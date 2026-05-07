@@ -72,6 +72,37 @@
   100% { opacity: 0; transform: translateY(-2px); }
 }
 
+/* — Animations utilitaires GTM admin (cf. docs/gtm/15-ui-ux-improvements.md) — */
+@keyframes fg-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fg-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  70% {
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fg-skeleton-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.35; }
+}
+
 @layer utilities {
   .visually-hidden {
     position: absolute;

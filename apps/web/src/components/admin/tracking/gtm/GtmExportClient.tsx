@@ -5,51 +5,51 @@ import type { GtmStats, GtmMeta } from '@/lib/tracking/gtm/exporter';
 import { GtmStatsGrid } from './GtmStatsGrid';
 import { GtmMetaInfo } from './GtmMetaInfo';
 import { GtmJsonPreview } from './GtmJsonPreview';
-
-const ENVS = ['production', 'stage', 'preview', 'dev'] as const;
-type Env = (typeof ENVS)[number];
+import { GtmHelpSteps } from './GtmHelpSteps';
+import { GtmEnvTabs, envBadge, type GtmEnv } from './GtmEnvTabs';
+import { GtmFullscreenPreview } from './GtmFullscreenPreview';
+import { IconAlert, IconCheck, IconCopy, IconDownload } from './GtmIcons';
 
 interface ExportPayload {
   pretty: string;
   stats: GtmStats;
   meta: GtmMeta;
-  env: Env;
+  env: GtmEnv;
 }
 
 interface Props {
   initial: ExportPayload;
 }
 
-const ENV_LABELS: Record<Env, string> = {
-  production: 'Production',
-  stage: 'Stage',
-  preview: 'Preview',
-  dev: 'Dev local',
-};
-
 export function GtmExportClient({ initial }: Props) {
-  const [env, setEnv] = useState<Env>(initial.env);
+  const [env, setEnv] = useState<GtmEnv>(initial.env);
   const [data, setData] = useState<ExportPayload>(initial);
   const [pending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
-  useEffect(() => {
-    if (env === initial.env) return;
+  const fetchEnv = useCallback((nextEnv: GtmEnv) => {
     setError(null);
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/admin/tracking/gtm/container?env=${env}&format=pretty`, {
-          credentials: 'include',
-        });
+        const res = await fetch(
+          `/api/admin/tracking/gtm/container?env=${nextEnv}&format=pretty`,
+          { credentials: 'include' },
+        );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const next = (await res.json()) as ExportPayload;
-        setData({ ...next, env });
+        setData({ ...next, env: nextEnv });
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'erreur');
+        setError(err instanceof Error ? err.message : 'Erreur réseau');
       }
     });
-  }, [env, initial.env]);
+  }, []);
+
+  useEffect(() => {
+    if (env === initial.env) return;
+    fetchEnv(env);
+  }, [env, initial.env, fetchEnv]);
 
   const onDownload = useCallback(() => {
     const url = `/api/admin/tracking/gtm/container?env=${env}&format=pretty&download=true`;
@@ -66,80 +66,124 @@ export function GtmExportClient({ initial }: Props) {
     }
   }, [data.pretty]);
 
+  // Raccourcis clavier — Cmd+S pour télécharger, Cmd+Shift+C pour copier
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      if (e.key === 's' && !e.shiftKey) {
+        e.preventDefault();
+        onDownload();
+      } else if (e.key.toLowerCase() === 'c' && e.shiftKey) {
+        e.preventDefault();
+        void onCopy();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onDownload, onCopy]);
+
+  const badge = envBadge(env);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="block">
-          <span className="block text-xs uppercase tracking-wide text-stone-500">
-            Environnement
-          </span>
-          <select
-            value={env}
-            onChange={(e) => setEnv(e.target.value as Env)}
-            className="mt-1 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
-            disabled={pending}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${badge.classes}`}
           >
-            {ENVS.map((e) => (
-              <option key={e} value={e}>
-                {ENV_LABELS[e]}
-              </option>
-            ))}
-          </select>
-        </label>
+            <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+            {badge.label}
+          </span>
+          <p className="text-xs text-stone-500">
+            Le conteneur reflète l'état du catalogue d'événements à la
+            génération. Re-génère via la sélection ci-dessous.
+          </p>
+        </div>
         {pending ? (
-          <span className="text-xs text-stone-500" role="status">
-            chargement…
+          <span className="text-xs text-stone-500" role="status" aria-live="polite">
+            génération en cours…
           </span>
         ) : null}
-      </div>
+      </header>
 
-      <GtmStatsGrid stats={data.stats} />
+      <GtmEnvTabs value={env} onChange={setEnv} disabled={pending} />
+
+      <GtmStatsGrid stats={data.stats} loading={pending} />
       <GtmMetaInfo meta={data.meta} />
 
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={onDownload}
-          className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-60"
           disabled={pending}
+          className="inline-flex items-center gap-2 rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-stone-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
+          <IconDownload className="h-4 w-4" />
           Télécharger .json
+          <kbd className="ml-1 rounded border border-stone-700/60 bg-stone-800 px-1 font-mono text-[10px] text-stone-300">
+            ⌘S
+          </kbd>
         </button>
         <button
           type="button"
           onClick={onCopy}
-          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-900 hover:bg-stone-50 disabled:opacity-60"
           disabled={pending}
+          className="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-900 shadow-sm transition-colors duration-150 hover:border-stone-400 hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {copied ? '✓ Copié' : 'Copier le JSON'}
+          {copied ? (
+            <span className="motion-safe:animate-[fg-pop-in_220ms_ease-out_both] inline-flex items-center gap-2 text-[#4F6B4D]">
+              <IconCheck className="h-4 w-4" />
+              Copié
+            </span>
+          ) : (
+            <>
+              <IconCopy className="h-4 w-4" />
+              Copier le JSON
+            </>
+          )}
         </button>
+        <span className="visually-hidden" aria-live="polite">
+          {copied ? 'Container JSON copié dans le presse-papier' : ''}
+        </span>
       </div>
 
       {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800">
-          {error}
-        </p>
+        <div
+          role="alert"
+          className="motion-safe:animate-[fg-fade-in_180ms_ease-out_both] flex items-start gap-2.5 rounded-md border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-900"
+        >
+          <IconAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-700" />
+          <div className="flex-1">
+            <p className="font-medium">Échec du chargement</p>
+            <p className="text-xs text-red-700">{error}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchEnv(env)}
+            className="rounded-md border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-900 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
+          >
+            Réessayer
+          </button>
+        </div>
       ) : null}
 
-      <GtmJsonPreview json={data.pretty} />
+      <GtmJsonPreview
+        json={data.pretty}
+        onRequestFullscreen={() => setFullscreen(true)}
+      />
 
-      <section className="rounded-md border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-          Comment importer dans GTM
-        </h2>
-        <ol className="mt-2 list-decimal space-y-1 pl-5">
-          <li>Ouvre Google Tag Manager → ton compte → ton conteneur web.</li>
-          <li>Admin → Import Container.</li>
-          <li>Choisis le fichier téléchargé.</li>
-          <li>
-            Workspace : crée <em>feature/auto-import-{new Date().toISOString().slice(0, 10)}</em>.
-          </li>
-          <li>
-            Mode : <strong>Merge</strong> (recommandé) ou <strong>Overwrite</strong> pour un reset complet.
-          </li>
-          <li>Confirme. Vérifie en Tag Assistant Preview avant publication.</li>
-        </ol>
-      </section>
+      <GtmHelpSteps />
+
+      <GtmFullscreenPreview
+        open={fullscreen}
+        onClose={() => setFullscreen(false)}
+        title={`container.${env}.json`}
+      >
+        <div className="h-full p-4">
+          <GtmJsonPreview json={data.pretty} fullHeight />
+        </div>
+      </GtmFullscreenPreview>
     </div>
   );
 }
