@@ -333,6 +333,25 @@ export const adminSourceInput = z.object({
 });
 export type AdminSourceInput = z.infer<typeof adminSourceInput>;
 
+// ---------------------------------------------------------------------------
+// CHA-230 Phase 3 — Admin curator (intent golden-set).
+//
+// Input du POST /api/admin/chat/intent-curator/[messageId] : l'admin
+// confirme ou corrige l'intent classifié pour un message visiteuse,
+// ce qui crée une ligne `chat_golden_intent_set`.
+//
+// `expectedIntent` accepte n'importe quelle string non vide pour rester
+// future-proof (ajout d'intents sans changer le schema). La validation
+// "intent connu" est faite côté UI (dropdown) et au moment de
+// l'export-script (avertissement si intent inconnu rencontré).
+// ---------------------------------------------------------------------------
+
+export const adminGoldenIntentInput = z.object({
+  expectedIntent: z.string().min(1).max(40),
+  notes: z.string().max(500).optional(),
+});
+export type AdminGoldenIntentInput = z.infer<typeof adminGoldenIntentInput>;
+
 export const adminConversationsListQuery = z.object({
   q: z.string().max(200).optional(),
   language: chatLanguageSchema.optional(),

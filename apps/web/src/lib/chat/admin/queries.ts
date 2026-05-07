@@ -11,11 +11,13 @@ import { requireChatDb } from '../db/client';
 import {
   chatConversationEvent,
   chatFeedback,
+  chatGoldenIntentSet,
   chatKnowledgeSource,
   chatMessage,
   chatProviderConfig,
   chatSession,
   chatThemePreset,
+  type ChatMessageRow,
   type ChatSessionRow,
 } from '../db/schema';
 
@@ -201,5 +203,119 @@ export const adminQueries = {
       .from(chatConversationEvent)
       .orderBy(desc(chatConversationEvent.occurredAt))
       .limit(limit);
+  },
+
+  // -------------------------------------------------------------------------
+  // CHA-230 Phase 3 — curator / quality dashboard
+  // -------------------------------------------------------------------------
+
+  /**
+   * Liste paginée des messages user récents avec leur intent classifié,
+   * pour la page `/admin/chat/intent-curator`.
+   *
+   * Filtres optionnels : intent, langue, méthode (regex/llm), date min.
+   * Par défaut : derniers 7 j, role=user, limit 100, ordre desc.
+   */
+  async listMessagesForCurator(
+    opts: {
+      intent?: string;
+      language?: string;
+      method?: 'regex' | 'llm' | 'llm-fixed' | 'golden' | 'manual';
+      since?: Date;
+      limit?: number;
+    } = {},
+  ): Promise<ChatMessageRow[]> {
+    const db = requireChatDb();
+    const start = opts.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const conds = [
+      eq(chatMessage.role, 'user'),
+      gte(chatMessage.createdAt, start),
+      isNotNull(chatMessage.intentTag),
+    ];
+    if (opts.intent) conds.push(eq(chatMessage.intentTag, opts.intent));
+    if (opts.language) conds.push(eq(chatMessage.language, opts.language));
+    if (opts.method) conds.push(eq(chatMessage.intentMethod, opts.method));
+
+    return db
+      .select()
+      .from(chatMessage)
+      .where(and(...conds))
+      .orderBy(desc(chatMessage.createdAt))
+      .limit(opts.limit ?? 100);
+  },
+
+  /**
+   * Aggrégats pour le quality dashboard. Retourne, pour la fenêtre
+   * donnée, le nombre de messages user par intent_tag, par méthode,
+   * et la part golden-tagué.
+   */
+  async qualityKpis(window: KpiWindow = '7d') {
+    const db = requireChatDb();
+    const start = windowStart(window);
+
+    // Distribution par intent.
+    const byIntent = await db
+      .select({
+        intent: chatMessage.intentTag,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentTag),
+        ),
+      )
+      .groupBy(chatMessage.intentTag)
+      .orderBy(desc(sql`COUNT(*)`));
+
+    // Distribution par méthode (regex vs llm vs llm-fixed).
+    const byMethod = await db
+      .select({
+        method: chatMessage.intentMethod,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentMethod),
+        ),
+      )
+      .groupBy(chatMessage.intentMethod);
+
+    // Distribution par confiance.
+    const byConfidence = await db
+      .select({
+        confidence: chatMessage.intentConfidence,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentConfidence),
+        ),
+      )
+      .groupBy(chatMessage.intentConfidence);
+
+    // Total golden-set (cumulé, indépendant de la fenêtre).
+    const [goldenTotal] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatGoldenIntentSet);
+
+    return {
+      byIntent: byIntent.map((r) => ({ intent: r.intent ?? '∅', count: r.n })),
+      byMethod: byMethod.map((r) => ({ method: r.method ?? '∅', count: r.n })),
+      byConfidence: byConfidence.map((r) => ({
+        confidence: r.confidence ?? '∅',
+        count: r.n,
+      })),
+      goldenTotal: goldenTotal?.n ?? 0,
+    };
   },
 };

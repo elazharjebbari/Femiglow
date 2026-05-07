@@ -542,6 +542,54 @@ export const chatLead = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// chat_golden_intent_set (CHA-230 Phase 3)
+//
+// Jeu de référence (golden-set) curé par l'admin pour les régressions
+// CI sur la classification d'intent. Chaque ligne est un exemple
+// "texte → intent attendu" validé manuellement par un humain.
+//
+// Cycle de vie :
+//   1. Admin tag manuellement un message via le curator UI →
+//      INSERT golden(text, expected_intent, source_*).
+//   2. Script `pnpm chat:export-golden` exporte les rows en JSON →
+//      tests/golden/intent-fixtures.json.
+//   3. CI charge la fixture et vérifie que `classifyIntent(text).intent
+//      === expected_intent` ≥ 90 % du temps.
+//
+// `source_message_id` / `source_session_id` sont nullable car :
+//   - L'admin peut ajouter un exemple synthétique non lié à un message.
+//   - Si on `forget()` un visiteur (RGPD), le message est supprimé en
+//     cascade mais le golden-text reste (dérivé anonymisé).
+// ---------------------------------------------------------------------------
+
+export const chatGoldenIntentSet = pgTable(
+  'chat_golden_intent_set',
+  {
+    id: text('id').primaryKey(), // cg_xxxxxxxx
+    text: text('text').notNull(),
+    language: text('language', { enum: ['fr', 'ar', 'ar-MA'] }).notNull(),
+    expectedIntent: text('expected_intent').notNull(),
+    sourceMessageId: text('source_message_id').references(
+      () => chatMessage.id,
+      { onDelete: 'set null' },
+    ),
+    sourceSessionId: text('source_session_id').references(
+      () => chatSession.id,
+      { onDelete: 'set null' },
+    ),
+    curatorEmail: text('curator_email').notNull(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    intentIdx: index('chat_golden_intent_idx').on(t.expectedIntent),
+    languageIdx: index('chat_golden_lang_idx').on(t.language),
+    sourceMsgIdx: index('chat_golden_source_msg_idx').on(t.sourceMessageId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Inferred row / insert types
 // ---------------------------------------------------------------------------
 
@@ -566,3 +614,6 @@ export type ChatRuntimeSettingRow = typeof chatRuntimeSetting.$inferSelect;
 export type ChatRuntimeSettingInsert = typeof chatRuntimeSetting.$inferInsert;
 export type ChatLeadRow = typeof chatLead.$inferSelect;
 export type ChatLeadInsert = typeof chatLead.$inferInsert;
+// CHA-230 Phase 3 — golden-set
+export type ChatGoldenIntentRow = typeof chatGoldenIntentSet.$inferSelect;
+export type ChatGoldenIntentInsert = typeof chatGoldenIntentSet.$inferInsert;
