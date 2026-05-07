@@ -1,0 +1,25 @@
+# Image: hands-lina-avant
+# Path: /testimonials/hands-lina-avant.{avif,webp}
+# Page: /kit (before/after testimonial, day 0)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, before-state. Must pair exactly with hands-lina-apres — same hand, same surface, same lighting, same framing.
+
+SCENE: A square section of folded natural linen, warm beige, slight wrinkles, identical surface for both before and after.
+
+SUBJECT: One adult female hand, warm hazelnut Moroccan skin tone, ages 25 to 40, resting on the linen. Day 0 state — nails honest and uneven: slightly bitten or worn down at the tips, irregular length across fingers, dry cuticles with mild peeling, dull surface, small white spot on one nail. Real skin texture, fine lines, no jewelry.
+
+ACTION: At rest, observed honestly. The truthful starting point.
+
+FRAMING: 50mm lens, eye-level 25° angle, hand framed slightly off-center to the right, wrist exiting bottom right. Shallow depth of field, sharp focus on the nails. Frame must be reproducible exactly for the after image.
+
+LIGHTING: Soft morning side light from the left, diffused, identical to hands-amal series for cross-testimony coherence.
+
+PALETTE: Warm off-white linen, faded sand beige, soft warm shadow under the hand, hazelnut skin warmth. Monochromatic earthen.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, fine linen weave visible, no beauty retouching.
+
+MOOD: Honest starting state, no shame, no drama.
+
+DO NOT INCLUDE: any text, watermarks, logos; faces or arms above the wrist; jewelry; nail polish, gel, acrylic, French manicure; staged-looking damage; HDR; vibrant saturated colors; orientalist props.

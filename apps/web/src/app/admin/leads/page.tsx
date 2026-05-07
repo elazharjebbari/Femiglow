@@ -1,0 +1,138 @@
+import Link from 'next/link';
+import { requireAdmin } from '@/lib/auth/require-admin';
+import { AdminShell } from '@/components/admin/AdminShell';
+import { listLeads } from '@/lib/db/queries/leads';
+import { leadFiltersSchema } from '@/lib/schemas/admin/lead-filters';
+
+export const dynamic = 'force-dynamic';
+
+export default async function AdminLeadsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const session = await requireAdmin('/admin/leads');
+  const parsed = leadFiltersSchema.safeParse(searchParams);
+  const filters = parsed.success ? parsed.data : leadFiltersSchema.parse({});
+  const { rows, total, page, pageSize } = await listLeads(filters);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  return (
+    <AdminShell adminEmail={session.email} active="leads">
+      <header className="mb-6 flex items-baseline justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Leads</h1>
+          <p className="mt-1 text-sm text-stone-600">
+            {total} prospect{total === 1 ? '' : 's'} au total.
+          </p>
+        </div>
+      </header>
+      <form className="mb-6 grid gap-3 sm:grid-cols-3" role="search">
+        <label className="block">
+          <span className="block text-xs font-medium text-stone-600">Recherche</span>
+          <input
+            type="search"
+            name="search"
+            defaultValue={filters.search ?? ''}
+            placeholder="email, téléphone, nom"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-stone-600">Statut</span>
+          <select
+            name="status"
+            defaultValue={filters.status ?? ''}
+            className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">— Tous —</option>
+            <option value="new">Nouveau</option>
+            <option value="contacted">Contacté</option>
+            <option value="qualified">Qualifié</option>
+            <option value="converted">Converti</option>
+            <option value="lost">Perdu</option>
+            <option value="archived">Archivé</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-stone-600">Tri</span>
+          <select
+            name="sort"
+            defaultValue={filters.sort}
+            className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="created_desc">Plus récents d'abord</option>
+            <option value="created_asc">Plus anciens d'abord</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          className="self-end rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 sm:col-span-3 sm:w-fit"
+        >
+          Appliquer
+        </button>
+      </form>
+      {rows.length === 0 ? (
+        <p className="rounded-md border border-dashed border-stone-300 bg-white px-4 py-8 text-center text-sm text-stone-500">
+          Aucun lead ne correspond aux filtres.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-md border border-stone-200 bg-white">
+          <table className="min-w-full divide-y divide-stone-200 text-sm">
+            <thead className="bg-stone-50">
+              <tr>
+                <Th>Identité</Th>
+                <Th>Email</Th>
+                <Th>Statut</Th>
+                <Th>Créé</Th>
+                <Th aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {rows.map((l) => (
+                <tr key={l.id} className="hover:bg-stone-50">
+                  <Td>{l.name ?? '—'}</Td>
+                  <Td>{l.email}</Td>
+                  <Td>
+                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+                      {l.status}
+                    </span>
+                  </Td>
+                  <Td>{l.createdAt.toLocaleDateString('fr-FR')}</Td>
+                  <Td>
+                    <Link
+                      href={`/admin/leads/${l.id}`}
+                      className="text-stone-700 underline-offset-2 hover:underline"
+                    >
+                      Détail
+                    </Link>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <nav aria-label="Pagination" className="mt-4 flex items-center justify-between text-sm">
+        <p className="text-stone-500">
+          Page {page} / {pageCount}
+        </p>
+      </nav>
+    </AdminShell>
+  );
+}
+
+function Th({ children }: { children?: React.ReactNode }) {
+  return (
+    <th
+      scope="col"
+      className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-stone-500"
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({ children }: { children?: React.ReactNode }) {
+  return <td className="px-4 py-3 align-top text-stone-800">{children}</td>;
+}

@@ -1,0 +1,25 @@
+# Image: mains-salma
+# Path: /avis/mains-salma.{avif,webp}
+# Page: / (home, testimonials section, avis #2)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, testimonial thumbnail, must visually pair with mains-ines and mains-yasmine — same lighting, same grain, same overall palette mood.
+
+SCENE: A folded length of natural linen, warm beige, slight wrinkles, resting on a pale plaster surface. Casablanca interior, mid-morning.
+
+SUBJECT: One adult female hand, warm hazelnut skin tone, ages 40 to 55, resting on the linen. Nails short, oval, no polish, healthy nail bed, cared-for cuticles, faint natural ridge. Real skin texture with subtle freckles and a few sun marks, the hand of someone who lives with her hands. A thin silver bangle slightly visible at the wrist.
+
+ACTION: A natural pause, fingers gently relaxed, thumb close to the index, no posing.
+
+FRAMING: 50mm lens, eye-level 25° angle, hand framed slightly off-center to the right, wrist exiting bottom right. Shallow depth of field, focus on the nails.
+
+LIGHTING: Soft morning side light from the left, diffused, no direct sun, the same light as the other testimonials so the trio feels like one shoot.
+
+PALETTE: Warm off-white linen, faded sand beige, soft warm shadow under the hand, no other accent — keep it monochromatic and earthen.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, fine linen weave visible.
+
+MOOD: Quiet, lived-in, dignified, unrushed.
+
+DO NOT INCLUDE: any text, watermarks, logos; faces or arms beyond the wrist; nail polish, gel, acrylic, French manicure, glitter; shiny gold rings, large jewelry; studio backdrop; HDR; vibrant saturated colors; orientalist clichés.

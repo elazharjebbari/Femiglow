@@ -1,0 +1,21 @@
+name,scope,required,exemple,description,rotation
+DATABASE_URL,server,oui,postgresql://user:pass@host/db?sslmode=require,Connexion Postgres Neon (avec pooler),au besoin
+DIRECT_DATABASE_URL,server,oui,postgresql://user:pass@host-direct/db?sslmode=require,Connexion directe sans pooler pour migrations,au besoin
+ADMIN_SESSION_PASSWORD,server,oui,base64 32+ chars,Cle iron-session signature/chiffrement cookie,annuelle
+WEBHOOK_SECRET_KEY,server,oui,base64 32+ chars,Cle pgp_sym_encrypt pour secrets HMAC at-rest,annuelle
+CRON_SECRET,server,oui,base64 32+ chars,Bearer token Vercel Cron,annuelle
+ADMIN_EMAIL,seed,seed only,fondatrice@femiglow.ma,Email du compte admin initial,n/a
+ADMIN_PASSWORD,seed,seed only,(genere openssl rand),Mot de passe initial - jamais commit,n/a
+SENTRY_DSN,server+client,recommande,https://...@sentry.io/...,DSN Sentry,jamais (rotation manuelle si besoin)
+SENTRY_AUTH_TOKEN,build,recommande,sntrys_...,Token uploads sourcemaps Sentry,annuelle
+NEXT_PUBLIC_APP_URL,client,oui,https://femiglow.ma,URL publique pour metas/canonical,n/a
+NEXT_PUBLIC_SENTRY_DSN,client,non,https://...@sentry.io/...,DSN Sentry public-side seulement si activé,n/a
+LOG_LEVEL,server,non,info,Niveau minimum de log (debug/info/warn/error),n/a
+NODE_ENV,server,auto,production,Geree par Next/Vercel,n/a
+VERCEL_ENV,server,auto,production,Injectee par Vercel (production/preview/development),n/a
+VERCEL_GIT_COMMIT_SHA,server,auto,a1b2c3d,SHA du commit deploye,n/a
+VERCEL_URL,server,auto,femiglow-pr-42.vercel.app,URL preview Vercel,n/a
+E2E_BASE_URL,test,test only,https://femiglow-pr-42.vercel.app,URL cible pour Playwright,n/a
+E2E_ADMIN_EMAIL,test,test only,e2e@femiglow.ma,Compte admin de test,n/a
+E2E_ADMIN_PASSWORD,test,test only,(secret CI),Mot de passe admin de test,n/a
+PREVIEW_ADMIN_PASSWORD,seed,preview only,(secret Vercel preview),Mot de passe admin de preview,n/a

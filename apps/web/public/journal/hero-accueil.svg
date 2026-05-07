@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 2000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mains posées au repos, lumière douce">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C5DBC4"/>
+      <stop offset="1" stop-color="#A9C5A8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="2000" fill="url(#g1)"/>
+  <circle cx="800" cy="1400" r="520" fill="#F2CECC" opacity="0.85"/>
+  <path d="M0 1700 Q 800 1500 1600 1700 L 1600 2000 L 0 2000 Z" fill="#FBF8F1" opacity="0.92"/>
+  <circle cx="1280" cy="540" r="180" fill="#FBF8F1" opacity="0.55"/>
+  <text x="800" y="1900" text-anchor="middle" font-family="Georgia, serif" font-size="36" letter-spacing="6" fill="#2C2A28" opacity="0.45">FEMIGLOW</text>
+</svg>

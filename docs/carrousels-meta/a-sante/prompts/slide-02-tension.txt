@@ -1,0 +1,27 @@
+# Image: slide-02-tension (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-02-tension.png
+# Format: 1080×1350 (4:5 vertical) — vertical diptych split 50/50
+# Family: tension / contrast
+# Pair-with: slide-01-cover (continuity of paper surface and lighting)
+
+FORMAT: 4:5 vertical, 1080×1350 px, vertical diptych — top half (1080×675) shows the "before vernis" state, bottom half (1080×675) shows the "stripped, bare" state. A faint horizontal line (1.5 px hairline, sand color #E8E0D2) separates the two halves. Negative space reserved on the left of each half for typography overlay.
+
+SCENE: Two square sections of the same warm hand-made paper as slide 1. Casablanca morning light, identical to slide 1.
+
+SUBJECT — TOP HALF: One adult female hand, light Mediterranean complexion, age 28-38, fingers spread, palm-down. Nails carry remnants of dark or dusty rose semi-permanent gel polish — slightly chipped at the tips, with a faint ridge of grown-out nail visible at the cuticle (about 2 mm of regrowth). Subtle surface dullness where the gel has lifted. The damage is subtle, never theatrical.
+
+SUBJECT — BOTTOM HALF: The exact same hand, same complexion, same surface, same lighting, polish completely removed. Nails appear slightly thinner, faintly translucent, with surface texture suggesting the typical post-gel softening: a barely visible white ridge, a duller surface than slide 1's hand. No drama, no redness. The honesty is the point.
+
+ACTION: Top half — at rest, after weeks of wear. Bottom half — at rest, after the polish is gone. Same hand, two states.
+
+FRAMING: 50mm lens, top-down at 30°, hand in each half placed in the right two-thirds of the frame — the left third of each half is empty paper (typography zone). Both halves crop the wrist identically.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain. Identical in both halves. Soft shadows, short fall-off.
+
+PALETTE: Warm off-white paper background. Top half — a faint dusty rose tint from the chipped polish. Bottom half — pure skin and paper, no accent. Restrained throughout.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, no beauty retouching. The two halves must read as the same shoot, the same hand, only the state differs.
+
+MOOD: Honest, restrained, never accusatory. The image observes — it does not judge.
+
+DO NOT INCLUDE: any text, captions, arrows, red marks, crosses, X icons, labels, before/after stamps; faces or arms above the wrist; jewelry; perfectly identical mannequin nails (must remain real); polish that looks brand new (top half is meant to look 2-3 weeks worn); cracked or dramatically broken nails (the damage is subtle); HDR; oversharpening; vibrant saturated colors; orientalist props; perfume-ad gloss; harsh shadows or studio softboxes.

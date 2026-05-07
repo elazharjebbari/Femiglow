@@ -1,0 +1,25 @@
+# Image: og-home
+# Path: /og/home.png
+# Page: / (Open Graph card for social sharing)
+# Ratio: 1.91:1 (1200×630)
+# Family: social
+
+FORMAT: 1.91:1 horizontal Open Graph card, exactly 1200×630 pixels, designed to receive a typographic title overlaid on the right half — leave generous airy negative space on the right two thirds.
+
+SCENE: Same Casablanca morning interior as hero-home, but composed wider. Pale plaster wall, linen runner, small wooden side table at the lower left. Late spring light just after sunrise.
+
+SUBJECT: Two adult female hands at rest in the lower-left third — one open on the linen, one approaching a small frosted-glass amber jar with a paper label (no readable text). Same hands, same jar, same composition language as hero-home but tighter to one corner.
+
+ACTION: The instant before the ritual begins. A pause.
+
+FRAMING: 50mm lens, 25° high angle, subject tucked into the lower-left third of the frame, the upper-right two thirds intentionally empty for typography. Shallow depth of field.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, same light as hero-home so the two images read as one shoot.
+
+PALETTE: Warm off-white linen, deep ink black on the amber jar's label edge, one muted sage green note far in the background. Monochrome with earthen accents.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain. Same grain and color grade as hero-home.
+
+MOOD: Unhurried, intimate, ritual atmosphere, breath-before-gesture.
+
+DO NOT INCLUDE: any text, watermarks, logos, readable labels (text will be added later in design); people facing camera; full faces; studio backdrop; shiny gold or chrome; HDR; vibrant saturated colors; orientalist clichés. The right two thirds must remain quiet enough to host typography — no busy details there.

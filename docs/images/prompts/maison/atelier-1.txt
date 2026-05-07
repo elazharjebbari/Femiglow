@@ -1,0 +1,25 @@
+# Image: atelier-1 (table de mélange)
+# Path: /maison/atelier-1.{avif,webp}
+# Page: /maison (atelier triptych, image 1 — formulation table)
+# Ratio: 4:3 (800×600)
+# Family: editorial / atelier
+
+FORMAT: 4:3 landscape, 800×600 pixels, atelier image one of three. Must pair with atelier-2 and atelier-3 — same lighting, same grain, same earthen palette.
+
+SCENE: A close view of the formulation table in the Casablanca atelier. A small brass laboratory scale (matte brushed brass, never shiny) sits centered with a small ceramic dish on it. Around the scale: three open ceramic pots holding pale powders of slightly different tones, a small glass beaker with amber resin, a hand-carved wooden spoon, a folded cotton cloth.
+
+SUBJECT: The arrangement of formulation tools at rest. Mid-process, paused.
+
+ACTION: At rest between two measurements. The scale needle slightly off-zero indicates recent use.
+
+FRAMING: 50mm lens, top-down 60° angle, scale on the rule-of-thirds left, pots and beaker filling the frame with breathing room. Shallow depth of field, sharp focus on the scale needle and the central pot rim.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, gentle warm shadow.
+
+PALETTE: Warm wood worktable, brushed brass scale (matte), off-white ceramic pots, pale powders in earthen tones, translucent amber resin in the beaker, off-white cotton cloth. Earthen.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine and atelier features. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, wood grain and powder texture visible. Same grade as atelier-2 and atelier-3.
+
+MOOD: Slow formulation, considered making, the work paused mid-process.
+
+DO NOT INCLUDE: any text, watermarks, logos, readable labels; people, hands, faces (this is a still-life of the workspace); modern digital scales or industrial equipment; bright shiny brass or chrome (must read as matte); HDR; saturated colors; cluttered arrangement.

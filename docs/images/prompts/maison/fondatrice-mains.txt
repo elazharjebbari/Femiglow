@@ -1,0 +1,25 @@
+# Image: fondatrice-mains
+# Path: /maison/fondatrice-mains.{avif,webp}
+# Page: /maison (founder portrait, hands at work)
+# Ratio: 4:5 (640×800)
+# Family: portraits
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, supportive image of the founder shown through her hands rather than her face.
+
+SCENE: A close section of an oak worktable in the Casablanca atelier. A small fine-mesh sieve held above an unglazed ceramic bowl, a soft mound of pale clay powder partially in the bowl and partially passing through the sieve. A folded linen cloth at the edge.
+
+SUBJECT: Two adult female hands of the founder, ages 40 to 55, warm hazelnut Mediterranean Moroccan complexion, real lived-in skin texture with fine lines and faint sun marks, short oval natural nails, no polish. One hand holds the sieve steady, the other taps the rim gently. A simple thin silver ring on the right hand. Sleeves of a soft natural linen shirt visible at the wrist.
+
+ACTION: The founder is sifting the clay — a precise, repeated craft gesture. Mid-motion, the powder is falling.
+
+FRAMING: 50mm lens, top-down 70° angle, sieve and bowl centered, hands framing the action from above. Shallow depth of field, sharp focus on the sieve mesh and the falling powder, soft blur on the rest.
+
+LIGHTING: Soft morning side light from a tall window on the left, diffused through linen curtain, gentle warm shadow under the bowl.
+
+PALETTE: Warm wood worktable, off-white linen sleeves, pale clay powder, muted sand ceramic, warm hazelnut skin tone, brushed steel sieve (matte, never shiny). Earthen and authentic.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine workshop features. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, skin texture and powder grain visible. Same grade as maison-hero.
+
+MOOD: Founder at work, real craft, considered making, the doing rather than the figure.
+
+DO NOT INCLUDE: any text, watermarks, logos; the founder's face or arms above the wrist; nail polish, gel, acrylic, glitter; reflective stainless steel sieve (must read as matte brushed); HDR; oversharpening; saturated colors; orientalist clichés; perfume-ad glow.

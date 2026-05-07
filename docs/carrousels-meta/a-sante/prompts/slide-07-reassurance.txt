@@ -1,0 +1,25 @@
+# Image: slide-07-reassurance (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-07-reassurance.png
+# Format: 1080×1350 (4:5 vertical)
+# Family: ritual context / time
+# Pair-with: visual continuity with slides 1-6
+
+FORMAT: 4:5 vertical, 1080×1350 px, editorial composition with a hand and a small hourglass. Generous negative space above (typography zone) and a smaller band below (footer zone).
+
+SCENE: A surface of crumpled linen cloth in warm off-white, draped naturally on a low wooden table of pale honey color. The linen has visible weave and gentle creases. Casablanca morning light from a north-facing window.
+
+SUBJECT: To the right of the frame, an adult female hand at rest, palm-down on the linen, fingers slightly curled in a relaxed pose. Nails are short to medium, oval, bare, with the soft natural sheen of a hand recently cared for (post-ritual feel). Real skin texture, no retouch. To the left of the hand, a small glass hourglass (about 12 cm tall) standing upright on the linen, sand inside is a muted sage-green color, mid-flow (about half the sand has fallen). The hourglass is plain, no markings, no metal collar — just glass and sand.
+
+ACTION: The hand rests; the sand falls. Time and care, side by side.
+
+FRAMING: 50mm lens, slight high angle (about 30°), composition arranged so the hourglass occupies the left third and the hand occupies the right third, with a small gap of linen between them. Shallow depth of field, sharp focus on the hourglass middle (where the sand passes through) and the hand's nails. The wood table edge softly blurs at the bottom of the frame.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain. Gentle shadows extend to the right at 30°. The glass hourglass catches a soft matte highlight on its left edge — never specular.
+
+PALETTE: Warm off-white linen background. Pale honey wood underneath. Soft natural skin tone. Muted sage-green sand inside the hourglass — the only accent color, restrained. Glass with a faint warm tint.
+
+STYLE: Editorial still-life in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible linen weave, honest texture, no studio polish.
+
+MOOD: Quiet, unhurried, ritual. The slow promise of a hand cared for in five minutes, every six weeks.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, signage, numerals on the hourglass; faces or arms above the wrist; jewelry, rings, bracelets; nail polish, gel, acrylic, glitter, gloss varnish, painted look; lit candles or open flames; perfectly identical mannequin nails; HDR; oversharpening; vibrant saturated colors, neon; perfume-ad gloss, halo, lens flare; bokeh balls; studio softbox reflections; orientalist props, zellige, lanterns, kaftans.

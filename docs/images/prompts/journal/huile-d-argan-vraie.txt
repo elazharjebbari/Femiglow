@@ -1,0 +1,25 @@
+# Image: huile-d-argan-vraie
+# Path: /journal/huile-d-argan-vraie.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about real argan oil and material truth.
+
+SCENE: A small wooden surface in rural southern Morocco, sun-warmed wood, a length of natural undyed cloth folded beneath. Late afternoon light from a small window.
+
+SUBJECT: A clear glass apothecary bottle without a label holding amber argan oil. Beside it, an opened argan fruit showing the rough pit and a single nut visible. A small ceramic dish with three more raw argan nuts. A folded leaf of argan tree.
+
+ACTION: At rest, the elements that compose the truth of the oil arrayed honestly. No staging.
+
+FRAMING: 50mm lens, eye-level slight high angle 25°, the bottle on the left third, the fruit and dish on the right. Shallow depth of field, sharp focus on the bottle and fruit.
+
+LIGHTING: Warm late-afternoon side light from the right, soft and amber, the kind of golden hour that carries the temperature of southern Morocco without becoming saturated.
+
+PALETTE: Warm wood tone, undyed cloth, deep amber oil, soft brown argan shells, subtle olive green of the leaf. Earthen and authentic.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and rural documentary. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, wood grain and pit texture visible.
+
+MOOD: Material truth, traceability, sun-warmed origin.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, readable labels; people, hands, faces; modern packaging or industrial elements; saturated yellow or orange in the oil (must read as muted honey amber); HDR; perfume-ad glow; tourist clichés.

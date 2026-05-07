@@ -1,0 +1,25 @@
+# Image: la-maison-au-printemps
+# Path: /journal/la-maison-au-printemps.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about the home in spring.
+
+SCENE: A corner of a Casablanca apartment in spring, a long sheer linen curtain caught mid-breeze by an open window, a small ceramic vase with a single sprig of orange blossom on a low wooden table. Morning light filters in.
+
+SUBJECT: The curtain in soft motion is the real subject — the sense of air moving through the home. The vase and orange blossom anchor the lower third.
+
+ACTION: The curtain breathes inward as the wind passes. Just one moment.
+
+FRAMING: 50mm lens, eye-level, curtain occupies the upper two thirds vertically, vase on the lower third right side. Shallow depth of field, sharp focus on the curtain weave at mid-height, vase softly in focus below.
+
+LIGHTING: Soft morning side light filtered through the linen curtain itself, gentle backlight on the fabric making the weave visible. No direct sun.
+
+PALETTE: Warm off-white linen, pale plaster wall, soft sage green leaves, white orange blossom, warm wood tone of the table. Quiet and earthen with a hint of spring.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, linen weave and floral texture visible.
+
+MOOD: Spring renewal indoors, the air moving, slow seasonal threshold.
+
+DO NOT INCLUDE: any text, watermarks, logos; people, hands, faces; bright direct sun, HDR; vibrant saturated colors; oversized floral arrangement (the orange blossom must remain restrained); orientalist clichés.

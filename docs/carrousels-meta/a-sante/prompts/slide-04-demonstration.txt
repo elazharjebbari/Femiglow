@@ -1,0 +1,31 @@
+# Image: slide-04-demonstration (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-04-demonstration.png
+# Format: 1080×1350 (4:5 vertical) — 2×2 grid of square macros
+# Family: composition / demonstration
+# Pair-with: visual continuity with slides 1-3; same paper, same light
+
+FORMAT: 4:5 vertical, 1080×1350 px, composed of a 2×2 grid of four square macro photographs (each ~ 480×480 px) on a pure cream background. Generous gutters between cells (about 24 px). Negative space at the top and bottom for headline + footer text.
+
+SCENE: All four macro cells share the same warm off-white hand-made paper surface. Casablanca morning light, identical across the four cells.
+
+SUBJECT — CELL 1 (top-left, "paste"): A small open frosted-glass jar containing a pale, fine, slightly creamy paste (kaolin and bamboo feel). A wooden brush with light beige bristles rests beside it on the paper. Macro 1:1, sharp focus on the paste texture.
+
+SUBJECT — CELL 2 (top-right, "powder"): A small open jar with very fine pale powder, slightly mounded. A folded muslin buffer in soft beige rests beside it. Sharp focus on the powder grain.
+
+SUBJECT — CELL 3 (bottom-left, "shine"): A small open jar with translucent amber resin oil, a single tiny droplet visible on the rim. A folded cotton cloth in cream rests beside it. Sharp focus on the resin's translucency.
+
+SUBJECT — CELL 4 (bottom-right, "polish"): A small open jar with cream-colored matte wax (carnauba feel). A folded silk handkerchief in soft cream rests beside it. Sharp focus on the wax surface texture.
+
+ACTION: Each cell shows the matter at rest, just before use. No hands in this slide — the focus is on the matters themselves. Quiet objects.
+
+FRAMING: Each cell is shot at macro 1:1 magnification, top-down 90°, jar centered, accompanying tool placed to the lower-right. All four cells use the same camera angle, the same distance, the same crop logic. Shallow depth of field, sharp focus on the matter; the surrounding paper softly blurs.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, identical across all four cells. Shadows fall consistently to the right at 30°.
+
+PALETTE: Warm off-white paper background throughout. Cell 1 — pale cream + light beige wood. Cell 2 — pale cream + soft beige muslin. Cell 3 — translucent amber. Cell 4 — cream wax + soft cream silk. The four accents form a quiet earthen progression.
+
+STYLE: Editorial macro still-life in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain. Style and palette consistent across the four cells — same shooting day, same grade.
+
+MOOD: Restrained, methodical, four matters of a slow ritual.
+
+DO NOT INCLUDE: any text on the jars, watermarks, logos, brand names, signage; readable labels of any kind; hands in this slide (the matters speak alone); reflective gold or chrome; HDR or oversharpening; vibrant saturated colors; perfume-ad glow, halo; bokeh balls; studio softbox reflections; orientalist props; flowers, candles, food; busy backgrounds.

@@ -1,0 +1,71 @@
+@startuml flux-creation-lead
+!theme plain
+title Flux — Soumission d'un formulaire public et capture lead
+
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+actor Visiteur
+participant "Browser" as browser
+participant "/api/contact\nou /api/checkout\nou /api/newsletter" as api
+participant "Zod validator" as zod
+database "leads" as t_leads
+database "lead_events" as t_events
+database "webhook_endpoints" as t_endpoints
+database "webhook_deliveries" as t_deliveries
+participant "Sentry" as sentry
+
+Visiteur -> browser : remplit formulaire
+browser -> api : POST application/json
+
+== Validation ==
+
+api -> zod : parse body
+alt validation échoue
+  api -> browser : 400 { error: 'invalid_input', issues }
+end
+
+== Capture IP & UA ==
+
+api -> api : ip = req.headers['x-forwarded-for']\nua = req.headers['user-agent']
+
+== Persistance lead (transaction) ==
+
+api -> t_leads : INSERT lead { id, source, type, payload, ip, ua, createdAt }
+note right
+  3 retries avec backoff 100ms
+  si la DB hoquette
+end note
+
+alt INSERT échoue après 3 tentatives
+  api -> sentry : capture exception
+  api -> browser : 503 { error: 'persistence_unavailable' }
+  note right of api
+    INVARIANT I-04 :
+    aucun 200 sans persistance.
+  end note
+end
+
+api -> t_events : INSERT event { lead_id, action='created', actor='public', at }
+
+== Enqueue des livraisons webhook ==
+
+api -> t_endpoints : SELECT enabled=true
+loop pour chaque endpoint
+  api -> api : if (filter passes lead.type)
+  api -> t_deliveries : INSERT delivery { endpoint_id, lead_id,\n  attempt=1, status='pending', scheduled_for=NOW() }
+end
+
+== Réponse au visiteur ==
+
+api -> browser : 200 { ok: true, leadId, orderId? }
+
+note over api, browser
+  Latence p95 cible : < 500ms
+  même si plusieurs endpoints
+  configurés (INSERT seulement,
+  pas de fetch externe ici)
+end note
+
+@enduml

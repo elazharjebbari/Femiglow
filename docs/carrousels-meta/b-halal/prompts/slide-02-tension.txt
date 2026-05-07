@@ -1,0 +1,29 @@
+# Image: slide-02-tension (Carousel B — Halal)
+# Path: /carrousels/b-halal/slide-02-tension.png
+# Format: 1080×1350 (4:5 vertical) — flat lay diptych
+# Family: tension / silent compromise
+# Pair-with: continuity of linen and morning light from slide 1
+
+FORMAT: 4:5 vertical, 1080×1350 px, overhead flat lay composition. The composition is structurally a left/right split (each ~ 540×1350) on a single continuous linen surface, with a small empty space of linen at the center to suggest tension between the two objects. Negative space at the top for typography overlay.
+
+SCENE: A wide flat surface of softly crumpled warm off-white linen cloth, identical to slide 1. Casablanca morning light from a north-facing window. The room is implied; nothing is in the background.
+
+SUBJECT — LEFT SIDE: A single small bottle of generic dark glass nail polish, lid closed, lying on its side or standing upright. The bottle is intentionally generic — no readable brand, no readable label, dark amber or charcoal glass that suggests "polish" without being any specific brand. The cap is a simple matte black. The bottle reads as "the polish you used to wear" — anonymous, almost archetypal.
+
+SUBJECT — RIGHT SIDE: A small folded piece of clean white-cream linen, freshly washed, neatly squared, suggesting the cloth used to dry hands after ablutions or to wrap a copy of a religious book without showing the book itself. The cloth is plain, no embroidery, no patterns, only honest weave texture.
+
+CENTER: A small empty area of linen between the two objects — about 6 cm of empty space — that visually represents the tension of the silent compromise.
+
+ACTION: Two objects at rest, side by side, never touching. The viewer reads the gap as the choice that should not have to be made.
+
+FRAMING: 90° top-down overhead view, 50mm lens, both objects positioned at equal distance from the center of the frame, each occupying roughly the lower third of their half. Top half of the frame is empty linen (typography zone). Deep focus throughout (flat lay convention).
+
+LIGHTING: Soft diffuse morning light from the upper left, even fall-off across the frame. Subtle shadows on the right of each object, identical in both halves.
+
+PALETTE: Warm off-white linen background. The polish bottle a single dark accent (dark amber or charcoal). The folded cloth pure cream. No other accent. Restraint is the point.
+
+STYLE: Editorial flat lay in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible linen weave, honest material texture, no studio polish.
+
+MOOD: Honest, restrained, never accusatory. The image observes the silent choice — it does not denounce.
+
+DO NOT INCLUDE: any text, captions, arrows, labels, X marks, crosses; readable brand or logo on the bottle; faces, hands, or any human element; jewelry, religious objects, prayer beads, Quran, prayer rugs, mosque silhouettes; studio backdrops, white seamless paper; HDR; oversharpening; vibrant saturated colors, neon; orientalist patterns, zellige, lanterns; flowers, candles, food; ribbon, gift wrap, commercial badges.

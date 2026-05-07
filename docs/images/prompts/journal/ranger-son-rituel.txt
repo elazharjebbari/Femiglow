@@ -1,0 +1,25 @@
+# Image: ranger-son-rituel
+# Path: /journal/ranger-son-rituel.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about how to store and care for the ritual.
+
+SCENE: A small wooden drawer half open, lined with cream tissue paper, on a low piece of furniture. Casablanca apartment, soft morning light.
+
+SUBJECT: Inside the drawer, the three jars of the FemiGlow kit (kit-base, kit-fortifiant, kit-lime) are aligned neatly on the tissue paper, with the ceramic file laid across them. A folded length of natural linen sits at the back of the drawer.
+
+ACTION: At rest, the ritual stored. The drawer has just been opened to reveal it.
+
+FRAMING: 50mm lens, top-down 70° angle, drawer fills the frame, jars in the lower two thirds, linen at the top. Shallow depth of field, sharp focus on the jar lids and the file.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, gentle shadow inside the drawer.
+
+PALETTE: Warm wood drawer, cream tissue paper, frosted glass with warm tint, brushed champagne matte lids, muted sand ceramic file, warm natural linen. All consistent with the kit-principale grade.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, wood grain and tissue paper texture visible.
+
+MOOD: Ritual as place, considered storage, slow care.
+
+DO NOT INCLUDE: any text, watermarks, logos, readable labels; people, hands, faces; modern industrial drawer hardware (no shiny chrome handles); HDR; saturated colors; perfume-ad glow; cluttered drawer.

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mains posées sur un plaid, lumière de lampe">
+  <defs>
+    <radialGradient id="g4" cx="0.7" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#F2CECC"/>
+      <stop offset="0.5" stop-color="#C8A876" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#2C2A28"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g4)"/>
+  <circle cx="1200" cy="320" r="160" fill="#FBF8F1" opacity="0.85"/>
+  <circle cx="1200" cy="320" r="240" fill="#FBF8F1" opacity="0.18"/>
+  <path d="M0 800 Q 800 680 1600 800 L 1600 1067 L 0 1067 Z" fill="#2C2A28" opacity="0.55"/>
+  <text x="800" y="980" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.55">LE SOIR · CINQ MINUTES</text>
+</svg>

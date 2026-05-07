@@ -1,0 +1,25 @@
+# Image: og-journal
+# Path: /og/journal.png
+# Page: /journal (Open Graph card for social sharing)
+# Ratio: 1.91:1 (1200×630)
+# Family: social
+
+FORMAT: 1.91:1 horizontal Open Graph card, exactly 1200×630 pixels, designed to receive a typographic title overlaid centered or to the right — keep that area airy.
+
+SCENE: A wide warm off-white hand-made paper background. A composed grid of three small editorial vignettes from the journal arranged in a horizontal triptych with generous space between, like a printed magazine layout.
+
+SUBJECT: Three small framed vignettes (treat them as small images-within-the-image), each 240×320 portrait, side by side, well-spaced: vignette 1 a folded linen with a sprig of dried herb; vignette 2 the three frosted-glass jars of the kit; vignette 3 a hand at rest on paper. The three together evoke seasons, materials, voices.
+
+ACTION: At rest, an editorial spread reading inward.
+
+FRAMING: 35mm lens, eye-level top-down 80° flat lay view, triptych centered horizontally on the lower two thirds, generous space above for a title. Each vignette has soft natural shadow under it as if printed on paper.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, gentle even fall-off across the spread.
+
+PALETTE: Warm off-white paper background, earthen vignette content (linen, glass, hand), monochromatic and quiet. Identical grade to the journal articles.
+
+STYLE: Editorial layout photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper grain visible.
+
+MOOD: Editorial calm, slow reading, the journal as object.
+
+DO NOT INCLUDE: any text, watermarks, logos (text added later in design); people, faces; HDR; saturated colors; cluttered layout. The upper third must remain quiet enough to host typography.

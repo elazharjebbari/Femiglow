@@ -1,0 +1,26 @@
+# Image: cross-rituel
+# Path: /maison/cross-rituel.{avif,webp,png}
+# Pages: /maison (CrossLinkTriptyque, card 1) + menu Sommaire (vignette « Le rituel »)
+# Ratio: 4:5 portrait, 800×1000 — must crop cleanly to 1:1 for the 88×88 menu thumbnail
+# Family: editorial / cross-link triptych
+# Pilote: OUI — première image du triptyque cross-link, fixe la grammaire visuelle des deux suivantes (cross-kit, cross-journal).
+
+FORMAT: 4:5 vertical portrait, 800×1000 pixels. Used at large size (≈480 px wide) on /maison and at micro size (88×88 square crop) in the navigation menu. Compose so the central subject sits within a centered square that reads correctly when cropped 1:1.
+
+SCENE: A domestic interior at Casablanca in the morning. A pale-creme wool plaid is draped softly over a low wooden bench seen from above-side. A pair of female hands at rest on the plaid, fingers slightly curled, palms upward, ongles courts, cuticules naturelles, peau hâlée réelle. No watch, no jewellery beyond a thin matte band. The hands have been still for some time — the rituel is over.
+
+SUBJECT: Two real adult hands at rest. The afterstate of a slow ritual: not the gesture itself, the silence after.
+
+ACTION: Repose. Hands released, breath settled. The image must read as "after the rituel", not "before" — fingers relaxed, no tension.
+
+FRAMING: 50mm lens, 30° high-side angle, hands centered both horizontally and vertically (so the 1:1 square crop for the menu thumbnail keeps both hands fully framed). Shallow depth of field, sharp focus on the closer cuticle line and the wool weave next to the wrist; outer edges fall to soft blur.
+
+LIGHTING: Soft morning side light, diffused through a linen curtain, north-facing window. Gentle shadow fall-off, no direct sun. Warm but not golden — the temperature of a Casablanca March morning indoors.
+
+PALETTE: Warm off-white wool with pale-sand undertone, warm-skin tones (real, not retouched), warm wood bench in the background, deep ink black with warmth on a small folded notebook glimpsed at the edge. Quiet earthen palette. No gold, no champagne, no rose.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible wool weave, real skin texture (faint creases, natural cuticles), no smoothing. Honest, tactile.
+
+MOOD: Unhurried, intimate, lived-in. The body has slowed down. Quiet stillness, soft breath, restrained.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names; faces, profile, hair, jewellery (other than a single thin matte band); manicured glossy nails, painted varnish, gel polish, false nails (ongles must be naturels, courts à moyens); studio backdrop, white seamless paper, photo equipment; shiny gold, chrome, glitter, pearlescent finishes; HDR, oversharpening, plastic skin, beauty retouch, smoothed pores; vibrant saturated colors, neon, magenta, cyan; orientalist clichés (saturated zellige, lanterns, kaftans); lit candles, alcohol, food clutter; influencer poses or hands posed for the camera (must read as caught at rest, not arranged).

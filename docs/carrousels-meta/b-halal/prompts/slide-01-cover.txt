@@ -1,0 +1,25 @@
+# Image: slide-01-cover (Carousel B — Halal)
+# Path: /carrousels/b-halal/slide-01-cover.png
+# Format: 1080×1350 (4:5 vertical Meta carousel)
+# Family: cover / hook
+# Pair-with: aucune (slide d'ouverture)
+
+FORMAT: 4:5 vertical, 1080×1350 px, Instagram and Facebook carousel cover image. Editorial composition with generous negative space at the top to allow typography overlay. The bottom 80px is a safe zone (Meta CTA bar will cover it).
+
+SCENE: A surface of softly crumpled lin cloth in warm off-white, gently draped on a low pale wood table. The room is implied — not seen. Casablanca morning light from a north-facing window, no direct sun. To the right of the frame, in soft focus and slightly distant, a small clear glass carafe of pure water resting on the linen. A single thin filament of water descends from above the carafe (from the very top edge of the frame, source unseen) — captured mid-fall as a slow, deliberate stream — but the hand below is not yet wet.
+
+SUBJECT: The dominant subject is one adult female hand, age range 28 to 38, light to medium Mediterranean complexion, palm-down on the linen, fingers slightly relaxed, wrist exiting to the right naturally. Nails short to medium length, oval shape, completely bare — no polish, no gloss, no French manicure, no glitter. Real, lived-in skin texture: visible pores, soft cuticles, faint surface ridges on the nails. The hand looks calm, anticipating, not posed.
+
+ACTION: The hand rests; water is about to arrive but has not yet touched the skin. Anticipation of a gesture, not the gesture itself. The slide announces — it does not yet prove.
+
+FRAMING: 50mm lens, slight high angle (about 25°), hand placed in the lower-left two-thirds of the frame, water filament occupying the upper-right third. Generous negative space across the upper third for typography overlay. Shallow depth of field, sharp focus on the nails and finger pads; the water filament is sharply caught (1/1000 shutter feel); the carafe and linen behind soften.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain. Light passes through the falling water and creates a very subtle prismatic shimmer in mid-air (real light through real water — never fake rainbow). Gentle shadow fall-off behind the hand.
+
+PALETTE: Warm off-white linen background. Soft natural skin tone. Pale washed sky-blue accent (water and glass) — restrained, dawn-linen tone. A single faint champagne thread of light on the carafe's rim. No other accent.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop product catalogs. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible linen weave, honest material texture, no studio polish. The water captured slow and dignified — never splashy, never commercial.
+
+MOOD: Quiet, ceremonial, slow. The kind of light that makes water feel sacred. No event has happened yet — only its breath.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, signage, labels, captions; faces or arms above the wrist; jewelry, rings, bracelets; nail polish, gel, acrylic, French manicure, glitter, gloss varnish, painted look; perfectly identical mannequin nails; HDR processing, oversharpening, plastic skin; vibrant saturated colors, neon; orientalist clichés, zellige, lanterns, kaftans, mosques, prayer rugs, Quran, religious objects of any kind; studio backdrops, white seamless paper, photo equipment; loud splashing water, water droplets bouncing dramatically; flowers, candles, food.

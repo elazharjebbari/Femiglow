@@ -1,0 +1,25 @@
+# Image: matieres-d-ailleurs
+# Path: /journal/matieres-d-ailleurs.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about materials gathered from elsewhere.
+
+SCENE: A small section of warm off-white hand-made paper, the surface of a curiosity board. Casablanca interior, soft morning light.
+
+SUBJECT: A small considered arrangement of four humble found objects spaced apart with breathing room: a dried green olive leaf, a small fragment of unglazed ceramic, a length of raw natural linen thread coiled, a small spiral seashell. Each object speaks of an origin elsewhere, all united by restraint.
+
+ACTION: At rest, an inventory of values. Just observed.
+
+FRAMING: 50mm lens, top-down 80° overhead view (flat lay), four objects in a loose 2x2 grid with generous space between, the paper grain visible around. Shallow depth of field, sharp focus on the centre.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, gentle shadow giving each object a subtle weight.
+
+PALETTE: Warm off-white paper, soft sage olive leaf, pale unglazed ceramic, warm cream linen thread, light tan seashell. Earthen and quiet.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper and natural-material textures visible.
+
+MOOD: Material values, origins gathered, quiet inventory.
+
+DO NOT INCLUDE: any text, watermarks, logos; people, hands, faces; modern industrial objects; saturated colors; HDR; perfume-ad glow; cluttered arrangement (must remain spacious).

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint *)",
+      "Bash(pnpm --filter @femiglow/web typecheck *)",
+      "Bash(pnpm --filter @femiglow/web lint *)",
+      "Bash(pnpm --filter @femiglow/web test *)",
+      "mcp__Claude_Preview__preview_screenshot"
+    ]
+  }
+}

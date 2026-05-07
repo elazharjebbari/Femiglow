@@ -1,0 +1,17 @@
+name,hex,token,role,context,contrast_on_creme,contrast_on_encre,wcag_aa
+creme,#FAF7F2,color.brand.creme,Background principal,Surfaces, panneaux,—,—,n/a
+encre,#1F1F1A,color.brand.encre,Texte principal, accents forts,Tous textes,17.4:1,—,AAA
+sauge,#A4B5A4,color.brand.sauge,Statut convertI succès,Badge converted/success,2.8:1,3.4:1,AA-large
+petale,#D8B7B7,color.brand.petale,Accent féminin alerte douce,Badge failed/danger doux,1.9:1,4.7:1,AA-on-encre
+ciel,#C8D6E5,color.brand.ciel,Statut nouveau info,Badge new,2.0:1,4.5:1,AA-on-encre
+champagne,#E8D9B5,color.brand.champagne,KPI surlignage,Badge in-progress/pending,1.5:1,5.7:1,AA-on-encre
+encre/95,rgba(31,31,26,0.95),color.neutral.encre/95,Texte principal sombre,Tableaux corps,16.5:1,—,AAA
+encre/80,rgba(31,31,26,0.80),color.neutral.encre/80,Texte secondaire,Métadonnées labels,12.4:1,—,AAA
+encre/60,rgba(31,31,26,0.60),color.neutral.encre/60,Texte tertiaire,Aide contextuelle,7.6:1,—,AAA
+encre/40,rgba(31,31,26,0.40),color.neutral.encre/40,Placeholder désactivé,Inputs vides icônes inactives,3.9:1,—,AA-large
+encre/20,rgba(31,31,26,0.20),color.neutral.encre/20,Bordures secondaires,Séparateurs,1.6:1,—,décoratif
+encre/10,rgba(31,31,26,0.10),color.neutral.encre/10,Bordures fines,Inputs séparateurs tableaux,1.2:1,—,décoratif
+encre/8,rgba(31,31,26,0.08),color.neutral.encre/8,Hover background,Lignes survolées,—,—,décoratif
+encre/5,rgba(31,31,26,0.05),color.neutral.encre/5,Surface alternée,Lignes paires tableau,—,—,décoratif
+danger,#A33A3A,color.semantic.danger,Suppression destructive,Boutons danger erreurs critiques,4.9:1,—,AA
+danger-bg,#F5E5E5,color.semantic.danger-bg,Fond alerte rouge,Toast erreur banner,—,—,décoratif

@@ -1,0 +1,25 @@
+# Image: hands-amal-avant
+# Path: /testimonials/hands-amal-avant.{avif,webp}
+# Page: /kit (before/after testimonial, day 0)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, before-state of a 21-day testimonial. Must pair exactly with hands-amal-apres — same hand, same surface, same lighting, same framing — only the nail condition differs.
+
+SCENE: A square section of warm off-white hand-made paper, slight texture, identical surface for both before and after.
+
+SUBJECT: One adult female hand, fair Mediterranean complexion, ages 30 to 45, resting palm-down on the paper. Day 0 state — nails honest and a bit neglected: slightly uneven length, faint dryness around the cuticles, mild ridges on the nail surface, dull keratin without shine, one small chip at the index. Real skin texture, fine lines, no jewelry.
+
+ACTION: At rest, observed honestly without staging. The truthful starting point.
+
+FRAMING: 50mm lens, 30° top-down view, hand centered, framed loosely so the wrist exits at the bottom edge. Shallow depth of field, sharp focus on the nails and finger pads. Frame must be reproducible exactly for the after image.
+
+LIGHTING: Soft morning side light from the left, diffused through linen curtain, gentle shadow under the palm.
+
+PALETTE: Warm off-white paper, soft skin tone, no other accent. Quiet and earthen.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, no beauty retouching. Same grade as hands-amal-apres.
+
+MOOD: Honest starting state, no shame, no drama, observed.
+
+DO NOT INCLUDE: any text, watermarks, logos; faces or arms above the wrist; jewelry; nail polish, gel, acrylic, French manicure; visible damage that looks staged or violent; HDR; vibrant saturated colors; orientalist props; perfume-ad polish.

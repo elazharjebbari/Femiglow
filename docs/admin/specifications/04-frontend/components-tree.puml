@@ -1,0 +1,114 @@
+@startuml components-tree
+!theme plain
+title Arbre de composition — pages admin clés
+
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+[AdminLayout] as layout
+[AdminHeader] as header
+[AdminSidebar] as sidebar
+[AdminBreadcrumb] as bread
+[LogoutButton] as logout
+
+layout --> header
+layout --> sidebar
+header --> logout
+header --> bread
+
+== /admin/dashboard ==
+[DashboardPage (Server)] as dashboard
+[KPICards (Server)] as kpis
+[MetricCard] as metric
+[RecentLeads (Server)] as recent
+[LeadTable] as leadtable
+
+dashboard --> kpis
+kpis --> metric
+dashboard --> recent
+recent --> leadtable
+
+== /admin/leads ==
+[LeadsListPage (Server)] as leadslist
+[LeadFilters (Client)] as filters
+[FilterChip] as chip
+[SearchInput] as search
+[DateRangePicker] as daterange
+[Pagination] as pag
+[ExportCsvButton (Client)] as exportcsv
+
+leadslist --> filters
+filters --> chip
+filters --> search
+filters --> daterange
+leadslist --> leadtable
+leadslist --> pag
+leadslist --> exportcsv
+
+== /admin/leads/[id] ==
+[LeadDetailPage (Server)] as detail
+[LeadIdentityCard (Server)] as identity
+[LeadCommandCard (Server)] as command
+[LeadStatusSelector (Client)] as statusSel
+[LeadNoteEditor (Client)] as noteEd
+[LeadTimeline (Server)] as timeline
+[DeliveryTable (Server)] as deltable
+[DeleteLeadButton (Client)] as delBtn
+
+detail --> identity
+detail --> command
+detail --> statusSel
+detail --> noteEd
+detail --> timeline
+detail --> deltable
+detail --> delBtn
+
+== /admin/webhooks ==
+[WebhooksListPage (Server)] as whlist
+[WebhookSummaryRow] as whrow
+
+whlist --> whrow
+
+== /admin/webhooks/new (et [id]) ==
+[WebhookFormPage (Server)] as whform_page
+[WebhookForm (Client)] as whform
+[WebhookSecretInput (Client)] as secretIn
+[WebhookFilterEditor (Client)] as filterEd
+
+whform_page --> whform
+whform --> secretIn
+whform --> filterEd
+
+== /admin/webhooks/[id]/deliveries ==
+[DeliveriesPage (Server)] as delpage
+[DeliveryFilters (Client)] as delfilters
+[DeliveryTable] as deltable2
+[ReplayDeliveryButton (Client)] as replayBtn
+
+delpage --> delfilters
+delpage --> deltable2
+deltable2 --> replayBtn
+
+== Composants partagés ==
+[StatusBadge] as sb
+[DeliveryStatusBadge] as dsb
+[LoadingSpinner] as spin
+[InlineError] as ierr
+[Toast (existant)] as toast
+[ConfirmationModal (existant)] as confirm
+
+leadtable --> sb
+deltable --> dsb
+deltable2 --> dsb
+delBtn --> confirm
+replayBtn --> confirm
+
+note bottom
+  Server = lit DB via Drizzle, rendu côté serveur,
+            zéro JS shipped pour son code.
+  Client = `'use client'`, interactivité (state,
+            events, react-hook-form).
+end note
+
+@enduml

@@ -1,0 +1,69 @@
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import type { Article } from '@/lib/schemas';
+import { Heading } from '@/components/ui/Heading';
+import { Image } from '@/components/ui/Image';
+import { Kicker } from '@/components/ui/Kicker';
+import { Text } from '@/components/ui/Text';
+import { categoryLabels } from '@/lib/i18n/categories';
+import { routes } from '@/lib/routes';
+import { formatArticleDate } from '@/lib/utils/format-date';
+
+interface ArticleCardProps {
+  article: Article;
+  priority?: boolean;
+  sizes?: string;
+  headingLevel?: 'h2' | 'h3';
+  /** Slot media déjà résolu (Component-Media). Remplace `featuredImage`. */
+  mediaSlot?: ReactNode;
+}
+
+export function ArticleCard({
+  article,
+  priority = false,
+  sizes = '(min-width: 1024px) 33vw, (min-width: 720px) 50vw, 100vw',
+  headingLevel = 'h3',
+  mediaSlot,
+}: ArticleCardProps) {
+  const categoryLabel = categoryLabels[article.category];
+  return (
+    <article className="group flex flex-col gap-4">
+      <Link
+        href={routes.article(article.slug)}
+        aria-label={`Lire « ${article.title} » — ${categoryLabel}`}
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-encre/40 focus-visible:ring-offset-4 focus-visible:ring-offset-creme"
+      >
+        {mediaSlot ?? (
+          <Image
+            src={article.featuredImage.src}
+            alt={article.featuredImage.alt}
+            width={article.featuredImage.width}
+            height={article.featuredImage.height}
+            ratio="4:5"
+            sizes={sizes}
+            priority={priority}
+            className="transition-transform duration-500 ease-out motion-reduce:transition-none group-hover:-translate-y-1"
+          />
+        )}
+      </Link>
+      <div className="space-y-2">
+        <Kicker>{categoryLabel}</Kicker>
+        <Heading as={headingLevel} size="md">
+          <Link href={routes.article(article.slug)} className="hover:text-encre/80">
+            {article.title}
+          </Link>
+        </Heading>
+        <Text size="small" tone="secondary">
+          {article.excerpt}
+        </Text>
+        <Text size="caption" tone="tertiary" className="pt-1">
+          <time dateTime={article.publishedAt.toISOString()}>
+            {formatArticleDate(article.publishedAt)}
+          </time>
+          <span aria-hidden="true"> · </span>
+          {article.readingTimeMinutes}&nbsp;min de lecture
+        </Text>
+      </div>
+    </article>
+  );
+}

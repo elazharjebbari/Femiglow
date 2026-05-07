@@ -1,0 +1,84 @@
+@startuml flux-webhook-tick
+!theme plain
+title Flux — Cron tick webhook (chaque minute)
+
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+participant "Vercel Cron" as cron
+participant "/api/admin/cron/\nwebhook-tick" as handler
+participant "Postgres\n(Drizzle)" as pg
+participant "mapper\nlib/webhooks/mapper.ts" as mapper
+participant "signer\nlib/webhooks/signer.ts" as signer
+participant "Serveur partenaire" as partner
+participant "Sentry" as sentry
+
+cron -> handler : POST\nAuthorization: Bearer ${CRON_SECRET}
+
+alt header manquant ou invalide
+  handler -> cron : 401 Unauthorized
+  handler -> sentry : warn "cron_unauthorized"
+end
+
+== Sélection du batch ==
+
+handler -> pg : BEGIN
+handler -> pg : SELECT d.*, e.*\n  FROM webhook_deliveries d\n  JOIN webhook_endpoints e ON d.endpoint_id = e.id\n  WHERE d.status = 'pending'\n    AND d.scheduled_for <= NOW()\n    AND e.enabled = true\n  ORDER BY d.scheduled_for ASC\n  LIMIT 50\n  FOR UPDATE OF d SKIP LOCKED
+handler -> pg : UPDATE deliveries SET status='in_flight'\n  WHERE id IN (...) -- dans la même transaction
+handler -> pg : COMMIT
+
+alt batch vide
+  handler -> cron : 200 { processed: 0 }
+end
+
+== Traitement de chaque delivery ==
+
+loop pour chaque delivery
+  handler -> pg : SELECT lead WHERE id = delivery.lead_id
+  handler -> mapper : mapLeadToWebhookPayload(lead, endpoint)
+  mapper -> handler : payload (JSON)
+  handler -> signer : hmacSha256(JSON.stringify(payload), endpoint.secret)
+  signer -> handler : signature hex
+
+  handler -> partner : POST endpoint.url\n  Content-Type: application/json\n  Idempotency-Key: lead.id\n  X-FemiGlow-Signature: sha256=...\n  Body: payload
+  note right
+    AbortSignal.timeout(15000)
+  end note
+
+  alt 2xx (succès)
+    partner -> handler : 200 OK
+    handler -> pg : UPDATE delivery\n  SET status='success',\n      http_status=200,\n      duration_ms=...,\n      completed_at=NOW()
+  else 4xx (refus définitif)
+    partner -> handler : 4xx
+    alt 410 Gone (endpoint désactivé)
+      handler -> pg : UPDATE endpoint SET enabled=false
+      handler -> pg : UPDATE delivery SET status='aborted'
+    else autre 4xx
+      handler -> pg : UPDATE delivery SET status='failed', error_message=...
+      handler -> handler : delivery.attempt < 7 → schedule retry
+      alt encore des retries
+        handler -> pg : INSERT new delivery { attempt+1, scheduled_for=NOW() + backoff(attempt) }
+      end
+    end
+  else 5xx ou network error
+    handler -> pg : UPDATE delivery SET status='failed', error_message=...
+    alt delivery.attempt < 7
+      handler -> pg : INSERT new delivery { attempt+1,\n  scheduled_for=NOW() + backoff(attempt) }
+    else
+      handler -> pg : (rien — abandonné, status reste 'failed')
+      handler -> sentry : capture "webhook_giveup" lead_id=...
+    end
+  end
+end
+
+handler -> cron : 200 { processed: N, success: ..., failed: ... }
+
+note over handler
+  Backoff(attempt) :
+  1=1m, 2=2m, 3=5m,
+  4=15m, 5=1h, 6=6h, 7=24h
+  Total ~36h sur 7 tentatives
+end note
+
+@enduml

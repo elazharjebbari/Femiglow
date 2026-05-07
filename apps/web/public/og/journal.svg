@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Le carnet de la maison FemiGlow">
+  <defs>
+    <linearGradient id="bg-journal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBF8F1"/>
+      <stop offset="100%" stop-color="#F2E6D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg-journal)"/>
+  <g transform="translate(600 312)">
+    <line x1="-80" y1="0" x2="-30" y2="0" stroke="#C8A876" stroke-width="0.8"/>
+    <line x1="30" y1="0" x2="80" y2="0" stroke="#C8A876" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="3" stroke="#C8A876" stroke-width="0.8" fill="none"/>
+  </g>
+  <text x="600" y="220" text-anchor="middle" font-family="Georgia, 'Cormorant Garamond', serif" font-style="italic" font-size="64" fill="#1A1A1A" font-weight="500">Le carnet de la maison.</text>
+  <text x="600" y="280" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="18" letter-spacing="3" fill="#1A1A1A" opacity="0.65">SAISONS · MATIÈRES · VOIX · MAISON · PRATIQUE</text>
+  <text x="600" y="420" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#1A1A1A" opacity="0.55">Récits saisonniers, écrits lentement à Casablanca.</text>
+  <text x="600" y="585" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" letter-spacing="3" fill="#1A1A1A" opacity="0.45">FEMIGLOW · JOURNAL</text>
+</svg>

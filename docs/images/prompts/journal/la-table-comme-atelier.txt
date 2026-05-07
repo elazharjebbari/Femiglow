@@ -1,0 +1,25 @@
+# Image: la-table-comme-atelier
+# Path: /journal/la-table-comme-atelier.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:3 (800×600)
+# Family: editorial / journal
+
+FORMAT: 4:3 landscape, 800×600 pixels, featured image of a journal article about the table as a domestic atelier.
+
+SCENE: A wide warm wooden table in a Casablanca apartment, mid-morning light. Spread across it: the four objects of the FemiGlow ritual (frosted amber jar, ceramic file, pale powder dish, folded linen square) arranged in a loose semi-circle.
+
+SUBJECT: One adult female hand entering from the right edge of the frame, mid-gesture, reaching for the ceramic file. Real skin texture, ages 30 to 45. The hand connects the viewer to the workspace without dominating it.
+
+ACTION: The hand reaches for the next object. Work-in-progress, atelier in use.
+
+FRAMING: 50mm lens, top-down 60° angle, table fills the frame with breathing room around objects, hand entering from the right at the rule-of-thirds line. Shallow depth of field, sharp focus on the central objects and the wrist.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, gentle warm shadow.
+
+PALETTE: Warm wood tone, off-white linen, frosted glass with warm tint, brushed champagne matte lid, muted sand ceramic, soft warm skin tone. Same earthen palette as the rest of the journal.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, wood grain and material texture visible.
+
+MOOD: Domestic atelier, work in progress, considered making.
+
+DO NOT INCLUDE: any text, watermarks, logos, readable labels; faces or arm above the wrist; nail polish, gel, acrylic; bright industrial lighting; HDR; saturated colors; orientalist clichés.

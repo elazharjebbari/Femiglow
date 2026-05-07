@@ -1,0 +1,29 @@
+# Image: slide-06-temoignage (Carousel B — Halal)
+# Path: /carrousels/b-halal/slide-06-temoignage.png
+# Format: 1080×1350 (4:5 vertical) — silhouette + book
+# Family: testimonial / human voice
+# Pair-with: continuity of light from slides 1-5
+# Variants to produce: 6-A (silhouette voilée), 6-B (silhouette non-voilée), 6-C (sans silhouette, juste les mains et le livre)
+
+FORMAT: 4:5 vertical, 1080×1350 px, editorial portrait-still-life hybrid. Generous negative space at the top (typography zone for "SARA, CASABLANCA"); central composition holds the human element; lower band reserved for the quote in italic typography.
+
+SCENE: A quiet domestic interior in Casablanca — implied, not detailed. A small wooden table of pale honey color in soft profile-side light, a folded linen cloth on the table, a closed book of cream-colored cover with no readable title or markings (a simple journal or notebook, NOT a religious text). A pale washed sky-blue tinted morning light enters from a window outside the frame on the left.
+
+SUBJECT (THIS PROMPT IS VARIANT 6-A — WITH SILHOUETTE VOILÉE): An adult female silhouette in three-quarter profile, age 28-40, head slightly bowed, eyes lowered toward the closed book — face is in soft shadow and partial profile, NOT identifiable, never frontal. She wears a simple, modest light linen scarf draped softly over her hair (no embroidery, no patterns, no visible religious styling — just a clean linen scarf in warm off-white). Her shoulders are visible in soft fabric of similar warm off-white. Her hand rests on the closed book, fingers slightly curled, nails short to medium, oval, completely bare. Real lived-in skin and fabric texture.
+
+# FOR VARIANT 6-B: Replace the linen scarf with hair softly tied back in a low loose chignon, no scarf, otherwise identical pose, identical framing, identical light. Modest plain linen blouse.
+# FOR VARIANT 6-C: Remove the silhouette entirely. Show only the hand resting on the closed book on the linen-covered wooden table. Same light, same palette.
+
+ACTION: A pause. The hand rests on the closed book. The silhouette is still. The image captures a moment of inwardness, not a religious act — just contemplation, calm, measured.
+
+FRAMING: 85mm lens, slight three-quarter profile angle, silhouette occupying the right half of the frame, book and hand in the left-center. Composition is balanced — the empty linen at the bottom-left invites typography. Shallow depth of field, sharp focus on the hand and the book; the silhouette softens slightly toward the back of the head.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain. The silhouette is mostly in soft shadow with rim light on the cheek and shoulder — the face remains in tonal mystery. The book and the hand are clearly lit.
+
+PALETTE: Warm off-white linen and paper. Pale honey wood. Soft natural skin tone. Pale washed sky-blue accent in the window light. The silhouette in muted earthen tones — warm off-white scarf, pale beige fabric. No bright color anywhere.
+
+STYLE: Editorial portrait-still-life in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible linen weave, honest fabric and skin texture, no studio polish. Classical compositional restraint — the silhouette suggests, never declares.
+
+MOOD: Inward, calm, composed. A woman at peace with her gestures. The image carries the dignity of someone whose beauty no longer asks her to choose.
+
+DO NOT INCLUDE: any readable text or letters on the book cover (the book must read as a private journal, never as a religious text); titles, embroidered names, or symbols on the book; readable Arabic or French calligraphy; watermarks, logos, brand names; the silhouette's eyes meeting the camera; smiles or posed expressions; jewelry, prayer beads (misbaha), prayer mats; mosques in the background; the Quran or any religious book — explicitly excluded; loud religious symbolism of any kind; the silhouette appearing posed, glamorized, or in modest-fashion editorial style; bright saturated colors; HDR; oversharpening; plastic skin; orientalist clichés (zellige, lanterns, mosaic patterns, kaftans with heavy embroidery); studio backdrops; loud splashing water.

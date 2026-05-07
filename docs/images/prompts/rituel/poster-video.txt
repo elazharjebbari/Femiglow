@@ -1,0 +1,25 @@
+# Image: poster-video (rituel-poster)
+# Path: /videos/rituel-poster.{avif,webp}
+# Page: /rituel (video poster, displayed before video plays)
+# Ratio: 16:9 (1280×720)
+# Family: heroes
+
+FORMAT: 16:9 landscape, 1280×720 pixels, static poster image displayed by the <video> element before playback. Will be partially overlaid by a play button at the center — leave the central area calm.
+
+SCENE: A low ceramic tray on a linen-covered table, Casablanca morning interior. The tray holds the four objects of the ritual disposed in arc: the small frosted amber jar, the unglazed ceramic file, a folded linen square, a tiny porcelain dish with a hint of fine powder.
+
+SUBJECT: Two adult female hands entering the frame from above, fingers extended, hovering just above the tray about to begin. The pose is suspended — the breath before the first gesture. Real skin texture, ages 30 to 40, mid-Mediterranean tone, short oval natural nails.
+
+ACTION: The instant of beginning. Hands suspended, not yet touching the objects. Anticipation.
+
+FRAMING: 50mm lens, top-down 80° overhead view (almost flat lay), tray centered, hands framing it from above. Symmetrical composition with breathing room. Shallow depth of field, focus on the hands and central object.
+
+LIGHTING: Soft morning side light from camera left, diffused through linen curtain, gentle directional shadow that lengthens to the right.
+
+PALETTE: Warm off-white linen, muted sand ceramic, translucent amber, faint sage green note in a dried herb at the corner. Earthen and quiet.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper-and-linen texture, honest matter.
+
+MOOD: Anticipation, ritual threshold, contemplative pause, the breath before the first gesture.
+
+DO NOT INCLUDE: any text, watermarks, logos, play button (will be added by browser), readable labels; faces or arms above the wrist; studio backdrop; shiny gold, chrome, glitter; HDR; vibrant saturated colors; orientalist clichés; perfume-ad glow.

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Atelier de Casablanca, lumière du matin sur une table en bois">
+  <defs>
+    <radialGradient id="g-printemps" cx="0.25" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#FBF8F1"/>
+      <stop offset="0.55" stop-color="#C5DBC4" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#2C2A28"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-printemps)"/>
+  <circle cx="380" cy="280" r="180" fill="#FBF8F1" opacity="0.7"/>
+  <circle cx="380" cy="280" r="280" fill="#FBF8F1" opacity="0.15"/>
+  <path d="M0 720 L 1600 660 L 1600 1067 L 0 1067 Z" fill="#C8A876" opacity="0.45"/>
+  <path d="M0 760 L 1600 720 L 1600 1067 L 0 1067 Z" fill="#2C2A28" opacity="0.5"/>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.6">LA MAISON · PRINTEMPS</text>
+</svg>

@@ -1,0 +1,25 @@
+# Image: og-kit
+# Path: /og/kit.png
+# Page: /kit (Open Graph card for social sharing)
+# Ratio: 1.91:1 (1200×630)
+# Family: social
+
+FORMAT: 1.91:1 horizontal Open Graph card, exactly 1200×630 pixels, designed to receive a typographic title overlaid on the right two thirds — keep that area airy.
+
+SCENE: A widened landscape variation of kit-principale. Warm off-white hand-made paper surface. The three jars of the kit aligned in soft arc on the lower-left third of the frame.
+
+SUBJECT: The three glass jars of the FemiGlow kit — frosted glass with brushed champagne matte lids, pale cream paper labels without readable text. Powder, amber resin, dried sage herb, in that order from left to right. Same kit, same arrangement language as kit-principale, but composed tighter to the lower-left for typography space.
+
+ACTION: Quiet alignment, the trinity at rest.
+
+FRAMING: 50mm lens, slight high angle 20°, jars in the lower-left third, the upper-right two thirds intentionally calm and empty. Shallow depth of field, sharp focus on the central jar.
+
+LIGHTING: Soft diffuse light from the upper left, identical to kit-principale so the two read as one shoot.
+
+PALETTE: Warm off-white paper, frosted glass, brushed champagne matte lids, pale powder, translucent amber, muted sage. Same grade as kit-principale.
+
+STYLE: Editorial packshot in the spirit of Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper grain visible.
+
+MOOD: Restrained, considered, the trinity at rest.
+
+DO NOT INCLUDE: any readable text on labels (text added later in design); watermarks, logos, brand names; reflective gold or chrome; pearlescent, glitter, gloss; HDR; saturated colors; perfume-ad glow. The right two thirds must remain quiet enough to host typography.

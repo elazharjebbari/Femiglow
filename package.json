@@ -1,0 +1,27 @@
+{
+  "name": "femiglow-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @femiglow/web dev",
+    "build": "pnpm --filter @femiglow/web build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "format": "pnpm -r format",
+    "prepare": "husky || true",
+    "secrets:scan": "gitleaks detect --config .gitleaks.toml --redact --verbose"
+  },
+  "lint-staged": {
+    "apps/web/src/**/*.{ts,tsx}": [
+      "pnpm --filter @femiglow/web exec eslint --fix"
+    ],
+    "apps/web/src/**/*.{ts,tsx,css,md}": [
+      "pnpm --filter @femiglow/web exec prettier --write"
+    ]
+  }
+}

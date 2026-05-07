@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mains de Lina, ongles soignés, sur un cahier ouvert">
+  <defs>
+    <radialGradient id="g-lina" cx="0.45" cy="0.5" r="0.85">
+      <stop offset="0" stop-color="#C5DBC4"/>
+      <stop offset="0.55" stop-color="#FBF8F1" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#2C2A28"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-lina)"/>
+  <rect x="380" y="460" width="840" height="420" rx="4" fill="#FBF8F1" opacity="0.85"/>
+  <line x1="800" y1="460" x2="800" y2="880" stroke="#2C2A28" stroke-width="1.5" opacity="0.25"/>
+  <g stroke="#7A8B6A" stroke-width="2" opacity="0.3" fill="none">
+    <line x1="420" y1="520" x2="760" y2="520"/>
+    <line x1="420" y1="560" x2="740" y2="560"/>
+    <line x1="420" y1="600" x2="760" y2="600"/>
+    <line x1="420" y1="640" x2="730" y2="640"/>
+    <line x1="840" y1="520" x2="1180" y2="520"/>
+    <line x1="840" y1="560" x2="1160" y2="560"/>
+    <line x1="840" y1="600" x2="1180" y2="600"/>
+  </g>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.7">VOIX · LINA</text>
+</svg>

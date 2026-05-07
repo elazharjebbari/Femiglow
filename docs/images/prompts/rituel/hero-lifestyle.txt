@@ -1,0 +1,25 @@
+# Image: hero-lifestyle
+# Path: /rituel/hero-lifestyle.{avif,webp}
+# Page: /rituel (hero LCP)
+# Ratio: 4:3 (1920×1440)
+# Family: heroes
+
+FORMAT: 4:3 landscape, 1920×1440 pixels, hero image at the top of the editorial ritual page. Will receive a title overlaid centered or left-aligned — keep some calm zones to host typography.
+
+SCENE: A low side table in a Casablanca apartment, mid-morning. Pale plaster wall behind, slightly textured. A length of off-white linen drapes the table edge. On the table: an unglazed ceramic dish in muted sand tone, a small frosted amber jar half open, a fine ceramic file laid diagonally, a folded square of natural linen. Window light filters through a sheer curtain.
+
+SUBJECT: Two adult female hands, real skin texture, mid-Mediterranean complexion, performing the second gesture of the ritual — gently buffing one nail with the ceramic file, the other hand steadying the wrist. Nails short, oval, no polish, healthy nail bed. Cuticles natural.
+
+ACTION: The polishing motion mid-gesture, slow and precise. The fingers are deliberate, never rushed.
+
+FRAMING: 50mm prime, slight high angle 30°, hands centered horizontally and placed in the upper third, the lower third occupied by the table objects. Shallow depth of field, sharp focus on the working hand and the nail being polished, soft fall-off on the rest of the table.
+
+LIGHTING: Soft morning side light from camera left, diffused through linen curtain, no direct sun. Gentle directional shadows. Slight warm bias as the sun rises.
+
+PALETTE: Warm off-white linen, pale plaster wall, hand-made paper feel, muted sand ceramic, translucent amber resin in the jar, subtle sage green note in a small dried herb at the corner. Earthen and quiet.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper-and-linen surfaces, honest texture.
+
+MOOD: Slow, ritual atmosphere, contemplative pause, intimate domesticity, the feeling of taking five minutes for oneself.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, readable labels; faces or anything above the wrists; studio backdrop; shiny gold, chrome, glitter; HDR or oversharpening; vibrant saturated colors, neon, magenta; orientalist clichés (bright zellige, lanterns, kaftans); alcohol, lit candles; bokeh balls, perfume-ad glow.

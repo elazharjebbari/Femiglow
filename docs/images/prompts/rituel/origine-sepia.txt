@@ -1,0 +1,25 @@
+# Image: origine-sepia
+# Path: /rituel/origine-sepia.{avif,webp}
+# Page: /rituel (origin section, narrative)
+# Ratio: 16:9 (640×480)
+# Family: editorial
+
+FORMAT: 16:9 landscape, 640×480 pixels, archival vintage photograph illustrating the origin of the ritual. Reads as a documentary still from another era.
+
+SCENE: An interior from 1920s Japan, a low wooden writing desk with a single drawer half open. Tatami floor edge visible, paper shoji screen blurred behind. A small porcelain bowl holds a fine pale powder. The aesthetic is wabi-sabi — restrained, intentional.
+
+SUBJECT: A young Japanese woman's hand and forearm in a soft cotton kimono sleeve, polishing one fingernail with a folded square of silk dipped in a fine mineral powder. Real skin, ages 25 to 35, traditional period setting. Nails short, naturally shaped, no polish.
+
+ACTION: The polishing motion of the hand, careful and slow, the gesture that will become the founding ritual.
+
+FRAMING: 50mm equivalent, eye-level slight high angle, hand centered, sleeve and porcelain bowl framing the gesture. Shallow depth of field.
+
+LIGHTING: Soft window light from the left, filtered through paper screen, very gentle, the kind of light typical of pre-flash photography.
+
+PALETTE: Sepia toning throughout — warm browns, cream, faded ivory, soft tan. No modern color, no pure black. Treat it as a real photograph from 1925 that has aged gently.
+
+STYLE: Vintage 1920s documentary photography, period-correct sepia print, subtle silver halide grain, soft contrast, natural emulsion fall-off at the edges. As if scanned from an archival album.
+
+MOOD: Quiet historical reverence, slow craft, the weight of tradition.
+
+DO NOT INCLUDE: any text, watermarks, logos, modern objects (no plastic, no electronics, no modern fabrics); orientalist costume clichés or dramatic make-up; faces in clear focus; studio lighting; HDR; vibrant or modern color; full color saturation — the entire image must read as period sepia.

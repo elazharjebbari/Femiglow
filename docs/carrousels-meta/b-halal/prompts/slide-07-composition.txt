@@ -1,0 +1,30 @@
+# Image: slide-07-composition (Carousel B — Halal)
+# Path: /carrousels/b-halal/slide-07-composition.png
+# Format: 1080×1350 (4:5 vertical) — flat lay triptych of matters
+# Family: composition / negation
+# Pair-with: continuity of palette with slides 1-6
+
+FORMAT: 4:5 vertical, 1080×1350 px, overhead flat lay. Three small ceramic shallow dishes arranged in a horizontal row across the lower-middle third of the frame. Generous negative space above (top half is paper for the headline + paragraph) and a small band below for the optional certification footnote.
+
+SCENE: A wide flat surface of warm off-white hand-made paper, slight deckle texture and very fine grain visible. Casablanca morning light from a north-facing window. No props beyond the three dishes.
+
+SUBJECT: Three small unglazed ceramic shallow dishes (each about 6 cm in diameter), aligned in a precisely spaced horizontal row, equal gaps between them. Each dish holds a different raw matter:
+- DISH 1 (left) — a single small puddle of golden translucent vegetable oil (jojoba feel), shallow and still.
+- DISH 2 (center) — small flakes of cream-yellow carnauba wax, matte, lightly mounded.
+- DISH 3 (right) — fine pale white-beige clay-and-bamboo powder, softly mounded.
+
+Behind each dish, a small handwritten kraft paper label rests faintly visible — but TEXT IS UNREADABLE (kraft paper labels are present as material element only, never as glyphs).
+
+ACTION: Three matters at rest, side by side, presented for honest inspection. The dishes hold the answer to the negation in the headline ("sans alcool, sans peinture, sans UV") — by showing what is, the image proves what is not.
+
+FRAMING: 90° top-down overhead view, 50mm lens, all three dishes parallel to the bottom edge, perfectly spaced. Deep focus across the row (flat lay convention). Generous negative space above for typography.
+
+LIGHTING: Soft diffuse morning light from the upper left, even fall-off across the row. Subtle shadows on the right side of each dish, identical in each.
+
+PALETTE: Warm off-white paper background. Three honest earthen accents: golden translucent oil, cream-yellow wax, pale clay-bamboo. A slow natural progression from gold to cream to pale.
+
+STYLE: Editorial flat lay in the spirit of Aesop catalog and Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain, honest material texture, no studio polish. Style and palette consistent with /docs/images/values/kit/kit-base.png if that asset exists.
+
+MOOD: Restrained transparency. Authority by showing what is — the negation in the headline ("sans alcool, sans peinture, sans UV") is proven by what is plainly visible.
+
+DO NOT INCLUDE: any readable text or glyphs on the labels; certification stamps, halal seals, badges of any kind (the certification mention belongs in typography overlay, not in the image); watermarks, logos, brand names, signage; reflective gold or chrome dishes (must remain unglazed ceramic, matte); pearlescent, glitter, gloss; HDR or oversharpening; vibrant saturated colors, neon, magenta, cyan; perfume-ad glow, halo; bokeh balls; studio softbox reflections; orientalist patterns or zellige; mosques, prayer rugs, Quran, calligraphy reading as religious; flowers, candles, food beyond the matters described; religious symbols of any kind.

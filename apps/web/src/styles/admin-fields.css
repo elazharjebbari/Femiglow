@@ -1,0 +1,692 @@
+/**
+ * Styles dédiés aux éditeurs de champs admin (P8).
+ *
+ * Les composants `FieldRow`, `TextEditor`, `MultilineEditor`, `LinkEditor`,
+ * `CtaEditor`, `EnumEditor`, etc. utilisent des classes (`field-row`,
+ * `field-label`, `field-help`, `field-text`, `field-link`, `field-cta`,
+ * `segmented`, `char-counter`, `field-error`, `field-badge`) qui sont
+ * stylées ici plutôt qu'inline pour rester proche du contrat de tests
+ * (qui sélectionnent par classe).
+ *
+ * Convention visuelle : charte stone/emerald, focus-visible accessible,
+ * inputs neutres, fieldsets en cartes plates.
+ */
+
+/* ───── Panneau parent ─────────────────────────────────────────────── */
+.fields-panel {
+  /* le wrapper reçoit déjà ses marges via Tailwind dans la page parent */
+}
+
+.fields-panel fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.fields-panel fieldset > legend {
+  padding: 0;
+}
+
+/* ───── FieldRow (wrapper d'un champ) ──────────────────────────────── */
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid rgb(231 229 228); /* stone-200 */
+  border-radius: 0.625rem;
+  background-color: #fff;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.field-row[data-dirty='true'] {
+  border-color: rgb(254 215 170); /* amber-200 */
+  background-color: rgb(255 251 235); /* amber-50/light */
+}
+
+.field-row:focus-within {
+  border-color: rgb(120 113 108); /* stone-500 */
+  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.06);
+}
+
+.field-row-head {
+  /* déjà flex via classes inline (flex items-baseline justify-between gap-2) */
+}
+
+.field-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(41 37 36); /* stone-800 */
+  line-height: 1.3;
+}
+
+.field-required-marker {
+  color: rgb(190 18 60); /* rose-700 */
+  margin-left: 2px;
+}
+
+.field-help {
+  font-size: 0.75rem;
+  color: rgb(120 113 108); /* stone-500 */
+  line-height: 1.45;
+}
+
+.field-error {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: rgb(190 18 60); /* rose-700 */
+}
+
+/* ───── Inputs scalaires (text, multiline, number) ─────────────────── */
+.field-row input[type='text'],
+.field-row input[type='number'],
+.field-row input[type='email'],
+.field-row input[type='url'],
+.field-row textarea,
+.field-row select {
+  width: 100%;
+  display: block;
+  padding: 0.5rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgb(28 25 23); /* stone-900 */
+  background-color: #fff;
+  border: 1px solid rgb(214 211 209); /* stone-300 */
+  border-radius: 0.375rem;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.field-row input[type='text']::placeholder,
+.field-row textarea::placeholder {
+  color: rgb(168 162 158); /* stone-400 */
+}
+
+.field-row input[type='text']:focus,
+.field-row input[type='number']:focus,
+.field-row input[type='email']:focus,
+.field-row input[type='url']:focus,
+.field-row textarea:focus,
+.field-row select:focus {
+  border-color: rgb(28 25 23); /* stone-900 */
+  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
+}
+
+.field-row input[aria-invalid='true'],
+.field-row textarea[aria-invalid='true'] {
+  border-color: rgb(225 29 72); /* rose-600 */
+}
+
+.field-row textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.field-row input[readonly],
+.field-row textarea[readonly] {
+  background-color: rgb(245 245 244); /* stone-100 */
+  color: rgb(87 83 78); /* stone-600 */
+  cursor: not-allowed;
+}
+
+/* ───── Compteur de caractères ─────────────────────────────────────── */
+.field-text {
+  position: relative;
+}
+
+.char-counter {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: rgb(120 113 108); /* stone-500 */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───── Badges de statut (saving / saved / error) ──────────────────── */
+.field-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  align-self: flex-start;
+}
+.field-badge--saving {
+  background-color: rgb(254 249 195); /* yellow-100 */
+  color: rgb(133 77 14); /* yellow-800 */
+}
+.field-badge--saved {
+  background-color: rgb(220 252 231); /* emerald-100 */
+  color: rgb(6 95 70); /* emerald-800 */
+}
+.field-badge--error {
+  background-color: rgb(254 226 226); /* rose-100 */
+  color: rgb(159 18 57); /* rose-800 */
+}
+
+/* ───── LinkEditor (fieldset interne) ──────────────────────────────── */
+.field-link,
+.field-cta {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  margin: 0;
+  border: 1px dashed rgb(214 211 209); /* stone-300 */
+  border-radius: 0.5rem;
+  background-color: rgb(250 250 249); /* stone-50 */
+}
+
+.field-link > label,
+.field-cta > label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: rgb(87 83 78); /* stone-600 */
+}
+
+/* checkbox label : layout inline */
+.field-link > label:has(input[type='checkbox']) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: rgb(41 37 36);
+}
+
+.field-link input[type='checkbox'] {
+  height: 1rem;
+  width: 1rem;
+  accent-color: rgb(28 25 23); /* stone-900 */
+}
+
+/* ───── Segmented control (CtaEditor variant + autres) ─────────────── */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background-color: rgb(245 245 244); /* stone-100 */
+  border-radius: 0.5rem;
+  border: 1px solid rgb(231 229 228); /* stone-200 */
+  width: fit-content;
+}
+
+.segmented > button {
+  /* override du reset global qui supprime tout */
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3125rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: rgb(87 83 78); /* stone-600 */
+  background-color: transparent;
+  border: 0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.segmented > button:hover:not([data-state='on']) {
+  background-color: #fff;
+  color: rgb(28 25 23);
+}
+
+.segmented > button[data-state='on'] {
+  background-color: rgb(28 25 23); /* stone-900 */
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.12);
+}
+
+.segmented > button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ───── Slot icône d'un CTA ────────────────────────────────────────── */
+.cta-icon-slot,
+.cta-variant {
+  display: grid;
+  gap: 0.25rem;
+}
+
+/* ───── PublishBar (déjà majoritairement Tailwind, on raffine) ─────── */
+.publish-bar {
+  position: sticky;
+  bottom: 0.5rem;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+  background-color: rgba(250, 250, 249, 0.92);
+}
+
+/* ───── EnumEditor select fallback ─────────────────────────────────── */
+.field-enum select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, rgb(120 113 108) 50%),
+    linear-gradient(135deg, rgb(120 113 108) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) center,
+    calc(100% - 11px) center;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
+/* ───── BooleanEditor (switch) ─────────────────────────────────────── */
+.field-boolean .switch {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.5rem;
+  height: 1.375rem;
+  padding: 2px;
+  border: 0;
+  border-radius: 9999px;
+  background-color: rgb(214 211 209); /* stone-300 */
+  cursor: pointer;
+  transition: background-color 160ms ease;
+  flex-shrink: 0;
+}
+
+.field-boolean .switch[data-state='on'] {
+  background-color: rgb(16 185 129); /* emerald-500 */
+}
+
+.field-boolean .switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field-boolean .switch-thumb {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: transform 160ms ease;
+  transform: translateX(0);
+}
+
+.field-boolean .switch[data-state='on'] .switch-thumb {
+  transform: translateX(1.125rem);
+}
+
+/* ───── IconEditor (trigger + dialog) ──────────────────────────────── */
+.field-icon .icon-trigger {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: rgb(41 37 36);
+  background-color: #fff;
+  border: 1px solid rgb(214 211 209);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.field-icon .icon-trigger:hover:not(:disabled) {
+  background-color: rgb(250 250 249);
+  border-color: rgb(168 162 158);
+}
+
+.field-icon .icon-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field-icon .icon-preview {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
+  background-color: rgb(245 245 244);
+  color: rgb(68 64 60);
+}
+
+.field-icon .icon-picker-dialog {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  background-color: rgba(28, 25, 23, 0.45);
+  backdrop-filter: blur(2px);
+  padding: 1rem;
+}
+
+.field-icon .icon-picker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: 100%;
+  max-width: 28rem;
+  max-height: 80vh;
+  background-color: #fff;
+  border: 1px solid rgb(231 229 228);
+  border-radius: 0.75rem;
+  box-shadow: 0 24px 48px -12px rgba(28, 25, 23, 0.3);
+  padding: 1rem;
+}
+
+.field-icon .icon-picker-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.field-icon .icon-picker-card > header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: rgb(28 25 23);
+}
+
+.field-icon .icon-picker-card > header button {
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  color: rgb(120 113 108);
+}
+.field-icon .icon-picker-card > header button:hover {
+  color: rgb(28 25 23);
+}
+
+.field-icon .icon-picker-card > input[type='search'] {
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgb(214 211 209);
+  border-radius: 0.375rem;
+}
+
+.field-icon .icon-picker-card > input[type='search']:focus {
+  outline: none;
+  border-color: rgb(28 25 23);
+  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
+}
+
+.field-icon .icon-picker-card > ul.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.375rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 6rem;
+}
+
+.field-icon .icon-picker-card > ul.icon-grid > li > button {
+  width: 100%;
+  padding: 0.4375rem 0.5rem;
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: left;
+  border: 1px solid rgb(231 229 228);
+  border-radius: 0.375rem;
+  background-color: #fff;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.field-icon .icon-picker-card > ul.icon-grid > li > button:hover {
+  background-color: rgb(245 245 244);
+  border-color: rgb(168 162 158);
+}
+.field-icon .icon-picker-card > ul.icon-grid > li > button[aria-selected='true'] {
+  background-color: rgb(28 25 23);
+  color: #fff;
+  border-color: rgb(28 25 23);
+}
+
+.field-icon .icon-picker-card > ul.icon-grid .empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: rgb(120 113 108);
+  font-size: 0.8125rem;
+  padding: 1rem 0;
+}
+
+.field-icon .icon-picker-card > .clear-btn {
+  align-self: flex-end;
+  font-size: 0.8125rem;
+  color: rgb(190 18 60);
+  padding: 0.25rem 0.5rem;
+}
+.field-icon .icon-picker-card > .clear-btn:hover {
+  color: rgb(159 18 57);
+  text-decoration: underline;
+}
+
+/* ───── QuoteEditor ────────────────────────────────────────────────── */
+.field-quote {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  margin: 0;
+  border: 1px dashed rgb(214 211 209);
+  border-radius: 0.5rem;
+  background-color: rgb(250 250 249);
+}
+.field-quote > label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: rgb(87 83 78);
+}
+
+/* ───── RecordEditor ───────────────────────────────────────────────── */
+.field-record {
+  display: grid;
+  gap: 0.5rem;
+}
+.field-record-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+.field-record-row > label {
+  font-size: 0.75rem;
+  color: rgb(87 83 78);
+  align-self: center;
+}
+
+/* ───── ListEditor ─────────────────────────────────────────────────── */
+.field-list {
+  display: grid;
+  gap: 0.5rem;
+}
+.field-list .list-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.field-list .list-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+  padding: 0.5rem;
+  border: 1px solid rgb(231 229 228);
+  border-radius: 0.5rem;
+  background-color: #fff;
+}
+.field-list .list-item-controls {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.field-list .list-item-controls > button {
+  appearance: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.75rem;
+  color: rgb(87 83 78);
+  background-color: rgb(245 245 244);
+  border: 1px solid rgb(231 229 228);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.field-list .list-item-controls > button:hover:not(:disabled) {
+  background-color: #fff;
+  color: rgb(28 25 23);
+  border-color: rgb(168 162 158);
+}
+.field-list .list-item-controls > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.field-list .list-item-editor {
+  min-width: 0;
+}
+.field-list .list-add {
+  appearance: none;
+  align-self: flex-start;
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: rgb(28 25 23);
+  background-color: #fff;
+  border: 1px dashed rgb(168 162 158);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.field-list .list-add:hover {
+  background-color: rgb(245 245 244);
+  border-color: rgb(28 25 23);
+  border-style: solid;
+}
+
+/* ───── RichTextEditor ─────────────────────────────────────────────── */
+.field-rich-text {
+  display: grid;
+  gap: 0.5rem;
+}
+.field-rich-text .rt-toolbar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid rgb(231 229 228);
+  border-radius: 0.5rem;
+  background-color: rgb(250 250 249);
+  width: fit-content;
+}
+.field-rich-text .rt-toolbar > button {
+  appearance: none;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: rgb(87 83 78);
+  background-color: transparent;
+  border: 0;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.field-rich-text .rt-toolbar > button:hover {
+  background-color: #fff;
+  color: rgb(28 25 23);
+}
+.field-rich-text .rt-toolbar > button[data-state='on'],
+.field-rich-text .rt-toolbar > button[aria-pressed='true'] {
+  background-color: rgb(28 25 23);
+  color: #fff;
+}
+.field-rich-text .rt-preview {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid rgb(231 229 228);
+  border-radius: 0.5rem;
+  background-color: rgb(250 250 249);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgb(28 25 23);
+  min-height: 5rem;
+  overflow-wrap: anywhere;
+}
+.field-rich-text .rt-preview p { margin: 0 0 0.5rem 0; }
+.field-rich-text .rt-preview p:last-child { margin-bottom: 0; }
+.field-rich-text .rt-preview a { color: rgb(28 25 23); text-decoration: underline; }
+.field-rich-text .rt-preview strong { font-weight: 600; }
+.field-rich-text .rt-preview em { font-style: italic; }
+
+/* ───── ColorTokenEditor ───────────────────────────────────────────── */
+.field-color-token {
+  display: grid;
+  gap: 0.5rem;
+}
+.field-color-token .swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3.5rem, 1fr));
+  gap: 0.375rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.field-color-token .swatch-grid > li > button,
+.field-color-token .swatch-grid > button {
+  appearance: none;
+  width: 100%;
+  height: 2.25rem;
+  border: 2px solid rgb(231 229 228);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+  position: relative;
+}
+.field-color-token .swatch-grid > li > button:hover,
+.field-color-token .swatch-grid > button:hover {
+  border-color: rgb(120 113 108);
+  transform: translateY(-1px);
+}
+.field-color-token .swatch-grid > li > button[aria-pressed='true'],
+.field-color-token .swatch-grid > button[aria-pressed='true'] {
+  border-color: rgb(28 25 23);
+  box-shadow: 0 0 0 2px rgba(28, 25, 23, 0.15);
+}
+
+/* ───── KickerEditor (preview en champagne) ────────────────────────── */
+.field-kicker {
+  display: grid;
+  gap: 0.375rem;
+}
+.field-kicker .kicker-preview {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.25rem;
+  background-color: rgb(254 240 199); /* amber-100 / champagne approx */
+  color: rgb(133 77 14); /* amber-800 */
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  width: fit-content;
+}
+
+/* ───── Filet de sécurité : tous les boutons sans classe à l'intérieur
+   d'un FieldRow doivent au minimum être visibles (le reset global a
+   supprimé toute apparence par défaut). ────────────────────────────── */
+.field-row fieldset > label > input,
+.field-row fieldset > label > span {
+  /* déjà géré par les sélecteurs ci-dessus, c'est juste un repère */
+}

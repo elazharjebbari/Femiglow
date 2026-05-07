@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Table en bois clair, nappe de lin, accessoires du rituel">
+  <defs>
+    <linearGradient id="g-table" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF8F1"/>
+      <stop offset="0.55" stop-color="#F2E6D4" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#C8A876"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-table)"/>
+  <rect x="0" y="640" width="1600" height="427" fill="#C8A876" opacity="0.55"/>
+  <rect x="80" y="600" width="1440" height="80" fill="#FBF8F1" opacity="0.85"/>
+  <g opacity="0.55">
+    <line x1="80" y1="610" x2="1520" y2="610" stroke="#C8A876" stroke-width="1"/>
+    <line x1="80" y1="630" x2="1520" y2="630" stroke="#C8A876" stroke-width="1"/>
+    <line x1="80" y1="650" x2="1520" y2="650" stroke="#C8A876" stroke-width="1"/>
+    <line x1="80" y1="670" x2="1520" y2="670" stroke="#C8A876" stroke-width="1"/>
+  </g>
+  <rect x="500" y="540" width="100" height="160" rx="6" fill="#C5DBC4"/>
+  <rect x="520" y="520" width="60" height="20" rx="3" fill="#2C2A28" opacity="0.85"/>
+  <rect x="700" y="560" width="90" height="140" rx="6" fill="#F2CECC"/>
+  <rect x="720" y="540" width="50" height="20" rx="3" fill="#C8A876"/>
+  <rect x="900" y="580" width="36" height="120" rx="6" fill="#C8A876"/>
+  <rect x="900" y="580" width="36" height="60" rx="6" fill="#FBF8F1"/>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.7">PRATIQUE · LA TABLE</text>
+</svg>

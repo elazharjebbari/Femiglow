@@ -1,0 +1,25 @@
+# Image: atelier-3 (coin lecture / formulation)
+# Path: /maison/atelier-3.{avif,webp}
+# Page: /maison (atelier triptych, image 3 — reading & formulation corner)
+# Ratio: 4:3 (800×600)
+# Family: editorial / atelier
+
+FORMAT: 4:3 landscape, 800×600 pixels, atelier image three of three. Must pair with atelier-1 and atelier-2 — same lighting, same grain, same earthen palette.
+
+SCENE: A small reading corner inside the Casablanca atelier. A worn wooden writing desk against a pale plaster wall. On the desk: an open hardback notebook with handwritten formulation notes (text not readable), a glass inkwell with a wooden-handled pen resting beside, a stack of three small reference books, a small ceramic cup with cold mint tea. Behind the desk on a low shelf: three glass apothecary vials with corks, half-filled with pale liquids. A linen apron drapes on the back of an old wooden chair to the right.
+
+SUBJECT: The intellectual side of the atelier — the corner where reading, note-taking and formulation thinking happen. Empty of people but alive with recent presence.
+
+ACTION: A pause between two thoughts. The notebook is mid-page, the pen rests.
+
+FRAMING: 35mm lens, eye-level slight high angle 15°, desk on the lower two thirds, shelf with vials in soft focus behind, chair with apron on the right edge. Shallow depth of field, sharp focus on the open notebook and pen.
+
+LIGHTING: Soft morning side light from a window on the upper left (out of frame), diffused through linen curtain, gentle warm shadow on the desk.
+
+PALETTE: Warm wood desk and chair, pale plaster wall, warm cream paper of the notebook, deep ink black on the page (illegible), soft amber of the inkwell, off-white linen apron, muted sand of the vials. Earthen.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine and atelier features. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, wood grain and paper texture visible. Same grade as atelier-1 and atelier-2.
+
+MOOD: The intellectual atelier, slow thinking, considered formulation, the work of the mind.
+
+DO NOT INCLUDE: any readable text, watermarks, logos; people, hands, faces; modern computer or screen, smartphone, calculator; bright artificial light; HDR; saturated colors; orientalist clichés; cluttered arrangement.

@@ -1,0 +1,151 @@
+id,phase,domaine,titre,description,effort_h,depend_de,critere_acceptation,test_associe
+ADM-001,P1,setup,Initialiser monorepo pnpm workspaces,Creer pnpm-workspace.yaml + package.json racine + apps/web stub,1,,pnpm install reussit sans erreur,
+ADM-002,P1,setup,Bootstrap Next.js 14 app router,Creer apps/web avec App Router et TypeScript strict,2,ADM-001,pnpm dev sert / sur localhost:3000,
+ADM-003,P1,setup,Configurer tsconfig strict noUncheckedIndexedAccess,Activer strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes,1,ADM-002,pnpm typecheck exit 0,
+ADM-004,P1,setup,Configurer ESLint avec presets,Ajouter @typescript-eslint + jsx-a11y + Next plugin,1,ADM-002,pnpm lint exit 0 sur fichiers seed,
+ADM-005,P1,setup,Configurer Prettier,Definir .prettierrc + integration ESLint,0.5,ADM-004,pnpm format check exit 0,
+ADM-006,P1,setup,Configurer Vitest config v8 coverage,Setup vitest.config.ts + scripts package.json,1,ADM-002,pnpm test passe sur test smoke,unit-vitest/lib_authsession.test.md
+ADM-007,P1,setup,Configurer Playwright minimal,Installer Playwright + creer playwright.config.ts,1,ADM-002,npx playwright test --list affiche specs,
+ADM-008,P1,setup,Pipeline CI GitHub Actions,Workflow lint + typecheck + vitest + playwright sur PR,2,ADM-004 ADM-006 ADM-007,CI verte sur PR de test,
+ADM-009,P1,setup,Configurer Vercel projet,Vercel link + vercel.json initial + region fra1,1,ADM-002,Deploiement preview reussit,
+ADM-010,P1,setup,Configurer Neon Pro + branche e2e,Creer compte Neon Pro + branche e2e + recuperer URLs,1,,DATABASE_URL valide testable via psql,
+ADM-011,P1,setup,Setup Drizzle ORM,Installer drizzle-orm + drizzle-kit + config drizzle.config.ts,1,ADM-010,drizzle-kit generate fonctionne,
+ADM-012,P1,db,Schema base admin_users + admin_login_attempts,Definir tables auth dans schema.ts,2,ADM-011,Migration appliquee Neon prod,
+ADM-013,P1,db,Schema leads + orders + order_items + lead_events,Definir tables metier core,2,ADM-012,Migration appliquee + ERD genere,
+ADM-014,P1,db,Schema webhook_endpoints + webhook_deliveries,Definir tables webhooks,2,ADM-013,Migration appliquee + index pending verifie,
+ADM-015,P1,db,Schema audit_events + rate_limit_counters,Definir tables transverses,1,ADM-014,Migration appliquee,
+ADM-016,P1,db,Triggers updated_at,Fonction trigger generic + attach toutes tables,1,ADM-015,Test : UPDATE met a jour updated_at,
+ADM-017,P1,observability,Integrer Sentry server+client,Sentry init + scrubPii + tags route,2,ADM-002,Erreur volontaire apparait dans Sentry preview,
+ADM-018,P1,observability,Logger structure JSON + AsyncLocalStorage,Helper logger + correlation request_id,2,ADM-002,Logs JSON visibles avec request_id,
+ADM-019,P1,observability,Endpoint /healthz,Route GET sans auth qui SELECT 1,0.5,ADM-011,GET /healthz returns 200 ok,unit-vitest/lib_apphealthcheck.test.md
+ADM-020,P1,observability,UptimeRobot configure sur /healthz,Ping toutes 5min + alertes email,0.5,ADM-019,Ping verifie dans dashboard,
+ADM-021,P2,auth,Helper hashPassword argon2id,Wrapper @node-rs/argon2 avec params OWASP 2024,1,ADM-018,Test unitaire hash + verify roundtrip,unit-vitest/lib_authpassword.test.md
+ADM-022,P2,auth,Helper sessionOptions iron-session,Configuration cookie + 8h maxAge + HttpOnly,1,ADM-021,Cookie pose sur reponse,unit-vitest/lib_authsession.test.md
+ADM-023,P2,auth,Schema Zod loginInputSchema,Email + password + min length,0.5,ADM-022,Schema rejette payloads invalides,unit-vitest/lib_schemaslogin.test.md
+ADM-024,P2,auth,POST /api/admin/login handler,Login complet avec rate-limit + audit,3,ADM-023,Login OK retourne 200 + cookie,integration-msw/scenario-login-success.md
+ADM-025,P2,auth,Brute-force protection 5/15min IP+email,Verification rate_limit_counters,1,ADM-024,6e tentative dans 15min retourne 429,integration-msw/scenario-login-rate-limit.md
+ADM-026,P2,auth,POST /api/admin/logout handler,Detruit session + clear cookie,1,ADM-024,Logout retire le cookie,integration-msw/scenario-logout.md
+ADM-027,P2,auth,requireAdmin helper SSR,Vérifie session + redirect /admin/login,1,ADM-024,Page protegee redirige sans cookie,unit-vitest/lib_authrequireadmin.test.md
+ADM-028,P2,auth,Middleware Next.js auth gate,Match /admin/* sauf /admin/login,2,ADM-027,Middleware redirige correctement,e2e-playwright/auth-login.spec.md
+ADM-029,P2,auth,Page /admin/login,Form email+password + erreurs i18n FR,2,ADM-028,Page accessible non connecte,e2e-playwright/auth-login.spec.md
+ADM-030,P2,auth,Tests E2E login flow,Playwright login OK + erreurs,2,ADM-029,Spec verte,e2e-playwright/auth-login.spec.md
+ADM-031,P2,leads,Schemas Zod leadFiltersSchema,Filters + tri + pagination,1,ADM-018,Schema valide URL params,unit-vitest/lib_schemasleadfilters.test.md
+ADM-032,P2,leads,Query getLeadsList paginee,Drizzle query avec count + pagination,2,ADM-031,Query retourne page 25 leads,unit-vitest/lib_dbqueriesleads.test.md
+ADM-033,P2,leads,Query getLeadById,Drizzle query + ressources liees,1,ADM-032,Retourne lead+order ou null,unit-vitest/lib_dbqueriesleads.test.md
+ADM-034,P2,leads,Query getLeadEventsTimeline,Events tries DESC + actor name,1,ADM-033,Retourne timeline complete,unit-vitest/lib_dbqueriesleadevents.test.md
+ADM-035,P2,leads,Page /admin/leads listing,Table SSR + filters + tri server,3,ADM-032,Liste affiche 25 leads + filtres OK,e2e-playwright/leads-listing.spec.md
+ADM-036,P2,leads,Composant LeadFiltersBar,Filtres status + period + search,2,ADM-035,Filtres MAJ URL + reload SSR,integration-msw/scenario-leads-list.md
+ADM-037,P2,leads,Composant LeadsTable,Table tri + pagination + a11y,2,ADM-036,Tri + pagination OK + clavier,integration-msw/scenario-leads-list.md
+ADM-038,P2,leads,Page /admin/leads/[id] detail,Header identite + sections + Suspense,3,ADM-033 ADM-034,Page rend lead + timeline,e2e-playwright/leads-detail.spec.md
+ADM-039,P2,leads,Server Action transitionLeadStatus,Validation transition + audit + event,2,ADM-038,Transition valide -> 200 + log,integration-msw/scenario-lead-status-update.md
+ADM-040,P2,leads,Composant LeadStatusMenu,Dropdown transitions valides,1,ADM-039,Click change status + toast,e2e-playwright/leads-detail.spec.md
+ADM-041,P2,leads,Server Action createLeadNote,Insert lead_event note + audit,1,ADM-039,Note creee visible dans timeline,integration-msw/scenario-lead-note-add.md
+ADM-042,P2,leads,Composant NoteForm,Form + textarea + submit,1,ADM-041,Submit cree note,e2e-playwright/leads-detail.spec.md
+ADM-043,P2,leads,Composant LeadEventsTimeline,Render events + groupage par jour,2,ADM-038,Timeline rend tous events,integration-msw/scenario-lead-timeline.md
+ADM-044,P2,leads,Suspense boundaries detail page,SuspenseLeadEvents + SuspenseDeliveries,1,ADM-043,Skeleton montre puis contenu,
+ADM-045,P2,leads,Tests vitest queries leads,Couverture 80%+ sur lib/db/queries/leads.ts,2,ADM-035,coverage rapport >= 80,unit-vitest/lib_dbqueriesleads.test.md
+ADM-046,P2,leads,Tests E2E leads detail page,Playwright detail + transitions + notes,2,ADM-040 ADM-042,Spec verte,e2e-playwright/leads-detail.spec.md
+ADM-047,P2,leads,Audit middleware admin actions,Logger automatique sur chaque action,1,ADM-039,Audit_events ligne par action,unit-vitest/lib_auditlogauditevent.test.md
+ADM-048,P2,leads,Empty state liste leads,Composant + image + CTA,0.5,ADM-035,Vide affiche message,
+ADM-049,P2,leads,Empty state detail (lead introuvable),404 page custom,0.5,ADM-038,ID inconnu retourne 404 propre,
+ADM-050,P2,layout,Composant AdminShell,Sidebar + header + main,2,ADM-028,Layout rend sur toutes pages,e2e-playwright/leads-listing.spec.md
+ADM-051,P2,layout,Composant AdminSidebar,Liens + active state + a11y,1,ADM-050,Click change route,
+ADM-052,P2,layout,Composant AdminHeader,User menu + logout,1,ADM-050,Logout depuis menu,
+ADM-053,P2,layout,Page /admin (dashboard placeholder),KPI stub + bienvenue,1,ADM-050,Page accessible apres login,
+ADM-054,P2,layout,Toast notifications system,Sonner ou toast custom,1,ADM-050,Toast affiche apres action,
+ADM-055,P2,layout,Erreur boundary App,Error.tsx + fallback,1,ADM-050,Erreur server affiche fallback,
+ADM-056,P2,layout,Loading states global,Loading.tsx + skeleton,0.5,ADM-050,Navigation montre skeleton,
+ADM-057,P2,layout,Page /admin/login layout dedie,Sans sidebar,1,ADM-029,Login affiche layout minimal,
+ADM-058,P2,security,Headers securite middleware,CSP nonce + HSTS + frame-ancestors,2,ADM-028,curl -I montre headers,e2e-playwright/security-headers.spec.md
+ADM-059,P2,security,Endpoint /api/csp-report,Recoit reports + log structure,1,ADM-058,POST report -> 204 + log,
+ADM-060,P2,security,Tests E2E security headers,Playwright check headers,1,ADM-058,Spec verte,e2e-playwright/security-headers.spec.md
+ADM-061,P3,webhooks,Helper crypto encryptSecret pgp_sym,Wrapper db.execute pgp_sym_encrypt,1,ADM-014,Round-trip encrypt/decrypt OK,unit-vitest/lib_cryptoencryption.test.md
+ADM-062,P3,webhooks,Helper crypto signHmac SHA-256,Sign + base64 encode,1,ADM-014,Signature deterministique pour input fixe,unit-vitest/lib_cryptohmac.test.md
+ADM-063,P3,webhooks,Helper verifyHmac timingSafeEqual,Compare signatures sans leak timing,0.5,ADM-062,verifyHmac true/false correct,unit-vitest/lib_cryptohmac.test.md
+ADM-064,P3,webhooks,Schema Zod webhookEndpointInputSchema,URL https + events + httpsUrl refine SSRF,1,ADM-061,Schema rejette http:// et IPs privees,unit-vitest/lib_schemaswebhookendpoint.test.md
+ADM-065,P3,webhooks,Anti-SSRF blockPrivateIps refine,Liste CIDR privees + DNS resolve check,2,ADM-064,IP 192.168.1.1 rejetee,unit-vitest/lib_webhooksantissrf.test.md
+ADM-066,P3,webhooks,Query createWebhookEndpoint,Insert + return secret en clair une fois,1,ADM-061,Secret retourne 1 seule fois,integration-msw/scenario-webhook-create.md
+ADM-067,P3,webhooks,Query updateWebhookEndpoint,Update sans secret,1,ADM-066,Update OK + audit,integration-msw/scenario-webhook-update.md
+ADM-068,P3,webhooks,Query rotateWebhookSecret,Genere nouveau secret + chiffre + retour,1,ADM-066,Nouveau secret different + ancien invalide,integration-msw/scenario-webhook-rotate.md
+ADM-069,P3,webhooks,Query deleteWebhookEndpoint,Soft-delete + cascade audit,1,ADM-066,Endpoint marque deleted,integration-msw/scenario-webhook-delete.md
+ADM-070,P3,webhooks,Page /admin/webhooks listing,Table endpoints + toggle actif,2,ADM-066,Page rend tous endpoints,e2e-playwright/webhooks-listing.spec.md
+ADM-071,P3,webhooks,Page /admin/webhooks/new,Form creation + display secret,2,ADM-066,Submit cree + montre secret,e2e-playwright/webhooks-create.spec.md
+ADM-072,P3,webhooks,Page /admin/webhooks/[id]/edit,Form edition + bouton rotate,2,ADM-067 ADM-068,Edit + rotate fonctionnent,e2e-playwright/webhooks-edit.spec.md
+ADM-073,P3,webhooks,Composant WebhookSecretReveal,Display secret 1 fois + copy + warning,1,ADM-071,Secret visible 1 fois + copie OK,
+ADM-074,P3,webhooks,Composant WebhookToggleSwitch,Active/disable avec optimistic update,1,ADM-070,Toggle MAJ etat backend,integration-msw/scenario-webhook-toggle.md
+ADM-075,P3,webhooks,Composant DeleteEndpointModal,Confirm + double confirmation,1,ADM-069,Modal valide + delete,integration-msw/scenario-webhook-delete.md
+ADM-076,P3,webhook-engine,enqueueDelivery helper,Insert webhook_deliveries + idempotency-key,2,ADM-014,Insert OK + duplicate idempotency 200 unchanged,integration-msw/scenario-engine-enqueue.md
+ADM-077,P3,webhook-engine,attemptDelivery helper,Fetch HTTP + sign + record result,3,ADM-076 ADM-062,Status 2xx -> succeeded ; 5xx -> failed,integration-msw/scenario-engine-attempt-success.md
+ADM-078,P3,webhook-engine,computeBackoff helper,Formule + jitter +/-20%,1,ADM-077,Backoff conforme suite [60s 5m 30m 3h 12h],unit-vitest/lib_webhooksbackoff.test.md
+ADM-079,P3,webhook-engine,scheduleRetry logic,Met a jour next_attempt_at + status,1,ADM-078,Failed -> retry programme,integration-msw/scenario-engine-retry-scheduled.md
+ADM-080,P3,webhook-engine,Statut permanent apres 5 echecs,Retry max -> permanent,1,ADM-079,5e echec marque permanent,integration-msw/scenario-engine-permanent.md
+ADM-081,P3,webhook-engine,Timeout 10s par tentative,AbortController + race timeout,1,ADM-077,Cible lente -> failed timeout,integration-msw/scenario-engine-timeout.md
+ADM-082,P3,webhook-engine,Tests vitest webhook-engine 80%+,Couverture lib/webhooks/*,3,ADM-081,coverage >= 80%,unit-vitest/lib_webhooksengine.test.md
+ADM-083,P3,cron,POST /api/cron/tick handler,Bearer auth + claim batch + foreach attempt,2,ADM-076,Tick traite N deliveries,integration-msw/scenario-cron-tick.md
+ADM-084,P3,cron,FOR UPDATE SKIP LOCKED claim,SQL atomic claim batch 50,1,ADM-083,Concurrence : pas de double-traitement,integration-msw/scenario-cron-concurrency.md
+ADM-085,P3,cron,Limite duree 50s par tick,Stop loop si elapsed > 50s,1,ADM-083,Tick s arrete avant 60s,unit-vitest/lib_cronticklimit.test.md
+ADM-086,P3,cron,vercel.json crons schedule,Cron declare * * * * *,0.5,ADM-083,Vercel deploy reconnait cron,
+ADM-087,P3,cron,Audit event system.cron_tick,Log chaque execution,0.5,ADM-083,Audit_events ligne par tick,
+ADM-088,P3,deliveries,Page /admin/webhooks/[id]/deliveries,Table deliveries + filtres,2,ADM-083,Page rend deliveries,e2e-playwright/webhook-deliveries.spec.md
+ADM-089,P3,deliveries,Drawer detail delivery,Slide right 480px + payload+request+response,2,ADM-088,Click row ouvre drawer,integration-msw/scenario-delivery-detail.md
+ADM-090,P3,deliveries,Bouton Retry now,POST retry + reload,1,ADM-088,Retry programme tick suivant,integration-msw/scenario-delivery-retry.md
+ADM-091,P3,deliveries,Filtres deliveries (status,event),URL params + filtre server,1,ADM-088,Filtre OK,integration-msw/scenario-delivery-filter.md
+ADM-092,P3,deliveries,KPI stats deliveries (3 cartes),Aggregation 24h + 7j,1,ADM-088,Stats refletent dataset,
+ADM-093,P3,events,Trigger metier lead.created -> enqueue,Server action lead create -> enqueueDelivery,1,ADM-076,Lead cree -> delivery insert,integration-msw/scenario-event-leadcreated.md
+ADM-094,P3,events,Trigger lead.status_changed -> enqueue,Idem sur transition,1,ADM-093,Transition -> delivery insert,integration-msw/scenario-event-leadstatus.md
+ADM-095,P3,webhooks,Tests E2E flow webhook complet,Playwright create -> trigger -> delivery,3,ADM-088 ADM-094,Spec verte,e2e-playwright/webhook-flow.spec.md
+ADM-096,P4,tests,MSW server setup base,Server avec handlers + setup integration,1,,Server intercepte requetes test,integration-msw/README.md
+ADM-097,P4,tests,Factories test (admin lead webhook),Factories generation rapide fixtures,2,ADM-096,Factory cree donnees valides,integration-msw/factories.md
+ADM-098,P4,tests,Suite MSW auth (4 scenarios),login success/fail/rate-limit/logout,2,ADM-097,4 specs vertes,integration-msw/scenario-login-success.md
+ADM-099,P4,tests,Suite MSW leads (10 scenarios),CRUD + filters + transitions + notes,4,ADM-097,10 specs vertes,integration-msw/scenario-leads-list.md
+ADM-100,P4,tests,Suite MSW webhooks (8 scenarios),CRUD + rotate + toggle + delete,3,ADM-097,8 specs vertes,integration-msw/scenario-webhook-create.md
+ADM-101,P4,tests,Suite MSW deliveries (5 scenarios),listing + drawer + filtres + retry,2,ADM-097,5 specs vertes,integration-msw/scenario-delivery-detail.md
+ADM-102,P4,tests,Suite MSW engine (7 scenarios),enqueue + attempt + retry + timeout + permanent,3,ADM-097,7 specs vertes,integration-msw/scenario-engine-enqueue.md
+ADM-103,P4,tests,Suite MSW cron (3 scenarios),tick + concurrency + bearer,2,ADM-097,3 specs vertes,integration-msw/scenario-cron-tick.md
+ADM-104,P4,tests,Suite MSW public (5 scenarios),events declencheurs cote site public,2,ADM-097,5 specs vertes,integration-msw/scenario-event-leadcreated.md
+ADM-105,P4,tests,Suite MSW rate-limit (2 scenarios),login limit + global limit,1,ADM-097,2 specs vertes,integration-msw/scenario-rate-limit-login.md
+ADM-106,P4,tests,Tests vitest libs auth/crypto/schemas,Couverture 80%+,2,ADM-098,coverage cible atteinte,
+ADM-107,P4,tests,Tests vitest libs db queries,Couverture 80%+,3,ADM-099,coverage cible atteinte,
+ADM-108,P4,tests,Tests vitest libs webhooks/cron,Couverture 80%+,3,ADM-102 ADM-103,coverage cible atteinte,
+ADM-109,P4,tests,Tests vitest libs errors/logging,Couverture 80%+,1,ADM-018,coverage cible atteinte,
+ADM-110,P4,tests,E2E specs auth (3),login/logout/forbidden,1,ADM-030,Specs vertes,e2e-playwright/auth-login.spec.md
+ADM-111,P4,tests,E2E specs leads (5),listing/detail/transition/note/empty,3,ADM-046,Specs vertes,e2e-playwright/leads-listing.spec.md
+ADM-112,P4,tests,E2E specs webhooks (4),create/edit/rotate/delete,2,ADM-072,Specs vertes,e2e-playwright/webhooks-create.spec.md
+ADM-113,P4,tests,E2E specs deliveries (3),listing/drawer/retry,2,ADM-088,Specs vertes,e2e-playwright/webhook-deliveries.spec.md
+ADM-114,P4,tests,E2E specs cron (2),tick succes/echec,1,ADM-083,Specs vertes,e2e-playwright/cron-tick.spec.md
+ADM-115,P4,tests,E2E specs security (3),headers/csp/auth-redirect,1,ADM-058,Specs vertes,e2e-playwright/security-headers.spec.md
+ADM-116,P4,tests,E2E specs flow complet,Login -> lead -> trigger -> delivery -> retry,2,ADM-095,Spec verte,e2e-playwright/webhook-flow.spec.md
+ADM-117,P4,a11y,Audit jest-axe sur composants,Toast Modal Drawer Form Table,2,ADM-098,0 violations critiques,accessibilite/jest-axe.md
+ADM-118,P4,a11y,Audit @axe-core/playwright pages,Login + leads list + leads detail + webhooks,2,ADM-110,0 violations critiques,accessibilite/axe-playwright.md
+ADM-119,P4,a11y,Audit clavier manuel,Tab order + focus visible + skip links,2,ADM-118,Checklist a11y validee,accessibilite/clavier.md
+ADM-120,P4,a11y,Audit lecteur d ecran,VoiceOver/NVDA flows critiques,2,ADM-119,Checklist SR validee,accessibilite/lecteur-ecran.md
+ADM-121,P4,a11y,Lighthouse CI a11y=100,Workflow CI + budget,1,ADM-118,CI verifie 100,
+ADM-122,P4,perf,Lighthouse CI perf>80,Workflow CI + budget,1,ADM-121,CI verifie 80,
+ADM-123,P4,perf,Optimisation images next/image,Audit + tailles + format,1,ADM-122,LCP < 2.5s,
+ADM-124,P4,perf,Audit bundle JS,Analyze + remove unused,1,ADM-122,JS bundle < 200kb gzip,
+ADM-125,P4,tests,Coverage report final >= 80,Verifier coverage glob >= 80,1,ADM-109,Rapport CI montre >= 80,
+ADM-126,P5,security,Audit OWASP top 10 manuel,Burp + checklist + rapport,4,ADM-095,Rapport 0 critiques,
+ADM-127,P5,security,Pen test rate-limiting,Tester contournement IP rotation,1,ADM-126,Aucun bypass identifie,
+ADM-128,P5,security,Pen test SSRF webhooks,Tenter requetes vers 127.0.0.1 metadata,1,ADM-126,Toutes bloquees,
+ADM-129,P5,security,Pen test auth bypass,Tampering session tokens + SQLi sur login,1,ADM-126,Aucun bypass identifie,
+ADM-130,P5,security,gitleaks pre-commit hook,Husky + gitleaks scan,1,,Hook bloque secrets fictifs,
+ADM-131,P5,security,gitleaks CI workflow,Workflow scan tout l historique,0.5,ADM-130,CI bloque PR avec secret,
+ADM-132,P5,security,pnpm audit + Snyk integration,CI step + alerte si high+,1,,CI bloque dependencies high CVE,
+ADM-133,P5,security,Test rotation ADMIN_SESSION_PASSWORD,Procedure complete en preview,0.5,,Procedure validee documentee,
+ADM-134,P5,security,Test rotation WEBHOOK_SECRET_KEY,Script rechiffrement en preview,1,,Procedure validee documentee,
+ADM-135,P5,security,Test rotation CRON_SECRET,Procedure en preview,0.5,,Procedure validee documentee,
+ADM-136,P5,security,Backup script + S3 upload,Script + workflow GH Actions monthly,2,ADM-132,Backup S3 visible + restore test,
+ADM-137,P5,security,PITR Neon test restore,Restaurer snapshot timestamp T-1h,1,ADM-136,Restore reussit < 30 min,
+ADM-138,P5,security,Documentation finale incident-response,Mettre a jour avec tests reels,1,ADM-129,Doc a jour,
+ADM-139,P5,security,Revue threat-model + status controles,Mettre tous controles a done ou justifie,1,ADM-128,Tous controles statues,
+ADM-140,P5,docs,Documentation rotation operations.md,Documenter chaque rotation effectuee,0.5,ADM-135,Doc a jour,
+ADM-141,P6,golive,Test charge legere 200 req/s,k6 + verifier p95 < 500ms,2,ADM-122,Resultat dans budget,
+ADM-142,P6,golive,Migration finale prod,Generation + apply + verif schema,1,ADM-013,Schema prod conforme,
+ADM-143,P6,golive,Verifier DNS femiglow.ma,A/AAAA records + TLS,0.5,ADM-009,curl https://femiglow.ma 200,
+ADM-144,P6,golive,Activer monitoring alertes prod,UptimeRobot + Sentry + alertes Slack,1,ADM-020,Alertes recues sur test trigger,
+ADM-145,P6,golive,Exercice runbook complet,Simuler P0 + rollback + post-mortem,2,ADM-138,Exercice valide,
+ADM-146,P6,golive,Documentation utilisateur fondatrice,Manuel + screenshots,3,ADM-095,Manuel relu OK,
+ADM-147,P6,golive,Formation fondatrice 1h,Demo console + Q&A + acces 1Password,1,ADM-146,Fondatrice autonome login + lead view,
+ADM-148,P6,golive,Communication go-live (interne),Annonce email + Slack,0.5,ADM-147,Email envoye,
+ADM-149,P6,golive,Bascule prod (no-op si DNS deja en place),Verifier site public + smoke E2E,1,ADM-145,Site public OK + smoke E2E vert,
+ADM-150,P6,golive,Suivi 7 jours post-launch,Oncall fondatrice+dev + revue J+7,2,ADM-149,7 jours sans P0/P1 = succes,

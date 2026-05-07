@@ -1,0 +1,27 @@
+# Image: slide-05-lecture (Carousel B — Halal)
+# Path: /carrousels/b-halal/slide-05-lecture.png
+# Format: 1080×1350 (4:5 vertical) — flat lay didactic
+# Family: didactic / scientific schema
+# Pair-with: continuity of palette with slides 1-4
+
+FORMAT: 4:5 vertical, 1080×1350 px, overhead flat lay with two distinct elements: on the left a real glass of water; on the right a delicate hand-drawn herbarium-style schematic of a single nail with water reaching its surface. Both rest on a single warm off-white paper surface. Generous typography zones at the top (headline) and middle-bottom (technical paragraph + footnote).
+
+SCENE: A wide flat surface of warm off-white hand-made paper, slight deckle texture and very fine grain visible. Casablanca morning light from a north-facing window. No props beyond the glass and the paper schematic.
+
+SUBJECT — LEFT: A simple clear glass tumbler, half-filled with pure still water. Plain straight-walled glass, no cuts, no patterns, slight warm tint. The water surface is calm. The glass casts a soft elongated shadow to the lower right.
+
+SUBJECT — RIGHT: A small hand-drawn herbarium-style ink illustration on the paper itself (the paper appears to have been drawn upon — fine ink lines integrated into the paper surface, not a separate inset). The illustration shows a single nail in profile (cross-section), drawn with a thin ink line, technical and sober — like a botanical study from a 19th-century natural history book. Above the nail, several small downward arrows (also fine ink lines) indicate water descending and reaching the nail surface. A faint Latin-style label hand-lettered beneath in dark ink reads "—" only as a soft horizontal hairline (no readable letters; the text would be added in Figma overlay later).
+
+ACTION: Two elements at rest. One real (the glass). One drawn (the schema). Together they make a quiet didactic pair.
+
+FRAMING: 90° top-down overhead view, 50mm lens, glass on the left third (occupying lower-left), schema on the right third (occupying middle-right). Top half of the frame is empty paper for headline typography. Deep focus across the frame.
+
+LIGHTING: Soft diffuse morning light from the upper left, even fall-off across the paper. Subtle shadow under the glass. The drawn schema is uniformly lit (it lives on the paper itself).
+
+PALETTE: Warm off-white paper background. The glass with a faint warm tint, water with the slightest washed sky-blue accent. Ink illustration in dark warm black (#2C2A28 ink tone, never pure black). No other accent.
+
+STYLE: Editorial flat lay with botanical-study sensibility, in the spirit of Aesop catalog meets vintage herbarium plates. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain, honest hand-drawn ink texture (visible nib variation in the line weight), no studio polish.
+
+MOOD: Calm, didactic, scientific without being sterile. The image teaches by showing, with the dignity of a 19th-century natural history page.
+
+DO NOT INCLUDE: any readable text on the schema or anywhere in the image (typography is added later in Figma); watermarks, logos, brand names; faces or hands; jewelry; nail polish, gel, acrylic; reflective glass, chrome; HDR; oversharpening; vibrant saturated colors, neon; perfume-ad polish, halo; bokeh balls; orientalist props, zellige, lanterns; religious symbols, mosques, prayer rugs, Quran, calligraphy that reads as religious — the schema must be neutral and scientific; flowers, candles, food.

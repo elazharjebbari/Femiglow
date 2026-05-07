@@ -1,0 +1,25 @@
+# Image: visiter-l-atelier
+# Path: /journal/visiter-l-atelier.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:3 (800×600)
+# Family: editorial / journal
+
+FORMAT: 4:3 landscape, 800×600 pixels, featured image of a journal article about visiting the FemiGlow atelier in Casablanca.
+
+SCENE: A wide view inside the FemiGlow atelier in Casablanca — a tall room with pale plaster walls, exposed warm wooden beams, a long oak worktable along one wall, a tall wooden shelf holding rows of unlabelled pots and ceramic dishes. A linen apron hangs on a hook to the left. Mid-morning natural light enters from a tall window with a sheer curtain.
+
+SUBJECT: The room itself is the subject — empty of people but evidently in use. A workshop alive with the recent presence of work.
+
+ACTION: A pause between sessions. The room rests, ready.
+
+FRAMING: 35mm lens, eye-level slight low angle 10°, wide editorial shot, worktable on the lower third leading the eye toward the shelf and the window light. Generous depth, balanced composition with breathing room.
+
+LIGHTING: Soft morning side light from a tall window on the right, diffused through linen curtain. Gentle warm fall-off across the room. No direct sun, no studio fill.
+
+PALETTE: Warm pale plaster, warm wood beams and worktable, off-white linen apron, muted sand ceramics on the shelf, soft warm shadow. Earthen and authentic Moroccan domestic.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine and Cereal magazine workshop features. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, plaster texture and wood grain visible.
+
+MOOD: Real workshop, slow craft, considered presence, the place exists.
+
+DO NOT INCLUDE: any text, watermarks, logos, signage; people, hands, faces; modern industrial equipment (no laptops, no metal racks); bright artificial light; HDR; saturated colors; orientalist clichés (no bright zellige tiles, no lanterns, no overstyled props); cluttered shelves.

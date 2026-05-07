@@ -1,0 +1,87 @@
+apps/web/src/
+├── app/
+│   ├── api/
+│   │   ├── admin/
+│   │   │   ├── login/route.ts                       POST  → connexion
+│   │   │   ├── logout/route.ts                      POST  → déconnexion
+│   │   │   ├── session/route.ts                     GET   → état session
+│   │   │   ├── leads/
+│   │   │   │   ├── route.ts                         GET   → liste paginée + ?format=csv
+│   │   │   │   └── [id]/
+│   │   │   │       ├── route.ts                     GET   → détail
+│   │   │   │       ├── status/route.ts              PATCH → changer statut
+│   │   │   │       └── notes/route.ts               POST  → ajouter note
+│   │   │   ├── webhooks/
+│   │   │   │   ├── route.ts                         GET, POST → liste / créer
+│   │   │   │   └── [id]/
+│   │   │   │       ├── route.ts                     GET, PATCH, DELETE
+│   │   │   │       ├── rotate-secret/route.ts       POST  → régénérer secret
+│   │   │   │       ├── test/route.ts                POST  → ping de test
+│   │   │   │       └── deliveries/route.ts          GET   → liste livraisons
+│   │   │   ├── webhook-deliveries/
+│   │   │   │   └── [id]/
+│   │   │   │       └── retry/route.ts               POST  → reprogrammer
+│   │   │   └── kpi/route.ts                         GET   → KPIs dashboard
+│   │   ├── cron/
+│   │   │   └── tick/route.ts                        POST  → batch livraison (auth Vercel)
+│   │   └── public/                                  (existant — formulaires site)
+│   │       ├── contact/route.ts
+│   │       ├── orders/route.ts
+│   │       └── newsletter/route.ts
+│   └── (admin)/...                                  (cf. 04-frontend/structure-fichiers.txt)
+│
+├── lib/
+│   ├── auth/
+│   │   ├── session.ts                               iron-session config + getSession()
+│   │   ├── password.ts                              argon2id hash + verify
+│   │   ├── rate-limit.ts                            brute-force protection (Postgres)
+│   │   └── require-admin.ts                         helper d'auth pour route handlers
+│   ├── db/
+│   │   ├── client.ts                                Drizzle + Neon serverless
+│   │   ├── schema.ts                                schéma complet (tables + relations)
+│   │   ├── migrations/                              fichiers SQL générés par drizzle-kit
+│   │   └── queries/
+│   │       ├── kpi.ts
+│   │       ├── leads.ts
+│   │       ├── webhooks.ts
+│   │       ├── deliveries.ts
+│   │       └── audit.ts
+│   ├── webhooks/
+│   │   ├── enqueue.ts                               crée une livraison à émettre
+│   │   ├── dispatch.ts                              consume batch & POST endpoints
+│   │   ├── signing.ts                               HMAC SHA-256 + canonical body
+│   │   ├── retry-policy.ts                          calcule next_attempt_at
+│   │   └── types.ts                                 types EventName, EventPayload
+│   ├── crypto/
+│   │   ├── encrypt.ts                               pgp_sym_encrypt wrapper
+│   │   └── ids.ts                                   cuid2 generator
+│   ├── schemas/
+│   │   ├── admin-auth.ts
+│   │   ├── leads.ts
+│   │   ├── webhooks.ts
+│   │   └── shared.ts
+│   ├── errors/
+│   │   ├── codes.ts                                 enum codes internes
+│   │   ├── http.ts                                  mapping code → HTTP
+│   │   └── format.ts                                formatErrorResponse(code, issues)
+│   ├── logging/
+│   │   ├── logger.ts                                singleton (pino-style structuré)
+│   │   ├── redact.ts                                masquage PII automatique
+│   │   └── correlation.ts                           request-id propagation
+│   ├── observability/
+│   │   ├── sentry.ts                                init Sentry server
+│   │   └── metrics.ts                               counters Vercel Analytics
+│   └── utils/
+│       ├── pagination.ts                            cursor encoding/decoding
+│       ├── csv.ts                                   stream CSV
+│       └── time.ts                                  date helpers
+│
+├── middleware.ts                                    auth gate, headers de sécurité
+└── instrumentation.ts                               Sentry init (Node + Edge)
+
+apps/web/drizzle/
+└── (artefacts générés)
+
+apps/web/scripts/
+├── seed.ts                                          seed de dev (cf. 06-data/seeds.md)
+└── rotate-secrets.ts                                rotation secrets HMAC programmée

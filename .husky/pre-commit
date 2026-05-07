@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+# FemiGlow pre-commit hook
+# - Lance gitleaks (si installé) sur le diff staged
+# - Lance lint-staged (typecheck/eslint sur les fichiers modifiés)
+
+set -e
+
+# 1. Gitleaks : empêche tout commit qui contient un secret connu.
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "→ gitleaks (staged diff)"
+  gitleaks protect --staged --redact --config .gitleaks.toml
+else
+  echo "⚠️  gitleaks non installé : skip. Installer via 'brew install gitleaks'."
+fi
+
+# 2. Lint-staged : eslint/prettier/typecheck sur les fichiers modifiés.
+if [ -f node_modules/.bin/lint-staged ]; then
+  echo "→ lint-staged"
+  node_modules/.bin/lint-staged
+fi

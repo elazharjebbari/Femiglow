@@ -1,0 +1,177 @@
+/* ==========================================================================
+   FemiGlow — Prose (.prose-femiglow)
+   Sélecteur appliqué au HTML rendu depuis markdown via unified/remark-rehype.
+   ========================================================================== */
+
+.prose-femiglow {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--color-text-primary);
+  max-width: 100%;
+}
+
+.prose-femiglow > * + * {
+  margin-top: var(--space-prose-paragraph);
+}
+
+.prose-femiglow p {
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.prose-femiglow h2,
+.prose-femiglow h3 {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  scroll-margin-top: 96px;
+  color: var(--color-encre);
+}
+
+.prose-femiglow h2 {
+  font-size: 32px;
+  line-height: 1.2;
+  margin-top: var(--space-prose-h2-top);
+  margin-bottom: var(--space-prose-h2-bottom);
+}
+
+.prose-femiglow h3 {
+  font-size: 24px;
+  line-height: 1.25;
+  margin-top: var(--space-prose-h3-top);
+  margin-bottom: var(--space-prose-h3-bottom);
+}
+
+.prose-femiglow a {
+  color: var(--color-encre);
+  border-bottom: 1px solid rgba(44, 42, 40, 0.4);
+  transition: opacity var(--duration-fast) var(--ease-out-soft),
+              border-color var(--duration-fast) var(--ease-out-soft);
+}
+
+.prose-femiglow a:hover {
+  opacity: 0.7;
+  border-color: var(--color-encre);
+}
+
+.prose-femiglow strong {
+  font-weight: 600;
+}
+
+.prose-femiglow em {
+  font-style: italic;
+}
+
+.prose-femiglow blockquote {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 28px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--color-encre);
+  border-left: 2px solid var(--color-sauge-dark);
+  padding-left: 1.5rem;
+  margin-top: var(--space-prose-blockquote);
+  margin-bottom: var(--space-prose-blockquote);
+}
+
+.prose-femiglow blockquote p {
+  font-size: 28px;
+  line-height: 1.4;
+}
+
+.prose-femiglow ul,
+.prose-femiglow ol {
+  padding-left: 1.5rem;
+}
+
+.prose-femiglow li + li {
+  margin-top: 0.5rem;
+}
+
+.prose-femiglow ul {
+  list-style: disc;
+}
+
+.prose-femiglow ol {
+  list-style: decimal;
+}
+
+.prose-femiglow code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+  background: rgba(44, 42, 40, 0.06);
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-xs);
+}
+
+.prose-femiglow pre {
+  background: rgba(44, 42, 40, 0.06);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.prose-femiglow pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose-femiglow hr {
+  border: 0;
+  border-top: 1px solid var(--color-border-soft);
+  margin: var(--space-prose-blockquote) 0;
+}
+
+.prose-femiglow img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-xs);
+}
+
+.prose-femiglow figure {
+  margin-top: var(--space-prose-figure);
+  margin-bottom: var(--space-prose-figure);
+}
+
+.prose-femiglow figcaption {
+  margin-top: 0.75rem;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+/* Drop cap — désactivable via .no-drop-cap */
+.prose-femiglow:not(.no-drop-cap) > p:first-of-type::first-letter {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 96px;
+  line-height: 0.9;
+  float: left;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--color-encre);
+}
+
+/* Sortie viewport (mobile) */
+@media (max-width: 640px) {
+  .prose-femiglow h2 {
+    font-size: 28px;
+    margin-top: 2.5rem;
+  }
+  .prose-femiglow h3 {
+    font-size: 22px;
+  }
+  .prose-femiglow blockquote,
+  .prose-femiglow blockquote p {
+    font-size: 24px;
+  }
+  .prose-femiglow:not(.no-drop-cap) > p:first-of-type::first-letter {
+    font-size: 72px;
+  }
+}

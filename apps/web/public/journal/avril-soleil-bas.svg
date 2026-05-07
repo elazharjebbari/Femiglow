@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mains exposées au soleil oblique, lumière dorée">
+  <defs>
+    <linearGradient id="g-avril" x1="0.1" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C8A876"/>
+      <stop offset="0.55" stop-color="#F2E6D4" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#2C2A28"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-avril)"/>
+  <circle cx="280" cy="280" r="200" fill="#FBF8F1" opacity="0.55"/>
+  <circle cx="280" cy="280" r="320" fill="#FBF8F1" opacity="0.18"/>
+  <g opacity="0.55">
+    <line x1="0" y1="380" x2="1600" y2="220" stroke="#FBF8F1" stroke-width="80" opacity="0.12"/>
+    <line x1="0" y1="500" x2="1600" y2="340" stroke="#FBF8F1" stroke-width="50" opacity="0.18"/>
+    <line x1="0" y1="600" x2="1600" y2="440" stroke="#FBF8F1" stroke-width="35" opacity="0.22"/>
+  </g>
+  <path d="M 0 720 L 1600 660 L 1600 1067 L 0 1067 Z" fill="#2C2A28" opacity="0.55"/>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.7">SAISON · AVRIL</text>
+</svg>

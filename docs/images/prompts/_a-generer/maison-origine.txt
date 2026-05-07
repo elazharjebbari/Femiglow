@@ -1,0 +1,26 @@
+# Image: maison-origine
+# Path: /maison/origine.{avif,webp,png}
+# Page: /maison — section narrative "L'origine" (image à droite du texte)
+# Ratio: 4:5 portrait, 960×1200
+# Family: editorial / atelier
+# Pilote: NON — coordonner avec atelier-1/2/3 et fondatrice-mains déjà validés.
+
+FORMAT: 4:5 vertical portrait, 960×1200 pixels, editorial inset image displayed beside long-form prose. Final usage: bleed-in image on a creme background, will sit at the right of three paragraphs of body copy.
+
+SCENE: A quiet corner of the formulation atelier in Casablanca, late afternoon — the moment described in the narrative when "la lumière tombe juste avant 18 heures". A wooden worktable seen at 35° from above-side. Two amber glass apothecary vials of slightly different heights catch the low side light; behind them, an open hand-bound notebook with a faint pencil annotation (illegible — pure texture); a folded raw-linen cloth in off-white to the lower right; a single dried sprig of laurel resting on the linen.
+
+SUBJECT: The arrangement of materials at rest, captured at the precise instant when the light "tombe juste". The hour, more than the objects.
+
+ACTION: Stillness. Nothing is being done — the atelier paused mid-thought.
+
+FRAMING: 50mm lens, slight high angle (≈ 25° down), vials placed on the rule-of-thirds left-vertical, notebook anchored bottom-third right. Shallow depth of field, sharp focus on the front amber vial's neck and the closer page edge of the notebook; the back of the table dissolves into soft warm haze. Generous negative space top-left where the late light falls onto bare wood.
+
+LIGHTING: Low golden side light from the upper left, 17h45 Casablanca March light, no direct sun — diffused through a sheer linen curtain. Warm shadow falling rightward, gentle fall-off, paper visibly catching the warmth. The kind of light that makes paper feel alive.
+
+PALETTE: Warm wood worktable (honey, never orange), amber resin in vials (translucent honey, never gold), warm off-white linen cloth, hand-made paper page, deep ink black with warmth on the pencil mark, muted sage green on the dried laurel sprig (herbarium tone, faded). Earthen, restrained.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop product catalogs. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper-and-linen surfaces, honest texture, visible wood grain, ceramic unglazed pores. Same grade as atelier-1, atelier-2, atelier-3 (already validated): keep the lighting temperature and grain consistent with that triptych.
+
+MOOD: Unhurried, ritual atmosphere, contemplative pause, the moment described in the body copy made literal. Quiet stillness, soft breath.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, readable labels on the vials or notebook (faint pencil only, never legible); people, hands, or faces; studio backdrop or photo equipment; shiny gold, chrome, glitter or pearlescent finishes; HDR processing, oversharpening, plastic surfaces, perfume-ad gloss, halo, bokeh balls; vibrant saturated colors, neon, magenta, cyan; orientalist clichés (saturated zellige, lanterns, kaftans); lit candles, alcohol bottles, food clutter; bright shiny brass — anything metallic must read as matte brushed champagne.

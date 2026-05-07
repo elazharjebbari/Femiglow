@@ -1,0 +1,28 @@
+# Dépendances
+node_modules
+.pnpm-store
+
+# Builds
+.next
+out
+dist
+build
+
+# Tests / coverage
+coverage
+playwright-report
+test-results
+
+# Environnement
+.env
+.env*.local
+
+# OS / IDE
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+# Storybook
+storybook-static

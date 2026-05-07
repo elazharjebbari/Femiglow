@@ -1,0 +1,25 @@
+# Image: avril-soleil-bas
+# Path: /journal/avril-soleil-bas.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about the low April sun.
+
+SCENE: A bare interior corner in spring, a pale plaster wall painted off-white, a folded length of natural linen draped on a low wooden bench. Casablanca apartment in early April morning.
+
+SUBJECT: An elongated cast shadow of a small potted olive branch projected on the linen and the wall, the plant itself partially visible at the edge of frame. The shadow is the real subject.
+
+ACTION: The shadow stretches slowly across the surface as the low spring sun rises behind the leaves.
+
+FRAMING: 50mm lens, eye-level, shadow centered diagonally across the frame, plant peeking from the right edge. Shallow depth of field, sharp focus on the shadow's edge on the linen.
+
+LIGHTING: Low April sun raking across the surface from the right, casting long soft-edged shadow. Warm raking light, no direct glare.
+
+PALETTE: Warm off-white linen, pale plaster, soft sage olive green, deep amber shadow tones. Earthen.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, linen weave visible. Same grain and grade as all other journal articles for cross-issue coherence.
+
+MOOD: Seasonal threshold, quiet observation, the slow tilt of light toward spring.
+
+DO NOT INCLUDE: any text, watermarks, logos; people, hands, faces; studio backdrop; vibrant saturated colors; HDR; perfume-ad glow; orientalist clichés; harsh contrast.

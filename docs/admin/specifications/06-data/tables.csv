@@ -1,0 +1,11 @@
+table,role,volume_attendu_an1,criticite,conservation,soft_delete,encryption_at_rest,backup_strategy
+admin_users,Comptes admin,1-3 lignes,critique,perpetuelle,oui,argon2id sur password_hash,Neon PITR 7j
+admin_login_attempts,Anti-brute-force,~10000/an,faible,24h,non,non,inutile (purge)
+rate_limit_counters,Rate limiting,~100000/an,faible,24h,non,non,inutile (purge)
+leads,Soumissions site,2000-5000/an,critique,18 mois post-soft-delete (RGPD),oui,non,Neon PITR 7j + export mensuel
+orders,Détails commande,800-2000/an,critique,18 mois post-soft-delete,herite leads,non,Neon PITR 7j
+order_items,Articles commande,1500-4000/an,critique,herite orders,herite orders,non,Neon PITR 7j
+lead_events,Timeline d'activité,8000-20000/an,important,herite leads,non (append-only),non,Neon PITR 7j
+webhook_endpoints,Configuration intégrations,5-20 lignes,critique,perpetuelle,oui,pgp_sym_encrypt sur secret,Neon PITR 7j
+webhook_deliveries,File d'attente + historique,30000-100000/an,important,90j puis archive,non,non,Neon PITR 7j
+audit_events,Journal append-only,5000-15000/an,critique (legal),36 mois,non,non,Neon PITR 7j + export trimestriel

@@ -1,0 +1,119 @@
+@startuml modele-conteneurs
+!theme plain
+title FemiGlow apps/web — Vue composants (C4 niveau 3)
+
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+skinparam componentStyle uml2
+
+package "apps/web/src" {
+
+  package "app" {
+    component "(marketing)/*" as marketing
+    component "(commerce)/*" as commerce
+    component "commander/*" as commander
+    component "(admin)/login" as admin_login_page
+    component "(admin)/dashboard" as admin_dashboard
+    component "(admin)/leads/*" as admin_leads
+    component "(admin)/webhooks/*" as admin_webhooks
+
+    component "/api/contact" as api_contact
+    component "/api/checkout" as api_checkout
+    component "/api/newsletter" as api_newsletter
+    component "/api/admin/login" as api_login
+    component "/api/admin/logout" as api_logout
+    component "/api/admin/leads/*" as api_admin_leads
+    component "/api/admin/webhooks/*" as api_admin_webhooks
+    component "/api/admin/cron/webhook-tick" as api_cron
+  }
+
+  component "middleware.ts" as middleware
+
+  package "lib/auth" {
+    component "session.ts\n(iron-session)" as auth_session
+    component "password.ts\n(argon2)" as auth_password
+    component "rate-limit.ts" as auth_rate
+  }
+
+  package "lib/webhooks" {
+    component "mapper.ts" as wh_mapper
+    component "signer.ts" as wh_signer
+    component "deliver.ts\n(retry, backoff)" as wh_deliver
+    component "enqueue.ts" as wh_enqueue
+  }
+
+  package "lib/db" {
+    component "client.ts" as db_client
+    component "schema.ts\n(Drizzle)" as db_schema
+    component "queries/leads.ts" as q_leads
+    component "queries/webhooks.ts" as q_webhooks
+    component "queries/audit.ts" as q_audit
+  }
+
+  package "lib/schemas (Zod)" {
+    component "admin-lead.ts" as zod_lead
+    component "admin-webhook.ts" as zod_webhook
+    component "common.ts" as zod_common
+  }
+
+  package "components/admin" {
+    component "LeadTable" as c_leadtable
+    component "LeadFilters" as c_leadfilters
+    component "LeadDetail" as c_leaddetail
+    component "WebhookForm" as c_whform
+    component "DeliveryTable" as c_deltable
+    component "AdminLayout" as c_layout
+  }
+}
+
+middleware --> auth_session : verifySession()
+api_login --> auth_password : verify()
+api_login --> auth_rate : checkAndIncrement()
+api_login --> auth_session : seal()
+
+api_contact --> zod_common : validate
+api_contact --> q_leads : insertLead()
+api_contact --> wh_enqueue : enqueueDeliveries()
+
+api_checkout --> q_leads : insertLead()
+api_checkout --> wh_enqueue : enqueueDeliveries()
+
+api_newsletter --> q_leads : insertLead()
+
+api_admin_leads --> zod_lead : validate
+api_admin_leads --> q_leads : updateStatus, addNote
+api_admin_leads --> q_audit : logEvent
+
+api_admin_webhooks --> zod_webhook : validate
+api_admin_webhooks --> q_webhooks : CRUD endpoints
+api_admin_webhooks --> q_audit : logEvent
+
+api_cron --> q_webhooks : selectPending(FOR UPDATE SKIP LOCKED)
+api_cron --> wh_mapper : mapLeadToPayload()
+api_cron --> wh_signer : hmacSha256()
+api_cron --> wh_deliver : deliverOne()
+
+admin_leads --> q_leads : Server Component reads
+admin_webhooks --> q_webhooks : Server Component reads
+
+c_leadtable --> admin_leads : compose
+c_leadfilters --> admin_leads : compose
+c_leaddetail --> admin_leads : compose
+c_whform --> admin_webhooks : compose
+c_deltable --> admin_webhooks : compose
+c_layout --> admin_leads : layout
+c_layout --> admin_webhooks : layout
+c_layout --> admin_dashboard : layout
+
+db_schema --> db_client
+q_leads --> db_client
+q_webhooks --> db_client
+q_audit --> db_client
+
+note bottom of middleware
+  Match : /admin(?!/login), /api/admin(?!/login|/cron)
+  Refus : 401 ou redirect 302 selon route type
+end note
+
+@enduml

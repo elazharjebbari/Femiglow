@@ -1,0 +1,25 @@
+# Image: voix-de-sara
+# Path: /journal/voix-de-sara.{avif,webp}
+# Page: /journal (author byline portrait)
+# Ratio: 1:1 (480×480)
+# Family: portraits / editorial
+
+FORMAT: Square 1:1, 480×480 pixels, supportive byline image accompanying an article authored by Sara. Must pair with voix-d-amal and voix-de-lina — same lighting, same grain, same earthen palette.
+
+SCENE: A small wooden table, a folded silk foulard in muted dusty rose tone half-folded, an open small wooden box, a small ceramic dish nearby. Casablanca interior, morning light.
+
+SUBJECT: Two adult female hands, both visible, in the act of folding the foulard with care. Real skin texture, deep warm brown complexion, ages 30 to 45, short almond natural nails, no polish.
+
+ACTION: The hands fold the foulard slowly, attentively. A domestic gesture of care for objects.
+
+FRAMING: 50mm lens, top-down 70° angle, foulard centered, hands working on it, wooden box on the upper left corner, dish on the lower right. Shallow depth of field, sharp focus on the fingertips and the silk weave.
+
+LIGHTING: Soft morning side light from the left, diffused through linen curtain, identical to the other voix-de-* portraits.
+
+PALETTE: Warm wood tone, dried rose petal silk (muted dusty pink, never bright), soft warm brown skin, off-white ceramic, warm wood box. Earthen with a single faded blush accent.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, silk weave and skin texture visible. Same grade as voix-d-amal and voix-de-lina.
+
+MOOD: Author's care, gesture of folding, gentle authority of voice.
+
+DO NOT INCLUDE: any text, watermarks, logos; faces or arms above the wrist; nail polish, gel, acrylic; bright fuchsia or saturated pink in the silk (must read as faded dried rose); jewelry display; modern device; HDR; orientalist clichés.

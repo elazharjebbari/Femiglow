@@ -1,0 +1,25 @@
+# Image: portrait-salma
+# Path: /rituel/portrait-salma.{avif,webp}
+# Page: /rituel (Q&A interview block)
+# Ratio: 3:4 (360×480)
+# Family: portraits
+
+FORMAT: 3:4 portrait, 360×480 pixels, used inside a Q&A block — image is small and supportive, listening rather than asserting.
+
+SCENE: A quiet domestic corner, Casablanca apartment, late morning. A wooden table, a ceramic cup of mint tea steaming gently, a folded linen napkin. Soft plaster wall behind.
+
+SUBJECT: An adult Moroccan woman in her late 30s, seen from three-quarter back, slightly turned away from the camera. Natural curly dark hair pulled loosely back. Soft cotton blouse in muted oat tone. We can see the curve of her shoulder, the back of her neck, the side of her jaw. One hand visible resting on the cup. No make-up emphasis. Real skin, real warmth.
+
+ACTION: She is paused, listening or thinking, holding the tea cup. The image suggests interiority, not performance.
+
+FRAMING: 50mm lens, slightly elevated 15° angle from behind her, framing her in the right two thirds, the cup and table on the left third. Shallow depth of field, focus on her shoulder and hand, face softly out of focus.
+
+LIGHTING: Soft morning side light from her left, diffused through linen curtain, no direct sun. Gentle warm fall-off.
+
+PALETTE: Warm off-white walls, oat-toned blouse, hand-made ceramic in muted sand, soft hazelnut skin tone, deep brown hair. One subtle sage green note (a sprig of dried mint near the cup).
+
+STYLE: Editorial portrait photography in the spirit of Kinfolk and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest texture, no beauty retouching.
+
+MOOD: Listening, interior, dignified, intimate without intrusion.
+
+DO NOT INCLUDE: any text, watermarks, logos; her face in sharp focus or facing the camera; smiling pose, influencer pose; heavy make-up; jewelry display; studio backdrop; shiny gold, chrome; HDR; saturated colors; orientalist props (bright kaftans, zellige tiles, lanterns).

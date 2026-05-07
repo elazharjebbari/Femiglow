@@ -1,0 +1,44 @@
+id,famille,type,nom,description,couvre,implementation,statut_v1,test
+C-AUTH-01,authentification,preventif,Hash argon2id,Hash de mot de passe avec argon2id 19MiB/2/1,T1.1 T6.1,@node-rs/argon2 dans lib/auth/password.ts,obligatoire,unit
+C-AUTH-02,authentification,preventif,Rate limiting login,5 echecs / 15 min par IP et par email,T1.1,lib/auth/rate-limit.ts table admin_login_attempts,obligatoire,unit+integration
+C-AUTH-03,authentification,preventif,Cookie httpOnly+secure+sameSite,Cookie session non lisible JS sameSite Lax,T1.2 T1.4,iron-session sessionOptions,obligatoire,unit
+C-AUTH-04,authentification,preventif,Rotation session 8h,maxAge cookie 8 heures,T1.3,sessionOptions.cookieOptions.maxAge,obligatoire,e2e
+C-AUTH-05,authentification,detectif,Audit chaque login,Journalisation success+failure,T1.1 R-tout,audit_events action='admin.login*',obligatoire,unit
+C-AUTH-06,authentification,preventif,Origin check sur mutations,Verifie Origin / Sec-Fetch-Site,T1.4,middleware verifie sur POST/PATCH/DELETE,recommande,unit
+C-INPUT-01,validation,preventif,Schemas Zod sur tous les bodies,Validation au boundary avec strict(),T2.2 T2.3 T6.2,lib/schemas/*.ts,obligatoire,unit
+C-INPUT-02,validation,preventif,Pas de sql.raw avec input user,Toutes les requetes Drizzle parametrees,T2.2 T6.2,review code + lint regle,obligatoire,lint+review
+C-INPUT-03,validation,preventif,Validation URL webhook anti-SSRF,Refus 127.0.0.1 169.254 RFC1918 localhost en prod,T3.6,lib/schemas/webhooks.ts refine custom,obligatoire,unit
+C-INPUT-04,validation,preventif,Validation next param redirect,Doit commencer par /admin/ pas de //,T5.4,middleware ou page login validate,obligatoire,unit+e2e
+C-CRYPTO-01,chiffrement,preventif,TLS 1.2+ tout trafic,HSTS preload includeSubDomains,T1.2 T3.3,Vercel auto + Strict-Transport-Security,obligatoire,header check
+C-CRYPTO-02,chiffrement,preventif,Secrets HMAC chiffres at-rest,pgp_sym_encrypt avec WEBHOOK_SECRET_KEY,T3.5 T6.1,lib/crypto/encrypt.ts colonne encrypted_secret,obligatoire,unit
+C-CRYPTO-03,chiffrement,preventif,Signature HMAC SHA-256 sortante,Webhooks signes X-FemiGlow-Signature,T3.2 T3.3,lib/webhooks/signing.ts,obligatoire,unit
+C-CRYPTO-04,chiffrement,preventif,timingSafeEqual sur verifications,Pas de string compare sur signatures,T3.2,signing.ts verifyHmac,obligatoire,unit
+C-CRYPTO-05,chiffrement,procedure,Rotation cle WEBHOOK_SECRET_KEY,Annuelle ou apres incident,C-CRYPTO-02,scripts/rotate-secrets.ts + runbook,recommande,procedure
+C-HEAD-01,headers,preventif,CSP strict,default-src self pas d'unsafe-inline,T5.1 T1.2,middleware.ts applySecurityHeaders,obligatoire,e2e header check
+C-HEAD-02,headers,preventif,X-Frame-Options DENY,Anti-clickjacking,T5.2,middleware.ts,obligatoire,e2e
+C-HEAD-03,headers,preventif,X-Content-Type-Options nosniff,Anti-MIME sniffing,T5.1,middleware.ts,obligatoire,e2e
+C-HEAD-04,headers,preventif,Referrer-Policy strict-origin-when-cross-origin,Limite la fuite via Referer,T7.1,middleware.ts,obligatoire,e2e
+C-HEAD-05,headers,preventif,Permissions-Policy restreint,camera mic geolocation desactives,Privacy,middleware.ts,obligatoire,e2e
+C-HEAD-06,headers,preventif,Cache-Control no-store sur API admin,Pas de cache navigateur,T5.3,helper API + middleware,obligatoire,e2e
+C-RATE-01,disponibilite,preventif,Rate limit formulaires publics,10 req/h IP sur contact 5/h newsletter,T2.1 T8.3,lib/auth/rate-limit.ts checkRateLimit,obligatoire,unit
+C-RATE-02,disponibilite,preventif,Rate limit webhook test,10/min/endpoint,T8.3,checkRateLimit scope whtest,obligatoire,unit
+C-AUDIT-01,audit,detectif,Audit trail mutations admin,Toutes mutations -> audit_events,R-tout,db queries audit.ts insertion systematique,obligatoire,unit
+C-AUDIT-02,audit,detectif,Conservation audit 36 mois,Purge automatique au-dela,RGPD,cron purge (v1.1) sinon manuel,recommande,procedure
+C-AUDIT-03,audit,detectif,Audit immuable,Aucune route DELETE/UPDATE sur audit_events,R-tout,convention code + review,obligatoire,review
+C-LOG-01,logging,preventif,Redaction PII automatique,emails phones secrets masques,T7.1,lib/logging/redact.ts,obligatoire,unit
+C-LOG-02,logging,detectif,Sentry beforeSend strip PII,Filtre supplementaire avant envoi Sentry,T7.2,instrumentation.ts,obligatoire,unit
+C-LOG-03,logging,detectif,Correlation X-Request-Id,Trace par requete cross-services,Diag,lib/logging/correlation.ts AsyncLocalStorage,recommande,e2e
+C-RGPD-01,rgpd,procedure,Procedure droit d'effacement,Anonymisation SQL + audit,T7.4,operations/rgpd-effacement.md,obligatoire,procedure
+C-RGPD-02,rgpd,procedure,Registre des traitements,Document tenu a jour,Compliance,compliance/registre-traitements.md (v1.1),recommande,procedure
+C-RGPD-03,rgpd,preventif,Consentement explicite formulaire,consent_at obligatoire en DB,T2.5,schema leads NOT NULL constraint,obligatoire,unit
+C-RGPD-04,rgpd,preventif,Politique de confidentialite accessible,Lien dans formulaires + pied de page,Compliance,page /confidentialite,obligatoire,e2e
+C-DB-01,db,preventif,Soft-delete par defaut,deleted_at colonne sur entites user,T6.3,schema.sql + queries default filter,obligatoire,unit
+C-DB-02,db,preventif,Backup PITR 7 jours Neon,Plan Pro requis,T6.3 T7.4,Neon dashboard config,obligatoire,verif config
+C-DB-03,db,preventif,Drizzle parametrise pas de raw,Anti SQL injection,T2.2 T6.2,Lint regle no-raw-sql,obligatoire,lint
+C-DB-04,db,detectif,Surveillance acces direct DB,Audit Neon role logs,T6.4,Neon audit log review trimestriel,recommande,procedure
+C-DEPLOY-01,deploiement,preventif,Pas de secret en clair dans le code,git-secrets pre-commit,T3.5,.gitleaks.toml + hook,obligatoire,ci
+C-DEPLOY-02,deploiement,preventif,Variables env via Vercel UI,Pas de .env commite,T3.5,.gitignore .env*,obligatoire,review
+C-DEPLOY-03,deploiement,detectif,Dependabot + audit npm,Mise a jour deps faille,Supply chain,GitHub Dependabot active,obligatoire,ci
+C-DEPLOY-04,deploiement,preventif,Lockfile commite verifie,pnpm-lock.yaml integrite,Supply chain,CI step pnpm install --frozen-lockfile,obligatoire,ci
+C-INC-01,incident,correctif,Runbook incident documente,Etapes detection -> notification,T tout,07-securite/incident-response.md,obligatoire,procedure
+C-INC-02,incident,correctif,Notification CNDP sous 72h,Loi 09-08 si fuite DCP,T tout,runbook section notification,obligatoire,procedure

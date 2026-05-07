@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800" role="img" aria-label="Mains de Sara après quatre mois, ongles fortifiés">
+  <defs>
+    <linearGradient id="bg-sara-ap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBF6EF"/>
+      <stop offset="100%" stop-color="#F2CECC"/>
+    </linearGradient>
+    <linearGradient id="skin-sara-ap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EAC6A8"/>
+      <stop offset="100%" stop-color="#CCA587"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg-sara-ap)"/>
+  <g transform="translate(400 460)">
+    <path d="M -150 0 Q -160 -160 -100 -200 Q -40 -230 -10 -200 Q 20 -230 80 -210 Q 140 -190 150 -130 Q 170 0 150 100 Q 130 180 0 200 Q -130 180 -150 100 Z" fill="url(#skin-sara-ap)" opacity="0.95"/>
+    <g fill="#FBEBDC" opacity="0.95">
+      <path d="M -125 -195 Q -125 -245 -110 -250 Q -95 -245 -95 -195 Z"/>
+      <path d="M -65 -215 Q -65 -276 -50 -284 Q -35 -276 -35 -215 Z"/>
+      <path d="M -5 -210 Q -5 -276 10 -284 Q 25 -276 25 -210 Z"/>
+      <path d="M 55 -205 Q 55 -266 70 -274 Q 85 -266 85 -205 Z"/>
+      <path d="M 110 -170 Q 110 -222 125 -228 Q 140 -222 140 -170 Z"/>
+    </g>
+    <g fill="#F8DFCB" opacity="0.6">
+      <ellipse cx="-110" cy="-225" rx="6" ry="3"/>
+      <ellipse cx="-50" cy="-256" rx="6" ry="3"/>
+      <ellipse cx="10" cy="-256" rx="6" ry="3"/>
+      <ellipse cx="70" cy="-246" rx="6" ry="3"/>
+      <ellipse cx="125" cy="-206" rx="5" ry="3"/>
+    </g>
+  </g>
+  <text x="400" y="740" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" letter-spacing="3.5" fill="#2C2A28" opacity="0.4">APRÈS · QUATRE MOIS</text>
+</svg>

@@ -1,0 +1,153 @@
+@startuml schema-erd
+!theme plain
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+hide circle
+
+title FemiGlow Admin — Modèle entité-relation (v1)
+
+entity admin_users {
+  * id : text [PK, cuid2]
+  --
+  * email : text [UQ, lower]
+  * password_hash : text [argon2id]
+  * name : text
+  * role : text
+  * created_at : timestamptz
+  updated_at : timestamptz
+  deleted_at : timestamptz
+}
+
+entity admin_login_attempts {
+  * id : text [PK]
+  --
+  * ip : text
+  * email : text
+  * success : bool
+  user_agent : text
+  * created_at : timestamptz
+}
+
+entity rate_limit_counters {
+  * id : text [PK]
+  --
+  * scope : text
+  * created_at : timestamptz
+}
+
+entity leads {
+  * id : text [PK, cuid2]
+  --
+  * type : lead_type
+  * status : lead_status
+  * full_name : text
+  * email : text
+  phone : text
+  city : text
+  * source : text
+  * metadata : jsonb
+  * consent_at : timestamptz
+  * created_at : timestamptz
+  updated_at : timestamptz
+  deleted_at : timestamptz
+}
+
+entity orders {
+  * id : text [PK]
+  --
+  * lead_id : text [FK → leads]
+  * total_minor : int
+  * shipping_minor : int
+  * currency : text
+  paid_at : timestamptz
+  * shipping_address : jsonb
+  notes : text
+}
+
+entity order_items {
+  * id : text [PK]
+  --
+  * order_id : text [FK → orders]
+  * sku : text
+  * name : text
+  * quantity : int
+  * unit_price_minor : int
+}
+
+entity lead_events {
+  * id : text [PK]
+  --
+  * lead_id : text [FK → leads]
+  * type : lead_event_type
+  actor_id : text [FK → admin_users]
+  body : text
+  * meta : jsonb
+  * created_at : timestamptz
+}
+
+entity webhook_endpoints {
+  * id : text [PK]
+  --
+  * name : text
+  * url : text [UQ where deleted_at NULL]
+  * events : text[]
+  description : text
+  * custom_headers : jsonb
+  * encrypted_secret : bytea
+  * active : bool
+  * created_at : timestamptz
+  updated_at : timestamptz
+  deleted_at : timestamptz
+}
+
+entity webhook_deliveries {
+  * id : text [PK]
+  --
+  * endpoint_id : text [FK → webhook_endpoints]
+  * event_name : text
+  * payload : jsonb
+  * idempotency_key : text
+  * signature : text
+  * status : webhook_delivery_status
+  * attempt : int
+  * max_attempts : int
+  * scheduled_at : timestamptz
+  next_attempt_at : timestamptz
+  last_attempt_at : timestamptz
+  http_status : int
+  duration_ms : int
+  response_body : text
+}
+
+entity audit_events {
+  * id : text [PK]
+  --
+  actor_id : text [FK → admin_users]
+  * action : text
+  target_type : text
+  target_id : text
+  ip : text
+  user_agent : text
+  * meta : jsonb
+  * created_at : timestamptz
+}
+
+leads ||--o{ orders
+orders ||--o{ order_items
+leads ||--o{ lead_events
+admin_users |o--o{ lead_events
+admin_users |o--o{ audit_events
+webhook_endpoints ||--o{ webhook_deliveries
+
+note bottom of webhook_deliveries
+  Index critique :
+  (next_attempt_at) WHERE status='pending'
+  → pris par le cron tick (FOR UPDATE SKIP LOCKED).
+end note
+
+note bottom of leads
+  Soft-delete (deleted_at).
+  Recherche full-text via GIN index.
+end note
+
+@enduml

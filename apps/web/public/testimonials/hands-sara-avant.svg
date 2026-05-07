@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800" role="img" aria-label="Mains de Sara avant, ongles cassants">
+  <defs>
+    <linearGradient id="bg-sara-av" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F4EFE8"/>
+      <stop offset="100%" stop-color="#E8D6D2"/>
+    </linearGradient>
+    <linearGradient id="skin-sara-av" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8C0A2"/>
+      <stop offset="100%" stop-color="#C99E80"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg-sara-av)"/>
+  <g transform="translate(400 460)">
+    <path d="M -150 0 Q -160 -160 -100 -200 Q -40 -230 -10 -200 Q 20 -230 80 -210 Q 140 -190 150 -130 Q 170 0 150 100 Q 130 180 0 200 Q -130 180 -150 100 Z" fill="url(#skin-sara-av)" opacity="0.95"/>
+    <g fill="#F8E2D5" opacity="0.85">
+      <path d="M -125 -195 L -120 -210 L -100 -210 L -95 -195 L -100 -188 L -120 -188 Z"/>
+      <path d="M -65 -215 L -58 -228 L -42 -228 L -35 -215 L -45 -208 L -55 -208 Z"/>
+      <path d="M -5 -210 L 2 -222 L 18 -222 L 25 -210 L 18 -204 L 2 -204 Z"/>
+      <path d="M 55 -205 L 62 -216 L 78 -216 L 85 -205 L 78 -200 L 62 -200 Z"/>
+      <path d="M 110 -170 L 116 -180 L 134 -180 L 140 -170 L 134 -165 L 116 -165 Z"/>
+    </g>
+    <g stroke="#9C5E48" stroke-width="0.7" opacity="0.5" fill="none">
+      <line x1="-110" y1="-188" x2="-115" y2="-208"/>
+      <line x1="-50" y1="-208" x2="-55" y2="-225"/>
+      <line x1="10" y1="-204" x2="6" y2="-220"/>
+      <line x1="70" y1="-200" x2="66" y2="-215"/>
+    </g>
+  </g>
+  <text x="400" y="740" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" letter-spacing="3.5" fill="#2C2A28" opacity="0.4">AVANT · MARRAKECH</text>
+</svg>

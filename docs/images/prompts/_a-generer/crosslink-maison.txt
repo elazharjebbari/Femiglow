@@ -1,0 +1,26 @@
+# Image: crosslink-maison
+# Path: /journal/crosslink-maison.{avif,webp,png}
+# Page: /journal — CrossLinkBanner en bas de page (lien vers /maison)
+# Ratio: 3:2 paysage, 1600×1067
+# Family: editorial / héros — atelier
+# Pilote: NON — coordonner avec maison-hero, atelier-1/2/3 (déjà validés) et avec maison-origine ci-dessus.
+
+FORMAT: 3:2 horizontal landscape, 1600×1067 pixels. Final usage: full-bleed banner image on a creme background, paired with text « Visiter la maison » to its left. The right two-thirds of the frame must hold the visual weight; the left third is a soft transition zone where the text overlay lives in layout.
+
+SCENE: A wide editorial view of the FemiGlow atelier interior at Casablanca, mid-morning. Pale plastered walls (off-white, slight warmth), clear wood floor, a tall sash window on the right framed by a sheer linen curtain that catches a slow breeze. Against the back wall, a low wooden shelf holds rows of small unglazed ceramic pots, neatly aligned but not symmetrical. In the foreground center-left, an unobtrusive worktable with a folded raw-linen cloth, a small brass scale (matte brushed, never shiny), and an open hand-bound notebook. No people in frame, but the room has just been left — a chair pushed slightly back, the curtain still moving.
+
+SUBJECT: The atelier as place — proof that the maison exists. The room, not the gesture.
+
+ACTION: An interior caught at the precise instant the worker has stepped out for a moment. Stillness with residual movement (curtain, dust in the light).
+
+FRAMING: 35mm lens, eye-level human height, slight low angle (≈ 15° up) to honor the room's proportions. Wide editorial shot. Worktable on the rule-of-thirds left, window on the right vertical third, ceramic shelf on the back wall as horizon line. Generous negative space upper left for text overlay. Deep enough focus to keep the room legible, but a gentle soft fall-off on the back shelf for depth.
+
+LIGHTING: Soft diffuse morning side light from the right sash window, filtered through linen curtain, no direct sun, gentle warm shadow on the left wall. Slight visible airborne dust catching the light beam. Same temperature and direction as maison-hero (already validated) — keep that grade.
+
+PALETTE: Warm off-white plaster, pale honey wood, off-white unglazed ceramic, raw écru linen, brushed champagne brass (matte), deep ink black with warmth on the open notebook. Earthen, restrained.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine and atelier features. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper-and-linen surfaces, plaster texture visible, wood grain visible, ceramic unglazed pores, brushed metal microscratches. Same grade as maison-hero and atelier-1/2/3 — paper-and-linen palette, no glow, no perfume-ad gloss.
+
+MOOD: Workshop reality, tactile materials, imperfect honesty. Quiet stillness, soft breath, lived-in. The reader must feel the room exists, that one could push the door and step in.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, readable labels on the pots or notebook; people, hands, faces (the room must be empty); studio backdrop, white seamless paper, photo-shoot equipment; shiny gold, chrome, polished glass, glitter, pearlescent finishes (brass is matte brushed); HDR, oversharpening, plastic surfaces, halo, bokeh balls; vibrant saturated colors, neon, magenta, cyan; orientalist clichés (saturated zellige, lanterns, ornate carved screens, kaftans hung as decor) — if a tile fragment shows, it must be in muted off-white sourdine; lit candles, alcohol bottles, food clutter; modern digital equipment, screens, cables. Style, palette, grain and lighting consistent with maison-hero and the atelier triptych.

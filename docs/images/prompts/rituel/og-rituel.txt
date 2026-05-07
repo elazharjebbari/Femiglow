@@ -1,0 +1,25 @@
+# Image: og-rituel
+# Path: /og/rituel.png
+# Page: /rituel (Open Graph card for social sharing)
+# Ratio: 1.91:1 (1200×630)
+# Family: social
+
+FORMAT: 1.91:1 horizontal Open Graph card, exactly 1200×630 pixels, designed to receive a typographic title overlaid on the right two thirds — keep that area airy.
+
+SCENE: A widened version of the rituel hero — a low side table in a Casablanca apartment, late morning. Linen runner, unglazed ceramic dish, frosted amber jar, ceramic file, dried herb at the corner.
+
+SUBJECT: Two adult female hands tucked into the lower-left third of the frame, mid-gesture in the polishing motion. Same hands and language as hero-lifestyle but composed tighter to the lower-left corner.
+
+ACTION: The polishing gesture, slow and precise.
+
+FRAMING: 50mm lens, slight high angle 30°, subject in the lower-left third, the upper-right two thirds intentionally calm and empty for typography. Shallow depth of field.
+
+LIGHTING: Soft morning side light from the left, identical to hero-lifestyle so the two read as one shoot.
+
+PALETTE: Warm off-white linen, pale plaster, hand-made paper feel, muted sand ceramic, translucent amber, sage green dried herb. Same grade as the hero.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain.
+
+MOOD: Slow, ritual, intimate, breath-before-gesture.
+
+DO NOT INCLUDE: any text, watermarks, logos (text added later in design); faces or arms above the wrist; studio backdrop; shiny gold, chrome; HDR; saturated colors; orientalist clichés. The right two thirds must remain quiet enough to host typography.

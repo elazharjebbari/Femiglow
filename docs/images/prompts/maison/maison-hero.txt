@@ -1,0 +1,25 @@
+# Image: maison-hero
+# Path: /images/maison-hero.{avif,webp}
+# Page: /maison (hero LCP)
+# Ratio: 4:3 (1920×1440)
+# Family: heroes
+
+FORMAT: 4:3 landscape, 1920×1440 pixels, hero image at the top of the brand storytelling page. Will receive a title overlaid — keep one corner calm to host typography.
+
+SCENE: A wide view inside a real Casablanca atelier — tall ceiling, pale plaster wall, exposed warm wooden beams, a long oak worktable along one wall, a tall wooden shelf holding rows of unlabelled ceramic pots. A linen apron hangs on a hook to the left side. A tall window on the right with sheer linen curtain. Mid-morning light enters in soft beams.
+
+SUBJECT: The atelier itself, completely empty of people but evidently in use — a notebook open on the worktable, a folded cloth, the suggestion that someone has just stepped out. The room exists.
+
+ACTION: A pause. The room rests. The sense of recent presence.
+
+FRAMING: 35mm lens, eye-level slight low angle 10°, wide editorial shot leading the eye from the worktable on the lower-left toward the window light on the upper-right. Generous depth, balanced composition with breathing room. One side of the frame deliberately calmer to host typography later.
+
+LIGHTING: Soft morning side light from a tall window on the right, diffused through linen curtain, no direct sun. Gentle warm fall-off across the room. Atmospheric but never theatrical.
+
+PALETTE: Warm pale plaster, warm wood beams and worktable, off-white linen apron, muted sand ceramics on the shelf, soft warm shadow. Earthen and authentic Moroccan domestic. Same grade as visiter-l-atelier and atelier-1/2/3.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine and Cereal magazine workshop features. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, plaster texture and wood grain visible.
+
+MOOD: Real workshop, slow craft, the place exists, considered presence.
+
+DO NOT INCLUDE: any text, watermarks, logos, signage; people, hands, faces; modern industrial equipment (no laptops, no metal racks, no screens); bright artificial light; HDR; saturated colors; orientalist clichés (no bright zellige tiles, no lanterns, no overstyled props); cluttered shelves; perfume-ad glow.

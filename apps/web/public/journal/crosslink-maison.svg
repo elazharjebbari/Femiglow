@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Vue intérieure de l’atelier FemiGlow à Casablanca">
+  <defs>
+    <linearGradient id="g-cross" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF8F1"/>
+      <stop offset="0.55" stop-color="#F2E6D4" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#C8A876"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-cross)"/>
+  <rect x="0" y="0" width="1600" height="380" fill="#FBF8F1" opacity="0.55"/>
+  <rect x="0" y="380" width="1600" height="240" fill="#C8A876" opacity="0.25"/>
+  <rect x="0" y="620" width="1600" height="447" fill="#2C2A28" opacity="0.18"/>
+  <rect x="200" y="120" width="320" height="500" fill="#FBF8F1" opacity="0.7"/>
+  <rect x="220" y="140" width="280" height="460" fill="#C5DBE5" opacity="0.55"/>
+  <line x1="360" y1="140" x2="360" y2="600" stroke="#2C2A28" stroke-width="1" opacity="0.5"/>
+  <line x1="220" y1="370" x2="500" y2="370" stroke="#2C2A28" stroke-width="1" opacity="0.5"/>
+  <rect x="900" y="340" width="500" height="280" fill="#C8A876" opacity="0.5"/>
+  <rect x="900" y="320" width="500" height="20" fill="#2C2A28" opacity="0.6"/>
+  <g>
+    <rect x="940" y="240" width="60" height="80" rx="3" fill="#C5DBC4"/>
+    <rect x="950" y="220" width="40" height="20" rx="2" fill="#2C2A28" opacity="0.85"/>
+    <rect x="1040" y="260" width="50" height="60" rx="3" fill="#F2CECC"/>
+    <rect x="1130" y="250" width="55" height="70" rx="3" fill="#F2E6D4"/>
+    <rect x="1230" y="270" width="50" height="50" rx="3" fill="#C5DBE5"/>
+    <rect x="1320" y="240" width="50" height="80" rx="3" fill="#C8A876"/>
+  </g>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.7">L’ATELIER · HABOUS · CASABLANCA</text>
+</svg>

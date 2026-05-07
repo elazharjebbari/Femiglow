@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="FemiGlow — Maison de soin pour les ongles">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F8F2E8"/>
+      <stop offset="100%" stop-color="#F2E6D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g fill="none" stroke="#7A8B6A" stroke-width="1" opacity="0.35">
+    <path d="M-50 480 C 240 420, 520 540, 820 460 S 1240 380, 1300 440"/>
+    <path d="M-50 520 C 280 460, 540 580, 860 500 S 1240 420, 1300 480"/>
+  </g>
+  <g transform="translate(600 250)" text-anchor="middle">
+    <text font-family="Georgia, 'Cormorant Garamond', serif" font-style="italic" font-size="86" fill="#1A1A1A" font-weight="500">FemiGlow</text>
+    <text y="74" font-family="Georgia, 'Cormorant Garamond', serif" font-style="italic" font-size="44" fill="#1A1A1A" opacity="0.8">Maison de soin pour les ongles</text>
+    <text y="140" font-family="Inter, system-ui, sans-serif" font-size="18" letter-spacing="3.5" fill="#1A1A1A" opacity="0.55">CASABLANCA · MAROC</text>
+  </g>
+  <g transform="translate(600 470)" stroke="#1A1A1A" stroke-width="0.6" fill="none" opacity="0.35">
+    <line x1="-90" y1="0" x2="-15" y2="0"/>
+    <line x1="15" y1="0" x2="90" y2="0"/>
+    <circle cx="0" cy="0" r="3"/>
+  </g>
+</svg>

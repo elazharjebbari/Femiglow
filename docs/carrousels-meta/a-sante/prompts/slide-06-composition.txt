@@ -1,0 +1,32 @@
+# Image: slide-06-composition (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-06-composition.png
+# Format: 1080×1350 (4:5 vertical) — overhead flat lay
+# Family: ingredients / transparency
+# Pair-with: visual continuity with slides 1-5
+
+FORMAT: 4:5 vertical, 1080×1350 px, overhead flat lay. Five small ceramic shallow dishes arranged in a horizontal row across the lower-middle third of the frame. Generous negative space above (top half is paper) and a smaller band below (room for the trio of "sans" exclusions in italic).
+
+SCENE: A wide flat surface of warm off-white hand-made paper, slight deckle texture and very fine grain visible. Casablanca morning light from a north-facing window. The room is implied, not seen.
+
+SUBJECT: Five small unglazed ceramic shallow dishes (each about 6 cm in diameter), aligned in a precisely spaced horizontal row, equal gaps between them. Each dish holds a different raw matter:
+- DISH 1 (left) — fine pale white-beige clay (kaolin), softly mounded.
+- DISH 2 — pale green-beige bamboo powder, finer than dish 1.
+- DISH 3 — small translucent amber-brown shards of pine resin, irregular shapes.
+- DISH 4 — a single small puddle of golden translucent oil (jojoba), shallow and still.
+- DISH 5 (right) — small flakes of cream-yellow carnauba wax, matte.
+
+Behind each dish, a small handwritten kraft paper label rests faintly visible — but TEXT IS UNREADABLE (it's a material element, not a glyph).
+
+ACTION: Five matters at rest, side by side, presented for honest inspection.
+
+FRAMING: 90° top-down overhead view, 50mm lens, all five dishes parallel to the bottom edge, perfectly spaced. Deep focus across the row (this is a flat lay — everything sharp). Generous negative space above and small band below.
+
+LIGHTING: Soft diffuse morning light from the upper left, even fall-off across the row. Subtle shadows on the right side of each dish, identical in each.
+
+PALETTE: Warm off-white paper background. Five honest earthen accents: pale clay, pale green bamboo, amber resin, golden oil, cream wax. A slow herbarium of beige-to-amber.
+
+STYLE: Editorial flat lay in the spirit of Aesop catalog and Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain, honest material texture, no studio polish.
+
+MOOD: Restrained transparency. Authority by showing — never by telling. The viewer sees what is, and concludes for herself.
+
+DO NOT INCLUDE: any readable text or glyphs on the labels (kraft paper labels are blurred or face away); watermarks, logos, brand names, signage; reflective gold or chrome dishes (must remain unglazed ceramic, matte); pearlescent, glitter, gloss; HDR or oversharpening; vibrant saturated colors, neon, magenta, cyan; perfume-ad glow, halo; bokeh balls (deep focus is intentional); studio softbox reflections; busy props; flowers, candles, food beyond what is described; orientalist patterns or zellige.

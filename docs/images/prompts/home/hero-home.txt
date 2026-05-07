@@ -1,0 +1,25 @@
+# Image: hero-home
+# Path: /images/hero-home.{avif,webp}
+# Page: / (home, hero LCP)
+# Ratio: 3:2 (1200×800)
+# Family: heroes
+
+FORMAT: 3:2 horizontal landscape, 1200×800 pixels, intended as a hero image for a website with editorial typography overlaid on the right third — leave generous negative space on that side.
+
+SCENE: A quiet Casablanca morning interior, pale plaster wall, small wooden side table, a folded linen runner in warm off-white. Late spring light just after sunrise, before the day starts.
+
+SUBJECT: A pair of adult female hands at rest. One hand lies open and relaxed on the linen, fingers slightly curled, natural cuticles, short to medium nails, no polish, real skin texture with fine lines, sun-kissed Mediterranean complexion. The other hand is approaching from the right, gently lifting a small frosted-glass amber jar with a paper label (no readable text on the label).
+
+ACTION: The instant before the ritual begins — a held breath, a hand reaching, eyes elsewhere. Stillness, not pose.
+
+FRAMING: 50mm prime lens, eye-level slight high angle looking down at 25°. Hands occupy the left two thirds of the frame, jar centered on the third line. Shallow depth of field, sharp focus on the resting hand and the jar, soft fall-off into the linen behind.
+
+LIGHTING: Soft morning side light coming from the left, diffused through a sheer linen curtain, north-facing window. Gentle directional shadows, no direct sun, no specular highlights. The kind of light that makes paper feel alive.
+
+PALETTE: Warm off-white linen background, hand-made paper feel, deep ink black with a hint of warmth on the lashes of the jar's amber resin. One subtle muted sage green note in a folded napkin at the edge. Brushed champagne metal nowhere — keep tones earthen and dusty.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop product catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper-and-linen surfaces, honest texture, visible weave of the linen, faint warmth of skin.
+
+MOOD: Unhurried, intimate, ritual atmosphere, contemplative pause, lived-in domesticity.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, signage, readable labels; people facing or smiling at the camera; full faces; studio backdrop or photography equipment; shiny gold, chrome, glitter or pearlescent finishes; HDR processing, oversharpening, plastic skin, beauty retouching; vibrant saturated colors, neon, magenta, cyan, fuchsia; orientalist clichés (overly bright zellige, saturated patterns, kaftans); alcohol, lit candles, food clutter; bokeh balls or perfume-ad glow.

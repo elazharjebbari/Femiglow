@@ -1,0 +1,116 @@
+import { eq } from 'drizzle-orm';
+import { db, memoryStore, schema } from '@/lib/db/client';
+import { createId } from '@/lib/ids';
+import type { TrackingSetting } from '@/lib/db/types';
+
+/**
+ * KV simple pour les flags globaux du tracking (bandeau cookies activé,
+ * mode test, etc). On stocke la valeur en JSON pour rester souple :
+ * un boolean, un objet, un enum… selon le besoin.
+ */
+
+function rowToSetting<T>(
+  row: typeof schema.trackingSettings.$inferSelect,
+): TrackingSetting<T> {
+  return {
+    id: row.id,
+    key: row.key,
+    value: row.value as T,
+    updatedAt: row.updatedAt,
+    updatedBy: row.updatedBy ?? null,
+  };
+}
+
+export async function getTrackingSetting<T>(
+  key: string,
+  defaultValue: T,
+): Promise<T> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(schema.trackingSettings)
+      .where(eq(schema.trackingSettings.key, key))
+      .limit(1);
+    if (rows[0]) return rowToSetting<T>(rows[0]).value;
+    return defaultValue;
+  }
+  for (const setting of memoryStore().trackingSettings.values()) {
+    if (setting.key === key) return setting.value as T;
+  }
+  return defaultValue;
+}
+
+export async function setTrackingSetting<T>(
+  key: string,
+  value: T,
+  options: { actorId?: string | null } = {},
+): Promise<TrackingSetting<T>> {
+  const now = new Date();
+  const drizzle = db();
+  if (drizzle) {
+    const existing = await drizzle
+      .select()
+      .from(schema.trackingSettings)
+      .where(eq(schema.trackingSettings.key, key))
+      .limit(1);
+    if (existing[0]) {
+      await drizzle
+        .update(schema.trackingSettings)
+        .set({
+          value: value as never,
+          updatedAt: now,
+          updatedBy: options.actorId ?? null,
+        })
+        .where(eq(schema.trackingSettings.id, existing[0].id));
+      return {
+        id: existing[0].id,
+        key,
+        value,
+        updatedAt: now,
+        updatedBy: options.actorId ?? null,
+      };
+    }
+    const id = createId('tset');
+    await drizzle.insert(schema.trackingSettings).values({
+      id,
+      key,
+      value: value as never,
+      updatedAt: now,
+      updatedBy: options.actorId ?? null,
+    });
+    return { id, key, value, updatedAt: now, updatedBy: options.actorId ?? null };
+  }
+  // memoryStore fallback
+  for (const [id, setting] of memoryStore().trackingSettings) {
+    if (setting.key === key) {
+      const updated: TrackingSetting<T> = {
+        id,
+        key,
+        value,
+        updatedAt: now,
+        updatedBy: options.actorId ?? null,
+      };
+      memoryStore().trackingSettings.set(id, updated);
+      return updated;
+    }
+  }
+  const id = createId('tset');
+  const created: TrackingSetting<T> = {
+    id,
+    key,
+    value,
+    updatedAt: now,
+    updatedBy: options.actorId ?? null,
+  };
+  memoryStore().trackingSettings.set(id, created);
+  return created;
+}
+
+/* Clés de configuration connues */
+export const TRACKING_SETTING_KEYS = {
+  /** Bandeau de consentement actif (true par défaut, désactivable selon juridiction) */
+  CONSENT_BANNER_ENABLED: 'consent_banner_enabled',
+  /** État de consentement par défaut quand le bandeau est désactivé */
+  CONSENT_DEFAULT_GRANTED: 'consent_default_granted',
+} as const;

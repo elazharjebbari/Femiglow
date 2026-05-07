@@ -1,0 +1,182 @@
+apps/web/src/
+├── middleware.ts                                  ← NOUVEAU — garde admin
+│
+├── app/
+│   ├── (admin)/                                   ← NOUVEAU — route group admin
+│   │   ├── layout.tsx                             ← AdminLayout (header + sidebar)
+│   │   ├── loading.tsx                            ← skeleton générique
+│   │   ├── error.tsx                              ← fallback erreur admin
+│   │   ├── not-found.tsx                          ← 404 sobre
+│   │   ├── login/
+│   │   │   ├── page.tsx                           ← LoginPage (Server)
+│   │   │   └── LoginForm.tsx                      ← Client component
+│   │   ├── dashboard/
+│   │   │   └── page.tsx                           ← KPI + derniers leads
+│   │   ├── leads/
+│   │   │   ├── page.tsx                           ← liste filtrable
+│   │   │   ├── loading.tsx
+│   │   │   └── [id]/
+│   │   │       ├── page.tsx                       ← détail lead
+│   │   │       ├── loading.tsx
+│   │   │       └── DeleteLeadButton.tsx           ← Client (confirm + DELETE)
+│   │   └── webhooks/
+│   │       ├── page.tsx                           ← liste destinations
+│   │       ├── new/
+│   │       │   └── page.tsx                       ← formulaire création
+│   │       └── [id]/
+│   │           ├── page.tsx                       ← édition destination
+│   │           ├── deliveries/
+│   │           │   └── page.tsx                   ← livraisons listées
+│   │           └── ReplayDeliveryButton.tsx       ← Client
+│   │
+│   └── api/
+│       └── admin/                                 ← NOUVEAU — API admin
+│           ├── login/route.ts
+│           ├── logout/route.ts
+│           ├── leads/
+│           │   ├── route.ts                       ← GET (export CSV via ?format=csv)
+│           │   └── [id]/
+│           │       ├── route.ts                   ← GET, DELETE
+│           │       ├── status/route.ts            ← PATCH
+│           │       └── notes/route.ts             ← POST
+│           ├── webhooks/
+│           │   ├── route.ts                       ← GET, POST
+│           │   ├── [id]/
+│           │   │   ├── route.ts                   ← GET, PATCH, DELETE
+│           │   │   ├── test/route.ts              ← POST (envoi test)
+│           │   │   └── deliveries/route.ts        ← GET
+│           │   └── deliveries/[id]/replay/route.ts ← POST
+│           └── cron/
+│               └── webhook-tick/route.ts          ← POST (Bearer)
+│
+├── components/
+│   ├── admin/                                     ← NOUVEAU
+│   │   ├── icons/
+│   │   │   ├── IconHome.tsx
+│   │   │   ├── IconLeads.tsx
+│   │   │   ├── IconWebhook.tsx
+│   │   │   ├── IconLogout.tsx
+│   │   │   ├── IconSearch.tsx
+│   │   │   ├── IconFilter.tsx
+│   │   │   ├── IconChevronDown.tsx
+│   │   │   ├── IconCheck.tsx
+│   │   │   ├── IconX.tsx
+│   │   │   ├── IconCopy.tsx
+│   │   │   ├── IconRefresh.tsx
+│   │   │   ├── IconAlert.tsx
+│   │   │   ├── IconClock.tsx
+│   │   │   ├── IconExternalLink.tsx
+│   │   │   ├── IconTrash.tsx
+│   │   │   ├── IconEdit.tsx
+│   │   │   ├── IconEye.tsx
+│   │   │   └── IconEyeOff.tsx
+│   │   ├── layout/
+│   │   │   ├── AdminHeader.tsx
+│   │   │   ├── AdminSidebar.tsx
+│   │   │   ├── AdminBreadcrumb.tsx
+│   │   │   └── LogoutButton.tsx
+│   │   ├── tables/
+│   │   │   ├── DataTable.tsx                      ← générique
+│   │   │   ├── LeadTable.tsx
+│   │   │   ├── DeliveryTable.tsx
+│   │   │   ├── EmptyState.tsx
+│   │   │   └── Pagination.tsx
+│   │   ├── filters/
+│   │   │   ├── LeadFilters.tsx
+│   │   │   ├── FilterChip.tsx
+│   │   │   ├── DateRangePicker.tsx
+│   │   │   └── SearchInput.tsx
+│   │   ├── badges/
+│   │   │   ├── StatusBadge.tsx                    ← LeadStatus
+│   │   │   ├── DeliveryStatusBadge.tsx
+│   │   │   └── MetricCard.tsx
+│   │   ├── lead-detail/
+│   │   │   ├── LeadDetail.tsx                     ← composition Server
+│   │   │   ├── LeadIdentityCard.tsx
+│   │   │   ├── LeadCommandCard.tsx
+│   │   │   ├── LeadTimeline.tsx
+│   │   │   ├── LeadStatusSelector.tsx             ← Client
+│   │   │   └── LeadNoteEditor.tsx                 ← Client
+│   │   ├── webhook-form/
+│   │   │   ├── WebhookForm.tsx                    ← Client
+│   │   │   ├── WebhookSecretInput.tsx
+│   │   │   └── WebhookFilterEditor.tsx
+│   │   ├── feedback/
+│   │   │   ├── LoadingSpinner.tsx
+│   │   │   └── InlineError.tsx
+│   │   ├── shortcuts/
+│   │   │   └── useAdminShortcuts.ts               ← hook clavier global
+│   │   └── login/
+│   │       └── LoginForm.tsx
+│   │
+│   └── (existant inchangé : ui/, forms/, layout/, commerce/...)
+│
+├── lib/
+│   ├── auth/                                      ← NOUVEAU
+│   │   ├── session.ts                             ← iron-session config + helpers
+│   │   ├── password.ts                            ← argon2 wrapper
+│   │   └── rate-limit.ts                          ← rate limiter en mémoire
+│   ├── webhooks/                                  ← NOUVEAU
+│   │   ├── mapper.ts                              ← mapLeadToWebhookPayload
+│   │   ├── signer.ts                              ← hmacSha256
+│   │   ├── enqueue.ts                             ← enqueueDeliveriesForLead
+│   │   ├── deliver.ts                             ← deliverOne (retry, backoff)
+│   │   └── backoff.ts                             ← scheduleNextAttempt
+│   ├── db/                                        ← NOUVEAU
+│   │   ├── client.ts                              ← drizzle client
+│   │   ├── schema.ts                              ← Drizzle schema (toutes tables)
+│   │   ├── migrations/                            ← drizzle-kit output
+│   │   │   ├── 0000_initial.sql
+│   │   │   ├── meta/
+│   │   │   └── ...
+│   │   └── queries/
+│   │       ├── leads.ts                           ← listLeads, getLead, updateStatus
+│   │       ├── webhooks.ts                        ← listEndpoints, listDeliveries
+│   │       ├── audit.ts                           ← logEvent, recentEvents
+│   │       └── kpi.ts                             ← compteurs dashboard
+│   ├── schemas/
+│   │   ├── (existant : common.ts, contact.ts, order.ts, ...)
+│   │   ├── admin-lead.ts                          ← NOUVEAU — filtres, status, note
+│   │   └── admin-webhook.ts                       ← NOUVEAU — endpoint create/update
+│   ├── utils/
+│   │   ├── (existant : cn.ts, ...)
+│   │   ├── format-date.ts                         ← NOUVEAU
+│   │   ├── format-currency.ts                     ← NOUVEAU
+│   │   └── csv-export.ts                          ← NOUVEAU
+│   └── env.ts                                     ← MODIFIÉ — nouvelles vars
+│
+├── styles/
+│   └── globals.css                                ← MODIFIÉ — variables admin éventuelles
+│
+└── test/                                          ← NOUVEAU (ou étendu)
+    ├── setup.ts                                   ← MSW setup
+    ├── msw/
+    │   ├── server.ts
+    │   ├── handlers/
+    │   │   ├── index.ts
+    │   │   ├── admin-auth.ts
+    │   │   ├── admin-leads.ts
+    │   │   ├── admin-webhooks.ts
+    │   │   ├── admin-cron.ts
+    │   │   ├── public-forms.ts
+    │   │   └── partner-webhook.ts
+    │   └── fixtures/
+    │       ├── leads.ts
+    │       ├── webhooks.ts
+    │       └── deliveries.ts
+    └── helpers/
+        ├── render-with-providers.tsx
+        ├── make-session-cookie.ts
+        └── seed-db.ts                             ← pour tests d'intégration
+
+vercel.json                                        ← NOUVEAU — schedule cron
+.env.example                                       ← MODIFIÉ — nouvelles vars
+drizzle.config.ts                                  ← NOUVEAU — drizzle-kit
+playwright.config.ts                               ← NOUVEAU — config E2E
+e2e/                                               ← NOUVEAU
+├── fixtures/
+│   └── seed.ts
+├── login.spec.ts
+├── leads.spec.ts
+├── webhooks.spec.ts
+└── end-to-end-lead.spec.ts

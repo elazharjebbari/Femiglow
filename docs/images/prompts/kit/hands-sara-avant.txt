@@ -1,0 +1,25 @@
+# Image: hands-sara-avant
+# Path: /testimonials/hands-sara-avant.{avif,webp}
+# Page: /kit (before/after testimonial, day 0)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, before-state. Must pair exactly with hands-sara-apres — same hand, same surface, same lighting, same framing.
+
+SCENE: A square section of pale wood table surface, light oak with visible grain, slightly worn. Identical surface for both before and after.
+
+SUBJECT: One adult female hand, deep warm brown skin tone, ages 25 to 40, resting fingers half open on the wood. Day 0 state — nails honest: slightly damaged from frequent use, uneven length, faint horizontal ridges, cuticles a bit dry and pushed-back inconsistently, dull keratin without shine. Real skin texture, fine lines, no jewelry.
+
+ACTION: At rest, observed honestly. The truthful starting point.
+
+FRAMING: 50mm lens, top-down 30° angle, hand placed on the lower left third, wood grain visible around. Shallow depth of field, sharp focus on the nails. Frame must be reproducible exactly for the after image.
+
+LIGHTING: Soft morning side light from the left, diffused, identical to the other testimonials for cross-testimony coherence.
+
+PALETTE: Warm wood tone, deep brown skin warmth, no other accent. Monochromatic earthen.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, wood grain visible, no beauty retouching.
+
+MOOD: Honest starting state, no shame, no drama.
+
+DO NOT INCLUDE: any text, watermarks, logos; faces or arms above the wrist; jewelry; nail polish, gel, acrylic, French manicure; staged damage; HDR; vibrant saturated colors; orientalist props.

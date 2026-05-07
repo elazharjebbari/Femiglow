@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="poster" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBF8F1"/>
+      <stop offset="100%" stop-color="#D4C4A8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#poster)"/>
+  <g transform="translate(960 540)" text-anchor="middle">
+    <circle r="60" fill="#2C2A28" opacity="0.6"/>
+    <polygon points="-15,-22 -15,22 22,0" fill="#FBF8F1"/>
+  </g>
+  <g transform="translate(960 720)" text-anchor="middle">
+    <text font-family="Inter, sans-serif" font-size="14" letter-spacing="4" fill="#2C2A28" opacity="0.55">90 SECONDES · CINQ GESTES</text>
+  </g>
+</svg>

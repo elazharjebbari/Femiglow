@@ -1,0 +1,26 @@
+# Image: cross-journal
+# Path: /maison/cross-journal.{avif,webp,png}
+# Pages: /maison (CrossLinkTriptyque, card 2) + menu Sommaire (vignette « Le journal »)
+# Ratio: 4:5 portrait, 800×1000 — must crop cleanly to 1:1 for the 88×88 menu thumbnail
+# Family: editorial / cross-link triptych
+# Pilote: NON — itérer après cross-rituel.txt et cross-kit.txt avec consigne « style, palette, grain and lighting consistent with the previous images ».
+
+FORMAT: 4:5 vertical portrait, 800×1000 pixels. Used at large size on /maison and at 88×88 square crop in the menu — compose central subject inside a centered square so the 1:1 crop holds.
+
+SCENE: A hand-bound notebook lying open on a pale wood table, photographed from above at 30° toward the page-fold. The right-hand page shows a few lines of handwritten ink, fully illegible (no readable letters — pure ink texture). A fountain pen with a brushed-champagne barrel rests across the gutter, nib pointing left, slightly raised on a small folded raw-linen napkin. To the upper left, a small ceramic cup of cold tea (off-white, unglazed). The notebook has been put down mid-sentence.
+
+SUBJECT: An open notebook and a pen, the editorial gesture suspended. The journal as place, not as content.
+
+ACTION: A pause in writing. The pen has been laid down, not put away; the page is still warm from the hand.
+
+FRAMING: 50mm lens, 25° high-side angle, notebook spine on the rule-of-thirds left-vertical, pen across the gutter. Shallow depth of field, sharp focus on the nib and the topmost ink line; the far page edge softens. The 1:1 crop for the menu must read as "open notebook with pen" with the cup just out of the square.
+
+LIGHTING: Soft morning side light, diffused through linen curtain, no direct sun, gentle shadow fall-off. Same temperature and direction as cross-rituel and cross-kit — keep continuity.
+
+PALETTE: Warm hand-made paper (off-white, slight cream cast), deep ink black with warmth on the handwriting, brushed champagne pen barrel (matte, never shiny gold), pale wood table underneath, off-white linen napkin, off-white unglazed ceramic cup. Earthen and restrained.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain (hand-made, deckle edge), ink line texture, ceramic unglazed pores, brushed metal microscratches on the pen. Same grade as cross-rituel and cross-kit.
+
+MOOD: Slow, intimate, lived-in. The act of writing slowly, by hand, by daylight. Quiet stillness, restrained, contemplative pause.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names or readable handwriting (the ink lines must remain non-letterforms — pure marks); people, hands, faces; arranged-for-camera composition (the pen must look set down, not posed); studio backdrop, white seamless paper, photo equipment; shiny gold, chrome, glitter, pearlescent finishes (pen barrel is matte champagne, never gold); HDR, oversharpening, plastic surfaces, halo, bokeh balls; vibrant saturated colors, neon, magenta, cyan; orientalist props; lit candles, alcohol, food clutter beyond the cup of cold tea. Style, palette, grain and lighting consistent with the previous images (cross-rituel, cross-kit).

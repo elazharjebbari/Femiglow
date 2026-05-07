@@ -1,0 +1,25 @@
+# Image: hands-amal-apres
+# Path: /testimonials/hands-amal-apres.{avif,webp}
+# Page: /kit (before/after testimonial, day 21)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, after-state of a 21-day testimonial. Must pair exactly with hands-amal-avant — same hand, same surface, same lighting, same framing — only the nail condition differs.
+
+SCENE: A square section of warm off-white hand-made paper, slight texture, identical surface to the before image.
+
+SUBJECT: The exact same adult female hand as hands-amal-avant — fair Mediterranean complexion, ages 30 to 45, resting palm-down on the paper. Day 21 state — nails are healthier in a measured, believable way: a touch more even in length and shape (oval, short to medium), cuticles soft and tidy without being severe, surface smoother but still showing natural ridges, healthier translucent pink at the nail bed, subtle natural shine (not glossy). The hand is the same hand, just better cared for.
+
+ACTION: At rest, observed honestly without staging. The proof is quiet.
+
+FRAMING: 50mm lens, 30° top-down view, hand centered, framed exactly like hands-amal-avant — same crop, same wrist exit, same hand position. Shallow depth of field, sharp focus on the nails and finger pads.
+
+LIGHTING: Soft morning side light from the left, diffused through linen curtain, identical to hands-amal-avant.
+
+PALETTE: Warm off-white paper, soft skin tone, no other accent. Same grade as the before image.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, no beauty retouching. Identical grade to hands-amal-avant.
+
+MOOD: Quiet improvement, slow beauty, restrained proof — never an advertisement transformation.
+
+DO NOT INCLUDE: any text, watermarks, logos; faces or arms above the wrist; jewelry; nail polish, gel, acrylic, French manicure, glitter, gloss varnish, painted look; perfectly identical mannequin nails (must remain real); HDR; oversharpening; vibrant saturated colors; orientalist props; perfume-ad polish.

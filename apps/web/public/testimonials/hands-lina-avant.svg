@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800" role="img" aria-label="Mains de Lina avant le rituel, cuticules sèches">
+  <defs>
+    <linearGradient id="bg-lina-av" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EFEDE2"/>
+      <stop offset="100%" stop-color="#D8DCCD"/>
+    </linearGradient>
+    <linearGradient id="skin-lina-av" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F0D8C0"/>
+      <stop offset="100%" stop-color="#D2B595"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg-lina-av)"/>
+  <g transform="translate(400 460)">
+    <path d="M -150 0 Q -160 -160 -100 -200 Q -40 -230 -10 -200 Q 20 -230 80 -210 Q 140 -190 150 -130 Q 170 0 150 100 Q 130 180 0 200 Q -130 180 -150 100 Z" fill="url(#skin-lina-av)" opacity="0.95"/>
+    <g fill="#FBEEDD" opacity="0.85">
+      <ellipse cx="-110" cy="-205" rx="17" ry="20"/>
+      <ellipse cx="-50" cy="-225" rx="19" ry="24"/>
+      <ellipse cx="10" cy="-220" rx="19" ry="24"/>
+      <ellipse cx="70" cy="-215" rx="18" ry="22"/>
+      <ellipse cx="125" cy="-180" rx="15" ry="18"/>
+    </g>
+    <g stroke="#9C7A5C" stroke-width="1" opacity="0.6" fill="none">
+      <path d="M -120 -190 Q -110 -184 -100 -190"/>
+      <path d="M -60 -210 Q -50 -204 -40 -210"/>
+      <path d="M 0 -205 Q 10 -199 20 -205"/>
+      <path d="M 60 -200 Q 70 -194 80 -200"/>
+      <path d="M 115 -165 Q 125 -159 135 -165"/>
+    </g>
+    <g stroke="#9C7A5C" stroke-width="0.5" opacity="0.4" fill="none">
+      <path d="M -100 -170 L -100 -205"/>
+      <path d="M -40 -190 L -40 -225"/>
+      <path d="M 20 -185 L 20 -220"/>
+      <path d="M 80 -180 L 80 -215"/>
+    </g>
+  </g>
+  <text x="400" y="740" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" letter-spacing="3.5" fill="#2C2A28" opacity="0.4">AVANT · RABAT</text>
+</svg>

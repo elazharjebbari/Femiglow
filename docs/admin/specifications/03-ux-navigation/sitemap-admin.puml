@@ -1,0 +1,85 @@
+@startuml sitemap-admin
+!theme plain
+title Sitemap admin
+
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+(*) --> "/admin"
+"/admin" --> "/admin/login" : si non authentifié
+"/admin" --> "/admin/dashboard" : si authentifié
+
+"/admin/login" --> "/admin/dashboard" : login OK + ?next=...
+
+state "/admin/dashboard" as dashboard {
+  [*] --> KPI
+  KPI --> "Leads 24h"
+  KPI --> "Non traités"
+  KPI --> "Livraisons KO"
+  --
+  Récent --> "5 derniers leads"
+}
+
+dashboard --> "/admin/leads"
+dashboard --> "/admin/webhooks/[id]/deliveries" : clic KPI livraisons
+
+state "/admin/leads" as leads_list {
+  [*] --> Filtres
+  Filtres --> Type
+  Filtres --> Statut
+  Filtres --> Période
+  Filtres --> Recherche
+  --
+  Tableau --> Pagination
+}
+
+leads_list --> "/admin/leads/[id]" : clic ligne
+leads_list --> "Export CSV" : ?format=csv
+
+state "/admin/leads/[id]" as lead_detail {
+  [*] --> Identité
+  Identité --> Payload
+  Payload --> Timeline
+  Timeline --> Actions
+  Actions --> "Changer statut"
+  Actions --> "Ajouter note"
+  Actions --> "Rejouer webhook"
+  Actions --> "Supprimer"
+}
+
+lead_detail --> leads_list : breadcrumb
+
+dashboard --> "/admin/webhooks"
+state "/admin/webhooks" as webhooks_list {
+  [*] --> Liste
+  Liste --> "Ajouter destination"
+}
+
+webhooks_list --> "/admin/webhooks/new"
+webhooks_list --> "/admin/webhooks/[id]" : clic ligne
+
+state "/admin/webhooks/[id]" as webhook_detail {
+  [*] --> Configuration
+  Configuration --> URL
+  Configuration --> Secret
+  Configuration --> Filtre
+  Configuration --> Toggle
+  --
+  Actions --> "Test payload"
+  Actions --> "Voir livraisons"
+}
+
+webhook_detail --> "/admin/webhooks/[id]/deliveries"
+
+state "/admin/webhooks/[id]/deliveries" as deliveries {
+  [*] --> Filtres
+  Filtres --> Statut
+  Filtres --> Période
+  --
+  Tableau --> "Détail expand"
+  --
+  Actions --> "Rejouer"
+}
+
+@enduml

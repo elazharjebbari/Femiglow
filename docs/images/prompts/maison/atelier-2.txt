@@ -1,0 +1,25 @@
+# Image: atelier-2 (étagère de stockage)
+# Path: /maison/atelier-2.{avif,webp}
+# Page: /maison (atelier triptych, image 2 — storage shelf)
+# Ratio: 4:3 (800×600)
+# Family: editorial / atelier
+
+FORMAT: 4:3 landscape, 800×600 pixels, atelier image two of three. Must pair with atelier-1 and atelier-3 — same lighting, same grain, same earthen palette.
+
+SCENE: A tall wooden shelf in the Casablanca atelier, three or four shelves visible. On each shelf: rows of unlabelled or hand-labelled ceramic and glass pots in regular spacing, each with a small handwritten paper label tied with twine (text not readable). A small wooden ladder leans at the side of the frame. Pale plaster wall behind the shelf.
+
+SUBJECT: The shelf and its contents — ordered, considered, alive with use. The visual rhythm of repeated pots tells of careful inventory.
+
+ACTION: At rest. The shelf has been recently tidied.
+
+FRAMING: 35mm lens, eye-level slight high angle 15°, shelf fills the frame frontally with breathing room above and below. Shallow depth of field, sharp focus on the central shelf, soft fall-off on the upper and lower edges.
+
+LIGHTING: Soft morning side light from a tall window to the right (out of frame), diffused through linen curtain, gentle directional shadow falling left across the shelves.
+
+PALETTE: Warm wood shelves, pale plaster wall, off-white and muted sand ceramic pots, warm cream paper labels, warm twine. Earthen and authentic atelier.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine and Cereal magazine workshop features. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, wood grain and ceramic texture visible. Same grade as atelier-1 and atelier-3.
+
+MOOD: Quiet inventory, considered storage, the rhythm of craft.
+
+DO NOT INCLUDE: any readable text on the labels, watermarks, logos, signage; people, hands, faces; modern industrial labelling, barcodes, plastic containers; bright artificial light; HDR; saturated colors; orientalist clichés; cluttered shelves.

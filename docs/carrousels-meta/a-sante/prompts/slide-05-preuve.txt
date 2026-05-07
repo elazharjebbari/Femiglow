@@ -1,0 +1,27 @@
+# Image: slide-05-preuve (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-05-preuve.png
+# Format: 1080×1350 (4:5 vertical) — vertical diptych split 50/50, before/after 21 days
+# Family: testimony / proof
+# Pair-with: should match the spirit of /docs/images/values/kit/hands-amal-avant.png and hands-amal-apres.png. If those exist, prefer reusing them via Figma rather than regenerating.
+
+FORMAT: 4:5 vertical, 1080×1350 px. Vertical diptych: top half (1080×675) is "day 1", bottom half (1080×675) is "day 21". A faint horizontal hairline separates the two (1.5 px, sand color #E8E0D2). Negative space reserved on the left side of each half for typography overlay.
+
+SCENE: Two identical square sections of warm off-white hand-made paper. Same paper, same lighting, same camera position in both halves. Only the nail condition differs.
+
+SUBJECT — TOP HALF (Day 1): One adult female hand, light to medium Mediterranean complexion, age 30-42, palm-down on the paper. Nails short to medium, oval, completely bare — no polish. Surface slightly dull, faint vertical ridges visible, cuticles a little dry but not damaged. The hand is real, lived-in, honest.
+
+SUBJECT — BOTTOM HALF (Day 21): The exact same hand, same complexion, same surface, same lighting, after 21 days of the FemiGlow ritual (used twice in 21 days). Nails appear measurably healthier in a believable, restrained way: a touch more even in length and shape, cuticles softer and tidier without being severe, surface smoother but still showing natural minor ridges, healthier translucent pink at the nail bed, subtle natural shine (keratin sheen, not gloss varnish). The hand is the same hand — only better cared for. The change must be visible but never dramatic, never theatrical, never advertisement-style transformation.
+
+ACTION: Each half — at rest, observed honestly without staging. The proof is quiet.
+
+FRAMING: 50mm lens, 30° top-down view, hand centered horizontally in the right two-thirds of each half, wrist exiting consistently. Identical crop, identical hand position in both halves. Shallow depth of field, sharp focus on the nails and finger pads.
+
+LIGHTING: Soft morning side light from the left, diffused through linen curtain, IDENTICAL in both halves. Same shadow direction, same shadow softness, same color temperature. The lighting consistency is the credibility of the slide.
+
+PALETTE: Warm off-white paper. Soft natural skin tone. No accent in either half. Same color grade in both halves.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, no beauty retouching. Identical grade in both halves — same shooting day energy.
+
+MOOD: Quiet improvement, slow beauty, restrained proof — never an advertisement transformation.
+
+DO NOT INCLUDE: any text, captions, arrows, labels, before/after stamps, day numbers in the image; faces or arms above the wrist; jewelry; nail polish, gel, acrylic, French manicure, glitter, gloss varnish, painted look in either half; perfectly identical mannequin nails (must remain real, slightly imperfect even after 21 days); HDR; oversharpening; vibrant saturated colors; orientalist props; perfume-ad polish; harsh shadows or studio softboxes; any color shift between the two halves (white balance must be identical).

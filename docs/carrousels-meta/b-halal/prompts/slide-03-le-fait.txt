@@ -1,0 +1,25 @@
+# Image: slide-03-le-fait (Carousel B — Halal)
+# Path: /carrousels/b-halal/slide-03-le-fait.png
+# Format: 1080×1350 (4:5 vertical) — extreme macro single nail
+# Family: announcement / mechanism
+# Pair-with: continuity with slides 1-2
+
+FORMAT: 4:5 vertical, 1080×1350 px, extreme macro of a single nail. The nail occupies roughly the central horizontal third of the frame; the upper third and lower third are reserved for typography (headline above, three-line spec below).
+
+SCENE: An adult female finger and thumb visible only as soft out-of-focus shapes around the focal nail. Behind, a continuous warm off-white surface (linen or paper, ambiguous). Casablanca morning light from the upper left.
+
+SUBJECT: ONE nail, perfectly centered, in extreme macro 1:1 magnification. The nail is short to medium, oval, bare (no polish, no gloss). Surface displays the natural translucent keratin sheen — the kind of subtle nacre real nails have when healthy. A single clean droplet of pure water rests on the surface of the nail, perfectly still, not flattening, not running, capturing a tiny highlight of morning light. The droplet is small (about 2-3 mm), purposeful, almost reverent. The skin around the nail is real, with visible pores and a faint cuticle line.
+
+ACTION: A drop of water at rest on a bare nail. Time is suspended. The droplet does not bead-and-roll like on a varnished surface — it sits softly, slightly absorbed, suggesting permeability and contact between water and keratin.
+
+FRAMING: 100mm macro lens, near 1:1 magnification, eye-level direct angle, nail centered horizontally. Extremely shallow depth of field — only the nail surface and the droplet are sharply in focus, everything else dissolves. Tight crop but with enough breath to allow typography overlay above and below.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain. The droplet catches a single soft highlight on its upper-left edge — never specular, never harsh. The nail's natural sheen is present but matte, never glossy.
+
+PALETTE: Warm off-white background. Soft natural skin tone. The droplet a faint pale washed sky-blue tint catching the light. No other accent.
+
+STYLE: Editorial macro photography in the spirit of Aesop and clinical-but-elegant catalog work. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin and nail texture, no beauty retouching. The image must feel both intimate and true — almost scientific in its precision, but never sterile.
+
+MOOD: Reverent, precise, quiet. Water and keratin meeting honestly.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, signage; faces or arms above the wrist; jewelry, rings; nail polish, gel, acrylic, French manicure, glitter, gloss varnish, painted look — the surface MUST appear as bare keratin; perfectly identical mannequin nails (must remain real, slightly imperfect); HDR; oversharpening; plastic skin; vibrant saturated colors, neon; perfume-ad polish, halo, lens flare; bokeh balls; studio softbox reflections; orientalist props, mosques, prayer rugs, Quran, religious objects; multiple droplets, splashes, water rivulets — only one quiet droplet.

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="L'origine">
+  <defs>
+    <linearGradient id="g-origine.svg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F2E6D4"/>
+      <stop offset="1" stop-color="#C8A876"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="1200" fill="url(#g-origine.svg)"/>
+  <g stroke="#2C2A28" stroke-opacity="0.35" stroke-width="0.75" fill="none">
+    <path d="M120 880 C 280 820, 440 940, 600 870 S 880 760, 960 800"/>
+    <path d="M120 920 C 280 860, 440 980, 600 910 S 880 800, 960 840"/>
+  </g>
+  <text x="480" y="640" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="56" fill="#2C2A28" fill-opacity="0.55">L'origine</text>
+</svg>

@@ -1,0 +1,173 @@
+# Spec GTM FemiGlow — source de vérité pour le générateur
+#
+# À éditer pour : changer un Pixel ID, ajouter une conversion Ads,
+# ajouter une LUT par environnement, ajouter un trigger custom hors
+# event catalogue, ou ajouter un tag auxiliaire.
+#
+# Ne pas éditer pour : ajouter un event (passe par event-catalog.ts)
+# ou changer un mapping provider (passe par event-mapping.ts).
+
+account_id: '6000000000'
+container_id: '12345678'
+container_path: 'accounts/6000000000/containers/12345678'
+default_workspace_id: '5'
+
+# ────────────────────────────────────────────────────────────────────
+# Constantes
+# ────────────────────────────────────────────────────────────────────
+constants:
+  GA4_ID_PROD: 'G-XXXXXXX1'
+  GA4_ID_STAGE: 'G-XXXXXXX2'
+  GA4_ID_PREVIEW: 'G-XXXXXXX3'
+
+  META_PIXEL_ID_PROD: '11111111111'
+  META_PIXEL_ID_STAGE: '22222222222'
+  META_PIXEL_ID_PREVIEW: '33333333333'
+
+  TIKTOK_PIXEL_ID_PROD: 'CXXXXXXX'
+  SNAP_PIXEL_ID_PROD: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+  PIN_TAG_ID_PROD: '0123456789'
+
+  GOOGLE_ADS_CUSTOMER: '123-456-7890'
+  GOOGLE_ADS_CONV_PURCHASE: 'AW-XXX/abc123'
+  GOOGLE_ADS_CONV_LEAD: 'AW-XXX/def456'
+  GOOGLE_ADS_CONV_SIGNUP: 'AW-XXX/ghi789'
+  GOOGLE_ADS_CONV_INIT_CHECKOUT: 'AW-XXX/jkl000'
+
+  DEFAULT_CURRENCY: 'MAD'
+  COOKIE_DOMAIN: 'auto'
+  SCHEMA_VERSION: '1'
+
+# ────────────────────────────────────────────────────────────────────
+# Environnements
+# ────────────────────────────────────────────────────────────────────
+environments:
+  production:
+    hostname_match: ['femiglow.ma', 'www.femiglow.ma']
+    auth: 'ENV-LIVE'
+    enabled_providers: [google_ga4, meta, tiktok, snap, pinterest, google_ads]
+
+  stage:
+    hostname_match: ['stage.femiglow.ma']
+    auth: 'ENV-STAGE'
+    enabled_providers: [google_ga4]
+
+  preview:
+    hostname_match: ['*.vercel.app']
+    auth: 'ENV-PREVIEW'
+    enabled_providers: [google_ga4]
+
+  dev:
+    hostname_match: ['localhost', '127.0.0.1']
+    auth: 'ENV-DEV'
+    enabled_providers: []
+
+# ────────────────────────────────────────────────────────────────────
+# Custom dimensions GA4
+# ────────────────────────────────────────────────────────────────────
+custom_dimensions:
+  - { name: schema_version,    scope: event, source: 'DLV - schema_version' }
+  - { name: locale,            scope: user,  source: 'DLV - page.locale' }
+  - { name: environment,       scope: event, source: 'LUT - Environment' }
+  - { name: utm_source,        scope: event, source: 'URL - utm_source' }
+  - { name: utm_medium,        scope: event, source: 'URL - utm_medium' }
+  - { name: utm_campaign,      scope: event, source: 'URL - utm_campaign' }
+  - { name: event_id,          scope: event, source: 'DLV - event_id' }
+  - { name: page_type,         scope: event, source: 'RLT - Page Type by Path' }
+  - { name: funnel_step,       scope: event, source: 'RLT - Funnel Step by Event' }
+  # Chat — cf. docs/gtm/13-events-chat.md §8
+  - { name: chat_session_id,   scope: event, source: 'DLV - chat.session_id' }
+  - { name: chat_language,     scope: event, source: 'DLV - chat.language' }
+  - { name: chat_attributed,   scope: event, source: 'JS - Chat Attributed' }
+  - { name: chat_intent,       scope: event, source: 'DLV - chat.intent_dominant' }
+  - { name: chat_role,         scope: event, source: 'DLV - chat.role' }
+
+# ────────────────────────────────────────────────────────────────────
+# Consent Mode v2 — defaults
+# ────────────────────────────────────────────────────────────────────
+consent_mode:
+  defaults:
+    ad_storage: denied
+    analytics_storage: denied
+    ad_user_data: denied
+    ad_personalization: denied
+    functionality_storage: denied
+    personalization_storage: denied
+    security_storage: granted
+    wait_for_update: 500
+
+# ────────────────────────────────────────────────────────────────────
+# Triggers extra (hors event catalogue)
+# ────────────────────────────────────────────────────────────────────
+extra_triggers:
+  - id: PV_KIT_PAGE
+    type: pageview
+    name: 'PV — Kit Page'
+    conditions:
+      - var: 'DLV - page.path'
+        op: equals
+        value: '/kit'
+
+  - id: PV_PUBLIC_PAGES
+    type: pageview
+    name: 'PV — Public Pages'
+    conditions:
+      - var: 'DLV - page.path'
+        op: not_matches_regex
+        value: '^/admin'
+
+# ────────────────────────────────────────────────────────────────────
+# Tags extra (helpers, pas générés depuis catalogue)
+# ────────────────────────────────────────────────────────────────────
+extra_tags:
+  - id: AUX_PAGE_TYPE_PUSH
+    name: 'Aux JS — Page Type'
+    type: html
+    code: |
+      <script>
+      window.dataLayer.push({ page_type: '{{RLT - Page Type by Path}}' });
+      </script>
+    triggers: ['PV — All Pages']
+    priority: 75
+
+  - id: AUX_META_LDU_ON_DENIED
+    name: 'Aux JS — Meta LDU on Denied'
+    type: html
+    code: |
+      <script>
+      if ({{DLV - consent.ad_storage}} !== 'granted' && window.fbq) {
+        fbq('dataProcessingOptions', ['LDU'], 0, 0);
+      }
+      </script>
+    triggers: ['CE — fg_consent_change', 'PV — All Pages']
+    priority: 60
+
+  # Chat — signaux Meta (cf. 13-events-chat.md §7)
+  - id: META_CHAT_ENGAGEMENT
+    name: 'Meta Evt — Chat Engagement'
+    type: html
+    code: |
+      <script>
+      fbq('trackCustom', 'ChatEngagement', {
+        page_path: {{DLV - page.path}},
+        language: {{DLV - chat.language}},
+        chat_session_id: {{DLV - chat.session_id}}
+      }, { eventID: {{DLV - event_id}} });
+      </script>
+    triggers: ['CE — fg_chat_widget_open (first per session)']
+    setup_tag: 'Meta Init — production'
+    priority: 0
+
+  - id: META_CHAT_CONTACT
+    name: 'Meta Evt — Chat Contact'
+    type: html
+    code: |
+      <script>
+      fbq('track', 'Contact', {
+        content_name: 'chat_first_message',
+        language: {{DLV - chat.language}}
+      }, { eventID: {{DLV - event_id}} });
+      </script>
+    triggers: ['CE — fg_chat_message_sent (first user msg)']
+    setup_tag: 'Meta Init — production'
+    priority: 0

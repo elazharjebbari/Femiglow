@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Gouttes de pluie sur une fenêtre, plante en arrière-plan">
+  <defs>
+    <linearGradient id="g-pluie" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C5DBE5"/>
+      <stop offset="0.6" stop-color="#C5DBC4" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#2C2A28"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-pluie)"/>
+  <g fill="#FBF8F1" opacity="0.55">
+    <ellipse cx="240" cy="220" rx="14" ry="22"/>
+    <ellipse cx="380" cy="340" rx="10" ry="18"/>
+    <ellipse cx="520" cy="180" rx="12" ry="20"/>
+    <ellipse cx="680" cy="280" rx="9" ry="16"/>
+    <ellipse cx="820" cy="160" rx="14" ry="22"/>
+    <ellipse cx="980" cy="320" rx="10" ry="18"/>
+    <ellipse cx="1180" cy="220" rx="12" ry="20"/>
+    <ellipse cx="1340" cy="380" rx="10" ry="18"/>
+    <ellipse cx="320" cy="520" rx="11" ry="19"/>
+    <ellipse cx="600" cy="600" rx="12" ry="20"/>
+    <ellipse cx="900" cy="540" rx="10" ry="18"/>
+    <ellipse cx="1240" cy="620" rx="11" ry="19"/>
+  </g>
+  <path d="M1100 900 Q 1180 700 1300 720 Q 1420 740 1380 920 Z" fill="#C5DBC4" opacity="0.65"/>
+  <path d="M1080 920 Q 1140 800 1240 820 Q 1320 840 1340 940" fill="#7A8B6A" opacity="0.55"/>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.6">SAISON · PLUIE DE MARS</text>
+</svg>

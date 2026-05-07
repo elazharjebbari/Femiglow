@@ -1,0 +1,25 @@
+# Image: slide-08-cta (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-08-cta.png
+# Format: 1080×1350 (4:5 vertical)
+# Family: closing / packshot CTA
+# Pair-with: must mirror the spirit of /docs/images/values/kit/kit-principale.png — the conversion frame
+
+FORMAT: 4:5 vertical, 1080×1350 px, editorial closing packshot. Composition holds the kit centered slightly low, with abundant negative space above (room for the wordmark FemiGlow + headline) and a smaller band below (room for the offer line + URL).
+
+SCENE: A wide flat surface of warm off-white hand-made paper raised on a low cube of thick cream paper (about 2 cm tall) — a discreet plinth that elevates the kit. The cube edge is visible only as a soft shadow line. The room is implied: a north-facing Casablanca window provides the morning light.
+
+SUBJECT: The Kit Rituel d'Éclat — three frosted-glass jars aligned in a soft horizontal arc on the paper cube, central jar slightly closer to camera. All three jars have brushed champagne metal lids, matte (never shiny gold or chrome). Pale cream paper labels with no readable text — labels are present as material texture only. Jar contents visible through frosted glass: pale powder (left), translucent amber resin oil (center), dried sage-green herb (right). Heights staggered by 1-2 cm. The kit feels considered, complete, at rest, ready to be received.
+
+ACTION: The kit waits. Quietly. Whole.
+
+FRAMING: 50mm lens, eye-level slight high angle 20°, jars placed in the middle-lower third of the frame so that the upper third is reserved for typography. Shallow depth of field, sharp focus on the central jar, soft fall-off on the outer two. Tight enough to feel intimate, wide enough to leave room.
+
+LIGHTING: Soft diffuse studio-feel light from the upper left, mimicking morning side light through linen curtain. Gentle shadows fall to the right at 30°, casting a soft matte shadow under the cube plinth. Highlights on the frosted glass are matte, never specular.
+
+PALETTE: Warm off-white paper background. Frosted glass with subtle warm tint. Brushed champagne lids (never gold, never yellow). The earthen trinity of accents inside the jars: pale powder, translucent amber, muted sage. The image is calm, restrained, ready to carry typography overlay without competing with it.
+
+STYLE: Editorial packshot in the spirit of Aesop product catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain, honest material texture, no studio polish. Style and palette consistent with /docs/images/values/kit/kit-principale.png — closing the carousel exactly where the conversion happens on the website.
+
+MOOD: Restrained, considered, the kit at rest, the maison at the end of the story. A quiet invitation, never a sale.
+
+DO NOT INCLUDE: any text on the labels, watermarks, logos (the wordmark will be added in Figma overlay), brand names, signage; readable glyphs; reflective gold or chrome; pearlescent, glitter, gloss; HDR or oversharpening; vibrant saturated colors; perfume-ad glow, halo, lens flare; bokeh balls; studio softbox reflections; busy props; flowers, candles, food; orientalist patterns; commercial badges, sale stickers, ribbon, gift wrap.

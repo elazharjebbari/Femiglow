@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Bouteille d’huile d’argan ambrée sur fond crème">
+  <defs>
+    <radialGradient id="g-argan" cx="0.5" cy="0.4" r="0.95">
+      <stop offset="0" stop-color="#FBF8F1"/>
+      <stop offset="0.55" stop-color="#F2E6D4" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#2C2A28"/>
+    </radialGradient>
+    <linearGradient id="g-bottle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8A876"/>
+      <stop offset="0.55" stop-color="#9A7B4A"/>
+      <stop offset="1" stop-color="#5A4322"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-argan)"/>
+  <ellipse cx="800" cy="900" rx="280" ry="20" fill="#2C2A28" opacity="0.18"/>
+  <rect x="700" y="230" width="200" height="60" rx="6" fill="#2C2A28" opacity="0.85"/>
+  <rect x="710" y="285" width="180" height="40" rx="4" fill="#5A4322"/>
+  <path d="M 700 320 L 720 380 L 720 880 Q 720 920 800 920 Q 880 920 880 880 L 880 380 L 900 320 Z" fill="url(#g-bottle)"/>
+  <rect x="730" y="540" width="140" height="180" rx="4" fill="#FBF8F1" opacity="0.85"/>
+  <text x="800" y="610" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="24" fill="#2C2A28">argan</text>
+  <text x="800" y="650" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" letter-spacing="3" fill="#2C2A28" opacity="0.7">TIZNIT · MAROC</text>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#2C2A28" opacity="0.55">MATIÈRES · ARGAN</text>
+</svg>

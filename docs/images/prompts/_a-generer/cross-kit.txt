@@ -1,0 +1,26 @@
+# Image: cross-kit
+# Path: /maison/cross-kit.{avif,webp,png}
+# Pages: /maison (CrossLinkTriptyque, card 3) + menu Sommaire (vignette « Le kit »)
+# Ratio: 4:5 portrait, 800×1000 — must crop cleanly to 1:1 for the 88×88 menu thumbnail
+# Family: editorial / cross-link triptych
+# Pilote: NON — itérer après cross-rituel.txt avec consigne « style, palette, grain and lighting consistent with the previous image ».
+
+FORMAT: 4:5 vertical portrait, 800×1000 pixels. Used at large size on /maison and at 88×88 square crop in the menu — compose central subject inside a centered square so the 1:1 crop holds.
+
+SCENE: A piece of raw écru linen laid on a pale wood surface, photographed from above-front at 30°. On the linen, the three components of the FemiGlow kit aligned in a soft, slightly imperfect line: the "base" jar (frosted glass, off-white powder visible inside), the "fortifiant" jar (frosted glass, amber resin inside), and the ceramic file (matte sand-grey, unglazed). The three objects breathe — they are not packed tight, the linen folds frame them.
+
+SUBJECT: A still-life of the three objects of the kit, alive yet packshot-clean, treated as a triptych within the triptych.
+
+ACTION: At rest before the rituel. The objects have been laid out by hand, not arranged for the camera; one fold of the linen is slightly off-axis.
+
+FRAMING: 50mm lens, 25° high angle, three objects placed across the central horizontal third so a 1:1 crop captures all three. Shallow depth of field, sharp focus on the central jar's neck (fortifiant); the file and base soften at the edges. Generous negative space at the top of the frame (linen folds catching low light).
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, no direct sun, gentle shadow fall-off. Same temperature as cross-rituel.txt — keep the morning indoor warmth.
+
+PALETTE: Warm off-white linen, frosted glass (translucent dust-white), amber resin in the second jar (translucent honey, never gold), matte sand-grey ceramic file, pale wood underneath. Earthen, restrained.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop product catalogs. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible linen weave, frosted-glass texture, ceramic unglazed pores, honest matter. Same grade as cross-rituel and cross-journal — paper-and-linen surfaces, no glow, no perfume-ad gloss.
+
+MOOD: Slow, attentive, still. The trinity at rest, not theatrical, not glamorous. Restrained, unhurried, ritual.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, readable labels on the jars (must remain blank or near-illegible — pure object); people, hands, faces; studio backdrop, white seamless paper, photo-shoot equipment; shiny gold, chrome, polished glass, glitter, pearlescent finishes; HDR, oversharpening, plastic surfaces, perfume-ad halo, bokeh balls; vibrant saturated colors, neon, magenta, cyan; orientalist props (saturated zellige, lanterns); arranged-for-camera symmetry — the line must read slightly off-axis, like one object was just put down. Style, palette, grain and lighting consistent with the previous image (cross-rituel).

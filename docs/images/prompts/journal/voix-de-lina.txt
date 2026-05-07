@@ -1,0 +1,25 @@
+# Image: voix-de-lina
+# Path: /journal/voix-de-lina.{avif,webp}
+# Page: /journal (author byline portrait)
+# Ratio: 1:1 (480×480)
+# Family: portraits / editorial
+
+FORMAT: Square 1:1, 480×480 pixels, supportive byline image accompanying an article authored by Lina. Must pair with voix-d-amal and voix-de-sara — same lighting, same grain, same earthen palette.
+
+SCENE: A small wooden table, a hardback book closing under the gesture, a folded length of natural linen beside it, a small ceramic cup with cold mint tea. Casablanca interior, morning light.
+
+SUBJECT: Two adult female hands, both visible, in the act of gently closing a book. Real skin texture, warm hazelnut Moroccan complexion, ages 30 to 45, short oval natural nails, no polish. The motion of closing is soft, not abrupt.
+
+ACTION: The book is being closed slowly after a passage that mattered. The thought continues.
+
+FRAMING: 50mm lens, top-down 70° angle, book centered, hands on top of it, ceramic cup on the lower right corner. Shallow depth of field, sharp focus on the hands and book edge.
+
+LIGHTING: Soft morning side light from the left, diffused through linen curtain, identical to the other voix-de-* portraits.
+
+PALETTE: Warm wood tone, warm cream of the book pages, soft hazelnut skin, muted linen, off-white ceramic. Earthen and quiet.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper grain and skin texture visible. Same grade as voix-d-amal and voix-de-sara.
+
+MOOD: Author's reflection, the moment after reading, gentle authority of voice.
+
+DO NOT INCLUDE: any readable text on the book, watermarks, logos; faces or arms above the wrist; nail polish, gel, acrylic; jewelry; modern device; HDR; saturated colors; orientalist clichés.

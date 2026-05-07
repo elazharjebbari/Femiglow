@@ -1,0 +1,54 @@
+FemiGlow — Arborescence /admin
+==============================
+
+PUBLIC (pas de session requise)
+  /admin/login                          Formulaire de connexion
+
+PROTÉGÉ (session admin requise)
+  /admin                                → 302 vers /admin/dashboard
+  /admin/dashboard                      Vue d'ensemble (KPI + derniers leads)
+  /admin/leads                          Liste paginée filtrable
+  /admin/leads/[id]                     Détail d'un lead + timeline
+  /admin/leads/[id]/notes               (modal/section) ajout de note interne
+  /admin/webhooks                       Liste des destinations configurées
+  /admin/webhooks/new                   Création d'une nouvelle destination
+  /admin/webhooks/[id]                  Détail / édition d'une destination
+  /admin/webhooks/[id]/deliveries       Liste des livraisons pour cette destination
+  /admin/webhooks/[id]/deliveries/[did] (modal/expand) détail livraison
+  /admin/parametres                     (v1.1) compte admin, rotation secret
+  /admin/exports                        (v2) historique des exports CSV
+
+API PUBLIQUE (déjà existante, à étendre)
+  POST /api/contact                     ↳ INSERT lead + INSERT webhook_deliveries
+  POST /api/checkout                    ↳ INSERT lead + INSERT webhook_deliveries
+  POST /api/newsletter                  ↳ INSERT lead
+
+API ADMIN (session requise sauf cron)
+  POST   /api/admin/login                       Authentification
+  POST   /api/admin/logout                      Destruction de session
+  GET    /api/admin/leads                       Liste (export CSV via ?format=csv)
+  GET    /api/admin/leads/[id]                  Lecture détail
+  PATCH  /api/admin/leads/[id]/status           Changement statut
+  POST   /api/admin/leads/[id]/notes            Ajout note
+  DELETE /api/admin/leads/[id]                  Suppression (soft-delete)
+  GET    /api/admin/webhooks                    Liste endpoints
+  POST   /api/admin/webhooks                    Création endpoint
+  GET    /api/admin/webhooks/[id]               Lecture endpoint
+  PATCH  /api/admin/webhooks/[id]               Mise à jour endpoint
+  DELETE /api/admin/webhooks/[id]               Suppression endpoint
+  POST   /api/admin/webhooks/[id]/test          Envoi payload test
+  GET    /api/admin/webhooks/[id]/deliveries    Liste livraisons
+  POST   /api/admin/webhooks/deliveries/[id]/replay  Replay manuel
+
+API CRON (Bearer CRON_SECRET, pas de session)
+  POST   /api/admin/cron/webhook-tick           Tick périodique du worker
+
+Routes publiques inchangées
+  /                                     Home marketing
+  /rituel, /kit, /journal, /maison, /contact   Pages marketing
+  /panier, /merci                        Routes commerce
+  /commander                             Checkout standalone
+
+Profondeur maximale : 4 niveaux d'URL (/admin/webhooks/[id]/deliveries/[did]).
+Convention de redirection : / et /admin et /admin/login authentifié → /admin/dashboard.
+Convention 404 : page custom dans (admin)/not-found.tsx, sobre, lien retour /admin/dashboard.

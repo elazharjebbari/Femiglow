@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Le kit FemiGlow — base, fortifiant, lime">
+  <defs>
+    <linearGradient id="bg-kit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBF8F1"/>
+      <stop offset="100%" stop-color="#F2E6D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg-kit)"/>
+  <g fill="none" stroke="#7A8B6A" stroke-width="1" opacity="0.3">
+    <path d="M-50 510 C 240 450, 520 570, 820 490 S 1240 410, 1300 470"/>
+  </g>
+  <g transform="translate(360 360)">
+    <ellipse cx="0" cy="180" rx="120" ry="10" fill="#2C2A28" opacity="0.08"/>
+    <rect x="-60" y="-180" width="120" height="220" rx="10" fill="#C5DBC4"/>
+    <rect x="-30" y="-220" width="60" height="44" rx="4" fill="#2C2A28" opacity="0.85"/>
+  </g>
+  <g transform="translate(560 360)">
+    <ellipse cx="0" cy="180" rx="120" ry="10" fill="#2C2A28" opacity="0.08"/>
+    <rect x="-55" y="-200" width="110" height="240" rx="10" fill="#F2CECC"/>
+    <rect x="-32" y="-244" width="64" height="48" rx="4" fill="#C8A876"/>
+  </g>
+  <g transform="translate(760 360) rotate(-10)">
+    <ellipse cx="0" cy="180" rx="60" ry="8" fill="#2C2A28" opacity="0.08"/>
+    <rect x="-22" y="-220" width="44" height="440" rx="8" fill="#C8A876"/>
+    <rect x="-22" y="-220" width="44" height="240" rx="8" fill="#F4ECE0"/>
+  </g>
+  <g transform="translate(600 130)" text-anchor="middle">
+    <text font-family="Georgia, 'Cormorant Garamond', serif" font-style="italic" font-size="68" fill="#1A1A1A" font-weight="500">Le kit FemiGlow</text>
+    <text y="56" font-family="Inter, system-ui, sans-serif" font-size="20" letter-spacing="3.5" fill="#1A1A1A" opacity="0.65">TROIS GESTES · CINQ MINUTES · UNE SAISON</text>
+  </g>
+  <text x="600" y="600" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" letter-spacing="3" fill="#1A1A1A" opacity="0.5">320 MAD · LIVRAISON 48 H · CASABLANCA</text>
+</svg>

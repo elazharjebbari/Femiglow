@@ -1,0 +1,47 @@
+# Configuration gitleaks pour FemiGlow.
+# Référence : https://github.com/gitleaks/gitleaks
+# Lance localement via le hook husky `.husky/pre-commit` ou en CI dans
+# `.github/workflows/security.yml`.
+
+[extend]
+# On part des règles par défaut puis on ajoute les patterns FemiGlow.
+useDefault = true
+
+[[rules]]
+id = "femiglow-admin-session-password"
+description = "ADMIN_SESSION_PASSWORD plain"
+regex = '''ADMIN_SESSION_PASSWORD\s*=\s*["']?[A-Za-z0-9+/=]{32,}["']?'''
+tags = ["secret", "femiglow"]
+
+[[rules]]
+id = "femiglow-webhook-secret-key"
+description = "WEBHOOK_SECRET_KEY plain"
+regex = '''WEBHOOK_SECRET_KEY\s*=\s*["']?[A-Za-z0-9+/=]{32,}["']?'''
+tags = ["secret", "femiglow"]
+
+[[rules]]
+id = "femiglow-cron-secret"
+description = "CRON_SECRET plain"
+regex = '''CRON_SECRET\s*=\s*["']?[A-Za-z0-9+/=]{16,}["']?'''
+tags = ["secret", "femiglow"]
+
+[[rules]]
+id = "femiglow-database-url"
+description = "Postgres connection string with password"
+regex = '''postgres(?:ql)?://[^:\s]+:[^@\s]+@[^/\s]+'''
+tags = ["secret", "femiglow"]
+
+[allowlist]
+description = "Faux secrets utilisés dans la doc et les tests"
+paths = [
+  '''(.*?)(\.lock|\.lockb|pnpm-lock\.yaml)''',
+  '''docs/admin/specifications/.*\.md''',
+  '''.*/__fixtures__/.*''',
+  '''.*\.example$''',
+  '''\.gitleaks\.toml''',
+]
+regexes = [
+  '''USER:PASSWORD@ep-xxx''',
+  '''argon2id\$.*PASS''',
+  '''placeholder''',
+]

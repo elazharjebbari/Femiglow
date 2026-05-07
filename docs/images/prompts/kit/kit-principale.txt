@@ -1,0 +1,25 @@
+# Image: kit-principale
+# Path: /products/kit-principale.{avif,webp}
+# Page: /kit (hero packshot)
+# Ratio: 4:5 (800×1000)
+# Family: packshots
+
+FORMAT: 4:5 vertical portrait, 800×1000 pixels, primary product hero image. Editorial packshot.
+
+SCENE: A wide flat surface of warm off-white hand-made paper, slight texture and natural deckle edge visible at the bottom. Casablanca morning light. No props beyond the three jars themselves.
+
+SUBJECT: Three glass jars of the FemiGlow kit aligned in a soft arc, arranged in slight depth so the central one is closest to camera. All three frosted-glass jars with brushed champagne metal lids (matte, not shiny). Pale cream paper labels with no readable text — the labels are present as material texture only. Each jar holds a different content visible through frosted glass: a fine pale powder (left), a translucent amber resin oil (center), a dried sage-green herb (right). Heights staggered by 1-2 cm to create rhythm.
+
+ACTION: Quiet alignment, the three together, just before use. The kit as a trinity.
+
+FRAMING: 50mm lens, eye-level slight high angle 20°, jars centered horizontally, arranged on the lower-middle third of the frame, generous airy space above. Shallow depth of field, sharp focus on the central jar, soft fall-off on the outer two.
+
+LIGHTING: Soft diffuse studio-feel light from the upper left, mimicking morning side light through linen curtain. Gentle shadows fall to the right at 30°. Highlights on the frosted glass are matte, not specular.
+
+PALETTE: Warm off-white paper background, frosted glass with subtle warm tint, brushed champagne lids (never gold, never yellow, matte brushed metallic), pale fine powder (left), translucent amber (center), muted sage green (right). Earthen trinity of accents.
+
+STYLE: Editorial packshot in the spirit of Aesop product catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain, honest material texture, no studio polish.
+
+MOOD: Restrained, considered, the trinity at rest.
+
+DO NOT INCLUDE: any readable text on the labels, watermarks, logos, brand names, signage; reflective gold or chrome; pearlescent, glitter, gloss varnish on labels; HDR or oversharpening; vibrant saturated colors; perfume-ad glow, halo, lens flare; bokeh balls; studio softbox reflections; busy props in the background.

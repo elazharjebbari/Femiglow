@@ -1,0 +1,25 @@
+# Image: pluie-de-mars
+# Path: /journal/pluie-de-mars.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about March rain.
+
+SCENE: An interior view from inside the apartment toward a window, Casablanca March morning. Rain droplets cling to the glass and trace slow paths downward. Behind the glass, a soft-focus silhouette of a potted plant on the balcony.
+
+SUBJECT: The window glass with rain droplets is the subject — texture in foreground, blurred world beyond. A small ceramic cup with steaming herbal infusion sits on the inside windowsill, half visible at the bottom edge.
+
+ACTION: The rain falls slowly. The room is silent. The cup steams.
+
+FRAMING: 50mm lens, eye-level, window glass occupies most of the frame, plant silhouette in soft focus behind, cup on the lower edge. Sharp focus on the rain droplets and the cup rim.
+
+LIGHTING: Soft cool diffused daylight from the rainy outside, no direct sun, slight warm bias from a low table lamp inside on the right (out of frame). Gentle contrast between cool exterior and warm interior glow.
+
+PALETTE: Cool grey of the rainy sky, soft sage of the plant silhouette, warm cream ceramic of the cup, warm wood windowsill. Quiet, with a cool-warm dialogue.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, water droplet texture visible, ceramic glaze visible.
+
+MOOD: Slow rain, interiority, the season's pause.
+
+DO NOT INCLUDE: any text, watermarks, logos; people, hands, faces; bright artificial light; HDR; saturated colors; cliché urban rain (no neon reflection, no umbrella); perfume-ad glow.

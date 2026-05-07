@@ -1,0 +1,25 @@
+# Image: cinq-minutes-le-soir
+# Path: /journal/cinq-minutes-le-soir.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about the five-minute evening ritual.
+
+SCENE: A small corner of a wooden table after dinner, Casablanca apartment in the evening. A ceramic cup half-finished with herbal infusion, a folded napkin, an open small notebook with a closed pen on top, a low table lamp glowing warm just out of frame creating a pool of warm light.
+
+SUBJECT: The still-life arrangement itself — cup, napkin, notebook — speaks of pause. The day has ended, the body is preparing for the ritual.
+
+ACTION: The objects rest. The room has been used. The evening has begun.
+
+FRAMING: 50mm lens, eye-level slight high angle 20°, objects clustered in the lower two thirds, generous airy space above to suggest the room beyond. Shallow depth of field, sharp focus on the cup rim and notebook edge.
+
+LIGHTING: Warm low-angle table lamp light from the right, soft pool of glow on the table, gentle fall-off into shadow. The kind of evening light that invites slowness. No overhead light, no direct lamp visible.
+
+PALETTE: Warm wood tone, off-white napkin, soft amber lamp glow, deep warm shadow at the edges. Earthen and intimate.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper grain visible. Same grade as other journal articles.
+
+MOOD: Quiet evening, day ending, intimate domestic pause, the moment before the ritual.
+
+DO NOT INCLUDE: any text or readable writing in the notebook, watermarks, logos; people, hands, faces; bright overhead lighting; television or screen glow; studio backdrop; vibrant saturated colors; HDR; orientalist clichés; alcohol bottles, lit candles in the frame.

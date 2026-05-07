@@ -1,0 +1,25 @@
+# Image: kit-fortifiant
+# Path: /products/kit-fortifiant.{avif,webp}
+# Page: /kit (composition section, individual product)
+# Ratio: 1:1 (360×360)
+# Family: packshots
+
+FORMAT: Square 1:1, 360×360 pixels, individual product card. Must pair visually with kit-base and kit-lime — same lighting, same paper background, same grain.
+
+SCENE: A square section of warm off-white hand-made paper, slight texture, identical surface to the other kit cards.
+
+SUBJECT: A single frosted-glass jar with a brushed champagne matte lid, pale cream paper label without readable text. The jar holds a translucent amber-honey resin oil visible through the frosted glass, light catching gently in the depth of the liquid. Slight three-quarter angle so the lid and the cylindrical body both read.
+
+ACTION: At rest, isolated. The second object of the trinity, the warmest and most luminous.
+
+FRAMING: 50mm lens, eye-level slight high angle 20°, jar centered, generous breathing space around. Shallow depth of field, sharp focus on the label edge and the lid rim.
+
+LIGHTING: Soft diffuse light from the upper left, identical to kit-base, gentle shadow falling to the right at 30°. The amber content catches a single subtle highlight of warmth without becoming glossy.
+
+PALETTE: Warm off-white paper, frosted glass with warm tint, brushed champagne matte lid, translucent amber resin (honey-like, not orange, not yellow). Earthen tonality.
+
+STYLE: Editorial packshot in the spirit of Aesop product catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper grain visible, identical grade to kit-base and kit-lime.
+
+MOOD: Warm object presence, slow honey light, considered modesty.
+
+DO NOT INCLUDE: any readable text on the label, watermarks, logos, brand names; reflective gold or chrome; pearlescent, glitter, gloss varnish; bright orange or yellow saturation in the amber (must read as muted honey); HDR; perfume-ad glow, halo, lens flare; busy backgrounds.

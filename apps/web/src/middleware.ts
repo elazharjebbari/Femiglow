@@ -1,0 +1,114 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { decodeSession, SESSION_COOKIE } from '@/lib/auth/session';
+import { buildChatCspExtensions } from '@/lib/chat/csp';
+import { buildTrackingCspExtensions } from '@/lib/tracking/providers/csp';
+
+export const config = {
+  matcher: [
+    /*
+     * Toutes les routes sauf statiques Next.js et favicon.
+     * On applique CSP/HSTS partout, et l'auth uniquement sur /admin/*.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|webp|avif|svg|ico|woff2?)$).*)',
+  ],
+};
+
+const PUBLIC_ADMIN_PATHS = new Set<string>(['/admin/login']);
+
+function buildCsp(
+  nonce: string,
+  isDev: boolean,
+  opts?: { allowSelfFraming?: boolean },
+): string {
+  const trackingExtensions = buildTrackingCspExtensions();
+  const chatExtensions = buildChatCspExtensions();
+  const scriptHosts = trackingExtensions.scriptSrc.join(' ');
+  const connectHosts = [...trackingExtensions.connectSrc, ...chatExtensions.connectSrc]
+    .filter(Boolean)
+    .join(' ');
+  const scriptSrc = isDev
+    ? `'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' ${scriptHosts}`.trim()
+    : `'self' 'nonce-${nonce}' 'strict-dynamic' ${scriptHosts}`.trim();
+  const directives = [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' blob: https://*.public.blob.vercel-storage.com",
+    "font-src 'self' data:",
+    `connect-src 'self' https://*.sentry.io https://plausible.io ${connectHosts}`.trim(),
+    // Live preview admin : on tolère le framing same-origin pour la
+    // page `/admin/components/[key]/preview` (servie en iframe). Partout
+    // ailleurs on garde 'none' (durci par défaut).
+    opts?.allowSelfFraming ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+  ];
+  // En dev (HTTP localhost), `upgrade-insecure-requests` casse toutes les
+  // sous-ressources (assets, _next/*, /api/*) car le navigateur tente du HTTPS.
+  if (!isDev) directives.push('upgrade-insecure-requests');
+  return directives.join('; ');
+}
+
+function generateNonce(): string {
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  let bin = '';
+  for (const b of arr) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+  const isAdmin = pathname.startsWith('/admin');
+  const isAdminApi = pathname.startsWith('/api/admin');
+
+  if (isAdmin && !PUBLIC_ADMIN_PATHS.has(pathname)) {
+    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    let session = null;
+    try {
+      session = await decodeSession(token);
+    } catch {
+      session = null;
+    }
+    if (!session) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin/login';
+      url.searchParams.set('next', pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  const nonce = generateNonce();
+  const isDev = process.env.NODE_ENV !== 'production';
+  // Les routes admin de live-preview sont chargées en iframe par
+  // `/admin/components/[key]` → frame-ancestors 'self' + X-Frame-Options
+  // SAMEORIGIN. Partout ailleurs on garde le durcissement complet.
+  const isAdminPreview =
+    pathname.startsWith('/admin/components/') && pathname.endsWith('/preview');
+  const csp = buildCsp(nonce, isDev, { allowSelfFraming: isAdminPreview });
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('content-security-policy', csp);
+
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  res.headers.set('content-security-policy', csp);
+  // HSTS uniquement en prod : sur localhost HTTP en dev, le pin HSTS empêche
+  // ensuite tout accès non-TLS pendant la durée du max-age (2 ans).
+  if (!isDev) {
+    res.headers.set(
+      'strict-transport-security',
+      'max-age=63072000; includeSubDomains; preload',
+    );
+  }
+  res.headers.set('x-content-type-options', 'nosniff');
+  res.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  res.headers.set('x-frame-options', isAdminPreview ? 'SAMEORIGIN' : 'DENY');
+  if (isAdmin || isAdminApi) {
+    res.headers.set('x-robots-tag', 'noindex, nofollow');
+    res.headers.set('cache-control', 'no-store, max-age=0');
+  }
+  return res;
+}

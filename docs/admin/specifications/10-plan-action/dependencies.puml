@@ -1,0 +1,109 @@
+@startuml dependencies
+title Graphe de dépendances entre tâches atomiques (vue macro)
+
+skinparam roundCorner 6
+skinparam shadowing false
+skinparam ArrowColor #555
+skinparam rectangle {
+  BackgroundColor<<P1>> #e3f2fd
+  BackgroundColor<<P2>> #f3e5f5
+  BackgroundColor<<P3>> #fff3e0
+  BackgroundColor<<P4>> #e8f5e9
+  BackgroundColor<<P5>> #ffebee
+  BackgroundColor<<P6>> #fffde7
+  BorderColor #555
+}
+
+' ─── P1 Fondations ──────────────────────────────
+package "P1 — Fondations" {
+  rectangle "ADM-001\nMonorepo" as P1_001 <<P1>>
+  rectangle "ADM-002\nNext.js" as P1_002 <<P1>>
+  rectangle "ADM-003-008\nTS/lint/test/CI" as P1_setup <<P1>>
+  rectangle "ADM-009\nVercel" as P1_009 <<P1>>
+  rectangle "ADM-010\nNeon" as P1_010 <<P1>>
+  rectangle "ADM-011\nDrizzle" as P1_011 <<P1>>
+  rectangle "ADM-012-016\nSchéma DB" as P1_db <<P1>>
+  rectangle "ADM-017-020\nObservabilité" as P1_obs <<P1>>
+}
+
+P1_001 --> P1_002
+P1_002 --> P1_setup
+P1_002 --> P1_009
+P1_010 --> P1_011
+P1_011 --> P1_db
+P1_002 --> P1_obs
+P1_011 --> P1_obs
+
+' ─── P2 Auth + Leads ────────────────────────────
+package "P2 — Auth + Leads" {
+  rectangle "ADM-021-027\nLib auth" as P2_authlib <<P2>>
+  rectangle "ADM-028-030\nMiddleware + login UI" as P2_authui <<P2>>
+  rectangle "ADM-031-037\nQueries + listing leads" as P2_listing <<P2>>
+  rectangle "ADM-038-049\nDétail + transitions" as P2_detail <<P2>>
+  rectangle "ADM-050-057\nLayout admin" as P2_layout <<P2>>
+  rectangle "ADM-058-060\nHeaders sécu" as P2_sec <<P2>>
+}
+
+P1_obs --> P2_authlib
+P2_authlib --> P2_authui
+P2_authui --> P2_layout
+P2_authui --> P2_sec
+P1_db --> P2_listing
+P2_authui --> P2_listing
+P2_listing --> P2_detail
+P2_layout --> P2_detail
+
+' ─── P3 Webhooks ────────────────────────────────
+package "P3 — Webhooks" {
+  rectangle "ADM-061-065\nCrypto + anti-SSRF" as P3_crypto <<P3>>
+  rectangle "ADM-066-075\nCRUD endpoints UI" as P3_crud <<P3>>
+  rectangle "ADM-076-082\nEngine" as P3_engine <<P3>>
+  rectangle "ADM-083-087\nCron" as P3_cron <<P3>>
+  rectangle "ADM-088-095\nDeliveries UI + flow" as P3_deliv <<P3>>
+}
+
+P1_db --> P3_crypto
+P3_crypto --> P3_crud
+P3_crypto --> P3_engine
+P3_engine --> P3_cron
+P3_cron --> P3_deliv
+P3_crud --> P3_deliv
+P2_layout --> P3_crud
+
+' ─── P4 Tests + a11y ────────────────────────────
+package "P4 — Tests + a11y" {
+  rectangle "ADM-096-097\nMSW infra" as P4_msw <<P4>>
+  rectangle "ADM-098-105\nMSW scenarios" as P4_msw_sc <<P4>>
+  rectangle "ADM-106-109\nVitest libs" as P4_unit <<P4>>
+  rectangle "ADM-110-116\nE2E specs" as P4_e2e <<P4>>
+  rectangle "ADM-117-125\nA11y + perf" as P4_qual <<P4>>
+}
+
+P3_deliv --> P4_msw
+P4_msw --> P4_msw_sc
+P4_msw_sc --> P4_unit
+P3_deliv --> P4_e2e
+P4_e2e --> P4_qual
+
+' ─── P5 Hardening ───────────────────────────────
+package "P5 — Hardening" {
+  rectangle "ADM-126-129\nPen tests" as P5_pen <<P5>>
+  rectangle "ADM-130-132\nScan secrets/deps" as P5_scan <<P5>>
+  rectangle "ADM-133-140\nRotations + backups + docs" as P5_ops <<P5>>
+}
+
+P4_qual --> P5_pen
+P4_qual --> P5_scan
+P5_pen --> P5_ops
+P5_scan --> P5_ops
+
+' ─── P6 Go-live ─────────────────────────────────
+package "P6 — Go-live" {
+  rectangle "ADM-141-145\nValidations finales" as P6_val <<P6>>
+  rectangle "ADM-146-150\nFormation + bascule + suivi" as P6_launch <<P6>>
+}
+
+P5_ops --> P6_val
+P6_val --> P6_launch
+
+@enduml

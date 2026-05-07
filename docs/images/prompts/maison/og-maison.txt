@@ -1,0 +1,25 @@
+# Image: og-maison
+# Path: /og/maison.png
+# Page: /maison (Open Graph card for social sharing)
+# Ratio: 1.91:1 (1200×630)
+# Family: social
+
+FORMAT: 1.91:1 horizontal Open Graph card, exactly 1200×630 pixels, designed to receive a typographic title overlaid on the right two thirds — keep that area airy.
+
+SCENE: A landscape recropping of the maison-hero — the Casablanca atelier interior, but composed so the worktable and shelf occupy only the lower-left third, leaving the upper-right two thirds airy and quiet for typography.
+
+SUBJECT: The atelier itself, empty of people, the room as protagonist. Same atelier as maison-hero.
+
+ACTION: A pause. The room rests.
+
+FRAMING: 35mm lens, eye-level slight low angle 10°, subject tucked into the lower-left third, generous airy space on the upper right. Generous depth, balanced composition.
+
+LIGHTING: Soft morning side light from the right window (just outside the airy zone), diffused through linen curtain. Identical to maison-hero so the two read as one shoot.
+
+PALETTE: Warm pale plaster, warm wood, off-white linen, muted sand ceramics, soft warm shadow. Same grade as maison-hero.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, plaster texture and wood grain visible.
+
+MOOD: Real workshop, slow craft, the place exists.
+
+DO NOT INCLUDE: any text, watermarks, logos (text added later in design); people, hands, faces; modern industrial equipment; bright artificial light; HDR; saturated colors; orientalist clichés. The upper-right two thirds must remain quiet enough to host typography.

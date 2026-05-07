@@ -1,0 +1,25 @@
+# Image: slide-03-promesse (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-03-promesse.png
+# Format: 1080×1350 (4:5 vertical)
+# Family: still-life — three jars trinity
+# Pair-with: continuity of light and paper from slides 1-2; visual continuity with /docs/images/values/kit/kit-principale.png
+
+FORMAT: 4:5 vertical, 1080×1350 px, editorial still-life. Three jars arranged in a soft arc on the lower half of the frame; upper half is generous negative space (typography overlay zone for headline + supertitle).
+
+SCENE: A wide flat surface of warm off-white hand-made paper, slight deckle edge visible at the bottom. Same paper texture as slides 1-2. Casablanca morning light. No props beyond the three jars.
+
+SUBJECT: Three frosted-glass jars of the FemiGlow kit aligned in a soft horizontal arc, the central jar slightly closer to camera, outer two slightly behind. All three jars have brushed champagne metal lids, matte (never shiny gold or chrome). Pale cream paper labels with no readable text — labels are present as material texture only, no glyphs. Each jar holds a different content visible through the frosted glass: a fine pale powder (left jar — kaolin/bamboo feel), a translucent amber resin oil (center jar — pine resin / jojoba feel), a dried sage-green herb texture (right jar — herbarium feel). Heights staggered by 1-2 cm to create rhythm.
+
+ACTION: Quiet alignment. The three together, just before use. The kit as a trinity — at rest, anticipating.
+
+FRAMING: 50mm lens, eye-level slight high angle 20°, jars centered horizontally in the lower-middle third of the frame. Generous airy space above (top 50% of frame is paper). Shallow depth of field, sharp focus on the central jar, soft fall-off on the outer two.
+
+LIGHTING: Soft diffuse studio-feel light from the upper left, mimicking morning side light through linen curtain. Gentle shadows fall to the right at 30°. Highlights on the frosted glass are matte, not specular.
+
+PALETTE: Warm off-white paper background. Frosted glass with subtle warm tint. Brushed champagne lids (never gold, never yellow). Pale fine powder (left, kaolin tone). Translucent amber (center, honey tone). Muted sage green (right, herbarium tone). An earthen trinity of accents.
+
+STYLE: Editorial packshot in the spirit of Aesop product catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain, honest material texture, no studio polish. Style and palette consistent with /docs/images/values/kit/kit-principale.png — same shooting day energy.
+
+MOOD: Restrained, considered, the trinity at rest. A quiet promise.
+
+DO NOT INCLUDE: any readable text on the labels, watermarks, logos, brand names, signage, glyphs; reflective gold or chrome; pearlescent, glitter, gloss varnish on labels; HDR or oversharpening; vibrant saturated colors; perfume-ad glow, halo, lens flare; bokeh balls; studio softbox reflections; busy props in the background; orientalist patterns; flowers, candles, food.

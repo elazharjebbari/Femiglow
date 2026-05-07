@@ -1,0 +1,25 @@
+# Image: hands-sara-apres
+# Path: /testimonials/hands-sara-apres.{avif,webp}
+# Page: /kit (before/after testimonial, day 21)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, after-state. Must pair exactly with hands-sara-avant.
+
+SCENE: A square section of pale wood table surface, light oak with visible grain. Identical surface to the before image.
+
+SUBJECT: The exact same adult female hand as hands-sara-avant — deep warm brown skin tone, ages 25 to 40. Day 21 state — nails are healthier in a measured way: smoother surface with subtle natural shine, more even length and almond shape, cuticles soft and tidy, healthier translucent base at the nail bed. Believable, restrained improvement, no transformation.
+
+ACTION: At rest, the proof is quiet.
+
+FRAMING: 50mm lens, top-down 30° angle, identical crop and placement to hands-sara-avant. Shallow depth of field.
+
+LIGHTING: Soft morning side light from the left, identical to hands-sara-avant.
+
+PALETTE: Same as the before — warm wood tone, deep brown skin warmth. Same grade.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk and Aesop. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, no beauty retouching. Identical grade to hands-sara-avant.
+
+MOOD: Quiet improvement, slow beauty, dignified restraint.
+
+DO NOT INCLUDE: any text, watermarks, logos; faces or arms above the wrist; jewelry; nail polish, gel, acrylic, French manicure, glitter, gloss varnish; perfectly identical mannequin nails (must remain real and recognizable as the same hand); HDR; oversharpening; vibrant saturated colors; perfume-ad polish.

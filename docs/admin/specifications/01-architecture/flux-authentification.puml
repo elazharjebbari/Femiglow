@@ -1,0 +1,81 @@
+@startuml flux-authentification
+!theme plain
+title Flux — Authentification administrateur
+
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+actor Admin
+participant "Browser" as browser
+participant "Middleware" as mw
+participant "/admin/login" as page_login
+participant "/api/admin/login" as api_login
+participant "iron-session" as iron
+participant "argon2" as argon
+database "ENV vars\n(ADMIN_EMAIL,\nADMIN_PASSWORD_HASH)" as env
+database "Postgres" as pg
+
+== 1. Tentative d'accès direct ==
+
+Admin -> browser : GET /admin/dashboard
+browser -> mw : requête
+mw -> mw : lit cookie fg_admin_session
+alt session absente ou invalide
+  mw -> browser : 302 Location: /admin/login?next=/admin/dashboard
+  browser -> page_login : GET
+  page_login -> browser : HTML formulaire
+end
+
+== 2. Soumission du formulaire ==
+
+Admin -> browser : email + mot de passe
+browser -> api_login : POST { email, password }
+api_login -> api_login : Zod validate body
+api_login -> api_login : rate-limit IP (5/10min)
+
+alt rate limit dépassé
+  api_login -> browser : 429 Too Many Requests
+end
+
+api_login -> env : compare email
+alt email différent
+  api_login -> argon : argon2.verify(dummyHash, password) // timing-safe
+  api_login -> browser : 401 + délai constant
+end
+
+api_login -> argon : argon2.verify(ADMIN_PASSWORD_HASH, password)
+alt mot de passe incorrect
+  api_login -> browser : 401 + délai constant
+  note right : log "login_failed" dans Sentry
+end
+
+api_login -> iron : seal({ email, createdAt, expiresAt })
+iron -> api_login : encrypted blob
+api_login -> browser : Set-Cookie fg_admin_session=...; httpOnly; secure; sameSite=Strict
+api_login -> pg : INSERT admin_sessions_audit\n(action='login_success', ip, ua)
+api_login -> browser : 200 + redirect Location
+
+== 3. Accès protégé authentifié ==
+
+browser -> mw : GET /admin/dashboard\nCookie: fg_admin_session=...
+mw -> iron : unseal
+alt cookie expiré
+  mw -> browser : 302 /admin/login?next=...
+end
+iron -> mw : { email, expiresAt }
+mw -> mw : si expiresAt - now < 1j → renouvelle expiresAt
+mw -> page_login : pass-through
+page_login -> pg : SELECT (Drizzle, Server Component)
+page_login -> browser : HTML rendu
+
+== 4. Logout ==
+
+Admin -> browser : clic "Se déconnecter"
+browser -> api_login : POST /api/admin/logout
+api_login -> iron : destroy()
+api_login -> browser : Set-Cookie fg_admin_session=; Max-Age=0
+api_login -> pg : INSERT admin_sessions_audit\n(action='logout')
+api_login -> browser : 204 + redirect /admin/login
+
+@enduml

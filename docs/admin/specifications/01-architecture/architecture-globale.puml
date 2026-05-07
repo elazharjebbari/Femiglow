@@ -1,0 +1,68 @@
+@startuml architecture-globale
+!theme plain
+title FemiGlow — Architecture système (C4 niveau Container)
+
+skinparam roundCorner 8
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+actor "Visiteur public" as visitor #petale
+actor "Administratrice" as admin #ciel
+
+cloud "Vercel" as vercel {
+  component "apps/web\n(Next.js 14 App Router)" as web {
+    component "Pages publiques\n(marketing, commerce)" as pub_pages
+    component "Pages admin\n((admin) Server Components)" as adm_pages
+    component "API publique\n/api/contact, /api/checkout, /api/newsletter" as pub_api
+    component "API admin\n/api/admin/*" as adm_api
+    component "Middleware\n(garde /admin et /api/admin)" as mw
+    component "Cron handler\n/api/admin/cron/webhook-tick" as cron_handler
+  }
+  component "Vercel Cron\n(* * * * *)" as cron
+}
+
+database "Postgres (Neon)\neu-central-1" as pg {
+  rectangle "leads" as t_leads
+  rectangle "lead_events" as t_events
+  rectangle "webhook_endpoints" as t_endpoints
+  rectangle "webhook_deliveries" as t_deliveries
+  rectangle "admin_sessions_audit" as t_audit
+}
+
+cloud "Sentry\n(EU)" as sentry
+cloud "Serveur partenaire\n(CRM externe)" as partner
+
+visitor --> pub_pages : HTTPS\n(formulaire)
+visitor --> pub_api : POST contact / checkout / newsletter
+admin --> mw : HTTPS\n(GET /admin/*)
+mw --> adm_pages : si session valide
+mw --> adm_api : si session valide
+
+pub_api --> t_leads : INSERT lead
+pub_api --> t_deliveries : INSERT pending
+adm_pages --> pg : SELECT (Drizzle)
+adm_api --> pg : SELECT / UPDATE (Drizzle)
+
+cron --> cron_handler : POST + Bearer CRON_SECRET
+cron_handler --> t_deliveries : SELECT pending\nFOR UPDATE SKIP LOCKED
+cron_handler --> partner : POST signed payload\n(HMAC-SHA256)
+cron_handler --> t_deliveries : UPDATE status
+
+web --> sentry : errors, traces
+adm_api --> t_audit : INSERT audit log
+adm_api --> t_events : INSERT event
+
+note right of partner
+  Format JSON imposé.
+  Secret HMAC partagé,
+  validé côté receveur.
+end note
+
+note bottom of pg
+  Souveraineté UE,
+  backups quotidiens auto,
+  pgcrypto pour secrets.
+end note
+
+@enduml

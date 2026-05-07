@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="portrait" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8D4B0"/>
+      <stop offset="100%" stop-color="#B8956F"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1500" fill="url(#portrait)"/>
+  <g transform="translate(600 700)" opacity="0.6">
+    <ellipse cx="0" cy="0" rx="180" ry="220" fill="#d4a982"/>
+    <ellipse cx="0" cy="180" rx="220" ry="80" fill="#a07f5e"/>
+  </g>
+  <g transform="translate(600 1400)" text-anchor="middle" opacity="0.3">
+    <text font-family="Georgia, serif" font-style="italic" font-size="32" fill="#3a2818">portrait · placeholder</text>
+  </g>
+</svg>

@@ -1,0 +1,25 @@
+# Image: mains-yasmine
+# Path: /avis/mains-yasmine.{avif,webp}
+# Page: / (home, testimonials section, avis #3)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, testimonial thumbnail, must pair with mains-ines and mains-salma — identical lighting, identical grain, identical earthy palette.
+
+SCENE: A small section of pale wood table, light oak with visible grain, slightly worn. A corner of an open notebook just enters the frame at the top, blank page. Casablanca domestic interior.
+
+SUBJECT: One adult female hand, deep warm brown skin tone, ages 25 to 35, resting fingers half open on the wood. Nails short, almond-shaped, no polish, healthy keratin, naturally shiny without gloss, well-maintained cuticles. Real skin texture, fine lines, one thin silver ring at the index. Hand of someone careful with her body.
+
+ACTION: A pause between two gestures — perhaps just put the pen down. Quiet attention.
+
+FRAMING: 50mm lens, top-down 30° angle, hand placed on the lower left third, the notebook corner visible at top. Shallow depth of field, sharp focus on the nails, wood grain softly out of focus around.
+
+LIGHTING: Soft morning side light from the left, diffused through linen, identical to the other two testimonials so they read as one shoot taken the same morning.
+
+PALETTE: Warm wood tone, off-white paper, deep brown skin warmth, no other accent. Monochromatic and earthen.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, paper grain visible.
+
+MOOD: Quiet attention, contemplative, lived-in, calm dignity.
+
+DO NOT INCLUDE: any text, watermarks, logos, readable writing on the notebook; faces or arms beyond the wrist; nail polish, gel, acrylic, French manicure, glitter; shiny gold or chrome jewelry; studio backdrop; HDR; vibrant saturated colors; orientalist clichés.

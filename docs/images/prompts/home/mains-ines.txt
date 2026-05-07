@@ -1,0 +1,25 @@
+# Image: mains-ines
+# Path: /avis/mains-ines.{avif,webp}
+# Page: / (home, testimonials section, avis #1)
+# Ratio: 1:1 (360×360)
+# Family: testimonials
+
+FORMAT: Square 1:1, 360×360 pixels, used as a small testimonial thumbnail next to a quote.
+
+SCENE: A close domestic surface — a sheet of thick hand-made paper, slightly textured, off-white, lying on a wooden table. Late morning Casablanca interior.
+
+SUBJECT: One adult female hand, fair Mediterranean complexion, ages 30 to 40, resting palm-down on the paper. Short to medium nails, naturally shaped, no polish, healthy translucent pink at the tip, visible cuticles trimmed but not erased. Real skin texture, fine lines on the knuckles, one small freckle. Wedding ring not present.
+
+ACTION: At rest, after the ritual. A held stillness, the hand slightly relaxed, fingers softly spread.
+
+FRAMING: 50mm lens, 30° top-down view, hand centered, framed loosely so the wrist exits at the bottom edge. Shallow depth of field, sharp focus on the nails and finger pads, paper surface gently soft behind.
+
+LIGHTING: Soft morning side light from the left, diffused through linen curtain, no direct sun, gentle shadow under the palm.
+
+PALETTE: Warm off-white paper, deep ink black absent — use only earthy neutrals, light wood, soft skin tone. One barely visible dried rose petal note far in the corner.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, honest skin texture, no retouching.
+
+MOOD: Quiet stillness, intimate proof, restrained.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names; jewelry except small thin band optional; people, faces, arms beyond the wrist; studio backdrop; shiny nails or polish, French manicure, gel, acrylic, glitter; vibrant saturated colors; HDR or beauty retouch; orientalist props.

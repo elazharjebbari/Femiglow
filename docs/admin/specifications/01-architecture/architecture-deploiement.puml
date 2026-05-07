@@ -1,0 +1,64 @@
+@startuml architecture-deploiement
+!theme plain
+title FemiGlow — Topologie de déploiement
+
+skinparam backgroundColor #FAF7F2
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+node "Cloudflare DNS\n(femiglow.ma)" as dns
+node "Vercel Edge Network" as edge
+node "Vercel Functions\n(eu-fra1)" as fn {
+  artifact "apps/web\nNext.js bundle" as bundle
+}
+database "Neon Postgres\n(eu-central-1, Frankfurt)" as neon {
+  database "primary branch\n(prod)" as branch_prod
+  database "preview branches\n(per-PR)" as branch_pr
+}
+node "Vercel Cron\nScheduler" as cron
+cloud "Sentry\n(eu.sentry.io)" as sentry
+cloud "Partenaire CRM\n(URL configurable)" as partner
+
+actor "Visiteurs" as users
+actor "Admin" as admin
+
+users --> dns : femiglow.ma
+admin --> dns : femiglow.ma/admin
+
+dns --> edge : routage
+edge --> fn : invocations
+fn --> branch_prod : pooled connection\n(serverless driver)
+fn --> sentry : telemetry
+
+cron --> fn : POST /api/admin/cron/webhook-tick\n(Authorization: Bearer)
+fn --> partner : HTTPS\nPOST signed JSON
+
+note right of fn
+  Plan : Vercel Pro ($20/mois)
+  Région : Francfort (fra1)
+  Timeout function : 60s
+  ENV: DATABASE_URL,
+       IRON_SESSION_PASSWORD,
+       ADMIN_EMAIL,
+       ADMIN_PASSWORD_HASH,
+       CRON_SECRET,
+       WEBHOOK_MASTER_KEY,
+       SENTRY_DSN
+end note
+
+note left of neon
+  Plan : Free ou Launch ($19/mois)
+  Branche prod : auto-suspend
+  Branches preview : 1 par PR
+  Backups : 7 jours rolling
+  Compute : 0.25 CU
+end note
+
+note bottom of partner
+  Endpoint configuré dans
+  l'admin via webhook_endpoints.
+  Aucun lock-in sur un partenaire
+  spécifique.
+end note
+
+@enduml

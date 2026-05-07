@@ -1,0 +1,25 @@
+# Image: slide-01-cover (Carousel A — Santé)
+# Path: /carrousels/a-sante/slide-01-cover.png
+# Format: 1080×1350 (4:5 vertical Meta carousel)
+# Family: cover / hook
+# Pair-with: aucune (slide d'ouverture)
+
+FORMAT: 4:5 vertical, 1080×1350 px, Instagram and Facebook carousel cover image. Editorial composition with generous negative space at the top to allow typography overlay. The bottom 80px is a safe zone (Meta CTA bar will cover it).
+
+SCENE: A wide flat surface of warm hand-made paper, slight deckle texture and very fine grain visible. Casablanca morning light from a north-facing window, no direct sun. The room is implied, not seen — just the paper surface and the hand.
+
+SUBJECT: One adult female hand, age range 28 to 38, light to medium Mediterranean complexion, resting palm-down on the paper, fingers slightly relaxed and softly spread. Nails short to medium length, oval shape, completely bare — no polish, no gloss, no French manicure, no glitter. Real, lived-in skin texture: visible pores, soft cuticles, faint surface ridges on the nails, a small natural imperfection on one knuckle. The hand looks calm, not posed.
+
+ACTION: At rest. The hand is the subject; nothing happens. The viewer is invited to slow down and look.
+
+FRAMING: 50mm lens, slight high angle (about 25°), hand placed in the lower two-thirds of the frame so that the upper third is pure paper texture (room for headline). Shallow depth of field, sharp focus on the nails and finger pads. Wrist exits the frame to the right naturally, not centered.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain. Gentle shadow fall-off behind the hand, soft and short. Highlights on the nails are matte (natural keratin sheen), not specular.
+
+PALETTE: Warm off-white paper background (cream, hand-made paper feel). Soft natural skin tone. No accent color in this frame — purity sets the stage. The viewer's eye is held by the contrast between the soft surface and the honest skin.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine and Aesop product catalogs. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, visible paper grain, honest material texture, no studio polish.
+
+MOOD: Quiet, slow, contemplative, intimate. The kind of light that makes paper feel alive. No event — just presence.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names, signage, labels, captions; faces or arms above the wrist; jewelry, rings, bracelets; nail polish, gel, acrylic, French manicure, glitter, gloss varnish, painted look; perfectly identical mannequin nails (must remain real, slightly imperfect); HDR processing, oversharpening, plastic skin, beauty retouch; vibrant saturated colors, neon, magenta, cyan; orientalist props, zellige, lanterns, kaftans; studio backdrops, white seamless paper, photo equipment; flat lay clutter; flowers, candles, food unless explicitly part of the subject (here, none).

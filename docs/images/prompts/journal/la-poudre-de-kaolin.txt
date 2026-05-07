@@ -1,0 +1,25 @@
+# Image: la-poudre-de-kaolin
+# Path: /journal/la-poudre-de-kaolin.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:5 (640×800)
+# Family: editorial / journal
+
+FORMAT: 4:5 vertical portrait, 640×800 pixels, featured image of a journal article about kaolin clay powder.
+
+SCENE: A small workshop surface — pale unglazed ceramic dish on warm off-white hand-made paper, with a fine pale clay powder partly inside the dish and partly spilled on the paper, tracing a soft circular trail.
+
+SUBJECT: The kaolin clay powder itself, in two states — contained in the dish and exploring the paper outside it. A small hand-carved wooden spoon rests beside the dish, half buried in the powder.
+
+ACTION: Just after a gesture of exploration — the powder has been moved, examined, traced with the spoon. The trace remains.
+
+FRAMING: 50mm lens, top-down 80° overhead view (flat lay), dish on the upper-left third, powder trail leading toward the lower-right. Shallow depth of field, sharp focus on the dish rim and the powder texture.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, gentle shadow on the powder revealing its fine grain.
+
+PALETTE: Warm off-white paper, pale unglazed ceramic, fine pale grey-white clay powder, warm wood spoon. Almost monochromatic, very quiet.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper grain and powder grain both visible.
+
+MOOD: Material curiosity, raw ingredient, gesture of exploration.
+
+DO NOT INCLUDE: any text, watermarks, logos; people, hands, faces; saturated white seamless background; HDR; vibrant colors; modern packaging; perfume-ad glow.

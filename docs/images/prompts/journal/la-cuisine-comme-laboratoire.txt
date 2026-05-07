@@ -1,0 +1,25 @@
+# Image: la-cuisine-comme-laboratoire
+# Path: /journal/la-cuisine-comme-laboratoire.{avif,webp}
+# Page: /journal (article featured image)
+# Ratio: 4:3 (800×600)
+# Family: editorial / journal
+
+FORMAT: 4:3 landscape, 800×600 pixels, featured image of a journal article about the kitchen as a laboratory of domestic beauty.
+
+SCENE: A wooden kitchen worktop, lived-in, with a small brass scale, three open ceramic pots holding spices and seeds (cumin, dried rose petals, coarse salt), a glass beaker with mint sprigs, a folded cotton towel, an old stoneware mortar with pestle. Casablanca apartment in mid-morning.
+
+SUBJECT: The arrangement itself reads as a laboratory of the senses — instruments and ingredients on the same surface, the kitchen revealed as a place of slow research.
+
+ACTION: At rest between two preparations. Tools open, ready.
+
+FRAMING: 50mm lens, top-down 60° angle, objects loosely clustered, scale on the upper right, mortar on the lower left, pots in between. Shallow depth of field, sharp focus on the scale needle and pot rims.
+
+LIGHTING: Soft morning side light from the upper left, diffused through linen curtain, gentle warm glow on the brass scale.
+
+PALETTE: Warm wood tone, off-white ceramic, brushed brass on the scale, soft sage of the mint, dried rose petal accent, earthen sand of the spices.
+
+STYLE: Editorial still-life photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, wood grain and ceramic glaze visible.
+
+MOOD: Slow research, the kitchen as workshop, considered domesticity.
+
+DO NOT INCLUDE: any text, watermarks, logos, readable labels on pots; modern industrial packaging; bright stainless steel or chrome appliances; people, hands, faces; HDR; saturated colors; orientalist props (no oversaturated tagine, no zellige).

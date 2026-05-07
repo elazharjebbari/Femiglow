@@ -1,0 +1,25 @@
+# Image: kit-lime
+# Path: /products/kit-lime.{avif,webp}
+# Page: /kit (composition section, individual product)
+# Ratio: 1:1 (360×360)
+# Family: packshots
+
+FORMAT: Square 1:1, 360×360 pixels, individual product card. Must pair with kit-base and kit-fortifiant — same lighting, same paper background, same grain.
+
+SCENE: A square section of off-white linen napkin laid flat, slight wrinkles visible, identical fabric tone to the broader kit composition.
+
+SUBJECT: A single hand-shaped ceramic nail file laid diagonally across the linen. The file is matte unglazed ceramic in a soft sand tone, slim, elegant, with a subtle slope at one end. No printing on the surface. It reads as a deliberate craft object, not a hardware tool.
+
+ACTION: At rest on linen, ready to be picked up. An instrument, not a tool.
+
+FRAMING: 50mm lens, top-down 80° overhead view, file placed diagonally from upper-left to lower-right, occupying the central diagonal third. Generous airy space at the corners. Shallow depth of field, sharp focus on the central section of the file.
+
+LIGHTING: Soft diffuse light from the upper left, identical to kit-base and kit-fortifiant, gentle shadow falling to the right at 30°. The matte ceramic catches a single soft highlight without becoming reflective.
+
+PALETTE: Warm off-white linen, muted sand ceramic, deeper natural shadow under the file. Monochromatic earthen tonality.
+
+STYLE: Editorial packshot in the spirit of Aesop product catalog. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, linen weave visible, honest matte ceramic texture, identical grade to kit-base and kit-fortifiant.
+
+MOOD: Quiet craft object, instrument at rest.
+
+DO NOT INCLUDE: any text, watermarks, logos, brand names; metal nail file appearance, glass file appearance; emery board appearance; reflective coating, glitter, gloss; HDR; vibrant saturated colors; perfume-ad glow; busy backgrounds; sandpaper texture (must read as smooth fine ceramic).

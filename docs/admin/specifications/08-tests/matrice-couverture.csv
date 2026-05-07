@@ -1,0 +1,59 @@
+id,domaine,fonctionnalite,unit,msw,e2e,a11y
+F-AUTH-01,auth,Login form valide,LoginForm.test.tsx,scenario-login-success,e2e/login.spec.ts,jest-axe
+F-AUTH-02,auth,Login mot de passe invalide,LoginForm.test.tsx,scenario-login-failure,e2e/login.spec.ts,jest-axe
+F-AUTH-03,auth,Login rate-limited,LoginForm.test.tsx,scenario-login-rate-limit,e2e/login-rate-limit.spec.ts,jest-axe
+F-AUTH-04,auth,Session expiree,useSession.test.tsx,scenario-session-expired,e2e/session-timeout.spec.ts,n/a
+F-AUTH-05,auth,Logout,LogoutButton.test.tsx,scenario-logout,e2e/logout.spec.ts,jest-axe
+F-AUTH-06,auth,Redirect non-authentifie vers login,middleware.test.ts,n/a,e2e/middleware-redirect.spec.ts,n/a
+F-AUTH-07,auth,Redirect deja authentifie depuis login,middleware.test.ts,n/a,e2e/middleware-redirect.spec.ts,n/a
+F-AUTH-08,auth,Honor next param redirect securise,redirect.test.ts,n/a,e2e/login-redirect-next.spec.ts,n/a
+F-DASH-01,dashboard,Affichage 3 KPI,KPICards.test.tsx,n/a (lecture serveur),e2e/dashboard.spec.ts,jest-axe
+F-DASH-02,dashboard,Streaming Suspense skeletons,RecentLeads.test.tsx,n/a,e2e/dashboard-streaming.spec.ts,jest-axe
+F-DASH-03,dashboard,Click KPI navigation filtree,KPICards.test.tsx,n/a,e2e/dashboard.spec.ts,jest-axe
+F-LEADS-01,leads,Liste leads paginee,LeadTable.test.tsx,scenario-leads-list,e2e/leads.spec.ts,jest-axe
+F-LEADS-02,leads,Filtres URL synchronises,LeadFilters.test.tsx,scenario-leads-filters,e2e/leads.spec.ts,jest-axe
+F-LEADS-03,leads,Pagination cursor next/prev,Pagination.test.tsx,scenario-leads-pagination,e2e/leads.spec.ts,jest-axe
+F-LEADS-04,leads,Recherche debounced,LeadFilters.test.tsx,scenario-leads-search,e2e/leads.spec.ts,jest-axe
+F-LEADS-05,leads,Empty state filtres,LeadTable.test.tsx,scenario-leads-empty,e2e/leads.spec.ts,jest-axe
+F-LEADS-06,leads,Export CSV,ExportButton.test.tsx,scenario-leads-export-csv,e2e/leads-export.spec.ts,jest-axe
+F-LEADS-07,leads-detail,Affichage detail complet,LeadDetail.test.tsx,scenario-lead-detail-load,e2e/lead-detail.spec.ts,jest-axe
+F-LEADS-08,leads-detail,Changement statut optimistic,StatusMenu.test.tsx,scenario-lead-status-change,e2e/lead-detail.spec.ts,jest-axe
+F-LEADS-09,leads-detail,Conflit transition statut,StatusMenu.test.tsx,scenario-lead-status-conflict,e2e/lead-detail.spec.ts,jest-axe
+F-LEADS-10,leads-detail,Ajout note,NoteForm.test.tsx,scenario-lead-note-add,e2e/lead-detail.spec.ts,jest-axe
+F-LEADS-11,leads-detail,Lead introuvable 404,n/a,n/a,e2e/lead-detail-404.spec.ts,jest-axe
+F-WH-01,webhooks,Liste endpoints,WebhooksTable.test.tsx,scenario-webhooks-list,e2e/webhooks-list.spec.ts,jest-axe
+F-WH-02,webhooks,Toggle actif/inactif,WebhookToggle.test.tsx,scenario-webhooks-toggle,e2e/webhooks-list.spec.ts,jest-axe
+F-WH-03,webhooks,Suppression endpoint,DeleteWebhookDialog.test.tsx,scenario-webhooks-delete,e2e/webhooks-list.spec.ts,jest-axe
+F-WH-04,webhooks,Creation endpoint,WebhookForm.test.tsx,scenario-webhook-create,e2e/webhook-form.spec.ts,jest-axe
+F-WH-05,webhooks,Edition endpoint,WebhookForm.test.tsx,scenario-webhook-edit,e2e/webhook-form.spec.ts,jest-axe
+F-WH-06,webhooks,Conflit URL existante,WebhookForm.test.tsx,scenario-webhook-conflict,e2e/webhook-form.spec.ts,jest-axe
+F-WH-07,webhooks,Test endpoint,TestButton.test.tsx,scenario-webhook-test,e2e/webhook-form.spec.ts,jest-axe
+F-WH-08,webhooks,Rotation secret,RotateSecretButton.test.tsx,scenario-webhook-rotate,e2e/webhook-form.spec.ts,jest-axe
+F-DEL-01,deliveries,Liste livraisons,DeliveriesTable.test.tsx,scenario-deliveries-list,e2e/webhook-deliveries.spec.ts,jest-axe
+F-DEL-02,deliveries,Filtre statut,DeliveriesTable.test.tsx,scenario-deliveries-filter,e2e/webhook-deliveries.spec.ts,jest-axe
+F-DEL-03,deliveries,Drawer detail,DeliveryDrawer.test.tsx,scenario-delivery-detail,e2e/webhook-deliveries.spec.ts,jest-axe
+F-DEL-04,deliveries,Renvoyer livraison,RetryButton.test.tsx,scenario-delivery-retry,e2e/webhook-deliveries.spec.ts,jest-axe
+F-DEL-05,deliveries,Conflit retry sur delivered,RetryButton.test.tsx,scenario-delivery-retry-conflict,e2e/webhook-deliveries.spec.ts,jest-axe
+F-WHFLOW-01,webhook-engine,Delivery succes premiere tentative,attempt-delivery.test.ts,scenario-delivery-success,e2e/webhook-flow.spec.ts,n/a
+F-WHFLOW-02,webhook-engine,Delivery retry apres 5xx,attempt-delivery.test.ts,scenario-delivery-5xx,e2e/webhook-flow.spec.ts,n/a
+F-WHFLOW-03,webhook-engine,Delivery retry apres timeout,attempt-delivery.test.ts,scenario-delivery-timeout,e2e/webhook-flow.spec.ts,n/a
+F-WHFLOW-04,webhook-engine,Delivery 4xx considere comme echec,attempt-delivery.test.ts,scenario-delivery-4xx,e2e/webhook-flow.spec.ts,n/a
+F-WHFLOW-05,webhook-engine,Dead letter apres max attempts,attempt-delivery.test.ts,scenario-delivery-final-fail,e2e/webhook-flow.spec.ts,n/a
+F-WHFLOW-06,webhook-engine,Replay manuel reset attempt,dispatch.test.ts,scenario-delivery-replay,e2e/webhook-flow.spec.ts,n/a
+F-CRON-01,cron,Tick batch normal,cron-tick.test.ts,scenario-cron-tick-batch,e2e/cron-flow.spec.ts,n/a
+F-CRON-02,cron,Tick file vide,cron-tick.test.ts,scenario-cron-tick-empty,n/a,n/a
+F-CRON-03,cron,Tick non autorise,cron-tick.test.ts,scenario-cron-tick-unauthorized,n/a,n/a
+F-PUB-01,public,Form contact valide,ContactForm.test.tsx,scenario-public-contact,e2e/public-forms.spec.ts,jest-axe
+F-PUB-02,public,Form order valide,OrderForm.test.tsx,scenario-public-order,e2e/public-forms.spec.ts,jest-axe
+F-PUB-03,public,Form newsletter valide,NewsletterForm.test.tsx,scenario-public-newsletter,e2e/public-forms.spec.ts,jest-axe
+F-PUB-04,public,Form sans consentement refuse,ContactForm.test.tsx,scenario-public-no-consent,e2e/public-forms.spec.ts,jest-axe
+F-PUB-05,public,Rate limit form,n/a,scenario-public-rate-limit,e2e/public-forms-rate-limit.spec.ts,n/a
+F-SEC-01,securite,Headers HTTP strict,n/a,n/a,e2e/security-headers.spec.ts,n/a
+F-SEC-02,securite,CSP appliquee,n/a,n/a,e2e/csp.spec.ts,n/a
+F-SEC-03,securite,Cookie HttpOnly,n/a,n/a,e2e/cookie-flags.spec.ts,n/a
+F-SEC-04,securite,Validation URL anti-SSRF,webhook-schema.test.ts,n/a,n/a,n/a
+F-SEC-05,securite,Audit trail mutation,audit.test.ts,n/a,n/a,n/a
+F-A11Y-01,a11y,Focus visible partout,n/a,n/a,e2e/a11y-focus.spec.ts,manual
+F-A11Y-02,a11y,Skip link,n/a,n/a,e2e/a11y-skip-link.spec.ts,manual
+F-A11Y-03,a11y,Contraste texte,n/a,n/a,e2e/a11y-contrast.spec.ts,axe
+F-A11Y-04,a11y,ARIA attribuee correctement,components/* tests,n/a,e2e/a11y-aria.spec.ts,axe

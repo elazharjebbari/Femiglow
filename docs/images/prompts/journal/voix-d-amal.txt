@@ -1,0 +1,25 @@
+# Image: voix-d-amal
+# Path: /journal/voix-d-amal.{avif,webp}
+# Page: /journal (author byline portrait)
+# Ratio: 1:1 (480×480)
+# Family: portraits / editorial
+
+FORMAT: Square 1:1, 480×480 pixels, supportive byline image accompanying an article authored by Amal. Must visually pair with voix-de-lina and voix-de-sara — same lighting, same grain, same earthen palette.
+
+SCENE: A small wooden table, a ceramic cup of mint tea, an open notebook with handwritten notes (text not readable), an open bottle of black ink, a fountain pen. Casablanca interior, morning light.
+
+SUBJECT: One adult female hand resting next to the notebook, holding the pen relaxed but not writing. Real skin texture, fair Mediterranean complexion, ages 30 to 45, short oval natural nails, no polish. The other hand gently around the tea cup just out of frame.
+
+ACTION: The pause between two sentences. Listening to oneself before writing.
+
+FRAMING: 50mm lens, top-down 60° angle, hand on the right third, notebook centered, ink and pen on the left. Shallow depth of field, sharp focus on the hand and pen tip.
+
+LIGHTING: Soft morning side light from the left, diffused through linen curtain, identical to the other voix-de-* portraits.
+
+PALETTE: Warm wood tone, off-white paper, deep ink black on the notebook (illegible), warm cream ceramic, soft skin tone. Earthen and quiet.
+
+STYLE: Editorial documentary photography in the spirit of Kinfolk magazine. Natural unretouched film aesthetic, subtle Kodak Portra 400 grain, paper grain and skin texture visible. Same grade as voix-de-lina and voix-de-sara.
+
+MOOD: Author's pause, listening to oneself, gentle authority of voice.
+
+DO NOT INCLUDE: any readable text, watermarks, logos; faces or arms above the wrist; nail polish, gel, acrylic; modern keyboard or laptop; HDR; saturated colors; orientalist clichés.

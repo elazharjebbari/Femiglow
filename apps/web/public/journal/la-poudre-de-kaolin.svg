@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Poudre de kaolin blanche dans un bol en céramique">
+  <defs>
+    <radialGradient id="g-kaolin" cx="0.5" cy="0.4" r="0.95">
+      <stop offset="0" stop-color="#FBF8F1"/>
+      <stop offset="0.55" stop-color="#F2E6D4" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#2C2A28"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g-kaolin)"/>
+  <ellipse cx="800" cy="640" rx="320" ry="60" fill="#2C2A28" opacity="0.18"/>
+  <path d="M 480 540 Q 480 760 800 760 Q 1120 760 1120 540 Z" fill="#C8A876" opacity="0.7"/>
+  <ellipse cx="800" cy="540" rx="320" ry="50" fill="#FBF8F1"/>
+  <ellipse cx="800" cy="538" rx="280" ry="40" fill="#FFFFFF" opacity="0.75"/>
+  <ellipse cx="760" cy="528" rx="180" ry="20" fill="#FFFFFF"/>
+  <text x="800" y="990" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#FBF8F1" opacity="0.6">MATIÈRES · KAOLIN</text>
+</svg>

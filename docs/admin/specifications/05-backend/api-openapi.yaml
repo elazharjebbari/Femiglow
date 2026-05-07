@@ -1,0 +1,576 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow Admin API
+  version: 1.0.0
+  description: |
+    Contrat exhaustif des routes `/api/admin/*` et `/api/cron/*`.
+    Toutes les routes JSON renvoient `Cache-Control: no-store`.
+  contact:
+    name: Élazhar Jebbari
+    email: elazhar.jebbari@gmail.com
+
+servers:
+  - url: https://femiglow.ma
+    description: Production
+  - url: http://localhost:3000
+    description: Développement local
+
+tags:
+  - name: auth
+  - name: leads
+  - name: webhooks
+  - name: deliveries
+  - name: kpi
+  - name: cron
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: femiglow.admin.session
+    cronBearer:
+      type: http
+      scheme: bearer
+
+  parameters:
+    leadId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9]{24}$' }
+    webhookId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9]{24}$' }
+    deliveryId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9]{24}$' }
+    cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum:
+            - unauthorized
+            - forbidden
+            - not_found
+            - validation_failed
+            - rate_limited
+            - conflict
+            - endpoint_unreachable
+            - persistence_unavailable
+            - internal_error
+        issues:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: array, items: { type: string } }
+              message: { type: string }
+
+    LeadStatus:
+      type: string
+      enum: [new, in_progress, won, lost, spam]
+
+    LeadType:
+      type: string
+      enum: [contact, order, newsletter, b2b]
+
+    Lead:
+      type: object
+      required: [id, type, status, fullName, email, createdAt]
+      properties:
+        id: { type: string }
+        type: { $ref: '#/components/schemas/LeadType' }
+        status: { $ref: '#/components/schemas/LeadStatus' }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        source: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    LeadEvent:
+      type: object
+      required: [id, leadId, type, createdAt]
+      properties:
+        id: { type: string }
+        leadId: { type: string }
+        type:
+          type: string
+          enum: [created, status_change, note_added, webhook_sent, webhook_failed]
+        actor: { type: string, nullable: true }
+        meta:
+          type: object
+          additionalProperties: true
+        body: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    EventName:
+      type: string
+      enum:
+        - lead.created
+        - order.created
+        - order.paid
+        - newsletter.subscribed
+        - b2b.requested
+        - webhook.test
+
+    WebhookEndpointInput:
+      type: object
+      required: [name, url, events]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        url: { type: string, format: uri }
+        events:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/EventName' }
+        description: { type: string, maxLength: 500, nullable: true }
+        customHeaders:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            required: [key, value]
+            properties:
+              key: { type: string, pattern: '^[A-Za-z0-9-]+$' }
+              value: { type: string, maxLength: 200 }
+        active: { type: boolean, default: true }
+
+    WebhookEndpoint:
+      allOf:
+        - $ref: '#/components/schemas/WebhookEndpointInput'
+        - type: object
+          required: [id, createdAt]
+          properties:
+            id: { type: string }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+            stats:
+              type: object
+              properties:
+                deliveries24h: { type: integer }
+                failures24h: { type: integer }
+                lastSuccessAt: { type: string, format: date-time, nullable: true }
+
+    WebhookDelivery:
+      type: object
+      required: [id, endpointId, eventName, status, attempt]
+      properties:
+        id: { type: string }
+        endpointId: { type: string }
+        eventName: { $ref: '#/components/schemas/EventName' }
+        status: { type: string, enum: [pending, delivered, failed, dead] }
+        attempt: { type: integer, minimum: 0 }
+        maxAttempts: { type: integer }
+        scheduledAt: { type: string, format: date-time }
+        lastAttemptAt: { type: string, format: date-time, nullable: true }
+        nextAttemptAt: { type: string, format: date-time, nullable: true }
+        httpStatus: { type: integer, nullable: true }
+        durationMs: { type: integer, nullable: true }
+        responseBody: { type: string, nullable: true }
+        idempotencyKey: { type: string }
+        signature: { type: string }
+        payload: { type: object, additionalProperties: true }
+
+  responses:
+    Unauthorized:
+      description: Session manquante ou expirée.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Ressource inexistante.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Body invalide.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /api/admin/login:
+    post:
+      tags: [auth]
+      summary: Authentification admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+      responses:
+        '200':
+          description: Session créée.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  redirect: { type: string }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: Identifiants invalides.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '429':
+          description: Rate limit atteint.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/admin/logout:
+    post:
+      tags: [auth]
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200': { description: Session détruite. }
+
+  /api/admin/session:
+    get:
+      tags: [auth]
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: État de la session.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      email: { type: string }
+                      name: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/admin/leads:
+    get:
+      tags: [leads]
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/LeadType' }
+        - name: status
+          in: query
+          schema: { type: string, description: 'CSV de LeadStatus' }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: city
+          in: query
+          schema: { type: string }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 80 }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, total] }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+        - { $ref: '#/components/parameters/cursor' }
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, csv] }
+      responses:
+        '200':
+          description: Liste paginée.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Lead' }
+                  nextCursor: { type: string, nullable: true }
+                  total: { type: integer }
+            text/csv:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/admin/leads/{id}:
+    get:
+      tags: [leads]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/leadId' }]
+      responses:
+        '200':
+          description: Détail.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Lead'
+                  - type: object
+                    properties:
+                      events:
+                        type: array
+                        items: { $ref: '#/components/schemas/LeadEvent' }
+                      deliveries:
+                        type: array
+                        items: { $ref: '#/components/schemas/WebhookDelivery' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/admin/leads/{id}/status:
+    patch:
+      tags: [leads]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/leadId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/LeadStatus' }
+                reason: { type: string, maxLength: 280 }
+      responses:
+        '200':
+          description: Lead mis à jour.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Lead' } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Transition interdite.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/admin/leads/{id}/notes:
+    post:
+      tags: [leads]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/leadId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '201':
+          description: Note ajoutée.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeadEvent' } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/admin/webhooks:
+    get:
+      tags: [webhooks]
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Liste.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/WebhookEndpoint' }
+    post:
+      tags: [webhooks]
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WebhookEndpointInput' }
+      responses:
+        '201':
+          description: Endpoint créé. Le secret est renvoyé une seule fois.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebhookEndpoint'
+                  - type: object
+                    properties:
+                      secret: { type: string }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409':
+          description: URL déjà existante.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/admin/webhooks/{id}:
+    get:
+      tags: [webhooks]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/webhookId' }]
+      responses:
+        '200':
+          description: Détail.
+          content: { application/json: { schema: { $ref: '#/components/schemas/WebhookEndpoint' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [webhooks]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/webhookId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/WebhookEndpointInput'
+      responses:
+        '200':
+          description: Mis à jour.
+          content: { application/json: { schema: { $ref: '#/components/schemas/WebhookEndpoint' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [webhooks]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/webhookId' }]
+      responses:
+        '204': { description: Supprimé (soft). }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/admin/webhooks/{id}/rotate-secret:
+    post:
+      tags: [webhooks]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/webhookId' }]
+      responses:
+        '200':
+          description: Nouveau secret.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  secret: { type: string }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/admin/webhooks/{id}/test:
+    post:
+      tags: [webhooks]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/webhookId' }]
+      responses:
+        '200':
+          description: Résultat du ping.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  httpStatus: { type: integer }
+                  latencyMs: { type: integer }
+                  responseBody: { type: string }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '502':
+          description: Endpoint injoignable.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/admin/webhooks/{id}/deliveries:
+    get:
+      tags: [deliveries]
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/webhookId' }
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, delivered, failed, dead] }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: event
+          in: query
+          schema: { $ref: '#/components/schemas/EventName' }
+        - name: http_code
+          in: query
+          schema: { type: integer }
+        - { $ref: '#/components/parameters/cursor' }
+      responses:
+        '200':
+          description: Livraisons paginées.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/WebhookDelivery' }
+                  nextCursor: { type: string, nullable: true }
+
+  /api/admin/webhook-deliveries/{id}/retry:
+    post:
+      tags: [deliveries]
+      security: [{ sessionCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/deliveryId' }]
+      responses:
+        '200':
+          description: Reprogrammé.
+          content: { application/json: { schema: { $ref: '#/components/schemas/WebhookDelivery' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Status incompatible (déjà delivered).
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/admin/kpi:
+    get:
+      tags: [kpi]
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: KPIs dashboard.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leads24h: { type: integer }
+                  untreated: { type: integer }
+                  failedDeliveries24h: { type: integer }
+                  computedAt: { type: string, format: date-time }
+
+  /api/cron/tick:
+    post:
+      tags: [cron]
+      security: [{ cronBearer: [] }]
+      responses:
+        '200':
+          description: Batch traité.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed: { type: integer }
+                  failed: { type: integer }
+                  deadLettered: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }

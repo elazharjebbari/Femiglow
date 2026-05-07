@@ -1,0 +1,54 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "regions": ["fra1"],
+  "crons": [
+    {
+      "path": "/api/cron/tick",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/media-optimize",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/tracking-purge",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/analytics-refresh",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/promote-scheduled-fields",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/purge-field-history",
+      "schedule": "0 4 * * 0"
+    },
+    {
+      "path": "/api/cron/chat/purge",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/chat/billing-reset",
+      "schedule": "0 0 1 * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/admin/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/api/admin/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
+      ]
+    }
+  ]
+}

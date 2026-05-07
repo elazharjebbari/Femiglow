@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mains appliquant la base transparente FemiGlow">
+  <defs>
+    <linearGradient id="g6" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F2CECC"/>
+      <stop offset="1" stop-color="#FBF8F1"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1067" fill="url(#g6)"/>
+  <ellipse cx="800" cy="600" rx="640" ry="220" fill="#FBF8F1" opacity="0.55"/>
+  <ellipse cx="800" cy="640" rx="500" ry="160" fill="#C8A876" opacity="0.25"/>
+  <path d="M540 540 Q 800 480 1060 540 Q 1080 660 800 700 Q 520 660 540 540 Z" fill="#FBF8F1" opacity="0.85"/>
+  <text x="800" y="980" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#2C2A28" opacity="0.4">GESTE · BASE</text>
+</svg>
