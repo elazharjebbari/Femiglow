@@ -20,7 +20,10 @@ interface Props {
 }
 
 export function GtmEnvTabs({ value, onChange, disabled }: Props) {
-  const groupId = useId();
+  // useId() retourne des chaînes contenant ":" (ex. ":r0:") qui sont
+  // valides en HTML mais déclenchent la règle axe `aria-valid-attr-value`.
+  // On normalise en supprimant les caractères non-alphanumériques.
+  const groupId = useId().replace(/[^a-zA-Z0-9-]/g, '');
   const tabsRef = useRef<Array<HTMLButtonElement | null>>([]);
 
   function onKeyDown(e: KeyboardEvent<HTMLButtonElement>, idx: number) {
@@ -57,7 +60,6 @@ export function GtmEnvTabs({ value, onChange, disabled }: Props) {
             role="tab"
             id={`${groupId}-${env}`}
             aria-selected={isActive}
-            aria-controls={`${groupId}-${env}-panel`}
             tabIndex={isActive ? 0 : -1}
             disabled={disabled}
             type="button"
