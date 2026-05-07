@@ -36,12 +36,28 @@ export interface LeadOfferState {
   successMessage: string | null;
 }
 
+// CHA-230 Phase 2 — État d'erreur structuré pour permettre l'affichage
+// d'un chip "Réessayer" quand l'erreur est transitoire (timeout, 5xx,
+// rate-limit). Le `lastUserText` est conservé pour pouvoir le ré-envoyer
+// en un clic sans saisie utilisateur.
+export interface ChatErrorState {
+  /** Code court (ex: 'timeout', 'rate-limit', 'auth', 'unknown'). */
+  code: string;
+  /** Message lisible affiché à l'utilisateur. */
+  message: string | null;
+  /** Si `true`, l'UI propose un chip "Réessayer". */
+  retryable: boolean;
+  /** Texte du dernier message user — re-envoyé par le chip. */
+  lastUserText: string | null;
+}
+
 interface ChatVolatileState {
   isOpen: boolean;
   isStreaming: boolean;
   messages: ChatMessageDto[];
   pendingAssistantId: string | null;
-  error: string | null;
+  // CHA-230 Phase 2 — Structuré (était `string | null`).
+  error: ChatErrorState | null;
   greeting: string;
   suggestions: string[];
   leadOffer: LeadOfferState;
@@ -67,7 +83,11 @@ interface ChatActions {
   ): void;
   endStreaming(messageId: string): void;
   pushUserMessage(message: ChatMessageDto): void;
-  setError(message: string | null): void;
+  // CHA-230 Phase 2 — `null` clear l'erreur ; sinon payload complet.
+  // Pas de surcharge string par mesure de simplicité (un seul shape).
+  setError(error: ChatErrorState | null): void;
+  /** CHA-230 Phase 2 — Clear l'erreur (équivaut à `setError(null)`). */
+  clearError(): void;
   // CHA-212 — Actions formulaire lead.
   receiveLeadOffer(payload: {
     messageId: string;
@@ -158,6 +178,7 @@ export const useChatStore = create<ChatState>()(
       pushUserMessage: (m) =>
         set((s) => ({ messages: [...s.messages, m], hasInteracted: true })),
       setError: (error) => set({ error }),
+      clearError: () => set({ error: null }),
       // CHA-212 — Lead form actions
       receiveLeadOffer: ({ messageId, reason, copyKey }) =>
         set((s) => {

@@ -143,14 +143,31 @@ export function useChatSend(): {
           endOfStream = true;
           queueResolver.current?.();
           queueResolver.current = null;
-          useChatStore.getState().setError(ev.data.code ?? 'unknown');
+          // CHA-230 Phase 2 — Payload structuré : on garde `lastUserText`
+          // pour permettre au chip "Réessayer" d'envoyer à nouveau le
+          // dernier message sans saisie. `retryable` vient du serveur
+          // (orchestrator → respond-stream.runnable → ProviderError).
+          useChatStore.getState().setError({
+            code: ev.data.code ?? 'unknown',
+            message: ev.data.message ?? null,
+            retryable: ev.data.retryable ?? false,
+            lastUserText: trimmed,
+          });
           if (ev.data.messageId) useChatStore.getState().endStreaming(ev.data.messageId);
         }
       }
     } catch (err) {
       const e = err as Error;
       if (e.name !== 'AbortError') {
-        useChatStore.getState().setError(e.message);
+        // CHA-230 Phase 2 — Erreur réseau côté client (fetch a throw,
+        // SSE coupé, etc.). On considère retryable=true par défaut :
+        // c'est typiquement un timeout ou un crash transitoire.
+        useChatStore.getState().setError({
+          code: 'network',
+          message: e.message,
+          retryable: true,
+          lastUserText: trimmed,
+        });
       }
     } finally {
       abortRef.current = null;

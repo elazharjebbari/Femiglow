@@ -40,6 +40,18 @@ import { ragService, type RetrievedChunk } from '../rag/service';
 import { getRuntimeBool } from '../runtime-setting';
 import { leadRepo } from '../repos/lead';
 import { env } from '@/lib/env';
+// CHA-230 Phase 2 — Runnables LangChain-style derrière feature flags.
+// Quand les flags sont OFF (défaut), le comportement est byte-identique
+// à pré-CHA-230. Quand ON, on bénéficie respectivement de la
+// classification LLM tool-call (avec fallback regex automatique) et du
+// retry+fallback streaming inter-providers.
+import {
+  isLlmIntentEnabled,
+  isProviderFallbackEnabled,
+} from '../feature-flag';
+import { classifyIntentRunnable } from '../runnables/classify-intent.runnable';
+import { respondStreamRunnable } from '../runnables/respond-stream.runnable';
+import type { ClassifiedIntent } from '../schemas/intent';
 
 const MEMORY_WINDOW = 12;
 
@@ -55,15 +67,24 @@ export async function* streamReply(
   const t0 = Date.now();
   const sanitized = sanitizeAndRedact(input.text);
   const language = detectLanguage(sanitized.contentSafe);
-  // CHA-230 — On capture l'intent ET le score pour pouvoir tagger
-  // la ligne `chat_message`. Le score sert :
-  //  - au dashboard /admin/chat/quality (Phase 3) pour mesurer la
-  //    confiance moyenne et alerter quand elle chute,
-  //  - au curator UI pour prioriser les messages low-confidence
-  //    qui méritent une revue humaine.
-  const intentClassification = classifyIntent(sanitized.contentSafe);
-  const intentTag = intentClassification.intent;
-  const intentConfidence = scoreToConfidence(intentClassification.score);
+  // CHA-230 — Pipeline d'intent : regex toujours, LLM tool-call si flag.
+  //  - regexClassif : sortie brute du classifieur regex pondéré (Phase 1).
+  //  - classified : sortie du runnable Phase 2 — soit identique au regex
+  //    (flag off OU shortcut score≥2 OU panne LLM), soit LLM-corrected.
+  // Les deux servent :
+  //  - dashboard /admin/chat/quality (Phase 3) : mesure de confiance,
+  //  - curator UI (Phase 3) : filtre des low-confidence à revoir,
+  //  - lead-decision : utilise `classified.intent` (peut différer du regex
+  //    quand le LLM corrige une formulation ambiguë que regex a ratée).
+  const regexClassif = classifyIntent(sanitized.contentSafe);
+  const classified = await runIntentPipeline(
+    sanitized.contentSafe,
+    regexClassif,
+    input.signal,
+  );
+  const intentTag = classified.intent;
+  const intentMethod = classified.method;
+  const intentConfidence = classified.confidence;
   const charterIn = charterFilter.inbound(sanitized.contentSafe);
   if (!charterIn.allowed) {
     yield {
@@ -71,6 +92,9 @@ export async function* streamReply(
       data: {
         code: charterIn.reason ?? 'charter-blocked',
         message: charterIn.rewriteHint,
+        // CHA-230 — charter-blocked n'est PAS retryable : la réponse
+        // serait à nouveau bloquée. UI ne propose pas de chip retry.
+        retryable: false,
       },
     };
     return;
@@ -92,14 +116,19 @@ export async function* streamReply(
     language,
     status: 'sent',
     intentTag,
-    intentMethod: 'regex',
+    intentMethod,
     intentConfidence,
   });
   await eventRepo.append(input.session.id, 'message_sent_user', {
     messageId: userMessage.id,
     redactions: sanitized.redactions,
     intent: intentTag,
-    intentScore: intentClassification.score,
+    intentMethod,
+    intentScore: regexClassif.score,
+    // CHA-230 Phase 2 — `intentReason` n'est pas une colonne ; on le passe
+    // dans l'event KPI pour pouvoir le surfacer dans le quality dashboard
+    // (Phase 3) sans nouvelle migration.
+    intentReason: classified.reason,
     intentConfidence,
     charter: charterIn.reason ?? null,
   });
@@ -110,7 +139,14 @@ export async function* streamReply(
   if (!instruction) {
     yield {
       event: 'error',
-      data: { code: 'no-instruction', message: 'No active instruction' },
+      data: {
+        code: 'no-instruction',
+        message: 'No active instruction',
+        // CHA-230 — config-issue : pas de retry tant que l'admin
+        // n'aura pas réactivé une instruction. Surface comme erreur
+        // dure côté UI.
+        retryable: false,
+      },
     };
     return;
   }
@@ -164,10 +200,39 @@ export async function* streamReply(
       sessionId: input.session.id,
       error: (err as Error).message,
     });
-    yield { event: 'error', data: { code: 'no-provider', message: 'no provider available' } };
+    yield {
+      event: 'error',
+      data: {
+        code: 'no-provider',
+        message: 'no provider available',
+        // CHA-230 — Tous les providers sont indisponibles (breaker
+        // ouvert ou quota épuisé). Retryable = true car typiquement
+        // le breaker se ferme après cooldown (30s par défaut).
+        retryable: true,
+      },
+    };
     return;
   }
   const { adapter, row } = chosen;
+
+  // CHA-230 Phase 2 — Si le flag fallback est activé, on pré-résout un
+  // provider secondaire dès maintenant (avant le streaming) — on ne le
+  // déclenche qu'en cas de panne du primaire (cf. respond-stream.runnable).
+  // Best-effort : un échec ici (aucun secondaire dispo, breaker ouvert) est
+  // dégradé en "primary-only retry" — pas une raison de tout arrêter.
+  let fallbackAdapter: typeof adapter | null = null;
+  if (isProviderFallbackEnabled()) {
+    try {
+      const fb = await providerRouter.chooseFallback('chat', row.id);
+      fallbackAdapter = fb?.adapter ?? null;
+    } catch (err) {
+      logger.warn('chat.orchestrator.fallback_resolution_failed', {
+        sessionId: input.session.id,
+        primaryId: row.id,
+        error: (err as Error).message,
+      });
+    }
+  }
 
   // Pré-crée un message assistant en streaming
   const assistantMessage = await messageRepo.create({
@@ -206,7 +271,30 @@ export async function* streamReply(
       language,
       signal: input.signal,
     };
-    const { stream, final } = await adapter.streamChat(req);
+    // CHA-230 Phase 2 — Le runnable enveloppe `streamChat()` avec retry
+    // + fallback quand le flag est ON. Quand OFF, il appelle juste
+    // `primary.streamChat(req)` sans surcouche → comportement byte-identique
+    // à pré-CHA-230 (cf. tests `respond-stream.runnable.test.ts > flag off`).
+    const fallbackEnabled = isProviderFallbackEnabled();
+    const respondOut = await respondStreamRunnable({
+      primaryProvider: adapter,
+      fallbackProvider: fallbackAdapter,
+      request: req,
+      retryFallbackEnabled: fallbackEnabled,
+    });
+    const { stream, final } = respondOut;
+    // Trace KPI les tentatives (utile pour Sentry et le quality dashboard).
+    if (fallbackEnabled && respondOut.attempts.length > 1) {
+      await eventRepo.append(input.session.id, 'chat_provider_retry_or_fallback', {
+        servedBy: respondOut.servedBy,
+        attempts: respondOut.attempts.map((a) => ({
+          providerId: a.providerId,
+          outcome: a.outcome,
+          code: a.error?.code,
+          durationMs: a.durationMs,
+        })),
+      });
+    }
     for await (const chunk of stream) {
       if (!chunk.delta) continue;
       if (firstTokenAt == null) firstTokenAt = Date.now();
@@ -430,6 +518,11 @@ export async function* streamReply(
         messageId: assistantMessage.id,
         code: e.code ?? 'unknown',
         message: e.message,
+        // CHA-230 — Propage le retryable décidé côté provider/runnable
+        // pour que l'UI puisse afficher un chip "Réessayer" sur les
+        // erreurs transitoires (timeout, 5xx, rate-limit) et le
+        // masquer sur les erreurs dures (auth, content-filter).
+        retryable: e.retryable ?? true,
       },
     };
   }
@@ -463,6 +556,67 @@ function scoreToConfidence(score: number): 'low' | 'medium' | 'high' {
   if (score >= 3) return 'high';
   if (score >= 2) return 'medium';
   return 'low';
+}
+
+/**
+ * CHA-230 Phase 2 — Pipeline d'intent unifié (regex + LLM optionnel).
+ *
+ * - Flag OFF (`CHAT_LLM_INTENT_ENABLED=false`, défaut) : retourne le
+ *   résultat regex avec `method: 'regex'` — comportement identique à
+ *   pré-CHA-230 Phase 1.
+ * - Flag ON sans clé OpenAI : idem (le runnable détecte llmConfig=null
+ *   et fait fallback regex direct).
+ * - Flag ON avec clé : appelle `classifyIntentRunnable` qui décide :
+ *     * Regex shortcut (score ≥ 2) → method 'regex'.
+ *     * LLM tool-call valide → method 'llm'.
+ *     * LLM corrigé via OutputFixingParser → method 'llm-fixed'.
+ *     * Tout panne → fallback regex avec method 'regex'.
+ *
+ * Garantie : ne throw JAMAIS. En cas de panne LLM, on dégrade au regex
+ * sans interrompre le flux principal.
+ */
+async function runIntentPipeline(
+  text: string,
+  regexClassif: ReturnType<typeof classifyIntent>,
+  signal?: AbortSignal,
+): Promise<ClassifiedIntent> {
+  // Mode flag-off : court-circuit complet, pas d'allocation runnable.
+  if (!isLlmIntentEnabled()) {
+    return {
+      intent: regexClassif.intent,
+      confidence: scoreToConfidence(regexClassif.score),
+      method: 'regex',
+      regexScore: regexClassif.score > 0 ? regexClassif.score : null,
+      reason: null,
+    };
+  }
+
+  // Mode flag-on : on délègue au runnable. Si pas de clé OpenAI, on passe
+  // `null` et le runnable fait fallback regex direct.
+  const apiKey = env.CHAT_OPENAI_API_KEY;
+  const llmConfig = apiKey ? { apiKey } : null;
+  // Le runnable est garanti no-throw — pas de try/catch nécessaire ici,
+  // mais on en met un par paranoïa pour blinder l'orchestrator (un bug
+  // futur dans le runnable ne doit JAMAIS empêcher la réponse).
+  try {
+    return await classifyIntentRunnable({
+      text,
+      regex: regexClassif,
+      llmConfig,
+      signal,
+    });
+  } catch (err) {
+    logger.warn('chat.orchestrator.intent_pipeline_failed', {
+      error: (err as Error).message,
+    });
+    return {
+      intent: regexClassif.intent,
+      confidence: scoreToConfidence(regexClassif.score),
+      method: 'regex',
+      regexScore: regexClassif.score > 0 ? regexClassif.score : null,
+      reason: null,
+    };
+  }
 }
 
 function _unusedTypeKeeper(_: ChatMessageRow): void {}

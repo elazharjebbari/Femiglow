@@ -236,6 +236,13 @@ export const chatStreamEvent = z.discriminatedUnion('event', [
       messageId: z.string().optional(),
       code: z.string(),
       message: z.string().optional(),
+      // CHA-230 Phase 2 — Indique au client si l'erreur est transitoire
+      // (réseau, timeout, 5xx, rate-limit). Quand `true`, l'UI peut
+      // proposer un chip "Réessayer". Quand `false` (auth, content-filter,
+      // charter-blocked), inutile de réessayer.
+      // Optional pour rétro-compatibilité : si absent, le client traite
+      // comme `false` (pas de retry proposé).
+      retryable: z.boolean().optional(),
     }),
   }),
   // CHA-208 — Offre proactive du formulaire de capture lead. Événement

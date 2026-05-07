@@ -384,6 +384,10 @@ export const chatConversationEvent = pgTable(
         // CHA-225 — formalisation d'un lead `inline-contact` en lead
         // formel après soumission du formulaire (consent RGPD propre).
         'chat_lead_form_upgrade',
+        // CHA-230 — Tracé quand `respond-stream.runnable.ts` a dû retry
+        // ou bascule vers un provider de fallback. Permet d'auditer la
+        // résilience inter-providers depuis /admin/chat/quality.
+        'chat_provider_retry_or_fallback',
       ],
     }).notNull(),
     payload: jsonb('payload'),
