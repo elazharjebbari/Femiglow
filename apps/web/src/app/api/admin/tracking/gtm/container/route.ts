@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { gtmExporter, type GtmEnvironment } from '@/lib/tracking/gtm/exporter';
+import { gtmConfigStore } from '@/lib/tracking/gtm/config-store';
 import { auditTrackingChange } from '@/lib/tracking/server/audit';
 
 export const runtime = 'nodejs';
@@ -18,6 +19,9 @@ const querySchema = z.object({
     .transform((v) => v === 'true' || v === '1')
     .optional()
     .default('false'),
+  configId: z
+    .union([z.string().uuid(), z.literal('active'), z.literal('defaults')])
+    .optional(),
 });
 
 function todayIso(): string {
@@ -34,10 +38,29 @@ export async function GET(request: Request): Promise<Response> {
       env: url.searchParams.get('env') ?? undefined,
       format: url.searchParams.get('format') ?? undefined,
       download: url.searchParams.get('download') ?? undefined,
+      configId: url.searchParams.get('configId') ?? undefined,
     });
 
     const env = params.env as GtmEnvironment;
-    const exp = gtmExporter.build({ env });
+
+    // Si configId fourni (uuid ou 'active'), on l'utilise comme override.
+    let configOverride: Record<string, unknown> | undefined;
+    let configIdResolved: string | null = null;
+    if (params.configId && params.configId !== 'defaults') {
+      const version =
+        params.configId === 'active'
+          ? await gtmConfigStore.getActive()
+          : await gtmConfigStore.get(params.configId);
+      if (version) {
+        configOverride = version.perEnv[env];
+        configIdResolved = version.id;
+      }
+    }
+
+    const exp = gtmExporter.build({
+      env,
+      ...(configOverride ? { config: configOverride } : {}),
+    });
 
     const action = params.download ? 'export_download' : 'export_view';
     await auditTrackingChange({
@@ -45,12 +68,19 @@ export async function GET(request: Request): Promise<Response> {
       resource: 'tracking_gtm',
       resourceId: env,
       actorId: session.adminId,
-      meta: { env, format: params.format, sha256: exp.meta.sha256, sizeBytes: exp.meta.sizeBytes },
+      meta: {
+        env,
+        format: params.format,
+        sha256: exp.meta.sha256,
+        sizeBytes: exp.meta.sizeBytes,
+        configId: configIdResolved,
+      },
     });
 
     if (params.download) {
       const body = params.format === 'minified' ? exp.minified : exp.pretty;
-      const filename = `gtm-femiglow-${env}-${todayIso()}.json`;
+      const cfgSuffix = configIdResolved ? `-cfg${configIdResolved.slice(0, 8)}` : '';
+      const filename = `gtm-femiglow-${env}-${todayIso()}${cfgSuffix}.json`;
       return new Response(body, {
         status: 200,
         headers: {
@@ -76,6 +106,7 @@ export async function GET(request: Request): Promise<Response> {
       stats: exp.stats,
       meta: exp.meta,
       env,
+      configId: configIdResolved,
     });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

@@ -17,26 +17,35 @@ interface ExportPayload {
   env: GtmEnv;
 }
 
-interface Props {
-  initial: ExportPayload;
+export interface ExportConfigOption {
+  id: string;
+  name: string;
 }
 
-export function GtmExportClient({ initial }: Props) {
+interface Props {
+  initial: ExportPayload;
+  configs?: ExportConfigOption[];
+  activeConfigId?: string | null;
+}
+
+export function GtmExportClient({ initial, configs = [], activeConfigId = null }: Props) {
   const [env, setEnv] = useState<GtmEnv>(initial.env);
+  const [configId, setConfigId] = useState<string>('defaults');
   const [data, setData] = useState<ExportPayload>(initial);
   const [pending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
-  const fetchEnv = useCallback((nextEnv: GtmEnv) => {
+  const fetchEnv = useCallback((nextEnv: GtmEnv, nextConfigId: string) => {
     setError(null);
     startTransition(async () => {
       try {
-        const res = await fetch(
-          `/api/admin/tracking/gtm/container?env=${nextEnv}&format=pretty`,
-          { credentials: 'include' },
-        );
+        const u = new URL('/api/admin/tracking/gtm/container', window.location.origin);
+        u.searchParams.set('env', nextEnv);
+        u.searchParams.set('format', 'pretty');
+        if (nextConfigId !== 'defaults') u.searchParams.set('configId', nextConfigId);
+        const res = await fetch(u.toString(), { credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const next = (await res.json()) as ExportPayload;
         setData({ ...next, env: nextEnv });
@@ -47,14 +56,18 @@ export function GtmExportClient({ initial }: Props) {
   }, []);
 
   useEffect(() => {
-    if (env === initial.env) return;
-    fetchEnv(env);
-  }, [env, initial.env, fetchEnv]);
+    if (env === initial.env && configId === 'defaults') return;
+    fetchEnv(env, configId);
+  }, [env, configId, initial.env, fetchEnv]);
 
   const onDownload = useCallback(() => {
-    const url = `/api/admin/tracking/gtm/container?env=${env}&format=pretty&download=true`;
-    window.location.assign(url);
-  }, [env]);
+    const u = new URL('/api/admin/tracking/gtm/container', window.location.origin);
+    u.searchParams.set('env', env);
+    u.searchParams.set('format', 'pretty');
+    u.searchParams.set('download', 'true');
+    if (configId !== 'defaults') u.searchParams.set('configId', configId);
+    window.location.assign(u.toString());
+  }, [env, configId]);
 
   const onCopy = useCallback(async () => {
     try {
@@ -107,7 +120,34 @@ export function GtmExportClient({ initial }: Props) {
         ) : null}
       </header>
 
-      <GtmEnvTabs value={env} onChange={setEnv} disabled={pending} />
+      <div className="flex flex-wrap items-end gap-3">
+        <GtmEnvTabs value={env} onChange={setEnv} disabled={pending} />
+        {configs.length > 0 ? (
+          <label className="block">
+            <span className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
+              Configuration
+            </span>
+            <select
+              value={configId}
+              onChange={(e) => setConfigId(e.target.value)}
+              disabled={pending}
+              className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-stone-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-1"
+            >
+              <option value="defaults">Defaults (sans config)</option>
+              {activeConfigId ? (
+                <option value="active">
+                  Active ({configs.find((c) => c.id === activeConfigId)?.name ?? activeConfigId.slice(0, 6)})
+                </option>
+              ) : null}
+              {configs.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
 
       <GtmStatsGrid stats={data.stats} loading={pending} />
       <GtmMetaInfo meta={data.meta} />
@@ -160,7 +200,7 @@ export function GtmExportClient({ initial }: Props) {
           </div>
           <button
             type="button"
-            onClick={() => fetchEnv(env)}
+            onClick={() => fetchEnv(env, configId)}
             className="rounded-md border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-900 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
           >
             Réessayer
