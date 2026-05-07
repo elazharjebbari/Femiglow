@@ -35,13 +35,29 @@ interface Pulse {
 }
 
 /**
- * Mapping événement → arête + nœud cible.
+ * Mapping événement → arête(s) + nœud(s) cible(s).
  *
- * - `message_sent_user` traverse l'amont du pipeline (sanitize → lang →
- *   charter), on émet 3 pulses successifs côté serveur pour donner une
- *   sensation de propagation (l'animation côté client dure 0.5s).
- * - `message_sent_agent` représente la sortie streaming → réponse.
- * - les feedbacks et conversions allument le nœud `response`.
+ * Les IDs (edges + nodes) doivent rester synchronisés avec
+ * `<PipelineGraph>` (`src/components/admin/chat/PipelineGraph.tsx`) ;
+ * tout drift = pulses qui n'animent rien.
+ *
+ * MAJ CHA-230 — pipeline étendu :
+ *
+ *   visitor → sanitize → lang → intent → charter
+ *                                          ↓
+ *                                        rag → provider → stream → humanize → response → lead
+ *
+ * Mapping :
+ *   - `message_sent_user` → propagation amont (sanitize → lang → intent →
+ *     charter), 4 pulses successifs.
+ *   - `message_sent_agent` → propagation aval (charter → rag → provider →
+ *     stream → humanize → response), 5 pulses successifs.
+ *   - `chat_lead_form_offered` / `chat_lead_form_submit` /
+ *     `chat_lead_auto_created` / `lead_email_captured` → allument le nœud
+ *     `lead` (post-décision lead-decision.ts).
+ *   - `chat_provider_retry_or_fallback` (CHA-229) → ré-allume `provider`
+ *     pour signaler visuellement un retry ou bascule de provider.
+ *   - `feedback_*` / `conversion_attributed` → ciblent toujours `response`.
  */
 function pulsesForEvent(row: ChatConversationEventRow): Pulse[] {
   const ts = row.occurredAt.toISOString();
@@ -56,19 +72,33 @@ function pulsesForEvent(row: ChatConversationEventRow): Pulse[] {
       return [
         { type: row.type, edge: 'visitor-sanitize', node: 'sanitize', ts },
         { type: row.type, edge: 'sanitize-lang', node: 'lang', ts },
-        { type: row.type, edge: 'lang-charter', node: 'charter', ts },
+        { type: row.type, edge: 'lang-intent', node: 'intent', ts },
+        { type: row.type, edge: 'intent-charter', node: 'charter', ts },
       ];
     case 'message_sent_agent':
       return [
         { type: row.type, edge: 'charter-rag', node: 'rag', ts, latencyMs },
         { type: row.type, edge: 'rag-provider', node: 'provider', ts, latencyMs },
         { type: row.type, edge: 'provider-stream', node: 'stream', ts, latencyMs },
-        { type: row.type, edge: 'stream-response', node: 'response', ts, latencyMs },
+        { type: row.type, edge: 'stream-humanize', node: 'humanize', ts, latencyMs },
+        { type: row.type, edge: 'humanize-response', node: 'response', ts, latencyMs },
+      ];
+    // CHA-229 — un retry ou un fallback s'est produit côté provider.
+    // Re-allumer le nœud `provider` pour visualiser la résilience.
+    case 'chat_provider_retry_or_fallback':
+      return [{ type: row.type, node: 'provider', ts, latencyMs }];
+    // CHA-208 / CHA-225 — décision et capture de lead post-réponse.
+    case 'chat_lead_form_offered':
+    case 'chat_lead_form_submit':
+    case 'chat_lead_auto_created':
+    case 'chat_lead_form_upgrade':
+    case 'lead_email_captured':
+      return [
+        { type: row.type, edge: 'response-lead', node: 'lead', ts },
       ];
     case 'feedback_positive':
     case 'feedback_negative':
     case 'conversion_attributed':
-    case 'lead_email_captured':
       return [{ type: row.type, node: 'response', ts }];
     case 'rate_limit_hit':
     case 'error':
@@ -77,6 +107,13 @@ function pulsesForEvent(row: ChatConversationEventRow): Pulse[] {
       return [{ type: row.type, node: 'lang', ts }];
     case 'widget_close':
     case 'suggestion_clicked':
+    case 'message_received_first_token':
+    case 'message_complete':
+    case 'chat_lead_form_view':
+    case 'chat_lead_form_focus':
+    case 'chat_lead_form_dismiss':
+    case 'chat_lead_webhook_sent':
+    case 'chat_lead_webhook_failed':
     default:
       return [];
   }

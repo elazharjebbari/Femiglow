@@ -8,6 +8,7 @@ import { sql } from 'drizzle-orm';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ChatAdminNav } from '@/components/admin/chat/ChatAdminNav';
 import { SystemDashboard } from '@/components/admin/chat/SystemDashboard';
+import { SystemDocs } from '@/components/admin/chat/SystemDocs';
 import { adminQueries } from '@/lib/chat/admin/queries';
 import { requireChatDb } from '@/lib/chat/db/client';
 import { isChatEnabled } from '@/lib/chat/feature-flag';
@@ -53,22 +54,27 @@ export default async function ChatSystemPage() {
         </p>
       </header>
 
-      <SystemDashboard
-        providers={providers.map((p) => ({
-          id: p.id,
-          label: p.label,
-          kind: p.kind,
-          enabled: p.enabled,
-          consumedEur: Number(p.consumedMonthEur),
-          quotaEur: p.quotaMonthlyEur != null ? Number(p.quotaMonthlyEur) : null,
-          state: p.enabled ? 'ok' : 'down',
-        }))}
-        knowledge={{
-          totalSources: row.total_sources,
-          totalChunks: row.total_chunks,
-          staleSources: row.stale,
-        }}
-      />
+      <div className="space-y-8">
+        <SystemDashboard
+          providers={providers.map((p) => ({
+            id: p.id,
+            label: p.label,
+            kind: p.kind,
+            enabled: p.enabled,
+            consumedEur: Number(p.consumedMonthEur),
+            quotaEur: p.quotaMonthlyEur != null ? Number(p.quotaMonthlyEur) : null,
+            state: p.enabled ? 'ok' : 'down',
+          }))}
+          knowledge={{
+            totalSources: row.total_sources,
+            totalChunks: row.total_chunks,
+            staleSources: row.stale,
+          }}
+        />
+
+        {/* CHA-230 — Documentation in-app : pipeline, configuration, runbook. */}
+        <SystemDocs />
+      </div>
     </AdminShell>
   );
 }

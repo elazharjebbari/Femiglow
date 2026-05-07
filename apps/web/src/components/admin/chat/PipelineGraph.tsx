@@ -1,12 +1,30 @@
 /**
  * CHA-131 / CHA-132 — `<PipelineGraph>` SVG.
  *
- * 8 nœuds : Visiteur → Sanitize → Lang → Charter → RAG → Provider →
- * Stream → Response. Edges animés via `<animateMotion>` quand un
- * pulse arrive (cf. CHA-135 SSE visualisation/stream).
+ * MAJ CHA-230 — pipeline post-refactor LangChain :
  *
- * Composant 100 % SVG inline, pas de dépendance lourde. Légère
- * animation CSS via classes.
+ *   visitor → sanitize → lang → intent → charter
+ *                                          ↓
+ *                                    rag (top)
+ *                                          ↓
+ *                                    provider  ← retry / breaker
+ *                                          ↓
+ *                                       stream → humanize → response → lead
+ *
+ * Soit 11 nœuds + 11 arêtes (vs. 8/8 avant). On a ajouté :
+ *   - `intent` : classification regex pondérée + LLM tool-call (Phase 2),
+ *     fallback sur regex si LLM panne (no-throw garanti).
+ *   - `humanize` : post-traitement de la réponse (apostrophes typographiques,
+ *     espaces fines, lissage darija — cf. services/humanize.ts).
+ *   - `lead` : décision d'offrir le formulaire de capture (lead-decision.ts +
+ *     phone-detect.ts) après chaque réponse.
+ *   - sub-label "retry / breaker" sur `provider` pour rappeler que le runnable
+ *     `respond-stream.runnable.ts` retry et bascule vers le fallback en cas
+ *     de panne (CHA-229) — uniquement quand `CHAT_PROVIDER_FALLBACK_ENABLED=true`.
+ *
+ * Edges animés via `<animateMotion>` quand un pulse arrive sur le SSE
+ * `/api/admin/chat/visualisation/stream` (cf. CHA-135). Compatible avec
+ * l'export SVG/Mermaid (`/api/admin/chat/visualisation/export`).
  */
 'use client';
 
@@ -27,28 +45,50 @@ interface NodeDef {
   label: string;
   cx: number;
   cy: number;
+  /** Petit texte sous le nœud (en italique, gris) pour adornement. */
+  sub?: string;
 }
 
+/**
+ * Layout : ligne principale y=110, RAG seul en y=55 au-dessus de Provider.
+ *
+ * Espacement horizontal ~110-120 px entre les nœuds — les cercles r=28 ne
+ * se touchent pas, et les sub-labels (italique gris) tiennent dessous sans
+ * empiéter sur le voisin.
+ */
 const NODES: NodeDef[] = [
-  { id: 'visitor', label: 'Visiteur', cx: 80, cy: 100 },
-  { id: 'sanitize', label: 'Sanitize', cx: 220, cy: 100 },
-  { id: 'lang', label: 'Lang', cx: 360, cy: 100 },
-  { id: 'charter', label: 'Charter', cx: 500, cy: 100 },
-  { id: 'rag', label: 'RAG', cx: 640, cy: 60 },
-  { id: 'provider', label: 'Provider', cx: 640, cy: 140 },
-  { id: 'stream', label: 'Stream', cx: 780, cy: 100 },
-  { id: 'response', label: 'Réponse', cx: 920, cy: 100 },
+  { id: 'visitor', label: 'Visiteur', cx: 50, cy: 110 },
+  { id: 'sanitize', label: 'Sanitize', cx: 160, cy: 110 },
+  { id: 'lang', label: 'Lang', cx: 260, cy: 110 },
+  { id: 'intent', label: 'Intent', cx: 370, cy: 110, sub: 'regex / LLM' },
+  { id: 'charter', label: 'Charte', cx: 480, cy: 110 },
+  { id: 'rag', label: 'RAG', cx: 590, cy: 55 },
+  { id: 'provider', label: 'Provider', cx: 590, cy: 110, sub: 'retry / breaker' },
+  { id: 'stream', label: 'Stream', cx: 700, cy: 110 },
+  { id: 'humanize', label: 'Humanize', cx: 820, cy: 110 },
+  { id: 'response', label: 'Réponse', cx: 940, cy: 110 },
+  { id: 'lead', label: 'Lead', cx: 1080, cy: 110, sub: 'décision form' },
 ];
 
+/**
+ * IMPORTANT : ces edge-IDs DOIVENT rester synchronisés avec
+ * `pulsesForEvent()` dans
+ * `src/app/api/admin/chat/visualisation/stream/route.ts` —
+ * tout changement ici impose une mise à jour là-bas, sinon les pulses
+ * SSE n'animeront plus rien.
+ */
 const EDGES: Array<{ id: string; from: string; to: string }> = [
   { id: 'visitor-sanitize', from: 'visitor', to: 'sanitize' },
   { id: 'sanitize-lang', from: 'sanitize', to: 'lang' },
-  { id: 'lang-charter', from: 'lang', to: 'charter' },
+  { id: 'lang-intent', from: 'lang', to: 'intent' },
+  { id: 'intent-charter', from: 'intent', to: 'charter' },
   { id: 'charter-rag', from: 'charter', to: 'rag' },
   { id: 'charter-provider', from: 'charter', to: 'provider' },
   { id: 'rag-provider', from: 'rag', to: 'provider' },
   { id: 'provider-stream', from: 'provider', to: 'stream' },
-  { id: 'stream-response', from: 'stream', to: 'response' },
+  { id: 'stream-humanize', from: 'stream', to: 'humanize' },
+  { id: 'humanize-response', from: 'humanize', to: 'response' },
+  { id: 'response-lead', from: 'response', to: 'lead' },
 ];
 
 export function PipelineGraph({ pulseStream, counters }: PipelineGraphProps) {
@@ -74,10 +114,10 @@ export function PipelineGraph({ pulseStream, counters }: PipelineGraphProps) {
 
   return (
     <svg
-      viewBox="0 0 1000 200"
+      viewBox="0 0 1180 200"
       role="img"
-      aria-label="Pipeline du chat"
-      className="w-full max-w-4xl"
+      aria-label="Pipeline du chat — visiteur → sanitize → lang → intent → charte → rag → provider → stream → humanize → réponse → lead"
+      className="w-full max-w-5xl"
     >
       {/* Edges */}
       {EDGES.map((edge) => {
@@ -126,10 +166,22 @@ export function PipelineGraph({ pulseStream, counters }: PipelineGraphProps) {
           >
             {n.label}
           </text>
+          {n.sub && (
+            <text
+              x={n.cx}
+              y={n.cy + 44}
+              textAnchor="middle"
+              fontSize={8}
+              fontStyle="italic"
+              fill="#a8a29e"
+            >
+              {n.sub}
+            </text>
+          )}
           {counters?.[n.id] != null && (
             <text
               x={n.cx}
-              y={n.cy + 48}
+              y={n.cy + (n.sub ? 56 : 48)}
               textAnchor="middle"
               fontSize={10}
               fill="#78716c"

@@ -31,20 +31,30 @@ interface Pulse {
   total?: number;
 }
 
+// CHA-230 — synchronisé avec stream/route.ts ET PipelineGraph.tsx.
+// Tout drift = pulses replay qui ne propagent plus les bons edges.
 const EDGE_BY_TYPE: Partial<Record<EventType, Array<{ edge?: string; node?: string }>>> = {
   session_open: [{ node: 'visitor' }],
   widget_open: [{ node: 'visitor' }],
   message_sent_user: [
     { edge: 'visitor-sanitize', node: 'sanitize' },
     { edge: 'sanitize-lang', node: 'lang' },
-    { edge: 'lang-charter', node: 'charter' },
+    { edge: 'lang-intent', node: 'intent' },
+    { edge: 'intent-charter', node: 'charter' },
   ],
   message_sent_agent: [
     { edge: 'charter-rag', node: 'rag' },
     { edge: 'rag-provider', node: 'provider' },
     { edge: 'provider-stream', node: 'stream' },
-    { edge: 'stream-response', node: 'response' },
+    { edge: 'stream-humanize', node: 'humanize' },
+    { edge: 'humanize-response', node: 'response' },
   ],
+  chat_provider_retry_or_fallback: [{ node: 'provider' }],
+  chat_lead_form_offered: [{ edge: 'response-lead', node: 'lead' }],
+  chat_lead_form_submit: [{ edge: 'response-lead', node: 'lead' }],
+  chat_lead_auto_created: [{ edge: 'response-lead', node: 'lead' }],
+  chat_lead_form_upgrade: [{ edge: 'response-lead', node: 'lead' }],
+  lead_email_captured: [{ edge: 'response-lead', node: 'lead' }],
   feedback_positive: [{ node: 'response' }],
   feedback_negative: [{ node: 'response' }],
   conversion_attributed: [{ node: 'response' }],

@@ -248,7 +248,18 @@ const RULES: PatternRule[] = [
     // Patterns FORTS — formulations exclusives, score 2.
     strong: [
       // Phrases d'achat explicite qui ne peuvent PAS vouloir dire suivi.
-      /\bje\s+(veux|voudrais|souhaite|peux|vais)\s+(commander|acheter|prendre|payer)\b/i,
+      // CHA-230 v3 — On accepte jusqu'à 3 mots entre le modal et le verbe
+      // d'action pour capter les insertions courantes :
+      //   « je souhaite au fait commander »  (bug prod 2026-05-07)
+      //   « je veux donc commander »
+      //   « je voudrais vraiment bien commander »
+      // On ajoute aussi `aimerais` / `voulais` (formulations polies).
+      // Le `[a-zA-Zà-ÿ'’-]+` limite les insertions à des mots sans
+      // ponctuation lourde, ce qui évite de chevaucher 2 phrases.
+      /\bje\s+(veux|voudrais|souhaite|peux|vais|aimerais|voulais)\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(commander|acheter|prendre|payer)\b/i,
+      // Variante sans modal explicite : « j'aimerais ... commander » via
+      // l'élision « j' » (cas où le tokenizer ne voit pas l'espace).
+      /\bj['’]?aimerais\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(commander|acheter|prendre|payer)\b/i,
       /\b(j['’]?achète|j['’]?ach[eè]te|je\s+l['’]?achète|je\s+le\s+prends|je\s+les\s+prends)\b/i,
       /\b(passer|faire|valider)\s+(une\s+|la\s+)?commande\b/i,
       /\bok\s+je\s+(prends|commande|veux|achète)\b/i,
