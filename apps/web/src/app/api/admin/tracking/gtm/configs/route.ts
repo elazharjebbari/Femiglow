@@ -25,8 +25,11 @@ export async function POST(request: Request): Promise<Response> {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
     const json = await request.json();
-    const input = gtmConfigCreateInputSchema.parse(json);
-    const created = await gtmConfigStore.create(input, { actorId: session.adminId });
+    const parsed = gtmConfigCreateInputSchema.safeParse(json);
+    if (!parsed.success) {
+      throw new HttpError('invalid_input', 'Données invalides', parsed.error.flatten());
+    }
+    const created = await gtmConfigStore.create(parsed.data, { actorId: session.adminId });
     await auditTrackingChange({
       action: 'create',
       resource: 'tracking_gtm',
