@@ -141,6 +141,10 @@ export const chatLeadTriggerReasonSchema = z.enum([
   // CHA-225 — Nouvelles raisons (intent d'achat / coordonnées posées en clair).
   'purchase-intent',
   'inline-contact',
+  // CHA-230 — Marchandage (rabais/réduction) → escalade humaine immédiate.
+  'negotiation',
+  // CHA-230 — Volume pro (grossiste/distributeur/institut) → escalade commerciale.
+  'wholesaler',
   'manual',
 ]);
 export type ChatLeadTriggerReason = z.infer<typeof chatLeadTriggerReasonSchema>;
@@ -251,6 +255,9 @@ export const chatStreamEvent = z.discriminatedUnion('event', [
         // CHA-225 — Nouvelles copies (intent d'achat / coordonnées en clair).
         'purchase-intent',
         'inline-contact',
+        // CHA-230 — Pivot humain (marchandage) + escalade commerciale (volume pro).
+        'negotiation',
+        'wholesaler',
         'manual',
       ]),
     }),

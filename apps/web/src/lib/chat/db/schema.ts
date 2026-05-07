@@ -221,6 +221,18 @@ export const chatMessage = pgTable(
       .default('sent'),
     errorCode: text('error_code'),
     parentMessageId: text('parent_message_id'),
+    // CHA-230 — Tag d'intent persisté pour observabilité, debug admin
+    // et futur pipeline d'enrichissement (golden-set). Nullable car
+    // les anciens messages n'ont pas été classés ; les nouveaux le sont
+    // au moment de la persistance dans l'orchestrator.
+    //
+    //   intentTag        : la classe d'intent retenue (ex. 'purchase-intent')
+    //   intentMethod     : qui a classé ? 'regex' (Phase 1) | 'llm' | 'golden'
+    //   intentConfidence : 'low' | 'medium' | 'high' — pour filtrer le
+    //                      curator UI vers les cas ambigus uniquement.
+    intentTag: text('intent_tag'),
+    intentMethod: text('intent_method'),
+    intentConfidence: text('intent_confidence'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -230,6 +242,10 @@ export const chatMessage = pgTable(
       t.createdAt,
     ),
     statusIdx: index('chat_message_status_idx').on(t.status),
+    // CHA-230 — Index pour le quality-dashboard admin (filtre par intent
+    // sur la fenêtre 7j/30j). On indexe seulement sur intentTag : les
+    // cas par méthode/confiance se filtrent par WHERE secondaire.
+    intentIdx: index('chat_message_intent_idx').on(t.intentTag, t.createdAt),
     // L'index GIN tsvector est créé en SQL brut dans la migration
     // (Drizzle ne sait pas exprimer `to_tsvector(...)` via le DSL).
   }),
@@ -469,6 +485,11 @@ export const chatLead = pgTable(
         // le chat → on capture proprement via le formulaire).
         'purchase-intent',
         'inline-contact',
+        // CHA-230 — negotiation (marchandage / rabais) + wholesaler
+        // (volume pro / grossiste). Les deux escaladent vers l'humain
+        // dès le 1er tour. cf. docs/chat-assistant/20-…md §2.6.
+        'negotiation',
+        'wholesaler',
         'manual',
       ],
     }).notNull(),

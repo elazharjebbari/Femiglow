@@ -33,7 +33,7 @@ import { sessionRepo } from '../repos/session';
 import { providerRouter } from './provider-router';
 import { sanitizeAndRedact } from './sanitize';
 import { charterFilter } from './charter-filter';
-import { detectIntent } from './intent';
+import { classifyIntent } from './intent';
 import { shouldOfferLeadForm } from './lead-decision';
 import { detectInlineContact } from './phone-detect';
 import { ragService, type RetrievedChunk } from '../rag/service';
@@ -55,7 +55,15 @@ export async function* streamReply(
   const t0 = Date.now();
   const sanitized = sanitizeAndRedact(input.text);
   const language = detectLanguage(sanitized.contentSafe);
-  const intentTag = detectIntent(sanitized.contentSafe);
+  // CHA-230 — On capture l'intent ET le score pour pouvoir tagger
+  // la ligne `chat_message`. Le score sert :
+  //  - au dashboard /admin/chat/quality (Phase 3) pour mesurer la
+  //    confiance moyenne et alerter quand elle chute,
+  //  - au curator UI pour prioriser les messages low-confidence
+  //    qui méritent une revue humaine.
+  const intentClassification = classifyIntent(sanitized.contentSafe);
+  const intentTag = intentClassification.intent;
+  const intentConfidence = scoreToConfidence(intentClassification.score);
   const charterIn = charterFilter.inbound(sanitized.contentSafe);
   if (!charterIn.allowed) {
     yield {
@@ -69,6 +77,12 @@ export async function* streamReply(
   }
 
   // Persiste le message user
+  // CHA-230 — On stocke l'intent + méthode + confidence sur la ligne
+  // pour alimenter le dashboard /admin/chat/quality (Phase 3) sans
+  // avoir à rejouer la classification a posteriori. La confidence
+  // est un label `low|medium|high` calculé à partir du score brut :
+  // c'est le format que consomme directement le curator UI (Phase 3)
+  // pour filtrer "uniquement les low".
   const userMessage = await messageRepo.create({
     sessionId: input.session.id,
     role: 'user',
@@ -77,11 +91,16 @@ export async function* streamReply(
     contentSafe: sanitized.contentSafe,
     language,
     status: 'sent',
+    intentTag,
+    intentMethod: 'regex',
+    intentConfidence,
   });
   await eventRepo.append(input.session.id, 'message_sent_user', {
     messageId: userMessage.id,
     redactions: sanitized.redactions,
     intent: intentTag,
+    intentScore: intentClassification.score,
+    intentConfidence,
     charter: charterIn.reason ?? null,
   });
   await sessionRepo.update(input.session.id, { language });
@@ -423,6 +442,27 @@ function pickInstructionByLang(
   if (language === 'ar' && instruction.bodyAr) return instruction.bodyAr;
   if (language === 'ar-MA' && instruction.bodyArMa) return instruction.bodyArMa;
   return instruction.body;
+}
+
+/**
+ * CHA-230 — Mappe le score d'intent brut (0+) vers un label `low|medium|
+ * high` qu'on persiste sur `chat_message.intent_confidence`.
+ *
+ * Choix des seuils :
+ *   - 0  → 'low'    (intent = 'misc', aucun signal exploitable)
+ *   - 1  → 'low'    (1 pattern standard — risque de faux positif)
+ *   - 2  → 'medium' (1 pattern strong OU 2 standards — signal net)
+ *   - 3+ → 'high'   (combo strong + standard, ou 2× strong — sans ambiguïté)
+ *
+ * Ces seuils alignent la sortie du regex classifier sur ce que sortira
+ * le LLM tool-call en Phase 2 (confidence ∈ [0, 1] mappée → label),
+ * pour que le dashboard `/admin/chat/quality` reçoive un signal homogène
+ * quel que soit le mode de classification actif.
+ */
+function scoreToConfidence(score: number): 'low' | 'medium' | 'high' {
+  if (score >= 3) return 'high';
+  if (score >= 2) return 'medium';
+  return 'low';
 }
 
 function _unusedTypeKeeper(_: ChatMessageRow): void {}
