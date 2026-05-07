@@ -10,7 +10,8 @@ export type TrackingResource =
   | 'tracking_inventory'
   | 'site_component'
   | 'component_media_binding'
-  | 'component_animation_binding';
+  | 'component_animation_binding'
+  | 'tracking_gtm';
 
 export type TrackingAction =
   | 'create'
@@ -23,6 +24,10 @@ export type TrackingAction =
   | 'test_event'
   | 'purge'
   | 'custom_code_update'
+  | 'export_download'
+  | 'export_copy'
+  | 'export_view'
+  | 'export_push'
   | 'assign'
   | 'unassign'
   | 'bulk-activate'

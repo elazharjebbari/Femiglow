@@ -858,6 +858,136 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
       },
     },
   },
+
+  // ===========================================================================
+  // GTM-CHAT-001..003 \u2014 \u00c9v\u00e9nements UX chat suppl\u00e9mentaires (suggestions,
+  // feedback, langue, erreur, rate-limit, attribution).
+  // Voir docs/gtm/13-events-chat.md.
+  // ===========================================================================
+  {
+    name: 'chat_suggestion_clicked',
+    category: 'engagement',
+    scope: 'web',
+    description: 'Clic sur une suggestion contextuelle dans le chat',
+    isConversion: false,
+    applicableCategories: ['chat'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['session_id', 'suggestion_label', 'suggestion_index'],
+      properties: {
+        session_id: { type: 'string' },
+        suggestion_label: { type: 'string' },
+        suggestion_index: { type: 'number' },
+      },
+    },
+  },
+  {
+    name: 'chat_feedback',
+    category: 'engagement',
+    scope: 'web',
+    description: 'Feedback (pouce vert/rouge) sur une r\u00e9ponse de l\u2019assistant',
+    isConversion: false,
+    applicableCategories: ['chat'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['session_id', 'message_id', 'value'],
+      properties: {
+        session_id: { type: 'string' },
+        message_id: { type: 'string' },
+        value: { type: 'number', enum: [1, -1] },
+        has_note: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'chat_language_switch',
+    category: 'engagement',
+    scope: 'web',
+    description: 'Bascule de langue dans la conversation (FR / AR / Darija)',
+    isConversion: false,
+    applicableCategories: ['chat'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['session_id', 'from_language', 'to_language', 'trigger'],
+      properties: {
+        session_id: { type: 'string' },
+        from_language: { type: 'string', enum: ['fr', 'ar', 'ar-MA'] },
+        to_language: { type: 'string', enum: ['fr', 'ar', 'ar-MA'] },
+        trigger: { type: 'string', enum: ['auto_detect', 'user_request'] },
+      },
+    },
+  },
+  {
+    name: 'chat_error',
+    category: 'engagement',
+    scope: 'web',
+    description: 'Erreur visible c\u00f4t\u00e9 visiteur (provider down, mod\u00e9ration, timeout)',
+    isConversion: false,
+    applicableCategories: ['chat'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['session_id', 'error_code'],
+      properties: {
+        session_id: { type: 'string' },
+        error_code: {
+          type: 'string',
+          enum: [
+            'rate_limited',
+            'moderation_blocked_input',
+            'moderation_blocked_output',
+            'provider_unavailable',
+            'quota_exceeded',
+            'timeout',
+            'internal',
+          ],
+        },
+        message_id: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'chat_rate_limit_hit',
+    category: 'engagement',
+    scope: 'web',
+    description: 'Le visiteur d\u00e9passe le rate-limit (par IP / session / visitor)',
+    isConversion: false,
+    applicableCategories: ['chat'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['session_id', 'scope', 'retry_after_seconds'],
+      properties: {
+        session_id: { type: 'string' },
+        scope: { type: 'string', enum: ['ip', 'session', 'visitor'] },
+        retry_after_seconds: { type: 'number' },
+      },
+    },
+  },
+  {
+    name: 'chat_conversion_attributed',
+    category: 'custom',
+    scope: 'both',
+    description:
+      'Signal d\u2019attribution chat \u2192 commande (audience-builder, pas une conversion en soi)',
+    isConversion: false,
+    applicableCategories: ['chat'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['session_id', 'order_id', 'attribution_window_days', 'messages_in_session'],
+      properties: {
+        session_id: { type: 'string' },
+        order_id: { type: 'string' },
+        attribution_window_days: { type: 'number' },
+        messages_in_session: { type: 'number' },
+        intent_dominant: { type: 'string' },
+      },
+    },
+  },
 ];
 
 export function findEventInCatalog(name: string): EventCatalogEntry | null {

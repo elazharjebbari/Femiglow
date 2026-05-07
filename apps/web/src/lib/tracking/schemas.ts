@@ -112,6 +112,154 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       source: z.string().optional(),
     })
     .passthrough(),
+
+  // — Chat assistant — cf. docs/gtm/13-events-chat.md, docs/chat-assistant/02-data.md §2.8
+  // Convention : `chat_*` (alignée avec event-catalog.ts existant), pas `fg_chat_*`.
+  chat_widget_open: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      page_path: z.string().optional(),
+      language: z.enum(['fr', 'ar', 'ar-MA']).optional(),
+      trigger: z.enum(['user', 'auto', 'cta']).optional(),
+    })
+    .strict(),
+  chat_widget_close: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      messages_count: z.number().int().nonnegative().optional(),
+      duration_ms: z.number().int().nonnegative().optional(),
+    })
+    .strict(),
+  chat_message_sent: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      message_index: z.number().int().nonnegative(),
+      intent: z.string().optional(),
+      chars: z.number().int().nonnegative().optional(),
+    })
+    .strict(),
+  chat_message_received: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      message_id: z.string().min(1).max(40),
+      first_token_ms: z.number().int().nonnegative(),
+    })
+    .strict(),
+  chat_message_complete: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      message_id: z.string().min(1).max(40),
+      latency_ms: z.number().int().nonnegative(),
+      tokens_out: z.number().int().nonnegative().optional(),
+    })
+    .strict(),
+  chat_lead_form_offered: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      form_variant: z.string().optional(),
+      trigger_intent: z.string().optional(),
+    })
+    .strict(),
+  chat_lead_form_view: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      form_variant: z.string().optional(),
+    })
+    .strict(),
+  chat_lead_form_focus: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      field_name: z.string().min(1).max(60),
+    })
+    .strict(),
+  chat_lead_form_dismiss: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      reason: z.enum(['user_close', 'timeout', 'navigation']).optional(),
+    })
+    .strict(),
+  chat_lead_form_submit: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      lead_id: z.string().min(1).max(40),
+      method: z.enum(['email', 'phone', 'whatsapp']).optional(),
+      consent_marketing: z.boolean().optional(),
+    })
+    .strict(),
+  chat_lead_webhook_sent: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      lead_id: z.string().min(1).max(40),
+      target: z.string().min(1).max(120),
+      latency_ms: z.number().int().nonnegative().optional(),
+    })
+    .strict(),
+  chat_lead_webhook_failed: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      lead_id: z.string().min(1).max(40),
+      target: z.string().min(1).max(120),
+      error_code: z.string().min(1).max(80),
+      attempts: z.number().int().nonnegative().optional(),
+    })
+    .strict(),
+
+  // — Chat assistant complément (GTM-CHAT-001..003) — événements
+  // déclaratifs UX qui n'étaient pas encore au catalogue.
+  chat_suggestion_clicked: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      suggestion_label: z.string().max(120),
+      suggestion_index: z.number().int().min(0).max(2),
+    })
+    .strict(),
+  chat_feedback: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      message_id: z.string().min(1).max(40),
+      value: z.union([z.literal(1), z.literal(-1)]),
+      has_note: z.boolean().optional(),
+    })
+    .strict(),
+  chat_language_switch: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      from_language: z.enum(['fr', 'ar', 'ar-MA']),
+      to_language: z.enum(['fr', 'ar', 'ar-MA']),
+      trigger: z.enum(['auto_detect', 'user_request']),
+    })
+    .strict(),
+  chat_error: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      error_code: z.enum([
+        'rate_limited',
+        'moderation_blocked_input',
+        'moderation_blocked_output',
+        'provider_unavailable',
+        'quota_exceeded',
+        'timeout',
+        'internal',
+      ]),
+      message_id: z.string().optional(),
+    })
+    .strict(),
+  chat_rate_limit_hit: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      scope: z.enum(['ip', 'session', 'visitor']),
+      retry_after_seconds: z.number().int().nonnegative(),
+    })
+    .strict(),
+  chat_conversion_attributed: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      order_id: z.string().min(1),
+      attribution_window_days: z.number().int().min(1).max(30),
+      messages_in_session: z.number().int().nonnegative(),
+      intent_dominant: z.string().optional(),
+    })
+    .strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -157,6 +305,24 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   fg_pixel_test: 'admin',
   fg_admin_action: 'admin',
   fg_consent_change: 'admin',
+  chat_widget_open: 'engagement',
+  chat_widget_close: 'engagement',
+  chat_message_sent: 'engagement',
+  chat_message_received: 'engagement',
+  chat_message_complete: 'engagement',
+  chat_lead_form_offered: 'lead',
+  chat_lead_form_view: 'lead',
+  chat_lead_form_focus: 'lead',
+  chat_lead_form_dismiss: 'lead',
+  chat_lead_form_submit: 'lead',
+  chat_lead_webhook_sent: 'lead',
+  chat_lead_webhook_failed: 'lead',
+  chat_suggestion_clicked: 'engagement',
+  chat_feedback: 'engagement',
+  chat_language_switch: 'engagement',
+  chat_error: 'engagement',
+  chat_rate_limit_hit: 'engagement',
+  chat_conversion_attributed: 'custom',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

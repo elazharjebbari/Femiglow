@@ -9,6 +9,7 @@ export type TrackingTab =
   | 'providers'
   | 'test'
   | 'logs'
+  | 'gtm'
   | 'settings';
 
 const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
@@ -18,6 +19,7 @@ const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
   { key: 'providers', href: '/admin/tracking/providers', label: 'Pixels' },
   { key: 'test', href: '/admin/tracking/test', label: 'Tester' },
   { key: 'logs', href: '/admin/tracking/logs', label: 'Logs' },
+  { key: 'gtm', href: '/admin/tracking/gtm', label: 'Export GTM' },
   { key: 'settings', href: '/admin/tracking/settings', label: 'Réglages' },
 ];
 
