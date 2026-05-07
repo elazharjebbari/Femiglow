@@ -9,6 +9,8 @@ import {
   emptyEnvConfig,
 } from '@/lib/tracking/gtm/config-schema';
 import { IconCopy, IconCheck } from './GtmIcons';
+import { GtmTemplatePicker } from './GtmTemplatePicker';
+import { GtmCsvImport } from './GtmCsvImport';
 
 interface Props {
   initial?: GtmConfigPerEnv;
@@ -130,16 +132,25 @@ export function GtmConfigForm({ initial, onSubmit, submitting = false }: Props) 
 
   return (
     <form onSubmit={onFormSubmit} className="space-y-6" noValidate>
-      <header>
-        <h3 className="text-sm font-medium text-stone-900">Nouvelle configuration</h3>
-        <p className="mt-1 text-xs text-stone-500">
-          Renseigne les valeurs des variables. Tu peux propager une valeur de
-          PROD vers STAGE/PREVIEW/DEV en un clic via les boutons{' '}
-          <span className="rounded bg-[#A8C4A6]/15 px-1 py-0.5 font-mono text-[10px] text-[#3F5B41]">
-            broadcast
-          </span>
-          .
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-medium text-stone-900">Nouvelle configuration</h3>
+          <p className="mt-1 text-xs text-stone-500">
+            Renseigne les valeurs des variables. Tu peux propager une valeur de
+            PROD vers STAGE/PREVIEW/DEV en un clic via les boutons{' '}
+            <span className="rounded bg-[#A8C4A6]/15 px-1 py-0.5 font-mono text-[10px] text-[#3F5B41]">
+              broadcast
+            </span>
+            .
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <GtmTemplatePicker onPick={(p) => setPerEnv(p)} />
+          <GtmCsvImport
+            base={perEnv}
+            onApply={(r) => setPerEnv(r.perEnv)}
+          />
+        </div>
       </header>
 
       <div className="grid gap-3 md:grid-cols-2">

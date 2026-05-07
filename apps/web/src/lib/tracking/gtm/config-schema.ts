@@ -102,12 +102,58 @@ export const gtmConfigVersionSchema = z.object({
 
 export type GtmConfigVersion = z.infer<typeof gtmConfigVersionSchema>;
 
-/** Payload de création — pas d'id, pas d'auteur (déduit de la session). */
-export const gtmConfigCreateInputSchema = z.object({
-  name: z.string().min(1).max(120),
-  notes: z.string().max(2000).nullable().optional(),
-  perEnv: gtmConfigPerEnvSchema,
-});
+/** Payload de création — pas d'id, pas d'auteur (déduit de la session).
+ *
+ * Le `superRefine` impose les règles cross-env documentées dans
+ * docs/gtm/17-onboarding-robustness.md §3.6 :
+ *  - GA4 activé en prod ⇒ ga4MeasurementId rempli
+ *  - Conv labels prod ⇒ Ads Customer ID rempli
+ *  - Pas de Pixel "DEV"/"SANDBOX" reconnu en production
+ */
+export const gtmConfigCreateInputSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    notes: z.string().max(2000).nullable().optional(),
+    perEnv: gtmConfigPerEnvSchema,
+  })
+  .superRefine((input, ctx) => {
+    const prod = input.perEnv.production;
+    const enabled = new Set(prod.enabledProviders ?? []);
+
+    // Règle 1 : GA4 activé en prod ⇒ Measurement ID rempli
+    if (enabled.has('google_ga4') && !prod.ga4MeasurementId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['perEnv', 'production', 'ga4MeasurementId'],
+        message:
+          'GA4 est activé en production mais le Measurement ID est vide. Renseigne G-XXXXXXX ou retire google_ga4 d’enabledProviders.',
+      });
+    }
+
+    // Règle 2 : Conv labels prod sans Ads Customer ID
+    const convLabels = prod.googleAdsConvLabels ?? {};
+    const hasAnyLabel = Object.values(convLabels).some((v) => !!v);
+    if (hasAnyLabel && !prod.googleAdsCustomerId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['perEnv', 'production', 'googleAdsCustomerId'],
+        message:
+          'Des Conv labels sont définis mais l’Ads Customer ID est vide en production.',
+      });
+    }
+
+    // Règle 3 : GA4 ID prod marqué DEV/TEST (heuristique anti-erreur).
+    // (Pixel Meta est numérique, donc cette règle ne s'y applique pas.)
+    const suspectMarkers = /(DEV|TEST)/i;
+    if (prod.ga4MeasurementId && suspectMarkers.test(prod.ga4MeasurementId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['perEnv', 'production', 'ga4MeasurementId'],
+        message:
+          'Le Measurement ID GA4 de production semble être un identifiant DEV/TEST.',
+      });
+    }
+  });
 
 export type GtmConfigCreateInput = z.infer<typeof gtmConfigCreateInputSchema>;
 

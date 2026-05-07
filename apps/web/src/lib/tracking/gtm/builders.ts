@@ -330,8 +330,11 @@ function buildGa4EventTag(ev: EventCatalogEntry, triggers: GtmTrigger[]): GtmTag
 function buildMetaEventTag(ev: EventCatalogEntry, triggers: GtmTrigger[]): GtmTag | null {
   const metaName = mapEventName(ev.name, 'meta');
   if (!metaName) return null;
+  // Le nom du tag inclut l'event FemiGlow source pour éviter les doublons
+  // quand plusieurs events FemiGlow mappent vers le même event Meta
+  // (ex. view_item_list / view_item / view_cart → tous ViewContent).
   return {
-    name: `Meta Evt — ${metaName}`,
+    name: `Meta Evt — ${ev.name} (${metaName})`,
     type: 'html',
     parameter: [
       param(
@@ -346,6 +349,24 @@ function buildMetaEventTag(ev: EventCatalogEntry, triggers: GtmTrigger[]): GtmTa
   };
 }
 
+function buildMetaInitTag(triggers: GtmTrigger[], cfg: GtmEnvConfig): GtmTag {
+  return {
+    name: 'Meta Init — production',
+    type: 'html',
+    parameter: [
+      param(
+        'html',
+        `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${cfg.metaPixelId}');fbq('track','PageView');</script>`,
+      ),
+      param('supportDocumentWrite', 'false', 'boolean'),
+    ],
+    firingTriggerId: [findTriggerId(triggers, 'PV — All Pages')],
+    priority: { type: 'integer', value: '70' },
+    tagFiringOption: 'oncePerEvent',
+    parentFolderId: FOLDER_IDS.config,
+  };
+}
+
 export function buildAllTags(triggers: GtmTrigger[], cfg: GtmEnvConfig): GtmTag[] {
   const tags: GtmTag[] = [];
   if (cfg.enabledProviders.includes('google_ga4') && cfg.ga4MeasurementId) {
@@ -356,6 +377,8 @@ export function buildAllTags(triggers: GtmTrigger[], cfg: GtmEnvConfig): GtmTag[
     }
   }
   if (cfg.enabledProviders.includes('meta') && cfg.metaPixelId) {
+    // Meta Init doit être créé avant les Meta Events qui le référencent en setupTag.
+    tags.push(buildMetaInitTag(triggers, cfg));
     for (const ev of EVENT_CATALOG) {
       const tag = buildMetaEventTag(ev, triggers);
       if (tag) tags.push(tag);

@@ -61,11 +61,12 @@ describe('gtmExporter — contenu généré', () => {
   it('crée un tag Meta uniquement si un mapping existe', () => {
     const c = buildContainer({ env: 'production', exportTime: FIXED_DATE });
     const metaTags = c.containerVersion.tag.filter((t) => t.name.startsWith('Meta Evt — '));
-    // Au moins Purchase, ChatEngagement, Contact
     const names = metaTags.map((t) => t.name);
-    expect(names).toContain('Meta Evt — Purchase');
-    expect(names).toContain('Meta Evt — ChatEngagement');
-    expect(names).toContain('Meta Evt — Contact');
+    // Les noms de tags Meta incluent l'event FemiGlow source pour éviter les
+    // doublons (cf. duplicate_name linter rule).
+    expect(names.some((n) => n.includes('(Purchase)'))).toBe(true);
+    expect(names.some((n) => n.includes('(ChatEngagement)'))).toBe(true);
+    expect(names.some((n) => n.includes('(Contact)'))).toBe(true);
   });
 
   it('en environnement dev, ne crée aucun tag pixel (providers vides)', () => {
