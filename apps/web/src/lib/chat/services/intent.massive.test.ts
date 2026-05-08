@@ -148,6 +148,14 @@ const CASES: IntentCase[] = [
   // Anti-régression : « j'ai déjà acheté » NE doit PAS être purchase-intent
   { text: "j'ai déjà acheté", language: 'fr', rejected: ['purchase-intent'] },
   { text: 'j’ai déjà acheté hier', language: 'fr', rejected: ['purchase-intent'] },
+  // CHA-230 v6 — élision « l'acheter / l'commander » (bug prod 2026-05-08
+  // « Je veux l'acheter » → réponse promet form qui n'apparaît pas).
+  { text: "Je veux l'acheter", language: 'fr', expected: 'purchase-intent', note: 'Bug v6' },
+  { text: "Je voudrais l'acheter", language: 'fr', expected: 'purchase-intent' },
+  { text: "Je veux l'acheter svp", language: 'fr', expected: 'purchase-intent' },
+  { text: 'Je veux l’acheter', language: 'fr', expected: 'purchase-intent' },
+  { text: "Je peux l'acheter ?", language: 'fr', expected: 'purchase-intent' },
+  { text: "j'aimerais l'acheter", language: 'fr', expected: 'purchase-intent' },
   // Darija
   { text: 'bghit nshri', language: 'ar-MA', expected: 'purchase-intent' },
   { text: 'bghit ntleb', language: 'ar-MA', expected: 'purchase-intent' },
@@ -389,6 +397,21 @@ describe('intent.detect — massive table-driven regression', () => {
     expect(detectIntent('finaliser mon achat')).toBe('purchase-intent');
     // Anti-régression : passé reste neutre
     expect(detectIntent("j'ai déjà acheté")).not.toBe('purchase-intent');
+  });
+
+  it('le bug élision "Je veux l\'acheter" (CHA-230 v6) est désormais détecté', () => {
+    // Bug prod 2026-05-08 — la regex `[a-zA-Zà-ÿ'’-]+\s+` exigeait un
+    // espace après le pronom complément, ce qui cassait sur l'élision
+    // « l'acheter ». Symptôme : assistant promet le form, form ne s'affiche pas.
+    expect(detectIntent("Je veux l'acheter")).toBe('purchase-intent');
+    expect(detectIntent('Je veux l’acheter')).toBe('purchase-intent');
+    expect(detectIntent("Je voudrais l'acheter")).toBe('purchase-intent');
+    expect(detectIntent("Je peux l'acheter ?")).toBe('purchase-intent');
+    expect(detectIntent("j'aimerais l'acheter")).toBe('purchase-intent');
+    expect(detectIntent("Je veux l'acheter svp")).toBe('purchase-intent');
+    // Variantes mot complet (déjà OK avant, anti-régression)
+    expect(detectIntent('je veux les acheter')).toBe('purchase-intent');
+    expect(detectIntent('je veux le commander')).toBe('purchase-intent');
   });
 
   it('aucun anti-pattern (rejected) ne trigger', () => {

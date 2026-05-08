@@ -256,10 +256,14 @@ const RULES: PatternRule[] = [
       // On ajoute aussi `aimerais` / `voulais` (formulations polies).
       // Le `[a-zA-Zà-ÿ'’-]+` limite les insertions à des mots sans
       // ponctuation lourde, ce qui évite de chevaucher 2 phrases.
-      /\bje\s+(veux|voudrais|souhaite|peux|vais|aimerais|voulais)\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(commander|acheter|prendre|payer)\b/i,
+      // CHA-230 v6 — Le `(?:l['’])?` capte l'élision « l'acheter / l'commander »
+      // (bug prod 2026-05-08 : « Je veux l'acheter » tombait en misc parce
+      // que l'apostrophe casse le `[a-zA-Zà-ÿ'’-]+\s+` qui exigeait un
+      // espace après le pronom).
+      /\bje\s+(veux|voudrais|souhaite|peux|vais|aimerais|voulais)\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(?:l['’])?(commander|acheter|prendre|payer)\b/i,
       // Variante sans modal explicite : « j'aimerais ... commander » via
       // l'élision « j' » (cas où le tokenizer ne voit pas l'espace).
-      /\bj['’]?aimerais\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(commander|acheter|prendre|payer)\b/i,
+      /\bj['’]?aimerais\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(?:l['’])?(commander|acheter|prendre|payer)\b/i,
       /\b(j['’]?achète|j['’]?ach[eè]te|je\s+l['’]?achète|je\s+le\s+prends|je\s+les\s+prends)\b/i,
       /\b(passer|faire|valider)\s+(une\s+|la\s+)?commande\b/i,
       /\bok\s+je\s+(prends|commande|veux|achète)\b/i,

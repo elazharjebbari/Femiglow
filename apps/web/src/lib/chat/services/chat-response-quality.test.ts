@@ -784,4 +784,73 @@ describe('CHA-230 — Qualité de réponse / coverage lead-form', () => {
       expect(detectIntent("j'ai acheté la semaine dernière")).not.toBe('purchase-intent');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // 9. CHA-230 v6 — Élision pronom complément (« Je veux l'acheter »)
+  //
+  // Bug prod 2026-05-08 (transcript 2) : « Bonjous » → greeting, puis
+  // « Je veux l'acheter » → assistant répond « Parfait. La suite se règle
+  // juste en dessous. » → aucun form. Deux causes : (1) regex casse sur
+  // l'apostrophe avant le verbe, (2) la formule LLM n'a pas le mot
+  // « formulaire ».
+  // ---------------------------------------------------------------------------
+  describe('9. CHA-230 v6 — Élision pronom complément + paraphrase LLM', () => {
+    const elisions = [
+      "Je veux l'acheter",
+      'Je veux l’acheter',
+      "Je voudrais l'acheter",
+      "Je peux l'acheter ?",
+      "j'aimerais l'acheter",
+      "Je veux l'acheter svp",
+    ];
+
+    it.each(elisions)('"%s" → purchase-intent', (text) => {
+      expect(detectIntent(text)).toBe('purchase-intent');
+    });
+
+    it('chaque variante avec élision déclenche le formulaire au 1er tour', () => {
+      for (const text of elisions) {
+        const verdict = shouldOfferLeadForm({
+          enabled: true,
+          alreadyOffered: false,
+          history: [u(text)],
+          currentIntent: 'purchase-intent',
+          assistantReply: 'ok',
+          now: MIDWEEK_OPEN,
+        });
+        expect(verdict.shouldOffer, `attendu true pour "${text}"`).toBe(true);
+        expect(verdict.reason).toBe('purchase-intent');
+      }
+    });
+
+    it('paraphrase LLM "la suite se règle juste en dessous" → assistantPromisedForm', () => {
+      // Bug prod 2026-05-08 — l'assistant répond cette formule sans le mot
+      // « formulaire ». Le filet doit la capturer parce que dans le chat,
+      // il n'y a JAMAIS rien d'autre que le form sous le message.
+      const promises = [
+        'Parfait. La suite se règle juste en dessous.',
+        'La suite se règle en dessous',
+        'La suite se passe juste en dessous',
+        'On enregistre tout ça juste en dessous',
+        'On finalise juste en dessous',
+        'Remplissez juste en dessous',
+        'Complétez juste en dessous svp',
+        'Laissez vos infos juste en dessous',
+      ];
+      for (const reply of promises) {
+        expect(assistantPromisedForm(reply), `attendu true pour "${reply}"`).toBe(true);
+      }
+    });
+
+    it('ne flague PAS "la suite logique" / "la suite Royale" (faux positifs sémantiques)', () => {
+      const safe = [
+        'La suite logique de votre routine est claire.',
+        'La suite Royale est notre best-seller.',
+        'Notre kit est livré sous 48h.',
+      ];
+      for (const reply of safe) {
+        expect(assistantPromisedForm(reply), `attendu false pour "${reply}"`).toBe(false);
+      }
+    });
+  });
 });

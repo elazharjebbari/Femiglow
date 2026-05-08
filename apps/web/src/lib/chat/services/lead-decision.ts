@@ -154,6 +154,16 @@ export const PROMISED_FORM_PATTERNS: RegExp[] = [
   /\bvalidez\s+(vos\s+)?coordonnées\b/i,
   /\blaissez[-\s]moi\s+(votre\s+)?prénom\b/i,
   /\bje\s+note\s+(votre\s+)?prénom\b/i,
+  // CHA-230 v6 — Le LLM peut paraphraser sans le mot « formulaire ».
+  // Cas prod 2026-05-08 : « La suite se règle juste en dessous » →
+  // l'utilisateur attend un widget qui n'arrive pas. Tous ces motifs
+  // sous-entendent « regardez sous mon message » dans un contexte chat
+  // où il n'y a JAMAIS rien d'autre que le form sous le message.
+  /\bla\s+suite\s+(se\s+|s['’])?(règle|passe|joue|fait|enregistre|note|continue|finalise)\b/i,
+  /\b(juste|directement)\s+(en|au|ci[-\s]?)[-\s]?dessous\b/i,
+  /\b(en|au|ci[-\s]?)[-\s]?dessous\s+(pour|vous\s+(pourrez|pouvez|allez)|permet|nous)\b/i,
+  /\b(on|nous|je)\s+(enregistre|note|valide|finalise|continue|prend)\s+.{0,30}(en|ci[-\s]?|au)[-\s]?dessous\b/i,
+  /\b(remplissez|complétez|laissez|donnez|écrivez|tapez)\s+.{0,30}(en|ci[-\s]?|au|juste)[-\s]?dessous\b/i,
 ];
 
 /** True si la réponse assistant annonce un formulaire explicitement. */
