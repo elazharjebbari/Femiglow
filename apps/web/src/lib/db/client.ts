@@ -14,6 +14,12 @@ import * as schema from '@/lib/db/schema';
 import type {
   AdminUser,
   AuditEvent,
+  InsightsComponentDailyRow,
+  InsightsEventDailyRow,
+  InsightsFunnelDailyRow,
+  InsightsPageDailyRow,
+  InsightsRefreshRunRow,
+  InsightsSectionDailyRow,
   Lead,
   LeadEvent,
   Media,
@@ -76,6 +82,12 @@ interface Store {
   componentAnimationBindings: Map<string, ComponentAnimationBinding>;
   componentFieldBindings: Map<string, ComponentFieldBinding>;
   componentFieldHistory: Map<string, ComponentFieldHistoryEntry>;
+  insightsEventDaily: Map<string, InsightsEventDailyRow>;
+  insightsPageDaily: Map<string, InsightsPageDailyRow>;
+  insightsComponentDaily: Map<string, InsightsComponentDailyRow>;
+  insightsSectionDaily: Map<string, InsightsSectionDailyRow>;
+  insightsFunnelDaily: Map<string, InsightsFunnelDailyRow>;
+  insightsRefreshRun: Map<string, InsightsRefreshRunRow>;
 }
 
 const globalAny = globalThis as typeof globalThis & { __femiglowStore?: Store };
@@ -115,6 +127,12 @@ function makeStore(): Store {
     componentAnimationBindings: new Map(),
     componentFieldBindings: new Map(),
     componentFieldHistory: new Map(),
+    insightsEventDaily: new Map(),
+    insightsPageDaily: new Map(),
+    insightsComponentDaily: new Map(),
+    insightsSectionDaily: new Map(),
+    insightsFunnelDaily: new Map(),
+    insightsRefreshRun: new Map(),
   };
 }
 

@@ -784,3 +784,90 @@ export interface ResolvedField<T = unknown> {
 }
 
 export type ResolvedFields = Record<string, ResolvedField>;
+
+/* ─────────────────────────────────────────────────────────────────
+ * Analytics Insights (cf. docs/analytics-insights/)
+ * ───────────────────────────────────────────────────────────────── */
+
+export interface InsightsEventDailyRow {
+  id: string;
+  date: string; // YYYY-MM-DD
+  eventName: string;
+  eventCategory: string;
+  env: string;
+  device: string;
+  locale: string;
+  count: number;
+  uniqueSessions: number;
+  conversionCount: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsPageDailyRow {
+  id: string;
+  date: string;
+  pageRoute: string;
+  pageViews: number;
+  uniqueSessions: number;
+  uniqueVisitors: number;
+  eventsTotal: number;
+  scroll75Count: number;
+  conversions: number;
+  bounceCount: number;
+  avgTimeSeconds: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsComponentDailyRow {
+  id: string;
+  date: string;
+  componentId: string;
+  componentName: string | null;
+  pageRoute: string | null;
+  eventName: string;
+  count: number;
+  uniqueSessions: number;
+  conversionCount: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsSectionDailyRow {
+  id: string;
+  date: string;
+  pageRoute: string;
+  sectionId: string;
+  views: number;
+  avgDwellSeconds: number;
+  uniqueSessions: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsFunnelDailyRow {
+  id: string;
+  date: string;
+  viewItem: number;
+  addToCart: number;
+  beginCheckout: number;
+  addPaymentInfo: number;
+  purchase: number;
+  generateLead: number;
+  uniquePurchasers: number;
+  revenueTotalCents: number;
+  refreshedAt: Date;
+}
+
+export type InsightsRefreshTrigger = 'cron' | 'manual';
+export type InsightsRefreshStatus = 'running' | 'success' | 'failed' | 'skipped';
+
+export interface InsightsRefreshRunRow {
+  id: string;
+  trigger: InsightsRefreshTrigger;
+  status: InsightsRefreshStatus;
+  startedAt: Date;
+  finishedAt: Date | null;
+  durationsMs: Record<string, number>;
+  counts: Record<string, number>;
+  errorCode: string | null;
+  errorMessage: string | null;
+  triggeredBy: string | null;
+}

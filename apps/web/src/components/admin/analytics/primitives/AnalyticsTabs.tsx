@@ -31,6 +31,11 @@ export const ANALYTICS_TABS: AnalyticsTab[] = [
     label: 'Checkout',
     match: ['/admin/analytics/checkout'],
   },
+  {
+    href: '/admin/analytics/insights',
+    label: 'Insights',
+    match: ['/admin/analytics/insights'],
+  },
 ];
 
 interface AnalyticsTabsProps {

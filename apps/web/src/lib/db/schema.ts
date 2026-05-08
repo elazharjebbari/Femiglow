@@ -1248,3 +1248,162 @@ export const experimentAssignments = pgTable(
     variantIdx: index('experiment_assignments_variant_idx').on(t.variantId),
   }),
 );
+
+/* ─────────────────────────────────────────────────────────────────────
+ * ANALYTICS INSIGHTS — agrégations pré-calculées + orchestration
+ * cf. docs/analytics-insights/02-data.md
+ *
+ * Six tables :
+ *  - insights_event_daily       : event × jour × env × device × locale
+ *  - insights_page_daily        : page_route × jour
+ *  - insights_component_daily   : component × event × jour
+ *  - insights_section_daily     : section × page × jour (avec dwell)
+ *  - insights_funnel_daily      : 1 ligne par jour (funnel ecommerce)
+ *  - insights_refresh_run       : historique des runs (lock + audit)
+ *
+ * Toutes les agrégations sont incrémentales (`INSERT … ON CONFLICT DO UPDATE`)
+ * et anonymisées par construction. Aucune PII n'est stockée.
+ * ───────────────────────────────────────────────────────────────────── */
+
+export const insightsEventDaily = pgTable(
+  'insights_event_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(), // YYYY-MM-DD UTC
+    eventName: text('event_name').notNull(),
+    eventCategory: text('event_category').notNull(),
+    env: text('env').notNull(),
+    device: text('device').notNull(),
+    locale: text('locale').notNull(),
+    count: integer('count').notNull(),
+    uniqueSessions: integer('unique_sessions').notNull(),
+    conversionCount: integer('conversion_count').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    ievUnique: uniqueIndex('iev_unique').on(
+      t.date,
+      t.eventName,
+      t.env,
+      t.device,
+      t.locale,
+    ),
+    ievDateIdx: index('iev_date_idx').on(t.date),
+    ievEventIdx: index('iev_event_idx').on(t.eventName, t.date),
+    ievCategoryIdx: index('iev_category_idx').on(t.eventCategory, t.date),
+    ievEnvIdx: index('iev_env_idx').on(t.env, t.date),
+  }),
+);
+
+export const insightsPageDaily = pgTable(
+  'insights_page_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    pageRoute: text('page_route').notNull(),
+    pageViews: integer('page_views').notNull().default(0),
+    uniqueSessions: integer('unique_sessions').notNull().default(0),
+    uniqueVisitors: integer('unique_visitors').notNull().default(0),
+    eventsTotal: integer('events_total').notNull().default(0),
+    scroll75Count: integer('scroll_75_count').notNull().default(0),
+    conversions: integer('conversions').notNull().default(0),
+    bounceCount: integer('bounce_count').notNull().default(0),
+    avgTimeSeconds: integer('avg_time_seconds').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    ipaUnique: uniqueIndex('ipa_unique').on(t.date, t.pageRoute),
+    ipaDateIdx: index('ipa_date_idx').on(t.date),
+    ipaRouteIdx: index('ipa_route_idx').on(t.pageRoute, t.date),
+    ipaPvIdx: index('ipa_pv_idx').on(t.pageViews, t.date),
+  }),
+);
+
+export const insightsComponentDaily = pgTable(
+  'insights_component_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    componentId: text('component_id').notNull(),
+    componentName: text('component_name'),
+    pageRoute: text('page_route'),
+    eventName: text('event_name').notNull(),
+    count: integer('count').notNull().default(0),
+    uniqueSessions: integer('unique_sessions').notNull().default(0),
+    conversionCount: integer('conversion_count').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    icoUnique: uniqueIndex('ico_unique').on(
+      t.date,
+      t.componentId,
+      t.eventName,
+      t.pageRoute,
+    ),
+    icoDateIdx: index('ico_date_idx').on(t.date),
+    icoComponentIdx: index('ico_component_idx').on(t.componentId, t.date),
+    icoEventIdx: index('ico_event_idx').on(t.eventName, t.date),
+    icoCountIdx: index('ico_count_idx').on(t.count, t.date),
+  }),
+);
+
+export const insightsSectionDaily = pgTable(
+  'insights_section_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    pageRoute: text('page_route').notNull(),
+    sectionId: text('section_id').notNull(),
+    views: integer('views').notNull().default(0),
+    avgDwellSeconds: integer('avg_dwell_seconds').notNull().default(0),
+    uniqueSessions: integer('unique_sessions').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    iseUnique: uniqueIndex('ise_unique').on(t.date, t.pageRoute, t.sectionId),
+    iseDateIdx: index('ise_date_idx').on(t.date),
+    iseRouteIdx: index('ise_route_idx').on(t.pageRoute, t.date),
+    iseDwellIdx: index('ise_dwell_idx').on(t.avgDwellSeconds, t.date),
+  }),
+);
+
+export const insightsFunnelDaily = pgTable(
+  'insights_funnel_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    viewItem: integer('view_item').notNull().default(0),
+    addToCart: integer('add_to_cart').notNull().default(0),
+    beginCheckout: integer('begin_checkout').notNull().default(0),
+    addPaymentInfo: integer('add_payment_info').notNull().default(0),
+    purchase: integer('purchase').notNull().default(0),
+    generateLead: integer('generate_lead').notNull().default(0),
+    uniquePurchasers: integer('unique_purchasers').notNull().default(0),
+    revenueTotalCents: bigint('revenue_total_cents', { mode: 'number' }).notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    ifuUnique: uniqueIndex('ifu_date_unique').on(t.date),
+    ifuDateIdx: index('ifu_date_idx').on(t.date),
+  }),
+);
+
+export const insightsRefreshRun = pgTable(
+  'insights_refresh_run',
+  {
+    id: text('id').primaryKey(),
+    trigger: text('trigger').notNull(), // 'cron' | 'manual'
+    status: text('status').notNull(), // 'running' | 'success' | 'failed' | 'skipped'
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    durationsMs: jsonb('durations_ms').notNull().default({}),
+    counts: jsonb('counts').notNull().default({}),
+    errorCode: text('error_code'),
+    errorMessage: text('error_message'),
+    triggeredBy: text('triggered_by'),
+  },
+  (t) => ({
+    irfStartedIdx: index('irf_started_idx').on(t.startedAt),
+    irfStatusIdx: index('irf_status_idx').on(t.status, t.startedAt),
+  }),
+);
