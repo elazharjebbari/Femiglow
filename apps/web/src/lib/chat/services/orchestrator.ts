@@ -34,7 +34,7 @@ import { providerRouter } from './provider-router';
 import { sanitizeAndRedact } from './sanitize';
 import { charterFilter } from './charter-filter';
 import { classifyIntent } from './intent';
-import { shouldOfferLeadForm } from './lead-decision';
+import { assistantPromisedForm, shouldOfferLeadForm } from './lead-decision';
 import { detectInlineContact } from './phone-detect';
 import { ragService, type RetrievedChunk } from '../rag/service';
 import { getRuntimeBool } from '../runtime-setting';
@@ -407,18 +407,39 @@ export async function* streamReply(
           alreadyOffered,
           enabled: true,
         });
-        if (decision.shouldOffer && decision.reason && decision.copyKey) {
+
+        // CHA-230 v5 — Filet de sécurité « LLM promet le formulaire ».
+        // cf. `lead-decision.ts#assistantPromisedForm` pour la politique.
+        const llmPromisedForm = !alreadyOffered && assistantPromisedForm(aggregated);
+
+        let finalDecision = decision;
+        if (!decision.shouldOffer && llmPromisedForm) {
+          logger.warn('chat.orchestrator.lead_safety_net_triggered', {
+            sessionId: input.session.id,
+            messageId: assistantMessage.id,
+            currentIntent: intentTag,
+            reason: 'llm-promised-form',
+          });
+          finalDecision = {
+            shouldOffer: true,
+            reason: 'manual',
+            copyKey: 'manual',
+            debug: { ...decision.debug, safetyNet: 'llm-promised-form' },
+          };
+        }
+
+        if (finalDecision.shouldOffer && finalDecision.reason && finalDecision.copyKey) {
           await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
             messageId: assistantMessage.id,
-            reason: decision.reason,
-            copyKey: decision.copyKey,
+            reason: finalDecision.reason,
+            copyKey: finalDecision.copyKey,
           });
           yield {
             event: 'lead-form-offer',
             data: {
               messageId: assistantMessage.id,
-              reason: decision.reason,
-              copyKey: decision.copyKey,
+              reason: finalDecision.reason,
+              copyKey: finalDecision.copyKey,
             },
           };
         }

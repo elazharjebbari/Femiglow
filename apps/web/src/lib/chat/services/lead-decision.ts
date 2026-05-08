@@ -129,6 +129,39 @@ function isOutOfKnowledge(reply: string): boolean {
   return OUT_OF_KNOWLEDGE_PATTERNS.some((p) => p.test(reply));
 }
 
+/**
+ * CHA-230 v5 — Filet de sécurité « LLM annonce un formulaire ».
+ *
+ * Bugs récurrents en prod : le LLM répond une formule type « le petit
+ * formulaire ci-dessous prend trente secondes » MAIS la décision lead-form
+ * dit shouldOffer=false (intent regex ne matche pas, score < shortcut,
+ * etc.). Le visiteur lit une promesse de formulaire qui n'apparaît jamais.
+ *
+ * Politique : si l'assistant ANNONCE explicitement un formulaire, on
+ * force l'offre quoi qu'en dise la décision principale. C'est mieux
+ * d'afficher un faux positif d'offre qu'un visiteur bloqué — le
+ * commercial humain valide en aval.
+ *
+ * Patterns dérivés des copies dans `instruction-defaults.ts` + variantes
+ * observées en prod.
+ */
+export const PROMISED_FORM_PATTERNS: RegExp[] = [
+  /formulaire\s+(juste\s+)?(ci[-\s]?dessous|en\s+dessous|qui\s+s['’]?affiche|sous\s+(ce|mon)\s+message)/i,
+  /petit\s+formulaire/i,
+  /le\s+formulaire\s+ci[-\s]?dessous/i,
+  /trente\s+secondes/i,
+  /\bprénom\s+et\s+(votre\s+)?numéro\b/i,
+  /\bvalidez\s+(vos\s+)?coordonnées\b/i,
+  /\blaissez[-\s]moi\s+(votre\s+)?prénom\b/i,
+  /\bje\s+note\s+(votre\s+)?prénom\b/i,
+];
+
+/** True si la réponse assistant annonce un formulaire explicitement. */
+export function assistantPromisedForm(reply: string): boolean {
+  if (!reply) return false;
+  return PROMISED_FORM_PATTERNS.some((p) => p.test(reply));
+}
+
 /** Compte les messages user dans l'historique. */
 function countUserMessages(history: LeadDecisionInput['history']): number {
   return history.filter((m) => m.role === 'user').length;

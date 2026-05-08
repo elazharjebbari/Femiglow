@@ -133,6 +133,21 @@ const CASES: IntentCase[] = [
   // Formulaire
   { text: 'Donnez-moi le formulaire', language: 'fr', expected: 'purchase-intent' },
   { text: 'Tu as un formulaire ?', language: 'fr', expected: 'purchase-intent' },
+  // CHA-230 v5 — bug "achat" + complément (svp, du kit, faire un, pour)
+  { text: 'achat', language: 'fr', expected: 'purchase-intent', note: 'Bug prod 2026-05-08' },
+  { text: 'achat svp', language: 'fr', expected: 'purchase-intent', note: 'Bug prod 2026-05-08' },
+  { text: 'achat du kit', language: 'fr', expected: 'purchase-intent' },
+  { text: 'pour achat', language: 'fr', expected: 'purchase-intent' },
+  { text: 'pour acheter', language: 'fr', expected: 'purchase-intent' },
+  { text: 'faire un achat', language: 'fr', expected: 'purchase-intent' },
+  { text: 'je veux faire un achat', language: 'fr', expected: 'purchase-intent' },
+  { text: 'je voudrais faire un achat', language: 'fr', expected: 'purchase-intent' },
+  { text: 'finaliser mon achat', language: 'fr', expected: 'purchase-intent' },
+  { text: 'valider mon achat', language: 'fr', expected: 'purchase-intent' },
+  { text: 'passer un achat', language: 'fr', expected: 'purchase-intent' },
+  // Anti-régression : « j'ai déjà acheté » NE doit PAS être purchase-intent
+  { text: "j'ai déjà acheté", language: 'fr', rejected: ['purchase-intent'] },
+  { text: 'j’ai déjà acheté hier', language: 'fr', rejected: ['purchase-intent'] },
   // Darija
   { text: 'bghit nshri', language: 'ar-MA', expected: 'purchase-intent' },
   { text: 'bghit ntleb', language: 'ar-MA', expected: 'purchase-intent' },
@@ -360,6 +375,20 @@ describe('intent.detect — massive table-driven regression', () => {
     expect(detectIntent('Je souhaite au fait commander')).toBe('purchase-intent');
     expect(detectIntent('Je veux donc commander')).toBe('purchase-intent');
     expect(detectIntent('Je voudrais bien commander')).toBe('purchase-intent');
+  });
+
+  it('le bug "achat" + petit complément (CHA-230 v5) est désormais détecté', () => {
+    // Bug prod 2026-05-08 — "achat" tout seul OK, mais "achat svp",
+    // "achat du kit", "faire un achat", "pour achat" tombaient en misc.
+    expect(detectIntent('achat')).toBe('purchase-intent');
+    expect(detectIntent('achat svp')).toBe('purchase-intent');
+    expect(detectIntent('achat du kit')).toBe('purchase-intent');
+    expect(detectIntent('pour achat')).toBe('purchase-intent');
+    expect(detectIntent('faire un achat')).toBe('purchase-intent');
+    expect(detectIntent('je veux faire un achat')).toBe('purchase-intent');
+    expect(detectIntent('finaliser mon achat')).toBe('purchase-intent');
+    // Anti-régression : passé reste neutre
+    expect(detectIntent("j'ai déjà acheté")).not.toBe('purchase-intent');
   });
 
   it('aucun anti-pattern (rejected) ne trigger', () => {

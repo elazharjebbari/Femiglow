@@ -271,6 +271,19 @@ const RULES: PatternRule[] = [
       // « j'ai déjà commandé » plus bas écarte les faux positifs).
       /^\s*(commander|acheter|order|buy|achat|tlb|tleb)\s*[!?.…]?\s*$/i,
       /^\s*(je\s+(veux|voudrais)\s+commander)\s*[!?.…]?\s*$/i,
+      // CHA-230 v5 — « achat » avec petit complément de politesse ou objet.
+      // Cas reporté en prod : « achat svp », « achat du kit », « pour
+      // l'achat », « faire un achat » → tombaient en misc parce que la
+      // forme « SEUL » plus haut exigeait un mot isolé. Ces formulations
+      // sont presque exclusivement transactionnelles → strong.
+      /\b(faire|passer|effectuer|valider|finaliser)\s+(un\s+|mon\s+|cet?\s+|son\s+)?achat\b/i,
+      /\bje\s+(veux|voudrais|souhaite|aimerais|peux|vais)\s+(faire|passer|effectuer)\s+(un\s+|mon\s+)?achat\b/i,
+      // « pour achat », « pour acheter », « pour faire un achat ».
+      /\bpour\s+(faire\s+(un\s+)?|un\s+|mon\s+)?(achat|acheter)\b/i,
+      /\b(l['’]?|un\s+|mon\s+)achat\s+(du|de\s+(la|votre|ce))\s+kit\b/i,
+      /^\s*achat\s+(svp|s['’]?il\s+vous\s+pla[iî]t|please|pls|stp)\s*[!?.…]?\s*$/i,
+      // « achat du kit » avec politesse optionnelle en suffixe.
+      /^\s*achat\s+du\s+kit(\s+(svp|s['’]?il\s+vous\s+pla[iî]t|please|pls|stp))?\s*[!?.…]?\s*$/i,
       // Darija : "bghit nshri/ntleb" et "kifach ntleb/nshri" — ces phrases
       // sont uniques au "comment commander/acheter" en darija → score 2.
       /\bbghit\s+(nshri|ntleb|nakhdo|nakhod)\b/i,
@@ -288,8 +301,10 @@ const RULES: PatternRule[] = [
     ],
     // Négateurs — si l'utilisateur parle d'une commande passée, ce
     // n'est PAS un signal d'achat (c'est `order-status`).
+    // CHA-230 v5 — On étend aussi à « j'ai déjà acheté » pour symétrie.
     negate: [
       /\bj['’]ai\s+(déjà\s+)?command[ée]\b/i,
+      /\bj['’]ai\s+(déjà\s+)?ach[eè]t[eé]\b/i,
       /\bma\s+commande\b/i, // "ma commande" = suivi
       /\bj['’]ai\s+pass[ée]?\s+(une\s+)?commande\b/i,
       /\bma\s+commande\s+est\b/i,

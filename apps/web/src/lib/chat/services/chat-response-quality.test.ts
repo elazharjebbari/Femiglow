@@ -37,7 +37,11 @@ import { describe, expect, it } from 'vitest';
 
 import type { ChatMessageRow } from '../db/schema';
 import { detectIntent, type ChatIntent } from './intent';
-import { shouldOfferLeadForm, type LeadFormReason } from './lead-decision';
+import {
+  assistantPromisedForm,
+  shouldOfferLeadForm,
+  type LeadFormReason,
+} from './lead-decision';
 
 // ---------------------------------------------------------------------------
 // Helpers : générateurs de conversation
@@ -674,6 +678,110 @@ describe('CHA-230 — Qualité de réponse / coverage lead-form', () => {
       ];
       expect(buckets.every((n) => n >= 1)).toBe(true);
       expect(buckets.length).toBeGreaterThanOrEqual(7);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 7. CHA-230 v5 — Filet de sécurité « LLM promet le formulaire »
+  //
+  // Bug reporté en prod : visiteur écrit « achat » → l'assistant répond
+  // « Le petit formulaire ci-dessous prend trente secondes » MAIS aucun
+  // formulaire n'apparaît. Le filet de sécurité doit capturer ces cas.
+  // ---------------------------------------------------------------------------
+  describe('7. CHA-230 v5 — assistantPromisedForm (filet de sécurité LLM)', () => {
+    it('détecte les promesses de formulaire dans la réponse assistant', () => {
+      const promises = [
+        'Le petit formulaire ci-dessous prend trente secondes.',
+        'Voici le petit formulaire pour vous.',
+        'Le formulaire ci-dessous est rapide.',
+        'Le formulaire ci dessous prend 30 secondes',
+        'Le formulaire en dessous',
+        'Le formulaire qui s’affiche sous ce message',
+        'Laissez moi votre prénom et votre numéro',
+        'Validez vos coordonnées juste ici',
+        'Je note votre prénom et numéro',
+      ];
+      for (const reply of promises) {
+        expect(assistantPromisedForm(reply), `attendu true pour "${reply}"`).toBe(true);
+      }
+    });
+
+    it('ne flague PAS les réponses sans promesse de formulaire', () => {
+      const safe = [
+        'Le kit est à 290 MAD.',
+        'Bonjour, comment puis-je vous aider ?',
+        'Notre kit est livré sous 48h.',
+        'Le rituel se fait en 3 étapes.',
+        '',
+      ];
+      for (const reply of safe) {
+        expect(assistantPromisedForm(reply), `attendu false pour "${reply}"`).toBe(false);
+      }
+    });
+
+    it('exact bug prod 2026-05-08 : "Bien sûr. Le petit formulaire ci-dessous..."', () => {
+      const reply =
+        'Bien sûr. Le petit formulaire ci-dessous prend trente secondes. Validez vos coordonnées et notre équipe vous rappelle dans la journée.';
+      expect(assistantPromisedForm(reply)).toBe(true);
+    });
+
+    it("résiste aux variantes d'apostrophes et espaces", () => {
+      // Apostrophes typographiques + espaces multiples + casse mixte.
+      expect(assistantPromisedForm('Le PETIT formulaire ci-dessous')).toBe(true);
+      expect(assistantPromisedForm('Le formulaire   ci-dessous')).toBe(true);
+      expect(assistantPromisedForm('Le formulaire qui s’affiche')).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 8. CHA-230 v5 — Régression "achat" + petit complément
+  //
+  // Le visiteur écrit « achat svp », « pour achat », « faire un achat »,
+  // « l’achat du kit » → la regex doit reconnaître purchase-intent SANS
+  // appel LLM (shortcut deterministe, score ≥ REGEX_SHORTCUT_THRESHOLD).
+  // ---------------------------------------------------------------------------
+  describe('8. CHA-230 v5 — Variantes "achat" déclenchent purchase-intent', () => {
+    const variants = [
+      'achat',
+      'achat svp',
+      'achat stp',
+      'achat du kit',
+      'achat du kit svp',
+      'pour achat',
+      'pour acheter',
+      'pour faire un achat',
+      'faire un achat',
+      'je veux faire un achat',
+      'je voudrais faire un achat',
+      'finaliser mon achat',
+      'valider mon achat',
+      'passer un achat',
+      'effectuer un achat',
+    ];
+
+    it.each(variants)('"%s" → purchase-intent', (text) => {
+      expect(detectIntent(text)).toBe('purchase-intent');
+    });
+
+    it('chaque variante "achat" déclenche le formulaire au 1er tour', () => {
+      for (const text of variants) {
+        const verdict = shouldOfferLeadForm({
+          enabled: true,
+          alreadyOffered: false,
+          history: [u(text)],
+          currentIntent: 'purchase-intent',
+          assistantReply: 'ok',
+          now: MIDWEEK_OPEN,
+        });
+        expect(verdict.shouldOffer, `attendu true pour "${text}"`).toBe(true);
+        expect(verdict.reason).toBe('purchase-intent');
+      }
+    });
+
+    it("n'attrape PAS les négations \"j'ai déjà acheté\"", () => {
+      expect(detectIntent("j'ai déjà acheté")).not.toBe('purchase-intent');
+      expect(detectIntent("j'ai déjà acheté hier")).not.toBe('purchase-intent');
+      expect(detectIntent("j'ai acheté la semaine dernière")).not.toBe('purchase-intent');
     });
   });
 });
