@@ -40,12 +40,26 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
             Catalogue éditable. Cycle de vie : draft ↔ published → archived → suppression.
           </p>
         </div>
-        <Link
-          href="/admin/products/new"
-          className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
-        >
-          + Nouveau produit
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {/*
+            Bouton Feed produit — ouvre la page d'aperçu Kolenda-driven
+            avec rendu UI, JSON et XML Google Merchant téléchargeable.
+            Cf. /admin/products/feed.
+          */}
+          <Link
+            href="/admin/products/feed"
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            data-testid="admin-products-feed-link"
+          >
+            Feed produit
+          </Link>
+          <Link
+            href="/admin/products/new"
+            className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+          >
+            + Nouveau produit
+          </Link>
+        </div>
       </header>
 
       <form

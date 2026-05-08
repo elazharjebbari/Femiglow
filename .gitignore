@@ -26,3 +26,10 @@ test-results
 
 # Storybook
 storybook-static
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Claude Code worktrees (chaque worktree est un repo Git séparé,
+# ne doit jamais être committé en gitlink dans le repo principal)
+.claude/worktrees/

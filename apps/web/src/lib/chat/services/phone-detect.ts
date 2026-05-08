@@ -125,14 +125,23 @@ function isPlausibleFirstName(raw: string): boolean {
 }
 
 /**
- * Extrait un prénom candidat du segment qui précède le numéro.
+ * Extrait un prénom candidat depuis un segment texte (avant OU après le
+ * numéro). On parcourt tous les tokens alphabétiques du segment, on
+ * écarte ceux qui ressemblent à du bruit (stopwords / mots collés), et
+ * on renvoie le PLUS PROCHE du numéro :
+ *  - pour `before` (texte avant le numéro), on lit en sens inverse et
+ *    on prend le dernier token plausible — celui collé au numéro.
+ *  - pour `after` (texte après le numéro), on lit en sens normal et on
+ *    prend le premier token plausible — celui collé au numéro.
  *
- * On prend le DERNIER token plausible avant l'index du match — c'est
- * généralement le plus proche du numéro (ex. "Bonjour je m'appelle
- * Hamid 0651592310" → "Hamid"). Si rien n'est trouvé, on renvoie le
- * dernier token alphabétique du segment, en dernier recours.
+ * Ne PAS utiliser pour de la validation forte — l'extraction sert
+ * uniquement à pré-remplir / suggérer le prénom du lead, et un fallback
+ * "Visiteur" couvre les échecs.
  */
-export function extractFirstName(textBeforePhone: string): string | null {
+export function extractFirstName(
+  textBeforePhone: string,
+  direction: 'before' | 'after' = 'before',
+): string | null {
   if (!textBeforePhone || textBeforePhone.trim().length === 0) return null;
 
   const tokens: string[] = [];
@@ -143,20 +152,22 @@ export function extractFirstName(textBeforePhone: string): string | null {
     tokens.push(match[1]!);
   }
 
-  // Stratégie 1 : dernier token plausible (le plus proche du numéro).
-  for (let i = tokens.length - 1; i >= 0; i -= 1) {
-    if (isPlausibleFirstName(tokens[i]!)) {
-      return capitalize(tokens[i]!);
+  if (tokens.length === 0) return null;
+
+  // Stratégie 1 : selon la direction, on cherche le token le plus proche
+  // du numéro qui passe le filtre `isPlausibleFirstName`.
+  const ordered = direction === 'before' ? [...tokens].reverse() : tokens;
+  for (const tok of ordered) {
+    if (isPlausibleFirstName(tok)) {
+      return capitalize(tok);
     }
   }
 
-  // Stratégie 2 : le tout dernier token, tant qu'il n'est pas dans la
-  // stoplist — accepte "Hamid" mais rejette "numero".
-  if (tokens.length > 0) {
-    const last = tokens[tokens.length - 1]!;
-    if (!FIRST_NAME_STOPWORDS.has(last.toLowerCase())) {
-      return capitalize(last);
-    }
+  // Stratégie 2 : dernier filet — le token le plus proche du numéro,
+  // s'il n'est pas dans la stoplist.
+  const fallback = direction === 'before' ? tokens[tokens.length - 1]! : tokens[0]!;
+  if (!FIRST_NAME_STOPWORDS.has(fallback.toLowerCase())) {
+    return capitalize(fallback);
   }
 
   return null;
@@ -226,7 +237,15 @@ export function detectInlineContact(
     const parsed = tryParsePhone(cand.raw, hint);
     if (parsed) {
       const before = text.slice(0, cand.index);
-      const firstName = extractFirstName(before);
+      // Le prénom peut être AVANT le numéro ("Hamid 0651...") ou APRÈS
+      // ("0651... Hamid"). On essaie d'abord avant — c'est l'ordre le
+      // plus naturel pour une présentation polie. Si rien n'est trouvé,
+      // on regarde après. Cas réel observé : "0751592310 Hamid".
+      let firstName = extractFirstName(before, 'before');
+      if (!firstName) {
+        const after = text.slice(cand.index + cand.raw.length);
+        firstName = extractFirstName(after, 'after');
+      }
       const explicit = /^\s*(?:\+|00)/.test(cand.raw);
       // Confiance : préfixe international explicite OU mobile reconnu →
       // high. Sinon medium (un format saisi à la française local).

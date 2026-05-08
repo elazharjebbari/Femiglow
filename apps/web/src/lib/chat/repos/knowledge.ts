@@ -5,6 +5,7 @@
  */
 import { eq, sql } from 'drizzle-orm';
 
+import { rowsOf } from '@/lib/db/exec';
 import { createId } from '@/lib/ids';
 
 import { requireChatDb } from '../db/client';
@@ -153,15 +154,7 @@ export const embeddingRepo = {
       ORDER BY ke.vector <=> ${vectorLiteral}::vector ASC
       LIMIT ${limit}
     `);
-    const list = (rows.rows ?? (rows as unknown as Array<Record<string, unknown>>)) as Array<{
-      chunk_id: string;
-      source_id: string;
-      content: string;
-      score: number;
-      metadata: Record<string, unknown> | null;
-      source_label: string;
-      source_locator: string | null;
-    }>;
+    const list = rowsOf(rows);
     return list
       .filter((r) => Number(r.score) >= minScore)
       .map((r) => ({

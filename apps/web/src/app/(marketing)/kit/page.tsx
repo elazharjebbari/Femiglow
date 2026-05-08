@@ -11,6 +11,7 @@ import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetail
 import { ComparatifSectionBound } from '@/components/sections/ComparatifSectionBound';
 import { HandsTestimonialsBound } from '@/components/sections/HandsTestimonialsBound';
 import { JournalGridBound } from '@/components/sections/JournalGridBound';
+import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectionBound';
 import { JsonLd, productSchema, faqPageSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
@@ -19,6 +20,9 @@ import {
   KIT_PRODUCT_SLUG,
   buildKitPublicProduct,
 } from '@/lib/products/public';
+import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
+import { feedToProductSchemaEnrichment } from '@/lib/products/feed/json-ld';
+import { getProductReviewStats } from '@/lib/products/reviews';
 
 const FALLBACK_OG = {
   url: '/og/kit.svg',
@@ -63,6 +67,20 @@ function isJsonLdRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * `seo.structuredData` retombe sur **Organization** (settings global) quand
+ * aucun override Product publié n'existe — cf. `resolveSeoMetadata` qui
+ * cascade `override?.structuredData ?? settings.organizationJsonLd`. Sans
+ * ce filtre, on attacherait `aggregateRating + review` à un Organization,
+ * ce qui produirait du markup Schema.org invalide.
+ */
+function isProductSchema(value: unknown): value is Record<string, unknown> {
+  return (
+    isJsonLdRecord(value) &&
+    (value as Record<string, unknown>)['@type'] === 'Product'
+  );
+}
+
 export default async function KitPage() {
   const [content, journalArticles, dbProduct, seo] = await Promise.all([
     cms.getKitPageContent(),
@@ -75,12 +93,36 @@ export default async function KitPage() {
       fallback: { title: FALLBACK_TITLE, description: FALLBACK_DESCRIPTION },
     }),
   ]);
+  // Stats reviews lues séparément (dépendent de `dbProduct.id`). Null si
+  // la base est encore vide : le builder retombe sur le starter rating.
+  const reviewStats = await getProductReviewStats(dbProduct.id);
 
-  // Si l'override SEO publié fournit un schema produit, on le préfère ;
-  // sinon on retombe sur le schema généré depuis le DB product (ou mock).
-  const productJsonLd = isJsonLdRecord(seo.structuredData)
-    ? (seo.structuredData as Record<string, unknown>)
-    : productSchema(dbProduct, '/kit');
+  // Schema.org Product :
+  //  - L'admin garde l'autorité éditoriale sur name / description / offers
+  //    via `seo.structuredData` (override CMS, scope product).
+  //  - L'aggregateRating + review sont **toujours** system-driven (calculés
+  //    depuis le feed kit + les testimonials du CMS). Sans aggregateRating,
+  //    Google n'affiche AUCUNE étoile dans les SERP même avec 287 avis 4,8/5.
+  //    On les injecte donc systématiquement, même quand un override existe,
+  //    pour ne pas perdre les Rich Results.
+  const productFeed = buildKitProductFeed(dbProduct, content, reviewStats);
+  const enrichment = feedToProductSchemaEnrichment(
+    productFeed,
+    content.handsTestimonials,
+  );
+  const enrichedAuto = productSchema(dbProduct, '/kit', enrichment);
+  const baseProductJsonLd: Record<string, unknown> = isProductSchema(
+    seo.structuredData,
+  )
+    ? seo.structuredData
+    : enrichedAuto;
+  const productJsonLd: Record<string, unknown> = { ...baseProductJsonLd };
+  if (enrichedAuto.aggregateRating !== undefined) {
+    productJsonLd.aggregateRating = enrichedAuto.aggregateRating;
+  }
+  if (enrichedAuto.review !== undefined) {
+    productJsonLd.review = enrichedAuto.review;
+  }
 
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0">
@@ -96,6 +138,17 @@ export default async function KitPage() {
       <IngredientsDetailsBound
         composition={content.composition}
         componentKey="kit-detail-mains"
+      />
+      {/*
+        Feed produit Kolenda-driven : densifie la conversion juste après
+        les détails ingrédients et avant le comparatif. Apporte les 4
+        gestes du rituel officiel + 3 promesses + social proof condensé.
+        Copy/principes : `lib/products/feed/kit-feed.ts`.
+      */}
+      <ProductFeedSectionBound
+        product={dbProduct}
+        content={content}
+        reviewStats={reviewStats}
       />
       <ComparatifSectionBound data={content.comparatif} />
       <FAQContextuelle items={content.faq} />

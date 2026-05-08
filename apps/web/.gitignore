@@ -11,3 +11,7 @@ coverage/
 .idea/
 playwright-report/
 test-results/
+
+# Playwright storage state (admin session pré-rempli, généré par
+# `e2e/global.setup.ts` à chaque run). Ne doit jamais être commité.
+.auth/

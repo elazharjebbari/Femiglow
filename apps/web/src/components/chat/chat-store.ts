@@ -93,6 +93,34 @@ const initialLeadOffer: LeadOfferState = {
   successMessage: null,
 };
 
+/**
+ * CHA-229 — Raisons « fortes » qui passent outre un précédent `dismiss`.
+ *
+ * Sémantique :
+ *   - `explicit-request` : la visiteuse a demandé explicitement à parler à
+ *     un humain (« je veux qu'on m'appelle »).
+ *   - `purchase-intent` : intention d'achat claire (« je veux commander »).
+ *   - `inline-contact`  : la visiteuse a déjà tapé son numéro dans le chat —
+ *     refuser de réafficher la bulle ferait perdre un lead chaud côté UI
+ *     (le lead anonyme côté DB est déjà créé en parallèle, cf.
+ *     `orchestrator.ts` §"Filet de sécurité commerciale").
+ *   - `manual` : déclenchement explicite (jamais bloqué).
+ *
+ * Les autres raisons (`frustration`, `after-hours`, `out-of-knowledge`,
+ * `objection-repeat`, `long-no-progress`, `b2b`) sont des heuristiques
+ * « soft » : si la visiteuse a déjà fermé une fois la bulle, on respecte
+ * son choix pour le reste de la session — pas de spam.
+ *
+ * cf. docs/chat-assistant/19-lead-capture-form.md §6.2 (« Re-offre après
+ * dismiss »).
+ */
+const STRONG_LEAD_REASONS: ReadonlySet<ChatLeadTriggerReason> = new Set([
+  'explicit-request',
+  'purchase-intent',
+  'inline-contact',
+  'manual',
+]);
+
 const initial: ChatPersistedState & ChatVolatileState = {
   sessionId: null,
   language: 'fr',
@@ -158,13 +186,24 @@ export const useChatStore = create<ChatState>()(
       pushUserMessage: (m) =>
         set((s) => ({ messages: [...s.messages, m], hasInteracted: true })),
       setError: (error) => set({ error }),
-      // CHA-212 — Lead form actions
+      // CHA-212 / CHA-229 — Lead form actions.
       receiveLeadOffer: ({ messageId, reason, copyKey }) =>
         set((s) => {
-          // Si déjà capturé ou rejeté pour cette session, on ignore.
+          // Lead déjà capturé : on n'embête plus jamais la visiteuse.
           if (s.leadCapturedSessionId === s.sessionId) return {};
-          if (s.leadOfferDismissedSessionId === s.sessionId) return {};
+          // Bulle déjà refusée pour cette session : on respecte le choix
+          // SAUF pour une intention forte arrivant *après* le dismiss
+          // (achat explicite, demande humain, numéro tapé en clair) — sinon
+          // on rate la conversion exactement au moment où elle est mûre.
+          const dismissed =
+            s.leadOfferDismissedSessionId === s.sessionId &&
+            !STRONG_LEAD_REASONS.has(reason);
+          if (dismissed) return {};
           return {
+            // Si la précédente offre avait été dismiss, on remet la jauge
+            // à zéro côté UI (le flag persistant `leadOfferDismissedSessionId`
+            // est volontairement conservé : si la visiteuse re-dismiss cette
+            // bulle « forte », les *soft* suivantes restent bloquées).
             leadOffer: {
               status: 'offered',
               triggeringMessageId: messageId,

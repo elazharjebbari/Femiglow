@@ -5,17 +5,21 @@
  * ne pas exposer la SQL côté client. Toutes les listes paginent et
  * trient par `created_at` desc.
  */
-import { and, count, desc, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNotNull, lte, or, sql } from 'drizzle-orm';
+
+import { rowsOf } from '@/lib/db/exec';
 
 import { requireChatDb } from '../db/client';
 import {
   chatConversationEvent,
   chatFeedback,
   chatKnowledgeSource,
+  chatLead,
   chatMessage,
   chatProviderConfig,
   chatSession,
   chatThemePreset,
+  type ChatLeadRow,
   type ChatSessionRow,
 } from '../db/schema';
 
@@ -72,15 +76,35 @@ export const adminQueries = {
         ),
       );
 
+    // CHA-225 — "Conversions" = sessions converties via order link
+    // (`chat_session.converted_at`) OU sessions ayant produit un lead
+    // chat marqué `outcome='converted'`. Avant ce patch, on ne comptait
+    // que la première condition, donc le KPI restait à 0 puisque rien
+    // n'appelle `attributeConversion` en runtime aujourd'hui.
     const [conversions] = await db
-      .select({ value: count() })
+      .select({ value: sql<number>`COUNT(DISTINCT ${chatSession.id})` })
       .from(chatSession)
+      .leftJoin(chatLead, eq(chatLead.sessionId, chatSession.id))
       .where(
         and(
           gte(chatSession.openedAt, start),
-          isNotNull(chatSession.convertedAt),
+          or(
+            isNotNull(chatSession.convertedAt),
+            eq(chatLead.outcome, 'converted'),
+          ),
         ),
       );
+
+    // KPI dédié leads chat capturés sur la fenêtre.
+    const [leadsCaptured] = await db
+      .select({ value: count() })
+      .from(chatLead)
+      .where(gte(chatLead.createdAt, start));
+
+    const [leadsConverted] = await db
+      .select({ value: count() })
+      .from(chatLead)
+      .where(and(gte(chatLead.createdAt, start), eq(chatLead.outcome, 'converted')));
 
     const [feedbackPos] = await db
       .select({ value: count() })
@@ -121,7 +145,9 @@ export const adminQueries = {
       sessions: sessions?.value ?? 0,
       messagesUser: messagesUser?.value ?? 0,
       messagesAgent: messagesAgent?.value ?? 0,
-      conversions: conversions?.value ?? 0,
+      conversions: Number(conversions?.value ?? 0),
+      leadsCaptured: leadsCaptured?.value ?? 0,
+      leadsConverted: leadsConverted?.value ?? 0,
       feedbackPos: feedbackPos?.value ?? 0,
       feedbackNeg: feedbackNeg?.value ?? 0,
       totalCostEur,
@@ -136,10 +162,32 @@ export const adminQueries = {
     status?: ChatSessionRow['status'];
     fromDate?: Date;
     toDate?: Date;
+    /**
+     * CHA-225 — filtre "conversion" :
+     *  - 'yes' : ne renvoie que les sessions converties (order link OU
+     *            chat_lead avec outcome='converted').
+     *  - 'no'  : exclut les sessions converties.
+     *  - undefined : pas de filtre.
+     */
+    converted?: 'yes' | 'no';
     limit?: number;
   }) {
     const db = requireChatDb();
     const limit = opts.limit ?? 50;
+
+    // Pré-calcule l'ensemble des session ids "convertis" si nécessaire.
+    // On utilise un sous-set côté Node plutôt qu'un JOIN à chaque requête,
+    // pour ne pas dupliquer les lignes (un session peut avoir plusieurs
+    // chat_lead) et garder la requête principale lisible.
+    let convertedIdsFilter: { ids: Set<string> } | null = null;
+    if (opts.converted) {
+      const ids = await this.convertedSessionIds({
+        fromDate: opts.fromDate,
+        toDate: opts.toDate,
+      });
+      convertedIdsFilter = { ids: new Set(ids) };
+    }
+
     if (opts.q && opts.q.trim().length > 0) {
       // Recherche full-text : trouve les sessions qui contiennent un
       // message matching la query, retourne la session unique la plus
@@ -155,7 +203,13 @@ export const adminQueries = {
          ORDER BY s.last_seen_at DESC
          LIMIT ${limit}
       `);
-      return (rows.rows ?? (rows as unknown as ChatSessionRow[])) as ChatSessionRow[];
+      const list = rowsOf(rows);
+      if (!convertedIdsFilter) return list;
+      return list.filter((s) =>
+        opts.converted === 'yes'
+          ? convertedIdsFilter!.ids.has(s.id)
+          : !convertedIdsFilter!.ids.has(s.id),
+      );
     }
 
     const conds = [];
@@ -163,6 +217,16 @@ export const adminQueries = {
     if (opts.status) conds.push(eq(chatSession.status, opts.status));
     if (opts.fromDate) conds.push(gte(chatSession.openedAt, opts.fromDate));
     if (opts.toDate) conds.push(lte(chatSession.openedAt, opts.toDate));
+    if (convertedIdsFilter) {
+      const ids = Array.from(convertedIdsFilter.ids);
+      if (opts.converted === 'yes') {
+        if (ids.length === 0) return [];
+        conds.push(inArray(chatSession.id, ids));
+      } else if (ids.length > 0) {
+        // exclure
+        conds.push(sql`${chatSession.id} NOT IN (${sql.join(ids.map((i) => sql`${i}`), sql`, `)})`);
+      }
+    }
 
     return db
       .select()
@@ -170,6 +234,62 @@ export const adminQueries = {
       .where(conds.length ? and(...conds) : undefined)
       .orderBy(desc(chatSession.lastSeenAt))
       .limit(limit);
+  },
+
+  /**
+   * CHA-225 — Set des session ids converties (via order link OU lead
+   * marqué converted). Sert de filtre pour `listConversations` et de
+   * marqueur visuel ("voyant") dans la table.
+   */
+  async convertedSessionIds(opts: { fromDate?: Date; toDate?: Date } = {}): Promise<string[]> {
+    const db = requireChatDb();
+    const conds: ReturnType<typeof eq>[] = [isNotNull(chatSession.convertedAt)];
+    if (opts.fromDate) conds.push(gte(chatSession.openedAt, opts.fromDate));
+    if (opts.toDate) conds.push(lte(chatSession.openedAt, opts.toDate));
+    const sessionRows = await db
+      .select({ id: chatSession.id })
+      .from(chatSession)
+      .where(and(...conds));
+
+    const leadConds: ReturnType<typeof eq>[] = [eq(chatLead.outcome, 'converted')];
+    if (opts.fromDate) leadConds.push(gte(chatLead.createdAt, opts.fromDate));
+    if (opts.toDate) leadConds.push(lte(chatLead.createdAt, opts.toDate));
+    const leadRows = await db
+      .select({ id: chatLead.sessionId })
+      .from(chatLead)
+      .where(and(...leadConds));
+
+    const set = new Set<string>();
+    for (const r of sessionRows) set.add(r.id);
+    for (const r of leadRows) set.add(r.id);
+    return Array.from(set);
+  },
+
+  /**
+   * CHA-225 — Liste paginée des chat leads pour la console
+   * `/admin/chat/leads`. Vue rapide à côté de `/admin/leads` qui mélange
+   * leads ecommerce + chat ; ici on reste 100 % chat pour lecture rapide
+   * (trigger reason, outcome, page d'origine).
+   */
+  async listChatLeads(opts: {
+    outcome?: ChatLeadRow['outcome'];
+    triggerReason?: ChatLeadRow['triggerReason'];
+    fromDate?: Date;
+    toDate?: Date;
+    limit?: number;
+  } = {}): Promise<ChatLeadRow[]> {
+    const db = requireChatDb();
+    const conds: ReturnType<typeof eq>[] = [];
+    if (opts.outcome) conds.push(eq(chatLead.outcome, opts.outcome));
+    if (opts.triggerReason) conds.push(eq(chatLead.triggerReason, opts.triggerReason));
+    if (opts.fromDate) conds.push(gte(chatLead.createdAt, opts.fromDate));
+    if (opts.toDate) conds.push(lte(chatLead.createdAt, opts.toDate));
+    return db
+      .select()
+      .from(chatLead)
+      .where(conds.length ? and(...conds) : undefined)
+      .orderBy(desc(chatLead.createdAt))
+      .limit(opts.limit ?? 100);
   },
 
   async listSources() {

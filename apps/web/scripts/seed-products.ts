@@ -217,7 +217,14 @@ async function main(): Promise<void> {
   );
 }
 
-if (require.main === module) {
+// Détection « exécuté directement » en ESM (`apps/web` est un module ESM
+// : `"type": "module"`, donc `require` n'existe pas). On compare le path
+// du fichier courant à `process.argv[1]` après normalisation file://.
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
   main().catch((err) => {
     console.error('[seed-products] erreur:', err);
     process.exit(1);

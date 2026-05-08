@@ -47,8 +47,10 @@ export default async function AdminDashboardPage() {
             {recentLeads.map((lead) => (
               <li key={lead.id} className="flex items-center justify-between px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-stone-900">{lead.name ?? lead.email}</p>
-                  <p className="text-xs text-stone-500">{lead.email}</p>
+                  <p className="text-sm font-medium text-stone-900">
+                    {lead.name ?? lead.email ?? lead.phone ?? '—'}
+                  </p>
+                  <p className="text-xs text-stone-500">{lead.email ?? lead.phone ?? '—'}</p>
                 </div>
                 <span className="rounded-full bg-stone-100 px-2 py-1 text-xs uppercase tracking-wide text-stone-600">
                   {lead.status}

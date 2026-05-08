@@ -242,12 +242,15 @@ export async function recoverFailedJobs(sinceDays = 7): Promise<number> {
   const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
   const now = new Date();
   if (drizzle) {
+    // CHA — `.returning(fields)` collapse sur l'union `DrizzleNeon | DrizzlePg`
+    // (seul l'overload sans args survit). On ne consomme que `.length` ici,
+    // donc l'overload no-arg est strictement équivalent et évite tout cast.
     const rows = await drizzle
       .update(schema.mediaJobs)
       .set({ status: 'pending', attemptCount: 0, nextAttemptAt: now, errorMessage: null })
       .where(and(eq(schema.mediaJobs.status, 'failed'), lte(schema.mediaJobs.createdAt, now)))
-      .returning({ id: schema.mediaJobs.id });
-    return rows.filter((r) => r).length;
+      .returning();
+    return rows.length;
   }
   const store = memoryStore();
   let count = 0;

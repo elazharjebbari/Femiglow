@@ -1,0 +1,32 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = `
+"<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+  <channel>
+    <title>FemiGlow — Catalogue produits</title>
+    <link>https://femiglow.ma</link>
+    <description><![CDATA[Le rituel manucure FemiGlow — édité au Maroc, livré en 48 heures.]]></description>
+    <language>fr-MA</language>
+    <lastBuildDate>__DATE__</lastBuildDate>
+    <generator>femiglow-feed/1.0 rating=4.8</generator>
+    <item>
+      <g:id>le-rituel</g:id>
+      <g:title><![CDATA[Le kit FemiGlow]]></g:title>
+      <g:description><![CDATA[Le kit FemiGlow réunit la base, le fortifiant et la lime. Trois gestes mesurés, pensés à Casablanca, pour accompagner vos ongles à chaque saison.]]></g:description>
+      <g:link>https://femiglow.ma/kit</g:link>
+      <g:image_link>https://femiglow.ma/products/kit-principale.png</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>320.00 MAD</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>FemiGlow</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type><![CDATA[Beauté > Soins ongles > Kit manucure]]></g:product_type>
+      <g:google_product_category>2915</g:google_product_category>
+      <g:custom_label_0>kit</g:custom_label_0>
+      <g:custom_label_1>fr-MA</g:custom_label_1>
+    </item>
+  </channel>
+</rss>
+"
+`;

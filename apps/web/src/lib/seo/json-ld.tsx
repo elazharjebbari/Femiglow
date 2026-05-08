@@ -81,8 +81,45 @@ export function howToSchema(input: HowToInput) {
   };
 }
 
-export function productSchema(product: Product, urlPath = '/kit') {
-  return {
+/**
+ * Données enrichies optionnelles pour Schema.org Product.
+ *
+ * - `aggregateRating` débloque les **étoiles dans les SERP Google** (Rich
+ *   Results). Sans aggregateRating, Google n'affiche pas la note moyenne.
+ * - `reviews` permet à Google d'extraire des extraits de témoignages.
+ *
+ * Les valeurs sont remontées depuis le builder feed (`buildKitProductFeed`)
+ * qui agrège `KitPageContent.handsTestimonials` + le compteur global.
+ */
+export interface ProductSchemaEnrichment {
+  aggregateRating?: {
+    /** Note moyenne, ex 4.8 (chiffre précis Pricing #14). */
+    ratingValue: number;
+    /** Nombre total d'avis. */
+    reviewCount: number;
+    /** Échelle, défaut 5. */
+    bestRating?: number;
+    /** Note plancher, défaut 1. */
+    worstRating?: number;
+  };
+  /** Échantillon de reviews (ex 3-5 témoignages les plus récents). */
+  reviews?: ReadonlyArray<{
+    authorName: string;
+    /** Texte de la review. */
+    body: string;
+    /** Note individuelle. Si absent, on hérite de l'aggregate (ou 5). */
+    ratingValue?: number;
+    /** ISO 8601, optionnel. */
+    datePublished?: string;
+  }>;
+}
+
+export function productSchema(
+  product: Product,
+  urlPath = '/kit',
+  enrichment: ProductSchemaEnrichment = {},
+) {
+  const base: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
@@ -102,6 +139,35 @@ export function productSchema(product: Product, urlPath = '/kit') {
       seller: { '@type': 'Organization', name: 'FemiGlow' },
     },
   };
+
+  if (enrichment.aggregateRating) {
+    const r = enrichment.aggregateRating;
+    base.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: r.ratingValue.toFixed(1),
+      reviewCount: r.reviewCount,
+      bestRating: (r.bestRating ?? 5).toFixed(1),
+      worstRating: (r.worstRating ?? 1).toFixed(1),
+    };
+  }
+
+  if (enrichment.reviews && enrichment.reviews.length > 0) {
+    const fallbackRating = enrichment.aggregateRating?.ratingValue ?? 5;
+    base.review = enrichment.reviews.map((rev) => ({
+      '@type': 'Review',
+      author: { '@type': 'Person', name: rev.authorName },
+      reviewBody: rev.body,
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: (rev.ratingValue ?? fallbackRating).toFixed(1),
+        bestRating: '5.0',
+        worstRating: '1.0',
+      },
+      ...(rev.datePublished ? { datePublished: rev.datePublished } : {}),
+    }));
+  }
+
+  return base;
 }
 
 export function faqPageSchema(items: FAQItem[]) {

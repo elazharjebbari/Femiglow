@@ -116,7 +116,14 @@ export default async function ChatOverviewPage() {
           <Kpi label="Sessions" value={kpis.sessions} />
           <Kpi label="Messages user" value={kpis.messagesUser} />
           <Kpi label="Messages agent" value={kpis.messagesAgent} />
-          <Kpi label="Conversions" value={kpis.conversions} />
+          <Kpi
+            label="Sessions converties"
+            value={kpis.conversions}
+            accent="emerald"
+            hint="order link OU lead.outcome=converted"
+          />
+          <Kpi label="Leads chat capturés" value={kpis.leadsCaptured} />
+          <Kpi label="Leads convertis" value={kpis.leadsConverted} accent="emerald" />
           <Kpi label="Feedback positif" value={kpis.feedbackPos} accent="emerald" />
           <Kpi label="Feedback négatif" value={kpis.feedbackNeg} accent="rose" />
           <Kpi
@@ -141,10 +148,12 @@ function Kpi({
   label,
   value,
   accent,
+  hint,
 }: {
   label: string;
   value: number | string;
   accent?: 'emerald' | 'rose';
+  hint?: string;
 }) {
   const accentClass =
     accent === 'emerald'
@@ -154,8 +163,11 @@ function Kpi({
         : 'text-stone-900';
   return (
     <div className="rounded-md border border-stone-200 bg-white px-4 py-3">
-      <p className="text-xs uppercase tracking-wide text-stone-500">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-stone-500" title={hint}>
+        {label}
+      </p>
       <p className={`mt-1 text-xl font-semibold tabular-nums ${accentClass}`}>{value}</p>
+      {hint ? <p className="mt-1 text-[10px] text-stone-400">{hint}</p> : null}
     </div>
   );
 }

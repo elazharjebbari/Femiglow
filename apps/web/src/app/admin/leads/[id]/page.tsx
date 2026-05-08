@@ -21,23 +21,39 @@ export default async function AdminLeadDetailPage({ params }: { params: { id: st
         <a href="/admin/leads" className="underline-offset-2 hover:underline">
           Leads
         </a>{' '}
-        / <span className="text-stone-700">{data.lead.email}</span>
+        / <span className="text-stone-700">{data.lead.email ?? data.lead.phone ?? data.lead.id}</span>
       </nav>
       <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
-            {data.lead.name ?? data.lead.email}
+            {data.lead.name ?? data.lead.email ?? data.lead.phone ?? '—'}
           </h1>
-          <p className="mt-1 text-sm text-stone-600">{data.lead.email}</p>
+          {data.lead.email ? (
+            <p className="mt-1 text-sm text-stone-600">{data.lead.email}</p>
+          ) : null}
           {data.lead.phone ? (
             <p className="text-sm text-stone-600">{data.lead.phone}</p>
           ) : null}
+          {data.lead.source ? (
+            <p className="mt-1 text-xs text-stone-500">
+              Source : <span className="font-mono">{data.lead.source}</span>
+            </p>
+          ) : null}
         </div>
-        <LeadStatusMenu
-          leadId={data.lead.id}
-          current={data.lead.status}
-          options={transitions}
-        />
+        {/* CHA-225 — Pour un chat lead (id `cl_…`), le statut est dérivé
+            de chat_lead.outcome ; on désactive le menu de transition
+            jusqu'à la mise en place de la passerelle d'écriture admin. */}
+        {data.lead.id.startsWith('cl_') ? (
+          <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
+            statut : {data.lead.status} (lead chat)
+          </span>
+        ) : (
+          <LeadStatusMenu
+            leadId={data.lead.id}
+            current={data.lead.status}
+            options={transitions}
+          />
+        )}
       </header>
       <section aria-label="Commande" className="mb-8 rounded-md border border-stone-200 bg-white p-4">
         <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">Commande</h2>

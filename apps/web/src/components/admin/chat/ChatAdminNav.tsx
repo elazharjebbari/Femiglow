@@ -9,6 +9,7 @@ import Link from 'next/link';
 export type ChatAdminSection =
   | 'overview'
   | 'conversations'
+  | 'leads'
   | 'kpis'
   | 'instructions'
   | 'sources'
@@ -21,6 +22,8 @@ export type ChatAdminSection =
 const ITEMS: Array<{ key: ChatAdminSection; href: string; label: string }> = [
   { key: 'overview', href: '/admin/chat', label: "Vue d'ensemble" },
   { key: 'conversations', href: '/admin/chat/conversations', label: 'Conversations' },
+  // CHA-225 — onglet rapide pour les leads chat-only (complément à /admin/leads).
+  { key: 'leads', href: '/admin/chat/leads', label: 'Leads chat' },
   { key: 'kpis', href: '/admin/chat/kpis', label: 'KPIs' },
   { key: 'instructions', href: '/admin/chat/instructions', label: 'Instructions' },
   { key: 'sources', href: '/admin/chat/sources', label: 'Sources' },
