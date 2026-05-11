@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { RitualsAdminTable } from '@/components/admin/rituals/RitualsAdminTable';
+import { RitualsAdminFilters } from '@/components/admin/rituals/RitualsAdminFilters';
 import { listAdminRituals } from '@/lib/db/queries/rituals-admin';
+import { parseAdminFilters } from '@/lib/admin/admin-filters';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +23,15 @@ export default async function AdminRitualsArchivedPage({
       ? 'REJECTED'
       : 'HIDDEN';
 
+  const filters = parseAdminFilters(searchParams);
   const result = await listAdminRituals({
     status: statusFilter,
+    flags: filters.flags,
+    sources: filters.sources,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    authorQuery: filters.authorQuery,
+    verified: filters.verified,
     page,
     pageSize: 25,
   });
@@ -80,6 +89,8 @@ export default async function AdminRitualsArchivedPage({
           Rejetés
         </Link>
       </nav>
+
+      <RitualsAdminFilters preserveParams={{ status: statusFilter }} />
 
       <RitualsAdminTable
         rows={result.rows}

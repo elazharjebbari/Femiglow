@@ -4,6 +4,7 @@ import { insertRitual } from './rituals';
 import {
   approveRitual,
   getAdminRitualById,
+  getRitualNeighbors,
   hideRitual,
   listAdminRituals,
   listAuditEntries,
@@ -54,6 +55,62 @@ describe('listAdminRituals', () => {
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]!.autoFlags).toContain('face_detected');
   });
+
+  it('filtre par flags multiple (intersection)', async () => {
+    await insertRitual({ ...baseRitual, autoFlags: ['face_detected'] });
+    await insertRitual({
+      ...baseRitual,
+      autoFlags: ['face_detected', 'emoji_detected'],
+    });
+    const result = await listAdminRituals({
+      status: 'all',
+      flags: ['face_detected', 'emoji_detected'],
+    });
+    expect(result.rows).toHaveLength(1);
+  });
+
+  it('filtre par sources', async () => {
+    await insertRitual({ ...baseRitual, source: 'web' });
+    await insertRitual({ ...baseRitual, source: 'email_j45' });
+    await insertRitual({ ...baseRitual, source: 'import_csv' });
+    const result = await listAdminRituals({
+      status: 'all',
+      sources: ['email_j45', 'import_csv'],
+    });
+    expect(result.rows).toHaveLength(2);
+  });
+
+  it('filtre par status liste (archived view)', async () => {
+    await insertRitual({ ...baseRitual, status: 'PENDING' });
+    await insertRitual({ ...baseRitual, status: 'REJECTED' });
+    await insertRitual({ ...baseRitual, status: 'HIDDEN' });
+    const result = await listAdminRituals({
+      status: ['REJECTED', 'HIDDEN'],
+    });
+    expect(result.rows).toHaveLength(2);
+    expect(result.total).toBe(2);
+  });
+
+  it('filtre par authorQuery (case-insensitive)', async () => {
+    await insertRitual({ ...baseRitual, authorFirstName: 'Amal' });
+    await insertRitual({ ...baseRitual, authorFirstName: 'Souad' });
+    const result = await listAdminRituals({
+      status: 'all',
+      authorQuery: 'AmA',
+    });
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]!.authorFirstName).toBe('Amal');
+  });
+
+  it('filtre par verified', async () => {
+    await insertRitual({ ...baseRitual, verifiedPurchase: true });
+    await insertRitual({ ...baseRitual, verifiedPurchase: false });
+    const verified = await listAdminRituals({ status: 'all', verified: true });
+    expect(verified.rows).toHaveLength(1);
+    expect(verified.rows[0]!.verifiedPurchase).toBe(true);
+    const all = await listAdminRituals({ status: 'all', verified: null });
+    expect(all.rows.length).toBeGreaterThanOrEqual(2);
+  });
 });
 
 describe('approveRitual', () => {
@@ -93,6 +150,65 @@ describe('restoreRitual', () => {
     const r = await insertRitual({ ...baseRitual, status: 'HIDDEN' });
     const updated = await restoreRitual(r.id, { actorId: 'admin-1' });
     expect(updated.status).toBe('APPROVED');
+  });
+});
+
+describe('getRitualNeighbors', () => {
+  async function seedThree() {
+    const a = await insertRitual({ ...baseRitual, status: 'PENDING' });
+    await new Promise((r) => setTimeout(r, 5));
+    const b = await insertRitual({ ...baseRitual, status: 'PENDING' });
+    await new Promise((r) => setTimeout(r, 5));
+    const c = await insertRitual({ ...baseRitual, status: 'PENDING' });
+    return { a, b, c };
+  }
+
+  it('élément du milieu a previous et next', async () => {
+    const { a, b, c } = await seedThree();
+    const res = await getRitualNeighbors(b.id, ['PENDING']);
+    expect(res.previousId).toBe(c.id);
+    expect(res.nextId).toBe(a.id);
+    expect(res.position).toBe(2);
+    expect(res.total).toBe(3);
+  });
+
+  it('premier (le plus récent) a previousId=null', async () => {
+    const { c } = await seedThree();
+    const res = await getRitualNeighbors(c.id, ['PENDING']);
+    expect(res.previousId).toBeNull();
+    expect(res.nextId).not.toBeNull();
+    expect(res.position).toBe(1);
+  });
+
+  it('dernier (le plus ancien) a nextId=null', async () => {
+    const { a } = await seedThree();
+    const res = await getRitualNeighbors(a.id, ['PENDING']);
+    expect(res.nextId).toBeNull();
+    expect(res.previousId).not.toBeNull();
+    expect(res.position).toBe(3);
+  });
+
+  it('rituel seul', async () => {
+    const r = await insertRitual({ ...baseRitual, status: 'PENDING' });
+    const res = await getRitualNeighbors(r.id, ['PENDING']);
+    expect(res.previousId).toBeNull();
+    expect(res.nextId).toBeNull();
+    expect(res.position).toBe(1);
+    expect(res.total).toBe(1);
+  });
+
+  it('status différent → file vide', async () => {
+    const r = await insertRitual({ ...baseRitual, status: 'PENDING' });
+    const res = await getRitualNeighbors(r.id, ['APPROVED']);
+    expect(res.position).toBe(0);
+    expect(res.total).toBe(0);
+  });
+
+  it('multi-status fusionne la file (archived view)', async () => {
+    await insertRitual({ ...baseRitual, status: 'REJECTED' });
+    const r = await insertRitual({ ...baseRitual, status: 'HIDDEN' });
+    const res = await getRitualNeighbors(r.id, ['REJECTED', 'HIDDEN']);
+    expect(res.total).toBe(2);
   });
 });
 

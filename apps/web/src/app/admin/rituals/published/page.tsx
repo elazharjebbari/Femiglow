@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { RitualsAdminTable } from '@/components/admin/rituals/RitualsAdminTable';
+import { RitualsAdminFilters } from '@/components/admin/rituals/RitualsAdminFilters';
 import { listAdminRituals } from '@/lib/db/queries/rituals-admin';
+import { parseAdminFilters } from '@/lib/admin/admin-filters';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +17,15 @@ export default async function AdminRitualsPublishedPage({
   const pageRaw = Number(searchParams.page ?? 1);
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
 
+  const filters = parseAdminFilters(searchParams);
   const result = await listAdminRituals({
     status: 'APPROVED',
+    flags: filters.flags,
+    sources: filters.sources,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    authorQuery: filters.authorQuery,
+    verified: filters.verified,
     page,
     pageSize: 25,
   });
@@ -50,6 +59,8 @@ export default async function AdminRitualsPublishedPage({
           </Link>
         </nav>
       </header>
+
+      <RitualsAdminFilters />
 
       <RitualsAdminTable
         rows={result.rows}

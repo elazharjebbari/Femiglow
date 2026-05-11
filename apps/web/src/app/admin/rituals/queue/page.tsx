@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { listAdminRituals } from '@/lib/db/queries/rituals-admin';
+import { RitualsAdminFilters } from '@/components/admin/rituals/RitualsAdminFilters';
+import { parseAdminFilters } from '@/lib/admin/admin-filters';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +26,15 @@ export default async function AdminRitualsQueuePage({
   const status =
     typeof showAllRaw === 'string' && showAllRaw === 'all' ? 'all' : 'PENDING';
 
+  const filters = parseAdminFilters(searchParams);
   const result = await listAdminRituals({
     status: status === 'all' ? 'all' : 'PENDING',
+    flags: filters.flags,
+    sources: filters.sources,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    authorQuery: filters.authorQuery,
+    verified: filters.verified,
     page,
     pageSize: 20,
   });
@@ -56,6 +65,10 @@ export default async function AdminRitualsQueuePage({
           </Link>
         </nav>
       </header>
+
+      <RitualsAdminFilters
+        preserveParams={status === 'all' ? { status: 'all' } : { status: 'PENDING' }}
+      />
 
       {result.rows.length === 0 ? (
         <div className="rounded border border-stone-200 bg-white p-12 text-center text-sm text-stone-600">

@@ -39,10 +39,18 @@ export function RitualsAdminTable({
   surface,
 }: RitualsAdminTableProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [optimisticallyRemoved, setOptimisticallyRemoved] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const visibleRows = useMemo(
+    () => rows.filter((r) => !optimisticallyRemoved.has(r.id)),
+    [rows, optimisticallyRemoved],
+  );
 
   const allOnPageChecked = useMemo(
-    () => rows.length > 0 && rows.every((r) => selected.has(r.id)),
-    [rows, selected],
+    () => visibleRows.length > 0 && visibleRows.every((r) => selected.has(r.id)),
+    [visibleRows, selected],
   );
 
   const toggleOne = (id: string) => {
@@ -58,28 +66,45 @@ export function RitualsAdminTable({
     setSelected((prev) => {
       if (allOnPageChecked) {
         const next = new Set(prev);
-        rows.forEach((r) => next.delete(r.id));
+        visibleRows.forEach((r) => next.delete(r.id));
         return next;
       }
-      return new Set([...Array.from(prev), ...rows.map((r) => r.id)]);
+      return new Set([...Array.from(prev), ...visibleRows.map((r) => r.id)]);
     });
+  };
+
+  const removeOptimistically = (ids: string[]) => {
+    setOptimisticallyRemoved((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+    return () => {
+      // rollback
+      setOptimisticallyRemoved((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+    };
   };
 
   return (
     <>
       <BulkActionBar
         selectedIds={Array.from(selected)}
-        totalVisible={rows.length}
+        totalVisible={visibleRows.length}
         totalAll={totalAll}
         onClearSelection={() => setSelected(new Set())}
         onSelectAll={() => {
           // Pour rester simple : sélection page-only ici.
           // Une vraie "sélection globale" nécessiterait un fetch all-ids.
         }}
+        onOptimisticRemove={removeOptimistically}
         actions={ACTIONS_BY_SURFACE[surface]}
       />
 
-      {rows.length === 0 ? (
+      {visibleRows.length === 0 ? (
         <div className="border border-stone-200 bg-white p-12 text-center text-sm text-stone-600">
           Aucun rituel à afficher.
         </div>
@@ -106,7 +131,7 @@ export function RitualsAdminTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
+            {visibleRows.map((r) => {
               const flags = r.autoFlags;
               const hasFace = flags.includes('face_detected');
               return (

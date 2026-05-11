@@ -3,16 +3,40 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import {
   getAdminRitualById,
+  getRitualNeighbors,
   listAuditEntries,
 } from '@/lib/db/queries/rituals-admin';
 import { RitualActionsClient } from '@/components/admin/rituals/RitualActionsClient';
+import { RitualNeighborsBar } from '@/components/admin/rituals/RitualNeighborsBar';
+import type { RitualStatus } from '@/lib/db/types';
 
 export const dynamic = 'force-dynamic';
 
+const VALID_STATUSES: RitualStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'HIDDEN'];
+
+function parseStatusParam(raw: string | undefined, fallback: RitualStatus): {
+  statuses: RitualStatus[];
+  param: string;
+} {
+  if (!raw) {
+    return { statuses: [fallback], param: fallback };
+  }
+  const statuses = raw
+    .split(',')
+    .map((s) => s.trim().toUpperCase())
+    .filter((s): s is RitualStatus => (VALID_STATUSES as string[]).includes(s));
+  if (statuses.length === 0) {
+    return { statuses: [fallback], param: fallback };
+  }
+  return { statuses, param: statuses.join(',') };
+}
+
 export default async function AdminRitualDetailPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams?: { status?: string };
 }) {
   const session = await requireAdmin(`/admin/rituals/${params.id}`);
   const ritual = await getAdminRitualById(params.id);
@@ -20,8 +44,19 @@ export default async function AdminRitualDetailPage({
 
   const audit = await listAuditEntries(ritual.id);
 
+  const { statuses, param } = parseStatusParam(searchParams?.status, ritual.status);
+  const neighbors = await getRitualNeighbors(ritual.id, statuses);
+
   return (
     <AdminShell adminEmail={session.email} active="rituals">
+      <RitualNeighborsBar
+        previousId={neighbors.previousId}
+        nextId={neighbors.nextId}
+        position={neighbors.position}
+        total={neighbors.total}
+        status={ritual.status}
+        statusParam={param}
+      />
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
           Rituel — {ritual.publicSlug}
@@ -101,6 +136,9 @@ export default async function AdminRitualDetailPage({
             id={ritual.id}
             status={ritual.status}
             featured={ritual.featured}
+            previousId={neighbors.previousId}
+            nextId={neighbors.nextId}
+            statusParam={param}
           />
 
           <section
