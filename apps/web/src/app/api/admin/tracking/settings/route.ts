@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminSession } from '@/lib/auth/require-admin';
@@ -74,6 +75,12 @@ export async function PATCH(request: Request): Promise<Response> {
       actorId: session.adminId,
       meta: parsed.data,
     });
+    // Le `RootLayout` lit ces deux settings et les passe à `<TrackingProvider>`.
+    // Toutes les pages (cachées par ISR) doivent être régénérées sinon les
+    // visiteurs continuent de voir l'ancien état (bandeau visible / consent
+    // denied) jusqu'au TTL `s-maxage=1800`. On invalide le layout entier
+    // pour cascader sur l'ensemble des routes publiques.
+    revalidatePath('/', 'layout');
     const settings = await loadSettings();
     return NextResponse.json({ ok: true, settings });
   } catch (err) {

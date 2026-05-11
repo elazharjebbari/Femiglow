@@ -51,7 +51,6 @@ export async function ArticleCardBound({
           context="inline"
           sizes={sizes}
           forcePriority={priority}
-          className="transition-transform duration-500 ease-out motion-reduce:transition-none group-hover:-translate-y-1"
         />
       }
     />

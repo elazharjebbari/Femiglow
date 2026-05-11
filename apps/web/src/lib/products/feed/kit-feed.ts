@@ -244,7 +244,7 @@ export function buildKitProductFeed(
       lead:
         'Trois objets dans la main, quatre gestes dans la soirée. La paste filme, la poudre lustre, la plaque retrouve sa cadence — un soin lent, pensé à Casablanca.',
       pricePrefix: 'Tout compris :',
-      ctaLabel: 'Composer mon rituel',
+      ctaLabel: 'Commander le rituel',
       // Microcopy serrée (Pricing #11) — chiffres précis (Pricing #14).
       ctaMicrocopy:
         'Paste · Powder · Polissoir inclus · Livraison 48 h · Paiement à la livraison · Retour 30 j.',

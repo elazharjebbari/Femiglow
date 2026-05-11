@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, type ButtonSize } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useCartStore } from '@/lib/stores/cart-store';
@@ -19,6 +20,12 @@ interface AddToCartButtonProps {
   size?: ButtonSize;
   fullWidth?: boolean;
   children?: ReactNode;
+  /**
+   * Si fourni, après ajout au panier on redirige vers cette URL au lieu
+   * d'ouvrir la `MiniCartSlideOver`. Utilisé sur `/kit` pour envoyer
+   * directement vers `/panier` (skip de l'étape intermédiaire).
+   */
+  redirectTo?: string;
 }
 
 export function AddToCartButton({
@@ -27,8 +34,11 @@ export function AddToCartButton({
   size = 'lg',
   fullWidth = true,
   children,
+  redirectTo,
 }: AddToCartButtonProps) {
+  const addItem = useCartStore((s) => s.addItem);
   const addItemAndOpen = useCartStore((s) => s.addItemAndOpen);
+  const router = useRouter();
   const { show } = useToast();
   const { emit } = useTracking();
   const [busy, setBusy] = useState(false);
@@ -50,7 +60,11 @@ export function AddToCartButton({
       unitPriceCents,
       imageSrc: product.images[0]?.src,
     };
-    addItemAndOpen(item);
+    if (redirectTo) {
+      addItem(item);
+    } else {
+      addItemAndOpen(item);
+    }
     emit('add_to_cart', {
       currency: product.currency,
       value: (unitPriceCents * quantity) / 100,
@@ -71,6 +85,9 @@ export function AddToCartButton({
     // d'un retour plus brand-aligned.
     show('Ajouté à votre rituel.');
     setBusy(false);
+    if (redirectTo) {
+      router.push(redirectTo);
+    }
   };
 
   return (
@@ -81,7 +98,7 @@ export function AddToCartButton({
       loading={busy}
       onClick={onClick}
     >
-      {children ?? 'Composer mon rituel'}
+      {children ?? 'Commander le rituel'}
     </Button>
   );
 }

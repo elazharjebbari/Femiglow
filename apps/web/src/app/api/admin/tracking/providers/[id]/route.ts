@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminSession } from '@/lib/auth/require-admin';
@@ -105,6 +106,12 @@ export async function PATCH(request: Request, ctx: Ctx): Promise<Response> {
       actorId: session.adminId,
       meta: { kind: updated.kind, status: updated.status },
     });
+    // Le snippet GTM/Meta/etc. est récupéré au runtime via /api/track/pixels
+    // (no-store) donc le widget client se met à jour sans cache stale, mais
+    // la page publique reste cachée par ISR (`s-maxage=1800`). On invalide
+    // le layout pour que le `<TrackingProvider>` rendu côté serveur reflète
+    // l'activation/désactivation immédiatement.
+    revalidatePath('/', 'layout');
     return NextResponse.json({
       provider: {
         id: updated.id,

@@ -9,6 +9,7 @@
  */
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useChatStore } from './chat-store';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
@@ -22,10 +23,28 @@ export function ChatLauncher({ unreadCount = 0 }: ChatLauncherProps) {
   const toggle = useChatStore((s) => s.toggle);
   const sessionId = useChatStore((s) => s.sessionId);
   const messagesCount = useChatStore((s) => s.messages.length);
+  const pathname = usePathname();
   const { emit } = useTracking();
 
   const isRtl = language === 'ar';
-  const positionClass = isRtl ? 'left-5 sm:left-7' : 'right-5 sm:right-7';
+  // Sur `/kit`, la `StickyCartCTA` occupe la bande basse en mobile (bar
+  // pleine largeur ~80px) et le coin bas-droit en desktop (boîte 340px).
+  // On remonte le launcher (mobile) et on le décale à gauche de la boîte
+  // sticky (desktop) pour ne pas recouvrir le bouton « Commander ».
+  const hasStickyCta = pathname === '/kit';
+  const verticalClass = hasStickyCta
+    ? 'bottom-24 sm:bottom-7'
+    : 'bottom-5 sm:bottom-7';
+  let positionClass: string;
+  if (isRtl) {
+    positionClass = 'left-5 sm:left-7';
+  } else if (hasStickyCta) {
+    // Mobile : on reste à `right-5` (le décalage vertical suffit) ; sm+ :
+    // 372px = 24px (right-6 du sticky) + 340px (largeur sticky) + 8px de marge.
+    positionClass = 'right-5 sm:right-[372px]';
+  } else {
+    positionClass = 'right-5 sm:right-7';
+  }
 
   const handleToggle = (): void => {
     if (isOpen) {
@@ -52,10 +71,11 @@ export function ChatLauncher({ unreadCount = 0 }: ChatLauncherProps) {
       aria-expanded={isOpen}
       data-testid="chat-launcher"
       className={[
-        'fixed z-40 bottom-5 sm:bottom-7 flex h-14 w-14 items-center justify-center rounded-full',
+        'fixed z-40 flex h-14 w-14 items-center justify-center rounded-full',
         'bg-stone-900 text-white shadow-lg shadow-stone-900/15 transition-all',
         'hover:bg-stone-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2',
         'motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300',
+        verticalClass,
         positionClass,
       ].join(' ')}
     >

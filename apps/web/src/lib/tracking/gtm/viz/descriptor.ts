@@ -47,16 +47,22 @@ export interface GraphDescriptor {
   totalVariables: number;
 }
 
+// Les `folderId` sont désormais des chaînes numériques (`'1'..'9'`) pour
+// satisfaire la contrainte d'import GTM (« base 10 number expected »).
+// Cette table de couleurs est purement interne à la viz Mermaid : elle
+// reflète les 9 dossiers structurels dans l'ordre de définition de
+// `FOLDER_IDS` côté `builders.ts` (config, page, ecommerce, lead,
+// conversions, fgCustom, consent, helpers, chat).
 const FOLDER_COLOR: Record<string, GraphFolderColor> = {
-  'F-00': 'ciel',
-  'F-01': 'creme',
-  'F-02': 'sauge-clair',
-  'F-03': 'petale',
-  'F-04': 'champagne',
-  'F-05': 'sable',
-  'F-06': 'sauge',
-  'F-07': 'stone',
-  'F-08': 'sauge-profond',
+  '1': 'ciel', // config
+  '2': 'creme', // page
+  '3': 'sauge-clair', // ecommerce
+  '4': 'petale', // lead
+  '5': 'champagne', // conversions
+  '6': 'sable', // fgCustom
+  '7': 'sauge', // consent
+  '8': 'stone', // helpers
+  '9': 'sauge-profond', // chat
 };
 
 function colorFor(folderId: string | undefined): GraphFolderColor {

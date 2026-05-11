@@ -93,6 +93,18 @@ export const useCartStore = create<CartState>()(
         shippingCity: state.shippingCity,
       }),
       onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Migration silencieuse : les paniers persistés avant le passage
+          // SVG→PNG des assets kit gardent en cache `kit-principale.svg`
+          // (placeholder). On réécrit au vol pour ne pas afficher le SVG
+          // sur `/panier` après update sans forcer l'utilisateur à vider
+          // son panier.
+          state.items = state.items.map((item) =>
+            item.imageSrc?.endsWith('.svg')
+              ? { ...item, imageSrc: item.imageSrc.replace(/\.svg$/, '.png') }
+              : item,
+          );
+        }
         state?.setHydrated();
       },
     },

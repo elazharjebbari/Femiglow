@@ -12,13 +12,13 @@ export const mockKit: Product = {
   currency: 'MAD',
   images: [
     {
-      src: '/products/kit-principale.svg',
+      src: '/products/kit-principale.png',
       alt: 'Le rituel FemiGlow \u2014 flacon de base, fortifiant et lime, sur fond crème',
       width: 1600,
       height: 2000,
     },
     {
-      src: '/products/kit-detail-mains.svg',
+      src: '/products/kit-detail-mains.png',
       alt: 'Mains appliquant la base transparente FemiGlow',
       width: 1600,
       height: 1067,

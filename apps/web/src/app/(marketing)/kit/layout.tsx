@@ -33,8 +33,9 @@ export default async function KitLayout({
           product={product}
           size="md"
           fullWidth={false}
+          redirectTo="/panier"
         >
-          Composer
+          Commander
         </AddToCartButton>
       </StickyCartCTA>
       <MiniCartSlideOver />

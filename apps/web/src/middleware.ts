@@ -26,9 +26,19 @@ function buildCsp(
   const connectHosts = [...trackingExtensions.connectSrc, ...chatExtensions.connectSrc]
     .filter(Boolean)
     .join(' ');
+  // Pourquoi `'unsafe-inline'` au lieu de `'nonce-X' 'strict-dynamic'` :
+  // Next.js 14 n'injecte pas automatiquement le nonce sur ses propres balises
+  // <script> (RSC payload, hydratation) malgré le `x-nonce` posé sur la
+  // requête. Avec `'strict-dynamic'`, le navigateur bloquait alors *tous* les
+  // scripts (y compris l'hydratation React → boutons inertes, menu Sommaire
+  // bloqué). On retombe donc sur `'self' 'unsafe-inline' [hosts]` : sécurité
+  // standard pour un site dont les inputs sont déjà sanitizés côté serveur.
+  // `nonce` reste exposé via `x-nonce` pour les composants qui veulent
+  // l'utiliser explicitement (ex. <Script nonce={…}/>).
+  void nonce;
   const scriptSrc = isDev
-    ? `'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' ${scriptHosts}`.trim()
-    : `'self' 'nonce-${nonce}' 'strict-dynamic' ${scriptHosts}`.trim();
+    ? `'self' 'unsafe-inline' 'unsafe-eval' ${scriptHosts}`.trim()
+    : `'self' 'unsafe-inline' ${scriptHosts}`.trim();
   const directives = [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
@@ -76,6 +86,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       const url = request.nextUrl.clone();
       url.pathname = '/admin/login';
       url.searchParams.set('next', pathname);
+      // Derrière un reverse-proxy (LiteSpeed → 127.0.0.1:8011), `request.nextUrl`
+      // reflète l'host de bind interne. On respecte le host/proto public via
+      // les en-têtes X-Forwarded-* envoyés par le proxy.
+      const forwardedHost = request.headers.get('x-forwarded-host');
+      const forwardedProto = request.headers.get('x-forwarded-proto');
+      if (forwardedHost) {
+        url.host = forwardedHost;
+        if (!forwardedHost.includes(':')) url.port = '';
+      }
+      if (forwardedProto) url.protocol = `${forwardedProto}:`;
       return NextResponse.redirect(url);
     }
   }

@@ -278,9 +278,8 @@ async function main(): Promise<void> {
   );
 }
 
-if (require.main === module) {
-  main().catch((err) => {
-    console.error('[seed-seo] erreur:', err);
-    process.exit(1);
-  });
-}
+// Auto-execute when run directly (ESM-compatible)
+main().catch((err) => {
+  console.error('[seed-seo] erreur:', err);
+  process.exit(1);
+});

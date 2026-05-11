@@ -24,10 +24,10 @@ describe('HeroProduit', () => {
     expect(h1).toHaveAttribute('id', 'hero-kit-title');
   });
 
-  it('rend le CTA principal « Composer mon rituel » (charte VII.5)', () => {
+  it('rend le CTA principal « Commander le rituel » (charte VII.5)', () => {
     renderHero();
     expect(
-      screen.getByRole('button', { name: /composer mon rituel/i }),
+      screen.getByRole('button', { name: /commander le rituel/i }),
     ).toBeInTheDocument();
   });
 

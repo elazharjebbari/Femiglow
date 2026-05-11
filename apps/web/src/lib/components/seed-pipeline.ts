@@ -348,7 +348,11 @@ export async function seedComponentFields(opts: {
     const validKeys = fields.map((f) => f.key);
 
     for (const field of fields) {
-      if (field.defaultValue === undefined) {
+      // `null` est traité comme "pas de valeur de seed" au même titre que
+      // `undefined` : la colonne `value` est `jsonb NOT NULL`, donc on ne
+      // peut pas persister null. Le champ reste sans binding tant qu'un
+      // admin ne l'a pas saisi via l'éditeur.
+      if (field.defaultValue == null) {
         if (field.required) {
           report.warnings.push(
             `${seed.key}.${field.key} : champ requis sans defaultValue (à corriger dans le registre).`,

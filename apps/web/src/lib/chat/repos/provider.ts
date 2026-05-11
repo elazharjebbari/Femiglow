@@ -11,6 +11,7 @@ import { createId } from '@/lib/ids';
 import { decryptSecret, encryptSecret } from '../secrets';
 import { requireChatDb } from '../db/client';
 import {
+  chatMessage,
   chatProviderConfig,
   type ChatProviderConfigInsert,
   type ChatProviderConfigRow,
@@ -110,6 +111,37 @@ export const providerRepo = {
       headers: row.headers ?? undefined,
       parameters: row.parameters ?? undefined,
     };
+  },
+
+  /**
+   * Supprime un provider. La FK `chat_message.provider_id` n'a pas d'`ON
+   * DELETE CASCADE`, sinon la suppression écraserait silencieusement
+   * l'historique des messages. On préserve l'historique en mettant
+   * `provider_id = NULL` sur les messages référençant ce provider, puis
+   * on supprime la ligne. Tout dans une transaction → rollback si l'une
+   * des deux étapes échoue.
+   *
+   * Renvoie `null` si le provider n'existait pas.
+   */
+  async delete(
+    id: string,
+  ): Promise<{ id: string; messagesNulled: number } | null> {
+    const db = requireChatDb();
+    return db.transaction(async (tx) => {
+      const existing = await tx
+        .select({ id: chatProviderConfig.id })
+        .from(chatProviderConfig)
+        .where(eq(chatProviderConfig.id, id))
+        .limit(1);
+      if (!existing[0]) return null;
+      const updated = await tx
+        .update(chatMessage)
+        .set({ providerId: null })
+        .where(eq(chatMessage.providerId, id))
+        .returning();
+      await tx.delete(chatProviderConfig).where(eq(chatProviderConfig.id, id));
+      return { id, messagesNulled: updated.length };
+    });
   },
 
   async incrementConsumed(id: string, costEur: number): Promise<void> {

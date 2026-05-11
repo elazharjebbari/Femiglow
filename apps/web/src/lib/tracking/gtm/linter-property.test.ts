@@ -21,7 +21,7 @@ function bigContainer(extraTags: number): GtmContainer {
     c.containerVersion.tag.push({
       name: `Aux Tag ${i}`,
       type: 'html',
-      parameter: [{ type: 'template', key: 'html', value: `<!-- ${i} -->` }],
+      parameter: [{ type: 'TEMPLATE', key: 'html', value: `<!-- ${i} -->` }],
       firingTriggerId: c.containerVersion.tag[0]!.firingTriggerId,
       parentFolderId: 'F-07',
     });

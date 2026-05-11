@@ -67,7 +67,7 @@ export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps)
                   className="group block w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-encre/40 focus-visible:ring-offset-4 focus-visible:ring-offset-creme"
                 >
                   {thumb ? (
-                    <div className="aspect-[3/2] w-full overflow-hidden bg-encre/5 transition-transform duration-700 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
+                    <div className="aspect-[3/2] w-full overflow-hidden bg-encre/5">
                       {thumb}
                     </div>
                   ) : (
@@ -78,7 +78,6 @@ export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps)
                       height={img.height}
                       ratio="3:2"
                       sizes="(min-width: 1024px) 33vw, 100vw"
-                      className="transition-transform duration-700 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     />
                   )}
                 </button>

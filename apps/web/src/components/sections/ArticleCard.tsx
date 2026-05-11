@@ -42,7 +42,6 @@ export function ArticleCard({
             ratio="4:5"
             sizes={sizes}
             priority={priority}
-            className="transition-transform duration-500 ease-out motion-reduce:transition-none group-hover:-translate-y-1"
           />
         )}
       </Link>

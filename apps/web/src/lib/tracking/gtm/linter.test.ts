@@ -86,7 +86,7 @@ describe('lintContainer — règles warnings', () => {
     const container = clone(buildContainer({ env: 'production', exportTime: FIXED }));
     container.containerVersion.trigger.push({
       triggerId: '99999',
-      type: 'customEvent',
+      type: 'CUSTOM_EVENT',
       name: 'CE — orphan_trigger',
     });
     const report = lintContainer({ container });
@@ -153,7 +153,7 @@ describe('lintContainer — règles infos', () => {
       variableId: '99999',
       type: 'c',
       name: 'CONST - Variable Orphelin',
-      parameter: [{ type: 'template', key: 'value', value: 'never-referenced' }],
+      parameter: [{ type: 'TEMPLATE', key: 'value', value: 'never-referenced' }],
     });
     const report = lintContainer({ container });
     expect(report.infos.some((i) => i.code === 'var_orphan')).toBe(true);
@@ -179,7 +179,7 @@ describe('lintContainer — résumé', () => {
     container.containerVersion.tag[0]!.firingTriggerId = []; // error
     container.containerVersion.trigger.push({
       triggerId: '99999',
-      type: 'customEvent',
+      type: 'CUSTOM_EVENT',
       name: 'CE — orphan',
     }); // warning
     const report = lintContainer({

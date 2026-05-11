@@ -87,7 +87,12 @@ export function ProductFeedSection({
                 <span className="text-base text-encre/70">{feed.currency}</span>
               </span>
             </p>
-            <AddToCartButton product={product} size="lg" fullWidth>
+            <AddToCartButton
+              product={product}
+              size="lg"
+              fullWidth
+              redirectTo="/panier"
+            >
               {feed.hero.ctaLabel}
             </AddToCartButton>
             <p className="text-[11px] uppercase tracking-[0.2em] text-encre/55">

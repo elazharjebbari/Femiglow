@@ -1,13 +1,14 @@
 /**
  * RTL — MediaImageClient.
  *
- * Régression critique : si l'image est déjà chargée par le navigateur au
- * moment où React attache son listener `onLoad`, le composant ne doit PAS
- * rester avec opacity=0 (sinon seul le blurhash s'affiche → perception
- * « page floutée à jamais », bug constaté en prod).
+ * Note: l'ancien fade-in opacity (0→1 onLoad) a été supprimé : sur certains
+ * mobiles (iOS Safari ancien, Android avec décodeur AVIF capricieux, cache +
+ * hydratation), le signal load pouvait ne jamais arriver et l'image restait
+ * invisible. Le blurhash en background couvre la phase de chargement et
+ * l'image apparaît dès que le navigateur la peint.
  */
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { MediaImageClient } from './MediaImageClient';
 
 const baseProps = {
@@ -29,34 +30,13 @@ const baseProps = {
 };
 
 describe('MediaImageClient', () => {
-  it('opacity passe à 1 après onLoad', async () => {
+  it("régression mobile : pas d'opacity:0 ni de transition opacity (image visible immédiatement)", () => {
+    // Garde-fou pour ne pas réintroduire le fade-in qui rendait les images
+    // invisibles sur certains mobiles quand `onLoad` ne se déclenchait pas.
     const { container } = render(<MediaImageClient {...baseProps} />);
     const img = container.querySelector('img.media-img') as HTMLImageElement;
-    expect(img.style.opacity).toBe('0');
-    fireEvent.load(img);
-    await waitFor(() => expect(img.style.opacity).toBe('1'));
-  });
-
-  it("régression: image déjà cachée au mount → opacity passe à 1 via useEffect", async () => {
-    // Simule le cas réel : l'image est déjà complète/naturalWidth>0 avant
-    // que React n'attache le onLoad. Le hook useEffect doit détecter
-    // cet état et basculer isLoaded à true sans qu'aucun load event ne soit
-    // dispatch.
-    const completeSpy = vi
-      .spyOn(HTMLImageElement.prototype, 'complete', 'get')
-      .mockReturnValue(true);
-    const widthSpy = vi
-      .spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get')
-      .mockReturnValue(1600);
-    try {
-      const { container } = render(<MediaImageClient {...baseProps} />);
-      const img = container.querySelector('img.media-img') as HTMLImageElement;
-      // jamais on ne fireEvent.load — useEffect doit suffire.
-      await waitFor(() => expect(img.style.opacity).toBe('1'));
-    } finally {
-      completeSpy.mockRestore();
-      widthSpy.mockRestore();
-    }
+    expect(img.style.opacity).toBe('');
+    expect(img.style.transition).toBe('');
   });
 
   it('respecte les modes objectFit / objectPosition', () => {

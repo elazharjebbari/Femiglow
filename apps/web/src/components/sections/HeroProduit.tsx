@@ -100,8 +100,13 @@ export function HeroProduit({
               shrink + densify the payment section).
             */}
             <div className="space-y-3 pt-2">
-              <AddToCartButton product={product} size="lg" fullWidth>
-                Composer mon rituel
+              <AddToCartButton
+                product={product}
+                size="lg"
+                fullWidth
+                redirectTo="/panier"
+              >
+                Commander le rituel
               </AddToCartButton>
               <p className="text-center text-[11px] uppercase tracking-[0.2em] text-encre/55">
                 Paiement sécurisé · Retour 14&#x202f;j · Livraison 48&#x202f;h

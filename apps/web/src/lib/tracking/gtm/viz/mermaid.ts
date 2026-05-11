@@ -24,7 +24,11 @@ export function descriptorToMermaid(desc: GraphDescriptor): string {
     if (triggerSeen.has(name)) return;
     triggerSeen.add(name);
     const id = `T_${sanitize(name)}`;
-    const isCustom = type === 'customEvent' || name.startsWith('CE');
+    // `type` est désormais émis en UPPER_SNAKE_CASE (format d'import GTM).
+    // On tolère aussi l'ancien `customEvent` au cas où d'anciens conteneurs
+    // sérialisés en lowercase passent par cette viz.
+    const isCustom =
+      type === 'CUSTOM_EVENT' || type === 'customEvent' || name.startsWith('CE');
     lines.push(`  ${id}([${quote(name)}])`);
     if (isCustom) lines.push(`  class ${id} trigCE`);
   }

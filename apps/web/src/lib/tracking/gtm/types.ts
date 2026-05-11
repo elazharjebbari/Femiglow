@@ -43,8 +43,15 @@ export type GtmTag = {
   parameter?: GtmParameter[];
   firingTriggerId?: string[];
   blockingTriggerId?: string[];
-  priority?: { type: 'integer'; value: string };
-  tagFiringOption?: 'oncePerEvent' | 'oncePerLoad' | 'unlimited';
+  /**
+   * `priority` est sérialisé en `Parameter` dans le format d'EXPORT GTM. GTM
+   * exige spécifiquement `type: 'INTEGER'` (et pas `TEMPLATE`) — sinon l'UI
+   * rejette « La valeur de la priorité de déclenchement doit être un nombre
+   * entier ». La valeur reste un string décimal (le format Parameter encode
+   * tout en string, mais le type informe le parser GTM de la coercion).
+   */
+  priority?: { type: 'INTEGER'; key?: string; value: string };
+  tagFiringOption?: 'ONCE_PER_EVENT' | 'ONCE_PER_LOAD' | 'UNLIMITED';
   setupTag?: { tagName: string; stopOnSetupFailure?: boolean }[];
   parentFolderId?: string;
 };

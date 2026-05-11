@@ -198,10 +198,7 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
                         alt=""
                         loading="lazy"
                         decoding="async"
-                        className={cn(
-                          'h-full w-full object-cover transition-transform duration-[220ms] ease-out',
-                          !reduceMotion && 'group-hover:scale-[1.02] group-focus-visible:scale-[1.02]',
-                        )}
+                        className="h-full w-full object-cover"
                       />
                     </span>
                   </Link>

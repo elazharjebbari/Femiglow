@@ -2,7 +2,12 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { TrackingClient } from '@/lib/tracking/client';
-import { DENIED_CONSENT, GRANTED_CONSENT, loadConsent } from '@/lib/tracking/consent';
+import {
+  DENIED_CONSENT,
+  GRANTED_CONSENT,
+  loadConsent,
+  saveConsent,
+} from '@/lib/tracking/consent';
 import { getAnonymousId, getSessionId } from '@/lib/tracking/identity';
 import type { TrackingConsentState } from '@/lib/db/types';
 
@@ -67,7 +72,19 @@ export function TrackingProvider({
     // Mode v2). Bandeau désactivé : on applique l'état souhaité par
     // l'admin (granted si juridiction ne l'exige pas, denied sinon).
     if (!bannerEnabled) {
-      setConsent(defaultGranted ? GRANTED_CONSENT : DENIED_CONSENT);
+      const next = defaultGranted ? GRANTED_CONSENT : DENIED_CONSENT;
+      setConsent(next);
+      // Si l'admin a demandé `defaultGranted=true` mais qu'aucun consent
+      // n'est encore en localStorage, on persiste le `GRANTED_CONSENT` et
+      // on dispatch `fg:consent-changed`. Sans ça, le `PixelLoader` lit un
+      // localStorage vide, retombe sur `DENIED_CONSENT` et n'injecte aucun
+      // snippet — même si le provider est `enabled` côté DB.
+      if (defaultGranted) {
+        const stored = loadConsent();
+        if (stored.analytics_storage !== 'granted') {
+          saveConsent(next);
+        }
+      }
     } else {
       setConsent(loadConsent());
     }
