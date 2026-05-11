@@ -12,6 +12,8 @@ import { ComparatifSectionBound } from '@/components/sections/ComparatifSectionB
 import { HandsTestimonialsBound } from '@/components/sections/HandsTestimonialsBound';
 import { JournalGridBound } from '@/components/sections/JournalGridBound';
 import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectionBound';
+import { RitualsModuleBound } from '@/components/sections/rituals/RitualsModuleBound';
+import { RitualsWallDrawer } from '@/components/sections/rituals/RitualsWallDrawer';
 import { JsonLd, productSchema, faqPageSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
@@ -151,6 +153,7 @@ export default async function KitPage() {
         reviewStats={reviewStats}
       />
       <ComparatifSectionBound data={content.comparatif} />
+      <RitualsModuleBound productKey="pack-femiglow" />
       <FAQContextuelle items={content.faq} />
       <HandsTestimonialsBound items={content.handsTestimonials} />
       <PivotFinal product={dbProduct} />
@@ -160,6 +163,7 @@ export default async function KitPage() {
         title="Trois lectures."
         variant="symmetric"
       />
+      <RitualsWallDrawer productKey="pack-femiglow" />
     </div>
   );
 }

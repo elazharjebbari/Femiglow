@@ -148,3 +148,78 @@
     --focus-outline-offset: 4px;
   }
 }
+
+/* ==========================================================================
+   Rituels partagés — tokens spécifiques
+   Cf. docs/reviews-wall/annexes/decisions-design-tokens.md
+   ========================================================================== */
+
+:root {
+  /* Cartes */
+  --ritual-card-bg: #ffffff;
+  --ritual-card-bg-hover: var(--color-creme);
+  --ritual-card-border-color: var(--color-sauge-soft);
+  --ritual-card-border-width: 1.5px;
+  --ritual-card-padding: 20px;
+
+  /* Chips filtres */
+  --ritual-chip-bg: #ffffff;
+  --ritual-chip-bg-hover: var(--color-sauge-soft);
+  --ritual-chip-bg-active: var(--color-sauge);
+  --ritual-chip-border: var(--color-sauge-soft);
+  --ritual-chip-border-active: var(--color-sauge-dark);
+  --ritual-chip-text: var(--color-encre);
+  --ritual-chip-height: 32px;
+  --ritual-chip-padding-x: 14px;
+  --ritual-chip-padding-y: 8px;
+
+  /* Drawer */
+  --ritual-drawer-bg: var(--color-creme);
+  --ritual-drawer-overlay: rgba(44, 42, 40, 0.30);
+  --ritual-drawer-width-desktop: 480px;
+  --ritual-drawer-width-tablet: 420px;
+  --ritual-drawer-width-large: 520px;
+  --ritual-drawer-padding: 32px;
+  --ritual-drawer-padding-mobile: 24px;
+  --ritual-bottom-sheet-height: 92vh;
+
+  /* Lightbox */
+  --ritual-lightbox-overlay: rgba(0, 0, 0, 0.95);
+  --ritual-lightbox-nav-button: 48px;
+
+  /* Module compact */
+  --ritual-module-grid-gap: 24px;
+  --ritual-module-card-aspect: 4 / 5;
+  --ritual-module-padding-block: 64px;
+  --ritual-module-padding-block-mobile: 48px;
+
+  /* Wizard */
+  --ritual-wizard-cta-height: 56px;
+  --ritual-wizard-step-padding: 32px;
+  --ritual-wizard-photo-thumb: 100px;
+
+  /* Animations */
+  --ritual-drawer-open-duration-desktop: 220ms;
+  --ritual-drawer-open-duration-mobile: 280ms;
+  --ritual-drawer-close-duration: 180ms;
+  --ritual-filter-transition-duration: 150ms;
+  --ritual-card-appear-duration: 300ms;
+  --ritual-card-stagger-delay: 50ms;
+  --ritual-lightbox-duration: 240ms;
+
+  --ritual-ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ritual-ease-in-quiet: cubic-bezier(0.4, 0, 1, 1);
+  --ritual-ease-in-out-silk: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ritual-drawer-open-duration-desktop: 80ms;
+    --ritual-drawer-open-duration-mobile: 80ms;
+    --ritual-drawer-close-duration: 80ms;
+    --ritual-filter-transition-duration: 80ms;
+    --ritual-card-stagger-delay: 0ms;
+    --ritual-card-appear-duration: 80ms;
+    --ritual-lightbox-duration: 80ms;
+  }
+}

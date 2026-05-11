@@ -1407,3 +1407,126 @@ export const insightsRefreshRun = pgTable(
     irfStatusIdx: index('irf_status_idx').on(t.status, t.startedAt),
   }),
 );
+
+// ===========================================================================
+// Rituels partagés — cf. docs/reviews-wall/execution/01-architecture-detaillee.md
+// ===========================================================================
+
+export const ritualSignal = pgEnum('ritual_signal', ['oui', 'hesite', 'non']);
+
+export const ritualStatus = pgEnum('ritual_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'HIDDEN',
+]);
+
+export const ritualSource = pgEnum('ritual_source', [
+  'web',
+  'email_j45',
+  'manual',
+  'import_csv',
+  'import_json',
+  'import_zip',
+]);
+
+export const ritualLanguage = pgEnum('ritual_language', ['fr', 'ar']);
+
+export const ritualPhotoFacesStatus = pgEnum('ritual_photo_faces_status', [
+  'PENDING_CHECK',
+  'OK',
+  'MANUAL_REVIEW',
+  'REJECTED_FACE',
+]);
+
+export const ritualTestimonials = pgTable(
+  'ritual_testimonials',
+  {
+    id: text('id').primaryKey(),
+    publicSlug: text('public_slug').notNull(),
+    productKey: text('product_key').notNull(),
+    body: text('body').notNull(),
+    bodyOriginal: text('body_original'),
+    wouldRecommend: ritualSignal('would_recommend').notNull(),
+    ritualTags: jsonb('ritual_tags').$type<string[]>().notNull().default([]),
+    authorFirstName: text('author_first_name'),
+    authorCity: text('author_city'),
+    initiatedSince: text('initiated_since'),
+    isAnonymous: boolean('is_anonymous').notNull().default(false),
+    language: ritualLanguage('language').notNull().default('fr'),
+    status: ritualStatus('status').notNull().default('PENDING'),
+    source: ritualSource('source').notNull(),
+    customerHash: text('customer_hash'),
+    orderId: text('order_id'),
+    verifiedPurchase: boolean('verified_purchase').notNull().default(false),
+    featured: boolean('featured').notNull().default(false),
+    moderationNote: text('moderation_note'),
+    autoFlags: jsonb('auto_flags').$type<string[]>().notNull().default([]),
+    importBatchId: text('import_batch_id'),
+    importRowId: text('import_row_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    rtPublicSlugUnique: uniqueIndex('rt_public_slug_unique').on(t.publicSlug),
+    rtStatusProductIdx: index('rt_status_product_idx').on(t.status, t.productKey),
+    rtPublishedAtIdx: index('rt_published_at_idx').on(t.publishedAt),
+    rtCustomerHashIdx: index('rt_customer_hash_idx').on(t.customerHash),
+  }),
+);
+
+export const ritualTestimonialPhotos = pgTable(
+  'ritual_testimonial_photos',
+  {
+    id: text('id').primaryKey(),
+    testimonialId: text('testimonial_id').notNull(),
+    url: text('url').notNull(),
+    thumbUrl: text('thumb_url').notNull(),
+    focalX: text('focal_x').notNull().default('0.500'),
+    focalY: text('focal_y').notNull().default('0.500'),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    byteSize: integer('byte_size').notNull(),
+    mime: text('mime').notNull(),
+    alt: text('alt'),
+    facesStatus: ritualPhotoFacesStatus('faces_status').notNull().default('PENDING_CHECK'),
+    facesCount: integer('faces_count').notNull().default(0),
+    facesCheckAt: timestamp('faces_check_at', { withTimezone: true }),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    rtpTestimonialIdx: index('rtp_testimonial_idx').on(t.testimonialId, t.position),
+    rtpFacesPendingIdx: index('rtp_faces_pending_idx').on(t.facesStatus),
+  }),
+);
+
+export const ritualAuditLog = pgTable(
+  'ritual_audit_log',
+  {
+    id: text('id').primaryKey(),
+    testimonialId: text('testimonial_id'),
+    actorId: text('actor_id'),
+    action: text('action').notNull(),
+    note: text('note'),
+    payload: jsonb('payload').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    ralTestimonialIdx: index('ral_testimonial_idx').on(t.testimonialId, t.createdAt),
+    ralActorIdx: index('ral_actor_idx').on(t.actorId, t.createdAt),
+  }),
+);
+
+export const ritualAggregate = pgTable('ritual_aggregate', {
+  productKey: text('product_key').primaryKey(),
+  totalCount: integer('total_count').notNull().default(0),
+  ouiCount: integer('oui_count').notNull().default(0),
+  hesiteCount: integer('hesite_count').notNull().default(0),
+  nonCount: integer('non_count').notNull().default(0),
+  withPhotosCount: integer('with_photos_count').notNull().default(0),
+  topTags: jsonb('top_tags').$type<Array<{ tag: string; count: number }>>().notNull().default([]),
+  lastPublishedAt: timestamp('last_published_at', { withTimezone: true }),
+  refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+});

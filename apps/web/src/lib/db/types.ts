@@ -885,3 +885,92 @@ export interface InsightsRefreshRunRow {
   errorMessage: string | null;
   triggeredBy: string | null;
 }
+
+// =========================================================================
+// Rituels partagés — cf. docs/reviews-wall/execution/
+// =========================================================================
+
+export type RitualSignal = 'oui' | 'hesite' | 'non';
+export type RitualStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
+export type RitualSource =
+  | 'web'
+  | 'email_j45'
+  | 'manual'
+  | 'import_csv'
+  | 'import_json'
+  | 'import_zip';
+export type RitualLanguage = 'fr' | 'ar';
+export type RitualPhotoFacesStatus =
+  | 'PENDING_CHECK'
+  | 'OK'
+  | 'MANUAL_REVIEW'
+  | 'REJECTED_FACE';
+
+export interface RitualTestimonial {
+  id: string;
+  publicSlug: string;
+  productKey: string;
+  body: string;
+  bodyOriginal: string | null;
+  wouldRecommend: RitualSignal;
+  ritualTags: string[];
+  authorFirstName: string | null;
+  authorCity: string | null;
+  initiatedSince: string | null;
+  isAnonymous: boolean;
+  language: RitualLanguage;
+  status: RitualStatus;
+  source: RitualSource;
+  customerHash: string | null;
+  orderId: string | null;
+  verifiedPurchase: boolean;
+  featured: boolean;
+  moderationNote: string | null;
+  autoFlags: string[];
+  importBatchId: string | null;
+  importRowId: string | null;
+  createdAt: Date;
+  publishedAt: Date | null;
+  updatedAt: Date;
+}
+
+export interface RitualTestimonialPhoto {
+  id: string;
+  testimonialId: string;
+  url: string;
+  thumbUrl: string;
+  focalX: string;
+  focalY: string;
+  width: number;
+  height: number;
+  byteSize: number;
+  mime: string;
+  alt: string | null;
+  facesStatus: RitualPhotoFacesStatus;
+  facesCount: number;
+  facesCheckAt: Date | null;
+  position: number;
+  createdAt: Date;
+}
+
+export interface RitualAuditEntry {
+  id: string;
+  testimonialId: string | null;
+  actorId: string | null;
+  action: string;
+  note: string | null;
+  payload: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface RitualAggregateRow {
+  productKey: string;
+  totalCount: number;
+  ouiCount: number;
+  hesiteCount: number;
+  nonCount: number;
+  withPhotosCount: number;
+  topTags: Array<{ tag: string; count: number }>;
+  lastPublishedAt: Date | null;
+  refreshedAt: Date;
+}
