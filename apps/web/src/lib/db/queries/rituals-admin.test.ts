@@ -102,6 +102,30 @@ describe('listAdminRituals', () => {
     expect(result.rows[0]!.authorFirstName).toBe('Amal');
   });
 
+  it('filtre par search full-text body', async () => {
+    await insertRitual({ ...baseRitual, body: 'Trois mois et la nervure est revenue.' });
+    await insertRitual({ ...baseRitual, body: 'Mes ongles sont plus souples.' });
+    const result = await listAdminRituals({ status: 'all', search: 'nervure' });
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]!.body).toContain('nervure');
+  });
+
+  it('search inclut author et city', async () => {
+    await insertRitual({ ...baseRitual, authorFirstName: 'Amal', authorCity: 'Rabat' });
+    await insertRitual({ ...baseRitual, authorFirstName: 'Souad', authorCity: 'Casablanca' });
+    const a = await listAdminRituals({ status: 'all', search: 'rabat' });
+    expect(a.rows).toHaveLength(1);
+    const s = await listAdminRituals({ status: 'all', search: 'Souad' });
+    expect(s.rows).toHaveLength(1);
+  });
+
+  it('search escape % et _', async () => {
+    await insertRitual({ ...baseRitual, body: 'Resultats 100% naturels' });
+    await insertRitual({ ...baseRitual, body: 'Resultats progressifs' });
+    const r = await listAdminRituals({ status: 'all', search: '100%' });
+    expect(r.rows).toHaveLength(1);
+  });
+
   it('filtre par verified', async () => {
     await insertRitual({ ...baseRitual, verifiedPurchase: true });
     await insertRitual({ ...baseRitual, verifiedPurchase: false });

@@ -44,6 +44,11 @@ describe('parseAdminFilters', () => {
     expect(f.authorQuery).toBe('Amal');
   });
 
+  it('parse search via ?q', () => {
+    const f = parseAdminFilters(new URLSearchParams('q=miracle'));
+    expect(f.search).toBe('miracle');
+  });
+
   it('parse verified', () => {
     expect(parseAdminFilters(new URLSearchParams('verified=true')).verified).toBe(true);
     expect(parseAdminFilters(new URLSearchParams('verified=false')).verified).toBe(false);
@@ -66,6 +71,7 @@ describe('serializeAdminFilters', () => {
       dateFrom: '2026-04-01',
       dateTo: '2026-05-01',
       authorQuery: 'Amal',
+      search: 'nervure',
       verified: true,
     };
     const params = serializeAdminFilters(original);

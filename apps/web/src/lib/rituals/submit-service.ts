@@ -7,7 +7,10 @@ import {
 import { sanitizeBody } from './sanitize-body';
 import { detectAutoFlags } from './auto-flags';
 import { decodeEmailToken } from './email-tokens';
+import { duplicateFlags, findSimilar } from './duplicate-detection';
+import { memoryStore, db, schema } from '@/lib/db/client';
 import type { RitualSource, RitualTestimonial } from '@/lib/db/types';
+import { inArray } from 'drizzle-orm';
 
 /**
  * Orchestration de la soumission d'un rituel.
@@ -25,6 +28,39 @@ export interface SubmitResult {
   estimatedPublishHours: number;
 }
 
+/**
+ * Compare le body contre les rituels APPROVED/PENDING de ce produit
+ * et retourne les flags de doublon à appliquer (`duplicate_strict`,
+ * `duplicate_loose`).
+ *
+ * Limité aux 500 rituels les plus récents pour éviter un O(n) catastrophique.
+ */
+async function detectDuplicateFlags(body: string, productKey: string): Promise<string[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = (await drizzle
+      .select({ id: schema.ritualTestimonials.id, body: schema.ritualTestimonials.body })
+      .from(schema.ritualTestimonials)
+      .where(inArray(schema.ritualTestimonials.status, ['APPROVED', 'PENDING']))
+      .limit(500)) as Array<{ id: string; body: string }>;
+    const matches = findSimilar(
+      body,
+      rows.filter((r) => r.body && r.body.length > 0),
+      0.7,
+    );
+    return duplicateFlags(matches);
+  }
+  const store = memoryStore();
+  const candidates = Array.from(store.ritualTestimonials.values())
+    .filter(
+      (r) =>
+        r.productKey === productKey &&
+        (r.status === 'APPROVED' || r.status === 'PENDING'),
+    )
+    .map((r) => ({ id: r.id, body: r.body }));
+  return duplicateFlags(findSimilar(body, candidates, 0.7));
+}
+
 export async function submitRitual(
   input: RitualTestimonialSubmit,
   ctx: SubmitContext = {},
@@ -32,9 +68,12 @@ export async function submitRitual(
   // 1. Sanitization du body
   const { sanitized, flags: emojiFlags } = sanitizeBody(input.body);
 
-  // 2. Auto-flags
+  // 2. Auto-flags + détection doublons
   const otherFlags = detectAutoFlags(sanitized);
-  const autoFlags = Array.from(new Set([...emojiFlags, ...otherFlags]));
+  const dupFlags = await detectDuplicateFlags(sanitized, input.productKey);
+  const autoFlags = Array.from(
+    new Set([...emojiFlags, ...otherFlags, ...dupFlags]),
+  );
 
   // 3. Décodage email token (si présent)
   let customerHash: string | null = null;

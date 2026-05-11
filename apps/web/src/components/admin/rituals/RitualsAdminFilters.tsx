@@ -89,6 +89,7 @@ export function RitualsAdminFilters({ preserveParams = {} }: RitualsAdminFilters
       dateFrom: null,
       dateTo: null,
       authorQuery: null,
+      search: null,
       verified: null,
     };
     setDraft(empty);

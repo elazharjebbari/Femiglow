@@ -34,6 +34,8 @@ export interface AdminFilters {
   dateTo: string | null;
   /** Recherche libre sur prénom auteur OU customer_hash. */
   authorQuery: string | null;
+  /** Recherche full-text sur body / body_original / auteur / ville. */
+  search: string | null;
   /** true = uniquement vérifiés ; false = uniquement non vérifiés ; null = tous. */
   verified: boolean | null;
 }
@@ -44,6 +46,7 @@ export const EMPTY_FILTERS: AdminFilters = {
   dateFrom: null,
   dateTo: null,
   authorQuery: null,
+  search: null,
   verified: null,
 };
 
@@ -84,6 +87,7 @@ export function parseAdminFilters(src: ParamSource): AdminFilters {
   const dateTo = getParam(src, 'to');
 
   const author = getParam(src, 'author');
+  const search = getParam(src, 'q');
   const verifiedRaw = getParam(src, 'verified');
   const verified =
     verifiedRaw === 'true' ? true : verifiedRaw === 'false' ? false : null;
@@ -94,6 +98,7 @@ export function parseAdminFilters(src: ParamSource): AdminFilters {
     dateFrom: dateFrom && ISO_DATE.test(dateFrom) ? dateFrom : null,
     dateTo: dateTo && ISO_DATE.test(dateTo) ? dateTo : null,
     authorQuery: author && author.length > 0 ? author : null,
+    search: search && search.length > 0 ? search : null,
     verified,
   };
 }
@@ -105,6 +110,7 @@ export function serializeAdminFilters(filters: AdminFilters): URLSearchParams {
   if (filters.dateFrom) out.set('from', filters.dateFrom);
   if (filters.dateTo) out.set('to', filters.dateTo);
   if (filters.authorQuery) out.set('author', filters.authorQuery);
+  if (filters.search) out.set('q', filters.search);
   if (filters.verified !== null) out.set('verified', filters.verified ? 'true' : 'false');
   return out;
 }
@@ -116,6 +122,7 @@ export function countActiveFilters(filters: AdminFilters): number {
   if (filters.dateFrom) n += 1;
   if (filters.dateTo) n += 1;
   if (filters.authorQuery) n += 1;
+  if (filters.search) n += 1;
   if (filters.verified !== null) n += 1;
   return n;
 }

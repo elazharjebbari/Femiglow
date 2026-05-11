@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { RitualsAdminTable } from '@/components/admin/rituals/RitualsAdminTable';
 import { RitualsAdminFilters } from '@/components/admin/rituals/RitualsAdminFilters';
+import { RitualsAdminSearch } from '@/components/admin/rituals/RitualsAdminSearch';
 import { listAdminRituals } from '@/lib/db/queries/rituals-admin';
 import { parseAdminFilters } from '@/lib/admin/admin-filters';
 
@@ -25,6 +26,7 @@ export default async function AdminRitualsPublishedPage({
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     authorQuery: filters.authorQuery,
+    search: filters.search,
     verified: filters.verified,
     page,
     pageSize: 25,
@@ -60,6 +62,7 @@ export default async function AdminRitualsPublishedPage({
         </nav>
       </header>
 
+      <RitualsAdminSearch />
       <RitualsAdminFilters />
 
       <RitualsAdminTable

@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { listAdminRituals } from '@/lib/db/queries/rituals-admin';
 import { RitualsAdminFilters } from '@/components/admin/rituals/RitualsAdminFilters';
+import { RitualsAdminSearch } from '@/components/admin/rituals/RitualsAdminSearch';
 import { parseAdminFilters } from '@/lib/admin/admin-filters';
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +35,7 @@ export default async function AdminRitualsQueuePage({
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     authorQuery: filters.authorQuery,
+    search: filters.search,
     verified: filters.verified,
     page,
     pageSize: 20,
@@ -63,9 +65,19 @@ export default async function AdminRitualsQueuePage({
           >
             Tous
           </Link>
+          {result.pendingCount > 0 && (
+            <Link
+              href="/admin/rituals/queue/sweep"
+              className="border border-emerald-300 bg-emerald-50 px-3 py-1 text-emerald-900 hover:bg-emerald-100"
+              data-testid="enter-sweep-mode"
+            >
+              Mode rafale →
+            </Link>
+          )}
         </nav>
       </header>
 
+      <RitualsAdminSearch />
       <RitualsAdminFilters
         preserveParams={status === 'all' ? { status: 'all' } : { status: 'PENDING' }}
       />

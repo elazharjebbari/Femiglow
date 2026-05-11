@@ -28,6 +28,8 @@ export interface AdminListFilters {
   dateTo?: string | null;
   /** Recherche libre sur prénom auteur ou customerHash. */
   authorQuery?: string | null;
+  /** Recherche full-text body / body_original / author_first_name / author_city. */
+  search?: string | null;
   verified?: boolean | null;
   page?: number;
   pageSize?: number;
@@ -101,6 +103,16 @@ export async function listAdminRituals(filters: AdminListFilters): Promise<Admin
       conditions.push(eq(schema.ritualTestimonials.verifiedPurchase, true));
     } else if (filters.verified === false) {
       conditions.push(eq(schema.ritualTestimonials.verifiedPurchase, false));
+    }
+    if (filters.search) {
+      const pat = `%${filters.search.replace(/[%_]/g, '\\$&')}%`;
+      const cond = or(
+        ilike(schema.ritualTestimonials.body, pat),
+        ilike(schema.ritualTestimonials.bodyOriginal, pat),
+        ilike(schema.ritualTestimonials.authorFirstName, pat),
+        ilike(schema.ritualTestimonials.authorCity, pat),
+      );
+      if (cond) conditions.push(cond);
     }
 
     const rows = (await drizzle
@@ -192,6 +204,16 @@ export async function listAdminRituals(filters: AdminListFilters): Promise<Admin
     all = all.filter((r) => r.verifiedPurchase === true);
   } else if (filters.verified === false) {
     all = all.filter((r) => r.verifiedPurchase === false);
+  }
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    all = all.filter(
+      (r) =>
+        r.body.toLowerCase().includes(q) ||
+        (r.bodyOriginal ?? '').toLowerCase().includes(q) ||
+        (r.authorFirstName ?? '').toLowerCase().includes(q) ||
+        (r.authorCity ?? '').toLowerCase().includes(q),
+    );
   }
   all.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   const start = (page - 1) * pageSize;
