@@ -173,8 +173,10 @@ describe('listRituals', () => {
     // 15 séries croissantes de mai => le plus récent en premier
     const first = result.items[0];
     const last = result.items[result.items.length - 1];
-    expect(new Date(first.publishedAt!).getTime()).toBeGreaterThan(
-      new Date(last.publishedAt!).getTime(),
+    expect(first?.publishedAt).toBeTruthy();
+    expect(last?.publishedAt).toBeTruthy();
+    expect(new Date(first!.publishedAt!).getTime()).toBeGreaterThan(
+      new Date(last!.publishedAt!).getTime(),
     );
   });
 });

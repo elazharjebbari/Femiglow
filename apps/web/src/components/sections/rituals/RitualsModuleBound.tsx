@@ -56,7 +56,6 @@ async function RitualsModuleResolver({ productKey }: { productKey: string }) {
 export function RitualsModuleBound({ productKey }: { productKey: string }) {
   return (
     <Suspense fallback={<RitualsModuleSkeleton />}>
-      {/* @ts-expect-error Async Server Component */}
       <RitualsModuleResolver productKey={productKey} />
     </Suspense>
   );
