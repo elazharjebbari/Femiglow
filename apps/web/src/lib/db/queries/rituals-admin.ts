@@ -7,6 +7,7 @@ import type {
   RitualStatus,
 } from '@/lib/db/types';
 import { insertAuditEvent, refreshRitualAggregate } from './rituals';
+import { dispatchRitualEvent } from '@/lib/rituals/webhook-dispatcher';
 
 /**
  * Queries admin (queue, détail, actions).
@@ -394,6 +395,9 @@ export async function approveRitual(id: string, ctx: ActionContext): Promise<Rit
     action: 'approved',
   });
   await refreshRitualAggregate(row.productKey);
+  dispatchRitualEvent('ritual.approved', updated).catch((e) =>
+    console.error('[rituals-admin] webhook dispatch failed', e),
+  );
   return updated;
 }
 
@@ -426,6 +430,9 @@ export async function rejectRitual(
     action: 'rejected',
     note,
   });
+  dispatchRitualEvent('ritual.rejected', updated, { note }).catch((e) =>
+    console.error('[rituals-admin] webhook dispatch failed', e),
+  );
   return updated;
 }
 
@@ -459,6 +466,9 @@ export async function hideRitual(
     note,
   });
   await refreshRitualAggregate(row.productKey);
+  dispatchRitualEvent('ritual.hidden', updated, { note }).catch((e) =>
+    console.error('[rituals-admin] webhook dispatch failed', e),
+  );
   return updated;
 }
 
@@ -490,6 +500,9 @@ export async function restoreRitual(
     action: 'restored',
   });
   await refreshRitualAggregate(row.productKey);
+  dispatchRitualEvent('ritual.restored', updated).catch((e) =>
+    console.error('[rituals-admin] webhook dispatch failed', e),
+  );
   return updated;
 }
 
@@ -536,6 +549,10 @@ export async function setFeatured(
     actorId: ctx.actorId,
     action: featured ? 'featured_on' : 'featured_off',
   });
+  dispatchRitualEvent(
+    featured ? 'ritual.featured_on' : 'ritual.featured_off',
+    { ...row, featured, updatedAt: now },
+  ).catch((e) => console.error('[rituals-admin] webhook dispatch failed', e));
 
   const total = drizzle
     ? ((await drizzle

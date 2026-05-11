@@ -189,6 +189,7 @@ export function RitualsAdminTable({
                   <td className="whitespace-nowrap p-2 align-top">
                     <Link
                       href={`/admin/rituals/${r.id}`}
+                      prefetch
                       className="text-xs font-medium text-stone-900 underline"
                     >
                       Détail →

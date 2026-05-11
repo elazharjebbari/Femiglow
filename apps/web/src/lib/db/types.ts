@@ -19,7 +19,13 @@ export type WebhookEventName =
   | 'lead.created'
   | 'lead.status_changed'
   | 'lead.note_added'
-  | 'order.created';
+  | 'order.created'
+  | 'ritual.approved'
+  | 'ritual.rejected'
+  | 'ritual.hidden'
+  | 'ritual.restored'
+  | 'ritual.featured_on'
+  | 'ritual.featured_off';
 
 export interface AdminUser {
   id: string;
@@ -961,6 +967,10 @@ export interface RitualAuditEntry {
   note: string | null;
   payload: Record<string, unknown>;
   createdAt: Date;
+  /** Hash SHA-256 de l'entrée précédente dans la chaîne (null pour la première). */
+  previousHash: string | null;
+  /** Signature HMAC SHA-256 du contenu canonique + previousHash. */
+  signature: string | null;
 }
 
 export interface RitualAggregateRow {

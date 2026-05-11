@@ -1512,6 +1512,8 @@ export const ritualAuditLog = pgTable(
     note: text('note'),
     payload: jsonb('payload').notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    previousHash: text('previous_hash'),
+    signature: text('signature'),
   },
   (t) => ({
     ralTestimonialIdx: index('ral_testimonial_idx').on(t.testimonialId, t.createdAt),

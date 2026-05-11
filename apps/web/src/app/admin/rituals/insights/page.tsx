@@ -3,6 +3,8 @@ import { AdminShell } from '@/components/admin/AdminShell';
 import { getRitualSummary, refreshRitualAggregate } from '@/lib/db/queries/rituals';
 import { listAdminRituals } from '@/lib/db/queries/rituals-admin';
 import { getExtendedInsights } from '@/lib/db/queries/rituals-insights';
+import { db, memoryStore, schema } from '@/lib/db/client';
+import { eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,14 +22,23 @@ const SOURCE_LABEL: Record<string, string> = {
 export default async function AdminRitualsInsightsPage() {
   const session = await requireAdmin('/admin/rituals/insights');
 
-  // Refresh à la volée pour avoir l'agrégat à jour
-  await refreshRitualAggregate(PRODUCT_KEY);
-
   const [summary, allList, extended] = await Promise.all([
     getRitualSummary(PRODUCT_KEY),
     listAdminRituals({ status: 'all', pageSize: 1 }),
     getExtendedInsights(30),
   ]);
+
+  // Lecture refreshedAt depuis la table aggregate (sans typer dans le schéma public).
+  const refreshedAt = await readAggregateRefreshedAt(PRODUCT_KEY);
+  const staleness = refreshedAt ? Date.now() - refreshedAt.getTime() : Infinity;
+  // Refresh agrégat asynchrone (fire-and-forget) si > 5 min.
+  // Pattern P4.6 : le rendu n'attend pas — le prochain hit verra la fraîcheur.
+  if (staleness > 5 * 60 * 1000) {
+    refreshRitualAggregate(PRODUCT_KEY).catch((e) =>
+      console.error('[insights] refresh agg failed', e),
+    );
+  }
+  const stalenessLabel = refreshedAt ? formatStaleness(staleness) : 'jamais';
 
   const totalAll = allList.total;
   const ouiPct = summary.totalCount > 0 ? (summary.ouiCount / summary.totalCount) * 100 : 0;
@@ -43,7 +54,7 @@ export default async function AdminRitualsInsightsPage() {
           Insights — Rituels partagés
         </h1>
         <p className="mt-1 text-sm text-stone-600">
-          Agrégat rafraîchi à chaque chargement de cette page.
+          Agrégat rafraîchi {stalenessLabel}. Refresh asynchrone si &gt; 5 min.
         </p>
       </header>
 
@@ -207,6 +218,28 @@ export default async function AdminRitualsInsightsPage() {
       </section>
     </AdminShell>
   );
+}
+
+async function readAggregateRefreshedAt(productKey: string): Promise<Date | null> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = (await drizzle
+      .select({ refreshedAt: schema.ritualAggregate.refreshedAt })
+      .from(schema.ritualAggregate)
+      .where(eq(schema.ritualAggregate.productKey, productKey))
+      .limit(1)) as Array<{ refreshedAt: Date }>;
+    return rows[0]?.refreshedAt ?? null;
+  }
+  return memoryStore().ritualAggregate.get(productKey)?.refreshedAt ?? null;
+}
+
+function formatStaleness(ms: number): string {
+  if (ms === Infinity) return 'jamais';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "il y a moins d'une minute";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `il y a ${hours} h`;
 }
 
 function DailyChart({

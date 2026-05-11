@@ -205,7 +205,7 @@ export async function insertAuditEvent(input: {
   note?: string | null;
   payload?: Record<string, unknown>;
 }): Promise<RitualAuditEntry> {
-  const entry: RitualAuditEntry = {
+  const base = {
     id: createId('ral'),
     testimonialId: input.testimonialId,
     actorId: input.actorId,
@@ -214,6 +214,14 @@ export async function insertAuditEvent(input: {
     payload: input.payload ?? {},
     createdAt: new Date(),
   };
+
+  // Lecture de la dernière entrée pour chaîner la signature.
+  const previous = await getLastAuditEntry();
+  const { signWithPrevious } = await import('@/lib/rituals/audit-signing');
+  const { previousHash, signature } = signWithPrevious(base, previous);
+
+  const entry: RitualAuditEntry = { ...base, previousHash, signature };
+
   const drizzle = db();
   if (drizzle) {
     await drizzle.insert(schema.ritualAuditLog).values(entry);
@@ -221,6 +229,22 @@ export async function insertAuditEvent(input: {
     memoryStore().ritualAuditLog.set(entry.id, entry);
   }
   return entry;
+}
+
+async function getLastAuditEntry(): Promise<RitualAuditEntry | null> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = (await drizzle
+      .select()
+      .from(schema.ritualAuditLog)
+      .orderBy(desc(schema.ritualAuditLog.createdAt))
+      .limit(1)) as RitualAuditEntry[];
+    return rows[0] ?? null;
+  }
+  const all = Array.from(memoryStore().ritualAuditLog.values()).sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+  return all[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------
