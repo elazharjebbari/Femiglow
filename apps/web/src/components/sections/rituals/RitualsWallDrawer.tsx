@@ -5,6 +5,9 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Fleuron } from '@/components/ui/Fleuron';
 import { Kicker } from '@/components/ui/Kicker';
 import { RitualCard } from './RitualCard';
+import { RitualPhotoLightbox } from './RitualPhotoLightbox';
+import { RitualsWallFilters, type RitualsFilterKey } from './RitualsWallFilters';
+import { RitualsWizard } from './wizard/RitualsWizard';
 import { useWallUrlState } from '@/lib/rituals/hooks/use-wall-url-state';
 import type {
   RitualSummary,
@@ -28,17 +31,9 @@ interface RitualsWallDrawerProps {
   productKey: string;
 }
 
-type FilterKey = 'all' | 'with_photos' | 'halal' | 'recent';
-
-const FILTER_LABEL: Record<FilterKey, string> = {
-  all: 'Tous',
-  with_photos: 'Avec photos',
-  halal: 'Halal',
-  recent: 'Récents',
-};
 
 export function RitualsWallDrawer({ productKey }: RitualsWallDrawerProps) {
-  const { isOpen, close, scrollToSlug } = useWallUrlState();
+  const { isOpen, view, close, setView, scrollToSlug } = useWallUrlState();
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
 
@@ -53,7 +48,9 @@ export function RitualsWallDrawer({ productKey }: RitualsWallDrawerProps) {
       {isOpen && (
         <DrawerSurface
           productKey={productKey}
+          view={view}
           onClose={close}
+          onSwitchView={setView}
           scrollToSlug={scrollToSlug}
           reduceMotion={!!reduceMotion}
         />
@@ -65,7 +62,9 @@ export function RitualsWallDrawer({ productKey }: RitualsWallDrawerProps) {
 
 interface DrawerSurfaceProps {
   productKey: string;
+  view: 'list' | 'wizard' | 'policy';
   onClose: () => void;
+  onSwitchView: (view: 'list' | 'wizard' | 'policy') => void;
   scrollToSlug: string | null;
   reduceMotion: boolean;
 }
@@ -75,7 +74,14 @@ interface ListResponse {
   meta: { nextCursor: string | null; hasMore: boolean; total: number };
 }
 
-function DrawerSurface({ productKey, onClose, scrollToSlug, reduceMotion }: DrawerSurfaceProps) {
+function DrawerSurface({
+  productKey,
+  view,
+  onClose,
+  onSwitchView,
+  scrollToSlug,
+  reduceMotion,
+}: DrawerSurfaceProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const [summary, setSummary] = useState<RitualSummary | null>(null);
@@ -84,8 +90,9 @@ function DrawerSurface({ productKey, onClose, scrollToSlug, reduceMotion }: Draw
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [filter, setFilter] = useState<RitualsFilterKey>('all');
   const [error, setError] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ slug: string; index: number } | null>(null);
 
   // Lock scroll body
   useEffect(() => {
@@ -219,6 +226,14 @@ function DrawerSurface({ productKey, onClose, scrollToSlug, reduceMotion }: Draw
         className="relative ml-auto flex h-full w-full max-w-[480px] flex-col overflow-y-auto bg-creme"
         style={{ width: 'min(100vw, var(--ritual-drawer-width-desktop))' }}
       >
+        {view === 'wizard' ? (
+          <RitualsWizard
+            productKey={productKey}
+            onClose={onClose}
+            onBackToList={() => onSwitchView('list')}
+          />
+        ) : (
+          <>
         <header className="sticky top-0 z-10 border-b border-encre/10 bg-creme/95 backdrop-blur px-6 pb-4 pt-6">
           <button
             ref={closeBtnRef}
@@ -252,30 +267,9 @@ function DrawerSurface({ productKey, onClose, scrollToSlug, reduceMotion }: Draw
           ) : null}
         </header>
 
-        <nav
-          aria-label="Filtres"
-          className="border-b border-encre/10 bg-creme px-6 py-3"
-        >
-          <ul className="flex gap-2 overflow-x-auto" role="list">
-            {(Object.keys(FILTER_LABEL) as FilterKey[]).map((key) => (
-              <li key={key}>
-                <button
-                  type="button"
-                  aria-pressed={filter === key}
-                  onClick={() => setFilter(key)}
-                  data-testid={`rituals-wall-filter-${key}`}
-                  className={
-                    filter === key
-                      ? 'border-[1.5px] border-sauge-dark bg-sauge px-3.5 py-2 text-xs font-medium text-encre transition-colors'
-                      : 'border-[1.5px] border-sauge-soft bg-white px-3.5 py-2 text-xs font-medium text-encre transition-colors hover:bg-sauge-soft'
-                  }
-                >
-                  {FILTER_LABEL[key]}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <div className="border-b border-encre/10 bg-creme px-6 py-3">
+          <RitualsWallFilters value={filter} onChange={setFilter} />
+        </div>
 
         <div className="flex-1 px-6 py-6">
           {loading && items.length === 0 && (
@@ -316,11 +310,30 @@ function DrawerSurface({ productKey, onClose, scrollToSlug, reduceMotion }: Draw
                     data={item}
                     variant="default"
                     highlighted={item.publicSlug === scrollToSlug}
+                    onPhotoClick={(idx) =>
+                      setLightbox({ slug: item.publicSlug, index: idx })
+                    }
                   />
                 </li>
               ))}
             </ul>
           )}
+
+          {lightbox &&
+            (() => {
+              const target = items.find((i) => i.publicSlug === lightbox.slug);
+              if (!target) return null;
+              const altName = target.signature.firstName ?? 'une initiée';
+              return (
+                <RitualPhotoLightbox
+                  isOpen
+                  photos={target.photos}
+                  initialIndex={lightbox.index}
+                  alt={`Photos partagées par ${altName}`}
+                  onClose={() => setLightbox(null)}
+                />
+              );
+            })()}
 
           {hasMore && (
             <div className="mt-6">
@@ -346,6 +359,14 @@ function DrawerSurface({ productKey, onClose, scrollToSlug, reduceMotion }: Draw
         </div>
 
         <footer className="sticky bottom-0 z-10 border-t border-encre/10 bg-creme/95 backdrop-blur px-6 py-4">
+          <button
+            type="button"
+            onClick={() => onSwitchView('wizard')}
+            data-testid="rituals-wall-share-link"
+            className="mb-3 block w-full text-sm font-medium text-encre/80 transition-colors hover:text-encre"
+          >
+            Partager mon rituel →
+          </button>
           <a
             href="/kit#kit-hero-produit"
             onClick={onClose}
@@ -357,6 +378,8 @@ function DrawerSurface({ productKey, onClose, scrollToSlug, reduceMotion }: Draw
             Livraison offerte au Maroc
           </p>
         </footer>
+          </>
+        )}
       </motion.div>
     </div>
   );
