@@ -13,12 +13,51 @@ interface PreviewItem {
   warnings: Array<{ field: string; code: string; message: string }>;
 }
 
+type CanonicalField =
+  | 'body'
+  | 'wouldRecommend'
+  | 'ritualTags'
+  | 'authorFirstName'
+  | 'authorCity'
+  | 'initiatedSince'
+  | 'isAnonymous'
+  | 'language'
+  | 'productKey';
+
+const CANONICAL_FIELDS: CanonicalField[] = [
+  'body',
+  'wouldRecommend',
+  'ritualTags',
+  'authorFirstName',
+  'authorCity',
+  'initiatedSince',
+  'isAnonymous',
+  'language',
+  'productKey',
+];
+
+const CANONICAL_LABEL: Record<CanonicalField, string> = {
+  body: 'body (témoignage — obligatoire)',
+  wouldRecommend: 'wouldRecommend (signal — obligatoire)',
+  ritualTags: 'ritualTags',
+  authorFirstName: 'authorFirstName',
+  authorCity: 'authorCity',
+  initiatedSince: 'initiatedSince',
+  isAnonymous: 'isAnonymous',
+  language: 'language',
+  productKey: 'productKey',
+};
+
 interface PreviewResult {
   totalParsed: number;
   totalValid: number;
   totalWarning: number;
   totalError: number;
   preview: PreviewItem[];
+  headers?: string[];
+  autoMapping?: Record<string, CanonicalField | null>;
+  effectiveMapping?: Record<string, CanonicalField | null>;
+  requiredFieldsMissing?: boolean;
 }
 
 interface CommitResult {
@@ -53,6 +92,9 @@ export function RitualsImportClient() {
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
   const [importNote, setImportNote] = useState('');
   const [includeWarnings, setIncludeWarnings] = useState(true);
+  const [columnMapping, setColumnMapping] = useState<
+    Record<string, CanonicalField | null> | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -78,7 +120,7 @@ export function RitualsImportClient() {
     reader.readAsText(file);
   };
 
-  const runPreview = async () => {
+  const runPreview = async (overrideMapping?: Record<string, CanonicalField | null> | null) => {
     if (!content.trim()) {
       setError('Veuillez coller ou uploader du contenu.');
       return;
@@ -89,14 +131,23 @@ export function RitualsImportClient() {
       const res = await fetch('/api/admin/rituals/import/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ format, content }),
+        body: JSON.stringify({
+          format,
+          content,
+          columnMapping: overrideMapping ?? columnMapping ?? undefined,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { error?: { message?: string } }).error?.message ?? `HTTP ${res.status}`);
       }
       const json = await res.json();
-      setPreview(json.data as PreviewResult);
+      const result = json.data as PreviewResult;
+      setPreview(result);
+      // Initialize columnMapping from server's effectiveMapping if user hasn't customized yet
+      if (!columnMapping && result.effectiveMapping) {
+        setColumnMapping(result.effectiveMapping);
+      }
       setStep(3);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -117,6 +168,7 @@ export function RitualsImportClient() {
           content,
           includeWarnings,
           importNote: importNote || undefined,
+          columnMapping: columnMapping ?? undefined,
         }),
       });
       if (!res.ok) {
@@ -274,7 +326,7 @@ export function RitualsImportClient() {
             </button>
             <button
               type="button"
-              onClick={runPreview}
+              onClick={() => runPreview()}
               disabled={pending || content.trim().length === 0}
               data-testid="import-run-preview"
               className="bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
@@ -293,6 +345,84 @@ export function RitualsImportClient() {
             <SummaryTile label="Avertissements" value={preview.totalWarning} color="amber" />
             <SummaryTile label="Erreurs" value={preview.totalError} color="rose" />
           </div>
+
+          {preview.headers && preview.headers.length > 0 && (
+            <details
+              className="rounded border border-stone-200 bg-white p-4"
+              open={preview.requiredFieldsMissing === true}
+            >
+              <summary className="cursor-pointer text-sm font-medium text-stone-700">
+                Mapping colonnes source → champ canonique
+                {preview.requiredFieldsMissing && (
+                  <span className="ml-2 text-rose-700">
+                    ⚠ Champ(s) obligatoire(s) non mappé(s)
+                  </span>
+                )}
+              </summary>
+              <p className="mt-2 text-xs text-stone-500">
+                Pour chaque colonne de votre fichier, choisissez le champ FemiGlow
+                correspondant. Les champs <code>body</code> et{' '}
+                <code>wouldRecommend</code> sont obligatoires.
+              </p>
+              <table className="mt-3 w-full text-xs">
+                <thead className="bg-stone-50 text-[10px] uppercase tracking-wide text-stone-600">
+                  <tr>
+                    <th className="p-2 text-left">Colonne source</th>
+                    <th className="p-2 text-left">→ Champ canonique</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.headers.map((header) => {
+                    const current =
+                      columnMapping?.[header] ??
+                      preview.effectiveMapping?.[header] ??
+                      null;
+                    return (
+                      <tr key={header} className="border-t border-stone-100">
+                        <td className="p-2 font-medium text-stone-900">
+                          {header}
+                        </td>
+                        <td className="p-2">
+                          <select
+                            value={current ?? ''}
+                            onChange={(e) => {
+                              const value =
+                                e.target.value === ''
+                                  ? null
+                                  : (e.target.value as CanonicalField);
+                              const next = {
+                                ...(columnMapping ?? preview.effectiveMapping ?? {}),
+                                [header]: value,
+                              };
+                              setColumnMapping(next);
+                            }}
+                            data-testid={`import-mapping-${header}`}
+                            className="w-full border border-stone-300 bg-white p-1 text-xs"
+                          >
+                            <option value="">— Ignorer cette colonne —</option>
+                            {CANONICAL_FIELDS.map((f) => (
+                              <option key={f} value={f}>
+                                {CANONICAL_LABEL[f]}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <button
+                type="button"
+                onClick={() => runPreview(columnMapping)}
+                disabled={pending}
+                data-testid="import-reapply-mapping"
+                className="mt-3 bg-stone-900 px-3 py-1.5 text-xs text-white hover:bg-stone-800 disabled:opacity-50"
+              >
+                {pending ? 'Re-analyse…' : 'Appliquer le mapping et re-prévisualiser'}
+              </button>
+            </details>
+          )}
 
           <div className="overflow-x-auto border border-stone-200 bg-white">
             <table className="w-full text-xs">

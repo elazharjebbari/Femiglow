@@ -3,6 +3,12 @@ import { getAdminSession } from '@/lib/auth/require-admin';
 import { parseCSV, CsvParseError } from '@/lib/rituals/import/csv-parser';
 import { parseJSON, JsonParseError } from '@/lib/rituals/import/json-parser';
 import { mapImportRow } from '@/lib/rituals/import/row-mapper';
+import {
+  applyColumnMapping,
+  autoDetectMapping,
+  hasRequiredFields,
+  type CanonicalField,
+} from '@/lib/rituals/import/column-mapping';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,11 +17,17 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/rituals/import/preview
  *
  * Accepte un body JSON :
- *   { format: 'csv' | 'csv-comma' | 'tsv' | 'json' | 'jsonl', content: string }
+ *   {
+ *     format: 'csv' | 'csv-comma' | 'tsv' | 'json' | 'jsonl',
+ *     content: string,
+ *     columnMapping?: Record<sourceHeader, CanonicalField | null>
+ *   }
  *
- * Renvoie une preview parsée + mappée + validée ligne par ligne.
- * Le commit (création réelle des rituels) est dans `/import/commit`
- * (non implémenté dans cette livraison J4 minimale).
+ * Renvoie :
+ *  - les en-têtes détectées
+ *  - le mapping auto-detecté + le mapping effectif (override admin si fourni)
+ *  - preview row-par-row validée
+ *  - flag requiredFieldsMissing si body ou wouldRecommend pas mappés
  *
  * Cf. docs/reviews-wall/execution/13-import-system-architecture.md § 8
  */
@@ -26,7 +38,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: { code: 'UNAUTHORIZED' } }, { status: 401 });
   }
 
-  let payload: { format?: string; content?: string };
+  let payload: {
+    format?: string;
+    content?: string;
+    columnMapping?: Record<string, CanonicalField | null>;
+  };
   try {
     payload = await request.json();
   } catch {
@@ -36,7 +52,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { format, content } = payload;
+  const { format, content, columnMapping } = payload;
   if (!format || !content) {
     return NextResponse.json(
       { error: { code: 'BAD_REQUEST', message: 'format et content requis' } },
@@ -72,11 +88,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: { code: 'INTERNAL' } }, { status: 500 });
   }
 
+  // Détection des en-têtes + mapping auto
+  const detectedHeaders =
+    parsedRows.length > 0 ? Object.keys(parsedRows[0] ?? {}) : [];
+  const autoMapping = autoDetectMapping(detectedHeaders);
+  const effectiveMapping = columnMapping ?? autoMapping;
+  const requiredOk = hasRequiredFields(effectiveMapping);
+
   let valid = 0;
   let warningCount = 0;
   let errorCount = 0;
   const preview = parsedRows.map((raw, index) => {
-    const result = mapImportRow(raw);
+    const canonicalized = applyColumnMapping(raw, effectiveMapping);
+    const result = mapImportRow(canonicalized);
     let status: 'VALID' | 'WARNING' | 'ERROR' = 'VALID';
     if (result.errors.length > 0) {
       status = 'ERROR';
@@ -102,6 +126,10 @@ export async function POST(request: Request) {
       totalValid: valid,
       totalWarning: warningCount,
       totalError: errorCount,
+      headers: detectedHeaders,
+      autoMapping,
+      effectiveMapping,
+      requiredFieldsMissing: !requiredOk,
       preview,
     },
   });

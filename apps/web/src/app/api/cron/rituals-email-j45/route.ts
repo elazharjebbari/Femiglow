@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateEmailToken } from '@/lib/rituals/email-tokens';
 import { hashCustomerEmail } from '@/lib/rituals/customer-hash';
 import { renderEmailTemplate } from '@/lib/rituals/email-templates';
+import { getEmailProvider } from '@/lib/rituals/email-provider';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,12 +63,12 @@ export async function POST(request: Request) {
         firstName: order.customerFirstName ?? 'Une initiée',
         ctaUrl,
       });
-      // TODO : remplacer par appel au provider e-mail (Resend, Postmark…)
-      console.warn('[cron/rituals-j45] email à envoyer', {
-        orderId: order.id,
-        subject: rendered.subject,
-        ctaUrl,
-      });
+      const provider = getEmailProvider();
+      const result = await provider.send({ to: order.customerEmail, rendered });
+      if (!result.ok) {
+        failed.push({ orderId: order.id, reason: result.error ?? 'unknown' });
+        continue;
+      }
       sent.push(order.id);
     } catch (e) {
       failed.push({ orderId: order.id, reason: String(e) });

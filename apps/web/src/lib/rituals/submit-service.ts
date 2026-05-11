@@ -1,5 +1,9 @@
 import type { RitualTestimonialSubmit } from '@/lib/schemas/rituals';
-import { insertRitual, insertAuditEvent } from '@/lib/db/queries/rituals';
+import {
+  insertRitual,
+  insertAuditEvent,
+  insertPhoto,
+} from '@/lib/db/queries/rituals';
 import { sanitizeBody } from './sanitize-body';
 import { detectAutoFlags } from './auto-flags';
 import { decodeEmailToken } from './email-tokens';
@@ -72,7 +76,25 @@ export async function submitRitual(
     status: 'PENDING',
   });
 
-  // 6. Audit log
+  // 6. Photos : insertion en MANUAL_REVIEW pour modération humaine.
+  //    Le pipeline upload a fait un check vision ML sync, mais on relit
+  //    ici en sécurité : tout passe par la modération admin avant publish.
+  for (let i = 0; i < input.photos.length; i++) {
+    const p = input.photos[i]!;
+    await insertPhoto({
+      testimonialId: ritual.id,
+      url: p.url ?? p.blobKey,
+      thumbUrl: p.thumbUrl ?? p.blobKey,
+      width: p.width,
+      height: p.height,
+      byteSize: p.byteSize,
+      mime: p.mime,
+      position: i,
+      facesStatus: 'MANUAL_REVIEW',
+    });
+  }
+
+  // 7. Audit log
   await insertAuditEvent({
     testimonialId: ritual.id,
     actorId: null,
@@ -80,6 +102,7 @@ export async function submitRitual(
     payload: {
       source,
       autoFlags,
+      photoCount: input.photos.length,
       ip: ctx.ip ?? null,
       hasEmailToken: !!input.emailToken && verifiedPurchase,
     },

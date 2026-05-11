@@ -10,6 +10,11 @@ import type { RitualSource } from '@/lib/db/types';
 import { parseCSV, type CsvSeparator } from './csv-parser';
 import { parseJSON } from './json-parser';
 import { mapImportRow } from './row-mapper';
+import {
+  applyColumnMapping,
+  autoDetectMapping,
+  type CanonicalField,
+} from './column-mapping';
 
 export type ImportFormat = 'csv' | 'csv-comma' | 'tsv' | 'json' | 'jsonl';
 
@@ -23,6 +28,8 @@ export interface ImportCommitInput {
   excludeErrors?: boolean;
   /** Note interne attachée à l'audit. */
   importNote?: string;
+  /** Mapping explicite source → champ canonique (override de l'auto-detect). */
+  columnMapping?: Record<string, CanonicalField | null>;
 }
 
 export interface ImportCommitContext {
@@ -72,6 +79,10 @@ export async function commitImportBatch(
   const source = sourceForFormat(input.format);
   const defaultProductKey = input.defaultProductKey ?? 'pack-femiglow';
   const includeWarnings = input.includeWarnings ?? true;
+  // Mapping colonnes : explicite ou auto-detect basé sur les en-têtes
+  const detectedHeaders =
+    parsedRows.length > 0 ? Object.keys(parsedRows[0] ?? {}) : [];
+  const columnMapping = input.columnMapping ?? autoDetectMapping(detectedHeaders);
 
   const errorsOut: ImportCommitResult['errors'] = [];
   let totalValid = 0;
@@ -81,7 +92,8 @@ export async function commitImportBatch(
 
   for (let i = 0; i < parsedRows.length; i++) {
     const raw = parsedRows[i]!;
-    const map = mapImportRow(raw, { defaultProductKey });
+    const canonicalized = applyColumnMapping(raw, columnMapping);
+    const map = mapImportRow(canonicalized, { defaultProductKey });
 
     if (map.errors.length > 0) {
       totalError += 1;

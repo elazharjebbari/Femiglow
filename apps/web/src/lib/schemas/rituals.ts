@@ -101,6 +101,8 @@ export type RitualTestimonialPublic = z.infer<typeof RitualTestimonialPublicSche
 
 export const RitualPhotoUploadSchema = z.object({
   blobKey: z.string().min(1),
+  url: z.string().min(1).optional(),
+  thumbUrl: z.string().min(1).optional(),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   byteSize: z.number().int().positive().max(5 * 1024 * 1024),

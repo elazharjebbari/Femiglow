@@ -16,6 +16,18 @@ import { RITUAL_TAG_CATALOG, RITUAL_CITY_CATALOG } from '@/lib/schemas/rituals';
 type WizardStep = 1 | 2 | 3 | 'confirmation';
 type Signal = 'oui' | 'hesite' | 'non';
 
+interface PhotoUpload {
+  tempId: string;
+  status: 'uploading' | 'OK' | 'MANUAL_REVIEW' | 'REJECTED_FACE' | 'error';
+  blobKey?: string;
+  thumbUrl?: string;
+  width?: number;
+  height?: number;
+  byteSize?: number;
+  mime?: string;
+  errorMessage?: string;
+}
+
 interface RitualsWizardProps {
   productKey: string;
   emailToken?: string | null;
@@ -52,6 +64,7 @@ export function RitualsWizard({
   const [initiatedSinceMonth, setInitiatedSinceMonth] = useState<number | null>(null);
   const [initiatedSinceYear, setInitiatedSinceYear] = useState<number | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [photos, setPhotos] = useState<PhotoUpload[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [emojiToast, setEmojiToast] = useState(false);
@@ -120,6 +133,85 @@ export function RitualsWizard({
     });
   };
 
+  const uploadPhoto = async (file: File): Promise<void> => {
+    const tempId = `photo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    setPhotos((prev) => [...prev, { tempId, status: 'uploading' }]);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/rituals/upload-photo', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as {
+          error?: { code?: string; message?: string };
+        };
+        setPhotos((prev) =>
+          prev.map((p) =>
+            p.tempId === tempId
+              ? {
+                  ...p,
+                  status: 'error',
+                  errorMessage: err.error?.message ?? `Erreur ${res.status}`,
+                }
+              : p,
+          ),
+        );
+        return;
+      }
+      const json = (await res.json()) as {
+        data: {
+          blobKey: string;
+          thumbUrl: string;
+          width: number;
+          height: number;
+          byteSize: number;
+          mime: string;
+          facesStatus: 'OK' | 'MANUAL_REVIEW' | 'REJECTED_FACE' | 'PENDING_CHECK';
+        };
+      };
+      const status: PhotoUpload['status'] =
+        json.data.facesStatus === 'OK'
+          ? 'OK'
+          : json.data.facesStatus === 'REJECTED_FACE'
+            ? 'REJECTED_FACE'
+            : 'MANUAL_REVIEW';
+      setPhotos((prev) =>
+        prev.map((p) =>
+          p.tempId === tempId
+            ? {
+                ...p,
+                status,
+                blobKey: json.data.blobKey,
+                thumbUrl: json.data.thumbUrl,
+                width: json.data.width,
+                height: json.data.height,
+                byteSize: json.data.byteSize,
+                mime: json.data.mime,
+              }
+            : p,
+        ),
+      );
+    } catch (e) {
+      setPhotos((prev) =>
+        prev.map((p) =>
+          p.tempId === tempId
+            ? {
+                ...p,
+                status: 'error',
+                errorMessage: e instanceof Error ? e.message : String(e),
+              }
+            : p,
+        ),
+      );
+    }
+  };
+
+  const removePhoto = (tempId: string) => {
+    setPhotos((prev) => prev.filter((p) => p.tempId !== tempId));
+  };
+
   const submit = async () => {
     if (!wouldRecommend) return;
     setSubmitting(true);
@@ -129,6 +221,19 @@ export function RitualsWizard({
         initiatedSinceMonth && initiatedSinceYear
           ? `${initiatedSinceYear}-${String(initiatedSinceMonth).padStart(2, '0')}`
           : null;
+      const photosPayload = photos
+        .filter(
+          (p): p is PhotoUpload & { blobKey: string } =>
+            (p.status === 'OK' || p.status === 'MANUAL_REVIEW') &&
+            !!p.blobKey,
+        )
+        .map((p) => ({
+          blobKey: p.blobKey,
+          width: p.width!,
+          height: p.height!,
+          byteSize: p.byteSize!,
+          mime: p.mime as 'image/jpeg' | 'image/png' | 'image/heic' | 'image/webp',
+        }));
       const res = await fetch('/api/rituals/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -142,7 +247,7 @@ export function RitualsWizard({
           initiatedSince,
           isAnonymous,
           language: 'fr',
-          photos: [],
+          photos: photosPayload,
           emailToken: emailToken ?? null,
           consentMarketing: false,
         }),
@@ -226,6 +331,9 @@ export function RitualsWizard({
           <Step2
             ritualTags={ritualTags}
             onToggleTag={toggleTag}
+            photos={photos}
+            onUploadPhoto={uploadPhoto}
+            onRemovePhoto={removePhoto}
             onContinue={() => setStep(3)}
             onSkip={submit}
             onBack={() => setStep(1)}
@@ -434,6 +542,9 @@ function Step1({
 function Step2({
   ritualTags,
   onToggleTag,
+  photos,
+  onUploadPhoto,
+  onRemovePhoto,
   onContinue,
   onSkip,
   onBack,
@@ -442,6 +553,9 @@ function Step2({
 }: {
   ritualTags: string[];
   onToggleTag: (tag: string) => void;
+  photos: PhotoUpload[];
+  onUploadPhoto: (file: File) => Promise<void>;
+  onRemovePhoto: (tempId: string) => void;
   onContinue: () => void;
   onSkip: () => void;
   onBack: () => void;
@@ -449,6 +563,8 @@ function Step2({
   submitError: string | null;
 }) {
   const limitReached = ritualTags.length >= 3;
+  const photoLimitReached = photos.length >= 3;
+  const hasFaceRejected = photos.some((p) => p.status === 'REJECTED_FACE');
   return (
     <div className="space-y-8" data-testid="wizard-step-2">
       <fieldset>
@@ -491,10 +607,111 @@ function Step2({
         )}
       </fieldset>
 
-      <p className="text-xs italic text-encre/60">
-        Les photos seront proposées dans une prochaine itération. Pour l&apos;instant,
-        vous pouvez nous écrire à info@femiglow-maroc.com avec vos clichés.
-      </p>
+      <fieldset>
+        <legend className="block font-cormorant text-lg text-encre">
+          Une photo de vos mains ?{' '}
+          <span className="text-xs italic text-encre/60">(jusqu’à trois)</span>
+        </legend>
+
+        {photos.length > 0 && (
+          <ul
+            role="list"
+            className="mt-3 grid grid-cols-3 gap-3"
+            data-testid="wizard-photos-list"
+          >
+            {photos.map((p) => (
+              <li
+                key={p.tempId}
+                className={`relative aspect-square border ${
+                  p.status === 'REJECTED_FACE'
+                    ? 'border-rose-500'
+                    : p.status === 'MANUAL_REVIEW'
+                      ? 'border-amber-500'
+                      : p.status === 'error'
+                        ? 'border-rose-700'
+                        : 'border-sauge-soft'
+                } bg-creme p-1`}
+              >
+                {p.thumbUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.thumbUrl}
+                    alt={`Photo ${p.tempId}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span
+                    className="flex h-full w-full items-center justify-center text-xs italic text-encre/60"
+                    aria-live="polite"
+                  >
+                    {p.status === 'uploading'
+                      ? 'Envoi…'
+                      : p.errorMessage ?? 'Erreur'}
+                  </span>
+                )}
+                {p.status === 'REJECTED_FACE' && (
+                  <span className="absolute bottom-1 left-1 right-1 bg-rose-700 px-1 py-0.5 text-center text-[10px] text-white">
+                    Visage détecté
+                  </span>
+                )}
+                {p.status === 'MANUAL_REVIEW' && (
+                  <span className="absolute bottom-1 left-1 right-1 bg-amber-600 px-1 py-0.5 text-center text-[10px] text-white">
+                    En relecture
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onRemovePhoto(p.tempId)}
+                  aria-label="Retirer cette photo"
+                  className="absolute right-0 top-0 inline-flex h-6 w-6 items-center justify-center bg-white/90 text-xs text-encre hover:bg-rose-100"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {!photoLimitReached && (
+          <label
+            className="mt-3 flex cursor-pointer flex-col items-center justify-center border-[1.5px] border-dashed border-sauge-soft bg-white p-6 text-center hover:border-sauge-dark"
+            data-testid="wizard-photo-drop"
+          >
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void onUploadPhoto(file);
+                e.target.value = '';
+              }}
+              className="sr-only"
+              data-testid="wizard-photo-input"
+            />
+            <span className="font-cormorant text-base italic text-encre/70">
+              + Glisser ou choisir une photo
+            </span>
+            <span className="mt-1 text-xs text-encre/60">
+              JPEG / PNG / WebP / HEIC · 5 Mo max · {3 - photos.length} restantes
+            </span>
+          </label>
+        )}
+
+        <p className="mt-3 text-xs italic text-encre/60">
+          Mains, gestes, table de soin. Pour préserver l’intimité de la maison,
+          nous ne publions pas de visage de face.
+        </p>
+
+        {hasFaceRejected && (
+          <p
+            role="alert"
+            className="mt-2 bg-rose-50 p-2 text-xs text-rose-900"
+            data-testid="wizard-face-rejected-notice"
+          >
+            Une de vos photos contient un visage. Voudriez-vous la remplacer ?
+          </p>
+        )}
+      </fieldset>
 
       {submitError && (
         <p role="alert" className="bg-rose-50 p-3 text-sm text-rose-900">

@@ -9,12 +9,25 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const CanonicalFieldSchema = z.enum([
+  'body',
+  'wouldRecommend',
+  'ritualTags',
+  'authorFirstName',
+  'authorCity',
+  'initiatedSince',
+  'isAnonymous',
+  'language',
+  'productKey',
+]);
+
 const ImportCommitPayloadSchema = z.object({
   format: z.enum(['csv', 'csv-comma', 'tsv', 'json', 'jsonl']),
   content: z.string().min(1).max(5 * 1024 * 1024),
   defaultProductKey: z.string().optional(),
   includeWarnings: z.boolean().optional(),
   importNote: z.string().max(500).optional(),
+  columnMapping: z.record(z.string(), CanonicalFieldSchema.nullable()).optional(),
 });
 
 export async function POST(request: Request) {
@@ -55,6 +68,7 @@ export async function POST(request: Request) {
         defaultProductKey: parsed.data.defaultProductKey,
         includeWarnings: parsed.data.includeWarnings,
         importNote: parsed.data.importNote,
+        columnMapping: parsed.data.columnMapping,
       },
       { actorId: session.adminId },
     );
