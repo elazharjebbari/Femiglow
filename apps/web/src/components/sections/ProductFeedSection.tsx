@@ -24,8 +24,9 @@ import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
-import { AddToCartButton } from '@/components/commerce/AddToCartButton';
+import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
 import { cn } from '@/lib/utils/cn';
+import { computePromo } from '@/lib/utils/promo';
 import type {
   FeedAccent,
   ProductFeed,
@@ -47,6 +48,8 @@ const accentDot: Record<FeedAccent, string> = {
 
 interface ProductFeedSectionProps {
   feed: ProductFeed;
+  /** Produit ciblé — sert au tracking GA4 (`add_to_cart` proxy émis
+   *  par `<CommanderAnchorButton/>` au scroll vers le wizard). */
   product: Product;
   /** Slug d'ancre pour le test E2E (default `product-feed`). */
   anchorId?: string;
@@ -57,6 +60,10 @@ export function ProductFeedSection({
   product,
   anchorId = 'product-feed',
 }: ProductFeedSectionProps) {
+  // Prix effectif promo-aware (`computePromo` masque silencieusement les
+  // saisies incohérentes). On le passe au tracking pour rester aligné
+  // avec ce que la visiteuse voit à l'écran.
+  const promo = computePromo(product.priceCents, product.promoPriceCents);
   return (
     <section
       id={anchorId}
@@ -87,14 +94,21 @@ export function ProductFeedSection({
                 <span className="text-base text-encre/70">{feed.currency}</span>
               </span>
             </p>
-            <AddToCartButton
-              product={product}
+            {/* CHA-246 — Le CTA "Recevoir le pack" ne pousse plus vers
+                `/panier` : il scroll-anchor vers le wizard funnel embarqué
+                sur la même page (`#commander-femiglow`). On reste sur /kit,
+                la commande se finalise sans navigation — même contrat que
+                le CTA hero (`HeroProduit` en mode `wizard-anchor`). */}
+            <CommanderAnchorButton
               size="lg"
               fullWidth
-              redirectTo="/panier"
+              productId={product.id}
+              productName={product.name}
+              priceCents={promo.effectivePriceCents}
+              currency={product.currency}
             >
               {feed.hero.ctaLabel}
-            </AddToCartButton>
+            </CommanderAnchorButton>
             <p className="text-[11px] uppercase tracking-[0.2em] text-encre/55">
               {feed.hero.ctaMicrocopy}
             </p>

@@ -6,7 +6,9 @@
  *  - les 4 cartes de step (numéros 1-4 + titres),
  *  - les 3 promesses (icônes + labels),
  *  - le bandeau social proof (rating + reviews count + citation),
- *  - le CTA principal (AddToCartButton — délégation aux tests existants),
+ *  - le CTA principal (CHA-246 — `CommanderAnchorButton` qui scroll-anchor
+ *    vers le wizard embarqué `#commander-femiglow` ; tests CTA dédiés
+ *    dans `CommanderAnchorButton.test.tsx`),
  *  - microcopy sous le CTA (Pricing #11),
  *  - aria-label sur la liste des gestes (a11y),
  *  - axe a11y clean.
@@ -88,11 +90,15 @@ describe('ProductFeedSection', () => {
     expect(screen.getByText(/livraison offerte au maroc/i)).toBeInTheDocument();
   });
 
-  it('rend le CTA AddToCartButton avec le label custom du feed', () => {
+  it('rend le CTA `CommanderAnchorButton` avec le label custom du feed (CHA-246)', () => {
     renderSection();
-    expect(
-      screen.getByRole('button', { name: new RegExp(feed.hero.ctaLabel, 'i') }),
-    ).toBeInTheDocument();
+    // CHA-246 — Le CTA n'est plus `AddToCartButton` (qui redirigeait
+    // vers `/panier`) : c'est `CommanderAnchorButton` qui scroll-anchor
+    // vers le wizard funnel embarqué (`#commander-femiglow`). Le
+    // libellé reste piloté par `feed.hero.ctaLabel`.
+    const button = screen.getByRole('button', { name: new RegExp(feed.hero.ctaLabel, 'i') });
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveAttribute('data-testid', 'kit-commander-anchor-button');
   });
 
   it('expose un id de section ancrable (data-testid + id par défaut)', () => {

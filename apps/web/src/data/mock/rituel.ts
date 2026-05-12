@@ -48,7 +48,7 @@ export const mockRituel: RituelPageContent = {
       ar: '/captions/rituel-ar.vtt',
     },
     transcript:
-      '1. Paste — une noisette, posée sur ongle sec. Filme, lisse, prépare.\n\n2. Powder — déposée sur la paste, fine et blanche. Absorbe, lustre, réveille.\n\nPolish & Shine — le polissoir Step 4, en mouvements lents. La brillance apparaît.',
+      'La grande tendance clean girl pour les nails, c\u2019est la manucure japonaise. Par contre, il y a quelque chose que vous devez absolument savoir.\n\nLa manucure japonaise, c\u2019est en fait un soin qui vient s\u2019appliquer sur la plaque de l\u2019ongle et qui va venir le nourrir et le faire briller pendant au moins 3 semaines.\n\nBien évidemment, si vous avez les ongles abîmés, striés ou qu\u2019une dépose a été mal faite, le résultat ne sera pas à son maximum. Il faut d\u2019abord prendre soin de vos ongles qu\u2019ils soient réparés au maximum pour avoir le résultat optimum.\n\nEn revanche, comme la manucure japonaise contient de la cire d\u2019abeille, des silicates, de la poudre de perle et plein de belles choses à l\u2019intérieur, elle va vous aider à réparer votre plaque. C\u2019est un soin en profondeur.',
     durationSeconds: 75,
   },
   sciences: {
