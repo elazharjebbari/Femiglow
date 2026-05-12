@@ -46,6 +46,10 @@ import type {
   ComponentFieldHistoryEntry,
   WebhookDelivery,
   WebhookEndpoint,
+  RitualTestimonial,
+  RitualTestimonialPhoto,
+  RitualAuditEntry,
+  RitualAggregateRow,
 } from '@/lib/db/types';
 
 interface Store {
@@ -88,6 +92,11 @@ interface Store {
   insightsSectionDaily: Map<string, InsightsSectionDailyRow>;
   insightsFunnelDaily: Map<string, InsightsFunnelDailyRow>;
   insightsRefreshRun: Map<string, InsightsRefreshRunRow>;
+  // Rituels partagés
+  ritualTestimonials: Map<string, RitualTestimonial>;
+  ritualTestimonialPhotos: Map<string, RitualTestimonialPhoto>;
+  ritualAuditLog: Map<string, RitualAuditEntry>;
+  ritualAggregate: Map<string, RitualAggregateRow>;
 }
 
 const globalAny = globalThis as typeof globalThis & { __femiglowStore?: Store };
@@ -133,6 +142,10 @@ function makeStore(): Store {
     insightsSectionDaily: new Map(),
     insightsFunnelDaily: new Map(),
     insightsRefreshRun: new Map(),
+    ritualTestimonials: new Map(),
+    ritualTestimonialPhotos: new Map(),
+    ritualAuditLog: new Map(),
+    ritualAggregate: new Map(),
   };
 }
 

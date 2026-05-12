@@ -15,13 +15,15 @@ interface AdminShellProps {
     | 'audit'
     | 'seo'
     | 'products'
-    | 'chat';
+    | 'chat'
+    | 'rituals';
   children: ReactNode;
 }
 
 const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }> = [
   { href: '/admin', key: 'dashboard', label: 'Tableau de bord' },
   { href: '/admin/leads', key: 'leads', label: 'Leads' },
+  { href: '/admin/rituals/queue', key: 'rituals', label: 'Rituels partagés' },
   { href: '/admin/media', key: 'media', label: 'Médias' },
   { href: '/admin/components', key: 'components', label: 'Composants' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
