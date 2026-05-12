@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useId, useState } from 'react';
 import { Container } from '@/components/ui/Container';
 import { CartButton } from '@/components/commerce/CartButton';
+import { useChatStore } from '@/components/chat/chat-store';
 import { SommaireOverlay } from './SommaireOverlay';
 import { cn } from '@/lib/utils/cn';
 
@@ -14,6 +15,10 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  // CHA-244 — quand le chat est ouvert, le header sticky se replie
+  // vers le haut pour libérer la zone d'en-tête du panel chat.
+  // cf. docs/admin-config/43-chat-mobile-ux-fix-runbook.md §B.
+  const chatOpen = useChatStore((s) => s.isOpen);
   const triggerId = useId();
   const overlayId = `${triggerId}-overlay`;
 
@@ -54,12 +59,19 @@ export function Header() {
     <>
       <header
         role="banner"
+        data-chat-open={chatOpen ? 'true' : 'false'}
         className={cn(
-          'sticky top-0 z-[var(--z-sticky)] transition-[background-color,backdrop-filter,height,border-color] duration-[280ms] ease-out',
+          'sticky top-0 z-[var(--z-sticky)] transition-[background-color,backdrop-filter,height,border-color,transform,opacity] duration-[280ms] ease-out',
+          // CHA-244 — chat ouvert : slide-up + fade-out, pointer-events
+          // off pour laisser passer les clics sur le panel chat.
+          // `motion-reduce` : on garde le fade mais pas le translate.
+          'data-[chat-open=true]:-translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none',
+          'motion-reduce:data-[chat-open=true]:translate-y-0',
           scrolled
             ? 'border-b border-encre/8 bg-creme/85 backdrop-blur-sm'
             : 'border-b border-transparent bg-transparent',
         )}
+        aria-hidden={chatOpen}
       >
         <Container width="page">
           <div

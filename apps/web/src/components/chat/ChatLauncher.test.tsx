@@ -47,4 +47,18 @@ describe('ChatLauncher (positionnement)', () => {
     // Pas de conflit Tailwind (`sm:right-7` ne doit plus être émis sur /kit).
     expect(button?.className).not.toContain('sm:right-7');
   });
+
+  // CHA-244 — Le launcher doit partager le token z-index du panel
+  // (`--z-chat-overlay`) pour ne pas être recouvert par le Header /
+  // sticky CTA quand il est visible.
+  it('CHA-244 : porte un z-index `--z-chat-overlay` via style inline (pas `z-40`)', () => {
+    const { container } = render(<ChatLauncher />);
+    const button = container.querySelector<HTMLElement>(
+      '[data-testid="chat-launcher"]',
+    );
+    expect(button).not.toBeNull();
+    expect(button!.style.zIndex).toBe('var(--z-chat-overlay)');
+    // Aucune classe Tailwind `z-…` ne doit subsister.
+    expect(button!.className).not.toMatch(/\bz-\d+\b/);
+  });
 });

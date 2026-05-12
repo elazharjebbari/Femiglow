@@ -54,7 +54,9 @@ export function MessageList() {
       {messages.length === 0 && greeting && (
         <p
           dir={language === 'ar' ? 'rtl' : 'ltr'}
-          className="rounded-xl bg-white px-3 py-2 text-sm text-stone-600 shadow-sm"
+          // CHA-244 — Greeting passé en text-base pour cohérence avec les
+          // bulles et lisibilité en mobile. cf. runbook §E.
+          className="rounded-xl bg-white px-3 py-2.5 text-base text-stone-700 shadow-sm"
         >
           {greeting}
         </p>
@@ -92,10 +94,12 @@ export function MessageList() {
 
 function SuggestionPill({ text }: { text: string }) {
   // CHA-062 — pill cliquable. Pour l'instant : textarea pre-fill.
+  // CHA-244 — text-sm (au lieu de text-xs) + padding plus généreux
+  // pour rester tappable sans zoom.
   return (
     <button
       type="button"
-      className="rounded-full border border-stone-300 bg-white px-3 py-1 text-xs text-stone-700 hover:border-stone-400 focus:outline-none focus-visible:ring-1 focus-visible:ring-stone-900"
+      className="rounded-full border border-stone-300 bg-white px-3.5 py-1.5 text-sm text-stone-700 hover:border-stone-400 focus:outline-none focus-visible:ring-1 focus-visible:ring-stone-900"
       onClick={() => {
         const el = document.querySelector<HTMLTextAreaElement>('[data-testid="chat-input"]');
         if (el) {

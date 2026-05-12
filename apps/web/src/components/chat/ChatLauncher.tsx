@@ -76,8 +76,13 @@ export function ChatLauncher({ unreadCount = 0 }: ChatLauncherProps) {
       aria-label={isOpen ? 'Fermer le chat' : 'Ouvrir le chat'}
       aria-expanded={isOpen}
       data-testid="chat-launcher"
+      // CHA-244 — Le launcher partage le même token que le panel
+      // (`--z-chat-overlay: 250`) pour passer au-dessus du Header /
+      // StickyCartCTA quand il est visible (mobile : caché si
+      // isOpen ; desktop : visible aux côtés de la bubble).
+      style={{ zIndex: 'var(--z-chat-overlay)' }}
       className={[
-        'fixed z-40 h-14 w-14 items-center justify-center rounded-full',
+        'fixed h-14 w-14 items-center justify-center rounded-full',
         displayClass,
         'bg-stone-900 text-white shadow-lg shadow-stone-900/15 transition-all',
         'hover:bg-stone-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2',

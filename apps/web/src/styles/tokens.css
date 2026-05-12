@@ -126,6 +126,15 @@
   --z-dropdown: 50;
   --z-sticky: 100;
   --z-overlay: 200;
+  /*
+   * CHA-244 — Chat sheet overlay.
+   * Doit passer AU-DESSUS du header sticky (`--z-sticky: 100`) et du
+   * `StickyCartCTA` (même token), sinon ces deux barres rognent
+   * visuellement le panel chat (cf. docs/admin-config/43-chat-mobile-ux-fix-runbook.md).
+   * On reste sous `--z-modal: 300` pour ne pas dépasser les dialogs
+   * admin (live preview, settings).
+   */
+  --z-chat-overlay: 250;
   --z-modal: 300;
   --z-toast: 400;
   --z-tooltip: 500;
