@@ -74,6 +74,13 @@ export default async function AdminRitualsQueuePage({
               Mode rafale →
             </Link>
           )}
+          <Link
+            href="/admin/rituals/best-practices"
+            className="border border-stone-300 px-3 py-1 hover:bg-stone-100"
+            data-testid="best-practices-link"
+          >
+            Guide
+          </Link>
         </nav>
       </header>
 

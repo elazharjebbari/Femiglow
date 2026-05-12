@@ -1,68 +1,139 @@
 /**
- * Seed initial des Rituels partagés.
- * Insère 3 témoignages factices `featured = true` pour amorcer le module compact
- * de /kit et le drawer du wall avant les premières soumissions réelles.
+ * Seed du wall « Rituels partagés » avec des avis FemiGlow réalistes.
  *
- * Cf. docs/reviews-wall/execution/00-runbook.md § Phase 1.12.
+ * Usage :
+ *   pnpm --filter @femiglow/web tsx scripts/seed-rituals.ts            # peuple
+ *   pnpm --filter @femiglow/web tsx scripts/seed-rituals.ts --dry-run  # stats seulement
  *
- * Usage : pnpm --filter @femiglow/web tsx scripts/seed-rituals.ts
+ * Idempotent : repérage par hash du body normalisé. Re-run sans danger.
+ *
+ * Cf. src/lib/rituals/seed-data.ts — distribution éditoriale (Kolenda).
  */
 /* eslint-disable no-console */
-import { insertRitual, refreshRitualAggregate } from '@/lib/db/queries/rituals';
+import { db, memoryStore, schema } from '@/lib/db/client';
+import { eq } from 'drizzle-orm';
+import {
+  insertPhoto,
+  insertRitual,
+  refreshRitualAggregate,
+} from '@/lib/db/queries/rituals';
+import { SEED_RITUALS, getSeedStats } from '@/lib/rituals/seed-data';
+import { bodyHash } from '@/lib/rituals/duplicate-detection';
 
 const PRODUCT_KEY = 'pack-femiglow';
 
-const fixtures = [
-  {
-    body:
-      "Trois mois et l'ongle a retrouvé sa nervure. J'ai cessé de le forcer. Je remarque que les cuticules ont apaisé doucement.",
-    wouldRecommend: 'oui' as const,
-    ritualTags: ['ongles-plus-lisses', 'plus-de-casse'],
-    authorFirstName: 'Amal',
-    authorCity: 'Rabat',
-    initiatedSince: '2026-02',
-  },
-  {
-    body:
-      'Cinq minutes le soir, devenu un rituel agréable. Je le fais avec ma tisane après le travail. La main respire entre deux journées denses.',
-    wouldRecommend: 'oui' as const,
-    ritualTags: ['rituel-devenu-habitude', 'mains-detendues'],
-    authorFirstName: 'Yasmine',
-    authorCity: 'Rabat',
-    initiatedSince: '2024-03',
-  },
-  {
-    body:
-      "La paste donne un fini qui me ressemble. Naturel, sans vernis. Cela faisait des années que je cherchais ce rendu simple, lisible, sobre.",
-    wouldRecommend: 'oui' as const,
-    ritualTags: ['eclat-naturel', 'fini-brillant'],
-    authorFirstName: 'Inès',
-    authorCity: 'Marrakech',
-    initiatedSince: '2023-10',
-  },
-];
+async function existingHashes(): Promise<Set<string>> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = (await drizzle
+      .select({ body: schema.ritualTestimonials.body })
+      .from(schema.ritualTestimonials)) as Array<{ body: string }>;
+    return new Set(rows.map((r) => bodyHash(r.body)));
+  }
+  return new Set(
+    Array.from(memoryStore().ritualTestimonials.values()).map((r) => bodyHash(r.body)),
+  );
+}
+
+async function backdate(ritualId: string, createdAt: Date): Promise<void> {
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle
+      .update(schema.ritualTestimonials)
+      .set({ createdAt })
+      .where(eq(schema.ritualTestimonials.id, ritualId));
+    return;
+  }
+  const row = memoryStore().ritualTestimonials.get(ritualId);
+  if (row) {
+    memoryStore().ritualTestimonials.set(ritualId, { ...row, createdAt });
+  }
+}
 
 async function main() {
-  console.log('[seed-rituals] insertion de 3 témoignages...');
-  for (const fixture of fixtures) {
-    const ritual = await insertRitual({
-      ...fixture,
-      productKey: PRODUCT_KEY,
-      bodyOriginal: fixture.body,
-      source: 'manual',
-      status: 'APPROVED',
-      featured: true,
-      publishedAt: new Date(),
-    });
-    console.log(`  ✓ ${ritual.publicSlug} — ${fixture.authorFirstName}`);
+  const dryRun = process.argv.includes('--dry-run');
+  const stats = getSeedStats();
+  console.log('[seed-rituals] distribution prévue :');
+  console.log(`  total : ${stats.total}`);
+  console.log(
+    `  signal : oui=${stats.bySignal.oui} · hesite=${stats.bySignal.hesite} · non=${stats.bySignal.non}`,
+  );
+  console.log(
+    `  status : APPROVED=${stats.byStatus.APPROVED} · PENDING=${stats.byStatus.PENDING} · REJECTED=${stats.byStatus.REJECTED} · HIDDEN=${stats.byStatus.HIDDEN}`,
+  );
+  console.log(`  avec photos : ${stats.withPhotos}`);
+  console.log(`  verified_purchase : ${stats.verified}`);
+  console.log(`  featured : ${stats.featured}`);
+
+  if (dryRun) {
+    console.log('[seed-rituals] dry-run terminé.');
+    return;
   }
 
-  console.log('[seed-rituals] refresh aggregate...');
-  const agg = await refreshRitualAggregate(PRODUCT_KEY);
+  const skip = await existingHashes();
+  let inserted = 0;
+  let skipped = 0;
+
+  for (const seed of SEED_RITUALS) {
+    const hash = bodyHash(seed.body);
+    if (skip.has(hash)) {
+      skipped += 1;
+      continue;
+    }
+
+    const createdAt = new Date(Date.now() - seed.daysAgo * 86400_000);
+    const publishedAt =
+      seed.status === 'APPROVED'
+        ? new Date(createdAt.getTime() + 18 * 3600_000)
+        : null;
+
+    const ritual = await insertRitual({
+      productKey: PRODUCT_KEY,
+      body: seed.body,
+      bodyOriginal: seed.bodyOriginal ?? seed.body,
+      wouldRecommend: seed.wouldRecommend,
+      ritualTags: seed.ritualTags,
+      authorFirstName: seed.authorFirstName,
+      authorCity: seed.authorCity,
+      initiatedSince: seed.initiatedSince,
+      isAnonymous: seed.isAnonymous ?? false,
+      language: seed.language ?? 'fr',
+      source: seed.source,
+      verifiedPurchase: seed.verifiedPurchase,
+      status: seed.status,
+      autoFlags: seed.autoFlags ?? [],
+      featured: seed.featured ?? false,
+      publishedAt,
+    });
+
+    await backdate(ritual.id, createdAt);
+
+    if (seed.photos && seed.photos.length > 0) {
+      for (let i = 0; i < seed.photos.length; i++) {
+        const p = seed.photos[i]!;
+        await insertPhoto({
+          testimonialId: ritual.id,
+          url: p.url,
+          thumbUrl: p.url,
+          width: p.width,
+          height: p.height,
+          byteSize: 200_000,
+          mime: 'image/jpeg',
+          alt: p.alt ?? null,
+          position: i,
+          facesStatus: 'OK',
+          facesCount: 0,
+        });
+      }
+    }
+
+    inserted += 1;
+  }
+
+  await refreshRitualAggregate(PRODUCT_KEY);
   console.log(
-    `  ✓ aggregate : ${agg.totalCount} approuvés · ${agg.ouiCount} oui · top tags : ${agg.topTags.map((t) => t.tag).join(', ')}`,
+    `[seed-rituals] terminé. Insérés : ${inserted}, déjà présents : ${skipped}.`,
   );
-  console.log('[seed-rituals] terminé');
 }
 
 main().catch((err) => {
