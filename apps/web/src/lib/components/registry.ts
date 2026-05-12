@@ -479,7 +479,26 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
     category: 'hero',
     pageGroup: 'kit',
     filePath: 'src/components/sections/HeroProduit.tsx',
-    slots: [SLOT_HERO_PRIMARY],
+    // Override du slot hero standard : `HeroProduit.tsx` rend l'image en
+    // ratio `4:5` sur le chemin fallback (`<Image ratio="4:5" />`), donc
+    // le slot bindé DOIT aussi être en 4/5 — sinon l'activation du
+    // binding fait passer la mise en page de portrait → landscape et
+    // casse la disposition. C'est ici l'image qui s'adapte au composant :
+    // la source peut être de n'importe quel ratio, Next/Image + object-cover
+    // la recadre runtime au 4:5 du slot (cf. CHA-243).
+    slots: [
+      {
+        ...SLOT_HERO_PRIMARY,
+        aspectRatioHint: '4/5',
+        recommendedWidth: 1200,
+        // Pas de crop physique au seed : on garde la source PNG intacte
+        // (utile si l'admin veut repointer le binding sur le même Media
+        // depuis un slot différent). Le crop visuel se fait runtime
+        // via object-cover.
+        cropToAspect: false,
+        objectFitDefault: 'cover',
+      },
+    ],
     defaultSvgFallback: '/products/kit-principale.svg',
     defaultLoadingStrategy: 'eager',
     defaultFetchPriority: 'high',

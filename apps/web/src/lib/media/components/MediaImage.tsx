@@ -37,6 +37,13 @@ interface BaseProps {
    * (`creme`, `creme-warm`, `champagne-soft`…) ou hex/rgba.
    */
   backgroundFill?: string;
+  /**
+   * Affiche le blurhash en background pendant le chargement.
+   * Défaut : `false` — le bg uni issu de la palette suffit, l'effet de flou
+   * est jugé trop bruyant sur le rendu éditorial FemiGlow. Activer
+   * ponctuellement pour une carte produit où le flou apporte du lyrisme.
+   */
+  blurPlaceholder?: boolean;
 }
 
 type MediaImageProps =
@@ -60,6 +67,7 @@ export async function MediaImage(props: MediaImageProps) {
     focalY,
     slotAspectRatio,
     backgroundFill,
+    blurPlaceholder = false,
   } = props;
   const idOrSlug = 'id' in props && props.id ? props.id : props.slug!;
   const media = await getMedia(idOrSlug);
@@ -119,7 +127,12 @@ export async function MediaImage(props: MediaImageProps) {
     media.variants[media.variants.length - 1];
   const fallbackUrl = fallbackVariant?.url ?? media.originalUrl ?? '';
 
-  const blurDataUrl = media.blurhash
+  // Le blurhash n'est calculé QUE si le caller demande explicitement le
+  // flou de chargement (`blurPlaceholder=true`). Par défaut on s'en passe :
+  // sur le rendu éditorial FemiGlow l'effet de flou est perçu comme bruyant
+  // (cf. ticket UX 12/05). Le `bgColor` issu de la palette reste affiché
+  // pendant le décode et suffit comme placeholder neutre.
+  const blurDataUrl = blurPlaceholder && media.blurhash
     ? await blurhashToSvgDataUrl(media.blurhash).catch(() => undefined)
     : undefined;
 

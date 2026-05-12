@@ -91,11 +91,27 @@ describe('seed-mapping (contrat de couverture)', () => {
   });
 
   // CHA-243 — Hero kit pointe vers image-produit.png (asset éditorial principal).
-  it('kit/image-produit.png est mappé sur kit-hero-produit/primary', () => {
+  it('kit/image-produit.png est mappé sur kit-hero-produit/primary et auto-activé', () => {
+    // `autoActivate: true` est CRITIQUE : sans ça, le binding sort du seed
+    // inactif et `HeroProduitBound` retombe sur le SVG fallback. La page
+    // /kit afficherait alors un placeholder au lieu du packshot principal.
     expect(IMAGE_TO_COMPONENT['kit/image-produit.png']).toEqual({
       componentKey: 'kit-hero-produit',
       slot: 'primary',
+      autoActivate: true,
     });
+  });
+
+  // Garde-fou : on n'auto-active QUE les assets canon. Toute autre entrée
+  // doit rester inactive par défaut pour ne pas écraser silencieusement
+  // un override que l'admin aurait posé via la CMS.
+  it('aucune autre entrée que les assets canon ne porte autoActivate=true', () => {
+    const autoActivated = Object.entries(IMAGE_TO_COMPONENT)
+      .filter(([, m]) => m.autoActivate === true)
+      .map(([p]) => p);
+    // Liste blanche explicite — toute nouvelle entrée auto-activée doit
+    // être ajoutée ici en pleine conscience.
+    expect(autoActivated.sort()).toEqual(['kit/image-produit.png']);
   });
 
   // CHA-243 — kit-principale.png reste sur disque comme alternative A/B

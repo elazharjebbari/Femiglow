@@ -6,8 +6,15 @@
  *   2. Optimize via `optimizeImage` (génère AVIF/WebP/JPEG aux 6 breakpoints).
  *   3. Insère un `Media` (status=ready) avec alt seedé.
  *   4. Crée les `MediaVariant` produits.
- *   5. Upsert le `componentMediaBindings` (componentKey, slot) avec
- *      `isActive=false` par défaut, ou `true` si `autoActivate=true`.
+ *   5. Upsert le `componentMediaBindings` (componentKey, slot) :
+ *      - À la CRÉATION du binding : `isActive=true` par défaut (fresh-seed
+ *        = tout actif, pas d'admin override à protéger).
+ *      - À la MISE À JOUR d'un binding existant : `isActive` est préservé
+ *        (respect des choix admin faits via la CMS) — sauf si `opts.autoActivate`
+ *        (CLI `--auto-activate`) ou `mapping.autoActivate` force la
+ *        réactivation explicite (cf. `seed-mapping.ts`).
+ *      Cf. « Option B » du runbook seed — `is_active` ne flip jamais
+ *      false → true silencieusement sur re-seed.
  *
  * Idempotence :
  *   - Slug du Media = `${pageGroup}-${basenameSansExt}`.
@@ -25,6 +32,7 @@ import {
 import { upsertVariant } from '@/lib/db/queries/media-variants';
 import { upsertSiteComponentFromSeed } from '@/lib/db/queries/site-components';
 import {
+  getBindingBySlot,
   upsertBinding,
 } from '@/lib/db/queries/component-bindings';
 import {
@@ -663,7 +671,34 @@ export async function seedFromDocs(opts: SeedOptions = {}): Promise<SeedReport> 
         });
         continue;
       }
-      const isActive = !!opts.autoActivate;
+      // Option B — `is_active` est résolu différemment selon que le binding
+      // existe déjà ou non :
+      //  - CRÉATION (binding inexistant) : `isActive=true` par défaut. Sur
+      //    un fresh-seed il n'y a aucun override admin à protéger, donc on
+      //    activate les bindings d'office — sinon la page tombe sur le SVG
+      //    fallback alors que les Media optimisés sont prêts. Le drapeau
+      //    `--auto-activate` et `mapping.autoActivate` deviennent
+      //    redondants pour ce cas mais restent rétro-compatibles.
+      //  - MISE À JOUR (binding existant) : `isActive` est PRÉSERVÉ. C'est
+      //    le nouveau garde-fou anti-écrasement : si l'admin a désactivé
+      //    un slot via la CMS, un re-seed ne le réactive plus en silence.
+      //    Pour forcer la réactivation, passer explicitement
+      //    `--auto-activate` (override CLI) ou marquer le mapping
+      //    `autoActivate: true` (override per-asset).
+      const existingBinding = await getBindingBySlot(cmp.id, mapping.slot);
+      const forceActivate = !!opts.autoActivate || !!mapping.autoActivate;
+      let isActiveDecision: boolean | undefined;
+      if (!existingBinding) {
+        // Fresh-seed : on active toujours (sinon le site reste vide).
+        isActiveDecision = true;
+      } else if (forceActivate) {
+        // Re-seed avec override explicite → on force.
+        isActiveDecision = true;
+      } else {
+        // Re-seed sans override → on omet `isActive` pour laisser
+        // `upsertBinding` retomber sur `existing.isActive`.
+        isActiveDecision = undefined;
+      }
       const slotDef = seed.slots.find((s) => s.key === mapping.slot);
       await upsertBinding({
         componentId: cmp.id,
@@ -671,7 +706,7 @@ export async function seedFromDocs(opts: SeedOptions = {}): Promise<SeedReport> 
         mediaId: media!.id,
         loadingStrategy: inferLoadingStrategy(seed.key, mapping.slot),
         fetchPriority: seed.defaultFetchPriority,
-        isActive,
+        ...(isActiveDecision !== undefined ? { isActive: isActiveDecision } : {}),
         placeholderStrategy: 'svg',
         // Hérite des défauts du slot pour que les images affichées
         // immédiatement après seed aient une présentation cohérente.
@@ -687,7 +722,12 @@ export async function seedFromDocs(opts: SeedOptions = {}): Promise<SeedReport> 
           : {}),
         createdBy: opts.actorId ?? null,
       });
-      if (isActive) report.images.activated += 1;
+      // Compte comme "activé" :
+      //  - création avec isActive=true, OU
+      //  - update avec forceActivate (qui passe isActive=true).
+      // Ne compte PAS les updates qui ont conservé existing.isActive=true
+      // (déjà actifs avant le re-seed).
+      if (isActiveDecision === true) report.images.activated += 1;
     } catch (e) {
       itemStatus = 'error';
       itemMessage = e instanceof Error ? e.message : String(e);

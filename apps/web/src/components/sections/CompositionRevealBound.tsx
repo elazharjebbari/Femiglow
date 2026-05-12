@@ -15,11 +15,18 @@ interface CompositionRevealBoundProps {
  * Les bindings `kit-comparatif/kit-base|kit-fortifiant|kit-lime` sont déjà seedés
  * (cf. `seed-mapping.ts`) et utilisés également par `ComparatifSectionBound`.
  * On les réutilise ici pour éviter de dupliquer la déclaration de slots.
+ *
+ * IMPORTANT — les clés correspondent aux `subProduct.id` du contenu Kit
+ * (cf. `apps/web/src/data/mock/kit.ts`). Lors du refactor audit 08/09, les
+ * sous-produits ont été renommés `1-paste / 2-powder / polissoir-step-4`
+ * mais ce mapping pointait encore sur les anciens ids — résultat : aucun
+ * binding ne matchait, la CompositionReveal retombait sur le SVG fallback
+ * (`/products/kit-base.svg` etc.) alors que les bindings DB étaient bien actifs.
  */
 const SUB_PRODUCT_ID_TO_SLOT: Record<string, string> = {
-  'base-transparente': 'kit-base',
-  fortifiant: 'kit-fortifiant',
-  'lime-artisanale': 'kit-lime',
+  '1-paste': 'kit-base',
+  '2-powder': 'kit-fortifiant',
+  'polissoir-step-4': 'kit-lime',
 };
 
 const COMPONENT_KEY = 'kit-comparatif';
