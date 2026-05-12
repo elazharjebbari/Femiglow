@@ -123,6 +123,27 @@ export interface WebhookDelivery {
   updatedAt: Date;
 }
 
+// CHA-260 — Outbound webhook log (payload PLAT).
+export type OutboundSource = 'order' | 'chat-lead' | 'cart-abandon' | 'contact' | 'newsletter';
+export type OutboundStatus = 'pending' | 'sent' | 'failed' | 'skipped' | 'disabled';
+
+export interface OutboundWebhookLogRow {
+  id: string;
+  source: OutboundSource;
+  sourceId: string;
+  idempotencyKey: string;
+  eventName: string;
+  payload: Record<string, unknown>;
+  status: OutboundStatus;
+  attemptCount: number;
+  lastError: string | null;
+  responseStatus: number | null;
+  latencyMs: number | null;
+  sentAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface AuditEvent {
   id: string;
   action: string;

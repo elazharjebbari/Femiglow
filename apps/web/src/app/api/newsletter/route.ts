@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { emailSchema } from '@/lib/schemas';
+import { logger } from '@/lib/logging/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,11 +28,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // Phase 2 : intégration Resend Audiences ou Mailjet.
-  console.warn('[newsletter] inscription', {
-    email: parsed.data.email,
+  // CHA-260 — La newsletter n'a PAS de téléphone : par contrat phone-gate
+  // (cf. runbook §2.5), aucun webhook outbound n'est déclenché. La
+  // synchronisation vers Resend/Mailjet reste prévue côté job dédié.
+  logger.info('newsletter.subscription.received', {
     source: parsed.data.source ?? 'unknown',
-    receivedAt: new Date().toISOString(),
   });
 
   return NextResponse.json({ ok: true });

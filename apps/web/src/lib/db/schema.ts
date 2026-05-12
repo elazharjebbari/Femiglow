@@ -179,6 +179,36 @@ export const webhookDeliveries = pgTable(
   }),
 );
 
+// CHA-260 — Outbound webhook log : observabilité + idempotency pour les
+// triggers métier (order, chat-lead, cart-abandon, contact, newsletter)
+// qui POSTent un payload PLAT vers `OUTBOUND_WEBHOOK_URL`.
+// Différence avec `webhook_deliveries` : pas de FK vers un endpoint
+// stocké en DB — l'URL/secret viennent de l'env (1 destination unique).
+export const outboundWebhookLog = pgTable(
+  'outbound_webhook_log',
+  {
+    id: text('id').primaryKey(),
+    source: text('source').notNull(),
+    sourceId: text('source_id').notNull(),
+    idempotencyKey: text('idempotency_key').notNull(),
+    eventName: text('event_name').notNull(),
+    payload: jsonb('payload').notNull().default({}),
+    status: text('status').notNull().default('pending'),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    lastError: text('last_error'),
+    responseStatus: integer('response_status'),
+    latencyMs: integer('latency_ms'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idemIdx: uniqueIndex('outbound_webhook_log_idem_idx').on(t.idempotencyKey),
+    sourceIdx: index('outbound_webhook_log_source_idx').on(t.source, t.sourceId),
+    statusIdx: index('outbound_webhook_log_status_idx').on(t.status, t.createdAt),
+  }),
+);
+
 export const auditEvents = pgTable(
   'audit_events',
   {

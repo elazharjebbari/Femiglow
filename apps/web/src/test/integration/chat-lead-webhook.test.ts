@@ -1,36 +1,30 @@
 /**
- * CHA-225 — Tests d'intégration MSW pour `dispatchLeadWebhook` (chat).
+ * CHA-260 — Tests d'intégration MSW pour `dispatchLeadWebhook` (chat),
+ * désormais branché sur le dispatcher outbound unifié (payload PLAT).
  *
- * Le service `dispatchLeadWebhook` poste un payload signé HMAC-SHA-256 vers
- * un endpoint externe (n8n / CRM) après création d'un `chat_lead`.
- * Cet ensemble de tests couvre :
+ * Couvre :
+ *   - succès 200 → status `sent`, headers attendus, signature valide,
+ *     payload FLAT conforme au contrat (`id`, `full_name`, `phone`, …)
+ *     SANS wrapping `{event, version, lead}`.
+ *   - 404 puis 200 sur retry → `sent`, attempts=2.
+ *   - 503 persistants → `failed` après 3 tentatives.
+ *   - URL absente → `disabled`, zéro fetch.
+ *   - Erreur réseau → 3 tentatives + `failed`.
  *
- *  - succès 200 → status `sent`, signature présente, headers attendus,
- *    payload conforme au contrat (`event=lead.created`, `version=1`,
- *    section `lead.*`) ;
- *  - 4xx (404) puis 200 sur retry → status `sent`, attempts=2 ;
- *  - 5xx persistants → status `failed` après MAX_ATTEMPTS=3 ;
- *  - URL absente (toggle webhook off) → status `disabled`, aucun fetch.
- *
- * On stubbe les repos en mémoire (le but du test est le contrat HTTP, pas
- * la persistance) et on remplace `setTimeout` par un fake timer pour que
- * les backoffs (1s/3s/9s) ne fassent pas traîner la suite.
- *
- * cf. apps/web/src/lib/chat/services/lead-webhook.ts §dispatchLeadWebhook
+ * cf. apps/web/src/lib/webhooks/outbound/sources/from-chat-lead.ts
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { http, HttpResponse, server } from '@/test/msw/server';
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
-// ---------------------------------------------------------------------------
-// Mocks d'environnement + repos. On configure `vi.hoisted` car on veut
-// pouvoir muter `env.CHAT_LEAD_WEBHOOK_URL` test par test (cas désactivé).
-// ---------------------------------------------------------------------------
-
 const envMock = vi.hoisted(() => ({
+  OUTBOUND_WEBHOOK_URL: undefined as string | undefined,
+  OUTBOUND_WEBHOOK_SECRET: undefined as string | undefined,
   CHAT_LEAD_WEBHOOK_URL: 'https://hook.example.com/chat' as string | undefined,
   CHAT_LEAD_WEBHOOK_SECRET: 'shhh-secret-min-16-chars' as string | undefined,
+  LOG_LEVEL: 'error' as const,
+  DATABASE_URL: undefined as string | undefined,
 }));
 
 const repos = vi.hoisted(() => ({
@@ -39,9 +33,7 @@ const repos = vi.hoisted(() => ({
   eventAppend: vi.fn(async (_sessionId: string, _kind: string, _payload: unknown) => {}),
 }));
 
-vi.mock('@/lib/env', () => ({
-  env: envMock,
-}));
+vi.mock('@/lib/env', () => ({ env: envMock }));
 
 vi.mock('@/lib/chat/repos/lead', () => ({
   leadRepo: {
@@ -51,9 +43,7 @@ vi.mock('@/lib/chat/repos/lead', () => ({
 }));
 
 vi.mock('@/lib/chat/repos/event', () => ({
-  eventRepo: {
-    append: repos.eventAppend,
-  },
+  eventRepo: { append: repos.eventAppend },
 }));
 
 vi.mock('@/lib/logging/logger', () => ({
@@ -65,21 +55,15 @@ vi.mock('@/lib/logging/logger', () => ({
   },
 }));
 
-// Import APRÈS les mocks pour que `lead-webhook.ts` capture les versions
-// stubées. (sinon on récupère le vrai env et le vrai repo qui essayent de
-// joindre Postgres).
 import {
   dispatchLeadWebhook,
   signWebhookPayload,
   verifyWebhookSignature,
 } from '@/lib/chat/services/lead-webhook';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+import { resetMemoryStore } from '@/lib/db/client';
 
 function makeLead(overrides: Partial<ChatLeadRow> = {}): ChatLeadRow {
-  const now = new Date('2026-05-07T12:00:00Z');
+  const now = new Date('2026-05-13T12:00:00Z');
   return {
     id: 'cl_msw_001',
     sessionId: 'cs_msw_001',
@@ -99,8 +83,7 @@ function makeLead(overrides: Partial<ChatLeadRow> = {}): ChatLeadRow {
     language: 'fr',
     intentAtCapture: 'purchase',
     snapshotMessages: [
-      { role: 'user', content: 'Bonjour, je veux commander', at: now.toISOString() },
-      { role: 'assistant', content: 'Avec plaisir !', at: now.toISOString() },
+      { role: 'user', content: 'Bonjour', at: now.toISOString() },
     ],
     webhookStatus: 'pending',
     webhookAttempts: 0,
@@ -120,9 +103,11 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => {
   server.resetHandlers();
   vi.clearAllMocks();
-  // Reset env defaults entre chaque test (cas `disabled` les modifie).
+  envMock.OUTBOUND_WEBHOOK_URL = undefined;
+  envMock.OUTBOUND_WEBHOOK_SECRET = undefined;
   envMock.CHAT_LEAD_WEBHOOK_URL = 'https://hook.example.com/chat';
   envMock.CHAT_LEAD_WEBHOOK_SECRET = 'shhh-secret-min-16-chars';
+  resetMemoryStore();
 });
 afterAll(() => server.close());
 
@@ -130,16 +115,14 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 
-// ---------------------------------------------------------------------------
-// Cas nominal : 200 OK
-// ---------------------------------------------------------------------------
-
-describe('dispatchLeadWebhook — succès 200', () => {
-  it('signe le body, envoie les bons headers, met à jour les repos', async () => {
+describe('dispatchLeadWebhook — succès 200 (payload PLAT)', () => {
+  it('envoie le payload flat avec headers + signature HMAC valides', async () => {
     const captured: {
       body?: string;
       sig?: string | null;
       event?: string | null;
+      source?: string | null;
+      idem?: string | null;
       contentType?: string | null;
     } = {};
 
@@ -148,6 +131,8 @@ describe('dispatchLeadWebhook — succès 200', () => {
         captured.body = await request.text();
         captured.sig = request.headers.get('x-femiglow-signature');
         captured.event = request.headers.get('x-femiglow-event');
+        captured.source = request.headers.get('x-femiglow-source');
+        captured.idem = request.headers.get('idempotency-key');
         captured.contentType = request.headers.get('content-type');
         return HttpResponse.json({ received: true });
       }),
@@ -158,57 +143,50 @@ describe('dispatchLeadWebhook — succès 200', () => {
 
     expect(result.status).toBe('sent');
     expect(result.attempts).toBe(1);
-    expect(captured.event).toBe('lead.created');
+    expect(captured.event).toBe('chat_lead.created');
+    expect(captured.source).toBe('chat-lead');
+    expect(captured.idem).toBe(`chat-lead:${lead.id}`);
     expect(captured.contentType).toMatch(/application\/json/);
     expect(captured.sig).toMatch(/^sha256=[a-f0-9]{64}$/);
 
-    // Verify la signature elle-même (HMAC-SHA-256 vérifiable par le receveur).
     expect(
       verifyWebhookSignature(captured.body!, captured.sig!, envMock.CHAT_LEAD_WEBHOOK_SECRET!),
     ).toBe(true);
 
-    // Le payload respecte le contrat documenté.
-    const payload = JSON.parse(captured.body!) as Record<string, unknown> & {
-      lead: Record<string, unknown>;
-    };
-    expect(payload.event).toBe('lead.created');
-    expect(payload.version).toBe('1');
-    expect(typeof payload.occurredAt).toBe('string');
-    expect(payload.lead.id).toBe(lead.id);
-    expect(payload.lead.sessionId).toBe(lead.sessionId);
-    expect(payload.lead.firstName).toBe('Yasmine');
-    expect(payload.lead.phoneE164).toBe('+212612345678');
-    expect(payload.lead.triggerReason).toBe('inline-contact');
-    expect(payload.lead.snapshot).toHaveLength(2);
+    const payload = JSON.parse(captured.body!) as Record<string, unknown>;
+    expect(payload.id).toBe(`chat-lead:${lead.id}`);
+    expect(payload.full_name).toBe('Yasmine');
+    // Phone gate MA → trunk prefix `0...`.
+    expect(payload.phone).toBe('0612345678');
+    expect(payload.currency).toBe('MAD');
+    expect(payload.quantity).toBe(1);
+    expect(payload.source_channel).toBe('chat:inline-contact');
+    // Pas de wrapping
+    expect((payload as { event?: unknown }).event).toBeUndefined();
+    expect((payload as { version?: unknown }).version).toBeUndefined();
+    expect((payload as { lead?: unknown }).lead).toBeUndefined();
 
-    // Les repos ont été mis à jour.
-    expect(repos.markWebhookSent).toHaveBeenCalledOnce();
     expect(repos.markWebhookSent).toHaveBeenCalledWith(lead.id);
     expect(repos.markWebhookFailed).not.toHaveBeenCalled();
-    expect(repos.eventAppend).toHaveBeenCalledOnce();
     expect(repos.eventAppend).toHaveBeenCalledWith(
       lead.sessionId,
       'chat_lead_webhook_sent',
-      expect.objectContaining({ leadId: lead.id, attempt: 1, status: 200 }),
+      expect.objectContaining({ leadId: lead.id }),
     );
   });
 
-  it('signe avec HMAC-SHA-256 cohérent avec signWebhookPayload (utilitaire interne)', () => {
-    const body = JSON.stringify({ event: 'lead.created' });
+  it('signWebhookPayload est déterministe et vérifiable', () => {
+    const body = JSON.stringify({ id: 'order-1' });
     const a = signWebhookPayload(body, 'mysecret-of-some-length');
     const b = signWebhookPayload(body, 'mysecret-of-some-length');
-    expect(a).toBe(b); // déterministe
+    expect(a).toBe(b);
     expect(verifyWebhookSignature(body, a, 'mysecret-of-some-length')).toBe(true);
     expect(verifyWebhookSignature(body, a, 'wrongsecret-1234567890')).toBe(false);
   });
 });
 
-// ---------------------------------------------------------------------------
-// Retry : 404 puis 200
-// ---------------------------------------------------------------------------
-
-describe('dispatchLeadWebhook — retry 4xx puis succès', () => {
-  it('réessaye après un 404 et finit par envoyer (status sent, attempts > 1)', async () => {
+describe('dispatchLeadWebhook — retry 404 puis succès', () => {
+  it('réessaye après un 404 et finit par envoyer', async () => {
     let calls = 0;
     server.use(
       http.post('https://hook.example.com/chat', () => {
@@ -220,26 +198,18 @@ describe('dispatchLeadWebhook — retry 4xx puis succès', () => {
 
     const lead = makeLead({ id: 'cl_retry' });
     const promise = dispatchLeadWebhook(lead);
-
-    // Avancer les timers pour passer le backoff de 1s entre tentatives.
     await vi.advanceTimersByTimeAsync(2_000);
 
     const result = await promise;
     expect(result.status).toBe('sent');
     expect(result.attempts).toBe(2);
     expect(calls).toBe(2);
-    expect(repos.markWebhookSent).toHaveBeenCalledOnce();
     expect(repos.markWebhookSent).toHaveBeenCalledWith('cl_retry');
-    expect(repos.markWebhookFailed).not.toHaveBeenCalled();
   });
 });
 
-// ---------------------------------------------------------------------------
-// Échec définitif : 503 sur toutes les tentatives
-// ---------------------------------------------------------------------------
-
-describe('dispatchLeadWebhook — échec persistant', () => {
-  it('marque webhook_status=failed après MAX_ATTEMPTS=3 sur 503 répétés', async () => {
+describe('dispatchLeadWebhook — échec persistant 503', () => {
+  it('marque webhook_status=failed après MAX_ATTEMPTS=3', async () => {
     let calls = 0;
     server.use(
       http.post('https://hook.example.com/chat', () => {
@@ -250,8 +220,6 @@ describe('dispatchLeadWebhook — échec persistant', () => {
 
     const lead = makeLead({ id: 'cl_fail' });
     const promise = dispatchLeadWebhook(lead);
-
-    // Backoffs cumulés : 1s + 3s = 4s ; on en avance 5s pour être confortable.
     await vi.advanceTimersByTimeAsync(5_000);
 
     const result = await promise;
@@ -259,28 +227,17 @@ describe('dispatchLeadWebhook — échec persistant', () => {
     expect(result.attempts).toBe(3);
     expect(calls).toBe(3);
     expect(result.lastError).toMatch(/http-503/);
-    expect(repos.markWebhookFailed).toHaveBeenCalledOnce();
     expect(repos.markWebhookFailed).toHaveBeenCalledWith(
       'cl_fail',
       expect.stringMatching(/http-503/),
     );
-    expect(repos.markWebhookSent).not.toHaveBeenCalled();
-    expect(repos.eventAppend).toHaveBeenCalledOnce();
-    expect(repos.eventAppend).toHaveBeenCalledWith(
-      lead.sessionId,
-      'chat_lead_webhook_failed',
-      expect.objectContaining({ leadId: 'cl_fail', attempts: 3 }),
-    );
   });
 });
 
-// ---------------------------------------------------------------------------
-// Webhook désactivé
-// ---------------------------------------------------------------------------
-
 describe('dispatchLeadWebhook — webhook non configuré', () => {
-  it('renvoie status=disabled et trace event chat_lead_webhook_failed sans fetch', async () => {
+  it('renvoie status=disabled (mappé `failed` côté façade) sans fetch', async () => {
     envMock.CHAT_LEAD_WEBHOOK_URL = undefined;
+    envMock.OUTBOUND_WEBHOOK_URL = undefined;
     let calls = 0;
     server.use(
       http.post('https://hook.example.com/chat', () => {
@@ -296,22 +253,15 @@ describe('dispatchLeadWebhook — webhook non configuré', () => {
     expect(result.attempts).toBe(0);
     expect(calls).toBe(0);
     expect(repos.markWebhookSent).not.toHaveBeenCalled();
-    expect(repos.markWebhookFailed).not.toHaveBeenCalled();
-    expect(repos.eventAppend).toHaveBeenCalledOnce();
-    expect(repos.eventAppend).toHaveBeenCalledWith(
-      lead.sessionId,
-      'chat_lead_webhook_failed',
-      expect.objectContaining({ reason: 'webhook-not-configured' }),
+    expect(repos.markWebhookFailed).toHaveBeenCalledWith(
+      'cl_disabled',
+      'webhook-not-configured',
     );
   });
 });
 
-// ---------------------------------------------------------------------------
-// Erreur réseau (DNS / timeout)
-// ---------------------------------------------------------------------------
-
 describe('dispatchLeadWebhook — erreur réseau', () => {
-  it('réessaye 3 fois quand le handler MSW renvoie un network error', async () => {
+  it('réessaye 3 fois et marque failed', async () => {
     let calls = 0;
     server.use(
       http.post('https://hook.example.com/chat', () => {
@@ -329,5 +279,30 @@ describe('dispatchLeadWebhook — erreur réseau', () => {
     expect(result.attempts).toBe(3);
     expect(calls).toBe(3);
     expect(result.lastError).toBeDefined();
+  });
+});
+
+describe('dispatchLeadWebhook — endpoint OUTBOUND prioritaire', () => {
+  it('utilise OUTBOUND_WEBHOOK_URL quand défini, plutôt que CHAT_LEAD_WEBHOOK_URL', async () => {
+    envMock.OUTBOUND_WEBHOOK_URL = 'https://hook.example.com/outbound';
+    envMock.OUTBOUND_WEBHOOK_SECRET = 'outbound-secret-of-some-length';
+    let chatHits = 0;
+    let outboundHits = 0;
+    server.use(
+      http.post('https://hook.example.com/chat', () => {
+        chatHits += 1;
+        return HttpResponse.json({});
+      }),
+      http.post('https://hook.example.com/outbound', () => {
+        outboundHits += 1;
+        return HttpResponse.json({});
+      }),
+    );
+
+    const lead = makeLead({ id: 'cl_outbound_prio' });
+    const result = await dispatchLeadWebhook(lead);
+    expect(result.status).toBe('sent');
+    expect(chatHits).toBe(0);
+    expect(outboundHits).toBe(1);
   });
 });

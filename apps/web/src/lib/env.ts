@@ -58,6 +58,10 @@ const envSchema = z.object({
   CHAT_LEAD_WEBHOOK_URL: z.string().url().optional(),
   CHAT_LEAD_WEBHOOK_SECRET: z.string().min(16).optional(),
   CHAT_LEAD_CONSENT_VERSION: z.string().min(4).default('2026-05-06'),
+  // CHA-260 — Outbound webhook unifié (order, cart-abandon, contact, …).
+  // Priorité sur CHAT_LEAD_WEBHOOK_URL ; fallback rétrocompat si absent.
+  OUTBOUND_WEBHOOK_URL: z.string().url().optional(),
+  OUTBOUND_WEBHOOK_SECRET: z.string().min(16).optional(),
 });
 
 export const env = envSchema.parse({
@@ -104,4 +108,6 @@ export const env = envSchema.parse({
   CHAT_LEAD_WEBHOOK_URL: process.env.CHAT_LEAD_WEBHOOK_URL,
   CHAT_LEAD_WEBHOOK_SECRET: process.env.CHAT_LEAD_WEBHOOK_SECRET,
   CHAT_LEAD_CONSENT_VERSION: process.env.CHAT_LEAD_CONSENT_VERSION,
+  OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
+  OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
 });

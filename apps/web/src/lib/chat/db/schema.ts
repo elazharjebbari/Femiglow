@@ -565,6 +565,11 @@ export const chatLead = pgTable(
     paymentSelectedAt: timestamp('payment_selected_at', { withTimezone: true }),
     purchasedAt: timestamp('purchased_at', { withTimezone: true }),
 
+    // CHA-260 — anti-doublon pour le scan outbound cart-abandon (cron tick).
+    // Posé une seule fois après envoi (succès OU échec final) du webhook
+    // `cart.abandoned` pour empêcher tout re-spam.
+    abandonWebhookAt: timestamp('abandon_webhook_at', { withTimezone: true }),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

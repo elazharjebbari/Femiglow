@@ -46,6 +46,7 @@ import type {
   ComponentFieldHistoryEntry,
   WebhookDelivery,
   WebhookEndpoint,
+  OutboundWebhookLogRow,
   RitualTestimonial,
   RitualTestimonialPhoto,
   RitualAuditEntry,
@@ -60,6 +61,7 @@ interface Store {
   leadEvents: Map<string, LeadEvent>;
   webhookEndpoints: Map<string, WebhookEndpoint>;
   webhookDeliveries: Map<string, WebhookDelivery>;
+  outboundWebhookLog: Map<string, OutboundWebhookLogRow>;
   auditEvents: Map<string, AuditEvent>;
   loginAttempts: Map<string, { ip: string; email: string; failedAt: Date }>;
   rateLimitCounters: Map<string, { count: number; resetAt: number }>;
@@ -110,6 +112,7 @@ function makeStore(): Store {
     leadEvents: new Map(),
     webhookEndpoints: new Map(),
     webhookDeliveries: new Map(),
+    outboundWebhookLog: new Map(),
     auditEvents: new Map(),
     loginAttempts: new Map(),
     rateLimitCounters: new Map(),

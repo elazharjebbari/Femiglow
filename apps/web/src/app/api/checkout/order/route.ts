@@ -34,6 +34,7 @@ import {
   orderRepo,
 } from '@/lib/checkout/repos/order-repo';
 import { createOrderInputSchema } from '@/lib/checkout/schemas/order';
+import { dispatchOrderWebhook } from '@/lib/webhooks/outbound/sources/from-order';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -179,6 +180,39 @@ export async function POST(req: NextRequest): Promise<Response> {
       leadId: input.leadId,
       replayed: result.replayed,
     });
+
+    // CHA-260 — Webhook outbound (fire-and-forget). On ne bloque pas la
+    // réponse client : le dispatcher logge la tentative en DB et l'idem-key
+    // empêche les doublons (court-circuit si `result.replayed`).
+    if (result.resourceId && result.body && !('error' in result.body)) {
+      const orderId = result.resourceId;
+      const totalCents = (result.body as { totalCents: number }).totalCents;
+      const currency = (result.body as { currency: string }).currency;
+      const ip =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+        req.headers.get('x-real-ip') ??
+        null;
+      const leadSnapshot = lead;
+      void dispatchOrderWebhook({
+        order: { id: orderId, totalCents, currency },
+        items: input.items.map((it) => ({
+          sku: it.sku,
+          name: it.name,
+          quantity: it.quantity,
+          variantKey: input.formContext.variantKey ?? null,
+        })),
+        lead: leadSnapshot,
+        shippingMode: input.shippingMode,
+        paymentMethod: input.paymentMethod,
+        ip,
+      }).catch((err: unknown) => {
+        logger.error('outbound.webhook.order.dispatch_error', {
+          orderId,
+          error: String(err),
+        });
+      });
+    }
+
     return NextResponse.json(result.body, { status: result.status });
   } catch (err) {
     logger.error('checkout.order.failed', { error: String(err) });
