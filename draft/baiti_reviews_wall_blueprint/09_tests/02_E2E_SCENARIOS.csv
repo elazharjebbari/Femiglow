@@ -1,0 +1,7 @@
+id,scenario,precondition,steps,expected
+E2E-REV-01,Open wall from spot,room chambre seeded,"open room -> click reviews spot","drawer visible, summary visible, dataLayer open event"
+E2E-REV-02,Filter photos,seeded reviews with photos,"click chip 'Avec photos'","list updates, only photo reviews shown, event filter_change"
+E2E-REV-03,Load more,pagination available,"click load more","more cards appended, counter updates"
+E2E-REV-04,Open product from review,review has product_key,"click 'Voir le produit'","drawer closes, product modal opens"
+E2E-REV-05,Submit review happy path,submit enabled,"click laisser un avis -> fill minimal -> submit","success message, dataLayer submit_success"
+E2E-REV-06,Keyboard focus trap,drawer open,"tab/shift-tab cycles","focus stays inside, ESC closes"

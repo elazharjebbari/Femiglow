@@ -1,0 +1,30 @@
+@startuml
+title Reviews Wall UI - State Machine
+
+[*] --> Closed
+Closed --> Opening : open()
+Opening --> ListLoading
+ListLoading --> ListReady : success
+ListLoading --> Error : error
+
+ListReady --> Filtering : filter_change
+Filtering --> ListLoading
+
+ListReady --> LoadingMore : load_more
+LoadingMore --> ListReady
+LoadingMore --> Error
+
+ListReady --> Form : open_form
+Form --> Submitting : submit
+Submitting --> ThankYou : success
+Submitting --> FormError : error
+FormError --> Form
+ThankYou --> ListReady : back_to_list
+
+ListReady --> HowVerified : open_policy
+HowVerified --> ListReady : back
+
+ListReady --> Closed : close()
+Error --> Closed : close()
+
+@enduml

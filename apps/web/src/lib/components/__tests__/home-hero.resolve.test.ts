@@ -32,7 +32,7 @@ describe('home-hero — cascade default ▸ binding (P12)', () => {
     // doit renvoyer source='binding' avec la valeur seedée.
     const out = await resolveComponentFields('home-hero');
     expect(out.title?.value).toBe('Le rituel ongles, en cinq minutes.');
-    expect(out.kicker?.value).toBe('Maison de Casablanca');
+    expect(out.kicker?.value).toBe('Maison de Rabat');
     expect(out.subtitle?.value).toBe(
       'Trois gestes, une saison. Une beauté lente, ancrée au Maroc.',
     );

@@ -1,0 +1,19 @@
+{
+  "room": "chambre",
+  "product_key": "sajadah-al-raha",
+  "variant_key": "black",
+  "rating": 5,
+  "title": "Bonne finition",
+  "body": "Bonne finition, belle douceur.",
+  "author_name": "Zohra",
+  "author_city": "Safi",
+  "is_anonymous": false,
+  "tags": [
+    "Confort immédiat"
+  ],
+  "photos": [
+    {
+      "upload_token": "tmp_upload_1"
+    }
+  ]
+}

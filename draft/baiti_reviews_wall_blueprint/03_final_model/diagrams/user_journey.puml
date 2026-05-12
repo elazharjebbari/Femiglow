@@ -1,0 +1,33 @@
+@startuml
+title Reviews Wall - User Journey (BAITI)
+
+actor User
+
+rectangle "Room Scene" {
+  (Explore scene) as Explore
+  (Click reviews spot) as ClickSpot
+}
+
+rectangle "Reviews Wall Drawer" {
+  (Scan summary) as Summary
+  (Filter reviews) as Filter
+  (Open product modal) as OpenProduct
+  (Write a review) as Write
+}
+
+rectangle "Product Modal" {
+  (Select pack/variant) as Select
+  (Submit lead) as Submit
+}
+
+User --> Explore
+User --> ClickSpot
+ClickSpot --> Summary
+Summary --> Filter
+Filter --> OpenProduct
+OpenProduct --> Select
+Select --> Submit
+Filter --> Write
+Write --> Filter
+
+@enduml

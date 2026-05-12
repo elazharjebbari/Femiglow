@@ -21,14 +21,14 @@ import { buildKitProductFeed } from './kit-feed';
 const product = mockKitPageContent.product;
 
 describe('buildKitProductFeed', () => {
-  it('expose les 4 étapes du rituel dans l\'ordre du visuel officiel', () => {
+  it('expose les 4 \u00E9tapes du rituel dans l\'ordre du visuel officiel', () => {
     const feed = buildKitProductFeed(product, mockKitPageContent);
     expect(feed.steps).toHaveLength(4);
     expect(feed.steps.map((s) => s.step)).toEqual([1, 2, 3, 4]);
-    expect(feed.steps[0]!.title).toMatch(/préparez/i);
+    expect(feed.steps[0]!.title).toMatch(/pr\u00E9parez/i);
     expect(feed.steps[1]!.title).toMatch(/paste/i);
     expect(feed.steps[2]!.title).toMatch(/powder/i);
-    expect(feed.steps[3]!.title).toMatch(/brillance|résultat/i);
+    expect(feed.steps[3]!.title).toMatch(/polish|shine/i);
   });
 
   it('utilise les couleurs FemiGlow (sauge/petale/champagne) sur les pastilles', () => {

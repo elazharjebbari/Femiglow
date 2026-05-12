@@ -29,4 +29,16 @@ test.describe('CSP / HSTS / frame-ancestors', () => {
     const res = await request.get('/');
     expect(res.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');
   });
+
+  test('frame-src autorise www.youtube-nocookie.com (CHA-243)', async ({ request }) => {
+    // Notre embed vidéo `/kit` charge `youtube-nocookie.com` en iframe.
+    // Sans directive `frame-src` explicite, le navigateur retombe sur
+    // `default-src 'self'` et bloque le framing → l'iframe reste vide.
+    const res = await request.get('/kit');
+    const csp = res.headers()['content-security-policy'];
+    expect(csp).toBeDefined();
+    expect(csp).toMatch(/frame-src [^;]*https:\/\/www\.youtube-nocookie\.com/);
+    // Ne PAS autoriser youtube.com direct (cookie domain).
+    expect(csp).not.toMatch(/frame-src [^;]*https:\/\/(?:www\.)?youtube\.com/);
+  });
 });

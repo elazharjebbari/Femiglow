@@ -59,6 +59,8 @@ export function AddToCartButton({
       quantity,
       unitPriceCents,
       imageSrc: product.images[0]?.src,
+      variantSku: product.primaryVariantSku,
+      variantId: product.primaryVariantId,
     };
     if (redirectTo) {
       addItem(item);

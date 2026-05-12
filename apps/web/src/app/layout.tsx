@@ -62,6 +62,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // CHA-mobile-ux : `resizes-content` indique aux navigateurs mobiles
+  // (Chrome Android d'abord) de réduire la viewport quand le clavier
+  // virtuel apparaît, au lieu de la laisser couvrir le composer. Sur
+  // iOS Safari, le combo `100dvh` + `visualViewport` API fait le reste.
+  // ⚠ Volontairement PAS de `maximumScale: 1` ni `userScalable: false`
+  // qui violeraient WCAG SC 1.4.4 (Resize Text).
+  interactiveWidget: 'resizes-content',
   themeColor: '#FBF8F1',
 };
 

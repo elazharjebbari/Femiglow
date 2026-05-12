@@ -16,7 +16,7 @@ describe('HeroMaison', () => {
   it('affiche le kicker et le sous-titre', () => {
     render(<HeroMaison data={mockMaison.hero} />);
     expect(screen.getByText(/^La maison$/)).toBeInTheDocument();
-    expect(screen.getByText(/Casablanca/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rabat/i)).toBeInTheDocument();
   });
 
   it('respecte axe', async () => {

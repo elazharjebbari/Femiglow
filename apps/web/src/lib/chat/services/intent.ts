@@ -170,7 +170,10 @@ const RULES: PatternRule[] = [
     // Patterns FORTS — formulations exclusives, score 2.
     strong: [
       // Phrases d'achat explicite qui ne peuvent PAS vouloir dire suivi.
-      /\bje\s+(veux|voudrais|souhaite|peux|vais)\s+(commander|acheter|prendre|payer)\b/i,
+      // Le `(?:l['’])?` optionnel capte l'élision pronom complément
+      // (« je veux l'acheter » — bug prod : l'apostrophe collée au verbe
+      // empêchait le match et laissait le visiteur sans formulaire).
+      /\bje\s+(veux|voudrais|souhaite|peux|vais)\s+(?:l['’])?(commander|acheter|prendre|payer)\b/i,
       /\b(j['’]?achète|j['’]?ach[eè]te|je\s+l['’]?achète|je\s+le\s+prends|je\s+les\s+prends)\b/i,
       /\b(passer|faire|valider)\s+(une\s+|la\s+)?commande\b/i,
       /\bok\s+je\s+(prends|commande|veux|achète)\b/i,

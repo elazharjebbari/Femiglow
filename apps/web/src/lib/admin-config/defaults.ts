@@ -44,6 +44,7 @@ export const flagsDefault: FlagsConfig = {
     betaSeo: false,
     productsCmsEnabled: true,
     appConfigUiEnabled: true,
+    freeShipping: true,
   },
 };
 

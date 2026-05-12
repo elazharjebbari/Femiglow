@@ -15,30 +15,30 @@ exports[`productSchema (Schema.org Product) avec enrichissement > snapshot du JS
     "@type": "Brand",
     "name": "FemiGlow",
   },
-  "description": "Le kit FemiGlow réunit la base, le fortifiant et la lime. Trois gestes mesurés, pensés à Casablanca, pour accompagner vos ongles à chaque saison.",
+  "description": "Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise halal, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.",
   "image": [
-    "https://femiglow.ma/products/kit-principale.svg",
-    "https://femiglow.ma/products/kit-detail-mains.svg",
+    "https://femiglow-maroc.com/products/kit-principale.png",
+    "https://femiglow-maroc.com/products/kit-detail-mains.png",
   ],
-  "name": "Le rituel FemiGlow",
+  "name": "Pack FemiGlow",
   "offers": {
     "@type": "Offer",
     "areaServed": "MA",
     "availability": "https://schema.org/InStock",
-    "price": "320.00",
+    "price": "390.00",
     "priceCurrency": "MAD",
     "seller": {
       "@type": "Organization",
       "name": "FemiGlow",
     },
-    "url": "https://femiglow.ma/kit",
+    "url": "https://femiglow-maroc.com/kit",
   },
   "review": [
     {
       "@type": "Review",
       "author": {
         "@type": "Person",
-        "name": "Amal, Casablanca",
+        "name": "Amal, Rabat",
       },
       "reviewBody": "Trois mois, et l’ongle a retrouvé sa nervure. J’ai cessé de le forcer.",
       "reviewRating": {
@@ -52,7 +52,7 @@ exports[`productSchema (Schema.org Product) avec enrichissement > snapshot du JS
       "@type": "Review",
       "author": {
         "@type": "Person",
-        "name": "Lina, Rabat",
+        "name": "Lina, Casablanca",
       },
       "reviewBody": "Cinq minutes le soir, c’est devenu un signal de fin de journée.",
       "reviewRating": {

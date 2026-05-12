@@ -12,6 +12,9 @@
  * Voir `docs/chat-assistant/18-instructions-knowledge-strategy.md` §4.
  *
  * Usage : `pnpm tsx scripts/seed-chat-instructions-v2.ts`
+ *
+ * Exporte aussi `runChatInstructionsV2Seed()` pour réutilisation côté
+ * Seeders Runner.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -23,13 +26,16 @@ try {
   for (const line of raw.split(/\r?\n/)) {
     const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/i.exec(line);
     if (!m) continue;
-    if (m[1].startsWith('#')) continue;
-    if (process.env[m[1]] === undefined) {
-      let v = m[2];
+    const key = m[1];
+    const rawValue = m[2];
+    if (!key || rawValue === undefined) continue;
+    if (key.startsWith('#')) continue;
+    if (process.env[key] === undefined) {
+      let v = rawValue;
       if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
         v = v.slice(1, -1);
       }
-      process.env[m[1]] = v;
+      process.env[key] = v;
     }
   }
 } catch {
@@ -50,25 +56,28 @@ import {
 import { instructionRepo } from '@/lib/chat/repos/instruction';
 import { providerRepo } from '@/lib/chat/repos/provider';
 
-// ---------------------------------------------------------------------------
-// Instructions v2 — texte source dans `src/lib/chat/instruction-defaults.ts`
-// (utilisé aussi par le bouton « Seed par défaut » de l'admin UI).
-// ---------------------------------------------------------------------------
+export interface ChatV2SeedReport {
+  instructionCreated: boolean;
+  instructionId: string | null;
+  instructionVersion: number;
+  providersUpdated: number;
+  providersTotal: number;
+  message: string;
+}
 
-
-async function seedInstructionV2(): Promise<void> {
+async function seedInstructionV2(): Promise<{
+  created: boolean;
+  id: string;
+  version: number;
+}> {
   // Idempotence : on cherche d'abord une version existante avec le même body.
   const all = await instructionRepo.listByScope('default');
   const existing = all.find((v) => v.body === DEFAULT_INSTRUCTION_FR_V2);
   if (existing) {
-    console.log('[seed-chat-v2] version v2 déjà présente :', existing.id, '(version', existing.version + ')');
     if (!existing.enabled) {
       await instructionRepo.activate(existing.id);
-      console.log('[seed-chat-v2] activée :', existing.id);
-    } else {
-      console.log('[seed-chat-v2] déjà active → skip');
     }
-    return;
+    return { created: false, id: existing.id, version: existing.version };
   }
 
   const created = await instructionRepo.create({
@@ -80,7 +89,7 @@ async function seedInstructionV2(): Promise<void> {
     createdBy: 'system',
   });
   await instructionRepo.activate(created.id);
-  console.log('[seed-chat-v2] instruction v2 créée + activée :', created.id, '(version', created.version + ')');
+  return { created: true, id: created.id, version: created.version };
 }
 
 /**
@@ -91,7 +100,10 @@ async function seedInstructionV2(): Promise<void> {
  *
  * Cf. doc 18 §4.6.
  */
-async function upsertProviderDefaultsV2(): Promise<void> {
+async function upsertProviderDefaultsV2(): Promise<{
+  updated: number;
+  total: number;
+}> {
   const CHAT_DEFAULTS_V2 = {
     maxTokens: 220, // ≈ 140 mots (cap doux ; cible 80 mots)
     temperature: 0.6,
@@ -106,8 +118,7 @@ async function upsertProviderDefaultsV2(): Promise<void> {
     .where(eq(chatProviderConfig.role, 'chat'));
 
   if (rows.length === 0) {
-    console.log('[seed-chat-v2] aucun provider chat en base → skip');
-    return;
+    return { updated: 0, total: 0 };
   }
 
   let updated = 0;
@@ -115,15 +126,35 @@ async function upsertProviderDefaultsV2(): Promise<void> {
     const current = (row.parameters ?? {}) as Record<string, unknown>;
     const merged = { ...current, ...CHAT_DEFAULTS_V2 };
     const equal = JSON.stringify(current) === JSON.stringify(merged);
-    if (equal) {
-      console.log(`[seed-chat-v2] provider ${row.id} (${row.label}) : params déjà à jour → skip`);
-      continue;
-    }
+    if (equal) continue;
     await providerRepo.update(row.id, { parameters: merged });
-    console.log(`[seed-chat-v2] provider ${row.id} (${row.label}) : params v2 appliqués`);
-    updated++;
+    updated += 1;
   }
-  console.log(`[seed-chat-v2] ${updated}/${rows.length} provider(s) mis à jour`);
+  return { updated, total: rows.length };
+}
+
+export async function runChatInstructionsV2Seed(): Promise<ChatV2SeedReport> {
+  const instr = await seedInstructionV2();
+  const providers = await upsertProviderDefaultsV2();
+  const messages: string[] = [];
+  messages.push(
+    instr.created
+      ? `instruction v2 créée (v${instr.version})`
+      : `instruction v2 déjà présente (v${instr.version})`,
+  );
+  messages.push(
+    providers.total === 0
+      ? 'aucun provider à mettre à jour'
+      : `${providers.updated}/${providers.total} provider(s) mis à jour`,
+  );
+  return {
+    instructionCreated: instr.created,
+    instructionId: instr.id,
+    instructionVersion: instr.version,
+    providersUpdated: providers.updated,
+    providersTotal: providers.total,
+    message: messages.join(' · '),
+  };
 }
 
 async function main(): Promise<void> {
@@ -131,12 +162,18 @@ async function main(): Promise<void> {
     console.error('[seed-chat-v2] DATABASE_URL est requis');
     process.exit(1);
   }
-  await seedInstructionV2();
-  await upsertProviderDefaultsV2();
+  const report = await runChatInstructionsV2Seed();
+  console.log(`[seed-chat-v2] ${report.message}`);
   console.log('[seed-chat-v2] terminé');
 }
 
-main().catch((err) => {
-  console.error('[seed-chat-v2] erreur', err);
-  process.exit(1);
-});
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error('[seed-chat-v2] erreur', err);
+    process.exit(1);
+  });
+}

@@ -9,7 +9,7 @@
  *  - prix promo conditionnel,
  *  - échappement des caractères XML interdits,
  *  - protection CDATA contre la séquence `]]>` (ré-injection),
- *  - format de prix « 320.00 MAD » strict (toujours 2 décimales).
+ *  - format de prix « 390.00 MAD » strict (toujours 2 décimales).
  */
 import { describe, it, expect } from 'vitest';
 
@@ -78,16 +78,16 @@ describe('merchantFeedXml', () => {
     expect(descMatch?.[1]).toMatch(/^<!\[CDATA\[/);
   });
 
-  it('formate le prix en "{majeur}.00 {currency}" sur le kit mock (320 MAD)', () => {
+  it('formate le prix en "{majeur}.00 {currency}" sur le kit mock (390 MAD)', () => {
     const xml = buildXml();
-    expect(xml).toMatch(/<g:price>320\.00 MAD<\/g:price>/);
+    expect(xml).toMatch(/<g:price>390\.00 MAD<\/g:price>/);
   });
 
   it('inclut g:sale_price quand promoPriceCents est défini', () => {
     const xml = buildXml({ promoPriceCents: 28000 });
     expect(xml).toContain('<g:sale_price>280.00 MAD</g:sale_price>');
-    // Le prix barré reste à 320.
-    expect(xml).toContain('<g:price>320.00 MAD</g:price>');
+    // Le prix barré reste à 390 (référence Pack FemiGlow).
+    expect(xml).toContain('<g:price>390.00 MAD</g:price>');
   });
 
   it('omet g:sale_price quand pas de promo', () => {

@@ -51,9 +51,9 @@ describe('ProductFeedSection', () => {
     });
     // Titres présents.
     expect(within(list).getByText(/préparez vos ongles/i)).toBeInTheDocument();
-    expect(within(list).getByText(/appliquez paste/i)).toBeInTheDocument();
-    expect(within(list).getByText(/appliquez powder/i)).toBeInTheDocument();
-    expect(within(list).getByText(/brillance/i)).toBeInTheDocument();
+    expect(within(list).getByText(/appliquez la paste/i)).toBeInTheDocument();
+    expect(within(list).getByText(/appliquez la powder/i)).toBeInTheDocument();
+    expect(within(list).getByText(/polish\s*&\s*shine/i)).toBeInTheDocument();
   });
 
   it('expose les 3 promesses du visuel officiel', () => {
@@ -79,8 +79,13 @@ describe('ProductFeedSection', () => {
 
   it('affiche le bloc prix avec small word (Pricing #2) et microcopy dense (#11)', () => {
     renderSection();
-    expect(screen.getByText(feed.hero.pricePrefix)).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(feed.hero.ctaMicrocopy.slice(0, 30)))).toBeInTheDocument();
+    // pricePrefix peut contenir des espaces insécables (U+00A0) que la
+    // normalisation testing-library aplatit ; on matche en regex souple.
+    expect(screen.getByText(/tout compris/i)).toBeInTheDocument();
+    // Microcopy dense : on cherche un fragment caractéristique au lieu du
+    // littéral entier (séparateurs typographiques + espaces fins peuvent
+    // varier).
+    expect(screen.getByText(/livraison offerte au maroc/i)).toBeInTheDocument();
   });
 
   it('rend le CTA AddToCartButton avec le label custom du feed', () => {

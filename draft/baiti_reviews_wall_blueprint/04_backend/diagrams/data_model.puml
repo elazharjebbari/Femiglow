@@ -1,0 +1,54 @@
+@startuml
+title Reviews - Data model (proposed)
+
+entity Product {
+  * id : uuid
+  --
+  title
+}
+
+entity ProductReview {
+  * id : uuid
+  --
+  product_id : uuid
+  room_slug : string
+  variant_key : string?
+  rating : int
+  title : string?
+  body : text
+  author_name : string?
+  author_city : string?
+  is_anonymous : bool
+  tags_json : json
+  has_photos : bool
+  verified_purchase : bool
+  status : enum
+  created_at
+  published_at
+}
+
+entity ReviewPhoto {
+  * id : uuid
+  --
+  review_id : uuid
+  image_url
+  thumb_url
+  order
+}
+
+entity ReviewAggregate {
+  * id : uuid
+  --
+  product_id : uuid
+  avg_rating
+  count
+  distribution_json
+  tag_summary_json
+  updated_at
+}
+
+Product ||--o{ ProductReview
+ProductReview ||--o{ ReviewPhoto
+Product ||--|| ReviewAggregate
+
+@enduml

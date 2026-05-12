@@ -1,6 +1,6 @@
 import type { Article, FAQItem, Product } from '@/lib/schemas';
 
-const SITE_URL = 'https://femiglow.ma';
+const SITE_URL = 'https://femiglow-maroc.com';
 
 interface JsonLdProps {
   data: Record<string, unknown>;
@@ -23,16 +23,23 @@ export function organizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
     sameAs: ['https://www.instagram.com/femiglow'],
+    founder: {
+      '@type': 'Person',
+      name: 'Souheila',
+      jobTitle: 'Biologiste, formulatrice et formatrice',
+    },
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer service',
-      email: 'contact@femiglow.ma',
+      email: 'info@femiglow-maroc.com',
+      telephone: '+212630035905',
       areaServed: 'MA',
       availableLanguage: ['French', 'Arabic'],
     },
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Casablanca',
+      streetAddress: '25 bis avenue Patrice Lumumba',
+      addressLocality: 'Rabat',
       addressCountry: 'MA',
     },
   };

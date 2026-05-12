@@ -12,13 +12,14 @@ import { ContactForm } from '@/components/forms/ContactForm';
 import { JsonLd } from '@/lib/seo/json-ld';
 import { contactTypeSchema, type ContactType } from '@/lib/schemas';
 
-const CONTACT_EMAIL = 'contact@femiglow.ma';
-const SITE_URL = 'https://femiglow.ma';
+const CONTACT_EMAIL = 'info@femiglow-maroc.com';
+const CONTACT_PHONE = '+212 630-035905';
+const SITE_URL = 'https://femiglow-maroc.com';
 
 export const metadata: Metadata = {
   title: 'Contact \u2014 la maison vous écrit',
   description:
-    'Une question sur le rituel, le kit, une commande, un échange professionnel\u202F? Écrivez à la maison FemiGlow depuis Casablanca.',
+    'Une question sur le rituel, le pack, une commande, une formation\u202F? Écrivez à la maison FemiGlow depuis Rabat (25 bis avenue Patrice Lumumba).',
   alternates: { canonical: '/contact' },
   openGraph: {
     type: 'website',
@@ -38,31 +39,37 @@ const faqs: FAQAccordionItem[] = [
     id: 'duree-rituel',
     question: 'Combien de temps dure le rituel\u202F?',
     answer:
-      'Quatre à six minutes, mains posées. La maison conseille deux à trois passages par semaine, le soir, pour laisser la cire travailler en silence.',
+      'Cinq minutes par soir, mains pos\u00E9es. Deux gestes \u2014 paste, powder \u2014 puis le polissoir Step 4 en finition. La maison conseille un passage par jour pour installer la cadence.',
   },
   {
     id: 'ongles-fragiles',
-    question: 'Mes ongles sont fragiles, est-ce indiqué\u202F?',
+    question: 'Mes ongles sont fragiles, est-ce indiqu\u00E9\u202F?',
     answer:
-      'Oui. Les matières sont choisies pour réparer sans agresser\u202F: cire d\u2019abeille, jojoba, kaolin doux. Aucun acétone, aucun durcisseur. Évitez seulement en cas d\u2019allergie connue à l\u2019un des ingrédients\u00A0; la liste figure sur la page Kit.',
+      'Oui. Les mati\u00E8res sont choisies pour r\u00E9parer sans agresser\u202F: cire d\u2019abeille, jojoba, talc cosm\u00E9tique, poudre de riz, kaolin polissant. Aucun ac\u00E9tone, aucun durcisseur. \u00C9vitez seulement en cas d\u2019allergie connue \u00E0 l\u2019un des ingr\u00E9dients\u00A0; la liste compl\u00E8te figure sur la page Pack.',
   },
   {
     id: 'delais-livraison',
-    question: 'Quels sont les délais de livraison\u202F?',
+    question: 'Quels sont les d\u00E9lais de livraison\u202F?',
     answer:
-      'Casablanca et Rabat\u00A0: 48 à 72 heures. Reste du Maroc\u00A0: 3 à 5 jours ouvrés. À l\u2019international, écrivez-nous, nous étudions chaque envoi à la main.',
+      'Rabat\u00A0: 24 heures. Casablanca et Sal\u00E9\u00A0: 24 \u00E0 48 heures. Reste du Maroc\u00A0: 48 \u00E0 72 heures. Livraison offerte au Maroc, sans seuil. \u00C0 l\u2019international, \u00E9crivez-nous, nous \u00E9tudions chaque envoi \u00E0 la main.',
+  },
+  {
+    id: 'formation-souheila',
+    question: 'Comment suivre une formation avec Souheila\u202F?',
+    answer:
+      'Souheila anime des formations \u00E0 la manucure japonaise et \u00E0 la fabrication cosm\u00E9tique dans l\u2019atelier de Rabat. \u00C9crivez \u00E0 info@femiglow-maroc.com en pr\u00E9cisant votre profil (esth\u00E9ticienne, formulatrice, \u00E9cole). Nous r\u00E9pondons sous trois jours.',
   },
   {
     id: 'echantillon-avant-achat',
-    question: 'Puis-je recevoir un échantillon avant achat\u202F?',
+    question: 'Puis-je recevoir un \u00E9chantillon avant achat\u202F?',
     answer:
-      'Pas de pochette d\u2019essai en Phase 1. Si vous hésitez, écrivez-nous en précisant le type de peau et l\u2019usage souhaité. Nous prenons le temps de vous répondre.',
+      'En cas d\u2019h\u00E9sitation pour cause d\u2019allergie, nous adressons un \u00E9chantillon de la paste avant l\u2019envoi du pack complet. \u00C9crivez-nous en pr\u00E9cisant l\u2019ingr\u00E9dient qui vous inqui\u00E8te.',
   },
 ];
 
 const crossLinks = [
   { href: '/rituel', label: 'Lire le rituel' },
-  { href: '/kit', label: 'Voir le kit' },
+  { href: '/kit', label: 'Voir le pack' },
   { href: '/maison', label: 'La maison' },
 ];
 
@@ -71,6 +78,7 @@ const contactPointSchema = {
   '@type': 'ContactPoint',
   contactType: 'customer service',
   email: CONTACT_EMAIL,
+  telephone: CONTACT_PHONE.replace(/\s|-/g, ''),
   areaServed: 'MA',
   availableLanguage: ['French', 'Arabic'],
   url: `${SITE_URL}/contact`,
@@ -94,8 +102,8 @@ export default function ContactPage({ searchParams }: ContactPageProps) {
       <ContactHero email={CONTACT_EMAIL} />
       <DirectContactBlock
         email={CONTACT_EMAIL}
-        streetAddress="14 rue des Acacias"
-        district="Bourgogne, Casablanca"
+        streetAddress="25 bis avenue Patrice Lumumba"
+        district="Rabat"
       />
       <section
         className="border-t border-encre/10 bg-creme py-16 sm:py-20"

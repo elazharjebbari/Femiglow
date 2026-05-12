@@ -1,0 +1,21 @@
+@startuml
+title Wireframe Mobile - Reviews Wall Bottom Sheet
+
+salt
+{
+{+
+  {#  __  Avis & experiences   [X] }
+  {+ 4.9 ★ (39) }
+  {+ [histogram mini] }
+  {+ chips: Tous  Avec photos  Critiques  ... }
+  {+ Trier: Recommandes v }
+  {+
+    [Card]
+    [Card]
+    [Card]
+  }
+  {+ [Afficher plus]  10/39 }
+  {# [Laisser un avis] }
+}
+}
+@enduml

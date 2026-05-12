@@ -16,17 +16,17 @@ export const SEED_ALT_BY_PATH: Record<string, string> = {
 
   /* rituel */
   'rituel/hero-lifestyle.png': 'Scène lifestyle d’un rituel du soir, texture lin et bois.',
-  'rituel/portrait-salma.png': 'Portrait éditorial de Salma, regard de côté, lumière naturelle.',
+  'rituel/portrait-salma.png': 'Portrait éditorial de Souheila, fondatrice et formulatrice, regard de côté, lumière naturelle.',
   'rituel/origine-sepia.png': 'Image sépia évoquant l’origine — atelier vintage.',
   'rituel/poster-video.png': 'Poster de la vidéo des 4 gestes — main appliquant l’huile.',
   'rituel/og-rituel.png': 'Page Rituel — visuel social.',
 
   /* kit */
-  'kit/kit-principale.png': 'Kit FemiGlow complet, packshot principal sur fond crème.',
-  'kit/kit-detail-mains.png': 'Mains tenant le kit en macro, doigts effleurant le bouchon.',
-  'kit/kit-base.png': 'Soin Base FemiGlow, packshot trois-quarts.',
-  'kit/kit-fortifiant.png': 'Soin Fortifiant FemiGlow, packshot ambré.',
-  'kit/kit-lime.png': 'Lime polissoir FemiGlow, vue détaillée.',
+  'kit/kit-principale.png': 'Pack FemiGlow complet \u2014 paste, powder et polissoir Step 4, packshot principal sur fond cr\u00E8me.',
+  'kit/kit-detail-mains.png': 'Mains tenant le pack FemiGlow en macro, doigts effleurant le bouchon.',
+  'kit/kit-base.png': 'Paste FemiGlow, packshot trois-quarts (vert sauge).',
+  'kit/kit-fortifiant.png': 'Powder FemiGlow, packshot ambr\u00E9 ros\u00E9 (rose poudr\u00E9).',
+  'kit/kit-lime.png': 'Polissoir Step 4 Polish & Shine FemiGlow, vue d\u00E9taill\u00E9e (bleu ciel).',
   'kit/hands-sara-avant.png': 'Mains de Sara avant le rituel — peau sèche.',
   'kit/hands-amal-avant.png': 'Mains d’Amal avant — ongles striés.',
   'kit/hands-amal-apres.png': 'Mains d’Amal après 4 semaines — peau apaisée.',

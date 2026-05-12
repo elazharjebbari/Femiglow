@@ -63,6 +63,12 @@ export function ChatLauncher({ unreadCount = 0 }: ChatLauncherProps) {
     toggle();
   };
 
+  // CHA-mobile-ux : en mobile, quand le panel est ouvert il prend tout
+  // l'écran (`inset-0`) ; le FAB serait recouvert et son rôle « ouvrir »
+  // devient redondant (la croix du header sert à fermer). On le masque
+  // donc en mobile uniquement. En desktop, le FAB et la bubble cohabitent.
+  const displayClass = isOpen ? 'hidden sm:flex' : 'flex';
+
   return (
     <button
       type="button"
@@ -71,7 +77,8 @@ export function ChatLauncher({ unreadCount = 0 }: ChatLauncherProps) {
       aria-expanded={isOpen}
       data-testid="chat-launcher"
       className={[
-        'fixed z-40 flex h-14 w-14 items-center justify-center rounded-full',
+        'fixed z-40 h-14 w-14 items-center justify-center rounded-full',
+        displayClass,
         'bg-stone-900 text-white shadow-lg shadow-stone-900/15 transition-all',
         'hover:bg-stone-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-2',
         'motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300',

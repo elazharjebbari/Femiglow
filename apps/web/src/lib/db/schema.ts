@@ -80,14 +80,25 @@ export const orders = pgTable(
     leadId: text('lead_id')
       .notNull()
       .references(() => leads.id, { onDelete: 'cascade' }),
+    // CHA-230 — FK optionnelle vers chat_lead pour relier l'order au lead
+    // capturé via le wizard. NULL pour les orders legacy.
+    chatLeadId: text('chat_lead_id'),
     totalCents: integer('total_cents').notNull(),
     currency: text('currency').notNull(),
     shippingMode: text('shipping_mode').notNull(),
     paymentMethod: text('payment_method').notNull(),
+    // CHA-230 — Form context (taxonomie tracking, cohérent avec chat_lead)
+    formId: text('form_id'),
+    formMode: text('form_mode', {
+      enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+    }),
+    variantKey: text('variant_key', { enum: ['A', 'B', 'control'] }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     leadIdx: index('orders_lead_idx').on(t.leadId),
+    chatLeadIdx: index('orders_chat_lead_idx').on(t.chatLeadId),
+    formIdx: index('orders_form_idx').on(t.formId, t.formMode, t.createdAt),
   }),
 );
 
@@ -1532,3 +1543,224 @@ export const ritualAggregate = pgTable('ritual_aggregate', {
   lastPublishedAt: timestamp('last_published_at', { withTimezone: true }),
   refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ===========================================================================
+// CHA-230 — Wizard checkout funnel
+// ---------------------------------------------------------------------------
+// 4 tables transverses au tunnel :
+//   - form_config             — config versionnée par formulaire (wizard_kit, …)
+//   - form_config_history     — audit log de chaque mise à jour
+//   - product_stock           — stock par variant (SKU) avec available/reserved
+//   - form_variant_assignment — stickiness A/B (visitor_id, form_id)
+//   - checkout_idempotency    — clés d'idempotence des appels API (TTL 24h)
+//
+// Cf. docs/checkout-funnel/08-architecture-data.md §3.2–3.5.
+// ===========================================================================
+
+export const formConfig = pgTable(
+  'form_config',
+  {
+    id: text('id').primaryKey(),
+    /** Clé stable du formulaire (`wizard_kit`, `wizard_commander`, …). UNIQUE. */
+    key: text('key').notNull(),
+    version: integer('version').notNull().default(1),
+    active: boolean('active').notNull().default(true),
+    /**
+     * JSONB validé côté code (cf. `apps/web/src/lib/checkout/form-config/schema.ts`).
+     * Contient : steps[], modes[], defaults, copy, validation.
+     */
+    config: jsonb('config').notNull().default(sql`'{}'::jsonb`),
+    description: text('description'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by'),
+    updatedBy: text('updated_by'),
+  },
+  (t) => ({
+    keyUnique: uniqueIndex('form_config_key_unique').on(t.key),
+    activeIdx: index('form_config_active_idx').on(t.active, t.updatedAt),
+  }),
+);
+
+export const formConfigHistory = pgTable(
+  'form_config_history',
+  {
+    id: text('id').primaryKey(),
+    formConfigId: text('form_config_id')
+      .notNull()
+      .references(() => formConfig.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    version: integer('version').notNull(),
+    config: jsonb('config').notNull(),
+    description: text('description'),
+    actorId: text('actor_id'),
+    action: text('action', {
+      enum: ['create', 'update', 'activate', 'deactivate', 'rollback'],
+    }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    formIdx: index('form_config_history_form_idx').on(t.formConfigId, t.version),
+    versionUnique: uniqueIndex('form_config_history_version_unique').on(
+      t.formConfigId,
+      t.version,
+    ),
+  }),
+);
+
+export const productStock = pgTable(
+  'product_stock',
+  {
+    /** PK = product_variants.id (1-1 avec un variant). */
+    variantId: text('variant_id')
+      .primaryKey()
+      .references(() => productVariants.id, { onDelete: 'cascade' }),
+    sku: text('sku').notNull(),
+    /** Stock physique disponible. >= 0 (CHECK SQL). */
+    available: integer('available').notNull().default(0),
+    /** Stock réservé par orders in-flight. >= 0. */
+    reserved: integer('reserved').notNull().default(0),
+    /** Seuil "derniers exemplaires" affiché côté UI. */
+    thresholdLow: integer('threshold_low').notNull().default(5),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: text('updated_by'),
+  },
+  (t) => ({
+    skuUnique: uniqueIndex('product_stock_sku_unique').on(t.sku),
+    availableIdx: index('product_stock_available_idx').on(t.available, t.reserved),
+  }),
+);
+
+export const formVariantAssignment = pgTable(
+  'form_variant_assignment',
+  {
+    visitorId: text('visitor_id').notNull(),
+    formId: text('form_id').notNull(),
+    variantKey: text('variant_key', { enum: ['A', 'B', 'control'] }).notNull(),
+    experimentKey: text('experiment_key'),
+    assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.visitorId, t.formId] }),
+    formVariantIdx: index('form_variant_assignment_form_variant_idx').on(
+      t.formId,
+      t.variantKey,
+      t.assignedAt,
+    ),
+  }),
+);
+
+export const checkoutIdempotency = pgTable(
+  'checkout_idempotency',
+  {
+    /** Clé opaque générée client (UUID / ulid). */
+    key: text('key').notNull(),
+    /** Opération concernée — borne la portée d'idempotence. */
+    scope: text('scope', {
+      enum: [
+        'lead_create',
+        'address_update',
+        'payment_select',
+        'order_create',
+        'email_optin',
+      ],
+    }).notNull(),
+    /** ID de la ressource créée (chat_lead.id ou orders.id). */
+    resourceId: text('resource_id'),
+    /** SHA256 du payload de requête — détecte les changements entre 2 tentatives. */
+    requestHash: text('request_hash').notNull(),
+    /** Payload exact de la réponse à re-servir (replay). */
+    responseJson: jsonb('response_json').notNull(),
+    responseStatus: integer('response_status').notNull().default(200),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true })
+      .notNull()
+      .default(sql`(now() + interval '24 hours')`),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.key, t.scope] }),
+    expiresIdx: index('checkout_idempotency_expires_idx').on(t.expiresAt),
+  }),
+);
+
+// ===========================================================================
+// DELIV-CITIES — Catalogue de villes de livraison (migration 0023)
+// ---------------------------------------------------------------------------
+// Source initiale = fixture sendit (429 villes uniques après dedup par slug
+// en gardant le pk le plus petit). Sert l'autocomplete UI, la tarification
+// par ville (MAD), l'affichage du délai (`delivery_eta`) et l'admin CRUD.
+//
+// Règles clés :
+//   - `delivery_price_mad` est en MAD entier (PAS centimes — règle produit).
+//   - `slug` est la clé métier stable (ASCII).
+//   - `source` indique la provenance (sendit | manual | custom) pour éviter
+//     d'écraser une édition admin lors d'une réimportation.
+// ===========================================================================
+
+export const deliveryCities = pgTable(
+  'delivery_cities',
+  {
+    id: text('id').primaryKey(),
+    /** Slug ASCII stable (slugify du nom FR). UNIQUE — clé métier. */
+    slug: text('slug').notNull(),
+    /** Libellé Latin/FR (affichage canonique). */
+    nameFr: text('name_fr').notNull(),
+    /** Libellé Arabe (nullable pour sources non-MA). */
+    nameAr: text('name_ar'),
+    /** ISO 3166-1 alpha-2. Défaut 'MA'. */
+    countryCode: text('country_code').notNull().default('MA'),
+    /** Prix livraison en MAD entier (PAS centimes). */
+    deliveryPriceMad: integer('delivery_price_mad').notNull(),
+    /** Bucket SLA texte (ex. "24h", "24h - 48h"). Affiché tel quel UI. */
+    deliveryEta: text('delivery_eta').notNull(),
+    /** Visible côté client si actif. */
+    isActive: boolean('is_active').notNull().default(true),
+    /** Provenance — restreint via CHECK. */
+    source: text('source', { enum: ['sendit', 'manual', 'custom'] })
+      .notNull()
+      .default('sendit'),
+    /** Référence externe d'audit (ex. "sendit:617"). */
+    externalRef: text('external_ref'),
+    /** Alias additionnels matchables côté autocomplete. */
+    aliases: jsonb('aliases').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Métadonnées libres pour évolutions futures sans migration. */
+    metadata: jsonb('metadata')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    /** Ordre manuel (admin « épingle » p. ex. Casablanca en 1er). */
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by'),
+    updatedBy: text('updated_by'),
+  },
+  (t) => ({
+    slugUnique: uniqueIndex('delivery_cities_slug_unique').on(t.slug),
+    activeNameIdx: index('delivery_cities_active_name_idx').on(
+      t.isActive,
+      t.nameFr,
+    ),
+    countryActiveIdx: index('delivery_cities_country_active_idx').on(
+      t.countryCode,
+      t.isActive,
+    ),
+    // Index expression géré côté migration (text_pattern_ops sur lower(name_fr))
+    // — non exprimable en Drizzle. Visible uniquement à l'usage `lower(name_fr)
+    // LIKE 'x%'`.
+  }),
+);
+
+// — Inferred types — — — — — — — — — — — — — — — — — — — — — — — — — — — —
+export type FormConfigRow = typeof formConfig.$inferSelect;
+export type FormConfigInsert = typeof formConfig.$inferInsert;
+export type FormConfigHistoryRow = typeof formConfigHistory.$inferSelect;
+export type FormConfigHistoryInsert = typeof formConfigHistory.$inferInsert;
+export type ProductStockRow = typeof productStock.$inferSelect;
+export type ProductStockInsert = typeof productStock.$inferInsert;
+export type FormVariantAssignmentRow = typeof formVariantAssignment.$inferSelect;
+export type FormVariantAssignmentInsert = typeof formVariantAssignment.$inferInsert;
+export type CheckoutIdempotencyRow = typeof checkoutIdempotency.$inferSelect;
+export type CheckoutIdempotencyInsert = typeof checkoutIdempotency.$inferInsert;
+export type DeliveryCityRow = typeof deliveryCities.$inferSelect;
+export type DeliveryCityInsert = typeof deliveryCities.$inferInsert;

@@ -1,0 +1,12 @@
+@startuml
+title Spot "review plaque" - states
+
+[*] --> Idle
+Idle --> Hover : mouseover
+Hover --> Idle : mouseout
+Idle --> Focus : tab focus
+Focus --> Idle : blur
+Focus --> Active : enter/click
+Active --> Idle : close drawer
+
+@enduml

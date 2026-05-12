@@ -7,11 +7,14 @@
  *   pnpm --filter @femiglow/web tsx scripts/seed-components.ts -- --force --auto-activate
  *   pnpm --filter @femiglow/web tsx scripts/seed-components.ts -- --dry-run
  *   pnpm --filter @femiglow/web tsx scripts/seed-components.ts -- --filter home
+ *
+ * Exporte aussi `runComponentsSeed(opts)` pour réutilisation côté Seeders
+ * Runner.
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { seedFromDocs } from '@/lib/components/seed-pipeline';
-import type { SeedOptions } from '@/lib/components/seed-pipeline';
+import type { SeedOptions, SeedReport } from '@/lib/components/seed-pipeline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,11 +53,17 @@ function parseArgs(argv: string[]): SeedOptions {
   return opts;
 }
 
-async function main(): Promise<void> {
-  const opts = parseArgs(process.argv.slice(2));
+export async function runComponentsSeed(
+  opts: SeedOptions = {},
+): Promise<SeedReport> {
   const projectRoot = path.resolve(__dirname, '..');
   const root = opts.rootDir ?? path.resolve(projectRoot, '../../docs/images/values');
-  const report = await seedFromDocs({ ...opts, rootDir: root });
+  return seedFromDocs({ ...opts, rootDir: root });
+}
+
+async function main(): Promise<void> {
+  const opts = parseArgs(process.argv.slice(2));
+  const report = await runComponentsSeed(opts);
 
   console.log(JSON.stringify(report, null, 2));
   if (report.images.errors.length > 0) {
@@ -63,7 +72,13 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error('seed:components failed', err);
-  process.exit(1);
-});
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error('seed:components failed', err);
+    process.exit(1);
+  });
+}

@@ -15,6 +15,8 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   betaSeo: 'Linter SEO en bêta avec scoring.',
   productsCmsEnabled: "Active la gestion du catalogue produits dans l'admin.",
   appConfigUiEnabled: 'Affiche /admin/settings (cette page).',
+  freeShipping:
+    'Livraison offerte sur toutes les villes (les prix catalogue sont barrés à l’affichage). Désactiver pour facturer la livraison.',
 };
 
 export function FlagsEditor({ initialFlags, meta }: FlagsEditorProps) {

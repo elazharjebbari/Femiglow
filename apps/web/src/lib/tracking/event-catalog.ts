@@ -988,6 +988,147 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
       },
     },
   },
+
+  // ===========================================================================
+  // CHA-230 — Checkout funnel wizard events.
+  // Voir docs/checkout-funnel/05-plan-action.md §2 PR #1 et
+  //      docs/checkout-funnel/09-architecture-frontend.md §6.
+  //
+  // Tous les events embarquent les attributs transverses :
+  //   form_id, form_mode, step_name, variant_key, lead_id?, schema_version.
+  // Fabriqués par les builders de `apps/web/src/lib/tracking/checkout-events.ts`.
+  // ===========================================================================
+  {
+    name: 'lead_capture',
+    category: 'lead',
+    scope: 'web',
+    description:
+      'Capture lead step 1 wizard (téléphone + ville pré-soumis ; lead_id créé).',
+    isConversion: true,
+    applicableCategories: ['form_submit', 'commerce_checkout'],
+    defaultProviders: ['google_ga4', 'meta', 'google_ads'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name', 'method', 'lead_id'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: { type: 'string', enum: ['lead'] },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        method: { type: 'string', enum: ['wizard', 'chat', 'newsletter'] },
+        contact_channels: {
+          type: 'array',
+          items: { type: 'string', enum: ['phone', 'email', 'sms'] },
+        },
+        currency: { type: 'string' },
+        value: { type: 'number' },
+        schema_version: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'address_completed',
+    category: 'ecommerce',
+    scope: 'web',
+    description:
+      'Step 2 wizard (adresse + ville validées). Pas une conversion, signal de progression.',
+    isConversion: false,
+    applicableCategories: ['form_submit', 'commerce_checkout'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: { type: 'string', enum: ['address'] },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        shipping_tier: { type: 'string' },
+        city_code: { type: 'string' },
+        currency: { type: 'string' },
+        value: { type: 'number' },
+        items: { type: 'array', items: ITEM_SCHEMA },
+        schema_version: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'wizard_error',
+    category: 'custom',
+    scope: 'web',
+    description:
+      'Erreur wizard (validation client, API, réseau, stock). error_code stable côté UI.',
+    isConversion: false,
+    applicableCategories: ['form_input', 'commerce_checkout'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name', 'source', 'error_code'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: {
+          type: 'string',
+          enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+        },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        source: {
+          type: 'string',
+          enum: ['client_validation', 'api', 'network', 'stock'],
+        },
+        error_code: { type: 'string' },
+        field_name: { type: 'string' },
+        http_status: { type: 'number' },
+        schema_version: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'wizard_abandoned',
+    category: 'custom',
+    scope: 'web',
+    description:
+      'Abandon du wizard (pagehide / unmount sans purchase). Mesure le drop-off par étape.',
+    isConversion: false,
+    applicableCategories: ['commerce_checkout'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name', 'last_step_reached', 'time_on_wizard_ms'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: {
+          type: 'string',
+          enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+        },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        last_step_reached: {
+          type: 'string',
+          enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+        },
+        time_on_wizard_ms: { type: 'number' },
+        last_field: { type: 'string' },
+        schema_version: { type: 'string' },
+      },
+    },
+  },
 ];
 
 export function findEventInCatalog(name: string): EventCatalogEntry | null {

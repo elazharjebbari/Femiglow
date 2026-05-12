@@ -260,6 +260,75 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       intent_dominant: z.string().optional(),
     })
     .strict(),
+
+  // — Checkout wizard (CHA-230) — cf. docs/checkout-funnel/05-plan-action.md §2.
+  // Les builders pures sont dans `lib/tracking/checkout-events.ts`. Ici on
+  // valide la shape côté serveur pour rejeter les payloads malformés.
+  // Les champs `form_id` / `form_mode` / `step_name` / `variant_key` sont
+  // les attributs transverses normalisés ; `schema_version` permet de pivot
+  // les dashboards si la taxonomie évolue (`v1` pour l'instant).
+  lead_capture: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      method: z.enum(['wizard', 'chat', 'newsletter']),
+      contact_channels: z.array(z.enum(['phone', 'email', 'sms'])).max(3),
+      currency: z.string().length(3),
+      value: z.number().nonnegative().optional(),
+    })
+    .strict(),
+  address_completed: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      shipping_tier: z.string().max(40).optional(),
+      city_code: z.string().max(60).optional(),
+      currency: z.string().length(3),
+      items: z.array(itemSchema).max(50).optional(),
+      value: z.number().nonnegative().optional(),
+    })
+    .strict(),
+  wizard_error: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      source: z.enum(['client_validation', 'api', 'network', 'stock']),
+      error_code: z.string().min(1).max(80),
+      field_name: z.string().max(60).optional(),
+      http_status: z.number().int().min(100).max(599).optional(),
+    })
+    .strict(),
+  wizard_abandoned: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      last_step_reached: z.enum([
+        'cart_review',
+        'lead',
+        'address',
+        'payment',
+        'thank_you',
+      ]),
+      time_on_wizard_ms: z.number().int().nonnegative(),
+      last_field: z.string().max(60).optional(),
+    })
+    .strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -323,6 +392,11 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   chat_error: 'engagement',
   chat_rate_limit_hit: 'engagement',
   chat_conversion_attributed: 'custom',
+  // — Checkout wizard
+  lead_capture: 'lead',
+  address_completed: 'ecommerce',
+  wizard_error: 'engagement',
+  wizard_abandoned: 'engagement',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

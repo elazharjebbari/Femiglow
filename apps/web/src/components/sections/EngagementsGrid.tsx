@@ -14,9 +14,9 @@ export function EngagementsGrid({ engagements }: EngagementsGridProps) {
     <section className="bg-creme py-16 sm:py-24">
       <Container width="page">
         <div className="mb-12 flex flex-col gap-3 sm:max-w-[60ch]">
-          <Kicker tone="champagne">Les quatre engagements</Kicker>
+          <Kicker tone="champagne">Les six engagements</Kicker>
           <Heading as="h2" size="display-md" italic="auto" balance>
-            Quatre lignes qui ne bougent pas.
+            Six lignes qui ne bougent pas.
           </Heading>
         </div>
         <ul className="grid grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-12 lg:grid-cols-4">

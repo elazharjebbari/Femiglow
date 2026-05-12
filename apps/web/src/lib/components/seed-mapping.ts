@@ -32,8 +32,15 @@ export const IMAGE_TO_COMPONENT: Record<string, SeedMappingEntry> = {
   'rituel/poster-video.png': { componentKey: 'rituel-video-4-gestes', slot: 'poster' },
   'rituel/og-rituel.png': { componentKey: 'rituel-og', slot: 'og' },
 
-  /* ───── kit/ ───── */
-  'kit/kit-principale.png': { componentKey: 'kit-hero-produit', slot: 'primary' },
+  /* ───── kit/ ─────
+   * `image-produit.png` est l'image de référence pour le hero kit (CHA-243).
+   * Le composant `kit-hero-produit` ramène l'image au ratio 4:5 via Next/Image
+   * + `object-cover`, donc l'image source n'a pas besoin d'être pré-cropée :
+   * c'est l'image qui s'adapte au composant, pas l'inverse.
+   * `kit-principale.png` reste disponible comme Media (toujours seedé), mais
+   * sans auto-binding — utile pour A/B test depuis l'admin.
+   */
+  'kit/image-produit.png': { componentKey: 'kit-hero-produit', slot: 'primary' },
   'kit/kit-detail-mains.png': { componentKey: 'kit-detail-mains', slot: 'primary' },
   'kit/kit-base.png': { componentKey: 'kit-comparatif', slot: 'kit-base' },
   'kit/kit-fortifiant.png': { componentKey: 'kit-comparatif', slot: 'kit-fortifiant' },
@@ -113,6 +120,19 @@ export const IMAGE_TO_COMPONENT: Record<string, SeedMappingEntry> = {
   'journal/og-journal.png': { componentKey: 'journal-og', slot: 'og' },
 };
 
+/**
+ * Assets présents sur disque mais intentionnellement non bindés à un composant.
+ * Ils sont quand même importés en `Media` par `seed-media.ts` (utiles pour
+ * A/B testing depuis l'admin), mais ne créent pas de binding éditorial.
+ *
+ * Garde-fou : le test de couverture `seed-mapping.test.ts` ne considère pas
+ * ces fichiers comme « unmapped » (donc pas d'échec CI quand ils existent).
+ */
+export const INTENTIONALLY_UNMAPPED: ReadonlySet<string> = new Set([
+  // Hero kit alternatif — l'image active est `kit/image-produit.png` (cf. CHA-243).
+  'kit/kit-principale.png',
+]);
+
 export function findMappingFor(sourcePath: string): SeedMappingEntry | undefined {
   return IMAGE_TO_COMPONENT[sourcePath];
 }
@@ -123,8 +143,11 @@ export function listSeedSourcePaths(): string[] {
 
 /**
  * Liste des fichiers présents sous `docs/images/values/` mais NON mappés
- * dans `IMAGE_TO_COMPONENT`. Utilisé pour le rapport CLI `--report`.
+ * dans `IMAGE_TO_COMPONENT` (et non listés comme intentionnellement non mappés).
+ * Utilisé pour le rapport CLI `--report`.
  */
 export function listUnmapped(filesPresent: string[]): string[] {
-  return filesPresent.filter((f) => !IMAGE_TO_COMPONENT[f]);
+  return filesPresent.filter(
+    (f) => !IMAGE_TO_COMPONENT[f] && !INTENTIONALLY_UNMAPPED.has(f),
+  );
 }

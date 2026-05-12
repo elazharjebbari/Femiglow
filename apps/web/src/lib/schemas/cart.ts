@@ -8,6 +8,14 @@ export const cartItemSchema = z.object({
   unitPriceCents: z.number().int().positive(),
   imageSrc: z.string().optional(),
   imageAlt: z.string().optional(),
+  /**
+   * CHA-233 — Identifiants variant DB pour relier l'item du panier client à la
+   * row `product_variants` côté serveur (résolution SKU côté
+   * `/api/checkout/order`). Optionnels : items legacy sans variant connu
+   * passent par un fallback résolveur côté serveur (cf. order-repo).
+   */
+  variantSku: z.string().min(1).max(80).optional(),
+  variantId: z.string().min(8).max(120).optional(),
 });
 export type CartItem = z.infer<typeof cartItemSchema>;
 

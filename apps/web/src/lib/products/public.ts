@@ -67,5 +67,7 @@ export async function buildKitPublicProduct(): Promise<PublicProduct> {
       primary?.inventoryStatus === undefined
         ? mockKit.inStock
         : primary.inventoryStatus !== 'out_of_stock',
+    primaryVariantSku: primary?.sku ?? mockKit.primaryVariantSku,
+    primaryVariantId: primary?.id ?? mockKit.primaryVariantId,
   };
 }

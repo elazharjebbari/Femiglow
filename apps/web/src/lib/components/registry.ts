@@ -183,7 +183,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         label: 'Kicker (sur-titre)',
         type: 'kicker',
         required: false,
-        defaultValue: 'Maison de Casablanca',
+        defaultValue: 'Maison de Rabat',
         description:
           'Sur-titre court affiché au-dessus du H1, traité visuellement en champagne.',
         group: 'Header',
@@ -417,8 +417,8 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
   },
   {
     key: 'rituel-portrait-salma',
-    name: 'Portrait Salma',
-    description: 'Portrait éditorial intégré dans la lettre (avatar rond ≤ 480 px).',
+    name: 'Portrait Souheila',
+    description: 'Portrait éditorial de la fondatrice, intégré dans la lettre (avatar rond ≤ 480 px).',
     category: 'card',
     pageGroup: 'rituel',
     filePath: 'src/components/sections/EditorialLetter.tsx',

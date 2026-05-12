@@ -13,8 +13,8 @@ export function JournalHero() {
             Le carnet de la maison.
           </Heading>
           <Text size="lead" tone="secondary" className="max-w-prose">
-            Récits saisonniers, matières, voix d&rsquo;initiées. Le journal s&rsquo;écrit
-            lentement, à Casablanca, et se publie au rythme de la lumière.
+            Une lettre par mois. Sur le rituel, les matières marocaines, l&rsquo;inspiration
+            japonaise. Écrit à Rabat. Lent comme le geste.
           </Text>
         </div>
       </Container>

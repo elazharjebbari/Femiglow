@@ -24,7 +24,7 @@ export function DirectContactBlock({ email, streetAddress, district }: DirectCon
               </a>
             </Text>
             <Text size="caption" tone="tertiary">
-              Réponse sous 24 heures ouvrées, depuis Casablanca.
+              Réponse sous 24 heures ouvrées, depuis Rabat.
             </Text>
           </div>
           <div className="space-y-3 border-t border-sauge pt-6 md:border-t-0 md:border-l md:pl-12 md:pt-0">

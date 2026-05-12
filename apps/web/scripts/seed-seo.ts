@@ -278,8 +278,15 @@ async function main(): Promise<void> {
   );
 }
 
-// Auto-execute when run directly (ESM-compatible)
-main().catch((err) => {
-  console.error('[seed-seo] erreur:', err);
-  process.exit(1);
-});
+// Auto-execute when run directly (ESM-compatible). Guarded pour permettre
+// l'import sans déclencher l'exécution (utilisé par lib/seeders/items/seo.ts).
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error('[seed-seo] erreur:', err);
+    process.exit(1);
+  });
+}

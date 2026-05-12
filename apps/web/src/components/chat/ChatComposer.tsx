@@ -39,6 +39,13 @@ export function ChatComposer() {
       onSubmit={handleSubmit}
       className="flex items-end gap-2 border-t border-stone-200 bg-white p-3"
     >
+      {/*
+        CHA-mobile-ux : la textarea est forcée à `text-base` (16 px) au
+        lieu de `text-sm` (14 px) pour empêcher iOS Safari de déclencher
+        un auto-zoom systématique sur le focus du champ. Tout input avec
+        font-size < 16 px sur iOS = zoom automatique.
+        cf. docs/chat-assistant/21-mobile-ux-plan.md §1.2
+      */}
       <textarea
         ref={ref}
         value={value}
@@ -54,7 +61,7 @@ export function ChatComposer() {
         placeholder={PLACEHOLDERS[language] ?? PLACEHOLDERS.fr}
         aria-label="Message"
         data-testid="chat-input"
-        className="block max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900"
+        className="block max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-lg border border-stone-300 bg-white px-3 py-2 text-base text-stone-900 placeholder:text-stone-400 focus:border-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900"
       />
       {isStreaming ? (
         <button

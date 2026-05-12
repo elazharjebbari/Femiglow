@@ -76,6 +76,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       <input
         ref={ref}
         id={id}
+        // CHA-231 : auto-détection LTR/RTL selon le contenu (utile en bilingue
+        // FR/AR). Override possible via prop `dir` sur l'appelant.
+        dir="auto"
         required={required}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
@@ -141,6 +144,8 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
         <textarea
           ref={ref}
           id={id}
+          // CHA-231 : auto-détection LTR/RTL pour la saisie bilingue FR/AR.
+          dir="auto"
           rows={rows}
           required={required}
           maxLength={maxLength}

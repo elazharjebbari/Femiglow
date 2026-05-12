@@ -1,0 +1,18 @@
+@startuml
+title Studio - Moderation flow
+
+actor Moderator
+
+state "Queue PENDING" as Q
+state "Review Detail" as D
+state "Approved" as A
+state "Rejected" as R
+
+Moderator --> Q
+Q --> D : open review
+D --> A : approve
+D --> R : reject
+A --> Q : back
+R --> Q : back
+
+@enduml

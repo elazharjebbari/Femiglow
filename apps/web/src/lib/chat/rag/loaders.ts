@@ -22,7 +22,7 @@ export interface LoaderResult {
 export async function loadUrl(url: string): Promise<LoaderResult> {
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'FemiGlowBot/1.0 (+https://femiglow.com/about)',
+      'User-Agent': 'FemiGlowBot/1.0 (+https://femiglow-maroc.com/maison)',
       Accept: 'text/html,application/xhtml+xml',
     },
     redirect: 'follow',

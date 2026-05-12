@@ -1,0 +1,14 @@
+@startuml
+title Review Submit Wizard (wireframe)
+
+salt
+{
+{+
+  {# Laisser un avis  [X] }
+  {+ Etape 1/3 }
+  {+ Note* [★★★★★] }
+  {+ Votre avis* [_________________________] }
+  {+ [Continuer] }
+}
+}
+@enduml

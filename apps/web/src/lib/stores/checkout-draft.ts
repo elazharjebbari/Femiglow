@@ -65,7 +65,8 @@ export const LAST_ORDER_PREFIX = 'last-order:';
 export interface LastOrderPayload {
   orderId: string;
   firstName: string;
-  email: string;
+  /** CHA-233 — Email opt-in step 3 ; absent si l'utilisatrice n'a pas demandé de récap. */
+  email?: string;
   items: Array<{
     productId: string;
     productSlug: string;
@@ -81,6 +82,10 @@ export interface LastOrderPayload {
   address: CheckoutForm['address'];
   paymentMethod: CheckoutForm['paymentMethod'];
   createdAt: string;
+  /** CHA-232 — prix catalogue avant offre, pour afficher en barré dans le recap. */
+  catalogShippingCents?: number;
+  /** CHA-232 — true si la commande a bénéficié de la livraison offerte. */
+  freeShipping?: boolean;
 }
 
 export function saveLastOrder(payload: LastOrderPayload): void {

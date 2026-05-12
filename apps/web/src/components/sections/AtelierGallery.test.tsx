@@ -20,8 +20,10 @@ beforeAll(() => {
 describe('AtelierGallery', () => {
   it('rend l’adresse, le quartier et 3 boutons de galerie', () => {
     render(<AtelierGallery data={mockMaison.atelier} />);
-    expect(screen.getByText(/14 rue des Acacias/i)).toBeInTheDocument();
-    expect(screen.getByText(/Bourgogne/i)).toBeInTheDocument();
+    expect(screen.getByText(/25 bis avenue Patrice Lumumba/i)).toBeInTheDocument();
+    // Le quartier "Rabat" peut apparaître plusieurs fois (texte + alt images) :
+    // on vérifie qu'il est présent au moins une fois.
+    expect(screen.getAllByText(/Rabat/i).length).toBeGreaterThan(0);
     const buttons = screen
       .getAllByRole('button')
       .filter((b) => /voir la photo/i.test(b.getAttribute('aria-label') ?? ''));

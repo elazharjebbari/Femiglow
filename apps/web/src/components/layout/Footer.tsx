@@ -63,8 +63,23 @@ export function Footer() {
             </nav>
           ))}
         </div>
-        <div className="border-t border-creme/10 py-6 text-xs text-creme/60">
-          © {new Date().getFullYear()} FemiGlow — Casablanca. Tous droits réservés.
+        <div className="border-t border-creme/10 py-6 text-xs text-creme/60 space-y-1">
+          <div>
+            FemiGlow · 25 bis avenue Patrice Lumumba, Rabat ·{' '}
+            <a
+              href="mailto:info@femiglow-maroc.com"
+              className="hover:text-creme"
+            >
+              info@femiglow-maroc.com
+            </a>{' '}
+            ·{' '}
+            <a href="tel:+212630035905" className="hover:text-creme">
+              +212 630-035905
+            </a>
+          </div>
+          <div>
+            © {new Date().getFullYear()} FemiGlow — Rabat. Tous droits réservés.
+          </div>
         </div>
       </Container>
     </footer>

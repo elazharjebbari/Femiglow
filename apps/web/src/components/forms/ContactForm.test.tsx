@@ -103,6 +103,6 @@ describe('ContactForm', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
     });
-    expect(screen.getByRole('alert')).toHaveTextContent(/contact@femiglow\.ma/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/info@femiglow-maroc\.com/);
   });
 });

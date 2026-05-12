@@ -1,0 +1,6 @@
+id,epic,story,priority,estimate,acceptance
+REV-01,studio,"Créer page liste avis + filtres",P0,3d,"List paginée, filtres status/product/rating"
+REV-02,studio,"Page détail avis + actions approve/reject/hide",P0,3d,"Actions changent status + audit"
+REV-03,studio,"Éditeur policy 'comment vérifiés'",P1,1d,"Contenu affiché dans drawer"
+REV-04,studio,"Bulk approve/reject",P1,2d,"Sélection multiple + actions"
+REV-05,studio,"Gestion tags",P1,2d,"CRUD tags + assign"

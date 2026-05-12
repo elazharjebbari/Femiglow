@@ -14,12 +14,12 @@
 Trois extraits représentatifs des retours récurrents (modérés et
 validés par le service client) :
 
-- "J'ai vu une vraie différence sur la souplesse de la cuticule au
-  bout de cinq semaines." — *Salma, Casablanca*
-- "Le rituel est devenu mon moment du soir. Discret, pas grasseux,
-  pas envahissant." — *Khadija, Rabat*
-- "Mes ongles cassaient tout le temps. En deux mois, ça s'est
-  stabilisé." — *Imane, Marrakech*
+- "J'ai vu une vraie différence sur la brillance au bout de trois
+  semaines. Mes ongles ne sont plus ternes." — *Amal, Rabat*
+- "Le rituel est devenu mon moment du soir. Cinq minutes, discrètes,
+  pas grasseuses, pas envahissantes." — *Lina, Casablanca*
+- "Mes ongles cassaient tout le temps. Au bout de deux mois, ça s'est
+  stabilisé. Et la brillance reste, sans vernis." — *Sara, Marrakech*
 
 ### Faits liés
 - Ces témoignages représentent un **pic-fin** dans la décision : les
@@ -36,9 +36,9 @@ validés par le service client) :
 ## Y a-t-il des retours négatifs ?
 
 Oui — comme partout. Ils concernent surtout l'absence de résultat
-visible avant 4 semaines (impatience), ou un parfum trop léger
-(préférence personnelle). Le service client traite chaque cas avec
-honnêteté (échange ou retour).
+visible avant 2 semaines (impatience), ou la sensation d'avoir besoin
+d'un temps de prise en main pour le polissoir Step 4. Le service client
+traite chaque cas avec honnêteté (échange, retour 30 jours).
 
 ### Faits liés
 - Les retours négatifs ne sont jamais masqués ; le service client les

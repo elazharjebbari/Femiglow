@@ -9,14 +9,14 @@ export const seoSettingsDefault: SeoSettings = {
   id: 'singleton',
   siteName: 'FemiGlow',
   defaultDescription:
-    'FemiGlow — rituels intimes naturels conçus au Maroc. Soin, douceur et qualité.',
+    'FemiGlow \u2014 maison de soin pour les ongles \u00E9dit\u00E9e \u00E0 Rabat. Manucure japonaise halal, deux gestes et un polissoir.',
   defaultOgImageMediaId: null,
   twitterHandle: null,
   organizationJsonLd: {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'FemiGlow',
-    url: 'https://femiglow.com',
+    url: 'https://femiglow-maroc.com',
   },
   defaultRobotsIndex: true,
   defaultRobotsFollow: true,

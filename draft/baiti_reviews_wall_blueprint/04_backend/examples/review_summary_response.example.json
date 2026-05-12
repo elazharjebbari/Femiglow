@@ -1,0 +1,28 @@
+{
+  "room": "chambre",
+  "product": null,
+  "avg_rating": 4.9,
+  "count": 39,
+  "distribution": {
+    "5": 28,
+    "4": 8,
+    "3": 2,
+    "2": 1,
+    "1": 0
+  },
+  "top_tags": [
+    {
+      "tag": "Confort immédiat",
+      "pct": 0.82
+    },
+    {
+      "tag": "Parents & seniors",
+      "pct": 0.63
+    },
+    {
+      "tag": "Utilisation quotidienne",
+      "pct": 0.71
+    }
+  ],
+  "policy_url": "/api/reviews/policy"
+}

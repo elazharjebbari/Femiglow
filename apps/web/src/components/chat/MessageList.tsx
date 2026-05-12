@@ -44,7 +44,12 @@ export function MessageList() {
       aria-live="polite"
       aria-label="Conversation"
       data-testid="chat-message-list"
-      className="flex-1 overflow-y-auto bg-stone-50/40 px-3 py-4"
+      // CHA-mobile-ux : `overscroll-contain` empêche le scroll de la
+      // liste de bleed-through sur la page sous-jacente en mobile
+      // (le sheet `inset-0` couvre toute la viewport, mais sans cette
+      // règle, atteindre le top/bottom déclenche un scroll de la page
+      // de fond — UX confuse). cf. docs/chat-assistant/21-mobile-ux-plan.md
+      className="flex-1 overflow-y-auto overscroll-contain bg-stone-50/40 px-3 py-4"
     >
       {messages.length === 0 && greeting && (
         <p

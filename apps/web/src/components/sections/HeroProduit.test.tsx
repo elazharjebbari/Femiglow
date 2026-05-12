@@ -31,12 +31,13 @@ describe('HeroProduit', () => {
     ).toBeInTheDocument();
   });
 
-  it('affiche le bloc prix via PriceDisplay (sans promo dans le mock)', () => {
+  it('affiche le bloc prix via PriceDisplay (avec promo 199/390 dans le mock)', () => {
     renderHero();
-    // mockKit : 32000 cents MAD → "320 MAD"
-    expect(screen.getByText(/320\s*MAD/)).toBeInTheDocument();
-    // Pas de prix barré, pas de label « Économisez »
-    expect(screen.queryByText(/Économisez/i)).not.toBeInTheDocument();
+    // mockKit : priceCents=39000 référence + promoPriceCents=19900 actif.
+    expect(screen.getByText(/199\s*MAD/)).toBeInTheDocument();
+    expect(screen.getByText(/390\s*MAD/)).toBeInTheDocument();
+    // Label « Économisez » présent (showSavings actif par défaut).
+    expect(screen.getByText(/Économisez/i)).toBeInTheDocument();
   });
 
   it('expose les réassurances dans la liste dédiée', () => {

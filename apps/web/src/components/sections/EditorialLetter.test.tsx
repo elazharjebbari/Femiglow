@@ -4,9 +4,9 @@ import { EditorialLetter } from './EditorialLetter';
 import { expectNoAxeViolations } from '@/test/axe';
 
 describe('EditorialLetter', () => {
-  it('rend la signature « Salma »', () => {
+  it('rend la signature « Souheila »', () => {
     render(<EditorialLetter firstName="Salma" />);
-    expect(screen.getByText('Salma')).toBeInTheDocument();
+    expect(screen.getByText('Souheila')).toBeInTheDocument();
     expect(screen.getByText(/fondatrice/i)).toBeInTheDocument();
   });
 

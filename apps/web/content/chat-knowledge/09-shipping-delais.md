@@ -8,13 +8,16 @@
 ## Combien de temps avant la livraison au Maroc ?
 
 On livre **partout au Maroc en 24 à 72 h** selon la ville :
-- **Casablanca, Rabat, Salé** : 24 à 48 h ouvrées.
+- **Rabat** : 24 h ouvrées.
+- **Casablanca, Salé** : 24 à 48 h ouvrées.
 - **Tanger, Marrakech, Fès, Meknès, Agadir** : 24 à 48 h ouvrées.
 - **Autres villes** : 48 à 72 h ouvrées.
 
-Les commandes passées avant 14 h en jour ouvré partent le jour même.
-Celles passées après 14 h ou le week-end partent le prochain jour
-ouvré.
+Les commandes passées avant 14 h en jour ouvré partent le jour même
+depuis l'atelier de Rabat (25 bis avenue Patrice Lumumba). Celles
+passées après 14 h ou le week-end partent le prochain jour ouvré.
+
+**La livraison est offerte au Maroc, sans seuil de commande.**
 
 ### Faits liés
 - Pas de livraison le dimanche.
@@ -24,26 +27,30 @@ ouvré.
 
 ## Comment se passe le paiement ?
 
-**Paiement à la livraison** : la cliente règle en cash, en main propre,
-au moment où elle reçoit le colis. C'est le mode standard, sans
-empreinte de carte préalable.
+Deux modes disponibles :
 
-**Vérification avant paiement** : le livreur permet d'**ouvrir le colis
-et de vérifier le produit avant de payer**. Si quelque chose ne
-correspond pas — flacon endommagé, produit manquant — la cliente peut
+**Paiement à la livraison (COD)** : la cliente règle en cash, en main
+propre, au moment où elle reçoit le colis. Mode standard, sans empreinte
+de carte préalable.
+
+**Paiement carte sécurisé (3D Secure)** : à la commande, par CB ou CMI.
+
+**Vérification avant paiement** : en COD, le livreur permet d'**ouvrir
+le colis et de vérifier le produit avant de payer**. Si quelque chose
+ne correspond pas — pack endommagé, produit manquant — la cliente peut
 refuser le colis, sans frais.
 
 ### Faits liés
 - Pas de prélèvement automatique, pas d'abonnement.
-- Aucun acompte n'est demandé à la commande.
+- Aucun acompte n'est demandé en COD.
 - Le colis arrive scellé ; le livreur attend que la cliente vérifie
-  avant d'encaisser.
+  avant d'encaisser (en COD).
 
 ### Reformulation à proposer (chat)
-- "Vous payez seulement quand le colis est dans vos mains et que vous
-  l'avez vérifié."
-- "Pas besoin d'avancer quoi que ce soit : le règlement se fait au
-  livreur, en cash, à la réception."
+- "Vous payez seulement quand le pack est dans vos mains et que vous
+  l'avez vérifié — c'est la formule paiement à la livraison."
+- "Pas besoin d'avancer quoi que ce soit en COD : le règlement se fait
+  au livreur, en cash, à la réception."
 
 ## Quels transporteurs ?
 

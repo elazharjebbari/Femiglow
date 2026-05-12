@@ -3,6 +3,8 @@
  * en mode passthrough (l'optimisation se fera via le worker).
  *
  * Usage : `pnpm tsx scripts/seed-media.ts`
+ *
+ * Exporte aussi `runMediaSeed(opts)` pour réutilisation côté Seeders Runner.
  */
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -38,25 +40,59 @@ function toSlug(name: string, section: string): string {
     .slice(0, 80);
 }
 
-async function main() {
+export interface MediaSeedOptions {
+  onProgress?: (label: string, fraction?: number) => void;
+  /** Permet d'overrider le répertoire racine pour tests / cwd différents. */
+  rootDir?: string;
+}
+
+export interface MediaSeedReport {
+  created: number;
+  skipped: number;
+  scanned: number;
+  errors: number;
+}
+
+export async function runMediaSeed(
+  opts: MediaSeedOptions = {},
+): Promise<MediaSeedReport> {
+  const root = opts.rootDir ?? ROOT;
+  opts.onProgress?.(`Scan ${path.basename(root)}`, 0.05);
+
   let dirStat;
   try {
-    dirStat = await stat(ROOT);
+    dirStat = await stat(root);
   } catch {
-    console.error(`[seed-media] répertoire introuvable: ${ROOT}`);
-    process.exit(1);
+    throw new Error(`[seed-media] répertoire introuvable: ${root}`);
   }
   if (!dirStat.isDirectory()) {
-    console.error(`[seed-media] ${ROOT} n'est pas un répertoire`);
-    process.exit(1);
+    throw new Error(`[seed-media] ${root} n'est pas un répertoire`);
   }
+
+  // Première passe : compter les fichiers pour ETA.
+  const files: string[] = [];
+  for await (const file of walk(root)) {
+    files.push(file);
+  }
+  const total = files.length;
+  opts.onProgress?.(`${total} fichiers à examiner`, 0.1);
 
   const storage = getStorage();
   let created = 0;
   let skipped = 0;
+  let errors = 0;
+  let processed = 0;
 
-  for await (const file of walk(ROOT)) {
-    const rel = path.relative(ROOT, file);
+  for (const file of files) {
+    processed += 1;
+    if (processed % 5 === 0 || processed === total) {
+      opts.onProgress?.(
+        `${processed}/${total} (créés ${created}, ignorés ${skipped})`,
+        0.1 + (0.9 * processed) / Math.max(1, total),
+      );
+    }
+
+    const rel = path.relative(root, file);
     const segments = rel.split(path.sep);
     if (segments.length < 2 || !segments[0] || !segments[segments.length - 1]) continue;
     const section = segments[0];
@@ -65,52 +101,63 @@ async function main() {
     if (!['png', 'jpg', 'jpeg', 'webp', 'avif', 'svg'].includes(ext)) continue;
     const slug = toSlug(filename, section);
 
-    const existing = await findMediaBySlug(slug);
-    if (existing) {
-      skipped++;
-      continue;
+    try {
+      const existing = await findMediaBySlug(slug);
+      if (existing) {
+        skipped += 1;
+        continue;
+      }
+
+      const buffer = await readFile(file);
+      const key = `originals/${slug}.${ext}`;
+      const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+      const { url } = await storage.put({
+        key,
+        body: buffer,
+        contentType: mime,
+      });
+
+      const profile = SECTION_PROFILE[section] ?? 'inline';
+      const media = await createMedia({
+        kind: 'image',
+        source: 'upload',
+        slug,
+        alt: filename.replace(/[-_.]/g, ' ').replace(/\.[^.]+$/, ''),
+        originalUrl: url,
+        originalFilename: filename,
+        originalSizeBytes: buffer.length,
+        originalMime: mime,
+        qualityProfile: profile,
+        loadingStrategy: profile === 'hero' ? 'eager' : 'viewport',
+        isHero: profile === 'hero',
+      });
+      await enqueueJob({ mediaId: media.id, kind: 'optimize' });
+      created += 1;
+    } catch (err) {
+      errors += 1;
+      console.error(`[seed-media] erreur ${slug}:`, err);
     }
-
-    const buffer = await readFile(file);
-    const checksum = await crypto.subtle
-      .digest('SHA-256', buffer)
-      .then((b) =>
-        Array.from(new Uint8Array(b))
-          .map((x) => x.toString(16).padStart(2, '0'))
-          .join(''),
-      );
-    const key = `originals/${slug}.${ext}`;
-    const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-    const { url } = await storage.put({
-      key,
-      body: buffer,
-      contentType: mime,
-      checksum,
-    });
-
-    const profile = SECTION_PROFILE[section] ?? 'inline';
-    const media = await createMedia({
-      kind: 'image',
-      source: 'upload',
-      slug,
-      alt: filename.replace(/[-_.]/g, ' ').replace(/\.[^.]+$/, ''),
-      originalUrl: url,
-      originalFilename: filename,
-      originalSizeBytes: buffer.length,
-      originalMime: mime,
-      qualityProfile: profile,
-      loadingStrategy: profile === 'hero' ? 'eager' : 'viewport',
-      isHero: profile === 'hero',
-    });
-    await enqueueJob({ mediaId: media.id, kind: 'optimize' });
-    created++;
-    console.log(`[seed-media] ${slug} créé (${section}, ${profile})`);
   }
 
-  console.log(`\n[seed-media] terminé. créés: ${created}, ignorés: ${skipped}`);
+  return { created, skipped, scanned: total, errors };
 }
 
-main().catch((err) => {
-  console.error('[seed-media] erreur:', err);
-  process.exit(1);
-});
+async function main() {
+  const report = await runMediaSeed({
+    onProgress: (label) => console.log(`[seed-media] ${label}`),
+  });
+  console.log(
+    `[seed-media] terminé. créés: ${report.created}, ignorés: ${report.skipped}, scannés: ${report.scanned}, erreurs: ${report.errors}`,
+  );
+}
+
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error('[seed-media] erreur:', err);
+    process.exit(1);
+  });
+}

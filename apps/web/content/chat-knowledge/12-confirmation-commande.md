@@ -23,7 +23,8 @@ les erreurs de livraison.
 
 C'est un choix de la maison : on préfère un échange humain bref à un
 process 100 % automatique. Cela permet d'ajuster (ex : modifier
-l'adresse, ajouter un message manuscrit pour un cadeau).
+l'adresse, ajouter un message manuscrit pour un cadeau, valider une
+allergie connue).
 
 ### Reformulation à proposer (chat)
 - "Une conseillère vous appellera pour confirmer votre commande ; vous

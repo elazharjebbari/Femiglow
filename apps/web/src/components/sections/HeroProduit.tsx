@@ -6,6 +6,7 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Reassurance } from '@/components/ui/Reassurance';
 import { Text } from '@/components/ui/Text';
 import { AddToCartButton } from '@/components/commerce/AddToCartButton';
+import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
 import { PriceDisplay } from '@/components/commerce/PriceDisplay';
 import { ViewItemTracker } from '@/components/tracking/ViewItemTracker';
 import { computePromo } from '@/lib/utils/promo';
@@ -17,6 +18,12 @@ interface HeroProduitProps {
   observeId?: string;
   /** Slot media résolu côté serveur. Remplace `product.images[0]`. */
   mediaSlot?: ReactNode;
+  /**
+   * CHA-231 — Mode du CTA primaire :
+   *  - `wizard-anchor` (défaut) : scroll vers le funnel embarqué (#commander-femiglow).
+   *  - `cart-redirect` : ajoute au panier puis redirige vers `/panier` (legacy).
+   */
+  commanderMode?: 'wizard-anchor' | 'cart-redirect';
 }
 
 export function HeroProduit({
@@ -24,6 +31,7 @@ export function HeroProduit({
   reassurances,
   observeId = 'hero-produit-anchor',
   mediaSlot,
+  commanderMode = 'wizard-anchor',
 }: HeroProduitProps) {
   const heroImage = product.images[0];
   // Tracking GA4 : `view_item.value` doit refléter le prix VU par
@@ -100,14 +108,27 @@ export function HeroProduit({
               shrink + densify the payment section).
             */}
             <div className="space-y-3 pt-2">
-              <AddToCartButton
-                product={product}
-                size="lg"
-                fullWidth
-                redirectTo="/panier"
-              >
-                Commander le rituel
-              </AddToCartButton>
+              {commanderMode === 'wizard-anchor' ? (
+                <CommanderAnchorButton
+                  size="lg"
+                  fullWidth
+                  productId={product.id}
+                  productName={product.name}
+                  priceCents={promo.effectivePriceCents}
+                  currency={product.currency}
+                >
+                  Commander le rituel
+                </CommanderAnchorButton>
+              ) : (
+                <AddToCartButton
+                  product={product}
+                  size="lg"
+                  fullWidth
+                  redirectTo="/panier"
+                >
+                  Commander le rituel
+                </AddToCartButton>
+              )}
               <p className="text-center text-[11px] uppercase tracking-[0.2em] text-encre/55">
                 Paiement sécurisé · Retour 14&#x202f;j · Livraison 48&#x202f;h
               </p>

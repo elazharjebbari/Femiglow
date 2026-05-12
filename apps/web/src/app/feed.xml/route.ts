@@ -72,7 +72,7 @@ function buildEmptyFallbackFeed(): string {
     '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">',
     '  <channel>',
     '    <title>FemiGlow — feed temporairement indisponible</title>',
-    '    <link>https://femiglow.ma/kit</link>',
+    '    <link>https://femiglow-maroc.com/kit</link>',
     '    <description>Feed produit en cours de régénération. Réessayez dans quelques minutes.</description>',
     '  </channel>',
     '</rss>',

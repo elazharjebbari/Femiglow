@@ -4,7 +4,7 @@ import { VideoPlayer4Gestes } from './VideoPlayer4Gestes';
 import { mockRituel } from '@/data/mock/rituel';
 import { expectNoAxeViolations } from '@/test/axe';
 
-describe('VideoPlayer4Gestes', () => {
+describe('VideoPlayer4Gestes — variante self-hosted (legacy)', () => {
   it('rend la vidéo avec poster, sources et pistes de captions FR + AR', () => {
     const { container } = render(<VideoPlayer4Gestes video={mockRituel.videoGestes} />);
     const video = container.querySelector('video');
@@ -31,4 +31,45 @@ describe('VideoPlayer4Gestes', () => {
     const { container } = render(<VideoPlayer4Gestes video={mockRituel.videoGestes} />);
     await expectNoAxeViolations(container);
   }, 15000);
+});
+
+describe('VideoPlayer4Gestes — variante YouTube (CHA-243)', () => {
+  const youTubeVideo = {
+    ...mockRituel.videoGestes,
+    youtubeUrl: 'https://youtube.com/shorts/N2pDuciP4uQ?si=h9_ROBIt-N7Oq7jb',
+  };
+
+  it('rend un iframe YouTube (pas de <video>) quand youtubeUrl est défini', () => {
+    const { container } = render(<VideoPlayer4Gestes video={youTubeVideo} />);
+    // Self-hosted <video> ABSENT
+    expect(container.querySelector('video')).toBeNull();
+    // YouTubeEmbed PRÉSENT
+    const wrap = container.querySelector('[data-testid="youtube-embed"]');
+    expect(wrap).not.toBeNull();
+    expect(wrap?.getAttribute('data-is-short')).toBe('true');
+    expect(wrap?.getAttribute('data-video-id')).toBe('N2pDuciP4uQ');
+  });
+
+  it('iframe pointe sur youtube-nocookie.com', () => {
+    render(<VideoPlayer4Gestes video={youTubeVideo} />);
+    const iframe = screen.getByTitle(/4 gestes en vidéo/) as HTMLIFrameElement;
+    expect(iframe.src).toContain('youtube-nocookie.com');
+    expect(iframe.src).toContain('N2pDuciP4uQ');
+  });
+
+  it('garde la transcription dépliable dans la variante YouTube', () => {
+    render(<VideoPlayer4Gestes video={youTubeVideo} />);
+    const button = screen.getByRole('button', { name: /Lire la transcription/ });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('tombe sur self-hosted si youtubeUrl est un string invalide', () => {
+    const bogus = { ...mockRituel.videoGestes, youtubeUrl: 'https://vimeo.com/12345' };
+    const { container } = render(<VideoPlayer4Gestes video={bogus} />);
+    // Doit retomber sur le player <video> historique
+    expect(container.querySelector('video')).not.toBeNull();
+    expect(container.querySelector('[data-testid="youtube-embed"]')).toBeNull();
+  });
 });

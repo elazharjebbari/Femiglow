@@ -101,7 +101,7 @@ const FR: Record<CopyKey, LeadFormCopy> = {
     intro: 'On revient vers vous sous 48 h pour cadrer le projet.',
     cta: 'Être contactée (pro)',
     noteLabel: 'Type de projet (institut, pharmacie, e-commerce…)',
-    notePlaceholder: 'Ex. salon esthétique à Casablanca',
+    notePlaceholder: 'Ex. salon esth\u00E9tique \u00E0 Rabat',
   },
   'purchase-intent': {
     ...FR_BASE,
@@ -112,7 +112,7 @@ const FR: Record<CopyKey, LeadFormCopy> = {
     successFallback:
       'Merci ! Une conseillère vous appelle dans la journée pour confirmer la livraison. À tout de suite ✨',
     noteLabel: 'Une précision ? (ville, étage, créneau)',
-    notePlaceholder: 'Ex. Casablanca, plutôt en fin d’après-midi',
+    notePlaceholder: 'Ex. Rabat, plut\u00F4t en fin d\u2019apr\u00E8s-midi',
   },
   'inline-contact': {
     ...FR_BASE,

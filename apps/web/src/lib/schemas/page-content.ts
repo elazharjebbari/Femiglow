@@ -88,11 +88,24 @@ export const rituelOrigineSchema = z.object({
 });
 export type RituelOrigine = z.infer<typeof rituelOrigineSchema>;
 
+/**
+ * Schéma vidéo Rituel — supporte deux backends de player :
+ *   1. Self-hosted (legacy) : `sources.mp4` + `sources.webm`
+ *   2. YouTube (CHA-243) : `youtubeUrl` (toutes variantes acceptées :
+ *      `watch?v=`, `youtu.be/`, `/shorts/`, `/embed/`, ID brut)
+ *
+ * Si `youtubeUrl` est défini, le composant `VideoPlayer4Gestes` route vers
+ * `<YouTubeEmbed>` (iframe `youtube-nocookie.com`). Sinon il utilise les
+ * sources locales. `sources` reste requis pour compat historique mais peut
+ * pointer vers un fichier inexistant si `youtubeUrl` prend le relais.
+ */
 export const rituelVideoSchema = z.object({
   sources: z.object({
     mp4: z.string().url().or(z.string().startsWith('/')),
     webm: z.string().url().or(z.string().startsWith('/')),
   }),
+  /** URL YouTube (watch/youtu.be/shorts/embed) ou ID brut 11 chars. Priorité au runtime si défini. */
+  youtubeUrl: z.string().optional(),
   poster: imageSchema,
   captions: z.object({
     fr: z.string(),
@@ -190,11 +203,17 @@ export const maisonPageContentSchema = z.object({
 });
 export type MaisonPageContent = z.infer<typeof maisonPageContentSchema>;
 
+/**
+ * Schéma vidéo Kit — voir `rituelVideoSchema` pour le détail du contrat.
+ * Idem : `youtubeUrl` optionnel prend la priorité sur les `sources` locales.
+ */
 export const kitVideoSchema = z.object({
   sources: z.object({
     mp4: z.string().url().or(z.string().startsWith('/')),
     webm: z.string().url().or(z.string().startsWith('/')),
   }),
+  /** URL YouTube (watch/youtu.be/shorts/embed) ou ID brut 11 chars. Priorité au runtime si défini. */
+  youtubeUrl: z.string().optional(),
   poster: imageSchema,
   captions: z.object({
     fr: z.string(),

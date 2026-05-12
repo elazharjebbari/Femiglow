@@ -1,46 +1,58 @@
 import type { Product } from '@/lib/schemas';
 
+/**
+ * Audit 08/09 — Pack FemiGlow (manucure japonaise halal). Anchoring
+ * 199 dh payé / 390 dh référence (option B § 0.1 doc 09) implémenté via
+ * `priceCents = 39000` + `promoPriceCents = 19900` pour rester compatible
+ * avec <PriceDisplay> et la pipeline tracking GA4 existante.
+ */
 export const mockKit: Product = {
   id: 'fg-kit-001',
   slug: 'le-rituel',
-  name: 'Le rituel FemiGlow',
-  tagline: 'Trois gestes, cinq minutes, une saison.',
+  name: 'Pack FemiGlow',
+  tagline:
+    'Manucure japonaise halal. Deux gestes, un polissoir, un éclat.',
   description:
-    'Le kit FemiGlow réunit la base, le fortifiant et la lime. Trois gestes mesurés, pensés à Casablanca, pour accompagner vos ongles à chaque saison.',
-  priceCents: 32000,
-  promoPriceCents: null,
+    'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise halal, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
+  priceCents: 39000,
+  promoPriceCents: 19900,
   currency: 'MAD',
   images: [
     {
       src: '/products/kit-principale.png',
-      alt: 'Le rituel FemiGlow \u2014 flacon de base, fortifiant et lime, sur fond crème',
+      alt: 'Pack FemiGlow ouvert sur fond pastel — pot paste vert sauge, pot powder rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow',
       width: 1600,
       height: 2000,
     },
     {
       src: '/products/kit-detail-mains.png',
-      alt: 'Mains appliquant la base transparente FemiGlow',
+      alt: 'Mains aux ongles nus, courts à moyens, naturellement brillants après le rituel paste-powder-polish',
       width: 1600,
       height: 1067,
     },
   ],
   composition: [
     {
-      name: 'Base transparente',
-      origin: 'Maroc, Casablanca',
-      description: 'Soin lissant qui prépare la surface de l\u2019ongle.',
+      name: '1 Paste',
+      origin: 'Atlas marocain · Souss-Massa',
+      description:
+        'Pâte crème onctueuse. Cire d\u2019abeille, huile de jojoba, tocophérol. Filme la plaque sans l\u2019étouffer.',
     },
     {
-      name: 'Fortifiant',
-      origin: 'Maroc',
-      description: 'Concentré qui retient l\u2019ongle dans le temps.',
+      name: '2 Powder',
+      origin: 'Maroc · Asie biologique',
+      description:
+        'Poudre fine blanche. Talc cosmétique, poudre de riz, silice. Absorbe l\u2019excès, lustre la surface.',
     },
     {
-      name: 'Lime artisanale',
-      origin: 'Atelier de Casablanca',
-      description: 'Coupe de précision, douce sur la kératine.',
+      name: 'Polissoir Step 4 Polish & Shine',
+      origin: 'Atelier de Rabat · kaolin de Marrakech',
+      description:
+        'Polissoir rectangulaire bleu ciel. Trois faces, trois grains. Révèle la brillance naturelle.',
     },
   ],
   inStock: true,
-  estimatedShipping: '48 à 72 heures à Casablanca',
+  estimatedShipping: 'Rabat : 24 h. Maroc : 48 à 72 h. Livraison offerte.',
+  primaryVariantSku: 'FEMI-KIT-100',
+  primaryVariantId: 'pvar_0c01jxc1yn4kjp3b',
 };

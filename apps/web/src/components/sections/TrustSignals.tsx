@@ -13,20 +13,20 @@ interface Signal {
 const signals: Signal[] = [
   {
     id: 'livraison',
-    title: 'Livraison Casablanca',
-    body: 'En main propre sous 24 \u00E0 48\u202Fheures. Reste du Maroc, 3 \u00E0 5\u202Fjours.',
+    title: 'Livraison offerte',
+    body: 'Rabat\u202F: 24\u202Fheures. Reste du Maroc\u202F: 48 \u00E0 72\u202Fheures. Sans seuil ni surcoût.',
     icon: 'truck',
   },
   {
     id: 'retour',
-    title: 'Retour 14\u202Fjours',
-    body: 'Si le rituel ne vous va pas, nous reprenons. Aucune justification \u00E0 fournir.',
+    title: 'Retour 30\u202Fjours',
+    body: 'Si le rituel ne vous va pas, nous reprenons \u2014 m\u00EAme entam\u00E9. Aucune justification \u00E0 fournir.',
     icon: 'rotate',
   },
   {
     id: 'paiement',
     title: 'Paiement s\u00E9curis\u00E9',
-    body: 'CMI Maroc, Stripe, ou paiement \u00E0 la livraison. Aucune donn\u00E9e bancaire stock\u00E9e.',
+    body: 'CMI Maroc, Stripe, ou paiement \u00E0 la livraison (COD). Aucune donn\u00E9e bancaire stock\u00E9e.',
     icon: 'shield',
   },
 ];

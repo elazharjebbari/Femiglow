@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils/cn';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
-const CONTACT_EMAIL = 'contact@femiglow.ma';
+const CONTACT_EMAIL = 'info@femiglow-maroc.com';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 

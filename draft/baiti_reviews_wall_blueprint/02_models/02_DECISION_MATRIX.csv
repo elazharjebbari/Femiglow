@@ -1,0 +1,10 @@
+criterion,weight,model_a_drawer,model_b_page,model_c_hybrid,notes
+Immersion BAITI,5,5,2,4,Le modèle A garde la scène en arrière-plan
+Chemin court vers produit,5,5,4,5,Le C est top si avis dans modal produit
+Complexité technique,3,3,2,1,C plus complexe (mutualisation)
+Performance mobile,4,5,4,5,Drawer/bottom-sheet très mobile-friendly
+SEO / partage URL,2,2,5,4,B et C meilleurs
+Capacité filtres avancés,3,4,5,5,B a plus d'espace
+Risque surcharge UI,4,4,3,3,A nécessite progressive disclosure
+Temps dev initial,3,4,3,2,A plus rapide à sortir
+TOTAL,,?, ?, ?,Calcul qualitatif à faire selon priorités

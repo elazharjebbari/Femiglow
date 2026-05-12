@@ -56,7 +56,7 @@ export async function POST(request: Request): Promise<Response> {
       eventId: uuidv7(),
       receivedAt: new Date(),
       pageRoute: parsed.data.pageRoute,
-      pageUrl: parsed.data.pageUrl ?? `https://femiglow.ma${parsed.data.pageRoute}`,
+      pageUrl: parsed.data.pageUrl ?? `https://femiglow-maroc.com${parsed.data.pageRoute}`,
       pageTitle: parsed.data.pageTitle ?? 'Admin Test',
       referrer: '',
       anonymousId: 'aid_test_admin',

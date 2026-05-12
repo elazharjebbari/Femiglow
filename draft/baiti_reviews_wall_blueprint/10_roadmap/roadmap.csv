@@ -1,0 +1,9 @@
+phase,deliverable,scope,priority,estimate
+P0,Design+spec final,"Valider modèle + wireframes + contracts",P0,2-3d
+P0,Backend v1,"Models + summary/list/submit endpoints",P0,5-7d
+P0,Frontend v1,"Drawer + summary + list + filters + load more",P0,7-10d
+P1,Studio moderation,"Queue + actions + policy",P1,5-7d
+P1,Photos upload,"Storage + thumbnails + lightbox",P1,5-7d
+P1,Tracking+dashboard,"dataLayer events + basic reporting",P1,2-3d
+P2,Hybrid in product modal,"Preview + open drawer",P2,3-5d
+P2,Optimization,"virtualization, caching, perf",P2,3-5d

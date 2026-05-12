@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { cms } from '@/lib/cms';
 import {
   VideoPlayer4Gestes,
@@ -14,6 +15,7 @@ import { JournalGridBound } from '@/components/sections/JournalGridBound';
 import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectionBound';
 import { RitualsModuleBound } from '@/components/sections/rituals/RitualsModuleBound';
 import { RitualsWallDrawer } from '@/components/sections/rituals/RitualsWallDrawer';
+import { KitCommanderSectionBound } from '@/components/sections/KitCommanderSectionBound';
 import { JsonLd, productSchema, faqPageSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
@@ -30,12 +32,12 @@ const FALLBACK_OG = {
   url: '/og/kit.svg',
   width: 1200,
   height: 630,
-  alt: 'Le kit FemiGlow — base, fortifiant, lime',
+  alt: 'Le pack FemiGlow — paste, powder, polissoir Step 4',
 };
 
-const FALLBACK_TITLE = 'Le kit FemiGlow — trois gestes, une saison';
+const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise halal';
 const FALLBACK_DESCRIPTION =
-  'Le kit réunit la base, le fortifiant et la lime. Trois gestes mesurés, pensés à Casablanca, livrés en 48 heures.';
+  'Pack FemiGlow — coffret de manucure japonaise halal en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par Souheila. Sans vernis, sans abrasion. Livraison offerte au Maroc.';
 
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;
@@ -135,6 +137,14 @@ export default async function KitPage() {
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
       />
+      {/*
+        CHA-230 — Funnel commander embarqué (Mode A — wizard_embed) remonté
+        immédiatement sous le Hero pour capter l'intention chaude avant que
+        l'utilisateur ne dérive vers les sections de réassurance. Cible des
+        CTA in-page et de la sticky bottom ; le client passe par
+        lead → address → thank_you sans quitter la page.
+      */}
+      <KitCommanderSectionBound />
       <CompositionRevealBound items={content.composition} />
       <VideoPlayer4Gestes video={content.videoSrc} />
       <IngredientsDetailsBound
@@ -163,7 +173,9 @@ export default async function KitPage() {
         title="Trois lectures."
         variant="symmetric"
       />
-      <RitualsWallDrawer productKey="pack-femiglow" />
+      <Suspense fallback={null}>
+        <RitualsWallDrawer productKey="pack-femiglow" />
+      </Suspense>
     </div>
   );
 }

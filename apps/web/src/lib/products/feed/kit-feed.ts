@@ -24,8 +24,8 @@
  *  - Pricing #14 — **Precise digits** : nombres non-ronds
  *    (4,8/5 plutôt que 5/5 ; 287 avis plutôt que 300).
  *  - Ecommerce #14 — Reviews count + average + quote, ensemble.
- *  - Luxury #6 — **Imply craftsmanship** : « affinée à Casablanca »,
- *    « lustrée au polissoir », « atelier marocain ».
+ *  - Luxury #6 — **Imply craftsmanship** : « affin\u00E9e \u00E0 Rabat »,
+ *    « lustr\u00E9e au polissoir », « atelier marocain ».
  *
  * Toute évolution éditoriale du feed se fait ici. Les composants
  * (`<ProductFeedSection/>`) ne contiennent **aucun** texte produit.
@@ -47,7 +47,7 @@ import type {
 /** URL absolue du site (override possible via env pour l'XML Merchant). */
 function siteOrigin(): string {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
-  return fromEnv && fromEnv.length > 0 ? fromEnv : 'https://femiglow.ma';
+  return fromEnv && fromEnv.length > 0 ? fromEnv : 'https://femiglow-maroc.com';
 }
 
 /** Convertit des centimes en majeurs (320 pour 32000). */
@@ -114,36 +114,36 @@ function buildSteps(): ProductFeedStep[] {
   return [
     {
       step: 1,
-      kicker: 'Geste 1',
-      title: 'Préparez vos ongles',
-      // Présent + verbes sensoriels (Kolenda Copy #1, #29).
+      kicker: 'Pr\u00E9paration',
+      title: 'Pr\u00E9parez vos ongles',
+      // Pr\u00E9sent + verbes sensoriels (Kolenda Copy #1, #29).
       description:
-        'On nettoie, on sèche, on lime légèrement — la plaque s\u2019ouvre au soin.',
+        'On nettoie, on s\u00E8che, on lime l\u00E9g\u00E8rement \u2014 la plaque s\u2019ouvre au soin.',
       accent: 'sauge',
     },
     {
       step: 2,
-      kicker: 'Geste 2',
-      title: 'Appliquez Paste',
+      kicker: 'Geste 1',
+      title: 'Appliquez la paste',
       description:
-        'Une noisette de 1 Paste, le polissoir glisse, la cire entre dans la kératine.',
+        'Une noisette de paste vert sauge, le polissoir glisse, la cire entre dans la k\u00E9ratine.',
       accent: 'sauge',
     },
     {
       step: 3,
-      kicker: 'Geste 3',
-      title: 'Appliquez Powder',
+      kicker: 'Geste 2',
+      title: 'Appliquez la powder',
       description:
-        'On dépose 2 Powder, on lustre lentement, la lumière revient à la surface.',
+        'On d\u00E9pose la powder rose poudr\u00E9, on lustre lentement, la lumi\u00E8re revient \u00E0 la surface.',
       accent: 'petale',
     },
     {
       step: 4,
-      kicker: 'Résultat',
-      title: 'Brillance naturelle',
-      // Premier pas montré comme déjà accompli (Copy #21).
+      kicker: 'Polissoir Step\u00A04',
+      title: 'Polish & Shine',
+      // Premier pas montr\u00E9 comme d\u00E9j\u00E0 accompli (Copy #21).
       description:
-        'Ongles lisses, lumineux, soignés — la main suffit, le geste tient la saison.',
+        'On finit au polissoir bleu ciel \u2014 l\u2019ongle devient miroir, sans vernis, sans abrasion.',
       accent: 'champagne',
     },
   ];
@@ -157,18 +157,18 @@ function buildClaims(): ProductFeedClaim[] {
   return [
     {
       icon: 'leaf',
-      label: 'Ingrédients d\u2019origine naturelle',
-      detail: 'Cire d\u2019abeille, jojoba, kaolin — sourcés au Maroc.',
+      label: 'Ingr\u00E9dients d\u2019origine naturelle',
+      detail: 'Cire d\u2019abeille, jojoba, kaolin, poudre de riz \u2014 manucure japonaise halal.',
     },
     {
       icon: 'drop',
       label: 'Sans produits chimiques agressifs',
-      detail: 'Ni acétone, ni phtalates, ni toluene — la plaque respire.',
+      detail: 'Ni ac\u00E9tone, ni phtalates, ni toluene \u2014 la plaque respire.',
     },
     {
       icon: 'sparkle',
-      label: 'Pour des ongles forts et éclatants',
-      detail: 'Kératine renforcée, brillance lustrée à la main.',
+      label: 'Pour des ongles forts et \u00E9clatants',
+      detail: 'K\u00E9ratine renforc\u00E9e, brillance lustr\u00E9e au polissoir Step\u00A04.',
     },
   ];
 }
@@ -238,16 +238,16 @@ export function buildKitProductFeed(
     availability: product.inStock ? 'in_stock' : 'out_of_stock',
     description: product.description,
     hero: {
-      kicker: 'Le rituel',
-      // Présent + verbes d'action (Copy #1).
-      title: 'Le rituel s\u2019installe en quatre gestes.',
+      kicker: 'Le pack',
+      // Pr\u00E9sent + verbes d'action (Copy #1).
+      title: 'Le rituel s\u2019installe en deux gestes et un polissoir.',
       lead:
-        'Trois objets dans la main, quatre gestes dans la soirée. La paste filme, la poudre lustre, la plaque retrouve sa cadence — un soin lent, pensé à Casablanca.',
-      pricePrefix: 'Tout compris :',
-      ctaLabel: 'Commander le rituel',
-      // Microcopy serrée (Pricing #11) — chiffres précis (Pricing #14).
+        'Trois objets dans la main, deux gestes dans la soir\u00E9e. La paste filme, la powder lustre, le polissoir Step\u00A04 r\u00E9v\u00E8le \u2014 manucure japonaise halal, pens\u00E9e \u00E0 Rabat.',
+      pricePrefix: 'Tout compris\u00A0:',
+      ctaLabel: 'Recevoir le pack',
+      // Microcopy serr\u00E9e (Pricing #11) \u2014 chiffres pr\u00E9cis (Pricing #14).
       ctaMicrocopy:
-        'Paste · Powder · Polissoir inclus · Livraison 48 h · Paiement à la livraison · Retour 30 j.',
+        'Paste \u00B7 Powder \u00B7 Polissoir Step\u00A04 inclus \u00B7 Livraison offerte au Maroc \u00B7 Paiement \u00E0 la livraison \u00B7 Retour 30\u202Fj.',
     },
     steps: buildSteps(),
     claims: buildClaims(),

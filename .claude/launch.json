@@ -12,6 +12,12 @@
       "runtimeExecutable": "/Users/elazhar/PycharmProjects/template-femiglow/.claude/worktrees/cha-230-langchain-robustness/.claude/dev.sh",
       "runtimeArgs": [],
       "port": 3030
+    },
+    {
+      "name": "femiglow-prod",
+      "runtimeExecutable": "./.claude/prod.sh",
+      "runtimeArgs": [],
+      "port": 3000
     }
   ]
 }

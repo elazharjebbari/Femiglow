@@ -294,8 +294,8 @@ export function SeoOverrideEditor({
   }
 
   // Preview values used by SerpPreview / FacebookPreview / TwitterPreview
-  const previewUrl = state.canonical || `https://femiglow.com/${state.targetKey || ''}`;
-  let previewHost = 'femiglow.com';
+  const previewUrl = state.canonical || `https://femiglow-maroc.com/${state.targetKey || ''}`;
+  let previewHost = 'femiglow-maroc.com';
   try {
     previewHost = new URL(previewUrl).host;
   } catch {
@@ -430,7 +430,7 @@ export function SeoOverrideEditor({
             type="text"
             value={state.canonical}
             onChange={(e) => setState((s) => ({ ...s, canonical: e.target.value }))}
-            placeholder="https://femiglow.com/page"
+            placeholder="https://femiglow-maroc.com/page"
             className="w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-sm"
           />
         </Field>

@@ -47,6 +47,12 @@ function buildCsp(
     "media-src 'self' blob: https://*.public.blob.vercel-storage.com",
     "font-src 'self' data:",
     `connect-src 'self' https://*.sentry.io https://plausible.io ${connectHosts}`.trim(),
+    // CHA-243 — Framing sortant : autoriser l'embed YouTube privacy-friendly
+    // sur `/kit`. Sans `frame-src` explicite, le navigateur retombe sur
+    // `default-src 'self'` et bloque l'iframe `youtube-nocookie.com`.
+    // On limite strictement au sous-domaine `nocookie` (pas de
+    // `youtube.com` direct qui poserait des cookies).
+    "frame-src 'self' https://www.youtube-nocookie.com",
     // Live preview admin : on tolère le framing same-origin pour la
     // page `/admin/components/[key]/preview` (servie en iframe). Partout
     // ailleurs on garde 'none' (durci par défaut).

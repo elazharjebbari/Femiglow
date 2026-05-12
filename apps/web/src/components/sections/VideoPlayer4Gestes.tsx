@@ -8,6 +8,8 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { YouTubeEmbed } from './YouTubeEmbed';
+import { parseYouTubeUrl } from '@/lib/video/youtube-url';
 
 interface VideoPlayer4GestesProps {
   video: RituelVideo;
@@ -22,8 +24,108 @@ const VIDEO_ID = 'rituel-4-gestes';
  *   (IntersectionObserver). Émet video_user_play UNIQUEMENT pour les plays utilisateur, video_autoplay_view
  *   au franchissement des 25 % de durée, video_complete à la fin (une fois), video_transcript_open à
  *   l'ouverture de la transcription. cf. docs/analytics/03-events-funnel-audit.md §6.1.
+ *
+ * CHA-243 — Dispatcher backend :
+ *   - Si `video.youtubeUrl` est défini ET parsable → délègue à `<YouTubeEmbed>`
+ *     (iframe `youtube-nocookie.com`, sans cookies tant que pas de lecture).
+ *   - Sinon → player HTML5 self-hosted historique avec autoplay au scroll.
  */
 export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
+  const youtubeParsed = video.youtubeUrl ? parseYouTubeUrl(video.youtubeUrl) : null;
+  if (youtubeParsed) {
+    return <YouTubeVariant video={video} />;
+  }
+  return <SelfHostedVariant video={video} />;
+}
+
+/**
+ * Variante YouTube — iframe `youtube-nocookie.com`. Garde la transcription
+ * dépliable (pas d'auto-captions YouTube pour les Shorts FR/AR garantis).
+ */
+function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
+  const [showTranscript, setShowTranscript] = useState(false);
+  const transcriptId = useId();
+  const titleId = useId();
+  const { emit } = useTracking();
+
+  const toggleTranscript = useCallback((): void => {
+    setShowTranscript((prev) => {
+      const next = !prev;
+      if (next) {
+        emit('video_transcript_open', {
+          video_id: VIDEO_ID,
+          video_title: 'Rituel — 4 gestes',
+        });
+      }
+      return next;
+    });
+  }, [emit]);
+
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="bg-creme-warm py-20 lg:py-28"
+      data-testid="video-section-youtube"
+    >
+      <Container width="page">
+        <div className="mx-auto max-w-3xl text-center">
+          <Kicker tone="champagne" withRule>
+            Les gestes
+          </Kicker>
+          <Heading
+            id={titleId}
+            as="h2"
+            size="display-md"
+            italic="always"
+            className="mt-5"
+          >
+            Cinq gestes, en un seul plan.
+          </Heading>
+          <Text size="body" tone="secondary" className="mt-4">
+            Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.
+          </Text>
+        </div>
+
+        <div className="mt-12">
+          <YouTubeEmbed
+            url={video.youtubeUrl!}
+            title="Rituel — 4 gestes en vidéo"
+            videoId={VIDEO_ID}
+          />
+        </div>
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={toggleTranscript}
+            aria-expanded={showTranscript}
+            aria-controls={transcriptId}
+            className="inline-flex items-center gap-2 text-kicker uppercase font-medium text-encre/70 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-encre focus-visible:ring-offset-2 focus-visible:ring-offset-creme-warm"
+          >
+            {showTranscript ? 'Masquer la transcription' : 'Lire la transcription'}
+          </button>
+        </div>
+
+        <div
+          id={transcriptId}
+          hidden={!showTranscript}
+          className="mx-auto mt-8 max-w-prose space-y-4"
+        >
+          {video.transcript.split('\n\n').map((paragraphe, i) => (
+            <Text key={i} size="body" tone="secondary">
+              {paragraphe}
+            </Text>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/**
+ * Variante self-hosted — player HTML5 avec autoplay au scroll. Code historique.
+ */
+function SelfHostedVariant({ video }: VideoPlayer4GestesProps) {
   const ref = useRef<HTMLVideoElement>(null);
   const reduced = useReducedMotion();
   const [showTranscript, setShowTranscript] = useState(false);

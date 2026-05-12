@@ -5,7 +5,7 @@ exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = 
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
   <channel>
     <title>FemiGlow — Catalogue produits</title>
-    <link>https://femiglow.ma</link>
+    <link>https://femiglow-maroc.com</link>
     <description><![CDATA[Le rituel manucure FemiGlow — édité au Maroc, livré en 48 heures.]]></description>
     <language>fr-MA</language>
     <lastBuildDate>__DATE__</lastBuildDate>
@@ -13,11 +13,12 @@ exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = 
     <item>
       <g:id>le-rituel</g:id>
       <g:title><![CDATA[Le kit FemiGlow]]></g:title>
-      <g:description><![CDATA[Le kit FemiGlow réunit la base, le fortifiant et la lime. Trois gestes mesurés, pensés à Casablanca, pour accompagner vos ongles à chaque saison.]]></g:description>
-      <g:link>https://femiglow.ma/kit</g:link>
-      <g:image_link>https://femiglow.ma/products/kit-principale.png</g:image_link>
+      <g:description><![CDATA[Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise halal, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.]]></g:description>
+      <g:link>https://femiglow-maroc.com/kit</g:link>
+      <g:image_link>https://femiglow-maroc.com/products/kit-principale.png</g:image_link>
       <g:availability>in stock</g:availability>
-      <g:price>320.00 MAD</g:price>
+      <g:price>390.00 MAD</g:price>
+      <g:sale_price>199.00 MAD</g:sale_price>
       <g:condition>new</g:condition>
       <g:brand>FemiGlow</g:brand>
       <g:identifier_exists>no</g:identifier_exists>

@@ -1,0 +1,36 @@
+{
+  "room": "chambre",
+  "product": null,
+  "filters": {
+    "has_photos": false,
+    "rating": null,
+    "tags": [],
+    "sort": "recommended"
+  },
+  "items": [
+    {
+      "id": "rvw_01",
+      "product_key": "sajadah-al-raha",
+      "product_title": "Sajadah Al-Raha",
+      "rating": 5,
+      "title": "Parfait",
+      "body": "Couleur élégante, ne glisse pas.",
+      "author_name": "Walid",
+      "author_city": "Rabat",
+      "is_anonymous": false,
+      "verified_purchase": true,
+      "tags": [
+        "Utilisation quotidienne"
+      ],
+      "photos": [
+        {
+          "thumb_url": "https://cdn.example/thumb1.jpg",
+          "image_url": "https://cdn.example/full1.jpg"
+        }
+      ],
+      "published_at": "2026-01-01"
+    }
+  ],
+  "cursor_next": "cursor_abc",
+  "total": 39
+}

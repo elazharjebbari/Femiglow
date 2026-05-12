@@ -87,6 +87,15 @@ export const productSchema = z.object({
   images: z.array(imageSchema).min(1),
   composition: z.array(ingredientSchema),
   inStock: z.boolean().default(true),
-  estimatedShipping: z.string().default('48 à 72 heures à Casablanca'),
+  estimatedShipping: z.string().default('Rabat\u00A0: 24\u202Fh. Maroc\u00A0: 48 \u00E0 72\u202Fh. Livraison offerte.'),
+  /**
+   * CHA-233 — Identifiants de la variant primaire (DB). Optionnels car
+   * le mock product n'a pas forcément de variant DB ; côté DB on les
+   * renseigne via `buildKitPublicProduct`. Ils permettent au panier
+   * client de transmettre le bon SKU/variantId à `/api/checkout/order`
+   * sans deviner depuis le slug.
+   */
+  primaryVariantSku: z.string().min(1).max(80).optional(),
+  primaryVariantId: z.string().min(8).max(120).optional(),
 });
 export type Product = z.infer<typeof productSchema>;

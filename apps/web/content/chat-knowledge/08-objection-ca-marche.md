@@ -5,25 +5,25 @@
 > **Locuteur** : conversion
 > **Source ID suggéré** : `ks_obj_efficacy`
 
-## Est-ce que le kit fonctionne vraiment ?
+## Est-ce que le pack fonctionne vraiment ?
 
-Le rituel agit sur le terrain de l'ongle (souplesse, hydratation, base
-de pousse). La majorité des clientes constatent un changement après 4 à
-6 semaines d'usage régulier — pas avant. Ce n'est pas un soin
-spectaculaire, c'est un soin patient.
+La manucure japonaise agit sur le terrain de l'ongle (souplesse,
+brillance, hydratation, base de pousse). La majorité des clientes
+constatent un changement après **2 à 4 semaines** d'usage régulier
+(cinq minutes par soir). Ce n'est pas un soin spectaculaire — c'est un
+soin patient, qui révèle l'éclat naturel sans vernis.
 
 ### Reformulation à proposer (chat)
 - "Qu'est-ce qui vous ferait dire que ça marche pour vous ?"
-- "On peut commencer petit — un flacon — et voir comment vos ongles
-  réagissent en 6 semaines."
+- "On peut commencer par 4 semaines de rituel régulier — c'est la
+  fenêtre où la différence se voit le plus clairement."
 
 ### Faits liés
-- Test interne : 87 % de retours positifs après 6 semaines (échantillon
-  80 testeuses).
-- Effets visibles d'abord sur la cuticule (souplesse), puis sur la
-  plaque d'ongle (couleur, résistance).
+- Effets visibles d'abord sur la brillance (Powder + polissoir Step 4),
+  puis sur la résistance de la plaque (Paste).
 - Le rituel ne fait pas pousser plus vite — il améliore la qualité de
   ce qui pousse.
+- Origine : manucure japonaise (Meiji) — méthode pluri-centenaire.
 
 ### Ne JAMAIS dire
 - "C'est garanti à 100 %" (faux et interdit).

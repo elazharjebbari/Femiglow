@@ -11,6 +11,7 @@
  */
 import { runSeoSeed } from '../../../scripts/seed-seo';
 import { runProductsSeed } from '../../../scripts/seed-products';
+import { runDeliveryCitiesSeed } from '../../../scripts/seed-delivery-cities';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -36,6 +37,17 @@ async function doSeed(): Promise<void> {
     );
   } catch (err) {
     console.warn('[boot-seed] products seed failed:', err);
+  }
+
+  try {
+    const citiesResult = await runDeliveryCitiesSeed();
+    console.warn(
+      `[boot-seed] delivery cities: ${citiesResult.database.inserted} new + ` +
+        `${citiesResult.database.updated} updated + ` +
+        `${citiesResult.database.skipped} preserved (admin edits)`,
+    );
+  } catch (err) {
+    console.warn('[boot-seed] delivery cities seed failed:', err);
   }
 }
 

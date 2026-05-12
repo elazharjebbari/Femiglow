@@ -1,0 +1,19 @@
+{
+  "key": "reviews_wall",
+  "module_key": "reviews_wall",
+  "label": "Avis clients",
+  "payload": {
+    "scope": "room",
+    "room_slug": "chambre",
+    "default_product_key": "sajadah-al-raha"
+  },
+  "style": {
+    "preset": "review_plaque",
+    "pulse": false,
+    "dot_visible": false,
+    "glow_intensity": 0.25,
+    "glow_color": "#ffffff",
+    "blur_px": 6,
+    "hover_expand": true
+  }
+}

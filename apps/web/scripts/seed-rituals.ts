@@ -50,31 +50,36 @@ async function backdate(ritualId: string, createdAt: Date): Promise<void> {
   }
 }
 
-async function main() {
-  const dryRun = process.argv.includes('--dry-run');
-  const stats = getSeedStats();
-  console.log('[seed-rituals] distribution prévue :');
-  console.log(`  total : ${stats.total}`);
-  console.log(
-    `  signal : oui=${stats.bySignal.oui} · hesite=${stats.bySignal.hesite} · non=${stats.bySignal.non}`,
-  );
-  console.log(
-    `  status : APPROVED=${stats.byStatus.APPROVED} · PENDING=${stats.byStatus.PENDING} · REJECTED=${stats.byStatus.REJECTED} · HIDDEN=${stats.byStatus.HIDDEN}`,
-  );
-  console.log(`  avec photos : ${stats.withPhotos}`);
-  console.log(`  verified_purchase : ${stats.verified}`);
-  console.log(`  featured : ${stats.featured}`);
+export interface RitualsSeedOptions {
+  dryRun?: boolean;
+  onProgress?: (label: string, fraction?: number) => void;
+}
 
+export interface RitualsSeedReport {
+  inserted: number;
+  skipped: number;
+  total: number;
+}
+
+export async function runRitualsSeed(
+  opts: RitualsSeedOptions = {},
+): Promise<RitualsSeedReport> {
+  const dryRun = opts.dryRun ?? false;
+  const stats = getSeedStats();
   if (dryRun) {
-    console.log('[seed-rituals] dry-run terminé.');
-    return;
+    return { inserted: 0, skipped: 0, total: stats.total };
   }
 
+  opts.onProgress?.('Lecture hashes existants', 0.1);
   const skip = await existingHashes();
   let inserted = 0;
   let skipped = 0;
+  const total = SEED_RITUALS.length;
+  let processed = 0;
 
   for (const seed of SEED_RITUALS) {
+    processed += 1;
+    opts.onProgress?.(`Ritual ${processed}/${total}`, processed / total);
     const hash = bodyHash(seed.body);
     if (skip.has(hash)) {
       skipped += 1;
@@ -130,13 +135,43 @@ async function main() {
     inserted += 1;
   }
 
+  opts.onProgress?.('Rafraîchissement agrégat', 0.95);
   await refreshRitualAggregate(PRODUCT_KEY);
-  console.log(
-    `[seed-rituals] terminé. Insérés : ${inserted}, déjà présents : ${skipped}.`,
-  );
+  return { inserted, skipped, total };
 }
 
-main().catch((err) => {
-  console.error('[seed-rituals] échec', err);
-  process.exit(1);
-});
+async function main() {
+  const dryRun = process.argv.includes('--dry-run');
+  const stats = getSeedStats();
+  console.log('[seed-rituals] distribution prévue :');
+  console.log(`  total : ${stats.total}`);
+  console.log(
+    `  signal : oui=${stats.bySignal.oui} · hesite=${stats.bySignal.hesite} · non=${stats.bySignal.non}`,
+  );
+  console.log(
+    `  status : APPROVED=${stats.byStatus.APPROVED} · PENDING=${stats.byStatus.PENDING} · REJECTED=${stats.byStatus.REJECTED} · HIDDEN=${stats.byStatus.HIDDEN}`,
+  );
+  console.log(`  avec photos : ${stats.withPhotos}`);
+  console.log(`  verified_purchase : ${stats.verified}`);
+  console.log(`  featured : ${stats.featured}`);
+
+  const report = await runRitualsSeed({ dryRun });
+  if (dryRun) {
+    console.log('[seed-rituals] dry-run terminé.');
+  } else {
+    console.log(
+      `[seed-rituals] terminé. Insérés : ${report.inserted}, déjà présents : ${report.skipped}.`,
+    );
+  }
+}
+
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error('[seed-rituals] échec', err);
+    process.exit(1);
+  });
+}

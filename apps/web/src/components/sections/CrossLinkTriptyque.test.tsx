@@ -17,7 +17,7 @@ describe('CrossLinkTriptyque', () => {
     render(<CrossLinkTriptyque links={mockMaison.crossLinks} />);
     expect(screen.getByRole('heading', { level: 3, name: /lire le rituel/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: /^Le journal/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 3, name: /voir le kit/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: /voir le pack/i })).toBeInTheDocument();
   });
 
   it('respecte axe', async () => {

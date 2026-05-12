@@ -42,7 +42,7 @@ export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps)
         <div className="mb-10 flex flex-col gap-3 sm:max-w-[60ch]">
           <Kicker tone="champagne">L’atelier</Kicker>
           <Heading as="h2" size="display-md" italic="auto" balance>
-            Casablanca, deux pièces calmes.
+            Rabat, deux pièces calmes.
           </Heading>
           <p className="font-body text-sm uppercase tracking-[0.18em] text-encre/60">
             {data.adresse} — {data.quartier}

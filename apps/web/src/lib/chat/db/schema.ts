@@ -504,6 +504,67 @@ export const chatLead = pgTable(
       .notNull()
       .default('pending'),
     convertedOrderId: text('converted_order_id'),
+
+    // ──────────────────────────────────────────────────────────────────────
+    // CHA-230 — Extensions wizard checkout funnel.
+    // Toutes nullable ou avec DEFAULT pour préserver les leads legacy.
+    // ──────────────────────────────────────────────────────────────────────
+
+    // Identité étendue (opt-in step 4 et step 2)
+    lastName: text('last_name'),
+    email: text('email'),
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    emailConsent: boolean('email_consent').notNull().default(false),
+
+    // Adresse de livraison (step 2)
+    shippingCity: text('shipping_city'),
+    shippingAddressLine1: text('shipping_address_line1'),
+    shippingAddressLine2: text('shipping_address_line2'),
+    shippingPostalCode: text('shipping_postal_code'),
+    shippingCountry: text('shipping_country').notNull().default('MA'),
+    shippingNotes: text('shipping_notes'),
+
+    // Préférence paiement (step 3)
+    preferredPaymentMethod: text('preferred_payment_method', {
+      enum: ['cod', 'bank_transfer', 'card'],
+    }),
+
+    // Source / Form context (cohérent avec la taxonomie tracking — cf.
+    // apps/web/src/lib/tracking/checkout-events.ts)
+    source: text('source', {
+      enum: ['chat_widget', 'wizard_kit', 'wizard_commander', 'newsletter', 'admin', 'inline'],
+    })
+      .notNull()
+      .default('chat_widget'),
+    formId: text('form_id'),
+    formMode: text('form_mode', {
+      enum: ['wizard_embed', 'wizard_cart', 'legacy_cart', 'chat'],
+    }),
+    variantKey: text('variant_key', { enum: ['A', 'B', 'control'] }),
+
+    // Ad attribution (Google / Meta)
+    gclid: text('gclid'),
+    fbp: text('fbp'),
+    fbc: text('fbc'),
+
+    // Snapshot panier au moment de la capture
+    cartSnapshot: jsonb('cart_snapshot').$type<{
+      items: Array<{ sku: string; name: string; quantity: number; unitPriceCents: number }>;
+      totalCents: number;
+      currency: string;
+    }>(),
+    cartTotalCents: integer('cart_total_cents'),
+    cartCurrency: text('cart_currency'),
+
+    // Progression du tunnel (horloges par step)
+    lastTouchedStep: text('last_touched_step', {
+      enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+    }),
+    leadCapturedAt: timestamp('lead_captured_at', { withTimezone: true }),
+    addressCompletedAt: timestamp('address_completed_at', { withTimezone: true }),
+    paymentSelectedAt: timestamp('payment_selected_at', { withTimezone: true }),
+    purchasedAt: timestamp('purchased_at', { withTimezone: true }),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -513,6 +574,10 @@ export const chatLead = pgTable(
     outcomeIdx: index('chat_lead_outcome_idx').on(t.outcome, t.createdAt),
     webhookIdx: index('chat_lead_webhook_idx').on(t.webhookStatus, t.createdAt),
     phoneIdx: index('chat_lead_phone_idx').on(t.phoneE164),
+    // CHA-230 — Indexes funnel
+    sourceIdx: index('chat_lead_source_idx').on(t.source, t.createdAt),
+    formIdx: index('chat_lead_form_idx').on(t.formId, t.formMode, t.createdAt),
+    stepIdx: index('chat_lead_step_idx').on(t.lastTouchedStep, t.createdAt),
   }),
 );
 

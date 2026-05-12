@@ -1,0 +1,23 @@
+@startuml
+title BAITI Reviews Wall - 3 modèles (vue d'ensemble)
+
+actor User
+
+rectangle "Room Scene" as Scene {
+  rectangle "Hotspot: Reviews" as Spot
+}
+
+rectangle "Model A: Drawer" as A
+rectangle "Model B: Full Page" as B
+rectangle "Model C: Hybrid" as C
+
+User --> Spot : click
+Spot --> A : open drawer
+Spot --> B : navigate route
+Spot --> C : open drawer OR open modal tab
+
+A --> Scene : overlay, scene stays visible
+B --> Scene : leave scene (breadcrumb/back)
+C --> Scene : overlay + product modal integration
+
+@enduml

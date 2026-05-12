@@ -27,14 +27,14 @@ const FALLBACK_OG = {
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('home-og')) ?? FALLBACK_OG;
   return {
-    title: 'Maison de soin pour les ongles \u2014 \u00e0 Casablanca',
+    title: 'Maison de soin pour les ongles \u2014 \u00e0 Rabat',
     description:
-      'Trois gestes, cinq minutes, un rituel saisonnier. La maison FemiGlow, \u00e9dit\u00e9e \u00e0 Casablanca.',
+      'Pack FemiGlow \u2014 manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir. \u00c9dit\u00e9 \u00e0 Rabat.',
     alternates: { canonical: '/' },
     openGraph: {
       type: 'website',
       title: 'FemiGlow \u2014 Maison de soin pour les ongles',
-      description: 'Trois gestes, cinq minutes, un rituel saisonnier.',
+      description: 'Manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir.',
       locale: 'fr_MA',
       siteName: 'FemiGlow',
       images: [{ url: og.url, width: og.width, height: og.height, alt: og.alt }],
@@ -42,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'FemiGlow \u2014 Maison de soin pour les ongles',
-      description: 'Trois gestes, cinq minutes, un rituel saisonnier.',
+      description: 'Manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir.',
       images: [og.url],
     },
   };

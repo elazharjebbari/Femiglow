@@ -28,7 +28,7 @@ export function FooterMinimal() {
             ))}
           </ul>
           <p className="text-xs text-encre/50">
-            © {new Date().getFullYear()} FemiGlow — Casablanca.
+            © {new Date().getFullYear()} FemiGlow — Rabat.
           </p>
         </div>
       </Container>

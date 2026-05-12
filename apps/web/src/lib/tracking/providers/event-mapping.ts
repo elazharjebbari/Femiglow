@@ -101,6 +101,23 @@ const MAP: Record<string, EventMapping> = {
   file_download: { google_ga4: 'file_download' },
   form_start: { google_ga4: 'form_start' },
   form_submit: { google_ga4: 'form_submit' },
+  // — CHA-230 Wizard checkout funnel — cf. docs/checkout-funnel/05-plan-action.md
+  // `lead_capture` est une conversion : on émet `Lead` côté Meta / Ads et le
+  // nom natif côté GA4 (pour pouvoir le distinguer du legacy `generate_lead`
+  // tant qu'on est en double run). On bascule sur `generate_lead` côté GA4
+  // après cleanup (PR #10).
+  lead_capture: {
+    google_ga4: 'lead_capture',
+    meta: 'Lead',
+    google_ads: 'generate_lead',
+  },
+  // `address_completed` mappe sur `add_shipping_info` (semantique GA4
+  // Enhanced Ecommerce) pour réutiliser les rapports existants côté GA4.
+  address_completed: { google_ga4: 'add_shipping_info' },
+  // Erreurs et abandon : événements custom, GA4 uniquement (signaux internes).
+  wizard_error: { google_ga4: 'wizard_error' },
+  wizard_abandoned: { google_ga4: 'wizard_abandoned' },
+
   fg_journal_read_75: { google_ga4: 'fg_journal_read_75' },
   fg_journal_read_100: { google_ga4: 'fg_journal_read_100' },
   fg_section_view: { google_ga4: 'fg_section_view' },
