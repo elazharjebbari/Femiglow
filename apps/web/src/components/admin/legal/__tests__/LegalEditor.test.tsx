@@ -14,6 +14,7 @@ const baseProps = {
   initialIncludeInSearch: false,
   status: 'draft' as const,
   version: 3,
+  initialUpdatedAtMs: 1715600000000,
   templateVars: [
     { key: 'COMPANY_NAME', value: 'FemiGlow', isRequired: true },
     { key: 'COMPANY_RC', value: '', isRequired: true },
@@ -92,6 +93,51 @@ describe('LegalEditor — édition + sauvegarde', () => {
     await waitFor(() =>
       expect(screen.getByText(/Erreur de sauvegarde/)).toBeInTheDocument(),
     );
+  });
+
+  it('409 version_conflict → ouvre modal "Conflit de version"', async () => {
+    server.use(legalScenarios.patchConflict('cgv'));
+    const user = userEvent.setup();
+    render(<LegalEditor {...baseProps} />);
+    const titleInput = screen.getByDisplayValue('CGV') as HTMLInputElement;
+    await user.clear(titleInput);
+    await user.type(titleInput, 'collision');
+    await user.click(screen.getByRole('button', { name: /Enregistrer/ }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /Conflit de version/i })).toBeInTheDocument(),
+    );
+    // Le bouton "Recharger" est présent
+    expect(screen.getByRole('button', { name: /Recharger/ })).toBeInTheDocument();
+  });
+
+  it('envoie If-Match header avec l\'ETag courant', async () => {
+    let receivedIfMatch: string | null = null;
+    server.use(
+      // override le handler pour capturer le header
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (await import('msw')).http.patch('/api/admin/legal/cgv', async ({ request }) => {
+        receivedIfMatch = request.headers.get('If-Match');
+        return (await import('msw')).HttpResponse.json({
+          id: 'lp_x',
+          slug: 'cgv',
+          title: 'CGV',
+          description: 'desc',
+          body_md: 'x',
+          status: 'draft',
+          version: 3,
+          updated_at: new Date().toISOString(),
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    render(<LegalEditor {...baseProps} />);
+    const titleInput = screen.getByDisplayValue('CGV') as HTMLInputElement;
+    await user.clear(titleInput);
+    await user.type(titleInput, 'new');
+    await user.click(screen.getByRole('button', { name: /Enregistrer/ }));
+
+    await waitFor(() => expect(receivedIfMatch).toBe(`W/"${baseProps.initialUpdatedAtMs}"`));
   });
 });
 

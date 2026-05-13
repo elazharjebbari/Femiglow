@@ -119,6 +119,35 @@ export interface UpdateLegalPageInput {
   canonicalUrl?: string | null;
   requireLegalReview?: boolean;
   actorId?: string | null;
+  /**
+   * Optimistic locking : si fourni, on n'update que si la `updatedAt` actuel
+   * en DB (en ms epoch) === expectedUpdatedAt. Sinon, renvoie version_conflict.
+   * On utilise `updatedAt` plutôt que `version` parce que `version` ne bouge
+   * qu'au publish — pour protéger les saves de draft concurrents, il faut un
+   * token qui change à chaque update.
+   */
+  expectedUpdatedAt?: number;
+}
+
+export type UpdateLegalPageOutcome =
+  | { ok: true; page: LegalPageRow }
+  | { ok: false; reason: 'not_found' | 'version_conflict'; currentUpdatedAt?: Date };
+
+export async function updateLegalPageWithLock(
+  slug: string,
+  patch: UpdateLegalPageInput,
+): Promise<UpdateLegalPageOutcome> {
+  const current = await getLegalPageBySlug(slug);
+  if (!current) return { ok: false, reason: 'not_found' };
+  if (
+    patch.expectedUpdatedAt !== undefined &&
+    patch.expectedUpdatedAt !== current.updatedAt.getTime()
+  ) {
+    return { ok: false, reason: 'version_conflict', currentUpdatedAt: current.updatedAt };
+  }
+  const updated = await updateLegalPage(slug, patch);
+  if (!updated) return { ok: false, reason: 'not_found' };
+  return { ok: true, page: updated };
 }
 
 export async function updateLegalPage(slug: string, patch: UpdateLegalPageInput): Promise<LegalPageRow | null> {

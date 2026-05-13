@@ -8,10 +8,21 @@ import {
   getLegalPageBySlug,
   listAllPlacements,
   listAllTemplateVars,
-  updateLegalPage,
+  updateLegalPageWithLock,
 } from '@/lib/legal/repository';
 import { legalPageUpdateInputSchema } from '@/lib/legal/types';
 import { detectMissingVars } from '@/lib/legal/vars';
+
+function buildETag(updatedAt: Date): string {
+  return `W/"${updatedAt.getTime()}"`;
+}
+
+function parseIfMatch(header: string | null): number | null {
+  if (!header) return null;
+  const match = header.match(/W\/"(\d+)"/);
+  if (!match) return null;
+  return Number(match[1]);
+}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,24 +41,27 @@ export async function GET(
     const [placements, vars] = await Promise.all([listAllPlacements(), listAllTemplateVars()]);
     const pagePlacements = placements.filter((p) => p.pageSlug === page.slug);
 
-    return NextResponse.json({
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      description: page.description,
-      body_md: page.bodyMd,
-      status: page.status,
-      version: page.version,
-      include_in_search: page.includeInSearch,
-      canonical_url: page.canonicalUrl,
-      require_legal_review: page.requireLegalReview,
-      last_legal_review_at: page.lastLegalReviewAt,
-      published_at: page.publishedAt,
-      updated_at: page.updatedAt,
-      updated_by: page.updatedBy,
-      placements: pagePlacements,
-      missing_vars: detectMissingVars(page.bodyMd, vars),
-    });
+    return NextResponse.json(
+      {
+        id: page.id,
+        slug: page.slug,
+        title: page.title,
+        description: page.description,
+        body_md: page.bodyMd,
+        status: page.status,
+        version: page.version,
+        include_in_search: page.includeInSearch,
+        canonical_url: page.canonicalUrl,
+        require_legal_review: page.requireLegalReview,
+        last_legal_review_at: page.lastLegalReviewAt,
+        published_at: page.publishedAt,
+        updated_at: page.updatedAt,
+        updated_by: page.updatedBy,
+        placements: pagePlacements,
+        missing_vars: detectMissingVars(page.bodyMd, vars),
+      },
+      { headers: { ETag: buildETag(page.updatedAt) } },
+    );
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });
@@ -82,24 +96,54 @@ export async function PATCH(
       );
     }
 
-    const updated = await updateLegalPage(params.slug, { ...parsed.data, actorId: session.adminId });
-    if (!updated) throw new HttpError('not_found', 'Page non trouvée');
+    const ifMatchTs = parseIfMatch(request.headers.get('if-match'));
+    const outcome = await updateLegalPageWithLock(params.slug, {
+      ...parsed.data,
+      actorId: session.adminId,
+      expectedUpdatedAt: ifMatchTs ?? undefined,
+    });
 
+    if (!outcome.ok) {
+      if (outcome.reason === 'not_found') {
+        throw new HttpError('not_found', 'Page non trouvée');
+      }
+      // version_conflict
+      return NextResponse.json(
+        {
+          error: {
+            code: 'version_conflict',
+            message: 'La page a été modifiée par un autre admin. Recharge la page pour voir la dernière version.',
+            currentUpdatedAt: outcome.currentUpdatedAt,
+          },
+        },
+        {
+          status: 409,
+          headers: outcome.currentUpdatedAt
+            ? { ETag: buildETag(outcome.currentUpdatedAt) }
+            : undefined,
+        },
+      );
+    }
+
+    const updated = outcome.page;
     await logLegalEvent('legal.page.updated', session.adminId, updated.id, {
       slug: updated.slug,
       fields: Object.keys(parsed.data),
     });
 
-    return NextResponse.json({
-      id: updated.id,
-      slug: updated.slug,
-      title: updated.title,
-      description: updated.description,
-      body_md: updated.bodyMd,
-      status: updated.status,
-      version: updated.version,
-      updated_at: updated.updatedAt,
-    });
+    return NextResponse.json(
+      {
+        id: updated.id,
+        slug: updated.slug,
+        title: updated.title,
+        description: updated.description,
+        body_md: updated.bodyMd,
+        status: updated.status,
+        version: updated.version,
+        updated_at: updated.updatedAt,
+      },
+      { headers: { ETag: buildETag(updated.updatedAt) } },
+    );
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });

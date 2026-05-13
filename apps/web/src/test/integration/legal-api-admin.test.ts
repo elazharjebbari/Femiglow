@@ -62,6 +62,7 @@ vi.mock('@/lib/legal/repository', () => ({
   getPublishedLegalPage: vi.fn(),
   createLegalPage: vi.fn(),
   updateLegalPage: vi.fn(),
+  updateLegalPageWithLock: vi.fn(),
   archiveLegalPage: vi.fn(),
   submitForReview: vi.fn(),
   listHistoryForSlug: vi.fn(),
@@ -301,10 +302,11 @@ describe('GET/PATCH/DELETE /api/admin/legal/[slug]', () => {
   });
 
   it('PATCH update + audit', async () => {
-    vi.mocked(repo.updateLegalPage).mockResolvedValue({
-      ...PAGE_BASE,
-      title: 'CGV v2',
-    } as never);
+    const updated = { ...PAGE_BASE, title: 'CGV v2' };
+    vi.mocked(repo.updateLegalPageWithLock).mockResolvedValue({
+      ok: true,
+      page: updated as never,
+    });
     const res = await patchAdminPage(
       new Request('http://x', {
         method: 'PATCH',
@@ -313,6 +315,7 @@ describe('GET/PATCH/DELETE /api/admin/legal/[slug]', () => {
       { params: { slug: 'cgv' } },
     );
     expect(res.status).toBe(200);
+    expect(res.headers.get('etag')).toMatch(/^W\/"\d+"$/);
     expect(auditMock).toHaveBeenCalledWith(
       'legal.page.updated',
       'adm_1',
@@ -330,6 +333,89 @@ describe('GET/PATCH/DELETE /api/admin/legal/[slug]', () => {
       { params: { slug: 'cgv' } },
     );
     expect(res.status).toBe(422);
+  });
+
+  it('GET expose le header ETag (W/"<updatedAt-ms>")', async () => {
+    const fixedDate = new Date('2026-05-13T12:00:00Z');
+    vi.mocked(repo.getLegalPageBySlug).mockResolvedValue({
+      ...PAGE_BASE,
+      updatedAt: fixedDate,
+    } as never);
+    vi.mocked(repo.listAllPlacements).mockResolvedValue([]);
+    vi.mocked(repo.listAllTemplateVars).mockResolvedValue([]);
+
+    const res = await getAdminPage(new Request('http://x'), { params: { slug: 'cgv' } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('etag')).toBe(`W/"${fixedDate.getTime()}"`);
+  });
+
+  it('PATCH 409 version_conflict si If-Match obsolète', async () => {
+    const current = new Date('2026-05-13T12:00:05Z');
+    vi.mocked(repo.updateLegalPageWithLock).mockResolvedValue({
+      ok: false,
+      reason: 'version_conflict',
+      currentUpdatedAt: current,
+    });
+
+    const res = await patchAdminPage(
+      new Request('http://x', {
+        method: 'PATCH',
+        headers: {
+          'If-Match': `W/"${current.getTime() - 60_000}"`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: 'Title OK' }),
+      }),
+      { params: { slug: 'cgv' } },
+    );
+    expect(res.status).toBe(409);
+    expect(res.headers.get('etag')).toBe(`W/"${current.getTime()}"`);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('version_conflict');
+    // audit pas appelé sur conflict
+    expect(auditMock).not.toHaveBeenCalled();
+  });
+
+  it('PATCH 200 si If-Match matche', async () => {
+    const ts = new Date('2026-05-13T12:00:00Z');
+    vi.mocked(repo.updateLegalPageWithLock).mockResolvedValue({
+      ok: true,
+      page: { ...PAGE_BASE, updatedAt: new Date(ts.getTime() + 1000) } as never,
+    });
+
+    const res = await patchAdminPage(
+      new Request('http://x', {
+        method: 'PATCH',
+        headers: { 'If-Match': `W/"${ts.getTime()}"`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Title OK' }),
+      }),
+      { params: { slug: 'cgv' } },
+    );
+    expect(res.status).toBe(200);
+    // Le repo doit avoir reçu expectedUpdatedAt
+    expect(vi.mocked(repo.updateLegalPageWithLock)).toHaveBeenCalledWith(
+      'cgv',
+      expect.objectContaining({ expectedUpdatedAt: ts.getTime() }),
+    );
+  });
+
+  it('PATCH 200 sans If-Match (back-compat, pas de lock)', async () => {
+    vi.mocked(repo.updateLegalPageWithLock).mockResolvedValue({
+      ok: true,
+      page: PAGE_BASE as never,
+    });
+    const res = await patchAdminPage(
+      new Request('http://x', {
+        method: 'PATCH',
+        body: JSON.stringify({ title: 'Title OK' }),
+      }),
+      { params: { slug: 'cgv' } },
+    );
+    expect(res.status).toBe(200);
+    expect(vi.mocked(repo.updateLegalPageWithLock)).toHaveBeenCalledWith(
+      'cgv',
+      expect.objectContaining({ expectedUpdatedAt: undefined }),
+    );
   });
 
   it('DELETE 409 si status=published', async () => {

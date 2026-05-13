@@ -23,6 +23,12 @@ interface LegalEditorProps {
   initialIncludeInSearch: boolean;
   status: string;
   version: number;
+  /**
+   * Timestamp (ms epoch) au moment du chargement, sert d'ETag pour
+   * l'optimistic locking. Envoyé dans `If-Match` sur PATCH ; en cas de
+   * 409, on affiche un modal "page modifiée par un autre admin".
+   */
+  initialUpdatedAtMs: number;
   templateVars: TemplateVar[];
   placements: Placement[];
 }
@@ -98,6 +104,8 @@ export function LegalEditor(props: LegalEditorProps) {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [version, setVersion] = useState(props.version);
   const [status, setStatus] = useState(props.status);
+  const [updatedAtMs, setUpdatedAtMs] = useState(props.initialUpdatedAtMs);
+  const [conflict, setConflict] = useState<{ currentUpdatedAt?: number } | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialSnapshot = useRef({
     title: props.initialTitle,
@@ -138,7 +146,10 @@ export function LegalEditor(props: LegalEditorProps) {
     try {
       const res = await fetch(`/api/admin/legal/${props.slug}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'If-Match': `W/"${updatedAtMs}"`,
+        },
         body: JSON.stringify({
           title,
           description: description || null,
@@ -146,17 +157,30 @@ export function LegalEditor(props: LegalEditorProps) {
           include_in_search: includeInSearch,
         }),
       });
+      if (res.status === 409) {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: { currentUpdatedAt?: string };
+        };
+        const ts = data.error?.currentUpdatedAt
+          ? new Date(data.error.currentUpdatedAt).getTime()
+          : undefined;
+        setConflict({ currentUpdatedAt: ts });
+        setSaveState('error');
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { version: number };
+      const data = (await res.json()) as { version: number; updated_at: string };
+      const newMs = new Date(data.updated_at).getTime();
       initialSnapshot.current = { title, description, bodyMd, includeInSearch };
       setVersion(data.version);
+      setUpdatedAtMs(newMs);
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 2000);
     } catch (err) {
       console.error('legal-editor save', err);
       setSaveState('error');
     }
-  }, [props.slug, title, description, bodyMd, includeInSearch]);
+  }, [props.slug, title, description, bodyMd, includeInSearch, updatedAtMs]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -298,6 +322,44 @@ export function LegalEditor(props: LegalEditorProps) {
           ))}
         </ul>
       </details>
+
+      {conflict ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="legal-conflict-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4"
+        >
+          <div className="w-full max-w-md bg-white p-6">
+            <h2 id="legal-conflict-title" className="text-lg font-semibold text-stone-900">
+              Conflit de version
+            </h2>
+            <p className="mt-2 text-sm text-stone-600">
+              Cette page a été modifiée par un autre admin pendant que tu
+              éditais. Tes changements locaux sont conservés, mais tu dois
+              recharger pour récupérer la dernière version, puis re-saisir.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConflict(null)}
+                className="border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+              >
+                Ignorer
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.reload();
+                }}
+                className="bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-800"
+              >
+                Recharger la page
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showPublishModal ? (
         <div

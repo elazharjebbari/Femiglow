@@ -70,6 +70,7 @@ export default async function LegalEditPage({ params }: PageProps) {
         initialIncludeInSearch={page.includeInSearch}
         status={page.status}
         version={page.version}
+        initialUpdatedAtMs={page.updatedAt.getTime()}
         templateVars={vars.map((v) => ({ key: v.key, value: v.value, isRequired: v.isRequired }))}
         placements={pagePlacements.map((p) => ({
           zoneKey: p.zoneKey,

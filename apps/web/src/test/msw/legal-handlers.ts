@@ -132,6 +132,21 @@ export const legalScenarios = {
       HttpResponse.json({ error: { code: 'internal_error' } }, { status: 500 }),
     ),
 
+  /** Force le PATCH à renvoyer 409 version_conflict. */
+  patchConflict: (slug: string, currentUpdatedAtIso = new Date().toISOString()) =>
+    http.patch(`/api/admin/legal/${slug}`, () =>
+      HttpResponse.json(
+        {
+          error: {
+            code: 'version_conflict',
+            message: 'La page a été modifiée par un autre admin.',
+            currentUpdatedAt: currentUpdatedAtIso,
+          },
+        },
+        { status: 409 },
+      ),
+    ),
+
   /** Force le publish à renvoyer 422 missing_required_vars. */
   publishMissingVars: (missing: string[]) =>
     http.post('/api/admin/legal/:slug/publish', () =>
