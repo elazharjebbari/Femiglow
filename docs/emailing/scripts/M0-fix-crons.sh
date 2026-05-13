@@ -65,7 +65,9 @@ for u in "${UNITS[@]}"; do
     echo "  (skip, not found) ${u}"
     continue
   fi
-  if grep -qE '^ExecStart=/usr/bin/curl.*-X[[:space:]]+POST' "${u}"; then
+  # Accept any -X METHOD (POST or GET) — the chat unit was repointed to GET
+  # by M0-fix-cron-final.sh, and we mustn't add -X POST on top of it.
+  if grep -qE '^ExecStart=/usr/bin/curl.*-X[[:space:]]+[A-Z]+' "${u}"; then
     echo "  (already fixed) ${u}"
     continue
   fi

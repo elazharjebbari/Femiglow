@@ -97,7 +97,7 @@ else
   ]
 }
 JSON
-    scli apply "${PLAN}" 2>&1 | tail -10
+    scli apply --file "${PLAN}" 2>&1 | tail -10
     rm -f "${PLAN}"
 
     # Find the new account id
@@ -123,7 +123,7 @@ JSON
   ]
 }
 JSON
-    scli apply "${PWPLAN}" 2>&1 | tail -10
+    scli apply --file "${PWPLAN}" 2>&1 | tail -10
     rm -f "${PWPLAN}"
     echo "  ✓ password set"
   fi
@@ -235,7 +235,7 @@ else
   ]
 }
 JSON
-    scli apply "${PLAN}" 2>&1 | tail -5
+    scli apply --file "${PLAN}" 2>&1 | tail -5
     rm -f "${PLAN}"
     echo "  ✓ webhook created"
   fi
