@@ -112,6 +112,52 @@ export const gtmConfigStore = {
     return version;
   },
 
+  /**
+   * D-003 — Clone d'une version (édition = nouvelle version dérivée).
+   * Idempotente : ne mute jamais la source. Le clone est ajouté à la liste
+   * et marqué `clonedFrom: source.id`. Pas d'auto-activation.
+   *
+   * Throws `config_version_not_found` si `sourceId` est inconnu.
+   */
+  async clone(
+    sourceId: string,
+    input: { name: string; notes?: string | null },
+    opts: SaveOptions,
+  ): Promise<GtmConfigVersion> {
+    const state = await readState();
+    const source = state.versions.find((v) => v.id === sourceId);
+    if (!source) throw new Error('config_version_not_found');
+
+    const cloned: GtmConfigVersion = {
+      id: randomUUID(),
+      name: input.name,
+      notes: input.notes ?? null,
+      createdAt: new Date().toISOString(),
+      createdBy: opts.actorId,
+      // Deep-clone JSON pour éviter toute mutation partagée avec la source.
+      perEnv: JSON.parse(JSON.stringify(source.perEnv)) as typeof source.perEnv,
+      clonedFrom: source.id,
+    };
+    state.versions.push(cloned);
+
+    // FIFO identique à create — préserve toujours l'active.
+    if (state.versions.length > MAX_CONFIG_VERSIONS) {
+      const sorted = state.versions
+        .slice()
+        .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+      const toRemove: string[] = [];
+      for (const v of sorted) {
+        if (state.versions.length - toRemove.length <= MAX_CONFIG_VERSIONS) break;
+        if (v.id === state.activeId) continue;
+        toRemove.push(v.id);
+      }
+      state.versions = state.versions.filter((v) => !toRemove.includes(v.id));
+    }
+
+    await writeState(state, opts);
+    return cloned;
+  },
+
   async activate(id: string, opts: SaveOptions): Promise<GtmConfigVersion> {
     const state = await readState();
     const target = state.versions.find((v) => v.id === id);

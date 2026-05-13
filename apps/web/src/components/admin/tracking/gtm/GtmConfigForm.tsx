@@ -11,11 +11,39 @@ import {
 import { IconCopy, IconCheck } from './GtmIcons';
 import { GtmTemplatePicker } from './GtmTemplatePicker';
 import { GtmCsvImport } from './GtmCsvImport';
+import { SyncIndicator } from './SyncIndicator';
 
 interface Props {
   initial?: GtmConfigPerEnv;
   onSubmit: (input: { name: string; notes: string | null; perEnv: GtmConfigPerEnv }) => Promise<void> | void;
   submitting?: boolean;
+  /**
+   * D-002 — Stratégie de seed initial. Le parent peut indiquer la
+   * provenance pour affiner l'UI (label du bouton submit, sous-titre).
+   * Le seed effectif est néanmoins porté par `initial` (le hydration
+   * passe par les props, pas par le seedFrom).
+   */
+  seedFrom?: 'providers' | 'version' | 'template' | 'empty';
+}
+
+// Mapping provider.pixelId → champ env config GTM (production seulement).
+// Les autres envs sont remplis par "propage" depuis le bouton ad-hoc.
+const PROVIDER_TO_FIELD: Partial<Record<string, keyof GtmEnvConfigDTO>> = {
+  meta: 'metaPixelId',
+  google_ga4: 'ga4MeasurementId',
+  tiktok: 'tiktokPixelId',
+  snap: 'snapPixelId',
+  pinterest: 'pinterestTagId',
+};
+
+interface ProvidersSnapshotEntry {
+  kind: string;
+  pixelId: string | null;
+}
+
+interface ProvidersSnapshot {
+  generatedAt: string;
+  providers: Record<string, ProvidersSnapshotEntry>;
 }
 
 interface FieldDef {
@@ -80,12 +108,54 @@ function emptyPerEnv(): GtmConfigPerEnv {
   };
 }
 
-export function GtmConfigForm({ initial, onSubmit, submitting = false }: Props) {
+export function GtmConfigForm({
+  initial,
+  onSubmit,
+  submitting = false,
+  seedFrom,
+}: Props) {
   const [perEnv, setPerEnv] = useState<GtmConfigPerEnv>(initial ?? emptyPerEnv());
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [propagatedKey, setPropagatedKey] = useState<string | null>(null);
+  const [providerSnapshot, setProviderSnapshot] = useState<ProvidersSnapshot | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  const importFromProviders = useCallback(async () => {
+    setImporting(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/tracking/providers/snapshot', {
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        throw new Error(`Snapshot HTTP ${res.status}`);
+      }
+      const snap = (await res.json()) as ProvidersSnapshot;
+      setProviderSnapshot(snap);
+      setPerEnv((cur) => {
+        const next = { ...cur };
+        const prod = { ...next.production };
+        for (const [kind, entry] of Object.entries(snap.providers)) {
+          const fieldKey = PROVIDER_TO_FIELD[kind];
+          if (!fieldKey) continue;
+          const value = entry.pixelId?.trim();
+          if (value) prod[fieldKey] = value as never;
+        }
+        next.production = prod;
+        return next;
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Import depuis Providers échoué : ${err.message}`
+          : 'Import depuis Providers échoué',
+      );
+    } finally {
+      setImporting(false);
+    }
+  }, []);
 
   const update = useCallback(
     (env: GtmEnv, key: FieldDef['key']) =>
@@ -144,7 +214,17 @@ export function GtmConfigForm({ initial, onSubmit, submitting = false }: Props) 
             .
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={importFromProviders}
+            disabled={importing}
+            data-testid="gtm-import-from-providers"
+            title="Pré-remplir depuis l'état actuel des Providers (D-002)"
+            className="inline-flex items-center gap-1 rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-700 shadow-sm transition hover:bg-stone-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {importing ? 'Import…' : 'Importer depuis Providers'}
+          </button>
           <GtmTemplatePicker onPick={(p) => setPerEnv(p)} />
           <GtmCsvImport
             base={perEnv}
@@ -152,6 +232,16 @@ export function GtmConfigForm({ initial, onSubmit, submitting = false }: Props) 
           />
         </div>
       </header>
+      {seedFrom === 'version' ? (
+        <div
+          role="note"
+          className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600"
+        >
+          Édition d'une version existante — la sauvegarde créera une{' '}
+          <strong>nouvelle version</strong> dérivée (clone). L'historique reste
+          préservé (D-003).
+        </div>
+      ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
         <label className="block">
@@ -212,17 +302,42 @@ export function GtmConfigForm({ initial, onSubmit, submitting = false }: Props) 
                     <div className="mt-0.5 text-[11px] text-stone-400">{field.hint}</div>
                   ) : null}
                 </td>
-                {GTM_ENVS.map((env) => (
-                  <td key={env} className="px-2 py-2 align-top">
-                    <input
-                      type="text"
-                      value={getFieldValue(perEnv[env], field.key)}
-                      placeholder={field.placeholder}
-                      onChange={update(env, field.key)}
-                      className="block w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 font-mono text-xs shadow-sm focus:border-stone-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-1"
-                    />
-                  </td>
-                ))}
+                {GTM_ENVS.map((env) => {
+                  // Snapshot uniquement en production — c'est l'env de
+                  // référence côté Providers. Si on a snap pour ce champ,
+                  // afficher SyncIndicator à droite de l'input prod.
+                  const providerValue =
+                    env === 'production' && providerSnapshot
+                      ? (() => {
+                          for (const [kind, fieldKey] of Object.entries(PROVIDER_TO_FIELD)) {
+                            if (fieldKey === field.key) {
+                              return providerSnapshot.providers[kind]?.pixelId ?? null;
+                            }
+                          }
+                          return null;
+                        })()
+                      : null;
+                  return (
+                    <td key={env} className="px-2 py-2 align-top">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={getFieldValue(perEnv[env], field.key)}
+                          placeholder={field.placeholder}
+                          onChange={update(env, field.key)}
+                          className="block w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 font-mono text-xs shadow-sm focus:border-stone-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-1"
+                        />
+                        {providerValue ? (
+                          <SyncIndicator
+                            current={getFieldValue(perEnv[env], field.key)}
+                            providerValue={providerValue}
+                            label={field.label}
+                          />
+                        ) : null}
+                      </div>
+                    </td>
+                  );
+                })}
                 <td className="px-1 py-2 align-top text-right">
                   <div className="inline-flex flex-col items-end gap-1">
                     <button
