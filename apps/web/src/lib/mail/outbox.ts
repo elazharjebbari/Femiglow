@@ -10,6 +10,7 @@
 import { and, eq, inArray, lte, or, isNull, sql } from 'drizzle-orm';
 
 import { db as getDb } from '@/lib/db/client';
+import { rowsOf } from '@/lib/db/exec';
 import { emailOutbox, emailEvent, type EmailOutboxRow } from '@/lib/db/schema-emails';
 import { logger } from '@/lib/logging/logger';
 import { env } from '@/lib/env';
@@ -78,7 +79,9 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
   // cron workers can process disjoint subsets.
   // Use Postgres now() instead of binding a JS Date — postgres-js doesn't
   // serialize raw Date objects when interpolated via sql`${date}` template.
-  const rows = (await drizzle.execute(sql`
+  // Use rowsOf() to handle both Neon HTTP ({ rows: [] }) and postgres-js
+  // (array direct) shapes — cf. lib/db/exec.ts.
+  const result = (await drizzle.execute(sql`
     UPDATE email_outbox o
     SET status = 'sending', updated_at = now()
     FROM (
@@ -94,9 +97,9 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
     ) AS picked
     WHERE o.id = picked.id
     RETURNING o.*;
-  `)) as unknown as { rows: EmailOutboxRow[] };
+  `)) as unknown as { rows: EmailOutboxRow[] } | EmailOutboxRow[];
 
-  const list = rows.rows ?? [];
+  const list = rowsOf(result);
   let succeeded = 0;
   let failed = 0;
   let dlq = 0;
