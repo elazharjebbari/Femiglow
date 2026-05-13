@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, lte, sql as dsql } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
+import { rowsOf } from '@/lib/db/exec';
 import { createId } from '@/lib/ids';
 import type { MediaJob, MediaJobKind, MediaJobStatus } from '@/lib/db/types';
 
@@ -88,8 +89,15 @@ export async function claimNextPendingJob(): Promise<MediaJob | null> {
       )
       RETURNING *
     `;
-    const result = (await drizzle.execute(claimSql)) as unknown as { rows: MediaJob[] };
-    return result.rows[0] ?? null;
+    // Cf. lib/db/exec.ts — db.execute() shape diverges between Neon ({rows:[]})
+    // and postgres-js (array direct). Use rowsOf() to handle both safely.
+    // The `as unknown as ...` escape hatch is needed because Drizzle's
+    // execute<T> requires T extends record-shape ; MediaJob isn't.
+    const result = (await drizzle.execute(claimSql)) as unknown as
+      | { rows: MediaJob[] }
+      | MediaJob[];
+    const rows = rowsOf(result);
+    return rows[0] ?? null;
   }
   const store = memoryStore();
   const candidates = Array.from(store.mediaJobs.values())

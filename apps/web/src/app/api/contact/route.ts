@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { contactFormSchema } from '@/lib/schemas';
 import { logger } from '@/lib/logging/logger';
 import { dispatchContactWebhook } from '@/lib/webhooks/outbound/sources/from-contact';
+import { sendTransactional } from '@/lib/mail/send';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,24 @@ export async function POST(request: Request) {
     logger.error('outbound.webhook.contact.dispatch_error', {
       error: String(err),
     });
+  });
+
+  // M1.A — Accusé de contact transactionnel (fire-and-forget aussi).
+  // Idempotency key : email + jour, évite les doublons si le user re-soumet
+  // 2× dans la même journée.
+  const today = new Date().toISOString().slice(0, 10);
+  const firstName = data.name.trim().split(/\s+/)[0] ?? data.name;
+  void sendTransactional({
+    template: 'contact-acknowledgement',
+    to: { email: data.email, name: data.name },
+    payload: {
+      firstName,
+      messageExcerpt: data.message.slice(0, 280),
+    },
+    idempotencyKey: `contact-ack:${data.email.toLowerCase()}:${today}`,
+    source: 'api.contact',
+  }).catch((err: unknown) => {
+    logger.error('mail.contact_ack.dispatch_error', { error: String(err) });
   });
 
   return NextResponse.json({ ok: true });
