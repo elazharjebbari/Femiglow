@@ -78,7 +78,7 @@ export const authFailedSchema = z
   })
   .passthrough();
 
-export const stalwartWebhookSchema = z.discriminatedUnion('event', [
+const knownEventSchema = z.discriminatedUnion('event', [
   queueAuthenticatedSchema,
   queueMessageQueuedSchema,
   deliveryDeliveredSchema,
@@ -87,7 +87,29 @@ export const stalwartWebhookSchema = z.discriminatedUnion('event', [
   authFailedSchema,
 ]);
 
+// Catch-all for any other Stalwart event we don't care about (acme.*, dns.*,
+// imap.*, etc.). The webhook captures everything (eventsPolicy=exclude with
+// empty set), so the receiver must tolerate them and return 200 silently.
+const unknownEventSchema = z
+  .object({ event: z.string() })
+  .passthrough();
+
+export const stalwartWebhookSchema = z.union([knownEventSchema, unknownEventSchema]);
+
+export type StalwartKnownEvent = z.infer<typeof knownEventSchema>;
 export type StalwartWebhookEvent = z.infer<typeof stalwartWebhookSchema>;
+
+export function isKnownEvent(evt: StalwartWebhookEvent): evt is StalwartKnownEvent {
+  const known = [
+    'queue.message-queued',
+    'queue.authenticated-message-queued',
+    'delivery.delivered',
+    'delivery.failed',
+    'queue.rescheduled',
+    'auth.failed',
+  ];
+  return known.includes(evt.event);
+}
 
 export function isHardBounce(errorCode: number | undefined): boolean {
   return errorCode != null && errorCode >= 500 && errorCode < 600;

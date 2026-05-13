@@ -23,6 +23,7 @@ import { logger } from '@/lib/logging/logger';
 import {
   stalwartWebhookSchema,
   isHardBounce,
+  isKnownEvent,
   type StalwartWebhookEvent,
 } from '@/lib/mail/webhooks/stalwart-parser';
 
@@ -43,9 +44,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     return new NextResponse('Webhook not configured', { status: 503 });
   }
 
-  const auth = req.headers.get('authorization') ?? '';
-  const expected = `Bearer ${secret}`;
-  if (!constantTimeEqual(auth, expected)) {
+  // Stalwart's HttpAuth Bearer schema is not documented in NDJSON apply.
+  // We use a custom header (X-FG-Webhook-Token) configured in the WebHook's
+  // httpHeaders map instead — simpler and equally secure.
+  const token = req.headers.get('x-fg-webhook-token') ?? '';
+  if (!constantTimeEqual(token, secret)) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -64,6 +67,13 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const evt: StalwartWebhookEvent = parsed.data;
   logger.info('mail.webhook.stalwart.received', { event: evt.event });
+
+  if (!isKnownEvent(evt)) {
+    // Stalwart's webhook captures all events (eventsPolicy=exclude + events={}).
+    // Most are noise for our use case (acme.*, dns.*, imap.*, etc.) — silently
+    // return 200 so Stalwart doesn't keep retrying.
+    return NextResponse.json({ ok: true, ignored: 'unhandled-event' });
+  }
 
   if (evt.event === 'auth.failed') {
     logger.warn('mail.smtp.auth_failed', { user: evt.user, ip: evt.ip });

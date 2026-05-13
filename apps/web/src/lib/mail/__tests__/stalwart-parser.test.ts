@@ -89,12 +89,15 @@ describe('stalwart-parser', () => {
       expect(stalwartWebhookSchema.parse(payload).event).toBe('delivery.delivered');
     });
 
-    it('rejects unknown event type', () => {
+    it('accepts unknown event type (passthrough — receiver returns 200 ignored)', () => {
+      // The webhook config uses eventsPolicy=exclude with empty events set,
+      // so Stalwart sends ALL events. The parser accepts any {event: string};
+      // the receiver routes only the known ones to DB and ignores the rest.
       const result = stalwartWebhookSchema.safeParse({
-        event: 'message.unknown',
-        queueId: 'x',
+        event: 'acme.auth-start',
+        domain: 'femiglow-maroc.com',
       });
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it('rejects payload missing event field', () => {

@@ -175,7 +175,7 @@ else
   if [[ "${DRY_RUN}" != "1" ]]; then
     PLAN=$(mktemp /tmp/stalwart-webhook-plan.XXXXXX.ndjson)
     cat > "${PLAN}" <<EOF
-{"@type":"create","object":"WebHook","value":{"webhook-fmg-stalwart":{"url":"${WEBHOOK_URL}","enable":true,"events":["queue.message-queued","queue.authenticated-message-queued","delivery.delivered","delivery.failed","queue.rescheduled","auth.failed"],"eventsPolicy":"include","httpHeaders":{},"timeout":"30s","throttle":"0s","discardAfter":"1d","allowInvalidCerts":false,"lossy":false,"level":"info","httpAuth":{"@type":"Bearer","token":"${WEBHOOK_SECRET}"}}}}
+{"@type":"create","object":"WebHook","value":{"webhook-fmg-stalwart":{"url":"${WEBHOOK_URL}","enable":true,"events":{},"eventsPolicy":"exclude","httpHeaders":{"X-FG-Webhook-Token":"${WEBHOOK_SECRET}"},"timeout":30000,"discardAfter":86400000,"throttle":1000,"allowInvalidCerts":false,"lossy":false,"level":"info"}}}
 EOF
     scli apply --file "${PLAN}" 2>&1 | tail -5
     rm -f "${PLAN}"
