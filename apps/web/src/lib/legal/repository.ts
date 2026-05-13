@@ -37,16 +37,34 @@ export async function getPublishedLegalPage(slug: string): Promise<LegalPageRow 
 
 export async function listLegalPages(filter: {
   status?: LegalPageStatus;
+  /** Recherche FR insensitive sur title + slug + description. */
+  search?: string;
 } = {}): Promise<LegalPageRow[]> {
   const c = conn();
+  const conds = [];
   if (filter.status) {
-    return c
-      .select()
-      .from(schema.legalPages)
-      .where(eq(schema.legalPages.status, filter.status))
-      .orderBy(desc(schema.legalPages.updatedAt));
+    conds.push(eq(schema.legalPages.status, filter.status));
   }
-  return c.select().from(schema.legalPages).orderBy(desc(schema.legalPages.updatedAt));
+  if (filter.search && filter.search.trim()) {
+    // ILIKE Postgres : insensitive. On échappe les wildcards.
+    const escaped = filter.search.replace(/[%_]/g, '\\$&').trim();
+    const pattern = `%${escaped}%`;
+    conds.push(
+      sql`(
+        ${schema.legalPages.title} ILIKE ${pattern}
+        OR ${schema.legalPages.slug} ILIKE ${pattern}
+        OR ${schema.legalPages.description} ILIKE ${pattern}
+      )`,
+    );
+  }
+  if (conds.length === 0) {
+    return c.select().from(schema.legalPages).orderBy(desc(schema.legalPages.updatedAt));
+  }
+  return c
+    .select()
+    .from(schema.legalPages)
+    .where(conds.length === 1 ? conds[0]! : and(...conds))
+    .orderBy(desc(schema.legalPages.updatedAt));
 }
 
 export interface LegalListStats {

@@ -2,15 +2,21 @@ import Link from 'next/link';
 
 import { AdminShell } from '@/components/admin/AdminShell';
 import { LegalEmptyState } from '@/components/admin/legal/EmptyState';
+import { LegalListFilters } from '@/components/admin/legal/LegalListFilters';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   legalListStats,
   listAllTemplateVars,
   listLegalPages,
 } from '@/lib/legal/repository';
+import { legalPageStatusSchema } from '@/lib/legal/types';
 import { detectMissingVars } from '@/lib/legal/vars';
 
 export const dynamic = 'force-dynamic';
+
+interface PageProps {
+  searchParams?: { q?: string; status?: string };
+}
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Brouillon',
@@ -26,13 +32,22 @@ const STATUS_PILL: Record<string, string> = {
   archived: 'bg-stone-200 text-stone-600',
 };
 
-export default async function AdminLegalPage() {
+export default async function AdminLegalPage({ searchParams }: PageProps) {
   const session = await requireAdmin('/admin/legal');
+  const statusParam = searchParams?.status
+    ? legalPageStatusSchema.safeParse(searchParams.status)
+    : null;
+  const filter = {
+    status: statusParam?.success ? statusParam.data : undefined,
+    search: searchParams?.q || undefined,
+  };
   const [pages, stats, vars] = await Promise.all([
-    listLegalPages(),
+    listLegalPages(filter),
     legalListStats(),
     listAllTemplateVars(),
   ]);
+
+  const isFiltered = Boolean(filter.status || filter.search);
 
   const rows = pages.map((p) => ({
     ...p,
@@ -84,6 +99,8 @@ export default async function AdminLegalPage() {
           </Link>
         </div>
       </header>
+
+      <LegalListFilters />
 
       <table className="w-full border-collapse border border-stone-200 bg-white text-sm">
         <thead className="bg-stone-100 text-left text-xs uppercase tracking-wider text-stone-600">
@@ -141,12 +158,23 @@ export default async function AdminLegalPage() {
 
       {rows.length === 0 ? (
         <div className="mt-8">
-          <LegalEmptyState
-            title="Aucune page légale"
-            description="Crée ta première page depuis le wizard, ou lance le seed pour générer les 9 templates par défaut (mentions légales, CGV, etc.)."
-            ctaHref="/admin/legal/new"
-            ctaLabel="+ Créer une page"
-          />
+          {isFiltered ? (
+            <LegalEmptyState
+              title="Aucun résultat"
+              description={`Aucune page ne correspond à tes filtres${
+                filter.search ? ` (recherche: "${filter.search}")` : ''
+              }${filter.status ? ` (statut: ${filter.status})` : ''}.`}
+              ctaHref="/admin/legal"
+              ctaLabel="Effacer les filtres"
+            />
+          ) : (
+            <LegalEmptyState
+              title="Aucune page légale"
+              description="Crée ta première page depuis le wizard, ou lance le seed pour générer les 9 templates par défaut (mentions légales, CGV, etc.)."
+              ctaHref="/admin/legal/new"
+              ctaLabel="+ Créer une page"
+            />
+          )}
         </div>
       ) : null}
     </AdminShell>
