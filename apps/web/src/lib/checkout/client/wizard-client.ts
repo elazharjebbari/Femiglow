@@ -75,7 +75,7 @@ interface RequestOpts {
   options?: WizardClientOptions;
 }
 
-async function request<T>(opts: RequestOpts): Promise<T> {
+async function request<T>(opts: RequestOpts, attempt = 0): Promise<T> {
   const fetchFn = resolveFetch(opts.options);
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -111,6 +111,22 @@ async function request<T>(opts: RequestOpts): Promise<T> {
 
   if (!res.ok) {
     const apiErr = await parseApiError(res);
+    // Si la clé idempotency a déjà été utilisée avec un payload DIFFÉRENT
+    // (l'utilisateur a corrigé un champ et re-submit), on purge la clé
+    // côté client et on retente UNE fois avec une clé fraîche. Sans cela,
+    // l'utilisateur reste bloqué sur 409 jusqu'à fermer l'onglet.
+    if (
+      apiErr instanceof ApiError &&
+      apiErr.code === 'idempotency_conflict' &&
+      opts.idempotency &&
+      attempt === 0
+    ) {
+      consumeIdempotencyKey(
+        opts.idempotency.scope,
+        opts.idempotency.resourceId ?? null,
+      );
+      return request<T>(opts, attempt + 1);
+    }
     throw apiErr;
   }
 

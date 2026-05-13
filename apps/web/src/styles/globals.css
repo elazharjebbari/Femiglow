@@ -1,6 +1,7 @@
 @import './tokens.css';
 @import './prose.css';
-@import './admin-fields.css';
+/* `admin-fields.css` est importé uniquement depuis le layout admin
+   (`app/admin/layout.tsx`) — gain ~25 KB sur le bundle CSS public. */
 
 @tailwind base;
 @tailwind components;
@@ -8,6 +9,18 @@
 
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
+
+  /*
+    Bloque l'auto-zoom iOS Safari sur focus de champ texte : iOS zoome
+    si font-size < 16 px. On force 16 px minimum (calc max() pour ne
+    PAS rapetisser sur les designs déjà à 18px+). Garde-fou complémentaire
+    au composant <MobileFocusGuard>.
+  */
+  input:not([type=button]):not([type=submit]):not([type=reset]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+  textarea,
+  select {
+    font-size: max(16px, 1rem);
+  }
 
   html {
     font-family: var(--font-inter), system-ui, sans-serif;

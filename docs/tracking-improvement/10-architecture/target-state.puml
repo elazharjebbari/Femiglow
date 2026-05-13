@@ -1,0 +1,96 @@
+@startuml target-state
+title FemiGlow Tracking — Architecture cible
+
+skinparam backgroundColor #FBF8F1
+skinparam componentStyle rectangle
+skinparam defaultFontName Inter
+
+actor User as U
+
+package "Browser" {
+  component "gtag.js\n(GA4 + Ads + GTM)" as GTAG
+  component "fbevents.js\n(Meta Pixel)" as FBQ
+  component "TrackingClient\n+ event_id UUID" as TC
+}
+
+package "Server" {
+  component "PixelLoader API\n/api/track/pixels" as PIXAPI
+  component "Track Ingest\n/api/track" as INGEST
+  component "Dispatcher" as DISP
+  component "Categorization Resolver\nresolveEventCategory()" as RES
+}
+
+package "Providers (CAPI server-side)" {
+  component "Meta CAPI" as METACAPI #LightGreen
+  component "GA4 MP" as GAMP #LightGreen
+  component "Google Ads CAPI\nEnhanced Conversions ✨" as ADS #PaleGreen
+  component "TikTok CAPI" as TT #LightGreen
+  component "Snap CAPI" as SNAP #LightGreen
+  component "Pinterest CAPI" as PIN #LightGreen
+}
+
+database "PostgreSQL" {
+  frame "tracking_providers"
+  frame "tracking_events_log\n+ event_id"
+  frame "tracking_event_overrides ✨"
+  frame "tracking_settings\n(gtm.config_versions)"
+}
+
+package "Admin UI" {
+  component "/admin/tracking\n(refreshed)"
+  component "/admin/tracking/events/categorization ✨"
+  component "/admin/tracking/analytics/providers ✨"
+  component "GtmConfigForm\n+ preFill + edit ✨"
+}
+
+U --> GTAG : page_view (auto)
+U --> FBQ
+U --> TC : explicit events
+
+note right of TC
+  Génère UUID `event_id`
+  → propagé client ET serveur
+  pour dédup native
+end note
+
+GTAG ..> "google-analytics.com" : event_id propagated
+FBQ ..> "facebook.com" : event_id propagated
+
+TC --> INGEST : POST /api/track\n+ event_id
+INGEST --> RES : eventName
+RES --> "tracking_event_overrides ✨" : SELECT
+RES --> DISP : category
+DISP --> METACAPI : event_id
+DISP --> GAMP : event_id
+DISP --> ADS : event_id ✨ NEW
+DISP --> TT : event_id
+DISP --> SNAP : event_id
+DISP --> PIN : event_id
+
+INGEST --> "tracking_events_log\n+ event_id" : INSERT\n+ providers_results
+
+PIXAPI --> "tracking_providers" : SELECT
+GTAG <.. PIXAPI : snippets
+
+"GtmConfigForm\n+ preFill + edit ✨" --> "tracking_providers" : snapshot
+
+note bottom of ADS
+  POST vers Google Ads API
+  Enhanced Conversions :
+  - user_data hash (email, tel)
+  - gclid (captured at landing)
+  - conversion_action label
+  - event_id (déduplication)
+
+  Fallback : si tag client a fire,
+  Google déduplique automatiquement.
+end note
+
+note left of "tracking_event_overrides ✨"
+  Override admin de la
+  googleAdsCategory pour
+  chaque event. Default
+  depuis event-catalog.
+end note
+
+@enduml

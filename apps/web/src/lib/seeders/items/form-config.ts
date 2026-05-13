@@ -157,9 +157,13 @@ export async function formConfigSeeder(
     }
   }
 
-  // Invalidation des feeds publics.
-  revalidatePath('/api/checkout/form-config/wizard_kit');
-  revalidatePath('/api/checkout/form-config/wizard_commander');
+  // Invalidation des feeds publics (tolérée hors Next runtime).
+  try {
+    revalidatePath('/api/checkout/form-config/wizard_kit');
+    revalidatePath('/api/checkout/form-config/wizard_commander');
+  } catch (err) {
+    if (!(err instanceof Error) || !/static generation store missing|Invariant/i.test(err.message)) throw err;
+  }
 
   return {
     stats: { created: createdCount, updated: updatedCount },

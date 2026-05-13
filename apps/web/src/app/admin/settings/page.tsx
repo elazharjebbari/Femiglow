@@ -220,6 +220,32 @@ export default async function AdminSettingsPage() {
             Progress + ETA en direct, sélection feed par feed.
           </p>
         </Link>
+        {/*
+          Reset feature — point d'entrée du wizard /admin/settings/reset.
+          Carte teintée rose pour signaler le risque destructif sans agresser.
+          Cf. docs/reset-feature/.
+        */}
+        <Link
+          href="/admin/settings/reset"
+          data-testid="settings-card-reset"
+          className="group flex flex-col rounded-md border border-rose-200 bg-rose-50/40 p-5 transition hover:border-rose-400 hover:shadow-sm"
+        >
+          <div className="flex items-start justify-between">
+            <h2 className="text-base font-semibold tracking-tight text-rose-900">
+              Reset (zone sensible)
+            </h2>
+            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-rose-800">
+              Destructif
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-rose-900/70">
+            Réinitialise la base et les médias vers un état canonique. Soft / medium / hard.
+            Backup automatique et rollback intégré.
+          </p>
+          <p className="mt-4 text-xs text-rose-900/60">
+            Wizard guidé avec confirmation typée et suivi temps réel.
+          </p>
+        </Link>
       </section>
       <footer className="mt-10 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <strong className="font-semibold">Sécurité :</strong> chaque modification est

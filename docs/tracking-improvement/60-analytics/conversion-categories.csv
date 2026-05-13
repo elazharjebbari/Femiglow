@@ -1,0 +1,12 @@
+event_name,google_ads_category,conversion_action_label_var,smart_bidding_weight,notes
+purchase,purchase,googleAdsConvLabels.purchase,1.0,Primary commerce conversion
+lead_capture,lead,googleAdsConvLabels.lead,0.3,CHA-230 wizard step 1
+generate_lead,lead,googleAdsConvLabels.lead,0.3,Generic lead form
+chat_lead_form_submit,lead,googleAdsConvLabels.lead,0.3,Chat widget lead capture
+contact_form_submit,contact,googleAdsConvLabels.contact,0.2,/contact form
+phone_call_initiated,contact,googleAdsConvLabels.contact,0.2,Phone click
+sign_up,sign_up,googleAdsConvLabels.signup,0.5,Account creation
+view_item,view_content,googleAdsConvLabels.viewContent,0.05,Product page view (optional)
+begin_checkout,,,,Not a Google Ads conversion (signal only)
+form_start,,,,Not a Google Ads conversion (engagement)
+add_to_cart,,,,Not a Google Ads conversion by default (configurable via override)

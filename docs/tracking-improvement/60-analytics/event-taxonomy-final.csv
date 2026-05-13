@@ -1,0 +1,30 @@
+canonical_name,category,scope,is_conversion,google_ads_category_default,description,meta_mapping,ga4_mapping,google_ads_mapping,tiktok_mapping,snap_mapping,pinterest_mapping,emit_trigger
+page_view,engagement,shared,false,,Page view,PageView,page_view,,,,,Auto by Next.js router
+scroll_50,engagement,shared,false,,Scroll past 50%,,scroll,,,,,On scroll event listener
+view_item,ecommerce,shared,false,,Product view,ViewContent,view_item,,ViewContent,,pagevisit,On /kit and /commander mount
+view_item_list,ecommerce,shared,false,,Product list,ViewContent,view_item_list,,,,,On product feed render
+add_to_cart,ecommerce,shared,false,,Add to cart,AddToCart,add_to_cart,,AddToCart,,addtocart,On Add to cart button click
+remove_from_cart,ecommerce,shared,false,,Remove from cart,,remove_from_cart,,,,,On Remove from cart button click
+form_start,engagement,shared,false,,First focus on a wizard form field,CustomEvent:form_start,form_start,,,,,On first onFocus of any form field
+begin_checkout,ecommerce,shared,true,,Explicit user clicked Continue,CustomEvent:checkout_intent,begin_checkout,,InitiateCheckout,,checkout,On explicit Continue button click in wizard
+add_shipping_info,ecommerce,shared,false,,Shipping form completed,AddShippingInfo,add_shipping_info,,,,,On address step complete
+add_payment_info,ecommerce,shared,false,,Payment selected,AddPaymentInfo,add_payment_info,,,,,On payment step complete
+purchase,ecommerce,shared,true,purchase,Order completed,Purchase,purchase,purchase,CompletePayment,PURCHASE,checkout,On 201 from /api/checkout/order
+generate_lead,lead,shared,true,lead,Generic lead form submit,Lead,generate_lead,generate_lead,SubmitForm,,,On any lead capture form submit
+lead_capture,lead,shared,true,lead,CHA-230 wizard lead step submit,Lead,lead_capture,lead_capture,SubmitForm,,,On wizard step 1 (lead) submit
+sign_up,lead,shared,true,sign_up,Account created,CompleteRegistration,sign_up,sign_up,CompleteRegistration,,,On signup form submit
+chat_lead_form_submit,lead,client,true,lead,Chat lead form submit,Lead,generate_lead,generate_lead,,,,On chat lead form submit (CHA-244)
+phone_call_initiated,lead,shared,true,contact,User clicked tel: link,,phone_call,phone_call_initiated,,,,On tel: link click
+contact_form_submit,lead,shared,true,contact,Contact page form submit,Contact,contact,contact,,,,On /contact form submit
+chat_widget_open,engagement,client,false,,Chat widget opened,,chat_open,,,,,On chat launcher click
+chat_message_sent,engagement,client,false,,User sent a chat message,,chat_msg_sent,,,,,On chat send button click
+stock_notify_subscribe,engagement,shared,false,,Stock notification opt-in,,stock_notify,,,,,On stock notify form submit
+form_submit,engagement,shared,false,,Generic form submit,,form_submit,,,,,On any form submit (fallback)
+form_error,engagement,shared,false,,Form validation error,,form_error,,,,,On client-side validation error
+wizard_error,engagement,shared,false,,Wizard step error,,wizard_error,,,,,On wizard step error
+wizard_step_completed,engagement,shared,false,,Wizard step completed,,wizard_step,,,,,On wizard step completion
+journal_article_view,engagement,shared,false,,Journal article view,ViewContent,view_item,,,,,On /journal/[slug] mount
+journal_article_read,engagement,shared,false,,Article >80% scroll,,article_read,,,,,On scroll past 80% of article
+share_click,engagement,shared,false,,Share button click,,share,,,,,On share button click
+admin_login,admin,server,false,,Admin login success,,,,,,,Server-side after auth ok
+admin_action,admin,server,false,,Admin sensitive action,,,,,,,Server-side on sensitive ops

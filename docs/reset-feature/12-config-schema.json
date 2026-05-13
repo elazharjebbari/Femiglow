@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://femiglow-maroc.com/schemas/reset-config.json",
+  "title": "ResetConfig",
+  "description": "Configuration d'une exécution de reset, validée côté API ET CLI",
+  "type": "object",
+  "required": ["mode", "preserve", "confirm", "withBackup", "keepBackups", "dryRun"],
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["soft", "medium", "hard", "custom"],
+      "description": "Niveau de reset. Détermine les phases exécutées."
+    },
+    "domains": {
+      "type": "array",
+      "description": "Liste des domaines à reset (mode=custom uniquement)",
+      "items": {
+        "type": "string",
+        "enum": ["commerce", "content", "tracking", "chat", "system"]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "preserve": {
+      "type": "array",
+      "description": "Tables à préserver (jamais wipe). admin_users + audit_events sont toujours préservés.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "admin_users",
+          "audit_events",
+          "orders",
+          "order_items",
+          "leads",
+          "lead_events",
+          "chat_lead",
+          "ritual_testimonials",
+          "ritual_testimonial_photos",
+          "ritual_audit_log"
+        ]
+      },
+      "uniqueItems": true,
+      "default": [
+        "admin_users",
+        "audit_events",
+        "orders",
+        "order_items",
+        "leads",
+        "lead_events",
+        "chat_lead",
+        "ritual_testimonials"
+      ]
+    },
+    "wipeMedia": {
+      "type": "boolean",
+      "default": false,
+      "description": "Vider /var/www/femiglow/.media-storage (forcé true en hard)"
+    },
+    "wipeNextCache": {
+      "type": "boolean",
+      "default": false,
+      "description": "Vider apps/web/.next (forcé true en hard, le rebuild se fait après)"
+    },
+    "withBackup": {
+      "type": "boolean",
+      "default": true,
+      "description": "Créer un backup avant tout destructif. Refusé false en mode hard sans flag escape."
+    },
+    "keepBackups": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 30,
+      "default": 5,
+      "description": "Nombre de backups les plus récents à conserver. 0 = aucun keep (déconseillé)."
+    },
+    "dryRun": {
+      "type": "boolean",
+      "default": false,
+      "description": "Exécute preflight + audit + plan uniquement. Aucune action destructive."
+    },
+    "confirm": {
+      "type": "string",
+      "description": "Texte de confirmation typé. Doit valoir 'RESET' (soft/medium/custom) ou 'HARD RESET' (hard)",
+      "pattern": "^(RESET|HARD RESET)$"
+    },
+    "nonInteractive": {
+      "type": "boolean",
+      "default": false,
+      "description": "(CLI only) skip prompts interactifs. Force --confirm à être fourni."
+    },
+    "actorId": {
+      "type": ["string", "null"],
+      "pattern": "^adm_[a-z0-9]+$",
+      "description": "ID de l'admin déclencheur. NULL pour CLI sans session."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "custom" } } },
+      "then": { "required": ["domains"] }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "hard" } } },
+      "then": {
+        "properties": {
+          "confirm": { "const": "HARD RESET" },
+          "withBackup": { "const": true },
+          "wipeMedia": { "const": true },
+          "wipeNextCache": { "const": true }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          { "properties": { "mode": { "const": "soft" } } },
+          { "properties": { "mode": { "const": "medium" } } },
+          { "properties": { "mode": { "const": "custom" } } }
+        ]
+      },
+      "then": {
+        "properties": {
+          "confirm": { "const": "RESET" }
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "mode": "soft",
+      "preserve": ["admin_users", "audit_events", "orders", "leads", "chat_lead", "ritual_testimonials"],
+      "wipeMedia": false,
+      "wipeNextCache": false,
+      "withBackup": true,
+      "keepBackups": 5,
+      "dryRun": false,
+      "confirm": "RESET",
+      "actorId": "adm_xxxxxxxxxxxxxxxx"
+    },
+    {
+      "mode": "hard",
+      "preserve": ["admin_users", "audit_events"],
+      "wipeMedia": true,
+      "wipeNextCache": true,
+      "withBackup": true,
+      "keepBackups": 5,
+      "dryRun": false,
+      "confirm": "HARD RESET",
+      "actorId": "adm_xxxxxxxxxxxxxxxx"
+    },
+    {
+      "mode": "custom",
+      "domains": ["commerce", "content"],
+      "preserve": ["admin_users", "audit_events", "orders", "ritual_testimonials"],
+      "wipeMedia": true,
+      "wipeNextCache": false,
+      "withBackup": true,
+      "keepBackups": 3,
+      "dryRun": false,
+      "confirm": "RESET",
+      "actorId": null
+    },
+    {
+      "mode": "soft",
+      "preserve": ["admin_users", "audit_events"],
+      "wipeMedia": false,
+      "wipeNextCache": false,
+      "withBackup": true,
+      "keepBackups": 5,
+      "dryRun": true,
+      "confirm": "RESET",
+      "actorId": "adm_xxxxxxxxxxxxxxxx"
+    }
+  ]
+}

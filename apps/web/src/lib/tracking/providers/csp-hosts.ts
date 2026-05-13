@@ -22,8 +22,11 @@ export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMa
     scriptSrc: ['https://www.googletagmanager.com'],
     connectSrc: [
       'https://www.google-analytics.com',
+      'https://*.google-analytics.com', // region1.google-analytics.com etc.
       'https://analytics.google.com',
+      'https://*.analytics.google.com',
       'https://stats.g.doubleclick.net',
+      'https://*.g.doubleclick.net',
     ],
   },
   google_ads: {
@@ -47,10 +50,14 @@ export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMa
     connectSrc: ['https://ct.pinterest.com', 'https://api.pinterest.com'],
   },
   gtm: {
-    scriptSrc: ['https://www.googletagmanager.com'],
+    scriptSrc: ['https://www.googletagmanager.com', 'https://tagassistant.google.com'],
     connectSrc: [
       'https://www.googletagmanager.com',
+      'https://*.googletagmanager.com',
       'https://www.google-analytics.com',
+      'https://*.google-analytics.com',
+      'https://analytics.google.com',
+      'https://*.analytics.google.com',
     ],
   },
   custom: {

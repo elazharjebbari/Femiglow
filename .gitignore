@@ -33,3 +33,12 @@ storybook-static
 # Claude Code worktrees (chaque worktree est un repo Git séparé,
 # ne doit jamais être committé en gitlink dans le repo principal)
 .claude/worktrees/
+
+# Media storage (régénérable par seeders — cf. docs/reset-feature)
+# Les fichiers optimisés (avif/webp/jpeg variants + originaux) vivent
+# sur disque mais sont produits par le pipeline seed-components/seed-media.
+# Ne pas tracker pour éviter 10k+ blobs binaires par re-seed.
+.media-storage/
+
+# Backups
+/var/backups/femiglow/

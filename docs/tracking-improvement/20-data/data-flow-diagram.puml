@@ -1,0 +1,60 @@
+@startuml data-flow-diagram
+title Flux de données — tracking improvement
+
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName Inter
+
+cloud "Browser" as B
+node "/api/track\nIngest" as IN
+node "/api/admin/tracking/*\nAdmin API" as ADM
+
+database "tracking_providers" as PROV
+database "tracking_event_definitions\n+ google_ads_category_default ✨" as DEFS
+database "tracking_event_overrides ✨" as OVR
+database "tracking_events_log\n+ event_id ✨" as LOG
+database "tracking_settings\n(gtm.config_versions)" as GTM
+database "tracking_consent_snapshots" as CONS
+
+cloud "External" {
+  cloud "Meta\nCAPI" as MET
+  cloud "GA4\nMP" as GA
+  cloud "Google Ads\nCAPI ✨" as ADS
+  cloud "TikTok" as TT
+  cloud "Snap" as SN
+  cloud "Pinterest" as PIN
+}
+
+B -[#0066cc]-> IN : POST events\n+ event_id ✨
+IN -> PROV : SELECT enabled
+IN -> DEFS : SELECT event def
+IN -> OVR : SELECT override
+IN -> CONS : INSERT (if changed)
+IN -> LOG : INSERT log
+
+IN -[#cc6600]-> MET : POST CAPI
+IN -[#cc6600]-> GA : POST MP
+IN -[#cc6600,thickness=2]-> ADS : POST :uploadClickConversions ✨
+IN -[#cc6600]-> TT : POST
+IN -[#cc6600]-> SN : POST
+IN -[#cc6600]-> PIN : POST
+
+ADM -> PROV : CRUD
+ADM -> OVR : CRUD ✨
+ADM -> GTM : CRUD
+ADM -> DEFS : READ
+
+note bottom of ADS
+  Authentication :
+  - OAuth refresh token (stocké chiffré dans PROV)
+  - Developer Token (env var)
+  - Customer ID (PROV.config)
+
+  Payload :
+  - gclid
+  - user_data (email/phone hash SHA-256)
+  - conversion_action label
+  - conversion_value / currency
+  - event_id (déduplication)
+end note
+
+@enduml

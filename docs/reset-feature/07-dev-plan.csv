@@ -1,0 +1,52 @@
+id,phase,task,effort_h,priority,depends_on,owner,deliverable,notes
+T01,setup,Créer arborescence lib/reset + types.ts,0.5,P0,,backend,types complets compilent,Types ResetMode/ResetConfig/PhaseDescriptor cf 03-design-backend.md
+T02,setup,Créer Zod schema config-schema.ts + tests,1,P0,T01,backend,schema + 8 tests parsing,Couvre validation mode/preserve/confirm
+T03,setup,Implémenter lock.ts (mutex global + file lock),1,P0,T01,backend,lock + 6 tests,Memory + file lock pour CLI/serveur
+T04,setup,Implémenter job-store.ts (clone seeders pattern),1.5,P0,T01,backend,store + 10 tests,TTL 1h max 500 events
+T05,phases,Phase preflight (disk/db/env check),1.5,P0,T01,backend,phase + 6 tests,Vérifs disque min 2x DB size
+T06,phases,Phase backup (pg_dump + tar + manifest),2.5,P0,T01,backend,phase + 8 tests,sha256 valid required
+T07,phases,Phase audit-counts (snapshot rows),0.5,P0,T01,backend,phase + 3 tests,SELECT count(*) par table critique
+T08,phases,Phase wipe-db (DROP ou TRUNCATE),2,P0,T05;T06,backend,phase + 8 tests,Transaction unique + ROLLBACK on partial
+T09,phases,Phase wipe-media (rm -rf .media-storage),1,P0,T06,backend,phase + 5 tests,Vérifie config.wipeMedia=true
+T10,phases,Phase wipe-cache (rm -rf .next),0.5,P1,T06,backend,phase + 3 tests,Optional hard only
+T11,phases,Phase migrate (drizzle-kit migrate via spawn),1,P0,T08,backend,phase + 4 tests,Capture stdout/stderr
+T12,phases,Phase seed (délégué à seeders orchestrator),1.5,P0,T11,backend,phase + 5 tests,Réutilise lib/seeders
+T13,phases,Phase verify (row count diff + HTTP smoke),2,P0,T12,backend,phase + 8 tests,Liste checks taggés critique/warn
+T14,phases,Phase cleanup-backups (prune older),0.5,P1,T06,backend,phase + 3 tests,keepBackups N default 5
+T15,planner,planner.ts (mode → ordered phases),1.5,P0,T05;T06;T08;T11;T12;T13,backend,planner + 6 tests,Switch sur mode + domains
+T16,orch,orchestrator.ts (boucle phases + abort + audit),3,P0,T15,backend,orchestrator + 12 tests,Critique vs non-critique
+T17,orch,restore.ts (rollback from backup),2,P0,T06,backend,restore + 6 tests,gunzip + psql + untar
+T18,api,Route POST /api/admin/reset/run,1,P0,T16,backend,route + 6 tests,Auth + lock + rate-limit
+T19,api,Route GET /api/admin/reset/preflight,1,P0,T05,backend,route + 4 tests,Lecture seule sans lock
+T20,api,Route GET /api/admin/reset/jobs/[id]/stream (SSE),1,P0,T04,backend,route + 4 tests,Pattern stream seeders
+T21,api,Route GET /api/admin/reset/jobs/[id] (snapshot),0.5,P0,T04,backend,route + 3 tests,Fallback polling
+T22,api,Route POST /api/admin/reset/jobs/[id]/cancel,0.5,P0,T04,backend,route + 3 tests,abort signal
+T23,api,Route POST /api/admin/reset/restore,1,P0,T17,backend,route + 4 tests,Backup id validation
+T24,api,Route GET /api/admin/reset/backups,0.5,P1,T06,backend,route + 3 tests,Liste depuis FS
+T25,cli,scripts/reset.ts (commander + run/restore/list),3,P0,T16;T17,backend,CLI + 8 tests,Exit codes 0-91
+T26,ui,Carte settings-card-reset dans page /admin/settings,0.5,P0,,frontend,carte ajoutée,Rose pas rouge vif
+T27,ui,Server page /admin/settings/reset/page.tsx,0.5,P0,T26,frontend,page rendue,requireAdmin + AdminShell
+T28,ui,ResetWizard.tsx (machine d'état useReducer),2,P0,T27,frontend,wizard + 8 tests,Steps transitions
+T29,ui,StepWelcome.tsx,0.5,P0,T28,frontend,step + a11y,Focus h1 on mount
+T30,ui,StepMode.tsx + ModeCard.tsx,1,P0,T28,frontend,step + 4 tests,Radio cards
+T31,ui,StepCustomOptions.tsx + DomainToggle.tsx,1,P0,T28,frontend,step + 4 tests,Skip si mode!=custom
+T32,ui,StepPreservation.tsx + PreservationCheckbox.tsx,1,P0,T28,frontend,step + 4 tests,Default tout preservé
+T33,ui,StepPreview.tsx + ImpactTable.tsx,2,P0,T28;T19,frontend,step + 6 tests,SWR fetch preflight
+T34,ui,StepConfirm.tsx + TypedConfirmInput.tsx,1,P0,T28,frontend,step + 6 tests,Match exact
+T35,ui,StepExecute.tsx + PhaseProgress.tsx + LogStream.tsx,2.5,P0,T28;T20,frontend,step + 8 tests,SSE + fallback polling
+T36,ui,StepReport.tsx + BackupBadge.tsx,1,P0,T28,frontend,step + 4 tests,Actions: refaire/fermer
+T37,ui,useResetStream.ts hook,1,P0,T20;T35,frontend,hook + 6 tests,EventSource + reconnect
+T38,ui,useResetConfig.ts hook (useReducer),1,P0,T28,frontend,hook + 8 tests,Actions reducer
+T39,ui,usePreflight.ts hook (SWR),0.5,P0,T19;T33,frontend,hook + 3 tests,Cache + revalidate
+T40,test,Jest setup + fixtures partagées,1,P0,,qa,fixtures + helpers,Mocks DB/FS
+T41,test,Tests Jest backend (lib/reset/),inclus,P0,T01-T17,qa,coverage 80+,Inclus dans chaque task
+T42,test,Tests Jest UI (composants),inclus,P0,T28-T39,qa,coverage 80+,Inclus dans chaque task
+T43,test,MSW handlers /api/admin/reset/*,1.5,P0,T18-T24,qa,handlers + intégration UI,Mock SSE + polling
+T44,test,Playwright e2e wizard complet (dry-run),3,P0,T28-T36;T43,qa,spec + CI green,Parcours soft dry-run
+T45,test,Playwright e2e wizard hard avec rollback,2,P1,T44,qa,spec spécifique,Simule crash phase migrate
+T46,test,Playwright a11y (axe),1,P1,T44,qa,axe report,Wizard navigable clavier
+T47,docs,Mettre à jour docs/reset-feature/runbook.md final,1,P0,T44,backend,runbook complet,Reflète version finale
+T48,deploy,Script de smoke post-deploy,0.5,P1,T13,qa,smoke shell,curl /kit /admin/login
+T49,docs,Audit findings dans README + dossier final,1,P0,T44,backend,docs à jour,
+T50,exec,Exécution runbook reset hard sur env staging-like,1,P0,T47,backend,reset OK + verify OK,Validation finale
+TOTAL,,Total,52,,,,52h ~ 7j dev,

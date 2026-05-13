@@ -5,6 +5,7 @@
  *
  * Usage : `pnpm tsx scripts/seed-products.ts`
  */
+import { sql } from 'drizzle-orm';
 import {
   createProduct,
   getProductBySlug,
@@ -14,7 +15,28 @@ import {
   upsertVariant,
 } from '@/lib/db/queries/products';
 import { upsertOverride } from '@/lib/db/queries/seo';
+import { db } from '@/lib/db/client';
 import type { Product, ProductVariant } from '@/lib/products/types';
+
+const DEFAULT_STOCK_AVAILABLE = 100;
+const DEFAULT_STOCK_THRESHOLD = 5;
+
+/**
+ * S'assure que chaque variante du produit a une ligne `product_stock`
+ * (avec 100 unités disponibles par défaut). Idempotent : si la ligne
+ * existe déjà, on la laisse intacte (l'admin a la priorité).
+ */
+async function ensureDefaultStockForProduct(productId: string, actorId: string | null): Promise<void> {
+  const conn = db();
+  if (!conn) return;
+  await conn.execute(sql`
+    INSERT INTO product_stock (variant_id, sku, available, reserved, threshold_low, updated_at, updated_by)
+    SELECT v.id, v.sku, ${DEFAULT_STOCK_AVAILABLE}, 0, ${DEFAULT_STOCK_THRESHOLD}, NOW(), ${actorId}
+    FROM product_variants v
+    WHERE v.product_id = ${productId}
+    ON CONFLICT (variant_id) DO NOTHING
+  `);
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://femiglow.com';
 
@@ -156,6 +178,11 @@ async function ensureProduct(seed: ProductSeed, actorId: string | null) {
     });
     position += 1;
   }
+
+  // CHA — Stock par défaut : 100 unités disponibles par variante.
+  // Idempotent (ON CONFLICT DO NOTHING) — un re-seed ne réinitialise pas
+  // le stock géré par l'admin via /admin/products/stock.
+  await ensureDefaultStockForProduct(product.id, actorId);
 
   // Publish — snapshot + status='published'
   await publishProduct(seed.slug, actorId, 'seed');

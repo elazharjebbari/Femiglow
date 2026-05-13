@@ -1,0 +1,76 @@
+@startuml current-state
+title FemiGlow Tracking — État actuel
+
+skinparam backgroundColor #FBF8F1
+skinparam componentStyle rectangle
+skinparam defaultFontName Inter
+
+actor User as U
+
+package "Browser" {
+  component "gtag.js\n(GA4 + GTM)" as GTAG
+  component "fbevents.js\n(Meta Pixel)" as FBQ
+  component "TrackingClient\n(batched)" as TC
+}
+
+package "Server" {
+  component "PixelLoader API\n/api/track/pixels" as PIXAPI
+  component "Track Ingest\n/api/track" as INGEST
+  component "Dispatcher" as DISP
+}
+
+package "Providers" {
+  component "Meta CAPI" as METACAPI #LightGreen
+  component "GA4 MP" as GAMP #LightGreen
+  component "Google Ads\nNO-OP ❌" as ADS #Pink
+  component "TikTok CAPI" as TT #LightGreen
+  component "Snap CAPI" as SNAP #LightGreen
+  component "Pinterest CAPI" as PIN #LightGreen
+}
+
+database "PostgreSQL" {
+  frame "tracking_providers"
+  frame "tracking_events_log"
+  frame "tracking_settings\n(gtm.config_versions)"
+}
+
+U --> GTAG : page_view
+U --> FBQ
+U --> TC : click, form_submit
+
+GTAG ..> "google-analytics.com\n(client-side)" : direct
+FBQ ..> "facebook.com" : direct
+
+TC --> INGEST : POST /api/track
+INGEST --> DISP
+DISP --> METACAPI
+DISP --> GAMP
+DISP -[#red,dashed]-> ADS : skipped
+DISP --> TT
+DISP --> SNAP
+DISP --> PIN
+
+PIXAPI --> "tracking_providers" : SELECT
+GTAG <.. PIXAPI : snippets
+
+INGEST --> "tracking_events_log" : INSERT
+
+note bottom of ADS
+  Adapter retourne
+  status: 'skipped'
+  error: 'client_only_provider'
+
+  Conversions Google Ads
+  dépendent UNIQUEMENT
+  du tag client gtag.js.
+end note
+
+note bottom of "tracking_events_log"
+  Bug : lead_capture
+  marqué isConversion=true
+  dans catalog mais ABSENT
+  de CONVERSION_EVENTS Set
+  côté /api/track
+end note
+
+@enduml

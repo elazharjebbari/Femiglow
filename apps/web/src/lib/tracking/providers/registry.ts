@@ -3,6 +3,7 @@ import { listEnabledTrackingProviders } from '@/lib/db/queries/tracking/provider
 import type { ProviderAdapter } from './types';
 import { metaAdapter } from './meta';
 import { googleAdapter } from './google';
+import { googleAdsAdapter } from './google-ads';
 import { tiktokAdapter } from './tiktok';
 import { snapAdapter } from './snap';
 import { pinterestAdapter } from './pinterest';
@@ -12,6 +13,7 @@ import { customAdapter } from './custom';
 const REGISTRY: Partial<Record<TrackingProviderKind, ProviderAdapter>> = {
   meta: metaAdapter,
   google_ga4: googleAdapter,
+  google_ads: googleAdsAdapter,
   tiktok: tiktokAdapter,
   snap: snapAdapter,
   pinterest: pinterestAdapter,

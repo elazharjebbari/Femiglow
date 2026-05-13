@@ -1,0 +1,68 @@
+TABLE public.tracking_events_log (EXISTANT — +event_id)
+=========================================================
+Colonne              | Type                          | Notes
+---------------------|-------------------------------|------------------------
+id                   | text PK                       | tel_<random>
+event_id             | text NULL                     | UUID v4 client-generated ✨ NEW
+event_name           | text NOT NULL                 |
+category             | tracking_event_category       |
+scope                | text                          |
+session_id           | text NULL                     |
+anonymous_id         | text NULL                     |
+user_id              | text NULL                     |
+is_conversion        | boolean NOT NULL DEFAULT false|
+received_at          | timestamp with tz             | NOT NULL DEFAULT now()
+page_url             | text NULL                     |
+page_route           | text NULL                     |
+page_title           | text NULL                     |
+referrer             | text NULL                     |
+locale               | text NULL                     |
+params               | jsonb                         |
+providers_dispatched | text[]                        | kinds tentés
+providers_results    | jsonb                         | { [kind]: { status,
+                     |                               |              latencyMs,
+                     |                               |              error? } }
+consent_state        | jsonb                         | snapshot du consent
+form_id              | text NULL                     | si event de form
+form_mode            | text NULL                     | wizard_embed, wizard_cart, legacy_cart
+variant_key          | text NULL                     | A/B test
+chat_lead_id         | text NULL                     |
+order_id             | text NULL                     |
+gclid                | text NULL                     | captured at landing ✨ NEW
+fbp                  | text NULL                     | _fbp cookie
+fbc                  | text NULL                     | _fbc cookie
+
+INDEX
+- (event_name)
+- (received_at DESC)
+- (anonymous_id)
+- (session_id)
+- (is_conversion) WHERE is_conversion = true
+- (event_id) WHERE event_id IS NOT NULL ✨ NEW
+
+QUERIES TYPES POST-REFONTE
+
+-- KPIs 24h par provider
+SELECT
+  kind,
+  count(*) as total,
+  count(*) FILTER (WHERE (providers_results->kind->>'status') = 'success') as ok,
+  avg((providers_results->kind->>'latencyMs')::int) as avg_latency
+FROM tracking_events_log,
+     unnest(providers_dispatched) as kind
+WHERE received_at >= now() - interval '24 hours'
+GROUP BY kind;
+
+-- Détecter les doublons par event_id (vérif dedup serveur)
+SELECT event_id, count(*) FROM tracking_events_log
+WHERE event_id IS NOT NULL
+GROUP BY event_id HAVING count(*) > 1;
+
+MIGRATION
+---------
+ALTER TABLE tracking_events_log
+  ADD COLUMN IF NOT EXISTS event_id text,
+  ADD COLUMN IF NOT EXISTS gclid text;
+
+CREATE INDEX IF NOT EXISTS tracking_events_log_event_id_idx
+  ON tracking_events_log (event_id) WHERE event_id IS NOT NULL;

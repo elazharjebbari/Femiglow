@@ -1,0 +1,90 @@
+STOCKAGE GTM CONFIG VERSIONS
+=============================
+Pas de table dédiée — stocké dans tracking_settings sous la clé
+`gtm.config_versions`.
+
+Format JSONB :
+
+{
+  "activeId": "uuid-v3",
+  "versions": [
+    {
+      "id": "uuid-v3",
+      "name": "v3 — Mai 2026",
+      "notes": "Migration vers form_start + Google Ads CAPI",
+      "perEnv": {
+        "production": {
+          "metaPixelId": "2179682406197934",
+          "ga4MeasurementId": "G-5VHP17SDZM",
+          "googleAdsCustomerId": "7082602195",
+          "googleAdsConvLabels": {
+            "purchase": "AbCdEf123Abc",
+            "lead": "XyZ789xyZ123",
+            "contact": "PqR456pqR123",
+            "signup": "",
+            "initCheckout": ""
+          },
+          "tiktokPixelId": "",
+          "snapPixelId": "",
+          "pinterestTagId": "",
+          "cookieDomain": "auto",
+          "defaultCurrency": "MAD",
+          "enabledProviders": ["meta","google_ga4","google_ads","gtm"]
+        },
+        "stage": { ... },
+        "preview": { ... },
+        "dev": { ... }
+      },
+      "createdAt": "2026-05-13T08:00:00.000Z",
+      "createdBy": "u_rg1atq9jqx5vcp6b",
+      "clonedFrom": "uuid-v2"  // ✨ NEW : tracé parent (édition)
+    },
+    { "id": "uuid-v2", "name": "v2 — BF 2026", ... },
+    { "id": "uuid-v1", "name": "v1 — initial", ... }
+  ]
+}
+
+POLITIQUE
+- max 50 versions, FIFO, jamais supprime l'active
+- clonedFrom permet de tracer la chaîne d'héritage (édition)
+- pas de FK vers tracking_providers : snapshot indépendant
+
+GET / SET
+---------
+const state = await trackingSettingsRepo.get('gtm.config_versions');
+state.versions.push(newVersion);
+await trackingSettingsRepo.set('gtm.config_versions', state);
+
+CRUD
+----
+create(version)    → ajoute, ne change pas activeId
+activate(id)       → set activeId = id
+clone(id, newName) → duplique, NEW id, clonedFrom = id, NOT activated
+remove(id)         → drop si !active
+update(id, patch)  ❌ NE PAS IMPLÉMENTER — toujours créer une nouvelle version
+                    pour préserver l'audit
+list()             → versions trié par createdAt DESC
+get(id)            → un seul
+
+NEW : route GET /api/admin/tracking/providers/snapshot
+---------------------------------------------------------
+Retour shape :
+
+{
+  "metaPixelId": "2179682406197934",
+  "ga4MeasurementId": "G-5VHP17SDZM",
+  "googleAdsCustomerId": "7082602195",
+  "googleAdsConvLabels": {
+    "purchase": "AbCdEf123Abc",
+    "lead": "XyZ789xyZ123",
+    "contact": "",
+    "signup": "",
+    "initCheckout": ""
+  },
+  "tiktokPixelId": "",
+  "snapPixelId": "",
+  "pinterestTagId": "",
+  "gtmContainerId": "GTM-M8K7V88D",
+  "providersCount": 3,
+  "fetchedAt": "2026-05-13T10:00:00.000Z"
+}

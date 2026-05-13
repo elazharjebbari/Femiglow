@@ -1,0 +1,57 @@
+TABLE public.tracking_providers (EXISTANT — inchangé en V1)
+=============================================================
+Colonne              | Type                          | Notes
+---------------------|-------------------------------|------------------------
+id                   | text PK                       | tp_<random>
+kind                 | tracking_provider_kind        | enum: meta, google_ga4,
+                     |                               |       google_ads, gtm,
+                     |                               |       tiktok, snap,
+                     |                               |       pinterest, custom
+status               | tracking_provider_status      | enabled, disabled, error
+pixel_id             | text                          | ex: AW-18136327114
+capi_token           | text                          | chiffré AES-GCM
+capi_token_iv        | text                          | IV chiffrement
+capi_token_tag       | text                          | auth tag GCM
+test_event_code      | text                          | Meta test events
+custom_head          | text                          | HTML injection head
+custom_body          | text                          | HTML injection body
+config               | jsonb                         | metadata provider-specific
+enabled_events       | text[]                        | event allowlist
+last_event_at        | timestamp with tz             |
+error_count_24h      | integer                       | NOT NULL DEFAULT 0
+last_error           | text                          |
+created_at           | timestamp with tz             | NOT NULL DEFAULT now()
+updated_at           | timestamp with tz             | NOT NULL DEFAULT now()
+
+INDEX
+- (kind) UNIQUE — un seul provider par kind
+- (status) WHERE status = 'enabled' — filtrage rapide
+
+ÉVOLUTION FUTURE V2 (hors-scope V1)
+- pixel_id → pixel_id_per_env JSONB { production, stage, preview, dev }
+- ajout colonne google_ads_customer_id, google_ads_developer_token (chiffré)
+- ajout colonne google_ads_refresh_token (chiffré, AES-GCM)
+
+
+TABLE public.tracking_providers · CHAMPS google_ads après V1
+=============================================================
+Pour le chantier 1, on EXTEND `config` JSONB avec :
+
+config.googleAdsCustomerId      | string (10 chiffres)
+config.googleAdsDeveloperToken  | string (chiffré, dans config car volumineux)
+config.googleAdsRefreshToken    | string (chiffré)
+config.googleAdsConversionActions | { [eventName]: { actionLabel, category } }
+
+Exemple :
+{
+  "googleAdsCustomerId": "7082602195",
+  "googleAdsConversionActions": {
+    "purchase": { "actionLabel": "AbCdEf123Abc", "category": "purchase" },
+    "lead_capture": { "actionLabel": "XyZ789xyZ123", "category": "lead" },
+    "phone_call_initiated": { "actionLabel": "PqR456pqR123", "category": "contact" }
+  }
+}
+
+NOTE : les tokens (developerToken, refreshToken) DOIVENT être chiffrés au
+repos. Préférer une colonne séparée `google_ads_oauth_credentials` (chiffrée
+AES-GCM) à l'embedding dans config JSONB.

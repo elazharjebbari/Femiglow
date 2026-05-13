@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/queries/tracking/settings';
 import { ensureSeedOnce } from '@/lib/boot/seed-on-boot';
 import { ChatWidgetMount } from '@/components/chat/ChatWidgetMount';
+import { MobileFocusGuard } from '@/components/a11y/MobileFocusGuard';
 
 const cormorant = localFont({
   src: '../../public/fonts/cormorant-garamond.woff2',
@@ -62,13 +63,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  // CHA-mobile-ux : `resizes-content` indique aux navigateurs mobiles
-  // (Chrome Android d'abord) de réduire la viewport quand le clavier
-  // virtuel apparaît, au lieu de la laisser couvrir le composer. Sur
-  // iOS Safari, le combo `100dvh` + `visualViewport` API fait le reste.
-  // ⚠ Volontairement PAS de `maximumScale: 1` ni `userScalable: false`
-  // qui violeraient WCAG SC 1.4.4 (Resize Text).
-  interactiveWidget: 'resizes-content',
+  // NB: `interactiveWidget: 'resizes-content'` (Chrome Android) retiré car
+  // Safari logge un warning "Viewport argument key 'interactive-widget' not
+  // recognized" qui pollue la console. iOS Safari gère déjà le clavier via
+  // `100dvh` + `visualViewport` API. WCAG SC 1.4.4 OK (pas de maximumScale).
   themeColor: '#FBF8F1',
 };
 
@@ -95,6 +93,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <body className="min-h-screen bg-creme font-body text-encre antialiased">
         <SkipLink />
+        {/* Bloque l'auto-zoom iOS/Android sur les champs texte. Aucun
+            impact UX en dehors d'une saisie. cf. MobileFocusGuard. */}
+        <MobileFocusGuard />
         <TrackingProvider
           bannerEnabled={bannerEnabled}
           defaultGranted={defaultGranted}

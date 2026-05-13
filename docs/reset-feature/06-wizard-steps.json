@@ -1,0 +1,195 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Reset Wizard Steps Configuration",
+  "description": "Configuration déclarative des steps du wizard /admin/settings/reset. Consommée par ResetWizard.tsx pour générer les étapes, transitions et règles de validation.",
+  "version": "1.0.0",
+  "steps": [
+    {
+      "id": "welcome",
+      "index": 1,
+      "label": "Bienvenue",
+      "component": "StepWelcome",
+      "canSkip": false,
+      "showsBackButton": false,
+      "showsNextButton": true,
+      "nextButtonLabel": "Continuer",
+      "validation": null,
+      "transitions": { "next": "mode" }
+    },
+    {
+      "id": "mode",
+      "index": 2,
+      "label": "Mode",
+      "component": "StepMode",
+      "canSkip": false,
+      "showsBackButton": true,
+      "showsNextButton": true,
+      "nextButtonLabel": "Suivant",
+      "validation": {
+        "rule": "modeSelected",
+        "errorMessage": "Choisis un mode pour continuer"
+      },
+      "transitions": {
+        "next": [
+          { "if": "config.mode == 'custom'", "to": "custom" },
+          { "else": "preservation" }
+        ]
+      }
+    },
+    {
+      "id": "custom",
+      "index": 3,
+      "label": "Options custom",
+      "component": "StepCustomOptions",
+      "canSkip": true,
+      "skipIf": "config.mode != 'custom'",
+      "showsBackButton": true,
+      "showsNextButton": true,
+      "nextButtonLabel": "Suivant",
+      "validation": {
+        "rule": "atLeastOneDomain",
+        "errorMessage": "Sélectionne au moins un domaine à reset"
+      },
+      "transitions": { "next": "preservation" }
+    },
+    {
+      "id": "preservation",
+      "index": 4,
+      "label": "Préservation",
+      "component": "StepPreservation",
+      "canSkip": false,
+      "showsBackButton": true,
+      "showsNextButton": true,
+      "nextButtonLabel": "Suivant",
+      "validation": null,
+      "transitions": { "next": "preview" }
+    },
+    {
+      "id": "preview",
+      "index": 5,
+      "label": "Aperçu impact",
+      "component": "StepPreview",
+      "canSkip": false,
+      "showsBackButton": true,
+      "showsNextButton": true,
+      "nextButtonLabel": "Suivant",
+      "validation": {
+        "rule": "preflightSucceeded",
+        "errorMessage": "Le preflight a échoué — voir détails ci-dessus"
+      },
+      "fetch": {
+        "endpoint": "/api/admin/reset/preflight",
+        "method": "POST",
+        "body": "config",
+        "onLoad": "PREFLIGHT_OK"
+      },
+      "transitions": { "next": "confirm" }
+    },
+    {
+      "id": "confirm",
+      "index": 6,
+      "label": "Confirmation",
+      "component": "StepConfirm",
+      "canSkip": false,
+      "showsBackButton": true,
+      "showsNextButton": false,
+      "primaryAction": {
+        "label": "Démarrer le reset",
+        "style": "destructive",
+        "fetch": {
+          "endpoint": "/api/admin/reset/run",
+          "method": "POST",
+          "body": "config",
+          "onSuccess": "START_JOB"
+        }
+      },
+      "validation": {
+        "rule": "confirmTextMatches",
+        "expectedTextFor": {
+          "soft": "RESET",
+          "medium": "RESET",
+          "custom": "RESET",
+          "hard": "HARD RESET"
+        },
+        "errorMessage": "Le texte doit correspondre exactement"
+      },
+      "transitions": { "next": "execute" }
+    },
+    {
+      "id": "execute",
+      "index": 7,
+      "label": "Exécution",
+      "component": "StepExecute",
+      "canSkip": false,
+      "showsBackButton": false,
+      "showsNextButton": false,
+      "showsCancelButton": true,
+      "cancelButtonLabel": "Annuler le reset",
+      "cancelGuard": {
+        "rule": "cancellableDuringPhase",
+        "allowedPhases": ["preflight", "backup", "audit-counts"],
+        "warningAfter": "Une annulation après wipe-db déclenchera un rollback automatique"
+      },
+      "stream": {
+        "endpoint": "/api/admin/reset/jobs/{jobId}/stream",
+        "fallback": {
+          "type": "polling",
+          "endpoint": "/api/admin/reset/jobs/{jobId}",
+          "intervalMs": 2000
+        }
+      },
+      "transitions": {
+        "next": [
+          { "if": "jobStatus == 'completed'", "to": "report" },
+          { "if": "jobStatus == 'failed'", "to": "report" },
+          { "if": "jobStatus == 'cancelled'", "to": "report" }
+        ]
+      }
+    },
+    {
+      "id": "report",
+      "index": 8,
+      "label": "Rapport",
+      "component": "StepReport",
+      "canSkip": false,
+      "showsBackButton": false,
+      "showsNextButton": false,
+      "actions": [
+        {
+          "id": "new-reset",
+          "label": "Faire un autre reset",
+          "action": "RESET_WIZARD"
+        },
+        {
+          "id": "close",
+          "label": "Fermer",
+          "style": "primary",
+          "action": "NAVIGATE",
+          "target": "/admin/settings"
+        }
+      ]
+    }
+  ],
+  "globalGuards": [
+    {
+      "id": "lock-held",
+      "check": "/api/admin/reset/jobs/active",
+      "ifTrue": "blockWizardAt",
+      "blockMessage": "Un reset est déjà en cours. Suis sa progression ou attends sa fin.",
+      "blockAction": {
+        "label": "Voir le reset en cours",
+        "navigate": "/admin/settings/reset?resumeJobId={activeJobId}"
+      }
+    }
+  ],
+  "telemetry": {
+    "events": [
+      "wizard.step.entered",
+      "wizard.step.next",
+      "wizard.step.back",
+      "wizard.cancel",
+      "wizard.complete",
+      "wizard.error"
+    ]
+  }
+}

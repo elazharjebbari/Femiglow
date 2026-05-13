@@ -39,13 +39,20 @@ function buildCsp(
   const scriptSrc = isDev
     ? `'self' 'unsafe-inline' 'unsafe-eval' ${scriptHosts}`.trim()
     : `'self' 'unsafe-inline' ${scriptHosts}`.trim();
+  // style-src-elem explicite : sans cela, certains navigateurs (Firefox)
+  // appliquent style-src en fallback strict et bloquent les feuilles
+  // tierces (GTM Tag Assistant, debug overlays, Google Fonts injectées
+  // par scripts tiers). On autorise les hôtes Google standards + self.
+  const styleSrcElem =
+    "'self' 'unsafe-inline' https://fonts.googleapis.com https://tagassistant.google.com";
   const directives = [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    `style-src-elem ${styleSrcElem}`,
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https://*.public.blob.vercel-storage.com",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     `connect-src 'self' https://*.sentry.io https://plausible.io ${connectHosts}`.trim(),
     // CHA-243 — Framing sortant : autoriser l'embed YouTube privacy-friendly
     // sur `/kit`. Sans `frame-src` explicite, le navigateur retombe sur

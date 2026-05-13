@@ -1,0 +1,375 @@
+# 30.4 — API endpoints (server contracts)
+openapi: 3.0.3
+info:
+  title: FemiGlow Tracking API
+  version: 2.0.0
+  description: Refonte tracking + Google Ads server-side
+servers:
+  - url: https://femiglow-maroc.com
+
+paths:
+  /api/track:
+    post:
+      summary: Ingestion d'événements de tracking (client batch)
+      tags: [public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [events]
+              properties:
+                events:
+                  type: array
+                  maxItems: 25
+                  items:
+                    $ref: '#/components/schemas/DataLayerEntry'
+      responses:
+        '200':
+          description: Acceptés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received: { type: integer }
+                  rejected:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index: { type: integer }
+                        reason: { type: string }
+        '429': { description: Rate limit exceeded }
+        '400': { description: Body invalide }
+
+  /api/track/pixels:
+    get:
+      summary: Snippets clients à injecter (PixelLoader)
+      tags: [public]
+      responses:
+        '200':
+          description: Liste des snippets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  snippets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kind: { type: string }
+                        code: { type: string }
+
+  /api/admin/tracking/providers/snapshot:
+    get:
+      summary: Snapshot des pixels enabled (pour pré-remplissage GTM)
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvidersSnapshot'
+        '401': { description: Non authentifié }
+
+  /api/admin/tracking/gtm:
+    get:
+      summary: Liste les versions GTM
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activeId: { type: string, nullable: true }
+                  versions:
+                    type: array
+                    items: { $ref: '#/components/schemas/GtmConfigVersion' }
+    post:
+      summary: Crée une nouvelle version (avec optionnel cloneFrom)
+      tags: [admin]
+      security: [adminSession: []]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, perEnv]
+              properties:
+                name: { type: string }
+                notes: { type: string, nullable: true }
+                cloneFrom: { type: string, nullable: true, description: "ID de la version source (édition)" }
+                perEnv: { $ref: '#/components/schemas/GtmConfigPerEnv' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  versionId: { type: string }
+
+  /api/admin/tracking/gtm/{versionId}:
+    get:
+      summary: Récupère une version (édition)
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: path
+          name: versionId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GtmConfigVersion' }
+        '404': { description: Version introuvable }
+    delete:
+      summary: Supprime une version (si pas active)
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '204': { description: Supprimée }
+        '409': { description: Version active — ne peut pas supprimer }
+
+  /api/admin/tracking/gtm/{versionId}/activate:
+    post:
+      summary: Active une version (la rend exportable)
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activeId: { type: string }
+
+  /api/admin/tracking/gtm/{versionId}/export:
+    get:
+      summary: Export GTM container.json
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: query
+          name: env
+          schema: { type: string, enum: [production, stage, preview, dev] }
+        - in: query
+          name: format
+          schema: { type: string, enum: [json, zip] }
+      responses:
+        '200':
+          content:
+            application/json: { schema: { type: object } }
+            application/zip: {}
+
+  /api/admin/tracking/events/categorization:
+    get:
+      summary: Liste tous les events avec catégorie résolue (override + default)
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    isConversion: { type: boolean }
+                    googleAdsCategoryDefault:
+                      type: string
+                      enum: [purchase, lead, contact, sign_up, view_content]
+                      nullable: true
+                    googleAdsCategoryOverride:
+                      type: string
+                      enum: [purchase, lead, contact, sign_up, view_content]
+                      nullable: true
+                    overrideUpdatedBy: { type: string, nullable: true }
+                    overrideUpdatedAt: { type: string, nullable: true }
+    put:
+      summary: Met à jour le override d'un event
+      tags: [admin]
+      security: [adminSession: []]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventName]
+              properties:
+                eventName: { type: string }
+                googleAdsCategory:
+                  type: string
+                  enum: [purchase, lead, contact, sign_up, view_content]
+                  nullable: true
+                note: { type: string, nullable: true }
+      responses:
+        '200': { description: Override sauvegardé }
+
+  /api/admin/tracking/analytics/providers:
+    get:
+      summary: KPIs par provider (7 derniers jours)
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: query
+          name: window
+          schema: { type: string, enum: [24h, 7d, 30d] }
+          default: 7d
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    kind: { type: string }
+                    total: { type: integer }
+                    success: { type: integer }
+                    successRate: { type: number }
+                    latencyP50Ms: { type: number }
+                    latencyP95Ms: { type: number }
+                    errors24h: { type: integer }
+                    lastError: { type: string, nullable: true }
+
+  /api/admin/tracking/test-event:
+    post:
+      summary: Envoie un event test à un provider donné
+      tags: [admin]
+      security: [adminSession: []]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [providerId, eventName]
+              properties:
+                providerId: { type: string }
+                eventName: { type: string }
+                params: { type: object }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success, failed, skipped] }
+                  latencyMs: { type: number }
+                  error: { type: string, nullable: true }
+
+components:
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: femiglow_admin_session
+
+  schemas:
+    DataLayerEntry:
+      type: object
+      required: [event_id, name, received_at]
+      properties:
+        event_id: { type: string, format: uuid }
+        name: { type: string }
+        received_at: { type: string, format: date-time }
+        params: { type: object }
+        page:
+          type: object
+          properties:
+            url: { type: string }
+            path: { type: string }
+            title: { type: string }
+            referrer: { type: string }
+            locale: { type: string }
+        user:
+          type: object
+          properties:
+            anonymous_id: { type: string }
+            session_id: { type: string }
+            user_id: { type: string, nullable: true }
+            gclid: { type: string, nullable: true }
+        consent:
+          type: object
+          properties:
+            ad_storage: { type: string, enum: [granted, denied] }
+            analytics_storage: { type: string, enum: [granted, denied] }
+            ad_user_data: { type: string, enum: [granted, denied] }
+            ad_personalization: { type: string, enum: [granted, denied] }
+            functional_storage: { type: string, enum: [granted, denied] }
+
+    ProvidersSnapshot:
+      type: object
+      required: [providersCount, fetchedAt]
+      properties:
+        metaPixelId: { type: string, nullable: true }
+        ga4MeasurementId: { type: string, nullable: true }
+        googleAdsCustomerId: { type: string, nullable: true }
+        googleAdsConvLabels:
+          type: object
+          additionalProperties: { type: string }
+        tiktokPixelId: { type: string, nullable: true }
+        snapPixelId: { type: string, nullable: true }
+        pinterestTagId: { type: string, nullable: true }
+        gtmContainerId: { type: string, nullable: true }
+        providersCount: { type: integer }
+        fetchedAt: { type: string, format: date-time }
+
+    GtmConfigPerEnv:
+      type: object
+      properties:
+        production: { $ref: '#/components/schemas/GtmConfigEnv' }
+        stage: { $ref: '#/components/schemas/GtmConfigEnv' }
+        preview: { $ref: '#/components/schemas/GtmConfigEnv' }
+        dev: { $ref: '#/components/schemas/GtmConfigEnv' }
+
+    GtmConfigEnv:
+      type: object
+      properties:
+        metaPixelId: { type: string }
+        ga4MeasurementId: { type: string }
+        googleAdsCustomerId: { type: string }
+        googleAdsConvLabels:
+          type: object
+          properties:
+            purchase: { type: string }
+            lead: { type: string }
+            contact: { type: string }
+            signup: { type: string }
+            initCheckout: { type: string }
+        tiktokPixelId: { type: string }
+        snapPixelId: { type: string }
+        pinterestTagId: { type: string }
+        cookieDomain: { type: string }
+        defaultCurrency: { type: string }
+        enabledProviders:
+          type: array
+          items: { type: string }
+
+    GtmConfigVersion:
+      type: object
+      required: [id, name, perEnv, createdAt, createdBy]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        notes: { type: string, nullable: true }
+        clonedFrom: { type: string, nullable: true }
+        perEnv: { $ref: '#/components/schemas/GtmConfigPerEnv' }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string }

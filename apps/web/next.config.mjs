@@ -12,6 +12,12 @@ const nextConfig = {
     optimizePackageImports: ['framer-motion', 'zustand'],
     serverComponentsExternalPackages: ['@node-rs/argon2', 'sharp', 'fluent-ffmpeg', 'ffmpeg-static'],
     instrumentationHook: true,
+    // Note : `optimizeCss` (critters) NON utilisé — Next 14.2 ne bundle plus
+    // critters pour App Router (streaming RSC incompatible). Pour réduire le
+    // render-blocking CSS, on s'appuie sur :
+    //  - split admin-fields.css (gain ~11 KB sur pages publiques)
+    //  - cache headers (HTML no-store + chunks immutable) → cf. headers()
+    //  - tailwind purge (config existante)
   },
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -42,6 +48,11 @@ const nextConfig = {
     // route handler réelle, qui vit sous `app/media-files/`.
     return [
       { source: '/_media/:path*', destination: '/media-files/:path*' },
+      // Legacy /favicon.ico → on sert le favicon dynamique généré par
+      // `app/icon.tsx`. Les browsers modernes utilisent le <link rel=icon>
+      // (auto-injecté) ; ce rewrite est juste pour les outils/clients
+      // historiques qui requêtent encore /favicon.ico par défaut.
+      { source: '/favicon.ico', destination: '/icon' },
     ];
   },
   async headers() {
@@ -59,6 +70,22 @@ const nextConfig = {
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+        ],
+      },
+      // Chunks JS/CSS hashés : immutable 1 an. Le hash change à chaque
+      // déploiement, on peut donc cacher agressivement sans risque de stale.
+      // Évite que l'utilisateur charge un chunk obsolète après un déploy.
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // Images optimisées Next servies dynamiquement : cache court côté CDN.
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
     ];

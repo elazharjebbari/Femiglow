@@ -48,8 +48,21 @@ async function reseedSection(
   }
 
   ctx.onProgress?.('Invalidation cache', 0.95);
-  revalidateTag(APP_CONFIG_TAG);
-  revalidateTag(sectionTag(section));
+  // revalidateTag requires Next.js static generation store — tolérer son absence
+  // (e.g. CLI tsx sans Next runtime). Cf. docs/reset-feature/10-error-taxonomy.md.
+  try {
+    revalidateTag(APP_CONFIG_TAG);
+    revalidateTag(sectionTag(section));
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      /static generation store missing|Invariant/i.test(err.message)
+    ) {
+      // CLI context — ignore silently. UI/API context surfacera l'erreur.
+    } else {
+      throw err;
+    }
+  }
 
   return {
     stats: {

@@ -1,0 +1,75 @@
+@startuml sequence-gtm-edit
+title Séquence — Édition d'une version GTM existante
+
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName Inter
+
+actor Admin as A
+participant "GtmList page" as LIST
+participant "GtmConfigForm\n(mode=edit)" as FORM
+participant "/api/admin/tracking/gtm" as API
+participant "gtmConfigStore" as STORE
+participant "/api/admin/tracking/providers/snapshot ✨" as SNAP
+database "tracking_settings" as DB
+
+A -> LIST : ouvre /admin/tracking/gtm
+LIST -> API : GET versions
+API -> STORE : list()
+STORE -> DB : SELECT gtm.config_versions
+DB --> STORE : [v1, v2, v3]
+STORE --> API : versions
+API --> LIST : { active, versions }
+
+A -> LIST : clique [Modifier] sur v2
+
+LIST -> FORM : navigate(?versionId=v2&mode=edit)
+
+FORM -> API : GET /gtm/v2
+API -> STORE : get(v2)
+STORE -> DB : SELECT
+DB --> STORE : version v2
+STORE --> API : v2 (perEnv: {production, ...})
+API --> FORM : v2
+
+par
+  FORM -> FORM : hydrate form fields from v2
+also
+  FORM -> SNAP : GET providers snapshot
+  SNAP -> DB : SELECT tracking_providers WHERE enabled
+  DB --> SNAP : providers
+  SNAP --> FORM : { metaPixelId, ga4MeasurementId, ... }
+end
+
+FORM -> FORM : compute diff(v2 vs snapshot)\nfor each field
+
+note right of FORM
+  Affiche indicateur visuel
+  ✅ champ aligné avec Provider
+  ⚠ champ divergent
+  ✏ champ overridé manuellement
+end note
+
+A -> FORM : modifie metaPixelId
+A -> FORM : clique [Sauvegarder v2.1]
+
+FORM -> FORM : nameInput("v2.1")
+FORM -> FORM : récap diff
+A -> FORM : confirme
+
+FORM -> API : POST /gtm { clone: v2, changes: {...}, name: "v2.1" }
+API -> STORE : clone(v2.id, "v2.1")
+STORE -> STORE : applyChanges()
+STORE -> DB : UPDATE tracking_settings\nappend new version
+DB --> STORE : ok
+STORE --> API : { versionId: "v2.1" }
+API --> FORM : 201 { versionId }
+
+FORM -> A : afficher "✅ v2.1 sauvegardée. Activer ?"
+
+A -> FORM : [Activer v2.1]
+FORM -> API : POST /gtm/v2.1/activate
+API -> STORE : activate("v2.1")
+STORE -> DB : UPDATE activeId = "v2.1"
+DB --> STORE : ok
+
+@enduml

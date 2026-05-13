@@ -1,0 +1,129 @@
+{
+  "$comment": "Données seed exemples pour environnement post-refonte. Utilisé en tests + onboarding.",
+  "trackingProviders": [
+    {
+      "id": "tp_meta_001",
+      "kind": "meta",
+      "status": "enabled",
+      "pixelId": "2179682406197934",
+      "config": {
+        "testEventCode": null
+      },
+      "enabledEvents": [
+        "purchase",
+        "lead_capture",
+        "generate_lead",
+        "add_to_cart",
+        "view_item",
+        "form_start"
+      ]
+    },
+    {
+      "id": "tp_ga4_001",
+      "kind": "google_ga4",
+      "status": "enabled",
+      "pixelId": "G-5VHP17SDZM",
+      "config": {},
+      "enabledEvents": ["*"]
+    },
+    {
+      "id": "tp_gads_001",
+      "kind": "google_ads",
+      "status": "enabled",
+      "pixelId": "AW-18136327114",
+      "config": {
+        "googleAdsCustomerId": "7082602195",
+        "googleAdsConversionActions": {
+          "purchase": {
+            "actionLabel": "AbCdEf123Abc",
+            "category": "purchase",
+            "defaultValue": 19900,
+            "defaultCurrency": "MAD"
+          },
+          "lead_capture": {
+            "actionLabel": "XyZ789xyZ123",
+            "category": "lead",
+            "defaultValue": null,
+            "defaultCurrency": null
+          },
+          "generate_lead": {
+            "actionLabel": "XyZ789xyZ123",
+            "category": "lead"
+          },
+          "phone_call_initiated": {
+            "actionLabel": "PqR456pqR123",
+            "category": "contact"
+          }
+        }
+      },
+      "enabledEvents": ["purchase", "lead_capture", "generate_lead", "phone_call_initiated"]
+    },
+    {
+      "id": "tp_gtm_001",
+      "kind": "gtm",
+      "status": "enabled",
+      "pixelId": "GTM-M8K7V88D",
+      "config": {},
+      "enabledEvents": ["*"]
+    }
+  ],
+  "trackingEventOverrides": [
+    {
+      "$comment": "Pas d'override par défaut — tout vient du catalogue.",
+      "event_name": "stock_notify_subscribe",
+      "google_ads_category": "lead",
+      "note": "Override : on considère un opt-in stock comme lead (marketing décision)",
+      "updated_by": "u_marketing_sara",
+      "updated_at": "2026-05-13T10:00:00.000Z"
+    }
+  ],
+  "gtmConfigSeed": {
+    "name": "v3 — Refonte 2026-05",
+    "notes": "Première version avec Google Ads CAPI server-side, form_start custom event, mapping begin_checkout révisé.",
+    "perEnv": {
+      "production": {
+        "metaPixelId": "2179682406197934",
+        "ga4MeasurementId": "G-5VHP17SDZM",
+        "googleAdsCustomerId": "7082602195",
+        "googleAdsConvLabels": {
+          "purchase": "AbCdEf123Abc",
+          "lead": "XyZ789xyZ123",
+          "contact": "PqR456pqR123",
+          "signup": "",
+          "initCheckout": ""
+        },
+        "tiktokPixelId": "",
+        "snapPixelId": "",
+        "pinterestTagId": "",
+        "cookieDomain": "auto",
+        "defaultCurrency": "MAD",
+        "enabledProviders": ["meta", "google_ga4", "google_ads", "gtm"]
+      },
+      "stage": {
+        "$comment": "Mêmes IDs avec test event codes pour Meta CAPI",
+        "metaPixelId": "2179682406197934",
+        "ga4MeasurementId": "G-5VHP17SDZM",
+        "googleAdsCustomerId": "7082602195",
+        "googleAdsConvLabels": {
+          "purchase": "AbCdEf123Abc",
+          "lead": "XyZ789xyZ123",
+          "contact": "PqR456pqR123",
+          "signup": "",
+          "initCheckout": ""
+        }
+      },
+      "preview": {
+        "metaPixelId": "",
+        "ga4MeasurementId": "G-PREVIEW00000",
+        "googleAdsCustomerId": "",
+        "googleAdsConvLabels": {}
+      },
+      "dev": {
+        "metaPixelId": "",
+        "ga4MeasurementId": "",
+        "googleAdsCustomerId": "",
+        "googleAdsConvLabels": {}
+      }
+    }
+  }
+}

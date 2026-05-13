@@ -1,0 +1,30 @@
+name,category,scope,is_conversion,google_ads_category_default,description,default_providers,meta_mapping,ga4_mapping,google_ads_mapping,tiktok_mapping,notes
+page_view,engagement,shared,false,,Standard page view,"google_ga4,meta",PageView,page_view,,,
+scroll_50,engagement,shared,false,,Scroll past 50%,google_ga4,,scroll,,,
+view_item,ecommerce,shared,false,,Product view,"google_ga4,meta",ViewContent,view_item,,ViewContent,
+view_item_list,ecommerce,shared,false,,Product list view,"google_ga4,meta",ViewContent,view_item_list,,,
+add_to_cart,ecommerce,shared,false,,Add to cart,"google_ga4,meta,tiktok",AddToCart,add_to_cart,,AddToCart,
+remove_from_cart,ecommerce,shared,false,,Remove from cart,google_ga4,,remove_from_cart,,,
+form_start,engagement,shared,false,,First focus on a wizard form field (NEW ✨),"google_ga4,meta",CustomEvent:form_start,form_start,,,New event — fired on first field focus
+begin_checkout,ecommerce,shared,true,,Explicit checkout click,"google_ga4,tiktok",CustomEvent:checkout_intent,begin_checkout,,InitiateCheckout,"REVISED ✨ — no longer Meta InitiateCheckout to avoid pollution"
+add_shipping_info,ecommerce,shared,false,,Shipping info added,"google_ga4,meta",AddShippingInfo,add_shipping_info,,,
+add_payment_info,ecommerce,shared,false,,Payment method selected,"google_ga4,meta",AddPaymentInfo,add_payment_info,,,
+purchase,ecommerce,shared,true,purchase,Order completed,"google_ga4,meta,google_ads,tiktok,snap,pinterest",Purchase,purchase,purchase,CompletePayment,Primary conversion
+generate_lead,lead,shared,true,lead,Lead generated (form),"google_ga4,meta,google_ads",Lead,generate_lead,generate_lead,SubmitForm,
+lead_capture,lead,shared,true,lead,CHA-230 wizard lead form submitted,"google_ga4,meta,google_ads",Lead,lead_capture,lead_capture,SubmitForm,"FIX ✨ — was missing from CONVERSION_EVENTS Set"
+sign_up,lead,shared,true,sign_up,Account created,"google_ga4,meta",CompleteRegistration,sign_up,sign_up,CompleteRegistration,
+chat_lead_form_submit,lead,client,true,lead,Chat lead capture,"google_ga4,meta",Lead,generate_lead,generate_lead,,Re-emitted as generate_lead
+phone_call_initiated,lead,shared,true,contact,Click on tel: link,"google_ga4,google_ads",,,phone_call_initiated,,
+contact_form_submit,lead,shared,true,contact,Contact page form submit,"google_ga4,meta,google_ads",Contact,contact,contact,,
+chat_widget_open,engagement,client,false,,Chat opened,google_ga4,,chat_open,,,
+chat_message_sent,engagement,client,false,,User sent chat message,google_ga4,,chat_msg_sent,,,
+stock_notify_subscribe,engagement,shared,false,,Stock notification opt-in,google_ga4,,stock_notify,,,
+form_submit,engagement,shared,false,,Generic form submit,google_ga4,,form_submit,,,
+form_error,engagement,shared,false,,Form validation error,google_ga4,,form_error,,,
+wizard_error,engagement,shared,false,,Wizard step error,google_ga4,,wizard_error,,,
+wizard_step_completed,engagement,shared,false,,Wizard step completed,google_ga4,,wizard_step,,,
+journal_article_view,engagement,shared,false,,Journal article view,"google_ga4,meta",ViewContent,view_item,,,
+journal_article_read,engagement,shared,false,,Article read complete (>80% scroll),google_ga4,,article_read,,,
+share_click,engagement,shared,false,,Share button click,google_ga4,,share,,,
+admin_login,admin,server,false,,Admin login success,google_ga4,,,,,
+admin_action,admin,server,false,,Admin sensitive action,google_ga4,,,,,

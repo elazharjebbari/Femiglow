@@ -1,0 +1,72 @@
+TABLE public.tracking_event_overrides (NOUVELLE)
+=================================================
+Permet à l'admin d'overrider la catégorie Google Ads d'un event défini
+dans le catalogue. Default depuis le catalogue, override prioritaire.
+
+Colonne              | Type                          | Notes
+---------------------|-------------------------------|------------------------
+event_name           | text PK                       | nom de l'event canonique
+google_ads_category  | text NULL                     | enum: purchase, lead,
+                     |                               |       contact, sign_up,
+                     |                               |       view_content, NULL
+                     |                               | (NULL = pas une conv. GAds)
+note                 | text NULL                     | commentaire admin
+updated_by           | text NULL                     | FK admin_users.id
+updated_at           | timestamp with tz             | NOT NULL DEFAULT now()
+created_at           | timestamp with tz             | NOT NULL DEFAULT now()
+
+CONTRAINTES
+- PK (event_name)
+- CHECK google_ads_category IN ('purchase','lead','contact','sign_up','view_content') OR NULL
+- FK updated_by → admin_users(id) ON DELETE SET NULL
+
+INDEX
+- (event_name) — implicite via PK
+
+QUERIES TYPES
+
+-- Resolve la catégorie effective d'un event
+SELECT
+  e.name,
+  COALESCE(o.google_ads_category, e.google_ads_category_default) AS effective_category
+FROM tracking_event_definitions e
+LEFT JOIN tracking_event_overrides o ON o.event_name = e.name
+WHERE e.name = $1;
+
+-- Liste de tous les events avec leur catégorie effective
+SELECT
+  e.name,
+  e.is_conversion,
+  e.google_ads_category_default AS default_category,
+  o.google_ads_category AS override_category,
+  o.updated_by,
+  o.updated_at
+FROM tracking_event_definitions e
+LEFT JOIN tracking_event_overrides o ON o.event_name = e.name
+ORDER BY e.is_conversion DESC, e.name;
+
+
+NOTE
+On ajoute aussi une colonne `google_ads_category_default text NULL` à
+tracking_event_definitions pour stocker le default (sync depuis le code
+catalog au seed).
+
+MIGRATION
+---------
+CREATE TABLE tracking_event_overrides (
+  event_name text NOT NULL,
+  google_ads_category text,
+  note text,
+  updated_by text REFERENCES admin_users(id) ON DELETE SET NULL,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  PRIMARY KEY (event_name),
+  CONSTRAINT chk_google_ads_category
+    CHECK (google_ads_category IS NULL OR google_ads_category IN
+      ('purchase','lead','contact','sign_up','view_content'))
+);
+
+ALTER TABLE tracking_event_definitions
+  ADD COLUMN IF NOT EXISTS google_ads_category_default text
+  CHECK (google_ads_category_default IS NULL OR google_ads_category_default IN
+    ('purchase','lead','contact','sign_up','view_content'));

@@ -1,0 +1,146 @@
+---
+# Action plan haute niveau — séquencement des sprints
+# Référence détaillée : 07-dev-plan.csv
+
+version: 1.0.0
+feature: reset
+target_branch: master
+target_env: production-on-server  # /var/www/femiglow
+
+phases:
+  - id: phase-A-preparation
+    label: "Préparation"
+    duration_estimate_h: 4
+    parallelizable: false
+    steps:
+      - git pull/merge depuis origin/master  # DONE
+      - exploration code seeders/orchestrator  # DONE
+      - rédaction dossier docs/reset-feature/  # IN PROGRESS
+      - validation dossier par utilisateur
+    gates:
+      - dossier_validated_by_user: true
+
+  - id: phase-B-backend
+    label: "Backend (lib/reset/ + API)"
+    duration_estimate_h: 22
+    parallelizable: false  # types must come first
+    dependencies: [phase-A-preparation]
+    sub-phases:
+      - id: B1-types-and-infra
+        tasks: [T01, T02, T03, T04]
+        duration_h: 4
+      - id: B2-phases-individuelles
+        tasks: [T05, T06, T07, T08, T09, T10, T11, T12, T13, T14]
+        duration_h: 13.5
+        parallelizable: true  # entre tâches indépendantes
+      - id: B3-orchestration
+        tasks: [T15, T16, T17]
+        duration_h: 6.5
+      - id: B4-api-routes
+        tasks: [T18, T19, T20, T21, T22, T23, T24]
+        duration_h: 5.5
+      - id: B5-cli
+        tasks: [T25]
+        duration_h: 3
+    gates:
+      - all_backend_tests_green: true
+      - cli_dry_run_passes: true
+
+  - id: phase-C-frontend
+    label: "Frontend (wizard /admin/settings/reset)"
+    duration_estimate_h: 16
+    parallelizable: false
+    dependencies: [phase-B-backend]
+    sub-phases:
+      - id: C1-page-et-wizard-shell
+        tasks: [T26, T27, T28]
+        duration_h: 3
+      - id: C2-steps
+        tasks: [T29, T30, T31, T32, T33, T34, T35, T36]
+        duration_h: 11
+        parallelizable: true  # entre steps indépendants
+      - id: C3-hooks
+        tasks: [T37, T38, T39]
+        duration_h: 2.5
+    gates:
+      - wizard_navigable_keyboard: true
+      - a11y_axe_no_critical: true
+
+  - id: phase-D-tests
+    label: "Tests intégration (MSW + Playwright)"
+    duration_estimate_h: 7.5
+    parallelizable: false
+    dependencies: [phase-C-frontend]
+    tasks: [T40, T43, T44, T45, T46]
+    gates:
+      - playwright_dry_run_green: true
+      - coverage_unit_above_80: true
+
+  - id: phase-E-runbook
+    label: "Runbook + exécution"
+    duration_estimate_h: 2.5
+    parallelizable: false
+    dependencies: [phase-D-tests]
+    tasks: [T47, T48, T49, T50]
+    gates:
+      - user_explicit_go_ahead: required
+      - user_answered_data_preservation_questions: required
+      - admin_bootstrap_validated: required
+
+  - id: phase-F-post-mortem
+    label: "Bilan & dette tech identifiée"
+    duration_estimate_h: 1
+    dependencies: [phase-E-runbook]
+    deliverable: docs/reset-feature/post-mortem.md
+
+risks:
+  - id: R1
+    risk: "Bug dans phase backup peut produire backup invalide non détecté"
+    mitigation: "sha256 validation + size minimum + smoke test du backup en preflight de la restore"
+    severity: high
+  - id: R2
+    risk: "Reset hard sur prod sans préservation détruit des données utilisateur réelles"
+    mitigation: "preserve=admin_users+audit_events par défaut, confirmation typée HARD RESET, attente go-ahead explicite utilisateur"
+    severity: critical
+  - id: R3
+    risk: "SSE rate limit / proxies coupent la connexion long"
+    mitigation: "keepalive 15s + fallback polling automatique"
+    severity: medium
+  - id: R4
+    risk: "pg_dump bloque si une session SQL ouverte avec lock"
+    mitigation: "preflight check pg_stat_activity, terminate les sessions non admin avant backup"
+    severity: medium
+  - id: R5
+    risk: "Disque plein pendant backup"
+    mitigation: "preflight check df -h > 2x taille DB estimée"
+    severity: high
+  - id: R6
+    risk: "Concurrent reset via CLI et UI"
+    mitigation: "file lock /var/run/femiglow-reset.lock + memory lock cross-check"
+    severity: medium
+  - id: R7
+    risk: "Rollback échoue (DB en état intermédiaire bizarre)"
+    mitigation: "Exit code 91 + alerte explicite avec commande manuelle dans le rapport"
+    severity: critical
+
+decision_log:
+  - date: 2026-05-13
+    decision: "Backup = obligatoire pour hard (refuse --no-backup sans flag escape)"
+    rationale: "Coût d'erreur asymétrique, le backup est cheap (~15s) vs reset 90s"
+  - date: 2026-05-13
+    decision: "Job store in-memory (non persistant DB) comme seeders"
+    rationale: "Simplicité + cohérence + reset est une opération admin courte"
+  - date: 2026-05-13
+    decision: "Confirmation typée plutôt que double-mot-de-passe"
+    rationale: "Cookie session 8h déjà élevée; typer le mot évite les clics accidentels"
+  - date: 2026-05-13
+    decision: "Pas de S3/distant backup en V1"
+    rationale: "Out of scope V1, manifest documenté pour upload manuel ultérieur"
+
+success_criteria:
+  - "Soft reset corrige variante stale FEMI-KIT-30 → page /kit affiche 199 dh"
+  - "Hard reset depuis DB vide → /kit fonctionnel en < 90s"
+  - "Rollback auto sur erreur phase migrate"
+  - "Aucun appel non-auth ne retourne autre chose que 401/403"
+  - "Wizard utilisable au clavier seul"
+  - "Tous tests verts en CI"
