@@ -1,3 +1,4 @@
+'use client';
 import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import type { RitualTestimonialPublic } from '@/lib/schemas/rituals';

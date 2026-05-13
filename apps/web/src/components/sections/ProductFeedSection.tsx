@@ -90,9 +90,17 @@ export function ProductFeedSection({
                 {feed.hero.pricePrefix}
               </span>
               <span className="font-display text-3xl text-encre">
-                {feed.priceMajor.toFixed(0)}{' '}
+                {(promo.effectivePriceCents / 100).toFixed(0)}{' '}
                 <span className="text-base text-encre/70">{feed.currency}</span>
               </span>
+              {promo.active && (
+                <span
+                  aria-label={`Prix avant promotion ${(promo.originalPriceCents / 100).toFixed(0)} ${feed.currency}`}
+                  className="text-base text-encre/45 line-through decoration-encre/35"
+                >
+                  {(promo.originalPriceCents / 100).toFixed(0)} {feed.currency}
+                </span>
+              )}
             </p>
             {/* CHA-246 — Le CTA "Recevoir le pack" ne pousse plus vers
                 `/panier` : il scroll-anchor vers le wizard funnel embarqué
