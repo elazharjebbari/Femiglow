@@ -99,7 +99,9 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
     RETURNING o.*;
   `)) as unknown as { rows: EmailOutboxRow[] } | EmailOutboxRow[];
 
-  const list = rowsOf(result);
+  // RAW SQL execute returns snake_case columns ; map to camelCase EmailOutboxRow
+  // shape so deliverRow can use Drizzle's $inferSelect typed fields.
+  const list = rowsOf(result).map(normalizeRow);
   let succeeded = 0;
   let failed = 0;
   let dlq = 0;
@@ -147,6 +149,45 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
     failed,
     dlq,
     durationMs: Date.now() - startedAt,
+  };
+}
+
+/**
+ * Map a snake_case row (from raw SQL execute) to the camelCase EmailOutboxRow
+ * shape expected by Drizzle's $inferSelect.
+ */
+function normalizeRow(raw: Record<string, unknown>): EmailOutboxRow {
+  const r = raw as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    idempotencyKey: r.idempotency_key as string,
+    template: r.template as string,
+    templateVersion: r.template_version as number,
+    toEmail: r.to_email as string,
+    toName: (r.to_name as string | null) ?? null,
+    fromEmail: r.from_email as string,
+    replyTo: (r.reply_to as string | null) ?? null,
+    subject: r.subject as string,
+    payloadJson: r.payload_json as Record<string, unknown>,
+    htmlSnapshot: (r.html_snapshot as string | null) ?? null,
+    textSnapshot: (r.text_snapshot as string | null) ?? null,
+    status: r.status as EmailOutboxRow['status'],
+    attempts: r.attempts as number,
+    maxAttempts: r.max_attempts as number,
+    nextRetry: (r.next_retry as Date | null) ?? null,
+    lastError: (r.last_error as string | null) ?? null,
+    smtpMessageId: (r.smtp_message_id as string | null) ?? null,
+    smtpResponse: (r.smtp_response as string | null) ?? null,
+    queueId: (r.queue_id as string | null) ?? null,
+    scheduledFor: (r.scheduled_for as Date | null) ?? null,
+    deliveredAt: (r.delivered_at as Date | null) ?? null,
+    bouncedAt: (r.bounced_at as Date | null) ?? null,
+    bounceReason: (r.bounce_reason as string | null) ?? null,
+    bounceType: (r.bounce_type as EmailOutboxRow['bounceType']) ?? null,
+    source: (r.source as string | null) ?? null,
+    createdByUserId: (r.created_by_user_id as string | null) ?? null,
+    createdAt: r.created_at as Date,
+    updatedAt: r.updated_at as Date,
   };
 }
 
