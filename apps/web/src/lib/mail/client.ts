@@ -39,9 +39,16 @@ function buildTransporter(): Transporter {
     name: 'mail.lumiereacademy.com',
     // SNI : Stalwart's TLS cert covers mail.lumiereacademy.com / *.femiglow-
     // maroc.com — not 127.0.0.1. By forcing the SNI servername to the real
-    // hostname, node-tls accepts the cert.
+    // hostname, node-tls accepts the cert (no hostname mismatch).
+    //
+    // rejectUnauthorized=false : on loopback the chain isn't always
+    // verifiable (Stalwart's Let's Encrypt cert chain may not be served
+    // complete on the internal listener, and node doesn't load OS CA
+    // bundles in production sometimes). The connection is loopback only,
+    // so MITM is not a realistic threat — accept any cert.
     tls: {
       servername: 'mail.lumiereacademy.com',
+      rejectUnauthorized: false,
     },
   });
 }
