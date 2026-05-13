@@ -52,6 +52,12 @@ export default async function AdminLegalPage() {
         </div>
         <div className="flex gap-2">
           <Link
+            href="/admin/legal/new"
+            className="bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-800"
+          >
+            + Nouvelle page
+          </Link>
+          <Link
             href="/admin/legal/template-vars"
             className="border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
           >
