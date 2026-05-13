@@ -1,8 +1,10 @@
 import { listEnabledTrackingProviders } from '@/lib/db/queries/tracking/providers';
-import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
+import type { TrackingProvider, TrackingProviderKind, TrackingProviderResult } from '@/lib/db/types';
 import { getAdapter } from '@/lib/tracking/providers/registry';
 import type { DispatchContext } from '@/lib/tracking/providers/types';
 import { logger } from '@/lib/logging/logger';
+import { resolveEventMapping } from '@/lib/tracking/mappings/resolver';
+import { PROVIDER_KINDS_FOR_MAPPING } from '@/lib/tracking/mappings/types';
 
 export interface DispatchOutcome {
   dispatched: string[];
@@ -33,6 +35,28 @@ function consentAllowsProvider(
 
 export async function dispatchToProviders(ctx: DispatchContext): Promise<DispatchOutcome> {
   const providers = await listEnabledTrackingProviders();
+
+  // Phase 4 — Pré-résoudre les mappings depuis event_mapping_versions (version active DB).
+  // Les adapters peuvent lire ctx.resolvedMappings[kind].mappedName en priorité, et
+  // fallback `mapEventName` du code legacy si absent. Best-effort : si le resolver
+  // plante, ctx.resolvedMappings reste undefined → behaviour pré-migration intact.
+  const resolved: NonNullable<DispatchContext['resolvedMappings']> = {};
+  await Promise.all(
+    PROVIDER_KINDS_FOR_MAPPING.map(async (kind) => {
+      try {
+        const r = await resolveEventMapping(ctx.eventName, kind);
+        if (r) resolved[kind as TrackingProviderKind] = r;
+      } catch (err) {
+        logger.warn('tracking.dispatch.resolver_degraded', {
+          kind,
+          event_name: ctx.eventName,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }),
+  );
+  const ctxWithMappings: DispatchContext = { ...ctx, resolvedMappings: resolved };
+
   const tasks = providers.map(async (provider): Promise<[string, TrackingProviderResult] | null> => {
     const adapter = getAdapter(provider.kind);
     if (!adapter || !adapter.supports(ctx.eventName)) return null;
@@ -43,7 +67,7 @@ export async function dispatchToProviders(ctx: DispatchContext): Promise<Dispatc
       return [provider.kind, { status: 'skipped', latencyMs: 0, attempts: 0, error: 'event_disabled' }];
     }
     try {
-      const result = await adapter.dispatch(provider, ctx);
+      const result = await adapter.dispatch(provider, ctxWithMappings);
       return [provider.kind, result];
     } catch (err) {
       logger.error('tracking.dispatch.adapter_threw', {

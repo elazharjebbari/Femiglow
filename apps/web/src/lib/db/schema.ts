@@ -632,6 +632,62 @@ export const trackingEventOverrides = pgTable(
   }),
 );
 
+// Migration 0032 — Event mappings : versionning event_canonique → vendor.
+// cf. docs/event-mappings/10-architecture/adr-001-versioning-strategy.md
+export const eventMappingVersions = pgTable(
+  'event_mapping_versions',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    notes: text('notes'),
+    status: text('status').notNull(),
+    isActive: boolean('is_active').notNull().default(false),
+    isDefault: boolean('is_default').notNull().default(false),
+    mappings: jsonb('mappings').notNull().default({}),
+    clonedFrom: text('cloned_from'),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    activatedAt: timestamp('activated_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    oneActiveIdx: uniqueIndex('event_mapping_versions_one_active')
+      .on(t.isActive)
+      .where(sql`is_active = true`),
+    statusIdx: index('event_mapping_versions_status_idx').on(t.status, t.createdAt),
+    defaultIdx: uniqueIndex('event_mapping_versions_default_idx')
+      .on(t.isDefault)
+      .where(sql`is_default = true`),
+    mappingsGin: index('event_mapping_versions_mappings_gin').using(
+      'gin',
+      t.mappings,
+    ),
+  }),
+);
+
+// Migration 0033 — audit log structuré.
+export const eventMappingAudit = pgTable(
+  'event_mapping_audit',
+  {
+    id: text('id').primaryKey(),
+    versionId: text('version_id'),
+    action: text('action').notNull(),
+    actorId: text('actor_id').notNull(),
+    before: jsonb('before'),
+    after: jsonb('after'),
+    meta: jsonb('meta').notNull().default({}),
+    ipAnonymized: text('ip_anonymized'),
+    uaHash: text('ua_hash'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    versionIdx: index('event_mapping_audit_version_idx').on(t.versionId, t.createdAt),
+    actorIdx: index('event_mapping_audit_actor_idx').on(t.actorId, t.createdAt),
+    actionIdx: index('event_mapping_audit_action_idx').on(t.action, t.createdAt),
+  }),
+);
+
 export const trackingComponentEvents = pgTable(
   'tracking_component_events',
   {
