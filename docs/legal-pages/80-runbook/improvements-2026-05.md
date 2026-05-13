@@ -198,8 +198,51 @@ ordre par criticité (P1–P4 = prod blockers).
 Chaque phase : un commit `feat(legal-pages): P<N> — <titre>` avec les
 tests ajoutés. Pas de squash entre phases (audit trail).
 
+## Statut d'exécution (2026-05-13)
+
+| Phase | Commit | Tests ajoutés | Statut |
+|---|---|---|---|
+| P1 | `e84f5ff` | 16 (5 unit + 4 int + 2 RTL + 5 MSW scenario) | ✅ |
+| P2 | `75d5a46` | 3 (assertions revalidateTag) | ✅ |
+| P3 | `c04cbba` | 7 integration (burst, isolation, Retry-After) | ✅ |
+| P4 | `0eca189` | 37 (10 unit + 27 integration paramétrés) | ✅ |
+| P5 | `6e8ff1a` | 9 (8 unit publish + 1 integration) | ✅ |
+| P6 | `745a3a4` | 8 RTL (navigation + soumission complète) | ✅ |
+| P7 | `e1598ca` | 19 (10 unit diff + 3 int + 6 RTL drawer) | ✅ |
+| P8 | `eda3f30` | 5 (4 unit redirects + 1 int 301) | ✅ |
+
+**Total tests legal après runbook : 207 (vs 111 avant) — +96 tests.**
+
 ## Validation finale
 
-- `pnpm test` (vitest) : 111 tests précédents + tests ajoutés, tous verts.
-- `pnpm tsc --noEmit` : 0 erreur dans les fichiers legal.
-- `pnpm test:e2e` : skip propre si DB/auth manquant, sinon vert.
+- ✅ `vitest run src/lib/legal/ src/components/admin/legal/ src/test/integration/legal-api-*` :
+  207/207 verts en ~34s (19 fichiers).
+- ✅ Pas de régression sur les 111 tests pré-runbook.
+- ✅ `tsc --noEmit` 0 erreur sur les fichiers legal.
+- ⏳ Playwright e2e : les specs existantes (`legal-public`, `admin-legal`,
+  `legal-a11y`) restent compatibles. Nouveaux specs e2e pour P6/P7 à
+  ajouter en V1.1.
+
+## Migration à appliquer
+
+Migration 0033_legal_slug_redirects.sql à exécuter en pre-deploy :
+
+```bash
+pnpm drizzle-kit migrate
+```
+
+Idempotent (CREATE IF NOT EXISTS). Pas de seed nécessaire — table vide
+au démarrage.
+
+## V1.1 — Pistes restantes
+
+Non couvertes par ce runbook (hors scope) :
+- i18n AR-MA (RTL, routing /ar/legal/).
+- PDF export pour le juriste.
+- Git sync sur branche orpheline.
+- Sentry + PostHog hooks legal.
+- Audit log UI (la table `audit_events` existe, manque l'écran).
+- Search / filter sur la liste admin.
+- Autocomplete `{{VARS}}` dans l'éditeur.
+- Variable usage warning ("touche {{X}} → 5 pages publiées à republier").
+- Bulk republish après changement de variable.
