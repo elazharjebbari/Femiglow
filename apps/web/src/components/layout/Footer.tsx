@@ -3,6 +3,7 @@ import { Container } from '@/components/ui/Container';
 import { Logo } from '@/components/ui/Logo';
 import { Text } from '@/components/ui/Text';
 import { Kicker } from '@/components/ui/Kicker';
+import { FooterLegalLinks } from '@/components/legal/FooterLegalLinks';
 import { routes } from '@/lib/routes';
 
 const columns = [
@@ -19,22 +20,13 @@ const columns = [
     title: 'Assistance',
     links: [
       { label: 'Contact', href: routes.contact },
-      { label: 'Livraison', href: '#' },
-      { label: 'Retours', href: '#' },
-    ],
-  },
-  {
-    title: 'Légal',
-    links: [
-      { label: 'Mentions', href: '#' },
-      { label: 'Conditions de vente', href: '#' },
-      { label: 'Confidentialité', href: '#' },
-      { label: 'Cookies', href: '#' },
+      { label: 'Livraison', href: '/legal/livraison' },
+      { label: 'Retours', href: '/legal/retours-remboursements' },
     ],
   },
 ];
 
-export function Footer() {
+export async function Footer() {
   return (
     <footer role="contentinfo" className="bg-encre text-creme">
       <Container width="page">
@@ -62,6 +54,10 @@ export function Footer() {
               </ul>
             </nav>
           ))}
+          <nav aria-label="Légal">
+            <Kicker tone="on-dark">Légal</Kicker>
+            <FooterLegalLinks />
+          </nav>
         </div>
         <div className="border-t border-creme/10 py-6 text-xs text-creme/60 space-y-1">
           <div>
