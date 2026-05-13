@@ -1,0 +1,141 @@
+{
+  # Design tokens spécifiques pages légales
+  # Hérite de la charte FemiGlow globale, override certains tokens
+
+  # === COULEURS ===
+  colors: {
+    legal_body_text:       "#44403c"   # stone-700, contraste AAA sur stone-50
+    legal_heading:         "#1c1917"   # stone-900
+    legal_subtle:          "#78716c"   # stone-500
+    legal_background:      "#fafaf9"   # stone-50
+    legal_card_background: "#ffffff"
+    legal_border:          "#e7e5e4"   # stone-200
+    legal_link:            "#be123c"   # rose-700
+    legal_link_hover:      "#9f1239"   # rose-800
+    legal_link_visited:    "#7c1d3f"
+    legal_warning_bg:      "#fef3c7"   # amber-100
+    legal_warning_border:  "#f59e0b"   # amber-500
+    legal_warning_text:    "#92400e"   # amber-800
+    legal_success_bg:      "#dcfce7"
+    legal_success_text:    "#166534"
+    legal_danger_bg:       "#fef2f2"
+    legal_danger_text:     "#991b1b"
+    legal_var_missing_bg:  "#fee2e2"
+    legal_var_missing_brd: "#dc2626"
+  }
+
+  # === TYPOGRAPHIE ===
+  typography: {
+    h1: {
+      font:     "Cormorant Garamond, serif"
+      weight:   500
+      size:     "clamp(2rem, 4vw, 2.75rem)"
+      lineHeight: 1.15
+      tracking: "-0.02em"
+    }
+    h2: {
+      font:     "Cormorant Garamond, serif"
+      weight:   500
+      size:     "1.625rem"
+      lineHeight: 1.25
+      marginTop: "2.5rem"
+      borderBottom: "1px solid {colors.legal_border}"
+    }
+    h3: {
+      font:     "Inter, sans-serif"
+      weight:   600
+      size:     "1.125rem"
+      transform: "uppercase"
+      tracking:  "0.05em"
+      color:     "{colors.legal_subtle}"
+    }
+    body: {
+      font:       "Inter, sans-serif"
+      weight:     400
+      size:       "1rem"     # 16px — meilleur pour iOS no-zoom
+      lineHeight: 1.75
+      maxWidth:   "65ch"
+    }
+    small: {
+      size: "0.875rem"
+      color: "{colors.legal_subtle}"
+    }
+    code: {
+      font: "JetBrains Mono, monospace"
+      bg:   "{colors.legal_border}"
+      size: "0.9em"
+    }
+  }
+
+  # === ESPACES ===
+  spacing: {
+    page_padding_x_mobile: "1.5rem"
+    page_padding_x_tablet: "2.5rem"
+    page_padding_y:        "3rem"
+    section_gap:           "2.5rem"
+    subsection_gap:        "1.25rem"
+    paragraph_gap:         "1rem"
+    list_item_gap:         "0.5rem"
+  }
+
+  # === RAYON BORDURES ===
+  radius: {
+    card:    "0.75rem"
+    button:  "0.5rem"
+    pill:    "9999px"
+    input:   "0.5rem"
+  }
+
+  # === SHADOWS ===
+  shadows: {
+    card:        "0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)"
+    card_hover:  "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)"
+    focus_ring:  "0 0 0 3px rgba(190,18,60,0.4)"
+  }
+
+  # === ANIMATIONS ===
+  animations: {
+    duration_fast: "150ms"
+    duration_normal: "250ms"
+    duration_slow: "400ms"
+    easing_default: "cubic-bezier(0.4, 0, 0.2, 1)"
+    respect_motion_reduced: true
+  }
+
+  # === COMPOSANTS ADMIN ===
+  admin: {
+    sidebar_width: "260px"
+    header_height: "56px"
+    editor_left_pane_min: "400px"
+    editor_right_pane_min: "400px"
+    toolbar_height: "44px"
+    chip_padding: "0.25rem 0.625rem"
+    badge_size: "1rem"
+  }
+
+  # === ZONES PUBLIQUES ===
+  public: {
+    legal_prose_max_width: "65ch"
+    legal_layout_max_width: "48rem"
+    footer_link_size: "0.875rem"
+    footer_link_gap:  "1.25rem"
+    cookie_banner_width_max: "32rem"
+  }
+
+  # === BREAKPOINTS ===
+  breakpoints: {
+    mobile_max:   "640px"
+    tablet_min:   "641px"
+    tablet_max:   "1024px"
+    desktop_min:  "1025px"
+  }
+
+  # === A11Y ===
+  a11y: {
+    min_target_touch: "44px"
+    focus_ring_width: "3px"
+    contrast_body_aaa: true   # 7:1 minimum
+    contrast_ui_aa:   true    # 4.5:1 minimum
+    reduced_motion_default: false
+  }
+}

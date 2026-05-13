@@ -1,0 +1,78 @@
+@startuml data-flow-diagram
+title Flux de données — Pages légales
+
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName Inter
+
+cloud "Browser public" as B
+node "/api/legal/[slug]\n(public read)" as PUB
+node "/api/admin/legal/*\n(admin CRUD)" as ADM
+
+database "legal_pages\n(état courant)" as LP
+database "legal_pages_history\n(audit immuable)" as LPH
+database "legal_zones\n(catalog)" as LZ
+database "legal_page_placements\n(matrice)" as LPP
+database "legal_template_vars\n(KV)" as LTV
+database "legal_link_health_snapshot\n(monitoring)" as LH
+database "audit_events" as AE
+
+cloud "Admin browser" as A
+
+node "Background job\ngit-sync" as GIT
+node "Cron 30min\nlink-checker" as CRON
+node "Build CI\nlink-checker --strict" as CI
+
+cloud "Git remote\nbranch legal-versions" as REMOTE
+
+B --> PUB : GET /api/legal/cgv
+PUB --> LP : SELECT WHERE slug='cgv' AND status='published'
+LP --> PUB : body_md, metadata
+PUB --> LTV : SELECT vars
+LTV --> PUB : substitution
+PUB --> B : { content: html, metadata }
+
+B --> PUB : GET /api/legal/placements/footer-main
+PUB --> LPP : SELECT JOIN legal_pages WHERE zone='footer-main'
+LPP --> PUB : links
+PUB --> B : { links: [...] }
+
+A --> ADM : POST /api/admin/legal/[slug]/publish
+ADM --> LP : UPDATE status='published', version+1
+ADM --> LPH : INSERT snapshot (immuable)
+ADM --> AE : INSERT audit
+ADM --> GIT : enqueue commit job
+ADM --> A : { published: true, version: X }
+
+GIT --> LP : SELECT page state
+GIT --> REMOTE : git push commit
+GIT --> AE : INSERT audit 'legal.git.committed'
+GIT --> LPH : UPDATE git_commit_sha
+
+CRON --> LPP : SELECT visible placements
+CRON --> LP : verify status='published'
+CRON --> "HTTP ping" : GET <route publique>
+"HTTP ping" --> CRON : status, latency
+CRON --> LH : INSERT snapshot
+
+CI --> LPP : pre-build verification
+CI --> LP : verify
+CI --> "Build" : pass / fail
+
+note bottom of LP
+  Source de vérité courant.
+  Read by public + admin.
+  Mutations via API admin only.
+end note
+
+note bottom of LPH
+  Audit immutable (TRIGGER bloque UPDATE/DELETE).
+  Préservation pour 10+ ans recommended (legal).
+end note
+
+note bottom of REMOTE
+  Backup externe + audit
+  juriste-readable.
+  Branch séparée de master.
+end note
+
+@enduml

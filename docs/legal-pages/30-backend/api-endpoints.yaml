@@ -1,0 +1,442 @@
+openapi: 3.0.3
+info:
+  title: FemiGlow Legal Pages API
+  version: 1.0.0
+  description: API publique + admin pour la gestion des pages légales
+servers:
+  - url: https://femiglow-maroc.com
+
+paths:
+  # === PUBLIC ===
+
+  /api/legal/{slug}:
+    get:
+      summary: Récupère le contenu rendu d'une page publiée
+      tags: [public]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9-]+$' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicLegalPage' }
+          headers:
+            Cache-Control: { schema: { type: string, example: 'public, s-maxage=300, stale-while-revalidate=900' } }
+        '404':
+          description: Page non trouvée ou non publiée
+
+  /api/legal/placements/{zone}:
+    get:
+      summary: Liste des liens à afficher dans une zone
+      tags: [public]
+      parameters:
+        - in: path
+          name: zone
+          required: true
+          schema: { type: string, enum: [footer-main, footer-bottom-bar, cookie-banner-links, checkout-consent, signup-consent, mobile-menu, chat-disclaimer] }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zone: { type: string }
+                  links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slug: { type: string }
+                        label: { type: string }
+                        href: { type: string }
+                        display_order: { type: integer }
+
+  # === ADMIN ===
+
+  /api/admin/legal:
+    get:
+      summary: Liste toutes les pages légales
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [draft, review, published, archived] }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pages:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminLegalPage' }
+                  stats:
+                    type: object
+                    properties:
+                      total: { type: integer }
+                      published: { type: integer }
+                      draft: { type: integer }
+                      review: { type: integer }
+
+    post:
+      summary: Crée une nouvelle page (wizard)
+      tags: [admin]
+      security: [adminSession: []]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slug, title, body_md]
+              properties:
+                slug: { type: string, pattern: '^[a-z0-9-]+$' }
+                title: { type: string }
+                description: { type: string }
+                body_md: { type: string }
+                include_in_search: { type: boolean, default: false }
+      responses:
+        '201': { content: { application/json: { schema: { $ref: '#/components/schemas/AdminLegalPage' } } } }
+        '409': { description: Slug déjà utilisé }
+
+  /api/admin/legal/{slug}:
+    get:
+      summary: Récupère une page (admin view, inclut draft)
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AdminLegalPage' } } } }
+        '404': { description: Not found }
+
+    patch:
+      summary: Met à jour le contenu (auto-save / save explicite)
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                body_md: { type: string }
+                include_in_search: { type: boolean }
+                canonical_url: { type: string, nullable: true }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AdminLegalPage' } } } }
+        '409': { description: Version conflict (optimistic locking) }
+
+    delete:
+      summary: Archive une page (soft delete) — pas de hard delete
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Archived }
+        '409': { description: Page is currently published, archive impossible }
+
+  /api/admin/legal/{slug}/submit-review:
+    post:
+      summary: Passe la page en status 'review'
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [review] }
+                  submittedAt: { type: string, format: date-time }
+
+  /api/admin/legal/{slug}/publish:
+    post:
+      summary: Publie la page (status='published', incrémente version, snapshot history)
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm:
+                  type: string
+                  enum: [PUBLIER]
+                  description: Texte de confirmation typée
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [published] }
+                  version: { type: integer }
+                  publishedAt: { type: string, format: date-time }
+        '400': { description: confirm text mismatch }
+        '422':
+          description: Pre-condition failure (variables requises non remplies, etc.)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code: { type: string, example: 'missing_required_vars' }
+                      missing: { type: array, items: { type: string } }
+
+  /api/admin/legal/{slug}/history:
+    get:
+      summary: Liste les versions historiques d'une page
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LegalPageHistoryEntry' }
+
+  /api/admin/legal/{slug}/restore/{version}:
+    post:
+      summary: Restaure une version ancienne (crée un draft à partir de cette version)
+      tags: [admin]
+      security: [adminSession: []]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+        - in: path
+          name: version
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminLegalPage' }
+
+  /api/admin/legal/placements:
+    get:
+      summary: Matrice des placements page × zone
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zones:
+                    type: array
+                    items: { $ref: '#/components/schemas/Zone' }
+                  matrix:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        page_slug: { type: string }
+                        zone_key: { type: string }
+                        is_visible: { type: boolean }
+                        display_order: { type: integer }
+                        label_override: { type: string, nullable: true }
+
+    put:
+      summary: Met à jour un placement (toggle visible, reorder, override label)
+      tags: [admin]
+      security: [adminSession: []]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [page_slug, zone_key]
+              properties:
+                page_slug: { type: string }
+                zone_key: { type: string }
+                is_visible: { type: boolean }
+                display_order: { type: integer }
+                label_override: { type: string, nullable: true }
+      responses:
+        '200': { description: Placement updated }
+
+  /api/admin/legal/template-vars:
+    get:
+      summary: Liste les variables de template
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TemplateVar' }
+
+    put:
+      summary: Met à jour une variable de template
+      tags: [admin]
+      security: [adminSession: []]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key, value]
+              properties:
+                key: { type: string }
+                value: { type: string }
+
+  /api/admin/legal/health:
+    get:
+      summary: Dashboard santé des liens légaux
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  globalStatus: { type: string, enum: [ok, warning, error] }
+                  lastCheckedAt: { type: string, format: date-time }
+                  byZone:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        zone_key: { type: string }
+                        ok: { type: integer }
+                        broken: { type: integer }
+                        links:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              page_slug: { type: string }
+                              status: { type: string }
+                              http_code: { type: integer, nullable: true }
+                              checked_at: { type: string, format: date-time }
+
+  /api/admin/legal/health/recheck:
+    post:
+      summary: Force une nouvelle vérification immédiate
+      tags: [admin]
+      security: [adminSession: []]
+      responses:
+        '200': { description: Check enqueued }
+
+components:
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: femiglow_admin_session
+
+  schemas:
+    PublicLegalPage:
+      type: object
+      required: [slug, title, content_html, last_updated_at]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        content_html: { type: string, description: 'Rendu HTML sanitized' }
+        last_updated_at: { type: string, format: date-time }
+        version: { type: integer }
+        include_in_search: { type: boolean }
+
+    AdminLegalPage:
+      type: object
+      required: [id, slug, title, body_md, status, version]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        body_md: { type: string }
+        status: { type: string, enum: [draft, review, published, archived] }
+        version: { type: integer }
+        include_in_search: { type: boolean }
+        canonical_url: { type: string, nullable: true }
+        require_legal_review: { type: boolean }
+        last_legal_review_at: { type: string, format: date-time, nullable: true }
+        published_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time }
+        updated_by: { type: string, nullable: true }
+        placements:
+          type: array
+          items: { type: object }
+        missing_vars:
+          type: array
+          items: { type: string }
+          description: Variables {{VAR}} référencées mais non remplies
+
+    LegalPageHistoryEntry:
+      type: object
+      properties:
+        version: { type: integer }
+        published_at: { type: string, format: date-time }
+        published_by: { type: string }
+        title: { type: string }
+        body_md_excerpt: { type: string, description: '500 premiers caractères' }
+        git_commit_sha: { type: string, nullable: true }
+
+    Zone:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        description: { type: string }
+        max_items_recommended: { type: integer }
+        is_required: { type: boolean }
+
+    TemplateVar:
+      type: object
+      properties:
+        key: { type: string }
+        label: { type: string }
+        description: { type: string, nullable: true }
+        value: { type: string, nullable: true }
+        is_required: { type: boolean }
+        sensitive: { type: boolean }

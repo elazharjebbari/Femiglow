@@ -1,0 +1,58 @@
+@startuml sequence-edit-flow
+title Séquence — Édition d'une page légale
+
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName Inter
+
+actor Admin as A
+participant "List page\n/admin/legal" as L
+participant "Editor page\n/admin/legal/[slug]/edit" as E
+participant "API\n/api/admin/legal/[slug]" as API
+participant "MD renderer\nlegalRenderer.render()" as REND
+database "legal_pages" as DB
+database "legal_pages_history" as DBH
+
+A -> L : ouvre /admin/legal
+L -> API : GET /api/admin/legal/list
+API -> DB : SELECT *
+DB --> API : pages[]
+API --> L : { pages: [...] }
+L -> A : Affiche liste
+
+A -> L : Clique "Mentions légales"
+L -> E : router push /admin/legal/mentions-legales/edit
+
+E -> API : GET /api/admin/legal/mentions-legales
+API -> DB : SELECT WHERE slug = 'mentions-legales'
+DB --> API : page (avec body_md, metadata)
+API --> E : page
+
+E -> A : Affiche éditeur (MD raw + preview)
+
+== Boucle d'édition (live preview) ==
+loop chaque keystroke
+  A -> E : tape du markdown
+  E -> REND : renderMd(currentText)
+  REND -> REND : sanitize + parse
+  REND -> REND : substitute {{VARS}}
+  REND --> E : html sanitized
+  E -> A : update preview pane
+end
+
+== Auto-save (every 30s for drafts) ==
+A -> E : pause de 30s
+E -> API : PATCH /api/admin/legal/mentions-legales\n{ body_md, version: current+1 }
+API -> DB : UPDATE legal_pages\nSET body_md = ?, version = ?, updated_at = NOW()
+DB --> API : updated row
+API --> E : { saved: true }
+E -> A : Indicator "auto-saved 14:32:01"
+
+== Sauvegarde explicite ==
+A -> E : Click "Sauvegarder brouillon"
+E -> API : PATCH /api/admin/legal/mentions-legales\n{ body_md, status: 'draft' }
+API -> DB : UPDATE
+DB --> API : ok
+API --> E : { saved: true }
+E -> A : Toast "Brouillon sauvegardé"
+
+@enduml

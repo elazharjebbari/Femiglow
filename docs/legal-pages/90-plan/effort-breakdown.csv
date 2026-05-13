@@ -1,0 +1,11 @@
+stream,total_days,critical,high,medium,low,notes
+data,3.75,3,0.75,0,0,migrations + seed + types
+backend,11,7,2,2,0,API + render + publish + cron + git sync
+frontend_public,4.75,4,0.75,0,0,layout + footer + cookie + checkout
+frontend_admin,10,5,3,2,0,editor + wizard + matrice + dashboards
+qa,11,4,3,3,1,jest + playwright + msw + axe + ultimate
+content,4.5,4.5,0,0,0,affiner 9 templates + revue juriste (calendaire 2sem)
+ops,2,0.5,1,0.5,0,deploy + monitoring + alerts
+TOTAL,47,28,10.5,7.5,1,
+parallelizable_savings,-12,,,,,M2+M3 overlap, M5 en parallèle
+NET_DAYS,35,,,,,7 semaines équipe 3 devs + 1 product + 1 juriste externe

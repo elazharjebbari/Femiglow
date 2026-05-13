@@ -1,0 +1,101 @@
+@startuml target-state
+title Pages légales — Architecture cible
+
+skinparam backgroundColor #FBF8F1
+skinparam componentStyle rectangle
+skinparam defaultFontName Inter
+
+actor Visitor as V
+actor Admin as A
+
+package "Public" {
+  component "Footer\n(reads zone 'footer-main')" as F
+  component "Cookie banner\n(reads zone 'cookie-banner-links')" as CB
+  component "Checkout consent\n(reads zone 'checkout-consent')" as CK
+  component "/legal/[slug]\n(public render)" as PG
+}
+
+package "Admin" {
+  component "/admin/legal/\nlist + matrix" as LIST
+  component "/admin/legal/[slug]/edit\nMD editor + preview" as EDIT
+  component "/admin/legal/health\nlink check dashboard" as HEALTH
+  component "/admin/legal/wizard/new\ncreate flow" as WIZ
+}
+
+package "API" {
+  component "/api/legal/[slug]\n(public read)" as APIPUB
+  component "/api/admin/legal/[slug]\n(admin CRUD)" as APIAD
+  component "/api/admin/legal/health\n(link verification)" as APIH
+}
+
+package "Backend" {
+  component "legalRenderer\n(MD → HTML sanitized)" as REND
+  component "templateVars\n({{VAR}} substitution)" as VARS
+  component "linkChecker\n(scheduled cron)" as LC
+  component "sitemap.xml\n(SEO exclude)" as SM
+  component "metadata\n(noindex default)" as META
+}
+
+database "PostgreSQL" {
+  frame "legal_pages\n(slug, title, body_md,\n status, version, ...)" as LP
+  frame "legal_pages_history\n(audit immutable)" as LPH
+  frame "legal_zones\n(footer-main, cookie...)" as LZ
+  frame "legal_page_placements\n(page × zone matrix)" as LPP
+  frame "legal_template_vars\n({{COMPANY_RC}}, ...)" as LTV
+  frame "legal_link_health_snapshot\n(timestamp, status)" as LH
+}
+
+artifact "Git branch\nlegal-versions" as GIT #LightGreen
+
+V --> F
+V --> CB
+V --> CK
+F --> APIPUB : fetch placements
+CB --> APIPUB
+CK --> APIPUB
+APIPUB --> LP
+APIPUB --> LPP
+APIPUB --> REND
+REND --> VARS
+VARS --> LTV
+REND --> PG
+
+PG ..> META : noindex if !include_in_search
+PG ..> SM : excluded by default
+
+A --> LIST : list pages
+A --> EDIT : edit
+A --> HEALTH : link check
+A --> WIZ : create new
+
+LIST --> APIAD
+EDIT --> APIAD
+WIZ --> APIAD
+HEALTH --> APIH
+
+APIAD --> LP : CRUD
+APIAD --> LPH : INSERT on publish
+APIAD --> LPP : update placements
+APIAD --> GIT : auto-commit on publish ★
+
+APIH --> LC
+LC --> LP
+LC --> LPP
+LC --> LH : INSERT snapshot
+
+note bottom of GIT
+  Sur chaque publication :
+  - Job background commit
+    content/legal/<slug>.<v>.md
+  - Branche non-mergée master
+  - Source de vérité externe
+    pour audit + recovery
+end note
+
+note bottom of LH
+  Cron 30min : pour chaque
+  placement visible, ping HTTP.
+  Si broken → alert + dashboard.
+end note
+
+@enduml
