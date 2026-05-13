@@ -76,6 +76,7 @@ vi.mock('@/lib/legal/repository', () => ({
   archiveLegalPage: vi.fn(),
   submitForReview: vi.fn(),
   listHistoryForSlug: vi.fn(),
+  getHistoryEntryBySlugVersion: vi.fn(),
   updateTemplateVar: vi.fn(),
   upsertPlacement: vi.fn(),
   pagesWithMissingPlacements: vi.fn(),
@@ -98,6 +99,7 @@ import {
 import { POST as submitReview } from '@/app/api/admin/legal/[slug]/submit-review/route';
 import { POST as publishRoute } from '@/app/api/admin/legal/[slug]/publish/route';
 import { GET as historyRoute } from '@/app/api/admin/legal/[slug]/history/route';
+import { GET as diffRoute } from '@/app/api/admin/legal/[slug]/diff/[v1]/[v2]/route';
 import { POST as restoreRoute } from '@/app/api/admin/legal/[slug]/restore/[version]/route';
 import {
   GET as placementsGet,
@@ -593,6 +595,46 @@ describe('GET /api/admin/legal/[slug]/history', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as Array<{ body_md_excerpt: string }>;
     expect(body[0]?.body_md_excerpt).toHaveLength(500);
+  });
+});
+
+describe('GET /api/admin/legal/[slug]/diff/[v1]/[v2]', () => {
+  it('200 + hunks + added/removed', async () => {
+    vi.mocked(repo.getHistoryEntryBySlugVersion)
+      .mockResolvedValueOnce({ version: 1, bodyMd: 'old\nbody', publishedAt: new Date() } as never)
+      .mockResolvedValueOnce({ version: 2, bodyMd: 'new\nbody', publishedAt: new Date() } as never);
+    const res = await diffRoute(new Request('http://x'), {
+      params: { slug: 'cgv', v1: '1', v2: '2' },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      from: { version: number };
+      to: { version: number };
+      added: number;
+      removed: number;
+      hunks: unknown[];
+    };
+    expect(body.from.version).toBe(1);
+    expect(body.to.version).toBe(2);
+    expect(body.added).toBeGreaterThan(0);
+    expect(body.removed).toBeGreaterThan(0);
+  });
+
+  it('400 si versions non-numériques', async () => {
+    const res = await diffRoute(new Request('http://x'), {
+      params: { slug: 'cgv', v1: 'abc', v2: '2' },
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('404 si une des deux versions est introuvable', async () => {
+    vi.mocked(repo.getHistoryEntryBySlugVersion)
+      .mockResolvedValueOnce({ version: 1, bodyMd: 'x', publishedAt: new Date() } as never)
+      .mockResolvedValueOnce(null);
+    const res = await diffRoute(new Request('http://x'), {
+      params: { slug: 'cgv', v1: '1', v2: '99' },
+    });
+    expect(res.status).toBe(404);
   });
 });
 

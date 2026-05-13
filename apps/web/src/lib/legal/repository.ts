@@ -205,6 +205,23 @@ export async function listHistoryForSlug(slug: string): Promise<LegalPageHistory
     .orderBy(desc(schema.legalPagesHistory.version));
 }
 
+export async function getHistoryEntryBySlugVersion(
+  slug: string,
+  version: number,
+): Promise<LegalPageHistoryRow | null> {
+  const rows = await conn()
+    .select()
+    .from(schema.legalPagesHistory)
+    .where(
+      and(
+        eq(schema.legalPagesHistory.slug, slug),
+        eq(schema.legalPagesHistory.version, version),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function getHistoryEntry(
   pageId: string,
   version: number,

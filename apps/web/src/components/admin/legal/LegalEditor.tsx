@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LegalHistoryDrawer } from './LegalHistoryDrawer';
 
 interface TemplateVar {
   key: string;
@@ -106,6 +107,7 @@ export function LegalEditor(props: LegalEditorProps) {
   const [status, setStatus] = useState(props.status);
   const [updatedAtMs, setUpdatedAtMs] = useState(props.initialUpdatedAtMs);
   const [conflict, setConflict] = useState<{ currentUpdatedAt?: number } | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialSnapshot = useRef({
     title: props.initialTitle,
@@ -303,10 +305,29 @@ export function LegalEditor(props: LegalEditorProps) {
         >
           Publier
         </button>
+        <button
+          type="button"
+          onClick={() => setShowHistory(true)}
+          className="border border-stone-300 px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
+        >
+          Historique
+        </button>
         <span className="ml-auto text-xs text-stone-500">
           v{version} · {status}
         </span>
       </div>
+
+      <LegalHistoryDrawer
+        slug={props.slug}
+        currentVersion={version}
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+        onRestored={() => {
+          // Recharge la page : restore réécrit body_md + status='draft'
+          // côté serveur, on reflète en rechargeant.
+          window.location.reload();
+        }}
+      />
 
       <details className="mt-6 border border-stone-200 bg-white p-4 text-sm">
         <summary className="cursor-pointer text-stone-700">
