@@ -88,10 +88,23 @@ async function handler(req: NextRequest, ctx: { params: { path: string[] } }) {
     return new NextResponse('Listmonk upstream error', { status: 502 });
   }
 
-  // 6. Stream response back, stripping hop-by-hop headers
+  // 6. Stream response back, stripping hop-by-hop + framing headers.
+  // Listmonk sets `X-Frame-Options: DENY` and a CSP with `frame-ancestors
+  // 'none'`. Since we serve Listmonk from our own admin domain via this
+  // proxy, those headers would block our /admin/emails/listmonk iframe.
+  // We strip them ; the FemiGlow CSP middleware already enforces frame
+  // policies for the parent page.
+  const FRAMING_BLOCKERS = new Set([
+    'x-frame-options',
+    'content-security-policy',
+    'content-security-policy-report-only',
+  ]);
   const responseHeaders = new Headers();
   for (const [k, v] of upstreamRes.headers.entries()) {
-    if (!HOP_BY_HOP.has(k.toLowerCase())) responseHeaders.set(k, v);
+    const lower = k.toLowerCase();
+    if (HOP_BY_HOP.has(lower)) continue;
+    if (FRAMING_BLOCKERS.has(lower)) continue;
+    responseHeaders.set(k, v);
   }
 
   return new NextResponse(upstreamRes.body, {

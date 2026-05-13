@@ -16,6 +16,16 @@ type Props = {
   title?: string;
   className?: string;
   onNavigate?: (path: string) => void;
+  /**
+   * Public Listmonk origin. When set (e.g. https://listmonk.femiglow-maroc.com),
+   * the iframe src is `${publicOrigin}${path}` — Listmonk is served from its
+   * own subdomain so its absolute `/admin/*` HTML paths don't collide with
+   * FemiGlow's `/admin/*` routes. When undefined, falls back to the
+   * same-origin proxy (`/api/listmonk${path}`) which only works if Listmonk's
+   * HTML doesn't reference absolute admin paths (it does, so the fallback is
+   * essentially broken — kept for dev/test only).
+   */
+  publicOrigin?: string;
 };
 
 export function ListmonkFrame({
@@ -23,6 +33,7 @@ export function ListmonkFrame({
   title = 'Listmonk',
   className,
   onNavigate,
+  publicOrigin,
 }: Props) {
   const ref = useRef<HTMLIFrameElement>(null);
 
@@ -40,7 +51,9 @@ export function ListmonkFrame({
   }, [onNavigate]);
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const src = `/api/listmonk${normalizedPath}`;
+  const src = publicOrigin
+    ? `${publicOrigin.replace(/\/$/, '')}${normalizedPath}`
+    : `/api/listmonk${normalizedPath}`;
 
   return (
     <iframe

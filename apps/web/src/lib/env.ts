@@ -75,6 +75,11 @@ const envSchema = z.object({
 
   // Listmonk API (loopback). Required quand broadcast/automation activé.
   LISTMONK_INTERNAL_URL: z.string().url().default('http://127.0.0.1:9000'),
+  // Public URL où le SPA Listmonk est joignable depuis le navigateur (ex.
+  // https://listmonk.femiglow-maroc.com). Sert d'origin iframe sur
+  // /admin/emails/listmonk. Si absent, l'iframe retombe sur le proxy
+  // same-origin (cassé tant que Listmonk sert son SPA depuis /admin/*).
+  LISTMONK_PUBLIC_URL: z.string().url().optional(),
   LISTMONK_API_USER: z.string().optional(),
   LISTMONK_API_TOKEN: z.string().optional(),
   LISTMONK_WEBHOOK_SECRET: z.string().min(16).optional(),
@@ -139,6 +144,7 @@ export const env = envSchema.parse({
   MAIL_FROM: process.env.MAIL_FROM,
   MAIL_REPLY_TO: process.env.MAIL_REPLY_TO,
   LISTMONK_INTERNAL_URL: process.env.LISTMONK_INTERNAL_URL,
+  LISTMONK_PUBLIC_URL: process.env.LISTMONK_PUBLIC_URL,
   LISTMONK_API_USER: process.env.LISTMONK_API_USER,
   LISTMONK_API_TOKEN: process.env.LISTMONK_API_TOKEN,
   LISTMONK_WEBHOOK_SECRET: process.env.LISTMONK_WEBHOOK_SECRET,

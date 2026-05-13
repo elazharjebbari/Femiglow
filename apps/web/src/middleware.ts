@@ -59,7 +59,12 @@ function buildCsp(
     // `default-src 'self'` et bloque l'iframe `youtube-nocookie.com`.
     // On limite strictement au sous-domaine `nocookie` (pas de
     // `youtube.com` direct qui poserait des cookies).
-    "frame-src 'self' https://www.youtube-nocookie.com",
+    // `listmonk.femiglow-maroc.com` est le sous-domaine dédié Listmonk
+    // (vhost LiteSpeed → 127.0.0.1:9000). On l'autorise comme frame-src
+    // pour /admin/emails/listmonk. Si LISTMONK_PUBLIC_URL n'est pas
+    // configuré, l'iframe retombe sur same-origin via le proxy
+    // /api/listmonk/* (couvert par `'self'`).
+    "frame-src 'self' https://www.youtube-nocookie.com https://listmonk.femiglow-maroc.com",
     // Live preview admin : on tolère le framing same-origin pour la
     // page `/admin/components/[key]/preview` (servie en iframe). Partout
     // ailleurs on garde 'none' (durci par défaut).

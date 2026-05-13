@@ -7,6 +7,7 @@
  */
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { env } from '@/lib/env';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ListmonkFrame } from '@/components/admin/emails/ListmonkFrame';
 
@@ -19,6 +20,10 @@ export default async function ListmonkWrapperPage({
 }) {
   const session = await requireAdmin('/admin/emails/listmonk');
   const path = '/' + (params.path?.join('/') ?? 'admin');
+  const publicOrigin = env.LISTMONK_PUBLIC_URL;
+  const externalHref = publicOrigin
+    ? `${publicOrigin.replace(/\/$/, '')}${path}`
+    : `/api/listmonk${path}`;
 
   return (
     <AdminShell adminEmail={session.email} active="emails">
@@ -35,7 +40,7 @@ export default async function ListmonkWrapperPage({
           </p>
         </div>
         <a
-          href={`/api/listmonk${path}`}
+          href={externalHref}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-stone-500 underline"
@@ -44,7 +49,18 @@ export default async function ListmonkWrapperPage({
         </a>
       </header>
 
-      <ListmonkFrame path={path} />
+      {publicOrigin ? (
+        <ListmonkFrame path={path} publicOrigin={publicOrigin} />
+      ) : (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">Listmonk n'est pas encore exposé publiquement.</p>
+          <p className="mt-2">
+            Configure <code className="font-mono">LISTMONK_PUBLIC_URL</code> dans{' '}
+            <code>apps/web/.env</code> (ex. <code>https://listmonk.femiglow-maroc.com</code>) +
+            le vhost LiteSpeed correspondant, puis recharge cette page.
+          </p>
+        </div>
+      )}
     </AdminShell>
   );
 }
