@@ -76,56 +76,17 @@ echo "→ 2. Create Stalwart noreply@femiglow-maroc.com (if absent)"
 if scli query Account 2>/dev/null | grep -q "noreply@femiglow-maroc.com"; then
   echo "  (already exists) noreply@femiglow-maroc.com"
 else
-  echo "  → creating account"
+  echo "  → creating account (NDJSON plan)"
   if [[ "${DRY_RUN}" != "1" ]]; then
-    # Stalwart CLI: create Account User with name + domainId.
-    # The CLI accepts JSON-like arguments via --json or per-field flags.
-    # We use a JSON apply plan for atomicity (create account + set password).
-    PLAN=$(mktemp /tmp/stalwart-noreply-plan.XXXXXX.json)
-    cat > "${PLAN}" <<JSON
-{
-  "creates": [
-    {
-      "type": "Account",
-      "subtype": "User",
-      "fields": {
-        "name": "noreply",
-        "domainId": "${DOMAIN_ID}",
-        "description": "FemiGlow app emailing sender (nodemailer)"
-      }
-    }
-  ]
-}
-JSON
-    scli apply --file "${PLAN}" 2>&1 | tail -10
+    # Stalwart's `apply` expects NDJSON : one record per line. The credential
+    # is set inline via the embedded `credentials.0.secret` field.
+    PLAN=$(mktemp /tmp/stalwart-noreply-plan.XXXXXX.ndjson)
+    cat > "${PLAN}" <<EOF
+{"@type":"create","object":"Account","value":{"account-noreply":{"@type":"User","name":"noreply","description":"FemiGlow app emailing sender (nodemailer)","domainId":"${DOMAIN_ID}","memberTenantId":null,"quotas":{},"credentials":{"0":{"@type":"Password","secret":"${NOREPLY_PASSWORD}","allowedIps":{},"expiresAt":null}},"timeZone":null,"locale":"fr_FR","memberGroupIds":{},"aliases":{}}}}
+EOF
+    scli apply --file "${PLAN}" 2>&1 | tail -5
     rm -f "${PLAN}"
-
-    # Find the new account id
-    ACCT_ID=$(scli query Account 2>/dev/null | grep "noreply@femiglow-maroc.com" | awk '{print $1}')
-    if [[ -z "${ACCT_ID}" ]]; then
-      echo "ERR: failed to find newly created noreply account" >&2
-      exit 3
-    fi
-    echo "  account id: ${ACCT_ID}"
-
-    # Set its password (AccountPassword singleton under the account)
-    PWPLAN=$(mktemp /tmp/stalwart-noreply-pw.XXXXXX.json)
-    cat > "${PWPLAN}" <<JSON
-{
-  "updates": [
-    {
-      "type": "AccountPassword",
-      "parent": "${ACCT_ID}",
-      "fields": {
-        "secret": "${NOREPLY_PASSWORD}"
-      }
-    }
-  ]
-}
-JSON
-    scli apply --file "${PWPLAN}" 2>&1 | tail -10
-    rm -f "${PWPLAN}"
-    echo "  ✓ password set"
+    echo "  ✓ noreply account created with password"
   fi
 fi
 
@@ -203,38 +164,12 @@ EXISTING_HOOK=$(scli query WebHook 2>/dev/null | grep -F "${WEBHOOK_URL}" || tru
 if [[ -n "${EXISTING_HOOK}" ]]; then
   echo "  (already configured) ${WEBHOOK_URL}"
 else
-  echo "  → creating webhook"
+  echo "  → creating webhook (NDJSON plan)"
   if [[ "${DRY_RUN}" != "1" ]]; then
-    PLAN=$(mktemp /tmp/stalwart-webhook-plan.XXXXXX.json)
-    cat > "${PLAN}" <<JSON
-{
-  "creates": [
-    {
-      "type": "WebHook",
-      "fields": {
-        "url": "${WEBHOOK_URL}",
-        "enable": true,
-        "events": [
-          "message.queued",
-          "message.delivered",
-          "message.delivery-failed",
-          "message.delivery-deferred",
-          "auth.failure"
-        ],
-        "eventsPolicy": "include",
-        "httpAuth": { "type": "Bearer", "token": "${WEBHOOK_SECRET}" },
-        "httpHeaders": {},
-        "timeout": "30s",
-        "throttle": "0s",
-        "discardAfter": "1d",
-        "allowInvalidCerts": false,
-        "lossy": false,
-        "level": "info"
-      }
-    }
-  ]
-}
-JSON
+    PLAN=$(mktemp /tmp/stalwart-webhook-plan.XXXXXX.ndjson)
+    cat > "${PLAN}" <<EOF
+{"@type":"create","object":"WebHook","value":{"webhook-fmg-stalwart":{"url":"${WEBHOOK_URL}","enable":true,"events":["message.queued","message.delivered","message.delivery-failed","message.delivery-deferred","auth.failure"],"eventsPolicy":"include","httpHeaders":{},"timeout":"30s","throttle":"0s","discardAfter":"1d","allowInvalidCerts":false,"lossy":false,"level":"info","httpAuth":{"@type":"Bearer","token":"${WEBHOOK_SECRET}"}}}}
+EOF
     scli apply --file "${PLAN}" 2>&1 | tail -5
     rm -f "${PLAN}"
     echo "  ✓ webhook created"
