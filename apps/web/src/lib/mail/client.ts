@@ -37,6 +37,12 @@ function buildTransporter(): Transporter {
     socketTimeout: 30_000,
     connectionTimeout: 10_000,
     name: 'mail.lumiereacademy.com',
+    // SNI : Stalwart's TLS cert covers mail.lumiereacademy.com / *.femiglow-
+    // maroc.com — not 127.0.0.1. By forcing the SNI servername to the real
+    // hostname, node-tls accepts the cert.
+    tls: {
+      servername: 'mail.lumiereacademy.com',
+    },
   });
 }
 

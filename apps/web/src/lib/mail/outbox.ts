@@ -45,7 +45,26 @@ export async function attemptSend(outboxId: string): Promise<void> {
     .returning();
   if (claim.length === 0 || !claim[0]) return; // already terminal or claimed by another worker
 
-  await deliverRow(claim[0]);
+  const row = claim[0];
+  try {
+    await deliverRow(row);
+  } catch (err) {
+    // Reset to 'failed' so the cron will retry (and so we don't leave rows
+    // stuck in 'sending' forever after a transient error).
+    const nextAttempts = (row.attempts ?? 0) + 1;
+    const reachedMax = nextAttempts >= MAX_ATTEMPTS;
+    await drizzle
+      .update(emailOutbox)
+      .set({
+        status: reachedMax ? 'dlq' : 'failed',
+        attempts: nextAttempts,
+        nextRetry: reachedMax ? null : new Date(Date.now() + computeBackoff(nextAttempts)),
+        lastError: err instanceof Error ? err.message : String(err),
+        updatedAt: new Date(),
+      })
+      .where(eq(emailOutbox.id, row.id));
+    throw err;
+  }
 }
 
 /**
