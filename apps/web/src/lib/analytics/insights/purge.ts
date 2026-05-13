@@ -108,9 +108,7 @@ function deleteFromMap<K, V>(map: Map<K, V>, predicate: (v: V) => boolean): numb
  * uniformément exposé entre les drivers).
  */
 async function deleteCount(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   drizzle: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   table: PgTable<any>,
   whereClause: SQL,
 ): Promise<number> {

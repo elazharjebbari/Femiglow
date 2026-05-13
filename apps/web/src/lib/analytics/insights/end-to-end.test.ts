@@ -4,7 +4,7 @@
  * Vérifie qu'un scénario réaliste (visiteur navigue + convertit) produit
  * les bons chiffres dans tous les services et exports.
  */
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetMemoryStore, memoryStore } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
 import type { TrackingEventLogEntry } from '@/lib/db/types';
@@ -26,6 +26,16 @@ const NOW = new Date('2026-05-08T15:00:00Z');
 
 beforeEach(() => {
   resetMemoryStore();
+  // Fige l'horloge sur NOW pour rendre le refresh incrémental déterministe.
+  // Sans ça, la fenêtre `since = max(refreshedAt) - 24h` est calculée
+  // depuis la date réelle d'exécution et exclut les events seedés à NOW
+  // dès que la date courante dépasse NOW + 24h.
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function inject(overrides: Partial<TrackingEventLogEntry> = {}): void {
