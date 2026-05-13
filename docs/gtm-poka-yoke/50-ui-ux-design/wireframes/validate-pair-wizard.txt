@@ -1,0 +1,133 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  /admin/tracking/gtm/validate-pair                                            ║
+║  Wizard 3 étapes — Couche A (prévention pré-import)                           ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+ÉTAPE 1 ─────────────────────────────────────────────────────────────────────────
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Valider l'import GTM                                                           │
+│ Vérifie que tes 2 fichiers sont cohérents AVANT de les importer dans GTM.     │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌─[Stepper]──────────────────────────────────────────────────────────────────────┐
+│  ● Étape 1     ○ Étape 2     ○ Étape 3                                         │
+│  Config GTM    Mapping       Validation                                        │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Étape 1 / 3 — Charge ta config GTM                                             │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│                                                                                │
+│      ┌──────────────────────────────────────────────────────────────┐          │
+│      │                                                              │          │
+│      │   📦                                                         │          │
+│      │                                                              │          │
+│      │   Drop config-vN.json ici                                    │          │
+│      │   ou clique pour sélectionner                                │          │
+│      │                                                              │          │
+│      │   Format attendu : export GTM "exportFormatVersion": 2       │          │
+│      │                                                              │          │
+│      └──────────────────────────────────────────────────────────────┘          │
+│                                                                                │
+│  ℹ Ce fichier contient les tags, triggers, variables (la structure GTM).      │
+│                                                                                │
+│                                            [Annuler]    [Suivant : Mapping →]  │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+
+ÉTAPE 2 ─────────────────────────────────────────────────────────────────────────
+
+┌─[Stepper]──────────────────────────────────────────────────────────────────────┐
+│  ✓ Étape 1     ● Étape 2     ○ Étape 3                                         │
+│  Config GTM    Mapping       Validation                                        │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Étape 2 / 3 — Charge ton mapping vendors                                       │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│                                                                                │
+│  ✅ Config chargée : config-v4.json                                            │
+│     Container : GTM-XXXX  ·  Bundle ID : a7c4f2e9b81d  ·  12 variables FG     │
+│                                                                                │
+│      ┌──────────────────────────────────────────────────────────────┐          │
+│      │                                                              │          │
+│      │   📋                                                         │          │
+│      │                                                              │          │
+│      │   Drop mapping-vN.json ici                                   │          │
+│      │   ou clique pour sélectionner                                │          │
+│      │                                                              │          │
+│      └──────────────────────────────────────────────────────────────┘          │
+│                                                                                │
+│  ℹ Ce fichier mappe chaque event canonique vers son nom vendor.               │
+│                                                                                │
+│                                       [← Retour]    [Valider la cohérence →]  │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+
+ÉTAPE 3 ─────────────────────────────────────────────────────────────────────────
+
+┌─[Stepper]──────────────────────────────────────────────────────────────────────┐
+│  ✓ Étape 1     ✓ Étape 2     ● Étape 3                                         │
+│  Config GTM    Mapping       Validation                                        │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Résultat de la validation                                                      │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │ ✅ Bundle ID cohérent : a7c4f2e9b81d                                     │  │
+│  │ ✅ Container ID cohérent : GTM-XXXX                                      │  │
+│  │ ✅ Schema versions compatibles : config v4 ≥ requiredConfigVersion v4   │  │
+│  │ ✅ 14 events couverts des deux côtés                                     │  │
+│  │                                                                          │  │
+│  │ ⚠ 1 WARNING :                                                            │  │
+│  │   • Variable {{FG Locale}} référencée par le mapping mais absente côté   │  │
+│  │     config. À ajouter dans GTM avant l'import (type "Constant" ou        │  │
+│  │     "Data Layer Variable").                                              │  │
+│  │                                                                          │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │ 🟢  VERDICT : OK avec 1 warning                                          │  │
+│  │     Importable, mais corriger le warning d'abord est recommandé.         │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                │
+│  📋 Procédure recommandée                                                      │
+│  ──────────────────────────────────────────────────────────────────────────── │
+│   1. Corriger le warning : ajouter {{FG Locale}} dans GTM (variable).         │
+│   2. Importer config-v4.json en premier → Submit & Publish.                   │
+│   3. Importer mapping-v17.json en second → Submit & Publish.                  │
+│   4. Ouvrir GTM Preview, faire un pageview, vérifier le sentinel ping.        │
+│   5. Revenir sur /admin/tracking/gtm/sync-status pour confirmer ✓.            │
+│                                                                                │
+│                                            [← Recommencer]  [Tout va bien →]  │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+
+CAS D'ERREUR ────────────────────────────────────────────────────────────────────
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Résultat de la validation                                                      │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐  │
+│  │ 🔴  VERDICT : Import bloqué — 2 erreurs                                  │  │
+│  │     Ne pas importer en l'état. Corriger les erreurs ci-dessous.          │  │
+│  └──────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                │
+│  ❌ ERREURS :                                                                  │
+│                                                                                │
+│   1. Bundle ID mismatch                                                        │
+│      • Config dit  : a7c4f2e9b81d                                              │
+│      • Mapping dit : b21e09da4c75                                              │
+│      • FIX : Re-générer les 2 fichiers ENSEMBLE depuis l'admin (export).      │
+│                                                                                │
+│   2. Container ID mismatch                                                     │
+│      • Config dit  : GTM-PROD-XXXX                                             │
+│      • Mapping dit : GTM-STAGING-YYYY                                          │
+│      • FIX : Tu mélanges prod et staging. Vérifier le workspace cible.        │
+│                                                                                │
+│                                            [← Recommencer]  [Fermer]          │
+└────────────────────────────────────────────────────────────────────────────────┘
