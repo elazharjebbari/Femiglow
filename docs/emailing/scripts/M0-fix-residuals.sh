@@ -117,12 +117,30 @@ echo ""
 echo "→ C. Rebuilding & restarting femiglow.service"
 
 if [[ "${DRY_RUN}" == "1" ]]; then
+  echo "  [DRY] would run: chown -R nodeapp:nodeapp .next (writable by build user)"
   echo "  [DRY] would run: cd ${WORKTREE}/apps/web && pnpm build"
   echo "  [DRY] would run: systemctl daemon-reload && systemctl restart femiglow.service"
 else
   cd "${WORKTREE}/apps/web"
+  # Pre-requisite : nodeapp must own .next/ to write trace, cache, build output.
+  # The runtime EACCES errors on .next/cache/fetch-cache/* confirm the owner
+  # is currently root from a prior build.
+  echo "  → chown -R nodeapp:nodeapp .next (+ .media-storage if present)"
+  if [[ -d .next ]]; then
+    chown -R nodeapp:nodeapp .next
+  fi
+  if [[ -d .media-storage ]]; then
+    chown -R nodeapp:nodeapp .media-storage 2>/dev/null || true
+  fi
+  # Also ensure node_modules is readable by nodeapp (typically already is via
+  # group, but harmless to assert).
+  if [[ -d node_modules ]]; then
+    chown -R nodeapp:nodeapp node_modules 2>/dev/null || true
+  fi
   if ! sudo -u nodeapp pnpm build 2>&1 | tail -20; then
     echo "ERR: build failed, aborting before restart"
+    echo "  Hint : check ownership again, or try removing .next and rebuilding from scratch :"
+    echo "    sudo rm -rf .next && sudo chown -R nodeapp:nodeapp . && sudo -u nodeapp pnpm build"
     exit 3
   fi
   systemctl daemon-reload
