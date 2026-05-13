@@ -31,7 +31,8 @@ export type RbacResource =
   | 'products'
   | 'media'
   | 'users'
-  | 'app-config';
+  | 'app-config'
+  | 'legal';
 
 export type RbacMatrix = Record<string, Record<RbacResource, RbacAction[]>>;
 
