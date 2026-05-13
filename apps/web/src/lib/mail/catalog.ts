@@ -18,6 +18,7 @@ import OrderConfirmation from './templates/order-confirmation';
 import NewsletterConfirm from './templates/newsletter-confirm';
 import LeadNotification from './templates/lead-notification';
 import PasswordReset from './templates/password-reset';
+import CartAbandoned from './templates/cart-abandoned';
 
 // — Variable spec (drives wizard UI + validation) — — — — — — — — — — — — — —
 
@@ -80,6 +81,12 @@ const PasswordResetPayload = z.object({
   firstName: z.string().min(1).max(80),
   resetUrl: z.string().url(),
   expiresInMinutes: z.number().int().positive(),
+});
+
+const CartAbandonedPayload = z.object({
+  firstName: z.string().min(1).max(80),
+  cartItemsLabel: z.string().min(1).max(500),
+  resumeUrl: z.string().url(),
 });
 
 // — Registry — — — — — — — — — — — — — — — — — — — — — — — — — — — — — — —
@@ -187,6 +194,27 @@ export const TEMPLATE_REGISTRY = {
       { name: 'firstName', type: 'dynamic', required: true, label: 'Prénom', sample: 'Souheila' },
       { name: 'resetUrl', type: 'url', required: true, label: 'URL de reset', sample: 'https://admin.femiglow-maroc.com/auth/reset?token=…' },
       { name: 'expiresInMinutes', type: 'number', required: true, label: 'Durée validité (min)', sample: '30' },
+    ],
+  },
+  'cart-abandoned': {
+    slug: 'cart-abandoned',
+    displayName: 'Panier abandonné',
+    category: 'automation',
+    description: 'Envoyé 1h après abandon du panier checkout (via automation cart-abandoned-1h).',
+    version: 1,
+    component: CartAbandoned,
+    schema: CartAbandonedPayload,
+    subjectFn: (p) => `${p.firstName}, tu as oublié quelque chose ✨`,
+    preheaderFn: (p) => `${p.firstName}, ton panier t'attend chez FemiGlow.`,
+    sampleData: {
+      firstName: 'Souheila',
+      cartItemsLabel: '2 × Sérum lumière (200 MAD)',
+      resumeUrl: 'https://femiglow-maroc.com/panier?resume=abc',
+    },
+    variables: [
+      { name: 'firstName', type: 'dynamic', required: true, label: 'Prénom', sample: 'Souheila' },
+      { name: 'cartItemsLabel', type: 'text', required: true, label: 'Items du panier', sample: '2 × Sérum lumière' },
+      { name: 'resumeUrl', type: 'url', required: true, label: 'URL de reprise', sample: 'https://femiglow-maroc.com/panier?resume=…' },
     ],
   },
 } as const satisfies Record<string, TemplateMeta<any>>;
