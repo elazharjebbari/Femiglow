@@ -57,6 +57,8 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
 
   // SELECT ... FOR UPDATE SKIP LOCKED + bulk UPDATE in a single CTE so concurrent
   // cron workers can process disjoint subsets.
+  // Use Postgres now() instead of binding a JS Date — postgres-js doesn't
+  // serialize raw Date objects when interpolated via sql`${date}` template.
   const rows = (await drizzle.execute(sql`
     UPDATE email_outbox o
     SET status = 'sending', updated_at = now()
@@ -64,9 +66,9 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
       SELECT id
       FROM email_outbox
       WHERE status IN ('pending', 'failed')
-        AND (next_retry IS NULL OR next_retry <= ${now})
+        AND (next_retry IS NULL OR next_retry <= now())
         AND attempts < max_attempts
-        AND (scheduled_for IS NULL OR scheduled_for <= ${now})
+        AND (scheduled_for IS NULL OR scheduled_for <= now())
       ORDER BY next_retry NULLS FIRST, created_at ASC
       LIMIT ${BATCH_SIZE}
       FOR UPDATE SKIP LOCKED
