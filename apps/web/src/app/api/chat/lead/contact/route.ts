@@ -35,6 +35,7 @@ import { getRuntimeBool } from '@/lib/chat/runtime-setting';
 import { env } from '@/lib/env';
 import { parsePhone, PhoneParseError } from '@/lib/phone';
 import { logger } from '@/lib/logging/logger';
+import { sendTransactional } from '@/lib/mail/send';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -204,6 +205,32 @@ export async function POST(req: NextRequest): Promise<Response> {
       error: (err as Error).message,
     });
   }
+
+  // M1.B.2 — Notification interne : envoie un mail à info@ pour que
+  // l'équipe puisse recontacter dans la journée. Fire-and-forget.
+  const outcomeContext = snapshot
+    .map((m) => `${m.role}: ${m.content}`)
+    .join('\n')
+    .slice(0, 1900);
+  void sendTransactional({
+    template: 'lead-notification',
+    to: { email: env.MAIL_REPLY_TO ?? 'info@femiglow-maroc.com' },
+    payload: {
+      leadName: lead.firstName,
+      leadPhone: lead.phoneE164,
+      leadEmail: null,
+      intent: intentAtCapture ?? 'unknown',
+      outcomeContext: outcomeContext || '(pas de contexte)',
+      adminUrl: `${env.NEXT_PUBLIC_SITE_URL}/admin/leads/${lead.id}`,
+    },
+    idempotencyKey: `lead-notif:${lead.id}`,
+    source: 'api.chat.lead.contact',
+  }).catch((err: unknown) => {
+    logger.error('mail.lead_notification.dispatch_error', {
+      leadId: lead.id,
+      error: String(err),
+    });
+  });
 
   return NextResponse.json({
     ok: true,
