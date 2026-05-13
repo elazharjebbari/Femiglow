@@ -304,19 +304,37 @@ A11y + polish :
 
 **Tests P10 : +47 tests.**
 
-## V1.1 — Pistes restantes
+## P11 — Pistes V1.1 livrées (2026-05-13)
 
-Non couvertes par ce runbook (hors scope) :
-- i18n AR-MA (RTL, routing /ar/legal/).
-- PDF export pour le juriste.
-- Git sync sur branche orpheline.
-- Sentry + PostHog hooks legal.
-- Search / filter sur la liste admin.
-- Variable usage warning ("touche {{X}} → 5 pages publiées à republier").
-- Bulk republish après changement de variable.
-- ToastProvider branché au layout admin + remplacement des inline
-  "✓ Enregistré" par useToast() (livré mais pas hooké).
-- RBAC enforcement runtime : les permissions sont déclarées dans
-  `defaults.ts` mais non enforced côté routes (requireAdmin actuel = toute
-  admin OK). Brancher un middleware permissions par route admin pour
-  activer la matrice viewer/editor/admin/superadmin.
+Tour de table sur les 5 items à fort ROI parmi les pistes restantes,
+livrés en commits atomiques avec tests.
+
+| Sous-phase | Commit | Tests | Couvre |
+|---|---|---|---|
+| P11.1 rehype mark missing vars | `f6df213` | 9 | plugin admin-preview wrap ⦉KEY⦊ en `<mark>` post-parse |
+| P11.2 search + filter list | `31d437a` | 14 | ILIKE search title/slug/desc + status filter, URL params, empty states |
+| P11.3 var usage + bulk republish | `4c50cd1` | 12 | repo listPagesUsingVar + API usage + bulk-republish + UI badge/bouton |
+| P11.4 toast intégré | `050aa27` | (deps existants) | ToastProvider au layout admin, save/republish notifications |
+| P11.5 RBAC enforcement runtime | `37099b0` | 13 | permissions.ts + requireLegalPermission sur PATCH/DELETE/publish/bulk |
+
+**Tests P11 : +48 tests.**
+
+## V2 — Pistes restantes (gros chantiers / infra)
+
+Non couvertes :
+- **i18n AR-MA** (RTL, routing /ar/legal/, traduction workflow) — gros
+  chantier 3-5j.
+- **PDF export** pour le juriste — nécessite lib Puppeteer/wkhtmltopdf
+  ou service externe.
+- **Git sync** sur branche orpheline — nécessite gestion SSH keys
+  serveur + ops.
+- **Sentry + PostHog hooks** — dépend de l'infra observability projet.
+- **Migration `admin_users.role` + UI assignation** : la matrice RBAC
+  fonctionne en fallback 'superadmin'. Pour activer les rôles fins,
+  ajouter colonne `role` (default 'superadmin' pour back-compat) et
+  une UI dans /admin/settings pour assigner.
+- **Branchement complet ToastProvider** sur LegalEditor /
+  SlugRedirectsManager / PlacementMatrix / LegalWizard / health (livré
+  uniquement sur TemplateVarsEditor en P11.4).
+- **`mode` query param `/admin/legal/preview`** : actuellement le client
+  envoie 'admin-preview' en dur, future option pour preview public.
