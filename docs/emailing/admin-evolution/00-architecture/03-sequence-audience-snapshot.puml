@@ -1,0 +1,60 @@
+@startuml sequence-audience-snapshot
+!theme plain
+title M5 — Audience snapshot → push Listmonk → campaign send
+
+actor Admin
+participant "Audience UI"        as UI
+participant "audience-actions"   as SA
+participant "Rules compiler"     as RC
+participant "Snapshot engine"    as SNAP
+participant "Listmonk sync"      as LM_SYNC
+database    "Postgres"           as DB
+cloud       "Listmonk"           as LM
+
+Admin -> UI : Define rules (3 commandes, total > 1000)
+UI -> SA : previewAudienceSize(rules)
+SA -> RC : compile(rules) → SQL
+SA -> DB : SELECT COUNT… [compiled]
+DB --> SA : 47
+SA --> UI : { size: 47 }
+
+Admin -> UI : Save audience
+UI -> SA : createAudience(name, rules)
+SA -> DB : INSERT email_audience
+DB --> SA : audience_id
+
+Admin -> UI : Snapshot now
+UI -> SA : snapshotAudience(audience_id)
+SA -> SNAP : execute(audience_id)
+SNAP -> DB : INSERT email_audience_snapshot (status=running)
+SNAP -> RC : compile(rules) → SQL
+SNAP -> DB : INSERT email_audience_snapshot_member\n(SELECT email FROM compiled)
+SNAP -> DB : UPDATE snapshot (status=done, size=47)
+SNAP --> SA : snapshot_id
+SA --> UI : { snapshot_id, size: 47, status: 'done' }
+
+== Plus tard, lors d'un envoi de campagne ==
+Admin -> UI : Send campaign "Promo Mai"
+UI -> SA : finalizeCampaign(campaign_id)
+SA -> SNAP : snapshotAudience(audience_id) [si dynamic]
+SNAP --> SA : snapshot_id
+SA -> LM_SYNC : pushSnapshotToListmonk(snapshot_id)
+LM_SYNC -> LM : POST /api/lists (ephemeral)
+LM --> LM_SYNC : list_id
+LM_SYNC -> DB : SELECT emails FROM snapshot_member
+LM_SYNC -> LM : POST /api/import/subscribers (bulk)
+LM --> LM_SYNC : ok
+LM_SYNC -> LM : POST /api/campaigns (audience=list_id)
+LM --> LM_SYNC : campaign_id
+LM_SYNC --> SA : { listmonk_campaign_id }
+SA -> DB : UPDATE email_campaign_link (snapshot_id, listmonk_campaign_id, status='sent')
+SA --> UI : ✓ Campaign sent
+
+== Cron J+30 ==
+note over LM_SYNC, LM
+  Cron quotidien : pour chaque snapshot
+  > 30 jours, supprime la liste éphémère
+  Listmonk correspondante.
+end note
+
+@enduml

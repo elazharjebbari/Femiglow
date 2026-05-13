@@ -1,0 +1,113 @@
+@startuml system-architecture
+!theme plain
+title M5 — Admin emailing system architecture
+
+skinparam component {
+  BackgroundColor #FAFAF8
+  BorderColor #5A6B5E
+}
+
+package "FemiGlow Next.js (admin.femiglow-maroc.com)" {
+  package "UI" {
+    [Cockpit transactional] as UI_TX
+    [Audience builder]      as UI_AUD
+    [Campaign wizard]       as UI_CAM
+    [Automation studio]     as UI_AUT
+    [Cmd-K palette]         as UI_CMD
+  }
+
+  package "Server actions / API" {
+    [outbox-actions]      as SA_TX
+    [audience-actions]    as SA_AUD
+    [campaign-actions]    as SA_CAM
+    [automation-actions]  as SA_AUT
+  }
+
+  package "Engines" {
+    [Rules compiler]     as ENG_RULES
+    [Snapshot engine]    as ENG_SNAP
+    [Listmonk sync]      as ENG_LM
+    [Automation runner]  as ENG_RUN
+    [Cron schedulers]    as ENG_CRON
+  }
+}
+
+database "Postgres" {
+  frame "Emailing" {
+    [email_outbox]
+    [email_event]
+    [email_suppression]
+    [email_subscriber_link]
+    [email_audience]
+    [email_audience_snapshot]
+    [email_audience_snapshot_member]
+    [email_campaign_link]
+    [email_automation]
+    [email_automation_run]
+  }
+  frame "Generic" {
+    [leads]
+    [orders]
+    [user_event]
+    [lead_tag]
+    [admin_email_view]
+    [admin_audit_log]
+  }
+}
+
+cloud "Listmonk (127.0.0.1:9000)" {
+  [Listmonk lists]
+  [Listmonk campaigns]
+  [Listmonk subscribers]
+}
+
+cloud "Stalwart SMTP" {
+  [SMTP delivery]
+}
+
+' UI → Server actions
+UI_TX --> SA_TX
+UI_AUD --> SA_AUD
+UI_CAM --> SA_CAM
+UI_AUT --> SA_AUT
+UI_CMD --> SA_TX : "filters parser"
+
+' Server actions → Engines
+SA_AUD --> ENG_RULES
+SA_AUD --> ENG_SNAP
+SA_CAM --> ENG_SNAP
+SA_CAM --> ENG_LM
+SA_AUT --> ENG_RULES
+
+' Engines → DB
+SA_TX --> [email_outbox]
+SA_TX --> [email_event]
+SA_TX --> [admin_email_view]
+
+ENG_SNAP --> [email_audience]
+ENG_SNAP --> [email_audience_snapshot]
+ENG_SNAP --> [email_audience_snapshot_member]
+ENG_RULES --> [leads]
+ENG_RULES --> [orders]
+ENG_RULES --> [user_event]
+ENG_RULES --> [email_event]
+ENG_RULES --> [email_suppression]
+
+ENG_LM --> [Listmonk lists] : "push subscribers"
+ENG_LM --> [Listmonk campaigns] : "create + schedule"
+ENG_LM --> [email_campaign_link] : "store campaign_id"
+
+ENG_RUN --> [email_automation]
+ENG_RUN --> [email_automation_run]
+ENG_RUN --> [email_outbox] : "enqueue send steps"
+ENG_RUN --> [lead_tag] : "tag steps"
+ENG_RUN --> [user_event] : "wait_for_event"
+
+ENG_CRON --> ENG_RUN : "tick automation"
+ENG_CRON --> ENG_LM : "cleanup ephemeral lists"
+ENG_CRON --> [email_audience_snapshot] : "purge old"
+
+[Stalwart] --> [email_outbox] : "delivery webhook"
+[Listmonk lists] --> [user_event] : "subscriber webhook"
+
+@enduml

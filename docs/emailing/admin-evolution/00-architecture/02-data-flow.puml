@@ -1,0 +1,42 @@
+@startuml data-flow
+!theme plain
+title M5 — Event ingestion flow (user_event)
+
+actor "Visitor"               as V
+participant "Web (browser)"   as W
+participant "FemiGlow API"    as API
+participant "Stalwart SMTP"   as SMTP
+participant "Listmonk"        as LM
+database    "Postgres"        as DB
+
+== Web tracking ==
+V -> W : page view, click, add-to-cart…
+W -> API : POST /api/tracking/events
+API -> DB : INSERT user_event\n(event_name, properties, session_id, source='web')
+
+== Order placed (server) ==
+V -> API : POST /api/checkout/order
+API -> DB : INSERT orders
+API -> DB : INSERT user_event\n(event_name='order.placed', source='server')
+
+== Email lifecycle ==
+API -> SMTP : send mail
+SMTP -> API : webhook delivery/bounce
+API -> DB : UPDATE email_outbox\nINSERT email_event
+API -> DB : INSERT user_event\n(event_name='email.delivered'\nor 'email.bounced',\nsource='email')
+
+== Newsletter (Listmonk) ==
+LM -> API : webhook subscriber.created\n/subscribed/bounced
+API -> DB : UPDATE email_subscriber_link\nINSERT email_event
+API -> DB : INSERT user_event\n(event_name='subscriber.created',\nsource='email')
+
+== Admin action ==
+note over API
+  Quand un admin modifie un lead
+  (status, note, tag…), on enregistre
+  aussi en user_event pour la
+  traçabilité audience.
+end note
+API -> DB : INSERT lead_events\nINSERT user_event\n(source='admin')
+
+@enduml

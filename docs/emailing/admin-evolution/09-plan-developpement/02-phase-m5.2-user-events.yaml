@@ -1,0 +1,107 @@
+phase: M5.2
+name: "Events utilisateur unifiés"
+duration_estimate_days: [6, 10]
+depends_on: []
+gate_test: "../11-tests/03-playwright-e2e/02-m5.2-ultimate.spec.md"
+
+objectives:
+  - Table user_event créée + indexée
+  - Bridges depuis 4 sources : web tracking, email webhooks, server actions, admin actions
+  - Backfill 90 jours optional
+  - Dashboard debug pour vérifier l'ingestion
+
+tickets:
+
+  - id: M5.2.0
+    title: "Migration user_event + indexes"
+    description: Tables + indexes en CREATE CONCURRENTLY pour les big tables.
+    estimate_days: 0.5
+    docs:
+      - "../01-data/01-tables.md#user_event"
+      - "../01-data/03-migrations-plan.md#m52"
+    tests:
+      - jest: "11-tests/01-jest-unit/user-event-schema.test.ts"
+    deliverable: "Migrations 0041 + 0042 appliquées"
+
+  - id: M5.2.1
+    title: "Helper insertUserEvent + types Zod"
+    description: |
+      Point d'entrée unique pour insérer un event.
+      Validation Zod stricte. Idempotency si même id_external fourni.
+    estimate_days: 0.5
+    tests:
+      - jest: "11-tests/01-jest-unit/user-event-insert.test.ts"
+    deliverable: "lib/mail/user-events/insert.ts"
+
+  - id: M5.2.2
+    title: "Bridge web tracking"
+    description: |
+      Hook dans /api/tracking/events (existant) qui appelle insertUserEvent.
+      Mapping : event_name = source.event_name, properties = payload.
+    estimate_days: 0.5
+    tests:
+      - msw: "11-tests/02-msw-integration/bridge-web-tracking.test.spec.md"
+    deliverable: "lib/mail/user-events/bridges/web-tracking.ts"
+
+  - id: M5.2.3
+    title: "Bridge email webhooks (Stalwart + Listmonk)"
+    description: |
+      listmonk-dispatcher + stalwart-handler écrivent aussi en user_event.
+      event_name = 'email.delivered', 'email.opened', etc.
+    estimate_days: 1
+    tests:
+      - msw: "11-tests/02-msw-integration/bridge-email-webhooks.test.spec.md"
+    deliverable: "lib/mail/user-events/bridges/email-webhooks.ts"
+
+  - id: M5.2.4
+    title: "Bridge server actions (orders, leads, chat)"
+    description: |
+      Wrap createOrder, createLead, chat lead capture pour générer user_event.
+    estimate_days: 1
+    tests:
+      - jest: "11-tests/01-jest-unit/bridge-server.test.ts"
+    deliverable: "lib/mail/user-events/bridges/server-actions.ts"
+
+  - id: M5.2.5
+    title: "Bridge admin actions"
+    description: |
+      lead_events handler → INSERT user_event aussi avec source='admin'.
+    estimate_days: 0.5
+    tests:
+      - jest: "11-tests/01-jest-unit/bridge-admin.test.ts"
+    deliverable: "lib/mail/user-events/bridges/admin-actions.ts"
+
+  - id: M5.2.6
+    title: "Backfill 90j (optional)"
+    description: |
+      Script one-shot qui lit email_event, lead_events, insights_event_daily
+      et alimente user_event rétroactivement.
+    estimate_days: 1
+    tests:
+      - jest: "11-tests/01-jest-unit/backfill.test.ts"
+    deliverable: "lib/mail/user-events/backfill.ts + script CLI"
+
+  - id: M5.2.7
+    title: "Dashboard debug events"
+    description: |
+      Page /admin/emails/events qui affiche count last 24h par event_name.
+    estimate_days: 0.5
+    docs:
+      - "../02-backend/01-api-endpoints.md#user-events"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/events-dashboard.spec.md"
+    deliverable: "Page debug"
+
+  - id: M5.2.8
+    title: "Test ultime M5.2"
+    description: |
+      E2E : envoyer 1 email → constater 3 rows user_event en DB.
+    estimate_days: 0.5
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/02-m5.2-ultimate.spec.md"
+    deliverable: "Test passe"
+
+gate_exit_criteria:
+  - "100% sources events couvertes par tests"
+  - "user_event peuplé en temps réel pour les 4 sources"
+  - "Test ultime passe"

@@ -1,0 +1,129 @@
+phase: M5.1
+name: "Inbox transactionnelle — cockpit Cmd-K"
+duration_estimate_days: [6, 10]
+depends_on: []
+gate_test: "../11-tests/03-playwright-e2e/01-m5.1-ultimate.spec.md"
+
+objectives:
+  - Tableau outbox enrichi avec filtres typés
+  - Command palette ⌘K avec syntaxe key:value
+  - Saved views (system + custom per admin)
+  - Bulk actions (retry, suppress, export)
+  - KPI header live avec sparklines + tendance vs J-1
+
+tickets:
+
+  - id: M5.1.0
+    title: "Worktree setup + migration admin_email_view"
+    description: |
+      Créer worktree /var/www/femiglow-m5/ branche m5/phase-1.
+      Migration 0040 (admin_email_view + seed system views).
+    estimate_days: 0.5
+    docs:
+      - "../01-data/01-tables.md#admin_email_view"
+      - "../01-data/03-migrations-plan.md#m51"
+    tests:
+      - jest: "11-tests/01-jest-unit/admin-email-view-schema.test.ts"
+    deliverable: "Branch m5/phase-1 créée, migration appliquée en local"
+
+  - id: M5.1.1
+    title: "Filters parser (key:value syntax)"
+    description: |
+      Parser `status:failed template:cart-*` → ParsedFilters.
+      Couvre la grammaire complète + erreurs.
+    estimate_days: 1
+    docs:
+      - "../03-frontend/04-cmd-k-palette.md#syntaxe-filtres"
+    tests:
+      - jest: "11-tests/01-jest-unit/filters-parser.test.spec.md"
+    deliverable: "lib/mail/transactional/filters-parser.ts + tests"
+
+  - id: M5.1.2
+    title: "Backend queries — listOutboxFiltered, summarize, bulk-retry"
+    description: |
+      3 queries Drizzle nouvelles, respectant les contrats du catalogue.
+    estimate_days: 1.5
+    docs:
+      - "../01-data/05-queries-catalog.md#m51"
+    tests:
+      - jest: "11-tests/01-jest-unit/outbox-queries.test.ts"
+    deliverable: "lib/mail/transactional/{search,summary,bulk-actions}.ts"
+
+  - id: M5.1.3
+    title: "API endpoints — search, summary, bulk-retry, views CRUD"
+    description: |
+      5 endpoints, validation Zod + auth + rate-limit.
+    estimate_days: 1.5
+    docs:
+      - "../02-backend/01-api-endpoints.md#transactional-cockpit"
+    tests:
+      - msw: "11-tests/02-msw-integration/transactional-endpoints.test.spec.md"
+    deliverable: "5 routes API + tests MSW"
+
+  - id: M5.1.4
+    title: "Composant CommandPalette"
+    description: |
+      cmdk wrapper avec filters parser intégré + suggestions.
+    estimate_days: 1.5
+    docs:
+      - "../03-frontend/04-cmd-k-palette.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/command-palette.test.spec.md"
+    deliverable: "components/admin/emails/cockpit/CommandPalette.tsx"
+
+  - id: M5.1.5
+    title: "Composant KpiHeader"
+    description: |
+      4 KPIs avec sparklines + auto-refresh + tendance.
+    estimate_days: 1
+    docs:
+      - "../03-frontend/02-components-catalog.md#kpiheader"
+    tests:
+      - jest: "11-tests/01-jest-unit/kpi-header.test.spec.md"
+    deliverable: "components/admin/emails/cockpit/KpiHeader.tsx"
+
+  - id: M5.1.6
+    title: "Composants SavedViewsSidebar + FilteredTable + BulkActionsBar"
+    description: |
+      Les 3 composants restants du cockpit.
+    estimate_days: 1.5
+    docs:
+      - "../03-frontend/02-components-catalog.md"
+      - "../04-ui-ux/02-mockups/transactional-inbox.txt"
+    tests:
+      - jest: "11-tests/01-jest-unit/saved-views.test.spec.md"
+      - jest: "11-tests/01-jest-unit/filtered-table.test.spec.md"
+      - jest: "11-tests/01-jest-unit/bulk-actions-bar.test.spec.md"
+    deliverable: "3 composants + tests RTL"
+
+  - id: M5.1.7
+    title: "Page transactional refonte"
+    description: |
+      app/admin/emails/transactional/page.tsx — assemble les 4 composants.
+      URL-state pour view + filters.
+    estimate_days: 1
+    docs:
+      - "../04-ui-ux/02-mockups/transactional-inbox.txt"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/cockpit-cmdk-search.spec.md"
+    deliverable: "Page refondue déployable en local"
+
+  - id: M5.1.8
+    title: "Test ultime + acceptance"
+    description: |
+      Test Playwright qui valide tous les gates de sortie M5.1.
+      Lighthouse a11y ≥ 95 + perf ≥ 90.
+    estimate_days: 1
+    docs:
+      - "../11-tests/03-playwright-e2e/01-m5.1-ultimate.spec.md"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/01-m5.1-ultimate.spec.md"
+    deliverable: "Test passe + audit Lighthouse OK"
+
+gate_exit_criteria:
+  - "Tous tickets M5.1.* en done"
+  - "Tous tests Jest + MSW + Playwright passent"
+  - "Lighthouse perf ≥ 90"
+  - "Lighthouse a11y ≥ 95"
+  - "Test ultime M5.1 passe (60s à retrouver/retry/save view/export)"
+  - "Merge m5/phase-1 → master sans conflit"

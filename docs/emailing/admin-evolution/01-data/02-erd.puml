@@ -1,0 +1,170 @@
+@startuml erd
+!theme plain
+title M5 — Entity Relationship Diagram (nouvelles tables + modifs)
+
+skinparam linetype ortho
+
+entity "leads" as L {
+  * id : uuid <<PK>>
+  --
+  email : text
+  phone : text
+  status : enum
+  consent_marketing : bool
+  created_at : timestamp
+}
+
+entity "orders" as O {
+  * id : uuid <<PK>>
+  --
+  lead_id : uuid <<FK>>
+  total_cents : int
+  created_at : timestamp
+}
+
+entity "user_event" as UE {
+  * id : bigint <<PK>>
+  --
+  email : text (idx)
+  event_name : text (idx)
+  ts : timestamp (idx)
+  properties : jsonb
+  session_id : text
+  source : enum
+  lead_id : uuid <<FK?>>
+}
+
+entity "email_outbox" as OB {
+  * id : uuid <<PK>>
+  --
+  template : text
+  to_email : text
+  status : enum
+  attempts : int
+  created_at : timestamp
+}
+
+entity "email_event" as EE {
+  * id : uuid <<PK>>
+  --
+  outbox_id : uuid <<FK?>>
+  type : enum
+  ts : timestamp
+  raw_json : jsonb
+}
+
+entity "email_suppression" as ES {
+  * email : text <<PK>>
+  --
+  reason : enum
+  source : enum
+  created_at : timestamp
+}
+
+entity "email_subscriber_link" as ESL {
+  * email : text <<PK>>
+  --
+  listmonk_subscriber_id : int
+  status : enum
+}
+
+entity "email_audience" as EA <<NEW M5.3>> {
+  * id : uuid <<PK>>
+  --
+  slug : text <<UNIQUE>>
+  name : text
+  rules : jsonb
+  exclusion_flags : jsonb
+  evaluation_mode : enum
+  created_by : text
+  created_at : timestamp
+}
+
+entity "email_audience_snapshot" as EAS <<NEW M5.3>> {
+  * id : uuid <<PK>>
+  --
+  audience_id : uuid <<FK>>
+  snapshot_key : text
+  status : enum
+  size : int
+  rules_snapshot : jsonb
+  listmonk_list_id : int
+  purgeable_after : timestamp
+}
+
+entity "email_audience_snapshot_member" as EASM <<NEW M5.3>> {
+  * snapshot_id : uuid <<FK>>
+  * email : text
+  --
+  payload : jsonb
+}
+
+entity "email_campaign_link" as ECL <<MODIFIED M5.4>> {
+  * id : uuid <<PK>>
+  --
+  listmonk_campaign_id : int
+  audience_id : uuid <<FK NEW>>
+  snapshot_id : uuid <<FK NEW>>
+  status : enum
+}
+
+entity "email_automation" as EAUT <<MODIFIED M5.5>> {
+  * id : uuid <<PK>>
+  --
+  slug : text <<UNIQUE>>
+  name : text
+  trigger_type : enum
+  trigger_config : jsonb
+  trigger_conditions : jsonb <<NEW>>
+  steps : jsonb
+  cooldown_seconds : int <<NEW>>
+  quiet_hours_* : <<NEW>>
+  daily_cap : int <<NEW>>
+  active : bool
+}
+
+entity "email_automation_run" as EAR <<MODIFIED M5.5>> {
+  * id : uuid <<PK>>
+  --
+  automation_id : uuid <<FK>>
+  recipient_email : text
+  current_step : int
+  status : enum (extended)
+  context_json : jsonb
+  next_action_at : timestamp
+  awaiting_event_name : text <<NEW>>
+  awaiting_until : timestamp <<NEW>>
+}
+
+entity "lead_tag" as LT <<NEW M5.5>> {
+  * id : uuid <<PK>>
+  --
+  lead_id : uuid <<FK>>
+  tag : text
+  source : enum
+  created_at : timestamp
+}
+
+entity "admin_email_view" as AEV <<NEW M5.1>> {
+  * id : uuid <<PK>>
+  --
+  owner_email : text
+  name : text
+  scope : enum
+  filter_state : jsonb
+  is_system : bool
+}
+
+' Relations
+L ||--o{ O
+L ||--o{ UE
+L ||--o{ LT
+O ||--o| OB : "may trigger transactional"
+OB ||--o{ EE
+EA ||--o{ EAS
+EAS ||--o{ EASM
+EA ||--o{ ECL : "campaign uses audience"
+EAS ||--o{ ECL : "campaign references snapshot"
+EAUT ||--o{ EAR
+
+@enduml

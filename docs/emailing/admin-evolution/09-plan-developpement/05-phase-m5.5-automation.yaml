@@ -1,0 +1,150 @@
+phase: M5.5
+name: "Automation studio V1 — step-list typée"
+duration_estimate_days: [10, 15]
+depends_on: [M5.3]
+gate_test: "../11-tests/03-playwright-e2e/05-m5.5-ultimate.spec.md"
+
+objectives:
+  - Extension types de steps (branch, tag, update_lead, webhook, wait_for_event)
+  - Runner V2 avec handlers par kind
+  - Conditions DSL (réutilise rules-compiler M5.3)
+  - Catalogue events
+  - UI wizard 5 steps + page edit + run detail
+
+tickets:
+
+  - id: M5.5.0
+    title: "Migration extensions + lead_tag"
+    description: |
+      ALTER email_automation, automation_run; CREATE lead_tag.
+    estimate_days: 0.5
+    docs:
+      - "../01-data/03-migrations-plan.md#m55"
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-schema.test.ts"
+    deliverable: "Migrations 0047-0049"
+
+  - id: M5.5.1
+    title: "Types Zod étendus pour AutomationStep"
+    description: |
+      Discriminated union avec les 7 kinds.
+    estimate_days: 0.5
+    docs:
+      - "../01-data/01-tables.md#schémas-étendus"
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-types.test.ts"
+    deliverable: "lib/mail/automation/types.ts étendu"
+
+  - id: M5.5.2
+    title: "Step handlers — wait, send (refactor existant)"
+    description: |
+      Refactor pour pattern handler. Tests par handler.
+    estimate_days: 1
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-runner.test.spec.md (wait, send)"
+    deliverable: "lib/mail/automation/step-handlers/{wait,send}.ts"
+
+  - id: M5.5.3
+    title: "Step handler — branch + condition evaluator"
+    description: |
+      Évaluer condition (réutilise rules-compiler) + advance dans sub-séquence.
+    estimate_days: 1.5
+    docs:
+      - "../02-backend/06-automation-runner-v2.md#branch"
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-runner.test.spec.md (branch)"
+    deliverable: "step-handlers/branch.ts + condition-evaluator.ts"
+
+  - id: M5.5.4
+    title: "Step handlers — tag, update_lead"
+    description: |
+      Tag add/remove sur lead_tag, update champ lead.
+    estimate_days: 1
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-runner.test.spec.md (tag, update_lead)"
+    deliverable: "step-handlers/{tag,update-lead}.ts"
+
+  - id: M5.5.5
+    title: "Step handlers — webhook"
+    description: |
+      Call HTTP avec retry exponentiel, log status.
+    estimate_days: 1
+    tests:
+      - msw: "11-tests/02-msw-integration/automation-webhook.test.spec.md"
+    deliverable: "step-handlers/webhook.ts"
+
+  - id: M5.5.6
+    title: "Step handler — wait_for_event + resume"
+    description: |
+      Mettre run en waiting_for_event ; brancher resume sur bridge user_event.
+    estimate_days: 1.5
+    docs:
+      - "../02-backend/06-automation-runner-v2.md#wait_for_event"
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-runner.test.spec.md (wait_for_event)"
+    deliverable: "step-handlers/wait-for-event.ts + resume logic"
+
+  - id: M5.5.7
+    title: "Frequency — cooldown, quiet hours, daily cap"
+    description: |
+      Applique au moment du trigger ET de l'advance.
+    estimate_days: 1
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-frequency.test.ts"
+    deliverable: "lib/mail/automation/frequency.ts"
+
+  - id: M5.5.8
+    title: "Catalogue events endpoint"
+    description: |
+      Liste depuis tracking_event_definitions + events emailing hardcodés.
+    estimate_days: 0.5
+    docs:
+      - "../02-backend/01-api-endpoints.md#catalogue-events"
+    tests:
+      - msw: "11-tests/02-msw-integration/events-catalog.test.spec.md"
+    deliverable: "Endpoint + cache"
+
+  - id: M5.5.9
+    title: "Composants StepEditor + ConditionBuilder + FrequencySettings"
+    description: |
+      Forms par kind + wrapper de RulesBuilder pour conditions.
+    estimate_days: 2
+    docs:
+      - "../03-frontend/02-components-catalog.md"
+      - "../04-ui-ux/02-mockups/automation-studio.txt"
+    tests:
+      - jest: "11-tests/01-jest-unit/step-editor.test.spec.md (par kind)"
+    deliverable: "Composants"
+
+  - id: M5.5.10
+    title: "Composant AutomationWizard + StepList"
+    description: |
+      5 steps + step list récursive (branches).
+    estimate_days: 1.5
+    tests:
+      - jest: "11-tests/01-jest-unit/automation-wizard.test.spec.md"
+    deliverable: "Composants"
+
+  - id: M5.5.11
+    title: "Pages automation"
+    description: |
+      /new (wizard), /[id]/edit, /runs/[id].
+    estimate_days: 1
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/automation-create.spec.md"
+    deliverable: "3 pages"
+
+  - id: M5.5.12
+    title: "Test ultime M5.5"
+    description: |
+      E2E : créer automation post-purchase upsell complète, déclencher, vérifier.
+    estimate_days: 1
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/05-m5.5-ultimate.spec.md"
+    deliverable: "Test passe"
+
+gate_exit_criteria:
+  - "Tous step kinds testés isolément"
+  - "Branch eval correct sur condition fixe et user-dépendante"
+  - "Cooldown + quiet hours respectés"
+  - "Test ultime passe"

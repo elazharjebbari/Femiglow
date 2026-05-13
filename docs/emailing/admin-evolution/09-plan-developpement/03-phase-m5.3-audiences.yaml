@@ -1,0 +1,151 @@
+phase: M5.3
+name: "Audience builder + snapshot engine"
+duration_estimate_days: [10, 15]
+depends_on: [M5.2]
+gate_test: "../11-tests/03-playwright-e2e/03-m5.3-ultimate.spec.md"
+
+objectives:
+  - Tables email_audience + email_audience_snapshot + member
+  - Rules compiler RulesJson → Drizzle query
+  - Preview live (count + sample)
+  - Snapshot engine async + idempotent
+  - UI builder + wizard 3 steps + page list + detail
+  - Cron purge snapshots > 90j
+
+tickets:
+
+  - id: M5.3.0
+    title: "Migrations + Zod types pour RulesGroup"
+    description: |
+      Tables (3) + types TypeScript/Zod pour RulesJson schema.
+    estimate_days: 1
+    docs:
+      - "../01-data/01-tables.md#email_audience"
+      - "../02-backend/03-rules-compiler.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/rules-types.test.ts"
+    deliverable: "Migrations 0043-0045 + lib/mail/audiences/rules-types.ts"
+
+  - id: M5.3.1
+    title: "Rules compiler — Phase 1 (commerce + identité)"
+    description: |
+      Compile les rules : email_pattern, country, consent_marketing,
+      created_at, order_count, order_total, has_ordered_product,
+      last_order_at.
+    estimate_days: 2
+    docs:
+      - "../02-backend/03-rules-compiler.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/rules-compiler.test.spec.md (P1)"
+    deliverable: "lib/mail/audiences/rules-compiler.ts (commerce+identité)"
+
+  - id: M5.3.2
+    title: "Rules compiler — Phase 2 (engagement + activité + tags)"
+    description: |
+      email_opened, email_clicked, received_without_open,
+      inactive_since, session_count, has_tag, not_has_tag.
+    estimate_days: 1.5
+    tests:
+      - jest: "11-tests/01-jest-unit/rules-compiler.test.spec.md (P2)"
+    deliverable: "Extensions du compileur"
+
+  - id: M5.3.3
+    title: "Rules compiler — composition + exclusions"
+    description: |
+      Combinaisons AND/OR/nested, application des exclusion_flags.
+    estimate_days: 1
+    tests:
+      - jest: "11-tests/01-jest-unit/rules-compiler.test.spec.md (composition)"
+    deliverable: "Final compiler ≥ 95% branch coverage"
+
+  - id: M5.3.4
+    title: "Preview engine — size + sample"
+    description: |
+      previewAudienceSize + previewAudienceSample, avec cache Redis 60s.
+    estimate_days: 1
+    docs:
+      - "../01-data/05-queries-catalog.md#m53"
+    tests:
+      - jest: "11-tests/01-jest-unit/audience-preview.test.ts"
+    deliverable: "lib/mail/audiences/preview.ts"
+
+  - id: M5.3.5
+    title: "Snapshot engine"
+    description: |
+      snapshotAudience avec transaction, idempotency, async > 5s.
+    estimate_days: 1.5
+    docs:
+      - "../02-backend/04-snapshot-engine.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/snapshot-engine.test.spec.md"
+    deliverable: "lib/mail/audiences/snapshot.ts"
+
+  - id: M5.3.6
+    title: "Audience CRUD API + server actions"
+    description: |
+      create/read/update/delete/list audiences endpoints.
+    estimate_days: 1
+    docs:
+      - "../02-backend/01-api-endpoints.md#audiences"
+    tests:
+      - msw: "11-tests/02-msw-integration/audiences-crud.test.spec.md"
+    deliverable: "API + actions"
+
+  - id: M5.3.7
+    title: "Composant AudienceRulesBuilder"
+    description: |
+      Form dynamique récursif (groups + rules), validation inline.
+    estimate_days: 2
+    docs:
+      - "../03-frontend/02-components-catalog.md#audiencerulesbuilder"
+      - "../04-ui-ux/02-mockups/audience-builder.txt"
+    tests:
+      - jest: "11-tests/01-jest-unit/rules-builder.test.spec.md"
+    deliverable: "Component"
+
+  - id: M5.3.8
+    title: "Composant AudiencePreview + AudienceWizard"
+    description: |
+      Preview avec debounce 800ms + wizard 3 steps stateful.
+    estimate_days: 1.5
+    tests:
+      - jest: "11-tests/01-jest-unit/audience-preview-component.test.spec.md"
+      - jest: "11-tests/01-jest-unit/audience-wizard.test.spec.md"
+    deliverable: "Components"
+
+  - id: M5.3.9
+    title: "Pages audiences"
+    description: |
+      /audiences (list), /new (wizard), /[id] (detail), /[id]/edit, /snapshots/[id].
+    estimate_days: 1
+    docs:
+      - "../03-frontend/01-routes-map.md"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/audience-create-and-snapshot.spec.md"
+    deliverable: "5 pages"
+
+  - id: M5.3.10
+    title: "Cron purge snapshots > 90j"
+    description: |
+      /api/cron/email-audience-purge endpoint + scheduler.
+    estimate_days: 0.5
+    docs:
+      - "../02-backend/04-snapshot-engine.md#purge"
+    tests:
+      - jest: "11-tests/01-jest-unit/audience-purge.test.ts"
+    deliverable: "Endpoint cron + systemd unit"
+
+  - id: M5.3.11
+    title: "Test ultime M5.3"
+    description: |
+      E2E : créer audience VIP → preview → snapshot → list visible.
+    estimate_days: 0.5
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/03-m5.3-ultimate.spec.md"
+    deliverable: "Test passe"
+
+gate_exit_criteria:
+  - "Rules compiler ≥ 95% branch coverage"
+  - "Preview audience < 3s sur DB prod-like"
+  - "Snapshot 10k rows < 30s"
+  - "Test ultime passe"
