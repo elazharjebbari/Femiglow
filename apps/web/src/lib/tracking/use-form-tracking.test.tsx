@@ -17,12 +17,10 @@ interface CapturedEvent {
 function makeProviderValue(events: CapturedEvent[]): TrackingContextValue {
   return {
     client: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       emit: (name: string, params: Record<string, unknown>) => {
         events.push({ name, params });
       },
       flushSync: () => {},
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
     consent: {
       ad_storage: 'denied',

@@ -497,5 +497,4 @@ describe('DeliveryCitiesEditor — pagination', () => {
 });
 
 // Silence "act" warnings for any deferred state updates we don't await.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _act = act;
