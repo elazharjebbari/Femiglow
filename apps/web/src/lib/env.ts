@@ -62,6 +62,28 @@ const envSchema = z.object({
   // Priorité sur CHAT_LEAD_WEBHOOK_URL ; fallback rétrocompat si absent.
   OUTBOUND_WEBHOOK_URL: z.string().url().optional(),
   OUTBOUND_WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  // — Emailing (cf. docs/emailing/09-infrastructure-setup.md §11) ——————————
+  // SMTP transactional vers Stalwart en loopback. Optional en dev/test ;
+  // required en prod via runtime guard dans lib/mail/client.ts.
+  SMTP_HOST: z.string().default('127.0.0.1'),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  MAIL_FROM: z.string().default('FemiGlow <noreply@femiglow-maroc.com>'),
+  MAIL_REPLY_TO: z.string().default('info@femiglow-maroc.com'),
+
+  // Listmonk API (loopback). Required quand broadcast/automation activé.
+  LISTMONK_INTERNAL_URL: z.string().url().default('http://127.0.0.1:9000'),
+  LISTMONK_API_USER: z.string().optional(),
+  LISTMONK_API_TOKEN: z.string().optional(),
+  LISTMONK_WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  // Stalwart → FemiGlow webhook authentication.
+  FEMIGLOW_STALWART_WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  // List-Unsubscribe one-click token signing (HMAC).
+  MAIL_UNSUB_TOKEN_SECRET: z.string().min(32).optional(),
 });
 
 export const env = envSchema.parse({
@@ -110,4 +132,16 @@ export const env = envSchema.parse({
   CHAT_LEAD_CONSENT_VERSION: process.env.CHAT_LEAD_CONSENT_VERSION,
   OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
   OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+  MAIL_FROM: process.env.MAIL_FROM,
+  MAIL_REPLY_TO: process.env.MAIL_REPLY_TO,
+  LISTMONK_INTERNAL_URL: process.env.LISTMONK_INTERNAL_URL,
+  LISTMONK_API_USER: process.env.LISTMONK_API_USER,
+  LISTMONK_API_TOKEN: process.env.LISTMONK_API_TOKEN,
+  LISTMONK_WEBHOOK_SECRET: process.env.LISTMONK_WEBHOOK_SECRET,
+  FEMIGLOW_STALWART_WEBHOOK_SECRET: process.env.FEMIGLOW_STALWART_WEBHOOK_SECRET,
+  MAIL_UNSUB_TOKEN_SECRET: process.env.MAIL_UNSUB_TOKEN_SECRET,
 });
