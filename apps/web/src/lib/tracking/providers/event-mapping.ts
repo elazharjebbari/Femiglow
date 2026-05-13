@@ -44,8 +44,12 @@ const MAP: Record<string, EventMapping> = {
   view_cart: {
     google_ga4: 'view_cart',
   },
+  // — D-004 — Meta mapping révisé : `begin_checkout` était `InitiateCheckout`
+  // (event standard Meta) qui fire au mount de page = page view déguisé qui
+  // pollue les audiences Lookalike. On bascule en CustomEvent côté Meta
+  // (`checkout_intent`) tout en gardant le standard GA4/TikTok/Snap/Pinterest.
   begin_checkout: {
-    meta: 'InitiateCheckout',
+    meta: 'checkout_intent',
     google_ga4: 'begin_checkout',
     tiktok: 'InitiateCheckout',
     snap: 'START_CHECKOUT',

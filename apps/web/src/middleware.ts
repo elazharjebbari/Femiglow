@@ -143,5 +143,29 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     res.headers.set('x-robots-tag', 'noindex, nofollow');
     res.headers.set('cache-control', 'no-store, max-age=0');
   }
+  // T14 — Capture des Google Click IDs (gclid/gbraid/wbraid) en cookie persistant
+  // pour Enhanced Conversions et attribution multi-pages. La capture est en
+  // first-touch : on n'écrase pas un click ID antérieur déjà en cookie. Durée
+  // 90 j (fenêtre d'attribution Google Ads par défaut).
+  if (!isAdmin && !isAdminApi) {
+    const sp = request.nextUrl.searchParams;
+    const CLICK_ID_PARAMS: ReadonlyArray<['gclid' | 'gbraid' | 'wbraid', string]> = [
+      ['gclid', '_fg_gclid'],
+      ['gbraid', '_fg_gbraid'],
+      ['wbraid', '_fg_wbraid'],
+    ];
+    for (const [param, cookieName] of CLICK_ID_PARAMS) {
+      const value = sp.get(param);
+      if (!value) continue;
+      if (request.cookies.has(cookieName)) continue;
+      res.cookies.set(cookieName, value, {
+        maxAge: 60 * 60 * 24 * 90,
+        httpOnly: false,
+        sameSite: 'lax',
+        secure: !isDev,
+        path: '/',
+      });
+    }
+  }
   return res;
 }
