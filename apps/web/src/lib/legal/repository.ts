@@ -332,6 +332,29 @@ export async function updateTemplateVar(
   return row ?? null;
 }
 
+/**
+ * Liste les slugs des pages publiées qui référencent {{KEY}} dans leur
+ * bodyMd. Utilisé pour le warning admin "var X utilisée dans N pages
+ * publiées" et la fonctionnalité bulk republish.
+ *
+ * Validation stricte du key (A-Z0-9_) pour éviter regex injection
+ * Postgres.
+ */
+export async function listPagesUsingVar(varKey: string): Promise<string[]> {
+  if (!/^[A-Z][A-Z0-9_]*$/.test(varKey)) return [];
+  const pattern = `\\{\\{${varKey}\\}\\}`;
+  const rows = await conn()
+    .select({ slug: schema.legalPages.slug })
+    .from(schema.legalPages)
+    .where(
+      and(
+        eq(schema.legalPages.status, 'published'),
+        sql`${schema.legalPages.bodyMd} ~ ${pattern}`,
+      ),
+    );
+  return rows.map((r) => r.slug);
+}
+
 export async function listPublishedSlugs(): Promise<string[]> {
   const rows = await conn()
     .select({ slug: schema.legalPages.slug })
