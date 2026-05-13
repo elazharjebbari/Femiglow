@@ -170,4 +170,57 @@ export const legalScenarios = {
     http.put('/api/admin/legal/template-vars', () =>
       HttpResponse.json({ error: { code: 'validation_failed' } }, { status: 422 }),
     ),
+
+  /** Simule une erreur réseau (TypeError côté client : fetch failed). */
+  networkError: (path: string, method: 'patch' | 'post' | 'put' = 'patch') =>
+    (http as unknown as Record<string, (p: string, h: () => Response) => unknown>)[method]!(
+      path,
+      () => HttpResponse.error(),
+    ),
+
+  /** Simule une réponse lente (ms) — utile pour tester les loaders/timeouts. */
+  slowResponse: (path: string, ms: number, method: 'patch' | 'post' | 'put' = 'patch') =>
+    (http as unknown as Record<string, (p: string, h: () => Promise<Response>) => unknown>)[
+      method
+    ]!(path, async () => {
+      await new Promise((r) => setTimeout(r, ms));
+      return HttpResponse.json({ ok: true });
+    }),
+
+  /** Simule 5xx intermittent (1 fail puis succès). */
+  intermittentFailure: (slug: string) => {
+    let failed = false;
+    return http.patch(`/api/admin/legal/${slug}`, () => {
+      if (!failed) {
+        failed = true;
+        return HttpResponse.json({ error: { code: 'internal_error' } }, { status: 500 });
+      }
+      return HttpResponse.json({
+        id: 'lp_x',
+        slug,
+        title: 'Recovered',
+        description: null,
+        body_md: 'x',
+        status: 'draft',
+        version: 1,
+        updated_at: new Date().toISOString(),
+      });
+    });
+  },
+
+  /** Simule un 429 rate-limited avec Retry-After. */
+  rateLimited: (path: string, retryAfterSec = 60) =>
+    http.post(path, () =>
+      HttpResponse.json(
+        { error: { code: 'rate_limited', message: 'Trop de requêtes' } },
+        { status: 429, headers: { 'Retry-After': String(retryAfterSec) } },
+      ),
+    ),
+
+  /** Simule un 403 CSRF. */
+  csrfForbidden: (path: string, method: 'patch' | 'post' | 'put' = 'patch') =>
+    (http as unknown as Record<string, (p: string, h: () => Response) => unknown>)[method]!(
+      path,
+      () => HttpResponse.json({ error: { code: 'forbidden' } }, { status: 403 }),
+    ),
 };

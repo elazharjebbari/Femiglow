@@ -109,7 +109,10 @@ export function LegalEditor(props: LegalEditorProps) {
   const [conflict, setConflict] = useState<{ currentUpdatedAt?: number } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialSnapshot = useRef({
+  // Snapshot en state (pas ref) : changer le snapshot doit invalider
+  // `isDirty` via useMemo. Avec useRef, l'invalidation manquait et le
+  // bouton Enregistrer restait actif après save.
+  const [snapshot, setSnapshot] = useState({
     title: props.initialTitle,
     description: props.initialDescription,
     bodyMd: props.initialBodyMd,
@@ -134,14 +137,14 @@ export function LegalEditor(props: LegalEditorProps) {
   }, [bodyMd, props.templateVars]);
 
   const isDirty = useMemo(() => {
-    const s = initialSnapshot.current;
+    const s = snapshot;
     return (
       title !== s.title ||
       description !== s.description ||
       bodyMd !== s.bodyMd ||
       includeInSearch !== s.includeInSearch
     );
-  }, [title, description, bodyMd, includeInSearch]);
+  }, [title, description, bodyMd, includeInSearch, snapshot]);
 
   const save = useCallback(async () => {
     setSaveState('saving');
@@ -173,7 +176,7 @@ export function LegalEditor(props: LegalEditorProps) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { version: number; updated_at: string };
       const newMs = new Date(data.updated_at).getTime();
-      initialSnapshot.current = { title, description, bodyMd, includeInSearch };
+      setSnapshot({ title, description, bodyMd, includeInSearch });
       setVersion(data.version);
       setUpdatedAtMs(newMs);
       setSaveState('saved');
