@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { useToast } from './Toast';
+
 interface VarRow {
   key: string;
   label: string;
@@ -16,6 +18,7 @@ interface Props {
 }
 
 export function TemplateVarsEditor({ vars }: Props) {
+  const { push: toast } = useToast();
   const [rows, setRows] = useState(vars);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +68,11 @@ export function TemplateVarsEditor({ vars }: Props) {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setRows((prev) => prev.map((r) => (r.key === key ? { ...r, value } : r)));
+      toast('success', `Variable ${key} sauvegardée`);
     } catch (err) {
-      setError((err as Error).message);
+      const msg = (err as Error).message;
+      setError(msg);
+      toast('error', `Échec sauvegarde ${key} : ${msg}`);
     } finally {
       setSavingKey(null);
     }
@@ -98,8 +104,15 @@ export function TemplateVarsEditor({ vars }: Props) {
         failed: number;
       };
       setRepublishResult({ key, ...data });
+      if (data.failed === 0) {
+        toast('success', `${data.succeeded} page(s) republiée(s) pour ${key}`);
+      } else {
+        toast('error', `${data.failed} page(s) ont échoué (${data.succeeded} OK)`);
+      }
     } catch (err) {
-      setError((err as Error).message);
+      const msg = (err as Error).message;
+      setError(msg);
+      toast('error', `Échec republish ${key} : ${msg}`);
     } finally {
       setRepublishingKey(null);
     }
