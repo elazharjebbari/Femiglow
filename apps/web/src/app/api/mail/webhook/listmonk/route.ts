@@ -19,6 +19,7 @@ import {
   listmonkWebhookSchema,
   isKnownListmonkEvent,
 } from '@/lib/mail/webhooks/listmonk-parser';
+import { dispatchListmonkEvent } from '@/lib/mail/webhooks/listmonk-dispatcher';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,13 +68,16 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ ok: true, ignored: 'unknown-event' });
   }
 
-  // M3.2 — Wiring to email_campaign_link / email_subscriber_link will
-  // happen in M3.4 when we sync campaign metrics back to the admin
-  // dashboard. For now we just log + return 200 so Listmonk doesn't keep
-  // retrying.
-  // TODO M3.4 : UPDATE email_campaign_link.{sent,opens,clicks,bounces}
-  //             on campaign.* events ; UPDATE email_subscriber_link on
-  //             subscriber.unsubscribed / subscriber.bounced.
+  try {
+    await dispatchListmonkEvent(evt);
+  } catch (err) {
+    logger.error('mail.webhook.listmonk.dispatch_error', {
+      event: evt.event,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    // Don't fail the webhook — return 200 so Listmonk doesn't retry-storm.
+    // The error is logged and surfacable via Sentry / observability.
+  }
 
   return NextResponse.json({ ok: true });
 }
