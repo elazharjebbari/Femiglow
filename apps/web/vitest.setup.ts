@@ -2,6 +2,20 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+// jsdom n'implémente pas Blob.prototype.text / arrayBuffer — polyfill simple
+// pour permettre aux composants qui font `await file.text()` de fonctionner
+// dans les tests (ValidatePairWizard, etc.).
+if (typeof globalThis.Blob !== 'undefined' && typeof Blob.prototype.text !== 'function') {
+  Blob.prototype.text = function () {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(this as Blob);
+    });
+  };
+}
+
 process.env.ADMIN_SESSION_PASSWORD = process.env.ADMIN_SESSION_PASSWORD ?? 'a'.repeat(32);
 process.env.WEBHOOK_SECRET_KEY = process.env.WEBHOOK_SECRET_KEY ?? 'b'.repeat(32);
 process.env.CRON_SECRET = process.env.CRON_SECRET ?? 'c'.repeat(32);
