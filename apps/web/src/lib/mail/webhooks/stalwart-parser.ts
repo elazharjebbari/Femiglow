@@ -121,7 +121,7 @@ export function isHardBounce(errorCode: number | undefined): boolean {
  * (e.g. auth.failed is logged elsewhere).
  */
 export function mapStalwartEventToInternal(
-  event: StalwartWebhookEvent['event'],
+  event: string,
 ): 'queued' | 'delivered' | 'bounced_hard' | 'bounced_soft' | 'retried' | null {
   switch (event) {
     case 'queue.message-queued':
@@ -133,7 +133,7 @@ export function mapStalwartEventToInternal(
       return 'bounced_hard'; // refined to soft via isHardBounce(errorCode) at the call site
     case 'queue.rescheduled':
       return 'retried';
-    case 'auth.failed':
+    default:
       return null;
   }
 }

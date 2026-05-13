@@ -9,7 +9,7 @@
  */
 import { and, eq, inArray, lte, or, isNull, sql } from 'drizzle-orm';
 
-import { db } from '@/lib/db/client';
+import { db as getDb } from '@/lib/db/client';
 import { emailOutbox, emailEvent, type EmailOutboxRow } from '@/lib/db/schema-emails';
 import { logger } from '@/lib/logging/logger';
 import { env } from '@/lib/env';
@@ -30,13 +30,20 @@ export type BatchResult = {
  * Claim a single outbox row and attempt to send it via SMTP.
  * Idempotent : if the row is already `sent`/`delivered`/`dlq`, do nothing.
  */
+function requireDb() {
+  const drizzle = getDb();
+  if (!drizzle) throw new Error('Database not configured (DATABASE_URL missing)');
+  return drizzle;
+}
+
 export async function attemptSend(outboxId: string): Promise<void> {
-  const claim = await db
+  const drizzle = requireDb();
+  const claim = await drizzle
     .update(emailOutbox)
     .set({ status: 'sending', updatedAt: new Date() })
     .where(and(eq(emailOutbox.id, outboxId), inArray(emailOutbox.status, ['pending', 'failed'])))
     .returning();
-  if (claim.length === 0) return; // already terminal or claimed by another worker
+  if (claim.length === 0 || !claim[0]) return; // already terminal or claimed by another worker
 
   await deliverRow(claim[0]);
 }
@@ -45,11 +52,12 @@ export async function attemptSend(outboxId: string): Promise<void> {
  * Cron pickup : claim a batch of outbox rows ready for retry and attempt them.
  */
 export async function pickAndProcessBatch(now: Date = new Date()): Promise<BatchResult> {
+  const drizzle = requireDb();
   const startedAt = Date.now();
 
   // SELECT ... FOR UPDATE SKIP LOCKED + bulk UPDATE in a single CTE so concurrent
   // cron workers can process disjoint subsets.
-  const rows = (await db.execute(sql`
+  const rows = (await drizzle.execute(sql`
     UPDATE email_outbox o
     SET status = 'sending', updated_at = now()
     FROM (
@@ -79,7 +87,7 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
     } catch (err) {
       const nextAttempts = (row.attempts ?? 0) + 1;
       const reachedMax = nextAttempts >= MAX_ATTEMPTS;
-      await db
+      await drizzle
         .update(emailOutbox)
         .set({
           status: reachedMax ? 'dlq' : 'failed',
@@ -91,7 +99,7 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
         .where(eq(emailOutbox.id, row.id));
       if (reachedMax) {
         dlq++;
-        await db.insert(emailEvent).values({
+        await drizzle.insert(emailEvent).values({
           outboxId: row.id,
           type: 'dlq',
           source: 'app',
@@ -99,7 +107,7 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
         });
       } else {
         failed++;
-        await db.insert(emailEvent).values({
+        await drizzle.insert(emailEvent).values({
           outboxId: row.id,
           type: 'failed',
           source: 'app',
@@ -131,7 +139,8 @@ async function deliverRow(row: EmailOutboxRow): Promise<void> {
       // Don't burn an attempt on a config error — surface a friendly message,
       // mark as failed so admin sees it, and skip retry path. The operator will
       // fix env and manually retry.
-      await db
+      const drizzle = requireDb();
+      await drizzle
         .update(emailOutbox)
         .set({
           status: 'failed',
@@ -166,7 +175,8 @@ async function deliverRow(row: EmailOutboxRow): Promise<void> {
     messageId: undefined, // Stalwart generates one
   });
 
-  await db
+  const drizzle = requireDb();
+  await drizzle
     .update(emailOutbox)
     .set({
       status: 'sent',
@@ -178,7 +188,7 @@ async function deliverRow(row: EmailOutboxRow): Promise<void> {
     })
     .where(eq(emailOutbox.id, row.id));
 
-  await db.insert(emailEvent).values({
+  await drizzle.insert(emailEvent).values({
     outboxId: row.id,
     type: 'sent',
     source: 'app',
@@ -195,7 +205,8 @@ async function deliverRow(row: EmailOutboxRow): Promise<void> {
  * Manual retry — resets failure state and lets the next cron pickup process it.
  */
 export async function retryOutbox(outboxId: string): Promise<void> {
-  await db
+  const drizzle = requireDb();
+  await drizzle
     .update(emailOutbox)
     .set({
       status: 'pending',

@@ -13,7 +13,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 
-import { db } from '@/lib/db/client';
+import { db as getDb } from '@/lib/db/client';
 import {
   emailSuppression,
   emailSubscriberLink,
@@ -30,7 +30,9 @@ async function process(token: string | null): Promise<{ ok: boolean; email?: str
   const email = verifyUnsubToken(token);
   if (!email) return { ok: false, reason: 'invalid-or-expired' };
 
-  await db.transaction(async (tx) => {
+  const drizzle = getDb();
+  if (!drizzle) return { ok: false, reason: 'db-not-configured' };
+  await drizzle.transaction(async (tx) => {
     await tx
       .insert(emailSuppression)
       .values({

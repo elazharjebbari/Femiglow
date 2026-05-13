@@ -14,7 +14,7 @@ import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 
 import { env } from '@/lib/env';
-import { db } from '@/lib/db/client';
+import { db as getDb } from '@/lib/db/client';
 import { emailOutbox } from '@/lib/db/schema-emails';
 import { logger } from '@/lib/logging/logger';
 
@@ -59,12 +59,14 @@ export async function sendTransactional<S extends TemplateSlug>(
   }
 
   // 2. Idempotency check.
-  const existing = await db
+  const drizzle = getDb();
+  if (!drizzle) throw new Error('Database not configured');
+  const existing = await drizzle
     .select({ id: emailOutbox.id })
     .from(emailOutbox)
     .where(eq(emailOutbox.idempotencyKey, input.idempotencyKey))
     .limit(1);
-  if (existing.length > 0) {
+  if (existing.length > 0 && existing[0]) {
     return { status: 'duplicate', outboxId: existing[0].id };
   }
 
@@ -85,7 +87,7 @@ export async function sendTransactional<S extends TemplateSlug>(
 
   // 5. INSERT outbox row.
   const id = randomUUID();
-  await db.insert(emailOutbox).values({
+  await drizzle.insert(emailOutbox).values({
     id,
     idempotencyKey: input.idempotencyKey,
     template: input.template,

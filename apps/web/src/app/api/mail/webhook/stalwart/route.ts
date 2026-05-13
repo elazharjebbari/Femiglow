@@ -13,7 +13,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 
 import { env } from '@/lib/env';
-import { db } from '@/lib/db/client';
+import { db as getDb } from '@/lib/db/client';
 import {
   emailOutbox,
   emailEvent,
@@ -89,24 +89,30 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ ok: true, ignored: 'no-message-id' });
   }
 
-  const found = await db
+  const drizzle = getDb();
+  if (!drizzle) {
+    logger.warn('mail.webhook.stalwart.db_not_configured');
+    return NextResponse.json({ ok: false, error: 'db-not-configured' }, { status: 503 });
+  }
+  const found = await drizzle
     .select()
     .from(emailOutbox)
     .where(eq(emailOutbox.smtpMessageId, messageId))
     .limit(1);
 
-  if (found.length === 0) {
+  if (found.length === 0 || !found[0]) {
     // May be a message originating from Listmonk (uses its own Message-ID
     // namespace) ; that path is handled via the Listmonk webhook.
     return NextResponse.json({ ok: true, ignored: 'unknown-message-id' });
   }
 
   const outbox = found[0];
-  const ts = evt.ts ? new Date(evt.ts) : new Date();
+  const evtTs = 'ts' in evt && typeof evt.ts === 'string' ? evt.ts : null;
+  const ts = evtTs ? new Date(evtTs) : new Date();
   const rawJson = evt as unknown as Record<string, unknown>;
 
   if (evt.event === 'queue.message-queued' || evt.event === 'queue.authenticated-message-queued') {
-    await db.insert(emailEvent).values({
+    await drizzle.insert(emailEvent).values({
       outboxId: outbox.id,
       type: 'queued',
       source: 'stalwart',
@@ -114,11 +120,11 @@ export async function POST(req: NextRequest): Promise<Response> {
       rawJson,
     });
   } else if (evt.event === 'delivery.delivered') {
-    await db
+    await drizzle
       .update(emailOutbox)
       .set({ status: 'delivered', deliveredAt: ts, updatedAt: new Date() })
       .where(eq(emailOutbox.id, outbox.id));
-    await db.insert(emailEvent).values({
+    await drizzle.insert(emailEvent).values({
       outboxId: outbox.id,
       type: 'delivered',
       source: 'stalwart',
@@ -129,7 +135,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const errorCode = 'errorCode' in evt && typeof evt.errorCode === 'number' ? evt.errorCode : undefined;
     const reason = 'reason' in evt && typeof evt.reason === 'string' ? evt.reason : 'unknown';
     const isHard = isHardBounce(errorCode);
-    await db
+    await drizzle
       .update(emailOutbox)
       .set({
         status: isHard ? 'bounced_permanent' : 'bounced_soft',
@@ -139,7 +145,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         updatedAt: new Date(),
       })
       .where(eq(emailOutbox.id, outbox.id));
-    await db.insert(emailEvent).values({
+    await drizzle.insert(emailEvent).values({
       outboxId: outbox.id,
       type: isHard ? 'bounced_hard' : 'bounced_soft',
       source: 'stalwart',
@@ -147,7 +153,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       rawJson,
     });
     if (isHard) {
-      await db
+      await drizzle
         .insert(emailSuppression)
         .values({
           email: outbox.toEmail,
@@ -158,7 +164,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         .onConflictDoNothing();
     }
   } else if (evt.event === 'queue.rescheduled') {
-    await db.insert(emailEvent).values({
+    await drizzle.insert(emailEvent).values({
       outboxId: outbox.id,
       type: 'retried',
       source: 'stalwart',

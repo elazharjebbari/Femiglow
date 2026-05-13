@@ -10,10 +10,11 @@ import { env } from '@/lib/env';
 const VALIDITY_SECONDS = 90 * 24 * 60 * 60;
 
 function getSecret(): string {
-  if (!env.MAIL_UNSUB_TOKEN_SECRET) {
+  const secret = env.MAIL_UNSUB_TOKEN_SECRET;
+  if (!secret) {
     throw new Error('MAIL_UNSUB_TOKEN_SECRET not configured');
   }
-  return env.MAIL_UNSUB_TOKEN_SECRET;
+  return secret;
 }
 
 function base64url(buf: Buffer): string {
@@ -35,7 +36,8 @@ export function generateUnsubToken(email: string, now: number = Date.now()): str
 export function verifyUnsubToken(token: string, now: number = Date.now()): string | null {
   const parts = token.split('.');
   if (parts.length !== 2) return null;
-  const [sigB64, payloadB64] = parts;
+  const sigB64 = parts[0]!;
+  const payloadB64 = parts[1]!;
   let payload: string;
   try {
     payload = fromBase64url(payloadB64).toString('utf8');

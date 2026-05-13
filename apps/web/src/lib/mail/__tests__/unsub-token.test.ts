@@ -22,7 +22,7 @@ describe('unsub-token', () => {
   it('rejects tampered signature', async () => {
     const mod = await import('../unsub-token');
     const token = mod.generateUnsubToken('user@example.com');
-    const [sig, payload] = token.split('.');
+    const [sig, payload] = token.split('.') as [string, string];
     const tampered = `${sig.slice(0, -2)}XX.${payload}`;
     expect(mod.verifyUnsubToken(tampered)).toBeNull();
   });
