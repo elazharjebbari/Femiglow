@@ -195,23 +195,123 @@ else
   echo "  (swaks not installed or DRY_RUN — skipped)"
 fi
 
-# ─── 6. Summary ───────────────────────────────────────────────────────────
+# ─── 6. Configure Stalwart webhook (idempotent) ───────────────────────────
+echo ""
+echo "→ 6. Configure Stalwart webhook → FemiGlow (idempotent)"
+WEBHOOK_URL="https://admin.femiglow-maroc.com/api/mail/webhook/stalwart"
+EXISTING_HOOK=$(scli query WebHook 2>/dev/null | grep -F "${WEBHOOK_URL}" || true)
+if [[ -n "${EXISTING_HOOK}" ]]; then
+  echo "  (already configured) ${WEBHOOK_URL}"
+else
+  echo "  → creating webhook"
+  if [[ "${DRY_RUN}" != "1" ]]; then
+    PLAN=$(mktemp /tmp/stalwart-webhook-plan.XXXXXX.json)
+    cat > "${PLAN}" <<JSON
+{
+  "creates": [
+    {
+      "type": "WebHook",
+      "fields": {
+        "url": "${WEBHOOK_URL}",
+        "enable": true,
+        "events": [
+          "message.queued",
+          "message.delivered",
+          "message.delivery-failed",
+          "message.delivery-deferred",
+          "auth.failure"
+        ],
+        "eventsPolicy": "include",
+        "httpAuth": { "type": "Bearer", "token": "${WEBHOOK_SECRET}" },
+        "httpHeaders": {},
+        "timeout": "30s",
+        "throttle": "0s",
+        "discardAfter": "1d",
+        "allowInvalidCerts": false,
+        "lossy": false,
+        "level": "info"
+      }
+    }
+  ]
+}
+JSON
+    scli apply "${PLAN}" 2>&1 | tail -5
+    rm -f "${PLAN}"
+    echo "  ✓ webhook created"
+  fi
+fi
+
+# ─── 7. Install systemd timer for /api/cron/email-outbox ──────────────────
+echo ""
+echo "→ 7. Install systemd timer femiglow-cron-email-outbox (every 60s)"
+
+SERVICE_FILE="/etc/systemd/system/femiglow-cron-email-outbox.service"
+TIMER_FILE="/etc/systemd/system/femiglow-cron-email-outbox.timer"
+
+if [[ -f "${SERVICE_FILE}" && -f "${TIMER_FILE}" ]]; then
+  echo "  (unit files already present)"
+else
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    echo "  [DRY] would create ${SERVICE_FILE} and ${TIMER_FILE}"
+  else
+    # Read CRON_SECRET from prod .env
+    CRON_SECRET=$(grep -E '^CRON_SECRET=' "${ENV_FILE}" | head -1 | cut -d= -f2-)
+    if [[ -z "${CRON_SECRET}" ]]; then
+      echo "ERR: CRON_SECRET not found in ${ENV_FILE}" >&2
+      exit 5
+    fi
+
+    cat > "${SERVICE_FILE}" <<UNIT
+[Unit]
+Description=FemiGlow cron: email outbox pickup (transactional retry)
+After=femiglow.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/curl -sf -X POST -H "Authorization: Bearer ${CRON_SECRET}" http://127.0.0.1:8011/api/cron/email-outbox
+TimeoutStartSec=60
+UNIT
+
+    cat > "${TIMER_FILE}" <<UNIT
+[Unit]
+Description=FemiGlow cron timer: email outbox pickup (every 60s)
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=5
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+    echo "  ✓ wrote ${SERVICE_FILE} and ${TIMER_FILE}"
+  fi
+fi
+
+if [[ "${DRY_RUN}" != "1" ]]; then
+  run "systemctl daemon-reload"
+  run "systemctl enable --now femiglow-cron-email-outbox.timer 2>&1 || true"
+  if systemctl is-active --quiet femiglow-cron-email-outbox.timer; then
+    echo "  ✓ timer active"
+  else
+    echo "  (timer state : $(systemctl is-active femiglow-cron-email-outbox.timer 2>&1))"
+  fi
+fi
+
+# ─── 8. Summary ───────────────────────────────────────────────────────────
 echo ""
 echo "══════════════════════════════════════════════════════════════════════"
-echo "✓ Bootstrap done. Remaining manual steps :"
+echo "✓ Bootstrap done."
 echo ""
-echo "  a) Configure Stalwart webhook (Settings → Webhooks in mail.fmg-maroc.com)"
-echo "     URL    : https://admin.femiglow-maroc.com/api/mail/webhook/stalwart"
-echo "     Events : message.queued, message.delivered, message.delivery-failed,"
-echo "              message.delivery-deferred, auth.failure"
-echo "     HTTP Auth Bearer token : <FEMIGLOW_STALWART_WEBHOOK_SECRET in .env>"
+echo "  Stalwart account   : noreply@femiglow-maroc.com"
+echo "  Webhook configured : ${WEBHOOK_URL}"
+echo "  Timer installed    : femiglow-cron-email-outbox.timer (60s)"
 echo ""
-echo "  b) Add systemd timer for /api/cron/email-outbox (every 60s)."
-echo "     Create these 2 files :"
-echo "       /etc/systemd/system/femiglow-cron-email-outbox.service"
-echo "       /etc/systemd/system/femiglow-cron-email-outbox.timer"
-echo "     (templates in 09-infrastructure-setup.md §9 of this dossier)"
-echo "     Then : systemctl daemon-reload && systemctl enable --now …timer"
+echo "  Secrets stored in  : ${SECRETS_FILE}"
+echo "  .env backup        : ${backup}"
 echo ""
-echo "  Secrets stored in : ${SECRETS_FILE}"
-echo "  .env backup       : ${backup}"
+echo "  Next : test a full transactional send (wire /api/contact, then submit"
+echo "         the contact form). The mail will hit Stalwart, then the outbox"
+echo "         cron will retry on failure, and the webhook will update DB on"
+echo "         delivered/bounced."
