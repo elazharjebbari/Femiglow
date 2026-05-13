@@ -91,7 +91,11 @@ export async function claimNextPendingJob(): Promise<MediaJob | null> {
     `;
     // Cf. lib/db/exec.ts — db.execute() shape diverges between Neon ({rows:[]})
     // and postgres-js (array direct). Use rowsOf() to handle both safely.
-    const result = await drizzle.execute<MediaJob>(claimSql);
+    // The `as unknown as ...` escape hatch is needed because Drizzle's
+    // execute<T> requires T extends record-shape ; MediaJob isn't.
+    const result = (await drizzle.execute(claimSql)) as unknown as
+      | { rows: MediaJob[] }
+      | MediaJob[];
     const rows = rowsOf(result);
     return rows[0] ?? null;
   }
