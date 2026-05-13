@@ -43,3 +43,4 @@ storybook-static
 # Backups
 /var/backups/femiglow/
 .emailing-secrets.local
+.env.bak.*
