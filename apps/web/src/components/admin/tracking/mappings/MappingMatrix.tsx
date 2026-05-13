@@ -1,12 +1,18 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useId } from 'react';
 import type {
   MappingCell,
   MappingProviderKind,
   Mappings,
 } from '@/lib/tracking/mappings/types';
 import { PROVIDER_KINDS_FOR_MAPPING } from '@/lib/tracking/mappings/types';
+import {
+  getStandardEvents,
+  isStandardEvent,
+  findCloseStandardEvents,
+  type StandardEvent,
+} from '@/lib/tracking/providers/standard-events';
 
 /**
  * Tableau pivot Event × Provider. Édition par cellule via popover.
@@ -177,6 +183,24 @@ function CellPopover(props: {
   const [isEnabled, setIsEnabled] = useState(props.cell.isEnabled);
   const [notes, setNotes] = useState(props.cell.notes ?? '');
 
+  const datalistId = useId();
+  const standardEvents = useMemo(() => getStandardEvents(props.provider), [props.provider]);
+  const isCurrentStandard = mappedName.trim() === '' || isStandardEvent(mappedName.trim(), props.provider);
+  const suggestions: StandardEvent[] = useMemo(() => {
+    if (mappedName.trim() === '' || isCurrentStandard) return [];
+    return findCloseStandardEvents(mappedName, props.provider, 3);
+  }, [mappedName, props.provider, isCurrentStandard]);
+
+  // Auto-flag isCustom pour Meta quand le nom n'est pas un standard reconnu.
+  // L'admin peut toujours désactiver manuellement.
+  function handleNameChange(next: string) {
+    setMappedName(next);
+    if (props.provider === 'meta' && next.trim() !== '') {
+      const isStd = isStandardEvent(next.trim(), 'meta');
+      setIsCustom(!isStd);
+    }
+  }
+
   function handleSave() {
     props.onSave({
       mappedName: mappedName.trim() === '' ? null : mappedName.trim(),
@@ -187,24 +211,67 @@ function CellPopover(props: {
   }
 
   return (
-    <div role="dialog" aria-modal="true" className="absolute left-0 top-full z-20 mt-1 w-80 rounded-md border border-stone-300 bg-white p-3 shadow-lg">
+    <div role="dialog" aria-modal="true" className="absolute left-0 top-full z-20 mt-1 w-96 rounded-md border border-stone-300 bg-white p-3 shadow-lg">
       <div className="mb-2 text-xs font-medium text-stone-700">{props.event} × {props.provider}</div>
       <label className="block">
-        <span className="block text-[10px] uppercase tracking-wide text-stone-500">Nom vendor (vide = pas de dispatch)</span>
+        <span className="block text-[10px] uppercase tracking-wide text-stone-500">
+          Nom vendor (vide = pas de dispatch) — {standardEvents.length} standards disponibles
+        </span>
         <input
           type="text"
           autoFocus
           value={mappedName}
-          onChange={(e) => setMappedName(e.target.value)}
+          onChange={(e) => handleNameChange(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Escape') props.onCancel(); if (e.key === 'Enter') handleSave(); }}
+          list={datalistId}
           className="mt-1 block w-full rounded border border-stone-300 px-2 py-1 font-mono text-xs"
           data-testid={`cell-input-${props.event}-${props.provider}`}
+          placeholder={standardEvents[0]?.name ?? ''}
         />
+        <datalist id={datalistId} data-testid={`datalist-${props.provider}`}>
+          {standardEvents.map((ev) => (
+            <option key={ev.name} value={ev.name}>
+              {ev.label}
+              {ev.isConversion ? ' • conversion' : ''}
+            </option>
+          ))}
+        </datalist>
+        {mappedName.trim() !== '' ? (
+          isCurrentStandard ? (
+            <p className="mt-1 text-[10px] text-emerald-700" data-testid="standard-event-badge">
+              ✓ Event standard {props.provider} reconnu
+            </p>
+          ) : (
+            <p className="mt-1 text-[10px] text-amber-700" data-testid="custom-event-badge">
+              ⚡ Nom non-standard{props.provider === 'meta' ? ' → envoyé comme CustomEvent Meta' : ' (custom event)'}
+              {suggestions.length > 0 ? (
+                <span className="ml-1 text-stone-500">
+                  Suggestions :{' '}
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={s.name}
+                      type="button"
+                      onClick={() => handleNameChange(s.name)}
+                      className="font-mono underline hover:text-stone-900"
+                    >
+                      {s.name}{i < suggestions.length - 1 ? ',' : ''}
+                    </button>
+                  ))}
+                </span>
+              ) : null}
+            </p>
+          )
+        ) : null}
       </label>
       {props.provider === 'meta' ? (
         <label className="mt-2 flex items-center gap-1 text-xs">
-          <input type="checkbox" checked={isCustom} onChange={(e) => setIsCustom(e.target.checked)} />
-          Custom event Meta (trackCustom)
+          <input
+            type="checkbox"
+            checked={isCustom}
+            onChange={(e) => setIsCustom(e.target.checked)}
+            data-testid="cell-input-isCustom"
+          />
+          Custom event Meta (trackCustom) — auto-coché pour les noms non-standards
         </label>
       ) : null}
       <label className="mt-1 flex items-center gap-1 text-xs">
