@@ -168,7 +168,7 @@ export function LegalWizard({ zones, templateVars }: WizardProps) {
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="mentions-legales"
-              className="mt-1 w-full border border-stone-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
             />
             {slugError ? <span className="text-xs text-red-700">{slugError}</span> : null}
             <span className="block text-xs text-stone-500">
@@ -182,7 +182,7 @@ export function LegalWizard({ zones, templateVars }: WizardProps) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 w-full border border-stone-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
             />
             {titleError ? <span className="text-xs text-red-700">{titleError}</span> : null}
           </label>
@@ -196,7 +196,7 @@ export function LegalWizard({ zones, templateVars }: WizardProps) {
               maxLength={200}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 w-full border border-stone-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
             />
             {descriptionError ? (
               <span className="text-xs text-red-700">{descriptionError}</span>
@@ -225,7 +225,7 @@ export function LegalWizard({ zones, templateVars }: WizardProps) {
             value={bodyMd}
             onChange={(e) => setBodyMd(e.target.value)}
             spellCheck={false}
-            className="h-[50vh] w-full resize-y border border-stone-300 p-3 font-mono text-sm"
+            className="h-[50vh] w-full resize-y rounded-md border border-stone-300 p-3 font-mono text-sm"
           />
           {bodyMd.length < 10 ? (
             <p className="mt-1 text-xs text-red-700">Au moins 10 caractères requis.</p>
@@ -335,7 +335,7 @@ export function LegalWizard({ zones, templateVars }: WizardProps) {
           type="button"
           onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
           disabled={step === 1 || submitting}
-          className="border border-stone-300 px-4 py-2 text-sm hover:bg-stone-100 disabled:opacity-40"
+          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm hover:bg-stone-50 disabled:opacity-40"
         >
           ← Précédent
         </button>
@@ -344,7 +344,7 @@ export function LegalWizard({ zones, templateVars }: WizardProps) {
             type="button"
             onClick={() => setStep((s) => ((s + 1) as Step))}
             disabled={!canAdvance(step)}
-            className="bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 disabled:opacity-40"
+            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-40"
           >
             Suivant →
           </button>
@@ -353,7 +353,7 @@ export function LegalWizard({ zones, templateVars }: WizardProps) {
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="bg-emerald-700 px-4 py-2 text-sm text-white hover:bg-emerald-800 disabled:opacity-40"
+            className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-40"
           >
             {submitting ? 'Création…' : 'Créer la page (draft)'}
           </button>

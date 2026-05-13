@@ -237,7 +237,7 @@ export function LegalEditor(props: LegalEditorProps) {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 w-full border border-stone-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
         <label className="block">
@@ -249,7 +249,7 @@ export function LegalEditor(props: LegalEditorProps) {
             maxLength={200}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 w-full border border-stone-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
       </div>
@@ -296,7 +296,7 @@ export function LegalEditor(props: LegalEditorProps) {
           type="button"
           onClick={save}
           disabled={!isDirty || saveState === 'saving'}
-          className="bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 disabled:opacity-40"
+          className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-40"
         >
           Enregistrer
         </button>
@@ -304,14 +304,14 @@ export function LegalEditor(props: LegalEditorProps) {
           type="button"
           onClick={() => setShowPublishModal(true)}
           disabled={status === 'published' && !isDirty}
-          className="border border-emerald-700 px-4 py-2 text-sm text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
+          className="rounded-md border border-emerald-700 bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
         >
           Publier
         </button>
         <button
           type="button"
           onClick={() => setShowHistory(true)}
-          className="border border-stone-300 px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
+          className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 hover:bg-stone-50"
         >
           Historique
         </button>
@@ -367,7 +367,7 @@ export function LegalEditor(props: LegalEditorProps) {
               <button
                 type="button"
                 onClick={() => setConflict(null)}
-                className="border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+                className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
               >
                 Ignorer
               </button>
@@ -376,7 +376,7 @@ export function LegalEditor(props: LegalEditorProps) {
                 onClick={() => {
                   window.location.reload();
                 }}
-                className="bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-800"
+                className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
               >
                 Recharger la page
               </button>
@@ -408,7 +408,7 @@ export function LegalEditor(props: LegalEditorProps) {
                 type="text"
                 value={publishConfirm}
                 onChange={(e) => setPublishConfirm(e.target.value)}
-                className="mt-1 w-full border border-stone-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-stone-300 px-2 py-1 text-sm"
               />
             </label>
             {publishError ? (
@@ -422,7 +422,7 @@ export function LegalEditor(props: LegalEditorProps) {
                   setPublishConfirm('');
                   setPublishError(null);
                 }}
-                className="border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+                className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
               >
                 Annuler
               </button>
@@ -430,7 +430,7 @@ export function LegalEditor(props: LegalEditorProps) {
                 type="button"
                 onClick={publish}
                 disabled={publishConfirm !== 'PUBLIER'}
-                className="bg-emerald-700 px-3 py-1.5 text-sm text-white hover:bg-emerald-800 disabled:opacity-40"
+                className="rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-40"
               >
                 Publier maintenant
               </button>

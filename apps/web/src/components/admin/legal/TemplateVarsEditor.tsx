@@ -99,7 +99,7 @@ function RowEditor({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={row.isRequired ? 'à remplir' : 'optionnel'}
-          className={`w-full border px-2 py-1 text-sm ${
+          className={`w-full rounded-md border px-2 py-1 text-sm ${
             row.isRequired && empty ? 'border-red-300 bg-red-50' : 'border-stone-300'
           }`}
         />
@@ -109,7 +109,7 @@ function RowEditor({
           type="button"
           disabled={!dirty || saving}
           onClick={() => onSave(value)}
-          className="bg-stone-900 px-3 py-1 text-xs text-white hover:bg-stone-800 disabled:opacity-40"
+          className="rounded-md bg-stone-900 px-3 py-1 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-40"
         >
           {saving ? '…' : 'Save'}
         </button>

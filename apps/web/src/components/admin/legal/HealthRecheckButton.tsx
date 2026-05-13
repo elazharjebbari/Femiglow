@@ -25,7 +25,7 @@ export function HealthRecheckButton() {
       type="button"
       onClick={run}
       disabled={busy}
-      className="border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-100 disabled:opacity-40"
+      className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50 disabled:opacity-40"
     >
       {busy ? 'Vérification…' : 'Lancer une vérification'}
     </button>

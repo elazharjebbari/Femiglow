@@ -160,7 +160,7 @@ export function LegalHistoryDrawer({ slug, currentVersion, open, onClose, onRest
                 type="button"
                 onClick={() => handleRestore(selectedV)}
                 disabled={restoring}
-                className="mt-4 bg-stone-900 px-3 py-1.5 text-xs text-white hover:bg-stone-800 disabled:opacity-40"
+                className="mt-4 rounded-md bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-40"
               >
                 {restoring ? 'Restauration…' : `Restaurer v${selectedV}`}
               </button>

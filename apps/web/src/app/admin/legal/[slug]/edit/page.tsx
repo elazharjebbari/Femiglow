@@ -45,7 +45,7 @@ export default async function LegalEditPage({ params }: PageProps) {
             href={`/legal/${page.slug}`}
             target="_blank"
             rel="noopener"
-            className="border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
           >
             Aperçu public ↗
           </Link>
