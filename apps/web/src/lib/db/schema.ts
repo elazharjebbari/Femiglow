@@ -516,6 +516,16 @@ export const trackingConsentStateEnum = pgEnum('tracking_consent_state', [
   'pending',
 ]);
 
+// Migration 0029 — catégorie Conversion Action Google Ads (default + override).
+export const googleAdsCategoryEnum = pgEnum('google_ads_category', [
+  'purchase',
+  'lead',
+  'contact',
+  'signup',
+  'view_content',
+  'none',
+]);
+
 export const trackingPages = pgTable(
   'tracking_pages',
   {
@@ -591,11 +601,34 @@ export const trackingEventDefinitions = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     // Migration 0009 — funnel mapping pour TOF/MOF/BOF/CONVERSION
     funnelStage: trackingFunnelStageEnum('funnel_stage').notNull().default('none'),
+    // Migration 0029 — catégorie Google Ads par défaut (override possible via tracking_event_overrides).
+    googleAdsCategoryDefault: googleAdsCategoryEnum('google_ads_category_default')
+      .notNull()
+      .default('none'),
   },
   (t) => ({
     nameUnique: uniqueIndex('tracking_event_def_name_unique').on(t.name),
     categoryIdx: index('tracking_event_def_category_idx').on(t.category),
     funnelStageIdx: index('tracking_event_def_funnel_stage_idx').on(t.funnelStage),
+  }),
+);
+
+// Migration 0030 — override admin de la catégorie Google Ads par event (D-005).
+export const trackingEventOverrides = pgTable(
+  'tracking_event_overrides',
+  {
+    id: text('id').primaryKey(),
+    eventName: text('event_name')
+      .notNull()
+      .references(() => trackingEventDefinitions.name, { onDelete: 'cascade' }),
+    googleAdsCategory: googleAdsCategoryEnum('google_ads_category').notNull(),
+    updatedBy: text('updated_by'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    note: text('note'),
+  },
+  (t) => ({
+    eventNameUnique: uniqueIndex('tracking_event_overrides_event_name_unique').on(t.eventName),
+    eventNameIdx: index('tracking_event_overrides_event_name_idx').on(t.eventName),
   }),
 );
 
@@ -678,6 +711,8 @@ export const trackingEventsLog = pgTable(
     trafficMedium: text('traffic_medium'),
     experimentId: text('experiment_id'),
     experimentVariant: text('experiment_variant'),
+    // Migration 0028 — Google click ID capturé en middleware (cookie first-touch).
+    gclid: text('gclid'),
   },
   (t) => ({
     eventIdUnique: uniqueIndex('tracking_events_log_event_id_unique').on(t.eventId),
@@ -697,6 +732,9 @@ export const trackingEventsLog = pgTable(
       t.sessionId,
     ),
     nameReceivedIdx: index('tracking_events_log_name_received_idx').on(t.eventName, t.receivedAt),
+    gclidIdx: index('tracking_events_log_gclid_idx')
+      .on(t.gclid)
+      .where(sql`gclid IS NOT NULL`),
   }),
 );
 
