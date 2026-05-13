@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { logLegalEvent } from '@/lib/legal/audit';
+import { requireSameOrigin } from '@/lib/legal/csrf';
 import {
   createLegalPage,
   getLegalPageBySlug,
@@ -57,6 +58,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+    requireSameOrigin(request);
 
     let payload: unknown;
     try {

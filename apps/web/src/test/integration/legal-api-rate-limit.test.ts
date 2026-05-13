@@ -27,6 +27,11 @@ vi.mock('@/lib/env', () => ({
   env: { NEXT_PUBLIC_SITE_URL: 'https://femiglow.ma' },
 }));
 
+vi.mock('@/lib/legal/csrf', () => ({
+  requireSameOrigin: vi.fn(),
+  checkSameOrigin: vi.fn(() => ({ ok: true })),
+}));
+
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),

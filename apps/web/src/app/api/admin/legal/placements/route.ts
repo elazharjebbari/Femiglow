@@ -8,6 +8,7 @@ import {
   LEGAL_PAGE_TAG,
   LEGAL_ZONE_TAG,
 } from '@/lib/legal/cache-tags';
+import { requireSameOrigin } from '@/lib/legal/csrf';
 import { listAllPlacements, listAllZones, upsertPlacement } from '@/lib/legal/repository';
 import { legalPlacementInputSchema } from '@/lib/legal/types';
 
@@ -47,6 +48,7 @@ export async function PUT(request: Request): Promise<Response> {
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+    requireSameOrigin(request);
 
     let payload: unknown;
     try {

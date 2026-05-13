@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
+import { requireSameOrigin } from '@/lib/legal/csrf';
 import { restoreLegalPageVersion } from '@/lib/legal/publish';
 import { getLegalPageBySlug } from '@/lib/legal/repository';
 
@@ -9,12 +10,13 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(
-  _req: Request,
+  request: Request,
   { params }: { params: { slug: string; version: string } },
 ): Promise<Response> {
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+    requireSameOrigin(request);
 
     const version = Number(params.version);
     if (!Number.isFinite(version) || version < 1) {

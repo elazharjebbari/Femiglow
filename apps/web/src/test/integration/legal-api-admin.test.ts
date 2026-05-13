@@ -43,6 +43,14 @@ vi.mock('@/lib/env', () => ({
   env: { NEXT_PUBLIC_SITE_URL: 'https://femiglow.ma' },
 }));
 
+// CSRF check stubé en no-op : la vraie protection est testée dans
+// legal-api-csrf.test.ts. On garde ce mock pour ne pas devoir ajouter un
+// header Origin à chaque Request mock dans les 36 tests admin.
+vi.mock('@/lib/legal/csrf', () => ({
+  requireSameOrigin: vi.fn(),
+  checkSameOrigin: vi.fn(() => ({ ok: true })),
+}));
+
 const auditMock = vi.fn();
 vi.mock('@/lib/legal/audit', () => ({
   logLegalEvent: (...args: unknown[]) => {

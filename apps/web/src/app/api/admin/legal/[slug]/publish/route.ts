@@ -7,6 +7,7 @@ import {
   LEGAL_PAGE_TAG,
   LEGAL_PUBLISHED_TAG,
 } from '@/lib/legal/cache-tags';
+import { requireSameOrigin } from '@/lib/legal/csrf';
 import { enforceLegalRateLimit, PUBLISH_LIMITS } from '@/lib/legal/rate-limit';
 import { publishLegalPage } from '@/lib/legal/publish';
 import { legalPublishInputSchema } from '@/lib/legal/types';
@@ -21,6 +22,7 @@ export async function POST(
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+    requireSameOrigin(request);
 
     const rl = await enforceLegalRateLimit('publish', session.adminId, PUBLISH_LIMITS);
     if (!rl.ok) return rl.response;

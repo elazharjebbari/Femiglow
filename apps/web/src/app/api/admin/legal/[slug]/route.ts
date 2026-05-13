@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { logLegalEvent } from '@/lib/legal/audit';
+import { requireSameOrigin } from '@/lib/legal/csrf';
 import {
   archiveLegalPage,
   getLegalPageBySlug,
@@ -75,6 +76,7 @@ export async function PATCH(
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+    requireSameOrigin(request);
 
     let payload: unknown;
     try {
@@ -151,12 +153,13 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
+  request: Request,
   { params }: { params: { slug: string } },
 ): Promise<Response> {
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+    requireSameOrigin(request);
 
     const existing = await getLegalPageBySlug(params.slug);
     if (!existing) throw new HttpError('not_found', 'Page non trouvée');

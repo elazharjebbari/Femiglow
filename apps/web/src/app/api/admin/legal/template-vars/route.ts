@@ -6,6 +6,7 @@ import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { logLegalEvent } from '@/lib/legal/audit';
 import { LEGAL_PUBLISHED_TAG, LEGAL_VARS_TAG } from '@/lib/legal/cache-tags';
+import { requireSameOrigin } from '@/lib/legal/csrf';
 import { listAllTemplateVars, updateTemplateVar } from '@/lib/legal/repository';
 import { legalTemplateVarKeySchema } from '@/lib/legal/types';
 
@@ -44,6 +45,7 @@ export async function PUT(request: Request): Promise<Response> {
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+    requireSameOrigin(request);
 
     let payload: unknown;
     try {
