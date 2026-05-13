@@ -1946,3 +1946,13 @@ export type LegalTemplateVarRow = typeof legalTemplateVars.$inferSelect;
 export type LegalTemplateVarInsert = typeof legalTemplateVars.$inferInsert;
 export type LegalLinkHealthSnapshotRow = typeof legalLinkHealthSnapshot.$inferSelect;
 export type LegalLinkHealthSnapshotInsert = typeof legalLinkHealthSnapshot.$inferInsert;
+
+export const legalSlugRedirects = pgTable('legal_slug_redirects', {
+  oldSlug: text('old_slug').primaryKey(),
+  newSlug: text('new_slug').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: text('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+});
+
+export type LegalSlugRedirectRow = typeof legalSlugRedirects.$inferSelect;
+export type LegalSlugRedirectInsert = typeof legalSlugRedirects.$inferInsert;

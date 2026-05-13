@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 
 import { Container } from '@/components/ui/Container';
 import { Kicker } from '@/components/ui/Kicker';
 import { env } from '@/lib/env';
+import { lookupSlugRedirect } from '@/lib/legal/redirects';
 import {
   getPublishedLegalPage,
   listAllTemplateVars,
@@ -44,7 +45,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function LegalPage({ params }: PageProps) {
   const page = await getPublishedLegalPage(params.slug);
-  if (!page) notFound();
+  if (!page) {
+    const redirectTo = await lookupSlugRedirect(params.slug);
+    if (redirectTo) permanentRedirect(`/legal/${redirectTo}`);
+    notFound();
+  }
 
   const vars = await listAllTemplateVars();
   const rendered = await renderLegalMarkdownWithDbVars(

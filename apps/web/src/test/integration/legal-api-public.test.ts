@@ -19,11 +19,16 @@ vi.mock('@/lib/legal/repository', () => ({
   listPlacementsForZone: vi.fn(),
 }));
 
+vi.mock('@/lib/legal/redirects', () => ({
+  lookupSlugRedirect: vi.fn(),
+}));
+
 import {
   getPublishedLegalPage,
   listAllTemplateVars,
   listPlacementsForZone,
 } from '@/lib/legal/repository';
+import { lookupSlugRedirect } from '@/lib/legal/redirects';
 
 import { GET as getLegalPage } from '@/app/api/legal/[slug]/route';
 import { GET as getZonePlacements } from '@/app/api/legal/placements/[zone]/route';
@@ -73,6 +78,7 @@ describe('GET /api/legal/[slug]', () => {
   beforeEach(() => {
     mockedPage.mockReset();
     mockedVars.mockReset();
+    vi.mocked(lookupSlugRedirect).mockReset();
   });
   afterEach(() => vi.clearAllMocks());
 
@@ -103,6 +109,7 @@ describe('GET /api/legal/[slug]', () => {
 
   it('404 si la page n\'existe pas / pas publiée', async () => {
     mockedPage.mockResolvedValue(null);
+    vi.mocked(lookupSlugRedirect).mockResolvedValue(null);
 
     const res = await getLegalPage(new Request('http://x/api/legal/inconnue'), {
       params: { slug: 'inconnue' },
@@ -110,6 +117,17 @@ describe('GET /api/legal/[slug]', () => {
     expect(res.status).toBe(404);
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe('not_found');
+  });
+
+  it('301 vers le nouveau slug si la page a été renommée', async () => {
+    mockedPage.mockResolvedValue(null);
+    vi.mocked(lookupSlugRedirect).mockResolvedValue('conditions-de-vente');
+
+    const res = await getLegalPage(new Request('http://x/api/legal/cgv-old'), {
+      params: { slug: 'cgv-old' },
+    });
+    expect(res.status).toBe(301);
+    expect(res.headers.get('Location')).toBe('/legal/conditions-de-vente');
   });
 
   it('content_html ne contient pas de <script>', async () => {

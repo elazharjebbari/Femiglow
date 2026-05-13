@@ -232,6 +232,13 @@
       "when": 1778665000005,
       "tag": "0032_legal_link_health",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1778665000006,
+      "tag": "0033_legal_slug_redirects",
+      "breakpoints": true
     }
   ]
 }

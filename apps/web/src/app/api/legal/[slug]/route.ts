@@ -6,6 +6,7 @@ import {
   extractClientIp,
   PUBLIC_LIMITS,
 } from '@/lib/legal/rate-limit';
+import { lookupSlugRedirect } from '@/lib/legal/redirects';
 import { getPublishedLegalPage, listAllTemplateVars } from '@/lib/legal/repository';
 import { renderLegalMarkdownWithDbVars } from '@/lib/legal/render';
 
@@ -24,7 +25,16 @@ export async function GET(
     if (!rl.ok) return rl.response;
 
     const page = await getPublishedLegalPage(params.slug);
-    if (!page) throw new HttpError('not_found', 'Page non trouvée');
+    if (!page) {
+      const redirectTo = await lookupSlugRedirect(params.slug);
+      if (redirectTo) {
+        return new Response(null, {
+          status: 301,
+          headers: { Location: `/legal/${redirectTo}` },
+        });
+      }
+      throw new HttpError('not_found', 'Page non trouvée');
+    }
 
     const vars = await listAllTemplateVars();
     const rendered = await renderLegalMarkdownWithDbVars(
