@@ -5,12 +5,24 @@ import { mappingsClient, MappingApiError } from '@/lib/admin/mappings-client';
 import type { MappingVersionListItem } from '@/lib/tracking/mappings/types';
 import { DEFAULT_VERSION_ID } from '@/lib/tracking/mappings/types';
 import { MappingCreateWizard } from './MappingCreateWizard';
+import { useConfirm } from './useConfirm';
 
 /**
  * Liste des versions de mappings. Affiche active, drafts, archived, deleted.
  * Actions par version : éditer, activer, archiver, supprimer, restaurer, exporter GTM.
  * cf. docs/event-mappings/50-ui-ux-design/wireframes/list-versions.txt
  */
+function formatActiveSince(date: Date | string | null): string | null {
+  if (!date) return null;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const days = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (days <= 0) return 'aujourd\'hui';
+  if (days === 1) return 'hier';
+  if (days < 30) return `il y a ${days}j`;
+  if (days < 365) return `il y a ${Math.floor(days / 30)}mo`;
+  return `il y a ${Math.floor(days / 365)}an`;
+}
+
 export function MappingVersionsList() {
   const [data, setData] = useState<{
     versions: MappingVersionListItem[];
@@ -22,6 +34,7 @@ export function MappingVersionsList() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [pendingByVersion, setPendingByVersion] = useState<Set<string>>(new Set());
+  const { confirm, ConfirmHost } = useConfirm();
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -48,7 +61,13 @@ export function MappingVersionsList() {
   };
 
   const handleActivate = async (id: string, name: string) => {
-    if (!confirm(`Activer "${name}" ? La version active courante sera archivée.`)) return;
+    const ok = await confirm({
+      title: `Activer "${name}" ?`,
+      message: 'La version active courante sera automatiquement archivée. Le dispatcher utilisera ce mapping immédiatement (cache invalidé en 30s).',
+      confirmLabel: '✓ Activer',
+      variant: 'success',
+    });
+    if (!ok) return;
     markPending(id, true);
     try {
       await mappingsClient.activate(id);
@@ -61,15 +80,22 @@ export function MappingVersionsList() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Supprimer "${name}" (soft-delete) ?`)) return;
+    const ok = await confirm({
+      title: `Supprimer "${name}" ?`,
+      message: 'La version sera masquée de la liste mais conservée en DB pour audit. Tu pourras la restaurer plus tard.',
+      details: '⚠️ Cette action n\'est pas définitive (soft-delete).',
+      confirmLabel: '🗑 Supprimer',
+      variant: 'danger',
+    });
+    if (!ok) return;
     markPending(id, true);
     try {
       await mappingsClient.softDelete(id);
       await refresh();
     } catch (err) {
       if (err instanceof MappingApiError) {
-        if (err.code === 'cannot_delete_active') alert("Impossible de supprimer la version active. Active une autre version d'abord.");
-        else if (err.code === 'cannot_delete_default') alert("La version __default__ ne peut pas être supprimée.");
+        if (err.code === 'cannot_delete_active') setError("Impossible de supprimer la version active. Active une autre version d'abord.");
+        else if (err.code === 'cannot_delete_default') setError("La version __default__ ne peut pas être supprimée.");
         else setError(err.message);
       }
     } finally {
@@ -78,7 +104,14 @@ export function MappingVersionsList() {
   };
 
   const handleResetDefault = async () => {
-    if (!confirm("Revenir au mapping par défaut FemiGlow ? La version active courante sera archivée.")) return;
+    const ok = await confirm({
+      title: 'Revenir au mapping par défaut FemiGlow ?',
+      message: 'La version active courante sera archivée. Le mapping factory FemiGlow (__default__) deviendra actif.',
+      details: '⚠️ Aucune donnée n\'est perdue : la version courante reste archivée et réactivable plus tard.',
+      confirmLabel: '↩ Revenir au default factory',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await mappingsClient.resetToDefault();
       await refresh();
@@ -123,6 +156,20 @@ export function MappingVersionsList() {
             ↩ Reset au default
           </button>
         ) : null}
+        <a
+          href="/admin/tracking/gtm"
+          className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+          title="Configurer les Pixel IDs / Conv labels"
+        >
+          ↗ GTM configs
+        </a>
+        <a
+          href="/admin/tracking/events/categorization"
+          className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+          title="Catégorisation Google Ads par event"
+        >
+          ↗ Catégorisation Ads
+        </a>
         <label className="ml-auto flex items-center gap-2 text-xs text-stone-600">
           <input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
           Inclure les supprimées
@@ -144,6 +191,7 @@ export function MappingVersionsList() {
           <tbody className="divide-y divide-stone-100 bg-white">
             {visible.map((v) => {
               const isPending = pendingByVersion.has(v.id);
+              const activeSince = v.isActive ? formatActiveSince(v.activatedAt ?? v.createdAt) : null;
               return (
                 <tr key={v.id} data-testid={`version-row-${v.id}`}>
                   <td className="px-3 py-2 align-top">
@@ -152,7 +200,10 @@ export function MappingVersionsList() {
                   </td>
                   <td className="px-3 py-2 align-top">
                     {v.isActive ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">ACTIVE</span>
+                      <div>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">ACTIVE</span>
+                        {activeSince ? <div className="mt-0.5 text-[10px] text-emerald-700">depuis {activeSince}</div> : null}
+                      </div>
                     ) : v.isDefault ? (
                       <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">DEFAULT</span>
                     ) : v.status === 'draft' ? (
@@ -173,6 +224,13 @@ export function MappingVersionsList() {
                         className="rounded border border-stone-300 bg-white px-2 py-0.5 text-xs hover:bg-stone-50"
                       >
                         Voir
+                      </a>
+                      <a
+                        href={`/admin/tracking/events/mappings/${v.id}/audit`}
+                        className="rounded border border-stone-300 bg-white px-2 py-0.5 text-xs hover:bg-stone-50"
+                        data-testid={`btn-audit-${v.id}`}
+                      >
+                        Historique
                       </a>
                       {!v.isDefault ? (
                         <a
@@ -231,6 +289,7 @@ export function MappingVersionsList() {
           }}
         />
       ) : null}
+      <ConfirmHost />
     </div>
   );
 }

@@ -46,16 +46,60 @@ export function MappingMatrix({ mappings, readOnly = false, onChange }: Props) {
     onChange(updated);
   }, [mappings, onChange]);
 
+  /** D1/D2 — Bulk : désactive tous les mappings pour un provider sur tous les events. */
+  const toggleProviderEnabled = useCallback((provider: MappingProviderKind, enabled: boolean) => {
+    if (!onChange) return;
+    const next: Mappings = {};
+    for (const [eventName, cells] of Object.entries(mappings)) {
+      next[eventName] = { ...cells };
+      const cell = cells[provider];
+      if (cell) {
+        next[eventName]![provider] = { ...cell, isEnabled: enabled };
+      }
+    }
+    onChange(next);
+  }, [mappings, onChange]);
+
   return (
     <div className="space-y-3">
-      <input
-        type="search"
-        placeholder="Filtrer par event…"
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        className="block w-64 rounded-md border border-stone-300 px-3 py-1.5 text-sm"
-        data-testid="matrix-filter"
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          placeholder="Filtrer par event…"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="block w-64 rounded-md border border-stone-300 px-3 py-1.5 text-sm"
+          data-testid="matrix-filter"
+        />
+        {!readOnly ? (
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-stone-500">Bulk provider :</span>
+            {PROVIDER_KINDS_FOR_MAPPING.map((p) => (
+              <div key={p} className="flex items-center rounded border border-stone-200">
+                <span className="px-2 py-1 text-[10px] font-medium text-stone-600">{PROVIDER_LABEL[p]}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleProviderEnabled(p, true)}
+                  title={`Activer ${PROVIDER_LABEL[p]} sur tous les events`}
+                  data-testid={`bulk-enable-${p}`}
+                  className="border-l border-stone-200 px-2 py-1 text-[10px] text-emerald-700 hover:bg-emerald-50"
+                >
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleProviderEnabled(p, false)}
+                  title={`Désactiver ${PROVIDER_LABEL[p]} sur tous les events`}
+                  data-testid={`bulk-disable-${p}`}
+                  className="border-l border-stone-200 px-2 py-1 text-[10px] text-stone-500 hover:bg-stone-50"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <div className="overflow-x-auto rounded-md border border-stone-200">
         <table className="min-w-full divide-y divide-stone-200 text-sm" data-testid="mapping-matrix">
           <caption className="sr-only">Matrice mappings event canonique × provider vendor</caption>
