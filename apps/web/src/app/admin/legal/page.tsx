@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminShell } from '@/components/admin/AdminShell';
+import { LegalEmptyState } from '@/components/admin/legal/EmptyState';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import {
   legalListStats,
@@ -139,10 +140,13 @@ export default async function AdminLegalPage() {
       </table>
 
       {rows.length === 0 ? (
-        <div className="mt-8 rounded border border-dashed border-stone-300 p-8 text-center text-sm text-stone-600">
-          Aucune page légale. Lance{' '}
-          <code className="bg-stone-100 px-1 py-0.5">pnpm tsx scripts/seed-legal.ts</code> pour
-          peupler les 9 templates par défaut.
+        <div className="mt-8">
+          <LegalEmptyState
+            title="Aucune page légale"
+            description="Crée ta première page depuis le wizard, ou lance le seed pour générer les 9 templates par défaut (mentions légales, CGV, etc.)."
+            ctaHref="/admin/legal/new"
+            ctaLabel="+ Créer une page"
+          />
         </div>
       ) : null}
     </AdminShell>
