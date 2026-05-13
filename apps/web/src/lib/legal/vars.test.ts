@@ -40,9 +40,9 @@ describe('legal/vars — substituteVars', () => {
     expect(substituteVars('{{FOO}}', new Map())).toBe('[FOO]');
   });
 
-  it('mode admin-preview : highlight HTML pour variable manquante', () => {
+  it('mode admin-preview : marker ⦉KEY⦊ pour variable manquante (wrapped en mark par rehype plugin downstream)', () => {
     const out = substituteVars('{{FOO}}', new Map(), 'admin-preview');
-    expect(out).toContain('<mark data-missing-var="FOO">{{FOO}}</mark>');
+    expect(out).toBe('⦉FOO⦊');
   });
 
   it('ignore les motifs qui ne matchent pas (minuscules)', () => {

@@ -52,11 +52,21 @@ export function substituteVars(
     const value = vars.get(rawKey);
     if (value !== undefined) return value;
     if (mode === 'admin-preview') {
-      return `<mark data-missing-var="${rawKey}">{{${rawKey}}}</mark>`;
+      // Marker textuel : un rehype plugin (rehypeHighlightMissingVars)
+      // wrap ce pattern dans <mark data-missing-var> APRÈS le parse MD.
+      // On évite d'injecter du HTML inline dans le source MD car
+      // remarkRehype l'écraserait (allowDangerousHtml: false).
+      return `⦉${rawKey}⦊`;
     }
     return `[${rawKey}]`;
   });
 }
+
+/** Délimiteurs du marker missing-var (Z notation brackets, peu probable
+ * d'apparaître naturellement dans du contenu légal). */
+export const MISSING_VAR_OPEN = '⦉';
+export const MISSING_VAR_CLOSE = '⦊';
+export const MISSING_VAR_REGEX = /⦉([A-Z][A-Z0-9_]*)⦊/g;
 
 export function detectVarsInTemplate(md: string): string[] {
   const matches = md.matchAll(VAR_PATTERN);

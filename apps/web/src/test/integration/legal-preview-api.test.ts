@@ -74,7 +74,7 @@ describe('POST /api/admin/legal/preview', () => {
     expect(res.status).toBe(400);
   });
 
-  it('mode=admin-preview garde le nom de la var visible si manquante', async () => {
+  it('mode=admin-preview wrap les vars manquantes dans <mark data-missing-var> (P11.1)', async () => {
     const res = await previewRoute(
       new Request('http://x', {
         method: 'POST',
@@ -82,11 +82,9 @@ describe('POST /api/admin/legal/preview', () => {
       }),
     );
     const body = (await res.json()) as { html: string };
-    // Le nom de la variable doit rester visible (pour signaler à l'admin
-    // qu'il manque cette donnée). L'enveloppe <mark> visuelle est
-    // souhaitée mais filtrée par sanitize au niveau du source MD —
-    // V1.1 : injecter via rehype plugin post-parse.
-    expect(body.html).toContain('COMPANY_RC');
+    expect(body.html).toContain('<mark');
+    expect(body.html).toContain('data-missing-var="COMPANY_RC"');
+    expect(body.html).toContain('{{COMPANY_RC}}');
   });
 
   it('headings extraits', async () => {
