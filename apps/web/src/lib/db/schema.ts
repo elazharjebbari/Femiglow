@@ -1794,3 +1794,155 @@ export type CheckoutIdempotencyRow = typeof checkoutIdempotency.$inferSelect;
 export type CheckoutIdempotencyInsert = typeof checkoutIdempotency.$inferInsert;
 export type DeliveryCityRow = typeof deliveryCities.$inferSelect;
 export type DeliveryCityInsert = typeof deliveryCities.$inferInsert;
+
+// — Legal pages — — — — — — — — — — — — — — — — — — — — — — — — — — — — — —
+export const legalPageStatusEnum = pgEnum('legal_page_status', [
+  'draft',
+  'review',
+  'published',
+  'archived',
+]);
+
+export const legalLinkStatusEnum = pgEnum('legal_link_status', [
+  'ok',
+  'page_missing',
+  'page_draft',
+  'http_4xx',
+  'http_5xx',
+  'timeout',
+]);
+
+export const legalPages = pgTable(
+  'legal_pages',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    bodyMd: text('body_md').notNull(),
+    status: legalPageStatusEnum('status').notNull().default('draft'),
+    version: integer('version').notNull().default(1),
+    includeInSearch: boolean('include_in_search').notNull().default(false),
+    canonicalUrl: text('canonical_url'),
+    locale: text('locale').notNull().default('fr-MA'),
+    requireLegalReview: boolean('require_legal_review').notNull().default(true),
+    lastLegalReviewAt: timestamp('last_legal_review_at', { withTimezone: true }),
+    lastLegalReviewBy: text('last_legal_review_by').references(() => adminUsers.id, {
+      onDelete: 'set null',
+    }),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    submittedBy: text('submitted_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    publishedBy: text('published_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    updatedBy: text('updated_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+  },
+  (t) => ({
+    slugUnique: uniqueIndex('legal_pages_slug_unique').on(t.slug),
+    statusIdx: index('idx_legal_pages_status').on(t.status),
+    updatedAtIdx: index('idx_legal_pages_updated_at').on(t.updatedAt),
+  }),
+);
+
+export const legalPagesHistory = pgTable(
+  'legal_pages_history',
+  {
+    id: text('id').primaryKey(),
+    pageId: text('page_id')
+      .notNull()
+      .references(() => legalPages.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    version: integer('version').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    bodyMd: text('body_md').notNull(),
+    metadataJson: jsonb('metadata_json').notNull().default({}),
+    statusAtSnapshot: legalPageStatusEnum('status_at_snapshot').notNull(),
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull(),
+    publishedBy: text('published_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    gitCommitSha: text('git_commit_sha'),
+    gitCommitAt: timestamp('git_commit_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pageVersionUnique: uniqueIndex('legal_history_page_version_unique').on(t.pageId, t.version),
+    pageVersionIdx: index('idx_legal_history_page_version').on(t.pageId, t.version),
+    slugDateIdx: index('idx_legal_history_slug_date').on(t.slug, t.publishedAt),
+  }),
+);
+
+export const legalZones = pgTable('legal_zones', {
+  key: text('key').primaryKey(),
+  label: text('label').notNull(),
+  description: text('description'),
+  maxItemsRecommended: integer('max_items_recommended').notNull().default(5),
+  isRequired: boolean('is_required').notNull().default(false),
+  displayOrder: integer('display_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const legalPagePlacements = pgTable(
+  'legal_page_placements',
+  {
+    pageSlug: text('page_slug')
+      .notNull()
+      .references(() => legalPages.slug, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    zoneKey: text('zone_key')
+      .notNull()
+      .references(() => legalZones.key, { onUpdate: 'cascade', onDelete: 'restrict' }),
+    displayOrder: integer('display_order').notNull().default(0),
+    isVisible: boolean('is_visible').notNull().default(true),
+    labelOverride: text('label_override'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.pageSlug, t.zoneKey] }),
+    zoneOrderIdx: index('idx_placements_zone_order').on(t.zoneKey, t.displayOrder),
+  }),
+);
+
+export const legalTemplateVars = pgTable('legal_template_vars', {
+  key: text('key').primaryKey(),
+  value: text('value'),
+  label: text('label').notNull(),
+  description: text('description'),
+  isRequired: boolean('is_required').notNull().default(true),
+  sensitive: boolean('sensitive').notNull().default(false),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedBy: text('updated_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+});
+
+export const legalLinkHealthSnapshot = pgTable(
+  'legal_link_health_snapshot',
+  {
+    id: text('id').primaryKey(),
+    checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
+    zoneKey: text('zone_key').notNull(),
+    pageSlug: text('page_slug').notNull(),
+    status: legalLinkStatusEnum('status').notNull(),
+    httpCode: integer('http_code'),
+    latencyMs: integer('latency_ms'),
+    notes: text('notes'),
+  },
+  (t) => ({
+    checkedAtIdx: index('idx_lhs_checked_at').on(t.checkedAt),
+    linkIdx: index('idx_lhs_link').on(t.zoneKey, t.pageSlug, t.checkedAt),
+    anomalyIdx: index('idx_lhs_anomaly').on(t.status),
+  }),
+);
+
+export type LegalPageRow = typeof legalPages.$inferSelect;
+export type LegalPageInsert = typeof legalPages.$inferInsert;
+export type LegalPageHistoryRow = typeof legalPagesHistory.$inferSelect;
+export type LegalPageHistoryInsert = typeof legalPagesHistory.$inferInsert;
+export type LegalZoneRow = typeof legalZones.$inferSelect;
+export type LegalZoneInsert = typeof legalZones.$inferInsert;
+export type LegalPagePlacementRow = typeof legalPagePlacements.$inferSelect;
+export type LegalPagePlacementInsert = typeof legalPagePlacements.$inferInsert;
+export type LegalTemplateVarRow = typeof legalTemplateVars.$inferSelect;
+export type LegalTemplateVarInsert = typeof legalTemplateVars.$inferInsert;
+export type LegalLinkHealthSnapshotRow = typeof legalLinkHealthSnapshot.$inferSelect;
+export type LegalLinkHealthSnapshotInsert = typeof legalLinkHealthSnapshot.$inferInsert;
