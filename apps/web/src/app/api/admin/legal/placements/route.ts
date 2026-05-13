@@ -1,9 +1,13 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { logLegalEvent } from '@/lib/legal/audit';
+import {
+  LEGAL_PAGE_TAG,
+  LEGAL_ZONE_TAG,
+} from '@/lib/legal/cache-tags';
 import { listAllPlacements, listAllZones, upsertPlacement } from '@/lib/legal/repository';
 import { legalPlacementInputSchema } from '@/lib/legal/types';
 
@@ -73,6 +77,8 @@ export async function PUT(request: Request): Promise<Response> {
 
     revalidatePath('/');
     revalidatePath(`/legal/${parsed.data.pageSlug}`);
+    revalidateTag(LEGAL_ZONE_TAG(parsed.data.zoneKey));
+    revalidateTag(LEGAL_PAGE_TAG(parsed.data.pageSlug));
     return NextResponse.json({ ok: true });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

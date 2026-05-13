@@ -1,10 +1,11 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { logLegalEvent } from '@/lib/legal/audit';
+import { LEGAL_PUBLISHED_TAG, LEGAL_VARS_TAG } from '@/lib/legal/cache-tags';
 import { listAllTemplateVars, updateTemplateVar } from '@/lib/legal/repository';
 import { legalTemplateVarKeySchema } from '@/lib/legal/types';
 
@@ -73,6 +74,11 @@ export async function PUT(request: Request): Promise<Response> {
     });
 
     revalidatePath('/sitemap.xml');
+    // Une variable touchée peut être référencée dans n'importe quelle page
+    // publiée → on flush global + tag dédié vars (consommé par la pipeline
+    // de rendu legal côté serveur).
+    revalidateTag(LEGAL_VARS_TAG);
+    revalidateTag(LEGAL_PUBLISHED_TAG);
     return NextResponse.json({ ok: true });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

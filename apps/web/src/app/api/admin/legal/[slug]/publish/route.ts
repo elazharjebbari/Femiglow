@@ -1,8 +1,12 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 
 import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
+import {
+  LEGAL_PAGE_TAG,
+  LEGAL_PUBLISHED_TAG,
+} from '@/lib/legal/cache-tags';
 import { publishLegalPage } from '@/lib/legal/publish';
 import { legalPublishInputSchema } from '@/lib/legal/types';
 
@@ -33,8 +37,12 @@ export async function POST(
 
     const result = await publishLegalPage(params.slug, parsed.data.confirm, session.adminId);
     if (result.ok) {
+      // Path-based revalidation pour les pages rendues + tag-based pour
+      // les fetches via unstable_cache (footer, cookie banner, etc.).
       revalidatePath(`/legal/${params.slug}`);
       revalidatePath('/sitemap.xml');
+      revalidateTag(LEGAL_PAGE_TAG(params.slug));
+      revalidateTag(LEGAL_PUBLISHED_TAG);
       return NextResponse.json({
         status: 'published',
         version: result.version,

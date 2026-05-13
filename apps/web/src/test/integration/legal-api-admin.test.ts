@@ -33,8 +33,10 @@ vi.mock('@/lib/auth/require-admin', () => ({
 }));
 
 const revalidatePathMock = vi.fn();
+const revalidateTagMock = vi.fn();
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
+  revalidateTag: (...args: unknown[]) => revalidateTagMock(...args),
 }));
 
 vi.mock('@/lib/env', () => ({
@@ -107,6 +109,7 @@ beforeEach(() => {
   };
   auditMock.mockClear();
   revalidatePathMock.mockClear();
+  revalidateTagMock.mockClear();
   for (const fn of Object.values(repo)) {
     if (typeof fn === 'function') (vi.mocked(fn) as ReturnType<typeof vi.fn>).mockReset();
   }
@@ -497,6 +500,8 @@ describe('POST /api/admin/legal/[slug]/publish', () => {
     expect(body.version).toBe(4);
     expect(revalidatePathMock).toHaveBeenCalledWith('/legal/cgv');
     expect(revalidatePathMock).toHaveBeenCalledWith('/sitemap.xml');
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal-page:cgv');
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal-pages-published');
   });
 
   it('400 si confirm != PUBLIER', async () => {
@@ -639,6 +644,8 @@ describe('Placements + Template-vars', () => {
       expect.objectContaining({ zone_key: 'footer-main' }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/legal/cgv');
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal-zone:footer-main');
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal-page:cgv');
   });
 
   it('GET /template-vars masque les sensitive', async () => {
@@ -674,6 +681,8 @@ describe('Placements + Template-vars', () => {
       expect.objectContaining({ had_value: true }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/sitemap.xml');
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal-template-vars');
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal-pages-published');
   });
 
   it('PUT /template-vars 404 si clé inconnue', async () => {
