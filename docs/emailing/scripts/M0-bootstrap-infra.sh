@@ -55,14 +55,16 @@ get_or_gen() {
   val=$(grep -E "^${key}=" "${SECRETS_FILE}" 2>/dev/null | head -1 | cut -d= -f2- || true)
   if [[ -z "${val}" ]]; then
     val=$(eval "${gen_cmd}")
-    echo "  → generated ${key} (${#val} chars)"
+    # Send progress messages to stderr so they don't pollute the captured value.
+    echo "  → generated ${key} (${#val} chars)" >&2
     if [[ "${DRY_RUN}" != "1" ]]; then
       echo "${key}=${val}" >> "${SECRETS_FILE}"
     fi
   else
-    echo "  → ${key} already set in secrets file"
+    echo "  → ${key} already set in secrets file" >&2
   fi
-  echo "${val}"
+  # Stdout is reserved for the value itself (consumed by command substitution).
+  printf '%s' "${val}"
 }
 
 NOREPLY_PASSWORD=$(get_or_gen "NOREPLY_SMTP_PASSWORD" 'openssl rand -base64 24 | tr -d "/+=" | head -c 24')
@@ -99,12 +101,17 @@ run "cp -a '${ENV_FILE}' '${backup}'"
 echo "  backup: ${backup}"
 
 upsert_env() {
+  # Drop any existing line for this key, then append the new one.
+  # No sed/eval quoting hell : works for values containing $, ', <, >, &, etc.
   local key="$1" val="$2"
-  if grep -qE "^${key}=" "${ENV_FILE}" 2>/dev/null; then
-    run "sed -i 's|^${key}=.*|${key}=${val}|' '${ENV_FILE}'"
-  else
-    run "echo '${key}=${val}' >> '${ENV_FILE}'"
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    echo "  [DRY] upsert ${key}=…"
+    return 0
   fi
+  local tmp="${ENV_FILE}.tmp.$$"
+  grep -vE "^${key}=" "${ENV_FILE}" > "${tmp}" || true
+  printf '%s=%s\n' "${key}" "${val}" >> "${tmp}"
+  mv "${tmp}" "${ENV_FILE}"
 }
 
 if [[ "${DRY_RUN}" != "1" ]]; then
