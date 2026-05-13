@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { DriftBannerServer } from '@/components/admin/tracking/gtm/DriftBannerServer';
 
 export type TrackingTab =
   | 'dashboard'
@@ -11,6 +12,8 @@ export type TrackingTab =
   | 'test'
   | 'logs'
   | 'gtm'
+  | 'gtm-sync'
+  | 'gtm-validate'
   | 'settings';
 
 const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
@@ -18,6 +21,8 @@ const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
   { key: 'inventory', href: '/admin/tracking/inventory', label: 'Inventaire' },
   { key: 'events', href: '/admin/tracking/events', label: 'Événements' },
   { key: 'mappings', href: '/admin/tracking/events/mappings', label: 'Mappings vendors' },
+  { key: 'gtm-sync', href: '/admin/tracking/gtm/sync-status', label: 'GTM Sync' },
+  { key: 'gtm-validate', href: '/admin/tracking/gtm/validate-pair', label: 'Valider import GTM' },
   { key: 'providers', href: '/admin/tracking/providers', label: 'Pixels' },
   { key: 'test', href: '/admin/tracking/test', label: 'Tester' },
   { key: 'logs', href: '/admin/tracking/logs', label: 'Logs' },
@@ -42,6 +47,7 @@ export function TrackingShell({
 }: TrackingShellProps) {
   return (
     <AdminShell adminEmail={adminEmail} active="tracking">
+      <DriftBannerServer />
       <header className="mb-6">
         <p className="text-xs uppercase tracking-wide text-stone-500">Tracking</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">{title}</h1>
