@@ -6,6 +6,7 @@ export type TrackingTab =
   | 'dashboard'
   | 'inventory'
   | 'events'
+  | 'mappings'
   | 'providers'
   | 'test'
   | 'logs'
@@ -16,6 +17,7 @@ const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
   { key: 'dashboard', href: '/admin/tracking', label: 'Vue d’ensemble' },
   { key: 'inventory', href: '/admin/tracking/inventory', label: 'Inventaire' },
   { key: 'events', href: '/admin/tracking/events', label: 'Événements' },
+  { key: 'mappings', href: '/admin/tracking/events/mappings', label: 'Mappings vendors' },
   { key: 'providers', href: '/admin/tracking/providers', label: 'Pixels' },
   { key: 'test', href: '/admin/tracking/test', label: 'Tester' },
   { key: 'logs', href: '/admin/tracking/logs', label: 'Logs' },

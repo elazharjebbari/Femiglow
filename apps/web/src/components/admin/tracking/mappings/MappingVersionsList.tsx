@@ -6,6 +6,7 @@ import type { MappingVersionListItem } from '@/lib/tracking/mappings/types';
 import { DEFAULT_VERSION_ID } from '@/lib/tracking/mappings/types';
 import { MappingCreateWizard } from './MappingCreateWizard';
 import { useConfirm } from './useConfirm';
+import { CloneAndEditButton } from './CloneAndEditButton';
 
 /**
  * Liste des versions de mappings. Affiche active, drafts, archived, deleted.
@@ -232,7 +233,7 @@ export function MappingVersionsList() {
                       >
                         Historique
                       </a>
-                      {!v.isDefault ? (
+                      {!v.isDefault && !v.isActive ? (
                         <a
                           href={`/admin/tracking/events/mappings/${v.id}/edit`}
                           data-testid={`btn-edit-${v.id}`}
@@ -240,6 +241,10 @@ export function MappingVersionsList() {
                         >
                           Éditer
                         </a>
+                      ) : null}
+                      {/* D-001 : __default__ et active immutables → workflow clone-and-edit en 1 click */}
+                      {(v.isDefault || v.isActive) ? (
+                        <CloneAndEditButton sourceId={v.id} sourceName={v.name} label="✏ Cloner & éditer" variant="secondary" />
                       ) : null}
                       {!v.isActive && v.status !== 'deleted' ? (
                         <button
