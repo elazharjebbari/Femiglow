@@ -1,0 +1,74 @@
+@startuml event-mappings-erd
+!theme plain
+title Event Mappings — ERD (PostgreSQL)
+
+entity "event_mapping_versions" as v {
+  * id : text <<PK>>
+  --
+  * name : text
+  * status : text <<draft|active|archived|deleted>>
+  * is_active : boolean
+  * is_default : boolean
+  * mappings : jsonb
+  --
+  cloned_from : text <<FK self>>
+  * created_by : text
+  * created_at : timestamptz
+  activated_at : timestamptz
+  archived_at : timestamptz
+  deleted_at : timestamptz
+}
+
+entity "event_mapping_audit" as a {
+  * id : text <<PK>>
+  --
+  version_id : text <<FK -> versions.id>>
+  * action : text <<create|edit|activate|...>>
+  * actor_id : text
+  before : jsonb
+  after : jsonb
+  * meta : jsonb
+  ip_anonymized : text
+  ua_hash : text
+  * created_at : timestamptz
+}
+
+entity "admin_users (existant)" as admin {
+  * id : text <<PK>>
+  email : text
+}
+
+entity "tracking_event_definitions (existant)" as eventdef {
+  * name : text <<UK>>
+  category : text
+  is_conversion : boolean
+}
+
+v ||--o{ a : "1..N audit entries"
+v }o--|| v : "cloned_from\n(self-reference)"
+a }o--|| admin : "actor_id"
+v }o--|| admin : "created_by"
+
+note bottom of v
+  mappings JSONB =
+    {
+      "<eventName>": {
+        "meta":       MappingCell,
+        "google_ga4": MappingCell,
+        ...
+      }
+    }
+  Référence implicite (par name string) aux
+  eventdef. Pas de FK car JSONB.
+  Validation cohérence faite côté service.
+end note
+
+note right of a
+  Conservé indéfiniment (audit légal).
+  Action 'export_gtm' enregistre sha256
+  dans meta.
+  before/after sont null pour les actions
+  de lecture (test_event, export_gtm).
+end note
+
+@enduml

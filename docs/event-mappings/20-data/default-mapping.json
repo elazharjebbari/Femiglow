@@ -1,0 +1,85 @@
+{
+  "_meta": {
+    "schemaVersion": 1,
+    "name": "FemiGlow Factory Default",
+    "generatedFromCode": "apps/web/src/lib/tracking/providers/event-mapping.ts",
+    "generatedAt": "2026-05-13",
+    "checksum": "sha256:to-be-computed-at-build-time",
+    "notes": "Source de vérité du factory mapping FemiGlow. Modifier en PR review-required. Le test CI 'pnpm tracking:check-default-mapping' garantit l'alignement avec event-mapping.ts."
+  },
+  "mappings": {
+    "page_view": {
+      "meta":       { "mappedName": "PageView",  "isCustom": false, "isEnabled": true,  "notes": null },
+      "google_ga4": { "mappedName": "page_view", "isCustom": false, "isEnabled": true,  "notes": null },
+      "google_ads": { "mappedName": null,        "isCustom": false, "isEnabled": false, "notes": null },
+      "tiktok":     { "mappedName": "Pageview",  "isCustom": false, "isEnabled": true,  "notes": null },
+      "snap":       { "mappedName": "PAGE_VIEW", "isCustom": false, "isEnabled": true,  "notes": null },
+      "pinterest":  { "mappedName": "pagevisit", "isCustom": false, "isEnabled": true,  "notes": null }
+    },
+    "view_item": {
+      "meta":       { "mappedName": "ViewContent",  "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ga4": { "mappedName": "view_item",    "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": null,           "isCustom": false, "isEnabled": false,"notes": null },
+      "tiktok":     { "mappedName": "ViewContent",  "isCustom": false, "isEnabled": true, "notes": null },
+      "snap":       { "mappedName": "VIEW_CONTENT", "isCustom": false, "isEnabled": true, "notes": null },
+      "pinterest":  { "mappedName": "pagevisit",    "isCustom": false, "isEnabled": true, "notes": null }
+    },
+    "add_to_cart": {
+      "meta":       { "mappedName": "AddToCart",   "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ga4": { "mappedName": "add_to_cart", "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": null,          "isCustom": false, "isEnabled": false,"notes": null },
+      "tiktok":     { "mappedName": "AddToCart",   "isCustom": false, "isEnabled": true, "notes": null },
+      "snap":       { "mappedName": "ADD_CART",    "isCustom": false, "isEnabled": true, "notes": null },
+      "pinterest":  { "mappedName": "addtocart",   "isCustom": false, "isEnabled": true, "notes": null }
+    },
+    "form_start": {
+      "meta":       { "mappedName": "form_start", "isCustom": true,  "isEnabled": true, "notes": "Meta CustomEvent — séparé de InitiateCheckout. D-004 tracking-improvement." },
+      "google_ga4": { "mappedName": "form_start", "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": null,         "isCustom": false, "isEnabled": false,"notes": null },
+      "tiktok":     { "mappedName": null,         "isCustom": false, "isEnabled": false,"notes": null },
+      "snap":       { "mappedName": null,         "isCustom": false, "isEnabled": false,"notes": null },
+      "pinterest":  { "mappedName": null,         "isCustom": false, "isEnabled": false,"notes": null }
+    },
+    "begin_checkout": {
+      "meta":       { "mappedName": "checkout_intent",   "isCustom": true,  "isEnabled": true, "notes": "Meta CustomEvent — évite la pollution InitiateCheckout (D-004)." },
+      "google_ga4": { "mappedName": "begin_checkout",    "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": null,                "isCustom": false, "isEnabled": false,"notes": null },
+      "tiktok":     { "mappedName": "InitiateCheckout",  "isCustom": false, "isEnabled": true, "notes": null },
+      "snap":       { "mappedName": "START_CHECKOUT",    "isCustom": false, "isEnabled": true, "notes": null },
+      "pinterest":  { "mappedName": "checkout",          "isCustom": false, "isEnabled": true, "notes": null }
+    },
+    "lead_capture": {
+      "meta":       { "mappedName": "Lead",          "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ga4": { "mappedName": "lead_capture",  "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": "generate_lead", "isCustom": false, "isEnabled": true, "notes": null },
+      "tiktok":     { "mappedName": null,            "isCustom": false, "isEnabled": false,"notes": null },
+      "snap":       { "mappedName": null,            "isCustom": false, "isEnabled": false,"notes": null },
+      "pinterest":  { "mappedName": null,            "isCustom": false, "isEnabled": false,"notes": null }
+    },
+    "purchase": {
+      "meta":       { "mappedName": "Purchase",        "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ga4": { "mappedName": "purchase",        "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": "purchase",        "isCustom": false, "isEnabled": true, "notes": null },
+      "tiktok":     { "mappedName": "CompletePayment", "isCustom": false, "isEnabled": true, "notes": null },
+      "snap":       { "mappedName": "PURCHASE",        "isCustom": false, "isEnabled": true, "notes": null },
+      "pinterest":  { "mappedName": "checkout",        "isCustom": false, "isEnabled": true, "notes": null }
+    },
+    "generate_lead": {
+      "meta":       { "mappedName": "Lead",          "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ga4": { "mappedName": "generate_lead", "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": "generate_lead", "isCustom": false, "isEnabled": true, "notes": null },
+      "tiktok":     { "mappedName": "SubmitForm",    "isCustom": false, "isEnabled": true, "notes": null },
+      "snap":       { "mappedName": "SIGN_UP",       "isCustom": false, "isEnabled": true, "notes": null },
+      "pinterest":  { "mappedName": "lead",          "isCustom": false, "isEnabled": true, "notes": null }
+    },
+    "sign_up": {
+      "meta":       { "mappedName": "CompleteRegistration", "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ga4": { "mappedName": "sign_up",              "isCustom": false, "isEnabled": true, "notes": null },
+      "google_ads": { "mappedName": null,                   "isCustom": false, "isEnabled": false,"notes": null },
+      "tiktok":     { "mappedName": "CompleteRegistration", "isCustom": false, "isEnabled": true, "notes": null },
+      "snap":       { "mappedName": "SIGN_UP",              "isCustom": false, "isEnabled": true, "notes": null },
+      "pinterest":  { "mappedName": "signup",               "isCustom": false, "isEnabled": true, "notes": null }
+    }
+  },
+  "_truncated": "Le fichier complet contient ~30 events. Voir docs/event-mappings/20-data/seed-data-full.json pour la liste exhaustive et docs/event-mappings/60-analytics/event-taxonomy.csv pour la doc."
+}
