@@ -65,36 +65,45 @@ export async function POST(req: NextRequest): Promise<Response> {
   const evt: StalwartWebhookEvent = parsed.data;
   logger.info('mail.webhook.stalwart.received', { event: evt.event });
 
-  if (evt.event === 'auth.failure') {
-    logger.warn('mail.smtp.auth_failure', { user: evt.user, ip: evt.ip });
+  if (evt.event === 'auth.failed') {
+    logger.warn('mail.smtp.auth_failed', { user: evt.user, ip: evt.ip });
     return NextResponse.json({ ok: true });
   }
 
-  // All other events have messageId — lookup outbox.
+  // All remaining events should carry a messageId — but Stalwart's exact
+  // payload shape isn't fully documented, so guard against absent fields.
+  const messageId =
+    'messageId' in evt && typeof evt.messageId === 'string' ? evt.messageId : null;
+  if (!messageId) {
+    logger.info('mail.webhook.stalwart.no_message_id', { event: evt.event });
+    return NextResponse.json({ ok: true, ignored: 'no-message-id' });
+  }
+
   const found = await db
     .select()
     .from(emailOutbox)
-    .where(eq(emailOutbox.smtpMessageId, evt.messageId))
+    .where(eq(emailOutbox.smtpMessageId, messageId))
     .limit(1);
 
   if (found.length === 0) {
     // May be a message originating from Listmonk (uses its own Message-ID
     // namespace) ; that path is handled via the Listmonk webhook.
-    return NextResponse.json({ ok: true, ignored: true });
+    return NextResponse.json({ ok: true, ignored: 'unknown-message-id' });
   }
 
   const outbox = found[0];
-  const ts = new Date(evt.ts);
+  const ts = evt.ts ? new Date(evt.ts) : new Date();
+  const rawJson = evt as unknown as Record<string, unknown>;
 
-  if (evt.event === 'message.queued') {
+  if (evt.event === 'queue.message-queued' || evt.event === 'queue.authenticated-message-queued') {
     await db.insert(emailEvent).values({
       outboxId: outbox.id,
       type: 'queued',
       source: 'stalwart',
       ts,
-      rawJson: evt as unknown as Record<string, unknown>,
+      rawJson,
     });
-  } else if (evt.event === 'message.delivered') {
+  } else if (evt.event === 'delivery.delivered') {
     await db
       .update(emailOutbox)
       .set({ status: 'delivered', deliveredAt: ts, updatedAt: new Date() })
@@ -104,16 +113,18 @@ export async function POST(req: NextRequest): Promise<Response> {
       type: 'delivered',
       source: 'stalwart',
       ts,
-      rawJson: evt as unknown as Record<string, unknown>,
+      rawJson,
     });
-  } else if (evt.event === 'message.delivery-failed') {
-    const isHard = isHardBounce(evt.errorCode);
+  } else if (evt.event === 'delivery.failed') {
+    const errorCode = 'errorCode' in evt && typeof evt.errorCode === 'number' ? evt.errorCode : undefined;
+    const reason = 'reason' in evt && typeof evt.reason === 'string' ? evt.reason : 'unknown';
+    const isHard = isHardBounce(errorCode);
     await db
       .update(emailOutbox)
       .set({
         status: isHard ? 'bounced_permanent' : 'bounced_soft',
         bouncedAt: ts,
-        bounceReason: evt.reason,
+        bounceReason: reason,
         bounceType: isHard ? 'hard' : 'soft',
         updatedAt: new Date(),
       })
@@ -123,7 +134,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       type: isHard ? 'bounced_hard' : 'bounced_soft',
       source: 'stalwart',
       ts,
-      rawJson: evt as unknown as Record<string, unknown>,
+      rawJson,
     });
     if (isHard) {
       await db
@@ -131,18 +142,18 @@ export async function POST(req: NextRequest): Promise<Response> {
         .values({
           email: outbox.toEmail,
           reason: 'hard_bounce',
-          detail: evt.reason,
+          detail: reason,
           source: 'stalwart',
         })
         .onConflictDoNothing();
     }
-  } else if (evt.event === 'message.delivery-deferred') {
+  } else if (evt.event === 'queue.rescheduled') {
     await db.insert(emailEvent).values({
       outboxId: outbox.id,
       type: 'retried',
       source: 'stalwart',
       ts,
-      rawJson: evt as unknown as Record<string, unknown>,
+      rawJson,
     });
   }
 

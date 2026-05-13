@@ -2,25 +2,26 @@ import { describe, it, expect } from 'vitest';
 import {
   stalwartWebhookSchema,
   isHardBounce,
+  mapStalwartEventToInternal,
 } from '../webhooks/stalwart-parser';
 
 describe('stalwart-parser', () => {
   describe('discriminated union', () => {
-    it('parses a message.delivered payload', () => {
+    it('parses a delivery.delivered payload', () => {
       const payload = {
-        event: 'message.delivered',
+        event: 'delivery.delivered',
         queueId: '307018204079726080',
         messageId: '<01HYW@femiglow-maroc.com>',
         rcpt: 'user@gmail.com',
         ts: '2026-05-13T16:00:04Z',
       };
       const parsed = stalwartWebhookSchema.parse(payload);
-      expect(parsed.event).toBe('message.delivered');
+      expect(parsed.event).toBe('delivery.delivered');
     });
 
-    it('parses message.delivery-failed with error code', () => {
+    it('parses delivery.failed with error code', () => {
       const payload = {
-        event: 'message.delivery-failed',
+        event: 'delivery.failed',
         queueId: 'q1',
         messageId: '<x@x>',
         rcpt: 'bad@example.com',
@@ -29,38 +30,63 @@ describe('stalwart-parser', () => {
         ts: '2026-05-13T16:00:00Z',
       };
       const parsed = stalwartWebhookSchema.parse(payload);
-      expect(parsed.event).toBe('message.delivery-failed');
-      if (parsed.event === 'message.delivery-failed') {
-        expect(parsed.errorCode).toBe(550);
-      }
+      expect(parsed.event).toBe('delivery.failed');
     });
 
-    it('parses auth.failure', () => {
+    it('parses auth.failed', () => {
       const payload = {
-        event: 'auth.failure',
+        event: 'auth.failed',
         user: 'noreply@femiglow-maroc.com',
         ip: '1.2.3.4',
         ts: '2026-05-13T16:00:00Z',
       };
-      expect(stalwartWebhookSchema.parse(payload).event).toBe('auth.failure');
+      expect(stalwartWebhookSchema.parse(payload).event).toBe('auth.failed');
     });
 
-    it('parses message.queued with rcpt array', () => {
+    it('parses queue.message-queued', () => {
       const payload = {
-        event: 'message.queued',
+        event: 'queue.message-queued',
         queueId: 'q1',
         messageId: '<x@x>',
-        rcpt: ['a@b.c', 'd@e.f'],
-        size: 1024,
         ts: '2026-05-13T16:00:00Z',
       };
-      const parsed = stalwartWebhookSchema.parse(payload);
-      expect(parsed.event).toBe('message.queued');
+      expect(stalwartWebhookSchema.parse(payload).event).toBe('queue.message-queued');
     });
 
-    it('rejects payload missing event field', () => {
-      const result = stalwartWebhookSchema.safeParse({ queueId: 'x' });
-      expect(result.success).toBe(false);
+    it('parses queue.authenticated-message-queued (transactional submission)', () => {
+      const payload = {
+        event: 'queue.authenticated-message-queued',
+        queueId: 'q42',
+        messageId: '<app@femi>',
+        ts: '2026-05-13T16:00:00Z',
+      };
+      expect(stalwartWebhookSchema.parse(payload).event).toBe(
+        'queue.authenticated-message-queued',
+      );
+    });
+
+    it('parses queue.rescheduled (temp failure retry)', () => {
+      const payload = {
+        event: 'queue.rescheduled',
+        queueId: 'q1',
+        messageId: '<x@x>',
+        nextRetry: '2026-05-13T16:30:00Z',
+        ts: '2026-05-13T16:00:00Z',
+      };
+      expect(stalwartWebhookSchema.parse(payload).event).toBe('queue.rescheduled');
+    });
+
+    it('accepts payloads with extra unknown fields (passthrough)', () => {
+      const payload = {
+        event: 'delivery.delivered',
+        queueId: 'q1',
+        messageId: '<x@x>',
+        rcpt: 'a@b.c',
+        ts: '2026-05-13T16:00:00Z',
+        bonusField: 42,
+        nested: { foo: 'bar' },
+      };
+      expect(stalwartWebhookSchema.parse(payload).event).toBe('delivery.delivered');
     });
 
     it('rejects unknown event type', () => {
@@ -71,16 +97,24 @@ describe('stalwart-parser', () => {
       expect(result.success).toBe(false);
     });
 
-    it('rejects missing errorCode on delivery-failed', () => {
-      const result = stalwartWebhookSchema.safeParse({
-        event: 'message.delivery-failed',
-        queueId: 'q',
-        messageId: 'm',
-        rcpt: 'r@r.r',
-        reason: 'x',
-        ts: '2026-05-13T16:00:00Z',
-      });
+    it('rejects payload missing event field', () => {
+      const result = stalwartWebhookSchema.safeParse({ queueId: 'x' });
       expect(result.success).toBe(false);
+    });
+
+    it('tolerates rcpt as either string or array', () => {
+      expect(
+        stalwartWebhookSchema.safeParse({
+          event: 'delivery.delivered',
+          rcpt: ['a@b.c', 'd@e.f'],
+        }).success,
+      ).toBe(true);
+      expect(
+        stalwartWebhookSchema.safeParse({
+          event: 'delivery.delivered',
+          rcpt: 'a@b.c',
+        }).success,
+      ).toBe(true);
     });
   });
 
@@ -103,6 +137,29 @@ describe('stalwart-parser', () => {
 
     it('returns false for 6xx (out of range)', () => {
       expect(isHardBounce(600)).toBe(false);
+    });
+
+    it('returns false for undefined (errorCode optional)', () => {
+      expect(isHardBounce(undefined)).toBe(false);
+    });
+  });
+
+  describe('mapStalwartEventToInternal', () => {
+    it('maps delivery.delivered → delivered', () => {
+      expect(mapStalwartEventToInternal('delivery.delivered')).toBe('delivered');
+    });
+    it('maps delivery.failed → bounced_hard (refined later)', () => {
+      expect(mapStalwartEventToInternal('delivery.failed')).toBe('bounced_hard');
+    });
+    it('maps queue.* queued events → queued', () => {
+      expect(mapStalwartEventToInternal('queue.message-queued')).toBe('queued');
+      expect(mapStalwartEventToInternal('queue.authenticated-message-queued')).toBe('queued');
+    });
+    it('maps queue.rescheduled → retried', () => {
+      expect(mapStalwartEventToInternal('queue.rescheduled')).toBe('retried');
+    });
+    it('returns null for auth.failed (logged elsewhere)', () => {
+      expect(mapStalwartEventToInternal('auth.failed')).toBeNull();
     });
   });
 });
