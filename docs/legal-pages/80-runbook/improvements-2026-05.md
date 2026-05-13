@@ -234,6 +234,36 @@ pnpm drizzle-kit migrate
 Idempotent (CREATE IF NOT EXISTS). Pas de seed nécessaire — table vide
 au démarrage.
 
+## P9 — Cohérence ecosystème admin (2026-05-13)
+
+Phase d'alignement avec les patterns admin existants après audit
+"toutes les interfaces sont-elles accessibles ?".
+
+| Sous-phase | Commit | Statut |
+|---|---|---|
+| P9.1 nav defaults inclut 'legal' | `e2ea65b` | ✅ |
+| P9.6 RBAC inclut 'legal' | `e2ea65b` (couplé P9.1) | ✅ |
+| P9.2 audit UI onglet legalPage | `39be852` | ✅ |
+| P9.3 dashboard card "Pages légales" | `2a964f6` | ✅ |
+| P9.4 styling alignment (pattern SEO) | `3f34afa` | ✅ |
+| P9.5 slug redirects UI | `555f3b0` | ✅ |
+
+**Résultats P9 :**
+- `admin-config/defaults.ts` : nav inclut 'legal' (pos 4 entre media et
+  tracking), matrice RBAC inclut 'legal' pour les 4 rôles (superadmin /
+  admin / editor / viewer).
+- `/admin/audit?resource=legalPage` : onglet dédié, labels FR pour les 9
+  actions legal.*, lien direct vers `/admin/legal/<slug>/edit` depuis la
+  colonne Cible.
+- `/admin` dashboard : card "Pages légales" avec 4 KPIs (Total / Publiées
+  / En revue / Brouillons) + warning orphelines + lien "Voir tout".
+- Styling : boutons + inputs respectent le pattern SEO (rounded-md,
+  hover stone-50/700, font-medium, bg-white).
+- `/admin/legal/redirects` : UI CRUD complète pour `legal_slug_redirects`
+  (formulaire ajout, table avec suppression, gestion erreurs 400/409/500).
+
+**Tests P9 : +60 tests.**
+
 ## V1.1 — Pistes restantes
 
 Non couvertes par ce runbook (hors scope) :
@@ -241,8 +271,11 @@ Non couvertes par ce runbook (hors scope) :
 - PDF export pour le juriste.
 - Git sync sur branche orpheline.
 - Sentry + PostHog hooks legal.
-- Audit log UI (la table `audit_events` existe, manque l'écran).
 - Search / filter sur la liste admin.
 - Autocomplete `{{VARS}}` dans l'éditeur.
 - Variable usage warning ("touche {{X}} → 5 pages publiées à republier").
 - Bulk republish après changement de variable.
+- RBAC enforcement runtime : les permissions sont déclarées dans
+  `defaults.ts` mais non enforced côté routes (requireAdmin actuel = toute
+  admin OK). Brancher un middleware permissions par route admin pour
+  activer la matrice viewer/editor/admin/superadmin.
