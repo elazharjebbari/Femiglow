@@ -1,0 +1,200 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Wizard — Modifier une page légale",
+  "version": "1.0.0",
+  "name": "edit-legal-page",
+  "context": {
+    "loadFrom": "GET /api/admin/legal/{slug}",
+    "lockOnEnter": true,
+    "warnIfOtherEditor": true
+  },
+  "header": {
+    "showStatusBadge": true,
+    "showVersionBadge": true,
+    "showLastUpdated": true,
+    "showLockOwner": true
+  },
+  "tabs": [
+    {
+      "id": "content",
+      "label": "Contenu",
+      "icon": "✏",
+      "default": true,
+      "component": "ContentTab",
+      "layout": "split-pane",
+      "leftPane": {
+        "title": "Markdown source",
+        "component": "MdEditor",
+        "features": [
+          "toolbar",
+          "syntax-highlight",
+          "auto-complete-vars",
+          "auto-complete-links",
+          "find-replace"
+        ]
+      },
+      "rightPane": {
+        "title": "Aperçu",
+        "component": "MdPreview",
+        "features": [
+          "live-render",
+          "scroll-sync",
+          "missing-vars-highlight",
+          "broken-links-warning"
+        ]
+      },
+      "footer": {
+        "showCharCount": true,
+        "showSaveStatus": true,
+        "showLastAutoSave": true
+      }
+    },
+    {
+      "id": "metadata",
+      "label": "Métadonnées",
+      "icon": "🏷",
+      "component": "MetadataTab",
+      "fields": [
+        { "id": "title", "type": "text", "required": true },
+        { "id": "slug", "type": "text", "required": true, "warnOnChange": "Modifier le slug va casser les liens existants. Un redirect 301 sera créé automatiquement." },
+        { "id": "description", "type": "textarea" },
+        { "id": "lang", "type": "select", "options": ["fr"], "disabled": true, "helperText": "Multi-lang en V2" }
+      ]
+    },
+    {
+      "id": "placements",
+      "label": "Affichage",
+      "icon": "📍",
+      "component": "PlacementsTab",
+      "description": "Choisis où afficher cette page sur le site",
+      "groups": [
+        {
+          "title": "Footer",
+          "zones": ["footer-main", "footer-bottom-bar"]
+        },
+        {
+          "title": "Menus",
+          "zones": ["mobile-menu", "user-account-sidebar"]
+        },
+        {
+          "title": "Bannière cookies",
+          "zones": ["cookie-banner-links"]
+        },
+        {
+          "title": "Tunnel d'achat",
+          "zones": ["checkout-consent", "checkout-confirmation"]
+        },
+        {
+          "title": "Compte client",
+          "zones": ["my-orders-help"]
+        }
+      ]
+    },
+    {
+      "id": "seo",
+      "label": "SEO",
+      "icon": "🔍",
+      "component": "SeoTab",
+      "fields": [
+        {
+          "id": "include_in_search",
+          "type": "toggle",
+          "label": "Indexer sur Google",
+          "default": false,
+          "warning": "Les pages légales sont par défaut exclues du SEO. Active uniquement si la page est de l'utilité publique (FAQ, guide d'achat)."
+        },
+        {
+          "id": "canonical_url",
+          "type": "text",
+          "showIf": "include_in_search"
+        }
+      ]
+    },
+    {
+      "id": "history",
+      "label": "Historique",
+      "icon": "📜",
+      "component": "HistoryTab",
+      "loadFrom": "GET /api/admin/legal/{slug}/history",
+      "actions": [
+        { "label": "Diff vs courant", "type": "preview" },
+        { "label": "Restaurer", "type": "restore", "confirm": true, "permission": "legal.write" }
+      ]
+    },
+    {
+      "id": "danger-zone",
+      "label": "Zone dangereuse",
+      "icon": "⚠",
+      "component": "DangerTab",
+      "actions": [
+        {
+          "id": "archive",
+          "label": "Archiver",
+          "permission": "legal.archive",
+          "confirm": {
+            "title": "Archiver « {{title}} » ?",
+            "body": "La page ne sera plus visible. Les liens en footer seront automatiquement retirés.",
+            "confirmText": "ARCHIVER"
+          },
+          "endpoint": "POST /api/admin/legal/{slug}/archive"
+        },
+        {
+          "id": "unpublish",
+          "label": "Dépublier (passe en draft)",
+          "showIf": "status === 'published'",
+          "permission": "legal.write",
+          "confirm": {
+            "title": "Dépublier ?",
+            "body": "La page redevient un draft non visible publiquement. À utiliser uniquement en cas de problème critique."
+          }
+        }
+      ]
+    }
+  ],
+  "actionsBar": {
+    "primary": [
+      {
+        "id": "save-draft",
+        "label": "Enregistrer le brouillon",
+        "showIf": "dirty",
+        "endpoint": "PUT /api/admin/legal/{slug}",
+        "permission": "legal.write"
+      },
+      {
+        "id": "submit-review",
+        "label": "Soumettre à revue",
+        "showIf": "status === 'draft' && !dirty",
+        "permission": "legal.submit_review",
+        "endpoint": "POST /api/admin/legal/{slug}/submit-review"
+      },
+      {
+        "id": "publish",
+        "label": "Publier",
+        "showIf": "status === 'review' || (status === 'draft' && permissions.has('legal.publish'))",
+        "permission": "legal.publish",
+        "confirm": {
+          "title": "Publier la version {{version + 1}} ?",
+          "body": "Cette action est définitive. Une copie immutable sera créée + commit git.",
+          "confirmText": "PUBLIER",
+          "checklist": [
+            "J'ai relu le contenu intégralement",
+            "Toutes les variables sont remplies",
+            "Les liens internes ont été testés",
+            "La date de mise à jour est correcte"
+          ]
+        },
+        "endpoint": "POST /api/admin/legal/{slug}/publish"
+      }
+    ],
+    "secondary": [
+      { "id": "preview-public", "label": "Aperçu public", "opensIn": "newTab" },
+      { "id": "diff-vs-published", "label": "Diff vs publié", "modal": true }
+    ]
+  },
+  "shortcuts": {
+    "save": "Cmd+S",
+    "preview": "Cmd+P",
+    "submitReview": "Cmd+Shift+R",
+    "publish": "Cmd+Shift+P"
+  }
+}

@@ -1,0 +1,70 @@
+TABLE public.legal_template_vars (NOUVELLE)
+=============================================
+Key/value store pour les variables substituées dans le contenu MD.
+
+Colonne          | Type                         | Notes
+-----------------|------------------------------|------------------------
+key              | text PK                      | COMPANY_NAME, ICE, RC, ...
+value            | text                         | "FemiGlow", "001234567890123", ...
+label            | text NOT NULL                | Libellé admin (FR)
+description      | text                         | Aide / format attendu
+is_required      | boolean NOT NULL DEFAULT TRUE| Bloque publish si null/empty
+sensitive        | boolean NOT NULL DEFAULT FALSE| Masqué dans logs si TRUE
+updated_at       | timestamp with time zone NOT NULL DEFAULT now()
+updated_by       | text                         | FK admin_users.id
+
+CONTRAINTES
+- PK (key)
+- CHECK (key ~ '^[A-Z][A-Z0-9_]*$' AND length(key) BETWEEN 2 AND 40)
+- CHECK (value IS NULL OR length(value) <= 1000)
+
+SEED (variables nécessaires pour FemiGlow)
+
+INSERT INTO legal_template_vars (key, label, description, is_required, value) VALUES
+('COMPANY_NAME',     'Nom légal',              'Dénomination sociale complète',          TRUE,  'FemiGlow'),
+('COMPANY_FORM',     'Forme juridique',        'SARL AU / EI / SA / ...',                TRUE,  ''),
+('COMPANY_CAPITAL',  'Capital social',         'Montant en MAD (sociétés)',              FALSE, ''),
+('COMPANY_ADDRESS',  'Adresse siège',          'Adresse complète',                       TRUE,  '25 bis avenue Patrice Lumumba, Rabat, Maroc'),
+('COMPANY_RC',       'RC (Registre Commerce)', 'Format : numéro/ville',                  TRUE,  ''),
+('ICE',              'ICE',                    'Identifiant Commun Entreprise (15 chiffres)', TRUE, ''),
+('COMPANY_PATENTE',  'Numéro patente',         'Numéro de patente (taxe pro)',           FALSE, ''),
+('COMPANY_TVA',      'Numéro TVA',             'Si assujetti à la TVA',                  FALSE, ''),
+('COMPANY_EMAIL',    'Email contact',          'Email général',                          TRUE,  'info@femiglow-maroc.com'),
+('COMPANY_PHONE',    'Téléphone',              'Numéro de contact (+212...)',            TRUE,  '+212 630-035905'),
+('DIRECTOR_NAME',    'Directeur publication',  'Personne responsable',                   TRUE,  'Sara Jebbari'),
+('HOSTING_NAME',     'Hébergeur — nom',        'Nom de la société d''hébergement',       TRUE,  ''),
+('HOSTING_ADDRESS',  'Hébergeur — adresse',    'Adresse de l''hébergeur',                TRUE,  ''),
+('HOSTING_PHONE',    'Hébergeur — téléphone',  'Téléphone hébergeur',                    FALSE, ''),
+('DPO_EMAIL',        'Email DPO',              'Délégué Protection Données',             TRUE,  'privacy@femiglow-maroc.com'),
+('CNDP_DECLARATION', 'CNDP — déclaration',     'Numéro déclaration CNDP ou "en cours"',  TRUE,  'en cours'),
+('LAST_UPDATED',     'Dernière mise à jour',   'Date format français',                   TRUE,  '13 mai 2026');
+
+UTILISATION DANS LE CONTENU MD
+
+```markdown
+**{{COMPANY_NAME}}** est édité par {{DIRECTOR_NAME}}, basée à
+{{COMPANY_ADDRESS}}.
+
+- **RC** : {{COMPANY_RC}}
+- **ICE** : {{ICE}}
+- **Email** : {{COMPANY_EMAIL}}
+- **Téléphone** : {{COMPANY_PHONE}}
+```
+
+Le renderer (legalRenderer.render(text)) substitue les `{{VAR}}` au runtime.
+Si une variable est manquante (NULL, vide, ou clé inconnue) :
+- En édition admin : highlight rouge dans la preview
+- En public : rendu = "[variable non remplie : COMPANY_RC]" ou fallback
+
+MIGRATION
+---------
+CREATE TABLE legal_template_vars (
+  key text PRIMARY KEY CHECK (key ~ '^[A-Z][A-Z0-9_]*$' AND length(key) BETWEEN 2 AND 40),
+  value text CHECK (value IS NULL OR length(value) <= 1000),
+  label text NOT NULL,
+  description text,
+  is_required boolean NOT NULL DEFAULT TRUE,
+  sensitive boolean NOT NULL DEFAULT FALSE,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text REFERENCES admin_users(id) ON DELETE SET NULL
+);

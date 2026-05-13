@@ -1,0 +1,63 @@
+@startuml current-state
+title Pages légales — État actuel
+
+skinparam backgroundColor #FBF8F1
+skinparam componentStyle rectangle
+skinparam defaultFontName Inter
+
+actor Visitor as V
+actor Admin as A
+
+package "Application" {
+  component "/mentions-legales\n(hardcoded TSX)" as ML #PaleYellow
+  component "Layout marketing\n(footer)" as L
+}
+
+package "Code source" {
+  artifact "page.tsx\n(static content)" as PT
+}
+
+V --> L : Naviguer
+L --> ML : Lien "Mentions légales"
+ML --> V : HTML rendu
+
+note bottom of ML
+  Contenu CODE en dur :
+  - Hardcoded en TSX
+  - Modif nécessite deploy
+  - Pas de versioning métier
+  - Pas de preview admin
+end note
+
+A --> PT : Édite via éditeur de code
+PT --> ML : Build Next.js
+
+note right of A
+  Pour modifier la moindre
+  virgule, il faut :
+  1. Modifier .tsx
+  2. Commit / PR
+  3. Build CI
+  4. Deploy
+  Cycle 30 min minimum.
+end note
+
+' Autres pages = absentes
+package "Pages absentes ❌" {
+  component "/cgv" as CGV #Pink
+  component "/cgu" as CGU #Pink
+  component "/confidentialite" as CONF #Pink
+  component "/cookies" as CK #Pink
+  component "/retours" as RET #Pink
+  component "/livraison" as LIV #Pink
+  component "/securite-produits" as SEC #Pink
+  component "/faq" as FAQ #Pink
+}
+
+note right of CGV
+  Non-conforme Loi 31-08 :
+  CGV obligatoires pour
+  un site e-commerce.
+end note
+
+@enduml

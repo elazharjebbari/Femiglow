@@ -1,0 +1,83 @@
+TABLE public.legal_link_health_snapshot (NOUVELLE)
+====================================================
+Snapshot du résultat des vérifications de liens.
+Rotation : on garde les 30 derniers snapshots par couple (zone, page).
+Plus ancien → supprimé via cron.
+
+Colonne          | Type                         | Notes
+-----------------|------------------------------|------------------------
+id               | text PK                      | llhs_<random>
+checked_at       | timestamp with time zone NOT NULL DEFAULT now()
+zone_key         | text NOT NULL                | FK legal_zones.key (informatif)
+page_slug        | text NOT NULL                | FK legal_pages.slug (informatif)
+status           | legal_link_status NOT NULL   | enum: ok, page_missing, page_draft, http_4xx, http_5xx, timeout
+http_code        | integer                      | NULL si pas de HTTP test
+latency_ms       | integer                      | Latence du HTTP test
+notes            | text                         | Détails error si applicable
+
+CONSTRAINTES
+- PK (id)
+- CHECK (latency_ms IS NULL OR latency_ms >= 0)
+- CHECK (http_code IS NULL OR http_code BETWEEN 100 AND 599)
+- FK zone_key, page_slug : non strict (peut être stale → ON DELETE SET NULL)
+
+ENUM legal_link_status
+- 'ok'           : page existe, published, HTTP 200
+- 'page_missing' : placement référence un slug qui n'existe plus en DB
+- 'page_draft'   : placement référence une page non-published
+- 'http_4xx'     : HTTP ping retourne 4xx (404, 403, ...)
+- 'http_5xx'     : HTTP ping retourne 5xx
+- 'timeout'      : pas de réponse en 5s
+
+INDEX
+- (checked_at DESC)
+- (zone_key, page_slug, checked_at DESC) — historique d'un lien
+- (status) WHERE status <> 'ok' — anomalies
+
+QUERIES TYPES
+
+-- Status courant de tous les liens
+SELECT DISTINCT ON (zone_key, page_slug)
+  zone_key, page_slug, status, http_code, checked_at
+FROM legal_link_health_snapshot
+ORDER BY zone_key, page_slug, checked_at DESC;
+
+-- Liens cassés actuels
+SELECT zone_key, page_slug, status, http_code, notes
+FROM legal_link_health_snapshot
+WHERE status <> 'ok' AND checked_at >= NOW() - INTERVAL '1 hour'
+ORDER BY checked_at DESC;
+
+-- Latency p95 par page
+SELECT page_slug,
+  percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) as p95
+FROM legal_link_health_snapshot
+WHERE checked_at >= NOW() - INTERVAL '24 hours'
+  AND latency_ms IS NOT NULL
+GROUP BY page_slug;
+
+-- Cleanup (cron weekly)
+DELETE FROM legal_link_health_snapshot
+WHERE checked_at < NOW() - INTERVAL '30 days';
+
+MIGRATION
+---------
+CREATE TYPE legal_link_status AS ENUM (
+  'ok', 'page_missing', 'page_draft',
+  'http_4xx', 'http_5xx', 'timeout'
+);
+
+CREATE TABLE legal_link_health_snapshot (
+  id text PRIMARY KEY,
+  checked_at timestamp with time zone NOT NULL DEFAULT now(),
+  zone_key text NOT NULL,
+  page_slug text NOT NULL,
+  status legal_link_status NOT NULL,
+  http_code integer CHECK (http_code IS NULL OR http_code BETWEEN 100 AND 599),
+  latency_ms integer CHECK (latency_ms IS NULL OR latency_ms >= 0),
+  notes text
+);
+
+CREATE INDEX idx_lhs_checked_at ON legal_link_health_snapshot (checked_at DESC);
+CREATE INDEX idx_lhs_link ON legal_link_health_snapshot (zone_key, page_slug, checked_at DESC);
+CREATE INDEX idx_lhs_anomaly ON legal_link_health_snapshot (status) WHERE status <> 'ok';

@@ -1,0 +1,9 @@
+id,name,depends_on,description,risk
+0033,create_legal_pages,0032,"CREATE TYPE legal_page_status + CREATE TABLE legal_pages",low
+0034,create_legal_pages_history,0033,"CREATE TABLE legal_pages_history + trigger immutable",low
+0035,create_legal_zones,0034,"CREATE TABLE legal_zones + seed 7 zones",low
+0036,create_legal_page_placements,0035,"CREATE TABLE legal_page_placements + FK",low
+0037,create_legal_template_vars,0036,"CREATE TABLE legal_template_vars + seed 17 vars FemiGlow",low
+0038,create_legal_link_health_snapshot,0037,"CREATE TYPE legal_link_status + CREATE TABLE legal_link_health_snapshot",low
+0039,seed_legal_pages,0038,"INSERT INTO legal_pages 9 pages préconfigurées en draft (cf. 60-content/*.md)",medium
+0040,seed_legal_page_placements,0039,"INSERT default placements (footer-main pour toutes pages, etc.)",low

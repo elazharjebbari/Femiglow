@@ -1,0 +1,95 @@
+{
+  "$comment": "Métadonnées des 9 pages légales préconfigurées. Le body_md est chargé depuis 60-content/<slug>.md au seed.",
+  "pages": [
+    {
+      "slug": "mentions-legales",
+      "title": "Mentions légales",
+      "description": "Informations légales obligatoires sur FemiGlow : éditeur, hébergement, propriété intellectuelle.",
+      "content_file": "60-content/mentions-legales.md",
+      "status": "draft",
+      "include_in_search": false,
+      "require_legal_review": true,
+      "default_placements": ["footer-main", "footer-bottom-bar"]
+    },
+    {
+      "slug": "cgv",
+      "title": "Conditions Générales de Vente",
+      "description": "CGV applicables à toute commande passée sur le site FemiGlow.",
+      "content_file": "60-content/conditions-generales-de-vente.md",
+      "status": "draft",
+      "include_in_search": false,
+      "require_legal_review": true,
+      "default_placements": ["footer-main", "checkout-consent", "footer-bottom-bar"]
+    },
+    {
+      "slug": "cgu",
+      "title": "Conditions Générales d'Utilisation",
+      "description": "Règles d'utilisation du site femiglow-maroc.com.",
+      "content_file": "60-content/conditions-generales-utilisation.md",
+      "status": "draft",
+      "include_in_search": false,
+      "require_legal_review": true,
+      "default_placements": ["footer-main", "chat-disclaimer"]
+    },
+    {
+      "slug": "confidentialite",
+      "title": "Politique de confidentialité",
+      "description": "Comment FemiGlow traite vos données personnelles, conformément à la Loi 09-08.",
+      "content_file": "60-content/politique-confidentialite.md",
+      "status": "draft",
+      "include_in_search": false,
+      "require_legal_review": true,
+      "default_placements": ["footer-main", "cookie-banner-links", "checkout-consent", "signup-consent"]
+    },
+    {
+      "slug": "cookies",
+      "title": "Politique cookies",
+      "description": "Détail des cookies utilisés sur le site et comment gérer vos préférences.",
+      "content_file": "60-content/politique-cookies.md",
+      "status": "draft",
+      "include_in_search": false,
+      "require_legal_review": true,
+      "default_placements": ["footer-main", "cookie-banner-links"]
+    },
+    {
+      "slug": "retours-remboursements",
+      "title": "Politique de retours et remboursements",
+      "description": "Modalités de retour des produits FemiGlow et délai de remboursement (Loi 31-08).",
+      "content_file": "60-content/politique-retours-remboursements.md",
+      "status": "draft",
+      "include_in_search": false,
+      "require_legal_review": true,
+      "default_placements": ["footer-main", "checkout-consent"]
+    },
+    {
+      "slug": "livraison",
+      "title": "Politique de livraison",
+      "description": "Zones desservies, délais et frais de livraison FemiGlow au Maroc.",
+      "content_file": "60-content/politique-livraison.md",
+      "status": "draft",
+      "include_in_search": true,
+      "require_legal_review": false,
+      "default_placements": ["footer-main"]
+    },
+    {
+      "slug": "securite-produits",
+      "title": "Sécurité et avertissements produits cosmétiques",
+      "description": "Précautions d'usage, allergies, conservation des produits cosmétiques FemiGlow.",
+      "content_file": "60-content/avertissements-securite-produits.md",
+      "status": "draft",
+      "include_in_search": false,
+      "require_legal_review": true,
+      "default_placements": ["footer-main"]
+    },
+    {
+      "slug": "faq",
+      "title": "FAQ — Service client",
+      "description": "Questions fréquentes sur les produits, la commande, la livraison et le retour FemiGlow.",
+      "content_file": "60-content/faq-service-client.md",
+      "status": "draft",
+      "include_in_search": true,
+      "require_legal_review": false,
+      "default_placements": ["footer-main", "mobile-menu"]
+    }
+  ]
+}

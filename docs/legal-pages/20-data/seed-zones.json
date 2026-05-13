@@ -1,0 +1,61 @@
+{
+  "$comment": "Seed des 7 zones où peuvent apparaître les liens légaux",
+  "zones": [
+    {
+      "key": "footer-main",
+      "label": "Footer — colonne légale",
+      "description": "Liens légaux dans la colonne dédiée du footer principal",
+      "max_items_recommended": 8,
+      "is_required": true,
+      "display_order": 1
+    },
+    {
+      "key": "footer-bottom-bar",
+      "label": "Footer — ligne en bas",
+      "description": "Ligne © FemiGlow · Mentions légales · CGV",
+      "max_items_recommended": 3,
+      "is_required": false,
+      "display_order": 2
+    },
+    {
+      "key": "cookie-banner-links",
+      "label": "Bannière cookies — liens",
+      "description": "Liens vers politique cookies + confidentialité dans la bannière de consentement",
+      "max_items_recommended": 2,
+      "is_required": false,
+      "display_order": 3
+    },
+    {
+      "key": "checkout-consent",
+      "label": "Checkout — acceptation",
+      "description": "Liens 'J'accepte les CGV et la politique de retour' au checkout",
+      "max_items_recommended": 2,
+      "is_required": true,
+      "display_order": 4
+    },
+    {
+      "key": "signup-consent",
+      "label": "Signup — acceptation",
+      "description": "Lien vers politique de confidentialité au formulaire d'inscription",
+      "max_items_recommended": 1,
+      "is_required": false,
+      "display_order": 5
+    },
+    {
+      "key": "mobile-menu",
+      "label": "Menu burger mobile",
+      "description": "Pages affichées dans le menu hamburger mobile",
+      "max_items_recommended": 5,
+      "is_required": false,
+      "display_order": 6
+    },
+    {
+      "key": "chat-disclaimer",
+      "label": "Chat — disclaimer pied",
+      "description": "Lien CGU ou politique de confidentialité au pied du chat widget",
+      "max_items_recommended": 1,
+      "is_required": false,
+      "display_order": 7
+    }
+  ]
+}
