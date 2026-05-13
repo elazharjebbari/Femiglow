@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { emailSchema } from '@/lib/schemas';
 import { logger } from '@/lib/logging/logger';
+import { env } from '@/lib/env';
+import { sendTransactional } from '@/lib/mail/send';
+import { generateUnsubToken } from '@/lib/mail/unsub-token';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,11 +31,35 @@ export async function POST(request: Request) {
     );
   }
 
-  // CHA-260 — La newsletter n'a PAS de téléphone : par contrat phone-gate
-  // (cf. runbook §2.5), aucun webhook outbound n'est déclenché. La
-  // synchronisation vers Resend/Mailjet reste prévue côté job dédié.
+  const { email, source } = parsed.data;
+
   logger.info('newsletter.subscription.received', {
-    source: parsed.data.source ?? 'unknown',
+    source: source ?? 'unknown',
+  });
+
+  // M1.B.1 — Double opt-in : envoyer un mail de confirmation.
+  // Idempotency : pas de date dans la clé — re-soumettre le même email
+  // dans une session répétée envoie un seul mail (l'utilisateur peut juste
+  // re-cliquer son ancien lien).
+  let confirmUrl: string;
+  try {
+    const token = generateUnsubToken(email); // re-use HMAC token signing
+    confirmUrl = `${env.NEXT_PUBLIC_SITE_URL}/api/newsletter/confirm?t=${encodeURIComponent(token)}`;
+  } catch {
+    // MAIL_UNSUB_TOKEN_SECRET not configured — log and reply ok anyway
+    // (form succeeded, but confirm step won't happen until secret is set).
+    logger.warn('newsletter.confirm_token_unavailable');
+    return NextResponse.json({ ok: true });
+  }
+
+  void sendTransactional({
+    template: 'newsletter-confirm',
+    to: { email },
+    payload: { confirmUrl },
+    idempotencyKey: `newsletter-confirm:${email.toLowerCase()}`,
+    source: `api.newsletter.${source ?? 'unknown'}`,
+  }).catch((err: unknown) => {
+    logger.error('mail.newsletter_confirm.dispatch_error', { error: String(err) });
   });
 
   return NextResponse.json({ ok: true });
