@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { cms } from '@/lib/cms';
 import { env } from '@/lib/env';
+import { listPublishedSearchablePages } from '@/lib/legal/repository';
 import { routes } from '@/lib/routes';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -24,5 +25,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...articleEntries];
+  // Legal pages : seules celles qui ont opt-in `include_in_search=true` apparaissent.
+  // Les autres restent accessibles publiquement mais sont noindex (cf. layout legal).
+  let legalEntries: MetadataRoute.Sitemap = [];
+  try {
+    const pages = await listPublishedSearchablePages();
+    legalEntries = pages.map((p) => ({
+      url: `${base}/legal/${p.slug}`,
+      lastModified: p.publishedAt ?? p.updatedAt,
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    }));
+  } catch {
+    // si DB indisponible (build sans DATABASE_URL), on ne casse pas le sitemap
+    legalEntries = [];
+  }
+
+  return [...staticEntries, ...articleEntries, ...legalEntries];
 }
