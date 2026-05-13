@@ -264,6 +264,46 @@ Phase d'alignement avec les patterns admin existants après audit
 
 **Tests P9 : +60 tests.**
 
+## P10 — Polish UX/UI (2026-05-13)
+
+Phase post-audit ergonomique : 3 chantiers focalisés expérience utilisateur
+(page publique + éditeur admin + a11y générale).
+
+| Sous-phase | Commit | Tests |
+|---|---|---|
+| P10.1 polish page publique | `fa061dc` | 13 |
+| P10.2 éditeur admin pro | `26b39b1` | 23 |
+| P10.3 a11y polish (toast + empty) | `57ce151` | 11 |
+
+**Résultats P10 :**
+
+Page publique (`/legal/[slug]`) :
+- `LegalRelatedLinks` : "Voir aussi" en bas, 4 liens vers autres pages
+  du footer-main (excluant currentSlug).
+- `LegalContactBlock` : "Une question ?" avec email+téléphone depuis
+  template vars + signature horodatée vN.
+- `LegalPrintButton` (client) : 🖨 Imprimer / PDF en haut.
+- Lien "◀ Retour à l'accueil" (hidden au print).
+- TOC en **side-rail sticky desktop**, ordre swappé sur mobile.
+
+Éditeur admin :
+- Status pill colorée (Brouillon/En revue/Publié/Archivé) avec ring-1.
+- Last save indicator "Dernière sauvegarde : 14h32".
+- Description counter X/200, ambre > 180.
+- `Cmd+S` / `Ctrl+S` save manuel.
+- Tabs Éditer/Aperçu sur mobile (role=tab + aria-selected).
+- Autocomplete `{{VARS}}` (listbox filtré par préfixe).
+- Server-side preview via `POST /api/admin/legal/preview` (debounce 500ms),
+  remplace le parser client simplifié.
+
+A11y + polish :
+- `ToastProvider` + `useToast()` : notifications 5s, 3 tones, aria-live.
+- `LegalEmptyState` réutilisable avec CTA (déjà branché sur /admin/legal).
+- `role='status'` + `aria-busy` sur indicateurs save.
+- `focus-visible:outline-2` sur inputs/textarea/boutons.
+
+**Tests P10 : +47 tests.**
+
 ## V1.1 — Pistes restantes
 
 Non couvertes par ce runbook (hors scope) :
@@ -272,9 +312,10 @@ Non couvertes par ce runbook (hors scope) :
 - Git sync sur branche orpheline.
 - Sentry + PostHog hooks legal.
 - Search / filter sur la liste admin.
-- Autocomplete `{{VARS}}` dans l'éditeur.
 - Variable usage warning ("touche {{X}} → 5 pages publiées à republier").
 - Bulk republish après changement de variable.
+- ToastProvider branché au layout admin + remplacement des inline
+  "✓ Enregistré" par useToast() (livré mais pas hooké).
 - RBAC enforcement runtime : les permissions sont déclarées dans
   `defaults.ts` mais non enforced côté routes (requireAdmin actuel = toute
   admin OK). Brancher un middleware permissions par route admin pour
