@@ -39,10 +39,16 @@ const sanitizeSchema: typeof defaultSchema = {
   attributes: {
     ...defaultSchema.attributes,
     '*': [...(defaultSchema.attributes?.['*'] ?? []), 'className', 'id'],
+    // NB: on liste `target` et `rel` sans contraindre les valeurs — le
+    // plugin `externalLinks` impose la bonne valeur AVANT sanitize. Les
+    // valeurs autorisées sont filtrées par `allowComments`/`tagFilter` de
+    // rehype-sanitize. La forme tuple `['key', 'v1', 'v2']` impose que la
+    // valeur soit strictement 'v1' OU 'v2' — ce qui filtre « noopener
+    // noreferrer » (deux tokens séparés par espace).
     a: [
       ...(defaultSchema.attributes?.a ?? []),
-      ['target', '_blank'],
-      ['rel', 'noopener', 'noreferrer'],
+      'target',
+      'rel',
     ],
     img: [
       ...(defaultSchema.attributes?.img ?? []),
@@ -51,7 +57,7 @@ const sanitizeSchema: typeof defaultSchema = {
       'width',
       'height',
     ],
-    mark: [['dataMissingVar']],
+    mark: ['dataMissingVar'],
   },
   protocols: {
     ...(defaultSchema.protocols ?? {}),
