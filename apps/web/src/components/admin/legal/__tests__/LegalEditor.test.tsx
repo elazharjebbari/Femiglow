@@ -40,7 +40,7 @@ describe('LegalEditor — affichage', () => {
     render(<LegalEditor {...baseProps} />);
     expect(screen.getByDisplayValue('CGV')).toBeInTheDocument();
     expect(screen.getByDisplayValue('desc')).toBeInTheDocument();
-    expect(screen.getByText(/v3 · draft/)).toBeInTheDocument();
+    expect(screen.getByText(/Brouillon · v3/)).toBeInTheDocument();
   });
 
   it('preview affiche le HTML avec substitution', () => {
@@ -177,8 +177,7 @@ describe('LegalEditor — publish modal', () => {
     await user.click(screen.getByRole('button', { name: /Publier maintenant/ }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText(/v4/)).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText(/published/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Publié · v4/)).toBeInTheDocument());
   });
 
   it('affiche les variables manquantes si publish renvoie 422', async () => {

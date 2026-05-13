@@ -108,7 +108,15 @@ export function LegalEditor(props: LegalEditorProps) {
   const [updatedAtMs, setUpdatedAtMs] = useState(props.initialUpdatedAtMs);
   const [conflict, setConflict] = useState<{ currentUpdatedAt?: number } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [serverPreviewHtml, setServerPreviewHtml] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [showVarSuggest, setShowVarSuggest] = useState(false);
+  const [varSuggestQuery, setVarSuggestQuery] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Snapshot en state (pas ref) : changer le snapshot doit invalider
   // `isDirty` via useMemo. Avec useRef, l'invalidation manquait et le
   // bouton Enregistrer restait actif après save.
@@ -179,6 +187,7 @@ export function LegalEditor(props: LegalEditorProps) {
       setSnapshot({ title, description, bodyMd, includeInSearch });
       setVersion(data.version);
       setUpdatedAtMs(newMs);
+      setLastSavedAt(Date.now());
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 2000);
     } catch (err) {
@@ -197,6 +206,107 @@ export function LegalEditor(props: LegalEditorProps) {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
   }, [isDirty, save]);
+
+  // Raccourci clavier Cmd+S / Ctrl+S → save manuel (override le default
+  // 'enregistrer la page web'). Cohérent avec la microcopy spec.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === 's') {
+        e.preventDefault();
+        if (isDirty && saveState !== 'saving') void save();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isDirty, saveState, save]);
+
+  // Server-side preview : debounce 500ms après chaque modif du body,
+  // POST /api/admin/legal/preview pour utiliser le VRAI pipeline (vs
+  // simpleMdToHtml client qui sert de fallback instantané).
+  useEffect(() => {
+    if (previewDebounce.current) clearTimeout(previewDebounce.current);
+    previewDebounce.current = setTimeout(async () => {
+      setPreviewLoading(true);
+      try {
+        const res = await fetch('/api/admin/legal/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bodyMd, mode: 'admin-preview' }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { html: string };
+          setServerPreviewHtml(data.html);
+        }
+      } catch {
+        // garde le client fallback
+      } finally {
+        setPreviewLoading(false);
+      }
+    }, 500);
+    return () => {
+      if (previewDebounce.current) clearTimeout(previewDebounce.current);
+    };
+  }, [bodyMd]);
+
+  function insertVarAtCursor(key: string) {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const before = bodyMd.slice(0, start);
+    const after = bodyMd.slice(end);
+    // Si on est en train d'écrire `{{partial`, on remplace le partial
+    const matchStart = before.lastIndexOf('{{');
+    const replaceFrom = matchStart >= 0 && /^\{\{[A-Z0-9_]*$/.test(before.slice(matchStart)) ? matchStart : start;
+    const next = bodyMd.slice(0, replaceFrom) + `{{${key}}}` + after;
+    setBodyMd(next);
+    setShowVarSuggest(false);
+    // Restore cursor after the inserted {{KEY}}
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = replaceFrom + key.length + 4;
+      ta.setSelectionRange(pos, pos);
+    });
+  }
+
+  function handleBodyChange(value: string) {
+    setBodyMd(value);
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const before = value.slice(0, ta.selectionStart);
+    const m = before.match(/\{\{([A-Z0-9_]*)$/);
+    if (m) {
+      setVarSuggestQuery(m[1] ?? '');
+      setShowVarSuggest(true);
+    } else {
+      setShowVarSuggest(false);
+    }
+  }
+
+  const filteredVarSuggestions = useMemo(() => {
+    const q = varSuggestQuery.toUpperCase();
+    const knownKeys = [
+      ...props.templateVars.map((v) => v.key),
+      'LAST_UPDATED', 'CURRENT_YEAR', 'SITE_URL',
+    ];
+    return knownKeys.filter((k) => k.startsWith(q)).slice(0, 6);
+  }, [varSuggestQuery, props.templateVars]);
+
+  const STATUS_PILL: Record<string, string> = {
+    draft: 'bg-stone-100 text-stone-700 ring-stone-200',
+    review: 'bg-amber-50 text-amber-800 ring-amber-200',
+    published: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+    archived: 'bg-stone-200 text-stone-600 ring-stone-300',
+  };
+  const STATUS_LABEL: Record<string, string> = {
+    draft: 'Brouillon',
+    review: 'En revue',
+    published: 'Publié',
+    archived: 'Archivé',
+  };
+
+  const descriptionCount = description.length;
 
   async function publish() {
     setPublishError(null);
@@ -230,6 +340,29 @@ export function LegalEditor(props: LegalEditorProps) {
 
   return (
     <div className="space-y-4">
+      {/* Status pill + last save indicator */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
+            STATUS_PILL[status] ?? STATUS_PILL.draft
+          }`}
+        >
+          <span aria-hidden="true">●</span>
+          {STATUS_LABEL[status] ?? status} · v{version}
+        </span>
+        {lastSavedAt && saveState === 'idle' ? (
+          <span className="text-xs text-stone-500">
+            Dernière sauvegarde :{' '}
+            <time dateTime={new Date(lastSavedAt).toISOString()}>
+              {new Date(lastSavedAt).toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </time>
+          </span>
+        ) : null}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <label className="block">
           <span className="text-xs uppercase tracking-wider text-stone-600">Titre</span>
@@ -237,19 +370,27 @@ export function LegalEditor(props: LegalEditorProps) {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
           />
         </label>
         <label className="block">
-          <span className="text-xs uppercase tracking-wider text-stone-600">
-            Description (max 200)
+          <span className="flex items-baseline justify-between text-xs uppercase tracking-wider text-stone-600">
+            <span>Description (max 200)</span>
+            <span
+              className={`tabular-nums ${
+                descriptionCount > 180 ? 'text-amber-700' : 'text-stone-500'
+              }`}
+              aria-live="polite"
+            >
+              {descriptionCount}/200
+            </span>
           </span>
           <input
             type="text"
             maxLength={200}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
           />
         </label>
       </div>
@@ -263,30 +404,91 @@ export function LegalEditor(props: LegalEditorProps) {
         Inclure dans le sitemap / autoriser l&apos;indexation Google
       </label>
 
+      {/* Tabs mobile only — sur desktop les deux panes affichés côte à côte */}
+      <div className="lg:hidden">
+        <div className="inline-flex rounded-md border border-stone-300 bg-white" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'edit'}
+            onClick={() => setActiveTab('edit')}
+            className={`rounded-l-md px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 ${
+              activeTab === 'edit' ? 'bg-stone-900 text-white' : 'text-stone-700'
+            }`}
+          >
+            Éditer
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'preview'}
+            onClick={() => setActiveTab('preview')}
+            className={`rounded-r-md px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 ${
+              activeTab === 'preview' ? 'bg-stone-900 text-white' : 'text-stone-700'
+            }`}
+          >
+            Aperçu
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-3 lg:grid-cols-2">
-        <div>
+        <div className={activeTab === 'preview' ? 'hidden lg:block' : ''}>
           <div className="mb-1 flex items-center justify-between text-xs text-stone-500">
             <span className="uppercase tracking-wider">Markdown</span>
-            <span>
+            <span role="status" aria-live="polite" aria-busy={saveState === 'saving'}>
               {saveState === 'saving' ? 'Enregistrement…' : null}
               {saveState === 'saved' ? '✓ Enregistré' : null}
               {saveState === 'error' ? '⚠ Erreur de sauvegarde' : null}
             </span>
           </div>
-          <textarea
-            value={bodyMd}
-            onChange={(e) => setBodyMd(e.target.value)}
-            spellCheck={false}
-            className="h-[60vh] w-full resize-y border border-stone-300 bg-white p-3 font-mono text-sm leading-relaxed"
-          />
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={bodyMd}
+              onChange={(e) => handleBodyChange(e.target.value)}
+              onBlur={() => setTimeout(() => setShowVarSuggest(false), 200)}
+              spellCheck={false}
+              aria-label="Contenu Markdown"
+              className="h-[60vh] w-full resize-y border border-stone-300 bg-white p-3 font-mono text-sm leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+            />
+            {showVarSuggest && filteredVarSuggestions.length > 0 ? (
+              <ul
+                role="listbox"
+                aria-label="Variables disponibles"
+                className="absolute left-3 top-12 z-10 max-h-48 w-64 overflow-y-auto rounded-md border border-stone-300 bg-white shadow-lg"
+              >
+                {filteredVarSuggestions.map((k) => (
+                  <li key={k}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected="false"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        insertVarAtCursor(k);
+                      }}
+                      className="block w-full px-3 py-1.5 text-left text-xs font-mono hover:bg-stone-100 focus-visible:bg-stone-100 focus-visible:outline-none"
+                    >
+                      {`{{${k}}}`}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </div>
-        <div>
-          <div className="mb-1 text-xs uppercase tracking-wider text-stone-500">
-            Aperçu (preview client simplifiée)
+        <div className={activeTab === 'edit' ? 'hidden lg:block' : ''}>
+          <div className="mb-1 flex items-center justify-between text-xs uppercase tracking-wider text-stone-500">
+            <span>Aperçu</span>
+            <span className="text-[10px] normal-case tracking-normal text-stone-400" aria-live="polite">
+              {previewLoading ? 'rendu serveur…' : serverPreviewHtml ? '✓ rendu pipeline' : 'client fallback'}
+            </span>
           </div>
           <div
-            className="h-[60vh] overflow-y-auto border border-stone-200 bg-stone-50 p-4 text-sm leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            aria-label="Aperçu du rendu"
+            className="prose-femiglow h-[60vh] overflow-y-auto border border-stone-200 bg-stone-50 p-4 text-sm leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: serverPreviewHtml ?? previewHtml }}
           />
         </div>
       </div>
@@ -315,8 +517,8 @@ export function LegalEditor(props: LegalEditorProps) {
         >
           Historique
         </button>
-        <span className="ml-auto text-xs text-stone-500">
-          v{version} · {status}
+        <span className="ml-auto text-xs text-stone-500" aria-hidden="true">
+          {/* la pill en haut affiche v + status */}
         </span>
       </div>
 
