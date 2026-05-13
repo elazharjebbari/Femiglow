@@ -10,15 +10,21 @@ import Link from 'next/link';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ChatAdminNav } from '@/components/admin/chat/ChatAdminNav';
 import { ConversationQuickView } from '@/components/admin/chat/ConversationQuickView';
+import { LeadOutcomeSelect } from '@/components/admin/chat/LeadOutcomeSelect';
 import { adminQueries } from '@/lib/chat/admin/queries';
 import { isChatEnabled } from '@/lib/chat/feature-flag';
+import {
+  HOT_TRIGGERS,
+  formatLeadAge,
+  isHotPendingOverdue,
+} from '@/lib/chat/services/lead-sla';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  searchParams?: { outcome?: string; trigger?: string };
+  searchParams?: { outcome?: string; trigger?: string; hot?: string };
 }
 
 const OUTCOMES: ReadonlyArray<ChatLeadRow['outcome']> = [
@@ -48,6 +54,7 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
 
   const outcome = (searchParams?.outcome ?? '').trim();
   const trigger = (searchParams?.trigger ?? '').trim();
+  const hotOnly = searchParams?.hot === '1';
 
   let rows: ChatLeadRow[] = [];
   let queryError: string | null = null;
@@ -66,6 +73,19 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
       queryError = (err as Error).message;
     }
   }
+
+  // CHAT-066 — Filtre "Hot only" : ne garder que les triggers à forte
+  // intention (purchase-intent / explicit-request / inline-contact) pour
+  // que Care voie d'abord ce qui rapporte. Appliqué côté Node après le
+  // fetch pour éviter d'ajouter un IN multi-valeurs côté SQL.
+  if (hotOnly) {
+    rows = rows.filter((r) => HOT_TRIGGERS.has(r.triggerReason));
+  }
+
+  // Une seule référence "now" partagée par toutes les lignes pour que
+  // l'affichage d'âge et le test SLA restent cohérents intra-render.
+  const now = new Date();
+  const overdueCount = rows.filter((r) => isHotPendingOverdue(r, now)).length;
 
   const counts = {
     total: rows.length,
@@ -90,14 +110,40 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
             .
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          {/* CHAT-067 — Prévisualiser le digest hebdo avant l'envoi du lundi. */}
+          <a
+            href="/api/admin/chat/digest/preview"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
+          >
+            Aperçu digest hebdo
+          </a>
+          {/* CHAT-066 — Export CSV avec les filtres courants pour relances CRM. */}
+          <a
+            href={buildExportHref(outcome, trigger)}
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
+            download
+          >
+            ⬇ Exporter CSV
+          </a>
+        </div>
       </header>
 
-      <section className="mb-4 grid gap-2 sm:grid-cols-5" aria-label="Résumé outcomes">
+      <section className="mb-4 grid gap-2 sm:grid-cols-6" aria-label="Résumé outcomes">
         <Counter label="Total" value={counts.total} />
         <Counter label="Pending" value={counts.pending} />
         <Counter label="Reached" value={counts.reached} accent="amber" />
         <Counter label="Converted" value={counts.converted} accent="emerald" />
         <Counter label="Discarded" value={counts.discarded} accent="rose" />
+        {/* CHAT-066 — Hot pending dépassant le SLA Care (4h). Voyant rouge
+            si > 0 pour appeler le tri "Hot only" + traitement immédiat. */}
+        <Counter
+          label="SLA dépassé"
+          value={overdueCount}
+          accent={overdueCount > 0 ? 'rose' : undefined}
+        />
       </section>
 
       <form className="mb-4 flex flex-wrap gap-2 text-sm" method="get">
@@ -125,6 +171,16 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
             </option>
           ))}
         </select>
+        <label className="inline-flex items-center gap-1.5 rounded-md border border-stone-300 bg-white px-2 py-1.5 text-stone-700">
+          <input
+            type="checkbox"
+            name="hot"
+            value="1"
+            defaultChecked={hotOnly}
+            className="h-4 w-4"
+          />
+          Hot only
+        </label>
         <button
           type="submit"
           className="rounded-md bg-stone-900 px-3 py-1.5 text-white"
@@ -153,6 +209,7 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
               <th className="px-3 py-2">Téléphone</th>
               <th className="px-3 py-2">Trigger</th>
               <th className="px-3 py-2">Outcome</th>
+              <th className="px-3 py-2" title="Temps écoulé depuis la capture du lead">Attente</th>
               <th className="px-3 py-2">Page</th>
               <th className="px-3 py-2">Session</th>
               <th className="px-3 py-2">Créé</th>
@@ -162,20 +219,22 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
           <tbody className="divide-y divide-stone-100">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-stone-500">
+                <td colSpan={9} className="px-3 py-6 text-center text-stone-500">
                   Aucun lead chat ne correspond aux filtres.
                 </td>
               </tr>
             ) : (
-              rows.map((l) => (
-                <tr
-                  key={l.id}
-                  className={
-                    l.outcome === 'converted'
-                      ? 'bg-emerald-50/60 hover:bg-emerald-50'
-                      : 'hover:bg-stone-50'
-                  }
-                >
+              rows.map((l) => {
+                const overdue = isHotPendingOverdue(l, now);
+                // Priorité visuelle : overdue (rouge) > converted (vert) >
+                // base. On ne mélange pas pour éviter une ligne ambiguë.
+                const rowClass = overdue
+                  ? 'bg-rose-50 hover:bg-rose-100'
+                  : l.outcome === 'converted'
+                    ? 'bg-emerald-50/60 hover:bg-emerald-50'
+                    : 'hover:bg-stone-50';
+                return (
+                <tr key={l.id} className={rowClass}>
                   <td className="px-3 py-2 font-medium text-stone-900">{l.firstName}</td>
                   <td className="px-3 py-2 font-mono text-xs">{l.phoneE164}</td>
                   <td className="px-3 py-2">
@@ -184,7 +243,27 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <OutcomeBadge outcome={l.outcome} />
+                    <div className="flex flex-col gap-1">
+                      <OutcomeBadge outcome={l.outcome} />
+                      {/* CHAT-066 — Mise à jour inline (status change). */}
+                      <LeadOutcomeSelect leadId={l.id} initialOutcome={l.outcome} />
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-xs tabular-nums">
+                    <span
+                      className={
+                        overdue
+                          ? 'rounded-full bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-800'
+                          : 'text-stone-600'
+                      }
+                      title={
+                        overdue
+                          ? 'Hot pending dépassant le SLA Care (4h)'
+                          : `Capturé le ${l.createdAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+                      }
+                    >
+                      {formatLeadAge(l.createdAt, now)}
+                    </span>
                   </td>
                   <td className="px-3 py-2 text-xs text-stone-600">{l.page ?? '—'}</td>
                   <td className="px-3 py-2 font-mono text-xs">
@@ -217,13 +296,21 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
     </AdminShell>
   );
+}
+
+function buildExportHref(outcome: string, trigger: string): string {
+  const params = new URLSearchParams({ format: 'csv' });
+  if (outcome) params.set('outcome', outcome);
+  if (trigger) params.set('trigger', trigger);
+  return `/api/admin/chat/export/leads?${params.toString()}`;
 }
 
 function Counter({

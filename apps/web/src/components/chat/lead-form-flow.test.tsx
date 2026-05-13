@@ -104,6 +104,11 @@ function stubFetchError(status: number, json: unknown): void {
 
 beforeEach(() => {
   resetStore();
+  // CHAT-063 — Le LeadFormBubble pré-remplit firstName/phone depuis
+  // localStorage. On nettoie entre chaque test pour rester déterministe.
+  if (typeof window !== 'undefined') {
+    window.localStorage.clear();
+  }
 });
 
 afterEach(() => {
@@ -413,5 +418,36 @@ describe('Lead-form flow — full UI integration (CHA-225)', () => {
     });
     render(<MessageList />);
     expect(screen.getByTestId('chat-lead-offer')).toHaveAttribute('dir', 'rtl');
+  });
+
+  it("CHAT-063 : pré-remplit firstName + phone depuis localStorage", async () => {
+    window.localStorage.setItem(
+      'fg.chat.lead-prefill.v1',
+      JSON.stringify({
+        firstName: 'Salma',
+        phone: '+212600112233',
+        country: 'MA',
+        savedAt: Date.now(),
+      }),
+    );
+    pushAssistantMessage('m1', 'Voici…');
+    act(() => {
+      useChatStore.getState().receiveLeadOffer({
+        messageId: 'm1',
+        reason: 'purchase-intent',
+        copyKey: 'purchase-intent',
+      });
+      useChatStore.getState().openLeadForm();
+    });
+    render(<MessageList />);
+    const form = await screen.findByTestId('chat-lead-form');
+    const firstName = form.querySelector(
+      'input[autocomplete="given-name"]',
+    ) as HTMLInputElement;
+    const phone = form.querySelector('input[type="tel"]') as HTMLInputElement;
+    await waitFor(() => {
+      expect(firstName.value).toBe('Salma');
+      expect(phone.value).toBe('+212600112233');
+    });
   });
 });

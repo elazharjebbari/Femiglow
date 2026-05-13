@@ -34,7 +34,15 @@ import { providerRouter } from './provider-router';
 import { sanitizeAndRedact } from './sanitize';
 import { charterFilter } from './charter-filter';
 import { detectIntent } from './intent';
+import { classifyByEmbedding } from './intent-vector';
+import {
+  embedTexts,
+  EmbeddingProviderUnavailableError,
+} from './embeddings';
+import { faqRepo } from '../repos/faq';
 import { shouldOfferLeadForm } from './lead-decision';
+import { notifyHotLead } from './lead-alerts';
+import { notifyFrustrationSpike } from './frustration-alerts';
 import { detectInlineContact } from './phone-detect';
 import { ragService, type RetrievedChunk } from '../rag/service';
 import { getRuntimeBool } from '../runtime-setting';
@@ -55,7 +63,8 @@ export async function* streamReply(
   const t0 = Date.now();
   const sanitized = sanitizeAndRedact(input.text);
   const language = detectLanguage(sanitized.contentSafe);
-  const intentTag = detectIntent(sanitized.contentSafe);
+  let intentTag = detectIntent(sanitized.contentSafe);
+  let intentSource: 'regex' | 'vector' = intentTag === 'misc' ? 'vector' : 'regex';
   const charterIn = charterFilter.inbound(sanitized.contentSafe);
   if (!charterIn.allowed) {
     yield {
@@ -67,6 +76,49 @@ export async function* streamReply(
     };
     return;
   }
+
+  // CHA-006 — On embed la question UNE FOIS et on partage le vecteur
+  // avec la cascade FAQ (L3) et le classifieur d'intent vectoriel.
+  // Si le provider d'embedding est down, on retombe sur regex-only +
+  // RAG+LLM (cascade silencieuse — aucune erreur côté visiteuse).
+  let questionVector: number[] | null = null;
+  try {
+    const embedResult = await embedTexts([sanitized.contentSafe]);
+    questionVector = embedResult.vectors[0] ?? null;
+  } catch (err) {
+    if (!(err instanceof EmbeddingProviderUnavailableError)) {
+      logger.warn('chat.orchestrator.embed_skipped', {
+        sessionId: input.session.id,
+        reason: (err as Error).message,
+      });
+    }
+  }
+
+  // Upgrade intent si la regex a échoué (misc) mais que le vecteur
+  // matche un centroïde au-dessus du seuil. Le tag upgradé sert :
+  //   - aux KPI (`message_sent_user.intent`),
+  //   - à `lead-decision` (déclenchement formulaire selon intent),
+  //   - aux logs admin.
+  if (questionVector && intentTag === 'misc') {
+    try {
+      const vectorMatch = await classifyByEmbedding(questionVector, language);
+      if (vectorMatch) {
+        intentTag = vectorMatch.intent;
+        logger.info('chat.orchestrator.intent_upgrade', {
+          sessionId: input.session.id,
+          intent: vectorMatch.intent,
+          score: vectorMatch.score,
+          sampleCount: vectorMatch.sampleCount,
+        });
+      }
+    } catch (err) {
+      logger.warn('chat.orchestrator.intent_vector_failed', {
+        sessionId: input.session.id,
+        reason: (err as Error).message,
+      });
+    }
+  }
+  intentSource = intentTag === 'misc' ? 'vector' : intentSource;
 
   // Persiste le message user
   const userMessage = await messageRepo.create({
@@ -82,6 +134,7 @@ export async function* streamReply(
     messageId: userMessage.id,
     redactions: sanitized.redactions,
     intent: intentTag,
+    intentSource,
     charter: charterIn.reason ?? null,
   });
   await sessionRepo.update(input.session.id, { language });
@@ -96,6 +149,88 @@ export async function* streamReply(
     return;
   }
   const recent = await messageRepo.recentForMemory(input.session.id, MEMORY_WINDOW);
+
+  // CHAT-066 — Escalade Care si l'utilisateur exprime une frustration
+  // récurrente. Non bloquant : `notifyFrustrationSpike` swallow tout
+  // (DB down, Slack down) pour préserver la latence first-token.
+  if (intentTag === 'frustration') {
+    void notifyFrustrationSpike({
+      sessionId: input.session.id,
+      history: recent.map((m) => ({ role: m.role, content: m.content })),
+      currentIntent: intentTag,
+      adminBaseUrl: env.NEXT_PUBLIC_SITE_URL,
+    });
+  }
+
+  // CHA-301 — Cascade L3 : match FAQ vectoriel avant RAG+LLM.
+  //
+  // Si la question matche une `chat_faq_entry` au-dessus de son
+  // threshold (calibré ~0.60 pour text-embedding-3-small), on sert
+  // directement la `scripted_reply` sans solliciter le LLM. Économise
+  // coût + latence (~400ms vs ~2-4s) et garantit une réponse cohérente
+  // éditorialement (textes validés par le PO).
+  //
+  // Réutilise `questionVector` déjà calculé ci-dessus pour l'intent
+  // vectoriel — pas de re-embed.
+  try {
+    if (questionVector) {
+      const faqMatch = await faqRepo.matchByEmbedding(questionVector, {
+        language,
+        audience: 'all',
+      });
+      if (faqMatch) {
+        const reply = faqMatch.scriptedReply;
+        const assistantMessage = await messageRepo.create({
+          sessionId: input.session.id,
+          role: 'assistant',
+          content: reply,
+          contentSafe: reply,
+          language,
+          status: 'sent',
+          parentMessageId: userMessage.id,
+          modelName: `faq:${faqMatch.key}`,
+        });
+        const latencyMs = Date.now() - t0;
+        await eventRepo.append(input.session.id, 'message_sent_agent', {
+          messageId: assistantMessage.id,
+          source: 'faq',
+          faqKey: faqMatch.key,
+          score: faqMatch.score,
+          threshold: faqMatch.threshold,
+          intentHint: faqMatch.intentHint,
+          tokensIn: 0,
+          tokensOut: 0,
+          latencyMs,
+        });
+        logger.info('chat.orchestrator.faq_hit', {
+          sessionId: input.session.id,
+          faqKey: faqMatch.key,
+          score: faqMatch.score,
+          threshold: faqMatch.threshold,
+        });
+        yield {
+          event: 'start',
+          data: { messageId: assistantMessage.id, language },
+        };
+        yield {
+          event: 'chunk',
+          data: { messageId: assistantMessage.id, delta: reply },
+        };
+        yield {
+          event: 'end',
+          data: { messageId: assistantMessage.id, latencyMs },
+        };
+        return;
+      }
+    }
+  } catch (err) {
+    if (!(err instanceof EmbeddingProviderUnavailableError)) {
+      logger.warn('chat.orchestrator.faq_skipped', {
+        sessionId: input.session.id,
+        reason: (err as Error).message,
+      });
+    }
+  }
 
   // CHA-097 — RAG retrieve. Si aucune source disponible (pas de
   // provider embedding ou index vide), on continue sans RAG.
@@ -372,6 +507,8 @@ export async function* streamReply(
               leadId: autoLead.id,
               confidence: detection.confidence,
             });
+            // CHAT-066 — Alerte Slack pour ce lead "chaud" auto-créé.
+            void notifyHotLead(autoLead, { adminBaseUrl: env.NEXT_PUBLIC_SITE_URL });
           } catch (err) {
             // On ne casse pas le flux — log + KPI suffisent.
             logger.warn('chat.orchestrator.inline_contact_auto_lead_failed', {

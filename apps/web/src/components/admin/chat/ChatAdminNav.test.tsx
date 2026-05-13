@@ -2,7 +2,7 @@
  * CHA-225 — Tests de la sous-navigation `/admin/chat`.
  *
  * Vérifie en particulier que :
- *  - les 11 onglets sont rendus (incluant le nouvel onglet « Leads chat »)
+ *  - les onglets attendus sont rendus dans l'ordre (incluant « Leads chat »)
  *  - chaque onglet pointe vers la bonne route
  *  - l'onglet actif reçoit `aria-current="page"` (a11y)
  *  - aucune violation axe
@@ -20,6 +20,8 @@ const EXPECTED_LINKS: ReadonlyArray<{ label: string; href: string }> = [
   { label: 'KPIs', href: '/admin/chat/kpis' },
   { label: 'Instructions', href: '/admin/chat/instructions' },
   { label: 'Sources', href: '/admin/chat/sources' },
+  { label: 'FAQ', href: '/admin/chat/faq' },
+  { label: 'Suggestions', href: '/admin/chat/suggestions' },
   { label: 'Providers', href: '/admin/chat/providers' },
   { label: 'Themes', href: '/admin/chat/themes' },
   { label: 'Langues', href: '/admin/chat/lang' },

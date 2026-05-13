@@ -368,6 +368,10 @@ export const chatConversationEvent = pgTable(
         // CHA-225 — formalisation d'un lead `inline-contact` en lead
         // formel après soumission du formulaire (consent RGPD propre).
         'chat_lead_form_upgrade',
+        // CHAT-066 — escalade frustration : 2 messages user consécutifs
+        // détectés comme `frustration` → alerte Slack #chat-care et trace
+        // KPI (analytics : tx frustration / session, MTTR Care, etc.).
+        'frustration_detected',
       ],
     }).notNull(),
     payload: jsonb('payload'),
@@ -586,6 +590,158 @@ export const chatLead = pgTable(
   }),
 );
 
+// ===========================================================================
+// CHA-300 — V5/V6 : intents, canned pairs, FAQ entries
+// ===========================================================================
+//
+// Architecture cascade (cf. docs/dossier-chat-v2/03-backend/intent-detection.md) :
+//   1) intent detection → centroid match (HNSW cosine)
+//   2) canned-pair match (exact key) → scripted reply local-stream
+//   3) FAQ entry match (HNSW cosine on question_embedding)
+//   4) RAG + LLM fallback
+//
+// Cf. docs/dossier-chat-v2/02-data/data-dictionary.csv lignes 2-53.
+
+// ---------------------------------------------------------------------------
+// chat_intent_centroid — vecteur agrégé par intent (cascade level 1)
+// ---------------------------------------------------------------------------
+
+export const chatIntentCentroid = pgTable(
+  'chat_intent_centroid',
+  {
+    id: text('id').primaryKey(), // ic_xxxxxxxx
+    intent: text('intent').notNull(), // ex. 'pricing', 'shipping', 'usage'
+    language: text('language', { enum: ['all', 'fr', 'ar', 'ar-MA'] })
+      .notNull()
+      .default('all'),
+    vector: customVector('vector', { dimensions: 1536 }).notNull(),
+    sampleCount: integer('sample_count').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    intentLangIdx: uniqueIndex('chat_ic_intent_lang_idx').on(t.intent, t.language),
+    // Index HNSW créé en SQL brut dans la migration.
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_intent_example — dataset de phrases labellisées (entraine centroïdes)
+// ---------------------------------------------------------------------------
+
+export const chatIntentExample = pgTable(
+  'chat_intent_example',
+  {
+    id: text('id').primaryKey(), // ie_xxxxxxxx
+    intent: text('intent').notNull(),
+    language: text('language', { enum: ['fr', 'ar', 'ar-MA'] }).notNull(),
+    text: text('text').notNull(),
+    addedBy: text('added_by').notNull(),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    intentLangIdx: index('chat_ie_intent_lang_idx').on(t.intent, t.language),
+    activeIdx: index('chat_ie_active_idx')
+      .on(t.intent)
+      .where(sql`${t.deletedAt} IS NULL`),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_canned_pair — paires (question pré-écrite ↔ réponse scriptée)
+// Sert les SuggestionPills sur le widget (page-aware via page_pattern).
+// ---------------------------------------------------------------------------
+
+export const chatCannedPair = pgTable(
+  'chat_canned_pair',
+  {
+    id: text('id').primaryKey(), // cnp_xxxxxxxx
+    key: text('key').notNull(), // ex. 'price-kit', 'shipping-cod-rabat'
+    pagePattern: text('page_pattern').notNull().default('*'),
+    audience: text('audience', { enum: ['all', 'b2c', 'b2b'] })
+      .notNull()
+      .default('all'),
+    order: integer('order').notNull().default(0),
+    enabled: boolean('enabled').notNull().default(true),
+    labelFr: text('label_fr').notNull(),
+    labelAr: text('label_ar').notNull(),
+    labelArMa: text('label_ar_ma').notNull(),
+    scriptedReplyFr: text('scripted_reply_fr').notNull(),
+    scriptedReplyAr: text('scripted_reply_ar').notNull(),
+    scriptedReplyArMa: text('scripted_reply_ar_ma').notNull(),
+    ctaLabel: text('cta_label'),
+    ctaUrl: text('cta_url'),
+    allowFollowupLlm: boolean('allow_followup_llm').notNull().default(true),
+    status: text('status', { enum: ['draft', 'review', 'published', 'archived'] })
+      .notNull()
+      .default('draft'),
+    currentVersionId: text('current_version_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    keyUniqIdx: uniqueIndex('chat_cnp_key_idx').on(t.key),
+    publishedIdx: index('chat_cnp_published_idx')
+      .on(t.pagePattern, t.audience, t.order)
+      .where(sql`${t.status} = 'published' AND ${t.enabled} = true`),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_canned_pair_version — historique immutable des body publiés
+// ---------------------------------------------------------------------------
+
+export const chatCannedPairVersion = pgTable(
+  'chat_canned_pair_version',
+  {
+    id: text('id').primaryKey(), // cnv_xxxxxxxx
+    pairId: text('pair_id')
+      .notNull()
+      .references(() => chatCannedPair.id, { onDelete: 'cascade' }),
+    bodyFr: text('body_fr').notNull(),
+    bodyAr: text('body_ar').notNull(),
+    bodyArMa: text('body_ar_ma').notNull(),
+    bodyHash: text('body_hash').notNull(), // sha256 du tuple body_*
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+    publishedBy: text('published_by').notNull(),
+  },
+  (t) => ({
+    pairIdx: index('chat_cnv_pair_idx').on(t.pairId, t.publishedAt),
+    pairHashIdx: uniqueIndex('chat_cnv_pair_hash_idx').on(t.pairId, t.bodyHash),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_faq_entry — FAQ avec embedding question (cascade level 3)
+// ---------------------------------------------------------------------------
+
+export const chatFaqEntry = pgTable(
+  'chat_faq_entry',
+  {
+    id: text('id').primaryKey(), // fq_xxxxxxxx
+    key: text('key').notNull(),
+    language: text('language', { enum: ['fr', 'ar', 'ar-MA'] }).notNull(),
+    questionCanonical: text('question_canonical').notNull(),
+    questionEmbedding: customVector('question_embedding', { dimensions: 1536 }).notNull(),
+    scriptedReply: text('scripted_reply').notNull(),
+    intentHint: text('intent_hint'), // FK soft → chatIntentCentroid.intent
+    threshold: numeric('threshold').notNull().default('0.85'),
+    enabled: boolean('enabled').notNull().default(true),
+    audience: text('audience', { enum: ['all', 'b2c', 'b2b'] })
+      .notNull()
+      .default('all'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    keyLangIdx: uniqueIndex('chat_fq_key_lang_idx').on(t.key, t.language),
+    enabledIdx: index('chat_fq_enabled_idx')
+      .on(t.language, t.audience)
+      .where(sql`${t.enabled} = true`),
+    // Index HNSW sur question_embedding créé en SQL brut dans la migration.
+  }),
+);
+
 // ---------------------------------------------------------------------------
 // Inferred row / insert types
 // ---------------------------------------------------------------------------
@@ -611,3 +767,13 @@ export type ChatRuntimeSettingRow = typeof chatRuntimeSetting.$inferSelect;
 export type ChatRuntimeSettingInsert = typeof chatRuntimeSetting.$inferInsert;
 export type ChatLeadRow = typeof chatLead.$inferSelect;
 export type ChatLeadInsert = typeof chatLead.$inferInsert;
+export type ChatIntentCentroidRow = typeof chatIntentCentroid.$inferSelect;
+export type ChatIntentCentroidInsert = typeof chatIntentCentroid.$inferInsert;
+export type ChatIntentExampleRow = typeof chatIntentExample.$inferSelect;
+export type ChatIntentExampleInsert = typeof chatIntentExample.$inferInsert;
+export type ChatCannedPairRow = typeof chatCannedPair.$inferSelect;
+export type ChatCannedPairInsert = typeof chatCannedPair.$inferInsert;
+export type ChatCannedPairVersionRow = typeof chatCannedPairVersion.$inferSelect;
+export type ChatCannedPairVersionInsert = typeof chatCannedPairVersion.$inferInsert;
+export type ChatFaqEntryRow = typeof chatFaqEntry.$inferSelect;
+export type ChatFaqEntryInsert = typeof chatFaqEntry.$inferInsert;

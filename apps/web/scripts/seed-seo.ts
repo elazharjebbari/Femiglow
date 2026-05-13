@@ -5,6 +5,7 @@
  *
  * Usage : `pnpm tsx scripts/seed-seo.ts`
  */
+import './_load-env.mjs';
 import { upsertOverride, upsertSeoSettings } from '@/lib/db/queries/seo';
 import { seoSettingsDefault } from '@/lib/seo/defaults';
 import { FEMIGLOW_KNOWN_PAGES } from '@/lib/seo/known-pages';

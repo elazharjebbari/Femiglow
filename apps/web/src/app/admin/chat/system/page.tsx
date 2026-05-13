@@ -15,9 +15,20 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ChatSystemPage() {
+const CRON_FLASH: Record<string, string> = {
+  'cron-kb-sync': 'Re-synchronisation des sources lancée.',
+  'cron-intent-recompute': 'Recalcul des centroïdes intent lancé.',
+  'cron-budget-watch': 'Surveillance des budgets providers lancée.',
+};
+
+export default async function ChatSystemPage({
+  searchParams,
+}: {
+  searchParams: { ok?: string };
+}) {
   const session = await requireAdmin('/admin/chat/system');
   const enabled = isChatEnabled();
+  const flash = searchParams.ok ? CRON_FLASH[searchParams.ok] : null;
 
   if (!enabled) {
     return (
@@ -52,6 +63,55 @@ export default async function ChatSystemPage() {
           Pipeline en temps réel, providers, base de connaissance.
         </p>
       </header>
+
+      {flash ? (
+        <div
+          role="status"
+          className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+        >
+          {flash}
+        </div>
+      ) : null}
+
+      <section className="mb-6 rounded-md border border-stone-200 bg-white p-4">
+        <h2 className="mb-2 text-sm font-medium text-stone-800">
+          Trigger manuel des crons chat
+        </h2>
+        <p className="mb-3 text-xs text-stone-500">
+          Utile après un import (sources, exemples intent) pour ne pas attendre
+          le schedule Vercel. Idempotent : un second run sans nouveau contenu
+          est un no-op.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <form method="post" action="/api/admin/chat/cron">
+            <input type="hidden" name="job" value="kb-sync" />
+            <button
+              type="submit"
+              className="rounded-md border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-100"
+            >
+              Re-sync sources volatiles
+            </button>
+          </form>
+          <form method="post" action="/api/admin/chat/cron">
+            <input type="hidden" name="job" value="intent-recompute" />
+            <button
+              type="submit"
+              className="rounded-md border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-100"
+            >
+              Recalcule centroïdes intent
+            </button>
+          </form>
+          <form method="post" action="/api/admin/chat/cron">
+            <input type="hidden" name="job" value="budget-watch" />
+            <button
+              type="submit"
+              className="rounded-md border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-100"
+            >
+              Surveille budgets providers
+            </button>
+          </form>
+        </div>
+      </section>
 
       <SystemDashboard
         providers={providers.map((p) => ({

@@ -31,6 +31,7 @@ import { sessionRepo } from '@/lib/chat/repos/session';
 import { rateLimit } from '@/lib/chat/services/rate-limit';
 import { detectIntent } from '@/lib/chat/services/intent';
 import { dispatchLeadWebhook } from '@/lib/chat/services/lead-webhook';
+import { notifyHotLead } from '@/lib/chat/services/lead-alerts';
 import { getRuntimeBool } from '@/lib/chat/runtime-setting';
 import { env } from '@/lib/env';
 import { parsePhone, PhoneParseError } from '@/lib/phone';
@@ -190,6 +191,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     phoneCountry: phone.country,
     phoneType: phone.type,
   });
+
+  // CHAT-066 — Alerte Slack pour lead "chaud" (purchase-intent,
+  // callback-request, explicit-request, inline-contact). Non bloquant :
+  // toute erreur est swallowée par `notifyHotLead`.
+  void notifyHotLead(lead, { adminBaseUrl: env.NEXT_PUBLIC_SITE_URL });
 
   // Webhook (non bloquant côté client : on lance et on attend en
   // arrière-plan, mais on capture le résultat pour la réponse afin que

@@ -1,17 +1,22 @@
 /**
  * Seed media — lit `docs/images/values/**` et crée les enregistrements media
- * en mode passthrough (l'optimisation se fera via le worker).
+ * en optimisant **inline** (variantes AVIF/WebP/JPEG générées immédiatement
+ * via `optimizeImage`). Heal automatique : pour un media existant dont les
+ * variantes physiques sont manquantes (driver `local` uniquement), on
+ * ré-optimise au lieu de skip.
  *
  * Usage : `pnpm tsx scripts/seed-media.ts`
  *
  * Exporte aussi `runMediaSeed(opts)` pour réutilisation côté Seeders Runner.
  */
+import './_load-env.mjs';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { createMedia } from '@/lib/db/queries/media';
-import { findMediaBySlug } from '@/lib/db/queries/media';
-import { enqueueJob } from '@/lib/db/queries/media-jobs';
+import { createMedia, findMediaBySlug, updateMedia } from '@/lib/db/queries/media';
+import { upsertVariant } from '@/lib/db/queries/media-variants';
 import { getStorage } from '@/lib/media/storage';
+import { optimizeImage } from '@/lib/media/pipeline/optimize-image';
+import { mediaVariantsHealthy } from '@/lib/media/heal';
 
 const ROOT = path.resolve(process.cwd(), '../..', 'docs/images/values');
 const SECTION_PROFILE: Record<string, 'hero' | 'inline' | 'thumb'> = {
@@ -51,6 +56,8 @@ export interface MediaSeedReport {
   skipped: number;
   scanned: number;
   errors: number;
+  /** Médias existants dont les variantes manquaient sur disque et ont été régénérées. */
+  healed: number;
 }
 
 export async function runMediaSeed(
@@ -69,7 +76,6 @@ export async function runMediaSeed(
     throw new Error(`[seed-media] ${root} n'est pas un répertoire`);
   }
 
-  // Première passe : compter les fichiers pour ETA.
   const files: string[] = [];
   for await (const file of walk(root)) {
     files.push(file);
@@ -80,6 +86,7 @@ export async function runMediaSeed(
   const storage = getStorage();
   let created = 0;
   let skipped = 0;
+  let healed = 0;
   let errors = 0;
   let processed = 0;
 
@@ -87,7 +94,7 @@ export async function runMediaSeed(
     processed += 1;
     if (processed % 5 === 0 || processed === total) {
       opts.onProgress?.(
-        `${processed}/${total} (créés ${created}, ignorés ${skipped})`,
+        `${processed}/${total} (créés ${created}, ignorés ${skipped}, soignés ${healed})`,
         0.1 + (0.9 * processed) / Math.max(1, total),
       );
     }
@@ -102,44 +109,91 @@ export async function runMediaSeed(
     const slug = toSlug(filename, section);
 
     try {
+      const buffer = await readFile(file);
+      const key = `originals/${slug}.${ext}`;
+      const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+      const profile = SECTION_PROFILE[section] ?? 'inline';
       const existing = await findMediaBySlug(slug);
-      if (existing) {
+
+      let media = existing;
+
+      if (!existing) {
+        const { url } = await storage.put({
+          key,
+          body: buffer,
+          contentType: mime,
+        });
+        media = await createMedia({
+          kind: 'image',
+          source: 'upload',
+          slug,
+          alt: filename.replace(/[-_.]/g, ' ').replace(/\.[^.]+$/, ''),
+          originalUrl: url,
+          originalFilename: filename,
+          originalSizeBytes: buffer.length,
+          originalMime: mime,
+          qualityProfile: profile,
+          loadingStrategy: profile === 'hero' ? 'eager' : 'viewport',
+          isHero: profile === 'hero',
+          status: 'processing',
+        });
+      } else {
+        // Heal : si le media est déjà en DB, on vérifie qu'au moins une
+        // variante physique existe encore. Sinon, on régénère.
+        if (await mediaVariantsHealthy(existing.id)) {
+          skipped += 1;
+          continue;
+        }
+      }
+
+      if (!media) {
         skipped += 1;
         continue;
       }
 
-      const buffer = await readFile(file);
-      const key = `originals/${slug}.${ext}`;
-      const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-      const { url } = await storage.put({
-        key,
-        body: buffer,
-        contentType: mime,
-      });
+      // SVG : pas de pipeline raster (sharp ne sait pas), on flag ready sans
+      // variantes (servi tel quel depuis originals/).
+      if (ext === 'svg') {
+        await updateMedia(media.id, { status: 'ready' });
+        if (existing) healed += 1;
+        else created += 1;
+        continue;
+      }
 
-      const profile = SECTION_PROFILE[section] ?? 'inline';
-      const media = await createMedia({
-        kind: 'image',
-        source: 'upload',
-        slug,
-        alt: filename.replace(/[-_.]/g, ' ').replace(/\.[^.]+$/, ''),
-        originalUrl: url,
-        originalFilename: filename,
-        originalSizeBytes: buffer.length,
-        originalMime: mime,
-        qualityProfile: profile,
-        loadingStrategy: profile === 'hero' ? 'eager' : 'viewport',
-        isHero: profile === 'hero',
+      const optim = await optimizeImage({
+        mediaId: media.id,
+        buffer,
       });
-      await enqueueJob({ mediaId: media.id, kind: 'optimize' });
-      created += 1;
+      for (const v of optim.variants) {
+        await upsertVariant({
+          mediaId: media.id,
+          format: v.format,
+          breakpoint: v.breakpoint,
+          width: v.width,
+          height: v.height,
+          quality: v.quality,
+          sizeBytes: v.sizeBytes,
+          url: v.url,
+          checksum: v.checksum,
+        });
+      }
+      await updateMedia(media.id, {
+        status: 'ready',
+        blurhash: optim.blurhash,
+        palette: optim.palette,
+        phash: optim.phash,
+        originalWidth: optim.width,
+        originalHeight: optim.height,
+      });
+      if (existing) healed += 1;
+      else created += 1;
     } catch (err) {
       errors += 1;
       console.error(`[seed-media] erreur ${slug}:`, err);
     }
   }
 
-  return { created, skipped, scanned: total, errors };
+  return { created, skipped, scanned: total, errors, healed };
 }
 
 async function main() {
@@ -147,7 +201,7 @@ async function main() {
     onProgress: (label) => console.log(`[seed-media] ${label}`),
   });
   console.log(
-    `[seed-media] terminé. créés: ${report.created}, ignorés: ${report.skipped}, scannés: ${report.scanned}, erreurs: ${report.errors}`,
+    `[seed-media] terminé. créés: ${report.created}, soignés: ${report.healed}, ignorés: ${report.skipped}, scannés: ${report.scanned}, erreurs: ${report.errors}`,
   );
 }
 

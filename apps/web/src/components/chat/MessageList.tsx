@@ -9,6 +9,7 @@
 import { Fragment, useEffect, useRef } from 'react';
 
 import { useChatStore } from './chat-store';
+import { useCannedPair } from './hooks/use-canned-pair';
 import { LeadFormBubble } from './LeadFormBubble';
 import { MessageBubble } from './MessageBubble';
 
@@ -20,6 +21,7 @@ export function MessageList() {
   const error = useChatStore((s) => s.error);
   const leadOfferStatus = useChatStore((s) => s.leadOffer.status);
   const leadOfferMessageId = useChatStore((s) => s.leadOffer.triggeringMessageId);
+  const { triggerPill } = useCannedPair();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,11 +76,24 @@ export function MessageList() {
           <LeadFormBubble language={language} />
         )}
       </ul>
-      {suggestions.length > 0 && messages.length === 0 && (
-        <ul className="mt-4 flex flex-wrap gap-2">
+      {suggestions.length > 0 && (
+        // CHA-300 v2 — pills persistantes (cf. dossier-chat-v2/02-conversion-playbook §1).
+        // Le guard initial `messages.length === 0` masquait les CTAs dès le 1er
+        // message, ce qui faisait chuter le `suggestion_clicked` rate. On garde
+        // les pills visibles tant qu'il en reste : chaque clic retire SA pill
+        // (cf. `use-canned-pair.ts`) — pas le bloc entier — pour autoriser
+        // plusieurs micro-décisions au fil de la conversation.
+        <ul
+          className="mt-4 flex flex-wrap gap-2"
+          aria-label="Suggestions rapides"
+        >
           {suggestions.map((s) => (
-            <li key={s}>
-              <SuggestionPill text={s} />
+            <li key={s.key}>
+              <SuggestionPill
+                pillKey={s.key}
+                label={s.label}
+                onTrigger={triggerPill}
+              />
             </li>
           ))}
         </ul>
@@ -92,24 +107,28 @@ export function MessageList() {
   );
 }
 
-function SuggestionPill({ text }: { text: string }) {
-  // CHA-062 — pill cliquable. Pour l'instant : textarea pre-fill.
-  // CHA-244 — text-sm (au lieu de text-xs) + padding plus généreux
-  // pour rester tappable sans zoom.
+function SuggestionPill({
+  pillKey,
+  label,
+  onTrigger,
+}: {
+  pillKey: string;
+  label: string;
+  onTrigger: (key: string, label: string) => void | Promise<void>;
+}) {
+  // CHA-300 — pill page-aware liée à une `chat_canned_pair`. Le clic appelle
+  // POST /api/chat/canned-pair via `useCannedPair`, qui pousse les bulles
+  // user + assistant dans le store.
   return (
     <button
       type="button"
+      data-pill-key={pillKey}
       className="rounded-full border border-stone-300 bg-white px-3.5 py-1.5 text-sm text-stone-700 hover:border-stone-400 focus:outline-none focus-visible:ring-1 focus-visible:ring-stone-900"
       onClick={() => {
-        const el = document.querySelector<HTMLTextAreaElement>('[data-testid="chat-input"]');
-        if (el) {
-          el.value = text;
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          el.focus();
-        }
+        void onTrigger(pillKey, label);
       }}
     >
-      {text}
+      {label}
     </button>
   );
 }

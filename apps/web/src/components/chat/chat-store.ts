@@ -15,6 +15,7 @@ import type {
   ChatLanguage,
   ChatLeadTriggerReason,
   ChatMessageDto,
+  ChatSuggestionPill,
 } from '@/lib/chat/contracts';
 
 interface ChatPersistedState {
@@ -43,7 +44,7 @@ interface ChatVolatileState {
   pendingAssistantId: string | null;
   error: string | null;
   greeting: string;
-  suggestions: string[];
+  suggestions: ChatSuggestionPill[];
   leadOffer: LeadOfferState;
 }
 
@@ -56,7 +57,7 @@ interface ChatActions {
     sessionId: string;
     language: ChatLanguage;
     greeting: string;
-    suggestions: string[];
+    suggestions: ChatSuggestionPill[];
     messages: ChatMessageDto[];
   }): void;
   beginStreaming(messageId: string): void;
@@ -67,6 +68,10 @@ interface ChatActions {
   ): void;
   endStreaming(messageId: string): void;
   pushUserMessage(message: ChatMessageDto): void;
+  // CHA-300 — Push direct d'une bulle assistant (canned-pair) sans passer
+  // par le flux streaming. Utilisé quand le serveur retourne déjà la
+  // `scripted_reply_*` complète. Réinitialise les pills (one-shot).
+  pushAssistantMessage(message: ChatMessageDto): void;
   setError(message: string | null): void;
   // CHA-212 — Actions formulaire lead.
   receiveLeadOffer(payload: {
@@ -185,6 +190,14 @@ export const useChatStore = create<ChatState>()(
         })),
       pushUserMessage: (m) =>
         set((s) => ({ messages: [...s.messages, m], hasInteracted: true })),
+      pushAssistantMessage: (m) =>
+        set((s) => ({
+          // CHA-300 v2 — on n'éteint plus le bloc suggestions ici. Le retrait
+          // est fait *par pill cliquée* dans `use-canned-pair.ts`, ce qui
+          // autorise plusieurs micro-décisions de conversion dans la même
+          // session (cf. dossier-chat-v2/00-vision/02-conversion-playbook §1).
+          messages: [...s.messages, m],
+        })),
       setError: (error) => set({ error }),
       // CHA-212 / CHA-229 — Lead form actions.
       receiveLeadOffer: ({ messageId, reason, copyKey }) =>

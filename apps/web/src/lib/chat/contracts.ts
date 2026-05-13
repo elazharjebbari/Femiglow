@@ -67,12 +67,24 @@ export type ChatMessageDto = z.infer<typeof chatMessageDto>;
 // Snapshot session (réponse `GET /api/chat/session`)
 // ---------------------------------------------------------------------------
 
+// CHA-300 — SuggestionPill page-aware (canned pairs V5/V6).
+// `key` identifie la paire côté backend pour servir la `scripted_reply_*`
+// dans la langue de session via POST /api/chat/canned-pair/{key}.
+// `ctaLabel`/`ctaUrl` rendus en bouton secondaire dans la bulle de réponse.
+export const chatSuggestionPill = z.object({
+  key: z.string().min(1).max(80),
+  label: z.string().min(1).max(120),
+  ctaLabel: z.string().max(60).nullable().optional(),
+  ctaUrl: z.string().max(2048).nullable().optional(),
+});
+export type ChatSuggestionPill = z.infer<typeof chatSuggestionPill>;
+
 export const chatSessionSnapshot = z.object({
   sessionId: z.string(),
   language: chatLanguageSchema,
   status: chatSessionStatusSchema,
   greeting: z.string(),
-  suggestions: z.array(z.string()).max(3),
+  suggestions: z.array(chatSuggestionPill).max(6),
   messages: z.array(chatMessageDto).max(200),
   themeVariantId: z.string(),
   variantOpaqueId: z.string(),
@@ -174,6 +186,26 @@ export const chatLeadContactResponse = z.object({
   outcomeMessage: z.string(),
 });
 export type ChatLeadContactResponse = z.infer<typeof chatLeadContactResponse>;
+
+// CHA-300 — Trigger d'une suggestion pré-écrite. Le serveur valide la `key`
+// contre `chat_canned_pair`, sert la `scripted_reply_*` dans la langue de
+// session, persiste les 2 messages (user + assistant) et émet l'event analytics.
+export const chatCannedPairTriggerInput = z.object({
+  sessionId: z.string().min(1).max(64),
+  key: z.string().min(1).max(80),
+  language: chatLanguageSchema.optional(),
+});
+export type ChatCannedPairTriggerInput = z.infer<typeof chatCannedPairTriggerInput>;
+
+export const chatCannedPairTriggerResponse = z.object({
+  ok: z.literal(true),
+  userMessage: chatMessageDto,
+  assistantMessage: chatMessageDto,
+  ctaLabel: z.string().nullable().optional(),
+  ctaUrl: z.string().nullable().optional(),
+  allowFollowupLlm: z.boolean(),
+});
+export type ChatCannedPairTriggerResponse = z.infer<typeof chatCannedPairTriggerResponse>;
 
 export const chatEventInput = z.object({
   sessionId: z.string(),
@@ -306,6 +338,53 @@ export const adminProviderInput = z.object({
   egressAllowed: z.boolean().default(false),
 });
 export type AdminProviderInput = z.infer<typeof adminProviderInput>;
+
+/**
+ * CHA-303 — Admin FAQ CRUD : payload form-encoded ou JSON pour créer/
+ * mettre à jour une entrée FAQ. `id` présent → patch ; absent → upsert
+ * par (`key`, `language`). Le seuil est borné [0.30, 0.95] : sous 0.30
+ * on matcherait n'importe quoi, au-dessus 0.95 on bloquerait toute
+ * paraphrase.
+ */
+export const adminFaqEntryInput = z.object({
+  id: z.string().optional(),
+  key: z.string().min(2).max(120).regex(/^[a-z0-9-:_/.]+$/i, 'key alphanumeric/dash'),
+  language: chatLanguageSchema,
+  questionCanonical: z.string().min(3).max(500),
+  scriptedReply: z.string().min(3).max(4_000),
+  intentHint: z.string().max(80).optional(),
+  threshold: z.number().min(0.3).max(0.95).default(0.55),
+  audience: z.enum(['all', 'b2c', 'b2b']).default('all'),
+  enabled: z.boolean().default(true),
+});
+export type AdminFaqEntryInput = z.infer<typeof adminFaqEntryInput>;
+
+/**
+ * CHA-300 — Admin Suggestions/Canned-Pair CRUD : payload form-encoded ou
+ * JSON pour créer/mettre à jour une SuggestionPill page-aware. Les 6 champs
+ * de localisation (label + scripted_reply x 3 langues) sont obligatoires :
+ * une suggestion publiée sans traduction casserait l'UX dans la langue
+ * manquante.
+ */
+export const adminCannedPairInput = z.object({
+  id: z.string().optional(),
+  key: z.string().min(2).max(80).regex(/^[a-z0-9-:_/.]+$/i, 'key alphanumeric/dash'),
+  pagePattern: z.string().min(1).max(120),
+  audience: z.enum(['all', 'b2c', 'b2b']).default('all'),
+  order: z.number().int().min(0).max(9999).default(100),
+  enabled: z.boolean().default(true),
+  labelFr: z.string().min(1).max(120),
+  labelAr: z.string().min(1).max(120),
+  labelArMa: z.string().min(1).max(120),
+  scriptedReplyFr: z.string().min(3).max(4_000),
+  scriptedReplyAr: z.string().min(3).max(4_000),
+  scriptedReplyArMa: z.string().min(3).max(4_000),
+  ctaLabel: z.string().max(60).nullable().optional(),
+  ctaUrl: z.string().max(2048).nullable().optional(),
+  allowFollowupLlm: z.boolean().default(false),
+  status: z.enum(['draft', 'review', 'published', 'archived']).default('draft'),
+});
+export type AdminCannedPairInput = z.infer<typeof adminCannedPairInput>;
 
 export const adminSourceInput = z.object({
   kind: z.enum(['url', 'markdown', 'pdf', 'docx', 'faq', 'snippet']),

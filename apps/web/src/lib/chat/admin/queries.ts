@@ -5,13 +5,15 @@
  * ne pas exposer la SQL côté client. Toutes les listes paginent et
  * trient par `created_at` desc.
  */
-import { and, count, desc, eq, gte, inArray, isNotNull, lte, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
 
 import { rowsOf } from '@/lib/db/exec';
 
 import { requireChatDb } from '../db/client';
 import {
+  chatCannedPair,
   chatConversationEvent,
+  chatFaqEntry,
   chatFeedback,
   chatKnowledgeSource,
   chatLead,
@@ -19,13 +21,15 @@ import {
   chatProviderConfig,
   chatSession,
   chatThemePreset,
+  type ChatCannedPairRow,
+  type ChatFaqEntryRow,
   type ChatLeadRow,
   type ChatSessionRow,
 } from '../db/schema';
 
 export type KpiWindow = 'today' | 'yesterday' | '7d' | '30d' | '90d' | 'all';
 
-function windowStart(w: KpiWindow): Date {
+export function windowStart(w: KpiWindow): Date {
   const now = new Date();
   const day = 24 * 60 * 60 * 1000;
   switch (w) {
@@ -321,5 +325,178 @@ export const adminQueries = {
       .from(chatConversationEvent)
       .orderBy(desc(chatConversationEvent.occurredAt))
       .limit(limit);
+  },
+
+  /**
+   * CHAT-055 — Compteurs Business du funnel + distribution d'intents.
+   *
+   * On reste sur des COUNT DISTINCT pour les paliers session-based (un
+   * visiteur qui envoie 10 messages compte 1 fois pour `messagesUserSessions`).
+   * Les conversions cumulent `chat_session.converted_at` et les leads
+   * `outcome='converted'` (même règle que `overviewKpis`, sinon les deux
+   * pages divergent).
+   */
+  async businessFunnel(window: KpiWindow = '30d') {
+    const db = requireChatDb();
+    const start = windowStart(window);
+
+    const [sessions] = await db
+      .select({ value: count() })
+      .from(chatSession)
+      .where(gte(chatSession.openedAt, start));
+
+    const [messagesUserSessions] = await db
+      .select({ value: sql<number>`COUNT(DISTINCT ${chatMessage.sessionId})` })
+      .from(chatMessage)
+      .innerJoin(chatSession, eq(chatSession.id, chatMessage.sessionId))
+      .where(
+        and(
+          gte(chatSession.openedAt, start),
+          eq(chatMessage.role, 'user'),
+          eq(chatMessage.status, 'sent'),
+        ),
+      );
+
+    const [leadsOffered] = await db
+      .select({ value: sql<number>`COUNT(DISTINCT ${chatConversationEvent.sessionId})` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          gte(chatConversationEvent.occurredAt, start),
+          eq(chatConversationEvent.type, 'chat_lead_form_offered'),
+        ),
+      );
+
+    const [leadsSubmitted] = await db
+      .select({ value: count() })
+      .from(chatLead)
+      .where(gte(chatLead.createdAt, start));
+
+    const [conversions] = await db
+      .select({ value: sql<number>`COUNT(DISTINCT ${chatSession.id})` })
+      .from(chatSession)
+      .leftJoin(chatLead, eq(chatLead.sessionId, chatSession.id))
+      .where(
+        and(
+          gte(chatSession.openedAt, start),
+          or(
+            isNotNull(chatSession.convertedAt),
+            eq(chatLead.outcome, 'converted'),
+          ),
+        ),
+      );
+
+    // Distribution d'intents : on agrège sur `chat_lead.intent_at_capture`
+    // (les seuls intents qui valent vraiment quelque chose côté Business :
+    // un visiteur qui a déclenché un lead). NULL est groupé sous 'unknown'.
+    const intentRows = await db
+      .select({
+        intent: sql<string>`COALESCE(${chatLead.intentAtCapture}, 'unknown')`,
+        value: count(),
+      })
+      .from(chatLead)
+      .where(gte(chatLead.createdAt, start))
+      .groupBy(sql`COALESCE(${chatLead.intentAtCapture}, 'unknown')`);
+
+    const intentCounts: Record<string, number> = {};
+    for (const row of intentRows) {
+      intentCounts[row.intent] = Number(row.value ?? 0);
+    }
+
+    return {
+      window,
+      counts: {
+        sessions: Number(sessions?.value ?? 0),
+        messagesUserSessions: Number(messagesUserSessions?.value ?? 0),
+        leadsOffered: Number(leadsOffered?.value ?? 0),
+        leadsSubmitted: Number(leadsSubmitted?.value ?? 0),
+        conversions: Number(conversions?.value ?? 0),
+      },
+      intentCounts,
+    };
+  },
+
+  /**
+   * CHAT-055 — Vue Editorial (Yasmine) : matériel à publier + matériel à
+   * rafraîchir. On sépare les deux pour un rendu en deux tables claires.
+   *
+   * - reviewCannedPairs : paires `status='review'` (ou 'draft') prêtes à
+   *   être validées et publiées. Tri par `updatedAt` desc = ce qui bouge.
+   * - staleFaqEntries : entries `enabled=true` non touchées depuis 90 j.
+   *   Proxy au "feedback < 0 ou sim baisse 7j" du doc, faute de tracking
+   *   FAQ→feedback aujourd'hui (chat_feedback est lié à message_id, pas
+   *   à faq_entry).
+   */
+  /**
+   * CHAT-066 — Données brutes pour le dashboard Care (`/admin/chat/care`).
+   *
+   * Retourne tous les leads `pending` (toutes triggers — le builder pur
+   * filtre les triggers hot) + les événements `frustration_detected` sur
+   * 7 jours (avec `sessionId` + `occurredAt`, suffisant pour le summary).
+   *
+   * On limite chaque liste à 200 lignes — au-delà l'utilisateur ira
+   * directement dans `/admin/chat/leads` ou `/admin/chat/conversations`
+   * pour filtrer / paginer.
+   */
+  async careOverview(opts: { limit?: number } = {}): Promise<{
+    pendingLeads: ChatLeadRow[];
+    frustrationEvents: Array<{ sessionId: string; occurredAt: Date }>;
+  }> {
+    const db = requireChatDb();
+    const limit = opts.limit ?? 200;
+    const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const pendingLeads = await db
+      .select()
+      .from(chatLead)
+      .where(eq(chatLead.outcome, 'pending'))
+      .orderBy(desc(chatLead.createdAt))
+      .limit(limit);
+
+    const frustrationRows = await db
+      .select({
+        sessionId: chatConversationEvent.sessionId,
+        occurredAt: chatConversationEvent.occurredAt,
+      })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'frustration_detected'),
+          gte(chatConversationEvent.occurredAt, since7d),
+        ),
+      )
+      .orderBy(desc(chatConversationEvent.occurredAt))
+      .limit(limit);
+
+    return { pendingLeads, frustrationEvents: frustrationRows };
+  },
+
+  async editorialOverview(opts: { staleAfterDays?: number; limit?: number } = {}): Promise<{
+    reviewCannedPairs: ChatCannedPairRow[];
+    staleFaqEntries: ChatFaqEntryRow[];
+    staleAfter: Date;
+  }> {
+    const db = requireChatDb();
+    const limit = opts.limit ?? 50;
+    const staleAfterDays = opts.staleAfterDays ?? 90;
+    const staleAfter = new Date(Date.now() - staleAfterDays * 24 * 60 * 60 * 1000);
+
+    const reviewCannedPairs = await db
+      .select()
+      .from(chatCannedPair)
+      .where(inArray(chatCannedPair.status, ['review', 'draft']))
+      .orderBy(desc(chatCannedPair.updatedAt))
+      .limit(limit);
+
+    const staleFaqEntries = await db
+      .select()
+      .from(chatFaqEntry)
+      .where(
+        and(eq(chatFaqEntry.enabled, true), lt(chatFaqEntry.updatedAt, staleAfter)),
+      )
+      .orderBy(chatFaqEntry.updatedAt)
+      .limit(limit);
+
+    return { reviewCannedPairs, staleFaqEntries, staleAfter };
   },
 };

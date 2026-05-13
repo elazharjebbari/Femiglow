@@ -16,6 +16,7 @@
  *   - depuis l'endpoint admin `POST /api/admin/delivery-cities/seed` pour
  *     déclencher un re-seed manuel via l'UI.
  */
+import './_load-env.mjs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 

@@ -5,6 +5,7 @@
  *
  * Usage : `pnpm tsx scripts/seed-products.ts`
  */
+import './_load-env.mjs';
 import { sql } from 'drizzle-orm';
 import {
   createProduct,

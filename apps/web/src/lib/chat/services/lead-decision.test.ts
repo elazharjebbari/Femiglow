@@ -348,6 +348,46 @@ describe("règle 7 — after-hours", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Règle 8 — Engagement (CHAT-064)
+// ---------------------------------------------------------------------------
+
+describe("règle 8 — engagement (CHAT-064)", () => {
+  it("propose après 6 messages user même sur intent non stagnant (ingredient)", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      history: [
+        userMsg('hi'),
+        userMsg('quel format ?'),
+        userMsg('ingrédients ?'),
+        userMsg('vegan ?'),
+        userMsg('et la durée ?'),
+        userMsg('et le pack famille ?'),
+      ],
+      currentIntent: 'ingredient' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(true);
+    expect(result.reason).toBe('long-no-progress');
+    expect(result.copyKey).toBe('manual');
+    expect(result.debug?.trigger).toBe('engagement');
+  });
+
+  it("ne propose pas à 5 user messages sur intent non stagnant", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      history: [
+        userMsg('hi'),
+        userMsg('quel format ?'),
+        userMsg('ingrédients ?'),
+        userMsg('vegan ?'),
+        userMsg('et la durée ?'),
+      ],
+      currentIntent: 'ingredient' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cas par défaut (aucune règle ne matche)
 // ---------------------------------------------------------------------------
 

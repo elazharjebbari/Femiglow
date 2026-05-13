@@ -46,6 +46,7 @@ import {
 } from '@/lib/db/queries/component-fields';
 import { getSiteComponentByKey } from '@/lib/db/queries/site-components';
 import { optimizeImage } from '@/lib/media/pipeline/optimize-image';
+import { mediaVariantsHealthy } from '@/lib/media/heal';
 import {
   DEFAULT_BREAKPOINTS,
   THUMB_BREAKPOINTS,
@@ -563,6 +564,14 @@ export async function seedFromDocs(opts: SeedOptions = {}): Promise<SeedReport> 
 
       let media = await findMediaBySlug(slug);
 
+      // Heal automatique : si le media est déjà ready mais ses variantes
+      // physiques manquent sur disque (driver local), on force la
+      // ré-optimisation comme si `--force` avait été passé. Sans ça, un
+      // reset soft re-seed la DB mais laisse l'utilisateur avec des 404
+      // partout.
+      const mediaHealthy = media ? await mediaVariantsHealthy(media.id) : true;
+      const shouldOptimize = !media || opts.force || !mediaHealthy;
+
       if (!media) {
         const buf = await fs.readFile(path.join(root, sourcePath));
         const seedOptimize = optimizeOptionsForSeed(seed, mapping.slot);
@@ -609,7 +618,7 @@ export async function seedFromDocs(opts: SeedOptions = {}): Promise<SeedReport> 
         });
         report.images.seeded += 1;
         itemStatus = 'seeded';
-      } else if (opts.force) {
+      } else if (shouldOptimize) {
         const buf = await fs.readFile(path.join(root, sourcePath));
         const seedOptimize = optimizeOptionsForSeed(seed, mapping.slot);
         // Synchronise les overrides si la politique du registre a évolué

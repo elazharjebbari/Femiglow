@@ -1,8 +1,19 @@
 /**
  * CHA-066 — Hook `useChatSession`.
  *
- * Charge la session via GET /api/chat/session au premier mount,
- * peuple le store. Idempotent : si déjà chargée, ne refait pas l'appel.
+ * Charge la session via GET /api/chat/session au mount du panel.
+ *
+ * Subtilité hydration (cf. bug 2026-05-13 « pills disparues après reload ») :
+ * Zustand `persist` ne sauvegarde QUE `sessionId / language / hasInteracted /
+ * leadOfferDismissedSessionId / leadCapturedSessionId` (cf. `partialize`).
+ * Au reload, le store est rehydraté avec sessionId connu mais
+ * `messages = [] / suggestions = []`. L'ancien guard `if (sessionId) return`
+ * sautait alors la requête → pas de pills, pas d'historique → UX cassée.
+ *
+ * Nouveau contrat : on déclenche le fetch si on n'a pas encore d'identifiant
+ * de session, OU si l'on a un sessionId rehydraté mais le snapshot client est
+ * vide (pas de messages ni de suggestions). Pendant un stream actif on
+ * s'abstient (le store contient déjà l'optimistic user + le bubble streamée).
  */
 'use client';
 
@@ -13,11 +24,17 @@ import type { ChatSessionSnapshot } from '@/lib/chat/contracts';
 
 export function useChatSession(initialPage?: string): void {
   const sessionId = useChatStore((s) => s.sessionId);
+  const hasMessages = useChatStore((s) => s.messages.length > 0);
+  const hasSuggestions = useChatStore((s) => s.suggestions.length > 0);
+  const isStreaming = useChatStore((s) => s.isStreaming);
   const setSession = useChatStore((s) => s.setSession);
   const setError = useChatStore((s) => s.setError);
 
   useEffect(() => {
-    if (sessionId) return;
+    // Déjà rempli côté client : pas besoin de re-fetch.
+    if (sessionId && (hasMessages || hasSuggestions)) return;
+    // Optimistic user en cours de stream : ne pas écraser le store.
+    if (isStreaming) return;
     let cancelled = false;
     const params = new URLSearchParams();
     if (initialPage) params.set('page', initialPage);
@@ -33,7 +50,18 @@ export function useChatSession(initialPage?: string): void {
         return (await res.json()) as ChatSessionSnapshot;
       })
       .then((snapshot) => {
-        if (cancelled || !snapshot) return;
+        if (cancelled || !snapshot) {
+          console.warn('[chat-session] fetch resolved but cancelled or null', {
+            cancelled,
+            hasSnapshot: !!snapshot,
+          });
+          return;
+        }
+        console.info('[chat-session] hydrating store', {
+          sessionId: snapshot.sessionId,
+          messages: snapshot.messages.length,
+          suggestions: snapshot.suggestions.length,
+        });
         setSession({
           sessionId: snapshot.sessionId,
           language: snapshot.language,
@@ -49,5 +77,13 @@ export function useChatSession(initialPage?: string): void {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, initialPage, setSession, setError]);
+  }, [
+    sessionId,
+    hasMessages,
+    hasSuggestions,
+    isStreaming,
+    initialPage,
+    setSession,
+    setError,
+  ]);
 }
