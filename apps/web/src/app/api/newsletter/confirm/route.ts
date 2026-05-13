@@ -15,6 +15,7 @@ import { db as getDb } from '@/lib/db/client';
 import { emailSubscriberLink } from '@/lib/db/schema-emails';
 import { verifyUnsubToken } from '@/lib/mail/unsub-token';
 import { logger } from '@/lib/logging/logger';
+import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,9 @@ async function confirm(token: string | null): Promise<{ ok: boolean; email?: str
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
+  const blocked = await enforceMailRateLimit('newsletter-confirm', req);
+  if (blocked) return blocked;
+
   const token = new URL(req.url).searchParams.get('t');
   const result = await confirm(token);
   if (!result.ok) {

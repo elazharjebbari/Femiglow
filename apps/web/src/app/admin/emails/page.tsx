@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { getOutboxKpi, listRecentOutbox } from '@/lib/admin/emails/queries';
+import { checkEmailingHealth } from '@/lib/admin/emails/health';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,18 +23,22 @@ function pct(num: number, den: number): string {
 
 export default async function AdminEmailsPage() {
   const session = await requireAdmin('/admin/emails');
-  const [kpi, recent] = await Promise.all([
+  const [kpi, recent, health] = await Promise.all([
     getOutboxKpi(),
     listRecentOutbox({ limit: 8 }),
+    checkEmailingHealth(),
   ]);
 
   return (
     <AdminShell adminEmail={session.email} active="emails">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Emails</h1>
-        <p className="mt-1 text-sm text-stone-600">
-          Transactionnels envoyés via Stalwart. KPIs 7 derniers jours.
-        </p>
+      <header className="mb-6 flex items-baseline justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Emails</h1>
+          <p className="mt-1 text-sm text-stone-600">
+            Transactionnels envoyés via Stalwart. KPIs 7 derniers jours.
+          </p>
+        </div>
+        <HealthBadge level={health.level} report={health} />
       </header>
 
       <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
@@ -128,6 +133,48 @@ function Kpi({
       <p className={`mt-1 text-2xl font-semibold tabular-nums ${toneClass}`}>{value}</p>
       {sub ? <p className="mt-0.5 text-xs text-stone-500">{sub}</p> : null}
     </div>
+  );
+}
+
+function HealthBadge({
+  level,
+  report,
+}: {
+  level: 'ok' | 'degraded' | 'incident';
+  report: Awaited<ReturnType<typeof import('@/lib/admin/emails/health').checkEmailingHealth>>;
+}) {
+  const cls =
+    level === 'ok'
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      : level === 'degraded'
+        ? 'bg-amber-50 text-amber-700 border-amber-200'
+        : 'bg-rose-50 text-rose-700 border-rose-200';
+  const dot = level === 'ok' ? '🟢' : level === 'degraded' ? '🟡' : '🔴';
+  const label = level === 'ok' ? 'Système OK' : level === 'degraded' ? 'Dégradé' : 'Incident';
+  const c = report.checks;
+  const details: string[] = [];
+  if (!c.smtpConfigured.ok) details.push(`SMTP non configuré (${c.smtpConfigured.missing?.join(', ')})`);
+  if (!c.db.ok) details.push(`DB indispo${c.db.error ? ` (${c.db.error})` : ''}`);
+  if (!c.outboxStuck.ok) details.push(`${c.outboxStuck.stuckCount} stuck en 'sending' > 5 min`);
+  if (!c.dlq24h.ok) details.push(`${c.dlq24h.count} DLQ sur 24h`);
+  if (c.pendingNow > 50) details.push(`${c.pendingNow} pending en attente`);
+  return (
+    <details className={`rounded-md border px-3 py-1.5 text-xs ${cls}`}>
+      <summary className="cursor-pointer font-medium select-none">
+        {dot} {label}
+      </summary>
+      <ul className="mt-2 space-y-1">
+        <li>SMTP : {c.smtpConfigured.ok ? '✓ configuré' : '✗ ' + (c.smtpConfigured.missing?.join(', ') ?? '')}</li>
+        <li>DB : {c.db.ok ? '✓ ok' : '✗ ' + (c.db.error ?? 'erreur')}</li>
+        <li>Outbox stuck : {c.outboxStuck.stuckCount}</li>
+        <li>DLQ 24h : {c.dlq24h.count}</li>
+        <li>Pending : {c.pendingNow}</li>
+        <li>Dernier livré : {c.lastDeliveredAt ? new Date(c.lastDeliveredAt).toLocaleString('fr-FR') : 'jamais'}</li>
+      </ul>
+      {details.length > 0 ? (
+        <p className="mt-2 font-medium">{details.join(' · ')}</p>
+      ) : null}
+    </details>
   );
 }
 

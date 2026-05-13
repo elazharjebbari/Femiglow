@@ -20,6 +20,7 @@ import {
 } from '@/lib/db/schema-emails';
 import { verifyUnsubToken } from '@/lib/mail/unsub-token';
 import { logger } from '@/lib/logging/logger';
+import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,8 @@ async function process(token: string | null): Promise<{ ok: boolean; email?: str
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
+  const blocked = await enforceMailRateLimit('unsubscribe', req);
+  if (blocked) return blocked;
   const token = new URL(req.url).searchParams.get('t');
   const result = await process(token);
   if (!result.ok) return new NextResponse(`Unsubscribe failed: ${result.reason}`, { status: 400 });
@@ -60,6 +63,8 @@ export async function POST(req: NextRequest): Promise<Response> {
 }
 
 export async function GET(req: NextRequest): Promise<Response> {
+  const blocked = await enforceMailRateLimit('unsubscribe', req);
+  if (blocked) return blocked;
   const token = new URL(req.url).searchParams.get('t');
   const result = await process(token);
   if (!result.ok) {

@@ -3,11 +3,15 @@ import { contactFormSchema } from '@/lib/schemas';
 import { logger } from '@/lib/logging/logger';
 import { dispatchContactWebhook } from '@/lib/webhooks/outbound/sources/from-contact';
 import { sendTransactional } from '@/lib/mail/send';
+import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const blocked = await enforceMailRateLimit('contact', request);
+  if (blocked) return blocked;
+
   let payload: unknown;
   try {
     payload = await request.json();

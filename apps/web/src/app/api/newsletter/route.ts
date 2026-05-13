@@ -5,6 +5,7 @@ import { logger } from '@/lib/logging/logger';
 import { env } from '@/lib/env';
 import { sendTransactional } from '@/lib/mail/send';
 import { generateUnsubToken } from '@/lib/mail/unsub-token';
+import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,9 @@ const newsletterSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const blocked = await enforceMailRateLimit('newsletter', request);
+  if (blocked) return blocked;
+
   let payload: unknown;
   try {
     payload = await request.json();

@@ -26,6 +26,7 @@ import {
   isKnownEvent,
   type StalwartWebhookEvent,
 } from '@/lib/mail/webhooks/stalwart-parser';
+import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,6 +39,9 @@ function constantTimeEqual(a: string, b: string): boolean {
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
+  const blocked = await enforceMailRateLimit('webhook-stalwart', req);
+  if (blocked) return blocked;
+
   const secret = env.FEMIGLOW_STALWART_WEBHOOK_SECRET;
   if (!secret) {
     logger.warn('mail.webhook.stalwart.no_secret_configured');
