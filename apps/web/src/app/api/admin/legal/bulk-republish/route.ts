@@ -9,6 +9,7 @@ import {
   LEGAL_PUBLISHED_TAG,
 } from '@/lib/legal/cache-tags';
 import { requireSameOrigin } from '@/lib/legal/csrf';
+import { requireLegalPermission } from '@/lib/legal/permissions';
 import { publishLegalPage } from '@/lib/legal/publish';
 import { listPagesUsingVar } from '@/lib/legal/repository';
 import { legalTemplateVarKeySchema } from '@/lib/legal/types';
@@ -46,6 +47,7 @@ export async function POST(request: Request): Promise<Response> {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
     requireSameOrigin(request);
+    await requireLegalPermission('publish', session);
 
     let payload: unknown;
     try {

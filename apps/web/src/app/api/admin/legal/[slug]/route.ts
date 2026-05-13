@@ -4,6 +4,7 @@ import { getAdminSession } from '@/lib/auth/require-admin';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { logLegalEvent } from '@/lib/legal/audit';
 import { requireSameOrigin } from '@/lib/legal/csrf';
+import { requireLegalPermission } from '@/lib/legal/permissions';
 import {
   archiveLegalPage,
   getLegalPageBySlug,
@@ -77,6 +78,7 @@ export async function PATCH(
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
     requireSameOrigin(request);
+    await requireLegalPermission('write', session);
 
     let payload: unknown;
     try {
@@ -160,6 +162,7 @@ export async function DELETE(
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
     requireSameOrigin(request);
+    await requireLegalPermission('delete', session);
 
     const existing = await getLegalPageBySlug(params.slug);
     if (!existing) throw new HttpError('not_found', 'Page non trouvée');
