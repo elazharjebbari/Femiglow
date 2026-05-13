@@ -93,3 +93,49 @@ test.describe('API insights protégées', () => {
     expect(res.status()).toBe(401);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// Régressions tracking-improvement — fix double-shell + 500 storage absent
+// ─────────────────────────────────────────────────────────────────────────
+
+test.describe('Régressions insights (post-fix)', () => {
+  test("un seul AdminShell rendu (pas de double-imbrication)", async ({ page }) => {
+    await page.goto('/admin/analytics/insights');
+    if (page.url().includes('/admin/login')) return;
+
+    // L'AdminShell rend une zone "Console FemiGlow" (logo/header).
+    // Si la page enfant re-rend AdminShell, on en a deux côte-à-côte.
+    const headerLogos = page.getByText(/console femi/i);
+    expect(await headerLogos.count()).toBeLessThanOrEqual(1);
+
+    // Nav principal admin ne doit apparaître qu'une fois.
+    const adminNav = page.getByRole('navigation', { name: /admin|console/i });
+    expect(await adminNav.count()).toBeLessThanOrEqual(1);
+  });
+
+  test('aucune réponse 5xx sur overview ou refresh au chargement', async ({ page }) => {
+    const failures: Array<{ url: string; status: number }> = [];
+    page.on('response', (res) => {
+      const url = res.url();
+      if (
+        (url.includes('/api/admin/analytics/insights/overview') ||
+          url.includes('/api/admin/analytics/insights/refresh')) &&
+        res.status() >= 500
+      ) {
+        failures.push({ url, status: res.status() });
+      }
+    });
+    await page.goto('/admin/analytics/insights');
+    if (page.url().includes('/admin/login')) return;
+    await page.waitForTimeout(3000);
+    expect(failures).toEqual([]);
+  });
+
+  test("pas de bandeau 'Impossible de charger ces données'", async ({ page }) => {
+    await page.goto('/admin/analytics/insights');
+    if (page.url().includes('/admin/login')) return;
+    await page.waitForTimeout(2000);
+    const errorBanner = page.getByText(/impossible de charger ces données/i);
+    expect(await errorBanner.count()).toBe(0);
+  });
+});
