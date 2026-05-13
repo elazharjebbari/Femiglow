@@ -38,8 +38,13 @@ export async function GET(): Promise<Response> {
 
     const drizzle = db();
     if (!drizzle) {
-      // En mode memory (tests/dev sans DB), on retourne une réponse vide.
-      return NextResponse.json({ providers: [], generatedAt: new Date().toISOString() });
+      // En mode memory (tests/dev sans DB), on retourne une réponse vide
+      // avec le même cache-control que le path nominal — comportement stable
+      // côté UI quel que soit l'env.
+      return NextResponse.json(
+        { providers: [], generatedAt: new Date().toISOString() },
+        { headers: { 'cache-control': 'no-store' } },
+      );
     }
 
     // UNNEST sur providers_dispatched + lecture du JSON providers_results.
