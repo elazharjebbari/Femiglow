@@ -103,6 +103,30 @@ export async function scanAndDispatchCartAbandon(
         error: String(err),
       });
     }
+
+    // M4 — Trigger cart-abandoned-1h automation (no-op if disabled or no email).
+    const leadEmail = (lead as unknown as { email?: string | null }).email;
+    if (leadEmail) {
+      try {
+        const { triggerAutomation } = await import('@/lib/mail/automation/triggers');
+        await triggerAutomation(
+          'cart-abandoned-1h',
+          {
+            recipientEmail: leadEmail,
+            firstName: lead.firstName,
+            cartItemsLabel: '(panier en cours)',
+            resumeUrl: 'https://femiglow-maroc.com/panier',
+          },
+          { dedupeKey: `lead-${lead.id}` },
+        );
+      } catch (err) {
+        logger.error('automation.cart_abandoned.trigger_error', {
+          leadId: lead.id,
+          error: String(err),
+        });
+      }
+    }
+
     // Stamp anti-doublon — qu'on ait réussi ou échoué, on ne re-tente plus.
     try {
       await db
