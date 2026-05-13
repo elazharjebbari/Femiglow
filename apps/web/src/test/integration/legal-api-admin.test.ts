@@ -555,6 +555,23 @@ describe('POST /api/admin/legal/[slug]/publish', () => {
     );
     expect(res.status).toBe(404);
   });
+
+  it('422 same_actor si publisher == submitter (4-eyes)', async () => {
+    vi.mocked(publishMod.publishLegalPage).mockResolvedValue({
+      ok: false,
+      code: 'same_actor',
+    });
+    const res = await publishRoute(
+      new Request('http://x', {
+        method: 'POST',
+        body: JSON.stringify({ confirm: 'PUBLIER' }),
+      }),
+      { params: { slug: 'cgv' } },
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('same_actor');
+  });
 });
 
 describe('GET /api/admin/legal/[slug]/history', () => {

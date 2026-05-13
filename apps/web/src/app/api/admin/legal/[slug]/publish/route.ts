@@ -62,6 +62,18 @@ export async function POST(
         { status: 400 },
       );
     }
+    if (result.code === 'same_actor') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'same_actor',
+            message:
+              'Tu ne peux pas publier une page que tu as toi-même soumise pour revue. Demande à un autre admin de publier.',
+          },
+        },
+        { status: 422 },
+      );
+    }
     return NextResponse.json(
       {
         error: { code: 'missing_required_vars', message: 'Variables obligatoires manquantes' },

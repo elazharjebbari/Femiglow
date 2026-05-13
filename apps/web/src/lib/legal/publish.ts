@@ -12,7 +12,8 @@ export type PublishOutcome =
   | { ok: true; version: number; publishedAt: Date }
   | { ok: false; code: 'not_found' }
   | { ok: false; code: 'missing_required_vars'; missing: string[] }
-  | { ok: false; code: 'confirm_mismatch' };
+  | { ok: false; code: 'confirm_mismatch' }
+  | { ok: false; code: 'same_actor' };
 
 export async function publishLegalPage(
   slug: string,
@@ -28,6 +29,18 @@ export async function publishLegalPage(
 
   const page = await getLegalPageBySlug(slug);
   if (!page) return { ok: false, code: 'not_found' };
+
+  // 4-eyes : si la page est en review et nécessite une revue juridique,
+  // l'admin qui a soumis ne peut pas publier elle-même. Les pages avec
+  // requireLegalReview=false (livraison, FAQ) sautent ce check.
+  if (
+    page.requireLegalReview &&
+    page.status === 'review' &&
+    page.submittedBy &&
+    page.submittedBy === actorId
+  ) {
+    return { ok: false, code: 'same_actor' };
+  }
 
   const dbVars = await listAllTemplateVars();
   const missing = detectMissingVars(page.bodyMd, dbVars);
