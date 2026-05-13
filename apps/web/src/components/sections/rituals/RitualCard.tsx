@@ -79,10 +79,10 @@ export function RitualCard({
         className,
       )}
     >
-      {photo && isCompact && (
+      {photo && isCompact && onPhotoClick && (
         <button
           type="button"
-          onClick={() => onPhotoClick?.(0)}
+          onClick={() => onPhotoClick(0)}
           aria-label={`Voir la photo en grand : ${buildPhotoAlt(data)}`}
           className="relative block w-full overflow-hidden border border-[var(--ritual-card-border-color)] aspect-[var(--ritual-module-card-aspect)]"
         >
@@ -99,11 +99,26 @@ export function RitualCard({
           />
         </button>
       )}
+      {photo && isCompact && !onPhotoClick && (
+        <div className="relative block w-full overflow-hidden border border-[var(--ritual-card-border-color)] aspect-[var(--ritual-module-card-aspect)]">
+          <Image
+            src={photo.thumbUrl}
+            alt={photo.alt ?? buildPhotoAlt(data)}
+            fill
+            sizes="(max-width: 768px) 100vw, 320px"
+            className="object-cover"
+            style={{
+              objectPosition: `${photo.focalX * 100}% ${photo.focalY * 100}%`,
+            }}
+            loading="lazy"
+          />
+        </div>
+      )}
 
-      {photo && !isCompact && (
+      {photo && !isCompact && onPhotoClick && (
         <button
           type="button"
-          onClick={() => onPhotoClick?.(0)}
+          onClick={() => onPhotoClick(0)}
           aria-label={`Voir la photo en grand : ${buildPhotoAlt(data)}`}
           className="float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]"
         >
@@ -120,6 +135,22 @@ export function RitualCard({
             loading="lazy"
           />
         </button>
+      )}
+      {photo && !isCompact && !onPhotoClick && (
+        <div className="float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]">
+          <Image
+            src={photo.thumbUrl}
+            alt={photo.alt ?? buildPhotoAlt(data)}
+            width={80}
+            height={80}
+            sizes="80px"
+            className="h-20 w-20 object-cover"
+            style={{
+              objectPosition: `${photo.focalX * 100}% ${photo.focalY * 100}%`,
+            }}
+            loading="lazy"
+          />
+        </div>
       )}
 
       <blockquote
