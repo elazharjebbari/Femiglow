@@ -7,7 +7,6 @@ import { DEFAULT_VERSION_ID } from '@/lib/tracking/mappings/types';
 import { MappingCreateWizard } from './MappingCreateWizard';
 import { useConfirm } from './useConfirm';
 import { CloneAndEditButton } from './CloneAndEditButton';
-import { MappingHelpPanel } from './MappingHelpPanel';
 
 /**
  * Liste des versions de mappings. Affiche active, drafts, archived, deleted.
@@ -133,8 +132,6 @@ export function MappingVersionsList() {
 
   return (
     <div className="space-y-4">
-      <MappingHelpPanel />
-
       {error ? (
         <div role="alert" className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
           {error}

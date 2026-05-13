@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { TrackingShell } from '@/components/admin/tracking/TrackingShell';
 import { MappingVersionsList } from '@/components/admin/tracking/mappings/MappingVersionsList';
+import { MappingHelpPanel } from '@/components/admin/tracking/mappings/MappingHelpPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,10 @@ export default async function MappingsPage() {
       title="Mappings event ↔ vendors"
       description="Configure la correspondance des événements canoniques vers Meta, GA4, Google Ads, TikTok, Snap, Pinterest. Versionnée, exportable vers GTM, restaurable au factory en 1 click."
     >
-      <MappingVersionsList />
+      <div className="space-y-4">
+        <MappingHelpPanel />
+        <MappingVersionsList />
+      </div>
     </TrackingShell>
   );
 }
