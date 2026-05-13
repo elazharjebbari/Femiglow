@@ -1,0 +1,113 @@
+@startuml dependencies
+!theme materia
+title Chat v2 — Dépendances entre lots
+
+skinparam component {
+  BackgroundColor #fff
+  BorderColor #6B46C1
+  FontColor #1F2937
+}
+
+package "V5 — Wave Fondation" as v5 {
+  [V5.1 Data & migrations] as v51
+  [V5.2 Intent detection] as v52
+  [V5.3 Retrieval routing + tools] as v53
+  [V5.4 Canned engine] as v54
+  [V5.5 Orchestrator + SSE] as v55
+  [V5.6 Frontend panel] as v56
+  [V5.7 Admin dashboard] as v57
+  [V5.8 Tests & obs] as v58
+}
+
+package "V6 — Wave Conversion" as v6 {
+  [V6.1 A/B engine] as v61
+  [V6.2 Canned/FAQ enrichi] as v62
+  [V6.3 Lead form intelligent] as v63
+  [V6.4 Mode anonyme RGPD] as v64
+  [V6.5 Métriques approfondies] as v65
+  [V6.6 Performance tuning] as v66
+}
+
+package "V7 — Wave Avancée" as v7 {
+  [V7.1 Order status tool] as v71
+  [V7.2 Promo engine] as v72
+  [V7.3 B2B avancé] as v73
+  [V7.4 Dark mode] as v74
+  [V7.5 GrowthBook migration] as v75
+  [V7.6 Voice (stretch)] as v76
+}
+
+' ─── Dépendances V5 internes ───
+v51 ..> v52 : tables intent
+v51 ..> v53 : tables tools + chunks
+v51 ..> v54 : tables canned pairs
+v51 ..> v55 : tables messages + events
+v51 ..> v57 : tables CRUD
+v52 ..> v53 : intent guide routing
+v52 ..> v55 : orchestrator uses detect
+v53 ..> v55 : orchestrator uses retriever
+v54 ..> v55 : orchestrator uses canned
+v54 ..> v56 : useLocalStream
+v55 ..> v56 : SSE events
+v55 ..> v57 : admin observability
+v56 ..> v58 : tests UI
+v57 ..> v58 : tests admin
+v51 ..> v58 : tests data layer
+
+' ─── V5 → V6 ───
+v55 ..> v61 : SSE ready for A/B
+v54 ..> v62 : workflow draft→published
+v55 ..> v63 : lead form offered event
+v51 ..> v64 : RGPD policy applied
+v58 ..> v65 : events schema stable
+v55 ..> v66 : streaming optim baseline
+
+' ─── V6 internes ───
+v61 ..> v62 : A/B variants need editorial
+v63 ..> v65 : measure intelligent form
+v66 ..> v65 : perf affects metrics
+
+' ─── V6 → V7 ───
+v51 ..> v71 : promo_codes refactor
+v51 ..> v72 : tracking table
+v62 ..> v73 : B2B canned ready
+v56 ..> v74 : tokens system
+v61 ..> v75 : migrate from cookie A/B
+
+' ─── V7 internes ───
+v71 ..> v76 : voice can call tools
+
+' ─── External dependencies ───
+cloud "Sendit API" as sendit
+cloud "Web Speech API" as wsa
+cloud "n8n CRM" as n8n
+
+sendit ..> v71 : tracking data
+wsa ..> v76 : STT
+n8n ..> v55 : webhook leads
+n8n ..> v73 : workflows B2B
+
+' ─── Notes ───
+note bottom of v51
+  Critical Path V5.
+  Blocking : Tous les autres lots V5
+  attendent les migrations en staging.
+end note
+
+note bottom of v55
+  Hub V5.
+  Glue between intent, tools, canned, RAG.
+  Plus risky — buffer 2 jours.
+end note
+
+note bottom of v58
+  Gate V5.
+  Tests ULTIMATE bloque ship prod.
+end note
+
+note bottom of v71
+  Dépend externe Sendit.
+  Si API pas prête → V7.1 reporté.
+end note
+
+@enduml

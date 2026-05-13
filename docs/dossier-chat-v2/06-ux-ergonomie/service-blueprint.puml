@@ -1,0 +1,122 @@
+@startuml service-blueprint
+!theme materia
+title FemiGlow Chat — Service Blueprint (Journey 1 : Soukaina conversion)
+
+skinparam DefaultFontSize 11
+skinparam BoxPadding 8
+
+' ─── Swimlanes (8 niveaux) ───
+participant "Évidence physique" as PE
+participant "Action visiteur" as V
+participant "Front-stage UI" as FS
+participant "Back-stage Tech" as BS
+participant "Process de support" as SP
+participant "Données capturées" as DC
+participant "Métriques émises" as M
+participant "Care team" as CT
+
+== Phase 1 : Discovery (T+0s à T+30s) ==
+
+V -> FS : Atterrit home (mobile)
+FS -> PE : Hero, témoignages, launcher avec pulse
+BS -> FS : Render RSC + lazy chunks
+BS -> DC : Cookie visitor_token (anonymous)
+DC --> M : event page_view
+
+== Phase 2 : Engagement (T+30s à T+45s) ==
+
+V -> FS : Tap launcher
+FS -> BS : Lazy-load chat-panel.js
+BS -> SP : Resolve session (visitorToken existant?)
+SP -> BS : sessionId créé/restauré
+SP -> BS : Greeting + 3 pills (page=/, language=ar-MA détecté UA)
+BS -> FS : Panel slide-up animation
+FS -> PE : Panel ouvert + greeting "Marhba bik !"
+DC --> M : event chat_opened, suggestions_shown
+
+== Phase 3 : Suggestion clicked (T+45s à T+50s) ==
+
+V -> FS : Tap pill "💎 Pack"
+FS -> BS : POST /api/chat/canned-pair/kit-price-question
+BS -> SP : Load canned pair, audience check (b2c match)
+SP -> DC : INSERT user_message + assistant_message + 2 events
+SP -> BS : Return scriptedReply
+BS -> FS : { scriptedReply: "Pack b 199 dh..." }
+FS -> FS : useLocalStream wpm=175 darija (1.2s display)
+FS -> PE : Bulle canned + CTA "chouf Pack"
+DC --> M : event suggestion_clicked, canned_used
+
+== Phase 4 : Question libre (T+50s à T+80s) ==
+
+V -> FS : Tape "Wach halal ?"
+FS -> BS : POST /api/chat/message (SSE)
+BS -> SP : detectIntent("Wach halal ?") → ingredient (regex)
+SP -> SP : Routing : RAG + search_faq tool
+SP -> SP : retrieveRag (audience=all, lang=ar-MA) → 2 chunks
+SP -> SP : streamFromProvider(openai gpt-4o-mini)
+SP -> FS : event:meta { provider, intent }
+SP -> FS : event:delta "Iyeh, 100% halal..."
+FS -> PE : Stream token-by-token (caret blink)
+SP -> DC : INSERT messages user + assistant
+SP -> FS : event:done { totalCost, latencyMs: 1623 }
+DC --> M : event message_sent, assistant_reply, retrieval_completed
+
+== Phase 5 : Question structurée (T+80s à T+110s) ==
+
+V -> FS : "chhal d toussil l Casa ?"
+FS -> BS : POST /api/chat/message
+BS -> SP : intent: shipping (embedding)
+SP -> SP : execTool get_delivery_info(city="Casa")
+SP -> SP : Tool resolves "casablanca" alias → DB
+SP -> SP : Streams LLM with tool result in context
+SP -> FS : event:tool_call + event:delta...
+FS -> PE : Bulle assistant + tool badge + "24h, 30 dh"
+DC --> M : tool_call event
+
+== Phase 6 : Lead conversion (T+110s à T+200s) ==
+
+SP -> SP : intent: purchase-intent OU suite à 3 questions
+SP -> FS : event:lead_form_offered { reason: purchase-intent }
+FS -> PE : LeadForm inline accent.50 sous bulle
+V -> FS : Remplit nom, phone, ville
+FS -> BS : POST /api/chat/lead (Zod validated)
+BS -> SP : INSERT chat_lead + queue webhook n8n
+SP -> CT : (async) webhook → n8n CRM workflow
+CT -> CT : Create CRM contact, assign care agent
+SP -> FS : 200 OK
+FS -> PE : "Choukran ! Ghantaslo bik lyoma"
+DC --> M : lead_submitted event
+
+== Phase 7 : Suivi (T+200s à T+24h) ==
+
+V -> FS : Ferme chat
+FS -> PE : Panel slide-down
+DC --> M : chat_closed event
+CT -> V : Care call (téléphone)
+CT -> DC : Mise à jour status lead=contacted/converted
+DC --> M : lead_status_changed event
+
+' ─── Légende ───
+note over PE
+  Évidence physique = ce que voit l'utilisateur
+end note
+
+note over BS
+  Back-stage Tech =
+  Postgres + Vercel + LLM providers
+end note
+
+note over SP
+  Process de support =
+  orchestrator, canned-engine,
+  retrieval, intent-detection
+end note
+
+note over M
+  Métriques émises persistées dans :
+  - chat_conversation_event
+  - kpi dashboards
+  - Sentry breadcrumbs
+end note
+
+@enduml

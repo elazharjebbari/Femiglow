@@ -1,0 +1,51 @@
+id,text,language,intent_label,annotated_by,annotation_date,notes
+1,"Bonjour, je voudrais savoir le prix du kit svp",fr,pricing,PO,2026-05-13,Standard
+2,"Bonjour combien ça coûte",fr,pricing,PO,2026-05-13,Court familier
+3,"C'est combien le pack",fr,pricing,PO,2026-05-13,Familier
+4,"Chhal taman dyal pack ?",ar-MA,pricing,PO,2026-05-13,Darija standard
+5,"بغيت نعرف الثمن",ar,pricing,PO,2026-05-13,AR script
+6,"C'est trop cher pour moi désolée",fr,objection-price,PO,2026-05-13,Standard
+7,"Ghali bzaf 200 dh c'est trop",ar-MA,objection-price,PO,2026-05-13,Mix darija/fr
+8,"Je suis pas sûre que ça marche",fr,objection-doubt,PO,2026-05-13,Doute formulé
+9,"Ça marche vraiment ce truc ?",fr,objection-doubt,PO,2026-05-13,Familier
+10,"Wach kayt9addem b'sah",ar-MA,objection-doubt,PO,2026-05-13,Darija
+11,"Bghit nshri darba wahed",ar-MA,purchase-intent,PO,2026-05-13,Achat immédiat darija
+12,"Je veux commander 2 packs",fr,purchase-intent,PO,2026-05-13,Quantité
+13,"Comment je fais pour commander",fr,purchase-intent,PO,2026-05-13,Friction process
+14,"أريد أن أطلب الطاقم",ar,purchase-intent,PO,2026-05-13,AR script formel
+15,"Où est ma commande numéro 1234",fr,order-status,PO,2026-05-13,Avec numéro
+16,"J'ai commandé hier elle arrive quand",fr,order-status,PO,2026-05-13,Sans numéro
+17,"Fin commande dyali",ar-MA,order-status,PO,2026-05-13,Darija
+18,"Vous livrez à Rabat en combien de temps",fr,shipping,PO,2026-05-13,Ville explicite
+19,"Tdkhlu l-Tanja ?",ar-MA,shipping,PO,2026-05-13,Darija
+20,"Combien la livraison à Marrakech",fr,shipping,PO,2026-05-13,Tarif livraison
+21,"Je suis pharmacie je veux revendre",fr,b2b,PO,2026-05-13,B2B explicite
+22,"Conditions partenariat pro ?",fr,b2b,PO,2026-05-13,B2B formel
+23,"Vous pouvez me rappeler ?",fr,callback-request,PO,2026-05-13,Callback explicite
+24,"Mumkin t3aytu liya 06 12 34 56 78",ar-MA,callback-request,PO,2026-05-13,Darija + numéro
+25,"Vous avez des témoignages ?",fr,social-proof,PO,2026-05-13,Témoignages
+26,"Quels avis sur ce produit",fr,social-proof,PO,2026-05-13,Avis
+27,"C'est mieux que la crème Bioderma ?",fr,comparison,PO,2026-05-13,Comparaison marque
+28,"Différence avec produit X",fr,comparison,PO,2026-05-13,Comparaison
+29,"Comment je l'applique le soir",fr,routine,PO,2026-05-13,Routine usage
+30,"Kifach kayt'9addem had soin",ar-MA,routine,PO,2026-05-13,Darija
+31,"Qu'est-ce qu'il y a dedans c'est naturel ?",fr,ingredient,PO,2026-05-13,Composition naturel
+32,"Liste ingrédients allergie possible",fr,ingredient,PO,2026-05-13,Allergie ingrédients
+33,"J'ai une réaction rouge sur la peau",fr,support,PO,2026-05-13,Support critique
+34,"3andi hassasiya khdmt b had soin",ar-MA,support,PO,2026-05-13,Darija support
+35,"Bonjour",fr,greeting,PO,2026-05-13,Pure greeting
+36,"Salam labas",ar-MA,greeting,PO,2026-05-13,Darija greeting
+37,"Merci pour votre réponse",fr,misc,PO,2026-05-13,Remerciement
+38,"Vous me répondez pas ça m'énerve",fr,frustration,PO,2026-05-13,Frustration explicite
+39,"Ça fait 2 fois je demande la même chose",fr,frustration,PO,2026-05-13,Frustration répétition
+40,"comamnder un pack",fr,purchase-intent,PO,2026-05-13,TYPO test fuzzy
+41,"jveux acheter",fr,purchase-intent,PO,2026-05-13,Apostrophe collée
+42,"j'ai déjà commandé j'attends",fr,order-status,PO,2026-05-13,NEGATEUR purchase-intent
+43,"Je crois que je vais acheter peut-être",fr,purchase-intent,PO,2026-05-13,Faible signal
+44,"je ne veux pas acheter",fr,misc,PO,2026-05-13,NEGATEUR strong
+45,"Bon je vais réfléchir merci",fr,misc,PO,2026-05-13,Disengagement
+46,"Marhba ! kayn livraison l Casa ?",ar-MA,shipping,PO,2026-05-13,Greeting + shipping
+47,"Combien le pack et livraison à Fes",fr,shipping,PO,2026-05-13,Mixte pricing + shipping (annoté shipping car ville explicite)
+48,"😊 ok je prends merci",fr,purchase-intent,PO,2026-05-13,Emoji + intent
+49,"non trop cher au revoir",fr,objection-price,PO,2026-05-13,Disengagement + objection
+50,"Pouvez-vous me dire si vos produits sont halal",fr,ingredient,PO,2026-05-13,Question certification

@@ -1,0 +1,84 @@
+key,context,locale_fr,locale_ar,locale_ar_ma,notes
+greeting.default,Default greeting fallback,Bonjour ! Comment puis-je vous aider aujourd'hui ?,مرحبا! كيف يمكنني مساعدتكم اليوم ؟,Marhba bik ! Kifach n3awnek lyoma ?,Used if no pageSalutation match
+greeting.home,Home page greeting,Bonjour ! Bienvenue chez FemiGlow. Que puis-je faire pour vous ?,مرحبا! أهلا بكم في فيميغلو. ماذا يمكنني أن أفعل لكم ؟,Marhba bik f FemiGlow ! Chno bghiti ndir lik ?,Page=/
+greeting.kit,Kit page greeting,Vous êtes sur le Pack. Je vous explique tout en quelques mots.,أنتم على صفحة الباك. سأشرح لكم كل شيء بإيجاز.,Rakom 3la Pack ! Ghan'fhmek koulchi b chwiya.,Page=/kit
+greeting.shop,Shop page greeting,Vous explorez nos rituels ? Je vous aide à choisir.,تتصفحون طقوسنا ؟ سأساعدكم على الاختيار.,Kat'chouf rituals dyalna ? Ghan'3awnek tkhtar.,Page=/shop
+greeting.b2b,B2B page greeting,Bienvenue à nos partenaires professionnels.,مرحبا بشركائنا المحترفين.,Marhba bi-chouraka2 dyalna l-mihaniyin.,Page=/b2b audience=b2b
+greeting.afterHours,Outside business hours,Bonjour ! Notre équipe revient demain. Laissez vos coordonnées si vous voulez être rappelée.,مرحبا! فريقنا سيعود غدا. اتركوا بياناتكم.,Marhba ! Fri9na ghadi yrjaa3 ghadda. Khelli coordonnées dyalek.,Trigger after-hours intent
+composer.placeholder,Composer input placeholder,Tapez votre message...,اكتبوا رسالتكم...,Kteb risaltek...,
+composer.hint.desktop,Hint below composer (desktop only),Entrée : envoyer · Maj+Entrée : nouvelle ligne,Enter للإرسال,Enter bach tsift,Hidden on mobile
+composer.send.label,Send button aria-label,Envoyer le message,إرسال الرسالة,Send risala,
+composer.disabled.tooltip,Send button disabled tooltip,L'assistant écrit en ce moment...,المساعد يكتب الآن...,L-assistant kayktab daba...,
+header.title,Chat panel header title,FemiGlow Assistant,FemiGlow مساعد,FemiGlow Assistant,Brand name preserved
+header.close.label,Close button aria-label,Fermer le chat,إغلاق المحادثة,Sed l-chat,
+header.status.nominal,Status pill text serviceLevel 0/1,En ligne,متصل,Online,
+header.status.degraded,Status pill text serviceLevel 2,En ligne,متصل,Online,No leak business reason
+header.status.canned,Status pill text serviceLevel 3,Réponses pré-écrites,ردود محضرة,Réponses préparées,
+header.status.static,Status pill text serviceLevel 4,Service réduit,خدمة محدودة,Khedma m7doda,
+typingDots.aria,Typing dots aria-label,L'assistant écrit votre réponse...,المساعد يكتب لكم الإجابة...,L-assistant kayktab lik...,
+streaming.aria.complete,SR announce on done,Réponse terminée.,انتهت الإجابة.,Tslat l-réponse.,
+sources.button.label,Show sources button,{count} sources,{count} مصادر,{count} sources,Pluralization handled in code
+sources.popover.title,Sources popover header,Sources,المصادر,Sources,
+sources.popover.close,Sources popover close,Fermer,إغلاق,Sed,
+toolBadge.prefix,Tool badge prefix,Vérifications :,تحققات:,Verifications:,Followed by list of tool names
+feedback.thumbs.up.label,Thumbs up aria-label,Cette réponse m'a aidée,هذه الإجابة ساعدتني,Had l-jawab 3awenni,
+feedback.thumbs.down.label,Thumbs down aria-label,Cette réponse ne m'a pas aidée,هذه الإجابة لم تساعدني,Had l-jawab ma 3awenniche,
+feedback.thanks,Toast after rating,Merci pour votre retour !,شكرا على ملاحظتكم !,Choukran 3la l-feedback !,
+leadForm.title.default,Default lead form title,Soyez rappelée,اتصلوا بي,Call'ni,
+leadForm.title.b2b,B2B lead form title,Discutons de votre projet,لنتحدث عن مشروعكم,Ndoz nhdro 3la projet dyalek,
+leadForm.title.providerDown,Provider down lead form title,Laissez-nous vos coordonnées,اتركوا لنا بياناتكم,Khelli lina coordonnées dyalek,
+leadForm.field.name.label,Name field label,Nom (optionnel),الاسم (اختياري),Smitek (optionnel),
+leadForm.field.phone.label,Phone field label,Téléphone *,الهاتف *,Tilifoun *,
+leadForm.field.phone.placeholder,Phone placeholder,+212 6 __ __ __ __,+212 6 __ __ __ __,+212 6 __ __ __ __,
+leadForm.field.email.label,Email field label,Email (optionnel),البريد (اختياري),Email (optionnel),
+leadForm.field.city.label,City field label,Ville,المدينة,Mdina,
+leadForm.field.city.placeholder,City placeholder,Casablanca,الدار البيضاء,Casa,
+leadForm.field.type.label,Type field label B2B,Type d'établissement,نوع المنشأة,Naw3 dyal l-machroo3,
+leadForm.consent.text,Consent text small,En soumettant vous acceptez notre politique de données.,بإرسال هذا تقبلون سياسة البيانات.,Ila s'datna had l-form raki tqebli politique d-data dyalna.,
+leadForm.submit.default,Submit button default,Être rappelée,اتصلوا بي,Bghit nessetal bya,
+leadForm.submit.b2b,Submit button B2B,Demander un devis,طلب عرض سعر,Demande devis,
+leadForm.submit.providerDown,Submit button provider down,Soyez recontactée,اتصلوا بي,Call'ni,
+leadForm.success,Success message after submit,Merci ! On vous rappelle dans la journée.,شكرا ! سنتصل بكم خلال اليوم.,Choukran ! Ghantaslo bik lyoma.,
+leadForm.error.phone.invalid,Phone validation error,Numéro invalide. Format attendu : +212 6XX XX XX XX,رقم غير صحيح.,Numéro machi sa7i7. Format: +212 6XX XX XX XX,
+leadForm.error.phone.required,Phone required error,Le téléphone est requis.,الهاتف مطلوب.,Khassek t-3ti tilifoun.,
+leadForm.error.email.invalid,Email validation error,Email invalide.,البريد غير صحيح.,Email machi sahih.,
+leadForm.error.consent,Consent missing error,Vous devez accepter notre politique.,يجب قبول السياسة.,Khassek tqebli politique.,
+leadForm.cancel,Cancel button,Annuler,إلغاء,Annuler,
+consent.banner.text,Consent banner text first-time,Nous utilisons votre conversation pour vous répondre. Vos données sont protégées (RGPD).,نستعمل محادثتكم للرد عليكم. بياناتكم محمية.,Kanst3mlo l-conversation dyalek bach ngawbo lik. L-data dyalek mhmiya.,
+consent.banner.policy,Privacy policy link,Voir notre politique,انظروا سياستنا,Chouf politique dyalna,Links to /politique-confidentialite
+consent.banner.accept,Accept button,J'accepte,أقبل,Wakha,
+consent.banner.anonymous,Anonymous mode button,Discuter sans laisser de trace,محادثة مجهولة,Hdar bla atar,Anonymous session no persistence
+error.validation,Validation error message,Votre message contient un caractère non supporté ou est trop long.,رسالتكم تحتوي على حرف غير مدعوم أو طويلة جدا.,Risalt'ek fiha herf machi mdo3am wla twila bzaf.,
+error.rateLimit,Rate limit error,Vous nous écrivez très vite. Patientez quelques secondes.,تكتبون بسرعة كبيرة. انتظروا بضع ثوان.,Katkateb b sor3a kbira. Stana chwiya.,
+error.providerDown,Provider down error,Notre assistant rencontre une difficulté technique. Laissez vos coordonnées pour être rappelée.,مساعدنا يواجه صعوبة تقنية. اتركوا بياناتكم.,L-assistant 3andou m'chkil tekni. Khelli coordonnées dyalek.,
+error.budgetExhausted,Budget exhausted same as providerDown,Notre assistant rencontre une difficulté technique. Laissez vos coordonnées pour être rappelée.,مساعدنا يواجه صعوبة تقنية. اتركوا بياناتكم.,L-assistant 3andou m'chkil tekni. Khelli coordonnées dyalek.,Identical visually
+error.internal,Generic internal error,Une erreur inattendue est survenue. Notre équipe est notifiée.,حدث خطأ غير متوقع. تم إشعار فريقنا.,K'darat 3andna m'chkila. Fri9na 3rifna.,
+error.retry,Retry button,Réessayer,أعيدوا المحاولة,Awd l-mouhawala,
+error.reportFeedback,Report problem link,Signaler un problème,أبلغوا عن مشكلة,Goul lina kayn m'chkil,
+toast.serviceLevel.degraded,Service degraded toast,Notre assistant a une difficulté temporaire. Vous pouvez nous laisser vos coordonnées.,مساعدنا يواجه صعوبة مؤقتة.,L-assistant 3andou m'chkil mou2aqat.,
+toast.serviceLevel.recovered,Service recovered toast,Notre assistant est de retour. Comment puis-je vous aider ?,مساعدنا عاد. كيف يمكنني مساعدتكم ؟,L-assistant rja3. Kifach n3awnek ?,
+launcher.label.default,Launcher button aria-label,Ouvrir le chat FemiGlow,افتحوا محادثة FemiGlow,Fteh l-chat FemiGlow,
+launcher.label.unread,Launcher with unread,Ouvrir le chat — {count} message(s) non lu(s),افتحوا المحادثة — {count} رسالة جديدة,Fteh l-chat — {count} jdad,
+pill.kit-price-question,Pill for kit price question,💎 Voir le Pack,💎 الباك,💎 chouf Pack,
+pill.shipping-info,Pill for shipping info,📦 Livraison,📦 التوصيل,📦 Toussil,
+pill.reviews,Pill for reviews,💬 Avis,💬 آراء,💬 ara,
+pill.halal,Pill for halal question,✓ Halal ?,✓ حلال ؟,✓ Halal ?,
+pill.routine,Pill for routine question,🌸 Ma routine,🌸 روتيني,🌸 Routine dyali,
+pill.contact,Pill for contact,💌 Être rappelée,💌 اتصلوا بي,💌 Call'ni,
+pill.b2b-pricing,B2B pricing pill,💼 Tarifs gros,💼 أسعار الجملة,💼 Asaar gros,B2B only
+pill.b2b-become-partner,B2B partner pill,🤝 Devenir revendeur,🤝 كونوا شريكنا,🤝 Bghit nkoun chrike,B2B only
+ctaButton.viewPack,View Pack CTA,Voir le Pack →,اطلعوا على الباك ←,chouf Pack →,Used in canned pair
+ctaButton.bookCall,Book call CTA,Réserver un appel,احجزوا مكالمة,Réservi mouqabala,
+ctaButton.viewReviews,View reviews CTA,Lire les avis,اقرأوا الآراء,9ra ara,
+nav.dashboard,Admin nav,Vue d'ensemble,نظرة عامة,Vue d'ensemble,Admin only
+nav.conversations,Admin conversations nav,Conversations,محادثات,Conversations,Admin only
+nav.intents,Admin intents nav,Intents,نوايا,Intents,Admin only
+nav.suggestions,Admin suggestions nav,Suggestions canned,اقتراحات محضرة,Suggestions canned,Admin only
+nav.faq,Admin FAQ nav,FAQ,أسئلة شائعة,FAQ,Admin only
+nav.tools,Admin tools nav,Tools,أدوات,Tools,Admin only
+nav.knowledge,Admin KB nav,Base de connaissance,قاعدة المعرفة,Base connaissance,Admin only
+nav.leads,Admin leads nav,Leads,عملاء محتملون,Leads,Admin only
+nav.analytics,Admin analytics nav,Analytics,تحليلات,Analytics,Admin only
+nav.health,Admin health nav,Santé du service,صحة الخدمة,Sante service,Admin only
+nav.gdpr,Admin RGPD nav,RGPD,RGPD,RGPD,Admin only
+nav.settings,Admin settings nav,Paramètres,إعدادات,Paramètres,Admin only

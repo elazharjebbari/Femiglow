@@ -1,0 +1,49 @@
+activity,owner_R,accountable_A,consulted_C,informed_I,notes
+Vision & scope,po_selma,po_selma,dev_lead+designer+content_yasmine,care_karim,Document final 00-vision/
+Architecture v2 ADRs,dev_lead,po_selma,dev_intermediate,all,Décisions 01-architecture/adr/
+Data model & migrations,dev_lead,dev_lead,po_selma+legal,all,02-data/migrations-plan.md
+Intent detection algo,dev_intermediate,dev_lead,po_selma,content_yasmine,03-backend/intent-detection.md
+Intent dataset (50 examples × 3 lang),content_yasmine,po_selma,dev_intermediate,—,intent-dataset-sample.csv
+Tool catalog spec,dev_lead,po_selma,care_karim,—,03-backend/tools-catalog.yaml
+Tool whitelisting fields policy,dev_lead,po_selma,legal,—,Security review needed
+Canned pairs editorial,content_yasmine,po_selma,designer,care_karim+all,canned-pairs-seed.csv + admin editor
+FAQ entries editorial,content_yasmine,po_selma,care_karim,—,faq-entries-seed.csv
+Microcopy trilingue,content_yasmine,po_selma,dev_intermediate,—,06-ux-ergonomie/microcopy.csv
+RTL native + i18n,dev_intermediate,dev_lead,designer+content_yasmine,—,All AR/AR-MA quality
+Frontend components,dev_intermediate,dev_lead,designer,—,04-frontend/* + Storybook
+A11y audit + WCAG AA,dev_intermediate,dev_lead,designer,po_selma,04-frontend/accessibility-checklist
+Design tokens YAML,designer,po_selma,dev_intermediate,—,05-design-ui/design-tokens.yaml
+Wireframes + Figma maquettes,designer,po_selma,dev_intermediate,content_yasmine,05-design-ui/wireframes-*
+User journeys mapping,designer,po_selma,care_karim,content_yasmine,06-ux-ergonomie/user-journeys.md
+SSE protocol spec,dev_lead,dev_lead,dev_intermediate,—,04-frontend/sse-protocol.md
+Error handling unified,dev_lead,dev_lead,care_karim,po_selma,03-backend/error-handling.md
+Provider routing + failover,dev_lead,dev_lead,po_selma,—,Decision providers + budget
+Cost budget governance,dev_lead,po_selma,—,all,Budget mensuel + alerts
+Admin dashboard chat-v2,dev_lead,dev_lead,content_yasmine+care_karim,po_selma,12 pages admin
+KPI tree definition,po_selma,po_selma,dev_lead,all,07-analytics/kpi-tree.md
+Event taxonomy,dev_intermediate,dev_lead,po_selma,—,07-analytics/event-taxonomy.csv
+Dashboards Health/Business/etc,dev_lead,po_selma,care_karim+content_yasmine,—,07-analytics/dashboards.md
+A/B testing engine V5/V6,dev_intermediate,dev_lead,po_selma,—,07-analytics/ab-testing.md
+A/B test proposals,po_selma,po_selma,designer+content_yasmine,—,Doc per experiment
+RGPD policy & retention,legal,po_selma,dev_lead,all,02-data/retention-rgpd.md
+GDPR export/forget admin,dev_lead,po_selma,legal,—,/dashboard/chat-v2/gdpr
+Consent banner copy,content_yasmine,legal,designer,—,Legal-approved text
+Webhook lead n8n CRM,dev_lead,po_selma,care_karim,—,Integration secret HMAC
+Cron kb-sync,dev_lead,dev_lead,—,po_selma,Auto-update KB
+Cron intent-recompute,dev_intermediate,dev_lead,—,—,Centroïdes update
+Cron budget-watch,dev_lead,po_selma,—,—,Service level switch
+Cron gdpr-purge,dev_lead,legal,po_selma,—,Compliance critical
+Tests unit Jest,dev_intermediate,dev_lead,—,—,Coverage 80%+
+Tests integration,dev_intermediate,dev_lead,—,—,API + orchestrator
+Tests E2E Playwright,dev_intermediate,dev_lead,designer,—,Critical paths
+Test ULTIMATE pipeline,dev_lead,dev_lead,po_selma,all,Pipeline complète E2E + chaos
+MSW handlers,dev_intermediate,dev_lead,—,—,Mock LLM providers in tests
+Runbook deploy,dev_lead,dev_lead,po_selma,—,11-runbook/deploy.md
+Runbook rollback,dev_lead,dev_lead,po_selma,—,11-runbook/rollback.md
+Runbook incidents,dev_lead,po_selma,care_karim,all,Incident playbook
+Observability YAML,dev_lead,dev_lead,po_selma,—,11-runbook/observability.yaml
+Care training (Karim onboarding admin),care_karim,po_selma,content_yasmine+dev_lead,—,Use admin daily
+Content training (Yasmine onboarding admin),content_yasmine,po_selma,dev_lead,—,Edit canned/FAQ autonomous
+Launch comms internal,po_selma,po_selma,all,—,Slack announcement
+Launch comms external (if any),po_selma,po_selma,—,—,Press if applicable
+Post-launch retrospective,po_selma,po_selma,all,—,T+14 ship V5

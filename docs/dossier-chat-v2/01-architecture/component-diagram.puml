@@ -1,0 +1,138 @@
+@startuml component-diagram
+' C4 niveau 2/3 — Component Diagram
+' Détail des modules internes du chat
+
+!theme cerulean-outline
+title FemiGlow Chat — Component Diagram (interne app Next.js)
+
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+package "Frontend (client components)" {
+  [ChatLauncher]
+  [ChatPanel]
+  [ChatHeader]
+  [MessageList]
+  [MessageBubble]
+  [SuggestionPill]
+  [ChatComposer]
+  [LeadFormBubble]
+  [useChatStore (Zustand)]
+  [useLocalStream]
+  [useSSE]
+}
+
+package "Public API routes (Next.js)" {
+  [POST /api/chat/session]
+  [POST /api/chat/message]
+  [POST /api/chat/canned-pair/:key]
+  [POST /api/chat/lead]
+  [POST /api/chat/feedback]
+}
+
+package "Orchestrator (server-only)" {
+  [sanitize.ts]
+  [lang/detect.ts]
+  [intent.ts (cascade)]
+  [retrieval/router.ts]
+  [retrieval/rag.ts]
+  [retrieval/tools.ts]
+  [retrieval/faq-gateway.ts]
+  [charter.ts (inbound + outbound)]
+  [humanize.ts]
+  [providers/router.ts]
+  [providers/breaker.ts]
+  [providers/openai.ts]
+  [providers/anthropic.ts]
+  [providers/mistral.ts]
+  [lead-decision.ts]
+  [canned-engine.ts]
+  [billing.ts]
+  [rate-limit.ts]
+}
+
+package "Persistence (Drizzle)" {
+  [chat_session]
+  [chat_message]
+  [chat_intent_centroid]
+  [chat_canned_pair]
+  [chat_faq_entry]
+  [chat_knowledge_*]
+  [chat_tool_call_log]
+  [chat_lead]
+  [chat_conversation_event]
+}
+
+package "Admin (server components + API)" {
+  [/admin/chat/dashboard]
+  [/admin/chat/intents]
+  [/admin/chat/suggestions]
+  [/admin/chat/sources]
+  [/admin/chat/tools]
+  [/admin/chat/conversations]
+  [/admin/chat/leads]
+  [/api/admin/chat/*]
+}
+
+package "Crons" {
+  [cron-kb-sync]
+  [cron-intent-recompute]
+  [cron-budget-watcher]
+}
+
+' Frontend flow
+[ChatPanel] --> [useChatStore]
+[ChatPanel] --> [MessageList]
+[MessageList] --> [MessageBubble]
+[MessageList] --> [SuggestionPill]
+[ChatPanel] --> [ChatComposer]
+[ChatPanel] --> [LeadFormBubble]
+[useSSE] --> [POST /api/chat/message]
+[SuggestionPill] --> [POST /api/chat/canned-pair/:key]
+[useLocalStream] --> [MessageBubble]
+
+' Orchestrator
+[POST /api/chat/message] --> [sanitize.ts]
+[sanitize.ts] --> [lang/detect.ts]
+[lang/detect.ts] --> [intent.ts (cascade)]
+[intent.ts (cascade)] --> [retrieval/router.ts]
+[retrieval/router.ts] --> [retrieval/faq-gateway.ts]
+[retrieval/router.ts] --> [retrieval/rag.ts]
+[retrieval/router.ts] --> [retrieval/tools.ts]
+[retrieval/router.ts] --> [providers/router.ts]
+[providers/router.ts] --> [providers/breaker.ts]
+[providers/breaker.ts] --> [providers/openai.ts]
+[providers/breaker.ts] --> [providers/anthropic.ts]
+[providers/breaker.ts] --> [providers/mistral.ts]
+[providers/openai.ts] --> [charter.ts (inbound + outbound)]
+[charter.ts (inbound + outbound)] --> [humanize.ts]
+[humanize.ts] --> [lead-decision.ts]
+[lead-decision.ts] --> [billing.ts]
+[billing.ts] --> [rate-limit.ts]
+
+' Canned engine
+[POST /api/chat/canned-pair/:key] --> [canned-engine.ts]
+[canned-engine.ts] --> [chat_canned_pair]
+[canned-engine.ts] --> [chat_message]
+
+' Persistence
+[intent.ts (cascade)] --> [chat_intent_centroid]
+[retrieval/faq-gateway.ts] --> [chat_faq_entry]
+[retrieval/rag.ts] --> [chat_knowledge_*]
+[retrieval/tools.ts] --> [chat_tool_call_log]
+[lead-decision.ts] --> [chat_lead]
+[billing.ts] --> [chat_conversation_event]
+[POST /api/chat/message] --> [chat_session]
+[POST /api/chat/message] --> [chat_message]
+
+' Crons
+[cron-kb-sync] --> [retrieval/rag.ts]
+[cron-intent-recompute] --> [chat_intent_centroid]
+[cron-budget-watcher] --> [billing.ts]
+
+' Admin
+[/api/admin/chat/*] --> [chat_canned_pair]
+[/api/admin/chat/*] --> [chat_intent_centroid]
+[/api/admin/chat/*] --> [chat_knowledge_*]
+
+@enduml

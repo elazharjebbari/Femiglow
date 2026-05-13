@@ -1,0 +1,50 @@
+event_name,layer,trigger,properties,owner,retention_days,sample_rate,purpose
+chat_session_created,backend,POST /api/chat/session,"sessionId, visitorToken, audience, language, pathname",dev,90,1.0,Counts new chat sessions
+chat_opened,frontend,User clicks launcher,"sessionId, pathname, fromBadge:bool",design,90,1.0,Engagement entry point
+chat_closed,frontend,User closes panel,"sessionId, durationMs, messagesCount",design,90,1.0,Engagement duration
+suggestions_shown,frontend,Panel renders pills,"sessionId, pairKeys[], count",content,90,1.0,Visibility of suggestions
+suggestion_clicked,frontend,User taps pill,"sessionId, pairKey, label, order",content,180,1.0,Most clicked suggestions
+canned_used,backend,servePairByKey,"sessionId, pairKey, language",content,180,1.0,Canned usage tracking
+faq_match,backend,FAQ gateway hit,"sessionId, faqEntryId, similarity",content,180,1.0,FAQ gateway efficacy
+faq_bypass,backend,FAQ gateway intentional skip,"sessionId, intent, reason",content,90,1.0,Why FAQ skipped
+message_sent,frontend,User submits message,"sessionId, length, language, retried:bool",dev,180,1.0,User activity
+message_received,frontend,Assistant message completed,"sessionId, messageId, source, latencyMs, firstTokenMs, provider, intent",dev,180,1.0,Message stats
+retrieval_completed,backend,Pipeline retrieval done,"sessionId, intent, retrievalStrategy, toolsUsed[], ragHits, ragHitRate",dev,180,1.0,Retrieval observability
+tool_call_attempted,backend,Tool invoked,"sessionId, toolName, status, durationMs, cacheHit:bool",dev,90,1.0,Tool observability
+tool_call_failed,backend,Tool error or timeout,"sessionId, toolName, errorCode, durationMs",dev,90,1.0,Tool error rate
+intent_detected,backend,detectIntent done,"sessionId, intent, confidence, source",ml,180,1.0,Intent accuracy tracking
+provider_used,backend,LLM streamed,"sessionId, provider, model, latencyMs, costUsd, tokensIn, tokensOut",dev,180,1.0,Provider cost & perf
+provider_error,backend,LLM 5xx or timeout,"sessionId, provider, errorCode, durationMs",dev,90,1.0,Provider reliability
+provider_failover,backend,Breaker switches provider,"sessionId, fromProvider, toProvider, reason",dev,90,1.0,Failover frequency
+service_level_changed,backend,sl transition,"fromSl, toSl, reason, durationInPreviousSl",dev,365,1.0,Service health trend
+lead_form_offered,backend,LeadForm event in stream,"sessionId, reason, suggestedFields[]",design,180,1.0,Offer rate
+lead_form_displayed,frontend,Form rendered to user,"sessionId, reason",design,180,1.0,UI confirmation
+lead_form_dismissed,frontend,User closes form without submit,"sessionId, reason",design,90,1.0,Dismissal rate
+lead_submitted,backend,POST /api/chat/lead,"sessionId, reason, fieldsProvided[], hasEmail:bool, hasName:bool",content,365,1.0,Lead capture
+lead_validation_failed,frontend,Zod fail on submit,"sessionId, field, errorCode",design,90,1.0,Form friction tracking
+lead_status_changed,care,Admin updates lead status,"leadId, fromStatus, toStatus, agentEmail",care,365,1.0,Care funnel
+order_attributed,backend,Order matched to lead (7d window),"sessionId, leadId, orderId, amountMad, lagDays",po,365,1.0,Attribution to chat
+feedback_given,frontend,User taps thumb,"sessionId, messageId, rating, source, note:str",content,180,1.0,Reply quality
+sources_popover_opened,frontend,User taps sources,"sessionId, messageId, sourcesCount",content,90,1.0,Trust signal
+cta_clicked,frontend,User taps inline CTA,"sessionId, messageId, ctaLabel, ctaUrl",content,180,1.0,CTA conversion
+panel_lazy_loaded,frontend,Panel JS chunk loaded,"durationMs",dev,30,0.1,Perf monitoring
+panel_first_render_blank,frontend,Panel mounted but no greeting,"durationMs",dev,30,0.1,Perf debug
+sse_connection_opened,frontend,EventSource open,"sessionId, attemptNumber",dev,30,0.1,SSE reliability
+sse_connection_closed,frontend,EventSource closed,"sessionId, reason, durationMs",dev,30,0.1,SSE lifecycle
+sse_error,frontend,SSE parse or network error,"sessionId, errorCode, atEventIndex",dev,90,1.0,SSE robustness
+chat_error_displayed,frontend,Error UI shown,"sessionId, errorCode, fallbackOffered:bool",dev,180,1.0,Error UX
+chat_retried,frontend,User taps retry,"sessionId, messageId",dev,90,1.0,Retry frequency
+language_switched,frontend,User changes lang manually,"sessionId, fromLang, toLang",content,90,1.0,Lang preferences
+language_auto_detected,backend,Auto-detect lang from message,"sessionId, fromLang, toLang, confidence",ml,90,1.0,Auto-detect accuracy
+ephemeral_note_injected,backend,LLM continuity note added,"sessionId, language, reason",dev,30,0.2,Continuity diagnostics
+budget_alert,backend,Daily budget threshold crossed,"thresholdPct, usdSpent, usdBudget",po,365,1.0,Cost governance
+consent_accepted,frontend,User accepts consent,"sessionId, consentVersion",legal,1095,1.0,RGPD legal proof
+consent_anonymous_mode,frontend,User chooses anonymous,"sessionId",legal,365,1.0,Privacy preference
+consent_revoked,frontend,User revokes after,"sessionId",legal,1095,1.0,RGPD legal proof
+admin_login,backend,Admin authenticates,"userId, role",security,365,1.0,Audit trail
+admin_action_canned_published,backend,Pair status → published,"userId, pairKey, fromStatus, versionId",content,1095,1.0,Editorial audit
+admin_action_intent_added,backend,New intent created,"userId, intentName",content,1095,1.0,Editorial audit
+admin_action_gdpr_export,backend,GDPR export run,"userId, leadId",legal,1095,1.0,RGPD audit
+admin_action_gdpr_forget,backend,RGPD delete run,"userId, leadId",legal,1095,1.0,RGPD audit
+ab_test_assigned,frontend,A/B variant assigned,"sessionId, experimentKey, variant",po,180,1.0,A/B engine
+ab_test_converted,backend,A/B participant converted,"sessionId, experimentKey, variant, conversionType",po,180,1.0,A/B analysis

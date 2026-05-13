@@ -1,0 +1,111 @@
+@startuml component-tree
+!theme materia
+title FemiGlow Chat — Arbre des composants frontend (v2)
+
+skinparam component {
+  BackgroundColor #fff
+  BorderColor #6B46C1
+  ArrowColor #6B46C1
+  FontColor #1F2937
+}
+skinparam package {
+  BackgroundColor #FAF5FF
+  BorderColor #9333EA
+  FontColor #581C87
+}
+
+package "RSC (server)" as rsc {
+  [SiteLayout\n(app/layout.tsx)] as SL
+  [ChatLauncher\n(launcher.tsx)] as CL
+  [ChatProvider\n(context-bridge)] as CP
+}
+
+package "Client (dynamic import)" as cli {
+  [ChatPanel\n(panel.tsx)] as Panel
+  [ChatHeader\n(header.tsx)] as Header
+  [ConsentBanner\n(consent.tsx)] as Consent
+  [MessageList\n(message-list.tsx)] as ML
+  [MessageBubble\n(message-bubble.tsx)] as MB
+  [SuggestionPills\n(suggestion-pills.tsx)] as SP
+  [Composer\n(composer.tsx)] as Comp
+  [LeadForm\n(lead-form.tsx)] as LF
+  [SourcesPopover\n(sources-popover.tsx)] as SrcP
+  [ToolBadge\n(tool-badge.tsx)] as TB
+  [TypingDots\n(typing-dots.tsx)] as TD
+  [FeedbackButtons\n(feedback.tsx)] as FB
+}
+
+package "Stores & hooks" as stores {
+  [useChatStore\n(Zustand)] as Store
+  [useChatSSE\n(EventSource)] as SSE
+  [useLocalStream\n(faux stream)] as LS
+  [useChatTheme\n(salutations)] as Theme
+  [chatMachine\n(state machine)] as SM
+}
+
+package "Services client" as svc {
+  [apiClient\n(fetch wrapper)] as API
+  [sanitize\n(DOMPurify)] as San
+  [i18n\n(string bundles)] as I18n
+  [analytics\n(KPI events)] as An
+}
+
+SL --> CL
+CL --> Panel : on click
+CL --> CP
+
+Panel --> Header
+Panel --> Consent
+Panel --> ML
+Panel --> SP
+Panel --> Comp
+Panel --> LF : conditional
+Panel --> Store
+
+ML --> MB
+MB --> SrcP : if sources
+MB --> TB : if tools used
+MB --> TD : if streaming
+MB --> FB : if assistant + completed
+MB --> San
+
+Comp --> Store : sendMessage
+LF --> API : submit lead
+SP --> Store : pickSuggestion
+
+Store --> SM
+Store --> SSE : start/stop
+Store --> LS : for canned
+
+SSE --> An : events
+LS --> An : events
+SP --> An : suggestion_clicked
+
+Header --> Theme : language switch
+Panel --> I18n
+
+note right of Panel
+  Lazy-loaded via:
+  dynamic(() => import('./panel'),
+         { ssr: false })
+end note
+
+note right of Store
+  Persist:
+  - sessionId, visitorToken
+  - messages (last 50)
+  - audience, language
+  Skip:
+  - streaming state
+  - errors transient
+end note
+
+note right of SSE
+  Lifecycle:
+  - mount: open EventSource
+  - delta: append to message
+  - error: backoff retry x2
+  - unmount: close + abort
+end note
+
+@enduml

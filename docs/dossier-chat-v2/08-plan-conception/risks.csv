@@ -1,0 +1,26 @@
+id,risk,category,probability,impact,severity,mitigation,owner,status,trigger_indicator
+R01,Provider LLM (OpenAI) outage prolongée,external,M,H,H,"Multi-provider routing + breaker + canned fallback sl3. Tested in chaos engineering.",dev_lead,monitored,Sentry: 5xx OpenAI > 10% sur 5min
+R02,Budget LLM dépasse 300 USD/mois,cost,M,M,M,"cron-budget-watch + alerts 80% + auto service level 3 si depasse.",dev_lead+po_selma,monitored,Cron quotidien
+R03,Intent detection accuracy < 70%,quality,L,H,M,"Audit hebdo 50 conversations + recompute centroïdes hebdo + enrichir dataset.",content_yasmine,monitored,Manual audit
+R04,Tool exfiltre marge/cost,security,L,H,M,"Whitelist output schema Zod stricte. Tests security scan.",dev_lead,mitigated,N/A code review
+R05,RGPD non-conforme exports,legal,L,VH,H,"Audit légal pré-ship + tests automatisés export/forget.",legal+dev_lead,planned,Legal review
+R06,Memory leak chat ouvert long,perf,M,M,M,"Tests longue durée + Chrome DevTools heap snapshot. Cancel cleanup audit.",dev_intermediate,planned,Manual test
+R07,Bundle initial > 8 kB,perf,M,M,L,"webpack-bundle-analyzer en CI + budget en config. Dynamic import chat panel.",dev_intermediate,planned,CI check
+R08,Streaming SSE bloqué AdBlocker,compat,M,L,L,"Détection timeout > 5s sans event + fallback JSON non-stream.",dev_intermediate,planned,Telemetry
+R09,Webhooks n8n perdus,integration,M,M,M,"Retries 3× exponential + HMAC + idempotency key + queue persist DB en fallback.",dev_lead,planned,Webhook success < 95%
+R10,Embeddings cost spike (model price hike),cost,L,M,L,"Cache embeddings query + rerank heuristique réduit overfetch. Alternative model fallback.",dev_lead,monitored,Monthly cost review
+R11,Multilingue darija quality faible,quality,M,M,M,"Validation native speaker (Yasmine ou Naima). 50 examples min par intent par lang.",content_yasmine,planned,Manual audit
+R12,Care team débordée par leads,operational,L,M,L,"Lead form pacing (offert pas trop tôt) + auto-prioritization HOT vs cold + n8n routing.",care_karim+po_selma,planned,> 50 leads/jour non contactés
+R13,A/B test contamination utilisateurs,methodology,L,M,L,"Stratification cookie 30 jours + max 2 expériences simultanées + documentation pre-registered.",dev_intermediate,planned,Variance anormale
+R14,Migrations Drizzle rollback échoue,deployment,L,H,M,"Backups DB pre-migration + tests rollback en staging + maintenance window.",dev_lead,planned,Staging tests
+R15,Adoption admin trop faible,human,M,M,M,"Onboarding session Yasmine + Karim + tooltips + docs runbook + office hours dev.",po_selma,planned,DAU admin < 1
+R16,Heuristique re-rank dégrade qualité,ml,L,M,L,"Garder version originale paramétrable + A/B test rerank on/off + feedback rate KPI.",dev_intermediate,planned,Feedback +1 drop
+R17,FAQ gateway false positives,quality,M,M,M,"Threshold per-entry calibré + feedback thumbs sur match + monthly review.",content_yasmine,planned,Manual review
+R18,Performance Vercel cold starts,perf,M,L,L,"Edge runtime pour SSE + warm-up cron. Mesure deploy-to-first-request.",dev_lead,planned,p99 cold start > 3s
+R19,Chat ne convertit pas (NS < cible),business,M,VH,H,"A/B testing aggressive en V6 + revue mensuelle PO + iteration canned/FAQ.",po_selma,monitored,Weekly KPI review
+R20,Equipe dev sous-dimensionnée pour V5,resource,M,H,H,"Buffer 20% sur estimations + scope cutter (canned-engine prio max si retard).",po_selma+dev_lead,monitored,Sprint velocity
+R21,Conflit V5 ship vs été congés,planning,M,M,L,"V5 ship début juin avant congés. V6 démarre directement. V7 prend l'été (8 sem).",po_selma,planned,Calendar
+R22,Sentry trop bruyant (alertes ignorées),observability,M,M,L,"Validation et warn pas captures + sampling sur low-severity + monthly alert review.",dev_lead,planned,> 50 alerts/jour
+R23,KB sources obsolètes (produits supprimés),data,L,L,L,"cron-kb-sync purge orphelins quotidien.",dev_lead,planned,Cron check
+R24,LLM hallucine prix/promo,ml,M,H,H,"Tools structurés priorité sur RAG pour facts + cite source dans prompt + validation Zod.",dev_lead,mitigated,Manual audit
+R25,Lead spam ou abuse,abuse,M,M,M,"Rate limit phone unique + recaptcha si > 3 leads même session + monitoring Care.",dev_lead+care_karim,planned,Spam rate > 5%

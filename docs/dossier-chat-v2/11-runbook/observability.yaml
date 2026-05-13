@@ -1,0 +1,395 @@
+# Observability configuration — Chat V2
+# Source of truth pour les alerts, dashboards, logs structurés.
+# Toute modification doit passer par PR review.
+
+version: "1.0"
+updated_at: "2026-05-13"
+owner: "dev_lead"
+
+# =============================================================
+# SENTRY
+# =============================================================
+
+sentry:
+  organization: femiglow
+  project: chat-v2
+  environments:
+    - development
+    - staging
+    - production
+  release_strategy: "git_sha_short"  # v5.0.0+sha_abc12345
+
+  # Volume sampling pour rester sous le quota
+  sampling:
+    error: 1.0          # 100% errors capturés
+    warning: 0.5        # 50% warnings
+    info: 0.1           # 10% info logs
+    transaction:
+      production: 0.1   # 10% transactions prod
+      staging: 1.0      # 100% staging
+
+  # Filtres beforeSend (PII redaction)
+  before_send:
+    - redact_pattern: '\+?\d{8,15}'              # phone numbers
+      replacement: '<REDACTED_PHONE>'
+    - redact_pattern: '[\w.-]+@[\w.-]+'          # emails
+      replacement: '<REDACTED_EMAIL>'
+    - redact_field: 'request.cookies.session'    # cookies session
+    - redact_field: 'request.headers.authorization'
+    - redact_field: 'extra.lead.phone'
+    - redact_field: 'extra.lead.email'
+
+  # Tags obligatoires (set via scope dans le code)
+  tags:
+    required:
+      - chat.area              # intent | retrieval | provider | ui | leadform | admin
+      - chat.service_level     # 1-5
+      - chat.language          # fr | ar | ar-MA
+      - chat.audience          # b2c | b2b
+    optional:
+      - chat.session_id        # UUID
+      - chat.provider          # openai | anthropic | mistral | gemini
+      - chat.tool_name
+      - chat.intent_id
+
+  # Alerts (envoie vers Slack)
+  alerts:
+
+    - name: "P0_chat_down"
+      condition: "event.count > 50 AND event.level = error AND tag(chat.area) IN (orchestrator, api)"
+      window: "5m"
+      threshold: 50
+      target: "#chat-launch"
+      template: "🔴 P0 — Chat down ({event.count} errors in 5min)"
+      severity: P0
+
+    - name: "P1_provider_down"
+      condition: "event.count > 20 AND tag(chat.area) = provider AND event.message contains '5xx'"
+      window: "5m"
+      threshold: 20
+      target: "#chat-launch"
+      template: "⚠️ P1 — Provider {tag(chat.provider)} 5xx ({event.count} in 5min)"
+      severity: P1
+
+    - name: "P1_streaming_aborted"
+      condition: "event.count > 10 AND event.message contains 'SSE stream aborted'"
+      window: "10m"
+      threshold: 10
+      target: "#chat-launch"
+      severity: P1
+
+    - name: "P2_intent_accuracy_drop"
+      condition: "metric.intent_accuracy < 0.8"
+      window: "1d"
+      threshold: 0.8
+      target: "#chat-launch"
+      severity: P2
+
+    - name: "P2_lead_webhook_failed"
+      condition: "event.count > 5 AND event.message contains 'Webhook failed after 3 retries'"
+      window: "1h"
+      threshold: 5
+      target: "#chat-launch"
+      severity: P2
+
+    - name: "P2_budget_80"
+      condition: "metric.llm_cost_monthly > 0.8 * env(LLM_BUDGET_USD_MONTHLY)"
+      window: "1h"
+      threshold: 0.8
+      target: "#chat-launch"
+      severity: P2
+
+    - name: "P2_budget_100"
+      condition: "metric.llm_cost_monthly > env(LLM_BUDGET_USD_MONTHLY)"
+      window: "1h"
+      threshold: 1.0
+      target: "#chat-launch"
+      severity: P2
+      auto_action: "set_service_level=3"
+
+    - name: "P3_axe_violations_increase"
+      condition: "metric.axe_violations > 5"
+      window: "1d"
+      threshold: 5
+      target: "#chat-build"
+      severity: P3
+
+# =============================================================
+# LOGS STRUCTURÉS (Pino)
+# =============================================================
+
+logs:
+  format: "json"
+  level:
+    development: "debug"
+    staging: "info"
+    production: "info"
+
+  destinations:
+    - type: stdout
+      formatter: json
+    - type: vercel_logs   # auto-collected by Vercel
+    - type: sentry_breadcrumbs
+      level: ">=warn"
+
+  pii_redaction:
+    fields:
+      - "lead.phone"
+      - "lead.email"
+      - "lead.address"
+      - "user.ip"
+      - "session.user_agent_full"
+
+  required_fields:
+    - timestamp
+    - level
+    - chat.session_id
+    - chat.area
+    - chat.service_level
+    - message
+    - trace_id  # cross-service
+
+  trace_propagation:
+    header: "X-Chat-Trace-Id"
+    generate_if_missing: true
+
+# =============================================================
+# DASHBOARDS (Grafana / Tremor / Recharts custom)
+# =============================================================
+
+dashboards:
+
+  - id: dashboard_health
+    title: "Health real-time"
+    audience: "dev_lead, on-call"
+    refresh: "30s"
+    panels:
+      - name: "Service level"
+        type: "single-stat"
+        query: "SELECT current_service_level FROM chat_health LIMIT 1"
+        thresholds: { 1: green, 2: yellow, 3: orange, 4: red, 5: black }
+      - name: "Providers status"
+        type: "table"
+        query: "SELECT provider, status, success_rate_5m FROM provider_health"
+      - name: "First token latency p50/p95/p99"
+        type: "timeseries"
+        query: |
+          SELECT date_trunc('minute', created_at) AS t,
+                 percentile_cont(0.5) WITHIN GROUP (ORDER BY first_token_ms) AS p50,
+                 percentile_cont(0.95) WITHIN GROUP (ORDER BY first_token_ms) AS p95,
+                 percentile_cont(0.99) WITHIN GROUP (ORDER BY first_token_ms) AS p99
+          FROM chat_messages
+          WHERE created_at > NOW() - INTERVAL '1 hour'
+          GROUP BY t ORDER BY t
+        targets: { p50: green, p95: yellow, p99: red }
+      - name: "Error rate"
+        type: "timeseries"
+        query: |
+          SELECT date_trunc('minute', created_at) AS t,
+                 COUNT(*) FILTER (WHERE status = 'error')::float / COUNT(*) AS rate
+          FROM chat_messages
+          WHERE created_at > NOW() - INTERVAL '1 hour'
+          GROUP BY t ORDER BY t
+      - name: "Budget burn"
+        type: "gauge"
+        query: "SELECT SUM(llm_cost_usd) / env('LLM_BUDGET_USD_MONTHLY') FROM chat_messages WHERE created_at > date_trunc('month', NOW())"
+        thresholds: { 0.5: green, 0.8: yellow, 1.0: red }
+
+  - id: dashboard_business
+    title: "Business KPIs"
+    audience: "po_selma, CEO"
+    refresh: "5m"
+    panels:
+      - name: "Conversion NS (chat_to_purchase)"
+        type: "single-stat-with-trend"
+        query: |
+          WITH attributed AS (
+            SELECT DISTINCT session_id FROM chat_orders WHERE created_at > NOW() - INTERVAL '30 days'
+          ),
+          sessions AS (
+            SELECT id FROM chat_sessions WHERE created_at > NOW() - INTERVAL '30 days'
+          )
+          SELECT (SELECT COUNT(*) FROM attributed)::float / (SELECT COUNT(*) FROM sessions) AS conversion
+      - name: "Daily sessions"
+        type: "timeseries"
+        query: "SELECT date_trunc('day', created_at) AS t, COUNT(*) FROM chat_sessions GROUP BY t ORDER BY t DESC LIMIT 30"
+      - name: "Lead capture rate"
+        type: "timeseries"
+      - name: "LLM cost daily"
+        type: "timeseries"
+      - name: "Engagement (messages/session)"
+        type: "timeseries"
+
+  - id: dashboard_editorial
+    title: "Editorial — content team"
+    audience: "content_yasmine, po_selma"
+    refresh: "1h"
+    panels:
+      - name: "Intent accuracy 7-day"
+        type: "timeseries"
+      - name: "Suggestions CTR"
+        type: "table-with-bar"
+        query: "SELECT suggestion_key, clicks, impressions, ctr FROM suggestions_perf ORDER BY ctr DESC"
+      - name: "FAQ match rate"
+        type: "table"
+      - name: "Canned satisfaction (feedback +1/-1)"
+        type: "table"
+      - name: "Frustration patterns top 20"
+        type: "table"
+
+  - id: dashboard_care
+    title: "Care team"
+    audience: "care_karim"
+    refresh: "1m"
+    panels:
+      - name: "Hot leads pending"
+        type: "list"
+        query: "SELECT * FROM chat_leads WHERE status = 'pending' AND priority = 'hot' ORDER BY created_at DESC"
+      - name: "Frustration alerts last 24h"
+        type: "list"
+      - name: "Leads SLA compliance"
+        type: "gauge"
+      - name: "Lead-to-order rate"
+        type: "single-stat-with-trend"
+
+# =============================================================
+# SLACK INTEGRATIONS
+# =============================================================
+
+slack:
+  channels:
+    - name: "#chat-launch"
+      purpose: "P0/P1 alerts + deploys + budget"
+      members: ["po_selma", "dev_lead", "dev_intermediate"]
+      mute_outside_business_hours: false  # P0 wake up anyone
+
+    - name: "#chat-care"
+      purpose: "Hot leads + frustration alerts"
+      members: ["care_karim", "po_selma", "content_yasmine"]
+      mute_outside_business_hours: true
+
+    - name: "#chat-build"
+      purpose: "Async standup + CI failures + dev questions"
+      members: ["po_selma", "dev_lead", "dev_intermediate", "designer", "content_yasmine"]
+
+  webhooks:
+    sentry: "${SLACK_WEBHOOK_SENTRY}"
+    deploys: "${SLACK_WEBHOOK_DEPLOYS}"
+    care: "${SLACK_WEBHOOK_CARE}"
+
+# =============================================================
+# CRON MONITORING
+# =============================================================
+
+crons:
+  - name: "kb-sync"
+    schedule: "0 3 * * *"  # daily 3h CET
+    timeout_minutes: 30
+    alert_on_failure: true
+    alert_on_timeout: true
+    target_channel: "#chat-build"
+
+  - name: "intent-recompute"
+    schedule: "0 4 * * *"
+    timeout_minutes: 20
+    alert_on_failure: true
+    target_channel: "#chat-build"
+
+  - name: "budget-watch"
+    schedule: "0 * * * *"  # hourly
+    timeout_minutes: 2
+    alert_on_failure: true
+    target_channel: "#chat-launch"
+
+  - name: "gdpr-purge"
+    schedule: "0 5 * * *"
+    timeout_minutes: 30
+    alert_on_failure: true
+    target_channel: "#chat-launch"  # critical RGPD
+
+# =============================================================
+# UPTIME MONITORING (UptimeRobot ou similaire)
+# =============================================================
+
+uptime:
+  monitors:
+    - name: "femiglow.com root"
+      url: "https://femiglow.com"
+      interval_seconds: 60
+      expected_status: 200
+      alert_threshold_consecutive_failures: 3
+
+    - name: "/api/chat/health"
+      url: "https://femiglow.com/api/chat/health"
+      interval_seconds: 60
+      expected_status: 200
+      expected_body_contains: '"serviceLevel"'
+      alert_threshold_consecutive_failures: 2
+
+    - name: "Admin login page"
+      url: "https://femiglow.com/admin"
+      interval_seconds: 300
+      expected_status: 200
+
+# =============================================================
+# RETENTION POLICIES (Sentry, logs, Postgres)
+# =============================================================
+
+retention:
+  sentry_events: 90  # jours
+  vercel_logs: 7
+  postgres_chat_messages: 365
+  postgres_chat_events: 90
+  postgres_chat_leads: 365  # business critical
+  postgres_audit_logs: 1825  # 5 ans (RGPD requirement)
+
+# =============================================================
+# ALERTING ESCALATION
+# =============================================================
+
+escalation:
+  - severity: P0
+    initial_recipient: "dev_lead"
+    timeout_minutes: 15
+    escalate_to: ["po_selma"]
+    second_timeout_minutes: 30
+    escalate_to_2: ["CEO"]
+
+  - severity: P1
+    initial_recipient: "dev_lead"
+    timeout_minutes: 60
+    escalate_to: ["po_selma"]
+
+  - severity: P2
+    initial_recipient: "dev_intermediate"
+    timeout_minutes: 240
+    escalate_to: ["dev_lead"]
+
+  - severity: P3
+    initial_recipient: "ticket_owner"
+    no_escalation: true
+
+# =============================================================
+# AUDIT TRAIL OBLIGATOIRE (séparé observability technique)
+# =============================================================
+
+audit_trail:
+  events:
+    - admin_login
+    - admin_logout
+    - admin_action: "intent_create | intent_update | intent_delete"
+    - admin_action: "suggestion_publish | suggestion_unpublish"
+    - admin_action: "faq_create | faq_update | faq_delete"
+    - admin_action: "lead_status_change"
+    - admin_action: "tool_sandbox_used"
+    - admin_action: "kb_sync_trigger"
+    - service_level_change
+    - feature_flag_change
+    - migration_applied
+    - migration_rolled_back
+    - rgpd_export_request
+    - rgpd_forget_request
+
+  retention_days: 1825  # 5 ans RGPD
+  storage: "postgres.audit_logs"
+  signed_log: true  # HMAC chain pour intégrité
