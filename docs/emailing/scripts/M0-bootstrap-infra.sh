@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+# ============================================================================
+# M0 — Bootstrap remaining emailing infra
+#
+# What this does :
+#   1. Generate 3 secrets (SMTP password, webhook secret, unsub HMAC key)
+#   2. Create Stalwart account `noreply@femiglow-maroc.com` (User)
+#   3. Append new emailing vars to /var/www/femiglow/apps/web/.env
+#   4. Restart femiglow.service to pick up new env
+#   5. Append the new secrets to /var/www/femiglow-emailing/.emailing-secrets.local
+#
+# Prerequisites :
+#   - Stalwart admin creds in .emailing-secrets.local
+#   - Migration 0028_emailing.sql applied (commit e3a33ed)
+#   - femiglow.service active
+#
+# What this does NOT do (left to the user, more sensitive) :
+#   - Create the Stalwart webhook (needs interactive review of events list)
+#   - Add the systemd timer femiglow-cron-email-outbox (the classifier blocks
+#     creating new persistent timers without explicit user direction)
+#
+# Idempotent. DRY_RUN=1 supported.
+# Run as root.
+# ============================================================================
+set -euo pipefail
+if [[ "${EUID}" -ne 0 ]]; then echo "ERR: must run as root" >&2; exit 1; fi
+
+WORKTREE="${WORKTREE:-/var/www/femiglow-emailing}"
+PROD="${PROD:-/var/www/femiglow}"
+SECRETS_FILE="${WORKTREE}/.emailing-secrets.local"
+ENV_FILE="${PROD}/apps/web/.env"
+DRY_RUN="${DRY_RUN:-0}"
+DOMAIN_ID="c"   # femiglow-maroc.com — from `stalwart-cli query Domain`
+
+if [[ ! -f "${SECRETS_FILE}" ]]; then
+  echo "ERR: ${SECRETS_FILE} missing — cannot read Stalwart admin creds" >&2
+  exit 2
+fi
+# Source admin creds (file uses KEY=VALUE syntax, ignore the comments)
+STALWART_ADMIN_USER=$(grep -E '^STALWART_ADMIN_USER=' "${SECRETS_FILE}" | head -1 | cut -d= -f2-)
+STALWART_ADMIN_PASSWORD=$(grep -E '^STALWART_ADMIN_PASSWORD=' "${SECRETS_FILE}" | head -1 | cut -d= -f2-)
+STALWART_URL=$(grep -E '^STALWART_URL=' "${SECRETS_FILE}" | head -1 | cut -d= -f2-)
+
+run() { if [[ "${DRY_RUN}" == "1" ]]; then echo "  [DRY] $*"; else eval "$@"; fi; }
+
+scli() { stalwart-cli --url "${STALWART_URL}" --user "${STALWART_ADMIN_USER}" --password "${STALWART_ADMIN_PASSWORD}" "$@"; }
+
+# ─── 1. Generate or reuse secrets ──────────────────────────────────────────
+echo "→ 1. Generate / reuse secrets"
+
+get_or_gen() {
+  local key="$1"
+  local gen_cmd="$2"
+  local val
+  val=$(grep -E "^${key}=" "${SECRETS_FILE}" 2>/dev/null | head -1 | cut -d= -f2- || true)
+  if [[ -z "${val}" ]]; then
+    val=$(eval "${gen_cmd}")
+    echo "  → generated ${key} (${#val} chars)"
+    if [[ "${DRY_RUN}" != "1" ]]; then
+      echo "${key}=${val}" >> "${SECRETS_FILE}"
+    fi
+  else
+    echo "  → ${key} already set in secrets file"
+  fi
+  echo "${val}"
+}
+
+NOREPLY_PASSWORD=$(get_or_gen "NOREPLY_SMTP_PASSWORD" 'openssl rand -base64 24 | tr -d "/+=" | head -c 24')
+WEBHOOK_SECRET=$(get_or_gen "FEMIGLOW_STALWART_WEBHOOK_SECRET" 'openssl rand -hex 32')
+UNSUB_SECRET=$(get_or_gen "MAIL_UNSUB_TOKEN_SECRET" 'openssl rand -hex 40')
+
+# ─── 2. Create Stalwart account noreply@femiglow-maroc.com ────────────────
+echo ""
+echo "→ 2. Create Stalwart noreply@femiglow-maroc.com (if absent)"
+
+if scli query Account 2>/dev/null | grep -q "noreply@femiglow-maroc.com"; then
+  echo "  (already exists) noreply@femiglow-maroc.com"
+else
+  echo "  → creating account"
+  if [[ "${DRY_RUN}" != "1" ]]; then
+    # Stalwart CLI: create Account User with name + domainId.
+    # The CLI accepts JSON-like arguments via --json or per-field flags.
+    # We use a JSON apply plan for atomicity (create account + set password).
+    PLAN=$(mktemp /tmp/stalwart-noreply-plan.XXXXXX.json)
+    cat > "${PLAN}" <<JSON
+{
+  "creates": [
+    {
+      "type": "Account",
+      "subtype": "User",
+      "fields": {
+        "name": "noreply",
+        "domainId": "${DOMAIN_ID}",
+        "description": "FemiGlow app emailing sender (nodemailer)"
+      }
+    }
+  ]
+}
+JSON
+    scli apply "${PLAN}" 2>&1 | tail -10
+    rm -f "${PLAN}"
+
+    # Find the new account id
+    ACCT_ID=$(scli query Account 2>/dev/null | grep "noreply@femiglow-maroc.com" | awk '{print $1}')
+    if [[ -z "${ACCT_ID}" ]]; then
+      echo "ERR: failed to find newly created noreply account" >&2
+      exit 3
+    fi
+    echo "  account id: ${ACCT_ID}"
+
+    # Set its password (AccountPassword singleton under the account)
+    PWPLAN=$(mktemp /tmp/stalwart-noreply-pw.XXXXXX.json)
+    cat > "${PWPLAN}" <<JSON
+{
+  "updates": [
+    {
+      "type": "AccountPassword",
+      "parent": "${ACCT_ID}",
+      "fields": {
+        "secret": "${NOREPLY_PASSWORD}"
+      }
+    }
+  ]
+}
+JSON
+    scli apply "${PWPLAN}" 2>&1 | tail -10
+    rm -f "${PWPLAN}"
+    echo "  ✓ password set"
+  fi
+fi
+
+# ─── 3. Update apps/web/.env (idempotent) ─────────────────────────────────
+echo ""
+echo "→ 3. Update ${ENV_FILE} with emailing vars"
+
+backup="${ENV_FILE}.bak.$(date +%Y%m%d-%H%M%S)"
+run "cp -a '${ENV_FILE}' '${backup}'"
+echo "  backup: ${backup}"
+
+upsert_env() {
+  local key="$1" val="$2"
+  if grep -qE "^${key}=" "${ENV_FILE}" 2>/dev/null; then
+    run "sed -i 's|^${key}=.*|${key}=${val}|' '${ENV_FILE}'"
+  else
+    run "echo '${key}=${val}' >> '${ENV_FILE}'"
+  fi
+}
+
+if [[ "${DRY_RUN}" != "1" ]]; then
+  # Add a section header if not present
+  if ! grep -q "# ─── Emailing" "${ENV_FILE}"; then
+    echo "" >> "${ENV_FILE}"
+    echo "# ─── Emailing (added by M0-bootstrap-infra.sh, cf. docs/emailing/) ─" >> "${ENV_FILE}"
+  fi
+  upsert_env SMTP_HOST "127.0.0.1"
+  upsert_env SMTP_PORT "587"
+  upsert_env SMTP_USER "noreply@femiglow-maroc.com"
+  upsert_env SMTP_PASSWORD "${NOREPLY_PASSWORD}"
+  upsert_env MAIL_FROM "'FemiGlow <noreply@femiglow-maroc.com>'"
+  upsert_env MAIL_REPLY_TO "info@femiglow-maroc.com"
+  upsert_env FEMIGLOW_STALWART_WEBHOOK_SECRET "${WEBHOOK_SECRET}"
+  upsert_env MAIL_UNSUB_TOKEN_SECRET "${UNSUB_SECRET}"
+  echo "  ✓ 8 vars added/updated"
+fi
+
+# ─── 4. Restart femiglow.service ──────────────────────────────────────────
+echo ""
+echo "→ 4. Restart femiglow.service to load new env"
+run "systemctl restart femiglow.service"
+sleep 5
+if [[ "${DRY_RUN}" != "1" ]]; then
+  if systemctl is-active --quiet femiglow.service; then
+    echo "  ✓ femiglow.service active"
+  else
+    echo "ERR: femiglow.service not active after restart" >&2
+    systemctl status femiglow.service --no-pager | tail -10 >&2
+    exit 4
+  fi
+fi
+
+# ─── 5. SMTP smoke test (verify nodemailer can connect) ───────────────────
+echo ""
+echo "→ 5. SMTP smoke test (swaks)"
+if [[ "${DRY_RUN}" != "1" ]] && command -v swaks >/dev/null; then
+  echo "Test from $(hostname) at $(date)" | swaks \
+    --to "admin@femiglow-maroc.com" \
+    --from "noreply@femiglow-maroc.com" \
+    --server 127.0.0.1:587 \
+    --auth-user "noreply@femiglow-maroc.com" \
+    --auth-password "${NOREPLY_PASSWORD}" \
+    --tls --tls-protocol tlsv1_2 \
+    --header "Subject: M0 bootstrap test $(date +%H%M%S)" \
+    --suppress-data 2>&1 | tail -5
+else
+  echo "  (swaks not installed or DRY_RUN — skipped)"
+fi
+
+# ─── 6. Summary ───────────────────────────────────────────────────────────
+echo ""
+echo "══════════════════════════════════════════════════════════════════════"
+echo "✓ Bootstrap done. Remaining manual steps :"
+echo ""
+echo "  a) Configure Stalwart webhook (Settings → Webhooks in mail.fmg-maroc.com)"
+echo "     URL    : https://admin.femiglow-maroc.com/api/mail/webhook/stalwart"
+echo "     Events : message.queued, message.delivered, message.delivery-failed,"
+echo "              message.delivery-deferred, auth.failure"
+echo "     HTTP Auth Bearer token : <FEMIGLOW_STALWART_WEBHOOK_SECRET in .env>"
+echo ""
+echo "  b) Add systemd timer for /api/cron/email-outbox (every 60s)."
+echo "     Create these 2 files :"
+echo "       /etc/systemd/system/femiglow-cron-email-outbox.service"
+echo "       /etc/systemd/system/femiglow-cron-email-outbox.timer"
+echo "     (templates in 09-infrastructure-setup.md §9 of this dossier)"
+echo "     Then : systemctl daemon-reload && systemctl enable --now …timer"
+echo ""
+echo "  Secrets stored in : ${SECRETS_FILE}"
+echo "  .env backup       : ${backup}"
