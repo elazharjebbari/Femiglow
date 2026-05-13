@@ -1,11 +1,14 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
-import { isEventSupported, mapEventName } from './event-mapping';
+import { isEventSupported } from './event-mapping';
+import { getMappedName } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
 
 function buildMpPayload(ctx: DispatchContext): Record<string, unknown> {
-  const eventNameMapped = mapEventName(ctx.eventName, 'google_ga4') ?? ctx.eventName;
+  // Si pas de mapping résolu, fallback au nom canonique (comportement
+  // historique : GA4 accepte n'importe quel event name custom).
+  const eventNameMapped = getMappedName(ctx, 'google_ga4') ?? ctx.eventName;
   const baseParams: Record<string, unknown> = {
     ...ctx.params,
     page_location: ctx.pageUrl,

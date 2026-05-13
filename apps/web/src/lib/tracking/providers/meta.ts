@@ -1,7 +1,8 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
 import { hashIdentity, sha256Hex } from './hashing';
-import { isEventSupported, mapEventName } from './event-mapping';
+import { isEventSupported } from './event-mapping';
+import { getMappedName, isMetaCustomEvent } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
 
@@ -55,11 +56,16 @@ export const metaAdapter: ProviderAdapter = {
     if (!accessToken) {
       return { status: 'skipped', latencyMs: 0, attempts: 0, error: 'capi_token_missing' };
     }
-    const eventNameMapped = mapEventName(ctx.eventName, 'meta');
+    const eventNameMapped = getMappedName(ctx, 'meta');
     if (!eventNameMapped) {
       return { status: 'skipped', latencyMs: 0, attempts: 0, error: 'event_unmapped' };
     }
     const ts = Math.floor(ctx.receivedAt.getTime() / 1000);
+    // Si l'admin a marqué isCustom=true, on envoie via trackCustom de la
+    // CAPI Meta : le `event_name` reste personnalisé, mais on flag dans
+    // custom_data pour cohérence client/serveur (les events client gtag
+    // utilisent fbq('trackCustom', name)).
+    const isCustom = isMetaCustomEvent(ctx);
     const payload = {
       data: [
         {
@@ -69,7 +75,10 @@ export const metaAdapter: ProviderAdapter = {
           event_source_url: ctx.pageUrl,
           action_source: 'website',
           user_data: buildUserData(ctx),
-          custom_data: buildCustomData(ctx.eventName, ctx.params),
+          custom_data: {
+            ...buildCustomData(ctx.eventName, ctx.params),
+            ...(isCustom ? { fg_custom_event: true } : {}),
+          },
         },
       ],
       ...(provider.testEventCode ? { test_event_code: provider.testEventCode } : {}),
