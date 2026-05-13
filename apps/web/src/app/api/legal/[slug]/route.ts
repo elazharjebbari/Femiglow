@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
+import {
+  enforceLegalRateLimit,
+  extractClientIp,
+  PUBLIC_LIMITS,
+} from '@/lib/legal/rate-limit';
 import { getPublishedLegalPage, listAllTemplateVars } from '@/lib/legal/repository';
 import { renderLegalMarkdownWithDbVars } from '@/lib/legal/render';
 
@@ -11,10 +16,13 @@ export const revalidate = 300;
 const CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=900';
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { slug: string } },
 ): Promise<Response> {
   try {
+    const rl = await enforceLegalRateLimit('public-page', extractClientIp(req), PUBLIC_LIMITS);
+    if (!rl.ok) return rl.response;
+
     const page = await getPublishedLegalPage(params.slug);
     if (!page) throw new HttpError('not_found', 'Page non trouvée');
 
@@ -37,7 +45,7 @@ export async function GET(
         include_in_search: page.includeInSearch,
         canonical_url: page.canonicalUrl,
       },
-      { headers: { 'Cache-Control': CACHE_CONTROL } },
+      { headers: { 'Cache-Control': CACHE_CONTROL, ...rl.headers } },
     );
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

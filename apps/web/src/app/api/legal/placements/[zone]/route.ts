@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
+import {
+  enforceLegalRateLimit,
+  extractClientIp,
+  PUBLIC_LIMITS,
+} from '@/lib/legal/rate-limit';
 import { listPlacementsForZone } from '@/lib/legal/repository';
 import { legalZoneKeySchema } from '@/lib/legal/types';
 
@@ -11,10 +16,13 @@ export const revalidate = 300;
 const CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=900';
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { zone: string } },
 ): Promise<Response> {
   try {
+    const rl = await enforceLegalRateLimit('public-zone', extractClientIp(req), PUBLIC_LIMITS);
+    if (!rl.ok) return rl.response;
+
     const parsed = legalZoneKeySchema.safeParse(params.zone);
     if (!parsed.success) throw new HttpError('invalid_input', 'Zone invalide');
 
@@ -28,7 +36,7 @@ export async function GET(
 
     return NextResponse.json(
       { zone: parsed.data, links },
-      { headers: { 'Cache-Control': CACHE_CONTROL } },
+      { headers: { 'Cache-Control': CACHE_CONTROL, ...rl.headers } },
     );
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

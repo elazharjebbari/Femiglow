@@ -9,6 +9,7 @@ import {
   gatherPlacementsToCheck,
   recordSnapshots,
 } from '@/lib/legal/link-verifier';
+import { enforceLegalRateLimit, HEALTH_RECHECK_LIMITS } from '@/lib/legal/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,9 @@ export async function POST(): Promise<Response> {
   try {
     const session = await getAdminSession();
     if (!session) throw new HttpError('unauthorized', 'Session requise');
+
+    const rl = await enforceLegalRateLimit('health-recheck', session.adminId, HEALTH_RECHECK_LIMITS);
+    if (!rl.ok) return rl.response;
 
     const targets = await gatherPlacementsToCheck();
     if (targets.length === 0) {
