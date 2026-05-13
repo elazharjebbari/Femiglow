@@ -14,12 +14,25 @@ import { TextField } from '@/components/forms/Field';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import type { CheckoutForm } from '@/lib/schemas';
+import { useFormTracking } from '@/lib/tracking/use-form-tracking';
+
+// FORM_ID/FORM_MODE dupliqués depuis CheckoutFlow.tsx pour permettre le wiring
+// tracking ici sans prop drilling. Si l'un évolue, garder les deux synchronisés.
+const TRACKING_FORM_ID = 'cart-checkout-v1';
+const TRACKING_FORM_MODE = 'wizard_cart' as const;
 
 export function InfoStep() {
   const {
     register,
     formState: { errors },
   } = useFormContext<CheckoutForm>();
+  // form_start sur premier focus champ (D-004). Pas de form_abandon car
+  // CheckoutFlow gère sa propre logique d'abandon via beforeunload.
+  const { handleFieldFocus } = useFormTracking({
+    formId: TRACKING_FORM_ID,
+    formMode: TRACKING_FORM_MODE,
+    trackAbandon: false,
+  });
 
   return (
     <fieldset className="space-y-7" data-testid="checkout-step-info">
@@ -39,8 +52,9 @@ export function InfoStep() {
           required
           error={errors.contact?.firstName?.message}
           {...register('contact.firstName')}
+          onFocus={handleFieldFocus('firstName')}
         />
-        <PhoneField />
+        <PhoneField onFocus={handleFieldFocus('phone')} />
       </div>
 
       <ConsentCheckbox />
@@ -48,7 +62,7 @@ export function InfoStep() {
   );
 }
 
-function PhoneField() {
+function PhoneField({ onFocus }: { onFocus?: () => void }) {
   const {
     register,
     formState: { errors },
@@ -85,6 +99,7 @@ function PhoneField() {
           placeholder="612345678"
           className="w-full bg-creme py-3 text-encre placeholder:text-encre/40 focus:outline-none"
           {...register('contact.phone')}
+          onFocus={onFocus}
         />
       </div>
       {error && (

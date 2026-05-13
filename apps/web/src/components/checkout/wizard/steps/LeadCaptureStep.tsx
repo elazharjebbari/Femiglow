@@ -25,7 +25,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useId, useMemo } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { z } from 'zod';
@@ -46,6 +46,7 @@ import {
   type WizardContext,
 } from '@/lib/tracking/checkout-events';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { useFormTracking } from '@/lib/tracking/use-form-tracking';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Schema validation client
@@ -128,32 +129,18 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
 
   const mutation = useLeadCaptureMutation();
 
-  // Tracking : begin_checkout au mount (le wizard est "ouvert").
-  useEffect(() => {
-    if (!formContext) return;
-    const ctx: WizardContext = {
-      form_id: formContext.formId,
-      form_mode: formContext.formMode,
-      step_name: 'lead',
-      variant_key: formContext.variantKey,
-    };
-    emit(
-      CHECKOUT_EVENT_NAMES.beginCheckout,
-      buildBeginCheckoutEvent({
-        ctx,
-        currency: cartSnapshot?.currency ?? 'MAD',
-        value: cartSnapshot ? cartSnapshot.totalCents / 100 : 0,
-        items: (cartSnapshot?.items ?? []).map((it) => ({
-          item_id: it.sku,
-          item_name: it.name,
-          price: it.unitPriceCents / 100,
-          quantity: it.quantity,
-        })),
-      }) as unknown as Record<string, unknown>,
-    );
-    // On veut un seul tir au mount — `emit` est stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formContext?.formId, formContext?.formMode, formContext?.variantKey]);
+  // D-004 — `begin_checkout` ne fire plus au mount (= page view déguisé qui
+  // polluait Lookalike Meta). Il est désormais déclenché dans `onSubmit`
+  // sur action explicite "Continuer". `form_start` (engagement) prend le
+  // relais comme signal d'entrée tunnel, émis au premier focus champ.
+  const beganCheckoutRef = useRef(false);
+  const { handleFieldFocus } = useFormTracking({
+    formId: formContext?.formId ?? 'wizard',
+    formMode: formContext?.formMode,
+    // Le wizard a sa propre logique d'abandon via wizard-store ;
+    // on n'active pas le `form_abandon` du hook pour éviter le doublon.
+    trackAbandon: false,
+  });
 
   // Persiste le draft à chaque change (resume après refresh).
   const watchedFirstName = watch('firstName');
@@ -171,6 +158,33 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
   const onSubmit = handleSubmit(async (values) => {
     // Honeypot — bot ? on accepte silencieusement et on s'arrête.
     if (values.website && values.website.length > 0) return;
+
+    // D-004 — `begin_checkout` sur action explicite (click Continuer), une
+    // seule fois par session de step. Le re-tir éventuel d'un second submit
+    // après erreur ne déclenche pas un nouveau begin_checkout.
+    if (!beganCheckoutRef.current && formContext) {
+      beganCheckoutRef.current = true;
+      const ctx: WizardContext = {
+        form_id: formContext.formId,
+        form_mode: formContext.formMode,
+        step_name: 'lead',
+        variant_key: formContext.variantKey,
+      };
+      emit(
+        CHECKOUT_EVENT_NAMES.beginCheckout,
+        buildBeginCheckoutEvent({
+          ctx,
+          currency: cartSnapshot?.currency ?? 'MAD',
+          value: cartSnapshot ? cartSnapshot.totalCents / 100 : 0,
+          items: (cartSnapshot?.items ?? []).map((it) => ({
+            item_id: it.sku,
+            item_name: it.name,
+            price: it.unitPriceCents / 100,
+            quantity: it.quantity,
+          })),
+        }) as unknown as Record<string, unknown>,
+      );
+    }
 
     try {
       await mutation.execute({
@@ -259,6 +273,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
             error={errors.firstName?.message}
             placeholder="Yasmine"
             {...register('firstName')}
+            onFocus={handleFieldFocus('firstName')}
           />
           <TextField
             id={phoneId}
@@ -271,6 +286,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
             hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
             error={errors.phone?.message}
             {...register('phone')}
+            onFocus={handleFieldFocus('phone')}
           />
         </div>
 

@@ -1,0 +1,2672 @@
+{
+  "_meta": {
+    "schemaVersion": 1,
+    "name": "FemiGlow Factory Default",
+    "generatedFromCode": "apps/web/src/lib/tracking/providers/event-mapping.ts",
+    "generatedAt": "2026-05-13",
+    "checksum": "sha256:ef34f2ea3d797f94e40e319fa704e40b09ebf0363c592c494ae520b01cffd97b",
+    "notes": "Source de vérité du factory mapping FemiGlow. Re-générer avec `pnpm tracking:generate-default-mapping`. Le test CI `pnpm tracking:check-default-mapping` garantit l'alignement avec event-mapping.ts."
+  },
+  "mappings": {
+    "page_view": {
+      "meta": {
+        "mappedName": "PageView",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "page_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "page_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "Pageview",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "PAGE_VIEW",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "pagevisit",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "scroll_depth": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "scroll",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "scroll",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "click": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "click",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "click",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "select_content": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "select_content",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "select_content",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "share": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "share",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "share",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "search": {
+      "meta": {
+        "mappedName": "Search",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "search",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "search",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "Search",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "search",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "video_start": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "video_start",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "video_start",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "video_progress": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "video_progress",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "video_progress",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "video_complete": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "video_complete",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "video_complete",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "file_download": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "file_download",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "file_download",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "form_start": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "form_start",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "form_start",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "form_submit": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "form_submit",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "form_submit",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "view_item_list": {
+      "meta": {
+        "mappedName": "ViewContent",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "view_item_list",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "view_item_list",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "select_item": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "select_item",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "select_item",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "view_item": {
+      "meta": {
+        "mappedName": "ViewContent",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "view_item",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "view_item",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "ViewContent",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "VIEW_CONTENT",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "pagevisit",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "add_to_cart": {
+      "meta": {
+        "mappedName": "AddToCart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "add_to_cart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "add_to_cart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "AddToCart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "ADD_CART",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "addtocart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "remove_from_cart": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "remove_from_cart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "remove_from_cart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "view_cart": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "view_cart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "view_cart",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "begin_checkout": {
+      "meta": {
+        "mappedName": "checkout_intent",
+        "isCustom": true,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "begin_checkout",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "begin_checkout",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "InitiateCheckout",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "START_CHECKOUT",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "checkout",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "add_shipping_info": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "add_shipping_info",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "add_shipping_info",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "add_payment_info": {
+      "meta": {
+        "mappedName": "AddPaymentInfo",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "add_payment_info",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "add_payment_info",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "AddPaymentInfo",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "ADD_BILLING",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "purchase": {
+      "meta": {
+        "mappedName": "Purchase",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "purchase",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "purchase",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "CompletePayment",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "PURCHASE",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "checkout",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "refund": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "refund",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "refund",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "view_promotion": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "view_promotion",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "view_promotion",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "select_promotion": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "select_promotion",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "select_promotion",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "generate_lead": {
+      "meta": {
+        "mappedName": "Lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "generate_lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "generate_lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "SubmitForm",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "SIGN_UP",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "sign_up": {
+      "meta": {
+        "mappedName": "CompleteRegistration",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "sign_up",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "sign_up",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "CompleteRegistration",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "SIGN_UP",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "signup",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "login": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "login",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "login",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_journal_read_75": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_journal_read_75",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_journal_read_75",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_journal_read_100": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_journal_read_100",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_journal_read_100",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_section_view": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_section_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_section_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_faq_view": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_faq_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_faq_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_composition_open": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_composition_open",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_composition_open",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "contact_submit": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "newsletter_submit": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "video_user_play": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "video_autoplay_view": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "form_field_focus": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "form_field_blur": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "form_validation_error": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "form_abandon": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "cta_impression": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "mini_cart_open": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "mini_cart_close": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "video_transcript_open": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_pixel_test": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_pixel_test",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_pixel_test",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_admin_action": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_admin_action",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_admin_action",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "fg_consent_change": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "fg_consent_change",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "fg_consent_change",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_widget_open": {
+      "meta": {
+        "mappedName": "ChatEngagement",
+        "isCustom": true,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_widget_open",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_widget_open",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_widget_close": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_widget_close",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_widget_close",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_message_sent": {
+      "meta": {
+        "mappedName": "Contact",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_message_sent",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_message_sent",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_message_received": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_message_received",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_message_received",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_message_complete": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_message_complete",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_message_complete",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_lead_form_offered": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_lead_form_offered",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_lead_form_offered",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_lead_form_view": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_lead_form_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_lead_form_view",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_lead_form_focus": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_lead_form_focus",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_lead_form_focus",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_lead_form_dismiss": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_lead_form_dismiss",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_lead_form_dismiss",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_lead_form_submit": {
+      "meta": {
+        "mappedName": "Lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "generate_lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "generate_lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": "SubmitForm",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": "LEAD",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": "lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      }
+    },
+    "chat_lead_webhook_sent": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_lead_webhook_sent",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_lead_webhook_sent",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_lead_webhook_failed": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_lead_webhook_failed",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_lead_webhook_failed",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_suggestion_clicked": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_suggestion_clicked",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_suggestion_clicked",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_feedback": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_feedback",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_feedback",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_language_switch": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_language_switch",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_language_switch",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_error": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_error",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_error",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_rate_limit_hit": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_rate_limit_hit",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_rate_limit_hit",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "chat_conversion_attributed": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "chat_conversion_attributed",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "chat_conversion_attributed",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "lead_capture": {
+      "meta": {
+        "mappedName": "Lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "lead_capture",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "generate_lead",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "address_completed": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "add_shipping_info",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "add_shipping_info",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "wizard_error": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "wizard_error",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "wizard_error",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    },
+    "wizard_abandoned": {
+      "meta": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "google_ga4": {
+        "mappedName": "wizard_abandoned",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "google_ads": {
+        "mappedName": "wizard_abandoned",
+        "isCustom": false,
+        "isEnabled": true,
+        "notes": null
+      },
+      "tiktok": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "snap": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      },
+      "pinterest": {
+        "mappedName": null,
+        "isCustom": false,
+        "isEnabled": false,
+        "notes": null
+      }
+    }
+  }
+}

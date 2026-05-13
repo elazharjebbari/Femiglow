@@ -1,0 +1,109 @@
+@startuml event-mappings-components
+!theme plain
+title Event Mappings — Diagramme composants (C4 niveau 3)
+
+actor "Admin (Sara)" as admin
+
+package "Frontend (Next.js App Router)" {
+  [/admin/tracking/events/mappings (page.tsx)] as page
+  [MappingVersionsList] as list
+  [MappingVersionEditor (wizard)] as editor
+  [MappingMatrix (event × provider pivot)] as matrix
+  [MappingDiffViewer] as diff
+  [MappingTestModal (dry-run)] as testmodal
+  [MappingExportButton] as exportbtn
+  [MappingResetDefaultButton] as resetbtn
+}
+
+package "Backend API (route handlers)" {
+  [GET /api/admin/tracking/events/mappings] as r_list
+  [POST /api/admin/tracking/events/mappings] as r_create
+  [GET /api/admin/tracking/events/mappings/:id] as r_get
+  [PUT /api/admin/tracking/events/mappings/:id] as r_update
+  [DELETE /api/admin/tracking/events/mappings/:id] as r_delete
+  [POST /api/admin/tracking/events/mappings/:id/activate] as r_activate
+  [POST /api/admin/tracking/events/mappings/:id/test] as r_test
+  [POST /api/admin/tracking/events/mappings/:id/export-gtm] as r_export
+  [POST /api/admin/tracking/events/mappings/reset-default] as r_reset
+}
+
+package "Services (lib/tracking/mappings)" {
+  [store.ts (CRUD + transitions)] as store
+  [resolver.ts (resolveEventMapping)] as resolver
+  [validator.ts (Zod par provider)] as validator
+  [gtm-export.ts (Container JSON)] as gtm_export
+  [audit.ts (auditMappingChange)] as audit
+}
+
+database "PostgreSQL" {
+  [event_mapping_versions (JSONB)] as t_versions
+  [event_mapping_audit] as t_audit
+}
+
+[default-mapping.json (file, immutable)] as default_file
+
+package "Dispatcher (existant)" {
+  [lib/tracking/server/dispatcher.ts] as dispatcher
+}
+
+admin --> page
+page --> list
+page --> editor
+editor --> matrix
+editor --> diff
+editor --> testmodal
+editor --> exportbtn
+list --> resetbtn
+
+list --> r_list
+editor --> r_get
+editor --> r_create
+editor --> r_update
+list --> r_activate
+list --> r_delete
+testmodal --> r_test
+exportbtn --> r_export
+resetbtn --> r_reset
+
+r_list --> store
+r_create --> store
+r_get --> store
+r_update --> store
+r_delete --> store
+r_activate --> store
+r_test --> resolver
+r_export --> gtm_export
+r_reset --> store
+
+store --> t_versions
+store --> validator
+store --> audit
+audit --> t_audit
+gtm_export --> store
+gtm_export --> t_versions
+resolver --> t_versions
+
+dispatcher --> resolver
+
+default_file ..> store : seed (boot + reset)
+
+note right of t_versions
+  Une version =
+  1 row {
+    id, status, name, notes,
+    is_active, is_default,
+    mappings: jsonb (matrice complète),
+    created_by, created_at,
+    activated_at, archived_at,
+    cloned_from
+  }
+  Index GIN sur mappings pour query JSONB
+end note
+
+note left of resolver
+  Cache in-memory TTL 30s
+  par (event, provider).
+  Invalidation sur activate.
+end note
+
+@enduml

@@ -70,7 +70,15 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
   file_download: z
     .object({ file_name: z.string().optional(), file_extension: z.string().optional() })
     .strict(),
-  form_start: z.object({ form_id: z.string().optional() }).strict(),
+  form_start: z
+    .object({
+      form_id: z.string().optional(),
+      first_field: z.string().optional(),
+      form_mode: z
+        .enum(['wizard_embed', 'wizard_cart', 'legacy_cart'])
+        .optional(),
+    })
+    .strict(),
   form_submit: z.object({ form_id: z.string().optional() }).strict(),
   view_item_list: ecommerceParams,
   select_item: ecommerceParams,

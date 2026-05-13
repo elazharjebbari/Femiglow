@@ -516,6 +516,16 @@ export const trackingConsentStateEnum = pgEnum('tracking_consent_state', [
   'pending',
 ]);
 
+// Migration 0029 — catégorie Conversion Action Google Ads (default + override).
+export const googleAdsCategoryEnum = pgEnum('google_ads_category', [
+  'purchase',
+  'lead',
+  'contact',
+  'signup',
+  'view_content',
+  'none',
+]);
+
 export const trackingPages = pgTable(
   'tracking_pages',
   {
@@ -591,11 +601,90 @@ export const trackingEventDefinitions = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     // Migration 0009 — funnel mapping pour TOF/MOF/BOF/CONVERSION
     funnelStage: trackingFunnelStageEnum('funnel_stage').notNull().default('none'),
+    // Migration 0029 — catégorie Google Ads par défaut (override possible via tracking_event_overrides).
+    googleAdsCategoryDefault: googleAdsCategoryEnum('google_ads_category_default')
+      .notNull()
+      .default('none'),
   },
   (t) => ({
     nameUnique: uniqueIndex('tracking_event_def_name_unique').on(t.name),
     categoryIdx: index('tracking_event_def_category_idx').on(t.category),
     funnelStageIdx: index('tracking_event_def_funnel_stage_idx').on(t.funnelStage),
+  }),
+);
+
+// Migration 0030 — override admin de la catégorie Google Ads par event (D-005).
+export const trackingEventOverrides = pgTable(
+  'tracking_event_overrides',
+  {
+    id: text('id').primaryKey(),
+    eventName: text('event_name')
+      .notNull()
+      .references(() => trackingEventDefinitions.name, { onDelete: 'cascade' }),
+    googleAdsCategory: googleAdsCategoryEnum('google_ads_category').notNull(),
+    updatedBy: text('updated_by'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    note: text('note'),
+  },
+  (t) => ({
+    eventNameUnique: uniqueIndex('tracking_event_overrides_event_name_unique').on(t.eventName),
+    eventNameIdx: index('tracking_event_overrides_event_name_idx').on(t.eventName),
+  }),
+);
+
+// Migration 0032 — Event mappings : versionning event_canonique → vendor.
+// cf. docs/event-mappings/10-architecture/adr-001-versioning-strategy.md
+export const eventMappingVersions = pgTable(
+  'event_mapping_versions',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    notes: text('notes'),
+    status: text('status').notNull(),
+    isActive: boolean('is_active').notNull().default(false),
+    isDefault: boolean('is_default').notNull().default(false),
+    mappings: jsonb('mappings').notNull().default({}),
+    clonedFrom: text('cloned_from'),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    activatedAt: timestamp('activated_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    oneActiveIdx: uniqueIndex('event_mapping_versions_one_active')
+      .on(t.isActive)
+      .where(sql`is_active = true`),
+    statusIdx: index('event_mapping_versions_status_idx').on(t.status, t.createdAt),
+    defaultIdx: uniqueIndex('event_mapping_versions_default_idx')
+      .on(t.isDefault)
+      .where(sql`is_default = true`),
+    mappingsGin: index('event_mapping_versions_mappings_gin').using(
+      'gin',
+      t.mappings,
+    ),
+  }),
+);
+
+// Migration 0033 — audit log structuré.
+export const eventMappingAudit = pgTable(
+  'event_mapping_audit',
+  {
+    id: text('id').primaryKey(),
+    versionId: text('version_id'),
+    action: text('action').notNull(),
+    actorId: text('actor_id').notNull(),
+    before: jsonb('before'),
+    after: jsonb('after'),
+    meta: jsonb('meta').notNull().default({}),
+    ipAnonymized: text('ip_anonymized'),
+    uaHash: text('ua_hash'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    versionIdx: index('event_mapping_audit_version_idx').on(t.versionId, t.createdAt),
+    actorIdx: index('event_mapping_audit_actor_idx').on(t.actorId, t.createdAt),
+    actionIdx: index('event_mapping_audit_action_idx').on(t.action, t.createdAt),
   }),
 );
 
@@ -678,6 +767,8 @@ export const trackingEventsLog = pgTable(
     trafficMedium: text('traffic_medium'),
     experimentId: text('experiment_id'),
     experimentVariant: text('experiment_variant'),
+    // Migration 0028 — Google click ID capturé en middleware (cookie first-touch).
+    gclid: text('gclid'),
   },
   (t) => ({
     eventIdUnique: uniqueIndex('tracking_events_log_event_id_unique').on(t.eventId),
@@ -697,6 +788,9 @@ export const trackingEventsLog = pgTable(
       t.sessionId,
     ),
     nameReceivedIdx: index('tracking_events_log_name_received_idx').on(t.eventName, t.receivedAt),
+    gclidIdx: index('tracking_events_log_gclid_idx')
+      .on(t.gclid)
+      .where(sql`gclid IS NOT NULL`),
   }),
 );
 
@@ -1794,3 +1888,87 @@ export type CheckoutIdempotencyRow = typeof checkoutIdempotency.$inferSelect;
 export type CheckoutIdempotencyInsert = typeof checkoutIdempotency.$inferInsert;
 export type DeliveryCityRow = typeof deliveryCities.$inferSelect;
 export type DeliveryCityInsert = typeof deliveryCities.$inferInsert;
+
+// ===========================================================================
+// GTM Poka-Yoke (D-001) — Surveillance runtime de la cohérence GTM
+// cf. docs/gtm-poka-yoke/20-data/01-data-model.md
+// ===========================================================================
+
+export const gtmSentinelPings = pgTable(
+  'gtm_sentinel_pings',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull(),
+    containerId: text('container_id').notNull(),
+    gtmId: text('gtm_id'),
+    bundleId: text('bundle_id').notNull(),
+    mappingVersion: text('mapping_version').notNull(),
+    configVersion: text('config_version').notNull(),
+    manifestMismatch: boolean('manifest_mismatch').notNull().default(false),
+    manifestMismatchDetails: text('manifest_mismatch_details'),
+    uaHash: text('ua_hash'),
+    ipHash: text('ip_hash'),
+    pageUrlHash: text('page_url_hash'),
+    rawPayload: jsonb('raw_payload').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  },
+  (t) => ({
+    receivedAtDesc: index('idx_gtm_pings_received_at_desc').on(t.receivedAt),
+    containerBundle: index('idx_gtm_pings_container_bundle').on(t.containerId, t.bundleId),
+    mappingVReceived: index('idx_gtm_pings_mapping_v_received').on(t.mappingVersion, t.receivedAt),
+  }),
+);
+
+export const gtmDriftState = pgTable('gtm_drift_state', {
+  id: text('id').primaryKey(),
+  status: text('status', { enum: ['ok', 'warning', 'critical'] }).notNull(),
+  since: timestamp('since', { withTimezone: true }).notNull(),
+  reasonsJson: jsonb('reasons_json').$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+  lastPingId: text('last_ping_id'),
+  lastCheckAt: timestamp('last_check_at', { withTimezone: true }).notNull().defaultNow(),
+  adminSnapshot: jsonb('admin_snapshot').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const gtmDriftHistory = pgTable(
+  'gtm_drift_history',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+    previousStatus: text('previous_status', { enum: ['ok', 'warning', 'critical'] }),
+    newStatus: text('new_status', { enum: ['ok', 'warning', 'critical'] }).notNull(),
+    reasonsJson: jsonb('reasons_json').$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+    triggeredByPingId: text('triggered_by_ping_id'),
+  },
+  (t) => ({
+    atDesc: index('idx_gtm_drift_history_at_desc').on(t.at),
+  }),
+);
+
+export const gtmSentinelDailyAggregates = pgTable(
+  'gtm_sentinel_daily_aggregates',
+  {
+    day: text('day').notNull(),
+    bundleId: text('bundle_id').notNull(),
+    mappingVersion: text('mapping_version').notNull(),
+    configVersion: text('config_version').notNull(),
+    containerId: text('container_id').notNull(),
+    pingsCount: integer('pings_count').notNull().default(0),
+    driftDetected: boolean('drift_detected').notNull().default(false),
+    firstPingAt: timestamp('first_ping_at', { withTimezone: true }).notNull(),
+    lastPingAt: timestamp('last_ping_at', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.day, t.bundleId] }),
+    dayDesc: index('idx_gtm_daily_agg_day_desc').on(t.day),
+  }),
+);
+
+export type GtmSentinelPingRow = typeof gtmSentinelPings.$inferSelect;
+export type GtmSentinelPingInsert = typeof gtmSentinelPings.$inferInsert;
+export type GtmDriftStateRow = typeof gtmDriftState.$inferSelect;
+export type GtmDriftStateInsert = typeof gtmDriftState.$inferInsert;
+export type GtmDriftHistoryRow = typeof gtmDriftHistory.$inferSelect;
+export type GtmDriftHistoryInsert = typeof gtmDriftHistory.$inferInsert;
+export type GtmSentinelDailyAggregateRow = typeof gtmSentinelDailyAggregates.$inferSelect;
+export type GtmSentinelDailyAggregateInsert = typeof gtmSentinelDailyAggregates.$inferInsert;

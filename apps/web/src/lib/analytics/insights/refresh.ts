@@ -119,10 +119,23 @@ export async function runInsightsRefresh(
 }
 
 export async function getInsightsRefreshStatus(): Promise<ApiRefreshStatus> {
-  const last = await findLastRun();
-  const lockHeld = (await findActiveRun()) !== null;
-  const enabled = await getInsightsRefreshEnabled();
-  const intervalMinutes = await getInsightsRefreshInterval();
+  // Robustesse : chaque sous-call est protégé pour qu'un défaut d'une
+  // facette ne casse pas tout l'endpoint. Ex: si `insights_refresh_run`
+  // n'existe pas encore (DB en retard de migration), on retourne
+  // `lastRun: null` + valeurs par défaut au lieu de 500.
+  const [last, lockHeld, enabled, intervalMinutes] = await Promise.all([
+    findLastRun().catch((err) => {
+      logger.warn('insights.refresh.status.lastRun.degraded', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    }),
+    findActiveRun()
+      .then((r) => r !== null)
+      .catch(() => false),
+    getInsightsRefreshEnabled().catch(() => true),
+    getInsightsRefreshInterval().catch(() => 15),
+  ]);
   return {
     lastRun: last
       ? {

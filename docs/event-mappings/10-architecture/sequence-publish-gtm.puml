@@ -1,0 +1,44 @@
+@startuml seq-publish-gtm
+!theme plain
+title Export d'une version vers GTM Container JSON
+
+actor Admin
+participant "MappingExportButton\n(client React)" as ui
+participant "API\nPOST /mappings/:id/export-gtm" as api
+participant "gtm-export.ts" as exporter
+participant "store.ts" as store
+database PG as db
+
+Admin -> ui : Click "Exporter vers GTM"
+ui -> ui : Modal de confirmation + sélection environnement (production/stage/preview/dev)
+Admin -> ui : Choisit "production" + confirme
+ui -> api : POST { env: 'production' }
+
+api -> store : get(versionId)
+store -> db : SELECT version
+db --> store : version row
+store --> api : version + mappings
+
+api -> exporter : buildGtmContainer(version, env)
+exporter -> exporter : transforme mappings JSONB → tags GTM\n+ variables GTM + triggers GTM\n+ container metadata
+exporter -> exporter : Calcul sha256 du payload
+exporter --> api : { containerJson, sha256, eventsCount, tagsCount }
+
+api --> ui : 200 { containerJson, meta }
+
+ui -> ui : Génère un Blob + déclenche download "femiglow-gtm-v3-prod.json"
+ui -> ui : Affiche toast "Export OK — 30 events, 180 tags générés. Importe maintenant via GTM UI > Admin > Importer container."
+
+note right of exporter
+  Le format produit est strictement
+  compatible avec GTM "Import Container".
+  Champs requis :
+    - exportFormatVersion: 2
+    - containerVersion: { container, tag[], variable[], trigger[] }
+  Validation locale : on charge le JSON
+  produit dans un GTM ContainerVersion
+  parser pour confirmer la conformité
+  (test CI obligatoire).
+end note
+
+@enduml

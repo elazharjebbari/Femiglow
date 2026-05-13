@@ -12,6 +12,7 @@
  */
 import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
+import { logger } from '@/lib/logging/logger';
 import type {
   InsightsComponentDailyRow,
   InsightsEventDailyRow,
@@ -63,28 +64,67 @@ export async function getOverview(
   const compFromDate = toIsoDate(range.comparisonFrom);
   const compToDate = toIsoDate(range.comparisonTo);
 
-  const events = await fetchEventDaily(fromDate, toDate, filters);
-  const pages = await fetchPageDaily(fromDate, toDate);
-  const compEvents = await fetchEventDaily(compFromDate, compToDate, filters);
-  const compPages = await fetchPageDaily(compFromDate, compToDate);
+  // Robustesse : si la storage layer rate (tables insights_* absentes,
+  // migrations en retard, prepared statement stale, etc.), on retourne un
+  // état "first run" cohérent au lieu de propager un 500 à l'UI.
+  // L'erreur est loggée pour debug (pas de masquage silencieux).
+  try {
+    const [events, pages, compEvents, compPages] = await Promise.all([
+      fetchEventDaily(fromDate, toDate, filters),
+      fetchPageDaily(fromDate, toDate),
+      fetchEventDaily(compFromDate, compToDate, filters),
+      fetchPageDaily(compFromDate, compToDate),
+    ]);
 
-  const kpis = computeKpis(events, pages);
-  const compKpis = computeKpis(compEvents, compPages);
-  const variations = computeVariations(kpis, compKpis);
-  const days = listDays(range.from, range.to);
-  const timeseries = buildTimeseries(events, days);
-  const heatmap = await buildHeatmap(range.from, range.to);
-  const topEvents = buildTopEvents(events, 10);
-  const refreshedAt = pickLatestRefresh(events, pages);
+    const kpis = computeKpis(events, pages);
+    const compKpis = computeKpis(compEvents, compPages);
+    const variations = computeVariations(kpis, compKpis);
+    const days = listDays(range.from, range.to);
+    const timeseries = buildTimeseries(events, days);
+    const heatmap = await buildHeatmap(range.from, range.to).catch((err) => {
+      logger.warn('insights.overview.heatmap.degraded', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return [] as InsightsHeatmapCell[];
+    });
+    const topEvents = buildTopEvents(events, 10);
+    const refreshedAt = pickLatestRefresh(events, pages);
 
+    return {
+      kpis,
+      variations,
+      timeseries,
+      heatmap,
+      topEvents,
+      refreshedAt,
+      firstRun: events.length === 0 && pages.length === 0,
+    };
+  } catch (err) {
+    logger.warn('insights.overview.degraded', {
+      error: err instanceof Error ? err.message : String(err),
+      pg_code: (err as { code?: string } | null)?.code ?? null,
+      window: filters.window,
+    });
+    return emptyOverview();
+  }
+}
+
+function emptyOverview(): OverviewResponse {
   return {
-    kpis,
-    variations,
-    timeseries,
-    heatmap,
-    topEvents,
-    refreshedAt,
-    firstRun: events.length === 0 && pages.length === 0,
+    kpis: {
+      totalEvents: 0,
+      uniqueSessions: 0,
+      pageViews: 0,
+      conversions: 0,
+      avgEventsPerSession: 0,
+      bounceRate: 0,
+    },
+    variations: {},
+    timeseries: [],
+    heatmap: [],
+    topEvents: [],
+    refreshedAt: null,
+    firstRun: true,
   };
 }
 

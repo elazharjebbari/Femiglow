@@ -1,0 +1,301 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow — Event Mappings Admin API
+  version: 1.0.0
+  description: |
+    API REST pour la gestion des correspondances events canoniques ↔ events
+    vendors (Meta, GA4, Google Ads, TikTok, Snap, Pinterest), avec versionning
+    immutable, audit, export GTM.
+    Toutes les routes sont protégées par session admin (iron-session).
+  contact:
+    name: FemiGlow Tech
+    email: tech@femiglow-maroc.com
+
+servers:
+  - url: https://femiglow-maroc.com
+    description: Production
+  - url: https://staging.femiglow-maroc.com
+    description: Staging
+  - url: http://localhost:8011
+    description: Dev local
+
+security:
+  - SessionCookie: []
+
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: fg_admin_session
+
+  schemas:
+    MappingCell:
+      type: object
+      required: [mappedName, isCustom, isEnabled]
+      properties:
+        mappedName:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 60
+        isCustom:
+          type: boolean
+          default: false
+        isEnabled:
+          type: boolean
+          default: true
+        notes:
+          type: [string, "null"]
+          maxLength: 200
+
+    MappingsByProvider:
+      type: object
+      required: [meta, google_ga4, google_ads, tiktok, snap, pinterest]
+      properties:
+        meta:       { $ref: "#/components/schemas/MappingCell" }
+        google_ga4: { $ref: "#/components/schemas/MappingCell" }
+        google_ads: { $ref: "#/components/schemas/MappingCell" }
+        tiktok:     { $ref: "#/components/schemas/MappingCell" }
+        snap:       { $ref: "#/components/schemas/MappingCell" }
+        pinterest:  { $ref: "#/components/schemas/MappingCell" }
+
+    Mappings:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/MappingsByProvider"
+      description: "Clés = nom event canonique. Ex: 'purchase'."
+
+    MappingVersion:
+      type: object
+      required: [id, name, status, isActive, isDefault, createdBy, createdAt]
+      properties:
+        id: { type: string, example: "emv_01H..." }
+        name: { type: string, maxLength: 120 }
+        notes: { type: [string, "null"], maxLength: 2000 }
+        status: { type: string, enum: [draft, active, archived, deleted] }
+        isActive: { type: boolean }
+        isDefault: { type: boolean }
+        mappings: { $ref: "#/components/schemas/Mappings" }
+        clonedFrom: { type: [string, "null"] }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        activatedAt: { type: [string, "null"], format: date-time }
+        archivedAt: { type: [string, "null"], format: date-time }
+        deletedAt: { type: [string, "null"], format: date-time }
+
+    MappingVersionListItem:
+      type: object
+      description: "Item liste — sans le champ mappings pour économiser la bande passante"
+      required: [id, name, status, isActive, isDefault, createdBy, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        notes: { type: [string, "null"] }
+        status: { type: string, enum: [draft, active, archived, deleted] }
+        isActive: { type: boolean }
+        isDefault: { type: boolean }
+        clonedFrom: { type: [string, "null"] }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        eventsCount: { type: integer, description: "Nombre d'events dans la matrice" }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: {}
+
+paths:
+  /api/admin/tracking/events/mappings:
+    get:
+      summary: Liste les versions
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [draft, active, archived, deleted, all] }
+          description: "Filtre par status. Default: omit 'deleted'."
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  versions:
+                    type: array
+                    items: { $ref: "#/components/schemas/MappingVersionListItem" }
+                  activeId: { type: [string, "null"] }
+                  defaultId: { type: string, example: "__default__" }
+        '401': { description: Unauthorized, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+    post:
+      summary: Crée une nouvelle version (mode draft)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, source]
+              properties:
+                name: { type: string, maxLength: 120 }
+                notes: { type: [string, "null"], maxLength: 2000 }
+                source:
+                  type: object
+                  oneOf:
+                    - properties:
+                        kind: { const: default }
+                    - properties:
+                        kind: { const: clone }
+                        sourceId: { type: string }
+                    - properties:
+                        kind: { const: import }
+                        mappings: { $ref: "#/components/schemas/Mappings" }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/MappingVersion" } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '404': { description: Source version not found }
+        '409': { description: Conflict (e.g. id reserved) }
+
+  /api/admin/tracking/events/mappings/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      summary: Détail d'une version (avec mappings complets)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/MappingVersion" } } } }
+        '404': { description: Not found }
+    put:
+      summary: Édite une version → crée automatiquement une nouvelle version draft clone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mappings]
+              properties:
+                mappings: { $ref: "#/components/schemas/Mappings" }
+                name: { type: string, maxLength: 120 }
+                notes: { type: [string, "null"], maxLength: 2000 }
+      responses:
+        '201': { description: "Nouvelle version draft créée (D-001 immutable)", content: { application/json: { schema: { $ref: "#/components/schemas/MappingVersion" } } } }
+        '400': { description: Validation error }
+        '403': { description: "Tentative d'édition sur __default__ (read-only)" }
+        '404': { description: Not found }
+    delete:
+      summary: Soft-delete d'une version (status='deleted')
+      responses:
+        '200': { description: OK }
+        '403': { description: "Refus: version active ou is_default" }
+        '404': { description: Not found }
+
+  /api/admin/tracking/events/mappings/{id}/activate:
+    post:
+      summary: Active une version (désactive l'active courante)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/MappingVersion" } } } }
+        '404': { description: Not found }
+        '409': { description: "Version déjà active ou en status 'deleted'" }
+
+  /api/admin/tracking/events/mappings/{id}/test:
+    post:
+      summary: Dry-run dispatch d'un event sur une version (sans appel réseau)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventName]
+              properties:
+                eventName: { type: string, example: "purchase" }
+                params: { type: object }
+      responses:
+        '200':
+          description: Result par provider
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        providerKind: { type: string }
+                        wouldDispatch: { type: boolean }
+                        mappedName: { type: [string, "null"] }
+                        skipReason: { type: [string, "null"] }
+
+  /api/admin/tracking/events/mappings/{id}/export-gtm:
+    post:
+      summary: Exporte la version en GTM Container JSON
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                env: { type: string, enum: [production, stage, preview, dev], default: production }
+      responses:
+        '200':
+          description: GTM Container JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  containerJson: { type: object }
+                  meta:
+                    type: object
+                    properties:
+                      sha256: { type: string }
+                      eventsCount: { type: integer }
+                      tagsCount: { type: integer }
+                      env: { type: string }
+
+  /api/admin/tracking/events/mappings/reset-default:
+    post:
+      summary: Active la version __default__ (reset factory)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/MappingVersion" } } } }
+
+  /api/admin/tracking/events/mappings/{id}/diff/{otherId}:
+    get:
+      summary: Diff entre 2 versions
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: otherId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Diff structuré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  added: { type: array, items: { type: object } }
+                  removed: { type: array, items: { type: object } }
+                  changed: { type: array, items: { type: object } }

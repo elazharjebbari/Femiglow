@@ -1,0 +1,60 @@
+================================================================================
+WIREFRAME : /admin/tracking/events/mappings — LISTE DES VERSIONS
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  Console FemiGlow ▸ Tracking ▸ Events ▸ Mappings                               │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐ │
+│  │  Mappings event ↔ vendors                                                │ │
+│  │  Configure la correspondance des événements canoniques vers Meta, GA4,   │ │
+│  │  Google Ads, TikTok, Snap, Pinterest. Versionnée, exportable vers GTM.   │ │
+│  └──────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                │
+│  [+ Créer une version]    [⤴ Importer depuis JSON]    [↩ Reset au default]    │
+│                                                                                │
+│  Filtres :  Status : [Tous ▼]   Showed deleted: ☐   🔍 [recherche par nom]   │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐ │
+│  │ ●  v3 — édition Sara 2026-05-13                          [ACTIVE]        │ │
+│  │    Modifié 2026-05-13 par sara@femiglow                                  │ │
+│  │    32 events, 156 cellules actives                                        │ │
+│  │    [Éditer] [Tester] [Exporter GTM] [Voir historique] [Archiver]         │ │
+│  │                                                                            │ │
+│  │ ○  v2 — fix Meta CustomEvent checkout_intent             [archived]      │ │
+│  │    2026-04-22 par karim@femiglow                                          │ │
+│  │    [Voir] [Activer] [Dupliquer] [Comparer]              [☑] (compare)    │ │
+│  │                                                                            │ │
+│  │ ○  v1 — version initiale post-refonte                    [archived]      │ │
+│  │    2026-03-01 par karim@femiglow                                          │ │
+│  │    [Voir] [Activer] [Dupliquer] [Comparer]              [ ] (compare)    │ │
+│  │                                                                            │ │
+│  │ 🔒 __default__ — FemiGlow Factory Default                [DEFAULT]       │ │
+│  │    Lecture seule. 2026-03-01.                                             │ │
+│  │    [Voir] [Activer (= reset au default)] [Dupliquer]                     │ │
+│  │                                                                            │ │
+│  │ ▾  Versions supprimées (2)                                                │ │
+│  │    [↩ Restaurer v0-test]                                                  │ │
+│  └──────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                │
+│  ─────────────────────────────────────────                                    │
+│  Comparer 2 versions : [Comparer v2 ↔ v3 →] (enabled si 2 cases cochées)     │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+LÉGENDE :
+  ●  = version active actuellement
+  ○  = version archivée
+  🔒 = version default (read-only)
+  [BUTTON] = bouton cliquable
+  ☑ = checkbox sélectionnée
+  ▾ = section dépliable
+
+INTERACTIONS :
+  - Click sur le titre d'une version → navigate vers /[id]
+  - "[Éditer]" sur active → /[id]/edit (mais création d'une nouvelle version au save)
+  - "[Activer]" → modale confirm
+  - "[Archiver]" sur active → bloqué, message "Active une autre version d'abord"
+  - "[Comparer]" + checkbox → enable bouton "Comparer 2 versions →"
+  - Toolbar sticky en scroll

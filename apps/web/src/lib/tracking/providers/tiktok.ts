@@ -1,12 +1,13 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
 import { hashIdentity, sha256Hex } from './hashing';
-import { isEventSupported, mapEventName } from './event-mapping';
+import { isEventSupported } from './event-mapping';
+import { getMappedName } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
 
 function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<string, unknown> {
-  const eventNameMapped = mapEventName(ctx.eventName, 'tiktok') ?? 'CustomEvent';
+  const eventNameMapped = getMappedName(ctx, 'tiktok') ?? 'CustomEvent';
   const hashed = hashIdentity(ctx.identity ?? {});
   const externalId = ctx.externalId ?? ctx.userId ?? ctx.anonymousId;
   return {

@@ -1,0 +1,203 @@
+---
+# Plan d'action séquencé (high-level)
+# Référence détaillée : 90-plan/dev-plan.csv
+# Cf. action plan template du chantier tracking-improvement (réutilisé).
+
+version: 1.0.0
+feature: event-mappings
+target_branch: master
+
+phases:
+  - id: phase-0-prep
+    label: "Préparation"
+    duration_estimate_h: 3
+    parallelizable: false
+    tasks:
+      - Branche feat/event-mappings depuis master
+      - Tag baseline pre-event-mappings-$(date)
+      - Tests existants verts (baseline)
+      - Setup .env nécessaire + .nvmrc
+    gates:
+      - all_existing_tests_green: true
+
+  - id: phase-1-migrations-and-seed
+    label: "Migrations DB + default-mapping.json + seed"
+    duration_estimate_h: 5
+    parallelizable: false
+    dependencies: [phase-0-prep]
+    tasks: [E01, E02, E03, E04, E05]
+    deliverables:
+      - 0032_event_mapping_versions.sql
+      - 0033_event_mapping_audit.sql
+      - 0034_event_mapping_seed_default.sql
+      - docs/event-mappings/20-data/default-mapping.json (complet, ~30 events)
+      - scripts/seed-event-mappings.ts
+      - scripts/generate-default-mapping.ts (regen depuis event-mapping.ts)
+      - scripts/check-default-mapping.ts (CI safeguard)
+    gates:
+      - migrations_applied_in_staging: true
+      - default_seed_has_all_catalog_events: true
+
+  - id: phase-2-services
+    label: "Services backend (store, resolver, validator, audit, gtm-export)"
+    duration_estimate_h: 12
+    parallelizable: false
+    dependencies: [phase-1-migrations-and-seed]
+    tasks: [E06, E07, E08, E09, E10, E11]
+    deliverables:
+      - lib/tracking/mappings/store.ts + tests
+      - lib/tracking/mappings/resolver.ts + tests (cache)
+      - lib/tracking/mappings/validator.ts + tests (Zod par provider)
+      - lib/tracking/mappings/audit.ts + tests
+      - lib/tracking/mappings/gtm-export.ts + tests (build + sha256)
+      - lib/tracking/mappings/types.ts (TypeScript shared)
+    gates:
+      - service_unit_tests_above_90_percent: true
+
+  - id: phase-3-api-routes
+    label: "Routes API admin (8 endpoints)"
+    duration_estimate_h: 8
+    parallelizable: false
+    dependencies: [phase-2-services]
+    tasks: [E12, E13, E14, E15, E16, E17, E18, E19, E20]
+    deliverables:
+      - app/api/admin/tracking/events/mappings/route.ts (GET, POST)
+      - app/api/admin/tracking/events/mappings/[id]/route.ts (GET, PUT, DELETE)
+      - app/api/admin/tracking/events/mappings/[id]/activate/route.ts
+      - app/api/admin/tracking/events/mappings/[id]/test/route.ts
+      - app/api/admin/tracking/events/mappings/[id]/export-gtm/route.ts
+      - app/api/admin/tracking/events/mappings/reset-default/route.ts
+      - app/api/admin/tracking/events/mappings/[id]/diff/[otherId]/route.ts
+      - app/api/admin/tracking/events/mappings/[id]/audit/route.ts
+    gates:
+      - openapi_contract_validated: true
+      - all_routes_integration_tested: true
+
+  - id: phase-4-dispatcher-refactor
+    label: "Refactor dispatcher pour utiliser resolveEventMapping"
+    duration_estimate_h: 3
+    parallelizable: true
+    dependencies: [phase-2-services]
+    tasks: [E21, E22]
+    deliverables:
+      - lib/tracking/server/dispatcher.ts patch (utilise resolver)
+      - Tests mise à jour pour valider que le dispatch passe par resolver
+    gates:
+      - dispatcher_uses_resolver: true
+      - existing_tracking_tests_still_green: true
+
+  - id: phase-5-ui-list-and-wizard
+    label: "UI : liste versions + wizard création"
+    duration_estimate_h: 10
+    parallelizable: false
+    dependencies: [phase-3-api-routes]
+    tasks: [E23, E24, E25, E26]
+    deliverables:
+      - app/admin/tracking/events/mappings/page.tsx (server)
+      - components/admin/tracking/mappings/MappingVersionsList.tsx
+      - components/admin/tracking/mappings/MappingCreateWizard.tsx
+      - components/admin/tracking/mappings/MappingVersionCard.tsx
+      - Hook useMappings + useMappingMutations
+    gates:
+      - list_renders_with_default_visible: true
+
+  - id: phase-6-ui-editor
+    label: "UI : éditeur matrice + cellule popover"
+    duration_estimate_h: 12
+    parallelizable: false
+    dependencies: [phase-5-ui-list-and-wizard]
+    tasks: [E27, E28, E29, E30]
+    deliverables:
+      - app/admin/tracking/events/mappings/[id]/edit/page.tsx
+      - components/admin/tracking/mappings/MappingMatrix.tsx
+      - components/admin/tracking/mappings/MappingCellEditor.tsx
+      - Keyboard navigation arrow keys
+    gates:
+      - edit_workflow_e2e_passes: true
+
+  - id: phase-7-ui-diff-test-export-reset
+    label: "UI : diff + test modal + export GTM + reset default"
+    duration_estimate_h: 8
+    parallelizable: true
+    dependencies: [phase-6-ui-editor]
+    tasks: [E31, E32, E33, E34, E35]
+    deliverables:
+      - components/admin/tracking/mappings/MappingDiffViewer.tsx
+      - components/admin/tracking/mappings/MappingTestModal.tsx
+      - components/admin/tracking/mappings/MappingExportButton.tsx
+      - components/admin/tracking/mappings/MappingResetDefaultButton.tsx
+      - components/admin/tracking/mappings/MappingImportButton.tsx
+    gates:
+      - all_F_criteria_passing: true
+
+  - id: phase-8-tests
+    label: "Suite tests Vitest + Playwright + MSW"
+    duration_estimate_h: 10
+    parallelizable: false
+    dependencies: [phase-3-api-routes, phase-7-ui-diff-test-export-reset]
+    tasks: [E36, E37, E38, E39, E40, E41, E42]
+    deliverables:
+      - 30+ tests Vitest
+      - 12+ scenarios Playwright
+      - MSW handlers admin
+      - 1 test ULTIMATE round-trip GTM
+      - axe-core a11y tests
+    gates:
+      - coverage_above_85: true
+      - ultimate_round_trip_green: true
+
+  - id: phase-9-deploy-and-monitoring
+    label: "Déploiement + post-deploy monitoring"
+    duration_estimate_h: 5
+    parallelizable: false
+    dependencies: [phase-8-tests]
+    tasks: [E43, E44, E45]
+    gates:
+      - smoke_tests_pass_in_prod: true
+      - no_p0_p1_in_24h: true
+
+success_criteria:
+  - "Admin peut éditer le mapping d'1 event pour 6 providers sans toucher au code"
+  - "Versioning : create/edit (clone)/activate/duplicate/archive/delete fonctionnent"
+  - "Reset au default en 1 click"
+  - "Export GTM JSON importable réellement dans GTM Web sans erreur"
+  - "Audit log de toutes les actions"
+  - "A11y WCAG AA"
+  - "Coverage tests > 85%"
+  - "Test ultime round-trip GTM vert en CI"
+
+decision_log_summary:
+  - date: 2026-05-13
+    decision: "Versioning immutable + clone à chaque édition (ADR-001)"
+    rationale: "Audit trail natif, bisect facile, cohérent avec gtm-configs"
+  - date: 2026-05-13
+    decision: "Default = fichier JSON versionné git (ADR-002)"
+    rationale: "Stable, reproducible, test CI évite drift"
+  - date: 2026-05-13
+    decision: "Export GTM Container JSON officiel (ADR-003)"
+    rationale: "Format reconnu par GTM UI Import, pas d'OAuth, V2 push API"
+  - date: 2026-05-13
+    decision: "MappingCell shape = { mappedName, isCustom, isEnabled, notes } (ADR-004)"
+    rationale: "Feature flag par cellule + Meta custom event support"
+
+risks_summary:
+  - id: R1
+    risk: "Drift default-mapping.json vs event-mapping.ts"
+    severity: medium
+    mitigation: "Test CI check-default-mapping obligatoire"
+  - id: R2
+    risk: "Version active corrompue (admin save mauvais mapping)"
+    severity: high
+    mitigation: "Validation Zod stricte + bouton Tester avant publier + rollback 1 click"
+  - id: R3
+    risk: "Export GTM format change (Google update)"
+    severity: low
+    mitigation: "Test ULTIMATE round-trip mensuel + alertes CI"
+  - id: R4
+    risk: "Concurrence 2 admins éditent simultanément"
+    severity: low
+    mitigation: "V1 last-write-wins, V2 If-Match optimistic locking"
+  - id: R5
+    risk: "Performance resolver dégradée"
+    severity: medium
+    mitigation: "Cache in-memory TTL 30s + monitoring p99"

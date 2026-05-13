@@ -1,0 +1,67 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  /admin/tracking/gtm/sync-status  (en cas de drift CRITICAL)                  ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌─[BANNER GLOBAL admin]──────────────────────────────────────────────────────────┐
+│ 🚨  GTM exécute le mapping v16 alors que v17 est actif côté admin.            │
+│     Importer la config GTM v4 et publier.        [Voir détails →]              │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌─[TrackingShell — tabs]─────────────────────────────────────────────────────────┐
+│ ⚙ Pixels   📤 GTM configs   📋 Mappings vendors   🔍 GTM Sync ●  📥 Valider   │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ GTM Sync Status                                       Mise à jour : il y a 4s  │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────────────────────────────┐│
+│ │ 🔴  DRIFT CRITIQUE                                                          ││
+│ │     Détecté il y a 12 min                                                   ││
+│ │                                                                             ││
+│ │  Cause :                                                                    ││
+│ │   • mapping_version_drift                                                   ││
+│ │     Attendu (admin) : v17                                                   ││
+│ │     Reçu (GTM)     : v16                                                    ││
+│ │                                                                             ││
+│ │  Actions à prendre :                                                        ││
+│ │   1. Ouvrir GTM (lien)                                                      ││
+│ │   2. Réimporter le mapping v17.json depuis l'admin                          ││
+│ │   3. Cliquer Submit & Publish                                               ││
+│ │   4. Revenir ici : le statut passera automatiquement à OK                   ││
+│ │                                                                             ││
+│ │  ┌──────────────────────────┐  ┌─────────────────────────────────────────┐ ││
+│ │  │ ↗ Ouvrir GTM             │  │ ↻ Recheck maintenant                    │ ││
+│ │  └──────────────────────────┘  └─────────────────────────────────────────┘ ││
+│ └─────────────────────────────────────────────────────────────────────────────┘│
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────┬─────────────────────────┬──────────────────────────┐
+│ Mapping vendors         │ Config GTM              │ Bundle ID                │
+│ ─────────────────────── │ ─────────────────────── │ ──────────────────────── │
+│ Admin :       v17       │ Admin :       v4        │ Admin :   a7c4f2e9b81d   │
+│ GTM runtime : v16  ✗    │ GTM runtime : v3  ✗     │ Runtime : b21e09da4c75 ✗ │
+│                         │                         │                          │
+│ 🔴 Drift depuis 12 min  │ 🔴 Drift depuis 12 min  │ 🔴 Mismatch              │
+└─────────────────────────┴─────────────────────────┴──────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ ⚠ Pourquoi cette alerte ?                                                      │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│ Tu as récemment activé une nouvelle version du mapping côté admin (v17), mais  │
+│ aucun ping GTM ne déclare encore exécuter cette version. C'est probablement    │
+│ parce que tu as oublié de publier le workspace GTM après l'import.            │
+│                                                                                │
+│ Si tu viens d'importer et de publier, ce drift se résorbera tout seul au       │
+│ premier pageview suivant (≤ 2 min).                                            │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Pings reçus dans les 60 dernières minutes                                      │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│ 19:30:12   bundleId=b21e09... mapping=v16 config=v3   ⚠ drift                  │
+│ 19:31:08   bundleId=b21e09... mapping=v16 config=v3   ⚠ drift                  │
+│ 19:32:01   bundleId=b21e09... mapping=v16 config=v3   ⚠ drift                  │
+│ ...                                                                            │
+└────────────────────────────────────────────────────────────────────────────────┘

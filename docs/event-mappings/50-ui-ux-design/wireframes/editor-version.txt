@@ -1,0 +1,82 @@
+================================================================================
+WIREFRAME : Wizard "Créer une version" — Modal multi-étapes
+================================================================================
+
+ÉTAPE 1/3 — Source de la nouvelle version
+────────────────────────────────────────────────────────────────────────────────
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ●—————O—————O   Source • Nom • Confirme                              [✕] │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│ Comment veux-tu démarrer la nouvelle version ?                            │
+│                                                                            │
+│ ◉ Depuis le mapping FemiGlow par défaut                                   │
+│    Repart de zéro avec le factory. Recommandé pour évolution majeure.     │
+│                                                                            │
+│ ○ Cloner une version existante                                            │
+│    Démarre avec les valeurs d'une autre version. Le plus courant.         │
+│                                                                            │
+│     Source : [v3 — édition Sara 2026-05-13 (active) ▼]                    │
+│                                                                            │
+│ ○ Importer depuis un fichier JSON                                          │
+│    Charge un mapping depuis un fichier exporté ailleurs ou PR git.        │
+│                                                                            │
+│     [📁 Choisir un fichier...] (max 100 KB, .json)                        │
+│                                                                            │
+│                                                                            │
+│                                          [Annuler]  [Continuer →]          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+ÉTAPE 2/3 — Nom et notes
+────────────────────────────────────────────────────────────────────────────────
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ✓—————●—————O   Source • Nom • Confirme                              [✕] │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│ Nom de la nouvelle version *                                              │
+│ [v4 — campagne Lookalike Q2 2026___________________________________]     │
+│ 39 / 120 caractères                                                        │
+│                                                                            │
+│ Notes (optionnel)                                                          │
+│ ┌──────────────────────────────────────────────────────────────────────┐ │
+│ │ Renommage Meta CustomEvent "checkout_intent" → "premium_checkout"    │ │
+│ │ pour la campagne Lookalike Q2 demandée par Sara.                     │ │
+│ │                                                                       │ │
+│ └──────────────────────────────────────────────────────────────────────┘ │
+│ 142 / 2000                                                                 │
+│                                                                            │
+│                                                                            │
+│                          [← Retour]  [Annuler]  [Continuer →]              │
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+ÉTAPE 3/3 — Récapitulatif
+────────────────────────────────────────────────────────────────────────────────
+┌────────────────────────────────────────────────────────────────────────────┐
+│ ✓—————✓—————●   Source • Nom • Confirme                              [✕] │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│ Récapitulatif avant création :                                            │
+│                                                                            │
+│  📍 Source       Cloner v3 — édition Sara 2026-05-13                      │
+│  📝 Nom          v4 — campagne Lookalike Q2 2026                          │
+│  📋 Notes        Renommage Meta CustomEvent...                            │
+│  📊 Events       32 events repris                                          │
+│  ⚙️ Status        draft (sera créée en mode draft)                        │
+│                                                                            │
+│  ℹ La version sera créée en mode draft. Elle ne sera PAS activée          │
+│    automatiquement. Tu pourras la consulter, la modifier et l'activer     │
+│    depuis la liste.                                                        │
+│                                                                            │
+│                                                                            │
+│                       [← Retour]  [Annuler]  [✓ Créer la version]          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+INTERACTIONS :
+  - Étapes 1→2→3 avec breadcrumb visuel (cercles colorés)
+  - "Retour" préserve les valeurs saisies
+  - "Annuler" : confirm si dirty
+  - Submit final : loading state "Création..." + désactive boutons
+  - Sur succès : toast + redirect /[newId]/edit
+  - Sur erreur : reste sur étape 3 + bandeau erreur

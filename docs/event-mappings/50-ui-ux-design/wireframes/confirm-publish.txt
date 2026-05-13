@@ -1,0 +1,105 @@
+================================================================================
+WIREFRAMES : Modales de confirmation (Activate, Reset Default, Export GTM)
+================================================================================
+
+MODALE : Activer une version
+────────────────────────────────────────────────────────────────────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ Activer la version v4 ?                                    [✕]  │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ La version courante (v3 — édition Sara 2026-05-13) sera         │
+│ automatiquement archivée. Le dispatcher serveur utilisera        │
+│ immédiatement le nouveau mapping (cache invalidé en 30s).        │
+│                                                                  │
+│ ℹ️ Tu pourras toujours réactiver v3 depuis la liste.            │
+│                                                                  │
+│                                                                  │
+│                          [Annuler]      [✓ Activer v4]           │
+└──────────────────────────────────────────────────────────────────┘
+
+
+MODALE : Reset au default
+────────────────────────────────────────────────────────────────────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ Revenir au mapping par défaut FemiGlow ?                  [✕]   │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ La version active courante (v4 — campagne Q2) sera archivée.    │
+│ Le mapping factory FemiGlow (__default__) deviendra actif.       │
+│                                                                  │
+│ Ce qui va changer (résumé) :                                     │
+│                                                                  │
+│  Meta begin_checkout : "premium_checkout" → "checkout_intent"    │
+│  Meta form_start     : "form_start_v2"    → "form_start"         │
+│  Ads lead_capture    : "generate_lead"    → "generate_lead"      │
+│  + 0 autre modification                                          │
+│                                                                  │
+│ ⚠️ Aucune donnée n'est perdue : la version v4 reste archivée    │
+│   et réactivable plus tard.                                       │
+│                                                                  │
+│                                                                  │
+│              [Annuler]   [↩ Revenir au default factory]          │
+└──────────────────────────────────────────────────────────────────┘
+
+
+MODALE : Export vers GTM
+────────────────────────────────────────────────────────────────────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ Exporter v3 vers GTM Container JSON                       [✕]   │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ Génère un fichier .json importable directement dans GTM Web      │
+│ via Admin > Container > Importer un container.                   │
+│                                                                  │
+│ Environnement cible :                                            │
+│  ◉ production                                                    │
+│  ○ stage                                                          │
+│  ○ preview                                                        │
+│  ○ dev                                                            │
+│                                                                  │
+│ Aperçu :                                                         │
+│  • 32 events canoniques → 32 triggers GTM                       │
+│  • 156 cellules actives → ~156 tags GTM                         │
+│  • 9 variables DLV générées                                      │
+│  • Taille estimée : ~45 KB                                       │
+│                                                                  │
+│ ℹ️ L'export ne contient PAS les Pixel IDs ni les Conv labels.   │
+│    Configure-les séparément dans /admin/tracking/gtm avant      │
+│    d'importer.                                                    │
+│                                                                  │
+│                          [Annuler]    [📥 Télécharger le JSON]   │
+└──────────────────────────────────────────────────────────────────┘
+
+
+MODALE : Soft-delete d'une version
+────────────────────────────────────────────────────────────────────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ Supprimer la version v2 ?                                  [✕]  │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ La version v2 sera masquée de la liste mais conservée en DB     │
+│ pour audit. Tu pourras la restaurer plus tard.                  │
+│                                                                  │
+│ ⚠️ Cette action n'est pas définitive (soft-delete).             │
+│                                                                  │
+│                                                                  │
+│                           [Annuler]    [🗑 Supprimer]            │
+└──────────────────────────────────────────────────────────────────┘
+
+
+MODALE : Tentative de delete sur active OU default — BLOQUÉE
+────────────────────────────────────────────────────────────────────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ ⛔ Suppression impossible                                   [✕]  │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ La version v3 est actuellement active. Elle ne peut pas être    │
+│ supprimée tant qu'elle est utilisée par le dispatcher.          │
+│                                                                  │
+│ Pour la supprimer :                                              │
+│  1. Active une autre version (depuis la liste)                  │
+│  2. Reviens supprimer v3 quand elle sera archivée               │
+│                                                                  │
+│                                                  [Compris]       │
+└──────────────────────────────────────────────────────────────────┘
