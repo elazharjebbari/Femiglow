@@ -36,6 +36,7 @@
     { "idx": 31, "version": "7", "when": 1778700000030, "tag": "0030_tracking_event_overrides",      "breakpoints": true },
     { "idx": 32, "version": "7", "when": 1779000000032, "tag": "0032_event_mapping_versions",       "breakpoints": true },
     { "idx": 33, "version": "7", "when": 1779000000033, "tag": "0033_event_mapping_audit",          "breakpoints": true },
-    { "idx": 34, "version": "7", "when": 1779000000034, "tag": "0034_event_mapping_seed_default",   "breakpoints": true }
+    { "idx": 34, "version": "7", "when": 1779000000034, "tag": "0034_event_mapping_seed_default",   "breakpoints": true },
+    { "idx": 35, "version": "7", "when": 1779000000035, "tag": "0035_gtm_poka_yoke",                "breakpoints": true }
   ]
 }

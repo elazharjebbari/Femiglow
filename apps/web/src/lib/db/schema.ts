@@ -1888,3 +1888,87 @@ export type CheckoutIdempotencyRow = typeof checkoutIdempotency.$inferSelect;
 export type CheckoutIdempotencyInsert = typeof checkoutIdempotency.$inferInsert;
 export type DeliveryCityRow = typeof deliveryCities.$inferSelect;
 export type DeliveryCityInsert = typeof deliveryCities.$inferInsert;
+
+// ===========================================================================
+// GTM Poka-Yoke (D-001) — Surveillance runtime de la cohérence GTM
+// cf. docs/gtm-poka-yoke/20-data/01-data-model.md
+// ===========================================================================
+
+export const gtmSentinelPings = pgTable(
+  'gtm_sentinel_pings',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull(),
+    containerId: text('container_id').notNull(),
+    gtmId: text('gtm_id'),
+    bundleId: text('bundle_id').notNull(),
+    mappingVersion: text('mapping_version').notNull(),
+    configVersion: text('config_version').notNull(),
+    manifestMismatch: boolean('manifest_mismatch').notNull().default(false),
+    manifestMismatchDetails: text('manifest_mismatch_details'),
+    uaHash: text('ua_hash'),
+    ipHash: text('ip_hash'),
+    pageUrlHash: text('page_url_hash'),
+    rawPayload: jsonb('raw_payload').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  },
+  (t) => ({
+    receivedAtDesc: index('idx_gtm_pings_received_at_desc').on(t.receivedAt),
+    containerBundle: index('idx_gtm_pings_container_bundle').on(t.containerId, t.bundleId),
+    mappingVReceived: index('idx_gtm_pings_mapping_v_received').on(t.mappingVersion, t.receivedAt),
+  }),
+);
+
+export const gtmDriftState = pgTable('gtm_drift_state', {
+  id: text('id').primaryKey(),
+  status: text('status', { enum: ['ok', 'warning', 'critical'] }).notNull(),
+  since: timestamp('since', { withTimezone: true }).notNull(),
+  reasonsJson: jsonb('reasons_json').$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+  lastPingId: text('last_ping_id'),
+  lastCheckAt: timestamp('last_check_at', { withTimezone: true }).notNull().defaultNow(),
+  adminSnapshot: jsonb('admin_snapshot').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const gtmDriftHistory = pgTable(
+  'gtm_drift_history',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+    previousStatus: text('previous_status', { enum: ['ok', 'warning', 'critical'] }),
+    newStatus: text('new_status', { enum: ['ok', 'warning', 'critical'] }).notNull(),
+    reasonsJson: jsonb('reasons_json').$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+    triggeredByPingId: text('triggered_by_ping_id'),
+  },
+  (t) => ({
+    atDesc: index('idx_gtm_drift_history_at_desc').on(t.at),
+  }),
+);
+
+export const gtmSentinelDailyAggregates = pgTable(
+  'gtm_sentinel_daily_aggregates',
+  {
+    day: text('day').notNull(),
+    bundleId: text('bundle_id').notNull(),
+    mappingVersion: text('mapping_version').notNull(),
+    configVersion: text('config_version').notNull(),
+    containerId: text('container_id').notNull(),
+    pingsCount: integer('pings_count').notNull().default(0),
+    driftDetected: boolean('drift_detected').notNull().default(false),
+    firstPingAt: timestamp('first_ping_at', { withTimezone: true }).notNull(),
+    lastPingAt: timestamp('last_ping_at', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.day, t.bundleId] }),
+    dayDesc: index('idx_gtm_daily_agg_day_desc').on(t.day),
+  }),
+);
+
+export type GtmSentinelPingRow = typeof gtmSentinelPings.$inferSelect;
+export type GtmSentinelPingInsert = typeof gtmSentinelPings.$inferInsert;
+export type GtmDriftStateRow = typeof gtmDriftState.$inferSelect;
+export type GtmDriftStateInsert = typeof gtmDriftState.$inferInsert;
+export type GtmDriftHistoryRow = typeof gtmDriftHistory.$inferSelect;
+export type GtmDriftHistoryInsert = typeof gtmDriftHistory.$inferInsert;
+export type GtmSentinelDailyAggregateRow = typeof gtmSentinelDailyAggregates.$inferSelect;
+export type GtmSentinelDailyAggregateInsert = typeof gtmSentinelDailyAggregates.$inferInsert;
