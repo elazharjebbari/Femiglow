@@ -78,6 +78,7 @@ admin-evolution/
 | **M5.4** Campaigns intégrées | [phase-m5.4](09-plan-developpement/04-phase-m5.4-campaigns.yaml) | 📋 spec écrite |
 | **M5.5** Automation studio | [phase-m5.5](09-plan-developpement/05-phase-m5.5-automation.yaml) | 📋 spec écrite |
 | **M5.6** Polish ergonomie | [phase-m5.6](09-plan-developpement/06-phase-m5.6-polish.yaml) | 📋 spec écrite |
+| **M5.7** Éditeur templates HTML + preview + variables | [phase-m5.7](09-plan-developpement/07-phase-m5.7-templates.yaml) | 📋 spec écrite |
 
 ## 🔗 Liens d'index
 

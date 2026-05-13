@@ -15,6 +15,7 @@
 | **M5.4** | Campaigns wizard avec audiences | 1 sem | Campagne envoyée à une audience native, stats reçues |
 | **M5.5** | Automation studio V1 (step-list typée) | 2-3 sem | Nouvelle automation créée par UI, run executée |
 | **M5.6** | Polish ergonomie (Cmd-K universel, a11y) | 1 sem | A11y audit Lighthouse ≥ 95 + raccourcis testés |
+| **M5.7** | Éditeur templates HTML + preview + variables auto + CTA library | 1.5-2.5 sem | Test E2E template-editor (create from default, edit, preview real lead, test send, rollback) ✓ |
 
 Avant de démarrer : **lire le [concept doc](../../14-admin-ui-evolution-concept.md)**, **lire [architecture/00-overview.md](../00-architecture/00-overview.md)**.
 
@@ -245,6 +246,45 @@ Uniformiser raccourcis clavier, empty states, micro-copy, a11y, motion.
 - [ ] **Test ultime M5.6** : un admin réalise au clavier (sans souris)
   un parcours complet : ouvrir transactional, chercher email, retry,
   créer audience, lancer campagne. Tout au clavier.
+
+---
+
+---
+
+## ▶ Phase M5.7 — Éditeur de templates HTML
+
+### Objectif
+Permettre la création de templates HTML personnalisés depuis l'admin :
+éditeur source + visuel, preview live, variables auto-mappées sur les
+clients (firstName/city/address…), bibliothèque de composants (CTA,
+dividers), test send, versionning + rollback. Inclut un **template par
+défaut conforme à la charte FemiGlow** (Pinyon Script wordmark,
+Cormorant titres, Inter body, palette sauge/crème/encre).
+
+### Fichiers de référence
+- [09-plan-developpement/07-phase-m5.7-templates.yaml](../09-plan-developpement/07-phase-m5.7-templates.yaml)
+- [04-ui-ux/06-template-editor.md](../04-ui-ux/06-template-editor.md) — Spec UX éditeur
+- [04-ui-ux/07-default-template-femiglow.html](../04-ui-ux/07-default-template-femiglow.html) — Template par défaut prêt à l'emploi
+- [02-backend/07-templates-engine.md](../02-backend/07-templates-engine.md) — Resolver context + render + sanitize + versioning
+- [11-tests/03-playwright-e2e/07-m5.7-ultimate.spec.md](../11-tests/03-playwright-e2e/07-m5.7-ultimate.spec.md)
+
+### Ordre d'exécution
+1. **Data** — migrations `email_template_custom` + `email_template_custom_version`
+2. **Resolver** — `buildEmailContext(email, opts)` : pull lead + orders + URLs
+3. **Renderer** — Handlebars + cache + sanitize DOMPurify + inline CSS
+4. **Default template** — installer le `default-femiglow.html` + 5 starters
+5. **CRUD + versioning endpoints** — list, create, update (new version), activate (rollback), test-send, preview
+6. **Composants UI** — Editor source (Monaco) + Editor sections + Preview iframe + Variables panel + Components library
+7. **Pages** — `/admin/emails/templates`, `[slug]/edit`, `[slug]/versions`
+8. **Intégration** — wizard campaign & automation utilisent les custom templates
+
+### Gate de sortie M5.7
+- [ ] Default FemiGlow rendu visuellement validé sur Gmail / Apple Mail / Outlook
+- [ ] Variables auto-résolues (firstName, city, address, orderId, …) en mock ET real
+- [ ] Sanitization rejette script / iframe (test XSS)
+- [ ] Versionning + rollback testés
+- [ ] CTA library insère du HTML conforme charte
+- [ ] **Test ultime M5.7** : créer template depuis default, modifier titre, ajouter CTA secondaire, preview avec real lead, test send, save v2, rollback v1, vérifier rollback OK
 
 ---
 

@@ -58,3 +58,15 @@ M5.6.5,M5.6,Raccourcis clavier + cheat sheet,1,M5.5,Hooks + UI,06-ergonomie/00-k
 M5.6.6,M5.6,Motion + prefers-reduced-motion,0.5,M5.5,Tokens,05-design/00-tokens.md,playwright:reduced-motion.spec.ts
 M5.6.7,M5.6,Audit micro-copy,0.5,M5.5,Copy PR,04-ui-ux/05-microcopy.md,-
 M5.6.8,M5.6,Test ultime M5.6 keyboard-only,1,M5.6.5,Test passe,11-tests/03-playwright-e2e/06-m5.6-ultimate.spec.md,playwright:m5.6-ultimate.spec.ts
+M5.7.0,M5.7,Migration email_template_custom + version,1,M5.2,Migration 0050 + seed,01-data/03-migrations-plan.md,jest:template-schema.test.ts
+M5.7.1,M5.7,Resolver de contexte lead → variables,1.5,M5.7.0;M5.2,context-resolver.ts,02-backend/07-templates-engine.md,jest:context-resolver.test.ts
+M5.7.2,M5.7,Renderer Handlebars + sanitization,1,M5.7.1,render.ts + sanitize.ts,02-backend/07-templates-engine.md,jest:template-renderer.test.ts
+M5.7.3,M5.7,Default FemiGlow + 5 starters,1.5,M5.7.2,6 fichiers .html starters/,04-ui-ux/07-default-template-femiglow.html,jest:templates-fixtures.test.ts
+M5.7.4,M5.7,CRUD endpoints + versioning,1,M5.7.2,Endpoints + actions,02-backend/07-templates-engine.md,msw:templates-crud.test.ts
+M5.7.5,M5.7,Preview + test-send endpoints,1,M5.7.4,2 endpoints,02-backend/07-templates-engine.md,msw:templates-preview.test.ts
+M5.7.6,M5.7,Composant TemplateEditor mode Source (Monaco),1.5,M5.7.4,Editor source,04-ui-ux/06-template-editor.md,jest:template-editor-source.test.tsx
+M5.7.7,M5.7,Composant TemplateEditor mode Sections (block builder),2,M5.7.6,Editor sections,04-ui-ux/06-template-editor.md,jest:template-editor-sections.test.tsx
+M5.7.8,M5.7,Composants Preview + Variables panel + Components library,1.5,M5.7.5,3 composants,04-ui-ux/06-template-editor.md,jest:template-preview.test.tsx
+M5.7.9,M5.7,Pages list + edit + history,1,M5.7.8,3 pages,03-frontend/01-routes-map.md,playwright:template-edit.spec.ts
+M5.7.10,M5.7,Intégration wizard campaign + automation,0.5,M5.7.9;M5.4,Wizard updates,03-frontend/02-components-catalog.md,playwright:wizard-template-select.spec.ts
+M5.7.11,M5.7,Test ultime M5.7,1,M5.7.10,Test passe,11-tests/03-playwright-e2e/07-m5.7-ultimate.spec.md,playwright:m5.7-ultimate.spec.ts
