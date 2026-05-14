@@ -295,6 +295,13 @@
       "when": 1779100000036,
       "tag": "0036_chat_v5_v6_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1779200000037,
+      "tag": "0037_canned_pair_lead_trigger",
+      "breakpoints": true
     }
   ]
 }

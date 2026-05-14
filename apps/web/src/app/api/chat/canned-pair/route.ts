@@ -56,6 +56,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       ctaLabel: result.ctaLabel,
       ctaUrl: result.ctaUrl,
       allowFollowupLlm: result.allowFollowupLlm,
+      triggersLeadForm: result.triggersLeadForm,
+      leadFormCopyKey: result.leadFormCopyKey,
     };
     return NextResponse.json(response);
   } catch (err) {

@@ -50,18 +50,7 @@ export function useChatSession(initialPage?: string): void {
         return (await res.json()) as ChatSessionSnapshot;
       })
       .then((snapshot) => {
-        if (cancelled || !snapshot) {
-          console.warn('[chat-session] fetch resolved but cancelled or null', {
-            cancelled,
-            hasSnapshot: !!snapshot,
-          });
-          return;
-        }
-        console.info('[chat-session] hydrating store', {
-          sessionId: snapshot.sessionId,
-          messages: snapshot.messages.length,
-          suggestions: snapshot.suggestions.length,
-        });
+        if (cancelled || !snapshot) return;
         setSession({
           sessionId: snapshot.sessionId,
           language: snapshot.language,

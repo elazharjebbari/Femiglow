@@ -45,6 +45,10 @@ export function useChatSend(): {
       status: 'sent',
       createdAt: new Date().toISOString(),
     });
+    // CHA-310 — Toute prise de parole (message libre OU pill) ferme le
+    // bloc suggestions pour la session : on entre dans la conversation,
+    // les CTAs initiaux n'ont plus leur place.
+    state.clearSuggestions();
     state.setError(null);
 
     const controller = new AbortController();

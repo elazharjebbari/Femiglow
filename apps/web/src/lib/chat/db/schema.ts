@@ -672,6 +672,24 @@ export const chatCannedPair = pgTable(
     ctaLabel: text('cta_label'),
     ctaUrl: text('cta_url'),
     allowFollowupLlm: boolean('allow_followup_llm').notNull().default(true),
+    // CHA-310 — Conversion-focused pills.
+    // Si `triggersLeadForm = true`, le widget ouvre le formulaire de lead
+    // après la `scripted_reply_*` (le pitch reste, le form se pose juste
+    // sous la bulle). `leadFormCopyKey` choisit la variante de copy/CTA
+    // (cf. lead-form-copy.ts) ; default 'purchase-intent' côté client si null.
+    triggersLeadForm: boolean('triggers_lead_form').notNull().default(false),
+    leadFormCopyKey: text('lead_form_copy_key', {
+      enum: [
+        'explicit-request',
+        'out-of-knowledge',
+        'objection',
+        'after-hours',
+        'b2b',
+        'purchase-intent',
+        'inline-contact',
+        'manual',
+      ],
+    }),
     status: text('status', { enum: ['draft', 'review', 'published', 'archived'] })
       .notNull()
       .default('draft'),

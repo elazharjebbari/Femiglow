@@ -147,13 +147,21 @@ export const cannedPairRepo = {
     ctaLabel: string | null;
     ctaUrl: string | null;
     allowFollowupLlm: boolean;
+    triggersLeadForm?: boolean;
+    leadFormCopyKey?: string | null;
     status: 'draft' | 'review' | 'published' | 'archived';
   }): Promise<ChatCannedPairRow> {
     const db = requireChatDb();
     const id = createId('cnp');
     const rows = await db
       .insert(chatCannedPair)
-      .values({ id, ...input })
+      .values({
+        id,
+        ...input,
+        triggersLeadForm: input.triggersLeadForm ?? false,
+        leadFormCopyKey:
+          (input.leadFormCopyKey as ChatCannedPairRow['leadFormCopyKey']) ?? null,
+      })
       .returning();
     return rows[0]!;
   },
@@ -180,6 +188,8 @@ export const cannedPairRepo = {
       ctaLabel: string | null;
       ctaUrl: string | null;
       allowFollowupLlm: boolean;
+      triggersLeadForm: boolean;
+      leadFormCopyKey: string | null;
       status: 'draft' | 'review' | 'published' | 'archived';
     }>,
   ): Promise<ChatCannedPairRow | null> {
@@ -202,6 +212,8 @@ export const cannedPairRepo = {
     if (patch.ctaLabel !== undefined) push('cta_label', patch.ctaLabel);
     if (patch.ctaUrl !== undefined) push('cta_url', patch.ctaUrl);
     if (patch.allowFollowupLlm !== undefined) push('allow_followup_llm', patch.allowFollowupLlm);
+    if (patch.triggersLeadForm !== undefined) push('triggers_lead_form', patch.triggersLeadForm);
+    if (patch.leadFormCopyKey !== undefined) push('lead_form_copy_key', patch.leadFormCopyKey);
     if (patch.status !== undefined) push('status', patch.status);
     if (sets.length === 0) return this.getById(id);
     sets.push(sql`updated_at = now()`);

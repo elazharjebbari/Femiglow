@@ -197,6 +197,20 @@ export const chatCannedPairTriggerInput = z.object({
 });
 export type ChatCannedPairTriggerInput = z.infer<typeof chatCannedPairTriggerInput>;
 
+// CHA-310 — Set des `copyKey` autorisés pour les pills déclencheuses de
+// formulaire lead. Mirror de l'enum DB `chat_canned_pair.lead_form_copy_key`.
+export const chatCannedPairLeadCopyKeySchema = z.enum([
+  'explicit-request',
+  'out-of-knowledge',
+  'objection',
+  'after-hours',
+  'b2b',
+  'purchase-intent',
+  'inline-contact',
+  'manual',
+]);
+export type ChatCannedPairLeadCopyKey = z.infer<typeof chatCannedPairLeadCopyKeySchema>;
+
 export const chatCannedPairTriggerResponse = z.object({
   ok: z.literal(true),
   userMessage: chatMessageDto,
@@ -204,6 +218,11 @@ export const chatCannedPairTriggerResponse = z.object({
   ctaLabel: z.string().nullable().optional(),
   ctaUrl: z.string().nullable().optional(),
   allowFollowupLlm: z.boolean(),
+  // CHA-310 — Indique au widget qu'il doit ouvrir le formulaire lead juste
+  // sous la bulle assistant. La `copyKey` est mappée vers
+  // `lead-form-copy.ts` → variante intro/CTA/success.
+  triggersLeadForm: z.boolean(),
+  leadFormCopyKey: chatCannedPairLeadCopyKeySchema.nullable().optional(),
 });
 export type ChatCannedPairTriggerResponse = z.infer<typeof chatCannedPairTriggerResponse>;
 
@@ -382,6 +401,9 @@ export const adminCannedPairInput = z.object({
   ctaLabel: z.string().max(60).nullable().optional(),
   ctaUrl: z.string().max(2048).nullable().optional(),
   allowFollowupLlm: z.boolean().default(false),
+  // CHA-310 — Admin form fields.
+  triggersLeadForm: z.boolean().default(false),
+  leadFormCopyKey: chatCannedPairLeadCopyKeySchema.nullable().optional(),
   status: z.enum(['draft', 'review', 'published', 'archived']).default('draft'),
 });
 export type AdminCannedPairInput = z.infer<typeof adminCannedPairInput>;

@@ -68,6 +68,9 @@ interface ChatActions {
   ): void;
   endStreaming(messageId: string): void;
   pushUserMessage(message: ChatMessageDto): void;
+  // CHA-310 — Reset des SuggestionPills (utilisé dès qu'un message part,
+  // libre ou cliqué). Ne touche pas à `messages` / `greeting`.
+  clearSuggestions(): void;
   // CHA-300 — Push direct d'une bulle assistant (canned-pair) sans passer
   // par le flux streaming. Utilisé quand le serveur retourne déjà la
   // `scripted_reply_*` complète. Réinitialise les pills (one-shot).
@@ -190,6 +193,7 @@ export const useChatStore = create<ChatState>()(
         })),
       pushUserMessage: (m) =>
         set((s) => ({ messages: [...s.messages, m], hasInteracted: true })),
+      clearSuggestions: () => set({ suggestions: [] }),
       pushAssistantMessage: (m) =>
         set((s) => ({
           // CHA-300 v2 — on n'éteint plus le bloc suggestions ici. Le retrait
@@ -269,3 +273,7 @@ export const useChatStore = create<ChatState>()(
     },
   ),
 );
+
+if (typeof window !== 'undefined') {
+  (window as unknown as { __chatStore?: unknown }).__chatStore = useChatStore;
+}

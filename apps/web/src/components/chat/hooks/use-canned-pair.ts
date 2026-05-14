@@ -17,7 +17,9 @@
 import { useCallback } from 'react';
 
 import type {
+  ChatCannedPairLeadCopyKey,
   ChatCannedPairTriggerResponse,
+  ChatLeadTriggerReason,
   ChatMessageDto,
 } from '@/lib/chat/contracts';
 import { useTracking } from '@/lib/tracking/use-tracking';
@@ -30,6 +32,21 @@ import { humanizeStream } from '../humanize.client';
  * `humanizeStream`. On garde les espaces dans le token précédent afin que
  * le cadenceur déclenche aussi sa pause "fin de mot" naturellement.
  */
+/**
+ * CHA-310 — Mapping `copyKey` → `triggerReason` (le store filtre les
+ * raisons « soft » après un dismiss ; les `strong` passent outre).
+ */
+const COPY_KEY_TO_REASON: Record<ChatCannedPairLeadCopyKey, ChatLeadTriggerReason> = {
+  'explicit-request': 'explicit-request',
+  'out-of-knowledge': 'out-of-knowledge',
+  objection: 'objection-repeat',
+  'after-hours': 'after-hours',
+  b2b: 'b2b',
+  'purchase-intent': 'purchase-intent',
+  'inline-contact': 'inline-contact',
+  manual: 'manual',
+};
+
 async function* tokenizeForTyping(s: string): AsyncIterable<string> {
   // Split en conservant les séparateurs (espaces, ponctuation, retour ligne).
   // Ex: "Salut, ça va ?" → ["Salut", ", ", "ça", " ", "va", " ", "?"]
@@ -58,6 +75,10 @@ export function useCannedPair(): {
         createdAt: new Date().toISOString(),
       };
       state.pushUserMessage(optimisticUser);
+      // CHA-310 — Dès qu'on clique une pill, on retire TOUTES les pills :
+      // une fois la conversation engagée, on ne propose plus d'autres CTAs
+      // génériques (cf. v2/00-vision/02-conversion-playbook §1 révisé).
+      state.clearSuggestions();
       state.setError(null);
 
       emit('chat_message_sent', {
@@ -103,13 +124,18 @@ export function useCannedPair(): {
         if (assistant.sources && assistant.sources.length > 0) {
           finalState.setSources(assistant.id, assistant.sources);
         }
-        // CHA-300 v2 — on retire UNIQUEMENT la pill cliquée (pas tout le
-        // bloc), pour permettre plusieurs micro-décisions dans une même
-        // conversation (cf. conversion-playbook §1). Les autres pills
-        // restent disponibles comme rappels CTA persistants.
-        useChatStore.setState((s) => ({
-          suggestions: s.suggestions.filter((p) => p.key !== key),
-        }));
+        // CHA-310 — Si la pair est marquée `triggers_lead_form`, on
+        // ouvre la bulle lead-capture juste sous la réponse assistant.
+        // La `copyKey` choisit la variante de copy/CTA (cf. lead-form-copy).
+        if (payload.triggersLeadForm) {
+          const copyKey: ChatCannedPairLeadCopyKey =
+            payload.leadFormCopyKey ?? 'purchase-intent';
+          finalState.receiveLeadOffer({
+            messageId: assistant.id,
+            reason: COPY_KEY_TO_REASON[copyKey],
+            copyKey,
+          });
+        }
       } catch (err) {
         useChatStore.getState().setError((err as Error).message);
       }

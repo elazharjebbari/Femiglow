@@ -59,6 +59,11 @@ interface CsvRow {
   cta_url: string | null;
   allow_followup_llm: boolean;
   intent_implied: string | null;
+  // CHA-310 — Conversion-focused fields (rétrocompatibles : si les
+  // colonnes manquent dans un CSV legacy, on retombe sur false / null).
+  triggers_lead_form: boolean;
+  lead_form_copy_key: string | null;
+  status: 'draft' | 'review' | 'published' | 'archived';
 }
 
 /**
@@ -107,10 +112,24 @@ function toCsvRow(headers: string[], cells: string[]): CsvRow {
     if (idx < 0) throw new Error(`column ${k} not in CSV`);
     return cells[idx] ?? '';
   };
+  // CHA-310 — Lookup tolérant pour les colonnes optionnelles (rétrocompat
+  // si on relit un CSV antérieur à 0037).
+  const getOpt = (k: string): string => {
+    const idx = headers.indexOf(k);
+    if (idx < 0) return '';
+    return cells[idx] ?? '';
+  };
   const audience = get('audience') as CsvRow['audience'];
   if (audience !== 'all' && audience !== 'b2c' && audience !== 'b2b') {
     throw new Error(`invalid audience for key=${get('key')}: ${audience}`);
   }
+  const rawStatus = getOpt('status').trim().toLowerCase();
+  const status: CsvRow['status'] =
+    rawStatus === 'archived' || rawStatus === 'draft' || rawStatus === 'review'
+      ? rawStatus
+      : 'published';
+  const rawCopyKey = getOpt('lead_form_copy_key').trim();
+  const lead_form_copy_key = rawCopyKey.length > 0 ? rawCopyKey : null;
   return {
     key: get('key').trim(),
     page_pattern: get('page_pattern').trim() || '*',
@@ -125,7 +144,10 @@ function toCsvRow(headers: string[], cells: string[]): CsvRow {
     cta_label: get('cta_label').trim() || null,
     cta_url: get('cta_url').trim() || null,
     allow_followup_llm: get('allow_followup_llm').trim().toLowerCase() === 'yes',
-    intent_implied: get('intent_implied').trim() || null,
+    intent_implied: getOpt('intent_implied').trim() || null,
+    triggers_lead_form: getOpt('triggers_lead_form').trim().toLowerCase() === 'yes',
+    lead_form_copy_key,
+    status,
   };
 }
 
@@ -184,13 +206,15 @@ export async function runChatCannedPairsSeed(opts: {
           label_fr, label_ar, label_ar_ma,
           scripted_reply_fr, scripted_reply_ar, scripted_reply_ar_ma,
           cta_label, cta_url, allow_followup_llm,
+          triggers_lead_form, lead_form_copy_key,
           status, current_version_id, created_at, updated_at
         ) VALUES (
           ${pairId}, ${r.key}, ${r.page_pattern}, ${r.audience}, ${r.order}, true,
           ${r.label_fr}, ${r.label_ar}, ${r.label_ar_ma},
           ${r.scripted_reply_fr}, ${r.scripted_reply_ar}, ${r.scripted_reply_ar_ma},
           ${r.cta_label}, ${r.cta_url}, ${r.allow_followup_llm},
-          'published', NULL, now(), now()
+          ${r.triggers_lead_form}, ${r.lead_form_copy_key},
+          ${r.status}, NULL, now(), now()
         )
       `);
       const versionId = newId('cnv');
@@ -211,7 +235,8 @@ export async function runChatCannedPairsSeed(opts: {
       continue;
     }
 
-    // UPDATE in place (labels + CTA + order + page_pattern + audience)
+    // UPDATE in place (labels + CTA + order + page_pattern + audience +
+    // CHA-310 conversion-focused fields).
     await conn.execute(sql`
       UPDATE chat_canned_pair SET
         page_pattern = ${r.page_pattern},
@@ -223,7 +248,9 @@ export async function runChatCannedPairsSeed(opts: {
         cta_label = ${r.cta_label},
         cta_url = ${r.cta_url},
         allow_followup_llm = ${r.allow_followup_llm},
-        status = 'published',
+        triggers_lead_form = ${r.triggers_lead_form},
+        lead_form_copy_key = ${r.lead_form_copy_key},
+        status = ${r.status},
         scripted_reply_fr = ${r.scripted_reply_fr},
         scripted_reply_ar = ${r.scripted_reply_ar},
         scripted_reply_ar_ma = ${r.scripted_reply_ar_ma},

@@ -15,6 +15,7 @@
 import { logger } from '@/lib/logging/logger';
 
 import type {
+  ChatCannedPairLeadCopyKey,
   ChatCannedPairTriggerInput,
   ChatLanguage,
   ChatMessageDto,
@@ -32,6 +33,8 @@ export interface CannedPairTriggerResult {
   ctaLabel: string | null;
   ctaUrl: string | null;
   allowFollowupLlm: boolean;
+  triggersLeadForm: boolean;
+  leadFormCopyKey: ChatCannedPairLeadCopyKey | null;
 }
 
 export class CannedPairError extends Error {
@@ -97,6 +100,8 @@ export const cannedPairService = {
       ctaLabel: pair.ctaLabel,
       ctaUrl: pair.ctaUrl,
       allowFollowupLlm: pair.allowFollowupLlm,
+      triggersLeadForm: pair.triggersLeadForm,
+      leadFormCopyKey: (pair.leadFormCopyKey ?? null) as ChatCannedPairLeadCopyKey | null,
     };
   },
 };
