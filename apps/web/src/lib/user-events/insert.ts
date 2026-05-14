@@ -136,7 +136,23 @@ export async function insertUserEvent(
     hasLeadId: leadId !== null,
   });
 
+  // M5.5 — wake up runs in 'waiting_for_event' status that match this event
+  // Fire-and-forget : we don't want event ingestion to be blocked by automation resume.
+  void resumeRunsForEventSafe(parsed.eventName, email);
+
   return { id: row.id, leadId: row.leadId };
+}
+
+async function resumeRunsForEventSafe(eventName: string, email: string): Promise<void> {
+  try {
+    const { resumeRunsForEvent } = await import('@/lib/mail/automation/resume');
+    await resumeRunsForEvent(eventName, email);
+  } catch (err) {
+    logger.error('user_event.resume_failed', {
+      error: String(err),
+      eventName,
+    });
+  }
 }
 
 /**

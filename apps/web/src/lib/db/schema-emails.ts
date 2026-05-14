@@ -119,6 +119,7 @@ export const emailAutomationRunStatus = pgEnum('email_automation_run_status', [
   'completed',
   'cancelled',
   'errored',
+  'waiting_for_event',
 ]);
 
 // — email_outbox — — — — — — — — — — — — — — — — — — — — — — — — — — — — —

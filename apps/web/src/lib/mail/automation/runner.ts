@@ -1,21 +1,20 @@
 /**
- * Automation runner — picks up due `email_automation_run` rows and
+ * Automation runner V2 — picks up due `email_automation_run` rows and
  * advances them one step at a time.
  *
  * Called by /api/cron/email-automation every 60s.
  *
  *   1. SELECT runs with status='running' AND nextActionAt <= now()
  *   2. For each run :
- *        - load the parent automation's steps
- *        - read step at currentStep
- *        - if 'send'   → sendTransactional + update outboxIds + increment step
- *        - if 'wait'   → nextActionAt = now + durationMs, increment step
- *        - if past end → status='completed', finishedAt=now
+ *        - load parent automation steps (V2 schema)
+ *        - resolve current step via stepPath (contextJson._path, default [currentStep])
+ *        - descend through branches lazily (evaluate condition then descend)
+ *        - dispatch by kind (wait/send/tag/update_lead/webhook/wait_for_event)
+ *        - persist next path + state
  *   3. Return summary
  *
  * Idempotent : `FOR UPDATE SKIP LOCKED` so concurrent runners don't collide.
- * Errors per-run are caught and demote that run to status='errored' (the
- * batch keeps going).
+ * Errors per-run are caught and demote that run to status='errored'.
  */
 import 'server-only';
 import { eq, sql } from 'drizzle-orm';
@@ -30,11 +29,28 @@ import { logger } from '@/lib/logging/logger';
 import { sendTransactional } from '@/lib/mail/send';
 import { isKnownTemplate, type TemplateSlug } from '@/lib/mail/catalog';
 import {
-  automationStepsSchema,
-  type AutomationSteps,
+  AutomationStepSchema,
   type AutomationStep,
-  type AutomationContext,
-} from './types';
+} from './step-types-v2';
+import { z } from 'zod';
+import { evaluateConditionAgainstUser } from './condition-evaluator';
+import { handleTagStep } from './step-handlers/tag';
+import { handleUpdateLeadStep } from './step-handlers/update-lead';
+import { handleWebhookStep } from './step-handlers/webhook';
+import {
+  descendToExecutable,
+  getStepAtPath,
+  isValidPath,
+  nextPath,
+  type StepPath,
+} from './step-handlers/step-path';
+import type { RulesGroup } from '@/lib/mail/audiences/rules-types';
+
+type AutomationContext = Record<string, unknown> & {
+  recipientEmail: string;
+};
+
+const automationStepsSchema = z.array(AutomationStepSchema);
 
 function requireDb() {
   const drizzle = getDb();
@@ -56,8 +72,6 @@ export async function tickAutomation(now: Date = new Date()): Promise<RunnerResu
   const drizzle = requireDb();
   const startedAt = Date.now();
 
-  // Claim a batch — set nextActionAt to NULL to mark 'in-flight' so
-  // re-entries of the cron don't double-pick.
   const result = (await drizzle.execute(sql`
     UPDATE email_automation_run o
     SET next_action_at = NULL
@@ -93,7 +107,13 @@ export async function tickAutomation(now: Date = new Date()): Promise<RunnerResu
       logger.error('automation.run_errored', { runId: run.id, error: msg });
       await drizzle
         .update(emailAutomationRun)
-        .set({ status: 'errored', finishedAt: new Date(), nextActionAt: null })
+        .set({
+          status: 'errored',
+          finishedAt: new Date(),
+          nextActionAt: null,
+          erroredAt: new Date(),
+          erroredReason: msg.slice(0, 500),
+        })
         .where(eq(emailAutomationRun.id, run.id));
     }
   }
@@ -108,13 +128,12 @@ export async function tickAutomation(now: Date = new Date()): Promise<RunnerResu
 }
 
 /**
- * Process a single run : execute the current step, schedule the next.
- * Returns true if the run is completed (no more steps).
+ * Process a single run : resolve the current step, dispatch, schedule next.
+ * Returns true if the run is completed.
  */
 async function processRun(run: EmailAutomationRunRow, now: Date): Promise<boolean> {
   const drizzle = requireDb();
 
-  // Load parent automation
   const [auto] = await drizzle
     .select()
     .from(emailAutomation)
@@ -123,7 +142,6 @@ async function processRun(run: EmailAutomationRunRow, now: Date): Promise<boolea
   if (!auto) throw new Error(`Automation ${run.automationId} introuvable`);
 
   if (!auto.active) {
-    // Parent was disabled — cancel the run.
     await drizzle
       .update(emailAutomationRun)
       .set({ status: 'cancelled', finishedAt: now, nextActionAt: null })
@@ -132,10 +150,27 @@ async function processRun(run: EmailAutomationRunRow, now: Date): Promise<boolea
   }
 
   const steps = parseSteps(auto.steps);
-  const idx = run.currentStep;
+  const ctx = (run.contextJson as AutomationContext) ?? { recipientEmail: run.recipientEmail };
 
-  if (idx >= steps.length) {
-    // Already done
+  // Resolve path : contextJson._path takes precedence; legacy fallback uses currentStep
+  const ctxPath = (ctx._path as unknown) ?? null;
+  let path: StepPath = isValidPath(ctxPath) ? ctxPath : [run.currentStep];
+
+  // Descend through branches lazily
+  const descended = await descendToExecutable(steps, path, async (cond: RulesGroup) => {
+    return evaluateConditionAgainstUser(cond, run.recipientEmail);
+  });
+  if (!descended) {
+    await drizzle
+      .update(emailAutomationRun)
+      .set({ status: 'completed', finishedAt: now, nextActionAt: null })
+      .where(eq(emailAutomationRun.id, run.id));
+    return true;
+  }
+  path = descended;
+
+  const step = getStepAtPath(steps, path);
+  if (!step) {
     await drizzle
       .update(emailAutomationRun)
       .set({ status: 'completed', finishedAt: now, nextActionAt: null })
@@ -143,41 +178,21 @@ async function processRun(run: EmailAutomationRunRow, now: Date): Promise<boolea
     return true;
   }
 
-  const step = steps[idx]!;
-  const ctx = (run.contextJson as AutomationContext) ?? { recipientEmail: run.recipientEmail };
-
-  if (step.kind === 'send') {
-    if (!isKnownTemplate(step.template)) {
-      throw new Error(`Template inconnu : ${step.template}`);
-    }
-    const payload: Record<string, unknown> = {};
-    for (const k of step.payloadKeys) {
-      payload[k] = ctx[k];
-    }
-    const idempotencyKey = `automation:${run.id}:step${idx}`;
-    const result = await sendTransactional({
-      template: step.template as TemplateSlug,
-      to: { email: run.recipientEmail },
-      payload: payload as never, // typed by catalog at runtime
-      idempotencyKey,
-      source: `automation.${auto.slug}.step${idx}`,
-    });
-
-    const outboxIds = Array.isArray(run.outboxIds) ? [...(run.outboxIds as string[])] : [];
-    if (result.status === 'queued' || result.status === 'duplicate') {
-      outboxIds.push(result.outboxId);
-    }
-
-    const nextIdx = idx + 1;
-    if (nextIdx >= steps.length) {
+  const advance = async (extra?: {
+    nextActionAt?: Date;
+    outboxIds?: string[];
+  }): Promise<boolean> => {
+    const np = nextPath(steps, path);
+    const newCtx = { ...ctx, _path: np } as Record<string, unknown>;
+    if (!np) {
       await drizzle
         .update(emailAutomationRun)
         .set({
-          currentStep: nextIdx,
           status: 'completed',
           finishedAt: now,
           nextActionAt: null,
-          outboxIds,
+          contextJson: newCtx,
+          ...(extra?.outboxIds ? { outboxIds: extra.outboxIds } : {}),
         })
         .where(eq(emailAutomationRun.id, run.id));
       return true;
@@ -185,33 +200,99 @@ async function processRun(run: EmailAutomationRunRow, now: Date): Promise<boolea
     await drizzle
       .update(emailAutomationRun)
       .set({
-        currentStep: nextIdx,
-        nextActionAt: now,
-        outboxIds,
+        currentStep: typeof np[0] === 'number' ? np[0] : run.currentStep,
+        nextActionAt: extra?.nextActionAt ?? now,
+        contextJson: newCtx,
+        status: 'running',
+        ...(extra?.outboxIds ? { outboxIds: extra.outboxIds } : {}),
       })
       .where(eq(emailAutomationRun.id, run.id));
     return false;
-  }
+  };
 
-  if (step.kind === 'wait') {
-    const nextActionAt = new Date(now.getTime() + step.durationMs);
-    const nextIdx = idx + 1;
-    await drizzle
-      .update(emailAutomationRun)
-      .set({
-        currentStep: nextIdx,
-        nextActionAt: nextIdx >= steps.length ? null : nextActionAt,
-        status: nextIdx >= steps.length ? 'completed' : 'running',
-        finishedAt: nextIdx >= steps.length ? now : null,
-      })
-      .where(eq(emailAutomationRun.id, run.id));
-    return nextIdx >= steps.length;
-  }
+  // ── Dispatch by kind ───────────────────────────────────────────────────
+  switch (step.kind) {
+    case 'send': {
+      if (!isKnownTemplate(step.template)) {
+        throw new Error(`Template inconnu : ${step.template}`);
+      }
+      const payload: Record<string, unknown> = {};
+      const keys = step.payloadKeys ?? [];
+      for (const k of keys) payload[k] = ctx[k];
+      if (step.varMappings) {
+        for (const [varName, ctxKey] of Object.entries(step.varMappings)) {
+          payload[varName] = ctx[ctxKey];
+        }
+      }
+      const stepLabel = pathToString(path);
+      const idempotencyKey = `automation:${run.id}:step${stepLabel}`;
+      const result = await sendTransactional({
+        template: step.template as TemplateSlug,
+        to: { email: run.recipientEmail },
+        payload: payload as never,
+        idempotencyKey,
+        source: `automation.${auto.slug}.step${stepLabel}`,
+      });
+      const outboxIds = Array.isArray(run.outboxIds) ? [...(run.outboxIds as string[])] : [];
+      if (result.status === 'queued' || result.status === 'duplicate') {
+        outboxIds.push(result.outboxId);
+      }
+      return advance({ outboxIds });
+    }
 
-  throw new Error(`Step kind inconnu : ${(step as AutomationStep).kind}`);
+    case 'wait': {
+      const nextActionAt = new Date(now.getTime() + step.durationMs);
+      return advance({ nextActionAt });
+    }
+
+    case 'tag': {
+      await handleTagStep(step, run.recipientEmail, auto.slug);
+      return advance();
+    }
+
+    case 'update_lead': {
+      await handleUpdateLeadStep(step, run.recipientEmail);
+      return advance();
+    }
+
+    case 'webhook': {
+      await handleWebhookStep(step, run.recipientEmail);
+      return advance();
+    }
+
+    case 'wait_for_event': {
+      const awaitingUntil = new Date(now.getTime() + step.timeoutMs);
+      const newCtx = { ...ctx, _path: path } as Record<string, unknown>;
+      await drizzle
+        .update(emailAutomationRun)
+        .set({
+          status: 'waiting_for_event',
+          awaitingEventName: step.eventName,
+          awaitingUntil,
+          nextActionAt: awaitingUntil, // re-pick if timeout passes
+          contextJson: newCtx,
+        })
+        .where(eq(emailAutomationRun.id, run.id));
+      return false;
+    }
+
+    case 'branch': {
+      // Shouldn't happen — descendToExecutable resolved any branch
+      throw new Error(`Branch step encountered post-descent at path ${pathToString(path)}`);
+    }
+
+    default: {
+      const exhaustive: never = step;
+      throw new Error(`Step kind inconnu : ${(exhaustive as { kind: string }).kind}`);
+    }
+  }
 }
 
-function parseSteps(raw: unknown): AutomationSteps {
+function pathToString(path: StepPath): string {
+  return path.map((seg) => (typeof seg === 'number' ? String(seg) : seg)).join('.');
+}
+
+function parseSteps(raw: unknown): AutomationStep[] {
   const parsed = automationStepsSchema.safeParse(raw);
   if (!parsed.success) {
     throw new Error(`Steps JSON invalide : ${parsed.error.message}`);
@@ -239,7 +320,6 @@ function normalizeRow(raw: Record<string, unknown>): EmailAutomationRunRow {
     nextActionAt: (raw.next_action_at as Date | null) ?? null,
     finishedAt: (raw.finished_at as Date | null) ?? null,
     outboxIds: raw.outbox_ids as string[],
-    // M5.5 — new columns (nullable, default null pour les anciens runs)
     awaitingEventName: (raw.awaiting_event_name as string | null) ?? null,
     awaitingUntil: (raw.awaiting_until as Date | null) ?? null,
     erroredAt: (raw.errored_at as Date | null) ?? null,
