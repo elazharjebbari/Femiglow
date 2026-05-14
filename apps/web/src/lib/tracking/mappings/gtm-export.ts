@@ -204,6 +204,10 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
   let nextTagId = 1;
   let nextVariableId = 1;
 
+  // Track which providers are actually used (to emit only the Constant
+  // variables they require).
+  const providersUsed = new Set<MappingProviderKind>();
+
   // 1. Variables génériques DLV utilisées
   const baseVariables = ['event_id', 'currency', 'value', 'transaction_id', 'items', 'form_id', 'first_field', 'lead_id', 'method'];
   for (const v of baseVariables) variableNames.add(v);
@@ -229,6 +233,8 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
     for (const kind of PROVIDER_KINDS_FOR_MAPPING) {
       const cell = providers[kind];
       if (!cell || !cell.isEnabled || !cell.mappedName) continue;
+      // Track which Pixel/Tag ID variables this provider needs (for auto-create).
+      providersUsed.add(kind);
       const tagType = PROVIDER_TO_GTM_TYPE[kind];
       const parameter: GtmTag['parameter'] = [];
       if (kind === 'meta' || kind === 'tiktok' || kind === 'snap' || kind === 'pinterest') {
@@ -273,9 +279,11 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
     }
   }
 
-  const variables: GtmVariable[] = Array.from(variableNames)
-    .sort()
-    .map((name) => ({
+  const variables: GtmVariable[] = [];
+
+  // DLV variables (Data Layer reads)
+  for (const name of Array.from(variableNames).sort()) {
+    variables.push({
       variableId: String(nextVariableId++),
       name: sanitizeGtmName(`DLV - ${name}`),
       type: 'v',
@@ -283,7 +291,36 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
         { type: 'TEMPLATE', key: 'name', value: name },
         { type: 'INTEGER', key: 'dataLayerVersion', value: '2' },
       ],
-    }));
+    });
+  }
+
+  // Constant variables (Pixel/Tag IDs) — referenced by the HTML snippets and
+  // built-in gaawe/awct tag parameters. Created with empty value placeholders ;
+  // the admin must fill them in after import (GTM → Variables → edit).
+  const CONST_VARS_PER_PROVIDER: Record<MappingProviderKind, string | null> = {
+    meta: 'Meta Pixel ID',
+    google_ga4: 'GA4 Measurement ID',
+    google_ads: 'Google Ads Customer ID',
+    tiktok: 'TikTok Pixel ID',
+    snap: 'Snap Pixel ID',
+    pinterest: 'Pinterest Tag ID',
+  };
+  for (const kind of providersUsed) {
+    const constName = CONST_VARS_PER_PROVIDER[kind];
+    if (!constName) continue;
+    variables.push({
+      variableId: String(nextVariableId++),
+      name: constName,
+      type: 'c',
+      parameter: [
+        {
+          type: 'TEMPLATE',
+          key: 'value',
+          value: '',
+        },
+      ],
+    });
+  }
 
   const container: GtmContainerJson = {
     exportFormatVersion: 2,
