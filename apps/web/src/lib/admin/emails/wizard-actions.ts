@@ -129,6 +129,11 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
       source: 'campaign',
     });
     const pushed = await pushSnapshotToListmonk(snap.snapshotId);
+    if (pushed.pushed === 0) {
+      throw new Error(
+        `L'audience contient ${snap.size} contact(s) mais 0 a/ont pu être ajouté(s) à Listmonk. Vérifie les logs serveur (event \`listmonk.subscriber.*_failed\`).`,
+      );
+    }
     listmonkListIds = [pushed.listmonkListId];
     // Persist snapshot link on the draft for later retrieval.
     await drizzle
