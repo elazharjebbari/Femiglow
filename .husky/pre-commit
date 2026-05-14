@@ -2,6 +2,7 @@
 # FemiGlow pre-commit hook
 # - Lance gitleaks (si installé) sur le diff staged
 # - Lance lint-staged (typecheck/eslint sur les fichiers modifiés)
+# - Valide les migrations si un fichier drizzle/migrations/ est modifié
 
 set -e
 
@@ -13,7 +14,13 @@ else
   echo "⚠️  gitleaks non installé : skip. Installer via 'brew install gitleaks'."
 fi
 
-# 2. Lint-staged : eslint/prettier/typecheck sur les fichiers modifiés.
+# 2. Migration validator : si des fichiers drizzle sont staged, valider.
+if git diff --cached --name-only | grep -qE '^apps/web/drizzle/migrations/'; then
+  echo "→ validate migrations"
+  node apps/web/scripts/_validate-migrations.mjs --strict
+fi
+
+# 3. Lint-staged : eslint/prettier/typecheck sur les fichiers modifiés.
 if [ -f node_modules/.bin/lint-staged ]; then
   echo "→ lint-staged"
   node_modules/.bin/lint-staged

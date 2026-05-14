@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
   pull_request:
-    branches: [main]
+    branches: [master, main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -29,6 +29,9 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      - name: Validate migrations
+        run: node apps/web/scripts/_validate-migrations.mjs --strict
 
       - name: Lint
         run: pnpm -r lint

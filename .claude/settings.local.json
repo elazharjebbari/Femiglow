@@ -148,7 +148,9 @@
       "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\);print\\('\\\\n'.join\\(it.get\\('name',''\\) for it in d\\)\\)\")",
       "Bash(systemctl show *)",
       "Bash(grep -o \"{config:\\\\\"[^\\\\\"]*\\\\\",page:\\\\\"[^\\\\\"]*\\\\\"\" /var/www/femiglow/apps/web/.next/server/app/api/admin/tracking/gtm/container/route.js)",
-      "Bash(grep -oE \"\\(config|page|ecommerce|lead|conversions|consent|chat|fgCustom|helpers\\):['\\\\\"][^'\\\\\"]{1,5}['\\\\\"]\" /var/www/femiglow/apps/web/.next/server/app/api/admin/tracking/gtm/container/route.js)"
+      "Bash(grep -oE \"\\(config|page|ecommerce|lead|conversions|consent|chat|fgCustom|helpers\\):['\\\\\"][^'\\\\\"]{1,5}['\\\\\"]\" /var/www/femiglow/apps/web/.next/server/app/api/admin/tracking/gtm/container/route.js)",
+      "Bash(systemctl list-units *)",
+      "Bash(python3 *)"
     ]
   }
 }
