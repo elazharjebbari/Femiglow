@@ -89,31 +89,101 @@ export interface GtmExportOutput {
 }
 
 /**
- * Tag types GTM par provider.
+ * Tag types GTM par provider — TOUS built-in, zéro installation requise.
  *
- * Built-in (aucune installation nécessaire) :
  *   - `gaawe`  : Google Analytics 4 Event
  *   - `awct`   : Google Ads Conversion Tracking
+ *   - `html`   : Custom HTML (snippet inline pour Meta/TikTok/Snap/Pinterest)
  *
- * Custom templates community (à installer DANS le workspace GTM AVANT
- * l'import, sinon l'erreur « Type d'entité inconnu (ID public du modèle :
- * cvt_xxx) ») :
- *   - `cvt_meta_pixel`     : Facebook/Meta Pixel
- *   - `cvt_tiktok_pixel`   : TikTok Pixel
- *   - `cvt_snap_pixel`     : Snap Pixel
- *   - `cvt_pinterest_tag`  : Pinterest Tag
- *
- * Pour les installer : GTM → Templates → Discover Templates → chercher
- * « Facebook Pixel » / « TikTok Pixel » / « Snap Pixel » / « Pinterest Tag ».
+ * Précédente version utilisait des Custom Templates (`cvt_meta_pixel`,
+ * `cvt_tiktok_pixel`, etc.) qui exigent une installation manuelle depuis la
+ * Template Gallery. C'est friction côté admin et casse l'import si oublié.
+ * On passe à `html` qui charge la lib + appelle l'event en une seule étape,
+ * universel et autonome.
  */
 const PROVIDER_TO_GTM_TYPE: Record<MappingProviderKind, string> = {
-  meta: 'cvt_meta_pixel',
+  meta: 'html',
   google_ga4: 'gaawe',
   google_ads: 'awct',
-  tiktok: 'cvt_tiktok_pixel',
-  snap: 'cvt_snap_pixel',
-  pinterest: 'cvt_pinterest_tag',
+  tiktok: 'html',
+  snap: 'html',
+  pinterest: 'html',
 };
+
+/**
+ * Snippets HTML par provider — chargent la lib de tracking + fire l'event.
+ * Idempotents : la lib n'est chargée qu'une fois grâce au check `if (window.X)`.
+ * Les Pixel/Tag IDs sont des références à des variables GTM (« {{...}} »)
+ * que l'utilisateur configure dans GTM → Variables.
+ */
+function htmlSnippetForProvider(
+  kind: MappingProviderKind,
+  mappedName: string,
+  isCustom: boolean,
+): string {
+  if (kind === 'meta') {
+    const eventCall = isCustom
+      ? `fbq('trackCustom', ${JSON.stringify(mappedName)});`
+      : `fbq('track', ${JSON.stringify(mappedName)});`;
+    return `<script>
+(function(){
+  if (!window.fbq) {
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '{{Meta Pixel ID}}');
+  }
+  ${eventCall}
+})();
+</script>`;
+  }
+  if (kind === 'tiktok') {
+    return `<script>
+(function(){
+  if (!window.ttq) {
+    !function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
+    ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"];
+    ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
+    for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
+    ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};
+    ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+    ttq.load('{{TikTok Pixel ID}}');
+    ttq.page();
+    }(window, document, 'ttq');
+  }
+  ttq.track(${JSON.stringify(mappedName)}, {});
+})();
+</script>`;
+  }
+  if (kind === 'snap') {
+    return `<script>
+(function(){
+  if (!window.snaptr) {
+    (function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};
+    a.queue=[];var s='script';r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)})(window,document,'https://sc-static.net/scevent.min.js');
+    snaptr('init', '{{Snap Pixel ID}}');
+  }
+  snaptr('track', ${JSON.stringify(mappedName)});
+})();
+</script>`;
+  }
+  if (kind === 'pinterest') {
+    return `<script>
+(function(){
+  if (!window.pintrk) {
+    !function(e){if(!window.pintrk){window.pintrk=function(){window.pintrk.queue.push(Array.prototype.slice.call(arguments))};var n=window.pintrk;n.queue=[],n.version="3.0";
+    var t=document.createElement("script");t.async=!0,t.src=e;var r=document.getElementsByTagName("script")[0];r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");
+    pintrk('load', '{{Pinterest Tag ID}}');
+    pintrk('page');
+  }
+  pintrk('track', ${JSON.stringify(mappedName)});
+})();
+</script>`;
+  }
+  return '';
+}
 
 /**
  * Sanitize les noms de tags/triggers/variables pour GTM.
@@ -161,16 +231,13 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
       if (!cell || !cell.isEnabled || !cell.mappedName) continue;
       const tagType = PROVIDER_TO_GTM_TYPE[kind];
       const parameter: GtmTag['parameter'] = [];
-      if (kind === 'meta') {
-        parameter.push({ type: 'TEMPLATE', key: 'pixelId', value: '{{Meta Pixel ID}}' });
+      if (kind === 'meta' || kind === 'tiktok' || kind === 'snap' || kind === 'pinterest') {
+        // Tag HTML inline : charge la lib (idempotent) + fire l'event.
         parameter.push({
           type: 'TEMPLATE',
-          key: 'eventName',
-          value: cell.isCustom ? 'trackCustom' : cell.mappedName,
+          key: 'html',
+          value: htmlSnippetForProvider(kind, cell.mappedName, cell.isCustom),
         });
-        if (cell.isCustom) {
-          parameter.push({ type: 'TEMPLATE', key: 'customEventName', value: cell.mappedName });
-        }
       } else if (kind === 'google_ga4') {
         // gaawe (GA4 Event) attend `measurementIdOverride` (pas
         // `measurementId`) pour identifier le pixel GA4. Le champ est
