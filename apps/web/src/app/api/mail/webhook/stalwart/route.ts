@@ -19,6 +19,7 @@ import {
   emailEvent,
   emailSuppression,
 } from '@/lib/db/schema-emails';
+import { bridgeStalwartToUserEvent } from '@/lib/user-events/bridges/email-webhooks';
 import { logger } from '@/lib/logging/logger';
 import {
   stalwartWebhookSchema,
@@ -174,6 +175,27 @@ export async function POST(req: NextRequest): Promise<Response> {
       source: 'stalwart',
       ts,
       rawJson,
+    });
+  }
+
+  // M5.2 — bridge vers user_event (unified). Fire-and-forget : ne bloque
+  // jamais le webhook (sinon Stalwart relance, retry-storm).
+  if (evt.event === 'delivery.delivered' || evt.event === 'delivery.failed') {
+    const errorCode =
+      evt.event === 'delivery.failed' && 'errorCode' in evt && typeof evt.errorCode === 'number'
+        ? evt.errorCode
+        : undefined;
+    const reason =
+      evt.event === 'delivery.failed' && 'reason' in evt && typeof evt.reason === 'string'
+        ? evt.reason
+        : undefined;
+    void bridgeStalwartToUserEvent({
+      event: evt.event,
+      rcpt: outbox.toEmail,
+      messageId: outbox.smtpMessageId ?? undefined,
+      errorCode,
+      reason,
+      ts: evtTs ?? undefined,
     });
   }
 

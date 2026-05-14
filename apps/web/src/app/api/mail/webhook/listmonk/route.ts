@@ -20,6 +20,7 @@ import {
   isKnownListmonkEvent,
 } from '@/lib/mail/webhooks/listmonk-parser';
 import { dispatchListmonkEvent } from '@/lib/mail/webhooks/listmonk-dispatcher';
+import { bridgeListmonkToUserEvent } from '@/lib/user-events/bridges/email-webhooks';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,33 @@ export async function POST(req: NextRequest): Promise<Response> {
     // Don't fail the webhook — return 200 so Listmonk doesn't retry-storm.
     // The error is logged and surfacable via Sentry / observability.
   }
+
+  // M5.2 — bridge vers user_event (unified). Fire-and-forget. Extraction
+  // de l'email best-effort depuis le payload, qui contient soit
+  // data.subscriber.email soit data.email selon l'event Listmonk.
+  void (async () => {
+    const data = (evt as { data?: Record<string, unknown> }).data ?? {};
+    const sub = (data.subscriber ?? data) as Record<string, unknown>;
+    const email = typeof sub.email === 'string' ? sub.email : null;
+    const evtName = evt.event;
+    if (!email) return;
+    if (
+      evtName === 'subscriber.created' ||
+      evtName === 'subscriber.unsubscribed' ||
+      evtName === 'subscriber.bounced' ||
+      evtName === 'subscriber.complained'
+    ) {
+      const bounceType =
+        evtName === 'subscriber.bounced' && typeof data.bounce_type === 'string'
+          ? data.bounce_type
+          : undefined;
+      await bridgeListmonkToUserEvent({
+        event: evtName,
+        email,
+        bounceType,
+      });
+    }
+  })();
 
   return NextResponse.json({ ok: true });
 }
