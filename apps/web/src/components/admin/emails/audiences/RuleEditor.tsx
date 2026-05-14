@@ -12,6 +12,7 @@
  */
 import type { Rule, RuleKind } from '@/lib/mail/audiences/rules-types';
 import { ruleLabel } from './rule-defaults';
+import { ProductAutocomplete } from './ProductAutocomplete';
 
 export type RuleEditorProps = {
   rule: Rule;
@@ -288,12 +289,10 @@ function ProductIdEditor({
   onChange: (r: Rule) => void;
 }) {
   return (
-    <input
-      type="text"
+    <ProductAutocomplete
       value={rule.productId}
-      onChange={(e) => onChange({ ...rule, productId: e.target.value })}
+      onChange={(slug) => onChange({ ...rule, productId: slug })}
       placeholder="kit-eclat-v2"
-      className="w-48 rounded border border-stone-300 px-2 py-1 text-sm"
     />
   );
 }
