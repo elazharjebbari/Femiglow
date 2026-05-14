@@ -1,0 +1,102 @@
+@startuml sequence-activate
+title Séquence backend — activate(planId)
+
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+participant "Route Handler\nPOST .../activate" as RH
+participant "TrackingPlanService" as S
+participant "Validator" as V
+participant "Repository\n(Drizzle TX)" as R
+participant "Postgres" as DB
+participant "AuditLogger" as A
+participant "PlanCache" as C
+participant "DriftDetector" as D
+
+RH -> S : activate(id, actor)
+S -> R : findById(id)
+R -> DB : SELECT ... WHERE id=:id
+DB --> R : row
+R --> S : record
+
+S -> V : validate(record.plan)
+V --> S : { ok: true } (sinon throws ValidationError)
+
+S -> R : activateInTx(id)
+R -> DB : BEGIN
+R -> DB : UPDATE plans SET status='archived',\n  archived_at=NOW() WHERE status='active'
+R -> DB : UPDATE plans SET status='active',\n  activated_at=NOW() WHERE id=:id
+R -> DB : COMMIT
+R --> S : { plan: newActive, previousActiveId }
+
+S -> A : log({ planId, action:'activate', actor, ... })
+A -> DB : INSERT INTO tracking_plan_audit ...
+
+S -> C : invalidate()
+
+S -> D : recordSnapshot(plan.bundleId)
+D -> DB : INSERT gtm_drift_state ... (admin_bundle_id update)
+
+S --> RH : { plan, bundleId, deactivatedPlanId }
+RH --> [Client] : 200 OK
+
+@enduml
+
+@startuml sequence-export
+title Séquence backend — exportContainer(planId, env)
+
+skinparam shadowing false
+
+participant "Route Handler\nGET .../export?env=production" as RH
+participant "TrackingPlanService" as S
+participant "Repository" as R
+participant "Exporter" as E
+
+RH -> S : exportContainer(id, 'production')
+S -> R : findById(id)
+R --> S : record
+S -> E : exportPlanToGtm(record.plan, 'production')
+E -> E : mergeProviderOverrides()
+E -> E : buildVariables() (Constants)
+E -> E : buildTags() (1 par event activé × provider activé)
+E -> E : buildTriggers() (Custom Event + PageView)
+E --> S : GtmContainerJson
+S --> RH : { container, bundleId }
+
+note over RH
+  Headers :
+   Content-Type: application/json
+   Content-Disposition: attachment;
+     filename=gtm-femiglow-production-2026-05-14.json
+     (si ?download=true)
+end note
+
+RH --> [Client] : 200 OK + JSON
+
+@enduml
+
+@startuml sequence-validate
+title Séquence backend — validate(plan) pendant édition
+
+skinparam shadowing false
+
+participant "Wizard UI" as UI
+participant "Store debounce 300ms" as Store
+participant "Route POST .../validate" as RH
+participant "Validator" as V
+
+UI -> Store : updateField('providers.meta.pixelId', '...')
+Store -> Store : debounce 300ms
+Store -> RH : POST plan body
+RH -> V : validate(plan)
+V -> V : Zod safeParse
+V -> V : R-001 placeholders walk
+V -> V : R-002 provider/id coherence
+V -> V : R-003 mapping/provider coherence
+V -> V : ... toutes les règles
+V --> RH : { ok, errors, warnings, recommendations }
+RH --> Store : 200
+Store -> UI : update validationErrors
+UI -> UI : affiche les erreurs en rouge sous les champs
+
+@enduml

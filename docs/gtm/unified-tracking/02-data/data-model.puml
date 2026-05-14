@@ -1,0 +1,86 @@
+@startuml data-model
+title FemiGlow Unified Tracking — Data model (ER simplifié)
+
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+entity "trackingPlans" as Plans {
+  * id : uuid <<PK>>
+  --
+  * name : text
+  * status : text [draft|active|archived]
+  * bundle_id : text
+  * plan : jsonb
+  parent_version_id : uuid <<FK>>
+  * created_at : timestamptz
+  * created_by : text
+  activated_at : timestamptz
+  archived_at : timestamptz
+  notes : text
+}
+note right of Plans
+  Unique partial index :
+  WHERE status='active'
+  garantit un seul plan actif.
+end note
+
+entity "trackingPlanAudit" as Audit {
+  * id : bigserial <<PK>>
+  --
+  * plan_id : uuid <<FK>>
+  * action : text
+  * actor : text
+  actor_ip : inet
+  actor_ua : text
+  diff : jsonb
+  metadata : jsonb
+  * created_at : timestamptz
+}
+note bottom of Audit
+  Append-only.
+  Trigger BEFORE UPDATE/DELETE → RAISE.
+end note
+
+entity "trackingDefaults" as Defaults {
+  * key : text <<PK>>
+  --
+  * value : text
+  * updated_at : timestamptz
+  * updated_by : text
+}
+
+entity "gtmSentinelPings\n(unchanged)" as Pings {
+  * id : bigserial <<PK>>
+  --
+  * bundle_id : text
+  * mapping_version : text
+  * config_version : text
+  * received_at : timestamptz
+}
+
+entity "gtmDriftState\n(unchanged)" as Drift {
+  * id : int <<PK>>
+  --
+  * status : text [ok|warning|critical]
+  * since : timestamptz
+  * reasons : jsonb
+  * last_ping_bundle_id : text
+  * admin_bundle_id : text
+}
+
+Plans ||--o{ Audit : "1..N"
+Plans ||--o| Plans : "parent_version_id (généalogie)"
+Plans }o..o| Drift : "bundle_id (logique applicative)"
+Pings }o..o| Drift : "agrégat via bundle_id"
+
+' Tables legacy (renommées, lecture seule, drop à T+90j)
+entity "trackingProviders_legacy_v1" as Legacy1 #lightgrey
+entity "eventMappingVersions_legacy_v1" as Legacy2 #lightgrey
+entity "trackingSettings_legacy_v1" as Legacy3 #lightgrey
+
+note right of Legacy1
+  Read-only après migration.
+  Drop à T+90j (cf. runbook).
+end note
+
+@enduml

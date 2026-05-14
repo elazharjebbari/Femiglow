@@ -67,6 +67,8 @@ export const dictionaryAr: WizardDictionary = {
       'أوافق على تلقي تأكيد الطلب والإشعارات المتعلقة به.',
     ctaSubmit: 'إرسال التأكيد',
     success: (email) => `تم إرسال التأكيد إلى ${email}.`,
+    newOrderHint: 'هل لديك طلب آخر؟',
+    ctaNewOrder: 'بدء طلب جديد',
   },
   errors: {
     invalidInput: 'حقل غير مقبول. تحقق من معلوماتك.',

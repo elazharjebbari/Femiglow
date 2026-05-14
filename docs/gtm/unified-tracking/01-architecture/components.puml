@@ -1,0 +1,84 @@
+@startuml components
+title FemiGlow Unified Tracking — Composants logiciels
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+package "apps/web/src/lib/tracking/plan/" {
+  [schema.ts\n(Zod canonical)] as Schema
+  [service.ts\n(TrackingPlanService)] as Svc
+  [repository.ts\n(Postgres)] as Repo
+  [validator.ts\n(Zod + métier)] as Valid
+  [exporter.ts\n(plan -> GTM)] as Export
+  [bundle-id.ts\n(SHA-256)] as Bundle
+  [audit.ts\n(log immutable)] as Audit
+}
+
+package "apps/web/src/lib/tracking/runtime/" {
+  [resolver.ts] as Resolver
+  [cache.ts (TTL 30s)] as Cache
+  [consent.ts] as ConsentSrv
+}
+
+package "apps/web/src/lib/tracking/providers/" {
+  [meta.ts (CAPI)] as MetaProv
+  [ga4-mp.ts] as GA4Prov
+  [tiktok.ts] as TTProv
+}
+
+package "apps/web/src/lib/tracking/client/" {
+  [dispatcher.client.ts] as DispClient
+  [gtag.client.ts] as GtagClient
+  [pixel-fallback.client.ts] as PixelClient
+}
+
+package "apps/web/src/components/admin/tracking/plan/" {
+  [TrackingPlanWizard.tsx] as Wizard
+  [TrackingPlanExpert.tsx] as Expert
+  [sections/*.tsx] as Sections
+  [preview/*.tsx] as Preview
+  [store.ts (Zustand)] as Store
+}
+
+package "apps/web/src/app/api/admin/tracking/plans/" {
+  [route.ts] as ApiList
+  [[id]/route.ts] as ApiOne
+  [[id]/activate/route.ts] as ApiActivate
+  [[id]/validate/route.ts] as ApiValidate
+  [[id]/export/route.ts] as ApiExport
+}
+
+Svc --> Schema
+Svc --> Repo
+Svc --> Valid
+Svc --> Export
+Svc --> Bundle
+Svc --> Audit
+Valid --> Schema
+Export --> Schema
+Bundle --> Schema
+
+Resolver --> Cache
+Resolver --> Repo
+Resolver --> ConsentSrv
+
+MetaProv --> Schema
+GA4Prov --> Schema
+TTProv --> Schema
+
+Wizard --> Sections
+Expert --> Sections
+Wizard --> Store
+Expert --> Store
+Store ..> ApiOne : PATCH
+Store ..> ApiActivate : POST
+Sections ..> Preview
+
+ApiList --> Svc
+ApiOne --> Svc
+ApiActivate --> Svc
+ApiValidate --> Valid
+ApiExport --> Export
+
+@enduml

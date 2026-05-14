@@ -1,0 +1,90 @@
+@startuml high-level-architecture
+title FemiGlow Unified Tracking — Architecture haut niveau
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+skinparam roundCorner 8
+
+actor "Admin marketing" as Admin
+actor "Visiteur web" as Visitor
+
+package "Browser" {
+  [Wizard / Expert UI] as UI
+  [trackEvent()] as TrackClient
+  [Consent Manager] as Consent
+}
+
+package "Next.js Server" {
+  package "Admin API" {
+    [Plans Controller] as PlansAPI
+    [Sync Status API] as SyncAPI
+  }
+  package "Runtime API" {
+    [/api/track] as TrackAPI
+    [/api/track/sentinel] as SentinelAPI
+  }
+  package "Domain" {
+    [TrackingPlanService] as PlanSvc
+    [Validator (Zod + lint)] as Validator
+    [Exporter (plan -> GTM JSON)] as Exporter
+    [Resolver (cached)] as Resolver
+    [DriftDetector] as Drift
+  }
+  package "Providers" {
+    [Meta Adapter] as Meta
+    [GA4 MP Adapter] as GA4MP
+    [TikTok Adapter] as TikTok
+  }
+}
+
+database "Postgres" as DB {
+  [trackingPlans]
+  [trackingPlanAudit]
+  [trackingDefaults]
+  [gtmSentinelPings]
+  [gtmDriftState]
+}
+
+cloud "GTM" as GTM {
+  [Container GTM-M8K7V88D]
+}
+
+cloud "Outils analytics" {
+  [GA4]
+  [Google Ads]
+  [Meta Ads Manager]
+}
+
+Admin --> UI : édite / publie
+UI --> PlansAPI : CRUD
+PlansAPI --> PlanSvc
+PlanSvc --> Validator
+PlanSvc --> Exporter
+PlanSvc --> DB
+
+Admin --> GTM : import JSON (manuel)
+Exporter ..> GTM : JSON download
+
+Visitor --> TrackClient
+TrackClient --> Consent : check
+TrackClient --> GTM : dataLayer push
+TrackClient --> TrackAPI : POST event
+TrackAPI --> Resolver
+Resolver --> DB : lit plan actif
+TrackAPI --> Meta
+TrackAPI --> GA4MP
+TrackAPI --> TikTok
+Meta --> [Meta Ads Manager]
+GA4MP --> GA4
+GTM --> GA4
+GTM --> [Google Ads]
+
+TrackClient --> SentinelAPI : ping bundleId
+SentinelAPI --> Drift
+Drift --> DB
+
+UI --> SyncAPI : statut drift
+SyncAPI --> Drift
+
+@enduml

@@ -1,0 +1,42 @@
+@startuml sequence-event
+title Séquence : événement client -> providers -> outils
+
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+actor Visiteur as V
+participant "trackEvent('add_to_cart')" as TE
+participant "Consent\nclient" as CC
+participant "dataLayer\n(gtag)" as DL
+participant "GTM" as GTM
+participant "GA4" as GA4
+participant "POST /api/track" as API
+participant "Resolver" as R
+participant "Plan cache" as PC
+participant "Meta adapter" as M
+participant "Meta CAPI" as MAPI
+
+V -> TE : click "Ajouter au panier"
+TE -> CC : ad_storage granted ?
+CC --> TE : true
+TE -> DL : push({event:'add_to_cart', value, currency})
+DL -> GTM : trigger CUSTOM_EVENT
+GTM -> GA4 : sendBeacon(event)
+GA4 --> GTM : 200
+
+TE -> API : POST {event:'add_to_cart', payload}
+API -> R : resolveEventMapping('add_to_cart')
+R -> PC : getActivePlan() (cached 30s)
+PC --> R : plan
+R --> API : { ga4:{name:'add_to_cart'}, meta:{name:'AddToCart',type:'standard'} }
+
+note over API : ne ré-envoie pas GA4\n(GTM s'en occupe).\nGarde Meta CAPI pour CAPI matching.
+
+API -> M : dispatch({mappedName:'AddToCart', payload, eventId})
+M -> M : userData = hash(email, phone, ...)
+M -> MAPI : POST /events {data:[{event_name:'AddToCart', user_data, custom_data}]}
+MAPI --> M : 200 {events_received:1}
+M --> API : { status:'sent', latencyMs:120 }
+API --> TE : 200 { results:[{provider:'meta', status:'sent'}] }
+
+@enduml

@@ -163,7 +163,7 @@ export function resetMemoryStore(): void {
   globalAny.__femiglowStore = makeStore();
 }
 
-type DrizzleDb =
+export type DrizzleDb =
   | ReturnType<typeof drizzleNeon<typeof schema>>
   | ReturnType<typeof drizzlePg<typeof schema>>;
 const dbCache = globalAny as typeof globalAny & { __femiglowDb?: DrizzleDb | null };

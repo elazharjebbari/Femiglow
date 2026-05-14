@@ -1,0 +1,101 @@
+id,layer,file,type,description,fixtures_used,blocking
+T-U001,unit,types.test.ts,Zod schema valid plan,Parse valid TrackingPlan,valid-production-v8.json,yes
+T-U002,unit,types.test.ts,Zod schema reject missing required,Should throw on missing name,invalid-missing-required.json,yes
+T-U003,unit,types.test.ts,Zod schema reject invalid enum,Should throw on status='unknown',custom,yes
+T-U004,unit,types.test.ts,Zod schema accept empty events,Empty events array OK,custom,no
+T-U005,unit,validator.test.ts,R-001 reject G-PROD0000 placeholder,Should fail validation,invalid-placeholder.json,yes
+T-U006,unit,validator.test.ts,R-001 reject AW-REPLACE_ placeholder,Should fail validation,custom,yes
+T-U007,unit,validator.test.ts,R-001 reject GTM-PLACEHOLDER placeholder,Should fail,custom,yes
+T-U008,unit,validator.test.ts,R-001 accept valid G- ID,Should pass,custom,yes
+T-U009,unit,validator.test.ts,R-002 require at least 1 provider,0 providers should fail,custom,yes
+T-U010,unit,validator.test.ts,R-002 accept 1+ provider,Should pass,custom,yes
+T-U011,unit,validator.test.ts,R-003 require ID per active provider,Active provider without ID fails,custom,yes
+T-U012,unit,validator.test.ts,R-003 inactive provider without ID OK,Should pass,custom,no
+T-U013,unit,validator.test.ts,R-004 require production env,Missing production fails,custom,yes
+T-U014,unit,validator.test.ts,R-005 unique event keys,Duplicate event key fails,custom,yes
+T-U015,unit,validator.test.ts,Warnings non-blocking,Returns warnings not errors,custom,no
+T-U016,unit,exporter.test.ts,Deterministic bundle hash,Same plan gives same hash,valid-production-v8.json,yes
+T-U017,unit,exporter.test.ts,Different env different hash,Production vs staging differ,multi-env-staging.json,yes
+T-U018,unit,exporter.test.ts,Export structure GA4 tag present,JSON contains GA4 tag,valid-production-v8.json,yes
+T-U019,unit,exporter.test.ts,Export structure Meta tag present,JSON contains Meta tag,valid-production-v8.json,yes
+T-U020,unit,exporter.test.ts,Export structure GTM container ID correct,Right container,valid-production-v8.json,yes
+T-U021,unit,exporter.test.ts,Export sorted deterministic,Keys sorted alphabetically,valid-production-v8.json,yes
+T-U022,unit,exporter.test.ts,Export snapshot vs expected,Diff = 0,expected-export-production.json,yes
+T-U023,unit,exporter.test.ts,Empty events produces base structure,No tags but valid JSON,custom,no
+T-U024,unit,exporter.test.ts,Export with consent mode tags,Consent triggers present,custom,yes
+T-U025,unit,differ.test.ts,Diff identical plans = empty,No changes,valid-production-v8.json,yes
+T-U026,unit,differ.test.ts,Diff added provider,Detects new TikTok added,custom,yes
+T-U027,unit,differ.test.ts,Diff removed event,Detects event removal,custom,yes
+T-U028,unit,differ.test.ts,Diff modified ID,Detects Pixel ID change,custom,yes
+T-U029,unit,differ.test.ts,Diff multi-env aware,Per-env diff,multi-env-staging.json,yes
+T-U030,unit,cache.test.ts,Cache HIT within TTL,Returns cached value,custom,yes
+T-U031,unit,cache.test.ts,Cache MISS after TTL,Re-fetches,custom,yes
+T-U032,unit,cache.test.ts,Cache invalidation on activate,Activate clears cache,custom,yes
+T-U033,unit,defaults.test.ts,Cascade tier 1 active plan,Uses active plan IDs,custom,yes
+T-U034,unit,defaults.test.ts,Cascade tier 2 latest archived,Falls back archived,custom,no
+T-U035,unit,defaults.test.ts,Cascade tier 3 trackingDefaults table,Final fallback,custom,yes
+T-U036,unit,defaults.test.ts,No autofill if user typed value,User override respected,custom,yes
+T-I001,integration,repository.test.ts,Create plan with audit,Plan + audit row inserted,test-db,yes
+T-I002,integration,repository.test.ts,Find active returns 1,Unique active enforced,test-db,yes
+T-I003,integration,repository.test.ts,Cannot create 2 active concurrently,Unique constraint fires,test-db,yes
+T-I004,integration,repository.test.ts,Audit append-only update fails,Trigger blocks UPDATE,test-db,yes
+T-I005,integration,repository.test.ts,Audit append-only delete fails,Trigger blocks DELETE,test-db,yes
+T-I006,integration,repository.test.ts,Optimistic concurrency,Version increment on update,test-db,yes
+T-I007,integration,service.test.ts,activate flow end-to-end,Plan A → archive Plan B activate,test-db,yes
+T-I008,integration,service.test.ts,activate with invalid plan rejected,Validation fails before activate,test-db,yes
+T-I009,integration,service.test.ts,create from existing clone,Cloned plan has new ID + audit,test-db,yes
+T-I010,integration,service.test.ts,archive plan,Status changes audit appended,test-db,yes
+T-I011,integration,api/plans.test.ts,POST /plans requires auth,401 without session,test-db,yes
+T-I012,integration,api/plans.test.ts,POST /plans returns 201 with valid plan,Created OK,test-db,yes
+T-I013,integration,api/plans.test.ts,POST /plans returns 400 with invalid,Returns errors array,test-db,yes
+T-I014,integration,api/plans.test.ts,POST /plans/:id/activate,Activates correctly,test-db,yes
+T-I015,integration,api/plans.test.ts,POST /plans/:id/validate,Returns validation result,test-db,yes
+T-I016,integration,api/plans.test.ts,POST /plans/:id/export,Returns deterministic JSON,test-db,yes
+T-I017,integration,api/plans.test.ts,GET /plans pagination,Cursor pagination works,test-db,no
+T-I018,integration,api/plans.test.ts,DELETE /plans not implemented,Returns 405,test-db,no
+T-C001,component,IdInput.test.tsx,Renders prefilled,Shows autofilled badge,custom,yes
+T-C002,component,IdInput.test.tsx,Detects placeholder G-PROD0000,Shows warning,custom,yes
+T-C003,component,IdInput.test.tsx,Revert clears modification,Resets to autofill,custom,yes
+T-C004,component,IdInput.test.tsx,Format validation invalid format,Shows error red border,custom,yes
+T-C005,component,IdInput.test.tsx,Debounced server validation,300ms after stop typing,custom,yes
+T-C006,component,Stepper.test.tsx,Renders 5 steps,All 5 visible,custom,yes
+T-C007,component,Stepper.test.tsx,Click future step blocked,Shows tooltip,custom,yes
+T-C008,component,Stepper.test.tsx,Click visited step goes back,Auto-save then navigate,custom,yes
+T-C009,component,EventMatrixRow.test.tsx,Renders event with providers,Checkboxes match state,custom,yes
+T-C010,component,EventMatrixRow.test.tsx,Toggle provider for event,Callback fired,custom,yes
+T-C011,component,JsonPreview.test.tsx,Highlights changed lines,Lines change background,custom,no
+T-C012,component,JsonPreview.test.tsx,Read-only,No edit possible,custom,yes
+T-C013,component,StatusCard.test.tsx,Renders 4 status variants,OK warning critical neutral,custom,yes
+T-C014,component,TrackingPlanWizard.test.tsx,Auto-save triggers after 5s,Mock timer,custom,yes
+T-C015,component,TrackingPlanWizard.test.tsx,Continue blocked if errors,Shows toast,custom,yes
+T-E001,e2e,journey-1-change-pixel.spec.ts,Amal changes Meta Pixel via wizard,Plan v9 active,test-db,yes
+T-E002,e2e,journey-2-add-provider.spec.ts,Younes adds TikTok via expert mode,New events visible,test-db,yes
+T-E003,e2e,journey-3-status-check.spec.ts,Aïcha views status read-only,No edit buttons visible,test-db,yes
+T-E004,e2e,journey-4-incident-drift.spec.ts,Drift critical detected + remediation,Status returns OK,test-db,yes
+T-E005,e2e,journey-5-staging-plan.spec.ts,Younes creates staging plan,Draft preserved prod unchanged,test-db,yes
+T-E006,e2e,activation.spec.ts,Activate plan shows diff modal,Modal renders correctly,test-db,yes
+T-E007,e2e,activation.spec.ts,Activate placeholder rejected,Toast error shown,test-db,yes
+T-E008,e2e,wizard-i18n.spec.ts,Wizard in French,UI texts in fr-MA,test-db,yes
+T-E009,e2e,wizard-i18n.spec.ts,Wizard in Arabic RTL,UI texts in ar-MA mirrored,test-db,no
+T-E010,e2e,history.spec.ts,View version history rollback,Rollback creates new version,test-db,yes
+T-E011,e2e,sync.spec.ts,Sync dashboard shows status,All providers visible,test-db,yes
+T-E012,e2e,sync.spec.ts,Test event widget sends debug ping,Ping logged not real,test-db,no
+T-E013,e2e,a11y.spec.ts,Wizard a11y full audit,axe-core 0 violations,test-db,yes
+T-E014,e2e,a11y.spec.ts,Expert mode a11y,0 violations,test-db,yes
+T-E015,e2e,keyboard.spec.ts,Wizard 100% keyboard navigation,Cmd+S Cmd+Enter all work,test-db,yes
+T-E016,e2e,keyboard.spec.ts,Command palette Cmd+K,Opens shows results,test-db,no
+T-E017,e2e,error-recovery.spec.ts,Network error retry,Auto retry then banner,test-db,yes
+T-E018,e2e,error-recovery.spec.ts,Concurrent edit detection,Toast shown,test-db,no
+T-E019,e2e,legacy-redirect.spec.ts,Old /tracking/pixels routes 302,Redirects to new,test-db,yes
+T-E020,e2e,legacy-redirect.spec.ts,Old /tracking/gtm routes 302,Redirects,test-db,yes
+T-M001,migration,migrate.test.ts,Dry-run on legacy fixture,Reports 0 errors,legacy-fixture,yes
+T-M002,migration,migrate.test.ts,Full migration produces same export,Snapshot match,legacy + expected,yes
+T-M003,migration,migrate.test.ts,Idempotent,Re-run produces same result,legacy-fixture,yes
+T-M004,migration,migrate.test.ts,Rollback restores state,Tables back to original,legacy-fixture,yes
+T-P001,perf,latency.test.ts,GET active plan p95 < 50ms,Benchmark,test-db,yes
+T-P002,perf,latency.test.ts,POST validate p95 < 500ms,Benchmark,test-db,yes
+T-P003,perf,latency.test.ts,POST export p95 < 200ms,Benchmark,test-db,yes
+T-P004,perf,bundle.test.ts,Tracking module bundle < 80kb,Bundle size check,N/A,yes
+T-LH001,lighthouse,wizard.spec.ts,Lighthouse perf score wizard,Score >= 80,N/A,no
+T-LH002,lighthouse,wizard.spec.ts,Lighthouse a11y score wizard,Score >= 95,N/A,yes
+T-IZ001,integration,ultimate.spec.ts,ULTIMATE TEST end-to-end,Full system validation,multiple,yes

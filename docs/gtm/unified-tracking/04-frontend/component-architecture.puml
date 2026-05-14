@@ -1,0 +1,97 @@
+@startuml component-architecture
+title FemiGlow Unified Tracking — Architecture des composants admin
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+package "app/admin/tracking" {
+  [page.tsx\n(Home)] as HomePage
+  [plans/page.tsx\n(List)] as ListPage
+  [plans/[id]/edit/page.tsx\n(Edit)] as EditPage
+  [plans/[id]/preview/page.tsx] as PreviewPage
+  [sync/page.tsx] as SyncPage
+}
+
+package "components/admin/tracking/plan" {
+  [TrackingPlanHome] as Home
+  [TrackingPlanList] as List
+  [TrackingPlanWizard] as Wizard
+  [TrackingPlanExpert] as Expert
+  [JsonPreview] as JsonPrev
+  [SyncDashboard] as Sync
+  database "store.ts (Zustand)" as Store
+}
+
+package "components/admin/tracking/plan/wizard" {
+  [WizardShell] as Shell
+  [Step1ChooseTools] as Step1
+  [Step2Identifiers] as Step2
+  [Step3Events] as Step3
+  [Step4Envs] as Step4
+  [Step5Review] as Step5
+}
+
+package "components/admin/tracking/plan/sections" {
+  [ProvidersSection] as PSec
+  [EventsMatrix] as EMat
+  [EnvProfilesSection] as ESec
+  [ProviderCard] as PCard
+  [EventRow] as ERow
+  [EnvProfileForm] as EForm
+}
+
+package "components/admin/tracking/plan/controls" {
+  [IdInput] as IdIn
+  [ProviderToggle] as PT
+  [ConsentBadge] as CB
+  [PlaceholderWarning] as PW
+}
+
+package "TanStack Query" {
+  [useActivePlan] as Q1
+  [usePlanById] as Q2
+  [usePlanMutation] as Q3
+  [useSyncStatus] as Q4
+}
+
+HomePage --> Home
+ListPage --> List
+EditPage --> Wizard : ?mode=wizard
+EditPage --> Expert : ?mode=expert
+PreviewPage --> JsonPrev
+SyncPage --> Sync
+
+Wizard --> Shell
+Shell --> Step1
+Shell --> Step2
+Shell --> Step3
+Shell --> Step4
+Shell --> Step5
+
+Step2 --> PSec
+Step3 --> EMat
+Step4 --> ESec
+
+PSec --> PCard
+EMat --> ERow
+ESec --> EForm
+
+PCard --> PT
+PCard --> IdIn
+EForm --> IdIn
+ERow --> CB
+
+IdIn --> PW
+
+Wizard --> Store
+Expert --> Store
+Store --> Q3
+
+Home --> Q1
+Home --> Q4
+List --> Q2
+JsonPrev --> Q2
+Sync --> Q4
+
+@enduml

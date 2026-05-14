@@ -1,0 +1,37 @@
+@startuml data-flow
+title FemiGlow Unified Tracking — Data flow d'un événement de bout en bout
+
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+participant "Visiteur" as V
+participant "trackEvent()" as TE
+participant "Consent" as C
+participant "gtag (dataLayer)" as GTAG
+participant "GTM Container" as GTM
+participant "GA4" as GA4
+participant "POST /api/track" as API
+participant "Resolver" as R
+participant "TrackingPlan (cache 30s)" as P
+participant "Meta Adapter" as M
+participant "Meta CAPI" as MetaAPI
+
+V -> TE : click "Ajouter au panier"
+TE -> C : ad_storage granted ?
+C --> TE : true
+TE -> GTAG : push('add_to_cart', {...})
+GTAG -> GTM : event in dataLayer
+GTM -> GA4 : Tag GA4 fires
+GA4 --> GTM : 200 OK
+
+TE -> API : POST /api/track {name: 'add_to_cart', payload}
+API -> R : resolveEventMapping('add_to_cart')
+R -> P : plan actif ?
+P --> R : { meta: 'AddToCart', ga4: 'add_to_cart', ... }
+API -> M : dispatch({name: 'AddToCart', ...})
+M -> MetaAPI : POST /events
+MetaAPI --> M : 200 OK
+M --> API : status: 'sent'
+API --> TE : 200 { results }
+
+@enduml

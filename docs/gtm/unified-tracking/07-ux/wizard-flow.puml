@@ -1,0 +1,58 @@
+@startuml wizard-flow
+title Wizard Tracking Plan — Diagramme d'états
+
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+[*] --> Step1
+
+state Step1 as "Étape 1\nChoisir mes outils"
+state Step2 as "Étape 2\nIdentifiants"
+state Step3 as "Étape 3\nÉvénements"
+state Step4 as "Étape 4\nEnvironnements"
+state Step5 as "Étape 5\nVérification"
+state Review {
+  state Validation as "Run validation\n(serveur)"
+  state OK as "✓ OK"
+  state Errors as "✗ Erreurs"
+  state Warnings as "⚠ Warnings"
+  Validation --> OK : 0 errors, 0 warnings
+  Validation --> Errors : N errors
+  Validation --> Warnings : 0 errors, N warnings
+}
+
+state Activate as "Activation\nserveur"
+state Done as "Plan actif\n+ téléchargement JSON"
+
+state Saved as "Brouillon\nsauvegardé"
+state ExitConfirm as "Confirm sortie\n(modifications non sauvées)"
+
+Step1 --> Step2 : Continuer
+Step2 --> Step3 : Continuer
+Step3 --> Step4 : Continuer
+Step4 --> Step5 : Continuer
+
+Step5 --> Review : (auto)
+Review --> Step3 : "Corriger" (clic sur erreur)
+Review --> Activate : Activer
+Review --> Saved : Sauver en brouillon
+
+Activate --> Done : 200 OK
+
+Done --> [*]
+
+Step2 --> Step1 : Retour
+Step3 --> Step2 : Retour
+Step4 --> Step3 : Retour
+Step5 --> Step4 : Retour
+
+Step1 --> ExitConfirm : navigation hors wizard
+Step2 --> ExitConfirm : navigation hors wizard
+Step3 --> ExitConfirm : navigation hors wizard
+Step4 --> ExitConfirm : navigation hors wizard
+Step5 --> ExitConfirm : navigation hors wizard
+
+ExitConfirm --> Step1 : "Sauver et quitter"
+ExitConfirm --> [*] : "Quitter sans sauver"
+
+@enduml

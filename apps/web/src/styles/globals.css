@@ -142,3 +142,24 @@
   }
   .skip-link:focus { top: 0; }
 }
+
+/*
+  CHA-mobile-focus — Verrou anti-zoom scopé au widget chat.
+
+  Hors `@layer` pour battre la cascade Tailwind utilities (`text-sm`,
+  `text-xs`, etc.) : iOS Safari zoome dès qu'un input < 16 px obtient
+  le focus, même si le garde-fou `@layer base` ci-dessus est défini —
+  les utilities de Tailwind ont une priorité de cascade supérieure et
+  écrasent la règle de base sur des classes locales (`className="text-sm"`).
+
+  La règle ci-dessous force 16 px exact sur tous les champs saisissables
+  à l'intérieur de `[data-chat-scope]` (le ChatPanel), ce qui annule
+  définitivement le re-zoom au focus pour le widget chat — sans
+  toucher au design des autres écrans (wizard, admin, content).
+*/
+[data-chat-scope] input:not([type=button]):not([type=submit]):not([type=reset]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),
+[data-chat-scope] textarea,
+[data-chat-scope] select,
+[data-chat-scope] [contenteditable="true"] {
+  font-size: 16px !important;
+}

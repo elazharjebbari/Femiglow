@@ -168,11 +168,11 @@ export function MappingVersionsList() {
           </button>
         </form>
         <a
-          href="/admin/tracking/gtm"
+          href="/admin/tracking/plans"
           className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
-          title="Configurer les Pixel IDs / Conv labels"
+          title="Configurer les Pixel IDs / Conv labels via le plan unifié"
         >
-          ↗ GTM configs
+          ↗ Plans tracking
         </a>
         <a
           href="/admin/tracking/events/categorization"

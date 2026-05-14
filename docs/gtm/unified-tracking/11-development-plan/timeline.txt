@@ -1,0 +1,118 @@
+Timeline Gantt (ASCII) — Unified Tracking Plan v2
+==================================================
+
+Légende :
+  ████  Sprint actif
+  ░░░░  Buffer / validation
+  ▓▓▓▓  Test ultime + go-live
+  ░     Days
+
+                              Sprint 1     Sprint 2     Sprint 3     Sprint 4     Sprint 5     Sprint 6
+                              ─────────── ─────────── ─────────── ─────────── ─────────── ────────────
+                              Mon ─── Fri Mon ─── Fri Mon ─── Fri Mon ─── Fri Mon ─── Fri Mon ─────── Fri
+Phase                         W1          W2          W3          W4          W5          W6
+
+[M3a] Schema + Migration      ████░
+[M3b] Repository + Service        ░████░
+[M3c] API endpoints                   ░████░
+[M3d] Exporter unifié                 ░░░████░
+
+[M4a] Primitives + Storybook                       ████░
+[M4d] Home page                                        ░████░
+
+[M4b] Wizard 5 steps                                       ░████░░░░░
+[M4b] Wizard a11y + tests                                            ████░
+
+[M4c] Expert mode + Sync + History                                       ░████░░░░
+[M4e] i18n fr + ar structure                                                 ░████░
+
+[M5a] Unit tests complets                                                        ░████
+[M5b] E2E suite complète                                                         ░████
+[M5c] MSW + fixtures                                                                ░██
+[M5d] Test ultime intégration                                                       ░██▓▓
+[M5e] Runbook + rollback rehearsal                                                  ░██░░
+[M5f] Migration prod dry-run                                                            ░░██
+[M5g] Go-live + monitoring                                                                 ░▓▓
+
+
+Détail Sprint 1 (W1) — Data + Backend foundations
+  Mon : TP2-001 schema trackingPlans      (3h)
+        TP2-002 schema audit + trigger    (4h)
+  Tue : TP2-003 schema defaults           (2h)
+        TP2-004 migration.sql             (3h)
+        TP2-005 seed defaults             (2h)
+  Wed : TP2-006 Zod schemas               (4h)
+  Thu : TP2-007 repository.ts             (5h)
+  Fri : TP2-008 unit tests                (4h)
+
+  → Livrable : tests verts, repo prêt à être consommé par service
+
+Détail Sprint 2 (W2) — Backend API + Export
+  Mon : TP2-009 validator.ts              (5h)
+  Tue : TP2-010 exporter.ts               (6h)
+  Wed : TP2-011 differ.ts                 (3h)
+        TP2-012 audit + cache             (3h)
+  Thu : TP2-013 service.ts                (4h)
+        TP2-014 API endpoints (partie)    (4h)
+  Fri : TP2-014 API endpoints (fin)       (4h)
+        TP2-015 OpenAPI                   (3h)
+        TP2-016 integration tests         (6h, débordement OK)
+
+Détail Sprint 3 (W3) — Frontend primitives + Home
+  Mon : TP2-017 Zustand store             (4h)
+        TP2-018 TanStack hooks            (3h)
+  Tue : TP2-019 primitives (StatusCard…)  (5h)
+  Wed : TP2-020 IdInput component         (5h)
+  Thu : TP2-021 EventMatrixRow            (3h)
+        TP2-022 JsonPreview               (4h)
+  Fri : TP2-023 TrackingPlanHome          (4h)
+        TP2-024 Storybook stories         (5h)
+
+Détail Sprint 4 (W4) — Wizard
+  Mon : TP2-025 Wizard shell              (5h)
+        TP2-026 Step1 providers           (3h)
+  Tue : TP2-027 Step2 identifiers         (5h)
+  Wed : TP2-028 Step3 events              (6h)
+  Thu : TP2-029 Step4 env profiles        (4h)
+        TP2-030 Step5 validation+activate (5h, partie)
+  Fri : TP2-030 Step5 (fin)               (3h)
+        TP2-031 E2E happy path            (4h)
+        TP2-032 a11y audit + fixes        (3h)
+
+Détail Sprint 5 (W5) — Expert + Sync + History + i18n
+  Mon : TP2-033 Expert layout             (5h)
+  Tue : TP2-034 Expert sections           (4h)
+        TP2-035 Sync page                 (5h, partie)
+  Wed : TP2-035 Sync page (fin)           (2h)
+        TP2-036 History page              (5h)
+  Thu : TP2-037 Diagnostics page          (4h)
+        TP2-038 i18n fr namespace         (3h)
+  Fri : TP2-039 i18n ar structure         (2h)
+        TP2-040 Legacy 302 redirects      (3h)
+        Buffer                             (3h)
+
+Détail Sprint 6 (W6) — Tests + Migration + Release
+  Mon : TP2-041 Unit tests complets       (6h)
+        TP2-042 E2E suite (partie)        (4h)
+  Tue : TP2-042 E2E suite (fin)           (4h)
+        TP2-043 MSW handlers              (4h)
+  Wed : TP2-044 Snapshot legacy vs new    (4h)
+        TP2-045 Ultimate integration test (4h)
+  Thu : TP2-046 Migration script + dry-run (5h)
+        TP2-047 Deployment runbook        (3h)
+  Fri AM:TP2-048 Rollback rehearsal       (2h)
+        TP2-049 Grafana dashboard         (3h)
+  Fri PM:TP2-050 Go-live + smoke tests    (4h)
+
+Total estimé : ~200 hours dev (= 25 jours-homme = ~5 sprints normaux + 1 sprint buffer/tests)
+
+Buffer cumulé : ~20% intégré (TP2-016 débordement, sprint 5 et 6 ont du slack)
+
+Hypothèses :
+- 8h productives/jour
+- 1 dev senior solo (Younes)
+- Pas d'interruption majeure (autres projets gelés sur cette période)
+- Lead dev review disponible J+1 max
+- DBA disponible pour migration prod
+
+Si interruption ou imprévu majeur : sprint 7 buffer disponible.

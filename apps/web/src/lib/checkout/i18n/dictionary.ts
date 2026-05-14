@@ -81,6 +81,8 @@ export interface WizardDictionary {
     consentLabel: string;
     ctaSubmit: string;
     success: (email: string) => string;
+    newOrderHint: string;
+    ctaNewOrder: string;
   };
   errors: {
     invalidInput: string;

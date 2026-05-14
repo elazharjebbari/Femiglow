@@ -64,6 +64,8 @@ export const dictionaryFr: WizardDictionary = {
       "J'accepte de recevoir la confirmation et les notifications liées à cette commande.",
     ctaSubmit: 'Envoyer la confirmation',
     success: (email) => `Confirmation envoyée à ${email}.`,
+    newOrderHint: 'Une autre commande à passer ?',
+    ctaNewOrder: 'Commencer une nouvelle commande',
   },
   errors: {
     invalidInput: "Un champ n'a pas été accepté. Vérifiez vos informations.",

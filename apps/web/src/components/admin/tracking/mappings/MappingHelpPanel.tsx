@@ -80,8 +80,8 @@ export function MappingHelpPanel() {
             <pre className="overflow-x-auto rounded-md border border-stone-200 bg-white p-3 font-mono text-[11px] leading-tight text-stone-700">
 {`     Console admin FemiGlow                       Container GTM Web (Google)
   ┌─────────────────────────┐                   ┌──────────────────────────┐
-  │ /admin/tracking/gtm     │── export ⓵ ─────►│ Variables constantes :    │
-  │   Configs GTM           │  (Pixel IDs)      │  {{Meta Pixel ID}}        │
+  │ /admin/tracking/plans   │── export ⓵ ─────►│ Variables constantes :    │
+  │   envProfiles           │  (Pixel IDs)      │  {{Meta Pixel ID}}        │
   │   Pixel IDs, Conv labels│                   │  {{GA4 Measurement ID}}  │
   └─────────────────────────┘                   │  {{Ads Customer ID}}      │
                                                  └──────────────────────────┘
@@ -113,12 +113,12 @@ export function MappingHelpPanel() {
             <h3 className="font-semibold text-stone-900">3. Démarche complète à suivre</h3>
             <ol className="space-y-3 list-none">
               <li className="rounded-md border border-stone-200 bg-white px-3 py-2">
-                <span className="font-medium text-stone-900">⓵ Configurer d'abord les Configs GTM</span>
+                <span className="font-medium text-stone-900">⓵ Configurer d'abord les envProfiles du plan</span>
                 <p className="mt-1 text-xs text-stone-600">
                   Va sur{' '}
-                  <a href="/admin/tracking/gtm" className="font-mono underline">/admin/tracking/gtm</a>{' '}
+                  <a href="/admin/tracking/plans" className="font-mono underline">/admin/tracking/plans</a>{' '}
                   pour saisir les Pixel IDs et Conv labels par environnement
-                  (production/stage/preview/dev). Active la version. Télécharge le JSON Configs.
+                  (production/staging/local) via les envProfiles du plan unifié. Active le plan, puis utilise le bouton « Exporter GTM ».
                   <strong> C'est l'import #1.</strong>
                 </p>
               </li>
