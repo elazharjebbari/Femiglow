@@ -14,6 +14,7 @@ import type { Rule, RuleKind } from '@/lib/mail/audiences/rules-types';
 import { ruleLabel } from './rule-defaults';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { TagAutocomplete } from './TagAutocomplete';
+import { TemplateAutocomplete } from './TemplateAutocomplete';
 
 export type RuleEditorProps = {
   rule: Rule;
@@ -226,13 +227,12 @@ function EmailOpenedClickedEditor({
       {rule.kind === 'email_opened' && (
         <label className="flex items-center gap-1 text-xs text-stone-600">
           template
-          <input
-            type="text"
+          <TemplateAutocomplete
             value={(rule as { templateSlug?: string }).templateSlug ?? ''}
-            onChange={(e) =>
+            onChange={(slug) =>
               onChange({
                 ...rule,
-                templateSlug: e.target.value || undefined,
+                templateSlug: slug || undefined,
               })
             }
             placeholder="welcome"
