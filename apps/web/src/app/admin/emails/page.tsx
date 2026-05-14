@@ -70,6 +70,18 @@ export default async function AdminEmailsPage() {
           Automatisations →
         </Link>
         <Link
+          href="/admin/emails/audiences"
+          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+        >
+          Audiences →
+        </Link>
+        <Link
+          href="/admin/emails/templates"
+          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+        >
+          Templates HTML →
+        </Link>
+        <Link
           href="/admin/emails/listmonk"
           className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
         >
