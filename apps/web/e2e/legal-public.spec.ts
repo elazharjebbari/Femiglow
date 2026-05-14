@@ -30,8 +30,11 @@ test.describe('pages légales publiques', () => {
       return;
     }
     expect(res.status()).toBe(200);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByText(/Dernière mise à jour/i)).toBeVisible();
+    // Le markdown rendu peut ré-introduire un `<h1>` ou un `<em>Dernière
+    // mise à jour : …</em>` en plus du header SSR. On vise donc le 1er
+    // match (le header SSR `<p>` au-dessus du contenu).
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expect(page.getByText(/Dernière mise à jour/i).first()).toBeVisible();
   });
 
   test('meta robots = noindex par défaut sur pages légales', async ({ page }) => {

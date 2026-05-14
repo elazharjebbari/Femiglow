@@ -55,7 +55,11 @@ test.describe('legal — CSRF posture', () => {
 });
 
 test.describe('legal — rate-limit en pratique', () => {
+  // 70 GET séquentiels peuvent dépasser le timeout par défaut (30 s) si
+  // le dev server est sous charge (parallèlisme des autres tests). On
+  // donne 60 s — suffisant en CI sans masquer un vrai stall.
   test('burst rapide sur /api/legal/cgv n\'amène pas à 200 indéfiniment', async ({ request }) => {
+    test.setTimeout(60_000);
     // On envoie 70 requêtes rapides ; au-delà de 60 dans la même fenêtre on
     // doit voir au moins une 429.
     let saw429 = false;

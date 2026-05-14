@@ -135,7 +135,7 @@ export default async function AdminLegalPage({ searchParams }: PageProps) {
               </td>
               <td className="px-3 py-2">
                 {p.missingVars.length === 0 ? (
-                  <span className="text-xs text-emerald-600">OK</span>
+                  <span className="text-xs text-emerald-700">OK</span>
                 ) : (
                   <span className="text-xs text-amber-700">
                     {p.missingVars.length} : {p.missingVars.slice(0, 3).join(', ')}

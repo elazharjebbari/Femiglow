@@ -15,6 +15,10 @@ async function ensureAuthOrSkip(page: import('@playwright/test').Page) {
 
 test.describe('admin legal wizard', () => {
   test('happy path : remplir 5 steps puis créer (slug unique)', async ({ page }) => {
+    // Dev mode (`next dev`) compile chaque route à la 1re requête : la POST
+    // /api/admin/legal + redirection vers /edit peut prendre 15-25 s.
+    // 90 s couvre worst case sans masquer un vrai stall.
+    test.setTimeout(90_000);
     await page.goto('/admin/legal/new');
     await ensureAuthOrSkip(page);
 
@@ -33,9 +37,14 @@ test.describe('admin legal wizard', () => {
     await page.getByRole('button', { name: /Suivant/ }).click();
 
     // Step 3 — Placements
-    // Coche au moins la zone obligatoire (footer-main = "Footer")
-    const footerCheckbox = page.locator('input[type="checkbox"]').first();
-    await footerCheckbox.check();
+    // Coche TOUTES les zones obligatoires (libellées ★ dans la matrice :
+    // par défaut `footer-main` + `checkout-consent`). Le seed peut en
+    // ajouter d'autres dans le futur — on les rafle toutes par leur ★.
+    const requiredCheckboxes = page.getByRole('checkbox', { name: /★/ });
+    const required = await requiredCheckboxes.count();
+    for (let i = 0; i < required; i += 1) {
+      await requiredCheckboxes.nth(i).check();
+    }
     await page.getByRole('button', { name: /Suivant/ }).click();
 
     // Step 4 — Variables : on n'a utilisé aucune var, donc OK
@@ -47,8 +56,11 @@ test.describe('admin legal wizard', () => {
     await expect(page.getByText(new RegExp(`/legal/${slug}`))).toBeVisible();
     await page.getByRole('button', { name: /Créer la page/ }).click();
 
-    // Redirection vers /edit
-    await page.waitForURL(new RegExp(`/admin/legal/${slug}/edit`), { timeout: 10_000 });
+    // Redirection vers /edit. `waitForURL` attend 'load' (potentiellement
+    // long en dev). On `toHaveURL` qui polle, plus robuste.
+    await expect(page).toHaveURL(new RegExp(`/admin/legal/${slug}/edit`), {
+      timeout: 30_000,
+    });
     await expect(page.getByRole('heading', { name: /Page de test E2E/i })).toBeVisible();
   });
 
@@ -71,9 +83,11 @@ test.describe('admin legal wizard', () => {
     await page.getByRole('button', { name: /Précédent/ }).click();
     await page.getByRole('button', { name: /Précédent/ }).click();
 
-    // Revérifie : slug + title préservés
-    await expect(page.getByDisplayValue('e2e-prev')).toBeVisible();
-    await expect(page.getByDisplayValue('Test Précédent')).toBeVisible();
+    // Revérifie : slug + title préservés. `getByDisplayValue` n'existe pas
+    // dans Playwright (c'est une API Testing Library) — on cible les inputs
+    // par leur placeholder / ordre et on assert `toHaveValue`.
+    await expect(page.getByPlaceholder('mentions-legales')).toHaveValue('e2e-prev');
+    await expect(page.locator('input[type="text"]').nth(1)).toHaveValue('Test Précédent');
   });
 
   test('slug invalide bloque le passage step 2', async ({ page }) => {
