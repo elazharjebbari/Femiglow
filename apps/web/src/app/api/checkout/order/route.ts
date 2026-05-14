@@ -36,6 +36,7 @@ import {
 import { createOrderInputSchema } from '@/lib/checkout/schemas/order';
 import { dispatchOrderWebhook } from '@/lib/webhooks/outbound/sources/from-order';
 import { sendTransactional } from '@/lib/mail/send';
+import { recordOrderPlaced } from '@/lib/user-events/bridges/server-actions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -220,6 +221,18 @@ export async function POST(req: NextRequest): Promise<Response> {
       if (leadEmail) {
         const itemsCount = input.items.reduce((s, it) => s + it.quantity, 0);
         const orderTotal = `${(totalCents / 100).toFixed(2)} ${currency}`;
+
+        // M5.2 — bridge vers user_event (unified). Fire-and-forget. Lien
+        // au lead via leadId pour audience filtering.
+        void recordOrderPlaced({
+          email: leadEmail,
+          orderId,
+          totalCents,
+          currency,
+          itemsCount,
+          leadId: input.leadId,
+        });
+
         void sendTransactional({
           template: 'order-confirmation',
           to: { email: leadEmail, name: leadSnapshot.firstName },

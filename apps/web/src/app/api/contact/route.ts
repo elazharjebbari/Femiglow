@@ -4,6 +4,7 @@ import { logger } from '@/lib/logging/logger';
 import { dispatchContactWebhook } from '@/lib/webhooks/outbound/sources/from-contact';
 import { sendTransactional } from '@/lib/mail/send';
 import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
+import { recordContactSubmitted } from '@/lib/user-events/bridges/server-actions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,13 @@ export async function POST(request: Request) {
 
   logger.info('contact.message.received', {
     type: data.type,
+    hasPhone: Boolean(data.phone?.trim()),
+  });
+
+  // M5.2 — bridge vers user_event (unified). Fire-and-forget.
+  void recordContactSubmitted({
+    email: data.email,
+    contactType: data.type,
     hasPhone: Boolean(data.phone?.trim()),
   });
 
