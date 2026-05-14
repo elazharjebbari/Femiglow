@@ -17,6 +17,8 @@ const FLASH_MESSAGES: Record<string, string> = {
   deleted: 'FAQ supprimée.',
   enabled: 'FAQ activée.',
   disabled: 'FAQ désactivée.',
+  seeded: 'FAQ par défaut importée (UPSERT depuis CSV).',
+  'seed-skipped': 'Import skippé — provider d’embedding OpenAI non configuré.',
 };
 
 export default async function FaqAdminPage({
@@ -53,12 +55,23 @@ export default async function FaqAdminPage({
             entrée. Sinon fallback RAG + LLM.
           </p>
         </div>
-        <a
-          href="/admin/chat/faq/new"
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          + Nouvelle FAQ
-        </a>
+        <div className="flex gap-2">
+          <form action="/api/admin/chat/faq/seed-defaults" method="POST">
+            <button
+              type="submit"
+              className="rounded-md border border-stone-300 px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-100"
+              title="Importe la FAQ par défaut depuis le CSV livré avec le projet. Idempotent (UPSERT par key+langue). Requiert OPENAI_API_KEY pour les embeddings."
+            >
+              ⚙ Seed par défaut
+            </button>
+          </form>
+          <a
+            href="/admin/chat/faq/new"
+            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            + Nouvelle FAQ
+          </a>
+        </div>
       </header>
 
       {flash ? (

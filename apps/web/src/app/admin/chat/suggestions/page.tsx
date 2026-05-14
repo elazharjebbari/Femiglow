@@ -18,6 +18,7 @@ const FLASH_MESSAGES: Record<string, string> = {
   enabled: 'Suggestion activée.',
   disabled: 'Suggestion désactivée.',
   published: 'Suggestion publiée.',
+  seeded: 'Pastilles par défaut importées (UPSERT depuis CSV + versioning).',
 };
 
 export default async function SuggestionsAdminPage({
@@ -55,12 +56,23 @@ export default async function SuggestionsAdminPage({
             pill, le chat renvoie la réponse scriptée associée dans sa langue.
           </p>
         </div>
-        <a
-          href="/admin/chat/suggestions/new"
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          + Nouvelle suggestion
-        </a>
+        <div className="flex gap-2">
+          <form action="/api/admin/chat/suggestions/seed-defaults" method="POST">
+            <button
+              type="submit"
+              className="rounded-md border border-stone-300 px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-100"
+              title="Importe les pastilles par défaut depuis le CSV livré avec le projet. Idempotent (UPSERT par key avec versioning)."
+            >
+              ⚙ Seed par défaut
+            </button>
+          </form>
+          <a
+            href="/admin/chat/suggestions/new"
+            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            + Nouvelle suggestion
+          </a>
+        </div>
       </header>
 
       {flash ? (
