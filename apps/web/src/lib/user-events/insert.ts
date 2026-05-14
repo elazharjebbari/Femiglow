@@ -125,7 +125,7 @@ export async function insertUserEvent(
       source: parsed.source,
       leadId,
     })
-    .returning({ id: userEvent.id, leadId: userEvent.leadId });
+    .returning();
 
   if (!row) throw new Error('insertUserEvent: INSERT returned no row');
 
