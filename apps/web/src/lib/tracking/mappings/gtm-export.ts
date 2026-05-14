@@ -94,13 +94,13 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
     triggers.push({
       triggerId,
       name: `FemiGlow: ${eventName}`,
-      type: 'customEvent',
+      type: 'CUSTOM_EVENT',
       customEventFilter: [
         {
-          type: 'equals',
+          type: 'EQUALS',
           parameter: [
-            { type: 'template', key: 'arg0', value: '{{_event}}' },
-            { type: 'template', key: 'arg1', value: eventName },
+            { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+            { type: 'TEMPLATE', key: 'arg1', value: eventName },
           ],
         },
       ],
@@ -112,22 +112,22 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
       const tagType = PROVIDER_TO_GTM_TYPE[kind];
       const parameter: GtmTag['parameter'] = [];
       if (kind === 'meta') {
-        parameter.push({ type: 'template', key: 'pixelId', value: '{{Meta Pixel ID}}' });
+        parameter.push({ type: 'TEMPLATE', key: 'pixelId', value: '{{Meta Pixel ID}}' });
         parameter.push({
-          type: 'template',
+          type: 'TEMPLATE',
           key: 'eventName',
           value: cell.isCustom ? 'trackCustom' : cell.mappedName,
         });
         if (cell.isCustom) {
-          parameter.push({ type: 'template', key: 'customEventName', value: cell.mappedName });
+          parameter.push({ type: 'TEMPLATE', key: 'customEventName', value: cell.mappedName });
         }
       } else if (kind === 'google_ga4') {
-        parameter.push({ type: 'template', key: 'tagId', value: '{{GA4 Measurement ID}}' });
-        parameter.push({ type: 'template', key: 'eventName', value: cell.mappedName });
+        parameter.push({ type: 'TEMPLATE', key: 'tagId', value: '{{GA4 Measurement ID}}' });
+        parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
       } else {
-        parameter.push({ type: 'template', key: 'eventName', value: cell.mappedName });
+        parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
       }
-      parameter.push({ type: 'template', key: 'eventID', value: '{{DLV - event_id}}' });
+      parameter.push({ type: 'TEMPLATE', key: 'eventID', value: '{{DLV - event_id}}' });
 
       tags.push({
         tagId: `tag_${kind}_${eventName}_${shortHash(`${kind}|${eventName}|${cell.mappedName}`)}`,
@@ -146,8 +146,8 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
       name: `DLV - ${name}`,
       type: 'v',
       parameter: [
-        { type: 'template', key: 'name', value: name },
-        { type: 'integer', key: 'dataLayerVersion', value: '2' },
+        { type: 'TEMPLATE', key: 'name', value: name },
+        { type: 'INTEGER', key: 'dataLayerVersion', value: '2' },
       ],
     }));
 
