@@ -1,17 +1,24 @@
 /**
  * Export GTM Container JSON — format compatible avec « Admin → Import Container » UI.
  *
- * Format reference (vérifié sur exportFormatVersion 2) :
+ * Format reference (vérifié sur exportFormatVersion 2 + cohérent avec
+ * src/lib/tracking/gtm/builders.ts L94-107) :
  * - tagId / triggerId / variableId : strings encodées en BASE-10 integers
  *   (« Invalid tag_id (base 10 number expected) » si on met `tag_xxx`).
  *   Auto-incrément 1..N par tableau, espace de noms disjoint entre tag /
  *   trigger / variable.
- * - parameter.type : lowercase `template | boolean | integer | list | map`.
+ * - parameter.type : **UPPERCASE** `TEMPLATE | BOOLEAN | INTEGER | LIST | MAP |
+ *   TAG_REFERENCE | TRIGGER_REFERENCE`.
  * - trigger.type : lowercase camelCase `customEvent | pageview | click | …`.
- * - customEventFilter[].type : lowercase `equals | contains | matchRegex | …`.
+ *   (Trigger types restent lowercase ; ce sont des identifiants stables.)
+ * - customEventFilter[].type : **UPPERCASE** `EQUALS | CONTAINS | MATCH_REGEX | …`.
  * - tag.type : lowercase identifiants stables `gaawc | gaawe | html | cvt_*`.
  * - variable.type : lowercase `v | c | k | u | gas | …`.
- * - builtInVariable.type : lowercase camelCase `pageUrl | clickElement | …`.
+ *
+ * Les enums lowercase sur parameter/filter (`template`, `equals`, `integer`)
+ * déclenchent « Error deserializing enum type [Type]. Unrecognized value
+ * [...] » à l'import GTM. L'API REST tagmanager.googleapis.com les accepte —
+ * l'UI d'import est plus stricte.
  *
  * Custom Templates (`cvt_meta_pixel`, `cvt_tiktok_pixel`, etc.) doivent être
  * installés AU PRÉALABLE depuis la Template Gallery côté workspace GTM.
@@ -113,10 +120,10 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
       type: 'customEvent',
       customEventFilter: [
         {
-          type: 'equals',
+          type: 'EQUALS',
           parameter: [
-            { type: 'template', key: 'arg0', value: '{{_event}}' },
-            { type: 'template', key: 'arg1', value: eventName },
+            { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+            { type: 'TEMPLATE', key: 'arg1', value: eventName },
           ],
         },
       ],
@@ -128,22 +135,22 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
       const tagType = PROVIDER_TO_GTM_TYPE[kind];
       const parameter: GtmTag['parameter'] = [];
       if (kind === 'meta') {
-        parameter.push({ type: 'template', key: 'pixelId', value: '{{Meta Pixel ID}}' });
+        parameter.push({ type: 'TEMPLATE', key: 'pixelId', value: '{{Meta Pixel ID}}' });
         parameter.push({
-          type: 'template',
+          type: 'TEMPLATE',
           key: 'eventName',
           value: cell.isCustom ? 'trackCustom' : cell.mappedName,
         });
         if (cell.isCustom) {
-          parameter.push({ type: 'template', key: 'customEventName', value: cell.mappedName });
+          parameter.push({ type: 'TEMPLATE', key: 'customEventName', value: cell.mappedName });
         }
       } else if (kind === 'google_ga4') {
-        parameter.push({ type: 'template', key: 'measurementId', value: '{{GA4 Measurement ID}}' });
-        parameter.push({ type: 'template', key: 'eventName', value: cell.mappedName });
+        parameter.push({ type: 'TEMPLATE', key: 'measurementId', value: '{{GA4 Measurement ID}}' });
+        parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
       } else {
-        parameter.push({ type: 'template', key: 'eventName', value: cell.mappedName });
+        parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
       }
-      parameter.push({ type: 'template', key: 'eventID', value: '{{DLV - event_id}}' });
+      parameter.push({ type: 'TEMPLATE', key: 'eventID', value: '{{DLV - event_id}}' });
 
       tags.push({
         tagId: String(nextTagId++),
@@ -162,8 +169,8 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
       name: `DLV - ${name}`,
       type: 'v',
       parameter: [
-        { type: 'template', key: 'name', value: name },
-        { type: 'integer', key: 'dataLayerVersion', value: '2' },
+        { type: 'TEMPLATE', key: 'name', value: name },
+        { type: 'INTEGER', key: 'dataLayerVersion', value: '2' },
       ],
     }));
 
