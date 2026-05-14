@@ -61,8 +61,12 @@ git fetch origin master 2>&1 | tail -3
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse origin/master)
 if [[ "$LOCAL" == "$REMOTE" ]]; then
-  log "Already at $REMOTE. No-op (unless --no-build for forced restart)."
-  if (( NO_BUILD == 0 )); then
+  log "Already at $REMOTE."
+  if (( DRY_RUN == 1 )); then
+    log "(dry-run) continuing to exercise the rest of the pipeline."
+  elif (( NO_BUILD == 1 )); then
+    log "Continuing for forced restart."
+  else
     log "Nothing to deploy. Exit."
     exit 0
   fi
