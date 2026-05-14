@@ -13,6 +13,7 @@
 import type { Rule, RuleKind } from '@/lib/mail/audiences/rules-types';
 import { ruleLabel } from './rule-defaults';
 import { ProductAutocomplete } from './ProductAutocomplete';
+import { TagAutocomplete } from './TagAutocomplete';
 
 export type RuleEditorProps = {
   rule: Rule;
@@ -271,12 +272,10 @@ function TagEditor({
   onChange: (r: Rule) => void;
 }) {
   return (
-    <input
-      type="text"
+    <TagAutocomplete
       value={rule.tag}
-      onChange={(e) => onChange({ ...rule, tag: e.target.value })}
+      onChange={(tag) => onChange({ ...rule, tag })}
       placeholder="vip"
-      className="w-40 rounded border border-stone-300 px-2 py-1 text-sm"
     />
   );
 }
