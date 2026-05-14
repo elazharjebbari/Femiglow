@@ -26,6 +26,7 @@ export const RBAC_RESOURCES = [
   'media',
   'users',
   'app-config',
+  'legal',
 ] as const satisfies readonly string[];
 
 export const RBAC_ACTIONS = [
@@ -83,6 +84,7 @@ const rbacResourceMatrix = z
     media: z.array(rbacActionEnum).default([]),
     users: z.array(rbacActionEnum).default([]),
     'app-config': z.array(rbacActionEnum).default([]),
+    legal: z.array(rbacActionEnum).default([]),
   })
   .strict();
 

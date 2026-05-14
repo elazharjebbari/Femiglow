@@ -1,6 +1,11 @@
 {
-  "generatedAt": "2026-05-13T10:43:19.125Z",
+  "generatedAt": "2026-05-13T15:42:56.655Z",
   "components": [
+    {
+      "name": "MobileFocusGuard",
+      "path": "src/components/a11y/MobileFocusGuard.tsx",
+      "category": "card"
+    },
     {
       "name": "AdminShell",
       "path": "src/components/admin/AdminShell.tsx",
@@ -2339,6 +2344,12 @@
       "title": "La maison \\u2014 Rabat",
       "category": "landing",
       "filePath": "src/app/(marketing)/maison/page.tsx"
+    },
+    {
+      "route": "/mentions-legales",
+      "title": "Mentions légales — FemiGlow",
+      "category": "landing",
+      "filePath": "src/app/(marketing)/mentions-legales/page.tsx"
     },
     {
       "route": "/merci",

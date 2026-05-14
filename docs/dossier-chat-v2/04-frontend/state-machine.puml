@@ -1,0 +1,103 @@
+@startuml state-machine
+!theme materia
+title Chat — Machine d'états (FSM)
+
+skinparam state {
+  BackgroundColor #fff
+  BorderColor #6B46C1
+  FontColor #1F2937
+  AttributeFontColor #6B46C1
+}
+
+[*] --> Idle : init store rehydrate
+
+state Idle {
+  [*] --> Closed
+  Closed : panel hidden
+  Closed : badge visible (unread?)
+}
+
+state Open {
+  [*] --> Greeting
+
+  state Greeting {
+    Greeting : greeting affiché
+    Greeting : 3 pills suggestion visibles
+    Greeting : composer focusable
+  }
+
+  state UserTyping {
+    UserTyping : textarea active
+    UserTyping : send enabled si len>0
+  }
+
+  state Streaming {
+    Streaming : SSE ouverte
+    Streaming : assistant placeholder + TypingDots
+    Streaming : delta append en temps réel
+    Streaming : Composer disabled (send)
+  }
+
+  state LocalStreaming {
+    LocalStreaming : faux stream canned local
+    LocalStreaming : cadence wpm=180 ± jitter
+    LocalStreaming : pas d'appel LLM
+  }
+
+  state LeadFormShown {
+    LeadFormShown : form inline visible
+    LeadFormShown : fields (name, phone, city)
+    LeadFormShown : submit → POST /api/chat/lead
+  }
+
+  state ErrorRecovery {
+    ErrorRecovery : message fallback affiché
+    ErrorRecovery : retry button OU lead form
+    ErrorRecovery : Sentry already notified
+  }
+
+  state Resolved {
+    Resolved : conversation marquée resolved
+    Resolved : feedback thumbs visible
+    Resolved : possible new question
+  }
+}
+
+Closed --> Greeting : openChat()
+Greeting --> UserTyping : focus composer
+Greeting --> LocalStreaming : pick suggestion
+UserTyping --> Streaming : send message
+Streaming --> Resolved : event:done
+Streaming --> ErrorRecovery : event:error
+Streaming --> LeadFormShown : event:lead_form_offered
+LocalStreaming --> Resolved : end of text
+LocalStreaming --> UserTyping : user starts typing
+Resolved --> UserTyping : new input
+ErrorRecovery --> UserTyping : retry click
+ErrorRecovery --> LeadFormShown : "be called back"
+LeadFormShown --> Resolved : submit success
+LeadFormShown --> UserTyping : cancel/back
+
+Open --> Closed : closeChat()
+Closed --> [*] : page leave (session persists)
+
+state ServiceLevel <<choice>>
+Streaming --> ServiceLevel : sl change
+ServiceLevel --> ErrorRecovery : sl=3 mid-stream
+ServiceLevel --> Resolved : sl back to 0/1
+
+note bottom of LocalStreaming
+  Continuité après canned:
+  Si user envoie msg suivant,
+  orchestrator ajoute note
+  système "tours canned sont
+  tes réponses, poursuis le ton"
+end note
+
+note right of ErrorRecovery
+  Provider down OU budget OU sl=3:
+  Tous tombent ici.
+  UI identique = pas de leak métier.
+end note
+
+@enduml

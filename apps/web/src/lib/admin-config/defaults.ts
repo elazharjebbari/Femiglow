@@ -24,15 +24,16 @@ export const navDefault: NavConfig = {
       position: 2,
     },
     { key: 'media', label: 'Médias', href: '/admin/media', icon: 'image', position: 3 },
-    { key: 'tracking', label: 'Tracking', href: '/admin/tracking', icon: 'activity', position: 4 },
-    { key: 'webhooks', label: 'Webhooks', href: '/admin/webhooks', icon: 'webhook', position: 5 },
-    { key: 'audit', label: 'Audit', href: '/admin/audit', icon: 'list', position: 6 },
+    { key: 'legal', label: 'Pages légales', href: '/admin/legal', icon: 'file', position: 4 },
+    { key: 'tracking', label: 'Tracking', href: '/admin/tracking', icon: 'activity', position: 5 },
+    { key: 'webhooks', label: 'Webhooks', href: '/admin/webhooks', icon: 'webhook', position: 6 },
+    { key: 'audit', label: 'Audit', href: '/admin/audit', icon: 'list', position: 7 },
     {
       key: 'settings',
       label: 'Réglages',
       href: '/admin/settings',
       icon: 'gear',
-      position: 7,
+      position: 8,
       requiresRole: 'admin',
     },
   ],
@@ -57,6 +58,7 @@ export const rbacDefault: RbacConfig = {
       media: ['read', 'write', 'publish', 'delete'],
       users: ['read', 'write', 'publish', 'delete'],
       'app-config': ['read', 'write', 'publish', 'delete'],
+      legal: ['read', 'write', 'publish', 'delete'],
     },
     admin: {
       components: ['read', 'write', 'publish'],
@@ -65,6 +67,7 @@ export const rbacDefault: RbacConfig = {
       media: ['read', 'write', 'publish'],
       users: ['read'],
       'app-config': ['read', 'write'],
+      legal: ['read', 'write', 'publish'],
     },
     editor: {
       components: ['read', 'write'],
@@ -73,6 +76,7 @@ export const rbacDefault: RbacConfig = {
       media: ['read', 'write'],
       users: [],
       'app-config': ['read'],
+      legal: ['read', 'write'],
     },
     viewer: {
       components: ['read'],
@@ -81,6 +85,7 @@ export const rbacDefault: RbacConfig = {
       media: ['read'],
       users: [],
       'app-config': ['read'],
+      legal: ['read'],
     },
   },
 };

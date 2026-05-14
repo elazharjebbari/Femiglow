@@ -40,6 +40,12 @@ export function ChatPanel({ page }: ChatPanelProps) {
 
   useChatSession(page);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as unknown as Record<string, unknown>).__chatStore = useChatStore;
+    }
+  }, []);
+
   // Esc closes the panel.
   useEffect(() => {
     if (!isOpen) return;

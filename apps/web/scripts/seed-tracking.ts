@@ -1,3 +1,4 @@
+import './_load-env.mjs';
 import path from 'node:path';
 import { upsertTrackingPage } from '@/lib/db/queries/tracking/pages';
 import {

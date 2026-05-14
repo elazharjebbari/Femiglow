@@ -1,0 +1,34 @@
+id,date_start,date_end,milestone,wave,lot,owner,deliverable,status,gate_blocking
+M01,2026-05-13,2026-05-15,Setup repo branches + CI,V5,V5.0,dev_lead,Branches feature/chat-v2 + protected,planned,false
+M02,2026-05-13,2026-05-16,Migration 0017-0019 staging,V5,V5.1,dev_lead,3 first migrations deployed,planned,false
+M03,2026-05-16,2026-05-20,Migrations 0020-0027 staging,V5,V5.1,dev_lead,All 11 migrations + indexes,planned,true
+M04,2026-05-15,2026-05-22,Seeds CSV import,V5,V5.1,content_yasmine,Seeds intents+pairs+faq imported,planned,false
+M05,2026-05-16,2026-05-22,Intent detection cascade,V5,V5.2,dev_intermediate,detectIntent() with tests,planned,true
+M06,2026-05-20,2026-05-26,Retrieval router + 3 tools,V5,V5.3,dev_lead,retrieval-router.ts + 3 tools,planned,true
+M07,2026-05-22,2026-05-28,FAQ gateway operational,V5,V5.3,dev_intermediate,tryFaqGateway() integrated,planned,false
+M08,2026-05-22,2026-05-28,Canned engine + ephemeral note,V5,V5.4,dev_lead,canned-engine.ts complete,planned,true
+M09,2026-05-26,2026-05-30,Orchestrator SSE 7 events,V5,V5.5,dev_lead,Full pipeline,planned,true
+M10,2026-05-28,2026-06-04,Frontend panel + Zustand store,V5,V5.6,dev_intermediate,All components shipped,planned,true
+M11,2026-05-28,2026-06-04,useLocalStream hook,V5,V5.6,dev_intermediate,Hook + tests + Storybook,planned,false
+M12,2026-05-30,2026-06-06,A11y audit pass WCAG AA,V5,V5.6,designer,axe-core green + manual NVDA test,planned,true
+M13,2026-05-30,2026-06-06,Admin dashboard + CRUD,V5,V5.7,dev_lead,12 pages admin,planned,true
+M14,2026-06-02,2026-06-08,Tests Jest + Playwright,V5,V5.8,dev_intermediate,Coverage 80%+,planned,true
+M15,2026-06-04,2026-06-10,Test ULTIMATE pipeline,V5,V5.8,dev_lead,Full E2E happy path + failures,planned,true
+M16,2026-06-06,2026-06-09,Sentry alerts + dashboards,V5,V5.8,dev_lead,All alerts configured,planned,false
+M17,2026-06-09,2026-06-10,GO/NOGO V5 production,V5,V5.X,po_selma,Gate review + decision,planned,true
+M18,2026-06-10,2026-06-10,Ship V5 to production,V5,V5.X,dev_lead,Deploy main branch,planned,false
+M19,2026-06-10,2026-06-24,Mesure NS 14j post-ship,V5,V5.X,po_selma,Dashboard validates baseline,planned,false
+M20,2026-06-10,2026-06-17,A/B engine cookie-based,V6,V6.1,dev_intermediate,Variant assigner + events,planned,false
+M21,2026-06-17,2026-07-01,Exp1+Exp5 launched,V6,V6.1,dev_intermediate,Two experiments live,planned,false
+M22,2026-06-10,2026-07-01,Enrichissement canned/FAQ +50,V6,V6.2,content_yasmine,Total ~80 entries trilingual,planned,false
+M23,2026-06-24,2026-07-08,Lead form intelligent,V6,V6.3,dev_intermediate,Pre-fill + smart timing,planned,false
+M24,2026-06-24,2026-07-15,Mode anonyme RGPD,V6,V6.4,dev_lead,Toggle + spec docs,planned,false
+M25,2026-07-01,2026-07-15,Dashboards + alerts complets,V6,V6.5,dev_lead,Business + Editorial + Care,planned,false
+M26,2026-07-08,2026-07-15,Perf tuning first-token < 600ms,V6,V6.6,dev_lead,Streaming optim,planned,false
+M27,2026-07-15,2026-07-15,GO/NOGO V6,V6,V6.X,po_selma,Gate decision,planned,true
+M28,2026-07-15,2026-07-29,Order status tool integration,V7,V7.1,dev_lead,get_order_status live,planned,false
+M29,2026-07-29,2026-08-12,Promo engine refactor,V7,V7.2,dev_lead,check_promo live,planned,false
+M30,2026-08-12,2026-09-02,B2B advanced workflow,V7,V7.3,po_selma,B2B funnel productive,planned,false
+M31,2026-09-02,2026-09-09,Dark mode,V7,V7.4,designer,Tokens + toggle,planned,false
+M32,2026-09-09,2026-09-15,GrowthBook migration,V7,V7.5,dev_lead,Self-hosted GB up,planned,false
+M33,2026-09-15,2026-09-15,Ship V7 final,V7,V7.X,dev_lead,All waves complete,planned,false

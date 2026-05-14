@@ -1,0 +1,51 @@
+module,test_file,description,scope,priority,assignee
+api/chat/session,session-create.integration.test.ts,POST /api/chat/session returns snapshot + DB row created,api+db,P0,dev_lead
+api/chat/session,session-rehydrate.integration.test.ts,GET /api/chat/session/[id] rehydrates state from DB,api+db,P0,dev_lead
+api/chat/session,session-not-found.integration.test.ts,GET /api/chat/session/[invalid] returns 404,api+db,P0,dev_lead
+api/chat/message,message-sse-streaming.integration.test.ts,POST /api/chat/message streams 7 SSE events,api+db+sse,P0,dev_lead
+api/chat/message,message-canned-response.integration.test.ts,Canned response served when intent matches,api+db+canned,P0,dev_lead
+api/chat/message,message-llm-fallback.integration.test.ts,LLM fallback when no canned + RAG context,api+db+llm,P0,dev_lead
+api/chat/message,message-rag-context.integration.test.ts,RAG retrieval injects sources,api+db+rag,P0,dev_lead
+api/chat/message,message-tool-call.integration.test.ts,Tool get_product invoked + result in stream,api+db+tools,P0,dev_lead
+api/chat/message,message-persisted.integration.test.ts,User + assistant messages persisted after stream,api+db,P0,dev_lead
+api/chat/canned-pair,canned-pair-served.integration.test.ts,POST /api/chat/canned-pair/[key] returns scripted reply,api+db,P0,dev_intermediate
+api/chat/canned-pair,canned-pair-not-found.integration.test.ts,Unknown key returns 404,api+db,P0,dev_intermediate
+api/chat/canned-pair,canned-pair-events.integration.test.ts,Canned response logs chat_events row,api+db,P0,dev_intermediate
+api/chat/lead,lead-submitted.integration.test.ts,POST /api/chat/lead persists + triggers webhook,api+db+webhook,P0,dev_lead
+api/chat/lead,lead-hmac-signed.integration.test.ts,Webhook payload signed with HMAC SHA-256,api+webhook,P0,dev_lead
+api/chat/lead,lead-webhook-retry.integration.test.ts,Webhook retries 3x with exponential backoff,api+webhook,P0,dev_lead
+api/chat/lead,lead-rate-limit.integration.test.ts,4th lead from same phone returns 429,api+db,P0,dev_lead
+api/chat/lead,lead-zod-validation.integration.test.ts,Invalid payload returns 400 with localized error,api,P0,dev_lead
+api/chat/feedback,feedback-vote.integration.test.ts,POST /api/chat/feedback records vote idempotent,api+db,P0,dev_intermediate
+api/chat/feedback,feedback-duplicate.integration.test.ts,Duplicate vote replaced not duplicated,api+db,P0,dev_intermediate
+api/chat/health,health-nominal.integration.test.ts,GET /api/chat/health returns service level 1 when all up,api+db,P1,dev_lead
+api/chat/health,health-degraded.integration.test.ts,Service level reflects provider failures,api+db,P1,dev_lead
+api/admin/intents,intent-crud.integration.test.ts,Admin CRUD intents + auth check,api+db+admin,P0,dev_lead
+api/admin/intents,intent-add-example.integration.test.ts,Add example triggers recompute eligibility,api+db,P0,dev_lead
+api/admin/suggestions,suggestion-publish.integration.test.ts,Workflow draft → review → published,api+db+admin,P0,dev_lead
+api/admin/faq,faq-crud.integration.test.ts,Admin CRUD FAQ + per-entry threshold,api+db+admin,P0,dev_intermediate
+api/admin/tools,tools-sandbox-execute.integration.test.ts,Sandbox executes tool with input + audit log,api+db+admin,P0,dev_lead
+api/admin/kb,kb-sync-trigger.integration.test.ts,Sync trigger creates kb-sync job + dry-run mode,api+db+admin,P1,dev_intermediate
+api/admin/leads,leads-list-filter.integration.test.ts,Filter by status + URL persistence,api+db+admin,P1,dev_lead
+api/admin/leads,leads-bulk-status-change.integration.test.ts,Bulk status change updates multiple rows,api+db+admin,P1,dev_lead
+api/admin/rgpd,rgpd-export.integration.test.ts,Export collects all user data per phone,api+db,P0,dev_lead
+api/admin/rgpd,rgpd-forget.integration.test.ts,Forget anonymizes data + audit logged,api+db,P0,dev_lead
+cron/kb-sync,kb-sync.integration.test.ts,Cron sync KB sources + purge orphelins,cron+db,P0,dev_intermediate
+cron/intent-recompute,intent-recompute.integration.test.ts,Cron recompute centroïdes from examples,cron+db,P0,dev_intermediate
+cron/budget-watch,budget-watch.integration.test.ts,Cron alerts 80%/100% + service level switch,cron+db,P0,dev_lead
+cron/gdpr-purge,gdpr-purge.integration.test.ts,Cron purges expired data per retention,cron+db,P0,dev_lead
+auth/iron-session,admin-login.integration.test.ts,Login creates session cookie + returns user,api+admin,P0,dev_lead
+auth/iron-session,admin-protected-route.integration.test.ts,Unauthorized request blocked + 401,api+admin,P0,dev_lead
+auth/iron-session,admin-logout.integration.test.ts,Logout clears session,api+admin,P0,dev_lead
+db/migrations,migration-up-down.integration.test.ts,Each migration up+down chained idempotent,db,P0,dev_lead
+db/migrations,migration-pgvector.integration.test.ts,HNSW index created and queries embedded,db,P0,dev_lead
+services/orchestrator,orchestrator-cascade.integration.test.ts,Full pipeline regex → embedding → LLM,services+db,P0,dev_lead
+services/orchestrator,orchestrator-faq-gateway.integration.test.ts,FAQ gateway hits before LLM,services+db,P0,dev_lead
+services/orchestrator,orchestrator-canned-then-llm.integration.test.ts,Canned served then LLM continues with note,services+db,P0,dev_lead
+services/canned,canned-tx-rollback.integration.test.ts,Failure mid-transaction rolls back both messages,services+db,P0,dev_lead
+services/providers,provider-failover.integration.test.ts,OpenAI fail → Anthropic auto failover,services,P0,dev_lead
+services/providers,provider-breaker.integration.test.ts,3 fails opens breaker for 30s,services,P0,dev_lead
+services/webhooks,webhook-end-to-end.integration.test.ts,Lead created → webhook sent → n8n mocked receives,services+webhook,P0,dev_lead
+services/budget,budget-tracker.integration.test.ts,Cost accumulates correctly per provider,services+db,P0,dev_lead
+services/rgpd,rgpd-retention-cron.integration.test.ts,Cron deletes expired rows + audit log,cron+db,P0,dev_lead
+events/analytics,event-emission.integration.test.ts,All 47 events fire correctly with required props,services+db,P0,dev_intermediate

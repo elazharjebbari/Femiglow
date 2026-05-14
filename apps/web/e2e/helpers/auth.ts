@@ -62,10 +62,14 @@ export async function loginAdmin(page: Page): Promise<void> {
   await page.getByLabel(/email/i).fill(ADMIN_EMAIL);
   await page.getByLabel(/mot de passe/i).fill(ADMIN_PWD);
   await page.getByRole('button', { name: /se connecter/i }).click();
+  // 30 s pour tolérer le compile-on-demand de Next dev (la 1re requête
+  // /admin POST puis redirection peut prendre 10-20 s à froid). En prod
+  // build ou CI warmé, la nav est < 1 s — ce plafond n'est qu'un safety
+  // net.
   await page.waitForURL(
     (url) =>
       /\/admin(\/|$)/.test(url.pathname) &&
       !url.pathname.startsWith('/admin/login'),
-    { timeout: 15_000 },
+    { timeout: 30_000 },
   );
 }

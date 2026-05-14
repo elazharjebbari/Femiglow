@@ -1,0 +1,18 @@
+intent,family,definition_fr,exemple_fr,exemple_ar,exemple_ar_ma,triggers_lead_form,priority_for_routing,downstream_tools,notes
+greeting,conversation,Salutation d'ouverture sans intention forte,Bonjour ça va ?,مرحبا,Salam labas,no,low,none,Ne déclenche aucun routing particulier
+pricing,commercial,Question explicite sur le prix d'un produit,Quel est le prix du pack ?,ما هو السعر ؟,Chhal taman dyal pack ?,no,high,"get_product, search_faq",Tool obligatoire pour éviter hallucination
+objection-price,commercial,L'utilisateur trouve le prix trop élevé,C'est trop cher,غالي بزاف,Ghali bzaf,no,high,"get_product, search_faq",Réponse doit argumenter valeur + témoignages
+objection-doubt,commercial,Doute sur l'efficacité ou la véracité,Ça marche vraiment ?,واش كيخدم بصح ؟,Wach kayt'9addem b'sah ?,no,high,search_faq,Activer social proof + composition transparente
+purchase-intent,commercial,Volonté explicite d'acheter,Je veux commander,بغيت نشري,Bghit nshri,YES (priority 1bis),critical,"get_product, get_delivery_info","CHA-225 : déclenche lead form dès tour 1"
+order-status,support,Demande état d'une commande passée,Où est ma commande #1234 ?,فين كاينة طلبيتي ؟,Fin commande dyali ?,no,high,get_order_status,Tool obligatoire + auth email
+shipping,commercial,Question sur livraison / délais,Vous livrez à Tanger en combien de temps ?,تخدمو طنجة ؟,Tdkhel l-Tanja ?,no,high,get_delivery_info,Tool catalogue villes Sendit
+b2b,commercial,Question revente ou partenariat pro,Je suis pharmacie je voudrais commercialiser,أنا صيدلية بغيت نبيع المنتج,Ana saydaliya bghit nbi3 had l-produit,YES (priority 2),high,none,Déclenche lead form B2B spécifique
+callback-request,support,Demande explicite d'être rappelé,Pouvez-vous m'appeler ?,ممكن تعيطو ليا ؟,Mumkin t3aytu liya ?,YES (priority 1),critical,none,Lead form immédiat
+social-proof,commercial,Demande de témoignages / résultats,Vous avez des avis ?,واش عندكم تجارب ؟,Wach 3andkom tjarib ?,no,medium,search_faq,RAG ciblé sur témoignages
+comparison,commercial,Comparaison avec autre produit,C'est mieux que X ?,واش حسن من X ؟,Wach hsen mn X ?,no,medium,"get_product, search_faq",Réponse cadrée par charter (pas de bashing)
+routine,produit,Question d'usage / routine,Comment l'utiliser ?,كيفاش نستعمل ؟,Kifach nsta3ml ?,no,medium,search_faq,RAG fiche routine
+ingredient,produit,Question composition / ingrédients,Qu'est-ce qu'il y a dedans ?,اشنو فيه ؟,Achno fih ?,no,medium,"get_product, search_faq",Tool + RAG combinés
+support,support,Problème post-achat (allergie réaction),J'ai une réaction sur la peau,عندي حساسية,3andi hassasiya,YES (priority 3+),high,none,Escalade Care prioritaire
+misc,conversation,Message hors taxonomie / catch-all,Merci beaucoup,شكرا,Choukran,no,low,none,Pas d'action particulière
+frustration,conversation,Mécontentement explicite,Vous me répondez pas ça m'énerve,ما كتجاوبوش,Ma katjawbouchi,YES (priority 4),high,none,Désescalade + escalade Care
+after-hours,conversation,Message en dehors des horaires Care,(détection heure),(détection heure),(détection heure),YES (priority 7),medium,none,Lead form avec rappel J+1

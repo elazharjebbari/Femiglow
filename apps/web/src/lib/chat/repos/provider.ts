@@ -35,6 +35,14 @@ export const providerRepo = {
       .orderBy(asc(chatProviderConfig.priority));
   },
 
+  async listAll(): Promise<ChatProviderConfigRow[]> {
+    const db = requireChatDb();
+    return db
+      .select()
+      .from(chatProviderConfig)
+      .orderBy(asc(chatProviderConfig.role), asc(chatProviderConfig.priority));
+  },
+
   async getById(id: string): Promise<ChatProviderConfigRow | null> {
     const db = requireChatDb();
     const rows = await db

@@ -10,6 +10,7 @@
  * Cf. src/lib/rituals/seed-data.ts — distribution éditoriale (Kolenda).
  */
 /* eslint-disable no-console */
+import './_load-env.mjs';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { eq } from 'drizzle-orm';
 import {

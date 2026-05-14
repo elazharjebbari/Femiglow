@@ -3,8 +3,9 @@
  */
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ChatAdminNav } from '@/components/admin/chat/ChatAdminNav';
-import { adminQueries, type KpiWindow } from '@/lib/chat/admin/queries';
+import { adminQueries, windowStart, type KpiWindow } from '@/lib/chat/admin/queries';
 import { isChatEnabled } from '@/lib/chat/feature-flag';
+import { summarizeWeeklyLeads } from '@/lib/chat/services/weekly-digest';
 import { requireAdmin } from '@/lib/auth/require-admin';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,16 @@ export default async function ChatKpisPage({
   const w = (WINDOWS.find((x) => x === searchParams?.w) ?? '30d') as KpiWindow;
 
   const kpis = enabled ? await adminQueries.overviewKpis(w).catch(() => null) : null;
+
+  // CHAT-067 — KPI Care : médiane / p90 du temps de prise en charge des
+  // leads (handledAt - createdAt). Branchée sur la même fenêtre que les
+  // autres KPI ; cap à 500 leads pour rester sous le seuil RSC.
+  const leadHandling = enabled
+    ? await adminQueries
+        .listChatLeads({ fromDate: windowStart(w), limit: 500 })
+        .then((rows) => summarizeWeeklyLeads(rows))
+        .catch(() => null)
+    : null;
 
   const conversionRate =
     kpis && kpis.sessions > 0 ? (kpis.conversions / kpis.sessions) * 100 : 0;
@@ -61,6 +72,28 @@ export default async function ChatKpisPage({
             <Card label="Latence P95" value={kpis.latencyP95 != null ? `${Math.round(kpis.latencyP95)} ms` : '—'} />
             <Card label="Sessions" value={`${kpis.sessions}`} />
           </section>
+          {leadHandling && leadHandling.total > 0 && (
+            <section
+              className="mb-6 grid gap-3 sm:grid-cols-3"
+              aria-label="KPIs Care — prise en charge leads"
+            >
+              <Card
+                label="Leads pris en charge"
+                value={`${leadHandling.handledCount} / ${leadHandling.total}`}
+                sub={`${leadHandling.hotPending} hot pending`}
+              />
+              <Card
+                label="Médiane prise en charge"
+                value={formatMinutes(leadHandling.medianHandlingMinutes)}
+                sub="(createdAt → handledAt)"
+              />
+              <Card
+                label="p90 prise en charge"
+                value={formatMinutes(leadHandling.p90HandlingMinutes)}
+                sub="(pire-cas 1-sur-10)"
+              />
+            </section>
+          )}
         </>
       ) : (
         <p className="text-sm text-stone-500">
@@ -69,6 +102,14 @@ export default async function ChatKpisPage({
       )}
     </AdminShell>
   );
+}
+
+function formatMinutes(min: number | null): string {
+  if (min == null) return '—';
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
 }
 
 function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {

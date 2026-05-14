@@ -1,0 +1,82 @@
+table,column,type,nullable,default,constraint,description,sensitive,added_in
+chat_intent_centroid,id,uuid,no,gen_random_uuid(),PK,Identifiant unique,no,v2
+chat_intent_centroid,intent,text,no,,UNIQUE,Nom de l'intent (ex. pricing),no,v2
+chat_intent_centroid,language,text,no,'all',CHECK in (all|fr|ar|ar-MA),Langue cible du centroïde,no,v2
+chat_intent_centroid,vector,vector(1536),no,,pgvector,Vecteur agrégé moyen des exemples,no,v2
+chat_intent_centroid,sample_count,int,no,0,>=0,Nombre d'exemples ayant constitué ce centroïde,no,v2
+chat_intent_centroid,updated_at,timestamptz,no,now(),,Dernière recompute,no,v2
+chat_intent_example,id,uuid,no,gen_random_uuid(),PK,Identifiant,no,v2
+chat_intent_example,intent,text,no,,FK soft,Intent associé,no,v2
+chat_intent_example,language,text,no,,CHECK in (fr|ar|ar-MA),Langue de l'exemple,no,v2
+chat_intent_example,text,text,no,,LENGTH 5..500,Phrase représentative,no,v2
+chat_intent_example,added_by,text,no,,FK admin_users,Auteur,no,v2
+chat_intent_example,added_at,timestamptz,no,now(),,Date d'ajout,no,v2
+chat_intent_example,deleted_at,timestamptz,yes,,,Soft delete pour purge dataset,no,v2
+chat_canned_pair,id,uuid,no,gen_random_uuid(),PK,Identifiant,no,v2
+chat_canned_pair,key,text,no,,UNIQUE,Clé technique stable (ex. price-kit),no,v2
+chat_canned_pair,page_pattern,text,no,'*',,"Pattern URL (/, /kit, /kit/*)",no,v2
+chat_canned_pair,audience,text,no,'all',CHECK in (all|b2c|b2b),Audience cible,no,v2
+chat_canned_pair,order,int,no,0,,Ordre d'affichage parmi les pills de la page,no,v2
+chat_canned_pair,enabled,bool,no,true,,Activation,no,v2
+chat_canned_pair,label_fr,text,no,,LENGTH 5..80,Label visible pill FR,no,v2
+chat_canned_pair,label_ar,text,no,,LENGTH 5..80,Label visible pill AR,no,v2
+chat_canned_pair,label_ar_ma,text,no,,LENGTH 5..80,Label visible pill AR-MA,no,v2
+chat_canned_pair,scripted_reply_fr,text,no,,LENGTH 20..600,Réponse pré-écrite FR,no,v2
+chat_canned_pair,scripted_reply_ar,text,no,,LENGTH 20..600,Réponse pré-écrite AR,no,v2
+chat_canned_pair,scripted_reply_ar_ma,text,no,,LENGTH 20..600,Réponse pré-écrite AR-MA,no,v2
+chat_canned_pair,cta_label,text,yes,,LENGTH 3..60,Label CTA inline optionnel,no,v2
+chat_canned_pair,cta_url,text,yes,,,URL CTA inline optionnelle,no,v2
+chat_canned_pair,allow_followup_llm,bool,no,true,,LLM autorisé à répondre librement au tour suivant,no,v2
+chat_canned_pair,status,text,no,'draft',CHECK in (draft|review|published|archived),Workflow éditorial,no,v2
+chat_canned_pair,current_version_id,uuid,yes,,FK chat_canned_pair_version,Version publiée actuelle,no,v2
+chat_canned_pair,created_at,timestamptz,no,now(),,,no,v2
+chat_canned_pair,updated_at,timestamptz,no,now(),,,no,v2
+chat_canned_pair_version,id,uuid,no,gen_random_uuid(),PK,,no,v2
+chat_canned_pair_version,pair_id,uuid,no,,FK,Paire associée,no,v2
+chat_canned_pair_version,body_fr,text,no,,,Snapshot FR,no,v2
+chat_canned_pair_version,body_ar,text,no,,,Snapshot AR,no,v2
+chat_canned_pair_version,body_ar_ma,text,no,,,Snapshot AR-MA,no,v2
+chat_canned_pair_version,body_hash,text,no,,,sha256 du tuple body_*,no,v2
+chat_canned_pair_version,published_at,timestamptz,no,now(),,,no,v2
+chat_canned_pair_version,published_by,text,no,,FK admin_users,,no,v2
+chat_faq_entry,id,uuid,no,gen_random_uuid(),PK,,no,v2
+chat_faq_entry,key,text,no,,UNIQUE per language,Clé technique,no,v2
+chat_faq_entry,language,text,no,,CHECK in (fr|ar|ar-MA),Langue,no,v2
+chat_faq_entry,question_canonical,text,no,,LENGTH 5..300,Formulation canonique,no,v2
+chat_faq_entry,question_embedding,vector(1536),no,,pgvector + HNSW idx,Embedding de la question,no,v2
+chat_faq_entry,scripted_reply,text,no,,LENGTH 20..800,Réponse pré-écrite,no,v2
+chat_faq_entry,intent_hint,text,yes,,FK soft,Intent attendu pour filtrer,no,v2
+chat_faq_entry,threshold,numeric,no,0.85,>=0 <=1,Seuil cosine minimal,no,v2
+chat_faq_entry,enabled,bool,no,true,,,no,v2
+chat_faq_entry,audience,text,no,'all',CHECK in (all|b2c|b2b),,no,v2
+chat_faq_entry,created_at,timestamptz,no,now(),,,no,v2
+chat_faq_entry,updated_at,timestamptz,no,now(),,,no,v2
+chat_tool,id,uuid,no,gen_random_uuid(),PK,,no,v2
+chat_tool,name,text,no,,UNIQUE,Nom fonctionnel,no,v2
+chat_tool,description,text,no,,,Description exposée au LLM,no,v2
+chat_tool,input_schema,jsonb,no,,,Zod/JSON schema,no,v2
+chat_tool,output_schema,jsonb,no,,,Zod/JSON schema,no,v2
+chat_tool,handler_path,text,no,,,Ref backend (ex. lib/chat/tools/get-product),no,v2
+chat_tool,enabled,bool,no,true,,,no,v2
+chat_tool,rate_limit_per_min,int,no,60,>=1,RL par tool,no,v2
+chat_tool,timeout_ms,int,no,2000,>=100,Timeout d'exécution,no,v2
+chat_tool_call_log,id,uuid,no,gen_random_uuid(),PK,,no,v2
+chat_tool_call_log,session_id,uuid,no,,FK,,no,v2
+chat_tool_call_log,message_id,uuid,yes,,FK,Message ayant déclenché,no,v2
+chat_tool_call_log,tool_name,text,no,,,Nom du tool appelé,no,v2
+chat_tool_call_log,params,jsonb,no,,,Params validés Zod,yes,v2
+chat_tool_call_log,result,jsonb,yes,,,Résultat (peut contenir données client),yes,v2
+chat_tool_call_log,status,text,no,,CHECK in (ok|error|timeout|denied),,no,v2
+chat_tool_call_log,error,text,yes,,,Message d'erreur si status != ok,no,v2
+chat_tool_call_log,duration_ms,int,no,,>=0,,no,v2
+chat_tool_call_log,created_at,timestamptz,no,now(),,,no,v2
+chat_knowledge_origin,source_id,uuid,no,,FK + PK composite,Source KB liée,no,v2
+chat_knowledge_origin,entity_type,text,no,,CHECK in (product|city|promo|manual),,no,v2
+chat_knowledge_origin,entity_id,text,no,,,ID externe (ex. product slug),no,v2
+chat_knowledge_origin,last_sync_at,timestamptz,no,now(),,,no,v2
+chat_knowledge_origin,source_hash,text,no,,,sha256 du contenu généré,no,v2
+chat_health_state,id,uuid,no,gen_random_uuid(),PK,,no,v2
+chat_health_state,service_level,int,no,0,CHECK in (0|1|2|3|4),,no,v2
+chat_health_state,reason,text,no,,,,no,v2
+chat_health_state,triggered_by,text,no,,CHECK in (breaker|budget|manual|infra),,no,v2
+chat_health_state,created_at,timestamptz,no,now(),,,no,v2

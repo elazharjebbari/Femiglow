@@ -14,6 +14,11 @@ const ALL_DENIED: TrackingConsentState = DENIED_CONSENT;
 
 const HAS_CHOSEN_KEY = 'fg_consent_chosen';
 
+export interface ConsentBannerLegalLink {
+  slug: string;
+  label: string;
+}
+
 export interface ConsentBannerProps {
   /**
    * Si false, le bandeau n'est jamais affiché (cas pays sans obligation
@@ -27,11 +32,18 @@ export interface ConsentBannerProps {
    * que la session ne reste pas en denied par défaut.
    */
   defaultGranted?: boolean;
+  /**
+   * Liens vers les pages légales (politique cookies / confidentialité) à
+   * afficher dans le bandeau. Hydratés depuis `legal_page_placements`
+   * (zone `cookie-banner-links`) côté layout serveur.
+   */
+  legalLinks?: ConsentBannerLegalLink[];
 }
 
 export function ConsentBanner({
   enabled = true,
   defaultGranted = false,
+  legalLinks = [],
 }: ConsentBannerProps = {}): JSX.Element | null {
   const [visible, setVisible] = useState(false);
   const [open, setOpen] = useState(false);
@@ -77,6 +89,22 @@ export function ConsentBanner({
         On utilise des cookies pour mesurer l&rsquo;audience et améliorer ton
         expérience. Tu peux tout accepter, tout refuser ou personnaliser.
       </p>
+      {legalLinks.length > 0 ? (
+        <p className="mt-2 text-xs text-stone-500">
+          En savoir plus :{' '}
+          {legalLinks.map((link, idx) => (
+            <span key={link.slug}>
+              <a
+                href={`/legal/${link.slug}`}
+                className="underline underline-offset-2 hover:text-stone-700"
+              >
+                {link.label}
+              </a>
+              {idx < legalLinks.length - 1 ? ' · ' : ''}
+            </span>
+          ))}
+        </p>
+      ) : null}
       {open && (
         <div className="mt-3 grid gap-2 text-sm">
           {(

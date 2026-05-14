@@ -26,6 +26,20 @@ export const sessionRepo = {
     return rows[0] ?? null;
   },
 
+  /**
+   * Liste toutes les sessions d'un visitor (RGPD export — DPO usage).
+   * Ne filtre pas par status : on inclut purged/archived pour le scope d'export.
+   */
+  async listByVisitor(visitorId: string, limit = 500): Promise<ChatSessionRow[]> {
+    const db = requireChatDb();
+    return db
+      .select()
+      .from(chatSession)
+      .where(eq(chatSession.visitorId, visitorId))
+      .orderBy(desc(chatSession.openedAt))
+      .limit(limit);
+  },
+
   async create(insert: Omit<ChatSessionInsert, 'id'>): Promise<ChatSessionRow> {
     const db = requireChatDb();
     const id = createId('cs');

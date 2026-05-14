@@ -62,6 +62,12 @@ const envSchema = z.object({
   // Priorité sur CHAT_LEAD_WEBHOOK_URL ; fallback rétrocompat si absent.
   OUTBOUND_WEBHOOK_URL: z.string().url().optional(),
   OUTBOUND_WEBHOOK_SECRET: z.string().min(16).optional(),
+  // CHAT-047/068 — Webhook compatible Slack pour les alertes runtime
+  // (provider désactivé par budget-watch, etc.). Si absent, no-op.
+  CHAT_ALERTS_WEBHOOK_URL: z.string().url().optional(),
+  // CHAT-067 — Email digest hebdo des leads chat (Care).
+  CHAT_DIGEST_RECIPIENT: z.string().email().optional(),
+  CHAT_DIGEST_FROM: z.string().min(3).default('FemiGlow Chat <chat@femiglow.local>'),
 
   // — Emailing (cf. docs/emailing/09-infrastructure-setup.md §11) ——————————
   // SMTP transactional vers Stalwart en loopback. Optional en dev/test ;
@@ -137,6 +143,9 @@ export const env = envSchema.parse({
   CHAT_LEAD_CONSENT_VERSION: process.env.CHAT_LEAD_CONSENT_VERSION,
   OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
   OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
+  CHAT_ALERTS_WEBHOOK_URL: process.env.CHAT_ALERTS_WEBHOOK_URL,
+  CHAT_DIGEST_RECIPIENT: process.env.CHAT_DIGEST_RECIPIENT,
+  CHAT_DIGEST_FROM: process.env.CHAT_DIGEST_FROM,
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER,

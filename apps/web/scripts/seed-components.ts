@@ -11,6 +11,7 @@
  * Exporte aussi `runComponentsSeed(opts)` pour réutilisation côté Seeders
  * Runner.
  */
+import './_load-env.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { seedFromDocs } from '@/lib/components/seed-pipeline';

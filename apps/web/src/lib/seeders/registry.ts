@@ -34,6 +34,9 @@ import { chatInstructionsSeeder } from './items/chat-instructions';
 import { chatInstructionsV2Seeder } from './items/chat-instructions-v2';
 import { chatThemeSeeder } from './items/chat-theme';
 import { chatProvidersSeeder } from './items/chat-providers';
+import { chatCannedPairsSeeder } from './items/chat-canned-pairs';
+import { chatFaqSeeder } from './items/chat-faq';
+import { chatIntentsSeeder } from './items/chat-intents';
 import { trackingSeeder } from './items/tracking';
 import { ritualsSeeder } from './items/rituals';
 
@@ -184,6 +187,36 @@ export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
     estimatedDurationMs: 700,
     idempotent: true,
     run: chatProvidersSeeder,
+  },
+  {
+    id: 'chat-canned-pairs',
+    group: 'chat',
+    label: 'Pills SuggestionPills (canned pairs V5/V6)',
+    description:
+      'UPSERT des 12 paires question/réponse pré-écrites depuis docs/dossier-chat-v2 (FR + AR + AR-MA), avec versioning immutable.',
+    estimatedDurationMs: 1_200,
+    idempotent: true,
+    run: chatCannedPairsSeeder,
+  },
+  {
+    id: 'chat-faq',
+    group: 'chat',
+    label: 'FAQ entries (cascade L3, embeddings)',
+    description:
+      'UPSERT les entrées FAQ depuis docs/dossier-chat-v2 + calcule les embeddings questions via OpenAI (text-embedding-3-small). Requiert provider embedding.',
+    estimatedDurationMs: 3_500,
+    idempotent: true,
+    run: chatFaqSeeder,
+  },
+  {
+    id: 'chat-intents',
+    group: 'chat',
+    label: 'Intents centroids (cascade L1)',
+    description:
+      'INSERT le dataset annoté + calcule les centroids moyens L2-normalisés par intent (langue all, embedding multilingue).',
+    estimatedDurationMs: 5_000,
+    idempotent: true,
+    run: chatIntentsSeeder,
   },
 
   // ── Tracking ─────────────────────────────────────────────────────────

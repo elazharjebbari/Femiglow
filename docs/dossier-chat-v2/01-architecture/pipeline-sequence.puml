@@ -1,0 +1,110 @@
+@startuml pipeline-sequence
+' Diagramme de séquence d'un message user → réponse
+' Inclut les 3 chemins : canned pair, faq gateway, LLM full
+
+!theme cerulean-outline
+title Chat FemiGlow — Séquence d'un message (3 chemins)
+
+skinparam sequenceMessageAlign center
+skinparam sequenceBoxBorderColor #444
+skinparam shadowing false
+
+actor User
+participant "Chat Widget" as W
+participant "API /chat/*" as API
+participant "Orchestrator" as Orch
+participant "Intent" as I
+participant "FAQ gateway" as FAQ
+participant "Tools" as T
+participant "RAG" as R
+participant "LLM Provider" as L
+database PG as "Postgres"
+participant "Lead-decision" as LD
+
+== CHEMIN A — Clic sur pill (canned pair) ==
+
+User -> W : Clic « Quel est le prix ? »
+W -> API : POST /api/chat/canned-pair/:key
+API -> PG : SELECT canned pair (key, lang)
+PG --> API : { label, scripted_reply, meta }
+API -> PG : INSERT chat_message role=user (source=suggestion)
+API -> PG : INSERT chat_message role=assistant (source=canned)
+API -> PG : INSERT event chat_canned_used
+API --> W : { reply_text, persistedIds, type: "canned" }
+W -> W : useLocalStream() — typewriter local 180 wpm
+W --> User : Bulle assistant streamée mot par mot
+
+== CHEMIN B — Message libre intercepté par FAQ gateway ==
+
+User -> W : Tape « combien coûte le pack ? »
+W -> API : POST /api/chat/message (SSE)
+API -> Orch : streamReply(text, sessionId)
+Orch -> Orch : sanitize + redact PII
+Orch -> Orch : lang detect (fr/ar/ar-MA)
+Orch -> I : detectIntent(text)
+I -> I : régex score >= 2 ? oui → return
+I --> Orch : { intent: "pricing", confidence: 0.9, source: "regex" }
+Orch -> FAQ : matchFaq(text, intent)
+FAQ -> FAQ : embed query → cosine vs faq entries
+FAQ --> Orch : { match: true, entry, score: 0.91 }
+Orch -> PG : INSERT chat_message role=user
+Orch -> W : SSE event "delta" (streaming scripted reply)
+W --> User : Bulle assistant streamée
+Orch -> PG : INSERT chat_message role=assistant (source=faq)
+Orch -> LD : decide(intent, history)
+LD --> Orch : { offer_lead_form: false }
+Orch -> PG : INSERT events KPI
+
+== CHEMIN C — Message libre, plein pipeline LLM ==
+
+User -> W : Tape « est-ce que ça marche sur peau hyper sensible ? »
+W -> API : POST /api/chat/message (SSE)
+API -> Orch : streamReply(text, sessionId)
+Orch -> Orch : sanitize + lang detect
+Orch -> I : detectIntent(text)
+I -> I : régex score < 2 → fallback embedding
+I -> PG : SELECT centroïdes
+I --> Orch : { intent: "ingredient", confidence: 0.82, source: "embedding" }
+Orch -> FAQ : matchFaq(text, intent)
+FAQ --> Orch : { match: false }
+Orch -> T : route intent → quels tools ?
+T -> T : intent=ingredient → tools=[search_faq, get_product]
+T -> PG : exec get_product("pack-femiglow")
+PG --> T : product data
+T --> Orch : tools result
+Orch -> R : retrieveRag(text, language, topK=4)
+R -> PG : embed query + cosine search
+PG --> R : 3 chunks (composition, ingredients, témoignages)
+R --> Orch : context chunks
+Orch -> Orch : assemble system prompt = instruction + tools + rag
+Orch -> L : streamChat(messages, tools optionnels)
+L --> Orch : SSE deltas (jitter humanize)
+Orch -> Orch : charter outbound filter
+Orch -> W : SSE deltas + "source" event si RAG hits
+W --> User : Bulle assistant streamée
+Orch -> PG : INSERT chat_message role=assistant (cost, latencyMs, ragHits, toolCalls)
+Orch -> LD : decide(intent, history)
+LD --> Orch : { offer_lead_form: false (pas assez de signaux) }
+Orch -> PG : INSERT events KPI (message_sent_*, tool_call, etc.)
+
+== Tour suivant : utilisateur tape librement après canned ==
+
+User -> W : Tape « ok et la livraison à Casa ? »
+W -> API : POST /api/chat/message (history incluant la canned)
+API -> Orch : streamReply(text, sessionId)
+note over Orch
+  L'historique injecté au LLM inclut :
+  - msg user "Quel est le prix ?" (source=suggestion)
+  - msg asst scripted reply (source=canned)
+  - msg user "ok et la livraison à Casa ?"
+
+  Note système éphémère ajoutée :
+  « Les tours [N-2, N-1] proviennent d'un script
+   pré-validé. Assume-les comme tes réponses. »
+end note
+Orch -> L : streamChat(messages + tools)
+L --> Orch : reply (continuité ton + delivery info via tool)
+Orch -> W : SSE deltas
+W --> User : Réponse fluide, sans rupture
+
+@enduml

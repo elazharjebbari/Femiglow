@@ -1,0 +1,67 @@
+@startuml system-context
+' C4 niveau 1 - System Context Diagram
+' Chat FemiGlow v2
+
+!define RECTANGLE class
+!theme cerulean-outline
+title FemiGlow Chat — System Context (C4 niveau 1)
+
+skinparam linetype ortho
+skinparam handwritten false
+skinparam shadowing false
+
+actor "Visiteur\n(P1 Soukaina, P2 Hicham, P3 Naima)" as Visitor
+actor "Staff Care\n(A2 Karim)" as Staff
+actor "Staff Content\n(A1 Yasmine)" as Content
+actor "Système de cron" as Cron
+
+rectangle "FemiGlow Web App\n(Next.js 14 + Drizzle + pgvector)" as App {
+  rectangle "Chat Widget (client)" as Widget
+  rectangle "API chat publique" as PubAPI
+  rectangle "Console admin chat" as AdminUI
+  rectangle "API admin chat" as AdminAPI
+  rectangle "Orchestrator" as Orch
+  rectangle "KB & Tools" as KBTools
+}
+
+cloud "OpenAI / Anthropic /\nMistral / Gemini /\nOllama" as LLMProvider
+database "PostgreSQL\n(Neon ou self-hosted)" as PG
+cloud "Sendit (livraison)\nfuture" as Sendit
+cloud "Webhook n8n/CRM\nlead capture" as CRM
+cloud "Sentry (errors)\nPlausible (analytics)" as Observ
+
+' Relations
+Visitor --> Widget : ouvre chat,\nclique pills,\ntape messages
+Widget --> PubAPI : SSE stream\n+ POST canned pair
+PubAPI --> Orch
+Orch --> KBTools : retrieve KB,\nappel tools
+Orch --> LLMProvider : streamChat,\nembedding
+Orch --> PG : persist messages,\nleads, KPIs
+KBTools --> PG : query produits,\nvilles, promos
+Orch --> CRM : webhook lead\ncapture (HMAC)
+
+Staff --> AdminUI : monitore conversations,\ntraite leads
+Content --> AdminUI : édite canned pairs,\nsuggestions, KB
+AdminUI --> AdminAPI : CRUD authentifié
+AdminAPI --> PG
+
+Cron --> PubAPI : sync KB quotidienne
+Cron --> KBTools : refresh embeddings
+
+App --> Observ : metrics,\nerrors,\nevents
+Sendit ..> KBTools : webhook tracking\n(Vague V7)
+
+note right of Orch
+  Pipeline 25 étapes :
+  sanitize → intent → retrieve →
+  router → LLM → humanize →
+  charter outbound → persist →
+  lead-decision → KPI
+end note
+
+note right of LLMProvider
+  Router & circuit breaker
+  3 fails / 30 s cooldown
+end note
+
+@enduml

@@ -1,0 +1,416 @@
+================================================================
+              CHAT V2 — LIVRABLES EXHAUSTIFS
+        Format texte simple pour cocher au feutre rouge.
+================================================================
+
+Légende :
+  [ ] = à livrer
+  [X] = livré et validé
+  [/] = en cours
+  [~] = livré partiellement, à compléter
+  [N] = N/A (downscopé)
+
+
+================================================================
+SECTION A — INFRASTRUCTURE & PRÉ-REQUIS
+================================================================
+
+A1. Comptes & accès
+  [ ] Compte OpenAI organisation chat-v2 + quota >=$300/mois
+  [ ] Compte Anthropic + quota
+  [ ] Compte Mistral + quota
+  [ ] Compte Gemini + quota
+  [ ] Compte Sentry projet chat-v2 + DSN
+  [ ] Compte Vercel projet femiglow-chat + preview branches
+  [ ] Postgres staging (Supabase ou Neon) + backups quotidiens
+  [ ] Postgres prod + backups + point-in-time recovery
+  [ ] Linear projet CHAT + intégration GitHub
+  [ ] Slack channels #chat-build, #chat-launch, #chat-care
+  [ ] n8n workflow webhook leads + HMAC secret
+  [ ] Domain DNS configuré chat.femiglow.com
+  [ ] Mailgun / Postmark pour digests email
+
+A2. Documents pré-requis avant Day 1
+  [ ] Specs validées 02-data (schema.dbml)
+  [ ] Specs validées 03-backend (orchestrator.md, intent-detection.md)
+  [ ] Specs validées 04-frontend (component-tree.puml, state-machine.puml)
+  [ ] Specs validées 05-design-ui (design-tokens.yaml)
+  [ ] Specs validées 06-ux-ergonomie (user-journeys.md, microcopy.csv)
+  [ ] Specs validées 07-analytics (kpi-tree.md, event-taxonomy.csv)
+  [ ] Risk register signed (08-plan-conception/risks.csv)
+  [ ] RACI signed (08-plan-conception/raci.csv)
+  [ ] Sprint backlog importé Linear (09-plan-developpement/sprint-breakdown.csv)
+
+
+================================================================
+SECTION B — DATA / SCHEMA (V5)
+================================================================
+
+B1. Migrations Drizzle (up + down testés rollback)
+  [ ] 0017_intent_centroids.sql
+  [ ] 0018_intent_examples.sql
+  [ ] 0019_canned_pairs.sql
+  [ ] 0020_chat_messages_intent_columns.sql
+  [ ] 0021_kb_chunks.sql (+ HNSW index dim=1536)
+  [ ] 0022_kb_sources.sql
+  [ ] 0023_chat_tool_calls.sql
+  [ ] 0024_chat_faq_entries.sql
+  [ ] 0025_chat_events.sql
+  [ ] 0026_chat_leads.sql
+  [ ] 0027_rgpd_retention_columns.sql
+
+B2. Seeds
+  [ ] db:seed:dev:intents (intents + examples 50/intent × 3 langues)
+  [ ] db:seed:dev:pairs (canned pairs 30 paires trilingues)
+  [ ] db:seed:dev:faq (FAQ 50 entries trilingues)
+  [ ] db:seed:dev:kb (KB initial 200 chunks produits + delivery)
+  [ ] db:seed:staging:* miroir + dataset réaliste
+
+
+================================================================
+SECTION C — BACKEND CORE (V5)
+================================================================
+
+C1. Intent detection cascade
+  [ ] lib/chat/services/intent/regex-layer.ts
+  [ ] lib/chat/services/intent/embedding-layer.ts
+  [ ] lib/chat/services/intent/llm-mini-layer.ts
+  [ ] lib/chat/services/intent/detect-intent.ts (entrée unifiée)
+  [ ] Tests 150 examples accuracy ≥ 85%
+  [ ] Centroïdes pré-calculés en DB
+  [ ] Logs structurés intent_detected
+
+C2. Retrieval router
+  [ ] lib/chat/services/retrieval/router.ts (decide())
+  [ ] lib/chat/services/retrieval/faq-gateway.ts (threshold per-entry)
+  [ ] lib/chat/services/retrieval/rag.ts (HNSW + filtre audience)
+  [ ] lib/chat/services/retrieval/rerank.ts (heuristique)
+  [ ] Tests matrice routing all intents
+
+C3. Tools (function calling)
+  [ ] lib/chat/services/tools/get-product.ts (whitelist Zod)
+  [ ] lib/chat/services/tools/get-delivery-info.ts (city aliases)
+  [ ] lib/chat/services/tools/search-faq.ts (ranked)
+  [ ] lib/chat/services/tools/index.ts (registry + Zod schemas)
+  [ ] Tests tools (input/output validés)
+
+C4. Canned engine
+  [ ] lib/chat/services/canned/resolve-salutations.ts
+  [ ] lib/chat/services/canned/serve-pair-by-key.ts (tx 2 messages)
+  [ ] lib/chat/services/canned/get-ephemeral-llm-note.ts
+  [ ] Tests canned engine (audience + page matching)
+
+C5. Orchestrator + streaming
+  [ ] lib/chat/services/orchestrator/stream-reply.ts (pipeline complet)
+  [ ] lib/chat/services/orchestrator/sse-emitter.ts (7 events)
+  [ ] lib/chat/services/orchestrator/breaker.ts (3-fail cooldown)
+  [ ] lib/chat/services/orchestrator/service-level.ts (5 niveaux)
+  [ ] Tests orchestrator (happy + chaos)
+
+C6. Providers
+  [ ] lib/chat/providers/openai.ts
+  [ ] lib/chat/providers/anthropic.ts
+  [ ] lib/chat/providers/mistral.ts
+  [ ] lib/chat/providers/gemini.ts
+  [ ] lib/chat/providers/ollama.ts (optionnel V5)
+  [ ] lib/chat/providers/routing.ts (priorité + failover)
+  [ ] MSW handlers tous providers
+
+C7. Errors
+  [ ] lib/chat/errors/chat-error.ts (hierarchy)
+  [ ] lib/chat/errors/types.ts (ProviderError, ToolError, etc.)
+  [ ] Tous errors localisés FR/AR/AR-MA
+
+
+================================================================
+SECTION D — API ROUTES (V5)
+================================================================
+
+D1. Endpoints
+  [ ] POST /api/chat/session (retourne snapshot)
+  [ ] GET  /api/chat/session/[id] (rehydrate)
+  [ ] POST /api/chat/message (SSE streaming 7 events)
+  [ ] POST /api/chat/canned-pair/[key] (scriptedReply)
+  [ ] POST /api/chat/lead (HMAC + retries n8n)
+  [ ] POST /api/chat/feedback (idempotent vote)
+  [ ] GET  /api/chat/health (service level + providers status)
+
+D2. Middleware
+  [ ] Rate limiting (token bucket par IP)
+  [ ] PII redaction logs
+  [ ] CORS strict
+  [ ] iron-session admin auth
+
+
+================================================================
+SECTION E — FRONTEND (V5)
+================================================================
+
+E1. Composants UI
+  [ ] components/chat/ChatLauncher.tsx (pulse + badge)
+  [ ] components/chat/ChatPanel.tsx (FSM 8 états)
+  [ ] components/chat/ChatHeader.tsx (status + language switch)
+  [ ] components/chat/MessageBubble.tsx (user/assistant/canned)
+  [ ] components/chat/SuggestionPills.tsx (a11y)
+  [ ] components/chat/Composer.tsx (autosize + cmd+enter)
+  [ ] components/chat/LeadForm.tsx (Zod inline + i18n)
+  [ ] components/chat/CtaButton.tsx
+  [ ] components/chat/TypingDots.tsx (stagger 180ms)
+  [ ] components/chat/ToastServiceLevel.tsx
+  [ ] components/chat/SourcesPopover.tsx
+
+E2. State management
+  [ ] lib/chat/store/chat-store.ts (Zustand + persist v2)
+  [ ] lib/chat/store/migrations.ts (persist migrate v1→v2)
+  [ ] lib/chat/store/sanitization.ts (rehydrate purge)
+  [ ] lib/chat/store/selectors.ts (idiomatiques)
+
+E3. Hooks
+  [ ] hooks/useChatSSE.ts (fetch + ReadableStream + parse 7 types)
+  [ ] hooks/useLocalStream.ts (wpm + jitter + reduced-motion)
+  [ ] hooks/useChatSession.ts (init + rehydrate)
+  [ ] hooks/usePrefersReducedMotion.ts
+
+E4. Animations
+  [ ] lib/chat/animations.hjson (tokens motion)
+  [ ] Implementation Framer Motion / CSS transitions par token
+  [ ] Reduced motion overrides global
+
+E5. i18n & RTL
+  [ ] lib/i18n/microcopy-loader.ts (FR + AR + AR-MA)
+  [ ] CSS RTL natif (logical properties)
+  [ ] Tests visuels RTL screenshots
+
+
+================================================================
+SECTION F — ADMIN (V5)
+================================================================
+
+F1. Pages admin
+  [ ] app/admin/page.tsx (overview)
+  [ ] app/admin/conversations/page.tsx (list + filters URL)
+  [ ] app/admin/conversations/[id]/page.tsx (detail drawer)
+  [ ] app/admin/intents/page.tsx (CRUD + examples)
+  [ ] app/admin/intents/[id]/recompute/route.ts (trigger)
+  [ ] app/admin/suggestions/page.tsx (workflow draft/review/published)
+  [ ] app/admin/suggestions/[id]/preview/page.tsx (live preview)
+  [ ] app/admin/faq/page.tsx (CRUD + per-entry threshold)
+  [ ] app/admin/tools/page.tsx (sandbox + stats)
+  [ ] app/admin/kb/page.tsx (sources + sync trigger)
+  [ ] app/admin/leads/page.tsx (inbox + bulk actions)
+  [ ] app/admin/health/page.tsx (service level + providers real-time)
+
+F2. Admin shell
+  [ ] components/admin/AdminLayout.tsx (sidebar + nav)
+  [ ] components/admin/CommandPalette.tsx (Cmd+K)
+  [ ] components/admin/BulkActions.tsx
+  [ ] components/admin/Filters.tsx (URL persisted)
+
+
+================================================================
+SECTION G — CRONS & JOBS (V5)
+================================================================
+
+G1. Cron jobs
+  [ ] cron/kb-sync.ts (daily — sync KB sources)
+  [ ] cron/intent-recompute.ts (daily — centroïdes)
+  [ ] cron/budget-watch.ts (hourly — switch service level si dépasse)
+  [ ] cron/gdpr-purge.ts (daily — retention)
+
+G2. Vercel cron config
+  [ ] vercel.json crons[] entries
+  [ ] Tests dry-run mode
+
+
+================================================================
+SECTION H — OBSERVABILITÉ (V5)
+================================================================
+
+H1. Sentry
+  [ ] DSN configuré (FE + BE)
+  [ ] Tags chat.area définis (intent, retrieval, provider, ui)
+  [ ] Alerts P0/P1 → Slack #chat-launch
+  [ ] PII redaction beforeSend hook
+
+H2. Dashboards
+  [ ] Dashboard Health (service level + providers + latence)
+  [ ] Dashboard Business (NS conversion + leads + revenue)
+  [ ] Dashboard Editorial (intents accuracy + canned + FAQ)
+  [ ] Dashboard Care (hot leads + frustration alerts)
+
+H3. Logs structurés
+  [ ] Pino logger config + JSON output
+  [ ] Trace IDs cross-service
+  [ ] PII redaction logs (phone, email, address)
+
+
+================================================================
+SECTION I — TESTS (V5)
+================================================================
+
+I1. Tests unit (Jest/Vitest)
+  [ ] Coverage cible 80%+
+  [ ] lib/chat/services/__tests__/*
+  [ ] lib/chat/store/__tests__/*
+  [ ] lib/chat/providers/__tests__/*
+
+I2. Tests integration
+  [ ] API endpoints integration (Postgres test container)
+  [ ] Tools integration
+  [ ] Webhook n8n integration
+
+I3. Tests E2E Playwright
+  [ ] Greeting flow (FR + AR + AR-MA)
+  [ ] Suggestion pill click → canned response
+  [ ] LLM message → streaming → 7 events
+  [ ] Lead form submission + webhook
+  [ ] Service level degradation
+  [ ] Admin workflow (suggestion publish + preview)
+
+I4. Tests E2E ULTIMATE
+  [ ] Pipeline complète bout en bout
+  [ ] Chaos engineering (kill provider, slow network)
+  [ ] Multi-langue switch mid-conversation
+  [ ] Persist rehydrate après reload
+  [ ] Voir docs/dossier-chat-v2/12-tests/ultimate-pipeline-test.md
+
+I5. Tests a11y
+  [ ] axe-core CI gate (chat + admin)
+  [ ] Tests manuels NVDA + VoiceOver
+  [ ] Tests clavier (Tab/Enter/Esc) toutes pages
+
+I6. Tests performance
+  [ ] Bundle size budget CI (<8 kB delta launcher closed)
+  [ ] Lighthouse CI (TTI mobile)
+  [ ] Load test 100 concurrent SSE
+
+
+================================================================
+SECTION J — DOCUMENTATION (V5)
+================================================================
+
+J1. Runbooks
+  [ ] runbook/deploy.md (step-by-step prod)
+  [ ] runbook/rollback.md (fast + safe)
+  [ ] runbook/incidents.md (P0/P1/P2/P3 playbooks)
+  [ ] runbook/observability.yaml (Sentry + alerts config)
+
+J2. Doc équipe interne
+  [ ] README.md root (overview + getting started)
+  [ ] CONTRIBUTING.md (conventions code)
+  [ ] CHANGELOG.md (Keep a Changelog)
+  [ ] docs/architecture/ADR-001 jusqu'au ADR-012
+
+J3. Training
+  [ ] Loom training admin pour Yasmine + Karim (45 min)
+  [ ] Doc support care (workflow leads)
+  [ ] FAQ interne pour stakeholders
+
+
+================================================================
+SECTION K — RELEASE V5
+================================================================
+
+K1. Pre-release checklist
+  [ ] CI verte (lint + type + tests + build)
+  [ ] Test ULTIMATE pipeline verte
+  [ ] Migrations DB appliquées staging
+  [ ] Smoke test staging green 24h
+  [ ] PO Selma validation finale staging
+  [ ] Backup DB prod taken
+  [ ] Variables d'env prod alignées
+  [ ] Feature flag ENABLE_CHAT_V2 prêt
+  [ ] DNS / domain config staged
+
+K2. Release Day
+  [ ] Maintenance window communiquée
+  [ ] Migration DB prod appliquée
+  [ ] Deploy Vercel prod
+  [ ] Smoke test post-deploy
+  [ ] Feature flag activé
+  [ ] Annonce #chat-launch
+  [ ] Care team standby
+  [ ] Monitoring Sentry + dashboards real-time
+
+K3. Post-release
+  [ ] Premier review KPI J+2
+  [ ] Hotfixes si applicable (tag v5.0.1)
+  [ ] Retro V5 publiée
+  [ ] V6 kickoff prep
+
+
+================================================================
+SECTION L — V6 LIVRABLES (Wave Conversion)
+================================================================
+
+L1. A/B testing
+  [ ] CHAT-058 A/B engine cookie variant assigner
+  [ ] CHAT-059 Exp1 greeting darija default
+  [ ] CHAT-060 Exp5 launcher pulse 30s
+  [ ] Lib analytics A/B exposure tracking
+
+L2. Contenu éditorial
+  [ ] CHAT-061 +25 canned pairs trilingual (Yasmine)
+  [ ] CHAT-062 +30 FAQ entries trilingual (Yasmine)
+  [ ] CHAT-076 +15 B2B canned pairs (Yasmine)
+
+L3. Lead form pacing
+  [ ] CHAT-063 Pre-fill from cookie
+  [ ] CHAT-064 Smart timing heuristic
+
+L4. RGPD + Care
+  [ ] CHAT-065 Mode anonyme RGPD toggle
+  [ ] CHAT-066 Dashboard care complete (hot leads + frustration)
+  [ ] CHAT-067 Email digest hebdo
+  [ ] CHAT-068 Slack alerts integration
+
+L5. Perf + load
+  [ ] CHAT-069 First token < 600ms p50 tuning
+  [ ] CHAT-070 Load test 100 concurrent SSE
+
+
+================================================================
+SECTION M — V7 LIVRABLES (Wave Avancée)
+================================================================
+
+M1. Sendit tracking
+  [ ] CHAT-071 Sendit API integration (auth + caching)
+  [ ] CHAT-072 Tool get_order_status (anti-énumération)
+
+M2. Promo engine
+  [ ] CHAT-073 Promo engine refactor (conditions structurées)
+  [ ] CHAT-074 Tool check_promo (idempotent + audit log)
+
+M3. B2B
+  [ ] CHAT-075 B2B LeadForm advanced fields
+
+M4. Dark mode + GrowthBook
+  [ ] CHAT-077 Dark mode tokens + toggle
+  [ ] CHAT-078 GrowthBook self-hosted migration (A/B v2)
+
+
+================================================================
+SECTION N — LIVRABLES TRANSVERSES (toutes vagues)
+================================================================
+
+N1. Sécurité
+  [ ] Audit OWASP top 10 V5 ship
+  [ ] Pen test léger via consultant externe V6 ship
+  [ ] Audit légal RGPD V5 ship
+  [ ] Audit logs PII redaction V5 ship
+
+N2. Performance perpétuelle
+  [ ] Bundle size monitoring (Vercel Speed Insights)
+  [ ] Lighthouse CI gate (TTI mobile < 3.5s)
+  [ ] Sentry web vitals tracking
+  [ ] Edge runtime SSE confirmed
+
+N3. Documentation continue
+  [ ] CHANGELOG.md à jour à chaque release
+  [ ] ADRs mis à jour si décision majeure
+  [ ] Runbooks revus mensuellement
+
+
+================================================================
+            FIN — IMPRIMER + COCHER AU FEUTRE
+================================================================

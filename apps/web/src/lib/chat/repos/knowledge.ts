@@ -3,7 +3,7 @@
  *
  * Chunks + embeddings. Recherche vector via `<=>` (cosine distance).
  */
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { rowsOf } from '@/lib/db/exec';
 import { createId } from '@/lib/ids';
@@ -56,6 +56,30 @@ export const sourceRepo = {
       .select()
       .from(chatKnowledgeSource)
       .where(eq(chatKnowledgeSource.enabled, true));
+  },
+
+  /**
+   * CHA-098 — Liste les sources éligibles à un re-sync automatique.
+   * Filtre sur `enabled`, `kind` (seules les URLs peuvent être refetched
+   * sans intervention humaine) et `freshness` (par défaut volatile).
+   */
+  async listForResync(opts?: {
+    kinds?: Array<'url' | 'markdown' | 'pdf' | 'docx' | 'faq' | 'snippet'>;
+    freshness?: Array<'evergreen' | 'seasonal' | 'volatile'>;
+  }): Promise<ChatKnowledgeSourceRow[]> {
+    const db = requireChatDb();
+    const kinds = opts?.kinds ?? ['url'];
+    const freshness = opts?.freshness ?? ['volatile'];
+    return db
+      .select()
+      .from(chatKnowledgeSource)
+      .where(
+        and(
+          eq(chatKnowledgeSource.enabled, true),
+          inArray(chatKnowledgeSource.kind, kinds),
+          inArray(chatKnowledgeSource.freshness, freshness),
+        ),
+      );
   },
 
   async findByHash(rawHash: string, language: string) {

@@ -36,6 +36,8 @@ description = "Faux secrets utilisés dans la doc et les tests"
 paths = [
   '''(.*?)(\.lock|\.lockb|pnpm-lock\.yaml)''',
   '''docs/admin/specifications/.*\.md''',
+  '''docs/dossier-chat-v2/.*''',
+  '''docs/audit/.*''',
   '''.*/__fixtures__/.*''',
   '''.*\.example$''',
   '''\.gitleaks\.toml''',

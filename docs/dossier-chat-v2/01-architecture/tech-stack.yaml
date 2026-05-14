@@ -1,0 +1,199 @@
+# Tech stack chat FemiGlow v2
+# Format YAML : facile à parser et à comparer entre versions
+# Convention : seules les techno *touchées par le chat* sont listées
+
+version: "2026.05.13-v1"
+
+runtime:
+  node: ">=20"
+  pnpm: ">=9"
+  edge_runtime: false  # middleware en Node (cf. nonces + iron-session)
+
+framework:
+  next:
+    version: "14.2.15"
+    app_router: true
+    rsc: true
+    middleware: "/middleware.ts (CSP, HSTS, auth admin)"
+  react:
+    version: "18.3.1"
+
+language:
+  typescript:
+    version: "5.6.3"
+    strict: true
+    target: "ES2022"
+
+styling:
+  tailwindcss: "3.4.13"
+  postcss: "8.4.47"
+  autoprefixer: "10.4.20"
+  design_tokens_source: "docs/dossier-chat-v2/05-design-ui/design-tokens.yaml"
+
+state_management:
+  client:
+    zustand: "5.0.0"
+    persist_middleware: true
+    storage_key: "fg_chat_state"
+  server:
+    drizzle_orm: "0.45.2"
+
+validation:
+  zod: "3.23.8"
+  rule: "Toute frontière (HTTP, tool, LLM JSON) doit avoir un schéma Zod"
+
+database:
+  postgresql:
+    drivers:
+      - "@neondatabase/serverless: 1.1.0"
+      - "postgres: 3.4.4"
+    extensions:
+      - "pgvector (HNSW index, cosine similarity)"
+    schema_dir: "apps/web/src/lib/db/schema"
+    migration_tool: "drizzle-kit 0.31.10"
+  memory_store:
+    purpose: "tests + dev sans DB"
+    location: "apps/web/src/lib/db/client.ts:155"
+
+auth:
+  admin:
+    library: "iron-session 8.0.4"
+    cookie: "femiglow_chat_session"
+    password: "ADMIN_SESSION_PASSWORD (env)"
+  public_chat: "anonyme, cookie visiteur 'fg_v' 30 jours"
+
+llm_providers:
+  default: "openai"
+  available:
+    openai:
+      sdk: "@langchain/openai 0.3.16"
+      models:
+        chat: "gpt-4o-mini"
+        embedding: "text-embedding-3-small (dim 1536)"
+    anthropic:
+      sdk: "@langchain/anthropic 0.3.13"
+      model: "claude-haiku-4-5"
+    mistral:
+      sdk: "@langchain/mistralai 0.2.0"
+      model: "mistral-small-latest"
+    gemini:
+      sdk: "@langchain/google-genai 0.1.6"
+      model: "gemini-1.5-flash"
+    ollama:
+      sdk: "@langchain/ollama 0.1.4"
+      models: ["qwen2.5:3b", "llama3.1:8b"]
+    azure_openai:
+      sdk: "@langchain/openai (azure mode)"
+  routing:
+    file: "apps/web/src/lib/chat/providers/router.ts"
+    breaker:
+      failure_threshold: 3
+      cooldown_seconds: 30
+
+retrieval:
+  rag:
+    vector_db: "pgvector HNSW"
+    chunking:
+      tool: "@langchain/textsplitters RecursiveCharacterTextSplitter"
+      tokens: 700
+      overlap: 80
+    rerank: "heuristique : boost mots-clés > 4 char, pénalité > 1500 char"
+    top_k_default: 5
+    cosine_threshold: 0.55
+  faq_gateway:
+    new: true
+    cosine_threshold: 0.85
+    env_flag: "CHAT_FAQ_GATEWAY_ENABLED"
+  tools:
+    new: true
+    schema: "JSON Schema via Zod"
+    allowlist_env: "CHAT_TOOL_ALLOWLIST"
+    catalog:
+      - get_product
+      - get_delivery_info
+      - search_faq
+      - check_promo  # vague V7
+      - get_order_status  # vague V7
+
+intent:
+  current: "régex pondéré (apps/web/src/lib/chat/services/intent.ts)"
+  new_cascade:
+    - regex_plus_plus  # fuzzy + synonymes + contexte
+    - embedding_centroid  # pgvector
+    - llm_mini  # cas critiques uniquement
+  env_flags:
+    - CHAT_INTENT_USE_EMBEDDINGS
+    - CHAT_INTENT_USE_LLM_FALLBACK
+    - CHAT_INTENT_EMBEDDING_THRESHOLD
+
+suggestions:
+  new: true
+  storage: "table chat_canned_pair + admin CMS"
+  client_stream: "useLocalStream hook (typewriter 180 wpm + jitter)"
+
+testing:
+  unit:
+    runner: "vitest 2.1.2"
+    coverage: "@vitest/coverage-v8 2.1.2"
+  e2e:
+    runner: "@playwright/test 1.48.0"
+    a11y: "@axe-core/playwright 4.11.3"
+  mocks:
+    msw: "2.14.2"
+  property_based:
+    fast_check: "4.7.0"
+
+observability:
+  errors:
+    sentry: "DSN env NEXT_PUBLIC_SENTRY_DSN"
+  analytics:
+    plausible: "domain env PLAUSIBLE_DOMAIN"
+  custom_events:
+    table: "chat_conversation_event"
+
+security:
+  csp: "self + nonce + tracking/chat extensions"
+  hsts: "production only"
+  redaction:
+    pii_patterns: "email, téléphone MA/FR, IBAN, CB Luhn, CNI MA"
+  charter_filter:
+    inbound: true
+    outbound: true
+  webhooks:
+    outbound: "HMAC-SHA256"
+    secret_env: "OUTBOUND_WEBHOOK_SECRET"
+
+compliance:
+  rgpd: "rétention 30 j conversations anonymes, 24 mois leads explicites"
+  consent_version_env: "CHAT_LEAD_CONSENT_VERSION"
+
+cron_jobs:
+  - name: cron-kb-sync
+    schedule: "0 2 * * *"  # 02:00 daily
+    path: "/api/cron/chat-knowledge-sync"
+    secret_env: "CRON_SECRET"
+  - name: cron-intent-recompute
+    schedule: "0 3 * * 0"  # 03:00 sunday
+    path: "/api/cron/chat-intent-recompute"
+  - name: cron-budget-watcher
+    schedule: "*/15 * * * *"  # every 15 min
+    path: "/api/cron/chat-budget-watch"
+
+new_dependencies:
+  required:
+    - name: "fastest-levenshtein"
+      version: "^1.0.16"
+      reason: "fuzzy matching intent (Régex++)"
+  optional:
+    - name: "@opentelemetry/api"
+      version: "^1.9.0"
+      reason: "traces pipeline (post-V7)"
+
+deprecated_or_remove:
+  - none
+
+# Notes
+notes:
+  - "Le stack reste 100 % compatible avec l'existant — pas de cassure majeure."
+  - "Aucune nouvelle infra requise (pas de Redis, pas de queue, pas de microservice)."
+  - "Si Vercel : durée max 60s SSE → suffisant pour LLM standard."

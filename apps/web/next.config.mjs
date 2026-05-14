@@ -9,7 +9,7 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   experimental: {
-    optimizePackageImports: ['framer-motion', 'zustand'],
+    optimizePackageImports: ['framer-motion'],
     serverComponentsExternalPackages: ['@node-rs/argon2', 'sharp', 'fluent-ffmpeg', 'ffmpeg-static'],
     instrumentationHook: true,
     // Note : `optimizeCss` (critters) NON utilisé — Next 14.2 ne bundle plus

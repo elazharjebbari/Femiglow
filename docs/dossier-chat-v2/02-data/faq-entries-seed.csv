@@ -1,0 +1,19 @@
+key,language,question_canonical,scripted_reply,intent_hint,threshold,audience,notes
+price-pack-fr,fr,Quel est le prix du pack FemiGlow ?,"Le Pack FemiGlow est à 199 dh (au lieu de 390 dh en prix de référence). Il comprend 3 soins essentiels. Livraison offerte dès 199 dh d'achat.",pricing,0.60,all,Variations attendues : combien ça coûte, quel prix, c'est combien...
+price-unit-fr,fr,Quel est le prix d'un seul soin ?,"Les soins peuvent être achetés à l'unité : nettoyant 79 dh, sérum 149 dh, tonique 99 dh. Le pack à 199 dh reste plus avantageux (économie de 127 dh).",pricing,0.60,all,
+shipping-cost-fr,fr,Combien coûte la livraison ?,"La livraison est offerte dès 199 dh d'achat. En dessous, comptez 30 dh pour les grandes villes et 45 dh pour les autres.",shipping,0.60,all,
+shipping-time-fr,fr,En combien de temps est livré ?,"Livraison en 24-48 h pour Casablanca, Rabat, Marrakech, Fès, Tanger. 2-4 jours pour les autres villes du Maroc.",shipping,0.60,all,
+payment-fr,fr,Comment payer ?,"3 options : (1) paiement à la livraison (cash), (2) virement bancaire, (3) carte bancaire en ligne. Le cash à la livraison est le plus utilisé : vous vérifiez votre colis avant.",purchase-intent,0.60,all,
+return-policy-fr,fr,Puis-je retourner si ça ne me convient pas ?,"Oui, vous avez 14 jours pour retourner le produit non ouvert. Notre service client organise le retour gratuitement.",support,0.60,all,
+composition-fr,fr,Quels sont les ingrédients ?,"Le Pack FemiGlow contient des ingrédients apaisants et régénérants : centella asiatica, panthénol, acide hyaluronique, niacinamide. Sans parabène, sans alcool desséchant, sans parfum. Liste complète sur la page produit.",ingredient,0.60,all,
+halal-fr,fr,Est-ce halal ?,"Oui, FemiGlow ne contient aucun ingrédient d'origine porcine ni alcool. La fabrication respecte les normes halal cosmétiques.",ingredient,0.60,all,
+side-effects-fr,fr,Y a-t-il des effets secondaires ?,"Aucun effet secondaire connu sur peau saine. Si vous avez une peau très sensible ou une allergie connue, faites un test à l'intérieur du poignet 24 h avant la première utilisation.",support,0.60,all,
+results-time-fr,fr,Combien de temps avant de voir les résultats ?,"Premiers effets visibles en 7-10 jours (peau plus douce, moins de rougeurs). Changements significatifs en 3-4 semaines avec usage régulier matin et soir.",routine,0.60,all,
+price-pack-ar-ma,ar-MA,Chhal taman dyal pack,"Pack FemiGlow b 199 dh (mn b3d 390 dh). Fih 3 mantujat asasia. Lev'ya majania mn 199 dh d-chra.",pricing,0.60,all,Variations darija : chhal kaytman, b chhal...
+shipping-time-ar-ma,ar-MA,F'9addach kantkhdmu,"24-48 sa3a l Casablanca, Rabat, Marrakech, Fes, Tanja. 2-4 ayam l m'doun lkhrin.",shipping,0.60,all,
+payment-ar-ma,ar-MA,Kifach nkhelles,"3 tariqat : 1- cash 3and l'istilam, 2- virement bnki, 3- carte 3la l'mawqi3. Cash 3and l'istilam howa l'aktar isti3mal.",purchase-intent,0.60,all,
+results-time-ar-ma,ar-MA,B'3d 9addach kanchouf n'taij,"Nataij l-ouwla f 7-10 ayam, taghyir wadeh f 3-4 simanat b'isti3mal m'ntadem.",routine,0.60,all,
+price-pack-ar,ar,ما هو سعر طاقم فيميغلو ؟,طاقم فيميغلو بـ 199 درهم (عوض 390 درهم). يحتوي على 3 منتجات أساسية. التوصيل مجاني من 199 درهم.,pricing,0.60,all,
+shipping-time-ar,ar,في كم من الوقت يصل الطلب ؟,التوصيل في 24-48 ساعة للمدن الكبرى. 2-4 أيام للمدن الأخرى.,shipping,0.60,all,
+payment-ar,ar,كيف يمكن الدفع ؟,3 خيارات : 1- نقدا عند الاستلام، 2- تحويل بنكي، 3- بطاقة ائتمانية. الدفع عند الاستلام هو الأكثر استعمالا.,purchase-intent,0.60,all,
+contact-care-fr,fr,Comment vous contacter ?,"Vous pouvez nous joindre par WhatsApp au 06XX XX XX XX (réponse en 1 h en journée), par email à contact@femiglow.ma, ou laisser vos coordonnées ici et nous vous rappelons sous 1 h.",callback-request,0.60,all,

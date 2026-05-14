@@ -7,6 +7,7 @@
  *
  * Idempotent : peut être lancé plusieurs fois sans danger.
  */
+import './_load-env.mjs';
 import { ensureBootstrapAdmin } from '@/lib/auth/bootstrap-admin';
 import { env } from '@/lib/env';
 
