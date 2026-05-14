@@ -88,10 +88,28 @@ export interface GtmExportOutput {
   };
 }
 
+/**
+ * Tag types GTM par provider.
+ *
+ * Built-in (aucune installation nécessaire) :
+ *   - `gaawe`  : Google Analytics 4 Event
+ *   - `awct`   : Google Ads Conversion Tracking
+ *
+ * Custom templates community (à installer DANS le workspace GTM AVANT
+ * l'import, sinon l'erreur « Type d'entité inconnu (ID public du modèle :
+ * cvt_xxx) ») :
+ *   - `cvt_meta_pixel`     : Facebook/Meta Pixel
+ *   - `cvt_tiktok_pixel`   : TikTok Pixel
+ *   - `cvt_snap_pixel`     : Snap Pixel
+ *   - `cvt_pinterest_tag`  : Pinterest Tag
+ *
+ * Pour les installer : GTM → Templates → Discover Templates → chercher
+ * « Facebook Pixel » / « TikTok Pixel » / « Snap Pixel » / « Pinterest Tag ».
+ */
 const PROVIDER_TO_GTM_TYPE: Record<MappingProviderKind, string> = {
   meta: 'cvt_meta_pixel',
-  google_ga4: 'gaawe', // GA4 Event tag built-in (no custom template needed)
-  google_ads: 'cvt_google_ads_conversion',
+  google_ga4: 'gaawe',
+  google_ads: 'awct',
   tiktok: 'cvt_tiktok_pixel',
   snap: 'cvt_snap_pixel',
   pinterest: 'cvt_pinterest_tag',
@@ -163,6 +181,16 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
           value: '{{GA4 Measurement ID}}',
         });
         parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
+      } else if (kind === 'google_ads') {
+        // awct (Ads Conversion Tracking) built-in. Le mappedName est au
+        // format « AW-XXX/conversion_label ». On laisse l'utilisateur
+        // configurer conversionId + conversionLabel via les variables CONST.
+        parameter.push({
+          type: 'TEMPLATE',
+          key: 'conversionId',
+          value: '{{Google Ads Customer ID}}',
+        });
+        parameter.push({ type: 'TEMPLATE', key: 'conversionLabel', value: cell.mappedName });
       } else {
         parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
       }
