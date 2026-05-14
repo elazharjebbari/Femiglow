@@ -1,0 +1,202 @@
+{
+  # ==========================================================================
+  # TrackingPlan — Schéma canonique
+  # Format HJSON pour documentation (https://hjson.github.io/)
+  # Le schéma TypeScript canonique vit dans apps/web/src/lib/tracking/plan/schema.ts
+  # ==========================================================================
+
+  meta: {
+    # Versionning interne du schéma. Bump à chaque breaking change.
+    schemaVersion: "1.0.0"
+
+    # ISO 8601, set à la création. Pas modifié sur update (seul activatedAt l'est).
+    createdAt: "2026-05-14T10:00:00.000Z"
+
+    # Email de l'admin qui a créé le plan.
+    createdBy: "amal@femiglow.ma"
+  }
+
+  # --------------------------------------------------------------------------
+  # Providers — Les outils analytics destinataires.
+  # Chaque provider a un flag `enabled` + ses IDs canoniques.
+  # --------------------------------------------------------------------------
+  providers: {
+    ga4: {
+      enabled: true
+      # G-XXXXXXXXX (Google Analytics 4 Measurement ID)
+      measurementId: "G-5VHP17SDZM"
+      # Optionnel : utilisé pour Measurement Protocol server-side (CAPI-like)
+      apiSecret: "<encrypted-at-rest>"
+    }
+
+    googleAds: {
+      enabled: true
+      # AW-XXXXXXXXX (Google Ads Customer ID)
+      customerId: "AW-987654321"
+      # Une entrée par conversion configurée dans Google Ads
+      conversions: [
+        { label: "lead-form-MAD", type: "lead" }
+        { label: "purchase-MAD",  type: "purchase" }
+        { label: "view-content",  type: "view" }
+      ]
+    }
+
+    meta: {
+      enabled: true
+      # Meta Pixel ID (15 ou 16 digits)
+      pixelId: "1234567890123456"
+      # Optionnel : token CAPI pour server-side Conversions API
+      capiToken: "<encrypted-at-rest>"
+      # Si défini, envoie aussi en mode test (visible dans Events Manager test events)
+      testEventCode: null
+    }
+
+    tiktok: {
+      enabled: false
+      pixelId: null
+      accessToken: null
+    }
+
+    snapchat: { enabled: false, pixelId: null }
+
+    pinterest: { enabled: false, tagId: null }
+  }
+
+  # --------------------------------------------------------------------------
+  # Env profiles — Surcharges par environnement.
+  # Chaque env peut redéfinir les IDs providers (utile pour staging / dev).
+  # --------------------------------------------------------------------------
+  envProfiles: {
+    production: {
+      # GTM Container ID où sera importé le JSON exporté
+      containerId: "GTM-M8K7V88D"
+      # Overrides : laissé vide = utilise providers.*
+      overrides: {}
+      cookieDomain: "auto"
+      defaultCurrency: "MAD"
+    }
+
+    staging: {
+      containerId: "GTM-XXXXXXX"
+      overrides: {
+        # Force un measurement ID de test sur staging
+        ga4MeasurementId: "G-TESTSTGNG1"
+      }
+      cookieDomain: "auto"
+      defaultCurrency: "MAD"
+    }
+
+    preview: {
+      # Pas de container GTM dédié — preview Vercel partage celui de prod
+      containerId: null
+      overrides: { ga4MeasurementId: "G-TESTSTGNG1" }
+      cookieDomain: "auto"
+      defaultCurrency: "MAD"
+    }
+
+    dev: {
+      # En dev local, on n'envoie rien à GTM (juste debug console)
+      containerId: null
+      overrides: {}
+      cookieDomain: "auto"
+      defaultCurrency: "MAD"
+    }
+  }
+
+  # --------------------------------------------------------------------------
+  # Events — La matrice de mapping.
+  # Clé = nom d'événement canonique FemiGlow.
+  # Valeur = config (enabled, mappings per provider, consent).
+  # --------------------------------------------------------------------------
+  events: {
+    lead_form_submit: {
+      enabled: true
+      description: "Soumission du formulaire de capture lead (wizard step 1)"
+
+      mappings: {
+        ga4: {
+          mappedName: "generate_lead"
+          isCustom: false
+          enabled: true
+          parameters: {
+            currency: "{{currency}}"
+            value: "{{value}}"
+          }
+        }
+        googleAds: {
+          conversionLabel: "lead-form-MAD"
+          enabled: true
+        }
+        meta: {
+          mappedName: "Lead"
+          isStandard: true
+          enabled: true
+        }
+        tiktok: {
+          mappedName: "SubmitForm"
+          enabled: false
+        }
+      }
+
+      consent: {
+        requiresAdStorage: true
+        requiresAnalyticsStorage: true
+      }
+    }
+
+    add_to_cart: {
+      enabled: true
+      description: "Ajout produit au panier (catalogue ou wizard)"
+      mappings: {
+        ga4: {
+          mappedName: "add_to_cart"
+          isCustom: false
+          enabled: true
+          parameters: { currency: "{{currency}}", value: "{{value}}", items: "{{items}}" }
+        }
+        googleAds: { conversionLabel: null, enabled: false }
+        meta: { mappedName: "AddToCart", isStandard: true, enabled: true }
+        tiktok: { mappedName: "AddToCart", enabled: false }
+      }
+      consent: { requiresAdStorage: true, requiresAnalyticsStorage: true }
+    }
+
+    purchase: {
+      enabled: true
+      description: "Confirmation de commande (thank-you page)"
+      mappings: {
+        ga4: {
+          mappedName: "purchase"
+          isCustom: false
+          enabled: true
+          parameters: {
+            transaction_id: "{{orderId}}"
+            currency: "{{currency}}"
+            value: "{{value}}"
+            items: "{{items}}"
+          }
+        }
+        googleAds: { conversionLabel: "purchase-MAD", enabled: true }
+        meta: { mappedName: "Purchase", isStandard: true, enabled: true }
+        tiktok: { mappedName: "CompletePayment", enabled: false }
+      }
+      consent: { requiresAdStorage: true, requiresAnalyticsStorage: true }
+    }
+
+    # ... + view_content, view_item, sign_up, etc. (cf. event-presets.csv)
+  }
+
+  # --------------------------------------------------------------------------
+  # Settings globaux du plan.
+  # --------------------------------------------------------------------------
+  settings: {
+    # Auto-fire d'un PageView au chargement (false si on veut piloter manuellement)
+    autoFireOnPageView: true
+
+    # Hostnames sur lesquels le tracking est désactivé (preview internes, etc.)
+    blockedHostnames: [ "localhost", "preview-internal.femiglow.ma" ]
+
+    # Si true : émet les events vers console + dataLayer mais bloque les network calls vers providers
+    debugMode: false
+  }
+}

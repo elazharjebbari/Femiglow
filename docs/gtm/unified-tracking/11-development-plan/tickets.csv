@@ -1,0 +1,51 @@
+id,sprint,phase,title,description,estimate_hours,depends_on,owner,priority
+TP2-001,1,backend,Create Drizzle schema trackingPlans,Define table trackingPlans + indexes (unique partial on status=active),3,,Younes,P0
+TP2-002,1,backend,Create Drizzle schema trackingPlanAudit + trigger,Define trackingPlanAudit table + append-only trigger blocking UPDATE/DELETE,4,TP2-001,Younes,P0
+TP2-003,1,backend,Create Drizzle schema trackingDefaults,Define trackingDefaults table for auto-prefill source,2,TP2-001,Younes,P0
+TP2-004,1,data,Write migration.sql with legacy rename,Rename legacy tables to _legacy_v1 + create new tables,3,TP2-002 TP2-003,Younes,P0
+TP2-005,1,data,Seed defaults data,Seed trackingDefaults with current production values (CSV import),2,TP2-004,Younes,P0
+TP2-006,1,backend,Define Zod schemas (types.ts),All TrackingPlan zod schemas + TypeScript types,4,TP2-001,Younes,P0
+TP2-007,1,backend,Implement repository.ts,Drizzle CRUD: findById findActive create update activate archive,5,TP2-006,Younes,P0
+TP2-008,1,backend,Unit tests repository + types,Jest unit tests for repository (in-memory DB) + Zod schema validation,4,TP2-007,Younes,P0
+TP2-009,2,backend,Implement validator.ts,validatePlan with PLACEHOLDER_PATTERNS + business rules R-001 to R-005,5,TP2-006,Younes,P0
+TP2-010,2,backend,Implement exporter.ts,exportPlan(plan env) → GtmContainerJson with deterministic bundleId,6,TP2-006,Younes,P0
+TP2-011,2,backend,Implement differ.ts,diffPlans(planA planB) → ChangeSet,3,TP2-010,Younes,P1
+TP2-012,2,backend,Implement audit.ts + cache.ts,appendAudit + PlanCache (30s TTL),3,TP2-007,Younes,P0
+TP2-013,2,backend,Implement service.ts (TrackingPlanService),All public methods: get list create update validate export activate archive,4,TP2-007 TP2-009 TP2-010 TP2-011 TP2-012,Younes,P0
+TP2-014,2,api,Implement 9 API endpoints,GET POST PUT activate archive validate export diff history,8,TP2-013,Younes,P0
+TP2-015,2,api,Write OpenAPI 3.1 spec,docs/gtm/unified-tracking/03-backend/service-contract.yaml,3,TP2-014,Younes,P1
+TP2-016,2,backend,Integration tests API endpoints,Supertest + test DB on all 9 endpoints,6,TP2-014,Younes,P0
+TP2-017,3,frontend,Setup Zustand store useTrackingPlanStore,Store + persist middleware + stripSecrets logic,4,TP2-006,Younes,P0
+TP2-018,3,frontend,Setup TanStack Query hooks,useTrackingPlans usePlan useActivePlan useDriftStatus,3,TP2-014,Younes,P0
+TP2-019,3,frontend,Implement primitives (StatusCard Badge etc.),All shared primitives in components/tracking/shared/,5,,Younes,P0
+TP2-020,3,frontend,Implement IdInput component,Smart input with auto-fill detection placeholder warning revert,5,TP2-019,Younes,P0
+TP2-021,3,frontend,Implement EventMatrixRow component,Matrix cell with checkbox + provider state,3,TP2-019,Younes,P0
+TP2-022,3,frontend,Implement JsonPreview component,Read-only JSON viewer with highlight on change,4,TP2-019,Younes,P1
+TP2-023,3,frontend,Implement TrackingPlanHome,Dashboard with active plan + sync status + history teaser,4,TP2-019 TP2-018,Younes,P0
+TP2-024,3,storybook,Storybook stories for all components,1 story per component minimum + interaction tests,5,TP2-019 to TP2-023,Younes,P1
+TP2-025,4,frontend,Implement TrackingPlanWizard shell,Wizard layout + stepper + footer navigation + auto-save indicator,5,TP2-019,Younes,P0
+TP2-026,4,frontend,Implement Step1 (providers),Provider selection UI with checkboxes + descriptions,3,TP2-025,Younes,P0
+TP2-027,4,frontend,Implement Step2 (identifiers),IdInput per provider + auto-fill from defaults,5,TP2-025 TP2-020,Younes,P0
+TP2-028,4,frontend,Implement Step3 (events),Event matrix UI + presets selector + bulk actions,6,TP2-025 TP2-021,Younes,P0
+TP2-029,4,frontend,Implement Step4 (env profiles),Env tabs + per-env config + defaults inheritance,4,TP2-025,Younes,P0
+TP2-030,4,frontend,Implement Step5 (validation+activate),Validation results UI + diff modal + activate flow,5,TP2-025,Younes,P0
+TP2-031,4,e2e,E2E test wizard happy path,Playwright: create plan via wizard end-to-end,4,TP2-026 to TP2-030,Younes,P0
+TP2-032,4,frontend,Wizard accessibility audit + fixes,Run axe + manual NVDA test + fix violations,3,TP2-031,Younes,P0
+TP2-033,5,frontend,Implement TrackingPlanExpert layout,3-column layout with section nav + main + JSON preview,5,TP2-019 TP2-022,Younes,P1
+TP2-034,5,frontend,Implement expert sections (reuse wizard parts),Adapt wizard steps as collapsible sections in expert mode,4,TP2-033 TP2-026 to TP2-030,Younes,P1
+TP2-035,5,frontend,Implement sync page,Sync status dashboard + provider activity + test event widget,5,TP2-019 TP2-018,Younes,P0
+TP2-036,5,frontend,Implement history page,Versions timeline + diff viewer + rollback action,5,TP2-019 TP2-018,Younes,P1
+TP2-037,5,frontend,Implement diagnostics page (expert),Logs viewer + JSON inspector + test runner,4,TP2-033,Younes,P2
+TP2-038,5,i18n,Setup i18n fr namespace tracking-admin,All strings externalized fr-MA,3,TP2-025 to TP2-037,Younes,P0
+TP2-039,5,i18n,Setup i18n ar namespace structure,Structure ready for ar-MA (with RTL CSS) translation TBD,2,TP2-038,Younes,P1
+TP2-040,5,frontend,Replace legacy routes with 302 redirects,Middleware + map of legacy → new routes,3,TP2-025 TP2-035,Younes,P0
+TP2-041,6,tests,Complete Jest unit test suite,Cover lib/tracking/plan/* to ≥ 80%,6,TP2-013,Younes,P0
+TP2-042,6,tests,Complete Playwright E2E suite,All journeys covered + cross-locale,8,TP2-031 TP2-038 TP2-039,Younes,P0
+TP2-043,6,tests,MSW handlers + fixtures,Mock all API endpoints for offline frontend tests,4,TP2-014,Younes,P0
+TP2-044,6,tests,Snapshot test export legacy vs migrated,Compare JSON output for sample plans,4,TP2-010,Younes,P0
+TP2-045,6,tests,Write ultimate integration test,Full E2E: create → validate → activate → export → drift OK,4,TP2-042 TP2-044,Younes,P0
+TP2-046,6,migration,Migration script + dry-run,Convert legacy data to TrackingPlan + dry-run mode,5,TP2-007,Younes,P0
+TP2-047,6,runbook,Write deployment runbook,Step-by-step deploy procedure + rollback,3,,Younes+Lead,P0
+TP2-048,6,runbook,Rehearse rollback on staging,Execute rollback runbook on staging to verify,2,TP2-047,Younes,P0
+TP2-049,6,monitoring,Setup Grafana dashboard,Health dashboard for production monitoring,3,,Younes,P1
+TP2-050,6,release,Go-live + smoke tests,Production deploy + smoke tests + monitoring 24h,4,All,Lead,P0

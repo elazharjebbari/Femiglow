@@ -26,6 +26,8 @@
     "seed:components-fields": "tsx scripts/seed-components-fields.ts",
     "seed:components-fields:reconcile": "tsx scripts/seed-components-fields.ts -- --reconcile",
     "seed:tracking": "tsx scripts/seed-tracking.ts",
+    "migrate:tracking-to-plan": "tsx scripts/migrate-tracking-to-plan.ts",
+    "migrate:tracking-to-plan:dry-run": "tsx scripts/migrate-tracking-to-plan.ts -- --dry-run",
     "seed:media": "tsx scripts/seed-media.ts",
     "seed:seo": "tsx scripts/seed-seo.ts",
     "seed:products": "tsx scripts/seed-products.ts",

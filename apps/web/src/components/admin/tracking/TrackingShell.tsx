@@ -5,28 +5,22 @@ import { DriftBannerServer } from '@/components/admin/tracking/gtm/DriftBannerSe
 
 export type TrackingTab =
   | 'dashboard'
+  | 'plans'
   | 'inventory'
   | 'events'
   | 'mappings'
-  | 'providers'
   | 'test'
   | 'logs'
-  | 'gtm'
-  | 'gtm-sync'
-  | 'gtm-validate'
   | 'settings';
 
 const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
   { key: 'dashboard', href: '/admin/tracking', label: 'Vue d’ensemble' },
+  { key: 'plans', href: '/admin/tracking/plans', label: 'Plans (unifié)' },
   { key: 'inventory', href: '/admin/tracking/inventory', label: 'Inventaire' },
   { key: 'events', href: '/admin/tracking/events', label: 'Événements' },
   { key: 'mappings', href: '/admin/tracking/events/mappings', label: 'Mappings vendors' },
-  { key: 'gtm-sync', href: '/admin/tracking/gtm/sync-status', label: 'GTM Sync' },
-  { key: 'gtm-validate', href: '/admin/tracking/gtm/validate-pair', label: 'Valider import GTM' },
-  { key: 'providers', href: '/admin/tracking/providers', label: 'Pixels' },
   { key: 'test', href: '/admin/tracking/test', label: 'Tester' },
   { key: 'logs', href: '/admin/tracking/logs', label: 'Logs' },
-  { key: 'gtm', href: '/admin/tracking/gtm', label: 'Export GTM' },
   { key: 'settings', href: '/admin/tracking/settings', label: 'Réglages' },
 ];
 

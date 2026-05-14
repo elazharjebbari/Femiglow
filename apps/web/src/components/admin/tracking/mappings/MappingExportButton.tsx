@@ -56,7 +56,7 @@ export function MappingExportButton({ versionId, versionName }: { versionId: str
               </select>
             </label>
             <p className="mt-3 rounded bg-stone-50 px-3 py-2 text-[11px] text-stone-600">
-              ℹ L'export ne contient pas les Pixel IDs ni les Conv labels — à configurer dans /admin/tracking/gtm avant d'importer.
+              ℹ L'export ne contient pas les Pixel IDs ni les Conv labels — à configurer dans /admin/tracking/plans (envProfiles) avant d'importer.
             </p>
             <footer className="mt-4 flex items-center justify-end gap-2">
               <button onClick={() => setOpen(false)} className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50">Annuler</button>

@@ -1,0 +1,16 @@
+event,description,ga4_mapped,ga4_custom,ads_label,meta_mapped,meta_is_standard,tiktok_mapped,consent_ad,consent_analytics
+page_view,Vue de page (auto-fire),page_view,false,,PageView,true,Pageview,false,true
+view_content,Vue d'une fiche produit,view_item,false,,ViewContent,true,ViewContent,true,true
+add_to_cart,Ajout au panier,add_to_cart,false,,AddToCart,true,AddToCart,true,true
+initiate_checkout,Démarrage du wizard checkout,begin_checkout,false,,InitiateCheckout,true,InitiateCheckout,true,true
+add_payment_info,Saisie info paiement,add_payment_info,false,,AddPaymentInfo,true,,true,true
+lead_form_submit,Soumission lead form,generate_lead,false,lead-form-MAD,Lead,true,SubmitForm,true,true
+purchase,Confirmation commande,purchase,false,purchase-MAD,Purchase,true,CompletePayment,true,true
+sign_up,Inscription compte (si applicable),sign_up,false,,CompleteRegistration,true,Subscribe,true,true
+search,Recherche interne,search,false,,Search,true,Search,false,true
+share,Partage social,share,false,,,false,Share,false,true
+download_brochure,Téléchargement brochure,download_brochure,true,,DownloadBrochure,false,,false,true
+chat_open,Ouverture du chat,chat_open,true,,ChatOpen,false,,false,true
+chat_lead_form_submit,Soumission lead depuis le chat,generate_lead,false,lead-form-MAD,Lead,true,SubmitForm,true,true
+wizard_step_complete,Validation d'une étape wizard,wizard_step_complete,true,,,false,,false,true
+wizard_abandoned,Abandon wizard (timeout),wizard_abandoned,true,,,false,,false,true

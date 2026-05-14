@@ -1,0 +1,12 @@
+key,value,updated_by,note
+ga4.production.measurementId,G-5VHP17SDZM,migration-script,"Measurement ID FemiGlow Maroc prod (à valider)"
+ga4.staging.measurementId,G-TESTSTGNG1,migration-script,"Measurement ID staging (placeholder à remplacer)"
+googleAds.production.customerId,AW-987654321,migration-script,"À remplacer par le vrai Customer ID prod"
+googleAds.production.convLabel.lead,lead-form-MAD,migration-script,"Conversion lead par défaut"
+googleAds.production.convLabel.purchase,purchase-MAD,migration-script,"Conversion purchase par défaut"
+meta.production.pixelId,1234567890123456,migration-script,"À remplacer par le vrai Pixel ID prod"
+meta.production.testEventCode,,migration-script,"Vide en prod (sinon Events Manager bloque)"
+gtm.production.containerId,GTM-M8K7V88D,migration-script,"Container GTM principal"
+gtm.staging.containerId,,migration-script,"Pas de container staging dédié (placeholder)"
+defaultCurrency,MAD,migration-script,"Devise par défaut FemiGlow Maroc"
+cookieDomain,auto,migration-script,"Laisser auto pour subdomain matching"
