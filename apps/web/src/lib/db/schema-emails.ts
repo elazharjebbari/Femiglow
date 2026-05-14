@@ -252,6 +252,10 @@ export const emailCampaignLink = pgTable(
     unsubscribeCount: integer('unsubscribe_count').notNull().default(0),
     abVariant: text('ab_variant'),
     createdByUserId: text('created_by_user_id'),
+    // M5.4 — audience native FemiGlow (nullable, rétro-compat)
+    audienceId: uuid('audience_id').references(() => emailAudience.id),
+    snapshotId: uuid('snapshot_id').references(() => emailAudienceSnapshot.id),
+    snapshotListmonkListId: integer('snapshot_listmonk_list_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -259,6 +263,7 @@ export const emailCampaignLink = pgTable(
     lmCampaignUnique: uniqueIndex('email_campaign_link_lm_unique').on(t.listmonkCampaignId),
     statusIdx: index('email_campaign_link_status_idx').on(t.status, t.scheduledFor),
     createdAtIdx: index('email_campaign_link_created_at_idx').on(t.createdAt),
+    audienceIdx: index('idx_campaign_audience').on(t.audienceId),
   }),
 );
 
