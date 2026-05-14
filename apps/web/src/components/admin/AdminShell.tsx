@@ -16,7 +16,8 @@ interface AdminShellProps {
     | 'seo'
     | 'products'
     | 'chat'
-    | 'rituals';
+    | 'rituals'
+    | 'legal';
   children: ReactNode;
 }
 
@@ -27,6 +28,7 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/media', key: 'media', label: 'Médias' },
   { href: '/admin/components', key: 'components', label: 'Composants' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
+  { href: '/admin/legal', key: 'legal', label: 'Pages légales' },
   { href: '/admin/products', key: 'products', label: 'Produits' },
   { href: '/admin/chat', key: 'chat', label: 'Chat' },
   { href: '/admin/webhooks', key: 'webhooks', label: 'Webhooks' },

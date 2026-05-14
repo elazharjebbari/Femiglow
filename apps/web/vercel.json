@@ -58,6 +58,10 @@
     {
       "path": "/api/cron/insights-purge",
       "schedule": "30 3 1 * *"
+    },
+    {
+      "path": "/api/cron/legal-link-health",
+      "schedule": "0 3 * * *"
     }
   ],
   "headers": [

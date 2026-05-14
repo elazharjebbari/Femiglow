@@ -14,6 +14,16 @@ import {
 import { ensureSeedOnce } from '@/lib/boot/seed-on-boot';
 import { ChatWidgetMount } from '@/components/chat/ChatWidgetMount';
 import { MobileFocusGuard } from '@/components/a11y/MobileFocusGuard';
+import { listPlacementsForZone } from '@/lib/legal/repository';
+
+async function loadCookieBannerLegalLinks(): Promise<Array<{ slug: string; label: string }>> {
+  try {
+    const rows = await listPlacementsForZone('cookie-banner-links');
+    return rows.map((r) => ({ slug: r.pageSlug, label: r.labelOverride ?? r.title }));
+  } catch {
+    return [];
+  }
+}
 
 const cormorant = localFont({
   src: '../../public/fonts/cormorant-garamond.woff2',
@@ -80,9 +90,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // défaut (banner activé, consent denied) couvrent l'install initiale ;
   // l'admin peut désactiver le bandeau dans /admin/tracking/settings pour
   // les juridictions où il n'est pas obligatoire (Maroc, US…).
-  const [bannerEnabled, defaultGranted] = await Promise.all([
+  const [bannerEnabled, defaultGranted, cookieBannerLegalLinks] = await Promise.all([
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
+    loadCookieBannerLegalLinks(),
   ]);
 
   return (
@@ -102,7 +113,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         >
           <TrackingGlobalListener />
           {children}
-          <ConsentBanner enabled={bannerEnabled} defaultGranted={defaultGranted} />
+          <ConsentBanner
+            enabled={bannerEnabled}
+            defaultGranted={defaultGranted}
+            legalLinks={cookieBannerLegalLinks}
+          />
           <PixelLoader />
           <DebugOverlay />
           <ChatWidgetMount />

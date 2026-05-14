@@ -16,7 +16,18 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/panier', '/commander', '/merci'],
+        // /admin/legal et /legal/<noindex> sont déjà protégés par
+        // X-Robots-Tag (admin) / meta robots (legal noindex), mais on
+        // bloque aussi côté robots.txt pour économiser le budget crawl.
+        // Les pages /legal/livraison et /legal/faq (include_in_search=true)
+        // restent allow par défaut.
+        disallow: [
+          '/api/',
+          '/panier',
+          '/commander',
+          '/merci',
+          '/admin/',
+        ],
       },
       // Phase 1 : refus explicite des crawlers IA.
       // Décision réversible une fois la posture éditoriale stabilisée.
