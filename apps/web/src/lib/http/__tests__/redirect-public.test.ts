@@ -37,9 +37,16 @@ describe('publicBaseUrl', () => {
     expect(publicBaseUrl(req)).toBe('http://localhost:3000');
   });
 
-  it('falls back to req.url host when no headers', () => {
+  it('rejects internal hosts in req.url and falls back to dev/prod default', () => {
     const req = makeReq({}, 'http://127.0.0.1:8011/api/x');
-    expect(publicBaseUrl(req)).toBe('http://127.0.0.1:8011');
+    // INTERNAL_HOST_RE rejects 127.0.0.1 → falls back to default
+    expect(publicBaseUrl(req)).not.toContain('127.0.0.1');
+    expect(publicBaseUrl(req)).not.toContain('localhost:8011');
+  });
+
+  it('rejects localhost in Host header (LiteSpeed forwarding bug)', () => {
+    const req = makeReq({ host: 'localhost:8011' });
+    expect(publicBaseUrl(req)).not.toContain('localhost:8011');
   });
 });
 

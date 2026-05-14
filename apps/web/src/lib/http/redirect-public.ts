@@ -13,20 +13,49 @@
  */
 import { NextResponse } from 'next/server';
 
+/**
+ * Compose l'URL externe à partir des headers reverse-proxy.
+ *
+ * Priorité :
+ *   1. PUBLIC_BASE_URL env var (override absolue, pour les cas tricky)
+ *   2. X-Forwarded-Host + X-Forwarded-Proto (LiteSpeed standard)
+ *   3. Host header s'il ne pointe pas vers localhost/127.0.0.1
+ *   4. Fallback req.url (dev mode local)
+ *
+ * Les hosts internes `localhost:*` / `127.0.0.1:*` / `0.0.0.0:*` sont
+ * **explicitement rejetés** : on préfère retomber sur req.url plutôt que
+ * de générer une Location qui pointe le navigateur de l'utilisateur final
+ * sur sa propre machine.
+ */
+const INTERNAL_HOST_RE = /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?)(:\d+)?$/i;
+
 export function publicBaseUrl(req: Request): string {
-  const headers = req.headers;
-  const forwardedHost = headers.get('x-forwarded-host') ?? headers.get('host');
-  const forwardedProto = headers.get('x-forwarded-proto') ?? 'https';
-  if (forwardedHost) {
-    return `${forwardedProto}://${forwardedHost}`;
+  const envOverride = process.env.PUBLIC_BASE_URL;
+  if (envOverride) return envOverride.replace(/\/$/, '');
+
+  const h = req.headers;
+  const xfHost = h.get('x-forwarded-host');
+  const xfProto = h.get('x-forwarded-proto');
+  if (xfHost && !INTERNAL_HOST_RE.test(xfHost)) {
+    return `${xfProto ?? 'https'}://${xfHost}`;
   }
-  // Last resort : derive from req.url (dev mode).
+  const hostHeader = h.get('host');
+  if (hostHeader && !INTERNAL_HOST_RE.test(hostHeader)) {
+    return `${xfProto ?? 'https'}://${hostHeader}`;
+  }
+  // Last resort : derive from req.url (only safe in dev).
   try {
     const url = new URL(req.url);
-    return `${url.protocol}//${url.host}`;
+    if (!INTERNAL_HOST_RE.test(url.host)) {
+      return `${url.protocol}//${url.host}`;
+    }
   } catch {
-    return 'http://localhost:3000';
+    /* noop */
   }
+  // Absolute fallback : never pretend it's localhost in production.
+  return process.env.NODE_ENV === 'production'
+    ? 'https://femiglow-maroc.com'
+    : 'http://localhost:3000';
 }
 
 export function redirectToPublic(
