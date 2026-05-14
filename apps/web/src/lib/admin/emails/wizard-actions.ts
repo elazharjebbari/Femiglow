@@ -67,7 +67,8 @@ const updateDraftInput = z.object({
   preheader: z.string().max(200).optional(),
   templateSlug: z.string().nullable().optional(),
   listmonkTemplateId: z.number().int().nullable().optional(),
-  audienceLinkIds: z.array(z.number().int()).optional(), // store Listmonk list IDs directly
+  audienceLinkIds: z.array(z.number().int()).optional(), // Listmonk list IDs
+  audienceId: z.string().uuid().nullable().optional(),    // FemiGlow audience (M5.3)
   scheduledFor: z.string().datetime().nullable().optional(),
   payloadJson: z.record(z.unknown()).optional(),
 });
@@ -84,6 +85,7 @@ export async function updateCampaignDraft(input: z.infer<typeof updateDraftInput
   if (parsed.preheader !== undefined) set.preheader = parsed.preheader;
   if (parsed.templateSlug !== undefined) set.templateSlug = parsed.templateSlug;
   if (parsed.audienceLinkIds !== undefined) set.audienceLinkIds = parsed.audienceLinkIds;
+  if (parsed.audienceId !== undefined) set.audienceId = parsed.audienceId;
   if (parsed.scheduledFor !== undefined) {
     set.scheduledFor = parsed.scheduledFor ? new Date(parsed.scheduledFor) : null;
   }
@@ -114,7 +116,31 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
   if (!draft) throw new Error('Brouillon introuvable');
   if (draft.status !== 'draft') throw new Error(`Statut ${draft.status} : cette campagne ne peut plus être finalisée`);
   if (!draft.subject) throw new Error('Sujet manquant');
-  if ((draft.audienceLinkIds as number[]).length === 0) throw new Error('Aucune liste sélectionnée');
+
+  // M5.4 — si une audience FemiGlow est sélectionnée, snapshot + push à
+  // Listmonk pour obtenir un list ID éphémère. Sinon on utilise audienceLinkIds
+  // (legacy Listmonk lists choisies directement).
+  let listmonkListIds: number[] = draft.audienceLinkIds as number[];
+  if (draft.audienceId) {
+    const { snapshotAudience } = await import('@/lib/mail/audiences/snapshot');
+    const { pushSnapshotToListmonk } = await import('@/lib/mail/campaigns/listmonk-sync');
+    const snap = await snapshotAudience(draft.audienceId, {
+      campaignId: parsed.id,
+      source: 'campaign',
+    });
+    const pushed = await pushSnapshotToListmonk(snap.snapshotId);
+    listmonkListIds = [pushed.listmonkListId];
+    // Persist snapshot link on the draft for later retrieval.
+    await drizzle
+      .update(emailCampaignLink)
+      .set({
+        snapshotId: snap.snapshotId,
+        snapshotListmonkListId: pushed.listmonkListId,
+      })
+      .where(eq(emailCampaignLink.id, parsed.id));
+  }
+
+  if (listmonkListIds.length === 0) throw new Error('Aucune liste ni audience sélectionnée');
 
   // Sanity : Listmonk reachable
   try {
@@ -127,7 +153,7 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
   const createRes = await listmonk.campaigns.create({
     name: draft.name,
     subject: draft.subject,
-    lists: draft.audienceLinkIds as number[],
+    lists: listmonkListIds,
     from_email: env.MAIL_FROM,
     body: parsed.bodyHtml,
     content_type: 'html',

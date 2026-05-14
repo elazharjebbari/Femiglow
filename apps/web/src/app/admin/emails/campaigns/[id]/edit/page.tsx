@@ -11,6 +11,7 @@ import {
   fetchListmonkLists,
   fetchListmonkTemplates,
 } from '@/lib/admin/emails/campaigns-queries';
+import { listAudiencesWithSnapshotCount } from '@/lib/mail/audiences/queries';
 import { CampaignWizard } from '@/components/admin/emails/wizard/CampaignWizard';
 
 export const dynamic = 'force-dynamic';
@@ -23,9 +24,19 @@ export default async function CampaignEditPage({ params }: { params: { id: strin
     redirect(`/admin/emails/campaigns/${params.id}`);
   }
 
-  const [listsRes, tplRes] = await Promise.all([fetchListmonkLists(), fetchListmonkTemplates()]);
+  const [listsRes, tplRes, audiencesAll] = await Promise.all([
+    fetchListmonkLists(),
+    fetchListmonkTemplates(),
+    listAudiencesWithSnapshotCount(),
+  ]);
   const lists = listsRes.ok ? listsRes.lists : [];
   const templates = tplRes.ok ? tplRes.templates : [];
+  const audiences = audiencesAll.map((a) => ({
+    id: a.id,
+    name: a.name,
+    slug: a.slug,
+    snapshotCount: a.snapshotCount,
+  }));
   const listmonkError = !listsRes.ok ? listsRes.error : !tplRes.ok ? tplRes.error : null;
 
   return (
@@ -44,12 +55,14 @@ export default async function CampaignEditPage({ params }: { params: { id: strin
           subject: draft.subject ?? '',
           preheader: draft.preheader,
           audienceLinkIds: Array.isArray(draft.audienceLinkIds) ? (draft.audienceLinkIds as number[]) : [],
+          audienceId: (draft.audienceId as string | null) ?? null,
           listmonkTemplateId: null,
           scheduledFor: draft.scheduledFor ? draft.scheduledFor.toISOString() : null,
           payloadJson: (draft.payloadJson as Record<string, unknown>) ?? {},
         }}
         lists={lists}
         templates={templates}
+        audiences={audiences}
         listmonkError={listmonkError}
       />
     </AdminShell>
