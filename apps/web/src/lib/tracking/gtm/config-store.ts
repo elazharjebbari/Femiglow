@@ -167,6 +167,20 @@ export const gtmConfigStore = {
     return target;
   },
 
+  /**
+   * Désactive la version active courante (state.activeId = null). Aucune
+   * version n'est plus active. Utile pour archiver un mapping temporairement
+   * sans le supprimer.
+   */
+  async deactivate(id: string, opts: SaveOptions): Promise<void> {
+    const state = await readState();
+    if (state.activeId !== id) {
+      throw new Error('config_version_not_active');
+    }
+    state.activeId = null;
+    await writeState(state, opts);
+  },
+
   async remove(id: string, opts: SaveOptions): Promise<void> {
     const state = await readState();
     if (state.activeId === id) {

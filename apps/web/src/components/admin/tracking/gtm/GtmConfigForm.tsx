@@ -15,6 +15,10 @@ import { SyncIndicator } from './SyncIndicator';
 
 interface Props {
   initial?: GtmConfigPerEnv;
+  /** Pré-remplit le champ "Nom" du formulaire (cas Modifier une version existante). */
+  initialName?: string;
+  /** Pré-remplit le champ "Notes" du formulaire. */
+  initialNotes?: string;
   onSubmit: (input: { name: string; notes: string | null; perEnv: GtmConfigPerEnv }) => Promise<void> | void;
   submitting?: boolean;
   /**
@@ -110,13 +114,15 @@ function emptyPerEnv(): GtmConfigPerEnv {
 
 export function GtmConfigForm({
   initial,
+  initialName,
+  initialNotes,
   onSubmit,
   submitting = false,
   seedFrom,
 }: Props) {
   const [perEnv, setPerEnv] = useState<GtmConfigPerEnv>(initial ?? emptyPerEnv());
-  const [name, setName] = useState('');
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState(initialName ?? '');
+  const [notes, setNotes] = useState(initialNotes ?? '');
   const [error, setError] = useState<string | null>(null);
   const [propagatedKey, setPropagatedKey] = useState<string | null>(null);
   const [providerSnapshot, setProviderSnapshot] = useState<ProvidersSnapshot | null>(null);
