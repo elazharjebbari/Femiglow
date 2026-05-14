@@ -154,7 +154,14 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
           parameter.push({ type: 'TEMPLATE', key: 'customEventName', value: cell.mappedName });
         }
       } else if (kind === 'google_ga4') {
-        parameter.push({ type: 'TEMPLATE', key: 'measurementId', value: '{{GA4 Measurement ID}}' });
+        // gaawe (GA4 Event) attend `measurementIdOverride` (pas
+        // `measurementId`) pour identifier le pixel GA4. Le champ est
+        // obligatoire si on n'a pas de GA4 Config Tag séparé référencé.
+        parameter.push({
+          type: 'TEMPLATE',
+          key: 'measurementIdOverride',
+          value: '{{GA4 Measurement ID}}',
+        });
         parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
       } else {
         parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
