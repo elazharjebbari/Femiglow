@@ -55,7 +55,10 @@ export async function previewAudienceSize(
 
   // SET LOCAL statement_timeout dans une transaction pour le bornage.
   const rows = (await drizzle.transaction(async (tx) => {
-    await tx.execute(sql`SET LOCAL statement_timeout = ${PREVIEW_TIMEOUT_MS}`);
+    // Postgres `SET LOCAL` n'accepte PAS de parameter binding (`$1`) — il
+    // faut une valeur littérale. PREVIEW_TIMEOUT_MS est une constante int,
+    // donc safe à interpoler via sql.raw.
+    await tx.execute(sql.raw(`SET LOCAL statement_timeout = ${PREVIEW_TIMEOUT_MS}`));
     return tx
       .select({ n: sql<number>`count(*)::int` })
       .from(leads)

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { listAudiencesWithSnapshotCount } from '@/lib/mail/audiences/queries';
+import { AudienceRowActions } from '@/components/admin/emails/audiences/AudienceRowActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,9 @@ export default async function AudiencesListPage() {
                 <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500 w-36">
                   Créée par
                 </th>
+                <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-stone-500 w-28">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -98,6 +102,9 @@ export default async function AudiencesListPage() {
                     {a.snapshotCount}
                   </td>
                   <td className="px-3 py-2 text-xs text-stone-500">{a.createdBy}</td>
+                  <td className="px-3 py-2 text-right">
+                    <AudienceRowActions audienceId={a.id} audienceName={a.name} />
+                  </td>
                 </tr>
               ))}
             </tbody>

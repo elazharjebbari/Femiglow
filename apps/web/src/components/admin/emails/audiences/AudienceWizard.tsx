@@ -318,7 +318,7 @@ export function AudienceWizard() {
             onClick={handleSubmit}
             disabled={state.submitting}
             data-testid="submit-btn"
-            className="rounded bg-sage-700 px-4 py-2 text-sm font-medium text-white hover:bg-sage-800 disabled:opacity-50"
+            className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {state.submitting ? 'Création…' : '✓ Créer l\'audience'}
           </button>

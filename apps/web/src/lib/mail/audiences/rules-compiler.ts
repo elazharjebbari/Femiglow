@@ -18,7 +18,7 @@
  */
 import 'server-only';
 import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
-import { leads, userEvent, orders } from '@/lib/db/schema';
+import { leads, userEvent, orders, leadTag } from '@/lib/db/schema';
 import { emailEvent, emailSuppression } from '@/lib/db/schema-emails';
 import {
   validateDepth,
@@ -34,20 +34,36 @@ import {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function parseRelativeWithin(within: string | undefined): Date | null {
+/**
+ * Convertit un `within` (ex. "30d", "12h", ou ISO date) en expression SQL.
+ *
+ * Retour : un fragment SQL prêt à être interpolé via le tag `sql`. Le format
+ * Date JS produit `Tue Apr 14 2026 ...` quand drizzle bind un Date sans type
+ * column → Postgres rejette le format. On force donc une expression
+ * `now() - interval '...'` ou un `timestamptz` ISO littéral.
+ */
+function parseRelativeWithinSql(within: string | undefined): SQL | null {
   if (!within) return null;
   const m = /^(\d+)([smhd])$/i.exec(within.trim());
   if (m) {
     const n = Number(m[1]);
     const unit = m[2]!.toLowerCase();
-    const ms =
-      unit === 's' ? 1000 : unit === 'm' ? 60_000 : unit === 'h' ? 3_600_000 : 86_400_000;
-    return new Date(Date.now() - n * ms);
+    const interval =
+      unit === 's' ? `${n} seconds` :
+      unit === 'm' ? `${n} minutes` :
+      unit === 'h' ? `${n} hours` :
+      `${n} days`;
+    return sql.raw(`(now() - interval '${interval}')`);
   }
-  // Fallback ISO date
+  // Fallback ISO timestamp literal.
   const d = new Date(within);
-  return Number.isFinite(d.getTime()) ? d : null;
+  if (!Number.isFinite(d.getTime())) return null;
+  return sql.raw(`('${d.toISOString()}'::timestamptz)`);
 }
+
+// `parseRelativeWithin` removed — the Date-returning version produced
+// bad parameter bindings ("Tue Apr 14 2026 ..." instead of ISO format).
+// Use `parseRelativeWithinSql` everywhere (returns a SQL fragment).
 
 function parseDateOrThrow(value: string): Date {
   const d = new Date(value);
@@ -97,7 +113,7 @@ function dateOp(
       return sql`${column} BETWEEN ${parseDateOrThrow(a)} AND ${parseDateOrThrow(b)}`;
     }
     case 'within': {
-      const threshold = parseRelativeWithin(value as string);
+      const threshold = parseRelativeWithinSql(value as string);
       if (!threshold) throw new Error(`Invalid within: ${value}`);
       return sql`${column} >= ${threshold}`;
     }
@@ -180,7 +196,7 @@ function compileRule(rule: Rule): SQL {
     // ── Engagement email (via email_event lié par toEmail) ─────────────
     case 'email_opened': {
       const withinFilter = rule.within
-        ? sql`AND ${emailEvent.ts} >= ${parseRelativeWithin(rule.within) ?? new Date(0)}`
+        ? sql`AND ${emailEvent.ts} >= ${parseRelativeWithinSql(rule.within) ?? sql.raw("'1970-01-01'::timestamptz")}`
         : sql``;
       // type='opened'. templateSlug filtre via outbox join si fourni.
       const inner = sql`SELECT 1 FROM ${emailEvent} WHERE ${emailEvent.type} = 'opened' ${withinFilter}`;
@@ -194,13 +210,13 @@ function compileRule(rule: Rule): SQL {
 
     case 'email_clicked': {
       const withinFilter = rule.within
-        ? sql`AND ${emailEvent.ts} >= ${parseRelativeWithin(rule.within) ?? new Date(0)}`
+        ? sql`AND ${emailEvent.ts} >= ${parseRelativeWithinSql(rule.within) ?? sql.raw("'1970-01-01'::timestamptz")}`
         : sql``;
       return sql`EXISTS (SELECT 1 FROM ${emailEvent} WHERE ${emailEvent.type} = 'clicked' ${withinFilter})`;
     }
 
     case 'received_without_open': {
-      const threshold = parseRelativeWithin(rule.within);
+      const threshold = parseRelativeWithinSql(rule.within);
       const tsFilter = threshold ? sql`AND ${emailEvent.ts} >= ${threshold}` : sql``;
       const sentCnt = sql`(SELECT COUNT(*) FROM ${emailEvent} WHERE ${emailEvent.type} IN ('sent', 'delivered') ${tsFilter})`;
       const openCnt = sql`(SELECT COUNT(*) FROM ${emailEvent} WHERE ${emailEvent.type} = 'opened' ${tsFilter})`;
@@ -219,7 +235,7 @@ function compileRule(rule: Rule): SQL {
 
     case 'session_count': {
       const withinFilter = rule.within
-        ? sql`AND ${userEvent.ts} >= ${parseRelativeWithin(rule.within) ?? new Date(0)}`
+        ? sql`AND ${userEvent.ts} >= ${parseRelativeWithinSql(rule.within) ?? sql.raw("'1970-01-01'::timestamptz")}`
         : sql``;
       const cnt = sql`(
         SELECT COUNT(DISTINCT ${userEvent.sessionId})
@@ -231,14 +247,20 @@ function compileRule(rule: Rule): SQL {
       return numericOp(cnt, rule.operator, rule.value);
     }
 
-    // ── Tags (lead_tag, M5.5 — fallback FALSE/TRUE en attendant) ──────
+    // ── Tags (lead_tag, M5.5) ─────────────────────────────────────────
     case 'has_tag':
-      void rule;
-      return sql`FALSE`;
+      return sql`EXISTS (
+        SELECT 1 FROM ${leadTag}
+        WHERE ${leadTag.leadId} = ${leads.id}
+          AND ${leadTag.tag} = ${rule.tag}
+      )`;
 
     case 'not_has_tag':
-      void rule;
-      return sql`TRUE`;
+      return sql`NOT EXISTS (
+        SELECT 1 FROM ${leadTag}
+        WHERE ${leadTag.leadId} = ${leads.id}
+          AND ${leadTag.tag} = ${rule.tag}
+      )`;
   }
 }
 

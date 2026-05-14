@@ -14,13 +14,15 @@ import { eq } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db/client';
-import { leads, orders } from '@/lib/db/schema';
+import { leads, leadTag, orders } from '@/lib/db/schema';
+import { createId } from '@/lib/ids';
 import { logger } from '@/lib/logging/logger';
 import { withIdempotency } from '@/lib/checkout/api/idempotency-middleware';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
 import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
 import { DbUnavailableError } from '@/lib/checkout/repos/idempotency-repo';
 import { optInEmailInputSchema } from '@/lib/checkout/schemas/lead';
+import { insertUserEventSafe } from '@/lib/user-events/insert';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -89,6 +91,30 @@ export async function PATCH(
             updatedAt: new Date(),
           })
           .where(eq(leads.id, order.leadId));
+
+        // Tag automatique `post-purchase-optin` (idempotent par
+        // (leadId, tag)). Permet de cibler ces leads via une audience
+        // (has_tag = 'post-purchase-optin') ou de fire une automation
+        // sur trigger = event lead.email_optin_post_purchase.
+        await conn
+          .insert(leadTag)
+          .values({
+            id: createId('tag'),
+            leadId: order.leadId,
+            tag: 'post-purchase-optin',
+            source: 'automation',
+            sourceRef: `checkout:${orderId}`,
+          })
+          .onConflictDoNothing();
+
+        // Émet un user_event pour les triggers d'automation.
+        await insertUserEventSafe({
+          email: input.email,
+          eventName: 'lead.email_optin_post_purchase',
+          source: 'server',
+          leadId: order.leadId,
+          properties: { orderId },
+        });
         return {
           status: 200,
           body: {
