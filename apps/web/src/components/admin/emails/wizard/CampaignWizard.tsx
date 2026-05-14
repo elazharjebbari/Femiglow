@@ -18,7 +18,7 @@
  * State client uniquement. La persistance draft est faite via
  * updateCampaignDraft() à chaque step transition (pas auto-save debounced).
  */
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   updateCampaignDraft,
@@ -146,10 +146,40 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
     });
   }
 
-  const estimatedAudience = audienceIds.reduce(
-    (s, id) => s + (lists.find((l) => l.id === id)?.subscriberCount ?? 0),
-    0,
-  );
+  const estimatedAudience = audienceId
+    ? (audiencePreviewSize ?? 0)
+    : audienceIds.reduce(
+        (s, id) => s + (lists.find((l) => l.id === id)?.subscriberCount ?? 0),
+        0,
+      );
+
+  // Hydrate preview size when an audience is already selected on mount (e.g.
+  // user reloads or jumps directly to step 5/6 without re-touching the radio).
+  useEffect(() => {
+    if (!audienceId || audiencePreviewSize !== null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/admin/emails/audiences/${audienceId}`, { credentials: 'include' });
+        if (!r.ok) return;
+        const data = await r.json();
+        const r2 = await fetch('/api/admin/emails/audiences/preview-size', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ rules: data.rules, exclusionFlags: data.exclusionFlags }),
+        });
+        if (!r2.ok) return;
+        const out = await r2.json();
+        if (!cancelled && typeof out.size === 'number') setAudiencePreviewSize(out.size);
+      } catch {
+        // silent
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [audienceId, audiencePreviewSize]);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -438,6 +468,9 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
             ) : null}
             <p className="mt-4 rounded bg-stone-50 p-3 text-sm">
               Estimation envoi total : <strong>{estimatedAudience} emails</strong>
+              {audienceId && (
+                <span className="ml-2 text-xs text-stone-500">(snapshot dynamique au moment du send)</span>
+              )}
             </p>
           </div>
         ) : null}
