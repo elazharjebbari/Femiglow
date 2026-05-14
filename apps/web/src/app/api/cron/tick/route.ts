@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import { processBatch } from '@/lib/webhooks/engine';
 import { scanAndDispatchCartAbandon } from '@/lib/webhooks/outbound/cart-abandon-scanner';
+import { syncCampaignStatuses } from '@/lib/mail/campaigns/listmonk-status-sync';
 import { logAuditEvent } from '@/lib/audit/log-event';
 import { logger } from '@/lib/logging/logger';
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
@@ -29,6 +30,20 @@ export async function POST(request: Request): Promise<Response> {
     // temps disponible. Le scanner est borné à CART_ABANDON_LIMIT leads.
     const cartAbandon = await scanAndDispatchCartAbandon({ limit: CART_ABANDON_LIMIT });
 
+    // Listmonk doesn't emit campaign.completed webhooks; poll instead.
+    let campaignSync: Awaited<ReturnType<typeof syncCampaignStatuses>> | { error: string } = {
+      checked: 0,
+      updated: 0,
+      errors: 0,
+      durationMs: 0,
+    };
+    try {
+      campaignSync = await syncCampaignStatuses();
+    } catch (err) {
+      campaignSync = { error: err instanceof Error ? err.message : String(err) };
+      logger.warn('cron.tick.campaign_sync_failed', { error: String(err) });
+    }
+
     let processed = 0;
     let succeeded = 0;
     let failed = 0;
@@ -48,13 +63,14 @@ export async function POST(request: Request): Promise<Response> {
       failed,
       took_ms: tookMs,
       cart_abandon: cartAbandon,
+      campaign_sync: campaignSync,
     });
     await logAuditEvent({
       action: 'system.cron_tick',
       actorId: null,
-      meta: { processed, succeeded, failed, took_ms: tookMs, cart_abandon: cartAbandon },
+      meta: { processed, succeeded, failed, took_ms: tookMs, cart_abandon: cartAbandon, campaign_sync: campaignSync },
     });
-    return NextResponse.json({ processed, succeeded, failed, tookMs, cartAbandon });
+    return NextResponse.json({ processed, succeeded, failed, tookMs, cartAbandon, campaignSync });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });
