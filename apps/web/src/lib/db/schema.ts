@@ -138,6 +138,33 @@ export const leadEvents = pgTable(
   }),
 );
 
+// — lead_tag (M5.5) ───────────────────────────────────────────────────────
+// Tags attribuables à un lead manuellement ou via automation steps.
+// Utilisable comme filtre dans audience builder (has_tag/not_has_tag).
+export const leadTag = pgTable(
+  'lead_tag',
+  {
+    id: text('id').primaryKey(),
+    leadId: text('lead_id')
+      .notNull()
+      .references(() => leads.id, { onDelete: 'cascade' }),
+    tag: text('tag').notNull(),
+    source: text('source', { enum: ['manual', 'automation', 'import'] })
+      .notNull()
+      .default('manual'),
+    sourceRef: text('source_ref'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    leadTagUnique: uniqueIndex('lead_tag_unique').on(t.leadId, t.tag),
+    tagIdx: index('idx_lead_tag_tag').on(t.tag),
+    leadIdx: index('idx_lead_tag_lead').on(t.leadId),
+  }),
+);
+
+export type LeadTagRow = typeof leadTag.$inferSelect;
+export type LeadTagInsert = typeof leadTag.$inferInsert;
+
 // — user_event (M5.2) ─────────────────────────────────────────────────────
 // Source de vérité unifiée des events utilisateur (web/email/server/admin).
 // Voir docs/emailing/admin-evolution/01-data/01-tables.md#user_event

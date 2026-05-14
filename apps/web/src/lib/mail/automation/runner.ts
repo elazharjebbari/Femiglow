@@ -239,5 +239,10 @@ function normalizeRow(raw: Record<string, unknown>): EmailAutomationRunRow {
     nextActionAt: (raw.next_action_at as Date | null) ?? null,
     finishedAt: (raw.finished_at as Date | null) ?? null,
     outboxIds: raw.outbox_ids as string[],
+    // M5.5 — new columns (nullable, default null pour les anciens runs)
+    awaitingEventName: (raw.awaiting_event_name as string | null) ?? null,
+    awaitingUntil: (raw.awaiting_until as Date | null) ?? null,
+    erroredAt: (raw.errored_at as Date | null) ?? null,
+    erroredReason: (raw.errored_reason as string | null) ?? null,
   };
 }

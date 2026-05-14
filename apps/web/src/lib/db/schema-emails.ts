@@ -319,6 +319,14 @@ export const emailAutomation = pgTable(
     triggerConfig: jsonb('trigger_config').notNull(),
     steps: jsonb('steps').notNull(),
     active: boolean('active').notNull().default(false),
+    // M5.5 — frequency control + trigger conditions
+    cooldownSeconds: integer('cooldown_seconds').notNull().default(0),
+    quietHoursEnabled: boolean('quiet_hours_enabled').notNull().default(true),
+    quietHoursStart: text('quiet_hours_start').notNull().default('08:00'),
+    quietHoursEnd: text('quiet_hours_end').notNull().default('22:00'),
+    quietHoursTz: text('quiet_hours_tz').notNull().default('Africa/Casablanca'),
+    dailyCap: integer('daily_cap'),
+    triggerConditions: jsonb('trigger_conditions'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -345,6 +353,11 @@ export const emailAutomationRun = pgTable(
     nextActionAt: timestamp('next_action_at', { withTimezone: true }),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
     outboxIds: jsonb('outbox_ids').notNull().default([]),
+    // M5.5 — wait_for_event support + error tracking
+    awaitingEventName: text('awaiting_event_name'),
+    awaitingUntil: timestamp('awaiting_until', { withTimezone: true }),
+    erroredAt: timestamp('errored_at', { withTimezone: true }),
+    erroredReason: text('errored_reason'),
   },
   (t) => ({
     automationIdx: index('email_automation_run_automation_idx').on(t.automationId, t.status),
