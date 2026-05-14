@@ -35,18 +35,26 @@ export default async function AutomationPage() {
 
   return (
     <AdminShell adminEmail={session.email} active="emails">
-      <header className="mb-6">
-        <Link href="/admin/emails" className="text-sm text-stone-500 underline">
-          ← Dashboard emails
+      <header className="mb-6 flex items-start justify-between">
+        <div>
+          <Link href="/admin/emails" className="text-sm text-stone-500 underline">
+            ← Dashboard emails
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">
+            Automatisations
+          </h1>
+          <p className="mt-1 text-sm text-stone-600">
+            Workflows déclenchés par events utilisateur (lead.created, cart.abandoned,
+            order.placed, …). Le wizard permet d'éditer les steps, les conditions et
+            les contrôles de fréquence.
+          </p>
+        </div>
+        <Link
+          href="/admin/emails/automation/new"
+          className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+        >
+          + Nouvelle automation
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">
-          Automatisations
-        </h1>
-        <p className="mt-1 text-sm text-stone-600">
-          Workflows déclenchés par event (cart-abandoned, post-purchase, etc.).
-          Les steps sont définis par migration ; cette UI permet de les
-          activer/désactiver et de monitorer les runs.
-        </p>
       </header>
 
       <section className="mb-8">
@@ -75,7 +83,14 @@ export default async function AutomationPage() {
               ) : (
                 automations.map((a) => (
                   <tr key={a.id} className="hover:bg-stone-50/60">
-                    <td className="px-3 py-2 font-mono text-xs">{a.slug}</td>
+                    <td className="px-3 py-2 font-mono text-xs">
+                      <Link
+                        href={`/admin/emails/automation/${a.id}/edit`}
+                        className="hover:underline"
+                      >
+                        {a.slug}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2 font-medium text-stone-900">{a.name}</td>
                     <td className="px-3 py-2 text-xs">{a.triggerType}</td>
                     <td className="px-3 py-2 text-xs text-stone-600">
@@ -93,16 +108,24 @@ export default async function AutomationPage() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <form action={toggleAutomationActive} className="inline">
-                        <input type="hidden" name="id" value={a.id} />
-                        <input type="hidden" name="next" value={String(!a.active)} />
-                        <button
-                          type="submit"
-                          className="rounded-md border border-stone-300 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/emails/automation/${a.id}/edit`}
+                          className="text-xs text-stone-600 underline"
                         >
-                          {a.active ? 'Désactiver' : 'Activer'}
-                        </button>
-                      </form>
+                          Éditer
+                        </Link>
+                        <form action={toggleAutomationActive} className="inline">
+                          <input type="hidden" name="id" value={a.id} />
+                          <input type="hidden" name="next" value={String(!a.active)} />
+                          <button
+                            type="submit"
+                            className="rounded-md border border-stone-300 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                          >
+                            {a.active ? 'Désactiver' : 'Activer'}
+                          </button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -144,7 +167,14 @@ export default async function AutomationPage() {
                         timeStyle: 'short',
                       })}
                     </td>
-                    <td className="px-3 py-2 text-stone-700">{r.recipientEmail}</td>
+                    <td className="px-3 py-2 text-stone-700">
+                      <Link
+                        href={`/admin/emails/automation/runs/${r.id}`}
+                        className="hover:underline"
+                      >
+                        {r.recipientEmail}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2 text-xs">{r.currentStep}</td>
                     <td className="px-3 py-2">
                       <span className="inline-block rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700">
