@@ -97,6 +97,15 @@ const PROVIDER_TO_GTM_TYPE: Record<MappingProviderKind, string> = {
   pinterest: 'cvt_pinterest_tag',
 };
 
+/**
+ * Sanitize les noms de tags/triggers/variables pour GTM.
+ * Caractères interdits dans l'UI : `:`, certains symboles spéciaux. On
+ * remplace par un tiret pour préserver la lisibilité.
+ */
+function sanitizeGtmName(raw: string): string {
+  return raw.replace(/:/g, ' -').replace(/\s+/g, ' ').trim();
+}
+
 export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
   const triggers: GtmTrigger[] = [];
   const tags: GtmTag[] = [];
@@ -116,7 +125,7 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
     const triggerId = String(nextTriggerId++);
     triggers.push({
       triggerId,
-      name: `FemiGlow: ${eventName}`,
+      name: sanitizeGtmName(`FemiGlow — ${eventName}`),
       type: 'CUSTOM_EVENT',
       customEventFilter: [
         {
@@ -154,7 +163,7 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
 
       tags.push({
         tagId: String(nextTagId++),
-        name: `FemiGlow: ${kind} — ${eventName}`,
+        name: sanitizeGtmName(`FemiGlow — ${kind} — ${eventName}`),
         type: tagType,
         parameter,
         firingTriggerId: [triggerId],
@@ -166,7 +175,7 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
     .sort()
     .map((name) => ({
       variableId: String(nextVariableId++),
-      name: `DLV - ${name}`,
+      name: sanitizeGtmName(`DLV - ${name}`),
       type: 'v',
       parameter: [
         { type: 'TEMPLATE', key: 'name', value: name },
