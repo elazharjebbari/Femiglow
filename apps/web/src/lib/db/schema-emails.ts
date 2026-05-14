@@ -15,6 +15,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -356,6 +357,34 @@ export const emailSettings = pgTable('email_settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// — admin_email_view (M5.1) — — — — — — — — — — — — — — — — — — — — — — — —
+// Saved views per-admin (transactional cockpit, audiences, automation).
+// is_system=true → vue prédéfinie système (owner_email='system'), lecture seule.
+
+export const adminEmailView = pgTable(
+  'admin_email_view',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerEmail: text('owner_email').notNull(),
+    name: text('name').notNull(),
+    scope: text('scope', { enum: ['transactional', 'campaigns', 'automation'] }).notNull(),
+    filterState: jsonb('filter_state').notNull(),
+    isSystem: boolean('is_system').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    uniqueOwnerScope: uniqueIndex('admin_email_view_unique_per_owner').on(
+      t.ownerEmail,
+      t.scope,
+      t.name,
+    ),
+    ownerIdx: index('idx_admin_email_view_owner').on(t.ownerEmail, t.scope),
+    systemIdx: index('idx_admin_email_view_system').on(t.scope, t.isSystem),
+  }),
+);
+
 // — Inferred types — — — — — — — — — — — — — — — — — — — — — — — — — — — —
 
 export type EmailOutboxRow = typeof emailOutbox.$inferSelect;
@@ -372,6 +401,9 @@ export type EmailSuppressionInsert = typeof emailSuppression.$inferInsert;
 export type EmailAutomationRow = typeof emailAutomation.$inferSelect;
 export type EmailAutomationRunRow = typeof emailAutomationRun.$inferSelect;
 export type EmailSettingsRow = typeof emailSettings.$inferSelect;
+export type AdminEmailViewRow = typeof adminEmailView.$inferSelect;
+export type AdminEmailViewInsert = typeof adminEmailView.$inferInsert;
+export type AdminEmailViewScope = 'transactional' | 'campaigns' | 'automation';
 
 export type EmailOutboxStatus =
   | 'pending'
