@@ -17,7 +17,9 @@ const EXPECTED_LINKS: ReadonlyArray<{ label: string; href: string }> = [
   { label: "Vue d'ensemble", href: '/admin/chat' },
   { label: 'Conversations', href: '/admin/chat/conversations' },
   { label: 'Leads chat', href: '/admin/chat/leads' },
+  { label: 'Care', href: '/admin/chat/care' },
   { label: 'KPIs', href: '/admin/chat/kpis' },
+  { label: 'Analytics', href: '/admin/chat/analytics' },
   { label: 'Instructions', href: '/admin/chat/instructions' },
   { label: 'Sources', href: '/admin/chat/sources' },
   { label: 'FAQ', href: '/admin/chat/faq' },
@@ -30,7 +32,7 @@ const EXPECTED_LINKS: ReadonlyArray<{ label: string; href: string }> = [
 ];
 
 describe('ChatAdminNav', () => {
-  it('rend les 11 sections attendues, dans l\'ordre, avec les bonnes routes', () => {
+  it('rend les sections attendues, dans l\'ordre, avec les bonnes routes', () => {
     render(<ChatAdminNav active="overview" />);
 
     const links = screen.getAllByRole('link');

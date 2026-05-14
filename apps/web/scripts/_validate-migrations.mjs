@@ -23,9 +23,11 @@
  *   node scripts/_validate-migrations.mjs --json       (output JSON)
  */
 import { readFileSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(import.meta.dirname, '..');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(__dirname, '..');
 const MIGRATIONS_DIR = resolve(ROOT, 'drizzle/migrations');
 const JOURNAL = resolve(MIGRATIONS_DIR, 'meta/_journal.json');
 

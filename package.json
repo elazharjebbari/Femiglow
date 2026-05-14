@@ -23,5 +23,10 @@
     "apps/web/src/**/*.{ts,tsx,css,md}": [
       "pnpm --filter @femiglow/web exec prettier --write"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "jsdom": "25.0.1"
+    }
   }
 }
