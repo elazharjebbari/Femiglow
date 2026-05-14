@@ -15,6 +15,8 @@ import { ruleLabel } from './rule-defaults';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { TagAutocomplete } from './TagAutocomplete';
 import { TemplateAutocomplete } from './TemplateAutocomplete';
+import { CountryAutocomplete } from './CountryAutocomplete';
+import { DurationInput } from './DurationInput';
 
 export type RuleEditorProps = {
   rule: Rule;
@@ -97,19 +99,25 @@ function CountryEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'countr
         <option value="eq">égal</option>
         <option value="in">parmi</option>
       </select>
-      <input
-        type="text"
-        value={Array.isArray(rule.value) ? rule.value.join(', ') : rule.value}
-        onChange={(e) => {
-          const v = e.target.value;
-          onChange({
-            ...rule,
-            value: rule.operator === 'in' ? v.split(',').map((s) => s.trim()) : v,
-          } as Rule);
-        }}
-        placeholder="MA, FR"
-        className="w-32 rounded border border-stone-300 px-2 py-1 text-sm uppercase"
-      />
+      {rule.operator === 'eq' ? (
+        <CountryAutocomplete
+          value={typeof rule.value === 'string' ? rule.value : ''}
+          onChange={(code) => onChange({ ...rule, value: code } as Rule)}
+        />
+      ) : (
+        <input
+          type="text"
+          value={Array.isArray(rule.value) ? rule.value.join(', ') : rule.value}
+          onChange={(e) =>
+            onChange({
+              ...rule,
+              value: e.target.value.split(',').map((s) => s.trim().toUpperCase()),
+            } as Rule)
+          }
+          placeholder="MA, FR"
+          className="w-40 rounded border border-stone-300 px-2 py-1 text-sm uppercase"
+        />
+      )}
     </div>
   );
 }
@@ -200,14 +208,12 @@ function EmailOpenedClickedEditor({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <label className="flex items-center gap-1">
+      <label className="flex items-center gap-2">
         dans les
-        <input
-          type="text"
+        <DurationInput
           value={rule.within ?? ''}
-          onChange={(e) => onChange({ ...rule, within: e.target.value || undefined })}
+          onChange={(v) => onChange({ ...rule, within: v || undefined })}
           placeholder="7d"
-          className="w-16 rounded border border-stone-300 px-2 py-1 text-sm"
         />
       </label>
       <label className="flex items-center gap-1 text-xs text-stone-600">
@@ -313,12 +319,10 @@ function ReceivedWithoutOpenEditor({
         className="w-16 rounded border border-stone-300 px-2 py-1 text-sm tabular-nums"
       />
       <span>reçus dans</span>
-      <input
-        type="text"
+      <DurationInput
         value={rule.within}
-        onChange={(e) => onChange({ ...rule, within: e.target.value })}
+        onChange={(v) => onChange({ ...rule, within: v })}
         placeholder="14d"
-        className="w-16 rounded border border-stone-300 px-2 py-1 text-sm"
       />
     </div>
   );
