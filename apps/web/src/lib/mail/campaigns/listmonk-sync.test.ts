@@ -82,21 +82,31 @@ describe('pushSnapshotToListmonk', () => {
 
     const fetchImpl = vi
       .fn()
+      // POST /api/lists → list created (id=99)
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ data: { id: 99 } }), { status: 200 }),
       )
+      // POST /api/subscribers ×3 (one per email)
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { status: 'queued' } }), { status: 200 }),
+        new Response(JSON.stringify({ data: { id: 1 } }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { id: 2 } }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: { id: 3 } }), { status: 200 }),
       );
 
     const result = await pushSnapshotToListmonk('snap-1', { fetchImpl });
     expect(result.listmonkListId).toBe(99);
     expect(result.pushed).toBe(3);
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
     // First call : POST /api/lists
     expect(fetchImpl.mock.calls[0]![0]).toContain('/api/lists');
-    // Second call : POST /api/import/subscribers
-    expect(fetchImpl.mock.calls[1]![0]).toContain('/api/import/subscribers');
+    // Calls 2..4 : POST /api/subscribers (one per email)
+    expect(fetchImpl.mock.calls[1]![0]).toContain('/api/subscribers');
+    expect(fetchImpl.mock.calls[2]![0]).toContain('/api/subscribers');
+    expect(fetchImpl.mock.calls[3]![0]).toContain('/api/subscribers');
   });
 
   it('throws on Listmonk create list failure', async () => {
