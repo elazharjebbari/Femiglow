@@ -40,6 +40,7 @@ import { chatIntentsSeeder } from './items/chat-intents';
 import { trackingSeeder } from './items/tracking';
 import { ritualsSeeder } from './items/rituals';
 import { legalSeeder } from './items/legal';
+import { eventMappingsSeeder } from './items/event-mappings';
 
 export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
   // ── Core ─────────────────────────────────────────────────────────────
@@ -230,6 +231,16 @@ export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
     estimatedDurationMs: 4_000,
     idempotent: true,
     run: trackingSeeder,
+  },
+  {
+    id: 'event-mappings',
+    group: 'tracking',
+    label: 'Factory event mappings (70 events × 6 vendors)',
+    description:
+      'Charge le mapping factory FemiGlow depuis docs/event-mappings/20-data/default-mapping.json dans event_mapping_versions.__default__. Active __default__ si aucune autre version active.',
+    estimatedDurationMs: 1_500,
+    idempotent: true,
+    run: eventMappingsSeeder,
   },
   {
     id: 'rituals',

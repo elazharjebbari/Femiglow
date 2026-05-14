@@ -157,6 +157,16 @@ export function MappingVersionsList() {
             ↩ Reset au default
           </button>
         ) : null}
+        <form action="/api/admin/tracking/events/mappings/seed-defaults" method="POST">
+          <button
+            type="submit"
+            data-testid="btn-seed-defaults"
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
+            title="Charge le factory mapping (70 events × 6 vendors) depuis docs/event-mappings/20-data/default-mapping.json. Idempotent : UPDATE si __default__ existe."
+          >
+            ⚙ Seed factory mapping (70 events)
+          </button>
+        </form>
         <a
           href="/admin/tracking/gtm"
           className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
