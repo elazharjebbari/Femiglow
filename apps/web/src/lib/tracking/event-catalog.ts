@@ -190,11 +190,21 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     name: 'form_start',
     category: 'engagement',
     scope: 'web',
-    description: 'D\u00e9but d\u2019interaction avec un formulaire',
+    description: 'D\u00e9but d\u2019interaction avec un formulaire (premier focus champ)',
     isConversion: false,
     applicableCategories: ['form_input'],
     defaultProviders: ['google_ga4'],
-    paramsSchema: { type: 'object', properties: { form_id: { type: 'string' } } },
+    paramsSchema: {
+      type: 'object',
+      properties: {
+        form_id: { type: 'string' },
+        first_field: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+      },
+    },
   },
   {
     name: 'form_submit',

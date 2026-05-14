@@ -1,0 +1,61 @@
+id,layer,suite,priority,scenario,setup,action,expected,success_criteria_ref
+T01,unit,store.test.ts,P0,create draft version,memoryStore empty,"store.create({name,mappings},opts)","row inserted status=draft is_active=false",F.2
+T02,unit,store.test.ts,P0,clone version,1 version exists,"store.clone(sourceId,overrides,opts)","new version cloned_from=source mappings deep-copy",F.4
+T03,unit,store.test.ts,P0,activate version,2 versions one active,store.activate(otherId),"transaction: old.is_active=false old.archived=now new.is_active=true new.status=active",F.5
+T04,unit,store.test.ts,P0,one_active_constraint,2 versions both is_active=true,"UPDATE direct (test DB constraint)",PG unique_violation raised,T.1
+T05,unit,store.test.ts,P0,cannot delete active,1 active version,store.softDelete(activeId),throws 'cannot_delete_active',
+T06,unit,store.test.ts,P0,cannot delete default,__default__ exists,store.softDelete('__default__'),throws 'cannot_delete_default',
+T07,unit,store.test.ts,P1,FIFO max 50 versions,49 archived + 1 active,store.create(...) 60 times,"length stays 50 active and default preserved oldest archived dropped",
+T08,unit,store.test.ts,P1,restore deleted,1 deleted version,store.restore(id),"status='archived' deleted_at=null",F.7
+T09,unit,store.test.ts,P0,resetToDefault,active=v3 default=__default__,store.resetToDefault(),"__default__ active v3 archived audit log written",F.12
+T10,unit,store.test.ts,P0,upsertDefault idempotent,run twice with same checksum,store.upsertDefault({mappings,checksum}),no duplicate created same row updated,
+T11,unit,resolver.test.ts,P0,cache hit returns same instance,call resolveEventMapping('purchase' 'meta') twice within TTL,both calls,exact same object reference (memo),P.5
+T12,unit,resolver.test.ts,P0,cache miss after activate,activate new version,call resolveEventMapping,fetches new mapping (cache invalidated),P.5
+T13,unit,resolver.test.ts,P0,fallback to code if DB empty,DB no versions,resolveEventMapping('purchase' 'meta'),returns from event-mapping.ts hardcoded,
+T14,unit,resolver.test.ts,P1,returns null if isEnabled=false,active version has isEnabled=false for cell,resolveEventMapping,returns null,
+T15,unit,validator.test.ts,P0,Meta valid name,"validate({mappedName:'Purchase',isCustom:false},'meta')",valid,T.7
+T16,unit,validator.test.ts,P0,Meta invalid kebab,"validate({mappedName:'pur-chase'},'meta')",invalid 'mapping_name_invalid',T.7
+T17,unit,validator.test.ts,P0,GA4 valid snake,"validate({mappedName:'purchase'},'google_ga4')",valid,T.7
+T18,unit,validator.test.ts,P0,GA4 invalid capital,"validate({mappedName:'Purchase'},'google_ga4')",invalid,T.7
+T19,unit,gtm-export.test.ts,P0,build container valid,default-mapping,buildGtmContainer({mappings env:'production'}),"exportFormatVersion=2 containerVersion.tag[] non empty",F.11
+T20,unit,gtm-export.test.ts,P0,sha256 deterministic,same input,buildGtmContainer twice,same sha256 returned,
+T21,unit,gtm-export.test.ts,P0,Meta isCustom produces trackCustom,1 mapping with isCustom=true,buildGtmContainer,"tag has eventName=trackCustom customEventName=mappedName",
+T22,unit,gtm-export.test.ts,P0,disabled cells skipped,5 disabled cells out of 30,buildGtmContainer,"tags count = enabled cells count not 30 not 35",
+T23,unit,gtm-export.test.ts,P1,round-trip schema valid,build then parse with GTM schema Zod,buildGtmContainer + parse,parse OK no errors,Q.4
+T24,integration,route-list.test.ts,P0,GET /mappings 200,session valid 1 version,GET,200 + array,F.1
+T25,integration,route-list.test.ts,P0,GET /mappings 401,no session,GET,401 unauthorized,S.1
+T26,integration,route-create.test.ts,P0,POST kind=default,session valid,POST {source:{kind:'default'}},201 + version draft,F.2
+T27,integration,route-create.test.ts,P0,POST kind=clone,session valid sourceId exists,POST {source:{kind:'clone' sourceId}},"201 + version cloned_from=sourceId",F.2
+T28,integration,route-create.test.ts,P0,POST kind=clone 404,sourceId invalid,POST,404 'source_not_found',
+T29,integration,route-create.test.ts,P0,POST kind=import,session valid,POST {source:{kind:'import' mappings}},201 + version mappings=imported,F.2
+T30,integration,route-create.test.ts,P0,POST kind=import 400,invalid mappings (Zod fail),POST,400 'validation_failed',T.7
+T31,integration,route-update.test.ts,P0,PUT clones existing,1 active version,PUT mappings,201 (new version) NOT 200 (no update in place),F.4
+T32,integration,route-update.test.ts,P0,PUT on __default__ → 403,attempt edit,PUT,403 'cannot_edit_default',T.1
+T33,integration,route-delete.test.ts,P0,DELETE soft,archived version,DELETE,200 + status=deleted,F.7
+T34,integration,route-delete.test.ts,P0,DELETE active → 403,active version,DELETE,403 'cannot_delete_active',
+T35,integration,route-activate.test.ts,P0,POST /activate,2 versions,POST /activate on other,200 + old archived new active,F.5
+T36,integration,route-test.test.ts,P0,POST /test purchase,active version,POST {eventName:'purchase'},results object 6 providers,F.10
+T37,integration,route-export-gtm.test.ts,P0,POST /export-gtm,active version,POST {env:'production'},200 + containerJson + sha256,F.11
+T38,integration,route-reset.test.ts,P0,POST /reset-default,active=v3,POST,200 + __default__ now active + audit log,F.12
+T39,integration,route-diff.test.ts,P0,GET /diff/:a/:b,2 versions,GET,200 + added/removed/changed arrays,F.9
+T40,e2e,playwright/list.spec.ts,P0,liste affiche versions,session admin,goto /mappings,active badge visible + actions visibles,F.1
+T41,e2e,playwright/create-wizard.spec.ts,P0,wizard create depuis default,goto /mappings,click create + step1 default + step2 name + step3 submit,redirect /[newId]/edit + draft visible,F.2
+T42,e2e,playwright/create-wizard.spec.ts,P0,wizard create depuis clone,1 version existante,wizard clone of v3,new version inherits v3 mappings,F.2
+T43,e2e,playwright/edit-matrix.spec.ts,P0,edit cellule,goto /[id]/edit,click cellule + edit + apply,cellule mise à jour + dirty counter +1,F.3
+T44,e2e,playwright/edit-matrix.spec.ts,P0,save creates new version,edits applied,click save + confirm,new version draft created + redirect,F.4
+T45,e2e,playwright/activate.spec.ts,P0,activate one version,goto /mappings,click activate + confirm,toast OK + badge mis à jour,F.5
+T46,e2e,playwright/delete.spec.ts,P0,delete archived,1 archived version,click delete + confirm,status=deleted + hidden de la liste,F.7
+T47,e2e,playwright/diff.spec.ts,P0,diff 2 versions,2 versions,select 2 + click compare,page diff montre les changements,F.9
+T48,e2e,playwright/test-modal.spec.ts,P0,test dispatch dry-run,goto matrix,click test + select purchase + run,résultats par provider affichés,F.10
+T49,e2e,playwright/export-gtm.spec.ts,P0,export download,goto matrix,click export + production + confirm,fichier .json téléchargé + toast OK,F.11
+T50,e2e,playwright/reset.spec.ts,P0,reset au default,active!=default,click reset + confirm,__default__ devient active + toast,F.12
+T51,e2e,playwright/a11y.spec.ts,P0,axe core 0 violation list,goto /mappings,run axe,0 critical/serious,Q.5
+T52,e2e,playwright/a11y.spec.ts,P0,axe core 0 violation editor,goto /[id]/edit,run axe,0 critical/serious,Q.5
+T53,e2e,playwright/keyboard.spec.ts,P0,nav clavier matrix,goto /[id]/edit,Tab Tab Enter arrows Escape,focus visible + actions OK,Q.6
+T54,e2e,playwright/ULTIMATE.spec.ts,P0,round-trip GTM,default version,export GTM + parse + re-import (mock) + diff,diff sémantique = empty,Q.4
+T55,unit,seed.test.ts,P0,seed default idempotent,run twice,seedDefaultMapping(),__default__ exists once with checksum updated,T.8
+T56,unit,resolver.test.ts,P1,perf p99 5ms,1000 calls,resolveEventMapping,p99 < 5ms,P.5
+T57,e2e,playwright/perf.spec.ts,P1,LCP < 200ms,build prod,goto /mappings,LCP measured < 200ms,P.3
+T58,unit,gtm-export.test.ts,P1,export < 500ms 200 mappings,200 mappings,time buildGtmContainer,< 500ms,P.4
+T59,integration,route-export-gtm.test.ts,P1,response time < 500ms,server,POST /export-gtm,response.time < 500ms,P.4
+T60,unit,check-default-mapping.test.ts,P0,drift detection CI,default-mapping.json + event-mapping.ts diverge,run script,exit 1 + diff listed,T.8

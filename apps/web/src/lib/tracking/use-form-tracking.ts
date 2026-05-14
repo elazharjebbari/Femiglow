@@ -23,6 +23,11 @@ import { useTracking } from './use-tracking';
 
 interface UseFormTrackingOptions {
   formId: string;
+  /**
+   * Mode du form (D-004) — propagé dans le payload `form_start` pour
+   * permettre la segmentation wizard embed / cart / legacy côté GA4.
+   */
+  formMode?: 'wizard_embed' | 'wizard_cart' | 'legacy_cart';
   /** Si true (default), émet form_abandon au pagehide si le formulaire a été touché. */
   trackAbandon?: boolean;
 }
@@ -40,6 +45,7 @@ interface UseFormTrackingResult {
 
 export function useFormTracking({
   formId,
+  formMode,
   trackAbandon = true,
 }: UseFormTrackingOptions): UseFormTrackingResult {
   const { emit } = useTracking();
@@ -47,17 +53,23 @@ export function useFormTracking({
   const submittedRef = useRef(false);
   const startTimeRef = useRef<number | null>(null);
   const lastFieldRef = useRef<string | null>(null);
+  const firstFieldRef = useRef<string | null>(null);
   const focusedFieldsRef = useRef(new Set<string>());
 
   const ensureStarted = useCallback(() => {
     if (startedRef.current) return;
     startedRef.current = true;
     startTimeRef.current = Date.now();
-    emit('form_start', { form_id: formId });
-  }, [emit, formId]);
+    emit('form_start', {
+      form_id: formId,
+      ...(firstFieldRef.current ? { first_field: firstFieldRef.current } : {}),
+      ...(formMode ? { form_mode: formMode } : {}),
+    });
+  }, [emit, formId, formMode]);
 
   const handleFieldFocus = useCallback(
     (fieldName: string) => () => {
+      if (!startedRef.current) firstFieldRef.current = fieldName;
       ensureStarted();
       lastFieldRef.current = fieldName;
       // Idempotence : un seul form_field_focus par champ

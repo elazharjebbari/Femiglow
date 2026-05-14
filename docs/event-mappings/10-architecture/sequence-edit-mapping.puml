@@ -1,0 +1,40 @@
+@startuml seq-edit-mapping
+!theme plain
+title Édition d'un mapping (D-001 : édition = nouvelle version clone)
+
+actor Admin
+participant "MappingMatrix\n(client React)" as ui
+participant "API\nPUT /mappings/:id" as api
+participant "store.ts" as store
+participant "validator.ts" as val
+participant "audit.ts" as audit
+database PG as db
+
+Admin -> ui : Édite cellule (event=purchase, meta=NewPurchaseName)
+ui -> ui : Optimistic UI update + bouton "Sauvegarder" devient actif
+Admin -> ui : Click "Sauvegarder modifications"
+ui -> ui : Confirm modale "Cette action va créer une nouvelle version dérivée"
+Admin -> ui : Confirme
+ui -> api : PUT {versionId, mappings, name?: 'v3 (édition de v2)'}
+
+api -> val : validate(mappings) (Zod par provider)
+val --> api : ok | error[]
+
+alt validation OK
+  api -> store : clone(sourceId=versionId, newMappings, opts)
+  store -> db : SELECT version source
+  db --> store : source row
+  store -> db : INSERT new version (status=draft, cloned_from, mappings)
+  db --> store : new id
+  store -> audit : auditMappingChange(action='edit', actorId, before, after)
+  audit -> db : INSERT event_mapping_audit
+  store --> api : { newVersion }
+  api --> ui : 201 { version }
+  ui -> ui : Toast succès + redirige vers la nouvelle version (mode draft)
+  ui -> ui : Affiche bandeau "Version draft créée. Active la version pour la mettre en production."
+else validation KO
+  api --> ui : 400 { error: validation_failed, fields: [...] }
+  ui -> ui : Affiche les erreurs en inline à côté de chaque cellule
+end
+
+@enduml

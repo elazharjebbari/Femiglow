@@ -1,0 +1,137 @@
+{
+  "_meta": {
+    "name": "MappingCreateWizard",
+    "description": "Wizard 3 étapes pour créer une nouvelle version de mappings",
+    "framework": "React 18 (Next.js App Router)",
+    "stateLibrary": "useState + useReducer interne",
+    "validation": "Zod"
+  },
+  "steps": [
+    {
+      "id": "step1-mode",
+      "title": "Source de la nouvelle version",
+      "description": "Choisir d'où démarre la nouvelle version",
+      "fields": [
+        {
+          "key": "source",
+          "type": "radio-group",
+          "required": true,
+          "options": [
+            {
+              "value": "default",
+              "label": "Depuis le mapping par défaut FemiGlow",
+              "description": "Repart de zéro avec le factory mapping. Recommandé pour les évolutions majeures.",
+              "icon": "factory"
+            },
+            {
+              "value": "clone",
+              "label": "Cloner une version existante",
+              "description": "Démarre avec les valeurs d'une version active/archivée. Le plus courant.",
+              "icon": "copy",
+              "subFields": [
+                {
+                  "key": "sourceId",
+                  "type": "select",
+                  "label": "Version source",
+                  "required": true,
+                  "optionsEndpoint": "GET /api/admin/tracking/events/mappings?status=active,archived"
+                }
+              ]
+            },
+            {
+              "value": "import",
+              "label": "Importer depuis un fichier JSON",
+              "description": "Charge un mapping depuis un fichier exporté ailleurs ou une PR git.",
+              "icon": "upload",
+              "subFields": [
+                {
+                  "key": "importFile",
+                  "type": "file",
+                  "accept": ".json",
+                  "maxSize": "100KB",
+                  "validation": "fileMustMatchMappingsSchema"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "navigation": {
+        "next": {
+          "label": "Continuer",
+          "enabledWhen": "source is valid and (if clone, sourceId selected) and (if import, file uploaded and valid)"
+        },
+        "cancel": {
+          "label": "Annuler",
+          "confirmIfDirty": true
+        }
+      }
+    },
+    {
+      "id": "step2-meta",
+      "title": "Nom et description",
+      "description": "Identifier clairement la version",
+      "fields": [
+        {
+          "key": "name",
+          "type": "text",
+          "label": "Nom de la version",
+          "placeholder": "v4 — campagne Sara mai 2026",
+          "required": true,
+          "maxLength": 120,
+          "validation": "z.string().min(1).max(120)"
+        },
+        {
+          "key": "notes",
+          "type": "textarea",
+          "label": "Notes (optionnel)",
+          "placeholder": "Renommage Meta CustomEvent pour la campagne Lookalike Q2",
+          "maxLength": 2000,
+          "rows": 4
+        }
+      ],
+      "navigation": {
+        "back": { "label": "Retour" },
+        "next": { "label": "Continuer", "enabledWhen": "name is valid" }
+      }
+    },
+    {
+      "id": "step3-confirm",
+      "title": "Récapitulatif",
+      "description": "Vérifier avant de créer la version",
+      "preview": {
+        "type": "summary-card",
+        "fields": [
+          { "label": "Source", "valueFrom": "step1.source" },
+          { "label": "Nom", "valueFrom": "step2.name" },
+          { "label": "Notes", "valueFrom": "step2.notes", "hideIfEmpty": true },
+          { "label": "Nombre d'events", "computed": "Object.keys(mappings).length" },
+          { "label": "Status après création", "value": "draft" }
+        ],
+        "info": "La version sera créée en mode draft. Elle ne sera PAS automatiquement active. Active-la depuis la liste après vérification."
+      },
+      "navigation": {
+        "back": { "label": "Retour" },
+        "submit": {
+          "label": "Créer la version",
+          "action": "POST /api/admin/tracking/events/mappings",
+          "loadingState": "Création en cours...",
+          "onSuccess": "redirect to /admin/tracking/events/mappings/[newId]/edit",
+          "onError": "show inline error + stay on step3"
+        }
+      }
+    }
+  ],
+  "accessibility": {
+    "focusManagement": "Focus auto sur premier input de chaque step à l'entrée",
+    "ariaLive": "polite pour les transitions step",
+    "keyboardNavigation": "Tab cycle dans la modale uniquement (focus trap)",
+    "escapeKey": "Ferme la modale (avec confirm si dirty)"
+  },
+  "responsive": {
+    "mobile": "Stack vertical, scrollable, sticky footer avec actions",
+    "tablet": "Same as desktop, modal max-width 600px",
+    "desktop": "Modal max-width 720px, centered"
+  },
+  "i18n": "fr-MA only (cf. microcopy.csv)"
+}

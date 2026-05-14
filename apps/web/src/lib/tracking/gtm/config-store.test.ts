@@ -169,3 +169,63 @@ describe('gtmConfigStore — historique', () => {
     expect(list.versions.map((v) => v.name)).toEqual(['newest', 'middle', 'oldest']);
   });
 });
+
+describe('gtmConfigStore.clone (D-003)', () => {
+  it('crée une nouvelle version avec clonedFrom = source.id', async () => {
+    const src = await gtmConfigStore.create(
+      { name: 'source v1', notes: 'src', perEnv: fixturePerEnv() },
+      { actorId: ACTOR },
+    );
+    const cloned = await gtmConfigStore.clone(
+      src.id,
+      { name: 'source v1 (edit)', notes: 'derived' },
+      { actorId: ACTOR },
+    );
+    expect(cloned.id).not.toBe(src.id);
+    expect(cloned.name).toBe('source v1 (edit)');
+    expect(cloned.notes).toBe('derived');
+    expect(cloned.clonedFrom).toBe(src.id);
+    // perEnv valeur égale mais référence distincte (deep clone).
+    expect(cloned.perEnv).toEqual(src.perEnv);
+    expect(cloned.perEnv).not.toBe(src.perEnv);
+    expect(cloned.perEnv.production).not.toBe(src.perEnv.production);
+  });
+
+  it('ne mute pas la source (perEnv.production)', async () => {
+    const src = await gtmConfigStore.create(
+      { name: 'src', perEnv: fixturePerEnv() },
+      { actorId: ACTOR },
+    );
+    const cloned = await gtmConfigStore.clone(
+      src.id,
+      { name: 'clone' },
+      { actorId: ACTOR },
+    );
+    cloned.perEnv.production.ga4MeasurementId = 'G-CHANGED1';
+    const reloaded = await gtmConfigStore.get(src.id);
+    expect(reloaded?.perEnv.production.ga4MeasurementId).toBe('G-PROD0000');
+  });
+
+  it("ajoute la version sans changer l'activeId (pas d'auto-activation)", async () => {
+    const src = await gtmConfigStore.create(
+      { name: 'src', perEnv: fixturePerEnv() },
+      { actorId: ACTOR },
+    );
+    let list = await gtmConfigStore.list();
+    expect(list.activeId).toBe(src.id);
+    await gtmConfigStore.clone(src.id, { name: 'clone' }, { actorId: ACTOR });
+    list = await gtmConfigStore.list();
+    expect(list.activeId).toBe(src.id);
+    expect(list.versions).toHaveLength(2);
+  });
+
+  it('rejette si sourceId inconnu', async () => {
+    await expect(
+      gtmConfigStore.clone(
+        '00000000-0000-0000-0000-000000000000',
+        { name: 'x' },
+        { actorId: ACTOR },
+      ),
+    ).rejects.toThrow('config_version_not_found');
+  });
+});

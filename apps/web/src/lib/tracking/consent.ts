@@ -41,8 +41,33 @@ export function saveConsent(state: TrackingConsentState): void {
   } catch {
     // ignore
   }
-  if (typeof window !== 'undefined' && (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag) {
-    (window as unknown as { gtag: (...args: unknown[]) => void }).gtag('consent', 'update', state);
+  // T34 / C4.T.3 — Consent Mode v2 propagation à tous les tags loaded.
+  // On pousse via plusieurs canaux pour couvrir gtag (Google), GTM (via
+  // dataLayer), Meta (fbq) et TikTok (ttq). Les tags pas encore chargés
+  // récupéreront la dernière valeur depuis la queue du dataLayer / window.
+  const w = window as unknown as Record<string, unknown>;
+  // 1) gtag direct (GA4/Ads/GTM) — Consent API native.
+  const gtag = w.gtag as ((...args: unknown[]) => void) | undefined;
+  if (typeof gtag === 'function') {
+    gtag('consent', 'update', state);
+  }
+  // 2) dataLayer.push pour GTM (déclencheurs Custom Event listener).
+  const dataLayer = (w.dataLayer ?? []) as unknown[];
+  if (Array.isArray(dataLayer)) {
+    dataLayer.push({ event: 'fg_consent_update', consent: state });
+    w.dataLayer = dataLayer;
+  }
+  // 3) Meta fbq — Meta gère son consent via grantConsent/revokeConsent.
+  const fbq = w.fbq as ((...args: unknown[]) => void) | undefined;
+  if (typeof fbq === 'function') {
+    fbq('consent', state.ad_storage === 'granted' ? 'grant' : 'revoke');
+  }
+  // 4) TikTok ttq — API analytics.disable() / .enable() (best effort,
+  //    no-op si non chargé).
+  const ttq = w.ttq as { disable?: () => void; enable?: () => void } | undefined;
+  if (ttq && typeof ttq === 'object') {
+    if (state.ad_storage === 'granted') ttq.enable?.();
+    else ttq.disable?.();
   }
   window.dispatchEvent(new CustomEvent('fg:consent-changed', { detail: state }));
 }

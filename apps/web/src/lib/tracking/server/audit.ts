@@ -4,6 +4,7 @@ export type TrackingResource =
   | 'tracking_page'
   | 'tracking_component'
   | 'tracking_event_definition'
+  | 'tracking_event_override'
   | 'tracking_component_event'
   | 'tracking_provider'
   | 'tracking_consent'

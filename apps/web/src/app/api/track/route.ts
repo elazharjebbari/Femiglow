@@ -19,7 +19,13 @@ export const dynamic = 'force-dynamic';
 
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
-const CONVERSION_EVENTS = new Set(['purchase', 'generate_lead', 'sign_up']);
+const CONVERSION_EVENTS = new Set([
+  'purchase',
+  'generate_lead',
+  'sign_up',
+  'begin_checkout',
+  'lead_capture',
+]);
 
 const consentStateSchema = z
   .object({

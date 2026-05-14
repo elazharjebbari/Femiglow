@@ -1,0 +1,11 @@
+action,priority,resource,when_emitted,before,after,meta_sample,frequency_expected
+create,P0,event_mapping_version,POST /mappings,null,"{name,mappings,status:draft}","{source:'default'}",~5/month
+duplicate,P1,event_mapping_version,POST /mappings (kind=clone),null,"{name,mappings,clonedFrom}","{sourceId}",~3/month
+edit,P0,event_mapping_version,PUT /mappings/[id] → crée new version,"{mappings:before}","{mappings:after}","{sourceId,diffSummary}",~10/month
+activate,P0,event_mapping_version,POST /mappings/[id]/activate,"{activeBefore:oldId}","{activeAfter:id}","{archivedId}",~5/month
+archive,P1,event_mapping_version,POST /mappings/[id]/archive,"{status:'active'}","{status:'archived'}","{}",~5/month
+delete,P0,event_mapping_version,DELETE /mappings/[id],"{status:prev}","{status:'deleted'}","{}",~2/month
+restore,P1,event_mapping_version,POST /mappings/[id]/restore,"{status:'deleted'}","{status:'archived'}","{}",rare
+reset_to_default,P0,event_mapping_version,POST /mappings/reset-default,"{activeBefore:oldId}","{activeAfter:'__default__'}","{resetType:'factory'}",rare (0-1/trimestre)
+export_gtm,P1,event_mapping_version,POST /mappings/[id]/export-gtm,null,null,"{env,sha256,tagsCount,eventsCount}",~3/month
+test_event,P3,event_mapping_version,POST /mappings/[id]/test,null,null,"{eventName,results}",~20/month

@@ -165,29 +165,20 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
   );
   const total = subtotal + shipping;
 
-  // Tracking : begin_checkout au mount (signal d'entrée tunnel).
-  // Purge `lead_create.__new__` pour éviter une collision idempotency
-  // avec un parcours wizard /kit antérieur (clés partagées en sessionStorage).
-  const beganCheckout = useRef(false);
+  // D-004 — `begin_checkout` ne fire plus au mount (déclenchait des
+  // InitiateCheckout polluants côté Meta sur page view déguisé). Il est
+  // émis dans `handleStep0Submit` sur action explicite "Continuer".
+  // Purge `lead_create.__new__` au mount pour éviter une collision
+  // idempotency avec un parcours wizard /kit antérieur (clés partagées en
+  // sessionStorage).
+  const beganCheckoutRef = useRef(false);
+  const purgeLeadCreateRef = useRef(false);
   useEffect(() => {
-    if (beganCheckout.current) return;
+    if (purgeLeadCreateRef.current) return;
     if (!hydrated || items.length === 0) return;
-    beganCheckout.current = true;
+    purgeLeadCreateRef.current = true;
     consumeIdempotencyKey('lead_create', null);
-    emit('begin_checkout', {
-      currency: 'MAD',
-      value: total / 100,
-      form_id: FORM_ID,
-      form_mode: FORM_MODE,
-      step_name: 'lead',
-      items: items.map((it) => ({
-        item_id: it.productId,
-        item_name: it.productName,
-        price: it.unitPriceCents / 100,
-        quantity: it.quantity,
-      })),
-    });
-  }, [hydrated, items, total, emit]);
+  }, [hydrated, items]);
 
   const focusStepHeading = (target: CheckoutStep) => {
     const id =
@@ -301,6 +292,23 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
     const values = methods.getValues();
     const visitorId = ensureVisitorId() ?? 'v_cart_unknown';
     const sessionId = ensureSessionId() ?? 's_cart_unknown';
+    // D-004 — begin_checkout sur action explicite (click Continuer step 0).
+    if (!beganCheckoutRef.current) {
+      beganCheckoutRef.current = true;
+      emit('begin_checkout', {
+        currency: 'MAD',
+        value: total / 100,
+        form_id: FORM_ID,
+        form_mode: FORM_MODE,
+        step_name: 'lead',
+        items: items.map((it) => ({
+          item_id: it.productId,
+          item_name: it.productName,
+          price: it.unitPriceCents / 100,
+          quantity: it.quantity,
+        })),
+      });
+    }
     setSubmitting(true);
     setError(null);
     try {

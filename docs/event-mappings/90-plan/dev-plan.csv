@@ -1,0 +1,47 @@
+id,phase,task,effort_h,priority,depends_on,owner,deliverable,notes
+E01,phase-1,Migration 0032 event_mapping_versions,1,P0,,backend,SQL + Drizzle schema + tests,Idempotent
+E02,phase-1,Migration 0033 event_mapping_audit,0.5,P0,E01,backend,SQL + schema,Audit log structuré
+E03,phase-1,Migration 0034 seed __default__ placeholder,0.5,P0,E02,backend,SQL idempotent,Placeholder, vraie data via script
+E04,phase-1,Default-mapping.json complet (~30 events),1,P0,,backend,docs/event-mappings/20-data/default-mapping.json,Source de vérité
+E05,phase-1,Scripts seed + generate + check,2,P0,E04,backend,3 scripts tsx + CI workflow,seed-event-mappings + generate-default + check-default
+E06,phase-2,lib/tracking/mappings/types.ts,1,P0,E01,backend,Types TS shared,Réutilisé partout
+E07,phase-2,store.ts (CRUD + transitions),3,P0,E06,backend,store.ts + tests 25+,FIFO + transactions
+E08,phase-2,resolver.ts (cache + fallback),2,P0,E07,backend,resolver.ts + tests 12+,TTL 30s in-memory
+E09,phase-2,validator.ts (Zod par provider),2,P0,E06,backend,validator.ts + tests 15+,6 regex provider
+E10,phase-2,audit.ts,1,P0,E07,backend,audit.ts + tests 8+,Re-utilise auditTrackingChange
+E11,phase-2,gtm-export.ts (build Container JSON),3,P0,E07,backend,gtm-export.ts + tests 12+,sha256 + schema GTM validation
+E12,phase-3,Route GET /mappings (list),1,P0,E07,backend,route.ts + test,F.1
+E13,phase-3,Route POST /mappings (create),1.5,P0,E07,backend,route.ts + tests,F.2 (3 sources: default/clone/import)
+E14,phase-3,Route GET /mappings/[id],0.5,P0,E07,backend,route.ts + test,F.1
+E15,phase-3,Route PUT /mappings/[id] (clone-on-edit),1.5,P0,E07,backend,route.ts + tests,F.3 F.4
+E16,phase-3,Route DELETE /mappings/[id] (soft),1,P0,E07,backend,route.ts + tests,F.7
+E17,phase-3,Route POST /mappings/[id]/activate,1,P0,E07,backend,route.ts + tests,F.5
+E18,phase-3,Route POST /mappings/[id]/test (dry-run),1,P0,E08,backend,route.ts + tests,F.10
+E19,phase-3,Route POST /mappings/[id]/export-gtm,1,P0,E11,backend,route.ts + tests,F.11
+E20,phase-3,Route POST /mappings/reset-default + GET diff + audit,1.5,P0,E07,backend,routes + tests,F.9 F.12
+E21,phase-4,dispatcher.ts use resolveEventMapping,1.5,P0,E08,backend,dispatcher.ts patch,Backward compat
+E22,phase-4,Tests existants tracking-improvement à mettre à jour,1.5,P0,E21,qa,test updates,
+E23,phase-5,Hook useMappings + useMappingMutations,2,P0,E12,frontend,hooks/,SWR-based
+E24,phase-5,MappingVersionsList component,3,P0,E23,frontend,composant + tests RTL,F.1
+E25,phase-5,MappingCreateWizard (3 steps),3,P0,E23,frontend,composant + tests,F.2
+E26,phase-5,Page /mappings + intégration menu admin,2,P0,E24,frontend,page.tsx + adminShell,Navigation
+E27,phase-6,Page /[id]/edit + MappingMatrix,5,P0,E26,frontend,page + composant + tests,F.3
+E28,phase-6,MappingCellEditor popover,3,P0,E27,frontend,composant + tests,Validation live
+E29,phase-6,Keyboard nav arrow keys,2,P0,E27,frontend,KeyHandler,Q.6
+E30,phase-6,Save flow (clone + redirect),2,P0,E27,frontend,handler,F.4
+E31,phase-7,MappingDiffViewer + page /compare,3,P0,E27,frontend,composant + page + tests,F.9
+E32,phase-7,MappingTestModal,2,P0,E27,frontend,composant + tests,F.10
+E33,phase-7,MappingExportButton + download,1.5,P0,E27,frontend,composant + tests,F.11
+E34,phase-7,MappingResetDefaultButton,1,P0,E27,frontend,composant + tests,F.12
+E35,phase-7,MappingImportButton (file picker),1,P0,E27,frontend,composant + tests,F.2
+E36,phase-8,Tests Vitest store (25+ tests),3,P0,E07,qa,tests,
+E37,phase-8,Tests Vitest resolver + validator + gtm-export + audit,3,P0,E11,qa,tests,
+E38,phase-8,Tests Vitest integration routes (8 routes),3,P0,E20,qa,tests,
+E39,phase-8,Tests RTL composants (matrix + diff + wizard),3,P0,E32,qa,tests,
+E40,phase-8,Playwright e2e (12 scenarios),4,P0,E35,qa,specs,12 critères F
+E41,phase-8,Playwright ULTIMATE round-trip GTM,2,P0,E19,qa,spec,T54 critique
+E42,phase-8,Axe-core a11y suite,1,P0,E27,qa,specs,Q.5
+E43,phase-9,Mise à jour docs post-impl,1,P1,E41,backend,docs sync,
+E44,phase-9,Smoke tests post-deploy script,0.5,P0,E41,qa,smoke-event-mappings.sh,
+E45,phase-9,Déploiement prod + monitoring 7j,3.5,P0,E44,backend,go-live,
+TOTAL,,Total,~76h,,,,~2 semaines focus,

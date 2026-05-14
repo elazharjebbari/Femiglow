@@ -98,6 +98,9 @@ export const gtmConfigVersionSchema = z.object({
   createdAt: z.string().datetime(),
   createdBy: z.string().min(1).max(120),
   perEnv: gtmConfigPerEnvSchema,
+  // D-003 — édition de version GTM = clone (jamais d'in-place update).
+  // Trace l'héritage pour l'audit trail et le diff UI.
+  clonedFrom: z.string().uuid().nullable().optional(),
 });
 
 export type GtmConfigVersion = z.infer<typeof gtmConfigVersionSchema>;

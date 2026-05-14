@@ -37,6 +37,17 @@ export interface DispatchContext {
   fbc?: string;
   ttclid?: string;
   gclid?: string;
+  /**
+   * Mappings event_name → vendor_name résolus depuis la version active
+   * d'event_mapping_versions. Si présent, les adapters DOIVENT utiliser
+   * cette valeur au lieu d'appeler `mapEventName` directement. cf. ADR-001.
+   */
+  resolvedMappings?: Partial<
+    Record<
+      TrackingProviderKind,
+      { mappedName: string; isCustom: boolean; notes: string | null }
+    >
+  >;
 }
 
 export interface ProviderAdapter {
