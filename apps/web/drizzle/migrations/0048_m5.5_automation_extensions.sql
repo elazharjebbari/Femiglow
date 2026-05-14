@@ -15,11 +15,10 @@ ALTER TABLE email_automation
   ADD COLUMN IF NOT EXISTS daily_cap integer,
   ADD COLUMN IF NOT EXISTS trigger_conditions jsonb;
 
--- Étendre enum status pour ajouter 'waiting_for_event'
-DO $$ BEGIN
-  ALTER TYPE email_automation_run_status ADD VALUE IF NOT EXISTS 'waiting_for_event' BEFORE 'completed';
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- NB : `ALTER TYPE ... ADD VALUE` ne peut pas s'exécuter dans une transaction
+-- Drizzle. Appliquer manuellement AVANT le migrate :
+--   ALTER TYPE email_automation_run_status ADD VALUE IF NOT EXISTS 'waiting_for_event' BEFORE 'completed';
+-- Cette migration assume que 'waiting_for_event' existe déjà sur l'enum.
 
 ALTER TABLE email_automation_run
   ADD COLUMN IF NOT EXISTS awaiting_event_name text,

@@ -11,18 +11,18 @@
 -- Drizzle migrator exécute chaque statement séparément.
 -- ===========================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_event_email_ts
+CREATE INDEX IF NOT EXISTS idx_user_event_email_ts
   ON user_event (email, ts DESC);
 --> statement-breakpoint
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_event_name_ts
+CREATE INDEX IF NOT EXISTS idx_user_event_name_ts
   ON user_event (event_name, ts DESC);
 --> statement-breakpoint
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_event_session
+CREATE INDEX IF NOT EXISTS idx_user_event_session
   ON user_event (session_id)
   WHERE session_id IS NOT NULL;
 --> statement-breakpoint
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_event_properties_gin
+CREATE INDEX IF NOT EXISTS idx_user_event_properties_gin
   ON user_event USING gin (properties);

@@ -10,7 +10,7 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['framer-motion'],
-    serverComponentsExternalPackages: ['@node-rs/argon2', 'sharp', 'fluent-ffmpeg', 'ffmpeg-static'],
+    serverComponentsExternalPackages: ['@node-rs/argon2', 'sharp', 'fluent-ffmpeg', 'ffmpeg-static', 'isomorphic-dompurify', 'jsdom'],
     instrumentationHook: true,
     // Note : `optimizeCss` (critters) NON utilisé — Next 14.2 ne bundle plus
     // critters pour App Router (streaming RSC incompatible). Pour réduire le
