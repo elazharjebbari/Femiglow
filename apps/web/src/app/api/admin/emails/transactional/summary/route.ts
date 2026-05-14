@@ -1,0 +1,34 @@
+/**
+ * GET /api/admin/emails/transactional/summary?window=1h|24h|7d
+ *
+ * KPIs temps réel pour le header du cockpit transactional.
+ */
+import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth/require-admin';
+import { logger } from '@/lib/logging/logger';
+import { SummaryQuerySchema } from '@/lib/mail/transactional/schemas';
+import { summarizeOutbox } from '@/lib/mail/transactional/summary';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: Request) {
+  await requireAdmin('/api/admin/emails/transactional/summary');
+
+  const url = new URL(req.url);
+  const parsed = SummaryQuerySchema.safeParse({ window: url.searchParams.get('window') ?? '1h' });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Validation échouée', issues: parsed.error.flatten() },
+      { status: 422 },
+    );
+  }
+
+  try {
+    const result = await summarizeOutbox(parsed.data.window);
+    return NextResponse.json(result);
+  } catch (err) {
+    logger.error('admin.emails.transactional.summary_failed', { error: String(err) });
+    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
+  }
+}
