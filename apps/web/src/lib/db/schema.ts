@@ -1,5 +1,6 @@
 import {
   bigint,
+  bigserial,
   boolean,
   integer,
   jsonb,
@@ -136,6 +137,33 @@ export const leadEvents = pgTable(
     createdAtIdx: index('lead_events_created_at_idx').on(t.createdAt),
   }),
 );
+
+// — user_event (M5.2) ─────────────────────────────────────────────────────
+// Source de vérité unifiée des events utilisateur (web/email/server/admin).
+// Voir docs/emailing/admin-evolution/01-data/01-tables.md#user_event
+export const userEvent = pgTable(
+  'user_event',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    email: text('email').notNull(),
+    eventName: text('event_name').notNull(),
+    ts: timestamp('ts', { withTimezone: true }).notNull().defaultNow(),
+    properties: jsonb('properties').notNull().default({}),
+    sessionId: text('session_id'),
+    source: text('source', { enum: ['web', 'server', 'email', 'admin', 'import'] }).notNull(),
+    leadId: text('lead_id').references(() => leads.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Index simple posé dans 0040 (FK constraint). Les heavy indexes
+    // (email+ts, event_name+ts, GIN(properties)) sont dans 0041 CONCURRENTLY.
+    leadIdx: index('idx_user_event_lead_id').on(t.leadId),
+  }),
+);
+
+export type UserEventRow = typeof userEvent.$inferSelect;
+export type UserEventInsert = typeof userEvent.$inferInsert;
+export type UserEventSource = 'web' | 'server' | 'email' | 'admin' | 'import';
 
 export const webhookEndpoints = pgTable('webhook_endpoints', {
   id: text('id').primaryKey(),

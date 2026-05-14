@@ -41,6 +41,8 @@
     { "idx": 36, "version": "7", "when": 1779000000035, "tag": "0035_gtm_poka_yoke",                    "breakpoints": true },
     { "idx": 37, "version": "7", "when": 1779100000036, "tag": "0036_tracking_event_id_gclid",          "breakpoints": true },
     { "idx": 38, "version": "7", "when": 1779100000037, "tag": "0037_tracking_event_category_default",  "breakpoints": true },
-    { "idx": 39, "version": "7", "when": 1779100000038, "tag": "0038_tracking_event_overrides",         "breakpoints": true }
+    { "idx": 39, "version": "7", "when": 1779100000038, "tag": "0038_tracking_event_overrides",         "breakpoints": true },
+    { "idx": 40, "version": "7", "when": 1779300000040, "tag": "0040_m5.2_user_event",                  "breakpoints": true },
+    { "idx": 41, "version": "7", "when": 1779300000041, "tag": "0041_m5.2_user_event_indexes",          "breakpoints": true }
   ]
 }
