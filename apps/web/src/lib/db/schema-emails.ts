@@ -427,6 +427,57 @@ export const emailAudienceSnapshot = pgTable(
 
 // — email_audience_snapshot_member (M5.3) ─────────────────────────────────
 
+// — email_template_custom (M5.7) ──────────────────────────────────────────
+
+export const emailTemplateCustom = pgTable(
+  'email_template_custom',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description'),
+    subjectTmpl: text('subject_tmpl').notNull(),
+    preheaderTmpl: text('preheader_tmpl'),
+    htmlSource: text('html_source').notNull(),
+    customVars: jsonb('custom_vars').notNull().default({}),
+    activeVersionId: uuid('active_version_id'),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    slugIdx: index('idx_email_template_custom_slug').on(t.slug),
+  }),
+);
+
+// — email_template_custom_version (M5.7) ──────────────────────────────────
+
+export const emailTemplateCustomVersion = pgTable(
+  'email_template_custom_version',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    templateId: uuid('template_id')
+      .notNull()
+      .references(() => emailTemplateCustom.id, { onDelete: 'cascade' }),
+    versionNumber: integer('version_number').notNull(),
+    subjectTmpl: text('subject_tmpl').notNull(),
+    preheaderTmpl: text('preheader_tmpl'),
+    htmlSource: text('html_source').notNull(),
+    customVars: jsonb('custom_vars').notNull().default({}),
+    commitMessage: text('commit_message'),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    versionIdx: index('idx_template_version_template').on(t.templateId, t.versionNumber),
+    versionUnique: uniqueIndex('email_template_custom_version_unique').on(
+      t.templateId,
+      t.versionNumber,
+    ),
+  }),
+);
+
 export const emailAudienceSnapshotMember = pgTable(
   'email_audience_snapshot_member',
   {
@@ -464,6 +515,9 @@ export type EmailAudienceSnapshotRow = typeof emailAudienceSnapshot.$inferSelect
 export type EmailAudienceSnapshotMemberRow = typeof emailAudienceSnapshotMember.$inferSelect;
 export type EmailAudienceEvaluationMode = 'static' | 'dynamic';
 export type EmailAudienceSnapshotStatus = 'pending' | 'running' | 'done' | 'errored';
+export type EmailTemplateCustomRow = typeof emailTemplateCustom.$inferSelect;
+export type EmailTemplateCustomInsert = typeof emailTemplateCustom.$inferInsert;
+export type EmailTemplateCustomVersionRow = typeof emailTemplateCustomVersion.$inferSelect;
 
 export type EmailOutboxStatus =
   | 'pending'
