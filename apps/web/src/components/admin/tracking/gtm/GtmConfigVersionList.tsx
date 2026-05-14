@@ -15,7 +15,9 @@ interface Props {
   activeId: string | null;
   versions: ConfigVersionSummary[];
   onActivate: (id: string) => Promise<void>;
+  onDeactivate?: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onEdit?: (id: string) => void;
   onCompare?: (id: string) => void;
 }
 
@@ -36,18 +38,21 @@ export function GtmConfigVersionList({
   activeId,
   versions,
   onActivate,
+  onDeactivate,
   onDelete,
+  onEdit,
   onCompare,
 }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handle(action: 'activate' | 'delete', id: string) {
+  async function handle(action: 'activate' | 'deactivate' | 'delete', id: string) {
     setError(null);
     setPendingId(id);
     try {
       if (action === 'activate') await onActivate(id);
+      if (action === 'deactivate' && onDeactivate) await onDeactivate(id);
       if (action === 'delete') await onDelete(id);
       setConfirmDeleteId(null);
     } catch (err) {
@@ -116,6 +121,27 @@ export function GtmConfigVersionList({
                       className="inline-flex items-center gap-1 rounded-md border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-900 transition hover:border-stone-400 hover:bg-stone-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-1"
                     >
                       Activer
+                    </button>
+                  ) : onDeactivate ? (
+                    <button
+                      type="button"
+                      onClick={() => handle('deactivate', v.id)}
+                      disabled={isPending}
+                      title="Désactive la version (aucune ne sera active). Pour basculer vers une autre, clique Activer sur celle-ci à la place."
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-1"
+                    >
+                      Archiver
+                    </button>
+                  ) : null}
+
+                  {onEdit ? (
+                    <button
+                      type="button"
+                      onClick={() => onEdit(v.id)}
+                      className="rounded-md px-2 py-1 text-xs font-medium text-stone-700 transition hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 focus-visible:ring-offset-1"
+                      title="Charge cette version dans le formulaire pour créer une nouvelle version basée dessus (l'originale reste intacte — audit trail)."
+                    >
+                      Modifier
                     </button>
                   ) : null}
 

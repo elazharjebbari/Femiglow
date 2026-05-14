@@ -53,16 +53,16 @@ describe('buildGtmContainer', () => {
     expect(r.containerJson.containerVersion.tag).toHaveLength(5);
   });
 
-  it('Meta isCustom=true → tag avec trackCustom + customEventName', () => {
+  it('Meta isCustom=true → tag HTML snippet appelle trackCustom avec event name', () => {
     const m = buildMappings();
     m.purchase!.meta = buildCell('checkout_intent', true, true);
     const r = buildGtmContainer({ mappings: m, env: 'production' });
     const metaTag = r.containerJson.containerVersion.tag.find((t) => t.name.includes('meta'));
     expect(metaTag).toBeDefined();
-    const eventNameParam = metaTag!.parameter.find((p) => p.key === 'eventName');
-    expect(eventNameParam!.value).toBe('trackCustom');
-    const customParam = metaTag!.parameter.find((p) => p.key === 'customEventName');
-    expect(customParam!.value).toBe('checkout_intent');
+    expect(metaTag!.type).toBe('html');
+    const htmlParam = metaTag!.parameter.find((p) => p.key === 'html');
+    expect(htmlParam!.value).toContain("fbq('trackCustom'");
+    expect(htmlParam!.value).toContain('"checkout_intent"');
   });
 
   it('sha256 déterministe (même input → même hash)', () => {
