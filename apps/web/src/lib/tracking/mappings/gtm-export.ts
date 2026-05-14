@@ -316,7 +316,9 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
         {
           type: 'TEMPLATE',
           key: 'value',
-          value: '',
+          // GTM refuse value="" sur Constant. Placeholder explicite à
+          // remplacer manuellement après import (Variables → edit).
+          value: `REPLACE_WITH_YOUR_${kind.toUpperCase()}_ID`,
         },
       ],
     });
