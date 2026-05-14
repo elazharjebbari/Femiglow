@@ -2,6 +2,30 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+// jsdom n'implémente pas ResizeObserver — utilisé par cmdk (CommandPalette M5.1).
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  class MockResizeObserver {
+    observe() {
+      /* no-op */
+    }
+    unobserve() {
+      /* no-op */
+    }
+    disconnect() {
+      /* no-op */
+    }
+  }
+  globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+}
+
+// jsdom n'implémente pas Element.scrollIntoView — appelé par cmdk pour
+// keeper l'item sélectionné visible. No-op suffit en test.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function () {
+    /* no-op */
+  };
+}
+
 // jsdom n'implémente pas Blob.prototype.text / arrayBuffer — polyfill simple
 // pour permettre aux composants qui font `await file.text()` de fonctionner
 // dans les tests (ValidatePairWizard, etc.).
