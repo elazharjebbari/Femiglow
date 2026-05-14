@@ -88,6 +88,17 @@ export default async function AdminEmailsPage() {
           Listmonk (admin natif) →
         </Link>
       </nav>
+      <p className="mb-6 text-xs text-stone-400">
+        Astuce :{' '}
+        <kbd className="rounded border border-stone-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-stone-600">
+          ⌘ K
+        </kbd>{' '}
+        /{' '}
+        <kbd className="rounded border border-stone-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-stone-600">
+          Ctrl K
+        </kbd>{' '}
+        pour naviguer entre sections sans souris.
+      </p>
 
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600">
