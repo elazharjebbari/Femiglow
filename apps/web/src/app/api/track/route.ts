@@ -6,6 +6,7 @@ import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { getClientIp, hashIp } from '@/lib/http/client-ip';
 import { checkRateLimit } from '@/lib/rate-limit/check';
 import { logEvent } from '@/lib/db/queries/tracking/events-log';
+import { bridgeWebTrackingToUserEvent } from '@/lib/user-events/bridges/web-tracking';
 import { findTrackingPageByRoute } from '@/lib/db/queries/tracking/pages';
 import { getValidator } from '@/lib/tracking/server/validator';
 import { enrichRequest } from '@/lib/tracking/server/enricher';
@@ -199,6 +200,16 @@ export async function POST(request: Request): Promise<Response> {
           schemaVersion: event.schema_version ?? 1,
         });
         result.accepted += 1;
+
+        // M5.2 — bridge vers user_event (unified). Fire-and-forget : ne
+        // doit jamais bloquer ni faire échouer le flow tracking principal.
+        void bridgeWebTrackingToUserEvent({
+          eventName: event.event,
+          email: null, // sera extrait du payload par le bridge
+          sessionId: event.user.session_id,
+          properties: paramsParsed.data as Record<string, unknown>,
+          ts: event.timestamp ? new Date(event.timestamp) : undefined,
+        });
       } catch (err) {
         result.rejected += 1;
         logger.error('tracking.ingest.persist_failed', {
