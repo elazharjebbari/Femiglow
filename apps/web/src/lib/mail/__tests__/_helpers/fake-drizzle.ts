@@ -28,7 +28,7 @@ export type FakeDrizzle = {
   execute: ReturnType<typeof vi.fn>;
   transaction: ReturnType<typeof vi.fn>;
   calls: {
-    select: Array<{ from?: unknown; where?: unknown; limit?: number }>;
+    select: Array<{ from?: unknown; where?: unknown; limit?: number; offset?: number; groupBy?: unknown; orderBy?: unknown }>;
     insert: Array<{ into?: unknown; values?: unknown; onConflict?: 'doNothing' | 'doUpdate' | null }>;
     update: Array<{ table?: unknown; set?: unknown; where?: unknown; returning?: boolean }>;
     delete: Array<{ from?: unknown; where?: unknown }>;
@@ -53,8 +53,14 @@ export function makeFakeDrizzle(opts: FakeDrizzleOpts = {}): FakeDrizzle {
   };
 
   // ── select chain ────────────────────────────────────────────────────
+  // Chaînable : .from().where().orderBy().groupBy().limit().offset()
+  // Awaitable à n'importe quel point (via Thenable .then).
   const select = vi.fn((_columns?: unknown) => {
     const sel: Record<string, unknown> = {};
+    const finalize = () => {
+      calls.select.push(sel);
+      return Promise.resolve(opts.selectResult ?? []);
+    };
     const obj = {
       from: vi.fn((t: unknown) => {
         sel.from = t;
@@ -64,19 +70,26 @@ export function makeFakeDrizzle(opts: FakeDrizzleOpts = {}): FakeDrizzle {
         sel.where = w;
         return obj;
       }),
+      groupBy: vi.fn((g: unknown) => {
+        sel.groupBy = g;
+        return obj;
+      }),
+      orderBy: vi.fn((o: unknown) => {
+        sel.orderBy = o;
+        return obj;
+      }),
       limit: vi.fn((n: number) => {
         sel.limit = n;
-        calls.select.push(sel);
-        return Promise.resolve(opts.selectResult ?? []);
+        return obj;
       }),
-      orderBy: vi.fn(() => obj),
+      offset: vi.fn((n: number) => {
+        sel.offset = n;
+        return obj;
+      }),
     };
-    // If user never calls .limit() but awaits the chain, register on .then
+    // Thenable : finalize la query au moment de l'await.
     Object.assign(obj, {
-      then: (cb: (rows: unknown[]) => unknown) => {
-        calls.select.push(sel);
-        return Promise.resolve(opts.selectResult ?? []).then(cb);
-      },
+      then: (cb: (rows: unknown[]) => unknown) => finalize().then(cb),
     });
     return obj;
   });
