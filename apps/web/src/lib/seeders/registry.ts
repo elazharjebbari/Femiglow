@@ -39,6 +39,7 @@ import { chatFaqSeeder } from './items/chat-faq';
 import { chatIntentsSeeder } from './items/chat-intents';
 import { trackingSeeder } from './items/tracking';
 import { ritualsSeeder } from './items/rituals';
+import { legalSeeder } from './items/legal';
 
 export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
   // ── Core ─────────────────────────────────────────────────────────────
@@ -239,6 +240,17 @@ export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
     estimatedDurationMs: 3_000,
     idempotent: true,
     run: ritualsSeeder,
+  },
+  // ── Legal ──────────────────────────────────────────────────────────────
+  {
+    id: 'legal-pages',
+    group: 'content',
+    label: 'Pages légales (mentions, CGV, confidentialité, …)',
+    description:
+      'Insère les 9 pages légales depuis docs/legal-pages/60-content + leurs placements. Préserve les éditions admin.',
+    estimatedDurationMs: 2_000,
+    idempotent: true,
+    run: legalSeeder,
   },
 ] as const;
 

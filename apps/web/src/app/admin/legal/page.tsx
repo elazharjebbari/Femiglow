@@ -97,6 +97,15 @@ export default async function AdminLegalPage({ searchParams }: PageProps) {
           >
             Santé liens
           </Link>
+          <form action="/api/admin/legal/seed-defaults" method="POST">
+            <button
+              type="submit"
+              className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
+              title="Insère les 9 pages légales depuis docs/legal-pages/60-content (préserve les éditions admin)"
+            >
+              Seed défauts
+            </button>
+          </form>
         </div>
       </header>
 
