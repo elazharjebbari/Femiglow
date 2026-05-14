@@ -12,6 +12,7 @@ import { adminProviderInput } from '@/lib/chat/contracts';
 import { providerRepo } from '@/lib/chat/repos/provider';
 import { requireAdminApi } from '@/lib/chat/admin/auth';
 import { logger } from '@/lib/logging/logger';
+import { redirectToPublic } from '@/lib/http/redirect-public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,5 +100,5 @@ export async function POST(req: NextRequest) {
   if (ct.includes('application/json')) {
     return NextResponse.json({ id: created.id });
   }
-  return NextResponse.redirect(new URL('/admin/chat/providers', req.url), 303);
+  return redirectToPublic(req, '/admin/chat/providers');
 }

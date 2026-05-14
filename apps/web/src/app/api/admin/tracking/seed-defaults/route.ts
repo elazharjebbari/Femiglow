@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { logger } from '@/lib/logging/logger';
 import { logAuditEvent } from '@/lib/audit/log-event';
+import { redirectToPublic } from '@/lib/http/redirect-public';
 import { runTrackingSeed } from '../../../../../../scripts/seed-tracking';
 
 export const runtime = 'nodejs';
@@ -46,5 +47,5 @@ export async function POST(req: NextRequest) {
   if (accept.includes('application/json')) {
     return NextResponse.json({ ok: true, report });
   }
-  return NextResponse.redirect(new URL('/admin/tracking?ok=seeded', req.url), 303);
+  return redirectToPublic(req, '/admin/tracking?ok=seeded');
 }

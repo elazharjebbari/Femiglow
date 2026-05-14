@@ -28,6 +28,7 @@ import {
 import { instructionRepo } from '@/lib/chat/repos/instruction';
 import { createId } from '@/lib/ids';
 import { logger } from '@/lib/logging/logger';
+import { redirectToPublic } from '@/lib/http/redirect-public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -160,5 +161,5 @@ export async function POST(req: NextRequest) {
     instruction.action === 'noop'
       ? `/admin/chat/instructions?ok=${flashCode}`
       : `/admin/chat/instructions/${instruction.id}?ok=${flashCode}`;
-  return NextResponse.redirect(new URL(target, req.url), 303);
+  return redirectToPublic(req, target);
 }

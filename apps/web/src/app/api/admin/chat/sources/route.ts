@@ -13,6 +13,7 @@ import { ragService, type RagSourceKind } from '@/lib/chat/rag/service';
 import { adminQueries } from '@/lib/chat/admin/queries';
 import { requireAdminApi } from '@/lib/chat/admin/auth';
 import { logger } from '@/lib/logging/logger';
+import { redirectToPublic } from '@/lib/http/redirect-public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     if (ct.includes('application/json')) {
       return NextResponse.json(result);
     }
-    return NextResponse.redirect(new URL('/admin/chat/sources', req.url), 303);
+    return redirectToPublic(req, '/admin/chat/sources');
   } catch (err) {
     logger.error('chat.admin.source.ingest_failed', {
       message: (err as Error).message,
