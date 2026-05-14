@@ -9,8 +9,8 @@
  *   trigger / variable.
  * - parameter.type : **UPPERCASE** `TEMPLATE | BOOLEAN | INTEGER | LIST | MAP |
  *   TAG_REFERENCE | TRIGGER_REFERENCE`.
- * - trigger.type : lowercase camelCase `customEvent | pageview | click | …`.
- *   (Trigger types restent lowercase ; ce sont des identifiants stables.)
+ * - trigger.type : **UPPER_SNAKE_CASE** `CUSTOM_EVENT | PAGEVIEW | CLICK |
+ *   DOM_READY | WINDOW_LOADED | LINK_CLICK | FORM_SUBMISSION | …`.
  * - customEventFilter[].type : **UPPERCASE** `EQUALS | CONTAINS | MATCH_REGEX | …`.
  * - tag.type : lowercase identifiants stables `gaawc | gaawe | html | cvt_*`.
  * - variable.type : lowercase `v | c | k | u | gas | …`.
@@ -117,7 +117,7 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
     triggers.push({
       triggerId,
       name: `FemiGlow: ${eventName}`,
-      type: 'customEvent',
+      type: 'CUSTOM_EVENT',
       customEventFilter: [
         {
           type: 'EQUALS',
