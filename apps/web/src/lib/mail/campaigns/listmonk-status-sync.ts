@@ -15,7 +15,7 @@
  *   - scheduled → scheduled
  */
 import 'server-only';
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import { db as getDb } from '@/lib/db/client';
 import { emailCampaignLink } from '@/lib/db/schema-emails';
 import { listmonk } from '@/lib/mail/listmonk/client';
@@ -38,8 +38,9 @@ export async function syncCampaignStatuses(): Promise<SyncResult> {
   const drizzle = requireDb();
   const start = Date.now();
 
-  // FemiGlow campaigns that have been pushed to Listmonk and aren't yet in
-  // a terminal state.
+  // Candidates: active campaigns OR recently-finished campaigns whose metrics
+  // are still 0 (Listmonk delivers them post-send, and we don't get a webhook
+  // notification, so we need to keep polling for a short window).
   const candidates = await drizzle
     .select({
       id: emailCampaignLink.id,
@@ -50,7 +51,13 @@ export async function syncCampaignStatuses(): Promise<SyncResult> {
     .where(
       and(
         isNotNull(emailCampaignLink.listmonkCampaignId),
-        inArray(emailCampaignLink.status, ['sending', 'scheduled']),
+        sql`(
+          ${emailCampaignLink.status} IN ('sending','scheduled')
+          OR (
+            ${emailCampaignLink.status} = 'sent'
+            AND ${emailCampaignLink.finishedAt} > now() - interval '24 hours'
+          )
+        )`,
       ),
     );
 
@@ -70,20 +77,25 @@ export async function syncCampaignStatuses(): Promise<SyncResult> {
       else if (lmStatus === 'running') next = 'sending';
       else if (lmStatus === 'scheduled') next = 'scheduled';
 
-      if (!next || next === c.status) continue;
-
+      // Pull metrics from Listmonk regardless of status transition.
       const set: Partial<typeof emailCampaignLink.$inferInsert> = {
-        status: next,
         updatedAt: now,
+        sentCount: res.data.sent ?? 0,
+        openCount: res.data.views ?? 0,
+        clickCount: res.data.clicks ?? 0,
+        bounceCount: res.data.bounces ?? 0,
       };
-      if (next === 'sent') set.finishedAt = now;
+      if (next && next !== c.status) {
+        set.status = next;
+        if (next === 'sent') set.finishedAt = now;
+      }
 
       await drizzle
         .update(emailCampaignLink)
         .set(set)
         .where(eq(emailCampaignLink.id, c.id));
 
-      updated += 1;
+      if (set.status) updated += 1;
       logger.info('listmonk.campaign_status.synced', {
         campaignId: c.id,
         listmonkCampaignId: c.listmonkCampaignId,
