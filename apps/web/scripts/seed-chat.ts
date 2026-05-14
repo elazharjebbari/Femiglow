@@ -192,6 +192,25 @@ export async function runChatProvidersSeed(): Promise<ChatProvidersReport> {
     });
     created += 1;
     priority += 10;
+
+    // M5+ : créer aussi le rôle 'embedding' associé pour les providers qui
+    // supportent les embeddings (OpenAI, Gemini, Mistral). Sans ça, le seeder
+    // FAQ + intents skipe car aucun provider avec role='embedding' n'est
+    // enabled. Le bouton "Seed défauts" devient inutile en prod.
+    if (p.kind === 'openai' || p.kind === 'gemini' || p.kind === 'mistral') {
+      await providerRepo.create({
+        kind: p.kind,
+        label: `${p.label} (embedding)`,
+        role: 'embedding',
+        priority,
+        enabled: true,
+        apiKey: p.env,
+        egressAllowed: false,
+        parameters: CHAT_DEFAULTS,
+      });
+      created += 1;
+      priority += 10;
+    }
   }
   if (env.CHAT_OLLAMA_BASE_URL) {
     await providerRepo.create({

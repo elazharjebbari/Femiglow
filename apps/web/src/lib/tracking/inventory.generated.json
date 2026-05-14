@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-13T15:42:56.655Z",
+  "generatedAt": "2026-05-14T14:56:41.961Z",
   "components": [
     {
       "name": "MobileFocusGuard",
@@ -232,6 +232,11 @@
       "category": "admin"
     },
     {
+      "name": "FaqForm",
+      "path": "src/components/admin/chat/FaqForm.tsx",
+      "category": "section_faq"
+    },
+    {
       "name": "ImportFromFileButton",
       "path": "src/components/admin/chat/ImportFromFileButton.tsx",
       "category": "cta_secondary"
@@ -242,6 +247,11 @@
       "category": "admin"
     },
     {
+      "name": "LeadOutcomeSelect",
+      "path": "src/components/admin/chat/LeadOutcomeSelect.tsx",
+      "category": "admin"
+    },
+    {
       "name": "PipelineGraph",
       "path": "src/components/admin/chat/PipelineGraph.tsx",
       "category": "admin"
@@ -249,6 +259,11 @@
     {
       "name": "ProviderForm",
       "path": "src/components/admin/chat/ProviderForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "SuggestionForm",
+      "path": "src/components/admin/chat/SuggestionForm.tsx",
       "category": "form_input"
     },
     {
@@ -432,6 +447,101 @@
       "category": "card"
     },
     {
+      "name": "AudienceDetailActions",
+      "path": "src/components/admin/emails/audiences/AudienceDetailActions.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AudiencePreview",
+      "path": "src/components/admin/emails/audiences/AudiencePreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AudienceRulesBuilder",
+      "path": "src/components/admin/emails/audiences/AudienceRulesBuilder.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AudienceWizard",
+      "path": "src/components/admin/emails/audiences/AudienceWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RuleEditor",
+      "path": "src/components/admin/emails/audiences/RuleEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AutomationWizard",
+      "path": "src/components/admin/emails/automation/AutomationWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FrequencySettings",
+      "path": "src/components/admin/emails/automation/FrequencySettings.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepEditor",
+      "path": "src/components/admin/emails/automation/StepEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepList",
+      "path": "src/components/admin/emails/automation/StepList.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BulkActionsBar",
+      "path": "src/components/admin/emails/cockpit/BulkActionsBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CommandPalette",
+      "path": "src/components/admin/emails/cockpit/CommandPalette.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FilteredTable",
+      "path": "src/components/admin/emails/cockpit/FilteredTable.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "KpiHeader",
+      "path": "src/components/admin/emails/cockpit/KpiHeader.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SavedViewsSidebar",
+      "path": "src/components/admin/emails/cockpit/SavedViewsSidebar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TransactionalCockpit",
+      "path": "src/components/admin/emails/cockpit/TransactionalCockpit.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GlobalCommandPalette",
+      "path": "src/components/admin/emails/GlobalCommandPalette.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ListmonkFrame",
+      "path": "src/components/admin/emails/ListmonkFrame.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TemplateEditor",
+      "path": "src/components/admin/emails/templates/TemplateEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CampaignWizard",
+      "path": "src/components/admin/emails/wizard/CampaignWizard.tsx",
+      "category": "admin"
+    },
+    {
       "name": "IconImage",
       "path": "src/components/admin/icons.tsx",
       "category": "media_image"
@@ -445,6 +555,56 @@
       "name": "LeadStatusMenu",
       "path": "src/components/admin/LeadStatusMenu.tsx",
       "category": "navigation"
+    },
+    {
+      "name": "LegalEmptyState",
+      "path": "src/components/admin/legal/EmptyState.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "HealthRecheckButton",
+      "path": "src/components/admin/legal/HealthRecheckButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "LegalEditor",
+      "path": "src/components/admin/legal/LegalEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LegalHistoryDrawer",
+      "path": "src/components/admin/legal/LegalHistoryDrawer.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "LegalListFilters",
+      "path": "src/components/admin/legal/LegalListFilters.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "LegalWizard",
+      "path": "src/components/admin/legal/LegalWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PlacementMatrix",
+      "path": "src/components/admin/legal/PlacementMatrix.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SlugRedirectsManager",
+      "path": "src/components/admin/legal/SlugRedirectsManager.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TemplateVarsEditor",
+      "path": "src/components/admin/legal/TemplateVarsEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ToastProvider",
+      "path": "src/components/admin/legal/Toast.tsx",
+      "category": "admin"
     },
     {
       "name": "LoginForm",
@@ -737,9 +897,29 @@
       "category": "admin"
     },
     {
+      "name": "ProvidersAnalyticsTable",
+      "path": "src/components/admin/tracking/analytics/ProvidersAnalyticsTable.tsx",
+      "category": "admin"
+    },
+    {
       "name": "ConsentBannerSettingsForm",
       "path": "src/components/admin/tracking/ConsentBannerSettingsForm.tsx",
       "category": "form_input"
+    },
+    {
+      "name": "EventCategorizationTable",
+      "path": "src/components/admin/tracking/events/EventCategorizationTable.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DriftBanner",
+      "path": "src/components/admin/tracking/gtm/DriftBanner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "DriftBannerServer",
+      "path": "src/components/admin/tracking/gtm/DriftBannerServer.tsx",
+      "category": "banner"
     },
     {
       "name": "GtmAdminTabs",
@@ -832,6 +1012,41 @@
       "category": "admin"
     },
     {
+      "name": "PingTimeline",
+      "path": "src/components/admin/tracking/gtm/PingTimeline.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SyncCard",
+      "path": "src/components/admin/tracking/gtm/SyncCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "SyncIndicator",
+      "path": "src/components/admin/tracking/gtm/SyncIndicator.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SyncStatusLive",
+      "path": "src/components/admin/tracking/gtm/SyncStatusLive.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SyncStatusView",
+      "path": "src/components/admin/tracking/gtm/SyncStatusView.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ValidatePairWizard",
+      "path": "src/components/admin/tracking/gtm/ValidatePairWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ValidationDiffViewer",
+      "path": "src/components/admin/tracking/gtm/ValidationDiffViewer.tsx",
+      "category": "admin"
+    },
+    {
       "name": "InventoryPanel",
       "path": "src/components/admin/tracking/InventoryPanel.tsx",
       "category": "admin"
@@ -839,6 +1054,61 @@
     {
       "name": "LogsPanel",
       "path": "src/components/admin/tracking/LogsPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CloneAndEditButton",
+      "path": "src/components/admin/tracking/mappings/CloneAndEditButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "ConfirmDialog",
+      "path": "src/components/admin/tracking/mappings/ConfirmDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingAuditTimeline",
+      "path": "src/components/admin/tracking/mappings/MappingAuditTimeline.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingCreateWizard",
+      "path": "src/components/admin/tracking/mappings/MappingCreateWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingDiffViewer",
+      "path": "src/components/admin/tracking/mappings/MappingDiffViewer.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingExportButton",
+      "path": "src/components/admin/tracking/mappings/MappingExportButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "MappingHelpPanel",
+      "path": "src/components/admin/tracking/mappings/MappingHelpPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingMatrix",
+      "path": "src/components/admin/tracking/mappings/MappingMatrix.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingTestModal",
+      "path": "src/components/admin/tracking/mappings/MappingTestModal.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "MappingVersionEditor",
+      "path": "src/components/admin/tracking/mappings/MappingVersionEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingVersionsList",
+      "path": "src/components/admin/tracking/mappings/MappingVersionsList.tsx",
       "category": "admin"
     },
     {
@@ -1236,6 +1506,31 @@
       "name": "SommaireOverlay",
       "path": "src/components/layout/SommaireOverlay.tsx",
       "category": "navigation"
+    },
+    {
+      "name": "CheckoutConsentText",
+      "path": "src/components/legal/CheckoutConsentText.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "FooterLegalLinks",
+      "path": "src/components/legal/FooterLegalLinks.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LegalContactBlock",
+      "path": "src/components/legal/LegalContactBlock.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LegalPrintButton",
+      "path": "src/components/legal/LegalPrintButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "LegalRelatedLinks",
+      "path": "src/components/legal/LegalRelatedLinks.tsx",
+      "category": "card"
     },
     {
       "name": "Footnote",
@@ -1884,10 +2179,22 @@
       "filePath": "src/app/admin/chat/page.tsx"
     },
     {
+      "route": "/admin/chat/analytics",
+      "title": "/admin/chat/analytics",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/analytics/page.tsx"
+    },
+    {
       "route": "/admin/chat/audit",
       "title": "/admin/chat/audit",
       "category": "admin",
       "filePath": "src/app/admin/chat/audit/page.tsx"
+    },
+    {
+      "route": "/admin/chat/care",
+      "title": "/admin/chat/care",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/care/page.tsx"
     },
     {
       "route": "/admin/chat/conversations",
@@ -1900,6 +2207,24 @@
       "title": "/admin/chat/conversations/:id",
       "category": "admin",
       "filePath": "src/app/admin/chat/conversations/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/chat/faq",
+      "title": "/admin/chat/faq",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/faq/page.tsx"
+    },
+    {
+      "route": "/admin/chat/faq/:id",
+      "title": "/admin/chat/faq/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/faq/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/chat/faq/new",
+      "title": "/admin/chat/faq/new",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/faq/new/page.tsx"
     },
     {
       "route": "/admin/chat/instructions",
@@ -1962,6 +2287,24 @@
       "filePath": "src/app/admin/chat/sources/new/page.tsx"
     },
     {
+      "route": "/admin/chat/suggestions",
+      "title": "/admin/chat/suggestions",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/suggestions/page.tsx"
+    },
+    {
+      "route": "/admin/chat/suggestions/:id",
+      "title": "/admin/chat/suggestions/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/suggestions/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/chat/suggestions/new",
+      "title": "/admin/chat/suggestions/new",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/suggestions/new/page.tsx"
+    },
+    {
       "route": "/admin/chat/system",
       "title": "/admin/chat/system",
       "category": "admin",
@@ -2016,6 +2359,114 @@
       "filePath": "src/app/admin/components/seed/page.tsx"
     },
     {
+      "route": "/admin/emails",
+      "title": "/admin/emails",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/page.tsx"
+    },
+    {
+      "route": "/admin/emails/audiences",
+      "title": "/admin/emails/audiences",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/audiences/page.tsx"
+    },
+    {
+      "route": "/admin/emails/audiences/:id",
+      "title": "/admin/emails/audiences/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/audiences/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/audiences/new",
+      "title": "/admin/emails/audiences/new",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/audiences/new/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation",
+      "title": "/admin/emails/automation",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation/:id/edit",
+      "title": "/admin/emails/automation/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation/new",
+      "title": "/admin/emails/automation/new",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/new/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation/runs/:id",
+      "title": "/admin/emails/automation/runs/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/runs/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/campaigns",
+      "title": "/admin/emails/campaigns",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/campaigns/page.tsx"
+    },
+    {
+      "route": "/admin/emails/campaigns/:id",
+      "title": "/admin/emails/campaigns/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/campaigns/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/campaigns/:id/edit",
+      "title": "/admin/emails/campaigns/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/campaigns/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/emails/events",
+      "title": "/admin/emails/events",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/events/page.tsx"
+    },
+    {
+      "route": "/admin/emails/listmonk/::path*",
+      "title": "/admin/emails/listmonk/::path*",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/listmonk/[[...path]]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/templates",
+      "title": "/admin/emails/templates",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/templates/page.tsx"
+    },
+    {
+      "route": "/admin/emails/templates/:id/edit",
+      "title": "/admin/emails/templates/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/templates/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/emails/templates/new",
+      "title": "/admin/emails/templates/new",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/templates/new/page.tsx"
+    },
+    {
+      "route": "/admin/emails/transactional",
+      "title": "/admin/emails/transactional",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/transactional/page.tsx"
+    },
+    {
+      "route": "/admin/emails/transactional/:id",
+      "title": "/admin/emails/transactional/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/transactional/[id]/page.tsx"
+    },
+    {
       "route": "/admin/leads",
       "title": "/admin/leads",
       "category": "admin",
@@ -2026,6 +2477,48 @@
       "title": "/admin/leads/:id",
       "category": "admin",
       "filePath": "src/app/admin/leads/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/legal",
+      "title": "/admin/legal",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/page.tsx"
+    },
+    {
+      "route": "/admin/legal/:slug/edit",
+      "title": "/admin/legal/:slug/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/[slug]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/legal/health",
+      "title": "/admin/legal/health",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/health/page.tsx"
+    },
+    {
+      "route": "/admin/legal/new",
+      "title": "/admin/legal/new",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/new/page.tsx"
+    },
+    {
+      "route": "/admin/legal/placements",
+      "title": "/admin/legal/placements",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/placements/page.tsx"
+    },
+    {
+      "route": "/admin/legal/redirects",
+      "title": "/admin/legal/redirects",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/redirects/page.tsx"
+    },
+    {
+      "route": "/admin/legal/template-vars",
+      "title": "/admin/legal/template-vars",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/template-vars/page.tsx"
     },
     {
       "route": "/admin/login",
@@ -2238,16 +2731,70 @@
       "filePath": "src/app/admin/tracking/page.tsx"
     },
     {
+      "route": "/admin/tracking/analytics/providers",
+      "title": "Analytics Providers — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/analytics/providers/page.tsx"
+    },
+    {
       "route": "/admin/tracking/events",
       "title": "/admin/tracking/events",
       "category": "admin",
       "filePath": "src/app/admin/tracking/events/page.tsx"
     },
     {
+      "route": "/admin/tracking/events/categorization",
+      "title": "Catégorisation Google Ads — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/categorization/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings",
+      "title": "Mappings event ↔ vendors — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/:id",
+      "title": "/admin/tracking/events/mappings/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/:id/audit",
+      "title": "/admin/tracking/events/mappings/:id/audit",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/[id]/audit/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/:id/edit",
+      "title": "/admin/tracking/events/mappings/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/compare/:a/:b",
+      "title": "/admin/tracking/events/mappings/compare/:a/:b",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/compare/[a]/[b]/page.tsx"
+    },
+    {
       "route": "/admin/tracking/gtm",
       "title": "/admin/tracking/gtm",
       "category": "admin",
       "filePath": "src/app/admin/tracking/gtm/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/gtm/sync-status",
+      "title": "GTM Sync Status — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/gtm/sync-status/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/gtm/validate-pair",
+      "title": "Valider import GTM — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/gtm/validate-pair/page.tsx"
     },
     {
       "route": "/admin/tracking/inventory",
@@ -2338,6 +2885,12 @@
       "title": "/kit",
       "category": "landing",
       "filePath": "src/app/(marketing)/kit/page.tsx"
+    },
+    {
+      "route": "/legal/:slug",
+      "title": "Page introuvable",
+      "category": "landing",
+      "filePath": "src/app/legal/[slug]/page.tsx"
     },
     {
       "route": "/maison",
