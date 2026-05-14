@@ -15,6 +15,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -356,6 +357,86 @@ export const emailSettings = pgTable('email_settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// — email_audience (M5.3) ─────────────────────────────────────────────────
+// Définition d'une audience (règles + exclusions). Évaluable dynamiquement
+// ou snapshot-able. Cf. docs/emailing/admin-evolution/01-data/01-tables.md
+
+export const emailAudience = pgTable(
+  'email_audience',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description'),
+    rules: jsonb('rules').notNull(),
+    exclusionFlags: jsonb('exclusion_flags').notNull().default({
+      hard_bounce: true,
+      unsubscribe: true,
+      manual_suppression: true,
+      marketing_optout: false,
+    }),
+    evaluationMode: text('evaluation_mode', { enum: ['static', 'dynamic'] })
+      .notNull()
+      .default('dynamic'),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    slugIdx: index('idx_email_audience_slug').on(t.slug),
+  }),
+);
+
+// — email_audience_snapshot (M5.3) ────────────────────────────────────────
+
+export const emailAudienceSnapshot = pgTable(
+  'email_audience_snapshot',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    audienceId: uuid('audience_id')
+      .notNull()
+      .references(() => emailAudience.id, { onDelete: 'cascade' }),
+    snapshotKey: text('snapshot_key'),
+    status: text('status', { enum: ['pending', 'running', 'done', 'errored'] })
+      .notNull()
+      .default('pending'),
+    size: integer('size').notNull().default(0),
+    rulesSnapshot: jsonb('rules_snapshot').notNull(),
+    exclusionSnapshot: jsonb('exclusion_snapshot').notNull(),
+    metadata: jsonb('metadata').notNull().default({}),
+    listmonkListId: integer('listmonk_list_id'),
+    listmonkListName: text('listmonk_list_name'),
+    erroredAt: timestamp('errored_at', { withTimezone: true }),
+    erroredReason: text('errored_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    purgeableAfter: timestamp('purgeable_after', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    audienceIdx: index('idx_snapshot_audience').on(t.audienceId, t.createdAt),
+    purgeIdx: index('idx_snapshot_purge').on(t.purgeableAfter),
+    keyUnique: uniqueIndex('email_audience_snapshot_key_unique').on(t.audienceId, t.snapshotKey),
+  }),
+);
+
+// — email_audience_snapshot_member (M5.3) ─────────────────────────────────
+
+export const emailAudienceSnapshotMember = pgTable(
+  'email_audience_snapshot_member',
+  {
+    snapshotId: uuid('snapshot_id')
+      .notNull()
+      .references(() => emailAudienceSnapshot.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    payload: jsonb('payload'),
+  },
+  (t) => ({
+    pk: uniqueIndex('email_audience_snapshot_member_pk').on(t.snapshotId, t.email),
+    emailIdx: index('idx_member_email').on(t.email),
+  }),
+);
+
 // — Inferred types — — — — — — — — — — — — — — — — — — — — — — — — — — — —
 
 export type EmailOutboxRow = typeof emailOutbox.$inferSelect;
@@ -372,6 +453,12 @@ export type EmailSuppressionInsert = typeof emailSuppression.$inferInsert;
 export type EmailAutomationRow = typeof emailAutomation.$inferSelect;
 export type EmailAutomationRunRow = typeof emailAutomationRun.$inferSelect;
 export type EmailSettingsRow = typeof emailSettings.$inferSelect;
+export type EmailAudienceRow = typeof emailAudience.$inferSelect;
+export type EmailAudienceInsert = typeof emailAudience.$inferInsert;
+export type EmailAudienceSnapshotRow = typeof emailAudienceSnapshot.$inferSelect;
+export type EmailAudienceSnapshotMemberRow = typeof emailAudienceSnapshotMember.$inferSelect;
+export type EmailAudienceEvaluationMode = 'static' | 'dynamic';
+export type EmailAudienceSnapshotStatus = 'pending' | 'running' | 'done' | 'errored';
 
 export type EmailOutboxStatus =
   | 'pending'
