@@ -1,0 +1,106 @@
+phase: M5.6
+name: "Polish ergonomie globale"
+duration_estimate_days: [4, 7]
+depends_on: [M5.1, M5.2, M5.3, M5.4, M5.5]
+gate_test: "../11-tests/03-playwright-e2e/06-m5.6-ultimate.spec.md"
+
+objectives:
+  - Cmd-K palette universelle (audiences + automation aussi)
+  - Empty states uniformes
+  - Toasts feedback + undo
+  - Audit a11y (axe-core CI)
+  - Audit micro-copy
+  - Motion + prefers-reduced-motion
+  - Raccourcis clavier complets
+
+tickets:
+
+  - id: M5.6.1
+    title: "Cmd-K universel — extend aux audiences + automation"
+    description: |
+      Le component CommandPalette accepte scope='audiences' et 'automation'.
+    estimate_days: 1
+    docs:
+      - "../03-frontend/04-cmd-k-palette.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/command-palette-universal.test.spec.md"
+    deliverable: "Component scopable + intégration dans pages"
+
+  - id: M5.6.2
+    title: "Empty states uniformes"
+    description: |
+      Audit tous les écrans, appliquer <EmptyState> partout.
+    estimate_days: 0.5
+    docs:
+      - "../04-ui-ux/03-empty-states.md"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/empty-states.spec.md"
+    deliverable: "Composant + intégrations"
+
+  - id: M5.6.3
+    title: "Toast system avec undo"
+    description: |
+      Lib sonner intégrée, helpers spécifiques (avec undo timer).
+    estimate_days: 0.5
+    docs:
+      - "../06-ergonomie/03-feedback-toasts.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/toast.test.spec.md"
+    deliverable: "lib + helpers"
+
+  - id: M5.6.4
+    title: "Audit a11y axe-core en CI"
+    description: |
+      Pipeline GitHub Actions qui run axe sur chaque page admin.
+    estimate_days: 1
+    docs:
+      - "../06-ergonomie/01-a11y-checklist.md"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/a11y-audit.spec.md"
+    deliverable: "CI workflow + 0 violation critique"
+
+  - id: M5.6.5
+    title: "Raccourcis clavier — implémentation + cheat sheet"
+    description: |
+      react-hotkeys-hook intégré, cheat sheet (`?`) global.
+    estimate_days: 1
+    docs:
+      - "../06-ergonomie/00-keyboard-shortcuts.md"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/keyboard-shortcuts.spec.md"
+    deliverable: "Hooks + cheat sheet UI"
+
+  - id: M5.6.6
+    title: "Motion + prefers-reduced-motion"
+    description: |
+      Tokens motion en CSS + override media query.
+    estimate_days: 0.5
+    docs:
+      - "../05-design/00-tokens.md#motion"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/reduced-motion.spec.md"
+    deliverable: "Tokens + tests"
+
+  - id: M5.6.7
+    title: "Audit micro-copy"
+    description: |
+      Pass exhaustive sur tous les écrans, conformité au vocabulaire.
+    estimate_days: 0.5
+    docs:
+      - "../04-ui-ux/05-microcopy.md"
+    deliverable: "Pull request copy"
+
+  - id: M5.6.8
+    title: "Test ultime M5.6"
+    description: |
+      E2E full keyboard-only journey.
+    estimate_days: 1
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/06-m5.6-ultimate.spec.md"
+    deliverable: "Test passe"
+
+gate_exit_criteria:
+  - "Lighthouse a11y ≥ 95 sur les 5 sections principales"
+  - "0 violation axe critique en CI"
+  - "Cheat sheet visible et complète"
+  - "Test ultime passe (keyboard-only journey)"

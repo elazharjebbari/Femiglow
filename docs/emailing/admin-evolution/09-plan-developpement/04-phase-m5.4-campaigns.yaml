@@ -1,0 +1,101 @@
+phase: M5.4
+name: "Wizard campagne avec audiences natives + push Listmonk éphémère"
+duration_estimate_days: [4, 7]
+depends_on: [M5.3]
+gate_test: "../11-tests/03-playwright-e2e/04-m5.4-ultimate.spec.md"
+
+objectives:
+  - Wizard campagne step "audience" refait (selector / inline builder / ad-hoc)
+  - Mécanisme snapshot + push Listmonk éphémère
+  - Cleanup listes éphémères J+30
+  - Detail page affiche audience associée
+
+tickets:
+
+  - id: M5.4.0
+    title: "Migration email_campaign_link extension"
+    description: |
+      ALTER : audience_id, snapshot_id, snapshot_listmonk_list_id.
+    estimate_days: 0.5
+    docs:
+      - "../01-data/03-migrations-plan.md#m54"
+    tests:
+      - jest: "11-tests/01-jest-unit/campaign-link-schema.test.ts"
+    deliverable: "Migration 0046"
+
+  - id: M5.4.1
+    title: "Listmonk sync engine (push éphémère)"
+    description: |
+      pushSnapshotToListmonk + cleanupExpiredLists.
+      Idempotent, retry exponentiel, chunks 1000.
+    estimate_days: 1.5
+    docs:
+      - "../02-backend/05-listmonk-sync.md"
+    tests:
+      - msw: "11-tests/02-msw-integration/listmonk-sync.test.spec.md"
+    deliverable: "lib/mail/campaigns/listmonk-sync.ts"
+
+  - id: M5.4.2
+    title: "finalizeCampaign V2 — snapshot + push"
+    description: |
+      Wrapper qui snapshot l'audience puis push Listmonk éphémère puis crée campagne.
+    estimate_days: 1
+    tests:
+      - msw: "11-tests/02-msw-integration/campaign-finalize-v2.test.spec.md"
+    deliverable: "lib/mail/campaigns/finalize-v2.ts"
+
+  - id: M5.4.3
+    title: "Wizard step 2 — AudienceSelector"
+    description: |
+      Remplace le multi-select Listmonk par le AudienceSelector.
+    estimate_days: 1
+    docs:
+      - "../03-frontend/02-components-catalog.md#audienceselector"
+      - "../04-ui-ux/01-wizard-spec-master.md#3-campaign-wizard-v2"
+    tests:
+      - jest: "11-tests/01-jest-unit/audience-selector.test.spec.md"
+    deliverable: "Composant + intégration wizard"
+
+  - id: M5.4.4
+    title: "Wizard step 6 — recap audience"
+    description: |
+      Affiche audience name + snapshot type (dynamic/static).
+    estimate_days: 0.5
+    tests:
+      - jest: "11-tests/01-jest-unit/campaign-recap.test.spec.md"
+    deliverable: "UI update step 6"
+
+  - id: M5.4.5
+    title: "Detail page — audience link"
+    description: |
+      Affiche audience associée + snapshot ID + lien membres.
+    estimate_days: 0.5
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/campaign-detail-audience.spec.md"
+    deliverable: "Page detail update"
+
+  - id: M5.4.6
+    title: "Cron cleanup listes Listmonk éphémères"
+    description: |
+      Endpoint cron + scheduler systemd.
+    estimate_days: 0.5
+    docs:
+      - "../02-backend/05-listmonk-sync.md#cleanup"
+    tests:
+      - jest: "11-tests/01-jest-unit/listmonk-cleanup.test.ts"
+    deliverable: "Cron + tests"
+
+  - id: M5.4.7
+    title: "Test ultime M5.4"
+    description: |
+      E2E : créer audience 50 emails test → créer campagne → finalize → vérifier
+      que Listmonk a reçu + envoyé.
+    estimate_days: 0.5
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/04-m5.4-ultimate.spec.md"
+    deliverable: "Test passe"
+
+gate_exit_criteria:
+  - "Campagne envoyée à audience native dans staging"
+  - "Listmonk list éphémère créée puis cleanup à J+30 simulé"
+  - "Test ultime passe"

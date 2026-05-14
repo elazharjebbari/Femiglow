@@ -171,7 +171,7 @@ describe('LegalEditor — auto-save', () => {
 
 describe('LegalEditor — unmount safety', () => {
   it('unmount pendant le save ne crashe pas (suppression composant + setState)', async () => {
-    let resolveFetch: (() => void) | null = null;
+    let resolveFetch: (() => void) | undefined;
     server.use(
       http.patch('/api/admin/legal/cgv', async () => {
         await new Promise<void>((r) => {
@@ -198,7 +198,7 @@ describe('LegalEditor — unmount safety', () => {
 
     // Unmount avant la fin du fetch
     unmount();
-    resolveFetch?.();
+    if (resolveFetch) resolveFetch();
 
     // Si on a survécu, le test passe (pas d'unhandled exception)
     expect(true).toBe(true);

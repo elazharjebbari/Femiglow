@@ -181,9 +181,10 @@ describe('rate-limit admin — POST /publish', () => {
 
 describe('rate-limit admin — POST /health/recheck', () => {
   it('1 recheck/min/admin, 2e renvoie 429', async () => {
-    const first = await recheckRoute();
+    const req = () => new Request('http://x', { method: 'POST' });
+    const first = await recheckRoute(req());
     expect(first.status).toBe(200);
-    const second = await recheckRoute();
+    const second = await recheckRoute(req());
     expect(second.status).toBe(429);
     expect(second.headers.get('Retry-After')).toBeDefined();
   });

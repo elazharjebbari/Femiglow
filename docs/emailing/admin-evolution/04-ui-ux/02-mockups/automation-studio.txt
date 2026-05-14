@@ -1,0 +1,143 @@
+═══════════════════════════════════════════════════════════════════════════════
+AUTOMATION STUDIO — Mockup ASCII
+═══════════════════════════════════════════════════════════════════════════════
+
+[LIST PAGE]
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ FemiGlow admin › Emails › Automation              [+ Nouvelle automation]  │
+├────────────────────────────────────────────────────────────────────────────┤
+│  Toutes  Actives  Inactives  Brouillons                                    │
+├──────────────────────┬──────────────────┬────────┬───────────┬────────────┤
+│  Slug                │ Trigger          │ Steps  │ État      │ Runs 24h   │
+├──────────────────────┼──────────────────┼────────┼───────────┼────────────┤
+│ 🤖 cart-abandoned-1h │ cart.abandoned   │ 2      │ 🟢 active │ 14 ↗       │
+│ 🤖 welcome-flow      │ lead.created     │ 4      │ 🟢 active │ 8          │
+│ 🤖 vip-upsell        │ order.placed     │ 5      │ ⚪ draft  │ 0          │
+└──────────────────────┴──────────────────┴────────┴───────────┴────────────┘
+
+🏃 Runs récentes
+┌─────────────────┬─────────────────┬────────────┬──────────────────────────┐
+│ Date            │ Email           │ Automation │ Étape    Status          │
+├─────────────────┼─────────────────┼────────────┼──────────────────────────┤
+│ 22:14           │ user@x.y        │ cart-1h    │ 2/2      ✓ done          │
+│ 22:13           │ a@b.c           │ welcome    │ 3/4      ⏳ waiting_event │
+│ 22:10           │ c@d.e           │ vip-upsell │ 5/5      ✓ done          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+[WIZARD STEP 3 — Étapes (le cœur)]
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Nouvelle automation › Relance panier abandonné            Step 3/5         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Trigger: ⚡ cart.abandoned                                                   │
+│   │                                                                         │
+│   ▼                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ 1. ⏳ Wait                                                      [✕] │   │
+│  │    Durée [1h    ▾]                                                  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│   │                                                                         │
+│   ▼                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ 2. ✉ Send email                                                 [✕] │   │
+│  │    Template [cart-abandoned ▾]                                       │   │
+│  │    Variables auto-mapées :                                          │   │
+│  │     • firstName     ← lead.first_name                               │   │
+│  │     • cartTotal     ← trigger.payload.total_mad                     │   │
+│  │     • resumeUrl     ← trigger.payload.resume_url                    │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│   │                                                                         │
+│   ▼                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ 3. ❓ Branch                                                    [✕] │   │
+│  │    Condition : [user a ouvert step 2 dans les 24h ▾]                 │   │
+│  │                                                                     │   │
+│  │    Si OUI ┐                                                         │   │
+│  │           ├── 3a. ⏳ Wait [48h]                                     │   │
+│  │           └── 3b. ✉ Send template [welcome-back ▾]                  │   │
+│  │                                                                     │   │
+│  │    Si NON ┐                                                         │   │
+│  │           └── 3a. 🏷 Tag [cart_lost] add                            │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  [+ Ajouter une étape ▾]                                                    │
+│    ▾                                                                        │
+│    ┌──────────────────────────┐                                             │
+│    │ ⏳ Wait                  │                                             │
+│    │ ✉ Send                   │                                             │
+│    │ ❓ Branch                │                                             │
+│    │ 🏷 Tag                   │                                             │
+│    │ ✏ Update lead           │                                             │
+│    │ 🔗 Webhook               │                                             │
+│    │ ⏸ Wait for event         │                                             │
+│    └──────────────────────────┘                                             │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  [← Retour]                                              [Continuer →]      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+[STEP EDITOR — drawer side panel]
+
+    Click sur une step → drawer side panel s'ouvre :
+
+    ┌────────────────────────────────────────┐
+    │ Step 2: ✉ Send email          [✕]     │
+    ├────────────────────────────────────────┤
+    │                                        │
+    │  Template *                            │
+    │  ┌──────────────────────────────────┐  │
+    │  │ [cart-abandoned ▾]               │  │
+    │  └──────────────────────────────────┘  │
+    │  ℹ Aperçu disponible dans /transac.   │
+    │                                        │
+    │  Variables                             │
+    │   Le template attend :                 │
+    │    - firstName                         │
+    │    - cartTotal                         │
+    │    - resumeUrl                         │
+    │                                        │
+    │   Auto-mapping détecté :               │
+    │    firstName ← lead.first_name  [Edit] │
+    │    cartTotal ← trigger.payload  [Edit] │
+    │    resumeUrl ← trigger.payload  [Edit] │
+    │                                        │
+    │  Délai avant envoi (depuis step préc.) │
+    │  ☐ Pas de délai                        │
+    │  ☑ Respect quiet hours                 │
+    │                                        │
+    ├────────────────────────────────────────┤
+    │              [Annuler] [Enregistrer]   │
+    └────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+[RUN DETAIL — timeline]
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Run #abc123 — user@x.y — cart-abandoned-relance                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Status : ⏳ running (step 3/5)                                              │
+│  Started: 22:14:03 (3min ago)                                                │
+│  Next   : step 3 at 23:14:03                                                 │
+│                                                                              │
+│  Timeline                                                                    │
+│  ✓ 22:14:03 — Triggered by cart.abandoned                                    │
+│                Payload: { total: 480 MAD, items: 3, resume_url: '...' }      │
+│  ✓ 22:14:03 — Step 1 (wait 1h) started                                       │
+│  ✓ 23:14:03 — Step 1 done → advancing to step 2                              │
+│  ✓ 23:14:03 — Step 2 (send cart-abandoned) → email queued (outbox#456)       │
+│  ✓ 23:14:08 — outbox#456 sent (delivered at 23:14:11)                        │
+│  ⏳ Now    — Step 3 (branch) — checking if user opened step 2 email...        │
+│                Currently: not yet opened                                     │
+│                Waiting until: 23:14:03+24h = 24/04 23:14                     │
+│                If opened by then → goto step 3a (wait 48h, send welcome)     │
+│                If not opened    → goto step 3.alt (tag cart_lost)            │
+│                                                                              │
+│  Actions                                                                     │
+│   [Cancel run]                                                               │
+│   [View related outbox emails]                                               │
+│   [Debug — show context]                                                     │
+└─────────────────────────────────────────────────────────────────────────────┘

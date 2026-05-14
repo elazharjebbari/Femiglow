@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, lte, sql } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import type {
   TrackingEventCategory,
@@ -200,10 +200,15 @@ export async function listEvents(opts: ListEventsOptions = {}): Promise<Tracking
 export async function purgeEventsBefore(date: Date): Promise<number> {
   const drizzle = db();
   if (drizzle) {
+    // Use lt() so Drizzle infers the column type (timestamptz) and binds the
+    // Date param correctly. The raw sql`${col} < ${date}` form lost the type
+    // info and produced "Failed query: ..." on postgres-js driver.
     const result = await drizzle
       .delete(schema.trackingEventsLog)
-      .where(sql`${schema.trackingEventsLog.receivedAt} < ${date}`);
-    return Number((result as { rowCount?: number }).rowCount ?? 0);
+      .where(lt(schema.trackingEventsLog.receivedAt, date));
+    // postgres-js returns `{ count: number }`, Neon returns `{ rowCount: number }`.
+    const r = result as { rowCount?: number; count?: number };
+    return Number(r.rowCount ?? r.count ?? 0);
   }
   const store = memoryStore();
   let count = 0;

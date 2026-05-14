@@ -68,6 +68,33 @@ const envSchema = z.object({
   // CHAT-067 — Email digest hebdo des leads chat (Care).
   CHAT_DIGEST_RECIPIENT: z.string().email().optional(),
   CHAT_DIGEST_FROM: z.string().min(3).default('FemiGlow Chat <chat@femiglow.local>'),
+
+  // — Emailing (cf. docs/emailing/09-infrastructure-setup.md §11) ——————————
+  // SMTP transactional vers Stalwart en loopback. Optional en dev/test ;
+  // required en prod via runtime guard dans lib/mail/client.ts.
+  SMTP_HOST: z.string().default('127.0.0.1'),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  MAIL_FROM: z.string().default('FemiGlow <noreply@femiglow-maroc.com>'),
+  MAIL_REPLY_TO: z.string().default('info@femiglow-maroc.com'),
+
+  // Listmonk API (loopback). Required quand broadcast/automation activé.
+  LISTMONK_INTERNAL_URL: z.string().url().default('http://127.0.0.1:9000'),
+  // Public URL où le SPA Listmonk est joignable depuis le navigateur (ex.
+  // https://listmonk.femiglow-maroc.com). Sert d'origin iframe sur
+  // /admin/emails/listmonk. Si absent, l'iframe retombe sur le proxy
+  // same-origin (cassé tant que Listmonk sert son SPA depuis /admin/*).
+  LISTMONK_PUBLIC_URL: z.string().url().optional(),
+  LISTMONK_API_USER: z.string().optional(),
+  LISTMONK_API_TOKEN: z.string().optional(),
+  LISTMONK_WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  // Stalwart → FemiGlow webhook authentication.
+  FEMIGLOW_STALWART_WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  // List-Unsubscribe one-click token signing (HMAC).
+  MAIL_UNSUB_TOKEN_SECRET: z.string().min(32).optional(),
 });
 
 export const env = envSchema.parse({
@@ -119,4 +146,17 @@ export const env = envSchema.parse({
   CHAT_ALERTS_WEBHOOK_URL: process.env.CHAT_ALERTS_WEBHOOK_URL,
   CHAT_DIGEST_RECIPIENT: process.env.CHAT_DIGEST_RECIPIENT,
   CHAT_DIGEST_FROM: process.env.CHAT_DIGEST_FROM,
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+  MAIL_FROM: process.env.MAIL_FROM,
+  MAIL_REPLY_TO: process.env.MAIL_REPLY_TO,
+  LISTMONK_INTERNAL_URL: process.env.LISTMONK_INTERNAL_URL,
+  LISTMONK_PUBLIC_URL: process.env.LISTMONK_PUBLIC_URL,
+  LISTMONK_API_USER: process.env.LISTMONK_API_USER,
+  LISTMONK_API_TOKEN: process.env.LISTMONK_API_TOKEN,
+  LISTMONK_WEBHOOK_SECRET: process.env.LISTMONK_WEBHOOK_SECRET,
+  FEMIGLOW_STALWART_WEBHOOK_SECRET: process.env.FEMIGLOW_STALWART_WEBHOOK_SECRET,
+  MAIL_UNSUB_TOKEN_SECRET: process.env.MAIL_UNSUB_TOKEN_SECRET,
 });

@@ -264,40 +264,89 @@
     {
       "idx": 37,
       "version": "7",
+      "when": 1778700928083,
+      "tag": "0028_emailing",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1778700928084,
+      "tag": "0029_emailing_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1778700928085,
+      "tag": "0030_emailing_seed_round2",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1778703888610,
+      "tag": "0031_emailing_automation_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
       "when": 1779000000032,
       "tag": "0032_event_mapping_versions",
       "breakpoints": true
     },
     {
-      "idx": 38,
+      "idx": 42,
       "version": "7",
       "when": 1779000000033,
       "tag": "0033_event_mapping_audit",
       "breakpoints": true
     },
     {
-      "idx": 39,
+      "idx": 43,
       "version": "7",
       "when": 1779000000034,
       "tag": "0034_event_mapping_seed_default",
       "breakpoints": true
     },
     {
-      "idx": 40,
+      "idx": 44,
       "version": "7",
       "when": 1779000000035,
       "tag": "0035_gtm_poka_yoke",
       "breakpoints": true
     },
     {
-      "idx": 41,
+      "idx": 45,
       "version": "7",
       "when": 1779100000036,
       "tag": "0036_chat_v5_v6_tables",
       "breakpoints": true
     },
     {
-      "idx": 42,
+      "idx": 46,
+      "version": "7",
+      "when": 1779100000036,
+      "tag": "0036_tracking_event_id_gclid",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1779100000037,
+      "tag": "0037_tracking_event_category_default",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1779100000038,
+      "tag": "0038_tracking_event_overrides",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
       "version": "7",
       "when": 1779200000037,
       "tag": "0037_canned_pair_lead_trigger",

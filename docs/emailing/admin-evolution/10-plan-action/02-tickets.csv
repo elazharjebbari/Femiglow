@@ -1,0 +1,72 @@
+id,phase,title,estimate_days,depends_on,deliverable,docs,tests
+M5.1.0,M5.1,Worktree setup + migration admin_email_view,0.5,,Branch + migration appliquée,01-data/01-tables.md,jest:admin-email-view-schema.test.ts
+M5.1.1,M5.1,Filters parser key:value syntax,1,M5.1.0,filters-parser.ts,03-frontend/04-cmd-k-palette.md,jest:filters-parser.test.ts
+M5.1.2,M5.1,Backend queries outbox search/summary/bulk-retry,1.5,M5.1.0,lib/mail/transactional/*.ts,01-data/05-queries-catalog.md,jest:outbox-queries.test.ts
+M5.1.3,M5.1,API endpoints (5),1.5,M5.1.2,5 routes API,02-backend/01-api-endpoints.md,msw:transactional-endpoints.test.ts
+M5.1.4,M5.1,Composant CommandPalette,1.5,M5.1.1;M5.1.3,CommandPalette.tsx,03-frontend/04-cmd-k-palette.md,jest:command-palette.test.tsx
+M5.1.5,M5.1,Composant KpiHeader,1,M5.1.3,KpiHeader.tsx,03-frontend/02-components-catalog.md,jest:kpi-header.test.tsx
+M5.1.6,M5.1,Composants SavedViewsSidebar + FilteredTable + BulkActionsBar,1.5,M5.1.3,3 composants,03-frontend/02-components-catalog.md,jest:*
+M5.1.7,M5.1,Page transactional refonte,1,M5.1.4;M5.1.5;M5.1.6,Page,04-ui-ux/02-mockups/transactional-inbox.txt,playwright:cockpit-cmdk-search.spec.ts
+M5.1.8,M5.1,Test ultime + acceptance M5.1,1,M5.1.7,Test passe,11-tests/03-playwright-e2e/01-m5.1-ultimate.spec.md,playwright:m5.1-ultimate.spec.ts
+M5.2.0,M5.2,Migration user_event + indexes,0.5,,Migration 0041-42,01-data/01-tables.md,jest:user-event-schema.test.ts
+M5.2.1,M5.2,Helper insertUserEvent + types Zod,0.5,M5.2.0,lib/mail/user-events/insert.ts,02-backend/00-overview.md,jest:user-event-insert.test.ts
+M5.2.2,M5.2,Bridge web tracking,0.5,M5.2.1,Bridge,02-backend/00-overview.md,msw:bridge-web-tracking.test.ts
+M5.2.3,M5.2,Bridge email webhooks,1,M5.2.1,Bridge,02-backend/00-overview.md,msw:bridge-email-webhooks.test.ts
+M5.2.4,M5.2,Bridge server actions,1,M5.2.1,Bridge,02-backend/00-overview.md,jest:bridge-server.test.ts
+M5.2.5,M5.2,Bridge admin actions,0.5,M5.2.1,Bridge,02-backend/00-overview.md,jest:bridge-admin.test.ts
+M5.2.6,M5.2,Backfill 90j script,1,M5.2.5,Script CLI,02-backend/00-overview.md,jest:backfill.test.ts
+M5.2.7,M5.2,Dashboard debug events,0.5,M5.2.5,Page debug,02-backend/01-api-endpoints.md,playwright:events-dashboard.spec.ts
+M5.2.8,M5.2,Test ultime M5.2,0.5,M5.2.7,Test passe,11-tests/03-playwright-e2e/02-m5.2-ultimate.spec.md,playwright:m5.2-ultimate.spec.ts
+M5.3.0,M5.3,Migrations + Zod types RulesGroup,1,M5.2,Migrations 0043-45,01-data/01-tables.md,jest:rules-types.test.ts
+M5.3.1,M5.3,Rules compiler — commerce + identité,2,M5.3.0,compiler P1,02-backend/03-rules-compiler.md,jest:rules-compiler.test.ts (P1)
+M5.3.2,M5.3,Rules compiler — engagement + activité + tags,1.5,M5.3.1,compiler P2,02-backend/03-rules-compiler.md,jest:rules-compiler.test.ts (P2)
+M5.3.3,M5.3,Rules compiler — composition + exclusions,1,M5.3.2,Final compiler,02-backend/03-rules-compiler.md,jest:rules-compiler.test.ts (composition)
+M5.3.4,M5.3,Preview engine,1,M5.3.3,preview.ts,01-data/05-queries-catalog.md,jest:audience-preview.test.ts
+M5.3.5,M5.3,Snapshot engine,1.5,M5.3.4,snapshot.ts,02-backend/04-snapshot-engine.md,jest:snapshot-engine.test.ts
+M5.3.6,M5.3,Audience CRUD API,1,M5.3.5,Endpoints,02-backend/01-api-endpoints.md,msw:audiences-crud.test.ts
+M5.3.7,M5.3,Composant AudienceRulesBuilder,2,M5.3.0;M5.3.6,Component,03-frontend/02-components-catalog.md,jest:rules-builder.test.tsx
+M5.3.8,M5.3,Composants Preview + Wizard,1.5,M5.3.7,Components,03-frontend/02-components-catalog.md,jest:*
+M5.3.9,M5.3,Pages audiences,1,M5.3.8,5 pages,03-frontend/01-routes-map.md,playwright:audience-create.spec.ts
+M5.3.10,M5.3,Cron purge snapshots,0.5,M5.3.5,Cron endpoint,02-backend/04-snapshot-engine.md,jest:audience-purge.test.ts
+M5.3.11,M5.3,Test ultime M5.3,0.5,M5.3.9,Test passe,11-tests/03-playwright-e2e/03-m5.3-ultimate.spec.md,playwright:m5.3-ultimate.spec.ts
+M5.4.0,M5.4,Migration email_campaign_link audience,0.5,M5.3,Migration 0046,01-data/03-migrations-plan.md,jest:campaign-link-schema.test.ts
+M5.4.1,M5.4,Listmonk sync engine,1.5,M5.4.0,listmonk-sync.ts,02-backend/05-listmonk-sync.md,msw:listmonk-sync.test.ts
+M5.4.2,M5.4,finalizeCampaign V2,1,M5.4.1,finalize-v2.ts,02-backend/05-listmonk-sync.md,msw:campaign-finalize-v2.test.ts
+M5.4.3,M5.4,Wizard step 2 AudienceSelector,1,M5.3.7;M5.4.2,Integration,04-ui-ux/01-wizard-spec-master.md,jest:audience-selector.test.tsx
+M5.4.4,M5.4,Wizard step 6 recap,0.5,M5.4.3,UI update,04-ui-ux/01-wizard-spec-master.md,jest:campaign-recap.test.tsx
+M5.4.5,M5.4,Detail page audience link,0.5,M5.4.2,Update detail,03-frontend/01-routes-map.md,playwright:campaign-detail-audience.spec.ts
+M5.4.6,M5.4,Cron cleanup listes éphémères,0.5,M5.4.2,Cron endpoint,02-backend/05-listmonk-sync.md,jest:listmonk-cleanup.test.ts
+M5.4.7,M5.4,Test ultime M5.4,0.5,M5.4.5,Test passe,11-tests/03-playwright-e2e/04-m5.4-ultimate.spec.md,playwright:m5.4-ultimate.spec.ts
+M5.5.0,M5.5,Migrations email_automation extensions + lead_tag,0.5,M5.3,Migrations 0047-49,01-data/03-migrations-plan.md,jest:automation-schema.test.ts
+M5.5.1,M5.5,Types Zod AutomationStep étendus,0.5,M5.5.0,types.ts,01-data/01-tables.md,jest:automation-types.test.ts
+M5.5.2,M5.5,Step handlers wait + send refactor,1,M5.5.1,handlers,02-backend/06-automation-runner-v2.md,jest:automation-runner.test.ts
+M5.5.3,M5.5,Step handler branch + condition evaluator,1.5,M5.5.2;M5.3.3,handler,02-backend/06-automation-runner-v2.md,jest:automation-runner-branch.test.ts
+M5.5.4,M5.5,Step handlers tag + update_lead,1,M5.5.2,handlers,02-backend/06-automation-runner-v2.md,jest:automation-runner-tag.test.ts
+M5.5.5,M5.5,Step handler webhook,1,M5.5.2,handler,02-backend/06-automation-runner-v2.md,msw:automation-webhook.test.ts
+M5.5.6,M5.5,Step handler wait_for_event + resume,1.5,M5.5.2;M5.2,handler,02-backend/06-automation-runner-v2.md,jest:automation-runner-wfe.test.ts
+M5.5.7,M5.5,Frequency cooldown + quiet hours + daily cap,1,M5.5.2,frequency.ts,02-backend/06-automation-runner-v2.md,jest:automation-frequency.test.ts
+M5.5.8,M5.5,Catalogue events endpoint,0.5,M5.5.0,Endpoint,02-backend/01-api-endpoints.md,msw:events-catalog.test.ts
+M5.5.9,M5.5,Composants StepEditor + ConditionBuilder + FrequencySettings,2,M5.5.8,Components,03-frontend/02-components-catalog.md,jest:step-editor.test.tsx
+M5.5.10,M5.5,Composant AutomationWizard + StepList,1.5,M5.5.9,Components,03-frontend/02-components-catalog.md,jest:automation-wizard.test.tsx
+M5.5.11,M5.5,Pages automation,1,M5.5.10,3 pages,03-frontend/01-routes-map.md,playwright:automation-create.spec.ts
+M5.5.12,M5.5,Test ultime M5.5,1,M5.5.11,Test passe,11-tests/03-playwright-e2e/05-m5.5-ultimate.spec.md,playwright:m5.5-ultimate.spec.ts
+M5.6.1,M5.6,Cmd-K universel (audiences + automation),1,M5.5,Integration,03-frontend/04-cmd-k-palette.md,jest:command-palette-universal.test.tsx
+M5.6.2,M5.6,Empty states uniformes,0.5,M5.5,Component + intégrations,04-ui-ux/03-empty-states.md,playwright:empty-states.spec.ts
+M5.6.3,M5.6,Toast system avec undo,0.5,M5.5,lib + helpers,06-ergonomie/03-feedback-toasts.md,jest:toast.test.ts
+M5.6.4,M5.6,Audit a11y axe-core en CI,1,M5.5,CI workflow,06-ergonomie/01-a11y-checklist.md,playwright:a11y-audit.spec.ts
+M5.6.5,M5.6,Raccourcis clavier + cheat sheet,1,M5.5,Hooks + UI,06-ergonomie/00-keyboard-shortcuts.md,playwright:keyboard-shortcuts.spec.ts
+M5.6.6,M5.6,Motion + prefers-reduced-motion,0.5,M5.5,Tokens,05-design/00-tokens.md,playwright:reduced-motion.spec.ts
+M5.6.7,M5.6,Audit micro-copy,0.5,M5.5,Copy PR,04-ui-ux/05-microcopy.md,-
+M5.6.8,M5.6,Test ultime M5.6 keyboard-only,1,M5.6.5,Test passe,11-tests/03-playwright-e2e/06-m5.6-ultimate.spec.md,playwright:m5.6-ultimate.spec.ts
+M5.7.0,M5.7,Migration email_template_custom + version,1,M5.2,Migration 0050 + seed,01-data/03-migrations-plan.md,jest:template-schema.test.ts
+M5.7.1,M5.7,Resolver de contexte lead → variables,1.5,M5.7.0;M5.2,context-resolver.ts,02-backend/07-templates-engine.md,jest:context-resolver.test.ts
+M5.7.2,M5.7,Renderer Handlebars + sanitization,1,M5.7.1,render.ts + sanitize.ts,02-backend/07-templates-engine.md,jest:template-renderer.test.ts
+M5.7.3,M5.7,Default FemiGlow + 5 starters,1.5,M5.7.2,6 fichiers .html starters/,04-ui-ux/07-default-template-femiglow.html,jest:templates-fixtures.test.ts
+M5.7.4,M5.7,CRUD endpoints + versioning,1,M5.7.2,Endpoints + actions,02-backend/07-templates-engine.md,msw:templates-crud.test.ts
+M5.7.5,M5.7,Preview + test-send endpoints,1,M5.7.4,2 endpoints,02-backend/07-templates-engine.md,msw:templates-preview.test.ts
+M5.7.6,M5.7,Composant TemplateEditor mode Source (Monaco),1.5,M5.7.4,Editor source,04-ui-ux/06-template-editor.md,jest:template-editor-source.test.tsx
+M5.7.7,M5.7,Composant TemplateEditor mode Sections (block builder),2,M5.7.6,Editor sections,04-ui-ux/06-template-editor.md,jest:template-editor-sections.test.tsx
+M5.7.8,M5.7,Composants Preview + Variables panel + Components library,1.5,M5.7.5,3 composants,04-ui-ux/06-template-editor.md,jest:template-preview.test.tsx
+M5.7.9,M5.7,Pages list + edit + history,1,M5.7.8,3 pages,03-frontend/01-routes-map.md,playwright:template-edit.spec.ts
+M5.7.10,M5.7,Intégration wizard campaign + automation,0.5,M5.7.9;M5.4,Wizard updates,03-frontend/02-components-catalog.md,playwright:wizard-template-select.spec.ts
+M5.7.11,M5.7,Test ultime M5.7,1,M5.7.10,Test passe,11-tests/03-playwright-e2e/07-m5.7-ultimate.spec.md,playwright:m5.7-ultimate.spec.ts

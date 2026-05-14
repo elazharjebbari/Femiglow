@@ -1,0 +1,62 @@
+@startuml sequence-automation-run
+!theme plain
+title M5 — Automation run lifecycle
+
+actor "Trigger source"            as TS
+participant "Runner cron"         as CRON
+participant "automation-actions"  as SA
+participant "Rules compiler"      as RC
+participant "Send engine"         as SEND
+database    "Postgres"            as DB
+
+== 1. Trigger reçu ==
+TS -> SA : triggerAutomation(slug='cart-abandoned',\ncontext={email, ...})
+SA -> DB : SELECT email_automation WHERE slug='cart-abandoned' AND active=true
+DB --> SA : automation row
+SA -> DB : SELECT email_automation_run\nWHERE automation_id AND email AND status IN ('pending','running')
+DB --> SA : (vide, pas de run actif)
+SA -> RC : eval(automation.trigger_conditions, user_context)
+RC --> SA : true
+SA -> DB : INSERT email_automation_run\n(status='pending', currentStep=0, nextActionAt=now())
+
+== 2. Cron pick-up ==
+CRON -> DB : SELECT runs WHERE nextActionAt <= now() AND status='pending' LIMIT 100
+DB --> CRON : runs[]
+
+loop pour chaque run
+  CRON -> SA : advanceRun(runId)
+  SA -> DB : SELECT run + automation.steps
+  alt step.kind = 'wait'
+    SA -> DB : UPDATE run\nSET currentStep+=1, nextActionAt=now+duration
+  else step.kind = 'send'
+    SA -> SEND : enqueueOutbox(template, recipient, vars)
+    SEND -> DB : INSERT email_outbox
+    SA -> DB : UPDATE run\nSET currentStep+=1, nextActionAt=now (advance immediately)
+  else step.kind = 'branch'
+    SA -> RC : eval(step.condition, user_context)
+    RC --> SA : true/false
+    SA -> DB : UPDATE run\nSET currentStep = step.if_true OR step.if_false branch
+  else step.kind = 'tag'
+    SA -> DB : INSERT lead_tag (lead_id, tag)
+    SA -> DB : UPDATE run advance
+  else step.kind = 'wait_for_event'
+    SA -> DB : UPDATE run\nSET status='waiting_for_event',\nawaiting={event_name, timeout_at}
+  end
+end
+
+== 3. Wait-for-event handler (cron ou bridge) ==
+note over CRON, DB
+  Quand un user_event arrive, on check
+  s'il matche un run en status='waiting_for_event'.
+  Si oui → reprend le run.
+  Si timeout → reprend la branche else.
+end note
+
+== 4. Run completion ==
+alt currentStep = nombre total steps
+  SA -> DB : UPDATE run SET status='completed', completedAt=now
+else error
+  SA -> DB : UPDATE run SET status='errored', error_msg=...
+end
+
+@enduml

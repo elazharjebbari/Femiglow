@@ -35,6 +35,7 @@ import {
 } from '@/lib/checkout/repos/order-repo';
 import { createOrderInputSchema } from '@/lib/checkout/schemas/order';
 import { dispatchOrderWebhook } from '@/lib/webhooks/outbound/sources/from-order';
+import { sendTransactional } from '@/lib/mail/send';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -211,6 +212,34 @@ export async function POST(req: NextRequest): Promise<Response> {
           error: String(err),
         });
       });
+
+      // M1.B.3 — Confirmation de commande au client (si on a un email).
+      // Pas tous les leads ont fourni un email — on tente uniquement si
+      // présent. Idempotency : orderId garantit un seul envoi.
+      const leadEmail = (leadSnapshot as { email?: string | null }).email ?? null;
+      if (leadEmail) {
+        const itemsCount = input.items.reduce((s, it) => s + it.quantity, 0);
+        const orderTotal = `${(totalCents / 100).toFixed(2)} ${currency}`;
+        void sendTransactional({
+          template: 'order-confirmation',
+          to: { email: leadEmail, name: leadSnapshot.firstName },
+          payload: {
+            firstName: leadSnapshot.firstName,
+            orderId,
+            orderTotal,
+            itemsCount,
+            deliveryEstimate:
+              input.shippingMode === 'pickup' ? 'retrait en boutique' : '2-4 jours ouvrés',
+          },
+          idempotencyKey: `order-confirm:${orderId}`,
+          source: 'api.checkout.order',
+        }).catch((err: unknown) => {
+          logger.error('mail.order_confirmation.dispatch_error', {
+            orderId,
+            error: String(err),
+          });
+        });
+      }
     }
 
     return NextResponse.json(result.body, { status: result.status });

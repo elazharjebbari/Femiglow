@@ -39,6 +39,7 @@ function emptyResources(): Record<RbacResource, RbacAction[]> {
     media: [],
     users: [],
     'app-config': [],
+    legal: [],
   };
 }
 
