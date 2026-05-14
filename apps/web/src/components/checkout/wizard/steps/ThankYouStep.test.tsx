@@ -206,3 +206,35 @@ describe('ThankYouStep — état d\'erreur', () => {
     expect(banner.textContent ?? '').toMatch(/trop de tentatives/i);
   });
 });
+
+describe('ThankYouStep — bouton « nouvelle commande »', () => {
+  it('affiche le hint et le CTA « Commencer une nouvelle commande »', () => {
+    render(<ThankYouStep />);
+    const block = screen.getByTestId('wizard-thankyou-neworder');
+    expect(block).toBeInTheDocument();
+    expect(block.textContent ?? '').toMatch(/une autre commande à passer/i);
+    const cta = screen.getByTestId('wizard-thankyou-neworder-cta');
+    expect(cta).toBeInTheDocument();
+    expect(cta.textContent ?? '').toMatch(/commencer une nouvelle commande/i);
+  });
+
+  it('reste affiché même quand le bloc opt-in est en état succès', () => {
+    mutationState = { status: 'success', error: null };
+    render(<ThankYouStep />);
+    expect(screen.getByTestId('wizard-thankyou-neworder-cta')).toBeInTheDocument();
+  });
+
+  it('clic → reset du wizard store (orderId, leadId, currentStep)', () => {
+    useWizardStore.getState().setLeadId('lead_xyz');
+    expect(useWizardStore.getState().leadId).toBe('lead_xyz');
+    expect(useWizardStore.getState().orderId).toBe('o_test_abc');
+
+    render(<ThankYouStep />);
+    fireEvent.click(screen.getByTestId('wizard-thankyou-neworder-cta'));
+
+    const after = useWizardStore.getState();
+    expect(after.leadId).toBeNull();
+    expect(after.orderId).toBeNull();
+    expect(after.currentStep).toBe('lead');
+  });
+});
