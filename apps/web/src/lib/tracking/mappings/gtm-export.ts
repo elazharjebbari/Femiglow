@@ -1,5 +1,20 @@
 /**
- * Export GTM Container JSON.
+ * Export GTM Container JSON — format compatible avec « Admin → Import Container » UI.
+ *
+ * Format reference (vérifié sur exportFormatVersion 2) :
+ * - tagId / triggerId / variableId : strings encodées en BASE-10 integers
+ *   (« Invalid tag_id (base 10 number expected) » si on met `tag_xxx`).
+ *   Auto-incrément 1..N par tableau, espace de noms disjoint entre tag /
+ *   trigger / variable.
+ * - parameter.type : lowercase `template | boolean | integer | list | map`.
+ * - trigger.type : lowercase camelCase `customEvent | pageview | click | …`.
+ * - customEventFilter[].type : lowercase `equals | contains | matchRegex | …`.
+ * - tag.type : lowercase identifiants stables `gaawc | gaawe | html | cvt_*`.
+ * - variable.type : lowercase `v | c | k | u | gas | …`.
+ * - builtInVariable.type : lowercase camelCase `pageUrl | clickElement | …`.
+ *
+ * Custom Templates (`cvt_meta_pixel`, `cvt_tiktok_pixel`, etc.) doivent être
+ * installés AU PRÉALABLE depuis la Template Gallery côté workspace GTM.
  * cf. docs/event-mappings/30-backend/gtm-export.md + ADR-003
  */
 import { createHash } from 'node:crypto';
@@ -68,21 +83,22 @@ export interface GtmExportOutput {
 
 const PROVIDER_TO_GTM_TYPE: Record<MappingProviderKind, string> = {
   meta: 'cvt_meta_pixel',
-  google_ga4: 'googtag',
+  google_ga4: 'gaawe', // GA4 Event tag built-in (no custom template needed)
   google_ads: 'cvt_google_ads_conversion',
   tiktok: 'cvt_tiktok_pixel',
   snap: 'cvt_snap_pixel',
   pinterest: 'cvt_pinterest_tag',
 };
 
-function shortHash(text: string): string {
-  return createHash('sha256').update(text).digest('hex').slice(0, 8);
-}
-
 export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
   const triggers: GtmTrigger[] = [];
   const tags: GtmTag[] = [];
   const variableNames = new Set<string>();
+
+  // Auto-incrementing IDs per namespace. GTM requires base-10 integer strings.
+  let nextTriggerId = 1;
+  let nextTagId = 1;
+  let nextVariableId = 1;
 
   // 1. Variables génériques DLV utilisées
   const baseVariables = ['event_id', 'currency', 'value', 'transaction_id', 'items', 'form_id', 'first_field', 'lead_id', 'method'];
@@ -90,17 +106,17 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
 
   // 2. Pour chaque event canonique, créer 1 trigger + 1 tag par cell active
   for (const [eventName, providers] of Object.entries(input.mappings)) {
-    const triggerId = `trg_${eventName}_${shortHash(eventName)}`;
+    const triggerId = String(nextTriggerId++);
     triggers.push({
       triggerId,
       name: `FemiGlow: ${eventName}`,
-      type: 'CUSTOM_EVENT',
+      type: 'customEvent',
       customEventFilter: [
         {
-          type: 'EQUALS',
+          type: 'equals',
           parameter: [
-            { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
-            { type: 'TEMPLATE', key: 'arg1', value: eventName },
+            { type: 'template', key: 'arg0', value: '{{_event}}' },
+            { type: 'template', key: 'arg1', value: eventName },
           ],
         },
       ],
@@ -112,25 +128,25 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
       const tagType = PROVIDER_TO_GTM_TYPE[kind];
       const parameter: GtmTag['parameter'] = [];
       if (kind === 'meta') {
-        parameter.push({ type: 'TEMPLATE', key: 'pixelId', value: '{{Meta Pixel ID}}' });
+        parameter.push({ type: 'template', key: 'pixelId', value: '{{Meta Pixel ID}}' });
         parameter.push({
-          type: 'TEMPLATE',
+          type: 'template',
           key: 'eventName',
           value: cell.isCustom ? 'trackCustom' : cell.mappedName,
         });
         if (cell.isCustom) {
-          parameter.push({ type: 'TEMPLATE', key: 'customEventName', value: cell.mappedName });
+          parameter.push({ type: 'template', key: 'customEventName', value: cell.mappedName });
         }
       } else if (kind === 'google_ga4') {
-        parameter.push({ type: 'TEMPLATE', key: 'tagId', value: '{{GA4 Measurement ID}}' });
-        parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
+        parameter.push({ type: 'template', key: 'measurementId', value: '{{GA4 Measurement ID}}' });
+        parameter.push({ type: 'template', key: 'eventName', value: cell.mappedName });
       } else {
-        parameter.push({ type: 'TEMPLATE', key: 'eventName', value: cell.mappedName });
+        parameter.push({ type: 'template', key: 'eventName', value: cell.mappedName });
       }
-      parameter.push({ type: 'TEMPLATE', key: 'eventID', value: '{{DLV - event_id}}' });
+      parameter.push({ type: 'template', key: 'eventID', value: '{{DLV - event_id}}' });
 
       tags.push({
-        tagId: `tag_${kind}_${eventName}_${shortHash(`${kind}|${eventName}|${cell.mappedName}`)}`,
+        tagId: String(nextTagId++),
         name: `FemiGlow: ${kind} — ${eventName}`,
         type: tagType,
         parameter,
@@ -142,12 +158,12 @@ export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
   const variables: GtmVariable[] = Array.from(variableNames)
     .sort()
     .map((name) => ({
-      variableId: `var_${shortHash(name)}`,
+      variableId: String(nextVariableId++),
       name: `DLV - ${name}`,
       type: 'v',
       parameter: [
-        { type: 'TEMPLATE', key: 'name', value: name },
-        { type: 'INTEGER', key: 'dataLayerVersion', value: '2' },
+        { type: 'template', key: 'name', value: name },
+        { type: 'integer', key: 'dataLayerVersion', value: '2' },
       ],
     }));
 
