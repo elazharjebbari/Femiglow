@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { requireAdminApi } from '@/lib/chat/admin/auth';
 import { logger } from '@/lib/logging/logger';
+import { redirectToPublic } from '@/lib/http/redirect-public';
 import { runChatFaqSeed } from '../../../../../../../scripts/seed-chat-faq';
 
 export const runtime = 'nodejs';
@@ -46,8 +47,5 @@ export async function POST(req: NextRequest) {
   }
 
   const flashCode = report.embeddingModel === null ? 'seed-skipped' : 'seeded';
-  return NextResponse.redirect(
-    new URL(`/admin/chat/faq?ok=${flashCode}`, req.url),
-    303,
-  );
+  return redirectToPublic(req, `/admin/chat/faq?ok=${flashCode}`);
 }
