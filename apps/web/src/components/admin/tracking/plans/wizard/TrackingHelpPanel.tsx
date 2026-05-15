@@ -386,6 +386,16 @@ lead_capture →
 function SectionExport(): JSX.Element {
   return (
     <Section number={5} title="Exporter & importer dans GTM" emoji="📦">
+      <Callout tone="warning">
+        <strong>Caractères interdits dans GTM</strong> : les noms de tags,
+        triggers et variables ne peuvent pas contenir <code>:</code>,{' '}
+        <code>,</code>, ni <code>;</code>. Si tu vois{' '}
+        <em>« The name contains invalid character: ":" »</em> à l'import,
+        c'est qu'un nom contient un de ces caractères. L'exporter FemiGlow
+        sanitize automatiquement (séparateur <code> / </code> à la place
+        de <code>:</code>), et un test de régression bloque toute
+        introduction d'un nom invalide.
+      </Callout>
       <p className="font-medium text-stone-900">Workflow :</p>
       <ol className="ml-5 list-decimal space-y-1">
         <li>

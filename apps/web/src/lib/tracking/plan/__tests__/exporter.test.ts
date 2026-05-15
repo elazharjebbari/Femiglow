@@ -166,16 +166,16 @@ describe('exportPlan — structure GTM', () => {
     expect(triggers.filter((t: any) => t.type === 'PAGEVIEW')).toHaveLength(1);
     // Standard CE triggers : 1 par event (page_view + purchase = 2)
     const standardCE = triggers.filter(
-      (t: any) => t.type === 'CUSTOM_EVENT' && !t.name.includes('[attr:'),
+      (t: any) => t.type === 'CUSTOM_EVENT' && !t.name.includes('[attr / '),
     );
     expect(standardCE).toHaveLength(2);
     // Attribution-gated CE triggers : pour `purchase` (conversion event)
     // × providers actifs (meta). page_view est audience donc aucun.
     const attrCE = triggers.filter(
-      (t: any) => t.type === 'CUSTOM_EVENT' && t.name.includes('[attr:'),
+      (t: any) => t.type === 'CUSTOM_EVENT' && t.name.includes('[attr / '),
     );
     expect(attrCE.length).toBeGreaterThanOrEqual(1);
-    expect(attrCE.find((t: any) => t.name === 'CE — purchase [attr:meta]')).toBeDefined();
+    expect(attrCE.find((t: any) => t.name === 'CE — purchase [attr / meta]')).toBeDefined();
   });
 
   it('CUSTOM_EVENT triggers carry an EQUALS customEventFilter on {{_event}}', () => {
@@ -369,11 +369,11 @@ describe('exportPlan — structure GTM', () => {
 
     // Trois triggers attribution doivent exister (meta, google_ads, tiktok)
     const attrTriggers = triggers.filter(
-      (t: any) => t.type === 'CUSTOM_EVENT' && t.name.includes('[attr:'),
+      (t: any) => t.type === 'CUSTOM_EVENT' && t.name.includes('[attr / '),
     );
-    const metaAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr:meta]');
-    const adsAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr:google_ads]');
-    const ttAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr:tiktok]');
+    const metaAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr / meta]');
+    const adsAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr / google_ads]');
+    const ttAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr / tiktok]');
     expect(metaAttr).toBeDefined();
     expect(adsAttr).toBeDefined();
     expect(ttAttr).toBeDefined();
@@ -419,8 +419,8 @@ describe('exportPlan — structure GTM', () => {
     const tags = (result.json as any).containerVersion.tag;
     const triggers = (result.json as any).containerVersion.trigger;
 
-    // Aucun trigger [attr:meta] pour page_view (audience)
-    const attrTriggers = triggers.filter((t: any) => t.name.includes('[attr:'));
+    // Aucun trigger [attr / meta] pour page_view (audience)
+    const attrTriggers = triggers.filter((t: any) => t.name.includes('[attr / '));
     expect(attrTriggers).toHaveLength(0);
 
     // Le tag Meta pour page_view utilise le trigger standard
@@ -450,6 +450,48 @@ describe('exportPlan — structure GTM', () => {
     expect(dlv.type).toBe('v');
     const nameParam = dlv.parameter.find((p: any) => p.key === 'name');
     expect(nameParam.value).toBe('attribution.channel');
+  });
+
+  it('aucun nom (tag/trigger/variable) ne contient des caractères refusés par l\'import GTM', () => {
+    // GTM rejette l'import si un name contient `:`, `,`, ou `;` :
+    // "The name contains invalid character: ':'".
+    // Source : https://support.google.com/tagmanager/answer/10165367
+    const plan = buildPlan({
+      providers: [
+        { id: 'ga4', active: true },
+        { id: 'meta', active: true },
+        { id: 'googleAds', active: true },
+        { id: 'tiktok', active: true },
+      ],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            ga4MeasurementId: 'G-X',
+            metaPixelId: '1234',
+            googleAdsConversionId: 'AW-X',
+            googleAdsConversionLabels: { purchase: 'LABEL' },
+            tiktokPixelId: 'TIKTOKID12345',
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { ga4: true, meta: true, googleAds: true, tiktok: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const cv = (result.json as any).containerVersion;
+    const allNames: Array<{ kind: string; name: string }> = [];
+    for (const t of cv.tag) allNames.push({ kind: 'tag', name: t.name });
+    for (const t of cv.trigger) allNames.push({ kind: 'trigger', name: t.name });
+    for (const v of cv.variable) allNames.push({ kind: 'variable', name: v.name });
+    const FORBIDDEN = /[:,;]/;
+    const bad = allNames.filter((n) => FORBIDDEN.test(n.name));
+    expect(
+      bad,
+      `Noms refusés par GTM : ${bad.map((n) => `${n.kind} "${n.name}"`).join(', ')}`,
+    ).toEqual([]);
   });
 
   it('does NOT emit consentSettings on tags (set via GTM UI / Consent Mode default)', () => {

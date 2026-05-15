@@ -333,7 +333,10 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     const id = nextTrigger();
     triggers.push({
       triggerId: id,
-      name: `CE — ${eventKey} [attr:${providerKey}]`,
+      // NB : pas de ':' dans le nom — GTM rejette le caractère ':' à
+      // l'import ("The name contains invalid character"). On utilise
+      // un séparateur ' / ' pour rester lisible.
+      name: `CE — ${eventKey} [attr / ${providerKey}]`,
       type: 'CUSTOM_EVENT',
       customEventFilter: [
         {

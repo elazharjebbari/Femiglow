@@ -234,6 +234,50 @@ Le gate est **additif** :
 - Seuls les visiteurs avec un canal payant identifié + event de
   conversion + provider non-correspondant sont skipped
 
+## Pièges courants à l'import GTM
+
+### 1. Caractère `:` dans les noms — REJETÉ par GTM
+
+GTM refuse l'import si un nom de **tag**, **trigger** ou **variable** contient
+les caractères `:`, `,` ou `;`. Message d'erreur :
+
+```
+The name contains invalid character: ":"
+```
+
+**Pourquoi ça arrivait** : les triggers attribution-gated étaient nommés
+`CE — purchase [attr:meta]` avec un `:`. GTM rejetait l'import complet.
+
+**Fix appliqué** : l'exporter remplace `:` par ` / ` →
+`CE — purchase [attr / meta]`. Compatible GTM, toujours lisible.
+
+**Régression-proof** : test exporter `aucun nom (tag/trigger/variable) ne
+contient des caractères refusés par l'import GTM` qui scanne le JSON
+complet et fail si un nom contient `[:,;]`.
+
+### 2. Conversion label vide → tag awct skipped
+
+Si un event-conversion FemiGlow n'a pas de label Google Ads rempli dans
+l'admin, l'exporter **n'émet pas** le tag `awct` correspondant. C'est
+intentionnel — sinon GTM importerait un tag avec un label vide qui
+n'enverrait aucune conversion mais consommerait un slot.
+
+### 3. Built-in variable `AD_STORAGE` / `ANALYTICS_STORAGE` — REJETÉ
+
+Ce sont des **consent storage keys**, pas des `BuiltInVariableType`.
+L'exporter ne les inclut plus dans `builtInVariable`.
+
+### 4. Trigger type `pageview` (lowercase) — REJETÉ
+
+GTM exige `PAGEVIEW` en SCREAMING_SNAKE_CASE. L'exporter émet la bonne
+casse.
+
+### 5. Community templates `cvt_meta` / `cvt_tiktok` — KO sans setup préalable
+
+L'exporter utilise des tags `html` natifs (avec snippet fbq/ttq) pour
+Meta et TikTok, plutôt que des templates communautaires qui exigent
+d'être installés dans le workspace cible.
+
 ## Limites + futurs travaux
 
 - Le gate utilise `ctx.anonymousId` (= visitorId) pour le lookup.
