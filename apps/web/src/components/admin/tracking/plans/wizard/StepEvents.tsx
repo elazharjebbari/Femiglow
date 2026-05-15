@@ -1,15 +1,16 @@
 'use client';
 
 import { EventMatrixRow } from '../EventMatrixRow';
+import { EVENT_CATALOG } from '@/lib/tracking/event-catalog';
 import type { Provider, ProviderId, TrackingEvent } from '@/lib/tracking/plan/types';
 
 const PRESET_EVENTS: string[] = [
   'page_view',
   'view_item',
   'add_to_cart',
-  'begin_checkout',
+  'checkout_intent',
   'purchase',
-  'lead_submit',
+  'lead_capture',
 ];
 
 const PROVIDER_LABEL: Record<ProviderId, string> = {
@@ -56,6 +57,34 @@ export function StepEvents({
     onChange([...events, { key, providers: {} }]);
   }
 
+  /**
+   * Ajoute en lot tous les events du catalogue qui ne sont pas encore
+   * dans le plan. Pratique quand le catalogue applicatif évolue (nouvel
+   * event) et qu'on veut le faire apparaître dans un plan existant sans
+   * cliquer sur chaque preset.
+   */
+  function syncFromCatalog() {
+    const existing = new Set(events.map((e) => e.key));
+    const missing = EVENT_CATALOG.filter((entry) => !existing.has(entry.name));
+    if (missing.length === 0) return;
+    const additions: TrackingEvent[] = missing.map((entry) => {
+      const providers: Record<string, boolean> = {};
+      // Mapping legacy → V2 (cf. canonical-seed.ts)
+      for (const p of entry.defaultProviders) {
+        if (p === 'google_ga4') providers.ga4 = true;
+        else if (p === 'google_ads') providers.googleAds = true;
+        else if (p === 'meta') providers.meta = true;
+        else if (p === 'tiktok') providers.tiktok = true;
+      }
+      return { key: entry.name, label: entry.description, providers };
+    });
+    onChange([...events, ...additions]);
+  }
+
+  const catalogMissingCount = EVENT_CATALOG.filter(
+    (entry) => !events.some((e) => e.key === entry.name),
+  ).length;
+
   function rename(oldKey: string, nextKey: string) {
     onChange(events.map((e) => (e.key === oldKey ? { ...e, key: nextKey } : e)));
   }
@@ -70,8 +99,27 @@ export function StepEvents({
         Quels événements tracker ?
       </h2>
       <p className="mb-4 text-sm text-stone-600">
-        Sélectionnez des presets ou créez vos propres clés (snake_case).
+        Sélectionnez des presets, synchronisez depuis le catalogue applicatif,
+        ou créez vos propres clés (snake_case).
       </p>
+
+      {catalogMissingCount > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-sky-200 bg-sky-50/60 px-4 py-2 text-sm text-sky-900">
+          <span>
+            <strong>{catalogMissingCount}</strong>{' '}
+            {catalogMissingCount > 1 ? 'événements' : 'événement'} du catalogue
+            {catalogMissingCount > 1 ? ' ne sont pas' : " n'est pas"} dans ce
+            plan (ex. <code className="font-mono">checkout_intent</code>).
+          </span>
+          <button
+            type="button"
+            onClick={syncFromCatalog}
+            className="shrink-0 rounded-md border border-sky-600 bg-white px-3 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+          >
+            Synchroniser ({catalogMissingCount})
+          </button>
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {PRESET_EVENTS.map((key) => {

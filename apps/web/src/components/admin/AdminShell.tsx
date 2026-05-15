@@ -81,7 +81,13 @@ export function AdminShell({ adminEmail, active, children }: AdminShellProps) {
           </button>
         </form>
       </aside>
-      <main className="flex-1 px-6 py-8 lg:px-10">{children}</main>
+      {/* min-w-0 + overflow-x-hidden : sans ça, un enfant à contenu
+          large (pre JSON, table dense…) empêche le flex item `main` de
+          rétrécir sous viewport, ce qui crée du scroll horizontal au
+          niveau de la page. Les conteneurs internes qui *veulent*
+          défiler horizontalement (ex. <pre overflow-auto>) le font
+          dans leur propre boîte sans déborder. */}
+      <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-8 lg:px-10">{children}</main>
     </div>
   );
 }
