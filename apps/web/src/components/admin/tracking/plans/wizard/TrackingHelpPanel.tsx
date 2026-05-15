@@ -20,6 +20,7 @@
  */
 'use client';
 
+import Link from 'next/link';
 import { listAdsConversions } from '@/lib/tracking/providers/event-mapping';
 
 export function TrackingHelpPanel({
@@ -43,6 +44,7 @@ export function TrackingHelpPanel({
         <SectionOverview />
         <SectionGoogleAds />
         <SectionMapping />
+        <SectionAttribution />
         <SectionExport />
         <SectionEnhanced />
         <SectionValidation />
@@ -99,18 +101,139 @@ function SectionOverview(): JSX.Element {
         vers les providers configurés (GA4, Google Ads, Meta, TikTok).
       </p>
       <CodeBlock>{`Site FemiGlow (event)
-    ↓ dataLayer.push({ event: 'purchase', value: 199, user_data: {...} })
+    ↓ dataLayer.push({ event: 'purchase', value: 199, user_data, attribution })
 GTM container
-    ├→ GA4 Event tag    (gaawe)  → Google Analytics
-    ├→ Ads Conversion   (awct)   → Google Ads (avec Enhanced Conversions)
-    ├→ Meta Pixel       (html)   → Meta Ads + CAPI
-    └→ TikTok Pixel     (html)   → TikTok Ads`}</CodeBlock>
+    ├→ GA4 Event tag    (gaawe)   → Google Analytics      (toujours fire)
+    ├→ Ads Conversion   (awct)    → Google Ads           ┐
+    ├→ Meta Pixel       (html)    → Meta Ads + CAPI      │ attribution-gated
+    └→ TikTok Pixel     (html)    → TikTok Ads           ┘ (cf. section 4)`}</CodeBlock>
       <p>
         <strong>Le plan</strong> stocke : les events à tracker, les pixel-IDs,
         le mapping cross-provider (event → nom canonique de chaque provider),
         et les <strong>étiquettes de conversion Google Ads</strong> que tu
         renseignes ici. L'export GTM <em>compile</em> ces données en un fichier
         JSON importable dans GTM en 1 clic.
+      </p>
+      <p>
+        Depuis mai 2026, le système intègre aussi l'<strong>attribution
+        multi-canal</strong> (cf. section 4) qui filtre les tags de conversion
+        pour qu'une vente venant de Google Ads ne soit pas créditée à Meta,
+        TikTok, etc. — fini le double-comptage.
+      </p>
+    </Section>
+  );
+}
+
+function SectionAttribution(): JSX.Element {
+  return (
+    <Section number={4} title="Attribution multi-canal — ne pas dupliquer les conversions" emoji="🎯">
+      <p>
+        <strong>Problème</strong> : sans attribution, chaque conversion (achat,
+        lead) est envoyée à <em>tous</em> les pixels (Google Ads, Meta, TikTok…).
+        Conséquence : 4 plateformes se créditent chacune 100 % de la même vente
+        → ROAS dilué + Smart Bidding bruité.
+      </p>
+      <p>
+        <strong>Solution FemiGlow</strong> : à chaque visite, on détecte le
+        <strong> canal d'acquisition</strong> via l'URL (
+        <code>gclid</code> = Google Ads, <code>fbclid</code> = Meta,{' '}
+        <code>ttclid</code> = TikTok, paramètres UTM…) et on le stocke dans un
+        cookie 90 j. Au moment de la conversion, une <strong>stratégie</strong>{' '}
+        (par défaut « dernier-clic payant ») détermine quel canal créditer. GTM
+        ne fire que le tag du canal attribué.
+      </p>
+      <CodeBlock>{`Visiteur arrive avec  ?gclid=abc
+    ↓
+Cookie fg_attr  →  { channel: 'google_ads', click_id: 'abc' }
+    ↓
+dataLayer.push({
+  event: 'purchase',
+  attribution: { channel: 'google_ads', is_paid: true, ... }
+})
+    ↓
+GTM filtre les tags :
+   ✓ GA4 Evt purchase             (analytics neutre, fire toujours)
+   ✓ Ads Conv purchase            (channel match google_ads)
+   ✗ Meta Evt purchase            (channel ≠ meta → skipped)
+   ✗ TikTok Evt purchase          (channel ≠ tiktok → skipped)`}</CodeBlock>
+      <p className="font-medium text-stone-900">Politique par-event :</p>
+      <ul className="ml-5 list-disc space-y-1">
+        <li>
+          <strong>Events d'audience</strong> (<code>page_view</code>,{' '}
+          <code>view_item</code>, <code>add_to_cart</code>, <code>view_cart</code>)
+          → fire sur <strong>tous les pixels</strong> (alimente Lookalike +
+          Custom Audiences). Pas de filtrage attribution.
+        </li>
+        <li>
+          <strong>Events de conversion</strong> (<code>purchase</code>,{' '}
+          <code>lead_capture</code>, <code>checkout_intent</code>,{' '}
+          <code>sign_up</code>, …) → fire <strong>uniquement</strong> sur le
+          canal attribué. Le filtre se fait via{' '}
+          <code className="rounded bg-stone-100 px-1 text-xs">
+            {`{{DLV - attribution.channel}}`}
+          </code>{' '}
+          dans le trigger GTM.
+        </li>
+        <li>
+          Le visiteur « direct » (sans click ID ni UTM identifié) est broadcast
+          partiel → tous les pixels payants fire (politique défaut, configurable).
+        </li>
+      </ul>
+      <p className="font-medium text-stone-900">5 stratégies disponibles :</p>
+      <div className="overflow-hidden rounded-md border border-stone-200 bg-white text-xs">
+        <table className="w-full">
+          <thead className="bg-stone-50 text-stone-500">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Stratégie</th>
+              <th className="px-3 py-2 text-left font-medium">Sémantique</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-200">
+            <tr>
+              <td className="px-3 py-1.5 font-mono">last_paid_touch</td>
+              <td className="px-3 py-1.5">
+                Dernier canal payant connu. <strong>★ Recommandé (défaut)</strong>.
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-1.5 font-mono">first_paid_touch</td>
+              <td className="px-3 py-1.5">
+                Premier canal payant qui a amené le visiteur (acquisition).
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-1.5 font-mono">last_touch</td>
+              <td className="px-3 py-1.5">
+                Dernier canal connu, payant ou non (inclut SEO/direct).
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-1.5 font-mono">first_touch</td>
+              <td className="px-3 py-1.5">Acquisition initiale, payante ou non.</td>
+            </tr>
+            <tr>
+              <td className="px-3 py-1.5 font-mono">broadcast</td>
+              <td className="px-3 py-1.5 text-stone-500">
+                Tous les pixels reçoivent la conversion. <em>Déconseillé.</em>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <Callout tone="info">
+        Configure la stratégie sur{' '}
+        <Link
+          href="/admin/tracking/attribution"
+          className="underline decoration-stone-400 underline-offset-2 hover:text-stone-900"
+        >
+          /admin/tracking/attribution
+        </Link>{' '}
+        — page dédiée avec sélecteur + debugger live (inspecte ton propre
+        cookie + résolution de chaque stratégie sur ton snapshot courant).
+      </Callout>
+      <p className="text-xs text-stone-500">
+        Doc complète : <code>docs/tracking-attribution/</code> (8 fichiers +
+        diagrammes ASCII).
       </p>
     </Section>
   );
@@ -255,7 +378,7 @@ lead_capture →
 
 function SectionExport(): JSX.Element {
   return (
-    <Section number={4} title="Exporter & importer dans GTM" emoji="📦">
+    <Section number={5} title="Exporter & importer dans GTM" emoji="📦">
       <p className="font-medium text-stone-900">Workflow :</p>
       <ol className="ml-5 list-decimal space-y-1">
         <li>
@@ -322,7 +445,7 @@ function SectionExport(): JSX.Element {
 
 function SectionEnhanced(): JSX.Element {
   return (
-    <Section number={5} title="Enhanced Conversions / Advanced Matching" emoji="🔐">
+    <Section number={6} title="Enhanced Conversions / Advanced Matching" emoji="🔐">
       <p>
         Pour améliorer le taux d'attribution des conversions (entre 5 % et
         30 % de gain typique), Google Ads et Meta acceptent des{' '}
@@ -364,7 +487,7 @@ function SectionEnhanced(): JSX.Element {
 
 function SectionValidation(): JSX.Element {
   return (
-    <Section number={6} title="Valider — Tag Assistant + Diagnostics" emoji="✅">
+    <Section number={7} title="Valider — Tag Assistant + Diagnostics" emoji="✅">
       <p className="font-medium text-stone-900">Validation côté GTM Preview :</p>
       <ol className="ml-5 list-decimal space-y-1">
         <li>
@@ -483,7 +606,7 @@ function SectionFaq(): JSX.Element {
     },
   ];
   return (
-    <Section number={7} title="FAQ rapide" emoji="❓">
+    <Section number={8} title="FAQ rapide" emoji="❓">
       <ul className="space-y-3">
         {items.map((it, i) => (
           <li key={i}>

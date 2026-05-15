@@ -5,6 +5,7 @@ import { TrackingShell } from '@/components/admin/tracking/TrackingShell';
 import { StatusBadge } from '@/components/admin/tracking/plans/StatusBadge';
 import { getTrackingPlanService } from '@/lib/tracking/plan';
 import { PlanDetailActions } from '@/components/admin/tracking/plans/PlanDetailActions';
+import { TrackingHelpPanel } from '@/components/admin/tracking/plans/wizard/TrackingHelpPanel';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,10 @@ export default async function PlanDetailPage({
         version={plan.version}
         validationOk={validation?.ok ?? null}
       />
+
+      <div className="mt-6">
+        <TrackingHelpPanel />
+      </div>
 
       {validation && (
         <section className="mt-6">
