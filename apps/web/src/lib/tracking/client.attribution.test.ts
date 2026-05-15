@@ -12,7 +12,7 @@ import {
   mergeTouch,
   writeAttributionCookie,
 } from './attribution/cookie';
-import type { ChannelTouch } from './attribution/types';
+import type { AttributionSnapshot, ChannelTouch } from './attribution/types';
 
 const GRANTED = {
   ad_storage: 'granted' as const,
@@ -99,7 +99,7 @@ describe('TrackingClient.emit() — attribution annotation', () => {
     const adsTouch = touch({ channel: 'google_ads', is_paid: true, click_id: 'g1', click_id_field: 'gclid' });
     const metaTouch = touch({ channel: 'meta', is_paid: true, click_id: 'f1', click_id_field: 'fbclid' });
     // L'utilisateur a cliqué Meta, puis Google → google_ads est le LAST paid
-    let snap = { first_touch: metaTouch, last_touch: metaTouch, paid_history: [metaTouch] };
+    let snap: AttributionSnapshot = { first_touch: metaTouch, last_touch: metaTouch, paid_history: [metaTouch] };
     snap = mergeTouch(snap, adsTouch);
     writeAttributionCookie(snap);
     const client = makeClient();
@@ -110,7 +110,7 @@ describe('TrackingClient.emit() — attribution annotation', () => {
   it('first_paid_touch retrouve la première touche payante (la plus ancienne)', () => {
     const adsTouch = touch({ channel: 'google_ads', is_paid: true, click_id: 'g1' });
     const metaTouch = touch({ channel: 'meta', is_paid: true, click_id: 'f1' });
-    let snap = { first_touch: metaTouch, last_touch: metaTouch, paid_history: [metaTouch] };
+    let snap: AttributionSnapshot = { first_touch: metaTouch, last_touch: metaTouch, paid_history: [metaTouch] };
     snap = mergeTouch(snap, adsTouch); // ads = plus récent, meta = plus ancien
     writeAttributionCookie(snap);
     const client = makeClient(() => 'first_paid_touch');
