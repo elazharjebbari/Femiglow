@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lte, ilike, or, sql as dsql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, ilike, or } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { chatDb } from '@/lib/chat/db/client';
 import { chatLead } from '@/lib/chat/db/schema';
@@ -44,18 +44,26 @@ function chatOutcomeToLeadStatus(outcome: ChatLeadRow['outcome']): LeadStatus {
 /** Convertit un `chat_lead` en `Lead` pour l'affichage admin unifié. */
 function chatLeadToLead(row: ChatLeadRow): Lead {
   const journey = computeLeadJourney(row);
+  const isChatWidgetLead = row.source === 'chat_widget';
+  const fullName = [row.firstName, row.lastName].filter(Boolean).join(' ').trim();
   return {
     id: row.id, // garde le préfixe `cl_…` pour disambiguation
-    email: null, // chat lead = capture phone-only, pas d'email
+    email: row.email ?? null,
     phone: row.phoneE164,
-    name: row.firstName,
+    name: fullName || row.firstName,
+    city: row.shippingCity ?? null,
+    country: row.shippingCountry ?? null,
+    addressLine1: row.shippingAddressLine1 ?? null,
+    addressLine2: row.shippingAddressLine2 ?? null,
     status: chatOutcomeToLeadStatus(row.outcome),
-    source: `chat:${row.triggerReason}`,
+    source: isChatWidgetLead ? `chat:${row.triggerReason}` : row.source,
     consentMarketing: false,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     // CHA-229 — Permet à /admin/leads de wirer la QuickView conversation.
-    chatSessionId: row.sessionId,
+    // Les leads wizard réutilisent aussi chat_lead + session_id pour le FK,
+    // mais ne doivent pas être présentés comme conversations chat.
+    chatSessionId: isChatWidgetLead ? row.sessionId : null,
     journeyStage: journey.stage,
     dataPct: journey.dataPct,
     webhookSummary: journey.webhookSummary,
@@ -69,7 +77,18 @@ function matchesLeadFilter(lead: Lead, filters: LeadFilters): boolean {
   if (filters.to && lead.createdAt > filters.to) return false;
   if (filters.search) {
     const q = filters.search.toLowerCase();
-    const hay = `${lead.email ?? ''} ${lead.name ?? ''} ${lead.phone ?? ''}`.toLowerCase();
+    const hay = [
+      lead.email,
+      lead.name,
+      lead.phone,
+      lead.city,
+      lead.country,
+      lead.addressLine1,
+      lead.source,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
     if (!hay.includes(q)) return false;
   }
   return true;
@@ -108,6 +127,22 @@ export async function listLeads(filters: LeadFilters = {}): Promise<LeadListResu
       .where(where)
       .orderBy(desc(schema.leads.createdAt));
 
+    // Les commandes wizard créent encore une row legacy `leads` pour le FK
+    // `orders.lead_id`, tout en gardant la source de vérité funnel dans
+    // `chat_lead`. Sans cette exclusion, /admin/leads affiche le même client
+    // deux fois : legacy `new` + wizard `converted`.
+    const orderLinks = await drizzle
+      .select({
+        leadId: schema.orders.leadId,
+        chatLeadId: schema.orders.chatLeadId,
+      })
+      .from(schema.orders);
+    const legacyLeadIdsLinkedToWizard = new Set(
+      orderLinks
+        .filter((row) => row.chatLeadId)
+        .map((row) => row.leadId),
+    );
+
     // 2. Leads issus du chat (CHA-225). On charge tout puis on filtre
     //    en mémoire — le mapping outcome→status diffère et un UNION
     //    SQL deviendrait illisible. Volume attendu < 10k pour un seul
@@ -127,13 +162,15 @@ export async function listLeads(filters: LeadFilters = {}): Promise<LeadListResu
 
     // 3. Merge + tri + pagination.
     const merged: Lead[] = [
-      ...(ecommerceRows as Lead[]).map((r) => ({
-        ...r,
-        // Lead.email peut désormais être null (chat leads). Pour les
-        // leads ecommerce, on conserve la string (Drizzle infère
-        // string mais on s'aligne sur le type unifié).
-        email: r.email ?? null,
-      })),
+      ...(ecommerceRows as Lead[])
+        .filter((r) => !legacyLeadIdsLinkedToWizard.has(r.id))
+        .map((r) => ({
+          ...r,
+          // Lead.email peut désormais être null (chat leads). Pour les
+          // leads ecommerce, on conserve la string (Drizzle infère
+          // string mais on s'aligne sur le type unifié).
+          email: r.email ?? null,
+        })),
       ...chatRows,
     ];
     merged.sort((a, b) =>
@@ -166,9 +203,9 @@ export async function getLeadById(id: string): Promise<{
   items: OrderItem[];
 } | null> {
   const drizzle = db();
-  // CHA-225 — Les ids `cl_xxx` désignent des chat leads (table chat_lead).
-  // On les sert depuis le chat schema, et on n'a JAMAIS de commande
-  // associée pour ce type de lead.
+  // Les ids `cl_xxx` désignent des rows `chat_lead`. Depuis le wizard, cette
+  // table porte aussi les leads checkout et peut avoir une commande liée via
+  // `orders.chat_lead_id`.
   if (id.startsWith('cl_')) {
     const cdb = chatDb();
     if (!cdb) return null;
@@ -179,7 +216,21 @@ export async function getLeadById(id: string): Promise<{
       .limit(1);
     const row = rows[0] as ChatLeadRow | undefined;
     if (!row) return null;
-    return { lead: chatLeadToLead(row), order: null, items: [] };
+    if (!drizzle) return { lead: chatLeadToLead(row), order: null, items: [] };
+    const orderRows = await drizzle
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.chatLeadId, id))
+      .limit(1);
+    const order = orderRows[0] ?? null;
+    const items = order
+      ? await drizzle.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id))
+      : [];
+    return {
+      lead: chatLeadToLead(row),
+      order: order ? (order as Order) : null,
+      items: items as OrderItem[],
+    };
   }
   if (drizzle) {
     const leadRows = await drizzle

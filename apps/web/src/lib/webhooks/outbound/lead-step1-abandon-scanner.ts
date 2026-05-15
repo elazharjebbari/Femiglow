@@ -92,18 +92,20 @@ export async function scanAndDispatchLeadStep1Abandon(
       else if (result.status === 'failed') failed += 1;
       else if (result.status === 'skipped') skipped += 1;
       else if (result.status === 'disabled') disabled += 1;
+
+      if (result.status === 'sent' || result.status === 'skipped') {
+        try {
+          await wizardLeadRepo.stampStep1AbandonWebhook(lead.id);
+        } catch (err) {
+          logger.error('outbound.webhook.lead-step1-abandon.stamp_error', {
+            leadId: lead.id,
+            error: String(err),
+          });
+        }
+      }
     } catch (err) {
       failed += 1;
       logger.error('outbound.webhook.lead-step1-abandon.dispatch_error', {
-        leadId: lead.id,
-        error: String(err),
-      });
-    }
-
-    try {
-      await wizardLeadRepo.stampStep1AbandonWebhook(lead.id);
-    } catch (err) {
-      logger.error('outbound.webhook.lead-step1-abandon.stamp_error', {
         leadId: lead.id,
         error: String(err),
       });

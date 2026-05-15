@@ -23,6 +23,11 @@ interface SettingsResponse {
   };
 }
 
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
 export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JSX.Element {
   const router = useRouter();
   const [step2Enabled, setStep2Enabled] = useState(props.initialStep2WebhookEnabled);
@@ -122,7 +127,9 @@ export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JS
             disabled={saving}
             onChange={(evt): void => setTimeoutMinutes(Number(evt.target.value))}
             onBlur={(): void => {
-              void save({ leadStep1AbandonTimeoutMinutes: timeout });
+              const clamped = clampInt(timeout, 1, 60);
+              setTimeoutMinutes(clamped);
+              void save({ leadStep1AbandonTimeoutMinutes: clamped });
             }}
             className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
           />
@@ -137,7 +144,9 @@ export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JS
             disabled={saving || !conversationEnabled}
             onChange={(evt): void => setMaxMessages(Number(evt.target.value))}
             onBlur={(): void => {
-              void save({ leadWebhookConversationMaxMessages: maxMessages });
+              const clamped = clampInt(maxMessages, 1, 50);
+              setMaxMessages(clamped);
+              void save({ leadWebhookConversationMaxMessages: clamped });
             }}
             className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
           />
@@ -152,7 +161,9 @@ export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JS
             disabled={saving || !conversationEnabled}
             onChange={(evt): void => setMaxBytes(Number(evt.target.value))}
             onBlur={(): void => {
-              void save({ leadWebhookConversationMaxBytes: maxBytes });
+              const clamped = clampInt(maxBytes, 1000, 50000);
+              setMaxBytes(clamped);
+              void save({ leadWebhookConversationMaxBytes: clamped });
             }}
             className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
           />
@@ -180,7 +191,10 @@ export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JS
       </label>
 
       {message ? (
-        <p className={tone === 'ok' ? 'text-xs text-emerald-700' : 'text-xs text-rose-700'} role="status">
+        <p
+          className={tone === 'ok' ? 'text-xs text-emerald-700' : 'text-xs text-rose-700'}
+          role={tone === 'err' ? 'alert' : 'status'}
+        >
           {message}
         </p>
       ) : null}

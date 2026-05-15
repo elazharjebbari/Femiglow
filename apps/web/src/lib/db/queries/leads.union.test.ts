@@ -28,6 +28,8 @@ import type { ChatLeadRow } from '@/lib/chat/db/schema';
 const state = vi.hoisted(() => ({
   ecommerceLeads: [] as Array<Record<string, unknown>>,
   chatLeads: [] as ChatLeadRow[],
+  orders: [] as Array<Record<string, unknown>>,
+  orderItems: [] as Array<Record<string, unknown>>,
 }));
 
 function makeChainable<T>(rows: T[]) {
@@ -46,11 +48,18 @@ vi.mock('@/lib/db/client', async () => {
   const actual = await vi.importActual<typeof import('@/lib/db/client')>(
     '@/lib/db/client',
   );
+  const dbSchema = await vi.importActual<typeof import('@/lib/db/schema')>(
+    '@/lib/db/schema',
+  );
   return {
     ...actual,
     db: () => ({
       select: () => ({
-        from: (_table: unknown) => makeChainable(state.ecommerceLeads),
+        from: (table: unknown) => {
+          if (table === dbSchema.orders) return makeChainable(state.orders);
+          if (table === dbSchema.orderItems) return makeChainable(state.orderItems);
+          return makeChainable(state.ecommerceLeads);
+        },
       }),
     }),
   };
@@ -116,6 +125,35 @@ function makeChatLead(overrides: Partial<ChatLeadRow> = {}): ChatLeadRow {
     handledAt: null,
     outcome: 'pending',
     convertedOrderId: null,
+    lastName: null,
+    email: null,
+    emailVerifiedAt: null,
+    emailConsent: false,
+    shippingCity: null,
+    shippingAddressLine1: null,
+    shippingAddressLine2: null,
+    shippingPostalCode: null,
+    shippingCountry: 'MA',
+    shippingNotes: null,
+    preferredPaymentMethod: null,
+    source: 'chat_widget',
+    formId: null,
+    formMode: null,
+    variantKey: null,
+    gclid: null,
+    fbp: null,
+    fbc: null,
+    cartSnapshot: null,
+    cartTotalCents: null,
+    cartCurrency: null,
+    lastTouchedStep: null,
+    leadCapturedAt: null,
+    addressCompletedAt: null,
+    paymentSelectedAt: null,
+    purchasedAt: null,
+    abandonWebhookAt: null,
+    step2WebhookAt: null,
+    step1AbandonWebhookAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -125,6 +163,8 @@ function makeChatLead(overrides: Partial<ChatLeadRow> = {}): ChatLeadRow {
 beforeEach(() => {
   state.ecommerceLeads = [];
   state.chatLeads = [];
+  state.orders = [];
+  state.orderItems = [];
 });
 
 afterEach(() => {
@@ -192,6 +232,32 @@ describe('listLeads — union ecommerce + chat_lead', () => {
     expect(result.rows[0]?.name).toBe('Yasmine');
   });
 
+  it('conserve la source wizard, email et ville pour les leads checkout', async () => {
+    state.chatLeads = [
+      makeChatLead({
+        id: 'cl_wizard',
+        firstName: 'Sara',
+        lastName: 'Benali',
+        email: 'sara@example.com',
+        source: 'wizard_kit',
+        formMode: 'wizard_embed',
+        shippingCity: 'Casablanca',
+        shippingAddressLine1: '12 rue Test',
+      }),
+    ];
+
+    const result = await listLeads();
+    expect(result.rows[0]).toMatchObject({
+      id: 'cl_wizard',
+      email: 'sara@example.com',
+      name: 'Sara Benali',
+      source: 'wizard_kit',
+      city: 'Casablanca',
+      addressLine1: '12 rue Test',
+      chatSessionId: null,
+    });
+  });
+
   it('filtre par statut transverse (chat + ecommerce)', async () => {
     state.ecommerceLeads = [makeEcommerceLead({ id: 'l_a', status: 'new' })];
     state.chatLeads = [
@@ -201,6 +267,32 @@ describe('listLeads — union ecommerce + chat_lead', () => {
 
     const result = await listLeads({ status: 'new' });
     expect(result.rows.map((r) => r.id).sort()).toEqual(['cl_a', 'l_a']);
+  });
+
+  it('masque le lead legacy lié à une commande wizard pour éviter le doublon new + converted', async () => {
+    state.ecommerceLeads = [
+      makeEcommerceLead({ id: 'lead_legacy', status: 'new', phone: '+212600000000' }),
+      makeEcommerceLead({ id: 'lead_manual', status: 'new', phone: '+212611111111' }),
+    ];
+    state.chatLeads = [
+      makeChatLead({
+        id: 'cl_wizard_done',
+        source: 'wizard_kit',
+        outcome: 'converted',
+        phoneE164: '+212600000000',
+      }),
+    ];
+    state.orders = [
+      {
+        id: 'o_1',
+        leadId: 'lead_legacy',
+        chatLeadId: 'cl_wizard_done',
+      },
+    ];
+
+    const result = await listLeads();
+    expect(result.rows.map((r) => r.id).sort()).toEqual(['cl_wizard_done', 'lead_manual']);
+    expect(result.rows.find((r) => r.id === 'lead_legacy')).toBeUndefined();
   });
 
   it('paginate à travers la liste fusionnée', async () => {
@@ -242,9 +334,9 @@ describe('listLeads — union ecommerce + chat_lead', () => {
     expect(result.rows.map((r) => r.id)).toEqual(['l_old', 'cl_new']);
   });
 
-  it("filtre par recherche libre couvre prénom et téléphone du chat lead", async () => {
+  it("filtre par recherche libre couvre prénom, téléphone et ville du chat lead", async () => {
     state.chatLeads = [
-      makeChatLead({ id: 'cl_h', firstName: 'Hamid', phoneE164: '+212751592310' }),
+      makeChatLead({ id: 'cl_h', firstName: 'Hamid', phoneE164: '+212751592310', shippingCity: 'Rabat' }),
       makeChatLead({ id: 'cl_y', firstName: 'Yasmine', phoneE164: '+212600000000' }),
     ];
 
@@ -257,6 +349,9 @@ describe('listLeads — union ecommerce + chat_lead', () => {
     // serveur) est traçable séparément.
     const byPhone = await listLeads({ search: '212751592310' });
     expect(byPhone.rows.map((r) => r.id)).toEqual(['cl_h']);
+
+    const byCity = await listLeads({ search: 'rabat' });
+    expect(byCity.rows.map((r) => r.id)).toEqual(['cl_h']);
   });
 });
 
@@ -282,6 +377,49 @@ describe('getLeadById — branche cl_xxx', () => {
     expect(found?.lead.source).toBe('chat:inline-contact');
     expect(found?.order).toBeNull();
     expect(found?.items).toEqual([]);
+  });
+
+  it('retourne la commande reliée par chatLeadId pour un lead wizard cl_*', async () => {
+    state.chatLeads = [
+      makeChatLead({
+        id: 'cl_wizard_order',
+        source: 'wizard_kit',
+        outcome: 'converted',
+        shippingCity: 'Marrakech',
+      }),
+    ];
+    state.orders = [
+      {
+        id: 'o_wizard',
+        leadId: 'lead_legacy',
+        chatLeadId: 'cl_wizard_order',
+        totalCents: 19900,
+        currency: 'MAD',
+        shippingMode: 'standard',
+        paymentMethod: 'cod',
+        createdAt: new Date('2026-05-03T10:00:00Z'),
+      },
+    ];
+    state.orderItems = [
+      {
+        id: 'oi_1',
+        orderId: 'o_wizard',
+        sku: 'kit',
+        name: 'Kit',
+        quantity: 1,
+        unitPriceCents: 19900,
+      },
+    ];
+
+    const found = await getLeadById('cl_wizard_order');
+    expect(found?.lead).toMatchObject({
+      id: 'cl_wizard_order',
+      source: 'wizard_kit',
+      city: 'Marrakech',
+      status: 'converted',
+    });
+    expect(found?.order?.id).toBe('o_wizard');
+    expect(found?.items.map((item) => item.id)).toEqual(['oi_1']);
   });
 
   it('retourne null pour un id cl_* inconnu', async () => {

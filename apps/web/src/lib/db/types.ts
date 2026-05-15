@@ -39,14 +39,17 @@ export interface AdminUser {
 export interface Lead {
   id: string;
   /**
-   * Les leads issus du chat n'ont PAS d'email (capture téléphone-only).
-   * Pour ces leads-là, `email` vaut `null`. Le contrat ecommerce reste
-   * inchangé : un lead créé via order/checkout aura toujours un email.
-   * cf. CHA-225 — unification de /admin/leads.
+   * Les leads chat et wizard peuvent être phone-only. `email` vaut `null`
+   * tant qu'aucun opt-in email n'a été capturé.
+   * cf. CHA-225/CHA-230 — unification de /admin/leads.
    */
   email: string | null;
   phone: string | null;
   name: string | null;
+  city?: string | null;
+  country?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
   status: LeadStatus;
   source: string | null;
   consentMarketing: boolean;
@@ -54,8 +57,8 @@ export interface Lead {
   updatedAt: Date;
   /**
    * CHA-229 — ID de la session de chat à l'origine du lead (`cs_…`).
-   * Présent uniquement pour les leads chat (`source='chat:…'`) ; `null`
-   * pour les leads ecommerce. Permet à `/admin/leads` d'ouvrir la
+   * Présent uniquement pour les vrais leads chat (`source='chat:…'`) ;
+   * `null` pour les leads ecommerce et wizard. Permet à `/admin/leads` d'ouvrir la
    * fenêtre rapide `ConversationQuickView` sans round-trip
    * supplémentaire pour résoudre `chat_lead.session_id`.
    */

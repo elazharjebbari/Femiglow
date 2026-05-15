@@ -163,4 +163,80 @@ describe('dispatchLeadStep2Webhook', () => {
       dispatchLeadStep2Webhook(makeLead({ step2WebhookAt: new Date() })),
     ).resolves.toMatchObject({ status: 'skipped', lastError: 'step2-webhook-already-stamped' });
   });
+
+  it('skip proprement sans requête externe quand le téléphone est invalide', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await expect(
+      dispatchLeadStep2Webhook(makeLead({ phoneE164: '', phoneRaw: 'abc' })),
+    ).resolves.toMatchObject({ status: 'skipped', lastError: 'invalid-phone:invalid' });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(repoMock.stampStep2Webhook).not.toHaveBeenCalled();
+  });
+
+  it('honore le toggle runtime et ne stamp pas si le webhook step2 est désactivé', async () => {
+    const { setTrackingSetting, TRACKING_SETTING_KEYS } = await import(
+      '@/lib/db/queries/tracking/settings'
+    );
+    await setTrackingSetting(TRACKING_SETTING_KEYS.LEAD_STEP2_WEBHOOK_ENABLED, false);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await expect(dispatchLeadStep2Webhook(makeLead())).resolves.toMatchObject({
+      status: 'disabled',
+      lastError: 'lead-step2-webhook-disabled',
+    });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(repoMock.stampStep2Webhook).not.toHaveBeenCalled();
+  });
+
+  it('garde le dispatch réussi même si le stamp DB échoue', async () => {
+    repoMock.stampStep2Webhook.mockRejectedValueOnce(new Error('db write failed'));
+    server.use(
+      http.post('https://hook.example.com/lead-step2', () => HttpResponse.json({ ok: true })),
+    );
+
+    await expect(dispatchLeadStep2Webhook(makeLead())).resolves.toMatchObject({
+      status: 'sent',
+      responseStatus: 200,
+    });
+    expect(repoMock.stampStep2Webhook).toHaveBeenCalledWith('cl_step2');
+  });
+
+  it('compose les champs produits pour un panier multi-items sans conversation si désactivée', async () => {
+    const { setTrackingSetting, TRACKING_SETTING_KEYS } = await import(
+      '@/lib/db/queries/tracking/settings'
+    );
+    await setTrackingSetting(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_ENABLED, false);
+    const captured: { body?: Record<string, unknown> } = {};
+    server.use(
+      http.post('https://hook.example.com/lead-step2', async ({ request }) => {
+        captured.body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    await dispatchLeadStep2Webhook(
+      makeLead({
+        cartSnapshot: {
+          items: [
+            { sku: 'KIT-1', name: 'Kit FemiGlow', quantity: 2, unitPriceCents: 19900 },
+            { sku: 'SERUM-1', name: 'Sérum', quantity: 1, unitPriceCents: 12000 },
+          ],
+          totalCents: 51800,
+          currency: 'mad',
+        },
+      }),
+    );
+
+    expect(captured.body).toMatchObject({
+      product_name: 'Kit FemiGlow + Sérum',
+      product_sku: 'KIT-1, SERUM-1',
+      quantity: 3,
+      total_price: 518,
+      currency: 'MAD',
+    });
+    expect(captured.body).not.toHaveProperty('conversation');
+  });
 });
