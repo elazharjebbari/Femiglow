@@ -6,6 +6,22 @@ import {
   getEventMapping,
 } from '@/lib/tracking/providers/event-mapping';
 import type { AdsConversionCategory } from '@/lib/tracking/providers/event-mapping';
+import { EVENT_CATALOG } from '@/lib/tracking/event-catalog';
+
+/**
+ * Set des events catalogués comme conversion (= bidding-relevant).
+ * Pour ces events, les tags des pixels payants (Meta/Ads/TikTok) sont
+ * câblés sur un trigger filtré par `attribution.channel` afin de ne
+ * fire que sur le canal attribué — cf.
+ * docs/tracking-attribution/03-architecture.md.
+ *
+ * Les events d'audience (page_view, view_item, add_to_cart, …) ne
+ * sont PAS dans ce set : leurs tags fire sur tous les pixels pour
+ * alimenter Lookalike + Custom Audiences.
+ */
+const CONVERSION_EVENT_NAMES = new Set(
+  EVENT_CATALOG.filter((e) => e.isConversion).map((e) => e.name),
+);
 import type {
   EnvName,
   ExportResult,
@@ -34,7 +50,7 @@ interface GtmTag {
 }
 
 interface GtmTriggerFilter {
-  type: 'EQUALS';
+  type: 'EQUALS' | 'CONTAINS' | 'STARTS_WITH' | 'ENDS_WITH' | 'MATCH_REGEX';
   parameter: GtmParameter[];
 }
 
@@ -295,10 +311,68 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     });
   }
 
+  // ─── Triggers conditionnés par attribution ─────────────────────
+  // Pour chaque event-conversion × pixel payant, on génère un trigger
+  // dédié qui combine :
+  //   - EQUALS sur le nom de l'event (filtre CustomEvent standard)
+  //   - MATCH_REGEX sur {{DLV - attribution.channel}} = (provider|direct|organic)
+  //
+  // Les events d'audience (isConversion=false dans event-catalog)
+  // utilisent le trigger CustomEvent classique sans filtre attribution
+  // → fire sur tous les pixels.
+  const attributionTriggerCache = new Map<string, string>();
+  function ensureAttributionTrigger(
+    eventKey: string,
+    providerKey: 'meta' | 'google_ads' | 'tiktok',
+  ): string {
+    const cacheKey = `${eventKey}:${providerKey}`;
+    const cached = attributionTriggerCache.get(cacheKey);
+    if (cached) return cached;
+    // Assure que la DLV attribution.channel existe (idempotent).
+    ensureDlv('DLV - attribution.channel', 'attribution.channel');
+    const id = nextTrigger();
+    triggers.push({
+      triggerId: id,
+      name: `CE — ${eventKey} [attr:${providerKey}]`,
+      type: 'CUSTOM_EVENT',
+      customEventFilter: [
+        {
+          type: 'EQUALS',
+          parameter: [
+            { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+            { type: 'TEMPLATE', key: 'arg1', value: eventKey },
+          ],
+        },
+        {
+          // MATCH_REGEX → fire si channel = providerKey OU direct OU organic.
+          // Le visiteur direct/organic est broadcasté à tous les pixels payants
+          // (politique par défaut, cf. docs/tracking-attribution/04).
+          type: 'MATCH_REGEX',
+          parameter: [
+            {
+              type: 'TEMPLATE',
+              key: 'arg0',
+              value: '{{DLV - attribution.channel}}',
+            },
+            {
+              type: 'TEMPLATE',
+              key: 'arg1',
+              value: `^(${providerKey}|direct|organic|broadcast)$`,
+            },
+          ],
+        },
+      ],
+      parentFolderId: '2',
+    });
+    attributionTriggerCache.set(cacheKey, id);
+    return id;
+  }
+
   // ─── Per-event tags (GA4 + Meta, wired to CUSTOM_EVENT triggers) ─
   for (const event of sortedEvents) {
     const triggerId = eventTriggerByKey[event.key];
     if (!triggerId) continue;
+    const isConversionEvent = CONVERSION_EVENT_NAMES.has(event.key);
 
     if (event.providers.ga4 && idVars.ga4) {
       tags.push({
@@ -316,6 +390,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
 
     if (event.providers.meta && idVars.meta) {
       const metaName = metaEventNameFor(event.key);
+      // Attribution-gated trigger pour conversions ; trigger standard
+      // pour events d'audience.
+      const metaTriggerId = isConversionEvent
+        ? ensureAttributionTrigger(event.key, 'meta')
+        : triggerId;
       tags.push({
         tagId: nextTag(),
         name: `Meta Evt — ${event.key} (${metaName})`,
@@ -328,7 +407,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
           },
           { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
         ],
-        firingTriggerId: [triggerId],
+        firingTriggerId: [metaTriggerId],
         setupTag: [{ tagName: META_INIT_NAME, stopOnSetupFailure: false }],
         parentFolderId: '2',
       });
@@ -353,6 +432,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         // catégorie côté reporting + bidding.
         const adsCategory: AdsConversionCategory =
           getEventMapping(event.key)?.google_ads?.category ?? 'DEFAULT';
+        // Attribution-gated trigger pour conversions ; trigger
+        // standard pour engagement (DEFAULT category, secondary).
+        const adsTriggerId = isConversionEvent
+          ? ensureAttributionTrigger(event.key, 'google_ads')
+          : triggerId;
         tags.push({
           tagId: nextTag(),
           name: `Ads Conv — ${event.key} (${labelKey})`,
@@ -372,7 +456,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
               value: 'true',
             },
           ],
-          firingTriggerId: [triggerId],
+          firingTriggerId: [adsTriggerId],
           parentFolderId: '2',
         });
       }
@@ -414,6 +498,9 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     }
 
     if (event.providers.tiktok && idVars.tiktok && cfg.tiktokPixelId) {
+      const tiktokTriggerId = isConversionEvent
+        ? ensureAttributionTrigger(event.key, 'tiktok')
+        : triggerId;
       tags.push({
         tagId: nextTag(),
         name: `TikTok Evt — ${event.key}`,
@@ -426,7 +513,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
           },
           { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
         ],
-        firingTriggerId: [triggerId],
+        firingTriggerId: [tiktokTriggerId],
         parentFolderId: '2',
       });
     }
