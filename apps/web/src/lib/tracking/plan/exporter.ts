@@ -228,7 +228,17 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     idVars.ga4 = makeConst('CONST - GA4 Measurement ID', cfg.ga4MeasurementId);
   }
   if (activeProviders.has('googleAds') && cfg.googleAdsConversionId) {
-    idVars.googleAds = makeConst('CONST - Google Ads Conversion ID', cfg.googleAdsConversionId);
+    // GTM tag template `awct` (Google Ads Conversion Tracking) attend
+    // le `conversionId` SOUS forme numérique uniquement. Si on passe
+    // `AW-18136327114`, GTM re-préfixe en interne →
+    // `AW-AW-18136327114` dans le ping final, et Google Ads ne
+    // compte AUCUNE conversion (Tag Assistant affiche un container
+    // fantôme `AW-AW-…`).
+    //
+    // Notre formulaire admin EXIGE le préfixe `AW-` pour la lisibilité
+    // utilisateur. On strip ici avant injection dans la CONST GTM.
+    const rawConversionId = cfg.googleAdsConversionId.replace(/^AW-/i, '');
+    idVars.googleAds = makeConst('CONST - Google Ads Conversion ID', rawConversionId);
   }
   if (activeProviders.has('meta') && cfg.metaPixelId) {
     idVars.meta = makeConst('CONST - Meta Pixel ID', cfg.metaPixelId);

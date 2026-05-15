@@ -44,7 +44,13 @@ export const googleAdsAdapter: ProviderAdapter = {
       "  s.setAttribute('data-gtag-loaded','1');",
       '  document.head.appendChild(s);',
       "  gtag('js',new Date());",
-      "  gtag('consent','default',{ad_storage:'denied',analytics_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',functional_storage:'denied'});",
+      // NB : volontairement PAS de gtag('consent','default',...) ici.
+      // Ces snippets sont injectés par PixelLoader (client) APRÈS
+      // l'init Consent Mode v2 faite par GtmHeadScript (SSR), qui lit
+      // la setting `consent_default_granted` (admin-controlled).
+      // Si on émettait à nouveau ici, on écraserait la valeur SSR avec
+      // un défaut hard-codé incorrect (bug observé : granted en SSR
+      // puis denied après injection).
       '}',
       "gtag('config',id,{send_page_view:false});",
       '})();',

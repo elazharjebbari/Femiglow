@@ -459,6 +459,38 @@ describe('exportPlan — structure GTM', () => {
     expect(nameParam.value).toBe('attribution.channel');
   });
 
+  it('CONST - Google Ads Conversion ID strip le préfixe AW- (sinon double prefix AW-AW-)', () => {
+    // GTM tag template `awct` ré-applique le prefix `AW-` au
+    // conversionId. Si on passe "AW-18136327114" dans la CONST, le
+    // ping final devient AW-AW-18136327114/label et Google Ads ne
+    // compte aucune conversion.
+    const plan = buildPlan({
+      providers: [{ id: 'googleAds', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            googleAdsConversionId: 'AW-18136327114', // user form expects AW- prefix
+            googleAdsConversionLabels: { purchase: 'LABEL_X' },
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [{ key: 'purchase', providers: { googleAds: true } }],
+    });
+    const result = exportPlan(plan, 'production');
+    const variables = (result.json as any).containerVersion.variable;
+    const constId = variables.find(
+      (v: any) => v.name === 'CONST - Google Ads Conversion ID',
+    );
+    expect(constId).toBeDefined();
+    const valueParam = constId.parameter.find((p: any) => p.key === 'value');
+    // Le CONST contient le numéro brut (sans AW-) pour que GTM
+    // construise correctement AW-<id>/<label>.
+    expect(valueParam.value).toBe('18136327114');
+    expect(valueParam.value).not.toMatch(/^AW-/);
+  });
+
   it('chaque CUSTOM_EVENT trigger a au plus UN entry dans customEventFilter (limite GTM)', () => {
     // GTM rejette l'import si un trigger CUSTOM_EVENT a >1 entry dans
     // customEventFilter avec : "Un déclencheur d'événement personnalisé

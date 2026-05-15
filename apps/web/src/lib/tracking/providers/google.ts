@@ -63,7 +63,10 @@ export const googleAdapter: ProviderAdapter = {
   },
   clientSnippet(provider: TrackingProvider): string | null {
     if (provider.status !== 'enabled' || !provider.pixelId) return null;
-    return `(function(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${provider.pixelId}';document.head.appendChild(s);})();window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('consent','default',{ad_storage:'denied',analytics_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',functional_storage:'denied'});gtag('config','${provider.pixelId}',{send_page_view:false});`;
+    // Idem google-ads.ts : pas de gtag('consent','default',...) ici,
+    // sinon on écrase la valeur émise par GtmHeadScript (SSR) qui lit
+    // la setting `consent_default_granted` admin-controlled.
+    return `(function(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${provider.pixelId}';document.head.appendChild(s);})();window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${provider.pixelId}',{send_page_view:false});`;
   },
   cspHosts() {
     return {

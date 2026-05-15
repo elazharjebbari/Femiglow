@@ -311,6 +311,33 @@ L'exporter utilise des tags `html` natifs (avec snippet fbq/ttq) pour
 Meta et TikTok, plutôt que des templates communautaires qui exigent
 d'être installés dans le workspace cible.
 
+### 6b. Double préfixe `AW-AW-<id>` — Google Ads ne compte RIEN
+
+Le tag template GTM `awct` (Google Ads Conversion Tracking) attend le
+paramètre `conversionId` **sous forme numérique uniquement** (ex.
+`18136327114`), pas avec le préfixe `AW-`. GTM re-applique le préfixe
+en interne au moment de construire le ping :
+
+```
+ping URL = https://pagead2.googlesyndication.com/pagead/conversion/AW-<conversionId>/<conversionLabel>
+```
+
+Si on passe `AW-18136327114` au tag, le ping devient
+`AW-AW-18136327114/...` → Google Ads ne reconnaît pas l'ID, aucune
+conversion comptée.
+
+**Symptôme visible dans Tag Assistant** : un container fantôme
+nommé `AW-AW-18136327114` apparaît dans la liste des conteneurs
+détectés.
+
+**Fix appliqué** :
+
+  - Form admin continue à exiger `AW-18136327114` (lisibilité user)
+  - L'exporter strip automatiquement `^AW-` avant injection dans la
+    CONST GTM (cf. `exporter.ts` ligne ~230)
+  - Test régression : « CONST - Google Ads Conversion ID strip le
+    préfixe AW- (sinon double prefix AW-AW-) »
+
 ### 6. CSP `connect-src` bloque les conversion pings Google Ads — SILENCIEUX
 
 Le navigateur bloque les pings de conversion avec une erreur du type :

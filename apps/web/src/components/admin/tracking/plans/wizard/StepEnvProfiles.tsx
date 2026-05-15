@@ -24,7 +24,7 @@ const ID_RULES: Record<
     key: 'googleAdsConversionId',
     label: 'Google Ads Conversion ID',
     pattern: /^AW-\d{6,12}$/,
-    hint: 'Format attendu : AW-123456789.',
+    hint: 'Format attendu : AW-123456789. L\'exporter strip le préfixe AW- automatiquement avant injection dans GTM (template awct le re-préfixe lui-même).',
   },
   meta: {
     key: 'metaPixelId',
