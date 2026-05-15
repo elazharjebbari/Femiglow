@@ -66,9 +66,12 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
 
   const variables: GtmVariable[] = [];
   const tags: GtmTag[] = [];
+  // GTM expects EventType enum in SCREAMING_SNAKE_CASE (protobuf name),
+  // not lowercase camelCase like the REST API. The container import
+  // rejects "pageview" with "Error deserializing enum type [EventType]".
   const triggers: GtmTrigger[] = [
-    { triggerId: '1', name: 'All Pages', type: 'pageview' },
-    { triggerId: '2', name: 'DOM Ready', type: 'domReady' },
+    { triggerId: '1', name: 'All Pages', type: 'PAGEVIEW' },
+    { triggerId: '2', name: 'DOM Ready', type: 'DOM_READY' },
   ];
 
   const varCounter = { value: 0 };

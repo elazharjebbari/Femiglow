@@ -113,6 +113,18 @@ describe('exportPlan — structure GTM', () => {
     expect(builtIns).toContainEqual({ type: 'ANALYTICS_STORAGE' });
   });
 
+  it('emits trigger.type as SCREAMING_SNAKE_CASE enum values', () => {
+    // GTM rejects lowercase camelCase like "pageview" with
+    // "Error deserializing enum type [EventType]. Unrecognized value [pageview]".
+    const result = exportPlan(buildPlan(), 'production');
+    const triggers = (result.json as any).containerVersion.trigger;
+    const types = triggers.map((t: any) => t.type);
+    expect(types).toContain('PAGEVIEW');
+    expect(types).toContain('DOM_READY');
+    expect(types).not.toContain('pageview');
+    expect(types).not.toContain('domReady');
+  });
+
   it('emits consentType as a LIST Parameter (not a bare array)', () => {
     // GTM's container import rejects `consentType: [{type: "analytics_storage"}]`
     // with "Argument is not an object". The correct shape is a Parameter
