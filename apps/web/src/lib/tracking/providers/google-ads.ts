@@ -53,12 +53,22 @@ export const googleAdsAdapter: ProviderAdapter = {
 
   cspHosts() {
     return {
-      scriptSrc: ['https://www.googletagmanager.com'],
+      scriptSrc: [
+        'https://www.googletagmanager.com',
+        'https://www.googleadservices.com',
+        'https://pagead2.googlesyndication.com',
+      ],
       connectSrc: [
         'https://www.google.com',
+        'https://www.google.fr',
+        'https://www.google.ma',
         'https://googleads.g.doubleclick.net',
         'https://www.googletagmanager.com',
         'https://*.google-analytics.com',
+        // Endpoint conversion ping — sans ça la conversion n'est pas
+        // comptée (CSP blocked). Cf. doc tracking-attribution #6.
+        'https://pagead2.googlesyndication.com',
+        'https://www.googleadservices.com',
       ],
     };
   },

@@ -311,6 +311,35 @@ L'exporter utilise des tags `html` natifs (avec snippet fbq/ttq) pour
 Meta et TikTok, plutôt que des templates communautaires qui exigent
 d'être installés dans le workspace cible.
 
+### 6. CSP `connect-src` bloque les conversion pings Google Ads — SILENCIEUX
+
+Le navigateur bloque les pings de conversion avec une erreur du type :
+
+```
+La directive Content Security Policy connect-src de la page a bloqué
+une requête vers https://pagead2.googlesyndication.com/pagead/conversion/AW-…
+```
+
+**Conséquence sournoise** : la conversion **n'est pas comptée** par
+Google Ads alors que tout le reste (DataLayer, GA4, GTM) marche
+normalement → tu ne vois pas l'erreur si tu ne regardes pas Tag
+Assistant ou la console DevTools.
+
+**Hosts à whitelist dans `connect-src` pour Google Ads** :
+
+  - `https://pagead2.googlesyndication.com` ← endpoint conversion ping
+  - `https://www.googleadservices.com` ← redirect intermédiaire
+  - `https://www.google.com`, `https://www.google.fr`, `https://www.google.ma`
+  - `https://googleads.g.doubleclick.net`
+  - `https://www.googletagmanager.com`
+
+**Fix appliqué** dans `lib/tracking/providers/csp-hosts.ts` et
+`google-ads.ts`. Le middleware Edge construit la CSP dynamiquement
+depuis ces hôtes → la mise à jour se propage automatiquement.
+
+**Validation** : Tag Assistant ne doit plus afficher de container
+fantôme `AW-AW-…` ni d'erreurs CSP dans son onglet « Système ».
+
 ## Limites + futurs travaux
 
 - Le gate utilise `ctx.anonymousId` (= visitorId) pour le lookup.

@@ -30,11 +30,23 @@ export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMa
     ],
   },
   google_ads: {
-    scriptSrc: ['https://www.googletagmanager.com'],
+    scriptSrc: [
+      'https://www.googletagmanager.com',
+      'https://www.googleadservices.com',
+      'https://pagead2.googlesyndication.com',
+    ],
     connectSrc: [
       'https://www.google.com',
+      'https://www.google.fr',
+      'https://www.google.ma', // marché FemiGlow (Maroc)
       'https://googleads.g.doubleclick.net',
       'https://www.googletagmanager.com',
+      // Endpoint critique pour les pings de conversion Google Ads.
+      // Sans ça, le browser bloque la requête avec une erreur CSP
+      // "connect-src blocked request to pagead2.googlesyndication.com"
+      // et la conversion N'EST PAS COMPTÉE par Google Ads.
+      'https://pagead2.googlesyndication.com',
+      'https://www.googleadservices.com',
     ],
   },
   tiktok: {
