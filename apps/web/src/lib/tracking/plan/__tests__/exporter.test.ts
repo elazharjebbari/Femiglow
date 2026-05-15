@@ -219,6 +219,106 @@ describe('exportPlan — structure GTM', () => {
     expect(types).not.toContain('ANALYTICS_STORAGE');
   });
 
+  it('emits Google Ads conversion tags with the real label (envConfig) + Enhanced Conversions', () => {
+    const plan = buildPlan({
+      providers: [
+        { id: 'ga4', active: true },
+        { id: 'googleAds', active: true },
+      ],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            ga4MeasurementId: 'G-X',
+            googleAdsConversionId: 'AW-18136327114',
+            googleAdsConversionLabels: {
+              purchase: 'UGxLCMGJv6wcEMrHichD',
+            },
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { ga4: true, googleAds: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const variables = (result.json as any).containerVersion.variable;
+
+    // Une CONST pour le label de conversion purchase
+    const labelConst = variables.find(
+      (v: any) => v.name === 'CONST - Ads Label - purchase',
+    );
+    expect(labelConst).toBeDefined();
+    expect(labelConst.parameter[0].value).toBe('UGxLCMGJv6wcEMrHichD');
+
+    // Tag awct référence la CONST + currency + value + transaction_id
+    // + Enhanced Conversions automatiques.
+    const awct = tags.find((t: any) => t.type === 'awct');
+    expect(awct).toBeDefined();
+    expect(awct.name).toBe('Ads Conv — purchase (purchase)');
+    const params = Object.fromEntries(
+      awct.parameter.map((p: any) => [p.key, p.value]),
+    );
+    expect(params.conversionId).toBe('{{CONST - Google Ads Conversion ID}}');
+    expect(params.conversionLabel).toBe('{{CONST - Ads Label - purchase}}');
+    expect(params.orderId).toBe('{{DLV - ecommerce.transaction_id}}');
+    expect(params.currencyCode).toBe('{{DLV - ecommerce.currency}}');
+    expect(params.conversionValue).toBe('{{DLV - ecommerce.value}}');
+    expect(params.enhancedConversionsAutomaticMode).toBe('true');
+  });
+
+  it('skips awct tag when no conversion label is configured in envConfig', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'googleAds', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            googleAdsConversionId: 'AW-X',
+            // PAS de googleAdsConversionLabels
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { googleAds: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    expect(tags.filter((t: any) => t.type === 'awct')).toHaveLength(0);
+  });
+
+  it('emits DLV user_data.* when events have identityFields', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'ga4', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: { ga4MeasurementId: 'G-X', gtmContainerId: 'GTM-Y' },
+        },
+      ],
+      // purchase a identityFields = [email, phone, firstName, lastName, city, country]
+      events: [{ key: 'purchase', providers: { ga4: true } }],
+    });
+    const result = exportPlan(plan, 'production');
+    const variables = (result.json as any).containerVersion.variable;
+    const names = variables.map((v: any) => v.name);
+    expect(names).toContain('DLV - user_data.email_sha256');
+    expect(names).toContain('DLV - user_data.phone_sha256');
+    expect(names).toContain('DLV - user_data.address.first_name_sha256');
+    expect(names).toContain('DLV - user_data.address.last_name_sha256');
+    expect(names).toContain('DLV - user_data.address.city');
+    expect(names).toContain('DLV - user_data.address.country');
+
+    // Vérifie le mapping DLV name = chemin dataLayer
+    const emailDlv = variables.find((v: any) => v.name === 'DLV - user_data.email_sha256');
+    const nameParam = emailDlv.parameter.find((p: any) => p.key === 'name');
+    expect(nameParam.value).toBe('user_data.sha256_email_address');
+  });
+
   it('does NOT emit consentSettings on tags (set via GTM UI / Consent Mode default)', () => {
     // The previous shape emitted consentType arrays that broke the
     // import. Until we can compute the correct LIST<TEMPLATE> shape

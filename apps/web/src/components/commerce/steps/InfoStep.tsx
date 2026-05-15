@@ -15,6 +15,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import type { CheckoutForm } from '@/lib/schemas';
 import { useFormTracking } from '@/lib/tracking/use-form-tracking';
+import { useCheckoutIntentTrigger } from '@/lib/tracking/use-checkout-intent';
 
 // FORM_ID/FORM_MODE dupliqués depuis CheckoutFlow.tsx pour permettre le wiring
 // tracking ici sans prop drilling. Si l'un évolue, garder les deux synchronisés.
@@ -26,13 +27,26 @@ export function InfoStep() {
     register,
     formState: { errors },
   } = useFormContext<CheckoutForm>();
-  // form_start sur premier focus champ (D-004). Pas de form_abandon car
-  // CheckoutFlow gère sa propre logique d'abandon via beforeunload.
+  // form_start sur premier focus champ. La fenêtre de dedup
+  // DEFAULT_REDUNDANCY['form_start']=5s côté TrackingClient neutralise
+  // les double-pushes (Mode A + Mode B montés en parallèle).
   const { handleFieldFocus } = useFormTracking({
     formId: TRACKING_FORM_ID,
     formMode: TRACKING_FORM_MODE,
     trackAbandon: false,
   });
+
+  // checkout_intent — 1ère frappe (≥1 char) ; idempotent par form_id.
+  const { handleInputChange: triggerCheckoutIntent } = useCheckoutIntentTrigger({
+    ctx: {
+      form_id: TRACKING_FORM_ID,
+      form_mode: TRACKING_FORM_MODE,
+      step_name: 'lead',
+      variant_key: null,
+    },
+  });
+
+  const firstNameProps = register('contact.firstName');
 
   return (
     <fieldset className="space-y-7" data-testid="checkout-step-info">
@@ -51,10 +65,17 @@ export function InfoStep() {
           autoComplete="given-name"
           required
           error={errors.contact?.firstName?.message}
-          {...register('contact.firstName')}
+          {...firstNameProps}
           onFocus={handleFieldFocus('firstName')}
+          onChange={(e) => {
+            void firstNameProps.onChange(e);
+            triggerCheckoutIntent('firstName', e.target.value);
+          }}
         />
-        <PhoneField onFocus={handleFieldFocus('phone')} />
+        <PhoneField
+          onFocus={handleFieldFocus('phone')}
+          onCheckoutIntentInput={(v) => triggerCheckoutIntent('phone', v)}
+        />
       </div>
 
       <ConsentCheckbox />
@@ -62,13 +83,20 @@ export function InfoStep() {
   );
 }
 
-function PhoneField({ onFocus }: { onFocus?: () => void }) {
+function PhoneField({
+  onFocus,
+  onCheckoutIntentInput,
+}: {
+  onFocus?: () => void;
+  onCheckoutIntentInput?: (value: string) => void;
+}) {
   const {
     register,
     formState: { errors },
   } = useFormContext<CheckoutForm>();
   const error = errors.contact?.phone?.message;
   const errorId = error ? 'checkout-phone-error' : undefined;
+  const phoneProps = register('contact.phone');
   return (
     <div className="space-y-2">
       <label
@@ -98,8 +126,12 @@ function PhoneField({ onFocus }: { onFocus?: () => void }) {
           aria-describedby={errorId}
           placeholder="612345678"
           className="w-full bg-creme py-3 text-encre placeholder:text-encre/40 focus:outline-none"
-          {...register('contact.phone')}
+          {...phoneProps}
           onFocus={onFocus}
+          onChange={(e) => {
+            void phoneProps.onChange(e);
+            onCheckoutIntentInput?.(e.target.value);
+          }}
         />
       </div>
       {error && (
