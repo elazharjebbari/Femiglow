@@ -1,0 +1,77 @@
+─────────────────────────────────────────────────────────────────────────
+  DÉTECTION DE CANAL — ARBRE DE DÉCISION (priorité descendante)
+─────────────────────────────────────────────────────────────────────────
+
+
+  IN: URL + document.referrer
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │ URL contient gclid OU gbraid OU wbraid ?                    │
+  └────────┬─────────────────────────────────────┬──────────────┘
+           │ oui                                  │ non
+           ▼                                      ▼
+       google_ads (is_paid=true)        ┌────────────────────────┐
+                                        │ URL contient fbclid ?  │
+                                        └─┬────────────────────┬─┘
+                                          │ oui                │ non
+                                          ▼                    ▼
+                                       meta (is_paid=true)   ┌──────────────────────────┐
+                                                             │ URL contient ttclid ?    │
+                                                             └─┬──────────────────────┬─┘
+                                                               │ oui                  │ non
+                                                               ▼                      ▼
+                                                            tiktok                ┌──────────────────────────┐
+                                                                                  │ URL contient sccid/epik/ │
+                                                                                  │ msclkid ?                │
+                                                                                  └─┬──────────────────────┬─┘
+                                                                                    │ oui                  │ non
+                                                                                    ▼                      ▼
+                                                                              snap/pinterest/         ┌─────────────────────────────┐
+                                                                              bing_ads                │ utm_medium IN paid          │
+                                                                                                      │  (cpc|ppc|paid|cpv|cpm|     │
+                                                                                                      │   display|social_paid) ?    │
+                                                                                                      └─┬─────────────────────────┬─┘
+                                                                                                        │ oui                     │ non
+                                                                                                        ▼                         ▼
+                                                                                                    canal mapped               ┌─────────────────────────────┐
+                                                                                                    par utm_source             │ utm_medium = email          │
+                                                                                                                               │ OR utm_source=newsletter ?  │
+                                                                                                                               └─┬─────────────────────────┬─┘
+                                                                                                                                 │ oui                     │ non
+                                                                                                                                 ▼                         ▼
+                                                                                                                              email                   ┌──────────────────────────┐
+                                                                                                                              (is_paid=false)         │ document.referrer ?      │
+                                                                                                                                                      └─┬──────────────────────┬─┘
+                                                                                                                                                        │ search-engine        │ social
+                                                                                                                                                        ▼                      ▼
+                                                                                                                                                     organic              social_organic
+                                                                                                                                                     (is_paid=false)
+                                                                                                                                                                 │
+                                                                                                                                                                 │ référent absent ou inconnu
+                                                                                                                                                                 ▼
+                                                                                                                                                              direct
+                                                                                                                                                              (is_paid=false)
+
+
+  ─────────────────────────────────────────────────────────────────
+                  ↓
+  ─────────────────────────────────────────────────────────────────
+
+
+  STRATÉGIE D'ATTRIBUTION (appliquée à chaque emit)
+
+  ┌────────────────────────────────────────────────────────┐
+  │ Lire snapshot { first_touch, last_touch, paid_history }│
+  └────────────────────────────────────┬───────────────────┘
+                                       │
+                  ┌────────────────────┼────────────────────┐
+                  │                    │                    │
+                  ▼                    ▼                    ▼
+       last_paid_touch ⭐    first_paid_touch       last_touch
+       paid_history[0]       paid_history.last      last_touch
+       (si vide → direct)    (si vide → direct)     ou direct
+
+                  ▼                    ▼
+       first_touch                broadcast
+       first_touch.channel        channel='broadcast'
+       ou direct                  → tous les pixels fire
