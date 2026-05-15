@@ -9,6 +9,7 @@ import { DebugOverlay } from '@/components/tracking/DebugOverlay';
 import { PixelLoader } from '@/components/tracking/PixelLoader';
 import { GtmHeadScript } from '@/components/tracking/GtmHeadScript';
 import { AttributionCaptureBridge } from '@/components/tracking/AttributionCaptureBridge';
+import { getAttributionStrategy } from '@/lib/tracking/attribution/server';
 import {
   getTrackingSetting,
   TRACKING_SETTING_KEYS,
@@ -92,11 +93,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // défaut (banner activé, consent denied) couvrent l'install initiale ;
   // l'admin peut désactiver le bandeau dans /admin/tracking/settings pour
   // les juridictions où il n'est pas obligatoire (Maroc, US…).
-  const [bannerEnabled, defaultGranted, cookieBannerLegalLinks] = await Promise.all([
-    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
-    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
-    loadCookieBannerLegalLinks(),
-  ]);
+  const [bannerEnabled, defaultGranted, cookieBannerLegalLinks, attributionStrategy] =
+    await Promise.all([
+      getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
+      getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
+      loadCookieBannerLegalLinks(),
+      getAttributionStrategy(),
+    ]);
 
   return (
     <html
@@ -117,6 +120,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <TrackingProvider
           bannerEnabled={bannerEnabled}
           defaultGranted={defaultGranted}
+          attributionStrategy={attributionStrategy}
         >
           <TrackingGlobalListener />
           {children}

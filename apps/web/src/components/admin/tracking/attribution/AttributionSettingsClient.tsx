@@ -4,15 +4,12 @@
  * Page admin /admin/tracking/attribution — sélecteur de stratégie +
  * debugger client-side basé sur le cookie `fg_attr` du navigateur.
  *
- * V1 minimale :
- *  - La stratégie n'est PAS encore persistée côté serveur (settings).
- *    Elle se sélectionne dans cette page mais le défaut runtime reste
- *    `last_paid_touch`. Persistance prévue en phase 1.2 (suite
- *    immédiate, cf. docs/tracking-attribution/06-runbook.md).
- *  - Le debugger inspecte le cookie courant du navigateur (utile pour
- *    QA en se connectant sur un device test).
+ * La stratégie est persistée côté serveur (table tracking_settings).
+ * Le bouton "Enregistrer" appelle un server action qui met à jour la
+ * setting, audit-log + revalidatePath. La valeur initiale est passée
+ * en prop depuis le RSC parent.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import {
   readAttributionCookie,
 } from '@/lib/tracking/attribution/cookie';
@@ -20,21 +17,43 @@ import { simulateAllStrategies } from '@/lib/tracking/attribution/strategy';
 import {
   ATTRIBUTION_STRATEGIES,
   CHANNEL_TO_PROVIDERS,
-  DEFAULT_ATTRIBUTION_STRATEGY,
   STRATEGY_META,
   type AttributionSnapshot,
   type AttributionStrategy,
 } from '@/lib/tracking/attribution/types';
+import { setAttributionStrategyAction } from '@/lib/tracking/attribution/actions';
 
-export function AttributionSettingsClient(): JSX.Element {
-  const [strategy, setStrategy] = useState<AttributionStrategy>(
-    DEFAULT_ATTRIBUTION_STRATEGY,
-  );
+export function AttributionSettingsClient({
+  initialStrategy,
+}: {
+  initialStrategy: AttributionStrategy;
+}): JSX.Element {
+  const [strategy, setStrategy] = useState<AttributionStrategy>(initialStrategy);
+  const [savedStrategy, setSavedStrategy] = useState<AttributionStrategy>(initialStrategy);
   const [snapshot, setSnapshot] = useState<AttributionSnapshot | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const dirty = strategy !== savedStrategy;
 
   useEffect(() => {
     setSnapshot(readAttributionCookie());
   }, []);
+
+  function save() {
+    setSaveMessage(null);
+    startTransition(async () => {
+      try {
+        const res = await setAttributionStrategyAction({ strategy });
+        setSavedStrategy(res.strategy);
+        setSaveMessage('✓ Stratégie enregistrée.');
+        window.setTimeout(() => setSaveMessage(null), 3000);
+      } catch (e) {
+        setSaveMessage(
+          e instanceof Error ? `Erreur : ${e.message}` : 'Erreur inattendue.',
+        );
+      }
+    });
+  }
 
   function refresh() {
     setSnapshot(readAttributionCookie());
@@ -60,7 +79,7 @@ export function AttributionSettingsClient(): JSX.Element {
           d'attribution du visiteur (cookie <code>fg_attr</code>) et applique
           la stratégie ci-dessous pour décider quel canal créditer.
         </p>
-        <fieldset className="space-y-2">
+        <fieldset className="space-y-2" disabled={isPending}>
           <legend className="sr-only">Stratégie</legend>
           {ATTRIBUTION_STRATEGIES.map((s) => (
             <StrategyRadio
@@ -71,10 +90,31 @@ export function AttributionSettingsClient(): JSX.Element {
             />
           ))}
         </fieldset>
-        <p className="mt-3 text-xs text-stone-500">
-          ⚠️ La persistance serveur est en cours de développement (phase 1.2).
-          Pour l'instant, le défaut runtime est <code>last_paid_touch</code>.
-        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={save}
+            disabled={!dirty || isPending}
+            className="rounded-md bg-stone-900 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {isPending ? 'Enregistrement…' : 'Enregistrer la stratégie'}
+          </button>
+          {!dirty && !saveMessage && (
+            <span className="text-xs text-stone-500">
+              Stratégie active : <code className="font-mono">{savedStrategy}</code>
+            </span>
+          )}
+          {saveMessage && (
+            <span
+              role="status"
+              className={`text-xs ${
+                saveMessage.startsWith('✓') ? 'text-emerald-700' : 'text-rose-700'
+              }`}
+            >
+              {saveMessage}
+            </span>
+          )}
+        </div>
       </section>
 
       <section aria-labelledby="debug-h">

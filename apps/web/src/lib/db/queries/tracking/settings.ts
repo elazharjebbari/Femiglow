@@ -113,4 +113,12 @@ export const TRACKING_SETTING_KEYS = {
   CONSENT_BANNER_ENABLED: 'consent_banner_enabled',
   /** État de consentement par défaut quand le bandeau est désactivé */
   CONSENT_DEFAULT_GRANTED: 'consent_default_granted',
+  /**
+   * Stratégie d'attribution multi-canal. Cf.
+   * docs/tracking-attribution/ + `lib/tracking/attribution/types.ts`.
+   * Valeurs : 'last_paid_touch' | 'first_paid_touch' | 'last_touch' |
+   *          'first_touch' | 'broadcast'
+   * Défaut runtime si absente : 'last_paid_touch' (recommandé).
+   */
+  ATTRIBUTION_STRATEGY: 'attribution_strategy',
 } as const;
