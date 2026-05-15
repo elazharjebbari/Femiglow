@@ -272,7 +272,7 @@ describe('exportPlan — structure GTM', () => {
     // + Enhanced Conversions automatiques.
     const awct = tags.find((t: any) => t.type === 'awct');
     expect(awct).toBeDefined();
-    expect(awct.name).toBe('Ads Conv — purchase (purchase)');
+    expect(awct.name).toBe('Ads Conv — purchase → purchase');
     const params = Object.fromEntries(
       awct.parameter.map((p: any) => [p.key, p.value]),
     );
@@ -286,6 +286,68 @@ describe('exportPlan — structure GTM', () => {
     // via envConfig.googleAdsEnhancedConversions).
     expect(params.enableEnhancedConversions).toBe('true');
     expect(params.enhancedConversionsAutomaticMode).toBe('true');
+  });
+
+  it('emits Ads Cfg (googtag) on All Pages to resolve "Hits différés" warning', () => {
+    // Tag Assistant affiche "Certains hits ne seront pas envoyés tant
+    // qu'une commande de configuration ne sera pas fournie par le
+    // biais d'un appel gtag('config') ou d'une balise Google dans Tag
+    // Manager." si AW-XXX est détecté comme destination mais qu'aucun
+    // `gtag('config','AW-XXX')` n'est jamais émis. Le template `awct`
+    // n'émet QUE `gtag('event','conversion')` — pas de config. Il faut
+    // une balise googtag dédiée (équivalent gaawc pour Ads).
+    const plan = buildPlan({
+      providers: [{ id: 'googleAds', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            googleAdsConversionId: 'AW-18136327114',
+            googleAdsConversionLabels: { purchase: 'LBL' },
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [{ key: 'purchase', providers: { googleAds: true } }],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const adsCfg = tags.find((t: any) => t.type === 'googtag');
+    expect(adsCfg).toBeDefined();
+    expect(adsCfg.name).toBe('Ads Cfg');
+    const params = Object.fromEntries(
+      adsCfg.parameter.map((p: any) => [p.key, p.value]),
+    );
+    // tagId DOIT inclure le préfixe AW- (contrairement à awct qui le
+    // re-préfixe). Si on passe juste "18136327114", googtag n'initialise
+    // pas la destination Ads et le warning persiste.
+    expect(params.tagId).toBe('AW-18136327114');
+    // Fire sur All Pages, ONCE_PER_EVENT, priorité juste sous GA4 Cfg.
+    expect(adsCfg.tagFiringOption).toBe('ONCE_PER_EVENT');
+    expect(adsCfg.priority).toMatchObject({
+      type: 'INTEGER',
+      key: 'priority',
+      value: '75',
+    });
+    const triggers = (result.json as any).containerVersion.trigger;
+    const allPagesTrigger = triggers.find((t: any) => t.type === 'PAGEVIEW');
+    expect(adsCfg.firingTriggerId).toEqual([allPagesTrigger.triggerId]);
+  });
+
+  it('does not emit Ads Cfg when googleAds provider inactive', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'ga4', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: { ga4MeasurementId: 'G-X', gtmContainerId: 'GTM-Y' },
+        },
+      ],
+      events: [{ key: 'purchase', providers: { ga4: true } }],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    expect(tags.filter((t: any) => t.type === 'googtag').length).toBe(0);
   });
 
   it('Enhanced Conversions désactivable via envConfig.googleAdsEnhancedConversions=false', () => {
@@ -434,6 +496,114 @@ describe('exportPlan — structure GTM', () => {
     const ga4Tag = tags.find((t: any) => t.name === 'GA4 Evt — purchase');
     const standardTrigger = triggers.find((t: any) => t.name === 'CE — purchase');
     expect(ga4Tag.firingTriggerId).toEqual([standardTrigger.triggerId]);
+  });
+
+  it('gating per-provider — checkout_intent broadcast pour Meta (InitiateCheckout=non-primary) ET pour Ads (secondary)', () => {
+    // Refactor mai 2026 : remplacement du flag global `isConversion`
+    // par `getAttributionMode(eventKey, provider)`. Conséquences :
+    //  - checkout_intent côté Meta → InitiateCheckout → broadcast
+    //    (funnel/intent, pas Purchase/Lead)
+    //  - checkout_intent côté Ads → secondary conversion → broadcast
+    //    (alimente Smart Bidding sans skewer attribution primary)
+    //  - add_to_cart côté Ads → secondary conversion → broadcast aussi
+    // Seuls les PRIMARY (Purchase/Lead côté Meta, recommendedRole='primary'
+    // côté Ads) sont attribution-gated.
+    const plan = buildPlan({
+      providers: [
+        { id: 'meta', active: true },
+        { id: 'googleAds', active: true },
+      ],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            metaPixelId: '1234',
+            googleAdsConversionId: 'AW-1',
+            googleAdsConversionLabels: {
+              purchase: 'P',
+              checkout_intent: 'CI',
+              add_to_cart: 'A2C',
+            },
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        {
+          key: 'purchase',
+          providers: { meta: true, googleAds: true },
+        },
+        {
+          key: 'checkout_intent',
+          providers: { meta: true, googleAds: true },
+        },
+        {
+          key: 'add_to_cart',
+          providers: { meta: true, googleAds: true },
+        },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const triggers = (result.json as any).containerVersion.trigger;
+
+    // ── Meta side ──
+    // purchase → Purchase (Meta primary) → attribution-gated
+    const metaPurchase = tags.find((t: any) =>
+      t.name.startsWith('Meta Evt — purchase'),
+    );
+    const metaPurchaseTrigger = triggers.find(
+      (t: any) => t.triggerId === metaPurchase.firingTriggerId[0],
+    );
+    expect(metaPurchaseTrigger.name).toBe('CE — purchase [attr / meta]');
+
+    // checkout_intent → InitiateCheckout (Meta non-primary) → broadcast
+    const metaCheckout = tags.find((t: any) =>
+      t.name.startsWith('Meta Evt — checkout_intent'),
+    );
+    const metaCheckoutTrigger = triggers.find(
+      (t: any) => t.triggerId === metaCheckout.firingTriggerId[0],
+    );
+    expect(metaCheckoutTrigger.name).toBe('CE — checkout_intent');
+    expect(metaCheckoutTrigger.filter).toBeUndefined();
+
+    // add_to_cart → AddToCart (Meta non-primary) → broadcast
+    const metaAtc = tags.find((t: any) =>
+      t.name.startsWith('Meta Evt — add_to_cart'),
+    );
+    const metaAtcTrigger = triggers.find(
+      (t: any) => t.triggerId === metaAtc.firingTriggerId[0],
+    );
+    expect(metaAtcTrigger.name).toBe('CE — add_to_cart');
+
+    // ── Google Ads side ──
+    // purchase → recommendedRole=primary → attribution-gated
+    const adsPurchase = tags.find(
+      (t: any) => t.type === 'awct' && t.name.includes('purchase'),
+    );
+    const adsPurchaseTrigger = triggers.find(
+      (t: any) => t.triggerId === adsPurchase.firingTriggerId[0],
+    );
+    expect(adsPurchaseTrigger.name).toBe('CE — purchase [attr / google_ads]');
+
+    // checkout_intent → recommendedRole=secondary → broadcast
+    const adsCheckout = tags.find(
+      (t: any) => t.type === 'awct' && t.name.includes('checkout_intent'),
+    );
+    const adsCheckoutTrigger = triggers.find(
+      (t: any) => t.triggerId === adsCheckout.firingTriggerId[0],
+    );
+    expect(adsCheckoutTrigger.name).toBe('CE — checkout_intent');
+    expect(adsCheckoutTrigger.filter).toBeUndefined();
+
+    // add_to_cart → recommendedRole=secondary → broadcast
+    const adsAtc = tags.find(
+      (t: any) => t.type === 'awct' && t.name.includes('add_to_cart'),
+    );
+    const adsAtcTrigger = triggers.find(
+      (t: any) => t.triggerId === adsAtc.firingTriggerId[0],
+    );
+    expect(adsAtcTrigger.name).toBe('CE — add_to_cart');
   });
 
   it('audience events (isConversion=false) do NOT receive attribution gating', () => {

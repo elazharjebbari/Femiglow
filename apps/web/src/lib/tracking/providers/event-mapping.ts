@@ -220,10 +220,14 @@ const MAP: Record<string, EventMapping> = {
     google_ga4: { name: 'sign_up', isStandard: true },
     google_ads: {
       // NB : enum `SIGNUP` sans underscore, et `name` reste GA4-style.
+      // Marqué secondary pour cohérence avec la config Google Ads UI
+      // (Secondaire dans le groupe "Envoi de formulaire de lead").
+      // Conséquence côté gating : broadcast sur tous les canaux pour
+      // alimenter smart bidding sans skewer l'attribution primary.
       name: 'sign_up',
       conversionLabelKey: 'sign_up',
       category: 'SIGNUP',
-      recommendedRole: 'primary',
+      recommendedRole: 'secondary',
       group: 'leads',
     },
     tiktok: { name: 'CompleteRegistration', isStandard: true },
@@ -351,12 +355,14 @@ const MAP: Record<string, EventMapping> = {
     meta: { name: 'Contact', isStandard: true },
     google_ads: {
       // 1er message utilisateur = vrai signal de Contact côté Ads.
+      // Marqué primary pour cohérence avec la config Google Ads UI
+      // (groupe "Envoi de formulaire de lead", role Principale).
       // Note : doit être gated « 1re fois par session » côté GTM si
       // beaucoup de messages par conversation.
       name: 'chat_message_sent',
       conversionLabelKey: 'chat_contact',
       category: 'CONTACT',
-      recommendedRole: 'secondary',
+      recommendedRole: 'primary',
       group: 'leads',
     },
   },
@@ -395,6 +401,86 @@ const MAP: Record<string, EventMapping> = {
 
 export function getEventMapping(eventName: string): EventMapping | null {
   return MAP[eventName] ?? null;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Attribution Mode (per-provider gating policy)
+// ─────────────────────────────────────────────────────────────────────
+//
+// Détermine si un event doit être **attribution-gated** pour un provider
+// donné (= ne fire que sur le canal attribué) ou **broadcast** (= fire
+// sur tous les canaux).
+//
+// Politique :
+//   - `primary`   → attribution-gated. Réservé aux conversions PILOTANT
+//                   le bidding (Purchase, Lead). Empêche la double-
+//                   attribution cross-provider qui skewerait Smart
+//                   Bidding (ex. clic Meta + Purchase compté Ads).
+//   - `broadcast` → fire sur tous les canaux. Pour les secondary
+//                   conversions (add_to_cart, checkout_intent, sign_up,
+//                   newsletter, video_complete, journal_read, …) et
+//                   pour les audience events (view_item, view_cart,
+//                   add_payment_info, …). Volume max pour alimenter
+//                   les algorithmes d'observation.
+//
+// Source de vérité par provider :
+//   - Google Ads : `google_ads.recommendedRole`
+//                  → la config UI Google Ads est la SoT pour les rôles ;
+//                    le mapping doit refléter la conv UI (sinon mismatch
+//                    de comptage entre fire-side et bidding-side).
+//   - Meta       : hardcoded `META_PRIMARY_NAMES`. Meta n'a pas de
+//                    distinction primary/secondary native ; on
+//                    considère que seuls Purchase + Lead pilotent le
+//                    bidding Advantage+ (les autres = funnel/audience).
+//   - TikTok     : hardcoded `TIKTOK_PRIMARY_NAMES`. Idem Meta —
+//                    CompletePayment = primary, SubmitForm = primary
+//                    (puisque lead campaigns optimisent là-dessus).
+//
+// Cf. docs/tracking-attribution/03-architecture.md pour la matrice
+// complète et les exemples de comportement par flow.
+
+export type AttributionMode = 'primary' | 'broadcast';
+
+export type AttributionProvider = 'meta' | 'google_ads' | 'tiktok';
+
+const META_PRIMARY_NAMES: ReadonlySet<string> = new Set(['Purchase', 'Lead']);
+const TIKTOK_PRIMARY_NAMES: ReadonlySet<string> = new Set([
+  'CompletePayment',
+  'SubmitForm',
+]);
+
+/**
+ * Retourne le mode d'attribution pour `(eventKey, provider)`.
+ *
+ * - `'primary'`   → tag attribution-gated (CUSTOM_EVENT + filter
+ *                   `attribution.channel ∈ {provider|direct|organic|broadcast}`).
+ * - `'broadcast'` → tag standard (CUSTOM_EVENT sans filtre attribution).
+ *
+ * Default safety : si l'event est inconnu, on retourne `'broadcast'`
+ * pour éviter de jamais bloquer un signal par accident.
+ */
+export function getAttributionMode(
+  eventKey: string,
+  provider: AttributionProvider,
+): AttributionMode {
+  const mapping = MAP[eventKey];
+  if (!mapping) return 'broadcast';
+  if (provider === 'google_ads') {
+    return mapping.google_ads?.recommendedRole === 'primary'
+      ? 'primary'
+      : 'broadcast';
+  }
+  if (provider === 'meta') {
+    const metaName = mapping.meta?.name;
+    return metaName && META_PRIMARY_NAMES.has(metaName) ? 'primary' : 'broadcast';
+  }
+  if (provider === 'tiktok') {
+    const tiktokName = mapping.tiktok?.name;
+    return tiktokName && TIKTOK_PRIMARY_NAMES.has(tiktokName)
+      ? 'primary'
+      : 'broadcast';
+  }
+  return 'broadcast';
 }
 
 export function mapEventName(eventName: string, kind: TrackingProviderKind): string | null {

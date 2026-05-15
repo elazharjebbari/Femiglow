@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/admin/tracking/plans/StatusBadge';
 import { getTrackingPlanService } from '@/lib/tracking/plan';
 import { PlanDetailActions } from '@/components/admin/tracking/plans/PlanDetailActions';
 import { TrackingHelpPanel } from '@/components/admin/tracking/plans/wizard/TrackingHelpPanel';
+import { AudienceStrategyPanel } from '@/components/admin/tracking/plans/wizard/AudienceStrategyPanel';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -74,8 +75,9 @@ export default async function PlanDetailPage({
         validationOk={validation?.ok ?? null}
       />
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
         <TrackingHelpPanel />
+        <AudienceStrategyPanel />
       </div>
 
       {validation && (

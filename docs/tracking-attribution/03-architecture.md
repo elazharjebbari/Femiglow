@@ -229,6 +229,92 @@ INSERT INTO tracking_settings (key, value) VALUES
   ('attribution.strategy', '"last_paid_touch"');
 ```
 
+## Gating per-provider : primary vs broadcast (refactor 2026-05-15)
+
+### Le problème de l'ancien modèle
+
+Le système initial utilisait un flag binaire **global** `isConversion: true`
+dans `event-catalog.ts`. Tous les events marqués conversion étaient
+attribution-gated pour **tous** les providers payants (Meta, Ads, TikTok).
+
+Limite : Google Ads et Meta ont une distinction primary/secondary
+réelle dans leur UI de conversions. `checkout_intent` est **secondaire**
+côté Google Ads (`BEGIN_CHECKOUT`, observation/learning) et **non-primary**
+côté Meta (`InitiateCheckout` est funnel/intent, pas Purchase/Lead).
+Le gater uniformément privait Smart Bidding et Advantage+ d'un signal
+volumique qu'on souhaite max.
+
+### Le modèle actuel
+
+Chaque couple `(eventKey, provider)` est classé en deux modes via
+`getAttributionMode(eventKey, provider)` dans
+`lib/tracking/providers/event-mapping.ts` :
+
+| Mode        | Comportement                                                                                      | Quand                                                       |
+|-------------|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| `primary`   | Attribution-gated. Trigger CUSTOM_EVENT + filter MATCH_REGEX sur `{{DLV - attribution.channel}}` | Réservé aux conv pilotant le bidding (Purchase, Lead)       |
+| `broadcast` | Trigger standard, fire sur tous les canaux                                                       | Audience events + secondary conversions (volume max)        |
+
+#### Source de vérité par provider
+
+| Provider       | `primary` si…                                                                              | Exemples primary                                                                 |
+|----------------|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| **google_ads** | `event-mapping.ts.google_ads.recommendedRole === 'primary'` (= rôle Principale dans Google Ads UI) | purchase, lead_capture, generate_lead, contact_submit, chat_message_sent         |
+| **meta**       | Meta event name ∈ `{ Purchase, Lead }`                                                     | purchase, lead_capture, generate_lead, chat_lead_form_submit                     |
+| **tiktok**     | TikTok event name ∈ `{ CompletePayment, SubmitForm }`                                      | purchase, generate_lead                                                          |
+
+Cas inconnus ou non-mappés → `broadcast` (safety default, on ne bloque
+jamais un signal par accident).
+
+#### Matrice par event (extrait — cf. event-mapping.ts pour la liste complète)
+
+| Event canonique     | Ads    | Meta       | TikTok     | Effet GTM                                              |
+|---------------------|--------|------------|------------|--------------------------------------------------------|
+| `purchase`          | primary | primary   | primary    | Tous gated (Purchase/Purchase/CompletePayment)         |
+| `lead_capture`      | primary | primary   | primary    | Tous gated (Lead/Lead/SubmitForm)                      |
+| `checkout_intent`   | broadcast | broadcast | broadcast | Aucun gating — fire partout (funnel/intent)            |
+| `add_to_cart`       | broadcast | broadcast | broadcast | Fire partout (audience + secondary Ads)                |
+| `sign_up`           | broadcast | broadcast | broadcast | Fire partout (UI Ads = Secondaire, Meta non-primary)   |
+| `add_payment_info`  | broadcast | broadcast | broadcast | Audience pure                                          |
+| `view_item`         | broadcast | broadcast | broadcast | Audience pure                                          |
+| `chat_message_sent` | primary | broadcast  | broadcast  | Ads gated uniquement (rôle Principale UI Ads CONTACT)  |
+
+#### Bénéfices du modèle per-provider
+
+1. **Bidding propre côté primary** : Smart Bidding (Ads) et Advantage+
+   (Meta) ne voient que les conversions attribuées à leur canal → pas
+   de double-comptage cross-provider qui skewerait l'algo.
+
+2. **Volume max côté secondary/audience** : `add_to_cart`,
+   `checkout_intent`, `sign_up` etc. fire sur **tous les canaux** —
+   alimente Smart Bidding (observation) et Custom Audiences (Meta
+   Lookalike, TikTok similar) avec le volume complet du trafic.
+
+3. **Cohérence Google Ads UI ↔ code** : le mapping
+   `event-mapping.ts.google_ads.recommendedRole` doit refléter le rôle
+   configuré dans Google Ads UI (Principale / Secondaire). Sinon
+   mismatch entre ce que GTM fire et ce que Google Ads compte → audit
+   chartré.
+
+#### Phase 2 (server CAPI) — symétrie
+
+`lib/tracking/attribution/dispatch-gate.ts` applique la **même logique** :
+`isPrimaryConversionFor(providerKind, eventName)` route via
+`getAttributionMode`. Les events non-primary pour le provider cible
+passent le gate avec `reason: 'non_primary_event'` (vs l'ancien
+`audience_event` qui collapsait deux concepts).
+
+### Comment ajuster
+
+- **Ajouter un event** comme conversion primary Google Ads : remplir
+  `google_ads.recommendedRole = 'primary'` dans `event-mapping.ts`
+  ET configurer la conv en Principale dans Google Ads UI.
+- **Repasser un event en secondary** : descendre `recommendedRole` à
+  `'secondary'` côté code ET côté UI Google Ads.
+- **Étendre la matrice Meta primary** : ajouter le Meta event name
+  dans `META_PRIMARY_NAMES` (event-mapping.ts). À utiliser avec
+  parcimonie — chaque ajout réduit le volume signal de cet event.
+
 ## Non-objectifs (phase 1)
 
 - ❌ Server-side dispatch Google Ads OCI / TikTok Events API

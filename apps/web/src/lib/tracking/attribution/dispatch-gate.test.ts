@@ -37,7 +37,7 @@ describe('decideAttribution — providers neutres (analytics, orchestrateur)', (
     const r = decideAttribution({
       providerKind: 'google_ga4',
       resolvedChannel: 'meta',
-      isConversionEvent: true,
+      isPrimaryConversion: true,
       strategy: 'last_paid_touch',
     });
     expect(r.allowed).toBe(true);
@@ -49,23 +49,23 @@ describe('decideAttribution — providers neutres (analytics, orchestrateur)', (
       decideAttribution({
         providerKind: 'gtm',
         resolvedChannel: 'tiktok',
-        isConversionEvent: true,
+        isPrimaryConversion: true,
         strategy: 'last_paid_touch',
       }).allowed,
     ).toBe(true);
   });
 });
 
-describe('decideAttribution — audience events', () => {
-  it('Meta + isConversionEvent=false → allowed (audience-building)', () => {
+describe('decideAttribution — non-primary events (audience + secondary)', () => {
+  it('Meta + isPrimaryConversion=false → allowed (broadcast)', () => {
     const r = decideAttribution({
       providerKind: 'meta',
-      resolvedChannel: 'google_ads', // visiteur Google, mais event audience
-      isConversionEvent: false,
+      resolvedChannel: 'google_ads', // visiteur Google, mais event non-primary
+      isPrimaryConversion: false,
       strategy: 'last_paid_touch',
     });
     expect(r.allowed).toBe(true);
-    expect(r.reason).toBe('audience_event');
+    expect(r.reason).toBe('non_primary_event');
   });
 });
 
@@ -74,7 +74,7 @@ describe('decideAttribution — conversions gated', () => {
     const r = decideAttribution({
       providerKind: 'meta',
       resolvedChannel: 'meta',
-      isConversionEvent: true,
+      isPrimaryConversion: true,
       strategy: 'last_paid_touch',
     });
     expect(r.allowed).toBe(true);
@@ -85,7 +85,7 @@ describe('decideAttribution — conversions gated', () => {
     const r = decideAttribution({
       providerKind: 'meta',
       resolvedChannel: 'google_ads',
-      isConversionEvent: true,
+      isPrimaryConversion: true,
       strategy: 'last_paid_touch',
     });
     expect(r.allowed).toBe(false);
@@ -98,7 +98,7 @@ describe('decideAttribution — conversions gated', () => {
       decideAttribution({
         providerKind: 'google_ads',
         resolvedChannel: 'meta',
-        isConversionEvent: true,
+        isPrimaryConversion: true,
         strategy: 'last_paid_touch',
       }).allowed,
     ).toBe(false);
@@ -109,7 +109,7 @@ describe('decideAttribution — conversions gated', () => {
       decideAttribution({
         providerKind: 'tiktok',
         resolvedChannel: 'meta',
-        isConversionEvent: true,
+        isPrimaryConversion: true,
         strategy: 'last_paid_touch',
       }).allowed,
     ).toBe(false);
@@ -121,7 +121,7 @@ describe('decideAttribution — fallback direct/organic (broadcast partiel)', ()
     const r = decideAttribution({
       providerKind: 'meta',
       resolvedChannel: 'direct',
-      isConversionEvent: true,
+      isPrimaryConversion: true,
       strategy: 'last_paid_touch',
     });
     expect(r.allowed).toBe(true);
@@ -133,7 +133,7 @@ describe('decideAttribution — fallback direct/organic (broadcast partiel)', ()
       decideAttribution({
         providerKind: 'google_ads',
         resolvedChannel: 'organic',
-        isConversionEvent: true,
+        isPrimaryConversion: true,
         strategy: 'last_paid_touch',
       }).allowed,
     ).toBe(true);
@@ -144,7 +144,7 @@ describe('decideAttribution — fallback direct/organic (broadcast partiel)', ()
       decideAttribution({
         providerKind: 'tiktok',
         resolvedChannel: 'unknown',
-        isConversionEvent: true,
+        isPrimaryConversion: true,
         strategy: 'last_paid_touch',
       }).allowed,
     ).toBe(true);
@@ -156,7 +156,7 @@ describe('decideAttribution — stratégie broadcast', () => {
     const r = decideAttribution({
       providerKind: 'meta',
       resolvedChannel: 'google_ads',
-      isConversionEvent: true,
+      isPrimaryConversion: true,
       strategy: 'broadcast',
     });
     expect(r.allowed).toBe(true);

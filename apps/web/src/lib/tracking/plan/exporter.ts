@@ -2,26 +2,29 @@ import { createHash } from 'crypto';
 
 import {
   getAdsConversionLabelKey,
+  getAttributionMode,
   getEventIdentityFields,
   getEventMapping,
 } from '@/lib/tracking/providers/event-mapping';
 import type { AdsConversionCategory } from '@/lib/tracking/providers/event-mapping';
-import { EVENT_CATALOG } from '@/lib/tracking/event-catalog';
 
 /**
- * Set des events catalogués comme conversion (= bidding-relevant).
- * Pour ces events, les tags des pixels payants (Meta/Ads/TikTok) sont
- * câblés sur un trigger filtré par `attribution.channel` afin de ne
- * fire que sur le canal attribué — cf.
- * docs/tracking-attribution/03-architecture.md.
+ * Politique de gating attribution PAR PROVIDER (cf. event-mapping.ts
+ * → `getAttributionMode`).
  *
- * Les events d'audience (page_view, view_item, add_to_cart, …) ne
- * sont PAS dans ce set : leurs tags fire sur tous les pixels pour
- * alimenter Lookalike + Custom Audiences.
+ *   - `'primary'`   → tag attribution-gated (filter `attribution.channel ∈
+ *                     {provider|direct|organic|broadcast}`). Réservé aux
+ *                     conversions pilotant le bidding (Purchase, Lead).
+ *   - `'broadcast'` → tag sans filtre attribution. Pour les secondary
+ *                     conversions (add_to_cart, checkout_intent, sign_up,
+ *                     newsletter, video_complete, …) ET pour les
+ *                     audience events (view_item, view_cart, …) afin
+ *                     d'alimenter les algorithmes d'observation.
+ *
+ * Le flag global `event-catalog.isConversion` est désormais ignoré pour
+ * le gating (il reste informatif côté catalogue) — la décision se fait
+ * par-provider via `getAttributionMode(eventKey, provider)`.
  */
-const CONVERSION_EVENT_NAMES = new Set(
-  EVENT_CATALOG.filter((e) => e.isConversion).map((e) => e.name),
-);
 import type {
   EnvName,
   ExportResult,
@@ -311,6 +314,45 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     });
   }
 
+  // ─── Google Ads Configuration tag (Google Tag / googtag) ─────────
+  // Résout le warning Tag Assistant « Hits différés / Certains hits ne
+  // seront pas envoyés tant qu'une commande de configuration ne sera
+  // pas fournie par le biais d'un appel gtag('config') ou d'une
+  // balise Google dans Tag Manager. »
+  //
+  // Pourquoi cette balise : le template `awct` (Google Ads Conversion
+  // Tracking) émet UNIQUEMENT `gtag('event','conversion',{send_to:
+  // 'AW-XXX/LABEL'})` — il n'appelle JAMAIS `gtag('config','AW-XXX')`.
+  // Côté Tag Assistant, le container AW-XXX est détecté (via la
+  // déclaration `destinations`) mais reste "à 0 tags firés" → warning.
+  //
+  // Le template `googtag` (Google Tag, équivalent gaawc pour Ads)
+  // appelle `gtag('config','AW-XXX', { ... })` à chaque PageView. Pas
+  // de doublon de conversion : googtag ne fire AUCUN event de
+  // conversion — il initialise seulement la destination AW-XXX
+  // (cookies, conversion linker, transport_url). Les conversions
+  // restent owned par les tags `awct`.
+  //
+  // Important : tagId doit inclure le préfixe AW- (contrairement au
+  // template awct qui le strip). Source : doc Google Tag.
+  if (idVars.googleAds && cfg.googleAdsConversionId) {
+    const fullAdsId = cfg.googleAdsConversionId.startsWith('AW-')
+      ? cfg.googleAdsConversionId
+      : `AW-${cfg.googleAdsConversionId}`;
+    tags.push({
+      tagId: nextTag(),
+      name: 'Ads Cfg',
+      type: 'googtag',
+      parameter: [
+        { type: 'TEMPLATE', key: 'tagId', value: fullAdsId },
+      ],
+      priority: { type: 'INTEGER', key: 'priority', value: '75' },
+      tagFiringOption: 'ONCE_PER_EVENT',
+      firingTriggerId: [allPagesId],
+      parentFolderId: '1',
+    });
+  }
+
   // ─── Meta Init tag (loads fbq + first PageView) ──────────────────
   const META_INIT_NAME = 'Meta Init';
   if (idVars.meta && cfg.metaPixelId) {
@@ -410,7 +452,6 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   for (const event of sortedEvents) {
     const triggerId = eventTriggerByKey[event.key];
     if (!triggerId) continue;
-    const isConversionEvent = CONVERSION_EVENT_NAMES.has(event.key);
 
     if (event.providers.ga4 && idVars.ga4) {
       tags.push({
@@ -428,11 +469,15 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
 
     if (event.providers.meta && idVars.meta) {
       const metaName = metaEventNameFor(event.key);
-      // Attribution-gated trigger pour conversions ; trigger standard
-      // pour events d'audience.
-      const metaTriggerId = isConversionEvent
-        ? ensureAttributionTrigger(event.key, 'meta')
-        : triggerId;
+      // Attribution-gated UNIQUEMENT pour les Meta primary conversions
+      // (Purchase, Lead). Tout le reste (InitiateCheckout, AddToCart,
+      // AddPaymentInfo, ViewContent, sign_up CompleteRegistration, …)
+      // broadcast sur tous les canaux pour alimenter Custom Audiences
+      // + Advantage+ funnel learning.
+      const metaTriggerId =
+        getAttributionMode(event.key, 'meta') === 'primary'
+          ? ensureAttributionTrigger(event.key, 'meta')
+          : triggerId;
       tags.push({
         tagId: nextTag(),
         name: `Meta Evt — ${event.key} (${metaName})`,
@@ -470,14 +515,28 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         // catégorie côté reporting + bidding.
         const adsCategory: AdsConversionCategory =
           getEventMapping(event.key)?.google_ads?.category ?? 'DEFAULT';
-        // Attribution-gated trigger pour conversions ; trigger
-        // standard pour engagement (DEFAULT category, secondary).
-        const adsTriggerId = isConversionEvent
-          ? ensureAttributionTrigger(event.key, 'google_ads')
-          : triggerId;
+        // Nom Google Ads (cf. event-mapping.ts → `google_ads.name`).
+        // Permet à un auditeur GTM de voir directement le binding
+        // canonique FemiGlow → catégorie Google. Format choisi :
+        //   `Ads Conv — checkout_intent → begin_checkout`
+        // (au lieu de l'ancien `Ads Conv — checkout_intent (checkout_intent)`
+        // qui répétait la canonique deux fois).
+        const adsName =
+          getEventMapping(event.key)?.google_ads?.name ?? event.key;
+        // Attribution-gated UNIQUEMENT pour les Ads PRIMARY conversions
+        // (recommendedRole='primary' dans event-mapping). Les SECONDARY
+        // conversions (add_to_cart, checkout_intent, sign_up, newsletter,
+        // video_complete, journal_read, chat_engagement, download)
+        // broadcast sur tous les canaux — alimente Smart Bidding sans
+        // skewer l'attribution primary (clean primary attribution +
+        // max volume secondary).
+        const adsTriggerId =
+          getAttributionMode(event.key, 'google_ads') === 'primary'
+            ? ensureAttributionTrigger(event.key, 'google_ads')
+            : triggerId;
         tags.push({
           tagId: nextTag(),
-          name: `Ads Conv — ${event.key} (${labelKey})`,
+          name: `Ads Conv — ${event.key} → ${adsName}`,
           type: 'awct',
           parameter: [
             { type: 'TEMPLATE', key: 'conversionId', value: idVars.googleAds },
@@ -546,9 +605,12 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     }
 
     if (event.providers.tiktok && idVars.tiktok && cfg.tiktokPixelId) {
-      const tiktokTriggerId = isConversionEvent
-        ? ensureAttributionTrigger(event.key, 'tiktok')
-        : triggerId;
+      // TikTok primary = CompletePayment (purchase) + SubmitForm (lead).
+      // Tout le reste broadcast.
+      const tiktokTriggerId =
+        getAttributionMode(event.key, 'tiktok') === 'primary'
+          ? ensureAttributionTrigger(event.key, 'tiktok')
+          : triggerId;
       tags.push({
         tagId: nextTag(),
         name: `TikTok Evt — ${event.key}`,

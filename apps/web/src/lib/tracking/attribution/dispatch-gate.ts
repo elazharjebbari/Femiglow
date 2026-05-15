@@ -16,8 +16,11 @@
  * mais aucun side-effect. Idempotent.
  */
 import 'server-only';
-import { EVENT_CATALOG } from '@/lib/tracking/event-catalog';
 import type { TrackingProviderKind } from '@/lib/db/types';
+import {
+  getAttributionMode,
+  type AttributionProvider,
+} from '@/lib/tracking/providers/event-mapping';
 import { findAttributionByVisitor } from './repository';
 import { getAttributionStrategy } from './server';
 import { applyStrategy } from './strategy';
@@ -52,10 +55,38 @@ const BROADCAST_CHANNELS = new Set<string>([
   'unknown',
 ]);
 
-/** Set des events catalogués comme conversion (= isConversion: true). */
-const CONVERSION_EVENT_NAMES = new Set(
-  EVENT_CATALOG.filter((e) => e.isConversion).map((e) => e.name),
-);
+/**
+ * Mappe `TrackingProviderKind` → `AttributionProvider` (event-mapping).
+ * Retourne `null` pour les providers neutres (GA4 analytics, GTM,
+ * webhooks customs) où aucun gating ne s'applique.
+ */
+const PROVIDER_TO_ATTRIBUTION_PROVIDER: Record<
+  TrackingProviderKind,
+  AttributionProvider | null
+> = {
+  meta: 'meta',
+  google_ads: 'google_ads',
+  google_ga4: null,
+  tiktok: 'tiktok',
+  snap: null,
+  pinterest: null,
+  gtm: null,
+  custom: null,
+};
+
+/**
+ * Détermine si l'event est PRIMARY (= attribution-gated) pour le
+ * provider donné. Si non, on broadcast (always allow). Cf.
+ * event-mapping.getAttributionMode pour la politique.
+ */
+function isPrimaryConversionFor(
+  providerKind: TrackingProviderKind,
+  eventName: string,
+): boolean {
+  const attrProvider = PROVIDER_TO_ATTRIBUTION_PROVIDER[providerKind];
+  if (!attrProvider) return false; // provider neutre → jamais primary
+  return getAttributionMode(eventName, attrProvider) === 'primary';
+}
 
 export interface AttributionGateResult {
   allowed: boolean;
@@ -89,12 +120,17 @@ export async function shouldDispatchByAttribution(
     };
   }
 
-  // 2) Audience event (isConversion=false) → always allowed
-  // (alimente Lookalike + Custom Audiences sur tous les pixels)
-  if (!CONVERSION_EVENT_NAMES.has(input.eventName)) {
+  // 2) Event non-primary pour CE provider → always allowed
+  // (broadcast pour alimenter audiences/observation/smart bidding
+  // secondary). Couvre :
+  //   - audience events (view_item, view_cart, add_payment_info, …)
+  //   - secondary conversions Ads (add_to_cart, checkout_intent,
+  //     sign_up, newsletter, video_complete, …)
+  //   - intent funnel Meta (InitiateCheckout, AddToCart, …)
+  if (!isPrimaryConversionFor(input.providerKind, input.eventName)) {
     return {
       allowed: true,
-      reason: 'audience_event',
+      reason: 'non_primary_event',
       attributedChannel: 'n/a',
       strategy,
     };
@@ -160,11 +196,16 @@ export async function shouldDispatchByAttribution(
  * Helper pur (sans I/O) — utile pour les tests + la simulation.
  * Réutilise la même logique que `shouldDispatchByAttribution` mais
  * accepte les inputs déjà résolus (pas de fetch DB / settings).
+ *
+ * `isPrimaryConversion` remplace l'ancien flag `isConversionEvent`
+ * (binaire global). Le caller doit calculer le mode primary/broadcast
+ * pour son couple (event × provider), idéalement via
+ * `getAttributionMode(eventKey, attrProvider)` depuis event-mapping.
  */
 export function decideAttribution(input: {
   resolvedChannel: AttributionChannel | 'broadcast' | 'unknown';
   providerKind: TrackingProviderKind;
-  isConversionEvent: boolean;
+  isPrimaryConversion: boolean;
   strategy: string;
 }): AttributionGateResult {
   const expectedChannel = PROVIDER_TO_CHANNEL[input.providerKind];
@@ -176,10 +217,10 @@ export function decideAttribution(input: {
       strategy: input.strategy,
     };
   }
-  if (!input.isConversionEvent) {
+  if (!input.isPrimaryConversion) {
     return {
       allowed: true,
-      reason: 'audience_event',
+      reason: 'non_primary_event',
       attributedChannel: 'n/a',
       strategy: input.strategy,
     };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   getAdsConversionLabelKey,
+  getAttributionMode,
   getEventIdentityFields,
   getEventMapping,
   isEventSupported,
@@ -131,9 +132,13 @@ describe('event-mapping', () => {
       }
     });
 
-    it('sign_up → SIGNUP (sans underscore !) primary leads', () => {
+    it('sign_up → SIGNUP secondary leads (match Google Ads UI Secondaire)', () => {
       const m = getEventMapping('sign_up');
       expect(m?.google_ads?.category).toBe('SIGNUP');
+      // sign_up est SECONDAIRE dans la config Google Ads UI. Le mapping
+      // reflète cette source de vérité — broadcast pour alimenter
+      // smart bidding (cf. getAttributionMode).
+      expect(m?.google_ads?.recommendedRole).toBe('secondary');
     });
 
     it('contact_submit → CONTACT primary leads', () => {
@@ -148,10 +153,14 @@ describe('event-mapping', () => {
       expect(m?.google_ads?.recommendedRole).toBe('secondary');
     });
 
-    it('chat_widget_open / chat_message_sent → engagement (further/leads secondary)', () => {
+    it('chat_widget_open → engagement (further secondary), chat_message_sent → CONTACT primary (match Google Ads UI)', () => {
       expect(getEventMapping('chat_widget_open')?.google_ads?.group).toBe('further');
       expect(getEventMapping('chat_message_sent')?.google_ads?.category).toBe('CONTACT');
-      expect(getEventMapping('chat_message_sent')?.google_ads?.recommendedRole).toBe('secondary');
+      // chat_message_sent est PRINCIPALE dans la config Google Ads UI
+      // (groupe "Envoi de formulaire de lead"). Le mapping reflète
+      // désormais cette source de vérité pour piloter le gating
+      // attribution (cf. getAttributionMode).
+      expect(getEventMapping('chat_message_sent')?.google_ads?.recommendedRole).toBe('primary');
     });
 
     it('file_download / video_complete / fg_journal_read_100 → DEFAULT secondary further', () => {
@@ -208,6 +217,79 @@ describe('event-mapping', () => {
       ]) {
         expect(keys).toContain(k);
       }
+    });
+  });
+
+  describe('getAttributionMode (gating per-provider)', () => {
+    describe('Google Ads — primary/secondary depuis recommendedRole', () => {
+      it.each([
+        ['purchase', 'primary'],
+        ['generate_lead', 'primary'],
+        ['lead_capture', 'primary'],
+        ['contact_submit', 'primary'],
+        ['chat_lead_form_submit', 'primary'],
+        ['chat_message_sent', 'primary'],
+      ])('%s → primary (attribution-gated)', (key, expected) => {
+        expect(getAttributionMode(key, 'google_ads')).toBe(expected);
+      });
+
+      it.each([
+        ['add_to_cart', 'broadcast'],
+        ['checkout_intent', 'broadcast'],
+        ['begin_checkout', 'broadcast'],
+        ['sign_up', 'broadcast'],
+        ['newsletter_submit', 'broadcast'],
+        ['video_complete', 'broadcast'],
+        ['file_download', 'broadcast'],
+        ['fg_journal_read_100', 'broadcast'],
+        ['chat_widget_open', 'broadcast'],
+      ])('%s → broadcast (secondary, alimente Smart Bidding)', (key, expected) => {
+        expect(getAttributionMode(key, 'google_ads')).toBe(expected);
+      });
+    });
+
+    describe('Meta — primary uniquement pour Purchase et Lead', () => {
+      it.each([
+        ['purchase', 'primary'], // → Purchase
+        ['generate_lead', 'primary'], // → Lead
+        ['lead_capture', 'primary'], // → Lead
+        ['chat_lead_form_submit', 'primary'], // → Lead
+      ])('%s → primary (gated pour Meta CAPI)', (key, expected) => {
+        expect(getAttributionMode(key, 'meta')).toBe(expected);
+      });
+
+      it.each([
+        ['view_item', 'broadcast'], // → ViewContent
+        ['add_to_cart', 'broadcast'], // → AddToCart
+        ['checkout_intent', 'broadcast'], // → InitiateCheckout
+        ['begin_checkout', 'broadcast'], // → InitiateCheckout
+        ['add_payment_info', 'broadcast'], // → AddPaymentInfo
+        ['sign_up', 'broadcast'], // → CompleteRegistration
+        ['chat_message_sent', 'broadcast'], // → Contact
+      ])('%s → broadcast (intent/funnel/audience Meta)', (key, expected) => {
+        expect(getAttributionMode(key, 'meta')).toBe(expected);
+      });
+    });
+
+    describe('TikTok — primary pour CompletePayment et SubmitForm', () => {
+      it('purchase → primary (CompletePayment)', () => {
+        expect(getAttributionMode('purchase', 'tiktok')).toBe('primary');
+      });
+      it('generate_lead → primary (SubmitForm)', () => {
+        expect(getAttributionMode('generate_lead', 'tiktok')).toBe('primary');
+      });
+      it('view_item → broadcast (ViewContent)', () => {
+        expect(getAttributionMode('view_item', 'tiktok')).toBe('broadcast');
+      });
+      it('checkout_intent → broadcast (InitiateCheckout)', () => {
+        expect(getAttributionMode('checkout_intent', 'tiktok')).toBe('broadcast');
+      });
+    });
+
+    it('event inconnu → broadcast (safety default)', () => {
+      expect(getAttributionMode('definitely_unknown_event', 'meta')).toBe('broadcast');
+      expect(getAttributionMode('definitely_unknown_event', 'google_ads')).toBe('broadcast');
+      expect(getAttributionMode('definitely_unknown_event', 'tiktok')).toBe('broadcast');
     });
   });
 });

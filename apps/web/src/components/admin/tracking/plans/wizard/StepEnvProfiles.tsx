@@ -1,6 +1,7 @@
 'use client';
 
 import { IdInput } from '../IdInput';
+import { AudienceStrategyPanel } from './AudienceStrategyPanel';
 import { GoogleAdsConversionLabelsEditor } from './GoogleAdsConversionLabelsEditor';
 import { TrackingHelpPanel } from './TrackingHelpPanel';
 import type {
@@ -83,6 +84,7 @@ export function StepEnvProfiles({
   return (
     <section aria-labelledby="step-env-h" className="space-y-8">
       <TrackingHelpPanel />
+      <AudienceStrategyPanel />
 
       <div>
         <h2 id="step-env-h" className="mb-2 text-base font-semibold text-stone-900">

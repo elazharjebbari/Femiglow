@@ -125,8 +125,10 @@ Combine **A pour les conversions et la rapidité**, et progressivement
 ### Faiblesses
 
 - ❌ **Complexité conceptuelle** : il faut expliquer aux opérateurs la
-   distinction "audience event" vs "conversion event" (mitigé par notre
-   admin UI qui catégorise nativement les events via le mapping)
+   matrice `primary` / `broadcast` par (event × provider) — cf.
+   `03-architecture.md` §"Gating per-provider" (mitigé par notre admin
+   UI qui catégorise nativement les events via le mapping et expose le
+   mode résolu dans le help panel du wizard tracking)
 - ❌ **Maintenance évolutive** : ajouter un nouveau provider demande de
    décider de sa condition d'attribution (mais l'architecture data-driven
    fait que c'est juste 1 ligne dans `event-mapping.ts`)

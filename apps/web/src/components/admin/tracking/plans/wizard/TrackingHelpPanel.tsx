@@ -163,29 +163,132 @@ Filtrage à 2 niveaux :
     ✓ Meta CAPI                    si channel = meta
                                    sinon attribution_skip
     (futur) Google Ads OCI, TikTok Events API, etc.`}</CodeBlock>
-      <p className="font-medium text-stone-900">Politique par-event :</p>
+      <p className="font-medium text-stone-900">
+        Politique par-event <em>par provider</em> (primary vs broadcast) :
+      </p>
+      <p>
+        Le gating se fait <strong>par couple (event × provider)</strong>, pas
+        globalement. Le système classe chaque event en deux modes selon le
+        provider cible :
+      </p>
+      <div className="overflow-hidden rounded-md border border-stone-200 bg-white text-xs">
+        <table className="w-full">
+          <thead className="bg-stone-50 text-stone-500">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Mode</th>
+              <th className="px-3 py-2 text-left font-medium">Comportement</th>
+              <th className="px-3 py-2 text-left font-medium">Utilisation</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-200">
+            <tr>
+              <td className="px-3 py-1.5 font-mono">primary</td>
+              <td className="px-3 py-1.5">
+                Attribution-gated. Fire seulement si{' '}
+                <code>attribution.channel ∈ {`{provider, direct, organic, broadcast}`}</code>.
+              </td>
+              <td className="px-3 py-1.5 text-stone-600">
+                Pilotage Smart Bidding (clean attribution).
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-1.5 font-mono">broadcast</td>
+              <td className="px-3 py-1.5">
+                Fire sur <strong>tous les canaux</strong>, indépendamment de
+                l'attribution.
+              </td>
+              <td className="px-3 py-1.5 text-stone-600">
+                Audience + observation/learning algorithmes.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="font-medium text-stone-900">
+        Source de vérité du mode (par provider) :
+      </p>
+      <div className="overflow-hidden rounded-md border border-stone-200 bg-white text-xs">
+        <table className="w-full">
+          <thead className="bg-stone-50 text-stone-500">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Provider</th>
+              <th className="px-3 py-2 text-left font-medium">
+                Mode <code>primary</code> si…
+              </th>
+              <th className="px-3 py-2 text-left font-medium">Exemples</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-200">
+            <tr>
+              <td className="px-3 py-1.5 font-mono">google_ads</td>
+              <td className="px-3 py-1.5">
+                <code>recommendedRole === 'primary'</code> dans{' '}
+                <code>event-mapping.ts</code> (= rôle Principale dans
+                Google Ads UI).
+              </td>
+              <td className="px-3 py-1.5 text-stone-600">
+                purchase, lead_capture, contact_submit, chat_message_sent
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-1.5 font-mono">meta</td>
+              <td className="px-3 py-1.5">
+                Meta event name ∈ <code>{`{Purchase, Lead}`}</code>.
+              </td>
+              <td className="px-3 py-1.5 text-stone-600">
+                purchase, lead_capture, generate_lead
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-1.5 font-mono">tiktok</td>
+              <td className="px-3 py-1.5">
+                TikTok event name ∈{' '}
+                <code>{`{CompletePayment, SubmitForm}`}</code>.
+              </td>
+              <td className="px-3 py-1.5 text-stone-600">
+                purchase, generate_lead
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>Conséquence pratique :</strong> un même event canonique peut
+        être <code>primary</code> pour un provider et <code>broadcast</code>{' '}
+        pour un autre. Exemple : <code>checkout_intent</code> →
+      </p>
       <ul className="ml-5 list-disc space-y-1">
         <li>
-          <strong>Events d'audience</strong> (<code>page_view</code>,{' '}
-          <code>view_item</code>, <code>add_to_cart</code>, <code>view_cart</code>)
-          → fire sur <strong>tous les pixels</strong> (alimente Lookalike +
-          Custom Audiences). Pas de filtrage attribution.
+          Côté Google Ads : <code>broadcast</code> (secondary conversion
+          <code>BEGIN_CHECKOUT</code>) — fire sur tous les canaux pour
+          alimenter Smart Bidding sans skewer l'attribution primary.
         </li>
         <li>
-          <strong>Events de conversion</strong> (<code>purchase</code>,{' '}
-          <code>lead_capture</code>, <code>checkout_intent</code>,{' '}
-          <code>sign_up</code>, …) → fire <strong>uniquement</strong> sur le
-          canal attribué. Le filtre se fait via{' '}
-          <code className="rounded bg-stone-100 px-1 text-xs">
-            {`{{DLV - attribution.channel}}`}
-          </code>{' '}
-          dans le trigger GTM.
+          Côté Meta : <code>broadcast</code> (Meta event{' '}
+          <code>InitiateCheckout</code>, qui n'est pas une primary conv
+          Meta — funnel learning Advantage+).
         </li>
         <li>
-          Le visiteur « direct » (sans click ID ni UTM identifié) est broadcast
-          partiel → tous les pixels payants fire (politique défaut, configurable).
+          Côté TikTok : <code>broadcast</code> (<code>InitiateCheckout</code>,
+          non-primary).
         </li>
       </ul>
+      <p>
+        Et <code>purchase</code> est <code>primary</code> partout (Purchase
+        Meta / Purchase Ads / CompletePayment TikTok) → attribution-gated.
+      </p>
+      <p>
+        <strong>Events d'audience pure</strong> (<code>page_view</code>,{' '}
+        <code>view_item</code>, <code>view_cart</code>,{' '}
+        <code>add_payment_info</code>, <code>add_shipping_info</code>,{' '}
+        <code>view_item_list</code>) ne sont primary <em>pour aucun</em>{' '}
+        provider → toujours broadcast.
+      </p>
+      <p>
+        Visiteur « direct » (sans click ID ni UTM identifié) ou « organic »
+        bénéficie d'un broadcast partiel : tous les pixels payants fire pour
+        ne pas perdre la conversion (politique défaut, configurable).
+      </p>
       <p className="font-medium text-stone-900">5 stratégies disponibles :</p>
       <div className="overflow-hidden rounded-md border border-stone-200 bg-white text-xs">
         <table className="w-full">

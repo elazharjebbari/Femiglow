@@ -78,9 +78,22 @@ export async function shouldDispatchByAttribution(input: {
 
 1. **Provider neutre** (`google_ga4`, `gtm`, `custom`) → toujours
    allowed. Reason : `provider_neutral`.
-2. **Event d'audience** (isConversion=false dans event-catalog :
-   `page_view`, `view_item`, `add_to_cart`, …) → toujours allowed
-   (alimente Lookalike + Custom Audiences). Reason : `audience_event`.
+2. **Event non-primary pour CE provider** → toujours allowed
+   (broadcast). Reason : `non_primary_event`. Couvre :
+   - Audience events purs (`page_view`, `view_item`, `view_cart`,
+     `add_payment_info`, `view_item_list`) — primary pour aucun
+     provider.
+   - Secondary conversions Ads (`add_to_cart`, `checkout_intent`,
+     `sign_up`, `newsletter_submit`, `video_complete`, `file_download`,
+     `fg_journal_read_100`) — primary uniquement si
+     `recommendedRole==='primary'` dans event-mapping.
+   - Intent funnel Meta (`InitiateCheckout`, `AddToCart`,
+     `AddPaymentInfo`, `CompleteRegistration`, `Contact`) — primary
+     Meta uniquement pour `Purchase` et `Lead`.
+
+   La classification est déterministe via
+   `getAttributionMode(eventName, attrProvider)` (event-mapping.ts).
+   Refactor mai 2026 — remplace l'ancien `isConversion` global.
 3. **Stratégie broadcast** → allow tout (déconseillé mais possible).
    Reason : `broadcast_strategy`.
 4. **Pas de snapshot serveur** (visiteur très récent, pas encore

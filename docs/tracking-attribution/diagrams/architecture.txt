@@ -73,17 +73,26 @@
   │    DLV - attribution.click_id                                   │
   │    DLV - attribution.strategy                                   │
   │                                                                 │
-  │  Pour chaque event :                                            │
+  │  Pour chaque couple (event × provider) :                        │
+  │  getAttributionMode(eventKey, provider) ∈ {primary, broadcast}  │
   │                                                                 │
-  │    audience events (page_view, view_item, view_item_list,       │
-  │                     add_to_cart, view_cart)                     │
-  │      → trigger sans condition d'attribution                     │
-  │      → tags fire sur TOUS les pixels                            │
+  │    broadcast  →  trigger sans condition d'attribution           │
+  │                  Couvre :                                       │
+  │                  • audience pure (page_view, view_item,         │
+  │                    view_cart, add_payment_info, …)              │
+  │                  • secondary conv Ads (add_to_cart,             │
+  │                    checkout_intent, sign_up, newsletter,        │
+  │                    video_complete, journal_read, …)             │
+  │                  • intent funnel Meta (InitiateCheckout,        │
+  │                    AddToCart, AddPaymentInfo, …)                │
   │                                                                 │
-  │    conversion events (purchase, lead_capture, …)                │
-  │      → trigger AVEC condition :                                 │
-  │        attribution.channel IN [<provider>, 'direct', 'organic'] │
-  │      → tag Meta fire si visiteur attribué Meta ou direct        │
-  │      → tag Ads  fire si visiteur attribué Ads  ou direct        │
-  │      → tag TikTok fire si visiteur attribué TikTok ou direct    │
+  │    primary    →  trigger AVEC condition :                       │
+  │                  attribution.channel MATCH_REGEX                │
+  │                    ^(<provider>|direct|organic|broadcast)$      │
+  │                  Couvre :                                       │
+  │                  • Ads : recommendedRole='primary'              │
+  │                    (purchase, lead_capture, contact_submit,     │
+  │                    chat_message_sent, …)                        │
+  │                  • Meta : Purchase, Lead                        │
+  │                  • TikTok : CompletePayment, SubmitForm         │
   └─────────────────────────────────────────────────────────────────┘

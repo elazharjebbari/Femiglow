@@ -131,11 +131,19 @@ Le `TrackingHelpPanel` existant gagne une nouvelle section #8 :
 
 ### Pourquoi pas d'édition de la politique par-event en v1 ?
 
-- 90% des cas couverts par le défaut (audience events / conversion events)
-- Le mapping `event-catalog.ts → isConversion` détermine la politique
+- 90% des cas couverts par le défaut (primary attribution-gated /
+  broadcast pour tout le reste — cf. §"Gating per-provider" dans
+  `03-architecture.md`)
+- Le mapping `event-mapping.ts → getAttributionMode(event, provider)`
+  détermine la politique de manière déterministe :
+  - Google Ads : depuis `recommendedRole` (cohérence avec UI Ads)
+  - Meta : depuis set `{ Purchase, Lead }`
+  - TikTok : depuis set `{ CompletePayment, SubmitForm }`
 - Évite un éditeur complexe qu'on devrait re-tester
 
-→ Si besoin futur, on ajoutera une UI table-edit dans une v2.
+→ Si besoin futur (override par-event), on ajoutera une UI table-edit
+qui surchargerait localement la décision retournée par
+`getAttributionMode`.
 
 ### Debugger en standalone (pas en modal)
 

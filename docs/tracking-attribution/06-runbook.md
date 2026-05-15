@@ -51,10 +51,16 @@
 10. `lib/tracking/plan/exporter.ts` :
     - Ajout des 4 DLV : `attribution.channel`, `attribution.click_id`,
       `attribution.is_paid`, `attribution.strategy`
-    - Pour chaque tag de conversion (Meta event, Ads awct, TikTok…) :
-      ajout d'un trigger ou condition basée sur `attribution.channel`
-    - Events d'audience (cf. `event-mapping.ts → isStandard` audience-side ou
-      catalog `isConversion=false`) : pas de condition
+    - Pour chaque tag, le mode est résolu via
+      `getAttributionMode(eventKey, provider)` :
+      - mode `primary` → trigger CUSTOM_EVENT spécifique
+        `CE — <event> [attr / <provider>]` avec filter MATCH_REGEX sur
+        `{{DLV - attribution.channel}}`
+      - mode `broadcast` → trigger CUSTOM_EVENT standard (pas de filtre)
+    - Conséquence : pas de condition attribution pour les audience
+      events (page_view, view_item, …) NI pour les secondary Ads
+      (add_to_cart, checkout_intent, sign_up, newsletter, …) NI pour
+      les intent funnel Meta (InitiateCheckout, AddToCart, …)
 
 ### Étape 5 — Admin UI (≈1h30)
 
