@@ -26,16 +26,31 @@ export const providerSchema = z.object({
 });
 export type Provider = z.infer<typeof providerSchema>;
 
+// Stocke un mapping `conversionLabelKey` → label Google Ads, ex.
+//   { checkout_intent: "UGxLCMGJv6wcEMrHichD", lead: "...", purchase: "..." }
+// La clé est définie côté code dans `event-mapping.ts`
+// (`google_ads.conversionLabelKey`). Permet à un même conteneur GTM
+// d'avoir N conversions Google Ads distinctes, chacune pilotée par
+// l'event canonique correspondant.
+export const googleAdsConversionLabelsSchema = z.record(z.string(), z.string());
+export type GoogleAdsConversionLabels = z.infer<typeof googleAdsConversionLabelsSchema>;
+
 export const envConfigSchema = z
   .object({
     ga4MeasurementId: z.string().optional(),
     googleAdsConversionId: z.string().optional(),
+    /** @deprecated — utilisé seulement par les builds legacy. Remplacé
+     *  par `googleAdsConversionLabels` (par-event). */
     googleAdsConversionLabel: z.string().optional(),
+    googleAdsConversionLabels: googleAdsConversionLabelsSchema.optional(),
     metaPixelId: z.string().optional(),
     tiktokPixelId: z.string().optional(),
     gtmContainerId: z.string().optional(),
   })
-  .catchall(z.string().optional());
+  // Catchall : autorise des clés arbitraires (string ou record string).
+  // Sans union, l'index signature serait `string`, ce qui rendrait le
+  // champ typé `googleAdsConversionLabels` (Record) incompatible.
+  .catchall(z.union([z.string(), googleAdsConversionLabelsSchema]).optional());
 export type EnvConfig = z.infer<typeof envConfigSchema>;
 
 export const envProfileSchema = z.object({

@@ -300,7 +300,59 @@ export function buildWizardAbandonedEvent(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 4-bis. checkout_intent (déclenché à la 1ère frappe step 1 — wizard lead)
+//
+// Sémantique : « l'utilisateur a tapé au moins 1 caractère dans le 1er
+// champ du formulaire lead ». Signal d'intent fort, plus précoce que
+// `begin_checkout` (qui ne fire qu'au submit) et plus qualifié que
+// `form_start` (qui fire dès qu'un champ reçoit le focus).
+//
+// Mappage cross-provider :
+//   GA4    → begin_checkout      (std)
+//   Meta   → InitiateCheckout    (std — Advanced Matching OFF ici,
+//                                 valeurs partielles non fiables)
+//   Ads    → conversion `checkout_intent`
+//                                 (cf. envConfig.googleAdsConversionLabels)
+//
+// Dedup : `dedup_key = "checkout_intent:<form_id>"` — 1 seule fois par
+// instance de formulaire, même si l'utilisateur efface tout et retape.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CheckoutIntentInput {
+  ctx: WizardContext;
+  /** Champ qui a reçu la 1ère frappe (firstName | phone | …). */
+  first_field?: string;
+  currency?: string;
+  /** Snapshot panier au moment de l'intent (optionnel, peut être null
+   *  si le wizard ne sait pas encore le montant). */
+  value?: number;
+  items?: EcommerceItem[];
+}
+
+export interface CheckoutIntentEvent extends WizardContext {
+  schema_version: typeof CHECKOUT_EVENTS_SCHEMA_VERSION;
+  first_field?: string;
+  currency: string;
+  value?: number;
+  items?: EcommerceItem[];
+}
+
+export function buildCheckoutIntentEvent(input: CheckoutIntentInput): CheckoutIntentEvent {
+  return withWizardContext(input.ctx, {
+    first_field: input.first_field,
+    currency: input.currency ?? DEFAULT_CURRENCY,
+    value: input.value,
+    items: input.items,
+  }) as CheckoutIntentEvent;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 5. begin_checkout (extension wizard du builder GA4 standard)
+//
+// @deprecated — depuis l'introduction de `checkout_intent` (qui fire à
+// la 1ère frappe), `begin_checkout` n'est plus émis depuis l'UI. Conservé
+// pour rétrocompatibilité des dashboards historiques. À supprimer après
+// la période de double-run.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BeginCheckoutInput {
@@ -406,6 +458,7 @@ export function buildPurchaseEvent(input: PurchaseInput): PurchaseEvent {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const CHECKOUT_EVENT_NAMES = {
+  checkoutIntent: 'checkout_intent',
   leadCapture: 'lead_capture',
   addressCompleted: 'address_completed',
   wizardError: 'wizard_error',

@@ -45,9 +45,11 @@ import { listDays, resolveInsightsRange, toIsoDate } from './filters';
 const CONVERSION_EVENTS = new Set([
   'purchase',
   'add_to_cart',
+  'checkout_intent',
   'begin_checkout',
   'add_payment_info',
   'generate_lead',
+  'lead_capture',
 ]);
 
 /* ═════════════════════════════════════════════════════════════════

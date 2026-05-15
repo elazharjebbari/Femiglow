@@ -46,8 +46,11 @@ import {
   CHECKOUT_EVENT_NAMES,
   type WizardContext,
 } from '@/lib/tracking/checkout-events';
+import { hashIdentityBrowser } from '@/lib/tracking/providers/hashing-browser';
+import { getEventIdentityFields } from '@/lib/tracking/providers/event-mapping';
 import type { CartItemSnapshot } from '@/lib/checkout/schemas/common';
 import { normalizePhoneToE164Maroc } from '@/lib/checkout/schemas/common';
+import type { EmitOptions } from '@/lib/tracking/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status type
@@ -112,11 +115,49 @@ function buildWizardCtx(opts: {
  * signature. On bridge via un wrapper qui projette dans un plain Record.
  */
 function emitEvent(
-  emit: (event: string, params?: Record<string, unknown>) => void,
+  emit: (event: string, params?: Record<string, unknown>, options?: EmitOptions) => void,
   eventName: string,
   payload: object,
+  options?: EmitOptions,
 ): void {
-  emit(eventName, payload as Record<string, unknown>);
+  emit(eventName, payload as Record<string, unknown>, options);
+}
+
+interface CheckoutIdentityFull {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  city?: string;
+  country?: string;
+}
+
+/**
+ * Hash l'identity côté navigateur (SHA-256) en filtrant sur les champs
+ * autorisés par le mapping de l'event (cf. `event-mapping.ts` →
+ * `identityFields`). Renvoie `undefined` si aucun hash possible (utile
+ * pour les events sans hydratation, ex. checkout_intent).
+ */
+async function buildUserDataForEvent(
+  eventName: string,
+  identity: CheckoutIdentityFull,
+): Promise<Record<string, unknown> | undefined> {
+  const fields = getEventIdentityFields(eventName);
+  if (fields.length === 0) return undefined;
+  const filtered: CheckoutIdentityFull = {};
+  for (const f of fields) {
+    const v = identity[f];
+    if (v) (filtered as Record<string, string>)[f] = v;
+  }
+  if (Object.keys(filtered).length === 0) return undefined;
+  try {
+    const hashed = await hashIdentityBrowser(filtered);
+    return hashed as Record<string, unknown>;
+  } catch {
+    // SubtleCrypto indisponible (test env) — on n'attache pas user_data
+    // mais on ne casse pas l'emit pour autant.
+    return undefined;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,7 +218,15 @@ export function useLeadCaptureMutation(): {
         setLeadId(res.leadId);
         goToStep('address');
         setSuccess();
-        // Tracking — lead_capture (conversion)
+        // Tracking — lead_capture (conversion) — hydratée pour
+        // Enhanced Conversions Google Ads + Advanced Matching Meta.
+        const userData = await buildUserDataForEvent(
+          CHECKOUT_EVENT_NAMES.leadCapture,
+          {
+            firstName: input.firstName,
+            phone: input.phone,
+          },
+        );
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.leadCapture,
@@ -196,6 +245,7 @@ export function useLeadCaptureMutation(): {
               ? cartSnapshot.totalCents / 100
               : undefined,
           }),
+          { userData },
         );
         return { leadId: res.leadId };
       } catch (e) {
@@ -274,6 +324,7 @@ export function useAddressMutation(): {
   const goToStep = useWizardStore((s) => s.goToStep);
   const setOrderId = useWizardStore((s) => s.setOrderId);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
+  const leadDraft = useWizardStore((s) => s.leadDraft);
 
   const execute = useCallback(
     async (input: AddressMutationInput): Promise<void> => {
@@ -301,6 +352,17 @@ export function useAddressMutation(): {
           notes: input.notes?.trim() || undefined,
           shippingMode: input.shippingMode,
         });
+        // Hydratation identity : firstName/phone (depuis leadDraft, set step 1)
+        // + city/country (depuis l'input courant). Enhanced Conversions.
+        const userDataAddress = await buildUserDataForEvent(
+          CHECKOUT_EVENT_NAMES.addressCompleted,
+          {
+            firstName: leadDraft.firstName,
+            phone: leadDraft.phone,
+            city: input.city,
+            country: input.country,
+          },
+        );
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.addressCompleted,
@@ -311,6 +373,7 @@ export function useAddressMutation(): {
             currency: cartSnapshot.currency,
             value: cartSnapshot.totalCents / 100,
           }),
+          { userData: userDataAddress },
         );
       } catch (e) {
         setError(e);
@@ -332,6 +395,15 @@ export function useAddressMutation(): {
         await wizardClient.patchPayment(leadId, {
           paymentMethod: DEFAULT_PAYMENT_METHOD,
         });
+        const userDataPayment = await buildUserDataForEvent(
+          CHECKOUT_EVENT_NAMES.addPaymentInfo,
+          {
+            firstName: leadDraft.firstName,
+            phone: leadDraft.phone,
+            city: input.city,
+            country: input.country,
+          },
+        );
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.addPaymentInfo,
@@ -341,6 +413,7 @@ export function useAddressMutation(): {
             currency: cartSnapshot.currency,
             value: cartSnapshot.totalCents / 100,
           }),
+          { userData: userDataPayment },
         );
       } catch (e) {
         setError(e);
@@ -375,6 +448,19 @@ export function useAddressMutation(): {
           shippingMode: input.shippingMode,
         });
         setOrderId(res.orderId);
+        // Conversion principale — identity complète hydratée
+        // (Enhanced Conversions Google Ads + Advanced Matching Meta).
+        // Email pas encore connu à ce stade (capturé optionnellement au
+        // thank_you step) ; phone/firstName/city/country suffisent.
+        const userDataPurchase = await buildUserDataForEvent(
+          CHECKOUT_EVENT_NAMES.purchase,
+          {
+            firstName: leadDraft.firstName,
+            phone: leadDraft.phone,
+            city: input.city,
+            country: input.country,
+          },
+        );
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.purchase,
@@ -392,6 +478,7 @@ export function useAddressMutation(): {
             })),
             payment_type: DEFAULT_PAYMENT_METHOD,
           }),
+          { userData: userDataPurchase },
         );
         goToStep('thank_you');
         setSuccess();

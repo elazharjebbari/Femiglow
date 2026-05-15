@@ -277,10 +277,22 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     paramsSchema: ecommerceParams(),
   },
   {
+    name: 'checkout_intent',
+    category: 'ecommerce',
+    scope: 'web',
+    description:
+      'Intention checkout \u2014 1\u00e8re frappe dans le formulaire lead (InitiateCheckout / begin_checkout / conv Ads).',
+    isConversion: true,
+    applicableCategories: ['commerce_checkout', 'form_input'],
+    defaultProviders: COMMERCE_PROVIDERS,
+    paramsSchema: ecommerceParams({ first_field: { type: 'string' } }),
+  },
+  {
     name: 'begin_checkout',
     category: 'ecommerce',
     scope: 'both',
-    description: 'D\u00e9but du tunnel checkout',
+    description:
+      'D\u00e9but du tunnel checkout (legacy \u2014 d\u00e9pr\u00e9ci\u00e9 au profit de checkout_intent).',
     isConversion: true,
     applicableCategories: ['commerce_checkout', 'cta_primary'],
     defaultProviders: COMMERCE_PROVIDERS,

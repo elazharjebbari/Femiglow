@@ -11,6 +11,21 @@ export interface DataLayerEntry {
   source?: { component_id?: string; component_name?: string; page_id?: string };
   context?: Record<string, unknown>;
   params?: Record<string, unknown>;
+  /**
+   * Bloc Enhanced Conversions (Google Ads) / Advanced Matching (Meta).
+   * Champs SHA-256 (hex). Format aligné sur la spec Google Ads :
+   * https://support.google.com/google-ads/answer/13262500
+   */
+  user_data?: {
+    sha256_email_address?: string;
+    sha256_phone_number?: string;
+    address?: {
+      sha256_first_name?: string;
+      sha256_last_name?: string;
+      city?: string;
+      country?: string;
+    };
+  };
 }
 
 const MAX_BUFFER = 200;

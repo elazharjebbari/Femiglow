@@ -11,6 +11,19 @@ export interface EmitOptions {
   context?: Record<string, unknown>;
   /** Override timestamp (utile pour replay tests). */
   timestamp?: string;
+  /**
+   * Bloc `user_data` (déjà hashé SHA-256) à attacher à l'entry. Voir
+   * `hashIdentityBrowser()`. Consommé par les tags GTM Google Ads
+   * (Enhanced Conversions) et Meta pixel (Advanced Matching).
+   */
+  userData?: Record<string, unknown>;
+  /**
+   * Clé de dédup personnalisée. Si fournie, l'event ne sera pas
+   * réémis pour la même clé pendant la fenêtre de redondance (ou
+   * jamais si la fenêtre vaut 0). Utile pour les events « 1 fois par
+   * formulaire » (ex. checkout_intent).
+   */
+  dedupKey?: string;
 }
 
 export interface TrackingClientConfig {
@@ -39,6 +52,14 @@ const DEFAULT_REDUNDANCY: Record<string, number> = {
   add_to_cart: 5_000,
   scroll_depth: 0,
   fg_section_view: 60_000,
+  // form_start est émis par useFormTracking au 1er focus. GTM le détecte
+  // aussi via son trigger built-in « form interaction ». On dedup sur
+  // une fenêtre courte par form_id pour éviter le double-push observé
+  // en QA (Mode A + Mode B montés simultanément).
+  form_start: 5_000,
+  // checkout_intent : 1 seule fois par instance de formulaire — la
+  // dedupKey suffixée par form_id garantit l'unicité.
+  checkout_intent: 0,
 };
 
 export class TrackingClient {
@@ -91,6 +112,7 @@ export class TrackingClient {
       },
       context: options.context,
       params,
+      ...(options.userData ? { user_data: options.userData } : {}),
     };
 
     if (this.dedupCache.has(entry.event_id)) return;
@@ -115,7 +137,12 @@ export class TrackingClient {
     params: Record<string, unknown>,
     options: EmitOptions,
   ): string {
-    const id = (params.transaction_id ?? params.item_id ?? options.componentId ?? '') as string;
+    if (options.dedupKey) return `${eventName}:${options.dedupKey}`;
+    const id = (params.transaction_id ??
+      params.item_id ??
+      params.form_id ??
+      options.componentId ??
+      '') as string;
     return `${eventName}:${id}`;
   }
 

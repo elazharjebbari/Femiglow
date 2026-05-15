@@ -32,11 +32,16 @@ describe('buildCanonicalSeed', () => {
     expect(seed.providers.find((p) => p.id === 'gtm')?.active).toBe(false);
   });
 
-  it('contient un envProfile production avec config vide (à remplir par l\'admin)', () => {
+  it('contient un envProfile production avec le squelette de conversion-labels (à remplir par l\'admin)', () => {
     const seed = buildCanonicalSeed();
     expect(seed.envProfiles).toHaveLength(1);
     expect(seed.envProfiles[0]?.env).toBe('production');
-    expect(seed.envProfiles[0]?.config).toEqual({});
+    const cfg = seed.envProfiles[0]?.config ?? {};
+    // Skeleton ads labels présent, valeurs vides (l'admin remplit).
+    expect(cfg.googleAdsConversionLabels).toBeDefined();
+    expect(cfg.googleAdsConversionLabels).toHaveProperty('purchase', '');
+    expect(cfg.googleAdsConversionLabels).toHaveProperty('checkout_intent', '');
+    expect(cfg.googleAdsConversionLabels).toHaveProperty('lead', '');
   });
 
   it('active Consent Mode v2 avec defaults denied/denied (RGPD-safe)', () => {
