@@ -146,4 +146,42 @@ describe('dispatchToProviders × attribution gate (phase 2)', () => {
     const out = await dispatchToProviders(ctx({ anonymousId: 'v_direct' }));
     expect(out.results.meta?.status).toBe('sent');
   });
+
+  it('skip serialisé pour audit log — providersResults.<kind>.error format stable', async () => {
+    // Vérifie que le shape du `error` dans le résultat skip est exactement
+    // celui qu'on persiste dans `tracking_events_log.providers_results`
+    // (ce qui permet la requête SQL `WHERE … LIKE 'attribution_skip:%'`).
+    await upsertTrackingProvider({
+      kind: 'meta',
+      status: 'enabled',
+      pixelId: '111',
+      capiToken: 'tok_meta',
+    });
+    await upsertAttribution({
+      visitorId: 'v_audit',
+      touch: touch({
+        channel: 'google_ads',
+        is_paid: true,
+        click_id: 'g_audit',
+        click_id_field: 'gclid',
+      }),
+    });
+    const out = await dispatchToProviders(
+      ctx({ anonymousId: 'v_audit', eventName: 'purchase' }),
+    );
+    const metaResult = out.results.meta;
+    expect(metaResult).toBeDefined();
+    expect(metaResult?.status).toBe('skipped');
+    expect(metaResult?.error).toMatch(/^attribution_skip:/);
+    // Format exact : attribution_skip:<channel> (sans suffixe _vs_ ;
+    // c'est la version utilisateur, le _vs_ reste dans reason interne).
+    expect(metaResult?.error).toBe('attribution_skip:google_ads');
+    // Champs structuraux nécessaires à la persistance JSONB
+    expect(metaResult?.attempts).toBe(0);
+    expect(metaResult?.latencyMs).toBe(0);
+    // Le shape complet doit être JSON-sérialisable
+    expect(() => JSON.stringify(metaResult)).not.toThrow();
+    const json = JSON.parse(JSON.stringify(metaResult)) as Record<string, unknown>;
+    expect(json.error).toBe('attribution_skip:google_ads');
+  });
 });
