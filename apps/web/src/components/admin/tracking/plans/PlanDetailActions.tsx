@@ -89,7 +89,10 @@ export function PlanDetailActions({
     }
   }
 
-  const canEdit = status === 'draft';
+  // Édition autorisée pour draft + active (concurrence optimiste via
+  // expectedVersion côté API). Bloquée seulement pour les plans
+  // archivés (passer par "Restaurer en brouillon" d'abord).
+  const canEdit = status !== 'archived';
   const canActivate = status === 'draft' && validationOk === true;
   const canArchive = status === 'draft' || status === 'active';
   const canRestore = status === 'archived';
