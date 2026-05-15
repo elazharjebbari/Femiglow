@@ -1,7 +1,7 @@
 'use client';
 
 import { IdInput } from '../IdInput';
-import { listAdsConversionEvents } from '@/lib/tracking/providers/event-mapping';
+import { GoogleAdsConversionLabelsEditor } from './GoogleAdsConversionLabelsEditor';
 import type {
   EnvProfile,
   GoogleAdsConversionLabels,
@@ -111,69 +111,3 @@ export function StepEnvProfiles({
   );
 }
 
-function GoogleAdsConversionLabelsEditor({
-  prod,
-  onChange,
-}: {
-  prod: EnvProfile;
-  onChange: (key: string, value: string) => void;
-}): JSX.Element {
-  const events = listAdsConversionEvents();
-  // Dédup par conversionLabelKey (plusieurs events peuvent partager
-  // la même conversion — ex. lead_capture + chat_lead_form_submit
-  // → key "lead").
-  const seen = new Set<string>();
-  const rows = events.filter((e) => {
-    if (seen.has(e.conversionLabelKey)) return false;
-    seen.add(e.conversionLabelKey);
-    return true;
-  });
-  const labels =
-    (prod.config as { googleAdsConversionLabels?: GoogleAdsConversionLabels })
-      .googleAdsConversionLabels ?? {};
-
-  return (
-    <div>
-      <h2 className="mb-2 text-base font-semibold text-stone-900">
-        Conversions Google Ads
-      </h2>
-      <p className="mb-4 text-sm text-stone-600">
-        Chaque event-conversion FemiGlow correspond à une conversion distincte
-        dans Google Ads. Renseignez l'<strong>étiquette de conversion</strong>{' '}
-        (ex.&nbsp;<code className="rounded bg-stone-100 px-1">UGxLCMGJv6wcEMrHichD</code>) —
-        l'ID est partagé via le champ « Google Ads Conversion ID » ci-dessus.
-        Sans étiquette, le tag de conversion correspondant ne sera pas exporté.
-      </p>
-      <div className="overflow-hidden rounded-md border border-stone-200">
-        <table className="w-full text-sm">
-          <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium">Event canonique</th>
-              <th className="px-3 py-2 text-left font-medium">Conversion label key</th>
-              <th className="px-3 py-2 text-left font-medium">Étiquette Google Ads</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-200">
-            {rows.map(({ eventName, conversionLabelKey }) => (
-              <tr key={conversionLabelKey}>
-                <td className="px-3 py-2 font-mono text-stone-900">{eventName}</td>
-                <td className="px-3 py-2 font-mono text-xs text-stone-500">
-                  {conversionLabelKey}
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    value={labels[conversionLabelKey] ?? ''}
-                    onChange={(e) => onChange(conversionLabelKey, e.target.value)}
-                    placeholder="UGxLCMGJv6wcEMrHichD"
-                    className="w-full rounded border border-stone-300 bg-white px-2 py-1 font-mono text-xs text-stone-900 focus:border-stone-500 focus:outline-none"
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}

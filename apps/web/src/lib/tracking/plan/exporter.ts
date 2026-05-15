@@ -5,6 +5,7 @@ import {
   getEventIdentityFields,
   getEventMapping,
 } from '@/lib/tracking/providers/event-mapping';
+import type { AdsConversionCategory } from '@/lib/tracking/providers/event-mapping';
 import type {
   EnvName,
   ExportResult,
@@ -347,6 +348,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         const txnIdVar = ensureDlv('DLV - ecommerce.transaction_id', 'ecommerce.transaction_id');
         const currencyVar = ensureDlv('DLV - ecommerce.currency', 'ecommerce.currency');
         const valueVar = ensureDlv('DLV - ecommerce.value', 'ecommerce.value');
+        // Catégorie API Google Ads (param `conversionCategory` du tag
+        // awct). Permet à Ads d'associer la conversion à la bonne
+        // catégorie côté reporting + bidding.
+        const adsCategory: AdsConversionCategory =
+          getEventMapping(event.key)?.google_ads?.category ?? 'DEFAULT';
         tags.push({
           tagId: nextTag(),
           name: `Ads Conv — ${event.key} (${labelKey})`,
@@ -354,6 +360,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
           parameter: [
             { type: 'TEMPLATE', key: 'conversionId', value: idVars.googleAds },
             { type: 'TEMPLATE', key: 'conversionLabel', value: labelVar },
+            { type: 'TEMPLATE', key: 'conversionCategory', value: adsCategory },
             { type: 'TEMPLATE', key: 'orderId', value: txnIdVar },
             { type: 'TEMPLATE', key: 'currencyCode', value: currencyVar },
             { type: 'TEMPLATE', key: 'conversionValue', value: valueVar },

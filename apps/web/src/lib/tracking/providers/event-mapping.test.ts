@@ -5,6 +5,7 @@ import {
   getEventMapping,
   isEventSupported,
   listAdsConversionEvents,
+  listAdsConversions,
   mapEventName,
 } from './event-mapping';
 
@@ -109,6 +110,104 @@ describe('event-mapping', () => {
       expect(keys).toContain('checkout_intent');
       expect(keys).toContain('lead');
       expect(list.find((c) => c.eventName === 'page_view')).toBeUndefined();
+    });
+  });
+
+  describe('mapping étendu (categories + roles + groups)', () => {
+    it('purchase a la catégorie PURCHASE, primary, group sales', () => {
+      const m = getEventMapping('purchase');
+      expect(m?.google_ads?.category).toBe('PURCHASE');
+      expect(m?.google_ads?.recommendedRole).toBe('primary');
+      expect(m?.google_ads?.group).toBe('sales');
+    });
+
+    it('lead_capture / generate_lead / chat_lead_form_submit → SUBMIT_LEAD_FORM primary leads', () => {
+      for (const k of ['lead_capture', 'generate_lead', 'chat_lead_form_submit']) {
+        const m = getEventMapping(k);
+        expect(m?.google_ads?.category).toBe('SUBMIT_LEAD_FORM');
+        expect(m?.google_ads?.recommendedRole).toBe('primary');
+        expect(m?.google_ads?.group).toBe('leads');
+        expect(m?.google_ads?.conversionLabelKey).toBe('lead');
+      }
+    });
+
+    it('sign_up → SIGNUP (sans underscore !) primary leads', () => {
+      const m = getEventMapping('sign_up');
+      expect(m?.google_ads?.category).toBe('SIGNUP');
+    });
+
+    it('contact_submit → CONTACT primary leads', () => {
+      const m = getEventMapping('contact_submit');
+      expect(m?.google_ads?.category).toBe('CONTACT');
+      expect(m?.google_ads?.recommendedRole).toBe('primary');
+    });
+
+    it('newsletter_submit → SIGNUP secondary (volume élevé, intent faible)', () => {
+      const m = getEventMapping('newsletter_submit');
+      expect(m?.google_ads?.category).toBe('SIGNUP');
+      expect(m?.google_ads?.recommendedRole).toBe('secondary');
+    });
+
+    it('chat_widget_open / chat_message_sent → engagement (further/leads secondary)', () => {
+      expect(getEventMapping('chat_widget_open')?.google_ads?.group).toBe('further');
+      expect(getEventMapping('chat_message_sent')?.google_ads?.category).toBe('CONTACT');
+      expect(getEventMapping('chat_message_sent')?.google_ads?.recommendedRole).toBe('secondary');
+    });
+
+    it('file_download / video_complete / fg_journal_read_100 → DEFAULT secondary further', () => {
+      for (const k of ['file_download', 'video_complete', 'fg_journal_read_100']) {
+        const m = getEventMapping(k);
+        expect(m?.google_ads?.category).toBe('DEFAULT');
+        expect(m?.google_ads?.recommendedRole).toBe('secondary');
+        expect(m?.google_ads?.group).toBe('further');
+      }
+    });
+  });
+
+  describe('listAdsConversions() — dédupliqué et ordonné', () => {
+    it('ne contient qu\'une entrée par conversionLabelKey, avec events agrégés', () => {
+      const list = listAdsConversions();
+      const keys = list.map((c) => c.conversionLabelKey);
+      // Pas de doublon
+      expect(new Set(keys).size).toBe(keys.length);
+
+      // La conv "lead" agrège lead_capture + generate_lead + chat_lead_form_submit
+      const lead = list.find((c) => c.conversionLabelKey === 'lead');
+      expect(lead).toBeDefined();
+      expect(lead!.events).toEqual(
+        expect.arrayContaining(['lead_capture', 'generate_lead', 'chat_lead_form_submit']),
+      );
+    });
+
+    it('ordre : sales avant leads avant further ; primary avant secondary', () => {
+      const list = listAdsConversions();
+      const positionOf = (key: string) => list.findIndex((c) => c.conversionLabelKey === key);
+      // purchase (sales primary) avant lead (leads primary)
+      expect(positionOf('purchase')).toBeLessThan(positionOf('lead'));
+      // lead (leads primary) avant chat_engagement (further secondary)
+      expect(positionOf('lead')).toBeLessThan(positionOf('chat_engagement'));
+      // Dans sales : purchase (primary) avant add_to_cart (secondary)
+      expect(positionOf('purchase')).toBeLessThan(positionOf('add_to_cart'));
+    });
+
+    it('inclut toutes les nouvelles conv (sign_up, contact, newsletter, chat_*, download, video_complete, journal_read)', () => {
+      const keys = listAdsConversions().map((c) => c.conversionLabelKey);
+      for (const k of [
+        'purchase',
+        'add_to_cart',
+        'checkout_intent',
+        'lead',
+        'sign_up',
+        'contact',
+        'newsletter',
+        'chat_engagement',
+        'chat_contact',
+        'download',
+        'video_complete',
+        'journal_read',
+      ]) {
+        expect(keys).toContain(k);
+      }
     });
   });
 });

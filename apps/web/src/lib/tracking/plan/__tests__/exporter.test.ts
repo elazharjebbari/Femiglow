@@ -263,6 +263,7 @@ describe('exportPlan — structure GTM', () => {
     );
     expect(params.conversionId).toBe('{{CONST - Google Ads Conversion ID}}');
     expect(params.conversionLabel).toBe('{{CONST - Ads Label - purchase}}');
+    expect(params.conversionCategory).toBe('PURCHASE');
     expect(params.orderId).toBe('{{DLV - ecommerce.transaction_id}}');
     expect(params.currencyCode).toBe('{{DLV - ecommerce.currency}}');
     expect(params.conversionValue).toBe('{{DLV - ecommerce.value}}');

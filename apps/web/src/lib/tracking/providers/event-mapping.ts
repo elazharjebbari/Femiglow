@@ -33,10 +33,52 @@ export interface ProviderEventEntry {
   isStandard?: boolean;
 }
 
+/**
+ * Catégorie de conversion Google Ads — enum API v18.
+ * Source : https://developers.google.com/google-ads/api/reference/rpc/v18/ConversionActionCategoryEnum.ConversionActionCategory
+ *
+ * NB : `SIGNUP` est sans underscore (gotcha Google).
+ */
+export type AdsConversionCategory =
+  // Sales group
+  | 'PURCHASE'
+  | 'ADD_TO_CART'
+  | 'BEGIN_CHECKOUT'
+  | 'SUBSCRIBE_PAID'
+  // Leads group
+  | 'CONTACT'
+  | 'SUBMIT_LEAD_FORM'
+  | 'BOOK_APPOINTMENT'
+  | 'SIGNUP'
+  | 'REQUEST_QUOTE'
+  | 'GET_DIRECTIONS'
+  // Further actions group
+  | 'OUTBOUND_CLICK'
+  | 'PAGE_VIEW'
+  | 'DEFAULT';
+
+/**
+ * Rôle de la conversion pour le bidding Google Ads.
+ *  - `primary`   : utilisée pour piloter Smart Bidding (tCPA, ROAS…)
+ *  - `secondary` : observation/reporting uniquement, n'influence pas
+ *                  l'algo.
+ */
+export type AdsConversionRole = 'primary' | 'secondary';
+
+/** Groupe UI (mirroir des groupes affichés dans Google Ads UI). */
+export type AdsConversionGroup = 'sales' | 'leads' | 'further';
+
 export interface AdsEventEntry extends ProviderEventEntry {
-  /** Si défini, cet event est une conversion Google Ads.
-   *  La valeur est lookupable dans envConfig.googleAdsConversionLabels. */
+  /** Si défini, cet event est une conversion Google Ads. La valeur est
+   *  lookupable dans envConfig.googleAdsConversionLabels[<key>]. */
   conversionLabelKey?: string;
+  /** Catégorie API recommandée (paramètre `conversionCategory` du tag GTM). */
+  category?: AdsConversionCategory;
+  /** Rôle recommandé pour le bidding (info UI seulement). */
+  recommendedRole?: AdsConversionRole;
+  /** Groupe d'affichage UI. Dérivable de `category`, mais explicite pour
+   *  garder le mapping data-driven. */
+  group?: AdsConversionGroup;
 }
 
 export interface EventMapping {
@@ -72,7 +114,13 @@ const MAP: Record<string, EventMapping> = {
   add_to_cart: {
     meta: { name: 'AddToCart', isStandard: true },
     google_ga4: { name: 'add_to_cart', isStandard: true },
-    google_ads: { name: 'add_to_cart', conversionLabelKey: 'add_to_cart' },
+    google_ads: {
+      name: 'add_to_cart',
+      conversionLabelKey: 'add_to_cart',
+      category: 'ADD_TO_CART',
+      recommendedRole: 'secondary',
+      group: 'sales',
+    },
     tiktok: { name: 'AddToCart', isStandard: true },
     snap: { name: 'ADD_CART', isStandard: true },
     pinterest: { name: 'addtocart', isStandard: true },
@@ -92,6 +140,9 @@ const MAP: Record<string, EventMapping> = {
     google_ads: {
       name: 'begin_checkout',
       conversionLabelKey: 'checkout_intent',
+      category: 'BEGIN_CHECKOUT',
+      recommendedRole: 'secondary',
+      group: 'sales',
     },
     tiktok: { name: 'InitiateCheckout', isStandard: true },
     snap: { name: 'START_CHECKOUT', isStandard: true },
@@ -107,6 +158,9 @@ const MAP: Record<string, EventMapping> = {
     google_ads: {
       name: 'begin_checkout',
       conversionLabelKey: 'checkout_intent',
+      category: 'BEGIN_CHECKOUT',
+      recommendedRole: 'secondary',
+      group: 'sales',
     },
     tiktok: { name: 'InitiateCheckout', isStandard: true },
     snap: { name: 'START_CHECKOUT', isStandard: true },
@@ -130,7 +184,13 @@ const MAP: Record<string, EventMapping> = {
   purchase: {
     meta: { name: 'Purchase', isStandard: true },
     google_ga4: { name: 'purchase', isStandard: true },
-    google_ads: { name: 'purchase', conversionLabelKey: 'purchase' },
+    google_ads: {
+      name: 'purchase',
+      conversionLabelKey: 'purchase',
+      category: 'PURCHASE',
+      recommendedRole: 'primary',
+      group: 'sales',
+    },
     tiktok: { name: 'CompletePayment', isStandard: true },
     snap: { name: 'PURCHASE', isStandard: true },
     pinterest: { name: 'checkout', isStandard: true },
@@ -143,7 +203,13 @@ const MAP: Record<string, EventMapping> = {
   generate_lead: {
     meta: { name: 'Lead', isStandard: true },
     google_ga4: { name: 'generate_lead', isStandard: true },
-    google_ads: { name: 'generate_lead', conversionLabelKey: 'lead' },
+    google_ads: {
+      name: 'generate_lead',
+      conversionLabelKey: 'lead',
+      category: 'SUBMIT_LEAD_FORM',
+      recommendedRole: 'primary',
+      group: 'leads',
+    },
     tiktok: { name: 'SubmitForm', isStandard: true },
     snap: { name: 'SIGN_UP', isStandard: true },
     pinterest: { name: 'lead', isStandard: true },
@@ -152,6 +218,14 @@ const MAP: Record<string, EventMapping> = {
   sign_up: {
     meta: { name: 'CompleteRegistration', isStandard: true },
     google_ga4: { name: 'sign_up', isStandard: true },
+    google_ads: {
+      // NB : enum `SIGNUP` sans underscore, et `name` reste GA4-style.
+      name: 'sign_up',
+      conversionLabelKey: 'sign_up',
+      category: 'SIGNUP',
+      recommendedRole: 'primary',
+      group: 'leads',
+    },
     tiktok: { name: 'CompleteRegistration', isStandard: true },
     snap: { name: 'SIGN_UP', isStandard: true },
     pinterest: { name: 'signup', isStandard: true },
@@ -170,16 +244,65 @@ const MAP: Record<string, EventMapping> = {
   select_content: { google_ga4: { name: 'select_content', isStandard: true } },
   video_start: { google_ga4: { name: 'video_start', isStandard: true } },
   video_progress: { google_ga4: { name: 'video_progress', isStandard: true } },
-  video_complete: { google_ga4: { name: 'video_complete', isStandard: true } },
-  file_download: { google_ga4: { name: 'file_download', isStandard: true } },
+  video_complete: {
+    google_ga4: { name: 'video_complete', isStandard: true },
+    google_ads: {
+      name: 'video_complete',
+      conversionLabelKey: 'video_complete',
+      category: 'DEFAULT',
+      recommendedRole: 'secondary',
+      group: 'further',
+    },
+  },
+  file_download: {
+    google_ga4: { name: 'file_download', isStandard: true },
+    google_ads: {
+      name: 'file_download',
+      conversionLabelKey: 'download',
+      category: 'DEFAULT',
+      recommendedRole: 'secondary',
+      group: 'further',
+    },
+  },
   form_start: { google_ga4: { name: 'form_start', isStandard: true } },
   form_submit: { google_ga4: { name: 'form_submit', isStandard: true } },
+  // ── Leads complémentaires (formulaires + chat + newsletter) ──
+  contact_submit: {
+    google_ga4: { name: 'contact_submit', isStandard: false },
+    google_ads: {
+      name: 'contact_submit',
+      conversionLabelKey: 'contact',
+      category: 'CONTACT',
+      recommendedRole: 'primary',
+      group: 'leads',
+    },
+    identityFields: ['email'],
+  },
+  newsletter_submit: {
+    google_ga4: { name: 'newsletter_submit', isStandard: false },
+    google_ads: {
+      // Catégorie SIGNUP (inscription = subscribe gratuit) — secondaire
+      // car volume élevé et intent plus faible que lead_capture.
+      name: 'newsletter_submit',
+      conversionLabelKey: 'newsletter',
+      category: 'SIGNUP',
+      recommendedRole: 'secondary',
+      group: 'leads',
+    },
+    identityFields: ['email'],
+  },
 
   // CHA-230 — conversion lead côté wizard FemiGlow.
   lead_capture: {
     google_ga4: { name: 'lead_capture', isStandard: false },
     meta: { name: 'Lead', isStandard: true },
-    google_ads: { name: 'generate_lead', conversionLabelKey: 'lead' },
+    google_ads: {
+      name: 'generate_lead',
+      conversionLabelKey: 'lead',
+      category: 'SUBMIT_LEAD_FORM',
+      recommendedRole: 'primary',
+      group: 'leads',
+    },
     identityFields: ['phone', 'firstName'],
   },
   address_completed: {
@@ -190,7 +313,18 @@ const MAP: Record<string, EventMapping> = {
   wizard_abandoned: { google_ga4: { name: 'wizard_abandoned', isStandard: false } },
 
   fg_journal_read_75: { google_ga4: { name: 'fg_journal_read_75', isStandard: false } },
-  fg_journal_read_100: { google_ga4: { name: 'fg_journal_read_100', isStandard: false } },
+  fg_journal_read_100: {
+    google_ga4: { name: 'fg_journal_read_100', isStandard: false },
+    google_ads: {
+      // Lecture journal à 100% = signal d'engagement éditorial fort.
+      // Catégorie DEFAULT (UI "Other") — observation seulement.
+      name: 'fg_journal_read_100',
+      conversionLabelKey: 'journal_read',
+      category: 'DEFAULT',
+      recommendedRole: 'secondary',
+      group: 'further',
+    },
+  },
   fg_section_view: { google_ga4: { name: 'fg_section_view', isStandard: false } },
   fg_faq_view: { google_ga4: { name: 'fg_faq_view', isStandard: false } },
   fg_composition_open: { google_ga4: { name: 'fg_composition_open', isStandard: false } },
@@ -201,11 +335,30 @@ const MAP: Record<string, EventMapping> = {
   chat_widget_open: {
     google_ga4: { name: 'chat_widget_open', isStandard: false },
     meta: { name: 'ChatEngagement', isStandard: false },
+    google_ads: {
+      // 1ère ouverture chat = signal d'intent. Observation seulement
+      // (volume très élevé sinon).
+      name: 'chat_widget_open',
+      conversionLabelKey: 'chat_engagement',
+      category: 'DEFAULT',
+      recommendedRole: 'secondary',
+      group: 'further',
+    },
   },
   chat_widget_close: { google_ga4: { name: 'chat_widget_close', isStandard: false } },
   chat_message_sent: {
     google_ga4: { name: 'chat_message_sent', isStandard: false },
     meta: { name: 'Contact', isStandard: true },
+    google_ads: {
+      // 1er message utilisateur = vrai signal de Contact côté Ads.
+      // Note : doit être gated « 1re fois par session » côté GTM si
+      // beaucoup de messages par conversation.
+      name: 'chat_message_sent',
+      conversionLabelKey: 'chat_contact',
+      category: 'CONTACT',
+      recommendedRole: 'secondary',
+      group: 'leads',
+    },
   },
   chat_message_received: { google_ga4: { name: 'chat_message_received', isStandard: false } },
   chat_message_complete: { google_ga4: { name: 'chat_message_complete', isStandard: false } },
@@ -216,7 +369,13 @@ const MAP: Record<string, EventMapping> = {
   chat_lead_form_submit: {
     google_ga4: { name: 'generate_lead', isStandard: true },
     meta: { name: 'Lead', isStandard: true },
-    google_ads: { name: 'generate_lead', conversionLabelKey: 'lead' },
+    google_ads: {
+      name: 'generate_lead',
+      conversionLabelKey: 'lead',
+      category: 'SUBMIT_LEAD_FORM',
+      recommendedRole: 'primary',
+      group: 'leads',
+    },
     tiktok: { name: 'SubmitForm', isStandard: true },
     snap: { name: 'LEAD', isStandard: true },
     pinterest: { name: 'lead', isStandard: true },
@@ -280,6 +439,20 @@ export function getEventIdentityFields(eventName: string): IdentityField[] {
   return MAP[eventName]?.identityFields ?? [];
 }
 
+/**
+ * Description enrichie d'une conversion Google Ads candidate.
+ * Plusieurs events FemiGlow peuvent partager le même
+ * `conversionLabelKey` (ex. lead_capture + generate_lead +
+ * chat_lead_form_submit → 'lead').
+ */
+export interface AdsConversionDescriptor {
+  conversionLabelKey: string;
+  events: string[];
+  category: AdsConversionCategory;
+  recommendedRole: AdsConversionRole;
+  group: AdsConversionGroup;
+}
+
 /** Liste des events qui sont des conversions Google Ads (pour l'exporter). */
 export function listAdsConversionEvents(): Array<{ eventName: string; conversionLabelKey: string }> {
   const out: Array<{ eventName: string; conversionLabelKey: string }> = [];
@@ -287,5 +460,53 @@ export function listAdsConversionEvents(): Array<{ eventName: string; conversion
     const key = entry.google_ads?.conversionLabelKey;
     if (key) out.push({ eventName, conversionLabelKey: key });
   }
+  return out;
+}
+
+/**
+ * Liste dédupliquée des conversions Google Ads (1 entrée par
+ * `conversionLabelKey`, agrégeant tous les events qui la déclenchent).
+ * Pratique pour l'UI admin (1 label saisi → N events).
+ *
+ * Sortie ordonnée par `group` (sales → leads → further) puis par
+ * `recommendedRole` (primary → secondary), pour matcher l'ordre des
+ * priorités côté admin.
+ */
+export function listAdsConversions(): AdsConversionDescriptor[] {
+  const byKey = new Map<string, AdsConversionDescriptor>();
+  for (const [eventName, entry] of Object.entries(MAP)) {
+    const ads = entry.google_ads;
+    if (!ads?.conversionLabelKey) continue;
+    const key = ads.conversionLabelKey;
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.events.push(eventName);
+    } else {
+      byKey.set(key, {
+        conversionLabelKey: key,
+        events: [eventName],
+        category: ads.category ?? 'DEFAULT',
+        recommendedRole: ads.recommendedRole ?? 'secondary',
+        group: ads.group ?? 'further',
+      });
+    }
+  }
+  const out = Array.from(byKey.values());
+  const groupOrder: Record<AdsConversionGroup, number> = {
+    sales: 0,
+    leads: 1,
+    further: 2,
+  };
+  const roleOrder: Record<AdsConversionRole, number> = {
+    primary: 0,
+    secondary: 1,
+  };
+  out.sort((a, b) => {
+    const g = groupOrder[a.group] - groupOrder[b.group];
+    if (g !== 0) return g;
+    return roleOrder[a.recommendedRole] - roleOrder[b.recommendedRole];
+  });
+  // Stable order pour les events partagés.
+  for (const d of out) d.events.sort();
   return out;
 }
