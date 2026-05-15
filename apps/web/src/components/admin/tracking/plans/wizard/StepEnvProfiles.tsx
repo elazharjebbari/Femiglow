@@ -1,7 +1,13 @@
 'use client';
 
 import { IdInput } from '../IdInput';
-import type { EnvProfile, Provider, ProviderId } from '@/lib/tracking/plan/types';
+import { listAdsConversionEvents } from '@/lib/tracking/providers/event-mapping';
+import type {
+  EnvProfile,
+  GoogleAdsConversionLabels,
+  Provider,
+  ProviderId,
+} from '@/lib/tracking/plan/types';
 
 const ID_RULES: Record<
   ProviderId,
@@ -53,40 +59,121 @@ export function StepEnvProfiles({
     config: {},
   };
   const activeProviders = providers.filter((p) => p.active);
+  const adsActive = activeProviders.some((p) => p.id === 'googleAds');
 
-  function patchProd(patch: Record<string, string | undefined>) {
+  function patchProd(patch: Record<string, unknown>) {
     const next: EnvProfile = {
       env: 'production',
-      config: { ...prod.config, ...patch },
+      config: { ...prod.config, ...patch } as EnvProfile['config'],
     };
     const others = profiles.filter((p) => p.env !== 'production');
     onChange([next, ...others]);
   }
 
+  function patchConversionLabel(key: string, value: string) {
+    const current =
+      (prod.config as { googleAdsConversionLabels?: GoogleAdsConversionLabels })
+        .googleAdsConversionLabels ?? {};
+    patchProd({
+      googleAdsConversionLabels: { ...current, [key]: value },
+    });
+  }
+
   return (
-    <section aria-labelledby="step-env-h">
-      <h2 id="step-env-h" className="mb-2 text-base font-semibold text-stone-900">
-        Identifiants production
+    <section aria-labelledby="step-env-h" className="space-y-8">
+      <div>
+        <h2 id="step-env-h" className="mb-2 text-base font-semibold text-stone-900">
+          Identifiants production
+        </h2>
+        <p className="mb-4 text-sm text-stone-600">
+          Remplissez les IDs réels (placeholders type <code>G-PROD0000</code> refusés à l'activation).
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {activeProviders.map((p) => {
+            const rule = ID_RULES[p.id];
+            const value = (prod.config as Record<string, string | undefined>)[rule.key] ?? '';
+            return (
+              <IdInput
+                key={p.id}
+                label={rule.label}
+                value={value}
+                onChange={(v) => patchProd({ [rule.key]: v })}
+                pattern={rule.pattern}
+                hint={rule.hint}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {adsActive && <GoogleAdsConversionLabelsEditor prod={prod} onChange={patchConversionLabel} />}
+    </section>
+  );
+}
+
+function GoogleAdsConversionLabelsEditor({
+  prod,
+  onChange,
+}: {
+  prod: EnvProfile;
+  onChange: (key: string, value: string) => void;
+}): JSX.Element {
+  const events = listAdsConversionEvents();
+  // Dédup par conversionLabelKey (plusieurs events peuvent partager
+  // la même conversion — ex. lead_capture + chat_lead_form_submit
+  // → key "lead").
+  const seen = new Set<string>();
+  const rows = events.filter((e) => {
+    if (seen.has(e.conversionLabelKey)) return false;
+    seen.add(e.conversionLabelKey);
+    return true;
+  });
+  const labels =
+    (prod.config as { googleAdsConversionLabels?: GoogleAdsConversionLabels })
+      .googleAdsConversionLabels ?? {};
+
+  return (
+    <div>
+      <h2 className="mb-2 text-base font-semibold text-stone-900">
+        Conversions Google Ads
       </h2>
       <p className="mb-4 text-sm text-stone-600">
-        Remplissez les IDs réels (placeholders type <code>G-PROD0000</code> refusés à l'activation).
+        Chaque event-conversion FemiGlow correspond à une conversion distincte
+        dans Google Ads. Renseignez l'<strong>étiquette de conversion</strong>{' '}
+        (ex.&nbsp;<code className="rounded bg-stone-100 px-1">UGxLCMGJv6wcEMrHichD</code>) —
+        l'ID est partagé via le champ « Google Ads Conversion ID » ci-dessus.
+        Sans étiquette, le tag de conversion correspondant ne sera pas exporté.
       </p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {activeProviders.map((p) => {
-          const rule = ID_RULES[p.id];
-          const value = (prod.config as Record<string, string | undefined>)[rule.key] ?? '';
-          return (
-            <IdInput
-              key={p.id}
-              label={rule.label}
-              value={value}
-              onChange={(v) => patchProd({ [rule.key]: v })}
-              pattern={rule.pattern}
-              hint={rule.hint}
-            />
-          );
-        })}
+      <div className="overflow-hidden rounded-md border border-stone-200">
+        <table className="w-full text-sm">
+          <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium">Event canonique</th>
+              <th className="px-3 py-2 text-left font-medium">Conversion label key</th>
+              <th className="px-3 py-2 text-left font-medium">Étiquette Google Ads</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-200">
+            {rows.map(({ eventName, conversionLabelKey }) => (
+              <tr key={conversionLabelKey}>
+                <td className="px-3 py-2 font-mono text-stone-900">{eventName}</td>
+                <td className="px-3 py-2 font-mono text-xs text-stone-500">
+                  {conversionLabelKey}
+                </td>
+                <td className="px-3 py-2">
+                  <input
+                    type="text"
+                    value={labels[conversionLabelKey] ?? ''}
+                    onChange={(e) => onChange(conversionLabelKey, e.target.value)}
+                    placeholder="UGxLCMGJv6wcEMrHichD"
+                    className="w-full rounded border border-stone-300 bg-white px-2 py-1 font-mono text-xs text-stone-900 focus:border-stone-500 focus:outline-none"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </section>
+    </div>
   );
 }
