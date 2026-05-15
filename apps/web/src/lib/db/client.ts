@@ -38,6 +38,7 @@ import type {
   TrackingPageComponent,
   TrackingProvider,
   TrackingSetting,
+  VisitorAttributionRow,
   SiteComponent,
   ComponentMediaBinding,
   ComponentAnimation,
@@ -82,6 +83,11 @@ interface Store {
   trackingConsentSnapshots: Map<string, TrackingConsentSnapshot>;
   trackingConsentOrder: string[];
   trackingSettings: Map<string, TrackingSetting>;
+  /**
+   * Snapshot d'attribution multi-canal par visitor_id. Cf.
+   * docs/tracking-attribution/. Mode in-memory (sans DB).
+   */
+  visitorAttribution: Map<string, VisitorAttributionRow>;
   siteComponents: Map<string, SiteComponent>;
   componentMediaBindings: Map<string, ComponentMediaBinding>;
   componentAnimations: Map<string, ComponentAnimation>;
@@ -133,6 +139,7 @@ function makeStore(): Store {
     trackingConsentSnapshots: new Map(),
     trackingConsentOrder: [],
     trackingSettings: new Map(),
+    visitorAttribution: new Map(),
     siteComponents: new Map(),
     componentMediaBindings: new Map(),
     componentAnimations: new Map(),

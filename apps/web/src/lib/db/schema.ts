@@ -886,6 +886,31 @@ export const trackingSettings = pgTable(
   }),
 );
 
+/**
+ * Snapshot d'attribution multi-canal par visitor_id. Cf.
+ * docs/tracking-attribution/. Sert :
+ *   - de source de vérité cross-session (le cookie est limité à 4KB)
+ *   - de support au debugger admin (inspecter un visitor par ID)
+ *   - de pré-requis pour les dispatchers serveur (Meta CAPI, Google Ads OCI…)
+ *
+ * `first_touch` est immuable après le 1er insert. `last_touch` est
+ * refresh à chaque touche. `paid_history` est LRU 20 (dedup click_id).
+ */
+export const visitorAttribution = pgTable(
+  'visitor_attribution',
+  {
+    visitorId: text('visitor_id').primaryKey(),
+    firstTouch: jsonb('first_touch').notNull(),
+    lastTouch: jsonb('last_touch').notNull(),
+    paidHistory: jsonb('paid_history').notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    updatedIdx: index('visitor_attribution_updated_at_idx').on(t.updatedAt),
+  }),
+);
+
 /* ─────────────────────────────────────────────────────────────────────
  * COMPONENT-MEDIA SYSTEM
  * Lie chaque composant visuel du site (registre `siteComponents`) à

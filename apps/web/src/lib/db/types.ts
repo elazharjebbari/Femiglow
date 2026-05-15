@@ -510,6 +510,20 @@ export interface TrackingSetting<TValue = unknown> {
   updatedBy: string | null;
 }
 
+/**
+ * Ligne `visitor_attribution` (in-memory + DB). Le `*Touch` est un
+ * objet libre — typé strictement par
+ * `lib/tracking/attribution/types.ts → ChannelTouch`.
+ */
+export interface VisitorAttributionRow {
+  visitorId: string;
+  firstTouch: unknown;
+  lastTouch: unknown;
+  paidHistory: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 /* ─────────────────────────────────────────────────────────────────
  * Component-Media System
  * ───────────────────────────────────────────────────────────────── */
