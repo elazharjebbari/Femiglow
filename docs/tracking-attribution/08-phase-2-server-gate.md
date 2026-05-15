@@ -311,6 +311,24 @@ L'exporter utilise des tags `html` natifs (avec snippet fbq/ttq) pour
 Meta et TikTok, plutôt que des templates communautaires qui exigent
 d'être installés dans le workspace cible.
 
+### 6a. CSP `script-src-elem` bloque view-through conversions Google Ads
+
+Erreur observée dans Tag Assistant :
+
+```
+CSP script-src-elem a bloqué une requête vers
+https://googleads.g.doubleclick.net/pagead/viewthroughconversion/18136327114/
+```
+
+L'endpoint **view-through conversion** (mesure les conversions des
+impressions Display sans clic direct) charge du script depuis
+`googleads.g.doubleclick.net`. Différent de `pagead2.googlesyndication.com`
+qui ne porte que les `connect-src` pings.
+
+**Fix appliqué** : `googleads.g.doubleclick.net` + `*.doubleclick.net`
+ajoutés à `script-src` ET `connect-src` pour Google Ads dans
+`csp-hosts.ts`.
+
 ### 6b. Double préfixe `AW-AW-<id>` — Google Ads ne compte RIEN
 
 Le tag template GTM `awct` (Google Ads Conversion Tracking) attend le
@@ -337,6 +355,42 @@ détectés.
     CONST GTM (cf. `exporter.ts` ligne ~230)
   - Test régression : « CONST - Google Ads Conversion ID strip le
     préfixe AW- (sinon double prefix AW-AW-) »
+
+### 7. Warning « Hits différés » dans Tag Assistant
+
+Message complet :
+> Certains hits ne seront pas envoyés tant qu'une commande de
+> configuration ne sera pas fournie par le biais d'un appel
+> `gtag('config')` ou d'une balise Google dans Tag Manager.
+
+**Cause** : gtag a reçu une commande `event` pour une destination
+(ex. `AW-XXXXXXX`) sans avoir vu de `gtag('config', 'AW-XXXXXXX', …)`
+préalable. Le hit est mis en file d'attente. Si aucun config ne vient,
+le hit est perdu.
+
+**Causes typiques chez FemiGlow** :
+
+1. **Container fantôme `AW-AW-<id>`** — un mauvais préfixe (cf. piège
+   6b) crée une fausse destination, des events sont envoyés à
+   `send_to: 'AW-AW-…/<label>'`, mais aucun config n'existe pour
+   cette destination → tous les hits AW-AW-* sont différés.
+
+2. **Multiple comptes Google Ads** dans le même tag — si on fait
+   pointer plusieurs `awct` tags vers différentes Conversion ID
+   sans tag Google Ads de config initial, GTM différe.
+
+3. **GA4 désactivé mais Ads actif** — si seul `gaawc` (GA4 config)
+   est désactivé mais `awct` (Ads conv) est actif, gtag n'a aucun
+   config Google chargé → les events Ads sont différés.
+
+**Fix** : s'assurer qu'il existe AU MOINS UN tag « Google Tag » (gaawc)
+qui appelle `gtag('config', 'G-XXXX', ...)` au PageView. Notre exporter
+émet déjà `GA4 Cfg` (gaawc) sur le trigger All Pages → pour FemiGlow
+la cause est presque toujours le container fantôme AW-AW-.
+
+**Solution pour le visiteur actuel** : re-télécharger le JSON GTM
+fixé (avec le AW- strippé, cf. piège 6b) et ré-importer dans GTM
+→ le `AW-AW-` disparaît, le warning Hits différés aussi.
 
 ### 6. CSP `connect-src` bloque les conversion pings Google Ads — SILENCIEUX
 

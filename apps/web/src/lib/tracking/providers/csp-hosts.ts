@@ -72,6 +72,10 @@ export const TRACKING_CSP_HOSTS: Readonly<Record<TrackingProviderKind, CspHostMa
       'https://www.googleadservices.com',
       'https://pagead2.googlesyndication.com',
       'https://*.googlesyndication.com',
+      // View-through conversion endpoint — émis par le gtag pixel
+      // Google Ads. Bloqué par script-src-elem sans whitelist.
+      'https://googleads.g.doubleclick.net',
+      'https://*.doubleclick.net',
     ],
     connectSrc: [
       ...GOOGLE_COMMON_CONNECT,
