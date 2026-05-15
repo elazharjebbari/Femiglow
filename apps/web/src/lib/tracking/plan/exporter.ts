@@ -7,13 +7,27 @@ import type {
   TrackingPlan,
 } from './types';
 
+interface GtmParameter {
+  type: string;
+  key?: string;
+  value?: string;
+  list?: GtmParameter[];
+}
+
 interface GtmTag {
   tagId: string;
   name: string;
   type: string;
   parameter: Array<{ type: string; key: string; value: string }>;
-  consentSettings?: { consentStatus: 'NEEDED'; consentType: { type: string }[] };
+  consentSettings?: { consentStatus: 'NEEDED'; consentType: GtmParameter };
   firingTriggerId?: string[];
+}
+
+function consentTypeList(values: string[]): GtmParameter {
+  return {
+    type: 'LIST',
+    list: values.map((value) => ({ type: 'TEMPLATE', value })),
+  };
 }
 
 interface GtmVariable {
@@ -144,7 +158,7 @@ function addEventTags(
         ],
         consentSettings: {
           consentStatus: 'NEEDED',
-          consentType: [{ type: 'analytics_storage' }],
+          consentType: consentTypeList(['analytics_storage']),
         },
       });
     }
@@ -159,7 +173,7 @@ function addEventTags(
         ],
         consentSettings: {
           consentStatus: 'NEEDED',
-          consentType: [{ type: 'ad_storage' }],
+          consentType: consentTypeList(['ad_storage']),
         },
       });
     }
@@ -174,7 +188,7 @@ function addEventTags(
         ],
         consentSettings: {
           consentStatus: 'NEEDED',
-          consentType: [{ type: 'ad_storage' }],
+          consentType: consentTypeList(['ad_storage']),
         },
       });
     }
@@ -189,7 +203,7 @@ function addEventTags(
         ],
         consentSettings: {
           consentStatus: 'NEEDED',
-          consentType: [{ type: 'ad_storage' }],
+          consentType: consentTypeList(['ad_storage']),
         },
       });
     }

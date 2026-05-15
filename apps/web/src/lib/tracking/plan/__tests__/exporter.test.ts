@@ -112,6 +112,24 @@ describe('exportPlan — structure GTM', () => {
     expect(builtIns).toContainEqual({ type: 'AD_STORAGE' });
     expect(builtIns).toContainEqual({ type: 'ANALYTICS_STORAGE' });
   });
+
+  it('emits consentType as a LIST Parameter (not a bare array)', () => {
+    // GTM's container import rejects `consentType: [{type: "analytics_storage"}]`
+    // with "Argument is not an object". The correct shape is a Parameter
+    // object wrapping a LIST of TEMPLATE values.
+    const result = exportPlan(buildPlan(), 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const ga4Tag = tags.find((t: any) => t.type === 'gaawe');
+    expect(ga4Tag.consentSettings.consentType).toEqual({
+      type: 'LIST',
+      list: [{ type: 'TEMPLATE', value: 'analytics_storage' }],
+    });
+    const metaTag = tags.find((t: any) => t.type === 'cvt_meta');
+    expect(metaTag.consentSettings.consentType).toEqual({
+      type: 'LIST',
+      list: [{ type: 'TEMPLATE', value: 'ad_storage' }],
+    });
+  });
 });
 
 describe('exportPlan — edge cases', () => {
