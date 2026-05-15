@@ -29,16 +29,17 @@ valeur par défaut recommandée.
 
 ## Pile de docs
 
-| # | Fichier | Sujet |
-|---|---|---|
-| 0 | [README.md](./README.md) | Index + diagrammes |
-| 1 | [01-audit-and-needs.md](./01-audit-and-needs.md) | État de l'art interne + cartographie du besoin |
-| 2 | [02-approaches-comparison.md](./02-approaches-comparison.md) | 3 approches évaluées + verdict |
-| 3 | [03-architecture.md](./03-architecture.md) | Architecture cible (approche C hybride) |
-| 4 | [04-data-and-engine.md](./04-data-and-engine.md) | Schéma BDD + moteur d'attribution |
-| 5 | [05-ui-ux-integration.md](./05-ui-ux-integration.md) | UI admin (settings + debug) |
-| 6 | [06-runbook.md](./06-runbook.md) | Plan d'exécution par phases |
-| 7 | [07-testing.md](./07-testing.md) | Tests unit / integration / E2E |
+| # | Fichier | Sujet | Statut |
+|---|---|---|---|
+| 0 | [README.md](./README.md) | Index + diagrammes | — |
+| 1 | [01-audit-and-needs.md](./01-audit-and-needs.md) | État de l'art interne + cartographie du besoin | — |
+| 2 | [02-approaches-comparison.md](./02-approaches-comparison.md) | 3 approches évaluées + verdict | — |
+| 3 | [03-architecture.md](./03-architecture.md) | Architecture cible (approche C hybride) | — |
+| 4 | [04-data-and-engine.md](./04-data-and-engine.md) | Schéma BDD + moteur d'attribution | — |
+| 5 | [05-ui-ux-integration.md](./05-ui-ux-integration.md) | UI admin (settings + debug) | — |
+| 6 | [06-runbook.md](./06-runbook.md) | Plan d'exécution par phases | — |
+| 7 | [07-testing.md](./07-testing.md) | Tests unit / integration / E2E | — |
+| 8 | [08-phase-2-server-gate.md](./08-phase-2-server-gate.md) | Phase 2 — gate CAPI serveur | ✅ Livré |
 
 ## Diagramme de haut niveau (cible)
 

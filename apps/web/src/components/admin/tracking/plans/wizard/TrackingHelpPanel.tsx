@@ -151,11 +151,18 @@ dataLayer.push({
   attribution: { channel: 'google_ads', is_paid: true, ... }
 })
     ↓
-GTM filtre les tags :
-   ✓ GA4 Evt purchase             (analytics neutre, fire toujours)
-   ✓ Ads Conv purchase            (channel match google_ads)
-   ✗ Meta Evt purchase            (channel ≠ meta → skipped)
-   ✗ TikTok Evt purchase          (channel ≠ tiktok → skipped)`}</CodeBlock>
+Filtrage à 2 niveaux :
+
+  CLIENT (GTM, phase 1.4) :
+    ✓ GA4 Evt purchase             (analytics neutre, fire toujours)
+    ✓ Ads Conv purchase            (channel match google_ads)
+    ✗ Meta Evt purchase            (channel ≠ meta → skipped)
+    ✗ TikTok Evt purchase          (channel ≠ tiktok → skipped)
+
+  SERVER (dispatcher CAPI, phase 2) :
+    ✓ Meta CAPI                    si channel = meta
+                                   sinon attribution_skip
+    (futur) Google Ads OCI, TikTok Events API, etc.`}</CodeBlock>
       <p className="font-medium text-stone-900">Politique par-event :</p>
       <ul className="ml-5 list-disc space-y-1">
         <li>

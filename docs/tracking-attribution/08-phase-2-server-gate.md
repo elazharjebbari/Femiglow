@@ -1,0 +1,246 @@
+# 8. Phase 2 — Gate d'attribution serveur (CAPI selectif)
+
+> **Statut** : ✅ Livrée
+> **Date** : 2026-05-15
+
+## Pourquoi
+
+La phase 1 filtre les conversions **côté navigateur** (GTM conditions
+sur la DLV `attribution.channel`). Mais FemiGlow envoie aussi des
+événements de conversion **côté serveur** via les CAPI :
+
+- **Meta Conversions API** (déjà branché, `lib/tracking/providers/meta.ts`)
+- Google Ads OCI (phase 3, à brancher)
+- TikTok Events API (phase 4)
+- Snap/Pinterest Conversions APIs (phase 5)
+
+Sans gate serveur, le CAPI Meta envoie toutes les conversions à Meta,
+peu importe l'attribution. Conséquence :
+
+- Un visiteur Google Ads convertit → GTM client skippe Meta (phase 1
+  marche), mais Meta CAPI envoie quand même la conversion → Meta crédite
+  la vente → double-comptage cross-canal réapparaît.
+- Un ad blocker bloque GTM → aucun pixel client ne fire → mais le CAPI
+  serveur enverrait quand même la conversion à Meta pour TOUS les
+  visiteurs (y compris Google Ads / TikTok), polluant les bidding
+  algos.
+
+La phase 2 corrige ces deux trous.
+
+## Architecture
+
+### Gate centralisé
+
+Plutôt que de patcher chaque adapter CAPI individuellement, le gate
+est implanté dans le **dispatcher serveur**
+(`lib/tracking/server/dispatcher.ts`). Tous les adapters (Meta
+aujourd'hui, Google Ads OCI / TikTok / Snap / Pinterest demain)
+passent par le dispatcher → un seul point d'application.
+
+```
+                    ┌──────────────────────────┐
+                    │ dispatcher.ts            │
+                    │                          │
+event arrive ──────►│ for each provider:       │
+                    │   ┌────────────────────┐ │
+                    │   │ consent allowed?   │ │ no → skip:consent_denied
+                    │   └─────────┬──────────┘ │
+                    │             │ yes        │
+                    │             ▼            │
+                    │   ┌────────────────────┐ │
+                    │   │ event enabled?     │ │ no → skip:event_disabled
+                    │   └─────────┬──────────┘ │
+                    │             │ yes        │
+                    │             ▼            │
+                    │   ┌────────────────────┐ │ no → skip:attribution_skip
+                    │   │ ★ attribution gate │ │       (new in phase 2)
+                    │   └─────────┬──────────┘ │
+                    │             │ yes        │
+                    │             ▼            │
+                    │   ┌────────────────────┐ │
+                    │   │ adapter.dispatch() │ │ → sent / failed
+                    │   └────────────────────┘ │
+                    └──────────────────────────┘
+```
+
+### Fonction `shouldDispatchByAttribution`
+
+```ts
+// lib/tracking/attribution/dispatch-gate.ts
+export async function shouldDispatchByAttribution(input: {
+  visitorId: string;
+  providerKind: TrackingProviderKind;
+  eventName: string;
+}): Promise<AttributionGateResult>;
+```
+
+### Logique de décision (ordre)
+
+1. **Provider neutre** (`google_ga4`, `gtm`, `custom`) → toujours
+   allowed. Reason : `provider_neutral`.
+2. **Event d'audience** (isConversion=false dans event-catalog :
+   `page_view`, `view_item`, `add_to_cart`, …) → toujours allowed
+   (alimente Lookalike + Custom Audiences). Reason : `audience_event`.
+3. **Stratégie broadcast** → allow tout (déconseillé mais possible).
+   Reason : `broadcast_strategy`.
+4. **Pas de snapshot serveur** (visiteur très récent, pas encore
+   POSTé `/api/track/attribution`) → fallback allow (best-effort
+   conservatif). Reason : `no_snapshot_broadcast`.
+5. **Canal résolu = canal attendu par le provider** → allow.
+   Reason : `match:<strategy>`.
+6. **Canal résolu = direct/organic/social_organic/unknown** →
+   fallback allow (broadcast partiel). Reason : `fallback:<channel>`.
+7. **Sinon** (canal payant différent identifié) → **SKIP**.
+   Reason : `attribution_skip:<resolved>_vs_<expected>`.
+
+## Implémentation
+
+### Fichier `dispatch-gate.ts`
+
+Deux fonctions :
+
+- `shouldDispatchByAttribution(input)` — avec I/O (lit `tracking_settings`
+  + `visitor_attribution`)
+- `decideAttribution(input)` — pure (sans I/O, prend les inputs déjà
+  résolus). Utilisée par les tests + la simulation UI.
+
+### Wiring dans le dispatcher
+
+```ts
+// lib/tracking/server/dispatcher.ts
+const gate = await shouldDispatchByAttribution({
+  visitorId: ctx.anonymousId,
+  providerKind: provider.kind,
+  eventName: ctx.eventName,
+}).catch((err) => {
+  // Fallback safe : si la gate plante, on autorise (best-effort)
+  logger.warn('tracking.dispatch.attribution_gate_degraded', { ... });
+  return null;
+});
+if (gate && !gate.allowed) {
+  logger.debug('tracking.dispatch.attribution_skip', {
+    kind: provider.kind,
+    event_name: ctx.eventName,
+    reason: gate.reason,
+    attributed_channel: gate.attributedChannel,
+    strategy: gate.strategy,
+  });
+  return [provider.kind, {
+    status: 'skipped',
+    error: `attribution_skip:${gate.attributedChannel}`,
+  }];
+}
+```
+
+### Politique safe-by-default
+
+Le gate est **conservateur** :
+- Si la lecture `getAttributionStrategy()` plante → fallback
+  `last_paid_touch`
+- Si la lecture `findAttributionByVisitor()` plante → on continue avec
+  null snapshot
+- Si pas de snapshot → on autorise (best-effort : mieux vaut envoyer
+  une conversion potentiellement double-comptée qu'en perdre une)
+- Si le gate jette en l'air → fallback allow (logged en warn)
+
+**Aucun risque** de perdre des conversions à cause d'une panne du gate.
+
+## Tests
+
+### `dispatch-gate.test.ts` (24 tests)
+
+Couvre :
+- Providers neutres (GA4, GTM, custom) toujours allowed
+- Audience events toujours allowed
+- Conversions match → allowed
+- Conversions mismatch → skipped
+- Fallback direct/organic/unknown → allowed
+- Stratégie broadcast → tout allowed
+- Matrice complète providers × canaux (last_paid_touch)
+- Stratégie first_paid_touch avec historique multi-touch
+
+### `dispatcher.attribution.test.ts` (5 tests)
+
+Tests d'intégration sur `dispatchToProviders` complet :
+- Visiteur Meta + purchase → Meta dispatched
+- Visiteur Google Ads + purchase → Meta skipped (le cas critique)
+- Visiteur Google Ads + page_view → Meta dispatched (audience)
+- Visiteur sans snapshot → Meta dispatched (fallback)
+- Visiteur direct → Meta dispatched (broadcast partiel)
+
+### Total phase 2
+
+29 nouveaux tests. 609/609 tracking tests verts.
+
+## Effets observables
+
+### Avant la phase 2
+
+```
+Visiteur Google Ads convertit
+  ├ GTM client : seul Ads Conv tag fire ✓
+  └ Meta CAPI : envoie l'event quand même
+       → Meta Ads Manager affiche la conversion
+       → Meta crédite la vente dans son algo
+       → ROAS Meta gonflé artificiellement
+```
+
+### Après la phase 2
+
+```
+Visiteur Google Ads convertit
+  ├ GTM client : seul Ads Conv tag fire ✓
+  └ Meta CAPI : SKIPPED (attribution_skip:google_ads_vs_meta)
+       → Meta Ads Manager n'affiche pas la conversion
+       → Meta n'a aucun signal sur cette vente
+       → ROAS Meta reflète vraiment ses conversions
+```
+
+## Logs / observabilité
+
+Chaque skip produit un log structuré :
+
+```json
+{
+  "level": "debug",
+  "event": "tracking.dispatch.attribution_skip",
+  "kind": "meta",
+  "event_name": "purchase",
+  "reason": "attribution_skip:google_ads_vs_meta",
+  "attributed_channel": "google_ads",
+  "strategy": "last_paid_touch"
+}
+```
+
+Chaque résultat est aussi tracé dans `tracking_events_log` (table
+existante) via `providersResults`. Tu peux requêter :
+
+```sql
+SELECT event_name, providers_results->'meta'->>'error' AS meta_err
+FROM tracking_events_log
+WHERE providers_results->'meta'->>'error' LIKE 'attribution_skip:%'
+ORDER BY received_at DESC
+LIMIT 50;
+```
+
+→ Tu vois exactement quelles conversions ont été skipped par le gate.
+
+## Pas de breaking change
+
+Le gate est **additif** :
+- Visiteurs sans snapshot continuent à recevoir le dispatch (fallback)
+- Audience events ne changent pas de comportement
+- Providers neutres (GA4) ne changent pas
+- Seuls les visiteurs avec un canal payant identifié + event de
+  conversion + provider non-correspondant sont skipped
+
+## Limites + futurs travaux
+
+- Le gate utilise `ctx.anonymousId` (= visitorId) pour le lookup.
+  Si ton visiteur a un `userId` connu (login admin), tu peux étendre
+  pour faire un OR-lookup. Pas implémenté en phase 2 (cas rare sur
+  le site public).
+- Le `getAttributionStrategy()` est lu à chaque dispatch (~1 query
+  cachée par tracking_settings). Si le volume devient critique,
+  ajouter un cache LRU 30s sur la stratégie.
+- Phase 3 (Google Ads OCI) tirera parti du gate sans modification.

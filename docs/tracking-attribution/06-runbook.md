@@ -106,12 +106,15 @@
 - ✅ Changement de stratégie dans l'admin → effet sur les prochaines pushes (pas de cache)
 - ✅ Debugger affiche correctement le snapshot pour un `visitor_id` donné
 
-## Phases ultérieures (hors scope phase 1)
+## Phases ultérieures
 
-### Phase 2 — Meta CAPI selectif (+2h)
+### Phase 2 — Meta CAPI selectif ✅ LIVRÉE
 
-- `lib/mail/...meta CAPI dispatcher` : appliquer la stratégie avant l'appel
-- Si `attribution.channel !== 'meta'` ET stratégie stricte → skip CAPI
+Cf. `08-phase-2-server-gate.md` pour les détails. Au lieu de cabler
+uniquement Meta CAPI, on a centralisé le gate dans le dispatcher
+serveur (`lib/tracking/server/dispatcher.ts`) — applicable à TOUS
+les CAPI futurs (Meta + Google Ads OCI + TikTok + Snap + Pinterest)
+sans duplication de code.
 - Conserve event_id pour dedup avec pixel client (au cas où ITP)
 
 ### Phase 3 — Google Ads Offline Conversion Import (+8h)
