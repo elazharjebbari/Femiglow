@@ -97,71 +97,78 @@ export function PlanDetailActions({
   const canExport = validationOk === true;
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {canEdit && (
-        <Link
-          href={`/admin/tracking/plans/${planId}/edit`}
-          className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
-        >
-          Éditer
-        </Link>
-      )}
-      <button
-        type="button"
-        onClick={activate}
-        disabled={busy || !canActivate}
-        className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Activer
-      </button>
-      <button
-        type="button"
-        onClick={doExport}
-        disabled={busy || !canExport}
-        className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Exporter GTM
-      </button>
-      <button
-        type="button"
-        onClick={archive}
-        disabled={busy || !canArchive}
-        className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-sm text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Archiver
-      </button>
-      {canRestore && (
+    <div className="min-w-0">
+      <div className="flex flex-wrap gap-2">
+        {canEdit && (
+          <Link
+            href={`/admin/tracking/plans/${planId}/edit`}
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
+          >
+            Éditer
+          </Link>
+        )}
         <button
           type="button"
-          onClick={restore}
-          disabled={busy}
-          className="rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={activate}
+          disabled={busy || !canActivate}
+          className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Restaurer en brouillon
+          Activer
         </button>
-      )}
-      {canDelete && (
         <button
           type="button"
-          onClick={remove}
-          disabled={busy}
-          className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={doExport}
+          disabled={busy || !canExport}
+          className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Supprimer
+          Exporter GTM
         </button>
-      )}
+        <button
+          type="button"
+          onClick={archive}
+          disabled={busy || !canArchive}
+          className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-sm text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Archiver
+        </button>
+        {canRestore && (
+          <button
+            type="button"
+            onClick={restore}
+            disabled={busy}
+            className="rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Restaurer en brouillon
+          </button>
+        )}
+        {canDelete && (
+          <button
+            type="button"
+            onClick={remove}
+            disabled={busy}
+            className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Supprimer
+          </button>
+        )}
+      </div>
       {error && (
-        <p role="alert" className="basis-full text-sm text-rose-700">
+        <p role="alert" className="mt-2 text-sm text-rose-700">
           {error}
         </p>
       )}
       {exportJson !== null && (
-        <div className="basis-full">
-          <h3 className="mb-2 text-sm font-medium text-stone-700">
-            Container GTM (production)
-          </h3>
+        <section className="mt-6 min-w-0">
+          <header className="mb-3 flex items-baseline justify-between gap-2">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-stone-500">
+              Container GTM (production)
+            </h3>
+            <p className="text-xs text-stone-500">
+              Import GTM &rarr; Admin &rarr; Importer un conteneur
+            </p>
+          </header>
           <JsonPreview data={exportJson} filename={`plan-${planId}.gtm.json`} />
-        </div>
+        </section>
       )}
     </div>
   );

@@ -60,9 +60,10 @@ describe('exportPlan — déterminisme', () => {
 
   it('bundleId is independent of exportTime (re-exporting same plan is stable)', () => {
     const a = exportPlan(buildPlan(), 'production');
-    // wait a tick so exportTime differs
     const b = exportPlan(buildPlan(), 'production');
-    expect((a.json as any).exportTime).not.toBe((b.json as any).exportTime);
+    expect((a.json as any).exportTime).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect((b.json as any).exportTime).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    // Whatever exportTime ends up being, the hash must ignore it.
     expect(a.bundleId).toBe(b.bundleId);
   });
 

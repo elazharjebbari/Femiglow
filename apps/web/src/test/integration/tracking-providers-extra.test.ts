@@ -122,7 +122,11 @@ describe('Adapter GTM', () => {
     expect(out.results.gtm?.error).toBe('client_only');
   });
 
-  it('clientSnippet renvoie un script avec le GTM ID', () => {
+  it('clientSnippet retourne null — GTM est désormais bootstrappé SSR (GtmHeadScript)', () => {
+    // GTM doit être chargé dans le HTML initial pour que Tag Assistant
+    // / Preview Mode détecte le conteneur. L'injection est donc faite
+    // server-side via <GtmHeadScript />, et l'adapter renvoie null
+    // pour que PixelLoader (client) ne le re-charge pas.
     const adapter = getAdapter('gtm');
     expect(adapter).toBeTruthy();
     const snippet = adapter!.clientSnippet?.({
@@ -144,6 +148,6 @@ describe('Adapter GTM', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    expect(snippet).toContain('GTM-XYZ');
+    expect(snippet).toBeNull();
   });
 });

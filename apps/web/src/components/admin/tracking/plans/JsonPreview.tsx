@@ -21,6 +21,12 @@ function pretty(value: unknown): string {
   }
 }
 
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} o`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} ko`;
+  return `${(n / (1024 * 1024)).toFixed(2)} Mo`;
+}
+
 export function JsonPreview({
   data,
   filename = 'export.json',
@@ -28,6 +34,8 @@ export function JsonPreview({
 }: JsonPreviewProps): JSX.Element {
   const [copied, setCopied] = useState(false);
   const content = pretty(data);
+  const sizeBytes = new Blob([content]).size;
+  const lineCount = content.split('\n').length;
 
   async function copy() {
     try {
@@ -49,33 +57,45 @@ export function JsonPreview({
     URL.revokeObjectURL(url);
   }
 
+  // `min-w-0` est crucial : sans ça, dans un parent flex/grid, le contenu
+  // monospace très large pousse la figure au-delà du conteneur (la
+  // valeur par défaut `min-width: auto` empêche le rétrécissement).
   return (
-    <figure className="overflow-hidden rounded-md border border-stone-200 bg-stone-50">
-      <figcaption className="flex items-center justify-between gap-2 border-b border-stone-200 bg-white px-3 py-2 text-xs text-stone-600">
-        <span>{filename}</span>
-        <span className="flex items-center gap-2">
+    <figure className="min-w-0 w-full overflow-hidden rounded-lg border border-stone-200 bg-stone-50 shadow-sm">
+      <figcaption className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 bg-white px-4 py-2.5 text-xs text-stone-600">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="inline-flex h-5 items-center rounded bg-stone-100 px-1.5 font-mono text-[10px] font-medium uppercase tracking-wide text-stone-600">
+            JSON
+          </span>
+          <span className="truncate font-mono text-stone-700">{filename}</span>
+          <span className="hidden text-stone-400 sm:inline">·</span>
+          <span className="hidden text-stone-500 sm:inline">
+            {formatBytes(sizeBytes)} · {lineCount} lignes
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={copy}
-            className="rounded border border-stone-300 bg-white px-2 py-0.5 text-xs hover:bg-stone-50"
+            className="rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 transition hover:border-stone-400 hover:bg-stone-50"
           >
-            {copied ? 'Copié' : 'Copier'}
+            {copied ? '✓ Copié' : 'Copier'}
           </button>
           <button
             type="button"
             onClick={download}
-            className="rounded border border-stone-300 bg-white px-2 py-0.5 text-xs hover:bg-stone-50"
+            className="rounded border border-stone-300 bg-stone-900 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-stone-800"
           >
             Télécharger
           </button>
-        </span>
+        </div>
       </figcaption>
       <pre
-        className="overflow-auto p-3 text-xs leading-5 text-stone-800"
-        style={{ maxHeight }}
+        className="overflow-auto p-4 font-mono text-[12px] leading-relaxed text-stone-800"
+        style={{ maxHeight, tabSize: 2 }}
         aria-label="Aperçu JSON"
       >
-        <code>{content}</code>
+        <code className="whitespace-pre">{content}</code>
       </pre>
     </figure>
   );
