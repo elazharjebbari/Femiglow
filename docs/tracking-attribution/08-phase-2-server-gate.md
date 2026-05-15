@@ -236,6 +236,39 @@ Le gate est **additif** :
 
 ## Pièges courants à l'import GTM
 
+### 0. `customEventFilter` limité à 1 seul entry — REJETÉ par GTM
+
+Un trigger `CUSTOM_EVENT` ne peut avoir qu'**UN SEUL** filtre dans
+`customEventFilter` (le matching du nom d'event). Si on en met
+plusieurs, GTM rejette à l'import avec :
+
+```
+Un déclencheur d'événement personnalisé doit comporter un seul filtre
+d'événement personnalisé.
+```
+
+**Pourquoi ça arrivait** : nos triggers attribution-gated avaient
+2 entries dans `customEventFilter` (EQUALS event_name + MATCH_REGEX
+attribution.channel).
+
+**Fix appliqué** : le filtre MATCH_REGEX a été déplacé dans le champ
+`filter` (séparé). Format final :
+
+```json
+{
+  "type": "CUSTOM_EVENT",
+  "customEventFilter": [
+    { "type": "EQUALS", "parameter": [...event_name...] }
+  ],
+  "filter": [
+    { "type": "MATCH_REGEX", "parameter": [...attribution.channel...] }
+  ]
+}
+```
+
+**Régression-proof** : test exporter qui scanne tous les triggers
+CUSTOM_EVENT et fail si l'un d'eux a >1 entry dans `customEventFilter`.
+
 ### 1. Caractère `:` dans les noms — REJETÉ par GTM
 
 GTM refuse l'import si un nom de **tag**, **trigger** ou **variable** contient

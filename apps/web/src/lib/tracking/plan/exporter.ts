@@ -58,7 +58,19 @@ interface GtmTrigger {
   triggerId: string;
   name: string;
   type: 'PAGEVIEW' | 'CUSTOM_EVENT' | 'DOM_READY' | 'WINDOW_LOADED';
+  /**
+   * Filtre du nom d'event. GTM limite à **UNE SEULE entrée** ici pour
+   * les CUSTOM_EVENT triggers (l'erreur « Un déclencheur d'événement
+   * personnalisé doit comporter un seul filtre d'événement personnalisé »
+   * apparaît sinon). Les conditions supplémentaires (ex. filtre
+   * d'attribution) doivent passer dans `filter` ci-dessous.
+   */
   customEventFilter?: GtmTriggerFilter[];
+  /**
+   * Conditions additionnelles évaluées APRÈS le matching event.
+   * Tableau libre — autant d'entrées qu'on veut.
+   */
+  filter?: GtmTriggerFilter[];
   parentFolderId?: string;
 }
 
@@ -338,6 +350,10 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       // un séparateur ' / ' pour rester lisible.
       name: `CE — ${eventKey} [attr / ${providerKey}]`,
       type: 'CUSTOM_EVENT',
+      // customEventFilter : UN SEUL filtre autorisé par GTM
+      // (matching du nom d'event). Si on en met plusieurs, GTM rejette
+      // l'import avec "Un déclencheur d'événement personnalisé doit
+      // comporter un seul filtre d'événement personnalisé".
       customEventFilter: [
         {
           type: 'EQUALS',
@@ -346,10 +362,14 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             { type: 'TEMPLATE', key: 'arg1', value: eventKey },
           ],
         },
+      ],
+      // filter : conditions additionnelles évaluées APRÈS le matching
+      // du nom d'event. C'est ici qu'on met le filtre d'attribution.
+      // MATCH_REGEX → fire si channel = providerKey OU direct OU
+      // organic. Le visiteur direct/organic est broadcasté à tous les
+      // pixels payants (politique défaut, cf. docs/tracking-attribution/04).
+      filter: [
         {
-          // MATCH_REGEX → fire si channel = providerKey OU direct OU organic.
-          // Le visiteur direct/organic est broadcasté à tous les pixels payants
-          // (politique par défaut, cf. docs/tracking-attribution/04).
           type: 'MATCH_REGEX',
           parameter: [
             {

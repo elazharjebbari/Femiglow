@@ -387,14 +387,30 @@ function SectionExport(): JSX.Element {
   return (
     <Section number={5} title="Exporter & importer dans GTM" emoji="📦">
       <Callout tone="warning">
-        <strong>Caractères interdits dans GTM</strong> : les noms de tags,
-        triggers et variables ne peuvent pas contenir <code>:</code>,{' '}
-        <code>,</code>, ni <code>;</code>. Si tu vois{' '}
-        <em>« The name contains invalid character: ":" »</em> à l'import,
-        c'est qu'un nom contient un de ces caractères. L'exporter FemiGlow
-        sanitize automatiquement (séparateur <code> / </code> à la place
-        de <code>:</code>), et un test de régression bloque toute
-        introduction d'un nom invalide.
+        <strong>Pièges classiques à l'import GTM</strong> :
+        <ul className="ml-4 mt-1 list-disc space-y-0.5 text-xs">
+          <li>
+            <strong>« Un déclencheur d'événement personnalisé doit comporter
+            un seul filtre d'événement personnalisé »</strong> : un trigger
+            CUSTOM_EVENT ne peut avoir qu'<strong>1 seule entrée</strong>{' '}
+            dans <code>customEventFilter</code>. Les conditions
+            supplémentaires (ex. filtre d'attribution) passent dans le
+            champ séparé <code>filter</code>. Fixé + test de régression.
+          </li>
+          <li>
+            <strong>« The name contains invalid character: ":" »</strong> :
+            les noms de tags/triggers/variables ne peuvent pas contenir{' '}
+            <code>:</code>, <code>,</code>, <code>;</code>. L'exporter
+            utilise <code> / </code> à la place. Fixé + test de régression
+            qui scanne tous les noms.
+          </li>
+          <li>
+            <strong>« Error deserializing enum type »</strong> : enum API
+            attend SCREAMING_SNAKE_CASE (<code>PAGEVIEW</code>,{' '}
+            <code>PURCHASE</code>) pas lowercase. Toujours bon côté
+            exporter.
+          </li>
+        </ul>
       </Callout>
       <p className="font-medium text-stone-900">Workflow :</p>
       <ol className="ml-5 list-decimal space-y-1">

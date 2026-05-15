@@ -378,8 +378,15 @@ describe('exportPlan — structure GTM', () => {
     expect(adsAttr).toBeDefined();
     expect(ttAttr).toBeDefined();
 
-    // Filtre MATCH_REGEX dessus
-    const regexFilter = metaAttr.customEventFilter.find((f: any) => f.type === 'MATCH_REGEX');
+    // customEventFilter doit contenir UN SEUL filtre (matching event name).
+    // GTM rejette plusieurs entrées : "Un déclencheur d'événement
+    // personnalisé doit comporter un seul filtre d'événement personnalisé".
+    expect(metaAttr.customEventFilter).toHaveLength(1);
+    expect(metaAttr.customEventFilter[0].type).toBe('EQUALS');
+    // Le filtre d'attribution (MATCH_REGEX) doit aller dans `filter`,
+    // pas dans customEventFilter.
+    expect(metaAttr.filter).toBeDefined();
+    const regexFilter = metaAttr.filter.find((f: any) => f.type === 'MATCH_REGEX');
     expect(regexFilter).toBeDefined();
     expect(regexFilter.parameter[0].value).toBe('{{DLV - attribution.channel}}');
     expect(regexFilter.parameter[1].value).toBe('^(meta|direct|organic|broadcast)$');
@@ -450,6 +457,48 @@ describe('exportPlan — structure GTM', () => {
     expect(dlv.type).toBe('v');
     const nameParam = dlv.parameter.find((p: any) => p.key === 'name');
     expect(nameParam.value).toBe('attribution.channel');
+  });
+
+  it('chaque CUSTOM_EVENT trigger a au plus UN entry dans customEventFilter (limite GTM)', () => {
+    // GTM rejette l'import si un trigger CUSTOM_EVENT a >1 entry dans
+    // customEventFilter avec : "Un déclencheur d'événement personnalisé
+    // doit comporter un seul filtre d'événement personnalisé".
+    // Les conditions additionnelles doivent passer dans `filter`.
+    const plan = buildPlan({
+      providers: [
+        { id: 'ga4', active: true },
+        { id: 'meta', active: true },
+        { id: 'googleAds', active: true },
+        { id: 'tiktok', active: true },
+      ],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            ga4MeasurementId: 'G-X',
+            metaPixelId: '1234',
+            googleAdsConversionId: 'AW-X',
+            googleAdsConversionLabels: { purchase: 'LABEL' },
+            tiktokPixelId: 'TIKTOKID12345',
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { ga4: true, meta: true, googleAds: true, tiktok: true } },
+        { key: 'page_view', providers: { ga4: true, meta: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const triggers = (result.json as any).containerVersion.trigger;
+    for (const t of triggers) {
+      if (t.type !== 'CUSTOM_EVENT') continue;
+      const filters = t.customEventFilter ?? [];
+      expect(
+        filters.length,
+        `Trigger "${t.name}" a ${filters.length} customEventFilter (>1 → GTM rejette l'import)`,
+      ).toBeLessThanOrEqual(1);
+    }
   });
 
   it('aucun nom (tag/trigger/variable) ne contient des caractères refusés par l\'import GTM', () => {
