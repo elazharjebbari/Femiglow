@@ -84,6 +84,8 @@ export default async function AdminLeadsPage({
               <tr>
                 <Th>Identité</Th>
                 <Th>Contact</Th>
+                <Th>Parcours</Th>
+                <Th>Webhook</Th>
                 <Th>Statut</Th>
                 <Th>Créé</Th>
                 <Th aria-label="Actions" />
@@ -94,6 +96,26 @@ export default async function AdminLeadsPage({
                 <tr key={l.id} className="hover:bg-stone-50">
                   <Td>{l.name ?? '—'}</Td>
                   <Td>{l.email ?? l.phone ?? '—'}</Td>
+                  <Td>
+                    <div className="space-y-1">
+                      <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">
+                        {labelForJourney(l.journeyStage)}
+                      </span>
+                      {typeof l.dataPct === 'number' ? (
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-stone-100">
+                          <div
+                            className="h-full rounded-full bg-emerald-500"
+                            style={{ width: `${l.dataPct}%` }}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  </Td>
+                  <Td>
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${webhookBadgeClass(l.webhookSummary)}`}>
+                      {labelForWebhook(l.webhookSummary)}
+                    </span>
+                  </Td>
                   <Td>
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
                       {l.status}
@@ -156,4 +178,49 @@ function Th({ children }: { children?: React.ReactNode }) {
 
 function Td({ children }: { children?: React.ReactNode }) {
   return <td className="px-4 py-3 align-top text-stone-800">{children}</td>;
+}
+
+function labelForJourney(stage?: string | null): string {
+  switch (stage) {
+    case 'lead':
+      return 'Lead';
+    case 'address':
+      return 'Adresse';
+    case 'payment':
+      return 'Paiement';
+    case 'purchased':
+      return 'Achat';
+    case 'abandoned_step1':
+      return 'Abandon step 1';
+    default:
+      return '—';
+  }
+}
+
+function labelForWebhook(status?: string | null): string {
+  switch (status) {
+    case 'step2_sent':
+      return 'step2 envoyé';
+    case 'step1_abandoned_sent':
+      return 'abandon envoyé';
+    case 'sent':
+      return 'envoyé';
+    case 'failed':
+      return 'échec';
+    case 'disabled':
+      return 'désactivé';
+    case 'pending':
+      return 'pending';
+    default:
+      return '—';
+  }
+}
+
+function webhookBadgeClass(status?: string | null): string {
+  if (status === 'failed') return 'bg-rose-100 text-rose-800';
+  if (status === 'sent' || status === 'step2_sent' || status === 'step1_abandoned_sent') {
+    return 'bg-emerald-100 text-emerald-800';
+  }
+  if (status === 'disabled') return 'bg-amber-100 text-amber-800';
+  return 'bg-stone-100 text-stone-600';
 }

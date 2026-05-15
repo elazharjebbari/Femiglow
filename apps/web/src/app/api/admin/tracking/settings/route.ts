@@ -16,14 +16,44 @@ export const dynamic = 'force-dynamic';
 interface SettingsView {
   consentBannerEnabled: boolean;
   consentDefaultGranted: boolean;
+  leadStep2WebhookEnabled: boolean;
+  leadStep1AbandonEnabled: boolean;
+  leadStep1AbandonTimeoutMinutes: number;
+  leadWebhookConversationEnabled: boolean;
+  leadWebhookConversationMaxMessages: number;
+  leadWebhookConversationMaxBytes: number;
 }
 
 async function loadSettings(): Promise<SettingsView> {
-  const [consentBannerEnabled, consentDefaultGranted] = await Promise.all([
+  const [
+    consentBannerEnabled,
+    consentDefaultGranted,
+    leadStep2WebhookEnabled,
+    leadStep1AbandonEnabled,
+    leadStep1AbandonTimeoutMinutes,
+    leadWebhookConversationEnabled,
+    leadWebhookConversationMaxMessages,
+    leadWebhookConversationMaxBytes,
+  ] = await Promise.all([
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_STEP2_WEBHOOK_ENABLED, true),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_STEP1_ABANDON_ENABLED, true),
+    getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_STEP1_ABANDON_TIMEOUT_MINUTES, 5),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_ENABLED, true),
+    getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES, 50),
+    getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_BYTES, 30_000),
   ]);
-  return { consentBannerEnabled, consentDefaultGranted };
+  return {
+    consentBannerEnabled,
+    consentDefaultGranted,
+    leadStep2WebhookEnabled,
+    leadStep1AbandonEnabled,
+    leadStep1AbandonTimeoutMinutes,
+    leadWebhookConversationEnabled,
+    leadWebhookConversationMaxMessages,
+    leadWebhookConversationMaxBytes,
+  };
 }
 
 export async function GET(): Promise<Response> {
@@ -42,6 +72,12 @@ const patchSchema = z
   .object({
     consentBannerEnabled: z.boolean().optional(),
     consentDefaultGranted: z.boolean().optional(),
+    leadStep2WebhookEnabled: z.boolean().optional(),
+    leadStep1AbandonEnabled: z.boolean().optional(),
+    leadStep1AbandonTimeoutMinutes: z.number().int().min(1).max(60).optional(),
+    leadWebhookConversationEnabled: z.boolean().optional(),
+    leadWebhookConversationMaxMessages: z.number().int().min(1).max(50).optional(),
+    leadWebhookConversationMaxBytes: z.number().int().min(1000).max(50000).optional(),
   })
   .strict();
 
@@ -65,6 +101,48 @@ export async function PATCH(request: Request): Promise<Response> {
       await setTrackingSetting<boolean>(
         TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED,
         parsed.data.consentDefaultGranted,
+        { actorId: session.adminId },
+      );
+    }
+    if (parsed.data.leadStep2WebhookEnabled !== undefined) {
+      await setTrackingSetting<boolean>(
+        TRACKING_SETTING_KEYS.LEAD_STEP2_WEBHOOK_ENABLED,
+        parsed.data.leadStep2WebhookEnabled,
+        { actorId: session.adminId },
+      );
+    }
+    if (parsed.data.leadStep1AbandonEnabled !== undefined) {
+      await setTrackingSetting<boolean>(
+        TRACKING_SETTING_KEYS.LEAD_STEP1_ABANDON_ENABLED,
+        parsed.data.leadStep1AbandonEnabled,
+        { actorId: session.adminId },
+      );
+    }
+    if (parsed.data.leadStep1AbandonTimeoutMinutes !== undefined) {
+      await setTrackingSetting<number>(
+        TRACKING_SETTING_KEYS.LEAD_STEP1_ABANDON_TIMEOUT_MINUTES,
+        parsed.data.leadStep1AbandonTimeoutMinutes,
+        { actorId: session.adminId },
+      );
+    }
+    if (parsed.data.leadWebhookConversationEnabled !== undefined) {
+      await setTrackingSetting<boolean>(
+        TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_ENABLED,
+        parsed.data.leadWebhookConversationEnabled,
+        { actorId: session.adminId },
+      );
+    }
+    if (parsed.data.leadWebhookConversationMaxMessages !== undefined) {
+      await setTrackingSetting<number>(
+        TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES,
+        parsed.data.leadWebhookConversationMaxMessages,
+        { actorId: session.adminId },
+      );
+    }
+    if (parsed.data.leadWebhookConversationMaxBytes !== undefined) {
+      await setTrackingSetting<number>(
+        TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_BYTES,
+        parsed.data.leadWebhookConversationMaxBytes,
         { actorId: session.adminId },
       );
     }

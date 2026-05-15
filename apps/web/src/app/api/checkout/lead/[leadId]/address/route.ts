@@ -11,6 +11,8 @@ import { withIdempotency } from '@/lib/checkout/api/idempotency-middleware';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
 import { patchLeadAddressInputSchema } from '@/lib/checkout/schemas/lead';
 import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
+import { getClientIp } from '@/lib/http/client-ip';
+import { dispatchLeadStep2Webhook } from '@/lib/webhooks/outbound/sources/from-wizard-step2';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -76,6 +78,17 @@ export async function PATCH(
       leadId,
       replayed: result.replayed,
     });
+    if (result.status === 200 && !result.replayed) {
+      const updated = await wizardLeadRepo.getById(leadId);
+      if (updated) {
+        void dispatchLeadStep2Webhook(updated, { ip: getClientIp(req) }).catch((err) => {
+          logger.error('outbound.webhook.lead-step2.fire_and_forget_failed', {
+            leadId,
+            error: String(err),
+          });
+        });
+      }
+    }
     return NextResponse.json(result.body, { status: result.status });
   } catch (err) {
     logger.error('checkout.lead.address.failed', { leadId, error: String(err) });

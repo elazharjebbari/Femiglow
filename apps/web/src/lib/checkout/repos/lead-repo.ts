@@ -201,4 +201,20 @@ export const wizardLeadRepo = {
       .returning();
     return rows[0] ?? null;
   },
+
+  async stampStep2Webhook(id: string, at: Date = new Date()): Promise<void> {
+    const db = requireChatDb();
+    await db
+      .update(chatLead)
+      .set({ step2WebhookAt: at, updatedAt: at })
+      .where(eq(chatLead.id, id));
+  },
+
+  async stampStep1AbandonWebhook(id: string, at: Date = new Date()): Promise<void> {
+    const db = requireChatDb();
+    await db
+      .update(chatLead)
+      .set({ step1AbandonWebhookAt: at, updatedAt: at })
+      .where(eq(chatLead.id, id));
+  },
 };

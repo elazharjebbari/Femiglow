@@ -289,6 +289,8 @@ export function buildLeadRepoMock() {
           paymentSelectedAt: insert.paymentSelectedAt ?? null,
           purchasedAt: insert.purchasedAt ?? null,
           abandonWebhookAt: insert.abandonWebhookAt ?? null,
+          step2WebhookAt: insert.step2WebhookAt ?? null,
+          step1AbandonWebhookAt: insert.step1AbandonWebhookAt ?? null,
           createdAt: new Date(),
           updatedAt: new Date(),
         };

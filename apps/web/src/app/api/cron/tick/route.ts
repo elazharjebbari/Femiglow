@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import { processBatch } from '@/lib/webhooks/engine';
 import { scanAndDispatchCartAbandon } from '@/lib/webhooks/outbound/cart-abandon-scanner';
+import { scanAndDispatchLeadStep1Abandon } from '@/lib/webhooks/outbound/lead-step1-abandon-scanner';
 import { syncCampaignStatuses } from '@/lib/mail/campaigns/listmonk-status-sync';
 import { logAuditEvent } from '@/lib/audit/log-event';
 import { logger } from '@/lib/logging/logger';
@@ -14,6 +15,7 @@ export const maxDuration = 60;
 const MAX_DURATION_MS = 50_000;
 const BATCH_SIZE = 50;
 const CART_ABANDON_LIMIT = 30;
+const LEAD_STEP1_ABANDON_LIMIT = 50;
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -29,6 +31,9 @@ export async function POST(request: Request): Promise<Response> {
     // garantit que ce job tourne même si processBatch consomme tout le
     // temps disponible. Le scanner est borné à CART_ABANDON_LIMIT leads.
     const cartAbandon = await scanAndDispatchCartAbandon({ limit: CART_ABANDON_LIMIT });
+    const leadStep1Abandon = await scanAndDispatchLeadStep1Abandon({
+      limit: LEAD_STEP1_ABANDON_LIMIT,
+    });
 
     // Listmonk doesn't emit campaign.completed webhooks; poll instead.
     let campaignSync: Awaited<ReturnType<typeof syncCampaignStatuses>> | { error: string } = {
@@ -63,14 +68,15 @@ export async function POST(request: Request): Promise<Response> {
       failed,
       took_ms: tookMs,
       cart_abandon: cartAbandon,
+      lead_step1_abandon: leadStep1Abandon,
       campaign_sync: campaignSync,
     });
     await logAuditEvent({
       action: 'system.cron_tick',
       actorId: null,
-      meta: { processed, succeeded, failed, took_ms: tookMs, cart_abandon: cartAbandon, campaign_sync: campaignSync },
+      meta: { processed, succeeded, failed, took_ms: tookMs, cart_abandon: cartAbandon, lead_step1_abandon: leadStep1Abandon, campaign_sync: campaignSync },
     });
-    return NextResponse.json({ processed, succeeded, failed, tookMs, cartAbandon, campaignSync });
+    return NextResponse.json({ processed, succeeded, failed, tookMs, cartAbandon, leadStep1Abandon, campaignSync });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });

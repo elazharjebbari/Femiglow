@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/auth/require-admin';
 import { TrackingShell } from '@/components/admin/tracking/TrackingShell';
 import { listTrackingProviders } from '@/lib/db/queries/tracking/providers';
 import { ConsentBannerSettingsForm } from '@/components/admin/tracking/ConsentBannerSettingsForm';
+import { LeadWebhookSettingsForm } from '@/components/admin/tracking/LeadWebhookSettingsForm';
 import {
   getTrackingSetting,
   TRACKING_SETTING_KEYS,
@@ -13,9 +14,24 @@ export default async function TrackingSettingsPage() {
   const session = await requireAdmin('/admin/tracking/settings');
   const providers = await listTrackingProviders();
   const enabledCount = providers.filter((p) => p.status === 'enabled').length;
-  const [bannerEnabled, defaultGranted] = await Promise.all([
+  const [
+    bannerEnabled,
+    defaultGranted,
+    leadStep2WebhookEnabled,
+    leadStep1AbandonEnabled,
+    leadStep1AbandonTimeoutMinutes,
+    leadWebhookConversationEnabled,
+    leadWebhookConversationMaxMessages,
+    leadWebhookConversationMaxBytes,
+  ] = await Promise.all([
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_STEP2_WEBHOOK_ENABLED, true),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_STEP1_ABANDON_ENABLED, true),
+    getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_STEP1_ABANDON_TIMEOUT_MINUTES, 5),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_ENABLED, true),
+    getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES, 50),
+    getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_BYTES, 30_000),
   ]);
 
   const checks: Array<{ label: string; ok: boolean; detail?: string }> = [
@@ -26,6 +42,14 @@ export default async function TrackingSettingsPage() {
     {
       label: 'CRON_SECRET défini',
       ok: !!process.env.CRON_SECRET && process.env.CRON_SECRET.length >= 16,
+    },
+    {
+      label: 'OUTBOUND_WEBHOOK_URL défini',
+      ok: !!process.env.OUTBOUND_WEBHOOK_URL,
+    },
+    {
+      label: 'OUTBOUND_WEBHOOK_SECRET défini',
+      ok: !!process.env.OUTBOUND_WEBHOOK_SECRET && process.env.OUTBOUND_WEBHOOK_SECRET.length >= 32,
     },
     {
       label: 'NODE_ENV',
@@ -91,6 +115,24 @@ export default async function TrackingSettingsPage() {
         <ConsentBannerSettingsForm
           initialBannerEnabled={bannerEnabled}
           initialDefaultGranted={defaultGranted}
+        />
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">
+          Leads - webhook outbound
+        </h2>
+        <p className="mt-3 text-sm text-stone-700">
+          Configuration du webhook plat envoyé après adresse, après abandon step 1 et depuis le
+          chat. Les envois restent journalisés dans <code className="font-mono text-xs">outbound_webhook_log</code>.
+        </p>
+        <LeadWebhookSettingsForm
+          initialStep2WebhookEnabled={leadStep2WebhookEnabled}
+          initialStep1AbandonEnabled={leadStep1AbandonEnabled}
+          initialStep1AbandonTimeoutMinutes={leadStep1AbandonTimeoutMinutes}
+          initialConversationEnabled={leadWebhookConversationEnabled}
+          initialConversationMaxMessages={leadWebhookConversationMaxMessages}
+          initialConversationMaxBytes={leadWebhookConversationMaxBytes}
         />
       </section>
 

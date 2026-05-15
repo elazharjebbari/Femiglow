@@ -78,6 +78,8 @@ export interface CityAutocompleteProps {
   hint?: string;
   /** Message d'erreur, géré par RHF. */
   error?: string;
+  /** Hint affiché quand le texte courant matche exactement une ville. */
+  matchedHint?: (matched: string) => string;
   /** Placeholder du `<input>`. */
   placeholder?: string;
   /** Valeur courante (texte libre). */
@@ -153,6 +155,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     label,
     hint,
     error,
+    matchedHint,
     placeholder,
     value,
     onChange,
@@ -182,6 +185,27 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
   // ── Données ────────────────────────────────────────────────────────────────
   const { items, loading } = useDeliveryCities(value, { countryCode, limit });
   const { freeShipping } = useShippingConfig();
+
+  const exactMatch = useMemo(() => {
+    const normalized = value.trim().toLocaleLowerCase();
+    if (!normalized) return null;
+    return (
+      items.find((city) => {
+        const candidates = [
+          city.nameFr,
+          city.nameAr ?? '',
+          city.slug,
+          ...city.aliases,
+        ];
+        return candidates.some(
+          (candidate) => candidate.trim().toLocaleLowerCase() === normalized,
+        );
+      }) ?? null
+    );
+  }, [items, value]);
+
+  const effectiveHint =
+    exactMatch && matchedHint ? matchedHint(exactMatch.nameFr) : hint;
 
   // Clamp activeIndex quand les items changent (ex: query qui se rétrécit).
   useEffect(() => {
@@ -332,10 +356,10 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
   const hasError = Boolean(error);
   const describedBy = useMemo(() => {
     const ids: string[] = [];
-    if (hint && !error) ids.push(`${id}-hint`);
+    if (effectiveHint && !error) ids.push(`${id}-hint`);
     if (error) ids.push(`${id}-error`);
     return ids.length > 0 ? ids.join(' ') : undefined;
-  }, [hint, error, id]);
+  }, [effectiveHint, error, id]);
 
   // Listbox actif uniquement quand il y a quelque chose à montrer ou un état
   // de chargement à signaler.
@@ -343,7 +367,13 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
 
   return (
     <div ref={containerRef} className="relative">
-      <FieldShell id={id} label={label} hint={hint} error={error} required={required}>
+      <FieldShell
+        id={id}
+        label={label}
+        hint={effectiveHint}
+        error={error}
+        required={required}
+      >
         <input
           ref={inputRef}
           id={id}

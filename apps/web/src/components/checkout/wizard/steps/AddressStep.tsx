@@ -337,6 +337,7 @@ export function AddressStep({ cta }: AddressStepProps) {
               label={t.address.cityLabel}
               placeholder={t.address.cityPlaceholder}
               hint={t.address.cityHintBilingual}
+              matchedHint={t.address.cityHintMatched}
               required
               error={errors.city?.message}
               value={field.value ?? ''}

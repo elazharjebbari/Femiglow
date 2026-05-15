@@ -121,4 +121,16 @@ export const TRACKING_SETTING_KEYS = {
    * Défaut runtime si absente : 'last_paid_touch' (recommandé).
    */
   ATTRIBUTION_STRATEGY: 'attribution_strategy',
+  /** Envoi automatique du webhook quand le wizard valide l'adresse. */
+  LEAD_STEP2_WEBHOOK_ENABLED: 'lead.step2_webhook_enabled',
+  /** Scan cron des leads ayant fourni nom + téléphone sans adresse. */
+  LEAD_STEP1_ABANDON_ENABLED: 'lead.step1_abandon_enabled',
+  /** Délai avant webhook d'abandon step 1, en minutes. */
+  LEAD_STEP1_ABANDON_TIMEOUT_MINUTES: 'lead.step1_abandon_timeout_minutes',
+  /** Inclusion du transcript chat dans les payloads lead. */
+  LEAD_WEBHOOK_CONVERSATION_ENABLED: 'lead.webhook_conversation_enabled',
+  /** Nombre max de messages envoyés dans `conversation`. */
+  LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES: 'lead.webhook_conversation_max_messages',
+  /** Budget max approximatif du champ `conversation`, en bytes UTF-8. */
+  LEAD_WEBHOOK_CONVERSATION_MAX_BYTES: 'lead.webhook_conversation_max_bytes',
 } as const;

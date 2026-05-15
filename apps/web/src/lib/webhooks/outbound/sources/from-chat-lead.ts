@@ -19,6 +19,8 @@ import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
 import { dispatchOutbound, type DispatchResult } from '../dispatcher';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
+import { snapshotMessagesToConversation } from '../helpers/conversation';
+import { getLeadWebhookSettings } from '../settings';
 
 export interface DispatchChatLeadResult {
   status: DispatchResult['status'];
@@ -54,10 +56,21 @@ export async function dispatchChatLeadWebhook(
   if (lead.triggerReason) noteParts.push(`trigger:${lead.triggerReason}`);
   if (lead.intentAtCapture) noteParts.push(`intent:${lead.intentAtCapture}`);
 
+  const settings = await getLeadWebhookSettings();
+  const conversation = settings.conversationEnabled
+    ? snapshotMessagesToConversation(lead.snapshotMessages, {
+        userName: lead.firstName,
+        maxMessages: settings.conversationMaxMessages,
+        maxBytes: settings.conversationMaxBytes,
+      })
+    : undefined;
+
   const payload = {
     id: `chat-lead:${lead.id}`,
     full_name: composeFullName(lead.firstName),
     phone: phone.value,
+    source: lead.source ?? 'chat_widget',
+    conversation,
     email: lead.email ?? undefined,
     note: noteParts.length ? noteParts.join(' | ') : undefined,
     source_channel: `chat:${lead.triggerReason ?? 'manual'}`,

@@ -5,6 +5,7 @@ import { chatLead } from '@/lib/chat/db/schema';
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 import { createId } from '@/lib/ids';
 import type { Lead, LeadStatus, Order, OrderItem } from '@/lib/db/types';
+import { computeLeadJourney } from '@/lib/admin/leads/journey';
 
 export interface LeadFilters {
   status?: LeadStatus;
@@ -42,6 +43,7 @@ function chatOutcomeToLeadStatus(outcome: ChatLeadRow['outcome']): LeadStatus {
 
 /** Convertit un `chat_lead` en `Lead` pour l'affichage admin unifié. */
 function chatLeadToLead(row: ChatLeadRow): Lead {
+  const journey = computeLeadJourney(row);
   return {
     id: row.id, // garde le préfixe `cl_…` pour disambiguation
     email: null, // chat lead = capture phone-only, pas d'email
@@ -54,6 +56,9 @@ function chatLeadToLead(row: ChatLeadRow): Lead {
     updatedAt: row.updatedAt,
     // CHA-229 — Permet à /admin/leads de wirer la QuickView conversation.
     chatSessionId: row.sessionId,
+    journeyStage: journey.stage,
+    dataPct: journey.dataPct,
+    webhookSummary: journey.webhookSummary,
   };
 }
 

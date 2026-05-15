@@ -160,7 +160,16 @@ describe('dispatchLeadWebhook — succès 200 (payload PLAT)', () => {
     expect(payload.phone).toBe('0612345678');
     expect(payload.currency).toBe('MAD');
     expect(payload.quantity).toBe(1);
+    expect(payload.source).toBe('chat_widget');
     expect(payload.source_channel).toBe('chat:inline-contact');
+    expect(payload.conversation).toEqual([
+      {
+        role: 'user',
+        name: 'Yasmine',
+        text: 'Bonjour',
+        ts: '2026-05-13T12:00:00.000Z',
+      },
+    ]);
     // Pas de wrapping
     expect((payload as { event?: unknown }).event).toBeUndefined();
     expect((payload as { version?: unknown }).version).toBeUndefined();

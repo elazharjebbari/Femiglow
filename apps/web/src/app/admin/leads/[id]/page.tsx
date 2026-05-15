@@ -55,6 +55,25 @@ export default async function AdminLeadDetailPage({ params }: { params: { id: st
           />
         )}
       </header>
+      <section aria-label="Parcours lead" className="mb-8 rounded-md border border-stone-200 bg-white p-4">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">Parcours</h2>
+        <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-stone-500">Étape</p>
+            <p className="mt-1 font-medium text-stone-900">{labelForJourney(data.lead.journeyStage)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-stone-500">Données</p>
+            <p className="mt-1 font-medium text-stone-900">
+              {typeof data.lead.dataPct === 'number' ? `${data.lead.dataPct}%` : '—'}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-stone-500">Webhook</p>
+            <p className="mt-1 font-medium text-stone-900">{labelForWebhook(data.lead.webhookSummary)}</p>
+          </div>
+        </div>
+      </section>
       <section aria-label="Commande" className="mb-8 rounded-md border border-stone-200 bg-white p-4">
         <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">Commande</h2>
         {data.order ? (
@@ -117,6 +136,42 @@ export default async function AdminLeadDetailPage({ params }: { params: { id: st
       </section>
     </AdminShell>
   );
+}
+
+function labelForJourney(stage?: string | null): string {
+  switch (stage) {
+    case 'lead':
+      return 'Lead capturé';
+    case 'address':
+      return 'Adresse complétée';
+    case 'payment':
+      return 'Paiement sélectionné';
+    case 'purchased':
+      return 'Achat finalisé';
+    case 'abandoned_step1':
+      return 'Abandon step 1 envoyé';
+    default:
+      return '—';
+  }
+}
+
+function labelForWebhook(status?: string | null): string {
+  switch (status) {
+    case 'step2_sent':
+      return 'lead.step2_completed envoyé';
+    case 'step1_abandoned_sent':
+      return 'lead.step1_abandoned envoyé';
+    case 'sent':
+      return 'chat_lead.created envoyé';
+    case 'failed':
+      return 'Échec webhook';
+    case 'disabled':
+      return 'Webhook désactivé';
+    case 'pending':
+      return 'En attente';
+    default:
+      return '—';
+  }
 }
 
 function labelForEventType(type: string): string {

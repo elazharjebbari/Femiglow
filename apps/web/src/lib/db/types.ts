@@ -60,6 +60,9 @@ export interface Lead {
    * supplémentaire pour résoudre `chat_lead.session_id`.
    */
   chatSessionId?: string | null;
+  journeyStage?: 'lead' | 'address' | 'payment' | 'purchased' | 'abandoned_step1';
+  dataPct?: number;
+  webhookSummary?: 'none' | 'pending' | 'sent' | 'failed' | 'disabled' | 'step2_sent' | 'step1_abandoned_sent';
 }
 
 export interface Order {
@@ -124,7 +127,14 @@ export interface WebhookDelivery {
 }
 
 // CHA-260 — Outbound webhook log (payload PLAT).
-export type OutboundSource = 'order' | 'chat-lead' | 'cart-abandon' | 'contact' | 'newsletter';
+export type OutboundSource =
+  | 'order'
+  | 'chat-lead'
+  | 'cart-abandon'
+  | 'contact'
+  | 'newsletter'
+  | 'lead-step2'
+  | 'lead-step1-abandon';
 export type OutboundStatus = 'pending' | 'sent' | 'failed' | 'skipped' | 'disabled';
 
 export interface OutboundWebhookLogRow {

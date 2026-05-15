@@ -573,6 +573,12 @@ export const chatLead = pgTable(
     // Posé une seule fois après envoi (succès OU échec final) du webhook
     // `cart.abandoned` pour empêcher tout re-spam.
     abandonWebhookAt: timestamp('abandon_webhook_at', { withTimezone: true }),
+    // Leads webhook multi-step — horloges dédiées pour l'observabilité admin
+    // et les scans idempotents. L'idempotency-key outbound reste la source de
+    // vérité anti-doublon; ces timestamps évitent les rescans et accélèrent
+    // les filtres parcours.
+    step2WebhookAt: timestamp('step2_webhook_at', { withTimezone: true }),
+    step1AbandonWebhookAt: timestamp('step1_abandon_webhook_at', { withTimezone: true }),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -587,6 +593,7 @@ export const chatLead = pgTable(
     sourceIdx: index('chat_lead_source_idx').on(t.source, t.createdAt),
     formIdx: index('chat_lead_form_idx').on(t.formId, t.formMode, t.createdAt),
     stepIdx: index('chat_lead_step_idx').on(t.lastTouchedStep, t.createdAt),
+    step2WebhookIdx: index('chat_lead_step2_webhook_idx').on(t.step2WebhookAt),
   }),
 );
 

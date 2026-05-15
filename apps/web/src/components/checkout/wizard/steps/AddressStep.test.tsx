@@ -208,6 +208,18 @@ describe('AddressStep — champs rendus', () => {
     expect(hint).toBeInTheDocument();
     expect(hint.textContent ?? '').toContain('الدار البيضاء');
   });
+
+  it('affiche le hint de ville reconnue quand la saisie matche un alias', async () => {
+    setMockedCities([CASABLANCA]);
+    const user = userEvent.setup();
+    render(<AddressStep />);
+
+    await user.type(screen.getByTestId('wizard-address-city'), 'Casa');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Reconnu\s*:\s*Casablanca/i)).toBeInTheDocument();
+    });
+  });
 });
 
 describe('AddressStep — combobox CHA-230', () => {
