@@ -43,14 +43,27 @@ export const envConfigSchema = z
      *  par `googleAdsConversionLabels` (par-event). */
     googleAdsConversionLabel: z.string().optional(),
     googleAdsConversionLabels: googleAdsConversionLabelsSchema.optional(),
+    /**
+     * Active Enhanced Conversions pour Google Ads. Quand true, le
+     * tag awct lit user_data du dataLayer (sha256 email/phone) pour
+     * améliorer le matching post-clic. Recommandé : true (~5-30% de
+     * conversions matchées en plus). Cf.
+     * https://support.google.com/google-ads/answer/13262500
+     */
+    googleAdsEnhancedConversions: z.boolean().optional(),
     metaPixelId: z.string().optional(),
     tiktokPixelId: z.string().optional(),
     gtmContainerId: z.string().optional(),
   })
-  // Catchall : autorise des clés arbitraires (string ou record string).
-  // Sans union, l'index signature serait `string`, ce qui rendrait le
-  // champ typé `googleAdsConversionLabels` (Record) incompatible.
-  .catchall(z.union([z.string(), googleAdsConversionLabelsSchema]).optional());
+  // Catchall : autorise des clés arbitraires (string, record string,
+  // boolean). Sans union, l'index signature serait restrictif et les
+  // champs typés `googleAdsConversionLabels` (Record),
+  // `googleAdsEnhancedConversions` (boolean) seraient rejetés.
+  .catchall(
+    z
+      .union([z.string(), z.boolean(), googleAdsConversionLabelsSchema])
+      .optional(),
+  );
 export type EnvConfig = z.infer<typeof envConfigSchema>;
 
 export const envProfileSchema = z.object({

@@ -282,7 +282,36 @@ describe('exportPlan — structure GTM', () => {
     expect(params.orderId).toBe('{{DLV - ecommerce.transaction_id}}');
     expect(params.currencyCode).toBe('{{DLV - ecommerce.currency}}');
     expect(params.conversionValue).toBe('{{DLV - ecommerce.value}}');
+    // Enhanced Conversions activé par défaut (admin override possible
+    // via envConfig.googleAdsEnhancedConversions).
+    expect(params.enableEnhancedConversions).toBe('true');
     expect(params.enhancedConversionsAutomaticMode).toBe('true');
+  });
+
+  it('Enhanced Conversions désactivable via envConfig.googleAdsEnhancedConversions=false', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'googleAds', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            googleAdsConversionId: 'AW-X',
+            googleAdsConversionLabels: { purchase: 'LBL' },
+            googleAdsEnhancedConversions: false,
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [{ key: 'purchase', providers: { googleAds: true } }],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const awct = tags.find((t: any) => t.type === 'awct');
+    const params = Object.fromEntries(
+      awct.parameter.map((p: any) => [p.key, p.value]),
+    );
+    expect(params.enableEnhancedConversions).toBe('false');
+    expect(params.enhancedConversionsAutomaticMode).toBe('false');
   });
 
   it('skips awct tag when no conversion label is configured in envConfig', () => {

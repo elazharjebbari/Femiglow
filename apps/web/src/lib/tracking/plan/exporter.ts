@@ -169,8 +169,13 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   }
   const cfg = profile.config as Record<string, string | undefined> & {
     googleAdsConversionLabels?: GoogleAdsConversionLabels;
+    googleAdsEnhancedConversions?: boolean;
   };
   const conversionLabels = cfg.googleAdsConversionLabels ?? {};
+  // Enhanced Conversions par défaut activé (admin override possible).
+  // Recommandation Google : ~5-30% conversions matchées en plus.
+  const enhancedConversionsEnabled =
+    cfg.googleAdsEnhancedConversions !== false;
   const activeProviders = new Set(plan.providers.filter((p) => p.active).map((p) => p.id));
 
   const nextTag = makeIdGen();
@@ -481,12 +486,22 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             { type: 'TEMPLATE', key: 'orderId', value: txnIdVar },
             { type: 'TEMPLATE', key: 'currencyCode', value: currencyVar },
             { type: 'TEMPLATE', key: 'conversionValue', value: valueVar },
-            // Enhanced Conversions automatiques : le tag GTM scrape le
-            // dataLayer (user_data.*) sans intervention manuelle.
+            // Enhanced Conversions : pilote 2 params du tag awct
+            //  - enableEnhancedConversions : on/off global de l'EC
+            //  - enhancedConversionsAutomaticMode : mode auto-scrape
+            //    user_data depuis dataLayer (vs manuel via JS variable)
+            // Param admin : envConfig.googleAdsEnhancedConversions
+            // (défaut: true). Côté gtag, ça se traduit en
+            // `allow_enhanced_conversions: true`.
+            {
+              type: 'BOOLEAN',
+              key: 'enableEnhancedConversions',
+              value: enhancedConversionsEnabled ? 'true' : 'false',
+            },
             {
               type: 'BOOLEAN',
               key: 'enhancedConversionsAutomaticMode',
-              value: 'true',
+              value: enhancedConversionsEnabled ? 'true' : 'false',
             },
           ],
           firingTriggerId: [adsTriggerId],

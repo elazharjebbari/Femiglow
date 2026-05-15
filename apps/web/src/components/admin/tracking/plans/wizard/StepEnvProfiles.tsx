@@ -109,8 +109,98 @@ export function StepEnvProfiles({
         </div>
       </div>
 
-      {adsActive && <GoogleAdsConversionLabelsEditor prod={prod} onChange={patchConversionLabel} />}
+      {adsActive && (
+        <>
+          <GoogleAdsEnhancedConversionsToggle
+            prod={prod}
+            onChange={(value) =>
+              patchProd({ googleAdsEnhancedConversions: value })
+            }
+          />
+          <GoogleAdsConversionLabelsEditor
+            prod={prod}
+            onChange={patchConversionLabel}
+          />
+        </>
+      )}
     </section>
+  );
+}
+
+function GoogleAdsEnhancedConversionsToggle({
+  prod,
+  onChange,
+}: {
+  prod: EnvProfile;
+  onChange: (value: boolean) => void;
+}): JSX.Element {
+  const cfg = prod.config as { googleAdsEnhancedConversions?: boolean };
+  // Default true si pas explicitement défini.
+  const enabled = cfg.googleAdsEnhancedConversions !== false;
+  return (
+    <div>
+      <h2 className="mb-2 text-base font-semibold text-stone-900">
+        Enhanced Conversions
+      </h2>
+      <p className="mb-4 text-sm text-stone-600">
+        Améliore le matching des conversions Google Ads en envoyant les
+        données client hashées (email, téléphone) au moment de la
+        conversion. Google déclare un gain moyen de{' '}
+        <strong>5 à 30 % de conversions matchées en plus</strong>{' '}
+        (notamment pour les acheteurs sans cookie de clic). Aucune
+        donnée non hashée ne quitte le navigateur — voir{' '}
+        <a
+          href="https://support.google.com/google-ads/answer/13262500"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-stone-400 underline-offset-2 hover:text-stone-900"
+        >
+          documentation Google
+        </a>
+        .
+      </p>
+      <label
+        className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition ${
+          enabled
+            ? 'border-emerald-300 bg-emerald-50/40'
+            : 'border-stone-200 bg-white hover:border-stone-400'
+        }`}
+      >
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-emerald-700"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-stone-900">
+              Activer Enhanced Conversions
+            </span>
+            {enabled && (
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                ★ Recommandé
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs text-stone-600">
+            Active le param <code>allow_enhanced_conversions: true</code>{' '}
+            sur les tags <code>awct</code> exportés. Le tag scrape
+            automatiquement <code>user_data.sha256_email_address</code>{' '}
+            et <code>user_data.sha256_phone_number</code> du dataLayer.
+          </p>
+          <p className="mt-1 text-[11px] text-stone-400">
+            ⚠️ Pour que ça fonctionne effectivement, la conversion
+            Google Ads doit aussi être configurée côté Google Ads UI :{' '}
+            <em>
+              Outils → Conversions → ta conversion → onglet «&nbsp;Conversions
+              améliorées&nbsp;» → activer
+            </em>
+            .
+          </p>
+        </div>
+      </label>
+    </div>
   );
 }
 

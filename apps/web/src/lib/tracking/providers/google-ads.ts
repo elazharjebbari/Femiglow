@@ -25,36 +25,17 @@ export const googleAdsAdapter: ProviderAdapter = {
     return { status: 'skipped', latencyMs: 0, attempts: 0, error: 'client_only_provider' };
   },
 
-  clientSnippet(provider: TrackingProvider): string | null {
-    if (provider.status !== 'enabled' || !provider.pixelId) return null;
-    const id = provider.pixelId;
-    // Snippet idempotent : charge gtag.js si pas déjà présent, puis configure
-    // l'ID Google Ads. Cohabite avec GA4 (même `window.dataLayer`, même
-    // `window.gtag`). Tag Assistant détecte les deux balises distinctement.
-    return [
-      '(function(){',
-      `var id=${JSON.stringify(id)};`,
-      'window.dataLayer=window.dataLayer||[];',
-      'function gtag(){dataLayer.push(arguments);}',
-      'window.gtag=window.gtag||gtag;',
-      "if(!document.querySelector('script[data-gtag-loaded]')){",
-      "  var s=document.createElement('script');",
-      "  s.async=true;",
-      "  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);",
-      "  s.setAttribute('data-gtag-loaded','1');",
-      '  document.head.appendChild(s);',
-      "  gtag('js',new Date());",
-      // NB : volontairement PAS de gtag('consent','default',...) ici.
-      // Ces snippets sont injectés par PixelLoader (client) APRÈS
-      // l'init Consent Mode v2 faite par GtmHeadScript (SSR), qui lit
-      // la setting `consent_default_granted` (admin-controlled).
-      // Si on émettait à nouveau ici, on écraserait la valeur SSR avec
-      // un défaut hard-codé incorrect (bug observé : granted en SSR
-      // puis denied après injection).
-      '}',
-      "gtag('config',id,{send_page_view:false});",
-      '})();',
-    ].join('');
+  clientSnippet(): string | null {
+    // Google Ads est bootstrapé via GTM (tag awct dans le container
+    // exporté). L'injection standalone gtag.js créait des doublons :
+    //   - double `gtag('config','AW-XXX')`
+    //   - double conversion event (1× par tag awct GTM, 1× par
+    //     auto-tracking gtag du config standalone)
+    // Le user observait `gtag("event","purchase",{send_to:"AW-XXX"})`
+    // après chaque event GTM complet : c'était l'auto-tracking.
+    // Source unique = GTM container. Cf. google.ts pour le même fix
+    // côté GA4.
+    return null;
   },
 
   cspHosts() {
