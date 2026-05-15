@@ -3,6 +3,12 @@
 import type { TrackingConsentState } from '@/lib/db/types';
 import { getDataLayer, type DataLayerEntry } from '@/lib/tracking/datalayer';
 import { uuidv7 } from '@/lib/tracking/uuid';
+import { readAttributionCookie } from '@/lib/tracking/attribution/cookie';
+import { applyStrategy } from '@/lib/tracking/attribution/strategy';
+import {
+  DEFAULT_ATTRIBUTION_STRATEGY,
+  type AttributionStrategy,
+} from '@/lib/tracking/attribution/types';
 
 export interface EmitOptions {
   componentId?: string;
@@ -39,6 +45,12 @@ export interface TrackingClientConfig {
   dedupSize?: number;
   /** R\u00e8gles anti-redondance par event. */
   redundancyWindows?: Record<string, number>;
+  /**
+   * Strat\u00e9gie d'attribution multi-canal. Lue \u00e0 chaque emit pour
+   * annoter `dataLayer.attribution`. Cf.
+   * docs/tracking-attribution/.
+   */
+  attributionStrategy?: () => AttributionStrategy;
 }
 
 interface QueuedEvent {
@@ -64,8 +76,11 @@ const DEFAULT_REDUNDANCY: Record<string, number> = {
 
 export class TrackingClient {
   private readonly config: Required<
-    Omit<TrackingClientConfig, 'redundancyWindows'>
-  > & { redundancyWindows: Record<string, number> };
+    Omit<TrackingClientConfig, 'redundancyWindows' | 'attributionStrategy'>
+  > & {
+    redundancyWindows: Record<string, number>;
+    attributionStrategy: () => AttributionStrategy;
+  };
   private queue: QueuedEvent[] = [];
   private dedupCache = new Map<string, number>();
   private lastEmitByKey = new Map<string, number>();
@@ -81,6 +96,7 @@ export class TrackingClient {
       maxBatchSize: config.maxBatchSize ?? 25,
       dedupSize: config.dedupSize ?? 500,
       redundancyWindows: { ...DEFAULT_REDUNDANCY, ...(config.redundancyWindows ?? {}) },
+      attributionStrategy: config.attributionStrategy ?? (() => DEFAULT_ATTRIBUTION_STRATEGY),
     };
   }
 
@@ -96,6 +112,12 @@ export class TrackingClient {
       return;
     }
     this.lastEmitByKey.set(redundancyKey, now);
+
+    // Attribution multi-canal — annote chaque entry avec le canal
+    // résolu via la stratégie active. Lecture cookie sync (<1ms).
+    const strategy = this.config.attributionStrategy();
+    const snapshot = readAttributionCookie();
+    const attributed = applyStrategy(snapshot, strategy);
 
     const entry: DataLayerEntry = {
       event: eventName,
@@ -113,6 +135,15 @@ export class TrackingClient {
       context: options.context,
       params,
       ...(options.userData ? { user_data: options.userData } : {}),
+      attribution: {
+        channel: attributed.channel,
+        is_paid: attributed.is_paid,
+        strategy,
+        reason: attributed.reason,
+        click_id: attributed.click_id,
+        click_id_field: attributed.click_id_field,
+        utm: attributed.utm,
+      },
     };
 
     if (this.dedupCache.has(entry.event_id)) return;

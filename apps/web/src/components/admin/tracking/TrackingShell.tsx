@@ -9,6 +9,7 @@ export type TrackingTab =
   | 'inventory'
   | 'events'
   | 'mappings'
+  | 'attribution'
   | 'test'
   | 'logs'
   | 'settings';
@@ -19,6 +20,7 @@ const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
   { key: 'inventory', href: '/admin/tracking/inventory', label: 'Inventaire' },
   { key: 'events', href: '/admin/tracking/events', label: 'Événements' },
   { key: 'mappings', href: '/admin/tracking/events/mappings', label: 'Mappings vendors' },
+  { key: 'attribution', href: '/admin/tracking/attribution', label: 'Attribution' },
   { key: 'test', href: '/admin/tracking/test', label: 'Tester' },
   { key: 'logs', href: '/admin/tracking/logs', label: 'Logs' },
   { key: 'settings', href: '/admin/tracking/settings', label: 'Réglages' },

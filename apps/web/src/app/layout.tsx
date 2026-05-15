@@ -8,6 +8,7 @@ import { ConsentBanner } from '@/components/tracking/ConsentBanner';
 import { DebugOverlay } from '@/components/tracking/DebugOverlay';
 import { PixelLoader } from '@/components/tracking/PixelLoader';
 import { GtmHeadScript } from '@/components/tracking/GtmHeadScript';
+import { AttributionCaptureBridge } from '@/components/tracking/AttributionCaptureBridge';
 import {
   getTrackingSetting,
   TRACKING_SETTING_KEYS,
@@ -124,6 +125,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             defaultGranted={defaultGranted}
             legalLinks={cookieBannerLegalLinks}
           />
+          <AttributionCaptureBridge />
           <PixelLoader />
           <DebugOverlay />
           <ChatWidgetMount />

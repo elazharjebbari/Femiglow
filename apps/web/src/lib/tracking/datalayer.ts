@@ -26,6 +26,26 @@ export interface DataLayerEntry {
       country?: string;
     };
   };
+  /**
+   * Attribution multi-canal — résultat de la stratégie active appliquée
+   * sur le snapshot du visiteur. Consommé par les conditions GTM pour
+   * gater les tags de conversion. Cf. docs/tracking-attribution/.
+   */
+  attribution?: {
+    channel: string;       // AttributionChannel | 'broadcast'
+    is_paid: boolean;
+    strategy: string;      // AttributionStrategy
+    reason: string;        // debug
+    click_id?: string;
+    click_id_field?: string;
+    utm?: {
+      source?: string;
+      medium?: string;
+      campaign?: string;
+      term?: string;
+      content?: string;
+    };
+  };
 }
 
 const MAX_BUFFER = 200;
