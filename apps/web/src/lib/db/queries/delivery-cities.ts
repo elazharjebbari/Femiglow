@@ -201,14 +201,14 @@ export async function listDeliveryCities(
           ? asc(schema.deliveryCities.deliveryPriceMad)
           : opts.sort === 'updated'
             ? desc(schema.deliveryCities.updatedAt)
-            : asc(schema.deliveryCities.position);
+            : sql`CASE WHEN ${schema.deliveryCities.position} = 0 THEN 1 ELSE 0 END`;
 
     const [items, totalRows] = await Promise.all([
       drizzle
         .select()
         .from(schema.deliveryCities)
         .where(where)
-        .orderBy(order, asc(schema.deliveryCities.nameFr))
+        .orderBy(order, asc(schema.deliveryCities.position), asc(schema.deliveryCities.nameFr))
         .limit(pageSize)
         .offset(offset),
       drizzle
@@ -251,7 +251,10 @@ export async function listDeliveryCities(
       case 'updated':
         return b.updatedAt.getTime() - a.updatedAt.getTime();
       default:
-        return a.position - b.position || a.nameFr.localeCompare(b.nameFr, 'fr');
+        // Priority cities (position > 0) first, then by position, then by name.
+        const aPri = a.position > 0 ? 0 : 1;
+        const bPri = b.position > 0 ? 0 : 1;
+        return aPri - bPri || a.position - b.position || a.nameFr.localeCompare(b.nameFr, 'fr');
     }
   });
   const total = rows.length;
@@ -293,6 +296,8 @@ export async function searchDeliveryCities(
           ),
         )
         .orderBy(
+          // Priority cities (position > 0) first, then alphabetical.
+          sql`CASE WHEN ${schema.deliveryCities.position} = 0 THEN 1 ELSE 0 END`,
           asc(schema.deliveryCities.position),
           asc(schema.deliveryCities.nameFr),
         )
@@ -305,7 +310,14 @@ export async function searchDeliveryCities(
           c.countryCode === countryCode &&
           (opts.includeInactive || c.isActive),
       )
-      .sort((a, b) => a.position - b.position || a.nameFr.localeCompare(b.nameFr, 'fr'))
+      .sort((a, b) => {
+        // Priority cities (position > 0) first, then alphabetical.
+        const aPri = a.position > 0 ? 0 : 1;
+        const bPri = b.position > 0 ? 0 : 1;
+        if (aPri !== bPri) return aPri - bPri;
+        if (a.position > 0 && b.position > 0) return a.position - b.position;
+        return a.nameFr.localeCompare(b.nameFr, 'fr');
+      })
       .slice(0, limit);
   }
 
@@ -336,7 +348,11 @@ export async function searchDeliveryCities(
       .select()
       .from(schema.deliveryCities)
       .where(and(...baseConds, fieldCond))
-      .orderBy(asc(schema.deliveryCities.position), asc(schema.deliveryCities.nameFr))
+      .orderBy(
+          sql`CASE WHEN ${schema.deliveryCities.position} = 0 THEN 1 ELSE 0 END`,
+          asc(schema.deliveryCities.position),
+          asc(schema.deliveryCities.nameFr),
+        )
       .limit(Math.max(limit * 4, 32)); // marge pour post-filter
     const candidates = rows.map(rowToCity);
     return postFilterAndRank(candidates, trimmed, arabic, limit);
@@ -377,6 +393,7 @@ function postFilterAndRank(
     matched.sort(
       (a, b) =>
         a.rank - b.rank ||
+        (a.city.position > 0 ? 0 : 1) - (b.city.position > 0 ? 0 : 1) ||
         a.city.position - b.city.position ||
         a.city.nameFr.localeCompare(b.city.nameFr, 'fr'),
     );
@@ -402,6 +419,7 @@ function postFilterAndRank(
   matched.sort(
     (a, b) =>
       a.rank - b.rank ||
+      (a.city.position > 0 ? 0 : 1) - (b.city.position > 0 ? 0 : 1) ||
       a.city.position - b.city.position ||
       a.city.nameFr.localeCompare(b.city.nameFr, 'fr'),
   );
