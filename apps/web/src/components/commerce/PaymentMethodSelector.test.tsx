@@ -5,24 +5,25 @@ import { PaymentMethodSelector } from './PaymentMethodSelector';
 import { expectNoAxeViolations } from '@/test/axe';
 
 describe('PaymentMethodSelector', () => {
-  it('affiche COD en première position', () => {
+  it('affiche COD en première position et les autres désactivés', () => {
     render(
       <PaymentMethodSelector name="paymentMethod" value="cod" onChange={() => {}} />,
     );
     const radios = screen.getAllByRole('radio');
     expect(radios[0]).toHaveAttribute('value', 'cod');
-    expect(radios[1]).toHaveAttribute('value', 'card');
-    expect(radios[2]).toHaveAttribute('value', 'cmi');
+    expect(radios[0]).not.toBeDisabled();
+    expect(radios[1]).toBeDisabled(); // carte bancaire — bientôt disponible
+    expect(radios[2]).toBeDisabled(); // CMI — bientôt disponible
   });
 
-  it('appelle onChange quand on coche carte', async () => {
+  it('appelle onChange quand on coche COD', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(
-      <PaymentMethodSelector name="paymentMethod" value="cod" onChange={onChange} />,
+      <PaymentMethodSelector name="paymentMethod" value="card" onChange={onChange} />,
     );
-    await user.click(screen.getByLabelText(/carte bancaire/i));
-    expect(onChange).toHaveBeenCalledWith('card');
+    await user.click(screen.getByLabelText(/paiement à la livraison/i));
+    expect(onChange).toHaveBeenCalledWith('cod');
   });
 
   it('respecte axe', async () => {
