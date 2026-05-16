@@ -10,6 +10,7 @@ export interface LeadWebhookSettingsFormProps {
   initialConversationEnabled: boolean;
   initialConversationMaxMessages: number;
   initialConversationMaxBytes: number;
+  initialInlineContactWebhookEnabled: boolean;
 }
 
 interface SettingsResponse {
@@ -20,6 +21,7 @@ interface SettingsResponse {
     leadWebhookConversationEnabled: boolean;
     leadWebhookConversationMaxMessages: number;
     leadWebhookConversationMaxBytes: number;
+    leadInlineContactWebhookEnabled: boolean;
   };
 }
 
@@ -36,6 +38,7 @@ export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JS
   const [conversationEnabled, setConversationEnabled] = useState(props.initialConversationEnabled);
   const [maxMessages, setMaxMessages] = useState(props.initialConversationMaxMessages);
   const [maxBytes, setMaxBytes] = useState(props.initialConversationMaxBytes);
+  const [inlineContactEnabled, setInlineContactEnabled] = useState(props.initialInlineContactWebhookEnabled);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [tone, setTone] = useState<'ok' | 'err' | null>(null);
@@ -61,6 +64,7 @@ export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JS
       setConversationEnabled(data.settings.leadWebhookConversationEnabled);
       setMaxMessages(data.settings.leadWebhookConversationMaxMessages);
       setMaxBytes(data.settings.leadWebhookConversationMaxBytes);
+      setInlineContactEnabled(data.settings.leadInlineContactWebhookEnabled);
       setTone('ok');
       setMessage('Réglages webhook enregistrés.');
       router.refresh();
@@ -186,6 +190,26 @@ export function LeadWebhookSettingsForm(props: LeadWebhookSettingsFormProps): JS
           <span className="font-medium">Inclure le transcript chat</span>
           <span className="mt-0.5 block text-xs text-stone-500">
             Snapshot borné, sans messages system/tool, pour les webhooks lead.
+          </span>
+        </span>
+      </label>
+
+      <label className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={inlineContactEnabled}
+          disabled={saving}
+          onChange={(evt): void => {
+            const value = evt.target.checked;
+            setInlineContactEnabled(value);
+            void save({ leadInlineContactWebhookEnabled: value });
+          }}
+          className="mt-0.5 h-4 w-4 rounded border-stone-300"
+        />
+        <span className="text-sm text-stone-800">
+          <span className="font-medium">Webhook immédiat inline-contact</span>
+          <span className="mt-0.5 block text-xs text-stone-500">
+            Envoie un webhook quand un numéro est détecté dans le chat, avant soumission du formulaire.
           </span>
         </span>
       </label>

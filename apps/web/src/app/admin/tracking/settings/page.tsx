@@ -23,6 +23,7 @@ export default async function TrackingSettingsPage() {
     leadWebhookConversationEnabled,
     leadWebhookConversationMaxMessages,
     leadWebhookConversationMaxBytes,
+    leadInlineContactWebhookEnabled,
   ] = await Promise.all([
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
@@ -32,6 +33,7 @@ export default async function TrackingSettingsPage() {
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_ENABLED, true),
     getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES, 50),
     getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_BYTES, 30_000),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_INLINE_CONTACT_WEBHOOK_ENABLED, true),
   ]);
 
   const checks: Array<{ label: string; ok: boolean; detail?: string }> = [
@@ -133,6 +135,7 @@ export default async function TrackingSettingsPage() {
           initialConversationEnabled={leadWebhookConversationEnabled}
           initialConversationMaxMessages={leadWebhookConversationMaxMessages}
           initialConversationMaxBytes={leadWebhookConversationMaxBytes}
+          initialInlineContactWebhookEnabled={leadInlineContactWebhookEnabled}
         />
       </section>
 

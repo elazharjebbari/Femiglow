@@ -1,18 +1,14 @@
 /**
- * CHA-260 — Builder webhook outbound pour les chat leads.
+ * Builder webhook outbound pour les leads inline-contact.
  *
- * Remplace l'ancien format `{event, version, occurredAt, lead}` (CHA-206)
- * par le payload PLAT unifié (contrat §1). Le lead arrive depuis
- * `POST /api/chat/lead/contact` après persistance.
+ * Déclenché immédiatement quand un numéro de téléphone est détecté
+ * dans le chat (orchestrator `detectInlineContact`). Payload similaire
+ * à `from-chat-lead.ts` mais avec un idempotency-key distinct pour
+ * permettre l'upgrade sans collision.
  *
- * Dispatch désormais vers les endpoints admin EN PRIORITÉ, puis fallback
- * outbound URL si aucun endpoint admin ne matche.
+ * Dispatch vers les endpoints admin EN PRIORITÉ, puis fallback outbound URL.
  *
- * Phone-gate : un chat lead est créé uniquement si `phoneE164` valide
- * (validation amont via `parsePhone`), donc le skip est défensif.
- *
- * Met à jour `chat_lead.webhook_status` selon le résultat dispatcher
- * pour garder l'admin /admin/chat/leads cohérent.
+ * Feature flag : `lead.inline_contact_webhook_enabled` (default true).
  */
 import { eventRepo } from '@/lib/chat/repos/event';
 import { leadRepo } from '@/lib/chat/repos/lead';
@@ -23,7 +19,7 @@ import { composeFullName, normalizePhoneForPayload } from '../payload';
 import { snapshotMessagesToConversation } from '../helpers/conversation';
 import { getLeadWebhookSettings } from '../settings';
 
-export interface DispatchChatLeadResult {
+export interface InlineContactWebhookResult {
   status: DispatchToAllChannelsResult['status'];
   attempts: number;
   responseStatus?: number;
@@ -31,14 +27,18 @@ export interface DispatchChatLeadResult {
   lastError?: string;
 }
 
-export async function dispatchChatLeadWebhook(
+export async function dispatchInlineContactWebhook(
   lead: ChatLeadRow,
-): Promise<DispatchChatLeadResult> {
-  const phone = normalizePhoneForPayload(lead.phoneE164 || lead.phoneRaw, 'MA');
+): Promise<InlineContactWebhookResult> {
+  const settings = await getLeadWebhookSettings();
+  if (!settings.inlineContactWebhookEnabled) {
+    return { status: 'disabled', attempts: 0, lastError: 'inline-contact-webhook-disabled' };
+  }
 
+  const phone = normalizePhoneForPayload(lead.phoneE164 || lead.phoneRaw, 'MA');
   if (!phone.ok) {
     await leadRepo.markWebhookFailed(lead.id, `invalid-phone:${phone.reason}`);
-    await eventRepo.append(lead.sessionId, 'chat_lead_webhook_failed', {
+    await eventRepo.append(lead.sessionId, 'inline_contact_webhook_failed', {
       leadId: lead.id,
       reason: `invalid-phone:${phone.reason}`,
     });
@@ -51,10 +51,9 @@ export async function dispatchChatLeadWebhook(
 
   const noteParts: string[] = [];
   if (lead.note) noteParts.push(lead.note.trim());
-  if (lead.triggerReason) noteParts.push(`trigger:${lead.triggerReason}`);
+  noteParts.push('trigger:inline-contact');
   if (lead.intentAtCapture) noteParts.push(`intent:${lead.intentAtCapture}`);
 
-  const settings = await getLeadWebhookSettings();
   const conversation = settings.conversationEnabled
     ? snapshotMessagesToConversation(lead.snapshotMessages, {
         userName: lead.firstName,
@@ -63,46 +62,43 @@ export async function dispatchChatLeadWebhook(
       })
     : undefined;
 
-  const payload = {
-    id: `chat-lead:${lead.id}`,
-    full_name: composeFullName(lead.firstName),
-    phone: phone.value,
-    source: lead.source ?? 'chat_widget',
-    conversation,
-    email: lead.email ?? undefined,
-    note: noteParts.length ? noteParts.join(' | ') : undefined,
-    source_channel: `chat:${lead.triggerReason ?? 'manual'}`,
-    quantity: 1,
-    currency: 'MAD' as const,
-  };
-
   const result = await dispatchToAllChannels({
-    source: 'chat-lead',
+    source: 'inline-contact',
     sourceId: lead.id,
-    idempotencyKey: `chat-lead:${lead.id}`,
+    idempotencyKey: `inline-contact:${lead.id}`,
     eventName: 'chat_lead.created',
     adminEventNames: ['chat_lead.created', 'lead.created'],
-    payload,
+    payload: {
+      id: `inline-contact:${lead.id}`,
+      full_name: composeFullName(lead.firstName),
+      phone: phone.value,
+      source: lead.source ?? 'chat_widget',
+      conversation,
+      note: noteParts.join(' | '),
+      source_channel: `chat:inline-contact`,
+      quantity: 1,
+      currency: 'MAD' as const,
+    },
   });
 
-  // Synchronise le statut chat_lead.webhook_status pour /admin/chat/leads.
+  // Synchronise le statut chat_lead.webhook_status pour l'admin.
   if (result.status === 'sent') {
     await leadRepo.markWebhookSent(lead.id);
-    await eventRepo.append(lead.sessionId, 'chat_lead_webhook_sent', {
+    await eventRepo.append(lead.sessionId, 'inline_contact_webhook_sent', {
       leadId: lead.id,
       attempts: result.attempts,
       responseStatus: result.responseStatus,
     });
   } else if (result.status === 'failed' || result.status === 'skipped') {
     await leadRepo.markWebhookFailed(lead.id, result.lastError ?? result.status);
-    await eventRepo.append(lead.sessionId, 'chat_lead_webhook_failed', {
+    await eventRepo.append(lead.sessionId, 'inline_contact_webhook_failed', {
       leadId: lead.id,
       attempts: result.attempts,
       reason: result.lastError ?? result.status,
     });
   } else if (result.status === 'disabled') {
     await leadRepo.markWebhookFailed(lead.id, 'webhook-not-configured');
-    await eventRepo.append(lead.sessionId, 'chat_lead_webhook_failed', {
+    await eventRepo.append(lead.sessionId, 'inline_contact_webhook_failed', {
       leadId: lead.id,
       reason: 'webhook-not-configured',
     });

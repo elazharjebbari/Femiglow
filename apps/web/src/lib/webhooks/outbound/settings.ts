@@ -10,6 +10,7 @@ export interface LeadWebhookSettings {
   conversationEnabled: boolean;
   conversationMaxMessages: number;
   conversationMaxBytes: number;
+  inlineContactWebhookEnabled: boolean;
 }
 
 function clampInt(value: unknown, fallback: number, min: number, max: number): number {
@@ -26,6 +27,7 @@ export async function getLeadWebhookSettings(): Promise<LeadWebhookSettings> {
     conversationEnabled,
     maxMessages,
     maxBytes,
+    inlineContactWebhookEnabled,
   ] = await Promise.all([
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_STEP2_WEBHOOK_ENABLED, true),
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_STEP1_ABANDON_ENABLED, true),
@@ -33,6 +35,7 @@ export async function getLeadWebhookSettings(): Promise<LeadWebhookSettings> {
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_ENABLED, true),
     getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES, 50),
     getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_BYTES, 30_000),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_INLINE_CONTACT_WEBHOOK_ENABLED, true),
   ]);
 
   return {
@@ -42,5 +45,6 @@ export async function getLeadWebhookSettings(): Promise<LeadWebhookSettings> {
     conversationEnabled: Boolean(conversationEnabled),
     conversationMaxMessages: clampInt(maxMessages, 50, 1, 50),
     conversationMaxBytes: clampInt(maxBytes, 30_000, 1_000, 50_000),
+    inlineContactWebhookEnabled: Boolean(inlineContactWebhookEnabled),
   };
 }

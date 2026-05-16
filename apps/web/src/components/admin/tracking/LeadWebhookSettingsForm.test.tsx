@@ -21,6 +21,7 @@ function renderForm(): void {
       initialConversationEnabled
       initialConversationMaxMessages={50}
       initialConversationMaxBytes={30000}
+      initialInlineContactWebhookEnabled
     />,
   );
 }
@@ -35,6 +36,7 @@ function okResponse(overrides: Record<string, boolean | number> = {}): Response 
         leadWebhookConversationEnabled: true,
         leadWebhookConversationMaxMessages: 50,
         leadWebhookConversationMaxBytes: 30000,
+        leadInlineContactWebhookEnabled: true,
         ...overrides,
       },
     }),
@@ -114,6 +116,7 @@ describe('LeadWebhookSettingsForm', () => {
         initialConversationEnabled={false}
         initialConversationMaxMessages={50}
         initialConversationMaxBytes={30000}
+        initialInlineContactWebhookEnabled
       />,
     );
 
@@ -130,6 +133,7 @@ describe('LeadWebhookSettingsForm', () => {
         initialConversationEnabled
         initialConversationMaxMessages={50}
         initialConversationMaxBytes={30000}
+        initialInlineContactWebhookEnabled
       />,
     );
 

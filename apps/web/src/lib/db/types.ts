@@ -18,9 +18,13 @@ export type DeliveryStatus = 'pending' | 'in_progress' | 'succeeded' | 'failed' 
 export type WebhookEventName =
   | 'lead.created'
   | 'lead.step2_completed'
+  | 'lead.step1_abandoned'
   | 'lead.status_changed'
   | 'lead.note_added'
+  | 'chat_lead.created'
+  | 'cart.abandoned'
   | 'order.created'
+  | 'contact.submitted'
   | 'ritual.approved'
   | 'ritual.rejected'
   | 'ritual.hidden'
@@ -146,7 +150,8 @@ export type OutboundSource =
   | 'contact'
   | 'newsletter'
   | 'lead-step2'
-  | 'lead-step1-abandon';
+  | 'lead-step1-abandon'
+  | 'inline-contact';
 export type OutboundStatus = 'pending' | 'sent' | 'failed' | 'skipped' | 'disabled';
 
 export interface OutboundWebhookLogRow {
