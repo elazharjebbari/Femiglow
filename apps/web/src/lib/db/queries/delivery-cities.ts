@@ -777,3 +777,76 @@ export async function countActiveDeliveryCities(
   }
   return n;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BATCH POSITION UPDATE (admin — villes prioritaires)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Met à jour les positions d'affichage d'un lot de villes.
+ * Utilisé par l'admin pour réordonner les villes prioritaires dans l'autocomplete.
+ *
+ * Retourne le nombre de villes mises à jour et les slugs introuvables.
+ */
+export async function updateDeliveryCityPositions(
+  patches: Array<{ slug: string; position: number }>,
+  opts: { actorId?: string | null } = {},
+): Promise<{ updated: number; notFound: string[] }> {
+  if (patches.length === 0) return { updated: 0, notFound: [] };
+
+  const drizzle = db();
+  const actorId = opts.actorId ?? null;
+  const notFound: string[] = [];
+
+  if (drizzle) {
+    // Vérifier les slugs existants
+    const slugs = patches.map((p) => p.slug);
+    const existing = await drizzle
+      .select({ slug: schema.deliveryCities.slug })
+      .from(schema.deliveryCities)
+      .where(inArray(schema.deliveryCities.slug, slugs));
+    const existingSet = new Set(existing.map((r) => r.slug));
+
+    for (const patch of patches) {
+      if (!existingSet.has(patch.slug)) {
+        notFound.push(patch.slug);
+        continue;
+      }
+      await drizzle
+        .update(schema.deliveryCities)
+        .set({
+          position: patch.position,
+          updatedAt: new Date(),
+          updatedBy: actorId,
+        })
+        .where(eq(schema.deliveryCities.slug, patch.slug));
+    }
+
+    return {
+      updated: patches.length - notFound.length,
+      notFound,
+    };
+  }
+
+  // Fallback mémoire
+  const store = ext();
+  let updated = 0;
+  for (const patch of patches) {
+    let found = false;
+    for (const [id, city] of store.deliveryCities) {
+      if (city.slug === patch.slug) {
+        store.deliveryCities.set(id, {
+          ...city,
+          position: patch.position,
+          updatedAt: new Date(),
+          updatedBy: actorId,
+        });
+        found = true;
+        updated++;
+        break;
+      }
+    }
+    if (!found) notFound.push(patch.slug);
+  }
+  return { updated, notFound };
+}

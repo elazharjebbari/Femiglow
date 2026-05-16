@@ -131,6 +131,20 @@ export const deliveryCitySeedSchema = z.object({
 
 export type DeliveryCitySeedInput = z.infer<typeof deliveryCitySeedSchema>;
 
+export const deliveryCityPositionsSchema = z.object({
+  positions: z
+    .array(
+      z.object({
+        slug: z.string().trim().min(1).max(80),
+        position: z.number().int().min(0).max(100000),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+export type DeliveryCityPositionsInput = z.infer<typeof deliveryCityPositionsSchema>;
+
 export const deliveryCitySearchQuerySchema = z.object({
   q: z.string().trim().max(80).optional().default(''),
   limit: z.coerce.number().int().min(1).max(50).optional().default(8),
