@@ -1,6 +1,9 @@
 /**
- * Scanner des leads wizard ayant validé step 1 (nom + téléphone) sans
+ * Scanner des leads ayant validé step 1 (nom + téléphone) sans
  * compléter l'adresse dans le délai configurable.
+ *
+ * Inclut désormais les leads `inline-contact` (conversation) qui ont
+ * `leadCapturedAt = NULL` en utilisant `COALESCE(leadCapturedAt, createdAt)`.
  */
 import { and, gt, isNull, lt, sql } from 'drizzle-orm';
 
@@ -64,18 +67,23 @@ export async function scanAndDispatchLeadStep1Abandon(
   const now = opts.now ?? new Date();
   const cutoffIdle = new Date(now.getTime() - settings.step1AbandonTimeoutMinutes * 60_000);
   const cutoffMaxAge = new Date(now.getTime() - (opts.maxAgeMs ?? DEFAULT_MAX_AGE_MS));
+
+  // COALESCE(leadCapturedAt, createdAt) pour rattraper les leads
+  // inline-contact qui n'ont pas leadCapturedAt renseigné.
+  const effectiveTimestamp = sql`COALESCE(${chatLead.leadCapturedAt}, ${chatLead.createdAt})`;
+
   const rows = await db
     .select()
     .from(chatLead)
     .where(
       and(
         sql`${chatLead.phoneE164} is not null`,
-        sql`${chatLead.leadCapturedAt} is not null`,
+        sql`${effectiveTimestamp} is not null`,
         isNull(chatLead.addressCompletedAt),
         isNull(chatLead.purchasedAt),
         isNull(chatLead.step1AbandonWebhookAt),
-        lt(chatLead.leadCapturedAt, cutoffIdle),
-        gt(chatLead.leadCapturedAt, cutoffMaxAge),
+        lt(effectiveTimestamp, cutoffIdle),
+        gt(effectiveTimestamp, cutoffMaxAge),
       ),
     )
     .limit(opts.limit ?? DEFAULT_LIMIT);
@@ -93,7 +101,9 @@ export async function scanAndDispatchLeadStep1Abandon(
       else if (result.status === 'skipped') skipped += 1;
       else if (result.status === 'disabled') disabled += 1;
 
-      if (result.status === 'sent' || result.status === 'skipped') {
+      // Stamp on sent, skipped, OR disabled to prevent rescanning
+      // the same disabled leads every minute.
+      if (result.status === 'sent' || result.status === 'skipped' || result.status === 'disabled') {
         try {
           await wizardLeadRepo.stampStep1AbandonWebhook(lead.id);
         } catch (err) {

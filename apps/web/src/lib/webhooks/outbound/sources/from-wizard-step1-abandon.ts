@@ -1,10 +1,10 @@
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
-import { dispatchOutbound, type DispatchResult } from '../dispatcher';
+import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 
 export interface LeadStep1AbandonWebhookResult {
-  status: DispatchResult['status'];
+  status: DispatchToAllChannelsResult['status'];
   attempts: number;
   responseStatus?: number;
   logId?: string;
@@ -19,11 +19,12 @@ export async function dispatchLeadStep1AbandonWebhook(
     return { status: 'skipped', attempts: 0, lastError: `invalid-phone:${phone.reason}` };
   }
 
-  const result = await dispatchOutbound({
+  const result = await dispatchToAllChannels({
     source: 'lead-step1-abandon',
     sourceId: lead.id,
     idempotencyKey: `lead-step1-abandon:${lead.id}`,
     eventName: 'lead.step1_abandoned',
+    adminEventNames: ['lead.step1_abandoned'],
     payload: {
       id: `lead-step1-abandon:${lead.id}`,
       full_name: composeFullName(lead.firstName, lead.lastName),

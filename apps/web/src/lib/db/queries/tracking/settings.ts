@@ -133,4 +133,6 @@ export const TRACKING_SETTING_KEYS = {
   LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES: 'lead.webhook_conversation_max_messages',
   /** Budget max approximatif du champ `conversation`, en bytes UTF-8. */
   LEAD_WEBHOOK_CONVERSATION_MAX_BYTES: 'lead.webhook_conversation_max_bytes',
+  /** Webhook immédiat pour les leads inline-contact (numéro détecté dans le chat). */
+  LEAD_INLINE_CONTACT_WEBHOOK_ENABLED: 'lead.inline_contact_webhook_enabled',
 } as const;

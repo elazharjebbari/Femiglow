@@ -22,6 +22,7 @@ interface SettingsView {
   leadWebhookConversationEnabled: boolean;
   leadWebhookConversationMaxMessages: number;
   leadWebhookConversationMaxBytes: number;
+  leadInlineContactWebhookEnabled: boolean;
 }
 
 async function loadSettings(): Promise<SettingsView> {
@@ -34,6 +35,7 @@ async function loadSettings(): Promise<SettingsView> {
     leadWebhookConversationEnabled,
     leadWebhookConversationMaxMessages,
     leadWebhookConversationMaxBytes,
+    leadInlineContactWebhookEnabled,
   ] = await Promise.all([
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
@@ -43,6 +45,7 @@ async function loadSettings(): Promise<SettingsView> {
     getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_ENABLED, true),
     getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES, 50),
     getTrackingSetting<number>(TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_BYTES, 30_000),
+    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.LEAD_INLINE_CONTACT_WEBHOOK_ENABLED, true),
   ]);
   return {
     consentBannerEnabled,
@@ -53,6 +56,7 @@ async function loadSettings(): Promise<SettingsView> {
     leadWebhookConversationEnabled,
     leadWebhookConversationMaxMessages,
     leadWebhookConversationMaxBytes,
+    leadInlineContactWebhookEnabled,
   };
 }
 
@@ -78,6 +82,7 @@ const patchSchema = z
     leadWebhookConversationEnabled: z.boolean().optional(),
     leadWebhookConversationMaxMessages: z.number().int().min(1).max(50).optional(),
     leadWebhookConversationMaxBytes: z.number().int().min(1000).max(50000).optional(),
+    leadInlineContactWebhookEnabled: z.boolean().optional(),
   })
   .strict();
 
@@ -143,6 +148,13 @@ export async function PATCH(request: Request): Promise<Response> {
       await setTrackingSetting<number>(
         TRACKING_SETTING_KEYS.LEAD_WEBHOOK_CONVERSATION_MAX_BYTES,
         parsed.data.leadWebhookConversationMaxBytes,
+        { actorId: session.adminId },
+      );
+    }
+    if (parsed.data.leadInlineContactWebhookEnabled !== undefined) {
+      await setTrackingSetting<boolean>(
+        TRACKING_SETTING_KEYS.LEAD_INLINE_CONTACT_WEBHOOK_ENABLED,
+        parsed.data.leadInlineContactWebhookEnabled,
         { actorId: session.adminId },
       );
     }

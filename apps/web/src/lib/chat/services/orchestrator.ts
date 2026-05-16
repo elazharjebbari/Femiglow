@@ -42,6 +42,7 @@ import {
 import { faqRepo } from '../repos/faq';
 import { shouldOfferLeadForm } from './lead-decision';
 import { notifyHotLead } from './lead-alerts';
+import { dispatchInlineContactWebhook } from '@/lib/webhooks/outbound/sources/from-inline-contact';
 import { notifyFrustrationSpike } from './frustration-alerts';
 import { detectInlineContact } from './phone-detect';
 import { ragService, type RetrievedChunk } from '../rag/service';
@@ -509,6 +510,13 @@ export async function* streamReply(
             });
             // CHAT-066 — Alerte Slack pour ce lead "chaud" auto-créé.
             void notifyHotLead(autoLead, { adminBaseUrl: env.NEXT_PUBLIC_SITE_URL });
+            // Webhook immédiat pour les leads inline-contact (fire-and-forget).
+            void dispatchInlineContactWebhook(autoLead).catch((err: unknown) => {
+              logger.warn('chat.orchestrator.inline_contact_webhook_failed', {
+                leadId: autoLead.id,
+                error: err instanceof Error ? err.message : String(err),
+              });
+            });
           } catch (err) {
             // On ne casse pas le flux — log + KPI suffisent.
             logger.warn('chat.orchestrator.inline_contact_auto_lead_failed', {

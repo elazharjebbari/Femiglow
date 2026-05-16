@@ -368,6 +368,9 @@ export const chatConversationEvent = pgTable(
         // CHA-225 — formalisation d'un lead `inline-contact` en lead
         // formel après soumission du formulaire (consent RGPD propre).
         'chat_lead_form_upgrade',
+        // Webhook dispatch pour leads inline-contact (numéro détecté dans le chat).
+        'inline_contact_webhook_sent',
+        'inline_contact_webhook_failed',
         // CHAT-066 — escalade frustration : 2 messages user consécutifs
         // détectés comme `frustration` → alerte Slack #chat-care et trace
         // KPI (analytics : tx frustration / session, MTTR Care, etc.).

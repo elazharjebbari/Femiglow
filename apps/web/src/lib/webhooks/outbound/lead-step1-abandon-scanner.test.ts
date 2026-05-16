@@ -126,7 +126,7 @@ describe('scanAndDispatchLeadStep1Abandon', () => {
     expect(result).toMatchObject({ scanned: 0, sent: 0, failed: 0, skipped: 0, disabled: 0 });
   });
 
-  it('compte sent/failed/skipped/disabled et stamp uniquement sent/skipped', async () => {
+  it('compte sent/failed/skipped/disabled et stamp sent/skipped/disabled', async () => {
     const rows = [makeLead('cl_sent'), makeLead('cl_failed'), makeLead('cl_skipped'), makeLead('cl_disabled')];
     mockDbRows(rows);
     dispatchMock.dispatchLeadStep1AbandonWebhook
@@ -148,9 +148,11 @@ describe('scanAndDispatchLeadStep1Abandon', () => {
       disabled: 1,
       timeoutMinutes: 5,
     });
-    expect(repoMock.stampStep1AbandonWebhook).toHaveBeenCalledTimes(2);
+    // Stamp on sent, skipped, AND disabled to prevent rescanning disabled leads.
+    expect(repoMock.stampStep1AbandonWebhook).toHaveBeenCalledTimes(3);
     expect(repoMock.stampStep1AbandonWebhook).toHaveBeenNthCalledWith(1, 'cl_sent');
     expect(repoMock.stampStep1AbandonWebhook).toHaveBeenNthCalledWith(2, 'cl_skipped');
+    expect(repoMock.stampStep1AbandonWebhook).toHaveBeenNthCalledWith(3, 'cl_disabled');
   });
 
   it('continue le batch si un dispatch throw et ne stamp pas la ligne en erreur', async () => {

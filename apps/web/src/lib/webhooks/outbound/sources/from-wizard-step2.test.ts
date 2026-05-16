@@ -214,18 +214,15 @@ describe('dispatchLeadStep2Webhook', () => {
       description: 'legacy admin endpoint',
     });
     const captured: {
-      event?: string;
+      eventName?: string;
       payload?: Record<string, unknown>;
       idem?: string | null;
     } = {};
     server.use(
       http.post('https://hook.example.com/admin-lead-created', async ({ request }) => {
-        const body = (await request.json()) as {
-          event: string;
-          payload: Record<string, unknown>;
-        };
-        captured.event = body.event;
-        captured.payload = body.payload;
+        const body = (await request.json()) as Record<string, unknown>;
+        captured.eventName = body.event_name as string;
+        captured.payload = body;
         captured.idem = request.headers.get('idempotency-key');
         return HttpResponse.json({ ok: true });
       }),
@@ -236,7 +233,7 @@ describe('dispatchLeadStep2Webhook', () => {
       responseStatus: 200,
     });
 
-    expect(captured.event).toBe('lead.created');
+    expect(captured.eventName).toBe('lead.step2_completed');
     expect(captured.idem).toBe('lead.created:lead-step2:cl_step2');
     expect(captured.payload).toMatchObject({
       id: 'lead-step2:cl_step2',
