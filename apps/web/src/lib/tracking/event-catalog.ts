@@ -389,7 +389,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Cr\u00e9ation d\u2019un compte',
     isConversion: true,
     applicableCategories: ['form_submit'],
-    defaultProviders: ['google_ga4', 'meta', 'tiktok'],
+    defaultProviders: ['google_ga4', 'meta', 'tiktok', 'snap'],
     paramsSchema: { type: 'object', properties: { method: { type: 'string' } } },
   },
   {
@@ -1028,7 +1028,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
       'Capture lead step 1 wizard (téléphone + ville pré-soumis ; lead_id créé).',
     isConversion: true,
     applicableCategories: ['form_submit', 'commerce_checkout'],
-    defaultProviders: ['google_ga4', 'meta', 'google_ads'],
+    defaultProviders: ['google_ga4', 'meta', 'google_ads', 'snap'],
     paramsSchema: {
       type: 'object',
       required: ['form_id', 'form_mode', 'step_name', 'method', 'lead_id'],

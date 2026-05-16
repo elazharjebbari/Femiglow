@@ -121,7 +121,7 @@ export function detectChannel(input: DetectInput): ChannelTouch {
       detected_at,
     });
   }
-  const sccid = params.get('sccid');
+  const sccid = params.get('ScCid') ?? params.get('sccid');
   if (sccid) {
     return validate({
       channel: 'snap',

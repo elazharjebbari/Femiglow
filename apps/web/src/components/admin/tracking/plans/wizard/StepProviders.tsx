@@ -7,6 +7,7 @@ const PROVIDER_LABELS: Record<ProviderId, string> = {
   googleAds: 'Google Ads',
   meta: 'Meta Pixel',
   tiktok: 'TikTok Pixel',
+  snap: 'Snapchat Pixel',
   gtm: 'Google Tag Manager',
 };
 
@@ -15,6 +16,7 @@ const PROVIDER_HINT: Record<ProviderId, string> = {
   googleAds: 'Conversions Google Ads. Requiert un Conversion ID.',
   meta: 'Pixel Meta pour publicité Facebook / Instagram.',
   tiktok: 'Pixel TikTok pour publicité TikTok Ads.',
+  snap: 'Pixel Snapchat Ads, audiences et conversions Snap.',
   gtm: 'Conteneur GTM (déploiement centralisé des tags).',
 };
 

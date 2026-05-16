@@ -32,6 +32,12 @@ describe('detectChannel — click IDs (priorité absolue)', () => {
   it('sccid → snap', () => {
     expect(det('https://x.com/?sccid=sn1').channel).toBe('snap');
   });
+  it('ScCid → snap (casse officielle Snap)', () => {
+    const t = det('https://x.com/?ScCid=sn2');
+    expect(t.channel).toBe('snap');
+    expect(t.click_id_field).toBe('sccid');
+    expect(t.click_id).toBe('sn2');
+  });
   it('epik → pinterest', () => {
     expect(det('https://x.com/?epik=p1').channel).toBe('pinterest');
   });

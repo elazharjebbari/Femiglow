@@ -208,6 +208,84 @@ describe('exportPlan — structure GTM', () => {
     );
   });
 
+  it('emits Snap Init and per-event snaptr tags with dedup params', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'snap', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            snapPixelId: '6a4f1a2b-1111-4444-9999-abcdefabcdef',
+            snapEventMode: 'hybrid',
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'view_item', providers: { snap: true } },
+        { key: 'lead_capture', providers: { snap: true } },
+        { key: 'purchase', providers: { snap: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const variables = (result.json as any).containerVersion.variable;
+    expect(variables).toContainEqual(
+      expect.objectContaining({ name: 'CONST - Snap Pixel ID', type: 'c' }),
+    );
+    expect(tags.find((t: any) => t.name === 'Snap Init')).toBeDefined();
+    const view = tags.find((t: any) => t.name === 'Snap Evt — view_item → VIEW_CONTENT');
+    expect(view).toBeDefined();
+    const lead = tags.find((t: any) => t.name === 'Snap Evt — lead_capture → SIGN_UP');
+    expect(lead).toBeDefined();
+    const purchase = tags.find((t: any) => t.name === 'Snap Evt — purchase → PURCHASE');
+    expect(purchase).toBeDefined();
+    const html = purchase.parameter.find((p: any) => p.key === 'html').value;
+    expect(html).toContain("snaptr('track','PURCHASE'");
+    expect(html).toContain('client_deduplication_id');
+    expect(html).toContain('item_ids');
+    expect(purchase.setupTag).toEqual([
+      { tagName: 'Snap Init', stopOnSetupFailure: false },
+    ]);
+  });
+
+  it('routes Snap primary conversions via attribution-gated triggers', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'snap', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            snapPixelId: '6a4f1a2b-1111-4444-9999-abcdefabcdef',
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { snap: true } },
+        { key: 'checkout_intent', providers: { snap: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const triggers = (result.json as any).containerVersion.trigger;
+    const snapPurchase = tags.find((t: any) => t.name === 'Snap Evt — purchase → PURCHASE');
+    const snapPurchaseTrigger = triggers.find(
+      (t: any) => t.triggerId === snapPurchase.firingTriggerId[0],
+    );
+    expect(snapPurchaseTrigger.name).toBe('CE — purchase [attr / snap]');
+    expect(snapPurchaseTrigger.filter[0].parameter[1].value).toBe(
+      '^(snap|direct|organic|broadcast)$',
+    );
+    const snapCheckout = tags.find(
+      (t: any) => t.name === 'Snap Evt — checkout_intent → START_CHECKOUT',
+    );
+    const snapCheckoutTrigger = triggers.find(
+      (t: any) => t.triggerId === snapCheckout.firingTriggerId[0],
+    );
+    expect(snapCheckoutTrigger.name).toBe('CE — checkout_intent');
+  });
+
   it('emits DLV - event_id when Meta is active (for fbq deduplication)', () => {
     const result = exportPlan(buildPlan(), 'production');
     const variables = (result.json as any).containerVersion.variable;
