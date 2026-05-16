@@ -188,6 +188,8 @@ function labelForWebhook(status?: string | null): string {
       return 'Échec webhook';
     case 'disabled':
       return 'Webhook désactivé';
+    case 'skipped':
+      return 'Webhook ignoré';
     case 'pending':
       return 'En attente';
     default:

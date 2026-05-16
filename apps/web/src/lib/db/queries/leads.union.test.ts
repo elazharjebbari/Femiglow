@@ -30,6 +30,7 @@ const state = vi.hoisted(() => ({
   chatLeads: [] as ChatLeadRow[],
   orders: [] as Array<Record<string, unknown>>,
   orderItems: [] as Array<Record<string, unknown>>,
+  outboundLogs: [] as Array<Record<string, unknown>>,
 }));
 
 function makeChainable<T>(rows: T[]) {
@@ -58,6 +59,7 @@ vi.mock('@/lib/db/client', async () => {
         from: (table: unknown) => {
           if (table === dbSchema.orders) return makeChainable(state.orders);
           if (table === dbSchema.orderItems) return makeChainable(state.orderItems);
+          if (table === dbSchema.outboundWebhookLog) return makeChainable(state.outboundLogs);
           return makeChainable(state.ecommerceLeads);
         },
       }),
@@ -165,6 +167,7 @@ beforeEach(() => {
   state.chatLeads = [];
   state.orders = [];
   state.orderItems = [];
+  state.outboundLogs = [];
 });
 
 afterEach(() => {
@@ -256,6 +259,61 @@ describe('listLeads — union ecommerce + chat_lead', () => {
       addressLine1: '12 rue Test',
       chatSessionId: null,
     });
+  });
+
+  it("corrige le résumé webhook depuis outbound_webhook_log même si l'ancien timestamp est présent", async () => {
+    state.chatLeads = [
+      makeChatLead({
+        id: 'cl_step2_disabled',
+        source: 'wizard_kit',
+        addressCompletedAt: new Date('2026-05-02T10:00:00Z'),
+        step2WebhookAt: new Date('2026-05-02T10:01:00Z'),
+      }),
+      makeChatLead({
+        id: 'cl_step2_sent',
+        source: 'wizard_kit',
+        addressCompletedAt: new Date('2026-05-02T10:00:00Z'),
+      }),
+    ];
+    state.outboundLogs = [
+      {
+        id: 'owl_disabled',
+        source: 'lead-step2',
+        sourceId: 'cl_step2_disabled',
+        idempotencyKey: 'lead-step2:cl_step2_disabled',
+        eventName: 'lead.step2_completed',
+        payload: {},
+        status: 'disabled',
+        attemptCount: 0,
+        lastError: 'no-endpoint-configured',
+        responseStatus: null,
+        latencyMs: null,
+        sentAt: null,
+        createdAt: new Date('2026-05-02T10:02:00Z'),
+        updatedAt: new Date('2026-05-02T10:02:00Z'),
+      },
+      {
+        id: 'owl_sent',
+        source: 'lead-step2',
+        sourceId: 'cl_step2_sent',
+        idempotencyKey: 'lead-step2:cl_step2_sent',
+        eventName: 'lead.step2_completed',
+        payload: {},
+        status: 'sent',
+        attemptCount: 1,
+        lastError: null,
+        responseStatus: 200,
+        latencyMs: 42,
+        sentAt: new Date('2026-05-02T10:02:00Z'),
+        createdAt: new Date('2026-05-02T10:02:00Z'),
+        updatedAt: new Date('2026-05-02T10:02:00Z'),
+      },
+    ];
+
+    const result = await listLeads();
+    const map = Object.fromEntries(result.rows.map((r) => [r.id, r.webhookSummary]));
+    expect(map.cl_step2_disabled).toBe('disabled');
+    expect(map.cl_step2_sent).toBe('step2_sent');
   });
 
   it('filtre par statut transverse (chat + ecommerce)', async () => {

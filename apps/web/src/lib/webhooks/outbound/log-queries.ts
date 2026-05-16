@@ -5,7 +5,7 @@
  *   - Drizzle si `DATABASE_URL` défini.
  *   - `memoryStore()` sinon (tests vitest / dev local sans Postgres).
  */
-import { and, desc, eq, sql as dsql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql as dsql } from 'drizzle-orm';
 
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
@@ -173,4 +173,36 @@ export async function listOutboundLogs(query: ListLogsQuery = {}): Promise<Outbo
   if (query.status) rows = rows.filter((r) => r.status === query.status);
   rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   return rows.slice(0, limit);
+}
+
+export async function listLatestOutboundLogsBySourceIds(
+  source: OutboundSource,
+  sourceIds: string[],
+): Promise<Map<string, OutboundWebhookLogRow>> {
+  const uniqueIds = Array.from(new Set(sourceIds.filter(Boolean)));
+  const latest = new Map<string, OutboundWebhookLogRow>();
+  if (uniqueIds.length === 0) return latest;
+
+  const drizzle = db();
+  const rows = drizzle
+    ? (
+        await drizzle
+          .select()
+          .from(schema.outboundWebhookLog)
+          .where(
+            and(
+              eq(schema.outboundWebhookLog.source, source),
+              inArray(schema.outboundWebhookLog.sourceId, uniqueIds),
+            ),
+          )
+          .orderBy(desc(schema.outboundWebhookLog.createdAt))
+      ).map(rowToLog)
+    : Array.from(memoryStore().outboundWebhookLog.values())
+        .filter((row) => row.source === source && uniqueIds.includes(row.sourceId))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  for (const row of rows) {
+    if (!latest.has(row.sourceId)) latest.set(row.sourceId, row);
+  }
+  return latest;
 }

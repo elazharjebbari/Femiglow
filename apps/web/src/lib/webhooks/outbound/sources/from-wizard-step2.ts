@@ -116,13 +116,15 @@ export async function dispatchLeadStep2Webhook(
     },
   });
 
-  try {
-    await wizardLeadRepo.stampStep2Webhook(lead.id);
-  } catch (err) {
-    logger.error('outbound.webhook.lead-step2.stamp_error', {
-      leadId: lead.id,
-      error: String(err),
-    });
+  if (result.status === 'sent') {
+    try {
+      await wizardLeadRepo.stampStep2Webhook(lead.id);
+    } catch (err) {
+      logger.error('outbound.webhook.lead-step2.stamp_error', {
+        leadId: lead.id,
+        error: String(err),
+      });
+    }
   }
 
   return {

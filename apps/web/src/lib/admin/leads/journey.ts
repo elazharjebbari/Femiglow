@@ -1,4 +1,5 @@
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
+import type { OutboundStatus } from '@/lib/db/types';
 
 export type LeadJourneyStage = 'lead' | 'address' | 'payment' | 'purchased' | 'abandoned_step1';
 export type LeadWebhookSummary =
@@ -7,6 +8,7 @@ export type LeadWebhookSummary =
   | 'sent'
   | 'failed'
   | 'disabled'
+  | 'skipped'
   | 'step2_sent'
   | 'step1_abandoned_sent';
 
@@ -14,6 +16,11 @@ export interface LeadJourneyView {
   stage: LeadJourneyStage;
   dataPct: number;
   webhookSummary: LeadWebhookSummary;
+}
+
+export interface LeadOutboundWebhookStatuses {
+  step2?: OutboundStatus | null;
+  step1Abandon?: OutboundStatus | null;
 }
 
 export function computeDataPct(row: Pick<
@@ -39,7 +46,27 @@ export function computeDataPct(row: Pick<
   return Math.round((present / fields.length) * 100);
 }
 
-export function computeLeadJourney(row: ChatLeadRow): LeadJourneyView {
+function summaryFromOutboundStatus(
+  status: OutboundStatus,
+  sentSummary: Extract<LeadWebhookSummary, 'step2_sent' | 'step1_abandoned_sent'>,
+): LeadWebhookSummary {
+  switch (status) {
+    case 'sent':
+      return sentSummary;
+    case 'failed':
+    case 'disabled':
+    case 'skipped':
+    case 'pending':
+      return status;
+    default:
+      return 'pending';
+  }
+}
+
+export function computeLeadJourney(
+  row: ChatLeadRow,
+  outboundStatuses: LeadOutboundWebhookStatuses = {},
+): LeadJourneyView {
   let stage: LeadJourneyStage = 'lead';
   if (row.purchasedAt) stage = 'purchased';
   else if (row.paymentSelectedAt) stage = 'payment';
@@ -47,7 +74,14 @@ export function computeLeadJourney(row: ChatLeadRow): LeadJourneyView {
   else if (row.step1AbandonWebhookAt) stage = 'abandoned_step1';
 
   let webhookSummary: LeadWebhookSummary = row.webhookStatus ?? 'none';
-  if (row.step2WebhookAt) webhookSummary = 'step2_sent';
+  if (outboundStatuses.step2) {
+    webhookSummary = summaryFromOutboundStatus(outboundStatuses.step2, 'step2_sent');
+  } else if (outboundStatuses.step1Abandon) {
+    webhookSummary = summaryFromOutboundStatus(
+      outboundStatuses.step1Abandon,
+      'step1_abandoned_sent',
+    );
+  } else if (row.step2WebhookAt) webhookSummary = 'step2_sent';
   else if (row.step1AbandonWebhookAt) webhookSummary = 'step1_abandoned_sent';
 
   return {

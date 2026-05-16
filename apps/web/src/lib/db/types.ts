@@ -65,7 +65,15 @@ export interface Lead {
   chatSessionId?: string | null;
   journeyStage?: 'lead' | 'address' | 'payment' | 'purchased' | 'abandoned_step1';
   dataPct?: number;
-  webhookSummary?: 'none' | 'pending' | 'sent' | 'failed' | 'disabled' | 'step2_sent' | 'step1_abandoned_sent';
+  webhookSummary?:
+    | 'none'
+    | 'pending'
+    | 'sent'
+    | 'failed'
+    | 'disabled'
+    | 'skipped'
+    | 'step2_sent'
+    | 'step1_abandoned_sent';
 }
 
 export interface Order {

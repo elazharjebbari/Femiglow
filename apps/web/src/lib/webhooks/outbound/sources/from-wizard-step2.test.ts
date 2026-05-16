@@ -191,6 +191,19 @@ describe('dispatchLeadStep2Webhook', () => {
     expect(repoMock.stampStep2Webhook).not.toHaveBeenCalled();
   });
 
+  it("ne stamp pas si aucun endpoint outbound n'est configuré", async () => {
+    envMock.OUTBOUND_WEBHOOK_URL = undefined;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await expect(dispatchLeadStep2Webhook(makeLead())).resolves.toMatchObject({
+      status: 'disabled',
+      lastError: 'no-endpoint-configured',
+    });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(repoMock.stampStep2Webhook).not.toHaveBeenCalled();
+  });
+
   it('garde le dispatch réussi même si le stamp DB échoue', async () => {
     repoMock.stampStep2Webhook.mockRejectedValueOnce(new Error('db write failed'));
     server.use(

@@ -51,4 +51,18 @@ describe('lead journey read model', () => {
       webhookSummary: 'step2_sent',
     });
   });
+
+  it('priorise le statut réel outbound sur les timestamps legacy', () => {
+    expect(
+      computeLeadJourney(lead({ step2WebhookAt: new Date() }), { step2: 'disabled' }),
+    ).toMatchObject({ webhookSummary: 'disabled' });
+    expect(computeLeadJourney(lead({ step2WebhookAt: null }), { step2: 'sent' })).toMatchObject({
+      webhookSummary: 'step2_sent',
+    });
+    expect(
+      computeLeadJourney(lead({ step1AbandonWebhookAt: new Date() }), {
+        step1Abandon: 'failed',
+      }),
+    ).toMatchObject({ webhookSummary: 'failed' });
+  });
 });

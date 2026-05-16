@@ -5,7 +5,8 @@ import { chatLead } from '@/lib/chat/db/schema';
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 import { createId } from '@/lib/ids';
 import type { Lead, LeadStatus, Order, OrderItem } from '@/lib/db/types';
-import { computeLeadJourney } from '@/lib/admin/leads/journey';
+import { computeLeadJourney, type LeadOutboundWebhookStatuses } from '@/lib/admin/leads/journey';
+import { listLatestOutboundLogsBySourceIds } from '@/lib/webhooks/outbound/log-queries';
 
 export interface LeadFilters {
   status?: LeadStatus;
@@ -42,8 +43,11 @@ function chatOutcomeToLeadStatus(outcome: ChatLeadRow['outcome']): LeadStatus {
 }
 
 /** Convertit un `chat_lead` en `Lead` pour l'affichage admin unifié. */
-function chatLeadToLead(row: ChatLeadRow): Lead {
-  const journey = computeLeadJourney(row);
+function chatLeadToLead(
+  row: ChatLeadRow,
+  outboundStatuses: LeadOutboundWebhookStatuses = {},
+): Lead {
+  const journey = computeLeadJourney(row, outboundStatuses);
   const isChatWidgetLead = row.source === 'chat_widget';
   const fullName = [row.firstName, row.lastName].filter(Boolean).join(' ').trim();
   return {
@@ -154,8 +158,17 @@ export async function listLeads(filters: LeadFilters = {}): Promise<LeadListResu
         .select()
         .from(chatLead)
         .orderBy(desc(chatLead.createdAt));
-      for (const row of all as ChatLeadRow[]) {
-        const mapped = chatLeadToLead(row);
+      const chatLeadRows = all as ChatLeadRow[];
+      const ids = chatLeadRows.map((row) => row.id);
+      const [step2Logs, step1AbandonLogs] = await Promise.all([
+        listLatestOutboundLogsBySourceIds('lead-step2', ids),
+        listLatestOutboundLogsBySourceIds('lead-step1-abandon', ids),
+      ]);
+      for (const row of chatLeadRows) {
+        const mapped = chatLeadToLead(row, {
+          step2: step2Logs.get(row.id)?.status,
+          step1Abandon: step1AbandonLogs.get(row.id)?.status,
+        });
         if (matchesLeadFilter(mapped, filters)) chatRows.push(mapped);
       }
     }
@@ -216,7 +229,15 @@ export async function getLeadById(id: string): Promise<{
       .limit(1);
     const row = rows[0] as ChatLeadRow | undefined;
     if (!row) return null;
-    if (!drizzle) return { lead: chatLeadToLead(row), order: null, items: [] };
+    const [step2Logs, step1AbandonLogs] = await Promise.all([
+      listLatestOutboundLogsBySourceIds('lead-step2', [id]),
+      listLatestOutboundLogsBySourceIds('lead-step1-abandon', [id]),
+    ]);
+    const lead = chatLeadToLead(row, {
+      step2: step2Logs.get(id)?.status,
+      step1Abandon: step1AbandonLogs.get(id)?.status,
+    });
+    if (!drizzle) return { lead, order: null, items: [] };
     const orderRows = await drizzle
       .select()
       .from(schema.orders)
@@ -227,7 +248,7 @@ export async function getLeadById(id: string): Promise<{
       ? await drizzle.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id))
       : [];
     return {
-      lead: chatLeadToLead(row),
+      lead,
       order: order ? (order as Order) : null,
       items: items as OrderItem[],
     };

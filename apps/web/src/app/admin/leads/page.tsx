@@ -239,6 +239,8 @@ function labelForWebhook(status?: string | null): string {
       return 'échec';
     case 'disabled':
       return 'désactivé';
+    case 'skipped':
+      return 'ignoré';
     case 'pending':
       return 'pending';
     default:
@@ -251,6 +253,6 @@ function webhookBadgeClass(status?: string | null): string {
   if (status === 'sent' || status === 'step2_sent' || status === 'step1_abandoned_sent') {
     return 'bg-emerald-100 text-emerald-800';
   }
-  if (status === 'disabled') return 'bg-amber-100 text-amber-800';
+  if (status === 'disabled' || status === 'skipped') return 'bg-amber-100 text-amber-800';
   return 'bg-stone-100 text-stone-600';
 }
