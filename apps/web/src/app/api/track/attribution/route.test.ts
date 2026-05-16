@@ -17,13 +17,11 @@ const originalDbUrl = process.env.DATABASE_URL;
 beforeAll(() => {
   delete process.env.DATABASE_URL;
   // Force re-évaluation de db() (memoized en globalThis)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (globalThis as any).__femiglowDb = null;
+  (globalThis as typeof globalThis & { __femiglowDb?: unknown }).__femiglowDb = null;
 });
 afterAll(() => {
   if (originalDbUrl) process.env.DATABASE_URL = originalDbUrl;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete (globalThis as any).__femiglowDb;
+  delete (globalThis as typeof globalThis & { __femiglowDb?: unknown }).__femiglowDb;
 });
 
 function req(body: unknown, headers: Record<string, string> = {}): Request {
