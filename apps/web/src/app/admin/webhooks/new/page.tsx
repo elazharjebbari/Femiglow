@@ -13,7 +13,7 @@ export default async function AdminWebhookNewPage() {
           Nouvel endpoint
         </h1>
         <p className="mt-1 text-sm text-stone-600">
-          L'URL doit être en HTTPS. Le secret HMAC sera affiché une seule fois.
+          L'URL doit être en HTTPS. Le secret HMAC pourra être copié et ajusté depuis la liste.
         </p>
       </header>
       <WebhookCreateForm />

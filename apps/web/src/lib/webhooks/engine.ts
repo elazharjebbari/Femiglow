@@ -65,12 +65,7 @@ export async function attemptDelivery(
     });
   }
 
-  const body = JSON.stringify({
-    id: delivery.id,
-    event: delivery.event,
-    created_at: delivery.createdAt.toISOString(),
-    payload: delivery.payload,
-  });
+  const body = JSON.stringify(delivery.payload);
   const secret = decryptSecret(endpoint.encryptedSecret);
   const signature = signHmac(secret, body);
 
@@ -86,6 +81,7 @@ export async function attemptDelivery(
       signal: controller.signal,
       headers: {
         'content-type': 'application/json',
+        'x-webhook-signature': signature,
         'x-femiglow-signature': signature,
         'idempotency-key': delivery.idempotencyKey,
         'user-agent': 'FemiGlow-Webhook/1.0',

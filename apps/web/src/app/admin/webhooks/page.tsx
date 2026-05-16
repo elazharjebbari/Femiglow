@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
-import { listWebhookEndpoints } from '@/lib/db/queries/webhook-endpoints';
+import {
+  listWebhookEndpoints,
+  revealWebhookSecret,
+} from '@/lib/db/queries/webhook-endpoints';
 import { listOutboundLogs } from '@/lib/webhooks/outbound/log-queries';
+import { WebhookSecretField } from '@/components/admin/webhooks/WebhookSecretField';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +16,14 @@ export default async function AdminWebhooksPage() {
     listWebhookEndpoints(),
     listOutboundLogs({ limit: 50 }),
   ]);
+  const endpointSecrets = new Map(
+    await Promise.all(
+      endpoints.map(async (endpoint) => [
+        endpoint.id,
+        await revealWebhookSecret(endpoint.id).catch(() => ''),
+      ] as const),
+    ),
+  );
 
   return (
     <AdminShell adminEmail={session.email} active="webhooks">
@@ -36,8 +48,8 @@ export default async function AdminWebhooksPage() {
       ) : (
         <ul className="divide-y divide-stone-200 rounded-md border border-stone-200 bg-white">
           {endpoints.map((e) => (
-            <li key={e.id} className="px-4 py-3">
-              <div className="flex items-center justify-between gap-4">
+            <li key={e.id} className="px-4 py-4">
+              <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-stone-900">{e.url}</p>
                   <p className="mt-1 text-xs text-stone-500">
@@ -51,6 +63,7 @@ export default async function AdminWebhooksPage() {
                   Livraisons
                 </Link>
               </div>
+              <WebhookSecretField endpointId={e.id} initialSecret={endpointSecrets.get(e.id) ?? ''} />
             </li>
           ))}
         </ul>

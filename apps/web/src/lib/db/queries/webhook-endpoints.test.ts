@@ -6,11 +6,14 @@ import {
   listWebhookEndpoints,
   updateWebhookEndpoint,
   rotateWebhookSecret,
+  revealWebhookSecret,
+  setWebhookSecret,
   deleteWebhookEndpoint,
 } from './webhook-endpoints';
 
 beforeEach(() => {
   resetMemoryStore();
+  process.env.WEBHOOK_SECRET_KEY = 'k'.repeat(32);
 });
 
 describe('queries.webhook-endpoints', () => {
@@ -47,6 +50,17 @@ describe('queries.webhook-endpoints', () => {
     const rotated = await rotateWebhookSecret(created.endpoint.id);
     expect(rotated.plainSecret).not.toBe(created.plainSecret);
     expect(rotated.endpoint.encryptedSecret).not.toBe(created.endpoint.encryptedSecret);
+  });
+
+  it('révèle et remplace un secret custom sans le stocker en clair', async () => {
+    const { endpoint } = await createWebhookEndpoint({
+      url: 'https://api.partner.com/hook',
+      events: ['lead.created'],
+    });
+    await setWebhookSecret(endpoint.id, 'baiti-custom-secret-2026');
+    const updated = await getWebhookEndpoint(endpoint.id);
+    expect(updated?.encryptedSecret).not.toContain('baiti-custom-secret-2026');
+    await expect(revealWebhookSecret(endpoint.id)).resolves.toBe('baiti-custom-secret-2026');
   });
 
   it('updateWebhookEndpoint patch active=false', async () => {
