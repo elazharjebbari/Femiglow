@@ -130,7 +130,7 @@ export function HeroProduit({
                 </AddToCartButton>
               )}
               <p className="text-center text-[11px] uppercase tracking-[0.2em] text-encre/55">
-                Paiement sécurisé · Retour 14&#x202f;j · Livraison 48&#x202f;h
+                Paiement à la livraison · Retour 14&#x202f;j · Livraison 48&#x202f;h
               </p>
             </div>
             {reassurances.length > 0 ? (

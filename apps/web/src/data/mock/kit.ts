@@ -301,8 +301,8 @@ export const mockKitPageContent: KitPageContent = {
     { icon: 'return', label: 'Retour 30 jours', detail: 'M\u00eame entam\u00e9' },
     {
       icon: 'payment',
-      label: 'Paiement s\u00e9curis\u00e9',
-      detail: '3D Secure & COD',
+      label: 'Paiement \u00e0 la livraison',
+      detail: 'V\u00e9rifiez avant de payer',
     },
   ],
   journalCrossSlugs: [

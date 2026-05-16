@@ -54,8 +54,12 @@ const PaymentIcon = () => (
     strokeLinejoin="round"
     className="h-4 w-4"
   >
-    <rect x="5" y="10" width="14" height="10" rx="1.5" />
-    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    <path d="M5 17v-4a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 8 13v1" />
+    <path d="M8 16v-6a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 11 10v1" />
+    <path d="M11 14v-4a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 14 10v3" />
+    <path d="M14 11v-1a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 17 10v6" />
+    <path d="M5 17a6 6 0 0 0 6 6h2a6 6 0 0 0 6-6" />
+    <circle cx="12" cy="4" r="2" />
   </svg>
 );
 
