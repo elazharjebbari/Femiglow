@@ -183,7 +183,14 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // ── Données ────────────────────────────────────────────────────────────────
-  const { items, loading } = useDeliveryCities(value, { countryCode, limit });
+  // Quand la query est vide, on montre les villes prioritaires (position > 0)
+  // — on demande davantage de résultats pour les couvrir toutes.
+  const isPopularView = value.trim() === '';
+  const effectiveLimit = isPopularView ? 13 : limit;
+  const { items, loading } = useDeliveryCities(value, {
+    countryCode,
+    limit: effectiveLimit,
+  });
   const { freeShipping } = useShippingConfig();
 
   const exactMatch = useMemo(() => {
@@ -427,6 +434,14 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
               aria-live="polite"
             >
               Recherche…
+            </li>
+          )}
+          {isPopularView && items.length > 0 && (
+            <li
+              role="presentation"
+              className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-encre/45"
+            >
+              Villes populaires
             </li>
           )}
           {items.map((city, index) => {

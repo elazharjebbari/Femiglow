@@ -210,7 +210,7 @@ describe('parseSenditFixture — sortie standard', () => {
       isActive: true,
       source: 'sendit',
       externalRef: 'sendit:100',
-      position: 0,
+      position: 1, // Casablanca est une ville prioritaire (position 1)
     });
     expect(summary).toEqual({
       parsed: 1,

@@ -28,7 +28,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  MOROCCAN_CITIES,
   searchCities as searchStaticCities,
   type MoroccanCity,
 } from '@/lib/checkout/data/moroccan-cities';
@@ -99,10 +98,7 @@ function staticCityToPublic(c: MoroccanCity): PublicCity {
 }
 
 function searchStaticAsPublic(query: string, limit: number): PublicCity[] {
-  // searchStaticCities renvoie le top-N si query vide.
-  if (!query.trim()) {
-    return MOROCCAN_CITIES.slice(0, limit).map(staticCityToPublic);
-  }
+  // searchCities trie par priorité si query vide, puis filtre par préfixe.
   return searchStaticCities(query, limit).map(staticCityToPublic);
 }
 
