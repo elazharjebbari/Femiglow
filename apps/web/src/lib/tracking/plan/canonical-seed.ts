@@ -4,9 +4,9 @@
  * Génère un `TrackingPlanInput` pré-rempli depuis le catalogue applicatif
  * (`src/lib/tracking/event-catalog.ts`) en mappant les noms de providers
  * legacy (`google_ga4`, `google_ads`, `snap`, `pinterest`) vers les
- * `ProviderId` v2 (`ga4`, `googleAds`, `meta`, `tiktok`, `gtm`).
+ * `ProviderId` v2 (`ga4`, `googleAds`, `meta`, `tiktok`, `snap`, `gtm`).
  *
- * Les providers non-supportés en v2 (snap, pinterest) sont ignorés.
+ * Les providers non-supportés en v2 (pinterest) sont ignorés.
  * GTM n'est pas dans le catalogue applicatif (c'est un container, pas une
  * destination) ; il reste désactivé par défaut.
  *
@@ -24,6 +24,7 @@ const LEGACY_TO_V2: Record<string, ProviderId> = {
   google_ads: 'googleAds',
   meta: 'meta',
   tiktok: 'tiktok',
+  snap: 'snap',
 };
 
 /**
@@ -77,6 +78,7 @@ export function buildCanonicalSeed(options: CanonicalSeedOptions = {}): Tracking
       { id: 'googleAds', active: true },
       { id: 'meta', active: true },
       { id: 'tiktok', active: true },
+      { id: 'snap', active: false },
       { id: 'gtm', active: false },
     ],
     envProfiles: [

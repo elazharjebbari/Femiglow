@@ -39,6 +39,12 @@ const ID_RULES: Record<
     pattern: /^[A-Z0-9]{15,25}$/i,
     hint: 'Alphanumérique 15 à 25 caractères.',
   },
+  snap: {
+    key: 'snapPixelId',
+    label: 'Snap Pixel ID',
+    pattern: /^[a-f0-9-]{32,36}$/i,
+    hint: 'Identifiant Pixel Snapchat, souvent au format UUID. Le token CAPI reste côté serveur.',
+  },
   gtm: {
     key: 'gtmContainerId',
     label: 'GTM Container ID',
@@ -62,6 +68,7 @@ export function StepEnvProfiles({
   };
   const activeProviders = providers.filter((p) => p.active);
   const adsActive = activeProviders.some((p) => p.id === 'googleAds');
+  const snapActive = activeProviders.some((p) => p.id === 'snap');
 
   function patchProd(patch: Record<string, unknown>) {
     const next: EnvProfile = {
@@ -125,7 +132,71 @@ export function StepEnvProfiles({
           />
         </>
       )}
+
+      {snapActive && (
+        <SnapchatTrackingMode
+          prod={prod}
+          onChange={(patch) => patchProd(patch)}
+        />
+      )}
     </section>
+  );
+}
+
+function SnapchatTrackingMode({
+  prod,
+  onChange,
+}: {
+  prod: EnvProfile;
+  onChange: (patch: Record<string, unknown>) => void;
+}): JSX.Element {
+  const cfg = prod.config as {
+    snapAdvancedMatching?: boolean;
+    snapEventMode?: 'pixel_only' | 'capi_only' | 'hybrid';
+  };
+  const advancedMatching = cfg.snapAdvancedMatching !== false;
+  const mode = cfg.snapEventMode ?? 'hybrid';
+  return (
+    <div>
+      <h2 className="mb-2 text-base font-semibold text-stone-900">
+        Snapchat Pixel & CAPI
+      </h2>
+      <div className="space-y-3 rounded-md border border-stone-200 bg-white p-3 text-sm">
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={advancedMatching}
+            onChange={(e) => onChange({ snapAdvancedMatching: e.target.checked })}
+            className="mt-1 h-4 w-4 accent-emerald-700"
+          />
+          <span>
+            <span className="block font-medium text-stone-900">
+              Activer les paramètres utilisateur Snap
+            </span>
+            <span className="block text-xs text-stone-600">
+              Utilise les champs hashés du dataLayer quand le consentement publicitaire est accordé.
+            </span>
+          </span>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-stone-700">
+            Mode d'envoi
+          </span>
+          <select
+            value={mode}
+            onChange={(e) => onChange({ snapEventMode: e.target.value })}
+            className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="hybrid">Pixel + CAPI (recommandé)</option>
+            <option value="pixel_only">Pixel seulement</option>
+            <option value="capi_only">CAPI seulement</option>
+          </select>
+          <span className="mt-1 block text-xs text-stone-500">
+            Le token CAPI n'est jamais exporté dans GTM; il se configure dans les providers serveur.
+          </span>
+        </label>
+      </div>
+    </div>
   );
 }
 
@@ -205,4 +276,3 @@ function GoogleAdsEnhancedConversionsToggle({
     </div>
   );
 }
-

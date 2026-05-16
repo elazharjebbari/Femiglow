@@ -54,7 +54,7 @@ function makeCtx(overrides: Partial<DispatchContext> = {}): DispatchContext {
 }
 
 describe('Adapter Snap', () => {
-  it('envoie un event sur tr.snapchat.com', async () => {
+  it('envoie un event complet sur tr.snapchat.com avec dedup, attribution et ecommerce', async () => {
     let captured: unknown = null;
     server.use(
       http.post('https://tr.snapchat.com/v3/:pixel/events', async ({ request }) => {
@@ -68,10 +68,74 @@ describe('Adapter Snap', () => {
       pixelId: 'snap_pix',
       capiToken: 'snap-token',
     });
-    const out = await dispatchToProviders(makeCtx());
+    const out = await dispatchToProviders(
+      makeCtx({
+        anonymousId: 'anon_snap_42',
+        params: {
+          transaction_id: 'tx_99',
+          currency: 'MAD',
+          value: 99,
+          event_tag: 'checkout_paid',
+          description: 'Commande test Snapchat',
+          items: [
+            { item_id: 'sku_a', item_name: 'Soin', item_category: 'skincare', quantity: 2, price: 49.5 },
+          ],
+        },
+        userData: {
+          sha256_email_address: 'e'.repeat(64),
+          sha256_phone_number: 'f'.repeat(64),
+          address: {
+            sha256_first_name: 'a'.repeat(64),
+            city: 'Marrakech',
+            country: 'MA',
+          },
+        },
+        attribution: {
+          channel: 'snapchat',
+          is_paid: true,
+          strategy: 'paid_social',
+          reason: 'click_id',
+          click_id: 'sc-click-99',
+          click_id_field: 'ScCid',
+          utm: { source: 'snapchat', campaign: 'ramadan' },
+        },
+      }),
+    );
     expect(out.dispatched).toContain('snap');
-    const c = captured as { data: Array<{ event_name: string }> };
-    expect(c.data[0]?.event_name).toBe('PURCHASE');
+    const c = captured as {
+      data: Array<{
+        event_name: string;
+        action_source: string;
+        event_id: string;
+        user_data: Record<string, unknown>;
+        custom_data: Record<string, unknown>;
+      }>;
+    };
+    expect(c.data[0]).toMatchObject({
+      event_name: 'PURCHASE',
+      action_source: 'WEB',
+      event_id: '01900000-0000-7000-8000-000000000099',
+    });
+    expect(c.data[0]?.user_data).toMatchObject({
+      em: ['e'.repeat(64)],
+      ph: ['f'.repeat(64)],
+      fn: ['a'.repeat(64)],
+      geo_city: 'Marrakech',
+      geo_country: 'MA',
+      sc_click_id: 'sc-click-99',
+    });
+    expect(c.data[0]?.custom_data).toMatchObject({
+      currency: 'MAD',
+      value: 99,
+      transaction_id: 'tx_99',
+      client_deduplication_id: '01900000-0000-7000-8000-000000000099',
+      event_tag: 'checkout_paid',
+      description: 'Commande test Snapchat',
+      item_ids: ['sku_a'],
+      item_category: 'skincare',
+      number_items: 2,
+      uuid_c1: 'anon_snap_42',
+    });
   });
 
   it('skip si access_token absent', async () => {

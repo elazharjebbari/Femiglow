@@ -43,10 +43,11 @@ describe('event-mapping', () => {
 
   // CHA-230 — Wizard checkout funnel events
   describe('CHA-230 wizard events', () => {
-    it('lead_capture → conversion routée Meta=Lead, Ads=generate_lead, GA4=lead_capture', () => {
+    it('lead_capture → conversion routée Meta=Lead, Ads=generate_lead, Snap=SIGN_UP, GA4=lead_capture', () => {
       expect(mapEventName('lead_capture', 'google_ga4')).toBe('lead_capture');
       expect(mapEventName('lead_capture', 'meta')).toBe('Lead');
       expect(mapEventName('lead_capture', 'google_ads')).toBe('generate_lead');
+      expect(mapEventName('lead_capture', 'snap')).toBe('SIGN_UP');
     });
 
     it('address_completed → GA4 add_shipping_info (réutilise rapports Enhanced Ecommerce)', () => {
@@ -286,10 +287,27 @@ describe('event-mapping', () => {
       });
     });
 
+    describe('Snap — primary pour PURCHASE et SIGN_UP', () => {
+      it('purchase → primary', () => {
+        expect(getAttributionMode('purchase', 'snap')).toBe('primary');
+      });
+      it('lead_capture → primary', () => {
+        expect(getAttributionMode('lead_capture', 'snap')).toBe('primary');
+      });
+      it('chat_lead_form_submit → primary via SIGN_UP', () => {
+        expect(mapEventName('chat_lead_form_submit', 'snap')).toBe('SIGN_UP');
+        expect(getAttributionMode('chat_lead_form_submit', 'snap')).toBe('primary');
+      });
+      it('checkout_intent → broadcast', () => {
+        expect(getAttributionMode('checkout_intent', 'snap')).toBe('broadcast');
+      });
+    });
+
     it('event inconnu → broadcast (safety default)', () => {
       expect(getAttributionMode('definitely_unknown_event', 'meta')).toBe('broadcast');
       expect(getAttributionMode('definitely_unknown_event', 'google_ads')).toBe('broadcast');
       expect(getAttributionMode('definitely_unknown_event', 'tiktok')).toBe('broadcast');
+      expect(getAttributionMode('definitely_unknown_event', 'snap')).toBe('broadcast');
     });
   });
 });

@@ -12,6 +12,7 @@ const PLACEHOLDER_PATTERNS = [
   /G-LOCAL0+$/i,
   /^AW-(REPLACE|PLACEHOLDER|DEMO)/i,
   /^GTM-(PLACEHOLDER|DEMO|REPLACE)/i,
+  /^SNAP-(PLACEHOLDER|DEMO|REPLACE)/i,
   /^1234567890/,
   /^XXXX/i,
 ];
@@ -22,6 +23,7 @@ const ID_FORMATS: Array<{ key: string; format: RegExp; label: string }> = [
   { key: 'gtmContainerId', format: /^GTM-[A-Z0-9]{6,10}$/, label: 'GTM Container ID' },
   { key: 'metaPixelId', format: /^\d{10,17}$/, label: 'Meta Pixel ID' },
   { key: 'tiktokPixelId', format: /^[A-Z0-9]{15,25}$/i, label: 'TikTok Pixel ID' },
+  { key: 'snapPixelId', format: /^[a-f0-9-]{32,36}$/i, label: 'Snap Pixel ID' },
 ];
 
 function isPlaceholder(value: string): boolean {
@@ -138,6 +140,8 @@ function providerRequiredKeys(providerId: string): string[] {
       return ['metaPixelId'];
     case 'tiktok':
       return ['tiktokPixelId'];
+    case 'snap':
+      return ['snapPixelId'];
     case 'gtm':
       return ['gtmContainerId'];
     default:

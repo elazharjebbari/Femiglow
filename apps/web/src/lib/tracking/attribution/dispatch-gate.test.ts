@@ -114,6 +114,28 @@ describe('decideAttribution — conversions gated', () => {
       }).allowed,
     ).toBe(false);
   });
+
+  it('Snap + channel=meta + conversion → SKIP', () => {
+    expect(
+      decideAttribution({
+        providerKind: 'snap',
+        resolvedChannel: 'meta',
+        isPrimaryConversion: true,
+        strategy: 'last_paid_touch',
+      }).allowed,
+    ).toBe(false);
+  });
+
+  it('Snap + channel=snap + conversion → allow', () => {
+    const r = decideAttribution({
+      providerKind: 'snap',
+      resolvedChannel: 'snap',
+      isPrimaryConversion: true,
+      strategy: 'last_paid_touch',
+    });
+    expect(r.allowed).toBe(true);
+    expect(r.reason).toBe('match:last_paid_touch');
+  });
 });
 
 describe('decideAttribution — fallback direct/organic (broadcast partiel)', () => {
@@ -332,8 +354,8 @@ describe('shouldDispatchByAttribution — fallback safe quand erreur en lecture'
 });
 
 describe('shouldDispatchByAttribution — matrice complète providers × canaux', () => {
-  const allChannels = ['meta', 'google_ads', 'tiktok'] as const;
-  const allProviders = ['meta', 'google_ads', 'tiktok'] as const;
+  const allChannels = ['meta', 'google_ads', 'tiktok', 'snap'] as const;
+  const allProviders = ['meta', 'google_ads', 'tiktok', 'snap'] as const;
 
   it('seul le provider matching reçoit la conversion (last_paid_touch)', async () => {
     for (const visitorChannel of allChannels) {
