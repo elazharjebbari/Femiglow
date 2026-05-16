@@ -9,6 +9,7 @@ const envMock = vi.hoisted(() => ({
   OUTBOUND_WEBHOOK_SECRET: 'dev-secret-min-32-chars-for-tests',
   CHAT_LEAD_WEBHOOK_URL: undefined as string | undefined,
   CHAT_LEAD_WEBHOOK_SECRET: undefined as string | undefined,
+  WEBHOOK_SECRET_KEY: 'webhook-secret-key-32-chars-for-tests',
   LOG_LEVEL: 'error' as const,
 }));
 
@@ -202,6 +203,51 @@ describe('dispatchLeadStep2Webhook', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(repoMock.stampStep2Webhook).not.toHaveBeenCalled();
+  });
+
+  it("utilise l'endpoint admin lead.created existant quand OUTBOUND_WEBHOOK_URL est absent", async () => {
+    envMock.OUTBOUND_WEBHOOK_URL = undefined;
+    const { createWebhookEndpoint } = await import('@/lib/db/queries/webhook-endpoints');
+    await createWebhookEndpoint({
+      url: 'https://hook.example.com/admin-lead-created',
+      events: ['lead.created'],
+      description: 'legacy admin endpoint',
+    });
+    const captured: {
+      event?: string;
+      payload?: Record<string, unknown>;
+      idem?: string | null;
+    } = {};
+    server.use(
+      http.post('https://hook.example.com/admin-lead-created', async ({ request }) => {
+        const body = (await request.json()) as {
+          event: string;
+          payload: Record<string, unknown>;
+        };
+        captured.event = body.event;
+        captured.payload = body.payload;
+        captured.idem = request.headers.get('idempotency-key');
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    await expect(dispatchLeadStep2Webhook(makeLead())).resolves.toMatchObject({
+      status: 'sent',
+      responseStatus: 200,
+    });
+
+    expect(captured.event).toBe('lead.created');
+    expect(captured.idem).toBe('lead.created:lead-step2:cl_step2');
+    expect(captured.payload).toMatchObject({
+      id: 'lead-step2:cl_step2',
+      event_name: 'lead.step2_completed',
+      webhook_source: 'lead-step2',
+      source_id: 'cl_step2',
+      full_name: 'Sara',
+      phone: '0612345678',
+      city: 'Marrakech',
+    });
+    expect(repoMock.stampStep2Webhook).toHaveBeenCalledWith('cl_step2');
   });
 
   it('garde le dispatch réussi même si le stamp DB échoue', async () => {

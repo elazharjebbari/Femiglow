@@ -17,6 +17,7 @@ export type DeliveryStatus = 'pending' | 'in_progress' | 'succeeded' | 'failed' 
 
 export type WebhookEventName =
   | 'lead.created'
+  | 'lead.step2_completed'
   | 'lead.status_changed'
   | 'lead.note_added'
   | 'order.created'

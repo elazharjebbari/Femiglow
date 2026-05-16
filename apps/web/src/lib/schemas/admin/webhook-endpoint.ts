@@ -3,6 +3,7 @@ import { isPrivateHostname } from '@/lib/webhooks/anti-ssrf';
 
 const eventNameSchema = z.enum([
   'lead.created',
+  'lead.step2_completed',
   'lead.status_changed',
   'lead.note_added',
   'order.created',

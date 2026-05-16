@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 const EVENT_OPTIONS = [
   { value: 'lead.created', label: 'Lead créé' },
+  { value: 'lead.step2_completed', label: 'Adresse lead complétée' },
   { value: 'lead.status_changed', label: 'Statut lead modifié' },
   { value: 'lead.note_added', label: 'Note lead ajoutée' },
   { value: 'order.created', label: 'Commande créée' },
