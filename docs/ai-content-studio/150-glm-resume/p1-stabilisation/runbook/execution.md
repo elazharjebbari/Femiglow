@@ -6,6 +6,51 @@
 
 ---
 
+## État d'avancement
+
+| Étape | Statut | Commit |
+|-------|--------|--------|
+| 1 — Bugs backend | ✅ Terminé | `11cf84d` |
+| 2 — Types partagés | ✅ Terminé | `d93095f` |
+| 3 — Découpage UI | ✅ Terminé | `218b6ae`, `527265c`, `0f2dca0` |
+| 4 — Accessibilité | ✅ Terminé (aria-live, noopener, dead code) | `5f717fb` |
+| 4b — Validation Zod | ⏳ Non commencé | — |
+| 5 — Tests unitaires | ✅ Terminé | `c542e43`, `dc65f9b`, `29353dc` |
+| 6 — Tests intégration MSW | ✅ Terminé | `5bd81d6` |
+| 7 — Tests E2E Playwright | ⏳ Non commencé | — |
+| 8 — Configuration couverture | ✅ Terminé | `dc65f9b` |
+| 9 — Mise à jour runbook | ✅ Ce document | — |
+
+### Résumé des commits P1
+
+```
+5bd81d6 test(content-studio): add MSW handlers and API integration tests
+29353dc test(content-studio): add unit tests for extracted components
+0f2dca0 refactor(content-studio): extract major components from monolith
+5f717fb fix(content-studio): add aria-live, rel=noopener, remove dead code
+527265c refactor(content-studio): extract Select and API helpers to separate files
+218b6ae refactor(content-studio): extract utility components and helpers from monolith
+d93095f refactor(content-studio): extract shared types to separate module
+11cf84d fix(content-studio): enforce state machine transitions and fix insertReview ternary
+3757976 fix(content-studio): return JSON 401 instead of redirect on API auth failure
+```
+
+### Statistiques tests
+
+- **118 tests** passent sur **14 fichiers** de test
+- Couverture : `src/lib/content-studio/**`, `src/components/admin/content-studio/**`
+- Seuils : 80% statements/lines/functions, 70% branches
+
+### Réduction du monolithe
+
+| Fichier | Avant | Après |
+|---------|-------|-------|
+| `ContentStudioClient.tsx` | 1567 lignes | 203 lignes |
+
+Composants extraits : `IdeaForm`, `DraftEditor` (+ `VisualGenerator`, `MediaPicker`, `DeliveryPanel`), `PostizHealthPanel` (+ `OpsMetric`), `EditorialCalendar` (+ `Metric`), `PostizPanel`, `SectionTitle`, `DeliveryStatusBadge`, `PlatformPreview`, `StudioGuide`, `Select`, `api.ts`, `helpers.ts`, `types.ts`
+
+---
+
 ## Prérequis
 
 ```bash
@@ -18,287 +63,121 @@ pnpm --filter @femiglow/web test -- --reporter=verbose 2>&1 | tail -20
 
 ---
 
-## Étape 1 — Corriger les bugs backend
+## Étape 1 — Corriger les bugs backend ✅
 
-### 1a. Corriger le ternaire identique dans repository.ts
+### 1a. Corriger le ternaire identique dans repository.ts ✅
 
-```bash
-# Ouvrir apps/web/src/lib/content-studio/repository.ts
-# Ligne ~457, remplacer :
-#   status: review.status === 'blocked' ? 'needs_review' : 'needs_review',
-# par :
-#   status: 'needs_review',
-```
+Ligne ~457, remplacé `status: review.status === 'blocked' ? 'needs_review' : 'needs_review'` par `status: 'needs_review'`.
 
-### 1b. Enforcer la state machine dans service.ts
+### 1b. Enforcer la state machine dans service.ts ✅
 
-```bash
-# Ouvrir apps/web/src/lib/content-studio/service.ts
-# Ajouter en haut :
-#   import { assertTransition } from './state-machine';
-#
-# Avant chaque updateIdeaStatus / updateDraft status / updatePostPlanning :
-#   assertTransition(currentStatus, newStatus);
-```
+Ajouté `import { assertTransition } from './state-machine'` et appels avant chaque changement de statut.
 
-### 1c. Ajouter les transitions manquantes dans state-machine.ts
+### 1c. Ajouter les transitions manquantes dans state-machine.ts ✅
 
-```bash
-# Ouvrir apps/web/src/lib/content-studio/state-machine.ts
-# Ajouter dans TRANSITIONS :
-#   ['scheduled', 'approved']: true,
-#   ['needs_review', 'generated']: true,
-```
+Ajouté `['scheduled', 'approved']: true` et `['needs_review', 'generated']: true`.
 
-### 1d. Écrire les tests
+### 1d. Écrire les tests ✅
 
-```bash
-# Créer apps/web/src/lib/content-studio/service.test.ts
-# Tests : transitions valides, transitions invalides, edge cases
-```
+Créé `service.test.ts` (40 tests transitions) et `auth.test.ts` (3 tests).
 
-### Valider
-
-```bash
-cd /var/www/femiglow-staging/apps/web
-pnpm vitest run src/lib/content-studio/state-machine.test.ts src/lib/content-studio/service.test.ts
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "fix(content-studio): enforce state machine transitions and fix insertReview ternary"
-```
+**Commit** : `11cf84d fix(content-studio): enforce state machine transitions and fix insertReview ternary`
 
 ---
 
-## Étape 2 — Types partagés
+## Étape 2 — Types partagés ✅
 
-```bash
-# Créer apps/web/src/components/admin/content-studio/types.ts
-# Déplacer Integration, StudioMediaItem, MediaCompartment, DraftAssetsByDraftId, AutomationResponse
-# Mettre à jour les imports dans ContentStudioClient.tsx
-```
+Créé `types.ts` avec `Integration`, `StudioMediaItem`, `DraftAssetsByDraftId`, `MediaCompartment`, `AutomationResponse`, `RunFunction`.
 
-### Valider
-
-```bash
-pnpm tsc --noEmit
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "refactor(content-studio): extract shared types to separate module"
-```
+**Commit** : `d93095f refactor(content-studio): extract shared types to separate module`
 
 ---
 
-## Étape 3 — Découpage UI
+## Étape 3 — Découpage UI ✅
 
-### 3a. StudioGuide
+Extraction progressive des composants du monolithe :
 
-```bash
-# Extraire la section d'aide repliable de ContentStudioClient.tsx
-# Créer StudioGuide.tsx avec props: enabled: boolean
-# Remplacer l'inline par <StudioGuide enabled={enabled} />
-```
+- `StudioGuide.tsx`, `SectionTitle.tsx`, `DeliveryStatusBadge.tsx`, `PlatformPreview.tsx`, `helpers.ts`, `Select.tsx`, `api.ts`
+- `IdeaForm.tsx`, `DraftEditor.tsx` (+ VisualGenerator, MediaPicker, DeliveryPanel), `PostizHealthPanel.tsx` (+ OpsMetric), `EditorialCalendar.tsx` (+ Metric), `PostizPanel.tsx`
 
-### 3b-3j. Autres composants
+ContentStudioClient.tsx passé de 1567 → 203 lignes.
 
-Procéder dans l'ordre : DraftCardList → MediaPicker → PlatformPreview → PostizPanel → IdeaForm → CalendarPipeline → PostizHealthPanel → AutomationActions
-
-Pour chaque composant :
-1. Identifier la portion dans ContentStudioClient.tsx (lignes dans l'analyse)
-2. Créer le fichier composant avec les props nécessaires
-3. Remplacer l'inline par le composant dans ContentStudioClient.tsx
-4. Vérifier TypeScript : `pnpm tsc --noEmit`
-5. Vérifier visuellement sur staging
-
-### Valider après chaque extraction
-
-```bash
-pnpm tsc --noEmit
-pnpm next build 2>&1 | tail -5
-```
-
-### Commit (regrouper 3-4 composants par commit)
-
-```bash
-git add -A
-git commit -m "refactor(content-studio): extract StudioGuide, DraftCardList, MediaPicker, PlatformPreview"
-
-git add -A
-git commit -m "refactor(content-studio): extract PostizPanel, IdeaForm, CalendarPipeline"
-
-git add -A
-git commit -m "refactor(content-studio): extract PostizHealthPanel, AutomationActions, simplify orchestrator"
-```
+**Commits** : `218b6ae`, `527265c`, `0f2dca0`
 
 ---
 
-## Étape 4 — Validation client + accessibilité
+## Étape 4 — Validation client + accessibilité ✅ (partiel)
 
-```bash
-# Ajouter validation Zod dans IdeaForm, DraftEditor
-# Ajouter aria-live sur la zone de message/error
-# Ajouter rel="noopener noreferrer" sur les liens externes
-# Supprimer le dead code (lignes 436-438)
-```
+- ✅ aria-live="polite", role="status", role="alert" sur messages/erreurs
+- ✅ rel="noopener noreferrer" sur liens externes
+- ✅ Dead code supprimé
+- ⏳ Validation Zod côté client — non commencé (P2)
 
-### Valider
-
-```bash
-pnpm tsc --noEmit
-pnpm next build 2>&1 | tail -5
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "feat(content-studio): add client-side Zod validation and accessibility improvements"
-```
+**Commit** : `5f717fb fix(content-studio): add aria-live, rel=noopener, remove dead code`
 
 ---
 
-## Étape 5 — Tests unitaires
+## Étape 5 — Tests unitaires ✅
 
-```bash
-# Créer :
-#   apps/web/src/lib/content-studio/service.test.ts
-#   apps/web/src/lib/content-studio/auth.test.ts
-#   apps/web/src/components/admin/content-studio/StudioGuide.test.tsx
-#   apps/web/src/components/admin/content-studio/DraftCardList.test.tsx
-```
+- `state-machine.test.ts` — 40 tests transitions
+- `auth.test.ts` — 3 tests auth
+- `automation.test.ts` — 3 tests (préexistant)
+- `SectionTitle.test.tsx` — 4 tests
+- `DeliveryStatusBadge.test.tsx` — 4 tests
+- `PlatformPreview.test.tsx` — 3 tests
+- `IdeaForm.test.tsx` — 3 tests
+- `EditorialCalendar.test.tsx` — 3 tests
+- `PostizPanel.test.tsx` — 3 tests
 
-### Valider
-
-```bash
-pnpm vitest run src/lib/content-studio/ src/components/admin/content-studio/
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "test(content-studio): add service, auth, and component unit tests"
-```
+**Commits** : `c542e43`, `dc65f9b`, `29353dc`
 
 ---
 
-## Étape 6 — Tests d'intégration API (MSW)
+## Étape 6 — Tests d'intégration API (MSW) ✅
 
-```bash
-# Créer :
-#   apps/web/src/test/msw/content-studio.ts
-#   apps/web/src/lib/content-studio/api-routes.test.ts
-```
+Créé `content-studio-handlers.ts` avec 8 handlers MSW et `content-studio-handlers.test.ts` avec 8 tests couvrant :
+- POST /ideas (création)
+- POST /ideas/:id/generate (génération)
+- PATCH /drafts/:id (mise à jour)
+- POST /drafts/:id/approve (approbation)
+- GET /media (liste médias)
+- POST /automation (jobs)
+- POST /postiz/integrations/sync (sync)
 
-### Valider
-
-```bash
-pnpm vitest run src/lib/content-studio/api-routes.test.ts
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "test(content-studio): add MSW handlers and API integration tests"
-```
+**Commit** : `5bd81d6 test(content-studio): add MSW handlers and API integration tests`
 
 ---
 
-## Étape 7 — Tests E2E Playwright
+## Étape 7 — Tests E2E Playwright ⏳
 
-```bash
-# Créer :
-#   apps/web/e2e/content-studio.spec.ts
-#   apps/web/src/test/factories/content-studio.ts
-```
-
-### Valider
-
-```bash
-# S'assurer que le serveur tourne
-systemctl status femiglow-staging
-# Lancer les tests E2E
-pnpm --filter @femiglow/web test:e2e -- --grep "Content Studio"
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "test(content-studio): add Playwright E2E tests and test factories"
-```
+Non commencé — nécessite un serveur en cours d'exécution et une configuration Playwright.
 
 ---
 
-## Étape 8 — Configuration couverture
+## Étape 8 — Configuration couverture ✅
 
-```bash
-# Modifier apps/web/vitest.config.ts
-# Ajouter au coverage.include :
-#   'src/lib/content-studio/**',
-#   'src/components/admin/content-studio/**',
-```
+Ajouté `src/lib/content-studio/**/*.{ts,tsx}` et `src/components/admin/content-studio/**/*.{ts,tsx}` au coverage include dans `vitest.config.ts`.
 
-### Valider
-
-```bash
-pnpm vitest run --coverage 2>&1 | grep "content-studio"
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "ci(content-studio): add coverage configuration for content-studio modules"
-```
-
----
-
-## Étape 9 — Mettre à jour le runbook
-
-```bash
-# Mettre à jour docs/ai-content-studio/130-runbook/prototype-runbook.md
-# Avec les corrections de bugs, le refactoring, les tests, les commits
-```
-
-### Commit
-
-```bash
-git add -A
-git commit -m "docs(content-studio): update runbook with P1 stabilization changes"
-```
+**Commit** : `dc65f9b test(content-studio): add test factories and extend vitest coverage config`
 
 ---
 
 ## Validation finale
 
-Après toutes les étapes :
-
 ```bash
-# TypeScript
-pnpm tsc --noEmit
+cd /var/www/femiglow-staging/apps/web
 
-# Tests unitaires
-pnpm vitest run src/lib/content-studio/ src/components/admin/content-studio/
+# TypeScript (seulement 3 erreurs pré-existantes dans postiz.test.ts)
+npx tsc --noEmit
+
+# Tests unitaires (118 tests, 14 fichiers)
+npx vitest run src/lib/content-studio/ src/components/admin/content-studio/
 
 # Build
-pnpm next build 2>&1 | tail -10
+npx next build
 
 # Redémarrer staging
-chown -R nodeapp:nodeapp .next
 systemctl restart femiglow-staging
-
-# Vérifier l'interface
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8012/admin/content-studio
-# Attendu : 307 (redirect vers login)
 
 # Vérifier l'API sans session
 curl -s http://localhost:8012/api/admin/content-studio/ideas | python3 -m json.tool
@@ -307,17 +186,29 @@ curl -s http://localhost:8012/api/admin/content-studio/ideas | python3 -m json.t
 
 ---
 
+## Problèmes connus (pré-existants)
+
+1. **`image-generation.test.ts`** : Le test `sharp` ne fonctionne pas en environnement de test (module natif non disponible). Pas lié aux changements P1.
+2. **`postiz.test.ts`** : 3 erreurs TypeScript "Object is possibly 'undefined'" — pré-existantes, pas liées aux changements P1.
+
+---
+
 ## Rollback
 
 Si une étape casse quelque chose :
 
 ```bash
-# Voir les commits
 git log --oneline -10
-
-# Revenir au commit précédent
 git revert HEAD
-
 # Ou annuler les changements non-committés
 git checkout -- .
 ```
+
+---
+
+## P2 et suivants (non commencés)
+
+- **P2** : Actions de review (approbation/refus), éditeur de brief
+- **P3** : Calendrier éditorial interactif, tableau de bord Postiz
+- **P4** : Notes/tags, tracking UTM, analytics
+- **P5** : Job queue, idempotence, pages séparées
