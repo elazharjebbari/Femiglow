@@ -1,0 +1,25 @@
+@startuml
+!theme plain
+title UI State Machine - Content Draft
+
+[*] --> Idea
+Idea --> Briefing : generate brief
+Briefing --> Generated : generation ok
+Briefing --> GenerationError : provider error
+GenerationError --> Briefing : retry
+Generated --> NeedsReview : open review
+NeedsReview --> Approved : human approve
+NeedsReview --> Rejected : reject
+NeedsReview --> Generated : request variation
+Approved --> Scheduling : schedule
+Scheduling --> Scheduled : postiz ok
+Scheduling --> ScheduleError : postiz failed
+ScheduleError --> Scheduling : retry
+Scheduled --> Published : postiz status published
+Scheduled --> Cancelled : cancel
+Published --> Measured : import metrics
+Rejected --> Archived
+Cancelled --> Archived
+Measured --> [*]
+@enduml
+

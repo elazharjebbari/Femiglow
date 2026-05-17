@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow AI Content Studio Admin API
+  version: 0.1.0
+servers:
+  - url: /api/admin/content-studio
+security:
+  - adminSession: []
+components:
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: femiglow_admin_session
+  schemas:
+    ContentIdeaCreate:
+      type: object
+      required: [pillar, objective, platform, format, prompt]
+      properties:
+        pillar:
+          type: string
+          enum: [rituel, produit, preuve, journal, maison, reassurance, saison, coulisses]
+        objective:
+          type: string
+          enum: [notoriete, consideration, conversion, reassurance, fidelisation]
+        platform:
+          type: string
+          enum: [instagram, facebook]
+        format:
+          type: string
+          enum: [post, story, reel, carousel]
+        prompt:
+          type: string
+          minLength: 8
+          maxLength: 2000
+    ContentDraft:
+      type: object
+      required: [id, status, caption, platform, format]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        caption: { type: string }
+        platform: { type: string }
+        format: { type: string }
+        scoreTotal: { type: integer, minimum: 0, maximum: 100 }
+paths:
+  /ideas:
+    get:
+      summary: List content ideas
+      responses:
+        "200":
+          description: Ideas list
+    post:
+      summary: Create an idea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContentIdeaCreate"
+      responses:
+        "201":
+          description: Idea created
+  /ideas/{id}/generate:
+    post:
+      summary: Generate brief and drafts from idea
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Drafts generated
+  /drafts/{id}/review:
+    post:
+      summary: Run brand review
+      responses:
+        "200":
+          description: Review result
+  /drafts/{id}/approve:
+    post:
+      summary: Approve a draft
+      responses:
+        "200":
+          description: Draft approved
+  /posts/{id}/schedule:
+    post:
+      summary: Schedule approved post via Postiz
+      responses:
+        "200":
+          description: Post scheduled
+        "409":
+          description: Draft not approved or already scheduled
+  /postiz/integrations/sync:
+    post:
+      summary: Sync Postiz integrations
+      responses:
+        "200":
+          description: Integrations synced
+

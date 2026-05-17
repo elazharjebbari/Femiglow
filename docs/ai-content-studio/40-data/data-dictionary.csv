@@ -1,0 +1,27 @@
+table,column,type,required,description
+content_campaign,id,text,yes,ID campagne préfixé cc_
+content_campaign,name,text,yes,Nom campagne
+content_campaign,objective,text,yes,Objectif marketing principal
+content_campaign,status,text,yes,draft active archived
+content_idea,id,text,yes,ID idée préfixé ci_
+content_idea,pillar,text,yes,rituel produit preuve journal maison reassurance saison coulisses
+content_idea,objective,text,yes,notoriete consideration conversion reassurance fidelisation
+content_idea,source_type,text,no,manual product article media campaign
+content_idea,status,text,yes,idea brief generated rejected archived
+content_brief,angle,text,yes,Angle narratif retenu
+content_brief,constraints_json,jsonb,yes,Interdits preuves CTA plateformes
+content_draft,platform,text,yes,instagram facebook
+content_draft,format,text,yes,post story reel carousel
+content_draft,caption,text,yes,Texte final ou brouillon
+content_draft,alt_text,text,no,Texte alternatif image
+content_draft,status,text,yes,generated needs_review approved rejected scheduled published
+content_draft,score_total,int,no,Score total 0-100
+content_asset_binding,media_id,text,yes,FK media existant
+content_generation_run,provider,text,yes,openai flux runway manual
+content_generation_run,model,text,yes,Modèle utilisé
+content_generation_run,prompt_version,text,yes,Version charte/prompt
+content_brand_review,status,text,yes,pass warning blocked
+content_post,scheduled_at,timestamp,no,Date UTC de programmation
+content_postiz_delivery,postiz_post_id,text,no,ID retourné par Postiz
+content_performance_snapshot,metrics_json,jsonb,yes,Portée likes commentaires clics conversions si disponible
+

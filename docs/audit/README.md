@@ -16,6 +16,7 @@ Ce dossier restitue l'état du projet FemiGlow tel qu'observé en mai 2026, avan
 | 07 | [Singularités, dette et manques](07-singularites-dette.md) | Décisions fortes, points de friction Phase 2, lacunes |
 | 08 | [Plan de correction du contenu](08-plan-correction-contenu.md) | Alignement fixtures + feeds + content sur le brief mai 2026 (Rabat, Souheila, Pack FemiGlow 2 étapes, 199 dh) |
 | 09 | [Guide détaillé des modifications](09-guide-modifications-detaille.md) | Page par page, composant par composant, élément par élément : quoi modifier, pourquoi (Kolenda) + 12 propositions d'articles |
+| 10 | [Audit application staging — 2026-05-14](audit-application-staging-2026-05-14.md) | Vue globale actuelle du staging : backend, frontend, data, architecture, UI/UX, design, sécurité, tests, docs |
 
 ## Méthode
 

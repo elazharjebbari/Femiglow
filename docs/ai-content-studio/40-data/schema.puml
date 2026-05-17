@@ -1,0 +1,120 @@
+@startuml
+!theme plain
+title AI Content Studio - ERD
+
+entity content_campaign {
+  * id : text
+  --
+  name : text
+  objective : text
+  starts_at : timestamp
+  ends_at : timestamp
+  status : text
+}
+
+entity content_idea {
+  * id : text
+  --
+  campaign_id : text
+  pillar : text
+  objective : text
+  source_type : text
+  source_ref : text
+  status : text
+  created_by : text
+}
+
+entity content_brief {
+  * id : text
+  --
+  idea_id : text
+  angle : text
+  cta : text
+  constraints_json : jsonb
+  version : int
+}
+
+entity content_draft {
+  * id : text
+  --
+  brief_id : text
+  platform : text
+  format : text
+  caption : text
+  alt_text : text
+  hashtags_json : jsonb
+  status : text
+  score_total : int
+}
+
+entity content_asset_binding {
+  * id : text
+  --
+  draft_id : text
+  media_id : text
+  role : text
+  crop_json : jsonb
+}
+
+entity content_generation_run {
+  * id : text
+  --
+  draft_id : text
+  provider : text
+  model : text
+  prompt_version : text
+  input_json : jsonb
+  output_json : jsonb
+  cost_cents : int
+}
+
+entity content_brand_review {
+  * id : text
+  --
+  draft_id : text
+  status : text
+  score_json : jsonb
+  violations_json : jsonb
+}
+
+entity content_post {
+  * id : text
+  --
+  draft_id : text
+  scheduled_at : timestamp
+  published_at : timestamp
+  status : text
+  utm_json : jsonb
+}
+
+entity content_postiz_delivery {
+  * id : text
+  --
+  post_id : text
+  integration_id : text
+  postiz_post_id : text
+  status : text
+  request_json : jsonb
+  response_json : jsonb
+}
+
+entity content_performance_snapshot {
+  * id : text
+  --
+  post_id : text
+  captured_at : timestamp
+  metrics_json : jsonb
+  source : text
+}
+
+content_campaign ||--o{ content_idea
+content_idea ||--o{ content_brief
+content_brief ||--o{ content_draft
+content_draft ||--o{ content_asset_binding
+content_draft ||--o{ content_generation_run
+content_draft ||--o{ content_brand_review
+content_draft ||--o{ content_post
+content_post ||--o{ content_postiz_delivery
+content_post ||--o{ content_performance_snapshot
+@enduml
+

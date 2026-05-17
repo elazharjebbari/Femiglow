@@ -1,0 +1,44 @@
+@startuml
+!theme plain
+title Create and schedule a content draft
+
+actor Admin
+participant "Admin UI" as UI
+participant "Content Studio API" as API
+participant "Generation Service" as Gen
+participant "Brand Review" as Review
+participant "Media Service" as Media
+database "PostgreSQL" as DB
+participant "Postiz Bridge" as Postiz
+
+Admin -> UI: Create idea
+UI -> API: POST /ideas
+API -> DB: insert idea
+API --> UI: idea
+
+Admin -> UI: Generate brief + drafts
+UI -> API: POST /ideas/{id}/generate
+API -> Gen: generate brief/captions
+Gen --> API: candidates
+API -> Review: score candidates
+Review --> API: scores + warnings
+API -> DB: insert generation_run + drafts
+API --> UI: drafts
+
+Admin -> UI: Select asset + approve
+UI -> API: POST /drafts/{id}/approve
+API -> Media: verify asset rights/status
+Media --> API: ok
+API -> DB: status approved + audit
+API --> UI: approved draft
+
+Admin -> UI: Schedule
+UI -> API: POST /posts/{id}/schedule
+API -> Postiz: upload media if needed
+Postiz --> API: postiz media id/url
+API -> Postiz: create schedule post
+Postiz --> API: postiz post id
+API -> DB: status scheduled + delivery log
+API --> UI: scheduled
+@enduml
+

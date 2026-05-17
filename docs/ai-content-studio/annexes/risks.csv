@@ -1,0 +1,11 @@
+risk_id,severity,area,risk,mitigation
+ACS-R001,high,brand,Image IA infidèle au produit,Utiliser médias existants v0 et références produit pour génération
+ACS-R002,high,security,Clé Postiz exposée,Serveur uniquement env redaction logs
+ACS-R003,high,workflow,Publication sans validation,Guard DB/API + tests E2E
+ACS-R004,medium,ops,Token Meta expiré,Sync integrations + alerte admin + runbook
+ACS-R005,medium,data,Prompts non traçables,content_generation_run obligatoire
+ACS-R006,medium,cost,Dépense IA incontrôlée,Budget quotidien + rate limit + quotas par action
+ACS-R007,medium,ux,Interface trop complexe,Wizard v0 puis kanban/calendar minimal
+ACS-R008,medium,integration,Postiz self-hosted diffère de la doc,POC endpoints avant dev complet
+ACS-R009,low,analytics,Postiz analytics insuffisantes,UTM tracking FemiGlow en fallback
+

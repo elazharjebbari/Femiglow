@@ -1,0 +1,28 @@
+surface:
+  page: "var(--color-creme)"
+  panel: "#FFFFFF"
+  panelMuted: "var(--color-creme-warm)"
+text:
+  primary: "var(--color-encre)"
+  secondary: "var(--color-text-secondary)"
+accent:
+  safe: "var(--color-sauge-dark)"
+  warning: "var(--color-champagne-dark)"
+  blocked: "var(--color-petale-dark)"
+radii:
+  panel: "8px"
+  control: "6px"
+spacing:
+  sidebarWidth: "260px"
+  editorMax: "1280px"
+brandScore:
+  pass:
+    label: "Fidèle à la maison"
+    color: "var(--color-sauge-dark)"
+  warning:
+    label: "À relire"
+    color: "var(--color-champagne-dark)"
+  blocked:
+    label: "À reprendre"
+    color: "var(--color-petale-dark)"
+
