@@ -156,7 +156,7 @@ describe('MSW — Content Studio API handlers', () => {
       });
       expect(res.ok).toBe(true);
       const json = await res.json();
-      expect(json.post.status).toBe('approved');
+      expect(json.post.status).toBe('cancelled');
       expect(json.post.cancelReason).toBe('Changement de planning');
     });
 

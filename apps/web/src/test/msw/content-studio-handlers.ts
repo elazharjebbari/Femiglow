@@ -157,7 +157,7 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       const body = (await request.json()) as Record<string, unknown>;
       state.posts[idx] = {
         ...state.posts[idx],
-        status: 'approved' as ContentStatus,
+        status: 'cancelled' as ContentStatus,
         cancelReason: (body.reason as string) ?? null,
         cancelledBy: null,
         cancelledAt: new Date(),

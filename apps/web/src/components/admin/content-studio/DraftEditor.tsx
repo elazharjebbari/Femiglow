@@ -707,7 +707,7 @@ function DeliveryPanel({
                   p.id === updated.id ? { ...p, status: updated.status as ContentPost['status'] } : p,
                 ),
               );
-              setMessage('Publication annulée, le post est revenu au statut approuvé.');
+              setMessage('Publication annulée.');
             }}
             run={run}
           />
