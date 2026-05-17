@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApi, requireContentStudioEnabled } from "@/lib/content-studio/auth";
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
-import { contentIdeaCreateSchema } from '@/lib/content-studio/schemas';
+import { contentIdeaCreateSchema, ideaQuerySchema } from '@/lib/content-studio/schemas';
 import { createContentIdea, listIdeas } from '@/lib/content-studio/service';
 import { getIdempotencyKey, getExistingResponse, storeIdempotentResponse } from '@/lib/content-studio/idempotency';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   try {
     requireContentStudioEnabled();
     await requireAdminApi();
-    return NextResponse.json({ ideas: await listIdeas() });
+    const { searchParams } = new URL(request.url);
+    const filters = ideaQuerySchema.parse(Object.fromEntries(searchParams.entries()));
+    return NextResponse.json({ ideas: await listIdeas(filters) });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });

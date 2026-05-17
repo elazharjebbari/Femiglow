@@ -55,7 +55,7 @@ import {
 } from './postiz';
 import type { ContentIdea } from './types';
 
-export { listIdeas, listDrafts, listPosts };
+export { listIdeas, listDrafts, listPosts } from './repository';
 
 export interface StudioMediaItem {
   id: string;
