@@ -211,7 +211,7 @@ const MAP: Record<string, EventMapping> = {
       group: 'leads',
     },
     tiktok: { name: 'SubmitForm', isStandard: true },
-    snap: { name: 'SIGN_UP', isStandard: true },
+    snap: { name: 'LEAD', isStandard: true },
     pinterest: { name: 'lead', isStandard: true },
     identityFields: ['email', 'phone', 'firstName'],
   },
@@ -307,7 +307,7 @@ const MAP: Record<string, EventMapping> = {
       recommendedRole: 'primary',
       group: 'leads',
     },
-    snap: { name: 'SIGN_UP', isStandard: true },
+    snap: { name: 'LEAD', isStandard: true },
     identityFields: ['phone', 'firstName'],
   },
   address_completed: {
@@ -384,7 +384,7 @@ const MAP: Record<string, EventMapping> = {
       group: 'leads',
     },
     tiktok: { name: 'SubmitForm', isStandard: true },
-    snap: { name: 'SIGN_UP', isStandard: true },
+    snap: { name: 'LEAD', isStandard: true },
     pinterest: { name: 'lead', isStandard: true },
     identityFields: ['email', 'phone'],
   },
@@ -451,7 +451,7 @@ const TIKTOK_PRIMARY_NAMES: ReadonlySet<string> = new Set([
   'CompletePayment',
   'SubmitForm',
 ]);
-const SNAP_PRIMARY_NAMES: ReadonlySet<string> = new Set(['PURCHASE', 'SIGN_UP']);
+const SNAP_PRIMARY_NAMES: ReadonlySet<string> = new Set(['PURCHASE', 'SIGN_UP', 'LEAD']);
 
 /**
  * Retourne le mode d'attribution pour `(eventKey, provider)`.

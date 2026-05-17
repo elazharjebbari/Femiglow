@@ -36,7 +36,7 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
         event_time: Math.floor(ctx.receivedAt.getTime() / 1000),
         event_id: ctx.eventId,
         event_source_url: ctx.pageUrl,
-        action_source: 'WEB',
+        action_source: 'website',
         user_data: {
           em: userData.sha256_email_address ? [userData.sha256_email_address] : hashed.em ? [hashed.em] : undefined,
           ph: userData.sha256_phone_number ? [userData.sha256_phone_number] : hashed.ph ? [hashed.ph] : undefined,
@@ -44,9 +44,11 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
           ln: address.sha256_last_name ? [address.sha256_last_name] : hashed.ln ? [hashed.ln] : undefined,
           geo_city: ctx.identity?.city ?? address.city ?? ctx.params.geo_city ?? ctx.params.city,
           geo_country: ctx.identity?.country ?? address.country ?? ctx.params.geo_country ?? ctx.params.country,
+          geo_region: ctx.params.geo_region as string | undefined,
           client_ip_address: ctx.ipAnonymized,
           client_user_agent: ctx.uaHash,
           sc_click_id: scClickId,
+          sc_cookie1: ctx.params.sc_cookie1 as string | undefined,
         },
         custom_data: {
           currency: ctx.params.currency,
@@ -99,7 +101,7 @@ export const snapAdapter: ProviderAdapter = {
   },
   clientSnippet(provider: TrackingProvider): string | null {
     if (provider.status !== 'enabled' || !provider.pixelId) return null;
-    return `(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};a.queue=[];var s='script';r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)})(window,document,'https://sc-static.net/scevent.min.js');snaptr('init','${provider.pixelId}');snaptr('track','PAGE_VIEW');`;
+    return `(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};a.queue=[];var s='script';r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)})(window,document,'https://sc-static.net/scevent.min.js');snaptr('init','${provider.pixelId}');`;
   },
   cspHosts() {
     return {
