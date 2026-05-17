@@ -18,6 +18,7 @@ import {
   CONTENT_PILLARS,
   CONTENT_PLATFORMS,
 } from '@/lib/content-studio/types';
+import type { Integration, StudioMediaItem, DraftAssetsByDraftId, MediaCompartment, AutomationResponse } from './types';
 
 interface Props {
   initialIdeas: ContentIdea[];
@@ -27,48 +28,6 @@ interface Props {
   initialDeliveries: ContentPostizDelivery[];
   initialSnapshots: ContentPerformanceSnapshot[];
   enabled: boolean;
-}
-
-interface Integration {
-  id: string;
-  provider: string;
-  identifier: string | null;
-  name: string | null;
-  disabled: boolean;
-}
-
-interface StudioMediaItem {
-  id: string;
-  slug: string;
-  kind: string;
-  source: string;
-  compartment: 'imported' | 'ai_generated';
-  status: string;
-  alt: string;
-  caption: string | null;
-  originalUrl: string | null;
-  thumbUrl: string | null;
-  previewUrl: string | null;
-  width: number | null;
-  height: number | null;
-  createdAt: string | Date;
-}
-
-type DraftAssetsByDraftId = Record<
-  string,
-  {
-    mediaId: string;
-    media: StudioMediaItem | null;
-  }
->;
-
-type MediaCompartment = StudioMediaItem['compartment'];
-
-interface AutomationResponse {
-  job: 'postiz-sync' | 'retry-deliveries' | 'import-status' | 'import-performance';
-  result: Record<string, unknown>;
-  deliveries?: ContentPostizDelivery[];
-  snapshots?: ContentPerformanceSnapshot[];
 }
 
 export function ContentStudioClient({
