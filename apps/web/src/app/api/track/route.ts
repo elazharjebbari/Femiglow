@@ -112,13 +112,13 @@ const incomingEventSchema = z
     user_data: userDataSchema.optional(),
     attribution: attributionSchema.optional(),
   })
-  .strict();
+  .passthrough();
 
 const batchSchema = z
   .object({
     events: z.array(incomingEventSchema).min(1).max(50),
   })
-  .strict();
+  .passthrough();
 
 interface IngestResult {
   accepted: number;
