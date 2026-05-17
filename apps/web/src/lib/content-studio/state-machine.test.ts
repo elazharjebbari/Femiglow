@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { canTransition, assertTransition } from './state-machine';
+import { HttpError } from '@/lib/errors/http-error';
 
 describe('content studio state machine', () => {
   it('autorise le chemin review vers approval', () => {
     expect(canTransition('needs_review', 'approved')).toBe(true);
   });
 
-  it('interdit de programmer un brouillon généré', () => {
+  it('interdit de programmer un brouillon genere', () => {
     expect(canTransition('generated', 'scheduled')).toBe(false);
   });
 
@@ -34,11 +35,15 @@ describe('content studio state machine', () => {
     expect(canTransition('scheduled', 'failed')).toBe(true);
   });
 
+  it('autorise scheduled vers approved (cancel schedule)', () => {
+    expect(canTransition('scheduled', 'approved')).toBe(true);
+  });
+
   it('autorise failed vers scheduled (retry)', () => {
     expect(canTransition('failed', 'scheduled')).toBe(true);
   });
 
-  it('interdit archived vers tout autre état', () => {
+  it('interdit archived vers tout autre etat', () => {
     expect(canTransition('archived', 'idea')).toBe(false);
     expect(canTransition('archived', 'brief')).toBe(false);
     expect(canTransition('archived', 'generated')).toBe(false);
@@ -48,18 +53,33 @@ describe('content studio state machine', () => {
     expect(canTransition('rejected', 'generated')).toBe(true);
   });
 
-  it('interdit needs_review vers scheduled (saut détape)', () => {
+  it('autorise needs_review vers generated (request variation)', () => {
+    expect(canTransition('needs_review', 'generated')).toBe(true);
+  });
+
+  it('interdit needs_review vers scheduled (saut d etape)', () => {
     expect(canTransition('needs_review', 'scheduled')).toBe(false);
   });
 
-  it('assertTransition lève pour une transition invalide', () => {
+  it('assertTransition leve HttpError pour une transition invalide', () => {
+    expect(() => assertTransition('idea', 'published')).toThrow(HttpError);
     expect(() => assertTransition('idea', 'published')).toThrow(
-      'Transition Content Studio invalide: idea -> published',
+      'Transition Content Studio invalide',
     );
   });
 
-  it('assertTransition ne lève pas pour une transition valide', () => {
+  it('assertTransition ne leve pas pour une transition valide', () => {
     expect(() => assertTransition('approved', 'scheduled')).not.toThrow();
+  });
+
+  it('assertTransition leve HttpError 409 pour transition invalide', () => {
+    try {
+      assertTransition('idea', 'published');
+    } catch (err) {
+      expect(err).toBeInstanceOf(HttpError);
+      expect((err as HttpError).status).toBe(409);
+      expect((err as HttpError).code).toBe('invalid_state');
+    }
   });
 
   it('autorise published vers measured', () => {

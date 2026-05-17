@@ -1,4 +1,5 @@
 import type { ContentStatus } from './types';
+import { HttpError } from '@/lib/errors/http-error';
 
 const ALLOWED: Record<ContentStatus, ContentStatus[]> = {
   idea: ['brief', 'archived'],
@@ -6,7 +7,7 @@ const ALLOWED: Record<ContentStatus, ContentStatus[]> = {
   generated: ['needs_review', 'rejected', 'archived'],
   needs_review: ['approved', 'generated', 'rejected', 'archived'],
   approved: ['scheduled', 'archived'],
-  scheduled: ['published', 'failed', 'cancelled'],
+  scheduled: ['published', 'failed', 'cancelled', 'approved'],
   published: ['measured', 'archived'],
   failed: ['scheduled', 'archived'],
   cancelled: ['archived'],
@@ -21,7 +22,7 @@ export function canTransition(from: ContentStatus, to: ContentStatus): boolean {
 
 export function assertTransition(from: ContentStatus, to: ContentStatus): void {
   if (!canTransition(from, to)) {
-    throw new Error(`Transition Content Studio invalide: ${from} -> ${to}`);
+    throw new HttpError('invalid_state', `Transition Content Studio invalide: ${from} → ${to}`);
   }
 }
 

@@ -10,6 +10,7 @@ import { runWorkerOnce } from '@/lib/media/worker/process-job';
 import { reviewDraftContent } from './brand-rules';
 import { generateForIdea } from './generation';
 import { generateStudioImage } from './image-generation';
+import { assertTransition } from './state-machine';
 import {
   approveDraft,
   createBrief,
@@ -125,6 +126,7 @@ export async function generateIdeaDrafts(input: {
   for (const draft of drafts) {
     await reviewContentDraft({ draftId: draft.id });
   }
+  assertTransition(idea.status, 'generated');
   await updateIdeaStatus(idea.id, 'generated');
   await logAuditEvent({
     action: 'content_studio.idea.generated',
@@ -348,6 +350,7 @@ export async function listContentPerformanceSnapshotsOverview() {
 
 export async function reviewContentDraft(input: { draftId: string }) {
   const draft = await requireDraft(input.draftId);
+  assertTransition(draft.status, 'needs_review');
   const review = reviewDraftContent(draft);
   return insertReview(review);
 }
@@ -357,6 +360,7 @@ export async function approveContentDraft(input: {
   actorId: string;
 }) {
   const draft = await requireDraft(input.draftId);
+  assertTransition(draft.status, 'approved');
   const review = (await getLatestReview(draft.id)) ?? (await reviewContentDraft({ draftId: draft.id }));
   if (review.status === 'blocked') {
     throw new HttpError('invalid_state', 'Le brouillon est bloqué par la charte.', {
@@ -399,6 +403,7 @@ export async function createDraftInPostiz(input: {
 }) {
   const post = await import('./repository').then((m) => m.getPost(input.postId));
   if (!post) throw new HttpError('not_found', 'Post introuvable');
+  assertTransition(post.status, 'scheduled');
   if (post.status !== 'approved' && post.status !== 'scheduled') {
     throw new HttpError('invalid_state', 'Seul un post approuvé ou planifié peut être envoyé à Postiz.');
   }

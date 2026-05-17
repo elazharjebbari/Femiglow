@@ -453,8 +453,11 @@ export async function insertReview(review: ContentBrandReview): Promise<ContentB
   } else {
     store().contentBrandReviews.set(review.id, review);
   }
+  // After brand review, draft always moves to needs_review regardless of
+  // whether violations were found. Approval is a separate action that
+  // checks for blocking violations before allowing the transition.
   await updateDraft(review.draftId, {
-    status: review.status === 'blocked' ? 'needs_review' : 'needs_review',
+    status: 'needs_review',
     scoreTotal: review.scoreTotal,
   });
   return review;
