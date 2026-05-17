@@ -18,6 +18,7 @@ import { IdeaForm } from './IdeaForm';
 import { DraftEditor } from './DraftEditor';
 import { PostizPanel } from './PostizPanel';
 import { ArchiveButton } from './ArchiveButton';
+import { LoadMore } from './LoadMore';
 import { LearningNoteForm } from './LearningNoteForm';
 import { UtmBuilder } from './UtmBuilder';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
@@ -57,6 +58,7 @@ export function ContentStudioClient({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [learningNotes, setLearningNotes] = useState<ContentLearningNote[]>([]);
+  const [ideaOffset, setIdeaOffset] = useState(0);
   const [activeTab, setActiveTab] = useState<StudioTab>('pipeline');
   const [isPending, startTransition] = useTransition();
 
@@ -171,6 +173,15 @@ export function ContentStudioClient({
                     ))
                   )}
                 </ul>
+                {ideas.length >= 50 && (
+                  <LoadMore
+                    currentCount={ideas.length}
+                    totalCount={ideas.length + 50}
+                    onLoadMore={() => setIdeaOffset((o) => o + 50)}
+                    disabled={isPending}
+                    label="idées"
+                  />
+                )}
               </div>
               <PostizPanel
                 integrations={integrations}
