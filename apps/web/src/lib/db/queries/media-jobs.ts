@@ -97,7 +97,7 @@ export async function claimNextPendingJob(): Promise<MediaJob | null> {
       | { rows: MediaJob[] }
       | MediaJob[];
     const rows = rowsOf(result);
-    return rows[0] ?? null;
+    return rows[0] ? rowToMediaJob(rows[0]) : null;
   }
   const store = memoryStore();
   const candidates = Array.from(store.mediaJobs.values())
@@ -189,6 +189,36 @@ export async function findJobById(id: string): Promise<MediaJob | null> {
     return (rows[0] as unknown as MediaJob | undefined) ?? null;
   }
   return memoryStore().mediaJobs.get(id) ?? null;
+}
+
+function rowToMediaJob(row: MediaJob | Record<string, unknown>): MediaJob {
+  const r = row as Record<string, unknown>;
+  return {
+    id: String(r.id),
+    mediaId: String(r.mediaId ?? r.media_id),
+    kind: String(r.kind) as MediaJobKind,
+    status: String(r.status) as MediaJobStatus,
+    attemptCount: Number(r.attemptCount ?? r.attempt_count ?? 0),
+    nextAttemptAt: toDate(r.nextAttemptAt ?? r.next_attempt_at),
+    errorMessage: nullableString(r.errorMessage ?? r.error_message),
+    payload: (r.payload as Record<string, unknown> | null) ?? {},
+    startedAt: nullableDate(r.startedAt ?? r.started_at),
+    finishedAt: nullableDate(r.finishedAt ?? r.finished_at),
+    createdAt: toDate(r.createdAt ?? r.created_at),
+  };
+}
+
+function toDate(value: unknown): Date {
+  return value instanceof Date ? value : new Date(String(value));
+}
+
+function nullableDate(value: unknown): Date | null {
+  if (value === null || value === undefined) return null;
+  return toDate(value);
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
 }
 
 export async function listJobsByMedia(mediaId: string, limit = 20): Promise<MediaJob[]> {

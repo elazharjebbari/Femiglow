@@ -1,0 +1,27 @@
+import type { ContentStatus } from './types';
+
+const ALLOWED: Record<ContentStatus, ContentStatus[]> = {
+  idea: ['brief', 'archived'],
+  brief: ['generated', 'rejected', 'archived'],
+  generated: ['needs_review', 'rejected', 'archived'],
+  needs_review: ['approved', 'generated', 'rejected', 'archived'],
+  approved: ['scheduled', 'archived'],
+  scheduled: ['published', 'failed', 'cancelled'],
+  published: ['measured', 'archived'],
+  failed: ['scheduled', 'archived'],
+  cancelled: ['archived'],
+  rejected: ['archived', 'generated'],
+  archived: [],
+  measured: ['archived'],
+};
+
+export function canTransition(from: ContentStatus, to: ContentStatus): boolean {
+  return ALLOWED[from]?.includes(to) ?? false;
+}
+
+export function assertTransition(from: ContentStatus, to: ContentStatus): void {
+  if (!canTransition(from, to)) {
+    throw new Error(`Transition Content Studio invalide: ${from} -> ${to}`);
+  }
+}
+

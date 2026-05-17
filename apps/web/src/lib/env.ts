@@ -95,6 +95,17 @@ const envSchema = z.object({
 
   // List-Unsubscribe one-click token signing (HMAC).
   MAIL_UNSUB_TOKEN_SECRET: z.string().min(32).optional(),
+
+  // — AI Content Studio ————————————————————————————————————————————————
+  CONTENT_STUDIO_ENABLED: z.enum(['true', 'false']).default('false'),
+  POSTIZ_BASE_URL: z.string().url().optional(),
+  POSTIZ_API_KEY: z.string().optional(),
+  CONTENT_STUDIO_DEFAULT_TIMEZONE: z.string().min(3).default('Africa/Casablanca'),
+  CONTENT_STUDIO_OPENAI_API_KEY: z.string().optional(),
+  CONTENT_STUDIO_TEXT_MODEL: z.string().min(1).default('gpt-4o-mini'),
+  CONTENT_STUDIO_IMAGE_PROVIDER: z.enum(['mock', 'openai']).default('mock'),
+  CONTENT_STUDIO_IMAGE_MODEL: z.string().min(1).default('gpt-image-1-mini'),
+  CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS: z.coerce.number().int().nonnegative().default(500),
 });
 
 export const env = envSchema.parse({
@@ -159,4 +170,14 @@ export const env = envSchema.parse({
   LISTMONK_WEBHOOK_SECRET: process.env.LISTMONK_WEBHOOK_SECRET,
   FEMIGLOW_STALWART_WEBHOOK_SECRET: process.env.FEMIGLOW_STALWART_WEBHOOK_SECRET,
   MAIL_UNSUB_TOKEN_SECRET: process.env.MAIL_UNSUB_TOKEN_SECRET,
+  CONTENT_STUDIO_ENABLED: process.env.CONTENT_STUDIO_ENABLED,
+  POSTIZ_BASE_URL: process.env.POSTIZ_BASE_URL,
+  POSTIZ_API_KEY: process.env.POSTIZ_API_KEY,
+  CONTENT_STUDIO_DEFAULT_TIMEZONE: process.env.CONTENT_STUDIO_DEFAULT_TIMEZONE,
+  CONTENT_STUDIO_OPENAI_API_KEY: process.env.CONTENT_STUDIO_OPENAI_API_KEY,
+  CONTENT_STUDIO_TEXT_MODEL: process.env.CONTENT_STUDIO_TEXT_MODEL,
+  CONTENT_STUDIO_IMAGE_PROVIDER: process.env.CONTENT_STUDIO_IMAGE_PROVIDER,
+  CONTENT_STUDIO_IMAGE_MODEL: process.env.CONTENT_STUDIO_IMAGE_MODEL,
+  CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS:
+    process.env.CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS,
 });
