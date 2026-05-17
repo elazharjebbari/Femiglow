@@ -357,4 +357,15 @@ describe('MSW — Content Studio API handlers', () => {
       expect(json.runs).toEqual([]);
     });
   });
+
+  describe('GET /api/admin/content-studio/health', () => {
+    it('retourne le mode et le statut du Content Studio', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/health');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.mode).toBe('memory');
+      expect(json.enabled).toBe(true);
+      expect(json.version).toBe('P3');
+    });
+  });
 });

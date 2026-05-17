@@ -340,5 +340,15 @@ export function contentStudioHandlers(state: MockContentStudioState) {
         runs: state.generationRuns ?? [],
       });
     }),
+
+    // GET /api/admin/content-studio/health — health check
+    http.get('http://localhost/api/admin/content-studio/health', () => {
+      inc(state, 'GET /health');
+      return HttpResponse.json({
+        mode: 'memory',
+        enabled: true,
+        version: 'P3',
+      });
+    }),
   ];
 }
