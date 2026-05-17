@@ -121,4 +121,156 @@ describe('MSW — Content Studio API handlers', () => {
       expect(json.integrations).toEqual([]);
     });
   });
-});
+
+  describe('POST /api/admin/content-studio/drafts/:id/reject', () => {
+    it('rejette un draft et retourne le draft mis à jour', async () => {
+      const draftId = state.drafts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/drafts/${draftId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Pas assez de preuve sociale' }),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.draft.status).toBe('rejected');
+      expect(json.draft.rejectionReason).toBe('Pas assez de preuve sociale');
+    });
+
+    it('retourne 404 pour un draft inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/drafts/nonexistent/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/admin/content-studio/posts/:id/cancel', () => {
+    it('annule un post planifié et retourne le post mis à jour', async () => {
+      const postId = state.posts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/posts/${postId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Changement de planning' }),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.post.status).toBe('approved');
+      expect(json.post.cancelReason).toBe('Changement de planning');
+    });
+
+    it('retourne 404 pour un post inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/posts/nonexistent/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/admin/content-studio/ideas/:id/archive', () => {
+    it('archive une idée et retourne l\'idée mise à jour', async () => {
+      const ideaId = state.ideas[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/ideas/${ideaId}/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.idea.status).toBe('archived');
+    });
+
+    it('retourne 404 pour une idée inexistante', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/ideas/nonexistent/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/admin/content-studio/drafts/:id/archive', () => {
+    it('archive un draft et retourne le draft mis à jour', async () => {
+      const draftId = state.drafts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/drafts/${draftId}/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.draft.status).toBe('archived');
+    });
+  });
+
+  describe('POST /api/admin/content-studio/posts/:id/archive', () => {
+    it('archive un post et retourne le post mis à jour', async () => {
+      const postId = state.posts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/posts/${postId}/archive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.post.status).toBe('archived');
+    });
+  });
+
+  describe('POST /api/admin/content-studio/drafts/:id/variation', () => {
+    it('crée une variation d\'un draft existant', async () => {
+      const draftId = state.drafts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/drafts/${draftId}/variation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.draft).toBeDefined();
+      expect(json.draft.parentDraftId).toBe(draftId);
+    });
+
+    it('retourne 404 pour un draft inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/drafts/nonexistent/variation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('GET /api/admin/content-studio/ideas/:id', () => {
+    it('retourne une idée par ID', async () => {
+      const ideaId = state.ideas[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/ideas/${ideaId}`);
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.idea.id).toBe(ideaId);
+    });
+
+    it('retourne 404 pour une idée inexistante', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/ideas/nonexistent');
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('GET /api/admin/content-studio/drafts/:id/reviews', () => {
+    it('retourne les reviews d\'un draft', async () => {
+      const draftId = state.drafts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/drafts/${draftId}/reviews`);
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.reviews).toEqual([]);
+    });
+
+    it('retourne 404 pour un draft inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/drafts/nonexistent/reviews');
+      expect(res.status).toBe(404);
+    });
+  });});

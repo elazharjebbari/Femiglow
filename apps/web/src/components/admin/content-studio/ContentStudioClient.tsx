@@ -16,6 +16,7 @@ import { PostizHealthPanel } from './PostizHealthPanel';
 import { IdeaForm } from './IdeaForm';
 import { DraftEditor } from './DraftEditor';
 import { PostizPanel } from './PostizPanel';
+import { ArchiveButton } from './ArchiveButton';
 import { postJson } from './api';
 
 interface Props {
@@ -155,6 +156,16 @@ export function ContentStudioClient({
                     >
                       Générer 3 propositions
                     </button>
+                    <ArchiveButton
+                      entityType="idea"
+                      entityId={idea.id}
+                      disabled={isPending}
+                      onArchived={() => {
+                        setIdeas((current) => current.filter((i) => i.id !== idea.id));
+                        setMessage('Idée archivée.');
+                      }}
+                      run={run}
+                    />
                   </li>
                 ))
               )}

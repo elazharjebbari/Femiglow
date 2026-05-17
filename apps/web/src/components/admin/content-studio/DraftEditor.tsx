@@ -16,6 +16,9 @@ import type {
 import { SectionTitle } from './SectionTitle';
 import { DeliveryStatusBadge } from './DeliveryStatusBadge';
 import { PlatformPreview } from './PlatformPreview';
+import { RejectDialog } from './RejectDialog';
+import { CancelDialog } from './CancelDialog';
+import { ArchiveButton } from './ArchiveButton';
 import { postJson, patchJson, getJson } from './api';
 import {
   extractUploadedImage,
@@ -258,6 +261,33 @@ export function DraftEditor({
           >
             Approuver
           </button>
+          {selectedDraft.status === 'needs_review' && (
+            <RejectDialog
+              draftId={selectedDraft.id}
+              disabled={disabled}
+              onRejected={(updated) => {
+                setDrafts((current) =>
+                  current.map((d) =>
+                    d.id === updated.id ? { ...d, status: updated.status as ContentDraft['status'], rejectionReason: updated.rejectionReason } : d,
+                  ),
+                );
+                setMessage('Brouillon rejeté.');
+              }}
+              run={run}
+            />
+          )}
+          <ArchiveButton
+            entityType="draft"
+            entityId={selectedDraft.id}
+            disabled={disabled}
+            onArchived={() => {
+              setDrafts((current) => current.filter((d) => d.id !== selectedDraft.id));
+              const nextDraft = drafts.find((d) => d.id !== selectedDraft.id);
+              setSelectedDraftId(nextDraft?.id ?? '');
+              setMessage('Brouillon archivé.');
+            }}
+            run={run}
+          />
         </div>
         {!selectedAsset && !mediaId ? (
           <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -667,6 +697,33 @@ function DeliveryPanel({
             ? 'Réessayer Postiz'
             : 'Uploader + créer draft'}
         </button>
+        {selectedPost?.status === 'scheduled' && (
+          <CancelDialog
+            postId={selectedPost.id}
+            disabled={disabled}
+            onCancelled={(updated) => {
+              setPosts((current) =>
+                current.map((p) =>
+                  p.id === updated.id ? { ...p, status: updated.status as ContentPost['status'] } : p,
+                ),
+              );
+              setMessage('Publication annulée, le post est revenu au statut approuvé.');
+            }}
+            run={run}
+          />
+        )}
+        {selectedPost && (
+          <ArchiveButton
+            entityType="post"
+            entityId={selectedPost.id}
+            disabled={disabled}
+            onArchived={() => {
+              setPosts((current) => current.filter((p) => p.id !== selectedPost.id));
+              setMessage('Post archivé.');
+            }}
+            run={run}
+          />
+        )}
         <p className="self-center text-xs text-violet-900">
           Le média est uploadé dans Postiz avant création du draft.
         </p>

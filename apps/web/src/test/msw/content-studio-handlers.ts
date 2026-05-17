@@ -3,7 +3,7 @@
  * Utilisés par les tests d'intégration qui mockent la couche API.
  */
 import { http, HttpResponse } from 'msw';
-import type { ContentPillar, ContentObjective, ContentPlatform, ContentFormat, ContentDraft } from '@/lib/content-studio/types';
+import type { ContentPillar, ContentObjective, ContentPlatform, ContentFormat, ContentDraft, ContentPost, ContentIdea, ContentStatus } from '@/lib/content-studio/types';
 import {
   buildContentIdea,
   buildContentDraft,
@@ -129,6 +129,105 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       const delivery = buildContentPostizDelivery({ postId: params.id as string });
       state.deliveries.unshift(delivery);
       return HttpResponse.json({ delivery, post });
+    }),
+
+    // POST /api/admin/content-studio/drafts/:id/reject — reject a draft
+    http.post('http://localhost/api/admin/content-studio/drafts/:id/reject', async ({ params, request }) => {
+      inc(state, 'POST /drafts/:id/reject');
+      const idx = state.drafts.findIndex((d) => d.id === params.id);
+      if (idx === -1) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Draft not found' } }, { status: 404 });
+      }
+      const body = (await request.json()) as Record<string, unknown>;
+      state.drafts[idx] = {
+        ...state.drafts[idx],
+        status: 'rejected' as ContentStatus,
+        rejectionReason: (body.reason as string) ?? null,
+      } as ContentDraft;
+      return HttpResponse.json({ draft: state.drafts[idx] });
+    }),
+
+    // POST /api/admin/content-studio/posts/:id/cancel — cancel a scheduled post
+    http.post('http://localhost/api/admin/content-studio/posts/:id/cancel', async ({ params, request }) => {
+      inc(state, 'POST /posts/:id/cancel');
+      const idx = state.posts.findIndex((p) => p.id === params.id);
+      if (idx === -1) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Post not found' } }, { status: 404 });
+      }
+      const body = (await request.json()) as Record<string, unknown>;
+      state.posts[idx] = {
+        ...state.posts[idx],
+        status: 'approved' as ContentStatus,
+        cancelReason: (body.reason as string) ?? null,
+        cancelledBy: null,
+        cancelledAt: new Date(),
+      } as ContentPost;
+      return HttpResponse.json({ post: state.posts[idx] });
+    }),
+
+    // POST /api/admin/content-studio/ideas/:id/archive — archive an idea
+    http.post('http://localhost/api/admin/content-studio/ideas/:id/archive', async ({ params }) => {
+      inc(state, 'POST /ideas/:id/archive');
+      const idx = state.ideas.findIndex((i) => i.id === params.id);
+      if (idx === -1) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Idea not found' } }, { status: 404 });
+      }
+      state.ideas[idx] = { ...state.ideas[idx], status: 'archived' as ContentStatus } as ContentIdea;
+      return HttpResponse.json({ idea: state.ideas[idx] });
+    }),
+
+    // POST /api/admin/content-studio/drafts/:id/archive — archive a draft
+    http.post('http://localhost/api/admin/content-studio/drafts/:id/archive', async ({ params }) => {
+      inc(state, 'POST /drafts/:id/archive');
+      const idx = state.drafts.findIndex((d) => d.id === params.id);
+      if (idx === -1) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Draft not found' } }, { status: 404 });
+      }
+      state.drafts[idx] = { ...state.drafts[idx], status: 'archived' as ContentStatus } as ContentDraft;
+      return HttpResponse.json({ draft: state.drafts[idx] });
+    }),
+
+    // POST /api/admin/content-studio/posts/:id/archive — archive a post
+    http.post('http://localhost/api/admin/content-studio/posts/:id/archive', async ({ params }) => {
+      inc(state, 'POST /posts/:id/archive');
+      const idx = state.posts.findIndex((p) => p.id === params.id);
+      if (idx === -1) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Post not found' } }, { status: 404 });
+      }
+      state.posts[idx] = { ...state.posts[idx], status: 'archived' as ContentStatus } as ContentPost;
+      return HttpResponse.json({ post: state.posts[idx] });
+    }),
+
+    // POST /api/admin/content-studio/drafts/:id/variation — create draft variation
+    http.post('http://localhost/api/admin/content-studio/drafts/:id/variation', async ({ params }) => {
+      inc(state, 'POST /drafts/:id/variation');
+      const parent = state.drafts.find((d) => d.id === params.id);
+      if (!parent) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Draft not found' } }, { status: 404 });
+      }
+      const variation = buildContentDraft({ briefId: parent.briefId, parentDraftId: parent.id });
+      state.drafts.unshift(variation);
+      return HttpResponse.json({ draft: variation });
+    }),
+
+    // GET /api/admin/content-studio/ideas/:id — get idea detail
+    http.get('http://localhost/api/admin/content-studio/ideas/:id', ({ params }) => {
+      inc(state, 'GET /ideas/:id');
+      const idea = state.ideas.find((i) => i.id === params.id);
+      if (!idea) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Idea not found' } }, { status: 404 });
+      }
+      return HttpResponse.json({ idea });
+    }),
+
+    // GET /api/admin/content-studio/drafts/:id/reviews — get review history
+    http.get('http://localhost/api/admin/content-studio/drafts/:id/reviews', ({ params }) => {
+      inc(state, 'GET /drafts/:id/reviews');
+      const draft = state.drafts.find((d) => d.id === params.id);
+      if (!draft) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Draft not found' } }, { status: 404 });
+      }
+      return HttpResponse.json({ reviews: [] });
     }),
   ];
 }
