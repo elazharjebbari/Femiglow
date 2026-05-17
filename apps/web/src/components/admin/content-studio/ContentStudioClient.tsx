@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { lazy, Suspense, useState, useTransition } from 'react';
 import type {
   ContentDraft,
   ContentPost,
@@ -12,7 +12,6 @@ import type {
 import type { DraftAssetsByDraftId, Integration, RunFunction, StudioMediaItem } from './types';
 import { SectionTitle } from './SectionTitle';
 import { StudioGuide } from './StudioGuide';
-import { EditorialCalendar } from './EditorialCalendar';
 import { PostizHealthPanel } from './PostizHealthPanel';
 import { IdeaForm } from './IdeaForm';
 import { DraftEditor } from './DraftEditor';
@@ -21,11 +20,13 @@ import { ArchiveButton } from './ArchiveButton';
 import { LoadMore } from './LoadMore';
 import { LearningNoteForm } from './LearningNoteForm';
 import { UtmBuilder } from './UtmBuilder';
-import { AnalyticsDashboard } from './AnalyticsDashboard';
-import { BudgetSummary } from './BudgetSummary';
 import { StudioTabs } from './StudioTabs';
 import type { StudioTab } from './StudioTabs';
 import { postJson } from './api';
+
+const EditorialCalendar = lazy(() => import('./EditorialCalendar').then((m) => ({ default: m.EditorialCalendar })));
+const AnalyticsDashboard = lazy(() => import('./AnalyticsDashboard').then((m) => ({ default: m.AnalyticsDashboard })));
+const BudgetSummary = lazy(() => import('./BudgetSummary').then((m) => ({ default: m.BudgetSummary })));
 
 interface Props {
   initialIdeas: ContentIdea[];
@@ -255,7 +256,9 @@ export function ContentStudioClient({
 
       {activeTab === 'calendar' && (
         <>
-          <EditorialCalendar posts={posts} drafts={drafts} deliveries={deliveries} onSelectDraft={(id) => { setSelectedDraftId(id); setActiveTab('pipeline'); }} />
+          <Suspense fallback={<p className="text-sm text-stone-500">Chargement du calendrier…</p>}>
+            <EditorialCalendar posts={posts} drafts={drafts} deliveries={deliveries} onSelectDraft={(id) => { setSelectedDraftId(id); setActiveTab('pipeline'); }} />
+          </Suspense>
           <PostizHealthPanel
             posts={posts}
             drafts={drafts}
@@ -271,11 +274,15 @@ export function ContentStudioClient({
       )}
 
       {activeTab === 'analytics' && (
-        <AnalyticsDashboard posts={posts} drafts={drafts} snapshots={snapshots} />
+        <Suspense fallback={<p className="text-sm text-stone-500">Chargement des analytics…</p>}>
+          <AnalyticsDashboard posts={posts} drafts={drafts} snapshots={snapshots} />
+        </Suspense>
       )}
 
       {activeTab === 'budget' && (
-        <BudgetSummary />
+        <Suspense fallback={<p className="text-sm text-stone-500">Chargement du budget…</p>}>
+          <BudgetSummary />
+        </Suspense>
       )}
     </div>
   );
