@@ -54,6 +54,7 @@ describe('/api/admin/tracking/settings', () => {
       leadWebhookConversationEnabled: true,
       leadWebhookConversationMaxMessages: 50,
       leadWebhookConversationMaxBytes: 30000,
+      leadInlineContactWebhookEnabled: true,
     });
   });
 
@@ -92,5 +93,22 @@ describe('/api/admin/tracking/settings', () => {
     await expect(
       getTrackingSetting(TRACKING_SETTING_KEYS.LEAD_STEP2_WEBHOOK_ENABLED, true),
     ).resolves.toBe(true);
+  });
+
+  it('PATCH toggle leadInlineContactWebhookEnabled à false', async () => {
+    const res = await PATCH(req({ leadInlineContactWebhookEnabled: false }));
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { settings: Record<string, unknown> };
+    expect(body.settings.leadInlineContactWebhookEnabled).toBe(false);
+    await expect(
+      getTrackingSetting(TRACKING_SETTING_KEYS.LEAD_INLINE_CONTACT_WEBHOOK_ENABLED, true),
+    ).resolves.toBe(false);
+  });
+
+  it('PATCH rejette leadInlineContactWebhookEnabled non-boolean', async () => {
+    const res = await PATCH(req({ leadInlineContactWebhookEnabled: 'yes' as unknown as boolean }));
+
+    expect(res.status).toBe(400);
   });
 });

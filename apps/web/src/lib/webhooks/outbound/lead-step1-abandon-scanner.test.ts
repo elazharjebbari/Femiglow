@@ -167,4 +167,40 @@ describe('scanAndDispatchLeadStep1Abandon', () => {
     expect(repoMock.stampStep1AbandonWebhook).toHaveBeenCalledTimes(1);
     expect(repoMock.stampStep1AbandonWebhook).toHaveBeenCalledWith('cl_ok');
   });
+
+  it('stamp les leads disabled pour empêcher le rescan', async () => {
+    mockDbRows([makeLead('cl_disabled1'), makeLead('cl_disabled2')]);
+    dispatchMock.dispatchLeadStep1AbandonWebhook
+      .mockResolvedValue({ status: 'disabled', attempts: 0, lastError: 'no-endpoint-configured' });
+
+    const result = await scanAndDispatchLeadStep1Abandon({ limit: 2 });
+
+    expect(result).toMatchObject({ scanned: 2, disabled: 2 });
+    expect(repoMock.stampStep1AbandonWebhook).toHaveBeenCalledTimes(2);
+    expect(repoMock.stampStep1AbandonWebhook).toHaveBeenCalledWith('cl_disabled1');
+    expect(repoMock.stampStep1AbandonWebhook).toHaveBeenCalledWith('cl_disabled2');
+  });
+
+  it('traite les leads inline-contact avec leadCapturedAt null en utilisant COALESCE', async () => {
+    const now = new Date('2026-05-14T10:00:00Z');
+    const inlineLead: ChatLeadRow = {
+      ...makeLead('cl_inline'),
+      leadCapturedAt: null,
+      createdAt: now,
+      triggerReason: 'inline-contact',
+    };
+    mockDbRows([inlineLead]);
+    dispatchMock.dispatchLeadStep1AbandonWebhook.mockResolvedValueOnce({
+      status: 'sent',
+      attempts: 1,
+    });
+
+    const result = await scanAndDispatchLeadStep1Abandon({
+      limit: 1,
+      now: new Date('2026-05-14T10:10:00Z'),
+    });
+
+    expect(result).toMatchObject({ scanned: 1, sent: 1 });
+    expect(dispatchMock.dispatchLeadStep1AbandonWebhook).toHaveBeenCalledWith(inlineLead);
+  });
 });

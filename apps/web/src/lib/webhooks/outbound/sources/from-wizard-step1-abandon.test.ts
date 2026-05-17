@@ -9,6 +9,7 @@ const envMock = vi.hoisted(() => ({
   OUTBOUND_WEBHOOK_SECRET: 'dev-secret-min-32-chars-for-tests',
   CHAT_LEAD_WEBHOOK_URL: undefined as string | undefined,
   CHAT_LEAD_WEBHOOK_SECRET: undefined as string | undefined,
+  WEBHOOK_SECRET_KEY: 'webhook-secret-key-32-chars-for-tests',
   LOG_LEVEL: 'error' as const,
 }));
 
@@ -130,5 +131,111 @@ describe('dispatchLeadStep1AbandonWebhook', () => {
       dispatchLeadStep1AbandonWebhook(makeLead({ phoneE164: '', phoneRaw: 'abc' })),
     ).resolves.toMatchObject({ status: 'skipped', lastError: 'invalid-phone:invalid' });
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('dispatche vers endpoint admin subscri lead.step1_abandoned', async () => {
+    envMock.OUTBOUND_WEBHOOK_URL = undefined;
+    const { createWebhookEndpoint } = await import('@/lib/db/queries/webhook-endpoints');
+    await createWebhookEndpoint({
+      url: 'https://hook.example.com/admin-abandon',
+      events: ['lead.step1_abandoned'],
+      description: 'admin step1-abandon endpoint',
+    });
+    const captured: { eventName?: string; payload?: Record<string, unknown>; idem?: string | null } = {};
+    server.use(
+      http.post('https://hook.example.com/admin-abandon', async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>;
+        captured.eventName = body.event_name as string;
+        captured.payload = body;
+        captured.idem = request.headers.get('idempotency-key');
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    const result = await dispatchLeadStep1AbandonWebhook(makeLead());
+
+    expect(result.status).toBe('sent');
+    expect(captured.eventName).toBe('lead.step1_abandoned');
+    expect(captured.payload).toMatchObject({
+      event_name: 'lead.step1_abandoned',
+      webhook_source: 'lead-step1-abandon',
+      source_id: 'cl_step1',
+    });
+    expect(captured.idem).toBe('lead.step1_abandoned:lead-step1-abandon:cl_step1');
+  });
+
+  it('retourne disabled quand aucun endpoint et aucun outbound URL', async () => {
+    envMock.OUTBOUND_WEBHOOK_URL = undefined;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    const result = await dispatchLeadStep1AbandonWebhook(makeLead());
+
+    expect(result.status).toBe('disabled');
+    expect(result.lastError).toBe('no-endpoint-configured');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('préfère endpoint admin sur outbound URL', async () => {
+    const { createWebhookEndpoint } = await import('@/lib/db/queries/webhook-endpoints');
+    await createWebhookEndpoint({
+      url: 'https://hook.example.com/admin-abandon',
+      events: ['lead.step1_abandoned'],
+      description: 'admin step1-abandon endpoint',
+    });
+    let adminCalled = false;
+    let outboundCalled = false;
+    server.use(
+      http.post('https://hook.example.com/admin-abandon', () => {
+        adminCalled = true;
+        return HttpResponse.json({ ok: true });
+      }),
+      http.post('https://hook.example.com/lead-step1-abandon', () => {
+        outboundCalled = true;
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    const result = await dispatchLeadStep1AbandonWebhook(makeLead());
+
+    expect(result.status).toBe('sent');
+    expect(adminCalled).toBe(true);
+    expect(outboundCalled).toBe(false);
+  });
+
+  it('inclut email et cart currency quand présents', async () => {
+    const captured: { body?: Record<string, unknown> } = {};
+    server.use(
+      http.post('https://hook.example.com/lead-step1-abandon', async ({ request }) => {
+        captured.body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    await dispatchLeadStep1AbandonWebhook(
+      makeLead({
+        email: 'nadia@example.com',
+        cartCurrency: 'MAD',
+        cartSnapshot: { items: [{ sku: 'KIT-1', name: 'Kit', quantity: 1, unitPriceCents: 19900 }], totalCents: 19900, currency: 'MAD' },
+      }),
+    );
+
+    expect(captured.body).toMatchObject({
+      email: 'nadia@example.com',
+      currency: 'MAD',
+    });
+  });
+
+  it('utilise formId comme source_channel quand présent', async () => {
+    const captured: { body?: Record<string, unknown> } = {};
+    server.use(
+      http.post('https://hook.example.com/lead-step1-abandon', async ({ request }) => {
+        captured.body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    await dispatchLeadStep1AbandonWebhook(makeLead({ formId: 'kit_femiglow_v1' }));
+
+    expect(captured.body?.source_channel).toBe('kit_femiglow_v1');
   });
 });

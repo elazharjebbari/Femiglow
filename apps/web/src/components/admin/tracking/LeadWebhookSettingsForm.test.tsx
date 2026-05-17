@@ -139,4 +139,35 @@ describe('LeadWebhookSettingsForm', () => {
 
     await expectNoAxeViolations(container);
   });
+
+  it('sauvegarde le toggle inline-contact et resynchronise avec la réponse serveur', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(okResponse({ leadInlineContactWebhookEnabled: false }));
+    renderForm();
+
+    await userEvent.click(screen.getByLabelText(/Webhook immédiat inline-contact/i));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      leadInlineContactWebhookEnabled: false,
+    });
+    await screen.findByRole('status');
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText(/Webhook immédiat inline-contact/i)).not.toBeChecked();
+  });
+
+  it('revert le toggle inline-contact quand le serveur retourne false', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(okResponse({ leadInlineContactWebhookEnabled: true }));
+    renderForm();
+
+    // Toggle off
+    await userEvent.click(screen.getByLabelText(/Webhook immédiat inline-contact/i));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    // Server responds with true (rejects the change)
+    expect(screen.getByLabelText(/Webhook immédiat inline-contact/i)).toBeChecked();
+  });
 });
