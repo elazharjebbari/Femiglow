@@ -257,6 +257,7 @@ describe('exportPlan — structure GTM', () => {
           env: 'production',
           config: {
             snapPixelId: '6a4f1a2b-1111-4444-9999-abcdefabcdef',
+            snapEventMode: 'hybrid',
             gtmContainerId: 'GTM-Y',
           },
         },
@@ -284,6 +285,32 @@ describe('exportPlan — structure GTM', () => {
       (t: any) => t.triggerId === snapCheckout.firingTriggerId[0],
     );
     expect(snapCheckoutTrigger.name).toBe('CE — checkout_intent');
+  });
+
+  it('skips Snap GTM tags by default (capi_only) — SnapPixelEvents handles client-side', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'snap', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            snapPixelId: '6a4f1a2b-1111-4444-9999-abcdefabcdef',
+            // No snapEventMode → defaults to capi_only
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { snap: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const variables = (result.json as any).containerVersion.variable;
+    // No Snap Init tag, no Snap event tags, no CONST Snap Pixel ID
+    expect(tags.find((t: any) => t.name === 'Snap Init')).toBeUndefined();
+    expect(tags.find((t: any) => t.name.startsWith('Snap Evt'))).toBeUndefined();
+    expect(variables.find((v: any) => v.name === 'CONST - Snap Pixel ID')).toBeUndefined();
   });
 
   it('emits DLV - event_id when Meta is active (for fbq deduplication)', () => {

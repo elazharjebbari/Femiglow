@@ -179,6 +179,9 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     googleAdsEnhancedConversions?: boolean;
     snapAdvancedMatching?: boolean;
     snapEventMode?: 'pixel_only' | 'capi_only' | 'hybrid';
+    // Default: 'capi_only' — SnapPixelEvents component handles client-side
+    // snaptr('track') calls. GTM tags are skipped to avoid duplicate events.
+    // Set 'hybrid' only if SnapPixelEvents is removed from the layout.
   };
   const conversionLabels = cfg.googleAdsConversionLabels ?? {};
   // Enhanced Conversions par défaut activé (admin override possible).
@@ -254,13 +257,18 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     const rawConversionId = cfg.googleAdsConversionId.replace(/^AW-/i, '');
     idVars.googleAds = makeConst('CONST - Google Ads Conversion ID', rawConversionId);
   }
+  // Snap GTM tags only generated when explicitly set to 'hybrid' or 'pixel_only'.
+  // Default is 'capi_only' — SnapPixelEvents component handles client-side events.
+  const snapNeedsGtm =
+    cfg.snapEventMode === 'hybrid' || cfg.snapEventMode === 'pixel_only';
+
   if (activeProviders.has('meta') && cfg.metaPixelId) {
     idVars.meta = makeConst('CONST - Meta Pixel ID', cfg.metaPixelId);
   }
   if (activeProviders.has('tiktok') && cfg.tiktokPixelId) {
     idVars.tiktok = makeConst('CONST - TikTok Pixel ID', cfg.tiktokPixelId);
   }
-  if (activeProviders.has('snap') && cfg.snapPixelId) {
+  if (activeProviders.has('snap') && cfg.snapPixelId && snapNeedsGtm) {
     idVars.snap = makeConst('CONST - Snap Pixel ID', cfg.snapPixelId);
   }
 
@@ -293,7 +301,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   const needsSnapPixel =
     activeProviders.has('snap') &&
     !!cfg.snapPixelId &&
-    cfg.snapEventMode !== 'capi_only';
+    snapNeedsGtm;
   if (needsMeta || needsSnapPixel) ensureDlv('DLV - event_id', 'event_id');
 
   // ─── Variables CONST pour les conversion labels Google Ads ──────
@@ -395,7 +403,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
 
   // ─── Snapchat Init tag (loads snaptr + PageView) ─────────────────
   const SNAP_INIT_NAME = 'Snap Init';
-  if (idVars.snap && cfg.snapPixelId && cfg.snapEventMode !== 'capi_only') {
+  if (idVars.snap && cfg.snapPixelId && snapNeedsGtm) {
     const initArgs = cfg.snapAdvancedMatching === false
       ? `snaptr('init','${cfg.snapPixelId}');`
       : `snaptr('init','${cfg.snapPixelId}',{user_hashed_email:'{{DLV - user_data.email_sha256}}',user_hashed_phone_number:'{{DLV - user_data.phone_sha256}}'});`;
@@ -675,7 +683,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       });
     }
 
-    if (event.providers.snap && idVars.snap && cfg.snapPixelId && cfg.snapEventMode !== 'capi_only') {
+    if (event.providers.snap && idVars.snap && cfg.snapPixelId && snapNeedsGtm) {
       const snapName = snapEventNameFor(event.key);
       if (snapName) {
         const snapTriggerId =
