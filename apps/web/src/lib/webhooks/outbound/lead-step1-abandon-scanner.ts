@@ -5,7 +5,7 @@
  * Inclut désormais les leads `inline-contact` (conversation) qui ont
  * `leadCapturedAt = NULL` en utilisant `COALESCE(leadCapturedAt, createdAt)`.
  */
-import { and, gt, isNull, lt, sql } from 'drizzle-orm';
+import { and, isNull, sql } from 'drizzle-orm';
 
 import { chatDb } from '@/lib/chat/db/client';
 import { chatLead } from '@/lib/chat/db/schema';
@@ -70,20 +70,20 @@ export async function scanAndDispatchLeadStep1Abandon(
 
   // COALESCE(leadCapturedAt, createdAt) pour rattraper les leads
   // inline-contact qui n'ont pas leadCapturedAt renseigné.
-  const effectiveTimestamp = sql`COALESCE(${chatLead.leadCapturedAt}, ${chatLead.createdAt})`;
-
+  // Les paramètres Date doivent être castés en timestamptz explicitement
+  // car le driver postgres-js en mode prepare: false ne les convertit pas.
   const rows = await db
     .select()
     .from(chatLead)
     .where(
       and(
         sql`${chatLead.phoneE164} is not null`,
-        sql`${effectiveTimestamp} is not null`,
+        sql`COALESCE(${chatLead.leadCapturedAt}, ${chatLead.createdAt}) is not null`,
         isNull(chatLead.addressCompletedAt),
         isNull(chatLead.purchasedAt),
         isNull(chatLead.step1AbandonWebhookAt),
-        lt(effectiveTimestamp, cutoffIdle),
-        gt(effectiveTimestamp, cutoffMaxAge),
+        sql`COALESCE(${chatLead.leadCapturedAt}, ${chatLead.createdAt}) < ${cutoffIdle.toISOString()}::timestamptz`,
+        sql`COALESCE(${chatLead.leadCapturedAt}, ${chatLead.createdAt}) > ${cutoffMaxAge.toISOString()}::timestamptz`,
       ),
     )
     .limit(opts.limit ?? DEFAULT_LIMIT);

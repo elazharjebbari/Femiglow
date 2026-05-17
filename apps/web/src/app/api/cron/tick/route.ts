@@ -78,6 +78,7 @@ export async function POST(request: Request): Promise<Response> {
     });
     return NextResponse.json({ processed, succeeded, failed, tookMs, cartAbandon, leadStep1Abandon, campaignSync });
   } catch (err) {
+    logger.error('cron.tick.error', { error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined });
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });
   }
