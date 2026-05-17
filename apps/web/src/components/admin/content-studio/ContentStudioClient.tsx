@@ -188,14 +188,14 @@ export function ContentStudioClient({
           />
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-4" aria-live="polite">
           {message ? (
-            <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            <p role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
               {message}
             </p>
           ) : null}
           {error ? (
-            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+            <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
               {error}
             </p>
           ) : null}
@@ -347,10 +347,6 @@ function DraftEditor({
         Générez une idée pour ouvrir l’éditeur.
       </div>
     );
-  }
-
-  if (caption !== selectedDraft.caption && selectedDraft.id !== '') {
-    // Keep the editor simple when switching cards.
   }
 
   const scoreTone =
@@ -1082,7 +1078,7 @@ function DeliveryPanel({
               {uploaded?.path ? (
                 <p className="truncate">
                   URL :{' '}
-                  <a className="text-violet-800 underline" href={uploaded.path} target="_blank">
+                  <a className="text-violet-800 underline" href={uploaded.path} target="_blank" rel="noopener noreferrer">
                     {uploaded.path}
                   </a>
                 </p>
