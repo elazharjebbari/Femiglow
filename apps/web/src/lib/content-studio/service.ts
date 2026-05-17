@@ -54,6 +54,7 @@ import {
   uploadPostizMediaFromUrl,
 } from './postiz';
 import type { ContentIdea } from './types';
+import { checkDailyBudget } from './budget';
 
 export { listIdeas, listDrafts, listPosts } from './repository';
 
@@ -91,6 +92,7 @@ export async function generateIdeaDrafts(input: {
   actorId: string | null;
 }) {
   const idea = await requireIdea(input.ideaId);
+  await checkDailyBudget(2);
   const generation = await generateForIdea(idea);
   const brief = await createBrief({
     ideaId: idea.id,
@@ -254,6 +256,8 @@ export async function generateVisualForDraft(input: {
   quality: 'low' | 'medium' | 'high';
 }) {
   const draft = await requireDraft(input.draftId);
+  const visualCostEstimate = input.quality === 'high' ? 8 : input.quality === 'medium' ? 4 : 2;
+  await checkDailyBudget(visualCostEstimate);
   const finalPrompt = buildVisualPrompt({
     draft,
     userPrompt: input.prompt,
