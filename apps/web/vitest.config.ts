@@ -37,6 +37,8 @@ export default defineConfig({
         'src/lib/products/feed/**/*.{ts,tsx}',
         'src/lib/products/reviews.ts',
         'src/components/sections/ProductFeedSection*.tsx',
+        'src/lib/content-studio/**/*.{ts,tsx}',
+        'src/components/admin/content-studio/**/*.{ts,tsx}',
       ],
       exclude: [
         '**/*.test.{ts,tsx}',
