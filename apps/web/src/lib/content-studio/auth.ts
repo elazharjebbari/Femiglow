@@ -3,8 +3,14 @@ import { env } from '@/lib/env';
 import { HttpError } from '@/lib/errors/http-error';
 import { decodeSession, SESSION_COOKIE, type AdminSession } from '@/lib/auth/session';
 
+let loggedStudioDisabled = false;
+
 export function requireContentStudioEnabled(): void {
   if (env.CONTENT_STUDIO_ENABLED !== 'true') {
+    if (!loggedStudioDisabled) {
+      console.warn('[content-studio] Feature désactivée. Activez CONTENT_STUDIO_ENABLED=true en staging.');
+      loggedStudioDisabled = true;
+    }
     throw new HttpError('forbidden', 'Content Studio désactivé.');
   }
 }
