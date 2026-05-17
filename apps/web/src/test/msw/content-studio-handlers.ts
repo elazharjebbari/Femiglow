@@ -26,6 +26,7 @@ export interface MockContentStudioState {
   posts: ReturnType<typeof buildContentPost>[];
   deliveries: ReturnType<typeof buildContentPostizDelivery>[];
   learningNotes: MockLearningNote[];
+  generationRuns: Array<{ id: string; ideaId: string | null; briefId: string | null; provider: string; model: string; promptVersion: string; status: string; costCents: number; errorMessage: string | null; createdBy: string | null; createdAt: string }>;
   callCount: Record<string, number>;
 }
 
@@ -36,6 +37,7 @@ export function createMockState(): MockContentStudioState {
     posts: [buildContentPost()],
     deliveries: [buildContentPostizDelivery()],
     learningNotes: [],
+    generationRuns: [],
     callCount: {},
   };
 }
@@ -330,4 +332,13 @@ export function contentStudioHandlers(state: MockContentStudioState) {
         },
       });
     }),
-  ];}
+
+    // GET /api/admin/content-studio/generation-runs — list generation runs
+    http.get('http://localhost/api/admin/content-studio/generation-runs', () => {
+      inc(state, 'GET /generation-runs');
+      return HttpResponse.json({
+        runs: state.generationRuns ?? [],
+      });
+    }),
+  ];
+}

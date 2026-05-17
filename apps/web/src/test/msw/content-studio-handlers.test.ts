@@ -348,4 +348,13 @@ describe('MSW — Content Studio API handlers', () => {
       expect(res.status).toBe(404);
     });
   });
+
+  describe('GET /api/admin/content-studio/generation-runs', () => {
+    it('retourne la liste des runs de génération', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/generation-runs');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.runs).toEqual([]);
+    });
+  });
 });

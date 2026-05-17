@@ -21,6 +21,7 @@ import { ArchiveButton } from './ArchiveButton';
 import { LearningNoteForm } from './LearningNoteForm';
 import { UtmBuilder } from './UtmBuilder';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { BudgetSummary } from './BudgetSummary';
 import { postJson } from './api';
 
 interface Props {
@@ -104,6 +105,7 @@ export function ContentStudioClient({
         setMessage={setMessage}
       />
       <AnalyticsDashboard posts={posts} drafts={drafts} snapshots={snapshots} />
+      <BudgetSummary />
       <div className="grid gap-6 xl:grid-cols-[minmax(320px,420px)_1fr]">
         <section className="space-y-4">
           <IdeaForm

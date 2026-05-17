@@ -532,6 +532,39 @@ export async function insertGenerationRun(
   return row;
 }
 
+export async function listGenerationRuns(limit = 50): Promise<ContentGenerationRun[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(contentGenerationRuns)
+      .orderBy(desc(contentGenerationRuns.createdAt))
+      .limit(limit);
+    return rows.map(rowGenerationRun);
+  }
+  return Array.from(store().contentGenerationRuns.values())
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, limit);
+}
+
+function rowGenerationRun(row: typeof contentGenerationRuns.$inferSelect): ContentGenerationRun {
+  return {
+    id: row.id,
+    ideaId: row.ideaId,
+    briefId: row.briefId,
+    provider: row.provider,
+    model: row.model,
+    promptVersion: row.promptVersion,
+    input: (row.input ?? {}) as Record<string, unknown>,
+    output: (row.output ?? {}) as Record<string, unknown>,
+    status: row.status as ContentGenerationRun['status'],
+    costCents: row.costCents,
+    errorMessage: row.errorMessage,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+  };
+}
+
 export async function approveDraft(input: {
   draftId: string;
   actorId: string;
