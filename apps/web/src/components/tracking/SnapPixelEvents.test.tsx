@@ -303,14 +303,14 @@ describe('SnapPixelEvents', () => {
     expect(snaptrMock).toHaveBeenCalledWith('track', 'START_CHECKOUT', expect.anything());
   });
 
-  it('does NOT include delivery_method for non-PURCHASE events', async () => {
+  it('includes delivery_method for ADD_CART and PAGE_VIEW per Snap v3 spec', async () => {
     await renderAndFlush();
     await pushEvent(mockEntry({ event: 'add_to_cart' }));
 
     const trackCall = snaptrMock.mock.calls.find((args: unknown[]) => args[0] === 'track');
     expect(trackCall).toBeDefined();
     const params = trackCall![2] as Record<string, unknown>;
-    expect(params.delivery_method).toBeUndefined();
+    expect(params.delivery_method).toBe('cod');
   });
 
   it('does NOT include sign_up_method for non-ADD_BILLING events', async () => {

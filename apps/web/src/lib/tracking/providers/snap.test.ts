@@ -101,12 +101,7 @@ describe('snap provider payload', () => {
       event_id: 'evt_snap_dedup_1',
       currency: 'MAD',
       value: 399,
-      transaction_id: 'order-42',
       order_id: 'order-42',
-      client_deduplication_id: 'evt_snap_dedup_1',
-      event_tag: 'femiglow',
-      description: 'Kit FemiGlow',
-      uuid_c1: 'anon_123',
     });
     expect(event.custom_data.content_ids).toEqual(['kit-1']);
     expect(event.custom_data.content_category).toEqual(['beauty']);
@@ -183,22 +178,10 @@ describe('snap CAPI v3 format compliance', () => {
     expect(ts).toBe(Math.floor(new Date('2026-05-16T12:00:00Z').getTime() / 1000));
   });
 
-  it('client_deduplication_id = event_id pour la dédup client/serveur', () => {
+  it('client_deduplication_id et uuid_c1 sont gérés côté client (SnapPixelEvents), pas CAPI', () => {
     const payload = __test__.buildPayload(provider(), ctx()) as any;
-    expect(payload.data[0].event_id).toBe('evt_snap_dedup_1');
-    expect(payload.data[0].custom_data.client_deduplication_id).toBe('evt_snap_dedup_1');
-  });
-
-  it('uuid_c1 est peuplé avec anonymousId', () => {
-    const payload = __test__.buildPayload(provider(), ctx()) as any;
-    expect(payload.data[0].custom_data.uuid_c1).toBe('anon_123');
-  });
-
-  it('uuid_c1 peut être surchargé par params.uuid_c1', () => {
-    const payload = __test__.buildPayload(provider(), ctx({
-      params: { ...ctx().params, uuid_c1: 'custom_uuid' },
-    })) as any;
-    expect(payload.data[0].custom_data.uuid_c1).toBe('custom_uuid');
+    expect(payload.data[0].custom_data.client_deduplication_id).toBeUndefined();
+    expect(payload.data[0].custom_data.uuid_c1).toBeUndefined();
   });
 
   it('user_data.em est toujours un array quand présent', () => {
@@ -376,23 +359,46 @@ describe('snap event mapping coverage', () => {
     expect(payload.data[0].event_name).toBe('CUSTOM_EVENT');
   });
 
-  it('PURCHASE inclut order_id et payment_info_available et delivery_method', () => {
+  it('PURCHASE inclut order_id et number_items (CAPI v3)', () => {
     const payload = __test__.buildPayload(provider(), ctx({ eventName: 'purchase' })) as any;
     expect(payload.data[0].custom_data.order_id).toBe('order-42');
-    expect(payload.data[0].custom_data.payment_info_available).toBe(1);
-    expect(payload.data[0].custom_data.delivery_method).toBe('cod');
+    expect(payload.data[0].custom_data.number_items).toEqual(['1']);
+    // CAPI v3: payment_info_available and delivery_method are client-side only
+    expect(payload.data[0].custom_data.payment_info_available).toBeUndefined();
+    expect(payload.data[0].custom_data.delivery_method).toBeUndefined();
   });
 
-  it('START_CHECKOUT inclut payment_info_available', () => {
+  it('START_CHECKOUT inclut order_id et number_items (CAPI v3)', () => {
     const payload = __test__.buildPayload(provider(), ctx({ eventName: 'checkout_intent' })) as any;
     expect(payload.data[0].event_name).toBe('START_CHECKOUT');
-    expect(payload.data[0].custom_data.payment_info_available).toBe(1);
+    expect(payload.data[0].custom_data.order_id).toBe('order-42');
+    expect(payload.data[0].custom_data.number_items).toEqual(['1']);
+    expect(payload.data[0].custom_data.payment_info_available).toBeUndefined();
   });
 
-  it('ADD_BILLING inclut sign_up_method', () => {
+  it('ADD_BILLING CAPI ne contient pas sign_up_method (client-side only)', () => {
     const payload = __test__.buildPayload(provider(), ctx({ eventName: 'add_payment_info' })) as any;
     expect(payload.data[0].event_name).toBe('ADD_BILLING');
-    expect(payload.data[0].custom_data.sign_up_method).toBe('phone');
+    expect(payload.data[0].custom_data.sign_up_method).toBeUndefined();
+  });
+
+  it('VIEW_CONTENT CAPI ne contient pas number_items (CAPI v3)', () => {
+    const payload = __test__.buildPayload(provider(), ctx({ eventName: 'view_item' })) as any;
+    expect(payload.data[0].custom_data.number_items).toBeUndefined();
+    expect(payload.data[0].custom_data.order_id).toBe('order-42');
+  });
+
+  it('ADD_CART CAPI contient number_items mais pas order_id', () => {
+    const payload = __test__.buildPayload(provider(), ctx({ eventName: 'add_to_cart' })) as any;
+    expect(payload.data[0].custom_data.number_items).toEqual(['1']);
+    expect(payload.data[0].custom_data.order_id).toBeUndefined();
+  });
+
+  it('PAGE_VIEW CAPI est minimal (event_id, content_ids, content_category)', () => {
+    const payload = __test__.buildPayload(provider(), ctx({ eventName: 'page_view' })) as any;
+    expect(payload.data[0].custom_data.event_id).toBe('evt_snap_dedup_1');
+    expect(payload.data[0].custom_data.number_items).toBeUndefined();
+    expect(payload.data[0].custom_data.order_id).toBeUndefined();
   });
 
   it('custom_data.content_ids remplace item_ids (Snap v3)', () => {

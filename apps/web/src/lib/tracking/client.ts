@@ -30,6 +30,19 @@ export interface EmitOptions {
    * formulaire » (ex. checkout_intent).
    */
   dedupKey?: string;
+  /**
+   * Identité en clair (email, phone, nom) pour les pixels client-side
+   * (Snap snaptr, Meta fbq Advanced Matching). Le SDK du pixel
+   * normalise et hashe lui-même. N'EST PAS envoyé à /api/track.
+   */
+  identity?: {
+    email?: string;
+    phone?: string;
+    firstName?: string;
+    lastName?: string;
+    city?: string;
+    country?: string;
+  };
 }
 
 export interface TrackingClientConfig {
@@ -135,6 +148,7 @@ export class TrackingClient {
       context: options.context,
       params,
       ...(options.userData ? { user_data: options.userData } : {}),
+      ...(options.identity ? { identity: options.identity } : {}),
       attribution: {
         channel: attributed.channel,
         is_paid: attributed.is_paid,

@@ -44,30 +44,30 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
     ? items.map((i) => String(Number(i.quantity) || 1))
     : undefined;
 
+  // Per Snap CAPI v3 spec: custom_data fields vary per event type.
+  // - ADD_CART: event_id, value, currency, content_ids, content_category, number_items
+  // - PAGE_VIEW: event_id, content_category, content_ids
+  // - PURCHASE: event_id, value, currency, content_ids, content_category, number_items, order_id
+  // - START_CHECKOUT: event_id, value, currency, content_ids, content_category, number_items, order_id
+  // - VIEW_CONTENT: event_id, value, currency, content_ids, content_category, order_id
+  // Client-side-only fields (delivery_method, payment_info_available, sign_up_method)
+  // are handled by SnapPixelEvents, not CAPI.
   const customData: Record<string, unknown> = {
     event_id: ctx.eventId,
     currency: ctx.params.currency,
     value: ctx.params.value,
     content_ids: contentIds,
     content_category: contentCategory ? [contentCategory] : undefined,
-    number_items: numberItemsArr,
-    transaction_id: ctx.params.transaction_id,
-    order_id: ctx.params.transaction_id,
-    client_deduplication_id: ctx.eventId,
-    event_tag: ctx.params.event_tag,
-    description: ctx.params.description,
-    uuid_c1: ctx.params.uuid_c1 ?? ctx.anonymousId,
   };
 
-  // Event-specific fields per Snap v3 spec
-  if (eventNameMapped === 'ADD_BILLING') {
-    customData.sign_up_method = ctx.params.sign_up_method as string | undefined ?? 'phone';
+  // number_items: only for ADD_CART, PURCHASE, START_CHECKOUT (per CAPI spec)
+  if (['ADD_CART', 'PURCHASE', 'START_CHECKOUT'].includes(eventNameMapped)) {
+    customData.number_items = numberItemsArr;
   }
-  if (eventNameMapped === 'START_CHECKOUT' || eventNameMapped === 'PURCHASE') {
-    customData.payment_info_available = ctx.params.payment_info_available as number | undefined ?? 1;
-  }
-  if (eventNameMapped === 'PURCHASE') {
-    customData.delivery_method = ctx.params.delivery_method as string | undefined ?? 'cod';
+
+  // order_id: only for PURCHASE, START_CHECKOUT, VIEW_CONTENT (per CAPI spec)
+  if (['PURCHASE', 'START_CHECKOUT', 'VIEW_CONTENT'].includes(eventNameMapped)) {
+    customData.order_id = ctx.params.transaction_id;
   }
 
   // Remove undefined values from custom_data (Snap rejects null/undefined)

@@ -27,6 +27,18 @@ export interface DataLayerEntry {
     };
   };
   /**
+   * Plain-text identity for client-side pixel Advanced Matching
+   * (Snap snaptr, Meta fbq). NOT sent to /api/track server-side.
+   */
+  identity?: {
+    email?: string;
+    phone?: string;
+    firstName?: string;
+    lastName?: string;
+    city?: string;
+    country?: string;
+  };
+  /**
    * Attribution multi-canal — résultat de la stratégie active appliquée
    * sur le snapshot du visiteur. Consommé par les conditions GTM pour
    * gater les tags de conversion. Cf. docs/tracking-attribution/.
