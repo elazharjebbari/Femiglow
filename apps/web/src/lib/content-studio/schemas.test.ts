@@ -8,6 +8,9 @@ import {
   learningNoteSchema,
   draftRejectSchema,
   postCancelSchema,
+  campaignCreateSchema,
+  campaignUpdateSchema,
+  campaignQuerySchema,
   ideaQuerySchema,
   draftQuerySchema,
   postQuerySchema,
@@ -226,6 +229,72 @@ describe('content studio schemas', () => {
     it('ideaQuerySchema rejette limit > 100', () => {
       const result = ideaQuerySchema.safeParse({ limit: 200 });
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('campaignCreateSchema', () => {
+    it('valide une campagne correcte', () => {
+      const result = campaignCreateSchema.safeParse({
+        name: 'Lancement été',
+        objective: 'notoriete',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejette un nom vide', () => {
+      const result = campaignCreateSchema.safeParse({
+        name: '',
+        objective: 'notoriete',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepte des dates optionnelles', () => {
+      const result = campaignCreateSchema.safeParse({
+        name: 'Campagne avec dates',
+        objective: 'conversion',
+        startsAt: '2026-06-01T00:00:00.000Z',
+        endsAt: '2026-08-31T23:59:59.000Z',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejette les champs inconnus', () => {
+      const result = campaignCreateSchema.safeParse({
+        name: 'Test',
+        objective: 'conversion',
+        extra: true,
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('campaignUpdateSchema', () => {
+    it('valide une mise à jour partielle', () => {
+      const result = campaignUpdateSchema.safeParse({ name: 'Nouveau nom' });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejette un nom vide', () => {
+      const result = campaignUpdateSchema.safeParse({ name: '' });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('campaignQuerySchema', () => {
+    it('accepte un status valide', () => {
+      const result = campaignQuerySchema.safeParse({ status: 'active' });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejette un status invalide', () => {
+      const result = campaignQuerySchema.safeParse({ status: 'invalid' });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepte un objet vide', () => {
+      const result = campaignQuerySchema.safeParse({});
+      expect(result.success).toBe(true);
     });
   });
 });

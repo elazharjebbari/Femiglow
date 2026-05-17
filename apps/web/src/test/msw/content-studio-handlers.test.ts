@@ -494,4 +494,74 @@ describe('MSW — Content Studio API handlers', () => {
       expect(res.status).toBe(404);
     });
   });
+
+  describe('GET /api/admin/content-studio/campaigns', () => {
+    it('retourne la liste des campagnes', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/campaigns');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.campaigns).toBeInstanceOf(Array);
+      expect(json.campaigns.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('filtre par status', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/campaigns?status=active');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.campaigns.every((c: { status: string }) => c.status === 'active')).toBe(true);
+    });
+  });
+
+  describe('POST /api/admin/content-studio/campaigns', () => {
+    it('crée une campagne', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Nouvelle campagne', objective: 'conversion' }),
+      });
+      expect(res.status).toBe(201);
+      const json = await res.json();
+      expect(json.campaign).toBeDefined();
+      expect(json.campaign.name).toBe('Nouvelle campagne');
+      expect(json.campaign.status).toBe('draft');
+    });
+  });
+
+  describe('GET /api/admin/content-studio/campaigns/:id', () => {
+    it('retourne une campagne par ID', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/campaigns/cmp_test1');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.campaign.id).toBe('cmp_test1');
+      expect(json.campaign.name).toBe('Lancement été 2026');
+    });
+
+    it('retourne 404 pour une campagne inexistante', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/campaigns/nonexistent');
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('PATCH /api/admin/content-studio/campaigns/:id', () => {
+    it('met à jour une campagne', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/campaigns/cmp_test2', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Rituel du matin', status: 'active' }),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.campaign.name).toBe('Rituel du matin');
+      expect(json.campaign.status).toBe('active');
+    });
+
+    it('retourne 404 pour une campagne inexistante', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/campaigns/nonexistent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Test' }),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
 });

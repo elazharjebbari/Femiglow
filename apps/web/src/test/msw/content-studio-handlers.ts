@@ -21,6 +21,7 @@ interface MockLearningNote {
 }
 
 export interface MockContentStudioState {
+  campaigns: Array<{ id: string; name: string; objective: string; status: string; startsAt: string | null; endsAt: string | null; createdBy: string | null; createdAt: string; updatedAt: string }>;
   ideas: ReturnType<typeof buildContentIdea>[];
   drafts: ReturnType<typeof buildContentDraft>[];
   posts: ReturnType<typeof buildContentPost>[];
@@ -32,6 +33,10 @@ export interface MockContentStudioState {
 
 export function createMockState(): MockContentStudioState {
   return {
+    campaigns: [
+      { id: 'cmp_test1', name: 'Lancement été 2026', objective: 'notoriete', status: 'active', startsAt: '2026-06-01T00:00:00.000Z', endsAt: '2026-08-31T23:59:59.000Z', createdBy: null, createdAt: '2026-05-01T10:00:00.000Z', updatedAt: '2026-05-01T10:00:00.000Z' },
+      { id: 'cmp_test2', name: 'Rituel du soir', objective: 'consideration', status: 'draft', startsAt: null, endsAt: null, createdBy: null, createdAt: '2026-05-10T10:00:00.000Z', updatedAt: '2026-05-10T10:00:00.000Z' },
+    ],
     ideas: [buildContentIdea()],
     drafts: [buildContentDraft()],
     posts: [buildContentPost()],
@@ -390,6 +395,64 @@ export function contentStudioHandlers(state: MockContentStudioState) {
         enabled: true,
         version: 'P3',
       });
+    }),
+
+    // GET /api/admin/content-studio/campaigns — list campaigns
+    http.get('http://localhost/api/admin/content-studio/campaigns', ({ request }) => {
+      inc(state, 'GET /campaigns');
+      const url = new URL(request.url);
+      const status = url.searchParams.get('status');
+      let filtered = state.campaigns;
+      if (status) filtered = filtered.filter((c) => c.status === status);
+      return HttpResponse.json({ campaigns: filtered });
+    }),
+
+    // POST /api/admin/content-studio/campaigns — create campaign
+    http.post('http://localhost/api/admin/content-studio/campaigns', async ({ request }) => {
+      inc(state, 'POST /campaigns');
+      const body = (await request.json()) as Record<string, unknown>;
+      const campaign = {
+        id: `cmp_${Date.now()}`,
+        name: String(body.name ?? ''),
+        objective: String(body.objective ?? ''),
+        status: 'draft',
+        startsAt: body.startsAt ? String(body.startsAt) : null,
+        endsAt: body.endsAt ? String(body.endsAt) : null,
+        createdBy: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      state.campaigns.unshift(campaign);
+      return HttpResponse.json({ campaign }, { status: 201 });
+    }),
+
+    // GET /api/admin/content-studio/campaigns/:id — get campaign
+    http.get('http://localhost/api/admin/content-studio/campaigns/:id', ({ params }) => {
+      inc(state, 'GET /campaigns/:id');
+      const campaign = state.campaigns.find((c) => c.id === params.id);
+      if (!campaign) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Campagne non trouvée.' } }, { status: 404 });
+      }
+      return HttpResponse.json({ campaign });
+    }),
+
+    // PATCH /api/admin/content-studio/campaigns/:id — update campaign
+    http.patch('http://localhost/api/admin/content-studio/campaigns/:id', async ({ params, request }) => {
+      inc(state, 'PATCH /campaigns/:id');
+      const idx = state.campaigns.findIndex((c) => c.id === params.id);
+      if (idx === -1) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Campagne non trouvée.' } }, { status: 404 });
+      }
+      const body = (await request.json()) as Record<string, unknown>;
+      const updated = { ...state.campaigns[idx] };
+      if (typeof body.name === 'string') updated.name = body.name;
+      if (typeof body.objective === 'string') updated.objective = body.objective;
+      if (typeof body.status === 'string') updated.status = body.status;
+      if ('startsAt' in body) updated.startsAt = body.startsAt ? String(body.startsAt) : null;
+      if ('endsAt' in body) updated.endsAt = body.endsAt ? String(body.endsAt) : null;
+      updated.updatedAt = new Date().toISOString();
+      state.campaigns[idx] = updated;
+      return HttpResponse.json({ campaign: updated });
     }),
   ];
 }
