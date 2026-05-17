@@ -15,6 +15,7 @@ interface AdminShellProps {
     | 'audit'
     | 'seo'
     | 'products'
+    | 'content-studio'
     | 'chat'
     | 'rituals'
     | 'legal'
@@ -31,6 +32,7 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
   { href: '/admin/legal', key: 'legal', label: 'Pages légales' },
   { href: '/admin/products', key: 'products', label: 'Produits' },
+  { href: '/admin/content-studio', key: 'content-studio', label: 'Studio contenu' },
   { href: '/admin/chat', key: 'chat', label: 'Chat' },
   { href: '/admin/emails', key: 'emails', label: 'Emails' },
   { href: '/admin/webhooks', key: 'webhooks', label: 'Webhooks' },
