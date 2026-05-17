@@ -23,6 +23,8 @@ import { SectionTitle } from './SectionTitle';
 import { DeliveryStatusBadge } from './DeliveryStatusBadge';
 import { PlatformPreview } from './PlatformPreview';
 import { StudioGuide } from './StudioGuide';
+import { Select } from './Select';
+import { postJson, patchJson, getJson } from './api';
 import {
   extractUploadedImage,
   summarizeSnapshot,
@@ -1282,64 +1284,4 @@ function PostizPanel({
       </ul>
     </div>
   );
-}
-
-function Select<T extends string>({
-  label,
-  value,
-  values,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  values: readonly T[];
-  onChange: (value: T) => void;
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="text-xs uppercase tracking-wide text-stone-500">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value as T)}
-        className="mt-1 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm"
-      >
-        {values.map((item) => (
-          <option key={item} value={item}>
-            {item}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return parseJson<T>(res);
-}
-
-async function patchJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return parseJson<T>(res);
-}
-
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  return parseJson<T>(res);
-}
-
-async function parseJson<T>(res: Response): Promise<T> {
-  const json = (await res.json().catch(() => ({}))) as T & {
-    error?: { message?: string };
-  };
-  if (!res.ok) throw new Error(json.error?.message ?? `HTTP ${res.status}`);
-  return json;
 }
