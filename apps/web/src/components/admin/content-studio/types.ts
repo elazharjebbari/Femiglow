@@ -41,3 +41,5 @@ export interface AutomationResponse {
   deliveries?: ContentPostizDelivery[];
   snapshots?: ContentPerformanceSnapshot[];
 }
+
+export type RunFunction = <T>(action: () => Promise<T>, onSuccess: (value: T) => void) => void;
