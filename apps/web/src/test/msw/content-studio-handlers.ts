@@ -251,5 +251,25 @@ export function contentStudioHandlers(state: MockContentStudioState) {
         },
       });
     }),
+
+    // GET /api/admin/content-studio/briefs/:id — get brief
+    http.get('http://localhost/api/admin/content-studio/briefs/:id', ({ params }) => {
+      inc(state, 'GET /briefs/:id');
+      const briefId = params.id as string;
+      return HttpResponse.json({
+        brief: {
+          id: briefId,
+          ideaId: 'idea_test1',
+          angle: 'Angle éditorial FemiGlow',
+          proof: 'Témoignages clientes et résultats visibles',
+          cta: 'Découvrir le rituel',
+          mediaDirection: 'Photo naturelle, lumière douce',
+          constraints: {},
+          version: 1,
+          createdBy: null,
+          createdAt: new Date('2026-01-01').toISOString(),
+        },
+      });
+    }),
   ];
 }

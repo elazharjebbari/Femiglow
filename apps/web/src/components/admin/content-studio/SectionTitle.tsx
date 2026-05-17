@@ -9,7 +9,7 @@ function SectionTitle({
   eyebrow: string;
   title: string;
   description?: string;
-  tone: 'rose' | 'sky' | 'amber' | 'violet' | 'teal' | 'indigo';
+  tone: 'rose' | 'sky' | 'amber' | 'violet' | 'teal' | 'indigo' | 'stone';
 }) {
   const toneClass = {
     rose: 'text-rose-700',
@@ -18,6 +18,7 @@ function SectionTitle({
     violet: 'text-violet-700',
     teal: 'text-teal-700',
     indigo: 'text-indigo-700',
+    stone: 'text-stone-700',
   }[tone];
   return (
     <div>

@@ -2,10 +2,29 @@ import { NextResponse } from 'next/server';
 import { requireAdminApi, requireContentStudioEnabled } from '@/lib/content-studio/auth';
 import { formatErrorResponse } from '@/lib/errors/http-error';
 import { briefUpdateSchema } from '@/lib/content-studio/schemas';
+import { getBrief } from '@/lib/content-studio/repository';
 import { updateContentBrief } from '@/lib/content-studio/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+export async function GET(
+  _request: Request,
+  { params }: { params: { id: string } },
+): Promise<Response> {
+  try {
+    requireContentStudioEnabled();
+    await requireAdminApi();
+    const brief = await getBrief(params.id);
+    if (!brief) {
+      return NextResponse.json({ error: { code: 'not_found', message: 'Brief introuvable.' } }, { status: 404 });
+    }
+    return NextResponse.json({ brief });
+  } catch (err) {
+    const { status, body } = formatErrorResponse(err);
+    return NextResponse.json(body, { status });
+  }
+}
 
 export async function PATCH(
   request: Request,

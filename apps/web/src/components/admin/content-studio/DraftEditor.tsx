@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type {
+  ContentBrief,
   ContentDraft,
   ContentPost,
   ContentPostizDelivery,
@@ -19,6 +20,7 @@ import { PlatformPreview } from './PlatformPreview';
 import { RejectDialog } from './RejectDialog';
 import { CancelDialog } from './CancelDialog';
 import { ArchiveButton } from './ArchiveButton';
+import { BriefEditor } from './BriefEditor';
 import { postJson, patchJson, getJson } from './api';
 import {
   extractUploadedImage,
@@ -68,6 +70,23 @@ export function DraftEditor({
   const [mediaCompartment, setMediaCompartment] = useState<MediaCompartment>('imported');
   const [integrationId, setIntegrationId] = useState('');
   const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue());
+  const [brief, setBrief] = useState<ContentBrief | null>(null);
+
+  useEffect(() => {
+    if (!selectedDraft?.briefId) {
+      setBrief(null);
+      return;
+    }
+    let cancelled = false;
+    void getJson<{ brief: ContentBrief }>(`/api/admin/content-studio/briefs/${selectedDraft.briefId}`)
+      .then((value) => {
+        if (!cancelled) setBrief(value.brief);
+      })
+      .catch(() => {
+        if (!cancelled) setBrief(null);
+      });
+    return () => { cancelled = true; };
+  }, [selectedDraft?.briefId]);
 
   if (!selectedDraft) {
     return (
@@ -168,6 +187,17 @@ export function DraftEditor({
           setSelectedMediaId={setMediaId}
           setMessage={setMessage}
         />
+        {brief && (
+          <div className="mt-4">
+            <BriefEditor
+              brief={brief}
+              draftStatus={selectedDraft.status}
+              disabled={disabled}
+              run={run}
+              onUpdate={setBrief}
+            />
+          </div>
+        )}
         <div className="mt-4 rounded-md border border-indigo-100 bg-indigo-50/40 p-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs uppercase tracking-wide text-stone-500">Preview réseau</p>

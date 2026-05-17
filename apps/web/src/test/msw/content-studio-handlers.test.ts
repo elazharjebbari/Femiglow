@@ -288,4 +288,15 @@ describe('MSW — Content Studio API handlers', () => {
       expect(json.brief.cta).toBe('Achetez maintenant');
     });
   });
+
+  describe('GET /api/admin/content-studio/briefs/:id', () => {
+    it('retourne un brief par ID', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/briefs/brief_test1');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.brief).toBeDefined();
+      expect(json.brief.id).toBe('brief_test1');
+      expect(json.brief.angle).toBeDefined();
+    });
+  });
 });
