@@ -1,6 +1,6 @@
 /**
  * Tests atomiques du seed canonique TP2.
- * Garantit que le seed produit un input valide, sans provider snap/pinterest,
+ * Garantit que le seed produit un input valide, avec provider snap et sans pinterest,
  * et que tous les events du catalogue sont représentés.
  */
 import { describe, expect, it } from 'vitest';
@@ -25,10 +25,11 @@ describe('buildCanonicalSeed', () => {
     expect(seed.name).toBe('Plan staging');
   });
 
-  it('active les 4 providers principaux (ga4/googleAds/meta/tiktok) et désactive GTM', () => {
+  it('active les 4 providers principaux (ga4/googleAds/meta/tiktok) et désactive Snap/GTM par défaut', () => {
     const seed = buildCanonicalSeed();
     const active = seed.providers.filter((p) => p.active).map((p) => p.id);
     expect(active.sort()).toEqual(['ga4', 'googleAds', 'meta', 'tiktok']);
+    expect(seed.providers.find((p) => p.id === 'snap')?.active).toBe(false);
     expect(seed.providers.find((p) => p.id === 'gtm')?.active).toBe(false);
   });
 
@@ -65,14 +66,20 @@ describe('buildCanonicalSeed', () => {
     expect(webOnly.events.length).toBe(all.events.length - serverEvents.length);
   });
 
-  it('ne mappe AUCUN provider legacy non supporté (snap/pinterest exclus)', () => {
+  it('mappe les providers supportés et exclut seulement pinterest', () => {
     const seed = buildCanonicalSeed();
-    const validIds: ProviderId[] = ['ga4', 'googleAds', 'meta', 'tiktok', 'gtm'];
+    const validIds: ProviderId[] = ['ga4', 'googleAds', 'meta', 'tiktok', 'snap', 'gtm'];
     for (const evt of seed.events) {
       for (const key of Object.keys(evt.providers)) {
         expect(validIds).toContain(key);
       }
     }
+  });
+
+  it('préserve Snapchat depuis le catalogue sur les conversions clés', () => {
+    const seed = buildCanonicalSeed();
+    expect(seed.events.find((e) => e.key === 'purchase')?.providers.snap).toBe(true);
+    expect(seed.events.find((e) => e.key === 'lead_capture')?.providers.snap).toBe(true);
   });
 
   it('mappe correctement google_ga4 → ga4 et google_ads → googleAds', () => {

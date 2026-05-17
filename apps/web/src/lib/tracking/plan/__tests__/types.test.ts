@@ -49,6 +49,25 @@ describe('trackingPlanInputSchema', () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it('accepts Snapchat as a first-class provider and env config', () => {
+    const result = trackingPlanInputSchema.safeParse({
+      ...baseInput,
+      providers: [{ id: 'snap', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            snapPixelId: '6a4f1a2b-1111-4444-9999-abcdefabcdef',
+            snapAdvancedMatching: true,
+            snapEventMode: 'hybrid',
+          },
+        },
+      ],
+      events: [{ key: 'lead_capture', providers: { snap: true } }],
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('trackingPlanSchema (full)', () => {

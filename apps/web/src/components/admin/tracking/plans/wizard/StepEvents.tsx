@@ -18,6 +18,7 @@ const PROVIDER_LABEL: Record<ProviderId, string> = {
   googleAds: 'Ads',
   meta: 'Meta',
   tiktok: 'TikTok',
+  snap: 'Snap',
   gtm: 'GTM',
 };
 
@@ -75,6 +76,7 @@ export function StepEvents({
         else if (p === 'google_ads') providers.googleAds = true;
         else if (p === 'meta') providers.meta = true;
         else if (p === 'tiktok') providers.tiktok = true;
+        else if (p === 'snap') providers.snap = true;
       }
       return { key: entry.name, label: entry.description, providers };
     });

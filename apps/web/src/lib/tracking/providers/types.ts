@@ -22,6 +22,25 @@ export interface DispatchContext {
   device: 'mobile' | 'tablet' | 'desktop';
   locale: string;
   params: Record<string, unknown>;
+  userData?: {
+    sha256_email_address?: string;
+    sha256_phone_number?: string;
+    address?: {
+      sha256_first_name?: string;
+      sha256_last_name?: string;
+      city?: string;
+      country?: string;
+    };
+  };
+  attribution?: {
+    channel: string;
+    is_paid: boolean;
+    strategy: string;
+    reason: string;
+    click_id?: string;
+    click_id_field?: string;
+    utm?: Record<string, string | undefined>;
+  };
   /** Identité éventuelle (email/phone/nom) — non hachée. Hashing à la charge de l'adapter. */
   identity?: {
     email?: string;

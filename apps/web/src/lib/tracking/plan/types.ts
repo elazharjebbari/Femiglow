@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const PROVIDER_IDS = ['ga4', 'googleAds', 'meta', 'tiktok', 'gtm'] as const;
+export const PROVIDER_IDS = ['ga4', 'googleAds', 'meta', 'tiktok', 'snap', 'gtm'] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 export const ENV_NAMES = ['production', 'staging', 'local'] as const;
@@ -53,6 +53,9 @@ export const envConfigSchema = z
     googleAdsEnhancedConversions: z.boolean().optional(),
     metaPixelId: z.string().optional(),
     tiktokPixelId: z.string().optional(),
+    snapPixelId: z.string().optional(),
+    snapAdvancedMatching: z.boolean().optional(),
+    snapEventMode: z.enum(['pixel_only', 'capi_only', 'hybrid']).optional(),
     gtmContainerId: z.string().optional(),
   })
   // Catchall : autorise des clés arbitraires (string, record string,

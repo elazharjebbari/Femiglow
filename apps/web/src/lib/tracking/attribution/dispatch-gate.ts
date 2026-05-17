@@ -68,7 +68,7 @@ const PROVIDER_TO_ATTRIBUTION_PROVIDER: Record<
   google_ads: 'google_ads',
   google_ga4: null,
   tiktok: 'tiktok',
-  snap: null,
+  snap: 'snap',
   pinterest: null,
   gtm: null,
   custom: null,

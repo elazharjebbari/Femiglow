@@ -129,6 +129,10 @@ function metaEventNameFor(eventKey: string): string {
   return m?.meta?.name ?? eventKey;
 }
 
+function snapEventNameFor(eventKey: string): string | null {
+  return getEventMapping(eventKey)?.snap?.name ?? null;
+}
+
 // Built-in variables that ship with every GTM container by default.
 // Note: AD_STORAGE / ANALYTICS_STORAGE are NOT built-in variable types
 // (those are consent storage keys, surfaced via the Consent built-in
@@ -173,6 +177,8 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   const cfg = profile.config as Record<string, string | undefined> & {
     googleAdsConversionLabels?: GoogleAdsConversionLabels;
     googleAdsEnhancedConversions?: boolean;
+    snapAdvancedMatching?: boolean;
+    snapEventMode?: 'pixel_only' | 'capi_only' | 'hybrid';
   };
   const conversionLabels = cfg.googleAdsConversionLabels ?? {};
   // Enhanced Conversions par défaut activé (admin override possible).
@@ -254,6 +260,9 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   if (activeProviders.has('tiktok') && cfg.tiktokPixelId) {
     idVars.tiktok = makeConst('CONST - TikTok Pixel ID', cfg.tiktokPixelId);
   }
+  if (activeProviders.has('snap') && cfg.snapPixelId) {
+    idVars.snap = makeConst('CONST - Snap Pixel ID', cfg.snapPixelId);
+  }
 
   // ─── DLV helpers ─────────────────────────────────────────────────
   // Génère une Data Layer Variable nommée et la mémorise pour éviter
@@ -281,7 +290,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
 
   // DLV - event_id : fbq dedup côté Meta + alignement Stape/server CAPI
   const needsMeta = activeProviders.has('meta') && !!cfg.metaPixelId;
-  if (needsMeta) ensureDlv('DLV - event_id', 'event_id');
+  const needsSnapPixel =
+    activeProviders.has('snap') &&
+    !!cfg.snapPixelId &&
+    cfg.snapEventMode !== 'capi_only';
+  if (needsMeta || needsSnapPixel) ensureDlv('DLV - event_id', 'event_id');
 
   // ─── Variables CONST pour les conversion labels Google Ads ──────
   // Une CONST par label réellement défini en envConfig. Le tag awct
@@ -380,6 +393,40 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     });
   }
 
+  // ─── Snapchat Init tag (loads snaptr + PageView) ─────────────────
+  const SNAP_INIT_NAME = 'Snap Init';
+  if (idVars.snap && cfg.snapPixelId && cfg.snapEventMode !== 'capi_only') {
+    const initArgs = cfg.snapAdvancedMatching === false
+      ? `snaptr('init','${cfg.snapPixelId}');`
+      : `snaptr('init','${cfg.snapPixelId}',{user_hashed_email:'{{DLV - user_data.email_sha256}}',user_hashed_phone_number:'{{DLV - user_data.phone_sha256}}'});`;
+    if (cfg.snapAdvancedMatching !== false) {
+      ensureDlv('DLV - user_data.email_sha256', 'user_data.sha256_email_address', '3');
+      ensureDlv('DLV - user_data.phone_sha256', 'user_data.sha256_phone_number', '3');
+    }
+    const initSnippet = [
+      `<script>(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){`,
+      `a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};`,
+      `a.queue=[];var s='script';var r=t.createElement(s);r.async=!0;r.src=n;`,
+      `var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)`,
+      `})(window,document,'https://sc-static.net/scevent.min.js');`,
+      initArgs,
+      `snaptr('track','PAGE_VIEW');</script>`,
+    ].join('');
+    tags.push({
+      tagId: nextTag(),
+      name: SNAP_INIT_NAME,
+      type: 'html',
+      parameter: [
+        { type: 'TEMPLATE', key: 'html', value: initSnippet },
+        { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
+      ],
+      priority: { type: 'INTEGER', key: 'priority', value: '65' },
+      tagFiringOption: 'ONCE_PER_EVENT',
+      firingTriggerId: [allPagesId],
+      parentFolderId: '1',
+    });
+  }
+
   // ─── Triggers conditionnés par attribution ─────────────────────
   // Pour chaque event-conversion × pixel payant, on génère un trigger
   // dédié qui combine :
@@ -392,7 +439,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   const attributionTriggerCache = new Map<string, string>();
   function ensureAttributionTrigger(
     eventKey: string,
-    providerKey: 'meta' | 'google_ads' | 'tiktok',
+    providerKey: 'meta' | 'google_ads' | 'tiktok' | 'snap',
   ): string {
     const cacheKey = `${eventKey}:${providerKey}`;
     const cached = attributionTriggerCache.get(cacheKey);
@@ -626,6 +673,47 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         firingTriggerId: [tiktokTriggerId],
         parentFolderId: '2',
       });
+    }
+
+    if (event.providers.snap && idVars.snap && cfg.snapPixelId && cfg.snapEventMode !== 'capi_only') {
+      const snapName = snapEventNameFor(event.key);
+      if (snapName) {
+        const snapTriggerId =
+          getAttributionMode(event.key, 'snap') === 'primary'
+            ? ensureAttributionTrigger(event.key, 'snap')
+            : triggerId;
+        const html = [
+          `<script>(function(){`,
+          `if(!window.snaptr)return;`,
+          `var dl=window.dataLayer||[];var entry=null;`,
+          `for(var i=dl.length-1;i>=0;i--){if(dl[i]&&dl[i].event==='${event.key}'){entry=dl[i];break;}}`,
+          `var params=(entry&&entry.params)||{};var user=(entry&&entry.user_data)||{};var p={};`,
+          `function set(k,v){if(v!==undefined&&v!==null&&v!==''&&v!=='undefined')p[k]=v;}`,
+          `set('price',params.value);set('currency',params.currency);`,
+          `set('transaction_id',params.transaction_id);set('client_deduplication_id',(entry&&entry.event_id)||'{{DLV - event_id}}');`,
+          `set('event_tag',params.event_tag);set('description',params.description);`,
+          `set('uuid_c1',params.uuid_c1||((entry&&entry.user)&&entry.user.anonymous_id));`,
+          `set('geo_city',params.geo_city||params.city);set('geo_country',params.geo_country||params.country);set('geo_region',params.geo_region||params.region);`,
+          `set('user_hashed_email',user.sha256_email_address);set('user_hashed_phone_number',user.sha256_phone_number);`,
+          `set('firstname',user.address&&user.address.sha256_first_name);`,
+          `if(Array.isArray(params.items)){p.item_ids=params.items.map(function(it){return it&&it.item_id;}).filter(Boolean);`,
+          `if(params.items[0]){set('item_category',params.items[0].item_category);}}`,
+          `snaptr('track','${snapName}',p);`,
+          `})();</script>`,
+        ].join('');
+        tags.push({
+          tagId: nextTag(),
+          name: `Snap Evt — ${event.key} → ${snapName}`,
+          type: 'html',
+          parameter: [
+            { type: 'TEMPLATE', key: 'html', value: html },
+            { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
+          ],
+          firingTriggerId: [snapTriggerId],
+          setupTag: [{ tagName: SNAP_INIT_NAME, stopOnSetupFailure: false }],
+          parentFolderId: '2',
+        });
+      }
     }
   }
 

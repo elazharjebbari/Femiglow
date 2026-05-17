@@ -307,6 +307,7 @@ const MAP: Record<string, EventMapping> = {
       recommendedRole: 'primary',
       group: 'leads',
     },
+    snap: { name: 'SIGN_UP', isStandard: true },
     identityFields: ['phone', 'firstName'],
   },
   address_completed: {
@@ -383,7 +384,7 @@ const MAP: Record<string, EventMapping> = {
       group: 'leads',
     },
     tiktok: { name: 'SubmitForm', isStandard: true },
-    snap: { name: 'LEAD', isStandard: true },
+    snap: { name: 'SIGN_UP', isStandard: true },
     pinterest: { name: 'lead', isStandard: true },
     identityFields: ['email', 'phone'],
   },
@@ -435,19 +436,22 @@ export function getEventMapping(eventName: string): EventMapping | null {
 //   - TikTok     : hardcoded `TIKTOK_PRIMARY_NAMES`. Idem Meta —
 //                    CompletePayment = primary, SubmitForm = primary
 //                    (puisque lead campaigns optimisent là-dessus).
+//   - Snap       : hardcoded `SNAP_PRIMARY_NAMES`. Purchase + SignUp
+//                    pilotent les campagnes conversion/lead Snapchat.
 //
 // Cf. docs/tracking-attribution/03-architecture.md pour la matrice
 // complète et les exemples de comportement par flow.
 
 export type AttributionMode = 'primary' | 'broadcast';
 
-export type AttributionProvider = 'meta' | 'google_ads' | 'tiktok';
+export type AttributionProvider = 'meta' | 'google_ads' | 'tiktok' | 'snap';
 
 const META_PRIMARY_NAMES: ReadonlySet<string> = new Set(['Purchase', 'Lead']);
 const TIKTOK_PRIMARY_NAMES: ReadonlySet<string> = new Set([
   'CompletePayment',
   'SubmitForm',
 ]);
+const SNAP_PRIMARY_NAMES: ReadonlySet<string> = new Set(['PURCHASE', 'SIGN_UP']);
 
 /**
  * Retourne le mode d'attribution pour `(eventKey, provider)`.
@@ -477,6 +481,12 @@ export function getAttributionMode(
   if (provider === 'tiktok') {
     const tiktokName = mapping.tiktok?.name;
     return tiktokName && TIKTOK_PRIMARY_NAMES.has(tiktokName)
+      ? 'primary'
+      : 'broadcast';
+  }
+  if (provider === 'snap') {
+    const snapName = mapping.snap?.name;
+    return snapName && SNAP_PRIMARY_NAMES.has(snapName)
       ? 'primary'
       : 'broadcast';
   }
