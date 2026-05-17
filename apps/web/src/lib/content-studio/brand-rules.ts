@@ -89,6 +89,8 @@ export function reviewDraftContent(draft: Pick<ContentDraft, 'id' | 'caption' | 
       platform: draft.hashtags.length > 12 ? 70 : 92,
     },
     violations,
+    reviewerId: null,
+    reviewType: 'auto' as const,
     rulesVersion: BRAND_RULES_VERSION,
     createdAt: new Date(),
   };

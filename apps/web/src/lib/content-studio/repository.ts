@@ -67,6 +67,7 @@ function rowIdea(row: typeof contentIdeas.$inferSelect): ContentIdea {
     prompt: row.prompt,
     sourceType: row.sourceType,
     sourceRef: row.sourceRef,
+    rejectionReason: (row as Record<string, unknown>).rejectionReason as string | null ?? null,
     status: row.status as ContentStatus,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
@@ -101,6 +102,8 @@ function rowDraft(row: typeof contentDrafts.$inferSelect): ContentDraft {
     cta: row.cta,
     altText: row.altText,
     hashtags: Array.isArray(row.hashtags) ? (row.hashtags as string[]) : [],
+    rejectionReason: (row as Record<string, unknown>).rejectionReason as string | null ?? null,
+    parentDraftId: (row as Record<string, unknown>).parentDraftId as string | null ?? null,
     status: row.status as ContentStatus,
     scoreTotal: row.scoreTotal,
     editedBy: row.editedBy,
@@ -117,6 +120,8 @@ function rowReview(row: typeof contentBrandReviews.$inferSelect): ContentBrandRe
     scoreTotal: row.scoreTotal,
     score: (row.score as Record<string, number>) ?? {},
     violations: Array.isArray(row.violations) ? (row.violations as never) : [],
+    reviewerId: (row as Record<string, unknown>).reviewerId as string | null ?? null,
+    reviewType: ((row as Record<string, unknown>).reviewType as 'auto' | 'manual') ?? 'auto',
     rulesVersion: row.rulesVersion,
     createdAt: row.createdAt,
   };
@@ -131,6 +136,9 @@ function rowPost(row: typeof contentPosts.$inferSelect): ContentPost {
     publishedAt: row.publishedAt,
     utm: (row.utm as Record<string, unknown>) ?? {},
     approvedBy: row.approvedBy,
+    cancelledBy: (row as Record<string, unknown>).cancelledBy as string | null ?? null,
+    cancelledAt: (row as Record<string, unknown>).cancelledAt as Date | null ?? null,
+    cancelReason: (row as Record<string, unknown>).cancelReason as string | null ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -174,6 +182,7 @@ export async function createIdea(input: {
     prompt: input.prompt,
     sourceType: input.sourceType ?? null,
     sourceRef: input.sourceRef ?? null,
+    rejectionReason: null,
     status: 'idea',
     createdBy: input.actorId,
     createdAt: now,
@@ -295,6 +304,8 @@ export async function createDrafts(
     cta: input.cta ?? null,
     altText: input.altText ?? null,
     hashtags: input.hashtags ?? [],
+    rejectionReason: null as string | null,
+    parentDraftId: null as string | null,
     status: 'generated' as ContentStatus,
     scoreTotal: null,
     editedBy: null,
@@ -334,7 +345,7 @@ export async function getDraft(id: string): Promise<ContentDraft | null> {
 
 export async function updateDraft(
   id: string,
-  patch: Partial<Pick<ContentDraft, 'caption' | 'hook' | 'cta' | 'altText' | 'hashtags' | 'status' | 'scoreTotal' | 'editedBy'>>,
+  patch: Partial<Pick<ContentDraft, 'caption' | 'hook' | 'cta' | 'altText' | 'hashtags' | 'status' | 'scoreTotal' | 'editedBy' | 'rejectionReason'>>,
 ): Promise<ContentDraft | null> {
   const existing = await getDraft(id);
   if (!existing) return null;
@@ -511,6 +522,9 @@ export async function approveDraft(input: {
     publishedAt: null,
     utm: {},
     approvedBy: input.actorId,
+    cancelledBy: null,
+    cancelledAt: null,
+    cancelReason: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -708,4 +722,112 @@ export async function listPerformanceSnapshotsForPosts(
     .filter((snapshot) => postIds.includes(snapshot.postId))
     .sort((a, b) => b.capturedAt.getTime() - a.capturedAt.getTime())
     .slice(0, 200);
+}
+
+// --- P2: Review actions ---
+
+export async function rejectDraft(id: string, reason?: string): Promise<ContentDraft | null> {
+  return updateDraft(id, { status: 'rejected', rejectionReason: reason ?? null });
+}
+
+export async function cancelPost(id: string, reason?: string, cancelledBy?: string | null): Promise<ContentPost | null> {
+  const existing = await getPost(id);
+  if (!existing) return null;
+  const updated: ContentPost = {
+    ...existing,
+    status: 'cancelled',
+    cancelReason: reason ?? null,
+    cancelledBy: cancelledBy ?? null,
+    cancelledAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle
+      .update(contentPosts)
+      .set({
+        status: updated.status,
+        cancelReason: updated.cancelReason,
+        cancelledBy: updated.cancelledBy,
+        cancelledAt: updated.cancelledAt,
+        updatedAt: updated.updatedAt,
+      })
+      .where(eq(contentPosts.id, id));
+  } else {
+    store().contentPosts.set(id, updated);
+  }
+  return updated;
+}
+
+export async function archiveEntity(
+  table: 'idea' | 'draft' | 'post',
+  id: string,
+): Promise<ContentIdea | ContentDraft | ContentPost | null> {
+  if (table === 'idea') {
+    await updateIdeaStatus(id, 'archived');
+    return getIdea(id);
+  }
+  if (table === 'draft') {
+    return updateDraft(id, { status: 'archived' });
+  }
+  const existing = await getPost(id);
+  if (!existing) return null;
+  const updated: ContentPost = { ...existing, status: 'archived', updatedAt: new Date() };
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle.update(contentPosts).set({ status: 'archived', updatedAt: updated.updatedAt }).where(eq(contentPosts.id, id));
+  } else {
+    store().contentPosts.set(id, updated);
+  }
+  return updated;
+}
+
+export async function createDraftVariation(
+  fromDraftId: string,
+  overrides: { variantLabel?: string; caption?: string; promptOverride?: string },
+): Promise<ContentDraft | null> {
+  const parent = await getDraft(fromDraftId);
+  if (!parent) return null;
+  const now = new Date();
+  const draft: ContentDraft = {
+    id: createId('cd'),
+    briefId: parent.briefId,
+    platform: parent.platform,
+    format: parent.format,
+    variantLabel: overrides.variantLabel ?? `Variante`,
+    caption: overrides.caption ?? parent.caption,
+    hook: parent.hook,
+    cta: parent.cta,
+    altText: parent.altText,
+    hashtags: parent.hashtags,
+    rejectionReason: null,
+    parentDraftId: fromDraftId,
+    status: 'generated',
+    scoreTotal: null,
+    editedBy: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle.insert(contentDrafts).values({ ...draft, hashtags: draft.hashtags as never });
+  } else {
+    store().contentDrafts.set(draft.id, draft);
+  }
+  return draft;
+}
+
+export async function listReviewsByDraft(draftId: string): Promise<ContentBrandReview[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(contentBrandReviews)
+      .where(eq(contentBrandReviews.draftId, draftId))
+      .orderBy(desc(contentBrandReviews.createdAt));
+    return rows.map(rowReview);
+  }
+  return Array.from(store().contentBrandReviews.values())
+    .filter((r) => r.draftId === draftId)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }

@@ -52,6 +52,7 @@ export interface ContentIdea {
   prompt: string;
   sourceType: string | null;
   sourceRef: string | null;
+  rejectionReason: string | null;
   status: ContentStatus;
   createdBy: string | null;
   createdAt: Date;
@@ -82,6 +83,8 @@ export interface ContentDraft {
   cta: string | null;
   altText: string | null;
   hashtags: string[];
+  rejectionReason: string | null;
+  parentDraftId: string | null;
   status: ContentStatus;
   scoreTotal: number | null;
   editedBy: string | null;
@@ -102,6 +105,8 @@ export interface ContentBrandReview {
   scoreTotal: number;
   score: Record<string, number>;
   violations: ContentBrandViolation[];
+  reviewerId: string | null;
+  reviewType: 'auto' | 'manual';
   rulesVersion: string;
   createdAt: Date;
 }
@@ -123,6 +128,9 @@ export interface ContentPost {
   publishedAt: Date | null;
   utm: Record<string, unknown>;
   approvedBy: string | null;
+  cancelledBy: string | null;
+  cancelledAt: Date | null;
+  cancelReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

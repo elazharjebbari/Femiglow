@@ -45,3 +45,81 @@ export const visualGenerationSchema = z
     quality: z.enum(['low', 'medium', 'high']).default('low'),
   })
   .strict();
+
+export const draftRejectSchema = z
+  .object({
+    reason: z.string().max(500).optional(),
+  })
+  .strict();
+
+export const postCancelSchema = z
+  .object({
+    reason: z.string().max(500).optional(),
+  })
+  .strict();
+
+export const postRescheduleSchema = z
+  .object({
+    scheduledAt: z.string().min(1),
+  })
+  .strict();
+
+export const draftVariationSchema = z
+  .object({
+    variantLabel: z.string().min(1).max(100).optional(),
+    promptOverride: z.string().max(2000).optional(),
+  })
+  .strict();
+
+export const archiveSchema = z
+  .object({
+    reason: z.string().max(500).optional(),
+  })
+  .strict();
+
+export const briefUpdateSchema = z
+  .object({
+    angle: z.string().max(500).optional(),
+    proof: z.string().max(1000).optional(),
+    cta: z.string().max(200).optional(),
+    mediaDirection: z.string().max(500).optional(),
+    constraints: z.record(z.unknown()).optional(),
+  })
+  .strict();
+
+export const learningNoteSchema = z
+  .object({
+    note: z.string().min(1).max(2000),
+    tags: z.array(z.string()).max(5).optional(),
+  })
+  .strict();
+
+export const ideaQuerySchema = z
+  .object({
+    status: z.string().optional(),
+    pillar: z.string().optional(),
+    platform: z.string().optional(),
+    limit: z.coerce.number().min(1).max(100).default(50),
+    offset: z.coerce.number().min(0).default(0),
+  })
+  .partial();
+
+export const draftQuerySchema = z
+  .object({
+    status: z.string().optional(),
+    platform: z.string().optional(),
+    format: z.string().optional(),
+    limit: z.coerce.number().min(1).max(100).default(50),
+    offset: z.coerce.number().min(0).default(0),
+  })
+  .partial();
+
+export const postQuerySchema = z
+  .object({
+    status: z.string().optional(),
+    scheduledAfter: z.string().optional(),
+    scheduledBefore: z.string().optional(),
+    limit: z.coerce.number().min(1).max(100).default(50),
+    offset: z.coerce.number().min(0).default(0),
+  })
+  .partial();

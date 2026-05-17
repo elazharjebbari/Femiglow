@@ -50,7 +50,7 @@ describe('MSW — Content Studio API handlers', () => {
 
   describe('PATCH /api/admin/content-studio/drafts/:id', () => {
     it('met à jour un draft existant', async () => {
-      const draftId = state.drafts[0].id;
+      const draftId = state.drafts[0]!.id;
       const res = await fetch(`http://localhost/api/admin/content-studio/drafts/${draftId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -73,7 +73,7 @@ describe('MSW — Content Studio API handlers', () => {
 
   describe('POST /api/admin/content-studio/drafts/:id/approve', () => {
     it('approuve un draft et crée un post', async () => {
-      const draftId = state.drafts[0].id;
+      const draftId = state.drafts[0]!.id;
       const res = await fetch(`http://localhost/api/admin/content-studio/drafts/${draftId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

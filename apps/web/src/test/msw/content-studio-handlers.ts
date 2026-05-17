@@ -3,6 +3,7 @@
  * Utilisés par les tests d'intégration qui mockent la couche API.
  */
 import { http, HttpResponse } from 'msw';
+import type { ContentPillar, ContentObjective, ContentPlatform, ContentFormat, ContentDraft } from '@/lib/content-studio/types';
 import {
   buildContentIdea,
   buildContentDraft,
@@ -39,10 +40,10 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       inc(state, 'POST /ideas');
       const body = (await request.json()) as Record<string, unknown>;
       const idea = buildContentIdea({
-        pillar: (body.pillar as string) ?? 'rituel',
-        objective: (body.objective as string) ?? 'consideration',
-        platform: (body.platform as string) ?? 'instagram',
-        format: (body.format as string) ?? 'post',
+        pillar: (body.pillar as ContentPillar) ?? 'rituel',
+        objective: (body.objective as ContentObjective) ?? 'consideration',
+        platform: (body.platform as ContentPlatform) ?? 'instagram',
+        format: (body.format as ContentFormat) ?? 'post',
         prompt: (body.prompt as string) ?? '',
         status: 'idea',
       });
@@ -55,7 +56,7 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       inc(state, 'POST /ideas/:id/generate');
       const idea = state.ideas.find((i) => i.id === params.id);
       if (!idea) {
-        return HttpResponse.json({ error: 'Idea not found' }, { status: 404 });
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Idea not found' } }, { status: 404 });
       }
       const updatedIdea = { ...idea, status: 'brief' as const };
       const draft = buildContentDraft({ briefId: idea.id });
@@ -71,9 +72,13 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       const body = (await request.json()) as Record<string, unknown>;
       const idx = state.drafts.findIndex((d) => d.id === params.id);
       if (idx === -1) {
-        return HttpResponse.json({ error: 'Draft not found' }, { status: 404 });
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Draft not found' } }, { status: 404 });
       }
-      state.drafts[idx] = { ...state.drafts[idx], ...body };
+      const patch = body as Record<string, unknown>;
+      const updated = { ...state.drafts[idx] };
+      if (typeof patch.caption === 'string') updated.caption = patch.caption;
+      if (typeof patch.status === 'string') updated.status = patch.status as ContentDraft['status'];
+      state.drafts[idx] = updated as ContentDraft;
       return HttpResponse.json({ draft: state.drafts[idx] });
     }),
 
@@ -82,9 +87,9 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       inc(state, 'POST /drafts/:id/approve');
       const idx = state.drafts.findIndex((d) => d.id === params.id);
       if (idx === -1) {
-        return HttpResponse.json({ error: 'Draft not found' }, { status: 404 });
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Draft not found' } }, { status: 404 });
       }
-      state.drafts[idx] = { ...state.drafts[idx], status: 'approved' };
+      state.drafts[idx] = { ...state.drafts[idx], status: 'approved' as const } as ContentDraft;
       const post = buildContentPost({ draftId: params.id as string });
       state.posts.unshift(post);
       return HttpResponse.json({ post });
@@ -119,7 +124,7 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       inc(state, 'POST /posts/:id/postiz-draft');
       const post = state.posts.find((p) => p.id === params.id);
       if (!post) {
-        return HttpResponse.json({ error: 'Post not found' }, { status: 404 });
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Post not found' } }, { status: 404 });
       }
       const delivery = buildContentPostizDelivery({ postId: params.id as string });
       state.deliveries.unshift(delivery);

@@ -43,6 +43,7 @@ export const contentIdeas = pgTable(
     prompt: text('prompt').notNull(),
     sourceType: text('source_type'),
     sourceRef: text('source_ref'),
+    rejectionReason: text('rejectionReason'),
     status: text('status').notNull().default('idea'),
     createdBy: text('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -94,6 +95,8 @@ export const contentDrafts = pgTable(
     altText: text('alt_text'),
     hashtags: jsonb('hashtags_json').notNull().default([]),
     status: text('status').notNull().default('generated'),
+    rejectionReason: text('rejectionReason'),
+    parentDraftId: text('parentId'),
     scoreTotal: integer('score_total'),
     editedBy: text('edited_by').references(() => adminUsers.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -102,6 +105,7 @@ export const contentDrafts = pgTable(
   (t) => ({
     statusIdx: index('content_draft_status_idx').on(t.status, t.createdAt),
     briefIdx: index('content_draft_brief_idx').on(t.briefId),
+    parentIdx: index('content_draft_parent_idx').on(t.parentDraftId),
   }),
 );
 
@@ -160,6 +164,8 @@ export const contentBrandReviews = pgTable(
     scoreTotal: integer('score_total').notNull(),
     score: jsonb('score_json').notNull().default({}),
     violations: jsonb('violations_json').notNull().default([]),
+    reviewerId: text('reviewerId').references(() => adminUsers.id, { onDelete: 'set null' }),
+    reviewType: text('reviewType').notNull().default('auto'),
     rulesVersion: text('rules_version').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -180,6 +186,9 @@ export const contentPosts = pgTable(
     publishedAt: timestamp('published_at', { withTimezone: true }),
     utm: jsonb('utm_json').notNull().default({}),
     approvedBy: text('approved_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    cancelledBy: text('cancelledBy').references(() => adminUsers.id, { onDelete: 'set null' }),
+    cancelledAt: timestamp('cancelledAt', { withTimezone: true }),
+    cancelReason: text('cancelReason'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

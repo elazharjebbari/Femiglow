@@ -15,10 +15,12 @@ import {
   approveDraft,
   createBrief,
   createDrafts,
+  createDraftVariation,
   createIdea,
   getDraft,
   getIdea,
   getLatestReview,
+  getPost,
   getPostForDraft,
   getPrimaryAsset,
   insertGenerationRun,
@@ -30,6 +32,10 @@ import {
   listPostizDeliveriesForPosts,
   listPrimaryAssetsForDrafts,
   listPosts,
+  listReviewsByDraft,
+  rejectDraft,
+  cancelPost,
+  archiveEntity,
   updatePostPlanning,
   updateDraft,
   updateIdeaStatus,
@@ -378,6 +384,55 @@ export async function approveContentDraft(input: {
     meta: { score: review.scoreTotal },
   });
   return post;
+}
+
+export async function rejectContentDraft(input: { draftId: string; reason?: string }) {
+  const draft = await requireDraft(input.draftId);
+  assertTransition(draft.status, 'rejected');
+  return rejectDraft(draft.id, input.reason);
+}
+
+export async function cancelScheduledPost(input: { postId: string; reason?: string; actorId?: string | null }) {
+  const post = await getPost(input.postId);
+  if (!post) throw new HttpError('not_found', 'Post introuvable.');
+  assertTransition(post.status, 'cancelled');
+  return cancelPost(post.id, input.reason, input.actorId);
+}
+
+export async function archiveContentIdea(ideaId: string) {
+  const idea = await getIdea(ideaId);
+  if (!idea) throw new HttpError('not_found', 'Idée introuvable.');
+  assertTransition(idea.status, 'archived');
+  await updateIdeaStatus(ideaId, 'archived');
+  return getIdea(ideaId);
+}
+
+export async function archiveContentDraft(draftId: string) {
+  const draft = await getDraft(draftId);
+  if (!draft) throw new HttpError('not_found', 'Brouillon introuvable.');
+  assertTransition(draft.status, 'archived');
+  return archiveEntity('draft', draftId);
+}
+
+export async function archiveContentPost(postId: string) {
+  const post = await getPost(postId);
+  if (!post) throw new HttpError('not_found', 'Post introuvable.');
+  assertTransition(post.status, 'archived');
+  return archiveEntity('post', postId);
+}
+
+export async function createVariation(input: { draftId: string; variantLabel?: string }) {
+  const draft = await requireDraft(input.draftId);
+  assertTransition(draft.status, 'generated');
+  return createDraftVariation(draft.id, { variantLabel: input.variantLabel });
+}
+
+export async function reschedulePost(input: { postId: string; scheduledAt: string }) {
+  const post = await getPost(input.postId);
+  if (!post) throw new HttpError('not_found', 'Post introuvable.');
+  const date = new Date(input.scheduledAt);
+  if (Number.isNaN(date.getTime())) throw new HttpError('invalid_input', 'Date invalide.');
+  return updatePostPlanning({ postId: post.id, scheduledAt: date });
 }
 
 export async function syncPostizIntegrations() {
