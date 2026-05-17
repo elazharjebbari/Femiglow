@@ -94,27 +94,30 @@ describe('snap provider payload', () => {
     });
     expect(event.user_data.em).toEqual(['e'.repeat(64)]);
     expect(event.user_data.ph).toEqual(['p'.repeat(64)]);
-    expect(event.user_data.geo_city).toBe('Marrakech');
-    expect(event.user_data.geo_country).toBe('MA');
+    expect(event.user_data.ct).toBe('Marrakech');
+    expect(event.user_data.country).toBe('MA');
     expect(event.user_data.sc_click_id).toBe('snap-click-1');
     expect(event.custom_data).toMatchObject({
+      event_id: 'evt_snap_dedup_1',
       currency: 'MAD',
       value: 399,
       transaction_id: 'order-42',
+      order_id: 'order-42',
       client_deduplication_id: 'evt_snap_dedup_1',
       event_tag: 'femiglow',
       description: 'Kit FemiGlow',
       uuid_c1: 'anon_123',
-      item_category: 'beauty',
     });
-    expect(event.custom_data.item_ids).toEqual(['kit-1']);
+    expect(event.custom_data.content_ids).toEqual(['kit-1']);
+    expect(event.custom_data.content_category).toEqual(['beauty']);
+    expect(event.custom_data.number_items).toEqual(['1']);
   });
 
-  it('includes geo_region from params', () => {
+  it('includes st (geo_region) from params', () => {
     const payload = __test__.buildPayload(provider(), ctx({
       params: { ...ctx().params, geo_region: 'Casablanca-Settat' },
     })) as any;
-    expect(payload.data[0].user_data.geo_region).toBe('Casablanca-Settat');
+    expect(payload.data[0].user_data.st).toBe('Casablanca-Settat');
   });
 
   it('includes sc_cookie1 from params', () => {
@@ -126,11 +129,11 @@ describe('snap provider payload', () => {
     expect(payload.data[0].user_data.sc_cookie1).toBe('snap_cookie_value_123');
   });
 
-  it('uses params.geo_region for geo_region', () => {
+  it('uses params.geo_region for st', () => {
     const payload = __test__.buildPayload(provider(), ctx({
       params: { ...ctx().params, geo_region: 'Marrakech-Safi' },
     })) as any;
-    expect(payload.data[0].user_data.geo_region).toBe('Marrakech-Safi');
+    expect(payload.data[0].user_data.st).toBe('Marrakech-Safi');
   });
 
   it('uses server-side hashIdentity when userData is absent', () => {
@@ -294,7 +297,7 @@ describe('snap CAPI v3 format compliance', () => {
     expect(p2.data[0].user_data.sc_click_id).toBe('param-sc-click-value');
   });
 
-  it('number_items est calculé depuis la somme des quantités des items', () => {
+  it('number_items est un array de strings représentant les quantités (Snap v3)', () => {
     const payload = __test__.buildPayload(provider(), ctx({
       params: {
         ...ctx().params,
@@ -304,7 +307,7 @@ describe('snap CAPI v3 format compliance', () => {
         ],
       },
     })) as any;
-    expect(payload.data[0].custom_data.number_items).toBe(5);
+    expect(payload.data[0].custom_data.number_items).toEqual(['2', '3']);
   });
 
   it('payload sans identity ni userData : les champs hash sont undefined', () => {
@@ -319,19 +322,18 @@ describe('snap CAPI v3 format compliance', () => {
     expect(ud.ln).toBeUndefined();
   });
 
-  it('geo_city et geo_country sont résolus avec fallback identity → address → params', () => {
-    // identity.city wins
+  it('geo_city et geo_country sont hashés quand identity les fournit en texte brut', () => {
+    const crypto = require('node:crypto');
+    // identity.city/country → hashIdentity hashes them → hashed.ct / hashed.country
     const p1 = __test__.buildPayload(provider(), ctx({
       identity: { city: 'Rabat', country: 'MA' },
-      userData: {
-        sha256_email_address: 'e'.repeat(64),
-        address: { city: 'Marrakech', country: 'DZ' },
-      },
+      userData: undefined,
     })) as any;
-    expect(p1.data[0].user_data.geo_city).toBe('Rabat');
-    expect(p1.data[0].user_data.geo_country).toBe('MA');
+    // hashIdentity normalizes and hashes: city → sha256('rabat'), country → sha256('ma')
+    expect(p1.data[0].user_data.ct).toMatch(/^[a-f0-9]{64}$/);
+    expect(p1.data[0].user_data.country).toMatch(/^[a-f0-9]{64}$/);
 
-    // address.city fallback quand identity absent
+    // address.city (plain text) fallback quand identity absent
     const p2 = __test__.buildPayload(provider(), ctx({
       identity: undefined,
       userData: {
@@ -339,8 +341,8 @@ describe('snap CAPI v3 format compliance', () => {
         address: { city: 'Marrakech', country: 'MA' },
       },
     })) as any;
-    expect(p2.data[0].user_data.geo_city).toBe('Marrakech');
-    expect(p2.data[0].user_data.geo_country).toBe('MA');
+    expect(p2.data[0].user_data.ct).toBe('Marrakech');
+    expect(p2.data[0].user_data.country).toBe('MA');
   });
 });
 
@@ -371,5 +373,53 @@ describe('snap event mapping coverage', () => {
   it('les événements non mappés pour Snap retournent CUSTOM_EVENT en fallback', () => {
     const payload = __test__.buildPayload(provider(), ctx({ eventName: 'scroll_depth' })) as any;
     expect(payload.data[0].event_name).toBe('CUSTOM_EVENT');
+  });
+
+  it('PURCHASE inclut order_id et payment_info_available et delivery_method', () => {
+    const payload = __test__.buildPayload(provider(), ctx({ eventName: 'purchase' })) as any;
+    expect(payload.data[0].custom_data.order_id).toBe('order-42');
+    expect(payload.data[0].custom_data.payment_info_available).toBe(1);
+    expect(payload.data[0].custom_data.delivery_method).toBe('cod');
+  });
+
+  it('START_CHECKOUT inclut payment_info_available', () => {
+    const payload = __test__.buildPayload(provider(), ctx({ eventName: 'checkout_intent' })) as any;
+    expect(payload.data[0].event_name).toBe('START_CHECKOUT');
+    expect(payload.data[0].custom_data.payment_info_available).toBe(1);
+  });
+
+  it('ADD_BILLING inclut sign_up_method', () => {
+    const payload = __test__.buildPayload(provider(), ctx({ eventName: 'add_payment_info' })) as any;
+    expect(payload.data[0].event_name).toBe('ADD_BILLING');
+    expect(payload.data[0].custom_data.sign_up_method).toBe('phone');
+  });
+
+  it('custom_data.content_ids remplace item_ids (Snap v3)', () => {
+    const payload = __test__.buildPayload(provider(), ctx()) as any;
+    expect(payload.data[0].custom_data.content_ids).toEqual(['kit-1']);
+    expect(payload.data[0].custom_data.item_ids).toBeUndefined();
+  });
+
+  it('custom_data.content_category est un array (Snap v3)', () => {
+    const payload = __test__.buildPayload(provider(), ctx()) as any;
+    expect(payload.data[0].custom_data.content_category).toEqual(['beauty']);
+    expect(payload.data[0].custom_data.item_category).toBeUndefined();
+  });
+
+  it('custom_data.event_id est présent (Snap v3 dedup)', () => {
+    const payload = __test__.buildPayload(provider(), ctx()) as any;
+    expect(payload.data[0].custom_data.event_id).toBe('evt_snap_dedup_1');
+  });
+
+  it('userAgent en clair est passé dans client_user_agent quand disponible', () => {
+    const payload = __test__.buildPayload(provider(), ctx({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)',
+    })) as any;
+    expect(payload.data[0].user_data.client_user_agent).toBe('Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)');
+  });
+
+  it('userAgent absent: fallback sur uaHash', () => {
+    const payload = __test__.buildPayload(provider(), ctx()) as any;
+    expect(payload.data[0].user_data.client_user_agent).toBe('ua_hash');
   });
 });

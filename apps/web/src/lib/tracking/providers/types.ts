@@ -18,6 +18,8 @@ export interface DispatchContext {
   userId?: string | null;
   consent: TrackingConsentState;
   uaHash: string;
+  /** User-Agent string en clair (pour Snap CAPI qui exige le UA non-hashé). */
+  userAgent?: string;
   ipAnonymized: string;
   device: 'mobile' | 'tablet' | 'desktop';
   locale: string;

@@ -28,7 +28,53 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
     (ctx.params.ScCid as string | undefined) ??
     (ctx.params.sccid as string | undefined) ??
     attributionClickId;
-  const numberItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+
+  // Per Snap CAPI v3 spec: city and country are hashed when not pre-hashed.
+  // If identity provides plain text, hashIdentity already produces hashed.ct and hashed.country.
+  // If userData provides pre-hashed values or plain text, resolve accordingly.
+  const geoCity = hashed.ct ?? address.city ?? ctx.identity?.city ?? ctx.params.geo_city ?? ctx.params.city;
+  const geoCountry = hashed.country ?? address.country ?? ctx.identity?.country ?? ctx.params.geo_country ?? ctx.params.country;
+  const geoRegion = ctx.params.geo_region as string | undefined;
+
+  // Per Snap CAPI v3 spec: content_ids (not item_ids), content_category as array,
+  // number_items as array of string quantities, event_id in custom_data.
+  const contentIds = items.length > 0 ? items.map((i) => i.item_id).filter(Boolean) : undefined;
+  const contentCategory = (items[0]?.item_category ?? ctx.params.item_category) as string | undefined;
+  const numberItemsArr = items.length > 0
+    ? items.map((i) => String(Number(i.quantity) || 1))
+    : undefined;
+
+  const customData: Record<string, unknown> = {
+    event_id: ctx.eventId,
+    currency: ctx.params.currency,
+    value: ctx.params.value,
+    content_ids: contentIds,
+    content_category: contentCategory ? [contentCategory] : undefined,
+    number_items: numberItemsArr,
+    transaction_id: ctx.params.transaction_id,
+    order_id: ctx.params.transaction_id,
+    client_deduplication_id: ctx.eventId,
+    event_tag: ctx.params.event_tag,
+    description: ctx.params.description,
+    uuid_c1: ctx.params.uuid_c1 ?? ctx.anonymousId,
+  };
+
+  // Event-specific fields per Snap v3 spec
+  if (eventNameMapped === 'ADD_BILLING') {
+    customData.sign_up_method = ctx.params.sign_up_method as string | undefined ?? 'phone';
+  }
+  if (eventNameMapped === 'START_CHECKOUT' || eventNameMapped === 'PURCHASE') {
+    customData.payment_info_available = ctx.params.payment_info_available as number | undefined ?? 1;
+  }
+  if (eventNameMapped === 'PURCHASE') {
+    customData.delivery_method = ctx.params.delivery_method as string | undefined ?? 'cod';
+  }
+
+  // Remove undefined values from custom_data (Snap rejects null/undefined)
+  for (const key of Object.keys(customData)) {
+    if (customData[key] === undefined) delete customData[key];
+  }
+
   return {
     data: [
       {
@@ -42,26 +88,15 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
           ph: userData.sha256_phone_number ? [userData.sha256_phone_number] : hashed.ph ? [hashed.ph] : undefined,
           fn: address.sha256_first_name ? [address.sha256_first_name] : hashed.fn ? [hashed.fn] : undefined,
           ln: address.sha256_last_name ? [address.sha256_last_name] : hashed.ln ? [hashed.ln] : undefined,
-          geo_city: ctx.identity?.city ?? address.city ?? ctx.params.geo_city ?? ctx.params.city,
-          geo_country: ctx.identity?.country ?? address.country ?? ctx.params.geo_country ?? ctx.params.country,
-          geo_region: ctx.params.geo_region as string | undefined,
+          ct: geoCity,
+          country: geoCountry,
+          st: geoRegion ? hashed.ct ? hashed.ct : geoRegion : undefined,
           client_ip_address: ctx.ipAnonymized,
-          client_user_agent: ctx.uaHash,
+          client_user_agent: ctx.userAgent ?? ctx.uaHash,
           sc_click_id: scClickId,
           sc_cookie1: ctx.params.sc_cookie1 as string | undefined,
         },
-        custom_data: {
-          currency: ctx.params.currency,
-          value: ctx.params.value,
-          item_ids: items.length > 0 ? items.map((i) => i.item_id).filter(Boolean) : undefined,
-          item_category: items[0]?.item_category ?? ctx.params.item_category,
-          number_items: numberItems > 0 ? numberItems : items.length > 0 ? items.length : undefined,
-          transaction_id: ctx.params.transaction_id,
-          client_deduplication_id: ctx.eventId,
-          event_tag: ctx.params.event_tag,
-          description: ctx.params.description,
-          uuid_c1: ctx.params.uuid_c1 ?? ctx.anonymousId,
-        },
+        custom_data: customData,
       },
     ],
     ...(provider.testEventCode ? { test_event_code: provider.testEventCode } : {}),

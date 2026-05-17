@@ -203,6 +203,7 @@ export async function POST(request: Request): Promise<Response> {
         userId: event.user.user_id ?? null,
         consent: event.consent as TrackingConsentState,
         uaHash: enrichment.uaHash,
+        userAgent: request.headers.get('user-agent') ?? undefined,
         ipAnonymized: enrichment.ipAnonymized,
         device: enrichment.device,
         locale: event.page.locale || enrichment.locale,
