@@ -14,11 +14,13 @@ import { assertTransition } from './state-machine';
 import {
   approveDraft,
   createBrief,
+  createCampaign,
   createDrafts,
   createDraftVariation,
   createIdea,
   createLearningNote,
   getBrief,
+  getCampaign,
   getDraft,
   getIdea,
   getLatestReview,
@@ -27,6 +29,7 @@ import {
   getPrimaryAsset,
   insertGenerationRun,
   insertPostizDelivery,
+  listCampaigns,
   listLearningNotesForPost,
   listLearningNotes,
   listPerformanceSnapshotsForPosts,
@@ -40,6 +43,8 @@ import {
   rejectDraft,
   cancelPost,
   archiveEntity,
+  updateCampaign,
+  updateCampaignStatus,
   updateBrief,
   updatePostPlanning,
   updateDraft,
@@ -56,7 +61,7 @@ import {
 import type { ContentIdea } from './types';
 import { checkDailyBudget } from './budget';
 
-export { listIdeas, listDrafts, listPosts } from './repository';
+export { listIdeas, listDrafts, listPosts, listCampaigns, getCampaign, createCampaign, updateCampaign, updateCampaignStatus } from './repository';
 
 export interface StudioMediaItem {
   id: string;

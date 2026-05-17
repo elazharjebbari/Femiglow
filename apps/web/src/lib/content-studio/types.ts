@@ -182,6 +182,18 @@ export interface ContentLearningNote {
   createdAt: Date;
 }
 
+export interface ContentCampaign {
+  id: string;
+  name: string;
+  objective: string;
+  status: 'draft' | 'active' | 'archived';
+  startsAt: Date | null;
+  endsAt: Date | null;
+  createdBy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ContentStudioOverview {
   ideas: ContentIdea[];
   drafts: ContentDraft[];

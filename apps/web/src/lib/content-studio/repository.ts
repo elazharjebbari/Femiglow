@@ -5,6 +5,7 @@ import {
   contentAssetBindings,
   contentBrandReviews,
   contentBriefs,
+  contentCampaigns,
   contentDrafts,
   contentGenerationRuns,
   contentIdeas,
@@ -18,6 +19,7 @@ import type {
   ContentAssetBinding,
   ContentBrandReview,
   ContentBrief,
+  ContentCampaign,
   ContentDraft,
   ContentFormat,
   ContentGenerationRun,
@@ -33,6 +35,7 @@ import type {
 } from './types';
 
 interface Store {
+  contentCampaigns: Map<string, ContentCampaign>;
   contentIdeas: Map<string, ContentIdea>;
   contentBriefs: Map<string, ContentBrief>;
   contentDrafts: Map<string, ContentDraft>;
@@ -47,6 +50,7 @@ interface Store {
 
 function store(): Store {
   const s = memoryStore() as unknown as Store & Record<string, unknown>;
+  if (!s.contentCampaigns) s.contentCampaigns = new Map();
   if (!s.contentIdeas) s.contentIdeas = new Map();
   if (!s.contentBriefs) s.contentBriefs = new Map();
   if (!s.contentDrafts) s.contentDrafts = new Map();
@@ -58,6 +62,20 @@ function store(): Store {
   if (!s.contentPerformanceSnapshots) s.contentPerformanceSnapshots = new Map();
   if (!s.contentLearningNotes) s.contentLearningNotes = new Map();
   return s;
+}
+
+function rowCampaign(row: typeof contentCampaigns.$inferSelect): ContentCampaign {
+  return {
+    id: row.id,
+    name: row.name,
+    objective: row.objective,
+    status: row.status as ContentCampaign['status'],
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 function rowIdea(row: typeof contentIdeas.$inferSelect): ContentIdea {
@@ -1000,4 +1018,118 @@ export async function listLearningNotes(limit = 50): Promise<ContentLearningNote
   return Array.from(store().contentLearningNotes.values())
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, limit);
+}
+
+// --- Campaigns ---
+
+export async function listCampaigns(filters?: { status?: string }): Promise<ContentCampaign[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(contentCampaigns)
+      .where(filters?.status ? eq(contentCampaigns.status, filters.status) : undefined)
+      .orderBy(desc(contentCampaigns.createdAt));
+    return rows.map(rowCampaign);
+  }
+  let items = Array.from(store().contentCampaigns.values());
+  if (filters?.status) items = items.filter((c) => c.status === filters.status);
+  return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+export async function getCampaign(id: string): Promise<ContentCampaign | null> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(contentCampaigns)
+      .where(eq(contentCampaigns.id, id))
+      .limit(1);
+    return rows[0] ? rowCampaign(rows[0]) : null;
+  }
+  return store().contentCampaigns.get(id) ?? null;
+}
+
+export async function createCampaign(input: {
+  name: string;
+  objective: string;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+  createdBy?: string | null;
+}): Promise<ContentCampaign> {
+  const id = createId('cmp');
+  const now = new Date();
+  const campaign: ContentCampaign = {
+    id,
+    name: input.name,
+    objective: input.objective,
+    status: 'draft',
+    startsAt: input.startsAt ?? null,
+    endsAt: input.endsAt ?? null,
+    createdBy: input.createdBy ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle.insert(contentCampaigns).values({
+      id,
+      name: input.name,
+      objective: input.objective,
+      status: 'draft',
+      startsAt: input.startsAt ?? null,
+      endsAt: input.endsAt ?? null,
+      createdBy: input.createdBy ?? null,
+    });
+    return campaign;
+  }
+  store().contentCampaigns.set(id, campaign);
+  return campaign;
+}
+
+export async function updateCampaignStatus(id: string, status: ContentCampaign['status']): Promise<ContentCampaign> {
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle
+      .update(contentCampaigns)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(contentCampaigns.id, id));
+    const rows = await drizzle
+      .select()
+      .from(contentCampaigns)
+      .where(eq(contentCampaigns.id, id))
+      .limit(1);
+    if (!rows[0]) throw new Error('Campaign not found');
+    return rowCampaign(rows[0]);
+  }
+  const campaign = store().contentCampaigns.get(id);
+  if (!campaign) throw new Error('Campaign not found');
+  campaign.status = status;
+  campaign.updatedAt = new Date();
+  return campaign;
+}
+
+export async function updateCampaign(id: string, patch: { name?: string; objective?: string; startsAt?: Date | null; endsAt?: Date | null }): Promise<ContentCampaign> {
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle
+      .update(contentCampaigns)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(contentCampaigns.id, id));
+    const rows = await drizzle
+      .select()
+      .from(contentCampaigns)
+      .where(eq(contentCampaigns.id, id))
+      .limit(1);
+    if (!rows[0]) throw new Error('Campaign not found');
+    return rowCampaign(rows[0]);
+  }
+  const campaign = store().contentCampaigns.get(id);
+  if (!campaign) throw new Error('Campaign not found');
+  if (patch.name !== undefined) campaign.name = patch.name;
+  if (patch.objective !== undefined) campaign.objective = patch.objective;
+  if (patch.startsAt !== undefined) campaign.startsAt = patch.startsAt;
+  if (patch.endsAt !== undefined) campaign.endsAt = patch.endsAt;
+  campaign.updatedAt = new Date();
+  return campaign;
 }

@@ -94,6 +94,30 @@ export const learningNoteSchema = z
   })
   .strict();
 
+export const campaignCreateSchema = z
+  .object({
+    name: z.string().min(1).max(200),
+    objective: z.string().min(1).max(500),
+    startsAt: z.string().datetime().nullable().optional(),
+    endsAt: z.string().datetime().nullable().optional(),
+  })
+  .strict();
+
+export const campaignUpdateSchema = z
+  .object({
+    name: z.string().min(1).max(200).optional(),
+    objective: z.string().min(1).max(500).optional(),
+    startsAt: z.string().datetime().nullable().optional(),
+    endsAt: z.string().datetime().nullable().optional(),
+  })
+  .strict();
+
+export const campaignQuerySchema = z
+  .object({
+    status: z.enum(['draft', 'active', 'archived']).optional(),
+  })
+  .partial();
+
 export const ideaQuerySchema = z
   .object({
     status: z.string().optional(),
