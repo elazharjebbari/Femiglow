@@ -273,4 +273,19 @@ describe('MSW — Content Studio API handlers', () => {
       const res = await fetch('http://localhost/api/admin/content-studio/drafts/nonexistent/reviews');
       expect(res.status).toBe(404);
     });
-  });});
+  });
+
+  describe('PATCH /api/admin/content-studio/briefs/:id', () => {
+    it('met à jour un brief existant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/briefs/brief_test1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ angle: 'Nouvel angle éditorial', cta: 'Achetez maintenant' }),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.brief.angle).toBe('Nouvel angle éditorial');
+      expect(json.brief.cta).toBe('Achetez maintenant');
+    });
+  });
+});

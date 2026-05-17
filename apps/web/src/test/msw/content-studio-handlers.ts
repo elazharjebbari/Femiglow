@@ -229,5 +229,27 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       }
       return HttpResponse.json({ reviews: [] });
     }),
+
+    // PATCH /api/admin/content-studio/briefs/:id — update brief
+    http.patch('http://localhost/api/admin/content-studio/briefs/:id', async ({ params, request }) => {
+      inc(state, 'PATCH /briefs/:id');
+      const body = (await request.json()) as Record<string, unknown>;
+      const briefId = params.id as string;
+      // Return a mock brief with updated fields
+      return HttpResponse.json({
+        brief: {
+          id: briefId,
+          ideaId: 'idea_test1',
+          angle: (body.angle as string) ?? 'Angle par défaut',
+          proof: (body.proof as string) ?? null,
+          cta: (body.cta as string) ?? 'En savoir plus',
+          mediaDirection: (body.mediaDirection as string) ?? null,
+          constraints: (body.constraints as Record<string, unknown>) ?? {},
+          version: 1,
+          createdBy: null,
+          createdAt: new Date('2026-01-01').toISOString(),
+        },
+      });
+    }),
   ];
 }

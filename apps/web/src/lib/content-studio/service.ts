@@ -17,6 +17,7 @@ import {
   createDrafts,
   createDraftVariation,
   createIdea,
+  getBrief,
   getDraft,
   getIdea,
   getLatestReview,
@@ -36,6 +37,7 @@ import {
   rejectDraft,
   cancelPost,
   archiveEntity,
+  updateBrief,
   updatePostPlanning,
   updateDraft,
   updateIdeaStatus,
@@ -614,4 +616,10 @@ function postizFilename(slug: string, url: string): string {
   const pathname = /^https?:\/\//i.test(url) ? new URL(url).pathname : url;
   const ext = pathname.match(/\.(webp|jpe?g|png)$/i)?.[1]?.toLowerCase() ?? 'jpg';
   return `${cleanSlug}.${ext === 'jpeg' ? 'jpg' : ext}`;
+}
+
+export async function updateContentBrief(input: { briefId: string; patch: { angle?: string; proof?: string; cta?: string; mediaDirection?: string; constraints?: Record<string, unknown> } }) {
+  const brief = await getBrief(input.briefId);
+  if (!brief) throw new HttpError('not_found', 'Brief introuvable.');
+  return updateBrief(brief.id, input.patch);
 }

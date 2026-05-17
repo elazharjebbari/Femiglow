@@ -261,6 +261,25 @@ export async function getBrief(id: string): Promise<ContentBrief | null> {
   return store().contentBriefs.get(id) ?? null;
 }
 
+export async function updateBrief(id: string, patch: Partial<Pick<ContentBrief, 'angle' | 'proof' | 'cta' | 'mediaDirection' | 'constraints'>>): Promise<ContentBrief | null> {
+  const existing = await getBrief(id);
+  if (!existing) return null;
+  const updated: ContentBrief = { ...existing, ...patch };
+  const drizzle = db();
+  if (drizzle) {
+    const setFields: Record<string, unknown> = {};
+    if (patch.angle !== undefined) setFields.angle = patch.angle;
+    if (patch.proof !== undefined) setFields.proof = patch.proof;
+    if (patch.cta !== undefined) setFields.cta = patch.cta;
+    if (patch.mediaDirection !== undefined) setFields.mediaDirection = patch.mediaDirection;
+    if (patch.constraints !== undefined) setFields.constraints = patch.constraints;
+    await drizzle.update(contentBriefs).set(setFields).where(eq(contentBriefs.id, id));
+  } else {
+    store().contentBriefs.set(id, updated);
+  }
+  return updated;
+}
+
 export async function getLatestBriefForIdea(ideaId: string): Promise<ContentBrief | null> {
   const drizzle = db();
   if (drizzle) {
