@@ -86,7 +86,7 @@ export function ContentStudioClient({
   return (
     <div className="space-y-5">
       <StudioGuide />
-      <EditorialCalendar posts={posts} drafts={drafts} deliveries={deliveries} />
+      <EditorialCalendar posts={posts} drafts={drafts} deliveries={deliveries} onSelectDraft={setSelectedDraftId} />
       <PostizHealthPanel
         posts={posts}
         drafts={drafts}

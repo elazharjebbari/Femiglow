@@ -53,21 +53,27 @@ const delivery: ContentPostizDelivery = {
 };
 
 describe('EditorialCalendar', () => {
-  it('affiche le message vide quand il n’y a pas de posts', () => {
+  it('affiche le calendrier avec les contrôles de vue', () => {
     render(<EditorialCalendar posts={[]} drafts={[]} deliveries={[]} />);
-    expect(screen.getByText(/Aucun post approuvé/i)).toBeInTheDocument();
+    expect(screen.getByText('Semaine')).toBeInTheDocument();
+    expect(screen.getByText('Mois')).toBeInTheDocument();
   });
 
-  it('affiche les posts avec leur statut et livraison', () => {
+  it('affiche les posts dans la grille calendrier', () => {
     render(<EditorialCalendar posts={[post]} drafts={[draft]} deliveries={[delivery]} />);
     expect(screen.getByText('Hook test')).toBeInTheDocument();
-    expect(screen.getByText(/instagram/i)).toBeInTheDocument();
   });
 
-  it('affiche les métriques Approuvés, Datés, Postiz', () => {
+  it('affiche les métriques Approuvés, Planifiés, Postiz', () => {
     render(<EditorialCalendar posts={[post]} drafts={[draft]} deliveries={[delivery]} />);
     expect(screen.getByText('Approuvés')).toBeInTheDocument();
-    expect(screen.getByText('Datés')).toBeInTheDocument();
+    expect(screen.getByText('Planifiés')).toBeInTheDocument();
     expect(screen.getByText('Postiz')).toBeInTheDocument();
+  });
+
+  it('affiche les en-têtes de jours de la semaine', () => {
+    render(<EditorialCalendar posts={[]} drafts={[]} deliveries={[]} />);
+    expect(screen.getByText('Lun')).toBeInTheDocument();
+    expect(screen.getByText('Dim')).toBeInTheDocument();
   });
 });
