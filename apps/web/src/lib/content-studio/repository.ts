@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db, memoryStore } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
 import {
@@ -198,15 +198,29 @@ export async function createIdea(input: {
   return idea;
 }
 
-export async function listIdeas(): Promise<ContentIdea[]> {
+export async function listIdeas(filters?: { status?: string; pillar?: string; platform?: string; limit?: number; offset?: number }): Promise<ContentIdea[]> {
+  const limit = filters?.limit ?? 100;
+  const offset = filters?.offset ?? 0;
   const drizzle = db();
   if (drizzle) {
-    const rows = await drizzle.select().from(contentIdeas).orderBy(desc(contentIdeas.createdAt)).limit(100);
+    const conditions = [];
+    if (filters?.status) conditions.push(eq(contentIdeas.status, filters.status));
+    if (filters?.pillar) conditions.push(eq(contentIdeas.pillar, filters.pillar));
+    if (filters?.platform) conditions.push(eq(contentIdeas.platform, filters.platform));
+    const rows = await drizzle.select().from(contentIdeas)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(contentIdeas.createdAt))
+      .limit(limit)
+      .offset(offset);
     return rows.map(rowIdea);
   }
-  return Array.from(store().contentIdeas.values()).sort(
+  let items = Array.from(store().contentIdeas.values()).sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
   );
+  if (filters?.status) items = items.filter((i) => i.status === filters.status);
+  if (filters?.pillar) items = items.filter((i) => i.pillar === filters.pillar);
+  if (filters?.platform) items = items.filter((i) => i.platform === filters.platform);
+  return items.slice(offset, offset + limit);
 }
 
 export async function getIdea(id: string): Promise<ContentIdea | null> {
@@ -346,15 +360,29 @@ export async function createDrafts(
   return drafts;
 }
 
-export async function listDrafts(): Promise<ContentDraft[]> {
+export async function listDrafts(filters?: { status?: string; platform?: string; format?: string; limit?: number; offset?: number }): Promise<ContentDraft[]> {
+  const limit = filters?.limit ?? 100;
+  const offset = filters?.offset ?? 0;
   const drizzle = db();
   if (drizzle) {
-    const rows = await drizzle.select().from(contentDrafts).orderBy(desc(contentDrafts.createdAt)).limit(100);
+    const conditions = [];
+    if (filters?.status) conditions.push(eq(contentDrafts.status, filters.status));
+    if (filters?.platform) conditions.push(eq(contentDrafts.platform, filters.platform));
+    if (filters?.format) conditions.push(eq(contentDrafts.format, filters.format));
+    const rows = await drizzle.select().from(contentDrafts)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(contentDrafts.createdAt))
+      .limit(limit)
+      .offset(offset);
     return rows.map(rowDraft);
   }
-  return Array.from(store().contentDrafts.values()).sort(
+  let items = Array.from(store().contentDrafts.values()).sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
   );
+  if (filters?.status) items = items.filter((d) => d.status === filters.status);
+  if (filters?.platform) items = items.filter((d) => d.platform === filters.platform);
+  if (filters?.format) items = items.filter((d) => d.format === filters.format);
+  return items.slice(offset, offset + limit);
 }
 
 export async function getDraft(id: string): Promise<ContentDraft | null> {
@@ -612,15 +640,34 @@ export async function getPost(id: string): Promise<ContentPost | null> {
   return store().contentPosts.get(id) ?? null;
 }
 
-export async function listPosts(): Promise<ContentPost[]> {
+export async function listPosts(filters?: { status?: string; scheduledAfter?: string; scheduledBefore?: string; limit?: number; offset?: number }): Promise<ContentPost[]> {
+  const limit = filters?.limit ?? 100;
+  const offset = filters?.offset ?? 0;
   const drizzle = db();
   if (drizzle) {
-    const rows = await drizzle.select().from(contentPosts).orderBy(desc(contentPosts.createdAt)).limit(100);
+    const conditions = [];
+    if (filters?.status) conditions.push(eq(contentPosts.status, filters.status));
+    if (filters?.scheduledAfter) conditions.push(desc(contentPosts.scheduledAt));
+    const rows = await drizzle.select().from(contentPosts)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(contentPosts.createdAt))
+      .limit(limit)
+      .offset(offset);
     return rows.map(rowPost);
   }
-  return Array.from(store().contentPosts.values()).sort(
+  let items = Array.from(store().contentPosts.values()).sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
   );
+  if (filters?.status) items = items.filter((p) => p.status === filters.status);
+  if (filters?.scheduledAfter) {
+    const after = new Date(filters.scheduledAfter).getTime();
+    items = items.filter((p) => p.scheduledAt && new Date(p.scheduledAt).getTime() >= after);
+  }
+  if (filters?.scheduledBefore) {
+    const before = new Date(filters.scheduledBefore).getTime();
+    items = items.filter((p) => p.scheduledAt && new Date(p.scheduledAt).getTime() <= before);
+  }
+  return items.slice(offset, offset + limit);
 }
 
 export async function updatePostPlanning(input: {
