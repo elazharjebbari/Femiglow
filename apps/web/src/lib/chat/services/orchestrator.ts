@@ -47,6 +47,7 @@ import { notifyFrustrationSpike } from './frustration-alerts';
 import { detectInlineContact } from './phone-detect';
 import { ragService, type RetrievedChunk } from '../rag/service';
 import { getRuntimeBool } from '../runtime-setting';
+import { computeIdentityHash } from '../repos/identity-hash';
 import { leadRepo } from '../repos/lead';
 import { env } from '@/lib/env';
 
@@ -455,14 +456,27 @@ export async function* streamReply(
         // CHA-225 — Filet de sécurité commerciale.
         //
         // Si l'utilisateur a écrit son numéro EN CLAIR dans son dernier
-        // message ET qu'aucun lead n'existe encore pour la session, on
-        // crée un lead automatique en fallback. Le widget de capture
-        // est tout de même proposé (cf. décision ci-dessus, raison
+        // message ET qu'aucun lead avec cette identité n'existe pour la
+        // session, on crée un lead automatique en fallback. Le widget de
+        // capture est tout de même proposé (cf. décision ci-dessus, raison
         // 'inline-contact') pour le consent RGPD propre. Si le visiteur
         // ferme la conversation sans soumettre le formulaire, on n'a
         // PAS perdu le lead — c'est précisément le bug reporté par
         // l'utilisateur ("ya rien dans les leads de admin").
-        if (!alreadyOffered && phoneDetected) {
+        //
+        // CHA-240 — On vérifie par identité (phone+name hash) et non
+        // par session seule : un visiteur qui donne un numéro différent
+        // dans la même session peut légitimement créer un nouveau lead.
+        if (phoneDetected) {
+          const inlineIdentityHash = computeIdentityHash(
+            detection.phoneE164!,
+            detection.firstName ?? 'Visiteur',
+          );
+          const existingForIdentity = await leadRepo.findBySessionAndIdentity(
+            input.session.id,
+            inlineIdentityHash,
+          );
+          if (!existingForIdentity) {
           try {
             const snapshotMessages = fullHistory.slice(-6).map((m) => ({
               role:
@@ -524,7 +538,8 @@ export async function* streamReply(
               error: (err as Error).message,
             });
           }
-        }
+          } // fin if (!existingForIdentity)
+        } // fin if (phoneDetected)
       }
     } catch (err) {
       logger.warn('chat.orchestrator.lead_decision_failed', {

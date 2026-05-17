@@ -14,7 +14,7 @@
  * `optInEmail` permet d'ajouter l'opt-in marketing après le thank-you
  * (step 4). Ne crée jamais un nouveau lead → mutation pure.
  */
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { requireChatDb } from '@/lib/chat/db/client';
 import {
@@ -23,6 +23,7 @@ import {
   type ChatLeadRow,
 } from '@/lib/chat/db/schema';
 import { createId } from '@/lib/ids';
+import { computeIdentityHash } from '@/lib/chat/repos/identity-hash';
 
 import { normalizePhoneToE164Maroc } from '../schemas/common';
 
@@ -63,8 +64,9 @@ export const wizardLeadRepo = {
   /**
    * Step 1 — crée le lead côté wizard. Le téléphone est normalisé E.164
    * AVANT insert pour garantir l'unicité applicative par numéro.
-   * Si un lead existe déjà pour cette session, retourne le lead existant
-   * sans créer de doublon (upsert atomique via ON CONFLICT).
+   * Si un lead existe déjà pour cette session avec la même identité
+   * (phone + name), retourne le lead existant sans créer de doublon.
+   * Si l'identité diffère, un nouveau lead est créé (multi-identité).
    */
   async createWizardLead(input: CreateWizardLeadInput): Promise<ChatLeadRow> {
     const phoneE164 = normalizePhoneToE164Maroc(input.phone);
@@ -73,6 +75,7 @@ export const wizardLeadRepo = {
     const db = requireChatDb();
     const id = createId('cl');
     const now = new Date();
+    const identityHash = computeIdentityHash(phoneE164, input.firstName.trim());
     const insert: ChatLeadInsert = {
       id,
       sessionId: input.sessionId,
@@ -101,18 +104,19 @@ export const wizardLeadRepo = {
       gclid: input.gclid ?? null,
       fbp: input.fbp ?? null,
       fbc: input.fbc ?? null,
+      identityHash,
     };
     const rows = await db
       .insert(chatLead)
       .values(insert)
-      .onConflictDoNothing({ target: chatLead.sessionId })
+      .onConflictDoNothing({ target: [chatLead.sessionId, chatLead.identityHash] })
       .returning();
     if (rows.length > 0) return rows[0]!;
-    // Conflict: a lead already exists for this session. Fetch it.
+    // Conflict: a lead with this session+identity already exists. Fetch it.
     const existing = await db
       .select()
       .from(chatLead)
-      .where(eq(chatLead.sessionId, input.sessionId))
+      .where(and(eq(chatLead.sessionId, input.sessionId), eq(chatLead.identityHash, identityHash)))
       .limit(1);
     return existing[0]!;
   },

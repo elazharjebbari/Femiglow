@@ -77,6 +77,7 @@ function makeLead(overrides: Partial<ChatLeadRow> = {}): ChatLeadRow {
     consentAt: now,
     visitorId: 'cv_msw_001',
     fingerprintHash: null,
+    identityHash: 'e8e9477d9a5050e08b351ae2ebcf823ac585d88d5cf227af2c2a5fcee324eb04',
     page: '/produit',
     referrer: 'https://google.com',
     utm: { utm_source: 'newsletter' },

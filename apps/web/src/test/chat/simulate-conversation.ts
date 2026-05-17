@@ -247,6 +247,7 @@ export function buildLeadRepoMock() {
           consentAt: insert.consentAt ?? new Date(),
           visitorId: insert.visitorId,
           fingerprintHash: insert.fingerprintHash ?? null,
+          identityHash: insert.identityHash ?? 'test_identity_hash',
           page: insert.page ?? null,
           referrer: insert.referrer ?? null,
           utm: insert.utm ?? null,
@@ -306,6 +307,13 @@ export function buildLeadRepoMock() {
       findBySession: vi.fn(async (sessionId: string) => {
         const leads = [...simStores.leads.values()].filter(
           (l) => l.sessionId === sessionId,
+        );
+        leads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return leads[0] ?? null;
+      }),
+      findBySessionAndIdentity: vi.fn(async (sessionId: string, identityHash: string) => {
+        const leads = [...simStores.leads.values()].filter(
+          (l) => l.sessionId === sessionId && l.identityHash === identityHash,
         );
         leads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         return leads[0] ?? null;

@@ -1,13 +1,15 @@
 /**
  * Tests de déduplication des leads : garantissent qu'une seule
- * row chat_lead existe par session_id, même en cas de création
- * concurrente ou de double-submit.
+ * row chat_lead existe par (session_id, identity_hash), même en cas
+ * de création concurrente ou de double-submit, tout en autorisant
+ * plusieurs leads par session si l'identité (téléphone + prénom) diffère.
  *
- * Utilise des mocks Drizzle pour simuler INSERT ON CONFLICT DO NOTHING.
+ * CHA-240 — Dédup multi-identité : (session_id, identity_hash) UNIQUE.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
+import { computeIdentityHash } from './identity-hash';
 
 const existingLead: ChatLeadRow = {
   id: 'cl_existing',
@@ -22,6 +24,7 @@ const existingLead: ChatLeadRow = {
   consentAt: new Date('2026-05-17T10:00:00Z'),
   visitorId: 'v_dedup1',
   fingerprintHash: null,
+  identityHash: computeIdentityHash('+212612345678', 'Existing'),
   page: '/chat',
   referrer: null,
   utm: null,
@@ -113,6 +116,19 @@ function mockSelectFindBySession(lead: ChatLeadRow | null): void {
   dbMock.select.mockReturnValue(chain);
 }
 
+function mockSelectFindBySessionAndIdentity(lead: ChatLeadRow | null): void {
+  const chain = {
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue(lead ? [lead] : []),
+        }),
+      }),
+    }),
+  };
+  dbMock.select.mockReturnValue(chain);
+}
+
 function mockSelectHasLead(rows: { id: string }[]): void {
   const chain = {
     from: vi.fn().mockReturnValue({
@@ -124,9 +140,9 @@ function mockSelectHasLead(rows: { id: string }[]): void {
   dbMock.select.mockReturnValue(chain);
 }
 
-describe('leadRepo.create — déduplication par session', () => {
-  it('insère un lead quand la session est nouvelle (ON CONFLICT retourne la row)', async () => {
-    const newLead = { ...existingLead, id: 'cl_new', firstName: 'New' };
+describe('leadRepo.create — déduplication par (session, identité)', () => {
+  it('insère un lead quand la session + identité est nouvelle', async () => {
+    const newLead = { ...existingLead, id: 'cl_new', firstName: 'New', identityHash: computeIdentityHash('+212612345678', 'New') };
     mockInsertReturning([newLead]);
 
     const result = await leadRepo.create({
@@ -142,19 +158,18 @@ describe('leadRepo.create — déduplication par session', () => {
 
     expect(result.id).toBe('cl_new');
     expect(result.firstName).toBe('New');
-    // Verify onConflictDoNothing was called on session_id
     expect(dbMock.insert).toHaveBeenCalled();
   });
 
-  it('retourne le lead existant quand ON CONFLICT DO NOTHING ne retourne rien', async () => {
-    // Insert returns empty array (conflict) → fetch existing
+  it('retourne le lead existant quand ON CONFLICT DO NOTHING ne retourne rien (même identité)', async () => {
+    // Insert returns empty array (conflict) → fetch existing by identity
     mockInsertReturning([]);
-    mockSelectFindBySession(existingLead);
+    mockSelectFindBySessionAndIdentity(existingLead);
 
     const result = await leadRepo.create({
       sessionId: 'cs_dedup1',
       triggerReason: 'explicit-request',
-      firstName: 'Duplicate',
+      firstName: 'Existing',
       phoneE164: '+212612345678',
       phoneRaw: '0612345678',
       consentVersion: '2026-05',
@@ -162,9 +177,27 @@ describe('leadRepo.create — déduplication par session', () => {
       language: 'fr',
     });
 
-    // Should return the existing lead, not throw
     expect(result.id).toBe('cl_existing');
     expect(result.firstName).toBe('Existing');
+  });
+});
+
+describe('leadRepo.findBySessionAndIdentity', () => {
+  it('retourne le lead pour une session + identité données', async () => {
+    mockSelectFindBySessionAndIdentity(existingLead);
+
+    const hash = computeIdentityHash('+212612345678', 'Existing');
+    const result = await leadRepo.findBySessionAndIdentity('cs_dedup1', hash);
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('cl_existing');
+  });
+
+  it('retourne null quand aucun lead ne correspond', async () => {
+    mockSelectFindBySessionAndIdentity(null);
+
+    const hash = computeIdentityHash('+212612345678', 'Nobody');
+    const result = await leadRepo.findBySessionAndIdentity('cs_nonexistent', hash);
+    expect(result).toBeNull();
   });
 });
 
@@ -202,12 +235,13 @@ describe('leadRepo.findBySession', () => {
 });
 
 describe('leadRepo.upgrade', () => {
-  it('met à jour les champs du lead inline-contact', async () => {
+  it('met à jour les champs du lead inline-contact et recalcule identityHash', async () => {
     const upgraded = {
       ...existingLead,
       triggerReason: 'explicit-request' as const,
       firstName: 'Formel',
       phoneE164: '+212698765432',
+      identityHash: computeIdentityHash('+212698765432', 'Formel'),
       webhookStatus: 'pending' as const,
       webhookAttempts: 0,
     };
@@ -234,5 +268,32 @@ describe('leadRepo.upgrade', () => {
     expect(result!.triggerReason).toBe('explicit-request');
     expect(result!.webhookStatus).toBe('pending');
     expect(result!.webhookAttempts).toBe(0);
+    expect(result!.identityHash).toBe(computeIdentityHash('+212698765432', 'Formel'));
+  });
+});
+
+describe('computeIdentityHash — dédup multi-identité', () => {
+  it('même session + même identité = même hash (bloque le doublon)', () => {
+    const hash1 = computeIdentityHash('+212612345678', 'Ahmed');
+    const hash2 = computeIdentityHash('+212612345678', 'Ahmed');
+    expect(hash1).toBe(hash2);
+  });
+
+  it('même session + tél différent = hash différent (autorise nouveau lead)', () => {
+    const hash1 = computeIdentityHash('+212612345678', 'Ahmed');
+    const hash2 = computeIdentityHash('+212698765432', 'Ahmed');
+    expect(hash1).not.toBe(hash2);
+  });
+
+  it('même session + nom différent = hash différent (autorise nouveau lead)', () => {
+    const hash1 = computeIdentityHash('+212612345678', 'Ahmed');
+    const hash2 = computeIdentityHash('+212612345678', 'Fatima');
+    expect(hash1).not.toBe(hash2);
+  });
+
+  it('insensible à la casse du prénom', () => {
+    const hash1 = computeIdentityHash('+212612345678', 'Ahmed');
+    const hash2 = computeIdentityHash('+212612345678', 'ahmed');
+    expect(hash1).toBe(hash2);
   });
 });

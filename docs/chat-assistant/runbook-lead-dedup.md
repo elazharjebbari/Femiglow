@@ -2,105 +2,89 @@
 
 ## Contexte
 
-En production, des leads en doublon existent dans la table `chat_lead` :
+En production, des leads en doublon existaient dans la table `chat_lead` :
 - 1 session avec 2 leads (`s_zxpovcty1a69unw4bx8q`)
 - 4 numéros de téléphone dupliqués, le pire ayant 7 leads pour le même `+212648621472`
 
-Cause racine : absence de contrainte UNIQUE sur `session_id` + race conditions dans les 3 chemins de création (orchestrateur, chat form, wizard).
+Cause racine : absence de contrainte UNIQUE + race conditions dans les 3 chemins de création.
 
-## Fix appliqué (code)
+## Fix appliqué (code + migration)
 
-1. **`leadRepo.create`** : upsert atomique `INSERT ... ON CONFLICT (session_id) DO NOTHING RETURNING *` + fallback `findBySession`
-2. **`wizardLeadRepo.createWizardLead`** : même pattern upsert
-3. **Tests** : `lead-dedup.test.ts` (7 tests passants couvrant create, findBySession, hasLeadForSession, upgrade)
+### Phase 1 : UNIQUE sur `session_id` (déployé)
 
-## Procédure de déploiement
+1. **Migration 0054** : dedup des données existantes + `UNIQUE INDEX ON (session_id)`
+2. **`leadRepo.create`** : upsert atomique `INSERT ... ON CONFLICT (session_id) DO NOTHING`
+3. **`wizardLeadRepo.createWizardLead`** : même pattern upsert
 
-### Étape 1 : Vérifier les doublons existants
+### Phase 2 : Multi-identité `(session_id, identity_hash)` (déployé)
 
-```bash
-# Compter les doublons par session_id
-psql "$DATABASE_URL" -c "
-  SELECT session_id, COUNT(*) AS n
-  FROM chat_lead
-  GROUP BY session_id
-  HAVING COUNT(*) > 1
-  ORDER BY n DESC;
-"
+Permet à un visiteur de créer un second lead dans la même session si l'identité (téléphone + prénom) est différente.
 
-# Compter les doublons par phone_e164
-psql "$DATABASE_URL" -c "
-  SELECT phone_e164, COUNT(*) AS n
-  FROM chat_lead
-  WHERE phone_e164 IS NOT NULL AND phone_e164 != '+0'
-  GROUP BY phone_e164
-  HAVING COUNT(*) > 1
-  ORDER BY n DESC;
-"
-```
+4. **Migration 0055** : colonne `identity_hash` (SHA-256 de `phone_e164|first_name` normalisé), backfill des 33 rows existantes, remplacement de l'index UNIQUE `(session_id)` par `(session_id, identity_hash)`
+5. **`computeIdentityHash()`** : SHA-256 de `trim(phone_e164) + "|" + lower(trim(firstName))`
+6. **`leadRepo.create`** : conflict target → `(sessionId, identityHash)`, fallback `findBySessionAndIdentity`
+7. **`wizardLeadRepo.createWizardLead`** : même pattern, conflict target `(sessionId, identityHash)`
+8. **`leadRepo.upgrade`** : recalcule `identityHash` quand phone/name changent
+9. **Orchestrateur** : inline-contact check par identité (`findBySessionAndIdentity`) au lieu de `hasLeadForSession`
+10. **Route `/api/chat/lead/contact`** : dédup par identité au lieu de par session seule
 
-### Étape 2 : Sauvegarder les doublons (audit trail)
-
-```bash
-# Exporter les doublons avant suppression
-psql "$DATABASE_URL" -c "
-  COPY (
-    SELECT *
-    FROM chat_lead
-    WHERE session_id IN (
-      SELECT session_id FROM chat_lead GROUP BY session_id HAVING COUNT(*) > 1
-    )
-    ORDER BY session_id, created_at
-  ) TO STDOUT WITH CSV HEADER
-" > /tmp/chat_lead_duplicates_backup_$(date +%Y%m%d).csv
-```
-
-### Étape 3 : Appliquer la migration (dedup + index UNIQUE)
-
-```bash
-psql "$DATABASE_URL" -f apps/web/drizzle/migrations/0054_chat_lead_unique_session.sql
-```
-
-Cette migration :
-1. Supprime les leads en doublon (garde le plus récent par `session_id`)
-2. Crée l'index `chat_lead_session_unique_idx` sur `session_id`
-
-### Étape 4 : Vérifier l'index
-
-```bash
-psql "$DATABASE_URL" -c "\d chat_lead" | grep unique
-psql "$DATABASE_URL" -c "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'chat_lead' AND indexname LIKE '%unique%';"
-```
-
-### Étape 5 : Reconstruire et redémarrer
-
-```bash
-cd /var/www/femiglow
-pnpm build
-systemctl restart femiglow.service
-```
-
-### Étape 6 : Vérifier en production
-
-- Créer un lead via le wizard → doit retourner 201
-- Re-soumettre le même formulaire → doit retourner le même lead (idempotent)
-- Vérifier qu'aucun nouveau doublon n'apparaît
-
-## Rollback
-
-Si la migration pose problème, supprimer l'index UNIQUE :
+## Index en production
 
 ```sql
-DROP INDEX IF EXISTS chat_lead_session_unique_idx;
+-- Index composite UNIQUE (remplace l'ancien chat_lead_session_unique_idx)
+chat_lead_session_identity_unique_idx ON chat_lead (session_id, identity_hash)
+
+-- Index standalone pour queries admin
+chat_lead_identity_hash_idx ON chat_lead (identity_hash)
 ```
 
-Les doublons supprimés sont dans le backup CSV (étape 2).
+## Comportement multi-identité
+
+| Scénario | Comportement |
+|----------|-------------|
+| Même session, même tél+nom, resubmit | `ON CONFLICT DO NOTHING` → retourne le lead existant |
+| Même session, tél différent | Nouveau lead créé (hash différent) |
+| Même session, même tél, nom différent | Nouveau lead créé (hash différent) |
+| Lead `inline-contact` + upgrade même identité | `findBySessionAndIdentity` trouve le lead → upgrade |
+| Lead `inline-contact` + identité différente | Nouveau lead créé |
+| Session convertie + nouvelle commande même tab | Nouveau sessionId (sessionStorage) → nouveau lead auto |
+
+## Procédure de rollback
+
+Si la migration 0055 pose problème :
+
+```sql
+-- Restaurer l'ancien index UNIQUE sur session_id seul
+DROP INDEX IF EXISTS chat_lead_session_identity_unique_idx;
+DROP INDEX IF EXISTS chat_lead_identity_hash_idx;
+ALTER TABLE chat_lead ALTER COLUMN identity_hash DROP NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS chat_lead_session_unique_idx ON chat_lead (session_id);
+```
+
+## Vérification en production
+
+```bash
+# Vérifier l'index composite
+psql "$DATABASE_URL" -c "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'chat_lead' AND indexname LIKE '%identity%';"
+
+# Vérifier les hashes backfillés
+psql "$DATABASE_URL" -c "SELECT id, session_id, phone_e164, first_name, identity_hash FROM chat_lead LIMIT 5;"
+
+# Vérifier qu'aucun identity_hash n'est NULL
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM chat_lead WHERE identity_hash IS NULL;"
+```
 
 ## Fichiers modifiés
 
 | Fichier | Changement |
 |---------|------------|
-| `drizzle/migrations/0054_chat_lead_unique_session.sql` | Nouveau — dedup + index UNIQUE |
-| `src/lib/chat/repos/lead.ts` | `create` → upsert ON CONFLICT |
-| `src/lib/checkout/repos/lead-repo.ts` | `createWizardLead` → upsert ON CONFLICT |
-| `src/lib/chat/repos/lead-dedup.test.ts` | Nouveau — 7 tests dédup |
+| `drizzle/migrations/0054_chat_lead_unique_session.sql` | Dedup + UNIQUE sur session_id |
+| `drizzle/migrations/0055_chat_lead_identity_hash.sql` | Colonne identity_hash + index composite |
+| `src/lib/chat/db/schema.ts` | Colonne `identityHash` + index |
+| `src/lib/chat/repos/identity-hash.ts` | Nouveau — `computeIdentityHash()` |
+| `src/lib/chat/repos/lead.ts` | `create` → conflict `(sessionId, identityHash)`, `findBySessionAndIdentity`, `upgrade` recalcule hash |
+| `src/lib/checkout/repos/lead-repo.ts` | `createWizardLead` → conflict `(sessionId, identityHash)` |
+| `src/lib/chat/services/orchestrator.ts` | Inline-contact : check par identité |
+| `src/app/api/chat/lead/contact/route.ts` | Dédup par identité |
+| `src/lib/chat/repos/lead-dedup.test.ts` | 13 tests multi-identité |
+| `src/lib/chat/repos/identity-hash.test.ts` | 7 tests hash |

@@ -10,6 +10,11 @@
  *  2. `markWebhookSent` / `markWebhookFailed` → côté service webhook.
  *  3. `setOutcome` → côté admin (CRM/back-office).
  *
+ * CHA-240 — Dédup par (session_id, identity_hash) :
+ * la même session peut avoir plusieurs leads si l'identité
+ * (téléphone + prénom) diffère. Un true duplicate (même session +
+ * même identité) est bloqué par ON CONFLICT DO NOTHING.
+ *
  * cf. docs/chat-assistant/19-lead-capture-form.md §5.3
  */
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
@@ -18,6 +23,7 @@ import { createId } from '@/lib/ids';
 
 import { requireChatDb } from '../db/client';
 import { chatLead, type ChatLeadInsert, type ChatLeadRow } from '../db/schema';
+import { computeIdentityHash } from './identity-hash';
 
 type Outcome = ChatLeadRow['outcome'];
 type WebhookStatus = ChatLeadRow['webhookStatus'];
@@ -35,21 +41,23 @@ export interface ListForAdminQuery {
 
 export const leadRepo = {
   /**
-   * Insère un nouveau lead. Si un lead existe déjà pour la même session,
-   * retourne le lead existant sans créer de doublon (upsert atomique).
-   * Garantit l'unicité par session_id grâce à l'index UNIQUE.
+   * Insère un nouveau lead. Si un lead existe déjà pour la même session
+   * avec la même identité (phone + name), retourne le lead existant sans
+   * créer de doublon (upsert atomique via ON CONFLICT).
+   * Si l'identité diffère, un nouveau lead est créé pour cette session.
    */
-  async create(insert: Omit<ChatLeadInsert, 'id'> & { id?: string }): Promise<ChatLeadRow> {
+  async create(insert: Omit<ChatLeadInsert, 'id' | 'identityHash'> & { id?: string }): Promise<ChatLeadRow> {
     const db = requireChatDb();
     const id = insert.id ?? createId('cl');
+    const identityHash = computeIdentityHash(insert.phoneE164, insert.firstName);
     const rows = await db
       .insert(chatLead)
-      .values({ ...insert, id })
-      .onConflictDoNothing({ target: chatLead.sessionId })
+      .values({ ...insert, id, identityHash })
+      .onConflictDoNothing({ target: [chatLead.sessionId, chatLead.identityHash] })
       .returning();
     if (rows.length > 0) return rows[0]!;
-    // Conflict: a lead already exists for this session. Fetch it.
-    const existing = await leadRepo.findBySession(insert.sessionId);
+    // Conflict: a lead with this session+identity already exists. Fetch it.
+    const existing = await leadRepo.findBySessionAndIdentity(insert.sessionId, identityHash);
     return existing!;
   },
 
@@ -95,6 +103,22 @@ export const leadRepo = {
   },
 
   /**
+   * CHA-240 — Récupère le lead pour une session + identité spécifique.
+   * Utilisé pour la dédup multi-identité : même session peut avoir
+   * plusieurs leads si le téléphone ou le nom diffère.
+   */
+  async findBySessionAndIdentity(sessionId: string, identityHash: string): Promise<ChatLeadRow | null> {
+    const db = requireChatDb();
+    const rows = await db
+      .select()
+      .from(chatLead)
+      .where(and(eq(chatLead.sessionId, sessionId), eq(chatLead.identityHash, identityHash)))
+      .orderBy(desc(chatLead.createdAt))
+      .limit(1);
+    return rows[0] ?? null;
+  },
+
+  /**
    * CHA-225 — Met à jour les champs "humains" d'un lead existant.
    * Utilisé pour formaliser un lead `inline-contact` (auto-créé) avec
    * les valeurs propres saisies dans le widget. On NE touche PAS aux
@@ -116,6 +140,7 @@ export const leadRepo = {
     },
   ): Promise<ChatLeadRow | null> {
     const db = requireChatDb();
+    const identityHash = computeIdentityHash(patch.phoneE164, patch.firstName);
     const rows = await db
       .update(chatLead)
       .set({
@@ -130,6 +155,7 @@ export const leadRepo = {
         language: patch.language,
         intentAtCapture: patch.intentAtCapture ?? null,
         snapshotMessages: patch.snapshotMessages ?? null,
+        identityHash,
         // Réinitialise le webhook : la donnée a changé, il faut renvoyer.
         webhookStatus: 'pending',
         webhookAttempts: 0,
@@ -250,6 +276,7 @@ export const leadRepo = {
         phoneRaw: '[anonymisé]',
         note: null,
         fingerprintHash: null,
+        identityHash: computeIdentityHash('+0', '[anonymisé]'),
         snapshotMessages: null,
         outcome: 'discarded',
         updatedAt: new Date(),

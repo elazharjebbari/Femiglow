@@ -487,6 +487,7 @@ export const chatLead = pgTable(
     consentAt: timestamp('consent_at', { withTimezone: true }).notNull().defaultNow(),
     visitorId: text('visitor_id').notNull(),
     fingerprintHash: text('fingerprint_hash'),
+    identityHash: text('identity_hash').notNull(),
     page: text('page'),
     referrer: text('referrer'),
     utm: jsonb('utm').$type<Record<string, string>>(),
@@ -597,6 +598,14 @@ export const chatLead = pgTable(
     formIdx: index('chat_lead_form_idx').on(t.formId, t.formMode, t.createdAt),
     stepIdx: index('chat_lead_step_idx').on(t.lastTouchedStep, t.createdAt),
     step2WebhookIdx: index('chat_lead_step2_webhook_idx').on(t.step2WebhookAt),
+    // CHA-240 — Composite unique on (session_id, identity_hash) allows
+    // multiple leads per session (different identities) while blocking
+    // true duplicates (same session + same phone+name).
+    sessionIdentityUniqIdx: uniqueIndex('chat_lead_session_identity_unique_idx').on(
+      t.sessionId,
+      t.identityHash,
+    ),
+    identityHashIdx: index('chat_lead_identity_hash_idx').on(t.identityHash),
   }),
 );
 
