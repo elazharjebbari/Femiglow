@@ -251,3 +251,17 @@ export const contentLearningNotes = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
 );
+
+export const contentIdempotencyKeys = pgTable(
+  'content_idempotency_key',
+  {
+    id: text('id').primaryKey(),
+    key: text('key').notNull().unique(),
+    response: jsonb('response_json').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    expiresIdx: index('content_idempotency_key_expires_idx').on(t.expiresAt),
+  }),
+);
