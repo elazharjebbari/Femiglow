@@ -17,6 +17,7 @@ import {
   createDrafts,
   createDraftVariation,
   createIdea,
+  createLearningNote,
   getBrief,
   getDraft,
   getIdea,
@@ -26,6 +27,8 @@ import {
   getPrimaryAsset,
   insertGenerationRun,
   insertPostizDelivery,
+  listLearningNotesForPost,
+  listLearningNotes,
   listPerformanceSnapshotsForPosts,
   insertReview,
   listDrafts,
@@ -623,3 +626,13 @@ export async function updateContentBrief(input: { briefId: string; patch: { angl
   if (!brief) throw new HttpError('not_found', 'Brief introuvable.');
   return updateBrief(brief.id, input.patch);
 }
+
+export async function addLearningNote(input: { postId: string | null; note: string; tags?: string[] }) {
+  return createLearningNote({
+    postId: input.postId,
+    note: input.note,
+    tags: input.tags,
+  });
+}
+
+export { listLearningNotesForPost, listLearningNotes };

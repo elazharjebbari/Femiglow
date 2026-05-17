@@ -299,4 +299,53 @@ describe('MSW — Content Studio API handlers', () => {
       expect(json.brief.angle).toBeDefined();
     });
   });
+
+  describe('POST /api/admin/content-studio/learning-notes', () => {
+    it('crée une note d\'apprentissage', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/learning-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: state.posts[0]!.id, note: 'Le hook question génère plus d\'engagement', tags: ['hook', 'engagement'] }),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.note).toBeDefined();
+      expect(json.note.note).toBe('Le hook question génère plus d\'engagement');
+      expect(json.note.tags).toEqual(['hook', 'engagement']);
+    });
+  });
+
+  describe('GET /api/admin/content-studio/learning-notes', () => {
+    it('retourne les notes pour un post donné', async () => {
+      const postId = state.posts[0]!.id;
+      await fetch('http://localhost/api/admin/content-studio/learning-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, note: 'Test note' }),
+      });
+      const res = await fetch(`http://localhost/api/admin/content-studio/learning-notes?postId=${postId}`);
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.notes.length).toBeGreaterThanOrEqual(1);
+      expect(json.notes[0].note).toBe('Test note');
+    });
+  });
+
+  describe('GET /api/admin/content-studio/utm', () => {
+    it('génère les paramètres UTM pour un post', async () => {
+      const postId = state.posts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/utm?postId=${postId}`);
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.utm).toBeDefined();
+      expect(json.utm.utm_source).toBeDefined();
+      expect(json.utm.utm_medium).toBeDefined();
+      expect(json.utm.utm_campaign).toBeDefined();
+    });
+
+    it('retourne 404 pour un post inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/utm?postId=nonexistent');
+      expect(res.status).toBe(404);
+    });
+  });
 });

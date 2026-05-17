@@ -173,6 +173,15 @@ export interface ContentPerformanceSnapshot {
   capturedAt: Date;
 }
 
+export interface ContentLearningNote {
+  id: string;
+  postId: string | null;
+  note: string;
+  tags: string[];
+  createdBy: string | null;
+  createdAt: Date;
+}
+
 export interface ContentStudioOverview {
   ideas: ContentIdea[];
   drafts: ContentDraft[];

@@ -8,6 +8,7 @@ import {
   contentDrafts,
   contentGenerationRuns,
   contentIdeas,
+  contentLearningNotes,
   contentPostizDeliveries,
   contentPosts,
   contentPerformanceSnapshots,
@@ -21,6 +22,7 @@ import type {
   ContentFormat,
   ContentGenerationRun,
   ContentIdea,
+  ContentLearningNote,
   ContentPerformanceSnapshot,
   ContentObjective,
   ContentPillar,
@@ -40,6 +42,7 @@ interface Store {
   contentPosts: Map<string, ContentPost>;
   contentPostizDeliveries: Map<string, ContentPostizDelivery>;
   contentPerformanceSnapshots: Map<string, ContentPerformanceSnapshot>;
+  contentLearningNotes: Map<string, ContentLearningNote>;
 }
 
 function store(): Store {
@@ -53,6 +56,7 @@ function store(): Store {
   if (!s.contentPosts) s.contentPosts = new Map();
   if (!s.contentPostizDeliveries) s.contentPostizDeliveries = new Map();
   if (!s.contentPerformanceSnapshots) s.contentPerformanceSnapshots = new Map();
+  if (!s.contentLearningNotes) s.contentLearningNotes = new Map();
   return s;
 }
 
@@ -849,4 +853,71 @@ export async function listReviewsByDraft(draftId: string): Promise<ContentBrandR
   return Array.from(store().contentBrandReviews.values())
     .filter((r) => r.draftId === draftId)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+function rowLearningNote(row: typeof contentLearningNotes.$inferSelect): ContentLearningNote {
+  return {
+    id: row.id,
+    postId: row.postId,
+    note: row.note,
+    tags: (row.tags as string[]) ?? [],
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+  };
+}
+
+export async function createLearningNote(input: {
+  postId: string | null;
+  note: string;
+  tags?: string[];
+  createdBy?: string | null;
+}): Promise<ContentLearningNote> {
+  const note: ContentLearningNote = {
+    id: createId('cln'),
+    postId: input.postId,
+    note: input.note,
+    tags: input.tags ?? [],
+    createdBy: input.createdBy ?? null,
+    createdAt: new Date(),
+  };
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle.insert(contentLearningNotes).values({
+      ...note,
+      tags: note.tags as never,
+    });
+  } else {
+    store().contentLearningNotes.set(note.id, note);
+  }
+  return note;
+}
+
+export async function listLearningNotesForPost(postId: string): Promise<ContentLearningNote[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(contentLearningNotes)
+      .where(eq(contentLearningNotes.postId, postId))
+      .orderBy(desc(contentLearningNotes.createdAt));
+    return rows.map(rowLearningNote);
+  }
+  return Array.from(store().contentLearningNotes.values())
+    .filter((n) => n.postId === postId)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+export async function listLearningNotes(limit = 50): Promise<ContentLearningNote[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(contentLearningNotes)
+      .orderBy(desc(contentLearningNotes.createdAt))
+      .limit(limit);
+    return rows.map(rowLearningNote);
+  }
+  return Array.from(store().contentLearningNotes.values())
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, limit);
 }

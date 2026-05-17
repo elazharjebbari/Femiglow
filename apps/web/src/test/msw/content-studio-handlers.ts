@@ -11,11 +11,21 @@ import {
   buildContentPostizDelivery,
 } from '../factories/content-studio';
 
+interface MockLearningNote {
+  id: string;
+  postId: string | null;
+  note: string;
+  tags: string[];
+  createdBy: string | null;
+  createdAt: string;
+}
+
 export interface MockContentStudioState {
   ideas: ReturnType<typeof buildContentIdea>[];
   drafts: ReturnType<typeof buildContentDraft>[];
   posts: ReturnType<typeof buildContentPost>[];
   deliveries: ReturnType<typeof buildContentPostizDelivery>[];
+  learningNotes: MockLearningNote[];
   callCount: Record<string, number>;
 }
 
@@ -25,6 +35,7 @@ export function createMockState(): MockContentStudioState {
     drafts: [buildContentDraft()],
     posts: [buildContentPost()],
     deliveries: [buildContentPostizDelivery()],
+    learningNotes: [],
     callCount: {},
   };
 }
@@ -271,5 +282,52 @@ export function contentStudioHandlers(state: MockContentStudioState) {
         },
       });
     }),
-  ];
-}
+
+    // GET /api/admin/content-studio/learning-notes — list learning notes
+    http.get('http://localhost/api/admin/content-studio/learning-notes', ({ request }) => {
+      inc(state, 'GET /learning-notes');
+      const url = new URL(request.url);
+      const postId = url.searchParams.get('postId');
+      const notes = postId
+        ? state.learningNotes.filter((n: MockLearningNote) => n.postId === postId)
+        : state.learningNotes;
+      return HttpResponse.json({ notes });
+    }),
+
+    // POST /api/admin/content-studio/learning-notes — create learning note
+    http.post('http://localhost/api/admin/content-studio/learning-notes', async ({ request }) => {
+      inc(state, 'POST /learning-notes');
+      const body = (await request.json()) as Record<string, unknown>;
+      const note: MockLearningNote = {
+        id: `cln_${Date.now()}`,
+        postId: (body.postId as string) ?? null,
+        note: (body.note as string) ?? '',
+        tags: (body.tags as string[]) ?? [],
+        createdBy: null,
+        createdAt: new Date().toISOString(),
+      };
+      state.learningNotes.unshift(note);
+      return HttpResponse.json({ note }, { status: 201 });
+    }),
+
+    // GET /api/admin/content-studio/utm — generate UTM params
+    http.get('http://localhost/api/admin/content-studio/utm', ({ request }) => {
+      inc(state, 'GET /utm');
+      const url = new URL(request.url);
+      const postId = url.searchParams.get('postId');
+      const post = state.posts.find((p: MockContentPost) => p.id === postId);
+      if (!post) {
+        return HttpResponse.json({ error: { code: 'not_found', message: 'Post introuvable.' } }, { status: 404 });
+      }
+      const draft = state.drafts.find((d: MockContentDraft) => d.id === post.draftId);
+      return HttpResponse.json({
+        utm: {
+          utm_source: draft?.platform ?? 'femiglow',
+          utm_medium: draft?.format ?? 'social',
+          utm_campaign: `cs_${post.id.slice(0, 8)}`,
+          utm_content: draft?.hook?.slice(0, 60) ?? draft?.variantLabel ?? '',
+          utm_term: '',
+        },
+      });
+    }),
+  ];}

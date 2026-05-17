@@ -7,6 +7,7 @@ import type {
   ContentIdea,
   ContentPostizDelivery,
   ContentPerformanceSnapshot,
+  ContentLearningNote,
 } from '@/lib/content-studio/types';
 import type { DraftAssetsByDraftId, Integration, RunFunction, StudioMediaItem } from './types';
 import { SectionTitle } from './SectionTitle';
@@ -17,6 +18,8 @@ import { IdeaForm } from './IdeaForm';
 import { DraftEditor } from './DraftEditor';
 import { PostizPanel } from './PostizPanel';
 import { ArchiveButton } from './ArchiveButton';
+import { LearningNoteForm } from './LearningNoteForm';
+import { UtmBuilder } from './UtmBuilder';
 import { postJson } from './api';
 
 interface Props {
@@ -49,6 +52,7 @@ export function ContentStudioClient({
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [learningNotes, setLearningNotes] = useState<ContentLearningNote[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const selectedDraft = drafts.find((draft) => draft.id === selectedDraftId) ?? drafts[0] ?? null;
@@ -208,6 +212,34 @@ export function ContentStudioClient({
             run={run}
             setMessage={setMessage}
           />
+          {selectedPost && (
+            <UtmBuilder post={selectedPost} draft={selectedDraft} />
+          )}
+          <LearningNoteForm
+            postId={selectedPost?.id ?? null}
+            disabled={isPending}
+            onCreated={(note) => setLearningNotes((current) => [note, ...current])}
+            run={run}
+          />
+          {learningNotes.length > 0 && (
+            <div className="rounded-md border border-indigo-100 bg-indigo-50/40 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Notes récentes</p>
+              <ul className="mt-2 space-y-2">
+                {learningNotes.map((n) => (
+                  <li key={n.id} className="rounded border border-indigo-100 bg-white p-2 text-sm">
+                    <p className="text-stone-800">{n.note}</p>
+                    {n.tags.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {n.tags.map((tag) => (
+                          <span key={tag} className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       </div>
     </div>
