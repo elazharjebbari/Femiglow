@@ -338,6 +338,11 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       inc(state, 'GET /generation-runs');
       return HttpResponse.json({
         runs: state.generationRuns ?? [],
+        budget: {
+          dailyBudgetCents: 500,
+          dailySpentCents: (state.generationRuns ?? []).reduce((s: number, r: { costCents: number }) => s + r.costCents, 0),
+          remainingCents: 500 - (state.generationRuns ?? []).reduce((s: number, r: { costCents: number }) => s + r.costCents, 0),
+        },
       });
     }),
 

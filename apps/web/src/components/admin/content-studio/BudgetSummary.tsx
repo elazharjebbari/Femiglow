@@ -8,6 +8,7 @@ import { formatShortDate } from './helpers';
 
 export function BudgetSummary() {
   const [runs, setRuns] = useState<ContentGenerationRun[]>([]);
+  const [budget, setBudget] = useState<{ dailyBudgetCents: number; dailySpentCents: number; remainingCents: number | null } | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   const totalCents = runs.reduce((sum, r) => sum + r.costCents, 0);
@@ -15,13 +16,15 @@ export function BudgetSummary() {
   const failed = runs.filter((r) => r.status === 'failed').length;
 
   function load() {
-    void getJson<{ runs: ContentGenerationRun[] }>('/api/admin/content-studio/generation-runs?limit=50')
+    void getJson<{ runs: ContentGenerationRun[]; budget: { dailyBudgetCents: number; dailySpentCents: number; remainingCents: number | null } }>('/api/admin/content-studio/generation-runs?limit=50')
       .then((value) => {
         setRuns(value.runs);
+        setBudget(value.budget);
         setLoaded(true);
       })
       .catch(() => {
         setRuns([]);
+        setBudget(null);
         setLoaded(true);
       });
   }
@@ -68,6 +71,23 @@ export function BudgetSummary() {
           <p className="text-[11px] text-red-800">Échoués</p>
         </div>
       </div>
+      {budget && budget.dailyBudgetCents > 0 && (
+        <div className="mt-3 rounded border border-amber-200 bg-white px-3 py-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-amber-800">Budget quotidien</span>
+            <span className="font-semibold text-amber-950">{formatCost(budget.dailySpentCents)} / {formatCost(budget.dailyBudgetCents)}</span>
+          </div>
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-amber-100">
+            <div
+              className={`h-full rounded-full transition-all ${budget.dailySpentCents / budget.dailyBudgetCents >= 0.9 ? 'bg-red-500' : budget.dailySpentCents / budget.dailyBudgetCents >= 0.7 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+              style={{ width: `${Math.min(100, (budget.dailySpentCents / budget.dailyBudgetCents) * 100)}%` }}
+            />
+          </div>
+          {budget.remainingCents !== null && (
+            <p className="mt-1 text-[10px] text-amber-700">Reste : {formatCost(budget.remainingCents)}</p>
+          )}
+        </div>
+      )}
       {runs.length > 0 && (
         <div className="mt-4 overflow-hidden rounded border border-stone-200 bg-white">
           <div className="grid grid-cols-[1fr_80px_80px_80px] border-b border-stone-200 bg-stone-50 px-3 py-2 text-xs font-medium text-stone-600">
