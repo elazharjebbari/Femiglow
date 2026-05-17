@@ -35,7 +35,7 @@ export async function POST(request: Request): Promise<Response> {
         { status: 400 },
       );
     }
-    const note = await addLearningNote(parsed.data);
+    const note = await addLearningNote({ postId: parsed.data.postId ?? null, note: parsed.data.note, tags: parsed.data.tags });
     return NextResponse.json({ note }, { status: 201 });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

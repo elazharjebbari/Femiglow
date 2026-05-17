@@ -74,11 +74,10 @@ export async function cleanExpiredIdempotencyKeys(): Promise<number> {
   const now = new Date();
   const drizzle = db();
   if (drizzle) {
-    const result = await drizzle
+    await drizzle
       .delete(contentIdempotencyKeys)
-      .where(lt(contentIdempotencyKeys.expiresAt, now))
-      .returning({ id: contentIdempotencyKeys.id });
-    return result.length;
+      .where(lt(contentIdempotencyKeys.expiresAt, now));
+    return 0;
   }
   let count = 0;
   for (const [key, entry] of memoryStore) {

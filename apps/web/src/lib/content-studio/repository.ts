@@ -1028,7 +1028,7 @@ export async function listCampaigns(filters?: { status?: string }): Promise<Cont
     const rows = await drizzle
       .select()
       .from(contentCampaigns)
-      .where(filters?.status ? eq(contentCampaigns.status, filters.status) : undefined)
+      .where(filters?.status ? eq(contentCampaigns.status, filters.status as 'draft' | 'active' | 'archived') : undefined)
       .orderBy(desc(contentCampaigns.createdAt));
     return rows.map(rowCampaign);
   }

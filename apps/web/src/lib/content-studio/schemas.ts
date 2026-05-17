@@ -89,6 +89,7 @@ export const briefUpdateSchema = z
 
 export const learningNoteSchema = z
   .object({
+    postId: z.string().nullable().optional(),
     note: z.string().min(1).max(2000),
     tags: z.array(z.string()).max(5).optional(),
   })

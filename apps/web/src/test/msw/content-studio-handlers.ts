@@ -358,11 +358,11 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       inc(state, 'GET /utm');
       const url = new URL(request.url);
       const postId = url.searchParams.get('postId');
-      const post = state.posts.find((p: MockContentPost) => p.id === postId);
+      const post = state.posts.find((p) => p.id === postId);
       if (!post) {
         return HttpResponse.json({ error: { code: 'not_found', message: 'Post introuvable.' } }, { status: 404 });
       }
-      const draft = state.drafts.find((d: MockContentDraft) => d.id === post.draftId);
+      const draft = state.drafts.find((d) => d.id === post.draftId);
       return HttpResponse.json({
         utm: {
           utm_source: draft?.platform ?? 'femiglow',
@@ -444,13 +444,18 @@ export function contentStudioHandlers(state: MockContentStudioState) {
         return HttpResponse.json({ error: { code: 'not_found', message: 'Campagne non trouvée.' } }, { status: 404 });
       }
       const body = (await request.json()) as Record<string, unknown>;
-      const updated = { ...state.campaigns[idx] };
-      if (typeof body.name === 'string') updated.name = body.name;
-      if (typeof body.objective === 'string') updated.objective = body.objective;
-      if (typeof body.status === 'string') updated.status = body.status;
-      if ('startsAt' in body) updated.startsAt = body.startsAt ? String(body.startsAt) : null;
-      if ('endsAt' in body) updated.endsAt = body.endsAt ? String(body.endsAt) : null;
-      updated.updatedAt = new Date().toISOString();
+      const existing = state.campaigns[idx]!;
+      const updated: typeof existing = {
+        id: existing.id,
+        name: typeof body.name === 'string' ? body.name : existing.name,
+        objective: typeof body.objective === 'string' ? body.objective : existing.objective,
+        status: typeof body.status === 'string' ? body.status : existing.status,
+        startsAt: 'startsAt' in body ? (body.startsAt ? String(body.startsAt) : null) : existing.startsAt,
+        endsAt: 'endsAt' in body ? (body.endsAt ? String(body.endsAt) : null) : existing.endsAt,
+        createdBy: existing.createdBy,
+        createdAt: existing.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
       state.campaigns[idx] = updated;
       return HttpResponse.json({ campaign: updated });
     }),

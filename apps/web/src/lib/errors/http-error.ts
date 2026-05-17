@@ -17,7 +17,9 @@ export type ErrorCode =
   | 'cannot_edit_default'
   | 'cannot_delete_default'
   | 'cannot_delete_active'
-  | 'version_deleted';
+  | 'version_deleted'
+  // Content Studio
+  | 'budget_exceeded';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
   unauthorized: 401,
@@ -37,6 +39,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   cannot_delete_default: 403,
   cannot_delete_active: 403,
   version_deleted: 409,
+  budget_exceeded: 429,
 };
 
 export class HttpError extends Error {

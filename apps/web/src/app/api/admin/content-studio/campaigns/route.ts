@@ -3,7 +3,6 @@ import { requireAdminApi, requireContentStudioEnabled } from '@/lib/content-stud
 import { formatErrorResponse } from '@/lib/errors/http-error';
 import { listCampaigns, createCampaign } from '@/lib/content-studio/repository';
 import { campaignCreateSchema, campaignQuerySchema } from '@/lib/content-studio/schemas';
-import { getSessionActorId } from '@/lib/session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     requireContentStudioEnabled();
-    const actorId = await requireAdminApi();
+    const session = await requireAdminApi();
     const body = await request.json();
     const parsed = campaignCreateSchema.safeParse(body);
     if (!parsed.success) {
@@ -45,7 +44,7 @@ export async function POST(request: Request): Promise<Response> {
       objective: parsed.data.objective,
       startsAt: parsed.data.startsAt ? new Date(parsed.data.startsAt) : null,
       endsAt: parsed.data.endsAt ? new Date(parsed.data.endsAt) : null,
-      createdBy: getSessionActorId(request) ?? actorId,
+      createdBy: session.adminId,
     });
     return NextResponse.json({ campaign }, { status: 201 });
   } catch (err) {

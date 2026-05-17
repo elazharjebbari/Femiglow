@@ -124,7 +124,7 @@ export function EditorialCalendar({
 
   const navLabel =
     mode === 'week'
-      ? `${formatShortDate(weekDays[0])} – ${formatShortDate(weekDays[6])}`
+      ? `${formatShortDate(weekDays[0]!)} – ${formatShortDate(weekDays[6]!)}`
       : `${MONTHS_FR[cursor.getMonth()]} ${cursor.getFullYear()}`;
 
   function navigate(direction: -1 | 1) {
