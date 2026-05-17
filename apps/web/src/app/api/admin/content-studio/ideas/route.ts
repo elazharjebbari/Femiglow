@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { requireAdminApi, requireContentStudioEnabled } from "@/lib/content-studio/auth";
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { contentIdeaCreateSchema } from '@/lib/content-studio/schemas';
 import { createContentIdea, listIdeas } from '@/lib/content-studio/service';
-import { requireContentStudioEnabled } from '@/lib/content-studio/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(): Promise<Response> {
   try {
     requireContentStudioEnabled();
-    await requireAdmin('/admin/content-studio');
+    await requireAdminApi();
     return NextResponse.json({ ideas: await listIdeas() });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
@@ -22,7 +21,7 @@ export async function GET(): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     requireContentStudioEnabled();
-    const session = await requireAdmin('/admin/content-studio');
+    const session = await requireAdminApi();
     const json = (await request.json().catch(() => null)) as unknown;
     const parsed = contentIdeaCreateSchema.safeParse(json);
     if (!parsed.success) {

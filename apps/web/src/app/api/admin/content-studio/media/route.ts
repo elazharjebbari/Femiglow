@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { requireAdminApi, requireContentStudioEnabled } from "@/lib/content-studio/auth";
 import { formatErrorResponse } from '@/lib/errors/http-error';
-import { requireContentStudioEnabled } from '@/lib/content-studio/auth';
 import { listContentStudioMedia } from '@/lib/content-studio/service';
 
 export const runtime = 'nodejs';
@@ -10,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request): Promise<Response> {
   try {
     requireContentStudioEnabled();
-    await requireAdmin('/admin/content-studio');
+    await requireAdminApi();
     const url = new URL(request.url);
     const q = url.searchParams.get('q') ?? undefined;
     const requestedCompartment = url.searchParams.get('compartment');

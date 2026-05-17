@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { requireAdminApi, requireContentStudioEnabled } from "@/lib/content-studio/auth";
 import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import {
   importPostizPerformanceJob,
@@ -8,7 +8,6 @@ import {
   retryPostizDeliveriesJob,
   syncPostizIntegrationsJob,
 } from '@/lib/content-studio/automation';
-import { requireContentStudioEnabled } from '@/lib/content-studio/auth';
 import {
   listContentPerformanceSnapshotsOverview,
   listPostizDeliveriesOverview,
@@ -31,7 +30,7 @@ const automationSchema = z.object({
 export async function POST(request: Request): Promise<Response> {
   try {
     requireContentStudioEnabled();
-    await requireAdmin('/admin/content-studio');
+    await requireAdminApi();
     const json = (await request.json().catch(() => ({}))) as unknown;
     const parsed = automationSchema.safeParse(json);
     if (!parsed.success) {
