@@ -14,8 +14,9 @@ export async function runWipeMedia(ctx: PhaseContext): Promise<PhaseResult> {
     return { stats: { skipped: true, reason: 'config.wipeMedia=false' }, summary: 'wipeMedia désactivé' };
   }
   const target = process.env.MEDIA_LOCAL_DIR || '/var/www/femiglow/.media-storage';
+  const projectRoot = process.env.FEMIGLOW_ROOT ?? '/var/www/femiglow';
   // On supprime aussi le legacy apps/web/.media-storage si présent
-  const legacy = '/var/www/femiglow/apps/web/.media-storage';
+  const legacy = `${projectRoot}/apps/web/.media-storage`;
 
   let removedDirs = 0;
   let freedBytes = 0;

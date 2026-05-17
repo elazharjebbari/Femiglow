@@ -206,7 +206,8 @@ async function countMediaContents(dir: string): Promise<{ dirCount: number; file
 
 function safeGit(args: string): string | undefined {
   try {
-    return execSync(`git ${args}`, { cwd: '/var/www/femiglow' }).toString().trim();
+    const projectRoot = process.env.FEMIGLOW_ROOT ?? '/var/www/femiglow';
+    return execSync(`git ${args}`, { cwd: projectRoot }).toString().trim();
   } catch { return undefined; }
 }
 

@@ -35,12 +35,14 @@ export async function runMigrate(ctx: PhaseContext): Promise<PhaseResult> {
 
 function runDrizzleMigrate(signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
-    const cwd = '/var/www/femiglow/apps/web';
+    const projectRoot = process.env.FEMIGLOW_ROOT ?? '/var/www/femiglow';
+    // Use db:migrate-safe which loads .env via node --env-file=.env
+    // (db:migrate uses drizzle-kit which doesn't load .env)
     const child = spawn(
       'pnpm',
-      ['--filter', '@femiglow/web', 'db:migrate'],
+      ['--filter', '@femiglow/web', 'db:migrate-safe'],
       {
-        cwd: '/var/www/femiglow',
+        cwd: projectRoot,
         stdio: ['ignore', 'pipe', 'pipe'],
         signal,
         env: { ...process.env },
@@ -60,7 +62,7 @@ function runDrizzleMigrate(signal: AbortSignal): Promise<string> {
       if (code === 0) resolve(out);
       else reject(new Error(`exit ${code} · ${err.slice(-500)}`));
     });
-    void cwd;
+    void projectRoot;
   });
 }
 
