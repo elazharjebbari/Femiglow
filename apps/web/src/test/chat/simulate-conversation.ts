@@ -189,6 +189,19 @@ export function buildEventRepoMock() {
           simStores.events.push({ sessionId, type, payload });
         },
       ),
+      hasLeadOfferForSession: vi.fn(async (sessionId: string) =>
+        simStores.events.some(
+          (e) => e.sessionId === sessionId && e.type === 'chat_lead_form_offered',
+        ),
+      ),
+      hasLeadOfferForMessage: vi.fn(async (sessionId: string, messageId: string) =>
+        simStores.events.some(
+          (e) =>
+            e.sessionId === sessionId &&
+            e.type === 'chat_lead_form_offered' &&
+            (e.payload as { messageId?: string } | null)?.messageId === messageId,
+        ),
+      ),
     },
   };
 }

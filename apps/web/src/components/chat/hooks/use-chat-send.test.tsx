@@ -274,7 +274,7 @@ describe('useChatSend — lead-form-offer routing', () => {
     expect(useChatStore.getState().leadOffer.triggeringMessageId).toBe('m5');
   });
 
-  it("reste 'idle' si le SSE n'émet PAS de lead-form-offer", async () => {
+  it("reste 'idle' si le SSE n'émet PAS de lead-form-offer et que la réponse ne propose pas le formulaire", async () => {
     const payload = [
       'event: start\ndata: {"messageId":"m6","language":"fr"}\n\n',
       'event: chunk\ndata: {"messageId":"m6","delta":"hello"}\n\n',
@@ -289,5 +289,54 @@ describe('useChatSend — lead-form-offer routing', () => {
 
     expect(useChatStore.getState().leadOffer.status).toBe('idle');
     expect(useChatStore.getState().messages.some((m) => m.role === 'assistant')).toBe(true);
+  });
+
+  it("déclenche le filet client si le SSE n'émet PAS de lead-form-offer mais que l'assistant propose le formulaire", async () => {
+    const payload = [
+      'event: start\ndata: {"messageId":"m7","language":"fr"}\n\n',
+      'event: chunk\ndata: {"messageId":"m7","delta":"Je vous affiche le formulaire juste ici."}\n\n',
+      'event: end\ndata: {"messageId":"m7","latencyMs":1}\n\n',
+    ];
+    stubFetch(() => makeSseResponse(payload));
+
+    const { result } = renderHook(() => useChatSend());
+    await act(async () => {
+      await result.current.send('je veux etre rappelee');
+    });
+
+    await waitFor(() => {
+      expect(useChatStore.getState().leadOffer.status).toBe('offered');
+    });
+    expect(useChatStore.getState().leadOffer).toMatchObject({
+      triggeringMessageId: 'm7',
+      reason: 'manual',
+      copyKey: 'manual',
+    });
+  });
+
+  it("n'ouvre qu'une seule offre si le filet client puis le SSE ciblent le même message", async () => {
+    const payload = [
+      'event: start\ndata: {"messageId":"m8","language":"fr"}\n\n',
+      'event: chunk\ndata: {"messageId":"m8","delta":"Je vous affiche le formulaire juste ici."}\n\n',
+      'event: end\ndata: {"messageId":"m8","latencyMs":1}\n\n',
+      'event: lead-form-offer\ndata: {"messageId":"m8","reason":"purchase-intent","copyKey":"purchase-intent"}\n\n',
+    ];
+    stubFetch(() => makeSseResponse(payload));
+
+    const { result } = renderHook(() => useChatSend());
+    await act(async () => {
+      await result.current.send('je veux commander');
+    });
+
+    await waitFor(() => {
+      expect(useChatStore.getState().leadOffer.status).toBe('offered');
+    });
+    // Le fallback client gagne car il est déclenché immédiatement à `end`;
+    // l'event SSE tardif est ignoré pour éviter une double instrumentation.
+    expect(useChatStore.getState().leadOffer).toMatchObject({
+      triggeringMessageId: 'm8',
+      reason: 'manual',
+      copyKey: 'manual',
+    });
   });
 });

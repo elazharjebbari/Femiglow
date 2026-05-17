@@ -4,6 +4,7 @@
 import { and, eq, gte, sql } from 'drizzle-orm';
 
 import { createId } from '@/lib/ids';
+import { rowsOf } from '@/lib/db/exec';
 
 import { requireChatDb } from '../db/client';
 import { chatConversationEvent, type ChatConversationEventRow } from '../db/schema';
@@ -46,5 +47,36 @@ export const eventRepo = {
         ),
       );
     return res[0]?.n ?? 0;
+  },
+
+  async hasLeadOfferForSession(sessionId: string): Promise<boolean> {
+    const db = requireChatDb();
+    const rows = await db
+      .select({ id: chatConversationEvent.id })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.sessionId, sessionId),
+          eq(chatConversationEvent.type, 'chat_lead_form_offered'),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  },
+
+  async hasLeadOfferForMessage(
+    sessionId: string,
+    messageId: string,
+  ): Promise<boolean> {
+    const db = requireChatDb();
+    const rows = await db.execute<{ id: string }>(sql`
+      SELECT id
+        FROM chat_conversation_event
+       WHERE session_id = ${sessionId}
+         AND type = 'chat_lead_form_offered'
+         AND payload->>'messageId' = ${messageId}
+       LIMIT 1
+    `);
+    return rowsOf(rows).length > 0;
   },
 };
