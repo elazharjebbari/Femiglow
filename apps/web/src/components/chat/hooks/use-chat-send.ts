@@ -13,6 +13,7 @@ import { useCallback, useRef } from 'react';
 import { useChatStore } from '../chat-store';
 import { readSseStream } from '../sse-reader';
 import { humanizeStream } from '../humanize.client';
+import { detectClientAssistantLeadTrigger } from '../assistant-reply-lead-trigger.client';
 import type { ChatLanguage } from '@/lib/chat/contracts';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
@@ -60,6 +61,7 @@ export function useChatSend(): {
       // l'illusion d'un humain qui tape. cf. CHA-078.
       let activeMessageId: string | null = null;
       const chunkQueue: string[] = [];
+      const leadOfferMessageIds = new Set<string>();
       // Ref-style pour éviter le narrowing TS : la réassignation via le
       // closure du Promise constructor n'est pas tracée par flow analysis.
       const queueResolver: { current: (() => void) | null } = { current: null };
@@ -130,7 +132,38 @@ export function useChatSend(): {
             message_id: ev.data.messageId,
             latency_ms: ev.data.latencyMs,
           });
+          const finalState = useChatStore.getState();
+          const assistant = finalState.messages.find((m) => m.id === ev.data.messageId);
+          const clientTrigger = assistant
+            ? detectClientAssistantLeadTrigger(
+                assistant.content,
+                (assistant.language ?? finalState.language) as ChatLanguage,
+              )
+            : null;
+          if (
+            clientTrigger &&
+            !leadOfferMessageIds.has(ev.data.messageId) &&
+            finalState.leadOffer.status === 'idle' &&
+            finalState.leadCapturedSessionId !== finalState.sessionId
+          ) {
+            leadOfferMessageIds.add(ev.data.messageId);
+            finalState.receiveLeadOffer({
+              messageId: ev.data.messageId,
+              reason: clientTrigger.reason,
+              copyKey: clientTrigger.copyKey,
+            });
+            emit('chat_lead_form_offered', {
+              session_id: state.sessionId,
+              message_id: ev.data.messageId,
+              reason: clientTrigger.reason,
+              copy_key: clientTrigger.copyKey,
+              source: clientTrigger.source,
+              matched_pattern: clientTrigger.matchedPattern,
+            });
+          }
         } else if (ev.event === 'lead-form-offer') {
+          if (leadOfferMessageIds.has(ev.data.messageId)) continue;
+          leadOfferMessageIds.add(ev.data.messageId);
           // CHA-213 — Pousse l'offre dans le store ; affichage géré par <MessageList>.
           useChatStore.getState().receiveLeadOffer({
             messageId: ev.data.messageId,

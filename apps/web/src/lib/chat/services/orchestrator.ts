@@ -16,7 +16,12 @@
  */
 import { logger } from '@/lib/logging/logger';
 
-import type { ChatStreamEvent } from '../contracts';
+import type {
+  ChatCannedPairLeadCopyKey,
+  ChatLanguage,
+  ChatLeadTriggerReason,
+  ChatStreamEvent,
+} from '../contracts';
 import type {
   ChatProviderMessage,
   ChatStreamRequest,
@@ -33,7 +38,7 @@ import { sessionRepo } from '../repos/session';
 import { providerRouter } from './provider-router';
 import { sanitizeAndRedact } from './sanitize';
 import { charterFilter } from './charter-filter';
-import { detectIntent } from './intent';
+import { detectIntent, type ChatIntent } from './intent';
 import { classifyByEmbedding } from './intent-vector';
 import {
   embedTexts,
@@ -41,13 +46,13 @@ import {
 } from './embeddings';
 import { faqRepo } from '../repos/faq';
 import { shouldOfferLeadForm } from './lead-decision';
+import { detectAssistantReplyLeadTrigger } from './assistant-reply-lead-trigger';
 import { notifyHotLead } from './lead-alerts';
 import { dispatchInlineContactWebhook } from '@/lib/webhooks/outbound/sources/from-inline-contact';
 import { notifyFrustrationSpike } from './frustration-alerts';
 import { detectInlineContact } from './phone-detect';
 import { ragService, type RetrievedChunk } from '../rag/service';
 import { getRuntimeBool } from '../runtime-setting';
-import { computeIdentityHash } from '../repos/identity-hash';
 import { leadRepo } from '../repos/lead';
 import { env } from '@/lib/env';
 
@@ -57,6 +62,12 @@ interface StreamReplyInput {
   session: ChatSessionRow;
   text: string;
   signal?: AbortSignal;
+}
+
+interface LeadOfferPayload {
+  messageId: string;
+  reason: ChatLeadTriggerReason;
+  copyKey: ChatCannedPairLeadCopyKey;
 }
 
 export async function* streamReply(
@@ -222,6 +233,19 @@ export async function* streamReply(
           event: 'end',
           data: { messageId: assistantMessage.id, latencyMs },
         };
+        const leadOffer = await maybeBuildLeadOfferAndCaptureInline({
+          session: input.session,
+          userMessage,
+          recent,
+          assistantMessageId: assistantMessage.id,
+          assistantReply: reply,
+          sanitizedContentRaw: sanitized.contentRaw,
+          language,
+          intentTag,
+        });
+        if (leadOffer) {
+          yield { event: 'lead-form-offer', data: leadOffer };
+        }
         return;
       }
     }
@@ -383,169 +407,18 @@ export async function* streamReply(
       data: { messageId: assistantMessage.id, latencyMs },
     };
 
-    // CHA-208 / CHA-225 — Décision lead-form-offer post-réponse. Best-effort :
-    // toute erreur ici ne doit pas faire échouer le flux principal.
-    //
-    // CRITIQUE : on doit utiliser `sanitized.contentRaw` (et non
-    // `contentSafe`) pour la détection téléphone, parce que `sanitize`
-    // remplace les numéros par `[téléphone]` avant d'envoyer au LLM.
-    // Sans ça, le détecteur ne verrait jamais le numéro et on
-    // perdrait toujours le lead.
-    try {
-      const leadEnabled = await getRuntimeBool('lead_form_enabled', true);
-      if (leadEnabled) {
-        const alreadyOffered = await leadRepo.hasLeadForSession(input.session.id);
-
-        // CHA-225 — Détection du téléphone dans le message BRUT (avant
-        // redaction). C'est ce verdict qu'on injecte ensuite dans
-        // `lead-decision` pour qu'il choisisse correctement la raison
-        // 'inline-contact' (priorité maximale).
-        const detection = detectInlineContact(sanitized.contentRaw);
-        const phoneDetected =
-          detection.phoneE164 != null &&
-          (detection.confidence === 'high' || detection.confidence === 'medium');
-
-        // `recent` inclut DÉJÀ `userMessage` (persisté juste avant
-        // `recentForMemory`). On ne le pousse PAS une 2e fois (sinon
-        // userCount est inflaté, ce qui peut déclencher à tort
-        // `after-hours` ou `long-no-progress`). On se contente de
-        // substituer son contenu par la version brute pour que la
-        // règle 0 (`looksLikePhone`) puisse voir les chiffres.
-        const fullHistory = recent.map((m) => ({
-          id: m.id,
-          role: m.role,
-          content:
-            m.id === userMessage.id ? sanitized.contentRaw : m.content,
-          createdAt: m.createdAt,
-        }));
-        // Si jamais userMessage n'est pas dans `recent` (cas limite :
-        // memory window saturée), on l'ajoute en bout de liste pour
-        // que `lastUserMsg` dans lead-decision pointe au bon endroit.
-        if (!fullHistory.some((m) => m.id === userMessage.id)) {
-          fullHistory.push({
-            id: userMessage.id,
-            role: userMessage.role,
-            content: sanitized.contentRaw,
-            createdAt: userMessage.createdAt,
-          });
-        }
-
-        const decision = shouldOfferLeadForm({
-          history: fullHistory,
-          currentIntent: intentTag,
-          assistantReply: aggregated,
-          alreadyOffered,
-          enabled: true,
-        });
-        if (decision.shouldOffer && decision.reason && decision.copyKey) {
-          await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
-            messageId: assistantMessage.id,
-            reason: decision.reason,
-            copyKey: decision.copyKey,
-          });
-          yield {
-            event: 'lead-form-offer',
-            data: {
-              messageId: assistantMessage.id,
-              reason: decision.reason,
-              copyKey: decision.copyKey,
-            },
-          };
-        }
-
-        // CHA-225 — Filet de sécurité commerciale.
-        //
-        // Si l'utilisateur a écrit son numéro EN CLAIR dans son dernier
-        // message ET qu'aucun lead avec cette identité n'existe pour la
-        // session, on crée un lead automatique en fallback. Le widget de
-        // capture est tout de même proposé (cf. décision ci-dessus, raison
-        // 'inline-contact') pour le consent RGPD propre. Si le visiteur
-        // ferme la conversation sans soumettre le formulaire, on n'a
-        // PAS perdu le lead — c'est précisément le bug reporté par
-        // l'utilisateur ("ya rien dans les leads de admin").
-        //
-        // CHA-240 — On vérifie par identité (phone+name hash) et non
-        // par session seule : un visiteur qui donne un numéro différent
-        // dans la même session peut légitimement créer un nouveau lead.
-        if (phoneDetected) {
-          const inlineIdentityHash = computeIdentityHash(
-            detection.phoneE164!,
-            detection.firstName ?? 'Visiteur',
-          );
-          const existingForIdentity = await leadRepo.findBySessionAndIdentity(
-            input.session.id,
-            inlineIdentityHash,
-          );
-          if (!existingForIdentity) {
-          try {
-            const snapshotMessages = fullHistory.slice(-6).map((m) => ({
-              role:
-                m.role === 'assistant'
-                  ? ('assistant' as const)
-                  : ('user' as const),
-              content: m.content.slice(0, 400),
-              at: m.createdAt.toISOString(),
-            }));
-            const autoLead = await leadRepo.create({
-              sessionId: input.session.id,
-              triggeringMessageId: userMessage.id,
-              triggerReason: 'inline-contact',
-              firstName: detection.firstName ?? 'Visiteur',
-              phoneE164: detection.phoneE164!,
-              phoneRaw:
-                detection.phoneRaw ?? sanitized.contentRaw.slice(0, 40),
-              note: 'Capture automatique — coordonnées détectées dans le chat. À confirmer par l\'agent humain.',
-              consentVersion: `${env.CHAT_LEAD_CONSENT_VERSION}+inline-fallback`,
-              consentAt: new Date(),
-              visitorId: input.session.visitorId,
-              fingerprintHash: input.session.fingerprintHash ?? null,
-              page: input.session.page ?? null,
-              referrer: input.session.referrer ?? null,
-              utm: input.session.utm ?? null,
-              language,
-              intentAtCapture: intentTag,
-              snapshotMessages,
-            });
-            await eventRepo.append(
-              input.session.id,
-              'chat_lead_auto_created',
-              {
-                leadId: autoLead.id,
-                triggerReason: 'inline-contact',
-                confidence: detection.confidence,
-                phoneCountry: detection.phoneMeta?.country ?? null,
-                source: 'phone-in-chat',
-              },
-            );
-            logger.info('chat.orchestrator.inline_contact_auto_lead', {
-              sessionId: input.session.id,
-              leadId: autoLead.id,
-              confidence: detection.confidence,
-            });
-            // CHAT-066 — Alerte Slack pour ce lead "chaud" auto-créé.
-            void notifyHotLead(autoLead, { adminBaseUrl: env.NEXT_PUBLIC_SITE_URL });
-            // Webhook immédiat pour les leads inline-contact (fire-and-forget).
-            void dispatchInlineContactWebhook(autoLead).catch((err: unknown) => {
-              logger.warn('chat.orchestrator.inline_contact_webhook_failed', {
-                leadId: autoLead.id,
-                error: err instanceof Error ? err.message : String(err),
-              });
-            });
-          } catch (err) {
-            // On ne casse pas le flux — log + KPI suffisent.
-            logger.warn('chat.orchestrator.inline_contact_auto_lead_failed', {
-              sessionId: input.session.id,
-              error: (err as Error).message,
-            });
-          }
-          } // fin if (!existingForIdentity)
-        } // fin if (phoneDetected)
-      }
-    } catch (err) {
-      logger.warn('chat.orchestrator.lead_decision_failed', {
-        sessionId: input.session.id,
-        error: (err as Error).message,
-      });
+    const leadOffer = await maybeBuildLeadOfferAndCaptureInline({
+      session: input.session,
+      userMessage,
+      recent,
+      assistantMessageId: assistantMessage.id,
+      assistantReply: aggregated,
+      sanitizedContentRaw: sanitized.contentRaw,
+      language,
+      intentTag,
+    });
+    if (leadOffer) {
+      yield { event: 'lead-form-offer', data: leadOffer };
     }
   } catch (err) {
     const e = err as { code?: string; message?: string; retryable?: boolean };
@@ -583,6 +456,171 @@ function pickInstructionByLang(
   if (language === 'ar' && instruction.bodyAr) return instruction.bodyAr;
   if (language === 'ar-MA' && instruction.bodyArMa) return instruction.bodyArMa;
   return instruction.body;
+}
+
+async function maybeBuildLeadOfferAndCaptureInline(input: {
+  session: ChatSessionRow;
+  userMessage: ChatMessageRow;
+  recent: ChatMessageRow[];
+  assistantMessageId: string;
+  assistantReply: string;
+  sanitizedContentRaw: string;
+  language: ChatLanguage;
+  intentTag: ChatIntent;
+}): Promise<LeadOfferPayload | null> {
+  try {
+    const leadEnabled = await getRuntimeBool('lead_form_enabled', true);
+    if (!leadEnabled) return null;
+
+    const leadAlreadyCaptured = await leadRepo.hasLeadForSession(input.session.id);
+    const offerAlreadyEmitted =
+      await eventRepo.hasLeadOfferForSession(input.session.id);
+    const offerAlreadyEmittedForMessage =
+      await eventRepo.hasLeadOfferForMessage(
+        input.session.id,
+        input.assistantMessageId,
+      );
+    const alreadyOffered = leadAlreadyCaptured || offerAlreadyEmitted;
+
+    // CRITIQUE: detecter les telephones sur le texte brut, pas sur
+    // contentSafe, car sanitize remplace les numeros par [telephone].
+    const detection = detectInlineContact(input.sanitizedContentRaw);
+    const phoneDetected =
+      detection.phoneE164 != null &&
+      (detection.confidence === 'high' || detection.confidence === 'medium');
+
+    const fullHistory = input.recent.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content:
+        m.id === input.userMessage.id ? input.sanitizedContentRaw : m.content,
+      createdAt: m.createdAt,
+    }));
+    if (!fullHistory.some((m) => m.id === input.userMessage.id)) {
+      fullHistory.push({
+        id: input.userMessage.id,
+        role: input.userMessage.role,
+        content: input.sanitizedContentRaw,
+        createdAt: input.userMessage.createdAt,
+      });
+    }
+
+    let offer: LeadOfferPayload | null = null;
+    const decision = shouldOfferLeadForm({
+      history: fullHistory,
+      currentIntent: input.intentTag,
+      assistantReply: input.assistantReply,
+      alreadyOffered,
+      enabled: true,
+    });
+
+    if (
+      decision.shouldOffer &&
+      decision.reason &&
+      decision.copyKey &&
+      !offerAlreadyEmittedForMessage
+    ) {
+      offer = {
+        messageId: input.assistantMessageId,
+        reason: decision.reason,
+        copyKey: decision.copyKey,
+      };
+      await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
+        ...offer,
+        source: 'lead-decision',
+        detectorVersion: 'lead-decision/v1',
+      });
+    } else if (!alreadyOffered && !offerAlreadyEmittedForMessage) {
+      const assistantTrigger = detectAssistantReplyLeadTrigger({
+        assistantReply: input.assistantReply,
+        currentIntent: input.intentTag,
+        language: input.language,
+      });
+      if (
+        assistantTrigger.shouldOffer &&
+        assistantTrigger.reason &&
+        assistantTrigger.copyKey
+      ) {
+        offer = {
+          messageId: input.assistantMessageId,
+          reason: assistantTrigger.reason,
+          copyKey: assistantTrigger.copyKey,
+        };
+        await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
+          ...offer,
+          source: assistantTrigger.source,
+          confidence: assistantTrigger.confidence,
+          matchedPatterns: assistantTrigger.matchedPatterns,
+          detectorVersion: 'assistant-reply-lead-trigger/v1',
+        });
+      }
+    }
+
+    if (phoneDetected) {
+      try {
+        const snapshotMessages = fullHistory.slice(-6).map((m) => ({
+          role:
+            m.role === 'assistant'
+              ? ('assistant' as const)
+              : ('user' as const),
+          content: m.content.slice(0, 400),
+          at: m.createdAt.toISOString(),
+        }));
+        const autoLead = await leadRepo.create({
+          sessionId: input.session.id,
+          triggeringMessageId: input.userMessage.id,
+          triggerReason: 'inline-contact',
+          firstName: detection.firstName ?? 'Visiteur',
+          phoneE164: detection.phoneE164!,
+          phoneRaw:
+            detection.phoneRaw ?? input.sanitizedContentRaw.slice(0, 40),
+          note: 'Capture automatique — coordonnées détectées dans le chat. À confirmer par l\'agent humain.',
+          consentVersion: `${env.CHAT_LEAD_CONSENT_VERSION}+inline-fallback`,
+          consentAt: new Date(),
+          visitorId: input.session.visitorId,
+          fingerprintHash: input.session.fingerprintHash ?? null,
+          page: input.session.page ?? null,
+          referrer: input.session.referrer ?? null,
+          utm: input.session.utm ?? null,
+          language: input.language,
+          intentAtCapture: input.intentTag,
+          snapshotMessages,
+        });
+        await eventRepo.append(input.session.id, 'chat_lead_auto_created', {
+          leadId: autoLead.id,
+          triggerReason: 'inline-contact',
+          confidence: detection.confidence,
+          phoneCountry: detection.phoneMeta?.country ?? null,
+          source: 'phone-in-chat',
+        });
+        logger.info('chat.orchestrator.inline_contact_auto_lead', {
+          sessionId: input.session.id,
+          leadId: autoLead.id,
+          confidence: detection.confidence,
+        });
+        void notifyHotLead(autoLead, { adminBaseUrl: env.NEXT_PUBLIC_SITE_URL });
+        void dispatchInlineContactWebhook(autoLead).catch((err: unknown) => {
+          logger.warn('chat.orchestrator.inline_contact_webhook_failed', {
+            leadId: autoLead.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      } catch (err) {
+        logger.warn('chat.orchestrator.inline_contact_auto_lead_failed', {
+          sessionId: input.session.id,
+          error: (err as Error).message,
+        });
+      }
+    }
+
+    return offer;
+  } catch (err) {
+    logger.warn('chat.orchestrator.lead_decision_failed', {
+      sessionId: input.session.id,
+      error: (err as Error).message,
+    });
+    return null;
+  }
 }
 
 function _unusedTypeKeeper(_: ChatMessageRow): void {}

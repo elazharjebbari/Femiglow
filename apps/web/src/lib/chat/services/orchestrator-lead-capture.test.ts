@@ -229,6 +229,41 @@ describe('Scénario 2 — purchase-intent dès le 1er tour (CHA-225)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Scénario 2bis — Ceinture serveur : la réponse IA promet le formulaire
+// ---------------------------------------------------------------------------
+
+describe('Scénario 2bis — assistant-reply trigger formulaire', () => {
+  it("propose le widget quand l'assistant promet le formulaire même si l'intent user est misc", async () => {
+    useStubReply('Je vous affiche le formulaire juste ici pour être rappelée.');
+    const session = makeTestSession();
+
+    const r = await runUserTurn(session, 'je ne sais pas trop quoi choisir');
+
+    expect(r.leadOffered).toBe(true);
+    expect(r.leadOfferReason).toBe('manual');
+    const evt = simStores.events.find((e) => e.type === 'chat_lead_form_offered');
+    expect(evt).toBeDefined();
+    expect((evt!.payload as { source?: string }).source).toBe(
+      'assistant-reply-form',
+    );
+  });
+
+  it("ne propose pas deux offres si une offre a déjà été émise dans la session", async () => {
+    useStubReply('Je vous affiche le formulaire juste ici.');
+    const session = makeTestSession();
+
+    const r1 = await runUserTurn(session, 'premier message neutre');
+    expect(r1.leadOffered).toBe(true);
+
+    const r2 = await runUserTurn(session, 'deuxième message neutre');
+    expect(r2.leadOffered).toBe(false);
+
+    const offers = simStores.events.filter((e) => e.type === 'chat_lead_form_offered');
+    expect(offers).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Scénario 3 — Conversation type complète (greeting → pricing → purchase)
 // ---------------------------------------------------------------------------
 

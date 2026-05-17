@@ -449,6 +449,13 @@
       "when": 1779500000055,
       "tag": "0055_chat_lead_identity_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1779500000056,
+      "tag": "0056_inline_contact_webhook_events",
+      "breakpoints": true
     }
   ]
 }
