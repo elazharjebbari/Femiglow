@@ -64,6 +64,42 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       return HttpResponse.json({ idea });
     }),
 
+    // GET /api/admin/content-studio/ideas — list ideas with filters
+    http.get('http://localhost/api/admin/content-studio/ideas', ({ request }) => {
+      inc(state, 'GET /ideas');
+      const url = new URL(request.url);
+      const status = url.searchParams.get('status');
+      const limit = Number(url.searchParams.get('limit') ?? '20');
+      const offset = Number(url.searchParams.get('offset') ?? '0');
+      let filtered = state.ideas;
+      if (status) filtered = filtered.filter((i) => i.status === status);
+      return HttpResponse.json({ ideas: filtered.slice(offset, offset + limit), total: filtered.length });
+    }),
+
+    // GET /api/admin/content-studio/drafts — list drafts with filters
+    http.get('http://localhost/api/admin/content-studio/drafts', ({ request }) => {
+      inc(state, 'GET /drafts');
+      const url = new URL(request.url);
+      const status = url.searchParams.get('status');
+      const limit = Number(url.searchParams.get('limit') ?? '20');
+      const offset = Number(url.searchParams.get('offset') ?? '0');
+      let filtered = state.drafts;
+      if (status) filtered = filtered.filter((d) => d.status === status);
+      return HttpResponse.json({ drafts: filtered.slice(offset, offset + limit), total: filtered.length });
+    }),
+
+    // GET /api/admin/content-studio/posts — list posts with filters
+    http.get('http://localhost/api/admin/content-studio/posts', ({ request }) => {
+      inc(state, 'GET /posts');
+      const url = new URL(request.url);
+      const status = url.searchParams.get('status');
+      const limit = Number(url.searchParams.get('limit') ?? '20');
+      const offset = Number(url.searchParams.get('offset') ?? '0');
+      let filtered = state.posts;
+      if (status) filtered = filtered.filter((p) => p.status === status);
+      return HttpResponse.json({ posts: filtered.slice(offset, offset + limit), total: filtered.length });
+    }),
+
     // POST /api/admin/content-studio/ideas/:id/generate — generate drafts from idea
     http.post('http://localhost/api/admin/content-studio/ideas/:id/generate', async ({ params }) => {
       inc(state, 'POST /ideas/:id/generate');

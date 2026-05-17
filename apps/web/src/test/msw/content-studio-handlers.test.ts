@@ -368,4 +368,130 @@ describe('MSW — Content Studio API handlers', () => {
       expect(json.version).toBe('P3');
     });
   });
+
+  describe('GET /api/admin/content-studio/ideas (list)', () => {
+    it('retourne la liste des idées', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/ideas');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.ideas).toBeInstanceOf(Array);
+      expect(json.total).toBeGreaterThanOrEqual(1);
+    });
+
+    it('filtre par status', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/ideas?status=idea');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.ideas.every((i: { status: string }) => i.status === 'idea')).toBe(true);
+    });
+
+    it('respecte limit et offset', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/ideas?limit=0&offset=0');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.ideas.length).toBe(0);
+    });
+  });
+
+  describe('GET /api/admin/content-studio/drafts (list)', () => {
+    it('retourne la liste des drafts', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/drafts');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.drafts).toBeInstanceOf(Array);
+      expect(json.total).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('GET /api/admin/content-studio/posts (list)', () => {
+    it('retourne la liste des posts', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/posts');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.posts).toBeInstanceOf(Array);
+      expect(json.total).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('POST /api/admin/content-studio/ideas/:id/generate', () => {
+    it('génère des drafts depuis une idée', async () => {
+      const ideaId = state.ideas[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/ideas/${ideaId}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.idea.status).toBe('brief');
+      expect(json.drafts).toBeInstanceOf(Array);
+      expect(json.drafts.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('retourne 404 pour une idée inexistante', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/ideas/nonexistent/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/admin/content-studio/posts/:id/postiz-draft', () => {
+    it('crée un draft Postiz pour un post', async () => {
+      const postId = state.posts[0]!.id;
+      const res = await fetch(`http://localhost/api/admin/content-studio/posts/${postId}/postiz-draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.delivery).toBeDefined();
+      expect(json.delivery.postId).toBe(postId);
+      expect(json.post).toBeDefined();
+    });
+
+    it('retourne 404 pour un post inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/posts/nonexistent/postiz-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('GET /api/admin/content-studio/generation-runs (with budget)', () => {
+    it('retourne le budget quotidien avec les runs', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/generation-runs');
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.budget).toBeDefined();
+      expect(json.budget.dailyBudgetCents).toBe(500);
+      expect(typeof json.budget.dailySpentCents).toBe('number');
+      expect(typeof json.budget.remainingCents).toBe('number');
+    });
+  });
+
+  describe('404 manquants', () => {
+    it('POST /drafts/:id/archive retourne 404 pour un draft inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/drafts/nonexistent/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it('POST /posts/:id/archive retourne 404 pour un post inexistant', async () => {
+      const res = await fetch('http://localhost/api/admin/content-studio/posts/nonexistent/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
 });
