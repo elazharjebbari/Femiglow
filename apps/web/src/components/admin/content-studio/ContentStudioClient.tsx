@@ -19,6 +19,19 @@ import {
   CONTENT_PLATFORMS,
 } from '@/lib/content-studio/types';
 import type { Integration, StudioMediaItem, DraftAssetsByDraftId, MediaCompartment, AutomationResponse } from './types';
+import { SectionTitle } from './SectionTitle';
+import { DeliveryStatusBadge } from './DeliveryStatusBadge';
+import { PlatformPreview } from './PlatformPreview';
+import { StudioGuide } from './StudioGuide';
+import {
+  extractUploadedImage,
+  summarizeSnapshot,
+  defaultScheduleValue,
+  toIsoOrNull,
+  toLocalDatetimeInput,
+  formatShortDate,
+  defaultVisualPrompt,
+} from './helpers';
 
 interface Props {
   initialIdeas: ContentIdea[];
@@ -208,64 +221,6 @@ export function ContentStudioClient({
   );
 }
 
-function StudioGuide() {
-  return (
-    <details className="group rounded-md border border-stone-200 bg-stone-50/70 px-4 py-3 text-sm text-stone-700">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
-        <span>
-          <span className="block text-sm font-semibold text-stone-900">
-            Comment utiliser ce studio
-          </span>
-          <span className="mt-0.5 block text-xs text-stone-500">
-            Workflow court : idée, propositions, relecture marque, validation, draft Postiz.
-          </span>
-        </span>
-        <span className="shrink-0 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-600 group-open:hidden">
-          Ouvrir
-        </span>
-        <span className="hidden shrink-0 rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-600 group-open:inline">
-          Fermer
-        </span>
-      </summary>
-      <div className="mt-4 grid gap-3 border-t border-stone-200 pt-4 md:grid-cols-4">
-        <div className="rounded border border-stone-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">1. Cadrer</p>
-          <p className="mt-1 text-sm leading-6">
-            Choisis le pilier, l'objectif, la plateforme et le format. L'intention doit expliquer
-            le message à produire, pas seulement un titre.
-          </p>
-        </div>
-        <div className="rounded border border-stone-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">2. Générer</p>
-          <p className="mt-1 text-sm leading-6">
-            Le studio crée trois brouillons de texte, les relit avec les règles FemiGlow et affiche
-            un score marque pour prioriser la meilleure piste.
-          </p>
-        </div>
-        <div className="rounded border border-stone-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">3. Visuel</p>
-          <p className="mt-1 text-sm leading-6">
-            Génère un visuel IA dans le compartiment dédié ou choisis un média importé. Les deux
-            compartiments sont sélectionnables pour le post.
-          </p>
-        </div>
-        <div className="rounded border border-stone-200 bg-white p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">4. Publier</p>
-          <p className="mt-1 text-sm leading-6">
-            Modifie la caption, sauvegarde pour relire, approuve, synchronise Postiz puis crée un
-            brouillon social. Rien n'est publié automatiquement.
-          </p>
-        </div>
-      </div>
-      <div className="mt-3 rounded border border-violet-200 bg-violet-50 px-3 py-2 text-xs leading-5 text-violet-900">
-        Le mode visuel IA est en <strong>mode test</strong> par défaut (pas de crédit OpenAI consommé).
-        Pour activer la génération réelle, configurez <code>CONTENT_STUDIO_IMAGE_PROVIDER=openai</code> et
-        <code> CONTENT_STUDIO_OPENAI_API_KEY</code>. Les visuels générés restent isolés dans le compartiment
-        IA du Studio et n'apparaissent pas dans la médiathèque classique FemiGlow.
-      </div>
-    </details>
-  );
-}
 
 function IdeaForm({
   disabled,
@@ -864,40 +819,6 @@ function MediaPicker({
   );
 }
 
-function PlatformPreview({
-  caption,
-  hashtags,
-  media,
-}: {
-  caption: string;
-  hashtags: string[];
-  media: StudioMediaItem | null;
-}) {
-  return (
-    <div className="mt-3 max-w-md rounded-md border border-stone-200 bg-white">
-      <div className="flex items-center gap-2 border-b border-stone-200 px-3 py-2">
-        <div className="h-7 w-7 rounded-full bg-stone-900" />
-        <div>
-          <p className="text-xs font-semibold text-stone-900">FemiGlow Maroc</p>
-          <p className="text-xs text-stone-500">Brouillon preview</p>
-        </div>
-      </div>
-      <div className="aspect-[4/5] bg-stone-100">
-        {media?.previewUrl ? (
-          <img src={media.previewUrl} alt={media.alt} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-stone-500">
-            Sélectionnez un média pour vérifier le rendu avant Postiz.
-          </div>
-        )}
-      </div>
-      <div className="space-y-2 px-3 py-3">
-        <p className="whitespace-pre-wrap text-sm leading-6 text-stone-800">{caption}</p>
-        <p className="text-xs text-stone-500">{hashtags.map((tag) => `#${tag}`).join(' ')}</p>
-      </div>
-    </div>
-  );
-}
 
 function PostizHealthPanel({
   posts,
@@ -1210,53 +1131,6 @@ function DeliveryPanel({
   );
 }
 
-function SectionTitle({
-  eyebrow,
-  title,
-  description,
-  tone,
-}: {
-  eyebrow: string;
-  title: string;
-  description?: string;
-  tone: 'rose' | 'sky' | 'amber' | 'violet' | 'teal' | 'indigo';
-}) {
-  const toneClass = {
-    rose: 'text-rose-700',
-    sky: 'text-sky-700',
-    amber: 'text-amber-700',
-    violet: 'text-violet-700',
-    teal: 'text-teal-700',
-    indigo: 'text-indigo-700',
-  }[tone];
-  return (
-    <div>
-      <p className={`text-xs font-semibold uppercase tracking-wide ${toneClass}`}>{eyebrow}</p>
-      <h2 className="mt-0.5 text-sm font-semibold text-stone-900">{title}</h2>
-      {description ? <p className="mt-0.5 text-xs text-stone-500">{description}</p> : null}
-    </div>
-  );
-}
-
-function DeliveryStatusBadge({ status }: { status: ContentPostizDelivery['status'] }) {
-  const cls =
-    status === 'sent'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-      : status === 'failed' || status === 'auth_failed'
-        ? 'border-red-200 bg-red-50 text-red-800'
-        : 'border-stone-200 bg-white text-stone-600';
-  return (
-    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${cls}`}>
-      {status === 'sent'
-        ? 'Envoyé'
-        : status === 'failed'
-          ? 'Échec'
-          : status === 'auth_failed'
-            ? 'Auth Postiz'
-            : 'En attente'}
-    </span>
-  );
-}
 
 function EditorialCalendar({
   posts,
@@ -1354,61 +1228,6 @@ function OpsMetric({
   );
 }
 
-function extractUploadedImage(delivery: ContentPostizDelivery): { id?: string; path?: string } | null {
-  const posts = delivery.request.posts;
-  if (!Array.isArray(posts)) return null;
-  const first = posts[0] as { value?: unknown };
-  if (!Array.isArray(first.value)) return null;
-  const value = first.value[0] as { image?: unknown };
-  if (!Array.isArray(value.image)) return null;
-  return (value.image[0] as { id?: string; path?: string }) ?? null;
-}
-
-function summarizeSnapshot(snapshot: ContentPerformanceSnapshot): string {
-  const metrics = snapshot.metrics;
-  if (snapshot.source === 'postiz_status') {
-    const state = typeof metrics.state === 'string' ? metrics.state : 'état inconnu';
-    const releaseURL = typeof metrics.releaseURL === 'string' ? metrics.releaseURL : null;
-    return releaseURL ? `${state} · ${releaseURL}` : state;
-  }
-  const analytics = metrics.analytics;
-  if (Array.isArray(analytics)) return `${analytics.length} métrique(s) analytics importée(s).`;
-  if (analytics && typeof analytics === 'object' && 'missing' in analytics) {
-    return 'Analytics manquantes : release id à relier côté Postiz.';
-  }
-  return 'Snapshot importé.';
-}
-
-function defaultScheduleValue(): string {
-  const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  date.setMinutes(0, 0, 0);
-  return toLocalDatetimeInput(date);
-}
-
-function toIsoOrNull(value: string): string | null {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
-}
-
-function toLocalDatetimeInput(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function formatShortDate(value: string | Date): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
-function defaultVisualPrompt(draft: ContentDraft): string {
-  const hook = draft.hook ? `${draft.hook}. ` : '';
-  return `${hook}Visuel beauté naturel FemiGlow, rituel ongles et mains, ambiance premium marocaine douce, lumière naturelle, composition éditoriale propre, sans texte lisible ni promesse médicale.`;
-}
 
 function PostizPanel({
   integrations,
