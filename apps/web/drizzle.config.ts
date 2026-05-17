@@ -5,6 +5,7 @@ export default {
     './src/lib/db/schema.ts',
     './src/lib/db/schema-emails.ts',
     './src/lib/chat/db/schema.ts',
+    './src/lib/db/schema-content-studio.ts',
   ],
   out: './drizzle/migrations',
   dialect: 'postgresql',

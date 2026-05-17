@@ -219,6 +219,18 @@ export interface MediaOverrides {
    */
   backgroundFill?: string;
   /**
+   * Métadonnées internes au Content Studio. Elles permettent d'isoler les
+   * visuels générés par IA des médias importés sans modifier l'usage global
+   * de la médiathèque.
+   */
+  contentStudio?: {
+    origin?: 'ai_generated' | 'imported';
+    provider?: string;
+    promptVersion?: string;
+    sourceDraftId?: string;
+    sourceIdeaId?: string;
+  };
+  /**
    * Si true, demande au pipeline (au seed ou re-générer) de cropper
    * physiquement les variants à l'aspectRatioHint du slot (centré sur le
    * focal point). Élimine définitivement le letterbox en `cover`.

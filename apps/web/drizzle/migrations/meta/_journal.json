@@ -398,14 +398,42 @@
       "idx": 56,
       "version": "7",
       "when": 1779500000048,
-      "tag": "0048_m5.5_automation_extensions",
+      "tag": "0047b_email_automation_run_status_add_waiting",
       "breakpoints": true
     },
     {
       "idx": 57,
       "version": "7",
       "when": 1779500000049,
+      "tag": "0048_m5.5_automation_extensions",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1779500000050,
       "tag": "0049_m5.5_lead_tag",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1779500000051,
+      "tag": "0049b_tracking_component_category_add_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1779500000052,
+      "tag": "0049c_tracking_component_enum_additions",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1779500000053,
+      "tag": "0050_ai_content_studio",
       "breakpoints": true
     }
   ]
