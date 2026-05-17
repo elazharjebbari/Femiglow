@@ -28,7 +28,12 @@ export function StepProviders({
   onChange: (next: Provider[]) => void;
 }): JSX.Element {
   function toggle(id: ProviderId) {
-    onChange(providers.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
+    const existing = providers.find((p) => p.id === id);
+    if (existing) {
+      onChange(providers.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
+    } else {
+      onChange([...providers, { id, active: true }]);
+    }
   }
 
   return (
