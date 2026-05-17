@@ -22,6 +22,7 @@ import { CancelDialog } from './CancelDialog';
 import { ArchiveButton } from './ArchiveButton';
 import { BriefEditor } from './BriefEditor';
 import { postJson, patchJson, getJson } from './api';
+import { draftUpdateSchema } from '@/lib/content-studio/schemas';
 import {
   extractUploadedImage,
   defaultScheduleValue,
@@ -71,6 +72,7 @@ export function DraftEditor({
   const [integrationId, setIntegrationId] = useState('');
   const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue());
   const [brief, setBrief] = useState<ContentBrief | null>(null);
+  const [draftErrors, setDraftErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!selectedDraft?.briefId) {
@@ -161,8 +163,13 @@ export function DraftEditor({
             value={caption}
             onChange={(event) => setCaption(event.target.value)}
             rows={10}
-            className="mt-1 w-full rounded-md border border-stone-200 px-3 py-2 text-sm leading-6"
+            className={`mt-1 w-full rounded-md border px-3 py-2 text-sm leading-6 ${
+              draftErrors.caption ? 'border-red-300 bg-red-50' : 'border-stone-200'
+            }`}
           />
+          {draftErrors.caption ? (
+            <p className="mt-1 text-xs text-red-700">{draftErrors.caption}</p>
+          ) : null}
         </label>
         <MediaPicker
           mediaItems={mediaItems}
@@ -231,12 +238,24 @@ export function DraftEditor({
           <button
             type="button"
             disabled={disabled}
-            onClick={() =>
+            onClick={() => {
+              setDraftErrors({});
+              const patch = { caption, mediaId: mediaId || selectedAsset?.mediaId || undefined };
+              const parsed = draftUpdateSchema.safeParse(patch);
+              if (!parsed.success) {
+                const fieldErrors: Record<string, string> = {};
+                for (const issue of parsed.error.issues) {
+                  const key = issue.path.join('.');
+                  fieldErrors[key] = issue.message;
+                }
+                setDraftErrors(fieldErrors);
+                return;
+              }
               run(
                 async () =>
                   patchJson<{ draft: ContentDraft }>(
                     `/api/admin/content-studio/drafts/${selectedDraft.id}`,
-                    { caption, mediaId: mediaId || selectedAsset?.mediaId || undefined },
+                    parsed.data,
                   ),
                 (value) => {
                   setDrafts((current) =>
@@ -258,7 +277,7 @@ export function DraftEditor({
                   setMessage('Brouillon sauvegardé, média associé et contenu relu.');
                 },
               )
-            }
+            }}
             className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-950 disabled:opacity-50"
           >
             Sauvegarder + relire
