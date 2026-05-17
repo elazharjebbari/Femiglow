@@ -435,6 +435,13 @@
       "when": 1779500000053,
       "tag": "0053_priority_cities",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1779500000054,
+      "tag": "0054_chat_lead_unique_session",
+      "breakpoints": true
     }
   ]
 }

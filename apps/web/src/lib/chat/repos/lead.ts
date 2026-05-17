@@ -34,15 +34,23 @@ export interface ListForAdminQuery {
 }
 
 export const leadRepo = {
-  /** Insère un nouveau lead. Renvoie la ligne créée. */
+  /**
+   * Insère un nouveau lead. Si un lead existe déjà pour la même session,
+   * retourne le lead existant sans créer de doublon (upsert atomique).
+   * Garantit l'unicité par session_id grâce à l'index UNIQUE.
+   */
   async create(insert: Omit<ChatLeadInsert, 'id'> & { id?: string }): Promise<ChatLeadRow> {
     const db = requireChatDb();
     const id = insert.id ?? createId('cl');
     const rows = await db
       .insert(chatLead)
       .values({ ...insert, id })
+      .onConflictDoNothing({ target: chatLead.sessionId })
       .returning();
-    return rows[0]!;
+    if (rows.length > 0) return rows[0]!;
+    // Conflict: a lead already exists for this session. Fetch it.
+    const existing = await leadRepo.findBySession(insert.sessionId);
+    return existing!;
   },
 
   async getById(id: string): Promise<ChatLeadRow | null> {

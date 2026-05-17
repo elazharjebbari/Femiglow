@@ -63,6 +63,8 @@ export const wizardLeadRepo = {
   /**
    * Step 1 — crée le lead côté wizard. Le téléphone est normalisé E.164
    * AVANT insert pour garantir l'unicité applicative par numéro.
+   * Si un lead existe déjà pour cette session, retourne le lead existant
+   * sans créer de doublon (upsert atomique via ON CONFLICT).
    */
   async createWizardLead(input: CreateWizardLeadInput): Promise<ChatLeadRow> {
     const phoneE164 = normalizePhoneToE164Maroc(input.phone);
@@ -100,8 +102,19 @@ export const wizardLeadRepo = {
       fbp: input.fbp ?? null,
       fbc: input.fbc ?? null,
     };
-    const rows = await db.insert(chatLead).values(insert).returning();
-    return rows[0]!;
+    const rows = await db
+      .insert(chatLead)
+      .values(insert)
+      .onConflictDoNothing({ target: chatLead.sessionId })
+      .returning();
+    if (rows.length > 0) return rows[0]!;
+    // Conflict: a lead already exists for this session. Fetch it.
+    const existing = await db
+      .select()
+      .from(chatLead)
+      .where(eq(chatLead.sessionId, input.sessionId))
+      .limit(1);
+    return existing[0]!;
   },
 
   async getById(id: string): Promise<ChatLeadRow | null> {
