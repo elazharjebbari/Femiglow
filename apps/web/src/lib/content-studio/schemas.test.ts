@@ -4,6 +4,13 @@ import {
   draftUpdateSchema,
   postizDraftSchema,
   visualGenerationSchema,
+  briefUpdateSchema,
+  learningNoteSchema,
+  draftRejectSchema,
+  postCancelSchema,
+  ideaQuerySchema,
+  draftQuerySchema,
+  postQuerySchema,
 } from './schemas';
 
 describe('content studio schemas', () => {
@@ -134,6 +141,91 @@ describe('content studio schemas', () => {
         expect(result.data.size).toBe('1024x1536');
         expect(result.data.quality).toBe('low');
       }
+    });
+  });
+
+  describe('briefUpdateSchema', () => {
+    it('valide une mise à jour angle', () => {
+      const result = briefUpdateSchema.safeParse({ angle: 'Nouvel angle' });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepte des constraints', () => {
+      const result = briefUpdateSchema.safeParse({ constraints: { maxHashtags: 10 } });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejette les champs inconnus', () => {
+      const result = briefUpdateSchema.safeParse({ unknown: true });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('learningNoteSchema', () => {
+    it('valide une note correcte', () => {
+      const result = learningNoteSchema.safeParse({ note: 'Le hook question génère plus d\'engagement' });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejette une note vide', () => {
+      const result = learningNoteSchema.safeParse({ note: '' });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejette plus de 5 tags', () => {
+      const result = learningNoteSchema.safeParse({ note: 'Test', tags: ['a', 'b', 'c', 'd', 'e', 'f'] });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('draftRejectSchema', () => {
+    it('valide sans raison', () => {
+      expect(draftRejectSchema.safeParse({}).success).toBe(true);
+    });
+
+    it('valide avec raison', () => {
+      expect(draftRejectSchema.safeParse({ reason: 'Pas assez convaincant' }).success).toBe(true);
+    });
+
+    it('rejette une raison trop longue', () => {
+      expect(draftRejectSchema.safeParse({ reason: 'x'.repeat(501) }).success).toBe(false);
+    });
+  });
+
+  describe('postCancelSchema', () => {
+    it('valide sans raison', () => {
+      expect(postCancelSchema.safeParse({}).success).toBe(true);
+    });
+
+    it('rejette une raison trop longue', () => {
+      expect(postCancelSchema.safeParse({ reason: 'x'.repeat(501) }).success).toBe(false);
+    });
+  });
+
+  describe('query schemas (pagination)', () => {
+    it('ideaQuerySchema accepte un objet vide (partial)', () => {
+      const result = ideaQuerySchema.safeParse({});
+      expect(result.success).toBe(true);
+    });
+
+    it('ideaQuerySchema accepte limit + offset', () => {
+      const result = ideaQuerySchema.safeParse({ limit: 50, offset: 0 });
+      expect(result.success).toBe(true);
+    });
+
+    it('draftQuerySchema accepte status + platform', () => {
+      const result = draftQuerySchema.safeParse({ status: 'generated', platform: 'instagram' });
+      expect(result.success).toBe(true);
+    });
+
+    it('postQuerySchema accepte scheduledAfter + scheduledBefore', () => {
+      const result = postQuerySchema.safeParse({ scheduledAfter: '2026-01-01', scheduledBefore: '2026-12-31' });
+      expect(result.success).toBe(true);
+    });
+
+    it('ideaQuerySchema rejette limit > 100', () => {
+      const result = ideaQuerySchema.safeParse({ limit: 200 });
+      expect(result.success).toBe(false);
     });
   });
 });
