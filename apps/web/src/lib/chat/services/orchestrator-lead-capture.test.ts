@@ -140,17 +140,32 @@ describe('Scénario 1 — phone in-chat (CHA-225)', () => {
     expect(result.leads).toHaveLength(0);
   });
 
-  it("ne crée pas de doublon si l'utilisateur retape son numéro au tour suivant", async () => {
+  it("ne crée pas de doublon si l'utilisateur retape le même numéro et nom (même identité)", async () => {
     useStubReply('Une seule réponse stub.');
     const session = makeTestSession();
 
     const r1 = await runUserTurn(session, 'hamid +212751592310');
     expect(r1.autoLeadCreated).toBe(true);
 
-    const r2 = await runUserTurn(session, 'rappelez-moi vite +212751592310');
+    // Même numéro + même prénom → même identityHash → pas de doublon.
+    const r2 = await runUserTurn(session, 'hamid +212751592310 rappellez-moi');
     expect(r2.autoLeadCreated).toBe(false);
     // Total : 1 seul lead pour la session.
     expect([...simStores.leads.values()]).toHaveLength(1);
+  });
+
+  it("crée un nouveau lead si l'identité diffère (numéro différent, même session)", async () => {
+    useStubReply('Une seule réponse stub.');
+    const session = makeTestSession();
+
+    const r1 = await runUserTurn(session, 'hamid +212751592310');
+    expect(r1.autoLeadCreated).toBe(true);
+
+    // Numéro différent → identityHash différent → nouveau lead autorisé.
+    const r2 = await runUserTurn(session, 'fatima +212698765432');
+    expect(r2.autoLeadCreated).toBe(true);
+    // Total : 2 leads pour la session (identités différentes).
+    expect([...simStores.leads.values()]).toHaveLength(2);
   });
 
   it("persiste l'event KPI 'chat_lead_auto_created'", async () => {

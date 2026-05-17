@@ -29,6 +29,7 @@ import { vi } from 'vitest';
 
 import type { ChatStreamEvent } from '@/lib/chat/contracts';
 import type { ChatLeadInsert, ChatLeadRow } from '@/lib/chat/db/schema';
+import { computeIdentityHash } from '@/lib/chat/repos/identity-hash';
 import { server } from '@/test/msw/server';
 import { encodeSseStream, type SsePart } from '@/test/msw/openai-handlers';
 import { http, HttpResponse } from 'msw';
@@ -232,7 +233,15 @@ export function buildRagServiceMock() {
 export function buildLeadRepoMock() {
   return {
     leadRepo: {
-      create: vi.fn(async (insert: Omit<ChatLeadInsert, 'id'> & { id?: string }) => {
+      create: vi.fn(async (insert: Omit<ChatLeadInsert, 'id' | 'identityHash'> & { id?: string }) => {
+        // Simulate ON CONFLICT (sessionId, identityHash) DO NOTHING:
+        // if a lead with the same (sessionId, identityHash) exists, return it.
+        const identityHash = computeIdentityHash(insert.phoneE164, insert.firstName);
+        for (const existing of simStores.leads.values()) {
+          if (existing.sessionId === insert.sessionId && existing.identityHash === identityHash) {
+            return existing;
+          }
+        }
         const id = insert.id ?? `cl_${Math.random().toString(36).slice(2, 10)}`;
         const row: ChatLeadRow = {
           id,
@@ -247,7 +256,7 @@ export function buildLeadRepoMock() {
           consentAt: insert.consentAt ?? new Date(),
           visitorId: insert.visitorId,
           fingerprintHash: insert.fingerprintHash ?? null,
-          identityHash: insert.identityHash ?? 'test_identity_hash',
+          identityHash: identityHash,
           page: insert.page ?? null,
           referrer: insert.referrer ?? null,
           utm: insert.utm ?? null,
