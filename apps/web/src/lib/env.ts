@@ -62,6 +62,11 @@ const envSchema = z.object({
   // Priorité sur CHAT_LEAD_WEBHOOK_URL ; fallback rétrocompat si absent.
   OUTBOUND_WEBHOOK_URL: z.string().url().optional(),
   OUTBOUND_WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  // Snapchat Conversions API — token CAPI disponible comme suggestion dans
+  // l'admin UI (/admin/tracking/providers). Non utilisé comme fallback automatique.
+  // Pour activer Snap CAPI : configurer le token via l'admin UI ou l'API.
+  SNAP_CAPI_TOKEN: z.string().optional(),
   // CHAT-047/068 — Webhook compatible Slack pour les alertes runtime
   // (provider désactivé par budget-watch, etc.). Si absent, no-op.
   CHAT_ALERTS_WEBHOOK_URL: z.string().url().optional(),
@@ -143,6 +148,7 @@ export const env = envSchema.parse({
   CHAT_LEAD_CONSENT_VERSION: process.env.CHAT_LEAD_CONSENT_VERSION,
   OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
   OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
+  SNAP_CAPI_TOKEN: process.env.SNAP_CAPI_TOKEN,
   CHAT_ALERTS_WEBHOOK_URL: process.env.CHAT_ALERTS_WEBHOOK_URL,
   CHAT_DIGEST_RECIPIENT: process.env.CHAT_DIGEST_RECIPIENT,
   CHAT_DIGEST_FROM: process.env.CHAT_DIGEST_FROM,

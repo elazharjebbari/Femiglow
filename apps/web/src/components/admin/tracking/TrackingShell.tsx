@@ -6,6 +6,7 @@ import { DriftBannerServer } from '@/components/admin/tracking/gtm/DriftBannerSe
 export type TrackingTab =
   | 'dashboard'
   | 'plans'
+  | 'providers'
   | 'inventory'
   | 'events'
   | 'mappings'
@@ -17,6 +18,7 @@ export type TrackingTab =
 const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
   { key: 'dashboard', href: '/admin/tracking', label: 'Vue d’ensemble' },
   { key: 'plans', href: '/admin/tracking/plans', label: 'Plans (unifié)' },
+  { key: 'providers', href: '/admin/tracking/providers', label: 'Providers' },
   { key: 'inventory', href: '/admin/tracking/inventory', label: 'Inventaire' },
   { key: 'events', href: '/admin/tracking/events', label: 'Événements' },
   { key: 'mappings', href: '/admin/tracking/events/mappings', label: 'Mappings vendors' },
