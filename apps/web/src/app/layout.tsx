@@ -7,6 +7,7 @@ import { TrackingGlobalListener } from '@/lib/tracking/global-listener';
 import { ConsentBanner } from '@/components/tracking/ConsentBanner';
 import { DebugOverlay } from '@/components/tracking/DebugOverlay';
 import { PixelLoader } from '@/components/tracking/PixelLoader';
+import { SnapPixelEvents } from '@/components/tracking/SnapPixelEvents';
 import { GtmHeadScript } from '@/components/tracking/GtmHeadScript';
 import { AttributionCaptureBridge } from '@/components/tracking/AttributionCaptureBridge';
 import { getAttributionStrategy } from '@/lib/tracking/attribution/server';
@@ -131,6 +132,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           />
           <AttributionCaptureBridge />
           <PixelLoader />
+          <SnapPixelEvents />
           <DebugOverlay />
           <ChatWidgetMount />
         </TrackingProvider>

@@ -85,6 +85,7 @@ describe('Snap client snippet', () => {
     const snippet = snapAdapter.clientSnippet!(p);
     expect(snippet).not.toBeNull();
     expect(snippet!).toContain("snaptr('init','snap-pixel-uuid')");
+    expect(snippet!).toContain("window.__fg_snap_pixel_id='snap-pixel-uuid'");
     // CRITICAL: Snap snippet must NOT contain PAGE_VIEW auto-track
     // (CAPI sends it server-side, auto-track would cause double events)
     expect(snippet!).not.toContain("snaptr('track','PAGE_VIEW')");
@@ -226,6 +227,7 @@ describe('client-snippet dedup: pas de double PAGE_VIEW entre client et serveur'
     const snippet = snapAdapter.clientSnippet!(p);
     // Le snippet doit contenir snaptr('init',...) mais PAS snaptr('track','PAGE_VIEW')
     expect(snippet).toContain("snaptr('init'");
+    expect(snippet).toContain("window.__fg_snap_pixel_id='snap-px'");
     expect(snippet).not.toContain("PAGE_VIEW");
   });
 

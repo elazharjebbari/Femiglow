@@ -155,6 +155,7 @@ describe('snap client snippet', () => {
     expect(snippet).toContain("snaptr('init','9bd26a82-3ecf-42aa-a3de-85df14c74a11')");
     expect(snippet).not.toContain("snaptr('track','PAGE_VIEW')");
     expect(snippet).not.toContain("snaptr('track',\"PAGE_VIEW\")");
+    expect(snippet).toContain("window.__fg_snap_pixel_id='9bd26a82-3ecf-42aa-a3de-85df14c74a11'");
   });
 
   it('returns null for disabled provider', () => {

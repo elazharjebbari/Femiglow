@@ -65,6 +65,8 @@ declare global {
   interface Window {
     femiglowDataLayer?: DataLayer;
     dataLayer?: Array<Record<string, unknown>>;
+    /** Pixel ID Snap — positionné par le snippet d'init, lu par SnapPixelEvents. */
+    __fg_snap_pixel_id?: string;
   }
 }
 
@@ -89,6 +91,9 @@ function createDataLayer(): DataLayer {
         window.dataLayer.push(entry as Record<string, unknown>);
       }
       while (entries.length > MAX_BUFFER) entries.shift();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('fg:datalayer-push', { detail: entry }));
+      }
     },
     recent(count = 20) {
       return entries.slice(Math.max(0, entries.length - count));

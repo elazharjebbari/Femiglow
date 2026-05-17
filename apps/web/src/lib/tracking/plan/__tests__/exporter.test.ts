@@ -236,7 +236,7 @@ describe('exportPlan — structure GTM', () => {
     expect(tags.find((t: any) => t.name === 'Snap Init')).toBeDefined();
     const view = tags.find((t: any) => t.name === 'Snap Evt — view_item → VIEW_CONTENT');
     expect(view).toBeDefined();
-    const lead = tags.find((t: any) => t.name === 'Snap Evt — lead_capture → SIGN_UP');
+    const lead = tags.find((t: any) => t.name === 'Snap Evt — lead_capture → LEAD');
     expect(lead).toBeDefined();
     const purchase = tags.find((t: any) => t.name === 'Snap Evt — purchase → PURCHASE');
     expect(purchase).toBeDefined();
