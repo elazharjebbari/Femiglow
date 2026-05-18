@@ -14,7 +14,19 @@ export async function GET(request: Request): Promise<Response> {
     await requireAdminApi();
     const { searchParams } = new URL(request.url);
     const filters = ideaQuerySchema.parse(Object.fromEntries(searchParams.entries()));
-    return NextResponse.json({ ideas: await listIdeas(filters) });
+    const limit = filters.limit ?? 50;
+    const offset = filters.offset ?? 0;
+    const rows = await listIdeas({ ...filters, limit: limit + 1, offset });
+    const hasMore = rows.length > limit;
+    return NextResponse.json({
+      ideas: hasMore ? rows.slice(0, limit) : rows,
+      pagination: {
+        limit,
+        offset,
+        nextOffset: hasMore ? offset + limit : null,
+        hasMore,
+      },
+    });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });
@@ -26,7 +38,7 @@ export async function POST(request: Request): Promise<Response> {
     requireContentStudioEnabled();
     const idempotencyKey = getIdempotencyKey(request);
     if (idempotencyKey) {
-      const existing = getExistingResponse(idempotencyKey);
+      const existing = await getExistingResponse(idempotencyKey);
       if (existing) return NextResponse.json(existing, { status: 201 });
     }
     const session = await requireAdminApi();
@@ -37,11 +49,10 @@ export async function POST(request: Request): Promise<Response> {
     }
     const idea = await createContentIdea({ ...parsed.data, actorId: session.adminId });
     const responseBody = { idea };
-    if (idempotencyKey) storeIdempotentResponse(idempotencyKey, responseBody);
+    if (idempotencyKey) await storeIdempotentResponse(idempotencyKey, responseBody);
     return NextResponse.json(responseBody, { status: 201 });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     return NextResponse.json(body, { status });
   }
 }
-

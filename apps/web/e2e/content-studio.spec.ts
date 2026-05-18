@@ -12,7 +12,7 @@ test.describe('Content Studio', () => {
   // --- Layout & navigation ---
 
   test('affiche le titre et le guide', async ({ page }) => {
-    await expect(page.getByText('Studio contenu')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Studio contenu' })).toBeVisible();
     await expect(page.getByText('AI Content Studio')).toBeVisible();
   });
 
@@ -60,7 +60,7 @@ test.describe('Content Studio', () => {
   });
 
   test('affiche l\'éditeur de brouillon', async ({ page }) => {
-    await expect(page.getByText('Brouillons')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Brouillons' })).toBeVisible();
   });
 
   test('les champs du formulaire idée sont interactifs', async ({ page }) => {
@@ -124,7 +124,7 @@ test.describe('Content Studio', () => {
     );
     await page.reload();
     await page.waitForURL('/admin/content-studio');
-    await expect(page.getByText('Studio contenu')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Studio contenu' })).toBeVisible();
   });
 
   test('la page reste fonctionnelle si l\'API retourne 401', async ({ page }) => {
@@ -133,6 +133,6 @@ test.describe('Content Studio', () => {
     );
     await page.reload();
     await page.waitForURL('/admin/content-studio');
-    await expect(page.getByText('Studio contenu')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Studio contenu' })).toBeVisible();
   });
 });

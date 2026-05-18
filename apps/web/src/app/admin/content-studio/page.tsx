@@ -18,7 +18,7 @@ export default async function AdminContentStudioPage() {
   const enabled = env.CONTENT_STUDIO_ENABLED === 'true';
   const [ideas, drafts, posts, draftAssets, deliveries, snapshots] = enabled
     ? await Promise.all([
-        listIdeas(),
+        listIdeas({ limit: 50, offset: 0 }),
         listDrafts(),
         listPosts(),
         listDraftPrimaryAssets(),

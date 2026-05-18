@@ -22,7 +22,7 @@ import { LearningNoteForm } from './LearningNoteForm';
 import { UtmBuilder } from './UtmBuilder';
 import { StudioTabs } from './StudioTabs';
 import type { StudioTab } from './StudioTabs';
-import { postJson } from './api';
+import { getJson, postJson } from './api';
 
 const EditorialCalendar = lazy(() => import('./EditorialCalendar').then((m) => ({ default: m.EditorialCalendar })));
 const AnalyticsDashboard = lazy(() => import('./AnalyticsDashboard').then((m) => ({ default: m.AnalyticsDashboard })));
@@ -59,7 +59,9 @@ export function ContentStudioClient({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [learningNotes, setLearningNotes] = useState<ContentLearningNote[]>([]);
-  const [ideaOffset, setIdeaOffset] = useState(0);
+  const [nextIdeaOffset, setNextIdeaOffset] = useState<number | null>(
+    initialIdeas.length >= 50 ? 50 : null,
+  );
   const [activeTab, setActiveTab] = useState<StudioTab>('pipeline');
   const [isPending, startTransition] = useTransition();
 
@@ -174,11 +176,27 @@ export function ContentStudioClient({
                     ))
                   )}
                 </ul>
-                {ideas.length >= 50 && (
+                {nextIdeaOffset !== null && (
                   <LoadMore
                     currentCount={ideas.length}
                     totalCount={ideas.length + 50}
-                    onLoadMore={() => setIdeaOffset((o) => o + 50)}
+                    onLoadMore={() =>
+                      run(
+                        async () =>
+                          getJson<{
+                            ideas: ContentIdea[];
+                            pagination?: { nextOffset: number | null; hasMore: boolean };
+                          }>(`/api/admin/content-studio/ideas?limit=50&offset=${nextIdeaOffset}`),
+                        (value) => {
+                          setIdeas((current) => {
+                            const existing = new Set(current.map((idea) => idea.id));
+                            const additions = value.ideas.filter((idea) => !existing.has(idea.id));
+                            return [...current, ...additions];
+                          });
+                          setNextIdeaOffset(value.pagination?.nextOffset ?? null);
+                        },
+                      )
+                    }
                     disabled={isPending}
                     label="idées"
                   />

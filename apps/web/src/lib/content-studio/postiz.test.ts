@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { buildPostizDraftPayload, parsePostizUploadedMedia } from './postiz';
 
+function firstPost<T>(posts: T[]): T {
+  const post = posts[0];
+  if (!post) throw new Error('Expected Postiz payload to contain one post');
+  return post;
+}
+
 describe('content studio postiz payload', () => {
   it('construit un brouillon Instagram', () => {
     const payload = buildPostizDraftPayload({
@@ -59,7 +65,8 @@ describe('content studio postiz payload', () => {
       format: 'post',
       content: 'Caption sans image',
     });
-    const value = (payload.posts as Array<{ value: unknown[] }>)[0].value[0] as Record<string, unknown>;
+    const post = firstPost(payload.posts as Array<{ value: unknown[] }>);
+    const value = post.value[0] as Record<string, unknown>;
     expect(value.image).toBeUndefined();
     expect(value.content).toBe('Caption sans image');
   });
@@ -79,7 +86,7 @@ describe('content studio postiz payload', () => {
       { value: 'femiglow', label: 'FemiGlow' },
       { value: 'soin', label: 'Soin' },
     ]);
-    expect((payload.posts as Array<{ settings: Record<string, unknown> }>)[0].settings.post_type).toBe('reel');
+    expect(firstPost(payload.posts as Array<{ settings: Record<string, unknown> }>).settings.post_type).toBe('reel');
   });
 
   it('utilise la date actuelle + 1h quand aucune date nest fournie', () => {
@@ -103,7 +110,7 @@ describe('content studio postiz payload', () => {
       format: 'carousel',
       content: 'Carousel caption',
     });
-    expect((payload.posts as Array<{ settings: Record<string, unknown> }>)[0].settings.post_type).toBe('post');
+    expect(firstPost(payload.posts as Array<{ settings: Record<string, unknown> }>).settings.post_type).toBe('post');
   });
 });
 

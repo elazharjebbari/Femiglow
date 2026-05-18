@@ -96,7 +96,7 @@ export const contentDrafts = pgTable(
     hashtags: jsonb('hashtags_json').notNull().default([]),
     status: text('status').notNull().default('generated'),
     rejectionReason: text('rejectionReason'),
-    parentDraftId: text('parentId'),
+    parentDraftId: text('parentDraftId'),
     scoreTotal: integer('score_total'),
     editedBy: text('edited_by').references(() => adminUsers.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
