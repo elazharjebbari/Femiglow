@@ -58,6 +58,7 @@ async function main(): Promise<void> {
   if (report.warnings.length > 0) {
     for (const w of report.warnings) console.warn(`⚠︎  ${w}`);
   }
+  process.exit(0);
 }
 
 main().catch((err) => {

@@ -16,6 +16,7 @@ import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectio
 import { RitualsModuleBound } from '@/components/sections/rituals/RitualsModuleBound';
 import { RitualsWallDrawer } from '@/components/sections/rituals/RitualsWallDrawer';
 import { KitCommanderSectionBound } from '@/components/sections/KitCommanderSectionBound';
+import { GeoPromoSlideHeaderSlot } from '@/components/promo/GeoPromoSlideHeaderSlot';
 import { JsonLd, productSchema, faqPageSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
@@ -130,6 +131,7 @@ export default async function KitPage() {
 
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0">
+      <GeoPromoSlideHeaderSlot />
       <JsonLd data={productJsonLd} />
       <JsonLd data={faqPageSchema(content.faq)} />
       <HeroProduitBound
