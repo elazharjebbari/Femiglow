@@ -5,6 +5,7 @@ import {
   createMockState,
   type MockContentStudioState,
 } from './content-studio-handlers';
+import { buildContentIdea } from '../factories/content-studio';
 
 let state: MockContentStudioState;
 
@@ -45,6 +46,28 @@ describe('MSW — Content Studio API handlers', () => {
         body: JSON.stringify({ pillar: 'rituel' }),
       });
       expect(state.callCount['POST /ideas']).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('GET /api/admin/content-studio/ideas', () => {
+    it('retourne la pagination nextOffset utilisée par LoadMore', async () => {
+      state.ideas = [
+        buildContentIdea({ id: 'idea_1', prompt: 'Première idée' }),
+        buildContentIdea({ id: 'idea_2', prompt: 'Deuxième idée' }),
+        buildContentIdea({ id: 'idea_3', prompt: 'Troisième idée' }),
+      ];
+
+      const res = await fetch('http://localhost/api/admin/content-studio/ideas?limit=2&offset=0');
+
+      expect(res.ok).toBe(true);
+      const json = await res.json();
+      expect(json.ideas.map((idea: { id: string }) => idea.id)).toEqual(['idea_1', 'idea_2']);
+      expect(json.pagination).toEqual({
+        limit: 2,
+        offset: 0,
+        nextOffset: 2,
+        hasMore: true,
+      });
     });
   });
 

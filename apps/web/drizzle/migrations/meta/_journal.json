@@ -435,6 +435,20 @@
       "when": 1779500000053,
       "tag": "0050_ai_content_studio",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1779500000054,
+      "tag": "0060_p2_review_actions",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1779500000055,
+      "tag": "0061_p3_idempotency_campaigns",
+      "breakpoints": true
     }
   ]
 }

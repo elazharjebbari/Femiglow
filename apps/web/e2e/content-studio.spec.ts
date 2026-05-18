@@ -71,6 +71,18 @@ test.describe('Content Studio', () => {
     }
   });
 
+  test('crée une idée depuis l’UI et la conserve après rechargement', async ({ page }) => {
+    const prompt = `codex-staging-${Date.now()} idée persistée depuis Playwright`;
+
+    await page.getByLabel('Intention').fill(prompt);
+    await page.getByRole('button', { name: /Enregistrer l'idée/i }).click();
+
+    await expect(page.locator('li').filter({ hasText: prompt })).toBeVisible({ timeout: 10_000 });
+    await page.reload();
+    await page.waitForURL('/admin/content-studio');
+    await expect(page.locator('li').filter({ hasText: prompt })).toBeVisible();
+  });
+
   // --- Calendar tab ---
 
   test('les filtres du calendrier sont visibles après changement d\'onglet', async ({ page }) => {

@@ -183,7 +183,8 @@ Actions data:
    - Index utiles: status, brief, parent, campaign, idempotency key.
 
 3. Créer une commande de validation.
-   - Soit script existant `db:validate`, soit script SQL documenté.
+   - Script existant `db:validate` pour l'intégrité du dossier migrations.
+   - Script `db:validate:content-studio` pour vérifier le contrat DB live du Content Studio.
    - La validation doit échouer si une colonne attendue manque.
 
 4. Nettoyer les conventions.
@@ -195,6 +196,8 @@ Tests:
 ```bash
 pnpm --dir /var/www/femiglow-staging/apps/web exec tsc --noEmit
 pnpm --dir /var/www/femiglow-staging/apps/web exec vitest run src/lib/content-studio/repository.test.ts
+pnpm --dir /var/www/femiglow-staging/apps/web run db:validate
+pnpm --dir /var/www/femiglow-staging/apps/web run db:validate:content-studio
 ```
 
 Critères de sortie:
@@ -599,4 +602,3 @@ Le plan est terminé uniquement quand:
 - `/admin/content-studio` est utilisable avec login admin sur staging.
 - Les logs récents ne montrent aucune erreur Content Studio bloquante.
 - Le runbook final est à jour dans `docs/codex/`.
-

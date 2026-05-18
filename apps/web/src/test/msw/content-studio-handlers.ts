@@ -78,7 +78,17 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       const offset = Number(url.searchParams.get('offset') ?? '0');
       let filtered = state.ideas;
       if (status) filtered = filtered.filter((i) => i.status === status);
-      return HttpResponse.json({ ideas: filtered.slice(offset, offset + limit), total: filtered.length });
+      const hasMore = offset + limit < filtered.length;
+      return HttpResponse.json({
+        ideas: filtered.slice(offset, offset + limit),
+        total: filtered.length,
+        pagination: {
+          limit,
+          offset,
+          nextOffset: hasMore ? offset + limit : null,
+          hasMore,
+        },
+      });
     }),
 
     // GET /api/admin/content-studio/drafts — list drafts with filters

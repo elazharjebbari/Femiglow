@@ -36,12 +36,12 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     requireContentStudioEnabled();
+    const session = await requireAdminApi();
     const idempotencyKey = getIdempotencyKey(request);
     if (idempotencyKey) {
       const existing = await getExistingResponse(idempotencyKey);
       if (existing) return NextResponse.json(existing, { status: 201 });
     }
-    const session = await requireAdminApi();
     const json = (await request.json().catch(() => null)) as unknown;
     const parsed = contentIdeaCreateSchema.safeParse(json);
     if (!parsed.success) {

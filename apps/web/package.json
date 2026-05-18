@@ -19,6 +19,7 @@
     "db:migrate-safe:plan": "node --env-file=.env scripts/_migrate-safe.mjs --plan",
     "db:validate": "node scripts/_validate-migrations.mjs",
     "db:validate:strict": "node scripts/_validate-migrations.mjs --strict",
+    "db:validate:content-studio": "node --env-file=.env scripts/validate-content-studio-schema.mjs",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "seed:admin": "tsx scripts/seed-admin.ts",
