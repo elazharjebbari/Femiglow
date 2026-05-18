@@ -5,7 +5,6 @@
  * dev/tests. Voir `docs/components-cms/architecture/02-data-model.md`
  * pour le contrat (invariants I1–I7).
  */
-import 'server-only';
 import { and, asc, desc, eq, lt, lte } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { createId } from '@/lib/ids';

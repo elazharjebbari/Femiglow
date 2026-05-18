@@ -179,6 +179,13 @@ export async function resolveComponentFields(
   return cached(componentKey, locale);
 }
 
+export async function resolveComponentFieldsFresh(
+  componentKey: string,
+  locale = 'fr',
+): Promise<ResolvedFields> {
+  return resolveBatch(componentKey, locale);
+}
+
 /* ────────────────────────────────────────────────────────────────────────
  * Draft resolver (NON cachée) — preview iframe admin uniquement (F4)
  * ──────────────────────────────────────────────────────────────────────── */
