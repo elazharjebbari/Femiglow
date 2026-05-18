@@ -96,6 +96,22 @@ export async function scanAndDispatchCartAbandon(
       else if (result.status === 'failed') failed += 1;
       else if (result.status === 'skipped') skipped += 1;
       else if (result.status === 'disabled') disabled += 1;
+
+      // Stamp anti-doublon — only stamp on definitive outcomes (not on
+      // transient failures, which should be retried on the next tick).
+      if (result.status === 'sent' || result.status === 'skipped' || result.status === 'disabled') {
+        try {
+          await db
+            .update(chatLead)
+            .set({ abandonWebhookAt: new Date(), updatedAt: new Date() })
+            .where(sql`${chatLead.id} = ${lead.id}`);
+        } catch (err) {
+          logger.error('outbound.webhook.cart-abandon.stamp_error', {
+            leadId: lead.id,
+            error: String(err),
+          });
+        }
+      }
     } catch (err) {
       failed += 1;
       logger.error('outbound.webhook.cart-abandon.dispatch_error', {
@@ -125,19 +141,6 @@ export async function scanAndDispatchCartAbandon(
           error: String(err),
         });
       }
-    }
-
-    // Stamp anti-doublon — qu'on ait réussi ou échoué, on ne re-tente plus.
-    try {
-      await db
-        .update(chatLead)
-        .set({ abandonWebhookAt: new Date(), updatedAt: new Date() })
-        .where(sql`${chatLead.id} = ${lead.id}`);
-    } catch (err) {
-      logger.error('outbound.webhook.cart-abandon.stamp_error', {
-        leadId: lead.id,
-        error: String(err),
-      });
     }
   }
 

@@ -39,12 +39,14 @@ async function setupEndpoint(url: string) {
 }
 
 describe('webhook delivery (MSW intégration)', () => {
-  it('delivery-success : 200 OK → status succeeded + signature envoyée', async () => {
-    const captured: { signature?: string | null; idem?: string | null } = {};
+  it('delivery-success : 200 OK → status succeeded + signatures envoyées', async () => {
+    const captured: { signature?: string | null; webhookSignature?: string | null; idem?: string | null; event?: string | null } = {};
     server.use(
       http.post('https://hook.example.com/ok', async ({ request }) => {
         captured.signature = request.headers.get('x-femiglow-signature');
+        captured.webhookSignature = request.headers.get('x-webhook-signature');
         captured.idem = request.headers.get('idempotency-key');
+        captured.event = request.headers.get('x-femiglow-event');
         return HttpResponse.json({ received: true });
       }),
     );
@@ -53,7 +55,9 @@ describe('webhook delivery (MSW intégration)', () => {
     expect(result.status).toBe('succeeded');
     expect(result.responseStatus).toBe(200);
     expect(captured.signature).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    expect(captured.webhookSignature).toBe(captured.signature);
     expect(captured.idem).toBe('idk_integration_1');
+    expect(captured.event).toBe('lead.created');
   });
 
   it('delivery-4xx : 404 → retry programmé', async () => {
@@ -105,21 +109,23 @@ describe('webhook delivery (MSW intégration)', () => {
     expect(result.responseStatus).toBe(410);
   });
 
-  it('delivery-signature-check : signature HMAC vérifie le body brut', async () => {
+  it('delivery-signature-check : signature HMAC vérifie le body brut + x-webhook-signature', async () => {
     let receivedBody = '';
     let receivedSignature: string | null = null;
+    let receivedWebhookSignature: string | null = null;
     server.use(
       http.post('https://hook.example.com/verify', async ({ request }) => {
         receivedBody = await request.text();
         receivedSignature = request.headers.get('x-femiglow-signature');
+        receivedWebhookSignature = request.headers.get('x-webhook-signature');
         return HttpResponse.json({ ok: true });
       }),
     );
     const { delivery } = await setupEndpoint('https://hook.example.com/verify');
     await attemptDelivery(delivery);
     const parsed = JSON.parse(receivedBody);
-    expect(parsed.event).toBe('lead.created');
-    expect(parsed.id).toBe(delivery.id);
+    expect(parsed.leadId).toBe('l_test');
     expect(receivedSignature).toMatch(/^[A-Za-z0-9+/]{40,}=*$/);
+    expect(receivedWebhookSignature).toBe(receivedSignature);
   });
 });

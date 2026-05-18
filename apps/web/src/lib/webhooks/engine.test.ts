@@ -64,7 +64,7 @@ describe('webhook engine: enqueue', () => {
 });
 
 describe('webhook engine: attempt', () => {
-  it('marque succeeded sur 2xx avec payload plat et signature HMAC compatible Baiti', async () => {
+  it('marque succeeded sur 2xx avec payload plat et signature HMAC', async () => {
     const { endpoint, plainSecret } = await createWebhookEndpoint({
       url: 'https://api.example.com/hook',
       events: ['lead.created'],
@@ -76,12 +76,14 @@ describe('webhook engine: attempt', () => {
       payload: { id: 'lead-1', full_name: 'Youssef Amrani', phone: '0661234567' },
     });
     let receivedSignature: string | null = null;
-    let receivedLegacySignature: string | null = null;
+    let receivedEvent: string | null = null;
+    let receivedSource: string | null = null;
     let receivedBody: string | null = null;
     const fetchImpl: typeof fetch = async (_url, init) => {
       const headers = init?.headers as Record<string, string> | undefined;
-      receivedSignature = headers?.['x-webhook-signature'] ?? null;
-      receivedLegacySignature = headers?.['x-femiglow-signature'] ?? null;
+      receivedSignature = headers?.['x-femiglow-signature'] ?? null;
+      receivedEvent = headers?.['x-femiglow-event'] ?? null;
+      receivedSource = headers?.['x-femiglow-source'] ?? null;
       receivedBody = init?.body?.toString() ?? null;
       return new Response('OK', { status: 200 });
     };
@@ -95,7 +97,8 @@ describe('webhook engine: attempt', () => {
       .update(receivedBody ?? '')
       .digest('base64');
     expect(receivedSignature).toBe(expectedSignature);
-    expect(receivedLegacySignature).toBe(expectedSignature);
+    expect(receivedEvent).toBe('lead.created');
+    expect(receivedSource).toBe('admin');
   });
 
   it('reprogramme un retry sur 5xx (status pending, nextAttemptAt futur)', async () => {

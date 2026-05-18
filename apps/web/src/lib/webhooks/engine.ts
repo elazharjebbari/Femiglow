@@ -81,10 +81,13 @@ export async function attemptDelivery(
       signal: controller.signal,
       headers: {
         'content-type': 'application/json',
+        'accept': 'application/json',
         'x-webhook-signature': signature,
         'x-femiglow-signature': signature,
+        'x-femiglow-event': delivery.event,
+        'x-femiglow-source': 'admin',
         'idempotency-key': delivery.idempotencyKey,
-        'user-agent': 'FemiGlow-Webhook/1.0',
+        'user-agent': 'femiglow-webhook/1.0',
       },
       body,
     });
@@ -105,6 +108,14 @@ export async function attemptDelivery(
   const succeeded = responseStatus !== null && responseStatus >= 200 && responseStatus < 300;
   const newAttemptCount = delivery.attemptCount + 1;
   if (succeeded) {
+    logger.info('webhook.delivery.succeeded', {
+      delivery_id: delivery.id,
+      endpoint_id: endpoint.id,
+      event: delivery.event,
+      attempt_count: newAttemptCount,
+      response_status: responseStatus,
+      latency_ms: latencyMs,
+    });
     return recordDeliveryAttempt({
       id: delivery.id,
       status: 'succeeded',
@@ -116,6 +127,14 @@ export async function attemptDelivery(
 
   const reachedMax = newAttemptCount >= MAX_ATTEMPTS;
   if (reachedMax) {
+    logger.warn('webhook.delivery.permanent', {
+      delivery_id: delivery.id,
+      endpoint_id: endpoint.id,
+      event: delivery.event,
+      attempt_count: newAttemptCount,
+      response_status: responseStatus,
+      error_code: errorCode,
+    });
     await logAuditEvent({
       action: 'webhook.delivery.permanent',
       actorId: null,
@@ -134,6 +153,15 @@ export async function attemptDelivery(
   }
 
   const nextAttemptAt = new Date(now().getTime() + computeBackoff(newAttemptCount));
+  logger.info('webhook.delivery.retry_scheduled', {
+    delivery_id: delivery.id,
+    endpoint_id: endpoint.id,
+    event: delivery.event,
+    attempt_count: newAttemptCount,
+    response_status: responseStatus,
+    error_code: errorCode,
+    next_attempt_at: nextAttemptAt.toISOString(),
+  });
   return recordDeliveryAttempt({
     id: delivery.id,
     status: 'pending',

@@ -240,19 +240,23 @@ export async function dispatchLeadStep2Webhook(
   options: { ip?: string | null } = {},
 ): Promise<LeadStep2WebhookResult> {
   if (lead.step2WebhookAt) {
+    logger.info('outbound.webhook.lead-step2.skipped', { leadId: lead.id, reason: 'already-stamped' });
     return { status: 'skipped', attempts: 0, lastError: 'step2-webhook-already-stamped' };
   }
   if (!lead.addressCompletedAt) {
+    logger.info('outbound.webhook.lead-step2.skipped', { leadId: lead.id, reason: 'address-not-completed' });
     return { status: 'skipped', attempts: 0, lastError: 'address-not-completed' };
   }
 
   const phone = normalizePhoneForPayload(lead.phoneE164 || lead.phoneRaw, 'MA');
   if (!phone.ok) {
+    logger.warn('outbound.webhook.lead-step2.skipped', { leadId: lead.id, reason: `invalid-phone:${phone.reason}` });
     return { status: 'skipped', attempts: 0, lastError: `invalid-phone:${phone.reason}` };
   }
 
   const settings = await getLeadWebhookSettings();
   if (!settings.step2WebhookEnabled) {
+    logger.info('outbound.webhook.lead-step2.disabled', { leadId: lead.id });
     return { status: 'disabled', attempts: 0, lastError: 'lead-step2-webhook-disabled' };
   }
 

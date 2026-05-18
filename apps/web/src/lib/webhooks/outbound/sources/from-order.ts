@@ -6,6 +6,7 @@
  */
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
+import { logger } from '@/lib/logging/logger';
 import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 
@@ -137,6 +138,14 @@ export async function dispatchOrderWebhook(
       source_channel: sourceChannel,
       ip: ctx.ip ?? undefined,
     },
+  });
+
+  logger.info('outbound.webhook.order.dispatch_result', {
+    orderId: ctx.order.id,
+    status: result.status,
+    attempts: result.attempts,
+    responseStatus: result.responseStatus,
+    logId: result.logId,
   });
 
   return {
