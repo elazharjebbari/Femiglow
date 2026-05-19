@@ -21,18 +21,28 @@ import {
 
 export const DEFAULT_GEO_PROMO_CONFIG: GeoPromoAdminConfig = {
   enabled: false,
-  messageTemplate: 'Offre du {dateShort} - {city}',
-  fallbackMessageTemplate: 'Offre du {dateShort} - Maroc',
+  // Cadence saisonnière > date précise (Kolenda Luxury §14 / Pricing §16 :
+  // pas de countdown ni de date d'expiration explicite). Le placeholder
+  // {dateShort} reste supporté par `renderPromoTemplate` pour les anciens
+  // overrides admin qui voudraient encore l'utiliser ; le défaut ne le
+  // pose plus.
+  messageTemplate: 'Édition de saison · {city}',
+  fallbackMessageTemplate: 'Édition de saison · Maroc',
   ctaLabel: 'Commander',
   ctaHref: GEO_PROMO_CTA_HREF,
-  ariaLabel: 'Offre FemiGlow du jour',
+  ariaLabel: 'Édition de saison FemiGlow',
   theme: 'ink',
   density: 'compact',
   motion: 'slide',
   dismissible: true,
   dismissMode: 'session',
   tagsEnabled: true,
-  tagOrder: ['discount', 'free_shipping', 'cod', 'inspect_before_pay', 'morocco_delivery'],
+  // Kolenda UX §1 : ≤ 4 options visibles. On garde 2 tags fonctionnels —
+  // le `-XX%` (`discount`), `inspect_before_pay` et `morocco_delivery` sont
+  // retirés des défauts (anti-pattern Pricing §16 « pas de "-49 %" seul »
+  // et redondance « partout au Maroc » avec le message principal).
+  // L'admin peut toujours les réactiver via le CMS pour une campagne.
+  tagOrder: ['free_shipping', 'cod'],
   routesInclude: [GEO_PROMO_ROUTE],
   routesExclude: ['/checkout', '/admin', '/api'],
   campaignKey: 'geo_promo_kit_default',

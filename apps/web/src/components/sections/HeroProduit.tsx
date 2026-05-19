@@ -106,13 +106,18 @@ export function HeroProduit({
 
             <AttributeChips items={fields.attributeChips} />
 
-            {/* Bloc prix : gap horizontal généreux (Müller-Lyer) */}
+            {/* Bloc prix : gap horizontal généreux (Müller-Lyer).
+                `showSavings={false}` désactive le micro-libellé CAPS posé
+                par `PriceDisplay` — on lui préfère la version sauge ci-dessous
+                (cohérent avec Kolenda Color §1 « pas de pop chaud sauf CTA »
+                + Copywriting §13 « zéro caps d'emphase »). */}
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 pt-2">
               <PriceDisplay
                 priceCents={product.priceCents}
                 promoPriceCents={product.promoPriceCents}
                 currency={product.currency}
                 size="xl"
+                showSavings={false}
               />
               {savings > 0 ? (
                 <span
