@@ -444,15 +444,22 @@ describe('cross-provider ads conversions completeness', () => {
   it('les conversions sont ordonnées par groupe (sales → leads → further), primary avant secondary dans chaque groupe', () => {
     const conversions = listAdsConversions();
     const groupOrder: Record<string, number> = { sales: 0, leads: 1, further: 2 };
+    // `noUncheckedIndexedAccess` rend `conversions[i]` possiblement undefined ;
+    // un helper local explicite l'invariant (la boucle itère in-range).
+    function at(i: number): NonNullable<(typeof conversions)[number]> {
+      const v = conversions[i];
+      if (!v) throw new Error(`out of range conversion index ${i}`);
+      return v;
+    }
     for (let i = 1; i < conversions.length; i++) {
-      const prevGroup = groupOrder[conversions[i - 1].group] ?? 99;
-      const curGroup = groupOrder[conversions[i].group] ?? 99;
+      const prevGroup = groupOrder[at(i - 1).group] ?? 99;
+      const curGroup = groupOrder[at(i).group] ?? 99;
       // Les groupes doivent être en ordre croissant
       expect(curGroup).toBeGreaterThanOrEqual(prevGroup);
       // Si même groupe, primary doit venir avant secondary
       if (prevGroup === curGroup) {
-        const prevRole = conversions[i - 1].recommendedRole === 'primary' ? 0 : 1;
-        const curRole = conversions[i].recommendedRole === 'primary' ? 0 : 1;
+        const prevRole = at(i - 1).recommendedRole === 'primary' ? 0 : 1;
+        const curRole = at(i).recommendedRole === 'primary' ? 0 : 1;
         expect(curRole).toBeGreaterThanOrEqual(prevRole);
       }
     }
@@ -460,9 +467,11 @@ describe('cross-provider ads conversions completeness', () => {
 
   it('purchase est la première conversion', () => {
     const conversions = listAdsConversions();
-    expect(conversions[0].conversionLabelKey).toBe('purchase');
-    expect(conversions[0].recommendedRole).toBe('primary');
-    expect(conversions[0].group).toBe('sales');
+    const first = conversions[0];
+    if (!first) throw new Error('listAdsConversions returned empty list');
+    expect(first.conversionLabelKey).toBe('purchase');
+    expect(first.recommendedRole).toBe('primary');
+    expect(first.group).toBe('sales');
   });
 });
 

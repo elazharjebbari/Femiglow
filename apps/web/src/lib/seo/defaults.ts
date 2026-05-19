@@ -58,14 +58,14 @@ export const FEMIGLOW_ORGANIZATION_JSON_LD = Object.freeze({
     'https://www.instagram.com/femiglow',
     'https://www.tiktok.com/@femiglow',
   ],
-}) as const;
+});
 
 /**
  * Valeurs par défaut figées de `seo_settings`. **Ne pas muter.**
  * Pour obtenir une copie modifiable (formulaire admin, payload d'upsert),
  * utilise `getSeoSettingsDefault()`.
  */
-export const seoSettingsDefault: SeoSettings = Object.freeze({
+export const seoSettingsDefault: SeoSettings = Object.freeze<SeoSettings>({
   id: 'singleton',
   siteName: 'FemiGlow',
   defaultDescription:
@@ -78,7 +78,7 @@ export const seoSettingsDefault: SeoSettings = Object.freeze({
   knownPages: FEMIGLOW_KNOWN_PAGES,
   updatedAt: new Date(0),
   updatedBy: null,
-}) as SeoSettings;
+});
 
 /**
  * Retourne une **copie profonde** des defaults SEO.

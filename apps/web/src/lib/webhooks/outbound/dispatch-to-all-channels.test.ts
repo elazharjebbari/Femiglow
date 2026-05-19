@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetMemoryStore } from '@/lib/db/client';
 import { createWebhookEndpoint } from '@/lib/db/queries/webhook-endpoints';
 import type { WebhookDelivery } from '@/lib/db/types';
+import type { OutboundPayload } from './payload';
 import { http, HttpResponse, server } from '@/test/msw/server';
 
 const envMock = vi.hoisted(() => ({
@@ -45,9 +46,33 @@ function makeDelivery(
     responseBody: null,
     errorCode: null,
     nextAttemptAt: null,
+    // `latencyMs: null` explicite — le type `WebhookDelivery` exige
+    // `number | null` (pas `undefined`). Omettre la clé donne `undefined`
+    // qui n'est pas assignable depuis `exactOptionalPropertyTypes: false`
+    // mais reste signalé par tsc avec `strict: true` quand le getter
+    // attendu est non-undefined.
+    latencyMs: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
+  };
+}
+
+/**
+ * Helper de construction d'un `OutboundPayload` valide. Centralise les
+ * defaults requis par le schéma Zod post-parse (`currency`, `quantity`)
+ * pour ne pas avoir à les répéter dans chaque test.
+ *
+ * Pour les tests qui veulent volontairement omettre ces champs (pour
+ * vérifier la validation), passer le payload directement sans helper.
+ */
+function leadPayload(
+  partial: Partial<OutboundPayload> & Pick<OutboundPayload, 'id' | 'full_name' | 'phone'>,
+): OutboundPayload {
+  return {
+    currency: 'MAD',
+    quantity: 1,
+    ...partial,
   };
 }
 
@@ -80,7 +105,7 @@ describe('dispatchToAllChannels', () => {
         idempotencyKey: 'inline-contact:cl_test',
         eventName: 'chat_lead.created',
         adminEventNames: ['chat_lead.created', 'lead.created'],
-        payload: { id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -104,7 +129,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'lead-step1-abandon:cl_test',
         eventName: 'lead.step1_abandoned',
-        payload: { id: 'lead-step1-abandon:cl_test', full_name: 'Nadia', phone: '0612345678' },
+        payload: leadPayload({ id: 'lead-step1-abandon:cl_test', full_name: 'Nadia', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('pending');
@@ -126,7 +151,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'lead-step1-abandon:cl_test',
         eventName: 'lead.step1_abandoned',
-        payload: { id: 'lead-step1-abandon:cl_test', full_name: 'Nadia', phone: '0612345678' },
+        payload: leadPayload({ id: 'lead-step1-abandon:cl_test', full_name: 'Nadia', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('failed');
@@ -156,7 +181,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'chat-lead:cl_test',
         eventName: 'chat_lead.created',
-        payload: { id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -187,7 +212,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'chat-lead:cl_test',
         eventName: 'chat_lead.created',
-        payload: { id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -211,7 +236,7 @@ describe('dispatchToAllChannels', () => {
         idempotencyKey: 'inline-contact:cl_test',
         eventName: 'chat_lead.created',
         adminEventNames: ['chat_lead.created', 'lead.created'],
-        payload: { id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -249,7 +274,7 @@ describe('dispatchToAllChannels', () => {
         idempotencyKey: 'inline-contact:cl_test',
         eventName: 'chat_lead.created',
         adminEventNames: ['chat_lead.created'],
-        payload: { id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -269,7 +294,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'inline-contact:cl_test',
         eventName: 'chat_lead.created',
-        payload: { id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('failed');
@@ -296,7 +321,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'chat-lead:cl_test',
         eventName: 'chat_lead.created',
-        payload: { id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -314,7 +339,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'chat-lead:cl_test',
         eventName: 'chat_lead.created',
-        payload: { id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'chat-lead:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('disabled');
@@ -356,7 +381,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'lead-step1-abandon:cl_test',
         eventName: 'lead.step1_abandoned',
-        payload: { id: 'lead-step1-abandon:cl_test', full_name: 'Nadia', phone: '0612345678' },
+        payload: leadPayload({ id: 'lead-step1-abandon:cl_test', full_name: 'Nadia', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -398,7 +423,7 @@ describe('dispatchToAllChannels', () => {
         idempotencyKey: 'inline-contact:cl_test',
         eventName: 'chat_lead.created',
         adminEventNames: ['chat_lead.created'],
-        payload: { id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('sent');
@@ -421,7 +446,7 @@ describe('dispatchToAllChannels', () => {
         sourceId: 'cl_test',
         idempotencyKey: 'inline-contact:cl_test',
         eventName: 'chat_lead.created',
-        payload: { id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' },
+        payload: leadPayload({ id: 'inline-contact:cl_test', full_name: 'Sara', phone: '0612345678' }),
       });
 
       expect(result.status).toBe('pending');

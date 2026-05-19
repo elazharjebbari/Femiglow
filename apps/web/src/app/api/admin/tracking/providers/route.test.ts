@@ -35,9 +35,11 @@ describe('/api/admin/tracking/providers', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { providers: Array<Record<string, unknown>> };
     expect(body.providers).toHaveLength(1);
-    expect(body.providers[0].kind).toBe('snap');
-    expect(body.providers[0].hasCapiToken).toBe(true);
-    expect(body.providers[0].capiToken).toBeUndefined();
+    const provider = body.providers[0];
+    if (!provider) throw new Error('expected at least one provider after assertion');
+    expect(provider.kind).toBe('snap');
+    expect(provider.hasCapiToken).toBe(true);
+    expect(provider.capiToken).toBeUndefined();
   });
 
   it('GET retourne une liste vide si aucun provider', async () => {

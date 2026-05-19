@@ -447,8 +447,21 @@ describe('Snap — skip conditions', () => {
 // ---------------------------------------------------------------------------
 
 describe('Snap — client snippet', () => {
+  /**
+   * Helper qui asserte la présence de `clientSnippet` sur le snap adapter
+   * et délègue l'appel. `clientSnippet` est typé optionnel sur
+   * `ProviderAdapter` car certains providers (CAPI-only) ne fournissent
+   * pas de snippet client ; le snap adapter, lui, en a toujours un.
+   */
+  function callSnippet(provider: Parameters<NonNullable<typeof snapAdapter.clientSnippet>>[0]) {
+    if (!snapAdapter.clientSnippet) {
+      throw new Error('snap adapter is missing clientSnippet — test invariant broken');
+    }
+    return snapAdapter.clientSnippet(provider);
+  }
+
   it('retourne un snippet avec le pixel ID', () => {
-    const snippet = snapAdapter.clientSnippet(makeSnapProvider());
+    const snippet = callSnippet(makeSnapProvider());
     expect(snippet).not.toBeNull();
     expect(snippet).toContain(SNAP_PIXEL_ID);
     expect(snippet).toContain("snaptr('init'");
@@ -457,12 +470,12 @@ describe('Snap — client snippet', () => {
   });
 
   it('retourne null si provider disabled', () => {
-    const snippet = snapAdapter.clientSnippet(makeSnapProvider({ status: 'disabled' }));
+    const snippet = callSnippet(makeSnapProvider({ status: 'disabled' }));
     expect(snippet).toBeNull();
   });
 
   it('retourne null si pixel_id absent', () => {
-    const snippet = snapAdapter.clientSnippet(makeSnapProvider({ pixelId: undefined as unknown as string }));
+    const snippet = callSnippet(makeSnapProvider({ pixelId: undefined as unknown as string }));
     expect(snippet).toBeNull();
   });
 });

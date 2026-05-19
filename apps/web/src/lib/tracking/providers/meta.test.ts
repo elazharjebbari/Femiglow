@@ -105,9 +105,35 @@ function ctx(overrides: Partial<DispatchContext> = {}): DispatchContext {
   };
 }
 
-function lastCallBody(): Record<string, unknown> {
+/**
+ * Body de la dernière requête envoyée à Meta CAPI via `fetchWithRetry`.
+ * Typage strict du retour pour éviter `unknown` à chaque déréférencement
+ * `body.data[0]...` dans les tests appelants.
+ */
+interface MetaCapiBody {
+  data: Array<Record<string, unknown>>;
+  test_event_code?: string;
+  [key: string]: unknown;
+}
+
+function lastCallBody(): MetaCapiBody {
   const calls = vi.mocked(fetchWithRetry).mock.calls;
-  return JSON.parse(calls[calls.length - 1][1].body as string);
+  const last = calls[calls.length - 1];
+  if (!last) throw new Error('fetchWithRetry was not called');
+  const [, init] = last;
+  return JSON.parse(init.body as string) as MetaCapiBody;
+}
+
+/**
+ * Premier event du dernier body envoyé. Asserte la présence et garantit
+ * un type non-undefined aux appelants — élimine le besoin d'optional
+ * chaining ou non-null assertions à chaque déréférencement de `data[0]`.
+ */
+function firstEvent(): Record<string, unknown> {
+  const body = lastCallBody();
+  const event = body.data[0];
+  if (!event) throw new Error('Meta CAPI body has no event in data[0]');
+  return event;
 }
 
 describe('meta provider', () => {
@@ -148,7 +174,9 @@ describe('meta provider', () => {
     expect(result.httpStatus).toBe(200);
 
     expect(vi.mocked(fetchWithRetry)).toHaveBeenCalledTimes(1);
-    const [url, init] = vi.mocked(fetchWithRetry).mock.calls[0];
+    const firstCall = vi.mocked(fetchWithRetry).mock.calls[0];
+    if (!firstCall) throw new Error('fetchWithRetry was not called');
+    const [url, init] = firstCall;
     expect(url).toContain('graph.facebook.com/v19.0/2179682406197934/events');
     expect(url).toContain('access_token=test-meta-capi-token-abc123');
 
@@ -177,7 +205,7 @@ describe('meta provider', () => {
   it('maps items array to Meta contents format', async () => {
     await metaAdapter.dispatch(provider(), ctx());
 
-    const customData = lastCallBody().data[0].custom_data as Record<string, unknown>;
+    const customData = firstEvent().custom_data as Record<string, unknown>;
     expect(customData.contents).toEqual([
       { id: 'kit-1', quantity: 1, item_price: 399 },
     ]);
@@ -193,7 +221,7 @@ describe('meta provider', () => {
       params: { content_name: 'Formulaire contact' },
     }));
 
-    expect(lastCallBody().data[0].event_name).toBe('Lead');
+    expect(firstEvent().event_name).toBe('Lead');
   });
 
   it('handles add_to_cart event', async () => {
@@ -207,7 +235,7 @@ describe('meta provider', () => {
       },
     }));
 
-    expect(lastCallBody().data[0].event_name).toBe('AddToCart');
+    expect(firstEvent().event_name).toBe('AddToCart');
   });
 
   it('omits test_event_code when not set', async () => {
@@ -222,6 +250,7 @@ describe('meta provider', () => {
       status: 400,
       body: '{"error":{"message":"Invalid token"}}',
       attempts: 1,
+      durationMs: 0,
     });
 
     const result = await metaAdapter.dispatch(provider(), ctx());

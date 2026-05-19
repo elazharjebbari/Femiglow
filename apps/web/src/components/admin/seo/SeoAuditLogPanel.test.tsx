@@ -114,8 +114,13 @@ describe('SeoAuditLogPanel — pagination', () => {
     await waitFor(() => {
       expect(screen.getByText('seo.update')).toBeTruthy();
     });
-    // Le cursor a été passé dans l'URL.
-    const callUrl = fetchMock.mock.calls[0]?.[0] as string;
+    // Le cursor a été passé dans l'URL. Cast via `unknown` car le type
+    // inféré de `mock.calls[0]` est `[] | [...]` (tuple paramétré ouvert)
+    // — passer par `unknown` documente que l'asserter en string est
+    // intentionnel.
+    const firstCall = fetchMock.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    const callUrl = (firstCall as unknown as [string, ...unknown[]])[0];
     expect(callUrl).toContain('cursor=ae_1');
   });
 });
@@ -127,6 +132,13 @@ describe('SeoAuditLogPanel — filtres', () => {
     ) as never;
   });
 
+  function readFetchUrl(): string {
+    const mock = global.fetch as ReturnType<typeof vi.fn>;
+    const firstCall = mock.mock.calls[0];
+    if (!firstCall) throw new Error('fetch did not get called');
+    return (firstCall as unknown as [string, ...unknown[]])[0];
+  }
+
   it('appliquer un filtre action met cette action dans la query', async () => {
     render(<SeoAuditLogPanel initialEvents={[]} initialNextCursor={null} />);
     fireEvent.change(screen.getByTestId('seo-audit-filter-action'), {
@@ -136,8 +148,7 @@ describe('SeoAuditLogPanel — filtres', () => {
     await waitFor(() => {
       expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(1);
     });
-    const callUrl = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
-    expect(callUrl).toContain('action=seo.publish');
+    expect(readFetchUrl()).toContain('action=seo.publish');
   });
 
   it('appliquer un filtre actor met cet actorId dans la query', async () => {
@@ -149,8 +160,7 @@ describe('SeoAuditLogPanel — filtres', () => {
     await waitFor(() => {
       expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(1);
     });
-    const callUrl = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
-    expect(callUrl).toContain('actorId=adm_yasmine');
+    expect(readFetchUrl()).toContain('actorId=adm_yasmine');
   });
 });
 
