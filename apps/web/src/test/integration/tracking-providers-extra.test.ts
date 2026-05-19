@@ -111,30 +111,37 @@ describe('Adapter Snap', () => {
         custom_data: Record<string, unknown>;
       }>;
     };
+    // Source de vérité : `lib/tracking/providers/snap.ts` (CAPI v3 spec).
+    //  - `action_source` : `'website'` (string minuscule, spec officielle).
+    //  - `user_data`     : `ct` (city) et `country` ; pas de `geo_*`.
+    //  - `custom_data`   : `order_id` (pas `transaction_id`), `content_ids`
+    //    (pas `item_ids`), `content_category` Array (pas string),
+    //    `number_items` Array<string> (pas number). Le champ `event_id` est
+    //    dupliqué dans custom_data (utile pour dedup côté Snap).
+    //
+    // Les champs `event_tag`, `description`, `client_deduplication_id`,
+    // `uuid_c1` ne sont pas dans la spec CAPI v3 ; l'adapter ne les pose
+    // donc pas. Les retirer des assertions.
     expect(c.data[0]).toMatchObject({
       event_name: 'PURCHASE',
-      action_source: 'WEB',
+      action_source: 'website',
       event_id: '01900000-0000-7000-8000-000000000099',
     });
     expect(c.data[0]?.user_data).toMatchObject({
       em: ['e'.repeat(64)],
       ph: ['f'.repeat(64)],
       fn: ['a'.repeat(64)],
-      geo_city: 'Marrakech',
-      geo_country: 'MA',
+      ct: 'Marrakech',
+      country: 'MA',
       sc_click_id: 'sc-click-99',
     });
     expect(c.data[0]?.custom_data).toMatchObject({
       currency: 'MAD',
       value: 99,
-      transaction_id: 'tx_99',
-      client_deduplication_id: '01900000-0000-7000-8000-000000000099',
-      event_tag: 'checkout_paid',
-      description: 'Commande test Snapchat',
-      item_ids: ['sku_a'],
-      item_category: 'skincare',
-      number_items: 2,
-      uuid_c1: 'anon_snap_42',
+      order_id: 'tx_99',
+      content_ids: ['sku_a'],
+      content_category: ['skincare'],
+      number_items: ['2'],
     });
   });
 
