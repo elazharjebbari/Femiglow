@@ -120,7 +120,8 @@ describe('ProviderConfigList — ordering', () => {
       />,
     );
     const cards = document.querySelectorAll('[data-testid^="provider-card-"]');
-    const last = cards[cards.length - 1].getAttribute('data-testid');
+    expect(cards.length).toBeGreaterThan(0);
+    const last = cards[cards.length - 1]?.getAttribute('data-testid');
     expect(last).toBe('provider-card-future_provider');
   });
 });
