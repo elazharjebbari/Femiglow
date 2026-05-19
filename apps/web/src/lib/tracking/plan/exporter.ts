@@ -133,6 +133,20 @@ function snapEventNameFor(eventKey: string): string | null {
   return getEventMapping(eventKey)?.snap?.name ?? null;
 }
 
+/**
+ * Nom canonique TikTok pour un event FemiGlow (Purchase, AddToCart, …),
+ * ou `null` si l'event n'est pas mappé pour TikTok. Le caller skip
+ * l'émission de la balise plutôt que de pousser un custom event qui
+ * n'optimiserait pas les campagnes Sales/Lead.
+ *
+ * Liste canonique : ads.tiktok.com/help/article/standard-events-parameters
+ * Note : le legacy `CompletePayment` (Events API V1.3 pré-unification)
+ * a été remplacé par `Purchase` via event-mapping.ts (cf. fix Purchase).
+ */
+function tiktokEventNameFor(eventKey: string): string | null {
+  return getEventMapping(eventKey)?.tiktok?.name ?? null;
+}
+
 // Built-in variables that ship with every GTM container by default.
 // Note: AD_STORAGE / ANALYTICS_STORAGE are NOT built-in variable types
 // (those are consent storage keys, surfaced via the Consent built-in
@@ -435,6 +449,43 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     });
   }
 
+  // ─── TikTok Init tag (bootstrap ttq + Pageview) ──────────────────
+  // Charge le SDK officiel TikTok Pixel et déclenche le premier
+  // Pageview. Référencé en `setupTag` par chaque TikTok Evt pour
+  // garantir que `window.ttq` est défini avant `ttq.track(...)`
+  // (GTM dédup `ONCE_PER_EVENT` rend ce chain idempotent).
+  // Source SDK : analytics.tiktok.com/i18n/pixel/events.js
+  const TIKTOK_INIT_NAME = 'TikTok Init';
+  if (idVars.tiktok && cfg.tiktokPixelId) {
+    const initSnippet = [
+      `<script>!function(w,d,t){w.TiktokAnalyticsObject=t;`,
+      `var ttq=w[t]=w[t]||[];`,
+      `ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];`,
+      `ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};`,
+      `for(var i=0;i<ttq.methods.length;i++){ttq.setAndDefer(ttq,ttq.methods[i])}`,
+      `ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++){ttq.setAndDefer(e,ttq.methods[n])}return e};`,
+      `ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";`,
+      `ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=i;ttq._t=ttq._t||{};ttq._t[e]=+new Date;`,
+      `ttq._o=ttq._o||{};ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript";o.async=!0;`,
+      `o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};`,
+      `ttq.load('${cfg.tiktokPixelId}');ttq.page();`,
+      `}(window,document,'ttq');</script>`,
+    ].join('');
+    tags.push({
+      tagId: nextTag(),
+      name: TIKTOK_INIT_NAME,
+      type: 'html',
+      parameter: [
+        { type: 'TEMPLATE', key: 'html', value: initSnippet },
+        { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
+      ],
+      priority: { type: 'INTEGER', key: 'priority', value: '70' },
+      tagFiringOption: 'ONCE_PER_EVENT',
+      firingTriggerId: [allPagesId],
+      parentFolderId: '1',
+    });
+  }
+
   // ─── Triggers conditionnés par attribution ─────────────────────
   // Pour chaque event-conversion × pixel payant, on génère un trigger
   // dédié qui combine :
@@ -660,27 +711,46 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     }
 
     if (event.providers.tiktok && idVars.tiktok && cfg.tiktokPixelId) {
-      // TikTok primary = CompletePayment (purchase) + SubmitForm (lead).
+      // Mapping vers le nom canonique TikTok (Purchase, AddToCart, …).
+      // Si l'event FemiGlow n'a pas de mapping TikTok, on skip plutôt
+      // que d'émettre `ttq.track('<fg_event_key>')` — sinon ça produit
+      // un custom event qui n'optimise ni Sales ni Lead.
+      //
+      // TikTok primary = Purchase (purchase) + SubmitForm (lead).
       // Tout le reste broadcast.
-      const tiktokTriggerId =
-        getAttributionMode(event.key, 'tiktok') === 'primary'
-          ? ensureAttributionTrigger(event.key, 'tiktok')
-          : triggerId;
-      tags.push({
-        tagId: nextTag(),
-        name: `TikTok Evt — ${event.key}`,
-        type: 'html',
-        parameter: [
-          {
-            type: 'TEMPLATE',
-            key: 'html',
-            value: `<script>if(window.ttq){ttq.track('${event.key}');}</script>`,
-          },
-          { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
-        ],
-        firingTriggerId: [tiktokTriggerId],
-        parentFolderId: '2',
-      });
+      const tiktokName = tiktokEventNameFor(event.key);
+      if (tiktokName) {
+        const tiktokTriggerId =
+          getAttributionMode(event.key, 'tiktok') === 'primary'
+            ? ensureAttributionTrigger(event.key, 'tiktok')
+            : triggerId;
+        // DLV - event_id requis pour la dédup Pixel ↔ CAPI (fenêtre 48h,
+        // tolérance 5min inter-canaux). Idempotent : déjà créé par la
+        // branche Meta/Snap si actives, sinon créé ici.
+        ensureDlv('DLV - event_id', 'event_id');
+        tags.push({
+          tagId: nextTag(),
+          // Convention de nommage parité Snap : `<provider> Evt — <fg_key> → <VendorName>`
+          // pour rendre le mapping visible dans l'UI GTM et faciliter les
+          // diagnostics côté Tag Assistant.
+          name: `TikTok Evt — ${event.key} → ${tiktokName}`,
+          type: 'html',
+          parameter: [
+            {
+              type: 'TEMPLATE',
+              key: 'html',
+              value: `<script>ttq.track('${tiktokName}', { event_id: {{DLV - event_id}} });</script>`,
+            },
+            { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
+          ],
+          firingTriggerId: [tiktokTriggerId],
+          // Garantit que `TikTok Init` (ttq.load + ttq.page) tourne avant
+          // que `ttq.track` ne soit appelé. GTM dédup le setupTag par
+          // session ; pas de double-load possible.
+          setupTag: [{ tagName: TIKTOK_INIT_NAME, stopOnSetupFailure: false }],
+          parentFolderId: '2',
+        });
+      }
     }
 
     if (event.providers.snap && idVars.snap && cfg.snapPixelId && snapNeedsGtm) {

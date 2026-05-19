@@ -150,7 +150,10 @@
       "Bash(grep -o \"{config:\\\\\"[^\\\\\"]*\\\\\",page:\\\\\"[^\\\\\"]*\\\\\"\" /var/www/femiglow/apps/web/.next/server/app/api/admin/tracking/gtm/container/route.js)",
       "Bash(grep -oE \"\\(config|page|ecommerce|lead|conversions|consent|chat|fgCustom|helpers\\):['\\\\\"][^'\\\\\"]{1,5}['\\\\\"]\" /var/www/femiglow/apps/web/.next/server/app/api/admin/tracking/gtm/container/route.js)",
       "Bash(systemctl list-units *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(git push)",
+      "Bash(git push origin master)",
+      "Bash(git push origin master:master)"
     ]
   }
 }

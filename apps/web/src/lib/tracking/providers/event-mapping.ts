@@ -191,7 +191,11 @@ const MAP: Record<string, EventMapping> = {
       recommendedRole: 'primary',
       group: 'sales',
     },
-    tiktok: { name: 'CompletePayment', isStandard: true },
+    // TikTok canonical event name (unified across Pixel + Events API V2).
+    // The legacy `CompletePayment` from Events API V1.3 is deprecated and
+    // no longer optimizes Sales campaigns since the unification.
+    // Source: ads.tiktok.com/help/article/standard-events-parameters
+    tiktok: { name: 'Purchase', isStandard: true },
     snap: { name: 'PURCHASE', isStandard: true },
     pinterest: { name: 'checkout', isStandard: true },
     identityFields: ['email', 'phone', 'firstName', 'lastName', 'city', 'country'],
@@ -448,7 +452,7 @@ export type AttributionProvider = 'meta' | 'google_ads' | 'tiktok' | 'snap';
 
 const META_PRIMARY_NAMES: ReadonlySet<string> = new Set(['Purchase', 'Lead']);
 const TIKTOK_PRIMARY_NAMES: ReadonlySet<string> = new Set([
-  'CompletePayment',
+  'Purchase',
   'SubmitForm',
 ]);
 const SNAP_PRIMARY_NAMES: ReadonlySet<string> = new Set(['PURCHASE', 'SIGN_UP', 'LEAD']);

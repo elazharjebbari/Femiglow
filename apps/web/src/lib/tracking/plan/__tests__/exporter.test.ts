@@ -313,6 +313,166 @@ describe('exportPlan — structure GTM', () => {
     expect(variables.find((v: any) => v.name === 'CONST - Snap Pixel ID')).toBeUndefined();
   });
 
+  // ─── TikTok Init + Evt (parité Meta/Snap) ──────────────────────────
+  //
+  // Cf. plan-action 2026-05-19 "Intégrer TikTok comme provider de bout-
+  // en-bout" — branche feat/tracking-tiktok-init.
+  //
+  // L'exporter doit produire :
+  //   - 1 balise `TikTok Init` (ttq.load + ttq.page) sur PV — All Pages,
+  //     ONCE_PER_EVENT, priority 70, dossier `00 — Configuration` (id '1').
+  //   - N balises `TikTok Evt — <fg_event> → <TikTokName>` qui :
+  //       · utilisent le nom canonique TikTok (Purchase, AddToCart, …),
+  //         JAMAIS l'event_key FemiGlow brut ni le legacy CompletePayment ;
+  //       · référencent `TikTok Init` via `setupTag` pour garantir que
+  //         `ttq` est chargé avant le track (idempotent, GTM gère la dédup) ;
+  //       · injectent `event_id` pour dédup Pixel ↔ CAPI (fenêtre 48h).
+  //   - 1 variable `CONST - TikTok Pixel ID` valant cfg.tiktokPixelId.
+  it('emits TikTok Init tag on PV All Pages with ttq.load + ttq.page', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'tiktok', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            tiktokPixelId: 'CTIKTOKPIXEL123456',
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'view_item', providers: { tiktok: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const json = result.json as any;
+    const tags = json.containerVersion.tag;
+    const variables = json.containerVersion.variable;
+    const triggers = json.containerVersion.trigger;
+
+    const init = tags.find((t: any) => t.name === 'TikTok Init');
+    expect(init).toBeDefined();
+    expect(init.type).toBe('html');
+    expect(init.tagFiringOption).toBe('ONCE_PER_EVENT');
+    expect(init.priority).toMatchObject({ type: 'INTEGER', key: 'priority', value: '70' });
+    expect(init.parentFolderId).toBe('1');
+
+    // Doit fire sur PV — All Pages (pas un CE)
+    const pv = triggers.find(
+      (t: any) => t.triggerId === init.firingTriggerId[0],
+    );
+    expect(pv.type).toBe('PAGEVIEW');
+
+    // Snippet bootstrap officiel TikTok
+    const html = init.parameter.find((p: any) => p.key === 'html').value as string;
+    expect(html).toContain("ttq.load('CTIKTOKPIXEL123456')");
+    expect(html).toContain('ttq.page()');
+    expect(html).toContain('https://analytics.tiktok.com/i18n/pixel/events.js');
+    expect(html).toContain("TiktokAnalyticsObject");
+
+    // CONST variable câblée
+    expect(variables).toContainEqual(
+      expect.objectContaining({ name: 'CONST - TikTok Pixel ID', type: 'c' }),
+    );
+  });
+
+  it('TikTok Evt tags use canonical TikTok names and reference TikTok Init via setupTag', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'tiktok', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            tiktokPixelId: 'CTIKTOKPIXEL123456',
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'view_item', providers: { tiktok: true } },
+        { key: 'add_to_cart', providers: { tiktok: true } },
+        { key: 'purchase', providers: { tiktok: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+
+    // Nom canonique TikTok dans le tag name (parité Snap)
+    const view = tags.find((t: any) => t.name === 'TikTok Evt — view_item → ViewContent');
+    const cart = tags.find((t: any) => t.name === 'TikTok Evt — add_to_cart → AddToCart');
+    const purchase = tags.find((t: any) => t.name === 'TikTok Evt — purchase → Purchase');
+    expect(view).toBeDefined();
+    expect(cart).toBeDefined();
+    expect(purchase).toBeDefined();
+
+    // Le script doit appeler ttq.track avec le nom canonique, pas l'event_key
+    const purchaseHtml = purchase.parameter.find((p: any) => p.key === 'html').value as string;
+    expect(purchaseHtml).toContain("ttq.track('Purchase'");
+    expect(purchaseHtml).not.toContain("ttq.track('purchase'");
+    expect(purchaseHtml).not.toContain("ttq.track('CompletePayment'");
+
+    // event_id pour la dédup Pixel ↔ CAPI
+    expect(purchaseHtml).toContain('event_id');
+    expect(purchaseHtml).toContain('{{DLV - event_id}}');
+
+    // setupTag → TikTok Init garantit que ttq est chargé avant track
+    for (const tag of [view, cart, purchase]) {
+      expect(tag.setupTag).toEqual([
+        { tagName: 'TikTok Init', stopOnSetupFailure: false },
+      ]);
+    }
+  });
+
+  it('skips TikTok tags entirely when tiktokPixelId is missing', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'tiktok', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: { gtmContainerId: 'GTM-Y' },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { tiktok: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    const variables = (result.json as any).containerVersion.variable;
+
+    expect(tags.find((t: any) => t.name === 'TikTok Init')).toBeUndefined();
+    expect(tags.find((t: any) => t.name.startsWith('TikTok Evt'))).toBeUndefined();
+    expect(variables.find((v: any) => v.name === 'CONST - TikTok Pixel ID')).toBeUndefined();
+  });
+
+  it('skips TikTok Evt for an event whose mapping has no TikTok standard name', () => {
+    // Un event FemiGlow-only (ex: `fg_journal_read_75`) n'a pas de mapping
+    // TikTok → on doit skip plutôt que d'émettre `ttq.track('fg_journal_read_75')`
+    // qui finirait en custom event non optimisable.
+    const plan = buildPlan({
+      providers: [{ id: 'tiktok', active: true }],
+      envProfiles: [
+        {
+          env: 'production',
+          config: {
+            tiktokPixelId: 'CTIKTOKPIXEL123456',
+            gtmContainerId: 'GTM-Y',
+          },
+        },
+      ],
+      events: [
+        { key: 'purchase', providers: { tiktok: true } },
+        { key: 'fg_journal_read_75', providers: { tiktok: true } },
+      ],
+    });
+    const result = exportPlan(plan, 'production');
+    const tags = (result.json as any).containerVersion.tag;
+    expect(tags.find((t: any) => t.name === 'TikTok Evt — purchase → Purchase')).toBeDefined();
+    expect(
+      tags.find((t: any) => t.name.startsWith('TikTok Evt — fg_journal_read_75')),
+    ).toBeUndefined();
+  });
+
   it('emits DLV - event_id when Meta is active (for fbq deduplication)', () => {
     const result = exportPlan(buildPlan(), 'production');
     const variables = (result.json as any).containerVersion.variable;
@@ -594,7 +754,7 @@ describe('exportPlan — structure GTM', () => {
     const adsTag = tags.find((t: any) => t.type === 'awct');
     expect(adsTag.firingTriggerId).toEqual([adsAttr.triggerId]);
     // Idem TikTok
-    const ttTag = tags.find((t: any) => t.name === 'TikTok Evt — purchase');
+    const ttTag = tags.find((t: any) => t.name === 'TikTok Evt — purchase → Purchase');
     expect(ttTag.firingTriggerId).toEqual([ttAttr.triggerId]);
 
     // Le tag GA4 reste sur le trigger standard (analytics neutre)

@@ -152,6 +152,95 @@ describe('/api/admin/tracking/providers/[kind]', () => {
       expect(res.status).toBe(401);
     });
   });
+
+  // ─── TikTok-specific contract ─────────────────────────────────────
+  //
+  // L'UI providers (commit 62f6ecc) montre toujours une carte TikTok,
+  // donc l'API doit pouvoir servir un empty-state GET et accepter un
+  // PATCH de création depuis cette carte.
+  describe('TikTok provider lifecycle', () => {
+    it('GET returns a disabled default when no TikTok row exists', async () => {
+      const res = await GET(getReq('tiktok'), { params: Promise.resolve({ kind: 'tiktok' }) });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.kind).toBe('tiktok');
+      expect(body.status).toBe('disabled');
+      expect(body.pixelId).toBeNull();
+      expect(body.hasCapiToken).toBe(false);
+    });
+
+    it('PATCH creates a TikTok provider with realistic pixelId + access token', async () => {
+      const res = await PATCH(
+        patchReq('tiktok', {
+          status: 'enabled',
+          pixelId: 'CTIKTOKPIXEL12345',
+          capiToken: 'tt-access-token-secret',
+          testEventCode: 'TT-TEST-DAY-1',
+        }),
+        { params: Promise.resolve({ kind: 'tiktok' }) },
+      );
+      expect(res.status).toBe(201);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.kind).toBe('tiktok');
+      expect(body.status).toBe('enabled');
+      expect(body.pixelId).toBe('CTIKTOKPIXEL12345');
+      expect(body.hasCapiToken).toBe(true);
+      expect(body.testEventCode).toBe('TT-TEST-DAY-1');
+      // Le token brut ne doit JAMAIS être renvoyé (AES-256-GCM stocké côté DB).
+      expect(body.capiToken).toBeUndefined();
+    });
+
+    it('PATCH persists the encrypted token to the DB store', async () => {
+      await PATCH(
+        patchReq('tiktok', {
+          status: 'enabled',
+          pixelId: 'CTIKTOKPIXEL12345',
+          capiToken: 'tt-access-token-secret',
+        }),
+        { params: Promise.resolve({ kind: 'tiktok' }) },
+      );
+      const stored = await findTrackingProviderByKind('tiktok');
+      expect(stored).not.toBeNull();
+      expect(stored!.pixelId).toBe('CTIKTOKPIXEL12345');
+      expect(stored!.capiToken).not.toBeNull();
+      // Le token stocké est chiffré : ne doit jamais être le clair.
+      expect(stored!.capiToken).not.toBe('tt-access-token-secret');
+    });
+
+    it('PATCH updates an existing TikTok provider (status flip)', async () => {
+      await PATCH(
+        patchReq('tiktok', { status: 'enabled', pixelId: 'CTIKTOKPIXEL12345' }),
+        { params: Promise.resolve({ kind: 'tiktok' }) },
+      );
+      const res = await PATCH(
+        patchReq('tiktok', { status: 'disabled' }),
+        { params: Promise.resolve({ kind: 'tiktok' }) },
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.status).toBe('disabled');
+      // pixelId préservé après le toggle status (le PATCH partiel ne doit pas l'effacer).
+      expect(body.pixelId).toBe('CTIKTOKPIXEL12345');
+
+      // Et l'UI list contient bien la ligne après création (sanity check).
+      const all = await listTrackingProviders();
+      expect(all.find((p) => p.kind === 'tiktok')).toBeDefined();
+    });
+
+    it('PATCH clears the testEventCode with explicit null', async () => {
+      await PATCH(
+        patchReq('tiktok', { status: 'enabled', testEventCode: 'TT-DAY-1' }),
+        { params: Promise.resolve({ kind: 'tiktok' }) },
+      );
+      const res = await PATCH(
+        patchReq('tiktok', { testEventCode: null }),
+        { params: Promise.resolve({ kind: 'tiktok' }) },
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.testEventCode).toBeNull();
+    });
+  });
 });
 
 async function upsertSnap() {

@@ -176,7 +176,7 @@ describe('cross-provider event mapping consistency', () => {
       meta: 'Purchase',
       google_ga4: 'purchase',
       google_ads: 'purchase',
-      tiktok: 'CompletePayment',
+      tiktok: 'Purchase',
       snap: 'PURCHASE',
       pinterest: 'checkout',
     },

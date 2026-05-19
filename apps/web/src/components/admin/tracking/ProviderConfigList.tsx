@@ -40,6 +40,21 @@ const PROVIDER_ORDER: TrackingProviderKind[] = [
   'custom',
 ];
 
+/**
+ * Providers affichés en empty-state (carte "Désactivé" cliquable) même
+ * sans ligne `tracking_providers` en base. Inclure un provider ici lui
+ * donne une porte d'entrée dans l'UI admin sans seed préalable.
+ *
+ * Critères pour ajouter un provider : adapter livré + couverture event
+ * mapping en place + tests verts. Sinon l'admin verrait une carte qui
+ * ne peut rien produire à l'enregistrement.
+ */
+const ALWAYS_VISIBLE: ReadonlySet<TrackingProviderKind> = new Set([
+  'snap',
+  'meta',
+  'tiktok',
+]);
+
 interface ProviderConfigListProps {
   providers: ProviderConfigResponse[];
   hasEnvSnapToken: boolean;
@@ -48,7 +63,7 @@ interface ProviderConfigListProps {
 export function ProviderConfigList({ providers, hasEnvSnapToken }: ProviderConfigListProps) {
   const byKind = new Map(providers.map((p) => [p.kind, p]));
   const ordered = PROVIDER_ORDER.filter(
-    (kind) => byKind.has(kind) || kind === 'snap' || kind === 'meta',
+    (kind) => byKind.has(kind) || ALWAYS_VISIBLE.has(kind),
   );
   // Add any providers not in our order list
   for (const p of providers) {

@@ -14,7 +14,7 @@ describe('event-mapping', () => {
   it('purchase → noms canoniques par provider', () => {
     expect(mapEventName('purchase', 'meta')).toBe('Purchase');
     expect(mapEventName('purchase', 'google_ga4')).toBe('purchase');
-    expect(mapEventName('purchase', 'tiktok')).toBe('CompletePayment');
+    expect(mapEventName('purchase', 'tiktok')).toBe('Purchase');
     expect(mapEventName('purchase', 'snap')).toBe('PURCHASE');
     expect(mapEventName('purchase', 'pinterest')).toBe('checkout');
   });
@@ -272,8 +272,8 @@ describe('event-mapping', () => {
       });
     });
 
-    describe('TikTok — primary pour CompletePayment et SubmitForm', () => {
-      it('purchase → primary (CompletePayment)', () => {
+    describe('TikTok — primary pour Purchase et SubmitForm', () => {
+      it('purchase → primary (Purchase)', () => {
         expect(getAttributionMode('purchase', 'tiktok')).toBe('primary');
       });
       it('generate_lead → primary (SubmitForm)', () => {

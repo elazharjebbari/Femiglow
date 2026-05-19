@@ -149,19 +149,37 @@ function PublishBar({
   publishError,
   onPublish,
 }: PublishBarProps): JSX.Element {
+  // `sticky bottom-4` ancre la barre au bas du viewport pendant que
+  // l'admin scrolle dans le formulaire (un panneau hero peut faire 8+
+  // champs et le bouton de publication disparaissait sous la pliure).
+  // `z-10` la garde au-dessus des éditeurs ; `shadow-md` la détache
+  // visuellement du contenu une fois sticky.
+  const isDirty = dirtyCount > 0;
   return (
     <div
-      className="publish-bar mt-8 flex items-center justify-between rounded-md border border-stone-200 bg-stone-50 px-4 py-3"
+      className={`publish-bar sticky bottom-4 z-10 mt-8 flex flex-wrap items-center justify-between gap-3 rounded-md border px-4 py-3 shadow-md transition-colors ${
+        isDirty
+          ? 'border-amber-300 bg-amber-50'
+          : 'border-stone-200 bg-stone-50'
+      }`}
       role="region"
       aria-label="Publication"
     >
-      <div className="text-sm text-stone-700">
-        {dirtyCount > 0 ? (
+      <div className="min-w-0 text-sm text-stone-700">
+        {isDirty ? (
           <span>
             <strong>{dirtyCount}</strong> champ{dirtyCount > 1 ? 's' : ''} en brouillon
+            <span className="ml-2 text-xs text-stone-500">
+              · sauvegarde automatique en cours
+            </span>
           </span>
         ) : (
-          <span className="text-stone-500">Aucune modification en attente</span>
+          <span className="text-stone-500">
+            Aucune modification en attente
+            <span className="ml-2 text-xs text-stone-400">
+              · les changements sont sauvegardés en draft, cliquez « Publier » pour les rendre visibles en prod
+            </span>
+          </span>
         )}
         {publishError ? (
           <span className="ml-3 text-red-600" role="alert">
@@ -171,7 +189,7 @@ function PublishBar({
       </div>
       <button
         type="button"
-        className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+        className="shrink-0 rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-stone-800 disabled:opacity-50"
         onClick={onPublish}
         disabled={publishing || dirtyCount === 0}
       >

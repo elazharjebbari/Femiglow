@@ -66,12 +66,12 @@ export async function HeroProduitBound({
   const fields: HeroProduitFields = {
     tagline: pickString(
       resolvedFields.tagline,
-      'Manucure japonaise halal. Deux gestes, un polissoir. La main se révèle.',
+      'Manucure japonaise. Deux gestes, un polissoir. La main se révèle.',
     ),
     description: pickString(resolvedFields.description, ''),
     attributeChips: pickStringArray(
       resolvedFields.attributeChips,
-      ['Sans vernis', 'Sans UV', 'Sans acétone', 'Halal'],
+      ['Sans vernis', 'Sans UV', 'Sans acétone'],
     ),
     trustRow: pickStringArray(resolvedFields.trustRow, [
       'Livraison offerte',
