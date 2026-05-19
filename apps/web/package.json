@@ -28,6 +28,7 @@
     "seed:tracking": "tsx scripts/seed-tracking.ts",
     "migrate:tracking-to-plan": "tsx scripts/migrate-tracking-to-plan.ts",
     "migrate:tracking-to-plan:dry-run": "tsx scripts/migrate-tracking-to-plan.ts -- --dry-run",
+    "tracking:plan-export": "tsx scripts/export-active-plan.ts",
     "seed:media": "tsx scripts/seed-media.ts",
     "seed:seo": "tsx scripts/seed-seo.ts",
     "seed:seo:defaults": "tsx scripts/seed-seo-defaults.ts",
