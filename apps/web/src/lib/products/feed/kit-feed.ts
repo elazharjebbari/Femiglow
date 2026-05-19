@@ -158,7 +158,7 @@ function buildClaims(): ProductFeedClaim[] {
     {
       icon: 'leaf',
       label: 'Ingr\u00E9dients d\u2019origine naturelle',
-      detail: 'Cire d\u2019abeille, jojoba, kaolin, poudre de riz \u2014 manucure japonaise halal.',
+      detail: 'Cire d\u2019abeille, jojoba, kaolin, poudre de riz \u2014 manucure japonaise.',
     },
     {
       icon: 'drop',
@@ -242,7 +242,7 @@ export function buildKitProductFeed(
       // Pr\u00E9sent + verbes d'action (Copy #1).
       title: 'Le rituel s\u2019installe en deux gestes et un polissoir.',
       lead:
-        'Trois objets dans la main, deux gestes dans la soir\u00E9e. La paste filme, la powder lustre, le polissoir Step\u00A04 r\u00E9v\u00E8le \u2014 manucure japonaise halal, pens\u00E9e \u00E0 Rabat.',
+        'Trois objets dans la main, deux gestes dans la soir\u00E9e. La paste filme, la powder lustre, le polissoir Step\u00A04 r\u00E9v\u00E8le \u2014 manucure japonaise, pens\u00E9e \u00E0 Rabat.',
       pricePrefix: 'Tout compris\u00A0:',
       ctaLabel: 'Recevoir le pack',
       // Microcopy serr\u00E9e (Pricing #11) \u2014 chiffres pr\u00E9cis (Pricing #14).
