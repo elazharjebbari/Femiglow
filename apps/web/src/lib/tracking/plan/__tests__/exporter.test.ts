@@ -754,7 +754,7 @@ describe('exportPlan — structure GTM', () => {
     const adsTag = tags.find((t: any) => t.type === 'awct');
     expect(adsTag.firingTriggerId).toEqual([adsAttr.triggerId]);
     // Idem TikTok
-    const ttTag = tags.find((t: any) => t.name === 'TikTok Evt — purchase');
+    const ttTag = tags.find((t: any) => t.name === 'TikTok Evt — purchase → Purchase');
     expect(ttTag.firingTriggerId).toEqual([ttAttr.triggerId]);
 
     // Le tag GA4 reste sur le trigger standard (analytics neutre)
