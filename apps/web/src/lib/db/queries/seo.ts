@@ -454,7 +454,51 @@ export const __noop_for_typecheck_seo = asc;
 /* -------------------------------------------------------------------------- */
 
 import type { AuditEvent } from '@/lib/db/types';
-import { lt, sql } from 'drizzle-orm';
+import { inArray, isNotNull, lt, sql } from 'drizzle-orm';
+
+/* -------------------------------------------------------------------------- */
+/*  Phase 5 — batch fetch des overrides composants                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Récupère tous les overrides publiés pour un ensemble de composants dans
+ * une **seule requête** (évite le N+1 quand une page agrège plusieurs
+ * composants pilotés).
+ *
+ * Retourne une Map keyée par `targetKey` pour lookup O(1) côté consommateur.
+ * Les composants sans override publié ne sont pas dans la Map (consommateur
+ * doit utiliser `.get(key)` avec test undefined).
+ */
+export async function getActiveComponentOverrides(
+  componentKeys: string[],
+  locale: string = 'fr-MA',
+): Promise<Map<string, SeoOverride>> {
+  if (componentKeys.length === 0) return new Map();
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(schema.seoOverrides)
+      .where(
+        and(
+          eq(schema.seoOverrides.scope, 'component'),
+          inArray(schema.seoOverrides.targetKey, componentKeys),
+          eq(schema.seoOverrides.locale, locale),
+          isNotNull(schema.seoOverrides.publishedAt),
+        ),
+      );
+    return new Map(rows.map((r) => [r.targetKey, rowToOverride(r)]));
+  }
+  // memoryStore fallback
+  const all = Array.from(ext().seoOverrides.values()).filter(
+    (o) =>
+      o.scope === 'component' &&
+      componentKeys.includes(o.targetKey) &&
+      o.locale === locale &&
+      o.publishedAt !== null,
+  );
+  return new Map(all.map((o) => [o.targetKey, o]));
+}
 
 export interface ListSeoAuditEventsOptions {
   /** Limite par page. Maximum 100, par défaut 20. */

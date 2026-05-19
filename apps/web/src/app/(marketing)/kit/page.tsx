@@ -20,6 +20,7 @@ import { GeoPromoSlideHeaderSlot } from '@/components/promo/GeoPromoSlideHeaderS
 import { JsonLd, productSchema, faqPageSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
+import { resolvePageWithComponents } from '@/lib/seo/component-resolve';
 import {
   KIT_LOCALE,
   KIT_PRODUCT_SLUG,
@@ -42,11 +43,21 @@ const FALLBACK_DESCRIPTION =
 
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;
-  const seo = await resolveSeoMetadata({
-    scope: 'product',
-    targetKey: KIT_PRODUCT_SLUG,
+  // Phase 5 — résolution page + composants. Le helper court-circuite si le
+  // flag `NEXT_PUBLIC_SEO_COMPONENT_OVERRIDES` n'est pas à 'true' : dans ce
+  // cas, retombe sur `resolveSeoMetadata` standard (zéro régression
+  // vérifiée par snapshot kit-metadata).
+  const seo = await resolvePageWithComponents({
+    pageScope: 'product',
+    pageTargetKey: KIT_PRODUCT_SLUG,
     locale: KIT_LOCALE,
     fallback: { title: FALLBACK_TITLE, description: FALLBACK_DESCRIPTION },
+    components: [
+      // Le hero kit peut porter son propre SEO override (scope='component',
+      // targetKey='kit-hero'). Champs écrasables : title et OG title.
+      // La description reste celle du produit (cohérence editorial).
+      { componentKey: 'kit-hero', overridableFields: ['title', 'ogTitle'] },
+    ],
   });
   return {
     title: seo.title,
