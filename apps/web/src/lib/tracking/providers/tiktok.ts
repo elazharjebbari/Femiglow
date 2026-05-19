@@ -91,3 +91,5 @@ export const tiktokAdapter: ProviderAdapter = {
     };
   },
 };
+
+export const __test__ = { buildPayload };
