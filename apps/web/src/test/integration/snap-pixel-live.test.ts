@@ -135,6 +135,13 @@ function captureSnapRequests(): { calls: Array<{ url: string; body: Record<strin
 // ---------------------------------------------------------------------------
 
 describe('Snap — mapping événements', () => {
+  // Source de vérité : `lib/tracking/providers/event-mapping.ts`.
+  //
+  // À noter — distinctions importantes côté Snap CAPI v3 :
+  //  - `generate_lead` → LEAD (formulaire de lead soumis).
+  //  - `sign_up`       → SIGN_UP (création de compte / signup formel).
+  //  - `lead_capture`  → LEAD (variante FemiGlow, cf. CHA-230 wizard).
+  // Ces 3 events restent distincts pour ne pas mélanger l'attribution.
   const SNAP_EVENTS: Array<{ fg: string; snap: string; isStandard: boolean }> = [
     { fg: 'page_view', snap: 'PAGE_VIEW', isStandard: true },
     { fg: 'view_item', snap: 'VIEW_CONTENT', isStandard: true },
@@ -143,8 +150,9 @@ describe('Snap — mapping événements', () => {
     { fg: 'begin_checkout', snap: 'START_CHECKOUT', isStandard: true },
     { fg: 'add_payment_info', snap: 'ADD_BILLING', isStandard: true },
     { fg: 'purchase', snap: 'PURCHASE', isStandard: true },
-    { fg: 'generate_lead', snap: 'SIGN_UP', isStandard: true },
+    { fg: 'generate_lead', snap: 'LEAD', isStandard: true },
     { fg: 'sign_up', snap: 'SIGN_UP', isStandard: true },
+    { fg: 'lead_capture', snap: 'LEAD', isStandard: true },
     { fg: 'chat_lead_form_submit', snap: 'LEAD', isStandard: true },
   ];
 
@@ -161,12 +169,14 @@ describe('Snap — mapping événements', () => {
   });
 
   it('les événements non-mappés retournent null', () => {
+    // `lead_capture` retiré : il est désormais mappé sur LEAD côté snap
+    // (cf. SNAP_EVENTS ci-dessus, CHA-230).
     const unmapped = [
       'view_item_list', 'remove_from_cart', 'view_cart', 'add_shipping_info',
       'refund', 'search', 'scroll_depth', 'click', 'select_content',
       'video_start', 'video_progress', 'video_complete',
       'form_start', 'form_submit', 'contact_submit', 'newsletter_submit',
-      'lead_capture', 'address_completed', 'wizard_error', 'wizard_abandoned',
+      'address_completed', 'wizard_error', 'wizard_abandoned',
       'chat_widget_open', 'chat_message_sent', 'chat_message_received',
       'chat_message_complete', 'chat_lead_form_offered', 'chat_lead_form_view',
       'chat_lead_form_focus', 'chat_lead_form_dismiss',
@@ -222,13 +232,17 @@ describe('Snap CAPI v3 — payload', () => {
     expect(userData.client_ip_address).toBe('102.0.0.0');
     expect(userData.client_user_agent).toBe('c'.repeat(64));
 
-    // custom_data
+    // custom_data — Snap CAPI v3 renames :
+    //  - `transaction_id` → `order_id`
+    //  - `item_ids`       → `content_ids`
+    //  - `number_items` est un Array<string> (pas un number) ; pour PURCHASE,
+    //    1 item de quantity 1 ⇒ `['1']`.
     const customData = data.custom_data as Record<string, unknown>;
     expect(customData.currency).toBe('MAD');
     expect(customData.value).toBe(290);
-    expect(customData.transaction_id).toBe('order_snap_001');
-    expect(customData.item_ids).toEqual(['kit_fg_01']);
-    expect(customData.number_items).toBe(1);
+    expect(customData.order_id).toBe('order_snap_001');
+    expect(customData.content_ids).toEqual(['kit_fg_01']);
+    expect(customData.number_items).toEqual(['1']);
   });
 
   it('page_view envoie un payload minimal (pas de custom_data e-commerce)', async () => {
@@ -267,7 +281,8 @@ describe('Snap CAPI v3 — payload', () => {
     const customData = data.custom_data as Record<string, unknown>;
     expect(customData.value).toBe(290);
     expect(customData.currency).toBe('MAD');
-    expect(customData.item_ids).toEqual(['kit_fg_01']);
+    // CAPI v3 : `item_ids` renommé `content_ids`.
+    expect(customData.content_ids).toEqual(['kit_fg_01']);
   });
 
   it('checkout_intent mappe vers START_CHECKOUT', async () => {
@@ -282,7 +297,7 @@ describe('Snap CAPI v3 — payload', () => {
     expect(data.event_name).toBe('START_CHECKOUT');
   });
 
-  it('generate_lead mappe vers SIGN_UP avec identityFields', async () => {
+  it('generate_lead mappe vers LEAD avec identityFields', async () => {
     const { calls } = captureSnapRequests();
     await upsertTrackingProvider({ kind: 'snap', status: 'enabled', pixelId: SNAP_PIXEL_ID, capiToken: SNAP_CAPI_TOKEN });
     await dispatchToProviders(makeCtx({
@@ -292,7 +307,11 @@ describe('Snap CAPI v3 — payload', () => {
     }));
 
     const data = (calls[0]!.body.data as Array<Record<string, unknown>>)[0]!;
-    expect(data.event_name).toBe('SIGN_UP');
+    // CAPI v3 distingue LEAD (formulaire de lead) de SIGN_UP (création de
+    // compte). FemiGlow utilise `generate_lead` pour les chat leads et
+    // formulaires de contact → mapping LEAD. `sign_up` reste dispo si un
+    // jour le site implémente des comptes utilisateurs.
+    expect(data.event_name).toBe('LEAD');
     const userData = data.user_data as Record<string, unknown>;
     const hashed = hashIdentity({ email: 'lead@test.ma', phone: '+212698765432', firstName: 'Karim' });
     expect(userData.em).toEqual([hashed.em]);
@@ -465,7 +484,11 @@ describe('Snap — client snippet', () => {
     expect(snippet).not.toBeNull();
     expect(snippet).toContain(SNAP_PIXEL_ID);
     expect(snippet).toContain("snaptr('init'");
-    expect(snippet).toContain("snaptr('track','PAGE_VIEW')");
+    // Le snippet expose `init` mais ne déclenche **pas** `PAGE_VIEW` côté
+    // inline — c'est `SnapPixelEvents` (composant client) qui s'en charge
+    // pour respecter le consentement utilisateur avant le premier track.
+    // L'inline pose juste `window.__fg_snap_pixel_id` que le composant lit.
+    expect(snippet).toContain('window.__fg_snap_pixel_id');
     expect(snippet).toContain('sc-static.net/scevent.min.js');
   });
 
