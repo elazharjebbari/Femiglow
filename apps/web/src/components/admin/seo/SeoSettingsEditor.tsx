@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { KnownPage, SeoSettings } from '@/lib/seo/types';
 import { seoSettingsUpsertSchema } from '@/lib/seo/schemas';
 
+import { OgImagePicker } from './OgImagePicker';
 import { ResetSettingsConfirmDialog } from './ResetSettingsConfirmDialog';
 
 interface SeoSettingsEditorProps {
@@ -222,15 +223,23 @@ export function SeoSettingsEditor({ initial }: SeoSettingsEditorProps) {
               className="w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-sm"
             />
           </Field>
-          <Field label="OG image par défaut — média ID">
-            <input
-              type="text"
-              value={state.defaultOgImageMediaId}
-              onChange={(e) =>
-                setState((s) => ({ ...s, defaultOgImageMediaId: e.target.value }))
+          <Field label="OG image par défaut" full>
+            <OgImagePicker
+              value={{
+                mediaId: state.defaultOgImageMediaId === '' ? null : state.defaultOgImageMediaId,
+                // Settings globaux : pas de template (pas dans le schéma seoSettings).
+                // Le picker affiche seulement none + media ici via un wrapper —
+                // on bascule en lecture seule des deux modes principaux.
+                template: null,
+              }}
+              onChange={(next) =>
+                setState((s) => ({
+                  ...s,
+                  defaultOgImageMediaId: next.mediaId ?? '',
+                }))
               }
-              placeholder="med_..."
-              className="w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-sm font-mono"
+              dynamicEnabled={false}
+              inputIdPrefix="settings-default-og"
             />
           </Field>
           <Field label="Robots par défaut">
