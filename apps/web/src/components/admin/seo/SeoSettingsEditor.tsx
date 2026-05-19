@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import type { KnownPage, SeoSettings } from '@/lib/seo/types';
 import { seoSettingsUpsertSchema } from '@/lib/seo/schemas';
 
+import { ResetSettingsConfirmDialog } from './ResetSettingsConfirmDialog';
+
 interface SeoSettingsEditorProps {
   initial: SeoSettings;
 }
@@ -39,6 +41,8 @@ export function SeoSettingsEditor({ initial }: SeoSettingsEditorProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const dirty = useMemo(
     () => JSON.stringify(state) !== JSON.stringify(fromSettings(initial)),
@@ -125,6 +129,31 @@ export function SeoSettingsEditor({ initial }: SeoSettingsEditorProps) {
 
   function removeKnownPage(idx: number) {
     setState((s) => ({ ...s, knownPages: s.knownPages.filter((_, i) => i !== idx) }));
+  }
+
+  async function handleReset() {
+    setError(null);
+    setSuccess(null);
+    setResetting(true);
+    try {
+      const res = await fetch('/api/admin/seo/settings/reset', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error?.message ?? 'Erreur serveur lors du reset.');
+        return;
+      }
+      const data = await res.json();
+      if (data?.settings) {
+        // Resynchronise le formulaire avec les defaults désormais persistés.
+        setState(fromSettings(data.settings as SeoSettings));
+      }
+      setSuccess('Settings restaurés aux valeurs par défaut — cache global invalidé.');
+      setResetOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur réseau.');
+    } finally {
+      setResetting(false);
+    }
   }
 
   return (
@@ -303,6 +332,39 @@ export function SeoSettingsEditor({ initial }: SeoSettingsEditorProps) {
           </div>
         )}
       </section>
+
+      <section
+        className="mb-6 rounded-md border border-rose-200 bg-rose-50/60 p-4"
+        aria-labelledby="seo-reset-zone-title"
+      >
+        <h2
+          id="seo-reset-zone-title"
+          className="mb-2 text-sm font-semibold text-rose-900"
+        >
+          Zone de réinitialisation
+        </h2>
+        <p className="mb-3 text-sm text-rose-900/80">
+          Restaure l'ensemble des paramètres SEO globaux aux valeurs par défaut
+          codées dans le module SEO (cf. <code className="font-mono text-xs">lib/seo/defaults.ts</code>).
+          L'état actuel est sauvegardé dans l'audit log avant l'opération.
+        </p>
+        <button
+          type="button"
+          onClick={() => setResetOpen(true)}
+          disabled={resetting || saving}
+          className="rounded-md border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+          data-testid="seo-settings-reset-trigger"
+        >
+          Restaurer les paramètres par défaut
+        </button>
+      </section>
+
+      <ResetSettingsConfirmDialog
+        open={resetOpen}
+        busy={resetting}
+        onCancel={() => setResetOpen(false)}
+        onConfirm={handleReset}
+      />
     </div>
   );
 }
