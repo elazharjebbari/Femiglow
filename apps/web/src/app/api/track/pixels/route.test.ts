@@ -9,8 +9,13 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { __test__ } from './route';
+import { filterForGtm, PROVIDERS_SKIPPED_WHEN_GTM } from './filter-for-gtm';
 import type { TrackingProvider, TrackingProviderKind } from '@/lib/db/types';
+
+// Namespace conservé pour limiter le diff côté tests existants ; les
+// helpers sont désormais exportés depuis `./filter-for-gtm` (séparation
+// imposée par le type-check strict de `route.ts` côté Next.js 14).
+const __test__ = { filterForGtm, PROVIDERS_SKIPPED_WHEN_GTM };
 
 function row(kind: TrackingProviderKind, overrides: Partial<TrackingProvider> = {}): TrackingProvider {
   return {
