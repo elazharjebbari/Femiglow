@@ -8,6 +8,14 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  env: {
+    // Date du build, injectée au moment de `next build`. Utilisée par le
+    // sitemap pour `lastModified` des routes statiques : un build identique
+    // ne change pas la date (vs `new Date()` au runtime qui faisait passer
+    // toutes les routes pour "modifiées" à chaque déploiement).
+    // cf. apps/web/src/app/sitemap.ts + docs/seo-action-plan-2026-05/05-frontend-public-design.md
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString(),
+  },
   // Monorepo pnpm — Next.js scanne par défaut depuis `apps/web/` ce qui rate
   // les `node_modules` hoistés à la racine. Sans `outputFileTracingRoot`, les
   // vendor chunks (framer-motion, zod, etc.) ne sont pas inclus dans
