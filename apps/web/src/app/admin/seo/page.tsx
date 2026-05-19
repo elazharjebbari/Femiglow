@@ -36,6 +36,12 @@ export default async function AdminSeoListPage({ searchParams }: PageProps) {
         </div>
         <div className="flex gap-2">
           <Link
+            href="/admin/seo/audit-log"
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
+          >
+            Audit log
+          </Link>
+          <Link
             href="/admin/seo/settings"
             className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
           >
