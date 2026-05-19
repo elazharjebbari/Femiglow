@@ -1021,6 +1021,25 @@ export interface RitualTestimonialPhoto {
   createdAt: Date;
 }
 
+export type ProductReviewPhotoStatus = 'draft' | 'published' | 'archived';
+
+export interface ProductReviewPhoto {
+  id: string;
+  productId: string;
+  reviewId: string | null;
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  blurDataUrl: string | null;
+  displayOrder: number;
+  status: ProductReviewPhotoStatus;
+  reviewerInitials: string | null;
+  reviewerCity: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface RitualAuditEntry {
   id: string;
   testimonialId: string | null;

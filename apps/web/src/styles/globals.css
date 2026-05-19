@@ -163,3 +163,36 @@
 [data-chat-scope] [contenteditable="true"] {
   font-size: 16px !important;
 }
+
+/*
+  Hero gallery & CTA — micro-animations.
+  `heroSwapIn` : fade + léger zoom au swap d'image (galerie principale).
+  `heroCtaPulse` : pulsation très lente du CTA (3.5 s, ≥ 200 ms Kolenda).
+  Désactivées sous prefers-reduced-motion.
+*/
+@keyframes heroSwapIn {
+  from { transform: scale(1.02); opacity: 0.7; }
+  to   { transform: scale(1);    opacity: 1;   }
+}
+@keyframes heroCtaPulse {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.02); }
+}
+.hero-cta-pulse { animation: heroCtaPulse 3500ms ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-cta-pulse { animation: none; }
+}
+
+/* CTA hero — override background pour le passer en sauge profond (#4A5D4A).
+   Le système Button rend en bg-encre par défaut. On override en ciblant
+   le button enfant du wrapper hero-cta-wrapper. */
+.hero-cta-wrapper button[type="button"],
+.hero-cta-wrapper a[role="button"],
+.hero-cta-wrapper button[data-variant="primary"] {
+  background-color: #4A5D4A !important;
+  color: #F7F4EE !important;
+}
+.hero-cta-wrapper button[type="button"]:hover,
+.hero-cta-wrapper a[role="button"]:hover {
+  background-color: #3D4F3D !important;
+}

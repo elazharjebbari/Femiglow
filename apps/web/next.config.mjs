@@ -1,7 +1,19 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Monorepo pnpm — Next.js scanne par défaut depuis `apps/web/` ce qui rate
+  // les `node_modules` hoistés à la racine. Sans `outputFileTracingRoot`, les
+  // vendor chunks (framer-motion, zod, etc.) ne sont pas inclus dans
+  // `.next/server/vendor-chunks/` → erreurs `Cannot find module ./vendor-chunks/…`
+  // au runtime `pnpm start`. cf. github.com/vercel/next.js/issues/52553
+  outputFileTracingRoot: path.join(__dirname, '../..'),
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -678,26 +678,42 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
   {
     key: 'kit-hero-produit',
     name: 'Hero Kit (produit)',
-    description: 'Hero produit — packshot principal eager.',
+    description: 'Hero produit — galerie vignettée (packshot + contextuel + photos clientes).',
     category: 'hero',
     pageGroup: 'kit',
     filePath: 'src/components/sections/HeroProduit.tsx',
-    // Override du slot hero standard : `HeroProduit.tsx` rend l'image en
-    // ratio `4:5` sur le chemin fallback (`<Image ratio="4:5" />`), donc
-    // le slot bindé DOIT aussi être en 4/5 — sinon l'activation du
-    // binding fait passer la mise en page de portrait → landscape et
-    // casse la disposition. C'est ici l'image qui s'adapte au composant :
-    // la source peut être de n'importe quel ratio, Next/Image + object-cover
-    // la recadre runtime au 4:5 du slot (cf. CHA-243).
+    // Trois slots média : packshot principal + deux contextuelles. La
+    // galerie hero (`HeroGallery`) fusionne ces slots avec les photos
+    // clientes (`product_review_photos`) pour proposer 4-7 vignettes.
+    // Ratio 4/5 sur tous — alignement strict pour éviter les sauts de
+    // hauteur au swap d'image (cf. CHA-243).
     slots: [
       {
         ...SLOT_HERO_PRIMARY,
         aspectRatioHint: '4/5',
         recommendedWidth: 1200,
-        // Pas de crop physique au seed : on garde la source PNG intacte
-        // (utile si l'admin veut repointer le binding sur le même Media
-        // depuis un slot différent). Le crop visuel se fait runtime
-        // via object-cover.
+        cropToAspect: false,
+        objectFitDefault: 'cover',
+      },
+      {
+        key: 'context_1',
+        label: 'Contextuelle 1 (geste)',
+        required: false,
+        acceptKinds: ['image'],
+        aspectRatioHint: '4/5',
+        recommendedWidth: 1200,
+        description: 'Main qui applique la paste, orientation droite (cible droitière).',
+        cropToAspect: false,
+        objectFitDefault: 'cover',
+      },
+      {
+        key: 'context_2',
+        label: 'Contextuelle 2 (ambiance)',
+        required: false,
+        acceptKinds: ['image'],
+        aspectRatioHint: '4/5',
+        recommendedWidth: 1200,
+        description: 'Kit posé sur surface en contexte (table de chevet, étagère).',
         cropToAspect: false,
         objectFitDefault: 'cover',
       },
@@ -707,6 +723,117 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
     defaultFetchPriority: 'high',
     supportsAnimation: true,
     metadata: { animationProfile: 'scale-hover' },
+    fields: [
+      {
+        key: 'tagline',
+        label: 'Tagline (sous-titre)',
+        type: 'text',
+        required: false,
+        defaultValue:
+          'Manucure japonaise halal. Deux gestes, un polissoir. La main se révèle.',
+        description:
+          "Phrase d'accroche sous le H1. La continuité d'image se ferme sur la main (sujet final).",
+        group: 'Contenu',
+        order: 1,
+        config: { maxLength: 140 },
+      },
+      {
+        key: 'description',
+        label: 'Description longue',
+        type: 'multiline',
+        required: false,
+        defaultValue:
+          "Le pack FemiGlow associe deux soins et un polissoir, pensés pour la manucure japonaise halal. Une paste qui lisse, une powder qui lustre, un polissoir Step 4 Polish & Shine. Sans vernis, sans lampe UV, sans acétone. Quelques gestes suffisent. L'ongle nu retrouve sa lumière. Le woudou reste intact.",
+        description:
+          "Texte descriptif. Affiché sous les chips attribut, au-dessus du prix.",
+        group: 'Contenu',
+        order: 2,
+        config: { maxLength: 600 },
+      },
+      {
+        key: 'attributeChips',
+        label: 'Chips attributs',
+        type: 'list',
+        required: false,
+        defaultValue: ['Sans vernis', 'Sans UV', 'Sans acétone', 'Halal'],
+        description:
+          'Pastilles courtes (max 6). Réponses aux requêtes mentales — placées sous le tagline.',
+        group: 'Réassurance',
+        order: 3,
+        config: {
+          itemType: 'text',
+          minItems: 0,
+          maxItems: 6,
+          itemConfig: { maxLength: 24 },
+        },
+      },
+      {
+        key: 'trustRow',
+        label: 'Ligne de réassurance',
+        type: 'list',
+        required: false,
+        defaultValue: [
+          'Livraison offerte',
+          'Paiement à la livraison',
+          'Retour 30 jours',
+        ],
+        description:
+          'Items séparés par "·" affichés au-dessus du CTA. Lus avant la décision de clic.',
+        group: 'Réassurance',
+        order: 4,
+        config: {
+          itemType: 'text',
+          minItems: 0,
+          maxItems: 4,
+          itemConfig: { maxLength: 40 },
+        },
+      },
+      {
+        key: 'reviewBadgeEnabled',
+        label: 'Afficher le badge note + avis',
+        type: 'boolean',
+        required: false,
+        defaultValue: true,
+        description:
+          'Affiche la note moyenne et le compte d\'avis entre le H1 et le tagline.',
+        group: 'Social proof',
+        order: 5,
+      },
+      {
+        key: 'ctaPulseEnabled',
+        label: 'Micro-pulse du CTA',
+        type: 'boolean',
+        required: false,
+        defaultValue: true,
+        description:
+          'Animation très lente (600 ms toutes 3-4 s) sur le bouton principal. Désactivée auto si prefers-reduced-motion.',
+        group: 'CTA',
+        order: 6,
+      },
+      {
+        key: 'galleryReviewPhotosEnabled',
+        label: 'Inclure les photos clientes dans la galerie',
+        type: 'boolean',
+        required: false,
+        defaultValue: true,
+        description:
+          'Active la lecture de la table product_review_photos pour enrichir la galerie. L\'admin peut désactiver ponctuellement.',
+        group: 'Galerie',
+        order: 7,
+      },
+      {
+        key: 'galleryMaxImages',
+        label: "Nombre maximum d'images dans la galerie",
+        type: 'number',
+        required: false,
+        defaultValue: 7,
+        description:
+          'Limite le nombre de vignettes (slot primary + contextuelles + photos clientes).',
+        group: 'Galerie',
+        order: 8,
+        config: { min: 1, max: 12, step: 1 },
+      },
+    ],
   },
   {
     key: 'kit-detail-mains',

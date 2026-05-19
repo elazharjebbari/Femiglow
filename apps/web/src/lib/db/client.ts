@@ -52,6 +52,7 @@ import type {
   RitualTestimonialPhoto,
   RitualAuditEntry,
   RitualAggregateRow,
+  ProductReviewPhoto,
 } from '@/lib/db/types';
 
 interface Store {
@@ -105,6 +106,8 @@ interface Store {
   ritualTestimonialPhotos: Map<string, RitualTestimonialPhoto>;
   ritualAuditLog: Map<string, RitualAuditEntry>;
   ritualAggregate: Map<string, RitualAggregateRow>;
+  // Photos clientes pour la galerie hero produit
+  productReviewPhotos: Map<string, ProductReviewPhoto>;
 }
 
 const globalAny = globalThis as typeof globalThis & { __femiglowStore?: Store };
@@ -156,6 +159,7 @@ function makeStore(): Store {
     ritualTestimonialPhotos: new Map(),
     ritualAuditLog: new Map(),
     ritualAggregate: new Map(),
+    productReviewPhotos: new Map(),
   };
 }
 
