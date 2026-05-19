@@ -37,9 +37,9 @@ const FALLBACK_OG = {
   alt: 'Le pack FemiGlow — paste, powder, polissoir Step 4',
 };
 
-const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise halal';
+const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise';
 const FALLBACK_DESCRIPTION =
-  'Pack FemiGlow — coffret de manucure japonaise halal en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par Souheila. Sans vernis, sans abrasion. Livraison offerte au Maroc.';
+  'Pack FemiGlow — coffret de manucure japonaise en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par Souheila. Sans vernis, sans abrasion. Livraison offerte au Maroc.';
 
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;

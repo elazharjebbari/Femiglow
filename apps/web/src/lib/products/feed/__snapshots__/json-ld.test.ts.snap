@@ -15,7 +15,7 @@ exports[`productSchema (Schema.org Product) avec enrichissement > snapshot du JS
     "@type": "Brand",
     "name": "FemiGlow",
   },
-  "description": "Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise halal, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.",
+  "description": "Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.",
   "image": [
     "https://femiglow-maroc.com/products/kit-principale.png",
     "https://femiglow-maroc.com/products/kit-detail-mains.png",

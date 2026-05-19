@@ -4,8 +4,8 @@ import { mockRituel } from './rituel';
 
 /**
  * Audit 08/09 — Pack FemiGlow : composition refondue (paste / powder /
- * polissoir Step 4), comparatif ajusté, FAQ enrichie (halal),
- * témoignages redistribués (Rabat centre de gravité).
+ * polissoir Step 4), comparatif ajusté, témoignages redistribués
+ * (Rabat centre de gravité).
  */
 export const mockKitPageContent: KitPageContent = {
   product: mockKit,
@@ -47,7 +47,6 @@ export const mockKitPageContent: KitPageContent = {
       ],
       certifications: [
         { label: 'Cosmos Organic', body: 'Ecocert' },
-        { label: 'Halal', body: 'Halal Cosmetics Council' },
         { label: 'Vegan', body: 'EVE Vegan' },
       ],
     },
@@ -88,7 +87,6 @@ export const mockKitPageContent: KitPageContent = {
       ],
       certifications: [
         { label: 'Cosmos Organic', body: 'Ecocert' },
-        { label: 'Halal', body: 'Halal Cosmetics Council' },
       ],
     },
     {
@@ -123,9 +121,7 @@ export const mockKitPageContent: KitPageContent = {
           origin: 'Europe',
         },
       ],
-      certifications: [
-        { label: 'Halal', body: 'Halal Cosmetics Council' },
-      ],
+      certifications: [],
     },
   ],
   // CHA-243 — Vidéo hero kit servie via YouTube (Short vertical).
@@ -165,7 +161,7 @@ export const mockKitPageContent: KitPageContent = {
         axis: 'Impact mati\u00e8re',
         vernis: 'Solvants volatils, formules \u00e0 base p\u00e9trochimique fr\u00e9quente.',
         rituel:
-          'Cire d\u2019abeille, jojoba, talc min\u00e9ral, riz, kaolin. Certifications Cosmos Organic et Halal.',
+          'Cire d\u2019abeille, jojoba, talc min\u00e9ral, riz, kaolin. Certification Cosmos Organic.',
       },
       {
         axis: 'Temps quotidien',
@@ -192,12 +188,6 @@ export const mockKitPageContent: KitPageContent = {
       question: 'Puis-je continuer \u00e0 porter du vernis\u202F?',
       answer:
         'Le rituel s\u2019accommode du vernis m\u00eame s\u2019il est pens\u00e9 pour s\u2019en passer. Appliquez la paste et la powder les soirs sans vernis. La plaque respire, le rituel installe sa lenteur.',
-    },
-    {
-      id: 'halal',
-      question: 'Que signifie la certification halal pour FemiGlow\u202F?',
-      answer:
-        'Origine trac\u00e9e de chaque mati\u00e8re, absence d\u2019alcool d\u00e9natur\u00e9, absence de d\u00e9riv\u00e9s animaux non conformes (g\u00e9latine, carmin). Notre fabricant est audit\u00e9 par le Halal Cosmetics Council. Le label est sur chaque pot et sur le polissoir.',
     },
     {
       id: 'grossesse',

@@ -1,7 +1,7 @@
 import type { Product } from '@/lib/schemas';
 
 /**
- * Audit 08/09 — Pack FemiGlow (manucure japonaise halal). Anchoring
+ * Audit 08/09 — Pack FemiGlow (manucure japonaise). Anchoring
  * 199 dh payé / 390 dh référence (option B § 0.1 doc 09) implémenté via
  * `priceCents = 39000` + `promoPriceCents = 19900` pour rester compatible
  * avec <PriceDisplay> et la pipeline tracking GA4 existante.
@@ -11,9 +11,9 @@ export const mockKit: Product = {
   slug: 'le-rituel',
   name: 'Pack FemiGlow',
   tagline:
-    'Manucure japonaise halal. Deux gestes, un polissoir, un éclat.',
+    'Manucure japonaise. Deux gestes, un polissoir, un éclat.',
   description:
-    'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise halal, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
+    'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
   priceCents: 39000,
   promoPriceCents: 19900,
   currency: 'MAD',

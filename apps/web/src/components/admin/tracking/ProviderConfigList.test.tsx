@@ -120,12 +120,9 @@ describe('ProviderConfigList — ordering', () => {
       />,
     );
     const cards = document.querySelectorAll('[data-testid^="provider-card-"]');
-    // `noUncheckedIndexedAccess` rend `cards[i]` possiblement undefined ;
-    // on garde l'invariant explicite (au moins une carte présente après
-    // render).
-    const lastCard = cards[cards.length - 1];
-    if (!lastCard) throw new Error('expected at least one provider card');
-    expect(lastCard.getAttribute('data-testid')).toBe('provider-card-future_provider');
+    expect(cards.length).toBeGreaterThan(0);
+    const last = cards[cards.length - 1]?.getAttribute('data-testid');
+    expect(last).toBe('provider-card-future_provider');
   });
 });
 
