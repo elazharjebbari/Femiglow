@@ -36,12 +36,15 @@ import {
   DEFAULT_KIT_REVIEW_STATS,
   type ProductReviewStats,
 } from '../reviews';
+import { buildPerUsageHint } from '@/lib/kit/pack/per-usage';
 import { assertValidProductFeed } from './schema';
 import type {
   ProductFeed,
   ProductFeedClaim,
+  ProductFeedHero,
   ProductFeedSocialProof,
   ProductFeedStep,
+  ProductFeedValueItem,
 } from './types';
 
 /** URL absolue du site (override possible via env pour l'XML Merchant). */
@@ -201,6 +204,56 @@ function buildSocialProof(
     rating: effective.rating,
     quote: top.quote ?? '',
     authorLabel: 'authorLabel' in top ? top.authorLabel : top.label,
+    // Kolenda §4.6 — libellé géographique plus chaleureux que « avis ».
+    // Le builder produit un défaut ; l'override admin peut le personnaliser.
+    countLabelGeo: `${effective.reviewsCount} maisons en France`,
+  };
+}
+
+/**
+ * Construit le hero du pack — copy + pricing breakdown (Kolenda §4.6).
+ *
+ * Les champs `priceCompareAt`, `valueBreakdown`, `perUsageHint` et
+ * `ctaAccent` sont produits par défaut depuis le `product` mock. Un
+ * override admin (Phase 4) pourra patcher individuellement via
+ * `pickPatch`.
+ *
+ * **Décision archi** : pour rester indépendant de la devise du `product`
+ * (MAD vs EUR), on prend le prix actuel comme référence et on dérive un
+ * `priceCompareAt` ~1,4×. Cela donne un savings crédible sans table de
+ * prix séparés en dur. Les autres labels (`valueBreakdown`) restent fixes
+ * en EUR — c'est la valeur perçue, pas une ventilation comptable.
+ */
+function buildHero(product: Product): ProductFeedHero {
+  const compareMajor = Math.round((product.priceCents * 1.4) / 100);
+  const compareLabel = `${compareMajor} ${product.currency === 'MAD' ? 'MAD' : '€'}`;
+
+  const valueBreakdown: ProductFeedValueItem[] = [
+    { label: '1 Paste · 30 ml', valueLabel: '19 €' },
+    { label: '2 Powder · 30 g', valueLabel: '14 €' },
+    { label: 'Polissoir 4 zones', valueLabel: '12 €' },
+    { label: 'Notice rituel + carte', valueLabel: 'offert', muted: true },
+  ];
+
+  // Coût par soin : ~47 soins pour 1 mois et demi d'usage standard.
+  const perUsage = buildPerUsageHint(product.priceCents, 47);
+
+  return {
+    kicker: 'Le pack',
+    // Présent + verbes d'action (Copy #1).
+    title: 'Le rituel s’installe en deux gestes et un polissoir.',
+    lead:
+      'Trois objets dans la main, deux gestes dans la soirée. La paste filme, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.',
+    pricePrefix: 'Tout compris :',
+    ctaLabel: 'Commander le rituel',
+    // Microcopy serrée (Pricing #11) — chiffres précis (Pricing #14).
+    ctaMicrocopy:
+      'Paste · Powder · Polissoir Step 4 inclus · Livraison offerte au Maroc · Paiement à la livraison · Retour 30 j.',
+    priceCompareAt: compareLabel,
+    priceCompareAtAriaLabel: `Prix non packagé ${compareLabel}`,
+    valueBreakdown,
+    perUsageHint: perUsage ?? undefined,
+    ctaAccent: 'sauge-dark',
   };
 }
 
@@ -237,18 +290,7 @@ export function buildKitProductFeed(
         : null,
     availability: product.inStock ? 'in_stock' : 'out_of_stock',
     description: product.description,
-    hero: {
-      kicker: 'Le pack',
-      // Pr\u00E9sent + verbes d'action (Copy #1).
-      title: 'Le rituel s\u2019installe en deux gestes et un polissoir.',
-      lead:
-        'Trois objets dans la main, deux gestes dans la soir\u00E9e. La paste filme, la powder lustre, le polissoir Step\u00A04 r\u00E9v\u00E8le \u2014 manucure japonaise, pens\u00E9e \u00E0 Rabat.',
-      pricePrefix: 'Tout compris\u00A0:',
-      ctaLabel: 'Recevoir le pack',
-      // Microcopy serr\u00E9e (Pricing #11) \u2014 chiffres pr\u00E9cis (Pricing #14).
-      ctaMicrocopy:
-        'Paste \u00B7 Powder \u00B7 Polissoir Step\u00A04 inclus \u00B7 Livraison offerte au Maroc \u00B7 Paiement \u00E0 la livraison \u00B7 Retour 30\u202Fj.',
-    },
+    hero: buildHero(product),
     steps: buildSteps(),
     claims: buildClaims(),
     socialProof: buildSocialProof(content, stats),

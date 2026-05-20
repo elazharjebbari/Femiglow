@@ -24,9 +24,8 @@ import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
-import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
+import { PriceBlock } from '@/components/sections/PriceBlock';
 import { cn } from '@/lib/utils/cn';
-import { computePromo } from '@/lib/utils/promo';
 import type {
   FeedAccent,
   ProductFeed,
@@ -60,10 +59,6 @@ export function ProductFeedSection({
   product,
   anchorId = 'product-feed',
 }: ProductFeedSectionProps) {
-  // Prix effectif promo-aware (`computePromo` masque silencieusement les
-  // saisies incohérentes). On le passe au tracking pour rester aligné
-  // avec ce que la visiteuse voit à l'écran.
-  const promo = computePromo(product.priceCents, product.promoPriceCents);
   return (
     <section
       id={anchorId}
@@ -82,45 +77,11 @@ export function ProductFeedSection({
             {feed.hero.lead}
           </Text>
 
-          {/* Bloc prix densifié — Kolenda Pricing #2 (small word) +
-              Pricing #11 (densify), microcopy serrée sous le CTA. */}
-          <div className="mx-auto max-w-md space-y-3 pt-8">
-            <p className="flex items-baseline justify-center gap-3">
-              <span className="text-xs uppercase tracking-[0.18em] text-encre/55">
-                {feed.hero.pricePrefix}
-              </span>
-              <span className="font-display text-3xl text-encre">
-                {(promo.effectivePriceCents / 100).toFixed(0)}{' '}
-                <span className="text-base text-encre/70">{feed.currency}</span>
-              </span>
-              {promo.active && (
-                <span
-                  aria-label={`Prix avant promotion ${(promo.originalPriceCents / 100).toFixed(0)} ${feed.currency}`}
-                  className="text-base text-encre/45 line-through decoration-encre/35"
-                >
-                  {(promo.originalPriceCents / 100).toFixed(0)} {feed.currency}
-                </span>
-              )}
-            </p>
-            {/* CHA-246 — Le CTA "Recevoir le pack" ne pousse plus vers
-                `/panier` : il scroll-anchor vers le wizard funnel embarqué
-                sur la même page (`#commander-femiglow`). On reste sur /kit,
-                la commande se finalise sans navigation — même contrat que
-                le CTA hero (`HeroProduit` en mode `wizard-anchor`). */}
-            <CommanderAnchorButton
-              size="lg"
-              fullWidth
-              productId={product.id}
-              productName={product.name}
-              priceCents={promo.effectivePriceCents}
-              currency={product.currency}
-            >
-              {feed.hero.ctaLabel}
-            </CommanderAnchorButton>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-encre/55">
-              {feed.hero.ctaMicrocopy}
-            </p>
-          </div>
+          {/* PriceBlock — Kolenda §4.6 : prix XXL, prix barré, bandeau
+              économie terracotta, ValueBreakdownList, perUsageHint,
+              CTA primaire + microcopy. IntersectionObserver émet
+              pack_section_view + pack_economy_view. */}
+          <PriceBlock feed={feed} product={product} />
         </div>
 
         {/* 2 — Rituel 4 gestes ------------------------------------------ */}
