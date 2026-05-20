@@ -27,6 +27,24 @@ export const ingredientDetailedSchema = z.object({
 });
 export type IngredientDetailed = z.infer<typeof ingredientDetailedSchema>;
 
+/**
+ * Couleurs d'accent reconnues pour la pastille numérotée d'un sous-produit
+ * dans la section « La composition » du Kit.
+ *
+ * Palette Kolenda — `docs/kolenda/FEMIGLOW-KIT-PLAYBOOK.md` Annexe A :
+ *  - `sauge` : `#A8B89E` (paste, verte sauge)
+ *  - `petale` : `#F2CECC` (powder, rose poudré)
+ *  - `ciel` : `#C5DBE5` (polissoir, bleu pierre)
+ *  - `champagne` : `#B8956B` (or poudré, fallback / générique)
+ */
+export const subProductAccentColorSchema = z.enum([
+  'sauge',
+  'petale',
+  'ciel',
+  'champagne',
+]);
+export type SubProductAccentColor = z.infer<typeof subProductAccentColorSchema>;
+
 export const subProductSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -35,6 +53,43 @@ export const subProductSchema = z.object({
   image: imageSchema,
   ingredients: z.array(ingredientDetailedSchema).min(1),
   certifications: z.array(certificationSchema),
+
+  /**
+   * Phrase de sensation physique (italique Cormorant sous la description).
+   * Ex. « Tiède au contact. », « Glisse, ne grise pas. ».
+   *
+   * Contraintes :
+   *  - 1 à 80 caractères après trim,
+   *  - se termine par une ponctuation (`.`, `!`, `?` ou guillemet français `»`)
+   *    pour signaler une phrase complète à voix maison.
+   *
+   * Optionnel : si absent, le composant ne rend pas de ligne dédiée.
+   * cf. Kolenda §4.3 — *induce sensation* (UX p. 8-9).
+   */
+  sensation: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .regex(
+      /[.!?»]$/,
+      'sensation doit se terminer par une ponctuation finale (. ! ? »)',
+    )
+    .optional(),
+
+  /**
+   * Image contextuelle (main qui prend, table de chevet). Affichée par
+   * crossfade au hover/tap au-dessus de `image`. Optionnelle — si absente,
+   * `MediaCrossfade` n'expose pas l'interaction.
+   */
+  contextualImage: imageSchema.optional(),
+
+  /**
+   * Couleur d'accent du sous-produit. Sert à teinter la pastille numérotée
+   * (et éventuellement la bordure au hover en phase 4). Décoratif uniquement.
+   * `null` ou absent → fallback `champagne` côté résolveur.
+   */
+  accentColor: subProductAccentColorSchema.optional(),
 });
 export type SubProduct = z.infer<typeof subProductSchema>;
 

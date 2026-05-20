@@ -13,6 +13,8 @@ export const mockKitPageContent: KitPageContent = {
     {
       id: '1-paste',
       name: '1 Paste',
+      sensation: 'Tiède au contact.',
+      accentColor: 'sauge',
       shortDescription:
         'Pâte crème onctueuse. Filme la plaque sans l\u2019étouffer. Une noisette suffit.',
       volume: '15 g',
@@ -53,6 +55,8 @@ export const mockKitPageContent: KitPageContent = {
     {
       id: '2-powder',
       name: '2 Powder',
+      sensation: 'Glisse, ne grise pas.',
+      accentColor: 'petale',
       shortDescription:
         'Poudre fine blanche, déposée sur la paste. Absorbe l\u2019excès, lustre la surface.',
       volume: '8 g',
@@ -95,6 +99,8 @@ export const mockKitPageContent: KitPageContent = {
       shortDescription:
         'Polissoir rectangulaire bleu ciel. Trois faces, trois grains. Révèle la brillance naturelle.',
       volume: '90 mm',
+      sensation: 'La lumière revient à la surface.',
+      accentColor: 'ciel',
       image: {
         src: '/products/kit-lime.svg',
         alt: 'Polissoir rectangulaire bleu ciel et gris clair, marqué "Step 4 Polish & Shine", trois faces de polissage',
