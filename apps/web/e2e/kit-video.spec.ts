@@ -146,32 +146,29 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
 });
 
 test.describe('/kit vidéo — cover SVG @video-cover', () => {
-  test('cover SVG inline visible au paint initial (default mock)', async ({ page }) => {
+  test('cover SVG (mode URL) visible au paint initial (default mock)', async ({ page }) => {
     await page.goto('/kit');
-    const cover = page.getByTestId('video-poster-svg-inline');
+    const cover = page.getByTestId('video-poster-svg-url');
     await expect(cover).toBeVisible({ timeout: 10_000 });
-    // L'aria-label de la cover doit être posé.
     const ariaLabel = await cover.getAttribute('aria-label');
     expect(ariaLabel).toMatch(/rituel|geste/i);
   });
 
-  test('SVG contient les éléments clés (halo, ongle, particules)', async ({ page }) => {
+  test('cover pointe vers le SVG maison /products/kit-principale.svg', async ({ page }) => {
     await page.goto('/kit');
-    const cover = page.getByTestId('video-poster-svg-inline');
-    const html = (await cover.innerHTML()) ?? '';
-    // Halo champagne, ongle nacré, particules animées présents
-    expect(html).toContain('radialGradient');
-    expect(html).toContain('animate');
+    const cover = page.getByTestId('video-poster-svg-url');
+    const src = await cover.getAttribute('src');
+    expect(src).toBe('/products/kit-principale.svg');
   });
 
-  test('voile encre 15 % désactivé quand cover SVG servi', async ({ page }) => {
+  test('voile encre 20 % toujours rendu (contraste bouton + badge)', async ({
+    page,
+  }) => {
     await page.goto('/kit');
-    const cover = page.getByTestId('video-poster-svg-inline');
-    await expect(cover).toBeVisible();
-    // Le sibling .bg-encre/15 ne doit pas être présent dans le bouton.
     const button = page.getByTestId('video-poster-cover');
+    await expect(button).toBeVisible();
     const html = (await button.innerHTML()) ?? '';
-    expect(html).not.toContain('bg-encre/15');
+    expect(html).toContain('bg-encre/20');
   });
 });
 

@@ -89,7 +89,7 @@ function PosterMedia({
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={`/api/media/${encodeURIComponent(svg.fileMediaId)}`}
+        src={`/api/kit-video-cover/${encodeURIComponent(svg.fileMediaId)}`}
         alt={svg.meta?.ariaLabel ?? posterImage.alt}
         className="absolute inset-0 h-full w-full object-cover"
         data-testid="video-poster-svg-file"
@@ -131,7 +131,6 @@ function VideoPosterCoverImpl(
   const buttonId = useId();
   const posterImage = video.posterCustom ?? video.poster;
   const playColor = resolveAccentHex(video.accentColor);
-  const hasCustomSvg = !!video.posterCoverSvg;
 
   if (played) {
     return (
@@ -160,14 +159,11 @@ function VideoPosterCoverImpl(
       className="group absolute inset-0 overflow-hidden rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3]"
       data-testid="video-poster-cover"
     >
+      {/* Voile encre 18 % — assure le contraste du bouton play + badge
+          durée sur n'importe quel media de fond (image, SVG inline,
+          fichier, URL). Décoratif uniquement. */}
       <PosterMedia video={video} posterImage={posterImage} />
-
-      {/* Voile encre 15 % — neutralise tout branding tiers résiduel quand
-          on retombe sur `poster` (sans `posterCustom`). Désactivé quand
-          un SVG custom est servi : il porte déjà son propre fond. */}
-      {hasCustomSvg ? null : (
-        <span aria-hidden="true" className="absolute inset-0 bg-encre/15" />
-      )}
+      <span aria-hidden="true" className="absolute inset-0 bg-encre/20" />
 
       {/* Bouton play 64×64 centré, couleur d'accent maison.
           Élément décoratif — l'aria-label du <button> parent porte

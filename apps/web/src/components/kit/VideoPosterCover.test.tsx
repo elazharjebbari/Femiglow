@@ -211,7 +211,7 @@ describe('VideoPosterCover — posterCoverSvg 3 modes', () => {
     );
     const img = screen.getByTestId('video-poster-svg-file') as HTMLImageElement;
     expect(img.tagName).toBe('IMG');
-    expect(img.getAttribute('src')).toBe('/api/media/media_abc123');
+    expect(img.getAttribute('src')).toBe('/api/kit-video-cover/media_abc123');
     expect(img.getAttribute('alt')).toBe('Cover fichier');
   });
 
@@ -237,7 +237,7 @@ describe('VideoPosterCover — posterCoverSvg 3 modes', () => {
     expect(img.getAttribute('referrerpolicy')).toBe('no-referrer');
   });
 
-  it('voile encre 15 % désactivé quand un SVG custom est servi', () => {
+  it('voile encre toujours rendu (contraste pour bouton play + badge durée)', () => {
     const { container } = render(
       <VideoPosterCover
         video={makeVideo({
@@ -249,7 +249,7 @@ describe('VideoPosterCover — posterCoverSvg 3 modes', () => {
         onPlay={() => {}}
       />,
     );
-    expect(container.querySelector('.bg-encre\\/15')).toBeNull();
+    expect(container.querySelector('.bg-encre\\/20')).not.toBeNull();
   });
 
   it('fallback rétrocompat : <Image> si posterCoverSvg absent', () => {
