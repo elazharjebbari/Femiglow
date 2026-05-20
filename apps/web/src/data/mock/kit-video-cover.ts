@@ -1,102 +1,88 @@
 /**
- * Cover SVG par défaut « Le rituel suspendu » pour la section vidéo `/kit`.
+ * Cover SVG par défaut « Le geste révélateur » pour la section vidéo `/kit`.
  *
- * Inspiré directement du vocabulaire visuel maison
- * (`public/journal/cinq-minutes-le-soir.svg`, `public/og/kit.svg`,
- * `public/journal/hero-accueil.svg`) : composition d'AMBIANCE plutôt que
- * de figure. Atmosphère feutrée studio, palette unifiée, sans personnage.
+ * Composition Kolenda §4.4 :
+ *  - L1 fond sauge `#E8EDE3` + grain papier (feTurbulence)
+ *  - L3 halo champagne `#C8A876` qui pulse (4s) — révèle l'ongle
+ *  - L2 main 3/4 + ongle central lustré (radialGradient nacre)
+ *  - L4 3 matières en orbite : cire (hexagone), silicate (losange),
+ *       perle (cercle nacre) — reprend le transcript
+ *  - L5 8 particules nacre flottantes (translateY infini, 5-10s offsets)
+ *  - L7 kicker italique « LE RITUEL · 90 SECONDES »
  *
- * Composition (10 layers) :
- *   L1  background gradient radial multi-stop (rose → champagne → encre)
- *       — ambiance studio nocturne du SVG `cinq-minutes-le-soir`
- *   L2  halo central de lumière ("lampe") qui pulse 6s — révèle la scène
- *   L3  2 halos secondaires superposés (profondeur, brume)
- *   L4  surface du sol (path courbe encre) — la table où la perle repose
- *   L5  ombre douce sous la perle (ancrage)
- *   L6  perle nacrée centrale (héros macro, gradient radial nacre)
- *       + reflets blancs sur la perle
- *   L7  2 lignes courbes éthérées champagne en arrière-plan
- *   L8  3 matières en stroke fin (cire/silicate/perle) + labels italiques
- *   L9  6 micro-particules nacre flottantes (translateY 6-11s, offsets)
- *   L10 titre éditorial « Le rituel » + filet champagne + kicker espacé
- *       + signature « LA MAISON · MARS 2026 » en bas
- *
- * Palette stricte : `#FBF8F1` crème, `#F2CECC` rose poudré, `#E8D8B8`
- * vanille, `#C8A876` champagne, `#A89472` bronze, `#2C2A28` encre.
- * Police : Cormorant Garamond italique pour la voix maison, Inter
- * letter-spacing pour les kickers.
+ * SVG 9:16 portrait (1080×1920), preserveAspectRatio slice → couvre le
+ * conteneur sans déformer. Animations respectent `prefers-reduced-motion`
+ * via les CSS du parent (motion-safe Tailwind).
  */
 
 export const DEFAULT_KIT_VIDEO_COVER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="cover-title cover-desc">
 <title id="cover-title">Le rituel — 90 secondes</title>
-<desc id="cover-desc">Atmosphère studio feutrée : halo de lumière, perle nacrée posée sur surface sombre, matières en arrière-plan.</desc>
+<desc id="cover-desc">Une main en plein geste de polissage, halo champagne, matières en orbite douce.</desc>
 <defs>
-<radialGradient id="ambiance" cx="0.5" cy="0.32" r="1.1">
-<stop offset="0" stop-color="#F2CECC" stop-opacity="0.7"/>
-<stop offset="0.4" stop-color="#E8D8B8"/>
-<stop offset="0.85" stop-color="#A89472"/>
-<stop offset="1" stop-color="#2C2A28"/>
+<radialGradient id="halo" cx="50%" cy="40%" r="40%">
+<stop offset="0%" stop-color="#C8A876" stop-opacity="0.55"/>
+<stop offset="60%" stop-color="#C8A876" stop-opacity="0.15"/>
+<stop offset="100%" stop-color="#C8A876" stop-opacity="0"/>
 </radialGradient>
-<radialGradient id="lampe" cx="0.5" cy="0.32" r="0.6">
-<stop offset="0" stop-color="#FBF8F1" stop-opacity="0.92"/>
-<stop offset="0.5" stop-color="#FBF8F1" stop-opacity="0.20"/>
-<stop offset="1" stop-color="#FBF8F1" stop-opacity="0"/>
+<radialGradient id="nail" cx="50%" cy="40%" r="60%">
+<stop offset="0%" stop-color="#FBFAF6" stop-opacity="0.98"/>
+<stop offset="60%" stop-color="#F2E0D0" stop-opacity="0.9"/>
+<stop offset="100%" stop-color="#E8C7AE" stop-opacity="0.8"/>
 </radialGradient>
-<radialGradient id="perle" cx="0.38" cy="0.32" r="0.7">
-<stop offset="0" stop-color="#FBF8F1"/>
-<stop offset="0.5" stop-color="#F2CECC" stop-opacity="0.85"/>
-<stop offset="1" stop-color="#A89472" stop-opacity="0.55"/>
-</radialGradient>
+<filter id="grain" x="0%" y="0%" width="100%" height="100%">
+<feTurbulence type="fractalNoise" baseFrequency="0.95" numOctaves="2" seed="3"/>
+<feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0"/>
+</filter>
 </defs>
-<rect width="1080" height="1920" fill="url(#ambiance)"/>
-<ellipse cx="540" cy="640" rx="620" ry="620" fill="url(#lampe)">
-<animate attributeName="opacity" values="0.85;1;0.85" dur="6s" repeatCount="indefinite"/>
-</ellipse>
-<ellipse cx="540" cy="600" rx="320" ry="64" fill="#FBF8F1" opacity="0.30"/>
-<ellipse cx="540" cy="720" rx="220" ry="42" fill="#F2CECC" opacity="0.45"/>
-<g stroke="#C8A876" stroke-width="0.9" fill="none" opacity="0.25">
-<path d="M-50 460 C 240 340, 520 540, 820 420 S 1240 320, 1180 380"/>
-<path d="M-50 940 C 240 820, 520 1020, 820 900 S 1240 800, 1180 860"/>
+<rect width="1080" height="1920" fill="#E8EDE3"/>
+<circle cx="540" cy="760" r="380" fill="url(#halo)">
+<animate attributeName="opacity" values="0.4;1;0.4" dur="4s" repeatCount="indefinite"/>
+</circle>
+<g stroke="#1a1a1a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85">
+<path d="M380 1100 Q420 900 540 880 Q620 900 640 1000"/>
+<path d="M620 1000 Q660 880 720 920 Q740 950 720 1050"/>
+<path d="M720 1050 Q780 990 820 1080"/>
+<path d="M380 1100 Q360 1300 500 1500 Q700 1620 820 1480 Q860 1300 820 1080"/>
 </g>
-<path d="M0 1300 Q 540 1200 1080 1300 L 1080 1920 L 0 1920 Z" fill="#2C2A28" opacity="0.48"/>
-<path d="M0 1300 Q 540 1200 1080 1300" stroke="#C8A876" stroke-width="1" fill="none" opacity="0.5"/>
-<ellipse cx="540" cy="1340" rx="140" ry="16" fill="#2C2A28" opacity="0.4"/>
-<ellipse cx="540" cy="1238" rx="78" ry="92" fill="url(#perle)" stroke="#2C2A28" stroke-width="1.2" stroke-opacity="0.5"/>
-<ellipse cx="515" cy="1198" rx="22" ry="36" fill="#FFFFFF" opacity="0.55"/>
-<ellipse cx="508" cy="1182" rx="9" ry="12" fill="#FFFFFF" opacity="0.88"/>
-<g opacity="0.45">
-<polygon points="200,440 232,458 232,492 200,510 168,492 168,458" fill="none" stroke="#C8A876" stroke-width="1.4"/>
-<text x="138" y="562" font-family="Cormorant Garamond, Georgia, serif" font-style="italic" font-size="22" fill="#FBF8F1" opacity="0.88">cire d'abeille</text>
-<polygon points="880,440 906,464 880,500 854,464" fill="none" stroke="#C8A876" stroke-width="1.4"/>
-<text x="800" y="558" font-family="Cormorant Garamond, Georgia, serif" font-style="italic" font-size="22" fill="#FBF8F1" opacity="0.88">silicate</text>
-<circle cx="900" cy="980" r="22" fill="none" stroke="#C8A876" stroke-width="1.4"/>
-<text x="790" y="1042" font-family="Cormorant Garamond, Georgia, serif" font-style="italic" font-size="22" fill="#FBF8F1" opacity="0.88">poudre de perle</text>
+<ellipse cx="540" cy="830" rx="48" ry="65" fill="url(#nail)" stroke="#1a1a1a" stroke-width="1.5"/>
+<ellipse cx="535" cy="805" rx="18" ry="28" fill="#FBFAF6" opacity="0.75"/>
+<g opacity="0.55">
+<polygon points="280,420 320,440 320,480 280,500 240,480 240,440" fill="#1a1a1a"/>
+<text x="200" y="555" font-family="Cormorant Garamond, Cormorant, serif" font-style="italic" font-size="24" fill="#1a1a1a" opacity="0.7">cire d'abeille</text>
+<polygon points="800,440 830,470 800,510 770,470" fill="#1a1a1a"/>
+<text x="700" y="565" font-family="Cormorant Garamond, Cormorant, serif" font-style="italic" font-size="24" fill="#1a1a1a" opacity="0.7">silicate</text>
+<circle cx="850" cy="1280" r="22" fill="#FBFAF6" stroke="#1a1a1a" stroke-width="1.2"/>
+<text x="740" y="1340" font-family="Cormorant Garamond, Cormorant, serif" font-style="italic" font-size="24" fill="#1a1a1a" opacity="0.7">poudre de perle</text>
 </g>
 <g fill="#FBFAF6">
-<circle cx="380" cy="640" r="3" opacity="0.9">
-<animateTransform attributeName="transform" type="translate" values="0,0;0,-18;0,0" dur="7s" repeatCount="indefinite"/>
+<circle cx="450" cy="680" r="3" opacity="0.85">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-18;0,0" dur="6s" repeatCount="indefinite" begin="0s"/>
 </circle>
-<circle cx="700" cy="700" r="2.5" opacity="0.7">
-<animateTransform attributeName="transform" type="translate" values="0,0;0,-14;0,0" dur="8s" repeatCount="indefinite" begin="1s"/>
+<circle cx="630" cy="700" r="2.5" opacity="0.8">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-14;0,0" dur="7s" repeatCount="indefinite" begin="1s"/>
 </circle>
-<circle cx="480" cy="500" r="2" opacity="0.65">
-<animateTransform attributeName="transform" type="translate" values="0,0;0,-22;0,0" dur="9s" repeatCount="indefinite" begin="2s"/>
+<circle cx="500" cy="620" r="2" opacity="0.75">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-22;0,0" dur="8s" repeatCount="indefinite" begin="2s"/>
 </circle>
-<circle cx="620" cy="540" r="2.2" opacity="0.75">
-<animateTransform attributeName="transform" type="translate" values="0,0;0,-12;0,0" dur="6s" repeatCount="indefinite" begin="0.5s"/>
+<circle cx="580" cy="950" r="2.5" opacity="0.7">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-12;0,0" dur="5s" repeatCount="indefinite" begin="0.5s"/>
 </circle>
-<circle cx="420" cy="800" r="2" opacity="0.6">
-<animateTransform attributeName="transform" type="translate" values="0,0;0,-16;0,0" dur="10s" repeatCount="indefinite" begin="3s"/>
+<circle cx="700" cy="800" r="2" opacity="0.75">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-16;0,0" dur="9s" repeatCount="indefinite" begin="2.5s"/>
 </circle>
-<circle cx="660" cy="450" r="1.8" opacity="0.7">
-<animateTransform attributeName="transform" type="translate" values="0,0;0,-20;0,0" dur="11s" repeatCount="indefinite" begin="1.5s"/>
+<circle cx="400" cy="780" r="2.5" opacity="0.7">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-20;0,0" dur="6.5s" repeatCount="indefinite" begin="1.5s"/>
+</circle>
+<circle cx="660" cy="600" r="2" opacity="0.75">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-15;0,0" dur="7.5s" repeatCount="indefinite" begin="3s"/>
+</circle>
+<circle cx="540" cy="550" r="3" opacity="0.7">
+<animateTransform attributeName="transform" type="translate" values="0,0;0,-25;0,0" dur="10s" repeatCount="indefinite" begin="0.8s"/>
 </circle>
 </g>
-<text x="540" y="200" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-style="italic" font-size="64" fill="#FBF8F1" opacity="0.95">Le rituel</text>
-<line x1="430" y1="252" x2="650" y2="252" stroke="#C8A876" stroke-width="1.5" opacity="0.75"/>
-<text x="540" y="308" text-anchor="middle" font-family="Inter, Georgia, serif" font-size="20" letter-spacing="6" fill="#FBF8F1" opacity="0.78">QUATRE GESTES · QUATRE-VINGT-DIX SECONDES</text>
-<text x="540" y="1810" text-anchor="middle" font-family="Inter, Georgia, serif" font-size="16" letter-spacing="5" fill="#FBF8F1" opacity="0.6">LA MAISON · MARS 2026</text>
+<text x="60" y="1840" font-family="Cormorant Garamond, Cormorant, serif" font-style="italic" font-size="28" fill="#1a1a1a" opacity="0.6" letter-spacing="4">LE RITUEL · 90 SECONDES</text>
+<rect width="1080" height="1920" filter="url(#grain)" opacity="0.4" pointer-events="none"/>
 </svg>`;
 
 export const DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL =
-  'Le rituel FemiGlow — pack paste, powder et polissoir, en 90 secondes.';
+  'Le rituel ongles, 90 secondes — main en plein geste de polissage, halo champagne, matières en orbite.';
