@@ -1,15 +1,20 @@
 /**
- * Tests `StepsTimeline` — Client wrapper de la grille 4 gestes (G3).
- *
- * G4 ajoutera des tests IntersectionObserver pour les events tracking.
+ * Tests `StepsTimeline` — Client wrapper de la grille 4 gestes.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
+
+const emitMock = vi.fn();
+
+vi.mock('@/lib/tracking/use-tracking', () => ({
+  useTracking: () => ({ emit: emitMock, consent: { analytics: 'granted' } }),
+}));
 
 import { StepsTimeline } from './StepsTimeline';
 import type {
   ProductFeedStep,
   ProductFeedStepsHeader,
+  ProductFeedStepsPostCta,
 } from '@/lib/products/feed/types';
 
 // Désactive Framer Motion pour des tests déterministes — useReducedMotion
@@ -22,6 +27,10 @@ vi.mock('framer-motion', async () => {
     useReducedMotion: () => true,
     LazyMotion: ({ children }: { children: React.ReactNode }) => children,
   };
+});
+
+beforeEach(() => {
+  emitMock.mockReset();
 });
 
 afterEach(() => cleanup());
@@ -114,5 +123,94 @@ describe('StepsTimeline', () => {
     expect(
       screen.getByTestId('steps-list').getAttribute('aria-label'),
     ).toBe('Les quatre gestes du rituel');
+  });
+
+  it('rend StepsPostCtaLink si postCta présent', () => {
+    const postCta: ProductFeedStepsPostCta = {
+      label: 'Démarrer le rituel',
+      anchorId: 'commander-femiglow',
+    };
+    render(<StepsTimeline steps={steps} postCta={postCta} />);
+    expect(screen.getByTestId('steps-post-cta')).toBeDefined();
+  });
+
+  it('ne rend PAS StepsPostCtaLink si postCta absent', () => {
+    render(<StepsTimeline steps={steps} />);
+    expect(screen.queryByTestId('steps-post-cta')).toBeNull();
+  });
+});
+
+describe('StepsTimeline — IntersectionObserver tracking', () => {
+  it('émet pack_steps_view au franchissement seuil 0.4', () => {
+    type Cb = (entries: IntersectionObserverEntry[]) => void;
+    const callbacks: Cb[] = [];
+    class IOTrigger {
+      constructor(cb: Cb) {
+        callbacks.push(cb);
+      }
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+      takeRecords = () => [];
+      root = null;
+      rootMargin = '';
+      thresholds = [0.4];
+    }
+    const original = window.IntersectionObserver;
+    // @ts-expect-error mock
+    window.IntersectionObserver = IOTrigger;
+
+    try {
+      render(<StepsTimeline steps={steps} header={header} />);
+      // Le 1er callback enregistré est celui du wrapper (view).
+      callbacks[0]!([
+        { isIntersecting: true, intersectionRatio: 0.5 } as IntersectionObserverEntry,
+      ]);
+      const events = emitMock.mock.calls.map((c) => c[0]);
+      expect(events).toContain('pack_steps_view');
+      const viewCall = emitMock.mock.calls.find(
+        (c) => c[0] === 'pack_steps_view',
+      );
+      expect(viewCall?.[1]).toMatchObject({
+        total_steps: 4,
+        total_duration_label: '5 minutes le soir',
+      });
+    } finally {
+      window.IntersectionObserver = original;
+    }
+  });
+
+  it('émet pack_steps_complete_view quand le step result entre dans le viewport', () => {
+    type Cb = (entries: IntersectionObserverEntry[]) => void;
+    const callbacks: Cb[] = [];
+    class IOTrigger {
+      constructor(cb: Cb) {
+        callbacks.push(cb);
+      }
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+      takeRecords = () => [];
+      root = null;
+      rootMargin = '';
+      thresholds = [0.5];
+    }
+    const original = window.IntersectionObserver;
+    // @ts-expect-error mock
+    window.IntersectionObserver = IOTrigger;
+
+    try {
+      render(<StepsTimeline steps={steps} />);
+      // 2 observers : view (wrapper) puis complete (step result)
+      // Le 2ᵉ callback est celui du step result.
+      expect(callbacks.length).toBeGreaterThanOrEqual(2);
+      callbacks[1]!([
+        { isIntersecting: true, intersectionRatio: 0.6 } as IntersectionObserverEntry,
+      ]);
+      const events = emitMock.mock.calls.map((c) => c[0]);
+      expect(events).toContain('pack_steps_complete_view');
+    } finally {
+      window.IntersectionObserver = original;
+    }
   });
 });

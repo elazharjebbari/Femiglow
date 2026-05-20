@@ -90,7 +90,11 @@ export function ProductFeedSection({
         </div>
 
         {/* 2 — Rituel 4 gestes (Kolenda §4.7) ---------------------------- */}
-        <StepsTimeline steps={feed.steps} header={feed.stepsHeader} />
+        <StepsTimeline
+          steps={feed.steps}
+          header={feed.stepsHeader}
+          postCta={feed.stepsPostCta}
+        />
 
         {/* 3 — Promesses (3 claims) ------------------------------------- */}
         <ul
