@@ -8,7 +8,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { useTracking } from '@/lib/tracking/use-tracking';
-import { YouTubeEmbed } from './YouTubeEmbed';
+import { VideoPosterCover } from '@/components/kit/VideoPosterCover';
 import { parseYouTubeUrl } from '@/lib/video/youtube-url';
 
 interface VideoPlayer4GestesProps {
@@ -44,6 +44,8 @@ export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
  */
 function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
   const [showTranscript, setShowTranscript] = useState(false);
+  const [played, setPlayed] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const transcriptId = useId();
   const titleId = useId();
   const { emit } = useTracking();
@@ -58,6 +60,15 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
         });
       }
       return next;
+    });
+  }, [emit]);
+
+  const handlePlay = useCallback((): void => {
+    setPlayed(true);
+    emit('video_user_play', {
+      video_id: VIDEO_ID,
+      video_title: 'Rituel — 4 gestes',
+      video_provider: 'youtube',
     });
   }, [emit]);
 
@@ -86,13 +97,14 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
           </Text>
         </div>
 
-        <div className="mt-12">
-          <YouTubeEmbed
-            url={video.youtubeUrl!}
-            title="Rituel — quatre gestes en vidéo"
+        <div className="relative mx-auto mt-12 aspect-[9/16] w-full max-w-md overflow-hidden rounded-md">
+          <VideoPosterCover
+            ref={iframeRef}
+            video={video}
             videoId={VIDEO_ID}
-            mute
-            captions="fr"
+            iframeTitle="Rituel — quatre gestes en vidéo"
+            played={played}
+            onPlay={handlePlay}
           />
         </div>
 

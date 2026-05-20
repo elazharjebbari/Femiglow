@@ -33,28 +33,30 @@ describe('VideoPlayer4Gestes — variante self-hosted (legacy)', () => {
   }, 15000);
 });
 
-describe('VideoPlayer4Gestes — variante YouTube (CHA-243)', () => {
+describe('VideoPlayer4Gestes — variante YouTube (CHA-243 + Phase 2 click-to-play)', () => {
   const youTubeVideo = {
     ...mockRituel.videoGestes,
     youtubeUrl: 'https://youtube.com/shorts/N2pDuciP4uQ?si=h9_ROBIt-N7Oq7jb',
   };
 
-  it('rend un iframe YouTube (pas de <video>) quand youtubeUrl est défini', () => {
+  it('rend le poster cover (pas d\'iframe) au paint initial quand youtubeUrl est défini', () => {
     const { container } = render(<VideoPlayer4Gestes video={youTubeVideo} />);
     // Self-hosted <video> ABSENT
     expect(container.querySelector('video')).toBeNull();
-    // YouTubeEmbed PRÉSENT
-    const wrap = container.querySelector('[data-testid="youtube-embed"]');
-    expect(wrap).not.toBeNull();
-    expect(wrap?.getAttribute('data-is-short')).toBe('true');
-    expect(wrap?.getAttribute('data-video-id')).toBe('N2pDuciP4uQ');
+    // Poster cover PRÉSENT
+    expect(screen.getByTestId('video-poster-cover')).toBeDefined();
+    // Iframe ABSENT (montée seulement après clic)
+    expect(container.querySelector('iframe')).toBeNull();
   });
 
-  it('iframe pointe sur youtube-nocookie.com', () => {
+  it('au clic sur le poster, monte l\'iframe sur youtube-nocookie.com avec autoplay', () => {
     render(<VideoPlayer4Gestes video={youTubeVideo} />);
+    fireEvent.click(screen.getByTestId('video-poster-cover'));
     const iframe = screen.getByTitle(/quatre gestes en vidéo/i) as HTMLIFrameElement;
     expect(iframe.src).toContain('youtube-nocookie.com');
     expect(iframe.src).toContain('N2pDuciP4uQ');
+    expect(iframe.src).toContain('autoplay=1');
+    expect(iframe.src).toContain('mute=1');
   });
 
   it('garde la transcription dépliable dans la variante YouTube', () => {
@@ -70,6 +72,6 @@ describe('VideoPlayer4Gestes — variante YouTube (CHA-243)', () => {
     const { container } = render(<VideoPlayer4Gestes video={bogus} />);
     // Doit retomber sur le player <video> historique
     expect(container.querySelector('video')).not.toBeNull();
-    expect(container.querySelector('[data-testid="youtube-embed"]')).toBeNull();
+    expect(screen.queryByTestId('video-poster-cover')).toBeNull();
   });
 });
