@@ -19,8 +19,10 @@ import { kitVideoOverrideUpsertSchema } from '@/lib/kit/video/schemas';
 import type {
   KitVideoOverride,
   KitVideoOverridePatch,
+  KitVideoPosterCoverSvg,
 } from '@/lib/kit/video/types';
 import type { VideoChapter } from '@/lib/schemas';
+import { CoverSvgEditor } from './CoverSvgEditor';
 
 const ACCENT_COLORS = ['sauge', 'petale', 'ciel', 'champagne'] as const;
 type AccentColor = (typeof ACCENT_COLORS)[number];
@@ -37,6 +39,7 @@ interface FormState {
   durationDisplay: string;
   accentColor: AccentColor | '';
   chapters: VideoChapter[];
+  posterCoverSvg: KitVideoPosterCoverSvg | null;
 }
 
 function fromOverride(o: KitVideoOverride | null): FormState {
@@ -46,6 +49,7 @@ function fromOverride(o: KitVideoOverride | null): FormState {
     durationDisplay: o?.durationDisplay ?? '',
     accentColor: (o?.accentColor as AccentColor | undefined) ?? '',
     chapters: o?.chapters ? (o.chapters as VideoChapter[]).slice() : [],
+    posterCoverSvg: o?.posterCoverSvg ?? null,
   };
 }
 
@@ -57,6 +61,7 @@ function toPatch(state: FormState): KitVideoOverridePatch {
       state.durationDisplay.trim() === '' ? null : state.durationDisplay.trim(),
     accentColor: state.accentColor === '' ? null : state.accentColor,
     chapters: state.chapters.length === 0 ? null : state.chapters,
+    posterCoverSvg: state.posterCoverSvg,
   };
 }
 
@@ -330,6 +335,11 @@ export function KitVideoEditor({ initial, source }: KitVideoEditorProps): JSX.El
           </div>
         </fieldset>
       </section>
+
+      <CoverSvgEditor
+        value={state.posterCoverSvg}
+        onChange={(next) => setState((prev) => ({ ...prev, posterCoverSvg: next }))}
+      />
 
       <section className="space-y-3" data-testid="kit-video-chapters-section">
         <div className="flex items-center justify-between">
