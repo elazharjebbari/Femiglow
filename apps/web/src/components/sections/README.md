@@ -18,7 +18,8 @@ Refonte mai 2026 — plan : [`docs/pack-section-optim-2026-05/`](../../../../../
 | `ProductFeedSectionBound.tsx` | Server | Wrapper RSC qui résout le `ProductFeed` via `resolveKitPack()` (cascade override-publié → mock) puis délègue. |
 | `PriceBlock.tsx` | Client | Bloc prix Kolenda §4.6 : prix XXL + prix barré + bandeau économie terracotta + ValueBreakdownList + perUsageHint + CTA primaire + social proof condensé + microcopy. IO émet `pack_section_view`, `pack_economy_view`, `pack_social_proof_view`. |
 | `ValueBreakdownList.tsx` | Server | Liste verticale label · valueLabel avec items `muted` rendus en italique opacity. |
-| `PackVisual.tsx` | Server | Packshot `<figure><img>` avec aspect-[4/5] et loading lazy. |
+| `PackVisual.tsx` | Server | Packshot `<figure><img>` SVG fallback (aspect-[4/5], loading lazy). Utilisé en mode statique / tests unitaires. |
+| `PackVisualBound.tsx` | Server (RSC) | Wrapper qui délègue à `<ComponentMedia componentKey="kit-pack-visual" slot="primary">` — variantes AVIF/WebP/JPEG multi-breakpoints + blurhash + sizes responsive. Fallback SVG automatique via `defaultSvgFallback` du registry si binding désactivé. |
 
 ### Helpers associés (lib/kit/pack/)
 
@@ -54,6 +55,25 @@ Magic word reset : `RESET-PACK`. Audit actions :
 | `pack_economy_view` | IO 0.5 (si savings) | `{savings_eur, savings_pct}` |
 | `pack_social_proof_view` | IO 0.5 (si socialProof) | `{rating, count, label_used: 'geo' | 'count'}` |
 | `pack_cta_click` | Click CTA + source=pack_section | `{source, cta_label, cta_accent}` |
+
+### Packshot Components-CMS (depuis Pack Visual A→F)
+
+Le slot `kit-pack-visual/primary` du Components-CMS pilote l'image
+affichée :
+
+- **Canon par défaut** : `docs/images/values/kit/kit-pack-shot.png` →
+  binding `autoActivate: true` dans `src/lib/components/seed-mapping.ts`.
+  Un re-seed (`pnpm tsx scripts/seed-components.ts`) restaure ce canon
+  même si l'admin l'a désactivé.
+- **Catalogue media** : l'image est optimisée par `seed-media` →
+  variantes AVIF/WebP/JPEG par breakpoint (sm/md/lg/xl/2xl), blurhash,
+  palette, phash auto-calculés.
+- **Admin** : `/admin/components` → `kit-pack-visual/primary` permet de :
+  - pointer le slot vers n'importe quel autre media du catalogue,
+  - désactiver le binding (le SVG fallback prend le relais),
+  - ajuster l'alt text, le focal point, l'object-fit.
+- **Reset** : `POST /api/admin/seeders/run` (ou re-seed CLI) restaure le
+  canon `kit-pack-shot.png`.
 
 ### Conventions
 
