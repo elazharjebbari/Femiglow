@@ -3,7 +3,7 @@ import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
-import { ProductCard } from '@/components/commerce/ProductCard';
+import { CompositionCard } from '@/components/kit/CompositionCard';
 import type { SubProduct } from '@/lib/schemas';
 
 interface CompositionRevealProps {
@@ -47,10 +47,11 @@ export function CompositionReveal({
           role="list"
           className={`grid grid-cols-1 gap-10 sm:grid-cols-2 ${cols} sm:gap-12`}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li key={item.id}>
-              <ProductCard
+              <CompositionCard
                 subProduct={item}
+                index={index}
                 detailsHref={`#${ingredientsAnchor}-${item.id}`}
                 mediaSlot={mediaSlots?.[item.id]}
               />
