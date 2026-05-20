@@ -47,6 +47,13 @@ export interface HeroProduitProps {
    *  - `cart-redirect` : ajoute au panier + redirige vers `/panier`
    */
   commanderMode?: 'wizard-anchor' | 'cart-redirect';
+  /**
+   * Seed event_id déterministe (32 hex) fourni par le Server Component pour
+   * aligner le Pixel client (via ViewItemTracker) avec le fire CAPI server-side.
+   *
+   * cf. docs/meta-quality-audit-2026-05/01-design-conception.md §3.3
+   */
+  eventIdSeed?: string;
 }
 
 const SAGE_LIGHT = '#A8B89E';
@@ -59,6 +66,7 @@ export function HeroProduit({
   reviewStats,
   observeId = 'hero-produit-anchor',
   commanderMode = 'wizard-anchor',
+  eventIdSeed,
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
   const savings = product.promoPriceCents
@@ -75,6 +83,7 @@ export function HeroProduit({
         itemName={product.name}
         priceCents={promo.effectivePriceCents}
         currency={product.currency}
+        eventIdSeed={eventIdSeed}
       />
       <Container width="page">
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-16">

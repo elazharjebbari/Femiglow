@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { cookies, headers } from 'next/headers';
+
 import { cms } from '@/lib/cms';
+import { computePromo } from '@/lib/utils/promo';
+import { deriveEventId } from '@/lib/tracking/event-id';
+import { serverFire } from '@/lib/tracking/server/server-fire';
 import {
   FAQContextuelle,
   PivotFinal,
@@ -112,6 +117,42 @@ export default async function KitPage() {
   // Stats reviews lues séparément (dépendent de `dbProduct.id`). Null si
   // la base est encore vide : le builder retombe sur le starter rating.
   const reviewStats = await getProductReviewStats(dbProduct.id);
+
+  // Tracking ViewContent — fire CAPI server-side avec event_id déterministe
+  // partagé avec le Pixel client (via ViewItemTracker.eventIdSeed). Meta
+  // dédup transparent entre les deux canaux.
+  //
+  // Objectif Phase 2 : combler le gap CAPI signalé par Meta (7 881 events
+  // de moins côté serveur sur 7 j). Le serveur devient la source fiable.
+  // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.6
+  const reqHeaders = headers();
+  const reqCookies = cookies();
+  const sessionId =
+    reqCookies.get('fg_session_id')?.value ?? reqCookies.get('_fbp')?.value ?? null;
+  const eventIdSeed = sessionId
+    ? deriveEventId({ eventName: 'view_item', sessionId, pageId: 'kit' })
+    : undefined;
+  const kitPromo = computePromo(dbProduct.priceCents, dbProduct.promoPriceCents);
+  void serverFire({
+    eventName: 'view_item',
+    pageId: 'kit',
+    pageRoute: '/kit',
+    pageUrl: `https://femiglow-maroc.com/kit`,
+    params: {
+      currency: dbProduct.currency,
+      value: kitPromo.effectivePriceCents / 100,
+      items: [
+        {
+          item_id: dbProduct.id,
+          item_name: dbProduct.name,
+          price: kitPromo.effectivePriceCents / 100,
+          quantity: 1,
+        },
+      ],
+    },
+    headers: reqHeaders,
+    cookies: reqCookies,
+  });
 
   // Schema.org Product :
   //  - L'admin garde l'autorité éditoriale sur name / description / offers
