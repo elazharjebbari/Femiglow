@@ -17,6 +17,27 @@ le playbook Kolenda (`docs/kolenda/FEMIGLOW-KIT-PLAYBOOK.md`) :
 | `SensationLine.tsx` | `<p>` italique Cormorant Garamond text-encre/70 pour la phrase de sensation. | Kolenda §4.3 + UX §13 |
 | `MediaCrossfade.tsx` | Crossfade isolated ↔ contextual au hover desktop / tap mobile / clavier (Enter/Space). Respecte `prefers-reduced-motion`. | Kolenda §4.3 + Ecommerce §6 |
 
+### Section détail INCI « La composition lue ligne par ligne. » (§4.5)
+
+| Composant (chemin) | Rôle |
+|---|---|
+| `components/sections/IngredientsDetails.tsx` | Section principale, délègue à `SubProductBlock` pour chaque sous-produit (×3). |
+| `components/commerce/SubProductBlock.tsx` (Client) | Encapsule : NumberBadge + titre + volume + `usageHint` inline + `NarrativeIntro` + `ResponsiveIngredientList` + certifications + `PostCtaLink`. Accordéon `<details>` natif sur mobile (premier ouvert par défaut), forcé ouvert sur sm+ via `useIsDesktop`. |
+| `components/commerce/ResponsiveIngredientList.tsx` (Server) | Split CSS — cards mobile via `sm:hidden`, tableau desktop via `hidden sm:block`. Tri par `%` décroissant (Kolenda §11). |
+| `components/commerce/IngredientCard.tsx` (Server) | Carte mobile avec hiérarchie nom + % accent / INCI + ⓘ / fonction · origine. |
+| `components/commerce/IngredientsTable.tsx` (Server) | Tableau 5 colonnes desktop. Signature étendue (`subProduct` legacy OU `ingredients/subProductId/accentColor`). Lignes alternées `bg-creme` / `bg-creme-warm/40`. |
+| `components/commerce/InciTooltip.tsx` (Client) | Bouton ⓘ + popover textuel a11y (role=tooltip, Esc + click-outside ferment). Émet `composition_inci_tooltip_open`. |
+| `components/commerce/NarrativeIntro.tsx` (Client) | Phrase italique Cormorant sous le titre. IntersectionObserver émet `composition_narrative_view` une seule fois au seuil 0.5. |
+| `components/commerce/PostCtaLink.tsx` (Client) | Lien éditorial « Voir le pack ↓ » qui scroll smooth vers `#commander-femiglow` et émet `composition_post_cta_click`. |
+
+**Admin** : `/admin/kit/composition` (liste) + `/admin/kit/composition/[id]` (éditeur singleton par sous-produit) — pattern miroir de `/admin/kit/video`. 4 routes API : `GET`/`PATCH`/`POST /publish`/`POST /reset` sous `/api/admin/kit/composition/[id]`.
+
+**Tracking** (4 events émis automatiquement) :
+- `composition_narrative_view` (IntersectionObserver 0.5 sur narrative)
+- `composition_accordion_open` (au déploiement utilisateur, 1ʳᵉ fois, mobile uniquement)
+- `composition_inci_tooltip_open` (click sur ⓘ)
+- `composition_post_cta_click` (click lien retour pack)
+
 ### Section vidéo « Les gestes » (§4.4)
 
 | Composant | Rôle | Source |

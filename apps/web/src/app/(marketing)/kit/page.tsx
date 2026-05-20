@@ -14,6 +14,7 @@ import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4Ge
 import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
 import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
 import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
+import { resolveKitComposition } from '@/lib/kit/composition/resolver';
 import { ComparatifSectionBound } from '@/components/sections/ComparatifSectionBound';
 import { HandsTestimonialsBound } from '@/components/sections/HandsTestimonialsBound';
 import { JournalGridBound } from '@/components/sections/JournalGridBound';
@@ -202,7 +203,7 @@ export default async function KitPage() {
       <CompositionRevealBound items={content.composition} />
       <VideoPlayer4GestesKitBound />
       <IngredientsDetailsBound
-        composition={content.composition}
+        composition={resolveKitComposition().map((it) => it.subProduct)}
         componentKey="kit-detail-mains"
       />
       {/*

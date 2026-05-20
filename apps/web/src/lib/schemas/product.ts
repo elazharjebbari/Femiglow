@@ -24,6 +24,20 @@ export const ingredientDetailedSchema = z.object({
   origin: z.string().min(1),
   concentrationPct: z.number().min(0).max(100).optional(),
   description: z.string().optional(),
+
+  /**
+   * Définition courte du nom INCI, affichée dans le tooltip `InciTooltip`.
+   * Voix maison, 1-2 phrases courtes, jamais > 200 caractères.
+   *
+   * Exemples :
+   *  - « Nom officiel de la cire d’abeille pure. Filme l’ongle sans le sceller. »
+   *  - « Forme cosmétique du silicate. Lisse et polit, sans rayer. »
+   *
+   * Si absent, le composant `InciTooltip` n'expose pas le bouton ⓘ.
+   *
+   * cf. Kolenda §4.5 + UX §7 (Hide unnecessary — tooltip sur termes techniques).
+   */
+  inciDefinition: z.string().trim().min(1).max(200).optional(),
 });
 export type IngredientDetailed = z.infer<typeof ingredientDetailedSchema>;
 
@@ -90,6 +104,48 @@ export const subProductSchema = z.object({
    * `null` ou absent → fallback `champagne` côté résolveur.
    */
   accentColor: subProductAccentColorSchema.optional(),
+
+  /**
+   * Intro narrative voix maison affichée en italique Cormorant sous le
+   * titre du sous-produit, avant le tableau / les cards d'ingrédients.
+   * Compose la « fiche d'atelier » Kolenda §4.5.
+   *
+   * Contraintes :
+   *  - 1-3 phrases (max 320 caractères après trim)
+   *  - Termine par une ponctuation finale (`.`, `!`, `?`, `»`)
+   *  - Mentionne idéalement origine + sensation gestuelle
+   *
+   * Exemple :
+   *   « 12 % de cire fondue à basse température par la coopérative apicole
+   *     du Moyen Atlas. Une noisette filme dix doigts. »
+   *
+   * Optionnel — si absent, pas d'intro rendue.
+   */
+  narrative: z
+    .string()
+    .trim()
+    .min(1)
+    .max(320)
+    .regex(
+      /[.!?»]$/,
+      'narrative doit se terminer par une ponctuation finale (. ! ? »)',
+    )
+    .optional(),
+
+  /**
+   * Mention gestuelle Easy-to-imagine (Copywriting §9) qui prolonge le
+   * `volume` dans le titre : « 1 Paste · 15 g · une noisette filme dix
+   * doigts ».
+   *
+   * Contraintes :
+   *  - 1-60 caractères trim
+   *  - Pas de ponctuation finale (clausule, pas phrase)
+   *
+   * Exemples : « une noisette filme dix doigts », « trois minutes de pose », « le polissoir vit 6 mois ».
+   *
+   * Optionnel — si absent, le titre reste `name — volume`.
+   */
+  usageHint: z.string().trim().min(1).max(60).optional(),
 });
 export type SubProduct = z.infer<typeof subProductSchema>;
 
