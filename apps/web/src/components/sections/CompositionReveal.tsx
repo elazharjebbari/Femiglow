@@ -28,7 +28,9 @@ export function CompositionReveal({
   return (
     <section
       aria-labelledby="composition-title"
-      className="bg-creme py-16 sm:py-24"
+      // Fond sable Kolenda §4.3 : rupture de rythme avec le Hero (crème) et
+      // la vidéo (crème) qui l'entourent. Annexe A — `#EFE9DD`.
+      className="bg-[#EFE9DD] py-16 sm:py-24"
     >
       <Container width="wide">
         <div className="mb-10 max-w-2xl space-y-4">
