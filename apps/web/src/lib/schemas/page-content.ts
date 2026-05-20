@@ -321,6 +321,23 @@ export const kitVideoSchema = z.object({
     .optional(),
   durationDisplay: z.string().min(1).max(8).optional(),
   accentColor: subProductAccentColorSchema.optional(),
+
+  /** Cover SVG dynamique (Phase α-δ) — aligné sur rituelVideoSchema. */
+  posterCoverSvg: z
+    .object({
+      source: z.enum(['inline', 'file', 'url']),
+      inline: z.string().max(50_000).nullable().optional(),
+      fileMediaId: z.string().max(64).nullable().optional(),
+      url: z.string().url().max(500).nullable().optional(),
+      meta: z
+        .object({
+          viewBox: z.string().max(64).optional(),
+          ariaLabel: z.string().max(200).optional(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .optional(),
 });
 export type KitVideo = z.infer<typeof kitVideoSchema>;
 
