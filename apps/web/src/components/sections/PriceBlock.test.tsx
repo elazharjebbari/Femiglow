@@ -94,6 +94,7 @@ function feedWith(overrides: Partial<ProductFeed['hero']> = {}): ProductFeed {
       rating: 4.8,
       quote: 'q',
       authorLabel: 'a',
+      countLabelGeo: '287 maisons en France',
     },
   } as unknown as ProductFeed;
 }
@@ -208,6 +209,29 @@ describe('PriceBlock — rendu', () => {
     render(<PriceBlock feed={feedWith()} product={product} />);
     expect(screen.getByText(/Paste · Powder/)).toBeDefined();
   });
+
+  it('affiche social proof condensé avec countLabelGeo si présent', () => {
+    render(<PriceBlock feed={feedWith()} product={product} />);
+    const sp = screen.getByTestId('pack-social-proof');
+    expect(sp.getAttribute('data-label-used')).toBe('geo');
+    expect(sp.textContent).toContain('4,8/5');
+    expect(sp.textContent).toContain('287 maisons en France');
+  });
+
+  it('fallback social proof = `<count> avis` si countLabelGeo absent', () => {
+    // socialProof avec countLabelGeo non défini
+    const feed = feedWith();
+    (feed as { socialProof: { countLabelGeo?: string } }).socialProof = {
+      reviewsCount: 287,
+      rating: 4.8,
+      quote: 'q',
+      authorLabel: 'a',
+    } as never;
+    render(<PriceBlock feed={feed} product={product} />);
+    const sp = screen.getByTestId('pack-social-proof');
+    expect(sp.getAttribute('data-label-used')).toBe('count');
+    expect(sp.textContent).toContain('287 avis');
+  });
 });
 
 describe('PriceBlock — tracking IO', () => {
@@ -243,6 +267,7 @@ describe('PriceBlock — tracking IO', () => {
       const events = emitMock.mock.calls.map((c) => c[0]);
       expect(events).toContain('pack_section_view');
       expect(events).toContain('pack_economy_view');
+      expect(events).toContain('pack_social_proof_view');
       // pack_economy_view params
       const economyCall = emitMock.mock.calls.find(
         (c) => c[0] === 'pack_economy_view',
@@ -250,6 +275,14 @@ describe('PriceBlock — tracking IO', () => {
       expect(economyCall?.[1]).toMatchObject({
         savings_eur: 14,
         savings_pct: 29,
+      });
+      const socialCall = emitMock.mock.calls.find(
+        (c) => c[0] === 'pack_social_proof_view',
+      );
+      expect(socialCall?.[1]).toMatchObject({
+        rating: 4.8,
+        count: 287,
+        label_used: 'geo',
       });
     } finally {
       window.IntersectionObserver = original;

@@ -38,6 +38,15 @@ export interface PriceBlockProps {
   product: Product;
 }
 
+/**
+ * Format français d'une note flottante (« 4,8 »).
+ * On garde 1 décimale pour la lisibilité, conformément à Pricing #14
+ * (chiffres précis plus crédibles qu'arrondis).
+ */
+function formatRating(rating: number): string {
+  return rating.toFixed(1).replace('.', ',');
+}
+
 function parsePriceCents(label: string | undefined): number | null {
   if (!label) return null;
   // Tolère « 49 € », « 49,00 € », « 49 MAD »
@@ -50,7 +59,7 @@ function parsePriceCents(label: string | undefined): number | null {
 }
 
 export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
-  const { hero, currency } = feed;
+  const { hero, currency, socialProof } = feed;
   const { emit } = useTracking();
   const sectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -59,6 +68,13 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
   const compareAtCents = parsePriceCents(hero.priceCompareAt);
   const savings = computePackSavings(promo.effectivePriceCents, compareAtCents);
 
+  // Social proof condensé — libellé géo prioritaire si défini, sinon
+  // fallback sur reviewsCount (compat legacy).
+  const socialProofLabel =
+    socialProof?.countLabelGeo ??
+    (socialProof ? `${socialProof.reviewsCount} avis` : null);
+  const socialProofLabelUsed = socialProof?.countLabelGeo ? 'geo' : 'count';
+
   useEffect(() => {
     const el = sectionRef.current;
     if (!el || typeof window === 'undefined' || !('IntersectionObserver' in window)) {
@@ -66,6 +82,7 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
     }
     let firedSection = false;
     let firedEconomy = false;
+    let firedSocial = false;
     const obs = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -84,7 +101,23 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
               savings_pct: savings.pct,
             });
           }
-          if (firedSection && (firedEconomy || !savings)) {
+          if (
+            !firedSocial &&
+            socialProof &&
+            entry.intersectionRatio >= 0.5
+          ) {
+            firedSocial = true;
+            emit('pack_social_proof_view', {
+              rating: socialProof.rating,
+              count: socialProof.reviewsCount,
+              label_used: socialProofLabelUsed,
+            });
+          }
+          if (
+            firedSection &&
+            (firedEconomy || !savings) &&
+            (firedSocial || !socialProof)
+          ) {
             obs.disconnect();
             break;
           }
@@ -94,7 +127,7 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [emit, savings]);
+  }, [emit, savings, socialProof, socialProofLabelUsed]);
 
   // Mapping accent → classes Tailwind. Pour Phase 0 le CTA garde son
   // variant primary natif ; Phase 1 introduira la variante sauge-dark
@@ -175,7 +208,25 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
         {hero.ctaLabel}
       </CommanderAnchorButton>
 
-      {/* 7 — Microcopy de réassurance */}
+      {/* 7 — Social proof condensé sous le CTA (Kolenda §4.6 — proof
+          de proximité). Labels géo prioritaire si défini, sinon fallback
+          `reviewsCount`. Note formatée FR (1 décimale, virgule). */}
+      {socialProof && socialProofLabel && (
+        <p
+          data-testid="pack-social-proof"
+          data-label-used={socialProofLabelUsed}
+          className="flex items-center justify-center gap-2 text-sm text-champagne-dark"
+        >
+          <span aria-hidden="true">★★★★★</span>
+          <span className="font-medium tabular-nums">
+            {formatRating(socialProof.rating)}/5
+          </span>
+          <span className="text-encre/40">·</span>
+          <span className="text-encre/70">{socialProofLabel}</span>
+        </p>
+      )}
+
+      {/* 8 — Microcopy de réassurance */}
       <p
         className={cn(
           'text-center text-[11px] uppercase tracking-[0.2em] text-encre/55',
