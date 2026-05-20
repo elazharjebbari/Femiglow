@@ -32,11 +32,67 @@ function makeReview(overrides: Partial<ProductReviewPhoto>): ProductReviewPhoto 
   };
 }
 
+// Helper : fabrique un resolved slot minimal avec media + variants (simule le
+// cas production où originalUrl=NULL mais les variants WebP/AVIF existent).
+function makeResolvedSlot(slotKey: string, mediaId: string, variantUrl: string) {
+  return {
+    component: { id: 'comp_1', key: 'kit-hero-produit', name: 'Hero Kit', slots: [], defaultSvgFallback: null, defaultLoadingStrategy: 'eager', defaultFetchPriority: 'high' },
+    slot: { id: 'slot_1', key: slotKey, label: slotKey, componentId: 'comp_1' },
+    binding: { id: 'bind_1', componentId: 'comp_1', slotKey, mediaId, isActive: true, customAlt: null, loadingStrategy: null, fetchPriority: null },
+    media: {
+      id: mediaId,
+      originalUrl: null,           // ← le cas bug : originalUrl absent en DB
+      alt: 'Photo packshot kit',
+      originalWidth: 1024,
+      originalHeight: 1280,
+      variants: [
+        { id: 'v1', mediaId, format: 'webp', breakpoint: 'lg', url: variantUrl,
+          width: 1024, height: 1280, bitrateKbps: null, quality: 85, sizeBytes: 62000,
+          checksum: 'abc', createdAt: new Date() },
+      ],
+      tags: [],
+    },
+    animation: null,
+    fallbackSvg: null,
+    loadingStrategy: 'eager' as const,
+    fetchPriority: 'high' as const,
+    alt: 'Photo packshot kit',
+  };
+}
+
 describe('getKitHeroGalleryImages', () => {
   beforeEach(() => {
     resetMemoryStore();
     vi.mocked(resolveComponentSlot).mockReset();
     vi.mocked(resolveComponentSlot).mockResolvedValue(null);
+  });
+
+  // ─── Bug 1 regression : originalUrl=NULL mais variants WebP présents ───────
+  it('Bug1 : retourne le slot primary via variant URL quand originalUrl=null', async () => {
+    vi.mocked(resolveComponentSlot).mockImplementation(async (_key, slot) => {
+      if (slot === 'primary')
+        return makeResolvedSlot('primary', 'me_4arvcdnelzb0i8ns', '/_media/media/me_4arvcdnelzb0i8ns/webp/lg.webp') as never;
+      return null;
+    });
+    const images = await getKitHeroGalleryImages({ includeReviews: false });
+    expect(images).toHaveLength(1);
+    expect(images[0]?.kind).toBe('product');
+    expect(images[0]?.src).toBe('/_media/media/me_4arvcdnelzb0i8ns/webp/lg.webp');
+    expect(images[0]?.src).not.toContain('kit-principale.png'); // pas de SVG placeholder
+  });
+
+  it('Bug1 : retourne null pour le slot quand aucune variant ET originalUrl vide', async () => {
+    vi.mocked(resolveComponentSlot).mockImplementation(async (_key, slot) => {
+      if (slot === 'primary')
+        return {
+          ...makeResolvedSlot('primary', 'me_empty', ''),
+          media: { ...makeResolvedSlot('primary', 'me_empty', '').media, variants: [], originalUrl: null },
+        } as never;
+      return null;
+    });
+    // Pas de fallback fourni → liste vide (slot ignoré silencieusement)
+    const images = await getKitHeroGalleryImages({ includeReviews: false });
+    expect(images).toHaveLength(0);
   });
 
   it("retourne une liste vide quand aucun slot n'a de binding et aucune review", async () => {

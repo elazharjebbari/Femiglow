@@ -33,9 +33,12 @@ const COMPONENT_KEY = 'kit-comparatif';
 
 /**
  * RSC wrapper qui résout les bindings produit du `kit-comparatif` pour les
- * trois `ProductCard` de `CompositionReveal`. Réutilise les slots déjà
+ * trois `CompositionCard` de `CompositionReveal`. Réutilise les slots déjà
  * exploités par `ComparatifSectionBound` (un seul jeu de bindings éditoriaux
  * pour les visuels produits du kit).
+ *
+ * cf. docs/composition-reveal-optim-2026-05/ pour le détail de la refonte
+ * Kolenda § 4.3 (ProductCard → CompositionCard).
  */
 export async function CompositionRevealBound({
   items,
