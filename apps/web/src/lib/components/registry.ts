@@ -868,6 +868,37 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
     metadata: { animationProfile: 'fade-in' },
   },
   {
+    // §4.6 — packshot du bloc « Le Pack » sur `/kit`. Le composant `PackVisual`
+    // accepte un media (raster optimisé multi-formats via ComponentMedia) avec
+    // fallback SVG statique `/products/kit-principale.svg` si binding désactivé.
+    key: 'kit-pack-visual',
+    name: 'Pack /kit — packshot section Kolenda §4.6',
+    description:
+      'Packshot du Pack FemiGlow (paste + powder + polissoir Step 4 Polish & Shine) affiché dans le bloc prix de la section « Le Pack ». Aspect ratio 4/5.',
+    category: 'section',
+    pageGroup: 'kit',
+    filePath: 'src/components/sections/PackVisual.tsx',
+    slots: [
+      {
+        key: 'primary',
+        label: 'Packshot Pack /kit',
+        required: false,
+        acceptKinds: ['image'],
+        aspectRatioHint: '4/5',
+        recommendedWidth: 800,
+        description:
+          'Image du pack complet posée sur fond crème, lecture lente — Kolenda §4.6.',
+        objectFitDefault: 'contain',
+        backgroundFillDefault: 'creme',
+      },
+    ],
+    defaultSvgFallback: '/products/kit-principale.svg',
+    defaultLoadingStrategy: 'viewport',
+    defaultFetchPriority: 'auto',
+    supportsAnimation: true,
+    metadata: { animationProfile: 'reveal-up' },
+  },
+  {
     key: 'kit-hands-testimonials',
     name: 'Avis mains (avant/après)',
     description: 'Témoignages mains avant/après pour Sara, Lina, Amal.',

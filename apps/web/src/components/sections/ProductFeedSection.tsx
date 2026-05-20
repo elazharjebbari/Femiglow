@@ -25,7 +25,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { PriceBlock } from '@/components/sections/PriceBlock';
-import { PackVisual } from '@/components/sections/PackVisual';
+import { PackVisualBound } from '@/components/sections/PackVisualBound';
 import { cn } from '@/lib/utils/cn';
 import type {
   FeedAccent,
@@ -91,9 +91,11 @@ export function ProductFeedSection({
             <PriceBlock feed={feed} product={product} hasVisual />
           </div>
 
-          {/* Colonne droite — packshot */}
+          {/* Colonne droite — packshot piloté par le Components-CMS
+              (slot `kit-pack-visual/primary`). Fallback SVG si binding
+              admin désactivé (cf. registry.ts defaultSvgFallback). */}
           <div className="order-first md:order-last">
-            <PackVisual
+            <PackVisualBound
               alt="Kit FemiGlow — paste, powder et polissoir Step 4, posés sur fond crème"
             />
           </div>

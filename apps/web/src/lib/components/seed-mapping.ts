@@ -74,6 +74,18 @@ export const IMAGE_TO_COMPONENT: Record<string, SeedMappingEntry> = {
     autoActivate: true,
   },
   'kit/kit-detail-mains.png': { componentKey: 'kit-detail-mains', slot: 'primary' },
+  /**
+   * §4.6 — packshot canon de la section « Le Pack ». `autoActivate: true`
+   * = ce binding est non-négociable : un re-seed le restaure même si
+   * l'admin l'a désactivé. L'admin peut bien sûr pointer ce slot vers
+   * un autre media du catalogue depuis `/admin/components` (changement
+   * éditorial respecté tant qu'un re-seed n'est pas déclenché).
+   */
+  'kit/kit-pack-shot.png': {
+    componentKey: 'kit-pack-visual',
+    slot: 'primary',
+    autoActivate: true,
+  },
   'kit/kit-base.png': { componentKey: 'kit-comparatif', slot: 'kit-base' },
   'kit/kit-fortifiant.png': { componentKey: 'kit-comparatif', slot: 'kit-fortifiant' },
   'kit/kit-lime.png': { componentKey: 'kit-comparatif', slot: 'kit-lime' },
