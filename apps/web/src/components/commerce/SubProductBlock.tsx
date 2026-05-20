@@ -17,12 +17,14 @@
  */
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { NumberBadge } from '@/components/kit/NumberBadge';
+import { NarrativeIntro } from './NarrativeIntro';
 import { PostCtaLink } from './PostCtaLink';
 import { ResponsiveIngredientList } from './ResponsiveIngredientList';
 import { resolveAccentHex } from '@/lib/composition/copy';
+import { useTracking } from '@/lib/tracking/use-tracking';
 import type { SubProduct } from '@/lib/schemas';
 
 export interface SubProductBlockProps {
@@ -59,6 +61,8 @@ export function SubProductBlock({
   const [open, setOpen] = useState(defaultOpen);
   const titleId = useId();
   const accent = resolveAccentHex(subProduct.accentColor);
+  const { emit } = useTracking();
+  const accordionTracked = useRef(false);
 
   // Sur desktop, on force toujours ouvert. Sur mobile, l'utilisateur pilote.
   const effectiveOpen = isDesktop || open;
@@ -72,11 +76,18 @@ export function SubProductBlock({
       <details
         open={effectiveOpen}
         onToggle={(e) => {
+          const nextOpen = e.currentTarget.open;
           // Synchronise l'état local quand l'utilisateur clique sur summary.
-          // Sur desktop l'événement ne se déclenche pas via clic
-          // (pointer-events:none sur summary via Tailwind sm:),
-          // mais on accepte par sécurité.
-          if (!isDesktop) setOpen(e.currentTarget.open);
+          if (!isDesktop) setOpen(nextOpen);
+          // Émet `composition_accordion_open` uniquement à la première
+          // ouverture utilisateur (mobile) — pas au mount, pas en fermeture.
+          if (nextOpen && !accordionTracked.current && !isDesktop) {
+            accordionTracked.current = true;
+            emit('composition_accordion_open', {
+              sub_product_id: subProduct.id,
+              sub_product_name: subProduct.name,
+            });
+          }
         }}
         className="group [&[open]_.chevron]:rotate-180"
       >
@@ -107,12 +118,10 @@ export function SubProductBlock({
 
         <div className="mt-4 space-y-6">
           {subProduct.narrative ? (
-            <p
-              className="font-display italic text-encre/75 text-lg leading-[1.55] max-w-prose"
-              data-testid={`composition-narrative-${subProduct.id}`}
-            >
-              {subProduct.narrative}
-            </p>
+            <NarrativeIntro
+              text={subProduct.narrative}
+              subProductId={subProduct.id}
+            />
           ) : null}
 
           <ResponsiveIngredientList
