@@ -151,6 +151,31 @@ describe('exportPlan — structure GTM', () => {
     expect(html).toContain("fbq('track', 'Purchase'");
   });
 
+  it('passes eventID (camelCase) as fbq option for Pixel/CAPI dedup', () => {
+    // Meta exige `eventID` (camelCase) en 4ème arg `{}, { eventID }` pour
+    // déduper le Pixel client avec la CAPI server-side. Le snake_case
+    // `event_id` est ignoré par fbq → pas de dédup → double-comptage.
+    // cf. https://developers.facebook.com/docs/marketing-api/conversions-api/deduplicate-pixel-and-server-events
+    const result = exportPlan(buildPlan(), 'production');
+    const tags = (result.json as any).containerVersion.tag as Array<{
+      name: string;
+      parameter: Array<{ key: string; value: string }>;
+    }>;
+    const metaEventTags = tags.filter((t) => t.name.startsWith('Meta Evt — '));
+    expect(metaEventTags.length).toBeGreaterThan(0);
+    for (const tag of metaEventTags) {
+      const html = tag.parameter.find((p) => p.key === 'html')?.value ?? '';
+      expect(html, `Tag ${tag.name} should include eventID`).toMatch(
+        /eventID:\s*\{\{DLV - event_id\}\}/,
+      );
+      // Le format ancien `event_id:` (snake_case) en option dedup ne doit
+      // plus apparaître dans les tags Meta — il serait ignoré par fbq.
+      expect(html, `Tag ${tag.name} must not use snake_case event_id as fbq option`).not.toMatch(
+        /\{\s*event_id:\s*\{\{DLV - event_id\}\}\s*\}/,
+      );
+    }
+  });
+
   it('wires every tag to a firingTriggerId (no orphan tags)', () => {
     const result = exportPlan(buildPlan(), 'production');
     const tags = (result.json as any).containerVersion.tag;

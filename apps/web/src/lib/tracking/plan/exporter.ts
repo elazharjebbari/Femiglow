@@ -592,7 +592,13 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
           {
             type: 'TEMPLATE',
             key: 'html',
-            value: `<script>fbq('track', '${metaName}', { event_id: {{DLV - event_id}} });</script>`,
+            // Meta CAPI dedup : la 4e arg de `fbq('track', name, params, opts)`
+            // doit avoir `eventID` (camelCase) — pas `event_id`. Le 3e arg
+            // (`{}`) reste pour custom_data event-level (value/currency/etc.)
+            // et n'est pas le bon emplacement pour eventID.
+            // cf. https://developers.facebook.com/docs/marketing-api/conversions-api/deduplicate-pixel-and-server-events
+            // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.9
+            value: `<script>fbq('track', '${metaName}', {}, { eventID: {{DLV - event_id}} });</script>`,
           },
           { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
         ],
