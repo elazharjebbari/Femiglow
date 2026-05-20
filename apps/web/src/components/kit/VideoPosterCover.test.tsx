@@ -147,6 +147,129 @@ describe('VideoPosterCover — état non joué', () => {
   });
 });
 
+describe('VideoPosterCover — posterCoverSvg 3 modes', () => {
+  const inlineSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920"><rect width="1080" height="1920" fill="#E8EDE3"/></svg>';
+
+  it('mode inline : rend le SVG via dangerouslySetInnerHTML', () => {
+    render(
+      <VideoPosterCover
+        video={makeVideo({
+          posterCoverSvg: {
+            source: 'inline',
+            inline: inlineSvg,
+            meta: { ariaLabel: 'Cover personnalisée' },
+          },
+        })}
+        videoId="v1"
+        iframeTitle="Titre"
+        played={false}
+        onPlay={() => {}}
+      />,
+    );
+    const node = screen.getByTestId('video-poster-svg-inline');
+    expect(node).toBeDefined();
+    expect(node.getAttribute('aria-label')).toBe('Cover personnalisée');
+    // Le SVG sanitized contient bien le <rect>
+    expect(node.innerHTML).toContain('rect');
+  });
+
+  it('mode inline : strip script même si présent au montage', () => {
+    const dangerous =
+      '<svg viewBox="0 0 100 100"><script>alert(1)</script><rect width="100" height="100"/></svg>';
+    render(
+      <VideoPosterCover
+        video={makeVideo({
+          posterCoverSvg: { source: 'inline', inline: dangerous },
+        })}
+        videoId="v1"
+        iframeTitle="Titre"
+        played={false}
+        onPlay={() => {}}
+      />,
+    );
+    const node = screen.getByTestId('video-poster-svg-inline');
+    expect(node.innerHTML).not.toContain('<script');
+    expect(node.innerHTML).not.toContain('alert');
+  });
+
+  it('mode file : rend <img> pointant sur /api/media/<id>', () => {
+    render(
+      <VideoPosterCover
+        video={makeVideo({
+          posterCoverSvg: {
+            source: 'file',
+            fileMediaId: 'media_abc123',
+            meta: { ariaLabel: 'Cover fichier' },
+          },
+        })}
+        videoId="v1"
+        iframeTitle="Titre"
+        played={false}
+        onPlay={() => {}}
+      />,
+    );
+    const img = screen.getByTestId('video-poster-svg-file') as HTMLImageElement;
+    expect(img.tagName).toBe('IMG');
+    expect(img.getAttribute('src')).toBe('/api/media/media_abc123');
+    expect(img.getAttribute('alt')).toBe('Cover fichier');
+  });
+
+  it('mode url : rend <img> avec referrerPolicy no-referrer', () => {
+    render(
+      <VideoPosterCover
+        video={makeVideo({
+          posterCoverSvg: {
+            source: 'url',
+            url: 'https://cdn.example.com/cover.svg',
+            meta: { ariaLabel: 'Cover externe' },
+          },
+        })}
+        videoId="v1"
+        iframeTitle="Titre"
+        played={false}
+        onPlay={() => {}}
+      />,
+    );
+    const img = screen.getByTestId('video-poster-svg-url') as HTMLImageElement;
+    expect(img.tagName).toBe('IMG');
+    expect(img.getAttribute('src')).toBe('https://cdn.example.com/cover.svg');
+    expect(img.getAttribute('referrerpolicy')).toBe('no-referrer');
+  });
+
+  it('voile encre 15 % désactivé quand un SVG custom est servi', () => {
+    const { container } = render(
+      <VideoPosterCover
+        video={makeVideo({
+          posterCoverSvg: { source: 'inline', inline: inlineSvg },
+        })}
+        videoId="v1"
+        iframeTitle="Titre"
+        played={false}
+        onPlay={() => {}}
+      />,
+    );
+    expect(container.querySelector('.bg-encre\\/15')).toBeNull();
+  });
+
+  it('fallback rétrocompat : <Image> si posterCoverSvg absent', () => {
+    render(
+      <VideoPosterCover
+        video={makeVideo()}
+        videoId="v1"
+        iframeTitle="Titre"
+        played={false}
+        onPlay={() => {}}
+      />,
+    );
+    // Pas de testid SVG, on garde le fallback Image.
+    expect(screen.queryByTestId('video-poster-svg-inline')).toBeNull();
+    expect(screen.queryByTestId('video-poster-svg-file')).toBeNull();
+    expect(screen.queryByTestId('video-poster-svg-url')).toBeNull();
+    expect(screen.getByRole('img')).toBeDefined();
+  });
+});
+
 describe('VideoPosterCover — état joué', () => {
   it('rend YouTubeEmbed quand played=true', () => {
     render(

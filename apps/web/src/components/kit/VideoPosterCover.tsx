@@ -31,11 +31,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useId, type ForwardedRef, forwardRef } from 'react';
+import { useId, useMemo, type ForwardedRef, forwardRef } from 'react';
 
 import { resolveAccentHex } from '@/lib/composition/copy';
 import { YouTubeEmbed } from '@/components/sections/YouTubeEmbed';
 import type { RituelVideo } from '@/lib/schemas';
+import { sanitizeSvgClient } from '@/lib/kit/video/sanitize-svg-client';
 
 export interface VideoPosterCoverProps {
   video: RituelVideo;
@@ -49,6 +50,80 @@ export interface VideoPosterCoverProps {
   onPlay: () => void;
 }
 
+/**
+ * Sous-composant qui choisit le rendu du média de fond du poster, selon la
+ * cascade :
+ *  1. `posterCoverSvg.source = 'inline'` → `<div dangerouslySetInnerHTML>`
+ *     (re-sanitized côté client en défense en profondeur).
+ *  2. `posterCoverSvg.source = 'file'`   → `<img src="/api/media/<id>">`.
+ *  3. `posterCoverSvg.source = 'url'`    → `<img src={url}>`.
+ *  4. Sinon (rétrocompat) → `<Image>` next/image sur posterCustom/poster.
+ *
+ * Le voile encre 15 % et le badge durée restent rendus par le parent.
+ */
+function PosterMedia({
+  video,
+  posterImage,
+}: {
+  video: RituelVideo;
+  posterImage: { src: string; alt: string };
+}): JSX.Element {
+  const svg = video.posterCoverSvg;
+  const sanitizedInline = useMemo(
+    () => (svg?.source === 'inline' && svg.inline ? sanitizeSvgClient(svg.inline) : ''),
+    [svg],
+  );
+
+  if (svg?.source === 'inline' && sanitizedInline) {
+    return (
+      <div
+        className="absolute inset-0"
+        role="img"
+        aria-label={svg.meta?.ariaLabel ?? posterImage.alt}
+        data-testid="video-poster-svg-inline"
+        dangerouslySetInnerHTML={{ __html: sanitizedInline }}
+      />
+    );
+  }
+  if (svg?.source === 'file' && svg.fileMediaId) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={`/api/media/${encodeURIComponent(svg.fileMediaId)}`}
+        alt={svg.meta?.ariaLabel ?? posterImage.alt}
+        className="absolute inset-0 h-full w-full object-cover"
+        data-testid="video-poster-svg-file"
+        loading="eager"
+      />
+    );
+  }
+  if (svg?.source === 'url' && svg.url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={svg.url}
+        alt={svg.meta?.ariaLabel ?? posterImage.alt}
+        className="absolute inset-0 h-full w-full object-cover"
+        data-testid="video-poster-svg-url"
+        loading="eager"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  // Fallback rétrocompat — next/image sur posterCustom/poster.
+  return (
+    <Image
+      src={posterImage.src}
+      alt={posterImage.alt}
+      fill
+      sizes="(min-width: 768px) 380px, 100vw"
+      priority
+      className="object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.02]"
+    />
+  );
+}
+
 function VideoPosterCoverImpl(
   { video, videoId, iframeTitle, played, onPlay }: VideoPosterCoverProps,
   iframeRef: ForwardedRef<HTMLIFrameElement>,
@@ -56,6 +131,7 @@ function VideoPosterCoverImpl(
   const buttonId = useId();
   const posterImage = video.posterCustom ?? video.poster;
   const playColor = resolveAccentHex(video.accentColor);
+  const hasCustomSvg = !!video.posterCoverSvg;
 
   if (played) {
     return (
@@ -84,17 +160,14 @@ function VideoPosterCoverImpl(
       className="group absolute inset-0 overflow-hidden rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3]"
       data-testid="video-poster-cover"
     >
-      <Image
-        src={posterImage.src}
-        alt={posterImage.alt}
-        fill
-        sizes="(min-width: 768px) 380px, 100vw"
-        priority
-        className="object-cover motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.02]"
-      />
+      <PosterMedia video={video} posterImage={posterImage} />
+
       {/* Voile encre 15 % — neutralise tout branding tiers résiduel quand
-          on retombe sur `poster` (sans `posterCustom`). Décoratif uniquement. */}
-      <span aria-hidden="true" className="absolute inset-0 bg-encre/15" />
+          on retombe sur `poster` (sans `posterCustom`). Désactivé quand
+          un SVG custom est servi : il porte déjà son propre fond. */}
+      {hasCustomSvg ? null : (
+        <span aria-hidden="true" className="absolute inset-0 bg-encre/15" />
+      )}
 
       {/* Bouton play 64×64 centré, couleur d'accent maison.
           Élément décoratif — l'aria-label du <button> parent porte
