@@ -217,6 +217,45 @@ describe('buildYouTubeEmbedUrl', () => {
     expect(() => buildYouTubeEmbedUrl('invalid!')).toThrow(/ID invalide/);
     expect(() => buildYouTubeEmbedUrl('')).toThrow(/ID invalide/);
   });
+
+  // Phase 0 — extensions Kolenda §4.4 (captions par défaut + IFrame API).
+  it('captions: \'fr\' → cc_load_policy=1 + cc_lang_pref=fr', () => {
+    const url = buildYouTubeEmbedUrl('dQw4w9WgXcQ', { captions: 'fr' });
+    const p = new URL(url).searchParams;
+    expect(p.get('cc_load_policy')).toBe('1');
+    expect(p.get('cc_lang_pref')).toBe('fr');
+  });
+
+  it('captions: \'ar\' → cc_load_policy=1 + cc_lang_pref=ar', () => {
+    const url = buildYouTubeEmbedUrl('dQw4w9WgXcQ', { captions: 'ar' });
+    const p = new URL(url).searchParams;
+    expect(p.get('cc_load_policy')).toBe('1');
+    expect(p.get('cc_lang_pref')).toBe('ar');
+  });
+
+  it('captions: \'auto\' → cc_load_policy=1 sans cc_lang_pref', () => {
+    const url = buildYouTubeEmbedUrl('dQw4w9WgXcQ', { captions: 'auto' });
+    const p = new URL(url).searchParams;
+    expect(p.get('cc_load_policy')).toBe('1');
+    expect(p.get('cc_lang_pref')).toBeNull();
+  });
+
+  it('captions: \'off\' (ou absent) → aucun param captions', () => {
+    const offUrl = new URL(buildYouTubeEmbedUrl('dQw4w9WgXcQ', { captions: 'off' }));
+    expect(offUrl.searchParams.get('cc_load_policy')).toBeNull();
+    const defaultUrl = new URL(buildYouTubeEmbedUrl('dQw4w9WgXcQ'));
+    expect(defaultUrl.searchParams.get('cc_load_policy')).toBeNull();
+  });
+
+  it('enableJsApi: true → enablejsapi=1', () => {
+    const url = buildYouTubeEmbedUrl('dQw4w9WgXcQ', { enableJsApi: true });
+    expect(new URL(url).searchParams.get('enablejsapi')).toBe('1');
+  });
+
+  it('enableJsApi: undefined ou false → pas de enablejsapi', () => {
+    expect(new URL(buildYouTubeEmbedUrl('dQw4w9WgXcQ')).searchParams.get('enablejsapi')).toBeNull();
+    expect(new URL(buildYouTubeEmbedUrl('dQw4w9WgXcQ', { enableJsApi: false })).searchParams.get('enablejsapi')).toBeNull();
+  });
 });
 
 describe('youTubeUrlToEmbed — intégration', () => {

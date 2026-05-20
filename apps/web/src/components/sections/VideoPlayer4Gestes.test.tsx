@@ -52,7 +52,7 @@ describe('VideoPlayer4Gestes — variante YouTube (CHA-243)', () => {
 
   it('iframe pointe sur youtube-nocookie.com', () => {
     render(<VideoPlayer4Gestes video={youTubeVideo} />);
-    const iframe = screen.getByTitle(/4 gestes en vidéo/) as HTMLIFrameElement;
+    const iframe = screen.getByTitle(/quatre gestes en vidéo/i) as HTMLIFrameElement;
     expect(iframe.src).toContain('youtube-nocookie.com');
     expect(iframe.src).toContain('N2pDuciP4uQ');
   });

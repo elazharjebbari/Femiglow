@@ -64,7 +64,7 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
   return (
     <section
       aria-labelledby={titleId}
-      className="bg-creme-warm py-20 lg:py-28"
+      className="bg-[#E8EDE3] py-20 lg:py-28"
       data-testid="video-section-youtube"
     >
       <Container width="page">
@@ -79,7 +79,7 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
             italic="always"
             className="mt-5"
           >
-            Cinq gestes, en un seul plan.
+            Quatre gestes, en un seul plan.
           </Heading>
           <Text size="body" tone="secondary" className="mt-4">
             Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.
@@ -89,8 +89,10 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
         <div className="mt-12">
           <YouTubeEmbed
             url={video.youtubeUrl!}
-            title="Rituel — 4 gestes en vidéo"
+            title="Rituel — quatre gestes en vidéo"
             videoId={VIDEO_ID}
+            mute
+            captions="fr"
           />
         </div>
 
@@ -206,7 +208,7 @@ function SelfHostedVariant({ video }: VideoPlayer4GestesProps) {
   return (
     <section
       aria-labelledby={titleId}
-      className="bg-creme-warm py-20 lg:py-28"
+      className="bg-[#E8EDE3] py-20 lg:py-28"
     >
       <Container width="page">
         <div className="mx-auto max-w-3xl text-center">
@@ -220,7 +222,7 @@ function SelfHostedVariant({ video }: VideoPlayer4GestesProps) {
             italic="always"
             className="mt-5"
           >
-            Cinq gestes, en un seul plan.
+            Quatre gestes, en un seul plan.
           </Heading>
           <Text size="body" tone="secondary" className="mt-4">
             Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.

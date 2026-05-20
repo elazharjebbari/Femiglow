@@ -104,6 +104,8 @@ export function parseYouTubeUrl(input: string): ParsedYouTube | null {
   return null;
 }
 
+export type YouTubeCaptionsPref = 'fr' | 'ar' | 'auto' | 'off';
+
 export interface BuildEmbedUrlOptions {
   /** Indique si on veut le contexte Short (ratio 9:16) — info portée par l'URL retournée via `?short=1` non, juste pour info aval. */
   isShort?: boolean;
@@ -117,6 +119,24 @@ export interface BuildEmbedUrlOptions {
   origin?: string;
   /** Démarrage à N secondes. Défaut: 0. */
   startSeconds?: number;
+  /**
+   * Politique de captions au démarrage.
+   *  - `'fr' | 'ar'` : force `cc_load_policy=1` + `cc_lang_pref=<lang>` →
+   *    captions chargées par défaut dans la langue demandée (anti-pattern
+   *    Kolenda §4.4 « autoplay avec son » neutralisé via captions).
+   *  - `'auto'` : force `cc_load_policy=1` sans pref de langue (YouTube
+   *    choisit selon les préférences de la cliente).
+   *  - `'off'` ou undefined : aucun param captions ajouté (comportement
+   *    historique).
+   */
+  captions?: YouTubeCaptionsPref;
+  /**
+   * Active YouTube IFrame API (`enablejsapi=1`) pour permettre l'écoute des
+   * events `onStateChange` (utilisé par `lib/video/iframe-tracker.ts` en
+   * phase 4 pour émettre `video_complete` + `video_progress_*`).
+   * Défaut : false — pas de surcharge tant qu'on n'instrumente pas.
+   */
+  enableJsApi?: boolean;
 }
 
 /**
@@ -151,6 +171,13 @@ export function buildYouTubeEmbedUrl(id: string, opts: BuildEmbedUrlOptions = {}
   if (opts.startSeconds && opts.startSeconds > 0) {
     params.set('start', String(Math.floor(opts.startSeconds)));
   }
+  if (opts.captions && opts.captions !== 'off') {
+    params.set('cc_load_policy', '1');
+    if (opts.captions === 'fr' || opts.captions === 'ar') {
+      params.set('cc_lang_pref', opts.captions);
+    }
+  }
+  if (opts.enableJsApi) params.set('enablejsapi', '1');
   return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
 }
 
