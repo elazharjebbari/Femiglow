@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
+import { Reveal } from '@/components/patterns/Reveal';
 import { Text } from '@/components/ui/Text';
 import { CompositionCard } from '@/components/kit/CompositionCard';
 import type { SubProduct } from '@/lib/schemas';
@@ -49,12 +50,18 @@ export function CompositionReveal({
         >
           {items.map((item, index) => (
             <li key={item.id}>
-              <CompositionCard
-                subProduct={item}
-                index={index}
-                detailsHref={`#${ingredientsAnchor}-${item.id}`}
-                mediaSlot={mediaSlots?.[item.id]}
-              />
+              {/* Reveal Kolenda §2.4 / Luxury §18 : fade + translateY 16 →
+                  0 sur 600 ms, stagger 120 ms entre cards. Respecte
+                  prefers-reduced-motion via useReducedMotion (le wrapper
+                  Reveal rend alors un <div> simple). */}
+              <Reveal direction="up" distance={16} delay={index * 120}>
+                <CompositionCard
+                  subProduct={item}
+                  index={index}
+                  detailsHref={`#${ingredientsAnchor}-${item.id}`}
+                  mediaSlot={mediaSlots?.[item.id]}
+                />
+              </Reveal>
             </li>
           ))}
         </ul>

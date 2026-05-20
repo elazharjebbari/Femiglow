@@ -83,4 +83,24 @@ describe('CompositionReveal — phase 0', () => {
     expect(screen.getAllByText(/Lire le détail/i).length).toBe(1);
     expect(screen.queryAllByText(/Voir la composition/i).length).toBe(0);
   });
+
+  it('wrappe chaque card dans un Reveal avec stagger (delay = index × 120 ms)', () => {
+    const items = [
+      makeSub({ id: 'a' }),
+      makeSub({ id: 'b' }),
+      makeSub({ id: 'c' }),
+    ];
+    const { container } = render(<CompositionReveal items={items} />);
+    // Le composant `Reveal` rend `<m.div>` quand reducedMotion=false ; il
+    // applique alors `initial`/`whileInView`. En jsdom on ne peut pas
+    // observer ces props directement, mais on peut vérifier qu'un wrapper
+    // <div> par card existe entre le <li> et l'<article>.
+    const lis = container.querySelectorAll('li');
+    lis.forEach((li) => {
+      const firstChild = li.firstElementChild;
+      expect(firstChild?.tagName).toBe('DIV');
+      // L'article CompositionCard est petit-enfant (li > div Reveal > article).
+      expect(firstChild?.firstElementChild?.tagName).toBe('ARTICLE');
+    });
+  });
 });
