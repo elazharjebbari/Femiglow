@@ -27,6 +27,7 @@ import { Text } from '@/components/ui/Text';
 import { PriceBlock } from '@/components/sections/PriceBlock';
 import { PackVisualBound } from '@/components/sections/PackVisualBound';
 import { StepCard } from '@/components/sections/StepCard';
+import { StepsConnector } from '@/components/sections/StepsConnector';
 import { StepsHeader } from '@/components/sections/StepsHeader';
 import { cn } from '@/lib/utils/cn';
 import type {
@@ -102,13 +103,14 @@ export function ProductFeedSection({
             role="list"
             aria-label="Les quatre gestes du rituel"
             className={cn(
-              'grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4',
+              'relative grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4',
               feed.stepsHeader ? 'mt-10' : '',
             )}
             data-testid="steps-list"
           >
+            <StepsConnector />
             {feed.steps.map((step) => (
-              <li key={step.step} data-step={step.step}>
+              <li key={step.step} data-step={step.step} className="relative">
                 <StepCard step={step} />
               </li>
             ))}
