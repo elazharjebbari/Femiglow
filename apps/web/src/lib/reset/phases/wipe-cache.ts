@@ -12,7 +12,9 @@ export async function runWipeCache(ctx: PhaseContext): Promise<PhaseResult> {
   if (!ctx.config.wipeNextCache) {
     return { stats: { skipped: true }, summary: 'wipeNextCache désactivé' };
   }
-  const target = '/var/www/femiglow/apps/web/.next';
+  const target = process.env.FEMIGLOW_ROOT
+    ? `${process.env.FEMIGLOW_ROOT}/apps/web/.next`
+    : '/var/www/femiglow/apps/web/.next';
   ctx.onProgress?.(`rm -rf ${target}`, 0.5);
   try {
     await rm(target, { recursive: true, force: true });

@@ -40,6 +40,7 @@ function emptyResources(): Record<RbacResource, RbacAction[]> {
     users: [],
     'app-config': [],
     legal: [],
+    'content-studio': [],
   };
 }
 

@@ -187,6 +187,7 @@ export function db(): DrizzleDb | null {
   if (dbCache.__femiglowDb !== undefined) return dbCache.__femiglowDb;
   const url = process.env.DATABASE_URL;
   if (!url) {
+    console.warn('[db] Aucune connexion DATABASE_URL — mode mémoire (données perdues au redémarrage).');
     dbCache.__femiglowDb = null;
     return null;
   }

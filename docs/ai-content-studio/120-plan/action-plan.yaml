@@ -1,0 +1,78 @@
+version: "2026-05-17"
+milestones:
+  - id: M0
+    name: Cadrage final
+    status: done
+    duration_days: 1
+    tasks:
+      - Valider périmètre v0
+      - Confirmer endpoints Postiz self-hosted
+      - Confirmer comptes Instagram/Facebook actifs
+      - Choisir modèles IA texte/image initiaux
+  - id: M1
+    name: Data + services socle
+    status: done
+    duration_days: 3
+    tasks:
+      - Ajouter migrations content studio
+      - Ajouter repositories
+      - Ajouter state machine
+      - Ajouter brand safety deterministic rules
+      - Ajouter postiz bridge mockable
+  - id: M2
+    name: API admin
+    status: done
+    duration_days: 3
+    tasks:
+      - CRUD ideas campaigns drafts
+      - generate drafts endpoint
+      - review endpoint
+      - approve endpoint
+      - schedule endpoint
+  - id: M3
+    name: UI prototype
+    status: done
+    duration_days: 5
+    tasks:
+      - ContentStudioShell
+      - Wizard create
+      - Draft editor
+      - Platform preview
+      - Brand score panel
+      - Calendar minimal
+  - id: M4
+    name: Intégration Postiz staging
+    status: done
+    duration_days: 2
+    tasks:
+      - Sync integrations
+      - Upload test media
+      - Schedule draft post
+      - Error handling
+  - id: M5
+    name: Tests + runbook
+    status: done
+    duration_days: 3
+    tasks:
+      - Unit tests brand safety (8 tests)
+      - Contract tests Postiz (9 tests)
+      - State machine tests (14 tests)
+      - Schema validation tests (9 tests)
+      - Automation tests (3 tests)
+      - Image generation tests (1 test)
+      - Smoke staging (end-to-end)
+      - Runbook ops
+definition_of_done:
+  - Aucun post généré ne peut être publié sans approval humain
+  - Les violations bloquantes empêchent schedule
+  - Les appels Postiz sont audités
+  - Les prompts et outputs IA sont traçables
+  - Les erreurs Postiz sont visibles en admin
+  - Le prototype peut être désactivé par feature flag
+extra_features:
+  - Génération visuelle IA (mock + OpenAI gpt-image-2)
+  - Compartiments média (importé / Généré IA)
+  - Jobs automatisation (retry, import status, import performance, sync)
+  - Calendrier éditorial
+  - Panel santé Postiz avec métriques
+  - Visual codes par section (rose=cadrage, sky=production, amber=média, indigo=preview, green=validation, violet=Postiz)

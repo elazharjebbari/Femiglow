@@ -1,0 +1,32 @@
+{
+  "type": "schedule",
+  "shortLink": false,
+  "date": "2026-05-20T10:00:00.000Z",
+  "tags": [
+    { "value": "femiglow", "label": "FemiGlow" },
+    { "value": "rituel", "label": "Rituel" }
+  ],
+  "posts": [
+    {
+      "integration": {
+        "id": "cmojqpv290003oo78n2xpn4a7"
+      },
+      "value": [
+        {
+          "content": "Un geste lent peut changer la manière dont une main se regarde. Le rituel FemiGlow révèle l’éclat naturel, sans vernis ni abrasion.\n\nDécouvrir le rituel.",
+          "image": [
+            {
+              "id": "postiz-media-id",
+              "path": "https://res.cloudinary.com/example/femiglow-rituel.jpg"
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "__type": "instagram",
+        "post_type": "post"
+      }
+    }
+  ]
+}
+

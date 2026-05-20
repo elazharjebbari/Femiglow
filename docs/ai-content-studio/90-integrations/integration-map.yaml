@@ -1,0 +1,30 @@
+systems:
+  femiglow_media:
+    direction: internal
+    purpose: "Réutiliser assets produit, photos, vidéos, variants"
+    required_for_v0: true
+  femiglow_products:
+    direction: internal
+    purpose: "Prix, noms, promesses autorisées, URLs"
+    required_for_v0: true
+  femiglow_tracking:
+    direction: internal
+    purpose: "UTM, conversions, click attribution"
+    required_for_v0: true
+  femiglow_analytics:
+    direction: internal
+    purpose: "Feedback loop et tableaux de bord"
+    required_for_v0: false
+  postiz:
+    direction: external
+    purpose: "Publication sociale"
+    required_for_v0: true
+  openai:
+    direction: external
+    purpose: "Génération texte/image et juge marque"
+    required_for_v0: true
+  listmonk:
+    direction: internal_external
+    purpose: "Réutilisation future des contenus en newsletter"
+    required_for_v0: false
+

@@ -22,7 +22,7 @@ describe('sortByConcentrationDesc', () => {
   });
 
   it('préserve l\'ordre source pour les ingrédients sans %', () => {
-    const r = sortByConcentrationDesc([
+    const r = sortByConcentrationDesc<{ name: string; concentrationPct?: number }>([
       { name: 'X' },
       { name: 'Y' },
       { name: 'Z' },

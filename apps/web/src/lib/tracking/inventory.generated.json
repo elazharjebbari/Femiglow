@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-14T15:38:05.774Z",
+  "generatedAt": "2026-05-14T20:02:08.263Z",
   "components": [
     {
       "name": "MobileFocusGuard",
@@ -467,8 +467,23 @@
       "category": "admin"
     },
     {
+      "name": "ProductAutocomplete",
+      "path": "src/components/admin/emails/audiences/ProductAutocomplete.tsx",
+      "category": "admin"
+    },
+    {
       "name": "RuleEditor",
       "path": "src/components/admin/emails/audiences/RuleEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TagAutocomplete",
+      "path": "src/components/admin/emails/audiences/TagAutocomplete.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TemplateAutocomplete",
+      "path": "src/components/admin/emails/audiences/TemplateAutocomplete.tsx",
       "category": "admin"
     },
     {

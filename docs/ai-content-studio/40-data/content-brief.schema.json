@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://femiglow-maroc.com/schemas/content-brief.schema.json",
+  "title": "FemiGlow Content Brief",
+  "type": "object",
+  "required": ["pillar", "objective", "platforms", "formats", "angle", "proof", "cta", "forbidden"],
+  "properties": {
+    "pillar": {
+      "type": "string",
+      "enum": ["rituel", "produit", "preuve", "journal", "maison", "reassurance", "saison", "coulisses"]
+    },
+    "objective": {
+      "type": "string",
+      "enum": ["notoriete", "consideration", "conversion", "reassurance", "fidelisation"]
+    },
+    "platforms": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["instagram", "facebook"] },
+      "minItems": 1
+    },
+    "formats": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["post", "story", "reel", "carousel"] },
+      "minItems": 1
+    },
+    "angle": { "type": "string", "minLength": 12 },
+    "proof": { "type": "string" },
+    "cta": { "type": "string" },
+    "mediaDirection": { "type": "string" },
+    "forbidden": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "utm": {
+      "type": "object",
+      "properties": {
+        "campaign": { "type": "string" },
+        "content": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

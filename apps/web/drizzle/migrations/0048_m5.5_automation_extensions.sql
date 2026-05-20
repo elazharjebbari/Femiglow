@@ -3,7 +3,7 @@
 -- ---------------------------------------------------------------------------
 -- Étend email_automation (cooldown, quiet_hours, daily_cap, trigger_conditions)
 -- + email_automation_run (awaiting_event_name, awaiting_until, errored_*)
--- Status enum étendu avec 'waiting_for_event' via ALTER TYPE.
+-- Enum value 'waiting_for_event' added in 0047b migration
 -- ===========================================================================
 
 ALTER TABLE email_automation
@@ -14,11 +14,6 @@ ALTER TABLE email_automation
   ADD COLUMN IF NOT EXISTS quiet_hours_tz text NOT NULL DEFAULT 'Africa/Casablanca',
   ADD COLUMN IF NOT EXISTS daily_cap integer,
   ADD COLUMN IF NOT EXISTS trigger_conditions jsonb;
-
--- NB : `ALTER TYPE ... ADD VALUE` ne peut pas s'exécuter dans une transaction
--- Drizzle. Appliquer manuellement AVANT le migrate :
---   ALTER TYPE email_automation_run_status ADD VALUE IF NOT EXISTS 'waiting_for_event' BEFORE 'completed';
--- Cette migration assume que 'waiting_for_event' existe déjà sur l'enum.
 
 ALTER TABLE email_automation_run
   ADD COLUMN IF NOT EXISTS awaiting_event_name text,

@@ -1,0 +1,14 @@
+id,type,scope,scenario,expected
+ACS-T001,unit,brand-safety,caption contient "miracle",blocked
+ACS-T002,unit,brand-safety,caption contient emoji,blocked
+ACS-T003,unit,postiz-builder,instagram post validé,payload has __type instagram and post_type post
+ACS-T004,unit,state-machine,schedule draft generated,invalid_state
+ACS-T005,integration,api,create idea valid,201 idea persisted
+ACS-T006,integration,api,generate drafts stores run,content_generation_run inserted
+ACS-T007,integration,api,approve blocked draft,409 content_brand_blocked
+ACS-T008,contract,postiz,401 integrations,auth_failed no retry
+ACS-T009,contract,postiz,500 create post,retry pending
+ACS-T010,component,wizard,keyboard navigation,no focus trap failure
+ACS-T011,e2e,prototype,idea to scheduled fake postiz,post status scheduled
+ACS-T012,a11y,calendar,screen reader labels present,axe pass
+

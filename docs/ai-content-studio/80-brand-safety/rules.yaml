@@ -1,0 +1,56 @@
+version: "2026-05-14"
+language:
+  default: fr
+  allowed:
+    - fr
+    - ar-MA
+blocked_terms:
+  - révolutionnaire
+  - miracle
+  - incroyable
+  - wow
+  - offre flash
+  - soldes
+  - dépêchez-vous
+  - résultat garanti
+  - ongles parfaits
+avoid_terms:
+  - acheter maintenant
+  - add to cart
+  - deal
+  - promo
+preferred_terms:
+  - rituel
+  - éclat
+  - précision
+  - patience
+  - maison
+  - initiée
+  - avec soin
+punctuation:
+  forbid_exclamation: true
+  prefer_curly_apostrophes: true
+  prefer_french_quotes: true
+visual:
+  forbid:
+    - face_closeup
+    - neon_colors
+    - nail_art_as_core_claim
+    - distorted_packaging
+    - unreadable_text
+  prefer:
+    - hands
+    - gesture
+    - natural_light
+    - linen
+    - marble
+    - warm_creme
+    - sauge_accent
+claims:
+  medical_claims: blocked
+  discount_claims: require_campaign_approval
+  ingredient_claims: require_source
+approval:
+  human_required_before_postiz_schedule: true
+  allow_auto_publish: false
+
