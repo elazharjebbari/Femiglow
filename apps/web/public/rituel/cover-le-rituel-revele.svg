@@ -1,33 +1,4 @@
-/**
- * Cover SVG par défaut « Le rituel suspendu » pour la section vidéo `/kit`.
- *
- * Inspiré directement du vocabulaire visuel maison
- * (`public/journal/cinq-minutes-le-soir.svg`, `public/og/kit.svg`,
- * `public/journal/hero-accueil.svg`) : composition d'AMBIANCE plutôt que
- * de figure. Atmosphère feutrée studio, palette unifiée, sans personnage.
- *
- * Composition (10 layers) :
- *   L1  background gradient radial multi-stop (rose → champagne → encre)
- *       — ambiance studio nocturne du SVG `cinq-minutes-le-soir`
- *   L2  halo central de lumière ("lampe") qui pulse 6s — révèle la scène
- *   L3  2 halos secondaires superposés (profondeur, brume)
- *   L4  surface du sol (path courbe encre) — la table où la perle repose
- *   L5  ombre douce sous la perle (ancrage)
- *   L6  perle nacrée centrale (héros macro, gradient radial nacre)
- *       + reflets blancs sur la perle
- *   L7  2 lignes courbes éthérées champagne en arrière-plan
- *   L8  3 matières en stroke fin (cire/silicate/perle) + labels italiques
- *   L9  6 micro-particules nacre flottantes (translateY 6-11s, offsets)
- *   L10 titre éditorial « Le rituel » + filet champagne + kicker espacé
- *       + signature « LA MAISON · MARS 2026 » en bas
- *
- * Palette stricte : `#FBF8F1` crème, `#F2CECC` rose poudré, `#E8D8B8`
- * vanille, `#C8A876` champagne, `#A89472` bronze, `#2C2A28` encre.
- * Police : Cormorant Garamond italique pour la voix maison, Inter
- * letter-spacing pour les kickers.
- */
-
-export const DEFAULT_KIT_VIDEO_COVER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="cover-title cover-desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="cover-title cover-desc">
 <title id="cover-title">Le rituel — 90 secondes</title>
 <desc id="cover-desc">Atmosphère studio feutrée : halo de lumière, perle nacrée posée sur surface sombre, matières en arrière-plan.</desc>
 <defs>
@@ -96,7 +67,4 @@ export const DEFAULT_KIT_VIDEO_COVER_SVG = `<svg xmlns="http://www.w3.org/2000/s
 <line x1="430" y1="252" x2="650" y2="252" stroke="#C8A876" stroke-width="1.5" opacity="0.75"/>
 <text x="540" y="308" text-anchor="middle" font-family="Inter, Georgia, serif" font-size="20" letter-spacing="6" fill="#FBF8F1" opacity="0.78">QUATRE GESTES · QUATRE-VINGT-DIX SECONDES</text>
 <text x="540" y="1810" text-anchor="middle" font-family="Inter, Georgia, serif" font-size="16" letter-spacing="5" fill="#FBF8F1" opacity="0.6">LA MAISON · MARS 2026</text>
-</svg>`;
-
-export const DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL =
-  'Le rituel en 90 secondes — perle nacrée au centre, halo de lumière studio, atmosphère feutrée.';
+</svg>
