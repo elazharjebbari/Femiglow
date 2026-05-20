@@ -160,7 +160,7 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
         </p>
       )}
 
-      {/* 6 — CTA primaire */}
+      {/* 6 — CTA primaire — Kolenda §4.6 : accent sauge-dark + micro-pulse */}
       <CommanderAnchorButton
         size="lg"
         fullWidth
@@ -168,6 +168,9 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
         productName={product.name}
         priceCents={promo.effectivePriceCents}
         currency={product.currency}
+        accent={ctaAccent === 'champagne' ? undefined : ctaAccent}
+        source="pack_section"
+        trackingLabel={hero.ctaLabel}
       >
         {hero.ctaLabel}
       </CommanderAnchorButton>

@@ -79,6 +79,19 @@ const config: Config = {
         'in-out-silk': 'cubic-bezier(0.65, 0, 0.35, 1)',
         'in-quiet': 'cubic-bezier(0.4, 0, 1, 1)',
       },
+      keyframes: {
+        // §4.6 — micro-pulse discret du CTA pack (3,5 s, amplitude 2 %).
+        // Volontairement faible : on cherche un signal d'attention, pas
+        // une animation criarde. `motion-safe:` désactive auto si l'OS
+        // demande `prefers-reduced-motion`.
+        'soft-pulse': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.02)' },
+        },
+      },
+      animation: {
+        'soft-pulse': 'soft-pulse 3.5s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

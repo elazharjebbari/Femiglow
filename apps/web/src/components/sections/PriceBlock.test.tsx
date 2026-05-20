@@ -23,8 +23,22 @@ vi.mock('@/lib/tracking/use-tracking', () => ({
 }));
 
 vi.mock('@/components/commerce/CommanderAnchorButton', () => ({
-  CommanderAnchorButton: ({ children }: { children: React.ReactNode }) => (
-    <button data-testid="kit-commander-anchor-button">{children}</button>
+  CommanderAnchorButton: ({
+    children,
+    accent,
+    source,
+  }: {
+    children: React.ReactNode;
+    accent?: string;
+    source?: string;
+  }) => (
+    <button
+      data-testid="kit-commander-anchor-button"
+      data-cta-accent={accent}
+      data-cta-source={source}
+    >
+      {children}
+    </button>
   ),
 }));
 
@@ -151,6 +165,25 @@ describe('PriceBlock — rendu', () => {
     expect(
       screen.getByTestId('kit-commander-anchor-button').textContent,
     ).toBe('Commander le rituel');
+  });
+
+  it('CTA propage accent=sauge-dark + source=pack_section', () => {
+    render(<PriceBlock feed={feedWith()} product={product} />);
+    const cta = screen.getByTestId('kit-commander-anchor-button');
+    expect(cta.getAttribute('data-cta-accent')).toBe('sauge-dark');
+    expect(cta.getAttribute('data-cta-source')).toBe('pack_section');
+  });
+
+  it('CTA accent=champagne → undefined (CTA garde son variant primary natif)', () => {
+    render(
+      <PriceBlock
+        feed={feedWith({ ctaAccent: 'champagne' })}
+        product={product}
+      />,
+    );
+    const cta = screen.getByTestId('kit-commander-anchor-button');
+    expect(cta.getAttribute('data-cta-accent')).toBeFalsy();
+    expect(cta.getAttribute('data-cta-source')).toBe('pack_section');
   });
 
   it('porte data-cta-accent depuis hero.ctaAccent', () => {
