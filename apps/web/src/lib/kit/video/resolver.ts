@@ -11,7 +11,7 @@
  * Les champs non éditables (sources mp4/webm, captions, transcript,
  * durationSeconds, poster fallback) viennent toujours du mock.
  */
-import { mockRituel } from '@/data/mock/rituel';
+import { mockKitPageContent } from '@/data/mock/kit';
 import type { RituelVideo } from '@/lib/schemas';
 import { getKitVideoOverride } from './store';
 import type { KitVideoOverride, ResolvedKitVideo, KitVideoSource } from './types';
@@ -23,7 +23,7 @@ import type { KitVideoOverride, ResolvedKitVideo, KitVideoSource } from './types
 export function resolveKitVideo(): ResolvedKitVideo {
   const override = getKitVideoOverride();
   if (!override || !override.publishedAt) {
-    return { video: mockRituel.videoGestes, meta: emptyMeta() };
+    return { video: mockKitPageContent.videoSrc, meta: emptyMeta() };
   }
   return {
     video: mergeOverrideOnMock(override),
@@ -43,7 +43,7 @@ export function resolveKitVideo(): ResolvedKitVideo {
 export function resolveKitVideoDraft(): ResolvedKitVideo {
   const override = getKitVideoOverride();
   if (!override) {
-    return { video: mockRituel.videoGestes, meta: emptyMeta() };
+    return { video: mockKitPageContent.videoSrc, meta: emptyMeta() };
   }
   const source: KitVideoSource = override.publishedAt && !override.draftedAt
     ? 'override-published'
@@ -69,7 +69,7 @@ function emptyMeta(): ResolvedKitVideo['meta'] {
 }
 
 function mergeOverrideOnMock(override: KitVideoOverride): RituelVideo {
-  const base = mockRituel.videoGestes;
+  const base = mockKitPageContent.videoSrc;
   return {
     ...base,
     youtubeUrl: override.youtubeUrl !== undefined && override.youtubeUrl !== null

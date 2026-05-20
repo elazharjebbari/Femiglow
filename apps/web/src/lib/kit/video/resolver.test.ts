@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { resetMemoryStore } from '@/lib/db/client';
-import { mockRituel } from '@/data/mock/rituel';
+import { mockKitPageContent } from '@/data/mock/kit';
 import { kitVideoOverrideUpsertSchema } from './schemas';
 import {
   getKitVideoOverride,
@@ -150,14 +150,14 @@ describe('resolveKitVideo — version publique', () => {
   it('retourne le mock pur quand aucun override n\'existe', () => {
     const r = resolveKitVideo();
     expect(r.meta.source).toBe('mock');
-    expect(r.video).toEqual(mockRituel.videoGestes);
+    expect(r.video).toEqual(mockKitPageContent.videoSrc);
   });
 
   it('retourne le mock quand l\'override est en draft (pas publié)', () => {
     upsertKitVideoOverride({ provenance: 'Override non publié.' });
     const r = resolveKitVideo();
     expect(r.meta.source).toBe('mock');
-    expect(r.video.provenance).toBe(mockRituel.videoGestes.provenance);
+    expect(r.video.provenance).toBe(mockKitPageContent.videoSrc.provenance);
   });
 
   it('merge l\'override publié sur le mock', () => {
@@ -167,7 +167,7 @@ describe('resolveKitVideo — version publique', () => {
     expect(r.meta.source).toBe('override-published');
     expect(r.video.provenance).toBe('Override publié.');
     // Les champs non touchés viennent toujours du mock.
-    expect(r.video.transcript).toBe(mockRituel.videoGestes.transcript);
+    expect(r.video.transcript).toBe(mockKitPageContent.videoSrc.transcript);
   });
 
   it('null dans l\'override = retour au mock pour ce champ', () => {
@@ -175,7 +175,7 @@ describe('resolveKitVideo — version publique', () => {
     upsertKitVideoOverride({ provenance: null });
     publishKitVideoOverride();
     const r = resolveKitVideo();
-    expect(r.video.provenance).toBe(mockRituel.videoGestes.provenance);
+    expect(r.video.provenance).toBe(mockKitPageContent.videoSrc.provenance);
     expect(r.video.durationDisplay).toBe('60″');
   });
 });

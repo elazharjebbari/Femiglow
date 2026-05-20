@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { cms } from '@/lib/cms';
 import {
-  VideoPlayer4Gestes,
   FAQContextuelle,
   PivotFinal,
 } from '@/components/sections';
+import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
 import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
 import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
 import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
@@ -159,7 +159,7 @@ export default async function KitPage() {
       */}
       <KitCommanderSectionBound />
       <CompositionRevealBound items={content.composition} />
-      <VideoPlayer4Gestes video={content.videoSrc} />
+      <VideoPlayer4GestesKitBound />
       <IngredientsDetailsBound
         composition={content.composition}
         componentKey="kit-detail-mains"
