@@ -44,6 +44,8 @@ import type {
   ProductFeedHero,
   ProductFeedSocialProof,
   ProductFeedStep,
+  ProductFeedStepsHeader,
+  ProductFeedStepsPostCta,
   ProductFeedValueItem,
 } from './types';
 
@@ -123,6 +125,8 @@ function buildSteps(): ProductFeedStep[] {
       description:
         'On nettoie, on s\u00E8che, on lime l\u00E9g\u00E8rement \u2014 la plaque s\u2019ouvre au soin.',
       accent: 'sauge',
+      duration: '30\u00A0s',
+      icon: 'buffer',
     },
     {
       step: 2,
@@ -131,6 +135,8 @@ function buildSteps(): ProductFeedStep[] {
       description:
         'Une noisette de paste vert sauge, le polissoir glisse, la cire entre dans la k\u00E9ratine.',
       accent: 'sauge',
+      duration: '1\u00A0min',
+      icon: 'drop',
     },
     {
       step: 3,
@@ -139,6 +145,8 @@ function buildSteps(): ProductFeedStep[] {
       description:
         'On d\u00E9pose la powder rose poudr\u00E9, on lustre lentement, la lumi\u00E8re revient \u00E0 la surface.',
       accent: 'petale',
+      duration: '2\u00A0min',
+      icon: 'sparkle',
     },
     {
       step: 4,
@@ -148,8 +156,34 @@ function buildSteps(): ProductFeedStep[] {
       description:
         'On finit au polissoir bleu ciel \u2014 l\u2019ongle devient miroir, sans vernis, sans abrasion.',
       accent: 'champagne',
+      duration: '1\u00A0min',
+      icon: 'mirror',
+      isResult: true,
     },
   ];
+}
+
+/**
+ * En-t\u00EAte de la grille des 4 gestes (Kolenda \u00A74.7 Attention #18).
+ * Annonce la dur\u00E9e totale avant la liste pour r\u00E9duire l'anxi\u00E9t\u00E9 temps.
+ */
+function buildStepsHeader(): ProductFeedStepsHeader {
+  return {
+    kicker: 'EN TOUT',
+    totalDuration: '5 minutes le soir',
+    lead: 'Quatre gestes lents, une fois par semaine.',
+  };
+}
+
+/**
+ * CTA \u00E9ditorial chuchot\u00E9 sous la grille — relance vers
+ * #commander-femiglow (Kolenda Attention #12, directional cues).
+ */
+function buildStepsPostCta(): ProductFeedStepsPostCta {
+  return {
+    label: 'D\u00E9marrer le rituel',
+    anchorId: 'commander-femiglow',
+  };
 }
 
 /**
@@ -322,6 +356,8 @@ export function buildKitProductFeed(
     description: product.description,
     hero: buildHero(product),
     steps: buildSteps(),
+    stepsHeader: buildStepsHeader(),
+    stepsPostCta: buildStepsPostCta(),
     claims: buildClaims(),
     socialProof: buildSocialProof(content, stats),
   };
