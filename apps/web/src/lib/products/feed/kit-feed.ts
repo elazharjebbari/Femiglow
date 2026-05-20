@@ -236,7 +236,10 @@ function buildHero(product: Product): ProductFeedHero {
   ];
 
   // Coût par soin : ~47 soins pour 1 mois et demi d'usage standard.
-  const perUsage = buildPerUsageHint(product.priceCents, 47);
+  // Unité alignée sur la devise du produit (cohérence visuelle avec
+  // le prix XXL — éviter savings € sur prix MAD).
+  const currencyUnit = product.currency === 'MAD' ? 'MAD' : '€';
+  const perUsage = buildPerUsageHint(product.priceCents, 47, currencyUnit);
 
   return {
     kicker: 'Le pack',

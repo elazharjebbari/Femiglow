@@ -176,13 +176,16 @@ export function PriceBlock({
           )}
         </p>
 
-        {/* 3 — Bandeau économie terracotta */}
+        {/* 3 — Bandeau économie terracotta. L'unité du bandeau suit la
+            devise du `ProductFeed` pour rester cohérente avec le prix XXL
+            (ex : « 347 MAD · 64 % » et pas « 347 € · 64 % » sur un
+            produit en MAD). */}
         {savings && (
           <p
             data-testid="pack-savings-badge"
             className="mx-auto inline-flex max-w-fit items-center gap-1 rounded-full bg-[#C28A6E]/12 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-[#8A4F36]"
           >
-            {formatSavingsLabel(savings)}
+            {formatSavingsLabel(savings, currency === 'MAD' ? 'MAD' : '€')}
           </p>
         )}
       </div>

@@ -50,11 +50,18 @@ export function computePackSavings(
 
 /**
  * Formate le libellé de bandeau économie au format
- * `« Vous économisez {eur} € · {pct} % »`. Convention typographique
- * française : espace insécable U+00A0 avant `€`, `·` et `%`. La police
- * peut ainsi gérer la justification sans casser ces unités.
+ * `« Vous économisez {amount} {unit} · {pct} % »`.
+ *
+ * - `currencyUnit` est l'unité affichée (défaut `'€'`). Pour les produits
+ *   en MAD, passer `'MAD'` afin que le bandeau reste cohérent avec le
+ *   prix XXL.
+ * - Convention typographique française : espace insécable U+00A0 avant
+ *   l'unité, `·` et `%`.
  */
-export function formatSavingsLabel(savings: PackSavings): string {
+export function formatSavingsLabel(
+  savings: PackSavings,
+  currencyUnit: string = '€',
+): string {
   const NBSP = ' ';
-  return `Vous économisez ${savings.eur}${NBSP}€${NBSP}·${NBSP}${savings.pct}${NBSP}%`;
+  return `Vous économisez ${savings.eur}${NBSP}${currencyUnit}${NBSP}·${NBSP}${savings.pct}${NBSP}%`;
 }
