@@ -226,19 +226,30 @@ function buildSocialProof(
  */
 function buildHero(product: Product): ProductFeedHero {
   const compareMajor = Math.round((product.priceCents * 1.4) / 100);
-  const compareLabel = `${compareMajor} ${product.currency === 'MAD' ? 'MAD' : '€'}`;
+  const currencyUnit = product.currency === 'MAD' ? 'MAD' : '€';
+  const compareLabel = `${compareMajor} ${currencyUnit}`;
+
+  // Répartition % du prix barré sur les 3 sous-produits — la somme
+  // tombe *exactement* sur `compareMajor` (l'arrondi est absorbé par
+  // le polissoir). Hiérarchie : Paste 40 % (matiere + complexité
+  // formule), Powder 32 %, Polissoir reste. La/le lectrice peut
+  // additionner mentalement et retomber pile sur le prix barré du
+  // bandeau économie (Kolenda §4.6).
+  const pasteVal = Math.round(compareMajor * 0.4);
+  const powderVal = Math.round(compareMajor * 0.32);
+  const polissoirVal = compareMajor - pasteVal - powderVal;
 
   const valueBreakdown: ProductFeedValueItem[] = [
-    { label: '1 Paste · 30 ml', valueLabel: '19 €' },
-    { label: '2 Powder · 30 g', valueLabel: '14 €' },
-    { label: 'Polissoir 4 zones', valueLabel: '12 €' },
+    { label: '1 Paste · 30 ml', valueLabel: `${pasteVal} ${currencyUnit}` },
+    { label: '2 Powder · 30 g', valueLabel: `${powderVal} ${currencyUnit}` },
+    { label: 'Polissoir 4 zones', valueLabel: `${polissoirVal} ${currencyUnit}` },
     { label: 'Notice rituel + carte', valueLabel: 'offert', muted: true },
+    { label: 'Livraison au Maroc', valueLabel: 'offert', muted: true },
   ];
 
   // Coût par soin : ~47 soins pour 1 mois et demi d'usage standard.
   // Unité alignée sur la devise du produit (cohérence visuelle avec
   // le prix XXL — éviter savings € sur prix MAD).
-  const currencyUnit = product.currency === 'MAD' ? 'MAD' : '€';
   const perUsage = buildPerUsageHint(product.priceCents, 47, currencyUnit);
 
   return {
