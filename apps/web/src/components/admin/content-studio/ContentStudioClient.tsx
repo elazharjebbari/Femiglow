@@ -16,6 +16,7 @@ import { PostizHealthPanel } from './PostizHealthPanel';
 import { IdeaForm } from './IdeaForm';
 import { DraftEditor } from './DraftEditor';
 import { PostizPanel } from './PostizPanel';
+import { SocialPublishingPanel } from './SocialPublishingPanel';
 import { ArchiveButton } from './ArchiveButton';
 import { LoadMore } from './LoadMore';
 import { LearningNoteForm } from './LearningNoteForm';
@@ -238,6 +239,26 @@ export function ContentStudioClient({
                 setSelectedDraftId={setSelectedDraftId}
                 run={run}
                 setMessage={setMessage}
+              />
+              <SocialPublishingPanel
+                post={selectedPost}
+                draft={selectedDraft}
+                disabled={isPending}
+                setMessage={setMessage}
+                onPostStatusChange={(postId, patch) => {
+                  setPosts((current) =>
+                    current.map((post) =>
+                      post.id === postId
+                        ? {
+                            ...post,
+                            ...patch,
+                            scheduledAt: patch.scheduledAt === undefined ? post.scheduledAt : patch.scheduledAt ? new Date(patch.scheduledAt) : null,
+                            publishedAt: patch.publishedAt === undefined ? post.publishedAt : patch.publishedAt ? new Date(patch.publishedAt) : null,
+                          }
+                        : post,
+                    ),
+                  );
+                }}
               />
               {selectedPost && (
                 <UtmBuilder post={selectedPost} draft={selectedDraft} />

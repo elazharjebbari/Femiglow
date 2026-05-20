@@ -2,7 +2,7 @@ import type { ContentStatus } from './types';
 import { HttpError } from '@/lib/errors/http-error';
 
 const ALLOWED: Record<ContentStatus, ContentStatus[]> = {
-  idea: ['brief', 'archived'],
+  idea: ['brief', 'generated', 'archived'],
   brief: ['generated', 'rejected', 'archived'],
   generated: ['needs_review', 'rejected', 'archived'],
   needs_review: ['approved', 'generated', 'rejected', 'archived'],
@@ -25,4 +25,3 @@ export function assertTransition(from: ContentStatus, to: ContentStatus): void {
     throw new HttpError('invalid_state', `Transition Content Studio invalide: ${from} → ${to}`);
   }
 }
-

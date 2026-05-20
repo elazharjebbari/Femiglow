@@ -61,6 +61,11 @@ export interface PostizAnalyticsResult {
   body: unknown;
 }
 
+interface RetryOptions {
+  attempts?: number;
+  delaysMs?: number[];
+}
+
 function baseUrl(): string {
   if (!env.POSTIZ_BASE_URL) throw new Error('POSTIZ_BASE_URL manquant');
   return env.POSTIZ_BASE_URL.replace(/\/$/, '');
@@ -122,7 +127,7 @@ export function buildPostizDraftPayload(input: PostizPostInput): Record<string, 
         content: input.content,
         image: [input.image],
       }
-    : { content: input.content };
+    : { content: input.content, image: [] };
 
   return {
     type: 'draft',
@@ -163,25 +168,62 @@ export function parsePostizUploadedMedia(body: Record<string, unknown>): PostizU
   };
 }
 
+export function extractPostizPostId(body: unknown): string | null {
+  const seen = new Set<unknown>();
+  const stack: unknown[] = [body];
+  const idKeys = new Set(['id', 'postId', 'post_id', 'publicationId']);
+  const containerKeys = new Set(['post', 'posts', 'data', 'result', 'results', 'item', 'items', 'publication']);
+
+  while (stack.length > 0) {
+    const value = stack.shift();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+
+    if (Array.isArray(value)) {
+      stack.push(...value);
+      continue;
+    }
+    if (typeof value !== 'object') continue;
+
+    const row = value as Record<string, unknown>;
+    for (const key of idKeys) {
+      const candidate = row[key];
+      if (typeof candidate === 'string' && candidate.trim().length > 0) return candidate;
+    }
+    for (const key of containerKeys) {
+      if (key in row) stack.push(row[key]);
+    }
+  }
+
+  return null;
+}
+
 export async function uploadPostizMediaFromUrl(input: {
   url: string;
   filename: string;
+  retry?: RetryOptions;
 }): Promise<PostizResult> {
-  const mediaRes = await fetch(input.url);
+  const retry = normalizeRetry(input.retry);
+  const mediaRes = await fetchWithRetry(input.url, { retry });
   if (!mediaRes.ok) {
     return {
       ok: false,
       status: mediaRes.status,
-      body: { stage: 'fetch_source_media', url: input.url },
+      body: { stage: 'fetch_source_media', url: input.url, attempts: retry.attempts },
     };
   }
   const blob = await mediaRes.blob();
-  const form = new FormData();
-  form.append('file', blob, input.filename);
-  const res = await fetch(`${baseUrl()}/api/public/v1/upload`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: form,
+  const res = await fetchWithRetry(`${baseUrl()}/api/public/v1/upload`, {
+    retry,
+    init: () => {
+      const form = new FormData();
+      form.append('file', blob, input.filename);
+      return {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      };
+    },
   });
   const body = (await res.json().catch(async () => ({ raw: await res.text().catch(() => '') }))) as
     Record<string, unknown>;
@@ -190,16 +232,54 @@ export async function uploadPostizMediaFromUrl(input: {
 
 export async function createPostizDraft(
   input: PostizPostInput,
+  retryOptions?: RetryOptions,
 ): Promise<PostizResult> {
+  const retry = normalizeRetry(retryOptions);
   const payload = buildPostizDraftPayload(input);
-  const res = await fetch(`${baseUrl()}/api/public/v1/posts`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(payload),
+  const res = await fetchWithRetry(`${baseUrl()}/api/public/v1/posts`, {
+    retry,
+    init: {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(payload),
+    },
   });
   const body = (await res.json().catch(async () => ({ raw: await res.text().catch(() => '') }))) as
     Record<string, unknown>;
   return { ok: res.ok, status: res.status, body };
+}
+
+function normalizeRetry(input?: RetryOptions): Required<RetryOptions> {
+  const attempts = Math.max(1, Math.min(input?.attempts ?? 3, 5));
+  const delaysMs = input?.delaysMs?.length ? input.delaysMs : [250, 750, 1500, 3000];
+  return { attempts, delaysMs };
+}
+
+async function fetchWithRetry(
+  url: string,
+  options: { init?: RequestInit | (() => RequestInit); retry: Required<RetryOptions> },
+): Promise<Response> {
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= options.retry.attempts; attempt += 1) {
+    try {
+      const init = typeof options.init === 'function' ? options.init() : options.init;
+      const response = await fetch(url, init);
+      if (!isTransientStatus(response.status) || attempt === options.retry.attempts) return response;
+    } catch (err) {
+      lastError = err;
+      if (attempt === options.retry.attempts) throw err;
+    }
+    await sleep(options.retry.delaysMs[Math.min(attempt - 1, options.retry.delaysMs.length - 1)] ?? 250);
+  }
+  throw lastError instanceof Error ? lastError : new Error('Postiz request failed');
+}
+
+function isTransientStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function parsePostizPosts(body: unknown): PostizListedPost[] {

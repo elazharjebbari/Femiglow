@@ -54,6 +54,7 @@ import {
 import {
   buildPostizDraftPayload,
   createPostizDraft,
+  extractPostizPostId,
   listPostizIntegrations,
   parsePostizUploadedMedia,
   uploadPostizMediaFromUrl,
@@ -603,11 +604,6 @@ async function requireDraft(id: string) {
   const draft = await getDraft(id);
   if (!draft) throw new HttpError('not_found', 'Brouillon introuvable');
   return draft;
-}
-
-function extractPostizPostId(body: Record<string, unknown>): string | null {
-  const id = body.id ?? body.postId ?? body.post?.['id' as never];
-  return typeof id === 'string' ? id : null;
 }
 
 function absoluteUrl(url: string): string {

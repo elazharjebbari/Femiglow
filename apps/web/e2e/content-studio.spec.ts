@@ -4,6 +4,8 @@ import { ADMIN_STORAGE_PATH } from './helpers/auth';
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
 test.describe('Content Studio', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/admin/content-studio');
     await page.waitForURL('/admin/content-studio');
@@ -81,6 +83,55 @@ test.describe('Content Studio', () => {
     await page.reload();
     await page.waitForURL('/admin/content-studio');
     await expect(page.locator('li').filter({ hasText: prompt })).toBeVisible();
+  });
+
+  test('génère des brouillons et un visuel IA mock depuis l’UI', async ({ page }) => {
+    const prompt = `codex-ai-generation-${Date.now()} pipeline UI complet`;
+
+    await page.getByLabel('Intention').fill(prompt);
+    await page.getByRole('button', { name: /Enregistrer l'idée/i }).click();
+
+    const ideaItem = page.locator('li').filter({ hasText: prompt }).first();
+    await expect(ideaItem).toBeVisible({ timeout: 10_000 });
+
+    const generationResponsePromise = page.waitForResponse((response) =>
+      response.url().includes('/api/admin/content-studio/ideas/') &&
+      response.url().endsWith('/generate') &&
+      response.request().method() === 'POST',
+    );
+    await ideaItem.getByRole('button', { name: /Générer 3 propositions/i }).click();
+    const generationResponse = await generationResponsePromise;
+    expect(generationResponse.status()).toBe(200);
+    const generationBody = (await generationResponse.json()) as {
+      drafts?: Array<{ id: string; variantLabel: string }>;
+    };
+    expect(generationBody.drafts).toHaveLength(3);
+    await expect(page.getByText('Brouillons générés et scorés.')).toBeVisible({ timeout: 10_000 });
+
+    const firstDraft = generationBody.drafts?.[0];
+    expect(firstDraft?.id).toBeTruthy();
+    await expect(
+      page.getByRole('button', { name: new RegExp(firstDraft!.variantLabel, 'i') }).first(),
+    ).toBeVisible();
+
+    const visualResponsePromise = page.waitForResponse((response) =>
+      response
+        .url()
+        .includes(`/api/admin/content-studio/drafts/${firstDraft!.id}/generate-visual`) &&
+      response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: /Générer le visuel/i }).click();
+    const visualResponse = await visualResponsePromise;
+    expect(visualResponse.status()).toBe(200);
+    const visualBody = (await visualResponse.json()) as {
+      media?: { id?: string; compartment?: string; previewUrl?: string | null };
+    };
+    expect(visualBody.media?.id).toBeTruthy();
+    expect(visualBody.media?.compartment).toBe('ai_generated');
+    expect(visualBody.media?.previewUrl).toBeTruthy();
+    await expect(page.getByText('Visuel IA généré, optimisé et sélectionné.')).toBeVisible({
+      timeout: 20_000,
+    });
   });
 
   // --- Calendar tab ---

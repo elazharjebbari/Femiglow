@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPostizDraftPayload, parsePostizUploadedMedia } from './postiz';
+import { buildPostizDraftPayload, extractPostizPostId, parsePostizUploadedMedia } from './postiz';
 
 function firstPost<T>(posts: T[]): T {
   const post = posts[0];
@@ -67,7 +67,7 @@ describe('content studio postiz payload', () => {
     });
     const post = firstPost(payload.posts as Array<{ value: unknown[] }>);
     const value = post.value[0] as Record<string, unknown>;
-    expect(value.image).toBeUndefined();
+    expect(value.image).toEqual([]);
     expect(value.content).toBe('Caption sans image');
   });
 
@@ -150,5 +150,24 @@ describe('content studio parsePostizUploadedMedia', () => {
       thumbnail: null,
       alt: null,
     });
+  });
+});
+
+
+describe('content studio extractPostizPostId', () => {
+  it('extrait un id direct', () => {
+    expect(extractPostizPostId({ id: 'cp_1' })).toBe('cp_1');
+  });
+
+  it('extrait un id imbriqué dans post', () => {
+    expect(extractPostizPostId({ post: { id: 'cp_nested' } })).toBe('cp_nested');
+  });
+
+  it('extrait un id depuis data.posts', () => {
+    expect(extractPostizPostId({ data: { posts: [{ id: 'cp_from_array' }] } })).toBe('cp_from_array');
+  });
+
+  it('retourne null sans id exploitable', () => {
+    expect(extractPostizPostId({ ok: true, data: { posts: [{ id: '' }] } })).toBeNull();
   });
 });

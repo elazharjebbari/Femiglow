@@ -15,6 +15,10 @@ describe('content studio state machine', () => {
     expect(canTransition('idea', 'brief')).toBe(true);
   });
 
+  it('autorise idea vers generated pour la generation brief + drafts en une action', () => {
+    expect(canTransition('idea', 'generated')).toBe(true);
+  });
+
   it('autorise idea vers archived', () => {
     expect(canTransition('idea', 'archived')).toBe(true);
   });
