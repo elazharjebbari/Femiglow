@@ -1,3 +1,4 @@
+import { InciTooltip } from './InciTooltip';
 import { resolveAccentHex } from '@/lib/composition/copy';
 import { sortByConcentrationDesc } from '@/lib/kit/composition/sort';
 import type {
@@ -64,7 +65,16 @@ export function IngredientsTable(props: IngredientsTableProps): JSX.Element {
               <th scope="row" className="p-3 text-left font-medium">
                 {ing.name}
               </th>
-              <td className="p-3 text-encre/70">{ing.inci}</td>
+              <td className="p-3 text-encre/70">
+                {ing.inci}
+                {ing.inciDefinition ? (
+                  <InciTooltip
+                    inciTerm={ing.inci}
+                    definition={ing.inciDefinition}
+                    subProductId={subProductId}
+                  />
+                ) : null}
+              </td>
               <td className="p-3">{ing.function}</td>
               <td className="p-3">{ing.origin}</td>
               <td

@@ -8,10 +8,10 @@
  *  - INCI (petit, gris encre/55)
  *  - Fonction · Origine (corps, encre/75)
  *
- * Le tooltip INCI sera intégré en Phase 3 (`InciTooltip`). Cette card
- * affiche déjà l'icône ⓘ comme placeholder visuel — non interactif tant
- * que `InciTooltip` n'est pas branché.
+ * Le bouton ⓘ à côté du nom INCI ouvre `InciTooltip` (Phase 3) si
+ * l'ingredient porte une `inciDefinition` (Phase 1).
  */
+import { InciTooltip } from './InciTooltip';
 import { resolveAccentHex } from '@/lib/composition/copy';
 import type { IngredientDetailed, SubProductAccentColor } from '@/lib/schemas';
 
@@ -49,7 +49,16 @@ export function IngredientCard({
           <p className="text-base text-encre/40">—</p>
         )}
       </div>
-      <p className="mt-1 text-xs text-encre/55 font-body">{ingredient.inci}</p>
+      <p className="mt-1 text-xs text-encre/55 font-body">
+        {ingredient.inci}
+        {ingredient.inciDefinition ? (
+          <InciTooltip
+            inciTerm={ingredient.inci}
+            definition={ingredient.inciDefinition}
+            subProductId={subProductId}
+          />
+        ) : null}
+      </p>
       <p className="mt-2 text-sm text-encre/75 font-body">
         {ingredient.function}
         <span className="mx-2 text-encre/30" aria-hidden="true">
