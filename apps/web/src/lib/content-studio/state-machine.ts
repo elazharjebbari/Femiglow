@@ -6,7 +6,7 @@ const ALLOWED: Record<ContentStatus, ContentStatus[]> = {
   brief: ['generated', 'rejected', 'archived'],
   generated: ['needs_review', 'rejected', 'archived'],
   needs_review: ['approved', 'generated', 'rejected', 'archived'],
-  approved: ['scheduled', 'archived'],
+  approved: ['scheduled', 'published', 'failed', 'archived'],
   scheduled: ['published', 'failed', 'cancelled', 'approved'],
   published: ['measured', 'archived'],
   failed: ['scheduled', 'archived'],

@@ -1,20 +1,25 @@
-# Audit général — Content Studio (AI generation + Postiz)
+# Audit général — Content Studio (AI generation + Postiz + Publication directe)
 
-Date : 2026-05-20
+Date : 2026-05-20 (mise à jour après commit `f4e6506`)
 Environnement : staging `/var/www/femiglow-staging`
-Branche : `master` (à jour avec `origin/master`)
+Branche : `master`
 Auteur : Codex (audit synthétique)
 
 ## 0. Résumé exécutif
 
 Le module **Content Studio** est un studio IA intégré à `apps/web` (Next.js App Router) qui orchestre :
-**idée → brief → 3 brouillons IA → revue marque → approbation humaine → brouillon Postiz → publication → mesure**.
+**idée → brief → 3 brouillons IA → revue marque → approbation humaine → publication (Postiz ou directe) → mesure**.
 
-À ce jour, l'ensemble du pipeline est **fonctionnel en staging** en mode mock/fallback, et a été **validé en réel** sur OpenAI texte + image et sur création de brouillon Postiz (sans publication automatique) lors des passes du 2026-05-18.
+**Évolution majeure 2026-05-20** : Le commit `f4e6506` ajoute un **second chemin de publication** parallèle à Postiz : un module `social-publishing` qui fait de Femiglow la **source de vérité** du cycle complet (génération → validation → publication → audit), avec une architecture multi-adapter (`dry_run`, `meta_graph`, `postiz`). Seul l'adapter `dry_run` est implémenté à ce jour ; il sert de base testable et de simulateur d'erreurs avant les vrais providers. Voir **section 12**.
 
-**Maturité globale** : *prototype avancé, en cours de hardening avant production.* L'architecture est en place, la couverture de tests est respectable (~256 cas unit + 1 spec E2E Playwright), mais plusieurs zones nécessitent encore du travail : observabilité UI des runs IA, comparaison de variantes, retry contrôlé depuis l'admin, et durcissement systemd.
+À ce jour, l'ensemble du pipeline est **fonctionnel en staging** :
+- Pipeline IA (mock/fallback + réel OpenAI) — validé 2026-05-18.
+- Publication via Postiz (création de drafts) — validée 2026-05-18 et 2026-05-19 (hardening).
+- **Publication directe via `social-publishing` en mode `dry_run`** — validée 2026-05-20 (commit `f4e6506`, 9 fichiers de tests, 33 tests passés, Playwright 2 passés, smoke OK).
 
-**État actuel du working tree** : 6 fichiers modifiés non-commités correspondant à la phase 1 et 2 du *plan-action-hardening-ai-generation-postiz* (extraction d'ID Postiz centralisée + retry réseau borné + `image:[]` pour drafts texte seul + E2E pipeline UI complet).
+**Maturité globale** : *prototype avancé, en cours d'extension fonctionnelle (publication directe) ET de hardening avant production réelle (Meta/Postiz).* L'architecture est en place et **6 nouvelles tables** ont été ajoutées via la migration `0062_social_publishing`. La couverture de tests est conséquente (~289 cas unit + 20 Playwright après commit), mais les adapters `meta_graph` et `postiz` réels restent à câbler.
+
+**État actuel du working tree** : propre (commit `f4e6506` créé, validé et propre selon le rapport utilisateur).
 
 ---
 
@@ -452,6 +457,253 @@ Trois grandes voies possibles, par ordre croissant d'ambition :
 - `apps/web/src/lib/content-studio/state-machine.ts` — transitions
 - `apps/web/src/lib/content-studio/brand-rules.ts` — scoring
 - `apps/web/src/lib/db/schema-content-studio.ts` — schéma DB
+- `apps/web/src/lib/social-publishing/admin-service.ts` — orchestration publication directe
+- `apps/web/src/lib/social-publishing/contracts.ts` — contrats multi-provider
+- `apps/web/src/lib/social-publishing/adapters/dry-run.ts` — adapter de référence
+- `apps/web/src/lib/db/schema-social-publishing.ts` — 6 nouvelles tables
 - `docs/ai-content-studio/30-architecture/architecture.md` — architecture cible
-- `docs/codex/plan-action-hardening-ai-generation-postiz.md` — plan en cours
+- `docs/ai-content-service/plan-publication-directe.md` — plan publication directe
+- `docs/ai-content-service/runbook-publication-directe.md` — runbook
+- `docs/codex/plan-action-hardening-ai-generation-postiz.md` — plan hardening
 - `docs/codex/ai-generation-tests-et-ameliorations-2026-05-18.md` — résultats tests réels
+
+---
+
+## 12. Mise à jour 2026-05-20 — Module `social-publishing` (commit `f4e6506`)
+
+Le commit `f4e6506` introduit un second pipeline de publication, parallèle à Postiz, qui transforme l'architecture du Content Studio : Femiglow devient la **source de vérité** du cycle complet et Postiz redevient un provider parmi d'autres au lieu d'être le point d'entrée unique.
+
+### 12.1 Vue d'ensemble du changement
+
+**48 fichiers modifiés, +5227/-23 lignes**, dont :
+- 1 migration SQL `0062_social_publishing` (110 lignes) appliquée en staging.
+- 1 nouveau schéma Drizzle `schema-social-publishing.ts` (158 lignes, **6 tables**).
+- 1 nouveau module domaine `lib/social-publishing/` (~1700 lignes : contracts, repository, service, admin-service, state-machine, retry, errors, dry-run adapter).
+- 9 nouvelles routes API admin (`/api/admin/social/*` et `/api/admin/content-studio/posts/[id]/publish-*` + `/publish-jobs/*`).
+- 1 nouveau composant UI `SocialPublishingPanel.tsx` (363 lignes) intégré dans `ContentStudioClient`.
+- 1 nouveau spec Playwright `content-studio-social-publishing.spec.ts` (204 lignes).
+- 3 nouveaux docs : `audit-worktree-publication-directe.md`, `plan-publication-directe.md` (295 l.), `runbook-publication-directe.md` (726 l.).
+
+### 12.2 Principe architectural
+
+> *Tout le travail se fait dans Femiglow. Aucune logique de publication directe ne doit être dispersée. Les secrets sociaux ne doivent jamais être exposés au frontend. La publication est idempotente. Postiz reste un adaptateur/fallback. Le `dry_run` est obligatoire avant tout test réel Meta/Postiz.*
+> — `docs/ai-content-service/plan-publication-directe.md`
+
+**3 providers prévus** (`SOCIAL_PROVIDER_IDS`) :
+- `dry_run` — **implémenté** : simule succès + 9 codes d'erreur (`token_expired`, `permission_denied`, `media_not_public`, `provider_rate_limited`, `provider_unavailable`, `unsupported_format`, `invalid_request`, `duplicate_external_post`, `unknown_provider_error`). Remote ID déterministe basé sur idempotency key.
+- `meta_graph` — **non implémenté** : adapter Meta Graph API (Instagram/Facebook).
+- `postiz` — **non implémenté** : adapter qui réutilisera `lib/content-studio/postiz.ts` comme fallback.
+
+### 12.3 Modèle de données (migration `0062_social_publishing`)
+
+**6 nouvelles tables Postgres** :
+
+| Table | Rôle | Contraintes notables |
+|---|---|---|
+| `social_account` | Compte connecté (provider, platform, remoteId, name, status, capabilities JSON) | UNIQUE `(provider, remote_id)` |
+| `social_credential` | Tokens chiffrés (secret_ref, scopes, expires_at, rotated_at) | FK cascade ← account |
+| `social_publish_job` | Job de publication (post_id, account_id, status, idempotency_key, content JSON, scheduled_at, locked_at, attempt_count, last_error) | UNIQUE `idempotency_key`, FK post cascade, FK account restrict |
+| `social_publish_attempt` | Chaque tentative (attempt_number, request/response/error JSON, duration_ms) | FK cascade ← job |
+| `social_publication` | Résultat persisté (remote_id, permalink, published_at, metadata) | UNIQUE `(job_id)`, UNIQUE `(provider, remote_id)` |
+| `social_publish_event` | Timeline opérationnelle/audit (type, actor, message, metadata) | FK cascade ← job |
+
+**Indexes** : 13 au total, dont `social_publish_job_status_scheduled_idx` qui prépare un futur worker de scheduling.
+
+**Vérifications de cohérence** :
+- Provider/platform/format/status sont des CHECK constraints au niveau SQL (pas que enum Drizzle).
+- `social_publish_job_idempotency_unique` garantit qu'un même idempotency key ne produit qu'un job.
+- `social_publication_provider_remote_unique` garantit qu'un même remote_id provider ne peut pas être enregistré deux fois (double-publish protection).
+
+### 12.4 State machine du job de publication
+
+```
+draft → approved, cancelled
+approved → queued, cancelled
+queued → publishing, cancelled, failed
+publishing → published, failed
+published = terminal
+failed → queued (retry), cancelled
+cancelled = terminal
+```
+
+Implémenté dans `lib/social-publishing/state-machine.ts:4-12`. Différent et **plus simple** que le state machine `content-studio` (12 états), car focalisé sur le job de publication uniquement. `nextRetryStatus()` impose que seuls les jobs `failed` peuvent être ré-enqueués.
+
+### 12.5 Contrats et erreurs normalisées
+
+Source : `lib/social-publishing/contracts.ts` et `errors.ts`.
+
+**Types publics** :
+- `SocialAccount`, `SocialPublishingCapability` (max caption, mediaRequired, supportsScheduling).
+- `SocialPublishContent` (sourcePostId, platform, format, caption, media[], scheduledAt, tags, metadata).
+- `SocialPublishRequest` / `SocialPublishResult` (success avec response provider | failure avec error normalisée).
+- `SocialPublishingAdapter` interface : `listCapabilities()` + `publish()`.
+
+**9 codes d'erreur normalisés** (`SOCIAL_PUBLISH_ERROR_CODES`) avec flag `retryable` : permet aux clients de l'API de distinguer les erreurs transitoires (rate limit, provider down) des erreurs définitives (permission, format).
+
+**Redaction** : `redactProviderPayload()` (errors.ts) supprime les tokens sensibles avant persistance — important pour la conformité (les `social_publish_attempt.response_json` peuvent contenir des payloads providers).
+
+### 12.6 Adapter `dry_run` (`adapters/dry-run.ts`)
+
+**Capabilities déclarées** :
+- Instagram **post** + **carousel** : media required, caption max 2200, scheduling supporté.
+- Facebook **post** : media optionnel, caption max 63206, scheduling supporté.
+
+**Validation pré-publication** :
+- Idempotency key non vide.
+- Account `provider=dry_run` + `status=active`.
+- Format supporté pour la platform.
+- Media HTTPS si requis.
+- Caption ≤ maxCaptionLength.
+
+**Simulation contrôlée d'erreurs** : si `request.content.metadata.dryRunFailureCode` est présent, l'adapter throw un `SocialPublishingError` avec ce code. Cela permet aux tests (et au futur runbook) de simuler chaque mode de défaillance sans dépendance externe.
+
+**Remote ID déterministe** : `dry_<sha256(idempotencyKey).slice(0,18)>` — garantit qu'un retry avec la même clé produit le même ID (cohérent avec l'unique `(provider, remote_id)`).
+
+### 12.7 Orchestration `admin-service.ts`
+
+Le fichier `lib/social-publishing/admin-service.ts` (382 lignes) orchestre 6 opérations :
+
+| Fonction | Rôle | Idempotence |
+|---|---|---|
+| `syncDryRunSocialAccounts()` | Upsert 2 comptes (IG + FB) dry-run | upsert par `(provider, remote_id)` |
+| `listAdminSocialAccounts()` | Liste comptes, auto-sync si vide | — |
+| `getPostPublishability({postId, accountId?})` | Construit `content` depuis draft + asset, retourne `{publishable, warnings, errors}` | — |
+| `publishContentPostNow()` | Vérifie publishability → crée job `queued` → `executeDryRunJob()` | par `idempotencyKey` |
+| `scheduleContentPost({scheduledAt})` | Crée job `queued` avec scheduledAt + met à jour `content_post.status=scheduled` | par `idempotencyKey` |
+| `retryPublishJob({jobId})` | `failed → queued → publishing → published\|failed` | conserve le même `idempotencyKey` |
+| `cancelPublishJob({jobId})` | Transition vers `cancelled` (state machine) | — |
+
+**Pipeline `executeDryRunJob()` (ligne 257-313)** :
+1. Vérifie job existe et n'est pas déjà `published`.
+2. `assertSocialPublishJobTransition(status → 'publishing')`.
+3. `updatePublishJobStatus({status: 'publishing', lockedAt: now})`.
+4. Appelle l'adapter `publishWithAdapter()` (mesure `durationMs`).
+5. `recordPublishAttempt()` avec request/response/error/duration.
+6. Si succès : `createPublication()` + `updatePostPlanning(status='published')` + `updatePublishJobStatus(status='published')`.
+7. Si échec : `updatePostPlanning(status='failed')` + `updatePublishJobStatus(status='failed', lastError)`.
+
+**Construction du content (`buildSocialContent()` ligne 341-366)** :
+- Récupère le draft et son `primary asset` via `getPrimaryAsset()`.
+- Résout l'URL publique du media via `pickPublicMediaUrl()` (préfère webp/jpeg variants, ignore les statuts ≠ ready/passthrough).
+- Convertit URL relative → absolue via `NEXT_PUBLIC_SITE_URL`.
+- Nettoie les hashtags (strip `#`).
+- Marque `metadata.dryRun=true` et `metadata.contentStudioDraftId` pour audit.
+
+### 12.8 API admin ajoutées (9 routes)
+
+| Route | Méthode | Rôle |
+|---|---|---|
+| `/api/admin/social/accounts` | `GET` | Liste comptes (auto-sync dry-run si vide) |
+| `/api/admin/social/accounts/sync` | `POST` | Force re-sync dry-run |
+| `/api/admin/content-studio/posts/[id]/publishability` | `GET` | Vérifie publishable + warnings + errors |
+| `/api/admin/content-studio/posts/[id]/publish-now` | `POST` | Publication immédiate |
+| `/api/admin/content-studio/posts/[id]/schedule` | `POST` | Programmation (scheduledAt) |
+| `/api/admin/content-studio/publish-jobs` | `GET` | Liste jobs (filtres status/post/account) |
+| `/api/admin/content-studio/publish-jobs/[id]` | `GET` | Détail + events + publications |
+| `/api/admin/content-studio/publish-jobs/[id]/retry` | `POST` | Re-enqueue failed |
+| `/api/admin/content-studio/publish-jobs/[id]/cancel` | `POST` | Annule (state machine) |
+
+Toutes les routes passent par `requireAdminApi()` + `formatErrorResponse()` (pattern Content Studio standard).
+
+### 12.9 UI — `SocialPublishingPanel.tsx`
+
+Composant intégré dans `ContentStudioClient.tsx` (avant UTM et learning notes), 363 lignes. Permet à l'admin de :
+- Synchroniser les comptes sociaux dry-run.
+- Inspecter la publishability (warnings + errors) d'un post.
+- **Publier maintenant** (avec confirmation implicite via état UI).
+- **Programmer** une publication future.
+- Voir l'historique des jobs récents.
+- *Pas encore en UI* : retry/cancel depuis le panneau (les routes existent mais ne sont pas exposées dans cette version du composant — à vérifier dans le composant).
+
+### 12.10 Tests et validations (validation staging exécutée)
+
+D'après le message de commit, **validations passées en staging** :
+- `pnpm --dir apps/web db:validate` ✅
+- `pnpm --dir apps/web db:migrate-safe:plan` → Applied 65, Pending 0 ✅
+- `pnpm --dir apps/web db:migrate-safe` → applied `0062_social_publishing` ✅
+- DB table checks (5 tables vérifiées) ✅
+- **Vitest ciblé** : 9 fichiers, **33 tests passés** ✅
+- `typecheck` ✅
+- `build` ✅
+- `chown .next` + `systemctl restart femiglow-staging.service` ✅
+- Smoke `/admin/content-studio` et `/api/admin/social/accounts` ✅
+- **Playwright** contre `http://127.0.0.1:8012` → **2 tests passés** ✅
+
+**Couverture tests ajoutée** (9 fichiers) :
+- `lib/social-publishing/repository.test.ts` (167 l.)
+- `lib/social-publishing/service.test.ts` (42 l.)
+- `lib/social-publishing/errors.test.ts` (23 l.)
+- `lib/social-publishing/retry.test.ts` (37 l.)
+- `lib/social-publishing/state-machine.test.ts` (32 l.)
+- `lib/social-publishing/adapters/dry-run.test.ts` (62 l.)
+- `app/api/admin/content-studio/posts/[id]/publish-now/route.test.ts` (175 l.)
+- `components/admin/content-studio/SocialPublishingPanel.test.tsx` (174 l.)
+- `test/msw/social-publishing-handlers.test.ts` (65 l.) + handlers (96 l.)
+
+**E2E** : `e2e/content-studio-social-publishing.spec.ts` (204 l.) couvre le parcours admin authentifié dry-run.
+
+### 12.11 Bug fix mentionné : `upsertSocialAccount`
+
+Le commit corrige un bug du upsert dry-run : *« le upsert retournait le mauvais ID après conflict handling sur `(provider, remote_id)` ; il retourne maintenant l'ID persisté correct »*. Importance : sans ce fix, deux appels successifs à `syncDryRunSocialAccounts()` pouvaient produire des références d'accounts incohérentes côté UI.
+
+### 12.12 Inventaire mis à jour (delta)
+
+| Métrique | Avant `f4e6506` | Après `f4e6506` |
+|---|---|---|
+| Tables DB Content Studio | 12 | **18** (12 + 6 social-publishing) |
+| Migrations appliquées | 64 | **65** |
+| Routes API admin | 25 | **34** (25 + 9 social) |
+| Modules domaine | 1 (`content-studio`) | **2** (`content-studio` + `social-publishing`) |
+| State machines | 1 (12 états) | **2** (12 états + 7 états job) |
+| Tests vitest content-studio + social | ~256 | **~289** (256 + 33) |
+| Specs Playwright | 1 spec (18 tests) | **2 specs** (18 + 2 = ~20 tests) |
+| Composants UI admin content-studio | 31 | **32** (+ `SocialPublishingPanel`) |
+
+### 12.13 État de complétude par rapport au plan `plan-publication-directe.md`
+
+| Étape du plan | Statut |
+|---|---|
+| Étape 1 — Audit worktree | ✅ `audit-worktree-publication-directe.md` |
+| Étape 2 — Contrats métier | ✅ `contracts.ts` + tests |
+| Étape 3 — Data model | ✅ migration + repository + tests |
+| Étape 4 — Adapter `dry_run` | ✅ implémenté + simule 9 codes erreur |
+| Étape 5 — Service & state machine | ✅ |
+| Étape 6 — Routes admin | ✅ 9 routes |
+| Étape 7 — UI Content Studio | ✅ panneau intégré |
+| Étape 8 — Tests vitest + MSW + Playwright | ✅ 33 tests + 2 Playwright |
+| Étape 9 — Adapter Postiz (fallback) | ❌ pas encore |
+| Étape 10 — Adapter Meta Graph (réel) | ❌ pas encore |
+| Étape 11 — Worker de scheduling | ❌ pas encore (table prête, pas de poller) |
+| Étape 12 — Gestion credentials (chiffrement) | ❌ pas encore (table `social_credential` créée, jamais écrite) |
+| Étape 13 — Webhooks providers (statut publication) | ❌ pas encore |
+| Étape 14 — Test réel Meta/Postiz | ❌ hors scope dry-run |
+
+### 12.14 Risques nouveaux et zones d'attention
+
+| # | Risque / Constat | Sévérité |
+|---|---|---|
+| N1 | **Deux pipelines de publication en parallèle** (`content_postiz_delivery` côté content-studio + `social_publish_job` côté social-publishing) — risque de divergence d'état si on ne décide pas lequel est canonique | 🟡 moyen |
+| N2 | `social_publish_job.status_scheduled_idx` prépare un worker, mais **aucun worker de scheduling n'existe** — un job `queued` avec `scheduledAt` ne sera jamais pické automatiquement | 🟡 moyen |
+| N3 | **Adapter `meta_graph` et `postiz` non implémentés** : aujourd'hui un job avec `provider != dry_run` ne peut pas s'exécuter (le code `executeDryRunJob` hardcode `dryRunAdapter`) | 🟡 moyen (limitation connue) |
+| N4 | `social_credential.secret_ref` est un texte non chiffré — la table est créée mais **pas de mécanisme de chiffrement** (KMS, vault) en place | 🔴 critique avant prod |
+| N5 | `executeDryRunJob` met à jour `content_post.status='failed'` quand le publish échoue (`admin-service.ts:311`) — mais le `content-studio` state machine peut ne pas autoriser `scheduled → failed` selon la version actuelle | 🟡 moyen (à vérifier après commit) |
+| N6 | `defaultIdempotencyKey()` utilise `${postId}:${accountId}:${suffix}` — pour `publish-now` le suffix est littéral `"now"`. Deux clics consécutifs renvoient donc le **même** job (ce qui est correct), mais une retry après échec via `publish-now` (vs `retryPublishJob`) renvoie le job existant échoué sans le ré-exécuter | 🟢 faible — comportement attendu par `resultForExistingJob()` |
+| N7 | UI : le panneau ne montre pas (encore) retry/cancel — à confirmer dans le composant ; les routes existent | 🟢 faible |
+| N8 | Pas de **rate limiting** par account au niveau du social-publishing — un retry boucle pourrait spammer un provider en prod | 🟡 moyen (avant Meta) |
+| N9 | `executeDryRunJob` impose `assertSocialPublishJobTransition(status → 'publishing')` après recharge — mais ne tente pas de **lock optimiste** : deux workers concurrents peuvent passer le check en même temps | 🟡 moyen (avant queue worker) |
+
+### 12.15 Recommandations prioritaires post-commit
+
+**P1 — Décision architecturale à faire** : Postiz reste-t-il un chemin parallèle (`content_postiz_delivery`) ou devient-il un **adapter** parmi 3 dans `social-publishing` ? Sans décision, on entretient deux modèles d'état pour la publication. Recommandation : faire de Postiz un adapter dans `social-publishing/adapters/postiz.ts` et **déprécier** progressivement les routes `posts/[id]/postiz-draft` et la table `content_postiz_delivery`.
+
+**P2 — Worker de scheduling** : implémenter un cron qui pick `social_publish_job.status='queued' AND scheduled_at <= now()` avec lock optimiste (`UPDATE ... WHERE locked_at IS NULL RETURNING`). Sans ça, `scheduleContentPost()` crée un job qui ne s'exécutera jamais automatiquement.
+
+**P3 — Chiffrement credentials** : avant le moindre token Meta réel, implémenter un wrapper KMS/vault autour de `social_credential.secret_ref`. La table existe mais n'est pas utilisable en l'état pour de la production.
+
+**P4 — Adapter `meta_graph`** : implémenter le vrai adapter Instagram Graph API + Facebook Pages API, en suivant les patterns dry-run (validation pré-publication, mapping d'erreurs vers les 9 codes normalisés).
+
+**P5 — Adapter `postiz` consolidé** : wrapper `lib/content-studio/postiz.ts` (déjà robuste avec retry + extractId) dans un `social-publishing/adapters/postiz.ts` qui respecte l'interface `SocialPublishingAdapter`.
+
+**P6 — UI retry/cancel** : exposer dans `SocialPublishingPanel` les actions retry et cancel sur les jobs récents (les routes existent).
+
+**P7 — Cohérence statut content_post** : aligner les transitions `content_post.status` (côté content-studio state machine) avec les transitions de `social_publish_job.status` (côté social-publishing). Aujourd'hui `admin-service.ts:311` met `content_post.status='failed'` sans passer par `assertTransition()` du state machine content-studio — vérifier l'absence d'effet de bord.

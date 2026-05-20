@@ -31,6 +31,18 @@ describe('content studio state machine', () => {
     expect(canTransition('approved', 'archived')).toBe(true);
   });
 
+  it('autorise approved vers published (publish-now direct)', () => {
+    expect(canTransition('approved', 'published')).toBe(true);
+  });
+
+  it('autorise approved vers failed (publish-now en echec)', () => {
+    expect(canTransition('approved', 'failed')).toBe(true);
+  });
+
+  it('interdit approved vers measured directement (saut d etape)', () => {
+    expect(canTransition('approved', 'measured')).toBe(false);
+  });
+
   it('autorise scheduled vers published', () => {
     expect(canTransition('scheduled', 'published')).toBe(true);
   });

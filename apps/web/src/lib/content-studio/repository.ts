@@ -33,6 +33,7 @@ import type {
   ContentPostizDelivery,
   ContentStatus,
 } from './types';
+import { assertTransition } from './state-machine';
 
 interface Store {
   contentCampaigns: Map<string, ContentCampaign>;
@@ -695,6 +696,9 @@ export async function updatePostPlanning(input: {
 }): Promise<ContentPost | null> {
   const existing = await getPost(input.postId);
   if (!existing) return null;
+  if (input.status && input.status !== existing.status) {
+    assertTransition(existing.status, input.status);
+  }
   const updated: ContentPost = {
     ...existing,
     scheduledAt: input.scheduledAt,
