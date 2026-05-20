@@ -298,6 +298,7 @@ export async function generateVisualForDraft(input: {
   await getStorage().put({ key: sourceKey, body: generated.buffer, contentType: generated.mime });
   await enqueueJob({ mediaId: media.id, kind: 'optimize', payload: { sourceKey } });
   await runWorkerOnce();
+  await upsertPrimaryAsset({ draftId: draft.id, mediaId: media.id });
   await insertGenerationRun({
     ideaId: null,
     briefId: draft.briefId,
@@ -390,6 +391,13 @@ export async function approveContentDraft(input: {
   }
   const existing = await getPostForDraft(draft.id);
   if (existing) return existing;
+  const asset = await getPrimaryAsset(draft.id);
+  if (!asset) {
+    throw new HttpError(
+      'invalid_state',
+      'Un visuel doit être associé avant approbation. Générez un visuel ou choisissez un media, puis cliquez « Sauvegarder + relire ».',
+    );
+  }
   const post = await approveDraft({ draftId: draft.id, actorId: input.actorId });
   await logAuditEvent({
     action: 'content_studio.draft.approved',

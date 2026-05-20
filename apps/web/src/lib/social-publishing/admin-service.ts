@@ -191,7 +191,19 @@ export async function getPostPublishability(input: {
     .find((item) => item.platform === content.platform && item.format === content.format);
   if (!capability) errors.push('Le compte social ne supporte pas ce format.');
   if (capability?.mediaRequired && content.media.length === 0) {
-    errors.push('Aucun média n\'est associé au brouillon. Générez d\'abord un visuel via « Générer le visuel ».');
+    const asset = await getPrimaryAsset(draft.id);
+    if (!asset) {
+      errors.push('Aucun média n\'est associé au brouillon. Générez d\'abord un visuel via « Générer le visuel ».');
+    } else {
+      const media = await getMediaWithRelations(asset.mediaId);
+      if (!media || media.deletedAt !== null) {
+        errors.push('Le visuel associé au brouillon est introuvable ou supprimé. Re-générez un visuel.');
+      } else if (media.status !== 'ready' && media.status !== 'passthrough') {
+        errors.push(`Le visuel associé n'est pas encore prêt (statut: ${media.status}). Réessayez dans un instant.`);
+      } else {
+        errors.push('Le visuel associé n\'a pas d\'URL publique exploitable. Re-générez un visuel.');
+      }
+    }
   }
   if (capability?.maxCaptionLength && content.caption.length > capability.maxCaptionLength) {
     errors.push(`La légende dépasse la limite de ${capability.maxCaptionLength} caractères.`);
