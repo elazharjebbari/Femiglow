@@ -1,6 +1,10 @@
 import type { KitPageContent } from '@/lib/schemas';
 import { mockKit } from './product';
 import { mockRituel } from './rituel';
+import {
+  DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL,
+  DEFAULT_KIT_VIDEO_COVER_SVG,
+} from './kit-video-cover';
 
 /**
  * Audit 08/09 — Pack FemiGlow : composition refondue (paste / powder /
@@ -138,6 +142,11 @@ export const mockKitPageContent: KitPageContent = {
   videoSrc: {
     ...mockRituel.videoGestes,
     youtubeUrl: 'https://youtube.com/shorts/N2pDuciP4uQ?si=h9_ROBIt-N7Oq7jb',
+    posterCoverSvg: {
+      source: 'inline' as const,
+      inline: DEFAULT_KIT_VIDEO_COVER_SVG,
+      meta: { ariaLabel: DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL },
+    },
   },
   comparatif: {
     titreVernis: 'Vernis classique',

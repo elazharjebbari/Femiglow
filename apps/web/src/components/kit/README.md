@@ -26,6 +26,22 @@ le playbook Kolenda (`docs/kolenda/FEMIGLOW-KIT-PLAYBOOK.md`) :
 | `VideoIFrameTracker.tsx` | Composant React-only (rend `null`) qui attache la YouTube IFrame API à l'iframe pour émettre `video_progress_25/50/75` + `video_complete`, et propage `currentSeconds` aux composants frères. Graceful degradation si ad-blocker. | Kolenda §4.4 + Analytics |
 | `VideoPostCta.tsx` | Lien éditorial discret « Voir le pack ci-dessous ↓ » sous la transcription, scroll smooth vers `#commander-femiglow`, tracking `video_cta_click`. | Kolenda §4.4 |
 
+### Cover SVG dynamique (extension phases α-δ)
+
+Le poster de la vidéo `/kit` peut désormais être un **SVG inline animé** au lieu d'une image raster. Le champ `posterCoverSvg` du `RituelVideo` accepte 3 modes :
+
+| `source` | Champ porteur | Service rendu côté public |
+|---|---|---|
+| `'inline'` | `inline: string` (SVG markup sanitized) | `<div dangerouslySetInnerHTML>` avec re-sanitization client |
+| `'file'` | `fileMediaId: string` (préfixe `kvc_`) | `<img src="/api/kit-video-cover/<id>">` (cache immutable) |
+| `'url'` | `url: string` (HTTPS only) | `<img src={url} referrerPolicy="no-referrer">` |
+
+Si `posterCoverSvg` est absent → rétrocompat fallback `next/image` sur `posterCustom` ou `poster`. Le voile encre 15 % est désactivé quand un SVG custom est servi (il porte déjà son propre fond).
+
+**Cover par défaut** : `data/mock/kit-video-cover.ts` exporte `DEFAULT_KIT_VIDEO_COVER_SVG` = composition « Le geste révélateur » (Kolenda §4.4) : fond sauge + grain papier + halo champagne qui pulse + main 3/4 + ongle nacré + 3 matières en orbite + 8 particules nacre flottantes + kicker italique.
+
+**Édition admin** : `/admin/kit/video` rend `<CoverSvgEditor>` avec 3 onglets, aperçu live 9:16, badge taille temps réel, sanitization DOMPurify côté serveur ET client (défense en profondeur).
+
 ## Helpers associés
 
 | Module | Rôle |
@@ -34,6 +50,9 @@ le playbook Kolenda (`docs/kolenda/FEMIGLOW-KIT-PLAYBOOK.md`) :
 | `@/lib/video/youtube-url.ts` | `parseYouTubeUrl`, `buildYouTubeEmbedUrl` (mute/captions/enableJsApi). |
 | `@/lib/video/chapters.ts` | `formatChapterTimestamp`, `findActiveChapterIndex`, `formatChapterIndex` — pur compute (testable sans React). |
 | `@/lib/video/iframe-tracker.ts` | `loadYouTubeIframeApi` (idempotent) + `attachVideoTracker` (player + polling 25/50/75 + ENDED). |
+| `@/lib/kit/video/sanitize-svg.ts` | `sanitizeSvgInline(raw)` (DOMPurify serveur + strip défensif `on*`/`javascript:` + plafond 50kB) + `validateSvgUrl(url)` (HEAD HTTPS + content-type whitelist). |
+| `@/lib/kit/video/sanitize-svg-client.ts` | `sanitizeSvgClient(raw)` — re-sanitize au montage `dangerouslySetInnerHTML` (défense en profondeur). |
+| `@/lib/kit/video/cover-files-store.ts` | Store memoryStore des SVG uploadés via `/api/admin/kit/video/cover/upload`. |
 
 ## Conventions
 
@@ -42,9 +61,11 @@ le playbook Kolenda (`docs/kolenda/FEMIGLOW-KIT-PLAYBOOK.md`) :
 - **`accentColor` est optionnel**. Le fallback automatique est `champagne` (`#B8956B`).
 - **`sensation` est optionnel**. Si absent du SubProduct, la `SensationLine` n'est pas rendue.
 - **`contextualImage` est optionnel**. Si absent, `MediaCrossfade` désactive son interaction.
-- **Vidéo — tous les champs étendus sont optionnels** (`chapters`, `posterCustom`, `provenance`, `durationDisplay`, `accentColor`). Un `RituelVideo` sans aucun champ reste rendu (timeline et badges juste invisibles).
+- **Vidéo — tous les champs étendus sont optionnels** (`chapters`, `posterCustom`, `provenance`, `durationDisplay`, `accentColor`, `posterCoverSvg`). Un `RituelVideo` sans aucun champ reste rendu (timeline et badges juste invisibles).
 - **`VideoIFrameTracker` mount conditionnel** : ne monter QUE quand `played === true`, sinon l'iframe n'existe pas et le tracker no-op.
 - **L'iframe YouTube DOIT contenir `enablejsapi=1`** pour que `VideoIFrameTracker` puisse l'attacher (`YouTubeEmbed` le passe quand `enableJsApi` est `true`, ce que `VideoPosterCover` active automatiquement à `played === true`).
+- **Cover SVG inline maison** : viewBox obligatoire (sinon refus), pas de `<script>`, pas d'attribut `style="…"` (DOMPurify FORBID), pas de `<image href="data:…">` (bypass payload binaire), max 50 kB. Les animations SMIL `<animate>` / `<animateTransform>` sont autorisées.
+- **SVG par défaut sourcing** : pour modifier la cover « Geste révélateur » sans repasser par l'admin, éditer `data/mock/kit-video-cover.ts` puis rebuild. Pour ajouter d'autres templates, créer un autre const exporté et l'utiliser comme valeur initiale de `posterCoverSvg.inline`.
 
 ## Tests
 

@@ -145,6 +145,36 @@ test.describe('/kit vidéo — interactions @video-interaction', () => {
   });
 });
 
+test.describe('/kit vidéo — cover SVG @video-cover', () => {
+  test('cover SVG inline visible au paint initial (default mock)', async ({ page }) => {
+    await page.goto('/kit');
+    const cover = page.getByTestId('video-poster-svg-inline');
+    await expect(cover).toBeVisible({ timeout: 10_000 });
+    // L'aria-label de la cover doit être posé.
+    const ariaLabel = await cover.getAttribute('aria-label');
+    expect(ariaLabel).toMatch(/rituel|geste/i);
+  });
+
+  test('SVG contient les éléments clés (halo, ongle, particules)', async ({ page }) => {
+    await page.goto('/kit');
+    const cover = page.getByTestId('video-poster-svg-inline');
+    const html = (await cover.innerHTML()) ?? '';
+    // Halo champagne, ongle nacré, particules animées présents
+    expect(html).toContain('radialGradient');
+    expect(html).toContain('animate');
+  });
+
+  test('voile encre 15 % désactivé quand cover SVG servi', async ({ page }) => {
+    await page.goto('/kit');
+    const cover = page.getByTestId('video-poster-svg-inline');
+    await expect(cover).toBeVisible();
+    // Le sibling .bg-encre/15 ne doit pas être présent dans le bouton.
+    const button = page.getByTestId('video-poster-cover');
+    const html = (await button.innerHTML()) ?? '';
+    expect(html).not.toContain('bg-encre/15');
+  });
+});
+
 test.describe('/kit vidéo — a11y @video-a11y', () => {
   test('0 violation axe sérieuse/critique sur la section vidéo', async ({ page }) => {
     await page.goto('/kit');
