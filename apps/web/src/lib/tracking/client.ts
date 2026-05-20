@@ -30,6 +30,7 @@ export interface EmitOptions {
    * formulaire » (ex. checkout_intent).
    */
   dedupKey?: string;
+  /**
    * Identité en clair (email, phone, nom) pour les pixels client-side
    * (Snap snaptr, Meta fbq Advanced Matching). Le SDK du pixel
    * normalise et hashe lui-même. N'EST PAS envoyé à /api/track.
