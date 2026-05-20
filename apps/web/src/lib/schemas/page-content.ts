@@ -231,9 +231,28 @@ export const kitComparatifSchema = z.object({
 });
 export type KitComparatif = z.infer<typeof kitComparatifSchema>;
 
+/**
+ * Vue éclatée du Kit FemiGlow — Kolenda §4.3.
+ *
+ * Image annotée des 3 sous-produits étalés à plat avec lignes fines
+ * vers chaque label. Format isométrique doux, fond sable. Rendue en
+ * tête de la section « La composition », avant la grille 3 cards.
+ *
+ * Optionnel : si absent du CMS / mock, le composant `CompositionReveal`
+ * ne rend pas la `<figure>` (rétrocompat). À fournir par DA pour activer.
+ */
+export const kitExplodedViewSchema = imageSchema;
+export type KitExplodedView = z.infer<typeof kitExplodedViewSchema>;
+
 export const kitPageContentSchema = z.object({
   product: productSchema,
   composition: z.array(subProductSchema).min(3).max(4),
+  /**
+   * Vue éclatée annotée des 3 sous-produits, rendue en tête de la
+   * section « La composition » avant la grille de cards (Kolenda §4.3).
+   * Optionnelle — la section fonctionne sans.
+   */
+  compositionExplodedView: kitExplodedViewSchema.optional(),
   videoSrc: kitVideoSchema,
   comparatif: kitComparatifSchema,
   faq: z.array(faqItemSchema).min(8).max(10),

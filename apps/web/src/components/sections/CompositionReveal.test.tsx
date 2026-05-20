@@ -84,6 +84,26 @@ describe('CompositionReveal — phase 0', () => {
     expect(screen.queryAllByText(/Voir la composition/i).length).toBe(0);
   });
 
+  it('omet la <figure> vue éclatée si `explodedView` absent (rétrocompat)', () => {
+    render(<CompositionReveal items={[makeSub()]} />);
+    expect(document.querySelector('[data-testid="composition-exploded-view"]')).toBeNull();
+  });
+
+  it('rend la <figure> vue éclatée si `explodedView` fourni', () => {
+    const explodedView = {
+      src: '/exploded.jpg',
+      alt: 'Vue éclatée du Kit FemiGlow',
+      width: 1600,
+      height: 900,
+    };
+    render(
+      <CompositionReveal items={[makeSub()]} explodedView={explodedView as never} />,
+    );
+    const fig = document.querySelector('[data-testid="composition-exploded-view"]');
+    expect(fig).not.toBeNull();
+    expect(fig?.tagName).toBe('FIGURE');
+  });
+
   it('wrappe chaque card dans un Reveal avec stagger (delay = index × 120 ms)', () => {
     const items = [
       makeSub({ id: 'a' }),

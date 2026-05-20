@@ -2,10 +2,11 @@ import type { ReactNode } from 'react';
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
+import { Image } from '@/components/ui/Image';
 import { Reveal } from '@/components/patterns/Reveal';
 import { Text } from '@/components/ui/Text';
 import { CompositionCard } from '@/components/kit/CompositionCard';
-import type { SubProduct } from '@/lib/schemas';
+import type { KitExplodedView, SubProduct } from '@/lib/schemas';
 
 interface CompositionRevealProps {
   items: SubProduct[];
@@ -16,12 +17,18 @@ interface CompositionRevealProps {
    * Typiquement fourni par `CompositionRevealBound`.
    */
   mediaSlots?: Record<string, ReactNode>;
+  /**
+   * Vue éclatée annotée du kit, optionnelle. Rendue avant la grille
+   * de cards (Kolenda §4.3 — pédagogie d'ensemble).
+   */
+  explodedView?: KitExplodedView;
 }
 
 export function CompositionReveal({
   items,
   ingredientsAnchor = 'ingredients-details',
   mediaSlots,
+  explodedView,
 }: CompositionRevealProps) {
   const cols =
     items.length >= 4 ? 'lg:grid-cols-4' : items.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2';
@@ -44,6 +51,27 @@ export function CompositionReveal({
             sa place sur la table de chevet, sa place dans la saison.
           </Text>
         </div>
+        {/* Vue éclatée annotée — optionnelle, ne rend rien si absente du CMS.
+            Kolenda §4.3 : « plan d'ensemble » qui prépare la lecture des 3
+            cards. Format paysage, fond sable cohérent avec la section. */}
+        {explodedView ? (
+          <Reveal direction="up" distance={12} duration={0.6}>
+            <figure
+              className="mb-12 lg:mb-16"
+              data-testid="composition-exploded-view"
+            >
+              <Image
+                src={explodedView.src}
+                alt={explodedView.alt}
+                width={explodedView.width}
+                height={explodedView.height}
+                ratio="16:9"
+                sizes="(min-width: 1024px) 70vw, 100vw"
+              />
+            </figure>
+          </Reveal>
+        ) : null}
+
         <ul
           role="list"
           className={`grid grid-cols-1 gap-10 sm:grid-cols-2 ${cols} sm:gap-12`}
