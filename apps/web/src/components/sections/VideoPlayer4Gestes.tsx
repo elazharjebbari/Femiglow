@@ -9,6 +9,7 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { VideoPosterCover } from '@/components/kit/VideoPosterCover';
+import { VideoChaptersFromRituel } from '@/components/kit/VideoChapters';
 import { parseYouTubeUrl } from '@/lib/video/youtube-url';
 
 interface VideoPlayer4GestesProps {
@@ -107,6 +108,8 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
             onPlay={handlePlay}
           />
         </div>
+
+        <VideoChaptersFromRituel video={video} videoId={VIDEO_ID} />
 
         <div className="mt-6 text-center">
           <button
