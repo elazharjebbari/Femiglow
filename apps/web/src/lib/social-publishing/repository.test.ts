@@ -8,8 +8,10 @@ import {
   listPublicationsForPost,
   listPublishEvents,
   listPublishJobs,
+  listScheduledJobsDue,
   listSocialAccounts,
   recordPublishAttempt,
+  tryAcquirePublishJobLock,
   updatePublishJobStatus,
   upsertSocialAccount,
 } from './repository';
@@ -163,5 +165,114 @@ describe('social-publishing repository', () => {
     expect(events.map((event) => event.type)).toEqual(
       expect.arrayContaining(['job.created', 'job.publishing', 'publication.created', 'job.published']),
     );
+  });
+
+  describe('tryAcquirePublishJobLock', () => {
+    async function newQueuedJob(idempotencyKey: string, scheduledAt: Date | null = null) {
+      const account = await upsertSocialAccount({
+        provider: 'dry_run',
+        platform: 'instagram',
+        remoteId: 'ig_lock',
+        name: 'IG lock test',
+      });
+      return createPublishJob({
+        postId: 'cp_lock',
+        accountId: account.id,
+        provider: 'dry_run',
+        platform: 'instagram',
+        format: 'post',
+        idempotencyKey,
+        content,
+        scheduledAt,
+      });
+    }
+
+    it('acquiert un job queued non locké et le passe en publishing', async () => {
+      const job = await newQueuedJob('lock:1');
+      const locked = await tryAcquirePublishJobLock({ jobId: job.id, allowedFromStatuses: ['queued', 'failed'] });
+      expect(locked).not.toBeNull();
+      expect(locked?.status).toBe('publishing');
+      expect(locked?.lockedAt).toBeInstanceOf(Date);
+    });
+
+    it('acquiert un job failed pour un retry', async () => {
+      const job = await newQueuedJob('lock:2');
+      await updatePublishJobStatus({ jobId: job.id, status: 'publishing' });
+      await updatePublishJobStatus({ jobId: job.id, status: 'failed', lockedAt: null });
+      const locked = await tryAcquirePublishJobLock({ jobId: job.id, allowedFromStatuses: ['queued', 'failed'] });
+      expect(locked?.status).toBe('publishing');
+    });
+
+    it('retourne null pour un job deja en publishing', async () => {
+      const job = await newQueuedJob('lock:3');
+      await tryAcquirePublishJobLock({ jobId: job.id, allowedFromStatuses: ['queued', 'failed'] });
+      const second = await tryAcquirePublishJobLock({ jobId: job.id, allowedFromStatuses: ['queued', 'failed'] });
+      expect(second).toBeNull();
+    });
+
+    it('retourne null pour un job avec lockedAt non null meme si status autorise', async () => {
+      const job = await newQueuedJob('lock:4');
+      await updatePublishJobStatus({ jobId: job.id, status: 'failed', lockedAt: new Date() });
+      const locked = await tryAcquirePublishJobLock({ jobId: job.id, allowedFromStatuses: ['queued', 'failed'] });
+      expect(locked).toBeNull();
+    });
+
+    it('retourne null pour un job avec status hors allowedFromStatuses', async () => {
+      const job = await newQueuedJob('lock:5');
+      await updatePublishJobStatus({ jobId: job.id, status: 'cancelled' });
+      const locked = await tryAcquirePublishJobLock({ jobId: job.id, allowedFromStatuses: ['queued', 'failed'] });
+      expect(locked).toBeNull();
+    });
+  });
+
+  describe('listScheduledJobsDue', () => {
+    async function newJob(idempotencyKey: string, scheduledAt: Date | null) {
+      const account = await upsertSocialAccount({
+        provider: 'dry_run',
+        platform: 'instagram',
+        remoteId: 'ig_due',
+        name: 'IG due test',
+      });
+      return createPublishJob({
+        postId: 'cp_due',
+        accountId: account.id,
+        provider: 'dry_run',
+        platform: 'instagram',
+        format: 'post',
+        idempotencyKey,
+        content,
+        scheduledAt,
+      });
+    }
+
+    it('retourne les jobs queued avec scheduled_at <= now', async () => {
+      const past = new Date('2026-05-19T10:00:00Z');
+      const future = new Date('2026-05-22T10:00:00Z');
+      await newJob('due:1', past);
+      await newJob('due:2', future);
+      const due = await listScheduledJobsDue({ now: new Date('2026-05-20T00:00:00Z'), limit: 10 });
+      expect(due.map((j) => j.idempotencyKey)).toEqual(['due:1']);
+    });
+
+    it('ignore les jobs sans scheduled_at (publish-now)', async () => {
+      await newJob('due:3', null);
+      const due = await listScheduledJobsDue({ now: new Date('2026-05-20T00:00:00Z'), limit: 10 });
+      expect(due).toHaveLength(0);
+    });
+
+    it('ignore les jobs deja lockes', async () => {
+      const job = await newJob('due:4', new Date('2026-05-19T10:00:00Z'));
+      await tryAcquirePublishJobLock({ jobId: job.id, allowedFromStatuses: ['queued', 'failed'] });
+      const due = await listScheduledJobsDue({ now: new Date('2026-05-20T00:00:00Z'), limit: 10 });
+      expect(due).toHaveLength(0);
+    });
+
+    it('respecte la limite et l ordre ascendant par scheduled_at', async () => {
+      await newJob('due:a', new Date('2026-05-19T08:00:00Z'));
+      await newJob('due:b', new Date('2026-05-19T05:00:00Z'));
+      await newJob('due:c', new Date('2026-05-19T11:00:00Z'));
+      const due = await listScheduledJobsDue({ now: new Date('2026-05-20T00:00:00Z'), limit: 2 });
+      expect(due.map((j) => j.idempotencyKey)).toEqual(['due:b', 'due:a']);
+    });
   });
 });

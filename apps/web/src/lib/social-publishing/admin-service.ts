@@ -12,11 +12,14 @@ import type {
   SocialAccount,
   SocialFormat,
   SocialPlatform,
+  SocialProviderId,
   SocialPublishContent,
   SocialPublishJob,
   SocialPublishResult,
+  SocialPublishingAdapter,
 } from './contracts';
 import { DryRunSocialPublishingAdapter } from './adapters/dry-run';
+import { PostizSocialPublishingAdapter } from './adapters/postiz';
 import { publishWithAdapter } from './service';
 import { assertSocialPublishJobTransition, nextRetryStatus } from './state-machine';
 import {
@@ -30,11 +33,27 @@ import {
   listPublicationsForPost,
   listSocialAccounts,
   recordPublishAttempt,
+  tryAcquirePublishJobLock,
   updatePublishJobStatus,
   upsertSocialAccount,
 } from './repository';
 
 const dryRunAdapter = new DryRunSocialPublishingAdapter();
+const postizAdapter = new PostizSocialPublishingAdapter();
+
+const adapters: Record<SocialProviderId, SocialPublishingAdapter | null> = {
+  dry_run: dryRunAdapter,
+  postiz: postizAdapter,
+  meta_graph: null,
+};
+
+function adapterFor(provider: SocialProviderId): SocialPublishingAdapter {
+  const adapter = adapters[provider];
+  if (!adapter) {
+    throw new HttpError('invalid_state', `Provider ${provider} non disponible`);
+  }
+  return adapter;
+}
 
 export async function syncDryRunSocialAccounts(): Promise<SocialAccount[]> {
   const instagram = await upsertSocialAccount({
@@ -103,7 +122,7 @@ export async function getPostPublishability(input: {
   if (review?.status === 'blocked') {
     errors.push('Le brouillon est bloqué par la charte de marque.');
   }
-  const capability = dryRunAdapter
+  const capability = adapterFor(account.provider)
     .listCapabilities(account)
     .find((item) => item.platform === content.platform && item.format === content.format);
   if (!capability) errors.push('Le compte social ne supporte pas ce format.');
@@ -155,7 +174,7 @@ export async function publishContentPostNow(input: {
     status: 'queued',
     requestedBy: input.actorId,
   });
-  return executeDryRunJob(job.id, input.actorId);
+  return executeJob({ jobId: job.id, actorId: input.actorId });
 }
 
 export async function scheduleContentPost(input: {
@@ -197,7 +216,7 @@ export async function retryPublishJob(input: { jobId: string; actorId: string | 
   if (!job) throw new HttpError('not_found', 'Job de publication introuvable.');
   const next = nextRetryStatus(job.status);
   await updatePublishJobStatus({ jobId: job.id, status: next, lastError: null });
-  return executeDryRunJob(job.id, input.actorId);
+  return executeJob({ jobId: job.id, actorId: input.actorId });
 }
 
 export async function cancelPublishJob(input: { jobId: string; actorId: string | null }): Promise<{ job: SocialPublishJob }> {
@@ -251,32 +270,51 @@ async function resultForExistingJob(job: SocialPublishJob): Promise<{ job: Socia
       },
     };
   }
-  return executeDryRunJob(job.id, job.requestedBy);
+  return executeJob({ jobId: job.id, actorId: job.requestedBy });
 }
 
-async function executeDryRunJob(jobId: string, actorId: string | null): Promise<{ job: SocialPublishJob; result: SocialPublishResult }> {
-  const job = await getPublishJob(jobId);
-  if (!job) throw new HttpError('not_found', 'Job de publication introuvable.');
-  if (job.status === 'published') {
-    return { job, result: { ok: true, status: 'published', response: { provider: job.provider, platform: job.platform, remoteId: 'already-published', publishedAt: (job.publishedAt ?? new Date()).toISOString() } } };
+export async function executeJob(input: { jobId: string; actorId: string | null }): Promise<{ job: SocialPublishJob; result: SocialPublishResult }> {
+  const existing = await getPublishJob(input.jobId);
+  if (!existing) throw new HttpError('not_found', 'Job de publication introuvable.');
+  if (existing.status === 'published') {
+    return resultForExistingJob(existing);
   }
-  assertSocialPublishJobTransition(job.status, 'publishing');
-  const account = await getSocialAccount(job.accountId);
+  const locked = await tryAcquirePublishJobLock({
+    jobId: input.jobId,
+    allowedFromStatuses: ['queued', 'failed'],
+  });
+  if (!locked) {
+    const current = await getPublishJob(input.jobId);
+    return {
+      job: current ?? existing,
+      result: {
+        ok: false,
+        status: 'failed',
+        error: {
+          code: 'invalid_request',
+          message: 'Job not available for execution (locked or terminal)',
+          retryable: false,
+        },
+      },
+    };
+  }
+  const account = await getSocialAccount(locked.accountId);
   if (!account) throw new HttpError('not_found', 'Compte social introuvable.');
-  const publishing = await updatePublishJobStatus({ jobId: job.id, status: 'publishing', lockedAt: new Date() });
+  const adapter = adapterFor(account.provider);
+  const publishing = locked;
   const startedAt = Date.now();
-  const result = await publishWithAdapter(dryRunAdapter, {
+  const result = await publishWithAdapter(adapter, {
     account,
-    content: job.content,
-    idempotencyKey: job.idempotencyKey,
-    requestedBy: actorId,
+    content: locked.content,
+    idempotencyKey: locked.idempotencyKey,
+    requestedBy: input.actorId,
     now: new Date(),
   });
   await recordPublishAttempt({
-    jobId: job.id,
+    jobId: locked.id,
     provider: account.provider,
     status: result.ok ? 'succeeded' : 'failed',
-    request: { accountId: account.id, content: job.content, idempotencyKey: job.idempotencyKey },
+    request: { accountId: account.id, content: locked.content, idempotencyKey: locked.idempotencyKey },
     response: result.ok ? ((result.response.raw ?? result.response) as unknown as Record<string, unknown>) : {},
     error: result.ok ? null : result.error,
     durationMs: Date.now() - startedAt,
@@ -284,8 +322,8 @@ async function executeDryRunJob(jobId: string, actorId: string | null): Promise<
   if (result.ok) {
     const publishedAt = new Date(result.response.publishedAt);
     await createPublication({
-      jobId: job.id,
-      postId: job.postId,
+      jobId: locked.id,
+      postId: locked.postId,
       accountId: account.id,
       provider: account.provider,
       platform: account.platform,
@@ -294,12 +332,12 @@ async function executeDryRunJob(jobId: string, actorId: string | null): Promise<
       publishedAt,
       metadata: result.response.raw ?? {},
     });
-    await updatePostPlanning({ postId: job.postId, scheduledAt: null, status: 'published' });
-    const updated = await updatePublishJobStatus({ jobId: job.id, status: 'published', publishedAt, lockedAt: null, lastError: null });
-    return { job: updated ?? publishing ?? job, result };
+    await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'published' });
+    const updated = await updatePublishJobStatus({ jobId: locked.id, status: 'published', publishedAt, lockedAt: null, lastError: null });
+    return { job: updated ?? publishing, result };
   }
   const updated = await updatePublishJobStatus({
-    jobId: job.id,
+    jobId: locked.id,
     status: 'failed',
     lockedAt: null,
     lastError: {
@@ -308,8 +346,8 @@ async function executeDryRunJob(jobId: string, actorId: string | null): Promise<
       retryable: result.error.retryable,
     },
   });
-  await updatePostPlanning({ postId: job.postId, scheduledAt: null, status: 'failed' });
-  return { job: updated ?? publishing ?? job, result };
+  await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'failed' });
+  return { job: updated ?? publishing, result };
 }
 
 async function enrichJob(job: SocialPublishJob) {

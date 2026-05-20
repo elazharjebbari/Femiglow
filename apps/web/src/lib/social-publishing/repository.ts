@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte } from 'drizzle-orm';
 import { db, memoryStore } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
 import {
@@ -298,6 +298,89 @@ export async function listPublishJobs(filters: {
       (!filters.accountId || job.accountId === filters.accountId),
     )
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+export async function tryAcquirePublishJobLock(input: {
+  jobId: string;
+  allowedFromStatuses: SocialPublishJobStatus[];
+}): Promise<SocialPublishJob | null> {
+  const now = new Date();
+  const drizzle = db();
+  if (drizzle) {
+    const updated = await drizzle
+      .update(socialPublishJobs)
+      .set({ status: 'publishing', lockedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(socialPublishJobs.id, input.jobId),
+          inArray(socialPublishJobs.status, input.allowedFromStatuses),
+          isNull(socialPublishJobs.lockedAt),
+        ),
+      )
+      .returning();
+    const row = updated[0];
+    if (!row) return null;
+    const job = rowJob(row);
+    await recordPublishEvent({
+      jobId: job.id,
+      type: 'job.publishing',
+      actorId: job.requestedBy,
+      message: 'Publication job locked for execution',
+    });
+    return job;
+  }
+  const current = store().socialPublishJobs.get(input.jobId);
+  if (!current) return null;
+  if (!input.allowedFromStatuses.includes(current.status)) return null;
+  if (current.lockedAt) return null;
+  const locked: SocialPublishJob = {
+    ...current,
+    status: 'publishing',
+    lockedAt: now,
+    updatedAt: now,
+  };
+  store().socialPublishJobs.set(locked.id, locked);
+  await recordPublishEvent({
+    jobId: locked.id,
+    type: 'job.publishing',
+    actorId: locked.requestedBy,
+    message: 'Publication job locked for execution',
+  });
+  return locked;
+}
+
+export async function listScheduledJobsDue(input: {
+  now: Date;
+  limit: number;
+}): Promise<SocialPublishJob[]> {
+  const limit = Math.max(1, Math.min(input.limit, 50));
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(socialPublishJobs)
+      .where(
+        and(
+          eq(socialPublishJobs.status, 'queued'),
+          isNotNull(socialPublishJobs.scheduledAt),
+          lte(socialPublishJobs.scheduledAt, input.now),
+          isNull(socialPublishJobs.lockedAt),
+        ),
+      )
+      .orderBy(asc(socialPublishJobs.scheduledAt))
+      .limit(limit);
+    return rows.map(rowJob);
+  }
+  return Array.from(store().socialPublishJobs.values())
+    .filter(
+      (job) =>
+        job.status === 'queued' &&
+        job.scheduledAt !== null &&
+        job.scheduledAt.getTime() <= input.now.getTime() &&
+        job.lockedAt === null,
+    )
+    .sort((a, b) => (a.scheduledAt!.getTime() - b.scheduledAt!.getTime()))
+    .slice(0, limit);
 }
 
 export async function updatePublishJobStatus(input: {
