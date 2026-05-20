@@ -10,6 +10,7 @@ import { Text } from '@/components/ui/Text';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { VideoPosterCover } from '@/components/kit/VideoPosterCover';
 import { VideoChaptersFromRituel } from '@/components/kit/VideoChapters';
+import { VideoIFrameTracker } from '@/components/kit/VideoIFrameTracker';
 import { parseYouTubeUrl } from '@/lib/video/youtube-url';
 
 interface VideoPlayer4GestesProps {
@@ -46,6 +47,7 @@ export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
 function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
   const [showTranscript, setShowTranscript] = useState(false);
   const [played, setPlayed] = useState(false);
+  const [currentSeconds, setCurrentSeconds] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const transcriptId = useId();
   const titleId = useId();
@@ -107,9 +109,20 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
             played={played}
             onPlay={handlePlay}
           />
+          {played ? (
+            <VideoIFrameTracker
+              iframeRef={iframeRef}
+              videoId={VIDEO_ID}
+              onCurrentTime={setCurrentSeconds}
+            />
+          ) : null}
         </div>
 
-        <VideoChaptersFromRituel video={video} videoId={VIDEO_ID} />
+        <VideoChaptersFromRituel
+          video={video}
+          videoId={VIDEO_ID}
+          currentSeconds={currentSeconds}
+        />
 
         <div className="mt-6 text-center">
           <button
