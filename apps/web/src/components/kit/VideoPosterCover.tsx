@@ -159,11 +159,12 @@ function VideoPosterCoverImpl(
       className="group absolute inset-0 overflow-hidden rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3]"
       data-testid="video-poster-cover"
     >
-      {/* Voile encre 18 % — assure le contraste du bouton play + badge
+      {/* Voile encre ~25 % — assure le contraste du bouton play + badge
           durée sur n'importe quel media de fond (image, SVG inline,
-          fichier, URL). Décoratif uniquement. */}
+          fichier, URL). Color literal car `bg-encre/X` rend transparent
+          (la CSS var ne supporte pas le opacity-modifier Tailwind). */}
       <PosterMedia video={video} posterImage={posterImage} />
-      <span aria-hidden="true" className="absolute inset-0 bg-encre/20" />
+      <span aria-hidden="true" className="absolute inset-0 bg-[#2C2A28]/25" />
 
       {/* Bouton play 64×64 centré, couleur d'accent maison.
           Élément décoratif — l'aria-label du <button> parent porte
@@ -182,7 +183,7 @@ function VideoPosterCoverImpl(
       {video.durationDisplay ? (
         <span
           aria-hidden="true"
-          className="absolute bottom-3 left-3 inline-flex items-center rounded-sm bg-encre/70 px-2 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-creme [font-variant-numeric:tabular-nums]"
+          className="absolute bottom-3 left-3 inline-flex items-center rounded-sm bg-[#2C2A28]/80 px-2 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-creme [font-variant-numeric:tabular-nums]"
           data-testid="video-poster-duration-badge"
         >
           {video.durationDisplay}

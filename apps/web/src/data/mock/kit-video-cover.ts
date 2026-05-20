@@ -99,4 +99,4 @@ export const DEFAULT_KIT_VIDEO_COVER_SVG = `<svg xmlns="http://www.w3.org/2000/s
 </svg>`;
 
 export const DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL =
-  'Le rituel en 90 secondes — perle nacrée au centre, halo de lumière studio, atmosphère feutrée.';
+  'Le rituel FemiGlow — pack paste, powder et polissoir, en 90 secondes.';

@@ -249,7 +249,7 @@ describe('VideoPosterCover — posterCoverSvg 3 modes', () => {
         onPlay={() => {}}
       />,
     );
-    expect(container.querySelector('.bg-encre\\/20')).not.toBeNull();
+    expect(container.querySelector('.bg-\\[\\#2C2A28\\]\\/25')).not.toBeNull();
   });
 
   it('fallback rétrocompat : <Image> si posterCoverSvg absent', () => {

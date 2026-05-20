@@ -168,7 +168,7 @@ test.describe('/kit vidéo — cover SVG @video-cover', () => {
     const button = page.getByTestId('video-poster-cover');
     await expect(button).toBeVisible();
     const html = (await button.innerHTML()) ?? '';
-    expect(html).toContain('bg-encre/20');
+    expect(html).toContain('bg-[#2C2A28]/25');
   });
 });
 
