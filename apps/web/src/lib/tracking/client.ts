@@ -30,7 +30,6 @@ export interface EmitOptions {
    * formulaire » (ex. checkout_intent).
    */
   dedupKey?: string;
-  /**
    * Identité en clair (email, phone, nom) pour les pixels client-side
    * (Snap snaptr, Meta fbq Advanced Matching). Le SDK du pixel
    * normalise et hashe lui-même. N'EST PAS envoyé à /api/track.
@@ -43,6 +42,25 @@ export interface EmitOptions {
     city?: string;
     country?: string;
   };
+  /**
+   * Override de l'`event_id` (sinon `uuidv7(now)` généré). Utile pour
+   * aligner un event client avec un event server-side qui partagerait
+   * la même ID — Meta dédup alors transparent entre Pixel et CAPI.
+   *
+   * Format accepté: 32 chars hex (cf. `deriveEventId`) OU uuid v7 (36 chars).
+   * Si le format est invalide, on retombe sur `uuidv7(now)` (pas de crash).
+   *
+   * cf. docs/meta-quality-audit-2026-05/01-design-conception.md §3.2
+   */
+  eventIdOverride?: string;
+}
+
+const EVENT_ID_OVERRIDE_PATTERN =
+  /^([a-f0-9]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+function pickEventId(now: number, override?: string): string {
+  if (override && EVENT_ID_OVERRIDE_PATTERN.test(override)) return override;
+  return uuidv7(now);
 }
 
 export interface TrackingClientConfig {
@@ -134,7 +152,7 @@ export class TrackingClient {
 
     const entry: DataLayerEntry = {
       event: eventName,
-      event_id: uuidv7(now),
+      event_id: pickEventId(now, options.eventIdOverride),
       timestamp: options.timestamp ?? new Date(now).toISOString(),
       schema_version: 1,
       consent,
