@@ -26,25 +26,13 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { PriceBlock } from '@/components/sections/PriceBlock';
 import { PackVisualBound } from '@/components/sections/PackVisualBound';
+import { StepsTimeline } from '@/components/sections/StepsTimeline';
 import { cn } from '@/lib/utils/cn';
 import type {
-  FeedAccent,
   ProductFeed,
   ProductFeedClaim,
-  ProductFeedStep,
 } from '@/lib/products/feed/types';
 import type { Product } from '@/lib/schemas';
-
-/**
- * Mapping accent → classes Tailwind FemiGlow. Les pastilles reprennent
- * exactement les couleurs des 4 numéros du visuel produit officiel.
- */
-const accentDot: Record<FeedAccent, string> = {
-  sauge: 'bg-sauge-soft text-sauge-dark ring-1 ring-sauge-dark/15',
-  petale: 'bg-petale-soft text-petale-dark ring-1 ring-petale-dark/15',
-  champagne: 'bg-champagne-soft text-champagne-dark ring-1 ring-champagne-dark/15',
-  ciel: 'bg-ciel-soft text-ciel-dark ring-1 ring-ciel-dark/15',
-};
 
 interface ProductFeedSectionProps {
   feed: ProductFeed;
@@ -101,16 +89,12 @@ export function ProductFeedSection({
           </div>
         </div>
 
-        {/* 2 — Rituel 4 gestes ------------------------------------------ */}
-        <ol
-          role="list"
-          aria-label="Les quatre gestes du rituel"
-          className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4"
-        >
-          {feed.steps.map((step) => (
-            <FeedStepCard key={step.step} step={step} />
-          ))}
-        </ol>
+        {/* 2 — Rituel 4 gestes (Kolenda §4.7) ---------------------------- */}
+        <StepsTimeline
+          steps={feed.steps}
+          header={feed.stepsHeader}
+          postCta={feed.stepsPostCta}
+        />
 
         {/* 3 — Promesses (3 claims) ------------------------------------- */}
         <ul
@@ -150,32 +134,6 @@ export function ProductFeedSection({
         </figure>
       </Container>
     </section>
-  );
-}
-
-/** Carte d'une étape du rituel (1/4). */
-function FeedStepCard({ step }: { step: ProductFeedStep }) {
-  return (
-    <li>
-      <article className="flex h-full flex-col gap-3">
-        <span
-          aria-hidden="true"
-          className={cn(
-            'inline-flex h-12 w-12 items-center justify-center rounded-full font-display text-xl',
-            accentDot[step.accent],
-          )}
-        >
-          {step.step}
-        </span>
-        <Kicker>{step.kicker}</Kicker>
-        <Heading as="h3" size="sm">
-          {step.title}
-        </Heading>
-        <Text size="body" tone="secondary" prose>
-          {step.description}
-        </Text>
-      </article>
-    </li>
   );
 }
 

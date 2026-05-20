@@ -25,6 +25,16 @@
 export type FeedAccent = 'sauge' | 'petale' | 'champagne' | 'ciel';
 
 /**
+ * Clé d'icône SVG affichée au-dessus de la pastille numérotée.
+ * 4 valeurs figées — cohérent avec la grammaire `ProductFeedClaim.icon`.
+ *  - `buffer`  : étapes de limage / préparation
+ *  - `drop`    : application d'un soin liquide / pâteux
+ *  - `sparkle` : étape qui lustre / révèle la lumière
+ *  - `mirror`  : résultat final (effet miroir)
+ */
+export type ProductFeedStepIcon = 'buffer' | 'drop' | 'sparkle' | 'mirror';
+
+/**
  * Une étape du rituel 4 gestes (cf. visuel produit officiel) :
  * Préparer · Paste · Powder · Résultat.
  */
@@ -42,6 +52,47 @@ export interface ProductFeedStep {
   description: string;
   /** Couleur du voyant numéroté (rappel des 4 pastilles du visuel). */
   accent: FeedAccent;
+  /**
+   * Durée approximative du geste, formatée FR (« 30 s », « 1 min »).
+   * Optionnel — si absent, le badge durée n'est pas rendu (rétro-compat).
+   */
+  duration?: string;
+  /**
+   * Marque ce step comme l'aboutissement du rituel (= step 4 par
+   * convention). Le rendu applique : anneau doublé sur la pastille,
+   * badge « RÉSULTAT », description en `font-display italic`.
+   */
+  isResult?: boolean;
+  /**
+   * Clé de l'icône SVG à afficher au-dessus de la pastille. Si absent,
+   * pas d'icône (rétro-compat).
+   */
+  icon?: ProductFeedStepIcon;
+}
+
+/**
+ * En-tête de la grille « rituel 4 gestes » (Kolenda §4.7 Attention #18).
+ * Rendu au-dessus des 4 cartes pour annoncer la durée totale et réduire
+ * l'anxiété temps perçue.
+ */
+export interface ProductFeedStepsHeader {
+  /** Kicker court (« EN TOUT »). */
+  kicker: string;
+  /** Durée totale formatée (« 5 minutes le soir »). */
+  totalDuration: string;
+  /** Lead 1 phrase sensorielle sous le titre. */
+  lead: string;
+}
+
+/**
+ * CTA éditorial chuchoté sous la grille des 4 gestes — relance funnel
+ * vers le bloc commande (Kolenda Attention #12, directional cues).
+ */
+export interface ProductFeedStepsPostCta {
+  /** Libellé du lien (« Démarrer le rituel »). */
+  label: string;
+  /** Ancre cible (sans #). */
+  anchorId: string;
 }
 
 /**
@@ -171,6 +222,17 @@ export interface ProductFeed {
   hero: ProductFeedHero;
   /** 4 cartes du rituel (Préparer · Paste · Powder · Résultat). */
   steps: ProductFeedStep[];
+  /**
+   * En-tête de la grille des 4 gestes (Kolenda §4.7). Optionnel —
+   * rétro-compat : un feed sans header continue de rendre la grille
+   * inchangée.
+   */
+  stepsHeader?: ProductFeedStepsHeader;
+  /**
+   * CTA éditorial sous la grille — relance vers `#commander-femiglow`.
+   * Optionnel — rétro-compat.
+   */
+  stepsPostCta?: ProductFeedStepsPostCta;
   /** 3 claims (origine naturelle · sans agressifs · ongles forts). */
   claims: ProductFeedClaim[];
   /** Social proof condensé. */

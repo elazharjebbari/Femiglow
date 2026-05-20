@@ -24,12 +24,30 @@ import { z } from 'zod';
 
 const accentSchema = z.enum(['sauge', 'petale', 'champagne', 'ciel']);
 
+const stepIconSchema = z.enum(['buffer', 'drop', 'sparkle', 'mirror']);
+
 const stepSchema = z.object({
   step: z.number().int().min(1).max(4),
   kicker: z.string().min(1),
   title: z.string().min(1),
   description: z.string().min(1),
   accent: accentSchema,
+  // Extensions Kolenda §4.7 — tous optionnels (rétro-compat).
+  duration: z.string().min(1).max(20).optional(),
+  isResult: z.boolean().optional(),
+  icon: stepIconSchema.optional(),
+});
+
+const stepsHeaderSchema = z.object({
+  kicker: z.string().min(1).max(40),
+  totalDuration: z.string().min(1).max(40),
+  lead: z.string().min(1).max(200),
+});
+
+const stepsPostCtaSchema = z.object({
+  label: z.string().min(1).max(40),
+  // Anchor id sans `#` — caractères URL-safe.
+  anchorId: z.string().regex(/^[a-z0-9-]+$/i).min(1).max(60),
 });
 
 const valueItemSchema = z.object({
@@ -105,6 +123,9 @@ export const productFeedSchema = z.object({
   hero: heroSchema,
   // Le rituel a *toujours* exactement 4 étapes (visuel imprimé).
   steps: z.array(stepSchema).length(4),
+  // Header + postCta optionnels — extensions Kolenda §4.7.
+  stepsHeader: stepsHeaderSchema.optional(),
+  stepsPostCta: stepsPostCtaSchema.optional(),
   // 3 promesses du visuel (leaf · drop · sparkle).
   claims: z.array(claimSchema).length(3),
   socialProof: socialProofSchema,
