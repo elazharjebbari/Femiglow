@@ -225,7 +225,23 @@ function buildSocialProof(
  * en EUR — c'est la valeur perçue, pas une ventilation comptable.
  */
 function buildHero(product: Product): ProductFeedHero {
-  const compareMajor = Math.round((product.priceCents * 1.4) / 100);
+  // Base du prix barré = `priceCents` du Product (= prix avant promo).
+  // - Si une promo est active (`promoPriceCents` > 0 et < priceCents),
+  //   le prix XXL sera `promoPriceCents` (géré par `computePromo`
+  //   côté PriceBlock) et le prix barré sera `priceCents`.
+  // - Sinon, on retombe sur un fallback ~1,4× (pack vs séparé estimé)
+  //   pour conserver un savings crédible même en l'absence de promo.
+  const hasPromo =
+    typeof product.promoPriceCents === 'number' &&
+    product.promoPriceCents > 0 &&
+    product.promoPriceCents < product.priceCents;
+  const compareCents = hasPromo
+    ? product.priceCents
+    : Math.round(product.priceCents * 1.4);
+  const effectiveCents = hasPromo
+    ? (product.promoPriceCents as number)
+    : product.priceCents;
+  const compareMajor = Math.round(compareCents / 100);
   const currencyUnit = product.currency === 'MAD' ? 'MAD' : '€';
   const compareLabel = `${compareMajor} ${currencyUnit}`;
 
@@ -250,7 +266,7 @@ function buildHero(product: Product): ProductFeedHero {
   // Coût par soin : ~47 soins pour 1 mois et demi d'usage standard.
   // Unité alignée sur la devise du produit (cohérence visuelle avec
   // le prix XXL — éviter savings € sur prix MAD).
-  const perUsage = buildPerUsageHint(product.priceCents, 47, currencyUnit);
+  const perUsage = buildPerUsageHint(effectiveCents, 47, currencyUnit);
 
   return {
     kicker: 'Le pack',
