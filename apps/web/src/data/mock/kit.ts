@@ -4,6 +4,14 @@ import { mockRituel } from './rituel';
 import { DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL } from './kit-video-cover';
 
 /**
+ * Cover SVG du Kit — markup inline du fichier
+ * `public/products/kit-principale.svg`. Inline plutôt que `source: 'url'`
+ * car le schema `kitVideoSchema.posterCoverSvg.url` exige une URL absolue
+ * (z.string().url()), incompatible avec un chemin relatif same-origin.
+ */
+const KIT_PRINCIPALE_COVER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 2000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Le rituel FemiGlow — flacon de base, fortifiant et lime, sur fond crème"><rect width="1600" height="2000" fill="#FBF8F1"/><ellipse cx="800" cy="1700" rx="600" ry="40" fill="#2C2A28" opacity="0.06"/><g transform="translate(540 760)"><rect x="-90" y="0" width="180" height="380" rx="14" fill="#C5DBC4"/><rect x="-50" y="-60" width="100" height="80" rx="6" fill="#2C2A28" opacity="0.85"/><rect x="-90" y="220" width="180" height="80" fill="#FBF8F1" opacity="0.4"/></g><g transform="translate(800 720)"><rect x="-95" y="0" width="190" height="430" rx="14" fill="#F2CECC"/><rect x="-52" y="-70" width="104" height="90" rx="6" fill="#2C2A28" opacity="0.85"/><rect x="-95" y="240" width="190" height="100" fill="#FBF8F1" opacity="0.45"/></g><g transform="translate(1060 800) rotate(8)"><rect x="-25" y="0" width="50" height="350" rx="6" fill="#C8A876"/><rect x="-25" y="0" width="50" height="40" fill="#2C2A28" opacity="0.7"/></g><text x="800" y="1900" text-anchor="middle" font-family="Georgia, serif" font-size="32" letter-spacing="8" fill="#2C2A28" opacity="0.5">LE RITUEL · FEMIGLOW</text></svg>`;
+
+/**
  * Audit 08/09 — Pack FemiGlow : composition refondue (paste / powder /
  * polissoir Step 4), comparatif ajusté, témoignages redistribués
  * (Rabat centre de gravité).
@@ -140,8 +148,8 @@ export const mockKitPageContent: KitPageContent = {
     ...mockRituel.videoGestes,
     youtubeUrl: 'https://youtube.com/shorts/N2pDuciP4uQ?si=h9_ROBIt-N7Oq7jb',
     posterCoverSvg: {
-      source: 'url' as const,
-      url: '/products/kit-principale.svg',
+      source: 'inline' as const,
+      inline: KIT_PRINCIPALE_COVER_SVG,
       meta: { ariaLabel: DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL },
     },
   },
