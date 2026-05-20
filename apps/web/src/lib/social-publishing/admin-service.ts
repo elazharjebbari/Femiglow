@@ -18,6 +18,7 @@ import type {
   SocialPublishResult,
   SocialPublishingAdapter,
 } from './contracts';
+import { listPostizIntegrations, type PostizIntegration } from '@/lib/content-studio/postiz';
 import { DryRunSocialPublishingAdapter } from './adapters/dry-run';
 import { PostizSocialPublishingAdapter } from './adapters/postiz';
 import { publishWithAdapter } from './service';
@@ -53,6 +54,20 @@ function adapterFor(provider: SocialProviderId): SocialPublishingAdapter {
     throw new HttpError('invalid_state', `Provider ${provider} non disponible`);
   }
   return adapter;
+}
+
+export interface SyncSocialAccountsOptions {
+  fetchPostizIntegrations?: () => Promise<PostizIntegration[]>;
+  includePostiz?: boolean;
+}
+
+export async function syncSocialAccounts(
+  options: SyncSocialAccountsOptions = {},
+): Promise<SocialAccount[]> {
+  const dryRun = await syncDryRunSocialAccounts();
+  if (options.includePostiz === false) return dryRun;
+  const postiz = await syncPostizSocialAccounts(options.fetchPostizIntegrations);
+  return [...dryRun, ...postiz];
 }
 
 export async function syncDryRunSocialAccounts(): Promise<SocialAccount[]> {
@@ -91,9 +106,58 @@ export async function syncDryRunSocialAccounts(): Promise<SocialAccount[]> {
   return [instagram, facebook];
 }
 
+export async function syncPostizSocialAccounts(
+  fetcher: (() => Promise<PostizIntegration[]>) | undefined = listPostizIntegrations,
+): Promise<SocialAccount[]> {
+  let integrations: PostizIntegration[] = [];
+  try {
+    integrations = await fetcher();
+  } catch (err) {
+    // Postiz peut être indisponible (clé manquante, réseau) ; on ne bloque pas
+    // l'admin — les comptes dry_run restent utilisables. On log et on continue.
+    console.warn('[social-publishing] listPostizIntegrations failed:', err instanceof Error ? err.message : err);
+    return [];
+  }
+  const accounts: SocialAccount[] = [];
+  for (const integration of integrations) {
+    // Postiz expose la plateforme via `identifier` (ex: 'instagram', 'facebook',
+    // 'instagram-business', 'facebook-page'). Le champ `provider` est rarement
+    // peuplé. On essaie les deux pour la robustesse.
+    const platform = mapPostizProviderToPlatform(integration.identifier ?? integration.provider);
+    if (!platform) continue;
+    const name = integration.name?.trim() || `Postiz ${platform}`;
+    const account = await upsertSocialAccount({
+      provider: 'postiz',
+      platform,
+      remoteId: integration.id,
+      name,
+      status: integration.disabled ? 'disabled' : 'active',
+      capabilities: postizAdapter.listCapabilities({
+        id: integration.id,
+        provider: 'postiz',
+        platform,
+        remoteId: integration.id,
+        name,
+        status: integration.disabled ? 'disabled' : 'active',
+        capabilities: [],
+      }),
+    });
+    accounts.push(account);
+  }
+  return accounts;
+}
+
+function mapPostizProviderToPlatform(value: string | undefined): SocialPlatform | null {
+  if (!value) return null;
+  const lower = value.toLowerCase();
+  if (lower === 'instagram' || lower.startsWith('instagram-')) return 'instagram';
+  if (lower === 'facebook' || lower.startsWith('facebook-') || lower === 'facebook-page') return 'facebook';
+  return null;
+}
+
 export async function listAdminSocialAccounts(): Promise<SocialAccount[]> {
   const accounts = await listSocialAccounts();
-  return accounts.length > 0 ? accounts : syncDryRunSocialAccounts();
+  return accounts.length > 0 ? accounts : syncSocialAccounts();
 }
 
 export async function getPostPublishability(input: {
@@ -127,13 +191,13 @@ export async function getPostPublishability(input: {
     .find((item) => item.platform === content.platform && item.format === content.format);
   if (!capability) errors.push('Le compte social ne supporte pas ce format.');
   if (capability?.mediaRequired && content.media.length === 0) {
-    errors.push('Un média HTTPS public est requis pour cette plateforme.');
+    errors.push('Aucun média n\'est associé au brouillon. Générez d\'abord un visuel via « Générer le visuel ».');
   }
   if (capability?.maxCaptionLength && content.caption.length > capability.maxCaptionLength) {
     errors.push(`La légende dépasse la limite de ${capability.maxCaptionLength} caractères.`);
   }
   if (content.media.some((media) => !media.url.startsWith('https://'))) {
-    errors.push('Tous les médias doivent être accessibles via HTTPS public.');
+    errors.push('Les médias doivent être servis en HTTPS public (vérifier NEXT_PUBLIC_SITE_URL et le stockage médias).');
   }
   if (content.tags && content.tags.length > 25) warnings.push('Plus de 25 hashtags détectés.');
 
@@ -373,7 +437,13 @@ async function resolvePostDraftAccount(postId: string, accountId: string | null)
 
 async function defaultAccountForPlatform(platform: SocialPlatform): Promise<SocialAccount | null> {
   const accounts = await listAdminSocialAccounts();
-  return accounts.find((account) => account.provider === 'dry_run' && account.platform === platform) ?? null;
+  // Préférence dry_run actif (sécurité staging), puis premier compte actif compatible.
+  const eligible = accounts.filter((account) => account.platform === platform && account.status === 'active');
+  return (
+    eligible.find((account) => account.provider === 'dry_run') ??
+    eligible[0] ??
+    null
+  );
 }
 
 async function buildSocialContent(postId: string, draft: Awaited<ReturnType<typeof getDraft>> & {}, scheduledAt: Date | null): Promise<SocialPublishContent> {
