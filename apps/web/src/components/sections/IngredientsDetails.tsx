@@ -4,6 +4,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { IngredientsTable } from '@/components/commerce/IngredientsTable';
+import { PostCtaLink } from '@/components/commerce/PostCtaLink';
 import type { SubProduct } from '@/lib/schemas';
 
 interface IngredientsDetailsProps {
@@ -48,6 +49,7 @@ export function IngredientsDetails({
           {composition.map((sub) => (
             <div key={sub.id} id={`${anchor}-${sub.id}`}>
               <IngredientsTable subProduct={sub} />
+              <PostCtaLink subProductId={sub.id} />
             </div>
           ))}
         </div>

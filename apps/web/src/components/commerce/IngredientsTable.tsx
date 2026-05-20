@@ -26,9 +26,12 @@ export function IngredientsTable({ subProduct }: IngredientsTableProps) {
               <th scope="col" className="p-3 text-right font-medium">%</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-encre/10 text-encre">
-            {subProduct.ingredients.map((ing) => (
-              <tr key={`${subProduct.id}-${ing.inci}`}>
+          <tbody className="text-encre">
+            {subProduct.ingredients.map((ing, i) => (
+              <tr
+                key={`${subProduct.id}-${ing.inci}`}
+                className={i % 2 === 0 ? 'bg-creme' : 'bg-creme-warm/40'}
+              >
                 <th scope="row" className="p-3 text-left font-medium">
                   {ing.name}
                 </th>
