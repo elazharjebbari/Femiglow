@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-<<<<<<< HEAD
 import type { TrackingProvider } from '@/lib/db/types';
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import { fetchWithRetry } from './retry';
+import { enrichPurchase } from './_enrich-purchase';
 import type { DispatchContext } from './types';
 import { metaAdapter } from './meta';
 
@@ -22,69 +22,38 @@ vi.mock('./retry', () => ({
   })),
 }));
 
+// Mock enrichPurchase — Purchase guard (P1.2). Default: params already
+// have valid value/currency, so enrich is a passthrough.
+vi.mock('./_enrich-purchase', () => ({
+  enrichPurchase: vi.fn(async () => ({
+    value: 399,
+    currency: 'MAD',
+    source: 'params',
+  })),
+}));
+
 beforeEach(() => {
   vi.mocked(decryptCapiToken).mockClear();
   vi.mocked(decryptCapiToken).mockReturnValue('test-meta-capi-token-abc123');
   vi.mocked(fetchWithRetry).mockClear();
+  vi.mocked(enrichPurchase).mockClear();
+  vi.mocked(enrichPurchase).mockResolvedValue({
+    value: 399,
+    currency: 'MAD',
+    source: 'params',
+  });
 });
-=======
-vi.mock('@/lib/db/queries/tracking/providers', () => ({
-  decryptCapiToken: vi.fn(() => 'decrypted_token'),
-}));
-
-vi.mock('./_enrich-purchase', () => ({
-  enrichPurchase: vi.fn(),
-}));
-
-vi.mock('./retry', () => ({
-  fetchWithRetry: vi.fn(),
-}));
-
-vi.mock('./event-mapping', () => ({
-  isEventSupported: vi.fn(() => true),
-}));
-
-vi.mock('./get-mapped-name', () => ({
-  getMappedName: vi.fn((ctx: { eventName: string }) => {
-    const map: Record<string, string> = {
-      purchase: 'Purchase',
-      purchase_server: 'Purchase',
-      view_item: 'ViewContent',
-      add_to_cart: 'AddToCart',
-    };
-    return map[ctx.eventName] ?? null;
-  }),
-  isMetaCustomEvent: vi.fn(() => false),
-}));
-
-import type { TrackingProvider } from '@/lib/db/types';
-import { metaAdapter } from './meta';
-import { enrichPurchase } from './_enrich-purchase';
-import { fetchWithRetry } from './retry';
-import type { DispatchContext } from './types';
-
-const enrichMock = vi.mocked(enrichPurchase);
-const fetchMock = vi.mocked(fetchWithRetry);
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
 
 function provider(overrides: Partial<TrackingProvider> = {}): TrackingProvider {
   return {
     id: 'tpr_meta',
     kind: 'meta',
     status: 'enabled',
-<<<<<<< HEAD
     pixelId: '2179682406197934',
     capiToken: 'encrypted',
     capiTokenIv: null,
     capiTokenTag: null,
     testEventCode: 'TEST11989',
-=======
-    pixelId: '1234567890',
-    capiToken: 'encrypted_token',
-    capiTokenIv: null,
-    capiTokenTag: null,
-    testEventCode: null,
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
     customHead: null,
     customBody: null,
     config: {},
@@ -92,13 +61,8 @@ function provider(overrides: Partial<TrackingProvider> = {}): TrackingProvider {
     lastEventAt: null,
     errorCount24h: 0,
     lastError: null,
-<<<<<<< HEAD
     createdAt: new Date('2026-05-16T10:00:00Z'),
     updatedAt: new Date('2026-05-16T10:00:00Z'),
-=======
-    createdAt: new Date('2026-05-20T10:00:00Z'),
-    updatedAt: new Date('2026-05-20T10:00:00Z'),
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
     ...overrides,
   };
 }
@@ -106,26 +70,15 @@ function provider(overrides: Partial<TrackingProvider> = {}): TrackingProvider {
 function ctx(overrides: Partial<DispatchContext> = {}): DispatchContext {
   return {
     eventName: 'purchase',
-<<<<<<< HEAD
     eventId: 'evt_meta_dedup_1',
     receivedAt: new Date('2026-05-16T12:00:00Z'),
-=======
-    eventId: 'evt_meta_001',
-    receivedAt: new Date('2026-05-20T12:00:00Z'),
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
     pageRoute: '/merci',
     pageUrl: 'https://femiglow.ma/merci',
     pageTitle: 'Merci',
     referrer: '',
-<<<<<<< HEAD
     anonymousId: 'anon_meta_123',
     sessionId: 'sess_meta_123',
     userId: 'user_42',
-=======
-    anonymousId: 'anon_meta_1',
-    sessionId: 'sess_meta_1',
-    userId: null,
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
     consent: {
       ad_storage: 'granted',
       analytics_storage: 'granted',
@@ -133,7 +86,6 @@ function ctx(overrides: Partial<DispatchContext> = {}): DispatchContext {
       ad_personalization: 'granted',
       functional_storage: 'granted',
     },
-<<<<<<< HEAD
     uaHash: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)',
     ipAnonymized: '197.230.0.0',
     device: 'mobile',
@@ -166,20 +118,10 @@ function ctx(overrides: Partial<DispatchContext> = {}): DispatchContext {
       click_id: 'fb-click-1',
       click_id_field: 'fbc',
     },
-=======
-    uaHash: 'ua_hash_meta',
-    ipAnonymized: '197.230.0.0',
-    device: 'desktop',
-    locale: 'fr-MA',
-    params: { transaction_id: 'ord_001', value: 320, currency: 'MAD' },
-    fbp: 'fb.1.aaa',
-    fbc: 'fb.1.bbb',
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
     ...overrides,
   };
 }
 
-<<<<<<< HEAD
 /**
  * Body de la dernière requête envoyée à Meta CAPI via `fetchWithRetry`.
  * Typage strict du retour pour éviter `unknown` à chaque déréférencement
@@ -230,39 +172,10 @@ describe('meta provider', () => {
   });
 
   it('skips dispatch when pixelId is missing', async () => {
-=======
-function okFetch(): void {
-  fetchMock.mockResolvedValue({
-    ok: true,
-    status: 200,
-    body: '{"events_received":1}',
-    attempts: 1,
-    durationMs: 50,
-  });
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  // Default enrich path : params already valid → source=params
-  enrichMock.mockResolvedValue({ value: 320, currency: 'MAD', source: 'params' });
-  okFetch();
-});
-
-describe('metaAdapter.dispatch — provider guards (legacy)', () => {
-  it('skips when provider disabled', async () => {
-    const result = await metaAdapter.dispatch(provider({ status: 'disabled' }), ctx());
-    expect(result.status).toBe('skipped');
-    expect(result.error).toBe('provider_disabled');
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('skips when pixelId missing', async () => {
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
     const result = await metaAdapter.dispatch(provider({ pixelId: null }), ctx());
     expect(result.status).toBe('skipped');
     expect(result.error).toBe('pixel_id_missing');
   });
-<<<<<<< HEAD
 
   it('skips dispatch when capiToken is missing', async () => {
     vi.mocked(decryptCapiToken).mockReturnValueOnce(null);
@@ -382,49 +295,47 @@ describe('metaAdapter.dispatch — provider guards (legacy)', () => {
     expect(hosts.connectSrc).toContain('https://graph.facebook.com');
   });
 });
-=======
-});
 
-describe('metaAdapter.dispatch — Purchase guard', () => {
+describe('metaAdapter.dispatch — Purchase guard (P1.2)', () => {
   it('dispatches when params already have valid value+currency', async () => {
     const result = await metaAdapter.dispatch(provider(), ctx());
     expect(result.status).toBe('sent');
-    expect(enrichMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
-      data: Array<{ custom_data: { value: number; currency: string } }>;
-    };
-    expect(body.data[0]!.custom_data.value).toBe(320);
-    expect(body.data[0]!.custom_data.currency).toBe('MAD');
+    expect(vi.mocked(enrichPurchase)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetchWithRetry)).toHaveBeenCalledTimes(1);
+    const customData = firstEvent().custom_data as Record<string, unknown>;
+    expect(customData.value).toBe(399);
+    expect(customData.currency).toBe('MAD');
   });
 
   it('skips with purchase_value_currency_invalid when enrich returns unavailable', async () => {
-    enrichMock.mockResolvedValue({ source: 'unavailable' });
+    vi.mocked(enrichPurchase).mockResolvedValueOnce({ source: 'unavailable' });
     const result = await metaAdapter.dispatch(
       provider(),
       ctx({ params: { transaction_id: 'ord_unknown' } }),
     );
     expect(result.status).toBe('skipped');
     expect(result.error).toBe('purchase_value_currency_invalid');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(vi.mocked(fetchWithRetry)).not.toHaveBeenCalled();
   });
 
   it('uses DB-enriched value/currency when params are incomplete', async () => {
-    enrichMock.mockResolvedValue({ value: 250, currency: 'USD', source: 'db' });
+    vi.mocked(enrichPurchase).mockResolvedValueOnce({
+      value: 250,
+      currency: 'USD',
+      source: 'db',
+    });
     const result = await metaAdapter.dispatch(
       provider(),
       ctx({ params: { transaction_id: 'ord_db_only' } }),
     );
     expect(result.status).toBe('sent');
-    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
-      data: Array<{ custom_data: { value: number; currency: string } }>;
-    };
-    expect(body.data[0]!.custom_data.value).toBe(250);
-    expect(body.data[0]!.custom_data.currency).toBe('USD');
+    const customData = firstEvent().custom_data as Record<string, unknown>;
+    expect(customData.value).toBe(250);
+    expect(customData.currency).toBe('USD');
   });
 
   it('also guards the purchase_server event (Stripe webhook)', async () => {
-    enrichMock.mockResolvedValue({ source: 'unavailable' });
+    vi.mocked(enrichPurchase).mockResolvedValueOnce({ source: 'unavailable' });
     const result = await metaAdapter.dispatch(
       provider(),
       ctx({ eventName: 'purchase_server', params: { payment_intent_id: 'pi_xxx' } }),
@@ -434,16 +345,19 @@ describe('metaAdapter.dispatch — Purchase guard', () => {
   });
 
   it('does NOT call enrich for non-purchase events', async () => {
-    const result = await metaAdapter.dispatch(
+    await metaAdapter.dispatch(
       provider(),
       ctx({ eventName: 'view_item', params: { value: 320, currency: 'MAD' } }),
     );
-    expect(result.status).toBe('sent');
-    expect(enrichMock).not.toHaveBeenCalled();
+    expect(vi.mocked(enrichPurchase)).not.toHaveBeenCalled();
   });
 
   it('preserves the original ctx.params (no mutation)', async () => {
-    enrichMock.mockResolvedValue({ value: 250, currency: 'USD', source: 'db' });
+    vi.mocked(enrichPurchase).mockResolvedValueOnce({
+      value: 250,
+      currency: 'USD',
+      source: 'db',
+    });
     const original = { transaction_id: 'ord_x' };
     const c = ctx({ params: original });
     await metaAdapter.dispatch(provider(), c);
@@ -451,44 +365,3 @@ describe('metaAdapter.dispatch — Purchase guard', () => {
     expect(c.params).toEqual({ transaction_id: 'ord_x' });
   });
 });
-
-describe('metaAdapter.dispatch — payload shape', () => {
-  it('produces a valid CAPI v19 payload', async () => {
-    await metaAdapter.dispatch(provider(), ctx());
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('graph.facebook.com/v19.0/'),
-      expect.objectContaining({ method: 'POST' }),
-    );
-    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
-      data: Array<{ event_name: string; event_id: string; action_source: string }>;
-    };
-    expect(body.data[0]).toMatchObject({
-      event_name: 'Purchase',
-      event_id: 'evt_meta_001',
-      action_source: 'website',
-    });
-  });
-
-  it('includes test_event_code when provider has one', async () => {
-    await metaAdapter.dispatch(provider({ testEventCode: 'TEST42' }), ctx());
-    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
-      test_event_code?: string;
-    };
-    expect(body.test_event_code).toBe('TEST42');
-  });
-
-  it('reports failed when fetch returns non-ok', async () => {
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 400,
-      body: '{"error":{"message":"bad request"}}',
-      attempts: 3,
-      durationMs: 600,
-    });
-    const result = await metaAdapter.dispatch(provider(), ctx());
-    expect(result.status).toBe('failed');
-    expect(result.httpStatus).toBe(400);
-    expect(result.error).toContain('bad request');
-  });
-});
->>>>>>> 0207ab8 (feat(tracking): guard meta dispatch on purchase missing value/currency)
