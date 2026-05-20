@@ -21,6 +21,7 @@
     "db:validate:strict": "node scripts/_validate-migrations.mjs --strict",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "db:install-purchase-view": "tsx scripts/install-view-purchase-quality.ts",
     "seed:admin": "tsx scripts/seed-admin.ts",
     "seed:components": "tsx scripts/seed-components.ts",
     "seed:components-fields": "tsx scripts/seed-components-fields.ts",
