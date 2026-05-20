@@ -26,9 +26,7 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { PriceBlock } from '@/components/sections/PriceBlock';
 import { PackVisualBound } from '@/components/sections/PackVisualBound';
-import { StepCard } from '@/components/sections/StepCard';
-import { StepsConnector } from '@/components/sections/StepsConnector';
-import { StepsHeader } from '@/components/sections/StepsHeader';
+import { StepsTimeline } from '@/components/sections/StepsTimeline';
 import { cn } from '@/lib/utils/cn';
 import type {
   ProductFeed,
@@ -92,30 +90,7 @@ export function ProductFeedSection({
         </div>
 
         {/* 2 — Rituel 4 gestes (Kolenda §4.7) ---------------------------- */}
-        <section className="mt-20" aria-labelledby="steps-timeline-title">
-          {feed.stepsHeader && (
-            <StepsHeader
-              header={feed.stepsHeader}
-              headingId="steps-timeline-title"
-            />
-          )}
-          <ol
-            role="list"
-            aria-label="Les quatre gestes du rituel"
-            className={cn(
-              'relative grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4',
-              feed.stepsHeader ? 'mt-10' : '',
-            )}
-            data-testid="steps-list"
-          >
-            <StepsConnector />
-            {feed.steps.map((step) => (
-              <li key={step.step} data-step={step.step} className="relative">
-                <StepCard step={step} />
-              </li>
-            ))}
-          </ol>
-        </section>
+        <StepsTimeline steps={feed.steps} header={feed.stepsHeader} />
 
         {/* 3 — Promesses (3 claims) ------------------------------------- */}
         <ul

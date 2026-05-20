@@ -12,6 +12,7 @@
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
+import { StepIcon } from '@/components/sections/StepIcon';
 import { cn } from '@/lib/utils/cn';
 import type { FeedAccent, ProductFeedStep } from '@/lib/products/feed/types';
 
@@ -42,6 +43,9 @@ export function StepCard({ step }: StepCardProps): JSX.Element {
       data-is-result={step.isResult ? 'true' : undefined}
       className="flex h-full flex-col gap-3"
     >
+      {step.icon && (
+        <StepIcon name={step.icon} className="h-6 w-6 text-encre/55" />
+      )}
       <div className="flex items-center gap-3">
         <span
           aria-hidden="true"
