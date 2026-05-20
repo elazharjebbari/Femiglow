@@ -11,6 +11,7 @@ import { useTracking } from '@/lib/tracking/use-tracking';
 import { VideoPosterCover } from '@/components/kit/VideoPosterCover';
 import { VideoChaptersFromRituel } from '@/components/kit/VideoChapters';
 import { VideoIFrameTracker } from '@/components/kit/VideoIFrameTracker';
+import { VideoPostCta } from '@/components/kit/VideoPostCta';
 import { parseYouTubeUrl } from '@/lib/video/youtube-url';
 
 interface VideoPlayer4GestesProps {
@@ -98,6 +99,14 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
           <Text size="body" tone="secondary" className="mt-4">
             Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.
           </Text>
+          {video.provenance ? (
+            <p
+              data-testid="video-provenance"
+              className="mt-2 font-display italic text-xs leading-[1.5] uppercase tracking-[0.1em] text-encre/50"
+            >
+              {video.provenance}
+            </p>
+          ) : null}
         </div>
 
         <div className="relative mx-auto mt-12 aspect-[9/16] w-full max-w-md overflow-hidden rounded-md">
@@ -147,6 +156,8 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
             </Text>
           ))}
         </div>
+
+        <VideoPostCta videoId={VIDEO_ID} />
       </Container>
     </section>
   );

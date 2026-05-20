@@ -74,4 +74,25 @@ describe('VideoPlayer4Gestes — variante YouTube (CHA-243 + Phase 2 click-to-pl
     expect(container.querySelector('video')).not.toBeNull();
     expect(screen.queryByTestId('video-poster-cover')).toBeNull();
   });
+
+  it('affiche la provenance maison en italique sous le sous-titre', () => {
+    render(<VideoPlayer4Gestes video={youTubeVideo} />);
+    const prov = screen.getByTestId('video-provenance');
+    expect(prov).toBeDefined();
+    expect(prov.textContent).toMatch(/Rabat/);
+    expect(prov.className).toMatch(/italic/);
+  });
+
+  it('omet la provenance si video.provenance est absent', () => {
+    const noProv = { ...youTubeVideo, provenance: undefined };
+    render(<VideoPlayer4Gestes video={noProv} />);
+    expect(screen.queryByTestId('video-provenance')).toBeNull();
+  });
+
+  it('rend la CTA post-vidéo « Voir le pack ci-dessous » pointant sur #commander-femiglow', () => {
+    render(<VideoPlayer4Gestes video={youTubeVideo} />);
+    const cta = screen.getByTestId('video-post-cta');
+    expect(cta.getAttribute('href')).toBe('#commander-femiglow');
+    expect(cta.textContent).toContain('Voir le pack ci-dessous');
+  });
 });
