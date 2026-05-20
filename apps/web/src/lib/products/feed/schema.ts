@@ -32,6 +32,12 @@ const stepSchema = z.object({
   accent: accentSchema,
 });
 
+const valueItemSchema = z.object({
+  label: z.string().min(1).max(60),
+  valueLabel: z.string().min(1).max(20),
+  muted: z.boolean().optional(),
+});
+
 const heroSchema = z.object({
   kicker: z.string().min(1),
   title: z.string().min(1).max(120),
@@ -48,6 +54,12 @@ const heroSchema = z.object({
     .refine((s) => s.split(/\s+/).filter(Boolean).length >= 8, {
       message: 'ctaMicrocopy doit contenir au moins 8 mots (Kolenda Pricing #11).',
     }),
+  // Extensions Kolenda §4.6 — tous optionnels pour rétro-compat.
+  priceCompareAt: z.string().min(1).max(20).optional(),
+  priceCompareAtAriaLabel: z.string().min(1).max(80).optional(),
+  valueBreakdown: z.array(valueItemSchema).min(1).max(6).optional(),
+  perUsageHint: z.string().min(1).max(80).optional(),
+  ctaAccent: z.enum(['sauge-dark', 'champagne', 'terracotta']).optional(),
 });
 
 const claimSchema = z.object({
@@ -63,6 +75,8 @@ const socialProofSchema = z.object({
   rating: z.number().min(0).max(5),
   quote: z.string().min(1),
   authorLabel: z.string().min(1),
+  // Libellé géographique optionnel — fallback `reviewsCount` si absent.
+  countLabelGeo: z.string().min(1).max(80).optional(),
 });
 
 /**

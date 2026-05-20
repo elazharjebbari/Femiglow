@@ -27,8 +27,6 @@ function requireDb() {
   return drizzle;
 }
 
-const CHUNK_SIZE = 1000;
-
 export type PushSnapshotResult = {
   listmonkListId: number;
   listmonkListName: string;
@@ -132,38 +130,75 @@ export async function pushSnapshotToListmonk(
     .from(emailAudienceSnapshotMember)
     .where(eq(emailAudienceSnapshotMember.snapshotId, snapshotId));
 
+  // Listmonk's /api/import/subscribers expects multipart CSV — we use the
+  // per-subscriber /api/subscribers endpoint instead. Handles 409 (existing
+  // email) by looking up the subscriber and bulk-adding to the list.
   let pushed = 0;
-  for (let i = 0; i < members.length; i += CHUNK_SIZE) {
-    const chunk = members.slice(i, i + CHUNK_SIZE);
-    const subscribers = chunk.map((m) => ({
-      email: m.email,
-      status: 'enabled' as const,
-    }));
-    const importRes = await fetchImpl(`${config.url}/api/import/subscribers`, {
+  for (const m of members) {
+    const res = await fetchImpl(`${config.url}/api/subscribers`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         authorization: basicAuth(config.user, config.token),
       },
       body: JSON.stringify({
-        params: {
-          mode: 'subscribe',
-          subscription_status: 'confirmed',
-          lists: [listId],
-        },
-        subscribers,
+        email: m.email,
+        status: 'enabled',
+        lists: [listId],
+        preconfirm_subscriptions: true,
       }),
     });
-    if (!importRes.ok) {
-      logger.warn('listmonk.import.chunk_failed', {
-        snapshotId,
-        listId,
-        chunkIndex: i / CHUNK_SIZE,
-        status: importRes.status,
-      });
-    } else {
-      pushed += chunk.length;
+    if (res.ok) {
+      pushed += 1;
+      continue;
     }
+    if (res.status === 409) {
+      // Existing subscriber → query by email then attach to list
+      try {
+        const q = encodeURIComponent(`subscribers.email = '${m.email.replace(/'/g, "''")}'`);
+        const lookupRes = await fetchImpl(
+          `${config.url}/api/subscribers?query=${q}&per_page=1`,
+          { headers: { authorization: basicAuth(config.user, config.token) } },
+        );
+        if (!lookupRes.ok) throw new Error(`lookup ${lookupRes.status}`);
+        const lookup = (await lookupRes.json()) as {
+          data?: { results?: Array<{ id: number }> };
+        };
+        const subId = lookup.data?.results?.[0]?.id;
+        if (!subId) throw new Error('subscriber not found after 409');
+        const addRes = await fetchImpl(`${config.url}/api/subscribers/lists`, {
+          method: 'PUT',
+          headers: {
+            'content-type': 'application/json',
+            authorization: basicAuth(config.user, config.token),
+          },
+          body: JSON.stringify({
+            ids: [subId],
+            action: 'add',
+            target_list_ids: [listId],
+            status: 'confirmed',
+          }),
+        });
+        if (!addRes.ok) throw new Error(`add ${addRes.status}`);
+        pushed += 1;
+      } catch (err) {
+        logger.warn('listmonk.subscriber.attach_failed', {
+          snapshotId,
+          listId,
+          email: m.email,
+          error: String(err),
+        });
+      }
+      continue;
+    }
+    const body = await res.text().catch(() => '');
+    logger.warn('listmonk.subscriber.create_failed', {
+      snapshotId,
+      listId,
+      email: m.email,
+      status: res.status,
+      body: body.slice(0, 200),
+    });
   }
 
   const durationMs = Date.now() - start;

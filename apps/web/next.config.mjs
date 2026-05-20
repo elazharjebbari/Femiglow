@@ -1,7 +1,27 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  env: {
+    // Date du build, injectée au moment de `next build`. Utilisée par le
+    // sitemap pour `lastModified` des routes statiques : un build identique
+    // ne change pas la date (vs `new Date()` au runtime qui faisait passer
+    // toutes les routes pour "modifiées" à chaque déploiement).
+    // cf. apps/web/src/app/sitemap.ts + docs/seo-action-plan-2026-05/05-frontend-public-design.md
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString(),
+  },
+  // Monorepo pnpm — Next.js scanne par défaut depuis `apps/web/` ce qui rate
+  // les `node_modules` hoistés à la racine. Sans `outputFileTracingRoot`, les
+  // vendor chunks (framer-motion, zod, etc.) ne sont pas inclus dans
+  // `.next/server/vendor-chunks/` → erreurs `Cannot find module ./vendor-chunks/…`
+  // au runtime `pnpm start`. cf. github.com/vercel/next.js/issues/52553
+  outputFileTracingRoot: path.join(__dirname, '../..'),
   eslint: {
     ignoreDuringBuilds: true,
   },

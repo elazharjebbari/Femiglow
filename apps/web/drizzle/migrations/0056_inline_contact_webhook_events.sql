@@ -1,0 +1,17 @@
+-- @no-transaction:true
+-- ---------------------------------------------------------------------------
+-- Migration 0056 — ajout des event types `inline_contact_webhook_*`
+-- ---------------------------------------------------------------------------
+-- NOTE :
+--   La colonne `chat_conversation_event.type` est définie comme `text NOT
+--   NULL` (voir migration 0012_chat_init.sql), PAS comme un enum PostgreSQL.
+--   Les valeurs autorisées sont validées au niveau de l'ORM Drizzle
+--   (`apps/web/src/lib/chat/db/schema.ts`, champ `text('type', { enum: [...] })`).
+--
+--   La version initiale tentait `ALTER TYPE chat_conversation_event_type ADD
+--   VALUE` — elle échouait systématiquement (`type does not exist`) car
+--   l'enum PostgreSQL n'a jamais été créé. Aucune modification SQL n'est
+--   nécessaire pour ajouter de nouvelles valeurs côté ORM : ce fichier est
+--   conservé pour préserver la séquence du journal Drizzle.
+-- ---------------------------------------------------------------------------
+SELECT 1;

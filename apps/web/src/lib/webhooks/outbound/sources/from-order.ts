@@ -1,25 +1,13 @@
 /**
  * CHA-260 — Builder webhook outbound pour les commandes (`order`).
  *
- * Appelé après `orderRepo.createOrder()` réussi côté
- * `/api/checkout/order`. Construit le payload PLAT avec un MAXIMUM de
- * champs (contrat §1) et délègue l'envoi au dispatcher unifié.
- *
- * Phone-gate : tous les orders ont un `phoneE164` valide (garanti par
- * `wizardLeadRepo.createWizardLead`), donc le skip pour téléphone est
- * théoriquement impossible côté order — on garde quand même la
- * validation pour défense en profondeur.
- *
- * Idempotency-key : `order:<order.id>` — stable et unique.
- *
- * cf. `docs/webhooks/outbound-webhook-runbook.md` §2.1.
+ * Dispatch désormais vers les endpoints admin EN PRIORITÉ, puis fallback
+ * outbound URL si aucun endpoint admin ne matche.
  */
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
-import {
-  dispatchOutbound,
-  type DispatchResult,
-} from '../dispatcher';
+import { logger } from '@/lib/logging/logger';
+import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 
 export interface OrderWebhookContext {
@@ -87,7 +75,7 @@ function composeAddress(line1: string | null, line2: string | null): string | un
 }
 
 export interface BuildOrderPayloadResult {
-  status: DispatchResult['status'];
+  status: DispatchToAllChannelsResult['status'];
   attempts: number;
   responseStatus?: number;
   logId?: string;
@@ -95,20 +83,20 @@ export interface BuildOrderPayloadResult {
 }
 
 /**
- * Construit le payload PLAT et envoie via le dispatcher.
+ * Construit le payload PLAT et envoie via le dispatcher unifié.
  * Anti-blocage : on n'attend pas la réponse au caller — la route appelle
- * cette fonction sans `await` (fire-and-forget). On expose néanmoins le
- * résultat pour les tests unitaires.
+ * cette fonction sans `await` (fire-and-forget).
  */
 export async function dispatchOrderWebhook(
   ctx: OrderWebhookContext,
 ): Promise<BuildOrderPayloadResult> {
   const phone = normalizePhoneForPayload(ctx.lead.phoneE164 || ctx.lead.phoneRaw, 'MA');
   if (!phone.ok) {
-    // Phone invalide → on n'envoie pas. Trace via dispatcher pour log
-    // unifié — le payload sera rejeté par Zod (phone manquant) et marqué
-    // `skipped`.
-    return shortCircuitInvalidPhone(ctx);
+    return {
+      status: 'skipped',
+      attempts: 0,
+      lastError: `invalid-phone:${phone.reason}`,
+    };
   }
 
   const productNames = joinUnique(ctx.items.map((i) => i.name));
@@ -126,62 +114,44 @@ export async function dispatchOrderWebhook(
   const countryCode = (ctx.lead.shippingCountry ?? 'MA').toUpperCase();
   const countryLabel = COUNTRY_LABEL[countryCode] ?? countryCode;
 
-  const payload = {
-    id: ctx.order.id,
-    full_name: composeFullName(ctx.lead.firstName),
-    phone: phone.value,
-    address: composeAddress(ctx.lead.shippingAddressLine1, ctx.lead.shippingAddressLine2),
-    city: ctx.lead.shippingCity ?? undefined,
-    country: countryLabel,
-    email: ctx.lead.email ?? undefined,
-    total_price: totalPrice,
-    currency: (ctx.order.currency || 'MAD').toUpperCase(),
-    quantity: Math.max(1, quantity),
-    product_name: productNames,
-    product_variant: productVariant ?? undefined,
-    product_sku: productSkus,
-    note: noteParts.length ? noteParts.join(' | ') : undefined,
-    source_channel: sourceChannel,
-    ip: ctx.ip ?? undefined,
-  };
-
-  const result = await dispatchOutbound({
+  const result = await dispatchToAllChannels({
     source: 'order',
     sourceId: ctx.order.id,
     idempotencyKey: `order:${ctx.order.id}`,
     eventName: 'order.created',
-    payload,
+    adminEventNames: ['order.created'],
+    payload: {
+      id: ctx.order.id,
+      full_name: composeFullName(ctx.lead.firstName),
+      phone: phone.value,
+      address: composeAddress(ctx.lead.shippingAddressLine1, ctx.lead.shippingAddressLine2),
+      city: ctx.lead.shippingCity ?? undefined,
+      country: countryLabel,
+      email: ctx.lead.email ?? undefined,
+      total_price: totalPrice,
+      currency: (ctx.order.currency || 'MAD').toUpperCase(),
+      quantity: Math.max(1, quantity),
+      product_name: productNames,
+      product_variant: productVariant ?? undefined,
+      product_sku: productSkus,
+      note: noteParts.length ? noteParts.join(' | ') : undefined,
+      source_channel: sourceChannel,
+      ip: ctx.ip ?? undefined,
+    },
   });
-  return {
+
+  logger.info('outbound.webhook.order.dispatch_result', {
+    orderId: ctx.order.id,
     status: result.status,
     attempts: result.attempts,
     responseStatus: result.responseStatus,
     logId: result.logId,
-    lastError: result.lastError,
-  };
-}
-
-async function shortCircuitInvalidPhone(
-  ctx: OrderWebhookContext,
-): Promise<BuildOrderPayloadResult> {
-  // On émet une tentative qui sera marquée `skipped` via le dispatcher —
-  // on construit volontairement un payload sans `phone` pour que Zod refuse.
-  const result = await dispatchOutbound({
-    source: 'order',
-    sourceId: ctx.order.id,
-    idempotencyKey: `order:${ctx.order.id}`,
-    eventName: 'order.created',
-    payload: {
-      id: ctx.order.id,
-      full_name: composeFullName(ctx.lead.firstName),
-      // phone absent volontairement → validation Zod échoue → skipped
-      currency: (ctx.order.currency || 'MAD').toUpperCase(),
-      quantity: 1,
-    },
   });
+
   return {
     status: result.status,
     attempts: result.attempts,
+    responseStatus: result.responseStatus,
     logId: result.logId,
     lastError: result.lastError,
   };

@@ -3,6 +3,12 @@
 import type { TrackingConsentState } from '@/lib/db/types';
 import { getDataLayer, type DataLayerEntry } from '@/lib/tracking/datalayer';
 import { uuidv7 } from '@/lib/tracking/uuid';
+import { readAttributionCookie } from '@/lib/tracking/attribution/cookie';
+import { applyStrategy } from '@/lib/tracking/attribution/strategy';
+import {
+  DEFAULT_ATTRIBUTION_STRATEGY,
+  type AttributionStrategy,
+} from '@/lib/tracking/attribution/types';
 
 export interface EmitOptions {
   componentId?: string;
@@ -11,6 +17,51 @@ export interface EmitOptions {
   context?: Record<string, unknown>;
   /** Override timestamp (utile pour replay tests). */
   timestamp?: string;
+  /**
+   * Bloc `user_data` (déjà hashé SHA-256) à attacher à l'entry. Voir
+   * `hashIdentityBrowser()`. Consommé par les tags GTM Google Ads
+   * (Enhanced Conversions) et Meta pixel (Advanced Matching).
+   */
+  userData?: Record<string, unknown>;
+  /**
+   * Clé de dédup personnalisée. Si fournie, l'event ne sera pas
+   * réémis pour la même clé pendant la fenêtre de redondance (ou
+   * jamais si la fenêtre vaut 0). Utile pour les events « 1 fois par
+   * formulaire » (ex. checkout_intent).
+   */
+  dedupKey?: string;
+  /**
+   * Identité en clair (email, phone, nom) pour les pixels client-side
+   * (Snap snaptr, Meta fbq Advanced Matching). Le SDK du pixel
+   * normalise et hashe lui-même. N'EST PAS envoyé à /api/track.
+   */
+  identity?: {
+    email?: string;
+    phone?: string;
+    firstName?: string;
+    lastName?: string;
+    city?: string;
+    country?: string;
+  };
+  /**
+   * Override de l'`event_id` (sinon `uuidv7(now)` généré). Utile pour
+   * aligner un event client avec un event server-side qui partagerait
+   * la même ID — Meta dédup alors transparent entre Pixel et CAPI.
+   *
+   * Format accepté: 32 chars hex (cf. `deriveEventId`) OU uuid v7 (36 chars).
+   * Si le format est invalide, on retombe sur `uuidv7(now)` (pas de crash).
+   *
+   * cf. docs/meta-quality-audit-2026-05/01-design-conception.md §3.2
+   */
+  eventIdOverride?: string;
+}
+
+const EVENT_ID_OVERRIDE_PATTERN =
+  /^([a-f0-9]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+function pickEventId(now: number, override?: string): string {
+  if (override && EVENT_ID_OVERRIDE_PATTERN.test(override)) return override;
+  return uuidv7(now);
 }
 
 export interface TrackingClientConfig {
@@ -26,6 +77,12 @@ export interface TrackingClientConfig {
   dedupSize?: number;
   /** R\u00e8gles anti-redondance par event. */
   redundancyWindows?: Record<string, number>;
+  /**
+   * Strat\u00e9gie d'attribution multi-canal. Lue \u00e0 chaque emit pour
+   * annoter `dataLayer.attribution`. Cf.
+   * docs/tracking-attribution/.
+   */
+  attributionStrategy?: () => AttributionStrategy;
 }
 
 interface QueuedEvent {
@@ -39,12 +96,23 @@ const DEFAULT_REDUNDANCY: Record<string, number> = {
   add_to_cart: 5_000,
   scroll_depth: 0,
   fg_section_view: 60_000,
+  // form_start est émis par useFormTracking au 1er focus. GTM le détecte
+  // aussi via son trigger built-in « form interaction ». On dedup sur
+  // une fenêtre courte par form_id pour éviter le double-push observé
+  // en QA (Mode A + Mode B montés simultanément).
+  form_start: 5_000,
+  // checkout_intent : 1 seule fois par instance de formulaire — la
+  // dedupKey suffixée par form_id garantit l'unicité.
+  checkout_intent: 0,
 };
 
 export class TrackingClient {
   private readonly config: Required<
-    Omit<TrackingClientConfig, 'redundancyWindows'>
-  > & { redundancyWindows: Record<string, number> };
+    Omit<TrackingClientConfig, 'redundancyWindows' | 'attributionStrategy'>
+  > & {
+    redundancyWindows: Record<string, number>;
+    attributionStrategy: () => AttributionStrategy;
+  };
   private queue: QueuedEvent[] = [];
   private dedupCache = new Map<string, number>();
   private lastEmitByKey = new Map<string, number>();
@@ -60,6 +128,7 @@ export class TrackingClient {
       maxBatchSize: config.maxBatchSize ?? 25,
       dedupSize: config.dedupSize ?? 500,
       redundancyWindows: { ...DEFAULT_REDUNDANCY, ...(config.redundancyWindows ?? {}) },
+      attributionStrategy: config.attributionStrategy ?? (() => DEFAULT_ATTRIBUTION_STRATEGY),
     };
   }
 
@@ -76,9 +145,15 @@ export class TrackingClient {
     }
     this.lastEmitByKey.set(redundancyKey, now);
 
+    // Attribution multi-canal — annote chaque entry avec le canal
+    // résolu via la stratégie active. Lecture cookie sync (<1ms).
+    const strategy = this.config.attributionStrategy();
+    const snapshot = readAttributionCookie();
+    const attributed = applyStrategy(snapshot, strategy);
+
     const entry: DataLayerEntry = {
       event: eventName,
-      event_id: uuidv7(now),
+      event_id: pickEventId(now, options.eventIdOverride),
       timestamp: options.timestamp ?? new Date(now).toISOString(),
       schema_version: 1,
       consent,
@@ -91,6 +166,17 @@ export class TrackingClient {
       },
       context: options.context,
       params,
+      ...(options.userData ? { user_data: options.userData } : {}),
+      ...(options.identity ? { identity: options.identity } : {}),
+      attribution: {
+        channel: attributed.channel,
+        is_paid: attributed.is_paid,
+        strategy,
+        reason: attributed.reason,
+        click_id: attributed.click_id,
+        click_id_field: attributed.click_id_field,
+        utm: attributed.utm,
+      },
     };
 
     if (this.dedupCache.has(entry.event_id)) return;
@@ -115,7 +201,12 @@ export class TrackingClient {
     params: Record<string, unknown>,
     options: EmitOptions,
   ): string {
-    const id = (params.transaction_id ?? params.item_id ?? options.componentId ?? '') as string;
+    if (options.dedupKey) return `${eventName}:${options.dedupKey}`;
+    const id = (params.transaction_id ??
+      params.item_id ??
+      params.form_id ??
+      options.componentId ??
+      '') as string;
     return `${eventName}:${id}`;
   }
 

@@ -142,3 +142,57 @@
   }
   .skip-link:focus { top: 0; }
 }
+
+/*
+  CHA-mobile-focus — Verrou anti-zoom scopé au widget chat.
+
+  Hors `@layer` pour battre la cascade Tailwind utilities (`text-sm`,
+  `text-xs`, etc.) : iOS Safari zoome dès qu'un input < 16 px obtient
+  le focus, même si le garde-fou `@layer base` ci-dessus est défini —
+  les utilities de Tailwind ont une priorité de cascade supérieure et
+  écrasent la règle de base sur des classes locales (`className="text-sm"`).
+
+  La règle ci-dessous force 16 px exact sur tous les champs saisissables
+  à l'intérieur de `[data-chat-scope]` (le ChatPanel), ce qui annule
+  définitivement le re-zoom au focus pour le widget chat — sans
+  toucher au design des autres écrans (wizard, admin, content).
+*/
+[data-chat-scope] input:not([type=button]):not([type=submit]):not([type=reset]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),
+[data-chat-scope] textarea,
+[data-chat-scope] select,
+[data-chat-scope] [contenteditable="true"] {
+  font-size: 16px !important;
+}
+
+/*
+  Hero gallery & CTA — micro-animations.
+  `heroSwapIn` : fade + léger zoom au swap d'image (galerie principale).
+  `heroCtaPulse` : pulsation très lente du CTA (3.5 s, ≥ 200 ms Kolenda).
+  Désactivées sous prefers-reduced-motion.
+*/
+@keyframes heroSwapIn {
+  from { transform: scale(1.02); opacity: 0.7; }
+  to   { transform: scale(1);    opacity: 1;   }
+}
+@keyframes heroCtaPulse {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.02); }
+}
+.hero-cta-pulse { animation: heroCtaPulse 3500ms ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-cta-pulse { animation: none; }
+}
+
+/* CTA hero — override background pour le passer en sauge profond (#4A5D4A).
+   Le système Button rend en bg-encre par défaut. On override en ciblant
+   le button enfant du wrapper hero-cta-wrapper. */
+.hero-cta-wrapper button[type="button"],
+.hero-cta-wrapper a[role="button"],
+.hero-cta-wrapper button[data-variant="primary"] {
+  background-color: #4A5D4A !important;
+  color: #F7F4EE !important;
+}
+.hero-cta-wrapper button[type="button"]:hover,
+.hero-cta-wrapper a[role="button"]:hover {
+  background-color: #3D4F3D !important;
+}

@@ -13,7 +13,7 @@ exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = 
     <item>
       <g:id>le-rituel</g:id>
       <g:title><![CDATA[Le kit FemiGlow]]></g:title>
-      <g:description><![CDATA[Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise halal, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.]]></g:description>
+      <g:description><![CDATA[Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.]]></g:description>
       <g:link>https://femiglow-maroc.com/kit</g:link>
       <g:image_link>https://femiglow-maroc.com/products/kit-principale.png</g:image_link>
       <g:availability>in stock</g:availability>

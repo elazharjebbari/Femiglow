@@ -78,6 +78,8 @@ export interface CityAutocompleteProps {
   hint?: string;
   /** Message d'erreur, géré par RHF. */
   error?: string;
+  /** Hint affiché quand le texte courant matche exactement une ville. */
+  matchedHint?: (matched: string) => string;
   /** Placeholder du `<input>`. */
   placeholder?: string;
   /** Valeur courante (texte libre). */
@@ -153,6 +155,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     label,
     hint,
     error,
+    matchedHint,
     placeholder,
     value,
     onChange,
@@ -180,8 +183,36 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // ── Données ────────────────────────────────────────────────────────────────
-  const { items, loading } = useDeliveryCities(value, { countryCode, limit });
+  // Quand la query est vide, on montre les villes prioritaires (position > 0)
+  // — on demande davantage de résultats pour les couvrir toutes.
+  const isPopularView = value.trim() === '';
+  const effectiveLimit = isPopularView ? 13 : limit;
+  const { items, loading } = useDeliveryCities(value, {
+    countryCode,
+    limit: effectiveLimit,
+  });
   const { freeShipping } = useShippingConfig();
+
+  const exactMatch = useMemo(() => {
+    const normalized = value.trim().toLocaleLowerCase();
+    if (!normalized) return null;
+    return (
+      items.find((city) => {
+        const candidates = [
+          city.nameFr,
+          city.nameAr ?? '',
+          city.slug,
+          ...city.aliases,
+        ];
+        return candidates.some(
+          (candidate) => candidate.trim().toLocaleLowerCase() === normalized,
+        );
+      }) ?? null
+    );
+  }, [items, value]);
+
+  const effectiveHint =
+    exactMatch && matchedHint ? matchedHint(exactMatch.nameFr) : hint;
 
   // Clamp activeIndex quand les items changent (ex: query qui se rétrécit).
   useEffect(() => {
@@ -332,10 +363,10 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
   const hasError = Boolean(error);
   const describedBy = useMemo(() => {
     const ids: string[] = [];
-    if (hint && !error) ids.push(`${id}-hint`);
+    if (effectiveHint && !error) ids.push(`${id}-hint`);
     if (error) ids.push(`${id}-error`);
     return ids.length > 0 ? ids.join(' ') : undefined;
-  }, [hint, error, id]);
+  }, [effectiveHint, error, id]);
 
   // Listbox actif uniquement quand il y a quelque chose à montrer ou un état
   // de chargement à signaler.
@@ -343,7 +374,13 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
 
   return (
     <div ref={containerRef} className="relative">
-      <FieldShell id={id} label={label} hint={hint} error={error} required={required}>
+      <FieldShell
+        id={id}
+        label={label}
+        hint={effectiveHint}
+        error={error}
+        required={required}
+      >
         <input
           ref={inputRef}
           id={id}
@@ -397,6 +434,14 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
               aria-live="polite"
             >
               Recherche…
+            </li>
+          )}
+          {isPopularView && items.length > 0 && (
+            <li
+              role="presentation"
+              className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-encre/45"
+            >
+              Villes populaires
             </li>
           )}
           {items.map((city, index) => {

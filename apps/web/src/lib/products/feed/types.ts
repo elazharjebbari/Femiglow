@@ -67,6 +67,45 @@ export interface ProductFeedHero {
   ctaLabel: string;
   /** Microcopy de réassurance dense sous le CTA. */
   ctaMicrocopy: string;
+  /**
+   * Pack pricing — extensions Kolenda §4.6 (optional, rétro-compat).
+   * Le builder peut produire ces champs ; un override admin peut les
+   * patcher ; un consommateur legacy peut les ignorer.
+   */
+  /** Prix barré « non packagé » (chaîne FR ex « 49 € »). Affiché en
+   *  petit, line-through. Sert au calcul `computePackSavings`. */
+  priceCompareAt?: string;
+  /** `aria-label` du prix barré pour les lecteurs d'écran. */
+  priceCompareAtAriaLabel?: string;
+  /**
+   * Décomposition de la valeur du pack — liste ordonnée d'items
+   * `{label, valueLabel, muted?}` rendue par `<ValueBreakdownList>`.
+   * `muted: true` rend l'item en italique opacity 60 % (ex : « offert »).
+   */
+  valueBreakdown?: ProductFeedValueItem[];
+  /** Microcopy coût/usage. Ex « ≈ 0,75 € par soin sur 30 jours ». */
+  perUsageHint?: string;
+  /**
+   * Accent visuel du CTA primaire. `sauge-dark` est le défaut Kolenda
+   * (contraste fort, conversion). `champagne` = fallback luxe doux.
+   * `terracotta` = bandeau économie/CTA secondaire (couleur littérale
+   * `#C28A6E`, cohérente avec le bandeau savings).
+   */
+  ctaAccent?: 'sauge-dark' | 'champagne' | 'terracotta';
+}
+
+/**
+ * Un item de la décomposition de valeur du pack.
+ * Affiché dans `<ValueBreakdownList>` sous forme d'une liste verticale
+ * label · valueLabel.
+ */
+export interface ProductFeedValueItem {
+  /** Libellé court de l'item (ex « 1 Paste · 30 ml »). */
+  label: string;
+  /** Valeur affichée à droite (ex « 19 € » ou « offert »). */
+  valueLabel: string;
+  /** Si true → item rendu en italique + opacity réduite (bonus/offert). */
+  muted?: boolean;
 }
 
 /**
@@ -95,6 +134,12 @@ export interface ProductFeedSocialProof {
   quote: string;
   /** Attribution lisible ("Lina, Rabat"). */
   authorLabel: string;
+  /**
+   * Libellé géographique optionnel pour le bloc condensé sous le CTA
+   * (ex « 287 maisons en France »). Fallback : `${reviewsCount} avis`.
+   * Plus chaleureux et plus crédible qu'un simple « avis ».
+   */
+  countLabelGeo?: string;
 }
 
 /**

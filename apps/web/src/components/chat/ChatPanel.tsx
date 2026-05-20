@@ -78,6 +78,87 @@ export function ChatPanel({ page }: ChatPanelProps) {
     };
   }, [isOpen]);
 
+  /*
+    CHA-mobile-focus — Neutralisation radicale du focus iOS dans le chat.
+
+    iOS Safari (et WebViews dérivées) déclenche au focus d'un input deux
+    effets parasites qui dégradent l'UX du chat :
+      1. **Scroll-into-view automatique** : la page parente et/ou le
+         panel sont scrollés pour rendre l'input visible — la
+         conversation remonte et disparaît.
+      2. **Push du composer hors-écran** : le clavier virtuel s'ouvre
+         mais ne resize PAS le `window.innerHeight` (visual ≠ layout
+         viewport). Le composer `position: fixed` se retrouve masqué
+         par le clavier, bouton d'envoi inclus.
+
+    Mécanique du fix :
+      - Sur `focusin` à l'intérieur du panel, on capture `panel.scrollTop`
+        et `window.scrollY` AVANT que iOS ait scrollé, puis on les
+        restaure après deux rAF (timing du scroll natif iOS).
+      - On écoute `visualViewport.resize/scroll` pour exposer le
+        décalage clavier en CSS var `--chat-keyboard-inset`. Le panel
+        applique `padding-bottom: var(--chat-keyboard-inset)` → le
+        composer remonte au-dessus du clavier.
+
+    Scopé au chat : seuls les inputs avec un ancêtre `[data-chat-scope]`
+    déclenchent cette logique, le wizard et les autres écrans ne sont
+    pas affectés.
+  */
+  useEffect(() => {
+    if (!isOpen) return;
+    if (typeof window === 'undefined') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const FOCUSABLE = 'input,textarea,select,[contenteditable="true"]';
+
+    function isChatField(target: EventTarget | null): target is HTMLElement {
+      return target instanceof HTMLElement && target.matches(FOCUSABLE);
+    }
+
+    function onFocusIn(e: FocusEvent) {
+      if (!isChatField(e.target)) return;
+      const startY = window.scrollY;
+      const list = panel!.querySelector<HTMLElement>('[data-chat-scroll]');
+      const startScroll = list?.scrollTop ?? 0;
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          if (window.scrollY !== startY) window.scrollTo(0, startY);
+          if (list && list.scrollTop !== startScroll) list.scrollTop = startScroll;
+        });
+      });
+    }
+
+    panel.addEventListener('focusin', onFocusIn);
+
+    const vv = window.visualViewport;
+    let rafId = 0;
+    function syncKeyboardInset() {
+      if (!vv) return;
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      panel!.style.setProperty('--chat-keyboard-inset', `${inset}px`);
+    }
+    function onViewportChange() {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(syncKeyboardInset);
+    }
+    if (vv) {
+      syncKeyboardInset();
+      vv.addEventListener('resize', onViewportChange);
+      vv.addEventListener('scroll', onViewportChange);
+    }
+
+    return () => {
+      panel.removeEventListener('focusin', onFocusIn);
+      if (vv) {
+        vv.removeEventListener('resize', onViewportChange);
+        vv.removeEventListener('scroll', onViewportChange);
+      }
+      cancelAnimationFrame(rafId);
+      panel.style.removeProperty('--chat-keyboard-inset');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const isRtl = language === 'ar';
@@ -98,13 +179,20 @@ export function ChatPanel({ page }: ChatPanelProps) {
       // sans polluer le reste du site. cf. runbook §E.
       data-chat-scope=""
       dir={isRtl ? 'rtl' : 'ltr'}
-      style={{ zIndex: 'var(--z-chat-overlay)' }}
+      style={{
+        zIndex: 'var(--z-chat-overlay)',
+        // CHA-mobile-focus — Padding bas dynamique : `--chat-keyboard-inset`
+        // est posé par le useEffect visualViewport ci-dessus quand le
+        // clavier mobile s'ouvre. Tant qu'il est absent, on retombe sur
+        // `env(safe-area-inset-bottom)` (notch). Le composer reste donc
+        // toujours visible au-dessus du clavier.
+        paddingBottom: 'max(env(safe-area-inset-bottom), var(--chat-keyboard-inset, 0px))',
+      }}
       className={[
         // ─── Mobile (base) : sheet full-screen ────────────────────────
         'fixed inset-0 h-[100dvh] w-full',
         'flex flex-col overflow-hidden border-0 bg-white shadow-2xl shadow-stone-900/10',
         'overscroll-contain',
-        'pb-[env(safe-area-inset-bottom)]',
         // ─── Desktop (≥ sm) : bubble bas-droite 380×560 ───────────────
         'sm:inset-auto sm:bottom-28 sm:h-auto sm:w-[380px]',
         'sm:max-h-[min(560px,calc(100vh-9rem))]',

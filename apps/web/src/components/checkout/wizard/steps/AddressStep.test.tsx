@@ -208,6 +208,18 @@ describe('AddressStep — champs rendus', () => {
     expect(hint).toBeInTheDocument();
     expect(hint.textContent ?? '').toContain('الدار البيضاء');
   });
+
+  it('affiche le hint de ville reconnue quand la saisie matche un alias', async () => {
+    setMockedCities([CASABLANCA]);
+    const user = userEvent.setup();
+    render(<AddressStep />);
+
+    await user.type(screen.getByTestId('wizard-address-city'), 'Casa');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Reconnu\s*:\s*Casablanca/i)).toBeInTheDocument();
+    });
+  });
 });
 
 describe('AddressStep — combobox CHA-230', () => {
@@ -280,12 +292,17 @@ describe('AddressStep — submit', () => {
     executeMock.mockResolvedValue(undefined);
     render(<AddressStep />);
 
-    // Sélection clavier de Casablanca via le combobox.
+    // Sélection explicite de Casablanca via le combobox. Le clic verrouille
+    // la valeur canonique avant de passer au champ adresse, ce qui évite que
+    // la saisie suivante reste capturée par le champ ville en jsdom.
     const cityInput = screen.getByTestId('wizard-address-city');
     await user.click(cityInput);
-    await user.keyboard('{ArrowDown}{Enter}');
+    await user.click(await screen.findByTestId('wizard-address-city-option-casablanca'));
+    await waitFor(() => expect(cityInput).toHaveValue('Casablanca'));
 
-    await user.type(screen.getByTestId('wizard-address-line1'), '12 rue des Roses');
+    const addressInput = screen.getByTestId('wizard-address-line1');
+    fireEvent.change(addressInput, { target: { value: '12 rue des Roses' } });
+    await waitFor(() => expect(addressInput).toHaveValue('12 rue des Roses'));
 
     const btn = screen.getByTestId('wizard-address-submit');
     await waitFor(() => expect(btn).not.toBeDisabled());

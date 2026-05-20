@@ -38,6 +38,7 @@ import type {
   TrackingPageComponent,
   TrackingProvider,
   TrackingSetting,
+  VisitorAttributionRow,
   SiteComponent,
   ComponentMediaBinding,
   ComponentAnimation,
@@ -51,6 +52,7 @@ import type {
   RitualTestimonialPhoto,
   RitualAuditEntry,
   RitualAggregateRow,
+  ProductReviewPhoto,
 } from '@/lib/db/types';
 
 interface Store {
@@ -82,6 +84,11 @@ interface Store {
   trackingConsentSnapshots: Map<string, TrackingConsentSnapshot>;
   trackingConsentOrder: string[];
   trackingSettings: Map<string, TrackingSetting>;
+  /**
+   * Snapshot d'attribution multi-canal par visitor_id. Cf.
+   * docs/tracking-attribution/. Mode in-memory (sans DB).
+   */
+  visitorAttribution: Map<string, VisitorAttributionRow>;
   siteComponents: Map<string, SiteComponent>;
   componentMediaBindings: Map<string, ComponentMediaBinding>;
   componentAnimations: Map<string, ComponentAnimation>;
@@ -99,6 +106,8 @@ interface Store {
   ritualTestimonialPhotos: Map<string, RitualTestimonialPhoto>;
   ritualAuditLog: Map<string, RitualAuditEntry>;
   ritualAggregate: Map<string, RitualAggregateRow>;
+  // Photos clientes pour la galerie hero produit
+  productReviewPhotos: Map<string, ProductReviewPhoto>;
 }
 
 const globalAny = globalThis as typeof globalThis & { __femiglowStore?: Store };
@@ -133,6 +142,7 @@ function makeStore(): Store {
     trackingConsentSnapshots: new Map(),
     trackingConsentOrder: [],
     trackingSettings: new Map(),
+    visitorAttribution: new Map(),
     siteComponents: new Map(),
     componentMediaBindings: new Map(),
     componentAnimations: new Map(),
@@ -149,6 +159,7 @@ function makeStore(): Store {
     ritualTestimonialPhotos: new Map(),
     ritualAuditLog: new Map(),
     ritualAggregate: new Map(),
+    productReviewPhotos: new Map(),
   };
 }
 
@@ -163,7 +174,7 @@ export function resetMemoryStore(): void {
   globalAny.__femiglowStore = makeStore();
 }
 
-type DrizzleDb =
+export type DrizzleDb =
   | ReturnType<typeof drizzleNeon<typeof schema>>
   | ReturnType<typeof drizzlePg<typeof schema>>;
 const dbCache = globalAny as typeof globalAny & { __femiglowDb?: DrizzleDb | null };

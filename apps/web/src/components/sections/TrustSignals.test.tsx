@@ -8,7 +8,7 @@ describe('TrustSignals', () => {
     render(<TrustSignals />);
     expect(screen.getByText(/livraison offerte/i)).toBeInTheDocument();
     expect(screen.getByText(/retour 30/i)).toBeInTheDocument();
-    expect(screen.getByText(/paiement s\u00e9curis\u00e9/i)).toBeInTheDocument();
+    expect(screen.getByText(/paiement \u00e0 la livraison/i)).toBeInTheDocument();
   });
 
   it('respecte axe', async () => {

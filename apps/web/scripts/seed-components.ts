@@ -71,6 +71,7 @@ async function main(): Promise<void> {
     console.error(`seed:components — ${report.images.errors.length} error(s).`);
     process.exit(1);
   }
+  process.exit(0);
 }
 
 const isMainModule =

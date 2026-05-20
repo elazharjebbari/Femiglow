@@ -18,13 +18,20 @@
  * State client uniquement. La persistance draft est faite via
  * updateCampaignDraft() à chaque step transition (pas auto-save debounced).
  */
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   updateCampaignDraft,
   finalizeCampaign,
 } from '@/lib/admin/emails/wizard-actions';
 import type { ListmonkListLite, ListmonkTemplateLite } from '@/lib/admin/emails/campaigns-queries';
+
+type AudienceLite = {
+  id: string;
+  name: string;
+  slug: string;
+  snapshotCount: number;
+};
 
 type WizardProps = {
   draftId: string;
@@ -33,18 +40,20 @@ type WizardProps = {
     subject: string;
     preheader: string | null;
     audienceLinkIds: number[];
+    audienceId?: string | null;
     listmonkTemplateId: number | null;
     scheduledFor: string | null;
     payloadJson: Record<string, unknown>;
   };
   lists: ListmonkListLite[];
   templates: ListmonkTemplateLite[];
+  audiences?: AudienceLite[];
   listmonkError: string | null;
 };
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
-export function CampaignWizard({ draftId, initial, lists, templates, listmonkError }: WizardProps) {
+export function CampaignWizard({ draftId, initial, lists, templates, audiences = [], listmonkError }: WizardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState<Step>(1);
@@ -53,6 +62,8 @@ export function CampaignWizard({ draftId, initial, lists, templates, listmonkErr
   // form state
   const [name, setName] = useState(initial.name);
   const [audienceIds, setAudienceIds] = useState<number[]>(initial.audienceLinkIds);
+  const [audienceId, setAudienceId] = useState<string | null>(initial.audienceId ?? null);
+  const [audiencePreviewSize, setAudiencePreviewSize] = useState<number | null>(null);
   const [templateId, setTemplateId] = useState<number | null>(initial.listmonkTemplateId);
   const [subject, setSubject] = useState(initial.subject);
   const [preheader, setPreheader] = useState(initial.preheader ?? '');
@@ -76,6 +87,7 @@ export function CampaignWizard({ draftId, initial, lists, templates, listmonkErr
           subject,
           preheader,
           audienceLinkIds: audienceIds,
+          audienceId,
           listmonkTemplateId: templateId,
           scheduledFor: scheduleMode === 'scheduled' && scheduledFor ? new Date(scheduledFor).toISOString() : null,
           payloadJson: { body: bodyHtml },
@@ -88,7 +100,7 @@ export function CampaignWizard({ draftId, initial, lists, templates, listmonkErr
 
   function validate(s: Step): string | null {
     if (s === 1 && name.trim().length < 3) return 'Le nom doit faire au moins 3 caractères.';
-    if (s === 2 && audienceIds.length === 0) return 'Sélectionne au moins une liste.';
+    if (s === 2 && audienceIds.length === 0 && !audienceId) return 'Sélectionne au moins une liste OU une audience.';
     if (s === 3 && bodyHtml.trim().length < 10) return 'Le corps du mail est trop court.';
     if (s === 4 && subject.trim().length < 3) return 'Le sujet doit faire au moins 3 caractères.';
     if (s === 5 && scheduleMode === 'scheduled' && !scheduledFor) return 'Choisis une date.';
@@ -134,10 +146,40 @@ export function CampaignWizard({ draftId, initial, lists, templates, listmonkErr
     });
   }
 
-  const estimatedAudience = audienceIds.reduce(
-    (s, id) => s + (lists.find((l) => l.id === id)?.subscriberCount ?? 0),
-    0,
-  );
+  const estimatedAudience = audienceId
+    ? (audiencePreviewSize ?? 0)
+    : audienceIds.reduce(
+        (s, id) => s + (lists.find((l) => l.id === id)?.subscriberCount ?? 0),
+        0,
+      );
+
+  // Hydrate preview size when an audience is already selected on mount (e.g.
+  // user reloads or jumps directly to step 5/6 without re-touching the radio).
+  useEffect(() => {
+    if (!audienceId || audiencePreviewSize !== null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/admin/emails/audiences/${audienceId}`, { credentials: 'include' });
+        if (!r.ok) return;
+        const data = await r.json();
+        const r2 = await fetch('/api/admin/emails/audiences/preview-size', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ rules: data.rules, exclusionFlags: data.exclusionFlags }),
+        });
+        if (!r2.ok) return;
+        const out = await r2.json();
+        if (!cancelled && typeof out.size === 'number') setAudiencePreviewSize(out.size);
+      } catch {
+        // silent
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [audienceId, audiencePreviewSize]);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -192,47 +234,123 @@ export function CampaignWizard({ draftId, initial, lists, templates, listmonkErr
 
         {/* Step 2 */}
         {step === 2 ? (
-          <div>
-            <h2 className="text-lg font-semibold text-stone-900">2. Audience</h2>
-            <p className="mt-1 text-sm text-stone-600">
-              Liste(s) de destinataires (Listmonk).
-            </p>
-            {lists.length === 0 ? (
-              <p className="mt-4 rounded border border-stone-200 bg-stone-50 p-3 text-sm text-stone-600">
-                Aucune liste disponible. Crée-en une dans <code>/admin/emails/listmonk</code>.
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-stone-900">2. Audience</h2>
+              <p className="mt-1 text-sm text-stone-600">
+                Choisis une <strong>audience FemiGlow</strong> (segmentation par règles, snapshot dynamique au send)
+                ou une <strong>liste Listmonk</strong> (statique, opt-in manuel).
               </p>
-            ) : (
-              <ul className="mt-4 space-y-2">
-                {lists.map((l) => {
-                  const checked = audienceIds.includes(l.id);
-                  return (
-                    <li key={l.id}>
-                      <label className="flex items-center gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            setAudienceIds(
-                              e.target.checked
-                                ? [...audienceIds, l.id]
-                                : audienceIds.filter((id) => id !== l.id),
-                            );
-                          }}
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium text-stone-900">{l.name}</p>
-                          <p className="text-xs text-stone-500">
-                            {l.subscriberCount} contacts · {l.type} · opt-in {l.optin}
-                          </p>
-                        </div>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <p className="mt-4 rounded bg-stone-50 p-3 text-sm">
-              Envois estimés : <strong>{estimatedAudience}</strong>
+            </div>
+
+            {/* Audiences FemiGlow */}
+            <section>
+              <h3 className="mb-2 text-sm font-medium text-stone-700">🎯 Audiences FemiGlow (M5.3)</h3>
+              {audiences.length === 0 ? (
+                <p className="rounded border border-stone-200 bg-stone-50 p-3 text-xs text-stone-600">
+                  Aucune audience définie. Crée-en une dans <code>/admin/emails/audiences/new</code>.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {audiences.map((a) => {
+                    const checked = audienceId === a.id;
+                    return (
+                      <li key={a.id}>
+                        <label className="flex items-center gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
+                          <input
+                            type="radio"
+                            name="audience-choice"
+                            checked={checked}
+                            onChange={() => {
+                              setAudienceId(a.id);
+                              setAudienceIds([]);
+                              // Fetch live preview size
+                              setAudiencePreviewSize(null);
+                              fetch(`/api/admin/emails/audiences/${a.id}`, { credentials: 'include' })
+                                .then((r) => r.ok ? r.json() : null)
+                                .then((data) => {
+                                  if (!data) return;
+                                  return fetch('/api/admin/emails/audiences/preview-size', {
+                                    method: 'POST',
+                                    headers: { 'content-type': 'application/json' },
+                                    credentials: 'include',
+                                    body: JSON.stringify({
+                                      rules: data.rules,
+                                      exclusionFlags: data.exclusionFlags,
+                                    }),
+                                  });
+                                })
+                                .then((r) => r?.ok ? r.json() : null)
+                                .then((data) => {
+                                  if (data && typeof data.size === 'number') setAudiencePreviewSize(data.size);
+                                })
+                                .catch(() => setAudiencePreviewSize(null));
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-stone-900">🎯 {a.name}</p>
+                            <p className="text-xs text-stone-500">
+                              slug <code className="font-mono">{a.slug}</code> · {a.snapshotCount} snapshot(s)
+                            </p>
+                          </div>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
+            {/* Listmonk lists */}
+            <section>
+              <h3 className="mb-2 text-sm font-medium text-stone-700">📋 Listes Listmonk (legacy)</h3>
+              {lists.length === 0 ? (
+                <p className="rounded border border-stone-200 bg-stone-50 p-3 text-xs text-stone-600">
+                  Aucune liste Listmonk. Crée-en une dans <code>/admin/emails/listmonk</code>.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {lists.map((l) => {
+                    const checked = audienceIds.includes(l.id);
+                    return (
+                      <li key={l.id}>
+                        <label className="flex items-center gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAudienceIds([...audienceIds, l.id]);
+                                setAudienceId(null);
+                              } else {
+                                setAudienceIds(audienceIds.filter((id) => id !== l.id));
+                              }
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-stone-900">{l.name}</p>
+                            <p className="text-xs text-stone-500">
+                              {l.subscriberCount} contacts · {l.type} · opt-in {l.optin}
+                            </p>
+                          </div>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
+            <p className="rounded bg-stone-50 p-3 text-sm">
+              Envois estimés :{' '}
+              <strong>
+                {audienceId
+                  ? (audiencePreviewSize ?? '…')
+                  : estimatedAudience}
+              </strong>
+              {audienceId && audiencePreviewSize !== null && (
+                <span className="ml-2 text-xs text-stone-500">(snapshot dynamique au moment du send)</span>
+              )}
             </p>
           </div>
         ) : null}
@@ -350,6 +468,9 @@ export function CampaignWizard({ draftId, initial, lists, templates, listmonkErr
             ) : null}
             <p className="mt-4 rounded bg-stone-50 p-3 text-sm">
               Estimation envoi total : <strong>{estimatedAudience} emails</strong>
+              {audienceId && (
+                <span className="ml-2 text-xs text-stone-500">(snapshot dynamique au moment du send)</span>
+              )}
             </p>
           </div>
         ) : null}
@@ -360,7 +481,14 @@ export function CampaignWizard({ draftId, initial, lists, templates, listmonkErr
             <h2 className="text-lg font-semibold text-stone-900">6. Vérification finale</h2>
             <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
               <Field label="Nom" value={name} />
-              <Field label="Audience" value={`${audienceIds.length} liste${audienceIds.length > 1 ? 's' : ''} · ~${estimatedAudience} envois`} />
+              <Field
+                label="Audience"
+                value={
+                  audienceId
+                    ? `🎯 ${audiences.find((a) => a.id === audienceId)?.name ?? audienceId.slice(0, 8)} · ~${audiencePreviewSize ?? '…'} envois (snapshot au send)`
+                    : `${audienceIds.length} liste${audienceIds.length > 1 ? 's' : ''} · ~${estimatedAudience} envois`
+                }
+              />
               <Field label="Template" value={templateId ? `Listmonk #${templateId}` : 'Corps libre'} />
               <Field label="Sujet" value={subject} />
               <Field label="Preheader" value={preheader || '—'} />

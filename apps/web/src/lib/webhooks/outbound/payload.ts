@@ -10,6 +10,17 @@ import { z } from 'zod';
 
 import { tryParsePhone, type NormalizedPhone } from '@/lib/phone';
 
+export const conversationMessageSchema = z
+  .object({
+    role: z.enum(['user', 'bot', 'assistant', 'system']),
+    name: z.string().trim().max(80).optional(),
+    text: z.string().trim().min(1).max(4000),
+    ts: z.string().datetime({ offset: true }),
+  })
+  .strict();
+
+export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
+
 /**
  * Schéma Zod strict du payload outbound.
  *
@@ -30,6 +41,8 @@ export const outboundPayloadSchema = z
     ref: z.string().trim().max(100).optional(),
     full_name: z.string().trim().min(1).max(200),
     phone: z.string().trim().min(4).max(40),
+    source: z.string().trim().max(60).optional(),
+    conversation: z.array(conversationMessageSchema).max(50).optional(),
     address: z.string().trim().max(500).optional(),
     city: z.string().trim().max(120).optional(),
     country: z.string().trim().max(80).optional(),
@@ -98,6 +111,7 @@ export function validateOutboundPayload(input: unknown): OutboundPayload {
     for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
       if (v === null || v === undefined) continue;
       if (typeof v === 'string' && v.trim().length === 0) continue;
+      if (Array.isArray(v) && v.length === 0) continue;
       cleaned[k] = v;
     }
   }

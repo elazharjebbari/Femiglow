@@ -24,9 +24,9 @@ import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
-import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
+import { PriceBlock } from '@/components/sections/PriceBlock';
+import { PackVisualBound } from '@/components/sections/PackVisualBound';
 import { cn } from '@/lib/utils/cn';
-import { computePromo } from '@/lib/utils/promo';
 import type {
   FeedAccent,
   ProductFeed,
@@ -60,10 +60,6 @@ export function ProductFeedSection({
   product,
   anchorId = 'product-feed',
 }: ProductFeedSectionProps) {
-  // Prix effectif promo-aware (`computePromo` masque silencieusement les
-  // saisies incohérentes). On le passe au tracking pour rester aligné
-  // avec ce que la visiteuse voit à l'écran.
-  const promo = computePromo(product.priceCents, product.promoPriceCents);
   return (
     <section
       id={anchorId}
@@ -72,54 +68,36 @@ export function ProductFeedSection({
       data-testid="product-feed-section"
     >
       <Container width="wide">
-        {/* 1 — Hero copy ------------------------------------------------ */}
-        <div className="mx-auto max-w-3xl space-y-5 text-center">
-          <Kicker tone="champagne">{feed.hero.kicker}</Kicker>
-          <Heading id="product-feed-title" as="h2" size="display-md">
-            {feed.hero.title}
-          </Heading>
-          <Text size="lead" tone="secondary" prose className="mx-auto">
-            {feed.hero.lead}
-          </Text>
+        {/* 1 — Hero : layout 2 colonnes desktop, 1 colonne mobile ------ */}
+        {/* Sur mobile : H2 → lead → PriceBlock → PackVisual           */}
+        {/* Sur md+   : col gauche (titre + lead + PriceBlock)         */}
+        {/*             col droite (PackVisual centré verticalement)   */}
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-16">
+          {/* Colonne gauche — texte + prix */}
+          <div className="space-y-5 text-center md:text-left">
+            <Kicker tone="champagne">{feed.hero.kicker}</Kicker>
+            <Heading id="product-feed-title" as="h2" size="display-md">
+              {feed.hero.title}
+            </Heading>
+            <Text size="lead" tone="secondary" prose className="md:mx-0">
+              {feed.hero.lead}
+            </Text>
 
-          {/* Bloc prix densifié — Kolenda Pricing #2 (small word) +
-              Pricing #11 (densify), microcopy serrée sous le CTA. */}
-          <div className="mx-auto max-w-md space-y-3 pt-8">
-            <p className="flex items-baseline justify-center gap-3">
-              <span className="text-xs uppercase tracking-[0.18em] text-encre/55">
-                {feed.hero.pricePrefix}
-              </span>
-              <span className="font-display text-3xl text-encre">
-                {(promo.effectivePriceCents / 100).toFixed(0)}{' '}
-                <span className="text-base text-encre/70">{feed.currency}</span>
-              </span>
-              {promo.active && (
-                <span
-                  aria-label={`Prix avant promotion ${(promo.originalPriceCents / 100).toFixed(0)} ${feed.currency}`}
-                  className="text-base text-encre/45 line-through decoration-encre/35"
-                >
-                  {(promo.originalPriceCents / 100).toFixed(0)} {feed.currency}
-                </span>
-              )}
-            </p>
-            {/* CHA-246 — Le CTA "Recevoir le pack" ne pousse plus vers
-                `/panier` : il scroll-anchor vers le wizard funnel embarqué
-                sur la même page (`#commander-femiglow`). On reste sur /kit,
-                la commande se finalise sans navigation — même contrat que
-                le CTA hero (`HeroProduit` en mode `wizard-anchor`). */}
-            <CommanderAnchorButton
-              size="lg"
-              fullWidth
-              productId={product.id}
-              productName={product.name}
-              priceCents={promo.effectivePriceCents}
-              currency={product.currency}
-            >
-              {feed.hero.ctaLabel}
-            </CommanderAnchorButton>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-encre/55">
-              {feed.hero.ctaMicrocopy}
-            </p>
+            {/* PriceBlock — Kolenda §4.6 : prix XXL, prix barré, bandeau
+                économie terracotta, ValueBreakdownList, perUsageHint,
+                CTA primaire + microcopy + social proof condensé.
+                IO émet pack_section_view + pack_economy_view +
+                pack_social_proof_view. */}
+            <PriceBlock feed={feed} product={product} hasVisual />
+          </div>
+
+          {/* Colonne droite — packshot piloté par le Components-CMS
+              (slot `kit-pack-visual/primary`). Fallback SVG si binding
+              admin désactivé (cf. registry.ts defaultSvgFallback). */}
+          <div className="order-first md:order-last">
+            <PackVisualBound
+              alt="Kit FemiGlow — paste, powder et polissoir Step 4, posés sur fond crème"
+            />
           </div>
         </div>
 

@@ -22,8 +22,8 @@
  * fuite d'attention au maximum techniquement possible.
  */
 
-import { useId, useMemo } from 'react';
-import { parseYouTubeUrl, buildYouTubeEmbedUrl } from '@/lib/video/youtube-url';
+import { forwardRef, useId, useMemo, type Ref } from 'react';
+import { parseYouTubeUrl, buildYouTubeEmbedUrl, type YouTubeCaptionsPref } from '@/lib/video/youtube-url';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
 export interface YouTubeEmbedProps {
@@ -41,6 +41,27 @@ export interface YouTubeEmbedProps {
   startSeconds?: number;
   /** Classes Tailwind additionnelles sur le wrapper. */
   className?: string;
+  /**
+   * Mute par défaut. Recommandé sur `/kit` pour neutraliser l'anti-pattern
+   * Kolenda §4.4 « autoplay avec son » même quand l'iframe est montée
+   * après un clic utilisateur. Défaut: `false` pour rétrocompat.
+   */
+  mute?: boolean;
+  /**
+   * `autoplay=1` dans l'URL — utile quand l'iframe est montée APRÈS un
+   * clic utilisateur (cf. `VideoPosterCover` phase 2). À combiner avec
+   * `mute=true` pour respecter les politiques navigateur.
+   */
+  autoplay?: boolean;
+  /**
+   * Politique de captions au démarrage. `'fr'` recommandé sur `/kit`.
+   */
+  captions?: YouTubeCaptionsPref;
+  /**
+   * Active YouTube IFrame API (`enablejsapi=1`) — requis pour attacher un
+   * tracker (`video_complete`, `video_progress_*`) en phase 4.
+   */
+  enableJsApi?: boolean;
 }
 
 /**
@@ -64,15 +85,22 @@ function aspectClass(ratio: '9-16' | '16-9'): string {
  * Coût : ~50 kB JS + cookies tiers (annule l'intérêt du domaine nocookie).
  * Tradeoff : on garde le tracking minimal (proxy click).
  */
-export function YouTubeEmbed({
-  url,
-  title,
-  videoId,
-  aspectRatio,
-  hl,
-  startSeconds,
-  className,
-}: YouTubeEmbedProps): JSX.Element | null {
+function YouTubeEmbedImpl(
+  {
+    url,
+    title,
+    videoId,
+    aspectRatio,
+    hl,
+    startSeconds,
+    className,
+    mute,
+    autoplay,
+    captions,
+    enableJsApi,
+  }: YouTubeEmbedProps,
+  ref: Ref<HTMLIFrameElement>,
+): JSX.Element | null {
   const reactId = useId();
   const { emit } = useTracking();
 
@@ -83,8 +111,12 @@ export function YouTubeEmbed({
     return buildYouTubeEmbedUrl(parsed.id, {
       hl,
       startSeconds,
+      mute,
+      autoplay,
+      captions,
+      enableJsApi,
     });
-  }, [parsed, hl, startSeconds]);
+  }, [parsed, hl, startSeconds, mute, autoplay, captions, enableJsApi]);
 
   if (!parsed || !embedUrl) {
     if (process.env.NODE_ENV !== 'production') {
@@ -113,6 +145,7 @@ export function YouTubeEmbed({
       }}
     >
       <iframe
+        ref={ref}
         id={reactId}
         src={embedUrl}
         title={title}
@@ -128,3 +161,6 @@ export function YouTubeEmbed({
     </div>
   );
 }
+
+export const YouTubeEmbed = forwardRef<HTMLIFrameElement, YouTubeEmbedProps>(YouTubeEmbedImpl);
+YouTubeEmbed.displayName = 'YouTubeEmbed';

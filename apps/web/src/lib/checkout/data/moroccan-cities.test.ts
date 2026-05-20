@@ -116,10 +116,12 @@ describe('moroccan-cities — normalizeArabicKey', () => {
 });
 
 describe('moroccan-cities — searchCities', () => {
-  it('retourne les premières villes pour une requête vide', () => {
+  it('retourne les villes prioritaires en tête pour une requête vide', () => {
     const res = searchCities('', 3);
     expect(res).toHaveLength(3);
-    expect(res[0]?.value).toBe(MOROCCAN_CITIES[0]?.value);
+    // Les villes prioritaires (position > 0) apparaissent en premier.
+    expect(res[0]?.value).toBe('casablanca');
+    expect(res[0]?.position).toBeGreaterThan(0);
   });
 
   it('matche par préfixe FR', () => {

@@ -7,7 +7,9 @@ export { AddToCartButton } from './AddToCartButton';
 export { IngredientsTable } from './IngredientsTable';
 export { ComparatifTable } from './ComparatifTable';
 export { FAQAccordion } from './FAQAccordion';
-export { ProductCard } from './ProductCard';
+// `ProductCard` retiré le 2026-05-20 (refonte composition Kolenda) —
+// remplacé par `components/kit/CompositionCard.tsx`. Cf.
+// docs/composition-reveal-optim-2026-05/.
 export { HandsTestimonialCarousel } from './HandsTestimonialCarousel';
 export { CartItem } from './CartItem';
 export { CartSummary } from './CartSummary';

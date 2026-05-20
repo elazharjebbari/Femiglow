@@ -25,7 +25,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useId, useMemo, useRef } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { z } from 'zod';
@@ -40,12 +40,8 @@ import {
   useWizardStore,
 } from '@/lib/checkout/state/wizard-store';
 import { useLeadCaptureMutation } from '@/lib/checkout/state/use-wizard-mutations';
-import {
-  CHECKOUT_EVENT_NAMES,
-  buildBeginCheckoutEvent,
-  type WizardContext,
-} from '@/lib/tracking/checkout-events';
-import { useTracking } from '@/lib/tracking/use-tracking';
+import type { WizardContext } from '@/lib/tracking/checkout-events';
+import { useCheckoutIntentTrigger } from '@/lib/tracking/use-checkout-intent';
 import { useFormTracking } from '@/lib/tracking/use-form-tracking';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,11 +99,37 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
   const consentId = useId();
   const honeypotId = useId();
 
-  const { emit } = useTracking();
   const formContext = useWizardStore((s) => s.formContext);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
   const leadDraft = useWizardStore((s) => s.leadDraft);
   const mergeLeadDraft = useWizardStore((s) => s.mergeLeadDraft);
+
+  // checkout_intent — fire à la 1ère frappe (≥1 char) dans le premier
+  // champ remplie. Idempotent par form_id. Cf. event-mapping.ts pour le
+  // routing GA4 begin_checkout / Meta InitiateCheckout / Ads conv.
+  const intentCtx: WizardContext | null = formContext
+    ? {
+        form_id: formContext.formId,
+        form_mode: formContext.formMode,
+        step_name: 'lead',
+        variant_key: formContext.variantKey,
+      }
+    : null;
+  const { handleInputChange: triggerCheckoutIntent } = useCheckoutIntentTrigger({
+    ctx: intentCtx ?? {
+      form_id: 'wizard',
+      form_mode: 'wizard_embed',
+      step_name: 'lead',
+      variant_key: null,
+    },
+    value: cartSnapshot ? cartSnapshot.totalCents / 100 : undefined,
+    items: (cartSnapshot?.items ?? []).map((it) => ({
+      item_id: it.sku,
+      item_name: it.name,
+      price: it.unitPriceCents / 100,
+      quantity: it.quantity,
+    })),
+  });
 
   const {
     register,
@@ -129,16 +151,13 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
 
   const mutation = useLeadCaptureMutation();
 
-  // D-004 — `begin_checkout` ne fire plus au mount (= page view déguisé qui
-  // polluait Lookalike Meta). Il est désormais déclenché dans `onSubmit`
-  // sur action explicite "Continuer". `form_start` (engagement) prend le
-  // relais comme signal d'entrée tunnel, émis au premier focus champ.
-  const beganCheckoutRef = useRef(false);
+  // `form_start` continue à être émis au 1er focus (engagement signal),
+  // mais le client de tracking dedupe désormais sur une fenêtre courte
+  // (cf. DEFAULT_REDUNDANCY['form_start']) pour neutraliser les doubles
+  // mounts Mode A + Mode B. `checkout_intent` couvre l'intent fort.
   const { handleFieldFocus } = useFormTracking({
     formId: formContext?.formId ?? 'wizard',
     formMode: formContext?.formMode,
-    // Le wizard a sa propre logique d'abandon via wizard-store ;
-    // on n'active pas le `form_abandon` du hook pour éviter le doublon.
     trackAbandon: false,
   });
 
@@ -159,32 +178,8 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
     // Honeypot — bot ? on accepte silencieusement et on s'arrête.
     if (values.website && values.website.length > 0) return;
 
-    // D-004 — `begin_checkout` sur action explicite (click Continuer), une
-    // seule fois par session de step. Le re-tir éventuel d'un second submit
-    // après erreur ne déclenche pas un nouveau begin_checkout.
-    if (!beganCheckoutRef.current && formContext) {
-      beganCheckoutRef.current = true;
-      const ctx: WizardContext = {
-        form_id: formContext.formId,
-        form_mode: formContext.formMode,
-        step_name: 'lead',
-        variant_key: formContext.variantKey,
-      };
-      emit(
-        CHECKOUT_EVENT_NAMES.beginCheckout,
-        buildBeginCheckoutEvent({
-          ctx,
-          currency: cartSnapshot?.currency ?? 'MAD',
-          value: cartSnapshot ? cartSnapshot.totalCents / 100 : 0,
-          items: (cartSnapshot?.items ?? []).map((it) => ({
-            item_id: it.sku,
-            item_name: it.name,
-            price: it.unitPriceCents / 100,
-            quantity: it.quantity,
-          })),
-        }) as unknown as Record<string, unknown>,
-      );
-    }
+    // NB : `begin_checkout` n'est plus émis ici. Le signal d'intent est
+    // désormais porté par `checkout_intent` (1ère frappe — cf. plus haut).
 
     try {
       await mutation.execute({
@@ -264,30 +259,46 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
-          <TextField
-            id={firstNameId}
-            label="Votre prénom"
-            autoComplete="given-name"
-            inputMode="text"
-            required
-            error={errors.firstName?.message}
-            placeholder="Yasmine"
-            {...register('firstName')}
-            onFocus={handleFieldFocus('firstName')}
-          />
-          <TextField
-            id={phoneId}
-            label="Téléphone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            required
-            placeholder="06 12 34 56 78"
-            hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
-            error={errors.phone?.message}
-            {...register('phone')}
-            onFocus={handleFieldFocus('phone')}
-          />
+          {(() => {
+            const firstNameProps = register('firstName');
+            const phoneProps = register('phone');
+            return (
+              <>
+                <TextField
+                  id={firstNameId}
+                  label="Votre prénom"
+                  autoComplete="given-name"
+                  inputMode="text"
+                  required
+                  error={errors.firstName?.message}
+                  placeholder="Yasmine"
+                  {...firstNameProps}
+                  onFocus={handleFieldFocus('firstName')}
+                  onChange={(e) => {
+                    void firstNameProps.onChange(e);
+                    triggerCheckoutIntent('firstName', e.target.value);
+                  }}
+                />
+                <TextField
+                  id={phoneId}
+                  label="Téléphone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  required
+                  placeholder="06 12 34 56 78"
+                  hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
+                  error={errors.phone?.message}
+                  {...phoneProps}
+                  onFocus={handleFieldFocus('phone')}
+                  onChange={(e) => {
+                    void phoneProps.onChange(e);
+                    triggerCheckoutIntent('phone', e.target.value);
+                  }}
+                />
+              </>
+            );
+          })()}
         </div>
 
         <div className="space-y-3">

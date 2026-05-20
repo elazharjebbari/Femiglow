@@ -448,3 +448,157 @@ export async function listAuditSnapshots(
 
 // Marker import to keep `asc` referenced in case build strictness changes
 export const __noop_for_typecheck_seo = asc;
+
+/* -------------------------------------------------------------------------- */
+/*  Audit events scope SEO (phase 3)                                          */
+/* -------------------------------------------------------------------------- */
+
+import type { AuditEvent } from '@/lib/db/types';
+import { inArray, isNotNull, lt, sql } from 'drizzle-orm';
+
+/* -------------------------------------------------------------------------- */
+/*  Phase 5 — batch fetch des overrides composants                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Récupère tous les overrides publiés pour un ensemble de composants dans
+ * une **seule requête** (évite le N+1 quand une page agrège plusieurs
+ * composants pilotés).
+ *
+ * Retourne une Map keyée par `targetKey` pour lookup O(1) côté consommateur.
+ * Les composants sans override publié ne sont pas dans la Map (consommateur
+ * doit utiliser `.get(key)` avec test undefined).
+ */
+export async function getActiveComponentOverrides(
+  componentKeys: string[],
+  locale: string = 'fr-MA',
+): Promise<Map<string, SeoOverride>> {
+  if (componentKeys.length === 0) return new Map();
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(schema.seoOverrides)
+      .where(
+        and(
+          eq(schema.seoOverrides.scope, 'component'),
+          inArray(schema.seoOverrides.targetKey, componentKeys),
+          eq(schema.seoOverrides.locale, locale),
+          isNotNull(schema.seoOverrides.publishedAt),
+        ),
+      );
+    return new Map(rows.map((r) => [r.targetKey, rowToOverride(r)]));
+  }
+  // memoryStore fallback
+  const all = Array.from(ext().seoOverrides.values()).filter(
+    (o) =>
+      o.scope === 'component' &&
+      componentKeys.includes(o.targetKey) &&
+      o.locale === locale &&
+      o.publishedAt !== null,
+  );
+  return new Map(all.map((o) => [o.targetKey, o]));
+}
+
+export interface ListSeoAuditEventsOptions {
+  /** Limite par page. Maximum 100, par défaut 20. */
+  limit?: number;
+  /** Curseur opaque = id du dernier event de la page précédente. */
+  cursor?: string | null;
+  /** Filtre exact sur l'action (e.g. `'seo.publish'`). */
+  action?: string | null;
+  /** Filtre sur l'actorId. */
+  actorId?: string | null;
+}
+
+export interface SeoAuditEventsPage {
+  events: AuditEvent[];
+  nextCursor: string | null;
+}
+
+/**
+ * Récupère les audit events dont l'action commence par `seo.` ou dont la
+ * `resourceType` est l'une des ressources SEO. Tri par `createdAt DESC` puis
+ * `id DESC` (stabilité). Pagination par curseur = id du dernier événement.
+ *
+ * Pourquoi curseur sur `id` plutôt que `createdAt` :
+ *  - `createdAt` peut avoir plusieurs lignes pour le même timestamp (batch).
+ *  - `id` est unique par construction (`createId('ae')`), stable.
+ *  - Le tri secondaire `id DESC` garantit la cohérence avec le filtre.
+ *
+ * Le `cursor` est passé en `WHERE id < cursor` après avoir résolu le tuple
+ * (createdAt, id) du cursor. Pour rester simple sans table jointure, on
+ * utilise `id < cursor` qui marche tant que les IDs sont lexicographiquement
+ * décroissants dans le temps — c'est le cas avec `createId` (timestamp prefix).
+ */
+export async function listSeoAuditEvents(
+  options: ListSeoAuditEventsOptions = {},
+): Promise<SeoAuditEventsPage> {
+  const rawLimit = options.limit ?? 20;
+  const limit = Math.max(1, Math.min(100, rawLimit));
+  const drizzle = db();
+  if (drizzle) {
+    const conditions = [
+      // Action SEO : préfixe 'seo.' OU resourceType dans la liste SEO connue.
+      or(
+        sql`${schema.auditEvents.action} LIKE 'seo.%'`,
+        sql`${schema.auditEvents.resourceType} IN ('seo_overrides', 'seo_settings', 'seo_audit_snapshot')`,
+      ),
+    ];
+    if (options.action) conditions.push(eq(schema.auditEvents.action, options.action));
+    if (options.actorId) conditions.push(eq(schema.auditEvents.actorId, options.actorId));
+    if (options.cursor) conditions.push(lt(schema.auditEvents.id, options.cursor));
+
+    const rows = await drizzle
+      .select()
+      .from(schema.auditEvents)
+      .where(and(...conditions))
+      .orderBy(desc(schema.auditEvents.createdAt), desc(schema.auditEvents.id))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const events: AuditEvent[] = rows.slice(0, limit).map((r) => ({
+      id: r.id,
+      action: r.action,
+      actorId: r.actorId,
+      resourceType: r.resourceType,
+      resourceId: r.resourceId,
+      meta: (r.meta ?? {}) as Record<string, unknown>,
+      createdAt: r.createdAt,
+    }));
+    return {
+      events,
+      nextCursor: hasMore ? (events.at(-1)?.id ?? null) : null,
+    };
+  }
+
+  // Fallback memoryStore (dev/tests sans DB)
+  const allRaw = Array.from(
+    (memoryStore() as unknown as { auditEvents?: Map<string, AuditEvent> }).auditEvents?.values() ?? [],
+  );
+  let filtered = allRaw.filter(
+    (e) =>
+      e.action.startsWith('seo.') ||
+      (e.resourceType !== null &&
+        ['seo_overrides', 'seo_settings', 'seo_audit_snapshot'].includes(e.resourceType)),
+  );
+  if (options.action) filtered = filtered.filter((e) => e.action === options.action);
+  if (options.actorId) filtered = filtered.filter((e) => e.actorId === options.actorId);
+  filtered.sort((a, b) => {
+    if (a.createdAt.getTime() !== b.createdAt.getTime()) {
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    }
+    return b.id.localeCompare(a.id);
+  });
+  let pageStart = 0;
+  if (options.cursor) {
+    const idx = filtered.findIndex((e) => e.id === options.cursor);
+    pageStart = idx >= 0 ? idx + 1 : filtered.length; // cursor consommé
+  }
+  const slice = filtered.slice(pageStart, pageStart + limit);
+  const hasMore = filtered.length > pageStart + limit;
+  return {
+    events: slice,
+    nextCursor: hasMore ? (slice.at(-1)?.id ?? null) : null,
+  };
+}

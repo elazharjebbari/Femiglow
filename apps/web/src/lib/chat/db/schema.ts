@@ -368,6 +368,9 @@ export const chatConversationEvent = pgTable(
         // CHA-225 — formalisation d'un lead `inline-contact` en lead
         // formel après soumission du formulaire (consent RGPD propre).
         'chat_lead_form_upgrade',
+        // Webhook dispatch pour leads inline-contact (numéro détecté dans le chat).
+        'inline_contact_webhook_sent',
+        'inline_contact_webhook_failed',
         // CHAT-066 — escalade frustration : 2 messages user consécutifs
         // détectés comme `frustration` → alerte Slack #chat-care et trace
         // KPI (analytics : tx frustration / session, MTTR Care, etc.).
@@ -484,6 +487,7 @@ export const chatLead = pgTable(
     consentAt: timestamp('consent_at', { withTimezone: true }).notNull().defaultNow(),
     visitorId: text('visitor_id').notNull(),
     fingerprintHash: text('fingerprint_hash'),
+    identityHash: text('identity_hash').notNull(),
     page: text('page'),
     referrer: text('referrer'),
     utm: jsonb('utm').$type<Record<string, string>>(),
@@ -573,6 +577,12 @@ export const chatLead = pgTable(
     // Posé une seule fois après envoi (succès OU échec final) du webhook
     // `cart.abandoned` pour empêcher tout re-spam.
     abandonWebhookAt: timestamp('abandon_webhook_at', { withTimezone: true }),
+    // Leads webhook multi-step — horloges dédiées pour l'observabilité admin
+    // et les scans idempotents. L'idempotency-key outbound reste la source de
+    // vérité anti-doublon; ces timestamps évitent les rescans et accélèrent
+    // les filtres parcours.
+    step2WebhookAt: timestamp('step2_webhook_at', { withTimezone: true }),
+    step1AbandonWebhookAt: timestamp('step1_abandon_webhook_at', { withTimezone: true }),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -587,6 +597,15 @@ export const chatLead = pgTable(
     sourceIdx: index('chat_lead_source_idx').on(t.source, t.createdAt),
     formIdx: index('chat_lead_form_idx').on(t.formId, t.formMode, t.createdAt),
     stepIdx: index('chat_lead_step_idx').on(t.lastTouchedStep, t.createdAt),
+    step2WebhookIdx: index('chat_lead_step2_webhook_idx').on(t.step2WebhookAt),
+    // CHA-240 — Composite unique on (session_id, identity_hash) allows
+    // multiple leads per session (different identities) while blocking
+    // true duplicates (same session + same phone+name).
+    sessionIdentityUniqIdx: uniqueIndex('chat_lead_session_identity_unique_idx').on(
+      t.sessionId,
+      t.identityHash,
+    ),
+    identityHashIdx: index('chat_lead_identity_hash_idx').on(t.identityHash),
   }),
 );
 

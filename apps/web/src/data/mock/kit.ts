@@ -1,11 +1,15 @@
 import type { KitPageContent } from '@/lib/schemas';
 import { mockKit } from './product';
 import { mockRituel } from './rituel';
+import {
+  DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL,
+  DEFAULT_KIT_VIDEO_COVER_SVG,
+} from './kit-video-cover';
 
 /**
  * Audit 08/09 — Pack FemiGlow : composition refondue (paste / powder /
- * polissoir Step 4), comparatif ajusté, FAQ enrichie (halal),
- * témoignages redistribués (Rabat centre de gravité).
+ * polissoir Step 4), comparatif ajusté, témoignages redistribués
+ * (Rabat centre de gravité).
  */
 export const mockKitPageContent: KitPageContent = {
   product: mockKit,
@@ -13,9 +17,14 @@ export const mockKitPageContent: KitPageContent = {
     {
       id: '1-paste',
       name: '1 Paste',
+      sensation: 'Tiède au contact.',
+      accentColor: 'sauge',
       shortDescription:
         'Pâte crème onctueuse. Filme la plaque sans l\u2019étouffer. Une noisette suffit.',
       volume: '15 g',
+      usageHint: 'une noisette filme dix doigts',
+      narrative:
+        '12 % de cire d’abeille fondue à basse température par la coopérative apicole du Moyen Atlas. Trois minutes de pose, le fini est mat.',
       image: {
         src: '/products/kit-base.svg',
         alt: 'Pot carré transparent à bords facettés, étiquette circulaire vert sauge "1 paste", pâte crème onctueuse',
@@ -29,6 +38,8 @@ export const mockKitPageContent: KitPageContent = {
           function: 'Filmog\u00e8ne naturel',
           origin: 'Coop\u00e9rative apicole, Atlas marocain',
           concentrationPct: 12,
+          inciDefinition:
+            'Nom officiel de la cire d\u2019abeille pure. Filme l\u2019ongle sans le sceller, laisse respirer la plaque.',
         },
         {
           name: 'Huile de jojoba',
@@ -36,6 +47,8 @@ export const mockKitPageContent: KitPageContent = {
           function: 'H\u00e9misphage des cuticules',
           origin: 'Cultures biologiques, Souss-Massa',
           concentrationPct: 8,
+          inciDefinition:
+            'Cire v\u00e9g\u00e9tale liquide, proche du s\u00e9bum naturel. Assouplit les cuticules sans graisser.',
         },
         {
           name: 'Tocoph\u00e9rol',
@@ -43,20 +56,26 @@ export const mockKitPageContent: KitPageContent = {
           function: 'Antioxydant',
           origin: 'Origine v\u00e9g\u00e9tale, Europe',
           concentrationPct: 0.5,
+          inciDefinition:
+            'Vitamine E d\u2019origine v\u00e9g\u00e9tale. Pr\u00e9serve les huiles de la formule du rancissement.',
         },
       ],
       certifications: [
         { label: 'Cosmos Organic', body: 'Ecocert' },
-        { label: 'Halal', body: 'Halal Cosmetics Council' },
         { label: 'Vegan', body: 'EVE Vegan' },
       ],
     },
     {
       id: '2-powder',
       name: '2 Powder',
+      sensation: 'Glisse, ne grise pas.',
+      accentColor: 'petale',
       shortDescription:
         'Poudre fine blanche, déposée sur la paste. Absorbe l\u2019excès, lustre la surface.',
       volume: '8 g',
+      usageHint: 'une pincée lustre toute la main',
+      narrative:
+        'Poudre minérale fine, déposée juste après la paste. Le talc absorbe le surplus, la silice lustre la surface. Pas de blanc, pas de gris.',
       image: {
         src: '/products/kit-fortifiant.svg',
         alt: 'Pot carré transparent à bords facettés, étiquette circulaire rose poudré "2 powder", poudre fine blanche',
@@ -70,6 +89,8 @@ export const mockKitPageContent: KitPageContent = {
           function: 'Matifiant min\u00e9ral',
           origin: 'Maroc',
           concentrationPct: 60,
+          inciDefinition:
+            'Silicate de magn\u00e9sium pur, lav\u00e9 et tamis\u00e9. Matifie sans gercer la plaque.',
         },
         {
           name: 'Poudre de riz',
@@ -77,6 +98,8 @@ export const mockKitPageContent: KitPageContent = {
           function: 'Absorbant doux',
           origin: 'Asie biologique',
           concentrationPct: 30,
+          inciDefinition:
+            'Amidon de riz finement broy\u00e9. Absorbe le surplus de paste sans dess\u00e9cher.',
         },
         {
           name: 'Silice',
@@ -84,11 +107,12 @@ export const mockKitPageContent: KitPageContent = {
           function: 'Texture & glissant',
           origin: 'Origine min\u00e9rale, Europe',
           concentrationPct: 10,
+          inciDefinition:
+            'Forme cosm\u00e9tique du silicate. Donne la glisse et r\u00e9v\u00e8le la brillance au polissage.',
         },
       ],
       certifications: [
         { label: 'Cosmos Organic', body: 'Ecocert' },
-        { label: 'Halal', body: 'Halal Cosmetics Council' },
       ],
     },
     {
@@ -97,6 +121,11 @@ export const mockKitPageContent: KitPageContent = {
       shortDescription:
         'Polissoir rectangulaire bleu ciel. Trois faces, trois grains. Révèle la brillance naturelle.',
       volume: '90 mm',
+      sensation: 'La lumière revient à la surface.',
+      accentColor: 'ciel',
+      usageHint: 'six mois de polissage doux',
+      narrative:
+        'Polissoir trois faces, du plus rugueux au plus doux. La dernière face révèle la brillance, sans solvant ni vernis. Se rince à l’eau tiède.',
       image: {
         src: '/products/kit-lime.svg',
         alt: 'Polissoir rectangulaire bleu ciel et gris clair, marqué "Step 4 Polish & Shine", trois faces de polissage',
@@ -109,23 +138,27 @@ export const mockKitPageContent: KitPageContent = {
           inci: 'Polyurethane Foam',
           function: 'Support',
           origin: 'Europe',
+          inciDefinition:
+            'Mousse synth\u00e9tique haute densit\u00e9, support structurel du polissoir. Lavable, durable, n\u2019absorbe pas la poudre.',
         },
         {
           name: 'Poudre de kaolin polissant',
           inci: 'Kaolin',
           function: 'Argile douce',
           origin: 'Carri\u00e8re, Marrakech',
+          inciDefinition:
+            'Argile blanche fine extraite localement. Polit sans rayer, r\u00e9v\u00e8le la brillance naturelle de l\u2019ongle.',
         },
         {
           name: 'Encre cosm\u00e9tique Step 4 Polish & Shine',
           inci: 'Cosmetic Ink',
           function: 'Marquage sans solvant',
           origin: 'Europe',
+          inciDefinition:
+            'Encre \u00e0 base d\u2019eau, sans solvant ni m\u00e9tal lourd. Marque le grain sans contaminer le polissage.',
         },
       ],
-      certifications: [
-        { label: 'Halal', body: 'Halal Cosmetics Council' },
-      ],
+      certifications: [],
     },
   ],
   // CHA-243 — Vidéo hero kit servie via YouTube (Short vertical).
@@ -136,6 +169,11 @@ export const mockKitPageContent: KitPageContent = {
   videoSrc: {
     ...mockRituel.videoGestes,
     youtubeUrl: 'https://youtube.com/shorts/N2pDuciP4uQ?si=h9_ROBIt-N7Oq7jb',
+    posterCoverSvg: {
+      source: 'inline' as const,
+      inline: DEFAULT_KIT_VIDEO_COVER_SVG,
+      meta: { ariaLabel: DEFAULT_KIT_VIDEO_COVER_ARIA_LABEL },
+    },
   },
   comparatif: {
     titreVernis: 'Vernis classique',
@@ -165,7 +203,7 @@ export const mockKitPageContent: KitPageContent = {
         axis: 'Impact mati\u00e8re',
         vernis: 'Solvants volatils, formules \u00e0 base p\u00e9trochimique fr\u00e9quente.',
         rituel:
-          'Cire d\u2019abeille, jojoba, talc min\u00e9ral, riz, kaolin. Certifications Cosmos Organic et Halal.',
+          'Cire d\u2019abeille, jojoba, talc min\u00e9ral, riz, kaolin. Certification Cosmos Organic.',
       },
       {
         axis: 'Temps quotidien',
@@ -192,12 +230,6 @@ export const mockKitPageContent: KitPageContent = {
       question: 'Puis-je continuer \u00e0 porter du vernis\u202F?',
       answer:
         'Le rituel s\u2019accommode du vernis m\u00eame s\u2019il est pens\u00e9 pour s\u2019en passer. Appliquez la paste et la powder les soirs sans vernis. La plaque respire, le rituel installe sa lenteur.',
-    },
-    {
-      id: 'halal',
-      question: 'Que signifie la certification halal pour FemiGlow\u202F?',
-      answer:
-        'Origine trac\u00e9e de chaque mati\u00e8re, absence d\u2019alcool d\u00e9natur\u00e9, absence de d\u00e9riv\u00e9s animaux non conformes (g\u00e9latine, carmin). Notre fabricant est audit\u00e9 par le Halal Cosmetics Council. Le label est sur chaque pot et sur le polissoir.',
     },
     {
       id: 'grossesse',
@@ -301,8 +333,8 @@ export const mockKitPageContent: KitPageContent = {
     { icon: 'return', label: 'Retour 30 jours', detail: 'M\u00eame entam\u00e9' },
     {
       icon: 'payment',
-      label: 'Paiement s\u00e9curis\u00e9',
-      detail: '3D Secure & COD',
+      label: 'Paiement \u00e0 la livraison',
+      detail: 'V\u00e9rifiez avant de payer',
     },
   ],
   journalCrossSlugs: [

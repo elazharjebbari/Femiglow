@@ -4,23 +4,12 @@
  * Déclenché par `cart-abandon-scanner.ts` qui passe en revue les
  * `chat_lead` rows éligibles (cf. runbook §2.3 pour les règles).
  *
- * Phone-gate STRICT : on ne tente l'envoi QUE si `phoneE164` est
- * exploitable. La règle d'éligibilité du scanner garantit déjà cela,
- * mais on revérifie en défense.
- *
- * Payload minimal mais riche :
- *  - `full_name` + `phone` (requis)
- *  - `email`, `address`, `city`, `country` (si l'étape adresse a été
- *    franchie côté wizard)
- *  - `total_price`, `currency`, `quantity`, `product_name`, `product_sku`
- *    (si `cart_snapshot` est présent)
- *
- * Idempotency-key : `cart-abandon:<lead.id>` — un seul webhook par
- * lead-abandoned (anti-spam strict).
+ * Dispatch désormais vers les endpoints admin EN PRIORITÉ, puis fallback
+ * outbound URL si aucun endpoint admin ne matche.
  */
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
-import { dispatchOutbound, type DispatchResult } from '../dispatcher';
+import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 
 const COUNTRY_LABEL: Record<string, string> = {
@@ -32,14 +21,6 @@ const COUNTRY_LABEL: Record<string, string> = {
   TN: 'Tunisie',
 };
 
-export interface CartAbandonWebhookResult {
-  status: DispatchResult['status'];
-  attempts: number;
-  responseStatus?: number;
-  logId?: string;
-  lastError?: string;
-}
-
 function composeAddress(line1: string | null, line2: string | null): string | undefined {
   const a = (line1 ?? '').trim();
   const b = (line2 ?? '').trim();
@@ -47,6 +28,14 @@ function composeAddress(line1: string | null, line2: string | null): string | un
   if (!b) return a;
   if (!a) return b;
   return `${a}, ${b}`;
+}
+
+export interface CartAbandonWebhookResult {
+  status: DispatchToAllChannelsResult['status'];
+  attempts: number;
+  responseStatus?: number;
+  logId?: string;
+  lastError?: string;
 }
 
 export async function dispatchCartAbandonWebhook(
@@ -87,30 +76,30 @@ export async function dispatchCartAbandonWebhook(
   if (lead.shippingNotes) noteParts.push(lead.shippingNotes.trim());
   if (lead.lastTouchedStep) noteParts.push(`step:${lead.lastTouchedStep}`);
 
-  const payload = {
-    id: `cart-abandon:${lead.id}`,
-    full_name: composeFullName(lead.firstName),
-    phone: phone.value,
-    email: lead.email ?? undefined,
-    address: composeAddress(lead.shippingAddressLine1, lead.shippingAddressLine2),
-    city: lead.shippingCity ?? undefined,
-    country: countryLabel,
-    total_price: totalPrice,
-    currency,
-    quantity,
-    product_name: productName,
-    product_sku: productSku,
-    note: noteParts.join(' | '),
-    source_channel: 'cart-abandon',
-  };
-
-  const result = await dispatchOutbound({
+  const result = await dispatchToAllChannels({
     source: 'cart-abandon',
     sourceId: lead.id,
     idempotencyKey: `cart-abandon:${lead.id}`,
     eventName: 'cart.abandoned',
-    payload,
+    adminEventNames: ['cart.abandoned'],
+    payload: {
+      id: `cart-abandon:${lead.id}`,
+      full_name: composeFullName(lead.firstName),
+      phone: phone.value,
+      email: lead.email ?? undefined,
+      address: composeAddress(lead.shippingAddressLine1, lead.shippingAddressLine2),
+      city: lead.shippingCity ?? undefined,
+      country: countryLabel,
+      total_price: totalPrice,
+      currency,
+      quantity,
+      product_name: productName,
+      product_sku: productSku,
+      note: noteParts.join(' | '),
+      source_channel: 'cart-abandon',
+    },
   });
+
   return {
     status: result.status,
     attempts: result.attempts,

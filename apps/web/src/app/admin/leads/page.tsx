@@ -35,7 +35,7 @@ export default async function AdminLeadsPage({
             type="search"
             name="search"
             defaultValue={filters.search ?? ''}
-            placeholder="téléphone, prénom, email"
+            placeholder="téléphone, prénom, email, ville"
             className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
@@ -84,6 +84,9 @@ export default async function AdminLeadsPage({
               <tr>
                 <Th>Identité</Th>
                 <Th>Contact</Th>
+                <Th>Ville</Th>
+                <Th>Parcours</Th>
+                <Th>Webhook</Th>
                 <Th>Statut</Th>
                 <Th>Créé</Th>
                 <Th aria-label="Actions" />
@@ -93,26 +96,63 @@ export default async function AdminLeadsPage({
               {rows.map((l) => (
                 <tr key={l.id} className="hover:bg-stone-50">
                   <Td>{l.name ?? '—'}</Td>
-                  <Td>{l.email ?? l.phone ?? '—'}</Td>
+                  <Td>
+                    <div className="space-y-1">
+                      <p>{l.email ?? l.phone ?? '—'}</p>
+                      {l.email && l.phone ? (
+                        <p className="text-xs text-stone-500">{l.phone}</p>
+                      ) : null}
+                    </div>
+                  </Td>
+                  <Td>
+                    <div className="space-y-1">
+                      <p>{l.city ?? '—'}</p>
+                      {l.addressLine1 ? (
+                        <p className="max-w-40 truncate text-xs text-stone-500" title={l.addressLine1}>
+                          {l.addressLine1}
+                        </p>
+                      ) : null}
+                    </div>
+                  </Td>
+                  <Td>
+                    <div className="space-y-1">
+                      <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">
+                        {labelForJourney(l.journeyStage)}
+                      </span>
+                      {typeof l.dataPct === 'number' ? (
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-stone-100">
+                          <div
+                            className="h-full rounded-full bg-emerald-500"
+                            style={{ width: `${l.dataPct}%` }}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  </Td>
+                  <Td>
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${webhookBadgeClass(l.webhookSummary)}`}>
+                      {labelForWebhook(l.webhookSummary)}
+                    </span>
+                  </Td>
                   <Td>
                     <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
                       {l.status}
                     </span>
-                    {l.source?.startsWith('chat:') ? (
+                    {l.source ? (
                       <span
                         title={l.source}
-                        className="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700"
+                        className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${sourceBadgeClass(l.source)}`}
                       >
-                        chat
+                        {labelForSource(l.source)}
                       </span>
                     ) : null}
                   </Td>
                   <Td>{l.createdAt.toLocaleDateString('fr-FR')}</Td>
                   <Td>
                     <div className="inline-flex items-center gap-3">
-                      {/* CHA-229 — Pour les leads chat, on offre l'accès
-                          direct à la conversation. Les leads ecommerce
-                          n'ont pas de session associée → pas de bouton. */}
+                      {/* CHA-229 — Uniquement les vrais leads chat. Les leads
+                          wizard ont aussi un session_id technique mais ne
+                          doivent pas être affichés comme conversations. */}
                       {l.chatSessionId ? (
                         <ConversationQuickView
                           sessionId={l.chatSessionId}
@@ -143,6 +183,18 @@ export default async function AdminLeadsPage({
   );
 }
 
+function labelForSource(source: string): string {
+  if (source.startsWith('chat:')) return 'chat';
+  if (source.startsWith('wizard')) return 'wizard';
+  return source;
+}
+
+function sourceBadgeClass(source: string): string {
+  if (source.startsWith('chat:')) return 'bg-emerald-50 text-emerald-700';
+  if (source.startsWith('wizard')) return 'bg-sky-50 text-sky-700';
+  return 'bg-stone-100 text-stone-600';
+}
+
 function Th({ children }: { children?: React.ReactNode }) {
   return (
     <th
@@ -156,4 +208,51 @@ function Th({ children }: { children?: React.ReactNode }) {
 
 function Td({ children }: { children?: React.ReactNode }) {
   return <td className="px-4 py-3 align-top text-stone-800">{children}</td>;
+}
+
+function labelForJourney(stage?: string | null): string {
+  switch (stage) {
+    case 'lead':
+      return 'Lead';
+    case 'address':
+      return 'Adresse';
+    case 'payment':
+      return 'Paiement';
+    case 'purchased':
+      return 'Achat';
+    case 'abandoned_step1':
+      return 'Abandon step 1';
+    default:
+      return '—';
+  }
+}
+
+function labelForWebhook(status?: string | null): string {
+  switch (status) {
+    case 'step2_sent':
+      return 'step2 envoyé';
+    case 'step1_abandoned_sent':
+      return 'abandon envoyé';
+    case 'sent':
+      return 'envoyé';
+    case 'failed':
+      return 'échec';
+    case 'disabled':
+      return 'désactivé';
+    case 'skipped':
+      return 'ignoré';
+    case 'pending':
+      return 'pending';
+    default:
+      return '—';
+  }
+}
+
+function webhookBadgeClass(status?: string | null): string {
+  if (status === 'failed') return 'bg-rose-100 text-rose-800';
+  if (status === 'sent' || status === 'step2_sent' || status === 'step1_abandoned_sent') {
+    return 'bg-emerald-100 text-emerald-800';
+  }
+  if (status === 'disabled' || status === 'skipped') return 'bg-amber-100 text-amber-800';
+  return 'bg-stone-100 text-stone-600';
 }

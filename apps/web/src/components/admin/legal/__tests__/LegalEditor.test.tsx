@@ -115,7 +115,6 @@ describe('LegalEditor — édition + sauvegarde', () => {
     let receivedIfMatch: string | null = null;
     server.use(
       // override le handler pour capturer le header
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (await import('msw')).http.patch('/api/admin/legal/cgv', async ({ request }) => {
         receivedIfMatch = request.headers.get('If-Match');
         return (await import('msw')).HttpResponse.json({

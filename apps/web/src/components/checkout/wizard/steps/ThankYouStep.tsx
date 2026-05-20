@@ -66,8 +66,16 @@ export function ThankYouStep({ title, subtitle }: ThankYouStepProps) {
   const { t } = useWizardTranslation();
 
   const orderId = useWizardStore((s) => s.orderId);
+  const resetWizard = useWizardStore((s) => s.reset);
 
   const optIn = useOrderEmailConfirmationMutation();
+
+  const onNewOrder = useCallback(() => {
+    resetWizard();
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [resetWizard]);
 
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
@@ -134,7 +142,10 @@ export function ThankYouStep({ title, subtitle }: ThankYouStepProps) {
         </div>
       )}
 
-      <div className="rounded border border-encre/15 bg-creme p-5 space-y-4">
+      <div
+        className="rounded border border-encre/15 bg-creme p-5 space-y-4"
+        data-testid="wizard-thankyou-emailcard"
+      >
         <div className="space-y-1">
           <Heading as="h3" size="sm" italic="always">
             {t.thankYou.emailConfirmationTitle}
@@ -206,6 +217,24 @@ export function ThankYouStep({ title, subtitle }: ThankYouStepProps) {
             </Button>
           </form>
         )}
+      </div>
+
+      <div
+        className="border-t border-encre/10 pt-6 flex flex-col gap-2 items-start"
+        data-testid="wizard-thankyou-neworder"
+      >
+        <Text size="small" tone="secondary">
+          {t.thankYou.newOrderHint}
+        </Text>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onNewOrder}
+          data-testid="wizard-thankyou-neworder-cta"
+        >
+          {t.thankYou.ctaNewOrder}
+        </Button>
       </div>
     </section>
   );

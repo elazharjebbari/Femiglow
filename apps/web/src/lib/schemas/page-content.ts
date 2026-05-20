@@ -3,6 +3,7 @@ import { imageSchema, ctaSchema } from './common';
 import {
   productSchema,
   subProductSchema,
+  subProductAccentColorSchema,
   comparatifRowSchema,
   handsTestimonialSchema,
   reassuranceSchema,
@@ -99,6 +100,23 @@ export type RituelOrigine = z.infer<typeof rituelOrigineSchema>;
  * sources locales. `sources` reste requis pour compat historique mais peut
  * pointer vers un fichier inexistant si `youtubeUrl` prend le relais.
  */
+/**
+ * Chapitre temporel d'une vidéo — Kolenda §4.4 « mini-timeline cliquable ».
+ *
+ * Contraintes :
+ *  - `key` slug kebab-case, unique au sein du tableau parent.
+ *  - `label` court (≤ 24 chars) — tient sur la timeline mobile 4-6 segments.
+ *  - `startSeconds` borné [0, 600] — la vidéo cible 90 s, on prévoit
+ *    10 min comme borne haute pour les futurs formats longs.
+ *  - Le tableau parent garantit l'ordre croissant via `refine`.
+ */
+export const videoChapterSchema = z.object({
+  key: z.string().regex(/^[a-z0-9][a-z0-9-]{0,40}$/),
+  label: z.string().min(1).max(24),
+  startSeconds: z.number().int().min(0).max(600),
+});
+export type VideoChapter = z.infer<typeof videoChapterSchema>;
+
 export const rituelVideoSchema = z.object({
   sources: z.object({
     mp4: z.string().url().or(z.string().startsWith('/')),
@@ -113,6 +131,67 @@ export const rituelVideoSchema = z.object({
   }),
   transcript: z.string(),
   durationSeconds: z.number().int().positive(),
+
+  // Extensions Kolenda §4.4 (phase 1) — tous optionnels (rétrocompat).
+  /**
+   * Poster custom maison (frame d'action) qui remplace `poster` dans le
+   * click-to-play overlay (`VideoPosterCover`). Si absent, fallback `poster`.
+   */
+  posterCustom: imageSchema.optional(),
+
+  /**
+   * Chapitres ordonnés par `startSeconds` croissant. 2-6 entrées.
+   */
+  chapters: z
+    .array(videoChapterSchema)
+    .min(2)
+    .max(6)
+    .refine(
+      (arr) => arr.every((c, i) => i === 0 || c.startSeconds >= (arr[i - 1]?.startSeconds ?? 0)),
+      { message: 'chapters doivent être triés par startSeconds croissant' },
+    )
+    .optional(),
+
+  /**
+   * Mention de provenance italique sous le sous-titre (voix maison, sans
+   * prénom nominal). Termine par une ponctuation finale.
+   */
+  provenance: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .regex(/[.!?»]$/, 'provenance doit se terminer par une ponctuation finale')
+    .optional(),
+
+  /** Badge durée affiché sur le poster (ex. « 90″ », « 1′30″ »). */
+  durationDisplay: z.string().min(1).max(8).optional(),
+
+  /** Couleur d'accent (réutilise l'enum SubProduct — Annexe A). */
+  accentColor: subProductAccentColorSchema.optional(),
+
+  /**
+   * Cover SVG dynamique (Phase α-δ). Si défini, remplace `posterCustom` /
+   * `poster` dans `VideoPosterCover`. Discriminé par `source` :
+   *  - `inline` : SVG markup sanitized (DOMPurify côté serveur).
+   *  - `file`   : référence media DB (SVG uploadé).
+   *  - `url`    : URL HTTPS externe vers un SVG.
+   */
+  posterCoverSvg: z
+    .object({
+      source: z.enum(['inline', 'file', 'url']),
+      inline: z.string().max(50_000).nullable().optional(),
+      fileMediaId: z.string().max(64).nullable().optional(),
+      url: z.string().url().max(500).nullable().optional(),
+      meta: z
+        .object({
+          viewBox: z.string().max(64).optional(),
+          ariaLabel: z.string().max(200).optional(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .optional(),
 });
 export type RituelVideo = z.infer<typeof rituelVideoSchema>;
 
@@ -221,6 +300,44 @@ export const kitVideoSchema = z.object({
   }),
   transcript: z.string(),
   durationSeconds: z.number().int().positive(),
+
+  // Extensions Kolenda §4.4 (phase 1) — alignées sur rituelVideoSchema.
+  posterCustom: imageSchema.optional(),
+  chapters: z
+    .array(videoChapterSchema)
+    .min(2)
+    .max(6)
+    .refine(
+      (arr) => arr.every((c, i) => i === 0 || c.startSeconds >= (arr[i - 1]?.startSeconds ?? 0)),
+      { message: 'chapters doivent être triés par startSeconds croissant' },
+    )
+    .optional(),
+  provenance: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .regex(/[.!?»]$/, 'provenance doit se terminer par une ponctuation finale')
+    .optional(),
+  durationDisplay: z.string().min(1).max(8).optional(),
+  accentColor: subProductAccentColorSchema.optional(),
+
+  /** Cover SVG dynamique (Phase α-δ) — aligné sur rituelVideoSchema. */
+  posterCoverSvg: z
+    .object({
+      source: z.enum(['inline', 'file', 'url']),
+      inline: z.string().max(50_000).nullable().optional(),
+      fileMediaId: z.string().max(64).nullable().optional(),
+      url: z.string().url().max(500).nullable().optional(),
+      meta: z
+        .object({
+          viewBox: z.string().max(64).optional(),
+          ariaLabel: z.string().max(200).optional(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .optional(),
 });
 export type KitVideo = z.infer<typeof kitVideoSchema>;
 
@@ -231,9 +348,28 @@ export const kitComparatifSchema = z.object({
 });
 export type KitComparatif = z.infer<typeof kitComparatifSchema>;
 
+/**
+ * Vue éclatée du Kit FemiGlow — Kolenda §4.3.
+ *
+ * Image annotée des 3 sous-produits étalés à plat avec lignes fines
+ * vers chaque label. Format isométrique doux, fond sable. Rendue en
+ * tête de la section « La composition », avant la grille 3 cards.
+ *
+ * Optionnel : si absent du CMS / mock, le composant `CompositionReveal`
+ * ne rend pas la `<figure>` (rétrocompat). À fournir par DA pour activer.
+ */
+export const kitExplodedViewSchema = imageSchema;
+export type KitExplodedView = z.infer<typeof kitExplodedViewSchema>;
+
 export const kitPageContentSchema = z.object({
   product: productSchema,
   composition: z.array(subProductSchema).min(3).max(4),
+  /**
+   * Vue éclatée annotée des 3 sous-produits, rendue en tête de la
+   * section « La composition » avant la grille de cards (Kolenda §4.3).
+   * Optionnelle — la section fonctionne sans.
+   */
+  compositionExplodedView: kitExplodedViewSchema.optional(),
   videoSrc: kitVideoSchema,
   comparatif: kitComparatifSchema,
   faq: z.array(faqItemSchema).min(8).max(10),

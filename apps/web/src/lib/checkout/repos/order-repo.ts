@@ -113,7 +113,20 @@ async function resolveLegacyLeadId(
     .from(leads)
     .where(eq(leads.email, email))
     .limit(1);
-  if (existing[0]) return existing[0].id;
+  if (existing[0]) {
+    await conn
+      .update(leads)
+      .set({
+        phone: contact.phoneE164,
+        name: contact.firstName,
+        status: 'converted',
+        source: 'wizard',
+        consentMarketing: contact.emailConsent ?? false,
+        updatedAt: new Date(),
+      })
+      .where(eq(leads.id, existing[0].id));
+    return existing[0].id;
+  }
 
   const id = createId('lead');
   await conn.insert(leads).values({
@@ -121,6 +134,7 @@ async function resolveLegacyLeadId(
     email,
     phone: contact.phoneE164,
     name: contact.firstName,
+    status: 'converted',
     source: 'wizard',
     consentMarketing: contact.emailConsent ?? false,
   });

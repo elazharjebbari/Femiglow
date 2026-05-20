@@ -7,7 +7,7 @@ interface Signal {
   id: string;
   title: string;
   body: string;
-  icon: 'truck' | 'rotate' | 'shield';
+  icon: 'truck' | 'rotate' | 'hand-coin';
 }
 
 const signals: Signal[] = [
@@ -25,9 +25,9 @@ const signals: Signal[] = [
   },
   {
     id: 'paiement',
-    title: 'Paiement s\u00E9curis\u00E9',
-    body: 'CMI Maroc, Stripe, ou paiement \u00E0 la livraison (COD). Aucune donn\u00E9e bancaire stock\u00E9e.',
-    icon: 'shield',
+    title: 'Paiement \u00E0 la livraison',
+    body: 'Vous ne payez qu\u2019\u00E0 la r\u00E9ception, apr\u00E8s avoir v\u00E9rifi\u00E9 votre commande. Aucun risque.',
+    icon: 'hand-coin',
   },
 ];
 
@@ -61,6 +61,17 @@ function Icon({ name }: { name: Signal['icon'] }) {
         <path d="M24 4v5h-5" />
         <path d="M27 16a11 11 0 0 1-19 7.5" />
         <path d="M8 28v-5h5" />
+      </svg>
+    );
+  }
+  if (name === 'hand-coin') {
+    return (
+      <svg {...common}>
+        <path d="M6 22v-6a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" />
+        <path d="M10 20v-8a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2" />
+        <path d="M14 18v-6a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v4" />
+        <path d="M18 14v-2a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v8a8 8 0 0 1-8 8h-4a8 8 0 0 1-8-8v0" />
+        <circle cx="16" cy="6" r="3" />
       </svg>
     );
   }

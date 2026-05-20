@@ -227,7 +227,7 @@ describe('Adapter TikTok', () => {
       data: Array<{ event: string; user: { external_id: string[] } }>;
     };
     expect(body.event_source_id).toBe('TT_PIXEL_42');
-    expect(body.data[0]?.event).toBe('CompletePayment');
+    expect(body.data[0]?.event).toBe('Purchase');
     expect(body.data[0]?.user.external_id[0]).toMatch(/^[0-9a-f]{64}$/);
   });
 });

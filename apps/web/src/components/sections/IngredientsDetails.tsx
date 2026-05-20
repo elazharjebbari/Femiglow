@@ -3,7 +3,7 @@ import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
-import { IngredientsTable } from '@/components/commerce/IngredientsTable';
+import { SubProductBlock } from '@/components/commerce/SubProductBlock';
 import type { SubProduct } from '@/lib/schemas';
 
 interface IngredientsDetailsProps {
@@ -16,6 +16,16 @@ interface IngredientsDetailsProps {
   mediaSlot?: ReactNode;
 }
 
+/**
+ * Section « Le détail · La composition lue ligne par ligne. » de `/kit`.
+ *
+ * Refonte Phase 2 (`docs/ingredients-detail-optim-2026-05/`) :
+ *  - Délégation à `SubProductBlock` qui pilote l'accordéon mobile + la
+ *    liste responsive (cards mobile / tableau desktop) + lien retour pack.
+ *  - Premier sous-produit ouvert par défaut (mobile), les autres fermés.
+ *  - Desktop : tous les sous-produits dépliés en permanence via le hook
+ *    `useIsDesktop` interne à `SubProductBlock`.
+ */
 export function IngredientsDetails({
   composition,
   anchor = 'ingredients-details',
@@ -39,16 +49,18 @@ export function IngredientsDetails({
             une formule.
           </Text>
         </div>
-        {mediaSlot && (
-          <div className="mb-12 overflow-hidden rounded-md">
-            {mediaSlot}
-          </div>
-        )}
+        {mediaSlot ? (
+          <div className="mb-12 overflow-hidden rounded-md">{mediaSlot}</div>
+        ) : null}
         <div className="space-y-12">
-          {composition.map((sub) => (
-            <div key={sub.id} id={`${anchor}-${sub.id}`}>
-              <IngredientsTable subProduct={sub} />
-            </div>
+          {composition.map((sub, index) => (
+            <SubProductBlock
+              key={sub.id}
+              subProduct={sub}
+              index={index}
+              anchor={anchor}
+              defaultOpen={index === 0}
+            />
           ))}
         </div>
       </Container>

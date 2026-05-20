@@ -118,6 +118,7 @@ export function DeliveryCitiesEditor({
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
   const [activeKpi, setActiveKpi] = useState(activeCount);
+  const [resettingPositions, setResettingPositions] = useState(false);
 
   // ─── Fetch & re-list ─────────────────────────────────────────────────────
   const refetch = useCallback(
@@ -278,6 +279,31 @@ export function DeliveryCitiesEditor({
     }
   }
 
+  // ─── Reset positions priori ────────────────────────────────────────────
+  async function resetPositions() {
+    setResettingPositions(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch('/api/admin/delivery-cities/positions/reset', {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error?.message ?? `HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { updated: number; notFound: string[] };
+      setSuccess(
+        `Positions réinitialisées : ${data.updated} ville${data.updated > 1 ? 's' : ''} mise${data.updated > 1 ? 's' : ''} à jour.`,
+      );
+      await refetch();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Réinitialisation échouée.');
+    } finally {
+      setResettingPositions(false);
+    }
+  }
+
   // ─── Effect: re-fetch on filter/page change ──────────────────────────────
   useEffect(() => {
     void refetch();
@@ -325,6 +351,16 @@ export function DeliveryCitiesEditor({
           </button>
           <button
             type="button"
+            onClick={resetPositions}
+            disabled={resettingPositions}
+            className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+            data-testid="reset-positions-btn"
+            title="Réinitialise les 13 villes prioritaires à leurs positions par défaut (Casablanca=1, Marrakech=2, …)"
+          >
+            {resettingPositions ? 'Réinitialisation…' : 'Positions par défaut'}
+          </button>
+          <button
+            type="button"
             onClick={() => setCreating(true)}
             className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
             data-testid="add-city-btn"
@@ -340,6 +376,11 @@ export function DeliveryCitiesEditor({
       >
         <Kpi label="Villes actives" value={activeKpi} />
         <Kpi label="Total catalogue" value={total} />
+        <Kpi
+          label="Villes priori."
+          value={items.filter((c) => c.position > 0).length}
+          hint="en tête de l'autocomplete"
+        />
         <Kpi
           label="Sources éditées"
           value={items.filter((c) => c.source !== 'sendit').length}
@@ -461,6 +502,9 @@ export function DeliveryCitiesEditor({
               <th scope="col" className="px-3 py-2 text-left">
                 Source
               </th>
+              <th scope="col" className="px-3 py-2 text-center">
+                Pos.
+              </th>
               <th scope="col" className="px-3 py-2 text-left">
                 Actif
               </th>
@@ -475,7 +519,7 @@ export function DeliveryCitiesEditor({
           <tbody className="divide-y divide-stone-100">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-8 text-center text-stone-500">
+                <td colSpan={10} className="px-3 py-8 text-center text-stone-500">
                   Aucune ville pour ces filtres.
                 </td>
               </tr>
@@ -509,6 +553,15 @@ export function DeliveryCitiesEditor({
                     >
                       {city.source}
                     </span>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {city.position > 0 ? (
+                      <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-100 text-[10px] font-semibold text-amber-800">
+                        {city.position}
+                      </span>
+                    ) : (
+                      <span className="text-stone-400">—</span>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     <button

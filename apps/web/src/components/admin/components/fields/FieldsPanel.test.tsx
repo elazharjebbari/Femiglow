@@ -92,6 +92,29 @@ describe('FieldsPanel — rendu', () => {
     expect(screen.getByText(/champ.* en brouillon/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Publier les modifications/ })).not.toBeDisabled();
   });
+
+  // Discoverability fix : la PublishBar disparaissait sous la pliure
+  // sur le hero (8 champs). On la rend sticky en bas du viewport.
+  it('la barre de publication est sticky en bas du viewport (toujours visible)', () => {
+    setup();
+    const region = screen.getByRole('region', { name: /Publication/i });
+    expect(region.className).toContain('sticky');
+    expect(region.className).toContain('bottom-4');
+    expect(region.className).toContain('z-10');
+  });
+
+  it('au repos affiche l\'aide sur le flux draft → publier', () => {
+    setup();
+    expect(
+      screen.getByText(/sauvegardés en draft, cliquez « Publier »/i),
+    ).toBeInTheDocument();
+  });
+
+  it('en état dirty affiche l\'indicateur de sauvegarde automatique', () => {
+    setup();
+    fireEvent.change(screen.getByLabelText(/Titre/), { target: { value: 'X' } });
+    expect(screen.getByText(/sauvegarde automatique en cours/i)).toBeInTheDocument();
+  });
 });
 
 describe('FieldsPanel — conflit', () => {

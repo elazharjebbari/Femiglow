@@ -130,12 +130,18 @@ describe('sitemap.ts — résilience DB', () => {
     expect(out.some((e) => e.url.includes('/legal/'))).toBe(false);
   });
 
-  it('si cms.getArticles throw, le reste sort quand même (V1 — on accepte la failure)', async () => {
+  it('si cms.getArticles throw, le reste sort quand même (V1.1 — try/catch ajouté phase 1 SEO)', async () => {
     articlesMock.mockRejectedValue(new Error('CMS down'));
     listSearchableMock.mockResolvedValue([]);
-    // Note : actuellement sitemap.ts ne catch pas getArticles → throw
-    // remonte. Ce test documente ce comportement et indique le besoin
-    // d'un try/catch autour de getArticles (V1.1).
-    await expect(sitemap()).rejects.toThrow(/CMS down/);
+    // V1.1 (phase 1 SEO, mai 2026) : `getArticles` est encapsulé dans un
+    // try/catch pour que le sitemap statique sorte même si le CMS est
+    // indisponible. Cohérent avec le comportement déjà en place pour
+    // `listPublishedSearchablePages`.
+    const out = await sitemap();
+    expect(out.length).toBeGreaterThanOrEqual(6);
+    // Pas d'entrée article : la section dynamique a échoué silencieusement.
+    expect(out.some((e) => e.url.includes('/journal/'))).toBe(false);
+    // Routes statiques toujours présentes.
+    expect(out.some((e) => e.url.endsWith('/contact'))).toBe(true);
   });
 });

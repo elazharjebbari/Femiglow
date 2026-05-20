@@ -10,12 +10,10 @@
  *                     reçoit le `label` humanisé via l'input libre du combobox.
  * - **label**       : forme affichée en FR (accents conservés).
  * - **labelAr**     : forme affichée en arabe (orthographe canonique MENA).
- * - **aliases**     : orthographes alternatives ou abrégées que les utilisateurs
- *                     tapent couramment (FR ou translittérations) — utilisées
- *                     pour le matching côté combobox.
- * - **expressEligible** : marqueur pour la livraison express, conservé pour
- *                     évolutivité future bien que CHA-231 n'affiche qu'un mode
- *                     unique (24-48h gratuit partout).
+ * - **aliases**     : orthographes alternatives reconnues au matching (FR ou translittérations).
+ * - **expressEligible** : marqueur pour la livraison express, conservé pour évolutivité.
+ * - **position**    : position d'affichage (0 = non prioritaire, >0 = prioritaire).
+ *                     Les villes prioritaires apparaissent en tête de l'autocomplete.
  *
  * Matching
  * ────────
@@ -43,7 +41,26 @@ export interface MoroccanCity {
   aliases?: string[];
   /** Éligible à la livraison express (24-48h) — conservé pour évolution future. */
   expressEligible: boolean;
+  /** Position d'affichage (0 = non prioritaire, >0 = prioritaire en tête). */
+  position: number;
 }
+
+/** Positions prioritaires — les villes les plus commandées apparaissent en tête de l'autocomplete. */
+const PRIORITY_POSITIONS: Record<string, number> = {
+  casablanca: 1,
+  marrakech: 2,
+  tanger: 3,
+  agadir: 4,
+  kenitra: 5,
+  fes: 6,
+  meknes: 7,
+  tetouan: 8,
+  'dar-bouaza': 9,
+  mohammedia: 10,
+  'el-jadida': 11,
+  'bouskoura-ville-verte': 12,
+  oujda: 13,
+};
 
 export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
   {
@@ -52,6 +69,7 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'أكادير',
     aliases: ['أغادير'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['agadir'] ?? 0,
   },
   {
     value: 'beni-mellal',
@@ -59,6 +77,14 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'بني ملال',
     aliases: ['Beni Mellal'],
     expressEligible: false,
+    position: 0,
+  },
+  {
+    value: 'bouskoura-ville-verte',
+    label: 'Bouskoura-Ville Verte',
+    labelAr: 'بوسكورة',
+    expressEligible: false,
+    position: PRIORITY_POSITIONS['bouskoura-ville-verte'] ?? 0,
   },
   {
     value: 'casablanca',
@@ -66,6 +92,14 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'الدار البيضاء',
     aliases: ['Casa', 'Dar el Beida', 'Dar el Beïda', 'Dar Beida'],
     expressEligible: true,
+    position: PRIORITY_POSITIONS['casablanca'] ?? 0,
+  },
+  {
+    value: 'dar-bouaza',
+    label: 'Dar Bouaza',
+    labelAr: 'دار بوعزة',
+    expressEligible: false,
+    position: PRIORITY_POSITIONS['dar-bouaza'] ?? 0,
   },
   {
     value: 'el-jadida',
@@ -73,12 +107,14 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'الجديدة',
     aliases: ['Mazagan'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['el-jadida'] ?? 0,
   },
   {
     value: 'errachidia',
     label: 'Errachidia',
     labelAr: 'الراشيدية',
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'essaouira',
@@ -86,6 +122,7 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'الصويرة',
     aliases: ['Mogador'],
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'fes',
@@ -93,6 +130,7 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'فاس',
     aliases: ['Fez'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['fes'] ?? 0,
   },
   {
     value: 'kenitra',
@@ -100,12 +138,14 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'القنيطرة',
     aliases: ['Kenitra'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['kenitra'] ?? 0,
   },
   {
     value: 'khouribga',
     label: 'Khouribga',
     labelAr: 'خريبكة',
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'laayoune',
@@ -113,12 +153,14 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'العيون',
     aliases: ['Laayoune'],
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'larache',
     label: 'Larache',
     labelAr: 'العرائش',
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'marrakech',
@@ -126,6 +168,7 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'مراكش',
     aliases: ['Marrakesh'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['marrakech'] ?? 0,
   },
   {
     value: 'meknes',
@@ -133,36 +176,42 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'مكناس',
     aliases: ['Meknes'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['meknes'] ?? 0,
   },
   {
     value: 'mohammedia',
     label: 'Mohammedia',
     labelAr: 'المحمدية',
     expressEligible: true,
+    position: PRIORITY_POSITIONS['mohammedia'] ?? 0,
   },
   {
     value: 'nador',
     label: 'Nador',
     labelAr: 'الناظور',
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'ouarzazate',
     label: 'Ouarzazate',
     labelAr: 'ورزازات',
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'oujda',
     label: 'Oujda',
     labelAr: 'وجدة',
     expressEligible: false,
+    position: PRIORITY_POSITIONS['oujda'] ?? 0,
   },
   {
     value: 'rabat',
     label: 'Rabat',
     labelAr: 'الرباط',
     expressEligible: true,
+    position: 0,
   },
   {
     value: 'safi',
@@ -170,6 +219,7 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'آسفي',
     aliases: ['Asfi'],
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'sale',
@@ -177,12 +227,14 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'سلا',
     aliases: ['Sale'],
     expressEligible: true,
+    position: 0,
   },
   {
     value: 'settat',
     label: 'Settat',
     labelAr: 'سطات',
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'tanger',
@@ -190,12 +242,14 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'طنجة',
     aliases: ['Tangier', 'Tanja'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['tanger'] ?? 0,
   },
   {
     value: 'taza',
     label: 'Taza',
     labelAr: 'تازة',
     expressEligible: false,
+    position: 0,
   },
   {
     value: 'temara',
@@ -203,6 +257,7 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'تمارة',
     aliases: ['Temara'],
     expressEligible: true,
+    position: 0,
   },
   {
     value: 'tetouan',
@@ -210,6 +265,7 @@ export const MOROCCAN_CITIES: ReadonlyArray<MoroccanCity> = [
     labelAr: 'تطوان',
     aliases: ['Tetouan'],
     expressEligible: false,
+    position: PRIORITY_POSITIONS['tetouan'] ?? 0,
   },
 ];
 
@@ -246,22 +302,22 @@ export function normalizeArabicKey(input: string): string {
   return input
     .normalize('NFKC')
     // Retire tashkil (U+064B → U+065F couvre l'essentiel)
-    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/gu, '')
+    .replace(/[ً-ٰٟۖ-ۭ]/gu, '')
     // Normalise alef variantes
-    .replace(/[\u0623\u0625\u0622]/gu, '\u0627') // أ إ آ → ا
+    .replace(/[أإآ]/gu, 'ا') // أ إ آ → ا
     // Retire ال initial (au début seulement, après trim)
     .trim()
     .replace(/^ال/u, '')
     // Normalise ta marbuta → ha (tolérance)
-    .replace(/\u0629/gu, '\u0647')
+    .replace(/ة/gu, 'ه')
     // Retire les ZWNJ / ZWJ + autres formatages
-    .replace(/[\u200B-\u200F\uFEFF]/gu, '')
+    .replace(/[​-‏﻿]/gu, '')
     .trim();
 }
 
 /** Détecte si une saisie contient au moins un caractère du bloc arabe. */
 function isArabicInput(input: string): boolean {
-  return /[\u0600-\u06FF\u0750-\u077F]/u.test(input);
+  return /[؀-ۿݐ-ݿ]/u.test(input);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -318,14 +374,30 @@ export function findCityByValue(value: string): MoroccanCity | null {
 }
 
 /**
+ * Tri par priorité : les villes avec position > 0 apparaissent en tête
+ * (triées par position croissante), suivies des villes avec position = 0
+ * (triées alphabétiquement).
+ */
+function sortByPriority(a: MoroccanCity, b: MoroccanCity): number {
+  if (a.position > 0 && b.position > 0) return a.position - b.position;
+  if (a.position > 0) return -1;
+  if (b.position > 0) return 1;
+  return a.label.localeCompare(b.label, 'fr');
+}
+
+/**
  * Recherche par préfixe (top `limit` résultats). Matche sur label FR, label AR,
  * et aliases. Détecte automatiquement le script de la saisie.
  *
- * Utilisé par le combobox pour proposer des suggestions dynamiques.
+ * Quand la query est vide, retourne les villes prioritaires en tête
+ * puis les autres par ordre alphabétique.
  */
 export function searchCities(query: string, limit = 8): MoroccanCity[] {
   const trimmed = query.trim();
-  if (!trimmed) return MOROCCAN_CITIES.slice(0, limit);
+  if (!trimmed) {
+    const sorted = [...MOROCCAN_CITIES].sort(sortByPriority);
+    return sorted.slice(0, limit);
+  }
 
   const arabic = isArabicInput(trimmed);
   const out: MoroccanCity[] = [];
@@ -333,7 +405,7 @@ export function searchCities(query: string, limit = 8): MoroccanCity[] {
 
   if (arabic) {
     const qAr = normalizeArabicKey(trimmed);
-    if (!qAr) return MOROCCAN_CITIES.slice(0, limit);
+    if (!qAr) return [...MOROCCAN_CITIES].sort(sortByPriority).slice(0, limit);
     for (const c of MOROCCAN_CITIES) {
       const labelKey = normalizeArabicKey(c.labelAr);
       const matches =
@@ -349,7 +421,7 @@ export function searchCities(query: string, limit = 8): MoroccanCity[] {
     }
   } else {
     const qFr = normalizeCityKey(trimmed);
-    if (!qFr) return MOROCCAN_CITIES.slice(0, limit);
+    if (!qFr) return [...MOROCCAN_CITIES].sort(sortByPriority).slice(0, limit);
     for (const c of MOROCCAN_CITIES) {
       const labelKey = normalizeCityKey(c.label);
       const matches =

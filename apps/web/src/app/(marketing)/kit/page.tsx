@@ -1,14 +1,20 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { cookies, headers } from 'next/headers';
+
 import { cms } from '@/lib/cms';
+import { computePromo } from '@/lib/utils/promo';
+import { deriveEventId } from '@/lib/tracking/event-id';
+import { serverFire } from '@/lib/tracking/server/server-fire';
 import {
-  VideoPlayer4Gestes,
   FAQContextuelle,
   PivotFinal,
 } from '@/components/sections';
+import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
 import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
 import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
 import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
+import { resolveKitComposition } from '@/lib/kit/composition/resolver';
 import { ComparatifSectionBound } from '@/components/sections/ComparatifSectionBound';
 import { HandsTestimonialsBound } from '@/components/sections/HandsTestimonialsBound';
 import { JournalGridBound } from '@/components/sections/JournalGridBound';
@@ -16,9 +22,11 @@ import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectio
 import { RitualsModuleBound } from '@/components/sections/rituals/RitualsModuleBound';
 import { RitualsWallDrawer } from '@/components/sections/rituals/RitualsWallDrawer';
 import { KitCommanderSectionBound } from '@/components/sections/KitCommanderSectionBound';
+import { GeoPromoSlideHeaderSlot } from '@/components/promo/GeoPromoSlideHeaderSlot';
 import { JsonLd, productSchema, faqPageSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
+import { resolvePageWithComponents } from '@/lib/seo/component-resolve';
 import {
   KIT_LOCALE,
   KIT_PRODUCT_SLUG,
@@ -35,17 +43,27 @@ const FALLBACK_OG = {
   alt: 'Le pack FemiGlow — paste, powder, polissoir Step 4',
 };
 
-const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise halal';
+const FALLBACK_TITLE = 'Le pack FemiGlow — manucure japonaise';
 const FALLBACK_DESCRIPTION =
-  'Pack FemiGlow — coffret de manucure japonaise halal en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par Souheila. Sans vernis, sans abrasion. Livraison offerte au Maroc.';
+  'Pack FemiGlow — coffret de manucure japonaise en deux gestes. Paste verte sauge, powder rose poudré et polissoir Step 4 Polish & Shine. Pensé à Rabat par Souheila. Sans vernis, sans abrasion. Livraison offerte au Maroc.';
 
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;
-  const seo = await resolveSeoMetadata({
-    scope: 'product',
-    targetKey: KIT_PRODUCT_SLUG,
+  // Phase 5 — résolution page + composants. Le helper court-circuite si le
+  // flag `NEXT_PUBLIC_SEO_COMPONENT_OVERRIDES` n'est pas à 'true' : dans ce
+  // cas, retombe sur `resolveSeoMetadata` standard (zéro régression
+  // vérifiée par snapshot kit-metadata).
+  const seo = await resolvePageWithComponents({
+    pageScope: 'product',
+    pageTargetKey: KIT_PRODUCT_SLUG,
     locale: KIT_LOCALE,
     fallback: { title: FALLBACK_TITLE, description: FALLBACK_DESCRIPTION },
+    components: [
+      // Le hero kit peut porter son propre SEO override (scope='component',
+      // targetKey='kit-hero'). Champs écrasables : title et OG title.
+      // La description reste celle du produit (cohérence editorial).
+      { componentKey: 'kit-hero', overridableFields: ['title', 'ogTitle'] },
+    ],
   });
   return {
     title: seo.title,
@@ -101,6 +119,42 @@ export default async function KitPage() {
   // la base est encore vide : le builder retombe sur le starter rating.
   const reviewStats = await getProductReviewStats(dbProduct.id);
 
+  // Tracking ViewContent — fire CAPI server-side avec event_id déterministe
+  // partagé avec le Pixel client (via ViewItemTracker.eventIdSeed). Meta
+  // dédup transparent entre les deux canaux.
+  //
+  // Objectif Phase 2 : combler le gap CAPI signalé par Meta (7 881 events
+  // de moins côté serveur sur 7 j). Le serveur devient la source fiable.
+  // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.6
+  const reqHeaders = headers();
+  const reqCookies = cookies();
+  const sessionId =
+    reqCookies.get('fg_session_id')?.value ?? reqCookies.get('_fbp')?.value ?? null;
+  const eventIdSeed = sessionId
+    ? deriveEventId({ eventName: 'view_item', sessionId, pageId: 'kit' })
+    : undefined;
+  const kitPromo = computePromo(dbProduct.priceCents, dbProduct.promoPriceCents);
+  void serverFire({
+    eventName: 'view_item',
+    pageId: 'kit',
+    pageRoute: '/kit',
+    pageUrl: `https://femiglow-maroc.com/kit`,
+    params: {
+      currency: dbProduct.currency,
+      value: kitPromo.effectivePriceCents / 100,
+      items: [
+        {
+          item_id: dbProduct.id,
+          item_name: dbProduct.name,
+          price: kitPromo.effectivePriceCents / 100,
+          quantity: 1,
+        },
+      ],
+    },
+    headers: reqHeaders,
+    cookies: reqCookies,
+  });
+
   // Schema.org Product :
   //  - L'admin garde l'autorité éditoriale sur name / description / offers
   //    via `seo.structuredData` (override CMS, scope product).
@@ -130,6 +184,7 @@ export default async function KitPage() {
 
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0">
+      <GeoPromoSlideHeaderSlot />
       <JsonLd data={productJsonLd} />
       <JsonLd data={faqPageSchema(content.faq)} />
       <HeroProduitBound
@@ -146,9 +201,9 @@ export default async function KitPage() {
       */}
       <KitCommanderSectionBound />
       <CompositionRevealBound items={content.composition} />
-      <VideoPlayer4Gestes video={content.videoSrc} />
+      <VideoPlayer4GestesKitBound />
       <IngredientsDetailsBound
-        composition={content.composition}
+        composition={resolveKitComposition().map((it) => it.subProduct)}
         componentKey="kit-detail-mains"
       />
       {/*

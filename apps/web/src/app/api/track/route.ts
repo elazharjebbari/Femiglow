@@ -38,6 +38,44 @@ const consentStateSchema = z
   })
   .strict();
 
+const userDataSchema = z
+  .object({
+    sha256_email_address: z.string().min(32).max(128).optional(),
+    sha256_phone_number: z.string().min(32).max(128).optional(),
+    address: z
+      .object({
+        sha256_first_name: z.string().min(32).max(128).optional(),
+        sha256_last_name: z.string().min(32).max(128).optional(),
+        city: z.string().max(120).optional(),
+        country: z.string().max(2).optional(),
+      })
+      .partial()
+      .optional(),
+  })
+  .partial()
+  .strict();
+
+const attributionSchema = z
+  .object({
+    channel: z.string().max(40),
+    is_paid: z.boolean(),
+    strategy: z.string().max(40),
+    reason: z.string().max(80),
+    click_id: z.string().max(512).optional(),
+    click_id_field: z.string().max(40).optional(),
+    utm: z
+      .object({
+        source: z.string().max(120).optional(),
+        medium: z.string().max(120).optional(),
+        campaign: z.string().max(120).optional(),
+        term: z.string().max(120).optional(),
+        content: z.string().max(120).optional(),
+      })
+      .partial()
+      .optional(),
+  })
+  .strict();
+
 const incomingEventSchema = z
   .object({
     event: z.string().min(1).max(80),
@@ -71,14 +109,16 @@ const incomingEventSchema = z
       .optional(),
     context: z.record(z.unknown()).optional(),
     params: z.record(z.unknown()).optional(),
+    user_data: userDataSchema.optional(),
+    attribution: attributionSchema.optional(),
   })
-  .strict();
+  .passthrough();
 
 const batchSchema = z
   .object({
     events: z.array(incomingEventSchema).min(1).max(50),
   })
-  .strict();
+  .passthrough();
 
 interface IngestResult {
   accepted: number;
@@ -163,10 +203,13 @@ export async function POST(request: Request): Promise<Response> {
         userId: event.user.user_id ?? null,
         consent: event.consent as TrackingConsentState,
         uaHash: enrichment.uaHash,
+        userAgent: request.headers.get('user-agent') ?? undefined,
         ipAnonymized: enrichment.ipAnonymized,
         device: enrichment.device,
         locale: event.page.locale || enrichment.locale,
         params: paramsParsed.data as Record<string, unknown>,
+        userData: event.user_data,
+        attribution: event.attribution,
       }).catch((err) => {
         logger.error('tracking.dispatch.failed', {
           event_name: event.event,

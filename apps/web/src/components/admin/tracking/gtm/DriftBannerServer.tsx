@@ -13,7 +13,7 @@ export async function DriftBannerServer() {
     <DriftBanner
       status={state.status}
       humanMessage={humanizeFirstReason(state.reasons[0])}
-      linkTo="/admin/tracking/gtm/sync-status"
+      linkTo="/admin/tracking/plans"
     />
   );
 }

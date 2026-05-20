@@ -17,9 +17,14 @@ export type DeliveryStatus = 'pending' | 'in_progress' | 'succeeded' | 'failed' 
 
 export type WebhookEventName =
   | 'lead.created'
+  | 'lead.step2_completed'
+  | 'lead.step1_abandoned'
   | 'lead.status_changed'
   | 'lead.note_added'
+  | 'chat_lead.created'
+  | 'cart.abandoned'
   | 'order.created'
+  | 'contact.submitted'
   | 'ritual.approved'
   | 'ritual.rejected'
   | 'ritual.hidden'
@@ -39,14 +44,17 @@ export interface AdminUser {
 export interface Lead {
   id: string;
   /**
-   * Les leads issus du chat n'ont PAS d'email (capture téléphone-only).
-   * Pour ces leads-là, `email` vaut `null`. Le contrat ecommerce reste
-   * inchangé : un lead créé via order/checkout aura toujours un email.
-   * cf. CHA-225 — unification de /admin/leads.
+   * Les leads chat et wizard peuvent être phone-only. `email` vaut `null`
+   * tant qu'aucun opt-in email n'a été capturé.
+   * cf. CHA-225/CHA-230 — unification de /admin/leads.
    */
   email: string | null;
   phone: string | null;
   name: string | null;
+  city?: string | null;
+  country?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
   status: LeadStatus;
   source: string | null;
   consentMarketing: boolean;
@@ -54,12 +62,23 @@ export interface Lead {
   updatedAt: Date;
   /**
    * CHA-229 — ID de la session de chat à l'origine du lead (`cs_…`).
-   * Présent uniquement pour les leads chat (`source='chat:…'`) ; `null`
-   * pour les leads ecommerce. Permet à `/admin/leads` d'ouvrir la
+   * Présent uniquement pour les vrais leads chat (`source='chat:…'`) ;
+   * `null` pour les leads ecommerce et wizard. Permet à `/admin/leads` d'ouvrir la
    * fenêtre rapide `ConversationQuickView` sans round-trip
    * supplémentaire pour résoudre `chat_lead.session_id`.
    */
   chatSessionId?: string | null;
+  journeyStage?: 'lead' | 'address' | 'payment' | 'purchased' | 'abandoned_step1';
+  dataPct?: number;
+  webhookSummary?:
+    | 'none'
+    | 'pending'
+    | 'sent'
+    | 'failed'
+    | 'disabled'
+    | 'skipped'
+    | 'step2_sent'
+    | 'step1_abandoned_sent';
 }
 
 export interface Order {
@@ -124,7 +143,15 @@ export interface WebhookDelivery {
 }
 
 // CHA-260 — Outbound webhook log (payload PLAT).
-export type OutboundSource = 'order' | 'chat-lead' | 'cart-abandon' | 'contact' | 'newsletter';
+export type OutboundSource =
+  | 'order'
+  | 'chat-lead'
+  | 'cart-abandon'
+  | 'contact'
+  | 'newsletter'
+  | 'lead-step2'
+  | 'lead-step1-abandon'
+  | 'inline-contact';
 export type OutboundStatus = 'pending' | 'sent' | 'failed' | 'skipped' | 'disabled';
 
 export interface OutboundWebhookLogRow {
@@ -520,6 +547,20 @@ export interface TrackingSetting<TValue = unknown> {
   value: TValue;
   updatedAt: Date;
   updatedBy: string | null;
+}
+
+/**
+ * Ligne `visitor_attribution` (in-memory + DB). Le `*Touch` est un
+ * objet libre — typé strictement par
+ * `lib/tracking/attribution/types.ts → ChannelTouch`.
+ */
+export interface VisitorAttributionRow {
+  visitorId: string;
+  firstTouch: unknown;
+  lastTouch: unknown;
+  paidHistory: unknown;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -990,6 +1031,25 @@ export interface RitualTestimonialPhoto {
   facesCheckAt: Date | null;
   position: number;
   createdAt: Date;
+}
+
+export type ProductReviewPhotoStatus = 'draft' | 'published' | 'archived';
+
+export interface ProductReviewPhoto {
+  id: string;
+  productId: string;
+  reviewId: string | null;
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  blurDataUrl: string | null;
+  displayOrder: number;
+  status: ProductReviewPhotoStatus;
+  reviewerInitials: string | null;
+  reviewerCity: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface RitualAuditEntry {

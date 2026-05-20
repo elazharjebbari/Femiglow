@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { decodeSession, SESSION_COOKIE } from '@/lib/auth/session';
 import { buildChatCspExtensions } from '@/lib/chat/csp';
 import { buildTrackingCspExtensions } from '@/lib/tracking/providers/csp';
+import { legacyRedirectIfNeeded } from '@/lib/tracking/plan/legacy-redirect';
 
 export const config = {
   matcher: [
@@ -91,6 +92,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const isAdmin = pathname.startsWith('/admin');
   const isAdminApi = pathname.startsWith('/api/admin');
+
+  // TP2 — Redirige les pages tracking legacy vers la nouvelle UI unifiée
+  // dès lors que `TRACKING_LEGACY_REDIRECT=on`. Géré avant l'auth pour
+  // que le 302 prenne effet même sans session (les pages cibles forceront
+  // ensuite la login si besoin).
+  const legacy = legacyRedirectIfNeeded(request);
+  if (legacy) return legacy;
 
   if (isAdmin && !PUBLIC_ADMIN_PATHS.has(pathname)) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;

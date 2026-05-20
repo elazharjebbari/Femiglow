@@ -113,4 +113,26 @@ export const TRACKING_SETTING_KEYS = {
   CONSENT_BANNER_ENABLED: 'consent_banner_enabled',
   /** État de consentement par défaut quand le bandeau est désactivé */
   CONSENT_DEFAULT_GRANTED: 'consent_default_granted',
+  /**
+   * Stratégie d'attribution multi-canal. Cf.
+   * docs/tracking-attribution/ + `lib/tracking/attribution/types.ts`.
+   * Valeurs : 'last_paid_touch' | 'first_paid_touch' | 'last_touch' |
+   *          'first_touch' | 'broadcast'
+   * Défaut runtime si absente : 'last_paid_touch' (recommandé).
+   */
+  ATTRIBUTION_STRATEGY: 'attribution_strategy',
+  /** Envoi automatique du webhook quand le wizard valide l'adresse. */
+  LEAD_STEP2_WEBHOOK_ENABLED: 'lead.step2_webhook_enabled',
+  /** Scan cron des leads ayant fourni nom + téléphone sans adresse. */
+  LEAD_STEP1_ABANDON_ENABLED: 'lead.step1_abandon_enabled',
+  /** Délai avant webhook d'abandon step 1, en minutes. */
+  LEAD_STEP1_ABANDON_TIMEOUT_MINUTES: 'lead.step1_abandon_timeout_minutes',
+  /** Inclusion du transcript chat dans les payloads lead. */
+  LEAD_WEBHOOK_CONVERSATION_ENABLED: 'lead.webhook_conversation_enabled',
+  /** Nombre max de messages envoyés dans `conversation`. */
+  LEAD_WEBHOOK_CONVERSATION_MAX_MESSAGES: 'lead.webhook_conversation_max_messages',
+  /** Budget max approximatif du champ `conversation`, en bytes UTF-8. */
+  LEAD_WEBHOOK_CONVERSATION_MAX_BYTES: 'lead.webhook_conversation_max_bytes',
+  /** Webhook immédiat pour les leads inline-contact (numéro détecté dans le chat). */
+  LEAD_INLINE_CONTACT_WEBHOOK_ENABLED: 'lead.inline_contact_webhook_enabled',
 } as const;

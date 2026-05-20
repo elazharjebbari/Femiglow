@@ -1,0 +1,297 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow Unified Tracking API
+  version: 1.0.0
+  description: |
+    API admin pour piloter le TrackingPlan FemiGlow.
+    Auth : NextAuth session + CSRF token.
+
+servers:
+  - url: https://femiglow.ma
+    description: Production
+  - url: https://staging.femiglow.ma
+    description: Staging
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Secure-next-auth.session-token
+
+  schemas:
+    PlanStatus:
+      type: string
+      enum: [draft, active, archived]
+
+    EnvName:
+      type: string
+      enum: [production, staging, preview, dev]
+
+    PlanSummary:
+      type: object
+      required: [id, name, status, bundleId, createdAt, createdBy]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { $ref: '#/components/schemas/PlanStatus' }
+        bundleId: { type: string }
+        createdAt: { type: string, format: date-time }
+        createdBy: { type: string, format: email }
+        activatedAt: { type: string, format: date-time, nullable: true }
+        archivedAt: { type: string, format: date-time, nullable: true }
+
+    TrackingPlan:
+      type: object
+      # cf. apps/web/src/lib/tracking/plan/schema.ts (Zod canonique)
+      additionalProperties: true
+
+    TrackingPlanRecord:
+      allOf:
+        - $ref: '#/components/schemas/PlanSummary'
+        - type: object
+          required: [plan]
+          properties:
+            plan: { $ref: '#/components/schemas/TrackingPlan' }
+            notes: { type: string, nullable: true }
+            parentVersionId: { type: string, format: uuid, nullable: true }
+
+    ValidationIssue:
+      type: object
+      required: [code, severity, message]
+      properties:
+        code: { type: string, example: 'placeholder_id' }
+        severity: { type: string, enum: [error, warning, info] }
+        path: { type: string, example: 'providers.meta.pixelId' }
+        message: { type: string }
+        fix: { type: string, nullable: true }
+
+    ValidationResult:
+      type: object
+      required: [ok, errors, warnings]
+      properties:
+        ok: { type: boolean }
+        errors: { type: array, items: { $ref: '#/components/schemas/ValidationIssue' } }
+        warnings: { type: array, items: { $ref: '#/components/schemas/ValidationIssue' } }
+        recommendations: { type: array, items: { type: string } }
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        issues:
+          type: array
+          items: { $ref: '#/components/schemas/ValidationIssue' }
+
+security:
+  - sessionCookie: []
+
+paths:
+  /api/admin/tracking/plans:
+    get:
+      summary: Liste les plans
+      parameters:
+        - in: query
+          name: status
+          schema: { type: array, items: { $ref: '#/components/schemas/PlanStatus' } }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/PlanSummary' } }
+                  total: { type: integer }
+    post:
+      summary: Crée un nouveau plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                from: { type: string, format: uuid, nullable: true }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrackingPlanRecord' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/admin/tracking/plans/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrackingPlanRecord' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              # Deep partial du TrackingPlan
+              additionalProperties: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrackingPlanRecord' }
+        '409':
+          description: Conflict (e.g. plan active)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/admin/tracking/plans/{id}/validate:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrackingPlan' }
+      responses:
+        '200':
+          description: OK (result, qu'il soit valide ou non)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationResult' }
+
+  /api/admin/tracking/plans/{id}/activate:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      responses:
+        '200':
+          description: Activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan: { $ref: '#/components/schemas/TrackingPlanRecord' }
+                  bundleId: { type: string }
+                  deactivatedPlanId: { type: string, nullable: true }
+        '422':
+          description: Cannot activate (validation failure)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /api/admin/tracking/plans/{id}/archive:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      responses:
+        '200':
+          description: Archived
+        '409':
+          description: Cannot archive active plan
+
+  /api/admin/tracking/plans/{id}/export:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+      - in: query
+        name: env
+        required: true
+        schema: { $ref: '#/components/schemas/EnvName' }
+      - in: query
+        name: format
+        schema: { type: string, enum: [pretty, minified], default: pretty }
+      - in: query
+        name: download
+        schema: { type: boolean, default: false }
+    get:
+      responses:
+        '200':
+          description: GTM container JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /api/admin/tracking/plans/{id}/sync-status:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      responses:
+        '200':
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok, warning, critical] }
+                  since: { type: string, format: date-time }
+                  reasons:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string }
+                        detail: { type: string }
+                  lastPing:
+                    type: object
+                    nullable: true
+                    properties:
+                      receivedAt: { type: string, format: date-time }
+                      bundleId: { type: string }
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }

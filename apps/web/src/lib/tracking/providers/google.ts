@@ -61,9 +61,17 @@ export const googleAdapter: ProviderAdapter = {
       error: result.ok ? undefined : result.body.slice(0, 200),
     };
   },
-  clientSnippet(provider: TrackingProvider): string | null {
-    if (provider.status !== 'enabled' || !provider.pixelId) return null;
-    return `(function(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${provider.pixelId}';document.head.appendChild(s);})();window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('consent','default',{ad_storage:'denied',analytics_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',functional_storage:'denied'});gtag('config','${provider.pixelId}',{send_page_view:false});`;
+  clientSnippet(): string | null {
+    // GA4 est bootstrapé via GTM (tag gaawc dans le container exporté).
+    // Si on injecte aussi gtag.js standalone côté client, on a :
+    //   - double config GA4 (gtag('config','G-XXX') × 2)
+    //   - double envoi des events (1 fois par le tag gaawe GTM,
+    //     1 fois par l'auto-tracking gtag du config standalone)
+    // Le user voyait `gtag("event", "purchase", {send_to:"G-XXX"})`
+    // après chaque event complet : c'était l'auto-tracking gtag du
+    // config standalone.
+    // Source unique = GTM. Le client snippet renvoie null.
+    return null;
   },
   cspHosts() {
     return {

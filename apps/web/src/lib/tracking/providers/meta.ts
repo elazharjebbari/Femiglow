@@ -1,5 +1,6 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
+import { enrichPurchase } from './_enrich-purchase';
 import { hashIdentity, sha256Hex } from './hashing';
 import { isEventSupported } from './event-mapping';
 import { getMappedName, isMetaCustomEvent } from './get-mapped-name';
@@ -7,6 +8,7 @@ import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
 
 const GRAPH_API_VERSION = 'v19.0';
+const PURCHASE_EVENT_NAMES = new Set(['purchase', 'purchase_server']);
 
 function buildUserData(ctx: DispatchContext): Record<string, unknown> {
   const hashed = hashIdentity(ctx.identity ?? {});
@@ -60,6 +62,22 @@ export const metaAdapter: ProviderAdapter = {
     if (!eventNameMapped) {
       return { status: 'skipped', latencyMs: 0, attempts: 0, error: 'event_unmapped' };
     }
+    // Guard Purchase value/currency : sans value > 0 + currency 3-lettres, Meta
+    // dégrade le ROAS. On enrichit depuis la DB orders puis on skippe si
+    // toujours invalide (cf. docs/meta-quality-audit-2026-05/§2 root cause A).
+    let params = ctx.params;
+    if (PURCHASE_EVENT_NAMES.has(ctx.eventName)) {
+      const enriched = await enrichPurchase(params);
+      if (enriched.source === 'unavailable') {
+        return {
+          status: 'skipped',
+          latencyMs: Date.now() - startedAt,
+          attempts: 0,
+          error: 'purchase_value_currency_invalid',
+        };
+      }
+      params = { ...params, value: enriched.value, currency: enriched.currency };
+    }
     const ts = Math.floor(ctx.receivedAt.getTime() / 1000);
     // Si l'admin a marqué isCustom=true, on envoie via trackCustom de la
     // CAPI Meta : le `event_name` reste personnalisé, mais on flag dans
@@ -76,7 +94,7 @@ export const metaAdapter: ProviderAdapter = {
           action_source: 'website',
           user_data: buildUserData(ctx),
           custom_data: {
-            ...buildCustomData(ctx.eventName, ctx.params),
+            ...buildCustomData(ctx.eventName, params),
             ...(isCustom ? { fg_custom_event: true } : {}),
           },
         },

@@ -32,10 +32,10 @@ export function CheckoutHeader({ onLeaveClick }: CheckoutHeaderProps) {
 
           <div
             className="hidden items-center gap-2 text-xs uppercase tracking-[0.18em] text-encre/70 sm:flex"
-            aria-label="Paiement sécurisé"
+            aria-label="Paiement à la livraison"
           >
-            <LockIcon />
-            <span>Paiement sécurisé</span>
+            <HandCoinIcon />
+            <span>Paiement à la livraison</span>
           </div>
 
           <Link
@@ -52,21 +52,25 @@ export function CheckoutHeader({ onLeaveClick }: CheckoutHeaderProps) {
   );
 }
 
-function LockIcon() {
+function HandCoinIcon() {
   return (
     <svg
       aria-hidden="true"
       width="14"
       height="14"
-      viewBox="0 0 14 14"
+      viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.4"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <rect x="2.5" y="6" width="9" height="6.5" rx="1" />
-      <path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" />
+      <path d="M5 17v-4a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 8 13v1" />
+      <path d="M8 16v-6a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 11 10v1" />
+      <path d="M11 14v-4a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 14 10v3" />
+      <path d="M14 11v-1a1.5 1.5 0 0 1 1.5-1.5h0A1.5 1.5 0 0 1 17 10v6" />
+      <path d="M5 17a6 6 0 0 0 6 6h2a6 6 0 0 0 6-6" />
+      <circle cx="12" cy="4" r="2" />
     </svg>
   );
 }

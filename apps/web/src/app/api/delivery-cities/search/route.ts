@@ -100,10 +100,7 @@ export async function GET(request: Request): Promise<Response> {
 
     // ── Kill-switch : sert le dataset statique au lieu de toucher la DB.
     if (!isDbCitiesEnabled()) {
-      const staticItems = (q.trim()
-        ? searchStaticCities(q, limit)
-        : MOROCCAN_CITIES.slice(0, limit)
-      ).map(staticToPublic);
+      const staticItems = searchStaticCities(q, limit).map(staticToPublic);
       const res = NextResponse.json({
         items: staticItems,
         total: staticItems.length,

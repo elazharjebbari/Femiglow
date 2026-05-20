@@ -63,6 +63,18 @@ const mocks = vi.hoisted(() => {
         }
       : null,
   );
+  /** CHA-240 — lookup par (session, identityHash). */
+  const leadFindBySessionAndIdentity = vi.fn(async (sessionId: string) =>
+    state.leadAlreadyForSession
+      ? {
+          id: 'cl_existing',
+          sessionId,
+          triggerReason: state.existingLeadReason,
+          firstName: 'pré-existant',
+          phoneE164: '+212600000000',
+        }
+      : null,
+  );
   const leadCreate = vi.fn(async (input: Record<string, unknown>) => ({
     id: 'cl_new',
     ...input,
@@ -85,6 +97,7 @@ const mocks = vi.hoisted(() => {
     sessionGetById,
     leadHasForSession,
     leadFindBySession,
+    leadFindBySessionAndIdentity,
     leadCreate,
     leadUpgrade,
     messageRecentForMemory,
@@ -108,6 +121,7 @@ vi.mock('@/lib/chat/repos/lead', () => ({
   leadRepo: {
     hasLeadForSession: mocks.leadHasForSession,
     findBySession: mocks.leadFindBySession,
+    findBySessionAndIdentity: mocks.leadFindBySessionAndIdentity,
     create: mocks.leadCreate,
     upgrade: mocks.leadUpgrade,
   },
@@ -115,6 +129,10 @@ vi.mock('@/lib/chat/repos/lead', () => ({
 
 vi.mock('@/lib/chat/repos/message', () => ({
   messageRepo: { recentForMemory: mocks.messageRecentForMemory },
+}));
+
+vi.mock('@/lib/chat/repos/identity-hash', () => ({
+  computeIdentityHash: vi.fn((_phone: string, _name: string) => 'mock_identity_hash'),
 }));
 
 vi.mock('@/lib/chat/repos/event', () => ({

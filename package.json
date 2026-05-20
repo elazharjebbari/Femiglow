@@ -4,8 +4,9 @@
   "private": true,
   "engines": {
     "node": ">=20",
-    "pnpm": ">=9"
+    "pnpm": "9.x"
   },
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "pnpm --filter @femiglow/web dev",
     "build": "pnpm --filter @femiglow/web build",

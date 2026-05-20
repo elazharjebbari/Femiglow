@@ -23,6 +23,8 @@ export const SEED_ALT_BY_PATH: Record<string, string> = {
 
   /* kit */
   'kit/kit-principale.png': 'Pack FemiGlow complet \u2014 paste, powder et polissoir Step 4, packshot principal sur fond cr\u00E8me.',
+  'kit/kit-pack-shot.png':
+    'Pack FemiGlow \u2014 paste, powder et polissoir Step 4 Polish & Shine pos\u00E9s sur papier cr\u00E8me et linge de lin, lumi\u00E8re du matin.',
   'kit/kit-detail-mains.png': 'Mains tenant le pack FemiGlow en macro, doigts effleurant le bouchon.',
   'kit/kit-base.png': 'Paste FemiGlow, packshot trois-quarts (vert sauge).',
   'kit/kit-fortifiant.png': 'Powder FemiGlow, packshot ambr\u00E9 ros\u00E9 (rose poudr\u00E9).',

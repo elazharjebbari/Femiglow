@@ -1,20 +1,12 @@
 /**
  * CHA-260 — Builder webhook outbound pour le formulaire de contact.
  *
- * Phone-gate strict :
- *   - phone absent / invalide → `status='skipped'`, AUCUN appel HTTP.
- *   - sinon → payload PLAT envoyé via dispatcher unifié.
- *
- * Pas de FK stable côté DB (le contact form n'est pas persisté en
- * `contact_submission` à ce stade) — l'idempotency-key est un id frais
- * généré par submission. Le receveur peut dédoublonner par
- * `(email, message_hash, time_window)` si besoin.
- *
- * cf. `docs/webhooks/outbound-webhook-runbook.md` §2.4.
+ * Dispatch désormais vers les endpoints admin EN PRIORITÉ, puis fallback
+ * outbound URL si aucun endpoint admin ne matche.
  */
 import { createId } from '@/lib/ids';
 
-import { dispatchOutbound, type DispatchResult } from '../dispatcher';
+import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 
 export interface ContactWebhookInput {
@@ -31,7 +23,7 @@ export interface ContactWebhookInput {
 }
 
 export interface ContactWebhookResult {
-  status: DispatchResult['status'];
+  status: DispatchToAllChannelsResult['status'];
   attempts: number;
   responseStatus?: number;
   logId?: string;
@@ -45,9 +37,6 @@ export async function dispatchContactWebhook(
 ): Promise<ContactWebhookResult> {
   const contactId = createId('contact');
 
-  // Phone-gate : pas de téléphone exploitable → on N'ENVOIE PAS et on
-  // ne crée pas de log non plus (les contacts sans phone restent
-  // traités par l'email du formulaire — pas de double-tracking).
   const phone = normalizePhoneForPayload(input.phone ?? null, 'MA');
   if (!phone.ok) {
     return {
@@ -64,25 +53,25 @@ export async function dispatchContactWebhook(
   if (input.role) noteParts.push(`role:${input.role}`);
   if (input.newsletterOptIn) noteParts.push('newsletter-opt-in');
 
-  const payload = {
-    id: contactId,
-    full_name: composeFullName(input.name),
-    phone: phone.value,
-    email: input.email,
-    note: noteParts.join(' | ').slice(0, 1990),
-    source_channel: `contact-form:${input.type}`,
-    quantity: 1,
-    currency: 'MAD',
-    ip: input.ip ?? undefined,
-  };
-
-  const result = await dispatchOutbound({
+  const result = await dispatchToAllChannels({
     source: 'contact',
     sourceId: contactId,
     idempotencyKey: contactId,
     eventName: 'contact.submitted',
-    payload,
+    adminEventNames: ['contact.submitted'],
+    payload: {
+      id: contactId,
+      full_name: composeFullName(input.name),
+      phone: phone.value,
+      email: input.email,
+      note: noteParts.join(' | ').slice(0, 1990),
+      source_channel: `contact-form:${input.type}`,
+      quantity: 1,
+      currency: 'MAD' as const,
+      ip: input.ip ?? undefined,
+    },
   });
+
   return {
     status: result.status,
     attempts: result.attempts,

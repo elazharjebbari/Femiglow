@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetMemoryStore, memoryStore } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
 
@@ -14,8 +14,14 @@ const NOW = new Date('2026-05-08T12:00:00Z');
 const BOM = '﻿';
 
 beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
   resetMemoryStore();
   vi.mocked(getAdminSession).mockReset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 function adminSession() {

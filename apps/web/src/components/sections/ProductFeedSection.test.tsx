@@ -13,8 +13,18 @@
  *  - aria-label sur la liste des gestes (a11y),
  *  - axe a11y clean.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+
+// Mock PackVisualBound (server-only via ComponentMedia → DB) — testé
+// indépendamment dans PackVisualBound.test.tsx.
+vi.mock('./PackVisualBound', () => ({
+  PackVisualBound: ({ alt }: { alt: string }) => (
+    <figure data-testid="pack-visual">
+      <img alt={alt} src="/products/kit-principale.svg" />
+    </figure>
+  ),
+}));
 
 import { ToastProvider } from '@/components/ui/Toast';
 import { mockKitPageContent } from '@/data/mock/kit';

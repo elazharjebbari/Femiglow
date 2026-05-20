@@ -46,6 +46,10 @@ export function MessageList() {
       aria-live="polite"
       aria-label="Conversation"
       data-testid="chat-message-list"
+      // CHA-mobile-focus — Marqueur consommé par le useEffect anti-scroll
+      // iOS du ChatPanel : c'est CETTE liste dont on doit restaurer le
+      // scrollTop si iOS l'a perturbé au focus d'un input.
+      data-chat-scroll=""
       // CHA-mobile-ux : `overscroll-contain` empêche le scroll de la
       // liste de bleed-through sur la page sous-jacente en mobile
       // (le sheet `inset-0` couvre toute la viewport, mais sans cette

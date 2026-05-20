@@ -165,13 +165,10 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
   );
   const total = subtotal + shipping;
 
-  // D-004 — `begin_checkout` ne fire plus au mount (déclenchait des
-  // InitiateCheckout polluants côté Meta sur page view déguisé). Il est
-  // émis dans `handleStep0Submit` sur action explicite "Continuer".
-  // Purge `lead_create.__new__` au mount pour éviter une collision
-  // idempotency avec un parcours wizard /kit antérieur (clés partagées en
-  // sessionStorage).
-  const beganCheckoutRef = useRef(false);
+  // `begin_checkout` migré vers `checkout_intent` (1ère frappe, cf.
+  // InfoStep + useCheckoutIntentTrigger). On purge `lead_create.__new__`
+  // au mount pour éviter une collision idempotency avec un parcours
+  // wizard /kit antérieur (clés partagées en sessionStorage).
   const purgeLeadCreateRef = useRef(false);
   useEffect(() => {
     if (purgeLeadCreateRef.current) return;
@@ -292,23 +289,9 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
     const values = methods.getValues();
     const visitorId = ensureVisitorId() ?? 'v_cart_unknown';
     const sessionId = ensureSessionId() ?? 's_cart_unknown';
-    // D-004 — begin_checkout sur action explicite (click Continuer step 0).
-    if (!beganCheckoutRef.current) {
-      beganCheckoutRef.current = true;
-      emit('begin_checkout', {
-        currency: 'MAD',
-        value: total / 100,
-        form_id: FORM_ID,
-        form_mode: FORM_MODE,
-        step_name: 'lead',
-        items: items.map((it) => ({
-          item_id: it.productId,
-          item_name: it.productName,
-          price: it.unitPriceCents / 100,
-          quantity: it.quantity,
-        })),
-      });
-    }
+    // NB : `begin_checkout` n'est plus émis ici. Le signal d'intent
+    // est désormais porté par `checkout_intent` (1ère frappe dans
+    // InfoStep, cf. useCheckoutIntentTrigger).
     setSubmitting(true);
     setError(null);
     try {

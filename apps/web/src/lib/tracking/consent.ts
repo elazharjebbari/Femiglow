@@ -69,6 +69,16 @@ export function saveConsent(state: TrackingConsentState): void {
     if (state.ad_storage === 'granted') ttq.enable?.();
     else ttq.disable?.();
   }
+  // 5) Snap snaptr — no official consent API. SnapPixelEvents component
+  //    gates event firing on ad_storage === 'granted'. When consent is
+  //    revoked, we re-init with empty matching params to flush PII.
+  const snapPixelId = w.__fg_snap_pixel_id as string | undefined;
+  const snaptr = w.snaptr as ((...args: unknown[]) => void) | undefined;
+  if (typeof snaptr === 'function' && snapPixelId) {
+    if (state.ad_storage !== 'granted') {
+      snaptr('init', snapPixelId, { user_hashed_email: '', user_hashed_phone_number: '' });
+    }
+  }
   window.dispatchEvent(new CustomEvent('fg:consent-changed', { detail: state }));
 }
 

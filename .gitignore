@@ -33,6 +33,10 @@ storybook-static
 # Claude Code worktrees (chaque worktree est un repo Git séparé,
 # ne doit jamais être committé en gitlink dans le repo principal)
 .claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# Brouillons locaux (notes perso, dumps GTM Tag Assistant, etc.)
+draft/
 
 # Media storage (régénérable par seeders — cf. docs/reset-feature)
 # Les fichiers optimisés (avif/webp/jpeg variants + originaux) vivent

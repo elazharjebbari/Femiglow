@@ -115,6 +115,15 @@ const NAME_AR_OVERLAY: Record<string, string> = (() => {
   return out;
 })();
 
+/** Map slug → position prioritaire (les villes les plus commandées en tête de l'autocomplete). */
+const POSITION_OVERLAY: Record<string, number> = (() => {
+  const out: Record<string, number> = {};
+  for (const c of MOROCCAN_CITIES) {
+    if (c.position > 0) out[c.value] = c.position;
+  }
+  return out;
+})();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers purs
 // ─────────────────────────────────────────────────────────────────────────────
@@ -302,7 +311,7 @@ export function parseSenditFixture(raw: unknown): ImportResult {
       externalRef: typeof rec.pk === 'number' ? `sendit:${rec.pk}` : 'sendit:?',
       aliases: aliasesOverlay ? [...aliasesOverlay] : [],
       metadata: {},
-      position: 0,
+      position: POSITION_OVERLAY[slug] ?? 0,
     };
 
     seen.set(slug, city);

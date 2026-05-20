@@ -16,6 +16,30 @@ import { useCallback, type ReactNode } from 'react';
 
 import { Button, type ButtonSize } from '@/components/ui/Button';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { cn } from '@/lib/utils/cn';
+
+/**
+ * Couleur d'accent visuel optionnelle pour personnaliser le CTA selon
+ * la section qui le porte (Kolenda §4.6). `undefined` garde le rendu
+ * historique (variant `primary` = bg-encre).
+ *
+ * `sauge-dark` est le défaut Kolenda pour le bloc pack (contraste fort
+ * + cohérence palette sauge). Active aussi `motion-safe:animate-soft-pulse`
+ * pour un signal d'attention discret.
+ */
+export type CommanderAnchorAccent = 'sauge-dark' | 'champagne' | 'terracotta';
+
+const accentClasses: Record<CommanderAnchorAccent, string> = {
+  // bg-sauge-dark = var(--color-sauge-dark) ≈ #4A5D4F ; texte crème.
+  'sauge-dark':
+    '!bg-sauge-dark !text-creme hover:!bg-sauge motion-safe:animate-soft-pulse',
+  champagne:
+    '!bg-champagne-dark !text-creme hover:!bg-champagne',
+  // Terracotta = couleur literal #C28A6E (Tailwind opacity-modifier ne
+  // supporte pas les CSS vars, cf. bug bg-encre/X documenté).
+  terracotta:
+    '!bg-[#C28A6E] !text-creme hover:!bg-[#A87356]',
+};
 
 interface CommanderAnchorButtonProps {
   /** ID de l'ancre (sans #). Défaut : `commander-femiglow`. */
@@ -28,6 +52,19 @@ interface CommanderAnchorButtonProps {
   productName?: string;
   priceCents?: number;
   currency?: string;
+  /**
+   * Accent visuel — change la palette du CTA selon la section.
+   * `sauge-dark` active aussi le micro-pulse Kolenda §4.6.
+   */
+  accent?: CommanderAnchorAccent;
+  /**
+   * Source tracking pour distinguer les clics CTA selon la section
+   * d'origine. Si `'pack_section'` est passé, émet en plus
+   * `pack_cta_click` avec `{source, cta_label, cta_accent}`.
+   */
+  source?: 'pack_section' | 'hero' | string;
+  /** Label de tracking explicite (par défaut, le `children` textuel). */
+  trackingLabel?: string;
 }
 
 export function CommanderAnchorButton({
@@ -39,6 +76,9 @@ export function CommanderAnchorButton({
   productName,
   priceCents,
   currency = 'MAD',
+  accent,
+  source,
+  trackingLabel,
 }: CommanderAnchorButtonProps) {
   const { emit } = useTracking();
 
@@ -77,7 +117,31 @@ export function CommanderAnchorButton({
         ],
       });
     }
-  }, [anchorId, currency, emit, priceCents, productId, productName]);
+
+    // §4.6 — event spécifique pack_cta_click si le bouton est utilisé
+    // dans la section pack. Permet une mesure CTR distincte de l'event
+    // ecommerce `add_to_cart` (qui agrège tous les CTA d'ajout).
+    if (source === 'pack_section') {
+      emit('pack_cta_click', {
+        source: 'pack_section',
+        cta_label:
+          trackingLabel ??
+          (typeof children === 'string' ? children : 'Commander'),
+        cta_accent: accent ?? 'default',
+      });
+    }
+  }, [
+    anchorId,
+    currency,
+    emit,
+    priceCents,
+    productId,
+    productName,
+    source,
+    accent,
+    trackingLabel,
+    children,
+  ]);
 
   return (
     <Button
@@ -86,6 +150,9 @@ export function CommanderAnchorButton({
       fullWidth={fullWidth}
       onClick={onClick}
       data-testid="kit-commander-anchor-button"
+      data-cta-accent={accent ?? undefined}
+      data-cta-source={source ?? undefined}
+      className={cn(accent && accentClasses[accent])}
     >
       {children ?? 'Commander'}
     </Button>

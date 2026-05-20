@@ -1,0 +1,25 @@
+event,description,category,fired_from,payload_keys,priority,consent_required
+page_view,Vue de page (auto-fire au load),lifecycle,client,"page_title,page_location,page_referrer",high,analytics
+view_content,Vue d'une fiche produit ou contenu enrichi,engagement,client,"item_id,item_name,item_category,value,currency",high,analytics
+search,Recherche interne (barre de recherche ou filtres),engagement,client,"search_term,result_count",medium,analytics
+add_to_cart,Ajout d'un produit au panier,commerce,client,"item_id,item_name,value,currency,quantity",critical,ad
+remove_from_cart,Retrait d'un produit du panier,commerce,client,"item_id,item_name,value,currency,quantity",medium,ad
+initiate_checkout,Démarrage du wizard checkout,commerce,client,"value,currency,num_items",critical,ad
+add_payment_info,Saisie info paiement,commerce,client,"value,currency,payment_type",high,ad
+add_shipping_info,Saisie info livraison,commerce,client,"value,currency,shipping_tier",medium,ad
+lead_form_submit,Soumission d'un formulaire lead,conversion,client+server,"form_id,form_source,value",critical,ad
+purchase,Confirmation de commande,conversion,server,"transaction_id,value,currency,items,customer_email_hash",critical,ad
+refund,Remboursement complet ou partiel,commerce,server,"transaction_id,value,currency",high,ad
+sign_up,Inscription compte (si applicable),conversion,client+server,"method,user_id",high,ad
+share,Partage social d'une page,engagement,client,"method,content_type,item_id",low,analytics
+download_brochure,Téléchargement d'une brochure PDF,engagement,client,"file_name,file_size",medium,analytics
+video_start,Lecture vidéo démarrée,engagement,client,"video_title,video_url,video_duration",low,analytics
+video_complete,Lecture vidéo terminée (>= 90%),engagement,client,"video_title,video_url,video_duration",medium,analytics
+chat_open,Ouverture du chat assistant,engagement,client,"page,language",medium,analytics
+chat_message_sent,Message utilisateur envoyé dans le chat,engagement,client,"message_length,language",low,analytics
+chat_lead_form_submit,Soumission lead depuis le chat,conversion,client+server,"form_id,page,value",critical,ad
+wizard_step_complete,Validation d'une étape du wizard checkout,funnel,client,"step_name,step_index,form_mode,variant_key",high,analytics
+wizard_abandoned,Abandon wizard (timeout ou close),funnel,client,"last_step_name,session_duration",medium,analytics
+order_confirmation_optin,Opt-in email de confirmation post-purchase,conversion,client,"order_id,email_hash",high,analytics
+form_submit_error,Erreur de soumission de formulaire,error,client,"form_id,error_code,error_field",low,analytics
+api_error,Erreur API client (4xx/5xx affichée à l'utilisateur),error,client,"endpoint,status,error_code",low,analytics

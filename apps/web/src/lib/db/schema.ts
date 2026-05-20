@@ -889,6 +889,31 @@ export const trackingSettings = pgTable(
   }),
 );
 
+/**
+ * Snapshot d'attribution multi-canal par visitor_id. Cf.
+ * docs/tracking-attribution/. Sert :
+ *   - de source de vérité cross-session (le cookie est limité à 4KB)
+ *   - de support au debugger admin (inspecter un visitor par ID)
+ *   - de pré-requis pour les dispatchers serveur (Meta CAPI, Google Ads OCI…)
+ *
+ * `first_touch` est immuable après le 1er insert. `last_touch` est
+ * refresh à chaque touche. `paid_history` est LRU 20 (dedup click_id).
+ */
+export const visitorAttribution = pgTable(
+  'visitor_attribution',
+  {
+    visitorId: text('visitor_id').primaryKey(),
+    firstTouch: jsonb('first_touch').notNull(),
+    lastTouch: jsonb('last_touch').notNull(),
+    paidHistory: jsonb('paid_history').notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    updatedIdx: index('visitor_attribution_updated_at_idx').on(t.updatedAt),
+  }),
+);
+
 /* ─────────────────────────────────────────────────────────────────────
  * COMPONENT-MEDIA SYSTEM
  * Lie chaque composant visuel du site (registre `siteComponents`) à
@@ -2192,3 +2217,40 @@ export const legalSlugRedirects = pgTable('legal_slug_redirects', {
 
 export type LegalSlugRedirectRow = typeof legalSlugRedirects.$inferSelect;
 export type LegalSlugRedirectInsert = typeof legalSlugRedirects.$inferInsert;
+
+/* ─────────────────────────────────────────────────────────────────
+ * Product review photos (galerie hero)
+ * cf. docs/kit-hero-optim/02-architecture.md §2.2
+ * ───────────────────────────────────────────────────────────────── */
+
+export const productReviewPhotos = pgTable(
+  'product_review_photos',
+  {
+    id: text('id').primaryKey(),
+    productId: text('product_id').notNull(),
+    reviewId: text('review_id'),
+    src: text('src').notNull(),
+    alt: text('alt').notNull().default('Photo cliente'),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    blurDataUrl: text('blur_data_url'),
+    displayOrder: integer('display_order').notNull().default(0),
+    status: text('status', { enum: ['draft', 'published', 'archived'] })
+      .notNull()
+      .default('published'),
+    reviewerInitials: text('reviewer_initials'),
+    reviewerCity: text('reviewer_city'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    productOrderIdx: index('idx_review_photos_product').on(
+      t.productId,
+      t.status,
+      t.displayOrder,
+    ),
+  }),
+);
+
+export type ProductReviewPhotoRow = typeof productReviewPhotos.$inferSelect;
+export type ProductReviewPhotoInsert = typeof productReviewPhotos.$inferInsert;

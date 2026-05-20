@@ -3,13 +3,13 @@
  * depuis le `Product` + `KitPageContent` reçus, puis délègue le rendu
  * à `<ProductFeedSection/>`.
  *
- * On garde le builder côté serveur pour :
- *  - éviter d'expédier la copy + les principes Kolenda dans le bundle JS,
- *  - permettre aux pages admin (preview, XML feed) de réutiliser exactement
- *    la même fonction sans dupliquer la logique éditoriale.
+ * Depuis le plan `pack-section-optim-2026-05` (Phase 4) : on passe par
+ * `resolveKitPack()` qui applique l'override admin publié si présent,
+ * avant de déléguer. Le builder reste pur (utilisé inchangé par le feed
+ * Merchant XML / JSON-LD pour Google Shopping).
  */
 import { ProductFeedSection } from './ProductFeedSection';
-import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
+import { resolveKitPack } from '@/lib/kit/pack/resolver';
 import type { ProductReviewStats } from '@/lib/products/reviews';
 import type { KitPageContent, Product } from '@/lib/schemas';
 
@@ -30,6 +30,6 @@ export function ProductFeedSectionBound({
   reviewStats,
   anchorId,
 }: ProductFeedSectionBoundProps) {
-  const feed = buildKitProductFeed(product, content, reviewStats);
+  const { feed } = resolveKitPack(product, content, reviewStats);
   return <ProductFeedSection feed={feed} product={product} anchorId={anchorId} />;
 }

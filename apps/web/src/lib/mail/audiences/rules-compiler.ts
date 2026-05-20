@@ -18,7 +18,7 @@
  */
 import 'server-only';
 import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
-import { leads, userEvent, orders } from '@/lib/db/schema';
+import { leads, userEvent, orders, leadTag } from '@/lib/db/schema';
 import { emailEvent, emailSuppression } from '@/lib/db/schema-emails';
 import {
   validateDepth,
@@ -247,14 +247,20 @@ function compileRule(rule: Rule): SQL {
       return numericOp(cnt, rule.operator, rule.value);
     }
 
-    // ── Tags (lead_tag, M5.5 — fallback FALSE/TRUE en attendant) ──────
+    // ── Tags (lead_tag, M5.5) ─────────────────────────────────────────
     case 'has_tag':
-      void rule;
-      return sql`FALSE`;
+      return sql`EXISTS (
+        SELECT 1 FROM ${leadTag}
+        WHERE ${leadTag.leadId} = ${leads.id}
+          AND ${leadTag.tag} = ${rule.tag}
+      )`;
 
     case 'not_has_tag':
-      void rule;
-      return sql`TRUE`;
+      return sql`NOT EXISTS (
+        SELECT 1 FROM ${leadTag}
+        WHERE ${leadTag.leadId} = ${leads.id}
+          AND ${leadTag.tag} = ${rule.tag}
+      )`;
   }
 }
 

@@ -7,6 +7,10 @@ import { TrackingGlobalListener } from '@/lib/tracking/global-listener';
 import { ConsentBanner } from '@/components/tracking/ConsentBanner';
 import { DebugOverlay } from '@/components/tracking/DebugOverlay';
 import { PixelLoader } from '@/components/tracking/PixelLoader';
+import { SnapPixelEvents } from '@/components/tracking/SnapPixelEvents';
+import { GtmHeadScript } from '@/components/tracking/GtmHeadScript';
+import { AttributionCaptureBridge } from '@/components/tracking/AttributionCaptureBridge';
+import { getAttributionStrategy } from '@/lib/tracking/attribution/server';
 import {
   getTrackingSetting,
   TRACKING_SETTING_KEYS,
@@ -90,11 +94,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // défaut (banner activé, consent denied) couvrent l'install initiale ;
   // l'admin peut désactiver le bandeau dans /admin/tracking/settings pour
   // les juridictions où il n'est pas obligatoire (Maroc, US…).
-  const [bannerEnabled, defaultGranted, cookieBannerLegalLinks] = await Promise.all([
-    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
-    getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
-    loadCookieBannerLegalLinks(),
-  ]);
+  const [bannerEnabled, defaultGranted, cookieBannerLegalLinks, attributionStrategy] =
+    await Promise.all([
+      getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_BANNER_ENABLED, true),
+      getTrackingSetting<boolean>(TRACKING_SETTING_KEYS.CONSENT_DEFAULT_GRANTED, false),
+      loadCookieBannerLegalLinks(),
+      getAttributionStrategy(),
+    ]);
 
   return (
     <html
@@ -103,6 +109,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${cormorant.variable} ${inter.variable} ${pinyon.variable}`}
     >
       <body className="min-h-screen bg-creme font-body text-encre antialiased">
+        {/* GTM bootstrap — chargé synchroniquement pour que Tag
+            Assistant / Preview Mode détecte le conteneur dès le HTML
+            initial. Le consentement est géré via Consent Mode v2
+            (defaults = denied tant que le bandeau n'est pas accepté). */}
+        <GtmHeadScript defaultGranted={defaultGranted} />
         <SkipLink />
         {/* Bloque l'auto-zoom iOS/Android sur les champs texte. Aucun
             impact UX en dehors d'une saisie. cf. MobileFocusGuard. */}
@@ -110,6 +121,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <TrackingProvider
           bannerEnabled={bannerEnabled}
           defaultGranted={defaultGranted}
+          attributionStrategy={attributionStrategy}
         >
           <TrackingGlobalListener />
           {children}
@@ -118,7 +130,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             defaultGranted={defaultGranted}
             legalLinks={cookieBannerLegalLinks}
           />
+          <AttributionCaptureBridge />
           <PixelLoader />
+          <SnapPixelEvents />
           <DebugOverlay />
           <ChatWidgetMount />
         </TrackingProvider>

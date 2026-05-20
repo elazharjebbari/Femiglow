@@ -76,6 +76,8 @@ export async function PATCH(
       leadId,
       replayed: result.replayed,
     });
+    // Webhook lead.step2_completed removed: wizard leads now only send
+    // order.created on purchase. Abandoned leads get cart.abandoned via scanner.
     return NextResponse.json(result.body, { status: result.status });
   } catch (err) {
     logger.error('checkout.lead.address.failed', { leadId, error: String(err) });

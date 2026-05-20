@@ -19,7 +19,10 @@ interface AdminShellProps {
     | 'chat'
     | 'rituals'
     | 'legal'
-    | 'emails';
+    | 'emails'
+    | 'kit-video'
+    | 'kit-composition'
+    | 'kit-pack';
   children: ReactNode;
 }
 
@@ -30,6 +33,9 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/media', key: 'media', label: 'Médias' },
   { href: '/admin/components', key: 'components', label: 'Composants' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
+  { href: '/admin/kit/video', key: 'kit-video', label: 'Vidéo /kit' },
+  { href: '/admin/kit/composition', key: 'kit-composition', label: 'Composition /kit' },
+  { href: '/admin/kit/pack', key: 'kit-pack', label: 'Pack /kit' },
   { href: '/admin/legal', key: 'legal', label: 'Pages légales' },
   { href: '/admin/products', key: 'products', label: 'Produits' },
   { href: '/admin/content-studio', key: 'content-studio', label: 'Studio contenu' },
@@ -83,7 +89,13 @@ export function AdminShell({ adminEmail, active, children }: AdminShellProps) {
           </button>
         </form>
       </aside>
-      <main className="flex-1 px-6 py-8 lg:px-10">{children}</main>
+      {/* min-w-0 + overflow-x-hidden : sans ça, un enfant à contenu
+          large (pre JSON, table dense…) empêche le flex item `main` de
+          rétrécir sous viewport, ce qui crée du scroll horizontal au
+          niveau de la page. Les conteneurs internes qui *veulent*
+          défiler horizontalement (ex. <pre overflow-auto>) le font
+          dans leur propre boîte sans déborder. */}
+      <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-8 lg:px-10">{children}</main>
     </div>
   );
 }

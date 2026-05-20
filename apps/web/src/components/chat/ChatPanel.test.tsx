@@ -63,13 +63,19 @@ afterEach(() => {
 describe('ChatPanel (sheet responsive — solution D)', () => {
   it('mobile (base) : inset-0 + h-[100dvh] + overscroll-contain + safe-area', () => {
     const { container } = render(<ChatPanel />);
-    const panel = container.querySelector('[data-testid="chat-panel"]');
+    const panel = container.querySelector('[data-testid="chat-panel"]') as HTMLElement;
     expect(panel).not.toBeNull();
-    const cls = panel!.className;
+    const cls = panel.className;
     expect(cls).toContain('inset-0');
     expect(cls).toContain('h-[100dvh]');
     expect(cls).toContain('overscroll-contain');
-    expect(cls).toContain('pb-[env(safe-area-inset-bottom)]');
+    // CHA-mobile-focus — Le `pb-[env(safe-area-inset-bottom)]` Tailwind a été
+    // remplacé par un `style.paddingBottom = max(safe-area, --chat-keyboard-inset)`
+    // pour pousser le composer au-dessus du clavier mobile iOS quand
+    // `visualViewport` change. Le `env(safe-area-inset-bottom)` reste donc
+    // garanti par fallback CSS max().
+    expect(panel.style.paddingBottom).toContain('env(safe-area-inset-bottom)');
+    expect(panel.style.paddingBottom).toContain('--chat-keyboard-inset');
   });
 
   it('desktop (sm+) : bottom-28 + w-[380px] + rounded-2xl + inset-auto', () => {

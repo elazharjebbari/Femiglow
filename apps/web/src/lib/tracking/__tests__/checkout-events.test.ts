@@ -398,6 +398,7 @@ describe('Transverse: form_mode et variant_key sur tous les events', () => {
 describe('CHECKOUT_EVENT_NAMES (re-exports)', () => {
   it('expose les noms d\'events stables', () => {
     expect(CHECKOUT_EVENT_NAMES).toEqual({
+      checkoutIntent: 'checkout_intent',
       leadCapture: 'lead_capture',
       addressCompleted: 'address_completed',
       wizardError: 'wizard_error',

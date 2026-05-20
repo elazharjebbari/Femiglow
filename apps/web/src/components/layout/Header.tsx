@@ -109,7 +109,7 @@ export function Header() {
                     className="pointer-events-auto absolute right-0 top-full mt-2 inline-flex items-center gap-2 whitespace-nowrap bg-encre px-3 py-1.5 font-body text-[10px] uppercase tracking-[0.18em] text-creme shadow-md motion-safe:animate-[hint-pulse_1.6s_ease-out_2]"
                   >
                     <span aria-hidden="true">↑</span>
-                    Les pages sont ici
+                    Voir le pack ci-dessous
                   </span>
                 )}
               </div>

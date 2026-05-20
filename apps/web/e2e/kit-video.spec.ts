@@ -1,93 +1,191 @@
 /**
- * CHA-243 — E2E du player vidéo YouTube sur /kit.
+ * E2E vidéo `/kit` — refonte Kolenda §4.4.
  *
- * Couvre :
- *   1. La page /kit rend une iframe YouTube (pas de <video> self-hosted)
- *   2. L'iframe pointe sur `www.youtube-nocookie.com` (privacy-enhanced)
- *   3. L'iframe contient l'ID de la vidéo configurée
- *   4. Les params privacy (`rel=0`, `modestbranding=1`) sont présents
- *   5. Le wrapper a un ratio 9:16 (Short détecté correctement)
- *   6. Aucune requête réseau ne part vers `youtube.com` au chargement (avant
- *      lecture) — vérifie que `youtube-nocookie.com` est bien isolé.
+ * Tags utilisés (filtrer via `pnpm playwright test --grep`) :
+ *  - `@video-render`      : présence des éléments clés (poster, chapitres, CTA)
+ *  - `@video-interaction` : click poster → iframe, click chapitre, CTA scroll
+ *  - `@video-a11y`        : 0 violation axe sérieuse/critique sur la section
  *
- * On ne mocke pas YouTube — l'iframe charge bien depuis l'extérieur ; on
- * vérifie juste le contrat de notre rendu et qu'aucune fuite cookie n'est
- * faite vers `youtube.com` avant un play utilisateur.
+ * Couvre aussi (CHA-243 historique) :
+ *  - L'iframe (montée après clic) pointe sur `youtube-nocookie.com`.
+ *  - Aucune fuite vers `youtube.com` (cookie domain) au paint initial.
+ *  - Params privacy (`rel=0`, `modestbranding=1`, etc.) présents.
+ *
+ * Tests publics — pas d'auth nécessaire.
  */
-import { expect, test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
-test.describe('CHA-243 — Vidéo YouTube /kit', () => {
-  test('rend une iframe `youtube-nocookie.com` avec ratio Short 9:16', async ({
+test.describe('/kit vidéo — rendu @video-render', () => {
+  test('section vidéo visible avec heading « Quatre gestes »', async ({ page }) => {
+    await page.goto('/kit');
+    const heading = page.getByRole('heading', {
+      name: /quatre gestes,? en un seul plan/i,
+      level: 2,
+    });
+    await expect(heading).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('poster cover (click-to-play) visible au paint, AUCUNE iframe avant clic', async ({
     page,
   }) => {
-    test.setTimeout(60_000);
-
-    // 0) Tracker les requêtes pour vérifier qu'aucune ne part vers `youtube.com` direct.
+    // Tracker toute fuite vers youtube.com (cookie domain).
     const youtubeCookieRequests: string[] = [];
     page.on('request', (req) => {
       const url = req.url();
-      // www.youtube.com / m.youtube.com (mais pas youtube-nocookie.com).
       if (/^https?:\/\/(www\.|m\.)?youtube\.com\b/.test(url)) {
         youtubeCookieRequests.push(url);
       }
     });
 
-    // 1) Charger /kit.
     await page.goto('/kit');
+    const poster = page.getByTestId('video-poster-cover');
+    await expect(poster).toBeVisible();
+    expect(await page.locator('iframe[src*="youtube"]').count()).toBe(0);
 
-    // 2) L'embed YouTube est rendu.
-    const embed = page.getByTestId('youtube-embed');
-    await expect(embed).toBeVisible();
+    // Aucune requête vers youtube.com avant clic — l'iframe n'est pas montée
+    // donc même youtube-nocookie.com ne doit pas être appelé.
+    await page.waitForTimeout(500);
+    expect(
+      youtubeCookieRequests,
+      `Fuites vers youtube.com: ${youtubeCookieRequests.join(', ')}`,
+    ).toHaveLength(0);
+  });
 
-    // 3) Pas de <video> self-hosted en parallèle.
-    await expect(page.locator('video')).toHaveCount(0);
+  test('mini-timeline avec 4 chapitres visible sous la vidéo', async ({ page }) => {
+    await page.goto('/kit');
+    const nav = page.getByTestId('video-chapters');
+    await expect(nav).toBeVisible();
+    const items = nav.locator('[data-testid^="video-chapter-"]');
+    await expect(items).toHaveCount(4);
+  });
 
-    // 4) Le data-is-short atteste la détection.
-    await expect(embed).toHaveAttribute('data-is-short', 'true');
-    await expect(embed).toHaveAttribute('data-video-id', 'N2pDuciP4uQ');
+  test('badge durée affiché sur le poster', async ({ page }) => {
+    await page.goto('/kit');
+    const badge = page.getByTestId('video-poster-duration-badge');
+    await expect(badge).toBeVisible();
+    await expect(badge).toContainText(/\d+/);
+  });
 
-    // 5) Ratio Short 9:16 — la classe Tailwind injectée.
-    const wrapClass = await embed.getAttribute('class');
-    expect(wrapClass ?? '').toContain('aspect-[9/16]');
+  test('CTA « Voir le pack » pointe sur #commander-femiglow', async ({ page }) => {
+    await page.goto('/kit');
+    const cta = page.getByTestId('video-post-cta');
+    await expect(cta).toBeVisible();
+    await expect(cta).toHaveAttribute('href', '#commander-femiglow');
+  });
+});
 
-    // 6) L'iframe contient bien le bon domaine + l'ID.
-    const iframe = embed.locator('iframe');
-    await expect(iframe).toBeVisible();
+test.describe('/kit vidéo — interactions @video-interaction', () => {
+  test('clic poster monte une iframe YouTube avec autoplay + mute + captions FR', async ({
+    page,
+  }) => {
+    await page.goto('/kit');
+    await page.getByTestId('video-poster-cover').click();
+    const iframe = page.locator('iframe[src*="youtube"]').first();
+    await expect(iframe).toBeVisible({ timeout: 5_000 });
     const src = await iframe.getAttribute('src');
-    expect(src).toBeTruthy();
-    expect(src!).toContain('https://www.youtube-nocookie.com/embed/N2pDuciP4uQ');
+    expect(src).toContain('youtube-nocookie.com');
+    expect(src).toContain('autoplay=1');
+    expect(src).toContain('mute=1');
+    expect(src).toContain('cc_load_policy=1');
+    expect(src).toContain('cc_lang_pref=fr');
+    expect(src).toContain('enablejsapi=1');
+  });
 
-    // 7) Params privacy minimal présents dans la query.
-    const u = new URL(src!);
+  test('iframe garde les params privacy YouTube (modestbranding, rel=0, etc.)', async ({
+    page,
+  }) => {
+    await page.goto('/kit');
+    await page.getByTestId('video-poster-cover').click();
+    const iframe = page.locator('iframe[src*="youtube"]').first();
+    const src = (await iframe.getAttribute('src')) ?? '';
+    const u = new URL(src);
     expect(u.searchParams.get('rel')).toBe('0');
     expect(u.searchParams.get('modestbranding')).toBe('1');
     expect(u.searchParams.get('iv_load_policy')).toBe('3');
     expect(u.searchParams.get('playsinline')).toBe('1');
+  });
 
-    // 8) Le titre accessible est porté par l'iframe (WCAG 2.4.1).
-    await expect(iframe).toHaveAttribute('title', /4 gestes|vidéo/i);
-
-    // 9) loading=lazy + referrerPolicy strict-origin
+  test('iframe attributs a11y/perf : title, loading=lazy, referrerpolicy, allow', async ({
+    page,
+  }) => {
+    await page.goto('/kit');
+    await page.getByTestId('video-poster-cover').click();
+    const iframe = page.locator('iframe[src*="youtube"]').first();
+    await expect(iframe).toHaveAttribute('title', /vidéo|gestes/i);
     await expect(iframe).toHaveAttribute('loading', 'lazy');
     await expect(iframe).toHaveAttribute(
       'referrerpolicy',
       'strict-origin-when-cross-origin',
     );
+    const allow = (await iframe.getAttribute('allow')) ?? '';
+    expect(allow).toContain('fullscreen');
+    expect(allow).toContain('autoplay');
+  });
 
-    // 9bis) Permissions Policy : fullscreen ET picture-in-picture
-    // (Chrome/Firefox modernes lisent `allow="fullscreen"`, Safari < 16.5 lit
-    // l'attribut legacy `allowfullscreen` côté élément).
-    const allowAttr = (await iframe.getAttribute('allow')) ?? '';
-    expect(allowAttr).toContain('fullscreen');
-    expect(allowAttr).toContain('picture-in-picture');
-    expect(allowAttr).toContain('autoplay');
-    await expect(iframe).toHaveAttribute('allowfullscreen', '');
+  test('clic chapitre conserve un seul aria-current="step" dans la timeline', async ({
+    page,
+  }) => {
+    await page.goto('/kit');
+    await page.getByTestId('video-chapter-powder').click();
+    const active = page.locator(
+      '[data-testid^="video-chapter-"][aria-current="step"]',
+    );
+    await expect(active).toHaveCount(1);
+  });
 
-    // 10) Avant interaction : aucune requête vers `youtube.com` (cookie domain).
-    //    Note : l'iframe va appeler `youtube-nocookie.com` mais c'est OK.
-    //    On laisse le réseau se stabiliser brièvement.
+  test('clic CTA scrolle vers #commander-femiglow', async ({ page }) => {
+    await page.goto('/kit');
+    const cta = page.getByTestId('video-post-cta');
+    await cta.scrollIntoViewIfNeeded();
+    await cta.click();
     await page.waitForTimeout(800);
-    expect(youtubeCookieRequests, `Fuites vers youtube.com: ${youtubeCookieRequests.join(', ')}`)
-      .toHaveLength(0);
+    const target = page.locator('#commander-femiglow').first();
+    expect(await target.count()).toBeGreaterThan(0);
+  });
+});
+
+test.describe('/kit vidéo — cover SVG @video-cover', () => {
+  test('cover SVG (mode URL) visible au paint initial (default mock)', async ({ page }) => {
+    await page.goto('/kit');
+    const cover = page.getByTestId('video-poster-svg-url');
+    await expect(cover).toBeVisible({ timeout: 10_000 });
+    const ariaLabel = await cover.getAttribute('aria-label');
+    expect(ariaLabel).toMatch(/rituel|geste/i);
+  });
+
+  test('cover pointe vers le SVG maison /products/kit-principale.svg', async ({ page }) => {
+    await page.goto('/kit');
+    const cover = page.getByTestId('video-poster-svg-url');
+    const src = await cover.getAttribute('src');
+    expect(src).toBe('/products/kit-principale.svg');
+  });
+
+  test('voile encre 20 % toujours rendu (contraste bouton + badge)', async ({
+    page,
+  }) => {
+    await page.goto('/kit');
+    const button = page.getByTestId('video-poster-cover');
+    await expect(button).toBeVisible();
+    const html = (await button.innerHTML()) ?? '';
+    expect(html).toContain('bg-[#2C2A28]/25');
+  });
+});
+
+test.describe('/kit vidéo — a11y @video-a11y', () => {
+  test('0 violation axe sérieuse/critique sur la section vidéo', async ({ page }) => {
+    await page.goto('/kit');
+    await page.waitForLoadState('domcontentloaded');
+    const results = await new AxeBuilder({ page })
+      .include('section[data-testid="video-section-youtube"]')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    const serious = results.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    );
+    if (serious.length > 0) {
+      console.log('AXE violations (video):', JSON.stringify(serious, null, 2));
+    }
+    expect(serious).toHaveLength(0);
   });
 });

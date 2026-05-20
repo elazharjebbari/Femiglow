@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { resetMemoryStore } from '@/lib/db/client';
 import { createWebhookEndpoint } from '@/lib/db/queries/webhook-endpoints';
@@ -63,8 +64,8 @@ describe('webhook engine: enqueue', () => {
 });
 
 describe('webhook engine: attempt', () => {
-  it('marque succeeded sur 2xx avec signature HMAC', async () => {
-    const { endpoint } = await createWebhookEndpoint({
+  it('marque succeeded sur 2xx avec payload plat et signature HMAC', async () => {
+    const { endpoint, plainSecret } = await createWebhookEndpoint({
       url: 'https://api.example.com/hook',
       events: ['lead.created'],
     });
@@ -72,17 +73,32 @@ describe('webhook engine: attempt', () => {
       endpointId: endpoint.id,
       event: 'lead.created',
       idempotencyKey: 'k',
-      payload: {},
+      payload: { id: 'lead-1', full_name: 'Youssef Amrani', phone: '0661234567' },
     });
     let receivedSignature: string | null = null;
+    let receivedEvent: string | null = null;
+    let receivedSource: string | null = null;
+    let receivedBody: string | null = null;
     const fetchImpl: typeof fetch = async (_url, init) => {
-      receivedSignature =
-        (init?.headers as Record<string, string> | undefined)?.['x-femiglow-signature'] ?? null;
+      const headers = init?.headers as Record<string, string> | undefined;
+      receivedSignature = headers?.['x-femiglow-signature'] ?? null;
+      receivedEvent = headers?.['x-femiglow-event'] ?? null;
+      receivedSource = headers?.['x-femiglow-source'] ?? null;
+      receivedBody = init?.body?.toString() ?? null;
       return new Response('OK', { status: 200 });
     };
     const result = await attemptDelivery(delivery, { fetchImpl });
     expect(result.status).toBe('succeeded');
-    expect(receivedSignature).toBeTruthy();
+    expect(receivedBody).toBe(
+      JSON.stringify({ id: 'lead-1', full_name: 'Youssef Amrani', phone: '0661234567' }),
+    );
+    expect(JSON.parse(receivedBody ?? '{}')).not.toHaveProperty('payload');
+    const expectedSignature = createHmac('sha256', plainSecret)
+      .update(receivedBody ?? '')
+      .digest('base64');
+    expect(receivedSignature).toBe(expectedSignature);
+    expect(receivedEvent).toBe('lead.created');
+    expect(receivedSource).toBe('admin');
   });
 
   it('reprogramme un retry sur 5xx (status pending, nextAttemptAt futur)', async () => {

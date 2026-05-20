@@ -45,6 +45,40 @@ describe('validateOutboundPayload — requis et défauts', () => {
     expect('email' in out).toBe(false);
   });
 
+  it('accepte source et conversation conforme', () => {
+    const out = validateOutboundPayload({
+      id: 'chat-lead:cl_1',
+      full_name: 'Sara',
+      phone: '0612345678',
+      source: 'chat_widget',
+      conversation: [
+        {
+          role: 'user',
+          name: 'Sara',
+          text: 'Je veux commander',
+          ts: '2026-05-14T10:00:00.000Z',
+        },
+      ],
+    });
+    expect(out.source).toBe('chat_widget');
+    expect(out.conversation?.[0]?.role).toBe('user');
+  });
+
+  it('rejette une conversation de plus de 50 messages', () => {
+    expect(() =>
+      validateOutboundPayload({
+        id: 'chat-lead:cl_1',
+        full_name: 'Sara',
+        phone: '0612345678',
+        conversation: Array.from({ length: 51 }, (_, i) => ({
+          role: 'user',
+          text: `msg ${i}`,
+          ts: '2026-05-14T10:00:00.000Z',
+        })),
+      }),
+    ).toThrow(OutboundPayloadValidationError);
+  });
+
   it('rejette un payload sans id / full_name / phone', () => {
     expect(() => validateOutboundPayload({})).toThrow(OutboundPayloadValidationError);
     expect(() => validateOutboundPayload({ id: 'a' })).toThrow(OutboundPayloadValidationError);

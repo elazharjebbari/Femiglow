@@ -140,17 +140,32 @@ describe('Scénario 1 — phone in-chat (CHA-225)', () => {
     expect(result.leads).toHaveLength(0);
   });
 
-  it("ne crée pas de doublon si l'utilisateur retape son numéro au tour suivant", async () => {
+  it("ne crée pas de doublon si l'utilisateur retape le même numéro et nom (même identité)", async () => {
     useStubReply('Une seule réponse stub.');
     const session = makeTestSession();
 
     const r1 = await runUserTurn(session, 'hamid +212751592310');
     expect(r1.autoLeadCreated).toBe(true);
 
-    const r2 = await runUserTurn(session, 'rappelez-moi vite +212751592310');
+    // Même numéro + même prénom → même identityHash → pas de doublon.
+    const r2 = await runUserTurn(session, 'hamid +212751592310 rappellez-moi');
     expect(r2.autoLeadCreated).toBe(false);
     // Total : 1 seul lead pour la session.
     expect([...simStores.leads.values()]).toHaveLength(1);
+  });
+
+  it("crée un nouveau lead si l'identité diffère (numéro différent, même session)", async () => {
+    useStubReply('Une seule réponse stub.');
+    const session = makeTestSession();
+
+    const r1 = await runUserTurn(session, 'hamid +212751592310');
+    expect(r1.autoLeadCreated).toBe(true);
+
+    // Numéro différent → identityHash différent → nouveau lead autorisé.
+    const r2 = await runUserTurn(session, 'fatima +212698765432');
+    expect(r2.autoLeadCreated).toBe(true);
+    // Total : 2 leads pour la session (identités différentes).
+    expect([...simStores.leads.values()]).toHaveLength(2);
   });
 
   it("persiste l'event KPI 'chat_lead_auto_created'", async () => {
@@ -210,6 +225,41 @@ describe('Scénario 2 — purchase-intent dès le 1er tour (CHA-225)', () => {
     const r = await runUserTurn(session, "j'ai déjà commandé hier, où est ma commande ?");
 
     expect(r.leadOffered).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scénario 2bis — Ceinture serveur : la réponse IA promet le formulaire
+// ---------------------------------------------------------------------------
+
+describe('Scénario 2bis — assistant-reply trigger formulaire', () => {
+  it("propose le widget quand l'assistant promet le formulaire même si l'intent user est misc", async () => {
+    useStubReply('Je vous affiche le formulaire juste ici pour être rappelée.');
+    const session = makeTestSession();
+
+    const r = await runUserTurn(session, 'je ne sais pas trop quoi choisir');
+
+    expect(r.leadOffered).toBe(true);
+    expect(r.leadOfferReason).toBe('manual');
+    const evt = simStores.events.find((e) => e.type === 'chat_lead_form_offered');
+    expect(evt).toBeDefined();
+    expect((evt!.payload as { source?: string }).source).toBe(
+      'assistant-reply-form',
+    );
+  });
+
+  it("ne propose pas deux offres si une offre a déjà été émise dans la session", async () => {
+    useStubReply('Je vous affiche le formulaire juste ici.');
+    const session = makeTestSession();
+
+    const r1 = await runUserTurn(session, 'premier message neutre');
+    expect(r1.leadOffered).toBe(true);
+
+    const r2 = await runUserTurn(session, 'deuxième message neutre');
+    expect(r2.leadOffered).toBe(false);
+
+    const offers = simStores.events.filter((e) => e.type === 'chat_lead_form_offered');
+    expect(offers).toHaveLength(1);
   });
 });
 

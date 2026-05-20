@@ -1,0 +1,157 @@
+# Architecture — Flux de données villes prioritaires
+
+```plantuml
+@startuml
+!theme plain
+skinparam backgroundColor #FFFBF5
+skinparam noteBackgroundColor #FFF8E7
+
+title Flux de données : Villes优先 dans l'autocomplete
+
+actor User as U
+participant "CityAutocomplete\n(RHF Controller)" as CA
+participant "useDeliveryCities\n(hook)" as HK
+participant "/api/delivery-cities/search\n(GET)" as API
+participant "searchDeliveryCities()\n(queries)" as QRY
+participant "delivery_cities\n(PostgreSQL)" as DB
+participant "DeliveryCitiesEditor\n(Admin)" as ADM
+participant "/api/admin/delivery-cities/positions\n(PATCH)" as ADM_API
+
+== Consultation (query vide) ==
+
+U -> CA : Focus sur le champ ville
+CA -> HK : useDeliveryCities("")
+HK -> API : GET /api/delivery-cities/search?q=&limit=8
+API -> QRY : searchDeliveryCities("", {limit:8})
+QRY -> DB : SELECT ... WHERE active AND country='MA'\n  ORDER BY position ASC, name_fr ASC\n  LIMIT 8
+DB --> QRY : [Casablanca(pos:1), Marrakech(pos:2), ...]
+QRY --> API : DeliveryCity[]
+API --> HK : {items: PublicCity[], total, query}
+HK --> CA : {items, loading:false}
+CA --> U : 🔍 "Villes populaires"\n  1. Casablanca\n  2. Marrakech\n  ...
+
+== Consultation (query "cas") ==
+
+U -> CA : Tape "cas"
+CA -> HK : useDeliveryCities("cas")
+HK -> API : GET /api/delivery-cities/search?q=cas&limit=8
+API -> QRY : searchDeliveryCities("cas", {limit:8})
+QRY -> DB : SELECT ... WHERE active AND country='MA'\n  AND name_fr ILIKE '%cas%'\n  ORDER BY position ASC, name_fr ASC\n  LIMIT 32
+DB --> QRY : [Casablanca(pos:1), ...]
+QRY -> QRY : postFilterAndRank() → rank 0 (prefix)
+QRY --> API : [Casablanca]
+API --> HK : {items: [Casablanca]}
+HK --> CA : {items}
+CA --> U : 🔍 Casablanca — 0 MAD — 24h
+
+== Admin : gestion des positions ==
+
+ADM -> ADM_API : PATCH /positions\n[{slug:"casablanca", position:1}, ...]
+ADM_API -> QRY : updateDeliveryCityPositions(patches)
+QRY -> DB : UPDATE delivery_cities SET position=X, updated_at=NOW() WHERE slug=Y
+DB --> QRY : OK
+QRY --> ADM_API : {updated: 13}
+ADM_API --> ADM : 200 {updated: 13}
+ADM -> ADM : Refetch & re-render
+
+@enduml
+```
+
+## Diagramme de séquence : Admin UI
+
+```plantuml
+@startuml
+!theme plain
+skinparam backgroundColor #FFFBF5
+
+title Admin : Panneau Villes优先
+
+actor Admin as A
+participant "DeliveryCitiesEditor" as ED
+participant "PriorityCitiesPanel" as PR
+participant "PATCH /positions" as API
+participant "delivery_cities" as DB
+
+A -> ED : Clique onglet « Villes优先 »
+ED -> PR : Affiche liste des villes avec position > 0
+PR -> PR : Chargement initial depuis /api/admin/delivery-cities?sort=position&active=true
+
+== Réordonner (drag & drop) ==
+
+A -> PR : Drag "Marrakech" avant "Casablanca"
+PR -> PR : Met à jour l'ordre local (optimistic)
+PR -> API : PATCH /positions [{slug:"marrakech",position:1},{slug:"casablanca",position:2},...]
+API -> DB : UPDATE delivery_cities SET position=1 WHERE slug='marrakech' ...
+DB --> API : OK
+API --> PR : {updated: 13}
+PR -> PR : Re-fetch liste mise à jour
+
+== Ajouter une ville à la priorité ==
+
+A -> PR : Clique « + Ajouter une ville »
+PR -> PR : Ouvre un mini-autocomplete (recherche dans les villes actives)
+A -> PR : Sélectionne "Oujda"
+PR -> API : PATCH /positions [{slug:"oujda",position:14}, ...]
+API -> DB : UPDATE delivery_cities SET position=14 WHERE slug='oujda'
+DB --> API : OK
+API --> PR : {updated: 1}
+PR -> PR : Ajoute Oujda à la liste优先
+
+== Retirer une ville de la priorité ==
+
+A -> PR : Clique « ✕ » sur "Tanger"
+PR -> API : PATCH /admin/delivery-cities/tanger {position: 0}
+API -> DB : UPDATE delivery_cities SET position=0 WHERE slug='tanger'
+DB --> API : OK
+API --> PR : OK
+PR -> PR : Retire Tanger de la liste优先
+
+@enduml
+```
+
+## Diagramme ER — Table delivery_cities (colonnes pertinentes)
+
+```plantuml
+@startuml
+!theme plain
+skinparam backgroundColor #FFFBF5
+
+entity "delivery_cities" as DC {
+  * id : text PK
+  --
+  * slug : text UNIQUE
+  * name_fr : text NOT NULL
+  name_ar : text
+  * country_code : text DEFAULT 'MA'
+  * delivery_price_mad : integer NOT NULL
+  * delivery_eta : text NOT NULL
+  * is_active : boolean DEFAULT true
+  * source : text DEFAULT 'sendit'
+  external_ref : text
+  * aliases : jsonb DEFAULT '[]'
+  * metadata : jsonb DEFAULT '{}'
+  ** position : integer DEFAULT 0 **
+  * created_at : timestamptz DEFAULT now()
+  * updated_at : timestamptz DEFAULT now()
+  created_by : text
+  updated_by : text
+  --
+  == Indexes ==
+  delivery_cities_slug_unique (slug)
+  delivery_cities_active_name_idx (is_active, name_fr)
+  delivery_cities_country_active_idx (country_code, is_active)
+}
+
+note right of DC
+  **position** détermine l'ordre d'affichage
+  dans l'autocomplete (query vide).
+
+  position = 0 → ville non优先 (tri alpha)
+  position > 0 → ville优先 (tri par position ASC)
+
+  Les villes优先 apparaissent en tête
+  avant les villes non优先.
+end note
+
+@enduml
+```

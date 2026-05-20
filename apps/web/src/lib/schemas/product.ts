@@ -24,8 +24,40 @@ export const ingredientDetailedSchema = z.object({
   origin: z.string().min(1),
   concentrationPct: z.number().min(0).max(100).optional(),
   description: z.string().optional(),
+
+  /**
+   * Définition courte du nom INCI, affichée dans le tooltip `InciTooltip`.
+   * Voix maison, 1-2 phrases courtes, jamais > 200 caractères.
+   *
+   * Exemples :
+   *  - « Nom officiel de la cire d’abeille pure. Filme l’ongle sans le sceller. »
+   *  - « Forme cosmétique du silicate. Lisse et polit, sans rayer. »
+   *
+   * Si absent, le composant `InciTooltip` n'expose pas le bouton ⓘ.
+   *
+   * cf. Kolenda §4.5 + UX §7 (Hide unnecessary — tooltip sur termes techniques).
+   */
+  inciDefinition: z.string().trim().min(1).max(200).optional(),
 });
 export type IngredientDetailed = z.infer<typeof ingredientDetailedSchema>;
+
+/**
+ * Couleurs d'accent reconnues pour la pastille numérotée d'un sous-produit
+ * dans la section « La composition » du Kit.
+ *
+ * Palette Kolenda — `docs/kolenda/FEMIGLOW-KIT-PLAYBOOK.md` Annexe A :
+ *  - `sauge` : `#A8B89E` (paste, verte sauge)
+ *  - `petale` : `#F2CECC` (powder, rose poudré)
+ *  - `ciel` : `#C5DBE5` (polissoir, bleu pierre)
+ *  - `champagne` : `#B8956B` (or poudré, fallback / générique)
+ */
+export const subProductAccentColorSchema = z.enum([
+  'sauge',
+  'petale',
+  'ciel',
+  'champagne',
+]);
+export type SubProductAccentColor = z.infer<typeof subProductAccentColorSchema>;
 
 export const subProductSchema = z.object({
   id: z.string(),
@@ -35,6 +67,85 @@ export const subProductSchema = z.object({
   image: imageSchema,
   ingredients: z.array(ingredientDetailedSchema).min(1),
   certifications: z.array(certificationSchema),
+
+  /**
+   * Phrase de sensation physique (italique Cormorant sous la description).
+   * Ex. « Tiède au contact. », « Glisse, ne grise pas. ».
+   *
+   * Contraintes :
+   *  - 1 à 80 caractères après trim,
+   *  - se termine par une ponctuation (`.`, `!`, `?` ou guillemet français `»`)
+   *    pour signaler une phrase complète à voix maison.
+   *
+   * Optionnel : si absent, le composant ne rend pas de ligne dédiée.
+   * cf. Kolenda §4.3 — *induce sensation* (UX p. 8-9).
+   */
+  sensation: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .regex(
+      /[.!?»]$/,
+      'sensation doit se terminer par une ponctuation finale (. ! ? »)',
+    )
+    .optional(),
+
+  /**
+   * Image contextuelle (main qui prend, table de chevet). Affichée par
+   * crossfade au hover/tap au-dessus de `image`. Optionnelle — si absente,
+   * `MediaCrossfade` n'expose pas l'interaction.
+   */
+  contextualImage: imageSchema.optional(),
+
+  /**
+   * Couleur d'accent du sous-produit. Sert à teinter la pastille numérotée
+   * (et éventuellement la bordure au hover en phase 4). Décoratif uniquement.
+   * `null` ou absent → fallback `champagne` côté résolveur.
+   */
+  accentColor: subProductAccentColorSchema.optional(),
+
+  /**
+   * Intro narrative voix maison affichée en italique Cormorant sous le
+   * titre du sous-produit, avant le tableau / les cards d'ingrédients.
+   * Compose la « fiche d'atelier » Kolenda §4.5.
+   *
+   * Contraintes :
+   *  - 1-3 phrases (max 320 caractères après trim)
+   *  - Termine par une ponctuation finale (`.`, `!`, `?`, `»`)
+   *  - Mentionne idéalement origine + sensation gestuelle
+   *
+   * Exemple :
+   *   « 12 % de cire fondue à basse température par la coopérative apicole
+   *     du Moyen Atlas. Une noisette filme dix doigts. »
+   *
+   * Optionnel — si absent, pas d'intro rendue.
+   */
+  narrative: z
+    .string()
+    .trim()
+    .min(1)
+    .max(320)
+    .regex(
+      /[.!?»]$/,
+      'narrative doit se terminer par une ponctuation finale (. ! ? »)',
+    )
+    .optional(),
+
+  /**
+   * Mention gestuelle Easy-to-imagine (Copywriting §9) qui prolonge le
+   * `volume` dans le titre : « 1 Paste · 15 g · une noisette filme dix
+   * doigts ».
+   *
+   * Contraintes :
+   *  - 1-60 caractères trim
+   *  - Pas de ponctuation finale (clausule, pas phrase)
+   *
+   * Exemples : « une noisette filme dix doigts », « trois minutes de pose », « le polissoir vit 6 mois ».
+   *
+   * Optionnel — si absent, le titre reste `name — volume`.
+   */
+  usageHint: z.string().trim().min(1).max(60).optional(),
 });
 export type SubProduct = z.infer<typeof subProductSchema>;
 

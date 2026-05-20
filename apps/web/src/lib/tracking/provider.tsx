@@ -9,6 +9,10 @@ import {
   saveConsent,
 } from '@/lib/tracking/consent';
 import { getAnonymousId, getSessionId } from '@/lib/tracking/identity';
+import {
+  DEFAULT_ATTRIBUTION_STRATEGY,
+  type AttributionStrategy,
+} from '@/lib/tracking/attribution/types';
 import type { TrackingConsentState } from '@/lib/db/types';
 
 export interface TrackingContextValue {
@@ -34,6 +38,12 @@ export interface TrackingProviderProps {
    * consentement comme accordé par défaut (juridictions sans obligation).
    */
   defaultGranted?: boolean;
+  /**
+   * Stratégie d'attribution multi-canal, injectée depuis le serveur
+   * (RSC root layout → tracking_settings.attribution_strategy).
+   * Par défaut `last_paid_touch`.
+   */
+  attributionStrategy?: AttributionStrategy;
 }
 
 export function TrackingProvider({
@@ -41,6 +51,7 @@ export function TrackingProvider({
   endpoint,
   bannerEnabled = true,
   defaultGranted = false,
+  attributionStrategy = DEFAULT_ATTRIBUTION_STRATEGY,
 }: TrackingProviderProps): JSX.Element {
   const initialConsent: TrackingConsentState =
     !bannerEnabled && defaultGranted ? GRANTED_CONSENT : DENIED_CONSENT;
@@ -48,6 +59,8 @@ export function TrackingProvider({
   const [isReady, setIsReady] = useState(false);
   const consentRef = useRef(consent);
   consentRef.current = consent;
+  const strategyRef = useRef(attributionStrategy);
+  strategyRef.current = attributionStrategy;
 
   const client = useMemo(
     () =>
@@ -63,6 +76,9 @@ export function TrackingProvider({
           locale:
             typeof navigator !== 'undefined' ? navigator.language || 'fr-FR' : 'fr-FR',
         }),
+        // Lecture via ref pour refléter un changement de stratégie sans
+        // recréer le client (rare, mais utile pour les tests).
+        attributionStrategy: () => strategyRef.current,
       }),
     [endpoint],
   );

@@ -70,17 +70,18 @@ describe('GET /api/delivery-cities/search', () => {
     expect(res.status).toBe(200);
   });
 
-  it('renvoie le top-N alphabétique trié par position si q vide', async () => {
+  it('renvoie les villes prioritaires en premier, puis alphabétiques si q vide', async () => {
     await seed();
     const res = await GET(req('/api/delivery-cities/search?q='));
     const body = (await res.json()) as {
       items: Array<{ slug: string }>;
       total: number;
     };
+    // Villes prioritaires (position > 0) en premier, puis alphabétiques.
     expect(body.items.map((c) => c.slug)).toEqual([
-      'casablanca',
       'rabat',
       'marrakech',
+      'casablanca',
     ]);
     expect(body.total).toBe(3);
   });

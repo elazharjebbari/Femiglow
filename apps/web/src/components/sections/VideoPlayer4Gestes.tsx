@@ -8,7 +8,10 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { useTracking } from '@/lib/tracking/use-tracking';
-import { YouTubeEmbed } from './YouTubeEmbed';
+import { VideoPosterCover } from '@/components/kit/VideoPosterCover';
+import { VideoChaptersFromRituel } from '@/components/kit/VideoChapters';
+import { VideoIFrameTracker } from '@/components/kit/VideoIFrameTracker';
+import { VideoPostCta } from '@/components/kit/VideoPostCta';
 import { parseYouTubeUrl } from '@/lib/video/youtube-url';
 
 interface VideoPlayer4GestesProps {
@@ -44,6 +47,9 @@ export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
  */
 function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
   const [showTranscript, setShowTranscript] = useState(false);
+  const [played, setPlayed] = useState(false);
+  const [currentSeconds, setCurrentSeconds] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const transcriptId = useId();
   const titleId = useId();
   const { emit } = useTracking();
@@ -61,10 +67,19 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
     });
   }, [emit]);
 
+  const handlePlay = useCallback((): void => {
+    setPlayed(true);
+    emit('video_user_play', {
+      video_id: VIDEO_ID,
+      video_title: 'Rituel — 4 gestes',
+      video_provider: 'youtube',
+    });
+  }, [emit]);
+
   return (
     <section
       aria-labelledby={titleId}
-      className="bg-creme-warm py-20 lg:py-28"
+      className="bg-[#E8EDE3] py-20 lg:py-28"
       data-testid="video-section-youtube"
     >
       <Container width="page">
@@ -79,20 +94,44 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
             italic="always"
             className="mt-5"
           >
-            Cinq gestes, en un seul plan.
+            Quatre gestes, en un seul plan.
           </Heading>
           <Text size="body" tone="secondary" className="mt-4">
             Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.
           </Text>
+          {video.provenance ? (
+            <p
+              data-testid="video-provenance"
+              className="mt-2 font-display italic text-xs leading-[1.5] uppercase tracking-[0.1em] text-encre/50"
+            >
+              {video.provenance}
+            </p>
+          ) : null}
         </div>
 
-        <div className="mt-12">
-          <YouTubeEmbed
-            url={video.youtubeUrl!}
-            title="Rituel — 4 gestes en vidéo"
+        <div className="relative mx-auto mt-12 aspect-[9/16] w-full max-w-md overflow-hidden rounded-md">
+          <VideoPosterCover
+            ref={iframeRef}
+            video={video}
             videoId={VIDEO_ID}
+            iframeTitle="Rituel — quatre gestes en vidéo"
+            played={played}
+            onPlay={handlePlay}
           />
+          {played ? (
+            <VideoIFrameTracker
+              iframeRef={iframeRef}
+              videoId={VIDEO_ID}
+              onCurrentTime={setCurrentSeconds}
+            />
+          ) : null}
         </div>
+
+        <VideoChaptersFromRituel
+          video={video}
+          videoId={VIDEO_ID}
+          currentSeconds={currentSeconds}
+        />
 
         <div className="mt-6 text-center">
           <button
@@ -117,6 +156,8 @@ function YouTubeVariant({ video }: VideoPlayer4GestesProps) {
             </Text>
           ))}
         </div>
+
+        <VideoPostCta videoId={VIDEO_ID} />
       </Container>
     </section>
   );
@@ -206,7 +247,7 @@ function SelfHostedVariant({ video }: VideoPlayer4GestesProps) {
   return (
     <section
       aria-labelledby={titleId}
-      className="bg-creme-warm py-20 lg:py-28"
+      className="bg-[#E8EDE3] py-20 lg:py-28"
     >
       <Container width="page">
         <div className="mx-auto max-w-3xl text-center">
@@ -220,7 +261,7 @@ function SelfHostedVariant({ video }: VideoPlayer4GestesProps) {
             italic="always"
             className="mt-5"
           >
-            Cinq gestes, en un seul plan.
+            Quatre gestes, en un seul plan.
           </Heading>
           <Text size="body" tone="secondary" className="mt-4">
             Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.
