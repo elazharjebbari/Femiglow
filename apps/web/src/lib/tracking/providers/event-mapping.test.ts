@@ -19,6 +19,21 @@ describe('event-mapping', () => {
     expect(mapEventName('purchase', 'pinterest')).toBe('checkout');
   });
 
+  it('purchase_server (Stripe webhook) maps to canonical Purchase per provider', () => {
+    // CAPI-only event — pas de mapping GA4/Ads (le client gère déjà côté
+    // browser via emit('purchase')). Mais Meta/TikTok/Snap/Pinterest doivent
+    // recevoir le standard event canonique pour ne pas être comptés en custom.
+    expect(mapEventName('purchase_server', 'meta')).toBe('Purchase');
+    expect(mapEventName('purchase_server', 'tiktok')).toBe('CompletePayment');
+    expect(mapEventName('purchase_server', 'snap')).toBe('PURCHASE');
+    expect(mapEventName('purchase_server', 'pinterest')).toBe('checkout');
+    expect(mapEventName('purchase_server', 'google_ga4')).toBeNull();
+  });
+
+  it('purchase_server is supported by Meta adapter', () => {
+    expect(isEventSupported('purchase_server', 'meta')).toBe(true);
+  });
+
   it('add_to_cart pour Meta = AddToCart', () => {
     expect(mapEventName('add_to_cart', 'meta')).toBe('AddToCart');
   });

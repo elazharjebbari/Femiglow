@@ -200,6 +200,18 @@ const MAP: Record<string, EventMapping> = {
     pinterest: { name: 'checkout', isStandard: true },
     identityFields: ['email', 'phone', 'firstName', 'lastName', 'city', 'country'],
   },
+  // Variant CAPI-only de purchase : émis depuis le webhook Stripe
+  // (cf. apps/web/src/app/api/stripe/webhook/route.ts) avec value/currency
+  // venant directement de Stripe. Doit être reporté en `Purchase` canonique
+  // côté Meta/TikTok/Snap pour ne pas se faire compter comme custom event.
+  // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 1.3
+  purchase_server: {
+    meta: { name: 'Purchase', isStandard: true },
+    tiktok: { name: 'CompletePayment', isStandard: true },
+    snap: { name: 'PURCHASE', isStandard: true },
+    pinterest: { name: 'checkout', isStandard: true },
+    identityFields: ['email', 'phone', 'firstName', 'lastName', 'city', 'country'],
+  },
   refund: { google_ga4: { name: 'refund', isStandard: true } },
   view_promotion: { google_ga4: { name: 'view_promotion', isStandard: true } },
   select_promotion: { google_ga4: { name: 'select_promotion', isStandard: true } },
