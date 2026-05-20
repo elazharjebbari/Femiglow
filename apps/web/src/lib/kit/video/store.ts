@@ -53,6 +53,7 @@ export function upsertKitVideoOverride(
     accentColor: applyPatchKey(existing?.accentColor, patch, 'accentColor'),
     posterCustom: applyPatchKey(existing?.posterCustom, patch, 'posterCustom'),
     chapters: applyPatchKey(existing?.chapters, patch, 'chapters'),
+    posterCoverSvg: applyPatchKey(existing?.posterCoverSvg, patch, 'posterCoverSvg'),
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     draftedAt: now,

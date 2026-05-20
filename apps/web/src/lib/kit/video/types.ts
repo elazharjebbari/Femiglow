@@ -9,6 +9,30 @@
 import type { RituelVideo } from '@/lib/schemas';
 
 /**
+ * Cover SVG dynamique pour le poster de la vidéo (Phase α-δ).
+ *
+ *  - `inline` : SVG markup saisi dans l'éditeur admin (sanitized DOMPurify).
+ *  - `file`   : fichier SVG uploadé, référence media DB.
+ *  - `url`    : URL HTTPS externe pointant vers un SVG (CORS-safe).
+ *
+ *  Un seul mode actif à la fois ; les autres champs restent vides.
+ */
+export interface KitVideoPosterCoverSvg {
+  source: 'inline' | 'file' | 'url';
+  /** SVG markup brut, sanitized côté serveur avant stockage. */
+  inline?: string | null;
+  /** ID media (référence Drizzle/memoryStore). */
+  fileMediaId?: string | null;
+  /** URL externe HTTPS, validée content-type + taille. */
+  url?: string | null;
+  /** Métadonnées pour le rendu et l'a11y. */
+  meta?: {
+    viewBox?: string;
+    ariaLabel?: string;
+  } | null;
+}
+
+/**
  * Sous-ensemble éditable du `RituelVideo`. Volontairement restreint aux
  * champs maîtrisables par un éditeur non-dev (cf. `06-admin-ui-ux-design.md`
  * §2). Les sources self-hosted, captions, transcript restent gérés côté code.
@@ -20,6 +44,7 @@ export interface KitVideoOverridePatch {
   accentColor?: RituelVideo['accentColor'] | null;
   posterCustom?: RituelVideo['posterCustom'] | null;
   chapters?: RituelVideo['chapters'] | null;
+  posterCoverSvg?: KitVideoPosterCoverSvg | null;
 }
 
 export interface KitVideoOverride extends KitVideoOverridePatch {

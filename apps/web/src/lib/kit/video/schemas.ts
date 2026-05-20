@@ -32,6 +32,65 @@ const provenanceSchema = z
 
 const durationDisplaySchema = z.string().min(1).max(8);
 
+/**
+ * Cover SVG : discriminated union sur `source`.
+ *
+ * Note : la sanitization du `inline` est faite côté API route via
+ * `sanitizeSvgInline` (pas dans le schema Zod, car asynchrone et
+ * dépend du runtime DOMPurify). Le schema valide juste la structure.
+ */
+const posterCoverSvgInlineSchema = z.object({
+  source: z.literal('inline'),
+  inline: z.string().min(1).max(50_000),
+  fileMediaId: z.null().optional(),
+  url: z.null().optional(),
+  meta: z
+    .object({
+      viewBox: z.string().min(1).max(64).optional(),
+      ariaLabel: z.string().min(1).max(200).optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+const posterCoverSvgFileSchema = z.object({
+  source: z.literal('file'),
+  inline: z.null().optional(),
+  fileMediaId: z.string().min(1).max(64),
+  url: z.null().optional(),
+  meta: z
+    .object({
+      viewBox: z.string().min(1).max(64).optional(),
+      ariaLabel: z.string().min(1).max(200).optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+const posterCoverSvgUrlSchema = z.object({
+  source: z.literal('url'),
+  inline: z.null().optional(),
+  fileMediaId: z.null().optional(),
+  url: z
+    .string()
+    .url()
+    .max(500)
+    .refine((u) => u.startsWith('https://'), { message: 'Seules les URLs HTTPS sont acceptées.' }),
+  meta: z
+    .object({
+      viewBox: z.string().min(1).max(64).optional(),
+      ariaLabel: z.string().min(1).max(200).optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+export const posterCoverSvgSchema = z.discriminatedUnion('source', [
+  posterCoverSvgInlineSchema,
+  posterCoverSvgFileSchema,
+  posterCoverSvgUrlSchema,
+]);
+
 /** Patch partiel — chaque clé peut être absente, présente avec valeur, ou présente avec `null`. */
 export const kitVideoOverrideUpsertSchema = z.object({
   youtubeUrl: youtubeUrlSchema.nullable().optional(),
@@ -54,6 +113,7 @@ export const kitVideoOverrideUpsertSchema = z.object({
     )
     .nullable()
     .optional(),
+  posterCoverSvg: posterCoverSvgSchema.nullable().optional(),
 });
 
 export type KitVideoOverrideUpsertInput = z.infer<typeof kitVideoOverrideUpsertSchema>;

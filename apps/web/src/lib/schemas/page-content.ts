@@ -169,6 +169,29 @@ export const rituelVideoSchema = z.object({
 
   /** Couleur d'accent (réutilise l'enum SubProduct — Annexe A). */
   accentColor: subProductAccentColorSchema.optional(),
+
+  /**
+   * Cover SVG dynamique (Phase α-δ). Si défini, remplace `posterCustom` /
+   * `poster` dans `VideoPosterCover`. Discriminé par `source` :
+   *  - `inline` : SVG markup sanitized (DOMPurify côté serveur).
+   *  - `file`   : référence media DB (SVG uploadé).
+   *  - `url`    : URL HTTPS externe vers un SVG.
+   */
+  posterCoverSvg: z
+    .object({
+      source: z.enum(['inline', 'file', 'url']),
+      inline: z.string().max(50_000).nullable().optional(),
+      fileMediaId: z.string().max(64).nullable().optional(),
+      url: z.string().url().max(500).nullable().optional(),
+      meta: z
+        .object({
+          viewBox: z.string().max(64).optional(),
+          ariaLabel: z.string().max(200).optional(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .optional(),
 });
 export type RituelVideo = z.infer<typeof rituelVideoSchema>;
 

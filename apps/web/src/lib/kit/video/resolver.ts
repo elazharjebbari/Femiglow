@@ -80,6 +80,7 @@ function mergeOverrideOnMock(override: KitVideoOverride): RituelVideo {
     accentColor: pickPatch(override.accentColor, base.accentColor),
     posterCustom: pickPatch(override.posterCustom, base.posterCustom),
     chapters: pickPatch(override.chapters, base.chapters),
+    posterCoverSvg: pickPatch(override.posterCoverSvg, base.posterCoverSvg),
   };
 }
 

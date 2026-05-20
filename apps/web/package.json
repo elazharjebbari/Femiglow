@@ -73,7 +73,7 @@
     "hast-util-to-string": "^3.0.1",
     "html-to-text": "^10.0.0",
     "iron-session": "^8.0.4",
-    "isomorphic-dompurify": "^2.19.0",
+    "isomorphic-dompurify": "^2.36.0",
     "langchain": "^0.3.10",
     "mammoth": "^1.8.0",
     "music-metadata": "^11.12.3",

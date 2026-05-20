@@ -89,7 +89,7 @@ importers:
         specifier: ^8.0.4
         version: 8.0.4
       isomorphic-dompurify:
-        specifier: ^2.19.0
+        specifier: ^2.36.0
         version: 2.36.0
       langchain:
         specifier: ^0.3.10
