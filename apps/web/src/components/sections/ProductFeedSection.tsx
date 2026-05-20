@@ -25,6 +25,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { PriceBlock } from '@/components/sections/PriceBlock';
+import { PackVisual } from '@/components/sections/PackVisual';
 import { cn } from '@/lib/utils/cn';
 import type {
   FeedAccent,
@@ -67,21 +68,35 @@ export function ProductFeedSection({
       data-testid="product-feed-section"
     >
       <Container width="wide">
-        {/* 1 — Hero copy ------------------------------------------------ */}
-        <div className="mx-auto max-w-3xl space-y-5 text-center">
-          <Kicker tone="champagne">{feed.hero.kicker}</Kicker>
-          <Heading id="product-feed-title" as="h2" size="display-md">
-            {feed.hero.title}
-          </Heading>
-          <Text size="lead" tone="secondary" prose className="mx-auto">
-            {feed.hero.lead}
-          </Text>
+        {/* 1 — Hero : layout 2 colonnes desktop, 1 colonne mobile ------ */}
+        {/* Sur mobile : H2 → lead → PriceBlock → PackVisual           */}
+        {/* Sur md+   : col gauche (titre + lead + PriceBlock)         */}
+        {/*             col droite (PackVisual centré verticalement)   */}
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-16">
+          {/* Colonne gauche — texte + prix */}
+          <div className="space-y-5 text-center md:text-left">
+            <Kicker tone="champagne">{feed.hero.kicker}</Kicker>
+            <Heading id="product-feed-title" as="h2" size="display-md">
+              {feed.hero.title}
+            </Heading>
+            <Text size="lead" tone="secondary" prose className="md:mx-0">
+              {feed.hero.lead}
+            </Text>
 
-          {/* PriceBlock — Kolenda §4.6 : prix XXL, prix barré, bandeau
-              économie terracotta, ValueBreakdownList, perUsageHint,
-              CTA primaire + microcopy. IntersectionObserver émet
-              pack_section_view + pack_economy_view. */}
-          <PriceBlock feed={feed} product={product} />
+            {/* PriceBlock — Kolenda §4.6 : prix XXL, prix barré, bandeau
+                économie terracotta, ValueBreakdownList, perUsageHint,
+                CTA primaire + microcopy + social proof condensé.
+                IO émet pack_section_view + pack_economy_view +
+                pack_social_proof_view. */}
+            <PriceBlock feed={feed} product={product} hasVisual />
+          </div>
+
+          {/* Colonne droite — packshot */}
+          <div className="order-first md:order-last">
+            <PackVisual
+              alt="Kit FemiGlow — paste, powder et polissoir Step 4, posés sur fond crème"
+            />
+          </div>
         </div>
 
         {/* 2 — Rituel 4 gestes ------------------------------------------ */}

@@ -36,6 +36,11 @@ import { ValueBreakdownList } from './ValueBreakdownList';
 export interface PriceBlockProps {
   feed: ProductFeed;
   product: Product;
+  /**
+   * Indique si un packshot visuel accompagne le bloc dans la section.
+   * Propagé à l'event `pack_section_view` (analytique de variante).
+   */
+  hasVisual?: boolean;
 }
 
 /**
@@ -58,7 +63,11 @@ function parsePriceCents(label: string | undefined): number | null {
   return Math.round(major * 100);
 }
 
-export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
+export function PriceBlock({
+  feed,
+  product,
+  hasVisual = false,
+}: PriceBlockProps): JSX.Element {
   const { hero, currency, socialProof } = feed;
   const { emit } = useTracking();
   const sectionRef = useRef<HTMLDivElement | null>(null);
@@ -90,8 +99,8 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
           if (!firedSection && entry.intersectionRatio >= 0.3) {
             firedSection = true;
             emit('pack_section_view', {
-              has_visual: false,
-              layout: window.innerWidth >= 640 ? 'desktop' : 'mobile',
+              has_visual: hasVisual,
+              layout: window.innerWidth >= 768 ? 'desktop' : 'mobile',
             });
           }
           if (!firedEconomy && savings && entry.intersectionRatio >= 0.5) {
@@ -127,7 +136,7 @@ export function PriceBlock({ feed, product }: PriceBlockProps): JSX.Element {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [emit, savings, socialProof, socialProofLabelUsed]);
+  }, [emit, savings, socialProof, socialProofLabelUsed, hasVisual]);
 
   // Mapping accent → classes Tailwind. Pour Phase 0 le CTA garde son
   // variant primary natif ; Phase 1 introduira la variante sauge-dark
