@@ -74,6 +74,9 @@ export function errorFromHttpStatus(status: number, message?: string): SocialPub
   if (status === 408 || status === 425 || status === 429) {
     return new SocialPublishingError({ code: 'provider_rate_limited', message: message ?? 'Provider rate limited the request', status });
   }
+  if (status === 409) {
+    return new SocialPublishingError({ code: 'duplicate_external_post', message: message ?? 'Provider rejected the request as a duplicate', status });
+  }
   if (status >= 500) {
     return new SocialPublishingError({ code: 'provider_unavailable', message: message ?? 'Provider unavailable', status });
   }
