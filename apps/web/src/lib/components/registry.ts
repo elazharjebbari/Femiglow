@@ -775,7 +775,6 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
         defaultValue: [
           'Livraison offerte',
           'Paiement à la livraison',
-          'Retour 30 jours',
         ],
         description:
           'Items séparés par "·" affichés au-dessus du CTA. Lus avant la décision de clic.',

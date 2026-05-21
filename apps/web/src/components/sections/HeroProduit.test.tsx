@@ -25,7 +25,7 @@ const fields: HeroProduitFields = {
   tagline: 'Manucure japonaise halal. Deux gestes, un polissoir. La main se révèle.',
   description: 'Le pack FemiGlow associe deux soins et un polissoir.',
   attributeChips: ['Sans vernis', 'Sans UV', 'Sans acétone', 'Halal'],
-  trustRow: ['Livraison offerte', 'Paiement à la livraison', 'Retour 30 jours'],
+  trustRow: ['Livraison offerte', 'Paiement à la livraison'],
   reviewBadgeEnabled: true,
   ctaPulseEnabled: true,
 };

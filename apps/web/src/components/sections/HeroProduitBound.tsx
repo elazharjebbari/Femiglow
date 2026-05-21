@@ -76,7 +76,6 @@ export async function HeroProduitBound({
     trustRow: pickStringArray(resolvedFields.trustRow, [
       'Livraison offerte',
       'Paiement à la livraison',
-      'Retour 30 jours',
     ]),
     reviewBadgeEnabled: pickBoolean(resolvedFields.reviewBadgeEnabled, true),
     ctaPulseEnabled: pickBoolean(resolvedFields.ctaPulseEnabled, true),
