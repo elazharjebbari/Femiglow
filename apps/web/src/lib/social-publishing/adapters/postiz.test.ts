@@ -235,6 +235,67 @@ describe('PostizSocialPublishingAdapter', () => {
       const result = await adapter.publish(request());
       expect(result).toMatchObject({ ok: false, error: { code: 'unknown_provider_error' } });
     });
+
+    it('mappe HTTP 409 du draft en duplicate_external_post non retryable', async () => {
+      const uploadMedia = vi.fn().mockResolvedValue(postizOk({ id: 'm', path: '/p.webp' }));
+      const createDraft = vi.fn().mockResolvedValue(postizErr(409, { message: 'already published' }));
+      const adapter = new PostizSocialPublishingAdapter({ uploadMedia, createDraft });
+      const result = await adapter.publish(request());
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: 'duplicate_external_post', retryable: false },
+      });
+    });
+  });
+
+  describe('publish — mode (now vs schedule)', () => {
+    it('publishNow : sans scheduledAt → type "now" + scheduledAt null', async () => {
+      const uploadMedia = vi.fn().mockResolvedValue(postizOk({ id: 'm', path: '/p.webp' }));
+      const createDraft = vi.fn().mockResolvedValue(postizOk({ id: 'p_now' }));
+      const adapter = new PostizSocialPublishingAdapter({ uploadMedia, createDraft });
+      const result = await adapter.publish(request());
+      expect(result.ok).toBe(true);
+      const draftCall = createDraft.mock.calls[0]?.[0];
+      expect(draftCall).toMatchObject({ type: 'now', scheduledAt: null });
+    });
+
+    it('schedule : scheduledAt future → type "schedule" + date conservée', async () => {
+      const uploadMedia = vi.fn().mockResolvedValue(postizOk({ id: 'm', path: '/p.webp' }));
+      const createDraft = vi.fn().mockResolvedValue(postizOk({ id: 'p_sched' }));
+      const adapter = new PostizSocialPublishingAdapter({ uploadMedia, createDraft });
+      const future = '2026-05-21T12:00:00.000Z';
+      const result = await adapter.publish(
+        request({ content: { ...request().content, scheduledAt: future } }),
+      );
+      expect(result.ok).toBe(true);
+      const draftCall = createDraft.mock.calls[0]?.[0];
+      expect(draftCall).toMatchObject({ type: 'schedule', scheduledAt: future });
+    });
+
+    it('rejette une scheduledAt dans le passé', async () => {
+      const adapter = new PostizSocialPublishingAdapter();
+      const past = '2026-05-19T12:00:00.000Z';
+      const result = await adapter.publish(
+        request({ content: { ...request().content, scheduledAt: past } }),
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: 'invalid_request', retryable: false },
+      });
+      if (result.ok) throw new Error('expected failure');
+      expect(result.error.message).toMatch(/past/i);
+    });
+
+    it('rejette une scheduledAt invalide (NaN)', async () => {
+      const adapter = new PostizSocialPublishingAdapter();
+      const result = await adapter.publish(
+        request({ content: { ...request().content, scheduledAt: 'not-a-date' } }),
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: 'invalid_request', retryable: false },
+      });
+    });
   });
 
   describe('publish — facebook sans média', () => {

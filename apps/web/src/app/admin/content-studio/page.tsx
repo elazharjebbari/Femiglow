@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminContentStudioPage() {
   const session = await requireAdmin('/admin/content-studio');
   const enabled = env.CONTENT_STUDIO_ENABLED === 'true';
+  const legacyPostizDisabled = env.CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED === 'true';
   const [ideas, drafts, posts, draftAssets, deliveries, snapshots] = enabled
     ? await Promise.all([
         listIdeas({ limit: 50, offset: 0 }),
@@ -49,6 +50,7 @@ export default async function AdminContentStudioPage() {
         initialDeliveries={deliveries}
         initialSnapshots={snapshots}
         enabled={enabled}
+        legacyPostizDisabled={legacyPostizDisabled}
       />
     </AdminShell>
   );

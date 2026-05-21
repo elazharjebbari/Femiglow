@@ -39,6 +39,7 @@ export function DraftEditor({
   mediaItems,
   integrations,
   disabled,
+  legacyPostizDisabled = false,
   setDrafts,
   setPosts,
   setDraftAssets,
@@ -56,6 +57,7 @@ export function DraftEditor({
   mediaItems: StudioMediaItem[];
   integrations: Integration[];
   disabled: boolean;
+  legacyPostizDisabled?: boolean;
   setDrafts: (updater: (current: ContentDraft[]) => ContentDraft[]) => void;
   setPosts: (updater: (current: ContentPost[]) => ContentPost[]) => void;
   setDraftAssets: (updater: (current: DraftAssetsByDraftId) => DraftAssetsByDraftId) => void;
@@ -220,20 +222,22 @@ export function DraftEditor({
             }
           />
         </div>
-        <DeliveryPanel
-          selectedPost={selectedPost}
-          deliveries={selectedDeliveries}
-          integrations={integrations}
-          integrationId={integrationId}
-          setIntegrationId={setIntegrationId}
-          scheduledAt={scheduledAt}
-          setScheduledAt={setScheduledAt}
-          disabled={disabled}
-          run={run}
-          setDeliveries={setDeliveries}
-          setPosts={setPosts}
-          setMessage={setMessage}
-        />
+        {legacyPostizDisabled ? null : (
+          <DeliveryPanel
+            selectedPost={selectedPost}
+            deliveries={selectedDeliveries}
+            integrations={integrations}
+            integrationId={integrationId}
+            setIntegrationId={setIntegrationId}
+            scheduledAt={scheduledAt}
+            setScheduledAt={setScheduledAt}
+            disabled={disabled}
+            run={run}
+            setDeliveries={setDeliveries}
+            setPosts={setPosts}
+            setMessage={setMessage}
+          />
+        )}
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"

@@ -103,6 +103,29 @@ describe('content studio postiz payload', () => {
     expect(date.getTime()).toBeLessThanOrEqual(after + 60 * 60 * 1000 + 1000);
   });
 
+  it('propage le type "now" quand fourni', () => {
+    const payload = buildPostizDraftPayload({
+      integrationId: 'ig_1',
+      platform: 'instagram',
+      format: 'post',
+      content: 'Publish immediately',
+      type: 'now',
+    });
+    expect(payload.type).toBe('now');
+  });
+
+  it('propage le type "schedule" avec date', () => {
+    const payload = buildPostizDraftPayload({
+      integrationId: 'ig_1',
+      platform: 'instagram',
+      format: 'post',
+      content: 'Publish later',
+      type: 'schedule',
+      scheduledAt: '2026-05-21T12:00:00.000Z',
+    });
+    expect(payload).toMatchObject({ type: 'schedule', date: '2026-05-21T12:00:00.000Z' });
+  });
+
   it('convertit un carousel en post_type post', () => {
     const payload = buildPostizDraftPayload({
       integrationId: 'ig_1',

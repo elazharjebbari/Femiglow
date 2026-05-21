@@ -9,6 +9,8 @@ export interface PostizIntegration {
   profile?: Record<string, unknown>;
 }
 
+export type PostizPostType = 'draft' | 'now' | 'schedule';
+
 export interface PostizPostInput {
   integrationId: string;
   platform: 'instagram' | 'facebook';
@@ -17,6 +19,14 @@ export interface PostizPostInput {
   scheduledAt?: Date | string | null;
   tags?: Array<{ value: string; label: string }>;
   image?: { id: string; path: string } | null;
+  /**
+   * Postiz post lifecycle:
+   *  - `draft`   : created as a draft, never published (legacy behaviour, kept for compat).
+   *  - `now`     : published immediately (`date` is informational; Postiz will publish ASAP).
+   *  - `schedule`: queued for the given `date` (must be in the future).
+   * Defaults to `draft` for backwards compatibility with `createDraftInPostiz`.
+   */
+  type?: PostizPostType;
 }
 
 export interface PostizUploadedMedia {
@@ -130,7 +140,7 @@ export function buildPostizDraftPayload(input: PostizPostInput): Record<string, 
     : { content: input.content, image: [] };
 
   return {
-    type: 'draft',
+    type: input.type ?? 'draft',
     shortLink: false,
     date: postizDate(input.scheduledAt),
     tags: input.tags ?? [{ value: 'femiglow', label: 'FemiGlow' }],

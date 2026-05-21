@@ -37,6 +37,7 @@ interface Props {
   initialDeliveries: ContentPostizDelivery[];
   initialSnapshots: ContentPerformanceSnapshot[];
   enabled: boolean;
+  legacyPostizDisabled?: boolean;
 }
 
 export function ContentStudioClient({
@@ -47,6 +48,7 @@ export function ContentStudioClient({
   initialDeliveries,
   initialSnapshots,
   enabled,
+  legacyPostizDisabled = false,
 }: Props) {
   const [ideas, setIdeas] = useState(initialIdeas);
   const [drafts, setDrafts] = useState(initialDrafts);
@@ -231,6 +233,7 @@ export function ContentStudioClient({
                 mediaItems={mediaItems}
                 integrations={integrations}
                 disabled={isPending}
+                legacyPostizDisabled={legacyPostizDisabled}
                 setDrafts={setDrafts}
                 setPosts={setPosts}
                 setDeliveries={setDeliveries}

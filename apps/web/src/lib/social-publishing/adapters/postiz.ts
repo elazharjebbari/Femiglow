@@ -52,6 +52,7 @@ export class PostizSocialPublishingAdapter implements SocialPublishingAdapter {
   async publish(request: SocialPublishRequest): Promise<SocialPublishResult> {
     try {
       validateRequest(request, this.listCapabilities(request.account));
+      validateSchedule(request);
 
       let uploadedImage: PostizPostInput['image'] = null;
       const media = request.content.media[0];
@@ -74,15 +75,19 @@ export class PostizSocialPublishingAdapter implements SocialPublishingAdapter {
         uploadedImage = { id: parsed.id, path: parsed.path };
       }
 
+      const now = request.now ?? new Date();
+      const { type, scheduledAt } = resolvePostizSchedule(request.content.scheduledAt, now);
+
       const draftResult = await this.createDraft(
         {
           integrationId: request.account.remoteId,
           platform: request.content.platform,
           format: request.content.format,
           content: request.content.caption,
-          scheduledAt: request.content.scheduledAt ?? null,
+          scheduledAt,
           tags: request.content.tags?.map((tag) => ({ value: tag, label: tag })),
           image: uploadedImage,
+          type,
         },
         { attempts: 3 },
       );
@@ -98,7 +103,7 @@ export class PostizSocialPublishingAdapter implements SocialPublishingAdapter {
         });
       }
 
-      const publishedAt = (request.now ?? new Date()).toISOString();
+      const publishedAt = now.toISOString();
       return {
         ok: true,
         status: 'published',
@@ -114,6 +119,43 @@ export class PostizSocialPublishingAdapter implements SocialPublishingAdapter {
     } catch (err) {
       return toPublishFailure(err);
     }
+  }
+}
+
+function resolvePostizSchedule(
+  scheduledAt: Date | string | null | undefined,
+  now: Date,
+): { type: 'now' | 'schedule'; scheduledAt: Date | string | null } {
+  if (!scheduledAt) return { type: 'now', scheduledAt: null };
+  const date = scheduledAt instanceof Date ? scheduledAt : new Date(scheduledAt);
+  if (Number.isNaN(date.getTime())) return { type: 'now', scheduledAt: null };
+  if (date.getTime() <= now.getTime()) return { type: 'now', scheduledAt: null };
+  return { type: 'schedule', scheduledAt };
+}
+
+function validateSchedule(request: SocialPublishRequest): void {
+  if (!request.content.scheduledAt) return;
+  const date =
+    request.content.scheduledAt instanceof Date
+      ? request.content.scheduledAt
+      : new Date(request.content.scheduledAt);
+  if (Number.isNaN(date.getTime())) {
+    throw new SocialPublishingError({
+      code: 'invalid_request',
+      message: 'Scheduled date is invalid',
+      retryable: false,
+    });
+  }
+  const now = (request.now ?? new Date()).getTime();
+  // Allow a 60s tolerance so a request crafted at T0 doesn't bounce against
+  // a serialization round-trip that lands at T0+ε. Anything older than that
+  // is treated as a logic bug and refused.
+  if (date.getTime() + 60_000 < now) {
+    throw new SocialPublishingError({
+      code: 'invalid_request',
+      message: 'Scheduled date is in the past',
+      retryable: false,
+    });
   }
 }
 
