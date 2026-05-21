@@ -28,6 +28,8 @@ import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import { WizardShell } from '@/components/checkout/wizard/WizardShell';
+import { WizardMobilePackThumb } from '@/components/checkout/wizard/WizardMobilePackThumb';
+import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
 import type { WizardFormContext } from '@/lib/checkout/state/wizard-store';
 
@@ -82,30 +84,36 @@ export function KitCommanderSection({
       className="scroll-mt-24 bg-creme py-16 lg:py-24"
     >
       <Container width="content" padded>
-        <header className="mb-10 max-w-2xl space-y-3">
-          <Text
-            size="small"
-            tone="secondary"
-            className="uppercase tracking-[0.18em]"
-          >
-            {kicker}
-          </Text>
-          <Heading
-            as="h2"
-            size="display-md"
-            italic="always"
-            id="kit-commander-heading"
-          >
-            {title}
-          </Heading>
-          <Text
-            tone="secondary"
-            // Subtitle peut contenir un &nbsp; — on s'autorise dangerouslySet ?
-            // Non : on garde du texte plat et on laisse le navigateur gérer
-            // l'espacement. Le NBSP littéral fonctionne en JSX.
-          >
-            {subtitle.replace(/&nbsp;/g, '\u00a0')}
-          </Text>
+        {/* Kolenda §5 W3 P7 — thumb pack 64×80 mobile only (< lg). */}
+        <header className="mb-10 flex max-w-2xl gap-4">
+          {DEFAULT_WIZARD_FEATURES.mobilePackThumbnail && (
+            <WizardMobilePackThumb />
+          )}
+          <div className="space-y-3">
+            <Text
+              size="small"
+              tone="secondary"
+              className="uppercase tracking-[0.18em]"
+            >
+              {kicker}
+            </Text>
+            <Heading
+              as="h2"
+              size="display-md"
+              italic="always"
+              id="kit-commander-heading"
+            >
+              {title}
+            </Heading>
+            <Text
+              tone="secondary"
+              // Subtitle peut contenir un &nbsp; — on s'autorise dangerouslySet ?
+              // Non : on garde du texte plat et on laisse le navigateur gérer
+              // l'espacement. Le NBSP littéral fonctionne en JSX.
+            >
+              {subtitle.replace(/&nbsp;/g, '\u00a0')}
+            </Text>
+          </div>
         </header>
 
         {preface}

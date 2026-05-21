@@ -30,6 +30,7 @@ import type { CartSnapshot, StepName } from '@/lib/checkout/schemas/common';
 
 import { WizardStepIndicator } from './WizardStepIndicator';
 import { TimeEstimateBadge } from './TimeEstimateBadge';
+import { WizardCartRecap } from './WizardCartRecap';
 import { LeadCaptureStep } from './steps/LeadCaptureStep';
 import {
   DEFAULT_WIZARD_COPY,
@@ -253,8 +254,18 @@ export function WizardShell({
       }
     : undefined;
 
+  // Cart à afficher : initial (props serveur) prioritaire, sinon
+  // celui du store (hydraté). Empêche le clignotement « pas de cart »
+  // pendant l'hydration.
+  const cartForRecap = initialCart ?? storedCart ?? null;
+
   return (
     <div className="space-y-6" data-testid="wizard-shell">
+      {/* Kolenda §5 W3 P1 — récap panier permanent en premier enfant.
+          Sticky mobile pour rester visible pendant le scroll. */}
+      {features.cartRecap && cartForRecap && (
+        <WizardCartRecap cart={cartForRecap} priceCompareAt="390 MAD" />
+      )}
       {header}
       {features.timeEstimate && (
         <TimeEstimateBadge label={wizardCopy.timeEstimateTotal} />
