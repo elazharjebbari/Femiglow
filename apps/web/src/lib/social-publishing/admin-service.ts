@@ -22,6 +22,8 @@ import { listPostizIntegrations, type PostizIntegration } from '@/lib/content-st
 import { DryRunSocialPublishingAdapter } from './adapters/dry-run';
 import { PostizSocialPublishingAdapter } from './adapters/postiz';
 import { publishWithAdapter } from './service';
+import { sendSocialAlert } from './alerts';
+import { logger } from '@/lib/logging/logger';
 import { assertSocialPublishJobTransition, nextRetryStatus } from './state-machine';
 import {
   createPublication,
@@ -423,6 +425,28 @@ export async function executeJob(input: { jobId: string; actorId: string | null 
     },
   });
   await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'failed' });
+  logger.error('social.publish.failed', {
+    job_id: locked.id,
+    post_id: locked.postId,
+    provider: account.provider,
+    platform: account.platform,
+    error_code: result.error.code,
+    error_message: result.error.message,
+    retryable: result.error.retryable,
+  });
+  // Non-blocking webhook. We don't await with retries on purpose — if the
+  // alert channel is down we still want the worker to make progress.
+  void sendSocialAlert({
+    title: `Publication ${account.provider}/${account.platform} échouée`,
+    detail: result.error.message,
+    severity: result.error.retryable ? 'warning' : 'critical',
+    fields: [
+      { label: 'jobId', value: locked.id },
+      { label: 'postId', value: locked.postId },
+      { label: 'errorCode', value: result.error.code },
+      { label: 'retryable', value: String(result.error.retryable) },
+    ],
+  });
   return { job: updated ?? publishing, result };
 }
 

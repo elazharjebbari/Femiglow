@@ -70,6 +70,12 @@ const envSchema = z.object({
   // CHAT-047/068 — Webhook compatible Slack pour les alertes runtime
   // (provider désactivé par budget-watch, etc.). Si absent, no-op.
   CHAT_ALERTS_WEBHOOK_URL: z.string().url().optional(),
+  // S3.2 — Slack/Discord webhook dédié aux échecs de publication sociale.
+  // Si absent, on retombe sur CHAT_ALERTS_WEBHOOK_URL.
+  SOCIAL_ALERTS_WEBHOOK_URL: z.string().url().optional(),
+  // S3.2 — destinataire du digest hebdo des échecs. Si absent, on retombe
+  // sur CHAT_DIGEST_RECIPIENT.
+  SOCIAL_DIGEST_RECIPIENT: z.string().email().optional(),
   // CHAT-067 — Email digest hebdo des leads chat (Care).
   CHAT_DIGEST_RECIPIENT: z.string().email().optional(),
   CHAT_DIGEST_FROM: z.string().min(3).default('FemiGlow Chat <chat@femiglow.local>'),
@@ -164,6 +170,8 @@ export const env = envSchema.parse({
   OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
   SNAP_CAPI_TOKEN: process.env.SNAP_CAPI_TOKEN,
   CHAT_ALERTS_WEBHOOK_URL: process.env.CHAT_ALERTS_WEBHOOK_URL,
+  SOCIAL_ALERTS_WEBHOOK_URL: process.env.SOCIAL_ALERTS_WEBHOOK_URL,
+  SOCIAL_DIGEST_RECIPIENT: process.env.SOCIAL_DIGEST_RECIPIENT,
   CHAT_DIGEST_RECIPIENT: process.env.CHAT_DIGEST_RECIPIENT,
   CHAT_DIGEST_FROM: process.env.CHAT_DIGEST_FROM,
   SMTP_HOST: process.env.SMTP_HOST,
