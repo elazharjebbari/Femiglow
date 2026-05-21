@@ -337,6 +337,60 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       last_field: z.string().max(60).optional(),
     })
     .strict(),
+
+  // — Wizard micro-events Kolenda §5 (Phase W0 du plan wizard-kit-optim) :
+  // identifient précisément où la friction se trouve à l'intérieur d'un step.
+  wizard_field_filled: z
+    .object({
+      field_name: z.enum([
+        'firstName',
+        'phone',
+        'consent',
+        'city',
+        'addressLine1',
+        'notes',
+      ]),
+      step_name: z.enum(['lead', 'address']),
+      form_id: z.string().min(1).max(60),
+      time_since_focus_ms: z.number().int().nonnegative(),
+    })
+    .strict(),
+
+  wizard_field_corrected: z
+    .object({
+      field_name: z.enum([
+        'firstName',
+        'phone',
+        'consent',
+        'city',
+        'addressLine1',
+        'notes',
+      ]),
+      step_name: z.enum(['lead', 'address']),
+      attempts: z.number().int().positive(),
+    })
+    .strict(),
+
+  wizard_step_abandoned: z
+    .object({
+      step_name: z.enum(['lead', 'address']),
+      fields_completed: z.number().int().nonnegative(),
+      time_in_step_ms: z.number().int().nonnegative(),
+    })
+    .strict(),
+
+  wizard_resume_shown: z
+    .object({
+      step_name: z.enum(['lead', 'address']),
+      time_since_last_visit_ms: z.number().int().nonnegative(),
+    })
+    .strict(),
+
+  wizard_resume_dismissed: z
+    .object({
+      step_name: z.enum(['lead', 'address']),
+    })
+    .strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -405,6 +459,12 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   address_completed: 'ecommerce',
   wizard_error: 'engagement',
   wizard_abandoned: 'engagement',
+  // Wizard micro-events (Kolenda §5 — wizard-kit-optim W0).
+  wizard_field_filled: 'engagement',
+  wizard_field_corrected: 'engagement',
+  wizard_step_abandoned: 'engagement',
+  wizard_resume_shown: 'engagement',
+  wizard_resume_dismissed: 'engagement',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

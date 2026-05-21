@@ -123,6 +123,33 @@ export interface WizardState {
   // Indique que `localStorage` a été lu (évite mismatch SSR).
   hydrated: boolean;
 
+  // ── wizard-kit-optim W0 — Tracking enrichi (Kolenda §5) ──────────────
+  /**
+   * Timestamp ms du focus initial par champ. Reset au changement de step.
+   * Non persisté.
+   */
+  fieldFocusedAt: Record<string, number>;
+  /**
+   * Compteur de corrections par champ (suppression > 50 % du contenu).
+   * Non persisté.
+   */
+  fieldCorrections: Record<string, number>;
+  /**
+   * Map des champs ayant déjà émis `wizard_field_filled` cette session.
+   * Garde contre la ré-émission si validité re-flip. Non persisté.
+   */
+  filledFieldsThisSession: Record<string, boolean>;
+  /**
+   * Indique que la ResumeBanner a été montrée durant cette session
+   * (one-shot — pas de réaffichage en navigation interne). Non persisté.
+   */
+  resumeBannerShown: boolean;
+  /**
+   * Indique que l'utilisateur a explicitement fermé la ResumeBanner.
+   * Persiste pour ne plus jamais la réafficher (sauf reset complet).
+   */
+  resumeBannerDismissed: boolean;
+
   // ── Actions ──────────────────────────────────────────────────────────
   setFormContext: (ctx: WizardFormContext) => void;
   setCartSnapshot: (snap: CartSnapshot | null) => void;
@@ -136,6 +163,12 @@ export interface WizardState {
   setLanguage: (lang: Language) => void;
   reset: () => void;
   setHydrated: () => void;
+  /** wizard-kit-optim W0 — actions tracking enrichi */
+  registerFieldFocus: (fieldName: string) => void;
+  markFieldFilled: (fieldName: string) => void;
+  incrementFieldCorrection: (fieldName: string) => void;
+  markResumeBannerShown: () => void;
+  dismissResumeBanner: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,6 +228,11 @@ const INITIAL: Omit<
   | 'setLanguage'
   | 'reset'
   | 'setHydrated'
+  | 'registerFieldFocus'
+  | 'markFieldFilled'
+  | 'incrementFieldCorrection'
+  | 'markResumeBannerShown'
+  | 'dismissResumeBanner'
 > = {
   leadId: null,
   orderId: null,
@@ -205,6 +243,12 @@ const INITIAL: Omit<
   addressDraft: DEFAULT_ADDRESS_DRAFT,
   paymentDraft: DEFAULT_PAYMENT_DRAFT,
   hydrated: false,
+  // wizard-kit-optim W0 — tracking enrichi (non-persisté sauf flag dismiss)
+  fieldFocusedAt: {},
+  fieldCorrections: {},
+  filledFieldsThisSession: {},
+  resumeBannerShown: false,
+  resumeBannerDismissed: false,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -233,6 +277,32 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
     })),
   reset: () => set({ ...INITIAL, hydrated: true }),
   setHydrated: () => set({ hydrated: true }),
+
+  // wizard-kit-optim W0 — tracking enrichi
+  registerFieldFocus: (fieldName) =>
+    set((state) => ({
+      fieldFocusedAt: { ...state.fieldFocusedAt, [fieldName]: Date.now() },
+    })),
+  markFieldFilled: (fieldName) =>
+    set((state) =>
+      state.filledFieldsThisSession[fieldName]
+        ? state
+        : {
+            filledFieldsThisSession: {
+              ...state.filledFieldsThisSession,
+              [fieldName]: true,
+            },
+          },
+    ),
+  incrementFieldCorrection: (fieldName) =>
+    set((state) => ({
+      fieldCorrections: {
+        ...state.fieldCorrections,
+        [fieldName]: (state.fieldCorrections[fieldName] ?? 0) + 1,
+      },
+    })),
+  markResumeBannerShown: () => set({ resumeBannerShown: true }),
+  dismissResumeBanner: () => set({ resumeBannerDismissed: true }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -331,6 +401,10 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     migrateWizardState(persisted, fromVersion) as WizardState,
   storage: createJSONStorage(() => safeStorage() ?? memoryStorage),
   // Whitelist explicite — `hydrated` est dérivé, jamais persisté.
+  // wizard-kit-optim W0 : seul `resumeBannerDismissed` est persisté côté
+  // tracking ; les autres fields (fieldFocusedAt, fieldCorrections,
+  // filledFieldsThisSession, resumeBannerShown) sont éphémères par
+  // design (reset à chaque visite).
   partialize: (state) => ({
     leadId: state.leadId,
     orderId: state.orderId,
@@ -340,6 +414,7 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     leadDraft: state.leadDraft,
     addressDraft: state.addressDraft,
     paymentDraft: state.paymentDraft,
+    resumeBannerDismissed: state.resumeBannerDismissed,
   }),
   onRehydrateStorage: () => (state) => {
     state?.setHydrated();
