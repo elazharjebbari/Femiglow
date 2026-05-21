@@ -401,9 +401,12 @@ export function AddressStep({ cta }: AddressStepProps) {
         )}
 
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          {/* Kolenda §5 W1 (P9) — Hierarchy : le bouton Retour passe en
+              link (souligné chuchoté) pour que le primary « Confirmer »
+              domine visuellement. Évite le mauvais clic mobile. */}
           <Button
             type="button"
-            variant="secondary"
+            variant="link"
             size="md"
             onClick={() => goToStep('lead')}
             disabled={submitting}

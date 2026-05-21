@@ -311,17 +311,22 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
               {...register('consent')}
             />
             <span>
-              J&rsquo;accepte d&rsquo;être contactée par la maison FemiGlow pour
-              ma commande. Voir nos{' '}
-              <Link
-                href="/mentions-legales"
-                target="_blank"
-                rel="noreferrer"
-                className="underline decoration-encre/40 underline-offset-4 hover:decoration-encre"
-              >
-                mentions légales
-              </Link>
-              .
+              {/* Kolenda §5 W1 (P10) — formulation opt-in désirable
+                  (« Je veux ») au lieu d'opt-in passif (« J'accepte »).
+                  Cialdini Commitment principle + Trust #6 (plain language). */}
+              Je veux être rappelée pour confirmer ma commande.
+              <span className="mt-1 block text-xs text-encre/55">
+                Pas de revente, pas de spam —{' '}
+                <Link
+                  href="/mentions-legales"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-encre/40 underline-offset-4 hover:decoration-encre"
+                >
+                  mentions légales
+                </Link>
+                .
+              </span>
             </span>
           </label>
           {errors.consent?.message && (

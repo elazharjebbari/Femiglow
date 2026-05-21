@@ -117,7 +117,9 @@ export function KitCommanderSection({
             initialCart={initialCart}
             copy={{
               title: 'Commander le rituel FemiGlow',
-              ctaLead: 'Continuer',
+              // Kolenda §5 W1 (P2) — CTA outcome qui désamorce la peur
+              // du paiement upfront (Trust #1 loss aversion).
+              ctaLead: 'Continuer · paiement à la livraison',
               ctaAddress: 'Confirmer la commande',
               thankYouTitle: 'Commande reçue, on vous rappelle.',
             }}
