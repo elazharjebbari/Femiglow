@@ -100,9 +100,16 @@ Décider, après S1.1, si on enchaîne sur **S2 (consolidation pipelines)** ou s
 
 Objectif : `social_publish_job` devient la seule façon de publier vers Postiz/Meta. Le legacy `content_postiz_delivery` est dépréciable proprement.
 
-### S2.1 — Postiz adapter complet ⏱️ 1.5 jour
+### S2.1 — Postiz adapter complet ⏱️ 1.5 jour — **[done] 2026-05-21 (commit 3ec0ec9)**
 
 **Risque résolu** : adapter Postiz incomplet (Phase B était scaffold). Sans cette complétion, on ne peut pas dévier le trafic du legacy.
+
+**Réalisation** :
+- `PostizPostInput.type` (`draft|now|schedule`) configurable.
+- Adapter choisit `now` sans `scheduledAt`, `schedule` si futur.
+- `scheduledAt` passée ou invalide → `invalid_request` upfront.
+- HTTP 409 → `duplicate_external_post` (non retryable) dans `errorFromHttpStatus`.
+- 9 tests adapter ajoutés (mode now/schedule + 409 + past/NaN) + 2 tests payload-builder. 46/46 verts sur les fichiers touchés ; 237/237 sur la zone Studio.
 
 #### Spec
 
@@ -153,11 +160,13 @@ Si on l'active : prérequis S2.2.0 = **S1.2bis chiffrement credentials** (per-ac
 
 **Risque résolu** : un draft peut être publié 2 fois (legacy + new). Source de doublons silencieux.
 
-#### Phase a — Feature flag UI (0.3j)
+#### Phase a — Feature flag UI (0.3j) — **[done] 2026-05-21 (commit 3ec0ec9)**
 
 - Ajouter `CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED` à `env.ts` (default `false` en staging).
 - Dans `DraftEditor.tsx` et views post : si `true`, cacher bouton « Envoyer à Postiz » (legacy) ; afficher uniquement « Publier maintenant » (nouveau pipeline).
 - Tester en staging avec flag `true`.
+
+**Réalisation** : flag câblé `env.ts` → `page.tsx` → `ContentStudioClient` → `DraftEditor` ; `DeliveryPanel` masqué quand `true`. `SocialPublishingPanel` reste visible. Pour activer en staging : `echo 'CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED=true' >> apps/web/.env && systemctl restart femiglow-staging.service`.
 
 #### Phase b — Re-route interne (0.5j)
 
