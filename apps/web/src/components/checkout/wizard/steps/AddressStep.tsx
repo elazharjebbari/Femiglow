@@ -59,8 +59,13 @@ import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
 
 import { StockIndicator } from '../StockIndicator';
 import { CityAutocomplete } from '../components/CityAutocomplete';
+import { NoCommitmentBadge } from '../NoCommitmentBadge';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
 import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
+import {
+  DEFAULT_WIZARD_COPY,
+  DEFAULT_WIZARD_FEATURES,
+} from '@/lib/checkout/copy/wizard-copy';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Schema validation client (miroir simplifié de `patchLeadAddressInputSchema`)
@@ -398,6 +403,16 @@ export function AddressStep({ cta }: AddressStepProps) {
           >
             {t.address.processingOrder}
           </p>
+        )}
+
+        {/* Kolenda §5 W2 (P3) — Trust #1 loss aversion : visible juste
+            avant le CTA primary pour désamorcer la peur engagement
+            financier. */}
+        {DEFAULT_WIZARD_FEATURES.noCommitmentBadge && (
+          <NoCommitmentBadge
+            label={DEFAULT_WIZARD_COPY.noCommitmentLabel}
+            sub={DEFAULT_WIZARD_COPY.noCommitmentSub}
+          />
         )}
 
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">

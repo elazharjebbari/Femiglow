@@ -23,6 +23,11 @@ interface WizardStepIndicatorProps {
   currentStep: StepName;
   /** Labels personnalisés (i18n). */
   labels?: Partial<Record<StepName, string>>;
+  /**
+   * Kolenda §5 W2 — durée estimée par step (« 60 s », « 30 s »…).
+   * Rendue à côté du label si fournie ; sinon rétro-compat (pas affichée).
+   */
+  timesPerStep?: Partial<Record<StepName, string>>;
   className?: string;
 }
 
@@ -38,6 +43,7 @@ export function WizardStepIndicator({
   steps,
   currentStep,
   labels,
+  timesPerStep,
   className,
 }: WizardStepIndicatorProps) {
   const currentIdx = steps.indexOf(currentStep);
@@ -52,6 +58,7 @@ export function WizardStepIndicator({
           const state =
             i < currentIdx ? 'done' : i === currentIdx ? 'current' : 'upcoming';
           const label = labels?.[step] ?? DEFAULT_LABELS[step];
+          const time = timesPerStep?.[step];
           return (
             <li
               key={step}
@@ -78,6 +85,14 @@ export function WizardStepIndicator({
                 )}
               >
                 {label}
+                {time && (
+                  <span
+                    data-testid={`wizard-step-time-${step}`}
+                    className="ml-1 text-[10px] text-encre/45 tabular-nums"
+                  >
+                    · {time}
+                  </span>
+                )}
               </span>
             </li>
           );

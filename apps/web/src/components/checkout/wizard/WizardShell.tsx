@@ -29,7 +29,12 @@ import {
 import type { CartSnapshot, StepName } from '@/lib/checkout/schemas/common';
 
 import { WizardStepIndicator } from './WizardStepIndicator';
+import { TimeEstimateBadge } from './TimeEstimateBadge';
 import { LeadCaptureStep } from './steps/LeadCaptureStep';
+import {
+  DEFAULT_WIZARD_COPY,
+  DEFAULT_WIZARD_FEATURES,
+} from '@/lib/checkout/copy/wizard-copy';
 
 // Steps lazy-loaded — pas encore implémentés (phases 6-7).
 // On garde la structure pour ne pas avoir à modifier le shell à chaque
@@ -236,10 +241,29 @@ export function WizardShell({
     }
   }
 
+  // Kolenda §5 W2 — réassurance temps + indicator enrichi.
+  // Wizard-copy + features par défaut (W5 admin override viendra plus tard).
+  const wizardCopy = DEFAULT_WIZARD_COPY;
+  const features = DEFAULT_WIZARD_FEATURES;
+  const stepTimes = features.timeEstimate
+    ? {
+        lead: wizardCopy.timeEstimateLead,
+        address: wizardCopy.timeEstimateAddress,
+        thank_you: wizardCopy.timeEstimateThankYou,
+      }
+    : undefined;
+
   return (
-    <div className="space-y-8" data-testid="wizard-shell">
+    <div className="space-y-6" data-testid="wizard-shell">
       {header}
-      <WizardStepIndicator steps={steps} currentStep={currentStep} />
+      {features.timeEstimate && (
+        <TimeEstimateBadge label={wizardCopy.timeEstimateTotal} />
+      )}
+      <WizardStepIndicator
+        steps={steps}
+        currentStep={currentStep}
+        timesPerStep={stepTimes}
+      />
       <Suspense fallback={<HydrationFallback />}>{stepView}</Suspense>
       {footer}
     </div>
