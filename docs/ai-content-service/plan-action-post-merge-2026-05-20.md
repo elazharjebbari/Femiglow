@@ -168,17 +168,26 @@ Si on l'active : prérequis S2.2.0 = **S1.2bis chiffrement credentials** (per-ac
 
 **Réalisation** : flag câblé `env.ts` → `page.tsx` → `ContentStudioClient` → `DraftEditor` ; `DeliveryPanel` masqué quand `true`. `SocialPublishingPanel` reste visible. Pour activer en staging : `echo 'CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED=true' >> apps/web/.env && systemctl restart femiglow-staging.service`.
 
-#### Phase b — Re-route interne (0.5j)
+#### Phase b — Re-route interne (0.5j) — **[deferred] 2026-05-21**
 
 - `createDraftInPostiz` (service.ts) devient un thin wrapper qui appelle `publishContentPostNow` du nouveau pipeline.
 - Garde la signature pour compat (API publique inchangée).
 - Tests : équivalence sortie legacy vs new sur 3 scénarios standard.
 
-#### Phase c — Deprecation marker (0.2j)
+**Décision** : reporté. Conflit de modèle de données entre legacy (`integrationId`+`content_postiz_delivery`) et nouveau (`accountId`+`social_publish_job`) — un thin wrapper aboutit soit à un dual-write (anti-objectif de S2.3), soit à une migration `integrationId→accountId` plus large que 0.5j. Comme legacy et nouveau partagent déjà les helpers HTTP Postiz (`uploadPostizMediaFromUrl`, `createPostizDraft`, `buildPostizDraftPayload`), il n'y a pas de code-path parallèle à fusionner. La consolidation se fera **en phase d** par suppression directe une fois la télémétrie phase c à zéro.
+
+#### Phase c — Deprecation marker (0.2j) — **[done] 2026-05-21**
 
 - Headers HTTP `Deprecation: true` + `Sunset: 2026-08-01` sur les routes legacy.
 - Doc README/changelog.
 - Audit log spécifique `social.legacy_route_used` pour mesurer trafic résiduel.
+
+**Réalisation** : `POST /api/admin/content-studio/posts/[id]/postiz-draft` émet désormais (succès comme erreur) :
+- `Deprecation: true`
+- `Sunset: Wed, 01 Aug 2026 00:00:00 GMT`
+- `Link: </api/admin/content-studio/posts/[id]/publish-now>; rel="successor-version"`
+
+Et un audit event `social.legacy_route_used` par appel (action, actorId, resourceType=content_post, resourceId=postId, meta.route='postiz-draft'). 3 tests vitest verts (headers succès, headers erreur, audit event).
 
 #### Phase d — Suppression (0.5j) — différée 2 semaines
 
