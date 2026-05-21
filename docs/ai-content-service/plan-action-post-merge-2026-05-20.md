@@ -242,7 +242,7 @@ Implementation :
 - Un post publié hier a un snapshot dans `content_performance_snapshot` aujourd'hui.
 - Tests 100%.
 
-### S3.2 — Alerting publication failures ⏱️ 0.5 jour
+### S3.2 — Alerting publication failures ⏱️ 0.5 jour — **[done] 2026-05-21 (commit 8917845)**
 
 **Risque résolu** : un échec de publication passe inaperçu jusqu'à ce que quelqu'un regarde le calendrier.
 
@@ -361,5 +361,5 @@ Hors-périmètre actuel. À documenter si besoin émerge.
 
 - [ ] **S2.2** : implémenter Meta Graph adapter ou skip ? (recommandation : skip)
 - [ ] **S2.3 Phase d** : DROP ou archive `content_postiz_delivery` après suppression code ?
-- [ ] **S3.2** : nouveau `SOCIAL_ALERTS_WEBHOOK_URL` ou réutilise `CHAT_ALERTS_WEBHOOK_URL` ?
+- [x] **S3.2** : nouveau `SOCIAL_ALERTS_WEBHOOK_URL` **avec fallback** sur `CHAT_ALERTS_WEBHOOK_URL` (idem `SOCIAL_DIGEST_RECIPIENT` → `CHAT_DIGEST_RECIPIENT`).
 - [ ] **S4.1** : trigger précis CDN — seuil volume ou seuil latence ?
