@@ -88,9 +88,17 @@ const config: Config = {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.02)' },
         },
+        // §5 W4 — fade-in du WizardCheckmark (200 ms, ease-out).
+        // Apparait quand un champ devient valide. Utilisé par
+        // `motion-safe:animate-fade-in`.
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(2px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'soft-pulse': 'soft-pulse 3.5s ease-in-out infinite',
+        'fade-in': 'fade-in 0.2s ease-out',
       },
     },
   },

@@ -34,12 +34,19 @@ import { Button } from '@/components/ui/Button';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/forms/Field';
+import { PhoneMaskInput } from '@/components/checkout/wizard/PhoneMaskInput';
+import { WizardCheckmark } from '@/components/checkout/wizard/WizardCheckmark';
+import { ResumeBanner } from '@/components/checkout/wizard/ResumeBanner';
 import { phoneMaroc9DigitsSchema } from '@/lib/checkout/schemas/common';
 import {
   DEFAULT_CONSENT_VERSION,
   useWizardStore,
 } from '@/lib/checkout/state/wizard-store';
 import { useLeadCaptureMutation } from '@/lib/checkout/state/use-wizard-mutations';
+import {
+  DEFAULT_WIZARD_COPY,
+  DEFAULT_WIZARD_FEATURES,
+} from '@/lib/checkout/copy/wizard-copy';
 import type { WizardContext } from '@/lib/tracking/checkout-events';
 import { useCheckoutIntentTrigger } from '@/lib/tracking/use-checkout-intent';
 import { useFormTracking } from '@/lib/tracking/use-form-tracking';
@@ -222,12 +229,50 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
     return e.message || 'Un instant — la commande n\u2019a pas pu démarrer. Réessayez.';
   }, [mutation.error]);
 
+  // Kolenda §5 W4 — Trust #5 (memory & personalization).
+  // ResumeBanner si la cliente a déjà commencé puis a refresh : leadDraft
+  // restauré non vide ET pas explicitement dismissed.
+  const leadDraftFirstName = useWizardStore((s) => s.leadDraft.firstName);
+  const resumeBannerDismissed = useWizardStore(
+    (s) => s.resumeBannerDismissed,
+  );
+  const watchedFirstNameForCheck = watch('firstName');
+  const watchedPhoneForCheck = watch('phone');
+  const watchedConsentForCheck = watch('consent');
+  const firstNameValid =
+    !errors.firstName &&
+    typeof watchedFirstNameForCheck === 'string' &&
+    watchedFirstNameForCheck.trim().length >= 2;
+  const phoneValid =
+    !errors.phone &&
+    typeof watchedPhoneForCheck === 'string' &&
+    watchedPhoneForCheck.replace(/\D/g, '').length >= 9;
+
+  // Affichage ResumeBanner :
+  //  - Une valeur a été saisie auparavant (≥ 2 chars dans firstName du draft)
+  //  - L'utilisateur n'a pas encore tapé dans le champ live (sinon redondant)
+  //  - Pas explicitement dismiss
+  const shouldShowResumeBanner =
+    DEFAULT_WIZARD_FEATURES.resumeBanner &&
+    !resumeBannerDismissed &&
+    leadDraftFirstName.trim().length >= 2 &&
+    (!watchedFirstNameForCheck ||
+      watchedFirstNameForCheck.trim().length === 0 ||
+      watchedFirstNameForCheck === leadDraftFirstName);
+
   return (
     <section
       aria-labelledby={`${firstNameId}-heading`}
       className="space-y-7"
       data-testid="wizard-step-lead"
     >
+      {shouldShowResumeBanner && (
+        <ResumeBanner
+          firstName={leadDraftFirstName}
+          template={DEFAULT_WIZARD_COPY.resumeBannerTemplate}
+        />
+      )}
+
       <header className="space-y-2">
         <Heading
           as="h2"
@@ -236,6 +281,12 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
           italic="always"
         >
           {heading}
+          {DEFAULT_WIZARD_FEATURES.fieldCheckmark && (
+            <WizardCheckmark
+              visible={firstNameValid && phoneValid && watchedConsentForCheck === true}
+              className="ml-2"
+            />
+          )}
         </Heading>
         <Text size="small" tone="secondary">
           Deux informations seulement — nous vous rappelons pour confirmer.
@@ -264,38 +315,69 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
             const phoneProps = register('phone');
             return (
               <>
-                <TextField
-                  id={firstNameId}
-                  label="Votre prénom"
-                  autoComplete="given-name"
-                  inputMode="text"
-                  required
-                  error={errors.firstName?.message}
-                  placeholder="Yasmine"
-                  {...firstNameProps}
-                  onFocus={handleFieldFocus('firstName')}
-                  onChange={(e) => {
-                    void firstNameProps.onChange(e);
-                    triggerCheckoutIntent('firstName', e.target.value);
-                  }}
-                />
-                <TextField
-                  id={phoneId}
-                  label="Téléphone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  required
-                  placeholder="06 12 34 56 78"
-                  hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
-                  error={errors.phone?.message}
-                  {...phoneProps}
-                  onFocus={handleFieldFocus('phone')}
-                  onChange={(e) => {
-                    void phoneProps.onChange(e);
-                    triggerCheckoutIntent('phone', e.target.value);
-                  }}
-                />
+                <div className="relative">
+                  <TextField
+                    id={firstNameId}
+                    label="Votre prénom"
+                    autoComplete="given-name"
+                    inputMode="text"
+                    required
+                    error={errors.firstName?.message}
+                    placeholder="Yasmine"
+                    {...firstNameProps}
+                    onFocus={handleFieldFocus('firstName')}
+                    onChange={(e) => {
+                      void firstNameProps.onChange(e);
+                      triggerCheckoutIntent('firstName', e.target.value);
+                    }}
+                  />
+                  {DEFAULT_WIZARD_FEATURES.fieldCheckmark && firstNameValid && (
+                    <span className="pointer-events-none absolute right-2 top-0 inline-flex">
+                      <WizardCheckmark visible />
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
+                  {DEFAULT_WIZARD_FEATURES.phoneMask ? (
+                    <PhoneMaskInput
+                      id={phoneId}
+                      label="Téléphone"
+                      required
+                      placeholder="06 12 34 56 78"
+                      hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
+                      error={errors.phone?.message}
+                      {...phoneProps}
+                      onFocus={handleFieldFocus('phone')}
+                      onChange={(e) => {
+                        void phoneProps.onChange(e);
+                        triggerCheckoutIntent('phone', e.target.value);
+                      }}
+                    />
+                  ) : (
+                    <TextField
+                      id={phoneId}
+                      label="Téléphone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      required
+                      placeholder="06 12 34 56 78"
+                      hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
+                      error={errors.phone?.message}
+                      {...phoneProps}
+                      onFocus={handleFieldFocus('phone')}
+                      onChange={(e) => {
+                        void phoneProps.onChange(e);
+                        triggerCheckoutIntent('phone', e.target.value);
+                      }}
+                    />
+                  )}
+                  {DEFAULT_WIZARD_FEATURES.fieldCheckmark && phoneValid && (
+                    <span className="pointer-events-none absolute right-2 top-0 inline-flex">
+                      <WizardCheckmark visible />
+                    </span>
+                  )}
+                </div>
               </>
             );
           })()}
