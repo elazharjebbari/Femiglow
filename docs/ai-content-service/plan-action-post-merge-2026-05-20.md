@@ -260,7 +260,7 @@ Implementation :
 - Un échec test produit un événement Sentry/log identifiable.
 - Mail digest hebdo lisible et actionnable.
 
-### S3.3 — Dashboard admin Content Studio ⏱️ 1 jour
+### S3.3 — Dashboard admin Content Studio ⏱️ 1 jour — **[done] 2026-05-21 (commit 6b6366d)**
 
 **Objectif** : `/admin/content-studio/dashboard` — un coup d'œil pour santé du module.
 
