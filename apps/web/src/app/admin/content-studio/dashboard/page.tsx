@@ -55,11 +55,18 @@ export default async function AdminContentStudioDashboardPage() {
 }
 
 function DashboardWidgets({ snapshot }: { snapshot: Awaited<ReturnType<typeof buildDashboardSnapshot>> }) {
-  const { postsThisWeek, jobSuccessRate, monthlyAiCost, accountHealth, topPerformers } = snapshot;
+  const {
+    postsThisWeek,
+    jobSuccessRate,
+    monthlyAiCost,
+    accountHealth,
+    topPerformers,
+    draftsAwaitingReview,
+  } = snapshot;
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           label="Posts publiés cette semaine"
           value={postsThisWeek.total.toString()}
@@ -69,7 +76,7 @@ function DashboardWidgets({ snapshot }: { snapshot: Awaited<ReturnType<typeof bu
         <MetricCard
           label="Taux de succès jobs"
           value={`${jobSuccessRate.rate}%`}
-          subline={`${jobSuccessRate.published} publiés / ${jobSuccessRate.failed} échecs`}
+          subline={`${jobSuccessRate.published} publiés / ${jobSuccessRate.failed} échecs · drafts exclus`}
           tone={successTone(jobSuccessRate.rate, jobSuccessRate.total)}
         />
         <MetricCard
@@ -77,6 +84,16 @@ function DashboardWidgets({ snapshot }: { snapshot: Awaited<ReturnType<typeof bu
           value={`${(monthlyAiCost.cents / 100).toFixed(2)} €`}
           subline={`${monthlyAiCost.runs} runs ce mois-ci`}
           tone="amber"
+        />
+        <MetricCard
+          label="Brouillons Postiz en attente"
+          value={draftsAwaitingReview.count.toString()}
+          subline={
+            draftsAwaitingReview.oldestAgeHours === null
+              ? 'Aucun brouillon en attente'
+              : `Plus ancien : ${draftsAwaitingReview.oldestAgeHours}h`
+          }
+          tone={draftsAwaitingReview.count === 0 ? 'stone' : 'amber'}
         />
       </section>
 

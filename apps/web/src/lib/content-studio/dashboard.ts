@@ -39,6 +39,12 @@ export interface JobSuccessRate {
   rate: number;
 }
 
+export interface DraftsAwaitingReview {
+  count: number;
+  /** Hours since the oldest unreviewed draft was sent to the provider. */
+  oldestAgeHours: number | null;
+}
+
 export interface MonthlyAiCost {
   cents: number;
   runs: number;
@@ -71,6 +77,7 @@ export interface DashboardSnapshot {
   monthlyAiCost: MonthlyAiCost;
   accountHealth: AccountHealth[];
   topPerformers: TopPerformer[];
+  draftsAwaitingReview: DraftsAwaitingReview;
   generatedAt: Date;
 }
 
@@ -92,6 +99,7 @@ export async function buildDashboardSnapshot(now: Date = new Date()): Promise<Da
     monthlyAiCost: computeMonthlyAiCost(runs, now),
     accountHealth: computeAccountHealth(accounts, jobs),
     topPerformers: computeTopPerformers(snapshots, { limit: 5 }),
+    draftsAwaitingReview: computeDraftsAwaitingReview(jobs, now),
     generatedAt: now,
   };
 }
@@ -124,12 +132,40 @@ export function computeJobSuccessRate(jobs: SocialPublishJob[]): JobSuccessRate 
   let published = 0;
   let failed = 0;
   for (const job of jobs) {
+    // Drafts are sent to the provider for review, not actually published on
+    // the social network. They live in their own widget — excluding them
+    // here keeps the publication success rate semantically meaningful.
+    if (job.content.publishMode === 'draft') continue;
     if (job.status === 'published') published += 1;
     else if (job.status === 'failed') failed += 1;
   }
   const total = published + failed;
   const rate = total === 0 ? 0 : Math.round((published / total) * 100);
   return { total, published, failed, rate };
+}
+
+export function computeDraftsAwaitingReview(
+  jobs: SocialPublishJob[],
+  now: Date,
+): DraftsAwaitingReview {
+  // A draft is "awaiting review" if it was successfully sent to the
+  // provider (status=published) but the editorial content_post has not
+  // yet been queued for real publication. We approximate the latter by
+  // looking at the job's publishedAt being more than 0 hours old; the
+  // dashboard only surfaces a count + oldest age, not an unbounded list.
+  const drafts = jobs.filter(
+    (job) => job.content.publishMode === 'draft' && job.status === 'published',
+  );
+  if (drafts.length === 0) {
+    return { count: 0, oldestAgeHours: null };
+  }
+  let oldestTime = Number.POSITIVE_INFINITY;
+  for (const job of drafts) {
+    const ts = (job.publishedAt ?? job.updatedAt).getTime();
+    if (ts < oldestTime) oldestTime = ts;
+  }
+  const oldestAgeHours = Math.max(0, Math.round((now.getTime() - oldestTime) / (60 * 60 * 1000)));
+  return { count: drafts.length, oldestAgeHours };
 }
 
 export function computeMonthlyAiCost(runs: ContentGenerationRun[], now: Date): MonthlyAiCost {

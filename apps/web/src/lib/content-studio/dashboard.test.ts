@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   computeAccountHealth,
+  computeDraftsAwaitingReview,
   computeJobSuccessRate,
   computeMonthlyAiCost,
   computePostsThisWeek,
@@ -135,6 +136,69 @@ describe('computeMonthlyAiCost', () => {
 
   it('renvoie 0 quand aucun run sur le mois', () => {
     expect(computeMonthlyAiCost([], now)).toMatchObject({ cents: 0, runs: 0 });
+  });
+});
+
+describe('computeJobSuccessRate — phase e draft awareness', () => {
+  it('exclut les jobs avec content.publishMode=draft du calcul', () => {
+    const draftPublished = job({
+      id: 'd1',
+      status: 'published',
+      content: { sourcePostId: 'po_d', platform: 'instagram', format: 'post', caption: '', media: [], publishMode: 'draft' },
+    });
+    const draftFailed = job({
+      id: 'd2',
+      status: 'failed',
+      content: { sourcePostId: 'po_d', platform: 'instagram', format: 'post', caption: '', media: [], publishMode: 'draft' },
+    });
+    const realPublished = job({ id: 'r1', status: 'published' });
+    const realFailed = job({ id: 'r2', status: 'failed' });
+    const rate = computeJobSuccessRate([draftPublished, draftFailed, realPublished, realFailed]);
+    expect(rate).toEqual({ total: 2, published: 1, failed: 1, rate: 50 });
+  });
+});
+
+describe('computeDraftsAwaitingReview', () => {
+  it('compte les drafts publiés et calcule l’âge du plus ancien', () => {
+    const oldDraft = job({
+      id: 'd1',
+      status: 'published',
+      publishedAt: new Date('2026-05-20T00:00:00.000Z'), // 36h before reference
+      content: { sourcePostId: 'po_d', platform: 'instagram', format: 'post', caption: '', media: [], publishMode: 'draft' },
+    });
+    const newDraft = job({
+      id: 'd2',
+      status: 'published',
+      publishedAt: new Date('2026-05-21T06:00:00.000Z'),
+      content: { sourcePostId: 'po_d', platform: 'instagram', format: 'post', caption: '', media: [], publishMode: 'draft' },
+    });
+    const result = computeDraftsAwaitingReview([oldDraft, newDraft], new Date('2026-05-21T12:00:00.000Z'));
+    expect(result).toMatchObject({ count: 2 });
+    expect(result.oldestAgeHours).toBeGreaterThanOrEqual(36);
+  });
+
+  it('renvoie 0 et oldestAgeHours=null quand aucun draft publié', () => {
+    expect(computeDraftsAwaitingReview([job({ status: 'queued' })], now)).toEqual({
+      count: 0,
+      oldestAgeHours: null,
+    });
+  });
+
+  it('ignore les drafts non terminaux (queued / failed)', () => {
+    const queuedDraft = job({
+      id: 'd1',
+      status: 'queued',
+      content: { sourcePostId: 'po_d', platform: 'instagram', format: 'post', caption: '', media: [], publishMode: 'draft' },
+    });
+    const failedDraft = job({
+      id: 'd2',
+      status: 'failed',
+      content: { sourcePostId: 'po_d', platform: 'instagram', format: 'post', caption: '', media: [], publishMode: 'draft' },
+    });
+    expect(computeDraftsAwaitingReview([queuedDraft, failedDraft], now)).toEqual({
+      count: 0,
+      oldestAgeHours: null,
+    });
   });
 });
 
