@@ -48,6 +48,14 @@ export interface KitCommanderSectionProps {
   subtitle?: string;
   /** Slot custom au-dessus du wizard (ex. recap visuel produit). */
   preface?: ReactNode;
+  /**
+   * Image du pack à afficher dans le thumb mobile + le cart-recap.
+   * Résolue côté serveur depuis la galerie hero (slot Component-Media
+   * `kit-hero-produit/primary`) → cohérence visuelle hero → wizard.
+   * Si undefined, les sous-composants retombent sur leur default
+   * `/products/kit-principale.png`.
+   */
+  packImage?: { src: string; alt: string };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,6 +83,7 @@ export function KitCommanderSection({
   title = 'Trois gestes, livrés chez vous.',
   subtitle = 'Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison gratuite en 24-48&nbsp;heures.',
   preface,
+  packImage,
 }: KitCommanderSectionProps) {
   return (
     <section
@@ -84,10 +93,15 @@ export function KitCommanderSection({
       className="scroll-mt-24 bg-creme py-16 lg:py-24"
     >
       <Container width="content" padded>
-        {/* Kolenda §5 W3 P7 — thumb pack 64×80 mobile only (< lg). */}
+        {/* Kolenda §5 W3 P7 — thumb pack 64×80 mobile only (< lg).
+            Image résolue côté server depuis `kit-hero-produit/primary`
+            (Component-Media) → packshot dynamique cohérent avec le hero. */}
         <header className="mb-10 flex max-w-2xl gap-4">
           {DEFAULT_WIZARD_FEATURES.mobilePackThumbnail && (
-            <WizardMobilePackThumb />
+            <WizardMobilePackThumb
+              src={packImage?.src}
+              alt={packImage?.alt}
+            />
           )}
           <div className="space-y-3">
             <Text
@@ -123,6 +137,7 @@ export function KitCommanderSection({
             formContext={KIT_FORM_CONTEXT}
             steps={[...KIT_STEPS]}
             initialCart={initialCart}
+            cartRecapThumbnailSrc={packImage?.src}
             copy={{
               title: 'Commander le rituel FemiGlow',
               // Kolenda §5 W1 (P2) — CTA outcome qui désamorce la peur

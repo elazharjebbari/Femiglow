@@ -69,6 +69,13 @@ export interface WizardShellProps {
   steps: StepName[];
   /** Snapshot du panier injecté côté serveur (Mode B). Mode A peut omettre. */
   initialCart?: CartSnapshot;
+  /**
+   * Override de la thumbnail dans le `WizardCartRecap`. Permet au caller
+   * (KitCommanderSection) de passer l'image hero résolue (Component-Media)
+   * pour cohérence visuelle hero → wizard. Si undefined, WizardCartRecap
+   * tombe sur son default `/products/kit-principale.png`.
+   */
+  cartRecapThumbnailSrc?: string;
   /** Textes (CTA, titre). Source : `form_config.config.copy`. */
   copy?: {
     title?: string;
@@ -123,6 +130,7 @@ export function WizardShell({
   formContext,
   steps,
   initialCart,
+  cartRecapThumbnailSrc,
   copy,
   paymentMethods,
   header,
@@ -270,6 +278,7 @@ export function WizardShell({
       {features.cartRecap && cartForRecap && (
         <WizardCartRecap
           cart={cartForRecap}
+          thumbnailSrc={cartRecapThumbnailSrc}
           priceCompareAt={formatCartCompareAt(cartForRecap)}
         />
       )}

@@ -20,6 +20,7 @@ import {
 } from '@/lib/products/public';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
 import { projectCartSnapshotFromVariant } from '@/lib/checkout/helpers/cart-snapshot-builder';
+import { getKitHeroGalleryImages } from '@/lib/products/kit-hero-gallery';
 
 // Fallback fixe utilisé UNIQUEMENT si la DB est vide ou le produit non publié
 // (env. local sans seed, snapshot mock). On garde la valeur stable pour ne pas
@@ -94,5 +95,44 @@ export async function KitCommanderSectionBound({
   // cache `productTag(KIT_PRODUCT_SLUG)` (déjà géré par `getKitProductCached`).
   void KIT_PRODUCT_SLUG;
 
-  return <KitCommanderSection initialCart={initialCart} {...rest} />;
+  // Résoud l'image PRIMARY du hero (Component-Media slot
+  // `kit-hero-produit/primary`) pour la passer au wizard thumb. Garantit
+  // que la vignette mobile et le récap panier affichent la MÊME photo
+  // que le hero (cohérence visuelle top-to-bottom du tunnel). Si le slot
+  // n'a pas de binding actif, on fallback sur l'image produit du mock.
+  // `includeReviews=false, maxTotal=1` rend la requête bon marché
+  // (pas de scan `product_review_photos`).
+  const gallery = await getKitHeroGalleryImages({
+    productId: 'kit-femiglow',
+    includeReviews: false,
+    maxTotal: 1,
+    productFallback: mockKit.images[0]
+      ? {
+          src: mockKit.images[0].src,
+          alt: mockKit.images[0].alt,
+          width: mockKit.images[0].width,
+          height: mockKit.images[0].height,
+        }
+      : undefined,
+  });
+  // Alt resilient : la galerie hero peut retourner alt="" (image marquée
+  // décorative). Pour le thumb wizard, on a besoin d'un alt sémantique
+  // (lecteur d'écran annonce le produit dans le tunnel commande).
+  const primaryHeroImage = gallery[0]
+    ? {
+        src: gallery[0].src,
+        alt:
+          gallery[0].alt && gallery[0].alt.trim().length > 0
+            ? gallery[0].alt
+            : 'Pack FemiGlow',
+      }
+    : undefined;
+
+  return (
+    <KitCommanderSection
+      initialCart={initialCart}
+      packImage={primaryHeroImage}
+      {...rest}
+    />
+  );
 }
