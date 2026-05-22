@@ -7,6 +7,9 @@ export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
 export const SOCIAL_FORMATS = ['post', 'story', 'reel', 'carousel'] as const;
 export type SocialFormat = (typeof SOCIAL_FORMATS)[number];
 
+export const SOCIAL_PUBLISH_MODES = ['now', 'schedule', 'draft'] as const;
+export type SocialPublishMode = (typeof SOCIAL_PUBLISH_MODES)[number];
+
 export const SOCIAL_PUBLISH_JOB_STATUSES = [
   'draft',
   'approved',
@@ -47,6 +50,12 @@ export interface SocialPublishingCapability {
   mediaRequired: boolean;
   maxCaptionLength?: number;
   supportsScheduling: boolean;
+  /**
+   * Provider can hold the content in a non-published review state (e.g.
+   * Postiz draft, Buffer queue with manual approval). Drives the
+   * "Brouillon Postiz" UI option.
+   */
+  supportsDraft: boolean;
 }
 
 export interface SocialMediaAsset {
@@ -65,6 +74,12 @@ export interface SocialPublishContent {
   caption: string;
   media: SocialMediaAsset[];
   scheduledAt?: Date | string | null;
+  /**
+   * Explicit publication intent. When absent, adapters fall back to the
+   * legacy inference (scheduledAt in the future → schedule, else now) for
+   * backward compatibility with jobs created before phase e.
+   */
+  publishMode?: SocialPublishMode;
   tags?: string[];
   metadata?: Record<string, unknown>;
 }

@@ -12,9 +12,9 @@ import type {
 import { SocialPublishingError, redactProviderPayload, toPublishFailure } from '../errors';
 
 const CAPABILITIES: SocialPublishingCapability[] = [
-  { platform: 'instagram', format: 'post', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true },
-  { platform: 'instagram', format: 'carousel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true },
-  { platform: 'facebook', format: 'post', mediaRequired: false, maxCaptionLength: 63206, supportsScheduling: true },
+  { platform: 'instagram', format: 'post', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'instagram', format: 'carousel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'facebook', format: 'post', mediaRequired: false, maxCaptionLength: 63206, supportsScheduling: true, supportsDraft: true },
 ];
 
 export class DryRunSocialPublishingAdapter implements SocialPublishingAdapter {

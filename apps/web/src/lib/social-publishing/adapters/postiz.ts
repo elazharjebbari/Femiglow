@@ -27,11 +27,11 @@ import {
 } from '../../content-studio/postiz';
 
 const CAPABILITIES: SocialPublishingCapability[] = [
-  { platform: 'instagram', format: 'post', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true },
-  { platform: 'instagram', format: 'carousel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true },
-  { platform: 'instagram', format: 'reel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true },
-  { platform: 'instagram', format: 'story', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true },
-  { platform: 'facebook', format: 'post', mediaRequired: false, maxCaptionLength: 63206, supportsScheduling: true },
+  { platform: 'instagram', format: 'post', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'instagram', format: 'carousel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'instagram', format: 'reel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'instagram', format: 'story', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'facebook', format: 'post', mediaRequired: false, maxCaptionLength: 63206, supportsScheduling: true, supportsDraft: true },
 ];
 
 export interface PostizAdapterDeps {
