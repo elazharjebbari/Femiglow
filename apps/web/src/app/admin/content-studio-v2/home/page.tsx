@@ -5,6 +5,14 @@ import { env } from '@/lib/env';
 import { AppShell } from '@/components/admin/content-studio-v2/shell/AppShell';
 import { EmptyState } from '@/components/admin/content-studio-v2/shell/EmptyState';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
+import { buildDashboardSnapshot } from '@/lib/content-studio/dashboard';
+import { listRecentAuditEvents } from '@/lib/audit/list-events';
+import { listRecentBrandReviews } from '@/lib/content-studio/repository';
+import {
+  HomeClient,
+  computeRecentActivity,
+  computeBrandHealth,
+} from '@/components/admin/content-studio-v2/home';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,20 +21,18 @@ export default async function HomePage() {
   const initials = session.email.split('@')[0]?.slice(0, 2) ?? 'EJ';
   const enabled = env.CONTENT_STUDIO_V2_ENABLED === 'true';
 
-  return (
-    <AppShell userEmail={session.email} userInitials={initials}>
-      {!enabled ? (
+  if (!enabled) {
+    return (
+      <AppShell userEmail={session.email} userInitials={initials}>
         <EmptyState
           eyebrow="Studio v2"
-          title="Module désactivé"
-          description={<>Activez <code style={{ fontFamily: 'var(--cs-font-mono)' }}>CONTENT_STUDIO_V2_ENABLED=true</code> pour utiliser cette interface.</>}
-        />
-      ) : (
-        <EmptyState
-          eyebrow="Accueil"
           illustration={<Activity size={28} />}
-          title="Le tableau de bord arrivera en Phase 6"
-          description="Cette zone hébergera les KPIs (posts cette semaine, taux de succès jobs, brouillons en attente, coût IA) et les raccourcis vers les autres modes. En attendant, attaque par la Création."
+          title="Module désactivé"
+          description={
+            <>
+              Activez <code style={{ fontFamily: 'var(--cs-font-mono)' }}>CONTENT_STUDIO_V2_ENABLED=true</code> pour utiliser cette interface.
+            </>
+          }
           actions={
             <>
               <Link href="/admin/content-studio-v2/create" style={{ textDecoration: 'none' }}>
@@ -41,7 +47,24 @@ export default async function HomePage() {
             </>
           }
         />
-      )}
+      </AppShell>
+    );
+  }
+
+  // Parallelise the three I/O calls — none depend on each other.
+  const now = new Date();
+  const [snapshot, auditEvents, brandReviews] = await Promise.all([
+    buildDashboardSnapshot(now),
+    listRecentAuditEvents(10),
+    listRecentBrandReviews(200),
+  ]);
+
+  const activity = computeRecentActivity(auditEvents, now);
+  const brandHealth = computeBrandHealth(brandReviews, now);
+
+  return (
+    <AppShell userEmail={session.email} userInitials={initials}>
+      <HomeClient snapshot={snapshot} activity={activity} brandHealth={brandHealth} />
     </AppShell>
   );
 }
