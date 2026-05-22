@@ -35,6 +35,10 @@ export class DryRunSocialPublishingAdapter implements SocialPublishingAdapter {
 
       const publishedAt = (request.now ?? new Date()).toISOString();
       const remoteId = deterministicRemoteId(request.idempotencyKey);
+      const isDraft = request.content.publishMode === 'draft';
+      const permalink = isDraft
+        ? `https://social.example.test/${request.account.platform}/draft/${remoteId}`
+        : `https://social.example.test/${request.account.platform}/${remoteId}`;
       return {
         ok: true,
         status: 'published',
@@ -42,11 +46,12 @@ export class DryRunSocialPublishingAdapter implements SocialPublishingAdapter {
           provider: this.provider,
           platform: request.account.platform,
           remoteId,
-          permalink: `https://social.example.test/${request.account.platform}/${remoteId}`,
+          permalink,
           publishedAt,
           raw: redactProviderPayload({
             dryRun: true,
             idempotencyKey: request.idempotencyKey,
+            simulatedDraft: isDraft,
             token: 'not-a-real-token',
           }) as Record<string, unknown>,
         },
@@ -116,6 +121,13 @@ function validateRequest(request: SocialPublishRequest, capabilities: SocialPubl
   }
   if (capability.maxCaptionLength && request.content.caption.length > capability.maxCaptionLength) {
     throw new SocialPublishingError({ code: 'invalid_request', message: 'Caption exceeds platform limit', retryable: false });
+  }
+  if (request.content.publishMode === 'draft' && !capability.supportsDraft) {
+    throw new SocialPublishingError({
+      code: 'unsupported_format',
+      message: 'Draft mode not supported for this dry-run capability',
+      retryable: false,
+    });
   }
 }
 

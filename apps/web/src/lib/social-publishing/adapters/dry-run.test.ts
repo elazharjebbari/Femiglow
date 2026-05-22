@@ -59,4 +59,26 @@ describe('DryRunSocialPublishingAdapter', () => {
     );
     expect(result).toMatchObject({ ok: false, error: { code: 'provider_rate_limited', retryable: true } });
   });
+
+  describe('publishMode draft', () => {
+    it('produit un permalink /draft/ et marque raw.simulatedDraft', async () => {
+      const adapter = new DryRunSocialPublishingAdapter();
+      const result = await adapter.publish(
+        request({ content: { ...request().content, publishMode: 'draft' } }),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.response.permalink).toContain('/draft/');
+      expect(result.response.raw?.simulatedDraft).toBe(true);
+    });
+
+    it('publication standard (sans publishMode) ne marque pas simulatedDraft', async () => {
+      const adapter = new DryRunSocialPublishingAdapter();
+      const result = await adapter.publish(request());
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('expected success');
+      expect(result.response.permalink).not.toContain('/draft/');
+      expect(result.response.raw?.simulatedDraft).toBe(false);
+    });
+  });
 });

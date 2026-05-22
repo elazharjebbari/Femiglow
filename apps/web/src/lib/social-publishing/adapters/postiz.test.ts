@@ -310,6 +310,74 @@ describe('PostizSocialPublishingAdapter', () => {
     });
   });
 
+  describe('publishMode', () => {
+    it("publishMode='draft' fait passer type='draft' au createDraft", async () => {
+      const uploadMedia = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { id: 'media_42', path: 'https://postiz.example.test/media/42.jpg' },
+      });
+      const createDraft = vi.fn().mockResolvedValue(postizOk({ id: 'pz_draft_42', state: 'DRAFT' }));
+      const adapter = new PostizSocialPublishingAdapter({ uploadMedia, createDraft });
+      const result = await adapter.publish(
+        request({ content: { ...request().content, publishMode: 'draft' } }),
+      );
+      expect(result.ok).toBe(true);
+      const callArgs = createDraft.mock.calls[0]?.[0] as { type?: string };
+      expect(callArgs.type).toBe('draft');
+    });
+
+    it("publishMode='now' force type='now' même si scheduledAt est dans le futur", async () => {
+      const uploadMedia = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { id: 'media_43', path: 'https://postiz.example.test/media/43.jpg' },
+      });
+      const createDraft = vi.fn().mockResolvedValue(postizOk({ id: 'pz_now_43' }));
+      const adapter = new PostizSocialPublishingAdapter({ uploadMedia, createDraft });
+      const future = new Date('2026-06-01T12:00:00.000Z');
+      await adapter.publish(
+        request({ content: { ...request().content, publishMode: 'now', scheduledAt: future } }),
+      );
+      const callArgs = createDraft.mock.calls[0]?.[0] as { type?: string };
+      expect(callArgs.type).toBe('now');
+    });
+
+    it("backward-compat: pas de publishMode + scheduledAt futur ⇒ type='schedule'", async () => {
+      const uploadMedia = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { id: 'media_44', path: 'https://postiz.example.test/media/44.jpg' },
+      });
+      const createDraft = vi.fn().mockResolvedValue(postizOk({ id: 'pz_sched_44' }));
+      const adapter = new PostizSocialPublishingAdapter({ uploadMedia, createDraft });
+      const future = new Date('2026-06-01T12:00:00.000Z');
+      await adapter.publish(
+        request({ content: { ...request().content, scheduledAt: future } }),
+      );
+      const callArgs = createDraft.mock.calls[0]?.[0] as { type?: string };
+      expect(callArgs.type).toBe('schedule');
+    });
+
+    it('exporte la permalink Postiz (ou null) sur la sortie draft', async () => {
+      const uploadMedia = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: { id: 'media_47', path: 'https://postiz.example.test/media/47.jpg' },
+      });
+      const createDraft = vi.fn().mockResolvedValue(
+        postizOk({ id: 'pz_draft_47', releaseURL: 'https://app.postiz.com/draft/47' }),
+      );
+      const adapter = new PostizSocialPublishingAdapter({ uploadMedia, createDraft });
+      const result = await adapter.publish(
+        request({ content: { ...request().content, publishMode: 'draft' } }),
+      );
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.response.permalink).toBe('https://app.postiz.com/draft/47');
+    });
+  });
+
   describe('getInsights', () => {
     it('parse une réponse Postiz array-of-metrics en SocialPostInsights', async () => {
       const fetchAnalytics = vi.fn().mockResolvedValue({

@@ -3,6 +3,7 @@ import type {
   SocialInsightsRequest,
   SocialInsightsResult,
   SocialPostInsights,
+  SocialPublishContent,
   SocialPublishRequest,
   SocialPublishResult,
   SocialPublishingAdapter,
@@ -84,7 +85,7 @@ export class PostizSocialPublishingAdapter implements SocialPublishingAdapter {
       }
 
       const now = request.now ?? new Date();
-      const { type, scheduledAt } = resolvePostizSchedule(request.content.scheduledAt, now);
+      const { type, scheduledAt } = resolvePostizSchedule(request.content, now);
 
       const draftResult = await this.createDraft(
         {
@@ -270,9 +271,19 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function resolvePostizSchedule(
-  scheduledAt: Date | string | null | undefined,
+  content: SocialPublishContent,
   now: Date,
-): { type: 'now' | 'schedule'; scheduledAt: Date | string | null } {
+): { type: 'draft' | 'now' | 'schedule'; scheduledAt: Date | string | null } {
+  // Explicit publishMode always wins over inference. This is the contract
+  // for phase e — callers that want a specific mode must set it.
+  if (content.publishMode === 'draft') {
+    return { type: 'draft', scheduledAt: null };
+  }
+  if (content.publishMode === 'now') {
+    return { type: 'now', scheduledAt: null };
+  }
+  // publishMode 'schedule' OR absent → infer from scheduledAt (backward-compat).
+  const scheduledAt = content.scheduledAt;
   if (!scheduledAt) return { type: 'now', scheduledAt: null };
   const date = scheduledAt instanceof Date ? scheduledAt : new Date(scheduledAt);
   if (Number.isNaN(date.getTime())) return { type: 'now', scheduledAt: null };
@@ -332,6 +343,13 @@ function validateRequest(request: SocialPublishRequest, capabilities: SocialPubl
   }
   if (capability.maxCaptionLength && request.content.caption.length > capability.maxCaptionLength) {
     throw new SocialPublishingError({ code: 'invalid_request', message: 'Caption exceeds platform limit', retryable: false });
+  }
+  if (request.content.publishMode === 'draft' && !capability.supportsDraft) {
+    throw new SocialPublishingError({
+      code: 'unsupported_format',
+      message: 'Draft mode not supported for this Postiz capability',
+      retryable: false,
+    });
   }
 }
 
