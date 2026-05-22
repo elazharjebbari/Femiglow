@@ -8,25 +8,52 @@ L'utilisateur doit **VOIR** (composition, vidéo, pack, témoignages) avant de *
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  ARC ÉMOTIONNEL — hero → preuve → décision     │
+│  ARC KOLENDA — hero → preuve → décision → reass │
 ├─────────────────────────────────────────────────┤
 │  1.  GeoPromoSlideHeaderSlot       [HEADER]     │  Bandeau promo géo
-│  2.  HeroProduitBound              [HERO]       │  Premier contact
+│  2.  HeroProduitBound              [HERO]       │  1ère zone conversion
 │  ─────────── PREUVE ─────────────                │
 │  3.  CompositionRevealBound §4.3   [PREUVE 1]   │  Trois piliers
 │  4.  VideoPlayer4GestesKitBound    [PREUVE 2]   │  Usage in vivo
-│  5.  ProductFeedSectionBound §4.6/7 [PREUVE 3]  │  Pack + Steps refonte
-│  6.  HandsTestimonialsBound        [PREUVE 4]   │  Social proof mains
+│  5.  ProductFeedSectionBound §4.6/7 [PACK]      │  Densité commerciale
 │  ─────────── DÉCISION ───────────                │
-│  7.  KitCommanderSectionBound ⭐   [WIZARD]     │  Commande WARM
-│  ─────────── DÉTAIL & SOCIAL ────                │
+│  6.  KitCommanderSectionBound ⭐   [WIZARD]     │  2ème zone conv (§4.6)
+│  ─────────── RÉASSURANCE ────────                │
+│  7.  HandsTestimonialsBound §4.10  [POST-COMMIT]│  Trois mains avant/après
 │  8.  IngredientsDetailsBound §4.5  [DETAIL]     │  Approfondissement
-│  9.  RitualsModuleBound            [SOCIAL]     │  ⭐ Voix de la maison (47 avis)
-│  10. FAQContextuelle               [OBJECTIONS] │  Levée d'objections
-│  11. JournalGridBound              [BOTTOM]     │  Pour aller plus loin
+│  9.  RitualsModuleBound §4.8       [SOCIAL]     │  ⭐ Voix de la maison (47 avis)
+│  10. FAQContextuelle §4.9          [OBJECTIONS] │  Levée d'objections
+│  11. JournalGridBound §4.12        [BOTTOM]     │  Pour aller plus loin
 │  ⏷ RitualsWallDrawer (overlay)                  │  Drawer Suspense
 └─────────────────────────────────────────────────┘
 ```
+
+## Position optimale du wizard — Kolenda §4.6
+
+> **Citation playbook** (`docs/kolenda/FEMIGLOW-KIT-PLAYBOOK.md` §4.6 « Le pack ») :
+> *« c'est la **deuxième zone de conversion** de la page. Tout doit converger
+> vers la décision. »*
+
+Le wizard est donc placé **immédiatement après le ProductFeed (§4.6 + §4.7)** :
+
+| Position | Section | Logique Kolenda |
+|---|---|---|
+| 5 | Pack + Steps §4.6/§4.7 | Densité commerciale (prix, économie 191 MAD, value-per-manucure, trust row) |
+| **6** | **WIZARD ⭐** | **2ème zone de conversion — matérialise la décision préparée par §4.6** |
+| 7 | HandsTestimonials §4.10 | Réassurance post-décision pour les hésitants |
+
+### Pourquoi pas position 3 (v1) ?
+- Commande « à froid » avant que l'utilisateur n'ait compris ce qu'il achète.
+- Kolenda §5 W1 anti-pattern explicite.
+
+### Pourquoi pas position 7 (après HandsTestimonials) ?
+- 5 sections de preuve avant le wizard = scroll fatigue (Kolenda §1.3).
+- §4.6 dit explicitement « 2ème zone de conversion » → le wizard DOIT être là.
+- HandsTestimonials est meilleur en réassurance post-clic (deuxième chance) qu'en preuve avant clic.
+
+### Pourquoi pas tout en haut (sous hero) ?
+- L'utilisateur n'a pas encore vu la composition, l'usage, le prix complet.
+- Conversion sur des utilisateurs non-qualifiés → taux d'abandon élevé en cours de wizard.
 
 ## Sections retirées (2)
 
