@@ -8,6 +8,7 @@
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ContentStudioClient } from '@/components/admin/content-studio/ContentStudioClient';
+import { logAuditEvent } from '@/lib/audit/log-event';
 import { env } from '@/lib/env';
 import {
   listContentPerformanceSnapshotsOverview,
@@ -26,6 +27,19 @@ export const metadata = {
 
 export default async function AdminContentStudioLegacyPage() {
   const session = await requireAdmin('/admin/content-studio-legacy');
+
+  // Telemetry: explicit visit to the legacy fallback. A spike here while
+  // V2_DEFAULT is on means users are bouncing back from v2 — worth a look.
+  void logAuditEvent({
+    action: 'content_studio.legacy.visited',
+    actorId: session.adminId,
+    resourceType: 'content_studio',
+    resourceId: null,
+    meta: {
+      v2Default: env.CONTENT_STUDIO_V2_DEFAULT,
+    },
+  }).catch(() => undefined);
+
   const enabled = env.CONTENT_STUDIO_ENABLED === 'true';
   const legacyPostizDisabled = env.CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED === 'true';
   const [ideas, drafts, posts, draftAssets, deliveries, snapshots] = enabled

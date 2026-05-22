@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/admin/content-studio-v2/shell/EmptyStat
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { buildDashboardSnapshot } from '@/lib/content-studio/dashboard';
 import { listRecentAuditEvents } from '@/lib/audit/list-events';
+import { logAuditEvent } from '@/lib/audit/log-event';
 import { listRecentBrandReviews } from '@/lib/content-studio/repository';
 import {
   HomeClient,
@@ -50,6 +51,16 @@ export default async function HomePage() {
       </AppShell>
     );
   }
+
+  // Telemetry: count v2 visits to compare against legacy.visited and the
+  // v1.redirected_to_v2 funnel event. Non-blocking, never throws.
+  void logAuditEvent({
+    action: 'content_studio.v2.visited',
+    actorId: session.adminId,
+    resourceType: 'content_studio',
+    resourceId: null,
+    meta: { mode: 'home' },
+  }).catch(() => undefined);
 
   // Parallelise the three I/O calls — none depend on each other.
   const now = new Date();

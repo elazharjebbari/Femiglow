@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ContentStudioClient } from '@/components/admin/content-studio/ContentStudioClient';
+import { logAuditEvent } from '@/lib/audit/log-event';
 import { env } from '@/lib/env';
 import {
   listContentPerformanceSnapshotsOverview,
@@ -25,8 +26,30 @@ export default async function AdminContentStudioPage() {
     env.CONTENT_STUDIO_V2_DEFAULT === 'true' &&
     env.CONTENT_STUDIO_V2_ENABLED === 'true'
   ) {
+    // Telemetry: count substitution redirects. The actual v2 page logs
+    // its own visit event so the funnel is observable both ways.
+    void logAuditEvent({
+      action: 'content_studio.v1.redirected_to_v2',
+      actorId: session.adminId,
+      resourceType: 'content_studio',
+      resourceId: null,
+      meta: { source: 'page_visit' },
+    }).catch(() => undefined);
     redirect('/admin/content-studio-v2/home');
   }
+
+  // Telemetry: this admin actively used v1 with the substitution flag off
+  // (or v2 disabled). Useful to confirm the migration path.
+  void logAuditEvent({
+    action: 'content_studio.v1.visited',
+    actorId: session.adminId,
+    resourceType: 'content_studio',
+    resourceId: null,
+    meta: {
+      v2Enabled: env.CONTENT_STUDIO_V2_ENABLED,
+      v2Default: env.CONTENT_STUDIO_V2_DEFAULT,
+    },
+  }).catch(() => undefined);
 
   const enabled = env.CONTENT_STUDIO_ENABLED === 'true';
   const legacyPostizDisabled = env.CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED === 'true';
