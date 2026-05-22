@@ -462,7 +462,13 @@ export async function executeJob(input: { jobId: string; actorId: string | null 
       publishedAt,
       metadata: result.response.raw ?? {},
     });
-    await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'published' });
+    // Draft mode does not actually publish the post on the social network —
+    // it only lands in the provider's review queue (e.g. Postiz draft list).
+    // Leave content_post.status untouched so the editorial workflow can still
+    // queue a real publication (publish-now / schedule) afterwards.
+    if (locked.content.publishMode !== 'draft') {
+      await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'published' });
+    }
     const updated = await updatePublishJobStatus({ jobId: locked.id, status: 'published', publishedAt, lockedAt: null, lastError: null });
     return { job: updated ?? publishing, result };
   }
@@ -476,7 +482,9 @@ export async function executeJob(input: { jobId: string; actorId: string | null 
       retryable: result.error.retryable,
     },
   });
-  await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'failed' });
+  if (locked.content.publishMode !== 'draft') {
+    await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'failed' });
+  }
   logger.error('social.publish.failed', {
     job_id: locked.id,
     post_id: locked.postId,
