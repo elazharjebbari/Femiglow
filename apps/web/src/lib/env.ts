@@ -120,6 +120,9 @@ const envSchema = z.object({
   CONTENT_STUDIO_IMAGE_PROVIDER: z.enum(['mock', 'openai']).default('mock'),
   CONTENT_STUDIO_IMAGE_MODEL: z.string().min(1).default('gpt-image-1-mini'),
   CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS: z.coerce.number().int().nonnegative().default(500),
+  // S?.? Content Studio v2 (refonte complete) — sous flag, derriere
+  // /admin/content-studio-v2/* tant que la migration n'est pas terminee.
+  CONTENT_STUDIO_V2_ENABLED: z.enum(['true', 'false']).default('false'),
 });
 
 export const env = envSchema.parse({
@@ -198,4 +201,5 @@ export const env = envSchema.parse({
   CONTENT_STUDIO_IMAGE_MODEL: process.env.CONTENT_STUDIO_IMAGE_MODEL,
   CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS:
     process.env.CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS,
+  CONTENT_STUDIO_V2_ENABLED: process.env.CONTENT_STUDIO_V2_ENABLED,
 });
