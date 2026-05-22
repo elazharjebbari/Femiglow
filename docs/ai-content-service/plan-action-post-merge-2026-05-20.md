@@ -204,7 +204,17 @@ Et un audit event `social.legacy_route_used` par appel (action, actorId, resourc
 
 ## SPRINT 3 — Observabilité & opérations (2-3 jours)
 
-### S3.1 — Ingestion performance snapshots ⏱️ 1 jour
+### S3.1 — Ingestion performance snapshots ⏱️ 1 jour — **[done] 2026-05-22**
+
+**Livré** :
+- Contrat `SocialPublishingAdapter` étendu avec `getInsights({account, providerPostId})` + types `SocialPostInsights` / `SocialInsightsResult`.
+- `DryRunSocialPublishingAdapter.getInsights` retourne des métriques synthétiques **déterministes** (SHA-256 du `providerPostId`).
+- `PostizSocialPublishingAdapter.getInsights` wrap `getPostizPostAnalytics`, parser défensif (`parsePostizAnalytics`) qui tolère array/objet, plusieurs alias (`impressions/views`, `reach/unique impressions`, `shares/retweets/reposts`, etc.) et reconstruit `engagementRate` localement.
+- Worker `apps/web/src/lib/content-studio/insights-worker.ts` : fenêtre glissante `[now-72h, now-24h]`, idempotence via clé `${provider}:${remoteId}:${UTCday}` sur `content_performance_snapshot.source`.
+- Route cron `GET /api/cron/content-studio/insights-ingestion` (Bearer `CRON_SECRET`, tick recommandé toutes les 6h).
+- Dashboard : widget "Top performers" branché sur `computeTopPerformers(snapshots, {limit:5})`, tri engagement décroissant, dédoublonnage par postId (snapshot le plus récent gagne).
+- Tests : 5 nouveaux dans `insights-worker.test.ts` (idempotence back-to-back, fenêtre, failure non bloquante, adapter sans `getInsights`), 3 dans `dashboard.test.ts` (top performers tri/dédoublonnage/skip), 3 dans `adapters/postiz.test.ts` (parse array & object wrappé, propagation 404). Total 258/258 vitest.
+- Smoke live : `GET /api/cron/content-studio/insights-ingestion` → 200 `{scanned:0,ingested:0}` (aucun job publié dans la fenêtre sur staging), 401 sans Bearer.
 
 **Objectif** : remplir `content_performance_snapshot` automatiquement depuis Postiz/Meta après publication.
 
