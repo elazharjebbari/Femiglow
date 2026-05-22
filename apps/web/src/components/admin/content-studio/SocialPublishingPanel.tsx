@@ -44,6 +44,8 @@ interface ScheduleResponse {
   job: SocialPublishJob;
 }
 
+type PublishMode = 'now' | 'schedule' | 'draft';
+
 interface Props {
   post: ContentPost | null;
   draft: ContentDraft | null;
@@ -64,6 +66,7 @@ export function SocialPublishingPanel({
   const [publishability, setPublishability] = useState<PublishabilityResponse['publishability'] | null>(null);
   const [jobs, setJobs] = useState<JobEnvelope[]>([]);
   const [scheduledAt, setScheduledAt] = useState(defaultDateTimeLocal());
+  const [mode, setMode] = useState<PublishMode>('now');
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -179,37 +182,106 @@ export function SocialPublishingPanel({
         </ul>
       ) : null}
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
-        <label className="block text-sm">
-          <span className="text-xs font-medium uppercase tracking-wide text-stone-500">Programmer</span>
-          <input
-            type="datetime-local"
-            value={scheduledAt}
-            disabled={isBlocked}
-            onChange={(event) => setScheduledAt(event.target.value)}
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900"
-          />
-        </label>
-        <button
-          type="button"
-          disabled={isBlocked || !isPublishable}
-          onClick={() => void runAction(schedule)}
-          className="self-end rounded-md border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-950 disabled:opacity-50"
-        >
-          Programmer
-        </button>
-        <button
-          type="button"
-          disabled={isBlocked || !isPublishable || currentPost.status === 'published'}
-          onClick={() => {
-            if (window.confirm('Publier maintenant en dry-run depuis Femiglow ?')) {
-              void runAction(publishNow);
-            }
-          }}
-          className="self-end rounded-md bg-emerald-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          Publier maintenant
-        </button>
+      <fieldset
+        className="mt-4 rounded-md border border-emerald-100 bg-white p-3"
+        aria-label="Mode d'envoi"
+      >
+        <legend className="px-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+          Mode d&apos;envoi
+        </legend>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="publish-mode"
+              value="now"
+              checked={mode === 'now'}
+              onChange={() => setMode('now')}
+              disabled={isBlocked}
+            />
+            <span>Publier maintenant</span>
+          </label>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="publish-mode"
+                value="schedule"
+                checked={mode === 'schedule'}
+                onChange={() => setMode('schedule')}
+                disabled={isBlocked}
+                aria-label="Programmer"
+              />
+              <span>Programmer</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              disabled={isBlocked || mode !== 'schedule'}
+              onChange={(event) => setScheduledAt(event.target.value)}
+              className="rounded-md border border-stone-300 bg-white px-2 py-1 text-sm text-stone-900 disabled:opacity-50"
+              aria-label="Date et heure de programmation"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="publish-mode"
+              value="draft"
+              checked={mode === 'draft'}
+              onChange={() => setMode('draft')}
+              disabled={isBlocked}
+              aria-describedby="publish-mode-draft-help"
+            />
+            <span>Brouillon Postiz</span>
+          </label>
+        </div>
+        {mode === 'draft' ? (
+          <p
+            id="publish-mode-draft-help"
+            className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+          >
+            Le post n&apos;apparaîtra pas sur le réseau social. Il atterrit dans la liste
+            de brouillons côté Postiz ; un humain le valide et publie depuis l&apos;UI Postiz.
+          </p>
+        ) : null}
+      </fieldset>
+
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        {mode === 'now' ? (
+          <button
+            type="button"
+            disabled={isBlocked || !isPublishable || currentPost.status === 'published'}
+            onClick={() => {
+              if (window.confirm('Publier maintenant sur le réseau social ? Cette action est irréversible.')) {
+                void runAction(publishNow);
+              }
+            }}
+            className="rounded-md bg-emerald-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            Publier maintenant
+          </button>
+        ) : null}
+        {mode === 'schedule' ? (
+          <button
+            type="button"
+            disabled={isBlocked || !isPublishable}
+            onClick={() => void runAction(schedule)}
+            className="rounded-md border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-950 disabled:opacity-50"
+          >
+            Programmer
+          </button>
+        ) : null}
+        {mode === 'draft' ? (
+          <button
+            type="button"
+            disabled={isBlocked || !isPublishable}
+            onClick={() => void runAction(sendDraft)}
+            className="rounded-md bg-stone-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            Envoyer comme brouillon
+          </button>
+        ) : null}
       </div>
 
       <div className="mt-4 rounded-md border border-emerald-100 bg-white p-3">
@@ -306,6 +378,17 @@ export function SocialPublishingPanel({
     upsertJob(value.job);
     onPostStatusChange(currentPost.id, { status: 'scheduled', scheduledAt: value.job.scheduledAt });
     setMessage('Publication dry-run programmée.');
+    await refreshJobs();
+  }
+
+  async function sendDraft() {
+    const value = await postJson<PublishResponse>(`/api/admin/content-studio/posts/${currentPost.id}/draft-on-provider`, {
+      accountId: accountId || undefined,
+      idempotencyKey: `ui:${currentPost.id}:${accountId || 'default'}:draft`,
+    });
+    upsertJob(value.job);
+    // Draft mode does not change content_post.status (server side).
+    setMessage('Brouillon envoyé au provider. Validez depuis l’UI Postiz.');
     await refreshJobs();
   }
 

@@ -93,6 +93,9 @@ function installFetch(overrides: Partial<{ publishable: typeof publishability }>
       const body = JSON.parse(String(init?.body ?? '{}')) as { scheduledAt?: string };
       return jsonResponse({ job: { id: 'spj_2', status: 'queued', scheduledAt: body.scheduledAt ?? '2026-05-19T12:00:00.000Z' } }, 201);
     }
+    if (url.includes('/draft-on-provider')) {
+      return jsonResponse({ job: { id: 'spj_draft_1', status: 'published', publishedAt: '2026-05-19T11:00:00.000Z' }, result: { ok: true, status: 'published' } }, 201);
+    }
     return jsonResponse({});
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -145,12 +148,17 @@ describe('SocialPublishingPanel', () => {
     expect(setMessage).toHaveBeenCalledWith('Publication dry-run effectuée.');
   });
 
-  it('programme un job futur et remonte le statut scheduled', async () => {
+  it('programme un job futur et remonte le statut scheduled (radio Programmer)', async () => {
     installFetch();
     const onPostStatusChange = vi.fn();
     renderPanel({ onPostStatusChange });
 
-    const button = await screen.findByRole('button', { name: /Programmer/i });
+    // S2.3 phase e: mode is "now" by default, switch to "schedule" first
+    await screen.findByText(/Instagram dry-run/i);
+    const scheduleRadio = screen.getByRole('radio', { name: /^Programmer$/i });
+    await userEvent.click(scheduleRadio);
+
+    const button = await screen.findByRole('button', { name: /^Programmer$/i });
     await userEvent.click(button);
 
     await waitFor(() => {
@@ -170,5 +178,48 @@ describe('SocialPublishingPanel', () => {
 
     expect(await screen.findByText(/Un média HTTPS public/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Publier maintenant/i })).toBeDisabled();
+  });
+
+  describe('mode Brouillon Postiz', () => {
+    it("affiche le bouton 'Envoyer comme brouillon' uniquement quand le mode draft est sélectionné", async () => {
+      installFetch();
+      renderPanel();
+      await screen.findByText(/Instagram dry-run/i);
+
+      // En mode 'now' (par défaut), le bouton brouillon n'est pas rendu.
+      expect(screen.queryByRole('button', { name: /Envoyer comme brouillon/i })).not.toBeInTheDocument();
+
+      const draftRadio = screen.getByRole('radio', { name: /Brouillon Postiz/i });
+      await userEvent.click(draftRadio);
+
+      expect(screen.getByRole('button', { name: /Envoyer comme brouillon/i })).toBeInTheDocument();
+      // Et le bouton "Publier maintenant" disparaît.
+      expect(screen.queryByRole('button', { name: /Publier maintenant/i })).not.toBeInTheDocument();
+    });
+
+    it('affiche la note informative amber quand le mode draft est sélectionné', async () => {
+      installFetch();
+      renderPanel();
+      await screen.findByText(/Instagram dry-run/i);
+      await userEvent.click(screen.getByRole('radio', { name: /Brouillon Postiz/i }));
+      expect(screen.getByText(/n[’']apparaîtra pas sur le réseau social/i)).toBeInTheDocument();
+    });
+
+    it("envoie un brouillon via /draft-on-provider et n'invoque pas onPostStatusChange", async () => {
+      const fetchMock = installFetch();
+      const onPostStatusChange = vi.fn();
+      const setMessage = vi.fn();
+      renderPanel({ onPostStatusChange, setMessage });
+      await screen.findByText(/Instagram dry-run/i);
+      await userEvent.click(screen.getByRole('radio', { name: /Brouillon Postiz/i }));
+      await userEvent.click(screen.getByRole('button', { name: /Envoyer comme brouillon/i }));
+
+      await waitFor(() => {
+        expect(setMessage).toHaveBeenCalledWith(expect.stringMatching(/[Bb]rouillon envoyé/));
+      });
+      expect(onPostStatusChange).not.toHaveBeenCalled();
+      const calls = fetchMock.mock.calls.map((c) => String(c[0]));
+      expect(calls.some((u) => u.includes('/draft-on-provider'))).toBe(true);
+    });
   });
 });
