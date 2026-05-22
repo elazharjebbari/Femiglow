@@ -256,6 +256,16 @@ export interface MediaOverrides {
     promptVersion?: string;
     sourceDraftId?: string;
     sourceIdeaId?: string;
+    /**
+     * Content Studio v2 (refonte) metadata. Pre-baked preview + thumbnail
+     * URLs computed at upload time so the MediaPicker v2 has no N+1.
+     */
+    v2?: {
+      previewUrl?: string;
+      thumbnailUrl?: string | null;
+      crop?: { x: number; y: number; width: number; height: number; rotation: number; aspectRatio: string | null };
+      trim?: { startSec: number; endSec: number };
+    };
   };
   /**
    * Si true, demande au pipeline (au seed ou re-générer) de cropper
