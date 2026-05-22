@@ -4,35 +4,20 @@ import AxeBuilder from '@axe-core/playwright';
 /**
  * E2E refonte landing /kit v2 — L3 du plan kit-landing-reorder-2026-05.
  *
- * Prérequis : le serveur doit tourner avec `NEXT_PUBLIC_KIT_LAYOUT_V2=true`
- * dans l'environnement de build.
+ * Les tests utilisent `?layout=v2` (override query param) pour cibler la v2
+ * sans nécessiter `NEXT_PUBLIC_KIT_LAYOUT_V2=true` au build. La cascade
+ * `kit/page.tsx` honore la qs en preview tout en préservant le canonical.
  *
  * Pour lancer localement :
- *   NEXT_PUBLIC_KIT_LAYOUT_V2=true pnpm --filter @femiglow/web build
  *   pnpm --filter @femiglow/web start
  *   pnpm --filter @femiglow/web exec playwright test kit-layout-v2
- *
- * Si le flag est OFF, ces tests sont skip via `test.skip` au début de la
- * describe (la sentinelle vérifie `data-kit-layout="v2"` dans le SSR).
  *
  * Référence : `docs/kit-landing-reorder-2026-05/04-tests-strategy.md`.
  */
 
 test.describe('@kit-layout-v2 — ordre Kolenda hero→preuve→décision', () => {
-  // Sentinelle : skip toute la suite si la prod n'est pas en v2.
-  // Évite d'avoir des tests qui foirent silencieusement en CI quand le
-  // flag n'a pas été passé.
   test.beforeEach(async ({ page }) => {
-    await page.goto('/kit');
-    const layoutAttr = await page
-      .locator('[data-kit-layout]')
-      .first()
-      .getAttribute('data-kit-layout');
-    test.skip(
-      layoutAttr !== 'v2',
-      `Cette suite teste le layout v2 mais le serveur retourne data-kit-layout="${layoutAttr}". ` +
-        `Lance avec NEXT_PUBLIC_KIT_LAYOUT_V2=true.`,
-    );
+    await page.goto('/kit?layout=v2');
   });
 
   test('SSR retourne data-kit-layout="v2"', async ({ page }) => {
@@ -84,7 +69,7 @@ test.describe('@kit-layout-v2 — ordre Kolenda hero→preuve→décision', () =
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 700 });
-    await page.goto('/kit');
+    await page.goto('/kit?layout=v2');
     const stickyCta = page.locator('[data-testid="kit-sticky-mobile-cta"]');
     await expect(stickyCta).toBeVisible();
     await expect(stickyCta).toHaveText(/Commander/i);
@@ -99,7 +84,7 @@ test.describe('@kit-layout-v2 — ordre Kolenda hero→preuve→décision', () =
 
   test('Sticky CTA absent en desktop (>= lg)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/kit');
+    await page.goto('/kit?layout=v2');
     const stickyCta = page.locator('[data-testid="kit-sticky-mobile-cta"]');
     // `lg:hidden` Tailwind → présent dans le DOM mais non visible
     await expect(stickyCta).not.toBeVisible();
@@ -121,17 +106,8 @@ test.describe('@kit-layout-v2 — ordre Kolenda hero→preuve→décision', () =
 });
 
 test.describe('@kit-layout-v1 — non-régression historique', () => {
-  // Sentinelle inverse : skip si on est en v2.
   test.beforeEach(async ({ page }) => {
-    await page.goto('/kit');
-    const layoutAttr = await page
-      .locator('[data-kit-layout]')
-      .first()
-      .getAttribute('data-kit-layout');
-    test.skip(
-      layoutAttr !== 'v1',
-      `Cette suite teste le layout v1 (baseline). Désactive le flag pour la lancer.`,
-    );
+    await page.goto('/kit?layout=v1');
   });
 
   test('SSR retourne data-kit-layout="v1"', async ({ page }) => {
@@ -144,7 +120,7 @@ test.describe('@kit-layout-v1 — non-régression historique', () => {
 
   test('Sticky CTA mobile ABSENT en v1', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 700 });
-    await page.goto('/kit');
+    await page.goto('/kit?layout=v1');
     const stickyCta = page.locator('[data-testid="kit-sticky-mobile-cta"]');
     await expect(stickyCta).toHaveCount(0);
   });

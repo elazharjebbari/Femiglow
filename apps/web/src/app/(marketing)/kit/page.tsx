@@ -88,7 +88,23 @@ function isProductSchema(value: unknown): value is Record<string, unknown> {
   );
 }
 
-export default async function KitPage() {
+/**
+ * Override de layout par query param — strictement pour le preview interne
+ * (équipe / Vercel preview deployments). En prod, le rollout passe par la
+ * variable d'env Vercel `NEXT_PUBLIC_KIT_LAYOUT_V2` (4 paliers Canary →
+ * Full, cf. doc 05-runbook-rollout).
+ *
+ * Pourquoi ne pas se contenter de l'env var ?
+ *  - Permet à l'équipe de comparer v1 vs v2 sans rebuild
+ *  - Permet aux Playwright `@kit-layout-v2` de cibler explicitement la v2
+ *    quand le serveur est en v1 par défaut (test sans manipulation d'env)
+ *  - Pas de SEO concern : le canonical de la page reste `/kit` (sans qs).
+ */
+interface KitPageProps {
+  searchParams?: { layout?: string };
+}
+
+export default async function KitPage({ searchParams }: KitPageProps) {
   const [content, journalArticles, dbProduct, seo] = await Promise.all([
     cms.getKitPageContent(),
     cms.getArticles({ limit: 3 }),
@@ -171,10 +187,18 @@ export default async function KitPage() {
     productJsonLd.review = enrichedAuto.review;
   }
 
-  // Délégation au layout v1 ou v2 selon feature flag
-  // `NEXT_PUBLIC_KIT_LAYOUT_V2`. Toute la data est résolue ci-dessus pour
-  // garantir zéro divergence DB / cache / tracking entre les versions.
+  // Délégation au layout v1 ou v2.
+  // Cascade : query param ?layout=v2|v1 (preview override) → env var
+  // NEXT_PUBLIC_KIT_LAYOUT_V2 (rollout prod). La query string n'altère
+  // pas le canonical (resolveSeoMetadata fige `/kit`).
   // Référence : `docs/kit-landing-reorder-2026-05/`.
+  const qsLayout = searchParams?.layout;
+  const effectiveLayout: 'v1' | 'v2' =
+    qsLayout === 'v2'
+      ? 'v2'
+      : qsLayout === 'v1'
+        ? 'v1'
+        : KIT_LAYOUT_VERSION;
   const layoutProps = {
     content,
     journalArticles,
@@ -182,7 +206,7 @@ export default async function KitPage() {
     productJsonLd,
     reviewStats,
   };
-  return KIT_LAYOUT_VERSION === 'v2' ? (
+  return effectiveLayout === 'v2' ? (
     <KitPageLayoutV2 {...layoutProps} />
   ) : (
     <KitPageLayoutV1 {...layoutProps} />

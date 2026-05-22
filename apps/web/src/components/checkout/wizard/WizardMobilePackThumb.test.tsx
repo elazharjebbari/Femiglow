@@ -14,7 +14,7 @@ describe('WizardMobilePackThumb', () => {
     const img = screen
       .getByTestId('wizard-mobile-pack-thumb')
       .querySelector('img');
-    expect(img?.getAttribute('src')).toBe('/products/kit-principale.svg');
+    expect(img?.getAttribute('src')).toBe('/products/kit-principale.png');
   });
 
   it('alt non vide par défaut', () => {

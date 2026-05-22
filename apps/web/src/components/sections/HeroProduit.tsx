@@ -54,6 +54,12 @@ export interface HeroProduitProps {
    * cf. docs/meta-quality-audit-2026-05/01-design-conception.md §3.3
    */
   eventIdSeed?: string;
+  /**
+   * Ancre href du SocialProofBadge — rend le compte avis cliquable et
+   * scroll vers la section sociale proof (typiquement `#hands-title`).
+   * Si undefined, le badge reste un span statique.
+   */
+  reviewsAnchorHref?: string;
 }
 
 const SAGE_LIGHT = '#A8B89E';
@@ -67,6 +73,7 @@ export function HeroProduit({
   observeId = 'hero-produit-anchor',
   commanderMode = 'wizard-anchor',
   eventIdSeed,
+  reviewsAnchorHref,
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
   const savings = product.promoPriceCents
@@ -106,6 +113,7 @@ export function HeroProduit({
               <SocialProofBadge
                 rating={reviewStats.rating}
                 reviewsCount={reviewStats.reviewsCount}
+                href={reviewsAnchorHref}
               />
             ) : null}
 

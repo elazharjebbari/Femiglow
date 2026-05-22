@@ -47,6 +47,11 @@ export function KitPageLayoutV1({
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
+        // Tant que la table `product_reviews` n'existe pas, on affiche
+        // le count REEL des témoignages CMS visibles plus bas plutôt
+        // que le starter hardcodé 287. Devient ignoré dès qu'une review
+        // DB réelle existe (cf. HeroProduitBound).
+        reviewsCountOverride={content.handsTestimonials?.length ?? 0}
       />
       {/*
         CHA-230 — Funnel commander embarqué (Mode A — wizard_embed) remonté

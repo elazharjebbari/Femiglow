@@ -26,7 +26,10 @@ export interface WizardCartRecapProps {
 
 export function WizardCartRecap({
   cart,
-  thumbnailSrc = '/products/kit-principale.svg',
+  // Même packshot que le hero produit (kit-principale.png) → cohérence
+  // visuelle tunnel hero → wizard recap. Voir aussi WizardMobilePackThumb
+  // qui partage le même default.
+  thumbnailSrc = '/products/kit-principale.png',
   priceCompareAt,
   className,
 }: WizardCartRecapProps): JSX.Element | null {

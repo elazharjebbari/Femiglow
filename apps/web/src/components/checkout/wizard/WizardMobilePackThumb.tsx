@@ -17,7 +17,11 @@ export interface WizardMobilePackThumbProps {
 }
 
 export function WizardMobilePackThumb({
-  src = '/products/kit-principale.svg',
+  // Aligne par défaut sur l'image principale du hero (cohérence visuelle
+  // top→bottom du tunnel). Le PNG est seedé via Component-Media slot
+  // `kit-hero-produit/primary` ; le fallback PNG ici sert quand on rend
+  // le composant hors contexte (tests, prévisualisation admin).
+  src = '/products/kit-principale.png',
   alt = 'Pack FemiGlow',
   className,
 }: WizardMobilePackThumbProps): JSX.Element {

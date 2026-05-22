@@ -60,7 +60,7 @@ describe('WizardCartRecap', () => {
     const img = screen
       .getByTestId('wizard-cart-recap')
       .querySelector('img');
-    expect(img?.getAttribute('src')).toBe('/products/kit-principale.svg');
+    expect(img?.getAttribute('src')).toBe('/products/kit-principale.png');
   });
 
   it('override thumbnailSrc via prop', () => {

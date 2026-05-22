@@ -249,7 +249,9 @@ describe('VideoPosterCover — posterCoverSvg 3 modes', () => {
         onPlay={() => {}}
       />,
     );
-    expect(container.querySelector('.bg-\\[\\#2C2A28\\]\\/25')).not.toBeNull();
+    // Voile renforcé à 45 % depuis l'ajout du texte overlay Kolenda
+    // (garantit le contraste AAA WCAG du kicker + titre).
+    expect(container.querySelector('.bg-\\[\\#2C2A28\\]\\/45')).not.toBeNull();
   });
 
   it('fallback rétrocompat : <Image> si posterCoverSvg absent', () => {

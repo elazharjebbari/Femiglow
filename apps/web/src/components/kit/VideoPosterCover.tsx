@@ -159,12 +159,47 @@ function VideoPosterCoverImpl(
       className="group absolute inset-0 overflow-hidden rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3]"
       data-testid="video-poster-cover"
     >
-      {/* Voile encre ~25 % — assure le contraste du bouton play + badge
-          durée sur n'importe quel media de fond (image, SVG inline,
-          fichier, URL). Color literal car `bg-encre/X` rend transparent
-          (la CSS var ne supporte pas le opacity-modifier Tailwind). */}
+      {/* Voile encre ~45 % — voile renforcé pour garantir le contraste
+          AAA du texte overlay (kicker + titre + sous-titre). Color literal
+          car `bg-encre/X` rend transparent (la CSS var ne supporte pas le
+          opacity-modifier Tailwind). */}
       <PosterMedia video={video} posterImage={posterImage} />
-      <span aria-hidden="true" className="absolute inset-0 bg-[#2C2A28]/25" />
+      <span aria-hidden="true" className="absolute inset-0 bg-[#2C2A28]/45" />
+
+      {/*
+        Kolenda §4.4 P3 — overlay éditorial sur poster vidéo.
+        Structure :
+          - Kicker uppercase tracking-wide sauge (clean girl tendance)
+          - Titre 2 lignes en italique display (promesse outcome)
+          - Sous-titre crème (curiosité + repère temps)
+        Couleurs : kicker sauge-light pastel, titre+sub crème sur voile
+        encre 45 % → ratio contraste ≥ 7:1 (AAA WCAG).
+        Cadré bas pour ne pas masquer le centre où vit le bouton play.
+        `aria-hidden` car l'aria-label du button parent porte déjà la
+        sémantique d'action ; ce bloc est purement décoratif (sinon il
+        ferait redondance avec le lecteur d'écran).
+      */}
+      <div
+        aria-hidden="true"
+        data-testid="video-poster-overlay-text"
+        className="pointer-events-none absolute inset-x-4 top-6 flex flex-col gap-2 text-creme sm:inset-x-8 sm:top-10"
+      >
+        <span className="font-body text-[10px] font-medium uppercase tracking-[0.22em] text-[#C3D4B5] sm:text-[11px]">
+          La manucure japonaise
+        </span>
+        <span
+          className="font-display text-[26px] leading-[1.05] sm:text-[34px]"
+          style={{ fontStyle: 'italic' }}
+        >
+          Brille 3 semaines.
+          <br />
+          Sans vernis.
+        </span>
+        <span className="font-body text-[12px] leading-snug text-creme/85 sm:text-[13px]">
+          Cire d'abeille, silicates, poudre de perle.
+          <br />4 gestes en 90 secondes — c'est tout.
+        </span>
+      </div>
 
       {/* Bouton play 64×64 centré, couleur d'accent maison.
           Élément décoratif — l'aria-label du <button> parent porte

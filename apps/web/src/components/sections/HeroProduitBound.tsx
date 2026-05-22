@@ -18,6 +18,13 @@ type HeroProduitBoundProps = Omit<
   'galleryImages' | 'fields' | 'reviewStats'
 > & {
   componentKey: string;
+  /**
+   * Override le count avis du fallback `DEFAULT_KIT_REVIEW_STATS`. Quand
+   * la table DB `product_reviews` est vide (cas actuel), on passe ici
+   * `content.handsTestimonials.length` pour afficher le count REEL des
+   * témoignages visibles plus bas dans la page — au lieu du starter 287.
+   */
+  reviewsCountOverride?: number;
 };
 
 /**
@@ -39,6 +46,7 @@ export async function HeroProduitBound({
   reassurances,
   observeId,
   commanderMode,
+  reviewsCountOverride,
 }: HeroProduitBoundProps): Promise<JSX.Element> {
   const productFallback = product.images[0];
   const [resolvedFields, rawGalleryImages, statsOrNull] = await Promise.all([
@@ -86,7 +94,17 @@ export async function HeroProduitBound({
   // `product.images[0]` existe.
   const galleryImages: HeroGalleryImage[] = rawGalleryImages;
 
-  const reviewStats: ProductReviewStats = statsOrNull ?? DEFAULT_KIT_REVIEW_STATS;
+  // Si la DB n'a pas encore de reviews et qu'un override est fourni par
+  // le parent (count des handsTestimonials CMS visibles plus bas), on
+  // l'utilise — c'est plus honnête que le starter 287 hardcodé tant que
+  // la table `product_reviews` n'existe pas. Dès que des reviews réelles
+  // entrent en DB, `statsOrNull` devient non-null et l'override est ignoré.
+  const fallbackStats: ProductReviewStats =
+    statsOrNull ??
+    (typeof reviewsCountOverride === 'number' && reviewsCountOverride > 0
+      ? { rating: DEFAULT_KIT_REVIEW_STATS.rating, reviewsCount: reviewsCountOverride }
+      : DEFAULT_KIT_REVIEW_STATS);
+  const reviewStats: ProductReviewStats = fallbackStats;
 
   return (
     <HeroProduit
@@ -97,6 +115,9 @@ export async function HeroProduitBound({
       reviewStats={reviewStats}
       observeId={observeId}
       commanderMode={commanderMode}
+      // Rend le badge cliquable → scroll vers la section HandsTestimonials
+      // (id="hands-title"). Évite la dispersion vs une route /avis dédiée.
+      reviewsAnchorHref="#hands-title"
     />
   );
 }

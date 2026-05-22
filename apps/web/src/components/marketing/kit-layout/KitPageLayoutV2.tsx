@@ -51,6 +51,10 @@ export function KitPageLayoutV2({
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
+        // Cf. KitPageLayoutV1 — count avis = handsTestimonials.length tant
+        // que la table product_reviews est vide, et badge cliquable vers
+        // #hands-title (handled inside HeroProduitBound).
+        reviewsCountOverride={content.handsTestimonials?.length ?? 0}
       />
 
       {/* — 2. PREUVE 1 : Composition (qualité formule) — */}
