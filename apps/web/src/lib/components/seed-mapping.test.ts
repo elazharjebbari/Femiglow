@@ -111,7 +111,10 @@ describe('seed-mapping (contrat de couverture)', () => {
       .map(([p]) => p);
     // Liste blanche explicite — toute nouvelle entrée auto-activée doit
     // être ajoutée ici en pleine conscience.
-    expect(autoActivated.sort()).toEqual(['kit/image-produit.png']);
+    expect(autoActivated.sort()).toEqual([
+      'kit/image-produit.png',
+      'kit/kit-pack-shot.png',
+    ]);
   });
 
   // CHA-243 — kit-principale.png reste sur disque comme alternative A/B

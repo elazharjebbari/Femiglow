@@ -17,7 +17,7 @@ exports[`merchantFeedXml > snapshot XML complet pour le kit mock (golden) 1`] = 
       <g:link>https://femiglow-maroc.com/kit</g:link>
       <g:image_link>https://femiglow-maroc.com/products/kit-principale.png</g:image_link>
       <g:availability>in stock</g:availability>
-      <g:price>390.00 MAD</g:price>
+      <g:price>289.00 MAD</g:price>
       <g:sale_price>199.00 MAD</g:sale_price>
       <g:condition>new</g:condition>
       <g:brand>FemiGlow</g:brand>

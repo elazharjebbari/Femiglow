@@ -90,7 +90,7 @@ describe('formatCartCompareAt', () => {
     expect(formatCartCompareAt(cart)).toBe('289 MAD');
   });
 
-  it('cas mock seed : 39000 vs 19900 → "390 MAD"', () => {
+  it('valeurs élevées 39000 vs 19900 → "390 MAD" (sanity edge si admin remonte)', () => {
     const cart: CartSnapshot = {
       items: [
         {

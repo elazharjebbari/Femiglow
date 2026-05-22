@@ -181,7 +181,9 @@ describe('projectCartSnapshotFromVariant', () => {
     expect(cart.compareAtTotalCents).toBe(28900);
   });
 
-  it('cas mock seed : 39000/19900 → 390 barré / 199 affiché', () => {
+  it('valeurs élevées synthétiques 39000/19900 → 390 barré / 199 affiché (sanity edge)', () => {
+    // Cas de garde : si l'admin remontait priceCents à 39000 (anchoring
+    // marketing plus agressif), le helper doit toujours projeter correctement.
     const cart = projectCartSnapshotFromVariant(
       {
         sku: 'FEMI-KIT-100',

@@ -25,7 +25,7 @@ exports[`productSchema (Schema.org Product) avec enrichissement > snapshot du JS
     "@type": "Offer",
     "areaServed": "MA",
     "availability": "https://schema.org/InStock",
-    "price": "390.00",
+    "price": "289.00",
     "priceCurrency": "MAD",
     "seller": {
       "@type": "Organization",

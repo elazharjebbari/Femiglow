@@ -2,8 +2,8 @@ import type { Product } from '@/lib/schemas';
 
 /**
  * Audit 08/09 — Pack FemiGlow (manucure japonaise). Anchoring
- * 199 dh payé / 390 dh référence (option B § 0.1 doc 09) implémenté via
- * `priceCents = 39000` + `promoPriceCents = 19900` pour rester compatible
+ * 199 dh payé / 289 dh référence (révision 2026-05-22) implémenté via
+ * `priceCents = 28900` + `promoPriceCents = 19900` pour rester compatible
  * avec <PriceDisplay> et la pipeline tracking GA4 existante.
  */
 export const mockKit: Product = {
@@ -14,7 +14,7 @@ export const mockKit: Product = {
     'Manucure japonaise. Deux gestes, un polissoir, un éclat.',
   description:
     'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
-  priceCents: 39000,
+  priceCents: 28900,
   promoPriceCents: 19900,
   currency: 'MAD',
   images: [

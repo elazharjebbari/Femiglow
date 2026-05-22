@@ -70,7 +70,7 @@ interface ProductSeed {
  * Source de vérité : `apps/web/src/data/mock/product.ts` (`mockKit`).
  *
  * - Audit 08/09 : Pack FemiGlow (manucure japonaise halal), anchoring 199 dh
- *   payé / 390 dh référence — devise MAD. La pipeline marketing
+ *   payé / 289 dh référence (révision 2026-05-22) — devise MAD. La pipeline marketing
  *   (`buildKitPublicProduct`) prend ses valeurs depuis la première variante,
  *   donc le SKU `FEMI-KIT-100` doit rester la première variante seedée pour
  *   que la sticky CTA et le PriceDisplay héro affichent bien 199,00 dhs.
@@ -98,8 +98,9 @@ const SEEDS: ProductSeed[] = [
       {
         sku: 'FEMI-KIT-100',
         label: 'Pack complet — paste + powder + polissoir',
-        // Anchoring 199 dh payé / 390 dh référence (cf. mockKit + doc 09 §0.1).
-        priceCents: 39000,
+        // Anchoring 199 dh payé / 289 dh référence (révision 2026-05-22 —
+        // ancien 390 dh ajusté pour cohérence wizard recap).
+        priceCents: 28900,
         promoPriceCents: 19900,
         weightG: 220,
         attributes: { format: 'pack complet', usage: 'rituel quotidien' },
@@ -120,7 +121,7 @@ const SEEDS: ProductSeed[] = [
             '@type': 'Offer',
             sku: 'FEMI-KIT-100',
             priceCurrency: 'MAD',
-            // Prix affiché = prix payé (promo active). Le strike 390 dh
+            // Prix affiché = prix payé (promo active). Le strike 289 dh
             // est porté côté UI (<PriceDisplay>) via `promoPriceCents`.
             price: '199.00',
             availability: 'https://schema.org/InStock',

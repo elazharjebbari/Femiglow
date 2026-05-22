@@ -121,14 +121,14 @@ export const TEMPLATE_REGISTRY = {
     sampleData: {
       firstName: 'Souheila',
       orderId: 'FG-20260513-001',
-      orderTotal: '390 MAD',
+      orderTotal: '199 MAD',
       itemsCount: 2,
       deliveryEstimate: '2-4 jours ouvrés',
     },
     variables: [
       { name: 'firstName', type: 'dynamic', required: true, label: 'Prénom', sample: 'Souheila' },
       { name: 'orderId', type: 'text', required: true, label: 'N° commande', sample: 'FG-20260513-001' },
-      { name: 'orderTotal', type: 'text', required: true, label: 'Total', sample: '390 MAD' },
+      { name: 'orderTotal', type: 'text', required: true, label: 'Total', sample: '199 MAD' },
       { name: 'itemsCount', type: 'number', required: true, label: 'Nombre d\'articles', sample: '2' },
       { name: 'deliveryEstimate', type: 'text', required: true, label: 'Délai livraison', sample: '2-4 jours' },
     ],
