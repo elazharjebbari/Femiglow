@@ -1,29 +1,11 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
 import { cookies, headers } from 'next/headers';
 
 import { cms } from '@/lib/cms';
 import { computePromo } from '@/lib/utils/promo';
 import { deriveEventId } from '@/lib/tracking/event-id';
 import { serverFire } from '@/lib/tracking/server/server-fire';
-import {
-  FAQContextuelle,
-  PivotFinal,
-} from '@/components/sections';
-import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
-import { HeroProduitBound } from '@/components/sections/HeroProduitBound';
-import { CompositionRevealBound } from '@/components/sections/CompositionRevealBound';
-import { IngredientsDetailsBound } from '@/components/sections/IngredientsDetailsBound';
-import { resolveKitComposition } from '@/lib/kit/composition/resolver';
-import { ComparatifSectionBound } from '@/components/sections/ComparatifSectionBound';
-import { HandsTestimonialsBound } from '@/components/sections/HandsTestimonialsBound';
-import { JournalGridBound } from '@/components/sections/JournalGridBound';
-import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectionBound';
-import { RitualsModuleBound } from '@/components/sections/rituals/RitualsModuleBound';
-import { RitualsWallDrawer } from '@/components/sections/rituals/RitualsWallDrawer';
-import { KitCommanderSectionBound } from '@/components/sections/KitCommanderSectionBound';
-import { GeoPromoSlideHeaderSlot } from '@/components/promo/GeoPromoSlideHeaderSlot';
-import { JsonLd, productSchema, faqPageSchema } from '@/lib/seo/json-ld';
+import { productSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
 import { resolvePageWithComponents } from '@/lib/seo/component-resolve';
@@ -35,6 +17,9 @@ import {
 import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
 import { feedToProductSchemaEnrichment } from '@/lib/products/feed/json-ld';
 import { getProductReviewStats } from '@/lib/products/reviews';
+import { KIT_LAYOUT_VERSION } from '@/lib/feature-flags/kit-layout';
+import { KitPageLayoutV1 } from '@/components/marketing/kit-layout/KitPageLayoutV1';
+import { KitPageLayoutV2 } from '@/components/marketing/kit-layout/KitPageLayoutV2';
 
 const FALLBACK_OG = {
   url: '/og/kit.svg',
@@ -133,6 +118,10 @@ export default async function KitPage() {
   const eventIdSeed = sessionId
     ? deriveEventId({ eventName: 'view_item', sessionId, pageId: 'kit' })
     : undefined;
+  // `eventIdSeed` est réservé pour le futur tracking ViewItem client (Pixel
+  // dédup serveur/client). Référencé ici pour conserver la séquence calc et
+  // documenter l'intention — sera consommé quand le ViewItemTracker landera.
+  void eventIdSeed;
   const kitPromo = computePromo(dbProduct.priceCents, dbProduct.promoPriceCents);
   void serverFire({
     eventName: 'view_item',
@@ -182,55 +171,20 @@ export default async function KitPage() {
     productJsonLd.review = enrichedAuto.review;
   }
 
-  return (
-    <div id="contenu-kit" className="pb-24 lg:pb-0">
-      <GeoPromoSlideHeaderSlot />
-      <JsonLd data={productJsonLd} />
-      <JsonLd data={faqPageSchema(content.faq)} />
-      <HeroProduitBound
-        product={dbProduct}
-        reassurances={content.reassurances}
-        componentKey="kit-hero-produit"
-      />
-      {/*
-        CHA-230 — Funnel commander embarqué (Mode A — wizard_embed) remonté
-        immédiatement sous le Hero pour capter l'intention chaude avant que
-        l'utilisateur ne dérive vers les sections de réassurance. Cible des
-        CTA in-page et de la sticky bottom ; le client passe par
-        lead → address → thank_you sans quitter la page.
-      */}
-      <KitCommanderSectionBound />
-      <CompositionRevealBound items={content.composition} />
-      <VideoPlayer4GestesKitBound />
-      <IngredientsDetailsBound
-        composition={resolveKitComposition().map((it) => it.subProduct)}
-        componentKey="kit-detail-mains"
-      />
-      {/*
-        Feed produit Kolenda-driven : densifie la conversion juste après
-        les détails ingrédients et avant le comparatif. Apporte les 4
-        gestes du rituel officiel + 3 promesses + social proof condensé.
-        Copy/principes : `lib/products/feed/kit-feed.ts`.
-      */}
-      <ProductFeedSectionBound
-        product={dbProduct}
-        content={content}
-        reviewStats={reviewStats}
-      />
-      <ComparatifSectionBound data={content.comparatif} />
-      <RitualsModuleBound productKey="pack-femiglow" />
-      <FAQContextuelle items={content.faq} />
-      <HandsTestimonialsBound items={content.handsTestimonials} />
-      <PivotFinal product={dbProduct} />
-      <JournalGridBound
-        articles={journalArticles}
-        kicker="Pour aller plus loin"
-        title="Trois lectures."
-        variant="symmetric"
-      />
-      <Suspense fallback={null}>
-        <RitualsWallDrawer productKey="pack-femiglow" />
-      </Suspense>
-    </div>
+  // Délégation au layout v1 ou v2 selon feature flag
+  // `NEXT_PUBLIC_KIT_LAYOUT_V2`. Toute la data est résolue ci-dessus pour
+  // garantir zéro divergence DB / cache / tracking entre les versions.
+  // Référence : `docs/kit-landing-reorder-2026-05/`.
+  const layoutProps = {
+    content,
+    journalArticles,
+    dbProduct,
+    productJsonLd,
+    reviewStats,
+  };
+  return KIT_LAYOUT_VERSION === 'v2' ? (
+    <KitPageLayoutV2 {...layoutProps} />
+  ) : (
+    <KitPageLayoutV1 {...layoutProps} />
   );
 }
