@@ -194,6 +194,23 @@ Et un audit event `social.legacy_route_used` par appel (action, actorId, resourc
 - Si telemetry `social.legacy_route_used` à 0 pendant 7j consécutifs → suppression code.
 - Migration `0064_drop_content_postiz_delivery_or_archive` selon décision (archive ou DROP).
 
+#### Phase e — Mode draft natif dans le nouveau pipeline ⏱️ 1.5 jour — **[done] 2026-05-22**
+
+Plan complet : `docs/ai-content-service/plan-s2.3-phase-e-draft-mode.md`.
+
+**Livré (commits e6c6c9d → 3337076 + plan-s2.3-phase-e-draft-mode.md)** :
+- Contrat `SocialPublishMode = 'now' | 'schedule' | 'draft'` + `publishMode?` sur `SocialPublishContent` + `supportsDraft: boolean` sur `SocialPublishingCapability`. Backward-compat conservée via inférence sur `scheduledAt`.
+- Adapters Postiz & DryRun honorent `publishMode` : Postiz envoie `type='draft'` au client API, DryRun marque `metadata.simulatedDraft: true` + permalink `/draft/`.
+- Service `sendContentPostToDraft` dans `admin-service.ts` ; clé d'idempotence `${postId}:${accountId}:draft` (séparée de `now`/`schedule`). `executeJob` ne flippe plus `content_post.status` quand `publishMode==='draft'`.
+- Route `POST /api/admin/content-studio/posts/[id]/draft-on-provider` (provider-agnostique).
+- UI `SocialPublishingPanel` : radio group "Mode d'envoi" (now/schedule/draft), bouton primaire conditionnel, note amber informative en mode draft, a11y aria-label.
+- Dashboard : `computeJobSuccessRate` exclut les drafts, nouveau widget "Brouillons Postiz en attente" (count + oldestAgeHours).
+- Audit `social.draft_created` émis en succès, `sendSocialAlert` skippé en échec draft, `social.publish.failed` log inclut `publish_mode`.
+- Tests : +6 adapters, +1 admin-service (via route), +5 route (happy, idempotence, cross-mode, 401, 404, audit), +3 UI (radio interaction, note informative, draft submit), +3 dashboard (success-rate exclude, drafts-count, ignore non-terminal), +2 MSW integration (wire format `type=draft`, 422 → invalid_request), +1 E2E Playwright (TS compile OK, run bloqué par flake pre-existant de global.setup.ts admin login).
+- Build vert ; service `active` ; smoke live : `POST /draft-on-provider` → 401, `/admin/content-studio/dashboard` → 307.
+
+**Effet sur phase d** : la suppression du legacy ne fait plus perdre de capacité produit (le mode "envoyer comme brouillon" est désormais dans le nouveau pipeline). Phase d débloquée dès T+7j de télémétrie `social.legacy_route_used = 0`.
+
 #### Done si
 
 - Feature flag toggle stable.
