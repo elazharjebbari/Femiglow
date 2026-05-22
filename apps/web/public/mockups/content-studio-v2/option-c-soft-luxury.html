@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockup C — Soft luxury · Content Studio v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=garet@300,400,500,700&display=swap" rel="stylesheet" />
+  <style>
+    /* ==================================================================
+       Mockup C — Soft luxury
+       Typo : Garet (display, humanist geom) / Manrope (body) / JetBrains Mono
+       Palette : ivory, champagne, espresso, velvet rose, olive
+       Inspiration : Aesop, The Row, Loro Piana — discret, riche
+       Densité considérée, hauteur de ligne fine, micro-détails travaillés
+       ================================================================== */
+
+    :root[data-theme="light"] {
+      --ivory:         #F7F4EF;
+      --bone:          #EBE3D4;
+      --champagne:     #E0CFB4;
+      --espresso:      #3A2F25;
+      --velvet:        #8E2E47;
+      --velvet-light:  #B23F5C;
+      --velvet-bg:     #F0DCE2;
+      --olive:         #6B7A4F;
+      --olive-bg:      #DCE3CC;
+      --linen:         #FFFFFF;
+      --shadow:        #2A1F15;
+      --bg-base:       var(--ivory);
+      --bg-elev:       var(--linen);
+      --bg-sunk:       var(--bone);
+      --bg-feature:    var(--champagne);
+      --fg-primary:    var(--espresso);
+      --fg-secondary:  #6A5747;
+      --fg-muted:      #A0907B;
+      --accent:        var(--velvet);
+      --accent-hov:    #6E1F35;
+      --accent-bg:     var(--velvet-bg);
+      --accent-second: var(--olive);
+      --border-fine:   rgba(58, 47, 37, 0.10);
+      --border-strong: rgba(58, 47, 37, 0.22);
+      --shadow-sm:     0 1px 2px rgba(42, 31, 21, 0.04);
+      --shadow-md:     0 4px 18px -2px rgba(42, 31, 21, 0.08);
+      --shadow-lg:     0 16px 48px -8px rgba(42, 31, 21, 0.18);
+      --radius:        2px;
+      --radius-md:     6px;
+    }
+    :root[data-theme="dark"] {
+      --bg-base:       #161310;
+      --bg-elev:       #1F1A14;
+      --bg-sunk:       #0E0B08;
+      --bg-feature:    #2A211B;
+      --fg-primary:    #E0CFB4;
+      --fg-secondary:  #A39580;
+      --fg-muted:      #6E6354;
+      --accent:        #B23F5C;
+      --accent-hov:    #C4536F;
+      --accent-bg:     #2A1820;
+      --accent-second: #90A06D;
+      --border-fine:   rgba(224, 207, 180, 0.10);
+      --border-strong: rgba(224, 207, 180, 0.24);
+      --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.35);
+      --shadow-md:     0 4px 18px rgba(0, 0, 0, 0.50);
+      --shadow-lg:     0 16px 48px rgba(0, 0, 0, 0.65);
+      --radius:        2px;
+      --radius-md:     6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-feature-settings: "kern", "liga", "calt"; }
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      font-size: 14px; line-height: 1.55; letter-spacing: -0.005em;
+      color: var(--fg-primary);
+      background: var(--bg-base);
+      min-height: 100vh;
+      transition: background-color .35s ease, color .35s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+    .display { font-family: 'Garet', 'Manrope', sans-serif; font-weight: 400; letter-spacing: -0.015em; }
+    .mono    { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; letter-spacing: -0.01em; }
+    .eyebrow {
+      font-family: 'Manrope', sans-serif; font-weight: 500;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
+      color: var(--fg-muted);
+    }
+
+    /* ===================== TOPBAR ===================== */
+    .topbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 40px;
+      padding: 22px 40px;
+      border-bottom: 1px solid var(--border-fine);
+      background: var(--bg-base);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 14px;
+      text-decoration: none; color: inherit;
+    }
+    .brand-mark {
+      width: 36px; height: 36px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      display: grid; place-items: center;
+      font-family: 'Garet', sans-serif; font-weight: 500; font-size: 17px;
+      color: var(--accent);
+    }
+    .brand-name {
+      font-family: 'Garet', sans-serif; font-weight: 400; font-size: 15px;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .brand-name span { color: var(--fg-muted); font-weight: 300; }
+
+    .nav-c {
+      display: flex; gap: 30px; justify-self: center;
+    }
+    .nav-c a {
+      text-decoration: none; color: var(--fg-secondary);
+      font-size: 13px; font-weight: 500;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 6px 0;
+      position: relative;
+      transition: color .2s;
+    }
+    .nav-c a:hover { color: var(--fg-primary); }
+    .nav-c a.active {
+      color: var(--accent);
+    }
+    .nav-c a.active::after {
+      content: ''; position: absolute;
+      bottom: -2px; left: 0; right: 0; height: 1px;
+      background: var(--accent);
+    }
+    .nav-c a .badge {
+      display: inline-block; margin-left: 6px;
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent); vertical-align: middle;
+    }
+
+    .top-right { display: flex; align-items: center; gap: 16px; }
+    .icon-c {
+      width: 32px; height: 32px;
+      background: transparent; border: none;
+      display: grid; place-items: center; cursor: pointer;
+      color: var(--fg-secondary);
+      transition: color .2s;
+    }
+    .icon-c:hover { color: var(--accent); }
+    .avatar-c {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-elev);
+      display: grid; place-items: center;
+      font-family: 'Garet', sans-serif; font-weight: 500; font-size: 12px;
+      color: var(--fg-primary);
+      letter-spacing: 0.05em;
+    }
+
+    /* ===================== STEPPER ===================== */
+    .stepper {
+      padding: 36px 40px;
+      max-width: 760px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative;
+    }
+    .stepper::before {
+      content: ''; position: absolute; left: 5%; right: 5%; top: 50%; height: 1px;
+      background: var(--border-fine);
+      z-index: 0;
+    }
+    .stp {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-base); padding: 4px 14px;
+    }
+    .stp-mark {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--fg-muted); letter-spacing: 0.1em;
+      width: 22px; height: 22px;
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+      display: grid; place-items: center;
+    }
+    .stp-lbl {
+      font-family: 'Garet', sans-serif; font-size: 13px;
+      letter-spacing: 0.04em; color: var(--fg-muted);
+      text-transform: uppercase;
+    }
+    .stp.done .stp-mark { background: var(--accent-second); border-color: var(--accent-second); color: white; }
+    .stp.done .stp-lbl { color: var(--fg-secondary); }
+    .stp.active .stp-mark { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+    .stp.active .stp-lbl { color: var(--accent); font-weight: 500; }
+
+    /* ===================== STAGE ===================== */
+    .stage {
+      max-width: 1400px; margin: 0 auto;
+      padding: 0 40px 28px;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 380px;
+      gap: 36px;
+      align-items: start;
+    }
+
+    /* ===================== INTENTION ===================== */
+    .intention {
+      position: sticky; top: 130px;
+      padding-right: 24px;
+      border-right: 1px solid var(--border-fine);
+    }
+    .intention .title {
+      font-family: 'Garet', sans-serif; font-weight: 400; font-size: 26px;
+      letter-spacing: -0.02em; margin-top: 6px; margin-bottom: 4px;
+      color: var(--fg-primary);
+    }
+    .intention .subtitle {
+      font-size: 12px; color: var(--fg-secondary);
+      font-style: italic; letter-spacing: 0.03em;
+      margin-bottom: 26px;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 26px;
+    }
+    .data-table tr td {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border-fine);
+      font-size: 13px;
+      vertical-align: baseline;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table .k {
+      color: var(--fg-muted);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+      width: 40%;
+    }
+    .data-table .v {
+      color: var(--fg-primary);
+      font-family: 'Garet', sans-serif; font-weight: 400;
+      text-align: right;
+    }
+
+    .fmt-list {
+      display: flex; flex-direction: column; gap: 4px;
+      margin-bottom: 28px;
+    }
+    .fmt-c {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      align-items: center; gap: 12px;
+      padding: 11px 12px;
+      border-radius: 2px;
+      cursor: pointer; transition: all .2s;
+      border: 1px solid transparent;
+    }
+    .fmt-c:hover { background: var(--bg-sunk); }
+    .fmt-c.on {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+    }
+    .fmt-c .dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 1.5px solid var(--border-strong);
+    }
+    .fmt-c.on .dot {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 3px var(--accent);
+    }
+    .fmt-c .nm {
+      font-family: 'Garet', sans-serif; font-size: 14px;
+      letter-spacing: 0.02em;
+    }
+    .fmt-c .rt {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--fg-muted); letter-spacing: 0.05em;
+    }
+    .fmt-c.on .rt { color: var(--accent); }
+
+    .quote {
+      padding: 18px 0;
+      border-top: 1px solid var(--border-fine);
+      border-bottom: 1px solid var(--border-fine);
+      font-style: italic;
+      font-size: 14px; line-height: 1.65;
+      color: var(--fg-secondary);
+      letter-spacing: 0.005em;
+    }
+
+    /* ===================== STUDIO (center) ===================== */
+    .studio { padding: 0 12px; }
+    .studio-head {
+      margin-bottom: 28px;
+      display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    .studio-head h2 {
+      font-family: 'Garet', sans-serif; font-weight: 400; font-size: 38px;
+      letter-spacing: -0.025em;
+      color: var(--fg-primary);
+    }
+    .studio-head h2 em {
+      font-family: 'Garet', sans-serif; font-style: italic; font-weight: 300;
+      color: var(--accent);
+    }
+    .studio-meta {
+      text-align: right;
+      font-size: 11px; color: var(--fg-muted);
+      text-transform: uppercase; letter-spacing: 0.15em;
+    }
+    .studio-meta strong { display: block; color: var(--fg-primary); font-size: 13px; font-family: 'Garet'; letter-spacing: 0; margin-top: 4px; text-transform: none; font-weight: 500; }
+
+    .canvas-c {
+      background: var(--bg-feature);
+      padding: 32px;
+      display: grid; place-items: center;
+      margin-bottom: 16px;
+      position: relative;
+      box-shadow: var(--shadow-md);
+    }
+    .canvas-c::before {
+      content: '';
+      position: absolute; inset: 12px;
+      border: 1px solid var(--border-fine);
+      pointer-events: none;
+    }
+    .canvas-frame {
+      position: relative;
+      aspect-ratio: 4/5;
+      width: 280px;
+      box-shadow: var(--shadow-lg);
+      background:
+        radial-gradient(circle at 25% 30%, rgba(255, 220, 195, 0.6), transparent 55%),
+        radial-gradient(circle at 75% 70%, rgba(142, 46, 71, 0.5), transparent 60%),
+        linear-gradient(140deg, #D4A87E 0%, #8E2E47 100%);
+    }
+    .crop {
+      position: absolute; inset: 18%;
+      border: 1px solid white;
+      box-shadow: 0 0 0 4000px rgba(20, 14, 8, 0.55);
+    }
+    .crop-corn {
+      position: absolute; width: 12px; height: 12px;
+      background: var(--accent);
+      border: 2px solid white;
+    }
+    .crop-corn.tl { top: -6px; left: -6px; border-radius: 0; }
+    .crop-corn.tr { top: -6px; right: -6px; }
+    .crop-corn.bl { bottom: -6px; left: -6px; }
+    .crop-corn.br { bottom: -6px; right: -6px; }
+    .crop-grid::before, .crop-grid::after {
+      content: ''; position: absolute;
+      background: rgba(255,255,255,0.30);
+    }
+    .crop-grid::before { left: 33.3%; right: 33.3%; top: 0; bottom: 0; width: 1px; }
+    .crop-grid::after  { top: 33.3%; bottom: 33.3%; left: 0; right: 0; height: 1px; }
+
+    .canvas-bar {
+      display: flex; flex-wrap: wrap; gap: 18px;
+      align-items: center; justify-content: center;
+      padding: 14px 0;
+      border-top: 1px solid var(--border-fine);
+      border-bottom: 1px solid var(--border-fine);
+    }
+    .ratio-c {
+      display: flex; gap: 0;
+    }
+    .ratio-c button {
+      padding: 6px 14px;
+      font-family: 'Garet', sans-serif; font-size: 12px;
+      letter-spacing: 0.04em;
+      background: transparent; border: none; color: var(--fg-muted);
+      cursor: pointer; transition: color .2s;
+      border-right: 1px solid var(--border-fine);
+    }
+    .ratio-c button:last-child { border-right: none; }
+    .ratio-c button:hover { color: var(--fg-primary); }
+    .ratio-c button.on { color: var(--accent); font-weight: 600; }
+    .v-sep { width: 1px; height: 24px; background: var(--border-fine); }
+    .tool-c {
+      width: 30px; height: 30px;
+      background: transparent; border: none;
+      color: var(--fg-secondary); cursor: pointer;
+      display: grid; place-items: center;
+      transition: color .2s;
+    }
+    .tool-c:hover { color: var(--accent); }
+
+    /* LIBRARY */
+    .lib-c-head {
+      margin-top: 28px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-fine);
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .lib-c-h {
+      font-family: 'Garet', sans-serif; font-weight: 400; font-size: 18px;
+      letter-spacing: -0.005em;
+    }
+    .lib-c-filt {
+      display: flex; gap: 14px; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .lib-c-filt span {
+      color: var(--fg-muted); cursor: pointer; transition: color .2s;
+      padding: 6px 0;
+    }
+    .lib-c-filt span:hover { color: var(--fg-secondary); }
+    .lib-c-filt span.on { color: var(--accent); }
+    .lib-c-filt span.on::after {
+      content: ''; display: block; height: 1px;
+      background: var(--accent); margin-top: 4px;
+    }
+
+    .lib-c-grid {
+      margin-top: 18px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    }
+    .lib-c-item {
+      aspect-ratio: 4/5;
+      cursor: pointer;
+      position: relative;
+      transition: all .25s;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .lib-c-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .lib-c-item.on { outline: 1px solid var(--accent); outline-offset: 4px; }
+    .lib-c-item .img { width: 100%; height: 100%; }
+    .lib-c-item .caption {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 8px 10px;
+      font-size: 9px;
+      color: white;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      background: linear-gradient(to top, rgba(20,14,8,0.6), transparent);
+      display: flex; justify-content: space-between;
+    }
+    .lib-c-item .play-c {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      color: white;
+    }
+    .i1 { background: linear-gradient(140deg, #D4A87E, #8E2E47); }
+    .i2 { background: linear-gradient(140deg, #90A06D, #4A5C3B); }
+    .i3 { background: linear-gradient(140deg, #E0CFB4, #B48E5C); }
+    .i4 { background: linear-gradient(140deg, #3A2F25, #6A4F3B); }
+    .i5 { background: radial-gradient(circle at 30% 30%, #F7F4EF, #8E2E47); }
+    .i6 { background: linear-gradient(140deg, #B23F5C, #6E1F35); }
+    .i7 { background: conic-gradient(from 90deg, #8E2E47, #90A06D, #E0CFB4, #8E2E47); }
+    .i8 { background: linear-gradient(140deg, #161310, #8E2E47); }
+
+    .lib-c-actions {
+      margin-top: 26px;
+      display: flex; gap: 16px; justify-content: flex-end;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-fine);
+    }
+
+    /* BUTTONS */
+    .btn-c {
+      padding: 11px 22px;
+      font-family: 'Garet', sans-serif; font-size: 13px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: all .25s;
+      display: inline-flex; align-items: center; gap: 10px;
+      border: 1px solid;
+      background: transparent;
+    }
+    .btn-c.primary {
+      background: var(--accent); color: white; border-color: var(--accent);
+    }
+    .btn-c.primary:hover { background: var(--accent-hov); border-color: var(--accent-hov); }
+    .btn-c.ghost {
+      color: var(--fg-primary); border-color: var(--border-strong);
+    }
+    .btn-c.ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-c.dark {
+      background: var(--fg-primary); color: var(--bg-base); border-color: var(--fg-primary);
+    }
+    .btn-c.dark:hover { background: var(--accent); border-color: var(--accent); }
+
+    /* ===================== PREVIEW IG ===================== */
+    .preview-wrap {
+      position: sticky; top: 130px;
+    }
+    .preview-c-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-fine);
+      margin-bottom: 18px;
+    }
+    .preview-c-h {
+      font-family: 'Garet', sans-serif; font-weight: 400; font-size: 20px;
+      letter-spacing: -0.01em;
+    }
+    .preview-c-h em { color: var(--accent); font-style: italic; }
+    .preview-c-sw {
+      display: flex; gap: 0; border: 1px solid var(--border-fine);
+    }
+    .preview-c-sw button {
+      padding: 5px 11px; border: none; background: transparent;
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--fg-muted); cursor: pointer;
+      border-right: 1px solid var(--border-fine);
+    }
+    .preview-c-sw button:last-child { border-right: none; }
+    .preview-c-sw button.on { background: var(--fg-primary); color: var(--bg-elev); }
+
+    .ig-c {
+      background: var(--bg-elev);
+      border: 1px solid var(--border-fine);
+      box-shadow: var(--shadow-md);
+    }
+    .ig-c-top { padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-fine); }
+    .ig-c-av {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--champagne));
+      padding: 2px;
+    }
+    .ig-c-av .inner {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: var(--bg-elev);
+      display: grid; place-items: center;
+      font-family: 'Garet'; font-weight: 500; font-size: 14px;
+      color: var(--accent);
+    }
+    .ig-c-meta { flex: 1; }
+    .ig-c-meta .u { font-weight: 600; font-size: 13px; color: var(--fg-primary); }
+    .ig-c-meta .l { font-size: 11px; color: var(--fg-muted); }
+    .ig-c-more { color: var(--fg-secondary); font-size: 18px; }
+
+    .ig-c-img {
+      aspect-ratio: 4/5;
+      background:
+        radial-gradient(circle at 25% 30%, rgba(255, 220, 195, 0.6), transparent 55%),
+        radial-gradient(circle at 75% 70%, rgba(142, 46, 71, 0.5), transparent 60%),
+        linear-gradient(140deg, #D4A87E 0%, #8E2E47 100%);
+    }
+
+    .ig-c-actions { padding: 11px 16px; display: flex; gap: 14px; }
+    .ig-c-actions svg { color: var(--fg-primary); cursor: pointer; }
+    .ig-c-actions .save { margin-left: auto; }
+
+    .ig-c-likes { padding: 0 16px; font-size: 13px; font-weight: 600; color: var(--fg-primary); }
+    .ig-c-cap {
+      padding: 8px 16px;
+      font-size: 13px; line-height: 1.55;
+      color: var(--fg-primary);
+    }
+    .ig-c-cap b { font-weight: 600; }
+    .ig-c-cap a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .ig-c-time {
+      padding: 10px 16px 16px;
+      font-size: 10px; color: var(--fg-muted);
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+
+    /* ACTION BAR */
+    .actionbar-c {
+      background: var(--bg-base);
+      border-top: 1px solid var(--border-fine);
+      padding: 18px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; bottom: 0; z-index: 40;
+      backdrop-filter: blur(10px);
+    }
+    .autosave-c {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--fg-secondary);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .autosave-c-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent-second);
+      box-shadow: 0 0 0 3px rgba(107, 122, 79, 0.18);
+      animation: pulse-c 2s infinite;
+    }
+    @keyframes pulse-c {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(107, 122, 79, 0.18); }
+      50%      { box-shadow: 0 0 0 6px rgba(107, 122, 79, 0.04); }
+    }
+    .ab-right { display: flex; align-items: center; gap: 18px; }
+    .budget-c {
+      font-size: 11px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--fg-muted);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .budget-c strong {
+      color: var(--fg-primary); font-weight: 600;
+      font-family: 'JetBrains Mono', monospace; text-transform: none; letter-spacing: 0;
+    }
+    .budget-c .b-track { width: 50px; height: 2px; background: var(--bg-sunk); position: relative; }
+    .budget-c .b-track::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 24%; background: var(--accent-second); }
+
+    svg { stroke-width: 1.6; }
+
+    @media (max-width: 1280px) {
+      .stage { grid-template-columns: 240px minmax(0,1fr) 340px; gap: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a class="brand" href="#">
+    <div class="brand-mark">F</div>
+    <div class="brand-name">Femiglow <span>· Studio</span></div>
+  </a>
+  <nav class="nav-c">
+    <a href="#">Accueil</a>
+    <a href="#" class="active">Création <span class="badge"></span></a>
+    <a href="#">Bibliothèque</a>
+    <a href="#">Planning</a>
+  </nav>
+  <div class="top-right">
+    <button class="icon-c" title="Recherche ⌘K">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="icon-c" onclick="toggleTheme()" title="Bascule thème">
+      <svg id="ico-theme" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.34 6.34L4.93 4.93M19.07 19.07l-1.41-1.41M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/></svg>
+    </button>
+    <div class="avatar-c">EJ</div>
+  </div>
+</header>
+
+<!-- STEPPER -->
+<div class="stepper">
+  <div class="stp done"><div class="stp-mark">I</div><div class="stp-lbl">Cadrer</div></div>
+  <div class="stp done"><div class="stp-mark">II</div><div class="stp-lbl">Générer</div></div>
+  <div class="stp active"><div class="stp-mark">III</div><div class="stp-lbl">Visuel</div></div>
+  <div class="stp"><div class="stp-mark">IV</div><div class="stp-lbl">Valider</div></div>
+</div>
+
+<!-- STAGE -->
+<main class="stage">
+
+  <!-- INTENTION -->
+  <aside class="intention">
+    <p class="eyebrow">Intention</p>
+    <h3 class="title">Rituel du soir</h3>
+    <p class="subtitle">Variante A — score 94/100</p>
+
+    <table class="data-table">
+      <tr><td class="k">Pilier</td><td class="v">Rituel</td></tr>
+      <tr><td class="k">Objectif</td><td class="v">Considération</td></tr>
+      <tr><td class="k">Plateforme</td><td class="v">Instagram</td></tr>
+      <tr><td class="k">Campagne</td><td class="v">Lancement Été</td></tr>
+    </table>
+
+    <p class="eyebrow" style="margin-bottom: 10px;">Format</p>
+    <div class="fmt-list">
+      <button class="fmt-c on">
+        <span class="dot"></span>
+        <span class="nm">Post</span>
+        <span class="rt">4 : 5</span>
+      </button>
+      <button class="fmt-c">
+        <span class="dot"></span>
+        <span class="nm">Story</span>
+        <span class="rt">9 : 16</span>
+      </button>
+      <button class="fmt-c">
+        <span class="dot"></span>
+        <span class="nm">Reel <span style="color: var(--fg-muted); font-size: 10px;">vidéo</span></span>
+        <span class="rt">9 : 16</span>
+      </button>
+      <button class="fmt-c">
+        <span class="dot"></span>
+        <span class="nm">Carousel</span>
+        <span class="rt">4 : 5</span>
+      </button>
+    </div>
+
+    <div class="quote">« Trois gestes lents, à la lumière d'une bougie. Le rituel commence quand on accepte que le soin prenne son temps. »</div>
+  </aside>
+
+  <!-- STUDIO -->
+  <section class="studio">
+    <div class="studio-head">
+      <h2>Préparer le <em>visuel</em></h2>
+      <div class="studio-meta">
+        Brouillon enregistré
+        <strong>Cadrage 4 : 5 actif</strong>
+      </div>
+    </div>
+
+    <div class="canvas-c">
+      <div class="canvas-frame">
+        <div class="crop crop-grid">
+          <div class="crop-corn tl"></div>
+          <div class="crop-corn tr"></div>
+          <div class="crop-corn bl"></div>
+          <div class="crop-corn br"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-bar">
+      <div class="ratio-c">
+        <button>1 : 1</button>
+        <button class="on">4 : 5</button>
+        <button>9 : 16</button>
+        <button>16 : 9</button>
+        <button>libre</button>
+      </div>
+      <div class="v-sep"></div>
+      <button class="tool-c" title="Zoom −"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="tool-c" title="Zoom +"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="tool-c" title="Rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/></svg></button>
+      <button class="tool-c" title="Annuler"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg></button>
+    </div>
+
+    <!-- LIBRARY -->
+    <div class="lib-c-head">
+      <span class="lib-c-h">Bibliothèque</span>
+      <div class="lib-c-filt">
+        <span class="on">Tous</span>
+        <span>Importés</span>
+        <span>Générés IA</span>
+        <span>Vidéo</span>
+      </div>
+    </div>
+
+    <div class="lib-c-grid">
+      <div class="lib-c-item on"><div class="img i1"></div><div class="caption"><span>Sélectionné</span><span>·</span></div></div>
+      <div class="lib-c-item"><div class="img i2"></div><div class="caption"><span>Image</span></div></div>
+      <div class="lib-c-item"><div class="img i3"></div><div class="caption"><span>IA</span></div></div>
+      <div class="lib-c-item">
+        <div class="img i4"></div>
+        <div class="play-c"><svg width="32" height="32" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+        <div class="caption"><span>Vidéo</span><span>24s</span></div>
+      </div>
+      <div class="lib-c-item"><div class="img i5"></div><div class="caption"><span>IA</span></div></div>
+      <div class="lib-c-item"><div class="img i6"></div><div class="caption"><span>IA</span></div></div>
+      <div class="lib-c-item"><div class="img i7"></div><div class="caption"><span>Image</span></div></div>
+      <div class="lib-c-item">
+        <div class="img i8"></div>
+        <div class="play-c"><svg width="32" height="32" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+        <div class="caption"><span>Vidéo</span><span>48s</span></div>
+      </div>
+    </div>
+
+    <div class="lib-c-actions">
+      <button class="btn-c ghost">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importer
+      </button>
+      <button class="btn-c dark">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L9 9l-7 1 5 5-1 7 6-3 6 3-1-7 5-5-7-1z"/></svg>
+        Générer IA
+      </button>
+    </div>
+  </section>
+
+  <!-- PREVIEW IG -->
+  <aside class="preview-wrap">
+    <div class="preview-c-head">
+      <div class="preview-c-h">Aperçu <em>Instagram</em></div>
+      <div class="preview-c-sw">
+        <button class="on">POST</button>
+        <button>STORY</button>
+        <button>REEL</button>
+      </div>
+    </div>
+
+    <div class="ig-c">
+      <div class="ig-c-top">
+        <div class="ig-c-av"><div class="inner">F</div></div>
+        <div class="ig-c-meta">
+          <div class="u">femiglow.maroc</div>
+          <div class="l">Marrakech, Maroc</div>
+        </div>
+        <div class="ig-c-more">⋯</div>
+      </div>
+      <div class="ig-c-img"></div>
+      <div class="ig-c-actions">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.36 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.1a8.5 8.5 0 0 1-.9-3.8 8.38 8.38 0 0 1 8.4-8.4 8.5 8.5 0 0 1 8.6 7.8z"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <svg class="save" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="ig-c-likes">1 247 j'aime</div>
+      <div class="ig-c-cap"><b>femiglow.maroc</b> Trois gestes lents, à la lumière d'une bougie. Le rituel commence quand on accepte que le soin prenne son temps. <a>#femiglow</a> <a>#rituel</a> <a>#slowbeauty</a></div>
+      <div class="ig-c-time">il y a deux heures</div>
+    </div>
+  </aside>
+</main>
+
+<!-- ACTION BAR -->
+<div class="actionbar-c">
+  <div class="autosave-c">
+    <span class="autosave-c-dot"></span>
+    Enregistré · il y a 2 secondes
+  </div>
+  <div class="ab-right">
+    <div class="budget-c">
+      Budget IA <strong>1.20 / 5.00 €</strong>
+      <div class="b-track"></div>
+    </div>
+    <button class="btn-c ghost">Brouillon Postiz</button>
+    <button class="btn-c primary">
+      Publier
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('mockup-theme-c', next);
+    document.getElementById('ico-theme').innerHTML = next === 'dark'
+      ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+      : '<path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.34 6.34L4.93 4.93M19.07 19.07l-1.41-1.41M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="4"/>';
+  }
+  const saved = localStorage.getItem('mockup-theme-c');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    if (saved === 'dark') {
+      document.getElementById('ico-theme').innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    }
+  }
+</script>
+</body>
+</html>
