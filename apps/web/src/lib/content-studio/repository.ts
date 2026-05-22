@@ -942,6 +942,26 @@ export async function createDraftVariation(
   return draft;
 }
 
+/**
+ * Liste les N dernières brand reviews (toutes drafts confondues).
+ * Utilisé par le BrandHealthCard du dashboard `/home` (Phase 6) pour
+ * calculer le score moyen 30 jours + le top des violations.
+ */
+export async function listRecentBrandReviews(limit = 200): Promise<ContentBrandReview[]> {
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(contentBrandReviews)
+      .orderBy(desc(contentBrandReviews.createdAt))
+      .limit(limit);
+    return rows.map(rowReview);
+  }
+  return Array.from(store().contentBrandReviews.values())
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, limit);
+}
+
 export async function listReviewsByDraft(draftId: string): Promise<ContentBrandReview[]> {
   const drizzle = db();
   if (drizzle) {

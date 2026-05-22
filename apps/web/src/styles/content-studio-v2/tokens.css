@@ -1,0 +1,245 @@
+/**
+ * Content Studio v2 — design tokens.
+ *
+ * Source of truth for the v2 color, spacing, radius, shadow vocabulary.
+ * Scoped to `.cs-v2-shell` to avoid leaking into the legacy admin or the
+ * public site. Theme switching is driven by `data-theme="light|dark"`
+ * which the ThemeProvider sets on the root.
+ *
+ * Default palette: Option A (Editorial elegant) — ivory + terracotta.
+ * Swap this file to migrate to Option B or C.
+ */
+
+.cs-v2-shell {
+  /* Typography variables come from next/font (see fonts.ts) */
+  --cs-font-display: var(--cs-font-display, ui-serif);
+  --cs-font-body: var(--cs-font-body, Georgia, serif);
+  --cs-font-mono: var(--cs-font-mono, ui-monospace);
+
+  /* Type scale */
+  --cs-text-xs: 11px;
+  --cs-text-sm: 13px;
+  --cs-text-base: 15px;
+  --cs-text-lg: 17px;
+  --cs-text-xl: 20px;
+  --cs-text-2xl: 24px;
+  --cs-text-3xl: 32px;
+  --cs-text-4xl: 44px;
+
+  /* Spacing */
+  --cs-space-0-5: 2px;
+  --cs-space-1: 4px;
+  --cs-space-2: 8px;
+  --cs-space-3: 12px;
+  --cs-space-4: 16px;
+  --cs-space-6: 24px;
+  --cs-space-8: 32px;
+  --cs-space-12: 48px;
+  --cs-space-16: 64px;
+  --cs-space-24: 96px;
+
+  /* Radius */
+  --cs-radius-sm: 4px;
+  --cs-radius: 8px;
+  --cs-radius-md: 12px;
+  --cs-radius-lg: 16px;
+  --cs-radius-full: 9999px;
+
+  /* Z-index ladder */
+  --cs-z-base: 0;
+  --cs-z-sticky: 30;
+  --cs-z-overlay: 50;
+  --cs-z-modal: 80;
+  --cs-z-toast: 90;
+
+  /* Motion */
+  --cs-motion-fast: 150ms;
+  --cs-motion-base: 220ms;
+  --cs-motion-slow: 320ms;
+  --cs-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================== LIGHT ============================== */
+.cs-v2-shell[data-theme='light'],
+.cs-v2-shell:not([data-theme='dark']) {
+  /* Surfaces */
+  --cs-bg-base: #FBF6F1;
+  --cs-bg-elevated: #FFFFFF;
+  --cs-bg-sunken: #F2EBE3;
+  --cs-bg-feature: #EDE3D5;
+  --cs-bg-overlay: rgba(26, 20, 17, 0.45);
+
+  /* Text */
+  --cs-fg-primary: #1A1411;
+  --cs-fg-secondary: #6B5E54;
+  --cs-fg-muted: #A89D90;
+  --cs-fg-on-accent: #FFFFFF;
+
+  /* Accents */
+  --cs-accent: #9C2A47;
+  --cs-accent-hover: #7B1F3A;
+  --cs-accent-soft: #C0566F;
+  --cs-accent-bg: #F6DDE4;
+
+  /* Sectorial (kept from legacy, normalised) */
+  --cs-clay: #7A4E3F;
+  --cs-sage: #5A7560;
+  --cs-saffron: #C28846;
+  --cs-violet: #7A4E9C;
+
+  /* Status */
+  --cs-success: #5A7560;
+  --cs-success-bg: #DCE5DD;
+  --cs-warning: #C28846;
+  --cs-warning-bg: #F5E5CC;
+  --cs-danger: #B8323A;
+  --cs-danger-bg: #F5DCDE;
+
+  /* Borders */
+  --cs-border-hair: rgba(122, 78, 63, 0.14);
+  --cs-border: rgba(122, 78, 63, 0.24);
+  --cs-border-strong: rgba(122, 78, 63, 0.42);
+  --cs-border-focus: rgba(156, 42, 71, 0.55);
+
+  /* Shadows */
+  --cs-shadow-sm: 0 1px 2px rgba(26, 20, 17, 0.04);
+  --cs-shadow-md: 0 4px 14px rgba(26, 20, 17, 0.07);
+  --cs-shadow-lg: 0 14px 40px rgba(26, 20, 17, 0.10);
+
+  color-scheme: light;
+}
+
+/* ============================== DARK ============================== */
+.cs-v2-shell[data-theme='dark'] {
+  --cs-bg-base: #1A1411;
+  --cs-bg-elevated: #211A16;
+  --cs-bg-sunken: #120E0B;
+  --cs-bg-feature: #2A211B;
+  --cs-bg-overlay: rgba(0, 0, 0, 0.65);
+
+  --cs-fg-primary: #FBF6F1;
+  --cs-fg-secondary: #C2B5A9;
+  --cs-fg-muted: #7A6E63;
+  --cs-fg-on-accent: #FFFFFF;
+
+  --cs-accent: #D85A78;
+  --cs-accent-hover: #E27089;
+  --cs-accent-soft: #B23F5C;
+  --cs-accent-bg: #3A1F25;
+
+  --cs-clay: #C28A6F;
+  --cs-sage: #8AA890;
+  --cs-saffron: #D4A24C;
+  --cs-violet: #B595D4;
+
+  --cs-success: #8AA890;
+  --cs-success-bg: #1F2A22;
+  --cs-warning: #D4A24C;
+  --cs-warning-bg: #2A2218;
+  --cs-danger: #E66A72;
+  --cs-danger-bg: #2A1818;
+
+  --cs-border-hair: rgba(251, 246, 241, 0.08);
+  --cs-border: rgba(251, 246, 241, 0.16);
+  --cs-border-strong: rgba(251, 246, 241, 0.32);
+  --cs-border-focus: rgba(216, 90, 120, 0.55);
+
+  --cs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --cs-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --cs-shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.60);
+
+  color-scheme: dark;
+}
+
+/* ============================== BASE STYLES ============================== */
+.cs-v2-shell {
+  background: var(--cs-bg-base);
+  color: var(--cs-fg-primary);
+  font-family: var(--cs-font-body);
+  font-size: var(--cs-text-base);
+  line-height: 1.55;
+  font-feature-settings: 'kern', 'liga', 'calt';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--cs-motion-slow) var(--cs-easing),
+              color var(--cs-motion-slow) var(--cs-easing);
+  min-height: 100vh;
+}
+
+.cs-v2-shell *,
+.cs-v2-shell *::before,
+.cs-v2-shell *::after {
+  box-sizing: border-box;
+}
+
+.cs-v2-shell .cs-eyebrow {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--cs-fg-muted);
+}
+
+.cs-v2-shell .cs-display {
+  font-family: var(--cs-font-display);
+  font-weight: 500;
+  letter-spacing: -0.011em;
+}
+
+.cs-v2-shell .cs-mono {
+  font-family: var(--cs-font-mono);
+  font-feature-settings: 'kern', 'tnum';
+  letter-spacing: 0;
+}
+
+/* ============================== UTILITY CLASSES ============================== */
+/* Buttons (atomic recipes — full primitives in Phase 0.6) */
+.cs-v2-shell .cs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding: 9px 18px;
+  border-radius: var(--cs-radius-sm);
+  border: 1px solid transparent;
+  font-family: var(--cs-font-display);
+  font-size: var(--cs-text-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color var(--cs-motion-fast) var(--cs-easing),
+              border-color var(--cs-motion-fast) var(--cs-easing),
+              transform var(--cs-motion-fast) var(--cs-easing),
+              box-shadow var(--cs-motion-fast) var(--cs-easing);
+  text-decoration: none;
+}
+.cs-v2-shell .cs-btn:focus-visible {
+  outline: 2px solid var(--cs-border-focus);
+  outline-offset: 2px;
+}
+
+.cs-v2-shell .cs-btn-primary {
+  background: var(--cs-accent);
+  color: var(--cs-fg-on-accent);
+  box-shadow: 0 6px 18px -6px rgba(156, 42, 71, 0.45);
+}
+.cs-v2-shell .cs-btn-primary:hover {
+  background: var(--cs-accent-hover);
+  transform: translateY(-1px);
+}
+
+.cs-v2-shell .cs-btn-ghost {
+  background: var(--cs-bg-elevated);
+  color: var(--cs-fg-primary);
+  border-color: var(--cs-border-strong);
+}
+.cs-v2-shell .cs-btn-ghost:hover {
+  border-color: var(--cs-clay);
+}
+
+.cs-v2-shell .cs-btn-secondary {
+  background: var(--cs-fg-primary);
+  color: var(--cs-bg-base);
+}
+.cs-v2-shell .cs-btn-secondary:hover {
+  background: var(--cs-clay);
+}
