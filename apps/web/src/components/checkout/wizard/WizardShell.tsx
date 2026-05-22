@@ -36,6 +36,7 @@ import {
   DEFAULT_WIZARD_COPY,
   DEFAULT_WIZARD_FEATURES,
 } from '@/lib/checkout/copy/wizard-copy';
+import { formatCartCompareAt } from '@/lib/checkout/helpers/cart-compare-at-format';
 
 // Steps lazy-loaded — pas encore implémentés (phases 6-7).
 // On garde la structure pour ne pas avoir à modifier le shell à chaque
@@ -262,9 +263,15 @@ export function WizardShell({
   return (
     <div className="space-y-6" data-testid="wizard-shell">
       {/* Kolenda §5 W3 P1 — récap panier permanent en premier enfant.
-          Sticky mobile pour rester visible pendant le scroll. */}
+          Sticky mobile pour rester visible pendant le scroll.
+          Le `priceCompareAt` est calculé dynamiquement depuis le snapshot
+          (cf. KitCommanderSectionBound qui projette `compareAtTotalCents`
+          uniquement quand une promo est active). Plus aucun hardcode UI. */}
       {features.cartRecap && cartForRecap && (
-        <WizardCartRecap cart={cartForRecap} priceCompareAt="390 MAD" />
+        <WizardCartRecap
+          cart={cartForRecap}
+          priceCompareAt={formatCartCompareAt(cartForRecap)}
+        />
       )}
       {header}
       {features.timeEstimate && (

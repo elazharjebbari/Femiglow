@@ -113,6 +113,14 @@ export const cartItemSnapshotSchema = z.object({
   quantity: z.number().int().positive().max(99),
   unitPriceCents: z.number().int().nonnegative(),
   /**
+   * Prix régulier avant promotion (centimes). Présent UNIQUEMENT si une
+   * promo est active sur l'item (i.e. `unitPriceCents < compareAtPriceCents`).
+   * Permet d'afficher le strike-through dans le récap wizard sans hardcoder
+   * une valeur côté UI. Source : `product_variants.price_cents` quand
+   * `promo_price_cents` est utilisé pour `unitPriceCents`.
+   */
+  compareAtPriceCents: z.number().int().positive().optional(),
+  /**
    * Identifiant du `product_variant` (ex. `pvar_...`). Optionnel pour
    * rétrocompatibilité (les anciennes routes `/api/cart` ne le projetaient
    * pas), mais REQUIS pour brancher le StockIndicator et la réservation
@@ -126,6 +134,13 @@ export type CartItemSnapshot = z.infer<typeof cartItemSnapshotSchema>;
 export const cartSnapshotSchema = z.object({
   items: z.array(cartItemSnapshotSchema).min(1, 'Panier vide.').max(20),
   totalCents: z.number().int().nonnegative(),
+  /**
+   * Somme des `compareAtPriceCents × quantity` (centimes). Undefined si
+   * aucun item n'a de promo active. Le wizard cart recap l'utilise pour
+   * afficher le prix barré au niveau total sans recalcul côté client.
+   * Garantie : `compareAtTotalCents > totalCents` quand défini.
+   */
+  compareAtTotalCents: z.number().int().positive().optional(),
   currency: z.string().length(3, 'Devise sur 3 caractères (ex. MAD).'),
 });
 export type CartSnapshot = z.infer<typeof cartSnapshotSchema>;
