@@ -15,6 +15,7 @@ import { POST as syncAccounts } from '@/app/api/admin/social/accounts/route';
 import { POST as draftOnProvider } from './route';
 import { POST as publishNow } from '../publish-now/route';
 import { listPublishJobs } from '@/lib/social-publishing/repository';
+import { memoryStore } from '@/lib/db/client';
 
 vi.mock('@/lib/content-studio/auth', () => ({
   requireAdminApi: vi.fn(),
@@ -163,6 +164,22 @@ describe('POST /api/admin/content-studio/posts/[id]/draft-on-provider', () => {
       { params: { id: 'po_x' } },
     );
     expect(res.status).toBe(401);
+  });
+
+  it('émet un audit event social.draft_created en cas de succès', async () => {
+    const post = await approvedInstagramPost();
+    await syncAccounts();
+    const res = await draftOnProvider(
+      request(`http://localhost/api/admin/content-studio/posts/${post.id}/draft-on-provider`, {}),
+      { params: { id: post.id } },
+    );
+    expect(res.status).toBe(201);
+    const auditEvents = Array.from(
+      (memoryStore() as unknown as { auditEvents?: Map<string, { action: string; resourceId: string | null }> }).auditEvents?.values() ?? [],
+    );
+    const draftEvents = auditEvents.filter((e) => e.action === 'social.draft_created');
+    expect(draftEvents).toHaveLength(1);
+    expect(draftEvents[0]?.resourceId).toBe(post.id);
   });
 
   it('renvoie 404 si le post n’existe pas', async () => {

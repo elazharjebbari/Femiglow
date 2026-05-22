@@ -23,6 +23,7 @@ import { DryRunSocialPublishingAdapter } from './adapters/dry-run';
 import { PostizSocialPublishingAdapter } from './adapters/postiz';
 import { publishWithAdapter } from './service';
 import { sendSocialAlert } from './alerts';
+import { logAuditEvent } from '@/lib/audit/log-event';
 import { logger } from '@/lib/logging/logger';
 import { assertSocialPublishJobTransition, nextRetryStatus } from './state-machine';
 import {
@@ -468,6 +469,20 @@ export async function executeJob(input: { jobId: string; actorId: string | null 
     // queue a real publication (publish-now / schedule) afterwards.
     if (locked.content.publishMode !== 'draft') {
       await updatePostPlanning({ postId: locked.postId, scheduledAt: null, status: 'published' });
+    } else {
+      await logAuditEvent({
+        action: 'social.draft_created',
+        actorId: locked.requestedBy,
+        resourceType: 'content_post',
+        resourceId: locked.postId,
+        meta: {
+          jobId: locked.id,
+          provider: account.provider,
+          platform: account.platform,
+          remoteId: result.response.remoteId,
+          permalink: result.response.permalink ?? null,
+        },
+      });
     }
     const updated = await updatePublishJobStatus({ jobId: locked.id, status: 'published', publishedAt, lockedAt: null, lastError: null });
     return { job: updated ?? publishing, result };
@@ -490,23 +505,28 @@ export async function executeJob(input: { jobId: string; actorId: string | null 
     post_id: locked.postId,
     provider: account.provider,
     platform: account.platform,
+    publish_mode: locked.content.publishMode ?? 'inferred',
     error_code: result.error.code,
     error_message: result.error.message,
     retryable: result.error.retryable,
   });
-  // Non-blocking webhook. We don't await with retries on purpose — if the
-  // alert channel is down we still want the worker to make progress.
-  void sendSocialAlert({
-    title: `Publication ${account.provider}/${account.platform} échouée`,
-    detail: result.error.message,
-    severity: result.error.retryable ? 'warning' : 'critical',
-    fields: [
-      { label: 'jobId', value: locked.id },
-      { label: 'postId', value: locked.postId },
-      { label: 'errorCode', value: result.error.code },
-      { label: 'retryable', value: String(result.error.retryable) },
-    ],
-  });
+  // Draft failures stay in the dashboard but do not page operators — they
+  // are recoverable by retry from the UI and never affect the live timeline.
+  if (locked.content.publishMode !== 'draft') {
+    // Non-blocking webhook. We don't await with retries on purpose — if the
+    // alert channel is down we still want the worker to make progress.
+    void sendSocialAlert({
+      title: `Publication ${account.provider}/${account.platform} échouée`,
+      detail: result.error.message,
+      severity: result.error.retryable ? 'warning' : 'critical',
+      fields: [
+        { label: 'jobId', value: locked.id },
+        { label: 'postId', value: locked.postId },
+        { label: 'errorCode', value: result.error.code },
+        { label: 'retryable', value: String(result.error.retryable) },
+      ],
+    });
+  }
   return { job: updated ?? publishing, result };
 }
 
