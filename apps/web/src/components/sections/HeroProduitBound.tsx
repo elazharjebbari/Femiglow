@@ -115,9 +115,12 @@ export async function HeroProduitBound({
       reviewStats={reviewStats}
       observeId={observeId}
       commanderMode={commanderMode}
-      // Rend le badge cliquable → scroll vers la section HandsTestimonials
-      // (id="hands-title"). Évite la dispersion vs une route /avis dédiée.
-      reviewsAnchorHref="#hands-title"
+      // Rend le badge cliquable → scroll vers le bloc « Les voix de la
+      // maison » (RitualsModule, id H2="rituals-module-title"). C'est le
+      // gros bloc social proof à grande échelle (47 rituels partagés en
+      // DB courante). Si le module rituels n'est pas rendu (cas test),
+      // l'ancre tombe en no-op silencieux côté navigateur.
+      reviewsAnchorHref="#rituals-module-title"
     />
   );
 }

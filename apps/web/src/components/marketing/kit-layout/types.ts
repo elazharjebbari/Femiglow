@@ -7,6 +7,7 @@
  */
 import type { KitPageContent, Article, Product } from '@/lib/schemas';
 import type { ProductReviewStats } from '@/lib/products/reviews';
+import type { RitualSummary } from '@/lib/schemas/rituals';
 
 export interface KitPageLayoutProps {
   /** Contenu CMS structuré (composition, faq, comparatif, testimonials, etc.). */
@@ -19,4 +20,11 @@ export interface KitPageLayoutProps {
   productJsonLd: Record<string, unknown>;
   /** Stats reviews DB — null si bdd vide (starter rating fallback côté builder). */
   reviewStats: ProductReviewStats | null;
+  /**
+   * Summary du module rituels (« voix de la maison »). Source du count
+   * affiché dans le badge hero + ancre href cible. totalCount=0 si la
+   * table `ritual_aggregate` est vide (le layout retombe alors sur le
+   * fallback handsTestimonials ou starter rating).
+   */
+  ritualSummary: RitualSummary;
 }

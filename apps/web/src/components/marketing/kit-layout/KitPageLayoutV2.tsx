@@ -5,9 +5,13 @@
  *
  * Changements vs v1 :
  *   - Wizard remonté à position 6 (après social proof) → conversion warm
- *   - 3 sections retirées : Comparatif, RitualsModule, PivotFinal
+ *   - 2 sections retirées : Comparatif, PivotFinal
  *     (composants conservés dans le repo pour rollback ; non importés ici)
- *   - 10 sections au lieu de 14 (cf. doc 01 P4 : Kolenda §1.3)
+ *   - RitualsModule (gros bloc « Les voix de la maison » — 47 rituels
+ *     partagés en DB) maintenu en post-wizard (position 8), seul bloc
+ *     social proof à grande échelle de la page. C'est lui que le badge
+ *     hero référence (count + ancre).
+ *   - 11 sections au lieu de 14 (cf. doc 01 P4 : Kolenda §1.3)
  *
  * NB : pas de sticky CTA bottom mobile ajouté — le `GeoPromoSlideHeaderSlot`
  * (top sticky de l'app) porte déjà un bouton « Commander » mobile, le
@@ -27,6 +31,7 @@ import { resolveKitComposition } from '@/lib/kit/composition/resolver';
 import { HandsTestimonialsBound } from '@/components/sections/HandsTestimonialsBound';
 import { JournalGridBound } from '@/components/sections/JournalGridBound';
 import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectionBound';
+import { RitualsModuleBound } from '@/components/sections/rituals/RitualsModuleBound';
 import { RitualsWallDrawer } from '@/components/sections/rituals/RitualsWallDrawer';
 import { KitCommanderSectionBound } from '@/components/sections/KitCommanderSectionBound';
 import { GeoPromoSlideHeaderSlot } from '@/components/promo/GeoPromoSlideHeaderSlot';
@@ -40,6 +45,7 @@ export function KitPageLayoutV2({
   dbProduct,
   productJsonLd,
   reviewStats,
+  ritualSummary,
 }: KitPageLayoutProps) {
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0" data-kit-layout="v2">
@@ -52,10 +58,15 @@ export function KitPageLayoutV2({
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
-        // Cf. KitPageLayoutV1 — count avis = handsTestimonials.length tant
-        // que la table product_reviews est vide, et badge cliquable vers
-        // #hands-title (handled inside HeroProduitBound).
-        reviewsCountOverride={content.handsTestimonials?.length ?? 0}
+        // Cf. KitPageLayoutV1 — count badge avis depuis le module rituels
+        // (47 en DB courante). Fallback handsTestimonials si rituals vide.
+        // L'ancre cliquable du badge cible #rituals-module-title (cf.
+        // HeroProduitBound).
+        reviewsCountOverride={
+          ritualSummary.totalCount > 0
+            ? ritualSummary.totalCount
+            : (content.handsTestimonials?.length ?? 0)
+        }
       />
 
       {/* — 2. PREUVE 1 : Composition (qualité formule) — */}
@@ -88,10 +99,20 @@ export function KitPageLayoutV2({
         componentKey="kit-detail-mains"
       />
 
-      {/* — 8. OBJECTIONS : FAQ — */}
+      {/*
+        — 8. SOCIAL PROOF À GRANDE ÉCHELLE : Les voix de la maison —
+        Module rituels (47 initiées ont partagé, 38 reprendraient). C'est
+        ce module qui alimente le compteur du badge hero et son ancre.
+        Position post-wizard : capte les utilisateurs qui ont scrollé au-
+        delà du wizard sans convertir, et leur donne un dernier signal
+        de confiance avant la FAQ + Journal.
+      */}
+      <RitualsModuleBound productKey="pack-femiglow" />
+
+      {/* — 9. OBJECTIONS : FAQ — */}
       <FAQContextuelle items={content.faq} />
 
-      {/* — 9. BOTTOM FUNNEL : Journal — */}
+      {/* — 10. BOTTOM FUNNEL : Journal — */}
       <JournalGridBound
         articles={journalArticles}
         kicker="Pour aller plus loin"
@@ -99,7 +120,7 @@ export function KitPageLayoutV2({
         variant="symmetric"
       />
 
-      {/* — 10. OVERLAY : RitualsWallDrawer (Suspense) — */}
+      {/* — 11. OVERLAY : RitualsWallDrawer (Suspense) — */}
       <Suspense fallback={null}>
         <RitualsWallDrawer productKey="pack-femiglow" />
       </Suspense>

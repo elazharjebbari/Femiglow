@@ -4,7 +4,7 @@
 
 L'utilisateur doit **VOIR** (composition, vidéo, pack, témoignages) avant de **PASSER COMMANDE** (wizard). Aujourd'hui le wizard est en position 3 — il commande à froid.
 
-## Structure v2 (10 sections)
+## Structure v2 (11 sections)
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -16,24 +16,30 @@ L'utilisateur doit **VOIR** (composition, vidéo, pack, témoignages) avant de *
 │  3.  CompositionRevealBound §4.3   [PREUVE 1]   │  Trois piliers
 │  4.  VideoPlayer4GestesKitBound    [PREUVE 2]   │  Usage in vivo
 │  5.  ProductFeedSectionBound §4.6/7 [PREUVE 3]  │  Pack + Steps refonte
-│  6.  HandsTestimonialsBound        [PREUVE 4]   │  Social proof
+│  6.  HandsTestimonialsBound        [PREUVE 4]   │  Social proof mains
 │  ─────────── DÉCISION ───────────                │
 │  7.  KitCommanderSectionBound ⭐   [WIZARD]     │  Commande WARM
-│  ─────────── DÉTAIL & FAQ ───────                │
+│  ─────────── DÉTAIL & SOCIAL ────                │
 │  8.  IngredientsDetailsBound §4.5  [DETAIL]     │  Approfondissement
-│  9.  FAQContextuelle               [OBJECTIONS] │  Levée d'objections
-│  10. JournalGridBound              [BOTTOM]     │  Pour aller plus loin
+│  9.  RitualsModuleBound            [SOCIAL]     │  ⭐ Voix de la maison (47 avis)
+│  10. FAQContextuelle               [OBJECTIONS] │  Levée d'objections
+│  11. JournalGridBound              [BOTTOM]     │  Pour aller plus loin
 │  ⏷ RitualsWallDrawer (overlay)                  │  Drawer Suspense
 └─────────────────────────────────────────────────┘
 ```
 
-## Sections retirées (3)
+## Sections retirées (2)
 
 | Section | Raison du retrait | Migration |
 |---|---|---|
 | `ComparatifSectionBound` | Le tableau §4.7 Steps couvre déjà la comparaison avec/sans vernis. | Vérifier qu'aucun argument unique du Comparatif manque dans Steps. Sinon enrichir Steps (1 ligne CMS). |
-| `RitualsModuleBound` | Rôle de FAQ secondaire — chevauche `FAQContextuelle`. | Migrer les 1-2 questions phares dans FAQ via CMS. |
-| `PivotFinal` | Le wizard EST le CTA final — double CTA inutile. | Le sticky mobile prend le relais. |
+| `PivotFinal` | Le wizard EST le CTA final — double CTA inutile. | Le sticky top GeoPromoSlideHeaderSlot prend le relais. |
+
+## Section conservée vs hypothèse initiale
+
+| Section | Raison | Position v2 |
+|---|---|---|
+| `RitualsModuleBound` | C'est le bloc social proof à grande échelle (47 rituels partagés en DB) — **c'est lui qui alimente le compteur du badge avis hero** + son ancre. Le retirer casserait le tunnel social proof. | Position 9 (post-wizard, pré-FAQ) |
 
 ## Pourquoi cette réorganisation ?
 

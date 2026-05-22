@@ -52,17 +52,36 @@ test.describe('@kit-layout-v2 — ordre Kolenda hero→preuve→décision', () =
     expect(wizardBox!.y).toBeGreaterThan(handsBox!.y);
   });
 
-  test('Sections retirées en v2 : Comparatif, RitualsModule, PivotFinal', async ({
+  test('Sections retirées en v2 : Comparatif, PivotFinal (NB: RitualsModule conservé)', async ({
     page,
   }) => {
     // Comparatif — cherche un titre caractéristique du composant
     // (pas de testid sur le bound actuellement, on assert l'absence du
     // contenu signature).
     await expect(page.getByText(/comparatif/i).first()).toHaveCount(0);
-    // RitualsModule — son data attribute si présent, sinon texte
-    await expect(page.locator('[data-rituals-module]')).toHaveCount(0);
     // PivotFinal — bloc CTA bas de page (testid si présent)
     await expect(page.locator('[data-testid="pivot-final"]')).toHaveCount(0);
+    // RitualsModule (« Les voix de la maison ») reste présent en v2 —
+    // c'est le bloc social proof à grande échelle référencé par le badge
+    // hero (count + ancre). Le retirer rendrait l'ancre du badge cassée.
+    await expect(page.locator('#rituals-module-title')).toHaveCount(1);
+  });
+
+  test('Badge social proof — count rituels + ancre #rituals-module-title', async ({
+    page,
+  }) => {
+    // Badge dans le hero — devient `<a>` quand reviewsAnchorHref est passé.
+    const badge = page.locator('a[aria-label^="Note"]').first();
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute('href', '#rituals-module-title');
+    // Le texte affiche "X avis" — X depuis ritualSummary.totalCount
+    // (47 en DB seed actuelle, peut varier en CI).
+    const text = (await badge.textContent()) ?? '';
+    const match = text.match(/(\d+)\s*avis/);
+    expect(match, `badge text should contain "X avis", got: ${text}`).not.toBeNull();
+    // Au moins 1 (sinon ce serait `handsTestimonials.length` fallback,
+    // pas pas le scope du test). Si DB rituals à 0 → CI doit seed.
+    expect(parseInt(match![1]!, 10)).toBeGreaterThan(0);
   });
 
   // Note : le sticky CTA bottom mobile a été retiré car redondant avec

@@ -37,6 +37,7 @@ export function KitPageLayoutV1({
   dbProduct,
   productJsonLd,
   reviewStats,
+  ritualSummary,
 }: KitPageLayoutProps) {
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0" data-kit-layout="v1">
@@ -47,11 +48,16 @@ export function KitPageLayoutV1({
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
-        // Tant que la table `product_reviews` n'existe pas, on affiche
-        // le count REEL des témoignages CMS visibles plus bas plutôt
-        // que le starter hardcodé 287. Devient ignoré dès qu'une review
-        // DB réelle existe (cf. HeroProduitBound).
-        reviewsCountOverride={content.handsTestimonials?.length ?? 0}
+        // Le count badge avis vient du module rituels (« voix de la maison »)
+        // — c'est le seul bloc social proof à grande échelle de la page.
+        // 47 en DB courante. Fallback handsTestimonials.length si rituals
+        // est vide (dev local sans seed). Devient ignoré dès qu'une review
+        // DB product_reviews réelle existe (cf. HeroProduitBound).
+        reviewsCountOverride={
+          ritualSummary.totalCount > 0
+            ? ritualSummary.totalCount
+            : (content.handsTestimonials?.length ?? 0)
+        }
       />
       {/*
         CHA-230 — Funnel commander embarqué (Mode A — wizard_embed) remonté

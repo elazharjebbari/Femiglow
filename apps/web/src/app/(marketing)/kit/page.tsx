@@ -17,6 +17,7 @@ import {
 import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
 import { feedToProductSchemaEnrichment } from '@/lib/products/feed/json-ld';
 import { getProductReviewStats } from '@/lib/products/reviews';
+import { getRitualSummary } from '@/lib/db/queries/rituals';
 import { KIT_LAYOUT_VERSION } from '@/lib/feature-flags/kit-layout';
 import { KitPageLayoutV1 } from '@/components/marketing/kit-layout/KitPageLayoutV1';
 import { KitPageLayoutV2 } from '@/components/marketing/kit-layout/KitPageLayoutV2';
@@ -120,6 +121,12 @@ export default async function KitPage({ searchParams }: KitPageProps) {
   // la base est encore vide : le builder retombe sur le starter rating.
   const reviewStats = await getProductReviewStats(dbProduct.id);
 
+  // Summary du module rituels (« voix de la maison »). C'est le bloc
+  // social proof à grande échelle de la page — le badge hero doit
+  // afficher SON count (vs handsTestimonials qui n'a que 3 cartes).
+  // Anchor : la section porte H2 id="rituals-module-title".
+  const ritualSummary = await getRitualSummary('pack-femiglow');
+
   // Tracking ViewContent — fire CAPI server-side avec event_id déterministe
   // partagé avec le Pixel client (via ViewItemTracker.eventIdSeed). Meta
   // dédup transparent entre les deux canaux.
@@ -205,6 +212,7 @@ export default async function KitPage({ searchParams }: KitPageProps) {
     dbProduct,
     productJsonLd,
     reviewStats,
+    ritualSummary,
   };
   return effectiveLayout === 'v2' ? (
     <KitPageLayoutV2 {...layoutProps} />
