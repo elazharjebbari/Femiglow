@@ -59,10 +59,10 @@ describe('HeroProduit', () => {
     ).toBeInTheDocument();
   });
 
-  it('affiche le bloc prix via PriceDisplay (avec promo 199/390 dans le mock)', () => {
+  it('affiche le bloc prix via PriceDisplay (avec promo 199/289 dans le mock)', () => {
     renderHero();
     expect(screen.getByText(/199\s*MAD/)).toBeInTheDocument();
-    expect(screen.getByText(/390\s*MAD/)).toBeInTheDocument();
+    expect(screen.getByText(/289\s*MAD/)).toBeInTheDocument();
   });
 
   it('rend les 4 chips attributs', () => {
