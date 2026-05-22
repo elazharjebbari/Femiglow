@@ -391,6 +391,34 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       step_name: z.enum(['lead', 'address']),
     })
     .strict(),
+
+  // — Kit landing reorder (L0 du plan kit-landing-reorder-2026-05) :
+  // mesure de l'arc Kolenda hero→preuve→décision et du temps avant
+  // visibilité du wizard (cible : ≥45s en v2 vs ~12s en v1).
+  kit_section_viewed: z
+    .object({
+      /** ID stable de la section (kebab-case). Liste ouverte pour
+       *  permettre d'instrumenter v1 et v2 sans changement de schéma. */
+      section_id: z.string().min(2).max(60),
+      /** Position 1-indexed dans l'ordre actuel (varie entre v1/v2). */
+      position: z.number().int().positive().max(20),
+      /** % de la section visible au moment du fire (IntersectionObserver). */
+      viewport_pct: z.number().min(0).max(100),
+      /** Version du layout en cours pour segmenter dans Plausible. */
+      layout_version: z.enum(['v1', 'v2']),
+    })
+    .strict(),
+
+  kit_wizard_visible_first_time: z
+    .object({
+      /** Temps écoulé depuis le LCP jusqu'à la première visibilité du
+       *  wizard (≥50% en viewport). Mesure la "fraîcheur" du commit. */
+      time_from_page_load_ms: z.number().int().nonnegative(),
+      /** Profondeur de scroll % au moment où le wizard devient visible. */
+      scroll_depth_pct: z.number().min(0).max(100),
+      layout_version: z.enum(['v1', 'v2']),
+    })
+    .strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -465,6 +493,9 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   wizard_step_abandoned: 'engagement',
   wizard_resume_shown: 'engagement',
   wizard_resume_dismissed: 'engagement',
+  // Kit landing reorder (kit-landing-reorder-2026-05 L0).
+  kit_section_viewed: 'engagement',
+  kit_wizard_visible_first_time: 'engagement',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

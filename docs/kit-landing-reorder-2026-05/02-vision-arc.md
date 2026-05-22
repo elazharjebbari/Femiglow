@@ -1,0 +1,75 @@
+# 02 — Vision & Arc Kolenda
+
+## Principe directeur
+
+L'utilisateur doit **VOIR** (composition, vidéo, pack, témoignages) avant de **PASSER COMMANDE** (wizard). Aujourd'hui le wizard est en position 3 — il commande à froid.
+
+## Structure v2 (10 sections)
+
+```
+┌─────────────────────────────────────────────────┐
+│  ARC ÉMOTIONNEL — hero → preuve → décision     │
+├─────────────────────────────────────────────────┤
+│  1.  GeoPromoSlideHeaderSlot       [HEADER]     │  Bandeau promo géo
+│  2.  HeroProduitBound              [HERO]       │  Premier contact
+│  ─────────── PREUVE ─────────────                │
+│  3.  CompositionRevealBound §4.3   [PREUVE 1]   │  Trois piliers
+│  4.  VideoPlayer4GestesKitBound    [PREUVE 2]   │  Usage in vivo
+│  5.  ProductFeedSectionBound §4.6/7 [PREUVE 3]  │  Pack + Steps refonte
+│  6.  HandsTestimonialsBound        [PREUVE 4]   │  Social proof
+│  ─────────── DÉCISION ───────────                │
+│  7.  KitCommanderSectionBound ⭐   [WIZARD]     │  Commande WARM
+│  ─────────── DÉTAIL & FAQ ───────                │
+│  8.  IngredientsDetailsBound §4.5  [DETAIL]     │  Approfondissement
+│  9.  FAQContextuelle               [OBJECTIONS] │  Levée d'objections
+│  10. JournalGridBound              [BOTTOM]     │  Pour aller plus loin
+│  ⏷ RitualsWallDrawer (overlay)                  │  Drawer Suspense
+└─────────────────────────────────────────────────┘
+```
+
+## Sections retirées (3)
+
+| Section | Raison du retrait | Migration |
+|---|---|---|
+| `ComparatifSectionBound` | Le tableau §4.7 Steps couvre déjà la comparaison avec/sans vernis. | Vérifier qu'aucun argument unique du Comparatif manque dans Steps. Sinon enrichir Steps (1 ligne CMS). |
+| `RitualsModuleBound` | Rôle de FAQ secondaire — chevauche `FAQContextuelle`. | Migrer les 1-2 questions phares dans FAQ via CMS. |
+| `PivotFinal` | Le wizard EST le CTA final — double CTA inutile. | Le sticky mobile prend le relais. |
+
+## Pourquoi cette réorganisation ?
+
+### Le wizard remonte à position 6 (pas 3)
+
+- **À 3** : utilisateur cold, n'a vu QUE le hero. Commande sans preuves.
+- **À 6** : utilisateur warm, a parcouru :
+  - Composition (qualité formule)
+  - Vidéo 4 gestes (usage simple)
+  - Pack + Steps (transparence prix)
+  - Témoignages mains (proof visuelle)
+  
+Conversion d'un public **informé**, pas impulsif. Ticket moyen plus stable.
+
+### IngredientsDetails passe en 8 (pas 6)
+
+- À 6 (actuel) : interrompt l'arc avant le wizard
+- À 8 (v2) : approfondissement **après** commande (sert ceux qui hésitent encore)
+
+### FAQ remonte à 9
+
+Levée d'objection juste avant Journal (bottom funnel). L'utilisateur qui scrolle jusqu'ici est en hésitation — FAQ doit être présent.
+
+## Sticky CTA mobile (nouveau)
+
+Le wizard étant en position 6, l'utilisateur peut le manquer s'il scrolle vite. Solution :
+
+```tsx
+<KitStickyMobileCta hrefAnchor="#commander-femiglow" />
+```
+
+Affiché uniquement `< lg`, sticky bottom, déclenche `cta_click` avec `source=sticky`.
+
+## Garde-fous
+
+- ❌ Aucune réécriture de composant — uniquement réorganisation + retraits
+- ✅ Feature flag `NEXT_PUBLIC_KIT_LAYOUT_V2` — par défaut `false` (v1 préservé)
+- ✅ Tracking préservé (event IDs stables)
+- ✅ Composants retirés en v2 **conservés** dans le repo (rollback trivial)
