@@ -57,15 +57,16 @@ Conversion d'un public **informé**, pas impulsif. Ticket moyen plus stable.
 
 Levée d'objection juste avant Journal (bottom funnel). L'utilisateur qui scrolle jusqu'ici est en hésitation — FAQ doit être présent.
 
-## Sticky CTA mobile (nouveau)
+## Sticky CTA mobile (non ajouté en v2)
 
-Le wizard étant en position 6, l'utilisateur peut le manquer s'il scrolle vite. Solution :
-
-```tsx
-<KitStickyMobileCta hrefAnchor="#commander-femiglow" />
-```
-
-Affiché uniquement `< lg`, sticky bottom, déclenche `cta_click` avec `source=sticky`.
+> **Révision 2026-05-22** : pas de sticky CTA bottom ajouté. Raison : le
+> `GeoPromoSlideHeaderSlot` (top sticky existant) porte déjà un bouton
+> « Commander » mobile. Un sticky bottom en plus créerait un doublon
+> visuel + double event `cta_click`.
+>
+> Si on souhaite tester un sticky bottom en complément du top (a/b split
+> sur clic-through rate), prévoir un flag distinct (`NEXT_PUBLIC_KIT_STICKY_BOTTOM`)
+> et un composant dédié.
 
 ## Garde-fous
 

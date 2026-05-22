@@ -65,30 +65,10 @@ test.describe('@kit-layout-v2 — ordre Kolenda hero→preuve→décision', () =
     await expect(page.locator('[data-testid="pivot-final"]')).toHaveCount(0);
   });
 
-  test('Sticky CTA mobile présent et fonctionnel (viewport < lg)', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 375, height: 700 });
-    await page.goto('/kit?layout=v2');
-    const stickyCta = page.locator('[data-testid="kit-sticky-mobile-cta"]');
-    await expect(stickyCta).toBeVisible();
-    await expect(stickyCta).toHaveText(/Commander/i);
-
-    // Click → scroll vers #commander-femiglow
-    await stickyCta.click();
-    // Wait for anchor to be in viewport (smooth scroll)
-    await page.waitForTimeout(800);
-    const commanderSection = page.locator('#commander-femiglow');
-    await expect(commanderSection).toBeInViewport();
-  });
-
-  test('Sticky CTA absent en desktop (>= lg)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/kit?layout=v2');
-    const stickyCta = page.locator('[data-testid="kit-sticky-mobile-cta"]');
-    // `lg:hidden` Tailwind → présent dans le DOM mais non visible
-    await expect(stickyCta).not.toBeVisible();
-  });
+  // Note : le sticky CTA bottom mobile a été retiré car redondant avec
+  // le `GeoPromoSlideHeaderSlot` (top sticky de l'app) qui porte déjà
+  // un bouton « Commander » mobile. Si un sticky bottom est réintroduit
+  // pour une future expérience A/B, ajouter ici les tests dédiés.
 
   test('axe a11y v2 — zéro violation critical/serious', async ({ page }) => {
     const results = await new AxeBuilder({ page })
@@ -116,12 +96,5 @@ test.describe('@kit-layout-v1 — non-régression historique', () => {
       .first()
       .getAttribute('data-kit-layout');
     expect(layoutAttr).toBe('v1');
-  });
-
-  test('Sticky CTA mobile ABSENT en v1', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 700 });
-    await page.goto('/kit?layout=v1');
-    const stickyCta = page.locator('[data-testid="kit-sticky-mobile-cta"]');
-    await expect(stickyCta).toHaveCount(0);
   });
 });

@@ -7,12 +7,14 @@
  *   - Wizard remonté à position 6 (après social proof) → conversion warm
  *   - 3 sections retirées : Comparatif, RitualsModule, PivotFinal
  *     (composants conservés dans le repo pour rollback ; non importés ici)
- *   - Sticky CTA mobile ajouté (scroll-to-wizard pour les mobiles qui
- *     pourraient sinon manquer la zone commande en pos 6)
  *   - 10 sections au lieu de 14 (cf. doc 01 P4 : Kolenda §1.3)
  *
- * Tests : Playwright `@kit-layout-v2` dans
- *   `apps/web-e2e/tests/kit/kit-layout-v2.spec.ts` (L3).
+ * NB : pas de sticky CTA bottom mobile ajouté — le `GeoPromoSlideHeaderSlot`
+ * (top sticky de l'app) porte déjà un bouton « Commander » mobile, le
+ * doublon créerait du bruit + double tracking. Si on veut a/b tester un
+ * CTA bottom en complément du top, prévoir un flag dédié.
+ *
+ * Tests : Playwright `@kit-layout-v2` dans `apps/web/e2e/kit-layout-v2.spec.ts`.
  */
 import { Suspense } from 'react';
 
@@ -30,7 +32,6 @@ import { KitCommanderSectionBound } from '@/components/sections/KitCommanderSect
 import { GeoPromoSlideHeaderSlot } from '@/components/promo/GeoPromoSlideHeaderSlot';
 import { JsonLd, faqPageSchema } from '@/lib/seo/json-ld';
 
-import { KitStickyMobileCta } from './KitStickyMobileCta';
 import type { KitPageLayoutProps } from './types';
 
 export function KitPageLayoutV2({
@@ -103,8 +104,13 @@ export function KitPageLayoutV2({
         <RitualsWallDrawer productKey="pack-femiglow" />
       </Suspense>
 
-      {/* — Sticky CTA mobile : visible < lg, scroll-to-wizard — */}
-      <KitStickyMobileCta />
+      {/*
+        Pas de sticky CTA bottom en v2 — le `GeoPromoSlideHeaderSlot` (top
+        sticky de l'app) porte déjà le bouton « Commander » mobile. Le
+        doublon créerait du bruit visuel + double tracking event. Si on
+        veut a/b tester un CTA bottom en complément du top, on réintroduira
+        un composant dédié avec scope flag distinct.
+      */}
     </div>
   );
 }
