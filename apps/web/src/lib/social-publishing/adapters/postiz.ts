@@ -1,5 +1,8 @@
 import type {
   SocialAccount,
+  SocialInsightsRequest,
+  SocialInsightsResult,
+  SocialPostInsights,
   SocialPublishRequest,
   SocialPublishResult,
   SocialPublishingAdapter,
@@ -15,8 +18,10 @@ import {
   buildPostizDraftPayload,
   createPostizDraft,
   extractPostizPostId,
+  getPostizPostAnalytics,
   parsePostizUploadedMedia,
   uploadPostizMediaFromUrl,
+  type PostizAnalyticsResult,
   type PostizPostInput,
   type PostizResult,
 } from '../../content-studio/postiz';
@@ -32,16 +37,19 @@ const CAPABILITIES: SocialPublishingCapability[] = [
 export interface PostizAdapterDeps {
   uploadMedia?: typeof uploadPostizMediaFromUrl;
   createDraft?: typeof createPostizDraft;
+  fetchAnalytics?: typeof getPostizPostAnalytics;
 }
 
 export class PostizSocialPublishingAdapter implements SocialPublishingAdapter {
   readonly provider = 'postiz' as const;
   private readonly uploadMedia: typeof uploadPostizMediaFromUrl;
   private readonly createDraft: typeof createPostizDraft;
+  private readonly fetchAnalytics: typeof getPostizPostAnalytics;
 
   constructor(deps: PostizAdapterDeps = {}) {
     this.uploadMedia = deps.uploadMedia ?? uploadPostizMediaFromUrl;
     this.createDraft = deps.createDraft ?? createPostizDraft;
+    this.fetchAnalytics = deps.fetchAnalytics ?? getPostizPostAnalytics;
   }
 
   listCapabilities(account: SocialAccount): SocialPublishingCapability[] {
@@ -120,6 +128,145 @@ export class PostizSocialPublishingAdapter implements SocialPublishingAdapter {
       return toPublishFailure(err);
     }
   }
+
+  async getInsights(request: SocialInsightsRequest): Promise<SocialInsightsResult> {
+    if (request.account.provider !== this.provider) {
+      return {
+        ok: false,
+        error: {
+          code: 'invalid_request',
+          message: 'Postiz adapter received a non postiz account',
+          retryable: false,
+        },
+      };
+    }
+    const result = await this.fetchAnalytics({ postId: request.providerPostId, days: 7 });
+    if (!result.ok) {
+      const err = errorFromHttpStatus(
+        result.status,
+        `Postiz analytics request failed (${result.status})`,
+      );
+      return {
+        ok: false,
+        error: {
+          code: err.code,
+          message: err.message,
+          retryable: err.retryable,
+          status: result.status,
+        },
+      };
+    }
+    return {
+      ok: true,
+      insights: parsePostizAnalytics({
+        provider: this.provider,
+        remoteId: request.providerPostId,
+        result,
+      }),
+    };
+  }
+}
+
+/**
+ * Postiz analytics response shape is loose (it varies with the channel).
+ * The most common variants:
+ *  - array of `{ label, total, data: [{date, value}], percentageChange }`
+ *  - object `{ analytics: [...] }`
+ *  - object `{ data: [...] }`
+ * We extract by case-insensitive label match against a small known vocabulary
+ * and tolerate missing metrics — `engagementRate` is recomputed from atoms.
+ */
+export function parsePostizAnalytics(input: {
+  provider: 'postiz';
+  remoteId: string;
+  result: PostizAnalyticsResult;
+  now?: Date;
+}): SocialPostInsights {
+  const now = input.now ?? new Date();
+  const rows = extractAnalyticsRows(input.result.body);
+  const lookup = new Map<string, number>();
+  for (const row of rows) {
+    const label = String(row.label ?? row.name ?? '').toLowerCase();
+    if (!label) continue;
+    const value = pickMetricValue(row);
+    if (value === null) continue;
+    if (!lookup.has(label)) lookup.set(label, value);
+  }
+  const impressions = matchMetric(lookup, ['impressions', 'views']);
+  const reach = matchMetric(lookup, ['reach', 'unique impressions']);
+  const likes = matchMetric(lookup, ['likes', 'reactions']);
+  const comments = matchMetric(lookup, ['comments', 'replies']);
+  const shares = matchMetric(lookup, ['shares', 'retweets', 'reposts']);
+  const saves = matchMetric(lookup, ['saves', 'saved', 'bookmarks']);
+  const videoViews = matchMetric(lookup, ['video views', 'plays']);
+  const base = reach ?? impressions;
+  const engagementRate =
+    base && base > 0
+      ? Math.round(
+          (((likes ?? 0) + (comments ?? 0) + (shares ?? 0) + (saves ?? 0)) / base) * 10_000,
+        ) / 10_000
+      : null;
+  return {
+    provider: input.provider,
+    remoteId: input.remoteId,
+    capturedAt: now.toISOString(),
+    metrics: { impressions, reach, likes, comments, shares, saves, videoViews, engagementRate },
+    raw: redactProviderPayload(input.result.body as Record<string, unknown>) as Record<string, unknown>,
+  };
+}
+
+function extractAnalyticsRows(body: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(body)) return body.filter((row): row is Record<string, unknown> => isObject(row));
+  if (!isObject(body)) return [];
+  const candidates = ['analytics', 'data', 'metrics', 'result'];
+  for (const key of candidates) {
+    const value = body[key];
+    if (Array.isArray(value)) {
+      return value.filter((row): row is Record<string, unknown> => isObject(row));
+    }
+  }
+  return [];
+}
+
+function pickMetricValue(row: Record<string, unknown>): number | null {
+  // Prefer the explicit total/current snapshot; fall back to the last data
+  // point in the time series.
+  const totalKeys = ['total', 'current', 'value', 'count'];
+  for (const key of totalKeys) {
+    const value = row[key];
+    const parsed = toFiniteNumber(value);
+    if (parsed !== null) return parsed;
+  }
+  const data = row.data;
+  if (Array.isArray(data) && data.length > 0) {
+    const last = data[data.length - 1];
+    if (isObject(last)) {
+      const parsed = toFiniteNumber(last.value ?? last.count ?? last.total);
+      if (parsed !== null) return parsed;
+    }
+  }
+  return null;
+}
+
+function matchMetric(lookup: Map<string, number>, aliases: string[]): number | null {
+  for (const alias of aliases) {
+    const value = lookup.get(alias);
+    if (typeof value === 'number') return value;
+  }
+  return null;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function resolvePostizSchedule(

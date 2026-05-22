@@ -309,4 +309,65 @@ describe('PostizSocialPublishingAdapter', () => {
       expect(uploadMedia).not.toHaveBeenCalled();
     });
   });
+
+  describe('getInsights', () => {
+    it('parse une réponse Postiz array-of-metrics en SocialPostInsights', async () => {
+      const fetchAnalytics = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: [
+          { label: 'Impressions', total: 1500, data: [{ date: '2026-05-19', value: 800 }] },
+          { label: 'Reach', total: 1000 },
+          { label: 'Likes', total: 60 },
+          { label: 'Comments', total: 8 },
+          { label: 'Shares', total: 4 },
+          { label: 'Saves', total: 2 },
+        ],
+      });
+      const adapter = new PostizSocialPublishingAdapter({ fetchAnalytics });
+      const result = await adapter.getInsights({ account: igAccount, providerPostId: 'p_postiz_42' });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.insights.provider).toBe('postiz');
+      expect(result.insights.remoteId).toBe('p_postiz_42');
+      expect(result.insights.metrics).toMatchObject({
+        impressions: 1500,
+        reach: 1000,
+        likes: 60,
+        comments: 8,
+        shares: 4,
+        saves: 2,
+      });
+      // engagement = (60+8+4+2)/1000 = 0.074
+      expect(result.insights.metrics.engagementRate).toBeCloseTo(0.074, 4);
+    });
+
+    it('propage 404 en provider_unavailable / retryable=false', async () => {
+      const fetchAnalytics = vi.fn().mockResolvedValue({ ok: false, status: 404, body: {} });
+      const adapter = new PostizSocialPublishingAdapter({ fetchAnalytics });
+      const result = await adapter.getInsights({ account: igAccount, providerPostId: 'p_404' });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.status).toBe(404);
+    });
+
+    it('extrait depuis { analytics: [...] } quand le body est wrappé', async () => {
+      const fetchAnalytics = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: {
+          analytics: [
+            { name: 'impressions', value: 500 },
+            { name: 'likes', value: 25 },
+          ],
+        },
+      });
+      const adapter = new PostizSocialPublishingAdapter({ fetchAnalytics });
+      const result = await adapter.getInsights({ account: igAccount, providerPostId: 'p_wrap' });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.insights.metrics.impressions).toBe(500);
+      expect(result.insights.metrics.likes).toBe(25);
+    });
+  });
 });

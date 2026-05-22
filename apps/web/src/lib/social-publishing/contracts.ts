@@ -175,8 +175,60 @@ export interface SocialPublishEvent {
   createdAt: Date;
 }
 
+/**
+ * Normalized post performance metrics, written into
+ * `content_performance_snapshot.metrics`. Optional fields stay nullable so
+ * providers that don't surface a given metric don't lie with zeros.
+ */
+export interface SocialPostInsights {
+  provider: SocialProviderId;
+  remoteId: string;
+  /** When the provider measured these metrics (defaults to now if absent). */
+  capturedAt: string;
+  metrics: {
+    impressions?: number | null;
+    reach?: number | null;
+    likes?: number | null;
+    comments?: number | null;
+    shares?: number | null;
+    saves?: number | null;
+    videoViews?: number | null;
+    /** Engagement = (likes + comments + shares + saves) / max(reach, 1). 0..1 */
+    engagementRate?: number | null;
+  };
+  /** Redacted provider payload — useful for debugging anomalies. */
+  raw?: Record<string, unknown>;
+}
+
+export interface SocialInsightsRequest {
+  account: SocialAccount;
+  providerPostId: string;
+}
+
+export interface SocialInsightsSuccess {
+  ok: true;
+  insights: SocialPostInsights;
+}
+
+export interface SocialInsightsFailure {
+  ok: false;
+  error: {
+    code: SocialPublishErrorCode;
+    message: string;
+    retryable: boolean;
+    status?: number;
+  };
+}
+
+export type SocialInsightsResult = SocialInsightsSuccess | SocialInsightsFailure;
+
 export interface SocialPublishingAdapter {
   readonly provider: SocialProviderId;
   listCapabilities(account: SocialAccount): SocialPublishingCapability[];
   publish(request: SocialPublishRequest): Promise<SocialPublishResult>;
+  /**
+   * Optional analytics retrieval. Adapters that don't yet implement it
+   * return `undefined` and the worker skips that publication.
+   */
+  getInsights?(request: SocialInsightsRequest): Promise<SocialInsightsResult>;
 }

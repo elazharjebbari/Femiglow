@@ -8,8 +8,16 @@
  * Output shape is deliberately flat — the page renders it directly into
  * widgets without further mapping.
  */
-import type { ContentPost, ContentGenerationRun } from './types';
-import { listPosts, listGenerationRuns } from './repository';
+import type {
+  ContentPost,
+  ContentGenerationRun,
+  ContentPerformanceSnapshot,
+} from './types';
+import {
+  listPosts,
+  listGenerationRuns,
+  listPerformanceSnapshotsForPosts,
+} from './repository';
 import {
   listPublishJobs,
   listSocialAccounts,
@@ -44,11 +52,25 @@ export interface AccountHealth {
   lastFailureCode: string | null;
 }
 
+export interface TopPerformer {
+  postId: string;
+  capturedAt: Date;
+  engagementRate: number;
+  impressions: number | null;
+  reach: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  saves: number | null;
+  source: string;
+}
+
 export interface DashboardSnapshot {
   postsThisWeek: PostsThisWeek;
   jobSuccessRate: JobSuccessRate;
   monthlyAiCost: MonthlyAiCost;
   accountHealth: AccountHealth[];
+  topPerformers: TopPerformer[];
   generatedAt: Date;
 }
 
@@ -60,11 +82,16 @@ export async function buildDashboardSnapshot(now: Date = new Date()): Promise<Da
     listGenerationRuns(1000),
   ]);
 
+  const publishedPostIds = posts.filter((p) => p.status === 'published').map((p) => p.id);
+  const snapshots =
+    publishedPostIds.length > 0 ? await listPerformanceSnapshotsForPosts(publishedPostIds) : [];
+
   return {
     postsThisWeek: computePostsThisWeek(posts, now),
     jobSuccessRate: computeJobSuccessRate(jobs),
     monthlyAiCost: computeMonthlyAiCost(runs, now),
     accountHealth: computeAccountHealth(accounts, jobs),
+    topPerformers: computeTopPerformers(snapshots, { limit: 5 }),
     generatedAt: now,
   };
 }
@@ -139,6 +166,46 @@ export function computeAccountHealth(
     });
   }
   return result.sort((a, b) => (b.lastSuccessAt?.getTime() ?? 0) - (a.lastSuccessAt?.getTime() ?? 0));
+}
+
+export function computeTopPerformers(
+  snapshots: ContentPerformanceSnapshot[],
+  options: { limit?: number } = {},
+): TopPerformer[] {
+  const limit = options.limit ?? 5;
+  // Keep only the most recent snapshot per post: an ingestion run produces
+  // overlapping daily entries, and we want the freshest view.
+  const latestByPost = new Map<string, ContentPerformanceSnapshot>();
+  for (const snap of snapshots) {
+    const current = latestByPost.get(snap.postId);
+    if (!current || snap.capturedAt.getTime() > current.capturedAt.getTime()) {
+      latestByPost.set(snap.postId, snap);
+    }
+  }
+  const enriched: TopPerformer[] = [];
+  for (const snap of latestByPost.values()) {
+    const metrics = snap.metrics as Record<string, unknown>;
+    const engagementRate = toFinite(metrics.engagementRate);
+    if (engagementRate === null) continue;
+    enriched.push({
+      postId: snap.postId,
+      capturedAt: snap.capturedAt,
+      engagementRate,
+      impressions: toFinite(metrics.impressions),
+      reach: toFinite(metrics.reach),
+      likes: toFinite(metrics.likes),
+      comments: toFinite(metrics.comments),
+      shares: toFinite(metrics.shares),
+      saves: toFinite(metrics.saves),
+      source: snap.source,
+    });
+  }
+  return enriched.sort((a, b) => b.engagementRate - a.engagementRate).slice(0, limit);
+}
+
+function toFinite(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return null;
 }
 
 function startOfDay(date: Date): Date {

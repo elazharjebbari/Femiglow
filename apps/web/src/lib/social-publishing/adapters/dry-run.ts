@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import type {
   SocialAccount,
+  SocialInsightsRequest,
+  SocialInsightsResult,
   SocialPublishRequest,
   SocialPublishResult,
   SocialPublishingAdapter,
@@ -52,6 +54,39 @@ export class DryRunSocialPublishingAdapter implements SocialPublishingAdapter {
     } catch (err) {
       return toPublishFailure(err);
     }
+  }
+
+  async getInsights(request: SocialInsightsRequest): Promise<SocialInsightsResult> {
+    // Deterministic synthetic metrics — same providerPostId always yields the
+    // same numbers, so two ingestion runs produce identical snapshots and the
+    // worker's idempotency check holds.
+    const seed = createHash('sha256').update(request.providerPostId).digest();
+    const byteAt = (idx: number): number => seed.readUInt8(idx);
+    const impressions = 500 + (seed.readUInt16BE(0) % 3500);
+    const reach = Math.round(impressions * (0.55 + (byteAt(2) % 30) / 100));
+    const likes = Math.round(reach * (0.04 + (byteAt(3) % 12) / 100));
+    const comments = Math.round(likes * (0.05 + (byteAt(4) % 15) / 100));
+    const shares = Math.round(likes * (0.02 + (byteAt(5) % 8) / 100));
+    const saves = Math.round(likes * (0.03 + (byteAt(6) % 10) / 100));
+    const engagementRate = reach > 0 ? (likes + comments + shares + saves) / reach : 0;
+    return {
+      ok: true,
+      insights: {
+        provider: this.provider,
+        remoteId: request.providerPostId,
+        capturedAt: new Date().toISOString(),
+        metrics: {
+          impressions,
+          reach,
+          likes,
+          comments,
+          shares,
+          saves,
+          videoViews: null,
+          engagementRate: Math.round(engagementRate * 10_000) / 10_000,
+        },
+      },
+    };
   }
 }
 

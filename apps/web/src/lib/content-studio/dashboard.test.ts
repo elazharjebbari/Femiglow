@@ -5,8 +5,13 @@ import {
   computeJobSuccessRate,
   computeMonthlyAiCost,
   computePostsThisWeek,
+  computeTopPerformers,
 } from './dashboard';
-import type { ContentPost, ContentGenerationRun } from './types';
+import type {
+  ContentPost,
+  ContentGenerationRun,
+  ContentPerformanceSnapshot,
+} from './types';
 import type { SocialAccount, SocialPublishJob } from '@/lib/social-publishing/contracts';
 
 const now = new Date('2026-05-21T12:00:00.000Z');
@@ -130,6 +135,50 @@ describe('computeMonthlyAiCost', () => {
 
   it('renvoie 0 quand aucun run sur le mois', () => {
     expect(computeMonthlyAiCost([], now)).toMatchObject({ cents: 0, runs: 0 });
+  });
+});
+
+describe('computeTopPerformers', () => {
+  function snap(overrides: Partial<ContentPerformanceSnapshot>): ContentPerformanceSnapshot {
+    return {
+      id: 'cps_x',
+      postId: 'po_x',
+      source: 'postiz:remote_x:2026-05-22',
+      metrics: { engagementRate: 0.1, reach: 100, likes: 8, comments: 2, shares: 0, saves: 0 },
+      capturedAt: now,
+      ...overrides,
+    };
+  }
+
+  it('classe par engagementRate décroissant, limite à options.limit', () => {
+    const top = computeTopPerformers(
+      [
+        snap({ id: 'a', postId: 'po_a', metrics: { engagementRate: 0.05, reach: 100, likes: 5 } }),
+        snap({ id: 'b', postId: 'po_b', metrics: { engagementRate: 0.12, reach: 80, likes: 9 } }),
+        snap({ id: 'c', postId: 'po_c', metrics: { engagementRate: 0.07, reach: 200, likes: 14 } }),
+      ],
+      { limit: 2 },
+    );
+    expect(top.map((t) => t.postId)).toEqual(['po_b', 'po_c']);
+    expect(top[0]?.engagementRate).toBe(0.12);
+  });
+
+  it('ne garde que le snapshot le plus récent par postId', () => {
+    const older = new Date('2026-05-20T00:00:00.000Z');
+    const newer = new Date('2026-05-21T00:00:00.000Z');
+    const top = computeTopPerformers([
+      snap({ id: 'a', postId: 'po_a', capturedAt: older, metrics: { engagementRate: 0.05 } }),
+      snap({ id: 'a2', postId: 'po_a', capturedAt: newer, metrics: { engagementRate: 0.15 } }),
+    ]);
+    expect(top).toHaveLength(1);
+    expect(top[0]?.engagementRate).toBe(0.15);
+  });
+
+  it('ignore les snapshots sans engagementRate', () => {
+    const top = computeTopPerformers([
+      snap({ id: 'a', postId: 'po_a', metrics: { reach: 100, likes: 5 } }),
+    ]);
+    expect(top).toHaveLength(0);
   });
 });
 

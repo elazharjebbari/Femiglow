@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { env } from '@/lib/env';
-import { buildDashboardSnapshot, type AccountHealth } from '@/lib/content-studio/dashboard';
+import {
+  buildDashboardSnapshot,
+  type AccountHealth,
+  type TopPerformer,
+} from '@/lib/content-studio/dashboard';
 
 export const dynamic = 'force-dynamic';
 // Server-rendered snapshot. 5 min revalidation prevents accidental hammering
@@ -51,7 +55,7 @@ export default async function AdminContentStudioDashboardPage() {
 }
 
 function DashboardWidgets({ snapshot }: { snapshot: Awaited<ReturnType<typeof buildDashboardSnapshot>> }) {
-  const { postsThisWeek, jobSuccessRate, monthlyAiCost, accountHealth } = snapshot;
+  const { postsThisWeek, jobSuccessRate, monthlyAiCost, accountHealth, topPerformers } = snapshot;
 
   return (
     <div className="space-y-6">
@@ -100,10 +104,14 @@ function DashboardWidgets({ snapshot }: { snapshot: Awaited<ReturnType<typeof bu
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
           Top performers
         </h2>
-        <p className="rounded-md border border-stone-200 bg-white p-4 text-sm text-stone-500">
-          Données indisponibles — l&apos;ingestion <code>content_performance_snapshot</code> sera
-          activée en S3.1 (worker cron Postiz <code>getInsights</code>).
-        </p>
+        {topPerformers.length === 0 ? (
+          <p className="rounded-md border border-stone-200 bg-white p-4 text-sm text-stone-500">
+            Aucun snapshot disponible. L&apos;ingestion s&apos;exécute toutes les 6h sur les
+            publications âgées de 24h à 72h ; revenir plus tard.
+          </p>
+        ) : (
+          <TopPerformersTable rows={topPerformers} />
+        )}
       </section>
 
       <p className="text-xs text-stone-400">
@@ -170,6 +178,43 @@ function DailyBars({ dailyCounts }: { dailyCounts: Array<{ date: string; count: 
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function TopPerformersTable({ rows }: { rows: TopPerformer[] }) {
+  return (
+    <div className="overflow-hidden rounded-md border border-stone-200 bg-white">
+      <table className="min-w-full divide-y divide-stone-200 text-sm">
+        <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
+          <tr>
+            <th className="px-4 py-2">Post</th>
+            <th className="px-4 py-2">Engagement</th>
+            <th className="px-4 py-2">Reach / Impressions</th>
+            <th className="px-4 py-2">Likes · Comm · Shares · Saves</th>
+            <th className="px-4 py-2">Capturé</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-stone-100">
+          {rows.map((row) => (
+            <tr key={row.postId}>
+              <td className="px-4 py-2 font-mono text-xs text-stone-700">{row.postId}</td>
+              <td className="px-4 py-2 tabular-nums font-semibold text-stone-900">
+                {(row.engagementRate * 100).toFixed(2)}%
+              </td>
+              <td className="px-4 py-2 text-stone-600 tabular-nums">
+                {row.reach ?? '—'} / {row.impressions ?? '—'}
+              </td>
+              <td className="px-4 py-2 text-stone-600 tabular-nums">
+                {(row.likes ?? 0)} · {(row.comments ?? 0)} · {(row.shares ?? 0)} · {(row.saves ?? 0)}
+              </td>
+              <td className="px-4 py-2 text-stone-500 tabular-nums">
+                {row.capturedAt.toISOString().slice(0, 16).replace('T', ' ')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
