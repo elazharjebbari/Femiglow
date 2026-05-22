@@ -19,6 +19,7 @@ import {
   getKitProductCached,
 } from '@/lib/products/public';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
+import { projectCartSnapshotFromVariant } from '@/lib/checkout/helpers/cart-snapshot-builder';
 
 // Fallback fixe utilisé UNIQUEMENT si la DB est vide ou le produit non publié
 // (env. local sans seed, snapshot mock). On garde la valeur stable pour ne pas
@@ -42,20 +43,20 @@ interface KitCommanderSectionBoundProps
 }
 
 function buildCartSnapshotFromMock(): CartSnapshot {
-  const unitPriceCents = mockKit.promoPriceCents ?? mockKit.priceCents;
-  return {
-    items: [
-      {
-        sku: FALLBACK_KIT_SKU,
-        name: mockKit.name,
-        quantity: 1,
-        unitPriceCents,
-        variantId: FALLBACK_KIT_VARIANT_ID,
-      },
-    ],
-    totalCents: unitPriceCents,
-    currency: mockKit.currency,
-  };
+  // Délégation au helper pur (testé exhaustivement dans
+  // `cart-snapshot-builder.test.ts`). Le mock fallback agit comme une
+  // "variant DB" synthétique pour réutiliser la même logique compareAt
+  // que la branche DB → zéro divergence entre les deux chemins.
+  return projectCartSnapshotFromVariant(
+    {
+      sku: FALLBACK_KIT_SKU,
+      priceCents: mockKit.priceCents,
+      promoPriceCents: mockKit.promoPriceCents ?? null,
+      currency: mockKit.currency,
+      variantId: FALLBACK_KIT_VARIANT_ID,
+    },
+    { productName: mockKit.name },
+  );
 }
 
 export async function KitCommanderSectionBound({
@@ -72,25 +73,19 @@ export async function KitCommanderSectionBound({
     if (!data || data.product.status !== 'published' || !primary) {
       initialCart = buildCartSnapshotFromMock();
     } else {
-      const unitPriceCents =
-        primary.promoPriceCents !== null &&
-        primary.promoPriceCents > 0 &&
-        primary.promoPriceCents < primary.priceCents
-          ? primary.promoPriceCents
-          : primary.priceCents;
-      initialCart = {
-        items: [
-          {
-            sku: primary.sku,
-            name: data.product.title || mockKit.name,
-            quantity: 1,
-            unitPriceCents,
-            variantId: primary.id,
-          },
-        ],
-        totalCents: unitPriceCents,
-        currency: primary.currency,
-      };
+      // Délégation au helper pur — même contrat compareAt que le mock
+      // fallback. Cf. `cart-snapshot-builder.test.ts` pour les 13 cas
+      // testés (promo active, no-promo, EUR, multi-qty, etc.).
+      initialCart = projectCartSnapshotFromVariant(
+        {
+          sku: primary.sku,
+          priceCents: primary.priceCents,
+          promoPriceCents: primary.promoPriceCents,
+          currency: primary.currency,
+          variantId: primary.id,
+        },
+        { productName: data.product.title || mockKit.name },
+      );
     }
   }
 
