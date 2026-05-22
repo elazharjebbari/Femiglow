@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { env } from '@/lib/env';
 import { studioV2Fonts } from '@/styles/content-studio-v2/fonts';
 import { ThemeProvider } from '@/components/admin/content-studio-v2/shell/ThemeProvider';
+import { StudioShellProviders } from '@/components/admin/content-studio-v2/shell/StudioShellProviders';
 import '@/styles/content-studio-v2/tokens.css';
 
 /**
@@ -17,7 +17,9 @@ export default function ContentStudioV2Layout({ children }: { children: ReactNod
   return (
     <ThemeProvider>
       <div className={`${fontVars} cs-v2-shell`} data-content-studio-version="2">
-        {children}
+        <StudioShellProviders>
+          {children}
+        </StudioShellProviders>
       </div>
     </ThemeProvider>
   );
