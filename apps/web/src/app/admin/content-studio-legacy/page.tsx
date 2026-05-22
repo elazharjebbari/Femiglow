@@ -1,4 +1,10 @@
-import { redirect } from 'next/navigation';
+/**
+ * Legacy Content Studio (v1) — fallback while the v2 refonte stabilises.
+ *
+ * Always accessible regardless of CONTENT_STUDIO_V2_DEFAULT. Identical to
+ * the original `/admin/content-studio` page; only the URL differs so v2
+ * can claim the canonical path.
+ */
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ContentStudioClient } from '@/components/admin/content-studio/ContentStudioClient';
@@ -14,20 +20,12 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminContentStudioPage() {
-  const session = await requireAdmin('/admin/content-studio');
+export const metadata = {
+  title: 'Content Studio · Legacy',
+};
 
-  // Substitution v2 : quand CONTENT_STUDIO_V2_DEFAULT=true ET v2 ENABLED,
-  // /admin/content-studio devient l'entrée par défaut de la refonte. L'ancien
-  // module reste accessible sur /admin/content-studio-legacy pour rollback
-  // sans deploy.
-  if (
-    env.CONTENT_STUDIO_V2_DEFAULT === 'true' &&
-    env.CONTENT_STUDIO_V2_ENABLED === 'true'
-  ) {
-    redirect('/admin/content-studio-v2/home');
-  }
-
+export default async function AdminContentStudioLegacyPage() {
+  const session = await requireAdmin('/admin/content-studio-legacy');
   const enabled = env.CONTENT_STUDIO_ENABLED === 'true';
   const legacyPostizDisabled = env.CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED === 'true';
   const [ideas, drafts, posts, draftAssets, deliveries, snapshots] = enabled
@@ -45,14 +43,15 @@ export default async function AdminContentStudioPage() {
     <AdminShell adminEmail={session.email} active="content-studio">
       <header className="mb-6">
         <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-          AI Content Studio
+          AI Content Studio · ancienne interface
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">
-          Studio contenu
+          Studio contenu — Legacy
         </h1>
         <p className="mt-1 max-w-3xl text-sm text-stone-600">
-          Générer des idées, revoir les brouillons, préserver la voix FemiGlow et créer
-          uniquement des brouillons Postiz validés.
+          Interface historique conservée le temps que la refonte v2 soit stabilisée.
+          La nouvelle interface se trouve sur{' '}
+          <a href="/admin/content-studio" className="text-stone-900 underline">/admin/content-studio</a>.
         </p>
       </header>
       <ContentStudioClient

@@ -78,7 +78,7 @@ export function CommandPalette({ onOpenCheatsheet }: Props) {
     group: 'Navigation',
     label: 'Ouvrir l\'ancien Studio',
     icon: <ExternalLink size={14} />,
-    perform: () => router.push('/admin/content-studio'),
+    perform: () => router.push('/admin/content-studio-legacy'),
   }), [router]));
   useCommand(useMemo<StudioCommand>(() => ({
     id: 'help.cheatsheet',

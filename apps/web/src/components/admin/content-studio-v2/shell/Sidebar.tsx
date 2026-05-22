@@ -123,7 +123,7 @@ export function Sidebar() {
       >
         <ThemeToggle />
         <Link
-          href="/admin/content-studio"
+          href="/admin/content-studio-legacy"
           title="Voir l'ancien Studio"
           style={{
             display: 'inline-flex',
