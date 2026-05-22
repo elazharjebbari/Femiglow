@@ -248,7 +248,59 @@ export async function publishContentPostNow(input: {
     platform: publishability.content.platform,
     format: publishability.content.format,
     idempotencyKey: key,
-    content: publishability.content,
+    content: { ...publishability.content, publishMode: 'now' },
+    status: 'queued',
+    requestedBy: input.actorId,
+  });
+  return executeJob({ jobId: job.id, actorId: input.actorId });
+}
+
+/**
+ * Send a content post to the provider in "review" / draft state, without
+ * triggering an actual social publication. The post lands in the provider's
+ * native UI (e.g. Postiz draft list) where a human can review and publish
+ * it manually. Useful for 4-eyes workflows and final QA on Postiz's preview.
+ *
+ * Idempotency key suffix is "draft" so the same post can also be queued
+ * via publishContentPostNow / scheduleContentPost without collision.
+ */
+export async function sendContentPostToDraft(input: {
+  postId: string;
+  accountId?: string | null;
+  actorId: string | null;
+  idempotencyKey?: string | null;
+}): Promise<{ job: SocialPublishJob; result: SocialPublishResult }> {
+  const explicitKey = input.idempotencyKey?.trim();
+  if (explicitKey) {
+    const existing = await findPublishJobByIdempotencyKey(explicitKey);
+    if (existing) return resultForExistingJob(existing);
+  }
+  const publishability = await getPostPublishability({ postId: input.postId, accountId: input.accountId });
+  if (!publishability.publishable) {
+    throw new HttpError('invalid_state', 'Post non publiable.', { errors: publishability.errors });
+  }
+  const capability = adapterFor(publishability.account.provider)
+    .listCapabilities(publishability.account)
+    .find(
+      (cap) =>
+        cap.platform === publishability.content.platform &&
+        cap.format === publishability.content.format,
+    );
+  if (!capability?.supportsDraft) {
+    throw new HttpError(
+      'invalid_state',
+      'Mode brouillon non supporté pour ce compte / format.',
+    );
+  }
+  const key = explicitKey || defaultIdempotencyKey(input.postId, publishability.account.id, 'draft');
+  const job = await createPublishJob({
+    postId: input.postId,
+    accountId: publishability.account.id,
+    provider: publishability.account.provider,
+    platform: publishability.content.platform,
+    format: publishability.content.format,
+    idempotencyKey: key,
+    content: { ...publishability.content, publishMode: 'draft', scheduledAt: null },
     status: 'queued',
     requestedBy: input.actorId,
   });
@@ -280,7 +332,7 @@ export async function scheduleContentPost(input: {
     platform: publishability.content.platform,
     format: publishability.content.format,
     idempotencyKey: key,
-    content: { ...publishability.content, scheduledAt: input.scheduledAt },
+    content: { ...publishability.content, publishMode: 'schedule', scheduledAt: input.scheduledAt },
     status: 'queued',
     scheduledAt: input.scheduledAt,
     requestedBy: input.actorId,
