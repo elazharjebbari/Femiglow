@@ -127,29 +127,67 @@ async function flushProvider(provider: CapiProvider): Promise<FlushStats> {
 }
 
 /**
- * Dispatch HTTP réel vers le provider. À câbler en Sprint 3 R1/R2.
+ * Dispatch HTTP réel vers le provider — Sprint 4 A3 wiring.
  *
- * Pour l'instant on log uniquement (les events restent en buffer Redis,
- * pas envoyés au provider externe). Cela permet de tester le flush
- * pipeline sans toucher aux API externes.
+ * Le buffer Redis stocke des `CapiBufferedEvent` dont le payload contient
+ * directement `{ url, body }` formaté par chaque provider. On itère le
+ * batch et fait des fetch parallèles (Promise.all avec cap concurrency).
  *
- * Référence : docs/live-systems-fix-2026-05/08-system-tracking.md § S2.3
+ * Référence : docs/live-systems-fix-2026-05/08-system-tracking.md § S2
  */
 async function dispatchBatchToProvider(
   provider: CapiProvider,
-  batch: unknown[],
+  batch: import('@/lib/tracking/server/capi-buffer').CapiBufferedEvent[],
 ): Promise<void> {
-  // STUB volontaire — le câblage réel dépend de :
-  //  - lib/tracking/providers/meta.ts dispatchBatch() (Meta CAPI v22.0)
-  //  - lib/tracking/providers/tiktok.ts dispatchBatch() (TikTok Events API)
-  //  - lib/tracking/providers/snap.ts dispatchBatch() (Snap CAPI)
-  //  - lib/tracking/providers/pinterest.ts dispatchBatch() (Pinterest)
-  // Pour QW Sprint 2, on simule le succès → events sortent du buffer.
-  // Tests intégration MSW vérifient ce flow end-to-end.
-  logger.info('capi.flush.stub', {
+  // Cap concurrency 10 pour éviter de saturer la lambda
+  const CHUNK = 10;
+  const failures: string[] = [];
+
+  for (let i = 0; i < batch.length; i += CHUNK) {
+    const chunk = batch.slice(i, i + CHUNK);
+    const results = await Promise.all(
+      chunk.map(async (event) => {
+        const payload = event.payload as { url?: string; body?: unknown };
+        if (!payload.url || !payload.body) {
+          return { ok: false, reason: 'malformed_payload' };
+        }
+        try {
+          const res = await fetch(payload.url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload.body),
+          });
+          if (!res.ok) {
+            const errBody = await res.text();
+            return {
+              ok: false,
+              reason: `http_${res.status}: ${errBody.slice(0, 100)}`,
+            };
+          }
+          return { ok: true };
+        } catch (err) {
+          return {
+            ok: false,
+            reason: err instanceof Error ? err.message : String(err),
+          };
+        }
+      }),
+    );
+    for (const r of results) {
+      if (!r.ok) failures.push(r.reason ?? 'unknown');
+    }
+  }
+
+  if (failures.length > 0) {
+    // Throw pour que le caller re-push les events (retry policy)
+    throw new Error(
+      `Dispatch ${provider} failed ${failures.length}/${batch.length}: ${failures.slice(0, 3).join('; ')}`,
+    );
+  }
+
+  logger.info('capi.flush.dispatched', {
     provider,
     count: batch.length,
-    note: 'STUB — real dispatch wiring deferred to Sprint 3 R1/R2',
   });
 }
 

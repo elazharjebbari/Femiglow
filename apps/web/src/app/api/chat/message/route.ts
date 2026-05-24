@@ -17,6 +17,12 @@ import { rateLimit } from '@/lib/chat/services/rate-limit';
 import { sessionRepo } from '@/lib/chat/repos/session';
 import { eventRepo } from '@/lib/chat/repos/event';
 import { logger } from '@/lib/logging/logger';
+// Sprint 4 B1 — Instrumentation streaming SSE
+// Référence : docs/live-systems-fix-2026-05/06-system-chat-openai.md § R2
+import {
+  StreamingMeter,
+  recordStreamingMetrics,
+} from '@/lib/chat/services/streaming-health';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -104,6 +110,11 @@ export async function POST(req: NextRequest): Promise<Response> {
   // Si le client ferme la connexion, on annule le stream provider.
   req.signal.addEventListener('abort', () => abort.abort());
 
+  // Sprint 4 B1 — Instrumentation streaming pour observabilité prod.
+  // Mesure first chunk latency, P95 inter-chunk, drop rate. Stockage
+  // Redis bucket minute via recordStreamingMetrics (fail-soft).
+  const meter = new StreamingMeter(session.id, 'auto'); // provider résolu par orchestrator
+
   return streamSSE(async (write) => {
     try {
       for await (const ev of streamReply({
@@ -111,14 +122,20 @@ export async function POST(req: NextRequest): Promise<Response> {
         text: parsed.data.text,
         signal: abort.signal,
       })) {
+        meter.onChunk();
         write(ev);
       }
+      meter.onEnd();
     } catch (err) {
+      meter.onDrop((err as Error).message);
       logger.error('chat.message.stream_failed', {
         sessionId: session.id,
         error: (err as Error).message,
       });
       write({ event: 'error', data: { code: 'stream-failed' } });
+    } finally {
+      // Fire-and-forget — ne bloque pas la réponse client.
+      void recordStreamingMetrics(meter.snapshot());
     }
   });
 }
