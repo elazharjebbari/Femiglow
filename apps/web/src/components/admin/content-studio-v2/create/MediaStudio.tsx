@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
@@ -34,6 +34,16 @@ export function MediaStudio({
   const [compartment, setCompartment] = useState<StudioV2Compartment | 'all'>('all');
   const [generating, setGenerating] = useState(false);
   const estimator = useGenerationEstimator({ bucket: 'visual', fallbackMs: 20_000 });
+  const [budget, setBudget] = useState<{ dailyBudgetCents: number; dailySpentCents: number; remainingCents: number } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/admin/content-studio/generation-runs?limit=0')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json: { budget?: { dailyBudgetCents: number; dailySpentCents: number; remainingCents: number } } | null) => {
+        if (json?.budget) setBudget(json.budget);
+      })
+      .catch(() => {});
+  }, []);
 
   async function generateVisual() {
     const prompt =
@@ -107,28 +117,47 @@ export function MediaStudio({
         >
           Visuel
         </h3>
-        <div style={{ display: 'inline-flex', gap: 8 }}>
-          {selectedMedia ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<RotateCcw size={14} />}
-              type="button"
-              onClick={() => onSelect(null)}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          {budget ? (
+            <p
+              aria-label="Budget IA quotidien"
+              style={{
+                margin: 0,
+                fontFamily: 'var(--cs-font-mono)',
+                fontSize: 11,
+                color: budget.dailyBudgetCents > 0 && budget.remainingCents / budget.dailyBudgetCents < 0.2
+                  ? 'var(--cs-danger)'
+                  : 'var(--cs-fg-muted)',
+              }}
             >
-              Décrocher
-            </Button>
+              {budget.dailyBudgetCents === 0
+                ? 'Budget illimité'
+                : `${budget.remainingCents}¢ / ${budget.dailyBudgetCents}¢ restants`}
+            </p>
           ) : null}
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Sparkles size={14} />}
-            type="button"
-            onClick={generateVisual}
-            loading={generating}
-          >
-            Générer un visuel IA
-          </Button>
+          <div style={{ display: 'inline-flex', gap: 8 }}>
+            {selectedMedia ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<RotateCcw size={14} />}
+                type="button"
+                onClick={() => onSelect(null)}
+              >
+                Décrocher
+              </Button>
+            ) : null}
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Sparkles size={14} />}
+              type="button"
+              onClick={generateVisual}
+              loading={generating}
+            >
+              Générer un visuel IA
+            </Button>
+          </div>
         </div>
       </header>
 

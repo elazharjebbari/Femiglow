@@ -150,7 +150,7 @@ export function CaptionEditor({
 }
 
 interface IndicatorProps {
-  status: 'idle' | 'saving' | 'saved' | 'error';
+  status: 'idle' | 'saving' | 'saved' | 'error' | 'session_expired';
   isDirty: boolean;
   lastSavedAt: number | null;
   error: string | null;
@@ -172,6 +172,25 @@ export function AutosaveIndicator({ status, isDirty, lastSavedAt, error }: Indic
         <Loader2 size={13} className="cs-spin" style={{ animation: 'cs-spin 1s linear infinite' }} />
         Enregistrement…
       </span>
+    );
+  }
+  if (status === 'session_expired') {
+    return (
+      <a
+        href="/admin/login"
+        role="alert"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 12,
+          color: 'var(--cs-danger)',
+          textDecoration: 'underline',
+        }}
+      >
+        <AlertCircle size={13} />
+        Session expirée — se reconnecter
+      </a>
     );
   }
   if (status === 'error') {

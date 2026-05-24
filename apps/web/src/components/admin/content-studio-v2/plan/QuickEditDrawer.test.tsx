@@ -149,4 +149,77 @@ describe('QuickEditDrawer', () => {
     );
     expect(screen.getByText('#femiglow')).toBeInTheDocument();
   });
+
+  it('"Annuler la publication" visible when post.status === "scheduled"', () => {
+    const scheduledPost = buildContentPost({
+      id: 'post_sched1',
+      draftId: 'draft_qe1',
+      status: 'scheduled',
+      scheduledAt: new Date('2026-06-15T10:00:00.000Z'),
+    });
+    render(
+      <QuickEditDrawer
+        open={true}
+        onOpenChange={vi.fn()}
+        post={scheduledPost}
+        draft={draft}
+      />,
+    );
+    expect(screen.getByTestId('cancel-publication-btn')).toBeInTheDocument();
+  });
+
+  it('"Annuler la publication" NOT visible when post.status === "approved"', () => {
+    const approvedPost = buildContentPost({
+      id: 'post_app1',
+      draftId: 'draft_qe1',
+      status: 'approved',
+    });
+    render(
+      <QuickEditDrawer
+        open={true}
+        onOpenChange={vi.fn()}
+        post={approvedPost}
+        draft={draft}
+      />,
+    );
+    expect(screen.queryByTestId('cancel-publication-btn')).not.toBeInTheDocument();
+  });
+
+  it('click cancel → dialog → confirm → fetch called → toast success', async () => {
+    const onUpdated = vi.fn();
+    const onOpenChange = vi.fn();
+    const scheduledPost = buildContentPost({
+      id: 'post_sched2',
+      draftId: 'draft_qe1',
+      status: 'scheduled',
+      scheduledAt: new Date('2026-06-15T10:00:00.000Z'),
+    });
+    const mockFetcher = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    render(
+      <QuickEditDrawer
+        open={true}
+        onOpenChange={onOpenChange}
+        post={scheduledPost}
+        draft={draft}
+        fetcher={mockFetcher}
+        onUpdated={onUpdated}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('cancel-publication-btn'));
+    await waitFor(() => {
+      expect(screen.getByText(/Le post sera retiré du calendrier/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('confirm-cancel-publication'));
+    await waitFor(() => {
+      expect(mockFetcher).toHaveBeenCalledWith(
+        '/api/admin/content-studio/posts/post_sched2/cancel',
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+    expect(toast.success).toHaveBeenCalledWith('Publication annulée.');
+    expect(onUpdated).toHaveBeenCalled();
+  });
 });

@@ -36,7 +36,7 @@ import type {
 import type { SocialPublishJob } from '@/lib/social-publishing/contracts';
 import type { StudioV2MediaItem } from '@/lib/content-studio-v2/media/types';
 
-export type AutosaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+export type AutosaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'session_expired';
 
 export interface DraftPatch {
   caption?: string;
@@ -255,6 +255,11 @@ export function useDraftAutosave(
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (res.status === 401) {
+        setError('session_expired');
+        setStatus('session_expired');
+        return;
+      }
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
         throw new Error(txt || `HTTP ${res.status}`);

@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { CaptionEditor } from './CaptionEditor';
+import { CaptionEditor, AutosaveIndicator } from './CaptionEditor';
 import { StudioProvider } from '@/lib/content-studio-v2/state/StudioContext';
 import { buildContentDraft } from '@/test/factories/content-studio';
 
@@ -116,5 +116,35 @@ describe('CaptionEditor', () => {
       />,
     );
     expect(screen.getByRole('region', { name: /Légende et accroche/i })).toBeInTheDocument();
+  });
+
+  it('shows session expired link when autosave status is session_expired', () => {
+    render(
+      <AutosaveIndicator
+        status="session_expired"
+        isDirty={false}
+        lastSavedAt={null}
+        error="session_expired"
+      />,
+    );
+    const link = screen.getByRole('alert');
+    expect(link).toBeInTheDocument();
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '/admin/login');
+    expect(link).toHaveTextContent(/Session expirée — se reconnecter/);
+  });
+
+  it('does not show session expired link on normal error', () => {
+    render(
+      <AutosaveIndicator
+        status="error"
+        isDirty={false}
+        lastSavedAt={null}
+        error="Some error"
+      />,
+    );
+    const alert = screen.getByRole('alert');
+    expect(alert.tagName).toBe('SPAN');
+    expect(alert).toHaveTextContent(/Échec — réessayer/);
   });
 });

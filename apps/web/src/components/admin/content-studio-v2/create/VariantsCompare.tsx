@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Check, Sparkles } from 'lucide-react';
+import { AlertTriangle, Check, Sparkles, X } from 'lucide-react';
+import { toast } from 'sonner';
 import type { ContentBrandViolation, ContentDraft } from '@/lib/content-studio/types';
-import { Badge, Button } from '@/components/admin/content-studio-v2/primitives';
+import { Badge, Button, Dialog } from '@/components/admin/content-studio-v2/primitives';
 
 export interface VariantViewModel {
   draft: ContentDraft;
@@ -15,10 +16,11 @@ interface VariantsCompareProps {
   variants: VariantViewModel[];
   selectedId: string | null;
   onSelect: (variant: VariantViewModel) => void;
+  onReject?: (draft: ContentDraft) => void;
   loading?: boolean;
 }
 
-export function VariantsCompare({ variants, selectedId, onSelect, loading }: VariantsCompareProps) {
+export function VariantsCompare({ variants, selectedId, onSelect, onReject, loading }: VariantsCompareProps) {
   const [highlightDiff, setHighlightDiff] = useState(false);
 
   if (loading) {
@@ -108,6 +110,7 @@ export function VariantsCompare({ variants, selectedId, onSelect, loading }: Var
             variant={variant}
             selected={variant.draft.id === selectedId}
             onSelect={() => onSelect(variant)}
+            onReject={onReject}
             highlightDiff={highlightDiff}
             baselineCaption={variants[0]?.draft.caption ?? ''}
           />
@@ -121,17 +124,42 @@ function VariantCard({
   variant,
   selected,
   onSelect,
+  onReject,
   highlightDiff,
   baselineCaption,
 }: {
   variant: VariantViewModel;
   selected: boolean;
   onSelect: () => void;
+  onReject?: (draft: ContentDraft) => void;
   highlightDiff: boolean;
   baselineCaption: string;
 }) {
   const { draft, score, violations = [] } = variant;
   const blocked = violations.some((v) => v.severity === 'blocked');
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+
+  async function handleReject() {
+    setRejecting(true);
+    try {
+      const res = await fetch(`/api/admin/content-studio/drafts/${draft.id}/reject`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reason: rejectReason }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setRejectOpen(false);
+      setRejectReason('');
+      onReject?.(draft);
+    } catch {
+      toast.error('Rejet échoué.');
+    } finally {
+      setRejecting(false);
+    }
+  }
+
   return (
     <article
       data-variant-id={draft.id}
@@ -218,16 +246,72 @@ function VariantCard({
           ))}
         </ul>
       ) : null}
-      <Button
-        variant={selected ? 'secondary' : 'primary'}
-        size="sm"
-        disabled={blocked}
-        leftIcon={selected ? <Check size={14} /> : undefined}
-        onClick={onSelect}
-        type="button"
-      >
-        {selected ? 'Sélectionnée' : blocked ? 'Bloquée (violations)' : 'Choisir cette variante'}
-      </Button>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Button
+          variant={selected ? 'secondary' : 'primary'}
+          size="sm"
+          disabled={blocked}
+          leftIcon={selected ? <Check size={14} /> : undefined}
+          onClick={onSelect}
+          type="button"
+        >
+          {selected ? 'Sélectionnée' : blocked ? 'Bloquée (violations)' : 'Choisir cette variante'}
+        </Button>
+        {!selected ? (
+          <Dialog
+            open={rejectOpen}
+            onOpenChange={setRejectOpen}
+            title="Rejeter cette variante"
+            description="Indiquez une raison (optionnel)."
+            size="sm"
+            trigger={
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<X size={12} />}
+                type="button"
+              >
+                Rejeter
+              </Button>
+            }
+            footer={
+              <>
+                <Button variant="ghost" size="sm" type="button" onClick={() => setRejectOpen(false)}>
+                  Annuler
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  type="button"
+                  loading={rejecting}
+                  onClick={handleReject}
+                  data-testid="confirm-reject"
+                >
+                  Confirmer le rejet
+                </Button>
+              </>
+            }
+          >
+            <textarea
+              aria-label="Raison du rejet"
+              maxLength={500}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: 'var(--cs-bg-base)',
+                border: '1px solid var(--cs-border)',
+                borderRadius: 'var(--cs-radius-sm)',
+                fontSize: 'var(--cs-text-sm)',
+                color: 'var(--cs-fg-primary)',
+                resize: 'vertical',
+              }}
+            />
+          </Dialog>
+        ) : null}
+      </div>
     </article>
   );
 }

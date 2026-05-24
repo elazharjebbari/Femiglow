@@ -157,4 +157,55 @@ describe('MediaStudio', () => {
     render(<MediaStudio {...defaultProps} />);
     expect(screen.getByRole('region', { name: /Studio média/i })).toBeInTheDocument();
   });
+
+  it('budget indicator fetches and displays remaining cents', async () => {
+    server.use(
+      http.get('/api/admin/content-studio/generation-runs', () => {
+        return HttpResponse.json({
+          runs: [],
+          budget: { dailyBudgetCents: 500, dailySpentCents: 200, remainingCents: 300 },
+        });
+      }),
+    );
+    render(<MediaStudio {...defaultProps} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Budget IA quotidien/i)).toHaveTextContent(
+        '300¢ / 500¢ restants',
+      );
+    });
+  });
+
+  it('budget unlimited shows "Budget illimité"', async () => {
+    server.use(
+      http.get('/api/admin/content-studio/generation-runs', () => {
+        return HttpResponse.json({
+          runs: [],
+          budget: { dailyBudgetCents: 0, dailySpentCents: 0, remainingCents: 0 },
+        });
+      }),
+    );
+    render(<MediaStudio {...defaultProps} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Budget IA quotidien/i)).toHaveTextContent(
+        'Budget illimité',
+      );
+    });
+  });
+
+  it('budget < 20% shows danger style', async () => {
+    server.use(
+      http.get('/api/admin/content-studio/generation-runs', () => {
+        return HttpResponse.json({
+          runs: [],
+          budget: { dailyBudgetCents: 500, dailySpentCents: 450, remainingCents: 50 },
+        });
+      }),
+    );
+    render(<MediaStudio {...defaultProps} />);
+    await waitFor(() => {
+      const indicator = screen.getByLabelText(/Budget IA quotidien/i);
+      expect(indicator).toHaveTextContent('50¢ / 500¢ restants');
+      expect(indicator.style.color).toBe('var(--cs-danger)');
+    });
+  });
 });

@@ -3,10 +3,10 @@
 import * as RadixDialog from '@radix-ui/react-dialog';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink, X, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ContentDraft, ContentPost } from '@/lib/content-studio/types';
-import { Badge, Button, Input } from '../primitives';
+import { Badge, Button, Dialog, Input } from '../primitives';
 
 interface QuickEditDrawerProps {
   open: boolean;
@@ -38,6 +38,8 @@ export function QuickEditDrawer({
 }: QuickEditDrawerProps) {
   const [scheduleInput, setScheduleInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     setScheduleInput(toLocalInput(post?.scheduledAt ?? null));
@@ -66,6 +68,27 @@ export function QuickEditDrawer({
       toast.error(err instanceof Error ? err.message : 'Échec.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCancelPublication() {
+    if (!post || !fetcher) return;
+    setCancelling(true);
+    try {
+      const res = await fetcher(`/api/admin/content-studio/posts/${post.id}/cancel`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reason: 'Annulé depuis le planning v2' }),
+      });
+      if (!res.ok) throw new Error(`http_${res.status}`);
+      toast.success('Publication annulée.');
+      onUpdated?.(post);
+      setCancelDialogOpen(false);
+      onOpenChange(false);
+    } catch {
+      toast.error('Annulation échouée.');
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -227,15 +250,58 @@ export function QuickEditDrawer({
             ) : (
               <span />
             )}
-            <Button
-              size="sm"
-              loading={saving}
-              onClick={handleSaveSchedule}
-              disabled={!post || !scheduleInput}
-              data-testid="quick-edit-save"
-            >
-              Enregistrer l’horaire
-            </Button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {post?.status === 'scheduled' ? (
+                <Dialog
+                  open={cancelDialogOpen}
+                  onOpenChange={setCancelDialogOpen}
+                  title="Annuler la publication ?"
+                  description="Le post sera retiré du calendrier."
+                  size="sm"
+                  trigger={
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      leftIcon={<XCircle size={14} />}
+                      type="button"
+                      data-testid="cancel-publication-btn"
+                    >
+                      Annuler la publication
+                    </Button>
+                  }
+                  footer={
+                    <>
+                      <Button variant="ghost" size="sm" type="button" onClick={() => setCancelDialogOpen(false)}>
+                        Non, garder
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        type="button"
+                        loading={cancelling}
+                        onClick={handleCancelPublication}
+                        data-testid="confirm-cancel-publication"
+                      >
+                        Confirmer l'annulation
+                      </Button>
+                    </>
+                  }
+                >
+                  <p style={{ margin: 0, fontSize: 'var(--cs-text-sm)', color: 'var(--cs-fg-secondary)' }}>
+                    Cette action est irréversible.
+                  </p>
+                </Dialog>
+              ) : null}
+              <Button
+                size="sm"
+                loading={saving}
+                onClick={handleSaveSchedule}
+                disabled={!post || !scheduleInput}
+                data-testid="quick-edit-save"
+              >
+                Enregistrer l'horaire
+              </Button>
+            </div>
           </footer>
         </RadixDialog.Content>
       </RadixDialog.Portal>

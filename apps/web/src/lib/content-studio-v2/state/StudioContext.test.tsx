@@ -272,6 +272,22 @@ describe('useDraftAutosave', () => {
     act(() => result.current.patch({ caption: 'never' }));
     expect(transport).not.toHaveBeenCalled();
   });
+
+  it('PATCH 401 sets status to session_expired', async () => {
+    const transport = vi.fn().mockResolvedValue(
+      new Response('Unauthorized', { status: 401 }),
+    );
+    const { result } = renderHook(
+      () => useDraftAutosave('draft-1', { debounceMs: 50, transport: transport as unknown as typeof fetch }),
+      { wrapper: wrapper({ drafts: [makeDraft()] }) },
+    );
+    act(() => result.current.patch({ caption: 'expired' }));
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(result.current.status).toBe('session_expired');
+    expect(result.current.error).toBe('session_expired');
+  });
 });
 
 describe('StudioProvider rendering', () => {
