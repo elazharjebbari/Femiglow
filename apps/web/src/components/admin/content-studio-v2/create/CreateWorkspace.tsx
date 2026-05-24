@@ -49,7 +49,7 @@ export function CreateWorkspace(props: CreateWorkspaceProps) {
 }
 
 function CreateWorkspaceInner() {
-  const { drafts, posts, mediaItems, setMediaItems, selectedDraftId, selectDraft, upsertDraft } =
+  const { drafts, setDrafts, posts, mediaItems, setMediaItems, selectedDraftId, selectDraft, upsertDraft } =
     useStudio();
 
   const [platform, setPlatform] = useState<PreviewPlatform>('instagram');
@@ -150,10 +150,27 @@ function CreateWorkspaceInner() {
             onFormatChange={(next) => {
               setFormat(next as PreviewFormat);
             }}
-            onCreated={(idea) => {
+            onCreated={async (idea) => {
               // After creating an idea, propagate platform+format hints to the preview.
               setPlatform(idea.platform as PreviewPlatform);
               setFormat(idea.format as PreviewFormat);
+              // Trigger draft generation for the new idea, then reload state.
+              try {
+                const res = await fetch(`/api/admin/content-studio/ideas/${idea.id}/generate`, {
+                  method: 'POST',
+                });
+                if (res.ok) {
+                  const json = (await res.json()) as { drafts?: ContentDraft[] };
+                  const generated = json.drafts ?? [];
+                  const first = generated[0];
+                  if (first) {
+                    setDrafts((prev) => [...generated, ...prev]);
+                    selectDraft(first.id);
+                  }
+                }
+              } catch {
+                // Generation failure is not blocking — user can retry.
+              }
             }}
           />
         </div>

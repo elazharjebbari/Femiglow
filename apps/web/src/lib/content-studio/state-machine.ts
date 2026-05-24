@@ -5,7 +5,7 @@ const ALLOWED: Record<ContentStatus, ContentStatus[]> = {
   idea: ['brief', 'generated', 'archived'],
   brief: ['generated', 'rejected', 'archived'],
   generated: ['needs_review', 'rejected', 'archived'],
-  needs_review: ['approved', 'generated', 'rejected', 'archived'],
+  needs_review: ['needs_review', 'approved', 'generated', 'rejected', 'archived'],
   approved: ['scheduled', 'published', 'failed', 'archived'],
   scheduled: ['published', 'failed', 'cancelled', 'approved'],
   published: ['measured', 'archived'],
