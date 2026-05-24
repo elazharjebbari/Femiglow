@@ -64,9 +64,9 @@ describe('popBatch', () => {
     await pushToBatch('meta', { event_name: 'Purchase', value: 199 });
     const batch = await popBatch('meta', 1);
     expect(batch).toHaveLength(1);
-    expect(batch[0].payload).toEqual({ event_name: 'Purchase', value: 199 });
-    expect(batch[0]._bufferedAt).toBeTypeOf('number');
-    expect(batch[0]._retry).toBe(0);
+    expect(batch[0]!.payload).toEqual({ event_name: 'Purchase', value: 199 });
+    expect(batch[0]!._bufferedAt).toBeTypeOf('number');
+    expect(batch[0]!._retry).toBe(0);
   });
 
   it('FIFO ordering (premier poussé = premier popé)', async () => {
@@ -85,7 +85,7 @@ describe('pushBack — retry', () => {
     expect(result.requeued).toBe(1);
     expect(result.dropped).toBe(0);
     const popped = await popBatch('meta');
-    expect(popped[0]._retry).toBe(1);
+    expect(popped[0]!._retry).toBe(1);
   });
 
   it('event _retry=5 (au cap) → dropped (pas re-pushé)', async () => {
