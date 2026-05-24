@@ -10,22 +10,22 @@
 import { DataTable, type DataTableColumn } from '../primitives/DataTable';
 import type { OverviewSourceRow } from '@/lib/analytics/queries/overview';
 import { formatNumber, formatPercent } from '@/lib/analytics/format';
+// Source de vérité unique pour les libellés canal — alignée sur la
+// taxonomie `TrafficBucket` (cf. `docs/attribution-fix-2026-05/`).
+import { BUCKET_LABELS } from '@/lib/tracking/taxonomy';
 
+/**
+ * Labels affichés dans la table — fallback sur BUCKET_LABELS (taxonomy)
+ * + 1 alias legacy (`other` → `unknown`) pour rétrocompat data antérieure
+ * au refactor (rows persistées avec l'ancienne énumération).
+ */
 const SOURCE_LABELS: Record<string, string> = {
-  direct: 'Direct',
-  organic_search: 'Organic search',
-  paid_search: 'Paid search',
-  organic_social: 'Organic social',
-  paid_social: 'Paid social',
-  email: 'Email',
-  display: 'Display',
-  affiliate: 'Affiliate',
-  referral: 'Referral',
-  internal: 'Interne',
+  ...BUCKET_LABELS,
+  // Aliases legacy (rétrocompat data pre-refactor)
+  other: 'Autres',
   paid_other: 'Paid (autre)',
   organic_other: 'Organic (autre)',
   ai_assistant: 'IA assistants',
-  other: 'Autres',
 };
 
 const COLUMNS: DataTableColumn<OverviewSourceRow>[] = [
