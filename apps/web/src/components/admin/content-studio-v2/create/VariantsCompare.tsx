@@ -61,6 +61,7 @@ export function VariantsCompare({ variants, selectedId, onSelect, loading }: Var
   return (
     <section
       aria-label="Comparer les variantes"
+      data-cs-variants-compare
       style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

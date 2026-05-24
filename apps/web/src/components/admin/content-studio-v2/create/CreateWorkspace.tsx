@@ -12,9 +12,11 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { Save, GitCompare } from 'lucide-react';
 import type { ContentDraft, ContentFormat, ContentIdea, ContentPlatform } from '@/lib/content-studio/types';
 import type { StudioV2MediaItem } from '@/lib/content-studio-v2/media/types';
 import { StudioProvider, useDraftAutosave, useStudio } from '@/lib/content-studio-v2/state/StudioContext';
+import { useCommand, type StudioCommand } from '@/lib/content-studio-v2/state/CommandRegistry';
 import type { PreviewFormat, PreviewPlatform } from '@/components/admin/content-studio-v2/media';
 import { Stepper } from './Stepper';
 import { IntentionForm } from './IntentionForm';
@@ -88,6 +90,35 @@ function CreateWorkspaceInner() {
   const captionForPreview = livePreview?.caption ?? draft?.caption ?? '';
 
   const autosave = useDraftAutosave(draft?.id ?? null);
+
+  // Contextual palette commands — visible only when a draft is being edited.
+  useCommand(useMemo<StudioCommand | null>(
+    () => (draft ? {
+      id: 'create.save',
+      group: 'Création',
+      label: 'Sauvegarder le brouillon',
+      shortcut: 'mod+s',
+      icon: <Save size={14} />,
+      perform: () => { void autosave.flush(); },
+    } : null),
+    [draft, autosave],
+  ));
+  useCommand(useMemo<StudioCommand | null>(
+    () => (variants.length > 1 ? {
+      id: 'create.variants',
+      group: 'Création',
+      label: `Variantes (${variants.length})`,
+      description: 'Comparer les variantes générées pour ce brief',
+      icon: <GitCompare size={14} />,
+      perform: () => {
+        const node = document.querySelector('[data-cs-variants-compare]');
+        if (node && 'scrollIntoView' in node) {
+          (node as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      },
+    } : null),
+    [variants.length],
+  ));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 24 }}>

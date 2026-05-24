@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { PageTransition } from './PageTransition';
 import { Toaster } from '../primitives/Toaster';
 
 interface AppShellProps {
@@ -28,7 +29,7 @@ export function AppShell({ children, userEmail, userInitials }: AppShellProps) {
             overflowY: 'auto',
           }}
         >
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
       <Toaster />

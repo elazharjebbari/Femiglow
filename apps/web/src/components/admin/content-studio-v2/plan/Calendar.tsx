@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import * as Tabs from '@radix-ui/react-tabs';
 import { DndContext, useDroppable } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarRange, ListChecks, ArrowLeft, ArrowRight, Locate } from 'lucide-react';
+import { useCommand, type StudioCommand } from '@/lib/content-studio-v2/state/CommandRegistry';
 import type {
   ContentDraft,
   ContentPillar,
@@ -156,6 +157,62 @@ export function Calendar({
       ? new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       : startOfWeek(new Date()));
   }
+
+  const switchView = useCallback(
+    (next: CalendarViewMode) => {
+      setMode(next);
+      updateUrl({ view: next });
+    },
+    [updateUrl],
+  );
+
+  // Palette commands: only registered while /plan is mounted, so they
+  // disappear automatically when navigating elsewhere.
+  useCommand(useMemo<StudioCommand>(() => ({
+    id: 'plan.today',
+    group: 'Planning',
+    label: 'Aller à aujourd’hui',
+    shortcut: 't',
+    icon: <Locate size={14} />,
+    perform: goToday,
+  }), [mode]));
+  useCommand(useMemo<StudioCommand>(() => ({
+    id: 'plan.prev',
+    group: 'Planning',
+    label: mode === 'month' ? 'Mois précédent' : 'Semaine précédente',
+    shortcut: '←',
+    icon: <ArrowLeft size={14} />,
+    perform: () => navigate(-1),
+  }), [mode]));
+  useCommand(useMemo<StudioCommand>(() => ({
+    id: 'plan.next',
+    group: 'Planning',
+    label: mode === 'month' ? 'Mois suivant' : 'Semaine suivante',
+    shortcut: '→',
+    icon: <ArrowRight size={14} />,
+    perform: () => navigate(1),
+  }), [mode]));
+  useCommand(useMemo<StudioCommand>(() => ({
+    id: 'plan.view-week',
+    group: 'Planning',
+    label: 'Vue semaine',
+    icon: <CalendarDays size={14} />,
+    perform: () => switchView('week'),
+  }), [switchView]));
+  useCommand(useMemo<StudioCommand>(() => ({
+    id: 'plan.view-month',
+    group: 'Planning',
+    label: 'Vue mois',
+    icon: <CalendarRange size={14} />,
+    perform: () => switchView('month'),
+  }), [switchView]));
+  useCommand(useMemo<StudioCommand>(() => ({
+    id: 'plan.view-list',
+    group: 'Planning',
+    label: 'Vue liste',
+    icon: <ListChecks size={14} />,
+    perform: () => switchView('list'),
+  }), [switchView]));
 
   const editingPost = useMemo(
     () => (editingPostId ? dnd.posts.find((p) => p.id === editingPostId) ?? null : null),

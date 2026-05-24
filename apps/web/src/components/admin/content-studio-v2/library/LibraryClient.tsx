@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Archive, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCommand, type StudioCommand } from '@/lib/content-studio-v2/state/CommandRegistry';
 import { LibraryFilters } from './LibraryFilters';
 import { LibrarySearch } from './LibrarySearch';
 import { LibraryGrid } from './LibraryGrid';
@@ -138,6 +140,76 @@ export function LibraryClient({ initialItems }: Props) {
     () => selectedItems(filteredItems, selection),
     [filteredItems, selection],
   );
+
+  // Bulk actions exposed via the palette — wrap the existing handler so the
+  // command palette can drive the same code path as the sticky BulkActionBar.
+  const runBulk = useCallback(
+    async (kind: 'approve' | 'archive') => {
+      if (selectedList.length === 0) return;
+      const results = await Promise.allSettled(
+        selectedList.map(async (item) => {
+          if (kind === 'approve') {
+            const res = await fetch(`/api/admin/content-studio/drafts/${item.draftId}/approve`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+            });
+            if (res.ok) handleBulkActionDone('approve', item);
+            return res.ok;
+          }
+          const endpoint = item.postId
+            ? `/api/admin/content-studio/posts/${item.postId}/archive`
+            : `/api/admin/content-studio/drafts/${item.draftId}/archive`;
+          const res = await fetch(endpoint, { method: 'POST' });
+          if (res.ok) handleBulkActionDone('archive', item);
+          return res.ok;
+        }),
+      );
+      const ok = results.filter((r) => r.status === 'fulfilled' && r.value === true).length;
+      const ko = results.length - ok;
+      if (ko === 0) {
+        toast.success(kind === 'approve' ? `${ok} draft${ok > 1 ? 's' : ''} approuvé${ok > 1 ? 's' : ''}.` : `${ok} élément${ok > 1 ? 's' : ''} archivé${ok > 1 ? 's' : ''}.`);
+      } else if (ok === 0) {
+        toast.error(`Échec sur ${ko} élément${ko > 1 ? 's' : ''}.`);
+      } else {
+        toast.warning(`${ok} OK / ${ko} en échec.`);
+      }
+      if (ok > 0) handleClearSelection();
+    },
+    [selectedList, handleBulkActionDone, handleClearSelection],
+  );
+
+  const selectionCount = selectedList.length;
+  useCommand(useMemo<StudioCommand | null>(
+    () => (selectionCount > 0 ? {
+      id: 'library.approve-selected',
+      group: 'Bibliothèque',
+      label: `Approuver la sélection (${selectionCount})`,
+      icon: <Check size={14} />,
+      perform: () => { void runBulk('approve'); },
+    } : null),
+    [selectionCount, runBulk],
+  ));
+  useCommand(useMemo<StudioCommand | null>(
+    () => (selectionCount > 0 ? {
+      id: 'library.archive-selected',
+      group: 'Bibliothèque',
+      label: `Archiver la sélection (${selectionCount})`,
+      icon: <Archive size={14} />,
+      perform: () => { void runBulk('archive'); },
+    } : null),
+    [selectionCount, runBulk],
+  ));
+  useCommand(useMemo<StudioCommand | null>(
+    () => (selectionCount > 0 ? {
+      id: 'library.clear-selection',
+      group: 'Bibliothèque',
+      label: 'Effacer la sélection',
+      shortcut: 'esc',
+      icon: <X size={14} />,
+      perform: handleClearSelection,
+    } : null),
+    [selectionCount, handleClearSelection],
+  ));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
