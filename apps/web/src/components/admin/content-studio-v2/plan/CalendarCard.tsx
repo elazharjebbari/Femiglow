@@ -2,7 +2,7 @@
 
 import { useDraggable } from '@dnd-kit/core';
 import type { CSSProperties } from 'react';
-import { ImageOff } from 'lucide-react';
+import { ImageOff, Play } from 'lucide-react';
 import type {
   ContentDraft,
   ContentPillar,
@@ -114,12 +114,21 @@ export function CalendarCard({
           }}
         >
           {media?.previewUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={media.previewUrl}
-              alt={media.alt || ''}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={media.kind === 'video' ? (media.thumbnailUrl ?? media.previewUrl) : media.previewUrl}
+                alt={media.alt || ''}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              {media.kind === 'video' ? (
+                <Play
+                  size={variant === 'mini' ? 8 : 10}
+                  fill="currentColor"
+                  style={{ position: 'absolute', color: 'white', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
+                />
+              ) : null}
+            </>
           ) : (
             <ImageOff size={variant === 'mini' ? 10 : 12} />
           )}

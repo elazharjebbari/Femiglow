@@ -25,7 +25,7 @@ const ASPECT: Record<PreviewFormat, string> = {
 };
 
 export function PlatformPreview({ platform, format, media, caption, handle = 'femiglow.maroc', carouselSiblings }: Props) {
-  if (platform === 'facebook') return <FacebookPreview media={media} caption={caption} handle={handle} />;
+  if (platform === 'facebook') return <FacebookPreview media={media} caption={caption} handle={handle} format={format} />;
   if (format === 'story') return <InstagramStory media={media} caption={caption} handle={handle} />;
   if (format === 'reel') return <InstagramReel media={media} caption={caption} handle={handle} />;
   return (
@@ -81,6 +81,13 @@ function InstagramFeed({
           </span>
         ) : null}
       </div>
+      {isCarousel ? (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 4, padding: '8px 0' }}>
+          {Array.from({ length: Math.max(carouselCount, 3) }).map((_, i) => (
+            <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: i === 0 ? 'var(--cs-accent)' : 'var(--cs-border)' }} />
+          ))}
+        </div>
+      ) : null}
       <ActionsBar />
       <p style={{ padding: '0 14px', fontSize: 13, fontWeight: 600, color: 'var(--cs-fg-primary)' }}>1 247 j'aime</p>
       <p style={{ padding: '6px 14px 14px', fontSize: 13, lineHeight: 1.5, color: 'var(--cs-fg-primary)' }}>
@@ -98,6 +105,7 @@ function InstagramStory({ media, caption, handle }: { media: StudioV2MediaItem |
   return (
     <div
       style={{
+        width: '100%',
         aspectRatio: '9 / 16',
         maxWidth: 320,
         position: 'relative',
@@ -120,7 +128,7 @@ function InstagramStory({ media, caption, handle }: { media: StudioV2MediaItem |
       </div>
       {/* Bottom caption */}
       <div style={{ position: 'absolute', left: 16, right: 16, bottom: 24, color: 'white', fontSize: 14, lineHeight: 1.4, textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
-        {caption.split(' ').slice(0, 14).join(' ')}…
+        {caption ? <>{caption.split(' ').slice(0, 14).join(' ')}{caption.split(' ').length > 14 ? '…' : ''}</> : null}
       </div>
     </div>
   );
@@ -132,6 +140,7 @@ function InstagramReel({ media, caption, handle }: { media: StudioV2MediaItem | 
   return (
     <div
       style={{
+        width: '100%',
         aspectRatio: '9 / 16',
         maxWidth: 320,
         position: 'relative',
@@ -146,7 +155,7 @@ function InstagramReel({ media, caption, handle }: { media: StudioV2MediaItem | 
       <div style={{ position: 'absolute', left: 14, right: 60, bottom: 12, color: 'white', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <p style={{ fontSize: 13, fontWeight: 600, textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>{handle}</p>
         <p style={{ fontSize: 12, lineHeight: 1.4, textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
-          {caption.split(' ').slice(0, 18).join(' ')}…
+          {caption ? <>{caption.split(' ').slice(0, 18).join(' ')}{caption.split(' ').length > 18 ? '…' : ''}</> : null}
         </p>
       </div>
       {/* Right vertical actions */}
@@ -170,15 +179,43 @@ function ReelIcon({ icon, label }: { icon: React.ReactNode; label: string }) {
 
 /* ============================ Facebook ============================ */
 
-function FacebookPreview({ media, caption, handle }: { media: StudioV2MediaItem | null; caption: string; handle: string }) {
+function FacebookPreview({ media, caption, handle, format }: { media: StudioV2MediaItem | null; caption: string; handle: string; format: PreviewFormat }) {
+  const isVertical = format === 'story' || format === 'reel';
+  const aspect = isVertical ? '9 / 16' : format === 'carousel' ? '1 / 1' : '1.91 / 1';
+
+  if (isVertical) {
+    return (
+      <div style={{ width: '100%', aspectRatio: '9 / 16', maxWidth: 320, position: 'relative', borderRadius: 'var(--cs-radius-md)', overflow: 'hidden', background: '#000', boxShadow: 'var(--cs-shadow-lg)' }}>
+        {renderMedia(media, 'cover')}
+        <div style={{ position: 'absolute', inset: '0 0 auto 0', height: 60, background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #1877F2, #4267B2)', display: 'grid', placeItems: 'center', color: 'white', fontFamily: 'var(--cs-font-display)', fontWeight: 600, fontSize: 12 }}>F</div>
+          <span style={{ color: 'white', fontSize: 12, fontWeight: 600, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{handle}</span>
+        </div>
+        {caption ? (
+          <div style={{ position: 'absolute', left: 16, right: 16, bottom: 24, color: 'white', fontSize: 14, lineHeight: 1.4, textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+            {caption.split(' ').slice(0, 14).join(' ')}{caption.split(' ').length > 14 ? '…' : ''}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div style={{ ...feedFrame, maxWidth: 360 }}>
       <Header handle={handle} subline="Page · Boutique · 2 h" platform="facebook" />
       <p style={{ padding: '10px 14px 12px', fontSize: 14, lineHeight: 1.5, color: 'var(--cs-fg-primary)' }}>
-        {caption}
+        {caption.length > 300 ? <>{caption.slice(0, 300)}<span style={{ color: 'var(--cs-accent)', cursor: 'pointer' }}>… Voir plus</span></> : caption}
       </p>
       {media ? (
-        <div style={{ aspectRatio: '1.91 / 1', background: 'var(--cs-bg-sunken)' }}>{renderMedia(media, 'cover')}</div>
+        <div style={{ aspectRatio: aspect, background: 'var(--cs-bg-sunken)', position: 'relative' }}>
+          {renderMedia(media, 'cover')}
+          {format === 'carousel' ? (
+            <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4 }}>
+              {[0, 1, 2].map((i) => <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: i === 0 ? 'white' : 'rgba(255,255,255,0.5)' }} />)}
+            </div>
+          ) : null}
+        </div>
       ) : null}
       <div style={{ padding: '10px 14px', display: 'flex', gap: 18, fontSize: 13, color: 'var(--cs-fg-secondary)' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Heart size={16} /> 312</span>

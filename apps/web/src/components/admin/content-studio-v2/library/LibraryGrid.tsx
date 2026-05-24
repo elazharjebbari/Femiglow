@@ -104,11 +104,11 @@ function LibraryCard({
       }}
       className="cs-library-card"
     >
-      {/* Thumbnail (4:5) */}
+      {/* Thumbnail — aspect adapts to format */}
       <div
         style={{
           position: 'relative',
-          aspectRatio: '4 / 5',
+          aspectRatio: item.format === 'story' || item.format === 'reel' ? '9 / 16' : '4 / 5',
           background: 'var(--cs-bg-sunken)',
         }}
       >

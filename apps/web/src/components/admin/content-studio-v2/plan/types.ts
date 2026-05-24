@@ -13,6 +13,10 @@ import type {
 export interface CalendarMediaEntry {
   mediaId: string;
   previewUrl: string | null;
+  /** Thumbnail URL (poster for videos). Falls back to previewUrl when absent. */
+  thumbnailUrl?: string | null;
+  /** Media kind — when 'video', uses thumbnailUrl for the img src. */
+  kind?: 'image' | 'video';
   alt: string;
 }
 
