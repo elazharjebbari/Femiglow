@@ -77,13 +77,17 @@ test("⌘K — ouvre la palette de commandes et liste les navigations", async ({
   await page.goto('/admin/content-studio-v2/home');
   await ensureAuthOrSkip(page);
 
-  // ⌘K on macOS, Ctrl+K elsewhere — Playwright supports `Meta+K` semantics.
-  await page.keyboard.press('Meta+k');
+  // react-hotkeys-hook maps `mod+k` to Cmd+K on darwin / Ctrl+K elsewhere.
+  // Playwright's `ControlOrMeta` modifier presses the right one per platform
+  // (CI/local on Linux = Control, dev on macOS = Meta).
+  await page.keyboard.press('ControlOrMeta+k');
   await expect(page.getByRole('dialog', { name: /palette de commandes/i })).toBeVisible();
 
-  // The palette should list the 4 navigation entries.
+  // The palette should list the 4 navigation entries. Commands say
+  // "Aller à l'Accueil / à la Création / à la Bibliothèque / au Planning"
+  // — we match the trailing label since the article varies.
   for (const mode of MODES) {
-    await expect(page.getByText(new RegExp(`Aller à (l['' ]+|la |le )?${mode.label}`, 'i'))).toBeVisible();
+    await expect(page.getByText(new RegExp(`Aller (à|au) .*${mode.label}`, 'i'))).toBeVisible();
   }
 
   // Escape closes.
