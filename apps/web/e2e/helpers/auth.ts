@@ -58,7 +58,12 @@ export const ADMIN_STORAGE_PATH = path.join(
  * storageState vide à la clé.
  */
 export async function loginAdmin(page: Page): Promise<void> {
+  // Pre-set consent to avoid the banner blocking the login button.
+  await page.context().addCookies([
+    { name: 'fg_consent', value: 'all', domain: '127.0.0.1', path: '/' },
+  ]);
   await page.goto('/admin/login');
+  await page.waitForLoadState('domcontentloaded');
   await page.getByLabel(/email/i).fill(ADMIN_EMAIL);
   await page.getByLabel(/mot de passe/i).fill(ADMIN_PWD);
   await page.getByRole('button', { name: /se connecter/i }).click();
