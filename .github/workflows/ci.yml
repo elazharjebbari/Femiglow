@@ -46,8 +46,8 @@ jobs:
           WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
           CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
 
-      - name: Content Studio unit tests
-        run: npx vitest run apps/web/src/lib/content-studio/ apps/web/src/components/admin/content-studio/ apps/web/src/test/msw/
+      - name: Content Studio unit + integration tests
+        run: npx vitest run apps/web/src/lib/content-studio/ apps/web/src/lib/content-studio-v2/ apps/web/src/components/admin/content-studio/ apps/web/src/components/admin/content-studio-v2/ apps/web/src/test/msw/
         env:
           ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
@@ -83,10 +83,14 @@ jobs:
           CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
           DATABASE_URL: ${{ secrets.CI_DATABASE_URL || '' }}
 
-      - name: Run Content Studio E2E
-        run: npx playwright test content-studio.spec.ts
+      - name: Run E2E tests (all specs)
+        run: npx playwright test
         working-directory: apps/web
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
           ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
           ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+          CONTENT_STUDIO_ENABLED: 'true'
+          CONTENT_STUDIO_V2_ENABLED: 'true'
+          CONTENT_STUDIO_V2_DEFAULT: 'true'
+          CONTENT_STUDIO_IMAGE_PROVIDER: mock
