@@ -20,6 +20,15 @@ import { logger } from '@/lib/logging/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/**
+ * `maxDuration` 30s pour le SSE chat — suffisant pour streaming complet
+ * (LLM + RAG + tools) sans coupure Vercel.
+ *
+ * Référence : docs/live-systems-fix-2026-05/03-plan-action-phases.md § QW3.
+ * Vercel default Hobby=10s, Pro=60s. On fixe à 30 explicitement pour
+ * éviter qu'une bascule plan ne change le comportement silencieusement.
+ */
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {

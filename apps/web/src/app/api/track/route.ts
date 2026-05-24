@@ -17,6 +17,14 @@ import type { TrackingConsentState } from '@/lib/db/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/**
+ * `maxDuration` 10s pour l'ingest tracking — synchrone, doit rester
+ * snappy. Si la latence /api/track P95 approche 10s, c'est qu'il faut
+ * activer le batching CAPI (cf. Sprint 2 S2).
+ *
+ * Référence : docs/live-systems-fix-2026-05/03-plan-action-phases.md § QW3.
+ */
+export const maxDuration = 10;
 
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
