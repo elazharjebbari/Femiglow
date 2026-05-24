@@ -186,6 +186,14 @@ export function StudioProvider({ children, initial, skipInitialFetch = false }: 
     ],
   );
 
+  // Expose the context value on window for E2E testing (Playwright).
+  useEffect(() => {
+    (window as any).__STUDIO_CTX__ = value;
+    return () => {
+      delete (window as any).__STUDIO_CTX__;
+    };
+  }, [value]);
+
   return <StudioContext.Provider value={value}>{children}</StudioContext.Provider>;
 }
 
