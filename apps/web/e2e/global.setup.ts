@@ -26,7 +26,7 @@ setup('authenticate as admin', async ({ page }) => {
   // peut dépasser le timeout par défaut de 30 s quand le serveur est
   // démarré juste avant les tests. 60 s couvre le worst case sans
   // masquer un vrai stall (login backend < 1 s, on tolère la compile).
-  setup.setTimeout(60_000);
+  setup.setTimeout(120_000);
   await fs.mkdir(path.dirname(ADMIN_STORAGE_PATH), { recursive: true });
 
   await loginAdmin(page);
@@ -34,8 +34,8 @@ setup('authenticate as admin', async ({ page }) => {
   // Wait for any post-login redirects to settle before evaluating
   // localStorage, otherwise the execution context can be destroyed
   // mid-evaluate by a client-side navigation.
-  await page.waitForLoadState('networkidle').catch(() => {});
-  await page.waitForTimeout(500);
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(2000);
 
   // Dismiss du `ConsentBanner` une fois pour toutes : le bandeau est monté
   // dans `app/layout.tsx` (donc présent sur l'admin) et son overlay
