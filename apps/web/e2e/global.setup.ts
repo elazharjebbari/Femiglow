@@ -31,6 +31,12 @@ setup('authenticate as admin', async ({ page }) => {
 
   await loginAdmin(page);
 
+  // Wait for any post-login redirects to settle before evaluating
+  // localStorage, otherwise the execution context can be destroyed
+  // mid-evaluate by a client-side navigation.
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(500);
+
   // Dismiss du `ConsentBanner` une fois pour toutes : le bandeau est monté
   // dans `app/layout.tsx` (donc présent sur l'admin) et son overlay
   // `role="dialog" fixed inset-x-4 bottom-4 z-50` intercepte les clics
