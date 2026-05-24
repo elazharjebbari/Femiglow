@@ -43,7 +43,17 @@ vi.mock('sonner', () => ({
   },
 }));
 
+import { CommandRegistryProvider } from '@/lib/content-studio-v2/state/CommandRegistry';
+import { HotkeyRegistryProvider } from '@/lib/content-studio-v2/state/useHotkey';
 import { LibraryClient } from './LibraryClient';
+
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <HotkeyRegistryProvider>
+      <CommandRegistryProvider>{children}</CommandRegistryProvider>
+    </HotkeyRegistryProvider>
+  );
+}
 
 function makeItem(over: Partial<LibraryItem> = {}): LibraryItem {
   return {
@@ -72,7 +82,7 @@ beforeEach(() => {
 describe('LibraryClient', () => {
   it('renders the result counter from initial items', () => {
     const items = [makeItem({ id: '1' }), makeItem({ id: '2' }), makeItem({ id: '3' })];
-    render(<LibraryClient initialItems={items} />);
+    render(<Wrapper><LibraryClient initialItems={items} /></Wrapper>);
     expect(screen.getByText(/3 \/ 3 résultats/i)).toBeInTheDocument();
   });
 
@@ -81,7 +91,7 @@ describe('LibraryClient', () => {
       makeItem({ id: '1', status: 'approved' }),
       makeItem({ id: '2', status: 'rejected' }),
     ];
-    render(<LibraryClient initialItems={items} />);
+    render(<Wrapper><LibraryClient initialItems={items} /></Wrapper>);
 
     // Open the status popover and check "approved".
     fireEvent.click(screen.getByRole('button', { name: /Statut/i }));
@@ -96,7 +106,7 @@ describe('LibraryClient', () => {
   it('debounced search (250ms) emits a URL update with q=', async () => {
     vi.useFakeTimers();
     const items = [makeItem({ id: '1', caption: 'Hydratation' })];
-    render(<LibraryClient initialItems={items} />);
+    render(<Wrapper><LibraryClient initialItems={items} /></Wrapper>);
     const input = screen.getByLabelText(/Rechercher dans la bibliothèque/i);
     fireEvent.change(input, { target: { value: 'hydra' } });
     // Avant 250ms : pas d'émission.
@@ -112,7 +122,7 @@ describe('LibraryClient', () => {
 
   it('bulk selection toggles the action bar visibility', () => {
     const items = [makeItem({ id: '1' })];
-    render(<LibraryClient initialItems={items} />);
+    render(<Wrapper><LibraryClient initialItems={items} /></Wrapper>);
     // Initially: no bulk bar.
     expect(screen.queryByRole('region', { name: /Actions groupées/i })).toBeNull();
     // Click the per-card checkbox.
@@ -124,7 +134,7 @@ describe('LibraryClient', () => {
 
   it('emits a URL with multiple selected statuses (multiselect)', () => {
     const items = [makeItem({ id: '1', status: 'approved' })];
-    render(<LibraryClient initialItems={items} />);
+    render(<Wrapper><LibraryClient initialItems={items} /></Wrapper>);
     fireEvent.click(screen.getByRole('button', { name: /Statut/i }));
     fireEvent.click(screen.getByRole('checkbox', { name: /Approuvé/i }));
     expect(routerReplace).toHaveBeenCalled();

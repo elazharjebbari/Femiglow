@@ -206,3 +206,40 @@ export function captureChatCompletionsBody(): {
   );
   return { handler, getLastBody: () => captured };
 }
+
+// ---------------------------------------------------------------------------
+// Image generation handlers (used by content-studio visual generation)
+// ---------------------------------------------------------------------------
+
+/** Happy-path: returns a tiny 1x1 white PNG as b64. */
+export const openaiImageGenerationHandler = http.post(
+  'https://api.openai.com/v1/images/generations',
+  async () => {
+    // 1x1 white PNG in base64
+    const b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+    return HttpResponse.json({
+      created: Math.floor(Date.now() / 1000),
+      data: [{ b64_json: b64, revised_prompt: 'A FemiGlow product mock image' }],
+    });
+  },
+);
+
+/** Content policy violation (DALL-E refuses the prompt). */
+export const openaiImagePolicyViolationHandler = http.post(
+  'https://api.openai.com/v1/images/generations',
+  () =>
+    HttpResponse.json(
+      { error: { message: 'Your request was rejected as a result of our safety system.', type: 'invalid_request_error', code: 'content_policy_violation' } },
+      { status: 400 },
+    ),
+);
+
+/** Rate limit on image generation. */
+export const openaiImageRateLimitHandler = http.post(
+  'https://api.openai.com/v1/images/generations',
+  () =>
+    HttpResponse.json(
+      { error: { message: 'Rate limit exceeded for images', type: 'rate_limit', code: 'rate_limit_exceeded' } },
+      { status: 429, headers: { 'retry-after': '60' } },
+    ),
+);

@@ -1,5 +1,30 @@
+import { z } from 'zod';
 import { env } from '@/lib/env';
 import type { ContentIdea } from './types';
+
+const generatedBriefSchema = z.object({
+  angle: z.string(),
+  proof: z.string(),
+  cta: z.string(),
+  mediaDirection: z.string(),
+  constraints: z.record(z.unknown()).default({}),
+});
+
+const generatedDraftSchema = z.object({
+  variantLabel: z.string(),
+  hook: z.string(),
+  caption: z.string(),
+  cta: z.string(),
+  altText: z.string().default(''),
+  hashtags: z.array(z.string()).default([]),
+});
+
+const generationOutputSchema = z.object({
+  brief: generatedBriefSchema,
+  drafts: z.array(generatedDraftSchema).min(1),
+});
+
+export { generationOutputSchema };
 
 export interface GeneratedBrief {
   angle: string;
@@ -48,7 +73,8 @@ export async function generateForIdea(idea: ContentIdea): Promise<GenerationResu
       choices?: Array<{ message?: { content?: string } }>;
     };
     const content = json.choices?.[0]?.message?.content ?? '';
-    const parsed = JSON.parse(content) as Pick<GenerationResult, 'brief' | 'drafts'>;
+    const raw = JSON.parse(content) as unknown;
+    const parsed = generationOutputSchema.parse(raw);
     return {
       provider: 'openai',
       model: env.CONTENT_STUDIO_TEXT_MODEL,

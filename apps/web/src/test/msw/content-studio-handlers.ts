@@ -122,7 +122,7 @@ export function contentStudioHandlers(state: MockContentStudioState) {
       if (!idea) {
         return HttpResponse.json({ error: { code: 'not_found', message: 'Idea not found' } }, { status: 404 });
       }
-      const updatedIdea = { ...idea, status: 'brief' as const };
+      const updatedIdea = { ...idea, status: 'generated' as const };
       const draft = buildContentDraft({ briefId: idea.id });
       state.drafts.unshift(draft);
       const ideaIdx = state.ideas.findIndex((i) => i.id === params.id);

@@ -446,7 +446,7 @@ describe('MSW — Content Studio API handlers', () => {
       });
       expect(res.ok).toBe(true);
       const json = await res.json();
-      expect(json.idea.status).toBe('brief');
+      expect(json.idea.status).toBe('generated');
       expect(json.drafts).toBeInstanceOf(Array);
       expect(json.drafts.length).toBeGreaterThanOrEqual(1);
     });
