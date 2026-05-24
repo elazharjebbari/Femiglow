@@ -82,6 +82,16 @@ export async function moderateChatText(
     return { ...PASS_THROUGH_DISABLED, latencyMs: Date.now() - t0 };
   }
 
+  // ChatProvider.moderate est optionnel (cf. types.ts). Si le provider
+  // sélectionné ne le supporte pas (ex: Anthropic adapter), on log et
+  // on fait pass-through (équivalent fail-soft).
+  if (!provider.moderate) {
+    logger.warn('chat.moderation.provider_no_moderate', {
+      sessionId: context.sessionId,
+    });
+    return { ...PASS_THROUGH_FAIL_SOFT, latencyMs: Date.now() - t0 };
+  }
+
   try {
     const result = await provider.moderate({ text });
     return {
