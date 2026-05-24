@@ -10,7 +10,7 @@ import { bridgeWebTrackingToUserEvent } from '@/lib/user-events/bridges/web-trac
 import { findTrackingPageByRoute } from '@/lib/db/queries/tracking/pages';
 import { getValidator } from '@/lib/tracking/server/validator';
 import { enrichRequest } from '@/lib/tracking/server/enricher';
-import { isDuplicateEventId } from '@/lib/tracking/server/dedup';
+import { isDuplicateEventId, isDuplicateEventIdAsync } from '@/lib/tracking/server/dedup';
 import { dispatchToProviders } from '@/lib/tracking/server/dispatcher';
 import { getEventCategory } from '@/lib/tracking/schemas';
 import type { TrackingConsentState } from '@/lib/db/types';
@@ -181,7 +181,10 @@ export async function POST(request: Request): Promise<Response> {
         continue;
       }
 
-      if (isDuplicateEventId(event.event_id)) {
+      // ⭐ S1 — Dedup robuste cross-lambda via Redis si v2.
+      // Fallback gracieux vers Map locale (v1) sinon.
+      // Référence : docs/live-systems-fix-2026-05/08-system-tracking.md
+      if (await isDuplicateEventIdAsync(event.event_id)) {
         result.duplicates += 1;
         continue;
       }
