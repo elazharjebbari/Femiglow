@@ -16,24 +16,22 @@ import { enrichTrendsNode } from '../nodes/enrich-trends';
 import { generateScriptNode } from '../nodes/generate-script';
 import { generateCaptionNode } from '../nodes/generate-caption';
 import { generateImagesNode } from '../nodes/generate-images';
+import { generateVideoNode } from '../nodes/generate-video';
+import { generateVoiceoverNode } from '../nodes/generate-voiceover';
+import { generateMusicNode } from '../nodes/generate-music';
+import { generateSubtitlesNode } from '../nodes/generate-subtitles';
+import { composeNode } from '../nodes/compose';
+import { transcodeExportNode } from '../nodes/transcode-export';
 import { qualityCheckNode } from '../nodes/quality-check';
 import { moderateNode } from '../nodes/moderate';
+import { humanReviewNode } from '../nodes/human-review';
+import { generateVariantsNode } from '../nodes/generate-variants';
 
 const log = createLogger('graph-builder');
 
 type NodeFn = (
   state: ContentGenerationStateType,
 ) => Promise<Partial<ContentGenerationUpdateType>>;
-
-function placeholder(name: string): NodeFn {
-  return async (state) => {
-    log.info(`[placeholder] executing node "${name}"`, {
-      jobId: state.jobId,
-      node: name,
-    });
-    return { currentStep: name };
-  };
-}
 
 const parseBrief: NodeFn = async (state) => {
   return parseBriefNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
@@ -59,22 +57,28 @@ const generateImages: NodeFn = async (state) => {
   return generateImagesNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
 };
 
-const generateVideo: NodeFn = placeholder('generateVideo');
-const generateVoiceover: NodeFn = placeholder('generateVoiceover');
-const generateMusic: NodeFn = placeholder('generateMusic');
-const generateSubtitles: NodeFn = placeholder('generateSubtitles');
+const generateVideo: NodeFn = async (state) => {
+  return generateVideoNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
+};
+
+const generateVoiceover: NodeFn = async (state) => {
+  return generateVoiceoverNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
+};
+
+const generateMusic: NodeFn = async (state) => {
+  return generateMusicNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
+};
+
+const generateSubtitles: NodeFn = async (state) => {
+  return generateSubtitlesNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
+};
 
 const compose: NodeFn = async (state) => {
-  log.info('Composing final output', { jobId: state.jobId, node: 'compose' });
-  return { currentStep: 'compose' };
+  return composeNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
 };
 
 const transcodeExport: NodeFn = async (state) => {
-  log.info('Transcoding and exporting', {
-    jobId: state.jobId,
-    node: 'transcodeExport',
-  });
-  return { currentStep: 'transcodeExport' };
+  return transcodeExportNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
 };
 
 const qualityCheck: NodeFn = async (state) => {
@@ -86,34 +90,11 @@ const moderate: NodeFn = async (state) => {
 };
 
 const humanReview: NodeFn = async (state) => {
-  log.info('Awaiting human review', { jobId: state.jobId, node: 'humanReview' });
-  return {
-    currentStep: 'humanReview',
-    humanReview: state.humanReview ?? {
-      decision: 'approved' as const,
-      feedback: undefined,
-    },
-  };
+  return humanReviewNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
 };
 
 const generateVariants: NodeFn = async (state) => {
-  log.info('Generating variants', {
-    jobId: state.jobId,
-    node: 'generateVariants',
-  });
-  return {
-    currentStep: 'generateVariants',
-    variants: [
-      {
-        variantIndex: 0,
-        script: state.script,
-        caption: state.caption,
-        hashtags: state.hashtags,
-        qualityScores: state.qualityScores,
-      },
-    ],
-    selectedVariant: 0,
-  };
+  return generateVariantsNode(state as unknown as Record<string, unknown>) as Promise<Partial<ContentGenerationUpdateType>>;
 };
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Sparkles, LayoutGrid, CalendarDays, ExternalLink, Cpu } from 'lucide-react';
+import { Home, Sparkles, LayoutGrid, CalendarDays, ExternalLink, Cpu, TrendingUp, Settings, BarChart3 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -18,7 +18,14 @@ const NAV: NavItem[] = [
   { href: '/admin/content-studio-v2/create',  label: 'Création',     icon: <Sparkles size={16} />, match: /^\/admin\/content-studio-v2\/create/ },
   { href: '/admin/content-studio-v2/library', label: 'Bibliothèque', icon: <LayoutGrid size={16} /> },
   { href: '/admin/content-studio-v2/plan',    label: 'Planning',     icon: <CalendarDays size={16} /> },
-  { href: '/admin/content-studio-v2/ai-engine', label: 'AI Engine',   icon: <Cpu size={16} />, match: /^\/admin\/content-studio-v2\/ai-engine/ },
+  { href: '/admin/content-studio-v2/ai-engine', label: 'AI Engine',   icon: <Cpu size={16} />, match: /^\/admin\/content-studio-v2\/ai-engine$/ },
+];
+
+const AI_SUBNAV: NavItem[] = [
+  { href: '/admin/content-studio-v2/ai-engine/create',    label: 'Générer',      icon: <Sparkles size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/trends',    label: 'Veille',       icon: <TrendingUp size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/analytics', label: 'Métriques',    icon: <BarChart3 size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/config',    label: 'Config',       icon: <Settings size={14} /> },
 ];
 
 export function Sidebar() {
@@ -115,6 +122,53 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {pathname.startsWith('/admin/content-studio-v2/ai-engine') && (
+        <nav
+          className="flex flex-col gap-0.5 mt-2 pt-2 px-1"
+          aria-label="AI Engine"
+          style={{ borderTop: '1px solid var(--cs-border-hair)' }}
+        >
+          <span
+            style={{
+              fontSize: 'var(--cs-text-xs)',
+              color: 'var(--cs-fg-muted)',
+              padding: '4px 12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              fontWeight: 500,
+            }}
+          >
+            AI Engine
+          </span>
+          {AI_SUBNAV.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? 'page' : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '7px 12px 7px 24px',
+                  borderRadius: 'var(--cs-radius-sm)',
+                  color: isActive ? 'var(--cs-accent)' : 'var(--cs-fg-muted)',
+                  background: isActive ? 'var(--cs-accent-bg)' : 'transparent',
+                  fontSize: 'var(--cs-text-xs)',
+                  fontWeight: isActive ? 600 : 400,
+                  textDecoration: 'none',
+                  transition: 'all var(--cs-motion-fast) var(--cs-easing)',
+                }}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
       <div style={{ flex: 1 }} />
 
