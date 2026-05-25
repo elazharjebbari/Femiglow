@@ -247,7 +247,7 @@ export default function AIEngineDashboardPage() {
             <Link href="/admin/content-studio-v2/ai-engine/create" style={{ textDecoration: 'none' }}>
               <Button leftIcon={<Sparkles size={14} />}>Nouvelle génération IA</Button>
             </Link>
-            <Link href="/admin/settings/ai-engine" style={{ textDecoration: 'none' }}>
+            <Link href="/admin/content-studio-v2/ai-engine/config" style={{ textDecoration: 'none' }}>
               <Button variant="ghost" leftIcon={<Settings size={14} />}>Configuration</Button>
             </Link>
           </div>
@@ -360,7 +360,7 @@ export default function AIEngineDashboardPage() {
           <Link href="/admin/content-studio-v2/ai-engine/create" style={{ textDecoration: 'none' }}>
             <Button leftIcon={<Sparkles size={14} />}>Nouvelle génération IA</Button>
           </Link>
-          <Link href="/admin/settings/ai-engine" style={{ textDecoration: 'none' }}>
+          <Link href="/admin/content-studio-v2/ai-engine/config" style={{ textDecoration: 'none' }}>
             <Button variant="ghost" leftIcon={<Settings size={14} />}>Configuration</Button>
           </Link>
         </div>

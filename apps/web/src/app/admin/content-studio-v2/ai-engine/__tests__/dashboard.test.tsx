@@ -274,6 +274,6 @@ describe('AIEngineDashboardPage', () => {
     const configLink = screen
       .getByRole('button', { name: /Configuration/i })
       .closest('a');
-    expect(configLink).toHaveAttribute('href', '/admin/settings/ai-engine');
+    expect(configLink).toHaveAttribute('href', '/admin/content-studio-v2/ai-engine/config');
   });
 });

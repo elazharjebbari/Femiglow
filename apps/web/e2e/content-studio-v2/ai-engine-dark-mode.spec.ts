@@ -12,7 +12,19 @@ import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
-const MOCK_HEALTH = { enabled: true };
+const MOCK_HEALTH = {
+  enabled: true,
+  providers: {
+    text: { configured: true, provider: 'openai', model: 'gpt-4o', name: 'Texte / LLM', status: 'active' },
+    image: { configured: true, provider: 'openai', model: 'dall-e-3', name: 'Images', status: 'active' },
+    video: { configured: false, provider: 'mock', model: 'mock', name: 'Video', status: 'inactive' },
+    tts: { configured: false, provider: 'mock', model: 'mock', name: 'Voix / TTS', status: 'inactive' },
+  },
+  budget: { dailyCents: 1000, maxPerJobCents: 100, dailyUsedCents: 50, dailyLimitCents: 1000, monthlyUsedCents: 200, monthlyLimitCents: 30000 },
+  quality: { threshold: 0.7, humanReviewRequired: false },
+  version: '1.0.0-mvp',
+  timestamp: new Date().toISOString(),
+};
 
 const MOCK_PROVIDERS = {
   providers: [
