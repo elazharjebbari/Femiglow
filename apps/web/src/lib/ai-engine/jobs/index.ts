@@ -1,6 +1,8 @@
 export {
   createJob,
   updateJobResult,
+  updateJobStatus,
+  getJob,
   recordCost,
   listJobs,
   getJobStats,

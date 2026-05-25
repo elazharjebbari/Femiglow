@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Clock,
   TrendingUp,
+  GitBranch,
 } from 'lucide-react';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { Badge } from '@/components/admin/content-studio-v2/primitives';
@@ -19,6 +20,18 @@ import { Badge } from '@/components/admin/content-studio-v2/primitives';
 /* ================================================================
    Types
    ================================================================ */
+
+interface NodeMetric {
+  nodeId: string;
+  label: string;
+  provider: string;
+  avgLatencyMs: number;
+  avgCostCents: number;
+  totalInvocations: number;
+  errorCount: number;
+  errorRate: number;
+  status: 'healthy' | 'degraded' | 'error';
+}
 
 interface AnalyticsData {
   overview: {
@@ -32,6 +45,7 @@ interface AnalyticsData {
     successRate: number;
     errorRate: number;
   };
+  nodeMetrics: NodeMetric[];
   costByProvider: Array<{ provider: string; costCents: number; count: number }>;
   costByNode: Array<{ nodeName: string; costCents: number; count: number }>;
   recentJobs: Array<{
@@ -46,6 +60,14 @@ interface AnalyticsData {
   }>;
 }
 
+type Period = 'day' | 'week' | 'month';
+
+const PERIOD_LABELS: Record<Period, string> = {
+  day: 'Dernieres 24h',
+  week: '7 jours',
+  month: '30 jours',
+};
+
 const PROVIDER_COLORS: Record<string, string> = {
   openai: 'var(--cs-accent)',
   anthropic: 'var(--cs-saffron)',
@@ -56,12 +78,28 @@ const PROVIDER_COLORS: Record<string, string> = {
 
 const NODE_LABELS: Record<string, string> = {
   brief_analysis: 'Analyse brief',
+  parseBrief: 'Analyse brief',
   script_writer: 'Script',
+  generateScript: 'Script',
   image_gen: 'Image',
+  generateImages: 'Image',
   caption_gen: 'Caption',
+  generateCaption: 'Caption',
   quality_gate: 'Qualite',
+  qualityCheck: 'Qualite',
   tts_gen: 'TTS',
+  generateVoiceover: 'TTS',
   video_gen: 'Video',
+  generateVideo: 'Video',
+  enrichKnowledge: 'Savoir',
+  enrichTrends: 'Tendances',
+  generateMusic: 'Musique',
+  generateSubtitles: 'Sous-titres',
+  compose: 'Composition',
+  transcodeExport: 'Export',
+  moderate: 'Moderation',
+  reviewGate: 'Revue',
+  generateVariants: 'Variantes',
 };
 
 const STATUS_BADGE: Record<string, { label: string; tone: 'success' | 'danger' | 'warning' | 'neutral' }> = {
@@ -74,6 +112,50 @@ const STATUS_BADGE: Record<string, { label: string; tone: 'success' | 'danger' |
 /* ================================================================
    Subcomponents
    ================================================================ */
+
+function PeriodSelector({
+  value,
+  onChange,
+}: {
+  value: Period;
+  onChange: (p: Period) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 2,
+        background: 'var(--cs-bg-sunken)',
+        borderRadius: 'var(--cs-radius)',
+        padding: 2,
+      }}
+    >
+      {(['day', 'week', 'month'] as Period[]).map((p) => (
+        <button
+          key={p}
+          onClick={() => onChange(p)}
+          style={{
+            padding: '6px 14px',
+            fontSize: 'var(--cs-text-xs)',
+            fontWeight: value === p ? 600 : 400,
+            color: value === p ? 'var(--cs-fg-primary)' : 'var(--cs-fg-muted)',
+            background: value === p ? 'var(--cs-bg-elevated)' : 'transparent',
+            border: value === p ? '1px solid var(--cs-border-hair)' : '1px solid transparent',
+            borderRadius: 'var(--cs-radius-sm, 4px)',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            fontFamily: 'inherit',
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            boxShadow: value === p ? 'var(--cs-shadow-sm)' : 'none',
+          }}
+        >
+          {PERIOD_LABELS[p]}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function KPICard({
   icon,
@@ -292,12 +374,13 @@ export default function AIEngineAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<Period>('month');
 
-  const fetchAnalytics = useCallback(async () => {
+  const fetchAnalytics = useCallback(async (p: Period) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/ai-engine/analytics');
+      const res = await fetch(`/api/admin/ai-engine/analytics?period=${p}&includeNodeMetrics=true`);
       if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const json = await res.json();
       setData(json);
@@ -309,8 +392,12 @@ export default function AIEngineAnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    fetchAnalytics(period);
+  }, [fetchAnalytics, period]);
+
+  const handlePeriodChange = useCallback((p: Period) => {
+    setPeriod(p);
+  }, []);
 
   if (loading) {
     return (
@@ -355,7 +442,7 @@ export default function AIEngineAnalyticsPage() {
             {error}
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={fetchAnalytics} leftIcon={<RefreshCw size={12} />}>
+        <Button variant="ghost" size="sm" onClick={() => fetchAnalytics(period)} leftIcon={<RefreshCw size={12} />}>
           Reessayer
         </Button>
       </section>
@@ -364,7 +451,7 @@ export default function AIEngineAnalyticsPage() {
 
   if (!data) return null;
 
-  const { overview, costByProvider, costByNode, recentJobs } = data;
+  const { overview, nodeMetrics, costByProvider, costByNode, recentJobs } = data;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -405,10 +492,16 @@ export default function AIEngineAnalyticsPage() {
             </h1>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="ghost" size="sm" onClick={fetchAnalytics} leftIcon={<RefreshCw size={12} />}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <PeriodSelector value={period} onChange={handlePeriodChange} />
+          <Button variant="ghost" size="sm" onClick={() => fetchAnalytics(period)} leftIcon={<RefreshCw size={12} />}>
             Actualiser
           </Button>
+          <Link href="/admin/content-studio-v2/ai-engine/graph" style={{ textDecoration: 'none' }}>
+            <Button variant="ghost" size="sm" leftIcon={<GitBranch size={12} />}>
+              Graphe
+            </Button>
+          </Link>
           <Link href="/admin/content-studio-v2/ai-engine/config" style={{ textDecoration: 'none' }}>
             <Button variant="ghost" size="sm">Configuration</Button>
           </Link>
@@ -452,6 +545,79 @@ export default function AIEngineAnalyticsPage() {
           tone="var(--cs-success)"
         />
       </section>
+
+      {/* Node health summary (from nodeMetrics) */}
+      {nodeMetrics && nodeMetrics.length > 0 && (
+        <section
+          style={{
+            background: 'var(--cs-bg-elevated)',
+            border: '1px solid var(--cs-border-hair)',
+            borderRadius: 'var(--cs-radius-md)',
+            padding: '20px 24px',
+            boxShadow: 'var(--cs-shadow-sm)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Activity size={16} style={{ color: 'var(--cs-accent)' }} />
+              <h2 className="cs-display" style={{ margin: 0, fontSize: 'var(--cs-text-base)', fontWeight: 500 }}>
+                Sante des noeuds du pipeline
+              </h2>
+            </div>
+            <Link href="/admin/content-studio-v2/ai-engine/graph" style={{ textDecoration: 'none' }}>
+              <Button variant="ghost" size="sm" leftIcon={<GitBranch size={12} />}>
+                Vue graphe
+              </Button>
+            </Link>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {nodeMetrics
+              .filter((m) => m.totalInvocations > 0 || m.avgCostCents > 0)
+              .map((m) => (
+              <div
+                key={m.nodeId}
+                style={{
+                  padding: '8px 12px',
+                  background: 'var(--cs-bg-sunken)',
+                  borderRadius: 'var(--cs-radius)',
+                  borderLeft: `3px solid ${
+                    m.status === 'healthy'
+                      ? 'var(--cs-success, #22c55e)'
+                      : m.status === 'degraded'
+                      ? 'var(--cs-warning, #f59e0b)'
+                      : 'var(--cs-danger, #ef4444)'
+                  }`,
+                  fontSize: 'var(--cs-text-xs)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                  minWidth: 120,
+                }}
+              >
+                <span style={{ fontWeight: 600, color: 'var(--cs-fg-primary)' }}>
+                  {m.label}
+                </span>
+                <div style={{ display: 'flex', gap: 10, color: 'var(--cs-fg-muted)' }}>
+                  <span className="cs-mono">{m.totalInvocations} inv.</span>
+                  {m.avgCostCents > 0 && (
+                    <span className="cs-mono">{(m.avgCostCents / 100).toFixed(2)} MAD</span>
+                  )}
+                  {m.errorCount > 0 && (
+                    <span className="cs-mono" style={{ color: 'var(--cs-danger, #ef4444)' }}>
+                      {m.errorCount} err.
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+            {nodeMetrics.every((m) => m.totalInvocations === 0 && m.avgCostCents === 0) && (
+              <p style={{ fontSize: 'var(--cs-text-sm)', color: 'var(--cs-fg-muted)', padding: 12 }}>
+                Aucune donnee de noeud disponible pour cette periode. Les metriques apparaitront apres la premiere generation.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -512,12 +678,28 @@ export default function AIEngineAnalyticsPage() {
               data={costByNode.map((n) => ({ key: n.nodeName, value: n.costCents, count: n.count }))}
               colors={{
                 brief_analysis: 'var(--cs-accent)',
+                parseBrief: 'var(--cs-accent)',
                 script_writer: 'var(--cs-saffron)',
+                generateScript: 'var(--cs-saffron)',
                 image_gen: 'var(--cs-sage)',
+                generateImages: 'var(--cs-sage)',
                 caption_gen: 'var(--cs-violet)',
+                generateCaption: 'var(--cs-violet)',
                 quality_gate: 'var(--cs-clay)',
+                qualityCheck: 'var(--cs-clay)',
                 tts_gen: 'var(--cs-accent-soft)',
+                generateVoiceover: 'var(--cs-accent-soft)',
                 video_gen: 'var(--cs-warning)',
+                generateVideo: 'var(--cs-warning)',
+                enrichKnowledge: 'var(--cs-sage)',
+                enrichTrends: 'var(--cs-saffron)',
+                generateMusic: 'var(--cs-violet)',
+                generateSubtitles: 'var(--cs-clay)',
+                compose: 'var(--cs-accent)',
+                transcodeExport: 'var(--cs-accent-soft)',
+                moderate: 'var(--cs-warning)',
+                reviewGate: 'var(--cs-sage)',
+                generateVariants: 'var(--cs-violet)',
               }}
               labelMap={NODE_LABELS}
               formatValue={(v) => `${(v / 100).toFixed(2)} MAD`}

@@ -7,6 +7,14 @@ import {
   ArrowLeft,
   RefreshCw,
   AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Edit3,
+  Eye,
+  Loader2,
+  BookOpen,
+  Image as ImageIcon,
+  Hash,
 } from 'lucide-react';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import {
@@ -29,6 +37,17 @@ interface BriefForm {
   keyMessage: string;
   productFocus: string;
   trendReference: string;
+}
+
+interface ReviewPayload {
+  jobId?: string;
+  script?: Record<string, unknown> | null;
+  caption?: string;
+  hashtags?: string[];
+  images?: Array<Record<string, unknown>>;
+  videos?: Array<Record<string, unknown>>;
+  qualityScores?: Record<string, number>;
+  moderationResult?: Record<string, unknown> | null;
 }
 
 const OBJECTIVES = [
@@ -215,7 +234,302 @@ function InputField({
   );
 }
 
-type Phase = 'brief' | 'generating' | 'result' | 'error';
+// ---------------------------------------------------------------------------
+// Review panel sub-component
+// ---------------------------------------------------------------------------
+
+function ReviewPanel({
+  jobId,
+  reviewPayload,
+  onDecision,
+  submitting,
+}: {
+  jobId: string;
+  reviewPayload: ReviewPayload;
+  onDecision: (decision: string, feedback?: string) => void;
+  submitting: boolean;
+}) {
+  const [feedbackMode, setFeedbackMode] = useState<'rejected' | 'edit_requested' | null>(null);
+  const [feedback, setFeedback] = useState('');
+
+  const script = reviewPayload.script as Record<string, unknown> | null | undefined;
+  const caption = reviewPayload.caption ?? '';
+  const hashtags = (reviewPayload.hashtags ?? []) as string[];
+  const images = (reviewPayload.images ?? []) as Array<Record<string, unknown>>;
+  const qualityScores = (reviewPayload.qualityScores ?? {}) as Record<string, number>;
+
+  const handleSubmitFeedback = () => {
+    if (feedbackMode) {
+      onDecision(feedbackMode, feedback || undefined);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        background: 'var(--cs-bg-elevated)',
+        border: '1px solid var(--cs-accent)',
+        borderRadius: 'var(--cs-radius-md)',
+        padding: '28px 32px',
+        boxShadow: 'var(--cs-shadow-sm)',
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 'var(--cs-radius)',
+            background: 'rgba(209, 183, 153, 0.15)',
+            color: 'var(--cs-accent)',
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Eye size={18} />
+        </div>
+        <div>
+          <h2
+            className="cs-display"
+            style={{ margin: 0, fontSize: 'var(--cs-text-lg)', fontWeight: 500 }}
+          >
+            Revue humaine requise
+          </h2>
+          <p style={{ margin: '2px 0 0 0', fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-muted)' }}>
+            Job {jobId.slice(0, 8)}... -- Examinez le contenu avant publication
+          </p>
+        </div>
+      </div>
+
+      {/* Script preview */}
+      {script && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <BookOpen size={14} style={{ color: 'var(--cs-fg-secondary)' }} />
+            <span className="cs-eyebrow" style={{ fontSize: 'var(--cs-text-xs)' }}>Script</span>
+          </div>
+          <div
+            style={{
+              background: 'var(--cs-bg-base)',
+              border: '1px solid var(--cs-border-hair)',
+              borderRadius: 'var(--cs-radius-sm)',
+              padding: '14px 16px',
+              fontSize: 'var(--cs-text-sm)',
+              color: 'var(--cs-fg-primary)',
+              lineHeight: 1.6,
+            }}
+          >
+            {script.hook ? (
+              <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>
+                Hook: {String(script.hook)}
+              </p>
+            ) : null}
+            {script.cta ? (
+              <p style={{ margin: '0 0 8px 0' }}>
+                <span style={{ fontWeight: 500 }}>CTA:</span> {String(script.cta)}
+              </p>
+            ) : null}
+            {Array.isArray(script.scenes) && (
+              <div style={{ marginTop: 8 }}>
+                {(script.scenes as Array<Record<string, unknown>>).map((scene, i) => (
+                  <p key={i} style={{ margin: '4px 0', color: 'var(--cs-fg-secondary)' }}>
+                    Scene {(scene.sceneNumber as number) ?? i + 1}: {scene.narration ? String(scene.narration) : (scene.visualNote as Record<string, unknown>)?.description ? String((scene.visualNote as Record<string, unknown>).description) : '--'}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Caption preview */}
+      {caption && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Edit3 size={14} style={{ color: 'var(--cs-fg-secondary)' }} />
+            <span className="cs-eyebrow" style={{ fontSize: 'var(--cs-text-xs)' }}>Caption</span>
+          </div>
+          <div
+            style={{
+              background: 'var(--cs-bg-base)',
+              border: '1px solid var(--cs-border-hair)',
+              borderRadius: 'var(--cs-radius-sm)',
+              padding: '14px 16px',
+              fontSize: 'var(--cs-text-sm)',
+              color: 'var(--cs-fg-primary)',
+              lineHeight: 1.6,
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {caption}
+          </div>
+        </div>
+      )}
+
+      {/* Hashtags */}
+      {hashtags.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Hash size={14} style={{ color: 'var(--cs-fg-secondary)' }} />
+            <span className="cs-eyebrow" style={{ fontSize: 'var(--cs-text-xs)' }}>Hashtags</span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {hashtags.map((tag, i) => (
+              <span
+                key={i}
+                style={{
+                  display: 'inline-block',
+                  padding: '3px 10px',
+                  borderRadius: 'var(--cs-radius-sm)',
+                  background: 'rgba(209, 183, 153, 0.12)',
+                  color: 'var(--cs-accent)',
+                  fontSize: 'var(--cs-text-xs)',
+                  fontWeight: 500,
+                }}
+              >
+                {tag.startsWith('#') ? tag : `#${tag}`}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Images */}
+      {images.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <ImageIcon size={14} style={{ color: 'var(--cs-fg-secondary)' }} />
+            <span className="cs-eyebrow" style={{ fontSize: 'var(--cs-text-xs)' }}>
+              Images ({images.length})
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
+            {images.map((img, i) => (
+              <div
+                key={i}
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 'var(--cs-radius-sm)',
+                  background: 'var(--cs-bg-base)',
+                  border: '1px solid var(--cs-border-hair)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {img.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={String(img.url)}
+                    alt={`Image ${i + 1}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <ImageIcon size={20} style={{ color: 'var(--cs-fg-muted)' }} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quality scores */}
+      {Object.keys(qualityScores).length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <span className="cs-eyebrow" style={{ fontSize: 'var(--cs-text-xs)', display: 'block', marginBottom: 8 }}>
+            Scores qualité
+          </span>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {Object.entries(qualityScores).map(([key, val]) => (
+              <div key={key} style={{ fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-secondary)' }}>
+                <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{key}:</span>{' '}
+                <span style={{ color: val >= 0.7 ? 'var(--cs-success)' : val >= 0.5 ? 'var(--cs-warning)' : 'var(--cs-danger)' }}>
+                  {typeof val === 'number' ? (val * 100).toFixed(0) : val}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Feedback textarea (shown when rejecting or requesting edits) */}
+      {feedbackMode && (
+        <div style={{ marginBottom: 18 }}>
+          <TextAreaField
+            label={feedbackMode === 'rejected' ? 'Raison du rejet' : 'Modifications demandées'}
+            value={feedback}
+            onChange={setFeedback}
+            placeholder={
+              feedbackMode === 'rejected'
+                ? 'Expliquez pourquoi ce contenu ne convient pas...'
+                : 'Décrivez les modifications souhaitées...'
+            }
+            rows={3}
+          />
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <Button
+              variant="primary"
+              onClick={handleSubmitFeedback}
+              disabled={submitting}
+              leftIcon={submitting ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
+            >
+              {submitting ? 'Envoi...' : 'Confirmer'}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => { setFeedbackMode(null); setFeedback(''); }}
+              disabled={submitting}
+            >
+              Annuler
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Decision buttons */}
+      {!feedbackMode && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Button
+            variant="primary"
+            leftIcon={submitting ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle size={14} />}
+            onClick={() => onDecision('approved')}
+            disabled={submitting}
+          >
+            {submitting ? 'Envoi...' : 'Approuver'}
+          </Button>
+          <Button
+            variant="ghost"
+            leftIcon={<Edit3 size={14} />}
+            onClick={() => setFeedbackMode('edit_requested')}
+            disabled={submitting}
+            style={{ borderColor: 'var(--cs-warning)', color: 'var(--cs-warning)' }}
+          >
+            Demander des modifications
+          </Button>
+          <Button
+            variant="ghost"
+            leftIcon={<XCircle size={14} />}
+            onClick={() => setFeedbackMode('rejected')}
+            disabled={submitting}
+            style={{ borderColor: 'var(--cs-danger)', color: 'var(--cs-danger)' }}
+          >
+            Rejeter
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
+
+type Phase = 'brief' | 'generating' | 'review' | 'reviewing' | 'result' | 'error';
 
 export default function AIEngineCreatePage() {
   const [phase, setPhase] = useState<Phase>('brief');
@@ -234,6 +548,9 @@ export default function AIEngineCreatePage() {
   const [bridgeResult, setBridgeResult] = useState<BridgeResultData | null>(null);
   const [contentStudioUrl, setContentStudioUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [reviewJobId, setReviewJobId] = useState<string>('');
+  const [reviewPayload, setReviewPayload] = useState<ReviewPayload | null>(null);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   const updateField = useCallback((field: keyof BriefForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -278,6 +595,8 @@ export default function AIEngineCreatePage() {
     setContentStudioUrl(null);
     setErrorMsg('');
     setTotalCost(undefined);
+    setReviewPayload(null);
+    setReviewJobId('');
 
     try {
       const res = await fetch('/api/admin/ai-engine/generate', {
@@ -301,6 +620,25 @@ export default function AIEngineCreatePage() {
 
       const data = await res.json();
 
+      // Check if generation requires human review
+      if (data.status === 'review') {
+        simulateProgress(() => {
+          setReviewJobId(data.jobId);
+          setReviewPayload(data.reviewPayload ?? {
+            script: data.script,
+            caption: data.caption,
+            hashtags: data.hashtags,
+            images: data.images,
+            videos: data.videos,
+            qualityScores: data.qualityScores,
+            moderationResult: data.moderationResult,
+          });
+          setTotalCost(data.totalCostCents ?? data.costTracking?.totalCents);
+          setPhase('review');
+        });
+        return;
+      }
+
       simulateProgress((success) => {
         if (success) {
           setResult(data);
@@ -316,6 +654,55 @@ export default function AIEngineCreatePage() {
     }
   }, [form, simulateProgress]);
 
+  const handleReviewDecision = useCallback(async (decision: string, feedback?: string) => {
+    if (!reviewJobId) return;
+
+    setReviewSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/admin/ai-engine/jobs/${reviewJobId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision, feedback }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Erreur ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // The review might trigger another review cycle (e.g. edit_requested -> regenerate -> review)
+      if (data.status === 'review') {
+        setReviewPayload(data.reviewPayload ?? {
+          script: data.script,
+          caption: data.caption,
+          hashtags: data.hashtags,
+          images: data.images,
+          videos: data.videos,
+          qualityScores: data.qualityScores,
+          moderationResult: data.moderationResult,
+        });
+        setReviewJobId(data.jobId);
+        setReviewSubmitting(false);
+        return;
+      }
+
+      // Final result
+      setResult(data);
+      setBridgeResult(data.bridgeResult ?? null);
+      setContentStudioUrl(data.contentStudioUrl ?? null);
+      setTotalCost(data.totalCostCents ?? data.costTracking?.totalCents);
+      setPhase('result');
+    } catch (e: unknown) {
+      setErrorMsg(e instanceof Error ? e.message : 'Erreur lors de la soumission de la revue');
+      setPhase('error');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }, [reviewJobId]);
+
   const handleRetry = useCallback(() => {
     handleGenerate();
   }, [handleGenerate]);
@@ -328,6 +715,8 @@ export default function AIEngineCreatePage() {
     setSteps([]);
     setTotalCost(undefined);
     setErrorMsg('');
+    setReviewPayload(null);
+    setReviewJobId('');
   }, []);
 
   const handleUse = useCallback(() => {
@@ -463,6 +852,15 @@ export default function AIEngineCreatePage() {
 
       {phase === 'generating' && (
         <GenerationProgress steps={steps} totalCost={totalCost} />
+      )}
+
+      {phase === 'review' && reviewPayload && (
+        <ReviewPanel
+          jobId={reviewJobId}
+          reviewPayload={reviewPayload}
+          onDecision={handleReviewDecision}
+          submitting={reviewSubmitting}
+        />
       )}
 
       {phase === 'result' && result && (

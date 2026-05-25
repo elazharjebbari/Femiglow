@@ -17,6 +17,7 @@ export interface JobRow {
   format: string;
   contentType: string;
   currentStep: string | null;
+  briefInput: Record<string, unknown> | null;
   caption: string | null;
   hashtags: string[] | null;
   totalCostCents: number;
@@ -75,6 +76,63 @@ export async function updateJobResult(
       .where(eq(aiEngineGenerationJobs.id, jobId));
   } catch (err) {
     log.warn('Failed to update job record', { data: { error: String(err) } });
+  }
+}
+
+export async function updateJobStatus(
+  jobId: string,
+  status: string,
+): Promise<void> {
+  const drizzle = db();
+  if (!drizzle) return;
+
+  try {
+    await drizzle
+      .update(aiEngineGenerationJobs)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(aiEngineGenerationJobs.id, jobId));
+  } catch (err) {
+    log.warn('Failed to update job status', { data: { error: String(err) } });
+  }
+}
+
+export async function getJob(jobId: string): Promise<JobRow | null> {
+  const drizzle = db();
+  if (!drizzle) return null;
+
+  try {
+    const rows = await drizzle
+      .select()
+      .from(aiEngineGenerationJobs)
+      .where(eq(aiEngineGenerationJobs.id, jobId))
+      .limit(1);
+
+    const r = rows[0];
+    if (!r) return null;
+
+    return {
+      id: r.id,
+      ideaId: r.ideaId,
+      status: r.status,
+      platform: r.platform,
+      format: r.format,
+      contentType: r.contentType,
+      currentStep: r.currentStep,
+      briefInput: r.briefInput as Record<string, unknown> | null,
+      caption: r.caption,
+      hashtags: r.hashtags,
+      totalCostCents: Number(r.totalCostCents ?? 0),
+      qualityScores: r.qualityScores as Record<string, number> | null,
+      durationMs: r.durationMs,
+      createdAt: r.createdAt,
+      completedAt: r.completedAt,
+    };
+  } catch (err) {
+    log.warn('Failed to get job', { data: { error: String(err) } });
+    return null;
   }
 }
 
@@ -138,6 +196,7 @@ export async function listJobs(options?: {
       format: r.format,
       contentType: r.contentType,
       currentStep: r.currentStep,
+      briefInput: r.briefInput as Record<string, unknown> | null,
       caption: r.caption,
       hashtags: r.hashtags,
       totalCostCents: Number(r.totalCostCents ?? 0),

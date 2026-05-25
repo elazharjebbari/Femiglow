@@ -1,5 +1,5 @@
-export { runGeneration, type GenerationRequest, type GenerationResult } from './orchestrator';
+export { runGeneration, resumeGeneration, type GenerationRequest, type GenerationResult, type ReviewDecision } from './orchestrator';
 export { getEngineConfig, type EngineConfig } from './config';
-export { createContentEngine } from './graph';
+export { createContentEngine, getContentEngine } from './graph';
 export { createLogger } from './utils';
 export { getTrends, getTrendForGeneration, type ScoredTrend } from './trends';
