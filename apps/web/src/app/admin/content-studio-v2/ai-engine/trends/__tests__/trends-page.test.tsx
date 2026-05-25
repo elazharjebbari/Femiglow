@@ -26,7 +26,7 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-import TrendsPage from '../../page';
+import TrendsPage from '../page';
 
 function buildTrend(overrides?: Record<string, unknown>) {
   return {
@@ -127,9 +127,10 @@ describe('TrendsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Toutes')).toBeInTheDocument();
     });
-    // Category filters derived from trends
-    expect(screen.getByText('Routine')).toBeInTheDocument();
-    expect(screen.getByText('Ingrédient')).toBeInTheDocument();
+    // Category filters are rendered as buttons — "Routine" appears in both
+    // the filter area and the trend card, so use getAllByText
+    expect(screen.getAllByText('Routine').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Ingrédient').length).toBeGreaterThanOrEqual(1);
   });
 
   it('clicking filter fetches with category param', async () => {
@@ -147,11 +148,14 @@ describe('TrendsPage', () => {
     render(<TrendsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Routine')).toBeInTheDocument();
+      expect(screen.getAllByText('Routine').length).toBeGreaterThanOrEqual(1);
     });
 
-    // Click on Routine filter
-    fireEvent.click(screen.getByText('Routine'));
+    // Click on Routine filter button (it's a plain <button> in the filter bar)
+    const routineButtons = screen.getAllByText('Routine');
+    // The filter button is the one without the category badge styling
+    // Filter buttons are rendered first in the DOM
+    fireEvent.click(routineButtons[0]);
 
     // A re-fetch should happen
     await waitFor(() => {

@@ -26,7 +26,7 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-import AIEngineConfigPage from '../../page';
+import AIEngineConfigPage from '../page';
 
 function buildProvider(overrides?: Record<string, unknown>) {
   return {
@@ -254,11 +254,12 @@ describe('AIEngineConfigPage', () => {
     fetchSpy.mockReturnValue(new Promise(() => {}));
     const { container } = render(<AIEngineConfigPage />);
 
-    // Loading state shows animated placeholder divs
-    const shimmerDivs = container.querySelectorAll(
-      'div[style*="cs-shimmer"]',
+    // Loading state renders div placeholders with shimmer animation
+    // The config page loading renders 4 divs with animation property
+    const skeletonDivs = container.querySelectorAll(
+      'div[style*="animation"]',
     );
-    expect(shimmerDivs.length).toBeGreaterThanOrEqual(1);
+    expect(skeletonDivs.length).toBeGreaterThanOrEqual(1);
   });
 
   it('error state shows message', async () => {

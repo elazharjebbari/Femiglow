@@ -145,7 +145,7 @@ test('trends — category pills are clickable', async ({ page }) => {
   await gotoAIEngine(page, 'trends');
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('J-Beauty Routine')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: 'J-Beauty Routine' })).toBeVisible({ timeout: 20_000 });
 
   // Category pills for the trends: "Routine" and "Ingrédient"
   const routinePill = page.getByRole('button', { name: 'Routine' });
@@ -154,7 +154,7 @@ test('trends — category pills are clickable', async ({ page }) => {
 
   // After clicking, the filter should be applied. The page re-fetches via mock.
   // Both trends still appear since mock always returns the same data.
-  await expect(page.getByText('J-Beauty Routine')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('heading', { name: 'J-Beauty Routine' })).toBeVisible({ timeout: 10_000 });
 });
 
 // ─────────────────────────────────────────────────────────────────
@@ -165,7 +165,7 @@ test('trends — "Créer un contenu" button links to /create with trend param', 
   await gotoAIEngine(page, 'trends');
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('J-Beauty Routine')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: 'J-Beauty Routine' })).toBeVisible({ timeout: 20_000 });
 
   const createLink = page.locator('article').first().getByRole('link', { name: /Créer un contenu/i });
   await expect(createLink).toBeVisible({ timeout: 10_000 });
@@ -182,7 +182,7 @@ test('trends — opportunity window text is shown', async ({ page }) => {
   await gotoAIEngine(page, 'trends');
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('J-Beauty Routine')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: 'J-Beauty Routine' })).toBeVisible({ timeout: 20_000 });
 
   // Opportunity windows from mock: "1 week" and "evergreen"
   await expect(page.getByText('1 week')).toBeVisible({ timeout: 10_000 });

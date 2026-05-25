@@ -176,9 +176,7 @@ test('analytics — link to graph viewer present', async ({ page }) => {
 
   await expect(page.getByText("Generations aujourd'hui")).toBeVisible({ timeout: 20_000 });
 
-  // The "Graphe" button links to /graph
-  const graphButton = page.getByRole('link', { name: /Graphe/i }).or(
-    page.locator('a[href*="/graph"]').first(),
-  );
-  await expect(graphButton).toBeVisible({ timeout: 10_000 });
+  // The "Graphe" button links to /graph (may appear in multiple places)
+  const graphLink = page.locator('a[href*="/graph"]').first();
+  await expect(graphLink).toBeVisible({ timeout: 10_000 });
 });

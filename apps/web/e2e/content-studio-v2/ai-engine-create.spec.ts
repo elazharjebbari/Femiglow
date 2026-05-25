@@ -185,8 +185,8 @@ test('create — result phase shows hook text', async ({ page }) => {
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
 
-  // Hook text from mock
-  await expect(page.getByText('Hook')).toBeVisible({ timeout: 10_000 });
+  // Hook text from mock — use the eyebrow label in the script section
+  await expect(page.locator('.cs-eyebrow', { hasText: 'Hook' }).first()).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText('Test hook')).toBeVisible({ timeout: 10_000 });
 });
 
@@ -203,7 +203,8 @@ test('create — result phase shows caption', async ({ page }) => {
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText('Caption')).toBeVisible({ timeout: 10_000 });
+  // Caption section — match the section heading specifically
+  await expect(page.locator('span', { hasText: 'Caption' }).first()).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText('Test caption for FemiGlow')).toBeVisible({ timeout: 10_000 });
 });
 

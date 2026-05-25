@@ -26,27 +26,30 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-import AIEngineCreatePage from '../../page';
+import AIEngineCreatePage from '../page';
+
+/**
+ * Helper: get all <select> elements rendered in the brief form.
+ */
+function getSelects(): HTMLSelectElement[] {
+  // The page has 4 select fields: Objective, Platform, Format, Tone
+  return Array.from(document.querySelectorAll('select'));
+}
 
 /**
  * Helper: fill in all required fields so the form becomes valid.
  */
 function fillRequiredFields() {
+  const selects = getSelects();
+
   // Objective
-  const objectiveSelect = screen.getAllByRole('combobox')[0];
-  fireEvent.change(objectiveSelect, { target: { value: 'awareness' } });
-
+  fireEvent.change(selects[0], { target: { value: 'awareness' } });
   // Platform
-  const platformSelect = screen.getAllByRole('combobox')[1];
-  fireEvent.change(platformSelect, { target: { value: 'instagram' } });
-
+  fireEvent.change(selects[1], { target: { value: 'instagram' } });
   // Format
-  const formatSelect = screen.getAllByRole('combobox')[2];
-  fireEvent.change(formatSelect, { target: { value: 'single_image' } });
-
+  fireEvent.change(selects[2], { target: { value: 'single_image' } });
   // Tone
-  const toneSelect = screen.getAllByRole('combobox')[3];
-  fireEvent.change(toneSelect, { target: { value: 'empowering' } });
+  fireEvent.change(selects[3], { target: { value: 'empowering' } });
 
   // Key message
   const keyMessageTextarea = screen.getByPlaceholderText(
@@ -83,9 +86,8 @@ describe('AIEngineCreatePage', () => {
 
   it('objective dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
-    const selects = screen.getAllByRole('combobox');
-    const objectiveSelect = selects[0];
-    const options = objectiveSelect.querySelectorAll('option');
+    const selects = getSelects();
+    const options = selects[0].querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('awareness');
     expect(values).toContain('engagement');
@@ -97,9 +99,8 @@ describe('AIEngineCreatePage', () => {
 
   it('platform dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
-    const selects = screen.getAllByRole('combobox');
-    const platformSelect = selects[1];
-    const options = platformSelect.querySelectorAll('option');
+    const selects = getSelects();
+    const options = selects[1].querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('instagram');
     expect(values).toContain('tiktok');
@@ -111,9 +112,8 @@ describe('AIEngineCreatePage', () => {
 
   it('format dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
-    const selects = screen.getAllByRole('combobox');
-    const formatSelect = selects[2];
-    const options = formatSelect.querySelectorAll('option');
+    const selects = getSelects();
+    const options = selects[2].querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('reel');
     expect(values).toContain('carousel');
@@ -125,9 +125,8 @@ describe('AIEngineCreatePage', () => {
 
   it('tone dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
-    const selects = screen.getAllByRole('combobox');
-    const toneSelect = selects[3];
-    const options = toneSelect.querySelectorAll('option');
+    const selects = getSelects();
+    const options = selects[3].querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('empowering');
     expect(values).toContain('educational');
@@ -271,10 +270,9 @@ describe('AIEngineCreatePage', () => {
 
   it('form maps format values correctly (single_image value exists)', () => {
     render(<AIEngineCreatePage />);
-    const selects = screen.getAllByRole('combobox');
-    const formatSelect = selects[2];
-    fireEvent.change(formatSelect, { target: { value: 'single_image' } });
-    expect(formatSelect).toHaveValue('single_image');
+    const selects = getSelects();
+    fireEvent.change(selects[2], { target: { value: 'single_image' } });
+    expect(selects[2]).toHaveValue('single_image');
   });
 
   it('shows reel format option in dropdown', () => {

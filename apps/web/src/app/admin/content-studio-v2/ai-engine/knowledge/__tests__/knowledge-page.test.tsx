@@ -26,7 +26,7 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-import KnowledgeBasePage from '../../page';
+import KnowledgeBasePage from '../page';
 
 function buildCollection(overrides?: Record<string, unknown>) {
   return {
@@ -134,8 +134,9 @@ describe('KnowledgeBasePage', () => {
       expect(screen.getByText('Science cosmétique')).toBeInTheDocument();
     });
     expect(screen.getByText('Science')).toBeInTheDocument(); // category badge
-    expect(screen.getByText(/12/)).toBeInTheDocument(); // doc count in stats or row
-    expect(screen.getByText(/156/)).toBeInTheDocument(); // chunk count
+    // "12" appears in both stat card and collection row, use getAllByText
+    expect(screen.getAllByText(/12/).length).toBeGreaterThanOrEqual(1); // doc count
+    expect(screen.getAllByText(/156/).length).toBeGreaterThanOrEqual(1); // chunk count
   });
 
   it('clicking collection expands to show documents', async () => {

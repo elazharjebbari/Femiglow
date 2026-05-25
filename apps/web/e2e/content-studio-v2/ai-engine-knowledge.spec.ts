@@ -157,9 +157,10 @@ test('knowledge — collection shows name and category badge', async ({ page }) 
 
   await expect(page.getByText('Ingredients J-Beauty')).toBeVisible({ timeout: 20_000 });
 
-  // Category badges: Science, Marque, Plateforme
-  await expect(page.getByText('Science')).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByText('Marque')).toBeVisible({ timeout: 10_000 });
+  // Category badges: Science, Marque, Plateforme (use first() to avoid
+  // matching stat card labels that also contain 'Plateforme')
+  await expect(page.getByText('Science').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('Marque').first()).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText('Plateforme').first()).toBeVisible({ timeout: 10_000 });
 });
 
@@ -218,9 +219,10 @@ test('knowledge — "Ajouter un document" button appears on expand', async ({ pa
   // Click it to show the form
   await addButton.click();
 
-  // Form fields should appear
+  // Form fields should appear — use label selector to avoid matching other
+  // elements that contain 'Contenu' (like button text)
   await expect(page.getByText('Titre du document')).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByText('Contenu')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('label', { hasText: 'Contenu' })).toBeVisible({ timeout: 10_000 });
 });
 
 // ─────────────────────────────────────────────────────────────────
