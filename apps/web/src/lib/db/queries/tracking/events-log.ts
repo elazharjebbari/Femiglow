@@ -31,6 +31,20 @@ export interface LogEventInput {
   providersResults?: Record<string, TrackingProviderResult>;
   receivedAt?: Date;
   schemaVersion?: number;
+  /**
+   * Attribution bucket résolu côté serveur (cf. `enrichEvent`).
+   * Doit être une valeur de `TrafficBucket` (`lib/tracking/taxonomy.ts`).
+   * Optionnel pour rétrocompatibilité avec les call-sites existants
+   * (v1 flag) — passe à NULL en DB si absent.
+   *
+   * Référence : `docs/attribution-fix-2026-05/02-vision-architecture.md`.
+   */
+  trafficSource?: string | null;
+  /**
+   * Medium normalisé (cpc, organic, email, ...). Sortie de
+   * `classifyTraffic` ou `applyStrategy().utm.medium`.
+   */
+  trafficMedium?: string | null;
 }
 
 export interface ListEventsOptions {
@@ -68,6 +82,8 @@ function rowToEntry(row: typeof schema.trackingEventsLog.$inferSelect): Tracking
     providersResults: (row.providersResults as Record<string, TrackingProviderResult>) ?? {},
     receivedAt: row.receivedAt,
     schemaVersion: row.schemaVersion,
+    trafficSource: row.trafficSource ?? null,
+    trafficMedium: row.trafficMedium ?? null,
   };
 }
 
@@ -95,6 +111,8 @@ export async function logEvent(input: LogEventInput): Promise<TrackingEventLogEn
     providersResults: input.providersResults ?? {},
     receivedAt: now,
     schemaVersion: input.schemaVersion ?? 1,
+    trafficSource: input.trafficSource ?? null,
+    trafficMedium: input.trafficMedium ?? null,
   };
   const drizzle = db();
   if (drizzle) {
@@ -121,6 +139,12 @@ export async function logEvent(input: LogEventInput): Promise<TrackingEventLogEn
         providersResults: entry.providersResults,
         receivedAt: entry.receivedAt,
         schemaVersion: entry.schemaVersion,
+        // 🔥 Fix attribution audit cause #1 — colonnes désormais persistées.
+        // Si non passé par le caller (v1 flag OFF) → NULL en DB (cohérent
+        // avec le comportement antérieur). Si passé (v2 flag ON) → segmentation
+        // fonctionnelle dans /admin/analytics.
+        trafficSource: entry.trafficSource,
+        trafficMedium: entry.trafficMedium,
       } as typeof schema.trackingEventsLog.$inferInsert);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

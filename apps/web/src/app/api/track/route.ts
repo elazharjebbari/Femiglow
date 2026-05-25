@@ -14,6 +14,11 @@ import { isDuplicateEventId } from '@/lib/tracking/server/dedup';
 import { dispatchToProviders } from '@/lib/tracking/server/dispatcher';
 import { getEventCategory } from '@/lib/tracking/schemas';
 import type { TrackingConsentState } from '@/lib/db/types';
+// Attribution v2 — résolution server-side authoritative (cf. audit).
+// Référence : `docs/attribution-fix-2026-05/02-vision-architecture.md`.
+import { ATTRIBUTION_VERSION } from '@/lib/feature-flags/attribution';
+import { extractRequestSignals } from '@/lib/tracking/server/request-signals';
+import { enrichEvent, type EnrichedEvent } from '@/lib/tracking/server/enrich-event';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -218,6 +223,45 @@ export async function POST(request: Request): Promise<Response> {
         return { dispatched: [], results: {} };
       });
 
+      // ── Attribution v2 : résolution server-side authoritative ─────────
+      // Le flag `ATTRIBUTION_V2` (default v1) garde la rétrocompat. Quand
+      // ON, on enrichit l'event avec `trafficSource`/`trafficMedium` avant
+      // l'INSERT. Quand OFF, comportement identique à avant (colonnes NULL).
+      let enriched: EnrichedEvent | null = null;
+      if (ATTRIBUTION_VERSION === 'v2') {
+        try {
+          const cookieReader = {
+            get: (name: string) => {
+              const cookieHeader = request.headers.get('cookie') ?? '';
+              const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+              return match ? { value: decodeURIComponent(match[1]!) } : undefined;
+            },
+          };
+          const signals = extractRequestSignals({
+            cookies: cookieReader,
+            referrer: event.page.referrer ?? request.headers.get('referer') ?? null,
+          });
+          enriched = await enrichEvent({
+            anonymousId: event.user.anonymous_id,
+            clientHint: event.attribution
+              ? {
+                  channel: event.attribution.channel,
+                  isPaid: event.attribution.is_paid,
+                  utm: event.attribution.utm,
+                }
+              : null,
+            requestSignals: signals,
+          });
+        } catch (err) {
+          // Ne JAMAIS faire échouer l'ingest pour un problème d'enrichissement.
+          // On log + persiste sans attribution (équivalent v1).
+          logger.warn('tracking.enrich.failed', {
+            event_name: event.event,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+
       try {
         await logEvent({
           id: createId('tev'),
@@ -241,6 +285,9 @@ export async function POST(request: Request): Promise<Response> {
           providersResults: dispatch.results,
           receivedAt: event.timestamp ? new Date(event.timestamp) : new Date(),
           schemaVersion: event.schema_version ?? 1,
+          // 🔥 Fix attribution audit cause #1 — colonnes désormais persistées.
+          trafficSource: enriched?.trafficSource ?? null,
+          trafficMedium: enriched?.trafficMedium ?? null,
         });
         result.accepted += 1;
 
