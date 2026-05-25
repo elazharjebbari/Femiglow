@@ -167,19 +167,23 @@ export async function bridgeToContentStudio(
       ? ((result.costTracking as Record<string, unknown>).totalCents as number)
       : 0;
 
-  await insertGenerationRun({
-    ideaId: idea.id,
-    briefId: brief.id,
-    provider: 'ai-engine-langgraph',
-    model: 'langgraph-v1',
-    promptVersion: 'ai-engine-v1',
-    input: request as unknown as Record<string, unknown>,
-    output: result as unknown as Record<string, unknown>,
-    status: 'succeeded',
-    costCents,
-    errorMessage: null,
-    createdBy: null,
-  });
+  try {
+    await insertGenerationRun({
+      ideaId: idea.id,
+      briefId: brief.id,
+      provider: 'ai-engine-langgraph',
+      model: 'langgraph-v1',
+      promptVersion: 'ai-engine-v1',
+      input: { platform: request.platform, format: request.format, keyMessage: request.briefInput.keyMessage } as Record<string, unknown>,
+      output: { status: result.status, durationMs: result.durationMs, qualityAvg: result.qualityScores?.average } as Record<string, unknown>,
+      status: 'succeeded',
+      costCents,
+      errorMessage: null,
+      createdBy: null,
+    });
+  } catch {
+    // generation_run insert is non-critical
+  }
 
   return {
     ideaId: idea.id,
