@@ -128,6 +128,25 @@ const envSchema = z.object({
   // Set to 'true' once Phase 7 polish + Phase 5 /plan completes; rollback
   // is a flag flip away.
   CONTENT_STUDIO_V2_DEFAULT: z.enum(['true', 'false']).default('false'),
+
+  // — AI Engine (LangGraph-based content generation) ————————————————————
+  AI_ENGINE_ENABLED: z.enum(['true', 'false']).default('false'),
+  AI_ENGINE_OPENAI_API_KEY: z.string().optional(),
+  AI_ENGINE_ANTHROPIC_API_KEY: z.string().optional(),
+  AI_ENGINE_GOOGLE_API_KEY: z.string().optional(),
+  AI_ENGINE_ELEVENLABS_API_KEY: z.string().optional(),
+  AI_ENGINE_OLLAMA_BASE_URL: z.string().url().optional(),
+  AI_ENGINE_DEFAULT_TEXT_PROVIDER: z.enum(['openai', 'anthropic', 'google', 'ollama']).default('openai'),
+  AI_ENGINE_DEFAULT_TEXT_MODEL: z.string().min(1).default('gpt-4.1-mini'),
+  AI_ENGINE_DEFAULT_IMAGE_PROVIDER: z.enum(['openai', 'google', 'stability', 'mock']).default('mock'),
+  AI_ENGINE_DEFAULT_IMAGE_MODEL: z.string().min(1).default('gpt-image-1'),
+  AI_ENGINE_DEFAULT_VIDEO_PROVIDER: z.enum(['google', 'runway', 'mock']).default('mock'),
+  AI_ENGINE_DEFAULT_TTS_PROVIDER: z.enum(['elevenlabs', 'openai', 'google', 'mock']).default('mock'),
+  AI_ENGINE_DAILY_BUDGET_CENTS: z.coerce.number().int().nonnegative().default(1000),
+  AI_ENGINE_MAX_BUDGET_PER_JOB_CENTS: z.coerce.number().int().nonnegative().default(100),
+  AI_ENGINE_QUALITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
+  AI_ENGINE_HUMAN_REVIEW_REQUIRED: z.enum(['true', 'false']).default('true'),
+  AI_ENGINE_LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
 
 export const env = envSchema.parse({
@@ -208,4 +227,21 @@ export const env = envSchema.parse({
     process.env.CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS,
   CONTENT_STUDIO_V2_ENABLED: process.env.CONTENT_STUDIO_V2_ENABLED,
   CONTENT_STUDIO_V2_DEFAULT: process.env.CONTENT_STUDIO_V2_DEFAULT,
+  AI_ENGINE_ENABLED: process.env.AI_ENGINE_ENABLED,
+  AI_ENGINE_OPENAI_API_KEY: process.env.AI_ENGINE_OPENAI_API_KEY,
+  AI_ENGINE_ANTHROPIC_API_KEY: process.env.AI_ENGINE_ANTHROPIC_API_KEY,
+  AI_ENGINE_GOOGLE_API_KEY: process.env.AI_ENGINE_GOOGLE_API_KEY,
+  AI_ENGINE_ELEVENLABS_API_KEY: process.env.AI_ENGINE_ELEVENLABS_API_KEY,
+  AI_ENGINE_OLLAMA_BASE_URL: process.env.AI_ENGINE_OLLAMA_BASE_URL,
+  AI_ENGINE_DEFAULT_TEXT_PROVIDER: process.env.AI_ENGINE_DEFAULT_TEXT_PROVIDER,
+  AI_ENGINE_DEFAULT_TEXT_MODEL: process.env.AI_ENGINE_DEFAULT_TEXT_MODEL,
+  AI_ENGINE_DEFAULT_IMAGE_PROVIDER: process.env.AI_ENGINE_DEFAULT_IMAGE_PROVIDER,
+  AI_ENGINE_DEFAULT_IMAGE_MODEL: process.env.AI_ENGINE_DEFAULT_IMAGE_MODEL,
+  AI_ENGINE_DEFAULT_VIDEO_PROVIDER: process.env.AI_ENGINE_DEFAULT_VIDEO_PROVIDER,
+  AI_ENGINE_DEFAULT_TTS_PROVIDER: process.env.AI_ENGINE_DEFAULT_TTS_PROVIDER,
+  AI_ENGINE_DAILY_BUDGET_CENTS: process.env.AI_ENGINE_DAILY_BUDGET_CENTS,
+  AI_ENGINE_MAX_BUDGET_PER_JOB_CENTS: process.env.AI_ENGINE_MAX_BUDGET_PER_JOB_CENTS,
+  AI_ENGINE_QUALITY_THRESHOLD: process.env.AI_ENGINE_QUALITY_THRESHOLD,
+  AI_ENGINE_HUMAN_REVIEW_REQUIRED: process.env.AI_ENGINE_HUMAN_REVIEW_REQUIRED,
+  AI_ENGINE_LOG_LEVEL: process.env.AI_ENGINE_LOG_LEVEL,
 });

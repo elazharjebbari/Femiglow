@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Sparkles, LayoutGrid, CalendarDays, ExternalLink } from 'lucide-react';
+import { Home, Sparkles, LayoutGrid, CalendarDays, ExternalLink, Cpu } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { href: '/admin/content-studio-v2/create',  label: 'Création',     icon: <Sparkles size={16} />, match: /^\/admin\/content-studio-v2\/create/ },
   { href: '/admin/content-studio-v2/library', label: 'Bibliothèque', icon: <LayoutGrid size={16} /> },
   { href: '/admin/content-studio-v2/plan',    label: 'Planning',     icon: <CalendarDays size={16} /> },
+  { href: '/admin/content-studio-v2/ai-engine', label: 'AI Engine',   icon: <Cpu size={16} />, match: /^\/admin\/content-studio-v2\/ai-engine/ },
 ];
 
 export function Sidebar() {

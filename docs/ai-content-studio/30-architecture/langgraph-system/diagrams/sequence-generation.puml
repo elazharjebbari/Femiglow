@@ -1,0 +1,129 @@
+@startuml sequence-generation
+title Séquence — Génération complète d'un Instagram Reel\n(Pipeline LangGraph 1.0)
+
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 200
+
+actor "Opérateur\nMarketing" as op
+participant "Frontend\nNext.js 14" as fe
+participant "API\nFastAPI" as api
+queue "Queue\nBullMQ/Redis" as q
+participant "Worker" as w
+participant "LangGraph\nEngine 1.0" as lg
+database "PostgreSQL\n+ pgvector" as db
+participant "Providers IA" as ai
+participant "Media\nPipeline" as mp
+database "S3/MinIO" as s3
+participant "Réseaux\nSociaux" as social
+
+== Phase 1 : Soumission ==
+
+op -> fe : Brief + [Générer]
+fe -> api : POST /api/v1/generate\n{brief, platform:"instagram", format:"reel"}
+api -> db : INSERT content_job (status: pending)
+api -> q : Enqueue job_id
+api --> fe : 202 Accepted {job_id}
+fe -> api : WS connect /ws/jobs/{id}
+
+== Phase 2 : Exécution du graphe ==
+
+q -> w : Dequeue job
+w -> lg : Execute graph(initial_state)
+activate lg
+
+note over lg : parse_brief (0.3s)
+lg -> db : SELECT workflow_config\nMerge defaults
+lg --> lg : BriefInputSchema.validate()
+
+note over lg : enrich_knowledge — RAG (0.8s)
+lg -> db : pgvector similarity_search\n(5 collections, k=10)
+db --> lg : 10 chunks
+lg -> ai : Cohere rerank (top 5)
+ai --> lg : 5 ranked chunks
+
+note over lg : enrich_trends (1.2s)
+lg -> db : SELECT trend_signals\nWHERE score > 0.7
+db --> lg : 3 tendances pertinentes
+
+note over lg : generate_script (3.2s, $0.08)
+lg -> ai : Claude Sonnet 4.6\nSystem: "Expert J-Beauty content creator..."\nUser: script prompt + knowledge + trends
+ai --> lg : ScriptOutputSchema (validated)
+
+note over lg : generate_video (45s, $0.25)
+lg -> ai : Google Veo 2\n3 scenes × 4s, 1080×1920
+ai --> lg : Vidéo brute MP4
+lg -> s3 : Upload vidéo brute
+
+note over lg : generate_voiceover (2.8s, $0.05)
+lg -> ai : ElevenLabs Multilingual V3\nVoix "Aria", 12s, français
+ai --> lg : Audio WAV
+lg -> s3 : Upload audio
+
+note over lg : generate_music (3.5s, $0.02)
+lg -> ai : MusicGen Large\nMood: "calm luxury", 12s
+ai --> lg : Audio MP3
+lg -> s3 : Upload musique
+
+note over lg : generate_subtitles (1.0s)
+lg -> lg : Whisper transcribe → SRT\nStyle: white text, shadow
+
+note over lg : compose (5.2s)
+lg -> mp : assemble(video, voiceover,\nmusic@0.15vol, subtitles,\ntext_overlays)
+mp -> mp : FFmpeg timeline\n+ audio mix\n+ subtitle burn
+mp -> s3 : Upload composition finale
+s3 --> mp : asset_url
+mp --> lg : MediaAsset
+
+note over lg : transcode_export (3.1s)
+lg -> mp : transcode(composition,\npreset: instagram_reel)
+mp --> lg : {instagram_reel: asset_url}
+
+note over lg : quality_check (1.2s, $0.01)
+lg -> ai : GPT-4.1 (vision)\n"Score this content 0-1:\nvisual, text, brand, hook"
+ai --> lg : {visual:0.84, text:0.91,\nbrand:0.88, hook:0.85}\navg: 0.87
+
+note over lg : moderate (0.8s)
+lg -> ai : OpenAI Moderation API
+ai --> lg : SAFE (aucun flag)
+
+== Phase 3 : Human-in-the-Loop ==
+
+note over lg : human_review — INTERRUPT
+lg -> db : Checkpoint state\n(status: review)
+deactivate lg
+
+w -> api : WS → review_needed\n{preview_url, scores, cost}
+api -> fe : WS → affiche preview
+fe -> op : Preview vidéo + scores +\n[Approuver] [Modifier] [Rejeter]
+
+op -> fe : Clic [Approuver ✅]
+fe -> api : POST /jobs/{id}/review\n{decision: "approved"}
+api -> lg : Resume graph(human_review)
+activate lg
+
+== Phase 4 : Variantes et publication ==
+
+note over lg : generate_variants (4s, $0.06)
+lg -> ai : Claude Sonnet 4.6\n"Generate 2 caption variants"
+ai --> lg : Variant A + Variant B
+
+lg -> db : UPDATE content_job\n(status: approved)
+lg --> w : Graph complete
+deactivate lg
+
+w -> api : WS → completed
+api -> fe : WS → résultat final
+fe -> op : Résultat + variantes +\n[Publier maintenant]\n[Planifier]
+
+== Phase 5 : Publication (optionnelle) ==
+
+op -> fe : [Publier maintenant]
+fe -> api : POST /api/v1/publish\n{job_id, platform: "instagram",\nvariant: "A"}
+api -> social : Instagram Reels API\n(video + caption + hashtags)
+social --> api : Published ✓ {post_id}
+api -> db : UPDATE content_job\n(status: published,\npublished_at: now())
+api -> db : INSERT audit_log\n(action: publish)
+api -> fe : WS → published 🎉
+fe -> op : "Publié sur Instagram ✅"
+
+@enduml

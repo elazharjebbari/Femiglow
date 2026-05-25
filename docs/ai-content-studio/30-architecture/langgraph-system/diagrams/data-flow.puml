@@ -1,0 +1,158 @@
+@startuml data-flow
+title Flux de données — De l'idée à la publication
+
+skinparam activity {
+    BackgroundColor #FFFFFF
+    BorderColor #333333
+}
+
+|#E8EAF6|Brief|
+start
+:Opérateur saisit le brief
+(objectif, ton, plateforme, format,
+message clé, produit, tendance);
+:Validation Pydantic
+BriefInputSchema;
+
+|#E8F5E9|Knowledge (RAG)|
+:Sélection collections pertinentes
+(platform + content_type + objective);
+:pgvector similarity_search
+(query embedding, k=10, threshold=0.7);
+:Cohere Embed 4 reranking (top 5);
+:Format knowledge_context (5 chunks);
+:Load brand_guidelines;
+
+|#FFF3E0|Trends|
+:Query trend_signals
+(brand_relevance > 0.7, non-expired);
+:LLM analyse pertinence
+"Ce signal convient à ce brief ?";
+:Format trend_context;
+
+|#E3F2FD|Text Generation|
+:LLM génère le script structuré
+(Claude Sonnet 4.6)
+→ ScriptOutputSchema
+{hook, scenes[], CTA,
+visual_direction[], music_mood};
+
+:LLM génère la caption
+(GPT-4.1-mini)
+→ CaptionOutputSchema
+{text, hashtags[], cta};
+
+|#FCE4EC|Visual Generation|
+fork
+    :Génération image(s)
+    (GPT Image 2 / Imagen 4)
+    platform_specs → size
+    brand_style → style;
+    :Upload S3
+    metadata: {job_id, scene, prompt};
+fork again
+    :Génération vidéo
+    (Google Veo 2)
+    scenes → multi-scene gen
+    1080×1920, H.264;
+    :Upload S3;
+fork again
+    :Génération voix-off
+    (ElevenLabs V3)
+    script.voiceover_text → audio
+    voice: configurable, lang: fr;
+    :Upload S3;
+fork again
+    :Génération musique
+    (MusicGen Large)
+    script.music_mood → instrumental
+    duration: from script;
+    :Upload S3;
+end fork
+
+|#F3E5F5|Composition|
+:Assemblage timeline
+(séquence scenes + transitions);
+:Application text overlays
+(position, timing, font, shadow);
+:Mix audio
+voix-off (vol:1.0) + musique (vol:0.15);
+:Burn-in sous-titres
+(Whisper → SRT → ASS styled);
+:Color grading final
+(brand LUT / preset);
+:Export multi-format
+(TRANSCODE_PRESETS par plateforme);
+:Upload composition S3;
+:Génération thumbnails;
+
+|#FFFDE7|Quality & Safety|
+:Score qualité (GPT-4.1 vision)
+{visual: 0.84, text: 0.91,
+brand: 0.88, hook: 0.85}
+avg: 0.87;
+
+if (score >= threshold 0.7?) then (✅ pass)
+    :Modération automatique
+    (OpenAI Moderation API);
+    if (safe?) then (✅ safe)
+    else (⚠️ flagged)
+        :Log flag + adjust prompt;
+        :→ Régénération;
+        stop
+    endif
+else (❌ below)
+    if (retries < 3?) then (retry)
+        :Adjust temperature;
+        :→ Régénération;
+        stop
+    else (fail)
+        :Log échec définitif;
+        stop
+    endif
+endif
+
+|#E8EAF6|Human Review|
+:INTERRUPT — Pause graphe
+Checkpoint state → PostgreSQL;
+:UI affiche preview:
+• Vidéo/Image preview
+• Caption
+• Quality scores
+• Cost so far
+• [Approuver] [Modifier] [Rejeter];
+
+if (décision opérateur?) then (✅ Approuvé)
+elseif (décision?) then (✏️ Modifier)
+    :Brief ajusté;
+    :→ Régénération;
+    stop
+else (❌ Rejeté)
+    :Log rejet + motif;
+    stop
+endif
+
+|#E8F5E9|Variants|
+:Génération 2-3 variantes
+(caption hooks différents)
+(Claude Sonnet 4.6);
+:Score comparatif par variante;
+:Opérateur sélectionne;
+
+|#FFF3E0|Publication|
+:Transcodage final
+(preset plateforme cible);
+:API sociale
+(Instagram/Facebook/TikTok/...);
+:Log audit_log
+{action: publish, user, timestamp};
+:Update content_job
+{status: published};
+:Update cost_ledger
+{total: $0.41};
+:Event → ClickHouse
+{generation_events, cost_events};
+
+stop
+
+@enduml

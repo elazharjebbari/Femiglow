@@ -1,0 +1,138 @@
+@startuml deployment
+title Diagramme de déploiement — Infrastructure
+
+skinparam node {
+    BackgroundColor #F8F9FA
+    BorderColor #333333
+}
+
+node "Serveur principal (dédié)" {
+
+    node "Docker Compose" {
+
+        artifact "api" as api <<FastAPI>> {
+            component [FastAPI\nRouters] as api_routes
+            component [LangGraph\nEngine 1.0] as lg_engine
+            component [WebSocket\nServer] as ws
+        }
+
+        artifact "worker × 3" as worker <<BullMQ>> {
+            component [BullMQ\nConsumer] as consumer
+            component [LangGraph\nExecutor] as executor
+        }
+
+        artifact "media-worker × 2" as mworker <<FFmpeg>> {
+            component [FFmpeg\nComposition] as ffmpeg
+            component [Pillow\nImage ops] as pillow
+            component [Transcode\nEngine] as transcode
+        }
+
+        artifact "trend-cron" as tcron <<APScheduler>> {
+            component [Collectors\n(8 sources)] as collectors
+            component [Scorer\nLLM-powered] as scorer
+        }
+    }
+
+    database "PostgreSQL 16" as pg {
+        storage [content_jobs]
+        storage [workflow_configs]
+        storage [provider_configs]
+        storage [knowledge_chunks\n(pgvector)] as pgv
+        storage [prompt_templates]
+        storage [cost_ledger]
+        storage [audit_log]
+        storage [langgraph_checkpoints]
+    }
+
+    database "Redis 7" as redis {
+        storage [BullMQ Queues\n(generation, media, publish)]
+        storage [Cache\n(providers, RAG, config)]
+        storage [Pub/Sub\n(job progress)]
+        storage [Rate Limits]
+    }
+
+    database "ClickHouse" as ch <<V1+>> {
+        storage [generation_events]
+        storage [cost_events]
+        storage [provider_latency]
+    }
+}
+
+node "Next.js (existant)\nPort 8012" as nextjs {
+    component [Frontend\nAI Engine Module] as fe
+    component [API Routes\n(proxy → FastAPI)] as proxy
+}
+
+cloud "Object Storage" as s3 {
+    storage [MinIO / S3\n/generated/images/\n/generated/videos/\n/generated/audio/\n/generated/exports/\n/uploads/\n/knowledge/] as s3_store
+}
+
+cloud "CDN" as cdn {
+    component [CloudFront /\nCloudflare R2\nPre-signed URLs]
+}
+
+cloud "Providers IA" as providers {
+    node "Text" {
+        component [Claude Sonnet 4.6\n($3/$15 per 1M)]
+        component [GPT-4.1\n($2/$8 per 1M)]
+        component [GPT-4.1-nano\n($0.10/$0.40)]
+    }
+    node "Image" {
+        component [GPT Image 2\n($0.03-$0.08/img)]
+        component [Imagen 4\n($0.04/img)]
+    }
+    node "Video" {
+        component [Google Veo 2\n($0.35/sec)]
+        component [Kling 3.0\n(WaveSpeedAI)]
+    }
+    node "Audio" {
+        component [ElevenLabs V3\n($15-30/M chars)]
+        component [MusicGen\n(self-hosted)]
+    }
+}
+
+cloud "Réseaux Sociaux" as social {
+    component [Instagram Graph API]
+    component [Facebook Marketing API]
+    component [TikTok Content API]
+    component [Pinterest API]
+    component [YouTube Data API]
+}
+
+cloud "Observabilité" as obs {
+    component [LangSmith\n(traces LangGraph)]
+    component [Prometheus\n+ Grafana]
+}
+
+' Relations
+nextjs --> api : HTTP (interne :8080)\nWebSocket
+proxy --> api_routes
+fe --> proxy
+
+api_routes --> lg_engine
+api_routes --> consumer : Enqueue via Redis
+ws --> redis : Pub/Sub progress
+
+consumer --> executor
+executor --> lg_engine
+executor --> pg : Checkpoints
+executor --> redis : Cache + progress
+executor --> providers : API calls
+
+mworker --> ffmpeg
+mworker --> s3_store : Upload/download
+
+tcron --> collectors
+collectors --> providers : Trend data scraping
+scorer --> providers : LLM analysis
+
+lg_engine --> pgv : RAG queries
+lg_engine --> s3_store : Asset storage
+lg_engine --> ch : Event logging
+
+s3_store --> cdn : Media delivery
+
+api_routes --> social : Publish
+api_routes --> obs : Traces + metrics
+
+@enduml

@@ -1,0 +1,101 @@
+@startuml config-ui
+title Configuration UI — Architecture des écrans
+
+skinparam usecase {
+    BackgroundColor #F8F9FA
+    BorderColor #333333
+}
+
+left to right direction
+
+actor "Admin" as admin
+actor "SuperAdmin" as sadmin
+
+package "Configuration UI" {
+
+    package "Workflows" {
+        usecase "Lister workflows" as wf_list
+        usecase "Créer/éditer workflow" as wf_edit
+        usecase "Configurer nœuds" as wf_nodes
+        usecase "Assigner providers\npar nœud" as wf_providers
+        usecase "Définir seuils\nqualité/retry/budget" as wf_thresholds
+        usecase "Activer/désactiver\nHITL" as wf_hitl
+        usecase "Tester workflow\n(dry run)" as wf_test
+        usecase "Dupliquer workflow" as wf_dup
+    }
+
+    package "Providers IA" {
+        usecase "Lister providers" as pv_list
+        usecase "Ajouter provider" as pv_add
+        usecase "Configurer API key" as pv_key
+        usecase "Activer/désactiver\nmodèles" as pv_models
+        usecase "Définir rate limits\net budget" as pv_limits
+        usecase "Configurer circuit\nbreaker" as pv_cb
+        usecase "Définir chaîne\nde fallback" as pv_fallback
+        usecase "Health check\nmanuel" as pv_health
+    }
+
+    package "Prompts" {
+        usecase "Lister prompt\ntemplates" as pr_list
+        usecase "Créer/éditer prompt" as pr_edit
+        usecase "Voir historique\nversions" as pr_history
+        usecase "Comparer versions\nside-by-side" as pr_compare
+        usecase "Rollback version" as pr_rollback
+        usecase "Voir métriques\npar version" as pr_metrics
+        usecase "A/B test\n2 versions" as pr_ab
+    }
+
+    package "Knowledge Base" {
+        usecase "Gérer collections" as kb_collections
+        usecase "Ajouter document\n(texte/fichier/URL)" as kb_add
+        usecase "Voir chunks\net embeddings" as kb_chunks
+        usecase "Tester recherche\nRAG" as kb_test
+        usecase "Configurer embedding\nmodel et chunking" as kb_config
+        usecase "Re-indexer collection" as kb_reindex
+    }
+
+    package "Brand" {
+        usecase "Éditer guidelines\nmarque" as br_guide
+        usecase "Upload assets\n(logo, palette, fonts)" as br_assets
+        usecase "Définir ton et style\npar défaut" as br_tone
+        usecase "Configurer règles\nmodération" as br_mod
+    }
+
+    package "Budgets" {
+        usecase "Définir budget\njournalier/mensuel" as bu_limits
+        usecase "Configurer alertes\nde dépassement" as bu_alerts
+        usecase "Voir historique\ndes coûts" as bu_history
+        usecase "Définir budget\nmax par job" as bu_job
+    }
+}
+
+admin --> wf_list
+admin --> wf_edit
+admin --> pr_list
+admin --> pr_edit
+admin --> kb_collections
+admin --> kb_add
+admin --> kb_test
+admin --> br_guide
+
+sadmin --> pv_add
+sadmin --> pv_key
+sadmin --> pv_cb
+sadmin --> pv_fallback
+sadmin --> bu_limits
+sadmin --> bu_alerts
+sadmin --> pr_rollback
+sadmin --> pr_ab
+
+wf_edit ..> wf_nodes : <<include>>
+wf_nodes ..> wf_providers : <<include>>
+wf_edit ..> wf_thresholds : <<include>>
+wf_edit ..> wf_hitl : <<include>>
+
+pr_edit ..> pr_history : <<extend>>
+pr_history ..> pr_compare : <<extend>>
+
+kb_add ..> kb_chunks : <<extend>>
+kb_config ..> kb_reindex : <<extend>>
+
+@enduml

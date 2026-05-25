@@ -1,0 +1,112 @@
+@startuml error-handling
+title Gestion d'erreur — Machine à états de résilience
+
+skinparam state {
+    BackgroundColor #F8F9FA
+    BorderColor #333333
+}
+
+[*] --> Running : Nœud démarre
+
+state Running {
+    state "Exécution normale" as exec
+    state "Appel provider" as call
+    exec --> call : invoke()
+}
+
+Running --> Success : Résultat valide
+
+state "Erreur détectée" as error {
+    state "Classifier erreur" as classify
+
+    classify --> RetryableError : Timeout, 429, 5xx
+    classify --> NonRetryableError : 401, 403, ValidationError
+    classify --> BudgetError : BudgetExceeded
+    classify --> ModerationError : ContentFlagged
+}
+
+Running --> error : Exception levée
+
+state "Retry Policy" as retry_policy {
+    state "Check attempts" as check_attempts
+    state "Wait backoff" as wait
+
+    check_attempts --> wait : attempts < max_retries\ndelay = base × 2^attempt + jitter
+    wait --> Running : Retry même provider
+
+    note right of wait
+        base: 1s
+        max_delay: 60s
+        exponential_base: 2
+        jitter: 0-10%
+    end note
+}
+
+RetryableError --> retry_policy
+
+state "Fallback Chain" as fallback {
+    state "Check circuit breakers" as check_cb
+    state "Select fallback" as select_fb
+    state "Try fallback provider" as try_fb
+
+    check_cb --> select_fb : Provider disponible
+    check_cb --> NoProviderAvailable : Tous circuit-broken
+    select_fb --> try_fb
+    try_fb --> Running : Fallback OK
+    try_fb --> check_cb : Fallback échoue aussi
+}
+
+retry_policy --> fallback : attempts >= max_retries
+
+state "Circuit Breaker" as circuit {
+    state "CLOSED" as closed : Normal\nfailure_count < threshold
+    state "OPEN" as open : Bloqué\nToutes requêtes rejetées
+    state "HALF_OPEN" as half_open : Test\n1 requête autorisée
+
+    closed --> open : failures >= 5
+    open --> half_open : reset_timeout (60s)
+    half_open --> closed : Succès
+    half_open --> open : Échec
+}
+
+state "Compensation" as compensation {
+    state "Cleanup assets partiels" as cleanup
+    state "Rollback state" as rollback
+    state "Log erreur structurée" as log
+
+    cleanup --> rollback
+    rollback --> log
+}
+
+NoProviderAvailable --> compensation
+NonRetryableError --> compensation
+BudgetError --> compensation
+
+state "Escalade humaine" as escalation {
+    state "Notification UI" as notify
+    state "Message contextuel" as msg
+    state "Action suggérée" as action
+
+    notify --> msg
+    msg --> action
+
+    note right of msg
+        Timeout → "Réessai en cours..."
+        429 → "Surchargé, réessai dans Ns"
+        Budget → "Budget atteint, augmenter?"
+        Modération → "Contenu flaggé: {raison}"
+        No provider → "Aucun service disponible"
+    end note
+}
+
+compensation --> escalation
+
+ModerationError --> "Adjust & Retry" : flag mineur\nadjust prompt
+ModerationError --> compensation : flag critique
+
+"Adjust & Retry" --> Running
+
+escalation --> [*] : Résolu ou abandonné
+Success --> [*]
+
+@enduml

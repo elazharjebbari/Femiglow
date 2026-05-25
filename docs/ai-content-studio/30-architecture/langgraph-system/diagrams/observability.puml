@@ -1,0 +1,87 @@
+@startuml observability
+title Observabilité — Architecture de monitoring et traces
+
+skinparam component {
+    BackgroundColor #F8F9FA
+    BorderColor #333333
+}
+
+package "Sources de données" {
+    component [LangGraph\nEngine] as lg
+    component [Provider Hub\n(API calls)] as ph
+    component [Media Pipeline\n(FFmpeg)] as mp
+    component [API\n(FastAPI)] as api
+    component [Workers\n(BullMQ)] as w
+}
+
+package "Collection" {
+    component [LangSmith\nCallbacks] as ls_cb
+    component [OpenTelemetry\nInstrumentation] as otel
+    component [Structured\nLogger] as logger
+    component [Cost\nInterceptor] as cost_int
+}
+
+package "Stockage" {
+    database [LangSmith\n(traces LangGraph)] as ls_db
+    database [ClickHouse\n(événements, métriques)] as ch
+    database [PostgreSQL\n(cost_ledger, audit_log)] as pg
+    database [Prometheus\n(métriques système)] as prom
+}
+
+package "Visualisation" {
+    component [Graph Viewer\n(React Flow)] as gv
+    component [Trace Viewer\n(Timeline)] as tv
+    component [Dashboard\nMétriques] as dash
+    component [Alerting\n(Slack, email)] as alert
+    component [Grafana\n(infra)] as grafana
+}
+
+' Collection flows
+lg --> ls_cb : Callback à chaque nœud
+lg --> otel : Spans OpenTelemetry
+ph --> cost_int : Coût par appel API
+ph --> otel : Latence, tokens, erreurs
+mp --> logger : Durée composition, taille fichier
+api --> otel : Request duration, status
+w --> logger : Queue depth, job duration
+
+' Storage flows
+ls_cb --> ls_db : Traces complètes\n(input, output, latence,\ntokens, prompt, model)
+otel --> ch : Événements structurés\n(append-only)
+cost_int --> pg : cost_ledger\n(provider, model, node, cost)
+logger --> ch : Logs structurés
+otel --> prom : Métriques système\n(CPU, memory, queue depth)
+
+' Visualization flows
+ls_db --> tv : Trace détaillée par job\n(nœud par nœud)
+ch --> dash : KPIs agrégés\n(coûts, latence, qualité, erreurs)
+ch --> gv : Métriques par nœud\n(latence P50/P95, coût, taux erreur)
+pg --> dash : Budget consommé\nTop providers par coût
+prom --> grafana : Infra monitoring
+ch --> alert : Seuils dépassés\n(erreur > 10%, budget > 80%)
+
+note bottom of dash
+    Métriques disponibles :
+    • Contenus générés / jour
+    • Coût total / par provider / par nœud
+    • Tokens consommés (in/out)
+    • Latence P50/P95/P99 par pipeline
+    • Taux de succès end-to-end
+    • Score qualité moyen
+    • Erreurs par type et provider
+    • Queue depth et wait time
+    • Budget restant (jour/mois)
+    • Provider health status
+    • Recommandations d'optimisation (LLM-powered)
+end note
+
+note right of gv
+    5 niveaux de zoom :
+    L1: Vue globale (tous pipelines)
+    L2: Vue pipeline (tous nœuds)
+    L3: Vue nœud (provider, prompt, métriques)
+    L4: Vue éclatée (sous-graphe interne)
+    L5: Vue trace (exécution spécifique)
+end note
+
+@enduml

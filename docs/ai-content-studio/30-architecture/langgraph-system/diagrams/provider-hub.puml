@@ -1,0 +1,146 @@
+@startuml provider-hub
+title Provider Hub — Architecture d'abstraction multi-provider
+
+skinparam class {
+    BackgroundColor #F8F9FA
+    BorderColor #333333
+}
+
+package "Provider Hub" {
+
+    abstract class ProviderAdapter <<interface>> {
+        + generate_text(prompt, system, **kwargs): TextResult
+        + generate_image(prompt, size, **kwargs): ImageResult
+        + generate_video(prompt, duration, **kwargs): VideoResult
+        + text_to_speech(text, voice, **kwargs): AudioResult
+        + generate_embedding(text, **kwargs): list[float]
+        + capabilities: list[str]
+        + last_cost_cents: float
+    }
+
+    class ProviderSelector {
+        + select_provider(node, tenant, budget): ProviderAdapter
+        - _filter_circuit_broken()
+        - _filter_over_budget()
+        - _filter_unhealthy()
+        - _sort_by_priority()
+    }
+
+    class CircuitBreaker {
+        - state: CLOSED | OPEN | HALF_OPEN
+        - failure_count: int
+        - failure_threshold: int = 5
+        - reset_timeout: float = 60s
+        + call(func, *args): Result
+        - _on_success()
+        - _on_failure()
+    }
+
+    class RetryPolicy {
+        - max_retries: int = 3
+        - base_delay: float = 1.0s
+        - exponential_base: float = 2.0
+        - max_delay: float = 60s
+        + get_delay(attempt): float
+        + should_retry(error, attempt): bool
+    }
+
+    class CostTracker {
+        + record_cost(provider, model, node, tokens, cost)
+        + get_remaining_budget(tenant): float
+        + get_daily_spend(tenant): float
+    }
+
+    class ProviderRegistry {
+        + register(adapter: ProviderAdapter)
+        + get_by_capability(capability): list[ProviderAdapter]
+        + get_by_name(name): ProviderAdapter
+        + health_check_all()
+    }
+}
+
+package "Adapters" {
+
+    class OpenAIAdapter {
+        models: GPT-4.1, GPT-4.1-mini,
+        GPT-4.1-nano, GPT Image 2,
+        gpt-4o-mini-tts, Whisper
+        capabilities: [text, image, tts, stt, vision]
+    }
+
+    class AnthropicAdapter {
+        models: Opus 4.7, Sonnet 4.6, Haiku 4.5
+        capabilities: [text, vision]
+        note: Batch API 50% off + prompt caching 90% off
+    }
+
+    class GoogleAdapter {
+        models: Gemini 2.5 Pro/Flash,
+        Imagen 4, Veo 2, Veo 3.1 Lite
+        capabilities: [text, image, video, tts, embedding]
+    }
+
+    class RunwayAdapter {
+        models: Gen-4.5
+        capabilities: [video]
+        note: Subscription model
+    }
+
+    class KlingAdapter {
+        models: Kling 3.0
+        via: WaveSpeedAI API
+        capabilities: [video]
+    }
+
+    class ElevenLabsAdapter {
+        models: Multilingual V3, Scribe v2
+        capabilities: [tts, stt]
+    }
+
+    class MusicGenAdapter {
+        models: MusicGen Large (Meta)
+        capabilities: [music]
+        note: Self-hostable, open-source
+    }
+
+    class StableAudioAdapter {
+        models: Stable Audio 2.0
+        capabilities: [music]
+    }
+
+    class OllamaAdapter {
+        models: Llama 4, Mistral, Qwen, etc.
+        capabilities: [text, embedding]
+        note: Local inference, ~41 TPS
+    }
+}
+
+ProviderAdapter <|-- OpenAIAdapter
+ProviderAdapter <|-- AnthropicAdapter
+ProviderAdapter <|-- GoogleAdapter
+ProviderAdapter <|-- RunwayAdapter
+ProviderAdapter <|-- KlingAdapter
+ProviderAdapter <|-- ElevenLabsAdapter
+ProviderAdapter <|-- MusicGenAdapter
+ProviderAdapter <|-- StableAudioAdapter
+ProviderAdapter <|-- OllamaAdapter
+
+ProviderSelector --> ProviderRegistry : query adapters
+ProviderSelector --> CircuitBreaker : check state
+ProviderSelector --> CostTracker : check budget
+ProviderRegistry --> ProviderAdapter : register/lookup
+CircuitBreaker --> ProviderAdapter : wraps calls
+RetryPolicy --> CircuitBreaker : retry on failure
+
+note bottom of ProviderSelector
+    Algorithme de sélection :
+    1. Charger providers configurés pour le nœud
+    2. Filtrer circuit breakers OPEN
+    3. Filtrer budget dépassé
+    4. Filtrer health_status "unhealthy"
+    5. Trier par priorité
+    6. Retourner le premier disponible
+    7. NoProviderAvailableError si aucun
+end note
+
+@enduml
