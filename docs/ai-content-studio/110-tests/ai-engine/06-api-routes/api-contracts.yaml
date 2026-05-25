@@ -1,0 +1,172 @@
+api_contracts:
+  - route: POST /api/admin/ai-engine/generate
+    auth: required (requireAdminApi)
+    validation:
+      - field: platform
+        type: enum
+        values: [instagram, facebook, tiktok, pinterest, youtube, linkedin, twitter, threads]
+        required: true
+      - field: format
+        type: enum
+        values: [post, story, reel, carousel, short, pin, article]
+        required: true
+      - field: contentType
+        type: string
+        required: true
+      - field: briefInput.objective
+        type: enum
+        values: [awareness, engagement, conversion, education, entertainment]
+        required: true
+      - field: briefInput.keyMessage
+        type: string
+        min_length: 1
+        required: true
+      - field: briefInput.tone
+        type: enum
+        values: [professional, casual, playful, luxurious, educational, inspiring]
+        required: false
+    responses:
+      200: { schema: GenerationResult, status: completed }
+      400: { schema: ZodError, cause: validation }
+      401: { schema: ErrorResponse, cause: no_session }
+      500: { schema: GenerationResult, status: failed }
+      503: { schema: ErrorResponse, cause: engine_disabled }
+    tests_needed:
+      - "Valid payload → 200 with script, caption, hashtags"
+      - "Missing platform → 400"
+      - "Invalid objective enum → 400"
+      - "Empty keyMessage → 400"
+      - "No auth cookie → 401"
+      - "AI_ENGINE_ENABLED=false → 503"
+      - "Engine crash → 500 with error details"
+      - "Valid payload with all optional fields"
+      - "Timeout handling (maxDuration=120)"
+
+  - route: GET /api/admin/ai-engine/health
+    auth: none
+    responses:
+      200: { fields: [enabled, providers, budget, quality, version, timestamp] }
+    tests_needed:
+      - "Returns enabled status"
+      - "Returns provider configured status for each"
+      - "Returns budget limits"
+      - "Returns version string"
+      - "Returns ISO timestamp"
+
+  - route: GET /api/admin/ai-engine/jobs
+    auth: required
+    query_params:
+      - { name: limit, type: integer, default: 20 }
+      - { name: offset, type: integer, default: 0 }
+      - { name: status, type: string, optional: true }
+      - { name: stats, type: boolean, optional: true }
+    tests_needed:
+      - "Returns jobs array"
+      - "Respects limit param"
+      - "Filters by status"
+      - "Includes stats when stats=true"
+      - "Pagination with offset"
+      - "No auth → 401"
+
+  - route: POST /api/admin/ai-engine/jobs/:id/review
+    auth: required
+    validation:
+      - { field: decision, type: enum, values: [approved, rejected, edit_requested], required: true }
+      - { field: feedback, type: string, required: false }
+    tests_needed:
+      - "Approved decision → completed result"
+      - "Rejected decision → regeneration triggered"
+      - "edit_requested with feedback → regeneration"
+      - "Job not found → 404"
+      - "Job not in review status → 409"
+      - "Invalid decision enum → 400"
+      - "No auth → 401"
+
+  - route: GET /api/admin/ai-engine/trends
+    auth: required
+    query_params:
+      - { name: minScore, type: float, default: 0.4 }
+      - { name: limit, type: integer, default: 20 }
+      - { name: categories, type: string_csv, optional: true }
+      - { name: refresh, type: boolean, optional: true }
+    tests_needed:
+      - "Returns trends array sorted by score"
+      - "Filters by minScore"
+      - "Filters by categories"
+      - "Refresh clears cache"
+      - "Respects limit"
+      - "No auth → 401"
+
+  - route: POST /api/admin/ai-engine/publish
+    auth: required
+    validation:
+      - { field: draftId, type: string, required: true }
+      - { field: mode, type: enum, values: [now, schedule], required: true }
+      - { field: scheduledAt, type: datetime, required_if: "mode=schedule" }
+    tests_needed:
+      - "Publish now calls Postiz"
+      - "Schedule sets scheduledAt"
+      - "Missing draftId → 400"
+      - "Schedule without scheduledAt → 400"
+      - "Draft not found → 404"
+      - "No auth → 401"
+
+  - route: GET /api/admin/ai-engine/knowledge
+    auth: required
+    tests_needed:
+      - "Returns collections array"
+      - "Each collection has slug, name, category, counts"
+      - "No auth → 401"
+
+  - route: POST /api/admin/ai-engine/knowledge/:slug/documents
+    auth: required
+    validation:
+      - { field: sourceType, type: enum, values: [text, url], required: true }
+      - { field: title, type: string, required_if: "sourceType=text" }
+      - { field: content, type: string, required_if: "sourceType=text" }
+    tests_needed:
+      - "Ingest text document"
+      - "Collection not found → 404"
+      - "Missing title → 400"
+      - "No auth → 401"
+
+  - route: POST /api/admin/ai-engine/knowledge/embed
+    auth: required
+    tests_needed:
+      - "Processes pending documents"
+      - "Returns documentsProcessed and chunksCreated"
+      - "No pending docs → message"
+      - "No auth → 401"
+
+  - route: GET /api/admin/ai-engine/analytics
+    auth: required
+    query_params:
+      - { name: period, type: enum, values: [day, week, month], default: month }
+      - { name: includeNodeMetrics, type: boolean, optional: true }
+    tests_needed:
+      - "Returns overview with KPIs"
+      - "Period filters data"
+      - "includeNodeMetrics adds nodeMetrics array"
+      - "No auth → 401"
+
+  - route: GET /api/admin/ai-engine/config/providers
+    auth: required
+    tests_needed:
+      - "Returns provider list with capabilities"
+      - "Shows configured vs unconfigured"
+
+  - route: GET /api/admin/ai-engine/config/workflows
+    auth: required
+    tests_needed:
+      - "Returns workflow configs or defaults"
+
+  - route: GET /api/admin/ai-engine/config/prompts
+    auth: required
+    tests_needed:
+      - "Returns prompt templates or defaults"
+
+  - route: GET /api/admin/ai-engine/integrations
+    auth: required
+    tests_needed:
+      - "Returns Postiz integration list"
+      - "Each integration has id, platform, name"
