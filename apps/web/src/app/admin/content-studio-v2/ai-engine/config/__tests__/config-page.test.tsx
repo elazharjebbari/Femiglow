@@ -126,14 +126,15 @@ describe('AIEngineConfigPage', () => {
     });
   });
 
-  it('shows 3 tabs (no Base de connaissances)', async () => {
+  it('shows 3 tabs', async () => {
     render(<AIEngineConfigPage />);
     await waitFor(() => {
       expect(screen.getByText('Fournisseurs')).toBeInTheDocument();
       expect(screen.getByText('Workflows')).toBeInTheDocument();
       expect(screen.getByText('Prompts')).toBeInTheDocument();
     });
-    expect(screen.queryByRole('button', { name: /Base de connaissances/ })).not.toBeInTheDocument();
+    // The config page header includes links to Base de connaissances and Analytiques
+    expect(screen.getByRole('button', { name: /Base de connaissances/ })).toBeInTheDocument();
   });
 
   it('default tab is Fournisseurs with provider cards', async () => {
