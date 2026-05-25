@@ -49,6 +49,7 @@ export async function POST(request: Request): Promise<Response> {
     const statusCode = result.status === 'failed' ? 500 : 200;
     return NextResponse.json(result, { status: statusCode });
   } catch (err) {
+    console.error('[ai-engine:generate] Route error:', err);
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: err.errors },

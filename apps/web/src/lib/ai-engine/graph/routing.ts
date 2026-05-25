@@ -33,7 +33,7 @@ export function routeAfterScript(state: ContentGenerationStateType): ScriptRoute
 
 // ── Quality gate routing ──────────────────────────────────────────────
 
-const QUALITY_PASS_THRESHOLD = 70;
+const QUALITY_PASS_THRESHOLD = 0.65;
 const MAX_RETRIES_PER_NODE = 2;
 
 export type QualityRoute = 'pass' | 'retry' | 'fail';

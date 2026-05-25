@@ -71,11 +71,11 @@ export function getEngineConfig(): EngineConfig {
     },
 
     apiKeys: {
-      openai: env.AI_ENGINE_OPENAI_API_KEY ?? env.CONTENT_STUDIO_OPENAI_API_KEY ?? env.CHAT_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY,
-      anthropic: env.AI_ENGINE_ANTHROPIC_API_KEY ?? env.CHAT_ANTHROPIC_API_KEY,
-      google: env.AI_ENGINE_GOOGLE_API_KEY ?? env.CHAT_GEMINI_API_KEY,
-      elevenlabs: env.AI_ENGINE_ELEVENLABS_API_KEY,
-      ollamaBaseUrl: env.AI_ENGINE_OLLAMA_BASE_URL ?? env.CHAT_OLLAMA_BASE_URL,
+      openai: env.AI_ENGINE_OPENAI_API_KEY || env.CONTENT_STUDIO_OPENAI_API_KEY || env.CHAT_OPENAI_API_KEY || process.env.OPENAI_API_KEY || undefined,
+      anthropic: env.AI_ENGINE_ANTHROPIC_API_KEY || env.CHAT_ANTHROPIC_API_KEY || undefined,
+      google: env.AI_ENGINE_GOOGLE_API_KEY || env.CHAT_GEMINI_API_KEY || undefined,
+      elevenlabs: env.AI_ENGINE_ELEVENLABS_API_KEY || undefined,
+      ollamaBaseUrl: env.AI_ENGINE_OLLAMA_BASE_URL || env.CHAT_OLLAMA_BASE_URL || undefined,
     },
 
     budget: {

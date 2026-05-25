@@ -118,7 +118,7 @@ export function buildContentGraph() {
     .addNode('transcodeExport', transcodeExport)
     .addNode('qualityCheck', qualityCheck)
     .addNode('moderate', moderate)
-    .addNode('humanReview', humanReview)
+    .addNode('reviewGate', humanReview)
     .addNode('generateVariants', generateVariants)
 
     // ── Linear opening sequence ──
@@ -158,13 +158,13 @@ export function buildContentGraph() {
 
     // ── Moderation gate ──
     .addConditionalEdges('moderate', routeAfterModeration, {
-      safe: 'humanReview',
+      safe: 'reviewGate',
       flagged: 'generateScript',
       blocked: END,
     })
 
     // ── Human review gate ──
-    .addConditionalEdges('humanReview', routeAfterHumanReview, {
+    .addConditionalEdges('reviewGate', routeAfterHumanReview, {
       approved: 'generateVariants',
       approved_direct: END,
       rejected: 'generateScript',

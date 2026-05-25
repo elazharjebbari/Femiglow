@@ -18,19 +18,25 @@ const briefInputSchema = z.object({
 });
 
 export async function parseBriefNode(state: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const config = getEngineConfig();
+  let config: ReturnType<typeof getEngineConfig>;
+  try {
+    config = getEngineConfig();
+  } catch {
+    config = { defaults: { tone: 'professional', language: 'fr', maxRetries: 3 }, budget: { dailyCents: 1000, maxPerJobCents: 100 } } as ReturnType<typeof getEngineConfig>;
+  }
   const jobId = state.jobId as string;
   log.info('Parsing brief', { jobId, node: 'parse_brief' });
 
-  const raw = state.briefInput as Record<string, unknown>;
+  const raw = ((state.brief ?? state.briefInput) as Record<string, unknown>) ?? {};
   const parsed = briefInputSchema.parse({
     ...raw,
-    tone: raw.tone ?? config.defaults.tone,
-    language: raw.language ?? config.defaults.language,
-    maxBudgetCents: raw.maxBudgetCents ?? config.budget.maxPerJobCents,
+    tone: raw.tone ?? config.defaults?.tone ?? 'professional',
+    language: raw.language ?? config.defaults?.language ?? 'fr',
+    maxBudgetCents: raw.maxBudgetCents ?? config.budget?.maxPerJobCents ?? 100,
   });
 
   return {
+    brief: parsed,
     briefInput: parsed,
     currentStep: 'parse_brief',
     costTracking: {

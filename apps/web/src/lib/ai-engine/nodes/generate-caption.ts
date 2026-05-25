@@ -23,7 +23,7 @@ const PLATFORM_LIMITS: Record<string, number> = {
 };
 
 function buildCaptionPrompt(state: Record<string, unknown>): string {
-  const brief = state.briefInput as Record<string, unknown>;
+  const brief = (state.brief ?? state.briefInput) as Record<string, unknown>;
   const script = state.script as Record<string, unknown>;
   const platform = state.platform as string;
   const format = state.format as string;
@@ -64,7 +64,7 @@ function buildCaptionPrompt(state: Record<string, unknown>): string {
 
 function fallbackCaption(state: Record<string, unknown>): z.infer<typeof captionOutputSchema> {
   const script = state.script as Record<string, unknown> | null;
-  const brief = state.briefInput as Record<string, unknown>;
+  const brief = (state.brief ?? state.briefInput) as Record<string, unknown>;
   const hook = (script?.hook as string) ?? 'Le rituel commence ici.';
   const cta = (script?.cta as string) ?? (brief.objective === 'conversion' ? 'Découvrir le rituel' : 'En savoir plus');
 

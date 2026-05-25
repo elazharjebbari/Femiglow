@@ -68,6 +68,7 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
     platform: request.platform,
     format: request.format,
     contentType: request.contentType,
+    brief: request.briefInput,
     briefInput: request.briefInput,
     knowledgeContext: '',
     trendContext: '',
@@ -104,7 +105,8 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
   };
 
   try {
-    const result = await engine.invoke(initialState as never);
+    log.info('Invoking LangGraph engine', { jobId, data: { stateKeys: Object.keys(initialState) } });
+    const result = await engine.invoke(initialState as never, { recursionLimit: 50 });
 
     const durationMs = Date.now() - startTime;
     const finalState = result as Record<string, unknown>;

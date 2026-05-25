@@ -54,7 +54,7 @@ Tu retournes UNIQUEMENT du JSON valide conforme au schema demandé.`;
 }
 
 function buildUserPrompt(state: Record<string, unknown>): string {
-  const brief = state.briefInput as Record<string, unknown>;
+  const brief = (state.brief ?? state.briefInput) as Record<string, unknown>;
   const platform = state.platform as string;
   const format = state.format as string;
   const knowledge = (state.knowledgeContext as string) || '';
@@ -143,7 +143,7 @@ function createLLM(config: ReturnType<typeof getEngineConfig>): ChatOpenAI | Cha
 }
 
 function fallbackScript(state: Record<string, unknown>): ScriptOutput {
-  const brief = state.briefInput as Record<string, unknown>;
+  const brief = (state.brief ?? state.briefInput) as Record<string, unknown>;
   const format = state.format as string;
   const isVideo = ['reel', 'story'].includes(format);
 

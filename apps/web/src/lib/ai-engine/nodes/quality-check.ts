@@ -115,8 +115,10 @@ export async function qualityCheckNode(state: Record<string, unknown>): Promise<
     data: { scores, passed, threshold },
   });
 
+  const prevRetries = (state.retries as Record<string, number>) ?? {};
   return {
     qualityScores: scores,
     currentStep: 'quality_check',
+    retries: { ...prevRetries, qualityCheck: (prevRetries.qualityCheck ?? 0) + 1 },
   };
 }

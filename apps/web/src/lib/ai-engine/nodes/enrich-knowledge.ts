@@ -97,10 +97,10 @@ export async function enrichKnowledgeNode(state: Record<string, unknown>): Promi
 }
 
 async function retrieveRagContext(state: Record<string, unknown>): Promise<string | null> {
-  const brief = state.briefInput as Record<string, unknown> | undefined;
+  const brief = (state.brief ?? state.briefInput) as Record<string, unknown> | undefined;
   const platform = state.platform as string | undefined;
   const contentType = state.contentType as string | undefined;
-  const objective = (brief?.objective as string) ?? '';
+  const objective = ((brief as Record<string, unknown> | undefined)?.objective as string) ?? '';
 
   const targetCollections = new Set<string>();
   targetCollections.add('brand-femiglow');
@@ -153,7 +153,7 @@ function formatRagResults(results: SearchResult[]): string {
 }
 
 function buildStaticKnowledgeContext(state: Record<string, unknown>): string {
-  const brief = state.briefInput as Record<string, unknown>;
+  const brief = (state.brief ?? state.briefInput) as Record<string, unknown>;
   const platform = state.platform as string;
   const format = state.format as string;
   const contentType = state.contentType as string;

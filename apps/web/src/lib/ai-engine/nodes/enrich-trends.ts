@@ -119,7 +119,7 @@ export async function enrichTrendsNode(state: Record<string, unknown>): Promise<
   // MVP: static seasonal trends
   // V2: real-time trend signals from Google Trends, TikTok, Instagram, etc.
   const trends = getStaticTrends();
-  const brief = state.briefInput as Record<string, unknown>;
+  const brief = (state.brief ?? state.briefInput) as Record<string, unknown>;
   const trendRef = brief.trendReference as string | undefined;
 
   const relevantTrends = trends
