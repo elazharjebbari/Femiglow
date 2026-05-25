@@ -2,19 +2,17 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Cpu,
   GitBranch,
   FileText,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
   Shield,
   Zap,
   RefreshCw,
-  ChevronRight,
-  Hash,
   Star,
   Eye,
   BarChart3,
@@ -26,9 +24,20 @@ import {
   ArrowRight,
   CircleDot,
   Power,
+  Pencil,
+  X,
+  Save,
+  Plus,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { Badge } from '@/components/admin/content-studio-v2/primitives';
+import { Input } from '@/components/admin/content-studio-v2/primitives';
+
+/* ================================================================
+   Types
+   ================================================================ */
 
 interface ProviderModel {
   name: string;
@@ -93,7 +102,33 @@ interface PromptData {
   createdAt: string;
 }
 
+interface WorkflowFormData {
+  id?: string;
+  name: string;
+  description: string;
+  platform: string;
+  format: string;
+  qualityThreshold: number;
+  maxBudgetCents: number;
+  maxRetries: number;
+  humanReviewRequired: boolean;
+  autoPublish: boolean;
+}
+
+interface PromptFormData {
+  id?: string;
+  nodeName: string;
+  name: string;
+  systemPrompt: string;
+  userPromptTemplate: string;
+  variables: string;
+}
+
 type Tab = 'providers' | 'workflows' | 'prompts';
+
+/* ================================================================
+   Constants
+   ================================================================ */
 
 const CAPABILITY_COLORS: Record<string, string> = {
   text: 'var(--cs-accent)',
@@ -138,6 +173,136 @@ const NODE_LABELS: Record<string, string> = {
   video_gen: 'Vidéo',
 };
 
+const PLATFORM_OPTIONS = [
+  { value: '', label: 'Toutes' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'pinterest', label: 'Pinterest' },
+];
+
+const FORMAT_OPTIONS = [
+  { value: '', label: 'Tous' },
+  { value: 'post', label: 'Post' },
+  { value: 'story', label: 'Story' },
+  { value: 'reel', label: 'Reel' },
+  { value: 'carousel', label: 'Carousel' },
+];
+
+const PROMPT_NODE_OPTIONS = [
+  { value: 'parse_brief', label: 'Parse brief' },
+  { value: 'enrich_knowledge', label: 'Enrich knowledge' },
+  { value: 'enrich_trends', label: 'Enrich trends' },
+  { value: 'generate_script', label: 'Generate script' },
+  { value: 'generate_caption', label: 'Generate caption' },
+  { value: 'generate_images', label: 'Generate images' },
+  { value: 'quality_check', label: 'Quality check' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'generate_variants', label: 'Generate variants' },
+];
+
+const EMPTY_WORKFLOW_FORM: WorkflowFormData = {
+  name: '',
+  description: '',
+  platform: '',
+  format: '',
+  qualityThreshold: 70,
+  maxBudgetCents: 100,
+  maxRetries: 3,
+  humanReviewRequired: true,
+  autoPublish: false,
+};
+
+const EMPTY_PROMPT_FORM: PromptFormData = {
+  nodeName: 'parse_brief',
+  name: '',
+  systemPrompt: '',
+  userPromptTemplate: '',
+  variables: '',
+};
+
+/* ================================================================
+   Shared inline-form styles
+   ================================================================ */
+
+const formBoxStyle: React.CSSProperties = {
+  background: 'var(--cs-bg-elevated)',
+  border: '1px solid var(--cs-border)',
+  borderRadius: 'var(--cs-radius-md)',
+  padding: '24px 28px',
+  boxShadow: 'var(--cs-shadow-sm)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 18,
+};
+
+const fieldLabelStyle: React.CSSProperties = {
+  fontSize: 'var(--cs-text-xs)',
+  fontWeight: 600,
+  color: 'var(--cs-fg-secondary)',
+  fontFamily: 'var(--cs-font-display)',
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+  marginBottom: 4,
+};
+
+const fieldInputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  fontSize: 'var(--cs-text-sm)',
+  fontFamily: 'var(--cs-font-body)',
+  color: 'var(--cs-fg-primary)',
+  background: 'var(--cs-bg-base)',
+  border: '1px solid var(--cs-border)',
+  borderRadius: 'var(--cs-radius-sm)',
+  outline: 'none',
+  transition: 'border-color var(--cs-motion-fast) var(--cs-easing)',
+  boxSizing: 'border-box' as const,
+};
+
+const fieldTextareaStyle: React.CSSProperties = {
+  ...fieldInputStyle,
+  fontFamily: 'var(--cs-font-mono)',
+  resize: 'vertical' as const,
+  lineHeight: 1.55,
+};
+
+const fieldSelectStyle: React.CSSProperties = {
+  ...fieldInputStyle,
+  cursor: 'pointer',
+  appearance: 'auto' as const,
+};
+
+const toggleTrackStyle = (on: boolean): React.CSSProperties => ({
+  width: 36,
+  height: 20,
+  borderRadius: 10,
+  background: on ? 'var(--cs-accent)' : 'var(--cs-border)',
+  position: 'relative',
+  cursor: 'pointer',
+  transition: 'background var(--cs-motion-fast) var(--cs-easing)',
+  flexShrink: 0,
+  border: 'none',
+});
+
+const toggleThumbStyle = (on: boolean): React.CSSProperties => ({
+  position: 'absolute',
+  top: 2,
+  left: on ? 18 : 2,
+  width: 16,
+  height: 16,
+  borderRadius: '50%',
+  background: '#fff',
+  transition: 'left var(--cs-motion-fast) var(--cs-easing)',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+});
+
+/* ================================================================
+   Sub-components
+   ================================================================ */
+
 function StatCard({ icon, value, label, accent }: { icon: React.ReactNode; value: string | number; label: string; accent?: string }) {
   return (
     <div
@@ -178,19 +343,84 @@ function StatCard({ icon, value, label, accent }: { icon: React.ReactNode; value
   );
 }
 
+/* ================================================================
+   Toggle
+   ================================================================ */
+
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        style={toggleTrackStyle(checked)}
+      >
+        <span style={toggleThumbStyle(checked)} />
+      </button>
+      <span style={{ fontSize: 'var(--cs-text-sm)', color: 'var(--cs-fg-primary)' }}>{label}</span>
+    </label>
+  );
+}
+
+/* ================================================================
+   Provider Card (preserved from existing code with edit functionality)
+   ================================================================ */
+
 function ProviderCard({
   provider,
   onTestConnection,
   testing,
+  onSave,
 }: {
   provider: ProviderData;
   onTestConnection: (id: string) => void;
   testing: boolean;
+  onSave: (id: string, data: { priority?: number; dailyBudgetCents?: number; rateLimitRpm?: number; isEnabled?: boolean; isFallback?: boolean }) => Promise<boolean>;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editPriority, setEditPriority] = useState(provider.priority);
+  const [editBudget, setEditBudget] = useState(provider.dailyBudgetCents ?? 0);
+  const [editRateLimit, setEditRateLimit] = useState(provider.rateLimitRpm ?? 60);
+  const [editEnabled, setEditEnabled] = useState(provider.isEnabled);
+  const [editFallback, setEditFallback] = useState(provider.isFallback);
+  const [editFeedback, setEditFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   const models = Array.isArray(provider.models) ? (provider.models as ProviderModel[]) : [];
   const maxModels = 3;
   const visibleModels = models.slice(0, maxModels);
   const hiddenCount = models.length - maxModels;
+
+  function openEdit() {
+    setEditPriority(provider.priority);
+    setEditBudget(provider.dailyBudgetCents ?? 0);
+    setEditRateLimit(provider.rateLimitRpm ?? 60);
+    setEditEnabled(provider.isEnabled);
+    setEditFallback(provider.isFallback);
+    setEditFeedback(null);
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setEditFeedback(null);
+    const ok = await onSave(provider.id, {
+      priority: editPriority,
+      dailyBudgetCents: editBudget,
+      rateLimitRpm: editRateLimit,
+      isEnabled: editEnabled,
+      isFallback: editFallback,
+    });
+    setSaving(false);
+    if (ok) {
+      setEditFeedback({ type: 'success', message: 'Configuration sauvegardée' });
+      setTimeout(() => { setEditing(false); setEditFeedback(null); }, 1200);
+    } else {
+      setEditFeedback({ type: 'error', message: 'Erreur lors de la sauvegarde' });
+    }
+  }
 
   return (
     <div
@@ -235,7 +465,6 @@ function ProviderCard({
               >
                 <Cpu size={20} />
               </span>
-              {/* Live dot indicator */}
               <span
                 style={{
                   position: 'absolute',
@@ -262,7 +491,6 @@ function ProviderCard({
             </div>
           </div>
 
-          {/* Enable toggle visual */}
           <div
             style={{
               display: 'flex',
@@ -342,7 +570,7 @@ function ProviderCard({
           </div>
         )}
 
-        {/* Footer: budget + test */}
+        {/* Footer: budget + test + edit */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
           <div style={{ display: 'flex', gap: 12, fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-muted)' }}>
             {provider.dailyBudgetCents != null && provider.dailyBudgetCents > 0 && (
@@ -358,24 +586,173 @@ function ProviderCard({
               </span>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<RefreshCw size={11} className={testing ? 'cs-spin' : ''} />}
-            onClick={() => onTestConnection(provider.id)}
-            disabled={testing || !provider.configured}
-            style={{ opacity: provider.configured ? 1 : 0.4 }}
-          >
-            Tester
-          </Button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Pencil size={11} />}
+              onClick={openEdit}
+              disabled={editing}
+            >
+              Éditer
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<RefreshCw size={11} className={testing ? 'cs-spin' : ''} />}
+              onClick={() => onTestConnection(provider.id)}
+              disabled={testing || !provider.configured}
+              style={{ opacity: provider.configured ? 1 : 0.4 }}
+            >
+              Tester
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Inline Edit Form */}
+      {editing && (
+        <div
+          style={{
+            borderTop: '1px solid var(--cs-border)',
+            padding: '18px 22px',
+            background: 'var(--cs-bg-base)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Input
+              label="Priorité"
+              type="number"
+              min={1}
+              max={100}
+              value={editPriority}
+              onChange={(e) => setEditPriority(Number(e.target.value))}
+              disabled={saving}
+            />
+            <Input
+              label="Budget quotidien (MAD)"
+              type="number"
+              min={0}
+              step={1}
+              value={Math.round(editBudget / 100)}
+              onChange={(e) => setEditBudget(Number(e.target.value) * 100)}
+              disabled={saving}
+            />
+          </div>
+          <Input
+            label="Rate limit (req/min)"
+            type="number"
+            min={1}
+            max={10000}
+            value={editRateLimit}
+            onChange={(e) => setEditRateLimit(Number(e.target.value))}
+            disabled={saving}
+          />
+          <div style={{ display: 'flex', gap: 20 }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 'var(--cs-text-sm)',
+                color: 'var(--cs-fg-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={editEnabled}
+                onChange={(e) => setEditEnabled(e.target.checked)}
+                disabled={saving}
+                style={{ width: 16, height: 16, accentColor: 'var(--cs-accent)' }}
+              />
+              Actif
+            </label>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 'var(--cs-text-sm)',
+                color: 'var(--cs-fg-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={editFallback}
+                onChange={(e) => setEditFallback(e.target.checked)}
+                disabled={saving}
+                style={{ width: 16, height: 16, accentColor: 'var(--cs-accent)' }}
+              />
+              Fallback
+            </label>
+          </div>
+
+          {editFeedback && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                borderRadius: 'var(--cs-radius-sm)',
+                background: editFeedback.type === 'success' ? 'var(--cs-success-bg)' : 'var(--cs-danger-bg)',
+                color: editFeedback.type === 'success' ? 'var(--cs-success)' : 'var(--cs-danger)',
+                fontSize: 'var(--cs-text-xs)',
+              }}
+            >
+              {editFeedback.type === 'success' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+              {editFeedback.message}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<X size={11} />}
+              onClick={() => { setEditing(false); setEditFeedback(null); }}
+              disabled={saving}
+            >
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              leftIcon={<Save size={11} />}
+              onClick={handleSave}
+              loading={saving}
+            >
+              Sauvegarder
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function WorkflowCard({ workflow }: { workflow: WorkflowData }) {
+/* ================================================================
+   Workflow Card
+   ================================================================ */
+
+function WorkflowCard({
+  workflow,
+  onEdit,
+  onDelete,
+  deleting,
+}: {
+  workflow: WorkflowData;
+  onEdit: (w: WorkflowData) => void;
+  onDelete: (id: string) => void;
+  deleting: boolean;
+}) {
   const nodes = workflow.graphConfig?.nodes ?? [];
+  const isDefault = workflow.id.startsWith('default-');
+
   return (
     <div
       style={{
@@ -400,20 +777,40 @@ function WorkflowCard({ workflow }: { workflow: WorkflowData }) {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {workflow.isActive ? (
             <Badge tone="success" size="sm">Actif</Badge>
           ) : (
             <Badge tone="neutral" size="sm">Inactif</Badge>
           )}
           <Badge tone="accent" size="sm">v{workflow.version}</Badge>
+          {!isDefault && (
+            <>
+              <Button variant="ghost" size="sm" leftIcon={<Pencil size={11} />} onClick={() => onEdit(workflow)}>
+                Éditer
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                leftIcon={deleting ? <Loader2 size={11} className="cs-spin" /> : <Trash2 size={11} />}
+                disabled={deleting}
+                onClick={() => {
+                  if (window.confirm(`Supprimer le workflow "${workflow.name}" ?`)) {
+                    onDelete(workflow.id);
+                  }
+                }}
+              >
+                Supprimer
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-secondary)' }}>
         {workflow.platform && <span style={{ fontWeight: 500 }}>{PLATFORM_LABELS[workflow.platform] ?? workflow.platform}</span>}
         {workflow.format && <span style={{ textTransform: 'capitalize' }}>{workflow.format}</span>}
-        <span>Qualité ≥ {(parseFloat(workflow.qualityThreshold) * 100).toFixed(0)}%</span>
+        <span>Qualité &ge; {(parseFloat(workflow.qualityThreshold) * 100).toFixed(0)}%</span>
         <span>Budget: {(workflow.maxBudgetCents / 100).toFixed(2)} MAD</span>
         <span>Retries: {workflow.maxRetries}</span>
       </div>
@@ -452,9 +849,24 @@ function WorkflowCard({ workflow }: { workflow: WorkflowData }) {
   );
 }
 
-function PromptCard({ prompt }: { prompt: PromptData }) {
+/* ================================================================
+   Prompt Card
+   ================================================================ */
+
+function PromptCard({
+  prompt,
+  onEdit,
+  onDelete,
+  deleting,
+}: {
+  prompt: PromptData;
+  onEdit: (p: PromptData) => void;
+  onDelete: (id: string) => void;
+  deleting: boolean;
+}) {
   const truncated = prompt.systemPrompt.length > 200 ? prompt.systemPrompt.slice(0, 200) + '…' : prompt.systemPrompt;
   const qualityPct = prompt.avgQualityScore ? Math.round(parseFloat(prompt.avgQualityScore) * 100) : null;
+  const isDefault = prompt.id.startsWith('default-');
 
   return (
     <div
@@ -478,13 +890,33 @@ function PromptCard({ prompt }: { prompt: PromptData }) {
             <span style={{ fontFamily: 'var(--cs-font-mono)' }}>{prompt.nodeName}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
           {prompt.isActive ? (
             <Badge tone="success" size="sm">Active</Badge>
           ) : (
             <Badge tone="neutral" size="sm">Inactive</Badge>
           )}
           <Badge tone="accent" size="sm">v{prompt.version}</Badge>
+          {!isDefault && (
+            <>
+              <Button variant="ghost" size="sm" leftIcon={<Pencil size={11} />} onClick={() => onEdit(prompt)}>
+                Éditer
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                leftIcon={deleting ? <Loader2 size={11} className="cs-spin" /> : <Trash2 size={11} />}
+                disabled={deleting}
+                onClick={() => {
+                  if (window.confirm(`Supprimer le prompt "${prompt.name}" ?`)) {
+                    onDelete(prompt.id);
+                  }
+                }}
+              >
+                Supprimer
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -548,6 +980,250 @@ function PromptCard({ prompt }: { prompt: PromptData }) {
   );
 }
 
+/* ================================================================
+   Workflow inline form
+   ================================================================ */
+
+function WorkflowForm({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  initial: WorkflowFormData;
+  onSave: (data: WorkflowFormData) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState<WorkflowFormData>(initial);
+  const isEditing = !!initial.id;
+
+  const set = <K extends keyof WorkflowFormData>(key: K, value: WorkflowFormData[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <div style={formBoxStyle}>
+      <h3 style={{ fontFamily: 'var(--cs-font-display)', fontSize: 'var(--cs-text-lg)', fontWeight: 500, margin: 0, color: 'var(--cs-fg-primary)' }}>
+        {isEditing ? 'Éditer le workflow' : 'Créer un workflow'}
+      </h3>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div>
+          <div style={fieldLabelStyle}>Nom</div>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => set('name', e.target.value)}
+            placeholder="Ex: Reel Instagram Beauté"
+            style={fieldInputStyle}
+          />
+        </div>
+        <div>
+          <div style={fieldLabelStyle}>Description</div>
+          <input
+            type="text"
+            value={form.description}
+            onChange={(e) => set('description', e.target.value)}
+            placeholder="Description du workflow"
+            style={fieldInputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div>
+          <div style={fieldLabelStyle}>Plateforme</div>
+          <select
+            value={form.platform}
+            onChange={(e) => set('platform', e.target.value)}
+            style={fieldSelectStyle}
+          >
+            {PLATFORM_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div style={fieldLabelStyle}>Format</div>
+          <select
+            value={form.format}
+            onChange={(e) => set('format', e.target.value)}
+            style={fieldSelectStyle}
+          >
+            {FORMAT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div>
+          <div style={fieldLabelStyle}>Seuil qualité (%)</div>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={form.qualityThreshold}
+            onChange={(e) => set('qualityThreshold', Math.min(100, Math.max(0, Number(e.target.value))))}
+            style={fieldInputStyle}
+          />
+        </div>
+        <div>
+          <div style={fieldLabelStyle}>Budget max (MAD)</div>
+          <input
+            type="number"
+            min={0}
+            value={form.maxBudgetCents}
+            onChange={(e) => set('maxBudgetCents', Math.max(0, Number(e.target.value)))}
+            style={fieldInputStyle}
+          />
+        </div>
+        <div>
+          <div style={fieldLabelStyle}>Retries max</div>
+          <input
+            type="number"
+            min={1}
+            max={5}
+            value={form.maxRetries}
+            onChange={(e) => set('maxRetries', Math.min(5, Math.max(1, Number(e.target.value))))}
+            style={fieldInputStyle}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 32 }}>
+        <Toggle checked={form.humanReviewRequired} onChange={(v) => set('humanReviewRequired', v)} label="Review humaine" />
+        <Toggle checked={form.autoPublish} onChange={(v) => set('autoPublish', v)} label="Auto-publication" />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
+        <Button variant="ghost" size="md" leftIcon={<X size={14} />} onClick={onCancel} disabled={saving}>
+          Annuler
+        </Button>
+        <Button
+          variant="primary"
+          size="md"
+          leftIcon={<Save size={14} />}
+          onClick={() => onSave(form)}
+          disabled={saving || !form.name.trim()}
+          loading={saving}
+        >
+          Sauvegarder
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Prompt inline form
+   ================================================================ */
+
+function PromptForm({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  initial: PromptFormData;
+  onSave: (data: PromptFormData) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState<PromptFormData>(initial);
+  const isEditing = !!initial.id;
+
+  const set = <K extends keyof PromptFormData>(key: K, value: PromptFormData[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <div style={formBoxStyle}>
+      <h3 style={{ fontFamily: 'var(--cs-font-display)', fontSize: 'var(--cs-text-lg)', fontWeight: 500, margin: 0, color: 'var(--cs-fg-primary)' }}>
+        {isEditing ? 'Éditer le prompt' : 'Créer un prompt'}
+      </h3>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div>
+          <div style={fieldLabelStyle}>Nom</div>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => set('name', e.target.value)}
+            placeholder="Ex: Analyse de brief v2"
+            style={fieldInputStyle}
+          />
+        </div>
+        <div>
+          <div style={fieldLabelStyle}>Noeud</div>
+          <select
+            value={form.nodeName}
+            onChange={(e) => set('nodeName', e.target.value)}
+            style={fieldSelectStyle}
+          >
+            {PROMPT_NODE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div style={fieldLabelStyle}>System prompt</div>
+        <textarea
+          rows={6}
+          value={form.systemPrompt}
+          onChange={(e) => set('systemPrompt', e.target.value)}
+          placeholder="Instructions système pour le modèle..."
+          style={fieldTextareaStyle}
+        />
+      </div>
+
+      <div>
+        <div style={fieldLabelStyle}>User prompt template</div>
+        <textarea
+          rows={4}
+          value={form.userPromptTemplate}
+          onChange={(e) => set('userPromptTemplate', e.target.value)}
+          placeholder="Template avec variables {{variable}}..."
+          style={fieldTextareaStyle}
+        />
+      </div>
+
+      <div>
+        <div style={fieldLabelStyle}>Variables (séparées par des virgules)</div>
+        <input
+          type="text"
+          value={form.variables}
+          onChange={(e) => set('variables', e.target.value)}
+          placeholder="platform, format, objective"
+          style={fieldInputStyle}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
+        <Button variant="ghost" size="md" leftIcon={<X size={14} />} onClick={onCancel} disabled={saving}>
+          Annuler
+        </Button>
+        <Button
+          variant="primary"
+          size="md"
+          leftIcon={<Save size={14} />}
+          onClick={() => onSave(form)}
+          disabled={saving || !form.name.trim() || !form.systemPrompt.trim()}
+          loading={saving}
+        >
+          {isEditing ? 'Créer nouvelle version' : 'Sauvegarder'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Empty state
+   ================================================================ */
+
 function EmptyState({ icon, title, description, cta }: { icon: React.ReactNode; title: string; description: string; cta?: React.ReactNode }) {
   return (
     <div
@@ -585,6 +1261,10 @@ function EmptyState({ icon, title, description, cta }: { icon: React.ReactNode; 
   );
 }
 
+/* ================================================================
+   Main page
+   ================================================================ */
+
 export default function AIEngineConfigPage() {
   const [tab, setTab] = useState<Tab>('providers');
   const [loading, setLoading] = useState(true);
@@ -593,6 +1273,18 @@ export default function AIEngineConfigPage() {
   const [workflows, setWorkflows] = useState<WorkflowData[]>([]);
   const [prompts, setPrompts] = useState<PromptData[]>([]);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
+
+  // Workflow form state
+  const [showWorkflowForm, setShowWorkflowForm] = useState(false);
+  const [workflowFormData, setWorkflowFormData] = useState<WorkflowFormData>(EMPTY_WORKFLOW_FORM);
+  const [savingWorkflow, setSavingWorkflow] = useState(false);
+  const [deletingWorkflowId, setDeletingWorkflowId] = useState<string | null>(null);
+
+  // Prompt form state
+  const [showPromptForm, setShowPromptForm] = useState(false);
+  const [promptFormData, setPromptFormData] = useState<PromptFormData>(EMPTY_PROMPT_FORM);
+  const [savingPrompt, setSavingPrompt] = useState(false);
+  const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -627,6 +1319,171 @@ export default function AIEngineConfigPage() {
     }
   }, []);
 
+  const handleSaveProvider = useCallback(async (
+    id: string,
+    data: { priority?: number; dailyBudgetCents?: number; rateLimitRpm?: number; isEnabled?: boolean; isFallback?: boolean },
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/admin/ai-engine/config/providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...data }),
+      });
+      if (!res.ok) return false;
+      await fetchData();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [fetchData]);
+
+  /* ---------- Workflow CRUD ---------- */
+
+  const openWorkflowCreate = useCallback(() => {
+    setWorkflowFormData(EMPTY_WORKFLOW_FORM);
+    setShowWorkflowForm(true);
+  }, []);
+
+  const openWorkflowEdit = useCallback((w: WorkflowData) => {
+    setWorkflowFormData({
+      id: w.id,
+      name: w.name,
+      description: w.description ?? '',
+      platform: w.platform ?? '',
+      format: w.format ?? '',
+      qualityThreshold: Math.round(parseFloat(w.qualityThreshold) * 100),
+      maxBudgetCents: w.maxBudgetCents,
+      maxRetries: w.maxRetries,
+      humanReviewRequired: w.humanReviewRequired,
+      autoPublish: w.autoPublish,
+    });
+    setShowWorkflowForm(true);
+  }, []);
+
+  const handleSaveWorkflow = useCallback(async (data: WorkflowFormData) => {
+    setSavingWorkflow(true);
+    try {
+      const payload = {
+        ...(data.id ? { id: data.id } : {}),
+        name: data.name,
+        description: data.description || null,
+        platform: data.platform || null,
+        format: data.format || null,
+        graphConfig: { nodes: [], edges: [] },
+        qualityThreshold: (data.qualityThreshold / 100).toFixed(2),
+        maxBudgetCents: data.maxBudgetCents,
+        maxRetries: data.maxRetries,
+        humanReviewRequired: data.humanReviewRequired,
+        autoPublish: data.autoPublish,
+      };
+      const res = await fetch('/api/admin/ai-engine/config/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Erreur ${res.status}`);
+      }
+      toast.success(data.id ? 'Workflow mis à jour' : 'Workflow créé');
+      setShowWorkflowForm(false);
+      await fetchData();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur lors de la sauvegarde');
+    } finally {
+      setSavingWorkflow(false);
+    }
+  }, [fetchData]);
+
+  const handleDeleteWorkflow = useCallback(async (id: string) => {
+    setDeletingWorkflowId(id);
+    try {
+      const res = await fetch(`/api/admin/ai-engine/config/workflows/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Erreur ${res.status}`);
+      }
+      toast.success('Workflow supprimé');
+      await fetchData();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur lors de la suppression');
+    } finally {
+      setDeletingWorkflowId(null);
+    }
+  }, [fetchData]);
+
+  /* ---------- Prompt CRUD ---------- */
+
+  const openPromptCreate = useCallback(() => {
+    setPromptFormData(EMPTY_PROMPT_FORM);
+    setShowPromptForm(true);
+  }, []);
+
+  const openPromptEdit = useCallback((p: PromptData) => {
+    setPromptFormData({
+      id: p.id,
+      nodeName: p.nodeName,
+      name: p.name,
+      systemPrompt: p.systemPrompt,
+      userPromptTemplate: p.userPromptTemplate,
+      variables: p.variables.join(', '),
+    });
+    setShowPromptForm(true);
+  }, []);
+
+  const handleSavePrompt = useCallback(async (data: PromptFormData) => {
+    setSavingPrompt(true);
+    try {
+      const variables = data.variables
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean);
+      const payload = {
+        ...(data.id ? { id: data.id } : {}),
+        nodeName: data.nodeName,
+        name: data.name,
+        systemPrompt: data.systemPrompt,
+        userPromptTemplate: data.userPromptTemplate,
+        variables,
+      };
+      const res = await fetch('/api/admin/ai-engine/config/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Erreur ${res.status}`);
+      }
+      toast.success(data.id ? 'Nouvelle version du prompt créée' : 'Prompt créé');
+      setShowPromptForm(false);
+      await fetchData();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur lors de la sauvegarde');
+    } finally {
+      setSavingPrompt(false);
+    }
+  }, [fetchData]);
+
+  const handleDeletePrompt = useCallback(async (id: string) => {
+    setDeletingPromptId(id);
+    try {
+      const res = await fetch(`/api/admin/ai-engine/config/prompts/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Erreur ${res.status}`);
+      }
+      toast.success('Prompt désactivé');
+      await fetchData();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur lors de la suppression');
+    } finally {
+      setDeletingPromptId(null);
+    }
+  }, [fetchData]);
+
+  /* ---------- Derived stats ---------- */
+
   const configuredCount = providers.filter((p) => p.configured).length;
   const activeWorkflows = workflows.filter((w) => w.isActive).length;
   const activePrompts = prompts.filter((p) => p.isActive).length;
@@ -637,6 +1494,8 @@ export default function AIEngineConfigPage() {
     { key: 'workflows', label: 'Workflows', icon: <GitBranch size={14} />, count: workflows.length },
     { key: 'prompts', label: 'Prompts', icon: <FileText size={14} />, count: prompts.length },
   ];
+
+  /* ---------- Render ---------- */
 
   if (loading) {
     return (
@@ -749,39 +1608,109 @@ export default function AIEngineConfigPage() {
       {tab === 'providers' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
           {providers.map((p) => (
-            <ProviderCard key={p.id} provider={p} onTestConnection={handleTestConnection} testing={testingProvider === p.id} />
+            <ProviderCard key={p.id} provider={p} onTestConnection={handleTestConnection} testing={testingProvider === p.id} onSave={handleSaveProvider} />
           ))}
         </div>
       )}
 
       {/* Workflows Tab */}
       {tab === 'workflows' && (
-        workflows.length === 0 ? (
-          <EmptyState
-            icon={<GitBranch size={24} />}
-            title="Aucun workflow personnalisé"
-            description="Les workflows par défaut sont utilisés pour la génération. Créez un workflow personnalisé pour ajuster les nœuds, seuils de qualité et providers par format."
-          />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {workflows.map((w) => <WorkflowCard key={w.id} workflow={w} />)}
-          </div>
-        )
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Create button */}
+          {!showWorkflowForm && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="primary" size="md" leftIcon={<Plus size={14} />} onClick={openWorkflowCreate}>
+                Créer un workflow
+              </Button>
+            </div>
+          )}
+
+          {/* Inline form */}
+          {showWorkflowForm && (
+            <WorkflowForm
+              initial={workflowFormData}
+              onSave={handleSaveWorkflow}
+              onCancel={() => setShowWorkflowForm(false)}
+              saving={savingWorkflow}
+            />
+          )}
+
+          {/* List or empty state */}
+          {workflows.length === 0 && !showWorkflowForm ? (
+            <EmptyState
+              icon={<GitBranch size={24} />}
+              title="Aucun workflow personnalisé"
+              description="Les workflows par défaut sont utilisés pour la génération. Créez un workflow personnalisé pour ajuster les noeuds, seuils de qualité et providers par format."
+              cta={
+                <Button variant="primary" size="md" leftIcon={<Plus size={14} />} onClick={openWorkflowCreate}>
+                  Créer un workflow
+                </Button>
+              }
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {workflows.map((w) => (
+                <WorkflowCard
+                  key={w.id}
+                  workflow={w}
+                  onEdit={openWorkflowEdit}
+                  onDelete={handleDeleteWorkflow}
+                  deleting={deletingWorkflowId === w.id}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Prompts Tab */}
       {tab === 'prompts' && (
-        prompts.length === 0 ? (
-          <EmptyState
-            icon={<FileText size={24} />}
-            title="Aucun prompt personnalisé"
-            description="Les templates de prompts par défaut sont utilisés pour chaque nœud du pipeline. Créez des templates versionnés pour itérer sur la qualité de génération."
-          />
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 14 }}>
-            {prompts.map((p) => <PromptCard key={p.id} prompt={p} />)}
-          </div>
-        )
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Create button */}
+          {!showPromptForm && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="primary" size="md" leftIcon={<Plus size={14} />} onClick={openPromptCreate}>
+                Créer un prompt
+              </Button>
+            </div>
+          )}
+
+          {/* Inline form */}
+          {showPromptForm && (
+            <PromptForm
+              initial={promptFormData}
+              onSave={handleSavePrompt}
+              onCancel={() => setShowPromptForm(false)}
+              saving={savingPrompt}
+            />
+          )}
+
+          {/* List or empty state */}
+          {prompts.length === 0 && !showPromptForm ? (
+            <EmptyState
+              icon={<FileText size={24} />}
+              title="Aucun prompt personnalisé"
+              description="Les templates de prompts par défaut sont utilisés pour chaque noeud du pipeline. Créez des templates versionnés pour itérer sur la qualité de génération."
+              cta={
+                <Button variant="primary" size="md" leftIcon={<Plus size={14} />} onClick={openPromptCreate}>
+                  Créer un prompt
+                </Button>
+              }
+            />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 14 }}>
+              {prompts.map((p) => (
+                <PromptCard
+                  key={p.id}
+                  prompt={p}
+                  onEdit={openPromptEdit}
+                  onDelete={handleDeletePrompt}
+                  deleting={deletingPromptId === p.id}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       <style>{`

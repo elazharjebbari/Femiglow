@@ -15,6 +15,9 @@ import {
   ArrowLeft,
   Database,
   Hash,
+  Trash2,
+  Link as LinkIcon,
+  Type,
 } from 'lucide-react';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { Badge } from '@/components/admin/content-studio-v2/primitives';
@@ -57,6 +60,25 @@ const CATEGORY_BADGE: Record<string, { label: string; tone: 'neutral' | 'accent'
   craft: { label: 'Craft', tone: 'neutral' },
 };
 
+const COLLECTION_CATEGORIES = [
+  { value: 'brand', label: 'Marque' },
+  { value: 'psychology', label: 'Psychologie' },
+  { value: 'platform', label: 'Plateforme' },
+  { value: 'trend', label: 'Tendances' },
+  { value: 'product', label: 'Produit' },
+  { value: 'viral', label: 'Viral' },
+  { value: 'production', label: 'Production' },
+];
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return 'Jamais';
   return new Date(iso).toLocaleDateString('fr-FR', {
@@ -80,6 +102,8 @@ export default function KnowledgeBasePage() {
   const [showForm, setShowForm] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState('');
   const [formContent, setFormContent] = useState('');
+  const [formSourceType, setFormSourceType] = useState<'text' | 'url'>('text');
+  const [formUrl, setFormUrl] = useState('');
   const [ingesting, setIngesting] = useState(false);
   const [ingestError, setIngestError] = useState<string | null>(null);
   const [ingestSuccess, setIngestSuccess] = useState<string | null>(null);
@@ -87,6 +111,19 @@ export default function KnowledgeBasePage() {
   const [embedding, setEmbedding] = useState(false);
   const [embedResult, setEmbedResult] = useState<EmbedResult | null>(null);
   const [embedError, setEmbedError] = useState<string | null>(null);
+
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<{ slug: string; docId: string; title: string } | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState(false);
+  const [confirmDeleteCol, setConfirmDeleteCol] = useState<{ slug: string; name: string } | null>(null);
+  const [deletingCol, setDeletingCol] = useState(false);
+
+  const [showNewCollection, setShowNewCollection] = useState(false);
+  const [newColName, setNewColName] = useState('');
+  const [newColSlug, setNewColSlug] = useState('');
+  const [newColDesc, setNewColDesc] = useState('');
+  const [newColCategory, setNewColCategory] = useState('brand');
+  const [creatingCol, setCreatingCol] = useState(false);
+  const [createColError, setCreateColError] = useState<string | null>(null);
 
   const fetchCollections = useCallback(async () => {
     try {
@@ -132,19 +169,20 @@ export default function KnowledgeBasePage() {
   }
 
   async function handleIngest(slug: string) {
-    if (!formTitle.trim() || !formContent.trim()) return;
+    if (formSourceType === 'text' && (!formTitle.trim() || !formContent.trim())) return;
+    if (formSourceType === 'url' && !formUrl.trim()) return;
     setIngesting(true);
     setIngestError(null);
     setIngestSuccess(null);
     try {
+      const body = formSourceType === 'text'
+        ? { sourceType: 'text' as const, title: formTitle.trim(), content: formContent.trim() }
+        : { sourceType: 'url' as const, url: formUrl.trim() };
+
       const res = await fetch(`/api/admin/ai-engine/knowledge/${slug}/documents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sourceType: 'text',
-          title: formTitle.trim(),
-          content: formContent.trim(),
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -154,6 +192,8 @@ export default function KnowledgeBasePage() {
       setIngestSuccess(`Document ingéré avec ${data.chunkCount} chunks`);
       setFormTitle('');
       setFormContent('');
+      setFormUrl('');
+      setFormSourceType('text');
       setShowForm(null);
       await fetchDocuments(slug);
       await fetchCollections();
@@ -161,6 +201,85 @@ export default function KnowledgeBasePage() {
       setIngestError(e instanceof Error ? e.message : 'Erreur inconnue');
     } finally {
       setIngesting(false);
+    }
+  }
+
+  async function handleDeleteDocument() {
+    if (!confirmDeleteDoc) return;
+    setDeletingDoc(true);
+    try {
+      const res = await fetch(
+        `/api/admin/ai-engine/knowledge/${confirmDeleteDoc.slug}/documents/${confirmDeleteDoc.docId}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `Erreur ${res.status}`);
+      }
+      setIngestSuccess(`Document "${confirmDeleteDoc.title}" supprimé`);
+      await fetchDocuments(confirmDeleteDoc.slug);
+      await fetchCollections();
+    } catch (e: unknown) {
+      setIngestError(e instanceof Error ? e.message : 'Erreur inconnue');
+    } finally {
+      setDeletingDoc(false);
+      setConfirmDeleteDoc(null);
+    }
+  }
+
+  async function handleDeleteCollection() {
+    if (!confirmDeleteCol) return;
+    setDeletingCol(true);
+    try {
+      const res = await fetch(
+        `/api/admin/ai-engine/knowledge/${confirmDeleteCol.slug}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `Erreur ${res.status}`);
+      }
+      setIngestSuccess(`Collection "${confirmDeleteCol.name}" supprimée`);
+      setExpandedId(null);
+      await fetchCollections();
+    } catch (e: unknown) {
+      setIngestError(e instanceof Error ? e.message : 'Erreur inconnue');
+    } finally {
+      setDeletingCol(false);
+      setConfirmDeleteCol(null);
+    }
+  }
+
+  async function handleCreateCollection() {
+    if (!newColName.trim() || !newColSlug.trim()) return;
+    setCreatingCol(true);
+    setCreateColError(null);
+    try {
+      const res = await fetch('/api/admin/ai-engine/knowledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newColName.trim(),
+          slug: newColSlug.trim(),
+          description: newColDesc.trim() || null,
+          category: newColCategory,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? data?.details?.[0]?.message ?? `Erreur ${res.status}`);
+      }
+      setIngestSuccess(`Collection "${newColName.trim()}" créée`);
+      setNewColName('');
+      setNewColSlug('');
+      setNewColDesc('');
+      setNewColCategory('brand');
+      setShowNewCollection(false);
+      await fetchCollections();
+    } catch (e: unknown) {
+      setCreateColError(e instanceof Error ? e.message : 'Erreur inconnue');
+    } finally {
+      setCreatingCol(false);
     }
   }
 
@@ -270,13 +389,23 @@ export default function KnowledgeBasePage() {
             </h1>
           </div>
         </div>
-        <Button
-          onClick={handleEmbed}
-          loading={embedding}
-          leftIcon={<Sparkles size={14} />}
-        >
-          Générer les embeddings
-        </Button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button
+            variant="ghost"
+            leftIcon={<Plus size={14} />}
+            onClick={() => { setShowNewCollection(true); setCreateColError(null); }}
+            disabled={showNewCollection}
+          >
+            Nouvelle collection
+          </Button>
+          <Button
+            onClick={handleEmbed}
+            loading={embedding}
+            leftIcon={<Sparkles size={14} />}
+          >
+            Générer les embeddings
+          </Button>
+        </div>
       </header>
 
       {embedResult && (
@@ -343,6 +472,191 @@ export default function KnowledgeBasePage() {
         >
           <CheckCircle2 size={18} style={{ color: 'var(--cs-success)', flexShrink: 0 }} />
           <p style={{ margin: 0, fontSize: 'var(--cs-text-sm)' }}>{ingestSuccess}</p>
+        </section>
+      )}
+
+      {/* Confirm delete document dialog */}
+      {confirmDeleteDoc && (
+        <section
+          style={{
+            background: 'var(--cs-danger-bg)',
+            border: '1px solid var(--cs-danger)',
+            borderRadius: 'var(--cs-radius-md)',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <AlertTriangle size={18} style={{ color: 'var(--cs-danger)', flexShrink: 0 }} />
+          <p style={{ margin: 0, fontSize: 'var(--cs-text-sm)', flex: 1 }}>
+            Supprimer ce document ? <strong>{confirmDeleteDoc.title}</strong>
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmDeleteDoc(null)}
+              disabled={deletingDoc}
+            >
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleDeleteDocument}
+              loading={deletingDoc}
+              style={{ background: 'var(--cs-danger)', color: '#fff', border: 'none' }}
+            >
+              Supprimer
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* Confirm delete collection dialog */}
+      {confirmDeleteCol && (
+        <section
+          style={{
+            background: 'var(--cs-danger-bg)',
+            border: '1px solid var(--cs-danger)',
+            borderRadius: 'var(--cs-radius-md)',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <AlertTriangle size={18} style={{ color: 'var(--cs-danger)', flexShrink: 0 }} />
+          <p style={{ margin: 0, fontSize: 'var(--cs-text-sm)', flex: 1 }}>
+            Supprimer cette collection ? <strong>{confirmDeleteCol.name}</strong>
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmDeleteCol(null)}
+              disabled={deletingCol}
+            >
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleDeleteCollection}
+              loading={deletingCol}
+              style={{ background: 'var(--cs-danger)', color: '#fff', border: 'none' }}
+            >
+              Supprimer
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* New collection form */}
+      {showNewCollection && (
+        <section
+          style={{
+            background: 'var(--cs-bg-elevated)',
+            border: '1px solid var(--cs-border-hair)',
+            borderRadius: 'var(--cs-radius-md)',
+            padding: '20px 24px',
+            boxShadow: 'var(--cs-shadow-sm)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
+          <div style={{ fontFamily: 'var(--cs-font-display)', fontWeight: 500, fontSize: 'var(--cs-text-sm)' }}>
+            Nouvelle collection
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Input
+              label="Nom"
+              placeholder="Ex: Fiches produits"
+              value={newColName}
+              onChange={(e) => {
+                setNewColName(e.target.value);
+                if (!newColSlug || newColSlug === slugify(newColName)) {
+                  setNewColSlug(slugify(e.target.value));
+                }
+              }}
+              disabled={creatingCol}
+            />
+            <Input
+              label="Slug"
+              placeholder="ex: fiches-produits"
+              value={newColSlug}
+              onChange={(e) => setNewColSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+              disabled={creatingCol}
+            />
+          </div>
+          <Input
+            label="Description"
+            placeholder="Description de la collection (optionnel)"
+            value={newColDesc}
+            onChange={(e) => setNewColDesc(e.target.value)}
+            disabled={creatingCol}
+          />
+          <div className="cs-input-field flex flex-col gap-1.5 w-full">
+            <label className="cs-eyebrow" style={{ fontSize: 'var(--cs-text-xs)' }}>
+              Catégorie
+            </label>
+            <select
+              value={newColCategory}
+              onChange={(e) => setNewColCategory(e.target.value)}
+              disabled={creatingCol}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: 'var(--cs-text-sm)',
+                border: '1px solid var(--cs-border)',
+                borderRadius: 'var(--cs-radius-sm)',
+                background: 'var(--cs-bg-elevated)',
+                color: 'var(--cs-fg-primary)',
+                fontFamily: 'inherit',
+              }}
+            >
+              {COLLECTION_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {createColError && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                background: 'var(--cs-danger-bg)',
+                borderRadius: 'var(--cs-radius-sm)',
+                fontSize: 'var(--cs-text-xs)',
+                color: 'var(--cs-danger)',
+              }}
+            >
+              <AlertTriangle size={12} />
+              {createColError}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setShowNewCollection(false); setCreateColError(null); }}
+              disabled={creatingCol}
+            >
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreateCollection}
+              loading={creatingCol}
+              disabled={!newColName.trim() || !newColSlug.trim()}
+            >
+              Créer
+            </Button>
+          </div>
         </section>
       )}
 
@@ -563,6 +877,28 @@ export default function KnowledgeBasePage() {
                             <span style={{ fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-muted)', flexShrink: 0 }}>
                               {formatDate(doc.createdAt)}
                             </span>
+                            <button
+                              onClick={() => setConfirmDeleteDoc({ slug: col.slug, docId: doc.id, title: doc.title })}
+                              title="Supprimer ce document"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 28,
+                                height: 28,
+                                borderRadius: 'var(--cs-radius-sm)',
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'var(--cs-fg-muted)',
+                                cursor: 'pointer',
+                                flexShrink: 0,
+                                transition: 'all var(--cs-motion-fast) var(--cs-easing)',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cs-danger-bg)'; e.currentTarget.style.color = 'var(--cs-danger)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cs-fg-muted)'; }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -585,39 +921,98 @@ export default function KnowledgeBasePage() {
                             gap: 14,
                           }}
                         >
-                          <Input
-                            label="Titre du document"
-                            placeholder="Ex: Guide des ingrédients japonais"
-                            value={formTitle}
-                            onChange={(e) => setFormTitle(e.target.value)}
-                            disabled={ingesting}
-                          />
-                          <div className="cs-input-field flex flex-col gap-1.5 w-full">
-                            <label
-                              className="cs-eyebrow"
-                              style={{ fontSize: 'var(--cs-text-xs)' }}
-                              htmlFor={`content-${col.slug}`}
-                            >
-                              Contenu
-                            </label>
-                            <textarea
-                              id={`content-${col.slug}`}
-                              placeholder="Collez le contenu textuel ici..."
-                              value={formContent}
-                              onChange={(e) => setFormContent(e.target.value)}
+                          {/* Source type toggle */}
+                          <div style={{ display: 'flex', gap: 0, borderRadius: 'var(--cs-radius-sm)', overflow: 'hidden', border: '1px solid var(--cs-border)', alignSelf: 'flex-start' }}>
+                            <button
+                              onClick={() => setFormSourceType('text')}
                               disabled={ingesting}
-                              rows={6}
-                              className="flex-1 bg-transparent px-3 py-2 text-sm text-cs-fg-primary placeholder:text-cs-fg-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                               style={{
-                                width: '100%',
-                                resize: 'vertical',
-                                border: '1px solid var(--cs-border)',
-                                borderRadius: 'var(--cs-radius-sm)',
-                                background: 'var(--cs-bg-elevated)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '6px 14px',
+                                border: 'none',
+                                background: formSourceType === 'text' ? 'var(--cs-accent-bg)' : 'transparent',
+                                color: formSourceType === 'text' ? 'var(--cs-accent)' : 'var(--cs-fg-muted)',
+                                fontWeight: formSourceType === 'text' ? 600 : 400,
+                                fontSize: 'var(--cs-text-xs)',
+                                cursor: 'pointer',
                                 fontFamily: 'inherit',
                               }}
-                            />
+                            >
+                              <Type size={12} />
+                              Texte
+                            </button>
+                            <button
+                              onClick={() => setFormSourceType('url')}
+                              disabled={ingesting}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '6px 14px',
+                                border: 'none',
+                                borderLeft: '1px solid var(--cs-border)',
+                                background: formSourceType === 'url' ? 'var(--cs-accent-bg)' : 'transparent',
+                                color: formSourceType === 'url' ? 'var(--cs-accent)' : 'var(--cs-fg-muted)',
+                                fontWeight: formSourceType === 'url' ? 600 : 400,
+                                fontSize: 'var(--cs-text-xs)',
+                                cursor: 'pointer',
+                                fontFamily: 'inherit',
+                              }}
+                            >
+                              <LinkIcon size={12} />
+                              URL
+                            </button>
                           </div>
+
+                          {formSourceType === 'text' ? (
+                            <>
+                              <Input
+                                label="Titre du document"
+                                placeholder="Ex: Guide des ingrédients japonais"
+                                value={formTitle}
+                                onChange={(e) => setFormTitle(e.target.value)}
+                                disabled={ingesting}
+                              />
+                              <div className="cs-input-field flex flex-col gap-1.5 w-full">
+                                <label
+                                  className="cs-eyebrow"
+                                  style={{ fontSize: 'var(--cs-text-xs)' }}
+                                  htmlFor={`content-${col.slug}`}
+                                >
+                                  Contenu
+                                </label>
+                                <textarea
+                                  id={`content-${col.slug}`}
+                                  placeholder="Collez le contenu textuel ici..."
+                                  value={formContent}
+                                  onChange={(e) => setFormContent(e.target.value)}
+                                  disabled={ingesting}
+                                  rows={6}
+                                  className="flex-1 bg-transparent px-3 py-2 text-sm text-cs-fg-primary placeholder:text-cs-fg-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                  style={{
+                                    width: '100%',
+                                    resize: 'vertical',
+                                    border: '1px solid var(--cs-border)',
+                                    borderRadius: 'var(--cs-radius-sm)',
+                                    background: 'var(--cs-bg-elevated)',
+                                    fontFamily: 'inherit',
+                                  }}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <Input
+                              label="URL du document"
+                              placeholder="https://example.com/article"
+                              type="url"
+                              value={formUrl}
+                              onChange={(e) => setFormUrl(e.target.value)}
+                              disabled={ingesting}
+                              leftAddon={<LinkIcon size={14} />}
+                            />
+                          )}
 
                           {ingestError && (
                             <div
@@ -645,6 +1040,8 @@ export default function KnowledgeBasePage() {
                                 setShowForm(null);
                                 setFormTitle('');
                                 setFormContent('');
+                                setFormUrl('');
+                                setFormSourceType('text');
                                 setIngestError(null);
                               }}
                               disabled={ingesting}
@@ -655,25 +1052,41 @@ export default function KnowledgeBasePage() {
                               size="sm"
                               onClick={() => handleIngest(col.slug)}
                               loading={ingesting}
-                              disabled={!formTitle.trim() || !formContent.trim()}
+                              disabled={
+                                formSourceType === 'text'
+                                  ? !formTitle.trim() || !formContent.trim()
+                                  : !formUrl.trim()
+                              }
                             >
                               Ingérer
                             </Button>
                           </div>
                         </div>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          leftIcon={<Plus size={12} />}
-                          onClick={() => {
-                            setShowForm(col.slug);
-                            setIngestError(null);
-                            setIngestSuccess(null);
-                          }}
-                        >
-                          Ajouter un document
-                        </Button>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<Plus size={12} />}
+                            onClick={() => {
+                              setShowForm(col.slug);
+                              setIngestError(null);
+                              setIngestSuccess(null);
+                            }}
+                          >
+                            Ajouter un document
+                          </Button>
+                          <div style={{ flex: 1 }} />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<Trash2 size={12} />}
+                            onClick={() => setConfirmDeleteCol({ slug: col.slug, name: col.name })}
+                            style={{ color: 'var(--cs-danger)' }}
+                          >
+                            Supprimer la collection
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
