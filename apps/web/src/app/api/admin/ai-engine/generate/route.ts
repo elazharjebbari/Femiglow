@@ -4,6 +4,7 @@ import { requireAdminApi } from '@/lib/content-studio/auth';
 import { formatErrorResponse } from '@/lib/errors/http-error';
 import { runGeneration } from '@/lib/ai-engine/orchestrator';
 import { getEngineConfig } from '@/lib/ai-engine/config';
+import { bridgeToContentStudio } from '@/lib/ai-engine/bridge';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -46,8 +47,24 @@ export async function POST(request: Request): Promise<Response> {
 
     const result = await runGeneration(parsed);
 
+    // Bridge successful generations into Content Studio records
+    let bridgeResult: { ideaId: string; briefId: string; draftId: string } | null = null;
+    let contentStudioUrl: string | null = null;
+
+    if (result.status !== 'failed') {
+      try {
+        bridgeResult = await bridgeToContentStudio(result, parsed);
+        contentStudioUrl = `/admin/content-studio-v2/library?highlight=${bridgeResult.draftId}`;
+      } catch (bridgeErr) {
+        console.error('[ai-engine:generate] Bridge to Content Studio failed (non-blocking):', bridgeErr);
+      }
+    }
+
     const statusCode = result.status === 'failed' ? 500 : 200;
-    return NextResponse.json(result, { status: statusCode });
+    return NextResponse.json(
+      { ...result, bridgeResult, contentStudioUrl },
+      { status: statusCode },
+    );
   } catch (err) {
     console.error('[ai-engine:generate] Route error:', err);
     if (err instanceof z.ZodError) {

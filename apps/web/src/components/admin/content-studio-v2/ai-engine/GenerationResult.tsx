@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import {
   ChevronDown,
   ChevronRight,
@@ -10,6 +11,7 @@ import {
   ArrowRight,
   Sparkles,
   Image as ImageIcon,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { Badge } from '@/components/admin/content-studio-v2/primitives';
@@ -36,6 +38,7 @@ export interface GenerationResultData {
 
 interface GenerationResultProps {
   result: GenerationResultData;
+  contentStudioUrl?: string | null;
   onUse?: () => void;
   onRegenerate?: () => void;
   regenerating?: boolean;
@@ -196,7 +199,7 @@ const QUALITY_LABELS: Record<string, string> = {
   overall: 'Score global',
 };
 
-export function GenerationResult({ result, onUse, onRegenerate, regenerating }: GenerationResultProps) {
+export function GenerationResult({ result, contentStudioUrl, onUse, onRegenerate, regenerating }: GenerationResultProps) {
   const { script, caption, hashtags, images, qualityScores, costBreakdown, totalCostCents } = result;
 
   return (
@@ -440,6 +443,16 @@ export function GenerationResult({ result, onUse, onRegenerate, regenerating }: 
         >
           Régénérer
         </Button>
+        {contentStudioUrl && (
+          <Link href={contentStudioUrl} style={{ textDecoration: 'none' }}>
+            <Button
+              variant="ghost"
+              leftIcon={<BookOpen size={14} />}
+            >
+              Voir dans la Bibliothèque
+            </Button>
+          </Link>
+        )}
         <Button
           variant="primary"
           rightIcon={<ArrowRight size={14} />}
