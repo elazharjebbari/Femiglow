@@ -16,13 +16,20 @@ test.use({ storageState: ADMIN_STORAGE_PATH });
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-/** Fill all required brief fields. */
+/** Fill all required brief fields using evaluate to trigger React state. */
 async function fillBrief(page: import('@playwright/test').Page) {
-  await page.locator('select').nth(0).selectOption('engagement');
-  await page.locator('select').nth(1).selectOption('instagram');
-  await page.locator('select').nth(2).selectOption('carousel');
-  await page.locator('select').nth(3).selectOption('luxurious');
+  // Use evaluate to set values and trigger React's onChange via native events.
+  // Playwright's selectOption can miss React's synthetic event in some contexts.
+  const selects = page.locator('select');
+  for (const [idx, val] of [[0, 'engagement'], [1, 'instagram'], [2, 'carousel'], [3, 'luxurious']] as const) {
+    const sel = selects.nth(idx);
+    await sel.selectOption(val);
+    // Trigger input event to ensure React sees the change
+    await sel.dispatchEvent('input', { bubbles: true });
+  }
   await page.locator('textarea').first().fill('Test session expired');
+  // Small wait for React to batch state updates
+  await page.waitForTimeout(300);
 }
 
 // ── Tests ────────────────────────────────────────────────────────
@@ -74,8 +81,7 @@ test('session — 401 error shows reconnection suggestion or retry option', asyn
 
   // The error phase should show a retry button or reconnection option
   const retryButton = page.getByRole('button', { name: /Réessayer/i });
-  const modifyButton = page.getByRole('button', { name: /Modifier le brief/i });
-  await expect(retryButton.or(modifyButton)).toBeVisible({ timeout: 10_000 });
+  await expect(retryButton).toBeVisible({ timeout: 10_000 });
 });
 
 // 3. Health API 401 - mocking /health intercepts SSR so page shows error boundary.
@@ -101,13 +107,17 @@ test('session — health API 401 triggers error boundary or graceful degradation
 
   // Either the error boundary shows, or the page loaded despite the 401.
   // Both are valid — the key is the page did NOT produce a blank/crash.
-  const errorBoundary = page.getByText(/interrompu|erreur|Unauthorized/i);
+  // Check for any of these indicators using individual assertions.
   const dashboard = page.getByRole('heading', { name: /Tableau de bord/i });
-  const shell = page.locator('.cs-v2-shell');
+  const errorText = page.getByText(/interrompu/i).first();
+  const errCode = page.getByText(/erreur/i).first();
 
-  await expect(
-    errorBoundary.or(dashboard).or(shell),
-  ).toBeVisible({ timeout: 15_000 });
+  // At least one indicator should be visible
+  const dashVisible = await dashboard.isVisible({ timeout: 10_000 }).catch(() => false);
+  const errVisible = await errorText.isVisible({ timeout: 2_000 }).catch(() => false);
+  const errCodeVisible = await errCode.isVisible({ timeout: 2_000 }).catch(() => false);
+
+  expect(dashVisible || errVisible || errCodeVisible).toBe(true);
 });
 
 // 4. Trends API returns 401 -> trends shows error or empty state
@@ -125,8 +135,13 @@ test('session — trends API 401 shows error on trends page', async ({ page }) =
 
   // The page should load the shell; trend data shows error or empty state
   const heading = page.getByRole('heading', { name: /Veille & Tendances/i });
-  const errorText = page.getByText(/erreur|indisponible|unauthorized|aucune tendance/i);
-  await expect(heading.or(errorText)).toBeVisible({ timeout: 15_000 });
+  await expect(heading).toBeVisible({ timeout: 15_000 });
+  // When trends API returns 401, the page shows an empty or error state
+  const emptyState = page.getByText(/aucune tendance/i);
+  const errorMsg = page.getByText(/erreur/i).first();
+  const emptyVisible = await emptyState.isVisible({ timeout: 5_000 }).catch(() => false);
+  const errorVisible = await errorMsg.isVisible({ timeout: 2_000 }).catch(() => false);
+  expect(emptyVisible || errorVisible).toBe(true);
 });
 
 // 5. Knowledge API returns 401 -> knowledge shows error or empty state
@@ -142,9 +157,14 @@ test('session — knowledge API 401 shows error on knowledge page', async ({ pag
   await gotoAIEngine(page, 'knowledge');
   ensureAuthOrSkip(page);
 
+  // When the knowledge API returns 401, the page shows a full error state
+  // with "Impossible de charger" or the heading still renders depending on
+  // implementation. Check for either.
   const heading = page.getByRole('heading', { name: /Base de connaissances/i });
-  const errorText = page.getByText(/erreur|indisponible|unauthorized|aucune collection/i);
-  await expect(heading.or(errorText)).toBeVisible({ timeout: 15_000 });
+  const errorMsg = page.getByText(/Impossible de charger|Erreur 401/i).first();
+  const headingVisible = await heading.isVisible({ timeout: 10_000 }).catch(() => false);
+  const errorVisible = await errorMsg.isVisible({ timeout: 5_000 }).catch(() => false);
+  expect(headingVisible || errorVisible).toBe(true);
 });
 
 // 6. After 401, retry button re-attempts (mock success on second call)
