@@ -172,17 +172,18 @@ test.describe.serial('Knowledge ingestion flow', () => {
     // Click "Ajouter un document"
     await sharedPage.getByRole('button', { name: /Ajouter un document/i }).click();
 
-    // Fill in the form
-    const titleInput = sharedPage.locator('input[type="text"]').last();
+    // Fill in the title using the label
+    const titleInput = sharedPage.getByLabel('Titre du document');
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Nouveau document de test');
 
-    const contentTextarea = sharedPage.locator('textarea').last();
+    // Fill in the content textarea
+    const contentTextarea = sharedPage.getByLabel('Contenu');
     await expect(contentTextarea).toBeVisible({ timeout: 5_000 });
     await contentTextarea.fill('Contenu du document de test pour la base de connaissances FemiGlow.');
 
     // Click "Ingérer"
-    const ingestBtn = sharedPage.getByRole('button', { name: /Ingérer/i });
+    const ingestBtn = sharedPage.getByRole('button', { name: /^Ingérer$/i });
     await expect(ingestBtn).toBeEnabled({ timeout: 5_000 });
     await ingestBtn.click();
   });
