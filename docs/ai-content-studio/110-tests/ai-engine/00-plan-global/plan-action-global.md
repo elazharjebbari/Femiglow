@@ -16,7 +16,8 @@
 | **MSW Contract** | MSW 2.x + Vitest | ~8 fichiers | ~80 tests | P1 |
 | **Playwright E2E** | Playwright 1.48 | ~10 fichiers | ~120 tests | P0 |
 | **Scénarios métier E2E** | Playwright serial | ~5 fichiers | ~50 tests | P1 |
-| **Total** | | **~55 fichiers** | **~650 tests** | |
+| **API Contract** | Vitest + vi.mock | 6 fichiers | 40 tests | P0 |
+| **Total** | | **~61 fichiers** | **~690 tests** | |
 
 ---
 
@@ -103,6 +104,34 @@
 | 6.3 | `scenario-hitl-reject.spec.ts` | Generate → Review → Reject → Regenerate → Approve | 8 |
 | 6.4 | `scenario-trend-to-publish.spec.ts` | Veille → Créer depuis tendance → Publier | 8 |
 | 6.5 | `scenario-knowledge-enrichment.spec.ts` | Ajouter doc → Embed → Générer → Vérifier RAG | 8 |
+
+### Phase 7 — Tests contract API (routes Next.js) (P0)
+
+Tests Vitest qui importent directement les route handlers Next.js et les testent avec des objets Request mockés. Auth et services mockés via `vi.mock`. Aucun serveur requis.
+
+| Étape | Fichier test | Endpoint | Tests |
+|---|---|---|---|
+| 7.1 | `api-contracts/ai-engine-generate.contract.test.ts` | POST /api/admin/ai-engine/generate | 10 |
+| 7.2 | `api-contracts/ai-engine-health.contract.test.ts` | GET /api/admin/ai-engine/health | 6 |
+| 7.3 | `api-contracts/ai-engine-trends.contract.test.ts` | GET /api/admin/ai-engine/trends | 6 |
+| 7.4 | `api-contracts/ai-engine-jobs.contract.test.ts` | GET /api/admin/ai-engine/jobs | 6 |
+| 7.5 | `api-contracts/ai-engine-knowledge.contract.test.ts` | GET/POST /api/admin/ai-engine/knowledge | 6 |
+| 7.6 | `api-contracts/ai-engine-publish.contract.test.ts` | POST /api/admin/ai-engine/publish | 6 |
+
+**Statut** : **DONE** -- 40 tests, 6 fichiers, 100% passants.  
+**Localisation** : `src/test/api-contracts/`  
+**Commande** : `vitest run src/test/api-contracts --reporter=verbose`
+
+### Phase 8 — Couverture finale et rapport
+
+| Étape | Action | Critère de succès |
+|---|---|---|
+| 8.1 | Exécuter `vitest run --coverage` sur toutes les suites | Coverage >= seuils configurés |
+| 8.2 | Identifier les modules non couverts | Liste de gaps documentée |
+| 8.3 | Ajouter tests manquants pour les gaps critiques | 0 module P0 sous 80% lignes |
+| 8.4 | Exécuter Playwright full suite | 100% tests passants |
+| 8.5 | Rapport final de couverture (HTML + JSON) | Archivé dans `./coverage/` |
+| 8.6 | Mise à jour CLAUDE.md avec commandes de test | Documenté |
 
 ---
 
