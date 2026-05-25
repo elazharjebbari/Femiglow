@@ -12,6 +12,10 @@ import {
   Sparkles,
   Image as ImageIcon,
   BookOpen,
+  Send,
+  Calendar,
+  CheckCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { Badge } from '@/components/admin/content-studio-v2/primitives';
@@ -36,9 +40,16 @@ export interface GenerationResultData {
   totalCostCents?: number;
 }
 
+export interface BridgeResultData {
+  ideaId: string;
+  briefId: string;
+  draftId: string;
+}
+
 interface GenerationResultProps {
   result: GenerationResultData;
   contentStudioUrl?: string | null;
+  bridgeResult?: BridgeResultData | null;
   onUse?: () => void;
   onRegenerate?: () => void;
   regenerating?: boolean;
@@ -190,6 +201,215 @@ function QualityBar({ label, value }: { label: string; value: number }) {
   );
 }
 
+type PublishMode = 'now' | 'schedule';
+type PublishState = 'idle' | 'publishing' | 'success' | 'error';
+
+function PublishSection({ draftId }: { draftId: string }) {
+  const [mode, setMode] = useState<PublishMode>('now');
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [publishState, setPublishState] = useState<PublishState>('idle');
+  const [publishMessage, setPublishMessage] = useState('');
+
+  const canPublish =
+    publishState !== 'publishing' &&
+    (mode === 'now' || (mode === 'schedule' && scheduledAt.trim().length > 0));
+
+  const handlePublish = useCallback(async () => {
+    setPublishState('publishing');
+    setPublishMessage('');
+
+    try {
+      const body: Record<string, unknown> = { draftId, mode };
+      if (mode === 'schedule' && scheduledAt) {
+        body.scheduledAt = new Date(scheduledAt).toISOString();
+      }
+
+      const res = await fetch('/api/admin/ai-engine/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg =
+          data.message ?? data.error ?? `Erreur HTTP ${res.status}`;
+        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
+
+      setPublishState('success');
+      setPublishMessage(
+        mode === 'now'
+          ? 'Contenu publié avec succès.'
+          : `Contenu planifié pour le ${new Date(scheduledAt).toLocaleString('fr-FR')}.`,
+      );
+    } catch (e: unknown) {
+      setPublishState('error');
+      setPublishMessage(
+        e instanceof Error ? e.message : 'Erreur lors de la publication.',
+      );
+    }
+  }, [draftId, mode, scheduledAt]);
+
+  return (
+    <div
+      style={{
+        background: 'var(--cs-bg-elevated)',
+        border: '1px solid var(--cs-border-hair)',
+        borderRadius: 'var(--cs-radius-md)',
+        padding: '24px 28px',
+        boxShadow: 'var(--cs-shadow-sm)',
+      }}
+    >
+      <h4
+        className="cs-display"
+        style={{
+          fontSize: 'var(--cs-text-base)',
+          fontWeight: 500,
+          margin: '0 0 16px 0',
+        }}
+      >
+        Publier
+      </h4>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Mode selector */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => setMode('now')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              borderRadius: 'var(--cs-radius-sm)',
+              border: `1px solid ${mode === 'now' ? 'var(--cs-accent)' : 'var(--cs-border)'}`,
+              background: mode === 'now' ? 'var(--cs-accent-bg)' : 'var(--cs-bg-base)',
+              color: mode === 'now' ? 'var(--cs-accent)' : 'var(--cs-fg-secondary)',
+              fontSize: 'var(--cs-text-sm)',
+              fontFamily: 'inherit',
+              fontWeight: mode === 'now' ? 600 : 400,
+              cursor: 'pointer',
+              transition: 'all var(--cs-motion-fast) var(--cs-easing)',
+            }}
+          >
+            <Send size={13} />
+            Publier maintenant
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('schedule')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 14px',
+              borderRadius: 'var(--cs-radius-sm)',
+              border: `1px solid ${mode === 'schedule' ? 'var(--cs-accent)' : 'var(--cs-border)'}`,
+              background: mode === 'schedule' ? 'var(--cs-accent-bg)' : 'var(--cs-bg-base)',
+              color: mode === 'schedule' ? 'var(--cs-accent)' : 'var(--cs-fg-secondary)',
+              fontSize: 'var(--cs-text-sm)',
+              fontFamily: 'inherit',
+              fontWeight: mode === 'schedule' ? 600 : 400,
+              cursor: 'pointer',
+              transition: 'all var(--cs-motion-fast) var(--cs-easing)',
+            }}
+          >
+            <Calendar size={13} />
+            Planifier
+          </button>
+        </div>
+
+        {/* Date picker for schedule mode */}
+        {mode === 'schedule' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label
+              className="cs-eyebrow"
+              style={{ fontSize: 'var(--cs-text-xs)' }}
+            >
+              Date et heure de publication
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              style={{
+                width: '100%',
+                maxWidth: 280,
+                padding: '9px 12px',
+                borderRadius: 'var(--cs-radius-sm)',
+                border: '1px solid var(--cs-border)',
+                background: 'var(--cs-bg-base)',
+                color: 'var(--cs-fg-primary)',
+                fontSize: 'var(--cs-text-sm)',
+                fontFamily: 'inherit',
+                outline: 'none',
+                transition:
+                  'border-color var(--cs-motion-fast) var(--cs-easing)',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Publish button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 4 }}>
+          <Button
+            variant="primary"
+            leftIcon={<Send size={14} />}
+            onClick={handlePublish}
+            disabled={!canPublish}
+            loading={publishState === 'publishing'}
+          >
+            {mode === 'now' ? 'Publier' : 'Planifier la publication'}
+          </Button>
+        </div>
+
+        {/* Status message */}
+        {publishState === 'success' && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 14px',
+              borderRadius: 'var(--cs-radius-sm)',
+              background: 'var(--cs-success-bg, rgba(34,197,94,0.08))',
+              border: '1px solid var(--cs-success, #22c55e)',
+              color: 'var(--cs-success, #22c55e)',
+              fontSize: 'var(--cs-text-sm)',
+            }}
+          >
+            <CheckCircle size={14} />
+            {publishMessage}
+          </div>
+        )}
+
+        {publishState === 'error' && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 14px',
+              borderRadius: 'var(--cs-radius-sm)',
+              background: 'var(--cs-danger-bg, rgba(239,68,68,0.08))',
+              border: '1px solid var(--cs-danger, #ef4444)',
+              color: 'var(--cs-danger, #ef4444)',
+              fontSize: 'var(--cs-text-sm)',
+            }}
+          >
+            <AlertTriangle size={14} />
+            {publishMessage}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const QUALITY_LABELS: Record<string, string> = {
   brand_alignment: 'Alignement marque',
   engagement_potential: 'Potentiel engagement',
@@ -199,7 +419,7 @@ const QUALITY_LABELS: Record<string, string> = {
   overall: 'Score global',
 };
 
-export function GenerationResult({ result, contentStudioUrl, onUse, onRegenerate, regenerating }: GenerationResultProps) {
+export function GenerationResult({ result, contentStudioUrl, bridgeResult, onUse, onRegenerate, regenerating }: GenerationResultProps) {
   const { script, caption, hashtags, images, qualityScores, costBreakdown, totalCostCents } = result;
 
   return (
@@ -432,6 +652,10 @@ export function GenerationResult({ result, contentStudioUrl, onUse, onRegenerate
             </tbody>
           </table>
         </div>
+      )}
+
+      {bridgeResult && (
+        <PublishSection draftId={bridgeResult.draftId} />
       )}
 
       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', paddingTop: 8 }}>

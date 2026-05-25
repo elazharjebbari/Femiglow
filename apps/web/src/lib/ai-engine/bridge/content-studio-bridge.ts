@@ -144,14 +144,20 @@ export async function bridgeToContentStudio(
     await updateDraft(draft.id, { scoreTotal: qualityAvg });
   }
 
-  // 4. Bind images as assets if present -----------------------------------
+  // 4. Bind images as assets if present (skip mock images)
   const images = (result.images ?? []) as Array<Record<string, unknown>>;
-  for (const img of images) {
-    const mediaId = img.assetId as string | undefined;
-    const url = img.url as string | undefined;
-    if (mediaId && url) {
-      await upsertPrimaryAsset({ draftId: draft.id, mediaId });
-      break; // only one primary asset per draft
+  const realImage = images.find((img) => {
+    const provider = img.provider as string | undefined;
+    return provider && !provider.startsWith('mock');
+  });
+  if (realImage) {
+    const mediaId = realImage.assetId as string | undefined;
+    if (mediaId) {
+      try {
+        await upsertPrimaryAsset({ draftId: draft.id, mediaId });
+      } catch {
+        // Media ID might not exist in media table yet — non-blocking
+      }
     }
   }
 

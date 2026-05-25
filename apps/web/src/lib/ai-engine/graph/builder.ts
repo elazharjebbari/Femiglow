@@ -135,11 +135,11 @@ export function buildContentGraph() {
       caption_only: 'generateCaption',
     })
 
-    // ── Video flow: video -> voiceover -> music -> subtitles -> compose ──
+    // ── Video flow: video -> voiceover -> music -> subtitles -> caption -> compose ──
     .addEdge('generateVideo', 'generateVoiceover')
     .addEdge('generateVoiceover', 'generateMusic')
     .addEdge('generateMusic', 'generateSubtitles')
-    .addEdge('generateSubtitles', 'compose')
+    .addEdge('generateSubtitles', 'generateCaption')
 
     // ── Image flows: images -> caption -> compose ──
     .addEdge('generateImages', 'generateCaption')

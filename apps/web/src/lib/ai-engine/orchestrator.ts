@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { createContentEngine } from './graph';
 import { getEngineConfig } from './config';
 import { createLogger } from './utils/logger';
+import { createJob, updateJobResult } from './jobs';
 
 const log = createLogger('orchestrator');
 
@@ -104,6 +105,8 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
     selectedVariant: null,
   };
 
+  await createJob(jobId, request).catch(() => {});
+
   try {
     log.info('Invoking LangGraph engine', { jobId, data: { stateKeys: Object.keys(initialState) } });
     const result = await engine.invoke(initialState as never, { recursionLimit: 50 });
@@ -122,7 +125,7 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       },
     });
 
-    return {
+    const genResult: GenerationResult = {
       jobId,
       status: finalState.humanReview ? 'completed' : 'review',
       script: (finalState.script as Record<string, unknown>) ?? null,
@@ -136,6 +139,10 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       errors: (finalState.errors as Array<Record<string, unknown>>) ?? [],
       durationMs,
     };
+
+    await updateJobResult(jobId, genResult).catch(() => {});
+
+    return genResult;
   } catch (err) {
     const durationMs = Date.now() - startTime;
     log.error('Generation failed', {
@@ -144,7 +151,7 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       data: { error: String(err) },
     });
 
-    return {
+    const failResult: GenerationResult = {
       jobId,
       status: 'failed',
       script: null,
@@ -158,5 +165,9 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       errors: [{ node: 'orchestrator', errorType: 'UnhandledError', message: String(err), timestamp: new Date().toISOString(), retryable: false }],
       durationMs,
     };
+
+    await updateJobResult(jobId, failResult).catch(() => {});
+
+    return failResult;
   }
 }

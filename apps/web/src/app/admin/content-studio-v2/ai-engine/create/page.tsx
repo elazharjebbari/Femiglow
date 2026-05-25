@@ -18,6 +18,7 @@ import {
 import {
   GenerationResult,
   type GenerationResultData,
+  type BridgeResultData,
 } from '@/components/admin/content-studio-v2/ai-engine/GenerationResult';
 
 interface BriefForm {
@@ -230,6 +231,8 @@ export default function AIEngineCreatePage() {
   const [steps, setSteps] = useState<PipelineStep[]>([]);
   const [totalCost, setTotalCost] = useState<number | undefined>();
   const [result, setResult] = useState<GenerationResultData | null>(null);
+  const [bridgeResult, setBridgeResult] = useState<BridgeResultData | null>(null);
+  const [contentStudioUrl, setContentStudioUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   const updateField = useCallback((field: keyof BriefForm, value: string) => {
@@ -271,6 +274,8 @@ export default function AIEngineCreatePage() {
   const handleGenerate = useCallback(async () => {
     setPhase('generating');
     setResult(null);
+    setBridgeResult(null);
+    setContentStudioUrl(null);
     setErrorMsg('');
     setTotalCost(undefined);
 
@@ -299,6 +304,8 @@ export default function AIEngineCreatePage() {
       simulateProgress((success) => {
         if (success) {
           setResult(data);
+          setBridgeResult(data.bridgeResult ?? null);
+          setContentStudioUrl(data.contentStudioUrl ?? null);
           setTotalCost(data.totalCostCents);
           setPhase('result');
         }
@@ -316,6 +323,8 @@ export default function AIEngineCreatePage() {
   const handleReset = useCallback(() => {
     setPhase('brief');
     setResult(null);
+    setBridgeResult(null);
+    setContentStudioUrl(null);
     setSteps([]);
     setTotalCost(undefined);
     setErrorMsg('');
@@ -459,6 +468,8 @@ export default function AIEngineCreatePage() {
       {phase === 'result' && result && (
         <GenerationResult
           result={result}
+          bridgeResult={bridgeResult}
+          contentStudioUrl={contentStudioUrl}
           onUse={handleUse}
           onRegenerate={handleRetry}
         />
