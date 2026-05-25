@@ -1,0 +1,234 @@
+scenarios:
+  - id: SM-001
+    name: "Golden Path — Brief → Generate → Review → Approve → Bibliothèque"
+    priority: P0
+    type: e2e-serial
+    description: >
+      L'opérateur crée un contenu de A à Z : remplit le brief,
+      lance la génération, review le résultat, l'approuve,
+      et le retrouve dans la Bibliothèque du Content Studio.
+    preconditions:
+      - Service staging actif
+      - API key OpenAI configurée
+      - Knowledge base seedée
+    steps:
+      - action: navigate
+        target: /admin/content-studio-v2/ai-engine
+        verify: "Dashboard affiché avec providers"
+      - action: click
+        target: "Nouvelle génération IA"
+        verify: "Page create affichée"
+      - action: select
+        target: Objectif
+        value: "Engagement communauté"
+      - action: select
+        target: Plateforme
+        value: Instagram
+      - action: select
+        target: Format
+        value: Carrousel
+      - action: select
+        target: Ton
+        value: "Premium / Luxe"
+      - action: type
+        target: "Message clé"
+        value: "Le rituel FemiGlow pour des ongles lumineux"
+      - action: type
+        target: "Focus produit"
+        value: "Kit de soin FemiGlow"
+      - action: click
+        target: Générer
+        verify: "Pipeline progress affiché"
+      - action: wait
+        condition: "Pipeline terminé ou review"
+        timeout: 120s
+      - action: verify
+        checks:
+          - "Script hook non vide"
+          - "Caption > 100 caractères"
+          - "Hashtags ≥ 3"
+          - "Images ≥ 1"
+          - "Quality score ≥ 0.7"
+      - action: verify
+        target: "Lien Bibliothèque"
+        check: "href contient /library?highlight="
+    expected_outcome: "Contenu visible dans la Bibliothèque avec score qualité"
+
+  - id: SM-002
+    name: "Error Recovery — Provider fail → Fallback → Retry → Success"
+    priority: P1
+    type: e2e-serial
+    steps:
+      - action: navigate
+        target: /admin/content-studio-v2/ai-engine/create
+      - action: fill_form
+        data:
+          objective: conversion
+          platform: instagram
+          format: post
+          tone: luxurious
+          keyMessage: "Test error recovery"
+      - action: mock_api
+        target: POST /api/admin/ai-engine/generate
+        response: { status: 500, body: { error: "Provider timeout" } }
+      - action: click
+        target: Générer
+      - action: verify
+        checks:
+          - "Phase error affichée"
+          - "Message d'erreur visible"
+          - "Bouton Réessayer visible"
+      - action: mock_api
+        target: POST /api/admin/ai-engine/generate
+        response: { status: 200, body: "mock_success_response" }
+      - action: click
+        target: Réessayer
+      - action: verify
+        checks:
+          - "Phase generating affichée"
+          - "Résultat affiché après succès"
+    expected_outcome: "Recovery réussie après un échec provider"
+
+  - id: SM-003
+    name: "HITL Reject → Regenerate → Approve"
+    priority: P1
+    type: e2e-serial
+    preconditions:
+      - AI_ENGINE_HUMAN_REVIEW_REQUIRED=true
+    steps:
+      - action: fill_and_generate
+        data: { objective: engagement, platform: instagram, format: carousel }
+      - action: wait
+        condition: "Phase review affichée"
+      - action: verify_review_panel
+        checks:
+          - "Script preview visible"
+          - "Caption preview visible"
+          - "Boutons Approuver/Rejeter/Modifier visibles"
+      - action: click
+        target: "Demander des modifications"
+      - action: type
+        target: feedback_textarea
+        value: "Le hook n'est pas assez accrocheur, proposer un angle plus sensoriel"
+      - action: click
+        target: Confirmer
+      - action: wait
+        condition: "Régénération en cours"
+      - action: wait
+        condition: "Nouvelle review ou résultat"
+      - action: click
+        target: Approuver
+      - action: verify
+        checks:
+          - "Phase result affichée"
+          - "Contenu différent du premier"
+    expected_outcome: "Cycle reject → regenerate → approve complété"
+
+  - id: SM-004
+    name: "Trend-to-Content — Veille → Brief pré-rempli → Generate → Publish"
+    priority: P1
+    type: e2e-serial
+    steps:
+      - action: navigate
+        target: /admin/content-studio-v2/ai-engine/trends
+      - action: verify
+        checks:
+          - "Tendances affichées avec scores"
+          - "Filtres catégorie visibles"
+      - action: click
+        target: "Créer un contenu (première tendance)"
+        verify: "Page create ouverte avec trendReference pré-rempli"
+      - action: fill_remaining_fields
+        data:
+          objective: awareness
+          platform: instagram
+          format: reel
+          tone: authentic
+          keyMessage: "Inspiré par la tendance"
+      - action: click
+        target: Générer
+      - action: wait
+        condition: "Résultat affiché"
+      - action: verify
+        checks:
+          - "Script mentionne la tendance"
+          - "Contenu généré avec succès"
+    expected_outcome: "Contenu créé à partir d'une tendance identifiée"
+
+  - id: SM-005
+    name: "Knowledge Enrichment — Ingestion → Embedding → Génération RAG"
+    priority: P2
+    type: e2e-serial
+    steps:
+      - action: navigate
+        target: /admin/content-studio-v2/ai-engine/knowledge
+      - action: verify
+        checks:
+          - "Collections affichées"
+          - "Stats visibles (9 Collections, 16 Documents)"
+      - action: expand_collection
+        target: brand-femiglow
+      - action: verify
+        checks:
+          - "Documents affichés dans la collection"
+          - "Chunk counts visibles"
+      - action: click
+        target: "Générer les embeddings"
+      - action: wait
+        condition: "Bannière de succès"
+      - action: navigate
+        target: /admin/content-studio-v2/ai-engine/create
+      - action: generate_content
+        data: { keyMessage: "Les bienfaits du camélia Tsubaki" }
+      - action: verify
+        checks:
+          - "Le contenu mentionne des ingrédients japonais"
+          - "Le RAG a enrichi le contexte"
+    expected_outcome: "Le RAG injecte du contexte pertinent de la knowledge base"
+
+  - id: SM-006
+    name: "Multi-format — Même brief → Post + Carousel + Reel"
+    priority: P2
+    type: e2e-serial
+    steps:
+      - action: generate_with_format
+        format: post
+        verify: "1 image, caption, pas de vidéo"
+      - action: generate_with_format
+        format: carousel
+        verify: "3+ images, caption, pas de vidéo"
+      - action: generate_with_format
+        format: reel
+        verify: "1 vidéo, voiceover, musique, sous-titres"
+    expected_outcome: "Chaque format produit le type de contenu attendu"
+
+  - id: SM-007
+    name: "Budget Guard — Génération refuse quand budget dépassé"
+    priority: P1
+    type: unit
+    steps:
+      - action: set_budget
+        value: 0
+      - action: attempt_generate
+      - action: verify
+        checks:
+          - "Erreur budget affiché"
+          - "Pas de génération lancée"
+    expected_outcome: "Le guard budget empêche les dépassements"
+
+  - id: SM-008
+    name: "Configuration change → Impact génération"
+    priority: P2
+    type: e2e
+    steps:
+      - action: navigate
+        target: /admin/content-studio-v2/ai-engine/config
+      - action: verify_provider
+        provider: OpenAI
+        status: Configuré
+      - action: verify_workflow
+        check: "Quality threshold = 0.7"
+      - action: generate_content
+      - action: verify
+        check: "Qualité respecte le threshold configuré"
+    expected_outcome: "La configuration influence le comportement de génération"

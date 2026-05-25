@@ -39,16 +39,34 @@ test('dashboard — "Nouvelle generation IA" button is visible and links to /cre
   await expect(ctaLink).toHaveAttribute('href', /\/ai-engine\/create/);
 });
 
-test('dashboard — sidebar shows AI Engine sub-navigation items', async ({ page }) => {
+test('dashboard — internal navigation links to sub-pages exist', async ({ page }) => {
+  // The AI Engine pages are standalone (no AppShell sidebar). Instead of
+  // testing sidebar sub-nav, verify the dashboard provides navigation links
+  // to the key sub-pages: create (/create) and configuration.
   await gotoAIEngine(page);
   ensureAuthOrSkip(page);
 
-  // The sidebar sub-nav is scoped to `nav[aria-label="AI Engine"]`.
-  const subNav = page.locator('nav[aria-label="AI Engine"]');
-  await expect(subNav).toBeVisible({ timeout: 15_000 });
+  // "Nouvelle generation IA" links to /create.
+  await expect(
+    page.getByRole('link', { name: /Nouvelle génération IA/i }),
+  ).toBeVisible({ timeout: 15_000 });
 
-  // Each sub-nav entry should be present.
-  for (const label of ['Générer', 'Veille', 'Config', 'Métriques']) {
-    await expect(subNav.getByText(label)).toBeVisible({ timeout: 5_000 });
-  }
+  // "Configuration" links to settings.
+  await expect(
+    page.getByRole('link', { name: /Configuration/i }),
+  ).toBeVisible({ timeout: 10_000 });
+
+  // The sidebar in the shell (AppShell) has an "AI Engine" entry
+  // linking to this page. Verify from the shell side.
+  await page.addInitScript(() => {
+    try { window.sessionStorage.removeItem('femiglow:chunk-reload-attempted'); } catch {}
+  });
+  await page.goto('/admin/content-studio-v2/home');
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('.cs-v2-shell')).toBeVisible({ timeout: 15_000 });
+
+  const sidebar = page.locator('.cs-sidebar');
+  const aiLink = sidebar.getByRole('link', { name: 'AI Engine' });
+  await expect(aiLink).toBeVisible({ timeout: 10_000 });
+  await expect(aiLink).toHaveAttribute('href', /\/ai-engine/);
 });
