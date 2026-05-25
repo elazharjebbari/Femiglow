@@ -166,26 +166,47 @@ export default function AIEngineDashboardPage() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function fetchHealth() {
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       try {
-        const res = await fetch('/api/admin/ai-engine/health');
+        const res = await fetch('/api/admin/ai-engine/health', {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
         if (!res.ok) throw new Error(`Erreur ${res.status}`);
         const data = await res.json();
         if (!cancelled) setHealth(data);
       } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur inconnue');
+        clearTimeout(timeoutId);
+        if (!cancelled) {
+          if (e instanceof DOMException && e.name === 'AbortError') {
+            setError('Délai d\'attente dépassé (5s). Le serveur met trop de temps à répondre.');
+          } else {
+            setError(e instanceof Error ? e.message : 'Erreur inconnue');
+          }
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     fetchHealth();
     return () => { cancelled = true; };
-  }, []);
+  }, [retryCount]);
 
-  if (loading) {
+  const handleRetry = () => setRetryCount((c) => c + 1);
+
+  if (loading && !health) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {[220, 120, 120].map((h, i) => (
@@ -204,29 +225,111 @@ export default function AIEngineDashboardPage() {
     );
   }
 
-  if (error) {
+  if (error && !health) {
     return (
-      <section
-        style={{
-          background: 'var(--cs-danger-bg)',
-          border: '1px solid var(--cs-danger)',
-          borderRadius: 'var(--cs-radius-md)',
-          padding: '32px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-        }}
-      >
-        <AlertTriangle size={20} style={{ color: 'var(--cs-danger)', flexShrink: 0 }} />
-        <div>
-          <p style={{ margin: 0, fontWeight: 600, fontSize: 'var(--cs-text-sm)' }}>
-            Impossible de charger le statut AI Engine
-          </p>
-          <p style={{ margin: '4px 0 0', fontSize: 'var(--cs-text-sm)', color: 'var(--cs-fg-secondary)' }}>
-            {error}
-          </p>
-        </div>
-      </section>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <p className="cs-eyebrow" style={{ marginBottom: 6 }}>AI Engine</p>
+            <h1
+              className="cs-display"
+              style={{
+                margin: 0,
+                fontSize: 'var(--cs-text-2xl)',
+                fontWeight: 500,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Tableau de bord
+            </h1>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Link href="/admin/content-studio-v2/ai-engine/create" style={{ textDecoration: 'none' }}>
+              <Button leftIcon={<Sparkles size={14} />}>Nouvelle génération IA</Button>
+            </Link>
+            <Link href="/admin/settings/ai-engine" style={{ textDecoration: 'none' }}>
+              <Button variant="ghost" leftIcon={<Settings size={14} />}>Configuration</Button>
+            </Link>
+          </div>
+        </header>
+
+        <section
+          style={{
+            background: 'var(--cs-danger-bg)',
+            border: '1px solid var(--cs-danger)',
+            borderRadius: 'var(--cs-radius-md)',
+            padding: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+          }}
+        >
+          <AlertTriangle size={20} style={{ color: 'var(--cs-danger)', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontWeight: 600, fontSize: 'var(--cs-text-sm)' }}>
+              Statut indisponible
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: 'var(--cs-text-sm)', color: 'var(--cs-fg-secondary)' }}>
+              {error}
+            </p>
+          </div>
+          <Button variant="ghost" onClick={handleRetry} leftIcon={<Activity size={14} />}>
+            Réessayer
+          </Button>
+        </section>
+
+        <section
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 14,
+          }}
+        >
+          {['text', 'image', 'video', 'tts'].map((key) => (
+            <div
+              key={key}
+              style={{
+                background: 'var(--cs-bg-elevated)',
+                border: '1px solid var(--cs-border-hair)',
+                borderRadius: 'var(--cs-radius-md)',
+                padding: '20px 22px',
+                boxShadow: 'var(--cs-shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 'var(--cs-radius)',
+                      background: 'var(--cs-bg-sunken)',
+                      color: 'var(--cs-accent)',
+                      display: 'grid',
+                      placeItems: 'center',
+                    }}
+                  >
+                    {PROVIDER_ICONS[key]}
+                  </span>
+                  <span style={{ fontFamily: 'var(--cs-font-display)', fontWeight: 500, fontSize: 'var(--cs-text-sm)' }}>
+                    {PROVIDER_LABELS[key] ?? key}
+                  </span>
+                </div>
+                <Badge tone="neutral" size="sm">
+                  <span style={{ marginLeft: 2 }}>Chargement...</span>
+                </Badge>
+              </div>
+              <div style={{ fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-muted)' }}>
+                <div>Fournisseur : <span style={{ color: 'var(--cs-fg-secondary)' }}>---</span></div>
+                <div>Modèle : <span className="cs-mono" style={{ color: 'var(--cs-fg-secondary)' }}>---</span></div>
+              </div>
+            </div>
+          ))}
+        </section>
+      </div>
     );
   }
 

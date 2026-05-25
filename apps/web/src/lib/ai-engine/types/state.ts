@@ -39,6 +39,7 @@ function mergeRetries(
 
 export interface ContentVariant {
   variantIndex: number;
+  label: string;
   script: ScriptOutput | null;
   caption: string;
   hashtags: string[];
