@@ -1,29 +1,22 @@
 /**
- * Tests for the AI Engine Config page — tabs navigation, provider cards,
- * workflow/prompt display, loading, and error states.
+ * @vitest-environment jsdom
  */
-
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-// Mock next/link
+vi.mock('@/components/admin/content-studio-v2/primitives', async () => {
+  const R = await import('react');
+  return {
+    Button: (props: Record<string, unknown>) => R.createElement('button', props, props.leftIcon as string, props.children as string),
+    Badge: (props: Record<string, unknown>) => R.createElement('span', props, props.children as string),
+    Input: (props: Record<string, unknown>) => R.createElement('input', props),
+  };
+});
+
 vi.mock('next/link', () => ({
   __esModule: true,
-  default: ({
-    href,
-    children,
-    style: _style,
-    ...rest
-  }: {
-    href: string;
-    children: React.ReactNode;
-    style?: React.CSSProperties;
-    [k: string]: unknown;
-  }) => (
-    <a href={href} {...rest}>
-      {children}
-    </a>
-  ),
+  default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }));
 
 import AIEngineConfigPage from '../page';
@@ -35,18 +28,16 @@ function buildProvider(overrides?: Record<string, unknown>) {
     name: 'OpenAI',
     apiKeyEnvVar: 'OPENAI_API_KEY',
     baseUrl: null,
-    capabilities: ['text', 'image', 'vision'],
-    models: [
-      { name: 'gpt-4o', capability: 'text', costPer1MInput: 250, costPer1MOutput: 1000 },
-    ],
-    rateLimitRpm: 60,
+    capabilities: ['text', 'image'],
+    models: [{ name: 'gpt-4o-mini', capability: 'text', costPer1MInput: 15 }],
+    rateLimitRpm: 500,
     dailyBudgetCents: 500,
     circuitBreakerConfig: null,
-    priority: 1,
+    priority: 10,
     isFallback: false,
     isEnabled: true,
     healthStatus: 'healthy',
-    lastHealthCheck: '2026-05-25T10:00:00Z',
+    lastHealthCheck: null,
     configured: true,
     ...overrides,
   };
@@ -54,231 +45,157 @@ function buildProvider(overrides?: Record<string, unknown>) {
 
 function buildWorkflow(overrides?: Record<string, unknown>) {
   return {
-    id: 'wf_default',
+    id: 'wf_1',
     name: 'Instagram Reel',
-    description: 'Workflow standard pour reels Instagram',
+    description: 'Workflow pour reels',
     platform: 'instagram',
     format: 'reel',
-    graphConfig: { nodes: ['brief_analysis', 'script_writer', 'quality_gate'] },
-    defaultTone: 'empowering',
+    graphConfig: { nodes: ['brief_analysis', 'script_writer', 'image_gen'] },
+    defaultTone: 'professional',
     defaultLanguage: 'fr',
     qualityThreshold: '0.7',
-    maxRetries: 2,
-    maxBudgetCents: 1000,
+    maxRetries: 3,
+    maxBudgetCents: 100,
     humanReviewRequired: true,
     autoPublish: false,
     providerOverrides: null,
-    version: 3,
+    version: 1,
     isActive: true,
-    createdAt: '2026-01-01T00:00:00Z',
-    updatedAt: '2026-05-25T10:00:00Z',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     ...overrides,
   };
 }
 
 function buildPrompt(overrides?: Record<string, unknown>) {
   return {
-    id: 'prompt_1',
-    nodeName: 'script_writer',
-    name: 'Script Writer v2',
-    systemPrompt: 'Tu es un expert en creation de scripts video pour les reseaux sociaux...',
-    userPromptTemplate: 'Cree un script pour {{platform}} au format {{format}}...',
-    variables: ['platform', 'format', 'tone'],
+    id: 'pt_1',
+    nodeName: 'generate_script',
+    name: 'Script Writer',
+    systemPrompt: 'Tu es un créateur de contenu expert...',
+    userPromptTemplate: 'Crée un script pour {platform}',
+    variables: ['platform', 'format'],
     version: 2,
     isActive: true,
     parentId: null,
-    avgQualityScore: '0.82',
-    usageCount: 45,
-    createdAt: '2026-03-15T00:00:00Z',
+    avgQualityScore: '0.85',
+    usageCount: 42,
+    createdAt: new Date().toISOString(),
     ...overrides,
   };
 }
 
-function mockConfigResponses(opts?: {
-  providers?: Record<string, unknown>[];
-  workflows?: Record<string, unknown>[];
-  prompts?: Record<string, unknown>[];
-}) {
-  return (url: string) => {
-    if (url.includes('/config/providers')) {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ providers: opts?.providers ?? [buildProvider()] }),
-      });
-    }
-    if (url.includes('/config/workflows')) {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ workflows: opts?.workflows ?? [buildWorkflow()] }),
-      });
-    }
-    if (url.includes('/config/prompts')) {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ prompts: opts?.prompts ?? [buildPrompt()] }),
-      });
-    }
-    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+let fetchResponses: Record<string, unknown> = {};
+
+beforeEach(() => {
+  fetchResponses = {
+    providers: { providers: [buildProvider()] },
+    workflows: { workflows: [buildWorkflow()] },
+    prompts: { prompts: [buildPrompt()] },
   };
-}
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+    const u = String(url);
+    if (u.includes('/config/providers')) return new Response(JSON.stringify(fetchResponses.providers));
+    if (u.includes('/config/workflows')) return new Response(JSON.stringify(fetchResponses.workflows));
+    if (u.includes('/config/prompts')) return new Response(JSON.stringify(fetchResponses.prompts));
+    if (u.includes('/health')) return new Response(JSON.stringify({ enabled: true }));
+    return new Response('{}');
+  });
+});
+
+afterEach(() => { vi.restoreAllMocks(); });
 
 describe('AIEngineConfigPage', () => {
-  let fetchSpy: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    fetchSpy = vi.fn();
-    globalThis.fetch = fetchSpy;
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('shows "Configuration" title', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
     render(<AIEngineConfigPage />);
+    await waitFor(() => expect(screen.getByText('Configuration')).toBeInTheDocument());
+  });
 
+  it('shows page description subtitle', async () => {
+    render(<AIEngineConfigPage />);
+    await waitFor(() => expect(screen.getByText(/Gérez les fournisseurs/)).toBeInTheDocument());
+  });
+
+  it('shows 4 stat cards', async () => {
+    render(<AIEngineConfigPage />);
     await waitFor(() => {
-      expect(screen.getByText('Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Fournisseurs actifs')).toBeInTheDocument();
+      expect(screen.getByText('Workflows actifs')).toBeInTheDocument();
+      expect(screen.getByText('Prompts versionnés')).toBeInTheDocument();
+      expect(screen.getByText('Budget quotidien total')).toBeInTheDocument();
     });
   });
 
-  it('shows 4 tabs: Fournisseurs, Workflows, Prompts, Base de connaissances', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
+  it('shows 3 tabs (no Base de connaissances)', async () => {
     render(<AIEngineConfigPage />);
-
     await waitFor(() => {
       expect(screen.getByText('Fournisseurs')).toBeInTheDocument();
+      expect(screen.getByText('Workflows')).toBeInTheDocument();
+      expect(screen.getByText('Prompts')).toBeInTheDocument();
     });
-    expect(screen.getByText('Workflows')).toBeInTheDocument();
-    expect(screen.getByText('Prompts')).toBeInTheDocument();
-    expect(screen.getByText('Base de connaissances')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Base de connaissances/ })).not.toBeInTheDocument();
   });
 
-  it('default tab is Fournisseurs', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
+  it('default tab is Fournisseurs with provider cards', async () => {
     render(<AIEngineConfigPage />);
+    await waitFor(() => expect(screen.getByText('OpenAI')).toBeInTheDocument());
+    expect(screen.getByText('gpt-4o-mini')).toBeInTheDocument();
+  });
 
+  it('provider shows Actif status when configured', async () => {
+    render(<AIEngineConfigPage />);
+    await waitFor(() => expect(screen.getByText('Actif')).toBeInTheDocument());
+  });
+
+  it('provider shows Inactif when not configured', async () => {
+    fetchResponses.providers = { providers: [buildProvider({ configured: false, isEnabled: false })] };
+    render(<AIEngineConfigPage />);
+    await waitFor(() => expect(screen.getByText('Inactif')).toBeInTheDocument());
+  });
+
+  it('provider capabilities badges displayed', async () => {
+    render(<AIEngineConfigPage />);
     await waitFor(() => {
-      // Provider content visible by default
-      expect(screen.getByText('Fournisseurs IA')).toBeInTheDocument();
+      expect(screen.getByText('Texte')).toBeInTheDocument();
+      expect(screen.getByText('Image')).toBeInTheDocument();
     });
-    expect(screen.getByText('OpenAI')).toBeInTheDocument();
   });
 
   it('clicking Workflows tab shows workflow content', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
     render(<AIEngineConfigPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Workflows')).toBeInTheDocument();
-    });
-
+    await waitFor(() => expect(screen.getByText('Fournisseurs')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Workflows'));
-
-    expect(screen.getByText('Workflows de generation')).toBeInTheDocument();
-    expect(screen.getByText('Instagram Reel')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Instagram Reel')).toBeInTheDocument());
   });
 
   it('clicking Prompts tab shows prompt content', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
     render(<AIEngineConfigPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Prompts')).toBeInTheDocument();
-    });
-
+    await waitFor(() => expect(screen.getByText('Fournisseurs')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Prompts'));
-
-    expect(screen.getByText('Templates de prompts')).toBeInTheDocument();
-    expect(screen.getByText('Script Writer v2')).toBeInTheDocument();
-  });
-
-  it('provider cards show name and status', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
-    render(<AIEngineConfigPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('OpenAI')).toBeInTheDocument();
-    });
-  });
-
-  it('OpenAI shows as "Configure" when key present', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
-    render(<AIEngineConfigPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Configure')).toBeInTheDocument();
-    });
-  });
-
-  it('provider capabilities are displayed as badges', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
-    render(<AIEngineConfigPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Texte')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Image')).toBeInTheDocument();
-    expect(screen.getByText('Vision')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Script Writer')).toBeInTheDocument());
   });
 
   it('workflow shows quality threshold', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
     render(<AIEngineConfigPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Workflows')).toBeInTheDocument();
-    });
-
+    await waitFor(() => expect(screen.getByText('Fournisseurs')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Workflows'));
-
-    expect(screen.getByText(/Seuil qualite : 70%/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/Qualité ≥ 70%/)).toBeInTheDocument());
   });
 
-  it('prompts show version number', async () => {
-    fetchSpy.mockImplementation(mockConfigResponses());
+  it('prompt shows version and quality', async () => {
     render(<AIEngineConfigPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Prompts')).toBeInTheDocument();
-    });
-
+    await waitFor(() => expect(screen.getByText('Fournisseurs')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Prompts'));
-
-    expect(screen.getByText('v2')).toBeInTheDocument();
-  });
-
-  it('loading state shows skeleton', () => {
-    // fetch never resolves
-    fetchSpy.mockReturnValue(new Promise(() => {}));
-    const { container } = render(<AIEngineConfigPage />);
-
-    // Loading state renders div placeholders with shimmer animation
-    // The config page loading renders 4 divs with animation property
-    const skeletonDivs = container.querySelectorAll(
-      'div[style*="animation"]',
-    );
-    expect(skeletonDivs.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('error state shows message', async () => {
-    fetchSpy.mockImplementation((url: string) => {
-      if (url.includes('/config/providers')) {
-        return Promise.resolve({ ok: false, status: 500 });
-      }
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ workflows: [], prompts: [] }),
-      });
-    });
-
-    render(<AIEngineConfigPage />);
-
     await waitFor(() => {
-      expect(
-        screen.getByText('Impossible de charger la configuration'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('v2')).toBeInTheDocument();
+      expect(screen.getByText('85%')).toBeInTheDocument();
     });
+  });
+
+  it('error state shows message and retry', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network fail'));
+    render(<AIEngineConfigPage />);
+    await waitFor(() => expect(screen.getByText(/Impossible de charger/)).toBeInTheDocument());
+    expect(screen.getByText('Réessayer')).toBeInTheDocument();
   });
 });
