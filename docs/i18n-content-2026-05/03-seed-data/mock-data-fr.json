@@ -1,0 +1,864 @@
+{
+  "_meta": {
+    "locale": "fr",
+    "source": "messages-fr.json",
+    "destinations": [
+      "apps/web/src/data/mock/articles.ts",
+      "apps/web/src/data/mock/homepage.ts",
+      "apps/web/src/data/mock/kit.ts",
+      "apps/web/src/data/mock/maison.ts",
+      "apps/web/src/data/mock/rituel.ts",
+      "apps/web/src/data/mock/product.ts"
+    ],
+    "note": "Pure i18n payload; the typed mock objects (dates, images, prices) live in code."
+  },
+  "articles": [
+    {
+      "key": "hiver",
+      "slug": "hiver-ongles-patience",
+      "title": "Hiver, ongles, patience",
+      "kicker": "Saison",
+      "excerpt": "Le froid sec de Rabat dessèche tout ce qui résiste. Les ongles plient, mais ne cassent pas — à condition de ralentir.",
+      "body": "Quand l’air sec descend sur Rabat en janvier...",
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "matieres_ailleurs",
+      "slug": "matieres-d-ailleurs",
+      "title": "Matières d’ailleurs",
+      "kicker": null,
+      "excerpt": "Le sourcing parle d’honnêteté. Voici ce qui compose vraiment notre soin, et d’où viennent les matières.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "paste_powder",
+      "slug": "paste-et-powder-deux-gestes",
+      "title": "Paste et powder — deux gestes",
+      "kicker": null,
+      "excerpt": "Deux gestes, un éclat. Tutorial sensoriel détaillé — paste, powder, polissoir Step 4.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "maison_printemps",
+      "slug": "la-maison-au-printemps",
+      "title": "La maison, au printemps",
+      "kicker": null,
+      "excerpt": "L’atelier de Rabat change de souffle quand l’orange fleurit. Visite d’un mois où la lumière revient.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "voix_amal",
+      "slug": "la-voix-d-amal",
+      "title": "La voix d’Amal",
+      "kicker": null,
+      "excerpt": "Trois mois de rituel, racontés par celle qui les a tenus. Sans promesse, sans avant-après caricatural.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "pluie_mars",
+      "slug": "pluie-de-mars",
+      "title": "Pluie de mars",
+      "kicker": null,
+      "excerpt": "L’humidité revient sur la côte. Les cuticules respirent, les gestes peuvent s’espacer.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "kaolin",
+      "slug": "la-poudre-de-kaolin",
+      "title": "La poudre de kaolin",
+      "kicker": null,
+      "excerpt": "Argile blanche, douce, neutre. Comment elle entre dans la base et pourquoi elle y reste.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "table_atelier",
+      "slug": "la-table-comme-atelier",
+      "title": "La table comme atelier",
+      "kicker": null,
+      "excerpt": "Préparer son espace avant de commencer. La nappe, la lumière, le verre d’eau.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "visiter_atelier",
+      "slug": "visiter-l-atelier",
+      "title": "Visiter l’atelier",
+      "kicker": null,
+      "excerpt": "25 bis avenue Patrice Lumumba, Rabat. Comment on est arrivés ici, et ce qu’on y fabrique.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "voix_lina",
+      "slug": "la-voix-de-lina",
+      "title": "La voix de Lina",
+      "kicker": null,
+      "excerpt": "Deux mois après, elle nous écrit. Ce qui a changé, ce qui n’a pas changé, et ce qu’elle attend de la suite.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "avril_soleil",
+      "slug": "avril-soleil-bas",
+      "title": "Avril, soleil bas",
+      "kicker": null,
+      "excerpt": "Le soleil casablancais reprend sa hauteur. Les mains se découvrent, le rituel s’allège.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "argan_vraie",
+      "slug": "l-huile-d-argan-vraie",
+      "title": "L’huile d’argan, vraie",
+      "kicker": null,
+      "excerpt": "Tiznit, coopératives, première pression. Pourquoi nous achetons direct, et combien ça coûte vraiment.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "ranger_rituel",
+      "slug": "ranger-son-rituel",
+      "title": "Ranger son rituel",
+      "kicker": null,
+      "excerpt": "Le placard, le tiroir, la trousse. Comment garder les flacons en bon état d’une saison à l’autre.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "cuisine_laboratoire",
+      "slug": "la-cuisine-comme-laboratoire",
+      "title": "La cuisine comme laboratoire",
+      "kicker": null,
+      "excerpt": "Avant l’atelier, il y a eu la cuisine. Récit d’un commencement domestique.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    },
+    {
+      "key": "voix_sara",
+      "slug": "la-voix-de-sara",
+      "title": "La voix de Sara",
+      "kicker": null,
+      "excerpt": "Quatre mois pleins. Sara raconte ses ongles, sa fatigue, ses doutes, et le geste qui s’est installé.",
+      "body": null,
+      "author_name": "L’équipe FemiGlow",
+      "author_bio": "Fondatrice de la maison FemiGlow. Biologiste et formulatrice, elle écrit depuis Rabat sur le saint lent et les matières du Maghreb."
+    }
+  ],
+  "homepage": {
+    "metadata": {
+      "title": "Maison de soin pour les ongles — à Rabat",
+      "description": "Pack FemiGlow — manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir. Édité à Rabat.",
+      "og_title": "FemiGlow — Maison de soin pour les ongles",
+      "og_description": "Manucure japonaise halal. Deux gestes, un polissoir, cinq minutes par soir."
+    },
+    "hero": {
+      "kicker": "Maison de Rabat",
+      "title": "Le pack FemiGlow. Deux gestes, un éclat révélé.",
+      "subtitle": "Manucure japonaise halal, pensée à Rabat. Sans vernis, sans abrasion.",
+      "cta_primary": "Découvrir le rituel",
+      "cta_secondary": "Recevoir le pack",
+      "image_alt": "Coffret pastel FemiGlow ouvert, pot paste sauge et pot powder rose poudré, polissoir bleu ciel, lumière naturelle de fin de matinée"
+    },
+    "gestes": {
+      "kicker": "Le rituel",
+      "title": "Cinq gestes, cinq minutes.",
+      "paste_titre": "Paste",
+      "paste_duree": "2 minutes",
+      "paste_description": "Pâte crème onctueuse, posée sur ongle sec. Filme, lisse, prépare.",
+      "powder_titre": "Powder",
+      "powder_duree": "2 minutes",
+      "powder_description": "Poudre fine blanche, déposée sur la paste. Absorbe, lustre, réveille.",
+      "polish_titre": "Polish & Shine",
+      "polish_duree": "1 minute",
+      "polish_description": "Polissoir Step 4 passé en mouvements lents. La brillance naturelle apparaît."
+    },
+    "manifeste": {
+      "kicker": "Manifeste",
+      "title": "La beauté lente est une attention.",
+      "statement_1": "Nous croyons que les ongles révèlent ce qu’on leur prête. Le geste, le temps, la patience.",
+      "statement_2": "Cinq minutes par jour. Deux gestes et un polissoir. Aucune démonstration."
+    },
+    "avis_kicker": "Voix",
+    "avis_title": "Celles qui ont essayé.",
+    "avis_items": [
+      {
+        "key": "salma",
+        "quote": "Trois mois sans casse. Cinq minutes par soir suffisent.",
+        "first_name": "Salma",
+        "context": "Casablanca",
+        "initiee_depuis": "Janvier 2025"
+      },
+      {
+        "key": "yasmine",
+        "quote": "Le rituel rythme ma fin de journée. C’est devenu un moment pour moi.",
+        "first_name": "Yasmine",
+        "context": "Rabat"
+      },
+      {
+        "key": "ines",
+        "quote": "La paste donne un fini qui me ressemble. Naturel, sans vernis.",
+        "first_name": "Inès",
+        "context": "Marrakech"
+      }
+    ]
+  },
+  "kit": {
+    "product": {
+      "name": "Pack FemiGlow",
+      "tagline": "Manucure japonaise. Deux gestes, un polissoir, un éclat.",
+      "description": "Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.",
+      "image_alt_primary": "Pack FemiGlow ouvert sur fond pastel — pot paste vert sauge, pot powder rose poudré, polissoir Step 4 bleu ciel, vague rose poudré, typographie FemiGlow",
+      "image_alt_secondary": "Mains aux ongles nus, courts à moyens, naturellement brillants après le rituel paste-powder-polish",
+      "shipping_estimate": "Rabat : 24 h. Maroc : 48 à 72 h. Livraison offerte."
+    },
+    "composition": {
+      "section": {
+        "kicker": "La composition",
+        "title": "Trois objets, trois gestes.",
+        "description": "Le kit tient dans une main. Chaque pièce a sa place dans le geste, sa place sur la table de chevet, sa place dans la saison."
+      },
+      "paste": {
+        "name": "1 Paste",
+        "sensation": "Tiède au contact.",
+        "short_description": "Pâte crème onctueuse. Filme la plaque sans l’étouffer. Une noisette suffit.",
+        "volume": "15 g",
+        "usage_hint": "une noisette filme dix doigts",
+        "narrative": "12 % de cire d’abeille fondue à basse température par la coopérative apicole du Moyen Atlas. Trois minutes de pose, le fini est mat.",
+        "ingredient": {
+          "cire": {
+            "name": "Cire d’abeille",
+            "function": "Filmogène naturel",
+            "origin": "Coopérative apicole, Atlas marocain",
+            "inci_definition": "Nom officiel de la cire d’abeille pure. Filme l’ongle sans le sceller, laisse respirer la plaque."
+          },
+          "jojoba": {
+            "name": "Huile de jojoba",
+            "function": "Hémisphage des cuticules",
+            "origin": "Cultures biologiques, Souss-Massa",
+            "inci_definition": "Cire végétale liquide, proche du sébum naturel. Assouplit les cuticules sans graisser."
+          },
+          "tocopherol": {
+            "name": "Tocophérol",
+            "function": "Antioxydant",
+            "origin": "Origine végétale, Europe",
+            "inci_definition": "Vitamine E d’origine végétale. Préserve les huiles de la formule du rancissement."
+          }
+        },
+        "certification": {
+          "cosmos_label": "Cosmos Organic",
+          "cosmos_body": "Ecocert",
+          "vegan_label": "Vegan",
+          "vegan_body": "EVE Vegan"
+        }
+      },
+      "powder": {
+        "name": "2 Powder",
+        "sensation": "Glisse, ne grise pas.",
+        "short_description": "Poudre fine blanche, déposée sur la paste. Absorbe l’excès, lustre la surface.",
+        "volume": "8 g",
+        "usage_hint": "une pincée lustre toute la main",
+        "narrative": "Poudre minérale fine, déposée juste après la paste. Le talc absorbe le surplus, la silice lustre la surface. Pas de blanc, pas de gris.",
+        "ingredient": {
+          "talc": {
+            "name": "Talc cosmétique",
+            "function": "Matifiant minéral",
+            "inci_definition": "Silicate de magnésium pur, lavé et tamisé. Matifie sans gercer la plaque."
+          },
+          "riz": {
+            "name": "Poudre de riz",
+            "function": "Absorbant doux",
+            "origin": "Asie biologique",
+            "inci_definition": "Amidon de riz finement broyé. Absorbe le surplus de paste sans dessécher."
+          },
+          "silice": {
+            "name": "Silice",
+            "function": "Texture & glissant",
+            "origin": "Origine minérale, Europe",
+            "inci_definition": "Forme cosmétique du silicate. Donne la glisse et révèle la brillance au polissage."
+          }
+        }
+      },
+      "polissoir": {
+        "name": "Polissoir Step 4 — Polish & Shine",
+        "short_description": "Polissoir rectangulaire bleu ciel. Trois faces, trois grains. Révèle la brillance naturelle.",
+        "volume": "90 mm",
+        "sensation": "La lumière revient à la surface.",
+        "usage_hint": "six mois de polissage doux",
+        "narrative": "Polissoir trois faces, du plus rugueux au plus doux. La dernière face révèle la brillance, sans solvant ni vernis. Se rince à l’eau tiède.",
+        "ingredient": {
+          "mousse": {
+            "name": "Mousse polyuréthane haute densité"
+          },
+          "kaolin": {
+            "name": "Poudre de kaolin polissant",
+            "function": "Argile douce",
+            "origin": "Carrière, Marrakech"
+          }
+        }
+      }
+    },
+    "comparatif": {
+      "title_vernis": "Vernis classique",
+      "title_rituel": "Pack FemiGlow",
+      "row": {
+        "preparation": {
+          "axis": "Préparation",
+          "vernis": "Dégraissage à l’acétone, surface lisse forcée.",
+          "rituel": "Nettoyage doux, observation de la plaque, sans solvant agressif."
+        },
+        "tenue": {
+          "axis": "Tenue",
+          "vernis": "5 à 7 jours sur ongle préparé, retouches fréquentes.",
+          "rituel": "Pas de tenue colorée : l’ongle reste tel qu’il est, soutenu jour après jour."
+        },
+        "recuperation": {
+          "axis": "Récupération",
+          "vernis": "Ongle déshydraté sous la couche, parfois fragilisé.",
+          "rituel": "Plaque hydratée, cuticules souples, polissage au kaolin Step 4."
+        },
+        "cout": {
+          "axis": "Coût annuel",
+          "vernis": "Vernis + dissolvant + cures réparatrices, env. 1 500 dh.",
+          "rituel": "Un pack FemiGlow à 199 dh tient quatre à cinq mois. Soit environ 500 dh par an."
+        },
+        "impact": {
+          "axis": "Impact matière",
+          "vernis": "Solvants volatils, formules à base pétrochimique fréquente.",
+          "rituel": "Cire d’abeille, jojoba, talc minéral, riz, kaolin. Certification Cosmos Organic."
+        },
+        "temps": {
+          "axis": "Temps quotidien",
+          "vernis": "Application 20 min, séchage long, retouches.",
+          "rituel": "Cinq minutes par jour, geste lent, sans séchage forcé."
+        }
+      },
+      "kicker": "Comparatif",
+      "title": "Vernis classique et rituel FemiGlow.",
+      "description": "Sans dénigrer, deux approches différentes. À chacune sa place dans une vie, à chacune ses contraintes. Lisez à voix haute : chaque ligne se tient."
+    },
+    "faq": {
+      "section": {
+        "kicker": "Questions",
+        "title": "Les questions qu’on nous pose.",
+        "description": "Les réponses sont courtes, précises, vérifiables. Si une question manque, écrivez-nous : nous l’ajouterons."
+      },
+      "items": [
+        {
+          "key": "duree_pack",
+          "question": "Combien de temps dure un pack ?",
+          "answer": "En usage quotidien, le pack tient quatre à cinq mois. La paste se vide en premier, la powder suit. Le polissoir dure environ un an. Nous proposons des recharges à partir de l’automne 2026."
+        },
+        {
+          "key": "frequence",
+          "question": "À quelle fréquence appliquer ?",
+          "answer": "Tous les soirs si vous le pouvez, en cinq minutes. Si vous sautez un jour, ce n’est pas grave : la maison accueille la pause comme elle accueille le retour."
+        },
+        {
+          "key": "compatibilite_vernis",
+          "question": "Puis-je continuer à porter du vernis ?",
+          "answer": "Le rituel s’accommode du vernis même s’il est pensé pour s’en passer. Appliquez la paste et la powder les soirs sans vernis. La plaque respire, le rituel installe sa lenteur."
+        },
+        {
+          "key": "grossesse",
+          "question": "Le rituel convient-il pendant la grossesse ?",
+          "answer": "Toutes les formules sont sans solvants volatils, sans phtalates, sans toluene. Nous recommandons d’échanger avec votre médecin : le soin se construit en confiance."
+        },
+        {
+          "key": "expedition",
+          "question": "Quels sont les délais de livraison ?",
+          "answer": "Rabat : 24 h. Reste du Maroc : 48 à 72 h. Livraison offerte. International : nous étudions chaque destination, l’envoi se fait par DHL avec suivi."
+        },
+        {
+          "key": "retours",
+          "question": "Puis-je retourner le pack ?",
+          "answer": "Oui, sous trente jours, même entamé. Vous nous écrivez deux lignes à info@femiglow-maroc.com, nous reprenons le pack. Remboursement sous cinq jours ouvrés."
+        },
+        {
+          "key": "allergies",
+          "question": "Et si je suis allergique à un ingrédient ?",
+          "answer": "Chaque formule liste son INCI complet sur cette page et sur l’étiquette du pot. En cas de doute, nous vous adressons un échantillon avant l’envoi du pack complet."
+        },
+        {
+          "key": "adolescentes",
+          "question": "Le rituel est-il adapté aux adolescentes ?",
+          "answer": "Oui, à partir de quatorze ans. Les formules sont douces, les gestes simples. C’est souvent un premier rendez-vous avec le soin lent."
+        }
+      ]
+    },
+    "hands_testimonials": [
+      {
+        "key": "amal",
+        "quote": "Trois mois, et l’ongle a retrouvé sa nervure. J’ai cessé de le forcer.",
+        "first_name": "Amal",
+        "city": "Rabat",
+        "initiee_depuis": "Février 2026"
+      },
+      {
+        "key": "lina",
+        "quote": "Cinq minutes le soir, c’est devenu un signal de fin de journée.",
+        "first_name": "Lina",
+        "city": "Casablanca"
+      },
+      {
+        "key": "sara",
+        "quote": "Je ne reviendrai pas au vernis. La main suffit à elle-même.",
+        "first_name": "Sara",
+        "city": "Marrakech"
+      }
+    ],
+    "hands": {
+      "kicker": "Trois mains",
+      "title": "Trois mains, trois saisons.",
+      "description": "Photos non retouchées, prises chez nos initiées au bout de plusieurs mois de rituel. La plaque retrouve sa nervure, sans recette miracle."
+    },
+    "reassurances": {
+      "shipping": {
+        "label": "Livraison offerte",
+        "detail": "Rabat 24 h — Maroc 48 à 72 h"
+      },
+      "return": {
+        "label": "Retour 30 jours",
+        "detail": "Même entamé"
+      },
+      "payment": {
+        "label": "Paiement à la livraison",
+        "detail": "Vérifiez avant de payer"
+      }
+    },
+    "ingredients_section": {
+      "kicker": "Le détail",
+      "title": "La composition lue ligne par ligne.",
+      "description": "Tout est dit : noms d’usage, INCI, fonction, origine, concentration. Pas d’angle mort, pas de promesse cachée derrière une formule."
+    },
+    "hero": {
+      "kicker": "Le rituel",
+      "savings": "Économie {savings} MAD",
+      "cta_commander": "Commander le rituel"
+    },
+    "commander": {
+      "kicker_default": "Commander le rituel",
+      "title_default": "Trois gestes, livrés chez vous.",
+      "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison gratuite en 24-48 heures."
+    },
+    "pivot_final": {
+      "kicker": "Le geste",
+      "title": "Posez le geste.",
+      "body": "Le rituel commence quand vous le décidez. Cinq minutes le soir, une saison, et la plaque retrouve sa cadence.",
+      "cta_secondary": "Lire encore"
+    },
+    "product_feed": {
+      "hero": {
+        "kicker": "Le pack",
+        "title": "Le rituel s’installe en deux gestes et un polissoir.",
+        "lead": "Trois objets dans la main, deux gestes dans la soirée. La paste filme, la powder lustre, le polissoir Step 4 révèle — manucure japonaise, pensée à Rabat.",
+        "price_prefix": "Tout compris :",
+        "cta_label": "Commander le rituel",
+        "cta_microcopy": "Paste · Powder · Polissoir Step 4 inclus · Livraison offerte au Maroc · Paiement à la livraison · Retour 30 j."
+      },
+      "compare_at_aria": "Prix non packagé {price}",
+      "value": {
+        "paste": "1 Paste · 30 ml",
+        "powder": "2 Powder · 30 g",
+        "polissoir": "Polissoir 4 zones",
+        "notice": "Notice rituel + carte",
+        "notice_offert": "offert",
+        "livraison": "Livraison au Maroc"
+      },
+      "steps": {
+        "header": {
+          "kicker": "En tout",
+          "total_duration": "5 minutes le soir",
+          "lead": "Quatre gestes lents, une fois par semaine."
+        },
+        "post_cta": {
+          "label": "Démarrer le rituel"
+        },
+        "preparation": {
+          "kicker": "Préparation",
+          "title": "Préparez vos ongles",
+          "description": "On nettoie, on sèche, on lime légèrement — la plaque s’ouvre au soin.",
+          "duration": "30 s"
+        },
+        "paste": {
+          "kicker": "Geste 1",
+          "title": "Appliquez la paste",
+          "description": "Une noisette de paste vert sauge, le polissoir glisse, la cire entre dans la kératine.",
+          "duration": "1 min"
+        },
+        "powder": {
+          "kicker": "Geste 2",
+          "title": "Appliquez la powder",
+          "description": "On dépose la powder rose poudré, on lustre lentement, la lumière revient à la surface.",
+          "duration": "2 min"
+        },
+        "step4": {
+          "kicker": "Polissoir Step 4",
+          "title": "Polish & Shine",
+          "description": "On finit au polissoir bleu ciel — l’ongle devient miroir, sans vernis, sans abrasion.",
+          "duration": "1 min",
+          "badge_result": "Résultat"
+        }
+      },
+      "claims": {
+        "naturel": {
+          "label": "Ingrédients d’origine naturelle",
+          "detail": "Cire d’abeille, jojoba, kaolin, poudre de riz — manucure japonaise."
+        },
+        "agressif": {
+          "label": "Sans produits chimiques agressifs",
+          "detail": "Ni acétone, ni phtalates, ni toluene — la plaque respire."
+        },
+        "eclatants": {
+          "label": "Pour des ongles forts et éclatants",
+          "detail": "Kératine renforcée brillance lustrée au polissoir Step 4."
+        }
+      },
+      "social_proof": {
+        "count_label_geo": "{count} maisons en France",
+        "fallback_quote": "Cinq minutes le soir, c’est devenu un signal de fin de journée.",
+        "fallback_author": "Lina, Rabat"
+      }
+    },
+    "pack_image_alt": "Kit FemiGlow — paste, powder et polissoir Step 4, posés sur fond crème",
+    "pack_visual": {
+      "label_promesses": "Promesses produit",
+      "label_avis_clientes": "Avis clientes"
+    }
+  },
+  "maison": {
+    "metadata": {
+      "title": "La maison — Rabat",
+      "description": "FemiGlow, maison de soin pour les ongles éditée à Rabat par notre fondatrice, biologiste et formulatrice. L’origine, l’atelier au 25 bis avenue Patrice Lumumba, les matières, les engagements halal et locaux.",
+      "og_title": "La maison FemiGlow — Rabat",
+      "og_description": "Maison de soin pour les ongles, éditée à Rabat. Manucure japonaise halal.",
+      "og_alt": "FemiGlow — La maison"
+    },
+    "hero": {
+      "kicker": "La maison",
+      "title": "La maison d’éclat.",
+      "subtitle": "Une maison de soin pour les ongles, éditée à Rabat. Lente, attentive, située au 25 bis avenue Patrice Lumumba.",
+      "cta_label": "Découvrir l’atelier →"
+    },
+    "origine": {
+      "kicker": "L’origine",
+      "titre": "Une attention partie d’un constat simple.",
+      "paragraph_1": "FemiGlow est né d’un constat simple : les ongles tiennent quand on leur prête le temps qu’ils demandent. Pas plus, pas moins. Cinq minutes le soir, deux gestes mesurés et un polissoir.",
+      "paragraph_2": "L’idée a pris forme à Rabat, dans un atelier de l’avenue Patrice Lumumba où la lumière tombe juste avant 18 heures. Trois métiers se sont assis autour d’une table : la formulation, la matière, l’écriture. Une seule conviction — la beauté lente est une attention, jamais une performance.",
+      "paragraph_3": "Notre fondatrice est biologiste. Elle a suivi plusieurs formations en fabrication cosmétique avant d’éditer ses premières marques de soins naturels. Aujourd’hui, elle anime des formations dans le même atelier où FemiGlow est conçu. Le rituel n’est pas une découverte — c’est une transmission."
+    },
+    "fondatrice": {
+      "kicker": "La fondatrice",
+      "titre": "Notre fondatrice, biologiste et formulatrice.",
+      "paragraph_1": "Notre fondatrice tient un master en biologie. Elle a suivi plusieurs formations spécialisées en fabrication de produits cosmétiques. Avant FemiGlow, elle a édité plusieurs marques de soins naturels — et chacune lui a appris quelque chose sur le geste, la matière, la traçabilité.",
+      "paragraph_2": "Elle anime aujourd’hui des formations dans l’atelier de Rabat, ouvertes aux jeunes formulatrices marocaines. FemiGlow est sa maison la plus lente."
+    },
+    "atelier": {
+      "adresse": "25 bis avenue Patrice Lumumba",
+      "quartier": "Rabat",
+      "description_1": "L’atelier tient dans deux pièces calmes : un plan de travail clair, une bibliothèque d’ouvrages techniques et de carnets, des échantillons de matières rangés par saison.",
+      "description_2": "On y formule en petites séries. On y reçoit notre fondatrice sur rendez-vous, le mardi et le jeudi, pour les formations et les consultations.",
+      "section": {
+        "kicker": "L’atelier",
+        "title": "Rabat, deux pièces calmes."
+      },
+      "gallery_label": "Voir la photo : {alt}"
+    },
+    "matieres": {
+      "section": {
+        "kicker": "Les matières",
+        "title": "Quatre matières, choisies une à une."
+      },
+      "items": [
+        {
+          "key": "cire",
+          "nom": "Cire d’abeille",
+          "origine": "Récoltée dans le Souss, en partenariat avec une coopérative familiale.",
+          "pourquoi": "Adoucit le sertissage de l’ongle et tient la paste sans la rigidifier."
+        },
+        {
+          "key": "jojoba",
+          "nom": "Huile de jojoba",
+          "origine": "Pressée à froid dans le Souss-Massa, filière marocaine.",
+          "pourquoi": "Cire liquide qui imite le sébum cutané — nourrit sans graisser."
+        },
+        {
+          "key": "kaolin",
+          "nom": "Kaolin polissant",
+          "origine": "Argile minière marocaine, carrière de Marrakech.",
+          "pourquoi": "Polit l’ongle sans l’assécher — c’est lui qui anime le polissoir Step 4."
+        },
+        {
+          "key": "riz",
+          "nom": "Poudre de riz",
+          "origine": "Cultures biologiques d’Asie, filière tracée.",
+          "pourquoi": "Absorbant doux — c’est elle qui donne à la powder sa finition mate juste avant la brillance."
+        }
+      ]
+    },
+    "engagements": {
+      "section": {
+        "kicker": "Les six engagements",
+        "title": "Six lignes qui ne bougent pas."
+      },
+      "items": [
+        {
+          "key": "sourcing",
+          "titre": "Sourcing direct",
+          "description": "Chaque matière est tracée jusqu’à son atelier d’origine. Aucun intermédiaire anonyme."
+        },
+        {
+          "key": "halal",
+          "titre": "Certification halal",
+          "description": "Chaque matière est tracée. Notre fabricant est audité par le Halal Cosmetics Council. Le label figure sur chaque pot et sur le polissoir."
+        },
+        {
+          "key": "vernis",
+          "titre": "Sans vernis",
+          "description": "Pas de résine plastique, pas de solvant fort. Le soin se voit à l’ongle, pas dans l’air."
+        },
+        {
+          "key": "rituel",
+          "titre": "Rituel lent",
+          "description": "Tout est calibré pour cinq minutes le soir. Plus court, c’est de la cosmétique. Plus long, c’est une corvée."
+        },
+        {
+          "key": "local",
+          "titre": "Local",
+          "description": "Conditionné, étiqueté, expédié depuis Rabat. Quand c’est possible, on garde la chaîne courte."
+        },
+        {
+          "key": "transmission",
+          "titre": "Transmission",
+          "description": "Notre équipe forme régulièrement des esthéticiennes et des formulatrices à la manucure japonaise, dans l’atelier de Rabat."
+        }
+      ]
+    },
+    "crosslinks": {
+      "rituel": {
+        "kicker": "Le rituel",
+        "titre": "Lire le rituel"
+      },
+      "journal": {
+        "kicker": "Le journal",
+        "titre": "Le journal"
+      },
+      "kit": {
+        "kicker": "Le pack",
+        "titre": "Voir le pack"
+      }
+    }
+  },
+  "rituel": {
+    "metadata": {
+      "title": "Le rituel — manucure japonaise halal, deux gestes",
+      "description": "Origine japonaise, sciences du soin, interview de notre fondatrice à Rabat. Le rituel FemiGlow raconté sans précipitation.",
+      "og_title": "Le rituel FemiGlow",
+      "og_description": "Deux gestes, un polissoir, une méthode lente, racontée à Rabat."
+    },
+    "howto": {
+      "name": "Le rituel FemiGlow",
+      "description": "Deux gestes et un polissoir en cinq minutes pour le soin lent des ongles, expliqués pas à pas — manucure japonaise halal."
+    },
+    "hero": {
+      "kicker": "Le rituel",
+      "title": "Manucure japonaise. Deux gestes. Un éclat lent.",
+      "subtitle": "Une méthode lente, racontée à Rabat.",
+      "image_alt": "Mains au repos sur un drap de lin clair, lumière oblique de fin de matinée"
+    },
+    "origine": {
+      "kicker": "Origine",
+      "titre": "Une attention venue du Japon, transmise à Rabat.",
+      "paragraph_1": "Au Japon, le soin de la main n’est pas un produit : c’est une attention quotidienne, lente, sans déclaration. La manucure japonaise — connue aussi sous les noms « kawaii » ou « chigiri » — remonte au début du XXᵉ siècle. Elle révèle la brillance naturelle de l’ongle par polissage, sans vernis.",
+      "paragraph_2": "Notre fondatrice a rapporté ce geste d’un voyage de formation. Elle l’a réinscrit dans un référentiel marocain : matières locales, certification halal, atelier au 25 bis avenue Patrice Lumumba, à Rabat.",
+      "paragraph_3": "Le résultat tient en cinq minutes par jour. Pas de promesse, pas de cure. Une habitude qui s’installe, comme on dépose une tasse sur une table en bois."
+    },
+    "video": {
+      "transcript": "La grande tendance clean girl pour les nails, c’est la manucure japonaise. Par contre, il y a quelque chose que vous devez absolument savoir...",
+      "duration_display": "90″",
+      "provenance": "Filmé à l’atelier de Rabat, mars 2026.",
+      "chapter": {
+        "paste": "Paste",
+        "powder": "Powder",
+        "step4": "Step 4",
+        "polissage": "Polissage"
+      }
+    },
+    "sciences": {
+      "section": {
+        "kicker": "Sciences du soin"
+      },
+      "title": "Trois matières, trois usages.",
+      "essai": {
+        "cire": {
+          "titre": "La cire d’abeille",
+          "paragraphe": "Filme la plaque sans l’étouffer. Une étude clinique sur 12 semaines a observé une réduction des microfissures dorsales chez les sujets exposés au froid sec¹."
+        },
+        "kaolin": {
+          "titre": "Le kaolin polissant",
+          "paragraphe": "Argile blanche douce. Quand l’ongle est lissé, le polissoir Step 4 ne grave pas — il révèle la brillance naturelle de la kératine²."
+        },
+        "halal": {
+          "titre": "Le référentiel halal",
+          "paragraphe": "Traçabilité des matières, absence d’alcool dénaturé, absence de dérivés animaux non conformes. Le label suit un audit du Halal Cosmetics Council³."
+        }
+      },
+      "source_1": "Tanaka H. (2021). Beeswax-based barrier creams in cold-induced nail fragility. Journal of Cosmetic Dermatology 20(4).",
+      "source_2": "Benyahia L. (2019). Kaolin clay polishing in non-invasive nail care. Annales de Dermatologie et de Vénéréologie 146(8).",
+      "source_3": "Halal Cosmetics Council (2023). Standards for halal cosmetic ingredient sourcing and certification — public framework."
+    },
+    "interview": {
+      "section": {
+        "kicker": "Conversation"
+      },
+      "introduction": "notre fondatrice a posé son atelier au 25 bis avenue Patrice Lumumba, à Rabat. Elle y formule, et elle y enseigne — d’autres marques de cosmétiques naturels passent par ses mains. Nous lui avons demandé comment le rituel s’enseigne.",
+      "nom_interviewee": "Notre fondatrice",
+      "questions": [
+        {
+          "key": "q1",
+          "question": "Vous êtes biologiste de formation. Pourquoi avoir choisi le geste plutôt que le laboratoire ?",
+          "reponse": "Le laboratoire m’a appris l’INCI. Le geste m’a appris la patience. Les deux se complètent — et c’est ce que je transmets dans mes formations à Rabat."
+        },
+        {
+          "key": "q2",
+          "question": "Pourquoi la manucure japonaise ?",
+          "reponse": "Parce qu’elle ne triche pas. Elle révèle au lieu de couvrir. Le vernis colore — le rituel polit."
+        },
+        {
+          "key": "q3",
+          "question": "Qu’est-ce que le halal change dans une formulation ?",
+          "reponse": "Tout. Origine des matières, traçabilité, absence d’alcool dénaturé, absence de gélatine animale. Ce n’est pas un argument marketing — c’est un référentiel de fabrication."
+        },
+        {
+          "key": "q4",
+          "question": "Cinq minutes par jour, c’est peu. Pourquoi pas plus ?",
+          "reponse": "Parce que l’ongle pousse de 0,1 mm par jour. Cinq minutes suffisent à l’accompagner. Plus serait inutile. Moins serait infidèle."
+        },
+        {
+          "key": "q5",
+          "question": "Que conseilleriez-vous à une initiée qui commence ?",
+          "reponse": "Commencez par la paste. Pendant une semaine, rien d’autre. Vous verrez ce que vos ongles vous racontent. Le polissoir arrive ensuite."
+        }
+      ]
+    },
+    "pivot": {
+      "phrase": "Maintenant que vous savez. Recevoir le pack.",
+      "cta_label": "Recevoir le pack — 199 dh"
+    },
+    "journal_cross": {
+      "kicker": "Pour aller plus loin",
+      "title": "Trois lectures de la maison."
+    }
+  },
+  "contact": {
+    "metadata": {
+      "title": "Contact — la maison vous écrit",
+      "description": "Une question sur le rituel, le pack, une commande, une formation ? Écrivez à la maison FemiGlow depuis Rabat (25 bis avenue Patrice Lumumba).",
+      "og_description": "La maison vous répond sous 24 heures ouvrées."
+    },
+    "hero": {
+      "kicker": "Écrire à la maison",
+      "title": "Contact.",
+      "subtitle": "Une question sur le rituel, le kit, une commande, un échange professionnel ?"
+    },
+    "form": {
+      "section_title": "Écrire à la maison.",
+      "type": {
+        "question": "Une question",
+        "order": "Une commande",
+        "professional": "Un échange professionnel",
+        "legend": "Quel type de message ?"
+      },
+      "field": {
+        "name": "Votre prénom",
+        "email": "Votre email",
+        "phone": "Téléphone",
+        "company": "Raison sociale",
+        "role": "Votre fonction",
+        "order_number": "Numéro de commande",
+        "order_number_hint": "Le numéro figure dans votre email de confirmation.",
+        "message": "Votre message",
+        "message_hint": "Au moins 20 caractères, pour que nous puissions répondre justement."
+      },
+      "honeypot_label": "Site web (ne pas remplir)",
+      "newsletter_consent": "Je souhaite recevoir la lettre saisonnière. Une lettre par saison. Aucun envoi commercial.",
+      "submit": "Envoyer mon message",
+      "success": {
+        "title": "Bien reçu. La maison vous répond.",
+        "body": "Nous lisons chaque message avec attention. Réponse sous 24 heures ouvrées."
+      },
+      "error": {
+        "body": "L’envoi n’a pas abouti. Réessayez ou écrivez-nous à {email}."
+      }
+    },
+    "faq": {
+      "kicker": "Foire aux questions",
+      "title": "Réponses rapides.",
+      "items": [
+        {
+          "key": "duree",
+          "question": "Combien de temps dure le rituel ?",
+          "answer": "Cinq minutes par soir, mains posées. Deux gestes — paste, powder — puis le polissoir Step 4 en finition. La maison conseille un passage par jour pour installer la cadence."
+        },
+        {
+          "key": "fragiles",
+          "question": "Mes ongles sont fragiles, est-ce indiqué ?",
+          "answer": "Oui. Les matières sont choisies pour réparer sans agresser : cire d’abeille, jojoba, talc cosmétique, poudre de riz, kaolin polissant. Aucun acétone, aucun durcisseur. Évitez seulement en cas d’allergie connue à l’un des ingrédients ; la liste complète figure sur la page Pack."
+        },
+        {
+          "key": "livraison",
+          "question": "Quels sont les délais de livraison ?",
+          "answer": "Rabat : 24 heures. Casablanca et Salé : 24 à 48 heures. Reste du Maroc : 48 à 72 heures. Livraison offerte au Maroc, sans seuil. À l’international, écrivez-nous, nous étudions chaque envoi à la main."
+        },
+        {
+          "key": "formation",
+          "question": "Comment suivre une formation avec notre équipe ?",
+          "answer": "Notre fondatrice anime des formations à la manucure japonaise et à la fabrication cosmétique dans l’atelier de Rabat. Écrivez à info@femiglow-maroc.com en précisant votre profil (esthéticienne, formulatrice, école). Nous répondons sous trois jours."
+        },
+        {
+          "key": "echantillon",
+          "question": "Puis-je recevoir un échantillon avant achat ?",
+          "answer": "En cas d’hésitation pour cause d’allergie, nous adressons un échantillon de la paste avant l’envoi du pack complet. Écrivez-nous en précisant l’ingrédient qui vous inquiète."
+        }
+      ]
+    },
+    "crosslinks": {
+      "rituel": "Lire le rituel",
+      "kit": "Voir le pack",
+      "maison": "La maison"
+    },
+    "direct": {
+      "kicker_write": "Écrire",
+      "kicker_atelier": "Atelier",
+      "response_time": "Réponse sous 24 heures ouvrées, depuis Rabat.",
+      "appointment_only": "Sur rendez-vous."
+    }
+  },
+  "ritual_module": {
+    "kicker": "Les voix de la maison",
+    "empty_title": "La maison écoute.",
+    "empty_body": "Soyez la première à partager votre rituel.",
+    "headline_one": "Une initiée a partagé son rituel. Elle le reprendrait.",
+    "headline_many": "{total} initiées ont partagé. {oui} reprendraient le rituel.",
+    "read_all": "Lire les {total} rituels partagés"
+  }
+}

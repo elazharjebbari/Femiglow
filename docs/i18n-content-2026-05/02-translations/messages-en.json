@@ -1,0 +1,1275 @@
+{
+  "_meta": {
+    "locale": "en",
+    "direction": "ltr",
+    "schema_version": "1.0",
+    "completeness_pct": 100,
+    "total_keys": 766,
+    "last_updated": "2026-05-27",
+    "voice_check": "International English, sober editorial tone",
+    "translator_notes": "FR proper nouns ('Maison FemiGlow', 'rituel') preserved where editorial. Sentence case for titles. No emoji, no marketing superlatives.",
+    "reviewer": "translator_en@femiglow.local (pending)"
+  },
+  "common": {
+    "back": "Back to home",
+    "close": "Close",
+    "cancel": "Cancel",
+    "read": "Read",
+    "continue": "Continue browsing",
+    "remove": "Remove",
+    "loading": "Reading your cart…",
+    "loading_order": "Reading your order…",
+    "loading_cart_recap": "Reading the summary…",
+    "reference": "Reference:",
+    "reload": "Reload the page",
+    "send": "Send my message",
+    "facultative": "(optional)",
+    "confirm_consent": "I agree that my message may be read by Maison FemiGlow in order to reply.",
+    "sources": "Sources",
+    "dotted_sources": "Sources · {count}"
+  },
+  "navigation": {
+    "home": "The maison",
+    "kit": "The pack",
+    "kit_alt": "The kit",
+    "rituel": "The ritual",
+    "journal": "The journal",
+    "contact": "Contact",
+    "account": "My account",
+    "cart": "Cart",
+    "menu_summary": "Navigation summary",
+    "menu_label": "Summary",
+    "menu_hint_arrow": "See the pack below",
+    "menu_season_label": "Spring season — Rabat",
+    "menu_season_label_short": "Spring · Rabat",
+    "menu_signature": "Rabat, spring season.",
+    "menu": {
+      "rituel_description": "Halal Japanese manicure. Two gestures, one buffer.",
+      "kit_description": "Paste, powder, Step 4 buffer. Five minutes each evening.",
+      "journal_description": "Notes from the atelier, in slow reading.",
+      "maison_description": "Rabat, our founder's atelier, the hands at work.",
+      "contact_description": "A question, a special request."
+    },
+    "header_logo_aria": "FemiGlow — Home",
+    "footer": {
+      "column_rituel": "The ritual",
+      "column_assistance": "Assistance",
+      "column_legal": "Legal",
+      "link_journal": "Journal",
+      "link_maison": "Maison",
+      "link_livraison": "Shipping",
+      "link_retours": "Returns",
+      "tagline": "Moroccan maison of nail care. The ritual, in five minutes.",
+      "address": "FemiGlow · 25 bis avenue Patrice Lumumba, Rabat",
+      "copyright": "© {year} FemiGlow — Rabat. All rights reserved.",
+      "copyright_minimal": "© {year} FemiGlow — Rabat."
+    },
+    "commerce_header": {
+      "back_home": "Back to the maison"
+    },
+    "checkout_header": {
+      "leave_aria": "Leave the order",
+      "payment_on_delivery": "Cash on delivery",
+      "back_cart": "Back to cart",
+      "back_cart_short": "Cart"
+    },
+    "footer_minimal": {
+      "cgv": "Terms of service",
+      "mentions": "Legal notices"
+    }
+  },
+  "marketing": {
+    "home": {
+      "metadata": {
+        "title": "Maison of nail care — in Rabat",
+        "description": "FemiGlow pack — halal Japanese manicure. Two gestures, one buffer, five minutes each evening. Edited in Rabat.",
+        "og_title": "FemiGlow — Maison of nail care",
+        "og_description": "Halal Japanese manicure. Two gestures, one buffer, five minutes each evening."
+      },
+      "fallback_og_alt": "FemiGlow",
+      "hero": {
+        "kicker": "Maison of Rabat",
+        "title": "The FemiGlow pack. Two gestures, a quiet glow.",
+        "subtitle": "Halal Japanese manicure, designed in Rabat. No polish, no abrasion.",
+        "cta_primary": "Discover the ritual",
+        "cta_secondary": "Receive the pack",
+        "image_alt": "Open FemiGlow pastel box, sage paste jar and powdered rose powder jar, sky blue buffer, late-morning natural light"
+      },
+      "gestes": {
+        "kicker": "The ritual",
+        "title": "Five gestures, five minutes.",
+        "paste_titre": "Paste",
+        "paste_duree": "2 minutes",
+        "paste_description": "Smooth cream paste, laid on a dry nail. Films, smooths, prepares.",
+        "powder_titre": "Powder",
+        "powder_duree": "2 minutes",
+        "powder_description": "Fine white powder, set over the paste. Absorbs, polishes, wakes.",
+        "polish_titre": "Polish & Shine",
+        "polish_duree": "1 minute",
+        "polish_description": "Step 4 buffer drawn in slow motions. The natural shine appears."
+      },
+      "manifeste": {
+        "kicker": "Manifesto",
+        "title": "Slow beauty is an attention.",
+        "statement_1": "We believe nails reveal whatever is given to them. The gesture, the time, the patience.",
+        "statement_2": "Five minutes a day. Two gestures and a buffer. Nothing to prove."
+      },
+      "avis": {
+        "salma": {
+          "quote": "Three months without breakage. Five minutes each evening is enough.",
+          "first_name": "Salma",
+          "context": "Casablanca",
+          "initiee_depuis": "January 2025"
+        },
+        "yasmine": {
+          "quote": "The ritual sets the rhythm of my late day. It has become a moment for me.",
+          "first_name": "Yasmine",
+          "context": "Rabat"
+        },
+        "ines": {
+          "quote": "The paste gives a finish that suits me. Natural, no polish.",
+          "first_name": "Inès",
+          "context": "Marrakech"
+        },
+        "kicker_default": "Voices",
+        "title_default": "Those who have tried."
+      }
+    },
+    "kit": {
+      "metadata": {
+        "title_fallback": "The FemiGlow pack — Japanese manicure",
+        "description_fallback": "FemiGlow pack — Japanese manicure box in two gestures. Sage green paste, powdered rose powder and Step 4 Polish & Shine buffer. Designed in Rabat by our team. No polish, no abrasion. Free shipping in Morocco.",
+        "og_alt": "The FemiGlow pack — paste, powder, Step 4 buffer"
+      },
+      "product": {
+        "name": "FemiGlow pack",
+        "tagline": "Japanese manicure. Two gestures, one buffer, one quiet glow.",
+        "description": "The FemiGlow pack brings together two jars — a smoothing paste and a polishing powder — and a Step 4 Polish & Shine buffer. A Japanese manicure, formulated in Rabat by our team. No polish. No abrasion. Five minutes a day is enough.",
+        "image_alt_primary": "Open FemiGlow pack on a pastel background — sage green paste jar, powdered rose powder jar, sky blue Step 4 buffer, powdered rose wave, FemiGlow typography",
+        "image_alt_secondary": "Bare hands with short to medium nails, naturally shining after the paste-powder-polish ritual",
+        "shipping_estimate": "Rabat: 24 h. Morocco: 48 to 72 h. Free shipping."
+      },
+      "composition": {
+        "paste": {
+          "name": "1 Paste",
+          "sensation": "Warm to the touch.",
+          "short_description": "Smooth cream paste. Films the nail plate without sealing it. A hazelnut-sized amount is enough.",
+          "volume": "15 g",
+          "usage_hint": "one dab covers ten fingers",
+          "narrative": "12% beeswax melted at low temperature by the beekeeping cooperative of the Middle Atlas. Three minutes of contact, the finish is matte.",
+          "ingredient": {
+            "cire": {
+              "name": "Beeswax",
+              "function": "Natural film-former",
+              "origin": "Beekeeping cooperative, Moroccan Atlas",
+              "inci_definition": "Official name for pure beeswax. Films the nail without sealing it, lets the plate breathe."
+            },
+            "jojoba": {
+              "name": "Jojoba oil",
+              "function": "Cuticle softener",
+              "origin": "Organic crops, Souss-Massa",
+              "inci_definition": "Liquid plant wax, close to natural sebum. Softens cuticles without leaving an oily film."
+            },
+            "tocopherol": {
+              "name": "Tocopherol",
+              "function": "Antioxidant",
+              "origin": "Plant origin, Europe",
+              "inci_definition": "Plant-derived vitamin E. Protects the formula's oils from going rancid."
+            }
+          },
+          "certification": {
+            "cosmos_label": "Cosmos Organic",
+            "cosmos_body": "Ecocert",
+            "vegan_label": "Vegan",
+            "vegan_body": "EVE Vegan"
+          }
+        },
+        "powder": {
+          "name": "2 Powder",
+          "sensation": "Glides, never dulls.",
+          "short_description": "Fine white powder, set over the paste. Absorbs the excess, polishes the surface.",
+          "volume": "8 g",
+          "usage_hint": "a pinch polishes the whole hand",
+          "narrative": "Fine mineral powder, laid just after the paste. The talc absorbs the surplus, the silica polishes the surface. No white, no grey.",
+          "ingredient": {
+            "talc": {
+              "name": "Cosmetic talc",
+              "function": "Mineral mattifier",
+              "inci_definition": "Pure magnesium silicate, washed and sieved. Mattifies without cracking the nail plate."
+            },
+            "riz": {
+              "name": "Rice powder",
+              "function": "Gentle absorbent",
+              "origin": "Organic Asia",
+              "inci_definition": "Finely ground rice starch. Absorbs the surplus paste without drying."
+            },
+            "silice": {
+              "name": "Silica",
+              "function": "Texture & glide",
+              "origin": "Mineral origin, Europe",
+              "inci_definition": "Cosmetic form of silicate. Gives the glide and reveals the shine when buffed."
+            }
+          }
+        },
+        "polissoir": {
+          "name": "Step 4 buffer — Polish & Shine",
+          "short_description": "Sky blue rectangular buffer. Three sides, three grains. Reveals the natural shine.",
+          "volume": "90 mm",
+          "sensation": "Light returns to the surface.",
+          "usage_hint": "six months of gentle buffing",
+          "narrative": "Three-sided buffer, from the coarsest to the softest grain. The final side reveals the shine, with no solvent, no polish. Rinses under warm water.",
+          "ingredient": {
+            "mousse": {
+              "name": "High-density polyurethane foam"
+            },
+            "kaolin": {
+              "name": "Polishing kaolin powder",
+              "function": "Soft clay",
+              "origin": "Quarry, Marrakech"
+            }
+          }
+        },
+        "section": {
+          "kicker": "The composition",
+          "title": "Three objects, three gestures.",
+          "description": "The kit fits in one hand. Each piece has its place in the gesture, its place on the bedside table, its place in the season."
+        }
+      },
+      "comparatif": {
+        "title_vernis": "Classic polish",
+        "title_rituel": "FemiGlow pack",
+        "row": {
+          "preparation": {
+            "axis": "Preparation",
+            "vernis": "Acetone degreasing, smooth surface forced.",
+            "rituel": "Gentle cleansing, attentive reading of the plate, no aggressive solvent."
+          },
+          "tenue": {
+            "axis": "Hold",
+            "vernis": "5 to 7 days on prepared nails, frequent touch-ups.",
+            "rituel": "No coloured hold: the nail stays as it is, supported day by day."
+          },
+          "recuperation": {
+            "axis": "Recovery",
+            "vernis": "Dehydrated nail under the coat, sometimes weakened.",
+            "rituel": "Hydrated plate, supple cuticles, polishing with Step 4 kaolin."
+          },
+          "cout": {
+            "axis": "Annual cost",
+            "vernis": "Polish + remover + repair treatments, approx. 1,500 MAD.",
+            "rituel": "A 199 MAD FemiGlow pack lasts four to five months. About 500 MAD per year."
+          },
+          "impact": {
+            "axis": "Material footprint",
+            "vernis": "Volatile solvents, often petrochemical-based formulas.",
+            "rituel": "Beeswax, jojoba, mineral talc, rice, kaolin. Cosmos Organic certification."
+          },
+          "temps": {
+            "axis": "Daily time",
+            "vernis": "20 min application, long drying, touch-ups.",
+            "rituel": "Five minutes a day, a slow gesture, no forced drying."
+          }
+        },
+        "kicker": "Comparison",
+        "title": "Classic polish and the FemiGlow ritual.",
+        "description": "Without dismissing either, two different approaches. Each has its place in a life, each has its constraints. Read each line aloud: every one stands on its own."
+      },
+      "faq": {
+        "duree_pack": {
+          "question": "How long does a pack last?",
+          "answer": "In daily use, the pack lasts four to five months. The paste runs out first, the powder follows. The buffer lasts about a year. Refills will be available from autumn 2026."
+        },
+        "frequence": {
+          "question": "How often should I apply it?",
+          "answer": "Every evening if you can, in five minutes. If you skip a day, that is fine: the maison welcomes the pause just as it welcomes the return."
+        },
+        "compatibilite_vernis": {
+          "question": "Can I keep wearing polish?",
+          "answer": "The ritual accommodates polish, even though it is designed to do without. Apply the paste and the powder on the evenings without polish. The plate breathes, the ritual settles into its slowness."
+        },
+        "grossesse": {
+          "question": "Is the ritual suitable during pregnancy?",
+          "answer": "All formulas are free of volatile solvents, phthalates and toluene. We recommend speaking with your doctor: care is built in confidence."
+        },
+        "expedition": {
+          "question": "What are the shipping times?",
+          "answer": "Rabat: 24 h. Rest of Morocco: 48 to 72 h. Free shipping. International: we study each destination, shipping is by DHL with tracking."
+        },
+        "retours": {
+          "question": "Can I return the pack?",
+          "answer": "Yes, within thirty days, even opened. Send us two lines at info@femiglow-maroc.com and we will collect the pack. Refund within five working days."
+        },
+        "allergies": {
+          "question": "What if I am allergic to an ingredient?",
+          "answer": "Each formula lists its full INCI on this page and on the jar label. If in doubt, we send you a sample before shipping the full pack."
+        },
+        "adolescentes": {
+          "question": "Is the ritual suitable for teenagers?",
+          "answer": "Yes, from the age of fourteen. The formulas are gentle, the gestures simple. It is often a first encounter with slow care."
+        },
+        "section": {
+          "kicker": "Questions",
+          "title": "The questions we are asked.",
+          "description": "The answers are short, precise, verifiable. If a question is missing, write to us: we will add it."
+        }
+      },
+      "hands_testimonials": {
+        "amal": {
+          "quote": "Three months, and the nail has recovered its grain. I stopped forcing it.",
+          "first_name": "Amal",
+          "city": "Rabat",
+          "initiee_depuis": "February 2026"
+        },
+        "lina": {
+          "quote": "Five minutes in the evening — it has become a signal that the day is ending.",
+          "first_name": "Lina",
+          "city": "Casablanca"
+        },
+        "sara": {
+          "quote": "I will not go back to polish. The hand is enough on its own.",
+          "first_name": "Sara",
+          "city": "Marrakech"
+        }
+      },
+      "reassurances": {
+        "shipping": {
+          "label": "Free shipping",
+          "detail": "Rabat 24 h — Morocco 48 to 72 h"
+        },
+        "return": {
+          "label": "30-day return",
+          "detail": "Even opened"
+        },
+        "payment": {
+          "label": "Cash on delivery",
+          "detail": "Inspect before you pay"
+        }
+      },
+      "ingredients": {
+        "section": {
+          "kicker": "The detail",
+          "title": "The composition read line by line.",
+          "description": "Everything is said: common names, INCI, function, origin, concentration. No blind spots, no promise hidden behind a formula."
+        }
+      },
+      "hands": {
+        "kicker": "Three hands",
+        "title": "Three hands, three seasons.",
+        "description": "Unretouched photographs, taken at our initiates' homes after several months of ritual. The plate regains its grain, with no miracle recipe."
+      },
+      "hero": {
+        "kicker": "The ritual",
+        "savings": "Save {savings} MAD",
+        "cta_commander": "Order the ritual"
+      },
+      "commander": {
+        "kicker_default": "Order the ritual",
+        "title_default": "Three gestures, delivered to your home.",
+        "subtitle_default": "A few details, an address in Morocco, and we take care of the rest. Free delivery in 24-48 hours."
+      },
+      "pivot_final": {
+        "kicker": "The gesture",
+        "title": "Make the gesture.",
+        "body": "The ritual begins when you decide. Five minutes in the evening, one season, and the nail plate returns to its cadence.",
+        "cta_secondary": "Read more"
+      },
+      "product_feed": {
+        "hero": {
+          "kicker": "The pack",
+          "title": "The ritual settles in with two gestures and a buffer.",
+          "lead": "Three objects in the hand, two gestures in the evening. The paste films, the powder polishes, the Step 4 buffer reveals — Japanese manicure, designed in Rabat.",
+          "price_prefix": "All included:",
+          "cta_label": "Order the ritual",
+          "cta_microcopy": "Paste · Powder · Step 4 buffer included · Free shipping in Morocco · Cash on delivery · 30-day return."
+        },
+        "compare_at_aria": "Unbundled price {price}",
+        "value": {
+          "paste": "1 Paste · 30 ml",
+          "powder": "2 Powder · 30 g",
+          "polissoir": "Buffer 4 zones",
+          "notice": "Ritual guide + card",
+          "notice_offert": "included",
+          "livraison": "Shipping in Morocco"
+        },
+        "steps": {
+          "header": {
+            "kicker": "In total",
+            "total_duration": "5 minutes in the evening",
+            "lead": "Four slow gestures, once a week."
+          },
+          "post_cta": {
+            "label": "Start the ritual"
+          },
+          "preparation": {
+            "kicker": "Preparation",
+            "title": "Prepare your nails",
+            "description": "Cleanse, dry, file lightly — the plate opens to care.",
+            "duration": "30 s"
+          },
+          "paste": {
+            "kicker": "Gesture 1",
+            "title": "Apply the paste",
+            "description": "A dab of sage green paste, the buffer glides, the wax enters the keratin.",
+            "duration": "1 min"
+          },
+          "powder": {
+            "kicker": "Gesture 2",
+            "title": "Apply the powder",
+            "description": "Set the powdered rose powder, polish slowly, light returns to the surface.",
+            "duration": "2 min"
+          },
+          "step4": {
+            "kicker": "Step 4 buffer",
+            "title": "Polish & Shine",
+            "description": "Finish with the sky blue buffer — the nail becomes a mirror, no polish, no abrasion.",
+            "duration": "1 min",
+            "badge_result": "Result"
+          }
+        },
+        "claims": {
+          "naturel": {
+            "label": "Naturally sourced ingredients",
+            "detail": "Beeswax, jojoba, kaolin, rice powder — Japanese manicure."
+          },
+          "agressif": {
+            "label": "No aggressive chemicals",
+            "detail": "No acetone, no phthalates, no toluene — the plate breathes."
+          },
+          "eclatants": {
+            "label": "For strong, glowing nails",
+            "detail": "Strengthened keratin, polished shine with the Step 4 buffer."
+          }
+        },
+        "social_proof": {
+          "count_label_geo": "{count} maisons in France",
+          "fallback_quote": "Five minutes in the evening — it has become a signal that the day is ending.",
+          "fallback_author": "Lina, Rabat"
+        }
+      },
+      "pack_image_alt": "FemiGlow kit — paste, powder and Step 4 buffer, laid on a cream background",
+      "pack_visual": {
+        "label_promesses": "Product promises",
+        "label_avis_clientes": "Customer reviews"
+      }
+    },
+    "maison": {
+      "metadata": {
+        "title": "The maison — Rabat",
+        "description": "FemiGlow, maison of nail care edited in Rabat by our founder, a biologist and formulator. The origin, the atelier at 25 bis avenue Patrice Lumumba, the materials, the halal and local commitments.",
+        "og_title": "Maison FemiGlow — Rabat",
+        "og_description": "Maison of nail care, edited in Rabat. Halal Japanese manicure.",
+        "og_alt": "FemiGlow — The maison"
+      },
+      "hero": {
+        "kicker": "The maison",
+        "title": "The maison of quiet glow.",
+        "subtitle": "A maison of nail care, edited in Rabat. Slow, attentive, set at 25 bis avenue Patrice Lumumba.",
+        "cta_label": "Discover the atelier →"
+      },
+      "origine": {
+        "kicker": "The origin",
+        "titre": "An attention born of a simple observation.",
+        "paragraph_1": "FemiGlow was born of a simple observation: nails hold when given the time they ask for. No more, no less. Five minutes in the evening, two measured gestures and a buffer.",
+        "paragraph_2": "The idea took shape in Rabat, in an atelier on avenue Patrice Lumumba where the light falls just before 6 PM. Three crafts sat around a table: formulation, materials, writing. One conviction — slow beauty is an attention, never a performance.",
+        "paragraph_3": "Our founder is a biologist. She trained in cosmetic manufacturing before editing her first natural skincare lines. Today, she runs workshops in the same atelier where FemiGlow is designed. The ritual is not a discovery — it is a transmission."
+      },
+      "fondatrice": {
+        "kicker": "The founder",
+        "titre": "Our founder, biologist and formulator.",
+        "paragraph_1": "Our founder holds a master's degree in biology. She trained in cosmetic product manufacturing across several specialised courses. Before FemiGlow, she edited several natural skincare lines — each one taught her something about the gesture, the material, the traceability.",
+        "paragraph_2": "She now runs workshops in the Rabat atelier, open to young Moroccan formulators. FemiGlow is her slowest maison."
+      },
+      "atelier": {
+        "adresse": "25 bis avenue Patrice Lumumba",
+        "quartier": "Rabat",
+        "description_1": "The atelier fits in two quiet rooms: a clear worktop, a library of technical books and notebooks, material samples arranged by season.",
+        "description_2": "We formulate here in small batches. Our founder receives by appointment, on Tuesdays and Thursdays, for workshops and consultations.",
+        "section": {
+          "kicker": "The atelier",
+          "title": "Rabat, two quiet rooms."
+        },
+        "gallery_label": "View the photograph: {alt}"
+      },
+      "matieres": {
+        "cire": {
+          "nom": "Beeswax",
+          "origine": "Harvested in the Souss, in partnership with a family cooperative.",
+          "pourquoi": "Softens the seating of the nail and holds the paste without stiffening it."
+        },
+        "jojoba": {
+          "nom": "Jojoba oil",
+          "origine": "Cold-pressed in Souss-Massa, Moroccan supply chain.",
+          "pourquoi": "Liquid wax that mimics the skin's sebum — nourishes without leaving a film."
+        },
+        "kaolin": {
+          "nom": "Polishing kaolin",
+          "origine": "Moroccan mining clay, quarry in Marrakech.",
+          "pourquoi": "Polishes the nail without drying it — this is what brings the Step 4 buffer to life."
+        },
+        "riz": {
+          "nom": "Rice powder",
+          "origine": "Organic crops from Asia, traced supply chain.",
+          "pourquoi": "A gentle absorbent — this is what gives the powder its matte finish, just before the shine."
+        },
+        "section": {
+          "kicker": "The materials",
+          "title": "Four materials, chosen one by one."
+        }
+      },
+      "engagements": {
+        "sourcing": {
+          "titre": "Direct sourcing",
+          "description": "Each material is traced back to its origin atelier. No anonymous intermediary."
+        },
+        "halal": {
+          "titre": "Halal certification",
+          "description": "Each material is traced. Our manufacturer is audited by the Halal Cosmetics Council. The label appears on every jar and on the buffer."
+        },
+        "vernis": {
+          "titre": "Without polish",
+          "description": "No plastic resin, no strong solvent. The care shows on the nail, not in the air."
+        },
+        "rituel": {
+          "titre": "Slow ritual",
+          "description": "Everything is calibrated for five minutes in the evening. Shorter, it becomes cosmetics. Longer, it becomes a chore."
+        },
+        "local": {
+          "titre": "Local",
+          "description": "Bottled, labelled, shipped from Rabat. When possible, we keep the chain short."
+        },
+        "transmission": {
+          "titre": "Transmission",
+          "description": "Our team regularly trains beauty professionals and formulators in the Japanese manicure, at the Rabat atelier."
+        },
+        "section": {
+          "kicker": "The six commitments",
+          "title": "Six lines that do not move."
+        }
+      },
+      "crosslinks": {
+        "rituel": {
+          "kicker": "The ritual",
+          "titre": "Read the ritual"
+        },
+        "journal": {
+          "kicker": "The journal",
+          "titre": "The journal"
+        },
+        "kit": {
+          "kicker": "The pack",
+          "titre": "See the pack"
+        }
+      }
+    },
+    "rituel": {
+      "metadata": {
+        "title": "The ritual — halal Japanese manicure, two gestures",
+        "description": "Japanese origin, the science of care, an interview with our founder in Rabat. The FemiGlow ritual told without haste.",
+        "og_title": "The FemiGlow ritual",
+        "og_description": "Two gestures, one buffer, a slow method, told in Rabat."
+      },
+      "howto": {
+        "name": "The FemiGlow ritual",
+        "description": "Two gestures and a buffer in five minutes for slow nail care, explained step by step — halal Japanese manicure."
+      },
+      "hero": {
+        "kicker": "The ritual",
+        "title": "Japanese manicure. Two gestures. A slow glow.",
+        "subtitle": "A slow method, told in Rabat.",
+        "image_alt": "Hands at rest on a pale linen sheet, oblique late-morning light"
+      },
+      "origine": {
+        "kicker": "Origin",
+        "titre": "An attention from Japan, passed on in Rabat.",
+        "paragraph_1": "In Japan, the care of the hand is not a product: it is a daily attention, slow, without declaration. The Japanese manicure — also known as kawaii or chigiri — dates back to the early 20th century. It reveals the natural shine of the nail through buffing, without polish.",
+        "paragraph_2": "Our founder brought this gesture back from a training trip. She set it within a Moroccan framework: local materials, halal certification, atelier at 25 bis avenue Patrice Lumumba, in Rabat.",
+        "paragraph_3": "The result fits in five minutes a day. No promises, no cure. A habit that settles in, as one sets a cup on a wooden table."
+      },
+      "video": {
+        "transcript": "The big clean-girl trend for nails is the Japanese manicure. But there is something you need to know first…",
+        "duration_display": "90″",
+        "provenance": "Filmed in the Rabat atelier, March 2026.",
+        "chapter": {
+          "paste": "Paste",
+          "powder": "Powder",
+          "step4": "Step 4",
+          "polissage": "Buffing"
+        }
+      },
+      "sciences": {
+        "section": {
+          "kicker": "The science of care"
+        },
+        "title": "Three materials, three uses.",
+        "essai": {
+          "cire": {
+            "titre": "Beeswax",
+            "paragraphe": "Films the nail plate without sealing it. A 12-week clinical study observed a reduction in dorsal microfissures in subjects exposed to dry cold¹."
+          },
+          "kaolin": {
+            "titre": "Polishing kaolin",
+            "paragraphe": "A soft white clay. When the nail is smoothed, the Step 4 buffer does not score — it reveals the natural shine of the keratin²."
+          },
+          "halal": {
+            "titre": "The halal framework",
+            "paragraphe": "Material traceability, no denatured alcohol, no non-compliant animal derivatives. The label follows an audit by the Halal Cosmetics Council³."
+          }
+        },
+        "source_1": "Tanaka H. (2021). Beeswax-based barrier creams in cold-induced nail fragility. Journal of Cosmetic Dermatology 20(4).",
+        "source_2": "Benyahia L. (2019). Kaolin clay polishing in non-invasive nail care. Annales de Dermatologie et de Vénéréologie 146(8).",
+        "source_3": "Halal Cosmetics Council (2023). Standards for halal cosmetic ingredient sourcing and certification — public framework."
+      },
+      "interview": {
+        "section": {
+          "kicker": "Conversation"
+        },
+        "introduction": "our founder set her atelier at 25 bis avenue Patrice Lumumba, in Rabat. She formulates there, and she teaches there — other natural cosmetics lines pass through her hands. We asked her how the ritual is taught.",
+        "nom_interviewee": "Our founder",
+        "q1": {
+          "question": "You are a biologist by training. Why choose the gesture over the laboratory?",
+          "reponse": "The laboratory taught me INCI. The gesture taught me patience. The two complete each other — and that is what I pass on in my workshops in Rabat."
+        },
+        "q2": {
+          "question": "Why the Japanese manicure?",
+          "reponse": "Because it does not cheat. It reveals rather than covers. Polish colours — the ritual polishes."
+        },
+        "q3": {
+          "question": "What does halal change in a formulation?",
+          "reponse": "Everything. Origin of the materials, traceability, no denatured alcohol, no animal gelatin. It is not a marketing argument — it is a manufacturing framework."
+        },
+        "q4": {
+          "question": "Five minutes a day is little. Why not more?",
+          "reponse": "Because the nail grows 0.1 mm a day. Five minutes is enough to keep pace. More would be useless. Less would be unfaithful."
+        },
+        "q5": {
+          "question": "What would you advise an initiate who is starting?",
+          "reponse": "Begin with the paste. For a week, nothing else. You will see what your nails are telling you. The buffer comes next."
+        }
+      },
+      "pivot": {
+        "phrase": "Now that you know. Receive the pack.",
+        "cta_label": "Receive the pack — 199 MAD"
+      },
+      "journal_cross": {
+        "kicker": "To go further",
+        "title": "Three readings from the maison."
+      }
+    },
+    "contact": {
+      "metadata": {
+        "title": "Contact — the maison writes back",
+        "description": "A question on the ritual, the pack, an order, a workshop? Write to Maison FemiGlow from Rabat (25 bis avenue Patrice Lumumba).",
+        "og_description": "The maison replies within 24 working hours."
+      },
+      "hero": {
+        "kicker": "Write to the maison",
+        "title": "Contact.",
+        "subtitle": "A question on the ritual, the kit, an order, a professional exchange?"
+      },
+      "form": {
+        "section_title": "Write to the maison.",
+        "type": {
+          "question": "A question",
+          "order": "An order",
+          "professional": "A professional exchange",
+          "legend": "What type of message?"
+        },
+        "field": {
+          "name": "Your first name",
+          "email": "Your email",
+          "phone": "Phone",
+          "company": "Company name",
+          "role": "Your role",
+          "order_number": "Order number",
+          "order_number_hint": "The number appears in your confirmation email.",
+          "message": "Your message",
+          "message_hint": "At least 20 characters, so we can reply properly."
+        },
+        "honeypot_label": "Website (leave empty)",
+        "newsletter_consent": "I wish to receive the seasonal letter. One letter per season. No commercial mailing.",
+        "submit": "Send my message",
+        "success": {
+          "title": "Received. The maison will reply.",
+          "body": "We read every message carefully. Reply within 24 working hours."
+        },
+        "error": {
+          "body": "The message did not go through. Try again or write to us at {email}."
+        }
+      },
+      "faq": {
+        "kicker": "Frequently asked questions",
+        "title": "Quick answers.",
+        "duree": {
+          "question": "How long does the ritual take?",
+          "answer": "Five minutes each evening, hands at rest. Two gestures — paste, powder — then the Step 4 buffer to finish. The maison suggests one passage a day to settle the cadence."
+        },
+        "fragiles": {
+          "question": "My nails are fragile, is the ritual right for me?",
+          "answer": "Yes. The materials are chosen to repair without aggressing: beeswax, jojoba, cosmetic talc, rice powder, polishing kaolin. No acetone, no hardener. Avoid only in case of a known allergy to one of the ingredients; the full list appears on the Pack page."
+        },
+        "livraison": {
+          "question": "What are the shipping times?",
+          "answer": "Rabat: 24 hours. Casablanca and Salé: 24 to 48 hours. Rest of Morocco: 48 to 72 hours. Free shipping in Morocco, no threshold. For international, write to us, we study each shipment by hand."
+        },
+        "formation": {
+          "question": "How can I attend a workshop with your team?",
+          "answer": "Our founder runs workshops in Japanese manicure and cosmetic manufacturing at the Rabat atelier. Write to info@femiglow-maroc.com with your profile (beauty professional, formulator, school). We reply within three days."
+        },
+        "echantillon": {
+          "question": "Can I receive a sample before purchase?",
+          "answer": "In case of doubt due to an allergy, we send a sample of the paste before shipping the full pack. Write to us specifying the ingredient that concerns you."
+        }
+      },
+      "crosslinks": {
+        "rituel": "Read the ritual",
+        "kit": "See the pack",
+        "maison": "The maison"
+      },
+      "direct": {
+        "kicker_write": "Write",
+        "kicker_atelier": "Atelier",
+        "response_time": "Reply within 24 working hours, from Rabat.",
+        "appointment_only": "By appointment only."
+      }
+    },
+    "journal": {
+      "metadata": {
+        "title_base": "The notebook of the maison{suffix}",
+        "description_default": "The notebook of Maison FemiGlow — seasonal stories, materials and voices of initiates, written in Rabat and published at the rhythm of the seasons.",
+        "description_filtered": "FemiGlow journal — articles in the {category} category, written in Rabat."
+      },
+      "hero": {
+        "title": "The notebook of the maison.",
+        "description": "One letter per month. On the ritual, Moroccan materials, Japanese inspiration. Written in Rabat. Slow as the gesture."
+      },
+      "cross": {
+        "maison": {
+          "kicker": "The maison",
+          "title": "The Rabat atelier.",
+          "description": "Visit the address at 25 bis avenue Patrice Lumumba, understand how the ritual is made, meet the voices that write it.",
+          "cta": "Visit the maison",
+          "image_alt": "Interior view of the FemiGlow atelier in Rabat"
+        }
+      },
+      "grid": {
+        "kicker": "The journal",
+        "title": "Seasonal letters.",
+        "cta": "Read the journal"
+      },
+      "categories": {
+        "all": "All",
+        "maison": "Maison",
+        "saison": "Season",
+        "voix": "Voices",
+        "matieres": "Materials",
+        "pratique": "Practice",
+        "aria": "Filter the journal by category"
+      },
+      "article": {
+        "title": {
+          "hiver": "Winter, nails, patience",
+          "matieres_ailleurs": "Materials from elsewhere",
+          "paste_powder": "Paste and powder — two gestures",
+          "maison_printemps": "The maison, in spring",
+          "voix_amal": "The voice of Amal",
+          "pluie_mars": "March rain",
+          "kaolin": "Kaolin powder",
+          "table_atelier": "The table as atelier",
+          "visiter_atelier": "Visit the atelier",
+          "voix_lina": "The voice of Lina",
+          "avril_soleil": "April, low sun",
+          "argan_vraie": "Argan oil, true",
+          "ranger_rituel": "Storing your ritual",
+          "cuisine_laboratoire": "The kitchen as laboratory",
+          "voix_sara": "The voice of Sara"
+        },
+        "kicker": {
+          "hiver": "Season"
+        },
+        "excerpt": {
+          "hiver": "The dry cold of Rabat parches all that resists. Nails bend, but do not break — provided one slows down.",
+          "matieres_ailleurs": "Sourcing speaks of honesty. Here is what really makes up our care, and where the materials come from.",
+          "paste_powder": "Two gestures, a quiet glow. A detailed sensory tutorial — paste, powder, Step 4 buffer.",
+          "maison_printemps": "The Rabat atelier changes its breath when the orange tree blossoms. A visit during a month when the light returns.",
+          "voix_amal": "Three months of ritual, told by the one who held them. No promises, no cliché before-and-after.",
+          "pluie_mars": "Humidity returns to the coast. Cuticles breathe, gestures can be spaced out.",
+          "kaolin": "White clay, soft, neutral. How it enters the base and why it stays.",
+          "table_atelier": "Prepare your space before you begin. The cloth, the light, the glass of water.",
+          "visiter_atelier": "25 bis avenue Patrice Lumumba, Rabat. How we ended up here, and what we make.",
+          "voix_lina": "Two months in, she writes to us. What has changed, what has not, and what she expects next.",
+          "avril_soleil": "The Casablanca sun rises higher again. Hands come out, the ritual lightens.",
+          "argan_vraie": "Tiznit, cooperatives, first pressing. Why we buy direct, and what it really costs.",
+          "ranger_rituel": "The cupboard, the drawer, the pouch. How to keep the bottles in good condition from one season to the next.",
+          "cuisine_laboratoire": "Before the atelier, there was the kitchen. The story of a domestic beginning.",
+          "voix_sara": "Four full months. Sara tells of her nails, her tiredness, her doubts, and the gesture that settled in."
+        },
+        "author": {
+          "equipe": "The FemiGlow team",
+          "bio": "Founder of Maison FemiGlow. Biologist and formulator, she writes from Rabat on slow care and the materials of the Maghreb."
+        },
+        "body": {
+          "hiver": "When the dry air settles over Rabat in January…"
+        }
+      },
+      "breadcrumb": {
+        "home": "Home",
+        "journal": "Journal"
+      }
+    },
+    "commerce": {
+      "commander": {
+        "metadata": {
+          "title": "Order",
+          "description": "Three measured steps to confirm your FemiGlow order: details, shipping, validation. Cash on delivery available."
+        }
+      },
+      "panier": {
+        "metadata": {
+          "title": "The cart",
+          "description": "The summary of your ritual, before the order."
+        }
+      },
+      "merci": {
+        "metadata": {
+          "title": "Thank you",
+          "description": "Your FemiGlow order is confirmed. You will receive a message from the maison with the preparation and shipping steps."
+        },
+        "order_hero": {
+          "kicker": "The maison thanks you",
+          "title": "Thank you, {first_name}.",
+          "body": "Your order is in good hands. You will receive a confirmation email within the minute, then a second one when it ships.",
+          "number_label": "Order number",
+          "estimate": "Estimated delivery: between {min} and {max}."
+        },
+        "timeline": {
+          "kicker": "Tracking your pack",
+          "title": "Three steps, at your pace.",
+          "preparation": "Preparation",
+          "preparation_hint": "Within 24 h, by hand, in Rabat.",
+          "expedition": "Shipping",
+          "expedition_hint": "1 to 2 working days after preparation.",
+          "livraison": "Delivery",
+          "livraison_hint": "Rabat 24 h · Morocco 48 to 72 h."
+        },
+        "letter": {
+          "kicker": "A word from our founder",
+          "title": "The maison takes the time it needs.",
+          "opening_named": "{first_name}, thank you for entrusting your ritual to the maison.",
+          "opening_anonymous": "Thank you for entrusting your ritual to the maison.",
+          "body_1": "Every pack is prepared by hand, in Rabat, in an atelier where we take our time. The paste prepares, the powder reveals, the buffer polishes. The glow will return, slowly.",
+          "body_2": "Until then, choose a quiet evening. Set the jars on a linen towel. The ritual does not like haste — that is its promise.",
+          "body_3": "If a question crosses your mind, write to us. The maison replies.",
+          "signature": "Our founder",
+          "signature_role": "Founder · FemiGlow"
+        },
+        "preparation": {
+          "kicker": "Preparing the gesture",
+          "title": "Choose a quiet evening.",
+          "body_1": "Set the jars on a linen towel. Dim the light. Open the ritual the way one opens a letter — without rush, with no productive intent.",
+          "body_2": "The maison does not offer a routine. It offers a suspended moment, which belongs to your hands."
+        },
+        "fallback": {
+          "title": "Confirmation sent by email.",
+          "body": "Your order has been recorded. The detailed confirmation is on its way to your inbox.",
+          "cta": "Back to the maison"
+        }
+      },
+      "cart": {
+        "hero": {
+          "kicker": "The cart",
+          "title": "Your cart.",
+          "subtitle": {
+            "empty": "No item for now.",
+            "one": "One item, safely set aside.",
+            "many": "{count} items, safely set aside."
+          }
+        }
+      },
+      "empty_cart": {
+        "title": "The cart is empty.",
+        "subtitle": "The ritual begins with a gesture. Three jars, five minutes.",
+        "cta_primary": "Discover the ritual",
+        "cta_secondary": "See the kit"
+      },
+      "cart_summary": {
+        "heading": "Your order.",
+        "subtotal": "Subtotal",
+        "shipping_estimate": "Estimated shipping",
+        "total": "Total",
+        "shipping_hint": "An estimate, refined at the next step.",
+        "cta": "Order",
+        "footnote": "You can change your order until the payment step."
+      },
+      "cart_contents": {
+        "label_quantity": "Quantity",
+        "label_remove": "Remove",
+        "subtotal": "Subtotal",
+        "shipping_hint": "Shipping estimated at the next step.",
+        "cta": "Place order",
+        "continue": "Continue browsing",
+        "empty": {
+          "kicker": "Cart",
+          "title": "The cart is empty.",
+          "subtitle": "The ritual begins with a kit. Three gestures, five minutes.",
+          "cta": "See the kit"
+        },
+        "unit": "per unit"
+      },
+      "minicart": {
+        "heading": "Your ritual",
+        "close_aria": "Close the cart",
+        "empty": "Your ritual is still to be composed.",
+        "quantity_label": "Quantity {qty}",
+        "cta_revoir": "Review the cart",
+        "continue": "Continue the ritual",
+        "toast": "Added to your ritual."
+      },
+      "trust_signals": {
+        "kicker": "Reassurance",
+        "title": "Three simple commitments.",
+        "livraison": {
+          "title": "Free shipping",
+          "body": "Rabat: 24 hours. Rest of Morocco: 48 to 72 hours. No threshold, no surcharge."
+        },
+        "retour": {
+          "title": "30-day return",
+          "body": "If the ritual does not suit you, we will take it back — even opened. No justification needed."
+        },
+        "paiement": {
+          "title": "Cash on delivery",
+          "body": "You pay only on receipt, after inspecting your order. No risk."
+        }
+      },
+      "journal_cross_panier": {
+        "kicker": "In the meantime",
+        "title": "Read the journal of the maison.",
+        "description": "Three letters per season. No urgency."
+      },
+      "sticky_cta": {
+        "aria": "Quick purchase"
+      }
+    }
+  },
+  "errors": {
+    "404": {
+      "metadata": {
+        "title": "Page not found",
+        "description": "The page you are looking for no longer exists, or does not yet."
+      },
+      "kicker": "404",
+      "title": "This page wandered off.",
+      "body": "Perhaps an old link, perhaps an editorial move. Let us return home or wander through the journal.",
+      "cta_home": "Back to home",
+      "cta_journal": "Read the journal"
+    },
+    "500": {
+      "kicker": "Apologies",
+      "title_default": "Something has paused.",
+      "title_chunk": "Update detected.",
+      "body_default": "The maison has logged the incident. You can reload the page, or return home — your cart is preserved.",
+      "body_chunk": "The site has been updated since your last visit. Automatic reload in progress…",
+      "reference_label": "Reference:",
+      "cta_reload": "Reload the page",
+      "cta_home": "Back to home"
+    },
+    "validation": {
+      "required": "This field is required",
+      "email_invalid": "Invalid email address",
+      "phone_invalid": "Invalid phone number",
+      "message_too_short": "The message is too short (min 20 characters)"
+    },
+    "newsletter": {
+      "consent_required": "Consent is required to sign up.",
+      "invalid_response": "Invalid server response.",
+      "network": "The sign-up could not complete. Try again later."
+    },
+    "article": {
+      "not_found": "Article not found"
+    },
+    "legal": {
+      "page_not_found": "Page not found"
+    }
+  },
+  "seo": {
+    "json_ld": {
+      "organization": {
+        "name": "FemiGlow",
+        "alternate_name": "Maison FemiGlow",
+        "description": "Maison of nail care edited in Morocco. A halal Japanese manicure ritual in four gestures.",
+        "founder_name": "Yasmine Jebbari",
+        "address_locality": "Casablanca"
+      }
+    },
+    "settings": {
+      "default_description": "FemiGlow — maison of nail care edited in Casablanca. Halal Japanese manicure in four gestures: paste, powder, shine, buffing."
+    },
+    "known_pages": {
+      "home": "Home",
+      "kit": "The Kit",
+      "rituel": "The Ritual",
+      "manifeste": "Manifesto",
+      "fondatrice": "Founder",
+      "temoignages": "Testimonials",
+      "journal": "Journal",
+      "faq": "FAQ",
+      "contact": "Contact",
+      "cgv": "Terms of service",
+      "mentions_legales": "Legal notices",
+      "confidentialite": "Privacy",
+      "cookies": "Cookies"
+    }
+  },
+  "legal": {
+    "mentions_legales": {
+      "metadata": {
+        "title": "Legal notices — FemiGlow",
+        "description": "Legal notices for the FemiGlow website: publisher, hosting, intellectual property, personal data, cookies."
+      },
+      "kicker": "Legal information",
+      "title": "Legal notices",
+      "updated": "Last updated: 13 May 2026",
+      "editor": {
+        "title": "Website publisher",
+        "address_label": "Address:",
+        "email_label": "Email:",
+        "phone_label": "Phone:",
+        "director": "Publishing director: Salma Jebbari, founder of FemiGlow."
+      },
+      "hosting": {
+        "title": "Hosting",
+        "body": "The site is hosted on a dedicated server located in France/Morocco. For any hosting-related request, contact the maison via {email}."
+      },
+      "intellectual": {
+        "title": "Intellectual property",
+        "body_1": "All content on this site (texts, photographs, illustrations, logos, videos, layout, visual identity) is the exclusive property of FemiGlow or of its editorial partners, and is protected by Moroccan and international intellectual property laws.",
+        "body_2": "Any reproduction, representation, modification, publication, adaptation or exploitation, in part or in full, by any means and on any medium, is prohibited without the prior written authorisation of FemiGlow."
+      },
+      "privacy": {
+        "title": "Personal data",
+        "body_1": "Information collected through the forms (contact, order, newsletter) is recorded and processed by FemiGlow to reply to your request, deliver an order, or keep you informed about the life of the maison (with your explicit consent).",
+        "body_2": "In accordance with Moroccan law 09-08 on the protection of personal data, and with the European GDPR for visitors from the European Union, you have the right to access, rectify, port and delete your data. To exercise these rights, write to {email}.",
+        "body_3": "Data is never resold or transferred to commercial third parties. It may be shared with our subcontractors (carrier, payment provider) only to the extent strictly necessary to deliver the service."
+      },
+      "cookies": {
+        "title": "Cookies & trackers",
+        "body_1": "This site uses technical cookies (session, cart, preferences) essential to its operation, and — subject to your consent through the management banner — anonymised audience measurement cookies and third-party cookies (Meta, Google Analytics, TikTok) used to improve the experience and our communication.",
+        "body_2": "You can adjust your preferences at any time through the consent banner (management icon at the bottom of the page)."
+      },
+      "cgv": {
+        "title": "Terms of sale",
+        "body": "The general terms of sale applicable to orders placed on this site are made available at checkout and sent by email when the order is confirmed."
+      },
+      "law": {
+        "title": "Applicable law & jurisdiction",
+        "body": "This site is governed by Moroccan law. In case of dispute, the courts of Rabat shall have sole jurisdiction, except where a mandatory legal provision provides otherwise."
+      },
+      "footer": {
+        "body": "For any question relating to these legal notices, contact the maison: {email}."
+      }
+    },
+    "dynamic": {
+      "page_kicker": "Legal pages",
+      "back_home": "Back to home",
+      "last_updated_label": "Last updated:",
+      "summary_label": "Summary",
+      "related_label": "See also",
+      "contact_block": {
+        "heading": "A question?",
+        "intro": "Our team replies quickly:",
+        "updated_line": "Updated on {date} · v{version}"
+      },
+      "print_label": "Print / PDF",
+      "print_aria": "Print this page or save it as PDF"
+    },
+    "checkout_consent": {
+      "text": "By validating the order, you acknowledge that you have read and accept the ...",
+      "default": {
+        "cgv": "Terms of service",
+        "confidentialite": "Privacy policy"
+      }
+    },
+    "footer_links": {
+      "default": {
+        "mentions": "Legal notices",
+        "cgv": "Terms of service",
+        "confidentialite": "Privacy",
+        "cookies": "Cookies"
+      }
+    }
+  },
+  "email": {
+    "shared": {
+      "header": {
+        "brand": "FemiGlow",
+        "tagline": "Mindful rituals · Morocco"
+      },
+      "footer": {
+        "address": "FemiGlow · Rabat, Morocco · {url}",
+        "unsub_intro": "You are receiving this email because you are in touch with FemiGlow.",
+        "unsub_link": "Unsubscribe",
+        "privacy_link": "Privacy"
+      }
+    },
+    "contact_ack": {
+      "subject": "Hello {firstName}, your message reached us",
+      "preheader": "We will reply within 24 working hours, {firstName}.",
+      "heading": "Thank you, {firstName}",
+      "body_1": "We have received your message — we will reply within 24 hours (working days).",
+      "body_2": "In the meantime, you may discover our most beloved rituals:",
+      "cta": "Discover the rituals →"
+    },
+    "order_confirmation": {
+      "subject": "Your order {orderId} is confirmed",
+      "preheader": "{itemsCount} item(s) · delivery {deliveryEstimate}",
+      "heading": "Your order is confirmed, {firstName}",
+      "body_thanks": "Thank you for your trust. Here is the summary of your order:",
+      "label_reference": "Reference:",
+      "label_articles": "Items:",
+      "label_total": "Total:",
+      "label_delivery": "Estimated delivery:",
+      "cta": "Track my order →",
+      "body_question": "A question? Simply reply to this email, we read everything."
+    },
+    "newsletter_confirm": {
+      "subject": "Confirm your subscription to the FemiGlow newsletter",
+      "preheader": "One last click to join the newsletter.",
+      "heading": "One last click",
+      "body_intro": "You have just subscribed to our newsletter — to confirm it is really you (and not a robot), click the button below:",
+      "cta": "Confirm my subscription →",
+      "body_ignore": "You did not request this? No worry, simply ignore this email — without the click, your address will never be added to our list.",
+      "body_expires": "The confirmation link expires in 7 days. After that, you may sign up again from the site."
+    },
+    "password_reset": {
+      "subject": "Reset your FemiGlow password",
+      "preheader": "Link valid for {expiresInMinutes} minutes.",
+      "heading": "Reset your password",
+      "greeting": "Hello {firstName},",
+      "body_request": "You have asked to reset your FemiGlow password. Click below to choose a new one:",
+      "cta": "Reset my password →",
+      "body_expires": "This link expires in {expires} minutes. If you did not make this request, simply ignore this email — your password remains unchanged.",
+      "security_note": "For security reasons, never share this link."
+    },
+    "cart_abandoned": {
+      "subject": "{firstName}, you left something behind",
+      "preheader": "{firstName}, your cart is waiting at FemiGlow.",
+      "heading": "{firstName}, your cart is waiting",
+      "body_intro": "You left a cart aside an hour ago. We have kept it safe for you:",
+      "body_resume": "Pick up where you left off in one click — no need to re-enter everything:",
+      "cta": "Resume my cart →",
+      "body_question": "If you have a question about the order, simply reply to this email — an advisor will get back to you within the day."
+    }
+  },
+  "chat": {
+    "launcher": {
+      "aria_open": "Open chat",
+      "aria_close": "Close chat",
+      "aria_unread": "{count} new messages"
+    },
+    "header": {
+      "name": "FemiGlow assistant",
+      "status": "Online · replies within seconds",
+      "close_aria": "Close chat",
+      "close_label": "Close"
+    },
+    "composer": {
+      "placeholder": {
+        "fr": "Posez votre question…",
+        "ar": "اكتب رسالتك…",
+        "ar_ma": "kteb ssoual dyalek…"
+      },
+      "input_aria": "Message",
+      "stop_label": "Stop",
+      "send_aria": "Send"
+    },
+    "message_list": {
+      "aria": "Conversation",
+      "suggestions_aria": "Quick suggestions"
+    },
+    "message_bubble": {
+      "sources_label": "Sources · {count}"
+    },
+    "lead_form": {
+      "countries": {
+        "maroc": "Morocco",
+        "france": "France",
+        "belgique": "Belgium",
+        "suisse": "Switzerland",
+        "algerie": "Algeria",
+        "tunisie": "Tunisia"
+      },
+      "country_aria": "Country",
+      "honeypot_label": "Alternate phone",
+      "copy": {
+        "fr": {
+          "intro_default": "Reply within 2 h, during opening hours.",
+          "cta_default": "Request a callback",
+          "dismiss": "Later",
+          "first_name_label": "First name",
+          "first_name_placeholder": "e.g. Sara",
+          "phone_label": "Phone (WhatsApp)",
+          "phone_placeholder": "06 12 34 56 78",
+          "note_label": "A specific question?",
+          "note_placeholder": "e.g. need advice on my routine",
+          "consent": "I agree to be contacted by FemiGlow. My data remains private.",
+          "submit": "Request a call",
+          "success_fallback": "Thank you. An advisor will call you shortly. See you very soon.",
+          "privacy_note": "Data used only for this callback. No spam, no resale.",
+          "purchase_intent": {
+            "intro": "Callback within the day · payment on delivery.",
+            "cta": "Order my kit",
+            "submit": "Confirm my order",
+            "success": "Thank you. An advisor will call you within the day to confirm the delivery. See you very soon."
+          },
+          "b2b": {
+            "cta": "Be contacted (pro)",
+            "note_label": "Type of project (institute, pharmacy, e-commerce…)",
+            "note_placeholder": "e.g. beauty salon in Rabat",
+            "intro": "We will get back to you within 48 h to scope the project."
+          },
+          "objection": {
+            "intro": "A short exchange, no commitment.",
+            "cta": "Speak with an advisor"
+          },
+          "after_hours": {
+            "intro": "We call back as soon as we open (Mon–Sat, 9 AM).",
+            "cta": "Be called back tomorrow"
+          },
+          "out_of_knowledge": {
+            "intro": "A human advisor takes over.",
+            "cta": "Request a callback"
+          },
+          "inline_contact": {
+            "intro": "Nothing is recorded until this form is submitted.",
+            "cta": "Confirm my details",
+            "submit": "Confirm"
+          },
+          "manual": {
+            "intro": "We will call back as soon as we are available.",
+            "cta": "Request a callback"
+          }
+        }
+      },
+      "errors": {
+        "first_name_too_short": "Your first name appears incomplete.",
+        "phone_too_short": "Number is too short.",
+        "invalid_phone": "Invalid number. Check the format.",
+        "consent_required": "To call you back, we need your agreement — please re-submit the form.",
+        "session_missing": "Session expired. Please start again.",
+        "already_captured": "Request already received, we will call you soon.",
+        "rate_limited": "One moment — too many attempts, try again in 1 min.",
+        "submit_failed": "An error occurred. Please try again.",
+        "network_error": "Connection interrupted. Please try again."
+      }
+    }
+  },
+  "mock-data": {
+    "ritual_module": {
+      "kicker": "Voices of the maison",
+      "empty_title": "The maison is listening.",
+      "empty_body": "Be the first to share your ritual.",
+      "headline_one": "One initiate has shared her ritual. She would do it again.",
+      "headline_many": "{total} initiates have shared. {oui} would do the ritual again.",
+      "read_all": "Read the {total} shared rituals"
+    }
+  }
+}
