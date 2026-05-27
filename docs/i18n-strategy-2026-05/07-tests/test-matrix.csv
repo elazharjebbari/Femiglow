@@ -1,0 +1,221 @@
+id,feature,locale,layer,priority,automated,file
+T001,resolveLocale extracts fr from path,fr,unit,P0,yes,src/lib/i18n/resolveLocale.test.ts
+T002,resolveLocale extracts ar from path,ar,unit,P0,yes,src/lib/i18n/resolveLocale.test.ts
+T003,resolveLocale extracts en from path,en,unit,P0,yes,src/lib/i18n/resolveLocale.test.ts
+T004,resolveLocale fallback to default for unknown locale path,all,unit,P0,yes,src/lib/i18n/resolveLocale.test.ts
+T005,resolveLocale priority path > cookie > header > default,all,unit,P0,yes,src/lib/i18n/resolveLocale.test.ts
+T006,resolveLocale invalid cookie ignored,all,unit,P0,yes,src/lib/i18n/resolveLocale.test.ts
+T007,resolveLocale parses Accept-Language q-weight,all,unit,P0,yes,src/lib/i18n/resolveLocale.test.ts
+T008,matchLocale exact match,all,unit,P0,yes,src/lib/i18n/matchLocale.test.ts
+T009,matchLocale base from region tag (fr-FR fr),all,unit,P0,yes,src/lib/i18n/matchLocale.test.ts
+T010,matchLocale case-insensitive,all,unit,P0,yes,src/lib/i18n/matchLocale.test.ts
+T011,matchLocale null for unsupported,all,unit,P0,yes,src/lib/i18n/matchLocale.test.ts
+T012,formatDate jj mois aaaa in FR,fr,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T013,formatDate Arabic grégorien forcé,ar,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T014,formatDate Month dd yyyy in EN,en,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T015,formatDate respects timeZone Africa Casablanca,all,unit,P1,yes,src/lib/i18n/formatters.test.ts
+T016,formatCurrency MAD format FR,fr,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T017,formatCurrency MAD format AR avec native numerals,ar,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T018,formatCurrency MAD format EN,en,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T019,formatCurrency handles zero,all,unit,P1,yes,src/lib/i18n/formatters.test.ts
+T020,formatCurrency handles negative amounts,all,unit,P1,yes,src/lib/i18n/formatters.test.ts
+T021,formatNumber thousands separator FR,fr,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T022,formatNumber thousands separator EN,en,unit,P0,yes,src/lib/i18n/formatters.test.ts
+T023,formatNumber percentage notation,all,unit,P1,yes,src/lib/i18n/formatters.test.ts
+T024,formatNumber compact notation 1.5M,all,unit,P2,yes,src/lib/i18n/formatters.test.ts
+T025,formatRelativeTime il y a 2 jours FR,fr,unit,P1,yes,src/lib/i18n/formatters.test.ts
+T026,formatRelativeTime 2 days ago EN,en,unit,P1,yes,src/lib/i18n/formatters.test.ts
+T027,formatRelativeTime Arabic relative,ar,unit,P1,yes,src/lib/i18n/formatters.test.ts
+T028,selectPluralKey English plural rules,en,unit,P1,yes,src/lib/i18n/pluralRules.test.ts
+T029,selectPluralKey French plural rules (0 singular),fr,unit,P1,yes,src/lib/i18n/pluralRules.test.ts
+T030,selectPluralKey Arabic 6 categories,ar,unit,P1,yes,src/lib/i18n/pluralRules.test.ts
+T031,config LOCALES is fr ar en,all,unit,P0,yes,src/lib/i18n/config.test.ts
+T032,config DEFAULT_LOCALE is fr,all,unit,P0,yes,src/lib/i18n/config.test.ts
+T033,config LOCALE_LABELS has all locales,all,unit,P0,yes,src/lib/i18n/config.test.ts
+T034,config isRtlLocale returns true only for ar,all,unit,P0,yes,src/lib/i18n/config.test.ts
+T035,Type-safety key inexistante fail TS,all,unit,P1,yes,src/lib/i18n/types.test.ts
+T036,WizardDictionary FR and AR same keys (no drift),all,unit,P0,yes,src/lib/checkout/i18n/dictionary.test.ts
+T037,WizardDictionary AR contains Arabic chars,ar,unit,P0,yes,src/lib/checkout/i18n/dictionary.test.ts
+T038,WizardDictionary CHA-231 regression preserved,all,unit,P0,yes,src/lib/checkout/i18n/dictionary.test.ts
+T039,messages JSON shape Zod valid FR,fr,unit,P0,yes,messages/messages.shape.test.ts
+T040,messages JSON shape Zod valid AR,ar,unit,P0,yes,messages/messages.shape.test.ts
+T041,messages JSON shape Zod valid EN,en,unit,P0,yes,messages/messages.shape.test.ts
+T042,messages all locales have same set of keys,all,unit,P0,yes,messages/messages.shape.test.ts
+T043,messages snapshot of keys (drift detection),all,unit,P0,yes,messages/keys.snapshot.test.ts
+T044,LocaleSwitcher renders trigger FR,fr,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T045,LocaleSwitcher renders trigger AR,ar,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T046,LocaleSwitcher renders trigger EN,en,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T047,LocaleSwitcher shows all locales in dropdown,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T048,LocaleSwitcher marks active locale with aria-current,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T049,LocaleSwitcher closes after selection,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T050,LocaleSwitcher keyboard opens on Enter,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T051,LocaleSwitcher keyboard closes on Escape,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T052,LocaleSwitcher keyboard ArrowDown/Up navigation,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T053,LocaleSwitcher aria-expanded toggles,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T054,LocaleSwitcher aria-haspopup is menu,all,component,P0,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T055,LocaleSwitcher snapshot per locale,all,component,P1,yes,src/components/i18n/LocaleSwitcher.test.tsx
+T056,Header navigation links locale-aware hrefs,all,component,P0,yes,src/components/layout/Header.test.tsx
+T057,Hero renders title in each locale,all,component,P0,yes,src/components/sections/Hero.test.tsx
+T058,Hero AR title contains Arabic chars,ar,component,P0,yes,src/components/sections/Hero.test.tsx
+T059,Hero snapshot per locale,all,component,P1,yes,src/components/sections/Hero.test.tsx
+T060,GET /api/i18n/coverage returns 200 with data,all,integration,P0,yes,src/app/api/i18n/coverage/route.integration.test.ts
+T061,GET /api/i18n/coverage returns 401 without auth,all,integration,P0,yes,src/app/api/i18n/coverage/route.integration.test.ts
+T062,GET /api/i18n/coverage returns 429 when rate-limited,all,integration,P1,yes,src/app/api/i18n/coverage/route.integration.test.ts
+T063,GET /api/i18n/coverage payload shape Zod,all,integration,P0,yes,src/app/api/i18n/coverage/route.integration.test.ts
+T064,GET /api/i18n/missing-keys filters by locale,all,integration,P0,yes,src/app/api/i18n/missing-keys/route.integration.test.ts
+T065,GET /api/i18n/missing-keys 404 for unknown locale,all,integration,P0,yes,src/app/api/i18n/missing-keys/route.integration.test.ts
+T066,GET /api/i18n/missing-keys returns empty for fr,fr,integration,P0,yes,src/app/api/i18n/missing-keys/route.integration.test.ts
+T067,POST /api/admin/i18n/upsert-message upserts successfully,all,integration,P0,yes,src/app/api/admin/i18n/upsert-message/route.integration.test.ts
+T068,POST /api/admin/i18n/upsert-message 401 without auth,all,integration,P0,yes,src/app/api/admin/i18n/upsert-message/route.integration.test.ts
+T069,POST /api/admin/i18n/upsert-message 422 invalid key,all,integration,P0,yes,src/app/api/admin/i18n/upsert-message/route.integration.test.ts
+T070,POST /api/admin/i18n/upsert-message 422 value too long,all,integration,P1,yes,src/app/api/admin/i18n/upsert-message/route.integration.test.ts
+T071,POST /api/admin/i18n/upsert-message accepts UTF-8 AR,ar,integration,P0,yes,src/app/api/admin/i18n/upsert-message/route.integration.test.ts
+T072,POST /api/i18n/locale/switch sets cookie NEXT_LOCALE,all,integration,P0,yes,src/app/api/i18n/locale/switch/route.integration.test.ts
+T073,POST /api/i18n/locale/switch cookie 1 year max-age,all,integration,P0,yes,src/app/api/i18n/locale/switch/route.integration.test.ts
+T074,POST /api/i18n/locale/switch cookie SameSite Lax,all,integration,P0,yes,src/app/api/i18n/locale/switch/route.integration.test.ts
+T075,POST /api/i18n/locale/switch 422 invalid locale,all,integration,P0,yes,src/app/api/i18n/locale/switch/route.integration.test.ts
+T076,POST /api/admin/i18n/locales create new,all,integration,P1,yes,src/app/api/admin/i18n/locales/route.integration.test.ts
+T077,POST /api/admin/i18n/locales 409 duplicate,all,integration,P1,yes,src/app/api/admin/i18n/locales/route.integration.test.ts
+T078,POST /api/admin/i18n/locales 409 delete default,all,integration,P0,yes,src/app/api/admin/i18n/locales/route.integration.test.ts
+T079,GET /api/admin/i18n/export CSV download,all,integration,P1,yes,src/app/api/admin/i18n/export/route.integration.test.ts
+T080,GET /api/admin/i18n/export JSON format,all,integration,P1,yes,src/app/api/admin/i18n/export/route.integration.test.ts
+T081,POST /api/admin/i18n/import dryRun does not modify,all,integration,P0,yes,src/app/api/admin/i18n/import/route.integration.test.ts
+T082,POST /api/admin/i18n/import returns errors per invalid key,all,integration,P1,yes,src/app/api/admin/i18n/import/route.integration.test.ts
+T083,middleware redirects / to /fr/ default,fr,integration,P0,yes,middleware.integration.test.ts
+T084,middleware preserves /fr/kit,fr,integration,P0,yes,middleware.integration.test.ts
+T085,middleware redirects /kit to /ar/kit via cookie,ar,integration,P0,yes,middleware.integration.test.ts
+T086,middleware uses Accept-Language fallback,all,integration,P0,yes,middleware.integration.test.ts
+T087,middleware ignores invalid cookie,all,integration,P0,yes,middleware.integration.test.ts
+T088,middleware skips /_next/*,all,integration,P0,yes,middleware.integration.test.ts
+T089,middleware skips /api/*,all,integration,P0,yes,middleware.integration.test.ts
+T090,middleware sets cookie NEXT_LOCALE on redirect,all,integration,P1,yes,middleware.integration.test.ts
+T091,Admin dashboard shows coverage per locale,all,integration,P1,yes,src/app/admin/i18n/dashboard/page.integration.test.tsx
+T092,Admin dashboard upsert refreshes coverage,all,integration,P0,yes,src/app/admin/i18n/dashboard/page.integration.test.tsx
+T093,Admin dashboard handles rate limit error,all,integration,P1,yes,src/app/admin/i18n/dashboard/page.integration.test.tsx
+T094,Fallback FR rendered when AR key missing,ar,integration,P0,yes,src/lib/i18n/fallback.integration.test.tsx
+T095,Fallback never renders raw [namespace.key],all,integration,P0,yes,src/lib/i18n/fallback.integration.test.tsx
+T096,Locale switcher switches /fr/kit to /ar/kit,all,e2e,P0,yes,e2e/i18n/switcher.all.spec.ts
+T097,Locale switcher preserves path on switch,all,e2e,P0,yes,e2e/i18n/switcher.all.spec.ts
+T098,Locale switcher preserves query string,all,e2e,P1,yes,e2e/i18n/switcher.all.spec.ts
+T099,Locale switcher dropdown closes after selection,all,e2e,P0,yes,e2e/i18n/switcher.all.spec.ts
+T100,Locale switcher clicking outside closes,all,e2e,P1,yes,e2e/i18n/switcher.all.spec.ts
+T101,Locale switcher keyboard Enter opens,all,e2e,P0,yes,e2e/i18n/switcher-keyboard.all.spec.ts
+T102,Locale switcher keyboard Escape closes,all,e2e,P0,yes,e2e/i18n/switcher-keyboard.all.spec.ts
+T103,Locale switcher keyboard ArrowDown navigates,all,e2e,P0,yes,e2e/i18n/switcher-keyboard.all.spec.ts
+T104,Cookie NEXT_LOCALE persists across reload,all,e2e,P0,yes,e2e/i18n/cookie-persistence.all.spec.ts
+T105,Cookie NEXT_LOCALE max-age 1 year,all,e2e,P0,yes,e2e/i18n/cookie-persistence.all.spec.ts
+T106,Cookie NEXT_LOCALE SameSite Lax,all,e2e,P1,yes,e2e/i18n/cookie-persistence.all.spec.ts
+T107,Cookie cleared falls back to Accept-Language,all,e2e,P1,yes,e2e/i18n/cookie-persistence.all.spec.ts
+T108,html dir=rtl on AR pages,ar,e2e,P0,yes,e2e/i18n/rtl-layout.ar.spec.ts
+T109,html lang attribute correct per locale,all,e2e,P0,yes,e2e/i18n/rtl-layout.ar.spec.ts
+T110,Navigation order right-to-left in RTL,ar,e2e,P0,yes,e2e/i18n/rtl-layout.ar.spec.ts
+T111,Tailwind logical properties work in RTL,ar,e2e,P0,yes,e2e/i18n/rtl-layout.ar.spec.ts
+T112,Hero layout mirrors correctly FR vs AR,all,e2e,P1,yes,e2e/i18n/rtl-vs-ltr.all.spec.ts
+T113,Wizard checkout step 1 renders FR,fr,e2e,P0,yes,e2e/i18n/wizard-checkout.all.spec.ts
+T114,Wizard checkout step 1 renders AR,ar,e2e,P0,yes,e2e/i18n/wizard-checkout.all.spec.ts
+T115,Wizard checkout step 1 renders EN,en,e2e,P0,yes,e2e/i18n/wizard-checkout.all.spec.ts
+T116,Wizard checkout step 1 to step 2 transition,all,e2e,P0,yes,e2e/i18n/wizard-checkout.all.spec.ts
+T117,Wizard form validation errors localized FR,fr,e2e,P0,yes,e2e/i18n/wizard-checkout.all.spec.ts
+T118,Wizard form validation errors localized AR,ar,e2e,P0,yes,e2e/i18n/wizard-checkout.all.spec.ts
+T119,Wizard currency MAD format per locale,all,e2e,P1,yes,e2e/i18n/wizard-checkout.all.spec.ts
+T120,hreflang home page all locales,all,e2e,P0,yes,e2e/i18n/hreflang.all.spec.ts
+T121,hreflang URLs point to correct locales,all,e2e,P0,yes,e2e/i18n/hreflang.all.spec.ts
+T122,hreflang x-default points to fr,all,e2e,P0,yes,e2e/i18n/hreflang.all.spec.ts
+T123,canonical points to current locale URL,all,e2e,P0,yes,e2e/i18n/hreflang.all.spec.ts
+T124,og:locale meta correct per locale,all,e2e,P1,yes,e2e/i18n/hreflang.all.spec.ts
+T125,og:locale:alternate for other locales,all,e2e,P1,yes,e2e/i18n/hreflang.all.spec.ts
+T126,404 page /fr/inexistant shows FR 404,fr,e2e,P0,yes,e2e/i18n/404.all.spec.ts
+T127,404 page /ar/inexistant shows AR 404,ar,e2e,P0,yes,e2e/i18n/404.all.spec.ts
+T128,404 page /en/inexistant shows EN 404,en,e2e,P0,yes,e2e/i18n/404.all.spec.ts
+T129,404 page localized back-to-home CTA,all,e2e,P1,yes,e2e/i18n/404.all.spec.ts
+T130,404 page has localized lang/dir,all,e2e,P0,yes,e2e/i18n/404.all.spec.ts
+T131,Unknown locale fallback to default 404,all,e2e,P1,yes,e2e/i18n/404.all.spec.ts
+T132,Locale survives navigation between pages,all,e2e,P0,yes,e2e/i18n/session-persistence.all.spec.ts
+T133,Logo link goes to localized home,all,e2e,P0,yes,e2e/i18n/session-persistence.all.spec.ts
+T134,Switching back and forth keeps state,all,e2e,P1,yes,e2e/i18n/session-persistence.all.spec.ts
+T135,Footer text localized,all,e2e,P0,yes,e2e/i18n/footer-localized.all.spec.ts
+T136,Legal page links localized,all,e2e,P0,yes,e2e/i18n/footer-localized.all.spec.ts
+T137,Admin i18n dashboard shows coverage,all,e2e,P1,yes,e2e/admin/i18n-dashboard.fr.spec.ts
+T138,Admin i18n dashboard upsert modal,all,e2e,P1,yes,e2e/admin/i18n-dashboard.fr.spec.ts
+T139,Admin i18n dashboard refreshes after upsert,all,e2e,P1,yes,e2e/admin/i18n-dashboard.fr.spec.ts
+T140,Visual home page desktop snapshot FR,fr,visual,P0,yes,e2e/visual/home.visual.spec.ts
+T141,Visual home page desktop snapshot AR,ar,visual,P0,yes,e2e/visual/home.visual.spec.ts
+T142,Visual home page desktop snapshot EN,en,visual,P0,yes,e2e/visual/home.visual.spec.ts
+T143,Visual kit page snapshot per locale,all,visual,P0,yes,e2e/visual/kit.visual.spec.ts
+T144,Visual kit product card snapshot,all,visual,P1,yes,e2e/visual/kit.visual.spec.ts
+T145,Visual kit mobile sticky CTA snapshot,all,visual,P1,yes,e2e/visual/kit.visual.spec.ts
+T146,Visual checkout step 1 snapshot,all,visual,P0,yes,e2e/visual/checkout.visual.spec.ts
+T147,Visual checkout errors snapshot,all,visual,P1,yes,e2e/visual/checkout.visual.spec.ts
+T148,Visual admin i18n dashboard snapshot,all,visual,P1,yes,e2e/visual/admin-dashboard.visual.spec.ts
+T149,Visual coverage gauge component,all,visual,P2,yes,e2e/visual/admin-dashboard.visual.spec.ts
+T150,Visual LocaleSwitcher closed snapshot,all,visual,P1,yes,e2e/visual/locale-switcher.visual.spec.ts
+T151,Visual LocaleSwitcher open snapshot,all,visual,P1,yes,e2e/visual/locale-switcher.visual.spec.ts
+T152,Visual LocaleSwitcher hover state,all,visual,P2,yes,e2e/visual/locale-switcher.visual.spec.ts
+T153,RTL audit hero FR mirror of AR,ar,visual,P1,yes,e2e/visual/rtl-audit.visual.spec.ts
+T154,RTL audit navigation inverted,ar,visual,P1,yes,e2e/visual/rtl-audit.visual.spec.ts
+T155,A11y home zero critical violations FR,fr,a11y,P0,yes,e2e/a11y/home.a11y.spec.ts
+T156,A11y home zero critical violations AR,ar,a11y,P0,yes,e2e/a11y/home.a11y.spec.ts
+T157,A11y home zero critical violations EN,en,a11y,P0,yes,e2e/a11y/home.a11y.spec.ts
+T158,A11y html lang attribute correct,all,a11y,P0,yes,e2e/a11y/home.a11y.spec.ts
+T159,A11y heading hierarchy valid,all,a11y,P0,yes,e2e/a11y/home.a11y.spec.ts
+T160,A11y landmarks present (banner/nav/main/contentinfo),all,a11y,P0,yes,e2e/a11y/home.a11y.spec.ts
+T161,A11y kit page zero violations,all,a11y,P0,yes,e2e/a11y/kit.a11y.spec.ts
+T162,A11y product cards have alt text,all,a11y,P0,yes,e2e/a11y/kit.a11y.spec.ts
+T163,A11y CTA buttons have accessible names,all,a11y,P0,yes,e2e/a11y/kit.a11y.spec.ts
+T164,A11y checkout step 1 zero violations,all,a11y,P0,yes,e2e/a11y/checkout.a11y.spec.ts
+T165,A11y form inputs have labels,all,a11y,P0,yes,e2e/a11y/checkout.a11y.spec.ts
+T166,A11y error messages announced (aria-describedby),all,a11y,P0,yes,e2e/a11y/checkout.a11y.spec.ts
+T167,A11y required fields have aria-required,all,a11y,P0,yes,e2e/a11y/checkout.a11y.spec.ts
+T168,A11y LocaleSwitcher button aria-label localized,all,a11y,P0,yes,e2e/a11y/locale-switcher.a11y.spec.ts
+T169,A11y LocaleSwitcher aria-expanded toggles,all,a11y,P0,yes,e2e/a11y/locale-switcher.a11y.spec.ts
+T170,A11y LocaleSwitcher items role=menuitem,all,a11y,P0,yes,e2e/a11y/locale-switcher.a11y.spec.ts
+T171,A11y LocaleSwitcher active aria-current=page,all,a11y,P0,yes,e2e/a11y/locale-switcher.a11y.spec.ts
+T172,A11y keyboard Tab order LTR on FR,fr,a11y,P0,yes,e2e/a11y/keyboard-nav.a11y.spec.ts
+T173,A11y keyboard Tab order RTL on AR,ar,a11y,P0,yes,e2e/a11y/keyboard-nav.a11y.spec.ts
+T174,A11y keyboard Esc closes dropdown,all,a11y,P0,yes,e2e/a11y/keyboard-nav.a11y.spec.ts
+T175,A11y keyboard Enter activates links,all,a11y,P0,yes,e2e/a11y/keyboard-nav.a11y.spec.ts
+T176,A11y focus visible on Tab,all,a11y,P0,yes,e2e/a11y/keyboard-nav.a11y.spec.ts
+T177,A11y focus trap inside dropdown,all,a11y,P0,yes,e2e/a11y/keyboard-nav.a11y.spec.ts
+T178,A11y RTL Tab follows visual right-to-left,ar,a11y,P0,yes,e2e/a11y/rtl-focus.ar.spec.ts
+T179,A11y RTL scroll behavior correct,ar,a11y,P1,yes,e2e/a11y/rtl-focus.ar.spec.ts
+T180,A11y prefers-reduced-motion respected,all,a11y,P1,yes,e2e/a11y/reduced-motion.a11y.spec.ts
+T181,A11y all images have alt or aria-hidden,all,a11y,P0,yes,e2e/a11y/screen-reader-attrs.a11y.spec.ts
+T182,A11y icons have aria-hidden or aria-label,all,a11y,P0,yes,e2e/a11y/screen-reader-attrs.a11y.spec.ts
+T183,A11y h1 unique and present,all,a11y,P0,yes,e2e/a11y/screen-reader-attrs.a11y.spec.ts
+T184,Lint no-hardcoded-strings detects JSX text,all,lint,P0,yes,eslint-plugin-femiglow-i18n/tests/no-hardcoded-strings.test.ts
+T185,Lint no-hardcoded-strings detects aria-label,all,lint,P0,yes,eslint-plugin-femiglow-i18n/tests/no-hardcoded-strings.test.ts
+T186,Lint key-format enforces snake_case,all,lint,P0,yes,eslint-plugin-femiglow-i18n/tests/key-format.test.ts
+T187,Lint key-format requires namespace,all,lint,P0,yes,eslint-plugin-femiglow-i18n/tests/key-format.test.ts
+T188,Lint key-format rejects camelCase,all,lint,P0,yes,eslint-plugin-femiglow-i18n/tests/key-format.test.ts
+T189,Lint orphan keys detects unused i18n keys,all,lint,P1,yes,scripts/check-orphan-i18n-keys.mjs
+T190,Lint required-locales detects missing AR keys,ar,lint,P0,yes,scripts/check-required-locales.mjs
+T191,Lint required-locales detects missing EN keys,en,lint,P0,yes,scripts/check-required-locales.mjs
+T192,Coverage script FR threshold 100% blocking,fr,coverage,P0,yes,scripts/coverage-translations.mjs
+T193,Coverage script AR threshold 90% warn,ar,coverage,P0,yes,scripts/coverage-translations.mjs
+T194,Coverage script EN threshold 90% warn,en,coverage,P0,yes,scripts/coverage-translations.mjs
+T195,Coverage snapshot DB cron daily,all,coverage,P1,yes,scripts/coverage-snapshot.mjs
+T196,Coverage Slack alert on drop >= 5%,all,coverage,P1,yes,scripts/coverage-alert.mjs
+T197,Coverage gate enable locale >= 95% blocking,all,coverage,P0,yes,src/app/api/admin/i18n/locales/route.ts
+T198,Snapshot messages keys (drift detection),all,snapshot,P0,yes,messages/keys.snapshot.test.ts
+T199,Snapshot Hero component per locale,all,snapshot,P1,yes,src/components/sections/Hero.snapshot.test.tsx
+T200,Snapshot generated types IntlMessages interface,all,snapshot,P1,yes,src/lib/i18n/types.generated.snapshot.test.ts
+T201,Snapshot WizardDictionary structure CHA-231,all,snapshot,P0,yes,src/lib/checkout/i18n/dictionary.snapshot.test.ts
+T202,Snapshot server-rendered home FR HTML,fr,snapshot,P2,yes,src/app/[locale]/page.server.snapshot.test.tsx
+T203,Snapshot server-rendered home AR HTML,ar,snapshot,P2,yes,src/app/[locale]/page.server.snapshot.test.tsx
+T204,Server Action locale switch persists cookie,all,integration,P1,yes,src/app/api/i18n/locale/switch/route.integration.test.ts
+T205,Email transactional welcome FR rendered,fr,integration,P2,yes,src/lib/email/welcome.test.ts
+T206,Email transactional welcome AR rendered,ar,integration,P2,yes,src/lib/email/welcome.test.ts
+T207,Email transactional welcome EN rendered,en,integration,P2,yes,src/lib/email/welcome.test.ts
+T208,JSON-LD structured data localized FR,fr,e2e,P1,yes,e2e/i18n/json-ld.fr.spec.ts
+T209,JSON-LD structured data localized AR,ar,e2e,P1,yes,e2e/i18n/json-ld.ar.spec.ts
+T210,JSON-LD structured data localized EN,en,e2e,P1,yes,e2e/i18n/json-ld.en.spec.ts
+T211,Sitemap.xml lists URLs per locale,all,e2e,P1,yes,e2e/i18n/sitemap.all.spec.ts
+T212,Robots.txt allows all locales,all,e2e,P2,yes,e2e/i18n/robots.all.spec.ts
+T213,CMS component_field_bindings filter by locale,all,integration,P1,yes,src/lib/cms/field-bindings.integration.test.ts
+T214,CMS legal_pages locale resolves correctly,all,integration,P1,yes,src/lib/cms/legal-pages.integration.test.ts
+T215,Lighthouse a11y score >= 95 per locale,all,perf,P1,yes,lighthouserc.json
+T216,Lighthouse perf score >= 85 per locale,all,perf,P1,yes,lighthouserc.json
+T217,Bundle size messages/*.json < 15kb gzipped,all,perf,P0,yes,scripts/check-bundle-size.mjs
+T218,CLS delta < 0.05 between FR and AR,all,perf,P1,yes,scripts/perf-comparison.mjs
+T219,LCP delta < 100ms between FR and AR,all,perf,P1,yes,scripts/perf-comparison.mjs
+T220,No JS errors on locale switch,all,e2e,P0,yes,e2e/i18n/error-monitoring.all.spec.ts

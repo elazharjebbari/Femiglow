@@ -38,6 +38,8 @@ paths = [
   '''docs/admin/specifications/.*\.md''',
   '''docs/dossier-chat-v2/.*''',
   '''docs/audit/.*''',
+  '''docs/i18n-strategy-2026-05/.*''',
+  '''docs/i18n-content-2026-05/.*''',
   '''.*/__fixtures__/.*''',
   '''.*\.example$''',
   '''\.gitleaks\.toml''',

@@ -1,0 +1,130 @@
+@startuml architecture-cible
+!theme cerulean-outline
+
+title FemiGlow i18n — Architecture cible (post-implémentation)
+
+' ====================================================================
+' COUCHES
+' ====================================================================
+
+package "🌐 CLIENT (Browser)" as Client {
+  actor "Visitor (FR/AR/EN)" as Visitor
+  rectangle "Cookie NEXT_LOCALE" as ClientCookie
+}
+
+package "🛡️ EDGE — Middleware Next.js" as Edge {
+  rectangle "middleware.ts" as MW {
+    note bottom : next-intl/middleware\nResolve locale:\n1. URL path /:locale/\n2. Cookie NEXT_LOCALE\n3. Accept-Language header\n4. Default 'fr'
+  }
+  rectangle "Rewrite/Redirect" as Rewrite {
+    note bottom : - 301 / → /fr/\n- Inject locale in request\n- Set cookie response
+  }
+}
+
+package "⚛️ SERVER — RSC Layer" as Server {
+  rectangle "app/[locale]/layout.tsx (RSC)" as Layout {
+    note bottom : - <html lang={locale} dir={dir}>\n- NextIntlClientProvider\n- Load messages JSON
+  }
+  rectangle "app/[locale]/(marketing)/kit/page.tsx" as PageKit {
+    note bottom : - useTranslations() RSC\n- getTranslations() server\n- generateMetadata() localisé
+  }
+  rectangle "Server Actions" as Actions {
+    note bottom : - Form submit\n- Locale persist cookie\n- DB writes
+  }
+  rectangle "API Routes" as ApiRoutes {
+    note bottom : - /api/i18n/coverage\n- /api/i18n/admin\n- /api/locale/switch
+  }
+}
+
+package "📦 STORAGE — Messages & Content" as Storage {
+  database "messages/fr.json\nmessages/ar.json\nmessages/en.json" as JsonFiles {
+    note bottom : - Static copy (marketing,\n  legal, UI components)\n- Bundled at build\n- ~12kb / locale gzipped
+  }
+  database "PostgreSQL\n(Drizzle ORM)" as DB {
+    note bottom : Tables avec locale column:\n- component_field_bindings\n- legal_pages\n- ritual_testimonials\n- seo_overrides\n- chat_session etc.
+  }
+  database "Wizard CHA-231\nWizardDictionary" as WizardDict {
+    note bottom : src/lib/checkout/i18n/\n- dictionary.ts (interface)\n- locales/fr.ts + ar.ts\n→ Conservé tel quel\n  (compat existante)
+  }
+}
+
+package "🎨 UI Components" as UI {
+  rectangle "<LocaleSwitcher />" as Switcher {
+    note bottom : Header dropdown\nFR / AR / EN\n+ icône globe
+  }
+  rectangle "Server Components\n(RSC translated)" as RSC {
+    note bottom : useTranslations() on server\nrendered as HTML
+  }
+  rectangle "Client Components\n('use client')" as Client_C {
+    note bottom : useTranslations() via\nNextIntlClientProvider
+  }
+  rectangle "Wizard checkout\n(CHA-231)" as WizardUI {
+    note bottom : use useWizardTranslation()\nfrom WizardDictionary\n(architecture séparée)
+  }
+}
+
+package "🧪 TESTS" as Tests {
+  rectangle "Vitest (unit)" as TestUnit {
+    note bottom : - dictionary integrity\n- helpers locale detect\n- pluralization\n- formatters
+  }
+  rectangle "MSW + Vitest (integration)" as TestInteg {
+    note bottom : - locale switching\n- middleware routes\n- API endpoints i18n
+  }
+  rectangle "Playwright (E2E)" as TestE2E {
+    note bottom : - user flows par locale\n- RTL screenshot\n- a11y RTL\n- visual regression
+  }
+  rectangle "Lighthouse CI" as TestLH {
+    note bottom : - perf per locale\n- SEO multi-lang\n- hreflang validation
+  }
+}
+
+package "🔍 MONITORING & ANALYTICS" as Mon {
+  rectangle "Plausible / GA4" as Analytics {
+    note bottom : event 'locale_changed'\nevent 'locale_used'\nfunnel par locale
+  }
+  rectangle "Sentry" as Sentry {
+    note bottom : Tag errors par locale\nDetect missing keys\nAlerte coverage drop
+  }
+  rectangle "Admin /admin/i18n" as AdminI18N {
+    note bottom : - Coverage gauge per locale\n- Missing keys list\n- Add new locale\n- Edit content CMS
+  }
+}
+
+' ====================================================================
+' FLOWS
+' ====================================================================
+
+Visitor --> MW : GET /fr/kit
+ClientCookie ..> MW : NEXT_LOCALE=fr
+MW --> Rewrite
+Rewrite --> Layout
+Layout --> PageKit
+Layout --> JsonFiles : load messages
+PageKit --> JsonFiles : useTranslations()
+PageKit --> DB : query content by locale
+PageKit --> Switcher
+PageKit --> RSC
+PageKit --> Client_C
+PageKit --> WizardUI
+WizardUI --> WizardDict
+
+' Server interactions
+PageKit --> Actions
+Actions --> ApiRoutes
+ApiRoutes --> DB
+
+' Monitoring
+RSC ..> Analytics
+RSC ..> Sentry
+AdminI18N --> DB
+AdminI18N --> JsonFiles
+
+' Tests
+TestUnit --> JsonFiles
+TestUnit --> WizardDict
+TestInteg --> MW
+TestInteg --> ApiRoutes
+TestE2E --> Visitor
+TestLH --> Visitor
+
+@enduml
