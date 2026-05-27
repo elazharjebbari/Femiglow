@@ -12,6 +12,58 @@
 >
 > **Statut** : Draft — à valider par fondatrice + lead technique avant kickoff Phase 1.
 
+> **Mise à jour 2026-05-27** : la **préparation du contenu (hors-sprint)** est désormais achevée et disponible dans [`docs/i18n-content-2026-05/`](../../i18n-content-2026-05/). Cela réduit significativement la charge de la **Phase 2 (Content extraction)** : l'audit code est déjà fait (766 strings inventoriées), les traductions FR/AR/EN canoniques sont produites (790 keys par locale), les seeds CSV/MD/JSON sont prêts à brancher, et un script de validation `validate-seeds.py` confirme le verdict `GO pour ingestion`. Voir détails ci-dessous au §"Statut courant".
+
+---
+
+## Statut courant — Préparation hors-sprint achevée (2026-05-27)
+
+### Ce qui est déjà fait (hors planning ci-dessous)
+
+Un dossier compagnon **[`docs/i18n-content-2026-05/`](../../i18n-content-2026-05/)** a été produit en amont du sprint i18n. Il contient les livrables de contenu prêts à brancher :
+
+| Livrable | État | Détails |
+|---|---|---|
+| Style reference (voix FemiGlow + Kolenda) | ✅ | `00-style-reference.md` — référence unique pour la voix dans les 3 langues |
+| Audit code RÉEL des strings | ✅ | `01-audit/inventory-complete.csv` — 766 strings auditées (vs 148 estimées initialement) |
+| Traductions FR canonical | ✅ | `02-translations/messages-fr.json` — 790 keys (voix FemiGlow stricte, 0 emoji, 0 « ! » marketing) |
+| Traductions AR (MSA féminin) | ✅ | `02-translations/messages-ar.json` — 790 keys (45 impératifs féminins, RTL prêt) |
+| Traductions EN (international sobre) | ✅ | `02-translations/messages-en.json` — 790 keys |
+| Component bindings CSV (DB seeds) | ✅ | `03-seed-data/component-bindings-{fr,ar,en}.csv` — 510 rows × 3 locales, parité exacte |
+| Pages légales (markdown DB seeds) | ✅ | `03-seed-data/legal-pages-{fr,ar,en}/` — 9 slugs × 3 locales = 27 .md (~1500 lignes/locale) |
+| Mock data articles (15 articles × 3) | ✅ | `03-seed-data/mock-data-{fr,ar,en}.json` — parité trilingue 15/15 |
+| Quality checks | ✅ | `04-quality/` : glossary-applied.csv (35 termes) + conversion-leverage-checklist (30/36 OK Kolenda) + review-notes.md |
+| Script de validation Go/No-Go | ✅ | `scripts/validate-seeds.py` — 6 checks, verdict actuel `GO pour ingestion` |
+
+### Impact sur le planning ci-dessous
+
+| Phase | Impact préparation hors-sprint |
+|---|---|
+| **Phase 0 — Étude validée + ADRs** | Inchangé. Doit toujours être faite (relecture + ADRs). |
+| **Phase 1 — Foundation** | Inchangé. Setup next-intl + middleware + routing — le contenu est prêt mais le code applicatif reste à monter. |
+| **Phase 2 — Content extraction** | **Réduit de ~50%** : l'audit + l'extraction sont déjà faits. Reste : copier `messages-{fr,ar,en}.json` vers `apps/web/messages/` + écrire scripts de seed DB. |
+| **Phase 3 — CMS multilingue** | **Réduit de ~30%** : les `component_field_bindings` seeds sont déjà produits — reste l'UI admin et le repo. |
+| **Phase 4 — RTL + AR** | Inchangé côté CSS/Tailwind. AR copy déjà revu pour adresse féminine. |
+| **Phase 5 — Workflow translateur** | Inchangé. Le dossier sert de référence/baseline pour les futurs translateurs. |
+| **Phase 6 — Tests denses** | Inchangé. Pyramide tests à monter. |
+
+### Points en attente d'arbitrage fondatrice (bloquants avant ingestion)
+
+(Loggés dans [`docs/i18n-content-2026-05/04-quality/review-notes.md`](../../i18n-content-2026-05/04-quality/review-notes.md))
+
+1. **Faits factuels expansés** dans 14 bodies articles AR/EN/FR (« 6 ans », « formule n° 287 », « cooperative Tiznit », etc.) — à valider/corriger
+2. **Numéro d'urgence** « 15 » (FR) dans `securite-produits.md` → adapter Maroc
+3. **10 placeholders légaux** (`[adresse]`, `[ICE]`, `[RC]`, `[email]`, `[téléphone]`) à remplir avant publication
+4. **Drifts identifiés** : Casablanca/Rabat, gestes 3/4/5, founder name, volumes paste/powder, typo « Hémisphage »
+
+### Comment intégrer la préparation hors-sprint au sprint
+
+**Au kick-off Phase 1** : un check ~30 min pour `python3 docs/i18n-content-2026-05/scripts/validate-seeds.py` doit retourner `0` (GO). Si arbitrage founder fait, re-run le script avant Phase 2.
+
+**Pendant Phase 2** : copier les messages-*.json depuis `docs/i18n-content-2026-05/02-translations/` vers `apps/web/messages/[locale].json` (un script `pnpm i18n:ingest-content` fait ça, à écrire dans T2.X).
+
+**Pendant Phase 3** : utiliser les CSV `component-bindings-*.csv` comme source pour le script de seed CMS (à écrire dans T3.X).
+
 ---
 
 ## Sommaire
@@ -352,19 +404,21 @@ export type Locale = (typeof locales)[number];
 - **ESLint rule** active dès la fin de phase 2 (warn → error progressif)
 - **Routes traitées** : `/`, `/maison`, `/kit`, `/rituel`, `/journal`, `/contact` (déjà fait phase 1)
 
+> 📦 **Préparation hors-sprint disponible** : l'audit + l'extraction + les traductions FR/AR/EN sont **déjà produits** dans [`docs/i18n-content-2026-05/`](../../i18n-content-2026-05/). T2.1 et T2.2 peuvent être considérés comme **déjà accomplis** (à valider en kickoff Phase 2). Les tâches T2.3 à T2.X consistent désormais principalement à **ingérer** ce contenu vers `apps/web/messages/` et à refactorer le code applicatif pour utiliser `useTranslations()`. Lancer `python3 docs/i18n-content-2026-05/scripts/validate-seeds.py` doit retourner `GO pour ingestion` avant kickoff.
+
 ### Tâches
 
-#### T2.1 — Audit + inventaire 600-800 strings
+#### T2.1 — Audit + inventaire 600-800 strings ✅ DÉJÀ FAIT
 
 | Champ | Valeur |
 |---|---|
 | Objectif | Recenser TOUTES les strings hardcoded à externaliser, avec scoring priorité |
-| DoD | Spreadsheet `docs/i18n-strategy-2026-05/06-data-strategy/inventaire-strings.csv` avec colonnes `file`, `line`, `string_fr`, `context`, `priority` (P0/P1/P2), `key_proposed` |
-| Durée | 2 JH |
+| DoD | Spreadsheet avec colonnes `file`, `line`, `string_fr`, `context`, `priority` (P0/P1/P2), `key_proposed` |
+| Durée | 2 JH — ~~à faire~~ **déjà fait hors-sprint** |
 | Dépendances | T1.8 (phase 1 OK) |
-| Livrables | CSV inventaire ~700 lignes |
+| Livrables | ✅ `docs/i18n-content-2026-05/01-audit/inventory-complete.csv` (766 strings auditées) |
 | Tests requis | N/A (audit) |
-| Fichiers touchés | `docs/i18n-strategy-2026-05/06-data-strategy/inventaire-strings.csv` |
+| Fichiers touchés | `docs/i18n-content-2026-05/01-audit/` |
 | Anti-patterns | Sauter l'audit et passer direct à l'extraction → on découvre des cas tordus en cours de route et on bloque |
 
 **Commande de scan initial** :

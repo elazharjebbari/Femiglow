@@ -90,6 +90,8 @@ Le wizard reste sur **`WizardDictionary`** existant — pas de régression, cont
 | Phase 7 — Deploy + obs | 1 sem | Ship + monitoring 30 jours |
 | **Total** | **~11 semaines** | (~2.5 mois d'effort intermittent) |
 
+> **Mise à jour 2026-05-27** : la **préparation du contenu** (Phase 2 audit + traductions FR/AR/EN + seeds DB + qualité) est désormais **achevée hors-sprint** dans le dossier compagnon [`docs/i18n-content-2026-05/`](../i18n-content-2026-05/). Impact : Phase 2 (Content extraction) réduite de ~50%, Phase 3 (CMS) réduite de ~30%. Effort total estimé ramené à ~**8-9 semaines** une fois Phase 0 (ADRs) signée. Détails dans [`08-plan-action/phases.md`](./08-plan-action/phases.md) §Statut courant.
+
 ## Liens rapides
 
 - 📊 **État actuel du projet** : [`00-context/etat-actuel.md`](./00-context/etat-actuel.md)
@@ -97,6 +99,7 @@ Le wizard reste sur **`WizardDictionary`** existant — pas de régression, cont
 - 🏗 **Architecture cible** : [`02-design-conception/architecture-cible.puml`](./02-design-conception/architecture-cible.puml)
 - 📋 **Plan d'action complet** : [`08-plan-action/phases.md`](./08-plan-action/phases.md)
 - 🛠 **Runbook ajout langue** : [`09-runbook/ajouter-nouvelle-langue.md`](./09-runbook/ajouter-nouvelle-langue.md)
+- 📦 **Contenu pré-traduit (compagnon)** : [`../i18n-content-2026-05/`](../i18n-content-2026-05/) — traductions + seeds prêts à brancher
 - ✅ **Batterie de tests** : [`11-test-execution/plan-batterie-tests.md`](./11-test-execution/plan-batterie-tests.md)
 
 ## Conventions du dossier
