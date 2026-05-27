@@ -329,15 +329,25 @@ export async function* streamReply(
       categories: inboundMod.categories,
       action: decision.action,
     });
+    // Inbound moderation : on émet une réponse scriptée complète via le
+    // contrat SSE existant (start → chunk → end). L'event `message_complete`
+    // utilisé initialement par QW2 Sprint 1 (commit 8f9e0265) n'a jamais
+    // existé dans `chatStreamEvent` (cf. contracts.ts §discriminatedUnion).
+    const moderatedMessageId = 'moderated_input';
+    const moderatedContent =
+      decision.scriptedMessage ??
+      'Je ne suis pas en mesure de répondre à cela.';
     yield {
-      event: 'message_complete',
-      data: {
-        messageId: 'moderated_input',
-        content:
-          decision.scriptedMessage ??
-          'Je ne suis pas en mesure de répondre à cela.',
-        moderated: true,
-      },
+      event: 'start',
+      data: { messageId: moderatedMessageId, language },
+    };
+    yield {
+      event: 'chunk',
+      data: { messageId: moderatedMessageId, delta: moderatedContent },
+    };
+    yield {
+      event: 'end',
+      data: { messageId: moderatedMessageId, latencyMs: 0 },
     };
     return;
   }
