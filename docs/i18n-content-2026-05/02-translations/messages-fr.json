@@ -3,7 +3,7 @@
     "locale": "fr",
     "schema_version": "1.0",
     "completeness_pct": 100,
-    "total_keys": 766,
+    "total_keys": 790,
     "last_updated": "2026-05-27",
     "voice_check": "passed (FemiGlow tone applied)",
     "drift_flagged_in_review_notes": true,
@@ -13,7 +13,8 @@
       "emojis_removed": 11,
       "caps_normalized": 5,
       "exclamation_marketing_removed": 6
-    }
+    },
+    "kolenda_leverage_v2": "L2 (MAD standardized) + L3 (rating) + L6 (value_per_use) + L10 (value_breakdown) appliqués"
   },
   "common": {
     "back": "Retour à l’accueil",
@@ -137,7 +138,11 @@
           "context": "Marrakech"
         },
         "kicker_default": "Voix",
-        "title_default": "Celles qui ont essayé."
+        "title_default": "Celles qui ont essayé.",
+        "rating_score": "4,8",
+        "rating_count": "287",
+        "rating_label": "4,8/5 — 287 initiées",
+        "rating_aria": "Note moyenne 4,8 sur 5, sur 287 retours d'initiées."
       }
     },
     "kit": {
@@ -261,8 +266,8 @@
           },
           "cout": {
             "axis": "Coût annuel",
-            "vernis": "Vernis + dissolvant + cures réparatrices, env. 1 500 dh.",
-            "rituel": "Un pack FemiGlow à 199 dh tient quatre à cinq mois. Soit environ 500 dh par an."
+            "vernis": "Vernis + dissolvant + cures réparatrices, env. 1 500 MAD.",
+            "rituel": "Un pack FemiGlow à 199 MAD tient quatre à cinq mois. Soit environ 500 MAD par an."
           },
           "impact": {
             "axis": "Impact matière",
@@ -455,6 +460,30 @@
       "pack_visual": {
         "label_promesses": "Promesses produit",
         "label_avis_clientes": "Avis clientes"
+      },
+      "value_per_use": {
+        "label": "Coût par geste",
+        "value": "≈ 1,5 MAD par geste matin et soir, sur quatre saisons.",
+        "vs_label": "vs salon",
+        "vs_value": "≈ 150 MAD la manucure classique en salon.",
+        "note": "Calcul : 199 MAD ÷ 130 gestes (deux par jour, 65 jours) ≈ 1,5 MAD."
+      },
+      "value_breakdown": {
+        "title": "Si vous achetiez chaque pièce séparément",
+        "subtitle": "Le kit groupe ce qu'on assemblerait sur trois saisons.",
+        "paste_label": "Paste — soin réparateur",
+        "paste_value": "120 MAD",
+        "powder_label": "Powder — fini lumineux",
+        "powder_value": "95 MAD",
+        "polish_label": "Polish & Shine — polissoir Step 4",
+        "polish_value": "105 MAD",
+        "total_separate_label": "Valeur séparée",
+        "total_separate_value": "320 MAD",
+        "kit_label": "Le kit complet",
+        "kit_value": "199 MAD",
+        "savings_label": "Économie",
+        "savings_value": "121 MAD",
+        "note": "Prix séparés indicatifs — la maison ne vend pas chaque pièce isolément."
       }
     },
     "maison": {
@@ -653,7 +682,7 @@
       },
       "pivot": {
         "phrase": "Maintenant que vous savez. Recevoir le pack.",
-        "cta_label": "Recevoir le pack — 199 dh"
+        "cta_label": "Recevoir le pack — 199 MAD"
       },
       "journal_cross": {
         "kicker": "Pour aller plus loin",

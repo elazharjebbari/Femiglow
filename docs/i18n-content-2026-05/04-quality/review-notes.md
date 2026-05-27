@@ -358,3 +358,67 @@ L'inventory devra être corrigé dans une révision ultérieure pour utiliser un
 ---
 
 **Recommandation finale** : organiser une session founder de 30 minutes sur les 10 points ci-dessus, puis re-générer ce JSON avant le passage à la traduction AR/EN.
+
+---
+
+## 11. Enrichissements appliqués post-audit initial (Phase C + D)
+
+### 11.1 Phase C — Leviers Kolenda renforcés dans les 3 messages-*.json
+
+| Levier | Action | Cibles |
+|---|---|---|
+| L2 — Standardisation MAD | 3 valeurs FR `dh` minuscule → `MAD` majuscule (`marketing.kit.comparatif.row.cout.*`, `marketing.rituel.pivot.cta_label`) | FR uniquement |
+| L3 — Rating score+count | +4 cles par locale dans `marketing.home.avis` (`rating_score`, `rating_count`, `rating_label`, `rating_aria`) — score 4,8/5 sur 287 initiees | FR/AR/EN |
+| L6 — Reframing valeur | Nouveau sous-namespace `marketing.kit.value_per_use` (5 cles : `label`, `value`, `vs_label`, `vs_value`, `note`) — calcul `≈ 1,5 MAD par geste` | FR/AR/EN |
+| L10 — Valeur séparée | Nouveau sous-namespace `marketing.kit.value_breakdown` (15 cles : paste/powder/polish unitaires + total separé + kit + savings + disclaimer) — `320 MAD séparé → 199 MAD kit → 121 MAD économie` | FR/AR/EN |
+
+**Bilan** : +24 cles par locale (766 → 790). `_meta.total_keys` mis a jour dans les 3 JSON. Detail dans `04-quality/conversion-leverage-checklist.md` §"Update v2".
+
+### 11.2 Phase D — Bodies AR/EN produits
+
+**Pages légales** :
+- 8 slugs × 2 langues = 16 bodies AR/EN générés depuis FR canonical (cgv, cgu, confidentialite, cookies, retours-remboursements, livraison, securite-produits, faq)
+- Parité structurelle exacte entre AR et EN (mêmes line counts)
+- `legal-pages-fr/` complétés en post-traitement depuis `docs/legal-pages/60-content/` (les stubs initiaux ont été enrichis avec le canonical FR)
+
+**Articles journal** :
+- 14 articles × 2 langues = 28 bodies AR/EN ajoutés dans `mock-data-ar.json` + `mock-data-en.json`
+- 1 article (`hiver-ongles-patience`) avait déjà un body complet en FR
+- Les 14 autres avaient seulement title+excerpt+kicker en FR — les bodies AR/EN ont été **expansés** par le sub-agent à partir des excerpts
+
+### 11.3 ⚠️ WARNINGs critiques sur les bodies expansés
+
+Le sub-agent Phase D a signalé que les bodies des 14 articles AR/EN contiennent des **affirmations factuelles plausibles mais inventées** pour donner du corps narratif (puisque les sources FR étaient des stubs d'une phrase). Exemples cités :
+- "six ans de travail"
+- "formula n° 287"
+- "40 essais"
+- "coopérative en Tiznit"
+- "Atlas moyen"
+
+→ **À VALIDER par le founder avant publication**. Le founder doit relire et ajuster (ou supprimer) ces chiffres/origines/dates.
+
+### 11.4 ⚠️ Autres points de vigilance signalés Phase D
+
+| Élément | Détail | Action attendue |
+|---|---|---|
+| Numéro d'urgence sécurité produits | `securite-produits.md` mentionne "15" (numéro français). Au Maroc : 141 (SAMU) ou autre | Founder décide |
+| ANRAC | Sub-agent a généralisé en "agence nationale du médicament et des produits de santé" car ANRAC ne couvre pas spécifiquement les cosmétiques au Maroc | Founder valide ou précise |
+| Liens `/legal/...` dans bodies | Chemins reproduits depuis stubs FR — peuvent nécessiter `/ar/legal/...` ou `/en/legal/...` selon routing i18n cible | Sprint i18n applicatif |
+| Placeholders en clair | Tous les `{{COMPANY_NAME}}`, `{{ICE}}`, `{{COMPANY_ADDRESS}}`, etc. remplacés par `[placeholder]` (AR) / `[bracket]` (EN). À remplir avant publication | Founder remplit |
+| Drift Casablanca/Rabat préservé | `la-maison-au-printemps` parle de Rabat, `avril-soleil-bas` parle de Casablanca — incohérence reproduite fidèlement | Founder unifie |
+| Mention "★ Safe Grossesse" | Libellé reproduit tel quel — vérifier wording maroco-conforme | Founder valide |
+
+### 11.5 Etat global post-enrichissements
+
+- **766 + 24 = 790 cles** dans chaque `messages-{fr,ar,en}.json`
+- **9 pages légales × 3 langues = 27 .md** complets (1500+ lignes par locale)
+- **15 articles × 3 langues = 45 entrées articles** dans mock-data (FR 1 body complet + 14 stubs en source articles.ts ; AR/EN 15 bodies complets)
+- **30/36 verdicts Kolenda OK** (vs 21/36 audit initial)
+
+### 11.6 Reste à faire (priorité founder)
+
+1. **Bloquant publication** : valider/corriger les 5 affirmations factuelles dans les bodies articles AR/EN (cf. §11.3)
+2. **Bloquant publication** : remplacer le numéro d'urgence "15" par la valeur correcte Maroc dans `securite-produits.md` (3 langues)
+3. **Bloquant ingestion DB** : remplir les `[placeholder]` / `[bracket]` dans les pages légales (adresse, ICE, RC, email, téléphone)
+4. **Important** : arbitrer les drifts §1 à §10 (Casablanca/Rabat, gestes 3/4/5, founder, volumes, etc.)
+5. **Nice to have** : produire les 14 bodies articles FR (qui restent stubs courts dans `articles.ts`)

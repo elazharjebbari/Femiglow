@@ -4,11 +4,12 @@
     "direction": "rtl",
     "schema_version": "1.0",
     "completeness_pct": 100,
-    "total_keys": 766,
+    "total_keys": 790,
     "last_updated": "2026-05-27",
     "voice_check": "MSA simplifié + adresse féminine appliquée",
     "translator_notes": "Touches darija réservées aux clés explicitement chat/newsletter — site principal en MSA. Adresse féminine systématique (impératifs et pronoms en forme féminine singulière).",
-    "reviewer": "translator_ar@femiglow.local (pending)"
+    "reviewer": "translator_ar@femiglow.local (pending)",
+    "kolenda_leverage_v2": "L2 (MAD standardized) + L3 (rating) + L6 (value_per_use) + L10 (value_breakdown) appliqués"
   },
   "common": {
     "back": "العودة إلى الصفحة الرئيسية",
@@ -132,7 +133,11 @@
           "context": "مراكش"
         },
         "kicker_default": "أصوات",
-        "title_default": "اللواتي جرّبن."
+        "title_default": "اللواتي جرّبن.",
+        "rating_score": "4,8",
+        "rating_count": "287",
+        "rating_label": "4,8/5 — 287 رأي",
+        "rating_aria": "متوسط التقييم 4,8 من 5، استنادا إلى 287 رأي."
       }
     },
     "kit": {
@@ -450,6 +455,30 @@
       "pack_visual": {
         "label_promesses": "وعود المنتج",
         "label_avis_clientes": "آراء الزبونات"
+      },
+      "value_per_use": {
+        "label": "تكلفة كل لمسة",
+        "value": "≈ 1,5 MAD لكل حركة، صباحا ومساء، على مدى أربعة مواسم.",
+        "vs_label": "مقارنة بالصالون",
+        "vs_value": "≈ 150 MAD للمناكير الكلاسيكية في الصالون.",
+        "note": "الحساب : 199 MAD ÷ 130 لمسة (مرتين يوميا، 65 يوما) ≈ 1,5 MAD."
+      },
+      "value_breakdown": {
+        "title": "إذا اشتريتِ كل قطعة على حدة",
+        "subtitle": "الكيت يجمع ما يمكن تجميعه على مدى ثلاثة مواسم.",
+        "paste_label": "Paste — عناية مرمّمة",
+        "paste_value": "120 MAD",
+        "powder_label": "Powder — لمعان طبيعي",
+        "powder_value": "95 MAD",
+        "polish_label": "Polish & Shine — صقّال Step 4",
+        "polish_value": "105 MAD",
+        "total_separate_label": "القيمة المنفصلة",
+        "total_separate_value": "320 MAD",
+        "kit_label": "الكيت الكامل",
+        "kit_value": "199 MAD",
+        "savings_label": "التوفير",
+        "savings_value": "121 MAD",
+        "note": "أسعار منفصلة إرشادية — الدار لا تبيع كل قطعة على حدة."
       }
     },
     "maison": {

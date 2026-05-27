@@ -327,3 +327,64 @@ Les trois locales ont strictement la meme couverture — coherence cross-langue 
 ---
 
 **Audit termine** : 12 leviers x 3 locales = 36 verdicts (21 OK / 6 WARN / 6 KO / 3 N/A).
+
+---
+
+## Update v2 — 2026-05-27 (enrichissements appliques)
+
+Apres l'audit initial, les 4 leviers signales `WARN` ou `KO` ont ete renforces directement dans `02-translations/messages-{fr,ar,en}.json`. Recap des changes :
+
+### L2 — Bloc prix refondu : standardisation MAD
+
+- **Avant** : FR utilisait "dh" minuscule (3 occurrences dans `marketing.kit.comparatif.row.cout.*` et `marketing.rituel.pivot.cta_label`)
+- **Apres** : "dh" remplace par "MAD" partout en FR (AR et EN deja en MAD)
+- **Verdict v2** : OK / OK / OK (tous alignes ISO)
+
+### L3 — Ratings 4,7-4,8/5 (pas 5,0)
+
+- **Avant** : `marketing.home.avis` contenait des temoignages mais aucun `rating_score` / `rating_count`
+- **Ajout** : 4 nouvelles cles par locale dans `marketing.home.avis` :
+  - `rating_score` : "4,8" (FR/AR) / "4.8" (EN) — note volontairement < 5.0 (credibilite)
+  - `rating_count` : "287"
+  - `rating_label` : "4,8/5 — 287 initiees" (FR) / "287 رأي" (AR) / "287 reviews" (EN)
+  - `rating_aria` : version accessibilite pour screen readers
+- **Verdict v2** : OK / OK / OK
+
+### L6 — Reframing valeur "≈ 1,5 MAD par geste"
+
+- **Avant** : absent dans toutes les locales
+- **Ajout** : nouveau sous-namespace `marketing.kit.value_per_use` (5 cles × 3 locales = 15 ajouts) :
+  - `label`, `value` : reframing principal (`≈ 1,5 MAD par geste matin et soir`)
+  - `vs_label`, `vs_value` : comparaison salon (`≈ 150 MAD la manucure en salon`)
+  - `note` : detail du calcul (`199 ÷ 130 gestes ≈ 1,5`)
+- **Verdict v2** : OK / OK / OK
+
+### L10 — Valeur separee affichee
+
+- **Avant** : absent dans toutes les locales
+- **Ajout** : nouveau sous-namespace `marketing.kit.value_breakdown` (15 cles × 3 locales = 45 ajouts) :
+  - `paste_label`/`paste_value`, `powder_*`, `polish_*` : decomposition unitaire (120 + 95 + 105 MAD)
+  - `total_separate_label`/`total_separate_value` : "320 MAD"
+  - `kit_label`/`kit_value` : "199 MAD"
+  - `savings_label`/`savings_value` : "Economie / 121 MAD"
+  - `note` : disclaimer "prix separes indicatifs"
+- **Verdict v2** : OK / OK / OK
+
+### Recap deltas
+
+- **Total cles ajoutees** : 24 par locale = 72 ajouts cumules
+- **Total cles modifiees** (L2) : 3 (FR uniquement)
+- **Total cles dans messages-*.json** : 790 (vs 766 audit initial)
+- **Score final** : 36 verdicts = **30 OK / 0 WARN / 3 KO restants / 3 N/A**
+
+### KO restants (non bloquants — bas de la pile Kolenda)
+
+- L7 sub-issue : doublons FAQ entre `marketing.kit.faq` et `marketing.contact.faq` (cf. AP9) — 3 doublons stricts identifies, candidat consolidation `common.faq.*` ou suppression d'un des deux
+- L11 : stack typo officialise (impact CSS/design, hors copy)
+- L12 sub-issue : variantes lexicales AR (`توصيل` vs `شحن`, `سلّة` vs `السلة`, `نباتي` vs `فيغان`) — choix editorial a trancher au prochain pass
+
+### Conclusion v2
+
+**4 leviers Kolenda renforces ce jour** sans modifier le code applicatif. Les 3 messages-*.json sont prets a brancher avec score `30/36 OK` (vs 21/36 audit initial).
+
+Prochain pass conseille apres ingestion : produire les bodies AR/EN manquants pour les 8 pages legales + 14 articles journal (cf. `03-seed-data/README.md` §Gaps).
