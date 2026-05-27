@@ -519,6 +519,13 @@
       "when": 1779719287451,
       "tag": "0073_visitor_attribution",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1780000000001,
+      "tag": "0075_legal_vars_rename_and_add",
+      "breakpoints": true
     }
   ]
 }

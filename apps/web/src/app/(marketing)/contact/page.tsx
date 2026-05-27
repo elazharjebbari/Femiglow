@@ -54,10 +54,10 @@ const faqs: FAQAccordionItem[] = [
       'Rabat\u00A0: 24 heures. Casablanca et Sal\u00E9\u00A0: 24 \u00E0 48 heures. Reste du Maroc\u00A0: 48 \u00E0 72 heures. Livraison offerte au Maroc, sans seuil. \u00C0 l\u2019international, \u00E9crivez-nous, nous \u00E9tudions chaque envoi \u00E0 la main.',
   },
   {
-    id: 'formation-souheila',
-    question: 'Comment suivre une formation avec Souheila\u202F?',
+    id: 'formation-fondatrice',
+    question: 'Comment suivre une formation avec notre \u00E9quipe\u202F?',
     answer:
-      'Souheila anime des formations \u00E0 la manucure japonaise et \u00E0 la fabrication cosm\u00E9tique dans l\u2019atelier de Rabat. \u00C9crivez \u00E0 info@femiglow-maroc.com en pr\u00E9cisant votre profil (esth\u00E9ticienne, formulatrice, \u00E9cole). Nous r\u00E9pondons sous trois jours.',
+      'Notre fondatrice anime des formations \u00E0 la manucure japonaise et \u00E0 la fabrication cosm\u00E9tique dans l\u2019atelier de Rabat. \u00C9crivez \u00E0 info@femiglow-maroc.com en pr\u00E9cisant votre profil (esth\u00E9ticienne, formulatrice, \u00E9cole). Nous r\u00E9pondons sous trois jours.',
   },
   {
     id: 'echantillon-avant-achat',
