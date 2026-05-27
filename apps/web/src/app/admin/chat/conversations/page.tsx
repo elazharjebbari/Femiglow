@@ -8,14 +8,23 @@ import Link from 'next/link';
 
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ChatAdminNav } from '@/components/admin/chat/ChatAdminNav';
+import { KindBadge } from '@/components/admin/chat/KindBadge';
 import { adminQueries } from '@/lib/chat/admin/queries';
 import { isChatEnabled } from '@/lib/chat/feature-flag';
+import type { ChatSessionKind } from '@/lib/chat/db/kind';
 import { requireAdmin } from '@/lib/auth/require-admin';
 
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  searchParams?: { q?: string; lang?: string; status?: string; converted?: string };
+  searchParams?: {
+    q?: string;
+    lang?: string;
+    status?: string;
+    converted?: string;
+    /** CHA-LEAD-V2 — mode debug : inclut sessions sans messages + tous kinds */
+    debug?: string;
+  };
 }
 
 export default async function ChatConversationsPage({ searchParams }: PageProps) {
@@ -28,6 +37,8 @@ export default async function ChatConversationsPage({ searchParams }: PageProps)
   const convertedRaw = searchParams?.converted?.trim() ?? '';
   const converted: 'yes' | 'no' | undefined =
     convertedRaw === 'yes' || convertedRaw === 'no' ? convertedRaw : undefined;
+  // CHA-LEAD-V2 — Mode debug : inclut les ghost sessions wizard + bootstraps vides
+  const debugGhosts = searchParams?.debug === 'ghosts';
 
   let rows: Awaited<ReturnType<typeof adminQueries.listConversations>> = [];
   let convertedIds = new Set<string>();
@@ -39,6 +50,8 @@ export default async function ChatConversationsPage({ searchParams }: PageProps)
         language: lang || undefined,
         status: (status as 'open' | 'idle' | 'archived' | 'purged' | '') || undefined,
         converted,
+        withMessagesOnly: !debugGhosts,
+        kinds: debugGhosts ? ['chat', 'wizard_pivot', 'system'] : undefined,
         limit: 100,
       });
       // On (re)calcule l'ensemble des convertis pour marquer les lignes
@@ -55,6 +68,30 @@ export default async function ChatConversationsPage({ searchParams }: PageProps)
       <ChatAdminNav active="conversations" />
       <header className="mb-4">
         <h1 className="text-2xl font-semibold tracking-tight">Conversations</h1>
+        <p className="mt-1 text-sm text-stone-600">
+          {debugGhosts ? (
+            <>
+              Mode <strong>debug</strong> — toutes les sessions visibles (y compris
+              wizard pivots et bootstraps vides).{' '}
+              <Link
+                href="/admin/chat/conversations"
+                className="underline-offset-2 hover:underline"
+              >
+                Repasser en mode normal
+              </Link>
+            </>
+          ) : (
+            <>
+              Affiche uniquement les conversations avec au moins un message envoyé.
+              <Link
+                href="/admin/chat/conversations?debug=ghosts"
+                className="ml-2 text-stone-500 underline-offset-2 hover:underline"
+              >
+                Voir tout (debug)
+              </Link>
+            </>
+          )}
+        </p>
       </header>
 
       <form className="mb-4 flex flex-wrap gap-2 text-sm" method="get">
@@ -168,6 +205,12 @@ export default async function ChatConversationsPage({ searchParams }: PageProps)
                       >
                         {s.id}
                       </Link>
+                      {debugGhosts && s.kind !== 'chat' ? (
+                        <KindBadge
+                          kind={s.kind as ChatSessionKind}
+                          className="ml-1.5"
+                        />
+                      ) : null}
                     </td>
                     <td className="px-3 py-2 text-stone-600">{s.page ?? '—'}</td>
                     <td className="px-3 py-2 uppercase">{s.language}</td>

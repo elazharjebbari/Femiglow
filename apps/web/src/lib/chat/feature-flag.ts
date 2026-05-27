@@ -17,6 +17,20 @@ export function isChatEnabled(): boolean {
 }
 
 /**
+ * CHA-LEAD-V2 — Active les filtres admin V2 :
+ *  - `adminQueries.listConversations` filtre `kind='chat'` + `withMessagesOnly`
+ *  - `adminQueries.listChatLeads` filtre `source IN ('chat_widget', 'inline')`
+ *
+ * Par défaut `false` pour rollback-safe. Toggle à `true` progressivement
+ * (staging puis prod) après vérification.
+ *
+ * Cf. docs/chat-conversations-leads-fix-2026-05/00-context/decisions-architecturales.md ADR-002.
+ */
+export function isChatAdminFiltersV2Enabled(): boolean {
+  return env.CHAT_ADMIN_FILTERS_V2 === 'true';
+}
+
+/**
  * Garde server-side : à utiliser au début des handlers et des
  * Server Components dépendants. Throw → renvoi en 404 par Next.
  */

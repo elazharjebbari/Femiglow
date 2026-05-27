@@ -148,7 +148,19 @@ export const chatProviderConfig = pgTable(
 export const chatSession = pgTable(
   'chat_session',
   {
-    id: text('id').primaryKey(), // cs_xxxxxxxx
+    id: text('id').primaryKey(), // cs_xxxxxxxx OU s_xxx (wizard pivot)
+    /**
+     * CHA-LEAD-V2-01 — Discriminateur entre conversations chat réelles
+     * (`'chat'`, default) et "ghost sessions" wizard utilisées comme pivot
+     * FK pour `chat_lead` (`'wizard_pivot'`). `'system'` couvre les flows
+     * système (newsletter standalone, admin seed) qui n'ont ni interface
+     * chat ni wizard.
+     *
+     * Cf. docs/chat-conversations-leads-fix-2026-05/01-design-conception/data-model.md
+     */
+    kind: text('kind', { enum: ['chat', 'wizard_pivot', 'system'] })
+      .notNull()
+      .default('chat'),
     visitorId: text('visitor_id').notNull(),
     fingerprintHash: text('fingerprint_hash'),
     language: text('language').notNull().default('fr'),
@@ -183,6 +195,11 @@ export const chatSession = pgTable(
     statusIdx: index('chat_session_status_idx').on(t.status, t.lastSeenAt),
     convIdx: index('chat_session_conv_idx').on(t.convertedAt),
     pageIdx: index('chat_session_page_idx').on(t.page),
+    kindStatusIdx: index('chat_session_kind_status_idx').on(
+      t.kind,
+      t.status,
+      t.lastSeenAt,
+    ),
   }),
 );
 

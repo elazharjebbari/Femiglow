@@ -1,9 +1,11 @@
 /**
  * CHA-018 — Repository chat_session.
+ * CHA-LEAD-V2-01 — Insère explicitement `kind: 'chat'` pour traçabilité logs.
  */
 import { and, desc, eq, sql } from 'drizzle-orm';
 
 import { createId } from '@/lib/ids';
+import { logger } from '@/lib/logging/logger';
 
 import { requireChatDb } from '../db/client';
 import { chatSession, type ChatSessionInsert, type ChatSessionRow } from '../db/schema';
@@ -43,7 +45,19 @@ export const sessionRepo = {
   async create(insert: Omit<ChatSessionInsert, 'id'>): Promise<ChatSessionRow> {
     const db = requireChatDb();
     const id = createId('cs');
-    const rows = await db.insert(chatSession).values({ ...insert, id }).returning();
+    // CHA-LEAD-V2-01 — On laisse insert.kind override possible (utile pour
+    // tests/seed) mais on garantit le default 'chat' explicite pour traçabilité.
+    const kind = insert.kind ?? 'chat';
+    const rows = await db
+      .insert(chatSession)
+      .values({ ...insert, id, kind })
+      .returning();
+    logger.info('chat.session.create', {
+      sessionId: id,
+      kind,
+      visitorId: insert.visitorId,
+      page: insert.page,
+    });
     return rows[0]!;
   },
 

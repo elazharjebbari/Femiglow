@@ -519,6 +519,13 @@
       "when": 1779719287451,
       "tag": "0073_visitor_attribution",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1780000000000,
+      "tag": "0074_chat_session_kind",
+      "breakpoints": true
     }
   ]
 }

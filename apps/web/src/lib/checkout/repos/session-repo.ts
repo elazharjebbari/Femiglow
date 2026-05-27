@@ -31,6 +31,7 @@
  */
 import { eq, sql } from 'drizzle-orm';
 
+import { logger } from '@/lib/logging/logger';
 import { requireChatDb } from '@/lib/chat/db/client';
 import { chatSession, type ChatSessionRow } from '@/lib/chat/db/schema';
 import { instructionRepo } from '@/lib/chat/repos/instruction';
@@ -81,6 +82,7 @@ export const wizardSessionRepo = {
       .insert(chatSession)
       .values({
         id: input.sessionId,
+        kind: 'wizard_pivot', // CHA-LEAD-V2-01 — discriminateur wizard
         visitorId: input.visitorId,
         language: input.language ?? 'fr',
         page: input.page ?? null,
@@ -92,7 +94,15 @@ export const wizardSessionRepo = {
       .onConflictDoNothing({ target: chatSession.id })
       .returning();
 
-    if (inserted[0]) return inserted[0];
+    if (inserted[0]) {
+      logger.info('chat.session.create', {
+        sessionId: inserted[0].id,
+        kind: 'wizard_pivot',
+        visitorId: input.visitorId,
+        page: input.page ?? null,
+      });
+      return inserted[0];
+    }
 
     // Conflit → autre requête a gagné la course. Relire la row.
     const recheck = await db
