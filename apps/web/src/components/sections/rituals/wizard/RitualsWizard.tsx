@@ -946,7 +946,7 @@ function ConfirmationView({ onClose }: { onClose: () => void }) {
       </p>
       <p className="mt-6 text-xs text-encre/60">Avec soin,</p>
       <p className="mt-1 font-inter text-sm font-medium text-encre">
-        Souheila · FemiGlow
+        notre fondatrice · FemiGlow
       </p>
       <Fleuron size="sm" tone="champagne" className="my-6" />
       <button

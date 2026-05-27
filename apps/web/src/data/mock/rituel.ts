@@ -1,7 +1,7 @@
 import type { RituelPageContent } from '@/lib/schemas';
 
 /**
- * Audit 08/09 — Rituel = manucure japonaise halal. Interview Souheila à Rabat.
+ * Audit 08/09 — Rituel = manucure japonaise halal. Interview de notre fondatrice à Rabat.
  * Sources scientifiques élargies (kaolin, halal cosmetics, manucure japonaise).
  */
 export const mockRituel: RituelPageContent = {
@@ -22,7 +22,7 @@ export const mockRituel: RituelPageContent = {
     titre: 'Une attention venue du Japon, transmise \u00e0 Rabat.',
     paragraphes: [
       'Au Japon, le soin de la main n\u2019est pas un produit\u202F: c\u2019est une attention quotidienne, lente, sans déclaration. La manucure japonaise — connue aussi sous les noms \u00ab\u202Fkawaii\u202F\u00bb ou \u00ab\u202Fchigiri\u202F\u00bb — remonte au début du XXᵉ siècle. Elle révèle la brillance naturelle de l\u2019ongle par polissage, sans vernis.',
-      'Souheila a rapporté ce geste d\u2019un voyage de formation. Elle l\u2019a réinscrit dans un référentiel marocain\u202F: matières locales, certification halal, atelier au 25 bis avenue Patrice Lumumba, à Rabat.',
+      'Notre fondatrice a rapporté ce geste d\u2019un voyage de formation. Elle l\u2019a réinscrit dans un référentiel marocain\u202F: matières locales, certification halal, atelier au 25 bis avenue Patrice Lumumba, à Rabat.',
       'Le résultat tient en cinq minutes par jour. Pas de promesse, pas de cure. Une habitude qui s\u2019installe, comme on dépose une tasse sur une table en bois.',
     ],
     photoSepia: {
@@ -94,14 +94,14 @@ export const mockRituel: RituelPageContent = {
   },
   interview: {
     introduction:
-      'Souheila a pos\u00e9 son atelier au 25 bis avenue Patrice Lumumba, \u00e0 Rabat. Elle y formule, et elle y enseigne \u2014 d\u2019autres marques de cosm\u00e9tiques naturels passent par ses mains. Nous lui avons demand\u00e9 comment le rituel s\u2019enseigne.',
+      'notre fondatrice a pos\u00e9 son atelier au 25 bis avenue Patrice Lumumba, \u00e0 Rabat. Elle y formule, et elle y enseigne \u2014 d\u2019autres marques de cosm\u00e9tiques naturels passent par ses mains. Nous lui avons demand\u00e9 comment le rituel s\u2019enseigne.',
     portrait: {
       src: '/rituel/portrait-salma.svg',
-      alt: 'Portrait de Souheila, fondatrice, lumi\u00e8re naturelle de fin d\u2019apr\u00e8s-midi',
+      alt: 'Portrait de notre fondatrice, fondatrice, lumi\u00e8re naturelle de fin d\u2019apr\u00e8s-midi',
       width: 1200,
       height: 1500,
     },
-    nomInterviewee: 'Souheila',
+    nomInterviewee: 'Notre fondatrice',
     questions: [
       {
         id: 'q1',

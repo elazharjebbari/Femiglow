@@ -15,7 +15,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const MARKETING_DIR = join(process.cwd(), 'src/app/(marketing)');
+const SEO_DIR = join(process.cwd(), 'src/lib/seo');
 const FOUNDER_PATTERN = /souhei[lï]a/i;
+// LEGAL-V2 — Couvrir aussi src/lib/seo/ (JSON-LD rendu sur toutes les pages
+// marketing via <JsonLd schema={...} />).
+const SCANNED_DIRS = [MARKETING_DIR, SEO_DIR];
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -32,8 +36,8 @@ function walk(dir: string): string[] {
 }
 
 describe('marketing pages — anonymisation prénom fondatrice', () => {
-  it('aucune occurrence dans les pages marketing publiques', () => {
-    const files = walk(MARKETING_DIR);
+  it('aucune occurrence dans les pages marketing publiques + SEO JSON-LD', () => {
+    const files = SCANNED_DIRS.flatMap(walk);
     const violations: Array<{ file: string; line: number; content: string }> = [];
 
     for (const file of files) {
