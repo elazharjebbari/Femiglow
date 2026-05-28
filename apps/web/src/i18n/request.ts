@@ -24,7 +24,9 @@ export default getRequestConfig(async ({ requestLocale }) => {
   // Dynamic import du fichier de messages. Le bundler split chaque locale
   // en chunk séparé, donc seules les messages de la locale active sont
   // chargées (pas les autres).
-  const messages = (await import(`@/messages/${locale}.json`)).default;
+  // NB : chemin relatif (pas `@/messages/...`) — webpack ne suit pas
+  // automatiquement les `paths` du tsconfig pour le dynamic import.
+  const messages = (await import(`../../messages/${locale}.json`)).default;
 
   return {
     locale,

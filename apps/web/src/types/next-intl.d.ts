@@ -13,7 +13,7 @@
  */
 import 'next-intl';
 
-import type messages from '@/messages/fr.json';
+import type messages from '../../messages/fr.json';
 
 declare module 'next-intl' {
   // Étend l'interface IntlMessages avec le shape réel des messages FR.
