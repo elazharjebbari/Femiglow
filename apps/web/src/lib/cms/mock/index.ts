@@ -7,6 +7,21 @@ import {
   mockRituel,
 } from '@/data/mock';
 import type { CMSAdapter, GetArticlesOptions, GetArticlesPageOptions } from '../types';
+import type { CmsLocaleOptions } from '../locale-options';
+import { pickByLocale } from '../pick-by-locale';
+
+/**
+ * Dictionnaires de contenu indexés par locale, consommés par
+ * `pickByLocale`. Phase 3.5 ingérera de vrais bindings AR/EN ici
+ * (depuis `docs/i18n-content-2026-05/03-seed-data/`).
+ *
+ * Pour l'instant, seul `fr` est défini → toutes les locales fallback
+ * sur le contenu FR de `mockHomepage` etc. Aucune régression côté UI.
+ */
+const homepageByLocale = { fr: mockHomepage };
+const maisonByLocale = { fr: mockMaison };
+const rituelByLocale = { fr: mockRituel };
+const kitPageByLocale = { fr: mockKitPageContent };
 
 export const mockAdapter: CMSAdapter = {
   async getArticles(options: GetArticlesOptions = {}) {
@@ -64,19 +79,19 @@ export const mockAdapter: CMSAdapter = {
     return mockKit;
   },
 
-  async getHomepageContent() {
-    return mockHomepage;
+  async getHomepageContent(options?: CmsLocaleOptions) {
+    return pickByLocale(homepageByLocale, options);
   },
 
-  async getMaisonPageContent() {
-    return mockMaison;
+  async getMaisonPageContent(options?: CmsLocaleOptions) {
+    return pickByLocale(maisonByLocale, options);
   },
 
-  async getRituelPageContent() {
-    return mockRituel;
+  async getRituelPageContent(options?: CmsLocaleOptions) {
+    return pickByLocale(rituelByLocale, options);
   },
 
-  async getKitPageContent() {
-    return mockKitPageContent;
+  async getKitPageContent(options?: CmsLocaleOptions) {
+    return pickByLocale(kitPageByLocale, options);
   },
 };
