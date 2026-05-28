@@ -1,13 +1,22 @@
 /**
  * Sub-layout `[locale]` — wrap les pages localisées avec :
  *  - `NextIntlClientProvider` (messages dispos côté client)
- *  - `LocaleDirectionScript` qui ajuste `<html lang/dir>` runtime
+ *  - Inline script SSR qui set `<html lang/dir>` AVANT hydration React
  *
- * NB : on ne touche PAS au layout root (`app/layout.tsx`) — il définit
- * encore `<html lang="fr">` hardcoded. L'ajustement runtime de `lang` et
- * `dir` permet d'avoir le bon comportement RTL sans casser les routes
- * legacy non-i18n. La refonte SSR-pure du root layout est planifiée pour
- * Phase 2.X (cf. `docs/i18n-strategy-2026-05/08-plan-action/phases.md`).
+ * Pattern "blocking inline script" (identique à next-themes dark mode) :
+ *  1. Le script est server-rendered dans le HTML envoyé au client
+ *  2. Le browser le parse + exécute SYNCHRONEMENT au premier hit (avant
+ *     l'hydration React, avant le premier paint visible)
+ *  3. `lang`/`dir` du `<html>` sont mis à jour AVANT que React ne touche
+ *     le DOM → **zéro flash LTR pour les visiteurs AR**
+ *
+ * On ne touche PAS au root layout (`app/layout.tsx`) — il continue de
+ * définir `<html lang="fr">` hardcoded pour les routes legacy. Notre
+ * script overrides au plus tôt pour les routes `[locale]/*`.
+ *
+ * Refonte SSR-pure du root layout (lang servi server-side dans le HTML
+ * initial) reste possible Phase 2.X mais demande de réécrire le
+ * middleware existant (CSP/auth/attribution) — out of scope ici.
  *
  * @see docs/i18n-strategy-2026-05/03-backend/server-rendering.md
  */
@@ -16,7 +25,6 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
-import { LocaleDirectionScript } from '@/components/i18n/LocaleDirectionScript';
 import { getLocaleConfig, isLocale, LOCALES } from '@/i18n.config';
 
 interface LocaleLayoutProps {
@@ -30,6 +38,18 @@ interface LocaleLayoutProps {
  */
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
+}
+
+/**
+ * Construit un script JavaScript inline qui set lang/dir sur l'élément
+ * `<html>` au plus tôt dans le cycle de chargement du document.
+ *
+ * Sécurité : la `locale` est validée par `isLocale()` en amont, donc
+ * impossible d'injecter du JS arbitraire via l'URL. La direction est
+ * une string statique ('ltr' | 'rtl') depuis `LOCALES_CONFIG`.
+ */
+function buildLocaleScript(locale: string, direction: 'ltr' | 'rtl'): string {
+  return `(function(){try{var h=document.documentElement;h.setAttribute('lang','${locale}');h.setAttribute('dir','${direction}');}catch(e){}})();`;
 }
 
 export default async function LocaleLayout({
@@ -48,6 +68,7 @@ export default async function LocaleLayout({
 
   const messages = await getMessages();
   const config = getLocaleConfig(params.locale);
+  const localeScript = buildLocaleScript(params.locale, config.direction);
 
   return (
     <NextIntlClientProvider
@@ -56,9 +77,10 @@ export default async function LocaleLayout({
       timeZone="Africa/Casablanca"
       now={new Date()}
     >
-      <LocaleDirectionScript
-        locale={params.locale}
-        direction={config.direction}
+      {/* Inline blocking script — set lang/dir AVANT premier paint. */}
+      <script
+        dangerouslySetInnerHTML={{ __html: localeScript }}
+        suppressHydrationWarning
       />
       {children}
     </NextIntlClientProvider>
