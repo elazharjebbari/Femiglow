@@ -30,7 +30,7 @@ export function CartButton() {
           <path d="M9 8V6a3 3 0 0 1 6 0v2" />
         </svg>
         {display > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-encre" />
+          <span className="absolute -end-0.5 -top-0.5 h-2 w-2 rounded-full bg-encre" />
         )}
       </span>
       <span className="hidden md:inline">Panier</span>

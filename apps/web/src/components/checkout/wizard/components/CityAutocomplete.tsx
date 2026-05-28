@@ -472,7 +472,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
                   )}
                 </div>
                 <div className="shrink-0 whitespace-nowrap text-xs text-encre/60">
-                  <div className="flex justify-end text-right">
+                  <div className="flex justify-end text-end">
                     <ShippingPriceDisplay
                       displayPrice={
                         city.deliveryPriceMad === 0
@@ -484,7 +484,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
                       align="right"
                     />
                   </div>
-                  <div className="text-right text-encre/45">
+                  <div className="text-end text-encre/45">
                     {city.deliveryEta}
                   </div>
                 </div>

@@ -51,7 +51,7 @@ export function PostCtaLink({
   );
 
   return (
-    <div className="mt-4 text-right">
+    <div className="mt-4 text-end">
       <a
         href={href}
         onClick={handleClick}

@@ -39,7 +39,7 @@ export function OrderSummaryAccordion({
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"
       >
         <span className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-encre/70">
           <ChevronIcon open={open} />

@@ -109,7 +109,7 @@ export function CompositionCard({
       <div className="space-y-2">
         <Heading as="h3" size="sm">
           {subProduct.name}
-          <span className="ml-2 align-baseline font-body text-base text-stone-500 [font-variant-numeric:tabular-nums]">
+          <span className="ms-2 align-baseline font-body text-base text-stone-500 [font-variant-numeric:tabular-nums]">
             · {subProduct.volume.toLowerCase()}
           </span>
         </Heading>

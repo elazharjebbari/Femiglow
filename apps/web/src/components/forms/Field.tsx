@@ -25,7 +25,7 @@ export function FieldShell({ id, label, hint, error, required, children, trailin
       <label htmlFor={id} className="block text-sm font-medium text-encre">
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-1 text-encre/50">
+          <span aria-hidden="true" className="ms-1 text-encre/50">
             *
           </span>
         )}

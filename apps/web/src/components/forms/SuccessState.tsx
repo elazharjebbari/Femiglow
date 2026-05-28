@@ -14,7 +14,7 @@ export function SuccessState() {
     <div
       role="status"
       aria-live="polite"
-      className="space-y-3 border-l-2 border-sauge pl-6 py-2"
+      className="space-y-3 border-s-2 border-sauge ps-6 py-2"
     >
       <h3
         ref={headingRef}

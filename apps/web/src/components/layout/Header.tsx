@@ -106,7 +106,7 @@ export function Header() {
                   <span
                     aria-hidden="true"
                     onClick={dismissHint}
-                    className="pointer-events-auto absolute right-0 top-full mt-2 inline-flex items-center gap-2 whitespace-nowrap bg-encre px-3 py-1.5 font-body text-[10px] uppercase tracking-[0.18em] text-creme shadow-md motion-safe:animate-[hint-pulse_1.6s_ease-out_2]"
+                    className="pointer-events-auto absolute end-0 top-full mt-2 inline-flex items-center gap-2 whitespace-nowrap bg-encre px-3 py-1.5 font-body text-[10px] uppercase tracking-[0.18em] text-creme shadow-md motion-safe:animate-[hint-pulse_1.6s_ease-out_2]"
                   >
                     <span aria-hidden="true">↑</span>
                     Voir le pack ci-dessous

@@ -26,25 +26,22 @@ export function ChatLauncher({ unreadCount = 0 }: ChatLauncherProps) {
   const pathname = usePathname();
   const { emit } = useTracking();
 
-  const isRtl = language === 'ar';
+  // CHA-rtl : on utilise les classes logiques (`end-*`) pour que le
+  // launcher se positionne côté « end » (right en LTR, left en RTL)
+  // automatiquement.
   // Sur `/kit`, la `StickyCartCTA` occupe la bande basse en mobile (bar
-  // pleine largeur ~80px) et le coin bas-droit en desktop (boîte 340px).
-  // On remonte le launcher (mobile) et on le décale à gauche de la boîte
-  // sticky (desktop) pour ne pas recouvrir le bouton « Commander ».
+  // pleine largeur ~80px) et le coin bas-end en desktop (boîte 340px).
+  // On remonte le launcher (mobile) et on le décale du côté `start` de la
+  // boîte sticky (desktop) pour ne pas recouvrir le bouton « Commander ».
   const hasStickyCta = pathname === '/kit';
   const verticalClass = hasStickyCta
     ? 'bottom-24 sm:bottom-7'
     : 'bottom-5 sm:bottom-7';
-  let positionClass: string;
-  if (isRtl) {
-    positionClass = 'left-5 sm:left-7';
-  } else if (hasStickyCta) {
-    // Mobile : on reste à `right-5` (le décalage vertical suffit) ; sm+ :
-    // 372px = 24px (right-6 du sticky) + 340px (largeur sticky) + 8px de marge.
-    positionClass = 'right-5 sm:right-[372px]';
-  } else {
-    positionClass = 'right-5 sm:right-7';
-  }
+  // Mobile : on reste à `end-5` (le décalage vertical suffit) ; sm+ :
+  // 372px = 24px (end-6 du sticky) + 340px (largeur sticky) + 8px de marge.
+  const positionClass = hasStickyCta
+    ? 'end-5 sm:end-[372px]'
+    : 'end-5 sm:end-7';
 
   const handleToggle = (): void => {
     if (isOpen) {
@@ -95,7 +92,7 @@ export function ChatLauncher({ unreadCount = 0 }: ChatLauncherProps) {
       {unreadCount > 0 && (
         <span
           aria-label={`${unreadCount} nouveau messages`}
-          className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-medium text-white"
+          className="absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-medium text-white"
         >
           {unreadCount > 9 ? '9+' : unreadCount}
         </span>

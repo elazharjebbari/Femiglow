@@ -174,7 +174,7 @@ export default async function LegalPage({ params }: PageProps) {
               </p>
               <ul className="mt-3 space-y-1.5 text-sm">
                 {rendered.headings.map((h) => (
-                  <li key={h.id} className={h.depth === 3 ? 'pl-4' : ''}>
+                  <li key={h.id} className={h.depth === 3 ? 'ps-4' : ''}>
                     <a
                       href={`#${h.id}`}
                       className="block rounded-sm text-encre/80 transition-colors hover:text-encre focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-encre"

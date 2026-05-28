@@ -29,7 +29,7 @@ export function NumberBadge({ label, hex, className }: NumberBadgeProps): JSX.El
       aria-hidden="true"
       data-testid="composition-number-badge"
       className={[
-        'absolute -top-3 -left-3 z-10 inline-flex h-9 w-9 items-center justify-center',
+        'absolute -top-3 -start-3 z-10 inline-flex h-9 w-9 items-center justify-center',
         'rounded-full bg-[#FBFAF6] font-display text-base shadow-sm',
         '[font-variant-numeric:tabular-nums]',
         className ?? '',

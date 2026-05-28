@@ -88,7 +88,7 @@ export function WizardStepIndicator({
                 {time && (
                   <span
                     data-testid={`wizard-step-time-${step}`}
-                    className="ml-1 text-[10px] text-encre/45 tabular-nums"
+                    className="ms-1 text-[10px] text-encre/45 tabular-nums"
                   >
                     · {time}
                   </span>

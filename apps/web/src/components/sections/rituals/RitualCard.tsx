@@ -120,7 +120,7 @@ export function RitualCard({
           type="button"
           onClick={() => onPhotoClick(0)}
           aria-label={`Voir la photo en grand : ${buildPhotoAlt(data)}`}
-          className="float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]"
+          className="float-start me-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]"
         >
           <Image
             src={photo.thumbUrl}
@@ -137,7 +137,7 @@ export function RitualCard({
         </button>
       )}
       {photo && !isCompact && !onPhotoClick && (
-        <div className="float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]">
+        <div className="float-start me-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]">
           <Image
             src={photo.thumbUrl}
             alt={photo.alt ?? buildPhotoAlt(data)}

@@ -8,7 +8,7 @@ export function ComparatifTable({ data }: ComparatifTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
-        <thead className="bg-encre text-creme text-left">
+        <thead className="bg-encre text-creme text-start">
           <tr>
             <th scope="col" className="p-4 font-medium uppercase tracking-[0.12em] text-[11px]">
               Axe
@@ -26,7 +26,7 @@ export function ComparatifTable({ data }: ComparatifTableProps) {
             <tr key={row.axis} className="align-top">
               <th
                 scope="row"
-                className="bg-creme-warm p-4 text-left font-display text-base text-encre"
+                className="bg-creme-warm p-4 text-start font-display text-base text-encre"
               >
                 {row.axis}
               </th>

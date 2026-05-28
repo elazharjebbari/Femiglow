@@ -225,7 +225,7 @@ function SuggestionPill({
       className={[
         'group flex w-full items-center gap-3 rounded-2xl',
         'border border-rose-200/80 bg-gradient-to-br from-white to-rose-50/60',
-        'px-4 py-3 text-left text-sm font-medium text-stone-800',
+        'px-4 py-3 text-start text-sm font-medium text-stone-800',
         'shadow-sm transition-all duration-150',
         'hover:border-rose-300 hover:shadow-md hover:from-rose-50/80 hover:to-rose-50',
         'active:scale-[0.985]',

@@ -284,7 +284,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
           {DEFAULT_WIZARD_FEATURES.fieldCheckmark && (
             <WizardCheckmark
               visible={firstNameValid && phoneValid && watchedConsentForCheck === true}
-              className="ml-2"
+              className="ms-2"
             />
           )}
         </Heading>
@@ -332,7 +332,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                     }}
                   />
                   {DEFAULT_WIZARD_FEATURES.fieldCheckmark && firstNameValid && (
-                    <span className="pointer-events-none absolute right-2 top-0 inline-flex">
+                    <span className="pointer-events-none absolute end-2 top-0 inline-flex">
                       <WizardCheckmark visible />
                     </span>
                   )}
@@ -373,7 +373,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                     />
                   )}
                   {DEFAULT_WIZARD_FEATURES.fieldCheckmark && phoneValid && (
-                    <span className="pointer-events-none absolute right-2 top-0 inline-flex">
+                    <span className="pointer-events-none absolute end-2 top-0 inline-flex">
                       <WizardCheckmark visible />
                     </span>
                   )}

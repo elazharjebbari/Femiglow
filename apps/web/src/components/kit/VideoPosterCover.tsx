@@ -218,7 +218,7 @@ function VideoPosterCoverImpl(
       {video.durationDisplay ? (
         <span
           aria-hidden="true"
-          className="absolute bottom-3 left-3 inline-flex items-center rounded-sm bg-[#2C2A28]/80 px-2 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-creme [font-variant-numeric:tabular-nums]"
+          className="absolute bottom-3 start-3 inline-flex items-center rounded-sm bg-[#2C2A28]/80 px-2 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-creme [font-variant-numeric:tabular-nums]"
           data-testid="video-poster-duration-badge"
         >
           {video.durationDisplay}

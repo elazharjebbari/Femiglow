@@ -176,7 +176,7 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
                         <span
                           aria-hidden="true"
                           className={cn(
-                            'pointer-events-none absolute -bottom-1 left-0 h-px bg-encre transition-all duration-[350ms] ease-out',
+                            'pointer-events-none absolute -bottom-1 start-0 h-px bg-encre transition-all duration-[350ms] ease-out',
                             active
                               ? 'w-full opacity-100 [height:1.5px]'
                               : 'w-0 opacity-80 group-hover:w-full group-focus-visible:w-full',
@@ -190,7 +190,7 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
                     </div>
                     <span
                       aria-hidden="true"
-                      className="relative ml-auto mt-2 block h-14 w-14 shrink-0 overflow-hidden rounded-[2px] bg-encre/5 sm:h-16 sm:w-16 md:h-[88px] md:w-[88px]"
+                      className="relative ms-auto mt-2 block h-14 w-14 shrink-0 overflow-hidden rounded-[2px] bg-encre/5 sm:h-16 sm:w-16 md:h-[88px] md:w-[88px]"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img

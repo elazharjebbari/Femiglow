@@ -163,9 +163,11 @@ export function ChatPanel({ page }: ChatPanelProps) {
 
   const isRtl = language === 'ar';
   // Position desktop uniquement : en mobile, `inset-0` couvre tout l'écran
-  // et neutralise `right-5` / `left-5`. On garde les variantes `sm:` pour
+  // et neutralise `end-5` / `start-5`. On garde les variantes `sm:` pour
   // que le bubble desktop se positionne correctement.
-  const positionClass = isRtl ? 'sm:left-7' : 'sm:right-7';
+  // `sm:end-7` est une logical property (= bottom-7 côté end, donc droite
+  // en LTR et gauche en RTL).
+  const positionClass = 'sm:end-7';
 
   return (
     <div

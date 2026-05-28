@@ -650,12 +650,12 @@ function Step2({
                   </span>
                 )}
                 {p.status === 'REJECTED_FACE' && (
-                  <span className="absolute bottom-1 left-1 right-1 bg-rose-700 px-1 py-0.5 text-center text-[10px] text-white">
+                  <span className="absolute bottom-1 inset-x-1 bg-rose-700 px-1 py-0.5 text-center text-[10px] text-white">
                     Visage détecté
                   </span>
                 )}
                 {p.status === 'MANUAL_REVIEW' && (
-                  <span className="absolute bottom-1 left-1 right-1 bg-amber-600 px-1 py-0.5 text-center text-[10px] text-white">
+                  <span className="absolute bottom-1 inset-x-1 bg-amber-600 px-1 py-0.5 text-center text-[10px] text-white">
                     En relecture
                   </span>
                 )}
@@ -663,7 +663,7 @@ function Step2({
                   type="button"
                   onClick={() => onRemovePhoto(p.tempId)}
                   aria-label="Retirer cette photo"
-                  className="absolute right-0 top-0 inline-flex h-6 w-6 items-center justify-center bg-white/90 text-xs text-encre hover:bg-rose-100"
+                  className="absolute end-0 top-0 inline-flex h-6 w-6 items-center justify-center bg-white/90 text-xs text-encre hover:bg-rose-100"
                 >
                   ×
                 </button>

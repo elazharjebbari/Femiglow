@@ -98,12 +98,12 @@ export function SubProductBlock({
           <NumberBadge
             label={String(index + 1).padStart(2, '0')}
             hex={accent}
-            className="!relative !top-0 !left-0 shrink-0"
+            className="!relative !top-0 !start-0 shrink-0"
           />
           <h3 className="flex-1 font-display text-2xl text-encre">
             {subProduct.name} — {subProduct.volume}
             {subProduct.usageHint ? (
-              <span className="ml-2 font-body italic text-base text-encre/55">
+              <span className="ms-2 font-body italic text-base text-encre/55">
                 · {subProduct.usageHint}
               </span>
             ) : null}

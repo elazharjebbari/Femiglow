@@ -27,7 +27,7 @@ export function DirectContactBlock({ email, streetAddress, district }: DirectCon
               Réponse sous 24 heures ouvrées, depuis Rabat.
             </Text>
           </div>
-          <div className="space-y-3 border-t border-sauge pt-6 md:border-t-0 md:border-l md:pl-12 md:pt-0">
+          <div className="space-y-3 border-t border-sauge pt-6 md:border-t-0 md:border-s md:ps-12 md:pt-0">
             <Kicker>Atelier</Kicker>
             <Text size="body" tone="default">
               {streetAddress}

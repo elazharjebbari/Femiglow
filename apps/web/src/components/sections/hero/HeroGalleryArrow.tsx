@@ -23,6 +23,7 @@ function ChevronIcon({ direction }: { direction: 'prev' | 'next' }): JSX.Element
       strokeLinejoin="round"
       aria-hidden="true"
       focusable="false"
+      className="rtl:scale-x-[-1]"
     >
       <path d={path} />
     </svg>
@@ -57,7 +58,7 @@ export function HeroGalleryArrow({
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A5D4A] focus-visible:ring-offset-2',
         'active:scale-95',
         'disabled:cursor-not-allowed disabled:opacity-30',
-        direction === 'prev' ? 'left-3' : 'right-3',
+        direction === 'prev' ? 'start-3' : 'end-3',
         className,
       )}
     >

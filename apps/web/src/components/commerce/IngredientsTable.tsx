@@ -47,13 +47,13 @@ export function IngredientsTable(props: IngredientsTableProps): JSX.Element {
         className="w-full border-collapse text-sm"
         data-testid={`ingredients-table-${subProductId}`}
       >
-        <thead className="bg-sauge-soft text-left text-[11px] uppercase tracking-[0.12em] text-encre/70">
+        <thead className="bg-sauge-soft text-start text-[11px] uppercase tracking-[0.12em] text-encre/70">
           <tr>
             <th scope="col" className="p-3 font-medium">Ingrédient</th>
             <th scope="col" className="p-3 font-medium">INCI</th>
             <th scope="col" className="p-3 font-medium">Fonction</th>
             <th scope="col" className="p-3 font-medium">Origine</th>
-            <th scope="col" className="p-3 text-right font-medium">%</th>
+            <th scope="col" className="p-3 text-end font-medium">%</th>
           </tr>
         </thead>
         <tbody className="text-encre">
@@ -62,7 +62,7 @@ export function IngredientsTable(props: IngredientsTableProps): JSX.Element {
               key={`${subProductId}-${ing.inci}`}
               className={i % 2 === 0 ? 'bg-creme' : 'bg-creme-warm/40'}
             >
-              <th scope="row" className="p-3 text-left font-medium">
+              <th scope="row" className="p-3 text-start font-medium">
                 {ing.name}
               </th>
               <td className="p-3 text-encre/70">
@@ -78,7 +78,7 @@ export function IngredientsTable(props: IngredientsTableProps): JSX.Element {
               <td className="p-3">{ing.function}</td>
               <td className="p-3">{ing.origin}</td>
               <td
-                className="p-3 text-right [font-feature-settings:'tnum','lnum']"
+                className="p-3 text-end [font-feature-settings:'tnum','lnum']"
                 style={ing.concentrationPct !== undefined ? { color: accent } : undefined}
               >
                 {ing.concentrationPct !== undefined ? `${ing.concentrationPct} %` : '—'}

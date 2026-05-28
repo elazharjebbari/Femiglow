@@ -98,7 +98,7 @@ export function RitualPhotoLightbox({
         {...variants}
         data-testid="ritual-photo-lightbox"
       >
-        <header className="absolute top-4 right-4 left-4 flex items-center justify-between">
+        <header className="absolute top-4 inset-x-4 flex items-center justify-between">
           <span className="font-inter text-xs text-white/70">
             Photo {index + 1} / {total}
           </span>
@@ -121,18 +121,18 @@ export function RitualPhotoLightbox({
               aria-label="Photo précédente"
               data-testid="ritual-photo-lightbox-prev"
               onClick={goPrev}
-              className="absolute left-4 z-10 inline-flex h-12 w-12 items-center justify-center bg-white/10 text-white hover:bg-white/20"
+              className="absolute start-4 z-10 inline-flex h-12 w-12 items-center justify-center bg-white/10 text-white hover:bg-white/20"
             >
-              <span aria-hidden="true">←</span>
+              <span aria-hidden="true" className="rtl:rotate-180 inline-block">←</span>
             </button>
             <button
               type="button"
               aria-label="Photo suivante"
               data-testid="ritual-photo-lightbox-next"
               onClick={goNext}
-              className="absolute right-4 z-10 inline-flex h-12 w-12 items-center justify-center bg-white/10 text-white hover:bg-white/20"
+              className="absolute end-4 z-10 inline-flex h-12 w-12 items-center justify-center bg-white/10 text-white hover:bg-white/20"
             >
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="rtl:rotate-180 inline-block">→</span>
             </button>
           </>
         )}
@@ -149,7 +149,7 @@ export function RitualPhotoLightbox({
         </div>
 
         {(photo.alt || caption) && (
-          <footer className="absolute bottom-4 left-4 right-4 text-center font-cormorant text-sm italic text-white/80">
+          <footer className="absolute bottom-4 inset-x-4 text-center font-cormorant text-sm italic text-white/80">
             {photo.alt ?? caption}
           </footer>
         )}

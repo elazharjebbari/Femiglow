@@ -79,7 +79,7 @@ export function ResumeBanner({
         onClick={handleDismiss}
         aria-label="Fermer la bannière de bienvenue"
         data-testid="wizard-resume-dismiss"
-        className="-mr-1 ml-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-encre/50 hover:text-encre focus-visible:outline focus-visible:outline-2 focus-visible:outline-encre/40"
+        className="-me-1 ms-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-encre/50 hover:text-encre focus-visible:outline focus-visible:outline-2 focus-visible:outline-encre/40"
       >
         ✕
       </button>

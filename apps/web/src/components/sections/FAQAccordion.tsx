@@ -27,7 +27,7 @@ export function FAQAccordion({ items }: FAQAccordionProps) {
             <li key={item.id}>
               <details className="group py-5 [&_summary::-webkit-details-marker]:hidden motion-reduce:transition-none">
                 <summary
-                  className="flex cursor-pointer list-none items-start justify-between gap-6 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"
+                  className="flex cursor-pointer list-none items-start justify-between gap-6 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"
                 >
                   <span className="font-display text-xl text-encre">{item.question}</span>
                   <span

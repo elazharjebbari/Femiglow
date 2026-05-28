@@ -62,7 +62,7 @@ export function ProductFeedSection({
         {/*             col droite (PackVisual centré verticalement)   */}
         <div className="grid grid-cols-1 gap-12 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-16">
           {/* Colonne gauche — texte + prix */}
-          <div className="space-y-5 text-center md:text-left">
+          <div className="space-y-5 text-center md:text-start">
             <Kicker tone="champagne">{feed.hero.kicker}</Kicker>
             <Heading id="product-feed-title" as="h2" size="display-md">
               {feed.hero.title}
@@ -140,7 +140,7 @@ export function ProductFeedSection({
 /** Item promesse : icône SVG + libellé + détail. */
 function FeedClaimItem({ claim }: { claim: ProductFeedClaim }) {
   return (
-    <li className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
+    <li className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-start">
       <span
         className={cn(
           'inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full',

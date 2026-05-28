@@ -223,7 +223,7 @@ function DrawerSurface({
       <motion.div
         ref={containerRef}
         {...drawerVariants}
-        className="relative ml-auto flex h-full w-full max-w-[480px] flex-col overflow-y-auto bg-creme"
+        className="relative ms-auto flex h-full w-full max-w-[480px] flex-col overflow-y-auto bg-creme"
         style={{ width: 'min(100vw, var(--ritual-drawer-width-desktop))' }}
       >
         {view === 'wizard' ? (

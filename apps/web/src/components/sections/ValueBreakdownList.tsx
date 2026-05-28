@@ -26,7 +26,7 @@ export function ValueBreakdownList({
     <ul
       aria-label={ariaLabel}
       data-testid="pack-value-breakdown"
-      className="mx-auto mt-4 max-w-sm space-y-1.5 text-left text-sm"
+      className="mx-auto mt-4 max-w-sm space-y-1.5 text-start text-sm"
     >
       {items.map((item, index) => (
         <li
