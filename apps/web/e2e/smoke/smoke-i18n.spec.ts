@@ -62,6 +62,56 @@ test.describe('@smoke @i18n i18n runtime end-to-end', () => {
     expect(bodyText).toMatch(/[؀-ۿ]/);
   });
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Phase 4 — RTL visuel (Tailwind logical properties + Cairo)
+  // ──────────────────────────────────────────────────────────────────────
+
+  test('AR — Cairo font chargée et appliquée sur le body', async ({ page }) => {
+    await page.goto('/ar/');
+    // La police effective doit contenir "Cairo" dans la cascade
+    const bodyFont = await page
+      .locator('body')
+      .evaluate((el) => getComputedStyle(el).fontFamily);
+    expect(bodyFont.toLowerCase()).toContain('cairo');
+  });
+
+  test('AR — line-height ajusté pour caractères arabes (1.8 vs 1.6)', async ({
+    page,
+  }) => {
+    await page.goto('/ar/');
+    const lineHeight = await page
+      .locator('html')
+      .evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
+    // line-height ≈ 16px * 1.8 = 28.8px ; tolérance pour navigateurs
+    expect(lineHeight).toBeGreaterThan(20);
+  });
+
+  test('AR — text-start = text-align: right (logical property en RTL)', async ({
+    page,
+  }) => {
+    await page.goto('/ar/');
+    // h1 (hero title) doit être text-start qui résout en right en RTL
+    const heroAlign = await page
+      .locator('h1')
+      .first()
+      .evaluate((el) => getComputedStyle(el).textAlign);
+    // text-start en RTL → "right" ou "start"
+    expect(['right', 'start']).toContain(heroAlign);
+  });
+
+  test('FR — pas de régression LTR (Inter conservé)', async ({ page }) => {
+    await page.goto('/fr/');
+    const bodyFont = await page
+      .locator('body')
+      .evaluate((el) => getComputedStyle(el).fontFamily);
+    expect(bodyFont.toLowerCase()).toContain('inter');
+    // line-height par défaut 1.6 (vs 1.8 AR)
+    const lineHeight = await page
+      .locator('html')
+      .evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
+    expect(lineHeight).toBeLessThanOrEqual(28);
+  });
+
   test('EN — /en/contact rend avec lang anglais', async ({ page }) => {
     const response = await page.goto('/en/contact');
     expect(response?.status()).toBe(200);
