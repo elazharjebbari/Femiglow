@@ -6,9 +6,10 @@ import {
   mockMaison,
   mockRituel,
 } from '@/data/mock';
-// Phase 3 T3.5/T3.6 — Mocks localisés ingérés ici. Les 4 pages CMS
-// (homepage, maison, rituel, kit) servent maintenant un contenu AR / EN
-// dédié sans fallback FR (cf. dictionnaires `*ByLocale` ci-dessous).
+// Phase 3 T3.5/T3.6/T3.7 — Mocks localisés ingérés ici. Les 4 pages CMS
+// (homepage, maison, rituel, kit) ET les articles du journal servent
+// maintenant un contenu AR / EN dédié sans fallback FR (cf. dictionnaires
+// `*ByLocale` ci-dessous).
 import { mockHomepageAr } from '@/data/mock/homepage.ar';
 import { mockHomepageEn } from '@/data/mock/homepage.en';
 import { mockMaisonAr } from '@/data/mock/maison.ar';
@@ -17,6 +18,9 @@ import { mockRituelAr } from '@/data/mock/rituel.ar';
 import { mockRituelEn } from '@/data/mock/rituel.en';
 import { mockKitPageContentAr } from '@/data/mock/kit.ar';
 import { mockKitPageContentEn } from '@/data/mock/kit.en';
+import { mockArticlesAr } from '@/data/mock/articles.ar';
+import { mockArticlesEn } from '@/data/mock/articles.en';
+import type { Article } from '@/lib/schemas';
 import type { CMSAdapter, GetArticlesOptions, GetArticlesPageOptions } from '../types';
 import type { CmsLocaleOptions } from '../locale-options';
 import { pickByLocale } from '../pick-by-locale';
@@ -48,10 +52,28 @@ const kitPageByLocale = {
   ar: mockKitPageContentAr,
   en: mockKitPageContentEn,
 };
+// Phase 3 T3.7 — Articles localisés. Bodies traduits sont stockés dans
+// `articles.{ar,en}.ts` — slugs FR canonical (ADR-002), même ordre, même
+// count que `mockArticles`.
+const articlesByLocale = {
+  fr: mockArticles,
+  ar: mockArticlesAr,
+  en: mockArticlesEn,
+};
+
+/**
+ * Sélectionne le bon array d'articles selon la locale + fallback CMS.
+ *
+ * Pattern aligné sur les pages (homepage / maison / rituel / kit) — un
+ * helper interne pour DRY-er les 4 méthodes article qui suivent.
+ */
+function articlesFor(options?: CmsLocaleOptions): Article[] {
+  return pickByLocale(articlesByLocale, options);
+}
 
 export const mockAdapter: CMSAdapter = {
   async getArticles(options: GetArticlesOptions = {}) {
-    let articles = [...mockArticles];
+    let articles = [...articlesFor(options)];
     if (options.category) {
       articles = articles.filter((a) => a.category === options.category);
     }
@@ -67,7 +89,7 @@ export const mockAdapter: CMSAdapter = {
 
   async getArticlesPage(options: GetArticlesPageOptions = {}) {
     const limit = options.limit ?? 12;
-    let articles = [...mockArticles];
+    let articles = [...articlesFor(options)];
     if (options.category) {
       articles = articles.filter((a) => a.category === options.category);
     }
@@ -84,18 +106,23 @@ export const mockAdapter: CMSAdapter = {
     return { items, nextCursor: hasMore ? lastSlug : null };
   },
 
-  async getArticleBySlug(slug: string) {
-    return mockArticles.find((a) => a.slug === slug) ?? null;
+  async getArticleBySlug(slug: string, options?: CmsLocaleOptions) {
+    return articlesFor(options).find((a) => a.slug === slug) ?? null;
   },
 
-  async getRelatedArticles(slug: string, limit = 3) {
-    const current = mockArticles.find((a) => a.slug === slug);
+  async getRelatedArticles(
+    slug: string,
+    limit = 3,
+    options?: CmsLocaleOptions,
+  ) {
+    const pool = articlesFor(options);
+    const current = pool.find((a) => a.slug === slug);
     if (!current) return [];
-    const sameCategory = mockArticles
+    const sameCategory = pool
       .filter((a) => a.slug !== slug && a.category === current.category)
       .slice(0, limit);
     if (sameCategory.length >= limit) return sameCategory;
-    const others = mockArticles
+    const others = pool
       .filter((a) => a.slug !== slug && !sameCategory.includes(a))
       .slice(0, limit - sameCategory.length);
     return [...sameCategory, ...others];
