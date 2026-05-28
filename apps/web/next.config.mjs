@@ -1,8 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import createNextIntlPlugin from 'next-intl/plugin';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Plugin next-intl : injecte la config de chargement des messages côté serveur.
+// Le chemin pointe vers `src/i18n/request.ts` qui exporte `getRequestConfig`.
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -112,4 +118,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

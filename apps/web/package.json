@@ -90,6 +90,7 @@
     "mammoth": "^1.8.0",
     "music-metadata": "^11.12.3",
     "next": "14.2.15",
+    "next-intl": "^3.26",
     "nodemailer": "^8.0.7",
     "pdfjs-dist": "^4.7.76",
     "postgres": "^3.4.4",
