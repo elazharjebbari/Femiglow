@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { LocaleSwitcher } from '@/components/i18n/LocaleSwitcher';
 import {
   menuEntries,
   menuSeasonLabel,
@@ -207,11 +208,30 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
             })}
           </ul>
 
+          {/*
+            Phase 5 — Section locale mobile (intégrée DANS le drawer pour
+            économiser l'espace du Header mobile). Visible md:hidden — sur
+            desktop, le LocaleSwitcher est directement dans le Header.
+          */}
           <motion.div
             variants={itemVariants}
             initial="initial"
             animate="animate"
-            transition={{ delay: reduceMotion ? 0 : 0.22 + menuEntries.length * 0.09 }}
+            transition={{
+              delay: reduceMotion ? 0 : 0.22 + menuEntries.length * 0.09,
+            }}
+            className="mx-auto w-full max-w-[var(--max-width-page)] border-t border-encre/8 px-6 pt-8 md:hidden lg:px-[14vw]"
+          >
+            <LocaleSwitcher variant="inline" onSelect={onClose} />
+          </motion.div>
+
+          <motion.div
+            variants={itemVariants}
+            initial="initial"
+            animate="animate"
+            transition={{
+              delay: reduceMotion ? 0 : 0.26 + menuEntries.length * 0.09,
+            }}
             className="mx-auto flex w-full max-w-[var(--max-width-page)] items-end justify-end px-6 pb-8 pt-12 lg:px-[14vw]"
           >
             <span className="font-script text-base text-encre/55 md:text-lg">

@@ -5,6 +5,7 @@ import { useEffect, useId, useState } from 'react';
 import { Container } from '@/components/ui/Container';
 import { CartButton } from '@/components/commerce/CartButton';
 import { useChatStore } from '@/components/chat/chat-store';
+import { LocaleSwitcher } from '@/components/i18n/LocaleSwitcher';
 import { SommaireOverlay } from './SommaireOverlay';
 import { cn } from '@/lib/utils/cn';
 
@@ -90,6 +91,15 @@ export function Header() {
 
             <div className="flex items-center gap-2 md:gap-4">
               <CartButton />
+              {/*
+                Phase 5 — Switcher de locale public éditorial (desktop only).
+                Sur mobile (< md), il est intégré dans le SommaireOverlay
+                (économie d'espace, cohérence drawer). cf. PHASE-4-FINAL.md.
+              */}
+              <LocaleSwitcher
+                variant="dropdown"
+                className="hidden md:inline-flex"
+              />
               <div className="relative">
                 <button
                   id={triggerId}
