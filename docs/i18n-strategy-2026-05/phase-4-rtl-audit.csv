@@ -1,0 +1,126 @@
+file,line,class_physical,rule,priority,context
+apps/web/src/components/commerce/TermsCheckbox.tsx,43,pl-7,pl->ps,P0,"<p role=""alert"" className=""pl-7 text-xs text-petale-dark"">"
+apps/web/src/components/commerce/CartButton.tsx,33,right-0.5,right->end,P0,"<span className=""absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-encre"" />"
+apps/web/src/components/commerce/SubProductBlock.tsx,101,left-0,left->start,P0,"className=""!relative !top-0 !left-0 shrink-0"""
+apps/web/src/components/commerce/SubProductBlock.tsx,106,ml-2,ml->ms,P0,"<span className=""ml-2 font-body italic text-base text-encre/55"">"
+apps/web/src/components/commerce/ShippingModeSelector.tsx,64,ml-auto,ml->ms,P0,"<span className=""ml-auto text-sm text-encre/70"">"
+apps/web/src/components/commerce/ShippingModeSelector.tsx,73,pl-7,pl->ps,P0,"<span className=""pl-7 text-xs text-encre/60"">{opt.hint}</span>"
+apps/web/src/components/commerce/InciTooltip.tsx,85,ml-1,ml->ms,P0,"className=""ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-encre/55 hover:text-encre focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:r"
+apps/web/src/components/commerce/InciTooltip.tsx,94,left-0,left->start,P0,"className=""absolute left-0 top-full z-50 mt-2 block w-64 max-w-xs rounded-md border border-encre/10 bg-creme p-3 shadow-md"""
+apps/web/src/components/commerce/ComparatifTable.tsx,11,text-left,text-left->text-start,P0,"<thead className=""bg-encre text-creme text-left"">"
+apps/web/src/components/commerce/ComparatifTable.tsx,29,text-left,text-left->text-start,P0,"className=""bg-creme-warm p-4 text-left font-display text-base text-encre"""
+apps/web/src/components/commerce/PaymentMethodSelector.tsx,83,pl-7,pl->ps,P0,"<span className=""pl-7 text-xs text-encre/60"">{opt.hint}</span>"
+apps/web/src/components/commerce/PostCtaLink.tsx,54,text-right,text-right->text-end,P0,"<div className=""mt-4 text-right"">"
+apps/web/src/components/commerce/CartItem.tsx,90,text-right,text-right->text-end,P0,"<div className=""text-right"">"
+apps/web/src/components/commerce/StickyCartCTA.tsx,65,left-auto,left->start,P0,"className=""fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-["
+apps/web/src/components/commerce/StickyCartCTA.tsx,65,right-6,right->end,P0,"className=""fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-["
+apps/web/src/components/commerce/ProgressBar3Steps.tsx,31,left-0,left->start,P0,"className=""absolute inset-y-0 left-0 bg-encre transition-[width] duration-base ease-out-soft"""
+apps/web/src/components/commerce/ProgressBar3Steps.tsx,85,text-left,text-left->text-start,P0,"index === 0 && 'text-left',"
+apps/web/src/components/commerce/ProgressBar3Steps.tsx,87,text-right,text-right->text-end,P0,"index === 2 && 'text-right',"
+apps/web/src/components/commerce/IngredientsTable.tsx,50,text-left,text-left->text-start,P0,"<thead className=""bg-sauge-soft text-left text-[11px] uppercase tracking-[0.12em] text-encre/70"">"
+apps/web/src/components/commerce/IngredientsTable.tsx,56,text-right,text-right->text-end,P0,"<th scope=""col"" className=""p-3 text-right font-medium"">%</th>"
+apps/web/src/components/commerce/IngredientsTable.tsx,65,text-left,text-left->text-start,P0,"<th scope=""row"" className=""p-3 text-left font-medium"">"
+apps/web/src/components/commerce/IngredientsTable.tsx,81,text-right,text-right->text-end,P0,"className=""p-3 text-right [font-feature-settings:'tnum','lnum']"""
+apps/web/src/components/commerce/CartContents.tsx,125,text-right,text-right->text-end,P0,"<div className=""text-right"">"
+apps/web/src/components/commerce/OrderSummaryAccordion.tsx,42,text-left,text-left->text-start,P0,"className=""flex w-full items-center justify-between gap-3 px-5 py-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"""
+apps/web/src/components/commerce/MiniCartSlideOver.tsx,105,right-0,right->end,P0,"'absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-creme shadow-xl transition-transform duration-base ease-out-soft motion-reduce:transition-none',"
+apps/web/src/components/sections/FAQAccordion.tsx,30,text-left,text-left->text-start,P0,"className=""flex cursor-pointer list-none items-start justify-between gap-6 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"""
+apps/web/src/components/sections/ReadingProgress.tsx,33,left-0,left->start,P0,"className=""pointer-events-none fixed left-0 right-0 top-0 z-sticky h-[2px] bg-transparent"""
+apps/web/src/components/sections/ReadingProgress.tsx,33,right-0,right->end,P0,"className=""pointer-events-none fixed left-0 right-0 top-0 z-sticky h-[2px] bg-transparent"""
+apps/web/src/components/sections/ProductFeedSection.tsx,65,text-left,text-left->text-start,P0,"<div className=""space-y-5 text-center md:text-left"">"
+apps/web/src/components/sections/ProductFeedSection.tsx,143,text-left,text-left->text-start,P0,"<li className=""flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left"">"
+apps/web/src/components/sections/ValueBreakdownList.tsx,29,text-left,text-left->text-start,P0,"className=""mx-auto mt-4 max-w-sm space-y-1.5 text-left text-sm"""
+apps/web/src/components/sections/HeroMaison.tsx,48,right-6,right->end,P0,"className=""pointer-events-none absolute right-6 top-10 opacity-20 sm:right-16 sm:top-16"""
+apps/web/src/components/sections/HeroMaison.tsx,48,right-16,right->end,P0,"className=""pointer-events-none absolute right-6 top-10 opacity-20 sm:right-16 sm:top-16"""
+apps/web/src/components/sections/StepsConnector.tsx,29,left-0,left->start,P0,"className=""pointer-events-none absolute left-0 right-0 top-6 hidden h-px border-t border-dashed border-encre/15 lg:block"""
+apps/web/src/components/sections/StepsConnector.tsx,29,right-0,right->end,P0,"className=""pointer-events-none absolute left-0 right-0 top-6 hidden h-px border-t border-dashed border-encre/15 lg:block"""
+apps/web/src/components/sections/StepsConnector.tsx,37,left-6,left->start,P0,"className=""pointer-events-none absolute bottom-2 left-6 top-2 w-px bg-encre/10 sm:hidden"""
+apps/web/src/components/sections/DirectContactBlock.tsx,30,pl-12,pl->ps,P0,"<div className=""space-y-3 border-t border-sauge pt-6 md:border-t-0 md:border-l md:pl-12 md:pt-0"">"
+apps/web/src/components/sections/TableOfContents.tsx,44,pl-4,pl->ps,P0,<li key={h.id} className={cn(h.depth === 3 && 'pl-4')}>
+apps/web/src/components/sections/TableOfContents.tsx,49,pl-3,pl->ps,P0,"'block border-l border-transparent pl-3 leading-snug transition-colors',"
+apps/web/src/components/forms/Field.tsx,28,ml-1,ml->ms,P0,"<span aria-hidden=""true"" className=""ml-1 text-encre/50"">"
+apps/web/src/components/forms/ErrorState.tsx,9,pl-6,pl->ps,P0,"className=""border-l-2 border-encre pl-6 py-2 text-sm text-encre"""
+apps/web/src/components/forms/ErrorState.tsx,9,border-l-2,border-l->border-s,P0,"className=""border-l-2 border-encre pl-6 py-2 text-sm text-encre"""
+apps/web/src/components/forms/SuccessState.tsx,17,pl-6,pl->ps,P0,"className=""space-y-3 border-l-2 border-sauge pl-6 py-2"""
+apps/web/src/components/forms/SuccessState.tsx,17,border-l-2,border-l->border-s,P0,"className=""space-y-3 border-l-2 border-sauge pl-6 py-2"""
+apps/web/src/components/patterns/Footnote.tsx,7,ml-0.5,ml->ms,P0,"<sup id={`fn-${n}`} className=""ml-0.5 text-[0.7em] font-body"">"
+apps/web/src/components/patterns/Footnote.tsx,27,pl-6,pl->ps,P0,className={`mt-12 list-decimal space-y-2 pl-6 text-sm leading-relaxed text-encre/70 ${className ?? ''}`}
+apps/web/src/components/patterns/Footnote.tsx,35,ml-1,ml->ms,P0,"className=""ml-1 inline-block underline-offset-2 hover:underline focus-visible:underline"""
+apps/web/src/components/chat/MessageList.tsx,228,text-left,text-left->text-start,P0,"'px-4 py-3 text-left text-sm font-medium text-stone-800',"
+apps/web/src/components/chat/MessageBubble.tsx,46,ml-1,ml->ms,P0,"className=""ml-1 inline-block h-2 w-2 animate-pulse rounded-full bg-stone-500"""
+apps/web/src/components/chat/MessageBubble.tsx,68,pl-3,pl->ps,P0,"<ul className=""mt-1 space-y-0.5 pl-3"">"
+apps/web/src/components/chat/ChatPanel.tsx,166,left-5,left->start,P0,// et neutralise `right-5` / `left-5`. On garde les variantes `sm:` pour
+apps/web/src/components/chat/ChatPanel.tsx,166,right-5,right->end,P0,// et neutralise `right-5` / `left-5`. On garde les variantes `sm:` pour
+apps/web/src/components/chat/ChatPanel.tsx,168,left-7,left->start,P0,const positionClass = isRtl ? 'sm:left-7' : 'sm:right-7';
+apps/web/src/components/chat/ChatPanel.tsx,168,right-7,right->end,P0,const positionClass = isRtl ? 'sm:left-7' : 'sm:right-7';
+apps/web/src/components/chat/ChatLauncher.tsx,40,left-5,left->start,P0,positionClass = 'left-5 sm:left-7';
+apps/web/src/components/chat/ChatLauncher.tsx,40,left-7,left->start,P0,positionClass = 'left-5 sm:left-7';
+apps/web/src/components/chat/ChatLauncher.tsx,42,right-5,right->end,P0,// Mobile : on reste à `right-5` (le décalage vertical suffit) ; sm+ :
+apps/web/src/components/chat/ChatLauncher.tsx,43,right-6,right->end,P0,// 372px = 24px (right-6 du sticky) + 340px (largeur sticky) + 8px de marge.
+apps/web/src/components/chat/ChatLauncher.tsx,44,right-5,right->end,P0,positionClass = 'right-5 sm:right-[372px]';
+apps/web/src/components/chat/ChatLauncher.tsx,46,right-5,right->end,P0,positionClass = 'right-5 sm:right-7';
+apps/web/src/components/chat/ChatLauncher.tsx,46,right-7,right->end,P0,positionClass = 'right-5 sm:right-7';
+apps/web/src/components/chat/ChatLauncher.tsx,98,right-1,right->end,P0,"className=""absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-medium text-white"""
+apps/web/src/components/layout/SommaireOverlay.tsx,179,left-0,left->start,P0,"'pointer-events-none absolute -bottom-1 left-0 h-px bg-encre transition-all duration-[350ms] ease-out',"
+apps/web/src/components/layout/SommaireOverlay.tsx,193,ml-auto,ml->ms,P0,"className=""relative ml-auto mt-2 block h-14 w-14 shrink-0 overflow-hidden rounded-[2px] bg-encre/5 sm:h-16 sm:w-16 md:h-[88px] md:w-[88px]"""
+apps/web/src/components/layout/CheckoutHeader.tsx,46,ml-2,ml->ms,P0,"<span className=""ml-2 hidden sm:inline"">Retour au panier</span>"
+apps/web/src/components/layout/CheckoutHeader.tsx,47,ml-2,ml->ms,P0,"<span className=""ml-2 sm:hidden"">Panier</span>"
+apps/web/src/components/layout/Header.tsx,109,right-0,right->end,P0,"className=""pointer-events-auto absolute right-0 top-full mt-2 inline-flex items-center gap-2 whitespace-nowrap bg-encre px-3 py-1.5 font-body text-[10px] uppercase tracking-[0.18em] text-creme shadow-"
+apps/web/src/components/kit/VideoPosterCover.tsx,209,left-1,left->start,P0,"className=""absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 grid h-16 w-16 place-items-center rounded-full shadow-lg motion-safe:transition-transform motion-safe:group-hover:scale-110"""
+apps/web/src/components/kit/VideoPosterCover.tsx,221,left-3,left->start,P0,"className=""absolute bottom-3 left-3 inline-flex items-center rounded-sm bg-[#2C2A28]/80 px-2 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-creme [font-variant-numeric:tabular-nums]"""
+apps/web/src/components/kit/VideoChapters.tsx,86,text-left,text-left->text-start,P0,"<ol className=""grid grid-cols-4 gap-x-3 gap-y-1 text-left [font-variant-numeric:tabular-nums]"">"
+apps/web/src/components/kit/VideoChapters.tsx,97,text-left,text-left->text-start,P0,"className=""group block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3] rounded-sm"""
+apps/web/src/components/kit/CompositionCard.tsx,112,ml-2,ml->ms,P0,"<span className=""ml-2 align-baseline font-body text-base text-stone-500 [font-variant-numeric:tabular-nums]"">"
+apps/web/src/components/kit/NumberBadge.tsx,32,left-3,left->start,P0,"'absolute -top-3 -left-3 z-10 inline-flex h-9 w-9 items-center justify-center',"
+apps/web/src/components/tracking/DebugOverlay.tsx,21,right-4,right->end,P0,"<div className=""fixed bottom-4 right-4 z-[60] max-h-72 w-80 overflow-auto rounded-xl border border-stone-300 bg-white/95 p-3 text-xs shadow-xl backdrop-blur"">"
+apps/web/src/components/tracking/ConsentBanner.tsx,159,ml-auto,ml->ms,P0,"className=""ml-auto rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800"""
+apps/web/src/components/checkout/wizard/WizardStepIndicator.tsx,91,ml-1,ml->ms,P0,"className=""ml-1 text-[10px] text-encre/45 tabular-nums"""
+apps/web/src/components/checkout/wizard/ResumeBanner.tsx,82,ml-2,ml->ms,P0,"className=""-mr-1 ml-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-encre/50 hover:text-encre focus-visible:outline focus-visible:outline-2 focus-visible:outline-encre/40"""
+apps/web/src/components/checkout/wizard/ResumeBanner.tsx,82,mr-1,mr->me,P0,"className=""-mr-1 ml-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-encre/50 hover:text-encre focus-visible:outline focus-visible:outline-2 focus-visible:outline-encre/40"""
+apps/web/src/components/checkout/wizard/WizardCheckmark.tsx,14,right-0,right->end,P0,/** Classe additionnelle pour positionnement (ex. `absolute top-0 right-0`). */
+apps/web/src/components/checkout/wizard/components/CityAutocomplete.tsx,475,text-right,text-right->text-end,P0,"<div className=""flex justify-end text-right"">"
+apps/web/src/components/checkout/wizard/components/CityAutocomplete.tsx,487,text-right,text-right->text-end,P0,"<div className=""text-right text-encre/45"">"
+apps/web/src/components/checkout/wizard/steps/LeadCaptureStep.tsx,287,ml-2,ml->ms,P0,"className=""ml-2"""
+apps/web/src/components/checkout/wizard/steps/LeadCaptureStep.tsx,335,right-2,right->end,P0,"<span className=""pointer-events-none absolute right-2 top-0 inline-flex"">"
+apps/web/src/components/checkout/wizard/steps/LeadCaptureStep.tsx,376,right-2,right->end,P0,"<span className=""pointer-events-none absolute right-2 top-0 inline-flex"">"
+apps/web/src/components/sections/rituals/RitualPhotoLightbox.tsx,101,left-4,left->start,P0,"<header className=""absolute top-4 right-4 left-4 flex items-center justify-between"">"
+apps/web/src/components/sections/rituals/RitualPhotoLightbox.tsx,101,right-4,right->end,P0,"<header className=""absolute top-4 right-4 left-4 flex items-center justify-between"">"
+apps/web/src/components/sections/rituals/RitualPhotoLightbox.tsx,124,left-4,left->start,P0,"className=""absolute left-4 z-10 inline-flex h-12 w-12 items-center justify-center bg-white/10 text-white hover:bg-white/20"""
+apps/web/src/components/sections/rituals/RitualPhotoLightbox.tsx,133,right-4,right->end,P0,"className=""absolute right-4 z-10 inline-flex h-12 w-12 items-center justify-center bg-white/10 text-white hover:bg-white/20"""
+apps/web/src/components/sections/rituals/RitualPhotoLightbox.tsx,152,left-4,left->start,P0,"<footer className=""absolute bottom-4 left-4 right-4 text-center font-cormorant text-sm italic text-white/80"">"
+apps/web/src/components/sections/rituals/RitualPhotoLightbox.tsx,152,right-4,right->end,P0,"<footer className=""absolute bottom-4 left-4 right-4 text-center font-cormorant text-sm italic text-white/80"">"
+apps/web/src/components/sections/rituals/RitualsWallDrawer.tsx,226,ml-auto,ml->ms,P0,"className=""relative ml-auto flex h-full w-full max-w-[480px] flex-col overflow-y-auto bg-creme"""
+apps/web/src/components/sections/rituals/RitualCard.tsx,123,mr-4,mr->me,P0,"className=""float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]"""
+apps/web/src/components/sections/rituals/RitualCard.tsx,123,float-left,float-left->float-start,P0,"className=""float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]"""
+apps/web/src/components/sections/rituals/RitualCard.tsx,140,mr-4,mr->me,P0,"<div className=""float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]"">"
+
+=== AUDIT RTL — STATISTIQUES ===
+Total occurrences : 107
+Par règle :
+  right->end                                 28
+  left->start                                21
+  ml->ms                                     17
+  text-left->text-start                      13
+  pl->ps                                     12
+  text-right->text-end                        8
+  mr->me                                      3
+  border-l->border-s                          2
+  float-left->float-start                     2
+  pr->pe                                      1
+Par priorité :
+  P0 : 107
+  P1 : 0
+  P2 : 0
+apps/web/src/components/sections/rituals/RitualCard.tsx,140,float-left,float-left->float-start,P0,"<div className=""float-left mr-4 mb-3 block h-20 w-20 overflow-hidden border border-[var(--ritual-card-border-color)]"">"
+apps/web/src/components/sections/hero/HeroGalleryMain.tsx,53,right-2,right->end,P0,"<figcaption className=""absolute bottom-2 right-2 rounded-full bg-encre/70 px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-creme-warm"">"
+apps/web/src/components/sections/hero/HeroGalleryThumbnails.tsx,29,pr-1,pr->pe,P0,"'flex max-h-[600px] flex-col gap-3 overflow-y-auto pr-1',"
+apps/web/src/components/sections/hero/HeroGalleryArrow.tsx,60,left-3,left->start,P0,"direction === 'prev' ? 'left-3' : 'right-3',"
+apps/web/src/components/sections/hero/HeroGalleryArrow.tsx,60,right-3,right->end,P0,"direction === 'prev' ? 'left-3' : 'right-3',"
+apps/web/src/components/sections/rituals/wizard/RitualsWizard.tsx,653,left-1,left->start,P0,"<span className=""absolute bottom-1 left-1 right-1 bg-rose-700 px-1 py-0.5 text-center text-[10px] text-white"">"
+apps/web/src/components/sections/rituals/wizard/RitualsWizard.tsx,653,right-1,right->end,P0,"<span className=""absolute bottom-1 left-1 right-1 bg-rose-700 px-1 py-0.5 text-center text-[10px] text-white"">"
+apps/web/src/components/sections/rituals/wizard/RitualsWizard.tsx,658,left-1,left->start,P0,"<span className=""absolute bottom-1 left-1 right-1 bg-amber-600 px-1 py-0.5 text-center text-[10px] text-white"">"
+apps/web/src/components/sections/rituals/wizard/RitualsWizard.tsx,658,right-1,right->end,P0,"<span className=""absolute bottom-1 left-1 right-1 bg-amber-600 px-1 py-0.5 text-center text-[10px] text-white"">"
+apps/web/src/components/sections/rituals/wizard/RitualsWizard.tsx,666,right-0,right->end,P0,"className=""absolute right-0 top-0 inline-flex h-6 w-6 items-center justify-center bg-white/90 text-xs text-encre hover:bg-rose-100"""
+apps/web/src/components/commerce/steps/InfoStep.tsx,106,ml-1,ml->ms,P0,"Téléphone <span aria-hidden=""true"" className=""ml-1 text-encre/50"">*</span>"
+apps/web/src/components/commerce/steps/InfoStep.tsx,180,pl-7,pl->ps,P0,"<p role=""alert"" className=""pl-7 text-xs text-petale-dark"">"
+apps/web/src/app/[locale]/legal/[slug]/page.tsx,177,pl-4,pl->ps,P0,<li key={h.id} className={h.depth === 3 ? 'pl-4' : ''}>
