@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { Cairo } from 'next/font/google';
 import '@/styles/globals.css';
 import { SkipLink } from '@/components/layout/SkipLink';
 import { TrackingProvider } from '@/lib/tracking/provider';
@@ -51,6 +52,18 @@ const pinyon = localFont({
   style: 'normal',
   display: 'swap',
   variable: '--font-pinyon',
+});
+
+// Phase 4.3 — Police arabe Cairo (Google Fonts) chargée à côté d'Inter/Cormorant.
+// Activée via CSS `[lang='ar']` dans globals.css — pas de bandwidth perdu en
+// LTR car next/font/google subsette automatiquement à `subsets: ['arabic']`.
+// `display: 'swap'` évite le FOIT (Flash of Invisible Text) sur transition.
+const cairo = Cairo({
+  subsets: ['arabic'],
+  weight: ['400', '500', '700'],
+  style: 'normal',
+  display: 'swap',
+  variable: '--font-cairo',
 });
 
 export const metadata: Metadata = {
@@ -106,7 +119,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang="fr"
       dir="ltr"
-      className={`${cormorant.variable} ${inter.variable} ${pinyon.variable}`}
+      className={`${cormorant.variable} ${inter.variable} ${pinyon.variable} ${cairo.variable}`}
     >
       <body className="min-h-screen bg-creme font-body text-encre antialiased">
         {/* GTM bootstrap — chargé synchroniquement pour que Tag

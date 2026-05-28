@@ -33,6 +33,29 @@
     text-rendering: optimizeLegibility;
   }
 
+  /*
+    Phase 4.3 — Police Cairo pour AR (chargée par next/font/google dans le
+    root layout). On override Inter/Cormorant quand `lang='ar'` :
+      - body : Cairo
+      - headings : Cairo (Cormorant Garamond ne gère pas l'arabe)
+    `line-height: 1.8` ajusté à la hauteur des caractères arabes (vs 1.6 LTR).
+  */
+  html[lang='ar'] {
+    font-family: var(--font-cairo), 'Cairo', 'Tajawal', system-ui, sans-serif;
+    line-height: 1.8;
+  }
+
+  html[lang='ar'] h1,
+  html[lang='ar'] h2,
+  html[lang='ar'] h3,
+  html[lang='ar'] h4,
+  html[lang='ar'] h5,
+  html[lang='ar'] h6 {
+    font-family: var(--font-cairo), 'Cairo', 'Tajawal', system-ui, sans-serif;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+
   body {
     margin: 0;
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
