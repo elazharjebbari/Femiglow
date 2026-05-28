@@ -4,7 +4,7 @@
     "direction": "rtl",
     "schema_version": "1.0",
     "completeness_pct": 100,
-    "total_keys": 790,
+    "total_keys": 797,
     "last_updated": "2026-05-27",
     "voice_check": "MSA simplifié + adresse féminine appliquée",
     "translator_notes": "Touches darija réservées aux clés explicitement chat/newsletter — site principal en MSA. Adresse féminine systématique (impératifs et pronoms en forme féminine singulière).",
@@ -1124,6 +1124,15 @@
         "confidentialite": "الخصوصية",
         "cookies": "ملفّات الارتباط"
       }
+    },
+    "chrome": {
+      "back_home": "العودة إلى الرئيسية",
+      "kicker": "الصفحات القانونية",
+      "last_updated": "آخر تحديث",
+      "toc": "الفهرس",
+      "toc_aria": "فهرس الصفحة",
+      "version_prefix": "إصدار",
+      "not_found_title": "الصفحة غير موجودة"
     }
   },
   "email": {

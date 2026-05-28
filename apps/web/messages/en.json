@@ -4,7 +4,7 @@
     "direction": "ltr",
     "schema_version": "1.0",
     "completeness_pct": 100,
-    "total_keys": 790,
+    "total_keys": 797,
     "last_updated": "2026-05-27",
     "voice_check": "International English, sober editorial tone",
     "translator_notes": "FR proper nouns ('Maison FemiGlow', 'rituel') preserved where editorial. Sentence case for titles. No emoji, no marketing superlatives.",
@@ -1124,6 +1124,15 @@
         "confidentialite": "Privacy",
         "cookies": "Cookies"
       }
+    },
+    "chrome": {
+      "back_home": "Back to home",
+      "kicker": "Legal pages",
+      "last_updated": "Last updated",
+      "toc": "Table of contents",
+      "toc_aria": "Table of contents for the page",
+      "version_prefix": "v",
+      "not_found_title": "Page not found"
     }
   },
   "email": {

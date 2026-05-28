@@ -3,7 +3,7 @@
     "locale": "fr",
     "schema_version": "1.0",
     "completeness_pct": 100,
-    "total_keys": 790,
+    "total_keys": 797,
     "last_updated": "2026-05-27",
     "voice_check": "passed (FemiGlow tone applied)",
     "drift_flagged_in_review_notes": true,
@@ -1129,6 +1129,15 @@
         "confidentialite": "Confidentialité",
         "cookies": "Cookies"
       }
+    },
+    "chrome": {
+      "back_home": "Retour à l’accueil",
+      "kicker": "Pages légales",
+      "last_updated": "Dernière mise à jour",
+      "toc": "Sommaire",
+      "toc_aria": "Sommaire de la page",
+      "version_prefix": "v",
+      "not_found_title": "Page introuvable"
     }
   },
   "email": {
