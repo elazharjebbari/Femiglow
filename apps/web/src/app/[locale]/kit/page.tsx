@@ -152,10 +152,10 @@ export default async function KitPage({ params, searchParams }: PageProps) {
   const locale = params.locale as Locale;
   setRequestLocale(locale);
 
-  // Phase 3 T3.2 : pass locale au fetch CMS kit content.
+  // Phase 3 T3.2/T3.4 : pass locale aux fetches CMS.
   const [content, journalArticles, dbProduct, seo] = await Promise.all([
     cms.getKitPageContent({ locale }),
-    cms.getArticles({ limit: 3 }),
+    cms.getArticles({ limit: 3, locale }),
     buildKitPublicProduct(),
     resolveSeoMetadata({
       scope: 'product',

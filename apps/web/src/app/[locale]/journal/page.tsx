@@ -112,8 +112,8 @@ export default async function JournalPage({ params, searchParams }: PageProps) {
   const activeKey = active ?? 'all';
 
   const [featuredItems, page1] = await Promise.all([
-    cms.getArticles({ limit: 1, featured: true }),
-    cms.getArticlesPage({ limit: 12, category: active ?? undefined }),
+    cms.getArticles({ limit: 1, featured: true, locale }),
+    cms.getArticlesPage({ limit: 12, category: active ?? undefined, locale }),
   ]);
 
   const featured = !active ? (featuredItems[0] ?? null) : null;

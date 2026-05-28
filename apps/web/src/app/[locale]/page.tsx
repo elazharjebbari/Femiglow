@@ -105,12 +105,10 @@ export default async function HomePage({ params }: PageProps) {
   const locale = params.locale as Locale;
   setRequestLocale(locale);
 
+  // Phase 3 T3.2/T3.3 : pass locale aux fetches CMS (impl mock fait fallback FR).
   const [content, journalArticles] = await Promise.all([
-    // Phase 3 T3.2 : on passe `{ locale }` pour préparer le fetch multilingue.
-    // L'impl mock ignore le param pour l'instant (retourne FR) ; Phase 3.3
-    // étendra le mock + ajoutera la vraie impl Sanity pour fetcher par locale.
     cms.getHomepageContent({ locale }),
-    cms.getArticles({ limit: 3, featured: true }),
+    cms.getArticles({ limit: 3, featured: true, locale }),
   ]);
 
   return (

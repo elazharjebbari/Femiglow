@@ -10,13 +10,13 @@ import type {
 
 import type { CmsLocaleOptions } from './locale-options';
 
-export interface GetArticlesOptions {
+export interface GetArticlesOptions extends CmsLocaleOptions {
   limit?: number;
   category?: ArticleCategory;
   featured?: boolean;
 }
 
-export interface GetArticlesPageOptions {
+export interface GetArticlesPageOptions extends CmsLocaleOptions {
   limit?: number;
   cursor?: string;
   category?: ArticleCategory;
@@ -30,10 +30,17 @@ export interface ArticlesPage {
 export interface CMSAdapter {
   getArticles(options?: GetArticlesOptions): Promise<Article[]>;
   getArticlesPage(options?: GetArticlesPageOptions): Promise<ArticlesPage>;
-  getArticleBySlug(slug: string): Promise<Article | null>;
-  getRelatedArticles(slug: string, limit?: number): Promise<Article[]>;
+  getArticleBySlug(
+    slug: string,
+    options?: CmsLocaleOptions,
+  ): Promise<Article | null>;
+  getRelatedArticles(
+    slug: string,
+    limit?: number,
+    options?: CmsLocaleOptions,
+  ): Promise<Article[]>;
 
-  getKit(): Promise<Product>;
+  getKit(options?: CmsLocaleOptions): Promise<Product>;
 
   getHomepageContent(options?: CmsLocaleOptions): Promise<HomepageContent>;
   getMaisonPageContent(options?: CmsLocaleOptions): Promise<MaisonPageContent>;

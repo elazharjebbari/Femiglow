@@ -56,7 +56,9 @@ export async function generateMetadata({
     return { title: 'Article' };
   }
 
-  const article = await cms.getArticleBySlug(params.slug);
+  const article = await cms.getArticleBySlug(params.slug, {
+    locale: params.locale,
+  });
   if (!article) {
     const t = await getTranslations({
       locale: params.locale,
@@ -125,12 +127,12 @@ export default async function ArticlePage({ params }: PageProps) {
 
   const tNav = await getTranslations({ locale, namespace: 'navigation' });
 
-  const article = await cms.getArticleBySlug(params.slug);
+  const article = await cms.getArticleBySlug(params.slug, { locale });
   if (!article) notFound();
 
   const [{ html, headings }, sameCategory] = await Promise.all([
     renderMarkdown(article.body),
-    cms.getArticles({ category: article.category, limit: 4 }),
+    cms.getArticles({ category: article.category, limit: 4, locale }),
   ]);
 
   const related = sameCategory
