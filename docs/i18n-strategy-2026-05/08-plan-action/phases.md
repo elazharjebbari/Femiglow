@@ -907,6 +907,29 @@ rg -t tsx -t ts -n '\b(m[lr]-|p[lr]-|text-(left|right)|border-[lr]|left-|right-)
 
 > **But** : compléter la pyramide de tests sur la dimension i18n, mettre en place coverage gates CI, et exécuter la boucle correction-test décrite dans `11-test-execution/`.
 
+### Annexe Phase 6 — Seed i18n bindings (livré 2026-05-28)
+
+> Cette annexe documente les tâches **non planifiées initialement** mais réalisées en parallèle de Phase 4/5 (préparation à Phase 6) : ingestion en DB des CSV `component-bindings-{ar,en}.csv` produits par la préparation contenu hors-sprint. Statut : **livré**.
+>
+> Runbook complet : [`../PHASE-6-SEED-RUNBOOK.md`](../PHASE-6-SEED-RUNBOOK.md)
+
+| Tâche | Statut | Livrable | Notes |
+|---|---|---|---|
+| **T6.S1 — Script seed `seed:i18n-bindings`** | ✅ 2026-05-28 | `apps/web/scripts/seed-i18n-bindings.ts` (CLI) + `apps/web/src/lib/i18n/seed-bindings.ts` (pipeline pur, 500 LOC) | Idempotent (I0/D2), `--dry`, `--force-update`, batch=100, rapport JSON |
+| **T6.S2 — Runbook seed** | ✅ 2026-05-28 | `docs/i18n-strategy-2026-05/PHASE-6-SEED-RUNBOOK.md` (~400 lignes) | Pré-flight → dry → apply → SQL → admin → frontend → Playwright. Timing ~45 min. |
+| **T6.S3 — Validation Python étendue** | ✅ 2026-05-28 | `docs/i18n-content-2026-05/scripts/validate-seeds.py` (CHECK 7 ajouté) | Détecte les slugs CSV absents du registre TS (orphans) |
+| **T6.S4 — Tests vitest seed** | ✅ 2026-05-28 | `apps/web/src/lib/i18n/seed-bindings.test.ts` (21 tests) | Parser CSV (RFC 4180 escapes), Zod, I0, force-update, dry, idempotence, pré-flight errors |
+| **T6.S5 — Scripts npm** | ✅ 2026-05-28 | `apps/web/package.json` : `seed:i18n-bindings`, `seed:i18n-bindings:dry` | Aligné sur conventions existantes (`seed:components-fields`) |
+
+**Particularités rencontrées** :
+
+- **54 slugs orphans sur 60** au 1er dry-run : le registre TS (`apps/web/src/lib/components/registry.ts`) contient seulement 22 composants (essentiellement images/heros), alors que le CSV cible 60 slugs (sections marketing détaillées : `kit-composition`, `commerce-merci`, `home-gestes`, etc.). Ces 54 slugs orphelins ne sont **pas seedés** — leur ingestion nécessite une étape préalable d'extension du registre TS (~4 JH, hors scope de ce livrable).
+- **47 bindings AR + 47 bindings EN insérables** au 1er run réel (les 6 slugs du registre qui matchent : `home-hero`, `home-avis-strip`, `kit-comparatif`, `kit-hands-testimonials`, `kit-pack-visual`, `maison-hero`, etc.).
+- **Idempotence stricte vérifiée** : 2e run ⇒ 0 INSERT, 47 SKIP par locale (test `seed-bindings.test.ts > idempotence`).
+- **Invariant I0 respecté** : les drafts existants (édités par admin) ne sont jamais sur-écrits sauf `--force-update` explicite.
+
+### Stratégie
+
 ### Stratégie
 
 Pyramide cible :

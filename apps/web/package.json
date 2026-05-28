@@ -27,6 +27,8 @@
     "seed:components": "tsx scripts/seed-components.ts",
     "seed:components-fields": "tsx scripts/seed-components-fields.ts",
     "seed:components-fields:reconcile": "tsx scripts/seed-components-fields.ts -- --reconcile",
+    "seed:i18n-bindings": "tsx scripts/seed-i18n-bindings.ts",
+    "seed:i18n-bindings:dry": "tsx scripts/seed-i18n-bindings.ts -- --dry",
     "seed:tracking": "tsx scripts/seed-tracking.ts",
     "migrate:tracking-to-plan": "tsx scripts/migrate-tracking-to-plan.ts",
     "migrate:tracking-to-plan:dry-run": "tsx scripts/migrate-tracking-to-plan.ts -- --dry-run",

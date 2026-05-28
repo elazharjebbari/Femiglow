@@ -356,6 +356,74 @@ def check_mock_data():
 
 
 # ─────────────────────────────────────────────────────────────────────────
+# CHECK 7 — Slugs CSV référencent des composants connus du registre TS
+# ─────────────────────────────────────────────────────────────────────────
+def check_csv_slugs_against_registry():
+    """
+    Compare la colonne `component_slug` des CSV à la liste des `key` dans
+    le registre TS (`apps/web/src/lib/components/registry.ts`).
+
+    Buts :
+      - Détecter les slugs orphelins (CSV référence un slug absent du
+        registre — il sera ignoré par `seed:i18n-bindings`).
+      - Lister les composants à ajouter au registre AVANT ingestion (sinon
+        ces rows ne seront pas seedées et finiront comme "orphans" dans
+        le rapport).
+
+    Note : on lit le registre TS via une regex simple (`key: 'xxx'`).
+    Si la convention change, ce check produira un faux positif — pas
+    bloquant (WARN, pas ERROR).
+    """
+    info("\nCHECK 7 — Slugs CSV vs registre TS (apps/web/src/lib/components/registry.ts)")
+
+    registry_path = ROOT.parent.parent / 'apps' / 'web' / 'src' / 'lib' / 'components' / 'registry.ts'
+    if not registry_path.exists():
+        warn(f"  ⚠ registre TS introuvable : {registry_path} — check skipped")
+        return
+
+    # Extrait toutes les `key: '<slug>',` (slugs de premier niveau).
+    text = registry_path.read_text()
+    registry_keys = set(re.findall(r"^\s{4}key:\s*'([a-z][a-z0-9-]+)'", text, re.MULTILINE))
+    if not registry_keys:
+        warn(f"  ⚠ registre TS : 0 key extraite — check skipped (regex pattern obsolète ?)")
+        return
+    info(f"  ✓ Registre TS : {len(registry_keys)} composants (ex: {sorted(registry_keys)[:3]}…)")
+
+    # Collecte des slugs présents dans les CSV (parité 3 locales — on prend FR
+    # comme référence ; les autres sont vérifiées par le CHECK 3).
+    fr_csv = ROOT / '03-seed-data' / 'component-bindings-fr.csv'
+    if not fr_csv.exists():
+        warn(f"  ⚠ {fr_csv} introuvable — check skipped")
+        return
+    with open(fr_csv) as f:
+        rows = list(csv.DictReader(f))
+    csv_slugs = {r['component_slug'] for r in rows if r.get('component_slug')}
+
+    orphans = sorted(csv_slugs - registry_keys)
+    matched = csv_slugs & registry_keys
+
+    if not orphans:
+        info(f"  ✓ Tous les slugs CSV ({len(csv_slugs)}) sont dans le registre TS")
+    else:
+        warn(
+            f"  ⚠ {len(orphans)}/{len(csv_slugs)} slug(s) CSV absent(s) du registre TS — "
+            f"ces rows seront comptées 'orphans' par seed:i18n-bindings."
+        )
+        # Aperçu des 5 premiers
+        for slug in orphans[:5]:
+            count = sum(1 for r in rows if r['component_slug'] == slug)
+            warn(f"    · {slug} ({count} rows × 3 locales)")
+        if len(orphans) > 5:
+            warn(f"    · +{len(orphans) - 5} autres slugs orphelins")
+        warn(
+            "    → Ajoute ces composants dans `apps/web/src/lib/components/registry.ts` "
+            "avant de lancer `pnpm seed:i18n-bindings`. Sinon les bindings AR/EN "
+            "associés ne seront pas ingérés."
+        )
+    info(f"  ✓ Slugs CSV matchant le registre : {len(matched)}/{len(csv_slugs)}")
+
+
+# ─────────────────────────────────────────────────────────────────────────
 # CHECK 6 — Drifts loggés dans review-notes
 # ─────────────────────────────────────────────────────────────────────────
 def check_review_notes():
@@ -391,6 +459,7 @@ def main():
     check_legal_pages()
     check_mock_data()
     check_review_notes()
+    check_csv_slugs_against_registry()
 
     print("\n" + "=" * 70)
     if INFO:
