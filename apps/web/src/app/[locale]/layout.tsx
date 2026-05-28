@@ -25,6 +25,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import type { ReactNode } from 'react';
 
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { getLocaleConfig, isLocale, LOCALES } from '@/i18n.config';
 
 interface LocaleLayoutProps {
@@ -82,7 +84,19 @@ export default async function LocaleLayout({
         dangerouslySetInnerHTML={{ __html: localeScript }}
         suppressHydrationWarning
       />
-      {children}
+      {/*
+        Phase 7A — Chrome public (Header + Footer) rendu ici afin que
+        `LocaleSwitcher` (embarqué dans le Header) apparaisse sur toutes
+        les routes localisées. Le legacy `(marketing)/layout.tsx`
+        continue d'utiliser le même Header/Footer pour les routes non
+        préfixées — pas de duplication.
+        cf. docs/i18n-strategy-2026-05/PHASE-7-AUDIT.md §A4.
+      */}
+      <Header />
+      <main id="main" tabIndex={-1}>
+        {children}
+      </main>
+      <Footer />
     </NextIntlClientProvider>
   );
 }

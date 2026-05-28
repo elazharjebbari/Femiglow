@@ -18,7 +18,10 @@ import { ArticleGrid } from '@/components/sections/ArticleGrid';
 import { CategoryPills } from '@/components/sections/CategoryPills';
 import { CrossLinkBanner } from '@/components/sections/CrossLinkBanner';
 import { FeaturedArticleBound } from '@/components/sections/FeaturedArticleBound';
-import { JournalHero } from '@/components/sections/JournalHero';
+import {
+  JournalHero,
+  getJournalHeroStringsForLocale,
+} from '@/components/sections/JournalHero';
 import { NewsletterBlock } from '@/components/sections/NewsletterBlock';
 import { isLocale, type Locale } from '@/i18n.config';
 import { cms } from '@/lib/cms';
@@ -103,10 +106,14 @@ export default async function JournalPage({ params, searchParams }: PageProps) {
   const locale = params.locale as Locale;
   setRequestLocale(locale);
 
-  const tCross = await getTranslations({
-    locale,
-    namespace: 'marketing.journal.cross.maison',
-  });
+  const [tCross, journalHeroStrings] = await Promise.all([
+    getTranslations({
+      locale,
+      namespace: 'marketing.journal.cross.maison',
+    }),
+    // Phase 7C — strings du hero pré-résolus (composant sync).
+    getJournalHeroStringsForLocale(locale),
+  ]);
 
   const active = parseCategory(searchParams.category);
   const activeKey = active ?? 'all';
@@ -138,7 +145,7 @@ export default async function JournalPage({ params, searchParams }: PageProps) {
   return (
     <>
       <JsonLd data={blogSchema(jsonLdArticles)} />
-      <JournalHero />
+      <JournalHero strings={journalHeroStrings} />
       {featured && <FeaturedArticleBound article={featured} />}
       <div className="bg-creme pt-12 sm:pt-16">
         <CategoryPills active={activeKey} />

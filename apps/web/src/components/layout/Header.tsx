@@ -8,6 +8,7 @@ import { useChatStore } from '@/components/chat/chat-store';
 import { LocaleSwitcher } from '@/components/i18n/LocaleSwitcher';
 import { SommaireOverlay } from './SommaireOverlay';
 import { cn } from '@/lib/utils/cn';
+import { useHeaderStrings } from './use-header-strings';
 
 const HINT_DELAY_MS = 8000;
 const HINT_STORAGE_KEY = 'femiglow.menu.hinted';
@@ -22,6 +23,10 @@ export function Header() {
   const chatOpen = useChatStore((s) => s.isOpen);
   const triggerId = useId();
   const overlayId = `${triggerId}-overlay`;
+  // Phase 7C — strings localisés en mode dual : sous provider next-intl
+  // (routes `[locale]/*`), on lit `messages/<locale>.json:navigation.*`.
+  // Hors provider (routes legacy `(marketing)/*`), fallback FR hardcodé.
+  const strings = useHeaderStrings();
 
   useEffect(() => {
     function onScroll() {
@@ -83,7 +88,7 @@ export function Header() {
           >
             <Link
               href="/"
-              aria-label="FemiGlow — Accueil"
+              aria-label={strings.logoAria}
               className="font-script leading-none text-encre transition-opacity hover:opacity-70"
             >
               <span className="text-[22px] md:text-[26px]">FemiGlow</span>
@@ -110,7 +115,7 @@ export function Header() {
                   aria-haspopup="dialog"
                   className="inline-flex h-11 items-center px-2 font-body text-[11px] uppercase tracking-[0.2em] text-encre underline decoration-encre/40 underline-offset-[6px] transition-colors hover:decoration-encre md:px-1 md:text-xs md:underline-offset-4"
                 >
-                  Sommaire
+                  {strings.menuLabel}
                 </button>
                 {showHint && (
                   <span
@@ -119,7 +124,7 @@ export function Header() {
                     className="pointer-events-auto absolute end-0 top-full mt-2 inline-flex items-center gap-2 whitespace-nowrap bg-encre px-3 py-1.5 font-body text-[10px] uppercase tracking-[0.18em] text-creme shadow-md motion-safe:animate-[hint-pulse_1.6s_ease-out_2]"
                   >
                     <span aria-hidden="true">↑</span>
-                    Voir le pack ci-dessous
+                    {strings.menuHintArrow}
                   </span>
                 )}
               </div>

@@ -33,6 +33,9 @@ import {
   FAQAccordion,
   type FAQAccordionItem,
 } from '@/components/sections';
+import { getContactHeroStringsForLocale } from '@/components/sections/ContactHero';
+import { getDirectContactStringsForLocale } from '@/components/sections/DirectContactBlock';
+import { getFAQAccordionHeaderForLocale } from '@/components/sections/FAQAccordion';
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { isLocale, type Locale } from '@/i18n.config';
@@ -129,6 +132,15 @@ export default async function ContactPage({
   const t = await getTranslations({ locale, namespace: 'marketing.contact' });
   const defaultType = resolveDefaultType(searchParams?.type);
 
+  // Phase 7C — Pré-résolution des strings localisés. Les composants
+  // section restent sync (compat tests vitest) ; on leur passe un objet
+  // plain qui inclut les bonnes traductions FR/AR/EN.
+  const [contactHeroStrings, directContactStrings, faqHeader] = await Promise.all([
+    getContactHeroStringsForLocale(locale),
+    getDirectContactStringsForLocale(locale),
+    getFAQAccordionHeaderForLocale(locale),
+  ]);
+
   // Construction de la liste FAQ depuis les clés du namespace.
   // Les IDs sont stables (utilisés pour l'accordion + ancres URL),
   // les question/answer sont traduits.
@@ -164,11 +176,12 @@ export default async function ContactPage({
   return (
     <>
       <JsonLd data={contactPointSchema} />
-      <ContactHero email={CONTACT_EMAIL} />
+      <ContactHero email={CONTACT_EMAIL} strings={contactHeroStrings} />
       <DirectContactBlock
         email={CONTACT_EMAIL}
         streetAddress="25 bis avenue Patrice Lumumba"
         district="Rabat"
+        strings={directContactStrings}
       />
       <section
         className="border-t border-encre/10 bg-creme py-16 sm:py-20"
@@ -186,7 +199,7 @@ export default async function ContactPage({
           <ContactForm defaultType={defaultType} />
         </Container>
       </section>
-      <FAQAccordion items={faqs} />
+      <FAQAccordion items={faqs} header={faqHeader} />
       <ContactCrossLinks links={crossLinks} />
     </>
   );

@@ -106,9 +106,11 @@ export default async function HomePage({ params }: PageProps) {
   setRequestLocale(locale);
 
   // Phase 3 T3.2/T3.3 : pass locale aux fetches CMS (impl mock fait fallback FR).
-  const [content, journalArticles] = await Promise.all([
+  const [content, journalArticles, tGestes] = await Promise.all([
     cms.getHomepageContent({ locale }),
     cms.getArticles({ limit: 3, featured: true, locale }),
+    // Phase 7C — kicker localisé pour `<GestesGrid>` (default prop FR).
+    getTranslations({ locale, namespace: 'marketing.home.gestes' }),
   ]);
 
   return (
@@ -116,9 +118,9 @@ export default async function HomePage({ params }: PageProps) {
       <JsonLd data={organizationSchema()} />
       <JsonLd data={websiteSchema()} />
       <ScrollMilestonesTracker contentId="home" contentType="page" />
-      <HeroBound data={content.hero} priority componentKey="home-hero" />
+      <HeroBound data={content.hero} priority componentKey="home-hero" locale={locale} />
       <Fleuron />
-      <GestesGrid etapes={content.gestes} />
+      <GestesGrid etapes={content.gestes} kicker={tGestes('kicker')} title={tGestes('title')} />
       <Fleuron />
       <Manifeste data={content.manifeste} />
       <Fleuron />

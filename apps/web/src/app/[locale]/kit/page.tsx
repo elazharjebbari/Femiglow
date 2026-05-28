@@ -232,6 +232,7 @@ export default async function KitPage({ params, searchParams }: PageProps) {
     productJsonLd,
     reviewStats,
     ritualSummary,
+    locale,
   };
   return effectiveLayout === 'v2' ? (
     <KitPageLayoutV2 {...layoutProps} />

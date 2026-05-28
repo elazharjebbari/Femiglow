@@ -1,20 +1,70 @@
+/**
+ * `DirectContactBlock` — bloc « Écrire à la maison » + adresse atelier.
+ *
+ * Phase 7C (2026-05) — Architecture dual (sync + helper async pour i18n) :
+ *  - composant sync : strings injectés en prop `strings`, sinon FR legacy.
+ *  - `getDirectContactStringsForLocale(locale)` — helper exporté.
+ *
+ * Clés `marketing.contact.direct.{kicker_write,kicker_atelier,response_time,
+ * appointment_only}` — déjà présentes FR / AR / EN.
+ *
+ * @see docs/i18n-strategy-2026-05/PHASE-7-AUDIT.md §A2
+ */
+import { getTranslations } from 'next-intl/server';
+
 import { Container } from '@/components/ui/Container';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
+import type { Locale } from '@/i18n.config';
+
+export interface DirectContactStrings {
+  kickerWrite: string;
+  kickerAtelier: string;
+  responseTime: string;
+  appointmentOnly: string;
+}
 
 interface DirectContactBlockProps {
   email: string;
   streetAddress: string;
   district: string;
+  strings?: DirectContactStrings;
 }
 
-export function DirectContactBlock({ email, streetAddress, district }: DirectContactBlockProps) {
+const LEGACY_FR: DirectContactStrings = {
+  kickerWrite: 'Écrire',
+  kickerAtelier: 'Atelier',
+  responseTime: 'Réponse sous 24 heures ouvrées, depuis Rabat.',
+  appointmentOnly: 'Sur rendez-vous.',
+};
+
+export async function getDirectContactStringsForLocale(
+  locale: Locale,
+): Promise<DirectContactStrings> {
+  const t = await getTranslations({
+    locale,
+    namespace: 'marketing.contact.direct',
+  });
+  return {
+    kickerWrite: t('kicker_write'),
+    kickerAtelier: t('kicker_atelier'),
+    responseTime: t('response_time'),
+    appointmentOnly: t('appointment_only'),
+  };
+}
+
+export function DirectContactBlock({
+  email,
+  streetAddress,
+  district,
+  strings = LEGACY_FR,
+}: DirectContactBlockProps) {
   return (
     <section className="border-t border-encre/10 bg-creme py-16 sm:py-20">
       <Container width="content">
         <div className="grid gap-10 md:grid-cols-2 md:gap-16">
           <div className="space-y-3">
-            <Kicker>Écrire</Kicker>
+            <Kicker>{strings.kickerWrite}</Kicker>
             <Text size="body" tone="default">
               <a
                 href={`mailto:${email}?subject=Bonjour`}
@@ -24,18 +74,18 @@ export function DirectContactBlock({ email, streetAddress, district }: DirectCon
               </a>
             </Text>
             <Text size="caption" tone="tertiary">
-              Réponse sous 24 heures ouvrées, depuis Rabat.
+              {strings.responseTime}
             </Text>
           </div>
           <div className="space-y-3 border-t border-sauge pt-6 md:border-t-0 md:border-s md:ps-12 md:pt-0">
-            <Kicker>Atelier</Kicker>
+            <Kicker>{strings.kickerAtelier}</Kicker>
             <Text size="body" tone="default">
               {streetAddress}
               <br />
               {district}
             </Text>
             <Text size="caption" tone="tertiary">
-              Sur rendez-vous.
+              {strings.appointmentOnly}
             </Text>
           </div>
         </div>

@@ -12,6 +12,7 @@ import {
   type ProductReviewStats,
 } from '@/lib/products/reviews';
 import type { ResolvedFields } from '@/lib/db/types';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 
 type HeroProduitBoundProps = Omit<
   ComponentProps<typeof HeroProduit>,
@@ -25,6 +26,11 @@ type HeroProduitBoundProps = Omit<
    * témoignages visibles plus bas dans la page — au lieu du starter 287.
    */
   reviewsCountOverride?: number;
+  /**
+   * Phase 7B — Locale active. Propagée à `resolveComponentFields` pour
+   * lire les bindings AR/EN. Sans valeur, défaut FR (legacy).
+   */
+  locale?: Locale;
 };
 
 /**
@@ -47,10 +53,12 @@ export async function HeroProduitBound({
   observeId,
   commanderMode,
   reviewsCountOverride,
+  locale,
 }: HeroProduitBoundProps): Promise<JSX.Element> {
+  const effectiveLocale = locale ?? DEFAULT_LOCALE;
   const productFallback = product.images[0];
   const [resolvedFields, rawGalleryImages, statsOrNull] = await Promise.all([
-    resolveComponentFields(componentKey),
+    resolveComponentFields(componentKey, effectiveLocale),
     getKitHeroGalleryImages({
       productId: product.id,
       maxTotal: pickNumber(undefined, 7),
@@ -71,20 +79,27 @@ export async function HeroProduitBound({
   ]);
 
   // Fields avec fallback sur defaults solides
+  // Phase 7B — En non-default locale, on ignore les valeurs `source === 'default'`
+  // (= valeurs FR du registry) afin que `data.product` ou les helpers de page
+  // localisés puissent fournir le bon contenu. Cf. PHASE-7-AUDIT.md §A6.
+  const acceptDefault = effectiveLocale === DEFAULT_LOCALE;
   const fields: HeroProduitFields = {
     tagline: pickString(
       resolvedFields.tagline,
       'Manucure japonaise. Deux gestes, un polissoir. La main se révèle.',
+      acceptDefault,
     ),
-    description: pickString(resolvedFields.description, ''),
+    description: pickString(resolvedFields.description, '', acceptDefault),
     attributeChips: pickStringArray(
       resolvedFields.attributeChips,
       ['Sans vernis', 'Sans UV', 'Sans acétone'],
+      acceptDefault,
     ),
-    trustRow: pickStringArray(resolvedFields.trustRow, [
-      'Livraison offerte',
-      'Paiement à la livraison',
-    ]),
+    trustRow: pickStringArray(
+      resolvedFields.trustRow,
+      ['Livraison offerte', 'Paiement à la livraison'],
+      acceptDefault,
+    ),
     reviewBadgeEnabled: pickBoolean(resolvedFields.reviewBadgeEnabled, true),
     ctaPulseEnabled: pickBoolean(resolvedFields.ctaPulseEnabled, true),
   };
@@ -125,8 +140,16 @@ export async function HeroProduitBound({
   );
 }
 
-function pickString(field: ResolvedFields[string] | undefined, fallback: string): string {
-  const v = field?.value;
+function pickString(
+  field: ResolvedFields[string] | undefined,
+  fallback: string,
+  acceptDefault = true,
+): string {
+  if (!field) return fallback;
+  // Phase 7B — En non-default locale, on refuse `source === 'default'`
+  // (= valeurs FR du registry) pour préserver le fallback localisé.
+  if (!acceptDefault && field.meta.source === 'default') return fallback;
+  const v = field.value;
   return typeof v === 'string' && v.trim().length > 0 ? v : fallback;
 }
 
@@ -138,8 +161,11 @@ function pickBoolean(field: ResolvedFields[string] | undefined, fallback: boolea
 function pickStringArray(
   field: ResolvedFields[string] | undefined,
   fallback: string[],
+  acceptDefault = true,
 ): string[] {
-  const v = field?.value;
+  if (!field) return fallback;
+  if (!acceptDefault && field.meta.source === 'default') return fallback;
+  const v = field.value;
   if (!Array.isArray(v)) return fallback;
   const cleaned = v
     .filter((item): item is string => typeof item === 'string')

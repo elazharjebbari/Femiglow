@@ -61,6 +61,7 @@ export function KitPageLayoutV2({
   productJsonLd,
   reviewStats,
   ritualSummary,
+  locale,
 }: KitPageLayoutProps) {
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0" data-kit-layout="v2">
@@ -73,6 +74,7 @@ export function KitPageLayoutV2({
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
+        locale={locale}
         // Count badge avis depuis le module rituels (47 en DB courante).
         // Fallback handsTestimonials si rituals vide. L'ancre cliquable
         // cible #rituals-module-title (cf. HeroProduitBound).

@@ -38,6 +38,7 @@ export function KitPageLayoutV1({
   productJsonLd,
   reviewStats,
   ritualSummary,
+  locale,
 }: KitPageLayoutProps) {
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0" data-kit-layout="v1">
@@ -48,6 +49,7 @@ export function KitPageLayoutV1({
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
+        locale={locale}
         // Le count badge avis vient du module rituels (« voix de la maison »)
         // — c'est le seul bloc social proof à grande échelle de la page.
         // 47 en DB courante. Fallback handsTestimonials.length si rituals

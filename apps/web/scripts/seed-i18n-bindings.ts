@@ -59,6 +59,11 @@ function parseArgs(argv: string[]): CliOpts {
   };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
+    // Phase 7D — Skip `--` séparateur pnpm/npm. Sans ce skip, le script
+    // exit 2 avec `Unknown flag: --` quand on lance via
+    // `pnpm seed:i18n-bindings:dry` (qui inclut `-- --dry` dans son script).
+    // cf. docs/i18n-strategy-2026-05/PHASE-7-AUDIT.md §A5.
+    if (a === '--') continue;
     switch (a) {
       case '--locale': {
         const next = argv[++i];
