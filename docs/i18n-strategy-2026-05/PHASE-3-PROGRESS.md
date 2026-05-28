@@ -15,7 +15,7 @@
 | **T3.5** Mocks AR/EN homepage + dispatch CMS | ✅ Fait | `d9b2f64` |
 | **T3.6** Mocks AR/EN maison + rituel + kit | ⏳ Reste | — |
 | **T3.7** Articles AR/EN (mocks + queries by-slug locale-aware) | ⏳ Reste | — |
-| **T3.8** UI admin saisie par locale (`component_field_bindings`) | ⏳ Reste | — |
+| **T3.8** UI admin saisie par locale (`component_field_bindings`) | ✅ Fait | (HEAD) |
 | **T3.9** Impl Sanity prod (vraie source DB) | ⏳ Reste | — |
 
 ## Architecture livrée Phase 3
@@ -141,8 +141,9 @@ Avec `I18N_ENABLED=true` :
 | vitest contract pages | 147 | — | 147 |
 | vitest helpers Phase 3 | — | 18 | 18 |
 | vitest dispatch CMS | — | 7 | 7 |
+| vitest admin i18n T3.8 | — | 15 | 15 |
 | Playwright smoke i18n | 7 | — | 7 |
-| **Total** | **224** | **25** | **249** |
+| **Total** | **224** | **40** | **264** |
 
 ## Commands utiles
 
@@ -168,8 +169,136 @@ pnpm vitest run \
 1. **T3.6** Mocks AR/EN pour maison + rituel + kit (réplique pattern homepage)
 2. **T3.7** Articles AR/EN : la page `/journal/[slug]` peut ingérer les
    bodies des `mock-data-{ar,en}.json` produits Phase 0
-3. **T3.8** UI admin pour saisir traductions par locale dans
-   `component_field_bindings.locale` (champ DB existe déjà)
-4. **T3.9** Impl Sanity prod : remplacer le mock par une vraie source
+3. **T3.9** Impl Sanity prod : remplacer le mock par une vraie source
 
 Et après Phase 3 : Phase 4 (RTL Tailwind + activation visuelle AR).
+
+## T3.8 — UI admin saisie par locale (livré)
+
+**Mission** : permettre au founder de saisir des traductions FR/AR/EN
+directement dans l'admin sur les `component_field_bindings`, sans toucher
+les mocks TS.
+
+**Page admin concernée** : `/admin/components/[key]` (ex `home-hero`,
+`maison-hero`, etc.) — un sélecteur d'onglets en tête de la section
+« Contenu éditorial » bascule entre FR / AR / EN.
+
+### Architecture
+
+```
+apps/web/src/components/admin/i18n/
+├── LocaleTabs.tsx            ← role=tablist 3 onglets (FR/AR/EN)
+├── LocaleTabs.test.tsx        ← 7 tests (aria, tabindex, callback, completion)
+├── LocaleEditorShell.tsx      ← orchestrateur : tient activeLocale, remount editor
+└── LocaleEditorShell.test.tsx ← 5 tests (switch, dir=rtl, completion, missing locale)
+
+apps/web/src/app/admin/components/[key]/page.tsx
+  ↳ load les initialFields pour les 3 locales en Promise.all
+  ↳ passe au LocaleEditorShell qui re-monte EditorWithPreview par locale
+
+apps/web/src/components/admin/components/fields/useFieldForm.ts
+  ↳ bugfix : publish POST passe désormais `?locale=${locale}` à la route
+  ↳ sans ça, les drafts AR/EN ne pouvaient pas être publiés (server fallback 'fr')
+
+apps/web/src/lib/db/queries/component-fields.test.ts
+  ↳ +3 tests isolation par locale (getDraftBinding, upsertDraftBinding, publishBinding)
+```
+
+### Comportement utilisateur
+
+1. L'admin arrive sur `/admin/components/home-hero`.
+2. Au-dessus du formulaire, une barre « Langue d'édition » avec 3 onglets :
+   - **FR** (actif par défaut, point vert si traduit)
+   - **AR** (point vert si traduit, sinon gris)
+   - **EN** (idem)
+3. Clic sur AR → le formulaire entier remonte avec les valeurs AR du draft
+   (ou published si pas de draft, ou `defaultValue` du registre).
+   Le tabpanel reçoit `dir="rtl"` (déjà géré par les CSS logiques Phase 4).
+4. Édition → autosave debounce 800 ms (PATCH avec `locale` dans le body).
+5. Clic « Publier les modifications » → POST publish pour chaque champ dirty
+   avec `?locale=ar`. Les FR et EN ne sont PAS affectés.
+
+### Stratégie remount vs partage de state
+
+Choix : `<EditorWithPreview key={activeLocale} />`. Au switch d'onglet, on
+remonte complètement le formulaire (et son `useFieldForm`). Ça simplifie
+énormément l'isolation : chaque locale a son propre dirty tracking, son
+propre debounce, ses propres erreurs de validation. Le coût est négligeable
+(< 30 champs sur le composant le plus chargé) et la rouille mentale du code
+augmente moins qu'avec un useFieldForm multi-locale.
+
+### Contraintes respectées
+
+- **Aucune régression FR-only** : le default reste 'fr' → le formulaire au
+  premier load est exactement identique à l'ancien comportement.
+- **Voix admin 100 % FR** : le chrome (« Langue d'édition », « Édite le
+  contenu pour Arabe »…) reste en français. Seuls les *contenus édités*
+  sont multilingues (ADR-008).
+- **TypeScript strict** : `Locale` type partout, pas de `as string`.
+- **State React local** : pas de cookie. L'admin ne doit jamais voir son
+  switcher éditorial confondu avec le `NEXT_LOCALE` du visiteur public.
+- **Validation Zod** : la route PATCH applique `validateFieldValue` après
+  encodage, indépendamment de la locale (shape identique, contenu libre).
+
+### Activation manuelle
+
+1. `pnpm dev`
+2. Se connecter à `/admin/login`
+3. Visiter `/admin/components/home-hero` (ou n'importe quel composant
+   ayant des `component.fields` dans le registre).
+4. Cliquer sur l'onglet AR, saisir des traductions, vérifier que le badge
+   passe à « ✓ traduit ».
+5. Publier → vérifier que `/ar/` rend bien les valeurs saisies (avec
+   `I18N_ENABLED=true` + adapter CMS branché sur les bindings DB — actuellement
+   le mock est encore prioritaire ; le branchement DB est l'objet de T3.9).
+
+### Bugfix collatéral
+
+`useFieldForm.publish()` POSTait `/api/.../publish` sans query string.
+La route `POST /publish` lit `?locale=…` (et tombait sur `'fr'` par défaut).
+Conséquence : un draft AR « publié » ne se serait pas promu → pas de
+visibilité en prod. Fixé : `?locale=${encodeURIComponent(locale)}` joint
+à l'URL du POST.
+
+### Tests (récap)
+
+| Suite | Tests | Notes |
+|---|---|---|
+| `LocaleTabs.test.tsx` | 7 | aria-selected, tabindex, onClick, completion, panelId |
+| `LocaleEditorShell.test.tsx` | 5 | switch locale, dir=rtl, complétion, missing locale, remount |
+| `component-fields.test.ts` (ajout T3.8) | 3 | isolation AR/FR/EN, upsert indep, publish indep |
+| **Total T3.8** | **15** | tous verts |
+
+### Limites connues / suite
+
+- **Preview iframe** : reste sur FR (le `PreviewFrame` ne propage pas encore
+  la locale dans son URL `?locale=ar`). À traiter en Phase 5 quand la
+  preview prendra un `?locale=` (chemin `[locale]/preview/...`).
+- **History view** : `/[key]/fields/[fieldKey]/history` lit `locale` mais
+  l'UI actuelle ne propose pas de filtre — l'historique mélange FR/AR/EN
+  pour le même champ. T3.8 ne le traite pas (out of scope).
+- **Sanity prod (T3.9)** : tout est en place côté Postgres. L'impl Sanity
+  remplacera le repo Drizzle par un client Sanity qui exposera la même
+  API (`getPublishedBinding`, `upsertDraftBinding`, etc.). Le LocaleEditorShell
+  ne sait pas qui sert la DB — il s'en fiche.
+
+### Pour T3.9 (recommandation)
+
+L'analyse de T3.8 a confirmé que **le repo `component-fields.ts` est l'unique
+porte d'entrée** des bindings. Sanity prod devra exposer un module
+compatible avec l'interface implicite :
+
+```ts
+getPublishedBinding(componentId, fieldKey, locale): Promise<Binding | null>
+getDraftBinding(componentId, fieldKey, locale): Promise<Binding | null>
+upsertDraftBinding(input: UpsertDraftInput): Promise<Binding>
+publishBinding(input: PublishInput): Promise<Binding>
+listHistory(componentId, fieldKey, locale, limit): Promise<HistoryEntry[]>
+restoreFromHistory(input: RestoreInput): Promise<Binding>
+// + listAllScheduled, listScheduledDue, archiveOrphanBindings…
+```
+
+Stratégie suggérée : un fichier `component-fields.sanity.ts` qui implémente
+ces signatures contre l'API Sanity, et un toggle de dispatch dans
+`@/lib/db/client` (`DATABASE_URL` ou `SANITY_PROJECT_ID`). Le ConflictError
+devra mapper vers le mécanisme de mutation Sanity (`ifRevisionId`).
