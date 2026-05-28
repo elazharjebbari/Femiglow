@@ -63,7 +63,7 @@ export async function generateMetadata({
   const og = (await resolveOgImage('journal-og')) ?? FALLBACK_OG;
 
   return {
-    title: `${t('title_base')}${titleSuffix}`,
+    title: `${t('title_base', { suffix: titleSuffix })}`,
     description,
     alternates: {
       canonical,
@@ -75,7 +75,7 @@ export async function generateMetadata({
       },
     },
     openGraph: {
-      title: `${t('title_base')}${titleSuffix} — FemiGlow`,
+      title: `${t('title_base', { suffix: titleSuffix })} — FemiGlow`,
       description,
       url: canonical,
       type: 'website',
