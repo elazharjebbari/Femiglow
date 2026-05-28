@@ -106,7 +106,10 @@ export default async function HomePage({ params }: PageProps) {
   setRequestLocale(locale);
 
   const [content, journalArticles] = await Promise.all([
-    cms.getHomepageContent(),
+    // Phase 3 T3.2 : on passe `{ locale }` pour préparer le fetch multilingue.
+    // L'impl mock ignore le param pour l'instant (retourne FR) ; Phase 3.3
+    // étendra le mock + ajoutera la vraie impl Sanity pour fetcher par locale.
+    cms.getHomepageContent({ locale }),
     cms.getArticles({ limit: 3, featured: true }),
   ]);
 

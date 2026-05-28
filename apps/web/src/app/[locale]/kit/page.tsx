@@ -152,8 +152,9 @@ export default async function KitPage({ params, searchParams }: PageProps) {
   const locale = params.locale as Locale;
   setRequestLocale(locale);
 
+  // Phase 3 T3.2 : pass locale au fetch CMS kit content.
   const [content, journalArticles, dbProduct, seo] = await Promise.all([
-    cms.getKitPageContent(),
+    cms.getKitPageContent({ locale }),
     cms.getArticles({ limit: 3 }),
     buildKitPublicProduct(),
     resolveSeoMetadata({

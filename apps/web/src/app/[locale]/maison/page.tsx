@@ -112,7 +112,8 @@ export default async function MaisonPage({ params }: PageProps) {
   const locale = params.locale as Locale;
   setRequestLocale(locale);
 
-  const content = await cms.getMaisonPageContent();
+  // Phase 3 T3.2 : pass locale (impl mock ignore, Sanity impl Phase 3.3).
+  const content = await cms.getMaisonPageContent({ locale });
 
   return (
     <>

@@ -117,10 +117,11 @@ export default async function RituelPage({ params }: PageProps) {
     namespace: 'marketing.rituel.howto',
   });
 
+  // Phase 3 T3.2 : pass locale aux fetches CMS.
   const [content, journalArticles, homepage] = await Promise.all([
-    cms.getRituelPageContent(),
+    cms.getRituelPageContent({ locale }),
     cms.getArticles({ limit: 3, featured: true }),
-    cms.getHomepageContent(),
+    cms.getHomepageContent({ locale }),
   ]);
 
   const crossSlugs = new Set(content.journalCrossSlugs);

@@ -8,6 +8,8 @@ import type {
   RituelPageContent,
 } from '@/lib/schemas';
 
+import type { CmsLocaleOptions } from './locale-options';
+
 export interface GetArticlesOptions {
   limit?: number;
   category?: ArticleCategory;
@@ -33,8 +35,8 @@ export interface CMSAdapter {
 
   getKit(): Promise<Product>;
 
-  getHomepageContent(): Promise<HomepageContent>;
-  getMaisonPageContent(): Promise<MaisonPageContent>;
-  getRituelPageContent(): Promise<RituelPageContent>;
-  getKitPageContent(): Promise<KitPageContent>;
+  getHomepageContent(options?: CmsLocaleOptions): Promise<HomepageContent>;
+  getMaisonPageContent(options?: CmsLocaleOptions): Promise<MaisonPageContent>;
+  getRituelPageContent(options?: CmsLocaleOptions): Promise<RituelPageContent>;
+  getKitPageContent(options?: CmsLocaleOptions): Promise<KitPageContent>;
 }
