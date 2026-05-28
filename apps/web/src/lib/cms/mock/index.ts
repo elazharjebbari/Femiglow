@@ -6,6 +6,11 @@ import {
   mockMaison,
   mockRituel,
 } from '@/data/mock';
+// Phase 3 T3.5 — Premiers vrais mocks localisés (homepage).
+// Les autres pages (maison/rituel/kit) feront fallback FR jusqu'à
+// création de leurs équivalents *.ar.ts / *.en.ts respectifs.
+import { mockHomepageAr } from '@/data/mock/homepage.ar';
+import { mockHomepageEn } from '@/data/mock/homepage.en';
 import type { CMSAdapter, GetArticlesOptions, GetArticlesPageOptions } from '../types';
 import type { CmsLocaleOptions } from '../locale-options';
 import { pickByLocale } from '../pick-by-locale';
@@ -18,7 +23,11 @@ import { pickByLocale } from '../pick-by-locale';
  * Pour l'instant, seul `fr` est défini → toutes les locales fallback
  * sur le contenu FR de `mockHomepage` etc. Aucune régression côté UI.
  */
-const homepageByLocale = { fr: mockHomepage };
+const homepageByLocale = {
+  fr: mockHomepage,
+  ar: mockHomepageAr,
+  en: mockHomepageEn,
+};
 const maisonByLocale = { fr: mockMaison };
 const rituelByLocale = { fr: mockRituel };
 const kitPageByLocale = { fr: mockKitPageContent };
