@@ -6,31 +6,48 @@ import {
   mockMaison,
   mockRituel,
 } from '@/data/mock';
-// Phase 3 T3.5 — Premiers vrais mocks localisés (homepage).
-// Les autres pages (maison/rituel/kit) feront fallback FR jusqu'à
-// création de leurs équivalents *.ar.ts / *.en.ts respectifs.
+// Phase 3 T3.5/T3.6 — Mocks localisés ingérés ici. Les 4 pages CMS
+// (homepage, maison, rituel, kit) servent maintenant un contenu AR / EN
+// dédié sans fallback FR (cf. dictionnaires `*ByLocale` ci-dessous).
 import { mockHomepageAr } from '@/data/mock/homepage.ar';
 import { mockHomepageEn } from '@/data/mock/homepage.en';
+import { mockMaisonAr } from '@/data/mock/maison.ar';
+import { mockMaisonEn } from '@/data/mock/maison.en';
+import { mockRituelAr } from '@/data/mock/rituel.ar';
+import { mockRituelEn } from '@/data/mock/rituel.en';
+import { mockKitPageContentAr } from '@/data/mock/kit.ar';
+import { mockKitPageContentEn } from '@/data/mock/kit.en';
 import type { CMSAdapter, GetArticlesOptions, GetArticlesPageOptions } from '../types';
 import type { CmsLocaleOptions } from '../locale-options';
 import { pickByLocale } from '../pick-by-locale';
 
 /**
  * Dictionnaires de contenu indexés par locale, consommés par
- * `pickByLocale`. Phase 3.5 ingérera de vrais bindings AR/EN ici
- * (depuis `docs/i18n-content-2026-05/03-seed-data/`).
- *
- * Pour l'instant, seul `fr` est défini → toutes les locales fallback
- * sur le contenu FR de `mockHomepage` etc. Aucune régression côté UI.
+ * `pickByLocale`. Phase 3.6 — Toutes les pages CMS (homepage, maison,
+ * rituel, kit) ont des bindings AR + EN dédiés, alignés sur les fichiers
+ * `messages/*.json` et le tone guide `docs/i18n-content-2026-05/
+ * 00-style-reference.md`.
  */
 const homepageByLocale = {
   fr: mockHomepage,
   ar: mockHomepageAr,
   en: mockHomepageEn,
 };
-const maisonByLocale = { fr: mockMaison };
-const rituelByLocale = { fr: mockRituel };
-const kitPageByLocale = { fr: mockKitPageContent };
+const maisonByLocale = {
+  fr: mockMaison,
+  ar: mockMaisonAr,
+  en: mockMaisonEn,
+};
+const rituelByLocale = {
+  fr: mockRituel,
+  ar: mockRituelAr,
+  en: mockRituelEn,
+};
+const kitPageByLocale = {
+  fr: mockKitPageContent,
+  ar: mockKitPageContentAr,
+  en: mockKitPageContentEn,
+};
 
 export const mockAdapter: CMSAdapter = {
   async getArticles(options: GetArticlesOptions = {}) {
