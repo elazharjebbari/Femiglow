@@ -1,73 +1,133 @@
 /**
- * Page démonstration locale — sert de pilote pour valider la chaîne i18n
- * complète (middleware → routing → request config → messages → render).
+ * Page `/[locale]/` — home FemiGlow upgrade depuis le pilote démo.
  *
- * Quand le flag `I18N_ENABLED=true`, accéder à `/fr/`, `/ar/` ou `/en/`
- * rend cette page traduite en utilisant `messages/<locale>.json`.
+ * Migration de la page `/` (legacy) vers le routing locale-aware.
+ * Localise generateMetadata + JSON-LD + structure. Le contenu CMS
+ * (hero, gestes, manifeste, avis, journal extracts) reste FR jusqu'à
+ * Phase 3 multilingue.
  *
- * Phase 2 ultérieure : migrer les vraies pages marketing
- * (`(marketing)/page.tsx` etc.) sous `[locale]/(marketing)/`.
- *
- * @see docs/i18n-strategy-2026-05/08-plan-action/phases.md §T1.7
+ * @see docs/i18n-strategy-2026-05/08-plan-action/phases.md §T2.7
  */
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { LocaleSwitcher } from '@/components/i18n/LocaleSwitcher';
-import { getLocaleConfig, isLocale } from '@/i18n.config';
-import { notFound } from 'next/navigation';
+import { AvisStripBound } from '@/components/sections/AvisStripBound';
+import { GestesGrid } from '@/components/sections/GestesGrid';
+import { HeroBound } from '@/components/sections/HeroBound';
+import { JournalExtraitsBound } from '@/components/sections/JournalExtraitsBound';
+import { Manifeste } from '@/components/sections/Manifeste';
+import { NewsletterBlock } from '@/components/sections/NewsletterBlock';
+import { ScrollMilestonesTracker } from '@/components/tracking/ScrollMilestonesTracker';
+import { Fleuron } from '@/components/ui/Fleuron';
+import { isLocale, type Locale } from '@/i18n.config';
+import { cms } from '@/lib/cms';
+import { resolveOgImage } from '@/lib/components/og-image';
+import { JsonLd, organizationSchema, websiteSchema } from '@/lib/seo/json-ld';
+
+const SITE_URL = 'https://femiglow-maroc.com';
+
+const FALLBACK_OG = {
+  url: '/og/home.svg',
+  width: 1200,
+  height: 630,
+  alt: 'FemiGlow',
+};
 
 interface PageProps {
   params: { locale: string };
 }
 
-export default async function LocalePilotPage({ params }: PageProps) {
+// ---------------------------------------------------------------------------
+// generateMetadata — SEO localisé
+// ---------------------------------------------------------------------------
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  if (!isLocale(params.locale)) {
+    return { title: 'FemiGlow' };
+  }
+  const t = await getTranslations({
+    locale: params.locale,
+    namespace: 'marketing.home.metadata',
+  });
+  const og = (await resolveOgImage('home-og')) ?? FALLBACK_OG;
+  const canonicalPath = `/${params.locale}/`;
+
+  return {
+    title: t('title'),
+    description: t('description'),
+    alternates: {
+      canonical: canonicalPath,
+      languages: {
+        fr: '/fr/',
+        ar: '/ar/',
+        en: '/en/',
+        'x-default': '/fr/',
+      },
+    },
+    openGraph: {
+      type: 'website',
+      title: t('og_title'),
+      description: t('og_description'),
+      url: `${SITE_URL}${canonicalPath}`,
+      siteName: 'FemiGlow',
+      locale:
+        params.locale === 'ar'
+          ? 'ar_MA'
+          : params.locale === 'en'
+            ? 'en_US'
+            : 'fr_MA',
+      images: [
+        { url: og.url, width: og.width, height: og.height, alt: og.alt },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('og_title'),
+      description: t('og_description'),
+      images: [og.url],
+    },
+  };
+}
+
+export const revalidate = 3600;
+
+// ---------------------------------------------------------------------------
+// Page — vraie home (remplace le pilote démo précédent)
+// ---------------------------------------------------------------------------
+
+export default async function HomePage({ params }: PageProps) {
   if (!isLocale(params.locale)) {
     notFound();
   }
-  setRequestLocale(params.locale);
+  const locale = params.locale as Locale;
+  setRequestLocale(locale);
 
-  const t = await getTranslations();
-  const config = getLocaleConfig(params.locale);
+  const [content, journalArticles] = await Promise.all([
+    cms.getHomepageContent(),
+    cms.getArticles({ limit: 3, featured: true }),
+  ]);
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <header className="mb-12 flex items-center justify-between gap-6">
-        <span className="text-sm uppercase tracking-widest text-stone-500">
-          {config.displayNameNative}
-        </span>
-        <LocaleSwitcher currentLocale={params.locale} />
-      </header>
-
-      <h1 className="font-serif text-5xl leading-tight text-stone-900">
-        {t('marketing.home.hero.title')}
-      </h1>
-
-      <p className="mt-6 text-lg leading-relaxed text-stone-600">
-        {t('marketing.home.hero.subtitle')}
-      </p>
-
-      <p className="mt-12 text-sm text-stone-500">
-        {t('navigation.kit')} · {t('navigation.home')} · {t('navigation.rituel')}
-      </p>
-
-      <section className="mt-16 rounded border border-stone-200 bg-stone-50 p-6">
-        <p className="text-xs uppercase tracking-widest text-stone-500">
-          {t('common.loading').replace('…', '')}
-        </p>
-        <p className="mt-3 text-2xl font-serif text-stone-900">
-          {t('marketing.home.avis.rating_label')}
-        </p>
-      </section>
-
-      <footer className="mt-16 border-t border-stone-200 pt-6 text-xs text-stone-400">
-        <p>
-          Route pilote i18n FemiGlow — locale active :{' '}
-          <code className="rounded bg-stone-100 px-1.5 py-0.5">
-            {params.locale}
-          </code>{' '}
-          (direction <code>{config.direction}</code>)
-        </p>
-      </footer>
-    </main>
+    <>
+      <JsonLd data={organizationSchema()} />
+      <JsonLd data={websiteSchema()} />
+      <ScrollMilestonesTracker contentId="home" contentType="page" />
+      <HeroBound data={content.hero} priority componentKey="home-hero" />
+      <Fleuron />
+      <GestesGrid etapes={content.gestes} />
+      <Fleuron />
+      <Manifeste data={content.manifeste} />
+      <Fleuron />
+      <AvisStripBound
+        testimonials={content.avis}
+        componentKey="home-avis-strip"
+      />
+      <Fleuron />
+      <JournalExtraitsBound articles={journalArticles} />
+      <NewsletterBlock />
+    </>
   );
 }
