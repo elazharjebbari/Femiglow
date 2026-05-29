@@ -1,0 +1,24 @@
+id,scenario,type,mode,preconditions,steps,expected,priority
+GV-01,Generation video mock reel via API operateur,nominal,mock,"draft reel existant, cookie cs_generation_mode=mock","POST generate-visual {kind:video,model:mock-video-1.0}",HTTP 200 media.previewUrl=/_media/content-studio/mock/reel-9x16.mp4 1080x1920 durationMs=5000,P0
+GV-02,Asset mock reel servi et jouable,nominal,mock,serveur prod up,"curl -I /_media/content-studio/mock/reel-9x16.mp4","HTTP 200 content-type video/mp4 fichier ISO MP4 non vide",P0
+GV-03,Generation video mock story,nominal,mock,"draft story existant, cookie mock","POST generate-visual {kind:video} format=story",HTTP 200 previewUrl story-9x16.mp4 durationMs=3000,P1
+GV-04,Format post/carousel refuse en video,error,mock,"draft format=post","POST generate-visual kind=video",erreur 'Aucun mock video disponible pour le format post',P1
+GV-05,E2E reel produit MP4 jouable (selecteur corrige),nominal,mock,"page /create, mocks enregistres","selectionner Reel, generer, attendre bouton 'Générer une vidéo IA'","video.first visible, src contient /_media/content-studio/mock/, kind=video",P0
+GV-06,E2E bascule image envoie kind=image,nominal,mock,"page /create reel","cliquer radio Image, generer 'Générer un visuel IA'",lastVisualBody.kind=image img visible,P1
+GV-07,UI libelle bouton suit le kind,nominal,both,"MediaStudio monte kind=video","inspecter bouton primaire","libelle = 'Générer une vidéo IA' (video) / 'Générer un visuel IA' (image)",P2
+GV-08,Live hf-video sans credential complet,error,live,"AI_ENGINE_HIGGSFIELD_API_SECRET vide, cookie live","POST generate-visual {kind:video,model:hf-video-lite}",invalid_state 'credential Higgsfield incomplet',P0
+GV-09,Live modele live-discovered non routable,error,live,"cookie live, picker propose veo3_1","POST generate-visual {kind:video,model:veo3_1}",invalid_state (idealement message correct: modele Higgsfield non supporte),P0
+GV-10,Live avec credential complet endpoints corriges,nominal,live,"credential KEY_ID:KEY_SECRET valide, endpoints async reecrits","POST generate-visual {kind:video,model:hf-video-mini}",submit /v1/image2video poll /v1/requests/{id}/status -> mp4 url valide,P1
+GV-11,Live Higgsfield statut failed,error,live,"credential valide, provider renvoie failed","POST generate puis poll status failed",erreur claire 'Higgsfield video failed: <raison>' propagee a l'UI,P1
+GV-12,Live Higgsfield timeout poll,error,live,"credential valide, jamais completed","POST generate, poll jusqu'au deadline","erreur 'timed out after 300000ms' bornee",P2
+GV-13,Recuperation apres echec live -> bascule mock,recovery,both,"echec live precedent","operateur passe le toggle en mock, regenere",HTTP 200 mp4 mock servi (degradation gracieuse),P1
+GV-14,Catalogue video ne liste que modeles routables,nominal,both,serveur up,"GET /models?role=video","chaque modele source:live est reellement consommable par generateStudioVideo",P0
+GV-15,Defaut picker = modele sur,nominal,both,"MediaStudio role=video","ModelPicker auto-select suggested",suggested=mock-video-1.0 (ou provider live operationnel),P2
+GV-16,Vitest sort EXIT 0 quand tout passe,nominal,mock,"suite vitest","pnpm vitest run; echo $?",exit code 0 aucune unhandled rejection,P0
+GV-17,Test polling failed ne laisse pas de promesse orpheline,error,mock,"video-generation.test.ts","run test polling status=failed avec fake timers",rejet capture sans Unhandled Rejection,P0
+GV-18,Tests nodes n'ecrivent pas dans .media-storage reel,error,mock,"compose/transcode-export tests","run tests; verifier .media-storage/ai-engine",aucun nouveau fichier stub ecrit (isolation tmpdir/env),P1
+GV-19,Pipeline AI-Engine produit un MP4 reel,nominal,live,"/api/admin/ai-engine/generate format=reel, ffmpeg dispo","executer graphe complet","fichier video-*.mp4 reel et non vide cree, lisible",P2
+GV-20,Compose mixe audio+sous-titres,nominal,live,"videos+voiceover+music+subtitles en state","executer composeNode",mp4 final avec piste audio mixee (vo 1.0 / bg 0.3) et metadata sous-titres,P2
+GV-21,VideoPlayer lit previewUrl avec controles,nominal,both,"media.kind=video previewUrl valide","monter VideoPlayer","video autoplay muted loop; badge VIDEO+duree; play/mute fonctionnels",P1
+GV-22,PlatformPreview route reel/story vers VideoPlayer,nominal,both,"media video, format reel","rendre PlatformPreview instagram reel",renderMedia detecte kind=video -> VideoPlayer affiche,P1
+GV-23,Generation sans draft selectionne,error,both,"aucun draft selectionne","cliquer Generer une video IA",toast 'Selectionnez d'abord une variante' bouton disabled,P2

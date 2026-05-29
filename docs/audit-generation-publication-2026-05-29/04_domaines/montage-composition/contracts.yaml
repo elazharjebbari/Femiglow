@@ -1,0 +1,84 @@
+domain: montage-composition
+operator_reachable_endpoints:
+  upload_and_crop:
+    method: POST
+    path: /api/admin/content-studio-v2/media/upload-and-crop
+    runtime: nodejs
+    maxDuration_s: 60
+    preconditions:
+      - CONTENT_STUDIO_V2_ENABLED=true   # sinon invalid_state
+      - admin session (cookie)            # sinon 401 unauthorized
+      - rate_limit: 30/min par IP         # sinon 429 rate_limited
+    request:
+      content_type: multipart/form-data
+      fields:
+        file: image binary (image/jpeg|png|webp), <= 25 MB
+        crop: JSON {x>=0,y>=0,width>0,height>0,rotation?[-360..360],aspectRatio?,alt(1..280)}
+    processing: sharp rotate?(rotation) -> extract(x,y,w,h) -> preview.webp(<=1080w,q85) + thumb.webp(320w,q75); createMedia(kind=image); storage=getStorage()(local -> /var/www/femiglow-staging/.media-storage)
+    response_201: { media: StudioV2MediaItem(kind=image, previewUrl, thumbnailUrl, originalUrl, width, height) }
+    errors:
+      invalid_state: v2 disabled
+      unauthorized: no session (401)
+      rate_limited: >30/min (429)
+      invalid_input: missing file/crop, bad crop JSON, zod fail (400)
+      internal_error: body non-multipart -> formData() throw (500)  # BUG: devrait etre 400
+    mode_behavior: identique mock/live (traitement local, cs_generation_mode non lu)
+    verified_live_probe: "crop 0,0,100,100 -> 201, preview WebP VP8 100x100 servi 200"
+  upload_and_trim:
+    method: POST
+    path: /api/admin/content-studio-v2/media/upload-and-trim
+    runtime: nodejs
+    maxDuration_s: 300
+    preconditions:
+      - CONTENT_STUDIO_V2_ENABLED=true
+      - admin session
+      - rate_limit: 10/min par IP
+      - ffmpeg disponible (FFMPEG_PATH ?? 'ffmpeg' = /usr/bin/ffmpeg)
+    request:
+      content_type: multipart/form-data
+      fields:
+        file: video (video/mp4|quicktime|webm|x-matroska), <= 200 MB
+        trim: JSON {startSec>=0, endSec>0, alt(1..280)}; (endSec-startSec) in (0, 90]
+    processing: ffmpeg -ss -t -c:v libx264 -crf23 -c:a aac +faststart -map_metadata -1 -> trimmed.mp4 ; poster frame@0.5s (-frames:v 1) ; createMedia(kind=video)
+    response_201: { media: StudioV2MediaItem(kind=video, previewUrl=trimmed.mp4, thumbnailUrl=poster|null, durationSec) }
+    errors:
+      invalid_input: missing file/trim, mauvais MIME, plage vide, duree>90s (400)
+      invalid_state: ffmpeg code!=0 (500)
+      unauthorized / rate_limited / internal_error(non-multipart)
+    mode_behavior: identique mock/live
+    verified_live_probe: "trim 0.5->2.0 -> 201 durationSec 1.5, MP4 H.264 servi 200, poster JPEG 320x240 servi 200"
+graph_nodes_NOT_operator_reachable_via_create_flow:
+  compose:
+    fn: composeNode (src/lib/ai-engine/nodes/compose.ts)
+    invoked_by: graphe LangGraph via POST /api/admin/ai-engine/generate uniquement
+    storage: HARDCODED join(cwd,'../../.media-storage/ai-engine') -> /_media/ai-engine (bypass getStorage)
+    video: ffmpeg mux voiceover(vol1.0)+music(vol0.3) amix; sans audio -> copie binaire; -c:v copy -c:a aac +faststart
+    image: sharp resize(cover, spec WxH) q90; mock(provider=mock|no images) -> SVG caption overlay -> jpeg
+    subtitles: lu mais NON incruste/muxe (booleen metadonnee seulement)
+    outputs: { composition: MediaAsset, currentStep: 'compose' }
+    mode_behavior: { mock: mux jamais exerce reellement (tests mockent ffmpeg), live: source video vide -> createEmptyAsset('No video source available') }
+  transcode_export:
+    fn: transcodeExportNode
+    video: ffmpeg libx264/aac size WxH crf23 +faststart yuv420p ; thumbnail frame@1s
+    image: sharp resize cover q85 progressive
+    enforcement: maxFileSizeMb LOOKED-UP mais JAMAIS applique ; spec.codec ignore (libx264 dur)
+    fallback: passthrough de composition si aucun export
+    outputs: { exports: Record<platform_format,MediaAsset>, thumbnails: MediaAsset[], currentStep }
+bridge:
+  fn: bridgeToContentStudio (src/lib/ai-engine/bridge/content-studio-bridge.ts)
+  propagates: idea, brief, draft(caption, hashtags, hook, cta), generation_run
+  DOES_NOT_propagate: composition, exports, thumbnails, voiceover, music, subtitles
+  image_binding: upsertPrimaryAsset({mediaId: img.assetId}) -> assetId pas une cle media -> catch silencieux
+errors_codes_global:
+  invalid_state -> 422/invalid (v2/ai-engine desactive)
+  unauthorized -> 401
+  rate_limited -> 429
+  invalid_input -> 400
+  internal_error -> 500
+env_state_verified:
+  CONTENT_STUDIO_V2_ENABLED: 'true'
+  AI_ENGINE_ENABLED: 'true'
+  MEDIA_STORAGE_DRIVER: 'local'
+  MEDIA_LOCAL_DIR: /var/www/femiglow-staging/.media-storage
+  FFMPEG_PATH: undefined (fallback 'ffmpeg' = /usr/bin/ffmpeg present)
+  AI_ENGINE/OPENAI/HIGGSFIELD keys: vides/incompletes -> generation live cassee

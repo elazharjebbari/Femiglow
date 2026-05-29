@@ -1,0 +1,138 @@
+@startuml target-architecture
+' FemiGlow Content Studio v2 / AI Engine — Architecture CIBLE (ADR-0007 Option 1)
+' Convergence vers A : le graphe LangGraph est le moteur unique ; B = UI au-dessus de A.
+' Statut : conception. Notation : composants + flux + zones de confiance.
+
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam roundcorner 8
+skinparam ArrowColor #2C3E50
+skinparam componentStyle rectangle
+
+skinparam package {
+  BorderColor #34495E
+  FontStyle bold
+  BackgroundColor #FBFCFD
+}
+skinparam component {
+  BorderColor #2980B9
+  BackgroundColor #EAF2FB
+  FontColor #1B2631
+}
+skinparam database {
+  BorderColor #16A085
+  BackgroundColor #E8F8F5
+}
+skinparam queue {
+  BorderColor #8E44AD
+  BackgroundColor #F4ECF7
+}
+skinparam cloud {
+  BorderColor #7F8C8D
+  BackgroundColor #F2F3F4
+}
+
+title Architecture cible — convergence vers A (moteur unique LangGraph)\nDoD = parite MOCK et LIVE · garde-fou anti-doublon · credential unifie
+
+actor "Operateur" as OP
+
+package "Couche UI / Facade  (B = create-flow, ex-moteur)" as UI {
+  component "Create-flow UI\n(/admin/.../create)" as CREATE
+  component "ModelPicker honnete\n(badge Live <=> moteur)\n[T-202]" as PICKER
+  component "Facade invokeEngine(brief)\n-> GenerationResult\npont B<->A idempotent\n[ADR-0008 / T-104]" as FACADE
+}
+
+package "Moteur unique A — Graphe LangGraph  [ADR-0007 Opt.1]" as ENGINE {
+  component "Nodes: script / caption / variants\nimages / video\nvoiceover / music / subtitles\ncompose / transcode-export\n(16 noeuds, HITL, moderation, QA)" as NODES
+  component "Contrat de sortie complet\nGenerationResult:\nscript,caption,images,video,\nvoiceover,music,subtitles,\ncomposition,exports,thumbnails\n[ADR-0010 / MISS-005]" as RESULT
+  component "Contrat d'erreur honnete\nstate.errors (noeuds media)\npas de 'completed' sans media\n[T-304 / MISS-011]" as ERRORS
+}
+
+package "Resolution credential unifiee  [ADR-0004 / T-005]" as CRED {
+  component "resolveProviderCredential(provider)\nsource unique: A + B + picker" as RESOLVE
+  component "Caches invalidables\n(resolvedKeyCache / modelCache /\ngetEngineConfig) [T-410]" as CACHE
+}
+
+package "File de jobs async unique  (worker resumable)  [ADR-0009 / ADR-0005 / ADR-0006]" as JOBS {
+  queue "Job queue\nidempotence + locking + retry borne\nMEDIA_DIR absolu [T-411]" as QUEUE
+  component "Worker: polling provider\n(submit + poll, backoff, timeout)\n[ADR-0006 / T-103]" as POLL
+  component "Scheduler publication\nrunScheduledPublishJobs\n[T-103b]" as SCHED
+  component "GARDE-FOU (gate dur)\nidempotence != scheduledAt [T-204]\nsync content_post<->job [T-301]\ncompte explicite [T-303]" as GUARD #FDEDEC
+}
+
+package "Publication" as PUB {
+  component "Adapter dry-run\n(meme contrat) [T-308]" as DRY
+  component "Adapter Postiz\n(meme contrat)" as POSTIZ_AD
+}
+
+database "Persistance\ncontent_post / generation_run /\nsocial_publish_job / .media-storage" as DB
+
+package "Harnais de parite mock/live  [ADR-0003 / T-006 / T-010]" as PARITY {
+  component "MSW reseau\nonUnhandledRequest:error\nhandlers fideles aux contrats" as MSW
+  component "Detecteur de divergence\n(schema zod mock<->live)\ngolden contracts" as DIVERG
+  component "Smoke operateur (mock ET live)\nasserte l'effet backend [T-010]" as SMOKE
+}
+
+cloud "Services externes (LIVE)" as EXT {
+  component "OpenAI\nimages + chat" as OPENAI
+  component "Higgsfield\nasync submit+poll\nplatform.higgsfield.ai" as HF
+  component "Postiz\n/api/public/v1/*" as POSTIZ_API
+}
+
+cloud "Declencheur self-hosted\n/api/cron/tick (systemd, CRON_SECRET)\nPAS vercel.json [ADR-0005]" as CRON
+
+' ---- Flux principaux ----
+OP --> CREATE
+CREATE --> PICKER
+CREATE --> FACADE
+PICKER ..> RESOLVE : interroge la MEME source\nque le moteur (badge honnete)
+
+FACADE --> NODES : invokeEngine(brief)  (B -> A)
+NODES --> RESULT
+NODES --> ERRORS
+RESULT --> FACADE : materialisation  (A -> B)\nassets persistes [T-401/402]
+
+NODES --> RESOLVE
+RESOLVE --> CACHE
+
+' jobs async (mutualises)
+NODES --> QUEUE : soumet job media long
+QUEUE --> POLL
+POLL --> HF : submit + poll status
+CRON --> QUEUE : tick
+QUEUE --> SCHED
+SCHED --> GUARD
+GUARD --> DRY
+GUARD --> POSTIZ_AD
+DRY ..> POSTIZ_AD : meme contrat (parite)
+POSTIZ_AD --> POSTIZ_API
+
+NODES --> OPENAI : image / texte LIVE [T-101/T-201]
+
+' persistance
+FACADE --> DB
+SCHED --> DB
+NODES --> DB
+
+' parite / verification (transverse)
+MSW ..> EXT : intercepte (mode mock)
+SMOKE ..> FACADE : exerce le parcours operateur
+SMOKE ..> SCHED
+DIVERG ..> MSW
+DIVERG ..> EXT : compare la FORME
+
+note right of GUARD
+  Activation LIVE du scheduler
+  GARDEE par T-204 + T-301.
+  Sans cela : doubles publications /
+  publication d'un post annule
+  sur de VRAIS comptes IG clients.
+end note
+
+note bottom of PARITY
+  Verite = comportement reel.
+  DoD : prouve en MOCK ET LIVE.
+  Gate CI sur exit code [T-001].
+end note
+
+@enduml

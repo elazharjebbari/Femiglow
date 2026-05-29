@@ -1,0 +1,97 @@
+@startuml seq-generation
+' ============================================================================
+' Séquence — Génération via le CREATE FLOW opérateur (pipeline B)
+' Source vérifiée : CreateWorkspace.tsx, IntentionForm.tsx,
+'   /api/admin/content-studio/ideas/[id]/generate, drafts/[id]/generate-visual,
+'   content-studio/service.ts, image-generation.ts, video-generation.ts.
+' ============================================================================
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam sequence {
+  ArrowColor #8F3F4A
+  LifeLineBorderColor #5A6E50
+  ParticipantBorderColor #8F3F4A
+  ParticipantBackgroundColor #FBE9E5
+}
+
+title Génération — Create flow (B) · branche mock vs live
+
+actor Operatrice as Op
+participant "IntentionForm /\nCreateWorkspace\n(/create)" as UI
+participant "GenerationModeToggle\n(cookie cs_generation_mode)" as Toggle
+participant "POST /ideas/[id]/generate" as RIdea
+participant "POST /drafts/[id]/generate-visual" as RVisual
+participant "service.ts" as Svc
+participant "generation.ts\n(generateForIdea)" as Text
+participant "image/video-generation.ts" as Media
+participant "OpenAI" as OpenAI
+participant "Higgsfield" as HF
+database "PostgreSQL" as DB
+
+== 1. Intention + génération texte ==
+Op -> UI : remplit le brief (pilier, objectif,\nplateforme, format, message, modèle)
+Op -> Toggle : choisit mock | live\n(pose cookie cs_generation_mode)
+UI -> RIdea : POST { model? }
+RIdea -> Svc : generateIdeaDrafts({ideaId, model})
+Svc -> Text : generateForIdea(idea, {model})
+alt clé OpenAI présente
+  Text -> OpenAI : POST /chat/completions (json_object)
+  OpenAI --> Text : brief + 3 drafts
+else pas de clé / erreur
+  Text --> Text : fallbackGeneration (template déterministe, provider='fallback')
+end
+Svc -> DB : createBrief + createDrafts (3 variantes)\n+ insertGenerationRun + reviewDraftContent
+Svc --> UI : { idea(generated), brief, drafts[], runs[] }
+Op -> UI : compare / sélectionne une variante (VariantsCompare)
+
+== 2. Génération visuelle (image OU vidéo) ==
+Op -> UI : « Générer le visuel » (kind=image|video, model, size, quality)
+UI -> RVisual : POST { prompt,size,quality,kind,model }
+RVisual -> RVisual : lit cookie cs_generation_mode\n(défaut 'mock' si absent)
+RVisual -> Svc : generateVisualForDraft({...,mode})
+
+alt kind = image
+  Svc -> Media : generateStudioImage({model,mode})
+  alt mode='mock' OU model='mock-*'
+    Media --> Svc : SVG -> PNG (provider='mock', 0¢)
+  else model='hf-*' (Higgsfield)
+    Media -> Media : higgsfieldAuthHeader()
+    alt credential incomplet
+      Media --> RVisual : <b>throw HttpError('invalid_state')</b>\n"credential Higgsfield incomplet"
+    else clé OK
+      Media -> HF : POST /v1/images/generate (Authorization: Key)
+      HF --> Media : image (url/base64) -> sharp PNG
+    end
+  else model='gpt-image-*'/'dall-e-*' OU live sans modèle
+    alt CONTENT_STUDIO_OPENAI_API_KEY absente
+      Media --> RVisual : <b>throw HttpError('invalid_state')</b>\n"clé OpenAI manquante"
+    else clé OK
+      Media -> OpenAI : POST /v1/images/generations
+      OpenAI --> Media : b64_json -> PNG
+    end
+  end
+  Svc -> DB : createMedia + storage.put + enqueueJob(optimize)\n+ runWorkerOnce + upsertPrimaryAsset + insertGenerationRun
+else kind = video
+  Svc -> Media : generateStudioVideo({format,model,mode})
+  alt mode='mock' OU model='mock-*'
+    Media --> Svc : MP4 statique (reel/story uniquement,\nsinon throw "aucun mock")
+  else model='hf-video-*'
+    Media -> HF : submit /v1/videos/generate + poll status (≤300s)
+    HF --> Media : video_url
+  else mode='live' sans hf-video-*
+    Media --> RVisual : <b>throw HttpError('invalid_state')</b>\n"aucun modèle vidéo live"
+  end
+  Svc -> DB : createMedia(status=passthrough) + upsertPrimaryAsset\n+ insertGenerationRun
+end
+Svc --> UI : StudioMediaItem (média lié au draft)
+UI --> Op : aperçu PreviewPane
+
+note over RIdea, Media
+  CHEMIN ALTERNATIF — Pipeline A (AI Engine LangGraph) :
+  la page /ai-engine/create appelle POST /api/admin/ai-engine/generate
+  → orchestrator.runGeneration → StateGraph (parseBrief…generateVariants)
+  → bridgeToContentStudio() matérialise idea/brief/draft/generation_run.
+  Ce chemin est DISTINCT du create flow ci-dessus et inclut voix-off,
+  musique, sous-titres, compose, transcode (inatteignables depuis /create).
+end note
+@enduml

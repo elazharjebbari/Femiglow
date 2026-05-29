@@ -1,0 +1,187 @@
+
+Running 39 tests using 2 workers
+
+[1A[2K[1/39] [setup] › e2e/global.setup.ts:24:1 › authenticate as admin
+[1A[2K[2/39] [chromium] › e2e/content-studio-social-publishing-draft.spec.ts:25:1 › envoie un post Content Studio en brouillon Postiz depuis l interface admin
+[1A[2K[3/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:47:3 › create post — golden path › 1. navigate to /create and see intention form
+[1A[2K[4/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:85:3 › create post — golden path › 2. select format = post
+[1A[2K[5/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:91:3 › create post — golden path › 3. select pillar = rituel
+[1A[2K[6/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:99:3 › create post — golden path › 4. select objective = considération
+[1A[2K[7/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:107:3 › create post — golden path › 5. select platform = instagram
+[1A[2K[8/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:115:3 › create post — golden path › 6. fill prompt with 50+ chars
+[1A[2K[9/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:124:3 › create post — golden path › 7. submit form -> stepper advances to "Générer"
+[1A[2K[10/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:139:3 › create post — golden path › 8. wait for 3 variantes to appear
+[1A[2K[11/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:158:3 › create post — golden path › 9. select first variant -> "Sélectionnée"
+[1A[2K[12/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:181:3 › create post — golden path › 10. verify caption editor appears with initial caption
+[1A[2K[13/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:196:3 › create post — golden path › 11. edit hook text
+[1A[2K[14/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:202:3 › create post — golden path › 12. edit caption text -> counter updates
+[1A[2K[15/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:217:3 › create post — golden path › 13. wait for autosave -> "Enregistré"
+[1A[2K[16/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:239:3 › create post — golden path › 14. click "Générer un visuel IA" -> progress bar -> image appears
+[1A[2K  1) [chromium] › e2e/content-studio-social-publishing-draft.spec.ts:25:1 › envoie un post Content Studio en brouillon Postiz depuis l interface admin 
+
+    PostgresError: relation "audit_event" does not exist
+
+      225 |   try {
+      226 |     await sql.begin(async (tx) => {
+    > 227 |       await tx`delete from audit_event where resource_id = ${ids.postId}`;
+          |               ^
+      228 |       await tx`delete from social_publication where post_id = ${ids.postId}`;
+      229 |       await tx`delete from social_publish_event where job_id in (select id from social_publish_job where post_id = ${ids.postId})`;
+      230 |       await tx`delete from social_publish_job where post_id = ${ids.postId}`;
+        at ErrorResponse (/var/www/femiglow-staging/node_modules/.pnpm/postgres@3.4.9/node_modules/postgres/src/connection.js:815:30)
+        at handle (/var/www/femiglow-staging/node_modules/.pnpm/postgres@3.4.9/node_modules/postgres/src/connection.js:489:6)
+        at Socket.data (/var/www/femiglow-staging/node_modules/.pnpm/postgres@3.4.9/node_modules/postgres/src/connection.js:324:9)
+        at cachedError (/var/www/femiglow-staging/node_modules/.pnpm/postgres@3.4.9/node_modules/postgres/src/query.js:170:23)
+        at Query (/var/www/femiglow-staging/node_modules/.pnpm/postgres@3.4.9/node_modules/postgres/src/query.js:36:24)
+        at sql (/var/www/femiglow-staging/node_modules/.pnpm/postgres@3.4.9/node_modules/postgres/src/index.js:112:11)
+        at /var/www/femiglow-staging/apps/web/e2e/content-studio-social-publishing-draft.spec.ts:227:15
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/content-studio-social-publ-25a65-iz-depuis-l-interface-admin-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/content-studio-social-publ-25a65-iz-depuis-l-interface-admin-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/content-studio-social-publ-25a65-iz-depuis-l-interface-admin-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/content-studio-social-publ-25a65-iz-depuis-l-interface-admin-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K[17/39] [chromium] › e2e/content-studio-v2/create-image-post.spec.ts:26:3 › create image post — golden path › step 1: intention form renders with format radios
+[1A[2K[18/39] [chromium] › e2e/content-studio-v2/create-image-post.spec.ts:55:3 › create image post — golden path › step 1b: format radios toggle aria-checked
+[1A[2K[19/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:255:3 › create post — golden path › 15. switch preview to Facebook -> tab changes
+[1A[2K[20/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:265:3 › create post — golden path › 16. switch format to Story -> tab changes
+[1A[2K[21/39] [chromium] › e2e/content-studio-v2/create-golden-path.spec.ts:275:3 › create post — golden path › 17. verify publish action group shows "Publier" dropdown
+[1A[2K[22/39] [chromium] › e2e/content-studio-v2/create-image-post.spec.ts:92:3 › create image post — golden path › step 3: stepper shows 4 creation steps
+[1A[2K[23/39] [chromium] › e2e/content-studio-v2/create-image-post.spec.ts:70:3 › create image post — golden path › step 2: fill intention and submit creates drafts
+[1A[2K[24/39] [chromium] › e2e/content-studio-v2/create-image-post.spec.ts:110:3 › create image post — golden path › accessibility audit on /create
+[1A[2K[25/39] [chromium] › e2e/content-studio-v2/create-mock-video.spec.ts:8:3 › Content Studio v2 — mock video flow › reel format defaults to video kind and produces a playable MP4
+[1A[2K[26/39] [chromium] › e2e/content-studio-v2/create-mock-video.spec.ts:39:3 › Content Studio v2 — mock video flow › switching to image kind sends kind=image
+[1A[2K[27/39] [chromium] › e2e/content-studio-v2/publish-flow.spec.ts:134:3 › publish flow — PublishActionGroup › with approved post: dropdown "Publier" is enabled and shows 3 options
+[1A[2K[28/39] [chromium] › e2e/content-studio-v2/publish-flow.spec.ts:145:3 › publish flow — PublishActionGroup › "Publier maintenant" -> confirm dialog -> mock POST -> toast
+[1A[2K[29/39] [chromium] › e2e/content-studio-v2/publish-flow.spec.ts:166:3 › publish flow — PublishActionGroup › "Publier maintenant" -> mock 422 -> toast error with message
+[1A[2K[30/39] [chromium] › e2e/content-studio-v2/publish-flow.spec.ts:187:3 › publish flow — PublishActionGroup › "Programmer" -> datetime input -> mock POST -> toast
+[1A[2K[31/39] [chromium] › e2e/content-studio-v2/publish-flow.spec.ts:217:3 › publish flow — PublishActionGroup › "Brouillon Postiz" -> confirm -> mock POST -> toast
+[1A[2K[32/39] [chromium] › e2e/social-publishing/generation-mode-toggle.spec.ts:16:1 › generation mode toggle visible + sets cookie + Higgsfield models present
+[1A[2K[chromium] › e2e/social-publishing/generation-mode-toggle.spec.ts:16:1 › generation mode toggle visible + sets cookie + Higgsfield models present
+Video model options: [
+  [32m'DALL·E 3Équilibréopenai· 4¢/appel'[39m,
+  [32m'GPT-Image-1Premiumopenai· 8¢/appelLive'[39m,
+  [32m'GPT-Image-1 miniRapideopenai· 0.4¢/appelLive'[39m,
+  [32m'GPT Image 1.5ÉquilibréopenaiLive'[39m,
+  [32m'Chatgpt Image LatestÉquilibréopenaiLive'[39m,
+  [32m'GPT Image 2ÉquilibréopenaiLive'[39m,
+  [32m'GPT Image 2 2026 04 21ÉquilibréopenaiLive'[39m,
+  [32m'Flux 2ÉquilibréhiggsfieldLive'[39m,
+  [32m'Flux KontextÉquilibréhiggsfieldLive'[39m,
+  [32m'Cinematic Studio 2 5ÉquilibréhiggsfieldLive'[39m,
+  [32m'Text2image Soul V2ÉquilibréhiggsfieldLive'[39m,
+  [32m'GPT Image 2ÉquilibréhiggsfieldLive'[39m,
+  [32m'Seedream V5 LiteRapidehiggsfieldLive'[39m,
+  [32m'Nano Banana 2RapidehiggsfieldLive'[39m,
+  [32m'Image AutoÉquilibréhiggsfieldLive'[39m,
+  [32m'Flux SchnellRapidehiggsfield· 0.3¢/appel'[39m,
+  [32m'Flux.1Équilibréhiggsfield· 2.5¢/appel'[39m,
+  [32m'Flux ProPremiumhiggsfield· 5.5¢/appel'[39m
+]
+
+[1A[2K[33/39] [chromium] › e2e/social-publishing/generation-smoke.spec.ts:13:3 › Generation smoke (real backend) › idea → variants → image generation
+[1A[2K[chromium] › e2e/social-publishing/generation-smoke.spec.ts:13:3 › Generation smoke (real backend) › idea → variants → image generation
+
+=== DIAGNOSTIC ===
+
+[1A[2KOutcome: variants
+
+[1A[2KAPI responses after submit:
+
+[1A[2K  [201] /api/admin/content-studio/ideas
+
+[1A[2K  [200] /api/admin/content-studio/ideas/ci_dzr8gbq5f3zrnlkd/generate
+
+[1A[2KConsole errors: []
+
+[1A[2K
+After variant select — API responses:
+
+[1A[2K  [200] /api/admin/content-studio/drafts/cd_zzni7t9l04yrf9d6/review
+
+[1A[2K  2) [chromium] › e2e/content-studio-v2/create-mock-video.spec.ts:8:3 › Content Studio v2 — mock video flow › reel format defaults to video kind and produces a playable MP4 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: /Générer un visuel IA/i })[22m
+
+
+      26 |
+      27 |     // Generate the visual.
+    > 28 |     await page.getByRole('button', { name: /Générer un visuel IA/i }).click();
+         |                                                                       ^
+      29 |     await expect(page.locator('video').first()).toBeVisible({ timeout: 15_000 });
+      30 |
+      31 |     // The payload sent to the API should contain kind=video.
+        at /var/www/femiglow-staging/apps/web/e2e/content-studio-v2/create-mock-video.spec.ts:28:71
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/content-studio-v2-create-m-5ddab-and-produces-a-playable-MP4-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/content-studio-v2-create-m-5ddab-and-produces-a-playable-MP4-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/content-studio-v2-create-m-5ddab-and-produces-a-playable-MP4-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/content-studio-v2-create-m-5ddab-and-produces-a-playable-MP4-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K
+After Générer click — API responses:
+
+[1A[2K  [200] /api/admin/content-studio/models?role=chat&format=post
+
+[1A[2K    body: {"models":[{"id":"whisper-1","provider":"openai","role":"chat","label":"Whisper 1","description":"Modèle openai découvert en live.","tier":"balanced","capabilities":[],"pricing":{},"recommendedFor":["post"],"source":"live"},{"id":"gpt-3.5-turbo","provider":"openai","role":"chat","label":"GPT 3.5 Tur
+
+[1A[2K  [200] /api/admin/content-studio/models?role=image&format=post
+
+[1A[2K    body: {"models":[{"id":"gpt-image-1","provider":"openai","role":"image","label":"GPT-Image-1","description":"Image premium, ratios verticaux.","tier":"premium","capabilities":["square","portrait","landscape","vertical-9x16"],"pricing":{"perCall":8},"recommendedFor":["reel"],"source":"live"},{"id":"gpt-ima
+
+[1A[2K  [200] /api/admin/content-studio/drafts/cd_zzni7t9l04yrf9d6/generate-visual
+
+[1A[2K    body: {"media":{"id":"me_uu3topxhsoux2dwp","slug":"content-studio-ai-cd-zzni7t9l04yrf9d6-yobbi0sp","kind":"image","source":"upload","compartment":"ai_generated","status":"ready","alt":"Détail de mains et de matière dans une ambiance crème et sauge.","caption":"Généré par le Content Studio depuis sensoriel
+
+[1A[2K
+Toasts visible: [ [32m'Visuel IA généré'[39m ]
+
+[1A[2KVisual elements on page: [33m1[39m
+
+[1A[2KAll <img> srcs:
+
+[1A[2K  - src="/_media/media/me_uu3topxhsoux2dwp/avif/sm.avif" visible=true
+
+[1A[2KAll <video> srcs:
+
+[1A[2KPreviewPane visible: [33mtrue[39m
+
+[1A[2KPreview <img> or <video> visible: [33mtrue[39m
+
+[1A[2KDécrocher button visible (=media is bound): [33mtrue[39m
+
+[1A[2K[34/39] [chromium] › e2e/social-publishing/media-kind-toggle.spec.ts:55:3 › MediaStudio kind toggle › reel format → Vidéo enabled, sélectionné par défaut, bouton dit "Générer une vidéo IA"
+[1A[2K[35/39] [chromium] › e2e/social-publishing/media-kind-toggle.spec.ts:30:3 › MediaStudio kind toggle › post format → Vidéo disabled, hint visible, video toggle absent en sélection
+[1A[2K[36/39] [chromium] › e2e/social-publishing/media-kind-toggle.spec.ts:71:3 › MediaStudio kind toggle › reel → générer vidéo → <video> visible et lisible dans le PreviewPane
+[1A[2K[37/39] [chromium] › e2e/social-publishing/media-kind-toggle.spec.ts:133:3 › MediaStudio kind toggle › post → générer image → <img> visible dans le PreviewPane
+[1A[2K[38/39] [chromium] › e2e/social-publishing/video-pipeline-full.spec.ts:20:1 › full video pipeline: idea (reel) → video gen → approve → publish-ready
+[1A[2K[39/39] [chromium] › e2e/social-publishing/video-publish-end-to-end.spec.ts:20:1 › video publish end-to-end: idea (reel) → video gen → approve → publish-now
+[1A[2K  2 failed
+    [chromium] › e2e/content-studio-social-publishing-draft.spec.ts:25:1 › envoie un post Content Studio en brouillon Postiz depuis l interface admin 
+    [chromium] › e2e/content-studio-v2/create-mock-video.spec.ts:8:3 › Content Studio v2 — mock video flow › reel format defaults to video kind and produces a playable MP4 
+  37 passed (1.3m)
+PLAYWRIGHT_EXIT=1

@@ -1,0 +1,20 @@
+id,scenario,type,mode,preconditions,steps,expected,priority
+VO-01,Generation reel ton valide produit voix-off audible,nominal,mock,"AI_ENGINE_ENABLED=true; cookie admin; cs_generation_mode=mock","POST /api/admin/ai-engine/generate {platform:instagram,format:reel,tone:inspiring,keyMessage:...,humanReviewRequired:false}","status:completed ET reponse contient voiceover.url non vide ET fichier voiceover-*.wav/mp3 sur disque servi en 200",P0
+VO-02,Voix-off silencieuse mock fiable sans lavfi,nominal,mock,"runtime serveur sans device lavfi","Declencher generate-voiceover via reel","Asset audio silencieux valide produit (WAV PCM en buffer ou asset statique), url non vide, fichier present",P0
+VO-03,Echec total voix-off propage une erreur,error,mock,"Forcer echec ecriture audio","generate-voiceover sans pouvoir ecrire le fichier","Le node renvoie StepError ET le job N'est PAS marque completed (statut degrade/failed explicite)",P0
+VO-04,Voix-off live OpenAI tts-1,nominal,live,"AI_ENGINE_DEFAULT_TTS_PROVIDER=openai; OPENAI_API_KEY valide","POST generate reel ton valide","mp3 reel telecharge, durationMs coherent, costCents>0, url servie",P1
+VO-05,Voix-off live ElevenLabs,nominal,live,"AI_ENGINE_DEFAULT_TTS_PROVIDER=elevenlabs; AI_ENGINE_ELEVENLABS_API_KEY valide","POST generate reel ton valide","mp3 reel ElevenLabs, configured:true dans /config/providers",P2
+VO-06,Voix-off live provider sans cle -> degradation explicite,error,live,"provider=elevenlabs sans cle","POST generate reel","Reponse claire (config error / fallback etiquete), PAS un completed silencieux",P1
+MU-01,Musique mood-aware exposee,nominal,both,"format reel","POST generate","music.url non vide expose dans la reponse; mix voix(1.0)/musique(0.3) audible dans la composition",P2
+MU-02,Musique silencieuse fiable sans lavfi,nominal,mock,"runtime sans lavfi","generate-music via reel","Piste silencieuse valide produite, url non vide",P1
+SU-01,Sous-titres SRT generes et exposes,nominal,both,"format reel avec script multi-scenes","POST generate puis lire reponse","subtitles present dans la reponse API ET fichier .srt valide servi en 200",P1
+SU-02,SRT synchronise sur duree reelle de la voix-off,nominal,both,"voiceover fonctionnel","Comparer timings SRT vs duree audio","Les cues couvrent la duree reelle du voiceover (pas seulement estimations)",P2
+SU-03,SRT decoupage multi-lignes au lieu de troncature,nominal,both,"scene avec narration > 120 chars","generate-subtitles","Texte reparti en plusieurs cues/lignes (~42 chars), pas de '...' dur",P2
+RT-01,Routing format image n'invoque pas l'audio,nominal,mock,"format carousel/post","POST generate","generate-voiceover/music/subtitles NON executes (logs)",P2
+TONE-01,Tons UI tous acceptes par le moteur,error,both,"UI AI-Engine","POST generate avec tone=empowering puis authentic puis urgent","Aucun status:failed pour cause d'enum; soit mapping vers enum interne, soit options UI restreintes",P0
+COMP-01,Composition video muxe audio + sous-titres,nominal,mock,"voiceover+music+subtitles non vides","POST generate reel","composition.url MP4 non vide avec pistes audio (audioTracks>0) et sous-titres",P1
+EXP-01,Export final MP4 expose et jouable,nominal,both,"composition valide","POST generate reel","exports[platform_format].url MP4 expose, jouable, thumbnail presente",P1
+INV-01,Pas de completed avec assets vides,error,both,"video/audio url vide","POST generate reel quand lavfi indisponible","status != completed (degrade/failed) ET message clair; pas de quality 0.91 trompeuse",P0
+LINK-01,Parcours operateur clarifie pour l'audio,nominal,both,"operateur sur /create","Tenter d'obtenir une voix-off depuis /create","Soit /create declenche le graphe et expose l'audio, soit l'UI indique que l'audio est exclusif a /ai-engine/create",P1
+MEDIA-01,Assets audio servis via /_media,nominal,mock,"un voiceover-*.wav existe","curl /_media/ai-engine/<file>","HTTP 200 avec le bon content-type",P2
+FF-01,ffmpeg+lavfi disponible dans le runtime prod,recovery,mock,"build prod PM2","Verifier setFfmpegPath + capacite lavfi dans le process","fluent-ffmpeg detecte lavfi; les nodes audio/video reussissent comme en CLI directe",P0

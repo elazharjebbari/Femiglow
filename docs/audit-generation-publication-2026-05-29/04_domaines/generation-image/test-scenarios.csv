@@ -1,0 +1,21 @@
+id,scenario,type,mode,preconditions,steps,expected,priority
+GI-01,Generation image mock nominale,nominal,mock,"draft existant, cookie cs_generation_mode=mock","POST generate-visual {prompt,size,quality,kind:image,model:gpt-image-1-mini}","200, media status=ready, AVIF servi 200, run provider=mock cost=0",high
+GI-02,Mock conserve le modele intentionnel,nominal,mock,"draft, mode mock","POST avec model=gpt-image-1 ; GET generation-runs","run doit tracer le modele intentionnel (usage.intendedModel=gpt-image-1) — AUJOURD'HUI ECHEC: enregistre mock-low-cost-image",medium
+GI-03,Live OpenAI sans cle create -> erreur claire,error,live,"CONTENT_STUDIO_OPENAI_API_KEY vide, cookie live","POST avec model=gpt-image-1-mini","409 invalid_state message 'CONTENT_STUDIO_OPENAI_API_KEY manquant', aucun appel reseau",high
+GI-04,Live Higgsfield credential incomplet -> erreur claire,error,live,"AI_ENGINE_HIGGSFIELD_API_KEY sans secret, cookie live","POST avec model=hf-flux-pro","409 invalid_state 'credential Higgsfield incomplet'",high
+GI-05,Live id decouvert non routable (flux_2) -> erreur,error,live,"cookie live","POST avec model=flux_2","DOIT renvoyer 'modele non supporte' explicite — AUJOURD'HUI tombe sur OpenAI default -> 409 cle manquante (fallback silencieux)",high
+GI-06,Live OpenAI fonctionnel (cle valide),nominal,live,"CONTENT_STUDIO_OPENAI_API_KEY/OPENAI_API_KEY valide lu par le generateur, cookie live","POST avec model=gpt-image-1","200, provider=openai, PNG reel, cout reel enregistre — NON VERIFIABLE aujourd'hui (cle non lue)",high
+GI-07,Live Higgsfield image fonctionnel (credential complet),nominal,live,"credential KEY_ID:KEY_SECRET valide, endpoints async corriges","POST avec model=hf-flux-pro","200 apres submit+poll /v1/text2image + /v1/requests/{id}/status — NON VERIFIABLE (endpoints faux + credential incomplet)",high
+GI-08,Picker source live fidele,nominal,both,"discovery higgsfield en echec","GET models?role=image","modeles higgsfield NON marques live si discovery=fallback — AUJOURD'HUI ECHEC: tous marques live",high
+GI-09,Picker key source alignee avec generateur,nominal,live,"OPENAI_API_KEY present, CONTENT_STUDIO_OPENAI_API_KEY vide","GET models?role=image puis tenter generation live OpenAI","cohérence: si picker dit live, la generation doit reussir — AUJOURD'HUI divergent",high
+GI-10,Budget quotidien depasse -> blocage,error,both,"dailySpent proche du cap","POST generate-visual high","409 invalid_state budget, pas de generation",medium
+GI-11,Draft inexistant,error,both,"id bidon","POST /drafts/zzz/generate-visual","404 not_found",low
+GI-12,Payload invalide (prompt trop court),error,both,"draft existant","POST {prompt:'court'}","400 invalid_input (min 12)",low
+GI-13,Auth requise,error,both,"sans cookie session","POST generate-visual","401",high
+GI-14,Recuperation apres echec provider live,recovery,live,"provider OpenAI renvoie 500","POST live OpenAI","502 upstream_failed, run status=failed enregistre, toast clair, draft non modifie",medium
+GI-15,Cout estime coherent picker/budget/run,nominal,both,"modele hf-flux-pro","Comparer registry perCall vs visualCostEstimate vs cout enregistre","valeurs et unites coherentes — AUJOURD'HUI incoherent (5.5 vs 550 vs 2/4/8)",medium
+GI-16,Noeud LangGraph vs flux create,nominal,both,"deux points d'entree","POST /content-studio/.../generate-visual vs POST /ai-engine/generate","comportement coherent OU separation documentee; noeud A ne doit pas renvoyer d'URL mock 404",medium
+GI-17,Mode video reel mock,nominal,mock,"draft format=reel, mode mock","POST generate-visual kind=video","200, mp4 reel-9x16.mp4 servi 200, poster present",high
+GI-18,Video live sans modele hf-video -> erreur,error,live,"cookie live, kind=video sans model hf-video","POST generate-visual kind=video","409 'aucun modele video live disponible'",medium
+GI-19,Picker propose modele suggere generable,nominal,live,"mode live","GET models?role=image -> suggested","suggested doit etre generable dans le mode courant — AUJOURD'HUI gpt-image-1-mini suggere non generable",high
+GI-20,Vitest exit code traite comme echec,recovery,n/a,"suite vitest","Lancer vitest","EXIT 0 requis; unhandled rejection video-generation.test.ts doit etre corrigee (await rejects.toThrow)",medium

@@ -1,0 +1,158 @@
+{
+  "axis": "robustesse",
+  "capturedAt": "2026-05-29",
+  "baseline": {
+    "branch": "feat/ai-engine-langgraph-mvp",
+    "totalConfirmedFindings": 68,
+    "totalMissedIssues": 34
+  },
+  "criticality": "blocker",
+  "findings": {
+    "axisFindingCount": 25,
+    "axisShareOfAllFindings": 0.37,
+    "bySeverity": {
+      "blocker": 3,
+      "critical": 4,
+      "major": 9,
+      "minor": 8,
+      "info": 1
+    },
+    "blockerIds": ["BUG-003", "BUG-004", "BUG-001", "BUG-002"],
+    "criticalIds": ["BUG-005", "BUG-008", "BUG-010", "BUG-014"],
+    "axisShareOfAllBlockers": 1.0,
+    "missedIssuesTouchingAxis": ["MISS-001", "MISS-006", "MISS-011", "MISS-019", "MISS-020", "MISS-028", "MISS-030", "MISS-033"],
+    "missedIssuesTouchingAxisCount": 8
+  },
+  "externalDependencyResilience": {
+    "dependencies": ["openai", "higgsfield", "postiz"],
+    "contractCorrect": {
+      "openai": true,
+      "higgsfield": false,
+      "postiz": true
+    },
+    "higgsfieldContractMode": "sync_hardcoded_but_real_api_is_async",
+    "liveReachableWithoutNetworkThrow": {
+      "openai_create_flow": false,
+      "higgsfield_create_flow": false,
+      "postiz_dry_run": true
+    },
+    "liveResilienceDemonstrable": false,
+    "liveResilienceDemonstrableReason": "Toute generation live throw invalid_state (HTTP 409) AVANT tout appel reseau (cle CONTENT_STUDIO_OPENAI_API_KEY vide, credential Higgsfield incomplet); impossible d'observer le comportement face a un 4xx/5xx reel au gel."
+  },
+  "networkGuardrails": {
+    "fetchCallsAnalyzed": {
+      "openai_image_callOpenAiImage": { "file": "lib/content-studio/image-generation.ts", "line": 121, "hasAbortSignalTimeout": false, "hasRetry": false },
+      "openai_text_generateForIdea": { "file": "lib/content-studio/generation.ts", "line": 75, "hasAbortSignalTimeout": false, "hasRetry": false },
+      "higgsfield_image_submit": { "file": "lib/content-studio/image-generation.ts", "line": 171, "hasAbortSignalTimeout": true, "timeoutMs": 60000, "hasRetry": false },
+      "higgsfield_image_download": { "file": "lib/content-studio/image-generation.ts", "line": 204, "hasAbortSignalTimeout": true, "timeoutMs": 60000, "hasRetry": false },
+      "higgsfield_video_submit": { "file": "lib/content-studio/video-generation.ts", "line": 157, "hasAbortSignalTimeout": true, "timeoutMs": 30000, "hasRetry": false },
+      "higgsfield_video_poll": { "file": "lib/content-studio/video-generation.ts", "line": 187, "hasAbortSignalTimeout": true, "timeoutMs": 30000, "hasRetry": false },
+      "postiz_listIntegrations": { "file": "lib/content-studio/postiz.ts", "line": 98, "hasAbortSignalTimeout": false, "hasRetry": false },
+      "postiz_upload_posts": { "file": "lib/content-studio/postiz.ts", "line": 226, "hasAbortSignalTimeout": false, "hasRetry": true }
+    },
+    "fetchCallsWithTimeout": 4,
+    "fetchCallsWithoutTimeout": 4,
+    "timeoutCoverageRatio": 0.5,
+    "operatorPathOpenAiFetchesWithTimeout": 0,
+    "operatorPathOpenAiFetchesTotal": 2
+  },
+  "retryAndCircuitBreaker": {
+    "systemA_aiEngine": {
+      "hasRetryUtil": true,
+      "retryUtilPath": "lib/ai-engine/providers/retry.ts",
+      "hasCircuitBreaker": true,
+      "circuitBreakerPath": "lib/ai-engine/providers/circuit-breaker.ts",
+      "circuitBreakerConfig": { "failureThreshold": 5, "resetTimeoutMs": 60000, "halfOpenMaxCalls": 1 },
+      "hasProviderFailover": true,
+      "reachableByOperator": false
+    },
+    "systemB_createFlow": {
+      "hasRetryUtil": false,
+      "hasCircuitBreaker": false,
+      "hasProviderFailover": false,
+      "reachableByOperator": true
+    },
+    "publishing": {
+      "hasRetryUtil": true,
+      "retryUtilPath": "lib/social-publishing/retry.ts",
+      "hasTransientClassification": true,
+      "transientHttpStatuses": [408, 425, 429, "5xx"],
+      "hasStateMachine": true,
+      "stateMachinePath": "lib/social-publishing/state-machine.ts",
+      "hasOptimisticLock": true,
+      "hasIdempotencyKey": true,
+      "hasRetryableFlagPropagation": true,
+      "postizClientHasTimeout": false
+    },
+    "resilienceStackReachableByOperator": false
+  },
+  "gracefulDegradation": {
+    "silentDegradationPaths": [
+      "generate-voiceover.ts (url:'' provider:fallback, no state.errors)",
+      "generate-music.ts (url:'' provider:fallback, no state.errors)",
+      "generate-video.ts (url:'' provider:fallback, no state.errors)",
+      "compose.ts (compose:empty, no state.errors)",
+      "generation.ts generateForIdea (fallbackGeneration on any error, no operator error)",
+      "generate-images.ts (mock image cost=0 served 404 on provider failure)"
+    ],
+    "graphNodesPushingToStateErrors": 0,
+    "qualityGateCanDetectMissingMedia": false,
+    "jobCanReportCompletedOverEmptyArtifact": true,
+    "operatorSeesErrorOnGenerationFailure": false
+  },
+  "stateIntegrity": {
+    "generationRunStatusesWrittenOnCreateFlow": ["succeeded"],
+    "generationRunFailedStatusEverWrittenOnImageVideo": false,
+    "generationWrappedInTransaction": false,
+    "publishJobHasGuardedStateMachine": true,
+    "cancelReschedulesyncsPublishJob": false,
+    "publishNowInvalidatesScheduledJob": false,
+    "scheduleDeduplicatesQueuedJob": false,
+    "doublePublicationRiskWhenSchedulerEnabled": true,
+    "orphanJobRiskWhenSchedulerEnabled": true,
+    "wrongAccountRiskInLive": true,
+    "dryRunGuardrailBypassPathExists": true,
+    "dryRunGuardrailBypassPath": "/api/admin/content-studio/posts/[id]/postiz-draft"
+  },
+  "scheduledExecution": {
+    "schedulerFunctionExists": true,
+    "schedulerWiredToCron": false,
+    "schedulerInVercelJson": false,
+    "vercelCronHonoredOnHost": false,
+    "hostRuntime": "pm2_next_start",
+    "scheduledPostsEverExecuted": false
+  },
+  "errorTyping": {
+    "httpErrorMisclassifications": [
+      { "id": "BUG-060", "expected": 400, "actual": 500, "where": "upload-and-crop/trim non-multipart" },
+      { "id": "BUG-051", "expected": 409, "actual": 500, "where": "regenerate already-generated idea" }
+    ],
+    "serverMessageOverwrittenByGeneric": ["BUG-054"]
+  },
+  "observability": {
+    "vitestReportsAllPassed": true,
+    "vitestPassedCount": 1695,
+    "vitestExitCode": 1,
+    "vitestExitMismatchWithReport": true,
+    "unhandledRejectionSource": "video-generation.ts:206 (Higgsfield content policy violation under fake timers)",
+    "ciGateReliableOnRobustness": false
+  },
+  "recoverability": {
+    "engineConfigSingletonFrozenUntilRestart": true,
+    "resolvedKeyCacheTtlMs": 300000,
+    "modelCacheTtlMs": 300000,
+    "cacheInvalidatedOnEnvChange": false,
+    "deadHostDiscoveryLatencyMs": 5000,
+    "deadHostDiscoveryEndpoint": "api.higgsfield.ai (host mort, BUG/MISS-019)"
+  },
+  "debtEstimate": {
+    "unit": "person-days",
+    "p0_unblockAndSecure": 5,
+    "p1_networkAndContract": 6,
+    "p2_errorContractAndDegradation": 5,
+    "p3_hygieneObservabilityRecovery": 4,
+    "totalEstimatedDays": 20,
+    "note": "Estimation indicative agence; exclut la validation live Higgsfield (depend d'un credential KEY_ID:KEY_SECRET fourni) et l'achat eventuel de provider TTS/musique."
+  },
+  "topFindingIds": ["BUG-003", "BUG-004", "BUG-001", "BUG-008", "BUG-038"]
+}

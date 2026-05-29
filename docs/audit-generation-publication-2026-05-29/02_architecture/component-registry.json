@@ -1,0 +1,591 @@
+{
+  "$comment": "Registre des composants génération + publication. Chemins relatifs à apps/web/. Vérifié sur le code au 2026-05-29.",
+  "generatedAt": "2026-05-29",
+  "components": [
+    {
+      "id": "ai.graph.builder",
+      "name": "Graph builder (StateGraph)",
+      "path": "src/lib/ai-engine/graph/builder.ts",
+      "layer": "lib",
+      "pipeline": "A-langgraph",
+      "responsibility": "Câble START->parseBrief->enrichKnowledge->enrichTrends->generateScript, branches video/image/caption, post-compose qualityCheck->moderate->reviewGate->generateVariants->END.",
+      "externalDeps": ["@langchain/langgraph"]
+    },
+    {
+      "id": "ai.graph.routing",
+      "name": "Conditional routing",
+      "path": "src/lib/ai-engine/graph/routing.ts",
+      "layer": "lib",
+      "pipeline": "A-langgraph",
+      "responsibility": "routeAfterScript (format), routeAfterQuality (seuil 0.65, 2 retries), routeAfterModeration, routeAfterHumanReview.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.graph.state",
+      "name": "Graph state",
+      "path": "src/lib/ai-engine/graph/state.ts (re-export types/state.ts)",
+      "layer": "lib",
+      "pipeline": "A-langgraph",
+      "responsibility": "ContentGenerationState : annotations LangGraph (script, images, videos, qualityScores, moderationResult, humanReview, costTracking...).",
+      "externalDeps": ["@langchain/langgraph"]
+    },
+    {
+      "id": "ai.orchestrator",
+      "name": "Orchestrator runGeneration/resumeGeneration",
+      "path": "src/lib/ai-engine/orchestrator.ts",
+      "layer": "service",
+      "pipeline": "A-langgraph",
+      "responsibility": "Invoque engine.invoke(thread_id=jobId), détecte interruption HITL, reprise via Command({resume}), persiste job.",
+      "externalDeps": ["@langchain/langgraph"]
+    },
+    {
+      "id": "ai.node.parseBrief",
+      "name": "parseBrief node",
+      "path": "src/lib/ai-engine/nodes/parse-brief.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Normalise le brief d'entrée pour le graphe.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.node.enrichKnowledge",
+      "name": "enrichKnowledge node (RAG)",
+      "path": "src/lib/ai-engine/nodes/enrich-knowledge.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Recherche pgvector (searchByCollections) selon plateforme/objectif/contentType ; fallback knowledge statique + BRAND_GUIDELINES.",
+      "externalDeps": ["pgvector", "OpenAI (embeddings)"]
+    },
+    {
+      "id": "ai.node.enrichTrends",
+      "name": "enrichTrends node",
+      "path": "src/lib/ai-engine/nodes/enrich-trends.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Ajoute du contexte tendances (trends engine) à l'état.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.node.generateScript",
+      "name": "generateScript node",
+      "path": "src/lib/ai-engine/nodes/generate-script.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Génère le script (hook/scenes/cta/visualDirection) via LLM @langchain ; point de retry des gates.",
+      "externalDeps": ["@langchain/openai", "@langchain/anthropic", "@langchain/google-genai", "@langchain/mistralai", "@langchain/ollama"]
+    },
+    {
+      "id": "ai.node.generateImages",
+      "name": "generateImages node",
+      "path": "src/lib/ai-engine/nodes/generate-images.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "ProviderSelector (openai/higgsfield/google par priorité) sinon mock /_media/ai-engine/mock. Tailles par plateforme/format.",
+      "externalDeps": ["OpenAI", "Higgsfield", "Google GenAI"]
+    },
+    {
+      "id": "ai.node.generateVideo",
+      "name": "generateVideo node",
+      "path": "src/lib/ai-engine/nodes/generate-video.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Rendu MP4 local via ffmpeg-static (drawtext par scène) ; ProviderSelector vidéo en option. Stockage .media-storage/ai-engine.",
+      "externalDeps": ["ffmpeg-static", "fluent-ffmpeg"]
+    },
+    {
+      "id": "ai.node.generateVoiceover",
+      "name": "generateVoiceover node",
+      "path": "src/lib/ai-engine/nodes/generate-voiceover.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Voix-off (branche vidéo uniquement). INATTEIGNABLE depuis le create flow B.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.node.generateMusic",
+      "name": "generateMusic node",
+      "path": "src/lib/ai-engine/nodes/generate-music.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Musique de fond (branche vidéo). INATTEIGNABLE depuis le create flow B.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.node.generateSubtitles",
+      "name": "generateSubtitles node",
+      "path": "src/lib/ai-engine/nodes/generate-subtitles.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Sous-titres (branche vidéo). INATTEIGNABLE depuis le create flow B.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.node.generateCaption",
+      "name": "generateCaption node",
+      "path": "src/lib/ai-engine/nodes/generate-caption.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Génère la légende + hashtags (point de convergence des branches).",
+      "externalDeps": ["@langchain/openai"]
+    },
+    {
+      "id": "ai.node.compose",
+      "name": "compose node",
+      "path": "src/lib/ai-engine/nodes/compose.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Compose les assets en une composition finale. INATTEIGNABLE depuis B.",
+      "externalDeps": ["fluent-ffmpeg"]
+    },
+    {
+      "id": "ai.node.transcodeExport",
+      "name": "transcodeExport node",
+      "path": "src/lib/ai-engine/nodes/transcode-export.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Transcode/exporte (ffmpeg/ffprobe) les rendus finaux. INATTEIGNABLE depuis B.",
+      "externalDeps": ["ffmpeg-static", "fluent-ffmpeg"]
+    },
+    {
+      "id": "ai.node.qualityCheck",
+      "name": "qualityCheck node",
+      "path": "src/lib/ai-engine/nodes/quality-check.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Calcule des scores qualité ; gate pass/retry/fail.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.node.moderate",
+      "name": "moderate node",
+      "path": "src/lib/ai-engine/nodes/moderate.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Modération du contenu ; gate safe/flagged/blocked.",
+      "externalDeps": []
+    },
+    {
+      "id": "ai.node.humanReview",
+      "name": "reviewGate (humanReview) node",
+      "path": "src/lib/ai-engine/nodes/human-review.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "HITL : interrupt() si humanReviewRequired ; décision approved/approved_direct/rejected/edit_requested.",
+      "externalDeps": ["@langchain/langgraph"]
+    },
+    {
+      "id": "ai.node.generateVariants",
+      "name": "generateVariants node",
+      "path": "src/lib/ai-engine/nodes/generate-variants.ts",
+      "layer": "node",
+      "pipeline": "A-langgraph",
+      "responsibility": "Produit des variantes finales avant END.",
+      "externalDeps": ["@langchain/openai"]
+    },
+    {
+      "id": "ai.knowledge.retrieval",
+      "name": "Knowledge retrieval (RAG)",
+      "path": "src/lib/ai-engine/knowledge/retrieval.ts",
+      "layer": "lib",
+      "pipeline": "A-langgraph",
+      "responsibility": "searchKnowledge/searchByCollections : embeddings OpenAI + requête pgvector cosine sur ai_engine_knowledge_chunk.",
+      "externalDeps": ["pgvector", "OpenAI (text-embedding-3-small)"]
+    },
+    {
+      "id": "ai.providers.selector",
+      "name": "ProviderSelector + circuit breaker",
+      "path": "src/lib/ai-engine/providers/selector.ts",
+      "layer": "lib",
+      "pipeline": "A-langgraph",
+      "responsibility": "Sélection de provider par capacité/priorité, retry, circuit-breaker, cost-tracker.",
+      "externalDeps": ["OpenAI", "Higgsfield", "Google GenAI"]
+    },
+    {
+      "id": "ai.bridge",
+      "name": "Content Studio bridge (A->B)",
+      "path": "src/lib/ai-engine/bridge/content-studio-bridge.ts",
+      "layer": "lib",
+      "pipeline": "shared",
+      "responsibility": "bridgeToContentStudio : matérialise un GenerationResult A en content_idea/brief/draft/generation_run (provider='ai-engine-langgraph'). Lien images mock ignoré.",
+      "externalDeps": []
+    },
+    {
+      "id": "api.ai.generate",
+      "name": "POST /api/admin/ai-engine/generate",
+      "path": "src/app/api/admin/ai-engine/generate/route.ts",
+      "layer": "api",
+      "pipeline": "A-langgraph",
+      "responsibility": "Normalise body (nested|flat), runGeneration, puis bridgeToContentStudio (non bloquant). 503 si AI_ENGINE_ENABLED=false.",
+      "externalDeps": []
+    },
+    {
+      "id": "api.ai.generateStream",
+      "name": "POST /api/admin/ai-engine/generate-stream (SSE)",
+      "path": "src/app/api/admin/ai-engine/generate-stream/route.ts",
+      "layer": "api",
+      "pipeline": "A-langgraph",
+      "responsibility": "Streaming SSE de la progression du graphe.",
+      "externalDeps": []
+    },
+    {
+      "id": "api.ai.jobsReview",
+      "name": "POST /api/admin/ai-engine/jobs/[id]/review",
+      "path": "src/app/api/admin/ai-engine/jobs/[id]/review/route.ts",
+      "layer": "api",
+      "pipeline": "A-langgraph",
+      "responsibility": "Décision HITL -> resumeGeneration.",
+      "externalDeps": []
+    },
+    {
+      "id": "api.ai.knowledge",
+      "name": "AI Engine knowledge routes",
+      "path": "src/app/api/admin/ai-engine/knowledge/*",
+      "layer": "api",
+      "pipeline": "A-langgraph",
+      "responsibility": "CRUD collections/documents, embed, seed-defaults (ingestion RAG pgvector).",
+      "externalDeps": ["OpenAI (embeddings)", "pgvector"]
+    },
+    {
+      "id": "api.ai.publish",
+      "name": "POST /api/admin/ai-engine/publish",
+      "path": "src/app/api/admin/ai-engine/publish/route.ts",
+      "layer": "api",
+      "pipeline": "shared",
+      "responsibility": "Approuve un draft (issu du bridge) puis publishContentPostNow -> réutilise le pipeline de publication B.",
+      "externalDeps": []
+    },
+    {
+      "id": "cs.service.generateIdeaDrafts",
+      "name": "generateIdeaDrafts",
+      "path": "src/lib/content-studio/service.ts",
+      "layer": "service",
+      "pipeline": "B-create",
+      "responsibility": "Texte : generateForIdea -> brief + 3 drafts + generation_run + auto brand review + transition idea->generated.",
+      "externalDeps": []
+    },
+    {
+      "id": "cs.service.generateVisualForDraft",
+      "name": "generateVisualForDraft / generateVideoForDraft",
+      "path": "src/lib/content-studio/service.ts",
+      "layer": "service",
+      "pipeline": "B-create",
+      "responsibility": "Visuel : route image|vidéo, génère, crée media + binding + generation_run, optimise (worker image) ou passthrough (vidéo).",
+      "externalDeps": ["sharp", "ffmpeg (worker média)"]
+    },
+    {
+      "id": "cs.generation.text",
+      "name": "generation.ts (generateForIdea)",
+      "path": "src/lib/content-studio/generation.ts",
+      "layer": "service",
+      "pipeline": "B-create",
+      "responsibility": "OpenAI chat/completions JSON (CONTENT_STUDIO_TEXT_MODEL) sinon fallback déterministe (provider='fallback').",
+      "externalDeps": ["OpenAI"]
+    },
+    {
+      "id": "cs.imageGeneration",
+      "name": "image-generation.ts",
+      "path": "src/lib/content-studio/image-generation.ts",
+      "layer": "service",
+      "pipeline": "B-create",
+      "responsibility": "Routing modèle/mode/env : mock SVG | OpenAI gpt-image/dall-e | Higgsfield hf-*. HttpError invalid_state si clé manquante.",
+      "externalDeps": ["OpenAI", "Higgsfield", "sharp"]
+    },
+    {
+      "id": "cs.videoGeneration",
+      "name": "video-generation.ts",
+      "path": "src/lib/content-studio/video-generation.ts",
+      "layer": "service",
+      "pipeline": "B-create",
+      "responsibility": "Routing : mock MP4 statique (reel/story seulement) | Higgsfield hf-video-* (submit + poll). HttpError si live sans modèle vidéo.",
+      "externalDeps": ["Higgsfield"]
+    },
+    {
+      "id": "cs.higgsfieldAuth",
+      "name": "higgsfield-auth.ts",
+      "path": "src/lib/content-studio/higgsfield-auth.ts",
+      "layer": "lib",
+      "pipeline": "B-create",
+      "responsibility": "higgsfieldBaseUrl + higgsfieldAuthHeader (Authorization: Key KEY_ID:KEY_SECRET) ; null si credential incomplet.",
+      "externalDeps": ["Higgsfield"]
+    },
+    {
+      "id": "cs.brandRules",
+      "name": "brand-rules.ts (reviewDraftContent)",
+      "path": "src/lib/content-studio/brand-rules.ts",
+      "layer": "lib",
+      "pipeline": "B-create",
+      "responsibility": "Revue automatique charte de marque -> content_brand_review (status/score/violations).",
+      "externalDeps": []
+    },
+    {
+      "id": "cs.stateMachine",
+      "name": "content-studio state-machine.ts",
+      "path": "src/lib/content-studio/state-machine.ts",
+      "layer": "lib",
+      "pipeline": "B-create",
+      "responsibility": "Transitions idea/draft/post (assertTransition).",
+      "externalDeps": []
+    },
+    {
+      "id": "cs.postizLib",
+      "name": "postiz.ts (client HTTP)",
+      "path": "src/lib/content-studio/postiz.ts",
+      "layer": "lib",
+      "pipeline": "publication",
+      "responsibility": "Client Postiz : integrations, upload, posts, analytics ; fetchWithRetry ; mapping payload draft.",
+      "externalDeps": ["Postiz"]
+    },
+    {
+      "id": "api.cs.ideasGenerate",
+      "name": "POST /ideas/[id]/generate",
+      "path": "src/app/api/admin/content-studio/ideas/[id]/generate/route.ts",
+      "layer": "api",
+      "pipeline": "B-create",
+      "responsibility": "Déclenche generateIdeaDrafts (modèle texte optionnel).",
+      "externalDeps": []
+    },
+    {
+      "id": "api.cs.generateVisual",
+      "name": "POST /drafts/[id]/generate-visual",
+      "path": "src/app/api/admin/content-studio/drafts/[id]/generate-visual/route.ts",
+      "layer": "api",
+      "pipeline": "B-create",
+      "responsibility": "Lit cookie cs_generation_mode (défaut mock), appelle generateVisualForDraft. maxDuration 120.",
+      "externalDeps": []
+    },
+    {
+      "id": "api.cs.publishNow",
+      "name": "POST /posts/[id]/publish-now",
+      "path": "src/app/api/admin/content-studio/posts/[id]/publish-now/route.ts",
+      "layer": "api",
+      "pipeline": "publication",
+      "responsibility": "publishContentPostNow (idempotency header/body).",
+      "externalDeps": []
+    },
+    {
+      "id": "api.cs.schedule",
+      "name": "POST /posts/[id]/schedule + reschedule + cancel",
+      "path": "src/app/api/admin/content-studio/posts/[id]/{schedule,reschedule,cancel}/route.ts",
+      "layer": "api",
+      "pipeline": "publication",
+      "responsibility": "scheduleContentPost / reschedulePost / cancelScheduledPost.",
+      "externalDeps": []
+    },
+    {
+      "id": "api.cs.postizDraft",
+      "name": "POST /posts/[id]/postiz-draft + draft-on-provider",
+      "path": "src/app/api/admin/content-studio/posts/[id]/{postiz-draft,draft-on-provider}/route.ts",
+      "layer": "api",
+      "pipeline": "publication",
+      "responsibility": "Envoi en brouillon : createDraftInPostiz (legacy delivery) / sendContentPostToDraft (adapter).",
+      "externalDeps": ["Postiz"]
+    },
+    {
+      "id": "api.cs.publishability",
+      "name": "GET /posts/[id]/publishability",
+      "path": "src/app/api/admin/content-studio/posts/[id]/publishability/route.ts",
+      "layer": "api",
+      "pipeline": "publication",
+      "responsibility": "Pré-validation publication (statuts, média HTTPS, capabilities).",
+      "externalDeps": []
+    },
+    {
+      "id": "api.cs.publishJobs",
+      "name": "publish-jobs (list + [id] + retry + cancel)",
+      "path": "src/app/api/admin/content-studio/publish-jobs/*",
+      "layer": "api",
+      "pipeline": "publication",
+      "responsibility": "Administration des jobs : liste/détail/retry/cancel.",
+      "externalDeps": []
+    },
+    {
+      "id": "sp.adminService",
+      "name": "social-publishing admin-service.ts",
+      "path": "src/lib/social-publishing/admin-service.ts",
+      "layer": "service",
+      "pipeline": "publication",
+      "responsibility": "publishContentPostNow/schedule/sendToDraft/executeJob, resolveDefaultAccount (mode dry_run|live), sync comptes, publishability.",
+      "externalDeps": []
+    },
+    {
+      "id": "sp.service",
+      "name": "social-publishing service.ts",
+      "path": "src/lib/social-publishing/service.ts",
+      "layer": "service",
+      "pipeline": "publication",
+      "responsibility": "publishWithAdapter : enveloppe l'appel adapter (idempotence, normalisation résultat).",
+      "externalDeps": []
+    },
+    {
+      "id": "sp.stateMachine",
+      "name": "publication state-machine.ts",
+      "path": "src/lib/social-publishing/state-machine.ts",
+      "layer": "lib",
+      "pipeline": "publication",
+      "responsibility": "Transitions job: draft->approved->queued->publishing->published|failed; failed->queued; cancelled. nextRetryStatus, isTerminal.",
+      "externalDeps": []
+    },
+    {
+      "id": "sp.worker",
+      "name": "worker.ts (runScheduledPublishJobs)",
+      "path": "src/lib/social-publishing/worker.ts",
+      "layer": "service",
+      "pipeline": "publication",
+      "responsibility": "Exécute les jobs échus (listScheduledJobsDue) via executeJob, comptabilise succeeded/failed/skipped.",
+      "externalDeps": []
+    },
+    {
+      "id": "sp.repository",
+      "name": "social-publishing repository.ts",
+      "path": "src/lib/social-publishing/repository.ts",
+      "layer": "db",
+      "pipeline": "publication",
+      "responsibility": "Accès tables social_* : createPublishJob, tryAcquirePublishJobLock, recordPublishAttempt, createPublication, listScheduledJobsDue.",
+      "externalDeps": ["PostgreSQL"]
+    },
+    {
+      "id": "sp.adapter.dryRun",
+      "name": "DryRunSocialPublishingAdapter",
+      "path": "src/lib/social-publishing/adapters/dry-run.ts",
+      "layer": "adapter",
+      "pipeline": "publication",
+      "responsibility": "Publication simulée : permalien social.example.test, remoteId déterministe, insights synthétiques. Aucun appel réseau.",
+      "externalDeps": []
+    },
+    {
+      "id": "sp.adapter.postiz",
+      "name": "PostizSocialPublishingAdapter",
+      "path": "src/lib/social-publishing/adapters/postiz.ts",
+      "layer": "adapter",
+      "pipeline": "publication",
+      "responsibility": "Upload média + create post/draft via postiz.ts ; parse remoteId/permalink ; analytics. Publication réelle.",
+      "externalDeps": ["Postiz"]
+    },
+    {
+      "id": "sp.alerts",
+      "name": "alerts.ts (sendSocialAlert)",
+      "path": "src/lib/social-publishing/alerts.ts",
+      "layer": "lib",
+      "pipeline": "publication",
+      "responsibility": "Webhook d'alerte sur échec de publication (hors mode draft).",
+      "externalDeps": ["webhook alerting"]
+    },
+    {
+      "id": "cron.socialPublishScheduler",
+      "name": "cron social-publish-scheduler",
+      "path": "src/app/api/cron/content-studio/social-publish-scheduler/route.ts",
+      "layer": "cron",
+      "pipeline": "publication",
+      "responsibility": "POST Bearer CRON_SECRET -> runScheduledPublishJobs (publie les jobs programmés échus).",
+      "externalDeps": []
+    },
+    {
+      "id": "cron.postizSync",
+      "name": "cron postiz-sync",
+      "path": "src/app/api/cron/content-studio/postiz-sync/route.ts",
+      "layer": "cron",
+      "pipeline": "publication",
+      "responsibility": "Synchronise comptes/intégrations Postiz.",
+      "externalDeps": ["Postiz"]
+    },
+    {
+      "id": "cron.retryDeliveries",
+      "name": "cron retry-deliveries",
+      "path": "src/app/api/cron/content-studio/retry-deliveries/route.ts",
+      "layer": "cron",
+      "pipeline": "publication",
+      "responsibility": "Rejoue les livraisons Postiz/jobs en échec.",
+      "externalDeps": ["Postiz"]
+    },
+    {
+      "id": "cron.insightsIngestion",
+      "name": "cron insights-ingestion",
+      "path": "src/app/api/cron/content-studio/insights-ingestion/route.ts",
+      "layer": "cron",
+      "pipeline": "publication",
+      "responsibility": "Ingestion des métriques (adapter.getInsights) -> content_performance_snapshot.",
+      "externalDeps": ["Postiz"]
+    },
+    {
+      "id": "cron.weeklyFailureDigest",
+      "name": "cron weekly-failure-digest",
+      "path": "src/app/api/cron/content-studio/weekly-failure-digest/route.ts",
+      "layer": "cron",
+      "pipeline": "publication",
+      "responsibility": "Digest hebdomadaire des échecs de publication.",
+      "externalDeps": []
+    },
+    {
+      "id": "ui.create.workspace",
+      "name": "CreateWorkspace + create UI",
+      "path": "src/components/admin/content-studio-v2/create/CreateWorkspace.tsx",
+      "layer": "ui",
+      "pipeline": "B-create",
+      "responsibility": "Orchestration UI 3 colonnes : IntentionForm, MediaStudio, PreviewPane, ApproveButton, PublishActionGroup, Stepper.",
+      "externalDeps": []
+    },
+    {
+      "id": "ui.create.generationModeToggle",
+      "name": "GenerationModeToggle",
+      "path": "src/components/admin/content-studio-v2/create/GenerationModeToggle.tsx",
+      "layer": "ui",
+      "pipeline": "B-create",
+      "responsibility": "Pose le cookie cs_generation_mode (mock|live) lu par generate-visual.",
+      "externalDeps": []
+    },
+    {
+      "id": "ui.create.modelPicker",
+      "name": "ModelPicker",
+      "path": "src/components/admin/content-studio-v2/create/ModelPicker.tsx",
+      "layer": "ui",
+      "pipeline": "B-create",
+      "responsibility": "Sélection du modèle texte/image/vidéo (mock-*, gpt-image-*, hf-*, hf-video-*).",
+      "externalDeps": []
+    },
+    {
+      "id": "ui.create.publishActionGroup",
+      "name": "PublishActionGroup",
+      "path": "src/components/admin/content-studio-v2/create/PublishActionGroup.tsx",
+      "layer": "ui",
+      "pipeline": "publication",
+      "responsibility": "Boutons Publier maintenant / Programmer / Brouillon sur provider ; dialogues de confirmation.",
+      "externalDeps": []
+    },
+    {
+      "id": "ui.aiEngine.create",
+      "name": "AI Engine create page",
+      "path": "src/app/admin/content-studio-v2/ai-engine/create/page.tsx",
+      "layer": "ui",
+      "pipeline": "A-langgraph",
+      "responsibility": "Form -> POST /api/admin/ai-engine/generate (pipeline A) ; gère review HITL via jobs/[id]/review.",
+      "externalDeps": []
+    },
+    {
+      "id": "db.schemaContentStudio",
+      "name": "schema-content-studio.ts",
+      "path": "src/lib/db/schema-content-studio.ts",
+      "layer": "db",
+      "pipeline": "B-create",
+      "responsibility": "Tables content_campaign/idea/brief/draft/asset_binding/generation_run/brand_review/post/postiz_delivery/performance_snapshot/learning_note/idempotency_key.",
+      "externalDeps": ["PostgreSQL"]
+    },
+    {
+      "id": "db.schemaSocialPublishing",
+      "name": "schema-social-publishing.ts",
+      "path": "src/lib/db/schema-social-publishing.ts",
+      "layer": "db",
+      "pipeline": "publication",
+      "responsibility": "Tables social_account, social_credential, social_publish_job (idempotencyKey unique), social_publish_attempt, social_publication, social_publish_event.",
+      "externalDeps": ["PostgreSQL"]
+    },
+    {
+      "id": "db.schemaAiEngine",
+      "name": "schema-ai-engine.ts",
+      "path": "src/lib/db/schema-ai-engine.ts",
+      "layer": "db",
+      "pipeline": "A-langgraph",
+      "responsibility": "Tables ai_engine_workflow/provider/prompt configs, knowledge collection/document/chunk(embedding vector(1536)), generation_jobs, cost_ledger, trend_signals, api_keys.",
+      "externalDeps": ["PostgreSQL", "pgvector"]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+# Manifest du plan d'action — FIGÉ
+name: plan-generation-publication
+title: "Plan d'action exécutable — pipeline génération + publication (FemiGlow Content Studio v2 / AI Engine)"
+version: "1.0.0"
+date: "2026-05-29"
+status: frozen
+covers_baseline: "docs/audit-generation-publication-2026-05-29 (v1.0.0)"
+target_architecture: "ADR-0007 Option 1 — converger vers A (LangGraph moteur unique ; create-flow = UI au-dessus de A)"
+nature: "PLAN UNIQUEMENT — aucune modification de code applicatif"
+
+principle: "Verite = comportement reel verifie en MOCK ET LIVE (parite). Toute DoD inclut une preuve mock+live. 'Fait' interdit."
+
+coverage:
+  audit_points: 102          # 68 BUG + 34 MISS
+  bugs: 68
+  missed: 34
+  refuted_no_action: [BUG-044]
+  covered: 102
+  uncovered: 0
+  proof: "01_coverage/audit-to-action.csv (genere mecaniquement)"
+
+actions:
+  total: 67
+  by_priority:
+    P0: 12
+    P1: 13
+    P2: 9
+    P3: 10
+    P4: 12
+    P5: 11
+  workstreams: [architecture, backend, frontend, ui-ux, data, design]
+  adr_proposed: 16     # voir 00_overview/adr-index.md — handles PLAN-ADR-001..016
+
+invariants_verified:
+  - "couverture audit->action: 102/102 (0 non couvert)"
+  - "dependances: 0 pendante (tous tokens ACT-* resolvent)"
+  - "ordonnancement: 0 action dependant d'une phase posterieure"
+  - "coherence tasks.csv <-> phasing.md: 67/67"
+  - "acceptation & estimation: 67/67 actions"
+  - "revue adversariale passee + remediee (3 eleves / 5 moyens / 4 faibles)"
+
+guardrail_scheduler: "Activation live d'ACT-BE-021 gardee par ACT-BE-022 + ACT-DA-003 + ACT-DA-004 + ACT-FE-006 (anti double-post / post annule / mauvais compte IG client). Gate G1."
+
+phasing: "P0 verite+parite (non negociable) -> P1 moteur unique + 4 blockers -> P2 honnetete -> P3 robustesse -> P4 compose/montage atteignable -> P5 convergence finale + dette. Gates durs G0..G5."
+
+definition_of_done: "Systeme 100% fonctionnel, prouve par des tests orientes operateur passant A L'IDENTIQUE en mock ET live."
+
+fingerprint:
+  algo: sha256
+  file_count: 54
+  checksums_file: SHA256SUMS.txt
+  aggregate: "a8bcbf04ce4f9e98cd370a2487c95ee0e5efc236290d81647236aaae860a2681"

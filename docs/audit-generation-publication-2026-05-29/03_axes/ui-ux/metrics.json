@@ -1,0 +1,130 @@
+{
+  "axis": "ui-ux",
+  "baselineDate": "2026-05-29",
+  "branch": "feat/ai-engine-langgraph-mvp",
+  "scope": "Experience operateur du pipeline generation+publication (Content Studio v2 / AI Engine)",
+  "criticality": "critical",
+
+  "findingsTouchingAxis": {
+    "confirmedBugs": 26,
+    "missedIssues": 10,
+    "total": 36
+  },
+  "confirmedBugsBySeverity": {
+    "blocker": 3,
+    "critical": 4,
+    "major": 15,
+    "minor": 4,
+    "info": 0
+  },
+  "missedIssuesBySeverity": {
+    "major": 4,
+    "minor": 5,
+    "info": 1
+  },
+
+  "findingIds": {
+    "blocker": ["BUG-001", "BUG-003", "BUG-004"],
+    "critical": ["BUG-006", "BUG-007", "BUG-009", "BUG-014"],
+    "major": ["BUG-015", "BUG-016", "BUG-019", "BUG-020", "BUG-021", "BUG-022", "BUG-024", "BUG-028", "BUG-033", "BUG-034", "BUG-039", "BUG-040", "BUG-043", "BUG-048"],
+    "minor": ["BUG-053", "BUG-054", "BUG-055", "BUG-056"],
+    "missed": ["MISS-001", "MISS-002", "MISS-003", "MISS-007", "MISS-012", "MISS-015", "MISS-016", "MISS-017", "MISS-018", "MISS-034"]
+  },
+
+  "operatorJourney": {
+    "stagesTotal": 7,
+    "stagesWithDeceptiveOrBrokenUi": 7,
+    "stagesFullyTrustworthyMockAndLive": 0,
+    "deceptiveSuccessToasts": 2,
+    "deceptiveSuccessToastIds": ["BUG-003", "BUG-053"],
+    "silentFailurePaths": 2,
+    "silentFailurePathIds": ["BUG-022", "BUG-003"]
+  },
+
+  "modelPickerParity": {
+    "imageModelsListed": 18,
+    "imageModelsBadgedLive": 14,
+    "imageModelsActuallyGenerableLive": 0,
+    "liveBadgeFalsePositiveRatio": 1.0,
+    "videoModelsLiveListed": 8,
+    "videoModelsRoutableByBackend": 0,
+    "chatRoleModelsListed": 106,
+    "chatRoleModelsThatAreActuallyChat": "partial",
+    "autoSelectsLiveModelOnMount": true,
+    "allowCustomDefaultOpen": true,
+    "customModelValidatedAgainstRegistry": false
+  },
+
+  "modeIndicatorCoherence": {
+    "sourcesOfTruthForMode": 3,
+    "sourcesOfTruthDetail": ["cookie cs_generation_mode (toggle, defaut mock)", "health.mockMode (env, false)", "defaut serveur generate-visual (mock code en dur)"],
+    "toggleAffectsTextGeneration": false,
+    "toggleAffectsVisualGeneration": true,
+    "toggleAffectsPublication": false,
+    "publicationGuardedBySeparateFlag": "SOCIAL_PUBLISHING_MODE (dry_run par defaut)",
+    "globalBadgeMatchesToggle": false
+  },
+
+  "errorHandling": {
+    "emptyCatchBlocks": 1,
+    "missingElseBranchAfterFailedFetch": 1,
+    "successToastsEmittedOnHttp200WithoutBackendEffectCheck": 2,
+    "serverErrorMessageOverriddenByGenericLabel": true,
+    "technicalEnvKeyMessageExposedToOperator": true,
+    "loadingStateMechanismPresent": true,
+    "estimatorWithStuckState": true
+  },
+
+  "mechanismsPresence": {
+    "liveBadgeReflectsRealGenerability": false,
+    "modelChoiceHonoredAndTraced": false,
+    "modeSingleSourceOfTruth": false,
+    "generationFailureSurfacedToOperator": false,
+    "scheduleSuccessReflectsRealExecution": false,
+    "publicationModeDistinctFromGenerationMode": false,
+    "voiceoverMusicSubtitlesMontageSurfacedInUi": false,
+    "ariaRolesPresentOnAuditedControls": true,
+    "emptyStateForMediaStudio": true,
+    "confirmationDialogWithPreview": true,
+    "mockGenerationWorksImageAndVideo": true,
+    "cropTrimWorksMockAndLive": true
+  },
+
+  "evidence": {
+    "playwrightOperatorJourneys": {
+      "specsTotal": 39,
+      "passed": 37,
+      "failed": 2,
+      "exitCode": 1,
+      "failedSpecs": ["content-studio-social-publishing-draft.spec.ts:25 (table audit_event vs audit_events)", "create-mock-video.spec.ts:8 (selecteur de bouton obsolete)"]
+    },
+    "vitest": {
+      "reportedPassed": 1695,
+      "reportedFailed": 0,
+      "processExitCode": 1,
+      "note": "rapport tout-vert mais process EXIT 1 (unhandled rejection, BUG-010) — illustre desync test/realite"
+    },
+    "runtimeEnv": {
+      "OPENAI_API_KEY": "present (164 chars) mais non lu par le flux create",
+      "CONTENT_STUDIO_OPENAI_API_KEY": "vide",
+      "AI_ENGINE_HIGGSFIELD_credential": "incomplet (cle sans secret)",
+      "SOCIAL_PUBLISHING_MODE": "dry_run (defaut)"
+    }
+  },
+
+  "debtEstimate": {
+    "p0Items": 4,
+    "p1Items": 2,
+    "p2Items": 4,
+    "p3Items": 3,
+    "totalRecommendations": 13,
+    "cheapHighImpactFixes": ["mapper OPENAI_API_KEY en fallback flux create (BUG-001)", "branche else+catch sur echec generation (BUG-022)", "ne pas forcer source:live dans materialiseDiscoveredModel (BUG-024)"],
+    "estimatedEffort": "moyen — la majorite des correctifs UI dependent de correctifs backend/env (split de cle, scheduler, bridge)"
+  },
+
+  "topFindingIds": ["BUG-003", "BUG-006", "BUG-022", "BUG-020", "BUG-021"],
+  "filesWritten": [
+    "/var/www/femiglow-staging/docs/audit-generation-publication-2026-05-29/03_axes/ui-ux/state.md",
+    "/var/www/femiglow-staging/docs/audit-generation-publication-2026-05-29/03_axes/ui-ux/metrics.json"
+  ]
+}

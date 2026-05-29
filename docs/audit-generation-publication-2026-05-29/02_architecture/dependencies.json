@@ -1,0 +1,131 @@
+{
+  "$comment": "Dépendances génération + publication. Vérifié sur apps/web (code + package.json + env.ts) au 2026-05-29.",
+  "generatedAt": "2026-05-29",
+  "externalServices": [
+    {
+      "name": "OpenAI",
+      "host": "api.openai.com",
+      "auth": "Authorization: Bearer (CONTENT_STUDIO_OPENAI_API_KEY | CHAT_OPENAI_API_KEY pour B ; AI_ENGINE_OPENAI_API_KEY pour A)",
+      "usedBy": [
+        "src/lib/content-studio/generation.ts (texte chat/completions)",
+        "src/lib/content-studio/image-generation.ts (images gpt-image/dall-e)",
+        "src/lib/ai-engine/knowledge/retrieval.ts (embeddings text-embedding-3-small)",
+        "src/lib/ai-engine/nodes/generate-script.ts / generate-caption.ts / generate-images.ts"
+      ]
+    },
+    {
+      "name": "Higgsfield",
+      "host": "platform.higgsfield.ai (AI_ENGINE_HIGGSFIELD_BASE_URL, défaut https://platform.higgsfield.ai)",
+      "auth": "Authorization: Key KEY_ID:KEY_SECRET (AI_ENGINE_HIGGSFIELD_API_KEY [+ _API_SECRET])",
+      "usedBy": [
+        "src/lib/content-studio/image-generation.ts (modèles hf-flux-*)",
+        "src/lib/content-studio/video-generation.ts (modèles hf-video-*, submit+poll)",
+        "src/lib/content-studio/higgsfield-auth.ts (helpers auth)",
+        "src/lib/ai-engine/nodes/generate-images.ts (via ProviderSelector)"
+      ],
+      "note": "Chemins d'endpoints (/v1/images/generate, /v1/videos/*) marqués TODO dans le code : API réelle async (text2image / image2video + requests/{id}/status) à réécrire et valider."
+    },
+    {
+      "name": "Postiz (self-hosted)",
+      "host": "POSTIZ_BASE_URL (endpoints /api/public/v1/{integrations,posts,upload,analytics/post/:id})",
+      "auth": "Authorization (clé API Postiz) via authHeaders()",
+      "usedBy": [
+        "src/lib/content-studio/postiz.ts (client HTTP)",
+        "src/lib/social-publishing/adapters/postiz.ts (publication live)",
+        "src/lib/social-publishing/admin-service.ts (syncPostizSocialAccounts)",
+        "src/app/api/cron/content-studio/{postiz-sync,retry-deliveries,insights-ingestion}"
+      ],
+      "downstream": ["Instagram", "Facebook"]
+    },
+    {
+      "name": "Google GenAI",
+      "host": "generativelanguage.googleapis.com (via @langchain/google-genai)",
+      "auth": "AI_ENGINE_GOOGLE_API_KEY",
+      "usedBy": [
+        "src/lib/ai-engine/providers/selector.ts",
+        "src/lib/ai-engine/nodes/generate-images.ts (priority 30, fallback)"
+      ]
+    },
+    {
+      "name": "PostgreSQL + pgvector",
+      "host": "DATABASE_URL (PostgreSQL 16, extension pgvector)",
+      "auth": "connexion drizzle (src/lib/db/client.ts)",
+      "usedBy": [
+        "toutes les tables content_*, social_*, ai_engine_*",
+        "src/lib/ai-engine/knowledge/retrieval.ts (recherche cosine ai_engine_knowledge_chunk.embedding, index HNSW)"
+      ]
+    },
+    {
+      "name": "Stockage médias",
+      "host": "filesystem .media-storage/ + /public/_media (getStorage())",
+      "auth": "local",
+      "usedBy": [
+        "src/lib/content-studio/service.ts (generateVisualForDraft)",
+        "src/lib/ai-engine/nodes/generate-video.ts (.media-storage/ai-engine)"
+      ]
+    },
+    {
+      "name": "Webhook d'alerting",
+      "host": "configurable (alerts.ts)",
+      "auth": "selon config",
+      "usedBy": ["src/lib/social-publishing/alerts.ts (sendSocialAlert sur échec non-draft)"]
+    }
+  ],
+  "npmKey": [
+    { "pkg": "@langchain/langgraph", "version": "^0.2.74", "purpose": "Graphe d'état du pipeline A (StateGraph, interrupt/Command HITL)" },
+    { "pkg": "@langchain/core", "version": "^0.3.30", "purpose": "Primitives LangChain partagées" },
+    { "pkg": "@langchain/openai", "version": "^0.3.16", "purpose": "LLM + embeddings OpenAI (pipeline A : script/caption/embeddings RAG)" },
+    { "pkg": "@langchain/anthropic", "version": "^0.3.13", "purpose": "Provider LLM Anthropic (pipeline A)" },
+    { "pkg": "@langchain/google-genai", "version": "^0.1.6", "purpose": "Provider LLM/image Google (pipeline A)" },
+    { "pkg": "@langchain/mistralai", "version": "^0.2.0", "purpose": "Provider LLM Mistral (pipeline A)" },
+    { "pkg": "@langchain/ollama", "version": "^0.1.4", "purpose": "Provider LLM local Ollama (pipeline A)" },
+    { "pkg": "drizzle-orm", "version": "^0.45.2", "purpose": "ORM + requêtes SQL/pgvector (toutes les tables)" },
+    { "pkg": "sharp", "version": "^0.34.5", "purpose": "Génération/normalisation images PNG (mock SVG, Higgsfield, worker média) — pipeline B" },
+    { "pkg": "ffmpeg-static", "version": "^5.3.0", "purpose": "Binaire ffmpeg pour rendu vidéo (pipeline A generate-video/transcode)" },
+    { "pkg": "fluent-ffmpeg", "version": "^2.1.3", "purpose": "Wrapper ffmpeg (compose/transcode pipeline A)" },
+    { "pkg": "next", "version": "14.2.15", "purpose": "Framework App Router (pages admin + API routes)" },
+    { "pkg": "zod", "version": "^3.23.8", "purpose": "Validation des payloads (schemas génération + publication)" },
+    { "pkg": "msw", "version": "^2.14.2", "purpose": "Mock Service Worker (tests d'intégration HTTP)" }
+  ],
+  "internalEdges": [
+    { "from": "ui.create.generationModeToggle", "to": "api.cs.generateVisual", "kind": "cookie cs_generation_mode lu côté route" },
+    { "from": "ui.create.workspace", "to": "api.cs.ideasGenerate", "kind": "fetch" },
+    { "from": "ui.create.workspace", "to": "api.cs.generateVisual", "kind": "fetch (via MediaStudio)" },
+    { "from": "ui.create.publishActionGroup", "to": "api.cs.publishNow", "kind": "fetch" },
+    { "from": "api.cs.ideasGenerate", "to": "cs.service.generateIdeaDrafts", "kind": "appel direct" },
+    { "from": "cs.service.generateIdeaDrafts", "to": "cs.generation.text", "kind": "generateForIdea" },
+    { "from": "cs.generation.text", "to": "OpenAI", "kind": "HTTP (sinon fallback déterministe)" },
+    { "from": "api.cs.generateVisual", "to": "cs.service.generateVisualForDraft", "kind": "appel direct (mode propagé)" },
+    { "from": "cs.service.generateVisualForDraft", "to": "cs.imageGeneration", "kind": "generateStudioImage (kind=image)" },
+    { "from": "cs.service.generateVisualForDraft", "to": "cs.videoGeneration", "kind": "generateStudioVideo (kind=video)" },
+    { "from": "cs.imageGeneration", "to": "cs.higgsfieldAuth", "kind": "higgsfieldAuthHeader (modèles hf-*)" },
+    { "from": "cs.videoGeneration", "to": "cs.higgsfieldAuth", "kind": "higgsfieldAuthHeader (modèles hf-video-*)" },
+    { "from": "cs.imageGeneration", "to": "OpenAI", "kind": "HTTP (gpt-image/dall-e)" },
+    { "from": "cs.imageGeneration", "to": "Higgsfield", "kind": "HTTP (hf-*)" },
+    { "from": "cs.videoGeneration", "to": "Higgsfield", "kind": "HTTP submit+poll (hf-video-*)" },
+    { "from": "cs.service.generateVisualForDraft", "to": "db.schemaContentStudio", "kind": "createMedia/binding/generation_run" },
+    { "from": "api.cs.publishNow", "to": "sp.adminService", "kind": "publishContentPostNow" },
+    { "from": "sp.adminService", "to": "sp.adminService", "kind": "resolveDefaultAccount (SOCIAL_PUBLISHING_MODE)" },
+    { "from": "sp.adminService", "to": "sp.service", "kind": "publishWithAdapter(adapter)" },
+    { "from": "sp.adminService", "to": "sp.stateMachine", "kind": "assertSocialPublishJobTransition / nextRetryStatus" },
+    { "from": "sp.adminService", "to": "sp.repository", "kind": "createPublishJob / lock / attempt / publication" },
+    { "from": "sp.service", "to": "sp.adapter.dryRun", "kind": "provider=dry_run (défaut)" },
+    { "from": "sp.service", "to": "sp.adapter.postiz", "kind": "provider=postiz (mode live)" },
+    { "from": "sp.adapter.postiz", "to": "cs.postizLib", "kind": "uploadPostizMediaFromUrl / createPostizDraft" },
+    { "from": "cs.postizLib", "to": "Postiz", "kind": "HTTP /api/public/v1/*" },
+    { "from": "sp.adminService", "to": "sp.alerts", "kind": "sendSocialAlert (échec non-draft)" },
+    { "from": "cron.socialPublishScheduler", "to": "sp.worker", "kind": "runScheduledPublishJobs" },
+    { "from": "sp.worker", "to": "sp.adminService", "kind": "executeJob(jobId) sur jobs échus" },
+    { "from": "ui.aiEngine.create", "to": "api.ai.generate", "kind": "fetch (pipeline A)" },
+    { "from": "api.ai.generate", "to": "ai.orchestrator", "kind": "runGeneration" },
+    { "from": "ai.orchestrator", "to": "ai.graph.builder", "kind": "engine.invoke (thread_id=jobId)" },
+    { "from": "ai.graph.builder", "to": "ai.node.enrichKnowledge", "kind": "edge graphe" },
+    { "from": "ai.node.enrichKnowledge", "to": "ai.knowledge.retrieval", "kind": "searchByCollections (RAG)" },
+    { "from": "ai.knowledge.retrieval", "to": "PostgreSQL + pgvector", "kind": "SELECT embedding <=> vecteur" },
+    { "from": "ai.node.generateImages", "to": "ai.providers.selector", "kind": "selectProvider (openai/higgsfield/google)" },
+    { "from": "api.ai.generate", "to": "ai.bridge", "kind": "bridgeToContentStudio (A->B, non bloquant)" },
+    { "from": "ai.bridge", "to": "db.schemaContentStudio", "kind": "insert idea/brief/draft/generation_run" },
+    { "from": "api.ai.publish", "to": "cs.service.generateIdeaDrafts", "kind": "approveContentDraft puis publishContentPostNow (réutilise pipeline B/publication)" },
+    { "from": "api.ai.jobsReview", "to": "ai.orchestrator", "kind": "resumeGeneration (HITL)" }
+  ]
+}

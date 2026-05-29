@@ -1,0 +1,95 @@
+domain: voix-off
+description: >
+  Contrat E/S du sous-pipeline audio (voix-off, musique, sous-titres) du graphe
+  AI-Engine. Atteignable seulement via le flux video (reel/story/shorts/video)
+  de /api/admin/ai-engine/generate. NON connecté au flux operateur /create.
+
+entrypoints:
+  - name: POST /api/admin/ai-engine/generate
+    auth: requireAdminApi (cookie admin) ; 401 sans session
+    preconditions:
+      - AI_ENGINE_ENABLED=true (sinon 503)
+      - format video pour atteindre l'audio (reel|story|shorts|video)
+    input_flat:
+      objective: string  # mappe vers enum interne
+      platform: enum[instagram,facebook,tiktok,pinterest,youtube,linkedin,twitter,threads]
+      format: enum[post,story,reel,carousel,short,pin,article,single_image,text_post,infographic]
+      tone: string        # NON valide par la route, MAIS parse-brief impose un enum restreint
+      keyMessage: string (min 1)
+      humanReviewRequired: boolean
+      imageEnabled: boolean
+      videoEnabled: boolean
+    output_current:        # ce qui sort REELLEMENT aujourd'hui
+      jobId: string
+      status: enum[completed,review,failed]
+      script: object|null
+      caption: string
+      hashtags: string[]
+      images: object[]
+      videos: object[]     # en mock video: [{provider:'fallback', url:''}]
+      qualityScores: object
+      moderationResult: object|null
+      costTracking: {totalCents, breakdown}   # breakdown inclut generate_voiceover/generate_music a 0
+      errors: object[]
+      bridgeResult: {ideaId,briefId,draftId}|null
+      contentStudioUrl: string|null
+    output_missing:        # produits cote serveur mais JAMAIS exposes
+      voiceover: "absent du DTO (orchestrator.ts:30-45)"
+      music: "absent"
+      subtitles: "absent (fichier .srt ecrit sur disque mais non reference)"
+      composition: "absent"
+      exports: "absent"
+      thumbnails: "absent"
+
+nodes:
+  generate_voiceover:
+    providers:
+      mock: "ffmpeg anullsrc/lavfi -> WAV silencieux (ECHOUE: lavfi indisponible dans le process)"
+      openai: "POST /v1/audio/speech tts-1 nova mp3 (jamais appele car provider=mock)"
+      elevenlabs: "POST text-to-speech eleven_multilingual_v2 (NON configure: cle absente)"
+    output: MediaAsset {url, mimeType, durationMs, provider, costCents} + voiceoverScript
+    error_behavior: "catch -> fallback silencieux -> si echec -> asset url='' (PAS d'erreur propagee)"
+    mock_status: broken    # lavfi echoue -> url='', aucun fichier
+    live_status: untested  # provider=mock, ElevenLabs absent
+
+  generate_music:
+    providers:
+      mock_only: "ffmpeg anullsrc stereo (silence). AUCUN provider musical reel."
+    output: MediaAsset {url, mimeType, durationMs, provider:'mock', costCents:0}
+    mock_status: broken    # lavfi echoue -> url=''
+    live_status: n/a       # aucune voie live n'existe
+
+  generate_subtitles:
+    impl: "JS pur (generateSRT) + writeFile .srt (PAS de ffmpeg)"
+    output: subtitles (string SRT) ecrit dans .media-storage, servi via /_media (200)
+    limits: ["timings estimes non alignes sur l'audio", "troncature dure a 117 chars", "output non expose dans l'API/UI"]
+    mock_status: partial   # genere mais non livre
+    live_status: partial
+
+  compose_video:
+    consumes: [videos[0], voiceover, music, subtitles]
+    behavior: "si pas de video.url -> createEmptyAsset; sinon mux voix(1.0)+musique(0.3) + aac"
+    current: "video.url vide en mock -> composition vide"
+
+  transcode_export:
+    consumes: composition
+    current: "pas de composition.url -> aucun export video"
+
+error_codes:
+  400: "Validation route (Zod) - schema flat/nested"
+  401: "Non authentifie"
+  500: "status:failed (ex: ZodError tone invalid_enum_value dans parse-brief)"
+  503: "AI_ENGINE_ENABLED != true"
+
+config_runtime_staging:
+  AI_ENGINE_ENABLED: "true"
+  AI_ENGINE_DEFAULT_TTS_PROVIDER: "mock"
+  AI_ENGINE_HUMAN_REVIEW_REQUIRED: "false"
+  AI_ENGINE_ELEVENLABS_API_KEY: "absent (configured:false)"
+  OPENAI_API_KEY: "present (fallback) -> OpenAI configured:true mais non utilise en TTS"
+  ffmpeg_lavfi: "ECHEC dans le process serveur (disponible en CLI directe)"
+
+invariants_violes:
+  - "status:completed alors que voiceover/music/video ont url='' (aucune verification de presence d'asset)"
+  - "tone offert par l'UI rejete par parse-brief (enums desynchronises)"
+  - "outputs audio/sous-titres/composes produits puis jetes avant l'API"

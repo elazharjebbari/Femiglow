@@ -1,0 +1,125 @@
+@startuml dependencies
+' Graphe des dependances entre taches du plan d'action
+' FemiGlow Content Studio v2 / AI Engine - baseline figee 2026-05-29
+' Notation robuste : pas de !include, rectangles + fleches "depend de".
+' Une fleche A --> B se lit : B depend de A (A doit etre fait/verifie avant B).
+
+title Plan d'action - dependances entre taches (P0 -> P4)\nFleche A --> B : B depend de A
+
+skinparam rectangle {
+  BorderColor black
+  FontColor black
+}
+skinparam ArrowColor #444444
+skinparam shadowing false
+
+legend top
+  P0 = securite-verite | P1 = blockers | P2 = criticals | P3 = majors | P4 = dette
+  Couleur = priorite. Garde-fou rouge : ne PAS activer T-103b en LIVE avant T-301 + T-204.
+endlegend
+
+' ============ P0 : socle de verite ============
+rectangle "T-001\nGate CI sur exit code\n[BUG-010/027/032]" as T001 #FFD9D9
+rectangle "T-002\nDrain fake-timers global\n[BUG-010/027/032]" as T002 #FFD9D9
+rectangle "T-003\nFix 2 E2E operateur\n[BUG-023/029/042]" as T003 #FFD9D9
+rectangle "T-005\nenv.ts OPENAI_API_KEY\n+ resolveApiKey unifie\n[BUG-001/005/006/007]" as T005 #FFD9D9
+rectangle "T-006\nMSW global + contract\ntests fournisseurs\n[BUG-041/045/046]" as T006 #FFD9D9
+rectangle "T-010\nSmoke operateur CI (mock)\n[BUG-047/046]" as T010 #FFD9D9
+rectangle "T-020\nFermer legacy /postiz-draft\n[BUG-040]" as T020 #FFD9D9
+rectangle "T-021\nAuth sur /_media\n[MISS-010]" as T021 #FFD9D9
+
+' ============ P1 : blockers ============
+rectangle "T-101\nImage LIVE create (OpenAI)\n[BUG-001/006/007/028]" as T101 #FFE8CC
+rectangle "T-102\nHiggsfield credential+auth\n[BUG-001/002/008/025]" as T102 #FFE8CC
+rectangle "T-103\nHiggsfield async submit+poll\n[BUG-002/008/009/025]" as T103 #FFE8CC
+rectangle "T-103b\nBrancher scheduler publication\n[BUG-003]" as T103b #FFE8CC
+rectangle "T-104\nBridge media A->B\ncomposition/exports\n[BUG-004/MISS-005/034]" as T104 #FFE8CC
+
+' ============ P2 : criticals ============
+rectangle "T-201\nTexte operateur LLM reel\n[BUG-005/020]" as T201 #FFF6CC
+rectangle "T-202\nPicker = generabilite reelle\n[BUG-006/007/024/043]" as T202 #FFF6CC
+rectangle "T-203\nEnum tone aligne\n[BUG-014]" as T203 #FFF6CC
+rectangle "T-204\nAnti double-publication\n[MISS-006/028]" as T204 #FFF6CC
+
+' ============ P3 : majors ============
+rectangle "T-301\nSync content_post<->job\n[BUG-038]" as T301 #E8F5D0
+rectangle "T-302\nRetry auto failed\n[F7/BUG-038]" as T302 #E8F5D0
+rectangle "T-303\nCompte Postiz explicite live\n[BUG-039]" as T303 #E8F5D0
+rectangle "T-304\nFallbacks audibles\n[MISS-020/011/BUG-022]" as T304 #E8F5D0
+rectangle "T-305\nVariation regenere le texte\n[BUG-017]" as T305 #E8F5D0
+rectangle "T-306\nStockage tests isole + purge\n[BUG-031/035/MISS-004]" as T306 #E8F5D0
+rectangle "T-307\nTests media reels ffmpeg/sharp\n[BUG-035/036/MISS-025]" as T307 #E8F5D0
+rectangle "T-308\ndry_run honnete + capabilities\n[BUG-045/065/MISS-029]" as T308 #E8F5D0
+rectangle "T-309\nIdee generated -> 409 propre\n[BUG-051]" as T309 #E8F5D0
+
+' ============ P4 : dette ============
+rectangle "T-410\nInvalidation caches env\n[MISS-030/033/BUG-043]" as T410 #D9E8F5
+rectangle "T-411\nMEDIA_DIR absolu\n[MISS-024/032]" as T411 #D9E8F5
+rectangle "T-412\nTaxonomies + libelles\n[BUG-052/MISS-014]" as T412 #D9E8F5
+rectangle "T-413\nToggle de mode coherent\n[BUG-021/MISS-016/017]" as T413 #D9E8F5
+rectangle "T-414\nformatError preserve serveur\n[BUG-054]" as T414 #D9E8F5
+rectangle "T-415\nGarde kind=video formats\n[MISS-023]" as T415 #D9E8F5
+
+' ============ Dependances P0 internes ============
+T001 --> T002
+
+' ============ P0 -> P1/P2 ============
+T001 --> T005
+T002 --> T005
+T001 --> T006
+T002 --> T006
+
+T003 --> T010
+T005 --> T010
+T006 --> T010
+
+' ============ Vers blockers P1 ============
+T005 --> T101
+T005 --> T102
+T006 --> T102
+T102 --> T103
+T006 --> T103
+T006 --> T104
+T010 --> T104
+
+' ============ Vers criticals P2 ============
+T005 --> T201
+T005 --> T202
+T101 --> T202
+T201 --> T202
+
+' ============ Publication : garde-fou avant activation live ============
+T301 --> T103b
+T204 --> T103b
+T103b --> T302
+
+' ============ Majors P3 ============
+T104 --> T304
+T010 --> T304
+T201 --> T305
+T306 --> T307
+T104 --> T307
+T006 --> T308
+
+' ============ Dette P4 ============
+T202 --> T410
+T306 --> T411
+T201 --> T412
+T005 --> T413
+
+' ============ Annotation garde-fou ============
+note bottom of T103b
+  GARDE-FOU CRITIQUE
+  Brancher + tester en MOCK : OK des que code pret.
+  ACTIVER en LIVE seulement APRES T-301 (sync job)
+  ET T-204 (dedup idempotence), sinon doubles
+  publications sur compte client reel.
+end note
+
+note bottom of T005
+  Correctif bon marche : OPENAI_API_KEY
+  valide deja present dans le process,
+  juste non mappe dans env.ts.
+end note
+
+@enduml

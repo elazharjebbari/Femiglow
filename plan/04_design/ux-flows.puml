@@ -1,0 +1,129 @@
+@startuml ux-flows-target
+' Parcours opérateur CIBLE — Content Studio v2 / AI Engine
+' Cible ADR-0007 Option 1 : convergence vers A (LangGraph moteur unique).
+' Le create-flow (B) est une UI au-dessus de A ; l'opérateur accède à voix-off / montage via A.
+' Les étendues "via A" sont les capacités aujourd'hui inatteignables (BUG-004) que la cible rend accessibles.
+
+title Parcours opérateur cible — génération + publication (convergence vers A)
+
+skinparam shadowing false
+skinparam ArrowColor #9C2A47
+skinparam activity {
+  BackgroundColor #FBF6F1
+  BorderColor #7A4E3F
+  DiamondBackgroundColor #EDE3D5
+}
+
+|Opérateur (UI = create-flow B)|
+start
+:Choisir plateforme + format
+(Instagram/Facebook · feed/story/reel/carousel);
+note right
+  Le format pilote kind=image|video (contrat distinction §3 design-system).
+  data-cs-kind ; vidéo désactivée hors reel/story (aria-disabled motivé).
+end note
+
+:Saisir intention / idée;
+
+|Moteur unique A (LangGraph, via invokeEngine)|
+:Générer SCRIPT + CAPTION + VARIANTS
+(noeuds generate-script/caption/variants);
+note right
+  Fin du fallback déterministe figé (BUG-005/T-201).
+  Le toggle mock/live pilote RÉELLEMENT le texte (source unique, ACT-UX-005/006).
+end note
+
+|Opérateur (UI = create-flow B)|
+:Choisir une variante texte;
+if (Génération texte a échoué ?) then (oui)
+  :Etat ERREUR explicite + bouton réessayer
+  (fin de l'échec silencieux BUG-022);
+  detach
+else (non)
+endif
+
+:Choisir le média;
+note left
+  Picker HONNÊTE : badge Live = générable (même clé que le moteur, T-005/T-202).
+  Modèles non générables grisés "Indisponible", jamais auto-sélectionnés (MISS-002).
+  Vocabulaire d'états : Live / Cache / Statique / Indisponible (design-system §4).
+end note
+
+split
+  ' --- Branche IMAGE ---
+  |Moteur unique A|
+  :Générer IMAGE (OpenAI live, T-101)
+  ou MOCK fidèle (MSW, T-006);
+split again
+  ' --- Branche VIDÉO ---
+  |Moteur unique A (worker de jobs async)|
+  :Soumettre VIDÉO (Higgsfield async submit, T-102/T-103);
+  :Poll hors requête HTTP (worker resumable);
+  note right
+    Etat "génération en cours" honnête côté UI (pas de blocage du handler).
+    Bouton : "Générer une vidéo IA" (data-cs-generate-button + data-cs-kind=video).
+  end note
+  :VIDÉO de base prête;
+end split
+
+|Moteur unique A (capacités riches — via A)|
+partition "Atteignable via A (cible — corrige BUG-004)" {
+  :VOIX-OFF (generate-voiceover);
+  :MUSIQUE (generate-music);
+  :SOUS-TITRES (generate-subtitles, wrapping multi-cue — BUG-066);
+  :COMPOSE + TRANSCODE/EXPORT
+  (ffmpeg/sharp réels — T-307/T-403);
+}
+
+|invokeEngine — pont bidirectionnel A->B|
+:Matérialiser un DRAFT B
+avec GenerationResult COMPLET
+(composition/exports/thumbnails/voiceover/music/subtitles — T-104);
+note right
+  Sans T-104, le pont lit undefined (MISS-005) : prérequis structurel de la cible.
+  Idempotent + async-aware ; assets persistés en bibliothèque (T-401/402).
+end note
+
+|Opérateur (UI = create-flow B)|
+:Aperçu FIDÈLE au rendu réseau
+(plus grande dérivée, pas le thumbnail sm — BUG-053/ACT-DS-004);
+note left
+  Slots média avancés rendus SSI l'asset existe (ACT-DS-005) :
+  vidéo composée · lecteur voix-off/musique · aperçu sous-titres.
+  Asset vide/cassé -> placeholder "média indisponible" (MISS-021/004), jamais cadre noir.
+end note
+
+if (Asset indisponible / vide / <1 ko ?) then (oui)
+  :Etat ERREUR visuel dédié
+  (placeholder, jamais faux succès);
+else (non)
+endif
+
+:Approuver
+("Valider et préparer la publication");
+note right
+  Message d'erreur serveur précis préservé (BUG-054/T-414),
+  pas de libellé générique écrasant.
+end note
+
+|Publication (sous garde-fou anti-incident — P3)|
+if (Mode publication ?) then (Maintenant)
+  :Publier (compte Postiz EXPLICITE — T-303);
+elseif (Programmer)
+  :Enregistrer job daté;
+  :Scheduler self-hosted /api/cron/tick (T-103b)
+  GARDÉ par idempotence+dédup (T-204)
+  et sync content_post<->job (T-301);
+  note right
+    Plus de toast "Publication programmée" mensonger (BUG-003) :
+    l'état reflète l'exécution réelle. dry_run = défaut honnête (T-308).
+  end note
+else (Brouillon)
+  :Créer draft Postiz (route legacy gardée — T-020);
+endif
+
+:Etat SUCCÈS confirmé par effet métier réel
+(jamais un 200 HTTP seul);
+stop
+
+@enduml

@@ -1,0 +1,79 @@
+domain: generation-video
+systems:
+  operator_flow_B:
+    description: Flux /create reellement utilise par l'operateur
+    entrypoint_api: POST /api/admin/content-studio/drafts/{id}/generate-visual
+    handler: src/app/api/admin/content-studio/drafts/[id]/generate-visual/route.ts
+    service: src/lib/content-studio/service.ts::generateVideoForDraft -> video-generation.ts::generateStudioVideo
+    auth: requireAdminApi (401 si non authentifie), requireContentStudioEnabled
+  ai_engine_flow_A:
+    description: Pipeline LangGraph (NON atteint par /create)
+    entrypoint_api: POST /api/admin/ai-engine/generate
+    nodes: [generate-video, compose, generate-voiceover, generate-music, generate-subtitles]
+    note: aucun mp4 reel produit en environnement; deconnecte du flux operateur
+
+inputs:
+  generate-visual:
+    body:
+      prompt: string (requis)
+      size: enum[1024x1024,1024x1536,1536x1024]
+      quality: enum[low,medium,high]
+      kind: enum[image,video]   # video => routage video
+      model: string (optionnel; mock-video-1.0 | hf-video-mini|lite|standard|turbo | ids live-discovered)
+    cookie:
+      cs_generation_mode: enum[mock,live]  # defaut mock si absent/invalide (route.ts:28-29)
+
+routing_generateStudioVideo:
+  - if mode==mock: -> mock asset (works)
+  - elif model matches ^mock-: -> mock asset (works)
+  - elif model startsWith hf-: -> Higgsfield (auth requise; sinon invalid_state)
+  - elif mode==live (modele non hf-): -> invalid_state 'aucun modele video live disponible'  # piege pour modeles live-discovered
+  - else env fallback -> mock
+
+outputs:
+  success_video:
+    media:
+      kind: video
+      previewUrl: string (url mp4 jouable)
+      originalUrl: string
+      thumbUrl: string (poster)
+      width: int
+      height: int
+      durationMs: int
+  mock_values:
+    reel: {previewUrl: /_media/content-studio/mock/reel-9x16.mp4, durationMs: 5000, 1080x1920}
+    story: {previewUrl: /_media/content-studio/mock/story-9x16.mp4, durationMs: 3000, 1080x1920}
+
+error_codes:
+  invalid_input: payload generate-visual invalide (zod)
+  invalid_state:
+    - 'credential Higgsfield incomplet' (model hf-* + pas de KEY_ID:KEY_SECRET)
+    - 'Mode live actif mais aucun modele video live disponible' (modele non hf- en live)
+    - "provider video X n'est pas encore implemente" (env fallback non-mock)
+  upstream_failed: Higgsfield submit/poll/timeout (chemins actuellement faux)
+  401: non authentifie
+  403: content-studio desactive
+
+behavior_matrix:
+  mock:
+    reel_story: works (asset statique servi 200 video/mp4)
+    post_carousel: throw 'Aucun mock video disponible' (pas de mock video)
+  live:
+    higgsfield_hf_models: broken (credential incomplet -> invalid_state)
+    higgsfield_live_discovered_models: broken (non routable -> invalid_state trompeur)
+    higgsfield_even_with_credential: broken (endpoints sync faux vs API async reelle)
+    other_providers: non implementes
+
+assets_status:
+  /_media/content-studio/mock/reel-9x16.mp4: present 62790o, HTTP 200 video/mp4
+  /_media/content-studio/mock/story-9x16.mp4: present 34658o, HTTP 200 video/mp4
+  /_media/content-studio/mock/poster-9x16.jpg: present, HTTP 200 image/jpeg
+  .media-storage/ai-engine/*.mp4: ABSENT (0 fichier)
+
+env_state_verified:
+  AI_ENGINE_HIGGSFIELD_API_KEY: set (mono-partie, sans ':')
+  AI_ENGINE_HIGGSFIELD_API_SECRET: vide
+  AI_ENGINE_HIGGSFIELD_BASE_URL: https://platform.higgsfield.ai (correct)
+  CONTENT_STUDIO_IMAGE_PROVIDER: mock
+  CONTENT_STUDIO_V2_MOCK_MODE: false (mockMode=false via /health)
+  consequence: generation video LIVE entierement non-fonctionnelle; seul MOCK marche

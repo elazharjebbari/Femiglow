@@ -1,0 +1,105 @@
+@startuml c4-component-publication
+' ============================================================================
+' C4 Niveau 3 — Composants : pipeline de PUBLICATION (pattern adapter)
+' Source vérifiée :
+'   src/components/admin/content-studio-v2/create/PublishActionGroup.tsx
+'   src/app/api/admin/content-studio/posts/[id]/{publish-now,postiz-draft,
+'     schedule,reschedule,cancel,publishability,draft-on-provider}/route.ts
+'   src/lib/social-publishing/{admin-service,service,state-machine,worker,
+'     repository}.ts + adapters/{dry-run,postiz}.ts
+'   src/app/api/cron/content-studio/social-publish-scheduler/route.ts
+' ============================================================================
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam component { BorderColor #8F3F4A BackgroundColor #FBE9E5 }
+skinparam database { BackgroundColor #EAF1E8 BorderColor #5A6E50 }
+
+title Niveau 3 — Composants de publication (adapter dry_run | postiz)
+
+component "PublishActionGroup.tsx\n(Publier maintenant / Programmer /\nBrouillon sur le provider)" as UI
+
+package "API Routes — posts/[id]" as Routes {
+  component "publish-now" as RNow
+  component "schedule" as RSched
+  component "reschedule" as RReSched
+  component "cancel" as RCancel
+  component "publishability" as RPub
+  component "postiz-draft / draft-on-provider" as RDraft
+}
+component "publish-jobs/[id]/{retry,cancel}\n+ publish-jobs (liste)" as RJobs
+
+component "admin-service.ts\npublishContentPostNow / scheduleContentPost /\nsendContentPostToDraft / executeJob /\nresolveDefaultAccount(SOCIAL_PUBLISHING_MODE)" as Admin
+component "service.ts\npublishWithAdapter()" as Svc
+component "state-machine.ts\ndraft->approved->queued->publishing\n->published | failed (->queued) | cancelled" as SM
+component "repository.ts\ncreatePublishJob / tryAcquirePublishJobLock /\nrecordPublishAttempt / createPublication /\nlistScheduledJobsDue" as Repo
+component "worker.ts\nrunScheduledPublishJobs()" as Worker
+component "alerts.ts\nsendSocialAlert (échec non-draft)" as Alerts
+
+package "adapters/* (SocialPublishingAdapter)" as Adapters {
+  component "dry-run.ts\npermalien factice social.example.test\n(rien posté) + insights synthétiques" as ADry
+  component "postiz.ts\nupload média -> create post/draft\n-> remoteId + permalink" as APostiz
+  component "meta_graph = null\n(non implémenté)" as AMeta
+}
+
+component "content-studio/postiz.ts\n/api/public/v1/{upload,posts,integrations,analytics}" as PostizLib
+
+rectangle "Cron tick / Vercel\nPOST Bearer CRON_SECRET" as Cron #FFFFFF
+component "/api/cron/content-studio/\nsocial-publish-scheduler" as RCron
+rectangle "Postiz self-hosted" as Postiz #FFFFFF
+rectangle "Instagram / Facebook" as Networks #FFFFFF
+
+database "PostgreSQL" as DB {
+  component "social_publish_job" as TJob
+  component "social_publish_attempt" as TAtt
+  component "social_publication" as TPubn
+  component "social_publish_event" as TEvt
+  component "social_account / social_credential" as TAcc
+  component "content_post (status)" as TPost
+}
+
+' ── flux ──
+UI --> RNow
+UI --> RSched
+UI --> RReSched
+UI --> RCancel
+UI --> RPub
+UI --> RDraft
+RNow --> Admin
+RSched --> Admin
+RReSched --> Admin
+RCancel --> Admin
+RPub --> Admin
+RDraft --> Admin
+RJobs --> Admin
+
+Cron --> RCron
+RCron --> Worker
+Worker --> Admin : executeJob(jobId) sur jobs échus (queued/failed)
+
+Admin --> Repo
+Admin --> SM
+Admin --> Svc
+Admin --> Alerts
+Svc --> Adapters : adapterFor(account.provider)
+ADry ..> DB
+APostiz --> PostizLib
+PostizLib --> Postiz
+Postiz --> Networks
+Repo --> TJob
+Repo --> TAtt
+Repo --> TPubn
+Repo --> TEvt
+Repo --> TAcc
+Admin --> TPost : updatePostPlanning(published/failed)\n(sauf publishMode=draft)
+
+note as NoteMode
+  SÉLECTION D'ADAPTER — resolveDefaultAccount(platform)
+  - SOCIAL_PUBLISHING_MODE=dry_run (DÉFAUT, sécurité staging) :
+    préfère un compte provider='dry_run' → DryRunAdapter → AUCUNE publication
+    réelle, permalien factice, content_post passe quand même à 'published'.
+  - SOCIAL_PUBLISHING_MODE=live : synchronise les comptes Postiz, choisit le
+    compte épinglé (SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID) ou le 1er compte
+    Postiz actif → PostizAdapter → upload + post réels.
+  meta_graph est câblé mais null (lève invalid_state si sélectionné).
+end note
+@enduml

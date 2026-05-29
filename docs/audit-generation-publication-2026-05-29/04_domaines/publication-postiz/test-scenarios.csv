@@ -1,0 +1,27 @@
+id,scenario,type,mode,preconditions,steps,expected,priority
+PP-01,Publier maintenant un post approuve IG (dry_run),nominal,mock,"SOCIAL_PUBLISHING_MODE=dry_run; post approved; draft approved; media ready HTTPS",POST /posts/{id}/publish-now {},201 job dry_run status=published permalink social.example.test content_post=published,high
+PP-02,Publier maintenant en live Postiz (compte test),nominal,live,"SOCIAL_PUBLISHING_MODE=live; compte Postiz TEST epingle via SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID; media HTTPS public",POST /posts/{id}/publish-now {accountId},201 job postiz published remoteId reel + draft/post visible dans Postiz + permalink releaseURL,high
+PP-03,Envoyer un brouillon au provider (dry_run),nominal,mock,post approved publishable,POST /posts/{id}/draft-on-provider {},201 publishMode=draft permalink .../draft/ content_post reste approved audit social.draft_created,high
+PP-04,Envoyer un brouillon Postiz live (compte test),nominal,live,"live + compte Postiz test; media public",POST /posts/{id}/draft-on-provider {accountId},201 type=draft cote Postiz draft visible dans file de revue PAS publie sur IG,high
+PP-05,Programmer un post T+1h et verifier execution,nominal,both,"post approved; cron scheduler ACTIF (corrige)",POST /schedule {scheduledAt:+1h} puis attendre echeance + tick scheduler,job queued->published a echeance content_post published,high
+PP-06,Programmation sans cron (etat actuel),error,both,scheduler NON branche (etat reel),POST /schedule {scheduledAt:+1h} puis attendre,job reste queued indefiniment post jamais publie (BUG finding-1),high
+PP-07,Refus publication post non approuve,error,both,post status=draft,POST /publish-now,409 invalid_state 'Post non publiable' errors=['Seul un post approuve...'],high
+PP-08,Refus media manquant/non public,error,both,draft sans media ou media non HTTPS,GET /publishability puis POST /publish-now,publishable=false errors media_not_public; 409 a la publication,high
+PP-09,Refus legende > 2200 (IG),error,both,caption 2300 chars,POST /publish-now,409 invalid_request 'Caption exceeds platform limit',medium
+PP-10,Idempotence publish-now (rejouer meme cle),recovery,both,job deja publie avec idempotencyKey K,POST /publish-now header Idempotency-Key:K (x2),meme job/result renvoye pas de double publication,high
+PP-11,Lock concurrent (double execution simultanee),recovery,both,job queued,2x executeJob en parallele,1 seul lock acquis l'autre renvoie failed 'not available' pas de double post,high
+PP-12,Retry job failed retryable,recovery,both,job failed code provider_rate_limited,retryPublishJob,job queued->publishing->published,medium
+PP-13,Echec live retryable puis succes (retry adapter),recovery,live,Postiz renvoie 429 puis 200,POST /publish-now,withRetry 3x succes final published,medium
+PP-14,Echec live non-retryable (422 invalid),error,live,Postiz renvoie 422,POST /publish-now,job failed code invalid_request content_post=failed alerte critical envoyee,high
+PP-15,Annuler post programme doit annuler le job queued,error,both,post scheduled + job queued,POST /cancel,job queued->cancelled content_post cancelled (BUG actuel: job reste queued finding-5),high
+PP-16,Reprogrammer doit deplacer le job queued,error,both,post scheduled + job queued,PATCH /reschedule {scheduledAt:+2h},job scheduledAt mis a jour (BUG actuel: job garde ancienne date finding-5),medium
+PP-17,Auth requise sur routes admin,error,both,sans cookie session,POST /publish-now sans Cookie,401 unauthorized,high
+PP-18,Cron scheduler exige CRON_SECRET,error,both,sans Bearer,POST /api/cron/.../social-publish-scheduler,401 unauthorized,medium
+PP-19,Sync comptes Postiz (lecture),nominal,live,POSTIZ_* presents,GET /api/admin/social/accounts ou sync,comptes IG reels synchronises status active (PROUVE 200),high
+PP-20,Postiz indisponible degrade gracieux,recovery,live,POSTIZ_BASE_URL injoignable,sync comptes,warn logge dry_run restent utilisables pas de crash,medium
+PP-21,Capabilities fraiches exposees a l'UI,error,both,schema capabilities etendu (reel/story/supportsDraft),GET /api/admin/social/accounts,capabilities incluent supportsDraft + reel/story (BUG actuel: stale finding-3),medium
+PP-22,Route legacy /postiz-draft respecte dry_run,error,mock,SOCIAL_PUBLISHING_MODE=dry_run,POST /postiz-draft {integrationId},devrait simuler (BUG actuel: poste reellement finding-7),high
+PP-23,Selection compte ambigue en live,error,live,live + 4 comptes Postiz + pas de pin + pas d'accountId,POST /publish-now {},devrait exiger selection (BUG actuel: 1er compte choisi finding-6),high
+PP-24,metadata reflete le mode reel,error,live,live,POST /publish-now puis lire social_publish_job.content.metadata,dryRun=false en live (BUG actuel: dryRun=true en dur finding-9),low
+PP-25,Provider meta_graph indisponible,error,both,compte provider=meta_graph,POST /publish-now,409 invalid_state 'Provider meta_graph non disponible',low
+PP-26,E2E brouillon teardown propre,recovery,mock,base de test avec table audit_event,run e2e content-studio-social-publishing-draft,test vert teardown OK (BUG actuel: audit_event manquant finding-4),medium

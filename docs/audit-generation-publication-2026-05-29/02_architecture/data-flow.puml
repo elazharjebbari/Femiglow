@@ -1,0 +1,64 @@
+@startuml data-flow
+' ============================================================================
+' Flux de données entités — génération + publication
+' Source vérifiée : schema-content-studio.ts, schema-social-publishing.ts,
+'   schema-ai-engine.ts (knowledge), bridge + service + admin-service.
+' ============================================================================
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam rectangle { RoundCorner 8 }
+skinparam database { BackgroundColor #EAF1E8 BorderColor #5A6E50 }
+skinparam component { BorderColor #8F3F4A BackgroundColor #FBE9E5 }
+
+title Flux de données : brief/idea -> draft -> media -> post -> publication
+
+' ── RAG / knowledge (entrée de génération) ──
+database "pgvector — RAG\nai_engine_knowledge_collection\nai_engine_knowledge_document\nai_engine_knowledge_chunk\n(embedding vector(1536))" as RAG #F2E8F0
+
+' ── Génération texte ──
+component "content_idea\n(pillar, objective, platform, format,\nsourceType: 'ai-engine'|opérateur)" as Idea
+component "content_brief\n(angle, proof, cta, mediaDirection)" as Brief
+component "content_draft\n(variantLabel, caption, hook, cta,\nhashtags, altText, scoreTotal, status)" as Draft
+component "content_generation_run\n(provider, model, promptVersion,\ninput, output, costCents)" as Run
+component "content_brand_review\n(status, scoreTotal, violations)" as Review
+
+' ── Média ──
+component "media (+ variants/thumbs)\nkind=image(ready) | video(passthrough)\noverrides.contentStudio.origin='ai_generated'" as Media
+component "content_asset_binding\n(draftId -> mediaId, role='primary')" as Binding
+
+' ── Post ──
+component "content_post\n(draftId, status: approved->scheduled\n->published/failed/cancelled, scheduledAt)" as Post
+
+' ── Publication ──
+component "social_account / social_credential\n(provider dry_run|postiz|meta_graph)" as Account
+component "social_publish_job\n(idempotencyKey, content_json+publishMode,\nstatus, scheduledAt, lastError)" as Job
+component "social_publish_attempt\n(status succeeded|failed, request, response)" as Attempt
+component "social_publication\n(remoteId, permalink, publishedAt)" as Pubn
+component "social_publish_event\n(type, message, actorId)" as Event
+component "content_postiz_delivery\n(chemin legacy postiz-draft / draft-on-provider)" as Delivery
+
+' ── Flux ──
+RAG ..> Run : searchKnowledge (enrichissement\ncontexte de génération, pipeline A)
+Idea --> Brief : generateIdeaDrafts / bridge
+Brief --> Draft : 1..3 variantes
+Idea --> Run : trace de génération
+Draft --> Run : generate-visual (image/vidéo)
+Draft --> Review : reviewDraftContent (auto)
+Run --> Media : visuel/vidéo produit
+Media --> Binding
+Binding --> Draft : asset primaire
+Draft --> Post : approveContentDraft (review!=blocked + asset)
+Account --> Job : resolveDefaultAccount(platform, mode)
+Post --> Job : publishContentPostNow / schedule / draft
+Job --> Attempt : recordPublishAttempt (1..n)
+Job --> Pubn : createPublication (succès)
+Job --> Event : journal d'événements
+Post ..> Delivery : postiz-draft (admin-service distinct)
+
+note bottom
+  Le PONT A->B (bridgeToContentStudio) écrit Idea/Brief/Draft/Run avec
+  provider='ai-engine-langgraph'. Les images mock du pipeline A ne sont PAS
+  liées comme asset (skip provider 'mock*') -> draft sans média => non
+  approuvable tant qu'un visuel réel n'est pas généré côté B.
+end note
+@enduml

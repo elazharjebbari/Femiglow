@@ -1,0 +1,135 @@
+{
+  "axis": "backend",
+  "capturedAt": "2026-05-29",
+  "baseline": "feat/ai-engine-langgraph-mvp",
+  "scope": "Routes API, services content-studio/social-publishing, generation texte/image/video, graphe LangGraph (orchestrator+nodes), providers, gating cle/credential, HttpError, idempotence, validation Zod, split env.",
+  "findings": {
+    "backendRelevantTotal": 33,
+    "bySeverity": {
+      "blocker": 4,
+      "critical": 5,
+      "major": 16,
+      "minor": 7,
+      "info": 1
+    },
+    "blockerIds": ["BUG-001", "BUG-002", "BUG-003", "BUG-004"],
+    "criticalIds": ["BUG-005", "BUG-008", "BUG-010", "BUG-011", "BUG-014"],
+    "majorIds": ["BUG-015", "BUG-017", "BUG-020", "BUG-022", "BUG-025", "BUG-026", "BUG-032", "BUG-033", "BUG-034", "BUG-038", "BUG-039", "BUG-040", "BUG-049", "BUG-050"],
+    "missedRelevantIds": ["MISS-001", "MISS-003", "MISS-005", "MISS-006", "MISS-008", "MISS-009", "MISS-011", "MISS-013", "MISS-016", "MISS-028", "MISS-030", "MISS-033"],
+    "topFindingIds": ["BUG-001", "BUG-002", "BUG-003", "BUG-004", "BUG-005"],
+    "shareOfAuditBlockers": "4/4",
+    "shareOfAuditCriticals": "5/8"
+  },
+  "generation": {
+    "liveImageOperatorFunctional": false,
+    "liveVideoOperatorFunctional": false,
+    "liveTextOperatorFunctional": false,
+    "textAlwaysDeterministicFallback": true,
+    "mockImageOperatorFunctional": true,
+    "mockTextHasNoDistinctMode": true,
+    "parallelPipelineCount": 2,
+    "operatorReachesPipelineA": false,
+    "bridgeDirection": "A->B (unidirectional)",
+    "bridgeTriggeredByOperatorFlow": false,
+    "orchestratorDtoExposesAudioCompose": false,
+    "missingDtoKeys": ["voiceover", "music", "subtitles", "composition", "exports", "thumbnails"],
+    "mediaNodesPushToStateErrors": false
+  },
+  "providers": {
+    "higgsfieldHostMigrated": true,
+    "higgsfieldAuthSchemaMigrated": true,
+    "higgsfieldEndpointsAsyncRewritten": false,
+    "higgsfieldImageContractCorrect": false,
+    "higgsfieldVideoContractCorrect": false,
+    "ttsRealProviderUsable": false,
+    "musicRealProvider": false,
+    "metaGraphAdapterImplemented": false,
+    "providersWithWrongContractMockedInTests": ["higgsfield-image", "higgsfield-video"]
+  },
+  "envAndKeyResolution": {
+    "openaiApiKeyPresentInProcess": true,
+    "openaiApiKeyDeclaredInEnvTs": false,
+    "contentStudioOpenAiKeyPresent": false,
+    "higgsfieldKeyPresent": true,
+    "higgsfieldKeyHasColon": false,
+    "higgsfieldSecretPresent": false,
+    "keyResolutionMechanisms": 2,
+    "pipelineAFallsBackToGenericOpenAiKey": true,
+    "pipelineBFallsBackToGenericOpenAiKey": false,
+    "usesNullishCoalescingThatLeaksEmptyString": true,
+    "ttsDefaultProvider": "mock",
+    "socialPublishingMode": "dry_run (default, unset)",
+    "liveParityDemonstrableAtFreeze": false,
+    "cheapUnblockAvailable": true,
+    "cheapUnblockDescription": "Declarer OPENAI_API_KEY dans env.ts + l'ajouter en fallback de la chaine pipeline B (generation.ts + image-generation.ts)"
+  },
+  "publication": {
+    "scheduledPublishEverExecutes": false,
+    "schedulerRouteRegisteredInVercelJson": false,
+    "schedulerCalledByCronTick": false,
+    "schedulerCalledBySystemdTimer": false,
+    "runScheduledPublishJobsNonTestCallers": 1,
+    "cancelReschedulesSyncSocialPublishJob": false,
+    "idempotencyKeysCanonical": false,
+    "doublePublicationPossible": true,
+    "legacyRouteBypassesDryRunGuard": true,
+    "defaultAccountSelectionExplicit": false,
+    "buildSocialContentDerivesDryRunFromMode": false
+  },
+  "routeBoundaryQuality": {
+    "routesUseZodSafeParse": true,
+    "routesUseHttpErrorMapping": true,
+    "routesUseAuthGuards": true,
+    "centralizedErrorFormatter": true,
+    "nonHttpErrorDegradesToOpaque500": true,
+    "writesWrappedInTransaction": false,
+    "modeCookieReadByVisualRoute": true,
+    "modeCookieReadByTextRoute": false,
+    "visualRouteHardcodesMockDefault": true
+  },
+  "caching": {
+    "engineConfigSingletonRequiresRestart": true,
+    "keyCacheTtlMinutes": 5,
+    "keyCacheInvalidatedOnEnvChange": false
+  },
+  "tests": {
+    "vitestReportedResult": "1695 passed / 0 failed",
+    "vitestProcessExitCode": 1,
+    "exitCodeAnomaly": true,
+    "playwrightOperatorPassed": 37,
+    "playwrightOperatorFailed": 2,
+    "testFilesInScope": 95,
+    "testsAssertingRealBackendEffect": 0,
+    "testFilesMockingFetch": 58,
+    "ratioTestsAssertingRealBackendEffect": 0.0,
+    "ratioTestFilesMockingFetch": 0.61,
+    "mswInstalled": true,
+    "mswGlobalServerMounted": false,
+    "mswOnUnhandledRequestError": false,
+    "contractTestCoversExternalProviders": false,
+    "aiEngineLlmNodesTestedOnSuccessPath": false,
+    "ciGateKeyedOnExitCode": false
+  },
+  "costEstimation": {
+    "pricingSourcesOfTruth": 3,
+    "pricingCentralized": false,
+    "unitConsistencyAcrossLayers": false
+  },
+  "technicalDebtEstimate": {
+    "unit": "person-days",
+    "p0UnblockLiveAndScheduler": 4,
+    "p1ProvidersAndMediaPipeline": 12,
+    "p2PublicationSafety": 6,
+    "p3ServiceRobustness": 5,
+    "p4TestParityHarness": 8,
+    "total": 35,
+    "note": "Estimation indicative ingenierie backend uniquement; exclut QA/UI. P0 a fort ratio impact/cout (debloque le live operateur + la publication programmee)."
+  },
+  "reproCommands": {
+    "envState": "grep -nE 'OPENAI_API_KEY|HIGGSFIELD|CONTENT_STUDIO_OPENAI' apps/web/src/lib/env.ts",
+    "schedulerWiring": "grep -rln 'runScheduledPublishJobs' apps/web/src --include='*.ts' | grep -v test ; grep -n social-publish vercel.json",
+    "higgsfieldEndpoints": "grep -nE \"/v1/(images|videos|text2image|image2video|requests)\" apps/web/src/lib/content-studio/{image,video}-generation.ts",
+    "vitestExit": "cat docs/audit-generation-publication-2026-05-29/01_audit/evidence/vitest-summary.json",
+    "orchestratorDto": "sed -n '30,45p' apps/web/src/lib/ai-engine/orchestrator.ts"
+  }
+}

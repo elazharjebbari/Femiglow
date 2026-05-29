@@ -1,0 +1,29 @@
+id,scenario,type,mode,preconditions,steps,expected,priority
+cw-01,Génération idée texte avec clé OpenAI configurée,nominal,live,CONTENT_STUDIO_OPENAI_API_KEY non vide,POST /ideas/{id}/generate {model:gpt-4o-mini},"provider=openai, model=gpt-4o-mini, cost>0, 3 drafts rédigés distincts par le LLM",P0
+cw-02,Génération idée texte sans clé (fallback),nominal,mock,CONTENT_STUDIO_OPENAI_API_KEY vide,POST /ideas/{id}/generate {},"provider=fallback, model=deterministic-template, cost=0, 3 drafts template",P0
+cw-03,MOCK vs LIVE doivent différer,nominal,both,une clé valide en LIVE; cookie mock en MOCK,Générer deux fois (LIVE puis MOCK) la même idée,"Texte LIVE ≠ texte MOCK; provider distinct (openai vs fallback)",P0
+cw-04,Cookie cs_generation_mode=mock force le fallback texte,nominal,mock,clé valide présente,POST /ideas/{id}/generate avec cookie cs_generation_mode=mock,provider=fallback (le mode mock doit être respecté pour le texte),P1
+cw-05,LLM renvoie JSON tronqué,error,live,clé valide; mock réseau renvoie JSON invalide,POST /ideas/{id}/generate,fallback déclenché avec providerError loggé; HTTP 200,P1
+cw-06,LLM renvoie 429,recovery,live,clé valide; OpenAI -> 429,POST /ideas/{id}/generate,fallback avec providerError='429...'; pas de crash; run.status=fallback,P1
+cw-07,LLM renvoie content_filter,error,live,clé valide; finish_reason=content_filter,POST /ideas/{id}/generate,fallback déclenché; HTTP 200,P2
+cw-08,Re-génération idée déjà generated,error,both,idée status=generated,POST /ideas/{id}/generate,HTTP 409 invalid_state 'Idée déjà générée' (PAS 500); aucune écriture partielle,P1
+cw-09,Génération idée inexistante,error,both,id bidon,POST /ideas/inconnu/generate,HTTP 404 not_found,P2
+cw-10,Génération sans auth,error,both,pas de cookie,POST /ideas/{id}/generate,HTTP 401,P1
+cw-11,Picker role=chat ne propose pas whisper,nominal,live,OPENAI_API_KEY valide,GET /models?role=chat,whisper-1 absent; seuls des modèles texte; pas de STT,P1
+cw-12,Modèle live du picker réellement utilisable,nominal,live,clé partagée discovery=génération,GET /models?role=chat puis POST generate avec ce model,le modèle choisi est effectivement appelé (provider=openai),P0
+cw-13,Picker sans clé Content-Studio ne marque pas live,error,mock,CONTENT_STUDIO_OPENAI_API_KEY vide,GET /models?role=chat,modèles non marqués 'live' OU discovery alignée sur la clé de génération,P1
+cw-14,Variation régénère un texte distinct,nominal,both,draft generated existant,POST /drafts/{id}/variation {variantLabel:x},"caption ET hook ≠ parent; parentDraftId renseigné",P1
+cw-15,Variation honore promptOverride,nominal,both,draft generated,POST /drafts/{id}/variation {promptOverride:'change le hook'},le hook reflète l'override,P2
+cw-16,Variation sur draft inexistant,error,both,id bidon,POST /drafts/inconnu/variation {},HTTP 404,P3
+cw-17,AI-Engine generate succès LLM,nominal,live,AI_ENGINE_ENABLED=true + clé,POST /ai-engine/generate {flat form},script+caption+variants générés par LLM; bridge crée idée/brief/draft,P1
+cw-18,AI-Engine generate fallback sans clé,nominal,mock,clé absente,POST /ai-engine/generate,fallbackScript/fallbackCaption; pas de crash; status != failed,P1
+cw-19,Nœud generate-script: JSON conforme,nominal,live,mock LLM résout JSON valide,invoke generateScriptNode,scriptOutputSchema validé; provider=openai; costCents calculé,P1
+cw-20,Nœud generate-script: JSON hors-schema,error,live,mock LLM résout JSON invalide,invoke generateScriptNode,fallbackScript; pas d'exception non gérée,P1
+cw-21,Nœud generate-caption: respect limite plateforme,nominal,live,platform=twitter,invoke generateCaptionNode,caption <=280; hashtags 1-3,P2
+cw-22,Mapping taxonomie A->B couvre tous les objectifs,nominal,both,objective=loyalty/ugc,bridgeToContentStudio,objective mappé sur une valeur Content-Studio valide (pas seulement défaut),P2
+cw-23,parse-brief rejette objective Content-Studio,error,both,brief.objective=consideration,invoke parseBriefNode,doit soit mapper soit renvoyer une erreur claire (pas ZodError brut non géré),P2
+cw-24,Fallback texte humanise le pilier,nominal,mock,pillar=coulisses,POST /ideas/{id}/generate,"angle sans enum brut; français correct (pas 'Relier coulisses à...')",P2
+cw-25,Fallback CTA varie selon objectif,nominal,mock,objective=notoriete,POST /ideas/{id}/generate,CTA adapté (pas systématiquement 'Lire la suite'),P3
+cw-26,Suite de tests sort 0 (pas d'unhandled rejection),recovery,mock,vitest run complet,pnpm vitest run,exit code 0; aucune unhandled rejection,P1
+cw-27,Clé vide traitée comme absente,error,both,CONTENT_STUDIO_OPENAI_API_KEY='',POST /ideas/{id}/generate,fallback (la chaîne vide ne doit pas être traitée comme clé valide),P1
+cw-28,Idempotence création idée,nominal,both,header Idempotency-Key répété,POST /ideas deux fois même clé,2e réponse identique 201 sans doublon,P3

@@ -1,0 +1,157 @@
+{
+  "$comment": "Indicateurs mesurables de l'axe maintenabilite. Baseline figee 2026-05-29, branche feat/ai-engine-langgraph-mvp. Chaque metrique est reproductible (commande ou finding source indique).",
+  "axis": "maintenabilite",
+  "generatedAt": "2026-05-29",
+  "criticality": "critical",
+
+  "findingsTouchingAxis": {
+    "total": 45,
+    "bySeverity": {
+      "blocker": 4,
+      "critical": 11,
+      "major": 22,
+      "minor": 7,
+      "info": 1
+    },
+    "bugIds": [
+      "BUG-001", "BUG-002", "BUG-004", "BUG-005", "BUG-006", "BUG-007", "BUG-008",
+      "BUG-009", "BUG-010", "BUG-014", "BUG-015", "BUG-016", "BUG-018", "BUG-019",
+      "BUG-023", "BUG-024", "BUG-025", "BUG-026", "BUG-027", "BUG-028", "BUG-031",
+      "BUG-032", "BUG-033", "BUG-034", "BUG-035", "BUG-037", "BUG-041", "BUG-042",
+      "BUG-043", "BUG-045", "BUG-046", "BUG-047", "BUG-048", "BUG-052", "BUG-057",
+      "BUG-062", "BUG-063", "BUG-064", "BUG-068"
+    ],
+    "missedIds": [
+      "MISS-002", "MISS-003", "MISS-004", "MISS-005", "MISS-007", "MISS-008",
+      "MISS-009", "MISS-011", "MISS-013", "MISS-015", "MISS-018", "MISS-022",
+      "MISS-024", "MISS-029", "MISS-030", "MISS-031", "MISS-032", "MISS-033", "MISS-034"
+    ],
+    "blockersRootCausedByMaintainability": ["BUG-001", "BUG-002", "BUG-004"],
+    "blockerCommentBUG003": "BUG-003 (cron) est principalement axe process/fiabilite; non compte ici."
+  },
+
+  "duplicationPipelines": {
+    "parallelPipelinesCount": 2,
+    "pipelineA": "ai-engine (LangGraph)",
+    "pipelineB": "content-studio (create flow operateur)",
+    "operatorUsesPipeline": "B-only",
+    "bridgeDirection": "A->B-unidirectional",
+    "bridgeFile": "src/lib/ai-engine/bridge/content-studio-bridge.ts",
+    "bridgeLinesOfCode": 193,
+    "bridgePropagatesImagesOnly": true,
+    "bridgePropagatesCompositionExportsThumbnails": false,
+    "aiEngineNodesCount": 17,
+    "createFlowImportsAiEngine": false,
+    "createFlowReferencesAiEngineRoutes": false,
+    "duplicatedLogicLinesOfCode": {
+      "text": { "B_generation.ts": 211, "A_generate-script.ts": 393, "A_generate-caption.ts": 193 },
+      "image": { "B_image-generation.ts": 272, "A_generate-images.ts": 202 },
+      "video": { "B_video-generation.ts": 261, "A_generate-video.ts": 250 },
+      "approxTotalDuplicated": 1782
+    }
+  },
+
+  "envKeySplit": {
+    "distinctOpenAiResolutionMechanisms": 4,
+    "openaiKeyDeclaredInEnvTs": false,
+    "openaiKeyPresentInProcess": true,
+    "openaiKeyLength": 164,
+    "mechanisms": [
+      { "file": "src/lib/ai-engine/services/api-key-manager.ts:42", "operator": "ENV_KEY_MAP+if(val)", "neutralizesEmptyString": true },
+      { "file": "src/lib/ai-engine/config/engine-config.ts:75", "operator": "||", "neutralizesEmptyString": true },
+      { "file": "src/lib/content-studio/generation.ts:70", "operator": "??", "neutralizesEmptyString": false },
+      { "file": "src/lib/content-studio/image-generation.ts:87/98/111/124", "operator": "direct-env-read", "neutralizesEmptyString": null }
+    ],
+    "higgsfieldCredentialComplete": false,
+    "higgsfieldKeyHasColonSeparator": false,
+    "higgsfieldSecretPresent": false,
+    "singleSharedKeyResolution": false
+  },
+
+  "uiBackendCoupling": {
+    "pickerProposesUnexecutableLiveModels": true,
+    "materialiseForcesLiveSource": true,
+    "roleChatModelCount": 106,
+    "roleChatLeaksNonChatModels": ["whisper-1", "sora-2", "sora-2-pro", "gpt-realtime", "gpt-audio", "davinci-002", "babbage-002"],
+    "modelValidatedAgainstRegistry": false,
+    "allowCustomDefault": true,
+    "nativeIdToInternalIdMappingExists": false
+  },
+
+  "testContractParity": {
+    "testFilesTotal": 871,
+    "testFilesMockingFetch": 19,
+    "testsAssertingRealBackendEffect": 0,
+    "testsAssertingRealBackendEffectDenominator": 95,
+    "nodeTestsCoverLlmSuccessPath": false,
+    "nodeTestsCoverFallbackOnly": true,
+    "mswInstalled": true,
+    "mswVersion": "2.14.2",
+    "mswServerGloballyWired": false,
+    "mswSetupServerEmpty": true,
+    "vitestSetupReferencesMsw": false,
+    "providerContractTestsExist": false,
+    "internalRouteContractTestsExist": true,
+    "higgsfieldContractMatchesRealApi": false,
+    "higgsfieldRealApiIsAsync": true,
+    "codeContainsHiggsfieldTodoMarkers": true,
+    "todoFixmeMarkersInGenPubLibs": 2
+  },
+
+  "ciSignalIntegrity": {
+    "vitestReportedPassed": 1695,
+    "vitestReportedFailed": 0,
+    "vitestReportedSuccess": true,
+    "vitestProcessExitCode": 1,
+    "reportLiesAboutProcessState": true,
+    "globalTeardownClearsTimers": false,
+    "rootCause": "unhandled-rejection-under-fake-timers (BUG-010/032)"
+  },
+
+  "testIsolation": {
+    "mediaDirSharedBetweenTestsAndRuntime": true,
+    "mediaDirPath": "join(process.cwd(),'../../.media-storage/ai-engine')",
+    "mediaDirCoupledToCwd": true,
+    "prodStorageStubFilesCount": 977,
+    "prodStorageStubFileBytes": "10-14",
+    "e2ePostizTargetsNonexistentTable": true,
+    "wrongTableName": "audit_event",
+    "realTableName": "audit_events"
+  },
+
+  "moduleBoundaries": {
+    "generationResultDtoDeclaresComposition": false,
+    "generationResultDtoDeclaresExports": false,
+    "generationResultDtoDeclaresThumbnails": false,
+    "orchestratorBuildResultPropagatesComposition": false,
+    "mediaNodesPushErrorsToState": false,
+    "qualityGateCanDetectMissingMedia": false,
+    "ffmpegBinarySources": 2,
+    "storageAbstractions": 2,
+    "pricingDefinitions": 3,
+    "toneEnumSourcesOutOfSync": 3,
+    "configSingletonReloadableAtRuntime": false,
+    "apiKeyCacheInvalidatesOnEnvChange": false
+  },
+
+  "mechanismsPresence": {
+    "singleSourceOfTruthForKeys": false,
+    "singleGenerationPipeline": false,
+    "providerContractDocumentedAndEnforced": false,
+    "globalMswHarness": false,
+    "ciGatesOnExitCode": false,
+    "testStorageIsolation": false,
+    "sharedTaxonomyEnums": false,
+    "modelRegistryValidationAtApi": false
+  },
+
+  "debtEstimate": {
+    "scale": "story-points-relatifs (1 SP ~ 0.5j dev senior)",
+    "P0_unblock_and_stop_bleeding": 8,
+    "P1_align_ui_backend_single_source": 21,
+    "P2_structural_convergence": 55,
+    "total": 84,
+    "ratioBlockersRootCausedByThisAxis": "3/4",
+    "note": "P0 inclut le correctif cle env bon marche (BUG-001/005) a fort effet de levier."
+  }
+}
