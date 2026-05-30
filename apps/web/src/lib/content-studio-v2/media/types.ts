@@ -2,7 +2,8 @@
  * Shared types between the v2 media endpoints and the React components.
  */
 
-export type StudioV2MediaKind = 'image' | 'video';
+// MP-AR (BUG-004): widened with 'audio' (voice-over/music) and 'subtitles'.
+export type StudioV2MediaKind = 'image' | 'video' | 'audio' | 'subtitles';
 export type StudioV2Compartment = 'imported' | 'ai_generated';
 
 export interface StudioV2MediaItem {

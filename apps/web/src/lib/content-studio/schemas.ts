@@ -62,6 +62,16 @@ export const visualGenerationSchema = z
   })
   .strict();
 
+// MP-VO-04 (BUG-004) — voice-over generation payload. `script` optional so the
+// server derives narration from the draft; an explicit empty string is rejected
+// by `.min(1)`. `.strict()` rejects stray keys.
+export const voiceoverGenerationSchema = z
+  .object({
+    script: z.string().trim().min(1).max(4000).optional(),
+    voice: z.enum(['mock', 'nova', 'alloy', 'shimmer', 'bella']).default('mock'),
+  })
+  .strict();
+
 export const draftRejectSchema = z
   .object({
     reason: z.string().max(500).optional(),

@@ -256,10 +256,15 @@ export interface MediaOverrides {
     promptVersion?: string;
     sourceDraftId?: string;
     sourceIdeaId?: string;
-    /** CS v2 create-audit Phase 3+4 — discriminator for AI-generated video assets. */
-    kind?: 'image' | 'video';
+    /** CS v2 create-audit Phase 3+4 — discriminator for AI-generated assets.
+     *  MP-AR (BUG-004) widened with 'audio' (voice-over/music) and 'subtitles'. */
+    kind?: 'image' | 'video' | 'audio' | 'subtitles';
     /** CS v2 Phase 4 — poster image URL for AI-generated videos. */
     posterUrl?: string;
+    /** MP-VO — voice-over voice id (mock|nova|alloy|...). */
+    voice?: string;
+    /** MP-VO / MP-SU — narration or SRT text used to produce the asset. */
+    narration?: string;
     /**
      * Content Studio v2 (refonte) metadata. Pre-baked preview + thumbnail
      * URLs computed at upload time so the MediaPicker v2 has no N+1.

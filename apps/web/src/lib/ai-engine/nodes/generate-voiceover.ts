@@ -130,6 +130,183 @@ async function generateElevenLabsTTS(
   return { filePath, fileName, costCents };
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// MP-VO-01 (BUG-004) — reusable synthesis core. Wraps the SAME private helpers
+// the node uses (generateSilentAudio / generateOpenAITTS / generateElevenLabsTTS)
+// so the per-draft service (pipeline B) can produce a voice-over without going
+// through the graph. No TTS/ffmpeg logic is reimplemented (D5). The node below
+// is intentionally left unchanged so its test stays green (MP-VO-13).
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * Robust silent-WAV writer (no ffmpeg). `ffmpeg-static`'s bundled binary lacks
+ * the `lavfi` input, so `anullsrc` fails in production — the legacy
+ * `generateSilentAudio` only "works" in the node test because ffmpeg is mocked.
+ * The per-draft service path uses this pure-JS generator instead so mock
+ * voice-over is actually functional. Writes a valid PCM s16le mono WAV.
+ */
+async function generateSilentWav(
+  durationSeconds: number,
+  jobId: string,
+): Promise<{ filePath: string; fileName: string }> {
+  await mkdir(MEDIA_DIR, { recursive: true });
+  const sampleRate = 44100;
+  const numSamples = Math.max(1, Math.floor(durationSeconds * sampleRate));
+  const dataSize = numSamples * 2; // 16-bit mono
+  const buf = Buffer.alloc(44 + dataSize); // data region is already zero = silence
+  buf.write('RIFF', 0);
+  buf.writeUInt32LE(36 + dataSize, 4);
+  buf.write('WAVE', 8);
+  buf.write('fmt ', 12);
+  buf.writeUInt32LE(16, 16);
+  buf.writeUInt16LE(1, 20); // PCM
+  buf.writeUInt16LE(1, 22); // mono
+  buf.writeUInt32LE(sampleRate, 24);
+  buf.writeUInt32LE(sampleRate * 2, 28); // byte rate
+  buf.writeUInt16LE(2, 32); // block align
+  buf.writeUInt16LE(16, 34); // bits per sample
+  buf.write('data', 36);
+  buf.writeUInt32LE(dataSize, 40);
+  const fileName = `voiceover-${jobId}-${Date.now()}.wav`;
+  const filePath = join(MEDIA_DIR, fileName);
+  await writeFile(filePath, buf);
+  return { filePath, fileName };
+}
+
+export type TtsProvider = 'openai' | 'elevenlabs' | 'mock';
+
+export interface SynthesizeVoiceoverInput {
+  /** Already-resolved narration text. */
+  text: string;
+  /** Correlation id for the file name (draftId in pipeline B, jobId in graph). */
+  jobId: string;
+  /** Which TTS engine. 'mock' => deterministic silent WAV, NO network. */
+  provider: TtsProvider;
+  /** Required for openai/elevenlabs; ignored for mock. */
+  apiKey?: string;
+  /** 'throw': surface provider failures (per-draft service). 'silent_fallback':
+   *  degrade to a silent track (autonomous graph). */
+  onProviderError: 'throw' | 'silent_fallback';
+  voice?: string;
+}
+
+export interface SynthesizeVoiceoverOutput {
+  voiceover: MediaAsset;
+  text: string;
+  costCents: number;
+  /** true when a silent fallback replaced a failed provider call. */
+  degraded: boolean;
+  truncated: boolean;
+}
+
+export async function synthesizeVoiceover(
+  input: SynthesizeVoiceoverInput,
+): Promise<SynthesizeVoiceoverOutput> {
+  const { text, jobId, provider, apiKey, onProviderError, voice } = input;
+  const estimatedDuration = estimateDurationSeconds(text);
+  try {
+    if (provider === 'openai' && apiKey) {
+      const result = await generateOpenAITTS(text, apiKey, jobId);
+      const fileStat = await stat(result.filePath).catch(() => null);
+      return {
+        voiceover: {
+          assetId: `openai-vo-${Date.now()}`,
+          url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
+          mimeType: 'audio/mpeg',
+          durationMs: estimatedDuration * 1000,
+          fileSizeBytes: fileStat?.size ?? 0,
+          provider: 'openai:tts-1',
+          generationParams: { textLength: text.length, voice: voice ?? 'nova' },
+          costCents: result.costCents,
+        },
+        text,
+        costCents: result.costCents,
+        degraded: false,
+        truncated: text.length > 4096,
+      };
+    }
+    if (provider === 'elevenlabs' && apiKey) {
+      const result = await generateElevenLabsTTS(text, apiKey, jobId);
+      const fileStat = await stat(result.filePath).catch(() => null);
+      return {
+        voiceover: {
+          assetId: `elevenlabs-vo-${Date.now()}`,
+          url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
+          mimeType: 'audio/mpeg',
+          durationMs: estimatedDuration * 1000,
+          fileSizeBytes: fileStat?.size ?? 0,
+          provider: 'elevenlabs:eleven_multilingual_v2',
+          generationParams: { textLength: text.length },
+          costCents: result.costCents,
+        },
+        text,
+        costCents: result.costCents,
+        degraded: false,
+        truncated: text.length > 5000,
+      };
+    }
+    // mock (or a provider with no key) → deterministic silent track, no network.
+    const result = await generateSilentWav(estimatedDuration, jobId);
+    const fileStat = await stat(result.filePath).catch(() => null);
+    return {
+      voiceover: {
+        assetId: `mock-vo-${Date.now()}`,
+        url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
+        mimeType: 'audio/wav',
+        durationMs: estimatedDuration * 1000,
+        fileSizeBytes: fileStat?.size ?? 0,
+        provider: 'mock',
+        generationParams: { textLength: text.length, silent: true },
+        costCents: 0,
+      },
+      text,
+      costCents: 0,
+      degraded: false,
+      truncated: false,
+    };
+  } catch (err) {
+    if (onProviderError === 'throw') throw err;
+    // silent_fallback: never crash the autonomous pipeline.
+    try {
+      const result = await generateSilentWav(estimatedDuration, jobId);
+      const fileStat = await stat(result.filePath).catch(() => null);
+      return {
+        voiceover: {
+          assetId: `fallback-vo-${Date.now()}`,
+          url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
+          mimeType: 'audio/wav',
+          durationMs: estimatedDuration * 1000,
+          fileSizeBytes: fileStat?.size ?? 0,
+          provider: 'fallback',
+          generationParams: { error: String(err), silent: true },
+          costCents: 0,
+        },
+        text,
+        costCents: 0,
+        degraded: true,
+        truncated: false,
+      };
+    } catch (ffmpegErr) {
+      return {
+        voiceover: {
+          assetId: `empty-vo-${Date.now()}`,
+          url: '',
+          mimeType: 'audio/wav',
+          durationMs: 0,
+          fileSizeBytes: 0,
+          provider: 'fallback',
+          generationParams: { error: String(ffmpegErr) },
+          costCents: 0,
+        },
+        text,
+        costCents: 0,
+        degraded: true,
+        truncated: false,
+      };
+    }
+  }
+}
+
 export async function generateVoiceoverNode(state: Record<string, unknown>): Promise<Record<string, unknown>> {
   const jobId = state.jobId as string;
   const config = getEngineConfig();
@@ -175,7 +352,7 @@ export async function generateVoiceoverNode(state: Record<string, unknown>): Pro
         costCents,
       };
     } else {
-      const result = await generateSilentAudio(estimatedDuration, jobId);
+      const result = await generateSilentWav(estimatedDuration, jobId);
       const fileStat = await stat(result.filePath).catch(() => null);
 
       voiceover = {
@@ -197,7 +374,7 @@ export async function generateVoiceoverNode(state: Record<string, unknown>): Pro
     });
 
     try {
-      const result = await generateSilentAudio(estimatedDuration, jobId);
+      const result = await generateSilentWav(estimatedDuration, jobId);
       const fileStat = await stat(result.filePath).catch(() => null);
 
       voiceover = {

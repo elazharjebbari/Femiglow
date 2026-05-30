@@ -52,6 +52,7 @@ import {
   updateDraft,
   updateIdeaStatus,
   upsertPrimaryAsset,
+  upsertBundleAssets,
 } from './repository';
 import {
   buildPostizDraftPayload,
@@ -62,6 +63,9 @@ import {
   uploadPostizMediaFromUrl,
 } from './postiz';
 import type { ContentIdea } from './types';
+import { synthesizeVoiceover, type TtsProvider } from '@/lib/ai-engine/nodes/generate-voiceover';
+import { resolveProviderCredential } from './provider-credentials';
+import { getEngineConfig } from '@/lib/ai-engine/config';
 import { checkDailyBudget } from './budget';
 
 export { listIdeas, listDrafts, listPosts, listCampaigns, getCampaign, createCampaign, updateCampaign, updateCampaignStatus } from './repository';
@@ -507,6 +511,185 @@ async function generateVideoForDraft(args: {
     createdAt: media.createdAt,
   };
   return out;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// MP-VO-02 (BUG-004) — per-draft voice-over generation (pipeline B). Mirrors
+// generateVideoForDraft: passthrough audio media + role='voiceover' bundle
+// binding. Reuses the AI-engine synthesis core (no TTS reimplementation).
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface VoiceoverForDraftInput {
+  draftId: string;
+  actorId: string | null;
+  /** Operator-edited narration. If omitted, derived from the draft. */
+  script?: string;
+  voice?: string;
+  mode?: 'mock' | 'live';
+}
+
+export interface VoiceoverResult {
+  id: string;
+  draftId: string;
+  role: 'voiceover';
+  kind: 'audio';
+  alt: string;
+  slug: string;
+  previewUrl: string;
+  originalUrl: string;
+  durationSec: number | null;
+  provider: string;
+  voice: string;
+  costCents: number;
+  createdAt: string;
+}
+
+const VOICEOVER_VIDEO_FORMATS = new Set(['reel', 'story']);
+const VOICEOVER_PROMPT_VERSION = 'content-studio-voiceover-v0-2026-05-30';
+
+/** Build the narration string from a draft when the operator gave no script. */
+function buildVoiceoverTextFromDraft(draft: Awaited<ReturnType<typeof requireDraft>>): string {
+  const parts = [draft.hook, draft.caption].map((s) => (s ?? '').trim()).filter(Boolean);
+  return parts.length > 0 ? parts.join('. ') : 'Le rituel FemiGlow.';
+}
+
+function ttsCostEstimateCents(provider: TtsProvider, textLength: number): number {
+  if (provider === 'openai') return (Math.min(textLength, 4096) / 1_000_000) * 1500;
+  if (provider === 'elevenlabs') return (Math.min(textLength, 5000) / 1000) * 3;
+  return 0;
+}
+
+export async function generateVoiceoverForDraft(
+  input: VoiceoverForDraftInput,
+): Promise<VoiceoverResult> {
+  const draft = await requireDraft(input.draftId);
+
+  // Voice-over only makes sense for video formats (the audio rides a video).
+  if (!VOICEOVER_VIDEO_FORMATS.has(draft.format)) {
+    throw new HttpError(
+      'invalid_state',
+      'Voix-off réservée aux formats vidéo (Reel/Story).',
+    );
+  }
+
+  const mode = input.mode ?? 'mock';
+  const voice = input.voice ?? 'mock';
+  const text = input.script?.trim() || buildVoiceoverTextFromDraft(draft);
+
+  // Mode-aware provider + credential resolution.
+  let provider: TtsProvider = 'mock';
+  let apiKey: string | undefined;
+  if (mode === 'live') {
+    const engineTts = getEngineConfig().providers.tts.default;
+    provider = engineTts === 'elevenlabs' ? 'elevenlabs' : 'openai';
+    apiKey = await resolveProviderCredential(provider);
+    if (!apiKey) {
+      throw new HttpError(
+        'invalid_state',
+        'Aucune clé TTS configurée. Ajoutez une clé ou repassez en mode mock.',
+      );
+    }
+  }
+
+  await checkDailyBudget(ttsCostEstimateCents(provider, text.length));
+
+  let out;
+  try {
+    out = await synthesizeVoiceover({
+      text,
+      jobId: draft.id,
+      provider,
+      apiKey,
+      onProviderError: 'throw',
+      voice,
+    });
+  } catch (err) {
+    throw new HttpError('upstream_failed', 'Échec du fournisseur TTS.', {
+      cause: String(err),
+    });
+  }
+
+  if (!out.voiceover.url) {
+    throw new HttpError('upstream_failed', 'Génération audio indisponible (ffmpeg).');
+  }
+
+  const ext = out.voiceover.mimeType === 'audio/wav' ? 'wav' : 'mp3';
+  const media = await createMedia({
+    kind: 'audio',
+    source: 'upload',
+    slug: `content-studio-vo-${draft.id}-${createId().slice(0, 8)}`,
+    alt: `Voix-off pour ${draft.variantLabel ?? draft.id}`,
+    originalFilename: `${draft.id}.${ext}`,
+    originalMime: out.voiceover.mimeType,
+    originalSizeBytes: out.voiceover.fileSizeBytes,
+    originalDurationMs: out.voiceover.durationMs,
+    originalUrl: out.voiceover.url,
+    status: 'passthrough',
+    qualityProfile: 'inline',
+    loadingStrategy: 'viewport',
+    overrides: {
+      contentStudio: {
+        origin: 'ai_generated',
+        kind: 'audio',
+        provider: out.voiceover.provider,
+        sourceDraftId: draft.id,
+        voice,
+        narration: text,
+        promptVersion: VOICEOVER_PROMPT_VERSION,
+      },
+    },
+    createdBy: input.actorId,
+  });
+
+  // role-scoped bind: replaces a prior voice-over, never the primary video.
+  await upsertBundleAssets({
+    draftId: draft.id,
+    assets: [
+      {
+        mediaId: media.id,
+        role: 'voiceover',
+        meta: { provider: out.voiceover.provider, voice, durationMs: out.voiceover.durationMs },
+      },
+    ],
+  });
+
+  await insertGenerationRun({
+    ideaId: null,
+    briefId: draft.briefId,
+    provider: out.voiceover.provider,
+    model: provider === 'mock' ? 'mock' : provider,
+    promptVersion: VOICEOVER_PROMPT_VERSION,
+    input: { draftId: draft.id, script: text, voice, mode, intendedProvider: provider },
+    output: { mediaId: media.id, durationMs: out.voiceover.durationMs, truncated: out.truncated },
+    status: 'succeeded',
+    costCents: out.costCents,
+    errorMessage: null,
+    createdBy: input.actorId,
+  });
+
+  await logAuditEvent({
+    action: 'content_studio.voiceover.generated',
+    actorId: input.actorId,
+    resourceType: 'media',
+    resourceId: media.id,
+    meta: { draftId: draft.id, provider: out.voiceover.provider, voice, mode },
+  });
+
+  return {
+    id: media.id,
+    draftId: draft.id,
+    role: 'voiceover',
+    kind: 'audio',
+    alt: media.alt,
+    slug: media.slug,
+    previewUrl: media.originalUrl ?? out.voiceover.url,
+    originalUrl: media.originalUrl ?? out.voiceover.url,
+    durationSec: out.voiceover.durationMs ? Math.round(out.voiceover.durationMs / 1000) : null,
+    provider: out.voiceover.provider,
+    voice,
+    costCents: out.costCents,
+    createdAt: media.createdAt.toISOString(),
+  };
 }
 
 function isContentStudioAiMedia(overrides: { contentStudio?: unknown } | null | undefined): boolean {

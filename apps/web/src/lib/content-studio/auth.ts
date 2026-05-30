@@ -24,6 +24,13 @@ export function isMediaStudioEnabled(): boolean {
   return env.CONTENT_STUDIO_MEDIA_STUDIO_ENABLED === 'true';
 }
 
+/** Gate the media-studio routes (voice-over, montage, subtitles) on the flag. */
+export function requireMediaStudioEnabled(): void {
+  if (!isMediaStudioEnabled()) {
+    throw new HttpError('forbidden', 'Studio média désactivé (CONTENT_STUDIO_MEDIA_STUDIO_ENABLED).');
+  }
+}
+
 export async function requireAdminApi(): Promise<AdminSession> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   const session = await decodeSession(token);

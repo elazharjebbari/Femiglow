@@ -333,7 +333,14 @@ function CreateWorkspaceInner() {
                 caption: captionForPreview,
                 platform,
                 format,
-                mediaKind: selectedMedia?.kind ?? null,
+                // Publish preview only shows the primary VISUAL; narrow the
+                // widened StudioV2MediaKind (audio/subtitles never previewed here).
+                mediaKind:
+                  selectedMedia?.kind === 'video'
+                    ? 'video'
+                    : selectedMedia?.kind === 'image'
+                      ? 'image'
+                      : null,
                 mediaPreviewUrl: selectedMedia?.previewUrl ?? null,
                 mediaAlt: selectedMedia?.alt ?? null,
                 durationSec: selectedMedia?.durationSec ?? null,
