@@ -140,7 +140,8 @@ describe('getCtaData — attribution', () => {
       anonymousId: 'A1',
       eventName: 'purchase',
       receivedAt: new Date('2026-05-06T10:10:00Z'),
-      payload: { value: 32000 },
+      // `value` en unité majeure MAD (cf. checkout-events) → 320 MAD = 32000 cents.
+      payload: { value: 320 },
     });
 
     const data = await getCtaData(filtersToday(), NOW);
@@ -169,7 +170,7 @@ describe('getCtaData — attribution', () => {
       anonymousId: 'A1',
       eventName: 'purchase',
       receivedAt: new Date('2026-05-06T10:00:00Z'),
-      payload: { value: 10000 },
+      payload: { value: 100 }, // 100 MAD = 10000 cents
     });
 
     const data = await getCtaData(filtersToday(), NOW);
@@ -236,7 +237,7 @@ describe('getCtaData — KPI totals', () => {
       anonymousId: 'A1',
       eventName: 'purchase',
       receivedAt: new Date('2026-05-06T10:02:00Z'),
-      payload: { value: 25000 },
+      payload: { value: 250 }, // 250 MAD = 25000 cents
     });
 
     const data = await getCtaData(filtersToday(), NOW);

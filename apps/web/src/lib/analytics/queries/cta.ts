@@ -294,11 +294,10 @@ function attributePurchases(
     }
     if (!attributed || !attributed.componentId) continue;
 
-    const value = readNumber(p.payload, 'value', 'amount', 'amount_cents');
     out.push({
       componentId: attributed.componentId,
       clickPageRoute: attributed.pageRoute,
-      valueCents: value !== null ? value : 0,
+      valueCents: readValueCents(p.payload),
       purchaseEventId: p.eventId,
     });
   }
@@ -520,4 +519,22 @@ function readNumber(
     }
   }
   return null;
+}
+
+/**
+ * Lit la valeur d'un achat et la normalise en **cents**.
+ *
+ * Les events checkout émettent `value`/`amount` en **unité majeure** (MAD) —
+ * cf. `lib/tracking/checkout-events.ts` (Enhanced Ecommerce GA4 : `currency` +
+ * `value`). On multiplie donc par 100. Les clés `amount_cents`/`value_cents`
+ * (si jamais émises) sont déjà en cents et prises telles quelles.
+ *
+ * cf. docs/analytics-audit-qa-2026-05-30 — finding AF-02 (revenu attribué ÷100).
+ */
+function readValueCents(obj: Record<string, unknown>): number {
+  const cents = readNumber(obj, 'amount_cents', 'value_cents');
+  if (cents !== null) return Math.round(cents);
+  const major = readNumber(obj, 'value', 'amount');
+  if (major !== null) return Math.round(major * 100);
+  return 0;
 }
