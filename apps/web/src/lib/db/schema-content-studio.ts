@@ -121,6 +121,8 @@ export const contentAssetBindings = pgTable(
       .references(() => media.id, { onDelete: 'restrict' }),
     role: text('role').notNull().default('primary'),
     crop: jsonb('crop_json').notNull().default({}),
+    // Per-role metadata (SRT text for subtitles, compose flags) — MP-AR-005.
+    meta: jsonb('meta_json').notNull().default({}),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

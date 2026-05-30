@@ -42,6 +42,20 @@ export interface GenerationResult {
   durationMs: number;
   /** Preview data sent to the UI when status = 'review' */
   reviewPayload?: Record<string, unknown> | null;
+
+  // ── MP-AR-001 (BUG-004): media-production artifacts ──────────────────────
+  // Additive + optional → existing callers keep compiling. Failure results
+  // omit them (failures carry no media).
+  /** TTS narration MediaAsset (graph channel `state.voiceover`). */
+  voiceover?: Record<string, unknown> | null;
+  /** Background music MediaAsset (`state.music`). */
+  music?: Record<string, unknown> | null;
+  /** SRT subtitle text (`state.subtitles`) — a string, not a file ref. */
+  subtitles?: string | null;
+  /** ffmpeg montage MediaAsset (graph channel `state.composition`). */
+  composedVideo?: Record<string, unknown> | null;
+  /** Platform-spec final encode (`state.exports.final`). */
+  transcodedVideo?: Record<string, unknown> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,6 +141,17 @@ function buildResultFromState(
     errors: (finalState.errors as Array<Record<string, unknown>>) ?? [],
     durationMs,
     reviewPayload: reviewPayload ?? null,
+
+    // ── MP-AR-001 — surface the media-production artifacts the graph produced.
+    voiceover: (finalState.voiceover as Record<string, unknown> | null) ?? null,
+    music: (finalState.music as Record<string, unknown> | null) ?? null,
+    subtitles: (finalState.subtitles as string | null) ?? null,
+    // NB: graph state channel is `composition`; DTO field is `composedVideo`.
+    composedVideo: (finalState.composition as Record<string, unknown> | null) ?? null,
+    transcodedVideo:
+      ((finalState.exports as Record<string, Record<string, unknown>> | undefined)?.final as
+        | Record<string, unknown>
+        | undefined) ?? null,
   };
 }
 

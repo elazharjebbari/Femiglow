@@ -519,6 +519,20 @@
       "when": 1779600000063,
       "tag": "0063_ai_engine_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1779600000064,
+      "tag": "0064_media_kind_subtitles",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1779600000065,
+      "tag": "0065_content_asset_binding_bundle",
+      "breakpoints": true
     }
   ]
 }

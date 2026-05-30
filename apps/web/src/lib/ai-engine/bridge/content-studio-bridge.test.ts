@@ -8,7 +8,7 @@ const mockUpdateIdeaStatus = vi.fn().mockResolvedValue(undefined);
 const mockCreateBrief = vi.fn().mockResolvedValue({ id: 'cb_test' });
 const mockCreateDrafts = vi.fn().mockResolvedValue([{ id: 'cd_test' }]);
 const mockUpdateDraft = vi.fn().mockResolvedValue(undefined);
-const mockUpsertPrimaryAsset = vi.fn().mockResolvedValue(undefined);
+const mockUpsertBundleAssets = vi.fn().mockResolvedValue([]);
 const mockInsertGenerationRun = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/content-studio/repository', () => ({
@@ -17,9 +17,16 @@ vi.mock('@/lib/content-studio/repository', () => ({
   createBrief: (...args: unknown[]) => mockCreateBrief(...args),
   createDrafts: (...args: unknown[]) => mockCreateDrafts(...args),
   updateDraft: (...args: unknown[]) => mockUpdateDraft(...args),
-  upsertPrimaryAsset: (...args: unknown[]) => mockUpsertPrimaryAsset(...args),
+  upsertBundleAssets: (...args: unknown[]) => mockUpsertBundleAssets(...args),
   insertGenerationRun: (...args: unknown[]) => mockInsertGenerationRun(...args),
 }));
+
+/** Extract the {role->mediaId/meta} bundle from the single upsertBundleAssets call. */
+function bundleFromCall(): Array<{ mediaId: string; role: string; meta?: Record<string, unknown> }> {
+  const call = mockUpsertBundleAssets.mock.calls[0];
+  if (!call) return [];
+  return (call[0] as { assets: Array<{ mediaId: string; role: string; meta?: Record<string, unknown> }> }).assets;
+}
 
 import { bridgeToContentStudio } from './content-studio-bridge';
 import type { GenerationRequest, GenerationResult } from '../orchestrator';
@@ -71,7 +78,8 @@ describe('bridgeToContentStudio', () => {
     mockCreateBrief.mockResolvedValue({ id: 'cb_test' });
     mockCreateDrafts.mockResolvedValue([{ id: 'cd_test' }]);
     mockUpdateDraft.mockResolvedValue(undefined);
-    mockUpsertPrimaryAsset.mockResolvedValue(undefined);
+    mockUpsertBundleAssets.mockClear();
+    mockUpsertBundleAssets.mockResolvedValue([]);
     mockInsertGenerationRun.mockResolvedValue(undefined);
   });
 
@@ -187,6 +195,45 @@ describe('bridgeToContentStudio', () => {
       { url: 'https://mock.local/img.jpg', provider: 'mock-dall-e', assetId: 'mock-asset-1' },
     ];
     await bridgeToContentStudio(makeResult({ images: mockImages }), makeRequest());
-    expect(mockUpsertPrimaryAsset).not.toHaveBeenCalled();
+    // no real visual → no bundle write at all (MP-AR-002 keeps the legacy skip).
+    expect(mockUpsertBundleAssets).not.toHaveBeenCalled();
+  });
+
+  // ── MP-AR-002 (BUG-004): full media bundle by role ───────────────────────
+  it('binds a real image as primary_image', async () => {
+    await bridgeToContentStudio(makeResult(), makeRequest());
+    const bundle = bundleFromCall();
+    expect(bundle).toContainEqual({ mediaId: 'asset-1', role: 'primary_image' });
+  });
+
+  it('surfaces voiceover, music and composed video by role (no longer dropped)', async () => {
+    await bridgeToContentStudio(
+      makeResult({
+        voiceover: { assetId: 'vo-1', provider: 'openai' },
+        music: { assetId: 'mu-1', provider: 'mock-music' },
+        composedVideo: { assetId: 'cmp-1', provider: 'ffmpeg' },
+      }),
+      makeRequest(),
+    );
+    const roles = bundleFromCall();
+    expect(roles).toContainEqual({ mediaId: 'vo-1', role: 'voiceover' });
+    // audio/composed mocks are deterministic → must surface (unlike mock visuals).
+    expect(roles).toContainEqual({ mediaId: 'mu-1', role: 'music' });
+    expect(roles).toContainEqual({ mediaId: 'cmp-1', role: 'composed_video' });
+  });
+
+  it('carries SRT subtitle text into the subtitles binding meta (not dropped)', async () => {
+    const srt = '1\n00:00:00,000 --> 00:00:02,000\nBonjour\n';
+    await bridgeToContentStudio(makeResult({ subtitles: srt }), makeRequest());
+    const sub = bundleFromCall().find((a) => a.role === 'subtitles');
+    expect(sub?.meta?.srt).toBe(srt);
+  });
+
+  it('binds the raw video clip as primary_video', async () => {
+    await bridgeToContentStudio(
+      makeResult({ images: [], videos: [{ assetId: 'vid-1', provider: 'higgsfield' }] }),
+      makeRequest(),
+    );
+    expect(bundleFromCall()).toContainEqual({ mediaId: 'vid-1', role: 'primary_video' });
   });
 });

@@ -109,6 +109,9 @@ const envSchema = z.object({
 
   // — AI Content Studio ————————————————————————————————————————————————
   CONTENT_STUDIO_ENABLED: z.enum(['true', 'false']).default('false'),
+  // MP-AR-006 (BUG-004) — gates the operator media studio (voice-over, montage,
+  // subtitles). Default off: the 4-step create flow is unchanged until flipped.
+  CONTENT_STUDIO_MEDIA_STUDIO_ENABLED: z.enum(['true', 'false']).default('false'),
   // S2.3 phase a — hides legacy `content_postiz_delivery` UI controls so the
   // new `social_publish_job` pipeline becomes the only publishing path.
   CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED: z.enum(['true', 'false']).default('false'),
@@ -240,6 +243,7 @@ export const env = envSchema.parse({
   FEMIGLOW_STALWART_WEBHOOK_SECRET: process.env.FEMIGLOW_STALWART_WEBHOOK_SECRET,
   MAIL_UNSUB_TOKEN_SECRET: process.env.MAIL_UNSUB_TOKEN_SECRET,
   CONTENT_STUDIO_ENABLED: process.env.CONTENT_STUDIO_ENABLED,
+  CONTENT_STUDIO_MEDIA_STUDIO_ENABLED: process.env.CONTENT_STUDIO_MEDIA_STUDIO_ENABLED,
   CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED: process.env.CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED,
   POSTIZ_BASE_URL: process.env.POSTIZ_BASE_URL,
   POSTIZ_API_KEY: process.env.POSTIZ_API_KEY,

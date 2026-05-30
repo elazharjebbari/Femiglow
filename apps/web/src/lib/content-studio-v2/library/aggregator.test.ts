@@ -86,8 +86,9 @@ function makeBinding(draftId: string, mediaId: string): ContentAssetBinding {
     id: `cab_${draftId}`,
     draftId,
     mediaId,
-    role: 'primary',
+    role: 'primary_image',
     crop: {},
+    meta: {},
     createdAt: new Date('2026-05-02T11:00:00.000Z'),
   };
 }

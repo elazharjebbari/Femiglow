@@ -111,12 +111,28 @@ export interface ContentBrandReview {
   createdAt: Date;
 }
 
+/**
+ * Per-draft media bundle role (MP-AR-001, BUG-004). A draft owns at most one
+ * binding per role, addressed via the UNIQUE(draft_id, role) index.
+ * `primary` was the only legacy value; the 0064 migration backfills it to
+ * `primary_image`/`primary_video`.
+ */
+export type MediaRole =
+  | 'primary_image'
+  | 'primary_video'
+  | 'voiceover'
+  | 'music'
+  | 'subtitles'
+  | 'composed_video';
+
 export interface ContentAssetBinding {
   id: string;
   draftId: string;
   mediaId: string;
-  role: string;
+  role: MediaRole;
   crop: Record<string, unknown>;
+  /** Per-role metadata: SRT text for subtitles, compose flags, etc. (MP-AR-003). */
+  meta: Record<string, unknown>;
   createdAt: Date;
 }
 

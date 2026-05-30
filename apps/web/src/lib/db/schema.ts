@@ -281,7 +281,7 @@ export const auditEvents = pgTable(
   }),
 );
 
-export const mediaKind = pgEnum('media_kind', ['image', 'video', 'audio']);
+export const mediaKind = pgEnum('media_kind', ['image', 'video', 'audio', 'subtitles']);
 export const mediaSource = pgEnum('media_source', ['upload', 'external']);
 export const mediaStatus = pgEnum('media_status', [
   'pending',

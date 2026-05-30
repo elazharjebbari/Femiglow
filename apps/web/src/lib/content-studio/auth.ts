@@ -15,6 +15,15 @@ export function requireContentStudioEnabled(): void {
   }
 }
 
+/**
+ * MP-AR-006 (BUG-004) — is the operator media studio (voice-over, montage,
+ * subtitles) enabled? Additive flag, default off; the 4-step create flow is
+ * unaffected when false.
+ */
+export function isMediaStudioEnabled(): boolean {
+  return env.CONTENT_STUDIO_MEDIA_STUDIO_ENABLED === 'true';
+}
+
 export async function requireAdminApi(): Promise<AdminSession> {
   const token = cookies().get(SESSION_COOKIE)?.value;
   const session = await decodeSession(token);

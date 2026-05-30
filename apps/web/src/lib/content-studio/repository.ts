@@ -32,6 +32,7 @@ import type {
   ContentPost,
   ContentPostizDelivery,
   ContentStatus,
+  MediaRole,
 } from './types';
 import { assertTransition } from './state-machine';
 
@@ -442,58 +443,127 @@ export async function updateDraft(
   return updated;
 }
 
+/**
+ * Upsert a set of media bindings for a draft, one per role (MP-AR-003,
+ * BUG-004). Each (draftId, role) is delete-then-insert SCOPED to that role, so
+ * other roles in the bundle are untouched — unlike the legacy
+ * `upsertPrimaryAsset` which wiped every binding for the draft.
+ */
+export async function upsertBundleAssets(input: {
+  draftId: string;
+  assets: Array<{
+    mediaId: string;
+    role: MediaRole;
+    crop?: Record<string, unknown>;
+    meta?: Record<string, unknown>;
+  }>;
+}): Promise<ContentAssetBinding[]> {
+  const drizzle = db();
+  const out: ContentAssetBinding[] = [];
+  for (const a of input.assets) {
+    const binding: ContentAssetBinding = {
+      id: createId('cab'),
+      draftId: input.draftId,
+      mediaId: a.mediaId,
+      role: a.role,
+      crop: a.crop ?? {},
+      meta: a.meta ?? {},
+      createdAt: new Date(),
+    };
+    if (drizzle) {
+      await drizzle
+        .delete(contentAssetBindings)
+        .where(
+          and(
+            eq(contentAssetBindings.draftId, input.draftId),
+            eq(contentAssetBindings.role, a.role),
+          ),
+        );
+      await drizzle.insert(contentAssetBindings).values(binding);
+    } else {
+      for (const [id, row] of store().contentAssetBindings.entries()) {
+        if (row.draftId === input.draftId && row.role === a.role) {
+          store().contentAssetBindings.delete(id);
+        }
+      }
+      store().contentAssetBindings.set(binding.id, binding);
+    }
+    out.push(binding);
+  }
+  return out;
+}
+
+/**
+ * D6 non-regression shim — keeps every existing call site working unchanged.
+ * Defaults to the `primary_image` role (the legacy `primary` semantics).
+ */
 export async function upsertPrimaryAsset(input: {
   draftId: string;
   mediaId: string;
+  role?: MediaRole;
 }): Promise<ContentAssetBinding> {
-  const binding: ContentAssetBinding = {
-    id: createId('cab'),
+  const [binding] = await upsertBundleAssets({
     draftId: input.draftId,
-    mediaId: input.mediaId,
-    role: 'primary',
-    crop: {},
-    createdAt: new Date(),
-  };
+    assets: [{ mediaId: input.mediaId, role: input.role ?? 'primary_image' }],
+  });
+  // upsertBundleAssets always pushes exactly one binding for a single asset.
+  return binding!;
+}
+
+/** Return a draft's bindings keyed by role (MP-AR-003). */
+export async function getDraftBundle(
+  draftId: string,
+): Promise<Partial<Record<MediaRole, ContentAssetBinding>>> {
   const drizzle = db();
+  const bundle: Partial<Record<MediaRole, ContentAssetBinding>> = {};
   if (drizzle) {
-    await drizzle
-      .delete(contentAssetBindings)
-      .where(eq(contentAssetBindings.draftId, input.draftId));
-    await drizzle.insert(contentAssetBindings).values(binding);
-  } else {
-    for (const [id, row] of store().contentAssetBindings.entries()) {
-      if (row.draftId === input.draftId && row.role === 'primary') {
-        store().contentAssetBindings.delete(id);
-      }
-    }
-    store().contentAssetBindings.set(binding.id, binding);
+    const rows = await drizzle
+      .select()
+      .from(contentAssetBindings)
+      .where(eq(contentAssetBindings.draftId, draftId));
+    for (const row of rows) bundle[row.role as MediaRole] = rowBinding(row);
+    return bundle;
   }
-  return binding;
+  for (const b of store().contentAssetBindings.values()) {
+    if (b.draftId === draftId) bundle[b.role] = b;
+  }
+  return bundle;
+}
+
+/** Map a persisted binding row to the domain type (MP-AR-003). */
+function rowBinding(row: typeof contentAssetBindings.$inferSelect): ContentAssetBinding {
+  return {
+    id: row.id,
+    draftId: row.draftId,
+    mediaId: row.mediaId,
+    role: row.role as MediaRole,
+    crop: (row.crop as Record<string, unknown>) ?? {},
+    meta: (row.meta as Record<string, unknown>) ?? {},
+    createdAt: row.createdAt,
+  };
 }
 
 export async function getPrimaryAsset(draftId: string): Promise<ContentAssetBinding | null> {
   const drizzle = db();
   if (drizzle) {
+    // Prefer a typed primary visual; fall back to any binding for the draft.
     const rows = await drizzle
       .select()
       .from(contentAssetBindings)
-      .where(eq(contentAssetBindings.draftId, draftId))
+      .where(
+        and(
+          eq(contentAssetBindings.draftId, draftId),
+          inArray(contentAssetBindings.role, ['primary_image', 'primary_video']),
+        ),
+      )
       .limit(1);
     const row = rows[0];
-    return row
-      ? {
-          id: row.id,
-          draftId: row.draftId,
-          mediaId: row.mediaId,
-          role: row.role,
-          crop: (row.crop as Record<string, unknown>) ?? {},
-          createdAt: row.createdAt,
-        }
-      : null;
+    return row ? rowBinding(row) : null;
   }
   return (
-    Array.from(store().contentAssetBindings.values()).find((b) => b.draftId === draftId) ??
-    null
+    Array.from(store().contentAssetBindings.values()).find(
+      (b) => b.draftId === draftId && (b.role === 'primary_image' || b.role === 'primary_video'),
+    ) ?? null
   );
 }
 
@@ -506,20 +576,13 @@ export async function listPrimaryAssetsForDrafts(
     const rows = await drizzle
       .select()
       .from(contentAssetBindings)
-      .where(eq(contentAssetBindings.role, 'primary'));
-    return rows
-      .filter((row) => draftIds.includes(row.draftId))
-      .map((row) => ({
-        id: row.id,
-        draftId: row.draftId,
-        mediaId: row.mediaId,
-        role: row.role,
-        crop: (row.crop as Record<string, unknown>) ?? {},
-        createdAt: row.createdAt,
-      }));
+      .where(inArray(contentAssetBindings.role, ['primary_image', 'primary_video']));
+    return rows.filter((row) => draftIds.includes(row.draftId)).map(rowBinding);
   }
   return Array.from(store().contentAssetBindings.values()).filter(
-    (binding) => binding.role === 'primary' && draftIds.includes(binding.draftId),
+    (binding) =>
+      (binding.role === 'primary_image' || binding.role === 'primary_video') &&
+      draftIds.includes(binding.draftId),
   );
 }
 

@@ -3,13 +3,14 @@ import {
   createBrief,
   createDrafts,
   insertGenerationRun,
-  upsertPrimaryAsset,
+  upsertBundleAssets,
 } from '@/lib/content-studio/repository';
 import type {
   ContentPillar,
   ContentObjective,
   ContentPlatform,
   ContentFormat,
+  MediaRole,
 } from '@/lib/content-studio/types';
 import type { GenerationRequest, GenerationResult } from '../orchestrator';
 
@@ -144,20 +145,46 @@ export async function bridgeToContentStudio(
     await updateDraft(draft.id, { scoreTotal: qualityAvg });
   }
 
-  // 4. Bind images as assets if present (skip mock images)
-  const images = (result.images ?? []) as Array<Record<string, unknown>>;
-  const realImage = images.find((img) => {
-    const provider = img.provider as string | undefined;
-    return provider && !provider.startsWith('mock');
-  });
-  if (realImage) {
-    const mediaId = realImage.assetId as string | undefined;
-    if (mediaId) {
-      try {
-        await upsertPrimaryAsset({ draftId: draft.id, mediaId });
-      } catch {
-        // Media ID might not exist in media table yet — non-blocking
-      }
+  // 4. Bind the full media bundle by role (MP-AR-002, BUG-004). The legacy
+  //    behavior bound at most ONE image; we now surface every artifact the
+  //    graph produced (voiceover/music/composed video) — without dropping them.
+  type Artifact = { assetId?: string; provider?: string };
+  const bundle: Array<{ mediaId: string; role: MediaRole; meta?: Record<string, unknown> }> = [];
+
+  const pushAsset = (a: Artifact | null | undefined, role: MediaRole) => {
+    if (!a) return;
+    // Preserve the legacy "skip mock" rule ONLY for primary visuals; audio /
+    // composed mocks are deterministic and must surface to the operator.
+    const isVisual = role === 'primary_image' || role === 'primary_video';
+    if (isVisual && a.provider?.startsWith('mock')) return;
+    if (a.assetId) bundle.push({ mediaId: a.assetId, role });
+  };
+
+  const images = (result.images ?? []) as Artifact[];
+  const realImage = images.find((img) => img.provider && !img.provider.startsWith('mock'));
+  pushAsset(realImage ?? null, 'primary_image');
+  pushAsset((result.videos?.[0] as Artifact | undefined) ?? null, 'primary_video');
+  pushAsset((result.voiceover as Artifact | null) ?? null, 'voiceover');
+  pushAsset((result.music as Artifact | null) ?? null, 'music');
+  pushAsset((result.composedVideo as Artifact | null) ?? null, 'composed_video');
+
+  // Subtitles are SRT TEXT, not a MediaAsset. The bridge's job is to not DROP
+  // the text; the canonical `.srt` asset write happens in the per-draft
+  // subtitles service (MP-SU). Record the SRT in the binding meta meanwhile.
+  if (typeof result.subtitles === 'string' && result.subtitles.length > 0) {
+    bundle.push({
+      mediaId: `srt:${draft.id}`,
+      role: 'subtitles',
+      meta: { srt: result.subtitles, source: 'ai-engine' },
+    });
+  }
+
+  if (bundle.length > 0) {
+    try {
+      await upsertBundleAssets({ draftId: draft.id, assets: bundle });
+    } catch {
+      // Media IDs might not exist in the media table yet — non-blocking
+      // (mirrors the original try/catch contract).
     }
   }
 

@@ -66,7 +66,8 @@ export function buildLibraryItems(input: AggregatorInput): LibraryItem[] {
   }
   const primaryBindingByDraft = new Map<string, ContentAssetBinding>();
   for (const binding of input.bindings) {
-    if (binding.role !== 'primary') continue;
+    // MP-AR-003: the legacy single role 'primary' is now the typed visual roles.
+    if (binding.role !== 'primary_image' && binding.role !== 'primary_video') continue;
     const existing = primaryBindingByDraft.get(binding.draftId);
     if (!existing || existing.createdAt < binding.createdAt) {
       primaryBindingByDraft.set(binding.draftId, binding);

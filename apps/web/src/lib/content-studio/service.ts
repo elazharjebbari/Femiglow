@@ -447,7 +447,9 @@ async function generateVideoForDraft(args: {
     },
     createdBy: args.actorId,
   });
-  await upsertPrimaryAsset({ draftId: draft.id, mediaId: media.id });
+  // MP-AR-003: this is the video path → bind under the typed primary_video role
+  // so the media bundle / compose step (MP-CO) can resolve the source clip.
+  await upsertPrimaryAsset({ draftId: draft.id, mediaId: media.id, role: 'primary_video' });
   await insertGenerationRun({
     ideaId: null,
     briefId: draft.briefId,
