@@ -439,7 +439,9 @@ export function useAddressMutation(): {
             formMode: formContext.formMode,
             variantKey: formContext.variantKey ?? null,
             source: formContext.source,
-            language: formContext.language,
+            // CHA-232 — la langue persistée reste `fr|ar` (contrainte SQL) ;
+            // `en` n'est qu'une langue d'affichage → ramenée à `fr` ici.
+            language: formContext.language === 'en' ? 'fr' : formContext.language,
           },
           items: cartSnapshot.items,
           expectedTotalCents: cartSnapshot.totalCents,

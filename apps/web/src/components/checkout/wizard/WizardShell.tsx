@@ -35,7 +35,10 @@ import { LeadCaptureStep } from './steps/LeadCaptureStep';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
 import { formatCartCompareAt } from '@/lib/checkout/helpers/cart-compare-at-format';
 import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
-import { getWizardDictionary } from '@/lib/checkout/i18n/dictionary';
+import {
+  getWizardDictionary,
+  type DictionaryLanguage,
+} from '@/lib/checkout/i18n/dictionary';
 
 // Steps lazy-loaded — pas encore implémentés (phases 6-7).
 // On garde la structure pour ne pas avoir à modifier le shell à chaque
@@ -110,7 +113,7 @@ function StepUnavailable({ name }: { name: StepName }) {
   );
 }
 
-function HydrationFallback({ language }: { language?: 'fr' | 'ar' }) {
+function HydrationFallback({ language }: { language?: DictionaryLanguage }) {
   // Phase 9bis — avant hydratation du store, `useWizardTranslation` retombe
   // sur la langue par défaut (FR), ce qui faisait fuiter « Un instant… » en
   // SSR sur /ar. On privilégie la langue connue côté serveur (`formContext`)

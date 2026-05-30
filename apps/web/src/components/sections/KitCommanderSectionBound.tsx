@@ -150,9 +150,9 @@ export async function KitCommanderSectionBound({
       kicker={kicker ?? t('kicker_default')}
       title={title ?? t('title_default')}
       subtitle={subtitle ?? t('subtitle_default')}
-      // Phase 8 (7E-13) — langue du wizard checkout (le système ne gère que
-      // fr/ar ; en retombe sur fr en attendant un dictionnaire en.ts).
-      wizardLanguage={locale === 'ar' ? 'ar' : 'fr'}
+      // Phase 8 (7E-13) — langue d'affichage du wizard checkout (fr/ar/en).
+      // La persistance reste fr|ar : `en` est ramené à `fr` côté serveur (CHA-232).
+      wizardLanguage={locale}
       {...restProps}
     />
   );

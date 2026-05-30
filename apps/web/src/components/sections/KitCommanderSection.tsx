@@ -59,11 +59,12 @@ export interface KitCommanderSectionProps {
   /**
    * Phase 8 (7E-13) — langue du wizard checkout embarqué. Injectée dans le
    * `formContext` → `useWizardTranslation` sélectionne le dictionnaire
-   * (`fr`/`ar`). En `ar`, on n'applique PAS l'override `copy` FR : le wizard
-   * utilise le dictionnaire AR complet. Le système checkout ne gère que
-   * `fr`/`ar` ; `en` retombe sur `fr` (en attendant `en.ts`).
+   * (`fr`/`ar`/`en`). En `ar` et `en`, on n'applique PAS l'override `copy` FR :
+   * le wizard utilise le dictionnaire complet de la langue. La langue persistée
+   * reste `fr|ar` (CHA-232) ; `en` est une langue d'affichage ramenée à `fr`
+   * côté serveur.
    */
-  wizardLanguage?: 'fr' | 'ar';
+  wizardLanguage?: 'fr' | 'ar' | 'en';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,8 +95,8 @@ export function KitCommanderSection({
   packImage,
   wizardLanguage,
 }: KitCommanderSectionProps) {
-  // Phase 8 (7E-13) — injecte la langue dans le formContext du wizard. En AR,
-  // le dictionnaire AR (`useWizardTranslation`) pilote tous les libellés.
+  // Phase 8 (7E-13) — injecte la langue dans le formContext du wizard. En AR/EN,
+  // le dictionnaire de la langue (`useWizardTranslation`) pilote tous les libellés.
   const formContext: WizardFormContext = wizardLanguage
     ? { ...KIT_FORM_CONTEXT, language: wizardLanguage }
     : KIT_FORM_CONTEXT;
@@ -152,10 +153,10 @@ export function KitCommanderSection({
             steps={[...KIT_STEPS]}
             initialCart={initialCart}
             cartRecapThumbnailSrc={packImage?.src}
-            // FR : override marketing custom. AR : pas d'override → le
-            // dictionnaire AR complet (`dictionaryAr`) fournit tous les libellés.
+            // FR : override marketing custom. AR/EN : pas d'override → le
+            // dictionnaire complet de la langue fournit tous les libellés.
             copy={
-              wizardLanguage === 'ar'
+              wizardLanguage && wizardLanguage !== 'fr'
                 ? undefined
                 : {
                     title: 'Commander le rituel FemiGlow',
