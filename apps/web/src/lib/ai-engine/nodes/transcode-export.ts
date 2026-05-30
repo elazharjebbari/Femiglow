@@ -95,6 +95,10 @@ export async function transcodeExportNode(state: Record<string, unknown>): Promi
   const composition = state.composition as MediaAsset | null;
   const exports: Record<string, MediaAsset> = {};
   const thumbnails: MediaAsset[] = [];
+  // ACT-BE-032 (BUG-058) : on retient la raison d'un échec transcode pour ne
+  // PAS le masquer derrière un passthrough silencieux (asset non transcodé
+  // servi comme un succès). Le fallback est marqué `degraded` + raison.
+  let transcodeError: string | null = null;
 
   await mkdir(MEDIA_DIR, { recursive: true });
 
@@ -172,18 +176,27 @@ export async function transcodeExportNode(state: Record<string, unknown>): Promi
       }
     }
   } catch (err) {
+    transcodeError = String(err);
     log.error('Transcode/export failed', {
       jobId,
       node: 'transcode_export',
-      data: { error: String(err) },
+      data: { error: transcodeError },
     });
   }
 
   if (Object.keys(exports).length === 0 && composition) {
+    // Fallback : on conserve la composition pour ne pas tout perdre, MAIS on la
+    // marque explicitement DÉGRADÉE (échec transcode) au lieu d'un passthrough
+    // muet qui passerait pour un export conforme (ACT-BE-032).
     exports[`${platform}_${format}`] = {
       ...composition,
       assetId: `passthrough-${Date.now()}`,
-      generationParams: { ...composition.generationParams, passthrough: true },
+      generationParams: {
+        ...composition.generationParams,
+        passthrough: true,
+        degraded: true,
+        degradedReason: transcodeError ?? 'transcode/export échoué (asset non transcodé)',
+      },
     };
   }
 
@@ -199,5 +212,7 @@ export async function transcodeExportNode(state: Record<string, unknown>): Promi
     exports,
     thumbnails,
     currentStep: 'transcode_export',
+    // ACT-BE-032 : signale au graphe qu'un export a dû être servi en dégradé.
+    transcodeDegraded: transcodeError !== null,
   };
 }

@@ -38,6 +38,9 @@ vi.mock('sharp', () => {
   return { default: fn };
 });
 
+// ACT-BE-032 : bascule pour faire échouer ffmpeg dans un test (l'event 'error').
+const ffmpegState = vi.hoisted(() => ({ shouldFail: false }));
+
 vi.mock('fluent-ffmpeg', () => {
   const cmd = {
     input: vi.fn().mockReturnThis(),
@@ -48,9 +51,11 @@ vi.mock('fluent-ffmpeg', () => {
     seekInput: vi.fn().mockReturnThis(),
     frames: vi.fn().mockReturnThis(),
     save: vi.fn().mockReturnThis(),
-    on: vi.fn(function (this: Record<string, unknown>, event: string, cb: () => void) {
-      if (event === 'end') {
+    on: vi.fn(function (this: Record<string, unknown>, event: string, cb: (err?: Error) => void) {
+      if (event === 'end' && !ffmpegState.shouldFail) {
         setTimeout(cb, 0);
+      } else if (event === 'error' && ffmpegState.shouldFail) {
+        setTimeout(() => cb(new Error('ffmpeg failed (test)')), 0);
       }
       return this;
     }),
@@ -79,6 +84,7 @@ import { transcodeExportNode } from './transcode-export';
 describe('transcodeExportNode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    ffmpegState.shouldFail = false;
   });
 
   const baseState = {
@@ -97,6 +103,23 @@ describe('transcodeExportNode', () => {
       costCents: 0,
     },
   };
+
+  it('échec ffmpeg → export marqué DÉGRADÉ (pas un passthrough muet) (ACT-BE-032)', async () => {
+    ffmpegState.shouldFail = true;
+    const result = await transcodeExportNode({
+      ...baseState,
+      format: 'reel',
+      composition: {
+        ...baseState.composition,
+        mimeType: 'video/mp4',
+        url: '/_media/ai-engine/composed-video.mp4',
+      },
+    });
+    expect(result.transcodeDegraded).toBe(true);
+    const exp = Object.values(result.exports as Record<string, { generationParams?: Record<string, unknown> }>)[0];
+    expect(exp?.generationParams?.degraded).toBe(true);
+    expect(typeof exp?.generationParams?.degradedReason).toBe('string');
+  });
 
   it('returns exports record', async () => {
     const result = await transcodeExportNode(baseState);
