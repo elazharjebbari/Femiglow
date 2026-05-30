@@ -41,10 +41,15 @@ describe('POST /api/admin/content-studio/posts/[id]/postiz-draft — legacy depr
     resetMemoryStore();
     requireContentStudioEnabledMock.mockReturnValue(undefined);
     requireAdminApiMock.mockResolvedValue(adminSession());
+    createDraftInPostizMock.mockReset();
     createDraftInPostizMock.mockResolvedValue({
       delivery: { id: 'delivery_1', postId: 'post_test', integrationId: 'ig_1', status: 'sent' },
       post: { id: 'post_test', status: 'scheduled' },
     });
+    // Les cas "succès/erreur" ci-dessous n'ont de sens qu'en mode live (sinon le
+    // garde-fou ACT-BE-020 renvoie 410 avant tout appel Postiz). Le mode dry_run
+    // est testé explicitement dans le bloc "garde-fou" plus bas.
+    vi.stubEnv('SOCIAL_PUBLISHING_MODE', 'live');
   });
 
   it('renvoie les headers RFC 8594 Deprecation + Sunset sur succès', async () => {
@@ -82,6 +87,30 @@ describe('POST /api/admin/content-studio/posts/[id]/postiz-draft — legacy depr
       actorId: 'adm_legacy_telemetry',
       resourceType: 'content_post',
       resourceId: 'post_test',
+    });
+  });
+
+  describe('garde-fou dry_run (ACT-BE-020, BUG-040)', () => {
+    it('en mode simulation (dry_run) → 410 Gone et NE touche PAS Postiz', async () => {
+      vi.stubEnv('SOCIAL_PUBLISHING_MODE', 'dry_run');
+      const response = await postizDraft(
+        request({ integrationId: 'ig_1' }),
+        { params: { id: 'post_test' } },
+      );
+      expect(response.status).toBe(410);
+      expect(createDraftInPostizMock).not.toHaveBeenCalled();
+      // headers de dépréciation conservés
+      expect(response.headers.get('deprecation')).toBe('true');
+    });
+
+    it('SOCIAL_PUBLISHING_MODE absent (défaut dry_run) → 410, aucun appel Postiz', async () => {
+      vi.stubEnv('SOCIAL_PUBLISHING_MODE', '');
+      const response = await postizDraft(
+        request({ integrationId: 'ig_1' }),
+        { params: { id: 'post_test' } },
+      );
+      expect(response.status).toBe(410);
+      expect(createDraftInPostizMock).not.toHaveBeenCalled();
     });
   });
 });

@@ -35,6 +35,26 @@ export async function POST(
       resourceId: params.id,
       meta: { route: 'postiz-draft', sunset: SUNSET_DATE },
     });
+
+    // ACT-BE-020 (BUG-040) — garde-fou de simulation. Cette route legacy
+    // appelait `createDraftInPostiz` qui touche l'API Postiz RÉELLE en ignorant
+    // SOCIAL_PUBLISHING_MODE. En mode simulation (défaut `dry_run`), on ne
+    // contacte JAMAIS Postiz : 410 Gone, le successeur étant le pipeline
+    // `social_publish_job` (publish-now), qui respecte l'adapter dry-run.
+    // Lecture au runtime (process.env) : le garde-fou reflète l'état courant,
+    // pas la valeur figée au chargement du module.
+    const socialPublishingMode = process.env.SOCIAL_PUBLISHING_MODE ?? 'dry_run';
+    if (socialPublishingMode !== 'live') {
+      return NextResponse.json(
+        {
+          error: 'gone',
+          message:
+            'Route legacy /postiz-draft désactivée en mode simulation (SOCIAL_PUBLISHING_MODE ≠ live). Utiliser « Publier maintenant » (pipeline social_publish_job, qui respecte le mode dry-run).',
+        },
+        { status: 410, headers: deprecationHeaders },
+      );
+    }
+
     const json = (await request.json().catch(() => null)) as unknown;
     const parsed = postizDraftSchema.safeParse(json);
     if (!parsed.success) {
