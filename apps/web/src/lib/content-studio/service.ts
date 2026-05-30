@@ -9,6 +9,7 @@ import { getStorage } from '@/lib/media/storage';
 import { runWorkerOnce } from '@/lib/media/worker/process-job';
 import { reviewDraftContent } from './brand-rules';
 import { generateForIdea } from './generation';
+import { imageCostCents } from './pricing';
 import { generateStudioImage } from './image-generation';
 import { generateStudioVideo } from './video-generation';
 import { assertTransition } from './state-machine';
@@ -307,7 +308,12 @@ export async function generateVisualForDraft(input: {
       mode: input.mode,
     });
   }
-  const visualCostEstimate = input.quality === 'high' ? 8 : input.quality === 'medium' ? 4 : 2;
+  // ACT-BE-035 — coût pré-check budget depuis la MÊME source que le coût
+  // enregistré (./pricing). En mock, génération gratuite → 0.
+  const visualCostEstimate = imageCostCents(
+    input.mode === 'mock' ? undefined : input.model ?? env.CONTENT_STUDIO_IMAGE_MODEL,
+    input.quality,
+  );
   await checkDailyBudget(visualCostEstimate);
   const finalPrompt = buildVisualPrompt({
     draft,

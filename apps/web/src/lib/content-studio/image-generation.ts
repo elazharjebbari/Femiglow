@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { HttpError } from '@/lib/errors/http-error';
 import { higgsfieldAuthHeader, higgsfieldBaseUrl } from './higgsfield-auth';
 import { resolveProviderCredential } from './provider-credentials';
+import { imageCostCents } from './pricing';
 
 export interface GenerateStudioImageInput {
   prompt: string;
@@ -23,11 +24,7 @@ export interface GeneratedStudioImage {
   estimatedCostCents: number;
 }
 
-const HIGGSFIELD_IMAGE_PRICING_CENTS: Record<string, number> = {
-  'hf-flux-schnell': 30,
-  'hf-flux-1': 250,
-  'hf-flux-pro': 550,
-};
+// Tarifs image centralisés dans ./pricing (ACT-BE-035).
 
 function isOpenAiImageModel(model: string | undefined): boolean {
   if (!model) return false;
@@ -157,7 +154,7 @@ async function callOpenAiImage(
     provider: 'openai',
     model: modelId,
     usage: json.usage ?? {},
-    estimatedCostCents: estimateOpenAiImageCostCents(input.quality),
+    estimatedCostCents: imageCostCents(modelId, input.quality),
   };
 }
 
@@ -226,7 +223,7 @@ async function generateHiggsfieldImage(
     provider: 'higgsfield',
     model: input.model ?? 'hf-flux-1',
     usage: { mode: 'live', model: hfModel },
-    estimatedCostCents: HIGGSFIELD_IMAGE_PRICING_CENTS[input.model ?? ''] ?? 250,
+    estimatedCostCents: imageCostCents(input.model, input.quality),
   };
 }
 
@@ -269,13 +266,3 @@ function parseSize(size: GenerateStudioImageInput['size']): { width: number; hei
   return { width: width || 1024, height: height || 1024 };
 }
 
-function estimateOpenAiImageCostCents(quality: GenerateStudioImageInput['quality']): number {
-  if (env.CONTENT_STUDIO_IMAGE_MODEL === 'gpt-image-1-mini') {
-    if (quality === 'high') return 4;
-    if (quality === 'medium') return 2;
-    return 1;
-  }
-  if (quality === 'high') return 22;
-  if (quality === 'medium') return 6;
-  return 1;
-}
