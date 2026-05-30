@@ -41,7 +41,14 @@ export async function POST(request: Request): Promise<Response> {
     });
     if (!rate.ok) throw new HttpError('rate_limited', 'Trop de requêtes vidéo');
 
-    const form = await request.formData();
+    // ACT-BE-034 (BUG-060) : corps non-multipart → 400 invalid_input clair
+    // (au lieu d'un TypeError 500 opaque sur request.formData()).
+    let form: FormData;
+    try {
+      form = await request.formData();
+    } catch {
+      throw new HttpError('invalid_input', 'Corps multipart/form-data attendu.');
+    }
     const file = form.get('file');
     const trimRaw = form.get('trim');
     if (!(file instanceof File)) throw new HttpError('invalid_input', 'Fichier manquant');
