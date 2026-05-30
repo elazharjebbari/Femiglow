@@ -101,6 +101,8 @@ export async function generateIdeaDrafts(input: {
   actorId: string | null;
   /** CS v2 Phase 2 — optional override of the text-generation model for this run. */
   model?: string;
+  /** ACT-BE-013 — mode mock/live propagé du cookie cs_generation_mode. */
+  mode?: 'mock' | 'live';
 }) {
   const idea = await requireIdea(input.ideaId);
   // ACT-BE-016 (BUG-051) : valider la transition AVANT toute écriture
@@ -110,7 +112,7 @@ export async function generateIdeaDrafts(input: {
   // lève déjà HttpError('invalid_state') → 409 lisible (pas un 500 opaque).
   assertTransition(idea.status, 'generated');
   await checkDailyBudget(2);
-  const generation = await generateForIdea(idea, { model: input.model });
+  const generation = await generateForIdea(idea, { model: input.model, mode: input.mode });
   const brief = await createBrief({
     ideaId: idea.id,
     angle: generation.brief.angle,

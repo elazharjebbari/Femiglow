@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { env } from '@/lib/env';
 import type { ContentIdea } from './types';
+import { HttpError } from '@/lib/errors/http-error';
+import { resolveProviderCredential } from './provider-credentials';
 
 const generatedBriefSchema = z.object({
   angle: z.string(),
@@ -54,12 +56,54 @@ export interface GenerationResult {
 
 const PROMPT_VERSION = 'content-studio-v0-2026-05-14';
 
-export async function generateForIdea(idea: ContentIdea): Promise<GenerationResult> {
-  const apiKey = env.CONTENT_STUDIO_OPENAI_API_KEY ?? env.CHAT_OPENAI_API_KEY;
+/**
+ * CS v2 create-audit Phase 2 — caller can override the text model id for a
+ * single generation run. Falls back to env.CONTENT_STUDIO_TEXT_MODEL when not
+ * provided. Logged on the resulting `content_generation_run.model` row.
+ */
+export interface GenerateForIdeaOptions {
+  model?: string;
+  /**
+   * Mode de génération propagé depuis le cookie `cs_generation_mode`
+   * (ACT-BE-013). `mock` force le fallback déterministe (jamais d'appel LLM,
+   * même si une clé est présente dans le process) ; `live` exige une clé
+   * résolue (sinon erreur explicite, pas une dégradation silencieuse).
+   */
+  mode?: 'mock' | 'live';
+}
+
+export async function generateForIdea(
+  idea: ContentIdea,
+  opts: GenerateForIdeaOptions = {},
+): Promise<GenerationResult> {
+  const model = opts.model ?? env.CONTENT_STUDIO_TEXT_MODEL;
+
+  // En mode mock explicite : résultat déterministe assumé, on ne touche jamais
+  // le LLM (sinon le mode mock partirait en live au déploiement, là où une clé
+  // OPENAI_API_KEY est présente dans le process).
+  if (opts.mode === 'mock') {
+    return fallbackGeneration(idea);
+  }
+
+  // Résolution de clé UNIFIÉE (ACT-ARC-013 / ACT-BE-010-texte) : chaîne d'env
+  // incl. OPENAI_API_KEY, chaîne vide neutralisée — ferme le split BUG-005
+  // (le `??` historique laissait passer une chaîne vide et n'allait jamais
+  // chercher OPENAI_API_KEY).
+  const apiKey = await resolveProviderCredential('openai');
+
+  // Mode live explicite sans clé : erreur claire (pas un fallback silencieux
+  // qui ferait croire que le live fonctionne).
+  if (opts.mode === 'live' && !apiKey) {
+    throw new HttpError(
+      'invalid_state',
+      'Mode live : aucune clé OpenAI résolue (CONTENT_STUDIO_OPENAI_API_KEY / OPENAI_API_KEY). Configure la clé ou repasse en mode mock.',
+    );
+  }
+
   if (!apiKey) return fallbackGeneration(idea);
 
   try {
-    const body = buildOpenAIBody(idea);
+    const body = buildOpenAIBody(idea, model);
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -77,7 +121,7 @@ export async function generateForIdea(idea: ContentIdea): Promise<GenerationResu
     const parsed = generationOutputSchema.parse(raw);
     return {
       provider: 'openai',
-      model: env.CONTENT_STUDIO_TEXT_MODEL,
+      model,
       promptVersion: PROMPT_VERSION,
       brief: parsed.brief,
       drafts: parsed.drafts.slice(0, 3),
@@ -88,9 +132,9 @@ export async function generateForIdea(idea: ContentIdea): Promise<GenerationResu
   }
 }
 
-function buildOpenAIBody(idea: ContentIdea): Record<string, unknown> {
+function buildOpenAIBody(idea: ContentIdea, model: string): Record<string, unknown> {
   return {
-    model: env.CONTENT_STUDIO_TEXT_MODEL,
+    model,
     temperature: 0.65,
     response_format: { type: 'json_object' },
     messages: [
