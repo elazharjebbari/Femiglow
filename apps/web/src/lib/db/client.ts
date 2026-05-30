@@ -201,4 +201,18 @@ export function db(): DrizzleDb | null {
   return dbCache.__femiglowDb;
 }
 
+/**
+ * Tests uniquement — injecte un drizzle de test (ex. PGlite, Postgres in-process)
+ * pour exercer le vrai chemin SQL sans base distante. Passer `null` rebascule en
+ * mode mémoire. cf. docs/analytics-audit-qa-2026-05-30 (harnais d'intégration).
+ */
+export function __setTestDb(testDb: DrizzleDb | null): void {
+  dbCache.__femiglowDb = testDb;
+}
+
+/** Tests uniquement — réinitialise le cache (force la ré-évaluation de `db()`). */
+export function __resetTestDb(): void {
+  dbCache.__femiglowDb = undefined;
+}
+
 export { schema };

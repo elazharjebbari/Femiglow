@@ -116,6 +116,24 @@ describe('InsightsView', () => {
     expect(screen.getByRole('tab', { name: 'Funnel' })).toBeInTheDocument();
   });
 
+  it('F-INS-03 — affiche la bannière « premier refresh » quand firstRun=true', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/overview')) {
+          return new Response(JSON.stringify({ ...mockOverview, firstRun: true }), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      }),
+    );
+    render(<InsightsView />);
+    await waitFor(() => {
+      expect(screen.getByTestId('insights-first-run')).toBeInTheDocument();
+    });
+  });
+
   it('affiche les KPIs après chargement de l\'overview', async () => {
     render(<InsightsView />);
     await waitFor(() => {

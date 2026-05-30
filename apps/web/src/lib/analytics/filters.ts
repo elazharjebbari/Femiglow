@@ -105,8 +105,21 @@ export function parseFiltersFromSearchParams(
     to: get('to'),
   };
 
-  // Filtre les undefined avant parse (Zod default seulement si key absente).
-  const cleaned = Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined));
+  // Validation par champ : une clé invalide est ignorée sans invalider toute la
+  // sélection (F-FLT-01). Ex. `?period=foo&device=desktop` conserve `desktop`.
+  // Les défauts Zod ne s'appliquent qu'aux clés absentes.
+  const inEnum = (v: string | undefined, allowed: readonly string[]) =>
+    v !== undefined && allowed.includes(v) ? v : undefined;
+
+  const cleaned = Object.fromEntries(
+    Object.entries({
+      period: inEnum(raw.period, ANALYTICS_PERIODS),
+      device: inEnum(raw.device, ANALYTICS_DEVICES),
+      traffic: inEnum(raw.traffic, TRAFFIC_VALUES),
+      from: raw.from,
+      to: raw.to,
+    }).filter(([, v]) => v !== undefined),
+  );
 
   const parsed = AnalyticsFiltersSchema.safeParse(cleaned);
   if (!parsed.success) {
@@ -178,10 +191,40 @@ function withComparison(from: Date, to: Date): ResolvedRange {
   };
 }
 
-function startOfDay(d: Date): Date {
-  const c = new Date(d);
-  c.setHours(0, 0, 0, 0);
-  return c;
+/**
+ * Fuseau d'affichage de l'admin FemiGlow (Maroc). Toutes les bornes de période
+ * (today / yesterday / 7d…) sont calculées dans ce fuseau, pas dans celui du
+ * process serveur (UTC sur Vercel).
+ * cf. docs/analytics-audit-qa-2026-05-30 — finding AF-04 (décalage de fuseau).
+ */
+export const ANALYTICS_TIMEZONE = 'Africa/Casablanca';
+
+/** Offset ISO (ex. "+01:00") du fuseau `timeZone` à l'instant `at`. */
+function tzOffset(at: Date, timeZone: string): string {
+  const name = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    timeZoneName: 'longOffset',
+  })
+    .formatToParts(at)
+    .find((p) => p.type === 'timeZoneName')?.value;
+  const m = name ? /GMT([+-]\d{2}:\d{2})/.exec(name) : null;
+  return m ? m[1]! : '+00:00';
+}
+
+/**
+ * Début du jour (00:00) contenant `d`, exprimé dans le fuseau d'affichage Maroc
+ * et retourné comme instant absolu (Date). Indépendant du `TZ` du process.
+ */
+function startOfDay(d: Date, timeZone: string = ANALYTICS_TIMEZONE): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  const ymd = `${get('year')}-${get('month')}-${get('day')}`;
+  return new Date(`${ymd}T00:00:00.000${tzOffset(d, timeZone)}`);
 }
 
 function addDays(d: Date, n: number): Date {

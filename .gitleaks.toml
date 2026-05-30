@@ -48,4 +48,6 @@ regexes = [
   '''USER:PASSWORD@ep-xxx''',
   '''argon2id\$.*PASS''',
   '''placeholder''',
+  # Postgres ephemere de CI/e2e (user=pass=postgres, host=localhost) — non secret.
+  '''postgres(?:ql)?://postgres:postgres@localhost''',
 ]

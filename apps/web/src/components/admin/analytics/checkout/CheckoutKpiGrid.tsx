@@ -4,10 +4,12 @@
  *
  * 1. Vues panier (sessions distinct view_cart)
  * 2. Begin checkout (sessions distinct begin_checkout)
- * 3. Soumissions (sessions distinct purchase, client + serveur)
- * 4. Abandons (begin_checkout sans purchase dans 60 min)
+ * 3. Achats (sessions distinct purchase, client + serveur) — le champ data
+ *    historique reste `submissions` ; le libellé opérateur dit « Achats » pour
+ *    lever l'ambiguïté avec une soumission de formulaire. cf. finding F-CHK-02.
+ * 4. Abandons (begin_checkout sans achat, fenêtre 60 min écoulée)
  *
- * Le sous-total `serverFallbackPurchases` est affiché en discret sous Soumissions
+ * Le sous-total `serverFallbackPurchases` est affiché en discret sous Achats
  * pour la transparence ops.
  */
 import { KpiCard } from '../primitives/KpiCard';
@@ -43,7 +45,7 @@ export function CheckoutKpiGrid({ totals, loading }: CheckoutKpiGridProps) {
         loading={loading}
       />
       <KpiCard
-        label="Soumissions"
+        label="Achats"
         value={totals.submissions}
         format="number"
         loading={loading}
@@ -54,7 +56,7 @@ export function CheckoutKpiGrid({ totals, loading }: CheckoutKpiGridProps) {
         value={totals.abandons}
         format="number"
         loading={loading}
-        comparisonLabel="Begin checkout sans purchase ≤ 60 min"
+        comparisonLabel="Begin checkout sans achat après 60 min"
       />
     </div>
   );

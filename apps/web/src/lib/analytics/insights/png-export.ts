@@ -8,6 +8,30 @@
  * - Pas d'import de lib externe (Image, Canvas natifs)
  */
 const DEFAULT_BG = '#FBF8F1';
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Dimensions de rendu d'un SVG (viewBox > taille DOM > défaut), bornées ≥ 1. */
+export function svgExportDimensions(svg: SVGSVGElement): { width: number; height: number } {
+  const vb = svg.viewBox?.baseVal;
+  const width = (vb?.width || svg.clientWidth || 800);
+  const height = (vb?.height || svg.clientHeight || 320);
+  return { width: Math.max(1, Math.round(width)), height: Math.max(1, Math.round(height)) };
+}
+
+/**
+ * Sérialise un SVG en XML autonome **robuste** pour l'export image (F-INS-05) :
+ * sur un clone, on force `xmlns` (sans quoi le SVG ne se charge pas comme `Image`
+ * dans plusieurs navigateurs → export blanc/échec) et des `width`/`height`
+ * explicites (sinon la taille naturelle est indéterminée → mise à l'échelle KO).
+ */
+export function serializeSvgForExport(svg: SVGSVGElement): string {
+  const { width, height } = svgExportDimensions(svg);
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', SVG_NS);
+  clone.setAttribute('width', String(width));
+  clone.setAttribute('height', String(height));
+  return new XMLSerializer().serializeToString(clone);
+}
 
 export async function exportSvgAsPngBlob(
   svg: SVGSVGElement,
@@ -15,10 +39,9 @@ export async function exportSvgAsPngBlob(
 ): Promise<Blob> {
   const scale = options.scale ?? 2;
   const bg = options.backgroundColor ?? DEFAULT_BG;
-  const width = svg.viewBox.baseVal.width || svg.clientWidth || 800;
-  const height = svg.viewBox.baseVal.height || svg.clientHeight || 320;
+  const { width, height } = svgExportDimensions(svg);
 
-  const xml = new XMLSerializer().serializeToString(svg);
+  const xml = serializeSvgForExport(svg);
   const svgBlob = new Blob(['<?xml version="1.0" standalone="no"?>\r\n', xml], {
     type: 'image/svg+xml;charset=utf-8',
   });
