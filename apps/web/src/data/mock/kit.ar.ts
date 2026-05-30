@@ -82,7 +82,7 @@ export const mockKitPageContentAr: KitPageContent = {
       accentColor: 'sauge',
       shortDescription:
         'عجينة كريمية ناعمة. تُغلِّف اللوحة دون أن تخنقها. حبّة بحجم البندقة تكفي.',
-      volume: '15 غ',
+      volume: '15 g',
       usageHint: 'حبّة بحجم البندقة تُغلِّف عشرة أصابع',
       narrative:
         '12% شمع نحل مُذاب على حرارة منخفضة من قِبَل تعاونية النحل في الأطلس المتوسّط. ثلاث دقائق من التطبيق، اللمسة مطفأة.',
@@ -133,7 +133,7 @@ export const mockKitPageContentAr: KitPageContent = {
       accentColor: 'petale',
       shortDescription:
         'بودرة بيضاء ناعمة، تُوضع فوق عجينة. تمتصّ الفائض، تُلمِّع السطح.',
-      volume: '8 غ',
+      volume: '8 g',
       usageHint: 'قبضة تُلمِّع اليد كاملة',
       narrative:
         'بودرة معدنية ناعمة، تُوضع مباشرة بعد عجينة. الطلق يمتصّ الفائض، السيليكا تُلمِّع السطح. دون أبيض، دون رمادي.',
@@ -179,7 +179,7 @@ export const mockKitPageContentAr: KitPageContent = {
       name: 'مُلمِّع الخطوة 4 — تلميع وإشراق',
       shortDescription:
         'مُلمِّع مستطيل أزرق سماوي. ثلاثة أوجه، ثلاث درجات. يكشف اللمعان الطبيعي.',
-      volume: '90 ملم',
+      volume: '90 mm',
       sensation: 'يعود الضوء إلى السطح.',
       accentColor: 'ciel',
       usageHint: 'ستّة أشهر من التلميع اللطيف',

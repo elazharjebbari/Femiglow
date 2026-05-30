@@ -1,9 +1,16 @@
 /**
  * Serveur MSW pour les tests d'intégration vitest.
  *
- * Le lifecycle (`listen`, `resetHandlers`, `close`) est géré globalement
- * par `src/test/setup/msw.setup.ts`. Les tests n'ont qu'à importer ce
- * `server` et appeler `server.use(...)` pour overrider.
+ * Le lifecycle (`listen`, `resetHandlers`, `close`) est géré **par fichier
+ * de test** — chaque suite choisit sa propre politique `onUnhandledRequest`
+ * (`'error'` / `'bypass'` / `'warn'`), incompatible avec un `listen` global
+ * unique (cf. `src/test/setup/msw.setup.ts`, no-op volontaire) :
+ * ```ts
+ * import { server, http, HttpResponse } from '@/test/msw/server';
+ * beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+ * afterEach(() => server.resetHandlers());
+ * afterAll(() => server.close());
+ * ```
  *
  * Pour usage par défaut chat, importer les handlers depuis
  * `@/test/msw/handlers/chat-internal` et les enregistrer dans le

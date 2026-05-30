@@ -533,7 +533,7 @@
           }
         },
         "social_proof": {
-          "count_label_geo": "{count} maisons in France",
+          "count_label_geo": "{count} homes in Morocco",
           "reviews_count": "{count, plural, one {# review} other {# reviews}}",
           "fallback_quote": "Five minutes in the evening — it has become a signal that the day is ending.",
           "fallback_author": "Lina, Rabat"

@@ -18,7 +18,15 @@
  * perf perçue (FCP) du /kit qui doit rester sub-2s.
  */
 
-import { Suspense, lazy, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 
 import {
   selectCanProceedFromLead,
@@ -26,6 +34,7 @@ import {
   useWizardStore,
   type WizardFormContext,
 } from '@/lib/checkout/state/wizard-store';
+import { shouldSyncFormContext } from '@/lib/checkout/state/form-context-sync';
 import type { CartSnapshot, StepName } from '@/lib/checkout/schemas/common';
 
 import { WizardStepIndicator } from './WizardStepIndicator';
@@ -59,6 +68,12 @@ const CartReviewStep = lazy(() =>
     .then((m) => ({ default: m.CartReviewStep }))
     .catch(() => ({ default: () => <StepUnavailable name="cart_review" /> })),
 );
+
+// SSR-safe : `useLayoutEffect` n'existe pas côté serveur (warning React). On
+// retombe sur `useEffect` lors du rendu serveur, et on utilise le layout effect
+// côté client pour committer la langue AVANT le paint (zéro flash FR sur /ar).
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -146,7 +161,7 @@ export function WizardShell({
   header,
   footer,
 }: WizardShellProps) {
-  const { t } = useWizardTranslation();
+  const { t, dir } = useWizardTranslation();
   const hydrated = useWizardHydrated();
   const currentStep = useWizardStore((s) => s.currentStep);
   const storedFormContext = useWizardStore((s) => s.formContext);
@@ -159,14 +174,16 @@ export function WizardShell({
   // Snycro formContext une fois hydraté. Si la persisted version diffère
   // (ex. user a changé d'A/B variant), on overrides — la source de vérité
   // est ce qui est passé en props par le serveur.
-  useEffect(() => {
+  // `language` est inclus dans le dirty-check : la route (`/ar`, `/en`, `/fr`)
+  // est la SOURCE DE VÉRITÉ de la langue. Sans cela, un `formContext` persisté
+  // d'une visite FR antérieure (mêmes formId/mode/variant) masquait la langue
+  // de la route et le wizard restait en français sur /ar. Layout effect →
+  // commit avant paint, donc pas de flash FR transitoire.
+  useIsomorphicLayoutEffect(() => {
     if (!hydrated) return;
-    const needsUpdate =
-      !storedFormContext ||
-      storedFormContext.formId !== formContext.formId ||
-      storedFormContext.formMode !== formContext.formMode ||
-      storedFormContext.variantKey !== formContext.variantKey;
-    if (needsUpdate) setFormContext(formContext);
+    if (shouldSyncFormContext(storedFormContext, formContext)) {
+      setFormContext(formContext);
+    }
   }, [hydrated, storedFormContext, formContext, setFormContext]);
 
   // Snapshot panier : si fourni en props et différent du persisted, écrase.
@@ -289,7 +306,7 @@ export function WizardShell({
   const cartForRecap = initialCart ?? storedCart ?? null;
 
   return (
-    <div className="space-y-6" data-testid="wizard-shell">
+    <div className="space-y-6" data-testid="wizard-shell" dir={dir}>
       {/* Kolenda §5 W3 P1 — récap panier permanent en premier enfant.
           Sticky mobile pour rester visible pendant le scroll.
           Le `priceCompareAt` est calculé dynamiquement depuis le snapshot

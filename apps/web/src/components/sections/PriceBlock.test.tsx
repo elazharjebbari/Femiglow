@@ -94,7 +94,7 @@ function feedWith(overrides: Partial<ProductFeed['hero']> = {}): ProductFeed {
       rating: 4.8,
       quote: 'q',
       authorLabel: 'a',
-      countLabelGeo: '287 maisons en France',
+      countLabelGeo: '287 maisons au Maroc',
     },
   } as unknown as ProductFeed;
 }
@@ -215,7 +215,7 @@ describe('PriceBlock — rendu', () => {
     const sp = screen.getByTestId('pack-social-proof');
     expect(sp.getAttribute('data-label-used')).toBe('geo');
     expect(sp.textContent).toContain('4,8/5');
-    expect(sp.textContent).toContain('287 maisons en France');
+    expect(sp.textContent).toContain('287 maisons au Maroc');
   });
 
   it('fallback social proof = `<count> avis` si countLabelGeo absent', () => {

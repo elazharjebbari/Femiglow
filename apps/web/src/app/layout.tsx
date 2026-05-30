@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import localFont from 'next/font/local';
 import { Cairo } from 'next/font/google';
+import { coerceLocale, getLocaleConfig } from '@/i18n.config';
 import '@/styles/globals.css';
 import { SkipLink } from '@/components/layout/SkipLink';
 import { TrackingProvider } from '@/lib/tracking/provider';
@@ -103,6 +105,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // soient peuplés au premier rendu serveur.
   await ensureSeedOnce();
 
+  // i18n SSR — locale active posée par le middleware (`x-locale`, dérivée du
+  // 1er segment d'URL). Elle pilote `<html lang/dir>` dès le HTML initial :
+  // source unique serveur+client, donc plus de divergence d'hydratation ni de
+  // flash LTR. Fallback DEFAULT_LOCALE pour les routes legacy non préfixées.
+  const activeLocale = coerceLocale(headers().get('x-locale'));
+  const { direction } = getLocaleConfig(activeLocale);
+
   // Lit la configuration globale du bandeau cookies. Les valeurs par
   // défaut (banner activé, consent denied) couvrent l'install initiale ;
   // l'admin peut désactiver le bandeau dans /admin/tracking/settings pour
@@ -117,8 +126,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html
-      lang="fr"
-      dir="ltr"
+      lang={activeLocale}
+      dir={direction}
       className={`${cormorant.variable} ${inter.variable} ${pinyon.variable} ${cairo.variable}`}
     >
       <body className="min-h-screen bg-creme font-body text-encre antialiased">

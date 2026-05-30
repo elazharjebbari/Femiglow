@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { decodeSession, SESSION_COOKIE } from '@/lib/auth/session';
-import { LOCALE_COOKIE_NAME } from '@/i18n.config';
+import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE_NAME } from '@/i18n.config';
 import { buildChatCspExtensions } from '@/lib/chat/csp';
 import { buildTrackingCspExtensions } from '@/lib/tracking/providers/csp';
 import { legacyRedirectIfNeeded } from '@/lib/tracking/plan/legacy-redirect';
@@ -156,6 +156,15 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
   requestHeaders.set('content-security-policy', csp);
+  // i18n SSR — expose la locale active (1er segment d'URL) au root layout
+  // pour qu'il rende `<html lang/dir>` côté serveur. Source unique partagée
+  // serveur+client ⇒ zéro mismatch d'hydratation, zéro flash LTR avant paint.
+  // Routes legacy sans préfixe ⇒ DEFAULT_LOCALE (cohérent avec l'ancien "fr").
+  const firstSegment = pathname.split('/')[1];
+  requestHeaders.set(
+    'x-locale',
+    isLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE,
+  );
 
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   res.headers.set('content-security-policy', csp);

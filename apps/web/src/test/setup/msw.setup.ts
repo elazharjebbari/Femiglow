@@ -1,23 +1,24 @@
 /**
- * MSW lifecycle pour vitest.
+ * Setup MSW pour vitest — VOLONTAIREMENT vide (no-op).
  *
- * Référence : `docs/chat-test-strategy-2026-05/01-architecture-test/02-msw-handlers-catalog.md`
+ * Le lifecycle MSW (`listen` / `resetHandlers` / `close`) est géré
+ * **par fichier de test**, et non globalement. Raison : la politique
+ * `onUnhandledRequest` diffère d'une suite à l'autre
+ * (`'error'` strict pour les contrats « aucun appel externe », `'bypass'`
+ * pour les suites qui émettent des requêtes volontairement non mockées,
+ * `'warn'` ailleurs). Un `server.listen()` global à politique unique :
+ *   1. entre en collision avec le `server.listen()` de chaque fichier
+ *      (`network.enable()` appelé 2× → « Invariant: network already enabled »), et
+ *   2. écraserait la politique propre à chaque suite (un global `'error'`
+ *      fait échouer les suites `'bypass'` : « Cannot bypass a request when
+ *      using the "error" strategy »).
+ * De plus un `afterEach(resetHandlers)` global effacerait les handlers que
+ * certaines suites enregistrent une seule fois en `beforeAll`.
  *
- * - `onUnhandledRequest: 'error'` → fail le test si une requête réelle leak
- *   au lieu d'être interceptée (anti-flakiness).
- * - `resetHandlers` entre les tests → pas de pollution entre fichiers.
+ * → Chaque suite appelle donc elle-même :
+ *     beforeAll(() => server.listen({ onUnhandledRequest: '<policy>' }));
+ *     afterEach(() => server.resetHandlers());
+ *     afterAll(() => server.close());
+ *   (cf. l'en-tête de `src/test/msw/server.ts`).
  */
-import { afterAll, afterEach, beforeAll } from 'vitest';
-import { server } from '@/test/msw/server';
-
-beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' });
-});
-
-afterEach(() => {
-  server.resetHandlers();
-});
-
-afterAll(() => {
-  server.close();
-});
+export {};

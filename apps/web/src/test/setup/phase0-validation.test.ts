@@ -11,7 +11,7 @@
  * Si CE TEST PASSE : le harnais est utilisable pour Phase 1.
  * Référence : `docs/chat-test-strategy-2026-05/04-execution-plan/01-phase-1-foundation-setup.md`
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach, afterAll } from 'vitest';
 import { faker } from '@faker-js/faker';
 import {
   chatSessionFactory,
@@ -23,6 +23,11 @@ import {
   maFirstName,
 } from '@/test/factories';
 import { server, http, HttpResponse, makeChatSseStream } from '@/test/msw/server';
+
+// Lifecycle MSW par-fichier (le setup global est un no-op, cf. msw.setup.ts).
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 describe('Phase 0 — Harnais validation', () => {
   describe('Factories chat', () => {

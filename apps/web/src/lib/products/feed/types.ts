@@ -196,7 +196,7 @@ export interface ProductFeedSocialProof {
   authorLabel: string;
   /**
    * Libellé géographique optionnel pour le bloc condensé sous le CTA
-   * (ex « 287 maisons en France »). Fallback : `${reviewsCount} avis`.
+   * (ex « 287 maisons au Maroc »). Fallback : `${reviewsCount} avis`.
    * Plus chaleureux et plus crédible qu'un simple « avis ».
    */
   countLabelGeo?: string;

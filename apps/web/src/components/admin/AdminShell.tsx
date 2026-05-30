@@ -11,6 +11,7 @@ interface AdminShellProps {
     | 'tracking'
     | 'analytics'
     | 'components'
+    | 'i18n'
     | 'settings'
     | 'audit'
     | 'seo'
@@ -32,6 +33,7 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/rituals/queue', key: 'rituals', label: 'Rituels partagés' },
   { href: '/admin/media', key: 'media', label: 'Médias' },
   { href: '/admin/components', key: 'components', label: 'Composants' },
+  { href: '/admin/i18n', key: 'i18n', label: 'Traductions / i18n' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
   { href: '/admin/kit/video', key: 'kit-video', label: 'Vidéo /kit' },
   { href: '/admin/kit/composition', key: 'kit-composition', label: 'Composition /kit' },

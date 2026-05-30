@@ -101,12 +101,19 @@ const nextConfig = {
       // Chunks JS/CSS hashés : immutable 1 an. Le hash change à chaque
       // déploiement, on peut donc cacher agressivement sans risque de stale.
       // Évite que l'utilisateur charge un chunk obsolète après un déploy.
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
+      // Uniquement en production : en dev les chunks ne sont PAS hashés
+      // (`layout.js`), un cache immutable y figerait un bundle obsolète et
+      // casserait le rechargement après édition.
+      ...(process.env.NODE_ENV === 'production'
+        ? [
+            {
+              source: '/_next/static/:path*',
+              headers: [
+                { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+              ],
+            },
+          ]
+        : []),
       // Images optimisées Next servies dynamiquement : cache court côté CDN.
       {
         source: '/_next/image/:path*',

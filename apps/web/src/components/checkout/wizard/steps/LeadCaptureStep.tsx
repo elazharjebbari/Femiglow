@@ -99,7 +99,7 @@ interface LeadCaptureStepProps {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
-  const { t } = useWizardTranslation();
+  const { t, dir } = useWizardTranslation();
   const firstNameId = useId();
   const phoneId = useId();
   const consentId = useId();
@@ -321,6 +321,10 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                     autoComplete="given-name"
                     inputMode="text"
                     required
+                    // Le prénom suit la direction de la langue d'affichage : en
+                    // AR le champ (placeholder + saisie) s'aligne à droite, au
+                    // lieu de `dir="auto"` qui résout LTR sur un champ vide.
+                    dir={dir}
                     error={errors.firstName?.message}
                     placeholder={t.leadStep.firstNamePlaceholder}
                     {...firstNameProps}
@@ -342,6 +346,10 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                       id={phoneId}
                       label={t.leadStep.phoneLabel}
                       required
+                      // Le numéro reste toujours LTR (même en AR) : un numéro de
+                      // téléphone est une séquence latine qui ne doit jamais être
+                      // ré-ordonnée par le contexte RTL.
+                      dir="ltr"
                       placeholder={t.leadStep.phonePlaceholder}
                       hint={t.leadStep.phoneHint}
                       error={errors.phone?.message}
@@ -360,6 +368,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                       inputMode="tel"
                       autoComplete="tel"
                       required
+                      dir="ltr"
                       placeholder={t.leadStep.phonePlaceholder}
                       hint={t.leadStep.phoneHint}
                       error={errors.phone?.message}

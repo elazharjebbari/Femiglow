@@ -365,7 +365,10 @@ function DropdownSwitcher({
           // `end-0` (logical) garantit l'alignement correct en RTL.
           className={cn(
             'absolute end-0 top-full z-[var(--z-popover,40)] mt-2 min-w-[12rem]',
-            'border border-encre/10 bg-creme/95 backdrop-blur-sm shadow-sm',
+            // Fond plein crème (charte) — pas de transparence : le menu ne
+            // doit jamais laisser transparaître le contenu sous-jacent, et le
+            // crème opaque garde un contraste fort avec le texte `text-encre`.
+            'border border-encre/15 bg-creme shadow-md',
             'origin-top motion-safe:animate-[locale-fade-in_180ms_ease-out]',
             'motion-reduce:animate-none',
           )}

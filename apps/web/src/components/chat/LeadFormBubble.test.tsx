@@ -12,7 +12,7 @@
  *
  * Mock useTracking (side-effect global tracking) pour isoler.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -24,6 +24,11 @@ import { useChatStore } from './chat-store';
 vi.mock('@/lib/tracking/use-tracking', () => ({
   useTracking: () => ({ emit: vi.fn(), consent: { analytics: true, marketing: false } }),
 }));
+
+// Lifecycle MSW par-fichier (le setup global est un no-op, cf. msw.setup.ts).
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 function setOffer(reason: 'purchase-intent' | 'frustration' | 'inline-contact' = 'purchase-intent') {
   const s = useChatStore.getState();

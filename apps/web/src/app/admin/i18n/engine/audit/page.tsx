@@ -37,7 +37,7 @@ export default async function AdminI18nEngineAuditPage(): Promise<JSX.Element> {
   );
 
   return (
-    <AdminShell adminEmail={session.email} active="settings">
+    <AdminShell adminEmail={session.email} active="i18n">
       <div className="space-y-4">
         <header>
           <h1 className="text-base font-semibold text-stone-900">

@@ -538,7 +538,7 @@
           }
         },
         "social_proof": {
-          "count_label_geo": "{count} maisons en France",
+          "count_label_geo": "{count} maisons au Maroc",
           "reviews_count": "{count, plural, one {# avis} other {# avis}}",
           "fallback_quote": "Cinq minutes le soir, c’est devenu un signal de fin de journée.",
           "fallback_author": "Lina, Rabat"

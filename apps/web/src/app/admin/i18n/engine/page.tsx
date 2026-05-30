@@ -19,7 +19,7 @@ export default async function AdminI18nEnginePage(): Promise<JSX.Element> {
   const { payload, version, updatedAt, updatedBy, isDefault } =
     await getAdminEngineConfig();
   return (
-    <AdminShell adminEmail={session.email} active="settings">
+    <AdminShell adminEmail={session.email} active="i18n">
       <EngineEditor
         initialConfig={payload}
         meta={{ version, updatedAt, updatedBy, isDefault }}
