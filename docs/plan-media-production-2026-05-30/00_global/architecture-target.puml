@@ -1,0 +1,96 @@
+@startuml architecture-target
+title FemiGlow Content Studio — Media Production Target Architecture (MP-AR-*)
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+legend top
+  Solid = data/control flow · Dashed = reuse (D5) · <<new>> = added by MP-AR/VO/CO/SU
+  Flag: CONTENT_STUDIO_MEDIA_STUDIO_ENABLED (default off) gates all <<new>> routes + UI
+endlegend
+
+package "Pipeline A — AI-Engine (LangGraph)" {
+  [graph/builder.ts] as Graph
+  package "nodes (reused, D5)" {
+    [generate-voiceover.ts\ngenerateVoiceoverAsset()] as NVO
+    [generate-music.ts\ngenerateMusicTrack()] as NMU
+    [generate-subtitles.ts\ngenerateSRT()] as NSU
+    [compose.ts\ncomposeVideo()/composeMediaBundle()] as NCO
+    [transcode-export.ts] as NTR
+  }
+  [types/state.ts\n(voiceover,music,subtitles,composition)] as State
+  [orchestrator.ts\nGenerationResult <<extended D2>>] as DTO
+  [bridge/content-studio-bridge.ts\nbridgeToContentStudio <<extended D2>>] as Bridge
+}
+
+package "Pipeline B — Content-Studio create-flow" {
+  package "service.ts" {
+    [generateVisualForDraft\n(image|video, unchanged)] as SVis
+    [generateVoiceoverForDraft <<new>>] as SVO
+    [generateSubtitlesForDraft <<new>>] as SSU
+    [composeDraftVideo <<new>>] as SCO
+  }
+  package "routes /api/admin/content-studio/drafts/[id]" {
+    [generate-visual (existing)] as RVis
+    [generate-voiceover <<new>>] as RVO
+    [generate-subtitles <<new>>] as RSU
+    [compose <<new>>] as RCO
+  }
+  [repository.ts\nupsertBundleAssets() <<new D1>>\ngetDraftBundle() <<new D1>>\nupsertPrimaryAsset() shim] as Repo
+}
+
+package "DB (Drizzle)" {
+  database "content_asset_binding\n(role: primary_image|primary_video|\nvoiceover|music|subtitles|composed_video)" as Bind
+  database "media\n(kind: image|video|audio|subtitles)" as Media
+}
+
+package "UI (step 3 Visuel — D4)" {
+  [MediaStudio.tsx\nStudio media tracks panel] as UI
+  [VideoPlayer.tsx (reused)] as VP
+  [PublishActionGroup.tsx\nshows composed video (dry_run)] as Pub
+}
+
+' Pipeline A graph flow
+Graph --> NVO
+Graph --> NMU
+Graph --> NSU
+Graph --> NCO
+NCO --> NTR
+NVO --> State
+NMU --> State
+NSU --> State
+NCO --> State
+State --> DTO : buildResultFromState reads\nvoiceover/music/subtitles/composition
+DTO --> Bridge
+Bridge --> Repo : upsertBundleAssets(all roles)
+
+' Reuse (D5)
+SVO ..> NVO : reuse core
+SSU ..> NSU : reuse core
+SCO ..> NCO : reuse core
+
+' Pipeline B flow
+UI --> RVO
+UI --> RSU
+UI --> RCO
+UI --> RVis
+RVO --> SVO
+RSU --> SSU
+RCO --> SCO
+RVis --> SVis
+SVO --> Repo
+SSU --> Repo
+SCO --> Repo
+SVis --> Repo
+Repo --> Bind
+SVO --> Media
+SSU --> Media
+SCO --> Media
+SVis --> Media
+
+' UI consumption
+Repo --> UI : getDraftBundle()
+UI --> VP : preview composed_video
+UI --> Pub : composed video + track summary
+
+@enduml

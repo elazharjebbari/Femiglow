@@ -1,0 +1,66 @@
+@startuml correction-loop
+title Boucle de corrections et vérifications — Media Production (MP-TB)
+
+skinparam shadowing false
+skinparam ActivityBackgroundColor #FDF6E3
+skinparam ActivityBorderColor #586E75
+skinparam ArrowColor #586E75
+skinparam ActivityDiamondBackgroundColor #EEE8D5
+
+start
+
+:green_streak = 0;
+
+repeat
+  partition "RUN GATE (fail-fast)" {
+    :G0  tsc --noEmit  (vitest does NOT typecheck);
+    if (G0 green?) then (yes)
+      :G1  next lint;
+      if (G1 green?) then (yes)
+        :G2  vitest run\n(MSW onUnhandledRequest:'error');
+        if (G2 green?) then (yes)
+          :G3  playwright --grep @content-studio\n(mock mode, :8012, dry-run);
+          if (G3 green?) then (yes)
+            :G4  next build;
+            if (G4 green?) then (yes)
+              :gate_result = ALL GREEN;
+            else (no)
+              :gate_result = RED (build);
+            endif
+          else (no)
+            :gate_result = RED (e2e);
+          endif
+        else (no)
+          :gate_result = RED (vitest);
+        endif
+      else (no)
+        :gate_result = RED (lint);
+      endif
+    else (no)
+      :gate_result = RED (typecheck);
+    endif
+  }
+
+  if (gate_result == ALL GREEN?) then (yes)
+    :green_streak = green_streak + 1;
+  else (no)
+    :green_streak = 0;
+    partition "TRIAGE & FIX" {
+      :collect failures;
+      :classify into T0..T6\nT0 typecheck · T1 no-network breach\nT2 non-regression · T3 contract\nT4 failure-injection · T5 a11y/i18n\nT6 flake;
+      :order by severity (blockers T0/T1/T2 first);
+      while (more classes to fix?) is (yes)
+        :pick highest-severity class;
+        :apply smallest fix at root\n(NO any / @ts-ignore / fetch-stub);
+        :re-run IMPACTED suites (inner loop);
+      endwhile (no)
+    }
+  endif
+
+repeat while (green_streak < 2?) is (yes) not (no — two consecutive full-gate greens)
+
+:EXIT — battery GREEN twice consecutively\nall exit criteria (correction-loop.md §5) satisfied\nno new MP-* test quarantined;
+
+stop
+
+@enduml

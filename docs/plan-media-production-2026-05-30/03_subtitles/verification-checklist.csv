@@ -1,0 +1,48 @@
+area,item,how_to_verify,expected,evidence
+backend,Default generation makes no provider call,Run generate-subtitles-for-draft.test.ts with MSW onUnhandledRequest:error,No openai request; provider='rule-based'; costCents=0,vitest output + request:start spy = []
+backend,Save makes no provider call,Run save-subtitles-for-draft.test.ts with MSW onUnhandledRequest:error,Zero captured requests (pure validate+serialize),vitest request:start spy = []
+backend,Live+refine+no-key returns 409,Mock resolveProviderCredential->undefined; call service refine=true mode=live,Throws HttpError invalid_state (409); no createMedia; no fetch,vitest rejects.toMatchObject {code:invalid_state}
+backend,mock+refine ignored,Call service refine=true mode=mock,provider='rule-based'; zero requests,vitest spy + provider assertion
+backend,Refine 5xx surfaces upstream_failed,MSW openai500; service refine=true mode=live+key,Throws HttpError upstream_failed (502); no silent fake asset,vitest output
+backend,Refine tidies text only not timecodes,MSW openaiOk; compare cue timecodes before/after refine,startMs/endMs unchanged; only lines tidied,vitest equality assertion
+backend,Non-video draft rejected,Call service for a carousel draft,Throws HttpError invalid_state (Sous-titres réservés…),vitest output
+backend,Node core extraction preserves graph behavior,Run existing generate-subtitles.test.ts unchanged,All 6 existing tests green; git diff empty for the file,vitest run + git diff
+data,role='subtitles' asset persisted,Inspect createMedia + upsertBundleAssets calls in save test,kind:'subtitles' role:'subtitles' mime application/x-subrip meta.style set,vitest spy args
+data,meta.srt equals .srt asset bytes,Compare meta.srt to storage.put body in save test,Byte-identical UTF-8,vitest assertion (data-model §7)
+data,Save re-indexes + canonicalizes SRT,Save shuffled-index cues; inspect serialized SRT,1..N contiguous indices; LF blocks; sorted by startMs,vitest serializeSrt assertion
+data,cues:[] clears binding idempotently,Call save twice with cues:[],Binding+.srt deleted; second call no error,vitest spy + idempotency
+data,Upsert scoped to role,Inspect upsertBundleAssets role arg in save,role:'subtitles' only; primary_video untouched,vitest spy args
+data,media_kind enum has 'subtitles',Run 0064 migration verification query,"enum image,video,audio,subtitles",db-migration.md §6 SELECT
+data,data-contract.json valid,python3 -m json.tool data-contract.json,Valid JSON; matches SubtitlesResult/Cue/BurnInStyle,CLI exit 0
+data,api-contract.yaml valid,Lint with a yaml/openapi validator,Valid OpenAPI 3.1; both paths resolve $refs,validator exit 0
+srt,Timecode round-trips,Run srt.test.ts round-trip cases,parseTimecode(formatTimecode(ms))===ms; format HH:MM:SS;mmm,vitest output
+srt,SRT serialize/parse idempotent,Run srt.test.ts round-trip,serializeSrt(parseSrt(x))===x for canonical x,vitest output
+srt,parseScriptToCues wraps lines,Run srt.test.ts wrapping case,Lines <=42 chars; <=2 lines; overflow -> extra cues,vitest output
+srt,validateCues covers V1..V11,Run validateCues tests,Errors V1-V7; warnings V8-V11; clean list -> [],vitest output
+route,Generate route mirrors generate-visual guards,Read route.ts; run route test,requireContentStudioEnabled+requireAdminApi+schema; 200 mock; 400 bad; 409 refine no-key; 401,vitest route suite
+route,Save route validates + returns cueErrors,Run save-subtitles.route.test.ts overlap case,400 invalid_input details.cueErrors,vitest route test
+route,Cookie mode resolution,Set cs_generation_mode cookie variants,live|mock honored; garbage/absent->mock,vitest route test
+ux,Generate then edit,Generate on a Reel draft (mock); edit a cue,CueEditor populated; counter+preview update,Playwright + CueEditor.test.tsx
+ux,Save blocked on overlap,Force overlapping cues,Enregistrer disabled; error summary lists cue,SubtitlesTrack/CueEditor test + Playwright
+ux,Style preview updates,Change position/size/color,SubtitleOverlayPreview reflects style live,SubtitleOverlayPreview.test.tsx + Playwright
+ux,Regenerate confirms overwrite,Click Régénérer with edits,Confirm dialog; cancel keeps edits,SubtitlesTrack.test.tsx + Playwright
+ux,409 refine-no-key inline,Force live refine no-key via UI,role=alert with Aucune clé IA configurée…,SubtitlesTrack.test.tsx
+a11y,Editor table semantics,Inspect CueEditor DOM,role=table; row labels "Sous-titre n de X à Y"; th scope=row,CueEditor.test.tsx + axe
+a11y,Invalid field announces why,Inspect aria-invalid + aria-errormessage,Bad timecode/over-long line announce the rule message,CueEditor.test.tsx
+a11y,Error summary focus management,Activate a summary item,Focus moves to the offending cue field,CueEditor.test.tsx + Playwright
+a11y,Style controls keyboard,Arrow on position/font radiogroup; slider arrows,Values change; aria-valuetext exposed,SubtitleStyleControls.test.tsx
+a11y,Preview role=img,Inspect SubtitleOverlayPreview,role=img descriptive aria-label,SubtitleOverlayPreview.test.tsx
+a11y,Live region announces state,Inspect aria-live region,polite announcements generating/saving/saved,SubtitlesTrack.test.tsx
+a11y,Contrast,Check editor text + warn if text/box contrast <4.5,>=4.5:1 UI; preview warns on low contrast,manual/axe + SubtitleStyleControls.test.tsx
+i18n,All copy French,Grep SubtitlesTrack/CueEditor/StyleControls strings,No English user-facing text,review + ui-ux-design.md table
+perf,No layout shift editing<->invalid<->ready,Toggle states,Same mounted editor; issue summary min-height reserved; CLS ~0,Playwright/devtools
+perf,reduced-motion respected,Set prefers-reduced-motion,Estimator + preview transitions disabled,manual
+perf,Large cue list responsive,Edit a 100-cue list,Editor stays responsive; validate memoized,profiling
+security,No secrets in repo,grep for keys in docs/code,None; keys only via resolveProviderCredential,grep clean
+security,Dry-run publishing only,Confirm SOCIAL_PUBLISHING_MODE,dry_run; subtitles never published alone,env check
+non-regression,Node test unchanged,generate-subtitles.test.ts file not edited,git diff empty for that test file,git diff
+non-regression,compose state.subtitles ingestion unchanged,Compose reads SRT string as before,compose.ts unchanged; only supplier differs,review + compose-subtitles-contract.test.ts
+non-regression,generate-visual untouched,Run existing MediaStudio.test.tsx,All green,vitest
+non-regression,Flag off DOM unchanged,Render MediaStudio with flag off,No Sous-titres track; identical to today,MediaStudio.subtitles.test.tsx
+ci,tsc --noEmit clean,pnpm -C apps/web exec tsc --noEmit,Exit 0,CI log
+ci,MSW onUnhandledRequest error global,Grep test setup,All subtitle integration files use it,review

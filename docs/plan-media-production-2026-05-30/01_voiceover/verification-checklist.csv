@@ -1,0 +1,32 @@
+area,item,how_to_verify,expected,evidence
+backend,Service mode=mock makes no provider call,Run generate-voiceover-for-draft.test.ts with MSW onUnhandledRequest:error,No openai/elevenlabs request; provider='mock'; costCents=0,vitest output + request:start spy = []
+backend,Service live+no-key returns 409,Mock resolveProviderCredential->undefined; call service mode=live,Throws HttpError invalid_state (409); no createMedia; no fetch,vitest rejects.toMatchObject {code:invalid_state}
+backend,Service live+key calls TTS exactly once,MSW ttsHandlers.openaiOk; count requests to api.openai.com,count===1; provider='openai:tts-1',vitest request counter
+backend,Provider 5xx surfaces upstream_failed,MSW openai500; call service mode=live+key,Throws HttpError upstream_failed (502); no silent fake asset,vitest output
+backend,Non-video draft rejected,Call service for a carousel draft,Throws HttpError invalid_state (Voix-off réservée…),vitest output
+backend,Node core extraction preserves graph behavior,Run existing generate-voiceover.test.ts unchanged,All 8 existing tests green,vitest run (no file edits)
+backend,Cost formulas match node,Compare service costCents to node formulas (openai 1500/1M chars; eleven 3/1k chars; mock 0),Equal,unit assertion
+data,role='voiceover' asset persisted,Inspect createMedia + upsertBundleAsset calls in service test,kind:'audio' role:'voiceover' overrides.contentStudio.role='voiceover',vitest spy args
+data,Regenerate replaces by role,Call service twice; assert upsertBundleAsset(role:'voiceover') replaces,Second call supersedes first; one voiceover per draft,vitest spy + data-model MP-AR-*
+data,generation_run records intendedProvider+truncated,Inspect insertGenerationRun input/output,input.intendedProvider set; output.truncated boolean,vitest spy args
+data,data-contract.json valid,python3 -m json.tool data-contract.json,Valid JSON; matches VoiceoverResult,CLI exit 0
+route,Route mirrors generate-visual guards,Read route.ts; run route test,requireContentStudioEnabled+requireAdminApi+schema; 200 mock; 400 bad; 409 no-key; 401 not-admin,vitest route suite
+route,Cookie mode resolution,Set cs_generation_mode cookie variants,live|mock honored; garbage/absent->mock,vitest route test
+ux,Track pre-fills script from narration,Open Visuel on a Reel draft (mock),Textarea non-empty (hook+scenes),Playwright + component test
+ux,Generate then preview,Click Générer; wait for AudioTrackPlayer,Player visible; toast Voix-off générée,Playwright voiceover.spec.ts
+ux,Stale badge after edit,Edit script after ready,modifié badge shown; Régénérer emphasized,component test stale
+ux,409 no-key message inline,Force live no-key via UI,role=alert with Aucune clé TTS configurée…,component test
+a11y,Audio player ARIA,Inspect AudioTrackPlayer DOM,role=group aria-label Lecteur voix-off; play aria-pressed; seek aria-valuetext; mute aria-pressed,AudioTrackPlayer.test.tsx + axe
+a11y,Keyboard operable,Tab/Space/Arrow on player+voices,Play toggles on Space; seek moves on Arrow; voice radiogroup arrow-navigable,Playwright keyboard smoke
+a11y,Live region announces state,Inspect aria-live region,polite announcements on generating/ready,component test
+a11y,Contrast,Check text on --cs-bg-elevated and badges,>=4.5:1,manual/axe
+i18n,All copy French,Grep VoiceoverTrack/AudioTrackPlayer strings,No English user-facing text,review + ui-ux-design.md table
+perf,No layout shift on state change,Toggle empty->generating->ready,Reserved player height; CLS ~0,Playwright/devtools
+perf,reduced-motion respected,Set prefers-reduced-motion,Estimator transition disabled,manual
+security,No secrets in repo,grep for keys in docs/code,None; keys only via resolveProviderCredential,grep clean
+security,Dry-run publishing only,Confirm SOCIAL_PUBLISHING_MODE,dry_run; voice-over never published alone,env check
+non-regression,generate-visual untouched,Run existing MediaStudio.test.tsx,All green,vitest
+non-regression,Flag off DOM unchanged,Render MediaStudio with flag off,No Voix-off track; identical to today,MediaStudio.voiceover.test.tsx
+non-regression,Node test unchanged,generate-voiceover.test.ts file not edited,git diff empty for that test file,git diff
+ci,tsc --noEmit clean,pnpm -C apps/web exec tsc --noEmit,Exit 0,CI log
+ci,MSW onUnhandledRequest error global,Grep test setup,All voice-over integration files use it,review

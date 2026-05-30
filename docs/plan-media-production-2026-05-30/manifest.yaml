@@ -1,0 +1,118 @@
+# Machine-readable inventory of the media-production action-plan dossier.
+# Generated 2026-05-30, anchored to merge deecc53 (branch master, staging).
+plan:
+  id: plan-media-production-2026-05-30
+  title: "Production média opérateur — voix-off · montage · sous-titres"
+  closes: BUG-004
+  audit_baseline: docs/audit-generation-publication-2026-05-29/
+  scope: design+plan+tests+runbook   # NO app code changed by this dossier
+  publishing_mode: dry_run           # never live
+  anchor_commit: deecc53
+  totals:
+    files: 82
+    by_ext: { md: 51, csv: 13, puml: 10, yaml: 4, json: 3, sh: 1 }
+    tests_designed: 273              # 04_test-battery/test-matrix.csv
+
+conventions:
+  task_id_prefixes:
+    MP-AR: architecture / DTO / bridge / data-model / migration
+    MP-VO: voice-over
+    MP-CO: compose / montage
+    MP-SU: subtitles / script-on-video
+    MP-TB: test battery
+    MP-RB: runbook
+  decisions: 00_global/decision-log.md   # D1..D6
+  quality_gates: [ "tsc --noEmit", "vitest run", "playwright", "next build" ]
+  invariants:
+    - "tsc --noEmit is a CI gate BEFORE vitest (vitest does not typecheck)"
+    - "MSW for all provider HTTP; onUnhandledRequest:'error' proves no-network on mock/no-key"
+    - "SOCIAL_PUBLISHING_MODE never live; dry_run sacrosanct"
+    - "additive + behind CONTENT_STUDIO_MEDIA_STUDIO_ENABLED; generateVisualForDraft untouched"
+    - "reuse pipeline-A nodes (ffmpeg/TTS/SRT); never reimplement"
+
+structure:
+  - folder: 00_global
+    role: architecture backbone (prerequisite, blocks all features)
+    task_ids: MP-AR-*
+    files:
+      - ground-truth-codebase.md   # READ FIRST — single source of truth
+      - overview.md
+      - scope-and-outcomes.md
+      - architecture-current.md
+      - architecture-target.md
+      - architecture-target.puml
+      - data-model.md
+      - data-model.puml
+      - dto-bridge-changes.md
+      - db-migration.md            # additive SQL 0064, fwd+rollback+backfill
+      - dependency-graph.puml
+      - decision-log.md
+      - risks.csv
+      - glossary.md
+      - naming-conventions.md
+  - folder: 01_voiceover
+    role: TTS voice-over per draft
+    task_ids: MP-VO-*
+    new_route: POST /api/admin/content-studio/drafts/[id]/generate-voiceover
+    new_service: generateVoiceoverForDraft
+    reuses_node: src/lib/ai-engine/nodes/generate-voiceover.ts
+    template: 16-file per-feature template (ground-truth §5)
+  - folder: 02_compose
+    role: ffmpeg montage of the track bundle into one mp4
+    task_ids: MP-CO-*
+    new_route: POST /api/admin/content-studio/drafts/[id]/compose
+    new_service: composeDraftVideo
+    reuses_node: src/lib/ai-engine/nodes/compose.ts (+ transcode-export.ts)
+    template: 16-file per-feature template
+  - folder: 03_subtitles
+    role: SRT generation + edit + burn-in style for compose
+    task_ids: MP-SU-*
+    new_routes:
+      - POST /api/admin/content-studio/drafts/[id]/generate-subtitles
+      - PUT  /api/admin/content-studio/drafts/[id]/subtitles
+    new_service: generateSubtitlesForDraft (+ saveSubtitlesForDraft)
+    reuses_node: src/lib/ai-engine/nodes/generate-subtitles.ts
+    owns_enum_addition: "media_kind += 'subtitles' (coordinated with MP-AR-005)"
+    template: 16-file per-feature template
+  - folder: 04_test-battery
+    role: dense robustness-first battery + correction/verification loop
+    task_ids: MP-TB-*
+    files:
+      - strategy.md
+      - robustness-principles.md
+      - correction-loop.md
+      - correction-loop.puml
+      - test-matrix.csv            # 273 distinct test_ids
+      - coverage-map.csv           # every test mapped to every angle, no gap
+      - msw-harness-plan.md
+      - ci-integration.yaml
+      - execution-plan.md
+      - flakiness-policy.md
+  - folder: 05_runbook
+    role: pilots end-to-end execution of the plan
+    task_ids: MP-RB-*
+    files:
+      - runbook.md                 # P0..P5 phased, gated, with rollback refs
+      - runbook-test-battery.md
+      - preflight.md
+      - go-no-go.md
+      - rollback.md
+      - commands.sh                # bash -n clean, non-destructive by default
+      - execution-checklist.csv
+      - pilot.md
+
+execution_order: [ P0_architecture, P1_voiceover, P2_subtitles, P3_compose, P4_ui_flag, P5_e2e_hardening ]
+prerequisites:
+  - "MP-AR-* (architecture + migration) blocks MP-VO/CO/SU-*"
+  - "MP-CO-* (compose) soft-depends on MP-VO-* and MP-SU-* artifacts"
+
+env_facts:
+  app_root: apps/web
+  pm2_process: web
+  port: 8012
+  build_cmd: "pnpm run build (from apps/web)"
+  health: "curl http://127.0.0.1:8012/api/health -> 200"
+  public_url: https://staging.femiglow-maroc.com
+  migrate_cmd: "pnpm -C apps/web run db:migrate-safe   # custom hash runner, next free = 0064"
+  feature_flag: CONTENT_STUDIO_MEDIA_STUDIO_ENABLED   # default off until G-P4
+  known_pre_existing_red: src/components/admin/content-studio/EditorialCalendar.test.tsx

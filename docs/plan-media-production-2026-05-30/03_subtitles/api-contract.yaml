@@ -1,0 +1,332 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow Content Studio — Subtitles / script-on-video API
+  version: 0.1.0
+  description: >
+    Per-draft subtitle (SRT) generation and editing (pipeline B). Reuses the
+    AI-Engine subtitle core (parseScriptToCues / serializeSrt). Mode-aware: the
+    default generation is PURE (no provider call); live-no-key only matters when
+    refine=true (optional LLM tidy) -> 409 invalid_state. Save (PUT) re-validates
+    the operator-edited cues server-side and persists a role='subtitles'
+    (kind='subtitles') bundle asset (SRT text + .srt asset + burn-in style).
+    Task prefix MP-SU-*.
+servers:
+  - url: https://staging.femiglow.local:8012
+    description: staging (mock mode)
+paths:
+  /api/admin/content-studio/drafts/{id}/generate-subtitles:
+    post:
+      operationId: generateSubtitlesForDraft
+      summary: Generate (or regenerate) timed subtitles from the draft script.
+      description: >
+        Builds a deterministic SRT from the draft script (hook + scenes), returns
+        the parsed cues + canonical SRT + default/existing style, and auto-persists
+        a role='subtitles' asset when >=1 cue is produced. Default path is pure
+        (no network). refine=true (live+key) optionally tidies cue text via an LLM.
+        Guarded by requireContentStudioEnabled + requireAdminApi. Mode resolved from
+        the cs_generation_mode cookie (mock | live), defaulting to mock.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Draft id.
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubtitlesGenerationRequest'
+            examples:
+              deriveFromDraft:
+                summary: Omit script — server derives cues from the draft script
+                value: {}
+              explicitText:
+                summary: Operator-provided source text override
+                value:
+                  script: "Découvrez le secret des ongles parfaits. Un geste lent, une main qui retrouve sa lumière."
+              liveRefine:
+                summary: Live + LLM tidy of cue text (needs a key)
+                value:
+                  refine: true
+      responses:
+        '200':
+          description: Subtitles generated (and bound when non-empty).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [media]
+                additionalProperties: false
+                properties:
+                  media: { $ref: '#/components/schemas/SubtitlesResult' }
+              examples:
+                mock:
+                  value:
+                    media:
+                      id: "med_srt_8f2a1c"
+                      draftId: "drf_123"
+                      role: subtitles
+                      kind: subtitles
+                      slug: "content-studio-srt-drf_123-8f2a1c"
+                      cueCount: 4
+                      provider: rule-based
+                      costCents: 0
+                      previewUrl: "/_media/ai-engine/subtitles-drf_123-1717070000000.srt"
+                      originalUrl: "/_media/ai-engine/subtitles-drf_123-1717070000000.srt"
+                      createdAt: "2026-05-30T10:00:00.000Z"
+                      style:
+                        font: sans
+                        sizePx: 28
+                        position: bottom
+                        textColor: "#FFFFFF"
+                        boxColor: "#000000"
+                        boxOpacity: 0.5
+                      srt: "1\n00:00:00,000 --> 00:00:03,000\nDécouvrez le secret des\nongles parfaits.\n\n2\n00:00:03,000 --> 00:00:08,000\nUn geste lent, une main qui\nretrouve sa lumière.\n\n"
+                      cues:
+                        - { index: 1, startMs: 0,    endMs: 3000,  lines: ["Découvrez le secret des", "ongles parfaits."] }
+                        - { index: 2, startMs: 3000, endMs: 8000,  lines: ["Un geste lent, une main qui", "retrouve sa lumière."] }
+                emptyScript:
+                  summary: Draft has no script text — transient empty result, nothing persisted
+                  value:
+                    media:
+                      id: ""
+                      draftId: "drf_123"
+                      role: subtitles
+                      kind: subtitles
+                      slug: ""
+                      cueCount: 0
+                      provider: rule-based
+                      costCents: 0
+                      previewUrl: ""
+                      originalUrl: ""
+                      createdAt: "2026-05-30T10:00:00.000Z"
+                      style: { font: sans, sizePx: 28, position: bottom, textColor: "#FFFFFF", boxColor: "#000000", boxOpacity: 0.5 }
+                      srt: ""
+                      cues: []
+        '400': { $ref: '#/components/responses/InvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            invalid_state — either the draft format is not video (Reel/Story), or
+            refine=true in live mode with no IA key. No asset is written.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                noKey:
+                  value: { error: { code: invalid_state, message: "Aucune clé IA configurée pour l’affinage. Désactivez l’affinage ou repassez en mode mock." } }
+                badFormat:
+                  value: { error: { code: invalid_state, message: "Sous-titres réservés aux formats vidéo (Reel/Story)." } }
+        '429': { $ref: '#/components/responses/BudgetExceeded' }
+        '502':
+          description: upstream_failed — refine LLM 5xx (live).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example: { error: { code: upstream_failed, message: "Échec de l’affinage des sous-titres." } }
+  /api/admin/content-studio/drafts/{id}/subtitles:
+    put:
+      operationId: saveSubtitlesForDraft
+      summary: Persist operator-edited cues + burn-in style as the subtitles asset.
+      description: >
+        Server re-validates the cues (validateCues — overlap, ordering, line length,
+        lines/cue, non-empty), re-serializes canonical SRT (1-based re-index), and
+        upserts the role='subtitles' binding (meta.srt + meta.style) + .srt asset.
+        cues:[] clears the subtitles for the draft. Structural errors -> 400 with
+        details.cueErrors.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubtitlesSaveRequest' }
+            examples:
+              save:
+                value:
+                  cues:
+                    - { index: 1, startMs: 0,    endMs: 3000, lines: ["Découvrez le secret des", "ongles parfaits."] }
+                    - { index: 2, startMs: 3000, endMs: 8000, lines: ["Un geste lent, une main qui", "retrouve sa lumière."] }
+                  style: { font: sans, sizePx: 30, position: bottom, textColor: "#FFFFFF", boxColor: "#000000", boxOpacity: 0.6 }
+              clear:
+                summary: Empty cues — clears the subtitles asset
+                value: { cues: [], style: { font: sans, sizePx: 28, position: bottom, textColor: "#FFFFFF" } }
+      responses:
+        '200':
+          description: Subtitles saved (or cleared when cues empty).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [media]
+                additionalProperties: false
+                properties:
+                  media: { $ref: '#/components/schemas/SubtitlesResult' }
+        '400':
+          description: >
+            invalid_input — payload shape invalid, OR structural cue errors
+            (overlap/ordering/line-length/lines/empty). details.cueErrors lists them.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                overlap:
+                  value:
+                    error:
+                      code: invalid_input
+                      message: "Sous-titres invalides."
+                      details:
+                        cueErrors:
+                          - { cueIndex: 2, code: overlap, severity: error, message: "Chevauchement : un sous-titre commence avant la fin du précédent." }
+                          - { cueIndex: 4, code: line_length, severity: error, message: "Ligne trop longue (47/42 caractères)." }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: invalid_state — draft format is not video (Reel/Story).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example: { error: { code: invalid_state, message: "Sous-titres réservés aux formats vidéo (Reel/Story)." } }
+components:
+  responses:
+    InvalidInput:
+      description: Invalid payload (invalid_input).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+          example: { error: { code: invalid_input, message: "Payload sous-titres invalide." } }
+    Unauthorized:
+      description: Not authenticated (unauthorized).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Forbidden:
+      description: Forbidden / feature disabled.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    NotFound:
+      description: Draft not found (not_found).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+          example: { error: { code: not_found, message: "Brouillon introuvable." } }
+    BudgetExceeded:
+      description: Daily budget exceeded (budget_exceeded).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  schemas:
+    SubtitlesGenerationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        script:
+          type: string
+          minLength: 1
+          maxLength: 8000
+          description: >
+            Operator override of the source text. If omitted, the server derives
+            cues from the draft script (hook + scene narration/onScreenText/...).
+        refine:
+          type: boolean
+          default: false
+          description: >
+            When true (live + key only), an LLM tidies cue TEXT (never timecodes).
+            mock mode ignores it (no provider call).
+    SubtitlesSaveRequest:
+      type: object
+      additionalProperties: false
+      required: [cues, style]
+      properties:
+        cues:
+          type: array
+          maxItems: 200
+          items: { $ref: '#/components/schemas/Cue' }
+          description: Operator-edited cues. Empty array clears the subtitles asset.
+        style: { $ref: '#/components/schemas/BurnInStyle' }
+    Cue:
+      type: object
+      additionalProperties: false
+      required: [index, startMs, endMs, lines]
+      properties:
+        index: { type: integer, minimum: 0, description: "Display order; server re-indexes 1..N on save." }
+        startMs: { type: integer, minimum: 0 }
+        endMs: { type: integer, minimum: 1, description: "Must be > startMs (validateCues V2)." }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items: { type: string }
+    BurnInStyle:
+      type: object
+      additionalProperties: false
+      required: [font, sizePx, position, textColor]
+      properties:
+        font: { type: string, enum: [sans, serif, mono] }
+        sizePx: { type: integer, minimum: 12, maximum: 72 }
+        position: { type: string, enum: [top, middle, bottom] }
+        textColor: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
+        boxColor: { type: string, pattern: '^#[0-9a-fA-F]{6}$' }
+        boxOpacity: { type: number, minimum: 0, maximum: 1 }
+    SubtitlesResult:
+      type: object
+      additionalProperties: false
+      required: [id, draftId, role, kind, slug, cues, srt, style, cueCount, previewUrl, originalUrl, provider, costCents, createdAt]
+      properties:
+        id: { type: string, description: "Media id; empty string when generate produced 0 cues (transient, not persisted)." }
+        draftId: { type: string }
+        role: { type: string, enum: [subtitles] }
+        kind: { type: string, enum: [subtitles] }
+        slug: { type: string }
+        cues:
+          type: array
+          items: { $ref: '#/components/schemas/Cue' }
+        srt: { type: string, description: "Canonical SRT (LF, 1-based indices). Byte-identical to the .srt asset and meta.srt." }
+        style: { $ref: '#/components/schemas/BurnInStyle' }
+        cueCount: { type: integer, minimum: 0 }
+        previewUrl: { type: string, description: "URL of the .srt text asset." }
+        originalUrl: { type: string }
+        provider: { type: string, description: "rule-based | openai:gpt-4o-mini" }
+        costCents: { type: number, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+    CueIssue:
+      type: object
+      additionalProperties: false
+      required: [cueIndex, code, severity, message]
+      properties:
+        cueIndex: { type: integer, minimum: 0 }
+        code:
+          type: string
+          enum: [timecode, duration, order, overlap, lines, line_length, empty, min_duration, cps, min_gap, beyond_video]
+        severity: { type: string, enum: [error, warning] }
+        message: { type: string }
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [invalid_input, unauthorized, forbidden, not_found, invalid_state, budget_exceeded, upstream_failed, internal_error]
+            message: { type: string }
+            details: {}
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: session
+security:
+  - adminSession: []

@@ -1,0 +1,79 @@
+phase,step_id,task_ref,action,command,gate,expected,status
+P0,0.1,MP-RB-preflight,Run preflight checklist,see 05_runbook/preflight.md,preflight,all blocking rows green; dry_run + flag off + ffmpeg-static + DB backup,todo
+P0,0.2,MP-RB-branch,Branch off staging master,git -C /var/www/femiglow-staging switch -c feat/media-production-mp,-,new branch from master,todo
+P0,0.3,MP-AR-001,Extend GenerationResult DTO (voiceover/music/subtitles/composedVideo/transcodedVideo),edit apps/web/src/lib/ai-engine/orchestrator.ts,tsc,optional fields added; buildResultFromState reads channels,todo
+P0,0.4,MP-AR-004,Widen StudioV2MediaKind + media_kind enum (add subtitles),edit apps/web/src/lib/content-studio-v2/media/types.ts + src/lib/db/schema.ts,tsc,kind=image|video|audio|subtitles,todo
+P0,0.5,MP-AR-003,Add upsertBundleAssets/getDraftBundle (keep upsertPrimaryAsset shim),edit apps/web/src/lib/content-studio/repository.ts + types.ts,tsc,per-role upsert; legacy shim preserved,todo
+P0,0.6,MP-AR-002,Extend bridge mapping to roles,edit apps/web/src/lib/ai-engine/bridge/content-studio-bridge.ts,tsc,each present artifact mapped via upsertBundleAssets,todo
+P0,0.7,MP-AR-006,Add feature flag (default false),edit apps/web/src/env.ts + .env.example,-,CONTENT_STUDIO_MEDIA_STUDIO_ENABLED default false,todo
+P0,0.8,MP-AR-005,Author additive migration 0064 (prefix @no-transaction:true),create apps/web/drizzle/migrations/0064_media_production_bundle.sql,-,enum add + meta_json + role backfill; no drop,todo
+P0,0.9,MP-AR-005,Validate migration journal,pnpm -C apps/web run db:validate:strict,-,no journal/hash errors,todo
+P0,0.10,MP-AR-005,Preview migration (dry),pnpm -C apps/web run db:migrate-safe -- --plan,-,0064 shown as only pending,todo
+P0,0.11,MP-AR-005,[USER] Apply migration 0064,!pnpm -C apps/web run db:migrate-safe,-,0064 applied; subtitles enum present; meta_json added,todo
+P0,0.12,MP-AR-005,Verify migration (db-migration.md §6 queries),see 05_runbook/commands.sh §5,-,enum=image|video|audio|subtitles; count(role=primary)=0,todo
+P0,0.13,MP-AR-all,Typecheck gate,pnpm -C apps/web run typecheck,tsc,exit 0,todo
+P0,0.14,MP-AR-all,Backbone vitest,pnpm -C apps/web exec vitest run src/lib/ai-engine src/lib/content-studio,-,backbone + CS v2 regression green,todo
+P0,0.15,MP-AR-all,Build,pnpm -C apps/web run build,build,next build succeeds,todo
+P0,0.16,MP-RB-loop,Correction loop to green twice,see 05_runbook/runbook-test-battery.md,loop,two consecutive green runs,todo
+P0,GP0,MP-RB-gate,Go/No-Go G-P0,see 05_runbook/go-no-go.md,G-P0,GO: backbone merged + migration verified + flag off + dry_run,todo
+P1,1.2,MP-VO-01,Extract synthesizeVoiceover core (node thin adapter),edit apps/web/src/lib/ai-engine/nodes/generate-voiceover.ts,-,core extracted; node behavior unchanged,todo
+P1,1.3,MP-VO-13,Node regression,pnpm -C apps/web exec vitest run src/lib/ai-engine/nodes/generate-voiceover.test.ts,-,existing tests 100% green unchanged,todo
+P1,1.4,MP-VO-04,Add voiceoverGenerationSchema (zod strict),edit apps/web/src/lib/content-studio/schemas.ts,-,rejects empty/unknown keys,todo
+P1,1.5,MP-VO-02,Implement generateVoiceoverForDraft service,edit apps/web/src/lib/content-studio/service.ts,-,mock no provider call; live-no-key 409,todo
+P1,1.6,MP-VO-03,Create POST generate-voiceover route,create apps/web/src/app/api/admin/content-studio/drafts/[id]/generate-voiceover/route.ts,-,mock 200; auth; cookie mode,todo
+P1,1.7,MP-VO-12,MSW TTS handlers + no-network proof,add apps/web/src/test/msw/handlers/tts.ts,-,onUnhandledRequest error proves no network,todo
+P1,1.8,MP-VO-06;MP-VO-05,Build AudioTrackPlayer + VoiceoverTrack,add components under create/tracks + media,-,a11y player; track states,todo
+P1,1.9,MP-VO-07,Wire VoiceoverTrack into MediaStudio (flag-gated),edit apps/web/src/components/admin/content-studio-v2/create/MediaStudio.tsx,-,flag off DOM unchanged; flag on reel track present,todo
+P1,1.10,MP-VO-08,Surface voiceover in publish summary,edit apps/web/src/components/admin/content-studio-v2/create/PublishActionGroup.tsx,-,Voix-off shown when present,todo
+P1,1.11,MP-VO-11,Typecheck gate,pnpm -C apps/web run typecheck,tsc,exit 0,todo
+P1,1.12,MP-VO-11,Voice-over vitest suite,pnpm -C apps/web exec vitest run,-,VO tests + MediaStudio.test.tsx green,todo
+P1,1.13,MP-VO-09,Playwright golden path (mock),pnpm -C apps/web exec playwright test e2e/content-studio-v2/voiceover.spec.ts,-,generate+preview voice-over (mock),todo
+P1,1.14,MP-VO-11,Build,pnpm -C apps/web run build,build,succeeds,todo
+P1,1.15,MP-RB-loop,Correction loop to green twice,see 05_runbook/runbook-test-battery.md,loop,two consecutive green runs,todo
+P1,GP1,MP-RB-gate,Go/No-Go G-P1,see 05_runbook/go-no-go.md,G-P1,GO,todo
+P2,2.2,MP-SU-01,Create srt.ts + refactor node to wrapper,add apps/web/src/lib/ai-engine/subtitles/srt.ts; edit generate-subtitles.ts,-,SRT round-trip; node unchanged,todo
+P2,2.3,MP-SU-13,Node regression,pnpm -C apps/web exec vitest run src/lib/ai-engine/nodes/generate-subtitles.test.ts,-,existing tests green unchanged,todo
+P2,2.4,MP-SU-02,Add generateSubtitlesForDraftCore (pure; optional refine),add apps/web/src/lib/ai-engine/subtitles/generate-subtitles-core.ts,-,refine=false no fetch,todo
+P2,2.5,MP-SU-06,Add subtitles schemas (generation+save),edit apps/web/src/lib/content-studio/schemas.ts,-,strict; cue limits; defaults,todo
+P2,2.6,MP-SU-03,Implement generateSubtitlesForDraft + saveSubtitlesForDraft,edit apps/web/src/lib/content-studio/service.ts,-,server-authoritative validateCues; meta.srt==bytes,todo
+P2,2.7,MP-SU-04;MP-SU-05,Create POST generate-subtitles + PUT subtitles routes,create the two route files under drafts/[id],-,mock 200; cueErrors envelope on overlap,todo
+P2,2.8,MP-SU-16,MSW refine handler + no-network proof,add apps/web/src/test/msw/handlers/subtitles-refine.ts,-,default path zero calls,todo
+P2,2.9,MP-SU-08;MP-SU-10;MP-SU-11;MP-SU-07,Build CueEditor/StyleControls/OverlayPreview/SubtitlesTrack,add components under create/tracks,-,a11y editor; states,todo
+P2,2.10,MP-SU-12,Wire SubtitlesTrack into MediaStudio (flag-gated),edit MediaStudio.tsx,-,flag off DOM unchanged,todo
+P2,2.11,MP-SU-09,Pin compose-consumer contract + publish summary,edit PublishActionGroup.tsx,-,Sous-titres shown; meta.srt==serializeSrt(cues),todo
+P2,2.12,MP-SU-15,Typecheck + JSON contract valid,pnpm -C apps/web run typecheck; python3 -m json.tool docs/.../03_subtitles/data-contract.json,tsc,both clean,todo
+P2,2.13,MP-SU-15,Subtitles vitest suite,pnpm -C apps/web exec vitest run,-,SU tests + non-regression green,todo
+P2,2.14,MP-SU-14,Playwright golden path (mock),pnpm -C apps/web exec playwright test e2e/content-studio-v2/subtitles.spec.ts,-,generate+edit+save (mock),todo
+P2,2.15,MP-SU-15,Build + correction loop to green twice,pnpm -C apps/web run build; see runbook-test-battery.md,loop,succeeds; two consecutive green runs,todo
+P2,GP2,MP-RB-gate,Go/No-Go G-P2,see 05_runbook/go-no-go.md,G-P2,GO,todo
+P3,3.2,MP-CO-01,Extract composeMediaBundle core (timeout/temp cleanup/codec fallback),edit apps/web/src/lib/ai-engine/nodes/compose.ts,-,node unchanged; core reusable,todo
+P3,3.3,MP-CO-11,Node regression,pnpm -C apps/web exec vitest run src/lib/ai-engine/nodes/compose.test.ts,-,existing 8 tests green unchanged,todo
+P3,3.4,MP-CO-04,Add composeGenerationSchema (booleans strict empty-body-ok),edit apps/web/src/lib/content-studio/schemas.ts,-,empty body ok; rejects unknown keys,todo
+P3,3.5,MP-CO-02,Implement composeDraftVideo service (bundle-aware),edit apps/web/src/lib/content-studio/service.ts,-,mock byte-copy; no-primary-video 409; tracks report,todo
+P3,3.6,MP-CO-03,Create POST compose route (empty body allowed),create apps/web/src/app/api/admin/content-studio/drafts/[id]/compose/route.ts,-,200 mock; 409 no primary video; error envelope,todo
+P3,3.7,MP-CO-09,Optional export chain (degraded never fatal),edit service.ts + reuse transcode-export.ts,-,export.degraded=true never fails compose,todo
+P3,3.8,MP-CO-14,MSW + ffmpeg boundary no-network proof,assert request:start spy == [],-,compose makes zero HTTP,todo
+P3,3.9,MP-CO-06;MP-CO-05,Build TracksPanel + ComposePanel (reuse VideoPlayer),add components under create/tracks,-,blocked/empty/composing/ready/stale/error states,todo
+P3,3.10,MP-CO-07,Wire ComposePanel via TracksPanel into MediaStudio (flag-gated),edit MediaStudio.tsx,-,flag off DOM unchanged,todo
+P3,3.11,MP-CO-08,Surface composed video in publish confirm (dry-run),edit PublishActionGroup.tsx,-,composed preview + summary; publish stays dry_run,todo
+P3,3.12,MP-CO-13,Typecheck gate,pnpm -C apps/web run typecheck,tsc,exit 0,todo
+P3,3.13,MP-CO-13,Compose vitest suite,pnpm -C apps/web exec vitest run,-,CO tests + non-regression green,todo
+P3,3.14,MP-CO-10,Playwright golden path (mock),pnpm -C apps/web exec playwright test e2e/content-studio-v2/compose.spec.ts,-,compose+preview+publish summary (mock),todo
+P3,3.15,MP-CO-13,Build + correction loop to green twice,pnpm -C apps/web run build; see runbook-test-battery.md,loop,succeeds; two consecutive green runs,todo
+P3,GP3,MP-RB-gate,Go/No-Go G-P3,see 05_runbook/go-no-go.md,G-P3,GO,todo
+P4,4.1,MP-CO-06,Confirm tracks panel hosts VO+Subtitles+Compose,pnpm -C apps/web exec vitest run -t TracksPanel,-,mounts only when videoCapable + flag on,todo
+P4,4.2,MP-RB-flag,Full flag-off regression (DOM unchanged),pnpm -C apps/web exec vitest run -t "flag off" + create-golden-path.spec.ts,-,flag-off DOM unchanged; golden path green,todo
+P4,4.3,MP-RB-flag,Typecheck + build green,pnpm -C apps/web run typecheck && pnpm -C apps/web run build,tsc,both succeed,todo
+P4,4.4,MP-RB-flag,[USER] Set staging flag ON in PM2 env,!pm2 restart web --update-env (after editing apps/web/.env),-,web online; CONTENT_STUDIO_MEDIA_STUDIO_ENABLED=true,todo
+P4,4.5,MP-RB-flag,Health after restart,curl -fsS http://127.0.0.1:8012/api/health,health,HTTP 200,todo
+P4,4.6,MP-RB-flag,Confirm dry_run still in force,grep -n ^SOCIAL_PUBLISHING_MODE= apps/web/.env,dry_run,dry_run,todo
+P4,4.7,MP-RB-flag,Flag-on smoke on :8012,pnpm -C apps/web exec playwright test e2e/content-studio-v2 -t @flag-on,-,Studio média panel renders; mock tracks generate,todo
+P4,GP4,MP-RB-gate,Go/No-Go G-P4,see 05_runbook/go-no-go.md,G-P4,GO: flag on staging + regression clean + dry_run intact,todo
+P5,5.1,MP-TB-tsc,Full typecheck gate,pnpm -C apps/web run typecheck,tsc,exit 0,todo
+P5,5.2,MP-TB-vitest,Full vitest battery,pnpm -C apps/web exec vitest run,-,green except EditorialCalendar pre-existing exception,todo
+P5,5.3,MP-TB-e2e,Full Playwright (mock :8012),pnpm -C apps/web exec playwright test e2e/content-studio-v2,-,voiceover+subtitles+compose+golden-path green,todo
+P5,5.4,MP-TB-build,Production build,pnpm -C apps/web run build,build,next build succeeds,todo
+P5,5.5,MP-TB-loop,Correction loop to green twice consecutive,see 05_runbook/runbook-test-battery.md,loop,two consecutive fully-green runs,todo
+P5,5.6,MP-TB-nonreg,Non-regression sign-off (generate-visual + 4-step + dry_run),pnpm -C apps/web exec vitest run -t non-regression + dry_run grep,dry_run,all green; dry_run intact,todo
+P5,5.7,MP-RB-evidence,Capture evidence per verification-checklists,record per 05_runbook/pilot.md,-,every feature verification-checklist row has evidence,todo
+P5,GP5,MP-RB-gate,Go/No-Go G-P5 (final),see 05_runbook/go-no-go.md,G-P5,GO: plan complete; BUG-004 closed,todo

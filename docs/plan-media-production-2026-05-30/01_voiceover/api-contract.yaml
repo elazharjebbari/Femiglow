@@ -1,0 +1,201 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow Content Studio — Voice-over (voix-off) API
+  version: 0.1.0
+  description: >
+    Per-draft TTS voice-over generation (pipeline B). Reuses the AI-Engine
+    `synthesizeVoiceover` core. Mode-aware: mock = deterministic silent track,
+    no provider call; live-no-key = 409 invalid_state. Task prefix MP-VO-*.
+servers:
+  - url: https://staging.femiglow.local:8012
+    description: staging (mock mode)
+paths:
+  /api/admin/content-studio/drafts/{id}/generate-voiceover:
+    post:
+      operationId: generateVoiceoverForDraft
+      summary: Generate (or regenerate) the voice-over track of a draft.
+      description: >
+        Creates a role='voiceover' (kind='audio') asset in the draft media
+        bundle and returns it. Regeneration replaces the existing voice-over.
+        Guarded by requireContentStudioEnabled + requireAdminApi. Mode resolved
+        from the `cs_generation_mode` cookie (mock | live), defaulting to mock.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Draft id.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceoverGenerationRequest'
+            examples:
+              deriveFromDraft:
+                summary: Omit script — server derives narration from the draft
+                value:
+                  voice: mock
+              explicitScript:
+                summary: Operator-edited script
+                value:
+                  script: "Un geste lent, une main qui retrouve sa lumière. Le rituel commence."
+                  voice: mock
+              liveVoice:
+                summary: Live voice selection
+                value:
+                  script: "Découvrez le rituel FemiGlow."
+                  voice: nova
+      responses:
+        '200':
+          description: Voice-over generated and bound to the draft.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [media]
+                additionalProperties: false
+                properties:
+                  media:
+                    $ref: '#/components/schemas/VoiceoverResult'
+              examples:
+                mock:
+                  value:
+                    media:
+                      id: "med_vo_8f2a1c"
+                      draftId: "drf_123"
+                      role: voiceover
+                      kind: audio
+                      alt: "Voix-off générée pour FemiGlow"
+                      slug: "content-studio-vo-drf_123-8f2a1c"
+                      previewUrl: "/_media/ai-engine/voiceover-drf_123-1717070000000.wav"
+                      originalUrl: "/_media/ai-engine/voiceover-drf_123-1717070000000.wav"
+                      durationSec: 14
+                      provider: mock
+                      voice: mock
+                      costCents: 0
+                      createdAt: "2026-05-30T10:00:00.000Z"
+        '400':
+          description: Invalid payload (invalid_input).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error:
+                  code: invalid_input
+                  message: "Payload voix-off invalide."
+                  details: { fieldErrors: { script: ["String must contain at least 1 character(s)"] } }
+        '401':
+          description: Not authenticated (unauthorized).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '403':
+          description: Forbidden / feature disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Draft not found (not_found).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example:
+                error: { code: not_found, message: "Brouillon introuvable." }
+        '409':
+          description: >
+            invalid_state — either the draft format is not video (Reel/Story),
+            or mode=live with no TTS key configured. No asset is written.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                noKey:
+                  value:
+                    error:
+                      code: invalid_state
+                      message: "Aucune clé TTS configurée. Ajoutez une clé ou repassez en mode mock."
+                badFormat:
+                  value:
+                    error:
+                      code: invalid_state
+                      message: "Voix-off réservée aux formats vidéo (Reel/Story)."
+        '429':
+          description: Daily budget exceeded (budget_exceeded).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '502':
+          description: upstream_failed — provider 5xx (live) or ffmpeg unavailable.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example:
+                error: { code: upstream_failed, message: "Échec du fournisseur TTS." }
+components:
+  schemas:
+    VoiceoverGenerationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        script:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: >
+            Operator-edited narration. If omitted, the server derives it from the
+            draft script (hook + scene narration). An explicit empty string is
+            rejected.
+        voice:
+          type: string
+          enum: [mock, nova, alloy, shimmer, bella]
+          default: mock
+    VoiceoverResult:
+      type: object
+      additionalProperties: false
+      required: [id, draftId, role, kind, alt, slug, previewUrl, originalUrl, provider, voice, costCents, createdAt]
+      properties:
+        id: { type: string }
+        draftId: { type: string }
+        role: { type: string, enum: [voiceover] }
+        kind: { type: string, enum: [audio] }
+        alt: { type: string }
+        slug: { type: string }
+        previewUrl: { type: string, description: Playable audio URL. }
+        originalUrl: { type: string }
+        durationSec:
+          type: [number, 'null']
+          minimum: 0
+        provider:
+          type: string
+          description: "mock | openai:tts-1 | elevenlabs:eleven_multilingual_v2"
+        voice: { type: string }
+        costCents:
+          type: number
+          minimum: 0
+        createdAt: { type: string, format: date-time }
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [invalid_input, unauthorized, forbidden, not_found, invalid_state, budget_exceeded, upstream_failed, internal_error]
+            message: { type: string }
+            details: {}
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: session
+security:
+  - adminSession: []

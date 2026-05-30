@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://femiglow.local/schemas/content-studio/voiceover/data-contract.json",
+  "title": "Voice-over (voix-off) data contract",
+  "description": "JSON-Schema for the voice-over request/response payloads and the persisted role='voiceover' bundle asset. Task prefix MP-VO-*. Grounded in generate-voiceover.ts MediaAsset and the StudioV2 media model.",
+  "$defs": {
+    "VoiceId": {
+      "type": "string",
+      "enum": ["mock", "nova", "alloy", "shimmer", "bella"]
+    },
+    "GenerationMode": {
+      "type": "string",
+      "enum": ["mock", "live"]
+    },
+    "VoiceoverGenerationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "script": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "description": "Operator narration. Omit to derive server-side from the draft."
+        },
+        "voice": { "$ref": "#/$defs/VoiceId", "default": "mock" }
+      }
+    },
+    "VoiceoverForDraftInput": {
+      "type": "object",
+      "description": "Service-level input for generateVoiceoverForDraft.",
+      "additionalProperties": false,
+      "required": ["draftId", "actorId"],
+      "properties": {
+        "draftId": { "type": "string", "minLength": 1 },
+        "actorId": { "type": ["string", "null"] },
+        "script": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "voice": { "$ref": "#/$defs/VoiceId" },
+        "mode": { "$ref": "#/$defs/GenerationMode" }
+      }
+    },
+    "MediaAsset": {
+      "type": "object",
+      "description": "AI-Engine MediaAsset returned by synthesizeVoiceover (src/lib/ai-engine/types/media.ts).",
+      "additionalProperties": false,
+      "required": ["assetId", "url", "mimeType", "fileSizeBytes", "provider", "generationParams", "costCents"],
+      "properties": {
+        "assetId": { "type": "string" },
+        "url": { "type": "string" },
+        "mimeType": { "type": "string", "examples": ["audio/wav", "audio/mpeg"] },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "fileSizeBytes": { "type": "number", "minimum": 0 },
+        "provider": { "type": "string", "examples": ["mock", "openai:tts-1", "elevenlabs:eleven_multilingual_v2", "fallback"] },
+        "generationParams": { "type": "object" },
+        "costCents": { "type": "number", "minimum": 0 }
+      }
+    },
+    "VoiceoverResult": {
+      "type": "object",
+      "description": "Service/route response (wrapped as { media }).",
+      "additionalProperties": false,
+      "required": ["id", "draftId", "role", "kind", "alt", "slug", "previewUrl", "originalUrl", "provider", "voice", "costCents", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "draftId": { "type": "string" },
+        "role": { "const": "voiceover" },
+        "kind": { "const": "audio" },
+        "alt": { "type": "string" },
+        "slug": { "type": "string" },
+        "previewUrl": { "type": "string" },
+        "originalUrl": { "type": "string" },
+        "durationSec": { "type": ["number", "null"], "minimum": 0 },
+        "provider": { "type": "string" },
+        "voice": { "$ref": "#/$defs/VoiceId" },
+        "costCents": { "type": "number", "minimum": 0 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "BundleAssetRecord": {
+      "type": "object",
+      "description": "Persisted draft-bundle asset (D1). The role discriminator + audio kind are introduced by MP-AR-* in 00_global; this is the voice-over instance.",
+      "additionalProperties": false,
+      "required": ["draftId", "mediaId", "role", "kind"],
+      "properties": {
+        "draftId": { "type": "string" },
+        "mediaId": { "type": "string" },
+        "role": { "const": "voiceover" },
+        "kind": { "const": "audio" },
+        "supersededByMediaId": { "type": ["string", "null"], "description": "Set when a regeneration replaces this voice-over." }
+      }
+    },
+    "MediaOverridesContentStudio": {
+      "type": "object",
+      "description": "overrides.contentStudio written by createMedia for the voice-over.",
+      "additionalProperties": true,
+      "required": ["origin", "role", "provider", "sourceDraftId", "promptVersion"],
+      "properties": {
+        "origin": { "const": "ai_generated" },
+        "role": { "const": "voiceover" },
+        "provider": { "type": "string" },
+        "sourceDraftId": { "type": "string" },
+        "voice": { "$ref": "#/$defs/VoiceId" },
+        "script": { "type": "string" },
+        "promptVersion": { "const": "content-studio-voiceover-v0-2026-05-30" }
+      }
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": ["invalid_input", "unauthorized", "forbidden", "not_found", "invalid_state", "budget_exceeded", "upstream_failed", "internal_error"]
+            },
+            "message": { "type": "string" },
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "request": { "script": "Un geste lent, une main qui retrouve sa lumière.", "voice": "mock" },
+      "response": {
+        "media": {
+          "id": "med_vo_8f2a1c",
+          "draftId": "drf_123",
+          "role": "voiceover",
+          "kind": "audio",
+          "alt": "Voix-off générée pour FemiGlow",
+          "slug": "content-studio-vo-drf_123-8f2a1c",
+          "previewUrl": "/_media/ai-engine/voiceover-drf_123-1717070000000.wav",
+          "originalUrl": "/_media/ai-engine/voiceover-drf_123-1717070000000.wav",
+          "durationSec": 14,
+          "provider": "mock",
+          "voice": "mock",
+          "costCents": 0,
+          "createdAt": "2026-05-30T10:00:00.000Z"
+        }
+      }
+    },
+    {
+      "request": { "script": "Découvrez le rituel FemiGlow.", "voice": "nova" },
+      "response_live_no_key": {
+        "error": {
+          "code": "invalid_state",
+          "message": "Aucune clé TTS configurée. Ajoutez une clé ou repassez en mode mock."
+        }
+      }
+    }
+  ]
+}

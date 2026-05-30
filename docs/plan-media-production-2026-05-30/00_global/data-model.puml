@@ -1,0 +1,91 @@
+@startuml data-model
+title FemiGlow Content Studio — Per-draft Media Bundle (D1) — ER / class view
+skinparam shadowing false
+hide circle
+skinparam linetype ortho
+
+enum MediaRole {
+  primary_image
+  primary_video
+  voiceover
+  music
+  subtitles
+  composed_video
+}
+
+enum media_kind {
+  image
+  video
+  audio
+  subtitles  <<new MP-AR-004>>
+}
+
+entity content_draft {
+  * id : text <<PK>>
+  --
+  briefId : text <<FK content_brief>>
+  platform : text
+  format : text
+  caption : text
+  status : text
+}
+
+entity content_asset_binding {
+  * id : text <<PK>>
+  --
+  draftId : text <<FK content_draft, cascade>>
+  mediaId : text <<FK media, restrict>>
+  role : text  ' MediaRole, default primary_image (was 'primary')
+  crop : jsonb
+  meta : jsonb  <<new MP-AR-005>>  ' subtitles: {srt}; composed: {hasVoiceover,hasMusic,hasSubtitles,sourceRoles}
+  createdAt : timestamptz
+  --
+  UNIQUE (draftId, role)  ' existing index content_asset_binding_draft_role_unique
+}
+
+entity media {
+  * id : text <<PK>>
+  --
+  kind : media_kind
+  source : media_source
+  slug : text
+  originalUrl : text
+  originalMime : text
+  originalDurationMs : int
+  originalWidth : int
+  originalHeight : int
+  overrides : jsonb
+  status : media_status
+}
+
+entity media_variants {
+  * id : text <<PK>>
+  --
+  mediaId : text <<FK media, cascade>>
+  format : variant_format
+  url : text
+}
+
+content_draft ||--o{ content_asset_binding : "has bundle (1 per role)"
+content_asset_binding }o--|| media : "binds"
+media ||--o{ media_variants : "variants"
+content_asset_binding ..> MediaRole : role
+media ..> media_kind : kind
+
+note bottom of content_asset_binding
+  Schema already supports this:
+  · role column (default was 'primary')
+  · UNIQUE(draftId, role) index exists
+  Deltas: add meta jsonb; repository stops
+  collapsing to one row (upsertBundleAssets).
+end note
+
+note bottom of media
+  media_kind already has 'audio';
+  MP-AR-004 adds 'subtitles'.
+  voiceover/music => kind=audio
+  subtitles        => kind=subtitles (.srt)
+  composed_video   => kind=video (mp4)
+end note
+
+@enduml

@@ -1,0 +1,46 @@
+area,item,how_to_verify,expected,evidence
+backend,Service mode=mock makes no network call,Run compose-draft-video.test.ts with MSW onUnhandledRequest:error,No HTTP at all; provider='compose:mock'; costCents=0,vitest output + request:start spy = []
+backend,Mock compose is a byte-copy (deterministic),Run compose-media-bundle.test.ts mock under fake system time,writeFile called with primary buffer; ffmpeg().save NOT called; url/assetId pinned,vitest output + save not called
+backend,No primary video returns 409 before any ffmpeg,getDraftBundle without primary_video; call service,Throws HttpError invalid_state (Aucune vidéo primaire); no createMedia; no ffmpeg,vitest rejects.toMatchObject {code:invalid_state}
+backend,Live with no extra track returns 409,Bundle has only primary_video; call service mode=live,Throws invalid_state (Aucune piste à monter…); mock would still byte-copy,vitest output
+backend,ffmpeg error surfaces upstream_failed + temp cleaned,Force ffmpeg 'error' event; call service mode=live,Throws upstream_failed (502); unlink called; no asset persisted,vitest output + fs.unlink spy
+backend,Timeout kills ffmpeg + upstream_failed,Force ffmpeg 'hang'; advance fake timers 90s,cmd.kill('SIGKILL') called; throws upstream_failed; unlink called,vitest fake-timer test
+backend,Missing source file rejected,readFile returns null; call service mode=live,Throws upstream_failed (Fichier vidéo source introuvable); no writeFile,vitest output
+backend,Codec-copy mux failure retries libx264,First save errors then ends; call core,Second attempt uses libx264 and succeeds,vitest output
+backend,Node core extraction preserves graph behavior,Run existing compose.test.ts unchanged,All 8 existing tests green; file not edited,vitest run + git diff empty for compose.test.ts
+backend,Cost is 0 in both modes,Inspect ComposeResult.costCents and generation_run,costCents===0 mock and live,vitest assertion
+data,role='composed_video' asset persisted,Inspect createMedia + upsertBundleAssets calls,kind:'video' role:'composed_video' overrides.contentStudio.role='composed_video',vitest spy args
+data,Recompose replaces by role,Call service twice; assert upsertBundleAssets(role:'composed_video') replaces,Second call supersedes first; one composed_video per draft; primary_video untouched,vitest spy + data-model MP-AR-*
+data,meta_json carries track flags + sourceRoles,Inspect upsertBundleAssets meta arg,"meta {hasVoiceover,hasMusic,hasSubtitles,sourceRoles[]}",vitest spy args
+data,generation_run records tracks+degraded,Inspect insertGenerationRun input/output,"input{mode,include*,export}; output{tracks,degraded}",vitest spy args
+data,data-contract.json valid,python3 -m json.tool data-contract.json,Valid JSON; matches ComposeResult,CLI exit 0
+data,api-contract.yaml valid,yaml/openapi lint api-contract.yaml,Valid OpenAPI 3.1; ComposeResult+ErrorEnvelope resolve,lint exit 0
+route,Route mirrors generate-visual guards,Read route.ts; run route test,requireContentStudioEnabled+requireAdminApi+schema; 200 mock; 400 unknown key; 409 no-video; 401 not-admin,vitest route suite
+route,Empty body composes everything present,POST {} in mock,Service called with default include* true export false,vitest route test
+route,Cookie mode resolution,Set cs_generation_mode cookie variants,live|mock honored; garbage/absent->mock,vitest route test
+ux,Compose blocked without primary video,Open Visuel on a Reel draft before generating video,Composer disabled + hint Générez d'abord une vidéo,Playwright + ComposePanel.test.tsx
+ux,Compose then preview composed video,Click Composer; wait for VideoPlayer,Composed video visible; toast Vidéo composée,Playwright compose.spec.ts
+ux,Track summary reflects response,Compose with vo+subs present,Summary shows 🎬✓ 🎙️✓ 💬✓,component test + summary chip
+ux,Stale badge after track change,Toggle include or regenerate a track after ready,à recomposer badge; Recomposer emphasized,ComposePanel.test.tsx stale
+ux,409 message inline,Force no-primary-video via UI,role=alert with Aucune vidéo primaire à monter,component test
+a11y,Include switches accessible,Inspect ComposePanel DOM,role=switch aria-checked; absent tracks aria-disabled; video row aria-disabled requise,ComposePanel.test.tsx + axe
+a11y,Compose button states,Inspect button,aria-disabled when blocked; aria-busy when composing; label toggles Composer/Recomposer,component test
+a11y,Presence not color-only,Inspect track rows,Text présente/absente present; emoji aria-hidden,review + component test
+a11y,Live region announces state,Inspect aria-live region,polite announcements composing/composed/error,component test
+a11y,Composed player a11y reused,Inspect VideoPlayer in panel,VideoPlayer aria-labels + data-cs-video-* intact,component test
+a11y,Contrast,Check text on --cs-bg-elevated and badges,>=4.5:1,manual/axe
+i18n,All copy French,Grep ComposePanel/TracksPanel strings,No English user-facing text,review + ui-ux-design.md table
+perf,No layout shift on state change,Toggle empty->composing->ready,Reserved player height; CLS ~0,Playwright/devtools
+perf,reduced-motion respected,Set prefers-reduced-motion,Estimator transition disabled,manual
+perf,Large output not buffered,Review core,mux output stat-ed not buffered; only byte-copy reads primary buffer,code review vs compose.ts
+security,No secrets in repo,grep for keys in docs/code,None; compose has no provider keys,grep clean
+security,Compose makes no network,MSW onUnhandledRequest:error across compose suite,Zero requests in all paths,vitest + request:start spy
+security,Dry-run publishing only,Confirm SOCIAL_PUBLISHING_MODE,dry_run; composed video published only in dry-run,env check
+non-regression,generate-visual untouched,Run existing MediaStudio.test.tsx,All green,vitest
+non-regression,Flag off DOM unchanged,Render MediaStudio with flag off,No Montage panel; identical to today,MediaStudio.compose.test.tsx
+non-regression,Node test unchanged,compose.test.ts file not edited,git diff empty for that test file,git diff
+non-regression,Publish falls back to primary when no composed,Open publish confirm without composed video,Primary video shown as today,PublishActionGroup.compose.test.tsx
+non-regression,transcode-export untouched by compose,Diff transcode-export.ts,Only consumed read-only; no edits,git diff
+ci,tsc --noEmit clean,pnpm -C apps/web exec tsc --noEmit,Exit 0,CI log
+ci,MSW onUnhandledRequest error global,Grep test setup,All compose integration files use it,review
+ci,No orphan temp files in tests,Inspect unlink spies on failure branches,unlink called on every reject path,vitest spy

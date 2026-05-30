@@ -1,0 +1,110 @@
+@startuml subtitles-sequence
+title Subtitles (per-draft) — UI -> route -> service -> SRT core -> DB  (generate + save)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor Operator as OP
+participant "SubtitlesTrack.tsx\n(MP-SU-07)\n+ CueEditor (MP-SU-08)" as UI
+participant "POST /drafts/[id]/\ngenerate-subtitles\n(MP-SU-04)" as RGEN
+participant "PUT /drafts/[id]/\nsubtitles\n(MP-SU-05)" as RSAVE
+participant "generateSubtitlesForDraft /\nsaveSubtitlesForDraft\n(service, MP-SU-03)" as SVC
+participant "SRT core\nparseScriptToCues /\nserializeSrt / validateCues\n(MP-SU-01/02)" as CORE
+participant "LLM (refine only)\nopenai:gpt-4o-mini" as LLM
+database "DB (media,\nbundle asset meta.srt/meta.style,\ngeneration_run, audit)" as DB
+
+== Generate (default = pure, NO network) ==
+OP -> UI : click "Générer les sous-titres"
+activate UI
+UI -> UI : guard draftId (toast if empty)\nconfirm overwrite if cues edited\nsetBusy('generating'), estimator.start()
+UI -> RGEN : POST { script?, refine:false }\ncookie cs_generation_mode
+activate RGEN
+RGEN -> RGEN : requireContentStudioEnabled()\nrequireAdminApi()\nsubtitlesGenerationSchema.safeParse
+alt invalid payload
+  RGEN --> UI : 400 invalid_input
+else ok
+  RGEN -> RGEN : resolve mode (cookie -> mock|live)
+  RGEN -> SVC : generateSubtitlesForDraft({draftId, actorId, script, refine, mode})
+  activate SVC
+  SVC -> DB : requireDraft(draftId)
+  alt draft missing
+    DB --> SVC : null
+    SVC --> RGEN : HttpError not_found (404)
+  else found
+    SVC -> SVC : format gate (reel/story)\nelse HttpError invalid_state (409)
+    alt refine && mode=live
+      SVC -> SVC : apiKey = resolveProviderCredential('openai')
+      alt no key
+        SVC --> RGEN : HttpError invalid_state (409)\nNO fetch, NO write
+      end
+    end
+    SVC -> CORE : generateSubtitlesForDraftCore({script, rawText, refine:(refine&&live), apiKey, onProviderError:'throw'})
+    activate CORE
+    CORE -> CORE : cues = parseScriptToCues(...)   (PURE, no network)
+    alt refine && live && key
+      CORE -> LLM : tidy cue text (1 call)
+      alt 5xx
+        LLM --> CORE : error
+        CORE --> SVC : throw -> HttpError upstream_failed (502)
+      else ok
+        LLM --> CORE : tidied lines
+      end
+    end
+    CORE -> CORE : srt = serializeSrt(cues)
+    CORE --> SVC : { cues, srt, provider:'rule-based', costCents:0, refined }
+    deactivate CORE
+    alt cues.length == 0  (empty script, E3)
+      SVC --> RGEN : transient SubtitlesResult { id:'', srt:'', cueCount:0 }\n(NOT persisted)
+    else >=1 cue
+      SVC -> SVC : saveSubtitlesForDraft(cues, defaultOrExistingStyle)  (see below)
+      SVC --> RGEN : SubtitlesResult
+    end
+  end
+  deactivate SVC
+  RGEN --> UI : 200 { media }
+end
+deactivate RGEN
+UI -> UI : adaptSubtitles -> setCues/setStyle\nestimator.stop(), toast "Sous-titres générés"
+UI -> OP : CueEditor populated + live validation + preview
+deactivate UI
+
+== Save (operator edits + style) — server is authoritative ==
+OP -> UI : edit cues / pick style, click "Enregistrer"
+activate UI
+UI -> UI : client validateCues (UX); guard valid; setBusy('saving')
+UI -> RSAVE : PUT { cues, style }
+activate RSAVE
+RSAVE -> RSAVE : guards + subtitlesSaveSchema.safeParse
+RSAVE -> SVC : saveSubtitlesForDraft({draftId, actorId, cues, style})
+activate SVC
+SVC -> DB : requireDraft + format gate
+alt cues == []   (E9 clear)
+  SVC -> DB : delete role='subtitles' binding + .srt media
+  SVC --> RSAVE : cleared SubtitlesResult { id:'', cueCount:0 }
+else
+  SVC -> CORE : validateCues(cues, {videoDurationMs})
+  CORE --> SVC : issues[]
+  alt has error-severity issues  (V1..V7)
+    SVC --> RSAVE : HttpError invalid_input (400)\ndetails.cueErrors = errors[]
+  else valid
+    SVC -> CORE : sortAndReindex + serializeSrt -> canonical srt
+    SVC -> DB : createMedia(kind:'subtitles', mime:application/x-subrip)\nstorage.put(.srt bytes)
+    SVC -> DB : upsertBundleAssets(role:'subtitles', meta:{ srt, cueCount, style })\n(replace prior; never the primary video)
+    SVC -> DB : insertGenerationRun(provider:'rule-based', cost 0)
+    SVC -> DB : logAuditEvent(content_studio.subtitles.saved)
+    SVC --> RSAVE : SubtitlesResult
+  end
+end
+deactivate SVC
+RSAVE --> UI : 200 { media }  (or 400 cueErrors)
+deactivate RSAVE
+UI -> UI : onSaved(asset) / markCueErrors(cueErrors)\ntoast "Sous-titres enregistrés"
+deactivate UI
+
+== Flow into compose & publish ==
+note over DB
+  role='subtitles' meta.srt + meta.style is read by
+  composeDraftVideo (../02_compose, MP-CO-*): state.subtitles = meta.srt,
+  burn-in uses meta.style. Shown in PublishActionGroup track summary (D4).
+end note
+@enduml

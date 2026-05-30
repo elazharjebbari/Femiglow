@@ -1,0 +1,76 @@
+@startuml voiceover-sequence
+title Voice-over generation (per-draft) — UI -> route -> service -> node -> DB
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor Operator as OP
+participant "VoiceoverTrack.tsx\n(MP-VO-05)" as UI
+participant "POST /drafts/[id]/\ngenerate-voiceover\n(MP-VO-03)" as ROUTE
+participant "generateVoiceoverForDraft\n(service, MP-VO-02)" as SVC
+participant "synthesizeVoiceover\n(node core, MP-VO-01)" as NODE
+participant "TTS provider\n(OpenAI/ElevenLabs)" as TTS
+database "DB (media,\nbundle asset,\ngeneration_run, audit)" as DB
+participant "ffmpeg\n(anullsrc)" as FF
+
+== Generate / Regenerate ==
+OP -> UI : edit script + pick voice, click "Générer"
+activate UI
+UI -> UI : guard draftId (toast if empty)\nsetGenerating(true), estimator.start()
+UI -> ROUTE : POST { script, voice }\ncookie cs_generation_mode
+activate ROUTE
+ROUTE -> ROUTE : requireContentStudioEnabled()\nrequireAdminApi()\nvoiceoverGenerationSchema.safeParse
+alt invalid payload
+  ROUTE --> UI : 400 invalid_input
+else ok
+  ROUTE -> ROUTE : resolve mode (cookie -> mock|live)
+  ROUTE -> SVC : generateVoiceoverForDraft({draftId, actorId, script, voice, mode})
+  activate SVC
+  SVC -> DB : requireDraft(draftId)
+  alt draft missing
+    DB --> SVC : null
+    SVC --> ROUTE : HttpError not_found (404)
+  else found
+    SVC -> SVC : format gate (reel/story)\nelse HttpError invalid_state (409)
+    SVC -> SVC : text = script.trim() || buildVoiceoverTextFromDraft(draft)
+    alt mode = live
+      SVC -> SVC : apiKey = resolveProviderCredential(ttsEngine)
+      alt no key
+        SVC --> ROUTE : HttpError invalid_state (409)\nNO fetch, NO write
+      end
+    end
+    SVC -> SVC : checkDailyBudget(estimate)\n(mock => 0)
+    SVC -> NODE : synthesizeVoiceover({text, jobId:draftId,\nprovider, apiKey, onProviderError:'throw', voice})
+    activate NODE
+    alt provider = mock
+      NODE -> FF : anullsrc silent WAV (NO network)
+      FF --> NODE : { filePath, fileName }
+    else provider = openai/elevenlabs (live+key)
+      NODE -> TTS : POST audio/speech (Bearer / xi-api-key)
+      alt 5xx
+        TTS --> NODE : error
+        NODE --> SVC : throw (onProviderError:'throw')
+        SVC --> ROUTE : HttpError upstream_failed (502)
+      else ok
+        TTS --> NODE : audio bytes -> write file
+      end
+    end
+    NODE --> SVC : { voiceover: MediaAsset, text, costCents, truncated }
+    deactivate NODE
+    SVC -> DB : createMedia(kind:'audio', role:'voiceover', overrides…)
+    SVC -> DB : upsertBundleAsset(draftId, role:'voiceover', mediaId)\n(replace prior — MP-AR-*)
+    SVC -> DB : insertGenerationRun(provider, costCents, …)
+    SVC -> DB : logAuditEvent(content_studio.voiceover.generated)
+    SVC --> ROUTE : VoiceoverResult
+  end
+  deactivate SVC
+  ROUTE --> UI : 200 { media }
+end
+deactivate ROUTE
+UI -> UI : adaptVoiceover -> onGenerated(asset)\nestimator.stop(), toast success
+UI -> OP : AudioTrackPlayer (ready)
+deactivate UI
+
+== Flow into compose & publish ==
+note over DB : role='voiceover' asset is read by\nComposeDraftVideo (../02_compose) and\nshown in PublishActionGroup track summary (D4)
+@enduml

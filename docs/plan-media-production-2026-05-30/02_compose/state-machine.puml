@@ -1,0 +1,69 @@
+@startuml compose-state-machine
+title Compose (montage) panel lifecycle (UI + composed asset)
+
+skinparam shadowing false
+
+[*] --> Hidden
+
+Hidden : panel not mounted
+Hidden : (flag off OR draft not reel/story)
+Hidden --> Blocked : flag on && video-capable draft && no primary_video
+Hidden --> Empty : flag on && video-capable draft && primary_video present
+
+state Blocked {
+  Blocked : 🎬 primary video missing
+  Blocked : "Composer" disabled + hint
+}
+
+Blocked --> Empty : primary video generated upstream
+
+state Empty {
+  Empty : primary_video present, no composed_video
+  Empty : track-presence toggles (🎙️ 🎵 💬)
+  Empty : "Composer" enabled
+}
+
+Empty --> Composing : click "Composer"\n[draftId && hasPrimaryVideo]
+Empty --> Empty : toggle include / export
+
+state Composing {
+  Composing : POST in flight
+  Composing : controls disabled, estimator bar
+}
+
+Composing --> Ready : 200 { media }\n(role='composed_video' created)
+Composing --> Error : 4xx/5xx\n(409 no-video/no-track, 502 ffmpeg/source/timeout, 400)
+
+state Ready {
+  Ready : composed_video playable (VideoPlayer)
+  Ready : track summary 🎬✓ 🎙️? 🎵? 💬?
+  Ready : "Recomposer" available
+}
+
+Ready --> Stale : a source track changes\n(asset still valid/playable)
+Ready --> Composing : click "Recomposer"
+Stale --> Composing : click "Recomposer" (emphasized)
+Stale --> Ready : recompose matches current bundle
+
+Error --> Composing : click "Réessayer"
+Error --> Empty : (no asset was written)\nfix tracks & retry
+Error --> Blocked : primary video was removed
+
+note right of Composing
+  mock  : byte-copy of primary, NO network,
+          NO provider, NO real ffmpeg mux, cost 0
+  live  : real ffmpeg mux of present tracks
+  live + no extra track : 409 (mock still byte-copies)
+  no primary_video      : 409 before any ffmpeg call
+  ffmpeg error/timeout  : 502, temp output unlinked
+end note
+
+note bottom of Ready
+  Ready asset is the video shown in:
+   - PublishActionGroup confirm (D4)
+   - the create-flow preview pane (prefers composed over raw)
+  Optional export field: platform-spec transcode (degraded never fatal)
+end note
+
+Ready --> [*] : draft published / discarded
+@enduml

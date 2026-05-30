@@ -1,0 +1,56 @@
+@startuml voiceover-state-machine
+title Voice-over track lifecycle (UI + asset)
+
+skinparam shadowing false
+
+[*] --> Hidden
+
+Hidden : track not mounted
+Hidden : (flag off OR draft not reel/story)
+Hidden --> Empty : flag on && video-capable draft
+
+state Empty {
+  Empty : no voiceover asset
+  Empty : script editable (pre-filled from narration)
+  Empty : voice selectable
+}
+
+Empty --> Generating : click "Générer"\n[draftId present]
+Empty --> Empty : edit script / pick voice
+
+state Generating {
+  Generating : POST in flight
+  Generating : controls disabled, estimator bar
+}
+
+Generating --> Ready : 200 { media }\n(asset created, role='voiceover')
+Generating --> Error : 4xx/5xx\n(409 no-key, 502 upstream, 400, 429)
+
+state Ready {
+  Ready : asset playable (AudioTrackPlayer)
+  Ready : "Régénérer" available
+}
+
+Ready --> Stale : edit script / change voice\n(asset still valid)
+Ready --> Generating : click "Régénérer"
+Stale --> Generating : click "Régénérer" (emphasized)
+Stale --> Ready : revert edits to match asset
+
+Error --> Generating : click "Réessayer"
+Error --> Empty : (no asset was written)\nedit & retry
+
+note right of Generating
+  mock  : ffmpeg anullsrc, NO network, cost 0
+  live+key : real TTS via reused node core
+  live+no-key : never enters Generating success;
+                routes straight to Error (409)
+end note
+
+note bottom of Ready
+  Ready asset participates in:
+   - Compose (../02_compose) reads role='voiceover'
+   - Publish confirm track summary (D4)
+end note
+
+Ready --> [*] : draft published / discarded
+@enduml

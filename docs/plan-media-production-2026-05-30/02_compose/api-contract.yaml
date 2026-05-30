@@ -1,0 +1,283 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow Content Studio — Compose (montage vidéo) API
+  version: 0.1.0
+  description: >
+    Per-draft video montage (pipeline B). Assembles the draft media bundle
+    (primary video + voice-over + music + subtitles) into ONE composed mp4 by
+    reusing the AI-Engine `composeMediaBundle` core (extracted from `composeNode`).
+    Mode-aware: mock = deterministic byte-copy of the primary video, NO provider
+    call and NO network at all; live without any extra track to mux = 409
+    invalid_state; no primary video = 409 invalid_state. Compose has no external
+    HTTP — the only I/O boundary is the local ffmpeg binary. Task prefix MP-CO-*.
+servers:
+  - url: https://staging.femiglow.local:8012
+    description: staging (mock mode)
+paths:
+  /api/admin/content-studio/drafts/{id}/compose:
+    post:
+      operationId: composeDraftVideo
+      summary: Assemble (or reassemble) the draft's tracks into one composed mp4.
+      description: >
+        Reads the draft media bundle server-side (getDraftBundle), folds the
+        present tracks (honoring the include flags) into one mp4 via the reused
+        ffmpeg core, and persists it as a role='composed_video' (kind='video')
+        asset. Regeneration replaces the existing composed video. Optionally
+        chains transcodeExportNode for a platform-spec export. Guarded by
+        requireContentStudioEnabled + requireAdminApi. Mode resolved from the
+        `cs_generation_mode` cookie (mock | live), defaulting to mock.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Draft id.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: false
+        description: >
+          Optional. An empty body composes everything present with no export.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComposeGenerationRequest'
+            examples:
+              composeAll:
+                summary: Empty body — compose every present track, no export
+                value: {}
+              excludeMusic:
+                summary: Compose but drop background music
+                value:
+                  includeMusic: false
+              composeAndExport:
+                summary: Compose then chain the platform-spec export
+                value:
+                  export: true
+      responses:
+        '200':
+          description: Composed video generated and bound to the draft.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [media]
+                additionalProperties: false
+                properties:
+                  media:
+                    $ref: '#/components/schemas/ComposeResult'
+              examples:
+                mock:
+                  value:
+                    media:
+                      id: "med_cmp_9a3b2d"
+                      draftId: "drf_123"
+                      role: composed_video
+                      kind: video
+                      alt: "Vidéo montée pour FemiGlow"
+                      slug: "content-studio-compose-drf_123-9a3b2d"
+                      previewUrl: "/_media/ai-engine/composed-drf_123-1717070000000.mp4"
+                      originalUrl: "/_media/ai-engine/composed-drf_123-1717070000000.mp4"
+                      thumbnailUrl: null
+                      durationSec: 14
+                      width: 1080
+                      height: 1920
+                      provider: "compose:mock"
+                      tracks: { hasVoiceover: true, hasMusic: false, hasSubtitles: true }
+                      export: null
+                      costCents: 0
+                      createdAt: "2026-05-30T10:00:00.000Z"
+                liveMuxExported:
+                  value:
+                    media:
+                      id: "med_cmp_71f0aa"
+                      draftId: "drf_123"
+                      role: composed_video
+                      kind: video
+                      alt: "Vidéo montée pour FemiGlow"
+                      slug: "content-studio-compose-drf_123-71f0aa"
+                      previewUrl: "/_media/ai-engine/composed-drf_123-1717070111000.mp4"
+                      originalUrl: "/_media/ai-engine/composed-drf_123-1717070111000.mp4"
+                      thumbnailUrl: "/_media/ai-engine/thumb-drf_123-1717070111500.jpg"
+                      durationSec: 14
+                      width: 1080
+                      height: 1920
+                      provider: compose
+                      tracks: { hasVoiceover: true, hasMusic: true, hasSubtitles: true }
+                      export:
+                        url: "/_media/ai-engine/export-instagram-reel-drf_123-1717070112000.mp4"
+                        width: 1080
+                        height: 1920
+                        degraded: false
+                      costCents: 0
+                      createdAt: "2026-05-30T10:01:51.000Z"
+        '400':
+          description: Invalid payload (invalid_input — unknown key / wrong type).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+              example:
+                error:
+                  code: invalid_input
+                  message: "Payload de montage invalide."
+                  details: { fieldErrors: { includeMusic: ["Expected boolean, received string"] } }
+        '401':
+          description: Not authenticated (unauthorized).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '403':
+          description: Forbidden / feature disabled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '404':
+          description: Draft not found (not_found).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              example:
+                error: { code: not_found, message: "Brouillon introuvable." }
+        '409':
+          description: >
+            invalid_state — the draft format is not video (Reel/Story), OR no
+            primary video exists in the bundle, OR mode=live with no extra track
+            (voice-over/music/subtitles) to mux. No asset is written.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                badFormat:
+                  value:
+                    error:
+                      code: invalid_state
+                      message: "Montage réservé aux formats vidéo (Reel/Story)."
+                noPrimaryVideo:
+                  value:
+                    error:
+                      code: invalid_state
+                      message: "Aucune vidéo primaire à monter."
+                noTracks:
+                  value:
+                    error:
+                      code: invalid_state
+                      message: "Aucune piste à monter (voix-off, musique ou sous-titres)."
+        '429':
+          description: Daily budget exceeded (budget_exceeded). Unreachable at cost 0; guard kept for parity.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '502':
+          description: >
+            upstream_failed — the ffmpeg mux failed, the source video file is
+            missing on disk, or the montage timed out. The partial output is
+            cleaned up; no degraded asset is persisted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+              examples:
+                ffmpeg:
+                  value:
+                    error: { code: upstream_failed, message: "Échec du montage ffmpeg." }
+                sourceMissing:
+                  value:
+                    error: { code: upstream_failed, message: "Fichier vidéo source introuvable." }
+                timeout:
+                  value:
+                    error: { code: upstream_failed, message: "Montage interrompu (délai dépassé)." }
+components:
+  schemas:
+    ComposeGenerationRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        All fields optional. Tracks actually folded in = (bundle ∩ include flags).
+        The primary video is always required and cannot be excluded.
+      properties:
+        includeVoiceover:
+          type: boolean
+          default: true
+          description: Include the role='voiceover' track if present.
+        includeMusic:
+          type: boolean
+          default: true
+          description: Include the role='music' track if present.
+        includeSubtitles:
+          type: boolean
+          default: true
+          description: Include the role='subtitles' (SRT) track if present.
+        export:
+          type: boolean
+          default: false
+          description: Chain transcodeExportNode for a platform-spec export.
+    TrackReport:
+      type: object
+      additionalProperties: false
+      required: [hasVoiceover, hasMusic, hasSubtitles]
+      description: Which tracks were actually folded into the composed video.
+      properties:
+        hasVoiceover: { type: boolean }
+        hasMusic: { type: boolean }
+        hasSubtitles: { type: boolean }
+    ExportInfo:
+      type: object
+      additionalProperties: false
+      required: [url, degraded]
+      description: Optional platform-spec export (present only when export=true).
+      properties:
+        url: { type: string }
+        width: { type: [number, 'null'] }
+        height: { type: [number, 'null'] }
+        degraded:
+          type: boolean
+          description: true when the transcode failed and a passthrough was served (ACT-BE-032).
+    ComposeResult:
+      type: object
+      additionalProperties: false
+      required: [id, draftId, role, kind, alt, slug, previewUrl, originalUrl, provider, tracks, costCents, createdAt]
+      properties:
+        id: { type: string }
+        draftId: { type: string }
+        role: { type: string, enum: [composed_video] }
+        kind: { type: string, enum: [video] }
+        alt: { type: string }
+        slug: { type: string }
+        previewUrl: { type: string, description: Playable mp4 URL. }
+        originalUrl: { type: string }
+        thumbnailUrl: { type: [string, 'null'] }
+        durationSec: { type: [number, 'null'], minimum: 0 }
+        width: { type: [number, 'null'], minimum: 0 }
+        height: { type: [number, 'null'], minimum: 0 }
+        provider:
+          type: string
+          description: "compose:mock (byte-copy) | compose (ffmpeg mux)"
+        tracks: { $ref: '#/components/schemas/TrackReport' }
+        export:
+          oneOf:
+            - { $ref: '#/components/schemas/ExportInfo' }
+            - { type: 'null' }
+        costCents: { type: number, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [invalid_input, unauthorized, forbidden, not_found, invalid_state, budget_exceeded, upstream_failed, internal_error]
+            message: { type: string }
+            details: {}
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: session
+security:
+  - adminSession: []

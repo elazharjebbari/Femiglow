@@ -1,0 +1,88 @@
+@startuml compose-sequence
+title Compose / montage (per-draft) — UI -> route -> service -> node core -> ffmpeg -> DB
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor Operator as OP
+participant "ComposePanel.tsx\n(MP-CO-05)" as UI
+participant "POST /drafts/[id]/\ncompose\n(MP-CO-03)" as ROUTE
+participant "composeDraftVideo\n(service, MP-CO-02)" as SVC
+participant "composeMediaBundle\n(node core, MP-CO-01)" as CORE
+participant "ffmpeg\n(local binary)" as FF
+participant "transcodeExportNode\n(optional, MP-CO-09)" as TX
+database "DB (media,\nbundle binding,\ngeneration_run, audit)" as DB
+
+== Compose / Recompose ==
+OP -> UI : toggle includes, click "Composer"
+activate UI
+UI -> UI : guard draftId + hasPrimaryVideo (toast if missing)\nsetComposing(true), estimator.start()
+UI -> ROUTE : POST { includeVoiceover, includeMusic,\nincludeSubtitles, export }\ncookie cs_generation_mode
+activate ROUTE
+ROUTE -> ROUTE : requireContentStudioEnabled()\nrequireAdminApi()\ncomposeGenerationSchema.safeParse(json ?? {})
+alt invalid payload
+  ROUTE --> UI : 400 invalid_input
+else ok
+  ROUTE -> ROUTE : resolve mode (cookie -> mock|live)
+  ROUTE -> SVC : composeDraftVideo({draftId, actorId, include*, export, mode})
+  activate SVC
+  SVC -> DB : requireDraft(draftId)
+  alt draft missing
+    DB --> SVC : null
+    SVC --> ROUTE : HttpError not_found (404)
+  else found
+    SVC -> SVC : format gate (reel/story)\nelse HttpError invalid_state (409)
+    SVC -> DB : getDraftBundle(draftId)  (role-addressed)
+    DB --> SVC : { primary_video?, voiceover?, music?, subtitles? }
+    alt no primary_video
+      SVC --> ROUTE : HttpError invalid_state (409)\n"Aucune vidéo primaire à monter."
+    else has primary_video
+      SVC -> SVC : resolve tracks honoring include flags\nsubtitles = bundle.subtitles?.meta.srt
+      alt mode=live && no extra track
+        SVC --> ROUTE : HttpError invalid_state (409)\n"Aucune piste à monter…"
+      else proceed
+        SVC -> SVC : checkDailyBudget(0)
+        SVC -> CORE : composeMediaBundle({jobId:draftId, primaryVideo,\nvoiceover, music, subtitles, mode, timeoutMs:90_000})
+        activate CORE
+        alt mode = mock  (deterministic, NO network, NO real mux)
+          CORE -> CORE : readFile(primary) -> writeFile(composed mp4)\nprovider='compose:mock'
+        else mode = live  (ffmpeg mux of present tracks)
+          CORE -> FF : input(video[, vo][, music]) + complexFilter amix\n-c:v copy -c:a aac -movflags +faststart -shortest\n(wrapped in withTimeout; SIGKILL on expiry)
+          alt source file missing
+            FF --> CORE : readFile null -> reject compose_source_missing
+          else corrupt/timeout/mux error
+            FF --> CORE : 'error' event / timeout -> reject\n(finally: unlink partial output)
+          else ok
+            FF --> CORE : 'end' -> stat(output)
+          end
+        end
+        alt core rejected
+          CORE --> SVC : throw
+          SVC --> ROUTE : HttpError upstream_failed (502)\n(no asset persisted, temp cleaned)
+        else ok
+          CORE --> SVC : { composed: MediaAsset, tracks, degraded }
+          deactivate CORE
+          opt export=true
+            SVC -> TX : transcodeExportNode({jobId, platform, format, composition})
+            TX --> SVC : exports[platform_format] (may be degraded — never fatal)
+          end
+          SVC -> DB : createMedia(kind:'video', role:'composed_video', overrides…)
+          SVC -> DB : upsertBundleAssets(role:'composed_video',\nmeta:{hasVoiceover,hasMusic,hasSubtitles,sourceRoles})\n(replace prior — MP-AR-003)
+          SVC -> DB : insertGenerationRun(provider, cost 0, tracks, …)
+          SVC -> DB : logAuditEvent(content_studio.compose.generated)
+          SVC --> ROUTE : ComposeResult
+        end
+      end
+    end
+  end
+  deactivate SVC
+  ROUTE --> UI : 200 { media }
+end
+deactivate ROUTE
+UI -> UI : adaptComposed -> onComposed(asset, tracks)\nestimator.stop(), toast success
+UI -> OP : VideoPlayer (composed) + track summary (ready)
+deactivate UI
+
+== Flow into publish ==
+note over DB : role='composed_video' asset is the video shown in\nPublishActionGroup confirm (D4); published in dry-run only
+@enduml

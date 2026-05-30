@@ -1,0 +1,112 @@
+# docs/plan-media-production-2026-05-30/04_test-battery/ci-integration.yaml
+# CI pipeline spec for the media-production test battery (MP-TB).
+# Implementation-agnostic but concrete: stages, order, gates, fail-fast.
+# The ORDER is load-bearing — tsc --noEmit MUST run before vitest because
+# vitest does NOT typecheck and two build-breakers shipped this week through
+# green test runs (ground-truth §6). Mirrors package.json scripts:
+#   typecheck: tsc --noEmit | lint: next lint | test: vitest run | build: next build
+
+name: media-production-test-battery
+
+defaults:
+  working_directory: apps/web
+  package_manager: pnpm
+  node: "20.x"
+  fail_fast: true              # a red stage stops the pipeline (correction-loop G0..G4)
+  cancel_in_progress: true
+  env:
+    SOCIAL_PUBLISHING_MODE: dry_run        # NEVER live publishing (ground-truth §2)
+    CONTENT_STUDIO_MEDIA_STUDIO_ENABLED: "false"   # default off; E2E flips it per-stage
+
+stages:
+
+  - id: G0_typecheck
+    name: "Typecheck (tsc --noEmit) — FIRST, hard gate"
+    run: pnpm -C apps/web exec tsc --noEmit
+    blocking: true
+    rationale: >
+      vitest does not typecheck. This is the only gate that catches the DTO/bridge
+      type contract (all new GenerationResult fields optional; MediaRole literal
+      union; noUncheckedIndexedAccess-safe). Covers TB-AR-015, TB-VO-060,
+      TB-CO-070, TB-SU-123.
+    on_failure: triage-class T0 (correction-loop.md §3)
+
+  - id: G1_lint
+    name: "Lint (next lint)"
+    run: pnpm -C apps/web run lint
+    blocking: true
+    needs: [G0_typecheck]
+    rationale: style + obvious correctness; cheap, runs before the heavy suites.
+
+  - id: G2_vitest
+    name: "Unit + integration (vitest run, MSW onUnhandledRequest:'error')"
+    run: pnpm -C apps/web exec vitest run
+    blocking: true
+    needs: [G1_lint]
+    env:
+      TZ: UTC                  # determinism for fake-timer / formatTimecode tests
+    asserts:
+      - "0 test failures"
+      - "0 unexpected-request errors (every mock/no-key path: request:start spy === [])"
+      - "existing node tests unchanged & green: compose.test.ts (8), generate-voiceover.test.ts (7), generate-subtitles.test.ts (6)"
+      - "git diff empty for those three node test files (non-regression T2)"
+    covers: "all TB-AR/VO/CO/SU unit+integration+contract+component rows"
+    on_failure: triage-classes T1/T2/T3/T4/T5 (correction-loop.md §3)
+
+  - id: G2b_contracts
+    name: "Static contract validation (JSON-Schema + OpenAPI lint)"
+    run: |
+      python3 -m json.tool docs/plan-media-production-2026-05-30/01_voiceover/data-contract.json > /dev/null
+      python3 -m json.tool docs/plan-media-production-2026-05-30/02_compose/data-contract.json > /dev/null
+      python3 -m json.tool docs/plan-media-production-2026-05-30/03_subtitles/data-contract.json > /dev/null
+      pnpm dlx @redocly/cli lint docs/plan-media-production-2026-05-30/01_voiceover/api-contract.yaml
+      pnpm dlx @redocly/cli lint docs/plan-media-production-2026-05-30/02_compose/api-contract.yaml
+      pnpm dlx @redocly/cli lint docs/plan-media-production-2026-05-30/03_subtitles/api-contract.yaml
+    blocking: false           # contract drift is a warning at PR time, blocker at merge
+    needs: [G1_lint]
+    parallel_with: [G2_vitest]
+    covers: "TB-GL-003, TB-GL-004, TB-SU-122"
+
+  - id: G3_e2e
+    name: "E2E (Playwright @content-studio, mock mode, staging :8012)"
+    run: pnpm -C apps/web exec playwright test --grep "@content-studio"
+    blocking: true
+    needs: [G2_vitest]
+    env:
+      CONTENT_STUDIO_MEDIA_STUDIO_ENABLED: "true"   # flag ON only for the E2E run
+      CS_GENERATION_MODE: mock                        # cs_generation_mode cookie default
+      SOCIAL_PUBLISHING_MODE: dry_run                 # publish must observe dry-run banner
+      PLAYWRIGHT_BASE_URL: "http://localhost:8012"
+    retries: 1                # trace on first retry (flakiness-policy.md)
+    asserts:
+      - "voiceover.spec.ts / compose.spec.ts / subtitles.spec.ts green"
+      - "existing create-golden-path.spec.ts green (TB-GL-001)"
+      - "publish confirm shows dry-run banner (no live publish)"
+      - "flag-off scenarios: legacy MediaStudio byte-stable"
+    covers: "TB-VO-053..058, TB-CO-063..069, TB-SU-115..121, TB-GL-001"
+    on_failure: triage-class T2/T4/T6 (correction-loop.md §3)
+
+  - id: G4_build
+    name: "Build (next build) — final type + bundle proof"
+    run: pnpm -C apps/web run build
+    blocking: true
+    needs: [G3_e2e]
+    rationale: catches any production-only type/bundle break the dev typecheck missed.
+    covers: TB-GL-005
+
+gates:
+  merge:
+    require_all_green: [G0_typecheck, G1_lint, G2_vitest, G3_e2e, G4_build]
+    require_no_failing_blocking_rows: true   # no test-matrix.csv blocking=yes row may be red
+    require_double_green: true               # two consecutive full-gate greens (correction-loop.md §5)
+    quarantine_allowlist:
+      - "EditorialCalendar.test"             # sanctioned pre-existing exception (flakiness-policy.md)
+    forbid_new_quarantine: true              # no new MP-* test may be quarantined to pass
+  release:
+    inherits: merge
+    require_migration_verified: true         # 0064 post-apply SELECTs pass (db-migration §6)
+    require_dry_run_publishing: true         # SOCIAL_PUBLISHING_MODE=dry_run asserted
+
+notifications:
+  on_red_blocking: block-and-route-to-triage   # correction-loop.md taxonomy
+  on_unexpected_request: fail-loud             # MSW onUnhandledRequest:'error' breach == T1

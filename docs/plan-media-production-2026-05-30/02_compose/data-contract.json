@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://femiglow.local/schemas/content-studio/compose/data-contract.json",
+  "title": "Compose (montage vidéo) data contract",
+  "description": "JSON-Schema for the compose request/response payloads and the persisted role='composed_video' bundle asset. Task prefix MP-CO-*. Grounded in compose.ts MediaAsset + generationParams {hasVoiceover,hasMusic,hasSubtitles} and the StudioV2 media model. Note: the graph STATE channel is 'composition' while the DTO field is 'composedVideo' (../00_global/dto-bridge-changes.md §1).",
+  "$defs": {
+    "GenerationMode": {
+      "type": "string",
+      "enum": ["mock", "live"]
+    },
+    "MediaRole": {
+      "type": "string",
+      "enum": ["primary_image", "primary_video", "voiceover", "music", "subtitles", "composed_video"],
+      "description": "D1 role discriminator (../00_global/data-model.md §2)."
+    },
+    "ComposeGenerationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Route body. All optional; empty object {} composes everything present with no export.",
+      "properties": {
+        "includeVoiceover": { "type": "boolean", "default": true },
+        "includeMusic": { "type": "boolean", "default": true },
+        "includeSubtitles": { "type": "boolean", "default": true },
+        "export": { "type": "boolean", "default": false }
+      }
+    },
+    "ComposeForDraftInput": {
+      "type": "object",
+      "description": "Service-level input for composeDraftVideo.",
+      "additionalProperties": false,
+      "required": ["draftId", "actorId"],
+      "properties": {
+        "draftId": { "type": "string", "minLength": 1 },
+        "actorId": { "type": ["string", "null"] },
+        "includeVoiceover": { "type": "boolean" },
+        "includeMusic": { "type": "boolean" },
+        "includeSubtitles": { "type": "boolean" },
+        "export": { "type": "boolean" },
+        "mode": { "$ref": "#/$defs/GenerationMode" }
+      }
+    },
+    "MediaAsset": {
+      "type": "object",
+      "description": "AI-Engine MediaAsset returned by composeMediaBundle (src/lib/ai-engine/types/media.ts).",
+      "additionalProperties": false,
+      "required": ["assetId", "url", "mimeType", "fileSizeBytes", "provider", "generationParams", "costCents"],
+      "properties": {
+        "assetId": { "type": "string" },
+        "url": { "type": "string", "examples": ["/_media/ai-engine/composed-drf_123-1717070000000.mp4"] },
+        "mimeType": { "type": "string", "const": "video/mp4" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "fileSizeBytes": { "type": "number", "minimum": 0 },
+        "provider": { "type": "string", "examples": ["compose:mock", "compose"] },
+        "generationParams": {
+          "type": "object",
+          "description": "Mirrors compose.ts: { hasVoiceover, hasMusic, hasSubtitles } (and audioTracks on the byte-copy path).",
+          "properties": {
+            "hasVoiceover": { "type": "boolean" },
+            "hasMusic": { "type": "boolean" },
+            "hasSubtitles": { "type": "boolean" },
+            "audioTracks": { "type": "number" }
+          }
+        },
+        "costCents": { "type": "number", "const": 0 }
+      }
+    },
+    "TrackReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hasVoiceover", "hasMusic", "hasSubtitles"],
+      "properties": {
+        "hasVoiceover": { "type": "boolean" },
+        "hasMusic": { "type": "boolean" },
+        "hasSubtitles": { "type": "boolean" }
+      }
+    },
+    "ComposeMediaBundleOutput": {
+      "type": "object",
+      "description": "Return of the reused node core composeMediaBundle.",
+      "additionalProperties": false,
+      "required": ["composed", "tracks", "degraded"],
+      "properties": {
+        "composed": { "$ref": "#/$defs/MediaAsset" },
+        "tracks": { "$ref": "#/$defs/TrackReport" },
+        "degraded": { "type": "boolean", "description": "true when a track was dropped (empty/missing SRT, etc.)." }
+      }
+    },
+    "ExportInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "degraded"],
+      "properties": {
+        "url": { "type": "string" },
+        "width": { "type": ["number", "null"] },
+        "height": { "type": ["number", "null"] },
+        "degraded": { "type": "boolean" }
+      }
+    },
+    "ComposeResult": {
+      "type": "object",
+      "description": "Service/route response (wrapped as { media }).",
+      "additionalProperties": false,
+      "required": ["id", "draftId", "role", "kind", "alt", "slug", "previewUrl", "originalUrl", "provider", "tracks", "costCents", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "draftId": { "type": "string" },
+        "role": { "const": "composed_video" },
+        "kind": { "const": "video" },
+        "alt": { "type": "string" },
+        "slug": { "type": "string" },
+        "previewUrl": { "type": "string" },
+        "originalUrl": { "type": "string" },
+        "thumbnailUrl": { "type": ["string", "null"] },
+        "durationSec": { "type": ["number", "null"], "minimum": 0 },
+        "width": { "type": ["number", "null"], "minimum": 0 },
+        "height": { "type": ["number", "null"], "minimum": 0 },
+        "provider": { "type": "string" },
+        "tracks": { "$ref": "#/$defs/TrackReport" },
+        "export": {
+          "oneOf": [
+            { "$ref": "#/$defs/ExportInfo" },
+            { "type": "null" }
+          ]
+        },
+        "costCents": { "type": "number", "const": 0 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "BundleAssetRecord": {
+      "type": "object",
+      "description": "Persisted draft-bundle asset (D1) for the composed video. role + meta introduced by MP-AR-* in 00_global; unique per (draftId, role).",
+      "additionalProperties": false,
+      "required": ["draftId", "mediaId", "role", "kind", "meta"],
+      "properties": {
+        "draftId": { "type": "string" },
+        "mediaId": { "type": "string" },
+        "role": { "const": "composed_video" },
+        "kind": { "const": "video" },
+        "meta": {
+          "type": "object",
+          "description": "content_asset_binding.meta_json for composed_video (data-model.md §5).",
+          "additionalProperties": true,
+          "required": ["hasVoiceover", "hasMusic", "hasSubtitles", "sourceRoles"],
+          "properties": {
+            "hasVoiceover": { "type": "boolean" },
+            "hasMusic": { "type": "boolean" },
+            "hasSubtitles": { "type": "boolean" },
+            "sourceRoles": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/MediaRole" },
+              "description": "Roles folded into this compose (e.g. ['primary_video','voiceover','subtitles'])."
+            }
+          }
+        }
+      }
+    },
+    "MediaOverridesContentStudio": {
+      "type": "object",
+      "description": "overrides.contentStudio written by createMedia for the composed video.",
+      "additionalProperties": true,
+      "required": ["origin", "role", "provider", "sourceDraftId", "promptVersion"],
+      "properties": {
+        "origin": { "const": "ai_generated" },
+        "role": { "const": "composed_video" },
+        "provider": { "type": "string", "examples": ["compose:mock", "compose"] },
+        "sourceDraftId": { "type": "string" },
+        "tracks": { "$ref": "#/$defs/TrackReport" },
+        "promptVersion": { "const": "content-studio-compose-v0-2026-05-30" }
+      }
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "enum": ["invalid_input", "unauthorized", "forbidden", "not_found", "invalid_state", "budget_exceeded", "upstream_failed", "internal_error"]
+            },
+            "message": { "type": "string" },
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "request": {},
+      "response": {
+        "media": {
+          "id": "med_cmp_9a3b2d",
+          "draftId": "drf_123",
+          "role": "composed_video",
+          "kind": "video",
+          "alt": "Vidéo montée pour FemiGlow",
+          "slug": "content-studio-compose-drf_123-9a3b2d",
+          "previewUrl": "/_media/ai-engine/composed-drf_123-1717070000000.mp4",
+          "originalUrl": "/_media/ai-engine/composed-drf_123-1717070000000.mp4",
+          "thumbnailUrl": null,
+          "durationSec": 14,
+          "width": 1080,
+          "height": 1920,
+          "provider": "compose:mock",
+          "tracks": { "hasVoiceover": true, "hasMusic": false, "hasSubtitles": true },
+          "export": null,
+          "costCents": 0,
+          "createdAt": "2026-05-30T10:00:00.000Z"
+        }
+      }
+    },
+    {
+      "request": { "includeMusic": false },
+      "response_no_primary_video": {
+        "error": {
+          "code": "invalid_state",
+          "message": "Aucune vidéo primaire à monter."
+        }
+      }
+    },
+    {
+      "request": {},
+      "response_ffmpeg_failure": {
+        "error": {
+          "code": "upstream_failed",
+          "message": "Échec du montage ffmpeg."
+        }
+      }
+    }
+  ]
+}

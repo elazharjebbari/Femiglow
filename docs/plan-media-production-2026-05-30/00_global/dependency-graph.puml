@@ -1,0 +1,67 @@
+@startuml dependency-graph
+title MP-AR-* blocks MP-VO / MP-CO / MP-SU (and files each task touches)
+left to right direction
+skinparam shadowing false
+skinparam rectangle {
+  BorderColor #555
+}
+legend top
+  Arrow A --> B reads "A blocks B" (B depends on A).
+  Boxes list the primary files each task touches.
+endlegend
+
+rectangle "MP-AR-001\nExtend GenerationResult DTO\n• orchestrator.ts" as AR1
+rectangle "MP-AR-002\nExtend bridge mapping\n• content-studio-bridge.ts" as AR2
+rectangle "MP-AR-003\nupsertBundleAssets / getDraftBundle\n• repository.ts\n• content-studio/types.ts" as AR3
+rectangle "MP-AR-004\nWiden kinds\n• content-studio-v2/media/types.ts\n• schema.ts (media_kind)" as AR4
+rectangle "MP-AR-005\nAdditive migration\n• schema-content-studio.ts\n• drizzle/migrations/0064_*.sql" as AR5
+rectangle "MP-AR-006\nFeature flag\n• env.ts\n• .env.example" as AR6
+
+rectangle "MP-VO-*\nVoice-over\n• service.ts (generateVoiceoverForDraft)\n• routes/.../generate-voiceover\n• nodes/generate-voiceover.ts (core)\n• MediaStudio.tsx (track)" as VO
+rectangle "MP-SU-*\nSubtitles\n• service.ts (generateSubtitlesForDraft)\n• routes/.../generate-subtitles\n• nodes/generate-subtitles.ts (core)\n• MediaStudio.tsx (track)" as SU
+rectangle "MP-CO-*\nCompose\n• service.ts (composeDraftVideo)\n• routes/.../compose\n• nodes/compose.ts (core)\n• MediaStudio.tsx (Composer)\n• VideoPlayer.tsx (preview)\n• PublishActionGroup.tsx" as CO
+
+rectangle "MP-TB-*\nTest battery\n• *.test.ts (service/route/node/component)\n• test/msw/* handlers\n• e2e/*.spec.ts\n• tsc --noEmit gate" as TB
+rectangle "MP-RB-*\nRunbook\n• enable flag, smoke,\n  rollback, dry-run guard" as RB
+
+' AR ordering inside the backbone
+AR3 --> AR2 : repo fn used by bridge
+AR1 --> AR2 : DTO fields read by bridge
+AR4 --> AR3 : MediaRole/kind types
+AR5 --> AR3 : meta column + migration
+AR5 --> AR4 : enum value
+
+' Backbone blocks features
+AR1 --> VO
+AR2 --> VO
+AR3 --> VO
+AR4 --> VO
+AR5 --> VO
+AR6 --> VO
+
+AR1 --> SU
+AR2 --> SU
+AR3 --> SU
+AR4 --> SU
+AR5 --> SU
+AR6 --> SU
+
+AR1 --> CO
+AR2 --> CO
+AR3 --> CO
+AR4 --> CO
+AR5 --> CO
+AR6 --> CO
+
+' Compose consumes the other tracks
+VO --> CO : voiceover input
+SU --> CO : subtitles input
+
+' Features feed test battery + runbook
+VO --> TB
+SU --> TB
+CO --> TB
+TB --> RB
+AR6 --> RB : flag toggled in runbook
+
+@enduml

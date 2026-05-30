@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://femiglow.local/schemas/content-studio/subtitles/data-contract.json",
+  "title": "Subtitles (sous-titres) data contract",
+  "description": "JSON-Schema for the subtitle request/response payloads, the Cue/SRT/BurnInStyle model, and the persisted role='subtitles' (kind='subtitles') bundle asset. Task prefix MP-SU-*. Grounded in generate-subtitles.ts (SRT string), compose.ts (state.subtitles consumer), and the StudioV2 media model. The media_kind='subtitles' enum value + content_asset_binding.meta_json column ship with MP-AR-005.",
+  "$defs": {
+    "GenerationMode": {
+      "type": "string",
+      "enum": ["mock", "live"]
+    },
+    "Cue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "startMs", "endMs", "lines"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0, "description": "Display order; server re-indexes 1..N on save." },
+        "startMs": { "type": "integer", "minimum": 0 },
+        "endMs": { "type": "integer", "minimum": 1, "description": "validateCues V2: endMs > startMs." },
+        "lines": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "type": "string" } }
+      }
+    },
+    "BurnInStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["font", "sizePx", "position", "textColor"],
+      "properties": {
+        "font": { "type": "string", "enum": ["sans", "serif", "mono"] },
+        "sizePx": { "type": "integer", "minimum": 12, "maximum": 72 },
+        "position": { "type": "string", "enum": ["top", "middle", "bottom"] },
+        "textColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "boxColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "boxOpacity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "SubtitleLimits": {
+      "type": "object",
+      "description": "SUBTITLE_LIMITS shared by client + server (src/lib/ai-engine/subtitles/srt.ts).",
+      "additionalProperties": false,
+      "properties": {
+        "MAX_CHARS_PER_LINE": { "const": 42 },
+        "MAX_LINES_PER_CUE": { "const": 2 },
+        "MIN_CUE_MS": { "const": 700 },
+        "MIN_GAP_MS": { "const": 80 },
+        "MAX_CPS": { "const": 17 },
+        "MAX_CUES": { "const": 200 }
+      }
+    },
+    "SubtitlesGenerationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "script": { "type": "string", "minLength": 1, "maxLength": 8000, "description": "Source text override. Omit to derive from the draft script." },
+        "refine": { "type": "boolean", "default": false }
+      }
+    },
+    "SubtitlesSaveRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cues", "style"],
+      "properties": {
+        "cues": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/Cue" }, "description": "Empty array clears the subtitles asset." },
+        "style": { "$ref": "#/$defs/BurnInStyle" }
+      }
+    },
+    "SubtitlesForDraftInput": {
+      "type": "object",
+      "description": "Service-level input for generateSubtitlesForDraft.",
+      "additionalProperties": false,
+      "required": ["draftId", "actorId"],
+      "properties": {
+        "draftId": { "type": "string", "minLength": 1 },
+        "actorId": { "type": ["string", "null"] },
+        "script": { "type": "string", "minLength": 1, "maxLength": 8000 },
+        "refine": { "type": "boolean" },
+        "mode": { "$ref": "#/$defs/GenerationMode" }
+      }
+    },
+    "SaveSubtitlesInput": {
+      "type": "object",
+      "description": "Service-level input for saveSubtitlesForDraft.",
+      "additionalProperties": false,
+      "required": ["draftId", "actorId", "cues", "style"],
+      "properties": {
+        "draftId": { "type": "string", "minLength": 1 },
+        "actorId": { "type": ["string", "null"] },
+        "cues": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/Cue" } },
+        "style": { "$ref": "#/$defs/BurnInStyle" }
+      }
+    },
+    "GenerateSubtitlesCoreOutput": {
+      "type": "object",
+      "description": "Pure core output (generateSubtitlesForDraftCore). srt == serializeSrt(cues).",
+      "additionalProperties": false,
+      "required": ["cues", "srt", "provider", "costCents", "refined"],
+      "properties": {
+        "cues": { "type": "array", "items": { "$ref": "#/$defs/Cue" } },
+        "srt": { "type": "string" },
+        "provider": { "type": "string", "enum": ["rule-based", "openai:gpt-4o-mini"] },
+        "costCents": { "type": "number", "minimum": 0 },
+        "refined": { "type": "boolean" }
+      }
+    },
+    "CueIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cueIndex", "code", "severity", "message"],
+      "properties": {
+        "cueIndex": { "type": "integer", "minimum": 0 },
+        "code": { "type": "string", "enum": ["timecode", "duration", "order", "overlap", "lines", "line_length", "empty", "min_duration", "cps", "min_gap", "beyond_video"] },
+        "severity": { "type": "string", "enum": ["error", "warning"] },
+        "message": { "type": "string" }
+      }
+    },
+    "SubtitlesResult": {
+      "type": "object",
+      "description": "Service/route response (wrapped as { media }).",
+      "additionalProperties": false,
+      "required": ["id", "draftId", "role", "kind", "slug", "cues", "srt", "style", "cueCount", "previewUrl", "originalUrl", "provider", "costCents", "createdAt"],
+      "properties": {
+        "id": { "type": "string", "description": "Media id; empty string for a transient empty (0-cue) generate result." },
+        "draftId": { "type": "string" },
+        "role": { "const": "subtitles" },
+        "kind": { "const": "subtitles" },
+        "slug": { "type": "string" },
+        "cues": { "type": "array", "items": { "$ref": "#/$defs/Cue" } },
+        "srt": { "type": "string", "description": "Canonical SRT; byte-identical to the .srt asset bytes and meta.srt (data-model §7)." },
+        "style": { "$ref": "#/$defs/BurnInStyle" },
+        "cueCount": { "type": "integer", "minimum": 0 },
+        "previewUrl": { "type": "string" },
+        "originalUrl": { "type": "string" },
+        "provider": { "type": "string" },
+        "costCents": { "type": "number", "minimum": 0 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "BundleAssetRecord": {
+      "type": "object",
+      "description": "Persisted draft-bundle asset (D1). content_asset_binding row for the subtitles role. meta carries the SRT text + cueCount + burn-in style (data-model §4.2/§5).",
+      "additionalProperties": false,
+      "required": ["draftId", "mediaId", "role", "kind", "meta"],
+      "properties": {
+        "draftId": { "type": "string" },
+        "mediaId": { "type": "string" },
+        "role": { "const": "subtitles" },
+        "kind": { "const": "subtitles" },
+        "meta": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["srt", "cueCount", "style"],
+          "properties": {
+            "srt": { "type": "string", "description": "Canonical SRT; MUST equal the .srt asset bytes." },
+            "cueCount": { "type": "integer", "minimum": 0 },
+            "style": { "$ref": "#/$defs/BurnInStyle" },
+            "warnings": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "MediaOverridesContentStudio": {
+      "type": "object",
+      "description": "overrides.contentStudio written by createMedia for the subtitles .srt asset.",
+      "additionalProperties": true,
+      "required": ["origin", "role", "provider", "sourceDraftId", "promptVersion"],
+      "properties": {
+        "origin": { "const": "ai_generated" },
+        "role": { "const": "subtitles" },
+        "provider": { "type": "string" },
+        "sourceDraftId": { "type": "string" },
+        "promptVersion": { "const": "content-studio-subtitles-v0-2026-05-30" }
+      }
+    },
+    "ComposeSubtitlesInput": {
+      "type": "object",
+      "description": "Contract consumed by Compose (../02_compose). state.subtitles is the SRT string (compose.ts L42); the burn-in style is passed separately so compose builds the ffmpeg subtitles filter force_style.",
+      "additionalProperties": false,
+      "required": ["srt"],
+      "properties": {
+        "srt": { "type": "string" },
+        "style": { "$ref": "#/$defs/BurnInStyle" }
+      }
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "type": "string", "enum": ["invalid_input", "unauthorized", "forbidden", "not_found", "invalid_state", "budget_exceeded", "upstream_failed", "internal_error"] },
+            "message": { "type": "string" },
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "request": { "refine": false },
+      "response": {
+        "media": {
+          "id": "med_srt_8f2a1c",
+          "draftId": "drf_123",
+          "role": "subtitles",
+          "kind": "subtitles",
+          "slug": "content-studio-srt-drf_123-8f2a1c",
+          "cues": [
+            { "index": 1, "startMs": 0, "endMs": 3000, "lines": ["Découvrez le secret des", "ongles parfaits."] },
+            { "index": 2, "startMs": 3000, "endMs": 8000, "lines": ["Un geste lent, une main qui", "retrouve sa lumière."] }
+          ],
+          "srt": "1\n00:00:00,000 --> 00:00:03,000\nDécouvrez le secret des\nongles parfaits.\n\n2\n00:00:03,000 --> 00:00:08,000\nUn geste lent, une main qui\nretrouve sa lumière.\n\n",
+          "style": { "font": "sans", "sizePx": 28, "position": "bottom", "textColor": "#FFFFFF", "boxColor": "#000000", "boxOpacity": 0.5 },
+          "cueCount": 2,
+          "previewUrl": "/_media/ai-engine/subtitles-drf_123-1717070000000.srt",
+          "originalUrl": "/_media/ai-engine/subtitles-drf_123-1717070000000.srt",
+          "provider": "rule-based",
+          "costCents": 0,
+          "createdAt": "2026-05-30T10:00:00.000Z"
+        }
+      }
+    },
+    {
+      "request_save_invalid": {
+        "cues": [
+          { "index": 1, "startMs": 0, "endMs": 4000, "lines": ["Ligne A"] },
+          { "index": 2, "startMs": 3000, "endMs": 6000, "lines": ["Cette ligne dépasse largement la limite des quarante-deux caractères autorisés."] }
+        ],
+        "style": { "font": "sans", "sizePx": 28, "position": "bottom", "textColor": "#FFFFFF" }
+      },
+      "response_400": {
+        "error": {
+          "code": "invalid_input",
+          "message": "Sous-titres invalides.",
+          "details": {
+            "cueErrors": [
+              { "cueIndex": 2, "code": "overlap", "severity": "error", "message": "Chevauchement : un sous-titre commence avant la fin du précédent." },
+              { "cueIndex": 2, "code": "line_length", "severity": "error", "message": "Ligne trop longue (78/42 caractères)." }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "request_live_refine_no_key": { "refine": true },
+      "response_live_no_key": {
+        "error": { "code": "invalid_state", "message": "Aucune clé IA configurée pour l’affinage. Désactivez l’affinage ou repassez en mode mock." }
+      }
+    }
+  ]
+}

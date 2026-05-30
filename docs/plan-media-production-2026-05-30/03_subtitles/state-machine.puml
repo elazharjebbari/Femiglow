@@ -1,0 +1,85 @@
+@startuml subtitles-state-machine
+title Subtitles track lifecycle (UI + asset + edit-validation)
+
+skinparam shadowing false
+
+[*] --> Hidden
+
+Hidden : track not mounted
+Hidden : (flag off OR draft not reel/story)
+Hidden --> Empty : flag on && video-capable draft && no subtitles asset
+Hidden --> Ready : flag on && video-capable draft && existing subtitles asset
+
+state Empty {
+  Empty : no cues, no asset
+  Empty : "Générer les sous-titres" CTA
+  Empty : style = DEFAULT_BURN_IN_STYLE
+}
+
+Empty --> Generating : click "Générer"\n[draftId present]
+
+state Generating {
+  Generating : POST generate-subtitles in flight
+  Generating : controls disabled, estimator bar
+  Generating : mock/default = PURE, no network, cost 0
+}
+
+Generating --> Editing : 200, cues.length > 0\n(auto-persisted -> asset exists)
+Generating --> Empty : 200, cues.length == 0\n(empty script, nothing persisted, hint shown)
+Generating --> Error : 4xx/5xx\n(409 format, 409 refine no-key, 502 refine 5xx, 400, 429)
+
+state Editing {
+  Editing : CueEditor populated
+  Editing : live validateCues on every change
+  Editing : SubtitleStyleControls + SubtitleOverlayPreview
+  --
+  state "valid (editing)" as EVALID
+  state "invalid" as EINVALID
+  [*] --> EVALID
+  EVALID --> EINVALID : edit introduces an error\n(overlap/order/line-length/lines/empty)
+  EINVALID --> EVALID : fix all errors
+  EINVALID : "Enregistrer" disabled\nerror summary + highlighted rows
+  EVALID : "Enregistrer" enabled when dirty\nwarnings (CPS/short/gap) non-blocking
+}
+
+Editing --> Saving : click "Enregistrer"\n[valid && dirty]
+Editing --> Generating : click "Régénérer"\n(confirm overwrite)
+
+state Saving {
+  Saving : PUT subtitles in flight
+  Saving : server re-validates (authoritative)
+}
+
+Saving --> Ready : 200 { media }\n(asset replaced, role='subtitles' meta.srt/meta.style)
+Saving --> Editing : 400 cueErrors\n(server validation mapped onto rows)
+Saving --> Error : 401/403/404/409/5xx
+
+state Ready {
+  Ready : asset matches editor (clean)
+  Ready : "Régénérer" + "Enregistrer" (disabled, nothing to save)
+}
+
+Ready --> Editing : edit a cue / change style (dirty)
+Ready --> Generating : click "Régénérer" (confirm overwrite)
+Empty --> Saving : (rare) add cues manually then Enregistrer
+Editing --> Empty : delete all cues -> cues == [] then Enregistrer clears asset (E9)
+
+Error --> Generating : click "Réessayer"
+Error --> Editing : (asset/cues still in editor) fix & retry save
+
+note right of Generating
+  refine=false (default) : parseScriptToCues + serializeSrt
+                           PURE, NO network, cost 0
+  refine=true + live+key : 1 LLM call tidies TEXT only
+  refine=true + live+no-key : -> Error (409), never Generating success
+  refine=true + mock : ignored (no provider call)
+end note
+
+note bottom of Ready
+  Ready asset participates in:
+   - Compose (../02_compose) reads meta.srt (state.subtitles) + meta.style (burn-in)
+   - Publish confirm track summary (D4): 💬 Sous-titres ✓
+end note
+
+Ready --> [*] : draft published / discarded
+@enduml
