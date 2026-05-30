@@ -119,6 +119,10 @@ describe('transcodeExportNode', () => {
     const exp = Object.values(result.exports as Record<string, { generationParams?: Record<string, unknown> }>)[0];
     expect(exp?.generationParams?.degraded).toBe(true);
     expect(typeof exp?.generationParams?.degradedReason).toBe('string');
+    // ACT-BE-015 : l'échec est poussé dans state.errors (pas masqué).
+    const errors = result.errors as Array<{ node: string; retryable: boolean }>;
+    expect(errors.length).toBeGreaterThanOrEqual(1);
+    expect(errors[0]!.node).toBe('transcode_export');
   });
 
   it('returns exports record', async () => {

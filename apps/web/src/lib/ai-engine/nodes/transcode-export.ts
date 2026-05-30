@@ -214,5 +214,19 @@ export async function transcodeExportNode(state: Record<string, unknown>): Promi
     currentStep: 'transcode_export',
     // ACT-BE-032 : signale au graphe qu'un export a dû être servi en dégradé.
     transcodeDegraded: transcodeError !== null,
+    // ACT-BE-015 : pousse l'échec dans le canal state.errors (qui existe déjà)
+    // au lieu de le masquer — le quality-gate/routing peut alors en tenir compte.
+    errors: transcodeError
+      ? [
+          {
+            node: 'transcode_export',
+            errorType: 'transcode_failed',
+            message: transcodeError,
+            timestamp: new Date().toISOString(),
+            provider: 'transcode',
+            retryable: true,
+          },
+        ]
+      : [],
   };
 }

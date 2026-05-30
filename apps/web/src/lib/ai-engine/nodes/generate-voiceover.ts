@@ -242,6 +242,11 @@ export async function generateVoiceoverNode(state: Record<string, unknown>): Pro
   const prevTotal = (prevCost?.totalCents as number) ?? 0;
   const prevBreakdown = (prevCost?.breakdown as Record<string, number>) ?? {};
 
+  // ACT-BE-015 (BUG-049) : une voix-off vide (url='') ou dégradée (fallback
+  // silencieux) est poussée dans state.errors au lieu de passer pour un succès.
+  const vo = voiceover as { url?: string; provider?: string; generationParams?: Record<string, unknown> };
+  const voiceoverDegraded = !vo.url || vo.provider === 'fallback';
+
   return {
     voiceover,
     voiceoverScript: text,
@@ -251,5 +256,17 @@ export async function generateVoiceoverNode(state: Record<string, unknown>): Pro
       totalCents: prevTotal + costCents,
       breakdown: { ...prevBreakdown, generate_voiceover: costCents },
     },
+    errors: voiceoverDegraded
+      ? [
+          {
+            node: 'generate_voiceover',
+            errorType: vo.url ? 'voiceover_degraded' : 'voiceover_empty',
+            message: String(vo.generationParams?.error ?? 'voix-off indisponible (fallback)'),
+            timestamp: new Date().toISOString(),
+            provider: 'fallback',
+            retryable: true,
+          },
+        ]
+      : [],
   };
 }
