@@ -88,6 +88,9 @@ jobs:
       # Le prototype Content Studio est gated ; l'e2e `content-studio.spec.ts`
       # vérifie ses onglets → il faut l'activer (build + runtime serveur).
       CONTENT_STUDIO_ENABLED: 'true'
+      # Génération de visuel : provider mock (déterministe, aucun appel externe).
+      # La génération de texte tombe déjà en fallback déterministe sans clé OpenAI.
+      CONTENT_STUDIO_IMAGE_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
 
