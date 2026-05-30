@@ -53,16 +53,16 @@ describe('logEvent — colonnes attribution (Fix audit cause #1)', () => {
     await logEvent(baseInput({ trafficSource: 'paid_social', trafficMedium: 'cpc' }));
     const events = await listEvents({ limit: 1 });
     expect(events).toHaveLength(1);
-    expect(events[0].trafficSource).toBe('paid_social');
-    expect(events[0].trafficMedium).toBe('cpc');
+    expect(events[0]!.trafficSource).toBe('paid_social');
+    expect(events[0]!.trafficMedium).toBe('cpc');
   });
 
   it('persiste trafficSource = NULL quand absent (rétrocompat v1)', async () => {
     await logEvent(baseInput());
     const events = await listEvents({ limit: 1 });
     expect(events).toHaveLength(1);
-    expect(events[0].trafficSource).toBe(null);
-    expect(events[0].trafficMedium).toBe(null);
+    expect(events[0]!.trafficSource).toBe(null);
+    expect(events[0]!.trafficMedium).toBe(null);
   });
 
   it('persiste tous les buckets sans casser', async () => {
@@ -125,11 +125,11 @@ describe('logEvent — colonnes attribution (Fix audit cause #1)', () => {
     );
     const purchases = await listEvents({ eventName: 'purchase' });
     expect(purchases).toHaveLength(1);
-    expect(purchases[0].trafficSource).toBe('paid_social');
+    expect(purchases[0]!.trafficSource).toBe('paid_social');
 
     const pages = await listEvents({ eventName: 'page_view' });
     expect(pages).toHaveLength(1);
-    expect(pages[0].trafficSource).toBe('organic_search');
+    expect(pages[0]!.trafficSource).toBe('organic_search');
   });
 
   it('event sans attribution + event avec attribution dans le même batch → coexistent', async () => {

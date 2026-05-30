@@ -235,9 +235,9 @@ describe('enrichEvent — concurrency (multi-events même visitor)', () => {
     // Tous les events devraient être identiquement résolus
     const allSame = results.every(
       (r) =>
-        r.trafficSource === results[0].trafficSource &&
-        r.trafficMedium === results[0].trafficMedium &&
-        r.utm.source === results[0].utm.source,
+        r.trafficSource === results[0]!.trafficSource &&
+        r.trafficMedium === results[0]!.trafficMedium &&
+        r.utm.source === results[0]!.utm.source,
     );
     expect(allSame).toBe(true);
     expect(mockedFind).toHaveBeenCalledTimes(10);

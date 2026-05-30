@@ -236,7 +236,7 @@ describe('MSW pipeline — /api/admin/debug/last-events', () => {
 
     const events = (await getDebugEvents()) as Array<{ trafficSource: string }>;
     expect(events).toHaveLength(1);
-    expect(events[0].trafficSource).toBe('paid_social');
+    expect(events[0]!.trafficSource).toBe('paid_social');
   });
 
   it('filtre par sessionId', async () => {
@@ -255,7 +255,7 @@ describe('MSW pipeline — /api/admin/debug/last-events', () => {
 
     const sessA = (await getDebugEvents('sess-A')) as Array<{ eventId: string }>;
     expect(sessA).toHaveLength(1);
-    expect(sessA[0].eventId).toBe('e1');
+    expect(sessA[0]!.eventId).toBe('e1');
   });
 
   it('événements triés du plus récent au plus ancien', async () => {
