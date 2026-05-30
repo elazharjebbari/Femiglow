@@ -31,11 +31,15 @@ Cible : `.github/workflows/ci.yml`, job `e2e`. Appliquer (cf. patch de référen
    ```yaml
    env:
      DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+     CONTENT_STUDIO_ENABLED: 'true'          # le prototype est gated → l'e2e en a besoin
+     CONTENT_STUDIO_IMAGE_PROVIDER: mock      # génération de visuel déterministe (pas d'appel externe)
    ```
-3. **Step migrate** (avant le build) :
+3. **Step migrate** (avant le build) — **runner maison**, PAS `drizzle-kit migrate` (qui wrappe
+   chaque migration en transaction → casse `CREATE EXTENSION`/`INDEX CONCURRENTLY`) :
    ```yaml
    - name: Apply DB migrations
-     run: pnpm --filter web db:migrate
+     run: node scripts/_migrate-safe.mjs   # lit DATABASE_URL de l'env du job
+     working-directory: apps/web
    ```
 4. **Build** : conserver, retirer la ligne `DATABASE_URL: ${{ secrets.CI_DATABASE_URL || '' }}`
    (désormais fournie au niveau job).
@@ -142,6 +146,8 @@ git fetch origin master && git log origin/master --oneline -1   # vérif merge
       CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
       ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
       ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+      CONTENT_STUDIO_ENABLED: 'true'
+      CONTENT_STUDIO_IMAGE_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -153,7 +159,8 @@ git fetch origin master && git log origin/master --oneline -1   # vérif merge
         run: npx playwright install chromium --with-deps
         working-directory: apps/web
       - name: Apply DB migrations
-        run: pnpm --filter web db:migrate
+        run: node scripts/_migrate-safe.mjs   # runner maison (pas drizzle-kit migrate)
+        working-directory: apps/web
       - name: Build Next.js
         run: pnpm --filter web build
       - name: Run Content Studio E2E
@@ -176,3 +183,24 @@ git fetch origin master && git log origin/master --oneline -1   # vérif merge
 
 `git revert <commit>` puis push. CI-only, aucun impact applicatif. Le job qualité reste vert
 indépendamment.
+
+## 8. Notes d'exécution réelle (PR #4, mergée `a3a846f`)
+
+Ajustements découverts pendant la boucle de correction (le §6 ci-dessus est la version **finale**) :
+
+1. **Migrations** : `drizzle-kit migrate` échoue (exit 1) — il enveloppe chaque migration dans une
+   transaction, incompatible avec `CREATE EXTENSION` / `INDEX CONCURRENTLY`. Le repo fournit le
+   runner maison `scripts/_migrate-safe.mjs` (hash-based, lit `DATABASE_URL`) — c'est lui qu'on
+   utilise.
+2. **Content Studio gated** : sans `CONTENT_STUDIO_ENABLED=true`, la page affiche un placeholder
+   « désactivé » → les onglets de `content-studio.spec.ts` n'existent pas. Flag ajouté à l'env du job.
+3. **Visuel IA** : `CONTENT_STUDIO_IMAGE_PROVIDER=mock` (la génération de **texte** tombe déjà en
+   fallback déterministe sans clé OpenAI ; seul le **visuel** avait besoin du provider mock).
+4. **Test data-dependent** : `content-studio.spec.ts` « éditeur de brouillon » attendait le panneau
+   « Brouillons », absent sur une base fraîche (`DraftEditor` affiche un état vide) → test rendu
+   résilient (accepte l'état vide OU le panneau).
+5. **gitleaks** : l'URL Postgres de CI (`postgres:postgres@localhost`) matchait la règle
+   `femiglow-database-url` → ajoutée à l'allowlist `.gitleaks.toml` (non secret).
+
+Résultat : **les deux jobs verts** (`Lint + Typecheck + Tests` **et** `Playwright E2E`) sur la PR
+puis sur `master`.
