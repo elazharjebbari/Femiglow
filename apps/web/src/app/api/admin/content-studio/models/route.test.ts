@@ -3,7 +3,7 @@ import {
   materialiseDiscoveredModel,
   mapDiscoverySource,
   discoveryRoleToStudio,
-} from './route';
+} from './discovery-mapping';
 import { inferRole } from '@/lib/ai-engine/services/model-discovery';
 
 /**
