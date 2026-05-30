@@ -160,7 +160,14 @@ function mapPostizProviderToPlatform(value: string | undefined): SocialPlatform 
 
 export async function listAdminSocialAccounts(): Promise<SocialAccount[]> {
   const accounts = await listSocialAccounts();
-  return accounts.length > 0 ? accounts : syncSocialAccounts();
+  const base = accounts.length > 0 ? accounts : await syncSocialAccounts();
+  // ACT-BE-065 (BUG-065) : capabilities RECALCULÉES à la volée depuis le code
+  // adapter (source unique), au lieu de servir les capabilities persistées
+  // potentiellement périmées (supportsDraft / reel / story manquants).
+  return base.map((account) => ({
+    ...account,
+    capabilities: adapterFor(account.provider).listCapabilities(account),
+  }));
 }
 
 export async function getPostPublishability(input: {
