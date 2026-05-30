@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { server, http, HttpResponse } from '@/test/msw/server';
 
 async function tinyPngBase64(): Promise<string> {
   const buf = await sharp({
@@ -9,6 +10,16 @@ async function tinyPngBase64(): Promise<string> {
     .toBuffer();
   return buf.toString('base64');
 }
+
+const OPENAI_IMAGES_URL = 'https://api.openai.com/v1/images/generations';
+const HIGGSFIELD_IMAGE_RE = /\/v1\/images\/generate/;
+
+// ARC-004 — appels providers interceptés par MSW (au lieu de spy sur fetch).
+// server.listen idempotent (test/msw/server.ts). onUnhandledRequest:'error' :
+// les chemins mock/no-key NE font aucun fetch (sinon MSW lèverait).
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 describe('content studio image generation', () => {
   beforeEach(() => {
@@ -45,20 +56,16 @@ describe('content studio image generation', () => {
   });
 
   it('mode=live + modèle gpt-image-1 + CONTENT_STUDIO_IMAGE_PROVIDER=mock → appelle OpenAI (PAS mock)', async () => {
-    // C'est exactement le bug rapporté : env=mock mais user veut un vrai appel.
     vi.stubEnv('CONTENT_STUDIO_IMAGE_PROVIDER', 'mock');
     vi.stubEnv('CONTENT_STUDIO_OPENAI_API_KEY', 'sk_test_openai');
     const pngB64 = await tinyPngBase64();
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
-      expect(String(url)).toContain('api.openai.com/v1/images/generations');
-      const body = JSON.parse(((init as RequestInit | undefined)?.body ?? '{}') as string);
-      // Critical: the SELECTED model id is sent, not the env default
-      expect(body.model).toBe('gpt-image-1');
-      return new Response(
-        JSON.stringify({ data: [{ b64_json: pngB64 }] }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      );
-    });
+    let captured: Record<string, unknown> | null = null;
+    server.use(
+      http.post(OPENAI_IMAGES_URL, async ({ request }) => {
+        captured = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ data: [{ b64_json: pngB64 }] });
+      }),
+    );
     const { generateStudioImage } = await import('./image-generation');
     const result = await generateStudioImage({
       prompt: 'live openai',
@@ -69,14 +76,12 @@ describe('content studio image generation', () => {
     });
     expect(result.provider).toBe('openai');
     expect(result.model).toBe('gpt-image-1');
-    fetchSpy.mockRestore();
+    // Critical : le modèle SÉLECTIONNÉ est envoyé, pas l'env default.
+    expect(captured!.model).toBe('gpt-image-1');
   });
 
   it('mode=live + modèle OpenAI sans AUCUNE clé OpenAI résolue → erreur explicite', async () => {
     vi.stubEnv('CONTENT_STUDIO_IMAGE_PROVIDER', 'mock');
-    // ACT-ARC-013/BE-010 : la résolution est désormais unifiée sur toute la
-    // chaîne d'env — on neutralise TOUTES les variables pour reproduire le cas
-    // « aucune clé » (sinon un OPENAI_API_KEY ambiant débloquerait, à raison).
     vi.stubEnv('AI_ENGINE_OPENAI_API_KEY', '');
     vi.stubEnv('CONTENT_STUDIO_OPENAI_API_KEY', '');
     vi.stubEnv('CHAT_OPENAI_API_KEY', '');
@@ -98,14 +103,13 @@ describe('content studio image generation', () => {
     vi.stubEnv('CONTENT_STUDIO_IMAGE_MODEL', 'gpt-image-1-mini'); // env default ≠ selected
     vi.stubEnv('CONTENT_STUDIO_OPENAI_API_KEY', 'sk_test');
     const pngB64 = await tinyPngBase64();
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
-      const body = JSON.parse(((init as RequestInit | undefined)?.body ?? '{}') as string);
-      expect(body.model).toBe('dall-e-3');
-      return new Response(
-        JSON.stringify({ data: [{ b64_json: pngB64 }] }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      );
-    });
+    let captured: Record<string, unknown> | null = null;
+    server.use(
+      http.post(OPENAI_IMAGES_URL, async ({ request }) => {
+        captured = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ data: [{ b64_json: pngB64 }] });
+      }),
+    );
     const { generateStudioImage } = await import('./image-generation');
     const result = await generateStudioImage({
       prompt: 'dall-e',
@@ -115,7 +119,7 @@ describe('content studio image generation', () => {
       mode: 'live',
     });
     expect(result.model).toBe('dall-e-3');
-    fetchSpy.mockRestore();
+    expect(captured!.model).toBe('dall-e-3');
   });
 
   it('model = mock-low-cost-image → SVG fallback même sans mode set', async () => {
@@ -148,20 +152,14 @@ describe('content studio image generation', () => {
   it('mode=live + hf-flux-1 → POST vers /v1/images/generate avec le bon modèle', async () => {
     vi.stubEnv('CONTENT_STUDIO_IMAGE_PROVIDER', 'openai');
     vi.stubEnv('AI_ENGINE_HIGGSFIELD_API_KEY', 'hf_test_key:hf_secret');
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
-      const u = String(url);
-      if (u.includes('/v1/images/generate')) {
-        const body = JSON.parse(((init as RequestInit | undefined)?.body ?? '{}') as string);
-        expect(body.model).toBe('flux-1');
-        expect(body.prompt).toBe('test prompt HF');
-        const pngB64 = await tinyPngBase64();
-        return new Response(
-          JSON.stringify({ images: [{ base64: pngB64 }] }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
-      }
-      throw new Error(`Unexpected fetch ${u}`);
-    });
+    const pngB64 = await tinyPngBase64();
+    let captured: Record<string, unknown> | null = null;
+    server.use(
+      http.post(HIGGSFIELD_IMAGE_RE, async ({ request }) => {
+        captured = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ images: [{ base64: pngB64 }] });
+      }),
+    );
     const { generateStudioImage } = await import('./image-generation');
     const result = await generateStudioImage({
       prompt: 'test prompt HF',
@@ -173,20 +171,20 @@ describe('content studio image generation', () => {
     expect(result.provider).toBe('higgsfield');
     expect(result.model).toBe('hf-flux-1');
     expect(result.estimatedCostCents).toBe(250);
-    fetchSpy.mockRestore();
+    expect(captured!.model).toBe('flux-1');
+    expect(captured!.prompt).toBe('test prompt HF');
   });
 
   it('mode=live + hf-flux-pro envoie le modèle Higgsfield correct', async () => {
     vi.stubEnv('AI_ENGINE_HIGGSFIELD_API_KEY', 'hf_test_key:hf_secret');
     const pngB64 = await tinyPngBase64();
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
-      const body = JSON.parse(((init as RequestInit | undefined)?.body ?? '{}') as string);
-      expect(body.model).toBe('flux-pro');
-      return new Response(
-        JSON.stringify({ images: [{ base64: pngB64 }] }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      );
-    });
+    let captured: Record<string, unknown> | null = null;
+    server.use(
+      http.post(HIGGSFIELD_IMAGE_RE, async ({ request }) => {
+        captured = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ images: [{ base64: pngB64 }] });
+      }),
+    );
     const { generateStudioImage } = await import('./image-generation');
     const result = await generateStudioImage({
       prompt: 'p',
@@ -196,6 +194,6 @@ describe('content studio image generation', () => {
       mode: 'live',
     });
     expect(result.estimatedCostCents).toBe(550);
-    fetchSpy.mockRestore();
+    expect(captured!.model).toBe('flux-pro');
   });
 });
