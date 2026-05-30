@@ -1,0 +1,29 @@
+@startuml sequence-nudge
+title Séquence — Nudge contextuel one-shot (anti-flash, anti-intrusion)
+
+actor "Visiteuse (navigateur AR)" as U
+participant "Server (RSC)" as S
+participant "resolveSuggestedLocale()" as D
+participant "LocaleNudge" as N
+participant "cookies" as C
+participant "analytics" as T
+
+U -> S : GET /fr/kit (Accept-Language: ar,fr)
+S -> C : lire NEXT_LOCALE, locale_nudge_dismissed
+S -> D : resolve(Accept-Language, cookies)
+D --> S : suggested='ar', served='fr'
+alt nudge activé ET pas déjà dismiss ET suggested≠served
+  S -> N : render(suggested='ar') (prop SSR → pas de flash, ADR-006)
+  N -> T : locale_nudge_shown
+  alt clic « بالعربية ؟ »
+    N -> T : locale_nudge_accepted
+    N -> useLocaleTransition : switch('ar') (cf. sequence-switch)
+  else dismiss (✕) ou ignore
+    N -> C : set locale_nudge_dismissed=1 (permanent)
+    N -> T : locale_nudge_dismissed
+  end
+else
+  S -> S : pas de nudge (silencieux)
+end
+note over N : Jamais de modale. Jamais sur le wizard. 1×/visiteur.
+@enduml
