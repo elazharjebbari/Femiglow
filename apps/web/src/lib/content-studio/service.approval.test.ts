@@ -6,6 +6,7 @@ import { HttpError } from '@/lib/errors/http-error';
 import {
   approveContentDraft,
   createContentIdea,
+  createVariation,
   generateVisualForDraft,
   reviewContentDraft,
 } from './service';
@@ -124,6 +125,19 @@ describe('generateVisualForDraft — auto-bind du visuel au draft', () => {
     // exécuté = mock ; intentionnel = le modèle choisi → traçabilité préservée
     expect(run.model).toMatch(/^mock-/);
     expect((run.input as Record<string, unknown>).intendedModel).toBe('gpt-image-1-mini');
+  });
+
+  it('createVariation RÉGÉNÈRE un texte différent du parent (ACT-BE-014)', async () => {
+    const draft = await makeDraft();
+    const variation = await createVariation({
+      draftId: draft.id,
+      promptOverride: 'Mets l’accent sur la patience et la lenteur du geste.',
+      mode: 'mock',
+    });
+    expect(variation).not.toBeNull();
+    expect(variation!.parentDraftId).toBe(draft.id);
+    // régénéré (fallback varié + prompt+override) ≠ clone identique du parent
+    expect(variation!.caption).not.toBe(draft.caption);
   });
 
   it('remplace le binding précédent quand on régénère un visuel', { timeout: 60000 }, async () => {

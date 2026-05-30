@@ -909,7 +909,16 @@ export async function archiveEntity(
 
 export async function createDraftVariation(
   fromDraftId: string,
-  overrides: { variantLabel?: string; caption?: string; promptOverride?: string },
+  overrides: {
+    variantLabel?: string;
+    caption?: string;
+    // ACT-BE-014 — champs régénérés (sinon clonés du parent à l'identique).
+    hook?: string;
+    cta?: string;
+    altText?: string;
+    hashtags?: string[];
+    promptOverride?: string;
+  },
 ): Promise<ContentDraft | null> {
   const parent = await getDraft(fromDraftId);
   if (!parent) return null;
@@ -921,10 +930,10 @@ export async function createDraftVariation(
     format: parent.format,
     variantLabel: overrides.variantLabel ?? `Variante`,
     caption: overrides.caption ?? parent.caption,
-    hook: parent.hook,
-    cta: parent.cta,
-    altText: parent.altText,
-    hashtags: parent.hashtags,
+    hook: overrides.hook ?? parent.hook,
+    cta: overrides.cta ?? parent.cta,
+    altText: overrides.altText ?? parent.altText,
+    hashtags: overrides.hashtags ?? parent.hashtags,
     rejectionReason: null,
     parentDraftId: fromDraftId,
     status: 'generated',

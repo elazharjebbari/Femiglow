@@ -195,30 +195,66 @@ function fallbackGeneration(
   };
 
   const base = idea.prompt.replace(/\s+/g, ' ').trim();
+
+  // ACT-BE-013 (variation du fallback) — hooks VARIÉS par format et hashtags
+  // par pilier, au lieu d'un bloc figé identique pour tout (un reel ne reçoit
+  // plus le hook d'un post). Combiné au prompt (présent dans la caption), deux
+  // idées de format/pilier/prompt distincts produisent des textes distincts —
+  // ce qui permet aussi à la régénération de variation (BE-014) de différer.
+  const hooksByFormat: Record<string, [string, string, string]> = {
+    reel: [
+      'Un geste lent capté en mouvement : la main retrouve sa lumière.',
+      'Quelques secondes au ralenti, et l’éclat naturel revient.',
+      'Le rituel en mouvement : un soin qui ne triche pas.',
+    ],
+    story: [
+      'Un instant suspendu : la main, la lumière, le geste.',
+      'Le temps d’une story, ralentir pour retrouver l’éclat.',
+      'À garder près de soi : le rituel qui prend soin sans abîmer.',
+    ],
+    carousel: [
+      'Étape par étape, la main retrouve sa lumière.',
+      'Trois gestes, une routine : l’éclat naturel se construit.',
+      'À faire défiler : le rituel FemiGlow, pas à pas.',
+    ],
+    post: [
+      'Un geste lent, une main qui retrouve sa lumière.',
+      'La lumière revient quand le geste ralentit.',
+      'Recevoir le rituel, c’est choisir un soin qui ne triche pas.',
+    ],
+  };
+  const hooks = hooksByFormat[idea.format] ?? hooksByFormat.post;
+  const hashtagsByPillar: Record<string, string[]> = {
+    produit: ['femiglow', 'kitfemiglow', 'soindesongles'],
+    rituel: ['femiglow', 'rituel', 'ritueldebeaute'],
+    education: ['femiglow', 'conseilsongles', 'soindesongles'],
+  };
+  const pillarTags = hashtagsByPillar[idea.pillar] ?? ['femiglow', 'maisonfemiglow', 'soindesongles'];
+
   const drafts: GeneratedDraft[] = [
     {
       variantLabel: 'sobre',
-      hook: 'Un geste lent, une main qui retrouve sa lumière.',
+      hook: hooks[0],
       caption: `${base}. Chez FemiGlow, le soin commence par un geste précis et patient. Sans vernis, sans abrasion, le rituel accompagne l’éclat naturel de l’ongle.\n\n${brief.cta}.`,
       cta: brief.cta,
       altText: 'Main posée près du rituel FemiGlow dans une lumière naturelle.',
-      hashtags: ['femiglow', 'rituel', 'soindesongles'],
+      hashtags: [...pillarTags],
     },
     {
       variantLabel: 'sensorielle',
-      hook: 'La lumière revient quand le geste ralentit.',
+      hook: hooks[1],
       caption: `${base}. Une texture, une pause, un éclat qui ne cherche pas à couvrir. Le rituel FemiGlow se transmet comme une attention discrète, avec soin.\n\n${brief.cta}.`,
       cta: brief.cta,
       altText: 'Détail de mains et de matière dans une ambiance crème et sauge.',
-      hashtags: ['femiglow', 'maisonfemiglow', 'ritueldebeaute'],
+      hashtags: [pillarTags[0]!, 'maisonfemiglow', 'ritueldebeaute'],
     },
     {
       variantLabel: 'conversion douce',
-      hook: 'Recevoir le rituel, c’est choisir un soin qui ne triche pas.',
+      hook: hooks[2],
       caption: `${base}. Le kit FemiGlow accompagne les ongles avec précision, sans vernis ni abrasion. Une routine courte, mais pensée pour durer dans le geste.\n\n${brief.cta}.`,
       cta: brief.cta,
       altText: 'Kit FemiGlow présenté avec des mains dans une lumière douce.',
-      hashtags: ['femiglow', 'kitfemiglow', 'onglesnaturels'],
+      hashtags: [pillarTags[0]!, 'kitfemiglow', 'onglesnaturels'],
     },
   ];
 

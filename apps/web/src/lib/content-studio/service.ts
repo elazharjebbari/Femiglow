@@ -606,10 +606,45 @@ export async function archiveContentPost(postId: string) {
   return archiveEntity('post', postId);
 }
 
-export async function createVariation(input: { draftId: string; variantLabel?: string }) {
+export async function createVariation(input: {
+  draftId: string;
+  variantLabel?: string;
+  promptOverride?: string;
+  mode?: 'mock' | 'live';
+}) {
   const draft = await requireDraft(input.draftId);
   assertTransition(draft.status, 'generated');
-  return createDraftVariation(draft.id, { variantLabel: input.variantLabel });
+
+  // ACT-BE-014 (BUG-017) — RÉGÉNÉRER réellement le texte au lieu de cloner le
+  // parent à l'identique : on remonte à l'idée via le brief et on relance la
+  // génération en consommant promptOverride (injecté dans le prompt). Le
+  // fallback varié (hooks/hashtags) garantit que la variation diffère même en
+  // mock. Repli sur un clone si l'idée/brief est introuvable.
+  const brief = await getBrief(draft.briefId);
+  const idea = brief ? await getIdea(brief.ideaId) : null;
+  if (idea) {
+    const variationIdea = input.promptOverride
+      ? { ...idea, prompt: `${idea.prompt}\n\nVariation demandée : ${input.promptOverride}` }
+      : idea;
+    const gen = await generateForIdea(variationIdea, { mode: input.mode });
+    const fresh = gen.drafts[0];
+    if (fresh) {
+      return createDraftVariation(draft.id, {
+        variantLabel: input.variantLabel ?? fresh.variantLabel,
+        caption: fresh.caption,
+        hook: fresh.hook,
+        cta: fresh.cta,
+        altText: fresh.altText,
+        hashtags: fresh.hashtags,
+        promptOverride: input.promptOverride,
+      });
+    }
+  }
+
+  return createDraftVariation(draft.id, {
+    variantLabel: input.variantLabel,
+    promptOverride: input.promptOverride,
+  });
 }
 
 export async function reschedulePost(input: { postId: string; scheduledAt: string }) {
