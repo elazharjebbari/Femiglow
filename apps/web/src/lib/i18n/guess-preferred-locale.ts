@@ -53,12 +53,12 @@ export function parseAcceptLanguage(
   const byLocale = new Map<Locale, number>();
   for (const part of header.split(',')) {
     const [tag, ...params] = part.trim().split(';');
-    const base = tag.trim().split('-')[0]?.toLowerCase();
+    const base = tag?.trim().split('-')[0]?.toLowerCase();
     if (!base || !isLocale(base)) continue;
     let q = 1;
     for (const p of params) {
       const m = p.trim().match(/^q=([0-9.]+)$/);
-      if (m) q = Number.parseFloat(m[1]);
+      if (m?.[1]) q = Number.parseFloat(m[1]);
     }
     byLocale.set(base, Math.max(byLocale.get(base) ?? 0, q));
   }

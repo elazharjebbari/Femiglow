@@ -74,6 +74,6 @@ describe('guessPreferredLocale', () => {
       adLocale: 'ar',
     });
     expect(r.guessedLocale).toBe('ar');
-    expect(r.evidence.every((v) => v.locale !== 'de')).toBe(true);
+    expect(r.evidence.every((v) => (v.locale as string) !== 'de')).toBe(true);
   });
 });
