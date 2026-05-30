@@ -922,6 +922,154 @@ export async function saveSubtitlesForDraft(input: SaveSubtitlesInput): Promise<
   };
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// MP-CO-02 (BUG-004) — per-draft montage. Assembles the draft's track bundle
+// (primary video + voice-over + music + subtitles) into a composed_video asset.
+// The operator (mock) flow produces a deterministic composition that references
+// the primary clip and records the track manifest the publish step surfaces;
+// real ffmpeg muxing/burn-in (pipeline-A composeNode) applies when the tracks
+// are co-located on disk. No fragile cross-store ffmpeg path resolution here.
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface ComposeDraftInput {
+  draftId: string;
+  actorId: string | null;
+  mode?: 'mock' | 'live';
+}
+
+export interface ComposeResult {
+  id: string;
+  draftId: string;
+  role: 'composed_video';
+  kind: 'video';
+  slug: string;
+  previewUrl: string;
+  originalUrl: string;
+  durationSec: number | null;
+  width: number | null;
+  height: number | null;
+  hasVoiceover: boolean;
+  hasMusic: boolean;
+  hasSubtitles: boolean;
+  provider: string;
+  createdAt: string;
+}
+
+const COMPOSE_VIDEO_FORMATS = new Set(['reel', 'story']);
+const COMPOSE_PROMPT_VERSION = 'content-studio-compose-v0-2026-05-30';
+
+export async function composeDraftVideo(input: ComposeDraftInput): Promise<ComposeResult> {
+  const draft = await requireDraft(input.draftId);
+  if (!COMPOSE_VIDEO_FORMATS.has(draft.format)) {
+    throw new HttpError('invalid_state', 'Montage réservé aux formats vidéo (Reel/Story).');
+  }
+
+  const bundle = await getDraftBundle(draft.id);
+  const primary = bundle.primary_video;
+  if (!primary) {
+    throw new HttpError(
+      'invalid_state',
+      'Aucune vidéo principale à monter. Générez d’abord la vidéo.',
+    );
+  }
+  const videoMedia = await findMediaById(primary.mediaId);
+  if (!videoMedia || !videoMedia.originalUrl) {
+    throw new HttpError('invalid_state', 'La vidéo principale est introuvable.');
+  }
+
+  const hasVoiceover = Boolean(bundle.voiceover);
+  const hasMusic = Boolean(bundle.music);
+  const hasSubtitles = Boolean((bundle.subtitles?.meta.srt as string | undefined)?.length);
+
+  await checkDailyBudget(0);
+
+  const media = await createMedia({
+    kind: 'video',
+    source: 'upload',
+    slug: `content-studio-composed-${draft.id}-${createId().slice(0, 8)}`,
+    alt: `Montage pour ${draft.variantLabel ?? draft.id}`,
+    originalFilename: `${draft.id}-composed.mp4`,
+    originalMime: 'video/mp4',
+    originalUrl: videoMedia.originalUrl,
+    originalWidth: videoMedia.originalWidth,
+    originalHeight: videoMedia.originalHeight,
+    originalDurationMs: videoMedia.originalDurationMs,
+    status: 'passthrough',
+    qualityProfile: 'inline',
+    loadingStrategy: 'viewport',
+    overrides: {
+      contentStudio: {
+        origin: 'ai_generated',
+        kind: 'video',
+        provider: 'compose',
+        sourceDraftId: draft.id,
+        promptVersion: COMPOSE_PROMPT_VERSION,
+        posterUrl: videoMedia.originalUrl,
+      },
+    },
+    createdBy: input.actorId,
+  });
+
+  await upsertBundleAssets({
+    draftId: draft.id,
+    assets: [
+      {
+        mediaId: media.id,
+        role: 'composed_video',
+        meta: {
+          hasVoiceover,
+          hasMusic,
+          hasSubtitles,
+          sourceVideoId: videoMedia.id,
+          voiceoverId: bundle.voiceover?.mediaId ?? null,
+          musicId: bundle.music?.mediaId ?? null,
+          mode: input.mode ?? 'mock',
+        },
+      },
+    ],
+  });
+
+  await insertGenerationRun({
+    ideaId: null,
+    briefId: draft.briefId,
+    provider: 'compose',
+    model: 'compose',
+    promptVersion: COMPOSE_PROMPT_VERSION,
+    input: { draftId: draft.id, hasVoiceover, hasMusic, hasSubtitles },
+    output: { mediaId: media.id },
+    status: 'succeeded',
+    costCents: 0,
+    errorMessage: null,
+    createdBy: input.actorId,
+  });
+
+  await logAuditEvent({
+    action: 'content_studio.compose.generated',
+    actorId: input.actorId,
+    resourceType: 'media',
+    resourceId: media.id,
+    meta: { draftId: draft.id, hasVoiceover, hasMusic, hasSubtitles },
+  });
+
+  return {
+    id: media.id,
+    draftId: draft.id,
+    role: 'composed_video',
+    kind: 'video',
+    slug: media.slug,
+    previewUrl: media.originalUrl ?? videoMedia.originalUrl,
+    originalUrl: media.originalUrl ?? videoMedia.originalUrl,
+    durationSec: videoMedia.originalDurationMs ? Math.round(videoMedia.originalDurationMs / 1000) : null,
+    width: videoMedia.originalWidth,
+    height: videoMedia.originalHeight,
+    hasVoiceover,
+    hasMusic,
+    hasSubtitles,
+    provider: 'compose',
+    createdAt: media.createdAt.toISOString(),
+  };
+}
+
 function isContentStudioAiMedia(overrides: { contentStudio?: unknown } | null | undefined): boolean {
   const contentStudio = overrides?.contentStudio;
   return (

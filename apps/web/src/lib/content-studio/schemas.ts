@@ -108,6 +108,9 @@ export const subtitlesSaveSchema = z
   })
   .strict();
 
+// MP-CO-04 (BUG-004) — compose takes no payload (it assembles the draft bundle).
+export const composeSchema = z.object({}).strict();
+
 export const draftRejectSchema = z
   .object({
     reason: z.string().max(500).optional(),
