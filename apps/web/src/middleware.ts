@@ -1,8 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { decodeSession, SESSION_COOKIE } from '@/lib/auth/session';
+import { LOCALE_COOKIE_NAME } from '@/i18n.config';
 import { buildChatCspExtensions } from '@/lib/chat/csp';
 import { buildTrackingCspExtensions } from '@/lib/tracking/providers/csp';
 import { legacyRedirectIfNeeded } from '@/lib/tracking/plan/legacy-redirect';
+import { isI18nEnabled } from '@/lib/i18n/feature-flag';
+import { resolveLegacyLocaleRedirect } from '@/lib/i18n/legacy-locale-redirect';
 
 export const config = {
   matcher: [
@@ -99,6 +102,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // ensuite la login si besoin).
   const legacy = legacyRedirectIfNeeded(request);
   if (legacy) return legacy;
+
+  // L8 — Quand l'i18n est activée, l'entrée par défaut bascule sur l'arbre
+  // localisé : `/` → `/fr`, `/kit` → `/fr/kit`… (cookie NEXT_LOCALE respecté).
+  // Seules les racines disposant d'un miroir `[locale]/` sont redirigées ;
+  // les routes legacy sans équivalent restent servies telles quelles.
+  // La query (UTM inclus) est préservée par le clone de `nextUrl` (INV-4).
+  if (isI18nEnabled()) {
+    const cookieLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
+    const target = resolveLegacyLocaleRedirect(pathname, cookieLocale);
+    if (target) {
+      const url = request.nextUrl.clone();
+      url.pathname = target;
+      return NextResponse.redirect(url);
+    }
+  }
 
   if (isAdmin && !PUBLIC_ADMIN_PATHS.has(pathname)) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;
