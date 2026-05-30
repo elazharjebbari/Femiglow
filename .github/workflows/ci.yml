@@ -85,6 +85,9 @@ jobs:
       CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
       ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
       ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+      # Le prototype Content Studio est gated ; l'e2e `content-studio.spec.ts`
+      # vérifie ses onglets → il faut l'activer (build + runtime serveur).
+      CONTENT_STUDIO_ENABLED: 'true'
     steps:
       - uses: actions/checkout@v4
 
