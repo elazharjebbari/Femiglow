@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildContentIdea } from '@/test/factories/content-studio';
+import { server } from '@/test/msw/server';
 
 /**
  * ACT-BE-013 (BUG-005) — le mode mock/live pilote RÉELLEMENT la génération de
@@ -13,6 +14,12 @@ const OPENAI_KEYS = [
   'OPENAI_API_KEY',
 ];
 
+// ARC-004 — onUnhandledRequest:'error' : tout fetch émis ferait échouer le test.
+// Le mode mock NE doit faire AUCun appel réseau ; l'absence d'erreur le prouve
+// (plus fort qu'un spy `not.toHaveBeenCalled`).
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterAll(() => server.close());
+
 describe('generateForIdea — mode mock/live', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -22,17 +29,18 @@ describe('generateForIdea — mode mock/live', () => {
     for (const k of OPENAI_KEYS) vi.stubEnv(k, '');
   });
   afterEach(() => {
+    server.resetHandlers();
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
   it('mode=mock → fallback déterministe même si une clé est présente (aucun LLM)', async () => {
     vi.stubEnv('OPENAI_API_KEY', 'sk-present-but-must-be-ignored');
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const { generateForIdea } = await import('./generation');
+    // Aucun handler enregistré : si generateForIdea émettait un fetch, MSW
+    // lèverait (onUnhandledRequest:'error') et ferait échouer le test.
     const out = await generateForIdea(buildContentIdea(), { mode: 'mock' });
     expect(out.provider).toBe('fallback');
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('mode=live sans clé résolue → HttpError invalid_state (pas de fallback silencieux)', async () => {
