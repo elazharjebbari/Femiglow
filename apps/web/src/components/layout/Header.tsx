@@ -17,6 +17,9 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  // La bande indice « ↑ Voir le pack » transparaîtrait sous le fond
+  // semi-opaque du menu de langue : on la masque tant que ce menu est ouvert.
+  const [localeMenuOpen, setLocaleMenuOpen] = useState(false);
   // CHA-244 — quand le chat est ouvert, le header sticky se replie
   // vers le haut pour libérer la zone d'en-tête du panel chat.
   // cf. docs/admin-config/43-chat-mobile-ux-fix-runbook.md §B.
@@ -104,6 +107,7 @@ export function Header() {
               <LocaleSwitcher
                 variant="dropdown"
                 className="hidden md:inline-flex"
+                onOpenChange={setLocaleMenuOpen}
               />
               <div className="relative">
                 <button
@@ -117,7 +121,7 @@ export function Header() {
                 >
                   {strings.menuLabel}
                 </button>
-                {showHint && (
+                {showHint && !localeMenuOpen && (
                   <span
                     aria-hidden="true"
                     onClick={dismissHint}

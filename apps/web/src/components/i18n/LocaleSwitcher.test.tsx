@@ -198,6 +198,21 @@ describe('LocaleSwitcher dropdown (desktop)', () => {
     );
   });
 
+  it('notifie onOpenChange(true) à l\'ouverture et (false) à la fermeture', () => {
+    const onOpenChange = vi.fn();
+    render(<LocaleSwitcher variant="dropdown" onOpenChange={onOpenChange} />);
+    // Effet de montage : état initial fermé.
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+
+    fireEvent.click(screen.getByTestId('locale-switcher-trigger'));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    fireEvent.keyDown(screen.getByTestId('locale-switcher-menu'), {
+      key: 'Escape',
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it("aucun emoji n'est rendu dans le DOM (politique charte FemiGlow)", () => {
     render(<LocaleSwitcher variant="dropdown" />);
     fireEvent.click(screen.getByTestId('locale-switcher-trigger'));

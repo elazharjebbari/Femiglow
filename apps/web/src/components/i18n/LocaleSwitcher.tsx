@@ -104,6 +104,13 @@ export interface LocaleSwitcherProps {
    * dans le SommaireOverlay pour fermer le drawer après le switch.
    */
   onSelect?: (locale: Locale) => void;
+  /**
+   * Callback optionnel notifiant l'ouverture/fermeture du menu dropdown.
+   * Permet à un parent (Header) de masquer un élément voisin qui
+   * transparaîtrait sous le fond semi-opaque du menu. Variante `dropdown`
+   * uniquement (la variante `inline` n'a pas d'état d'ouverture).
+   */
+  onOpenChange?: (open: boolean) => void;
   /** Permet d'override la className racine (positionnement par parent). */
   className?: string;
 }
@@ -134,6 +141,7 @@ export function LocaleSwitcher(props: LocaleSwitcherProps) {
 function LocaleSwitcherInner({
   variant = 'dropdown',
   onSelect,
+  onOpenChange,
   className,
   activeLocale,
 }: LocaleSwitcherProps & { activeLocale: Locale }) {
@@ -205,6 +213,7 @@ function LocaleSwitcherInner({
       menuAriaLabel={t('locale_switcher_menu_aria')}
       isPending={isPending}
       className={className}
+      onOpenChange={onOpenChange}
     />
   );
 }
@@ -221,6 +230,7 @@ interface DropdownSwitcherProps {
   menuAriaLabel: string;
   isPending: boolean;
   className?: string;
+  onOpenChange?: (open: boolean) => void;
 }
 
 function DropdownSwitcher({
@@ -231,6 +241,7 @@ function DropdownSwitcher({
   menuAriaLabel,
   isPending,
   className,
+  onOpenChange,
 }: DropdownSwitcherProps) {
   const [open, setOpen] = useState(false);
   const [focusIndex, setFocusIndex] = useState<number>(() =>
@@ -241,6 +252,12 @@ function DropdownSwitcher({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Notifie le parent (Header) de l'état d'ouverture du menu pour qu'il
+  // masque un voisin transparaissant sous le fond semi-opaque du menu.
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   // Ferme le menu au click outside.
   useEffect(() => {
