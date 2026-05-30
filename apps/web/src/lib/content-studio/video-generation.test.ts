@@ -1,9 +1,20 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
+import { server, http, HttpResponse } from '@/test/msw/server';
 
 // We test through dynamic imports so per-test env overrides take effect on
 // the freshly resolved module (env.ts reads process.env at module load).
 
 const ORIGINAL_ENV = { ...process.env };
+
+// ARC-004 — l'API Higgsfield (submit + polling) est interceptée par MSW au lieu
+// de spy sur globalThis.fetch. Matchers par chemin (le host vient de l'env).
+// MSW coexiste avec les fake timers : advanceTimersByTimeAsync purge les
+// microtâches, donc la Response du handler se résout entre deux polls.
+const HF_SUBMIT_RE = /\/v1\/videos\/generate$/;
+const HF_STATUS_RE = /\/v1\/videos\/status\//;
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterAll(() => server.close());
 
 describe('content-studio/video-generation', () => {
   beforeEach(() => {
@@ -15,6 +26,7 @@ describe('content-studio/video-generation', () => {
   });
 
   afterEach(() => {
+    server.resetHandlers();
     process.env = ORIGINAL_ENV;
   });
 
@@ -125,23 +137,12 @@ describe('content-studio/video-generation', () => {
 
     it('mode=live + hf-video-mini → POST /videos/generate + polling jusque completed', async () => {
       process.env.AI_ENGINE_HIGGSFIELD_API_KEY = 'hf_test:secret_test';
-      const fetchSpy = vi
-        .spyOn(globalThis, 'fetch')
-        .mockImplementation(async (url) => {
-          const u = String(url);
-          if (u.endsWith('/videos/generate')) {
-            return new Response(JSON.stringify({ job_id: 'job_abc' }), {
-              status: 200,
-            });
-          }
-          if (u.includes('/videos/status/')) {
-            return new Response(
-              JSON.stringify({ status: 'completed', video_url: 'https://hf/result.mp4' }),
-              { status: 200 },
-            );
-          }
-          throw new Error(`unexpected fetch ${u}`);
-        });
+      server.use(
+        http.post(HF_SUBMIT_RE, () => HttpResponse.json({ job_id: 'job_abc' })),
+        http.get(HF_STATUS_RE, () =>
+          HttpResponse.json({ status: 'completed', video_url: 'https://hf/result.mp4' }),
+        ),
+      );
       // accélère le polling — pas d'attente réelle
       vi.useFakeTimers();
       const { generateStudioVideo } = await import('./video-generation');
@@ -159,28 +160,20 @@ describe('content-studio/video-generation', () => {
       expect(out.publicUrl).toBe('https://hf/result.mp4');
       expect(out.estimatedCostCents).toBe(400);
       expect(out.model).toBe('hf-video-mini');
-      fetchSpy.mockRestore();
     });
 
     it('hf-video-turbo → durée 10s + coût 6500', async () => {
       process.env.AI_ENGINE_HIGGSFIELD_API_KEY = 'hf_test:secret_test';
-      const fetchSpy = vi
-        .spyOn(globalThis, 'fetch')
-        .mockImplementation(async (url, init) => {
-          const u = String(url);
-          if (u.endsWith('/videos/generate')) {
-            const body = JSON.parse((init?.body ?? '{}') as string);
-            expect(body.model).toBe('turbo');
-            expect(body.duration_seconds).toBe(10);
-            return new Response(JSON.stringify({ job_id: 'job_xyz' }), {
-              status: 200,
-            });
-          }
-          return new Response(
-            JSON.stringify({ status: 'completed', video_url: 'https://hf/r.mp4' }),
-            { status: 200 },
-          );
-        });
+      let submitBody: Record<string, unknown> | null = null;
+      server.use(
+        http.post(HF_SUBMIT_RE, async ({ request }) => {
+          submitBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ job_id: 'job_xyz' });
+        }),
+        http.get(HF_STATUS_RE, () =>
+          HttpResponse.json({ status: 'completed', video_url: 'https://hf/r.mp4' }),
+        ),
+      );
       vi.useFakeTimers();
       const { generateStudioVideo } = await import('./video-generation');
       const promise = generateStudioVideo({
@@ -192,24 +185,21 @@ describe('content-studio/video-generation', () => {
       await vi.advanceTimersByTimeAsync(6_000);
       const out = await promise;
       vi.useRealTimers();
+      // le payload submit porte bien le modèle Higgsfield + la durée demandés.
+      expect(submitBody!.model).toBe('turbo');
+      expect(submitBody!.duration_seconds).toBe(10);
       expect(out.durationMs).toBe(10_000);
       expect(out.estimatedCostCents).toBe(6500);
-      fetchSpy.mockRestore();
     });
 
     it('polling status=failed → throw avec message d\'erreur', async () => {
       process.env.AI_ENGINE_HIGGSFIELD_API_KEY = 'hf_test:secret_test';
-      const fetchSpy = vi
-        .spyOn(globalThis, 'fetch')
-        .mockImplementation(async (url) => {
-          if (String(url).endsWith('/videos/generate')) {
-            return new Response(JSON.stringify({ job_id: 'job_fail' }), { status: 200 });
-          }
-          return new Response(
-            JSON.stringify({ status: 'failed', error: 'content policy violation' }),
-            { status: 200 },
-          );
-        });
+      server.use(
+        http.post(HF_SUBMIT_RE, () => HttpResponse.json({ job_id: 'job_fail' })),
+        http.get(HF_STATUS_RE, () =>
+          HttpResponse.json({ status: 'failed', error: 'content policy violation' }),
+        ),
+      );
       vi.useFakeTimers();
       const { generateStudioVideo } = await import('./video-generation');
       const promise = generateStudioVideo({
@@ -226,7 +216,6 @@ describe('content-studio/video-generation', () => {
       await vi.advanceTimersByTimeAsync(6_000);
       await rejection;
       vi.useRealTimers();
-      fetchSpy.mockRestore();
     });
   });
 });
