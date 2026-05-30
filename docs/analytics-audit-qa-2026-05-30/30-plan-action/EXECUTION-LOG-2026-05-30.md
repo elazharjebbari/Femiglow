@@ -23,6 +23,7 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **F-FMT-02** | P2 | Semaine ISO vérifiée correcte aux bords d'année (verrouillée par test) | `format.ts` (déjà correct) | `format.test.ts` F-FMT-02 | ✅ closed |
 | **F-CHK-03** | P2 | Achat dans les 60 min après `to` (fetch `(to, to+60min]`) n'est plus compté abandon ; il ne gonfle pas non plus le KPI achats de la période | `queries/checkout.ts` | `checkout.test.ts` F-CHK-03 | ✅ closed |
 | **F-SEC-01** | P2 | `fetchEvents` (funnel/cta/checkout) en requêtes **paramétrées** (`sql`+`sql.join`) au lieu de `sql.raw`+`escape()` maison | `queries/{funnel,cta,checkout}.ts` | `cta.pglite.integration.test.ts` (vrai SQL) | ✅ closed |
+| **F-CTA-03** | P2 | Légende de la table CTA expliquant qu'une ligne « 0 clic / achats > 0 » est normale (attribution fallback) | `CtaTable.tsx` | `CtaTable.test.tsx` (non-régression) | ✅ closed |
 
 ## Harnais d'intégration PGlite (nouveau)
 
@@ -47,12 +48,12 @@ refresh) qui nécessitaient une base réelle.
 
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
-F-CTA-03 (libellé fallback clics=0/achats>0 — copy UI), F-INS-02..06 (firstRun, refresh concurrent,
-export PNG), F-PERF-01/02/04 (matviews, cache). Le **harnais PGlite** ci-dessus débloque
-F-PERF/F-INS (base réelle disponible en test). Voir `00-audit/findings-register.csv` et
-`30-plan-action/plan-action.csv`.
+F-INS-02..06 (firstRun, refresh concurrent, export PNG), F-PERF-01/02/04 (matviews, cache) — les
+deux derniers chantiers, dimension « Sprint 2/3 » (refonte agrégation SQL + matviews + refresh
+insights). Le **harnais PGlite** ci-dessus les débloque (base réelle disponible en test). Voir
+`00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
 
-**Bilan corrections : 18 findings fermés** (5 P0/P1 + 13 P2) sur 27. Suite analytics : 488 verts
+**Bilan corrections : 19 findings fermés** (5 P0/P1 + 14 P2) sur 27. Suite analytics : 489 verts
 (dont 2 d'intégration PGlite sur le vrai chemin SQL).
 
 ## Validation locale
