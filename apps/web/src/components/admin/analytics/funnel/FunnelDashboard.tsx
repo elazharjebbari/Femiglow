@@ -2,13 +2,14 @@
  * FunnelDashboard — orchestrateur client de l'onglet Funnel.
  * cf. docs/analytics/05-onglets-specs.md §3
  *
- * Reçoit l'overview + sankey + by-page pré-chargés par le RSC, ne refetch que
- * si l'admin change les filtres (period/device/traffic) — relais via URL et
- * `useEffect` qui tape `/api/admin/analytics/funnel{,/sankey}?...`.
+ * Source de vérité = l'URL (réactif via `useAnalyticsFilters`). Le RSC a
+ * pré-chargé overview + sankey + by-page ; on ne refetch les 3 endpoints que
+ * lorsque l'admin change un filtre (period/device/traffic).
+ * cf. docs/analytics-audit-qa-2026-05-30 — AF-01 (réactivité) + F-PERF-03.
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type {
   FunnelByPageData,
@@ -18,6 +19,7 @@ import type {
 import type { AnalyticsFilters } from '@/lib/analytics/filters';
 import { filtersToSearchParams } from '@/lib/analytics/filters';
 
+import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
 import { FunnelByPageSankey } from './FunnelByPageSankey';
 import { FunnelDataTable } from './FunnelDataTable';
 import { FunnelDropOff } from './FunnelDropOff';
@@ -44,7 +46,7 @@ export function FunnelDashboard({
   initialSankey,
   initialByPage,
 }: FunnelDashboardProps) {
-  const [filters] = useState<AnalyticsFilters>(initialFilters);
+  const { filters } = useAnalyticsFilters();
   const [state, setState] = useState<State>({
     overview: initialOverview,
     sankey: initialSankey,
@@ -52,12 +54,18 @@ export function FunnelDashboard({
     loading: false,
     error: null,
   });
+  const initialQs = filtersToSearchParams(initialFilters).toString();
+  const isFirstRun = useRef(true);
 
   // Quand l'admin change les filtres via FilterBar (qui réécrit l'URL), on
   // refetch les 3 endpoints en parallèle.
   useEffect(() => {
-    let cancelled = false;
     const params = filtersToSearchParams(filters).toString();
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      if (params === initialQs) return; // données déjà pré-chargées par le RSC
+    }
+    let cancelled = false;
     const q = params ? `?${params}` : '';
     setState((s) => ({ ...s, loading: true, error: null }));
     Promise.all([
@@ -96,7 +104,7 @@ export function FunnelDashboard({
     return () => {
       cancelled = true;
     };
-  }, [filters]);
+  }, [filters, initialQs]);
 
   return (
     <div className="flex flex-col gap-6" data-testid="funnel-dashboard">
