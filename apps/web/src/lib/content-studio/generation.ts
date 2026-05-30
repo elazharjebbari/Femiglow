@@ -201,7 +201,7 @@ function fallbackGeneration(
   // plus le hook d'un post). Combiné au prompt (présent dans la caption), deux
   // idées de format/pilier/prompt distincts produisent des textes distincts —
   // ce qui permet aussi à la régénération de variation (BE-014) de différer.
-  const hooksByFormat: Record<string, [string, string, string]> = {
+  const hooksByFormat = {
     reel: [
       'Un geste lent capté en mouvement : la main retrouve sa lumière.',
       'Quelques secondes au ralenti, et l’éclat naturel revient.',
@@ -222,8 +222,10 @@ function fallbackGeneration(
       'La lumière revient quand le geste ralentit.',
       'Recevoir le rituel, c’est choisir un soin qui ne triche pas.',
     ],
-  };
-  const hooks = hooksByFormat[idea.format] ?? hooksByFormat.post;
+  } satisfies Record<string, [string, string, string]>;
+  // `satisfies` garde les clés littérales concrètes : `.post` (et l'accès par
+  // clé connue) reste un tuple défini sous noUncheckedIndexedAccess.
+  const hooks = hooksByFormat[idea.format as keyof typeof hooksByFormat] ?? hooksByFormat.post;
   const hashtagsByPillar: Record<string, string[]> = {
     produit: ['femiglow', 'kitfemiglow', 'soindesongles'],
     rituel: ['femiglow', 'rituel', 'ritueldebeaute'],
