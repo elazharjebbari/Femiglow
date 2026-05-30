@@ -22,6 +22,18 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **F-FMT-01** | P2 | Axe X heure/jour ancré sur `Africa/Casablanca` (cohérent AF-04) | `format.ts` | `format.test.ts` F-FMT-01 | ✅ closed |
 | **F-FMT-02** | P2 | Semaine ISO vérifiée correcte aux bords d'année (verrouillée par test) | `format.ts` (déjà correct) | `format.test.ts` F-FMT-02 | ✅ closed |
 | **F-CHK-03** | P2 | Achat dans les 60 min après `to` (fetch `(to, to+60min]`) n'est plus compté abandon ; il ne gonfle pas non plus le KPI achats de la période | `queries/checkout.ts` | `checkout.test.ts` F-CHK-03 | ✅ closed |
+| **F-SEC-01** | P2 | `fetchEvents` (funnel/cta/checkout) en requêtes **paramétrées** (`sql`+`sql.join`) au lieu de `sql.raw`+`escape()` maison | `queries/{funnel,cta,checkout}.ts` | `cta.pglite.integration.test.ts` (vrai SQL) | ✅ closed |
+
+## Harnais d'intégration PGlite (nouveau)
+
+Pour traiter F-SEC-01 sur le **vrai chemin SQL** sans Postgres distant (ni docker), ajout d'un
+**Postgres in-process** : devDep `@electric-sql/pglite` + adaptateur `drizzle-orm/pglite`, et un hook
+de test `__setTestDb`/`__resetTestDb` dans `lib/db/client.ts` (injection d'un drizzle de test).
+`cta.pglite.integration.test.ts` (directive `@vitest-environment node`) crée les tables, insère des
+events, et exécute `getCtaData` contre PGlite — validant le revenu MAD (AF-02) et la sécurité
+(F-SEC-01) côté SQL. Un **proxy** déballe `execute()` en tableau pour refléter le contrat
+neon-http/postgres-js de prod. **Ce harnais débloque les futures itérations F-PERF/F-INS** (matviews,
+refresh) qui nécessitaient une base réelle.
 
 ## Décisions notables
 
@@ -35,12 +47,13 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
-F-CTA-03 (libellé fallback clics=0/achats>0), F-CHK-03 (purchase juste après `to` → faux abandon),
-F-INS-02..06 (firstRun, refresh concurrent, export PNG), F-PERF-01/02/04 (matviews, cache),
-F-SEC-01 (requêtes paramétrées — à traiter avec une base de test, non couvert par les unit en
-memoryStore). Voir `00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
+F-CTA-03 (libellé fallback clics=0/achats>0 — copy UI), F-INS-02..06 (firstRun, refresh concurrent,
+export PNG), F-PERF-01/02/04 (matviews, cache). Le **harnais PGlite** ci-dessus débloque
+F-PERF/F-INS (base réelle disponible en test). Voir `00-audit/findings-register.csv` et
+`30-plan-action/plan-action.csv`.
 
-**Bilan corrections : 16 findings fermés** (5 P0/P1 + 11 P2) sur 27. Suite analytics : 485 verts.
+**Bilan corrections : 18 findings fermés** (5 P0/P1 + 13 P2) sur 27. Suite analytics : 488 verts
+(dont 2 d'intégration PGlite sur le vrai chemin SQL).
 
 ## Validation locale
 

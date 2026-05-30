@@ -388,25 +388,24 @@ interface FetchOpts {
 async function fetchEvents(opts: FetchOpts): Promise<TrackingEventLogEntry[]> {
   const drizzle = db();
   if (drizzle) {
-    const conditions: string[] = [];
-    conditions.push(`received_at >= '${opts.from.toISOString()}'`);
-    conditions.push(`received_at < '${opts.to.toISOString()}'`);
-    conditions.push(`consent_snapshot->>'analytics_storage' = 'granted'`);
-    if (opts.device) conditions.push(`device = '${escape(opts.device)}'`);
-    if (opts.traffic) conditions.push(`traffic_source = '${escape(opts.traffic)}'`);
-
-    const where = conditions.join(' AND ');
+    // Requête paramétrée (F-SEC-01) : valeurs liées, pas interpolées.
+    const conditions = [
+      sql`received_at >= ${opts.from.toISOString()}`,
+      sql`received_at < ${opts.to.toISOString()}`,
+      sql`consent_snapshot->>'analytics_storage' = 'granted'`,
+    ];
+    if (opts.device) conditions.push(sql`device = ${opts.device}`);
+    if (opts.traffic) conditions.push(sql`traffic_source = ${opts.traffic}`);
+    const whereSql = sql.join(conditions, sql` AND `);
     const rows = await drizzle.execute(
-      sql.raw(
-        `SELECT id, event_id, event_name, event_category, page_id, component_id,
+      sql`SELECT id, event_id, event_name, event_category, page_id, component_id,
                 page_route, anonymous_id, session_id, user_id, consent_snapshot,
                 payload, ua_hash, ip_anonymized, device, locale, is_conversion,
                 providers_dispatched, providers_results, received_at, schema_version,
                 traffic_source, traffic_medium, experiment_id, experiment_variant
          FROM tracking_events_log
-         WHERE ${where}
+         WHERE ${whereSql}
          ORDER BY received_at ASC`,
-      ),
     );
     return (rows as unknown as Record<string, unknown>[]).map(rowToEntry);
   }
@@ -422,10 +421,6 @@ async function fetchEvents(opts: FetchOpts): Promise<TrackingEventLogEntry[]> {
   if (opts.traffic) entries = entries.filter((e) => trafficOf(e) === opts.traffic);
   entries.sort((a, b) => a.receivedAt.getTime() - b.receivedAt.getTime());
   return entries;
-}
-
-function escape(s: string): string {
-  return s.replace(/'/g, "''");
 }
 
 function rowToEntry(row: Record<string, unknown>): TrackingEventLogEntry {
