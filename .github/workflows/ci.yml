@@ -45,7 +45,12 @@ jobs:
           CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
 
       - name: Content Studio unit tests
-        run: npx vitest run apps/web/src/lib/content-studio/ apps/web/src/components/admin/content-studio/ apps/web/src/test/msw/
+        # vitest est installé dans apps/web (workspace) ; lancer depuis la racine
+        # donne « vitest: not found » (exit 127). On exécute donc dans apps/web
+        # avec des chemins relatifs. (Redondant avec `pnpm -r test`, conservé par
+        # prudence pour le scope env dédié.)
+        run: npx vitest run src/lib/content-studio/ src/components/admin/content-studio/ src/test/msw/
+        working-directory: apps/web
         env:
           ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
