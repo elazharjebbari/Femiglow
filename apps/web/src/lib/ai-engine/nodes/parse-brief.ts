@@ -6,7 +6,23 @@ const log = createLogger('node:parse-brief');
 
 const briefInputSchema = z.object({
   objective: z.enum(['awareness', 'engagement', 'conversion', 'education', 'entertainment']),
-  tone: z.enum(['professional', 'casual', 'playful', 'luxurious', 'educational', 'inspiring']).default('professional'),
+  // ACT-BE-017 (BUG-014) : aligné sur l'enum du DTO de la route /generate et de
+  // l'UI AI-Engine, qui proposent aussi empowering/authentic/urgent. Sans cet
+  // alignement, parse-brief levait une ZodError → job status:failed avant toute
+  // génération. Le ton n'est qu'interpolé dans les prompts (pas de switch métier).
+  tone: z
+    .enum([
+      'professional',
+      'casual',
+      'playful',
+      'luxurious',
+      'educational',
+      'inspiring',
+      'empowering',
+      'authentic',
+      'urgent',
+    ])
+    .default('professional'),
   targetAudience: z.string().default('Femmes 25-45 ans intéressées par la beauté japonaise'),
   productFocus: z.string().optional(),
   keyMessage: z.string(),

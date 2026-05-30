@@ -46,6 +46,21 @@ describe('parseBriefNode', () => {
     expect(result.currentStep).toBe('parse_brief');
   });
 
+  it.each(['empowering', 'authentic', 'urgent'])(
+    'accepte le ton UI « %s » sans ZodError (ACT-BE-017, BUG-014)',
+    async (tone) => {
+      const result = await parseBriefNode({
+        jobId: 'job-tone',
+        briefInput: {
+          objective: 'awareness',
+          keyMessage: 'Alignement des tons UI / DTO / parse-brief.',
+          tone,
+        },
+      });
+      expect((result.brief as Record<string, unknown>).tone).toBe(tone);
+    },
+  );
+
   it('applies default tone from config when not in brief', async () => {
     const state = {
       jobId: 'job-456',
