@@ -37,18 +37,20 @@ describe('content-studio/video-generation', () => {
     expect(out.durationMs).toBe(3000);
   });
 
-  it('throws for format=post (no video mock)', async () => {
+  // ACT-BE-033 (BUG-067) : kind=video sur un format non-vidéo → erreur MÉTIER
+  // 409 (HttpError invalid_state), pas une 500 opaque.
+  it('rejette format=post avec un HttpError 409 (pas de mock vidéo)', async () => {
     const { generateStudioVideo } = await import('./video-generation');
     await expect(
       generateStudioVideo({ format: 'post', prompt: 'flat-lay' }),
-    ).rejects.toThrow(/Aucun mock vidéo/);
+    ).rejects.toMatchObject({ code: 'invalid_state', status: 409 });
   });
 
-  it('throws for format=carousel (no video mock)', async () => {
+  it('rejette format=carousel avec un HttpError 409 (pas de mock vidéo)', async () => {
     const { generateStudioVideo } = await import('./video-generation');
     await expect(
       generateStudioVideo({ format: 'carousel', prompt: 'séries 3 images' }),
-    ).rejects.toThrow(/Aucun mock vidéo/);
+    ).rejects.toMatchObject({ code: 'invalid_state', status: 409 });
   });
 
   it('uses CONTENT_STUDIO_VIDEO_MODEL env value when no model passed', async () => {
