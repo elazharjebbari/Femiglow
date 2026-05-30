@@ -123,6 +123,26 @@ export async function getCheckoutData(
   // ts (pour TTS et calcul abandons).
   const sessions = aggregateSessions(events);
 
+  // F-CHK-03 : un achat peut survenir juste après la fin de période (la session
+  // a démarré le checkout dans [from,to] mais convertit à to+Δ). On récupère les
+  // purchases dans (to, to+60min] pour ne pas compter ces sessions comme abandons
+  // à tort. Ces events ne comptent PAS dans les KPI/funnel de la période.
+  const latePurchaseTs = new Map<string, number>();
+  {
+    const late = await fetchEvents({
+      from: range.to,
+      to: new Date(range.to.getTime() + ABANDON_WINDOW_MS),
+      device: filters.device === 'all' ? undefined : filters.device,
+      traffic: filters.traffic === 'all' ? undefined : filters.traffic,
+    });
+    for (const e of late) {
+      if (e.eventName !== 'purchase' && e.eventName !== 'purchase_server') continue;
+      const t = e.receivedAt.getTime();
+      const prev = latePurchaseTs.get(e.sessionId);
+      if (prev === undefined || t < prev) latePurchaseTs.set(e.sessionId, t);
+    }
+  }
+
   // KPI + funnel counts
   const stepCounts: Record<CheckoutStage, number> = {
     view_cart: 0,
@@ -135,7 +155,7 @@ export async function getCheckoutData(
   let abandons = 0;
   let serverFallback = 0;
 
-  for (const s of sessions.values()) {
+  for (const [sessionId, s] of sessions.entries()) {
     // Funnel cumulatif : pour passer au step N, il faut tous les steps < N
     // OU au moins le begin_checkout (les "skip" steps sont OK — un user peut
     // sauter add_shipping si pas applicable). Convention : on ne remonte pas
@@ -154,8 +174,14 @@ export async function getCheckoutData(
     if (s.begin_checkout && s.beginCheckoutTs !== null) {
       if (!s.purchase) {
         // Un begin_checkout récent (< 60 min) peut encore convertir : on ne le
-        // compte pas comme abandon tant que la fenêtre n'est pas écoulée. F-CHK-04.
-        if (now.getTime() - s.beginCheckoutTs > ABANDON_WINDOW_MS) abandons += 1;
+        // compte pas comme abandon tant que la fenêtre n'est pas écoulée (F-CHK-04).
+        // Ni s'il a converti juste après la fin de période (F-CHK-03).
+        const lateTs = latePurchaseTs.get(sessionId);
+        const convertedSoon =
+          lateTs !== undefined && lateTs - s.beginCheckoutTs <= ABANDON_WINDOW_MS;
+        if (now.getTime() - s.beginCheckoutTs > ABANDON_WINDOW_MS && !convertedSoon) {
+          abandons += 1;
+        }
       } else if (s.purchaseTs !== null && s.purchaseTs - s.beginCheckoutTs > ABANDON_WINDOW_MS) {
         abandons += 1;
       }

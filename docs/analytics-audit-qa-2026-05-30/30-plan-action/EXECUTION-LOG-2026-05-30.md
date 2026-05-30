@@ -21,6 +21,7 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **F-CHK-02** | P2 | KPI « Soumissions » → « Achats » (le champ data `submissions` reste pour compat) | `CheckoutKpiGrid.tsx` | `CheckoutKpiGrid.test.tsx` | ✅ closed |
 | **F-FMT-01** | P2 | Axe X heure/jour ancré sur `Africa/Casablanca` (cohérent AF-04) | `format.ts` | `format.test.ts` F-FMT-01 | ✅ closed |
 | **F-FMT-02** | P2 | Semaine ISO vérifiée correcte aux bords d'année (verrouillée par test) | `format.ts` (déjà correct) | `format.test.ts` F-FMT-02 | ✅ closed |
+| **F-CHK-03** | P2 | Achat dans les 60 min après `to` (fetch `(to, to+60min]`) n'est plus compté abandon ; il ne gonfle pas non plus le KPI achats de la période | `queries/checkout.ts` | `checkout.test.ts` F-CHK-03 | ✅ closed |
 
 ## Décisions notables
 
