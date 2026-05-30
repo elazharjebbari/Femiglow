@@ -1,0 +1,46 @@
+# =====================================================================
+# Commandes exactes — Batterie de tests analytics FemiGlow
+# Exécuter depuis la racine du repo. Stack : pnpm + vitest + playwright + msw.
+# =====================================================================
+
+# --- Pré-requis ---
+pnpm install
+pnpm --filter web typecheck
+
+# --- Harnais (Phase 0) ---
+pnpm --filter web test -- src/test                      # fixtures + handlers MSW a vide
+
+# --- Couche UNITAIRE (justesse des chiffres) ---
+pnpm --filter web test -- src/lib/analytics             # toutes les queries + format + filtres
+pnpm --filter web test -- src/lib/analytics/queries/cta.spec.ts        # ciblé CTA (AF-02)
+pnpm --filter web test -- src/lib/analytics/queries/checkout.spec.ts   # ciblé Checkout (AF-03)
+pnpm --filter web test -- src/lib/analytics/filters.range-tz.spec.ts   # fuseau (AF-04)
+
+# --- Couche COMPOSANT + MSW (états + refetch / AF-01) ---
+pnpm --filter web test -- src/components/admin/analytics
+pnpm --filter web test -- src/components/admin/analytics/cta/CtaDashboard.refetch.spec.tsx
+
+# --- Cas TEMPORELS en double fuseau (AF-04) ---
+TZ=UTC                pnpm --filter web test -- src/lib/analytics/filters
+TZ=Africa/Casablanca  pnpm --filter web test -- src/lib/analytics/filters
+
+# --- Couche E2E Playwright (point de vue opérateur) ---
+pnpm --filter web test:e2e -- e2e/analytics
+pnpm --filter web test:e2e -- e2e/analytics/filters-reactivity.spec.ts   # AF-01 (cœur)
+pnpm --filter web test:e2e -- e2e/analytics/cta-revenue.spec.ts          # AF-02
+pnpm --filter web test:e2e -- e2e/analytics/insights-operator.spec.ts    # refresh/export/drawer
+pnpm --filter web test:e2e -- e2e/analytics/a11y.spec.ts                 # axe
+
+# --- Anti-flaky (fin de phase) : 3 exécutions consécutives ---
+for i in 1 2 3; do pnpm --filter web test:e2e -- e2e/analytics || break; done
+
+# --- Couverture (seuils config/coverage-targets.yaml) ---
+pnpm --filter web test:coverage -- src/lib/analytics
+
+# --- Mode watch (dev TDD) ---
+pnpm --filter web test:watch -- src/lib/analytics
+
+# --- Boucle complète locale avant push ---
+pnpm --filter web typecheck \
+ && pnpm --filter web test -- src/lib/analytics src/components/admin/analytics \
+ && pnpm --filter web test:e2e -- e2e/analytics

@@ -1,0 +1,40 @@
+@startuml boucle-correction-verification
+title Boucle de correction & vérification (TDD par finding)
+
+start
+:Charger findings-register.csv;
+while (Reste un finding 'open' ?) is (oui)
+  :SELECT finding de plus haute priorité (P0>P1>P2);
+  :RED — écrire/activer le test de non-régression;
+  if (le test échoue pour la bonne raison ?) then (oui)
+    :FIX — correctif minimal (code applicatif);
+    :pnpm typecheck;
+    :GREEN — relancer le test du finding;
+    if (vert ?) then (oui)
+      :REGRESS — suite analytics complète\n(unit + composant + e2e, bi-fuseau);
+      if (UI concernée ?) then (oui)
+        :A11Y — axe (0 violation critique/serious);
+      else (non)
+      endif
+      if (tout vert ?) then (oui)
+        :CLOSE — status=closed + lien test;
+      else (non)
+        :Régression détectée\n-> rouvrir le finding impacté;
+      endif
+    else (non)
+      :Ajuster le correctif;
+    endif
+  else (non)
+    :Corriger le test (mauvaise raison d'échec);
+  endif
+endwhile (non)
+
+:Suite COMPLÈTE 3x (anti-flaky);
+if (stable + couverture >= seuils ?) then (oui)
+  :GO — checklist go/no-go;
+  stop
+else (non)
+  :Stabiliser / compléter;
+  stop
+endif
+@enduml

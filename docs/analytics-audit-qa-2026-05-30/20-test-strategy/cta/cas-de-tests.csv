@@ -1,0 +1,23 @@
+case_id,feature,layer,operator_gesture_or_precondition,expected,linked_finding
+TC-CTA-001,FN-CTA-09,vitest,"achat 199 MAD attribué a un clic","revenue = 199 MAD (19900 cents)",AF-02
+TC-CTA-002,FN-CTA-08,vitest,"clic + achat même session","dernier clic avant achat crédité",
+TC-CTA-003,FN-CTA-08,vitest,"clic J-3 même anonymous_id, achat aujourd'hui","attribué via fallback 7j",
+TC-CTA-004,FN-CTA-08,vitest,"achat sans aucun clic dans 7j","aucun crédit",
+TC-CTA-005,FN-CTA-08,vitest,"2 clics avant achat","seul le dernier crédité (last-click)",
+TC-CTA-006,FN-CTA-08,vitest,"2 achats sur le même CTA","2 achats cumulés sur le CTA",
+TC-CTA-007,FN-CTA-07,vitest,"plusieurs rows","totals = somme des rows (impr/clics/achats/revenu)",
+TC-CTA-008,FN-CTA-07,vitest,"impressions=0","clickRate null; pas de division par 0",
+TC-CTA-009,FN-CTA-07,vitest,"clics=0","conversionRate null",
+TC-CTA-010,FN-CTA-06,vitest,"achat attribué via clic hors période","topPages.purchases réconcilié avec totals",F-CTA-02
+TC-CTA-011,FN-CTA-10,vitest,"composant deletedAt non null","row.isDeleted = true",
+TC-CTA-012,FN-CTA-10,vitest,"2 pages a égalité de clics","page majoritaire déterministe",F-CTA-04
+TC-CTA-013,FN-CTA-07,vitest,"events sans consent","exclus",
+TC-CTA-014,FN-CTA-11,msw,"GET /cta sans session","401",
+TC-CTA-015,FN-CTA-02,rtl,"initialData rendu","KPI+table+topMessages+topPages affichés",
+TC-CTA-016,FN-CTA-02,rtl,"changement filtre via URL","KPI et table refetch et changent",AF-01
+TC-CTA-017,FN-CTA-03,rtl,"montant revenu","affiché en MAD (pas EUR, pas ÷100)","AF-02,F-CTA-05"
+TC-CTA-018,FN-CTA-04,rtl,"row isDeleted","badge 'supprimé' visible",
+TC-CTA-019,FN-CTA-04,rtl,"row clics=0 achats>0","explication/tooltip fallback visible",F-CTA-03
+TC-CTA-020,FN-CTA-02,playwright,"changer source mobile->meta","taux conversion change",AF-01
+TC-CTA-021,FN-CTA-03,playwright,"lire KPI revenu","revenu plausible en MAD",AF-02
+TC-CTA-022,FN-CTA-03,a11y,"axe sur /cta","aucune violation critique; badge texte",

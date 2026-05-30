@@ -1,0 +1,74 @@
+id,system,name,file,primary_test_layer,priority,linked_findings
+FN-LAY-01,LAY,AdminShell + garde auth,analytics/layout.tsx,playwright,P1,
+FN-LAY-02,LAY,AnalyticsTabs navigation,primitives/AnalyticsTabs.tsx,playwright,P1,
+FN-LAY-03,LAY,FilterBar période,primitives/FilterBar.tsx,playwright,P0,AF-01
+FN-LAY-04,LAY,FilterBar device (défaut mobile),primitives/FilterBar.tsx,playwright,P0,"AF-01,AF-05"
+FN-LAY-05,LAY,FilterBar source/traffic,primitives/FilterBar.tsx,playwright,P0,AF-01
+FN-LAY-06,LAY,FilterBar reset,primitives/FilterBar.tsx,playwright,P1,
+FN-LAY-07,LAY,Persistance localStorage TTL,filters.ts,vitest,P1,
+FN-LAY-08,LAY,Parsing/validation Zod filtres,filters.ts,vitest,P1,F-FLT-01
+FN-LAY-09,LAY,resolveRange period->range+comparaison,filters.ts,vitest,P1,AF-04
+FN-LAY-10,LAY,Formatage number/percent/duration/currency/delta/bucket,format.ts,vitest,P1,"AF-02,F-FMT-01,F-FMT-02"
+FN-LAY-11,LAY,Classification trafic,attribution.ts,vitest,P2,
+FN-LAY-12,LAY,Primitive KpiCard,primitives/KpiCard.tsx,rtl,P1,
+FN-LAY-13,LAY,Primitive DataTable,primitives/DataTable.tsx,rtl,P1,
+FN-LAY-14,LAY,Primitive ChartFrame,primitives/ChartFrame.tsx,rtl,P2,
+FN-LAY-15,LAY,Primitive EmptyState,primitives/EmptyState.tsx,rtl,P1,
+FN-LAY-16,LAY,Primitive ErrorState,primitives/ErrorState.tsx,rtl,P1,
+FN-LAY-17,LAY,Primitive Skeleton,primitives/Skeleton.tsx,rtl,P2,
+FN-LAY-18,LAY,Primitive ExportCsvButton,primitives/ExportCsvButton.tsx,rtl,P1,
+FN-LAY-19,LAY,Primitive AnalyticsTooltip,primitives/AnalyticsTooltip.tsx,rtl,P2,
+FN-FUN-01,FUN,Page RSC pré-chargement,funnel/page.tsx,playwright,P1,F-PERF-03
+FN-FUN-02,FUN,FunnelDashboard refetch,funnel/FunnelDashboard.tsx,playwright,P0,AF-01
+FN-FUN-03,FUN,FunnelGlobal 5 étapes,funnel/FunnelGlobal.tsx,rtl,P1,
+FN-FUN-04,FUN,FunnelDropOff,funnel/FunnelDropOff.tsx,rtl,P1,
+FN-FUN-05,FUN,FunnelByPageSankey,funnel/FunnelByPageSankey.tsx,rtl,P1,
+FN-FUN-06,FUN,FunnelDataTable par page,funnel/FunnelDataTable.tsx,rtl,P1,
+FN-FUN-07,FUN,getFunnelOverview,queries/funnel.ts,vitest,P1,"AF-03,AF-04"
+FN-FUN-08,FUN,getFunnelByPage,queries/funnel.ts,vitest,P1,
+FN-FUN-09,FUN,getFunnelSankey,queries/funnel.ts,vitest,P1,
+FN-FUN-10,FUN,API GET /funnel (+view=table),api/funnel/route.ts,msw,P1,
+FN-FUN-11,FUN,API GET /funnel/sankey,api/funnel/sankey/route.ts,msw,P1,
+FN-FUN-12,FUN,Classification d'étape,queries/funnel.ts,vitest,P1,F-FUN-03
+FN-FUN-13,FUN,aggregateSessions + médiane,queries/funnel.ts,vitest,P1,
+FN-CTA-01,CTA,Page RSC getCtaData,cta/page.tsx,playwright,P1,
+FN-CTA-02,CTA,CtaDashboard refetch,cta/CtaDashboard.tsx,playwright,P0,AF-01
+FN-CTA-03,CTA,CtaKpiGrid,cta/CtaKpiGrid.tsx,rtl,P1,"AF-02,F-CTA-05"
+FN-CTA-04,CTA,CtaTable isDeleted,cta/CtaTable.tsx,rtl,P1,F-CTA-03
+FN-CTA-05,CTA,CtaTopMessages,cta/CtaTopMessages.tsx,rtl,P2,
+FN-CTA-06,CTA,CtaTopPages,cta/CtaTopPages.tsx,rtl,P2,F-CTA-02
+FN-CTA-07,CTA,getCtaData,queries/cta.ts,vitest,P1,"AF-02,F-CTA-02"
+FN-CTA-08,CTA,attributePurchases last-click+fallback,queries/cta.ts,vitest,P0,"AF-02,F-CTA-02"
+FN-CTA-09,CTA,Lecture valeur/revenu (unité),queries/cta.ts,vitest,P1,AF-02
+FN-CTA-10,CTA,fetchComponents labels/deletedAt,queries/cta.ts,vitest,P2,F-CTA-04
+FN-CTA-11,CTA,API GET /cta,api/cta/route.ts,msw,P1,
+FN-CHK-01,CHK,Page RSC getCheckoutData,checkout/page.tsx,playwright,P1,
+FN-CHK-02,CHK,CheckoutDashboard refetch,checkout/CheckoutDashboard.tsx,playwright,P0,AF-01
+FN-CHK-03,CHK,CheckoutKpiGrid,checkout/CheckoutKpiGrid.tsx,rtl,P1,F-CHK-02
+FN-CHK-04,CHK,CheckoutFunnelStepper,checkout/CheckoutFunnelStepper.tsx,rtl,P1,AF-03
+FN-CHK-05,CHK,CheckoutTimeToSubmit,checkout/CheckoutTimeToSubmit.tsx,rtl,P1,
+FN-CHK-06,CHK,CheckoutFormErrors,checkout/CheckoutFormErrors.tsx,rtl,P1,
+FN-CHK-07,CHK,CheckoutAbandonedFields,checkout/CheckoutAbandonedFields.tsx,rtl,P2,
+FN-CHK-08,CHK,getCheckoutData,queries/checkout.ts,vitest,P1,"AF-03,F-CHK-03,F-CHK-04"
+FN-CHK-09,CHK,classifyEvent+aggregateSessions,queries/checkout.ts,vitest,P1,
+FN-CHK-10,CHK,buildTimeToSubmit percentiles,queries/checkout.ts,vitest,P1,
+FN-CHK-11,CHK,Calcul abandons 60min,queries/checkout.ts,vitest,P1,"F-CHK-03,F-CHK-04"
+FN-CHK-12,CHK,API GET /checkout,api/checkout/route.ts,msw,P1,
+FN-INS-01,INS,InsightsView onglets internes,insights/InsightsView.tsx,playwright,P1,AF-05
+FN-INS-02,INS,FiltersBar Insights,insights/InsightsView.tsx,playwright,P1,AF-05
+FN-INS-03,INS,useInsightsFilters URL,insights/useInsights.ts,vitest,P1,
+FN-INS-04,INS,useInsightsFetch refetch,insights/useInsights.ts,vitest,P1,
+FN-INS-05,INS,Overview KPIs/timeseries/heatmap,api/insights/overview,msw,P1,F-INS-04
+FN-INS-06,INS,Pages + drill-down,api/insights/pages,playwright,P1,
+FN-INS-07,INS,Components + dead + drill-down,api/insights/components,playwright,P1,
+FN-INS-08,INS,Sections dwell,api/insights/sections,msw,P2,
+FN-INS-09,INS,Funnel insights,api/insights/funnel,msw,P1,F-INS-04
+FN-INS-10,INS,InsightsCharts,insights/InsightsCharts.tsx,rtl,P1,
+FN-INS-11,INS,InsightsDrawer drill-down,insights/InsightsDrawer.tsx,rtl,P1,
+FN-INS-12,INS,Refresh matview lock/firstRun,api/insights/refresh,playwright,P1,"F-INS-03,F-INS-06"
+FN-INS-13,INS,Settings enabled/interval,api/insights/settings,msw,P1,
+FN-INS-14,INS,Export CSV par view,api/insights/export,playwright,P1,
+FN-INS-15,INS,Export PNG,insights/ExportPngButton.tsx,playwright,P2,F-INS-05
+FN-INS-16,INS,Purge/rétention,insights/purge.ts,vitest,P2,
+FN-INS-17,INS,Audit log,insights/audit.ts,vitest,P2,
+FN-INS-18,INS,aggregate/services calcul KPIs,insights/aggregate.ts,vitest,P1,F-INS-04
