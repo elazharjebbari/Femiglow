@@ -160,6 +160,12 @@ export async function getCheckoutData(
     }
   }
 
+  // Modèle BOOL_OR : chaque étape compte les sessions ayant émis l'event,
+  // indépendamment des autres (un visiteur peut entrer directement au
+  // begin_checkout sans view_cart). `progressionFromPrevious` peut donc dépasser
+  // 100 % (étape plus peuplée que la précédente) ; le `dropoffToNext` est clampé
+  // à 0 car un « drop-off négatif » n'a pas de sens à afficher.
+  // cf. docs/analytics-audit-qa-2026-05-30 — finding AF-03.
   const steps: CheckoutFunnelStep[] = CHECKOUT_STAGES.map((stage, idx) => {
     const cur = stepCounts[stage];
     const prev = idx > 0 ? stepCounts[CHECKOUT_STAGES[idx - 1]!] : null;
@@ -172,7 +178,7 @@ export async function getCheckoutData(
       progressionFromPrevious:
         prev !== null && prev > 0 ? cur / prev : null,
       dropoffToNext:
-        next !== null && cur > 0 ? 1 - next / cur : null,
+        next !== null && cur > 0 ? Math.max(0, 1 - next / cur) : null,
     };
   });
 

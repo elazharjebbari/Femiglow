@@ -75,6 +75,24 @@ function pushEvent(o: PushOpts): void {
   store.trackingEventsLog.set(entry.id, entry);
 }
 
+describe('getCheckoutData — AF-03 modèle BOOL_OR', () => {
+  it('clampe le drop-off à 0 quand une étape dépasse la précédente (entrée directe)', async () => {
+    // s1 : view_cart + begin_checkout ; s2 : begin_checkout seul (arrivée directe)
+    pushEvent({ id: '1', sessionId: 's1', eventName: 'view_cart' });
+    pushEvent({ id: '2', sessionId: 's1', eventName: 'begin_checkout' });
+    pushEvent({ id: '3', sessionId: 's2', eventName: 'begin_checkout' });
+
+    const data = await getCheckoutData(FILTERS, NOW);
+    const byStage = Object.fromEntries(data.steps.map((s) => [s.stage, s]));
+    expect(byStage.view_cart!.sessions).toBe(1);
+    expect(byStage.begin_checkout!.sessions).toBe(2);
+    // drop-off view_cart → begin_checkout = 1 - 2/1 = -1, clampé à 0.
+    expect(byStage.view_cart!.dropoffToNext).toBe(0);
+    // la progression peut dépasser 100 % (modèle BOOL_OR assumé).
+    expect(byStage.begin_checkout!.progressionFromPrevious).toBe(2);
+  });
+});
+
 describe('getCheckoutData', () => {
   it('returns zero totals on empty store', async () => {
     const data = await getCheckoutData(FILTERS, NOW);

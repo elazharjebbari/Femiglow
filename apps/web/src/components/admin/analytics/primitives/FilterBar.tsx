@@ -7,6 +7,7 @@
  */
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useTransition } from 'react';
 
 import {
@@ -62,8 +63,14 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ className = '' }: FilterBarProps) {
+  const pathname = usePathname();
   const { filters, setFilters, reset } = useAnalyticsFilters();
   const [isPending, startTransition] = useTransition();
+
+  // L'onglet Insights a son propre jeu de filtres (window/env/locale/…) et rend
+  // sa propre barre. On masque donc la FilterBar globale sur cette route pour
+  // éviter deux barres aux modèles divergents. cf. finding AF-05.
+  if (pathname?.endsWith('/analytics/insights')) return null;
 
   const update = (patch: Partial<AnalyticsFilters>) => {
     startTransition(() => setFilters({ ...filters, ...patch }));
