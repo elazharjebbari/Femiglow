@@ -90,11 +90,21 @@ export function formatBucket(
   if (Number.isNaN(d.getTime())) return '';
   switch (granularity) {
     case 'hour':
+      // Heure ancrée sur le fuseau Maroc, cohérente avec les bornes de période
+      // (cf. AF-04 / F-FMT-01) — sinon l'axe X dérive selon le fuseau du client.
       return d
-        .toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        .toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Africa/Casablanca',
+        })
         .replace(':', 'h');
     case 'day':
-      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+      return d.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        timeZone: 'Africa/Casablanca',
+      });
     case 'week': {
       // ISO week number
       const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));

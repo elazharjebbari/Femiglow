@@ -92,6 +92,15 @@ describe('parseFiltersFromSearchParams', () => {
     expect(r).toEqual(DEFAULT_FILTERS);
   });
 
+  it('F-FLT-01 — une clé invalide est ignorée, les clés valides sont conservées', () => {
+    const r = parseFiltersFromSearchParams(
+      new URLSearchParams('period=foo&device=desktop&traffic=meta'),
+    );
+    expect(r.device).toBe('desktop'); // valides conservés
+    expect(r.traffic).toBe('meta');
+    expect(r.period).toBe(DEFAULT_FILTERS.period); // invalide → défaut, sans tout jeter
+  });
+
   it('accepte un Record (pour Next.js searchParams)', () => {
     const r = parseFiltersFromSearchParams({ period: '30d', device: 'tablet', traffic: 'meta' });
     expect(r).toMatchObject({ period: '30d', device: 'tablet', traffic: 'meta' });
@@ -127,17 +136,29 @@ describe('filtersToSearchParams', () => {
 describe('resolveRange', () => {
   const now = new Date('2026-05-06T12:34:00Z');
 
-  it('today → 00:00 → 24:00 du jour', () => {
+  it('today → minuit heure Maroc (Africa/Casablanca), fenêtre 24h', () => {
+    // AF-04 : bornes ancrées sur le fuseau Maroc (+01), pas sur le TZ du process.
+    // now = 12:34 UTC = 13:34 Casablanca → début de journée Maroc = 00:00 +01.
     const r = resolveRange({ ...DEFAULT_FILTERS, period: 'today' }, now);
-    expect(r.from.getHours()).toBe(0);
-    expect(r.from.getMinutes()).toBe(0);
+    expect(r.from.toISOString()).toBe('2026-05-05T23:00:00.000Z');
     expect(r.to.getTime() - r.from.getTime()).toBe(86_400_000);
   });
 
-  it('yesterday → veille', () => {
+  it('yesterday → veille (heure Maroc)', () => {
     const r = resolveRange({ ...DEFAULT_FILTERS, period: 'yesterday' }, now);
     expect(r.to.getTime() - r.from.getTime()).toBe(86_400_000);
-    expect(r.to.toDateString()).toBe(new Date('2026-05-06T00:00:00').toDateString());
+    expect(r.to.toISOString()).toBe('2026-05-05T23:00:00.000Z'); // début d'aujourd'hui Maroc
+    expect(r.from.toISOString()).toBe('2026-05-04T23:00:00.000Z');
+  });
+
+  it('AF-04 — un achat de 00:30 heure Maroc est rattaché à « aujourd’hui »', () => {
+    // 00:30 Casablanca le 2026-05-06 = 2026-05-05T23:30:00Z (la veille en UTC).
+    const nowMaroc0030 = new Date('2026-05-05T23:30:00Z');
+    const r = resolveRange({ ...DEFAULT_FILTERS, period: 'today' }, nowMaroc0030);
+    const achat = new Date('2026-05-05T23:30:00Z').getTime();
+    expect(r.from.getTime()).toBeLessThanOrEqual(achat); // dans la fenêtre « today »
+    expect(r.to.getTime()).toBeGreaterThan(achat);
+    expect(r.from.toISOString()).toBe('2026-05-05T23:00:00.000Z');
   });
 
   it('7d → 7 jours glissants', () => {

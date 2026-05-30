@@ -1,0 +1,23 @@
+case_id,feature,layer,operator_gesture_or_precondition,expected,linked_finding
+TC-INS-001,FN-INS-18,vitest,"jeu d'events agrégé","avgEventsPerSession=total/sessions; bounce in [0,1]",
+TC-INS-002,FN-INS-18,vitest,"top events","share in [0,1]; somme ~ 1",
+TC-INS-003,FN-INS-05,vitest,"période + période précédente","variations = delta cohérent",
+TC-INS-005,FN-INS-09,vitest,"funnel insights revenue","totalRevenueCents en unité correcte",F-INS-04
+TC-INS-006,FN-INS-12,vitest,"2 refresh concurrents","1 success, 1 skipped (lock)",F-INS-06
+TC-INS-007,FN-INS-12,vitest,"refresh sur matview vide","firstRun puis success",F-INS-03
+TC-INS-008,FN-INS-16,vitest,"purge rétention","anciennes données supprimées selon politique",
+TC-INS-009,FN-INS-03,vitest,"URL -> filters","window/env/device/locale/trafficSource parsés",
+TC-INS-010,FN-INS-04,vitest,"changement URL","refetch déclenché",
+TC-INS-011,FN-INS-05,msw,"GET overview sans session","401",
+TC-INS-012,FN-INS-13,msw,"PATCH settings interval=7","rejeté (valeurs 5/10/15/30/60)",
+TC-INS-013,FN-INS-13,msw,"PATCH settings interval=15","accepté + persisté",
+TC-INS-014,FN-INS-05,msw,"window=custom from>to","400 validation",
+TC-INS-015,FN-INS-01,rtl,"firstRun=true","état dédié 'lancez un refresh' (pas EmptyState)",F-INS-03
+TC-INS-016,FN-INS-11,rtl,"clic ligne page","drawer ouvert avec data",
+TC-INS-017,FN-INS-02,playwright,"changer window 7d->30d","toutes les vues refetch et changent",
+TC-INS-018,FN-INS-06,playwright,"drill-down page + Échap","drawer ouvre puis ferme (focus-trap)",
+TC-INS-019,FN-INS-12,playwright,"clic Rafraîchir","running->success; refreshedAt visible",F-INS-02
+TC-INS-020,FN-INS-14,playwright,"Export CSV vue pages","download avec colonnes attendues",
+TC-INS-021,FN-INS-15,playwright,"Export PNG (fr/ar/en)","fichier PNG non vide",F-INS-05
+TC-INS-022,FN-INS-01,playwright,"sur /insights une seule barre effective","pas de conflit FilterBar layout vs Insights",AF-05
+TC-INS-023,FN-INS-10,a11y,"axe sur /insights","heatmap/drawer accessibles; onglets role=tab",

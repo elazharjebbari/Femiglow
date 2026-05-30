@@ -12,8 +12,12 @@
  *
  * Différences avec `server-emit.ts` (sibling) :
  *  - `server-emit` PERSISTE en DB (`tracking_events_log`) sans dispatcher.
- *  - `server-fire` DISPATCHE vers les providers sans persister (les events
- *    client équivalents arrivent déjà en DB via `/api/track`).
+ *  - `server-fire` DISPATCHE vers les providers ET ⭐ PERSISTE EN DB
+ *    depuis le sprint live-systems-fix-2026-05 (QW5).
+ *    Référence : docs/live-systems-fix-2026-05/08-system-tracking.md
+ *    Pourquoi : avant, les server-fire ne remontaient pas en
+ *    /admin/analytics → asymétrie observabilité. Maintenant on persiste
+ *    avec un discriminant `source='server_fire'` pour différencier.
  *
  * Respect RGPD : skippe si `consent.ad_storage !== 'granted'`. Bot UA skippé
  * (ne pollue pas Meta Events Manager). Sans `_fbp` ET sans `fg_session_id`,
@@ -32,6 +36,9 @@ import { logger } from '@/lib/logging/logger';
 
 import { dispatchToProviders } from './dispatcher';
 import { anonymizeIp, hashUserAgent, parseDevice } from './enricher';
+import { logEvent } from '@/lib/db/queries/tracking/events-log';
+import { createId } from '@/lib/ids';
+import { getEventCategory } from '@/lib/tracking/schemas';
 
 /** Catégorie d'event tracking — alignée sur `TrackingEventCategory`. */
 type ServerFireCategory = 'page' | 'engagement' | 'ecommerce' | 'lead' | 'custom';
@@ -142,25 +149,66 @@ export async function serverFire(input: ServerFireInput): Promise<ServerFireResu
   const acceptLanguage = input.headers.get('accept-language') ?? '';
   const locale = acceptLanguage.split(',')[0]?.split(';')[0]?.trim() || 'fr-MA';
 
+  const receivedAt = new Date();
+  const uaHash = hashUserAgent(ua);
+  const ipAnonymized = anonymizeIp(ip);
+  const device = parseDevice(ua);
+
   try {
     const outcome = await dispatchToProviders({
       eventName: input.eventName,
       eventId,
-      receivedAt: new Date(),
+      receivedAt,
       pageRoute: input.pageRoute,
       pageUrl: input.pageUrl,
       anonymousId: sessionId,
       sessionId,
       userId: null,
       consent,
-      uaHash: hashUserAgent(ua),
-      ipAnonymized: anonymizeIp(ip),
-      device: parseDevice(ua),
+      uaHash,
+      ipAnonymized,
+      device,
       locale,
       params: input.params,
       ...(fbp ? { fbp } : {}),
       ...(fbc ? { fbc } : {}),
     });
+
+    // ⭐ QW5 — Persistance tracking_events_log pour observabilité unifiée.
+    // Fire-and-forget : ne doit jamais faire échouer le dispatch principal.
+    // Le champ `source='server_fire'` distingue de 'client_fire' (default).
+    // Référence : docs/live-systems-fix-2026-05/08-system-tracking.md § QW5
+    try {
+      await logEvent({
+        id: createId('tev'),
+        eventId,
+        eventName: input.eventName,
+        eventCategory: getEventCategory(input.eventName),
+        pageId: input.pageId,
+        pageRoute: input.pageRoute,
+        anonymousId: sessionId,
+        sessionId,
+        userId: null,
+        consentSnapshot: consent,
+        payload: input.params,
+        uaHash,
+        ipAnonymized,
+        device,
+        locale,
+        isConversion: input.eventName === 'purchase' || input.eventName === 'generate_lead',
+        providersDispatched: outcome.dispatched ?? [],
+        providersResults: (outcome.results ?? {}) as Record<string, never>,
+        receivedAt,
+        schemaVersion: 1,
+      });
+    } catch (persistErr) {
+      // Logue mais ne fait pas échouer le serverFire (dispatch a réussi).
+      logger.warn('tracking.server_fire.persist_failed', {
+        event_name: input.eventName,
+        error: persistErr instanceof Error ? persistErr.message : String(persistErr),
+      });
+    }
+
     return { status: 'fired', dispatched: outcome.dispatched };
   } catch (err) {
     logger.error('tracking.server_fire.failed', {

@@ -22,7 +22,6 @@ function mockDbReturns(row: MaybeRow): void {
         }),
       }),
     }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
 }
 

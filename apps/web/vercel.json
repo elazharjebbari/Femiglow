@@ -62,6 +62,22 @@
     {
       "path": "/api/cron/legal-link-health",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/content-studio/social-publish-scheduler",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/content-studio/insights-ingestion",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/content-studio/weekly-failure-digest",
+      "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/tracking/capi-flush",
+      "schedule": "* * * * *"
     }
   ],
   "headers": [

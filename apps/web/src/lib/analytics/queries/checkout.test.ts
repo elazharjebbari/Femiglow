@@ -75,6 +75,72 @@ function pushEvent(o: PushOpts): void {
   store.trackingEventsLog.set(entry.id, entry);
 }
 
+describe('getCheckoutData — AF-03 modèle BOOL_OR', () => {
+  it('clampe le drop-off à 0 quand une étape dépasse la précédente (entrée directe)', async () => {
+    // s1 : view_cart + begin_checkout ; s2 : begin_checkout seul (arrivée directe)
+    pushEvent({ id: '1', sessionId: 's1', eventName: 'view_cart' });
+    pushEvent({ id: '2', sessionId: 's1', eventName: 'begin_checkout' });
+    pushEvent({ id: '3', sessionId: 's2', eventName: 'begin_checkout' });
+
+    const data = await getCheckoutData(FILTERS, NOW);
+    const byStage = Object.fromEntries(data.steps.map((s) => [s.stage, s]));
+    expect(byStage.view_cart!.sessions).toBe(1);
+    expect(byStage.begin_checkout!.sessions).toBe(2);
+    // drop-off view_cart → begin_checkout = 1 - 2/1 = -1, clampé à 0.
+    expect(byStage.view_cart!.dropoffToNext).toBe(0);
+    // la progression peut dépasser 100 % (modèle BOOL_OR assumé).
+    expect(byStage.begin_checkout!.progressionFromPrevious).toBe(2);
+  });
+});
+
+describe('getCheckoutData — F-CHK-04 fenêtre d’abandon', () => {
+  it('un begin_checkout récent (< 60 min) sans achat n’est pas compté abandon', async () => {
+    pushEvent({
+      id: '1',
+      sessionId: 's1',
+      eventName: 'begin_checkout',
+      receivedAt: new Date(NOW.getTime() - 5 * 60_000), // 5 min avant maintenant
+    });
+    const data = await getCheckoutData(FILTERS, NOW);
+    expect(data.totals.beginCheckout).toBe(1);
+    expect(data.totals.abandons).toBe(0); // fenêtre 60 min non écoulée
+  });
+});
+
+describe('getCheckoutData — F-CHK-03 conversion juste après la fin de période', () => {
+  it('un begin_checkout qui convertit dans les 60 min après `to` n’est pas un abandon', async () => {
+    const from = new Date('2026-05-05T00:00:00Z');
+    const to = new Date('2026-05-06T00:00:00Z');
+    const nowLater = new Date('2026-05-06T12:00:00Z'); // bien après `to`
+    const filters: AnalyticsFilters = {
+      period: 'custom',
+      device: 'all',
+      traffic: 'all',
+      from: from.toISOString(),
+      to: to.toISOString(),
+    };
+    // begin 10 min avant la fin de période ; achat 5 min après (hors période).
+    pushEvent({
+      id: '1',
+      sessionId: 's1',
+      eventName: 'begin_checkout',
+      receivedAt: new Date('2026-05-05T23:50:00Z'),
+    });
+    pushEvent({
+      id: '2',
+      sessionId: 's1',
+      eventName: 'purchase',
+      receivedAt: new Date('2026-05-06T00:05:00Z'),
+      payload: { value: 199 },
+    });
+
+    const data = await getCheckoutData(filters, nowLater);
+    expect(data.totals.beginCheckout).toBe(1);
+    expect(data.totals.submissions).toBe(0); // l'achat est hors période
+    expect(data.totals.abandons).toBe(0); // converti dans les 60 min → pas un abandon
+  });
+});
+
 describe('getCheckoutData', () => {
   it('returns zero totals on empty store', async () => {
     const data = await getCheckoutData(FILTERS, NOW);
