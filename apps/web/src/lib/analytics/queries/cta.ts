@@ -195,8 +195,12 @@ export async function getCtaData(
     byPage.set(route, acc);
   }
   for (const att of attributions) {
-    const acc = byPage.get(att.clickPageRoute);
-    if (acc) acc.purchases += 1;
+    // L'achat peut être attribué à un clic survenu hors de [from,to] (fallback
+    // 7 j) : on crée alors l'entrée de page pour réconcilier topPages avec les
+    // totals. cf. docs/analytics-audit-qa-2026-05-30 — finding F-CTA-02.
+    const acc = byPage.get(att.clickPageRoute) ?? { impressions: 0, clicks: 0, purchases: 0 };
+    acc.purchases += 1;
+    byPage.set(att.clickPageRoute, acc);
   }
   const topPages: CtaTopPage[] = Array.from(byPage.entries())
     .map(([pageRoute, v]) => ({
@@ -206,7 +210,7 @@ export async function getCtaData(
       purchasesAttributed: v.purchases,
       conversionRate: v.clicks > 0 ? v.purchases / v.clicks : null,
     }))
-    .filter((p) => p.clicks > 0 || p.impressions > 0)
+    .filter((p) => p.clicks > 0 || p.impressions > 0 || p.purchasesAttributed > 0)
     .sort((a, b) => b.purchasesAttributed - a.purchasesAttributed || b.clicks - a.clicks)
     .slice(0, 10);
 

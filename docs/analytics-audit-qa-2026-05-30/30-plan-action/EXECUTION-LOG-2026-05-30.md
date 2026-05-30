@@ -17,6 +17,8 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **F-FLT-01** | P2 | Filtres invalides : clé invalide ignorée, clés valides conservées (plus de fallback global muet) | `filters.ts` | `filters.test.ts` F-FLT-01 | ✅ closed |
 | **F-CTA-04** | P2 | Page majoritaire déterministe à égalité (tie-break lexicographique) | `queries/cta.ts` | `cta.test.ts` F-CTA-04 | ✅ closed |
 | **F-CHK-04** | P2 | Abandons : un begin_checkout récent (< 60 min) sans achat n'est plus compté abandon | `queries/checkout.ts` | `checkout.test.ts` F-CHK-04 | ✅ closed |
+| **F-CTA-02** | P2 | topPages réconcilié avec les totals : l'achat attribué via fallback 7 j (page hors période) est désormais compté | `queries/cta.ts` | `cta.test.ts` F-CTA-02 | ✅ closed |
+| **F-CHK-02** | P2 | KPI « Soumissions » → « Achats » (le champ data `submissions` reste pour compat) | `CheckoutKpiGrid.tsx` | `CheckoutKpiGrid.test.tsx` | ✅ closed |
 
 ## Décisions notables
 
@@ -30,13 +32,12 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
-F-CTA-02 (topPages vs fallback hors période), F-CTA-03 (libellé fallback clics=0/achats>0),
-F-CHK-02 (libellé « submissions »), F-CHK-03 (purchase juste après `to` → faux abandon),
+F-CTA-03 (libellé fallback clics=0/achats>0), F-CHK-03 (purchase juste après `to` → faux abandon),
 F-INS-02..06 (firstRun, refresh concurrent, export PNG), F-PERF-01/02/04 (matviews, cache),
 F-SEC-01 (requêtes paramétrées), F-FMT-01/02 (fuseau axe heure, semaine ISO). Voir
 `00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
 
-**Bilan corrections : 12 findings fermés** (5 P0/P1 + 7 P2) sur 27.
+**Bilan corrections : 14 findings fermés** (5 P0/P1 + 9 P2) sur 27.
 
 ## Validation locale
 

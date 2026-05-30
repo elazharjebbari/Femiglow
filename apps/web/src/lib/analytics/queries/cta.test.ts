@@ -248,6 +248,38 @@ describe('getCtaData — KPI totals', () => {
   });
 });
 
+describe('getCtaData — F-CTA-02 topPages réconcilié avec le fallback 7j', () => {
+  it('compte l’achat dans topPages même si le clic vient du fallback (page hors période)', async () => {
+    pushComp('c1', 'CTA');
+    // clic 3 jours avant, sur /promo (hors fenêtre "today")
+    pushEvent({
+      id: '1',
+      sessionId: 'S0',
+      anonymousId: 'A1',
+      eventName: 'cta_click',
+      componentId: 'c1',
+      pageRoute: '/promo',
+      receivedAt: new Date('2026-05-03T10:00:00Z'),
+    });
+    // achat aujourd'hui, autre session, même anonymous_id
+    pushEvent({
+      id: '2',
+      sessionId: 'S1',
+      anonymousId: 'A1',
+      eventName: 'purchase',
+      receivedAt: new Date('2026-05-06T10:00:00Z'),
+      payload: { value: 100 },
+    });
+    const data = await getCtaData(filtersToday(), NOW);
+    const promo = data.topPages.find((p) => p.pageRoute === '/promo');
+    expect(promo?.purchasesAttributed).toBe(1);
+    // réconciliation : Σ topPages.purchases = Σ rows.purchases (totals attribués)
+    const sumTop = data.topPages.reduce((s, p) => s + p.purchasesAttributed, 0);
+    const sumRows = data.rows.reduce((s, r) => s + r.purchasesAttributed, 0);
+    expect(sumTop).toBe(sumRows);
+  });
+});
+
 describe('getCtaData — F-CTA-04 page majoritaire déterministe', () => {
   it('choisit la page lexicographiquement plus petite à égalité de clics', async () => {
     pushComp('c1', 'CTA');
