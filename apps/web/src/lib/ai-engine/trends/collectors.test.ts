@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { server, http, HttpResponse } from '@/test/msw/server';
 
 vi.mock('../utils/logger', () => ({
   createLogger: () => ({
@@ -14,21 +15,29 @@ import {
   collectRedditSignals,
   collectGoogleTrends,
   collectRSSFeeds,
-  type RawTrendSignal,
 } from './collectors';
+
+// ARC-004 — l'API Reddit est interceptée par MSW (au lieu de vi.spyOn(fetch)).
+const REDDIT_RE = /reddit\.com\/r\//;
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+function redditResponse(children: Array<{ data: Record<string, unknown> }>) {
+  return HttpResponse.json({ data: { children } });
+}
 
 describe('collectSeasonalSignals', () => {
   it('returns signals for current month', async () => {
     const signals = await collectSeasonalSignals();
     expect(Array.isArray(signals)).toBe(true);
-    // Should always return at least the evergreen signals
     expect(signals.length).toBeGreaterThan(0);
   });
 
   it('includes year-round trends', async () => {
     const signals = await collectSeasonalSignals();
     const evergreenSources = signals.filter((s) => s.source === 'evergreen');
-    // There are 4 evergreen signals defined
     expect(evergreenSources.length).toBe(4);
     expect(evergreenSources.every((s) => s.rawScore === 0.75)).toBe(true);
   });
@@ -47,113 +56,89 @@ describe('collectSeasonalSignals', () => {
 });
 
 describe('collectRedditSignals', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('calls Reddit API', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: {
-            children: [
-              {
-                data: {
-                  title: 'Amazing nail care routine with Japanese camellia oil',
-                  selftext: 'I tried this beauty routine and my skin glows',
-                  url: 'https://reddit.com/r/SkincareAddiction/1',
-                  score: 500,
-                  created_utc: Date.now() / 1000,
-                },
-              },
-              {
-                data: {
-                  title: 'Random unrelated post about cooking',
-                  selftext: 'Recipe for pasta',
-                  url: 'https://reddit.com/r/SkincareAddiction/2',
-                  score: 200,
-                  created_utc: Date.now() / 1000,
-                },
-              },
-            ],
+    let capturedUrl = '';
+    server.use(
+      http.get(REDDIT_RE, ({ request }) => {
+        capturedUrl = request.url;
+        return redditResponse([
+          {
+            data: {
+              title: 'Amazing nail care routine with Japanese camellia oil',
+              selftext: 'I tried this beauty routine and my skin glows',
+              url: 'https://reddit.com/r/SkincareAddiction/1',
+              score: 500,
+              created_utc: Date.now() / 1000,
+            },
           },
-        }),
-        { status: 200 },
-      ),
+          {
+            data: {
+              title: 'Random unrelated post about cooking',
+              selftext: 'Recipe for pasta',
+              url: 'https://reddit.com/r/SkincareAddiction/2',
+              score: 200,
+              created_utc: Date.now() / 1000,
+            },
+          },
+        ]);
+      }),
     );
 
-    const signals = await collectRedditSignals(['SkincareAddiction']);
-    expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining('reddit.com/r/SkincareAddiction'),
-      expect.any(Object),
-    );
-    fetchSpy.mockRestore();
+    await collectRedditSignals(['SkincareAddiction']);
+    expect(capturedUrl).toContain('reddit.com/r/SkincareAddiction');
   });
 
   it('filters beauty-related posts', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: {
-            children: [
-              {
-                data: {
-                  title: 'Amazing nail care routine',
-                  selftext: 'My beauty skin glow routine',
-                  url: 'https://reddit.com/r/test/1',
-                  score: 500,
-                  created_utc: Date.now() / 1000,
-                },
-              },
-              {
-                data: {
-                  title: 'How to fix a flat tire',
-                  selftext: 'Car maintenance tips',
-                  url: 'https://reddit.com/r/test/2',
-                  score: 800,
-                  created_utc: Date.now() / 1000,
-                },
-              },
-            ],
+    server.use(
+      http.get(REDDIT_RE, () =>
+        redditResponse([
+          {
+            data: {
+              title: 'Amazing nail care routine',
+              selftext: 'My beauty skin glow routine',
+              url: 'https://reddit.com/r/test/1',
+              score: 500,
+              created_utc: Date.now() / 1000,
+            },
           },
-        }),
-        { status: 200 },
+          {
+            data: {
+              title: 'How to fix a flat tire',
+              selftext: 'Car maintenance tips',
+              url: 'https://reddit.com/r/test/2',
+              score: 800,
+              created_utc: Date.now() / 1000,
+            },
+          },
+        ]),
       ),
     );
 
     const signals = await collectRedditSignals(['test']);
-    // Only beauty-related post should pass
     expect(signals.length).toBe(1);
     expect(signals[0]!.title).toContain('nail care');
-    vi.restoreAllMocks();
   });
 
   it('handles fetch error gracefully', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network timeout'));
+    server.use(http.get(REDDIT_RE, () => HttpResponse.error()));
     const signals = await collectRedditSignals(['SkincareAddiction']);
     expect(signals).toEqual([]);
-    vi.restoreAllMocks();
   });
 
   it('each Reddit signal has required fields', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          data: {
-            children: [
-              {
-                data: {
-                  title: 'Japanese beauty oil routine',
-                  selftext: 'Camellia oil is great for skin care',
-                  url: 'https://reddit.com/r/AsianBeauty/1',
-                  score: 300,
-                  created_utc: Date.now() / 1000,
-                },
-              },
-            ],
+    server.use(
+      http.get(REDDIT_RE, () =>
+        redditResponse([
+          {
+            data: {
+              title: 'Japanese beauty oil routine',
+              selftext: 'Camellia oil is great for skin care',
+              url: 'https://reddit.com/r/AsianBeauty/1',
+              score: 300,
+              created_utc: Date.now() / 1000,
+            },
           },
-        }),
-        { status: 200 },
+        ]),
       ),
     );
 
@@ -166,7 +151,6 @@ describe('collectRedditSignals', () => {
       expect(s).toHaveProperty('detectedAt');
       expect(s.detectedAt).toBeInstanceOf(Date);
     }
-    vi.restoreAllMocks();
   });
 });
 
