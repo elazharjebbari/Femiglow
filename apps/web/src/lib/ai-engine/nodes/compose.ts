@@ -300,8 +300,25 @@ export async function composeNode(state: Record<string, unknown>): Promise<Recor
     data: { provider: composition.provider },
   });
 
+  // ACT-BE-015 : une composition vide (échec → createEmptyAsset) ou en fallback
+  // est poussée dans state.errors au lieu de passer pour un succès.
+  const comp = composition as { url?: string; provider?: string; generationParams?: Record<string, unknown> };
+  const composeDegraded = !comp.url || comp.provider === 'fallback';
+
   return {
     composition,
     currentStep: 'compose',
+    errors: composeDegraded
+      ? [
+          {
+            node: 'compose',
+            errorType: comp.url ? 'compose_degraded' : 'compose_empty',
+            message: String(comp.generationParams?.error ?? 'composition indisponible'),
+            timestamp: new Date().toISOString(),
+            provider: comp.provider ?? 'compose',
+            retryable: true,
+          },
+        ]
+      : [],
   };
 }

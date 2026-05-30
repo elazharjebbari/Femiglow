@@ -109,6 +109,10 @@ export async function generateMusicNode(state: Record<string, unknown>): Promise
 
   void config;
 
+  // ACT-BE-015 (BUG-050) : musique vide/fallback poussée dans state.errors.
+  const mu = music as { url?: string; provider?: string; generationParams?: Record<string, unknown> };
+  const musicDegraded = !mu.url || mu.provider === 'fallback';
+
   return {
     music,
     currentStep: 'generate_music',
@@ -117,5 +121,17 @@ export async function generateMusicNode(state: Record<string, unknown>): Promise
       totalCents: prevTotal + costCents,
       breakdown: { ...prevBreakdown, generate_music: costCents },
     },
+    errors: musicDegraded
+      ? [
+          {
+            node: 'generate_music',
+            errorType: mu.url ? 'music_degraded' : 'music_empty',
+            message: String(mu.generationParams?.error ?? 'musique indisponible (fallback)'),
+            timestamp: new Date().toISOString(),
+            provider: 'fallback',
+            retryable: true,
+          },
+        ]
+      : [],
   };
 }

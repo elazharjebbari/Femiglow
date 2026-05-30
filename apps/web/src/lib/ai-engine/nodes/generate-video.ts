@@ -5,6 +5,9 @@ import ffmpegPath from 'ffmpeg-static';
 import { createLogger } from '../utils/logger';
 import { getEngineConfig } from '../config';
 import type { MediaAsset } from '../types/media';
+import { ProviderSelector } from '../providers/selector';
+import type { ProviderConfig } from '../providers/types';
+import { resolveApiKey } from '../services/api-key-manager';
 
 if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -108,11 +111,78 @@ export async function generateVideoNode(state: Record<string, unknown>): Promise
   let costCents = 0;
 
   try {
-    if (config.providers.video.default !== 'mock' && config.apiKeys.google) {
-      log.info('Non-mock video provider configured but not yet implemented, falling back to mock', {
-        jobId,
-        node: 'generate_video',
-      });
+    if (config.providers.video.default !== 'mock') {
+      const providerType = config.providers.video.default;
+      const apiKey = await resolveApiKey(providerType);
+
+      if (apiKey) {
+        try {
+          const providerConfig: ProviderConfig = {
+            id: `runtime-${providerType}`,
+            type: providerType,
+            name: providerType,
+            apiKeyEnvVar: `AI_ENGINE_${providerType.toUpperCase()}_API_KEY`,
+            capabilities: ['video'],
+            models: [],
+            rateLimitRpm: 60,
+            dailyBudgetCents: config.budget.dailyCents,
+            circuitBreaker: { failureThreshold: 5, resetTimeoutMs: 60000, halfOpenMaxCalls: 1 },
+            priority: 10,
+            isFallback: false,
+            isEnabled: true,
+            healthStatus: 'healthy',
+          };
+
+          const selector = new ProviderSelector([providerConfig]);
+          const adapter = selector.selectProvider('generate_video', 'video');
+          const totalDuration = scenes.reduce((sum, s) => sum + (s.durationSeconds ?? 4), 0);
+
+          const result = await adapter.generateVideo({
+            model: 'higgsfield-video-v1',
+            prompt: scenes.map(s => s.description).join('. '),
+            durationSeconds: totalDuration,
+            width,
+            height,
+          });
+
+          videos.push({
+            assetId: `${providerType}-video-${Date.now()}`,
+            url: result.data.videoUrl,
+            mimeType: 'video/mp4',
+            width,
+            height,
+            durationMs: totalDuration * 1000,
+            fileSizeBytes: 0,
+            provider: providerType,
+            generationParams: { scenes: scenes.length, totalDuration },
+            costCents: result.costCents,
+          });
+          costCents += result.costCents;
+
+          const durationMs = Date.now() - startTime;
+          log.info('Video generated via provider', { jobId, node: 'generate_video', durationMs, costCents, data: { provider: providerType } });
+
+          const prevCost = state.costTracking as Record<string, unknown> | undefined;
+          const prevTotal = (prevCost?.totalCents as number) ?? 0;
+          const prevBreakdown = (prevCost?.breakdown as Record<string, number>) ?? {};
+
+          return {
+            videos,
+            currentStep: 'generate_video',
+            costTracking: {
+              ...prevCost,
+              totalCents: prevTotal + costCents,
+              breakdown: { ...prevBreakdown, generate_video: costCents },
+            },
+          };
+        } catch (providerErr) {
+          log.warn('Provider video generation failed, falling back to mock', {
+            jobId,
+            node: 'generate_video',
+            data: { provider: providerType, error: String(providerErr) },
+          });
+        }
+      }
     }
 
     const result = await generateMockVideo(scenes, width, height, jobId);
@@ -168,6 +238,11 @@ export async function generateVideoNode(state: Record<string, unknown>): Promise
   const prevTotal = (prevCost?.totalCents as number) ?? 0;
   const prevBreakdown = (prevCost?.breakdown as Record<string, number>) ?? {};
 
+  // ACT-BE-015 : une vidéo vide (url='') ou en fallback est poussée dans
+  // state.errors au lieu de passer pour un succès.
+  const vids = videos as Array<{ url?: string; provider?: string; generationParams?: Record<string, unknown> }>;
+  const degradedVid = vids.find((v) => !v?.url || v?.provider === 'fallback');
+
   return {
     videos,
     currentStep: 'generate_video',
@@ -176,5 +251,17 @@ export async function generateVideoNode(state: Record<string, unknown>): Promise
       totalCents: prevTotal + costCents,
       breakdown: { ...prevBreakdown, generate_video: costCents },
     },
+    errors: degradedVid
+      ? [
+          {
+            node: 'generate_video',
+            errorType: degradedVid.url ? 'video_degraded' : 'video_empty',
+            message: String(degradedVid.generationParams?.error ?? 'vidéo indisponible (fallback)'),
+            timestamp: new Date().toISOString(),
+            provider: 'fallback',
+            retryable: true,
+          },
+        ]
+      : [],
   };
 }
