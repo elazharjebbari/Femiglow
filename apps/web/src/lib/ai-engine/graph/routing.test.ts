@@ -103,6 +103,37 @@ describe('routeAfterQuality', () => {
     expect(routeAfterQuality(state)).toBe('pass');
   });
 
+  it('NE passe PAS malgré un bon score si un média est vide (ACT-BE-015)', () => {
+    const state = mockState({
+      qualityScores: { text_quality: 0.8, visual_quality: 0.7 },
+      errors: [
+        { node: 'generate_voiceover', errorType: 'voiceover_empty', message: 'vide', timestamp: '', retryable: true },
+      ] as never,
+    });
+    expect(routeAfterQuality(state)).toBe('retry');
+  });
+
+  it('échoue sur média vide quand les retries sont épuisés (ACT-BE-015)', () => {
+    const state = mockState({
+      qualityScores: { text_quality: 0.8, visual_quality: 0.7 },
+      errors: [
+        { node: 'compose', errorType: 'compose_empty', message: 'vide', timestamp: '', retryable: true },
+      ] as never,
+      retries: { qualityCheck: 2 },
+    });
+    expect(routeAfterQuality(state)).toBe('fail');
+  });
+
+  it('un média seulement DÉGRADÉ (pas vide) ne bloque pas le pass (ACT-BE-015)', () => {
+    const state = mockState({
+      qualityScores: { text_quality: 0.8, visual_quality: 0.7 },
+      errors: [
+        { node: 'transcode_export', errorType: 'transcode_failed', message: 'x', timestamp: '', retryable: true },
+      ] as never,
+    });
+    expect(routeAfterQuality(state)).toBe('pass');
+  });
+
   it('returns pass when scores are empty (no dead-end)', () => {
     expect(routeAfterQuality(mockState({ qualityScores: {} }))).toBe('pass');
   });

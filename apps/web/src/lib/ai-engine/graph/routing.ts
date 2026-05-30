@@ -39,6 +39,19 @@ const MAX_RETRIES_PER_NODE = 2;
 export type QualityRoute = 'pass' | 'retry' | 'fail';
 
 export function routeAfterQuality(state: ContentGenerationStateType): QualityRoute {
+  const retryCount = state.retries?.['qualityCheck'] ?? 0;
+
+  // ACT-BE-015 — un média DUR manquant (asset vide, errorType `*_empty` poussé
+  // par les nœuds média dans state.errors) NE PEUT PAS être certifié 'completed'
+  // sur le seul score : on retente si possible, sinon on échoue — au lieu de
+  // passer en silence avec un asset url=''.
+  const hasEmptyMedia = (state.errors ?? []).some(
+    (e) => typeof e?.errorType === 'string' && e.errorType.endsWith('_empty'),
+  );
+  if (hasEmptyMedia) {
+    return retryCount < MAX_RETRIES_PER_NODE ? 'retry' : 'fail';
+  }
+
   const scores = state.qualityScores ?? {};
   const values = Object.values(scores);
 
@@ -54,7 +67,6 @@ export function routeAfterQuality(state: ContentGenerationStateType): QualityRou
   }
 
   // Check if we have retries left for the quality check node
-  const retryCount = state.retries?.['qualityCheck'] ?? 0;
   if (retryCount < MAX_RETRIES_PER_NODE) {
     return 'retry';
   }
