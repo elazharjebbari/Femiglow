@@ -24,6 +24,10 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **F-CHK-03** | P2 | Achat dans les 60 min après `to` (fetch `(to, to+60min]`) n'est plus compté abandon ; il ne gonfle pas non plus le KPI achats de la période | `queries/checkout.ts` | `checkout.test.ts` F-CHK-03 | ✅ closed |
 | **F-SEC-01** | P2 | `fetchEvents` (funnel/cta/checkout) en requêtes **paramétrées** (`sql`+`sql.join`) au lieu de `sql.raw`+`escape()` maison | `queries/{funnel,cta,checkout}.ts` | `cta.pglite.integration.test.ts` (vrai SQL) | ✅ closed |
 | **F-CTA-03** | P2 | Légende de la table CTA expliquant qu'une ligne « 0 clic / achats > 0 » est normale (attribution fallback) | `CtaTable.tsx` | `CtaTable.test.tsx` (non-régression) | ✅ closed |
+| **F-INS-03** | P2 | Bannière dédiée quand `firstRun=true` (matview vide ≠ « pas de trafic ») | `InsightsView.tsx` | `InsightsView.test.tsx` F-INS-03 | ✅ closed |
+| **F-INS-02** | P2 | « Dernière mise à jour : {refreshedAt} » — **déjà affiché** (`InsightsView.tsx:396`) | — | — | ✅ vérifié |
+| **F-INS-04** | P2 | Revenu funnel insights : `value × 100` — **déjà correct** (`aggregate.ts:226`) et testé | — | `aggregate.test.ts:208` | ✅ vérifié |
+| **F-INS-06** | P2 | Refresh concurrent : lock pessimiste + API **429 propre** (pas de 500) — **déjà géré** et testé | — | `refresh.test.ts:108` + `refresh/route.test.ts:96` | ✅ vérifié |
 
 ## Harnais d'intégration PGlite (nouveau)
 
@@ -48,13 +52,14 @@ refresh) qui nécessitaient une base réelle.
 
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
-F-INS-02..06 (firstRun, refresh concurrent, export PNG), F-PERF-01/02/04 (matviews, cache) — les
-deux derniers chantiers, dimension « Sprint 2/3 » (refonte agrégation SQL + matviews + refresh
-insights). Le **harnais PGlite** ci-dessus les débloque (base réelle disponible en test). Voir
-`00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
+**F-INS-05** (export PNG fragile — fonts/RTL/taille) : nécessite un test visuel Playwright/navigateur.
+**F-PERF-01/02** (refonte agrégation in-memory → SQL + routage matviews) et **F-PERF-04** (cache) :
+chantier « Sprint 2/3 », gros effort multi-fichiers ; le **harnais PGlite** le débloque (base réelle
+en test). Voir `00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
 
-**Bilan corrections : 19 findings fermés** (5 P0/P1 + 14 P2) sur 27. Suite analytics : 489 verts
-(dont 2 d'intégration PGlite sur le vrai chemin SQL).
+**Bilan corrections : 23 findings traités** (5 P0/P1 + 18 P2, dont 3 vérifiés déjà corrects) sur 27.
+Suite analytics : 489 verts (dont 2 d'intégration PGlite sur le vrai chemin SQL). Reste : F-INS-05,
+F-PERF-01/02/04.
 
 ## Validation locale
 
