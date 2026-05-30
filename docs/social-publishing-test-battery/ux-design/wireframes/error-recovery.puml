@@ -1,0 +1,22 @@
+@startsalt error-recovery
+title Token expired — recovery flow
+{
+  "Home — Comptes sociaux"
+  --
+  {📷 instagram | "AlFenna Beauty"      | <Actif>         | "Dernière publ: il y a 2h" | -                }
+  {📷 instagram | "FemiGlow Test"       | <Compte expiré>  | "Dernier échec: 401"      | [Reconnecter]    }
+  {📘 facebook  | "AlFenna FB"          | <Actif>         | "Aucun échec récent"      | -                }
+  --
+  [Synchroniser]
+  --
+  ".. Operateur clique Reconnecter .. (ouvre Postiz UI)"
+  ".. Operateur re-OAuth dans Postiz .."
+  ".. Retour FemiGlow + Click Synchroniser .."
+  --
+  "Toast: '3 comptes synchronisés'"
+  --
+  {📷 instagram | "AlFenna Beauty"      | <Actif>         | "Dernière publ: il y a 2h" }
+  {📷 instagram | "FemiGlow Test"       | <Actif>         | "Re-connecté"              }
+  {📘 facebook  | "AlFenna FB"          | <Actif>         | "Aucun échec récent"      }
+}
+@endsalt

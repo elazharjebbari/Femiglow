@@ -1,0 +1,522 @@
+# Service Layer -- Test Scenarios
+#
+# Document: 190-HF/03-backend/services/scenarios.yaml
+# Date: 2026-05-27
+# Coverage: Unit tests for api-key-manager.ts, api-key-validator.ts, model-discovery.ts
+#
+# Conventions:
+#   type: unit | integration
+#   priority: P0 (blocker), P1 (critical), P2 (important), P3 (nice-to-have)
+#   file: target test file
+#   mock: describes the mock/stub setup
+#   assertions: list of expected outcomes
+
+scenarios:
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # API KEY VALIDATOR -- testHiggsfield()
+  # File: src/lib/ai-engine/services/__tests__/api-key-validator.test.ts
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-SVC-001
+    name: "validateApiKey('higgsfield', validKey) returns valid on HTTP 200"
+    type: unit
+    priority: P0
+    file: api-key-validator.test.ts
+    mock: "fetch GET https://api.higgsfield.ai/v1/models returns 200 with { models: [...] }"
+    input:
+      providerType: "higgsfield"
+      apiKey: "hf-valid-key-12345"
+    assertions:
+      - "result.valid === true"
+      - "result.provider === 'higgsfield'"
+      - "result.latencyMs > 0"
+      - "result.error is undefined"
+
+  - id: HF-SVC-002
+    name: "validateApiKey('higgsfield', invalidKey) returns invalid on HTTP 401"
+    type: unit
+    priority: P0
+    file: api-key-validator.test.ts
+    mock: "fetch returns 401"
+    input:
+      providerType: "higgsfield"
+      apiKey: "hf-bad-key"
+    assertions:
+      - "result.valid === false"
+      - "result.provider === 'higgsfield'"
+      - "result.error === 'Invalid API key'"
+
+  - id: HF-SVC-003
+    name: "validateApiKey('higgsfield', key) returns valid on HTTP 429 (rate limited but key valid)"
+    type: unit
+    priority: P0
+    file: api-key-validator.test.ts
+    mock: "fetch returns 429"
+    assertions:
+      - "result.valid === true"
+      - "result.provider === 'higgsfield'"
+
+  - id: HF-SVC-004
+    name: "validateApiKey('higgsfield', key) returns valid on HTTP 400 (bad request but key valid)"
+    type: unit
+    priority: P1
+    file: api-key-validator.test.ts
+    mock: "fetch returns 400"
+    assertions:
+      - "result.valid === true"
+
+  - id: HF-SVC-005
+    name: "validateApiKey('higgsfield', key) returns invalid on HTTP 403"
+    type: unit
+    priority: P1
+    file: api-key-validator.test.ts
+    mock: "fetch returns 403 with body 'Insufficient permissions'"
+    assertions:
+      - "result.valid === false"
+      - "result.error contains 'HTTP 403'"
+
+  - id: HF-SVC-006
+    name: "validateApiKey('higgsfield', key) returns invalid on HTTP 500"
+    type: unit
+    priority: P1
+    file: api-key-validator.test.ts
+    mock: "fetch returns 500"
+    assertions:
+      - "result.valid === false"
+      - "result.error contains 'HTTP 500'"
+
+  - id: HF-SVC-007
+    name: "validateApiKey('higgsfield', key) handles network timeout"
+    type: unit
+    priority: P0
+    file: api-key-validator.test.ts
+    mock: "fetch never resolves (AbortSignal fires after TIMEOUT_MS)"
+    assertions:
+      - "result.valid === false"
+      - "result.error contains timeout-related message"
+      - "result.latencyMs >= 10000 (TIMEOUT_MS)"
+
+  - id: HF-SVC-008
+    name: "validateApiKey('higgsfield', key) handles network error (DNS failure)"
+    type: unit
+    priority: P1
+    file: api-key-validator.test.ts
+    mock: "fetch throws TypeError('Failed to fetch')"
+    assertions:
+      - "result.valid === false"
+      - "result.error contains 'Failed to fetch'"
+
+  - id: HF-SVC-009
+    name: "validateApiKey('higgsfield', key) truncates long error bodies"
+    type: unit
+    priority: P2
+    file: api-key-validator.test.ts
+    mock: "fetch returns 500 with 5000-char body"
+    assertions:
+      - "result.error.length <= 250 (200 chars from body + prefix)"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # API KEY MANAGER -- Higgsfield entries
+  # File: src/lib/ai-engine/services/__tests__/api-key-manager.test.ts
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-SVC-010
+    name: "listApiKeys includes Higgsfield with source 'none' when no key configured"
+    type: unit
+    priority: P0
+    file: api-key-manager.test.ts
+    setup: "No DB key for higgsfield, AI_ENGINE_HIGGSFIELD_API_KEY unset"
+    assertions:
+      - "result contains entry with providerType === 'higgsfield'"
+      - "entry.providerName === 'Higgsfield AI'"
+      - "entry.source === 'none'"
+      - "entry.isActive === false"
+      - "entry.label === 'Non configure'"
+
+  - id: HF-SVC-011
+    name: "listApiKeys includes Higgsfield with source 'env' when env var set"
+    type: unit
+    priority: P0
+    file: api-key-manager.test.ts
+    setup: "AI_ENGINE_HIGGSFIELD_API_KEY = 'hf-env-key-123456789'"
+    assertions:
+      - "entry.source === 'env'"
+      - "entry.isActive === true"
+      - "entry.masked starts with 'hf-env' and ends with '6789'"
+      - "entry.keyPrefix === 'hf-env'"
+      - "entry.keyLastFour === '6789'"
+
+  - id: HF-SVC-012
+    name: "listApiKeys includes Higgsfield with source 'database' when DB key exists"
+    type: unit
+    priority: P0
+    file: api-key-manager.test.ts
+    setup: "DB contains active row for providerType='higgsfield'"
+    assertions:
+      - "entry.source === 'database'"
+      - "entry.id is not null"
+      - "entry.isActive === true"
+
+  - id: HF-SVC-013
+    name: "resolveApiKey('higgsfield') returns DB key over env key"
+    type: unit
+    priority: P0
+    file: api-key-manager.test.ts
+    setup: "DB has active key for higgsfield AND AI_ENGINE_HIGGSFIELD_API_KEY is set"
+    assertions:
+      - "returned key matches decrypted DB key"
+      - "NOT the env var value"
+
+  - id: HF-SVC-014
+    name: "resolveApiKey('higgsfield') falls back to env when no DB key"
+    type: unit
+    priority: P0
+    file: api-key-manager.test.ts
+    setup: "No DB key, AI_ENGINE_HIGGSFIELD_API_KEY = 'hf-fallback'"
+    assertions:
+      - "returned key === 'hf-fallback'"
+
+  - id: HF-SVC-015
+    name: "resolveApiKey('higgsfield') returns undefined when no key anywhere"
+    type: unit
+    priority: P0
+    file: api-key-manager.test.ts
+    setup: "No DB key, no env var"
+    assertions:
+      - "returned value is undefined"
+
+  - id: HF-SVC-016
+    name: "resolveApiKey('higgsfield') caches result for 5 minutes"
+    type: unit
+    priority: P1
+    file: api-key-manager.test.ts
+    setup: "AI_ENGINE_HIGGSFIELD_API_KEY = 'hf-cached'"
+    assertions:
+      - "first call returns 'hf-cached'"
+      - "second call returns same value without DB query"
+      - "after 5 min TTL, DB is queried again"
+
+  - id: HF-SVC-017
+    name: "saveApiKey('higgsfield', key) stores encrypted key in DB"
+    type: unit
+    priority: P1
+    file: api-key-manager.test.ts
+    assertions:
+      - "DB insert called with providerType='higgsfield'"
+      - "encryptedKey is not the raw key"
+      - "returned result.providerName === 'Higgsfield AI'"
+
+  - id: HF-SVC-018
+    name: "saveApiKey('higgsfield', key) deactivates previous active key"
+    type: unit
+    priority: P1
+    file: api-key-manager.test.ts
+    setup: "DB already has active key for higgsfield"
+    assertions:
+      - "DB update sets isActive=false on old key"
+      - "DB insert creates new active key"
+
+  - id: HF-SVC-019
+    name: "deleteApiKey reports fallbackToEnv when env var exists"
+    type: unit
+    priority: P2
+    file: api-key-manager.test.ts
+    setup: "DB key exists, AI_ENGINE_HIGGSFIELD_API_KEY is set"
+    assertions:
+      - "deleteApiKey returns { success: true, fallbackToEnv: true }"
+
+  - id: HF-SVC-020
+    name: "invalidateCache('higgsfield') clears resolved key cache"
+    type: unit
+    priority: P2
+    file: api-key-manager.test.ts
+    assertions:
+      - "after invalidateCache, next resolveApiKey queries DB again"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # MODEL DISCOVERY -- Higgsfield
+  # File: src/lib/ai-engine/services/__tests__/model-discovery.test.ts
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-SVC-030
+    name: "discoverModels('higgsfield') returns fallback models when no API key"
+    type: unit
+    priority: P0
+    file: model-discovery.test.ts
+    setup: "no apiKey provided"
+    assertions:
+      - "result.source === 'fallback'"
+      - "result.models includes { id: 'higgsfield-diffusion-v2', role: 'image' }"
+      - "result.models includes { id: 'higgsfield-video-v1', role: 'video' }"
+
+  - id: HF-SVC-031
+    name: "discoverModels('higgsfield') returns live models on successful fetch"
+    type: unit
+    priority: P0
+    file: model-discovery.test.ts
+    mock: "fetchHiggsfield returns [{ id: 'hf-new-model', role: 'image' }]"
+    setup: "apiKey provided"
+    assertions:
+      - "result.source === 'live'"
+      - "result.models includes 'hf-new-model'"
+      - "result.models also includes fallback models (merged via dedupeMerge)"
+
+  - id: HF-SVC-032
+    name: "discoverModels('higgsfield') falls back on fetch error"
+    type: unit
+    priority: P0
+    file: model-discovery.test.ts
+    mock: "fetchHiggsfield throws Error('higgsfield 500')"
+    assertions:
+      - "result.source === 'fallback'"
+      - "result.models === FALLBACK_MODELS.higgsfield"
+      - "warning logged"
+
+  - id: HF-SVC-033
+    name: "discoverModels('higgsfield') caches live results for 5 minutes"
+    type: unit
+    priority: P1
+    file: model-discovery.test.ts
+    mock: "fetchHiggsfield returns live models"
+    assertions:
+      - "first call: source='live', fetchHiggsfield called"
+      - "second call (< 5min): source='cache', fetchHiggsfield NOT called"
+      - "after 5min TTL: fetchHiggsfield called again"
+
+  - id: HF-SVC-034
+    name: "invalidateModelCache('higgsfield') forces re-fetch"
+    type: unit
+    priority: P1
+    file: model-discovery.test.ts
+    assertions:
+      - "after invalidateModelCache, next call is source='live'"
+
+  - id: HF-SVC-035
+    name: "fetchHiggsfield parses model list correctly"
+    type: unit
+    priority: P0
+    file: model-discovery.test.ts
+    mock: |
+      fetch returns 200 with {
+        models: [
+          { id: 'higgsfield-diffusion-v2', type: 'image' },
+          { id: 'higgsfield-video-v1', type: 'video' },
+          { id: 'higgsfield-embed-v1', type: 'embedding' }
+        ]
+      }
+    assertions:
+      - "returns 3 ModelEntry objects"
+      - "diffusion model has role 'image'"
+      - "video model has role 'video'"
+      - "embed model has role 'embedding'"
+
+  - id: HF-SVC-036
+    name: "fetchHiggsfield infers role from model name when type is missing"
+    type: unit
+    priority: P1
+    file: model-discovery.test.ts
+    mock: "fetch returns { models: [{ id: 'hf-video-gen-v3' }] } (no type field)"
+    assertions:
+      - "model role inferred as 'video' (regex /video/i matches)"
+
+  - id: HF-SVC-037
+    name: "fetchHiggsfield defaults to 'image' role when no hints"
+    type: unit
+    priority: P2
+    file: model-discovery.test.ts
+    mock: "fetch returns { models: [{ id: 'hf-mystery-model' }] }"
+    assertions:
+      - "model role defaults to 'image'"
+
+  - id: HF-SVC-038
+    name: "fetchHiggsfield throws on non-200 response"
+    type: unit
+    priority: P1
+    file: model-discovery.test.ts
+    mock: "fetch returns 401"
+    assertions:
+      - "throws Error('higgsfield 401')"
+
+  - id: HF-SVC-039
+    name: "fetchHiggsfield handles empty models array"
+    type: unit
+    priority: P2
+    file: model-discovery.test.ts
+    mock: "fetch returns 200 with { models: [] }"
+    assertions:
+      - "returns empty array"
+      - "discoverModels falls back to FALLBACK_MODELS"
+
+  - id: HF-SVC-040
+    name: "fetchHiggsfield handles missing models field"
+    type: unit
+    priority: P2
+    file: model-discovery.test.ts
+    mock: "fetch returns 200 with {} (no models field)"
+    assertions:
+      - "returns empty array (json.models ?? [])"
+
+  - id: HF-SVC-041
+    name: "fetchHiggsfield sends correct Authorization header"
+    type: unit
+    priority: P0
+    file: model-discovery.test.ts
+    mock: "fetch intercepted"
+    input:
+      apiKey: "hf-test-key"
+    assertions:
+      - "request headers contain Authorization: 'Bearer hf-test-key'"
+      - "request URL is 'https://api.higgsfield.ai/v1/models'"
+
+  - id: HF-SVC-042
+    name: "fetchHiggsfield respects FETCH_TIMEOUT_MS (5s)"
+    type: unit
+    priority: P1
+    file: model-discovery.test.ts
+    mock: "fetch hangs indefinitely"
+    assertions:
+      - "throws after ~5000ms"
+      - "AbortController signal fires"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # ENV CONFIG PARSING
+  # File: src/lib/ai-engine/config/__tests__/engine-config.test.ts
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-SVC-050
+    name: "getEngineConfig populates apiKeys.higgsfield from env"
+    type: unit
+    priority: P0
+    file: engine-config.test.ts
+    setup: "AI_ENGINE_HIGGSFIELD_API_KEY = 'hf-from-env'"
+    assertions:
+      - "config.apiKeys.higgsfield === 'hf-from-env'"
+
+  - id: HF-SVC-051
+    name: "getEngineConfig sets apiKeys.higgsfield to undefined when env var absent"
+    type: unit
+    priority: P0
+    file: engine-config.test.ts
+    setup: "AI_ENGINE_HIGGSFIELD_API_KEY not set"
+    assertions:
+      - "config.apiKeys.higgsfield === undefined"
+
+  - id: HF-SVC-052
+    name: "env schema accepts AI_ENGINE_DEFAULT_IMAGE_PROVIDER='higgsfield'"
+    type: unit
+    priority: P0
+    file: env.test.ts
+    assertions:
+      - "Zod parse succeeds"
+      - "env.AI_ENGINE_DEFAULT_IMAGE_PROVIDER === 'higgsfield'"
+
+  - id: HF-SVC-053
+    name: "env schema accepts AI_ENGINE_DEFAULT_VIDEO_PROVIDER='higgsfield'"
+    type: unit
+    priority: P0
+    file: env.test.ts
+    assertions:
+      - "Zod parse succeeds"
+      - "env.AI_ENGINE_DEFAULT_VIDEO_PROVIDER === 'higgsfield'"
+
+  - id: HF-SVC-054
+    name: "ProviderType.parse('higgsfield') succeeds"
+    type: unit
+    priority: P0
+    file: types.test.ts
+    assertions:
+      - "returns 'higgsfield'"
+      - "no ZodError thrown"
+
+  - id: HF-SVC-055
+    name: "ProviderType.parse('higsfield') fails (typo)"
+    type: unit
+    priority: P2
+    file: types.test.ts
+    assertions:
+      - "throws ZodError"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # PROVIDER LISTING
+  # File: src/app/api/admin/ai-engine/config/providers/__tests__/route.test.ts
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-SVC-060
+    name: "GET /providers includes Higgsfield in default providers list"
+    type: unit
+    priority: P0
+    file: providers-route.test.ts
+    setup: "No DB providers (uses getDefaultProviders fallback)"
+    assertions:
+      - "response.providers includes entry with providerType='higgsfield'"
+      - "entry.name === 'Higgsfield AI'"
+      - "entry.capabilities === ['image', 'video']"
+      - "entry.priority === 15"
+
+  - id: HF-SVC-061
+    name: "GET /providers sets configured=true when AI_ENGINE_HIGGSFIELD_API_KEY is set"
+    type: unit
+    priority: P0
+    file: providers-route.test.ts
+    setup: "AI_ENGINE_HIGGSFIELD_API_KEY = 'hf-key'"
+    assertions:
+      - "higgsfield entry.configured === true"
+
+  - id: HF-SVC-062
+    name: "GET /providers sets configured=false when AI_ENGINE_HIGGSFIELD_API_KEY is absent"
+    type: unit
+    priority: P0
+    file: providers-route.test.ts
+    setup: "AI_ENGINE_HIGGSFIELD_API_KEY not set"
+    assertions:
+      - "higgsfield entry.configured === false"
+
+  - id: HF-SVC-063
+    name: "GET /providers/models?provider=higgsfield returns static models"
+    type: unit
+    priority: P0
+    file: providers-models-route.test.ts
+    assertions:
+      - "response.models includes 'higgsfield-diffusion-v2'"
+      - "response.models includes 'higgsfield-video-v1'"
+      - "response.source === 'fallback'"
+
+  - id: HF-SVC-064
+    name: "GET /providers/models?provider=higgsfield&capability=image filters to image models"
+    type: unit
+    priority: P1
+    file: providers-models-route.test.ts
+    assertions:
+      - "all returned models have role 'image'"
+      - "no video models in response"
+
+  - id: HF-SVC-065
+    name: "GET /providers/models?provider=higgsfield&capability=video filters to video models"
+    type: unit
+    priority: P1
+    file: providers-models-route.test.ts
+    assertions:
+      - "all returned models have role 'video'"
+      - "no image models in response"
+
+# ─────────────────────────────────────────────────────────────────────
+# Summary
+# ─────────────────────────────────────────────────────────────────────
+#
+# Total scenarios: 36
+# By priority:
+#   P0: 19 (must-pass for merge)
+#   P1: 10 (expected for release)
+#   P2:  7 (nice to have)
+#
+# By service:
+#   api-key-validator:   9
+#   api-key-manager:    11
+#   model-discovery:    13
+#   env/config:          6
+#   providers API:       6
+#
+# Note: Some scenarios overlap with adapter/scenarios.yaml (e.g., HF-ADAPT-018
+# tests missing API key from the adapter side, while HF-SVC-015 tests it from
+# the manager side). Both are necessary to ensure each layer handles the case.

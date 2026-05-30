@@ -1,0 +1,135 @@
+@startuml Knowledge Edit - Data Flow
+
+title Flux de donnees : Mise a jour d'un document avec re-chunking
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+
+actor "Admin UI\n(KnowledgeBasePage)" as UI
+participant "DocumentEditDialog" as DlgEdit
+participant "ConfirmReChunkDialog" as DlgConfirm
+participant "Next.js API Route\nPATCH [slug]/documents/[docId]" as API
+participant "requireAdminApi()" as Auth
+participant "Zod Validation" as Zod
+participant "getCollection()" as GetCol
+participant "updateDocument()" as SvcUpdate
+database "PostgreSQL\n(Drizzle Transaction)" as DB
+participant "RecursiveCharacterTextSplitter\n(@langchain/textsplitters)" as Splitter
+participant "OpenAI API\ntext-embedding-3-small" as OpenAI
+participant "updateCollectionCounts()" as Counts
+
+== Phase 1 : Ouverture du formulaire d'edition ==
+
+UI -> API : GET /knowledge/{slug}/documents/{docId}
+API -> Auth : Verifier session admin
+Auth --> API : OK (adminId)
+API -> GetCol : getCollection(slug)
+GetCol -> DB : SELECT * FROM collection WHERE slug = ?
+DB --> GetCol : CollectionRow
+GetCol --> API : collection
+API -> DB : SELECT * FROM document\nWHERE id = docId AND collection_id = ?
+DB --> API : DocumentDetail (avec contentText)
+API --> UI : 200 { document: { id, title, contentText, ... } }
+
+UI -> DlgEdit : Afficher le formulaire\npre-rempli (title, content)
+
+== Phase 2 : Modification par l'utilisateur ==
+
+DlgEdit -> DlgEdit : L'utilisateur modifie\nle titre et/ou le contenu
+
+DlgEdit -> DlgEdit : handleSaveDocument()\nDetecte que le contenu est modifie
+
+alt Contenu modifie (content !== originalContent)
+    DlgEdit -> DlgConfirm : Afficher la confirmation\n"X chunks seront re-generes"
+    DlgConfirm --> DlgEdit : Utilisateur confirme
+end
+
+== Phase 3 : Envoi de la requete PATCH ==
+
+DlgEdit -> UI : handleSaveDocument() (confirme)
+UI -> API : PATCH /knowledge/{slug}/documents/{docId}\n{ title: "...", content: "..." }
+
+API -> Auth : Verifier session admin
+Auth --> API : OK
+
+API -> Zod : Valider le body\nz.object({ title?, content? })
+Zod --> API : Donnees validees
+
+API -> GetCol : getCollection(slug)
+GetCol --> API : collection (ou 404)
+
+API -> SvcUpdate : updateDocument(docId, collectionId, { title, content })
+
+== Phase 4 : Re-chunking transactionnel ==
+
+SvcUpdate -> SvcUpdate : needsReChunk = true\n(content fourni)
+
+SvcUpdate -> OpenAI : Verifier disponibilite\n(getEmbeddings())
+OpenAI --> SvcUpdate : OK (embeddings instance)
+
+group Transaction PostgreSQL [ATOMIQUE]
+
+    SvcUpdate -> DB : DELETE FROM ai_engine_knowledge_chunk\nWHERE document_id = '{docId}'
+    DB --> SvcUpdate : N rows deleted
+
+    SvcUpdate -> DB : UPDATE ai_engine_knowledge_document\nSET title = ?, content_text = ?,\nupdated_at = NOW()\nWHERE id = '{docId}'
+    DB --> SvcUpdate : 1 row updated
+
+    SvcUpdate -> Splitter : splitText(newContent)\nchunkSize=1000, overlap=200
+    Splitter --> SvcUpdate : string[] chunks (ex: 5 chunks)
+
+    loop Pour chaque batch de 100 chunks
+        SvcUpdate -> OpenAI : embedDocuments(batch)\n1536 dimensions
+        OpenAI --> SvcUpdate : float[][] vectors
+        SvcUpdate -> DB : INSERT INTO ai_engine_knowledge_chunk\n(collection_id, document_id,\ncontent, embedding, metadata)\nVALUES (...)
+        DB --> SvcUpdate : Chunks inseres
+    end
+
+    SvcUpdate -> DB : UPDATE ai_engine_knowledge_document\nSET chunk_count = {totalChunks}\nWHERE id = '{docId}'
+    DB --> SvcUpdate : OK
+
+end
+
+note over DB : COMMIT si tout OK\nROLLBACK si erreur
+
+== Phase 5 : Mise a jour des compteurs ==
+
+SvcUpdate -> Counts : updateCollectionCounts(collectionId)
+Counts -> DB : SELECT count(*) FROM documents\nWHERE collection_id = ?
+DB --> Counts : documentCount
+Counts -> DB : SELECT count(*) FROM chunks\nWHERE collection_id = ?
+DB --> Counts : chunkCount
+Counts -> DB : UPDATE collection\nSET document_count = ?,\nchunk_count = ?,\nlast_indexed_at = NOW()
+DB --> Counts : OK
+Counts --> SvcUpdate : OK
+
+SvcUpdate --> API : { success: true,\nchunkCount: 5,\nreChunked: true }
+
+== Phase 6 : Reponse a l'UI ==
+
+API --> UI : 200 {\n  success: true,\n  chunkCount: 5,\n  reChunked: true\n}
+
+UI -> DlgEdit : Fermer la modale
+UI -> UI : setIngestSuccess("Document mis a jour\navec 5 chunks re-generes")
+UI -> API : GET /knowledge (rafraichir la liste)
+API --> UI : { collections: [...] }
+UI -> API : GET /knowledge/{slug}/documents\n(rafraichir les documents)
+API --> UI : { documents: [...] }
+
+== Scenario d'erreur : Echec OpenAI ==
+
+note over OpenAI : Si l'API OpenAI\nechoue pendant\nl'embedding
+
+SvcUpdate -[#red]-> OpenAI : embedDocuments(batch)
+OpenAI -[#red]-> SvcUpdate : Error: Rate limit exceeded
+
+note over DB #FFcccc : ROLLBACK automatique\nLes anciens chunks sont preserves
+
+SvcUpdate --> API : { success: false,\nerror: "Rate limit exceeded",\nchunkCount: 0,\nreChunked: false }
+
+API --> UI : 500 {\n  error: "Update failed",\n  detail: "Rate limit exceeded"\n}
+
+UI -> DlgEdit : Afficher l'erreur\ndans la modale\n(formulaire reste ouvert)
+
+@enduml

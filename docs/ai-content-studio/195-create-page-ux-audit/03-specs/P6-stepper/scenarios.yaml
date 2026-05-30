@@ -1,0 +1,228 @@
+feature: P6-stepper
+component: CreateStepper
+file: apps/web/src/components/admin/content-studio-v2/ai-engine/CreateStepper.tsx
+
+scenarios:
+  - id: P6-001
+    name: "Stepper renders 4 steps"
+    type: component
+    priority: P0
+    given: "CreateStepper is rendered with currentPhase='brief' and completedPhases=[]"
+    steps:
+      - "Render <CreateStepper currentPhase='brief' completedPhases={[]} />"
+      - "Query all step circle elements"
+    expected: "4 step circles are visible with labels Brief, Generation, Review, Publication"
+    assertions:
+      - "screen.getAllByRole('listitem') has length 4"
+      - "screen.getByText('Brief') is visible"
+      - "screen.getByText('Generation') is visible"
+      - "screen.getByText('Review') is visible"
+      - "screen.getByText('Publication') is visible"
+
+  - id: P6-002
+    name: "Active step has accent background"
+    type: component
+    priority: P0
+    given: "currentPhase is 'brief'"
+    steps:
+      - "Render <CreateStepper currentPhase='brief' completedPhases={[]} />"
+      - "Check the first step circle style"
+    expected: "Step 1 circle has accent background color and white text"
+    assertions:
+      - "Step 1 circle has backgroundColor matching --cs-accent"
+      - "Step 1 number text has white color"
+
+  - id: P6-003
+    name: "Completed step shows checkmark"
+    type: component
+    priority: P0
+    given: "currentPhase is 'generating' and completedPhases includes 'brief'"
+    steps:
+      - "Render <CreateStepper currentPhase='generating' completedPhases={['brief']} />"
+      - "Check step 1 visual state"
+    expected: "Step 1 shows a check icon with success color, step 2 is active"
+    assertions:
+      - "Step 1 circle contains Check icon SVG"
+      - "Step 1 circle has backgroundColor matching --cs-success"
+      - "Step 2 circle has backgroundColor matching --cs-accent"
+
+  - id: P6-004
+    name: "Future steps have gray border"
+    type: component
+    priority: P0
+    given: "currentPhase is 'brief'"
+    steps:
+      - "Render <CreateStepper currentPhase='brief' completedPhases={[]} />"
+      - "Check steps 2, 3, 4 visual state"
+    expected: "Steps 2-4 have gray border and muted number color"
+    assertions:
+      - "Steps 2-4 circles have border-color matching --cs-border"
+      - "Steps 2-4 numbers have color matching --cs-fg-muted"
+
+  - id: P6-005
+    name: "Phase mapping brief to step 1"
+    type: component
+    priority: P0
+    given: "currentPhase is 'brief'"
+    steps:
+      - "Render with currentPhase='brief'"
+    expected: "Step 1 is active, steps 2-4 are future"
+    assertions:
+      - "Step 1 has aria-current='step'"
+      - "Steps 2-4 do not have aria-current"
+
+  - id: P6-006
+    name: "Phase mapping generating to step 2"
+    type: component
+    priority: P0
+    given: "currentPhase is 'generating', completedPhases=['brief']"
+    steps:
+      - "Render with currentPhase='generating'"
+    expected: "Step 1 is completed, step 2 is active, steps 3-4 are future"
+    assertions:
+      - "Step 1 has check icon"
+      - "Step 2 has aria-current='step'"
+      - "Steps 3-4 are future state"
+
+  - id: P6-007
+    name: "Phase mapping review to step 3"
+    type: component
+    priority: P0
+    given: "currentPhase is 'review', completedPhases=['brief','generating']"
+    steps:
+      - "Render with currentPhase='review'"
+    expected: "Steps 1-2 completed, step 3 active, step 4 future"
+    assertions:
+      - "Steps 1-2 have check icons"
+      - "Step 3 has aria-current='step'"
+      - "Step 4 is future state"
+
+  - id: P6-008
+    name: "Phase mapping reviewing to step 3 (same as review)"
+    type: component
+    priority: P1
+    given: "currentPhase is 'reviewing', completedPhases=['brief','generating']"
+    steps:
+      - "Render with currentPhase='reviewing'"
+    expected: "Step 3 is active (same as review phase)"
+    assertions:
+      - "Step 3 has aria-current='step'"
+
+  - id: P6-009
+    name: "Phase mapping result to step 4"
+    type: component
+    priority: P0
+    given: "currentPhase is 'result', completedPhases=['brief','generating','review']"
+    steps:
+      - "Render with currentPhase='result'"
+    expected: "Steps 1-3 completed, step 4 active"
+    assertions:
+      - "Steps 1-3 have check icons"
+      - "Step 4 has aria-current='step'"
+
+  - id: P6-010
+    name: "Error state shows red border on current step"
+    type: component
+    priority: P0
+    given: "currentPhase is 'error', hasError=true, completedPhases=['brief']"
+    steps:
+      - "Render with currentPhase='error' and hasError=true"
+    expected: "Step 2 (last known) has red/error border and AlertTriangle icon"
+    assertions:
+      - "The step at the last known position has border-color matching --cs-danger"
+      - "Error step circle contains AlertTriangle icon"
+
+  - id: P6-011
+    name: "Error on first step (no completedPhases)"
+    type: component
+    priority: P1
+    given: "currentPhase is 'error', hasError=true, completedPhases=[]"
+    steps:
+      - "Render with currentPhase='error' and completedPhases=[]"
+    expected: "Step 1 shows error state"
+    assertions:
+      - "Step 1 has error visual state (red border)"
+
+  - id: P6-012
+    name: "Connecting lines are green for completed steps"
+    type: component
+    priority: P1
+    given: "currentPhase is 'review', completedPhases=['brief','generating']"
+    steps:
+      - "Render and inspect connecting line between step 1 and step 2"
+    expected: "Line between step 1 and step 2 has success color"
+    assertions:
+      - "Line element has backgroundColor matching --cs-success"
+
+  - id: P6-013
+    name: "Connecting lines are gray for future steps"
+    type: component
+    priority: P1
+    given: "currentPhase is 'brief', completedPhases=[]"
+    steps:
+      - "Render and inspect connecting lines"
+    expected: "All lines have border/gray color"
+    assertions:
+      - "All line elements have backgroundColor matching --cs-border"
+
+  - id: P6-014
+    name: "Responsive -- labels hidden on mobile"
+    type: component
+    priority: P1
+    given: "Viewport width is 375px"
+    steps:
+      - "Render CreateStepper in a 375px wide container"
+      - "Check visibility of label elements"
+    expected: "Step labels are not visible, only icons/numbers are shown"
+    assertions:
+      - "Label elements have CSS display:none at viewport < 640px"
+
+  - id: P6-015
+    name: "Icons are correct for each step"
+    type: component
+    priority: P1
+    given: "CreateStepper rendered"
+    steps:
+      - "Render and inspect each step's icon"
+    expected: "Step 1 has FileText, step 2 has Sparkles, step 3 has Eye, step 4 has Send"
+    assertions:
+      - "Each step renders the correct lucide icon"
+
+  - id: P6-016
+    name: "Navigation aria attributes are correct"
+    type: component
+    priority: P1
+    given: "CreateStepper rendered with currentPhase='generating'"
+    steps:
+      - "Render and check ARIA roles"
+    expected: "Container has role=navigation with correct aria-label"
+    assertions:
+      - "Container has role='navigation'"
+      - "Container has aria-label='Progression de la creation'"
+
+  - id: P6-017
+    name: "Transition from brief to generating updates stepper"
+    type: integration
+    priority: P0
+    given: "AIEngineCreatePage is rendered, user has filled the brief"
+    steps:
+      - "Fill brief form with valid data"
+      - "Click 'Generer' button"
+    expected: "Stepper transitions: step 1 becomes completed, step 2 becomes active"
+    assertions:
+      - "Step 1 shows checkmark icon"
+      - "Step 2 has aria-current='step'"
+
+  - id: P6-018
+    name: "handleReset resets stepper to step 1"
+    type: integration
+    priority: P0
+    given: "User is on result phase"
+    steps:
+      - "Simulate reaching result phase"
+      - "Click 'Modifier le brief' button (handleReset)"
+    expected: "Stepper resets to step 1 active, all others future, completedPhases empty"
+    assertions:
+      - "Step 1 has aria-current='step'"
+      - "Steps 2-4 are in future state"
+      - "No completed checkmarks visible"

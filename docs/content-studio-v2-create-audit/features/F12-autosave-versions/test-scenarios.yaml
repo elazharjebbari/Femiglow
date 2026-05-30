@@ -1,0 +1,23 @@
+feature: F12-autosave-versions
+
+unit:
+  - name: useDraftAutosave debounces 1500ms
+    when: patch called 3× rapidly
+    expect: 1 fetch fired after 1500ms
+  - name: flush triggers immediate save
+    when: flush() called after patch
+    expect: immediate fetch, no waiting
+  - name: isDirty true after patch, false after save
+  - name: status transitions saving → saved on 200
+
+component:
+  - name: AutosaveIndicator renders all states
+    expect: idle, saving spinner, saved checkmark, error red
+
+contract:
+  - name: PATCH /drafts/:id 409 conflict
+    given: stale state
+    expect: 409 with error.code='version_conflict'
+  - name: PATCH /drafts/:id 401
+    given: session expired
+    expect: 401, frontend sets status='session_expired'

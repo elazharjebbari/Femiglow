@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Sparkles,
   Image as ImageIcon,
+  Film,
   BookOpen,
   Send,
   Calendar,
@@ -35,6 +36,7 @@ export interface GenerationResultData {
   caption?: string;
   hashtags?: string[];
   images?: string[];
+  videos?: string[];
   qualityScores?: Record<string, number>;
   costBreakdown?: { label: string; amountCents: number }[];
   totalCostCents?: number;
@@ -210,6 +212,8 @@ function PublishSection({ draftId }: { draftId: string }) {
   const [publishState, setPublishState] = useState<PublishState>('idle');
   const [publishMessage, setPublishMessage] = useState('');
 
+  const isMock = draftId.startsWith('mock-') || draftId.includes('test');
+
   const canPublish =
     publishState !== 'publishing' &&
     (mode === 'now' || (mode === 'schedule' && scheduledAt.trim().length > 0));
@@ -255,6 +259,7 @@ function PublishSection({ draftId }: { draftId: string }) {
   return (
     <div
       style={{
+        position: 'relative',
         background: 'var(--cs-bg-elevated)',
         border: '1px solid var(--cs-border-hair)',
         borderRadius: 'var(--cs-radius-md)',
@@ -262,6 +267,23 @@ function PublishSection({ draftId }: { draftId: string }) {
         boxShadow: 'var(--cs-shadow-sm)',
       }}
     >
+      {isMock && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            padding: '2px 8px',
+            borderRadius: 'var(--cs-radius-sm)',
+            background: 'rgba(245, 158, 11, 0.12)',
+            color: '#f59e0b',
+            fontSize: 'var(--cs-text-xs)',
+            fontWeight: 500,
+          }}
+        >
+          Mode Mock
+        </span>
+      )}
       <h4
         className="cs-display"
         style={{
@@ -420,7 +442,7 @@ const QUALITY_LABELS: Record<string, string> = {
 };
 
 export function GenerationResult({ result, contentStudioUrl, bridgeResult, onUse, onRegenerate, regenerating }: GenerationResultProps) {
-  const { script, caption, hashtags, images, qualityScores, costBreakdown, totalCostCents } = result;
+  const { script, caption, hashtags, images, videos, qualityScores, costBreakdown, totalCostCents } = result;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -570,6 +592,35 @@ export function GenerationResult({ result, contentStudioUrl, bridgeResult, onUse
                         height: '100%',
                         objectFit: 'cover',
                         display: 'block',
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {videos && videos.length > 0 && (
+            <CollapsibleSection title={`Vidéos (${videos.length})`} icon={<Film size={14} />} defaultOpen>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {videos.map((src, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      borderRadius: 'var(--cs-radius)',
+                      overflow: 'hidden',
+                      border: '1px solid var(--cs-border-hair)',
+                      background: 'var(--cs-bg-sunken)',
+                    }}
+                  >
+                    <video
+                      src={src}
+                      controls
+                      style={{
+                        width: '100%',
+                        maxHeight: 400,
+                        display: 'block',
+                        background: '#000',
                       }}
                     />
                   </div>

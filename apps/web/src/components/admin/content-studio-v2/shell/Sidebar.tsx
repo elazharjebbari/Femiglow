@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Sparkles, LayoutGrid, CalendarDays, ExternalLink, Cpu, TrendingUp, Settings, BarChart3 } from 'lucide-react';
+import { Home, Sparkles, LayoutGrid, CalendarDays, ExternalLink, Cpu, TrendingUp, Settings, BarChart3, BookOpen } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -22,10 +22,11 @@ const NAV: NavItem[] = [
 ];
 
 const AI_SUBNAV: NavItem[] = [
-  { href: '/admin/content-studio-v2/ai-engine/create',    label: 'Générer',      icon: <Sparkles size={14} /> },
-  { href: '/admin/content-studio-v2/ai-engine/trends',    label: 'Veille',       icon: <TrendingUp size={14} /> },
-  { href: '/admin/content-studio-v2/ai-engine/analytics', label: 'Métriques',    icon: <BarChart3 size={14} /> },
-  { href: '/admin/content-studio-v2/ai-engine/config',    label: 'Config',       icon: <Settings size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/create',    label: 'Générer',       icon: <Sparkles size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/knowledge', label: 'Connaissances', icon: <BookOpen size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/trends',    label: 'Veille',        icon: <TrendingUp size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/analytics', label: 'Métriques',     icon: <BarChart3 size={14} /> },
+  { href: '/admin/content-studio-v2/ai-engine/config',    label: 'Config',        icon: <Settings size={14} /> },
 ];
 
 export function Sidebar() {

@@ -14,6 +14,7 @@ export async function GET(): Promise<Response> {
       mode: db() ? 'drizzle' : 'memory',
       enabled: env.CONTENT_STUDIO_ENABLED === 'true',
       version: 'P3',
+      mockMode: env.CONTENT_STUDIO_V2_MOCK_MODE === 'true',
     });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

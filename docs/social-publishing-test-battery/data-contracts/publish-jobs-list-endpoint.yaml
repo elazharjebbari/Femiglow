@@ -1,0 +1,30 @@
+endpoint:
+  method: GET
+  path: /api/admin/content-studio/publish-jobs
+
+query_parameters:
+  status: { type: string, optional: true }
+  accountId: { type: string, optional: true }
+  postId: { type: string, optional: true }
+  limit: { type: integer, default: 50, max: 200 }
+  offset: { type: integer, default: 0 }
+
+response_200:
+  schema:
+    jobs:
+      type: array
+      items: PublishJob
+    pagination:
+      limit: integer
+      offset: integer
+      nextOffset: integer | null
+      hasMore: boolean
+    count: integer
+
+ordering:
+  default: createdAt DESC
+  fields: createdAt, scheduledAt, status
+
+filters:
+  status: ['queued', 'publishing', 'published', 'failed', 'cancelled']
+  scope: last 7 days by default (configurable)

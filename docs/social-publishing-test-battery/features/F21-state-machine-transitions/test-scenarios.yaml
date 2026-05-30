@@ -1,0 +1,40 @@
+feature: F21-state-machine-transitions
+critical: P0
+
+unit:
+  - id: F21-U-valid-1
+    name: draft → approved
+    expect: returns true
+  - id: F21-U-valid-2
+    name: queued → publishing
+  - id: F21-U-valid-3
+    name: publishing → published
+  - id: F21-U-valid-4
+    name: publishing → failed
+  - id: F21-U-valid-5
+    name: failed → queued (retry)
+  - id: F21-U-valid-6
+    name: failed → cancelled
+  - id: F21-U-valid-7
+    name: queued → cancelled
+  - id: F21-U-valid-8
+    name: approved → cancelled
+  - id: F21-U-valid-9
+    name: queued → failed (pre-flight fail)
+  - id: F21-U-valid-10
+    name: same state idempotent
+  - id: F21-U-invalid-1
+    name: published → anything → false
+    table:
+      - published → queued
+      - published → publishing
+      - published → failed
+      - published → cancelled
+  - id: F21-U-invalid-2
+    name: cancelled → anything → false
+  - id: F21-U-invalid-3
+    name: queued → published (skipping publishing) → false
+  - id: F21-U-invalid-4
+    name: draft → published → false
+  - id: F21-U-invalid-5
+    name: approved → publishing (skipping queued) → false

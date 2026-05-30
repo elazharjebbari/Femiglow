@@ -11,10 +11,17 @@ import type {
 } from '../contracts';
 import { SocialPublishingError, redactProviderPayload, toPublishFailure } from '../errors';
 
+// Aligné sur les capabilities Postiz : Instagram supporte post / carousel / reel
+// / story. Sans ces deux derniers, la publication vidéo (reel/story) échouait
+// en 409 « Le compte social ne supporte pas ce format » en environnement mock.
 const CAPABILITIES: SocialPublishingCapability[] = [
   { platform: 'instagram', format: 'post', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
   { platform: 'instagram', format: 'carousel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'instagram', format: 'reel', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
+  { platform: 'instagram', format: 'story', mediaRequired: true, maxCaptionLength: 2200, supportsScheduling: true, supportsDraft: true },
   { platform: 'facebook', format: 'post', mediaRequired: false, maxCaptionLength: 63206, supportsScheduling: true, supportsDraft: true },
+  { platform: 'facebook', format: 'reel', mediaRequired: true, maxCaptionLength: 63206, supportsScheduling: true, supportsDraft: true },
+  { platform: 'facebook', format: 'story', mediaRequired: true, maxCaptionLength: 63206, supportsScheduling: true, supportsDraft: true },
 ];
 
 export class DryRunSocialPublishingAdapter implements SocialPublishingAdapter {

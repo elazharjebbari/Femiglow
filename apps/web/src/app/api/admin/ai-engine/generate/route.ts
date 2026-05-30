@@ -12,11 +12,11 @@ export const maxDuration = 120;
 
 const generateRequestSchema = z.object({
   platform: z.enum(['instagram', 'facebook', 'tiktok', 'pinterest', 'youtube', 'linkedin', 'twitter', 'threads']),
-  format: z.enum(['post', 'story', 'reel', 'carousel', 'short', 'pin', 'article']),
+  format: z.enum(['post', 'story', 'reel', 'carousel', 'short', 'pin', 'article', 'single_image', 'text_post', 'infographic']),
   contentType: z.string().min(1),
   briefInput: z.object({
-    objective: z.enum(['awareness', 'engagement', 'conversion', 'education', 'entertainment']),
-    tone: z.enum(['professional', 'casual', 'playful', 'luxurious', 'educational', 'inspiring']).optional(),
+    objective: z.enum(['awareness', 'engagement', 'conversion', 'education', 'entertainment', 'loyalty', 'ugc']),
+    tone: z.enum(['professional', 'casual', 'playful', 'luxurious', 'educational', 'inspiring', 'empowering', 'authentic', 'urgent']).optional(),
     targetAudience: z.string().optional(),
     productFocus: z.string().optional(),
     keyMessage: z.string().min(1),
@@ -29,6 +29,66 @@ const generateRequestSchema = z.object({
   ideaId: z.string().uuid().optional(),
   workflowId: z.string().uuid().optional(),
 });
+
+// Flat schema matching the create page's form submission
+const generateRequestFlat = z.object({
+  objective: z.string().min(1),
+  platform: z.string().min(1),
+  format: z.string().min(1),
+  tone: z.string().min(1),
+  keyMessage: z.string().min(1),
+  productFocus: z.string().optional(),
+  trendReference: z.string().optional(),
+  model: z.string().optional(),
+  temperature: z.number().optional(),
+  maxTokens: z.number().optional(),
+  imageEnabled: z.boolean().optional(),
+  imageModel: z.string().optional(),
+  videoEnabled: z.boolean().optional(),
+  videoModel: z.string().optional(),
+  humanReviewRequired: z.boolean().optional(),
+});
+
+/**
+ * Normalise incoming request body. Accepts EITHER the original nested
+ * schema (used by programmatic callers / tests) OR the flat schema
+ * that the create-page form sends.
+ */
+function normalizeRequest(body: unknown) {
+  // Try the original nested schema first
+  const nested = generateRequestSchema.safeParse(body);
+  if (nested.success) return nested.data;
+
+  // Try the flat schema from the create page
+  const flat = generateRequestFlat.safeParse(body);
+  if (flat.success) {
+    const d = flat.data;
+    return {
+      platform: d.platform as z.infer<typeof generateRequestSchema>['platform'],
+      format: d.format as z.infer<typeof generateRequestSchema>['format'],
+      contentType: d.format, // derive contentType from format
+      briefInput: {
+        objective: d.objective as z.infer<typeof generateRequestSchema>['briefInput']['objective'],
+        tone: d.tone as z.infer<typeof generateRequestSchema>['briefInput']['tone'],
+        keyMessage: d.keyMessage,
+        productFocus: d.productFocus,
+        trendReference: d.trendReference,
+      },
+      // Pass through generation config (consumed downstream by engine state)
+      model: d.model,
+      temperature: d.temperature,
+      maxTokens: d.maxTokens,
+      imageEnabled: d.imageEnabled,
+      imageModel: d.imageModel,
+      videoEnabled: d.videoEnabled,
+      videoModel: d.videoModel,
+      humanReviewRequired: d.humanReviewRequired,
+    };
+  }
+
+  // Both schemas failed — throw the original nested error for richer messages
+  return generateRequestSchema.parse(body);
+}
 
 export async function POST(request: Request): Promise<Response> {
   try {
@@ -43,7 +103,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const body = await request.json();
-    const parsed = generateRequestSchema.parse(body);
+    const parsed = normalizeRequest(body);
 
     const result = await runGeneration(parsed);
 

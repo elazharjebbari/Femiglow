@@ -9,11 +9,11 @@ export interface EngineConfig {
       model: string;
     };
     image: {
-      default: 'openai' | 'google' | 'stability' | 'mock';
+      default: 'openai' | 'google' | 'stability' | 'higgsfield' | 'mock';
       model: string;
     };
     video: {
-      default: 'google' | 'runway' | 'mock';
+      default: 'google' | 'runway' | 'higgsfield' | 'mock';
     };
     tts: {
       default: 'elevenlabs' | 'openai' | 'google' | 'mock';
@@ -25,6 +25,7 @@ export interface EngineConfig {
     anthropic: string | undefined;
     google: string | undefined;
     elevenlabs: string | undefined;
+    higgsfield: string | undefined;
     ollamaBaseUrl: string | undefined;
   };
 
@@ -75,6 +76,7 @@ export function getEngineConfig(): EngineConfig {
       anthropic: env.AI_ENGINE_ANTHROPIC_API_KEY || env.CHAT_ANTHROPIC_API_KEY || undefined,
       google: env.AI_ENGINE_GOOGLE_API_KEY || env.CHAT_GEMINI_API_KEY || undefined,
       elevenlabs: env.AI_ENGINE_ELEVENLABS_API_KEY || undefined,
+      higgsfield: env.AI_ENGINE_HIGGSFIELD_API_KEY || undefined,
       ollamaBaseUrl: env.AI_ENGINE_OLLAMA_BASE_URL || env.CHAT_OLLAMA_BASE_URL || undefined,
     },
 

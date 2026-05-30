@@ -1,0 +1,224 @@
+feature: P3-review-toggle
+component: AIEngineCreatePage (review flow)
+files:
+  - apps/web/src/app/admin/content-studio-v2/ai-engine/create/page.tsx
+  - apps/web/src/test/msw/ai-engine-handlers.ts
+
+scenarios:
+  - id: P3-001
+    name: "Toggle enabled sends humanReviewRequired=true in body"
+    type: integration
+    priority: P0
+    given: "AIEngineCreatePage rendered, brief form filled"
+    steps:
+      - "Open advanced params section"
+      - "Enable 'Review humaine avant publication' toggle"
+      - "Click 'Generer'"
+    expected: "POST /generate body includes humanReviewRequired: true"
+    assertions:
+      - "fetch was called with body containing humanReviewRequired: true"
+
+  - id: P3-002
+    name: "Toggle disabled sends humanReviewRequired=false in body"
+    type: integration
+    priority: P0
+    given: "AIEngineCreatePage rendered, brief form filled, toggle is off"
+    steps:
+      - "Leave the review toggle in default off state"
+      - "Click 'Generer'"
+    expected: "POST /generate body includes humanReviewRequired: false"
+    assertions:
+      - "fetch was called with body containing humanReviewRequired: false"
+
+  - id: P3-003
+    name: "Mock handler returns review status when flag is true"
+    type: unit
+    priority: P0
+    given: "MSW handler for POST /generate is active"
+    steps:
+      - "Send POST /generate with body { humanReviewRequired: true, ... }"
+    expected: "Response has status: 'review' and includes reviewPayload"
+    assertions:
+      - "response.status === 'review'"
+      - "response.reviewPayload is defined"
+      - "response.reviewPayload.script is defined"
+
+  - id: P3-004
+    name: "Mock handler returns completed status when flag is false"
+    type: unit
+    priority: P0
+    given: "MSW handler for POST /generate is active"
+    steps:
+      - "Send POST /generate with body { humanReviewRequired: false, ... }"
+    expected: "Response has status: 'completed'"
+    assertions:
+      - "response.status === 'completed'"
+
+  - id: P3-005
+    name: "Review phase activates with mock payload content"
+    type: integration
+    priority: P0
+    given: "Toggle is enabled, form is submitted"
+    steps:
+      - "Enable review toggle"
+      - "Click Generer"
+      - "Wait for simulation to complete"
+    expected: "ReviewPanel appears with FemiGlow mock content"
+    assertions:
+      - "Phase transitions to 'review'"
+      - "ReviewPanel is visible in the DOM"
+      - "screen.getByText(/Revue humaine requise/) is visible"
+
+  - id: P3-006
+    name: "Mock review payload contains realistic FemiGlow script"
+    type: unit
+    priority: P0
+    given: "MOCK_REVIEW_PAYLOAD is defined in ai-engine-handlers.ts"
+    steps:
+      - "Inspect MOCK_REVIEW_PAYLOAD.reviewPayload.script"
+    expected: "Script has hook, 3 scenes, and cta with FemiGlow brand content"
+    assertions:
+      - "script.hook contains 'FemiGlow' or 'japonais' or 'ongles'"
+      - "script.scenes has length >= 3"
+      - "script.cta is a non-empty string"
+      - "Each scene has sceneNumber, narration, and durationSeconds"
+
+  - id: P3-007
+    name: "Mock review payload contains realistic caption"
+    type: unit
+    priority: P0
+    given: "MOCK_REVIEW_PAYLOAD is defined"
+    steps:
+      - "Inspect MOCK_REVIEW_PAYLOAD.reviewPayload.caption"
+    expected: "Caption is multi-line FemiGlow branded text"
+    assertions:
+      - "caption.length > 100"
+      - "caption includes 'FemiGlow'"
+      - "caption includes newline characters"
+
+  - id: P3-008
+    name: "Mock review payload contains hashtags"
+    type: unit
+    priority: P0
+    given: "MOCK_REVIEW_PAYLOAD is defined"
+    steps:
+      - "Inspect MOCK_REVIEW_PAYLOAD.reviewPayload.hashtags"
+    expected: "Hashtags array includes FemiGlow brand tags"
+    assertions:
+      - "hashtags.length >= 5"
+      - "hashtags includes '#FemiGlow'"
+      - "hashtags includes '#JBeauty'"
+      - "hashtags includes '#SoinDesOngles'"
+
+  - id: P3-009
+    name: "Mock review payload contains quality scores"
+    type: unit
+    priority: P1
+    given: "MOCK_REVIEW_PAYLOAD is defined"
+    steps:
+      - "Inspect MOCK_REVIEW_PAYLOAD.reviewPayload.qualityScores"
+    expected: "Quality scores include overall, creativity, and brandAlignment"
+    assertions:
+      - "qualityScores.overall === 0.82"
+      - "qualityScores.creativity === 0.78"
+      - "qualityScores.brandAlignment === 0.91"
+
+  - id: P3-010
+    name: "Approve decision transitions to result phase"
+    type: integration
+    priority: P0
+    given: "ReviewPanel is visible with mock payload"
+    steps:
+      - "Click 'Approuver' button"
+      - "Wait for review submission"
+    expected: "Phase transitions from 'review' to 'result', GenerationResult is displayed"
+    assertions:
+      - "Phase becomes 'result'"
+      - "GenerationResult component is visible"
+
+  - id: P3-011
+    name: "Reject decision shows feedback textarea"
+    type: integration
+    priority: P1
+    given: "ReviewPanel is visible"
+    steps:
+      - "Click 'Rejeter' button"
+    expected: "Feedback textarea appears with 'Raison du rejet' label"
+    assertions:
+      - "Textarea with label 'Raison du rejet' is visible"
+      - "Confirm and Cancel buttons appear"
+
+  - id: P3-012
+    name: "Edit requested decision shows modification textarea"
+    type: integration
+    priority: P1
+    given: "ReviewPanel is visible"
+    steps:
+      - "Click 'Demander des modifications' button"
+    expected: "Feedback textarea appears with 'Modifications demandees' label"
+    assertions:
+      - "Textarea with label 'Modifications demandees' is visible"
+
+  - id: P3-013
+    name: "Mock review images display in ReviewPanel"
+    type: integration
+    priority: P1
+    given: "ReviewPanel is visible with mock payload containing images"
+    steps:
+      - "Check the images section of ReviewPanel"
+    expected: "Images count badge shows 2, image containers are rendered"
+    assertions:
+      - "screen.getByText(/Images.*2/) is visible"
+      - "2 image containers are in the DOM"
+
+  - id: P3-014
+    name: "Toggle state persists across retry"
+    type: integration
+    priority: P1
+    given: "Toggle is enabled, generation completed, user clicks Regenerer"
+    steps:
+      - "Enable review toggle"
+      - "Submit and reach result"
+      - "Click Regenerer"
+    expected: "Toggle is still enabled for the new generation"
+    assertions:
+      - "humanReviewRequired state is still true"
+      - "POST /generate body still contains humanReviewRequired: true"
+
+  - id: P3-015
+    name: "Toggle state resets on handleReset"
+    type: integration
+    priority: P1
+    given: "Toggle is enabled, user is on error phase"
+    steps:
+      - "Click 'Modifier le brief'"
+    expected: "Toggle resets to default value (false)"
+    assertions:
+      - "humanReviewRequired state is false"
+
+  - id: P3-016
+    name: "Review cycle -- edit_requested returns new review payload"
+    type: integration
+    priority: P1
+    given: "ReviewPanel is visible, operator requests edits"
+    steps:
+      - "Click 'Demander des modifications'"
+      - "Type feedback text"
+      - "Click Confirmer"
+    expected: "New review payload is received, ReviewPanel refreshes"
+    assertions:
+      - "Phase remains 'review'"
+      - "POST /jobs/{jobId}/review was called with decision='edit_requested'"
+
+  - id: P3-017
+    name: "Mock moderation result is safe"
+    type: unit
+    priority: P2
+    given: "MOCK_REVIEW_PAYLOAD.reviewPayload.moderationResult"
+    steps:
+      - "Inspect moderation result"
+    expected: "safe is true, flags is empty, brandScore >= 80"
+    assertions:
+      - "moderationResult.safe === true"
+      - "moderationResult.flags.length === 0"
+      - "moderationResult.brandScore >= 80"

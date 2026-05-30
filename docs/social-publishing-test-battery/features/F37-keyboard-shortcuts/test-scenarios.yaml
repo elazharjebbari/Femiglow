@@ -1,0 +1,12 @@
+feature: F37-keyboard-shortcuts
+critical: P3
+
+e2e:
+  - id: F37-E-1
+    name: Cmd+S triggers flush
+  - id: F37-E-2
+    name: Esc closes publish dropdown
+  - id: F37-E-3
+    name: Esc closes confirm dialog
+  - id: F37-E-4
+    name: Tab order through PublishActionGroup

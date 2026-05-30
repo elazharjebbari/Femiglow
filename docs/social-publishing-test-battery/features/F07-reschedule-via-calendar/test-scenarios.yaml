@@ -1,0 +1,37 @@
+feature: F07-reschedule-via-calendar
+critical: P1
+
+contract:
+  - id: F07-C-1
+    name: PATCH reschedule happy path
+    expect: 200 with updated scheduledAt
+  - id: F07-C-2
+    name: PATCH reschedule past date 400
+  - id: F07-C-3
+    name: PATCH reschedule post not scheduled 409
+  - id: F07-C-4
+    name: PATCH updates job.scheduledAt too
+    expect: SELECT scheduledAt FROM social_publish_job WHERE postId=... matches new
+
+component:
+  - id: F07-CO-1
+    name: QuickEditDrawer opens on double-click
+  - id: F07-CO-2
+    name: QuickEditDrawer pre-fills current scheduledAt
+  - id: F07-CO-3
+    name: QuickEditDrawer save fires PATCH
+  - id: F07-CO-4
+    name: success toast + drawer closes
+  - id: F07-CO-5
+    name: validation: past date shows inline error
+  - id: F07-CO-6
+    name: drag-drop on CalendarCard fires PATCH
+    expect: simulate drag + drop → API call
+
+e2e:
+  - id: F07-E-1
+    name: reschedule via QuickEditDrawer
+    scenario_ref: S07
+  - id: F07-E-2
+    name: reschedule via drag-drop
+    scenario_ref: S12 partial

@@ -1,0 +1,53 @@
+feature: F05-variant-comparison
+
+component:
+  - name: renders 3 variant cards
+    given: 3 variants in props
+    expect: 3 articles with [data-variant-id] visible
+  - name: shows scores
+    expect: '85/100', '72/100', '90/100' visible
+  - name: selecting marks card as selected
+    when: click 'Choisir cette variante'
+    expect: card has data-selected='true'
+  - name: blocked variant disables choose button
+    given: violations[].severity='blocked'
+    expect: button text 'Bloquée (violations)' + disabled
+  - name: toggle diff highlights words
+    when: check 'Voir les différences'
+    expect: <mark> elements present on non-A variants
+
+  - name: select calls auto-review
+    when: click 'Choisir' on variant B
+    expect: fetch POST /drafts/B/review fired
+  - name: review failure does not block selection
+    when: review fetch rejects
+    expect: draft still selected locally (graceful)
+
+  - name: reject opens dialog
+    when: click 'Rejeter' on variant
+    expect: dialog with textarea visible
+  - name: reject submits with reason
+    when: fill textarea + click 'Confirmer le rejet'
+    expect: fetch POST /drafts/:id/reject with { reason: '…' }
+  - name: rejected variant removed from list
+    after: successful reject
+    expect: variant card disappears
+
+contract:
+  - name: POST /drafts/:id/review (generated) → 200, draft.status='needs_review'
+  - name: POST /drafts/:id/review idempotent
+    given: draft already in needs_review
+    expect: 200, no error
+  - name: POST /drafts/:id/reject with reason → 200, draft.status='rejected'
+
+e2e:
+  - name: select variant → stepper advances to Visual
+    steps:
+      - given 3 variants visible
+      - click 'Choisir' on first
+    expect: stepper active = 'Visuel'
+  - name: reject variant → variant removed
+    steps:
+      - click 'Rejeter' on variant 2
+      - submit dialog
+    expect: variant 2 no longer in DOM

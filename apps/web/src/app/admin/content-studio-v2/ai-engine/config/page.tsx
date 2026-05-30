@@ -30,10 +30,12 @@ import {
   Plus,
   Trash2,
   Loader2,
+  Key,
 } from 'lucide-react';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { Badge } from '@/components/admin/content-studio-v2/primitives';
 import { Input } from '@/components/admin/content-studio-v2/primitives';
+import { ModelSelector } from '@/components/admin/content-studio-v2/ai-engine/ModelSelector';
 
 /* ================================================================
    Types
@@ -124,7 +126,26 @@ interface PromptFormData {
   variables: string;
 }
 
-type Tab = 'providers' | 'workflows' | 'prompts';
+type Tab = 'providers' | 'workflows' | 'prompts' | 'api-keys';
+
+type KeySource = 'database' | 'env' | 'none';
+
+interface ApiKeyInfo {
+  id: string | null;
+  providerType: string;
+  providerName: string;
+  label: string;
+  source: KeySource;
+  masked: string;
+  keyPrefix: string;
+  keyLastFour: string;
+  isActive: boolean;
+  baseUrl: string | null;
+  lastTestedAt: string | null;
+  lastTestResult: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
 
 /* ================================================================
    Constants
@@ -377,7 +398,7 @@ function ProviderCard({
   provider: ProviderData;
   onTestConnection: (id: string) => void;
   testing: boolean;
-  onSave: (id: string, data: { priority?: number; dailyBudgetCents?: number; rateLimitRpm?: number; isEnabled?: boolean; isFallback?: boolean }) => Promise<boolean>;
+  onSave: (id: string, data: { priority?: number; dailyBudgetCents?: number; rateLimitRpm?: number; isEnabled?: boolean; isFallback?: boolean; models?: ProviderModel[]; baseUrl?: string | null }) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -387,11 +408,20 @@ function ProviderCard({
   const [editEnabled, setEditEnabled] = useState(provider.isEnabled);
   const [editFallback, setEditFallback] = useState(provider.isFallback);
   const [editFeedback, setEditFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [editModels, setEditModels] = useState<ProviderModel[]>([]);
+  const [editBaseUrl, setEditBaseUrl] = useState(provider.baseUrl ?? '');
 
   const models = Array.isArray(provider.models) ? (provider.models as ProviderModel[]) : [];
   const maxModels = 3;
   const visibleModels = models.slice(0, maxModels);
   const hiddenCount = models.length - maxModels;
+
+  function inferCapability(modelName: string): string {
+    if (/embed/i.test(modelName)) return 'embedding';
+    if (/dall-e|imagen|sdxl|flux|stable/i.test(modelName)) return 'image';
+    if (/tts|whisper/i.test(modelName)) return 'tts';
+    return 'text';
+  }
 
   function openEdit() {
     setEditPriority(provider.priority);
@@ -399,6 +429,8 @@ function ProviderCard({
     setEditRateLimit(provider.rateLimitRpm ?? 60);
     setEditEnabled(provider.isEnabled);
     setEditFallback(provider.isFallback);
+    setEditModels([...models]);
+    setEditBaseUrl(provider.baseUrl ?? '');
     setEditFeedback(null);
     setEditing(true);
   }
@@ -412,6 +444,8 @@ function ProviderCard({
       rateLimitRpm: editRateLimit,
       isEnabled: editEnabled,
       isFallback: editFallback,
+      models: editModels,
+      baseUrl: editBaseUrl.trim() || null,
     });
     setSaving(false);
     if (ok) {
@@ -690,6 +724,35 @@ function ProviderCard({
               />
               Fallback
             </label>
+          </div>
+
+          {provider.providerType === 'ollama' && (
+            <Input
+              label="URL de base Ollama"
+              type="url"
+              placeholder="https://ollama.mycloud.com"
+              value={editBaseUrl}
+              onChange={(e) => setEditBaseUrl(e.target.value)}
+              disabled={saving}
+            />
+          )}
+
+          <div>
+            <div style={{ fontSize: 'var(--cs-text-xs)', fontWeight: 600, color: 'var(--cs-fg-secondary)', fontFamily: 'var(--cs-font-display)', letterSpacing: '0.04em', textTransform: 'uppercase' as const, marginBottom: 6 }}>
+              Modèles
+            </div>
+            <ModelSelector
+              providerType={provider.providerType}
+              selectedModels={editModels.map((m) => m.name)}
+              onModelsChange={(names) => {
+                setEditModels(names.map((name) => {
+                  const existing = editModels.find((m) => m.name === name);
+                  if (existing) return existing;
+                  return { name, capability: inferCapability(name) };
+                }));
+              }}
+              disabled={saving}
+            />
           </div>
 
           {editFeedback && (
@@ -1286,6 +1349,20 @@ export default function AIEngineConfigPage() {
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
 
+  // API keys state
+  const [apiKeys, setApiKeys] = useState<ApiKeyInfo[]>([]);
+  const [loadingKeys, setLoadingKeys] = useState(false);
+  const [keysError, setKeysError] = useState<string | null>(null);
+  const [showApiKeyForm, setShowApiKeyForm] = useState(false);
+  const [apiKeyFormProvider, setApiKeyFormProvider] = useState('openai');
+  const [apiKeyFormValue, setApiKeyFormValue] = useState('');
+  const [apiKeyFormLabel, setApiKeyFormLabel] = useState('');
+  const [apiKeyFormBaseUrl, setApiKeyFormBaseUrl] = useState('');
+  const [savingApiKey, setSavingApiKey] = useState(false);
+  const [testingKeyProvider, setTestingKeyProvider] = useState<string | null>(null);
+  const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null);
+  const [confirmDeleteKey, setConfirmDeleteKey] = useState<ApiKeyInfo | null>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -1321,7 +1398,7 @@ export default function AIEngineConfigPage() {
 
   const handleSaveProvider = useCallback(async (
     id: string,
-    data: { priority?: number; dailyBudgetCents?: number; rateLimitRpm?: number; isEnabled?: boolean; isFallback?: boolean },
+    data: { priority?: number; dailyBudgetCents?: number; rateLimitRpm?: number; isEnabled?: boolean; isFallback?: boolean; models?: ProviderModel[]; baseUrl?: string | null },
   ): Promise<boolean> => {
     try {
       const res = await fetch('/api/admin/ai-engine/config/providers', {
@@ -1482,6 +1559,117 @@ export default function AIEngineConfigPage() {
     }
   }, [fetchData]);
 
+  /* ---------- API Keys CRUD ---------- */
+
+  const fetchApiKeys = useCallback(async () => {
+    setLoadingKeys(true);
+    setKeysError(null);
+    try {
+      const res = await fetch('/api/admin/ai-engine/config/api-keys');
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const data = await res.json();
+      setApiKeys(data.apiKeys ?? []);
+    } catch (e: unknown) {
+      setKeysError(e instanceof Error ? e.message : 'Erreur inconnue');
+    } finally {
+      setLoadingKeys(false);
+    }
+  }, []);
+
+  const [keysFetched, setKeysFetched] = useState(false);
+
+  const fetchApiKeysOnce = useCallback(async () => {
+    setKeysFetched(true);
+    await fetchApiKeys();
+  }, [fetchApiKeys]);
+
+  useEffect(() => {
+    if (tab === 'api-keys' && !keysFetched && !loadingKeys) {
+      fetchApiKeysOnce();
+    }
+  }, [tab, keysFetched, loadingKeys, fetchApiKeysOnce]);
+
+  async function handleSaveApiKey() {
+    if (!apiKeyFormValue.trim()) return;
+    setSavingApiKey(true);
+    try {
+      const body: Record<string, string> = {
+        providerType: apiKeyFormProvider,
+        apiKey: apiKeyFormValue,
+      };
+      if (apiKeyFormLabel.trim()) body.label = apiKeyFormLabel.trim();
+      if (apiKeyFormBaseUrl.trim()) body.baseUrl = apiKeyFormBaseUrl.trim();
+
+      const res = await fetch('/api/admin/ai-engine/config/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? `Erreur ${res.status}`);
+      }
+      toast.success('Clé API enregistrée');
+      setShowApiKeyForm(false);
+      setApiKeyFormValue('');
+      setApiKeyFormLabel('');
+      setApiKeyFormBaseUrl('');
+      await fetchApiKeys();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setSavingApiKey(false);
+    }
+  }
+
+  async function handleDeleteApiKey() {
+    if (!confirmDeleteKey?.id) return;
+    setDeletingKeyId(confirmDeleteKey.id);
+    try {
+      const res = await fetch(`/api/admin/ai-engine/config/api-keys/${confirmDeleteKey.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const data = await res.json();
+      toast.success(data.fallbackToEnv ? 'Clé supprimée — fallback sur variable d\'env' : 'Clé supprimée');
+      setConfirmDeleteKey(null);
+      await fetchApiKeys();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setDeletingKeyId(null);
+    }
+  }
+
+  async function handleTestApiKey(providerType: string) {
+    setTestingKeyProvider(providerType);
+    try {
+      const res = await fetch('/api/admin/ai-engine/config/api-keys/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerType }),
+      });
+      if (!res.ok) {
+        if (res.status === 429) {
+          toast.error('Trop de tentatives. Réessayez dans 1 minute.');
+          return;
+        }
+        throw new Error(`Erreur ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.result?.valid) {
+        toast.success(`${providerType} — Clé valide (${data.result.latencyMs}ms)`);
+      } else {
+        toast.error(`${providerType} — ${data.result?.error ?? 'Clé invalide'}`);
+      }
+      await fetchApiKeys();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setTestingKeyProvider(null);
+    }
+  }
+
   /* ---------- Derived stats ---------- */
 
   const configuredCount = providers.filter((p) => p.configured).length;
@@ -1493,6 +1681,7 @@ export default function AIEngineConfigPage() {
     { key: 'providers', label: 'Fournisseurs', icon: <Cpu size={14} />, count: providers.length },
     { key: 'workflows', label: 'Workflows', icon: <GitBranch size={14} />, count: workflows.length },
     { key: 'prompts', label: 'Prompts', icon: <FileText size={14} />, count: prompts.length },
+    { key: 'api-keys', label: 'Clés API', icon: <Key size={14} />, count: apiKeys.filter((k) => k.source !== 'none').length },
   ];
 
   /* ---------- Render ---------- */
@@ -1552,11 +1741,12 @@ export default function AIEngineConfigPage() {
       </header>
 
       {/* Stats summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
         <StatCard icon={<Activity size={18} />} value={`${configuredCount}/${providers.length}`} label="Fournisseurs actifs" accent="var(--cs-success)" />
         <StatCard icon={<Layers size={18} />} value={activeWorkflows || '—'} label="Workflows actifs" accent="var(--cs-violet)" />
         <StatCard icon={<PenTool size={18} />} value={activePrompts || '—'} label="Prompts versionnés" accent="var(--cs-saffron)" />
         <StatCard icon={<Wallet size={18} />} value={totalBudget > 0 ? `${(totalBudget / 100).toFixed(0)} MAD` : '—'} label="Budget quotidien total" accent="var(--cs-accent)" />
+        <StatCard icon={<Key size={18} />} value={apiKeys.filter((k) => k.source !== 'none').length} label="Clés configurées" accent={apiKeys.filter((k) => k.source !== 'none').length >= 3 ? 'var(--cs-success)' : 'var(--cs-saffron)'} />
       </div>
 
       {/* Tab navigation */}
@@ -1708,6 +1898,194 @@ export default function AIEngineConfigPage() {
                   deleting={deletingPromptId === p.id}
                 />
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* API Keys Tab */}
+      {tab === 'api-keys' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0, fontFamily: 'var(--cs-font-display)', fontWeight: 500, fontSize: 'var(--cs-text-lg)' }}>
+              Clés d&apos;accès API
+            </h2>
+            <Button
+              size="sm"
+              leftIcon={<Plus size={14} />}
+              onClick={() => { setShowApiKeyForm(true); setApiKeyFormProvider('openai'); setApiKeyFormValue(''); setApiKeyFormLabel(''); setApiKeyFormBaseUrl(''); }}
+            >
+              Ajouter une clé
+            </Button>
+          </div>
+
+          {keysError && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: 'var(--cs-danger-bg)', border: '1px solid var(--cs-danger)', borderRadius: 'var(--cs-radius-sm)', fontSize: 'var(--cs-text-sm)', color: 'var(--cs-danger)' }}>
+              <AlertTriangle size={14} />
+              {keysError}
+            </div>
+          )}
+
+          {/* Confirm delete */}
+          {confirmDeleteKey && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--cs-danger-bg)', border: '1px solid var(--cs-danger)', borderRadius: 'var(--cs-radius-sm)' }}>
+              <AlertTriangle size={14} style={{ color: 'var(--cs-danger)', flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: 'var(--cs-text-sm)', flex: 1 }}>
+                Supprimer la clé <strong>{confirmDeleteKey.providerName}</strong> ?
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteKey(null)} disabled={!!deletingKeyId}>Annuler</Button>
+              <Button size="sm" onClick={handleDeleteApiKey} loading={!!deletingKeyId} style={{ background: 'var(--cs-danger)', color: '#fff', border: 'none' }}>Supprimer</Button>
+            </div>
+          )}
+
+          {/* Add/Edit form */}
+          {showApiKeyForm && (
+            <section style={{ background: 'var(--cs-bg-elevated)', border: '1px solid var(--cs-accent)', borderRadius: 'var(--cs-radius-md)', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontFamily: 'var(--cs-font-display)', fontWeight: 500, fontSize: 'var(--cs-text-sm)' }}>
+                Ajouter une clé API
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="cs-input-field flex flex-col gap-1.5 w-full">
+                  <label className="cs-eyebrow" style={{ fontSize: 'var(--cs-text-xs)' }}>Fournisseur</label>
+                  <select
+                    value={apiKeyFormProvider}
+                    onChange={(e) => setApiKeyFormProvider(e.target.value)}
+                    disabled={savingApiKey}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: 'var(--cs-text-sm)', border: '1px solid var(--cs-border)', borderRadius: 'var(--cs-radius-sm)', background: 'var(--cs-bg-elevated)', color: 'var(--cs-fg-primary)', fontFamily: 'inherit' }}
+                  >
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="google">Google AI (Gemini)</option>
+                    <option value="elevenlabs">ElevenLabs</option>
+                    <option value="ollama">Ollama (local)</option>
+                  </select>
+                </div>
+                <Input
+                  label="Label (optionnel)"
+                  placeholder="Ex: Production key"
+                  value={apiKeyFormLabel}
+                  onChange={(e) => setApiKeyFormLabel(e.target.value)}
+                  disabled={savingApiKey}
+                />
+              </div>
+              <Input
+                label={apiKeyFormProvider === 'ollama' ? 'URL de base' : 'Clé API'}
+                type={apiKeyFormProvider === 'ollama' ? 'url' : 'password'}
+                placeholder={apiKeyFormProvider === 'ollama' ? 'http://localhost:11434' : 'sk-...'}
+                value={apiKeyFormProvider === 'ollama' ? apiKeyFormBaseUrl : apiKeyFormValue}
+                onChange={(e) => apiKeyFormProvider === 'ollama' ? setApiKeyFormBaseUrl(e.target.value) : setApiKeyFormValue(e.target.value)}
+                disabled={savingApiKey}
+                autoComplete="off"
+              />
+              {apiKeyFormProvider === 'ollama' && (
+                <Input
+                  label="Clé API (optionnel pour Ollama)"
+                  type="password"
+                  placeholder="Laisser vide si pas d'auth"
+                  value={apiKeyFormValue}
+                  onChange={(e) => setApiKeyFormValue(e.target.value)}
+                  disabled={savingApiKey}
+                  autoComplete="off"
+                />
+              )}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <Button variant="ghost" size="sm" onClick={() => { setShowApiKeyForm(false); setApiKeyFormValue(''); }} disabled={savingApiKey}>Annuler</Button>
+                <Button size="sm" onClick={handleSaveApiKey} loading={savingApiKey} disabled={apiKeyFormProvider === 'ollama' ? !apiKeyFormBaseUrl.trim() : !apiKeyFormValue.trim()}>Enregistrer</Button>
+              </div>
+            </section>
+          )}
+
+          {/* Keys grid */}
+          {loadingKeys ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 24 }}>
+              <Loader2 size={14} style={{ animation: 'cs-spin 0.7s linear infinite', color: 'var(--cs-fg-muted)' }} />
+              <span style={{ fontSize: 'var(--cs-text-sm)', color: 'var(--cs-fg-muted)' }}>Chargement...</span>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
+              {apiKeys.map((key) => {
+                const isTesting = testingKeyProvider === key.providerType;
+
+                return (
+                  <div
+                    key={key.providerType}
+                    style={{
+                      background: 'var(--cs-bg-elevated)',
+                      border: `1px solid ${key.source === 'none' ? 'var(--cs-border)' : 'var(--cs-border-hair)'}`,
+                      borderRadius: 'var(--cs-radius-md)',
+                      padding: '20px 22px',
+                      boxShadow: 'var(--cs-shadow-sm)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 14,
+                      opacity: key.source === 'none' ? 0.7 : 1,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ fontFamily: 'var(--cs-font-display)', fontWeight: 500, fontSize: 'var(--cs-text-sm)' }}>
+                          {key.providerName}
+                        </div>
+                        <div style={{ fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-muted)', marginTop: 2 }}>
+                          {key.label}
+                        </div>
+                      </div>
+                      <Badge
+                        tone={key.source === 'database' ? 'accent' : key.source === 'env' ? 'sage' : 'neutral'}
+                        size="sm"
+                      >
+                        {key.source === 'database' ? 'Base de données' : key.source === 'env' ? 'Env var' : 'Non configuré'}
+                      </Badge>
+                    </div>
+
+                    {key.source !== 'none' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <code style={{ fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-secondary)', background: 'var(--cs-bg-sunken)', padding: '4px 8px', borderRadius: 'var(--cs-radius-sm)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {key.masked}
+                        </code>
+                        {key.lastTestResult && (
+                          <Badge tone={key.lastTestResult === 'valid' ? 'success' : 'warning'} size="sm">
+                            {key.lastTestResult === 'valid' ? 'Valide' : 'Invalide'}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {key.lastTestedAt && (
+                      <div style={{ fontSize: 'var(--cs-text-xs)', color: 'var(--cs-fg-muted)' }}>
+                        Dernier test: {new Date(key.lastTestedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                      {key.source !== 'none' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTestApiKey(key.providerType)}
+                          loading={isTesting}
+                          disabled={!!testingKeyProvider}
+                          leftIcon={<Zap size={12} />}
+                        >
+                          Tester
+                        </Button>
+                      )}
+                      <div style={{ flex: 1 }} />
+                      {key.source === 'database' && key.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmDeleteKey(key)}
+                          style={{ color: 'var(--cs-danger)' }}
+                          leftIcon={<Trash2 size={12} />}
+                        >
+                          Supprimer
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

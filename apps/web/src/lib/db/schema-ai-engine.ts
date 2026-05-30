@@ -103,6 +103,7 @@ export const aiEngineKnowledgeCollections = pgTable(
     lastIndexedAt: timestamp('last_indexed_at', { withTimezone: true }),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     slugUnique: uniqueIndex('ai_kc_slug_unique').on(t.slug),
@@ -124,6 +125,7 @@ export const aiEngineKnowledgeDocuments = pgTable(
     metadata: jsonb('metadata'),
     chunkCount: integer('chunk_count').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     collectionIdx: index('ai_kd_collection_idx').on(t.collectionId, t.createdAt),
@@ -243,5 +245,28 @@ export const aiEngineTrendSignals = pgTable(
     categoryIdx: index('ai_ts_category_idx').on(t.category),
     compositeScoreIdx: index('ai_ts_composite_score_idx').on(t.compositeScore),
     expiresAtIdx: index('ai_ts_expires_at_idx').on(t.expiresAt),
+  }),
+);
+
+export const aiEngineApiKeys = pgTable(
+  'ai_engine_api_key',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    providerType: text('provider_type').notNull(),
+    label: text('label').notNull(),
+    encryptedKey: text('encrypted_key').notNull(),
+    keyPrefix: text('key_prefix').notNull(),
+    keyLastFour: text('key_last_four').notNull(),
+    baseUrl: text('base_url'),
+    isActive: boolean('is_active').notNull().default(true),
+    lastTestedAt: timestamp('last_tested_at', { withTimezone: true }),
+    lastTestResult: text('last_test_result'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    providerTypeIdx: index('ai_ak_provider_type_idx').on(t.providerType),
+    activeIdx: index('ai_ak_active_idx').on(t.isActive),
+    uniqueActiveProvider: uniqueIndex('ai_ak_unique_active_provider').on(t.providerType, t.isActive),
   }),
 );

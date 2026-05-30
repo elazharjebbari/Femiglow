@@ -1,0 +1,271 @@
+feature: P1-model-preset-selector
+component: ModelPresetSelector
+file: apps/web/src/components/admin/content-studio-v2/ai-engine/ModelPresetSelector.tsx
+
+scenarios:
+  - id: P1-001
+    name: "Renders 4 preset buttons"
+    type: component
+    priority: P0
+    given: "ModelPresetSelector is rendered with default props"
+    steps:
+      - "Render <ModelPresetSelector capability='text' selectedModel='' onModelChange={jest.fn()} />"
+    expected: "4 buttons visible: Auto, Rapide, Premium, Personnalise"
+    assertions:
+      - "screen.getByRole('radio', { name: /auto/i }) is visible"
+      - "screen.getByRole('radio', { name: /rapide/i }) is visible"
+      - "screen.getByRole('radio', { name: /premium/i }) is visible"
+      - "screen.getByRole('radio', { name: /personnalis/i }) is visible"
+
+  - id: P1-002
+    name: "Auto is selected by default"
+    type: component
+    priority: P0
+    given: "ModelPresetSelector rendered with no explicit preset"
+    steps:
+      - "Render component with selectedModel=''"
+    expected: "Auto button has active/selected styling"
+    assertions:
+      - "Auto button has aria-checked='true'"
+      - "Auto button has accent background color"
+      - "Other buttons have aria-checked='false'"
+
+  - id: P1-003
+    name: "Clicking Rapide selects fast preset and calls onModelChange"
+    type: component
+    priority: P0
+    given: "Auto is currently selected"
+    steps:
+      - "Click the 'Rapide' button"
+    expected: "Rapide button becomes active, onModelChange called with fast model"
+    assertions:
+      - "onModelChange was called with 'gpt-4o-mini' (default provider openai)"
+      - "Rapide button has aria-checked='true'"
+      - "Auto button has aria-checked='false'"
+
+  - id: P1-004
+    name: "Clicking Premium selects premium preset"
+    type: component
+    priority: P0
+    given: "Auto is currently selected"
+    steps:
+      - "Click the 'Premium' button"
+    expected: "Premium button becomes active, onModelChange called with premium model"
+    assertions:
+      - "onModelChange was called with 'gpt-4o'"
+      - "Premium button has aria-checked='true'"
+
+  - id: P1-005
+    name: "Clicking Auto calls onModelChange with empty string"
+    type: component
+    priority: P0
+    given: "Premium is currently selected"
+    steps:
+      - "Click the 'Auto' button"
+    expected: "Auto button becomes active, onModelChange called with ''"
+    assertions:
+      - "onModelChange was called with ''"
+      - "Auto button has aria-checked='true'"
+
+  - id: P1-006
+    name: "Clicking Personnalise shows ModelSelector inline"
+    type: component
+    priority: P0
+    given: "Auto is currently selected"
+    steps:
+      - "Click the 'Personnalise' button"
+    expected: "ModelSelector component appears below the buttons"
+    assertions:
+      - "Personnalise button has aria-checked='true'"
+      - "ModelSelector trigger button is visible in the DOM"
+
+  - id: P1-007
+    name: "Switching from Personnalise to Rapide hides ModelSelector"
+    type: component
+    priority: P1
+    given: "Personnalise is selected and ModelSelector is visible"
+    steps:
+      - "Click 'Rapide' button"
+    expected: "ModelSelector disappears, Rapide is active"
+    assertions:
+      - "ModelSelector trigger button is no longer in the DOM"
+      - "Rapide button has aria-checked='true'"
+
+  - id: P1-008
+    name: "Custom model selection triggers onModelChange"
+    type: component
+    priority: P0
+    given: "Personnalise is selected, ModelSelector is visible"
+    steps:
+      - "Open the ModelSelector popover"
+      - "Select 'claude-sonnet-4-20250514' from the list"
+    expected: "onModelChange called with 'claude-sonnet-4-20250514'"
+    assertions:
+      - "onModelChange was called with 'claude-sonnet-4-20250514'"
+
+  - id: P1-009
+    name: "Each button has correct icon"
+    type: component
+    priority: P1
+    given: "ModelPresetSelector rendered"
+    steps:
+      - "Inspect each button's icon"
+    expected: "Auto has Cpu, Rapide has Zap, Premium has Star, Personnalise has Settings"
+    assertions:
+      - "Auto button contains Cpu icon SVG"
+      - "Rapide button contains Zap icon SVG"
+      - "Premium button contains Star icon SVG"
+      - "Personnalise button contains Settings icon SVG"
+
+  - id: P1-010
+    name: "Disabled state disables all buttons"
+    type: component
+    priority: P1
+    given: "ModelPresetSelector rendered with disabled=true"
+    steps:
+      - "Render with disabled={true}"
+      - "Try clicking any button"
+    expected: "All buttons are disabled, no onModelChange call"
+    assertions:
+      - "All radio buttons have disabled attribute or pointer-events none"
+      - "onModelChange was not called"
+
+  - id: P1-011
+    name: "Segmented button layout -- first button has left border-radius"
+    type: component
+    priority: P2
+    given: "ModelPresetSelector rendered"
+    steps:
+      - "Inspect border-radius of first and last buttons"
+    expected: "First button has rounded left corners, last has rounded right corners, middle have 0"
+    assertions:
+      - "First button borderRadius starts with non-zero left values"
+      - "Last button borderRadius ends with non-zero right values"
+
+  - id: P1-012
+    name: "Radiogroup ARIA structure"
+    type: component
+    priority: P1
+    given: "ModelPresetSelector rendered"
+    steps:
+      - "Check ARIA roles on the container and buttons"
+    expected: "Container has role=radiogroup, buttons have role=radio"
+    assertions:
+      - "Container element has role='radiogroup'"
+      - "Container has aria-label matching 'Selection du preset'"
+      - "Each button has role='radio'"
+
+  - id: P1-013
+    name: "Keyboard navigation with arrow keys"
+    type: component
+    priority: P1
+    given: "Auto button is focused"
+    steps:
+      - "Press ArrowRight key"
+    expected: "Focus moves to Rapide, Rapide becomes selected"
+    assertions:
+      - "Rapide button has focus"
+      - "Rapide button has aria-checked='true'"
+      - "onModelChange called with fast model"
+
+  - id: P1-014
+    name: "Left arrow wraps from Auto to Personnalise"
+    type: component
+    priority: P2
+    given: "Auto button is focused"
+    steps:
+      - "Press ArrowLeft key"
+    expected: "Focus wraps to Personnalise button"
+    assertions:
+      - "Personnalise button has focus"
+      - "Personnalise button has aria-checked='true'"
+
+  - id: P1-015
+    name: "Fast preset resolves to correct model per provider"
+    type: unit
+    priority: P0
+    given: "DEFAULT_PRESET_MAPPING is defined"
+    steps:
+      - "Call resolution with preset='fast' and provider='anthropic'"
+    expected: "Returns 'claude-haiku-4-20250514'"
+    assertions:
+      - "resolvePresetModel('fast', 'anthropic') === 'claude-haiku-4-20250514'"
+
+  - id: P1-016
+    name: "Premium preset resolves to correct model per provider"
+    type: unit
+    priority: P0
+    given: "DEFAULT_PRESET_MAPPING is defined"
+    steps:
+      - "Call resolution with preset='premium' and provider='google'"
+    expected: "Returns 'gemini-2.5-pro'"
+    assertions:
+      - "resolvePresetModel('premium', 'google') === 'gemini-2.5-pro'"
+
+  - id: P1-017
+    name: "Unknown provider falls back to openai mapping"
+    type: unit
+    priority: P1
+    given: "DEFAULT_PRESET_MAPPING does not include 'unknown-provider'"
+    steps:
+      - "Call resolution with preset='fast' and provider='unknown-provider'"
+    expected: "Returns 'gpt-4o-mini' (openai fallback)"
+    assertions:
+      - "resolvePresetModel('fast', 'unknown-provider') === 'gpt-4o-mini'"
+
+  - id: P1-018
+    name: "Hover state on non-selected button"
+    type: component
+    priority: P2
+    given: "Auto is selected, cursor hovers over Rapide"
+    steps:
+      - "Hover over the Rapide button"
+    expected: "Rapide button background changes to elevated color"
+    assertions:
+      - "Rapide button background transitions to --cs-bg-elevated on hover"
+
+  - id: P1-019
+    name: "Value passed to parent is resolved model string"
+    type: integration
+    priority: P0
+    given: "ModelPresetSelector inside AIEngineCreatePage form"
+    steps:
+      - "Select Premium preset"
+      - "Click Generer"
+    expected: "POST /generate body includes textModel='gpt-4o'"
+    assertions:
+      - "fetch body contains { textModel: 'gpt-4o' }"
+
+  - id: P1-020
+    name: "Auto preset sends empty textModel to backend"
+    type: integration
+    priority: P0
+    given: "ModelPresetSelector with Auto selected"
+    steps:
+      - "Leave Auto selected"
+      - "Click Generer"
+    expected: "POST /generate body includes textModel='' or textModel is absent"
+    assertions:
+      - "fetch body textModel is '' or undefined"
+
+  - id: P1-021
+    name: "Selecting custom then clearing selection reverts to empty"
+    type: component
+    priority: P1
+    given: "Personnalise is selected and a custom model was chosen"
+    steps:
+      - "Remove the selected model badge in ModelSelector"
+    expected: "onModelChange called with '' (empty)"
+    assertions:
+      - "onModelChange was called with ''"
+
+  - id: P1-022
+    name: "Only single model selection allowed in custom mode"
+    type: component
+    priority: P1
+    given: "Personnalise selected, one model already chosen"
+    steps:
+      - "Select a second model in ModelSelector"
+    expected: "Only the first model is used; onModelChange called with the new single model"
+    assertions:
+      - "onModelChange called with the latest single selection, not an array"

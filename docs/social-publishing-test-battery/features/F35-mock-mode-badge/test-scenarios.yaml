@@ -1,0 +1,14 @@
+feature: F35-mock-mode-badge
+critical: P3
+
+component:
+  - id: F35-CO-1
+    name: visible when mockMode=true
+  - id: F35-CO-2
+    name: hidden when mockMode=false
+  - id: F35-CO-3
+    name: aria-label='Mode mock activé'
+  - id: F35-CO-4
+    name: data-cs-mock-badge attribute for selectors
+  - id: F35-CO-5
+    name: custom label prop overrides default

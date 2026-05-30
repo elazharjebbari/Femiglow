@@ -93,6 +93,7 @@ describe('IntentionForm', () => {
     });
     expect(onCreated).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'idea_new' }),
+      undefined, // CS v2 Phase 2 — second arg is the chosen model id (undefined = use suggestion)
     );
   });
 
@@ -108,5 +109,45 @@ describe('IntentionForm', () => {
     const storyRadio = screen.getByRole('radio', { name: /Story/i });
     fireEvent.click(storyRadio);
     expect(onFormatChange).toHaveBeenCalledWith('story');
+  });
+
+  describe('format media support badges', () => {
+    it('renders the correct media support badge for each format', () => {
+      const { container } = render(<IntentionForm />);
+      const post = container.querySelector('[data-format="post"] [data-cs-media-support]');
+      const story = container.querySelector('[data-format="story"] [data-cs-media-support]');
+      const reel = container.querySelector('[data-format="reel"] [data-cs-media-support]');
+      const carousel = container.querySelector(
+        '[data-format="carousel"] [data-cs-media-support]',
+      );
+      expect(post?.getAttribute('data-cs-media-support')).toBe('image');
+      expect(story?.getAttribute('data-cs-media-support')).toBe('both');
+      expect(reel?.getAttribute('data-cs-media-support')).toBe('video');
+      expect(carousel?.getAttribute('data-cs-media-support')).toBe('image');
+    });
+
+    it('post badge says "Image"', () => {
+      const { container } = render(<IntentionForm />);
+      const badge = container.querySelector('[data-format="post"] [data-cs-media-support]');
+      expect(badge?.textContent).toMatch(/Image/);
+    });
+
+    it('reel badge says "Vidéo"', () => {
+      const { container } = render(<IntentionForm />);
+      const badge = container.querySelector('[data-format="reel"] [data-cs-media-support]');
+      expect(badge?.textContent).toMatch(/Vidéo/);
+    });
+
+    it('story badge says "Image + Vidéo"', () => {
+      const { container } = render(<IntentionForm />);
+      const badge = container.querySelector('[data-format="story"] [data-cs-media-support]');
+      expect(badge?.textContent).toMatch(/Image \+ Vidéo/);
+    });
+
+    it('carousel badge says "Image"', () => {
+      const { container } = render(<IntentionForm />);
+      const badge = container.querySelector('[data-format="carousel"] [data-cs-media-support]');
+      expect(badge?.textContent).toMatch(/Image/);
+    });
   });
 });

@@ -1,0 +1,449 @@
+feature: F05-config-api-keys
+description: API key management with source badges, masked display, test with rate limiting, add/delete operations
+component_under_test: apps/web/src/app/admin/content-studio-v2/ai-engine/config/page.tsx
+test_file: apps/web/src/app/admin/content-studio-v2/ai-engine/config/__tests__/config-page.test.tsx
+
+scenarios:
+  # ---- LAZY LOADING ----
+
+  - id: F05-T01
+    name: "Keys are fetched only on first tab activation"
+    type: component
+    priority: P0
+    preconditions: "Page loaded, on providers tab initially"
+    steps:
+      - "Verify no GET /api-keys request made"
+      - "Switch to api-keys tab"
+    expected: "GET /config/api-keys called once on tab switch"
+    assertions:
+      - "No /api-keys fetch before tab switch"
+      - "Exactly one GET /config/api-keys after first switch"
+    tags: [lazy-load, performance]
+
+  - id: F05-T02
+    name: "Keys not re-fetched on subsequent tab switches"
+    type: component
+    priority: P1
+    preconditions: "Keys already fetched"
+    steps:
+      - "Switch to providers tab, then back to api-keys"
+    expected: "No additional GET request"
+    assertions:
+      - "fetch not called again for /config/api-keys"
+    tags: [lazy-load, caching]
+
+  # ---- LOADING AND ERROR ----
+
+  - id: F05-T03
+    name: "Loading state shows spinner"
+    type: component
+    priority: P0
+    preconditions: "GET /api-keys pending"
+    steps:
+      - "Switch to api-keys tab"
+    expected: "Loader2 spinner and text 'Chargement...'"
+    assertions:
+      - "Spinner element visible"
+      - "Text 'Chargement...' visible"
+    tags: [loading]
+
+  - id: F05-T04
+    name: "Error state shows error banner"
+    type: component
+    priority: P0
+    preconditions: "GET /api-keys returns 500"
+    steps:
+      - "Switch to api-keys tab, API fails"
+    expected: "Red error banner with error message"
+    assertions:
+      - "AlertTriangle icon visible"
+      - "Error message text visible"
+    tags: [error]
+
+  # ---- KEY CARDS RENDERING ----
+
+  - id: F05-T05
+    name: "5 provider cards rendered for all providers"
+    type: component
+    priority: P0
+    preconditions: "API returns 5 keys (openai, anthropic, google, elevenlabs, ollama)"
+    steps:
+      - "Render api-keys tab"
+    expected: "5 cards in grid layout"
+    assertions:
+      - "5 card elements rendered"
+      - "Grid has gridTemplateColumns 'repeat(auto-fill, minmax(340px, 1fr))'"
+    tags: [rendering, layout]
+
+  - id: F05-T06
+    name: "Database source shows 'Base de donnees' badge in accent tone"
+    type: component
+    priority: P0
+    preconditions: "Key with source='database'"
+    steps:
+      - "Render card"
+    expected: "Badge text 'Base de donnees' with accent tone"
+    assertions:
+      - "Badge 'Base de donnees' visible"
+    tags: [rendering, badge]
+
+  - id: F05-T07
+    name: "Env source shows 'Env var' badge in sage tone"
+    type: component
+    priority: P0
+    preconditions: "Key with source='env'"
+    steps:
+      - "Render card"
+    expected: "Badge 'Env var' with sage tone"
+    assertions:
+      - "Badge 'Env var' visible"
+    tags: [rendering, badge]
+
+  - id: F05-T08
+    name: "None source shows 'Non configure' badge and reduced opacity"
+    type: component
+    priority: P0
+    preconditions: "Key with source='none'"
+    steps:
+      - "Render card"
+    expected: "Badge 'Non configure', card opacity 0.7"
+    assertions:
+      - "Badge 'Non configure' visible"
+      - "Card has opacity 0.7"
+    tags: [rendering, badge, visual]
+
+  - id: F05-T09
+    name: "Masked key displayed in code element"
+    type: component
+    priority: P0
+    preconditions: "Key with source='database', masked='sk-...abc1'"
+    steps:
+      - "Render card"
+    expected: "Code element shows 'sk-...abc1'"
+    assertions:
+      - "code element with text 'sk-...abc1' visible"
+    tags: [rendering, masked-key]
+
+  - id: F05-T10
+    name: "Unconfigured key hides masked key section"
+    type: component
+    priority: P1
+    preconditions: "Key with source='none'"
+    steps:
+      - "Render card"
+    expected: "No code element with masked key"
+    assertions:
+      - "No code element in this card"
+    tags: [rendering, edge-case]
+
+  - id: F05-T11
+    name: "Valid test result shows 'Valide' success badge"
+    type: component
+    priority: P1
+    preconditions: "Key with lastTestResult='valid'"
+    steps:
+      - "Render card"
+    expected: "Badge 'Valide' in success tone"
+    assertions:
+      - "Badge 'Valide' visible"
+    tags: [rendering, test-result]
+
+  - id: F05-T12
+    name: "Invalid test result shows 'Invalide' warning badge"
+    type: component
+    priority: P1
+    preconditions: "Key with lastTestResult='invalid'"
+    steps:
+      - "Render card"
+    expected: "Badge 'Invalide' in warning tone"
+    assertions:
+      - "Badge 'Invalide' visible"
+    tags: [rendering, test-result]
+
+  - id: F05-T13
+    name: "Last tested date shown in French locale"
+    type: component
+    priority: P2
+    preconditions: "Key with lastTestedAt='2025-12-01T10:30:00Z'"
+    steps:
+      - "Render card"
+    expected: "Text 'Dernier test: 1 dec., 10:30'"
+    assertions:
+      - "Text matching 'Dernier test:' visible"
+    tags: [rendering, formatting]
+
+  # ---- TEST KEY ----
+
+  - id: F05-T14
+    name: "Test button calls test API and shows success toast"
+    type: component
+    priority: P0
+    preconditions: "Configured key, API returns valid result with latency"
+    steps:
+      - "Click 'Tester' on configured key"
+    expected: "POST /api-keys/test called, toast shows 'Cle valide' with latency"
+    assertions:
+      - "POST /config/api-keys/test called with { providerType }"
+      - "toast.success with message matching 'Cle valide'"
+    tags: [testing, api, toast]
+
+  - id: F05-T15
+    name: "Test button shows loading spinner during test"
+    type: component
+    priority: P1
+    preconditions: "Test in progress"
+    steps:
+      - "Click 'Tester', check button state"
+    expected: "Button shows loading state"
+    assertions:
+      - "Tester button has loading prop true"
+    tags: [testing, loading]
+
+  - id: F05-T16
+    name: "All test buttons disabled while one test is running"
+    type: component
+    priority: P1
+    preconditions: "Test running for openai"
+    steps:
+      - "Check other test buttons"
+    expected: "All Tester buttons have disabled attribute"
+    assertions:
+      - "Every Tester button is disabled"
+    tags: [testing, concurrent]
+
+  - id: F05-T17
+    name: "Test button hidden for unconfigured keys"
+    type: component
+    priority: P1
+    preconditions: "Key with source='none'"
+    steps:
+      - "Render card"
+    expected: "No Tester button in the card"
+    assertions:
+      - "No 'Tester' button in this card"
+    tags: [testing, conditional]
+
+  - id: F05-T18
+    name: "Rate limit 429 shows specific toast message"
+    type: component
+    priority: P0
+    preconditions: "Test API returns 429"
+    steps:
+      - "Click Tester, API returns 429"
+    expected: "toast.error with 'Trop de tentatives. Reessayez dans 1 minute.'"
+    assertions:
+      - "toast.error called with rate limit message"
+      - "No retry loop triggered"
+    tags: [testing, rate-limit, anti-loop]
+
+  - id: F05-T19
+    name: "Test failure shows provider-specific error toast"
+    type: component
+    priority: P1
+    preconditions: "Test API returns valid=false with error message"
+    steps:
+      - "Click Tester"
+    expected: "toast.error with provider name and error"
+    assertions:
+      - "toast.error called with provider name in message"
+    tags: [testing, error]
+
+  # ---- ADD KEY FORM ----
+
+  - id: F05-T20
+    name: "Add button opens inline form"
+    type: component
+    priority: P0
+    preconditions: "On api-keys tab"
+    steps:
+      - "Click 'Ajouter une cle'"
+    expected: "Inline form with accent border, provider select, key input"
+    assertions:
+      - "Form section with accent border visible"
+      - "Text 'Ajouter une cle API' heading visible"
+      - "Provider select with 5 options"
+      - "Key input field visible"
+    tags: [add, form]
+
+  - id: F05-T21
+    name: "Provider select has 5 options"
+    type: component
+    priority: P1
+    preconditions: "Add form open"
+    steps:
+      - "Inspect provider select"
+    expected: "Options: OpenAI, Anthropic, Google AI (Gemini), ElevenLabs, Ollama (local)"
+    assertions:
+      - "5 option elements in select"
+    tags: [add, form, options]
+
+  - id: F05-T22
+    name: "Ollama mode switches key input to URL input"
+    type: component
+    priority: P0
+    preconditions: "Add form, select Ollama"
+    steps:
+      - "Change provider to 'ollama'"
+    expected: "Label changes to 'URL de base', type='url', placeholder 'http://localhost:11434'"
+    assertions:
+      - "Input label contains 'URL de base'"
+      - "Input type is 'url'"
+      - "Extra optional key field appears"
+    tags: [add, form, ollama]
+
+  - id: F05-T23
+    name: "Ollama mode shows extra optional key field"
+    type: component
+    priority: P1
+    preconditions: "Add form with ollama selected"
+    steps:
+      - "Check form fields"
+    expected: "Second input with label 'Cle API (optionnel pour Ollama)' and type='password'"
+    assertions:
+      - "Input with label matching 'optionnel pour Ollama' is visible"
+    tags: [add, form, ollama]
+
+  - id: F05-T24
+    name: "Save disabled when key is empty (non-Ollama)"
+    type: component
+    priority: P0
+    preconditions: "Add form, provider=openai, key empty"
+    steps:
+      - "Check Enregistrer button"
+    expected: "Button disabled"
+    assertions:
+      - "Enregistrer button is disabled"
+    tags: [validation]
+
+  - id: F05-T25
+    name: "Save disabled when base URL empty (Ollama)"
+    type: component
+    priority: P0
+    preconditions: "Add form, provider=ollama, baseUrl empty"
+    steps:
+      - "Check Enregistrer button"
+    expected: "Button disabled"
+    assertions:
+      - "Enregistrer button is disabled"
+    tags: [validation, ollama]
+
+  - id: F05-T26
+    name: "Successful save shows toast and refreshes list"
+    type: component
+    priority: P0
+    preconditions: "POST returns 201"
+    steps:
+      - "Fill key and save"
+    expected: "Toast 'Cle API enregistree', form closes, fetchApiKeys called"
+    assertions:
+      - "toast.success with 'Cle API enregistree'"
+      - "Form not in DOM"
+      - "GET /config/api-keys called again"
+    tags: [add, save, toast]
+
+  - id: F05-T27
+    name: "Cancel closes form and clears inputs"
+    type: component
+    priority: P1
+    preconditions: "Add form open with data entered"
+    steps:
+      - "Click 'Annuler'"
+    expected: "Form closes, inputs cleared, no POST"
+    assertions:
+      - "Form not in DOM"
+      - "No POST request"
+    tags: [add, cancel]
+
+  # ---- DELETE KEY ----
+
+  - id: F05-T28
+    name: "Delete button only visible for database-source keys"
+    type: component
+    priority: P0
+    preconditions: "Keys: one database, one env, one none"
+    steps:
+      - "Check delete buttons"
+    expected: "Only database key card has Supprimer button"
+    assertions:
+      - "Database card has 'Supprimer' button"
+      - "Env card does NOT have 'Supprimer' button"
+      - "None card does NOT have 'Supprimer' button"
+    tags: [delete, conditional]
+
+  - id: F05-T29
+    name: "Delete shows confirm banner with provider name"
+    type: component
+    priority: P0
+    preconditions: "Database key for 'OpenAI'"
+    steps:
+      - "Click 'Supprimer'"
+    expected: "Red confirm banner with text 'Supprimer la cle OpenAI ?'"
+    assertions:
+      - "Confirm section with danger background visible"
+      - "Text matching 'Supprimer la cle' and 'OpenAI' visible"
+      - "'Annuler' and 'Supprimer' buttons in banner"
+    tags: [delete, confirm]
+
+  - id: F05-T30
+    name: "Confirm delete calls API and shows appropriate toast"
+    type: component
+    priority: P0
+    preconditions: "Confirm visible, DELETE returns { fallbackToEnv: true }"
+    steps:
+      - "Click confirm 'Supprimer'"
+    expected: "DELETE called, toast 'Cle supprimee -- fallback sur variable d'env'"
+    assertions:
+      - "DELETE /config/api-keys/{id} called"
+      - "toast.success with fallback message"
+    tags: [delete, api, toast]
+
+  - id: F05-T31
+    name: "Cancel confirm dismisses banner"
+    type: component
+    priority: P1
+    preconditions: "Confirm banner visible"
+    steps:
+      - "Click 'Annuler' in confirm banner"
+    expected: "Banner disappears, no DELETE request"
+    assertions:
+      - "Confirm section not in DOM"
+      - "No DELETE request"
+    tags: [delete, cancel]
+
+  # ---- STAT CARD ----
+
+  - id: F05-T32
+    name: "Stat card shows configured key count"
+    type: component
+    priority: P1
+    preconditions: "3 keys with source != 'none', 2 with source='none'"
+    steps:
+      - "Check stat card in header"
+    expected: "Stat card shows value 3 with label 'Cles configurees'"
+    assertions:
+      - "Stat card value is 3"
+    tags: [stats]
+
+  - id: F05-T33
+    name: "Stat card accent is green when >= 3 configured"
+    type: component
+    priority: P2
+    preconditions: "3+ configured keys"
+    steps:
+      - "Check stat card color"
+    expected: "Accent color is var(--cs-success)"
+    assertions:
+      - "Stat card uses success accent"
+    tags: [stats, visual]
+
+  - id: F05-T34
+    name: "Stat card accent is saffron when < 3 configured"
+    type: component
+    priority: P2
+    preconditions: "2 configured keys"
+    steps:
+      - "Check stat card color"
+    expected: "Accent color is var(--cs-saffron)"
+    assertions:
+      - "Stat card uses saffron accent"
+    tags: [stats, visual]

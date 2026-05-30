@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import {
   aiEngineKnowledgeCollections,
@@ -20,6 +20,7 @@ export interface CollectionRow {
   lastIndexedAt: Date | null;
   isActive: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export async function createCollection(
@@ -196,6 +197,88 @@ export async function seedDefaultCollections(): Promise<CollectionRow[]> {
   return created;
 }
 
+export interface UpdateCollectionData {
+  name?: string;
+  description?: string | null;
+  category?: string;
+}
+
+export async function updateCollection(
+  id: string,
+  data: UpdateCollectionData,
+): Promise<CollectionRow> {
+  const drizzle = db();
+  if (!drizzle) {
+    throw new Error('Database connection required');
+  }
+
+  const updateFields: Record<string, unknown> = { updatedAt: new Date() };
+  if (data.name !== undefined) updateFields.name = data.name;
+  if (data.description !== undefined) updateFields.description = data.description;
+  if (data.category !== undefined) updateFields.category = data.category;
+
+  const [updated] = await drizzle
+    .update(aiEngineKnowledgeCollections)
+    .set(updateFields)
+    .where(eq(aiEngineKnowledgeCollections.id, id))
+    .returning();
+
+  if (!updated) {
+    throw new Error(`Collection ${id} not found`);
+  }
+
+  log.info('Collection updated', { id, fields: Object.keys(data) });
+  return mapRow(updated);
+}
+
+export interface DocumentDetail {
+  id: string;
+  collectionId: string;
+  title: string;
+  sourceType: string;
+  sourceUrl: string | null;
+  contentText: string | null;
+  metadata: unknown;
+  chunkCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function getDocumentById(
+  collectionId: string,
+  documentId: string,
+): Promise<DocumentDetail | null> {
+  const drizzle = db();
+  if (!drizzle) return null;
+
+  const rows = await drizzle
+    .select()
+    .from(aiEngineKnowledgeDocuments)
+    .where(
+      and(
+        eq(aiEngineKnowledgeDocuments.id, documentId),
+        eq(aiEngineKnowledgeDocuments.collectionId, collectionId),
+      ),
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    collectionId: row.collectionId,
+    title: row.title,
+    sourceType: row.sourceType,
+    sourceUrl: row.sourceUrl,
+    contentText: row.contentText,
+    metadata: row.metadata,
+    chunkCount: row.chunkCount,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 function mapRow(row: typeof aiEngineKnowledgeCollections.$inferSelect): CollectionRow {
   return {
     id: row.id,
@@ -208,5 +291,6 @@ function mapRow(row: typeof aiEngineKnowledgeCollections.$inferSelect): Collecti
     lastIndexedAt: row.lastIndexedAt,
     isActive: row.isActive,
     createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }

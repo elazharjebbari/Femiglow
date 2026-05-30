@@ -1,0 +1,38 @@
+feature: F13-account-sync-postiz
+critical: P1
+
+unit:
+  - id: F13-U-1
+    name: syncSocialAccounts upserts new
+    given: Postiz returns 3 integrations, DB has 0
+    expect: 3 INSERTs
+  - id: F13-U-2
+    name: syncSocialAccounts updates existing
+    given: DB has same remoteId, name changed
+    expect: UPDATE, not INSERT
+  - id: F13-U-3
+    name: syncSocialAccounts soft-deletes missing
+    given: DB has 5, Postiz returns 3 (2 missing)
+    expect: 2 marked disabled
+  - id: F13-U-4
+    name: capabilities mapping IG
+    given: integration.platform='instagram'
+    expect: capabilities has 'post', 'reel', 'story' entries
+  - id: F13-U-5
+    name: handles Postiz 401
+    given: Postiz returns 401
+    expect: throws HttpError code='token_expired'
+
+contract:
+  - id: F13-C-1
+    name: POST sync happy path
+    expect: 200 accounts array
+  - id: F13-C-2
+    name: POST sync Postiz unauthorized 401
+  - id: F13-C-3
+    name: POST sync partial failure
+    expect: 200 with errors array if some integrations failed mapping
+
+e2e:
+  - id: F13-E-1
+    name: sync button on Home refreshes accounts list

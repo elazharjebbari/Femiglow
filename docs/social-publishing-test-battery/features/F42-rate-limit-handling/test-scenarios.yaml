@@ -1,0 +1,19 @@
+feature: F42-rate-limit-handling
+critical: P1
+
+unit:
+  - id: F42-U-1
+    name: 429 from Postiz → retryable
+  - id: F42-U-2
+    name: 3 attempts then fail
+  - id: F42-U-3
+    name: success on 2nd attempt
+    given: 1st 429, 2nd 200
+    expect: 2 calls, success
+  - id: F42-U-4
+    name: backoff applied between retries
+
+e2e:
+  - id: F42-E-1
+    name: UI shows mapped message on 429 final
+    scenario_ref: S10

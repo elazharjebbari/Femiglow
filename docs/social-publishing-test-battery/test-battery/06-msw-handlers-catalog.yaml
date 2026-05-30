@@ -1,0 +1,104 @@
+version: "1.0.0"
+source_file: src/test/msw/social-publishing-handlers.ts
+
+handlers:
+  - id: pub_now
+    method: POST
+    path: /api/admin/content-studio/posts/:id/publish-now
+    variants:
+      success:
+        status: 201
+        body: { status: queued, jobs: [{ id, postId, status: published }] }
+      rate_limited: { status: 429, body: { error: { code: provider_rate_limited } } }
+      budget_exceeded: { status: 402, body: { error: { code: budget_exceeded } } }
+      auth_failed: { status: 401, body: { error: { code: token_expired } } }
+      no_account: { status: 409, body: { error: { code: no_account_connected } } }
+      brand_blocked: { status: 409, body: { error: { code: brand_review_blocked } } }
+      idempotency_replay: { status: 200, body: { jobs: [...] } }
+
+  - id: pub_schedule
+    method: POST
+    path: /api/admin/content-studio/posts/:id/schedule
+    variants:
+      success: { status: 201, body: { status: scheduled } }
+      past_date: { status: 400, body: { error: { code: invalid_date } } }
+      min_lead: { status: 400, body: { error: { code: min_lead_time } } }
+
+  - id: pub_draft
+    method: POST
+    path: /api/admin/content-studio/posts/:id/draft-on-provider
+    variants:
+      success: { status: 201 }
+      capability_not_supported: { status: 409 }
+
+  - id: pub_cancel
+    method: POST
+    path: /api/admin/content-studio/posts/:id/cancel
+    variants:
+      success: { status: 200 }
+      already_terminal: { status: 409 }
+
+  - id: pub_reschedule
+    method: PATCH
+    path: /api/admin/content-studio/posts/:id/reschedule
+    variants:
+      success: { status: 200 }
+      past_date: { status: 400 }
+
+  - id: jobs_list
+    method: GET
+    path: /api/admin/content-studio/publish-jobs
+    variants:
+      success: { status: 200, body: { jobs: [...] } }
+      empty: { status: 200, body: { jobs: [] } }
+
+  - id: job_retry
+    method: POST
+    path: /api/admin/content-studio/publish-jobs/:id/retry
+    variants:
+      success: { status: 200, body: { job: { status: queued } } }
+      not_failed: { status: 409 }
+
+  - id: job_cancel
+    method: POST
+    path: /api/admin/content-studio/publish-jobs/:id/cancel
+    variants:
+      success: { status: 200 }
+      terminal: { status: 409 }
+
+  - id: postiz_sync
+    method: POST
+    path: /api/admin/content-studio/postiz/integrations/sync
+    variants:
+      success: { status: 200, body: { accounts: [...], summary: {...} } }
+      unauthorized: { status: 401 }
+
+  - id: health
+    method: GET
+    path: /api/admin/content-studio/health
+    variants:
+      mock_mode_on: { status: 200, body: { mockMode: true } }
+      mock_mode_off: { status: 200, body: { mockMode: false } }
+
+  - id: generation_runs
+    method: GET
+    path: /api/admin/content-studio/generation-runs
+    variants:
+      success: { status: 200, body: { budget: { dailyBudgetCents: 100, dailySpentCents: 5, remainingCents: 95 } } }
+      budget_exhausted: { status: 200, body: { budget: { remainingCents: 0 } } }
+
+  - id: media_list
+    method: GET
+    path: /api/admin/content-studio/media
+    variants:
+      success: { status: 200, body: { items: [...] } }
+
+state_store:
+  type: in-memory Map
+  scope: per test (reset in afterEach)
+  purpose: idempotency, polling state changes
+
+helpers_export:
+  - createPublishHandlers(opts)
+  - applyPlaywrightRoutes(page, opts)
+  - PublishMockStore class

@@ -1,0 +1,371 @@
+# Frontend Test Scenarios -- Higgsfield AI Provider Integration
+# Date: 2026-05-27
+# Total: 24 scenarios
+
+suite: higgsfield-frontend
+description: >
+  Scenarios verifying that the existing provider-agnostic UI correctly
+  renders Higgsfield AI data across the Config page tabs, ModelSelector,
+  and API Keys management.
+
+# =============================================================================
+# Provider Card Grid (Fournisseurs Tab)
+# =============================================================================
+
+scenarios:
+
+  - id: FE-HF-001
+    title: Higgsfield provider card renders in grid
+    tab: Fournisseurs
+    precondition: >
+      GET /config/providers returns a Higgsfield entry with
+      providerType='higgsfield', name='Higgsfield AI', configured=true,
+      isEnabled=true, healthStatus='healthy'.
+    steps:
+      - Navigate to Config page
+      - Wait for providers to load
+    assertions:
+      - Text "Higgsfield AI" is visible in the provider grid
+      - Card is rendered with full opacity (opacity: 1)
+    priority: critical
+
+  - id: FE-HF-002
+    title: Card shows 'Image' and 'Video' capability badges
+    tab: Fournisseurs
+    precondition: >
+      Higgsfield provider has capabilities: ['image', 'video'].
+    steps:
+      - Navigate to Config page
+      - Locate Higgsfield card
+    assertions:
+      - Badge with text "Image" is visible
+      - Badge with text "Video" is visible (French: "Video")
+      - Image badge has saffron color (--cs-saffron)
+      - Video badge has violet color (--cs-violet)
+    priority: critical
+
+  - id: FE-HF-003
+    title: Card shows correct models list
+    tab: Fournisseurs
+    precondition: >
+      Higgsfield provider has models:
+        - { name: 'higgsfield-diffusion-v2', capability: 'image', costPerUnit: 500 }
+        - { name: 'higgsfield-video-v1', capability: 'video', costPerUnit: 2000 }
+    steps:
+      - Navigate to Config page
+      - Locate Higgsfield card
+    assertions:
+      - Text "higgsfield-diffusion-v2" is visible (mono font)
+      - Text "higgsfield-video-v1" is visible (mono font)
+      - Cost "5c/u" is visible for diffusion model
+      - Cost "20c/u" is visible for video model
+      - No "plus N autres modeles" line (only 2 models, max is 3)
+    priority: high
+
+  - id: FE-HF-004
+    title: Card shows healthy status bar (green)
+    tab: Fournisseurs
+    precondition: >
+      Higgsfield provider has healthStatus='healthy', configured=true.
+    steps:
+      - Navigate to Config page
+      - Inspect top 3px bar on Higgsfield card
+    assertions:
+      - Bar has background var(--cs-success) (green)
+      - Status badge shows "Actif"
+      - Status dot is green
+    priority: high
+
+  - id: FE-HF-005
+    title: Card shows degraded status bar (amber)
+    tab: Fournisseurs
+    precondition: >
+      Higgsfield provider has healthStatus='degraded', configured=true.
+    steps:
+      - Navigate to Config page
+    assertions:
+      - Status bar has background var(--cs-warning)
+    priority: medium
+
+  - id: FE-HF-006
+    title: Card shows unconfigured state
+    tab: Fournisseurs
+    precondition: >
+      Higgsfield provider has configured=false, isEnabled=false.
+    steps:
+      - Navigate to Config page
+      - Locate Higgsfield card
+    assertions:
+      - Status bar has background var(--cs-border) (grey)
+      - Badge shows "Inactif"
+      - Card has opacity 0.55
+      - Tester button is disabled / low opacity
+    priority: high
+
+  - id: FE-HF-007
+    title: Card shows priority and fallback badge
+    tab: Fournisseurs
+    precondition: >
+      Higgsfield provider has priority=15, isFallback=false.
+    steps:
+      - Navigate to Config page
+    assertions:
+      - Text "Priorite 15" is visible
+      - No "fallback" badge is shown
+    priority: medium
+
+  - id: FE-HF-008
+    title: Card shows budget and rate limit
+    tab: Fournisseurs
+    precondition: >
+      Higgsfield provider has dailyBudgetCents=20, rateLimitRpm=60.
+    steps:
+      - Navigate to Config page
+    assertions:
+      - Text "0.20 MAD/j" is visible (Shield icon)
+      - Text "60/min" is visible (Zap icon)
+    priority: medium
+
+  - id: FE-HF-009
+    title: Stat card counts include Higgsfield
+    tab: Fournisseurs
+    precondition: >
+      7 providers total, 5 configured (including Higgsfield).
+    steps:
+      - Navigate to Config page
+      - Check stat cards
+    assertions:
+      - "Fournisseurs actifs" shows "5/7"
+      - "Budget quotidien total" includes Higgsfield's budget in sum
+      - "Cles configurees" count reflects Higgsfield key status
+    priority: high
+
+# =============================================================================
+# Inline Edit Form
+# =============================================================================
+
+  - id: FE-HF-010
+    title: Edit form works for Higgsfield (priority, budget, rate limit)
+    tab: Fournisseurs
+    precondition: Higgsfield card is rendered and configured.
+    steps:
+      - Click "Editer" on Higgsfield card
+      - Change priority to 5
+      - Change budget to 1 MAD
+      - Click "Sauvegarder"
+    assertions:
+      - Edit form opens with pre-filled values (priority=15, budget computed, rate=60)
+      - Actif and Fallback checkboxes are visible
+      - ModelSelector shows provider type "higgsfield"
+      - No "URL de base Ollama" field shown (not Ollama)
+      - Save calls POST /config/providers with updated data
+      - Success feedback "Configuration sauvegardee" appears
+      - Form closes after 1.2 seconds
+    priority: critical
+
+  - id: FE-HF-011
+    title: Edit form error keeps form open
+    tab: Fournisseurs
+    precondition: POST /config/providers returns 500.
+    steps:
+      - Click "Editer" on Higgsfield card
+      - Click "Sauvegarder"
+    assertions:
+      - Red feedback "Erreur lors de la sauvegarde" is shown
+      - Form remains open with Annuler button visible
+    priority: high
+
+  - id: FE-HF-012
+    title: Cancel closes edit form without saving
+    tab: Fournisseurs
+    precondition: Edit form is open for Higgsfield.
+    steps:
+      - Click "Annuler"
+    assertions:
+      - Edit form disappears
+      - No POST request was made
+    priority: medium
+
+  - id: FE-HF-013
+    title: Test connection button works for Higgsfield
+    tab: Fournisseurs
+    precondition: Higgsfield is configured.
+    steps:
+      - Click "Tester" on Higgsfield card
+    assertions:
+      - Spinner icon appears during test
+      - Health endpoint is called
+      - Button returns to normal after test completes
+    priority: medium
+
+# =============================================================================
+# ModelSelector
+# =============================================================================
+
+  - id: FE-HF-014
+    title: ModelSelector loads Higgsfield models
+    tab: Fournisseurs (edit form)
+    precondition: >
+      GET /config/providers/models?provider=higgsfield returns
+      { models: [{id:'higgsfield-diffusion-v2',role:'image'},{id:'higgsfield-video-v1',role:'video'}], source:'live' }
+    steps:
+      - Open edit form for Higgsfield
+      - Click ModelSelector trigger
+    assertions:
+      - Popover opens with search input
+      - "higgsfield-diffusion-v2" appears with [IMAGE] role badge
+      - "higgsfield-video-v1" appears with [VIDEO] role badge
+      - Footer shows "Live (2 modeles)"
+      - Source dot is green (#22c55e)
+    priority: critical
+
+  - id: FE-HF-015
+    title: ModelSelector shows fallback when live fetch fails
+    tab: Fournisseurs (edit form)
+    precondition: >
+      GET /config/providers/models?provider=higgsfield returns
+      { models: [...], source: 'fallback' }
+    steps:
+      - Open edit form for Higgsfield
+      - Click ModelSelector trigger
+    assertions:
+      - Fallback models are shown
+      - Footer shows "Statique (2 modeles)"
+      - Source dot is amber (#f59e0b)
+    priority: high
+
+  - id: FE-HF-016
+    title: ModelSelector refresh clears cache and re-fetches
+    tab: Fournisseurs (edit form)
+    precondition: Higgsfield models are cached from previous open.
+    steps:
+      - Open ModelSelector
+      - Click refresh button
+    assertions:
+      - API is called again (bypassing cache)
+      - Source updates from "Cache" to "Live" on success
+    priority: medium
+
+  - id: FE-HF-017
+    title: ModelSelector supports custom model entry for Higgsfield
+    tab: Fournisseurs (edit form)
+    steps:
+      - Open ModelSelector for Higgsfield
+      - Type "higgsfield-custom-v3" in search
+    assertions:
+      - "Ajouter higgsfield-custom-v3" option appears
+      - Selecting it adds the model to selectedModels
+    priority: low
+
+# =============================================================================
+# API Keys Tab (Cles API)
+# =============================================================================
+
+  - id: FE-HF-018
+    title: API key card for Higgsfield shows correct source (database)
+    tab: Cles API
+    precondition: >
+      GET /config/api-keys returns Higgsfield with source='database',
+      masked='hf-****ab12', label='Production key'.
+    steps:
+      - Switch to Cles API tab
+    assertions:
+      - Card with "Higgsfield AI" is visible
+      - Badge shows "Base de donnees" (tone: accent)
+      - Masked key "hf-****ab12" is displayed in code element
+      - "Tester" button is visible
+      - "Supprimer" button is visible
+    priority: critical
+
+  - id: FE-HF-019
+    title: API key card shows env var source
+    tab: Cles API
+    precondition: >
+      Higgsfield key has source='env', masked='hf-****cd34'.
+    steps:
+      - Switch to Cles API tab
+    assertions:
+      - Badge shows "Env var" (tone: sage)
+      - Masked key is displayed
+      - "Tester" button is visible
+      - "Supprimer" button is NOT visible (env keys cannot be deleted from UI)
+    priority: high
+
+  - id: FE-HF-020
+    title: Unconfigured Higgsfield key shows "Non configure"
+    tab: Cles API
+    precondition: >
+      Higgsfield key has source='none'.
+    steps:
+      - Switch to Cles API tab
+    assertions:
+      - Badge shows "Non configure" (tone: neutral)
+      - Card has opacity 0.7
+      - No masked key displayed
+      - No "Tester" or "Supprimer" buttons
+    priority: high
+
+  - id: FE-HF-021
+    title: Test API key button works for Higgsfield
+    tab: Cles API
+    precondition: >
+      Higgsfield key is configured. POST /config/api-keys/test returns valid=true.
+    steps:
+      - Switch to Cles API tab
+      - Click "Tester" on Higgsfield card
+    assertions:
+      - POST /config/api-keys/test called with { providerType: 'higgsfield' }
+      - Toast shows "higgsfield -- Cle valide (Nms)"
+    priority: high
+
+  - id: FE-HF-022
+    title: Delete API key works for Higgsfield
+    tab: Cles API
+    precondition: >
+      Higgsfield key has source='database', id='ak-hf-001'.
+    steps:
+      - Switch to Cles API tab
+      - Click "Supprimer" on Higgsfield card
+      - Confirm deletion in inline banner
+    assertions:
+      - Inline confirmation banner appears with "Supprimer la cle Higgsfield AI ?"
+      - Clicking "Supprimer" in banner calls DELETE /config/api-keys/ak-hf-001
+      - Toast shows "Cle supprimee"
+      - Key list re-fetches
+    priority: high
+
+# =============================================================================
+# Dark Mode
+# =============================================================================
+
+  - id: FE-HF-023
+    title: Dark mode renders correctly
+    tab: Fournisseurs
+    precondition: >
+      Dark mode is active (prefers-color-scheme: dark or theme toggle).
+    steps:
+      - Navigate to Config page in dark mode
+    assertions:
+      - Higgsfield card background uses dark elevated color
+      - Capability badges maintain contrast (saffron/violet on dark bg)
+      - Health status bar colors remain distinguishable
+      - Model list text is readable
+      - Edit form inputs have appropriate dark backgrounds
+    priority: medium
+
+# =============================================================================
+# Responsive Layout
+# =============================================================================
+
+  - id: FE-HF-024
+    title: Responsive layout includes Higgsfield card
+    tab: Fournisseurs
+    precondition: Viewport width < 680px.
+    steps:
+      - Resize viewport to mobile width
+    assertions:
+      - Provider cards stack in a single column
+      - Higgsfield card occupies full width
+      - All content (badges, models, buttons) remains visible
+      - API keys grid also stacks to single column
+    priority: medium

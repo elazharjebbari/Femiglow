@@ -1,0 +1,12 @@
+feature: F40-dark-mode-publish-ui
+critical: P3
+
+e2e:
+  - id: F40-E-1
+    name: snapshot create page dark
+  - id: F40-E-2
+    name: snapshot plan page dark
+  - id: F40-E-3
+    name: snapshot publish dropdown open dark
+  - id: F40-E-4
+    name: snapshot confirm dialog dark

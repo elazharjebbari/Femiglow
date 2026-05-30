@@ -1,0 +1,37 @@
+feature: F08-video-model-selection
+
+unit:
+  - name: suggestForFormat('reel').video returns mock-video-1.0
+  - name: registry contains ≥ 1 video entry
+  - name: generateMockVideo for reel returns 1080x1920 MP4
+    expect: media.kind='video', width=1080, height=1920, durationMs > 0
+
+component:
+  - name: video toggle default ON for reel format
+    given: format='reel'
+    expect: toggle 'Vidéo' checked
+  - name: video toggle default OFF for post format
+    given: format='post'
+    expect: toggle 'Image' checked
+  - name: ModelPicker(role=video) shows mock entry
+    given: tab Générer, toggle vidéo
+    expect: trigger displays 'Mock vidéo'
+
+contract:
+  - name: POST /generate-visual with kind=video → 200, media.kind='video'
+  - name: POST /generate-visual with kind=video, model=mock-video-1.0 → run.model recorded
+  - name: with kind=video for format=post → 200 but warning logged (or 400 if strict)
+
+e2e:
+  - name: generate mock video for reel
+    steps:
+      - format=reel
+      - tab Générer, toggle vidéo (default)
+      - click Générer
+    expect:
+      - PreviewPane renders <video>
+      - video.src ends with /reel-9x16.mp4
+      - video.duration > 0
+  - name: mock badge visible when mock mode
+    given: env CONTENT_STUDIO_V2_MOCK_MODE=true
+    expect: 'Mode mock' badge visible in Stepper + PublishActionGroup

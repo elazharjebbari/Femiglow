@@ -16,8 +16,20 @@ export const contentIdeaCreateSchema = z
     prompt: z.string().min(8).max(2000),
     sourceType: z.string().max(80).nullable().optional(),
     sourceRef: z.string().max(160).nullable().optional(),
+    /** CS v2 create-audit Phase 2 — optional text-model override. Persisted only
+     * in `content_generation_run.model`; not on the idea row itself. */
+    model: z.string().min(1).max(120).optional(),
   })
   .strict();
+
+/** CS v2 create-audit Phase 2 — body for POST /ideas/:id/generate. Allows the
+ * UI to override the text-generation model just for this run. */
+export const ideasGenerateSchema = z
+  .object({
+    model: z.string().min(1).max(120).optional(),
+  })
+  .strict()
+  .optional();
 
 export const draftUpdateSchema = z
   .object({
@@ -43,6 +55,10 @@ export const visualGenerationSchema = z
     prompt: z.string().min(12).max(1800),
     size: z.enum(['1024x1024', '1024x1536', '1536x1024']).default('1024x1536'),
     quality: z.enum(['low', 'medium', 'high']).default('low'),
+    /** CS v2 Phase 3 — choose image vs video. Default keeps legacy callers working. */
+    kind: z.enum(['image', 'video']).default('image'),
+    /** CS v2 Phase 3 — optional image or video model id override. */
+    model: z.string().min(1).max(120).optional(),
   })
   .strict();
 
@@ -60,7 +76,7 @@ export const postCancelSchema = z
 
 export const postRescheduleSchema = z
   .object({
-    scheduledAt: z.string().min(1),
+    scheduledAt: z.string().datetime(),
   })
   .strict();
 

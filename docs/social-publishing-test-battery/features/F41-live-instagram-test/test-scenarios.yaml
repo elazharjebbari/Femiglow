@@ -1,0 +1,27 @@
+feature: F41-live-instagram-test
+critical: P0
+gating:
+  env: E2E_LIVE_POSTIZ=1
+  tag: '@live'
+  workers: 1
+
+e2e:
+  - id: F41-E-1
+    name: live publish-now on AlFenna IG
+    scenario_ref: S13
+    steps:
+      - given: E2E_LIVE_POSTIZ=1, valid Postiz API key, account synced
+      - when: create test draft + approve + publish-now via UI
+      - then: social_publish_job.status='published' within 90s
+      - and: content_postiz_delivery.status='sent', postizPostId set
+      - and: Postiz API GET /posts/:id returns post with Instagram permalink
+      - and: audit_log social.publish.published row exists
+      - finally: cleanup (DELETE Postiz post) if E2E_LIVE_CLEANUP=1
+
+  - id: F41-E-2
+    name: smoke pre-flight check
+    steps:
+      - given: E2E_LIVE_POSTIZ=1
+      - when: spec setup runs
+      - then: AlFenna account found in /integrations, no dangling test post in last 10min
+      - or: skip with clear message

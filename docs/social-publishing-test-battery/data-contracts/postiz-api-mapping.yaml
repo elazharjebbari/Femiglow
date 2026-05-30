@@ -1,0 +1,72 @@
+title: FemiGlow → Postiz mapping reference
+description: |
+  Comment chaque champ FemiGlow se traduit en payload Postiz pour POST /api/public/v1/posts.
+
+mapping:
+  type:
+    source: publishMode (FemiGlow)
+    target: type (Postiz)
+    rules:
+      now: 'now'
+      schedule: 'schedule'
+      draft: 'draft'
+
+  date:
+    source: scheduledAt OR now+1h
+    target: date
+    format: ISO8601
+
+  shortLink:
+    source: hardcoded
+    target: false
+
+  tags:
+    source: content.tags
+    target: tags
+    default: [{ value: 'femiglow', label: 'FemiGlow' }]
+
+  posts:
+    type: array (multi-account support; usually 1 entry)
+    items:
+      integration:
+        id:
+          source: account.remoteId
+          target: integration.id
+      value:
+        type: array
+        items:
+          content:
+            source: caption
+            target: content
+          image:
+            source: uploaded_media[] (from /upload calls)
+            target: image
+            shape: [{ id, path }]
+      settings:
+        __type:
+          source: platform
+          target: settings.__type
+        post_type:
+          source: format
+          target: settings.post_type
+          transforms:
+            carousel → 'post' (Postiz uses 'post' for carousels)
+
+example_payload_now:
+  type: 'now'
+  date: '2026-05-28T14:30:00.000Z'
+  shortLink: false
+  tags: [{ value: 'femiglow', label: 'FemiGlow' }]
+  posts:
+    - integration: { id: 'ig_alfenna_postiz_id' }
+      value:
+        - content: 'Caption text here'
+          image: [{ id: 'media_id_from_upload', path: '/path/from/upload' }]
+      settings:
+        __type: 'instagram'
+        post_type: 'post'
+
+example_payload_schedule:
+  type: 'schedule'
+  date: '2026-05-29T09:00:00.000Z'
+  # ... rest identical

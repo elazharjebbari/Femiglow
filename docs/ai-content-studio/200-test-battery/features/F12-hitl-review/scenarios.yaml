@@ -1,0 +1,457 @@
+feature: F12
+name: HITL Review (Human In The Loop)
+source: apps/web/src/app/admin/content-studio-v2/ai-engine/create/page.tsx (ReviewPanel)
+existing_tests: apps/web/src/components/admin/content-studio-v2/ai-engine/ReviewPanel.test.tsx
+
+scenarios:
+
+  # ---------------------------------------------------------------------------
+  # Review Panel Rendering
+  # ---------------------------------------------------------------------------
+
+  - id: F12-001
+    title: Review phase displays "Revue humaine requise" heading
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (fill form, mock review response, advance timers)
+      - assert: heading "Revue humaine requise" visible
+    expected: Review panel header rendered
+    existing_test: ReviewPanel.test.tsx - line 118
+
+  - id: F12-002
+    title: Job ID prefix shown in subtitle
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with jobId "job_abcdef1234567890"
+      - assert: text contains "job_abcd" (first 8 chars)
+      - assert: text contains "Examinez le contenu avant publication"
+    expected: Job reference displayed for operator tracking
+
+  - id: F12-003
+    title: Script hook text rendered in preview
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.script.hook = "Saviez-vous que votre peau change ?"
+      - assert: text "Saviez-vous que votre peau change" visible
+    expected: Script hook displayed
+    existing_test: ReviewPanel.test.tsx - line 120
+
+  - id: F12-004
+    title: Script CTA rendered
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.script.cta = "Decouvrez notre serum"
+      - assert: text "CTA:" prefix visible
+      - assert: text "Decouvrez notre serum" visible
+    expected: CTA section displayed
+
+  - id: F12-005
+    title: Script scenes listed with scene numbers
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.script.scenes = [{ sceneNumber: 1, narration: "Premiere scene" }]
+      - assert: text "Scene 1:" visible
+      - assert: text "Premiere scene" visible
+    expected: Scene list rendered
+
+  - id: F12-006
+    title: Caption text rendered in preview
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.caption = "Votre routine hivernale commence ici."
+      - assert: text "Votre routine hivernale commence ici." visible
+    expected: Caption displayed
+    existing_test: ReviewPanel.test.tsx - line 127
+
+  - id: F12-007
+    title: Hashtags rendered with # prefix
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.hashtags = ["skincare", "winter", "glow"]
+      - assert: text "#skincare" visible
+      - assert: text "#winter" visible
+      - assert: text "#glow" visible
+    expected: All hashtag badges displayed
+    existing_test: ReviewPanel.test.tsx - line 133
+
+  - id: F12-008
+    title: Quality scores section shows percentages with color coding
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: with qualityScores = { brand_alignment: 0.85, clarity: 0.92 }
+      - assert: text "Scores qualite" visible
+      - assert: text "85%" visible with green color (>= 70%)
+      - assert: text "92%" visible with green color (>= 70%)
+    expected: Quality scores computed and color-coded
+    existing_test: ReviewPanel.test.tsx - line 139
+
+  - id: F12-009
+    title: Quality score below 0.7 shows warning color
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with qualityScores = { engagement_potential: 0.55 }
+      - assert: text "55%" visible with warning color (--cs-warning)
+    expected: Medium scores use amber color
+
+  - id: F12-010
+    title: Quality score below 0.5 shows danger color
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with qualityScores = { hook_strength: 0.35 }
+      - assert: text "35%" visible with danger color (--cs-danger)
+    expected: Low scores use red color
+
+  - id: F12-011
+    title: Image thumbnails rendered when images present
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with images = [{ url: "/test.png" }, { url: "/test2.png" }]
+      - assert: text "Images (2)" visible
+      - assert: 2 img elements rendered with src attributes
+    expected: Image preview grid displayed
+
+  - id: F12-012
+    title: Image placeholder shown when url missing
+    priority: P2
+    type: unit
+    steps:
+      - goToReviewPhase: with images = [{}] (no url property)
+      - assert: ImageIcon placeholder rendered instead of img
+    expected: Graceful fallback for missing image URLs
+
+  - id: F12-013
+    title: Script section hidden when script is null
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.script = null
+      - assert: "Script" label NOT in document
+    expected: Conditional rendering for missing script
+
+  - id: F12-014
+    title: Caption section hidden when caption is empty
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.caption = ""
+      - assert: "Caption" label NOT in document
+    expected: Conditional rendering for empty caption
+
+  - id: F12-015
+    title: Hashtags section hidden when array empty
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with reviewPayload.hashtags = []
+      - assert: "Hashtags" label NOT in document
+    expected: Conditional rendering for no hashtags
+
+  # ---------------------------------------------------------------------------
+  # Decision Buttons
+  # ---------------------------------------------------------------------------
+
+  - id: F12-020
+    title: All three decision buttons visible initially
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard review response)
+      - assert: button "Approuver" visible
+      - assert: button "Rejeter" visible
+      - assert: button "Demander des modifications" visible
+    expected: Full decision interface rendered
+    existing_test: ReviewPanel.test.tsx - lines 147-166
+
+  - id: F12-021
+    title: Approve button has CheckCircle icon
+    priority: P2
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - query: button "Approuver"
+      - assert: button contains CheckCircle icon (SVG with specific path)
+    expected: Approve button iconography correct
+
+  - id: F12-022
+    title: Edit button has warning color styling
+    priority: P2
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - query: button "Demander des modifications"
+      - assert: button has borderColor var(--cs-warning) and color var(--cs-warning)
+    expected: Edit button uses warning color scheme
+
+  - id: F12-023
+    title: Reject button has danger color styling
+    priority: P2
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - query: button "Rejeter"
+      - assert: button has borderColor var(--cs-danger) and color var(--cs-danger)
+    expected: Reject button uses danger color scheme
+
+  - id: F12-024
+    title: All buttons disabled when submitting=true
+    priority: P0
+    type: unit
+    steps:
+      - render: ReviewPanel with submitting=true
+      - assert: button "Approuver" is disabled
+      - assert: button "Rejeter" is disabled
+      - assert: button "Demander des modifications" is disabled
+    expected: Buttons locked during submission
+
+  - id: F12-025
+    title: Approve button shows spinner when submitting
+    priority: P1
+    type: unit
+    steps:
+      - render: ReviewPanel with submitting=true
+      - query: button "Approuver" (text may change to "Envoi...")
+      - assert: Loader2 spinner icon visible within button
+    expected: Loading feedback during submission
+
+  # ---------------------------------------------------------------------------
+  # Feedback Flow -- Reject
+  # ---------------------------------------------------------------------------
+
+  - id: F12-030
+    title: Clicking Reject shows feedback textarea with reject placeholder
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - click: button "Rejeter"
+      - assert: textarea with placeholder /ne convient pas/ appears
+      - assert: decision buttons hidden
+    expected: Reject feedback mode activated
+    existing_test: ReviewPanel.test.tsx - line 168
+
+  - id: F12-031
+    title: Feedback textarea accepts text input
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - click: button "Rejeter"
+      - change: textarea to "Pas assez engageant"
+      - assert: textarea value is "Pas assez engageant"
+    expected: Text input functional
+    existing_test: ReviewPanel.test.tsx - line 194
+
+  - id: F12-032
+    title: Confirmer and Annuler buttons appear in feedback mode
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - click: button "Rejeter"
+      - assert: button "Confirmer" visible (primary variant)
+      - assert: button "Annuler" visible (ghost variant)
+    expected: Feedback action buttons displayed
+
+  - id: F12-033
+    title: Confirmer calls onDecision with 'rejected' and feedback text
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard, mock review API)
+      - click: button "Rejeter"
+      - change: textarea to "Hook trop faible"
+      - click: button "Confirmer"
+      - assert: review API called with { decision: 'rejected', feedback: 'Hook trop faible' }
+    expected: Rejection submitted with feedback
+
+  - id: F12-034
+    title: Annuler resets feedback mode and clears text
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - click: button "Rejeter"
+      - change: textarea to "Some text"
+      - click: button "Annuler"
+      - assert: decision buttons reappear
+      - assert: textarea no longer visible
+    expected: Cancel restores initial state
+
+  # ---------------------------------------------------------------------------
+  # Feedback Flow -- Edit Request
+  # ---------------------------------------------------------------------------
+
+  - id: F12-040
+    title: Clicking Edit shows feedback textarea with edit placeholder
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - click: button "Demander des modifications"
+      - assert: textarea with placeholder /modifications souhaitees/ appears
+    expected: Edit feedback mode activated
+    existing_test: ReviewPanel.test.tsx - line 180
+
+  - id: F12-041
+    title: Confirmer calls onDecision with 'edit_requested' and feedback
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard, mock review API)
+      - click: button "Demander des modifications"
+      - change: textarea to "Ajouter mention du camelia Tsubaki"
+      - click: button "Confirmer"
+      - assert: review API called with { decision: 'edit_requested', feedback: 'Ajouter mention du camelia Tsubaki' }
+    expected: Edit request submitted with specific feedback
+
+  - id: F12-042
+    title: Empty feedback sent as undefined
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: (standard, mock review API)
+      - click: button "Rejeter"
+      - click: button "Confirmer" (without entering text)
+      - assert: review API called with { decision: 'rejected', feedback: undefined }
+    expected: No feedback gracefully handled
+
+  # ---------------------------------------------------------------------------
+  # Approval Flow
+  # ---------------------------------------------------------------------------
+
+  - id: F12-050
+    title: Clicking Approve calls review API with 'approved'
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - mock: review API resolves with completed result
+      - click: button "Approuver"
+      - assert: fetch called with POST /api/admin/ai-engine/jobs/job_abcdef.../review
+      - assert: request body contains { decision: 'approved' }
+    expected: Approval sent to API
+    existing_test: ReviewPanel.test.tsx - line 206
+
+  - id: F12-051
+    title: After approval, result phase appears
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - mock: review API resolves with { status: 'completed', script: {...}, caption: '...' }
+      - click: button "Approuver"
+      - await: microtasks flush
+      - assert: "Contenu genere" heading appears (result phase)
+    expected: Successful approval transitions to result
+    existing_test: ReviewPanel.test.tsx - line 235
+
+  # ---------------------------------------------------------------------------
+  # Review Cycle Loop
+  # ---------------------------------------------------------------------------
+
+  - id: F12-060
+    title: Edit request returning new review cycle updates panel
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: with caption "First version"
+      - mock: review API resolves with { status: 'review', jobId: 'job_new', reviewPayload: { caption: 'Second version', ... } }
+      - click: button "Demander des modifications"
+      - change: textarea to "More engaging"
+      - click: button "Confirmer"
+      - await: response resolves
+      - assert: caption now shows "Second version"
+      - assert: decision buttons reappear for new review
+    expected: Multi-cycle review loop works correctly
+
+  - id: F12-061
+    title: Reject returning new review cycle works
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: with script.hook = "Original hook"
+      - mock: review API resolves with { status: 'review', reviewPayload: { script: { hook: 'New hook' } } }
+      - click: button "Rejeter"
+      - change: textarea to "Not good enough"
+      - click: button "Confirmer"
+      - await: response resolves
+      - assert: "New hook" visible in review panel
+    expected: Rejection can trigger regeneration cycle
+
+  # ---------------------------------------------------------------------------
+  # Error Handling
+  # ---------------------------------------------------------------------------
+
+  - id: F12-070
+    title: Review API failure transitions to error phase
+    priority: P0
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - mock: review API resolves { ok: false, status: 500, error: 'Server error' }
+      - click: button "Approuver"
+      - assert: error phase displayed with "Server error" message
+    expected: API errors handled gracefully
+
+  - id: F12-071
+    title: Review API network error shows error phase
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - mock: review API rejects with TypeError
+      - click: button "Approuver"
+      - assert: error phase displayed
+      - assert: error message mentions the failure
+    expected: Network failures handled
+
+  - id: F12-072
+    title: Submitting state reset after API error
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - mock: review API resolves { ok: false, status: 500 }
+      - click: button "Approuver"
+      - assert: reviewSubmitting set to false (buttons re-enabled after error transition)
+    expected: Loading state cleaned up on failure
+
+msw_handlers:
+  required:
+    - "http.post('/api/admin/ai-engine/generate') -- returns status='review'"
+    - "http.post('/api/admin/ai-engine/jobs/:id/review')"
+  error_variants:
+    - "generate returns 500 (server error)"
+    - "review returns 500 (server error)"
+    - "review returns 429 (rate limited)"
+
+test_utilities:
+  goToReviewPhase: |
+    async function goToReviewPhase(fetchSpy, overrides = {}) {
+      const response = { ...reviewResponse(), ...overrides };
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(response),
+      });
+      render(<AIEngineCreatePage />);
+      fillRequiredFields();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Generer/i }));
+      });
+      // Advance through 6 pipeline steps
+      for (let i = 0; i < 7; i++) {
+        await act(async () => { vi.advanceTimersByTime(3100); });
+      }
+      expect(screen.getByText('Revue humaine requise')).toBeInTheDocument();
+    }

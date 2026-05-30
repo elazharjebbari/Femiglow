@@ -1,0 +1,120 @@
+feature: F01-publish-now-direct
+critical: P0
+
+unit:
+  - id: F01-U-1
+    name: publishContentPostNow idempotency replay
+    given: existing job with idempotencyKey='k1' status=published
+    when: publishContentPostNow({ ..., idempotencyKey: 'k1' })
+    expect: returns existing job, no new INSERT
+  - id: F01-U-2
+    name: publishContentPostNow pre-flight no_media
+    given: post approved + no asset_binding
+    expect: throws HttpError invalid_state code=no_media_attached
+  - id: F01-U-3
+    name: publishContentPostNow pre-flight brand_blocked
+    given: brand_review.status='blocked'
+    expect: throws HttpError code=brand_review_blocked
+  - id: F01-U-4
+    name: publishContentPostNow pre-flight no_account
+    given: no active account for platform
+    expect: throws HttpError code=no_account_connected
+  - id: F01-U-5
+    name: executeJob lock acquire success
+    when: tryAcquireLock then publishWithAdapter resolves
+    expect: status transitions queued → publishing → published, lockedAt set then cleared
+  - id: F01-U-6
+    name: executeJob lock acquire conflict
+    given: another worker holds lock
+    expect: skipped, job remains queued
+  - id: F01-U-7
+    name: executeJob adapter failure with retry
+    given: adapter throws transient 503
+    when: executeJob runs with retry
+    expect: attempts up to 3 with exp backoff, then status=failed
+  - id: F01-U-8
+    name: executeJob adapter failure terminal
+    given: adapter throws non-retryable 422
+    expect: 1 attempt, status=failed, no retry
+
+contract:
+  - id: F01-C-1
+    name: POST publish-now happy path 201
+    payload: '{ accountId: "sa_1" }'
+    expect: 201 with jobs[0].status in [queued, published]
+  - id: F01-C-2
+    name: POST publish-now idempotency 200 cached
+    given: jobs[0] already exists for key='k1'
+    payload: '{ idempotencyKey: "k1" }'
+    expect: 200/201 with same job.id
+  - id: F01-C-3
+    name: POST publish-now 401 unauthorized
+    given: no admin cookie
+    expect: 401
+  - id: F01-C-4
+    name: POST publish-now 404 not found
+    given: postId does not exist
+    expect: 404
+  - id: F01-C-5
+    name: POST publish-now 409 invalid_state
+    given: post.status='cancelled'
+    expect: 409 with error.code='invalid_state'
+  - id: F01-C-6
+    name: POST publish-now 409 brand_blocked
+    expect: 409 with error.code='brand_review_blocked'
+  - id: F01-C-7
+    name: POST publish-now 409 no_account_connected
+    expect: 409 with error.code='no_account_connected'
+  - id: F01-C-8
+    name: POST publish-now 429 rate_limited
+    given: Postiz returns 429
+    expect: 429 with error.code='provider_rate_limited'
+
+component:
+  - id: F01-CO-1
+    name: dropdown shows 3 options
+    given: postId provided + draft + media + caption
+    expect: menu items 'Publier maintenant', 'Programmer', 'Brouillon Postiz' all visible
+  - id: F01-CO-2
+    name: dropdown trigger disabled without postId
+    given: postId=null
+    expect: trigger has disabled attribute
+  - id: F01-CO-3
+    name: clicking 'Publier maintenant' opens dialog
+    expect: dialog title 'Publier maintenant ?' visible
+  - id: F01-CO-4
+    name: dialog shows G12 preview
+    given: preview prop populated
+    expect: testid='publish-confirm-preview' has thumbnail + caption + platform tag
+  - id: F01-CO-5
+    name: confirm fires API call
+    when: click confirm in dialog
+    expect: fetch POST /publish-now with method=POST
+  - id: F01-CO-6
+    name: success toast on 201
+    expect: text 'Publication lancée' visible after submit
+  - id: F01-CO-7
+    name: error toast on 409 (mapped message)
+    given: server returns 409 code='no_account_connected'
+    expect: toast 'Aucun compte social connecté.'
+  - id: F01-CO-8
+    name: error toast on 429
+    given: server returns 429 code='provider_rate_limited'
+    expect: toast 'Trop de requêtes...'
+  - id: F01-CO-9
+    name: mock badge inline visible when mockMode=true
+    expect: testid mockmode badge in footer
+
+e2e:
+  - id: F01-E-1
+    name: golden path publish-now
+    scenario_ref: S01
+  - id: F01-E-2
+    name: publish 409 mapped to French message
+    scenario_ref: S06 partial
+  - id: F01-E-3
+    name: publish then immediate state update in calendar
+    scenario_ref: S12 partial
+  - id: F01-E-4
+    name: idempotency replay E2E (double-click guard)
+    scenario_ref: S11

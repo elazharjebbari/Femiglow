@@ -20,7 +20,23 @@ const baseCollectionRow = {
   lastIndexedAt: new Date('2026-01-01'),
   isActive: true,
   createdAt: new Date('2025-12-01'),
+  updatedAt: new Date('2025-12-01'),
 };
+
+const baseDocumentRow = {
+  id: 'doc-1',
+  collectionId: 'col-1',
+  title: 'Test Document',
+  sourceType: 'text',
+  sourceUrl: null,
+  contentText: 'Some content here',
+  metadata: null,
+  chunkCount: 3,
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
+};
+
+const mockUpdateReturning = vi.fn();
 
 const mockDb = {
   insert: vi.fn(() => ({
@@ -40,7 +56,9 @@ const mockDb = {
   })),
   update: vi.fn(() => ({
     set: mockUpdateSet.mockReturnValue({
-      where: mockUpdateWhere.mockResolvedValue(undefined),
+      where: mockUpdateWhere.mockReturnValue({
+        returning: mockUpdateReturning.mockResolvedValue([baseCollectionRow]),
+      }),
     }),
   })),
 };
@@ -58,7 +76,10 @@ vi.mock('@/lib/db/schema-ai-engine', () => ({
     collectionId: 'collection_id',
   },
   aiEngineKnowledgeDocuments: {
+    id: 'id',
     collectionId: 'collection_id',
+    title: 'title',
+    sourceType: 'source_type',
   },
   aiEngineKnowledgeChunks: {
     collectionId: 'collection_id',
@@ -79,7 +100,9 @@ import {
   listCollections,
   getCollection,
   deleteCollection,
+  updateCollection,
   updateCollectionCounts,
+  getDocumentById,
   seedDefaultCollections,
 } from './collections';
 import { db } from '@/lib/db/client';
@@ -104,7 +127,8 @@ describe('collections', () => {
     });
     mockDb.select.mockReturnValue({ from: mockSelectFrom });
 
-    mockUpdateWhere.mockResolvedValue(undefined);
+    mockUpdateReturning.mockResolvedValue([baseCollectionRow]);
+    mockUpdateWhere.mockReturnValue({ returning: mockUpdateReturning });
     mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
     mockDb.update.mockReturnValue({ set: mockUpdateSet });
   });
@@ -192,5 +216,107 @@ describe('collections', () => {
     await deleteCollection('col-1');
     expect(mockDb.update).toHaveBeenCalled();
     expect(mockUpdateSet).toHaveBeenCalledWith({ isActive: false });
+  });
+
+  describe('updateCollection', () => {
+    it('updates name and returns updated row', async () => {
+      const updated = { ...baseCollectionRow, name: 'Updated Name', updatedAt: new Date() };
+      mockUpdateReturning.mockResolvedValueOnce([updated]);
+
+      const result = await updateCollection('col-1', { name: 'Updated Name' });
+      expect(result.name).toBe('Updated Name');
+      expect(mockDb.update).toHaveBeenCalled();
+    });
+
+    it('updates description to null', async () => {
+      const updated = { ...baseCollectionRow, description: null, updatedAt: new Date() };
+      mockUpdateReturning.mockResolvedValueOnce([updated]);
+
+      const result = await updateCollection('col-1', { description: null });
+      expect(result.description).toBeNull();
+    });
+
+    it('updates category', async () => {
+      const updated = { ...baseCollectionRow, category: 'brand', updatedAt: new Date() };
+      mockUpdateReturning.mockResolvedValueOnce([updated]);
+
+      const result = await updateCollection('col-1', { category: 'brand' });
+      expect(result.category).toBe('brand');
+    });
+
+    it('throws when collection not found', async () => {
+      mockUpdateReturning.mockResolvedValueOnce([]);
+
+      await expect(updateCollection('non-existent', { name: 'X' })).rejects.toThrow(
+        'Collection non-existent not found',
+      );
+    });
+
+    it('throws when DB is null', async () => {
+      (db as ReturnType<typeof vi.fn>).mockReturnValueOnce(null);
+
+      await expect(updateCollection('col-1', { name: 'X' })).rejects.toThrow(
+        'Database connection required',
+      );
+    });
+
+    it('always sets updatedAt', async () => {
+      mockUpdateReturning.mockResolvedValueOnce([baseCollectionRow]);
+      await updateCollection('col-1', { name: 'Test' });
+
+      const setCall = mockUpdateSet.mock.calls[0]![0] as Record<string, unknown>;
+      expect(setCall).toHaveProperty('updatedAt');
+      expect(setCall.updatedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('getDocumentById', () => {
+    it('returns document when found', async () => {
+      mockSelectLimit.mockResolvedValueOnce([baseDocumentRow]);
+      mockSelectWhere.mockReturnValueOnce({ limit: mockSelectLimit });
+      mockSelectFrom.mockReturnValueOnce({ where: mockSelectWhere });
+
+      const result = await getDocumentById('col-1', 'doc-1');
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe('doc-1');
+      expect(result!.title).toBe('Test Document');
+      expect(result!.contentText).toBe('Some content here');
+    });
+
+    it('returns null when document not found', async () => {
+      mockSelectLimit.mockResolvedValueOnce([]);
+      mockSelectWhere.mockReturnValueOnce({ limit: mockSelectLimit });
+      mockSelectFrom.mockReturnValueOnce({ where: mockSelectWhere });
+
+      const result = await getDocumentById('col-1', 'non-existent');
+      expect(result).toBeNull();
+    });
+
+    it('returns null when DB is null', async () => {
+      (db as ReturnType<typeof vi.fn>).mockReturnValueOnce(null);
+
+      const result = await getDocumentById('col-1', 'doc-1');
+      expect(result).toBeNull();
+    });
+
+    it('maps all fields correctly', async () => {
+      mockSelectLimit.mockResolvedValueOnce([baseDocumentRow]);
+      mockSelectWhere.mockReturnValueOnce({ limit: mockSelectLimit });
+      mockSelectFrom.mockReturnValueOnce({ where: mockSelectWhere });
+
+      const result = await getDocumentById('col-1', 'doc-1');
+      expect(result).toEqual({
+        id: 'doc-1',
+        collectionId: 'col-1',
+        title: 'Test Document',
+        sourceType: 'text',
+        sourceUrl: null,
+        contentText: 'Some content here',
+        metadata: null,
+        chunkCount: 3,
+        createdAt: baseDocumentRow.createdAt,
+        updatedAt: baseDocumentRow.updatedAt,
+      });
+    });
   });
 });

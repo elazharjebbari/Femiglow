@@ -1,0 +1,27 @@
+feature: F20-dry-run-adapter
+critical: P1
+
+unit:
+  - id: F20-U-1
+    name: deterministic id from idempotencyKey
+    given: 2 publish calls with same key
+    expect: same remoteId
+  - id: F20-U-2
+    name: permalink synthetic
+    expect: starts with 'https://dry-run.local/'
+  - id: F20-U-3
+    name: failure simulation via metadata
+    given: content.metadata.dryRunFailureCode='provider_rate_limited'
+    expect: throws that code, retryable=true
+  - id: F20-U-4
+    name: failure simulation non-retryable
+    given: code='token_expired'
+    expect: throws, retryable=false
+  - id: F20-U-5
+    name: capabilities IG: post + carousel only
+  - id: F20-U-6
+    name: capabilities FB: post only
+  - id: F20-U-7
+    name: getInsights returns synthetic metrics
+  - id: F20-U-8
+    name: zero-latency by default

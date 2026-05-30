@@ -1,0 +1,505 @@
+# Evaluation des Risques -- Knowledge Edit + API Keys Management
+# Date de reference : 2026-05-25
+# Branche : feat/ai-engine-langgraph-mvp
+
+metadata:
+  projet: FemiGlow AI Engine
+  features:
+    - Knowledge Edit (KE)
+    - API Keys Management (AKM)
+  date_evaluation: "2026-05-25"
+  evaluateur: "Equipe Developpement"
+  prochaine_revision: "2026-06-08"
+
+# ============================================================
+# Echelle de probabilite :
+#   1 - Tres faible (< 5%)
+#   2 - Faible (5-20%)
+#   3 - Moyenne (20-50%)
+#   4 - Elevee (50-80%)
+#   5 - Tres elevee (> 80%)
+#
+# Echelle d'impact :
+#   1 - Negligeable (delai mineur, pas de perte)
+#   2 - Faible (delai modere, contournement possible)
+#   3 - Moyen (fonctionnalite degradee, effort correction significatif)
+#   4 - Eleve (fonctionnalite indisponible, perte de donnees possible)
+#   5 - Critique (faille securite, perte de donnees confirmee, indisponibilite totale)
+#
+# Score de risque = Probabilite x Impact
+#   1-4   : Faible (accepte, surveiller)
+#   5-9   : Moyen (plan de mitigation actif)
+#   10-15 : Eleve (mitigation obligatoire avant deploiement)
+#   16-25 : Critique (bloquant, correction immediate)
+# ============================================================
+
+risques:
+  # ============================================================
+  # RISQUES DE SECURITE
+  # ============================================================
+
+  - id: SEC-001
+    titre: "Fuite de cle API dans les logs applicatifs"
+    description: >
+      Une cle API pourrait etre involontairement loguee en clair
+      dans les logs applicatifs (console.log, logger.info, etc.)
+      lors d'operations de debug ou en cas d'erreur non geree.
+    feature: AKM
+    categorie: securite
+    probabilite: 2
+    impact: 5
+    score: 10
+    consequence: >
+      Exposition de cles API a toute personne ayant acces aux logs.
+      Risque d'utilisation frauduleuse des cles.
+      Factures imprevues chez les fournisseurs IA.
+    mitigation:
+      - action: "Revue de code systematique sur tous les console.log et logger.*"
+        responsable: "Developpeur"
+        delai: "Avant merge"
+        statut: planifie
+      - action: "Ajouter un filtre de log qui masque les patterns de cles (sk-*, AI*)"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Test automatise de non-fuite dans les reponses API"
+        responsable: "Developpeur"
+        delai: "Phase 5"
+        statut: planifie
+      - action: "Grep automatise dans la CI pour detecter les patterns de cles en dur"
+        responsable: "DevOps"
+        delai: "Phase 7"
+        statut: planifie
+    indicateurs_de_suivi:
+      - "Nombre de cles detectees dans les logs : 0"
+      - "Test de non-fuite passe : oui/non"
+
+  - id: SEC-002
+    titre: "Perte ou corruption de la cle de chiffrement (AI_ENGINE_ENCRYPTION_KEY)"
+    description: >
+      Si la cle de chiffrement AES-256-GCM est perdue, corrompue ou
+      modifiee sans rotation, toutes les cles API stockees en base
+      deviennent inaccessibles (impossible a dechiffrer).
+    feature: AKM
+    categorie: securite
+    probabilite: 2
+    impact: 5
+    score: 10
+    consequence: >
+      Toutes les cles API stockees en base sont inaccessibles.
+      Les providers IA deviennent non fonctionnels (sauf ceux avec env var).
+      Necessite de re-saisir toutes les cles.
+    mitigation:
+      - action: "Documenter la procedure de sauvegarde de la cle de chiffrement"
+        responsable: "DevOps"
+        delai: "Phase 7"
+        statut: planifie
+      - action: "Stocker la cle dans un secrets manager (Vault, AWS Secrets Manager)"
+        responsable: "DevOps"
+        delai: "Post-deploiement"
+        statut: planifie
+      - action: "Implementer une procedure de rotation de cle"
+        responsable: "Developpeur"
+        delai: "Post-deploiement"
+        statut: a_evaluer
+      - action: "Fallback automatique sur env vars si le dechiffrement echoue"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+
+  - id: SEC-003
+    titre: "Cle API retournee en clair dans une reponse API"
+    description: >
+      Un bug dans les routes API pourrait retourner la cle API
+      dechiffree en clair dans le corps de la reponse JSON.
+    feature: AKM
+    categorie: securite
+    probabilite: 1
+    impact: 5
+    score: 5
+    consequence: >
+      Exposition directe de la cle API dans le reseau.
+      Interception possible si HTTPS est compromis.
+    mitigation:
+      - action: "Ne JAMAIS appeler getApiKey() dans un handler GET"
+        responsable: "Developpeur"
+        delai: "Phase 2"
+        statut: planifie
+      - action: "Test automatise verifiant l'absence de cle en clair dans chaque reponse"
+        responsable: "Developpeur"
+        delai: "Phase 5"
+        statut: planifie
+      - action: "Revue de code obligatoire sur toutes les routes API Keys"
+        responsable: "Revieweur"
+        delai: "Avant merge"
+        statut: planifie
+
+  - id: SEC-004
+    titre: "Acces non autorise aux endpoints de gestion des cles"
+    description: >
+      Un utilisateur non admin pourrait acceder aux endpoints
+      de gestion des cles API si l'authentification est mal implementee.
+    feature: AKM
+    categorie: securite
+    probabilite: 1
+    impact: 5
+    score: 5
+    consequence: >
+      Modification ou suppression de cles API par un utilisateur non autorise.
+      Perturbation du fonctionnement de l'AI Engine.
+    mitigation:
+      - action: "requireAdminApi() appele en premier dans chaque handler"
+        responsable: "Developpeur"
+        delai: "Phase 2"
+        statut: planifie
+      - action: "Tests d'authentification pour chaque endpoint"
+        responsable: "Developpeur"
+        delai: "Phase 5"
+        statut: planifie
+
+  # ============================================================
+  # RISQUES DE DONNEES
+  # ============================================================
+
+  - id: DAT-001
+    titre: "Corruption de la base de connaissances lors de la re-indexation"
+    description: >
+      La modification du contenu d'un document declenche une re-indexation
+      (suppression des anciens chunks + re-chunking + re-embedding).
+      Si le processus echoue a mi-parcours, le document peut se retrouver
+      sans chunks (perte de donnees d'embedding).
+    feature: KE
+    categorie: donnees
+    probabilite: 3
+    impact: 4
+    score: 12
+    consequence: >
+      Document sans embeddings, invisible pour la recherche semantique.
+      Degradation de la qualite de generation de l'AI Engine.
+      Necessite une re-indexation manuelle.
+    mitigation:
+      - action: "Utiliser une transaction DB pour la re-indexation (suppression + insertion atomique)"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Conserver les anciens chunks jusqu'a confirmation de la creation des nouveaux"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Ajouter un mecanisme de rollback en cas d'echec d'embedding"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Test unitaire simulant un echec d'embedding a mi-parcours"
+        responsable: "Developpeur"
+        delai: "Phase 5"
+        statut: planifie
+
+  - id: DAT-002
+    titre: "Conflit de slug lors de l'edition de collection"
+    description: >
+      Un admin pourrait modifier le slug d'une collection pour un slug
+      deja utilise par une autre collection, violant la contrainte unique.
+    feature: KE
+    categorie: donnees
+    probabilite: 3
+    impact: 2
+    score: 6
+    consequence: >
+      Erreur 409/500 retournee a l'utilisateur.
+      Pas de perte de donnees mais experience utilisateur degradee.
+    mitigation:
+      - action: "Verification de l'unicite du slug cote serveur AVANT la mise a jour"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Message d'erreur explicite cote UI (Ce slug est deja utilise)"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: planifie
+      - action: "Gestion de l'erreur unique constraint de PostgreSQL"
+        responsable: "Developpeur"
+        delai: "Phase 2"
+        statut: planifie
+
+  - id: DAT-003
+    titre: "Perte du contenu original du document lors de l'edition"
+    description: >
+      Si l'edition d'un document ecrase le contenu sans possibilite
+      de retour en arriere, une erreur de saisie peut causer
+      la perte du contenu original.
+    feature: KE
+    categorie: donnees
+    probabilite: 2
+    impact: 3
+    score: 6
+    consequence: >
+      Contenu original perdu si l'admin ecrase par erreur.
+      Pas de versionning du contenu des documents.
+    mitigation:
+      - action: "Confirmation avant sauvegarde si le contenu a ete modifie de plus de 50%"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: a_evaluer
+      - action: "Stocker l'ancien contenu dans metadata.previousContent (1 niveau)"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Ajouter un bouton Annuler qui restaure les valeurs originales"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: planifie
+
+  # ============================================================
+  # RISQUES TECHNIQUES
+  # ============================================================
+
+  - id: TECH-001
+    titre: "Incompatibilite de la migration Drizzle avec la base existante"
+    description: >
+      La migration ajoutant les nouvelles colonnes pourrait echouer
+      si la base de donnees a des donnees inconsistantes ou si
+      des migrations precedentes n'ont pas ete appliquees.
+    feature: Commune
+    categorie: technique
+    probabilite: 2
+    impact: 3
+    score: 6
+    consequence: >
+      Deploiement bloque jusqu'a resolution de la migration.
+      Delai de livraison.
+    mitigation:
+      - action: "Tester la migration sur un dump de la base de staging"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Utiliser des colonnes nullables pour eviter les conflits avec les donnees existantes"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Preparer un script SQL de rollback de la migration"
+        responsable: "Developpeur"
+        delai: "Phase 7"
+        statut: planifie
+
+  - id: TECH-002
+    titre: "Latence excessive lors de la re-indexation de documents longs"
+    description: >
+      Pour des documents tres longs (> 50 000 caracteres), le processus
+      de re-chunking + re-embedding peut prendre plusieurs secondes,
+      bloquant la requete HTTP.
+    feature: KE
+    categorie: performance
+    probabilite: 3
+    impact: 2
+    score: 6
+    consequence: >
+      Timeout de la requete HTTP (504 Gateway Timeout).
+      Experience utilisateur degradee (spinner long).
+    mitigation:
+      - action: "Ajouter un timeout de 30s sur la requete PUT avec message de feedback"
+        responsable: "Developpeur"
+        delai: "Phase 2"
+        statut: planifie
+      - action: "Pour les documents > 20000 chars, lancer la re-indexation en arriere-plan et retourner immediatement"
+        responsable: "Developpeur"
+        delai: "Post-deploiement"
+        statut: a_evaluer
+      - action: "Afficher une barre de progression pour les re-indexations longues"
+        responsable: "Developpeur"
+        delai: "Post-deploiement"
+        statut: a_evaluer
+
+  - id: TECH-003
+    titre: "Latence du test de cle API (providers lents ou injoignables)"
+    description: >
+      L'appel de sante aux providers (pour tester une cle) peut
+      prendre plus de 10 secondes si le provider est lent ou temporairement
+      indisponible.
+    feature: AKM
+    categorie: performance
+    probabilite: 3
+    impact: 2
+    score: 6
+    consequence: >
+      Experience utilisateur degradee (attente longue sans feedback).
+      Possible faux negatif (cle valide mais timeout).
+    mitigation:
+      - action: "Timeout de 10s sur chaque test de cle"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Afficher un spinner avec message 'Test en cours...' pendant l'attente"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: planifie
+      - action: "Retourner un message explicite en cas de timeout ('Provider injoignable, la cle peut etre valide')"
+        responsable: "Developpeur"
+        delai: "Phase 2"
+        statut: planifie
+
+  - id: TECH-004
+    titre: "Regression sur les tests existants (622 unit + 27 E2E)"
+    description: >
+      Les modifications apportees au schema, aux services et aux
+      composants pourraient casser des tests existants qui
+      dependent de ces modules.
+    feature: Commune
+    categorie: technique
+    probabilite: 3
+    impact: 3
+    score: 9
+    consequence: >
+      Delai supplementaire pour corriger les regressions.
+      Risque de faux sentiment de securite si les tests regressionnes
+      sont ignores.
+    mitigation:
+      - action: "Executer la suite complete de tests apres chaque phase"
+        responsable: "Developpeur"
+        delai: "Chaque phase"
+        statut: planifie
+      - action: "Modifier les tests existants pour accommoder les nouveaux champs (updatedAt)"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Utiliser des valeurs par defaut pour les nouveaux champs pour ne pas casser les mocks existants"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+
+  - id: TECH-005
+    titre: "Conflit entre cle DB et variable d'environnement"
+    description: >
+      La logique de priorite (cle DB > env var) pourrait creer
+      de la confusion si un admin modifie l'env var en pensant
+      que c'est la source active alors qu'une cle DB existe.
+    feature: AKM
+    categorie: ux
+    probabilite: 3
+    impact: 2
+    score: 6
+    consequence: >
+      Confusion sur la cle active.
+      Difficulte de debug en cas de probleme de connexion au provider.
+    mitigation:
+      - action: "Afficher clairement la source de la cle active dans l'UI (Source: Base de donnees / Variable d'environnement)"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: planifie
+      - action: "Ajouter un tooltip expliquant la logique de priorite"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: planifie
+
+  # ============================================================
+  # RISQUES UX / UI
+  # ============================================================
+
+  - id: UX-001
+    titre: "Formulaire d'edition non responsive sur mobile"
+    description: >
+      Les formulaires inline d'edition (collection et document)
+      pourraient etre mal rendus sur les ecrans mobiles ou tablettes.
+    feature: KE
+    categorie: ux
+    probabilite: 4
+    impact: 1
+    score: 4
+    consequence: >
+      Experience degradee sur mobile (chevauchement de champs, boutons trop petits).
+      Le back-office est principalement utilise sur desktop, impact limite.
+    mitigation:
+      - action: "Tester avec un viewport mobile dans Playwright (375x667)"
+        responsable: "Developpeur"
+        delai: "Phase 5"
+        statut: planifie
+      - action: "Utiliser des grid responsives (auto-fit, minmax)"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: planifie
+
+  - id: UX-002
+    titre: "Perte de donnees saisies si la session expire pendant l'edition"
+    description: >
+      Si la session admin expire pendant que l'utilisateur edite
+      une collection ou un document, les donnees saisies seront
+      perdues lors de la tentative de sauvegarde (401).
+    feature: Commune
+    categorie: ux
+    probabilite: 2
+    impact: 2
+    score: 4
+    consequence: >
+      Frustration de l'utilisateur qui perd son travail.
+      Pas de perte de donnees en base.
+    mitigation:
+      - action: "Detecter le 401 et afficher un message 'Session expiree, veuillez vous reconnecter'"
+        responsable: "Developpeur"
+        delai: "Phase 3"
+        statut: planifie
+      - action: "Conserver les donnees du formulaire en localStorage pendant l'edition"
+        responsable: "Developpeur"
+        delai: "Post-deploiement"
+        statut: a_evaluer
+
+  # ============================================================
+  # RISQUES ORGANISATIONNELS
+  # ============================================================
+
+  - id: ORG-001
+    titre: "Delai de livraison sous-estime"
+    description: >
+      L'estimation de 42h pourrait etre insuffisante en raison
+      de complexites non anticipees, notamment sur le chiffrement
+      et la re-indexation.
+    feature: Commune
+    categorie: organisationnel
+    probabilite: 3
+    impact: 2
+    score: 6
+    consequence: >
+      Retard de livraison de 1-2 jours.
+      Pression sur la qualite si le delai est force.
+    mitigation:
+      - action: "Ajouter une marge de 20% sur l'estimation (42h -> 50h)"
+        responsable: "Chef de projet"
+        delai: "Planification"
+        statut: planifie
+      - action: "Prioriser les taches critiques pour livrer un MVP fonctionnel en premier"
+        responsable: "Developpeur"
+        delai: "Phase 1"
+        statut: planifie
+      - action: "Report des taches P3 (faible priorite) si necessaire"
+        responsable: "Chef de projet"
+        delai: "Phase 6"
+        statut: planifie
+
+# ============================================================
+# RESUME DES RISQUES PAR SCORE
+# ============================================================
+
+resume:
+  critiques: 0
+  eleves:
+    - SEC-001  # Score 10 - Fuite de cle dans les logs
+    - SEC-002  # Score 10 - Perte de cle de chiffrement
+    - DAT-001  # Score 12 - Corruption base de connaissances
+  moyens:
+    - TECH-004  # Score 9 - Regression tests
+    - SEC-003   # Score 5 - Cle en clair dans reponse API
+    - SEC-004   # Score 5 - Acces non autorise
+    - DAT-002   # Score 6 - Conflit slug
+    - DAT-003   # Score 6 - Perte contenu original
+    - TECH-001  # Score 6 - Migration Drizzle
+    - TECH-002  # Score 6 - Latence re-indexation
+    - TECH-003  # Score 6 - Latence test cle
+    - TECH-005  # Score 6 - Confusion source cle
+    - ORG-001   # Score 6 - Delai sous-estime
+  faibles:
+    - UX-001  # Score 4 - Responsive mobile
+    - UX-002  # Score 4 - Session expiree
+
+  score_total: 96
+  score_moyen: 6.4
+  nombre_risques: 15
+  risques_a_traiter_avant_deploiement: 5  # SEC-001, SEC-002, SEC-003, SEC-004, DAT-001

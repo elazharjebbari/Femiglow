@@ -1,0 +1,711 @@
+# AI Engine -- MSW Handler Coverage Inventory
+# Last updated: 2026-05-27
+#
+# This file maps every AI Engine API route to its MSW handler(s).
+# Handler source: src/test/msw/ai-engine-handlers.ts
+#
+# Status legend:
+#   exists   - handler is implemented and exported
+#   missing  - handler needs to be created
+#   partial  - success handler exists but error variants are missing
+
+handler_source: src/test/msw/ai-engine-handlers.ts
+base_path: /api/admin/ai-engine
+total_routes: 24
+total_handlers_existing: 29
+total_handlers_needed: 53
+
+routes:
+
+  # ============================================================
+  # GENERATION
+  # ============================================================
+
+  - path: POST /api/admin/ai-engine/generate
+    description: Run the full LangGraph content generation pipeline
+    handlers:
+      success:
+        name: aiEngineHandlers[0]
+        export: aiEngineHandlers
+        status: exists
+        returns: MOCK_GENERATION_RESULT (jobId, status, script, caption, hashtags, images, qualityScores, costTracking)
+        http_status: 200
+      error_500:
+        name: aiEngineErrorHandlers.generate500
+        export: aiEngineErrorHandlers
+        status: exists
+        returns: "{error: {code: 'internal_error', message: 'Provider timeout'}}"
+        http_status: 500
+      error_429:
+        name: aiEngineErrorHandlers.generate429
+        export: aiEngineErrorHandlers
+        status: exists
+        returns: "{error: {code: 'rate_limited', message: 'Budget quotidien depasse'}}"
+        http_status: 429
+      error_401:
+        name: aiEngineErrorHandlers.generate401
+        status: missing
+        returns: "{error: {code: 'unauthorized', message: 'Session expired'}}"
+        http_status: 401
+      error_422:
+        name: aiEngineErrorHandlers.generate422
+        status: missing
+        returns: "{error: {code: 'validation_error', message: 'Missing required field: platform'}}"
+        http_status: 422
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-generate.contract.test.ts
+    e2e_files: [ai-engine-create.spec.ts, ai-engine-scenario-golden-path.spec.ts]
+
+  - path: POST /api/admin/ai-engine/generate-stream
+    description: SSE streaming generation with real-time progress events
+    handlers:
+      success:
+        name: aiEngineStreamHandlers.success
+        status: missing
+        returns: "SSE events: {event: 'phase', data: {name, progress, status}}"
+        http_status: 200
+        content_type: text/event-stream
+      error_stream:
+        name: aiEngineStreamHandlers.error
+        status: missing
+        returns: "SSE event: {event: 'error', data: {code, message}}"
+        http_status: 200
+        content_type: text/event-stream
+      error_500:
+        name: aiEngineStreamHandlers.server_error
+        status: missing
+        returns: "{error: 'Internal server error'}"
+        http_status: 500
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-stream.contract.test.ts
+    e2e_files: [ai-engine-sse-streaming.spec.ts]
+
+  # ============================================================
+  # HEALTH
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/health
+    description: System health check with provider and budget status
+    handlers:
+      success:
+        name: aiEngineHandlers[1]
+        export: aiEngineHandlers
+        status: exists
+        returns: MOCK_HEALTH (enabled, providers, budget, quality, version)
+        http_status: 200
+      timeout:
+        name: aiEngineErrorHandlers.healthTimeout
+        export: aiEngineErrorHandlers
+        status: exists
+        returns: MOCK_HEALTH (delayed by 10s)
+        http_status: 200
+      disabled:
+        name: aiEngineErrorHandlers.healthDisabled
+        export: aiEngineErrorHandlers
+        status: exists
+        returns: MOCK_HEALTH with enabled=false
+        http_status: 200
+      error_503:
+        name: aiEngineErrorHandlers.health503
+        status: missing
+        returns: "{error: 'Service unavailable'}"
+        http_status: 503
+    tested_by: [contract, component, e2e]
+    contract_file: ai-engine-health.contract.test.ts
+    e2e_files: [ai-engine-dashboard.spec.ts]
+
+  # ============================================================
+  # TRENDS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/trends
+    description: Trending topics with composite scores and brand relevance
+    handlers:
+      success:
+        name: aiEngineHandlers[2]
+        export: aiEngineHandlers
+        status: exists
+        returns: MOCK_TRENDS (trends array, meta)
+        http_status: 200
+      empty:
+        name: aiEngineTrendsHandlers.empty
+        status: missing
+        returns: "{trends: [], meta: {count: 0}}"
+        http_status: 200
+      error_500:
+        name: aiEngineTrendsHandlers.error500
+        status: missing
+        returns: "{error: 'Trends service unavailable'}"
+        http_status: 500
+    tested_by: [contract, component, e2e]
+    contract_file: ai-engine-trends.contract.test.ts
+    e2e_files: [ai-engine-trends.spec.ts]
+
+  # ============================================================
+  # KNOWLEDGE -- COLLECTIONS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/knowledge
+    description: List all knowledge collections
+    handlers:
+      success:
+        name: aiEngineHandlers[3]
+        export: aiEngineHandlers
+        status: exists
+        returns: MOCK_COLLECTIONS (array of collections with id, name, slug, documentCount)
+        http_status: 200
+      empty:
+        name: aiEngineKnowledgeHandlers.empty
+        status: missing
+        returns: "[]"
+        http_status: 200
+      error_401:
+        name: aiEngineKnowledgeHandlers.unauthorized
+        status: missing
+        returns: "{error: 'Unauthorized'}"
+        http_status: 401
+      error_500:
+        name: aiEngineKnowledgeHandlers.error500
+        status: missing
+        returns: "{error: 'Database error'}"
+        http_status: 500
+    tested_by: [contract, component, e2e]
+    contract_file: ai-engine-knowledge.contract.test.ts
+    e2e_files: [ai-engine-knowledge.spec.ts]
+
+  - path: GET /api/admin/ai-engine/knowledge/:slug
+    description: Get single knowledge collection by slug
+    handlers:
+      success:
+        name: aiEngineKnowledgeHandlers.getBySlug
+        status: missing
+        returns: "{collection: MOCK_COLLECTIONS[0]}"
+        http_status: 200
+      error_404:
+        name: aiEngineKnowledgeHandlers.getBySlug404
+        status: missing
+        returns: "{error: 'Collection not found'}"
+        http_status: 404
+    tested_by: [contract]
+    contract_file: ai-engine-knowledge-deep.contract.test.ts
+
+  - path: PATCH /api/admin/ai-engine/knowledge/:slug
+    description: Update a knowledge collection (name, description, category, isActive)
+    handlers:
+      success:
+        name: knowledgeEditHandlers[0]
+        export: knowledgeEditHandlers
+        status: exists
+        returns: "{collection: {merged fields with updatedAt}}"
+        http_status: 200
+      error_404:
+        name: knowledgeEditErrorHandlers.slug404
+        status: missing
+        returns: "{error: 'Collection not found'}"
+        http_status: 404
+      error_422:
+        name: knowledgeEditErrorHandlers.validation
+        status: missing
+        returns: "{error: 'Invalid field: name cannot be empty'}"
+        http_status: 422
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-knowledge-edit.contract.test.ts
+    e2e_files: [ai-engine-knowledge-edit.spec.ts]
+
+  # ============================================================
+  # KNOWLEDGE -- DOCUMENTS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/knowledge/:slug/documents
+    description: List documents in a collection
+    handlers:
+      success:
+        name: aiEngineKnowledgeHandlers.listDocuments
+        status: missing
+        returns: "{documents: [MOCK_DOCUMENT_DETAIL]}"
+        http_status: 200
+      empty:
+        name: aiEngineKnowledgeHandlers.listDocumentsEmpty
+        status: missing
+        returns: "{documents: []}"
+        http_status: 200
+      error_404:
+        name: aiEngineKnowledgeHandlers.listDocuments404
+        status: missing
+        returns: "{error: 'Collection not found'}"
+        http_status: 404
+    tested_by: [contract]
+    contract_file: ai-engine-knowledge-deep.contract.test.ts
+
+  - path: GET /api/admin/ai-engine/knowledge/:slug/documents/:docId
+    description: Get a single document with full content
+    handlers:
+      success:
+        name: knowledgeEditHandlers[1]
+        export: knowledgeEditHandlers
+        status: exists
+        returns: "{document: MOCK_DOCUMENT_DETAIL}"
+        http_status: 200
+      error_404:
+        name: knowledgeEditErrorHandlers.doc404
+        status: missing
+        returns: "{error: 'Document not found'}"
+        http_status: 404
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-knowledge-edit.contract.test.ts
+    e2e_files: [ai-engine-knowledge-edit.spec.ts]
+
+  - path: PATCH /api/admin/ai-engine/knowledge/:slug/documents/:docId
+    description: Update document content or metadata, triggers re-chunking if content changed
+    handlers:
+      success:
+        name: knowledgeEditHandlers[2]
+        export: knowledgeEditHandlers
+        status: exists
+        returns: "{document: {id}, reChunked: bool, chunkCount: number}"
+        http_status: 200
+      error_404:
+        name: knowledgeEditErrorHandlers.docPatch404
+        status: missing
+        returns: "{error: 'Document not found'}"
+        http_status: 404
+      error_422:
+        name: knowledgeEditErrorHandlers.docPatchValidation
+        status: missing
+        returns: "{error: 'Content must be a non-empty string'}"
+        http_status: 422
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-knowledge-edit.contract.test.ts
+    e2e_files: [ai-engine-knowledge-edit.spec.ts]
+
+  # ============================================================
+  # KNOWLEDGE -- EMBEDDING / SEED
+  # ============================================================
+
+  - path: POST /api/admin/ai-engine/knowledge/embed
+    description: Trigger embedding generation for documents in a collection
+    handlers:
+      success:
+        name: aiEngineHandlers[12]
+        export: aiEngineHandlers
+        status: exists
+        returns: "{documentsProcessed: 2, chunksCreated: 10}"
+        http_status: 200
+      error_500:
+        name: aiEngineEmbedHandlers.error500
+        status: missing
+        returns: "{error: 'Embedding provider unavailable'}"
+        http_status: 500
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-knowledge-deep.contract.test.ts
+    e2e_files: [ai-engine-knowledge-flow.spec.ts]
+
+  - path: POST /api/admin/ai-engine/knowledge/seed
+    description: Seed the knowledge base with initial brand data
+    handlers:
+      success:
+        name: aiEngineSeedHandlers.success
+        status: missing
+        returns: "{collections: 2, documents: 3, message: 'Seed complete'}"
+        http_status: 200
+      error_500:
+        name: aiEngineSeedHandlers.error500
+        status: missing
+        returns: "{error: 'Seed failed: database error'}"
+        http_status: 500
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-knowledge-deep.contract.test.ts
+    e2e_files: [ai-engine-knowledge-flow.spec.ts]
+
+  # ============================================================
+  # JOBS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/jobs
+    description: List generation jobs with statistics
+    handlers:
+      success:
+        name: aiEngineHandlers[4]
+        export: aiEngineHandlers
+        status: exists
+        returns: MOCK_JOBS (jobs array, stats with daily/weekly/monthly)
+        http_status: 200
+      empty:
+        name: aiEngineJobsHandlers.empty
+        status: missing
+        returns: "{jobs: [], stats: {daily: {totalJobs: 0}}}"
+        http_status: 200
+      error_401:
+        name: aiEngineJobsHandlers.unauthorized
+        status: missing
+        returns: "{error: 'Unauthorized'}"
+        http_status: 401
+      error_500:
+        name: aiEngineJobsHandlers.error500
+        status: missing
+        returns: "{error: 'Database connection failed'}"
+        http_status: 500
+    tested_by: [contract, component]
+    contract_file: ai-engine-jobs.contract.test.ts
+
+  - path: POST /api/admin/ai-engine/jobs/:id/review
+    description: Submit human review decision (approve/reject/edit) for a job
+    handlers:
+      success:
+        name: aiEngineHandlers[13]
+        export: aiEngineHandlers
+        status: exists
+        returns: "MOCK_GENERATION_RESULT with status=completed"
+        http_status: 200
+      error_404:
+        name: aiEngineReviewHandlers.notFound
+        status: missing
+        returns: "{error: 'Job not found'}"
+        http_status: 404
+      error_422:
+        name: aiEngineReviewHandlers.invalidAction
+        status: missing
+        returns: "{error: 'Invalid review action. Must be approve, reject, or edit'}"
+        http_status: 422
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-jobs.contract.test.ts
+    e2e_files: [ai-engine-hitl-review.spec.ts]
+
+  # ============================================================
+  # CONFIGURATION -- PROVIDERS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/config/providers
+    description: List all configured AI providers with health status
+    handlers:
+      success:
+        name: aiEngineHandlers[5]
+        export: aiEngineHandlers
+        status: exists
+        returns: MOCK_PROVIDERS (array with providerType, capabilities, models, healthStatus)
+        http_status: 200
+      error_500:
+        name: aiEngineConfigHandlers.providers500
+        status: missing
+        returns: "{error: 'Failed to load providers'}"
+        http_status: 500
+    tested_by: [contract, component, e2e]
+    contract_file: ai-engine-config.contract.test.ts
+    e2e_files: [ai-engine-config.spec.ts]
+
+  - path: GET /api/admin/ai-engine/config/providers/models
+    description: List available models across all providers
+    handlers:
+      success:
+        name: aiEngineConfigHandlers.models
+        status: missing
+        returns: "{models: [{provider, name, costPer1MInput, capabilities}]}"
+        http_status: 200
+      error_500:
+        name: aiEngineConfigHandlers.models500
+        status: missing
+        returns: "{error: 'Model discovery failed'}"
+        http_status: 500
+    tested_by: [contract]
+    contract_file: ai-engine-config.contract.test.ts
+
+  # ============================================================
+  # CONFIGURATION -- WORKFLOWS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/config/workflows
+    description: List all configured workflows
+    handlers:
+      success:
+        name: aiEngineHandlers[6]
+        export: aiEngineHandlers
+        status: exists
+        returns: "[] (empty array)"
+        http_status: 200
+      error_500:
+        name: aiEngineConfigHandlers.workflows500
+        status: missing
+        returns: "{error: 'Failed to load workflows'}"
+        http_status: 500
+    tested_by: [contract, component]
+    contract_file: ai-engine-config.contract.test.ts
+
+  - path: POST /api/admin/ai-engine/config/workflows
+    description: Create a new workflow definition
+    handlers:
+      success:
+        name: aiEngineConfigHandlers.createWorkflow
+        status: missing
+        returns: "{workflow: {id, name, nodes, edges, createdAt}}"
+        http_status: 201
+      error_422:
+        name: aiEngineConfigHandlers.createWorkflow422
+        status: missing
+        returns: "{error: 'Workflow name is required'}"
+        http_status: 422
+    tested_by: [contract]
+    contract_file: ai-engine-config.contract.test.ts
+
+  - path: GET /api/admin/ai-engine/config/workflows/:id
+    description: Get a single workflow by ID
+    handlers:
+      success:
+        name: aiEngineConfigHandlers.getWorkflow
+        status: missing
+        returns: "{workflow: {id, name, nodes, edges}}"
+        http_status: 200
+      error_404:
+        name: aiEngineConfigHandlers.getWorkflow404
+        status: missing
+        returns: "{error: 'Workflow not found'}"
+        http_status: 404
+    tested_by: [contract]
+    contract_file: ai-engine-config.contract.test.ts
+
+  # ============================================================
+  # CONFIGURATION -- PROMPTS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/config/prompts
+    description: List all prompt templates
+    handlers:
+      success:
+        name: aiEngineHandlers[7]
+        export: aiEngineHandlers
+        status: exists
+        returns: "[] (empty array)"
+        http_status: 200
+      error_500:
+        name: aiEngineConfigHandlers.prompts500
+        status: missing
+        returns: "{error: 'Failed to load prompts'}"
+        http_status: 500
+    tested_by: [contract, component]
+    contract_file: ai-engine-config.contract.test.ts
+
+  - path: POST /api/admin/ai-engine/config/prompts/:id
+    description: Update a prompt template
+    handlers:
+      success:
+        name: aiEngineConfigHandlers.updatePrompt
+        status: missing
+        returns: "{prompt: {id, name, content, updatedAt}}"
+        http_status: 200
+      error_404:
+        name: aiEngineConfigHandlers.updatePrompt404
+        status: missing
+        returns: "{error: 'Prompt not found'}"
+        http_status: 404
+      error_422:
+        name: aiEngineConfigHandlers.updatePrompt422
+        status: missing
+        returns: "{error: 'Prompt content cannot be empty'}"
+        http_status: 422
+    tested_by: [contract]
+    contract_file: ai-engine-config.contract.test.ts
+
+  # ============================================================
+  # CONFIGURATION -- API KEYS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/config/api-keys
+    description: List API keys for all providers (masked, never raw)
+    handlers:
+      success:
+        name: apiKeysHandlers[0]
+        export: apiKeysHandlers
+        status: exists
+        returns: "{apiKeys: MOCK_API_KEYS} (5 providers with masked keys)"
+        http_status: 200
+      error_401:
+        name: apiKeysErrorHandlers.unauthorized
+        status: missing
+        returns: "{error: 'Unauthorized'}"
+        http_status: 401
+    tested_by: [contract, component, e2e]
+    contract_file: ai-engine-api-keys.contract.test.ts
+    e2e_files: [ai-engine-api-keys.spec.ts]
+
+  - path: POST /api/admin/ai-engine/config/api-keys
+    description: Save a new encrypted API key for a provider
+    handlers:
+      success:
+        name: apiKeysHandlers[1]
+        export: apiKeysHandlers
+        status: exists
+        returns: "{apiKey: {id, providerType, masked, isActive}}"
+        http_status: 201
+      error_503:
+        name: apiKeysErrorHandlers.encryptionUnavailable
+        export: apiKeysErrorHandlers
+        status: exists
+        returns: "{error: \"Le chiffrement n'est pas configure.\"}"
+        http_status: 503
+      error_422:
+        name: apiKeysErrorHandlers.saveValidation
+        status: missing
+        returns: "{error: 'API key is required'}"
+        http_status: 422
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-api-keys.contract.test.ts
+    e2e_files: [ai-engine-api-keys.spec.ts]
+
+  - path: DELETE /api/admin/ai-engine/config/api-keys/:id
+    description: Delete a stored API key, optionally falling back to env var
+    handlers:
+      success:
+        name: apiKeysHandlers[2]
+        export: apiKeysHandlers
+        status: exists
+        returns: "{success: true, fallbackToEnv: false}"
+        http_status: 200
+      error_404:
+        name: apiKeysErrorHandlers.keyNotFound
+        export: apiKeysErrorHandlers
+        status: exists
+        returns: "{error: 'Cle API introuvable'}"
+        http_status: 404
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-api-keys.contract.test.ts
+    e2e_files: [ai-engine-api-keys.spec.ts]
+
+  - path: POST /api/admin/ai-engine/config/api-keys/test
+    description: Test an API key by making a lightweight call to the provider
+    handlers:
+      success:
+        name: apiKeysHandlers[3]
+        export: apiKeysHandlers
+        status: exists
+        returns: "{result: {valid: true, provider, latencyMs}}"
+        http_status: 200
+      error_429:
+        name: apiKeysErrorHandlers.rateLimited
+        export: apiKeysErrorHandlers
+        status: exists
+        returns: "{error: 'Trop de tentatives.'}"
+        http_status: 429
+      test_invalid:
+        name: apiKeysErrorHandlers.testInvalid
+        export: apiKeysErrorHandlers
+        status: exists
+        returns: "{result: {valid: false, provider, latencyMs, error: 'Invalid API key'}}"
+        http_status: 200
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-api-keys.contract.test.ts
+    e2e_files: [ai-engine-api-keys.spec.ts]
+
+  # ============================================================
+  # ANALYTICS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/analytics
+    description: Analytics overview with cost breakdown and recent jobs
+    handlers:
+      success:
+        name: aiEngineHandlers[9]
+        export: aiEngineHandlers
+        status: exists
+        returns: "{overview, costByProvider, costByNode, recentJobs}"
+        http_status: 200
+      error_500:
+        name: aiEngineAnalyticsHandlers.error500
+        status: missing
+        returns: "{error: 'Analytics aggregation failed'}"
+        http_status: 500
+      error_401:
+        name: aiEngineAnalyticsHandlers.unauthorized
+        status: missing
+        returns: "{error: 'Unauthorized'}"
+        http_status: 401
+    tested_by: [contract, component, e2e]
+    contract_file: ai-engine-analytics-deep.contract.test.ts
+    e2e_files: [ai-engine-analytics.spec.ts]
+
+  # ============================================================
+  # INTEGRATIONS
+  # ============================================================
+
+  - path: GET /api/admin/ai-engine/integrations
+    description: List connected social media platforms
+    handlers:
+      success:
+        name: aiEngineHandlers[10]
+        export: aiEngineHandlers
+        status: exists
+        returns: MOCK_INTEGRATIONS (integrations array with platform, name, disabled)
+        http_status: 200
+      empty:
+        name: aiEngineIntegrationsHandlers.empty
+        status: missing
+        returns: "{integrations: []}"
+        http_status: 200
+      error_500:
+        name: aiEngineIntegrationsHandlers.error500
+        status: missing
+        returns: "{error: 'Integration service unavailable'}"
+        http_status: 500
+    tested_by: [contract, component]
+    contract_file: ai-engine-integrations.contract.test.ts
+
+  # ============================================================
+  # PUBLISH
+  # ============================================================
+
+  - path: POST /api/admin/ai-engine/publish
+    description: Publish generated content to a social media platform
+    handlers:
+      success:
+        name: aiEngineHandlers[11]
+        export: aiEngineHandlers
+        status: exists
+        returns: "{success: true, postId: 'post-001'}"
+        http_status: 200
+      error_401:
+        name: aiEnginePublishHandlers.unauthorized
+        status: missing
+        returns: "{error: 'Unauthorized'}"
+        http_status: 401
+      error_409:
+        name: aiEnginePublishHandlers.conflict
+        status: missing
+        returns: "{error: 'Content already published'}"
+        http_status: 409
+      error_500:
+        name: aiEnginePublishHandlers.error500
+        status: missing
+        returns: "{error: 'Platform API error'}"
+        http_status: 500
+    tested_by: [contract, e2e]
+    contract_file: ai-engine-publish.contract.test.ts
+    e2e_files: [ai-engine-publish.spec.ts]
+
+# ============================================================
+# SUMMARY
+# ============================================================
+
+summary:
+  routes_total: 24
+  handlers_by_status:
+    exists: 29
+    missing: 53
+    total_needed: 82
+  handlers_by_type:
+    success_exists: 14
+    success_missing: 10
+    error_exists: 15
+    error_missing: 35
+    edge_case_missing: 8
+  coverage_by_test_layer:
+    contract: 24  # all routes covered
+    component: 12  # routes used by UI components
+    e2e: 18       # routes exercised through browser
+  mock_data_exports:
+    - MOCK_GENERATION_RESULT
+    - MOCK_HEALTH
+    - MOCK_TRENDS
+    - MOCK_COLLECTIONS
+    - MOCK_JOBS
+    - MOCK_PROVIDERS
+    - MOCK_INTEGRATIONS
+    - MOCK_DOCUMENT_DETAIL
+    - MOCK_API_KEYS

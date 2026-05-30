@@ -1,0 +1,65 @@
+ID,Catégorie,Description,Priorité,Fichier,Statut
+TC-SVC-UC-01,Service: updateCollection,Mise a jour du nom de la collection et retour de la ligne mappee,P0,collections.test.ts,A faire
+TC-SVC-UC-02,Service: updateCollection,Accepter description = null pour effacer la description,P1,collections.test.ts,A faire
+TC-SVC-UC-03,Service: updateCollection,Mise a jour de la categorie seule,P1,collections.test.ts,A faire
+TC-SVC-UC-04,Service: updateCollection,Mise a jour simultanee de name + description + category,P0,collections.test.ts,A faire
+TC-SVC-UC-05,Service: updateCollection,Lever une erreur si la collection n'existe pas (rows vide),P0,collections.test.ts,A faire
+TC-SVC-UC-06,Service: updateCollection,Lever une erreur si la connexion DB est null,P0,collections.test.ts,A faire
+TC-SVC-UC-07,Service: updateCollection,updatedAt est toujours inclus dans le SET,P1,collections.test.ts,A faire
+TC-SVC-UC-08,Service: updateCollection,Les champs non fournis ne sont pas inclus dans le SET,P1,collections.test.ts,A faire
+TC-SVC-GD-01,Service: getDocumentById,Recuperation reussie du document complet avec contentText,P0,collections.test.ts,A faire
+TC-SVC-GD-02,Service: getDocumentById,Retourner null si le document n'existe pas,P0,collections.test.ts,A faire
+TC-SVC-GD-03,Service: getDocumentById,Retourner null si le document n'appartient pas a la collection,P0,collections.test.ts,A faire
+TC-SVC-GD-04,Service: getDocumentById,Retourner null si la connexion DB est null,P1,collections.test.ts,A faire
+TC-SVC-UD-01,Service: updateDocument,Mise a jour du titre sans declencher de re-chunking,P0,ingestion.test.ts,A faire
+TC-SVC-UD-02,Service: updateDocument,Mise a jour du contenu avec suppression/re-creation des chunks,P0,ingestion.test.ts,A faire
+TC-SVC-UD-03,Service: updateDocument,Mise a jour titre + contenu simultanement (re-chunk),P0,ingestion.test.ts,A faire
+TC-SVC-UD-04,Service: updateDocument,Verification du nombre correct de chunks apres re-chunking,P0,ingestion.test.ts,A faire
+TC-SVC-UD-05,Service: updateDocument,Erreur API OpenAI pendant l'embedding (result.success=false),P0,ingestion.test.ts,A faire
+TC-SVC-UD-06,Service: updateDocument,Cle API OpenAI non configuree (getEmbeddings null),P1,ingestion.test.ts,A faire
+TC-SVC-UD-07,Service: updateDocument,Connexion DB indisponible (db() null),P1,ingestion.test.ts,A faire
+TC-SVC-UD-08,Service: updateDocument,updateCollectionCounts appele apres re-chunking reussi,P1,ingestion.test.ts,A faire
+TC-SVC-UD-09,Service: updateDocument,updateCollectionCounts PAS appele si titre seul modifie,P2,ingestion.test.ts,A faire
+TC-SVC-UD-10,Service: updateDocument,Erreur de transaction DB (rollback implicite),P0,ingestion.test.ts,A faire
+TC-API-PC-01,API: PATCH collection,Retourner 200 avec la collection mise a jour (nom),P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PC-02,API: PATCH collection,Retourner 400 si aucun champ n'est fourni (body vide),P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PC-03,API: PATCH collection,Retourner 400 si le nom est une chaine vide,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PC-04,API: PATCH collection,Retourner 400 si le nom depasse 200 caracteres,P1,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PC-05,API: PATCH collection,Retourner 404 si la collection n'existe pas,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PC-06,API: PATCH collection,Retourner 401 si la session admin est invalide,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PD-01,API: PATCH document,Retourner 200 avec reChunked=false pour update titre seul,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PD-02,API: PATCH document,Retourner 200 avec reChunked=true pour update contenu,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PD-03,API: PATCH document,Retourner 500 si updateDocument echoue (erreur embedding),P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PD-04,API: PATCH document,Retourner 404 si la collection n'existe pas,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PD-05,API: PATCH document,Retourner 400 si aucun champ n'est fourni,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-PD-06,API: PATCH document,Retourner 400 si le titre depasse 500 caracteres,P1,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-GD-01,API: GET document,Retourner 200 avec le document complet (contentText inclus),P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-GD-02,API: GET document,Retourner 404 si le document n'existe pas,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-GD-03,API: GET document,Retourner 404 si la collection n'existe pas,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-API-GD-04,API: GET document,Retourner 401 si la session admin est invalide,P0,ai-engine-knowledge-edit.contract.test.ts,A faire
+TC-UI-CE-01,UI: CollectionEditForm,Afficher la modale avec les champs pre-remplis (nom + desc + cat + slug readonly),P0,knowledge-page-edit.test.tsx,A faire
+TC-UI-CE-02,UI: CollectionEditForm,Desactiver le bouton Enregistrer si le nom est vide,P0,knowledge-page-edit.test.tsx,A faire
+TC-UI-CE-03,UI: CollectionEditForm,Fermer la modale et rafraichir la liste apres PATCH reussi,P0,knowledge-page-edit.test.tsx,A faire
+TC-UI-CE-04,UI: CollectionEditForm,Fermer la modale sans requete PATCH au clic sur Annuler,P1,knowledge-page-edit.test.tsx,A faire
+TC-UI-DE-01,UI: DocumentEditForm,Charger et afficher le contenu du document dans le formulaire,P0,knowledge-page-edit.test.tsx,A faire
+TC-UI-DE-02,UI: DocumentEditForm,Afficher un textarea avec resize:vertical pour le contenu,P2,knowledge-page-edit.test.tsx,A faire
+TC-UI-DE-03,UI: DocumentEditForm,Afficher la confirmation de re-chunk si le contenu est modifie,P0,knowledge-page-edit.test.tsx,A faire
+TC-UI-DV-01,UI: DocumentViewer,Afficher le contenu complet avec metadonnees (type + chunks + dates),P0,knowledge-page-edit.test.tsx,A faire
+TC-UI-DV-02,UI: DocumentViewer,Basculer du viewer vers l'editeur via le bouton Modifier,P1,knowledge-page-edit.test.tsx,A faire
+TC-UI-ERR-01,UI: Erreur API,Afficher l'erreur serveur dans la modale sans la fermer,P0,knowledge-page-edit.test.tsx,A faire
+E2E-01,E2E: Edition collection,Modifier le nom d'une collection avec succes,P0,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-02,E2E: Edition collection,Modifier la description et la categorie,P1,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-03,E2E: Edition document,Modifier le titre d'un document sans re-chunking,P0,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-04,E2E: Edition document,Modifier le contenu avec confirmation de re-chunking,P0,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-05,E2E: Visualisation,Afficher le contenu complet dans le viewer,P0,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-06,E2E: Annulation,Annuler l'edition sans sauvegarder (aucun PATCH envoye),P1,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-07,E2E: Validation,Bouton Enregistrer desactive si nom vide + compteur caracteres,P0,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-08,E2E: Concurrence,Erreur 409 conflit lors d'edition concurrente,P2,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-09,E2E: Re-chunking,Verifier le nombre de chunks affiche apres re-chunking,P1,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-10,E2E: Navigation,Naviguer entre la vue edition et la vue liste,P1,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-11,E2E: Accessibilite,Navigation clavier (Tab + Enter + Escape),P1,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-12,E2E: Responsive,Modale plein ecran sur mobile + layout tablette,P2,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-13,E2E: Resilience,Erreur API pendant la sauvegarde + reessai avec succes,P0,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-14,E2E: Rollback,Ancien nom preserve apres echec du PATCH,P1,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-15,E2E: Transition,Passage du viewer a l'editeur de document,P1,ai-engine-knowledge-edit.spec.ts,A faire
+E2E-16,E2E: Chargement,Affichage du skeleton pendant le chargement du document,P2,ai-engine-knowledge-edit.spec.ts,A faire

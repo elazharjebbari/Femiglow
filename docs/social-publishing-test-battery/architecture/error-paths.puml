@@ -1,0 +1,68 @@
+@startuml error-paths
+title Social Publishing — Error paths (HTTP → app code → UI message)
+
+skinparam component {
+  BackgroundColor #FFFBF3
+  BorderColor #6B5BFF
+}
+
+' Pre-flight errors (caught by getPostPublishability)
+package "Pre-flight" {
+  [post.status != approved/scheduled] --> [409 invalid_state]
+  [draft.status != approved] --> [409 invalid_state]
+  [brand_review.status = blocked] --> [409 brand_review_blocked]
+  [no media + capability requires] --> [409 no_media_attached]
+  [media not ready] --> [409 invalid_media]
+  [media URL not HTTPS] --> [409 invalid_media_url]
+  [caption > capability.maxLength] --> [409 caption_too_long]
+}
+
+' Account errors
+package "Account" {
+  [account.status = disabled] --> [409 account_disabled]
+  [account.status = token_expired] --> [401 token_expired]
+  [account.status = permission_missing] --> [403 permission_denied]
+  [no account connected] --> [409 no_account_connected]
+}
+
+' Postiz upstream
+package "Postiz upstream" {
+  [Postiz 401] --> [token_expired]
+  [Postiz 403] --> [permission_denied]
+  [Postiz 408] --> [provider_timeout (retryable)]
+  [Postiz 409] --> [conflict]
+  [Postiz 422] --> [invalid_payload]
+  [Postiz 425] --> [provider_temporarily_unavailable (retryable)]
+  [Postiz 429] --> [provider_rate_limited (retryable, with backoff)]
+  [Postiz 5xx] --> [provider_unavailable (retryable)]
+  [network timeout] --> [provider_timeout (retryable)]
+}
+
+' UI mapping
+package "UI mapping (formatError)" {
+  [token_expired] --> [Toast: "Session expirée, veuillez vous reconnecter."]
+  [permission_denied] --> [Toast: "Action non autorisée."]
+  [provider_rate_limited] --> [Toast: "Trop de requêtes, réessayez dans un instant."]
+  [provider_unavailable] --> [Toast: "Provider indisponible."]
+  [brand_review_blocked] --> [Toast: "Le contenu est bloqué par la revue brand."]
+  [no_media_attached] --> [Toast: "Aucun média attaché au draft."]
+  [no_account_connected] --> [Toast: "Aucun compte social connecté."]
+  [min_lead_time] --> [Toast: "La date doit être au moins 5 minutes dans le futur."]
+  [caption_too_long] --> [Banner: "Caption dépasse XXX caractères (max YYY)."]
+}
+
+note right of [Postiz 429]
+  Retry strategy:
+  - 3 attempts max
+  - backoff [100, 300, 900]ms
+  - Honor `Retry-After` header if present (future enhancement)
+  - On retry exhausted: status='failed'
+end note
+
+note bottom of [Toast: "Provider indisponible."]
+  All toasts route via formatError()
+  helper in lib/content-studio-v2/
+  errors/messages.ts (Phase 6).
+end note
+
+@enduml

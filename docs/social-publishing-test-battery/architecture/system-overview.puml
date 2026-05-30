@@ -1,0 +1,140 @@
+@startuml system-overview
+title Social Publishing — System Overview
+
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor #FFFBF3
+  BorderColor #6B5BFF
+}
+
+package "Browser (Admin)" {
+  [PublishActionGroup\ncreate/] as PAG
+  [JobQueue\nplan/] as JQ
+  [QuickEditDrawer\nplan/] as QED
+  [Calendar + CalendarCard\nplan/] as CAL
+  [LibraryClient\nlibrary/] as LIB
+  [AccountHealthCard\nhome/] as AHC
+}
+
+package "Next.js API Routes" {
+  [POST /posts/:id/publish-now] as PN
+  [POST /posts/:id/schedule] as PS
+  [POST /posts/:id/draft-on-provider] as PD
+  [POST /posts/:id/cancel] as PC
+  [PATCH /posts/:id/reschedule] as PR
+  [GET /publish-jobs] as JL
+  [POST /publish-jobs/:id/retry] as JR
+  [POST /publish-jobs/:id/cancel] as JC
+  [POST /postiz/integrations/sync] as PIS
+}
+
+package "Service Layer\n(lib/social-publishing)" {
+  [admin-service.ts\npublishContentPostNow\nscheduleContentPost\nsendContentPostToDraft] as ADMIN
+  [service.ts\npublishWithAdapter] as SVC
+  [retry.ts\nexpBackoff] as RT
+  [state-machine.ts\ntransitions] as SM
+  [errors.ts\nHTTP→code] as ERR
+  [repository.ts\nDrizzle CRUD] as REPO
+  [worker.ts\ncron handler] as WRK
+  [alerts.ts\nSlack webhook] as ALR
+}
+
+package "Adapters" {
+  [adapters/postiz.ts] as APZ
+  [adapters/dry-run.ts] as ADR
+}
+
+database "PostgreSQL" {
+  frame "social_publishing tables" {
+    [social_account]
+    [social_credential]
+    [social_publish_job]
+    [social_publish_attempt]
+    [social_publish_publication]
+    [social_publish_event]
+  }
+  frame "content_studio tables" {
+    [content_post]
+    [content_postiz_delivery]
+    [audit_log]
+  }
+}
+
+cloud "Postiz SaaS" {
+  [POST /upload] as P_UPLOAD
+  [POST /posts (now/sched/draft)] as P_POSTS
+  [GET /posts/:id] as P_GET
+  [GET /integrations] as P_INT
+  [GET /analytics/post/:id] as P_AN
+}
+
+cloud "Instagram/Facebook\n(end-user visibility)" {
+  [@alfenna_beauty\n(test target)]
+}
+
+queue "Cron scheduler\n(Vercel/Node cron)" {
+  [social-publish-scheduler\nevery 5min] as CRON_PUB
+  [postiz-sync\nhourly] as CRON_SYNC
+  [social-failure-digest\nweekly] as CRON_DIG
+}
+
+' UI → API
+PAG --> PN
+PAG --> PS
+PAG --> PD
+QED --> PR
+QED --> PC
+JQ --> JL : polling 30s
+JQ --> JR
+JQ --> JC
+AHC --> PIS
+
+' API → service
+PN --> ADMIN
+PS --> ADMIN
+PD --> ADMIN
+PC --> ADMIN
+PR --> ADMIN
+JL --> REPO
+JR --> ADMIN
+JC --> ADMIN
+PIS --> ADMIN
+
+' Service inner
+ADMIN --> SVC
+ADMIN --> REPO
+ADMIN --> SM
+SVC --> RT
+SVC --> ERR
+SVC --> APZ
+SVC --> ADR
+
+' Adapter → external
+APZ --> P_UPLOAD
+APZ --> P_POSTS
+APZ --> P_GET
+APZ --> P_INT
+APZ --> P_AN
+P_POSTS ..> [@alfenna_beauty\n(test target)] : publishes
+
+' DB
+REPO --> [social_publish_job]
+REPO --> [social_publish_attempt]
+REPO --> [social_publish_publication]
+REPO --> [social_publish_event]
+REPO --> [social_account]
+REPO --> [social_credential]
+ADMIN --> [content_postiz_delivery]
+ADMIN --> [audit_log]
+
+' Cron
+CRON_PUB --> WRK
+WRK --> REPO
+WRK --> SVC
+CRON_SYNC --> ADMIN
+CRON_DIG --> ADMIN
+
+' Alerts
+SVC --> ALR : on failure
+
+@enduml

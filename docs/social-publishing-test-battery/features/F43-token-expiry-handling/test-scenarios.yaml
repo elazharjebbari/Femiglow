@@ -1,0 +1,23 @@
+feature: F43-token-expiry-handling
+critical: P1
+
+unit:
+  - id: F43-U-1
+    name: 401 Postiz → token_expired
+  - id: F43-U-2
+    name: account marked token_expired in DB after 1st failure
+  - id: F43-U-3
+    name: pre-flight rejects publish on token_expired account
+  - id: F43-U-4
+    name: re-sync clears token_expired if Postiz returns 200
+
+component:
+  - id: F43-CO-1
+    name: AccountHealthCard shows warning badge
+  - id: F43-CO-2
+    name: Reconnect link visible
+
+e2e:
+  - id: F43-E-1
+    name: token expiry mid-publish flow
+    scenario_ref: S17

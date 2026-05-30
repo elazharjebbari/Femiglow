@@ -1,0 +1,18 @@
+feature: F15-scheduling
+
+component:
+  - name: clicking Programmer opens dialog with datepicker
+  - name: default scheduledAt is 1h from now rounded to 5min
+  - name: preset '+1h' sets scheduledAt accordingly
+  - name: preset 'Demain 9h' sets next day 9am
+  - name: submit calls schedule API
+    when: click Programmer in dialog
+    expect: POST /posts/:postId/schedule { scheduledAt: ISO }
+  - name: timezone label visible
+    expect: text 'Europe/Paris' (or browser tz) visible
+
+contract:
+  - name: schedule with future date → 200
+  - name: schedule with past date → 400 invalid_date
+  - name: schedule < 5 min ahead → 400 min_lead_time
+  - name: reschedule existing post → 200, scheduledAt updated

@@ -1,0 +1,283 @@
+feature: P2-advanced-params
+component: AdvancedParams
+file: apps/web/src/components/admin/content-studio-v2/ai-engine/AdvancedParams.tsx
+
+scenarios:
+  - id: P2-001
+    name: "Section renders collapsed by default"
+    type: component
+    priority: P0
+    given: "AdvancedParams is rendered with default props"
+    steps:
+      - "Render <AdvancedParams format='reel' ... />"
+    expected: "Section header visible with title 'Parametres avances', content hidden"
+    assertions:
+      - "screen.getByText('Parametres avances') is visible"
+      - "screen.queryByText('Modele de redaction') is null (content collapsed)"
+      - "Section toggle button has aria-expanded='false'"
+
+  - id: P2-002
+    name: "Clicking header expands the section"
+    type: component
+    priority: P0
+    given: "Section is collapsed"
+    steps:
+      - "Click on the 'Parametres avances' header button"
+    expected: "Section expands and all controls become visible"
+    assertions:
+      - "Section toggle button has aria-expanded='true'"
+      - "screen.getByText('Modele de redaction') is visible"
+      - "screen.getByText(/modele d.image/i) is visible"
+
+  - id: P2-003
+    name: "ModelPresetSelector for text is visible when expanded"
+    type: component
+    priority: P0
+    given: "Section is expanded"
+    steps:
+      - "Expand the section"
+    expected: "ModelPresetSelector with 4 preset buttons is visible"
+    assertions:
+      - "screen.getByText('Modele de redaction') is visible"
+      - "screen.getByRole('radiogroup') is in the DOM"
+      - "4 radio buttons are visible (Auto, Rapide, Premium, Personnalise)"
+
+  - id: P2-004
+    name: "ModelSelector for image is visible when expanded"
+    type: component
+    priority: P0
+    given: "Section is expanded"
+    steps:
+      - "Expand the section"
+    expected: "Image model selector trigger button is visible"
+    assertions:
+      - "screen.getByText(/modele d.image/i) is visible"
+      - "ModelSelector trigger for image is in the DOM"
+
+  - id: P2-005
+    name: "Video model selector visible when format is reel"
+    type: component
+    priority: P0
+    given: "Section expanded, format='reel'"
+    steps:
+      - "Render with format='reel' and expand"
+    expected: "Video model selector is visible"
+    assertions:
+      - "screen.getByText(/modele vid/i) is visible"
+
+  - id: P2-006
+    name: "Video model selector visible when format is story"
+    type: component
+    priority: P0
+    given: "Section expanded, format='story'"
+    steps:
+      - "Render with format='story' and expand"
+    expected: "Video model selector is visible"
+    assertions:
+      - "screen.getByText(/modele vid/i) is visible"
+
+  - id: P2-007
+    name: "Video model selector visible when format is carousel"
+    type: component
+    priority: P1
+    given: "Section expanded, format='carousel'"
+    steps:
+      - "Render with format='carousel' and expand"
+    expected: "Video model selector is visible"
+    assertions:
+      - "screen.getByText(/modele vid/i) is visible"
+
+  - id: P2-008
+    name: "Video model selector hidden when format is single_image"
+    type: component
+    priority: P0
+    given: "Section expanded, format='single_image'"
+    steps:
+      - "Render with format='single_image' and expand"
+    expected: "Video model selector is NOT visible"
+    assertions:
+      - "screen.queryByText(/modele vid/i) is null"
+
+  - id: P2-009
+    name: "Video model selector hidden when format is text_post"
+    type: component
+    priority: P0
+    given: "Section expanded, format='text_post'"
+    steps:
+      - "Render with format='text_post' and expand"
+    expected: "Video model selector is NOT visible"
+    assertions:
+      - "screen.queryByText(/modele vid/i) is null"
+
+  - id: P2-010
+    name: "Generate visuals toggle defaults to true"
+    type: component
+    priority: P0
+    given: "Section expanded"
+    steps:
+      - "Expand section and check toggle state"
+    expected: "Toggle is ON by default"
+    assertions:
+      - "Generate visuals toggle has aria-checked='true'"
+
+  - id: P2-011
+    name: "Disabling generate visuals hides image and video selectors"
+    type: component
+    priority: P0
+    given: "Section expanded, generateVisuals is true"
+    steps:
+      - "Click the generate visuals toggle to disable"
+    expected: "Image and video model selectors disappear"
+    assertions:
+      - "onGenerateVisualsChange called with false"
+      - "When re-rendered with generateVisuals=false, image/video selectors are not in DOM"
+
+  - id: P2-012
+    name: "Re-enabling generate visuals shows image and video selectors"
+    type: component
+    priority: P1
+    given: "Section expanded, generateVisuals is false"
+    steps:
+      - "Click the generate visuals toggle to enable"
+    expected: "Image and video model selectors reappear"
+    assertions:
+      - "onGenerateVisualsChange called with true"
+      - "Image model selector is visible again"
+
+  - id: P2-013
+    name: "Human review toggle defaults to false"
+    type: component
+    priority: P0
+    given: "Section expanded"
+    steps:
+      - "Expand section and check review toggle"
+    expected: "Toggle is OFF by default"
+    assertions:
+      - "Review toggle has aria-checked='false'"
+
+  - id: P2-014
+    name: "Enabling human review toggle calls onHumanReviewChange"
+    type: component
+    priority: P0
+    given: "Section expanded, humanReviewRequired is false"
+    steps:
+      - "Click the human review toggle"
+    expected: "onHumanReviewChange called with true"
+    assertions:
+      - "onHumanReviewChange was called with true"
+
+  - id: P2-015
+    name: "Section has Settings icon"
+    type: component
+    priority: P2
+    given: "AdvancedParams rendered"
+    steps:
+      - "Check the section header icon"
+    expected: "Settings icon is visible in the header"
+    assertions:
+      - "Header contains Settings (lucide) icon SVG"
+
+  - id: P2-016
+    name: "All controls disabled when disabled prop is true"
+    type: component
+    priority: P1
+    given: "Section expanded, disabled=true"
+    steps:
+      - "Render with disabled=true and expand"
+    expected: "All interactive controls are disabled"
+    assertions:
+      - "ModelPresetSelector buttons are disabled"
+      - "ModelSelector triggers are disabled"
+      - "Toggle switches have aria-disabled='true' or pointer-events:none"
+
+  - id: P2-017
+    name: "Layout is vertical stack with 16px gap"
+    type: component
+    priority: P2
+    given: "Section expanded"
+    steps:
+      - "Inspect the inner container style"
+    expected: "Inner container has flex-direction: column and gap: 16px"
+    assertions:
+      - "Container has style flexDirection: column"
+      - "Container has style gap: 16px (or equivalent)"
+
+  - id: P2-018
+    name: "Format change from reel to text_post hides video selector"
+    type: component
+    priority: P1
+    given: "Section expanded, format was 'reel', video selector visible"
+    steps:
+      - "Re-render with format='text_post'"
+    expected: "Video model selector disappears"
+    assertions:
+      - "screen.queryByText(/modele vid/i) is null"
+      - "onVideoModelChange called with '' (reset)"
+
+  - id: P2-019
+    name: "Toggle switch ARIA role is 'switch'"
+    type: component
+    priority: P1
+    given: "Section expanded"
+    steps:
+      - "Check ARIA roles of both toggles"
+    expected: "Both toggles have role='switch'"
+    assertions:
+      - "screen.getAllByRole('switch') has length 2"
+
+  - id: P2-020
+    name: "Section persists values when collapsed and re-expanded"
+    type: component
+    priority: P1
+    given: "Section expanded, text preset changed to Premium, then collapsed"
+    steps:
+      - "Expand section"
+      - "Select Premium preset"
+      - "Collapse section"
+      - "Re-expand section"
+    expected: "Premium preset is still selected"
+    assertions:
+      - "Premium button still has aria-checked='true' after re-expand"
+
+  - id: P2-021
+    name: "Integration -- generate body includes all advanced params"
+    type: integration
+    priority: P0
+    given: "AIEngineCreatePage with advanced params configured"
+    steps:
+      - "Fill brief form"
+      - "Open advanced params"
+      - "Select Premium text model"
+      - "Enable human review"
+      - "Click Generer"
+    expected: "POST /generate body includes textModel, generateVisuals, humanReviewRequired"
+    assertions:
+      - "fetch body contains textModel='gpt-4o'"
+      - "fetch body contains generateVisuals=true"
+      - "fetch body contains humanReviewRequired=true"
+
+  - id: P2-022
+    name: "Collapsible section toggle has aria-expanded attribute"
+    type: component
+    priority: P1
+    given: "AdvancedParams rendered"
+    steps:
+      - "Check the header toggle button"
+    expected: "Button has aria-expanded and aria-controls attributes"
+    assertions:
+      - "Toggle button has aria-expanded='false' initially"
+      - "Toggle button has aria-controls pointing to content id"
+
+  - id: P2-023
+    name: "Chevron rotates when section opens/closes"
+    type: component
+    priority: P2
+    given: "Section is collapsed"
+    steps:
+      - "Note the chevron orientation (ChevronRight)"
+      - "Click to expand"
+      - "Note the chevron orientation (ChevronDown)"
+    expected: "Chevron changes from ChevronRight to ChevronDown"
+    assertions:
+      - "Collapsed: ChevronRight icon visible"
+      - "Expanded: ChevronDown icon visible"

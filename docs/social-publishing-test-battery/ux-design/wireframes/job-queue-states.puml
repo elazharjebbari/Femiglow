@@ -1,0 +1,12 @@
+@startsalt job-queue-states
+title JobQueue — états des rows
+{
+  "Jobs récents (7 derniers jours)"
+  --
+  <queued>  instagram · reel · postiz | "Programmé : 28/05 14:00" | [Annuler]
+  <publishing> instagram · post · postiz | "Tentative 1" | [Annuler]
+  <published✓> instagram · post · postiz | "Publié il y a 5 min" | [Voir le post]
+  <failed✗> instagram · post · postiz | "Tentative 3 — Provider indisponible" | [Retry]
+  <cancelled> facebook · post · dry_run | "Annulé il y a 1h" | -
+}
+@endsalt

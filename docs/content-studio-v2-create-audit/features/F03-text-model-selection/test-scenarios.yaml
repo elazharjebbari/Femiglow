@@ -1,0 +1,62 @@
+feature: F03-text-model-selection
+component: ModelPicker (+ IntentionForm integration)
+
+unit:
+  - name: suggestForFormat('post').chat = gpt-4o-mini (default + fast)
+    expect: id='gpt-4o-mini'
+  - name: suggestForFormat('reel').chat = gpt-4o (balanced)
+    expect: id='gpt-4o'
+  - name: suggestForFormat('carousel').chat = gpt-4o (balanced, first sorted)
+    expect: id in ['gpt-4o', 'claude-sonnet-4-6']
+  - name: registry contains ≥ 3 chat models
+    expect: listChatModels().length >= 3
+
+component:
+  - name: ModelPicker renders trigger with default model
+    given: no value, no fetch yet
+    expect: button text 'Choisir un modèle' OR placeholder
+  - name: ModelPicker fetches on open
+    when: click trigger
+    expect: fetch GET /api/admin/content-studio/models?role=chat
+  - name: ModelPicker shows suggested group first
+    given: format='reel', open popover
+    expect: section header 'Recommandé pour reel' present
+  - name: ModelPicker selection fires onChange
+    when: select first item
+    expect: onChange called with model id
+  - name: ModelPicker shows source indicator
+    given: response includes source='static'
+    expect: badge 'Static' visible
+  - name: custom input adds non-listed model
+    when: click '+ Ajouter un modèle custom', type 'my-model'
+    expect: onChange called with 'my-model'
+
+contract:
+  - name: GET /api/admin/content-studio/models?role=chat → 200
+    expect: response.models.length >= 3, response.suggested defined
+  - name: GET /models?role=chat&format=reel → suggested.tier in [balanced, premium]
+  - name: GET /models?role=invalid → 400
+  - name: GET /models?role=chat 401 if not authenticated
+  - name: POST /ideas with body.model='gpt-4o' → 200, generation_run.model='gpt-4o'
+  - name: POST /ideas without model → 200, generation_run.model = env default
+
+e2e:
+  - name: Operator selects gpt-4o for a reel
+    steps:
+      - visit /admin/content-studio-v2/create
+      - select Reel format
+      - click ModelPicker → wait popover
+      - click 'GPT-4o'
+      - fill intention, click Enregistrer
+    expect:
+      - generation completes
+      - badge under VariantsCompare shows 'Généré par gpt-4o'
+
+  - name: Default suggested model when none selected
+    steps:
+      - visit /admin/content-studio-v2/create
+      - select Post format (no model action)
+      - fill intention, click Enregistrer
+    expect:
+      - generation uses suggestForFormat('post').chat.id
+      - badge shows it (e.g. 'gpt-4o-mini')

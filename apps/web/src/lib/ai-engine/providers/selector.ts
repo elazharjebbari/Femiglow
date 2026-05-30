@@ -4,6 +4,7 @@ import { ProviderAdapter } from './adapters/base';
 import { OpenAIAdapter } from './adapters/openai';
 import { AnthropicAdapter } from './adapters/anthropic';
 import { GoogleAdapter } from './adapters/google';
+import { HiggsFieldAdapter } from './adapters/higgsfield';
 import { globalCostTracker } from './cost-tracker';
 
 function createAdapter(config: ProviderConfig): ProviderAdapter {
@@ -14,6 +15,8 @@ function createAdapter(config: ProviderConfig): ProviderAdapter {
       return new AnthropicAdapter(config);
     case 'google':
       return new GoogleAdapter(config);
+    case 'higgsfield':
+      return new HiggsFieldAdapter(config);
     default:
       throw new Error(`Unsupported provider type: ${config.type}`);
   }

@@ -1,0 +1,576 @@
+# ============================================================================
+# AI Engine Create Page — State Machine Definition (NEW)
+# After all 6 UX fixes (P1-P6)
+# ============================================================================
+# This YAML describes the complete state machine for the Create page.
+# It is used as a reference for implementation and testing.
+# ============================================================================
+
+machine:
+  name: AIEngineCreatePage
+  version: "2.0"
+  description: >
+    State machine for the AI Engine content creation page.
+    Manages the lifecycle from brief input through generation, optional
+    human review, to result display and publication.
+  initial_state: brief
+
+# ============================================================================
+# STATES
+# ============================================================================
+states:
+
+  brief:
+    description: >
+      Initial state. The operator fills in the creative brief form.
+      Advanced parameters (model selection, toggles) are available
+      in a collapsible section.
+    step_index: 0
+    ui_components:
+      - component: Stepper
+        props:
+          active_step: 0
+          labels: ["Brief", "Generation", "Review", "Publication"]
+      - component: BriefForm
+        props:
+          fields:
+            - { name: objective, type: select, required: true }
+            - { name: platform, type: select, required: true }
+            - { name: format, type: select, required: true }
+            - { name: tone, type: select, required: true }
+            - { name: keyMessage, type: textarea, required: true }
+            - { name: productFocus, type: input, required: false }
+            - { name: trendReference, type: input, required: false }
+      - component: AdvancedParams
+        props:
+          default_open: false
+          children:
+            - component: ModelPresetSelector
+              props:
+                capability: text
+                presets: [auto, fast, premium, custom]
+                default: auto
+            - component: ModelSelector
+              props:
+                capability: image
+                provider_type: openai
+            - component: ModelSelector
+              props:
+                capability: video
+                provider_type: higgsfield
+                visible_when: "format NOT IN ['text_post', 'infographic']"
+            - component: Toggle
+              props:
+                label: "Generer les visuels"
+                default: true
+            - component: Toggle
+              props:
+                label: "Review humaine avant publication"
+                default: false
+    allowed_transitions:
+      - to: generating
+        trigger: click_generate
+        guard: isFormValid
+
+  generating:
+    description: >
+      The system is generating content. A pipeline progress animation
+      plays while the POST /generate request is in flight.
+    step_index: 1
+    ui_components:
+      - component: Stepper
+        props:
+          active_step: 1
+          completed_steps: [0]
+      - component: GenerationProgress
+        props:
+          steps: PIPELINE_STEPS
+          totalCost: null
+    allowed_transitions:
+      - to: review
+        trigger: generation_success_with_review
+        guard: "(humanReviewEnabled AND data.status !== 'review') OR data.status === 'review'"
+        action: >
+          Build reviewPayload from generation result.
+          If client-side review: store pendingResult.
+          Set reviewJobId.
+      - to: result
+        trigger: generation_success_no_review
+        guard: "NOT humanReviewEnabled AND data.status !== 'review'"
+        action: >
+          Set result, bridgeResult (with mock fallback), contentStudioUrl.
+      - to: error
+        trigger: generation_failure
+        guard: "fetch throws OR res.status >= 400"
+        action: >
+          Set errorMsg from response body or exception message.
+
+  review:
+    description: >
+      The operator reviews the generated content before publication.
+      Can approve, request edits, or reject. This state is reached
+      either from the server (API returns status=review) or client-side
+      (humanReviewEnabled toggle is on).
+    step_index: 2
+    ui_components:
+      - component: Stepper
+        props:
+          active_step: 2
+          completed_steps: [0, 1]
+      - component: ReviewPanel
+        props:
+          jobId: reviewJobId
+          reviewPayload: reviewPayload
+          submitting: reviewSubmitting
+          onDecision: handleReviewDecision
+    allowed_transitions:
+      - to: result
+        trigger: review_approved
+        guard: "decision === 'approved'"
+        action: >
+          If pendingResult (mock): use as final result, build effectiveBridgeResult.
+          If real API: POST /jobs/{id}/review, use response as final result.
+      - to: review
+        trigger: review_edit_requested
+        guard: "decision === 'edit_requested'"
+        action: >
+          If pendingResult (mock): simulate delay, stay in review.
+          If real API: POST /jobs/{id}/review, API returns new reviewPayload.
+      - to: brief
+        trigger: review_rejected
+        guard: "decision === 'rejected'"
+        action: >
+          If pendingResult (mock): handleReset().
+          If real API: POST /jobs/{id}/review, then handleReset().
+      - to: error
+        trigger: review_api_failure
+        guard: "fetch throws OR res.status >= 400"
+        action: >
+          Set errorMsg from response body or exception message.
+
+  reviewing:
+    description: >
+      Transient sub-state of review while the review decision API call
+      is in flight. The ReviewPanel shows a loading spinner on buttons.
+    step_index: 2
+    ui_components:
+      - component: Stepper
+        props:
+          active_step: 2
+          completed_steps: [0, 1]
+      - component: ReviewPanel
+        props:
+          submitting: true
+    allowed_transitions:
+      - to: result
+        trigger: review_api_success_approved
+      - to: review
+        trigger: review_api_success_edit
+      - to: brief
+        trigger: review_api_success_rejected
+      - to: error
+        trigger: review_api_failure
+
+  result:
+    description: >
+      The final generated content is displayed with all assets:
+      script, caption, hashtags, images, videos, quality scores,
+      cost breakdown, and the publish section.
+    step_index: 3
+    ui_components:
+      - component: Stepper
+        props:
+          active_step: 3
+          completed_steps: [0, 1, 2]
+      - component: GenerationResult
+        props:
+          result: GenerationResultData
+          bridgeResult: BridgeResultData  # always present (mock fallback)
+          contentStudioUrl: string | null
+          onUse: handleUse
+          onRegenerate: handleRetry
+        children:
+          - component: ScriptSection
+            visible_when: "result.script is not null"
+          - component: CaptionSection
+            visible_when: "result.caption is not empty"
+          - component: HashtagChips
+            visible_when: "result.hashtags.length > 0"
+          - component: ImageGallery
+            visible_when: "result.images.length > 0"
+          - component: VideoPlayer
+            visible_when: "result.videos.length > 0"
+          - component: QualityScores
+            visible_when: "result.qualityScores has keys"
+          - component: CostBreakdown
+            visible_when: "result.costBreakdown.length > 0"
+          - component: PublishSection
+            visible_when: always  # mock fallback ensures bridgeResult exists
+            props:
+              draftId: bridgeResult.draftId
+              isMock: "draftId starts with 'mock-' or contains 'test'"
+    allowed_transitions:
+      - to: generating
+        trigger: click_regenerate
+        action: "handleRetry() -> handleGenerate()"
+      - to: brief
+        trigger: click_new_brief
+        action: "handleReset() -> clear all state"
+
+  error:
+    description: >
+      An error occurred during generation or review. The operator
+      can retry or go back to modify the brief.
+    step_index: -1  # Stepper keeps last valid state
+    ui_components:
+      - component: Stepper
+        props:
+          active_step: last_valid_step
+          note: "Stepper does NOT advance to error — it stays at the step where the error occurred."
+      - component: ErrorPanel
+        props:
+          message: errorMsg
+          onRetry: handleRetry
+          onReset: handleReset
+    allowed_transitions:
+      - to: generating
+        trigger: click_retry
+        action: "handleRetry() -> handleGenerate()"
+      - to: brief
+        trigger: click_modify_brief
+        action: "handleReset() -> clear all state"
+
+# ============================================================================
+# TRANSITIONS (flat list for test matrix generation)
+# ============================================================================
+transitions:
+
+  - id: T01
+    from: brief
+    to: generating
+    trigger: click_generate
+    guard: isFormValid
+    description: "Operator clicks Generate button with valid form"
+    post_body:
+      - objective
+      - platform
+      - format
+      - tone
+      - keyMessage
+      - productFocus
+      - trendReference
+      - humanReviewRequired
+      - textModel
+      - imageModel
+      - videoModel
+      - generateVisuals
+
+  - id: T02
+    from: generating
+    to: result
+    trigger: generation_success_no_review
+    guard: "NOT humanReviewEnabled AND data.status !== 'review'"
+    description: "Generation completes successfully without review"
+    actions:
+      - setResult(data)
+      - setBridgeResult(data.bridgeResult ?? mockFallback)
+      - setContentStudioUrl(data.contentStudioUrl)
+      - setPhase('result')
+
+  - id: T03
+    from: generating
+    to: review
+    trigger: generation_success_with_review_toggle
+    guard: "humanReviewEnabled AND data.status !== 'review'"
+    description: "Generation completes, client-side review forced by toggle"
+    actions:
+      - buildMockReviewPayload(data)
+      - setPendingResult(data)
+      - setReviewJobId(data.jobId ?? mockId)
+      - setReviewPayload(mockPayload)
+      - setPhase('review')
+
+  - id: T04
+    from: generating
+    to: review
+    trigger: generation_success_with_review_api
+    guard: "data.status === 'review'"
+    description: "Generation completes, server requires review"
+    actions:
+      - setReviewJobId(data.jobId)
+      - setReviewPayload(data.reviewPayload)
+      - setPhase('review')
+
+  - id: T05
+    from: generating
+    to: error
+    trigger: generation_failure
+    guard: "fetch throws OR HTTP >= 400"
+    description: "Generation API call fails"
+    actions:
+      - setErrorMsg(message)
+      - setPhase('error')
+
+  - id: T06
+    from: review
+    to: result
+    trigger: review_approved_mock
+    guard: "decision === 'approved' AND pendingResult exists"
+    description: "Operator approves in mock review mode"
+    actions:
+      - setResult(pendingResult)
+      - setBridgeResult(effectiveBridgeResult)
+      - setPhase('result')
+      - setPendingResult(null)
+
+  - id: T07
+    from: review
+    to: result
+    trigger: review_approved_api
+    guard: "decision === 'approved' AND NOT pendingResult"
+    description: "Operator approves in real API review mode"
+    actions:
+      - POST /jobs/{id}/review { decision: 'approved' }
+      - setResult(apiResponse)
+      - setBridgeResult(apiResponse.bridgeResult)
+      - setPhase('result')
+
+  - id: T08
+    from: review
+    to: review
+    trigger: review_edit_requested
+    guard: "decision === 'edit_requested'"
+    description: "Operator requests edits (mock or real)"
+    actions:
+      - "mock: simulate delay, stay in review"
+      - "real: POST /jobs/{id}/review, receive new reviewPayload"
+
+  - id: T09
+    from: review
+    to: brief
+    trigger: review_rejected_mock
+    guard: "decision === 'rejected' AND pendingResult exists"
+    description: "Operator rejects in mock review mode"
+    actions:
+      - handleReset()
+      - setPendingResult(null)
+
+  - id: T10
+    from: review
+    to: brief
+    trigger: review_rejected_api
+    guard: "decision === 'rejected' AND NOT pendingResult"
+    description: "Operator rejects in real API review mode"
+    actions:
+      - POST /jobs/{id}/review { decision: 'rejected' }
+      - handleReset()
+
+  - id: T11
+    from: result
+    to: generating
+    trigger: click_regenerate
+    description: "Operator clicks Regenerer button"
+    actions:
+      - handleRetry() -> handleGenerate()
+
+  - id: T12
+    from: result
+    to: brief
+    trigger: navigate_away
+    description: "Operator navigates back or starts new generation"
+
+  - id: T13
+    from: error
+    to: generating
+    trigger: click_retry
+    description: "Operator clicks Reessayer button"
+    actions:
+      - handleRetry() -> handleGenerate()
+
+  - id: T14
+    from: error
+    to: brief
+    trigger: click_modify_brief
+    description: "Operator clicks Modifier le brief button"
+    actions:
+      - handleReset()
+
+# ============================================================================
+# APPLICATION STATE
+# ============================================================================
+state_variables:
+  # Phase management
+  - name: phase
+    type: "Phase"
+    type_definition: "'brief' | 'generating' | 'review' | 'reviewing' | 'result' | 'error'"
+    initial: "brief"
+
+  # Brief form
+  - name: form
+    type: BriefForm
+    fields:
+      - { name: objective, type: string, initial: "" }
+      - { name: platform, type: string, initial: "" }
+      - { name: format, type: string, initial: "" }
+      - { name: tone, type: string, initial: "" }
+      - { name: keyMessage, type: string, initial: "" }
+      - { name: productFocus, type: string, initial: "" }
+      - { name: trendReference, type: string, initial: "" }
+
+  # Advanced params (NEW)
+  - name: textModelPreset
+    type: "ModelPreset"
+    type_definition: "'auto' | 'fast' | 'premium' | 'custom'"
+    initial: "auto"
+    added_by: P1
+
+  - name: textModelCustom
+    type: string
+    initial: ""
+    added_by: P1
+
+  - name: imageModel
+    type: string
+    initial: ""
+    added_by: P2
+
+  - name: videoModel
+    type: string
+    initial: ""
+    added_by: P2
+
+  - name: generateVisuals
+    type: boolean
+    initial: true
+    added_by: P2
+
+  - name: humanReviewEnabled
+    type: boolean
+    initial: false
+    added_by: P3
+
+  # Generation pipeline
+  - name: steps
+    type: "PipelineStep[]"
+    initial: "[]"
+
+  - name: totalCost
+    type: "number | undefined"
+    initial: undefined
+
+  # Result
+  - name: result
+    type: "GenerationResultData | null"
+    initial: null
+
+  - name: bridgeResult
+    type: "BridgeResultData | null"
+    initial: null
+    note: "Always populated after generation via mock fallback (P5)"
+
+  - name: contentStudioUrl
+    type: "string | null"
+    initial: null
+
+  # Review
+  - name: reviewJobId
+    type: string
+    initial: ""
+
+  - name: reviewPayload
+    type: "ReviewPayload | null"
+    initial: null
+
+  - name: reviewSubmitting
+    type: boolean
+    initial: false
+
+  - name: pendingResult
+    type: "GenerationResultData | null"
+    initial: null
+    added_by: P3
+    note: "Stores generation result when client-side review is forced"
+
+  # Error
+  - name: errorMsg
+    type: string
+    initial: ""
+
+# ============================================================================
+# DERIVED STATE
+# ============================================================================
+derived_state:
+
+  - name: isFormValid
+    expression: "form.objective && form.platform && form.format && form.tone && form.keyMessage.trim()"
+
+  - name: showVideoModel
+    expression: "!['text_post', 'infographic'].includes(form.format)"
+    added_by: P2
+
+  - name: isMockMode
+    expression: "process.env.NODE_ENV === 'development' OR !hasRealApiKeys"
+    added_by: P5
+
+  - name: stepperSteps
+    expression: "mapPhaseToSteps(phase)"
+    added_by: P6
+
+  - name: resolvedTextModel
+    expression: >
+      textModelPreset === 'custom'
+        ? textModelCustom
+        : PRESET_MODELS[textModelPreset]?.model ?? ''
+    added_by: P1
+
+# ============================================================================
+# API ENDPOINTS
+# ============================================================================
+api_endpoints:
+
+  - path: "POST /api/admin/ai-engine/generate"
+    body_schema:
+      required: [objective, platform, format, tone, keyMessage]
+      optional:
+        - productFocus
+        - trendReference
+        - humanReviewRequired   # P3
+        - textModel             # P1
+        - imageModel            # P2
+        - videoModel            # P2
+        - generateVisuals       # P2
+    response_variants:
+      - status: 200
+        when: "successful generation, no review"
+        shape: "GenerationResultData + bridgeResult + contentStudioUrl"
+      - status: 200
+        when: "successful generation, review required"
+        shape: "{ status: 'review', jobId, reviewPayload, ... }"
+      - status: 400
+        when: "validation error"
+      - status: 500
+        when: "generation failure"
+
+  - path: "POST /api/admin/ai-engine/jobs/{id}/review"
+    body_schema:
+      required: [decision]
+      optional: [feedback]
+    response_variants:
+      - status: 200
+        when: "review processed, final result"
+        shape: "GenerationResultData + bridgeResult"
+      - status: 200
+        when: "edit requested, new review cycle"
+        shape: "{ status: 'review', jobId, reviewPayload }"
+
+  - path: "POST /api/admin/ai-engine/publish"
+    body_schema:
+      required: [draftId, mode]
+      optional: [scheduledAt, integrationIds]
+    response_variants:
+      - status: 201
+        when: "published or scheduled"
+      - status: 404
+        when: "draft not found"
+      - status: 500
+        when: "platform API error"

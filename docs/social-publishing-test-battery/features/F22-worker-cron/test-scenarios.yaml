@@ -1,0 +1,36 @@
+feature: F22-worker-cron
+critical: P0
+
+unit:
+  - id: F22-U-1
+    name: picks job scheduledAt past
+    given: 1 job queued scheduledAt = now-1min
+    expect: executed
+  - id: F22-U-2
+    name: skips not yet due
+    given: 1 job scheduledAt = now+10min
+    expect: not executed
+  - id: F22-U-3
+    name: skips locked jobs
+    given: 1 job queued lockedAt=now
+    expect: not picked
+  - id: F22-U-4
+    name: max 5 per run
+    given: 10 due
+    expect: 5 executed, 5 remain queued
+  - id: F22-U-5
+    name: order by scheduledAt ASC
+  - id: F22-U-6
+    name: one job failure does not stop loop
+    given: job 1 fails, jobs 2/3 succeed
+    expect: 3 attempts, 1 failed, 2 succeeded
+  - id: F22-U-7
+    name: returns {succeeded, failed, skipped} counts
+
+contract:
+  - id: F22-C-1
+    name: cron route requires bearer CRON_SECRET
+    given: no header
+    expect: 401
+  - id: F22-C-2
+    name: cron route 200 with summary

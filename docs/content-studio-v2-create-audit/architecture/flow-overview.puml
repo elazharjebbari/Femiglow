@@ -1,0 +1,86 @@
+@startuml flow-overview
+title Content Studio v2 — Create page end-to-end (target after improvements)
+
+actor Operator as U
+participant "IntentionForm" as IF
+participant "VariantsCompare" as VC
+participant "MediaStudio" as MS
+participant "CaptionEditor" as CE
+participant "PreviewPane" as PP
+participant "PublishActionGroup" as PUB
+participant "StudioContext" as CTX
+database "DB" as DB
+queue "Publish job" as JOB
+control "OpenAI / Mock" as LLM
+
+== Step 1 — Frame ==
+U -> IF : fills pillar/objective/platform/format/intention\nselects text model (ModelPicker)
+IF -> CTX : (optimistic) updates UI
+IF -> "POST /ideas" : { ..., model? }
+"POST /ideas" -> DB : INSERT content_idea
+"POST /ideas" --> IF : { idea }
+
+IF -> "POST /ideas/:id/generate"
+"POST /ideas/:id/generate" -> LLM : generateForIdea(model)
+LLM --> "POST /ideas/:id/generate" : brief + drafts
+"POST /ideas/:id/generate" -> DB : INSERT brief, 3 drafts, run
+"POST /ideas/:id/generate" --> IF : { idea, brief, drafts, runs[] }
+IF -> CTX : upsert drafts
+
+== Step 2 — Generate ==
+U -> VC : selects variant
+VC -> CTX : selectDraft(id)
+VC -> "POST /drafts/:id/review" : (auto)
+"POST /drafts/:id/review" -> DB : draft.status = needs_review
+"POST /drafts/:id/review" --> VC : { review }
+VC -> CTX : upsertDraft (status updated)
+
+== Step 3 — Visual ==
+U -> MS : picks Image or Video toggle, selects image/video model
+U -> MS : clicks "Générer un visuel IA"
+alt Image
+  MS -> "POST /drafts/:id/generate-visual" : { kind=image, model, prompt, size, quality }
+  "POST /drafts/:id/generate-visual" -> LLM : generateStudioImage(model)
+else Video
+  MS -> "POST /drafts/:id/generate-visual" : { kind=video, model, prompt }
+  "POST /drafts/:id/generate-visual" -> LLM : generateStudioVideo(model)\nif mock → static MP4
+end
+LLM --> "POST /drafts/:id/generate-visual" : media
+"POST /drafts/:id/generate-visual" -> DB : INSERT media, asset_binding, run
+"POST /drafts/:id/generate-visual" --> MS : { media }
+MS -> CTX : upsertMedia + bindToDraft
+
+== Step 3 → 4 transition ==
+U -> CE : edits caption (autosave debounced)
+CE -> "PATCH /drafts/:id" : { caption?, hook?, cta?, hashtags?, mediaId? }
+"PATCH /drafts/:id" -> DB : UPDATE + re-brand-review
+"PATCH /drafts/:id" --> CE : { draft }
+CE -> CTX : upsertDraft
+
+U -> PP : clicks "Valider et préparer la publication"
+PP -> "POST /drafts/:id/approve"
+"POST /drafts/:id/approve" -> DB : draft.status=approved\nINSERT content_post (status=approved)
+"POST /drafts/:id/approve" --> PP : { post }
+PP -> CTX : upsertPost → postId now available
+
+== Step 4 — Validate ==
+U -> PUB : opens dropdown
+alt Publier maintenant
+  U -> PUB : confirms
+  PUB -> "POST /posts/:id/publish-now"
+  "POST /posts/:id/publish-now" -> JOB : enqueue
+  "POST /posts/:id/publish-now" --> PUB : { jobs }
+else Programmer
+  U -> PUB : picks date+time
+  PUB -> "POST /posts/:id/schedule" : { scheduledAt }
+  "POST /posts/:id/schedule" -> JOB : enqueue scheduled
+  "POST /posts/:id/schedule" --> PUB : { jobs }
+else Brouillon Postiz
+  U -> PUB : confirms
+  PUB -> "POST /posts/:id/draft-on-provider"
+  "POST /posts/:id/draft-on-provider" -> JOB : enqueue draft
+  "POST /posts/:id/draft-on-provider" --> PUB : { jobs }
+end
+PUB -> CTX : reload posts + jobs
+
+@enduml

@@ -1,0 +1,220 @@
+feature: P5-mock-publish
+components:
+  - PublishSection (GenerationResult.tsx)
+  - MSW handler (ai-engine-handlers.ts)
+files:
+  - apps/web/src/components/admin/content-studio-v2/ai-engine/GenerationResult.tsx
+  - apps/web/src/test/msw/ai-engine-handlers.ts
+
+scenarios:
+  - id: P5-001
+    name: "PublishSection visible when bridgeResult is present"
+    type: component
+    priority: P0
+    given: "GenerationResult rendered with a non-null bridgeResult"
+    steps:
+      - "Render <GenerationResult result={mockResult} bridgeResult={{ ideaId: 'mock-idea-001', briefId: 'mock-brief-001', draftId: 'mock-draft-001' }} />"
+    expected: "PublishSection is visible with 'Publier' heading"
+    assertions:
+      - "screen.getByText('Publier') is visible"
+      - "screen.getByText(/publier maintenant/i) is visible"
+
+  - id: P5-002
+    name: "PublishSection hidden when bridgeResult is null"
+    type: component
+    priority: P0
+    given: "GenerationResult rendered with bridgeResult=null"
+    steps:
+      - "Render <GenerationResult result={mockResult} bridgeResult={null} />"
+    expected: "No PublishSection in the DOM"
+    assertions:
+      - "screen.queryByText('Publier') is null"
+
+  - id: P5-003
+    name: "Mock bridgeResult has IDs starting with 'mock-'"
+    type: unit
+    priority: P0
+    given: "MOCK_GENERATION_RESULT in ai-engine-handlers.ts"
+    steps:
+      - "Inspect MOCK_GENERATION_RESULT.bridgeResult"
+    expected: "All IDs start with 'mock-'"
+    assertions:
+      - "bridgeResult.ideaId starts with 'mock-'"
+      - "bridgeResult.briefId starts with 'mock-'"
+      - "bridgeResult.draftId starts with 'mock-'"
+
+  - id: P5-004
+    name: "Mode Mock badge visible for mock bridgeResult"
+    type: component
+    priority: P0
+    given: "PublishSection rendered with isMock=true"
+    steps:
+      - "Render <PublishSection draftId='mock-draft-001' isMock={true} />"
+    expected: "Badge 'Mode Mock' is visible with amber color"
+    assertions:
+      - "screen.getByText('Mode Mock') is visible"
+      - "Badge element has amber/warning color styling"
+
+  - id: P5-005
+    name: "Mode Mock badge hidden for real bridgeResult"
+    type: component
+    priority: P0
+    given: "PublishSection rendered with isMock=false"
+    steps:
+      - "Render <PublishSection draftId='cd_real_001' isMock={false} />"
+    expected: "No 'Mode Mock' badge visible"
+    assertions:
+      - "screen.queryByText('Mode Mock') is null"
+
+  - id: P5-006
+    name: "isMockBridgeResult detects mock IDs"
+    type: unit
+    priority: P0
+    given: "isMockBridgeResult function defined"
+    steps:
+      - "Call with { ideaId: 'mock-idea-001', briefId: 'mock-brief-001', draftId: 'mock-draft-001' }"
+    expected: "Returns true"
+    assertions:
+      - "isMockBridgeResult(mockBridge) === true"
+
+  - id: P5-007
+    name: "isMockBridgeResult returns false for real IDs"
+    type: unit
+    priority: P0
+    given: "isMockBridgeResult function defined"
+    steps:
+      - "Call with { ideaId: 'ci_abc123', briefId: 'cb_abc123', draftId: 'cd_abc123' }"
+    expected: "Returns false"
+    assertions:
+      - "isMockBridgeResult(realBridge) === false"
+
+  - id: P5-008
+    name: "isMockBridgeResult returns false for null"
+    type: unit
+    priority: P1
+    given: "isMockBridgeResult function defined"
+    steps:
+      - "Call with null"
+    expected: "Returns false"
+    assertions:
+      - "isMockBridgeResult(null) === false"
+
+  - id: P5-009
+    name: "Mock publish handler returns success for 'now' mode"
+    type: unit
+    priority: P0
+    given: "MSW handler for POST /publish is active"
+    steps:
+      - "Send POST /publish with body { draftId: 'mock-draft-001', mode: 'now' }"
+    expected: "Response has status 'published' and includes postId and job"
+    assertions:
+      - "response.status === 'published'"
+      - "response.postId starts with 'mock-post-'"
+      - "response.draftId === 'mock-draft-001'"
+      - "response.job.status === 'completed'"
+
+  - id: P5-010
+    name: "Mock publish handler returns scheduled for 'schedule' mode"
+    type: unit
+    priority: P0
+    given: "MSW handler for POST /publish is active"
+    steps:
+      - "Send POST /publish with body { draftId: 'mock-draft-001', mode: 'schedule', scheduledAt: '2026-06-01T10:00:00.000Z' }"
+    expected: "Response has status 'scheduled' and includes scheduledAt"
+    assertions:
+      - "response.status === 'scheduled'"
+      - "response.scheduledAt === '2026-06-01T10:00:00.000Z'"
+      - "response.job.status === 'scheduled'"
+
+  - id: P5-011
+    name: "Integration -- full publish flow in 'now' mode"
+    type: integration
+    priority: P0
+    given: "AIEngineCreatePage, generation completed, PublishSection visible"
+    steps:
+      - "Fill and submit brief form"
+      - "Wait for generation result"
+      - "In PublishSection, click 'Publier maintenant'"
+      - "Click 'Publier' button"
+    expected: "Success message 'Contenu publie avec succes.' appears"
+    assertions:
+      - "screen.getByText(/publi. avec succ.s/i) is visible"
+      - "Success message has green styling"
+
+  - id: P5-012
+    name: "Integration -- full publish flow in 'schedule' mode"
+    type: integration
+    priority: P1
+    given: "AIEngineCreatePage, generation completed, PublishSection visible"
+    steps:
+      - "Click 'Planifier' mode button"
+      - "Set datetime-local to future date"
+      - "Click 'Planifier la publication' button"
+    expected: "Success message with scheduled date appears"
+    assertions:
+      - "screen.getByText(/planifi. pour le/) is visible"
+
+  - id: P5-013
+    name: "Mode Mock badge has role='status'"
+    type: component
+    priority: P1
+    given: "PublishSection with isMock=true"
+    steps:
+      - "Render and inspect the mock badge"
+    expected: "Badge has role=status and aria-label"
+    assertions:
+      - "Badge element has role='status'"
+      - "Badge has aria-label='Publication en mode simulation'"
+
+  - id: P5-014
+    name: "PublishSection visible after review approval"
+    type: integration
+    priority: P0
+    given: "Review toggle enabled, generation triggers review, operator approves"
+    steps:
+      - "Enable review toggle"
+      - "Generate content"
+      - "Approve in ReviewPanel"
+      - "Wait for result phase"
+    expected: "PublishSection visible with bridgeResult from review response"
+    assertions:
+      - "screen.getByText('Publier') is visible"
+      - "PublishSection contains mock badge"
+
+  - id: P5-015
+    name: "Publish button disabled during publishing"
+    type: component
+    priority: P1
+    given: "PublishSection visible, user clicks Publier"
+    steps:
+      - "Click Publier button"
+      - "Check button state while request is in-flight"
+    expected: "Publier button is disabled with loading state"
+    assertions:
+      - "Publier button has disabled attribute"
+      - "Loading spinner is visible"
+
+  - id: P5-016
+    name: "Error handling -- publish returns 500"
+    type: integration
+    priority: P1
+    given: "MSW override with publishErrorHandlers.error500"
+    steps:
+      - "Generate content successfully"
+      - "Click Publier"
+    expected: "Error message displayed in PublishSection"
+    assertions:
+      - "screen.getByText(/erreur|platform api error/i) is visible"
+      - "Error message has red/danger styling"
+
+  - id: P5-017
+    name: "Error handling -- publish returns 409 (already published)"
+    type: integration
+    priority: P1
+    given: "MSW override with publishErrorHandlers.conflict"
+    steps:
+      - "Generate content successfully"
+      - "Click Publier"
+    expected: "Error message about already published content"
+    assertions:
+      - "screen.getByText(/already published|d.j. publi/i) is visible"

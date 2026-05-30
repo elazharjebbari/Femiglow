@@ -1,0 +1,22 @@
+feature: F16-brand-review-gate
+critical: P1
+
+unit:
+  - id: F16-U-1
+    name: getPostPublishability rejects brand blocked
+  - id: F16-U-2
+    name: getPostPublishability allows brand warning
+  - id: F16-U-3
+    name: getPostPublishability uses latest review if multiple
+
+contract:
+  - id: F16-C-1
+    name: publish-now 409 brand_review_blocked
+  - id: F16-C-2
+    name: schedule 409 brand_review_blocked
+
+e2e:
+  - id: F16-E-1
+    name: ApproveButton disabled when brand blocked
+  - id: F16-E-2
+    name: publish triggered then brand blocks → toast mapped

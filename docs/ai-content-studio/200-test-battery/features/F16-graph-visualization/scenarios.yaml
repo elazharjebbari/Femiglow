@@ -1,0 +1,465 @@
+feature: F16
+name: Graph Visualization
+source: apps/web/src/app/admin/content-studio-v2/ai-engine/graph/page.tsx
+url: /admin/content-studio-v2/ai-engine/graph
+
+scenarios:
+
+  # ---------------------------------------------------------------------------
+  # Loading & Error States
+  # ---------------------------------------------------------------------------
+
+  - id: F16-001
+    title: Shows shimmer skeleton during data load
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch returns never-resolving promise
+      - render: GraphViewerPage
+      - assert: 3 skeleton placeholders visible (60px, 500px, 200px heights)
+    expected: Loading state displayed
+
+  - id: F16-002
+    title: API error shows error banner
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch rejects with Error("Erreur 500")
+      - render: GraphViewerPage
+      - await: loading complete
+      - assert: text "Impossible de charger la vue du graphe" visible
+      - assert: text "Erreur 500" visible
+      - assert: button "Reessayer" visible
+    expected: Error state with retry
+
+  - id: F16-003
+    title: Retry button refetches data
+    priority: P0
+    type: unit
+    steps:
+      - mock: first fetch rejects, second resolves with valid data
+      - render: GraphViewerPage
+      - await: error state
+      - click: button "Reessayer"
+      - assert: graph content appears
+    expected: Retry mechanism functional
+
+  # ---------------------------------------------------------------------------
+  # Header & Navigation
+  # ---------------------------------------------------------------------------
+
+  - id: F16-005
+    title: Page title renders correctly
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: heading "Visualisation du graphe LangGraph" visible
+      - assert: eyebrow "AI Engine" visible
+    expected: Title rendered
+
+  - id: F16-006
+    title: Back arrow links to AI Engine dashboard
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: link to "/admin/content-studio-v2/ai-engine" exists
+    expected: Back navigation present
+
+  - id: F16-007
+    title: Navigation links to Analytiques and Configuration
+    priority: P2
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: button "Analytiques" links to .../analytics
+      - assert: button "Configuration" links to .../config
+    expected: Cross-navigation links available
+
+  # ---------------------------------------------------------------------------
+  # Summary Bar
+  # ---------------------------------------------------------------------------
+
+  - id: F16-010
+    title: Summary bar shows node count metrics
+    priority: P0
+    type: unit
+    steps:
+      - mock: with 16 non-terminal nodes, 14 healthy, 1 degraded, 1 error
+      - render and load: GraphViewerPage
+      - assert: text "Noeuds:" followed by "16"
+      - assert: text "Sains:" followed by "14"
+      - assert: text "Degrades:" followed by "1"
+      - assert: text "Erreurs:" followed by "1"
+    expected: Summary statistics accurate
+
+  - id: F16-011
+    title: Summary bar shows total invocations and errors
+    priority: P1
+    type: unit
+    steps:
+      - mock: with total invocations = 150, total errors = 3
+      - render and load: GraphViewerPage
+      - assert: text "Total invocations:" followed by "150"
+      - assert: text "Total erreurs:" followed by "3"
+    expected: Aggregate counters displayed
+
+  - id: F16-012
+    title: Degraded count hidden when 0
+    priority: P2
+    type: unit
+    steps:
+      - mock: with all nodes healthy (0 degraded)
+      - render and load: GraphViewerPage
+      - assert: "Degrades:" label NOT visible
+    expected: Zero counts conditionally hidden
+
+  - id: F16-013
+    title: Error count uses danger color when > 0
+    priority: P2
+    type: unit
+    steps:
+      - mock: with total errors = 5
+      - assert: error count text has color var(--cs-danger)
+    expected: Error count visually emphasized
+
+  # ---------------------------------------------------------------------------
+  # Graph Layout -- Row Sections
+  # ---------------------------------------------------------------------------
+
+  - id: F16-020
+    title: Opening sequence row renders 5 nodes
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: text "Sequence d'ouverture" visible (row label)
+      - assert: node "Debut" (START) visible
+      - assert: node "Analyse du brief" visible
+      - assert: node "Enrichissement savoir" visible
+      - assert: node "Enrichissement tendances" visible
+      - assert: node "Generation script" visible
+    expected: Opening row fully rendered
+
+  - id: F16-021
+    title: Video branch row renders 4 nodes with branch label
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: BranchLabel "reel / story" visible
+      - assert: node "Generation video" visible
+      - assert: node "Voix off" visible
+      - assert: node "Musique" visible
+      - assert: node "Sous-titres" visible
+    expected: Video branch fully rendered
+
+  - id: F16-022
+    title: Image branch row renders with branch label
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: BranchLabel "carousel / image" visible
+      - assert: node "Generation images" visible
+    expected: Image branch rendered
+
+  - id: F16-023
+    title: Text branch label shows shortcut indicator
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: BranchLabel "texte" visible
+      - assert: text "directement vers Generation caption" visible
+    expected: Text path indicated
+
+  - id: F16-024
+    title: Post-composition row renders 3 nodes
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: text "Post-composition" row label visible
+      - assert: nodes "Generation caption", "Composition", "Transcodage / Export" visible
+    expected: Post-composition row rendered
+
+  - id: F16-025
+    title: Quality gates row renders 3 nodes
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: text "Controle et validation" row label visible
+      - assert: nodes "Controle qualite", "Moderation", "Revue humaine" visible
+    expected: Quality gates row rendered
+
+  - id: F16-026
+    title: Terminal row renders 2 nodes
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: text "Finalisation" row label visible
+      - assert: nodes "Generation variantes", "Fin" (END) visible
+    expected: Terminal row rendered
+
+  # ---------------------------------------------------------------------------
+  # NodeCard -- Display
+  # ---------------------------------------------------------------------------
+
+  - id: F16-030
+    title: Regular node shows status indicator dot
+    priority: P0
+    type: unit
+    steps:
+      - mock: with parseBrief metric status='healthy'
+      - render and load: GraphViewerPage
+      - assert: "Analyse du brief" node has 10px green dot (position: absolute, top-right)
+    expected: Status dot positioned correctly
+
+  - id: F16-031
+    title: Node shows quick metrics when collapsed
+    priority: P0
+    type: unit
+    steps:
+      - mock: with parseBrief having avgLatencyMs=1200, avgCostCents=5
+      - render and load: GraphViewerPage
+      - assert: "1.2s" latency text visible near "Analyse du brief"
+      - assert: "0.05" cost text visible
+    expected: Quick metrics always visible
+
+  - id: F16-032
+    title: Node with errors shows error rate in collapsed view
+    priority: P1
+    type: unit
+    steps:
+      - mock: with node having errorRate=15.5
+      - assert: text "15.5%" visible in danger color with AlertCircle icon
+    expected: Error rate prominently displayed
+
+  - id: F16-033
+    title: START node has pill shape and no interaction
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - query: "Debut" node element
+      - assert: borderRadius is var(--cs-radius-full)
+      - assert: background is var(--cs-bg-sunken)
+      - assert: no role="button" attribute
+      - assert: no tabIndex attribute
+    expected: Terminal nodes are non-interactive
+
+  - id: F16-034
+    title: END node has pill shape and no interaction
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - query: "Fin" node element
+      - assert: same constraints as START node
+    expected: END terminal node styling correct
+
+  # ---------------------------------------------------------------------------
+  # NodeCard -- Expand/Collapse
+  # ---------------------------------------------------------------------------
+
+  - id: F16-040
+    title: Clicking a node expands it to show details
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - click: "Analyse du brief" node
+      - assert: expanded details section appears
+      - assert: status badge visible (e.g., "Sain")
+      - assert: "Fournisseur" label with provider name
+      - assert: "Latence moy." label with formatted value
+      - assert: "Cout moy." label with MAD value
+      - assert: "Invocations" count
+      - assert: "Erreurs" count with percentage
+    expected: Full node details displayed
+
+  - id: F16-041
+    title: Clicking expanded node collapses it
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - click: "Analyse du brief" node (expand)
+      - assert: details visible
+      - click: "Analyse du brief" node again (collapse)
+      - assert: details hidden
+    expected: Toggle behavior works
+
+  - id: F16-042
+    title: Expanding a different node collapses the previous one
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - click: "Analyse du brief" (expand)
+      - click: "Generation script" (expand different)
+      - assert: "Analyse du brief" details hidden
+      - assert: "Generation script" details visible
+    expected: Single-expand constraint
+
+  - id: F16-043
+    title: Expanded node has glow shadow
+    priority: P2
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - click: "Analyse du brief" (expand)
+      - assert: node boxShadow contains "0 0 0 3px" (glow effect)
+    expected: Visual emphasis on expanded node
+
+  - id: F16-044
+    title: Keyboard Enter activates node toggle
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - focus: "Analyse du brief" node (has tabIndex=0)
+      - keydown: Enter
+      - assert: details expanded
+    expected: Keyboard accessible
+
+  - id: F16-045
+    title: Keyboard Space activates node toggle
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - focus: "Generation script" node
+      - keydown: Space
+      - assert: details expanded
+      - assert: event.preventDefault() called (space does not scroll)
+    expected: Space key works and prevents scroll
+
+  # ---------------------------------------------------------------------------
+  # NodeCard -- Metric Formatting
+  # ---------------------------------------------------------------------------
+
+  - id: F16-050
+    title: Latency of 0 shows dash
+    priority: P2
+    type: unit
+    steps:
+      - mock: with node.avgLatencyMs = 0
+      - assert: latency display shows "-"
+    expected: Zero latency handled
+
+  - id: F16-051
+    title: Cost of 0 shows dash
+    priority: P2
+    type: unit
+    steps:
+      - mock: with node.avgCostCents = 0
+      - assert: cost display shows "-"
+    expected: Zero cost handled
+
+  - id: F16-052
+    title: Expanded node shows cost with 3 decimal places in MAD
+    priority: P2
+    type: unit
+    steps:
+      - mock: with node.avgCostCents = 8
+      - click: node to expand
+      - assert: "Cout moy." shows "0.080 MAD"
+    expected: Precise cost formatting
+
+  # ---------------------------------------------------------------------------
+  # Edge Rendering
+  # ---------------------------------------------------------------------------
+
+  - id: F16-055
+    title: EdgeArrow connects nodes within a row
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: edge arrows between consecutive nodes in opening row (4 arrows for 5 nodes)
+    expected: Horizontal connections rendered
+
+  - id: F16-056
+    title: VerticalConnector renders between row sections
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: vertical connectors visible between opening and branches, branches and post-composition, etc.
+    expected: Vertical flow indicators present
+
+  # ---------------------------------------------------------------------------
+  # Conditional Edges Legend
+  # ---------------------------------------------------------------------------
+
+  - id: F16-060
+    title: Legend shows all 4 conditional routing groups
+    priority: P0
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: text "Routages conditionnels" heading visible
+      - assert: group "Generation script" with 3 routes visible
+      - assert: group "Controle qualite" with 3 routes visible
+      - assert: group "Moderation" with 3 routes visible
+      - assert: group "Revue humaine" with 3 routes visible
+    expected: Complete conditional routing documentation
+
+  - id: F16-061
+    title: Each route shows source, label, and destination
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: "Generation script" group shows "reel / story" -> "Generation video"
+      - assert: "Generation script" group shows "carousel / image" -> "Generation images"
+      - assert: "Generation script" group shows "texte" -> "Generation caption"
+    expected: Route details accurate
+
+  # ---------------------------------------------------------------------------
+  # Status Legend
+  # ---------------------------------------------------------------------------
+
+  - id: F16-065
+    title: Bottom legend shows all status types and edge types
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - assert: text "Legende" visible
+      - assert: "Sain" with green dot
+      - assert: "Degrade" with amber dot
+      - assert: "Erreur" with red dot
+      - assert: "Lien direct" with solid line
+      - assert: "Lien conditionnel" with dashed line
+      - assert: text "Cliquer un noeud pour voir les details"
+    expected: Legend fully rendered
+
+  # ---------------------------------------------------------------------------
+  # Refresh
+  # ---------------------------------------------------------------------------
+
+  - id: F16-070
+    title: Actualiser button refetches data
+    priority: P1
+    type: unit
+    steps:
+      - render and load: GraphViewerPage
+      - resetMocks: clear fetch calls
+      - click: button "Actualiser"
+      - assert: fetch called again with includeNodeMetrics=true
+    expected: Manual refresh functional
+
+msw_handlers:
+  required:
+    - "http.get('/api/admin/ai-engine/analytics') -- with includeNodeMetrics=true"
+  mock_response: |
+    The analytics handler should include a nodeMetrics array with entries
+    for each of the 16 non-terminal nodes. Each entry needs nodeId, label,
+    provider, avgLatencyMs, avgCostCents, totalInvocations, errorCount,
+    errorRate, and status fields.

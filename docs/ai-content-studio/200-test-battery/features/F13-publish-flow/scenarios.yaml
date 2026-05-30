@@ -1,0 +1,434 @@
+feature: F13
+name: Publish Flow
+source: apps/web/src/components/admin/content-studio-v2/ai-engine/GenerationResult.tsx
+existing_tests: apps/web/src/components/admin/content-studio-v2/ai-engine/PublishSection.test.tsx
+
+scenarios:
+
+  # ---------------------------------------------------------------------------
+  # GenerationResult -- Content Display
+  # ---------------------------------------------------------------------------
+
+  - id: F13-001
+    title: Result heading "Contenu genere" displayed
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with BASE_RESULT
+      - assert: heading "Contenu genere" visible
+    expected: Main result section rendered
+
+  - id: F13-002
+    title: Script section renders with hook, scenes, CTA
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with script = { hook: "Test hook", scenes: [{ type: "intro", text: "Scene text", duration: "4s" }], cta: "Click here" }
+      - assert: "Script" collapsible section visible and open by default
+      - assert: "Hook" label and "Test hook" text visible
+      - assert: scene badge "intro" visible
+      - assert: "Scene text" visible
+      - assert: "4s" duration visible
+      - assert: "Call to Action" label and "Click here" visible
+    expected: Full script structure rendered
+
+  - id: F13-003
+    title: Caption rendered with CopyButton
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with caption = "Test caption for publish"
+      - assert: "Caption" label visible
+      - assert: caption text "Test caption for publish" visible
+      - assert: button with title "Copier" exists
+    expected: Caption section with copy functionality
+
+  - id: F13-004
+    title: CopyButton copies text to clipboard
+    priority: P1
+    type: unit
+    steps:
+      - mock: navigator.clipboard.writeText resolves
+      - render: GenerationResult with caption = "Copy me"
+      - click: Copier button
+      - assert: navigator.clipboard.writeText called with "Copy me"
+      - assert: button text changes to "Copie" (with Check icon)
+      - advanceTimersByTime: 2000
+      - assert: button text reverts to "Copier"
+    expected: Copy-to-clipboard works with visual feedback
+
+  - id: F13-005
+    title: Hashtags rendered as accent badges
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with hashtags = ["femiglow", "jbeauty"]
+      - assert: Badge with text "#femiglow" visible
+      - assert: Badge with text "#jbeauty" visible
+    expected: Hashtags rendered as styled badges
+
+  - id: F13-006
+    title: Images grid rendered in collapsible section
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult with images = ["/img1.png", "/img2.png", "/img3.png"]
+      - assert: "Visuels (3)" collapsible section visible
+      - assert: 3 <img> elements with src attributes
+    expected: Image grid with count label
+
+  - id: F13-007
+    title: Quality scores rendered as progress bars
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with qualityScores = { brand_alignment: 0.85, clarity: 0.72, cta_strength: 0.55 }
+      - assert: "Scores qualite" heading visible
+      - assert: "Alignement marque" label with 85% bar (green)
+      - assert: "Clarte du message" label with 72% bar (green)
+      - assert: "Force du CTA" label with 55% bar (amber, < 60% but label maps differently)
+    expected: Quality bars with thresholded colors
+
+  - id: F13-008
+    title: Quality bar color thresholds - green >= 80%, amber >= 60%, red < 60%
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult with qualityScores = { a: 0.85, b: 0.65, c: 0.45 }
+      - assert: 85% bar color is var(--cs-success)
+      - assert: 65% bar color is var(--cs-warning)
+      - assert: 45% bar color is var(--cs-danger)
+    expected: Three-tier color threshold applied
+
+  - id: F13-009
+    title: Cost breakdown table rendered
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult with costBreakdown = [
+          { label: "Script generation", amountCents: 8 },
+          { label: "Image generation", amountCents: 12 }
+        ] and totalCostCents = 20
+      - assert: "Detail des couts" heading visible
+      - assert: "Script generation" row with "0.08 MAD"
+      - assert: "Image generation" row with "0.12 MAD"
+      - assert: "Total" row with "0.20 MAD" (bold)
+    expected: Cost table with line items and total
+
+  # ---------------------------------------------------------------------------
+  # GenerationResult -- Actions
+  # ---------------------------------------------------------------------------
+
+  - id: F13-015
+    title: Regenerer button calls onRegenerate
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with onRegenerate = vi.fn()
+      - click: button "Regenerer"
+      - assert: onRegenerate called once
+    expected: Regenerate callback triggered
+
+  - id: F13-016
+    title: Regenerer button shows spinner when regenerating=true
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult with regenerating=true
+      - assert: button "Regenerer" shows loading spinner (cs-spinner class)
+    expected: Loading state on regenerate
+
+  - id: F13-017
+    title: "Utiliser ce contenu" button calls onUse
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with onUse = vi.fn()
+      - click: button "Utiliser ce contenu"
+      - assert: onUse called once
+    expected: Use callback triggered
+
+  - id: F13-018
+    title: Library link visible when contentStudioUrl provided
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult with contentStudioUrl="/admin/content-studio-v2/library?highlight=cd_001"
+      - assert: link "Voir dans la Bibliotheque" visible
+      - assert: link href is "/admin/content-studio-v2/library?highlight=cd_001"
+    expected: Deep link to library rendered
+
+  - id: F13-019
+    title: Library link hidden when contentStudioUrl is null
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult without contentStudioUrl
+      - assert: "Voir dans la Bibliotheque" NOT in document
+    expected: Conditional link rendering
+
+  # ---------------------------------------------------------------------------
+  # PublishSection -- Visibility
+  # ---------------------------------------------------------------------------
+
+  - id: F13-020
+    title: Publish section visible when bridgeResult provided
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult = { ideaId: 'i1', briefId: 'b1', draftId: 'd1' }
+      - assert: h4 heading "Publier" visible
+    expected: Publish section rendered with bridge result
+    existing_test: PublishSection.test.tsx - line 61
+
+  - id: F13-021
+    title: Publish section hidden when no bridgeResult
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult without bridgeResult
+      - assert: no h4 "Publier" heading in document
+    expected: Publish section not rendered
+    existing_test: PublishSection.test.tsx - line 73
+
+  # ---------------------------------------------------------------------------
+  # PublishSection -- Mode Selector
+  # ---------------------------------------------------------------------------
+
+  - id: F13-025
+    title: "Publier maintenant" mode button exists and active by default
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult
+      - assert: button "Publier maintenant" visible
+      - assert: button "Publier maintenant" has accent styling (active state)
+    expected: Now mode is default
+    existing_test: PublishSection.test.tsx - line 84
+
+  - id: F13-026
+    title: "Planifier" mode button exists
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult
+      - assert: button "Planifier" visible (matching /Planifier$/i)
+    expected: Schedule mode button present
+    existing_test: PublishSection.test.tsx - line 93
+
+  - id: F13-027
+    title: Clicking "Planifier" shows datetime input
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult
+      - click: button "Planifier"
+      - assert: input[type="datetime-local"] appears
+      - assert: label "Date et heure de publication" visible
+    expected: Schedule mode UI revealed
+    existing_test: PublishSection.test.tsx - line 102
+
+  - id: F13-028
+    title: Datetime input accepts future date
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult
+      - click: button "Planifier"
+      - change: datetime input to "2026-12-25T10:00"
+      - assert: input value is "2026-12-25T10:00"
+    expected: Date selection works
+    existing_test: PublishSection.test.tsx - line 113
+
+  - id: F13-029
+    title: Publish button text changes per mode
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult
+      - assert: publish action button text is "Publier" (now mode)
+      - click: button "Planifier"
+      - assert: publish action button text is "Planifier la publication"
+    expected: Dynamic button label
+
+  - id: F13-030
+    title: Schedule mode publish button disabled without date
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult
+      - click: button "Planifier"
+      - assert: publish action button is disabled (scheduledAt is empty)
+    expected: Validation prevents empty schedule
+
+  - id: F13-031
+    title: Schedule mode publish button enabled after date entry
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationResult with bridgeResult
+      - click: button "Planifier"
+      - change: datetime input to "2026-12-25T10:00"
+      - assert: publish action button is NOT disabled
+    expected: Date entry enables publish
+
+  # ---------------------------------------------------------------------------
+  # PublishSection -- Publish API
+  # ---------------------------------------------------------------------------
+
+  - id: F13-035
+    title: Publish now calls POST /api/admin/ai-engine/publish with correct body
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with { success: true }
+      - render: GenerationResult with bridgeResult { draftId: 'draft_pub_1' }
+      - click: button "Publier" (action button)
+      - assert: fetch called with POST /api/admin/ai-engine/publish
+      - assert: body.draftId === 'draft_pub_1'
+      - assert: body.mode === 'now'
+    expected: Correct API call for immediate publish
+    existing_test: PublishSection.test.tsx - line 127
+
+  - id: F13-036
+    title: Schedule publish includes scheduledAt as ISO string
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with { success: true }
+      - render: GenerationResult with bridgeResult
+      - click: button "Planifier"
+      - change: datetime input to "2026-12-25T10:00"
+      - click: button "Planifier la publication"
+      - assert: request body.mode === 'schedule'
+      - assert: request body.scheduledAt is ISO 8601 string for Dec 25 2026
+    expected: Schedule date transmitted as ISO
+
+  # ---------------------------------------------------------------------------
+  # PublishSection -- Status Feedback
+  # ---------------------------------------------------------------------------
+
+  - id: F13-040
+    title: Success state shows green confirmation banner
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with { success: true }
+      - render: GenerationResult with bridgeResult
+      - click: publish button
+      - await: response
+      - assert: text /publie avec succes/ visible
+      - assert: banner has green border/background (success styling)
+      - assert: CheckCircle icon visible
+    expected: Success feedback displayed
+    existing_test: PublishSection.test.tsx - line 157
+
+  - id: F13-041
+    title: Schedule success shows localized date
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch resolves with { success: true }
+      - render: GenerationResult with bridgeResult
+      - switch: to schedule mode, set date "2026-12-25T10:00"
+      - click: publish button
+      - await: response
+      - assert: text /planifie pour le/ visible with formatted date
+    expected: Scheduled date confirmed in message
+
+  - id: F13-042
+    title: Error state shows red error banner
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves { ok: false, status: 500, body: { error: "Publication impossible serveur hors ligne" } }
+      - render: GenerationResult with bridgeResult
+      - click: publish button
+      - await: response
+      - assert: text "Publication impossible serveur hors ligne" visible
+      - assert: banner has red border/background (danger styling)
+      - assert: AlertTriangle icon visible
+    expected: Error feedback displayed
+    existing_test: PublishSection.test.tsx - line 176
+
+  - id: F13-043
+    title: Loading state shows spinner on publish button
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch returns never-resolving promise
+      - render: GenerationResult with bridgeResult
+      - click: publish button
+      - assert: spinner element (cs-spinner) visible
+      - assert: publish button disabled during loading
+    expected: Loading indicator while publishing
+    existing_test: PublishSection.test.tsx - line 197
+
+  - id: F13-044
+    title: Error message parses data.message field
+    priority: P2
+    type: unit
+    steps:
+      - mock: fetch resolves { ok: false, body: { message: "Draft introuvable" } }
+      - render: GenerationResult with bridgeResult
+      - click: publish button
+      - assert: text "Draft introuvable" visible
+    expected: Multiple error field formats handled
+
+  - id: F13-045
+    title: Fallback error message for non-JSON response
+    priority: P2
+    type: unit
+    steps:
+      - mock: fetch resolves { ok: false, status: 502, json() throws }
+      - render: GenerationResult with bridgeResult
+      - click: publish button
+      - assert: text "Erreur HTTP 502" visible
+    expected: Non-JSON errors handled gracefully
+
+  # ---------------------------------------------------------------------------
+  # CollapsibleSection
+  # ---------------------------------------------------------------------------
+
+  - id: F13-050
+    title: Script section starts open by default
+    priority: P2
+    type: unit
+    steps:
+      - render: GenerationResult with script
+      - assert: script content is visible (not collapsed)
+      - assert: ChevronDown icon visible (open indicator)
+    expected: defaultOpen=true works
+
+  - id: F13-051
+    title: Clicking section header toggles visibility
+    priority: P2
+    type: unit
+    steps:
+      - render: GenerationResult with script
+      - click: Script section header
+      - assert: script content hidden
+      - assert: ChevronRight icon visible (closed indicator)
+      - click: Script section header again
+      - assert: script content visible again
+    expected: Toggle behavior works
+
+msw_handlers:
+  required:
+    - "http.post('/api/admin/ai-engine/publish')"
+  optional:
+    - "http.post('/api/admin/ai-engine/generate') -- for full flow tests"
+
+test_utilities:
+  BASE_RESULT: |
+    const BASE_RESULT: GenerationResultData = {
+      script: { hook: 'Hook text', scenes: [], cta: 'CTA text' },
+      caption: 'Test caption for publish',
+      hashtags: ['test'],
+    };
+  BRIDGE: |
+    const BRIDGE: BridgeResultData = {
+      ideaId: 'idea_pub_1',
+      briefId: 'brief_pub_1',
+      draftId: 'draft_pub_1',
+    };

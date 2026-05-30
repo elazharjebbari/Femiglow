@@ -1,0 +1,30 @@
+endpoint:
+  method: POST
+  path: /api/admin/content-studio/posts/{id}/schedule
+  auth: admin cookie
+
+request_body:
+  schema:
+    scheduledAt: { type: string, format: date-time, required: true }
+    accountId: { type: string, required: false }
+    idempotencyKey: { type: string, required: false }
+
+response_201:
+  schema:
+    status: { value: scheduled }
+    jobs: array of PublishJob with scheduledAt set
+
+response_400:
+  variants:
+    - { code: invalid_input, when: missing scheduledAt }
+    - { code: invalid_date, when: scheduledAt in past }
+    - { code: min_lead_time, when: scheduledAt < now + 60s }
+response_409:
+  variants:
+    - { code: invalid_state, when: post not approved }
+    - { code: brand_review_blocked }
+    - { code: no_account_connected }
+
+validations:
+  - scheduledAt > now + 60s (configurable via env)
+  - scheduledAt ≤ now + 1 year (sanity)

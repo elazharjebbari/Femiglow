@@ -1,0 +1,17 @@
+feature: F29-weekly-failure-digest
+critical: P3
+
+unit:
+  - id: F29-U-1
+    name: aggregates failures by provider/platform/error_code
+    given: 10 failures with 3 distinct codes
+    expect: 3 groups
+  - id: F29-U-2
+    name: 7 days window
+    expect: query WHERE createdAt >= now - 7 days
+  - id: F29-U-3
+    name: email skipped if 0 failures
+  - id: F29-U-4
+    name: email sent if recipient configured
+  - id: F29-U-5
+    name: email contains summary table + total count

@@ -1,0 +1,18 @@
+feature: F36-toast-feedback
+critical: P2
+
+component:
+  - id: F36-CO-1
+    name: success toast appears on publish-now 201
+  - id: F36-CO-2
+    name: error toast on publish-now 409 with mapped message
+  - id: F36-CO-3
+    name: success toast contains formatted date for schedule
+  - id: F36-CO-4
+    name: mock mode suffix in success toast (" (mock)")
+  - id: F36-CO-5
+    name: toast auto-dismisses after 3s (success)
+  - id: F36-CO-6
+    name: toast persists for 6s (error)
+  - id: F36-CO-7
+    name: toast position top-right

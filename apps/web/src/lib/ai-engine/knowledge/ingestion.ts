@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { db } from '@/lib/db/client';
@@ -134,6 +134,130 @@ export async function ingestUrl(
     const message = err instanceof Error ? err.message : 'Unknown error';
     log.error('URL ingestion failed', { url, error: message });
     return { documentId: '', chunkCount: 0, success: false, error: message };
+  }
+}
+
+export interface UpdateDocumentData {
+  title?: string;
+  content?: string;
+}
+
+export interface UpdateDocumentResult {
+  documentId: string;
+  reChunked: boolean;
+  chunkCount: number;
+  success: boolean;
+  error?: string;
+}
+
+export async function updateDocument(
+  collectionId: string,
+  documentId: string,
+  data: UpdateDocumentData,
+): Promise<UpdateDocumentResult> {
+  const drizzle = db();
+  if (!drizzle) {
+    return { documentId, reChunked: false, chunkCount: 0, success: false, error: 'No database connection' };
+  }
+
+  try {
+    // Verify document belongs to collection
+    const docs = await drizzle
+      .select({ id: aiEngineKnowledgeDocuments.id, chunkCount: aiEngineKnowledgeDocuments.chunkCount })
+      .from(aiEngineKnowledgeDocuments)
+      .where(
+        and(
+          eq(aiEngineKnowledgeDocuments.id, documentId),
+          eq(aiEngineKnowledgeDocuments.collectionId, collectionId),
+        ),
+      )
+      .limit(1);
+
+    if (docs.length === 0) {
+      return { documentId, reChunked: false, chunkCount: 0, success: false, error: 'Document not found' };
+    }
+
+    const needsReChunk = data.content !== undefined;
+
+    if (!needsReChunk) {
+      // Title-only update — no re-chunking
+      const updateFields: Record<string, unknown> = { updatedAt: new Date() };
+      if (data.title !== undefined) updateFields.title = data.title;
+
+      await drizzle
+        .update(aiEngineKnowledgeDocuments)
+        .set(updateFields)
+        .where(eq(aiEngineKnowledgeDocuments.id, documentId));
+
+      return { documentId, reChunked: false, chunkCount: docs[0]!.chunkCount, success: true };
+    }
+
+    // Content changed — transactional re-chunking
+    const embeddings = getEmbeddings();
+    if (!embeddings) {
+      return { documentId, reChunked: false, chunkCount: 0, success: false, error: 'OpenAI API key not configured' };
+    }
+
+    const startTime = Date.now();
+    const content = data.content!;
+
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: CHUNK_SIZE,
+      chunkOverlap: CHUNK_OVERLAP,
+    });
+    const chunks = await splitter.splitText(content);
+
+    // Generate all embeddings before touching DB
+    const allVectors: number[][] = [];
+    for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+      const batch = chunks.slice(i, i + BATCH_SIZE);
+      const vectors = await embeddings.embedDocuments(batch);
+      allVectors.push(...vectors);
+    }
+
+    // Transactional: delete old chunks, insert new, update document
+    await drizzle.transaction(async (tx) => {
+      await tx
+        .delete(aiEngineKnowledgeChunks)
+        .where(eq(aiEngineKnowledgeChunks.documentId, documentId));
+
+      if (chunks.length > 0) {
+        const chunkRows = chunks.map((chunkContent, idx) => ({
+          collectionId,
+          documentId,
+          content: chunkContent,
+          metadata: { chunkIndex: idx, totalChunks: chunks.length } as Record<string, unknown>,
+          embedding: allVectors[idx]!,
+        }));
+
+        for (let i = 0; i < chunkRows.length; i += BATCH_SIZE) {
+          await tx.insert(aiEngineKnowledgeChunks).values(chunkRows.slice(i, i + BATCH_SIZE));
+        }
+      }
+
+      const updateFields: Record<string, unknown> = {
+        contentText: content,
+        chunkCount: chunks.length,
+        updatedAt: new Date(),
+      };
+      if (data.title !== undefined) updateFields.title = data.title;
+
+      await tx
+        .update(aiEngineKnowledgeDocuments)
+        .set(updateFields)
+        .where(eq(aiEngineKnowledgeDocuments.id, documentId));
+    });
+
+    await updateCollectionCounts(collectionId);
+
+    const durationMs = Date.now() - startTime;
+    log.info('Document updated with re-chunking', { documentId, chunkCount: chunks.length, durationMs });
+
+    return { documentId, reChunked: true, chunkCount: chunks.length, success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    log.error('Document update failed', { documentId, error: message });
+    return { documentId, reChunked: false, chunkCount: 0, success: false, error: message };
   }
 }
 

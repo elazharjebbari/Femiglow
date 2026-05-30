@@ -1,0 +1,476 @@
+feature: F10
+name: Content Creation (Create Page)
+source: apps/web/src/app/admin/content-studio-v2/ai-engine/create/page.tsx
+url: /admin/content-studio-v2/ai-engine/create
+
+scenarios:
+
+  # ---------------------------------------------------------------------------
+  # Form Rendering
+  # ---------------------------------------------------------------------------
+
+  - id: F10-001
+    title: Page renders with brief phase by default
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - assert: heading "Nouvelle generation" is visible
+      - assert: heading "Brief creatif" is visible
+      - assert: descriptive text mentions "Decrivez le contenu"
+    expected: Brief form is displayed as the initial phase
+
+  - id: F10-002
+    title: All 4 required select fields render with placeholder options
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - assert: 4 <select> elements exist
+      - assert: select[0] has "Selectionner un objectif..." as first option
+      - assert: select[1] has "Selectionner une plateforme..." as first option
+      - assert: select[2] has "Selectionner un format..." as first option
+      - assert: select[3] has "Selectionner un ton..." as first option
+    expected: All selects render with empty-value placeholders
+
+  - id: F10-003
+    title: Objectif select has 6 valid options
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: first <select> element
+      - assert: options include awareness, engagement, conversion, education, loyalty, ugc
+      - assert: labels are "Notoriete de marque", "Engagement communaute", "Conversion / Ventes", "Education produit", "Fidelisation client", "Contenu UGC"
+    expected: All 6 objective options are present with French labels
+
+  - id: F10-004
+    title: Plateforme select has 6 valid options
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: second <select> element
+      - assert: options include instagram, tiktok, facebook, youtube, linkedin, pinterest
+    expected: All 6 platform options are present
+
+  - id: F10-005
+    title: Format select has 6 valid options
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: third <select> element
+      - assert: options include reel, carousel, story, single_image, text_post, infographic
+    expected: All 6 format options are present
+
+  - id: F10-006
+    title: Ton select has 6 valid options
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: fourth <select> element
+      - assert: options include empowering, educational, playful, luxurious, authentic, urgent
+    expected: All 6 tone options are present
+
+  - id: F10-007
+    title: Message cle textarea renders as required
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: textarea with placeholder /message principal/i
+      - assert: textarea exists with 3 rows
+      - assert: associated label shows "Message cle" with red asterisk
+    expected: Message cle textarea is visible and marked required
+
+  - id: F10-008
+    title: Optional fields (Focus produit, Reference tendance) render without asterisk
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: input with placeholder /Nom du produit/
+      - assert: label "Focus produit" visible without red asterisk in <span>
+      - query: input with placeholder /Trend TikTok/
+      - assert: label "Reference tendance" visible without red asterisk in <span>
+    expected: Optional fields render without required indicator
+
+  # ---------------------------------------------------------------------------
+  # Form Validation
+  # ---------------------------------------------------------------------------
+
+  - id: F10-010
+    title: Generer button disabled when all fields empty
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: button with name /Generer/i
+      - assert: button is disabled
+    expected: Button disabled on initial render
+
+  - id: F10-011
+    title: Generer button disabled when only objective selected
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - change: select[0] to "awareness"
+      - assert: button /Generer/ is disabled
+    expected: Partial form keeps button disabled
+
+  - id: F10-012
+    title: Generer button disabled when only 3 of 4 selects filled
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - change: select[0] to "awareness"
+      - change: select[1] to "instagram"
+      - change: select[2] to "reel"
+      - assert: button /Generer/ is disabled (missing tone)
+    expected: Missing one required select keeps button disabled
+
+  - id: F10-013
+    title: Generer button disabled when selects filled but keyMessage empty
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - change: all 4 selects to valid values
+      - assert: keyMessage textarea is empty
+      - assert: button /Generer/ is disabled
+    expected: Missing keyMessage keeps button disabled
+
+  - id: F10-014
+    title: Generer button disabled when keyMessage is whitespace only
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - change: all 4 selects to valid values
+      - change: textarea to "   " (spaces only)
+      - assert: button /Generer/ is disabled
+    expected: Whitespace-only keyMessage keeps button disabled
+
+  - id: F10-015
+    title: Generer button enabled when all required fields valid
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields:
+          objective: awareness
+          platform: instagram
+          format: reel
+          tone: empowering
+          keyMessage: "Test message"
+      - assert: button /Generer/ is NOT disabled
+    expected: All required fields filled enables the button
+
+  - id: F10-016
+    title: Generer button remains enabled without optional fields
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all 5 required)
+      - assert: productFocus input is empty
+      - assert: trendReference input is empty
+      - assert: button /Generer/ is NOT disabled
+    expected: Optional fields do not affect validation
+
+  - id: F10-017
+    title: Special characters in keyMessage are accepted
+    priority: P2
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (4 selects)
+      - change: textarea to "L'eclat des ongles & la beaute <naturelle> 100%"
+      - assert: button /Generer/ is NOT disabled
+    expected: Special characters do not break validation
+
+  # ---------------------------------------------------------------------------
+  # Generate Flow -- Success
+  # ---------------------------------------------------------------------------
+
+  - id: F10-020
+    title: Clicking Generer transitions to generating phase
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all 5 required)
+      - mock: fetch resolves with MOCK_GENERATION_RESULT
+      - click: button /Generer/
+      - assert: brief form disappears
+      - assert: "Pipeline de generation" heading appears (GenerationProgress)
+    expected: Phase transitions from brief to generating
+
+  - id: F10-021
+    title: API receives correct request body
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields:
+          objective: conversion
+          platform: tiktok
+          format: reel
+          tone: playful
+          keyMessage: "Decouvrez notre nouveau serum"
+      - change: productFocus to "Serum FemiGlow"
+      - change: trendReference to "skincareroutine"
+      - mock: fetch resolves with success
+      - click: button /Generer/
+      - assert: fetch called with POST /api/admin/ai-engine/generate
+      - assert: request body.objective === "conversion"
+      - assert: request body.platform === "tiktok"
+      - assert: request body.format === "reel"
+      - assert: request body.tone === "playful"
+      - assert: request body.keyMessage === "Decouvrez notre nouveau serum"
+      - assert: request body.productFocus === "Serum FemiGlow"
+      - assert: request body.trendReference === "skincareroutine"
+    expected: All form values sent in the request body
+
+  - id: F10-022
+    title: Optional fields sent as undefined when empty
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (5 required, leave optional empty)
+      - mock: fetch resolves with success
+      - click: button /Generer/
+      - assert: request body.productFocus is undefined
+      - assert: request body.trendReference is undefined
+    expected: Empty optional fields excluded from request
+
+  - id: F10-023
+    title: Successful generation shows result phase
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all required)
+      - mock: fetch resolves with MOCK_GENERATION_RESULT (status completed)
+      - click: button /Generer/
+      - advance: fake timers through all 6 pipeline steps (~21s)
+      - assert: "Contenu genere" heading appears
+      - assert: script hook text visible
+      - assert: caption text visible
+      - assert: hashtag badges visible
+    expected: Full result displayed after pipeline completes
+
+  - id: F10-024
+    title: Cost is displayed in result phase
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all required)
+      - mock: fetch resolves with result containing totalCostCents 150
+      - click: button /Generer/
+      - advance: timers through pipeline
+      - assert: cost display shows "1.50 MAD"
+    expected: Cost formatted correctly in MAD currency
+
+  # ---------------------------------------------------------------------------
+  # Generate Flow -- Review (HITL)
+  # ---------------------------------------------------------------------------
+
+  - id: F10-030
+    title: Review status triggers review phase after pipeline
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all required)
+      - mock: fetch resolves with { status: 'review', jobId: 'job_123', reviewPayload: {...} }
+      - click: button /Generer/
+      - advance: timers through all 6 pipeline steps
+      - assert: "Revue humaine requise" heading appears
+      - assert: job ID prefix visible (job_123 -> "job_1234...")
+    expected: Review panel displayed when API signals HITL
+
+  - id: F10-031
+    title: Review phase shows script, caption, hashtags, quality scores
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - goToReviewPhase: (fill form, mock review response, advance timers)
+      - assert: script hook text from reviewPayload visible
+      - assert: caption text from reviewPayload visible
+      - assert: hashtag badges from reviewPayload visible
+      - assert: "Scores qualite" section visible
+      - assert: score percentages computed correctly (0.85 -> "85%")
+    expected: All review content sections populated
+
+  # ---------------------------------------------------------------------------
+  # Generate Flow -- Error
+  # ---------------------------------------------------------------------------
+
+  - id: F10-040
+    title: API 500 transitions to error phase
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all required)
+      - mock: fetch resolves with { ok: false, status: 500, body: { error: "Provider timeout" } }
+      - click: button /Generer/
+      - assert: "Erreur de generation" heading visible
+      - assert: "Provider timeout" message visible
+    expected: Error phase displayed with server error message
+
+  - id: F10-041
+    title: Network error transitions to error phase
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all required)
+      - mock: fetch rejects with TypeError("Failed to fetch")
+      - click: button /Generer/
+      - assert: "Erreur de generation" heading visible
+      - assert: "Failed to fetch" message visible
+    expected: Error phase displayed with network error
+
+  - id: F10-042
+    title: Error phase shows Retry and Reset buttons
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - trigger: error phase via mock 500
+      - assert: button /Reessayer/ visible with RefreshCw icon
+      - assert: button /Modifier le brief/ visible
+    expected: Both recovery actions available
+
+  - id: F10-043
+    title: Retry button relaunches generation
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - trigger: error phase via mock 500
+      - mock: second fetch resolves with MOCK_GENERATION_RESULT
+      - click: button /Reessayer/
+      - assert: phase transitions to generating
+      - advance: timers
+      - assert: result phase displayed
+    expected: Retry successfully recovers from error
+
+  - id: F10-044
+    title: Reset button returns to brief phase
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - trigger: error phase via mock 500
+      - click: button /Modifier le brief/
+      - assert: brief form reappears
+      - assert: form fields retain previous values (form state not cleared on reset)
+    expected: Brief form restored after reset
+    note: handleReset sets phase to brief but does NOT clear form state
+
+  - id: F10-045
+    title: API validation error displays detail message
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields: (all required)
+      - mock: fetch resolves { ok: false, status: 400, body: { error: "platform 'myspace' non supportee" } }
+      - click: button /Generer/
+      - assert: error message contains "platform 'myspace' non supportee"
+    expected: Validation error detail propagated to UI
+
+  # ---------------------------------------------------------------------------
+  # Navigation
+  # ---------------------------------------------------------------------------
+
+  - id: F10-050
+    title: Back arrow links to AI Engine dashboard
+    priority: P1
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - query: Link with href="/admin/content-studio-v2/ai-engine"
+      - assert: link contains ArrowLeft icon (16px)
+    expected: Back navigation available
+
+  - id: F10-051
+    title: Header displays "AI Engine" eyebrow and "Nouvelle generation" title
+    priority: P2
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - assert: text "AI Engine" in cs-eyebrow element
+      - assert: h1 "Nouvelle generation" in cs-display style
+    expected: Page header correctly styled
+
+  # ---------------------------------------------------------------------------
+  # Result Actions
+  # ---------------------------------------------------------------------------
+
+  - id: F10-060
+    title: Regenerer button in result phase restarts generation
+    priority: P1
+    type: unit
+    steps:
+      - goToResultPhase: (fill, generate, advance timers)
+      - mock: new fetch resolves with different result
+      - click: button /Regenerer/
+      - assert: phase transitions to generating
+    expected: Regeneration works from result phase
+
+  - id: F10-061
+    title: "Utiliser ce contenu" button navigates to CS v2 create page
+    priority: P1
+    type: unit
+    steps:
+      - goToResultPhase: (fill, generate, advance timers)
+      - mock: window.location.href
+      - click: button /Utiliser ce contenu/
+      - assert: window.location.href set to "/admin/content-studio-v2/create"
+    expected: Use button triggers navigation
+
+  - id: F10-062
+    title: Library link visible when contentStudioUrl present
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch resolves with result containing contentStudioUrl
+      - goToResultPhase: (advance timers)
+      - assert: link /Voir dans la Bibliotheque/ visible
+      - assert: link href matches contentStudioUrl value
+    expected: Library deep link rendered
+
+msw_handlers:
+  required:
+    - "http.post('/api/admin/ai-engine/generate')"
+  optional:
+    - "http.post('/api/admin/ai-engine/jobs/:id/review')"
+    - "http.post('/api/admin/ai-engine/publish')"
+
+test_utilities:
+  fillRequiredFields: |
+    function fillRequiredFields() {
+      const selects = document.querySelectorAll('select');
+      fireEvent.change(selects[0], { target: { value: 'awareness' } });
+      fireEvent.change(selects[1], { target: { value: 'instagram' } });
+      fireEvent.change(selects[2], { target: { value: 'reel' } });
+      fireEvent.change(selects[3], { target: { value: 'empowering' } });
+      fireEvent.change(screen.getByPlaceholderText(/message principal/i), {
+        target: { value: 'Test message' },
+      });
+    }
+  goToReviewPhase: |
+    Uses vi.useFakeTimers(), mocks fetch with status='review' response,
+    renders page, fills form, clicks Generer, then advances timers
+    through 6 pipeline steps (7 iterations x 3100ms each).

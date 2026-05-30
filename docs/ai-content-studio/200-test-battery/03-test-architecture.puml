@@ -1,0 +1,202 @@
+@startuml AI_Engine_Test_Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam ArrowThickness 1.5
+skinparam RoundCorner 8
+
+title AI Engine -- Test Pyramid Architecture\n<size:10>(FemiGlow Content Studio v2 -- LangGraph MVP)</size>
+
+' ============================================================
+'  COLOR SCHEME
+' ============================================================
+skinparam component {
+  BackgroundColor<<e2e>> #FFE0B2
+  BorderColor<<e2e>> #E65100
+  BackgroundColor<<component>> #C8E6C9
+  BorderColor<<component>> #2E7D32
+  BackgroundColor<<contract>> #BBDEFB
+  BorderColor<<contract>> #1565C0
+  BackgroundColor<<unit>> #E1BEE7
+  BorderColor<<unit>> #6A1B9A
+  BackgroundColor<<msw>> #FFF9C4
+  BorderColor<<msw>> #F57F17
+  BackgroundColor<<infra>> #CFD8DC
+  BorderColor<<infra>> #455A64
+}
+
+' ============================================================
+'  TEST PYRAMID -- TOP TO BOTTOM
+' ============================================================
+
+package "Layer 4: E2E Tests (Playwright)" <<e2e>> {
+  component [**29 spec files**\n224 tests] as E2E
+  component [S01: Golden Path\nBrief -> Generate -> Library] as S01 <<e2e>>
+  component [S02: Error Recovery\nFail -> Retry -> Succeed] as S02 <<e2e>>
+  component [S03: Knowledge Flow\nSeed -> Upload -> Edit -> Embed] as S03 <<e2e>>
+  component [S04: Review Cycle\nGenerate -> Review -> Publish] as S04 <<e2e>>
+  component [S05: Budget Guard\nLimit -> Warn -> Block] as S05 <<e2e>>
+  component [S06: Multi-platform\nIG + TikTok + LinkedIn] as S06 <<e2e>>
+  component [Cross-cutting\na11y, responsive, dark mode\nkeyboard, session, concurrent] as E2E_CROSS <<e2e>>
+}
+
+package "Layer 3: Component Tests (Vitest + jsdom)" <<component>> {
+  component [**14 test files**\n161 tests] as COMP
+  component [Pages\ndashboard, config, create\nknowledge, analytics\ntrends, graph] as PAGES <<component>>
+  component [Shared Components\nGenerationResult\nGenerationProgress\nReviewPanel\nPublishSection\nErrorBanners\nClipboardCopy] as SHARED <<component>>
+}
+
+package "Layer 2: Contract API Tests (Vitest + MSW)" <<contract>> {
+  component [**14 test files**\n116 tests] as CONTRACT
+  component [Generation\n/generate, /generate-stream] as C_GEN <<contract>>
+  component [Knowledge\n/knowledge, /:slug\n/documents, /seed, /embed] as C_KNOW <<contract>>
+  component [Configuration\n/providers, /workflows\n/prompts, /api-keys] as C_CONF <<contract>>
+  component [Operations\n/jobs, /publish\n/analytics, /trends\n/integrations, /health] as C_OPS <<contract>>
+}
+
+package "Layer 1: Unit Tests (Vitest)" <<unit>> {
+  component [**56 test files**\n635 tests] as UNIT
+  component [Graph\nbuilder, routing\nstate, reducers] as U_GRAPH <<unit>>
+  component [Nodes (15)\nparse-brief, generate-script\ngenerate-caption, compose\nmoderate, quality-check\nhuman-review, enrich-*\nmedia generation nodes] as U_NODES <<unit>>
+  component [Providers\nOpenAI, Anthropic, Google\ncircuit-breaker, retry\ncost-tracker, selector] as U_PROV <<unit>>
+  component [Knowledge\ncollections, ingestion\nretrieval, seed-data] as U_KNOW <<unit>>
+  component [Services\napi-key-manager\napi-key-validator\nencryption-service\nmodel-discovery] as U_SERV <<unit>>
+  component [Trends\ncollectors, scorer, engine] as U_TRENDS <<unit>>
+  component [Cross-cutting\norchestrator, security\nconcurrent, bridge\nconfig, schemas\nperformance] as U_CROSS <<unit>>
+}
+
+' ============================================================
+'  MSW MOCK LAYER
+' ============================================================
+
+package "MSW Mock Layer" <<msw>> {
+  component [**ai-engine-handlers.ts**\n14 success handlers\n4 error handlers] as MSW_MAIN <<msw>>
+  component [**knowledgeEditHandlers**\n3 handlers] as MSW_KEDIT <<msw>>
+  component [**apiKeysHandlers**\n4 success + 4 error] as MSW_KEYS <<msw>>
+  component [New handlers needed\n~53 additional handlers\n(success + error variants)] as MSW_NEW <<msw>>
+}
+
+' ============================================================
+'  INFRASTRUCTURE
+' ============================================================
+
+package "Infrastructure" <<infra>> {
+  component [Next.js Dev Server\nhttp://127.0.0.1:3000] as SERVER <<infra>>
+  component [PostgreSQL\nDrizzle ORM] as DB <<infra>>
+  component [Playwright Config\nchromium, setup project\ncross-browser opt-in] as PW_CONF <<infra>>
+  component [Vitest Config\njsdom, @/ alias\nv8 coverage] as VT_CONF <<infra>>
+}
+
+' ============================================================
+'  PRODUCTION CODE UNDER TEST
+' ============================================================
+
+package "Production Code" {
+  component [API Routes\n24 route.ts files\nsrc/app/api/admin/ai-engine/] as ROUTES
+  component [Service Layer\nsrc/lib/ai-engine/\n56 modules] as SERVICES
+  component [React Pages\nsrc/app/admin/.../ai-engine/\n7 pages] as UI_PAGES
+  component [React Components\nsrc/components/.../ai-engine/\n6 shared components] as UI_COMP
+}
+
+' ============================================================
+'  RELATIONSHIPS -- WHAT TESTS WHAT
+' ============================================================
+
+' E2E tests exercise the full stack through the browser
+E2E -[#E65100]-> SERVER : "HTTP via\nbrowser"
+SERVER -[#455A64]-> ROUTES
+SERVER -[#455A64]-> UI_PAGES
+SERVER -[#455A64]-> UI_COMP
+
+' Component tests exercise UI with MSW
+PAGES -[#2E7D32]-> UI_PAGES : "renders"
+SHARED -[#2E7D32]-> UI_COMP : "renders"
+COMP -[#F57F17,dashed]-> MSW_MAIN : "mocks API"
+COMP -[#F57F17,dashed]-> MSW_KEDIT : "mocks API"
+COMP -[#F57F17,dashed]-> MSW_KEYS : "mocks API"
+
+' Contract tests exercise routes with MSW
+C_GEN -[#1565C0]-> ROUTES : "tests"
+C_KNOW -[#1565C0]-> ROUTES : "tests"
+C_CONF -[#1565C0]-> ROUTES : "tests"
+C_OPS -[#1565C0]-> ROUTES : "tests"
+CONTRACT -[#F57F17,dashed]-> MSW_MAIN : "intercepts"
+CONTRACT -[#F57F17,dashed]-> MSW_KEDIT : "intercepts"
+CONTRACT -[#F57F17,dashed]-> MSW_KEYS : "intercepts"
+
+' Unit tests exercise services directly
+U_GRAPH -[#6A1B9A]-> SERVICES : "tests"
+U_NODES -[#6A1B9A]-> SERVICES : "tests"
+U_PROV -[#6A1B9A]-> SERVICES : "tests"
+U_KNOW -[#6A1B9A]-> SERVICES : "tests"
+U_SERV -[#6A1B9A]-> SERVICES : "tests"
+U_TRENDS -[#6A1B9A]-> SERVICES : "tests"
+U_CROSS -[#6A1B9A]-> SERVICES : "tests"
+
+' Routes call services
+ROUTES -[#455A64]-> SERVICES : "imports"
+UI_PAGES -[#455A64]-> UI_COMP : "imports"
+
+' Infrastructure supports test layers
+PW_CONF ..[#455A64]..> E2E : "configures"
+VT_CONF ..[#455A64]..> UNIT : "configures"
+VT_CONF ..[#455A64]..> CONTRACT : "configures"
+VT_CONF ..[#455A64]..> COMP : "configures"
+DB ..[#455A64]..> SERVER : "connection"
+
+' ============================================================
+'  DATA FLOW LEGEND
+' ============================================================
+
+legend right
+  |= Color |= Layer |= Count |
+  | <#E1BEE7> | Unit (Vitest) | 635 tests |
+  | <#BBDEFB> | Contract API (Vitest + MSW) | 116 tests |
+  | <#C8E6C9> | Component UI (Vitest + jsdom) | 161 tests |
+  | <#FFE0B2> | E2E (Playwright) | 224 tests |
+  | <#FFF9C4> | MSW Mock Handlers | 29 existing |
+  |= | **Total** | **1,136 tests** |
+end legend
+
+' ============================================================
+'  DATA FLOW ANNOTATION
+' ============================================================
+
+note right of MSW_MAIN
+  **Data flow:**
+  Mock data constants
+  (MOCK_GENERATION_RESULT,
+   MOCK_HEALTH, MOCK_TRENDS, ...)
+  are shared between MSW handlers
+  and test assertion files.
+
+  **Pattern:**
+  Mock -> MSW handler -> HTTP intercept
+  -> Route/Component under test
+  -> Assertion against mock shape
+end note
+
+note left of E2E
+  **E2E execution:**
+  Playwright -> Chromium
+  -> Next.js server
+  -> Real routes
+  -> Real DB (test seed)
+
+  Auth via global.setup.ts
+  (.auth/admin.json)
+end note
+
+note bottom of UNIT
+  **Unit test isolation:**
+  All external deps mocked
+  (vi.mock, vi.fn)
+  No HTTP, no DB, no browser
+
+  Pure function testing
+  with deterministic inputs
+end note
+
+@enduml

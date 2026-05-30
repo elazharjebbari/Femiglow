@@ -1,0 +1,25 @@
+endpoint:
+  method: POST
+  path: /api/admin/content-studio/posts/{id}/cancel
+  alt_method_route_job_cancel:
+    path: /api/admin/content-studio/publish-jobs/{id}/cancel
+  auth: admin cookie
+
+request_body:
+  schema:
+    reason: { type: string, max: 500, optional: true }
+
+response_200:
+  schema:
+    post: { status: cancelled, cancelledAt, cancelledBy, cancelReason }
+    OR
+    job: { status: cancelled, lockedAt: null }
+
+response_409:
+  variants:
+    - { code: already_terminal, when: post.status ∈ {published, failed, cancelled, archived} }
+
+side_effects:
+  - UPDATE content_post.status='cancelled' (post-level cancel)
+  - UPDATE social_publish_job.status='cancelled' (job-level cancel)
+  - audit_log action='social.publish.cancelled'

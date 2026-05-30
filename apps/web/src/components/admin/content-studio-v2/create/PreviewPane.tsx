@@ -1,5 +1,6 @@
 'use client';
 
+import { Info } from 'lucide-react';
 import { PlatformPreview } from '@/components/admin/content-studio-v2/media';
 import type {
   PreviewFormat,
@@ -16,6 +17,24 @@ interface PreviewPaneProps {
   onPlatformChange?: (platform: PreviewPlatform) => void;
   /** Optional list of formats — synchronised with IntentionForm. */
   onFormatChange?: (format: PreviewFormat) => void;
+  /**
+   * CS v2 create-audit Phase 5 — slot for the "Valider et préparer la
+   * publication" action. Rendered under the preview when supplied.
+   */
+  footerActions?: React.ReactNode;
+  /**
+   * CS v2 Phase 7 polish — true when a draft is selected. Lets us swap the
+   * "Décrivez votre intention" message for "Attachez un visuel" / "Ajoutez
+   * une caption" depending on which piece is still missing.
+   */
+  hasDraft?: boolean;
+}
+
+function computeGuidance(hasDraft: boolean, media: StudioV2MediaItem | null, caption: string): string | null {
+  if (!hasDraft) return 'Décrivez votre intention pour démarrer.';
+  if (!media) return 'Attachez un visuel pour activer la validation.';
+  if (!caption.trim()) return 'Ajoutez une caption avant de valider.';
+  return null;
 }
 
 const FORMATS: { value: PreviewFormat; label: string }[] = [
@@ -37,10 +56,14 @@ export function PreviewPane({
   caption,
   onPlatformChange,
   onFormatChange,
+  footerActions,
+  hasDraft = false,
 }: PreviewPaneProps) {
+  const guidance = computeGuidance(hasDraft, media, caption);
   return (
     <aside
       aria-label="Aperçu"
+      data-section="validate"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -77,9 +100,43 @@ export function PreviewPane({
           onChange={(value) => onFormatChange?.(value as PreviewFormat)}
         />
       </header>
+      {guidance ? (
+        <div
+          role="note"
+          aria-label="Indication d'aperçu"
+          data-cs-preview-guidance
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 10px',
+            background: 'var(--cs-accent-bg)',
+            color: 'var(--cs-accent)',
+            borderRadius: 'var(--cs-radius-sm)',
+            fontSize: 12,
+            lineHeight: 1.4,
+          }}
+        >
+          <Info size={12} aria-hidden />
+          <span>{guidance}</span>
+        </div>
+      ) : null}
       <div style={{ display: 'grid', placeItems: 'center', padding: '6px 0' }}>
         <PlatformPreview platform={platform} format={format} media={media} caption={caption} />
       </div>
+      {footerActions ? (
+        <div
+          data-cs-section="preview-footer"
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            paddingTop: 8,
+            borderTop: '1px solid var(--cs-border-hair)',
+          }}
+        >
+          {footerActions}
+        </div>
+      ) : null}
     </aside>
   );
 }

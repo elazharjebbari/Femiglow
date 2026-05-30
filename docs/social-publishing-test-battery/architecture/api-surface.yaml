@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: Social Publishing — API surface
+  version: "2.0.0-test-battery"
+  description: |
+    Surface complète des endpoints liés à la publication sociale.
+    Tous les endpoints requièrent une session admin (cookie).
+
+servers:
+  - url: http://localhost:8012
+  - url: https://staging.femiglow-maroc.com
+
+paths:
+  /api/admin/content-studio/posts/{id}/publish-now:
+    post:
+      summary: Publier immédiatement
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+                idempotencyKey: { type: string }
+      responses:
+        '201': { description: jobs created }
+        '400': { description: invalid input }
+        '401': { description: unauthorized }
+        '404': { description: post not found }
+        '409': { description: pre-flight failed (brand_blocked, no_media, no_account, etc.) }
+        '429': { description: rate limit }
+        '500': { description: server error }
+
+  /api/admin/content-studio/posts/{id}/schedule:
+    post:
+      summary: Programmer la publication
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduledAt]
+              properties:
+                scheduledAt: { type: string, format: date-time }
+                accountId: { type: string }
+                idempotencyKey: { type: string }
+      responses:
+        '201': { description: scheduled }
+        '400': { description: past date or invalid format }
+        '409': { description: pre-flight failed }
+
+  /api/admin/content-studio/posts/{id}/draft-on-provider:
+    post:
+      summary: Brouillon côté Postiz (pas publié)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '201': { description: draft job created }
+        '409': { description: capability not supported }
+
+  /api/admin/content-studio/posts/{id}/cancel:
+    post:
+      summary: Annuler scheduled / queued
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { description: cancelled }
+        '409': { description: already terminal }
+
+  /api/admin/content-studio/posts/{id}/reschedule:
+    patch:
+      summary: Re-schedule
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduledAt]
+              properties:
+                scheduledAt: { type: string, format: date-time }
+      responses:
+        '200': { description: rescheduled }
+        '400': { description: past or invalid }
+
+  /api/admin/content-studio/publish-jobs:
+    get:
+      summary: Liste des jobs récents
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: accountId, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+      responses:
+        '200': { description: jobs list }
+
+  /api/admin/content-studio/publish-jobs/{id}/retry:
+    post:
+      summary: Retry job failed
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: job re-queued }
+        '409': { description: not in failed state }
+
+  /api/admin/content-studio/publish-jobs/{id}/cancel:
+    post:
+      summary: Cancel job
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: cancelled }
+        '409': { description: already terminal }
+
+  /api/admin/content-studio/postiz/integrations/sync:
+    post:
+      summary: Sync Postiz → social_account
+      responses:
+        '200': { description: synced }
+        '401': { description: postiz auth failed }
+
+# Cron-only (out of admin scope, listed for completeness)
+  /api/cron/content-studio/social-publish-scheduler:
+    post:
+      summary: Cron handler — picks scheduled jobs due
+      security:
+        - cronAuth: []
+      responses:
+        '200': { description: jobs processed }
+
+  /api/cron/content-studio/postiz-sync:
+    post:
+      summary: Cron handler — sync Postiz integrations
+      security:
+        - cronAuth: []
+      responses:
+        '200': { description: synced }
+
+components:
+  securitySchemes:
+    cronAuth:
+      type: http
+      scheme: bearer
+      description: Bearer CRON_SECRET

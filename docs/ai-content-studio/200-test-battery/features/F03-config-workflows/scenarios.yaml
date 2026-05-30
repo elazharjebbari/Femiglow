@@ -1,0 +1,369 @@
+feature: F03-config-workflows
+description: Workflow CRUD with list/form views, pipeline visualization, badges, and default protection
+component_under_test: apps/web/src/app/admin/content-studio-v2/ai-engine/config/page.tsx
+test_file: apps/web/src/app/admin/content-studio-v2/ai-engine/config/__tests__/config-page.test.tsx
+
+scenarios:
+  # ---- EMPTY STATE ----
+
+  - id: F03-T01
+    name: "Empty state shown when no workflows exist"
+    type: component
+    priority: P0
+    preconditions: "API returns empty workflows array, tab=workflows"
+    steps:
+      - "Render page, switch to workflows tab"
+    expected: "EmptyState with GitBranch icon and 'Aucun workflow personnalise' title"
+    assertions:
+      - "Text 'Aucun workflow personnalise' is visible"
+      - "CTA button 'Creer un workflow' is visible"
+    tags: [empty-state]
+
+  - id: F03-T02
+    name: "Empty state CTA opens create form"
+    type: component
+    priority: P0
+    preconditions: "On empty state"
+    steps:
+      - "Click 'Creer un workflow' CTA"
+    expected: "Create form appears with title 'Creer un workflow'"
+    assertions:
+      - "Text 'Creer un workflow' visible as form heading"
+      - "Form inputs are rendered"
+    tags: [empty-state, form]
+
+  # ---- WORKFLOW LIST ----
+
+  - id: F03-T03
+    name: "Workflow list renders all workflows as cards"
+    type: component
+    priority: P0
+    preconditions: "API returns 3 workflows"
+    steps:
+      - "Render page, switch to workflows tab"
+    expected: "3 WorkflowCard components rendered in a column"
+    assertions:
+      - "3 workflow names are visible"
+    tags: [rendering, list]
+
+  - id: F03-T04
+    name: "Active workflow shows 'Actif' badge in success tone"
+    type: component
+    priority: P0
+    preconditions: "Workflow with isActive=true"
+    steps:
+      - "Render card"
+    expected: "Badge 'Actif' with success tone"
+    assertions:
+      - "Badge with text 'Actif' is visible"
+    tags: [rendering, badge]
+
+  - id: F03-T05
+    name: "Inactive workflow shows 'Inactif' badge in neutral tone"
+    type: component
+    priority: P1
+    preconditions: "Workflow with isActive=false"
+    steps:
+      - "Render card"
+    expected: "Badge 'Inactif' with neutral tone"
+    assertions:
+      - "Badge with text 'Inactif' is visible"
+    tags: [rendering, badge]
+
+  - id: F03-T06
+    name: "Version badge displays workflow version"
+    type: component
+    priority: P1
+    preconditions: "Workflow with version=3"
+    steps:
+      - "Render card"
+    expected: "Badge 'v3' in accent tone"
+    assertions:
+      - "Badge with text 'v3' is visible"
+    tags: [rendering, badge, versioning]
+
+  - id: F03-T07
+    name: "Pipeline visualization renders node badges with arrows"
+    type: component
+    priority: P1
+    preconditions: "Workflow with graphConfig.nodes=['brief_analysis', 'script_writer', 'image_gen']"
+    steps:
+      - "Render card"
+    expected: "Pipeline shows: Brief -> Script -> Image with arrow separators"
+    assertions:
+      - "Text 'Brief' is visible"
+      - "Text 'Script' is visible"
+      - "Text 'Image' is visible"
+      - "ArrowRight icons between nodes"
+    tags: [rendering, pipeline]
+
+  - id: F03-T08
+    name: "Workflow with empty nodes shows no pipeline section"
+    type: component
+    priority: P2
+    preconditions: "Workflow with graphConfig.nodes=[]"
+    steps:
+      - "Render card"
+    expected: "No pipeline node badges rendered"
+    assertions:
+      - "No NODE_LABELS text visible (Brief, Script, etc.)"
+    tags: [rendering, edge-case]
+
+  - id: F03-T09
+    name: "Platform and format labels display correctly"
+    type: component
+    priority: P1
+    preconditions: "Workflow with platform='instagram', format='reel'"
+    steps:
+      - "Render card"
+    expected: "Text 'Instagram' and 'reel' visible"
+    assertions:
+      - "Text 'Instagram' visible"
+      - "Text 'reel' visible"
+    tags: [rendering, labels]
+
+  - id: F03-T10
+    name: "Quality threshold displays as percentage"
+    type: component
+    priority: P1
+    preconditions: "Workflow with qualityThreshold='0.85'"
+    steps:
+      - "Render card"
+    expected: "Text 'Qualite >= 85%'"
+    assertions:
+      - "Text matching /Qualit.*85%/ is visible"
+    tags: [rendering, formatting]
+
+  - id: F03-T11
+    name: "HITL status shows Requis when humanReviewRequired is true"
+    type: component
+    priority: P1
+    preconditions: "Workflow with humanReviewRequired=true"
+    steps:
+      - "Render card"
+    expected: "Text 'HITL: Requis'"
+    assertions:
+      - "Text 'HITL: Requis' is visible"
+    tags: [rendering]
+
+  - id: F03-T12
+    name: "Auto-publish status shows Auto when autoPublish is true"
+    type: component
+    priority: P1
+    preconditions: "Workflow with autoPublish=true"
+    steps:
+      - "Render card"
+    expected: "Text 'Publication: Auto'"
+    assertions:
+      - "Text 'Publication: Auto' is visible"
+    tags: [rendering]
+
+  # ---- DEFAULT PROTECTION ----
+
+  - id: F03-T13
+    name: "Default workflow hides Edit and Delete buttons"
+    type: component
+    priority: P0
+    preconditions: "Workflow with id='default-instagram-reel'"
+    steps:
+      - "Render card for default workflow"
+    expected: "No 'Editer' or 'Supprimer' buttons visible on this card"
+    assertions:
+      - "Card does not contain 'Editer' button"
+      - "Card does not contain 'Supprimer' button"
+    tags: [default-protection, security]
+
+  - id: F03-T14
+    name: "Custom workflow shows Edit and Delete buttons"
+    type: component
+    priority: P0
+    preconditions: "Workflow with id='custom-workflow-123'"
+    steps:
+      - "Render card"
+    expected: "Both 'Editer' and 'Supprimer' buttons visible"
+    assertions:
+      - "'Editer' button is present"
+      - "'Supprimer' button is present"
+    tags: [rendering, crud]
+
+  # ---- CREATE FORM ----
+
+  - id: F03-T15
+    name: "Create button opens form with empty defaults"
+    type: component
+    priority: P0
+    preconditions: "On workflows tab with existing workflows"
+    steps:
+      - "Click 'Creer un workflow' header button"
+    expected: "Form appears with heading 'Creer un workflow' and empty fields"
+    assertions:
+      - "Form heading 'Creer un workflow' is visible"
+      - "Name input value is empty"
+      - "Description input value is empty"
+      - "Quality threshold input value is 70"
+      - "Max retries input value is 3"
+      - "Human review toggle is checked"
+      - "Auto-publish toggle is unchecked"
+    tags: [create, form]
+
+  - id: F03-T16
+    name: "Save button disabled when name is empty"
+    type: component
+    priority: P0
+    preconditions: "Create form open, name field empty"
+    steps:
+      - "Check save button state"
+    expected: "Sauvegarder button is disabled"
+    assertions:
+      - "Sauvegarder button has disabled attribute"
+    tags: [validation, form]
+
+  - id: F03-T17
+    name: "Saving workflow shows loading state"
+    type: component
+    priority: P1
+    preconditions: "Form filled, save clicked"
+    steps:
+      - "Fill name 'Test Workflow'"
+      - "Click Sauvegarder"
+    expected: "Button shows loading spinner, inputs disabled during save"
+    assertions:
+      - "Sauvegarder button has loading state"
+      - "Form inputs are disabled"
+    tags: [save, loading]
+
+  - id: F03-T18
+    name: "Successful create shows toast and refreshes list"
+    type: component
+    priority: P0
+    preconditions: "POST /config/workflows returns 200"
+    steps:
+      - "Fill form and save"
+    expected: "Toast 'Workflow cree', form closes, fetchData called"
+    assertions:
+      - "toast.success called with 'Workflow cree'"
+      - "showWorkflowForm is false"
+      - "fetchData called to refresh list"
+    tags: [save, success, toast]
+
+  # ---- EDIT FORM ----
+
+  - id: F03-T19
+    name: "Edit button pre-populates form from workflow data"
+    type: component
+    priority: P0
+    preconditions: "Workflow: name='Reel Beauty', platform='instagram', quality=0.85, budget=200"
+    steps:
+      - "Click 'Editer' on workflow card"
+    expected: "Form titled 'Editer le workflow' with pre-populated values"
+    assertions:
+      - "Form heading 'Editer le workflow'"
+      - "Name input value is 'Reel Beauty'"
+      - "Platform select value is 'instagram'"
+      - "Quality input value is 85"
+      - "Budget input value is 200"
+    tags: [edit, form, pre-populate]
+
+  - id: F03-T20
+    name: "Successful edit shows 'Workflow mis a jour' toast"
+    type: component
+    priority: P0
+    preconditions: "Edit form, POST returns success"
+    steps:
+      - "Modify name and save"
+    expected: "Toast 'Workflow mis a jour'"
+    assertions:
+      - "toast.success called with 'Workflow mis a jour'"
+      - "POST body includes the workflow id"
+    tags: [edit, save, toast]
+
+  - id: F03-T21
+    name: "Cancel closes form without API call"
+    type: component
+    priority: P1
+    preconditions: "Form open"
+    steps:
+      - "Click 'Annuler'"
+    expected: "Form disappears, no POST request made"
+    assertions:
+      - "showWorkflowForm is false"
+      - "No POST to /config/workflows"
+    tags: [cancel, form]
+
+  # ---- DELETE ----
+
+  - id: F03-T22
+    name: "Delete shows browser confirm dialog"
+    type: component
+    priority: P0
+    preconditions: "Custom workflow card"
+    steps:
+      - "Click 'Supprimer'"
+    expected: "window.confirm called with workflow name"
+    assertions:
+      - "window.confirm called with message matching 'Supprimer le workflow'"
+    tags: [delete, confirm]
+
+  - id: F03-T23
+    name: "Confirming delete calls DELETE API and shows toast"
+    type: component
+    priority: P0
+    preconditions: "Confirm returns true, DELETE returns 200"
+    steps:
+      - "Click 'Supprimer', confirm"
+    expected: "DELETE /config/workflows/{id} called, toast 'Workflow supprime'"
+    assertions:
+      - "DELETE request sent"
+      - "toast.success called with 'Workflow supprime'"
+    tags: [delete, api, toast]
+
+  - id: F03-T24
+    name: "Cancelling confirm does not trigger delete"
+    type: component
+    priority: P1
+    preconditions: "Confirm returns false"
+    steps:
+      - "Click 'Supprimer', cancel confirm dialog"
+    expected: "No DELETE request, workflow remains"
+    assertions:
+      - "No DELETE request sent"
+    tags: [delete, cancel]
+
+  - id: F03-T25
+    name: "Delete button shows spinner while deleting"
+    type: component
+    priority: P2
+    preconditions: "Delete in progress"
+    steps:
+      - "Trigger delete, check button before response"
+    expected: "Loader2 icon with cs-spin class, button disabled"
+    assertions:
+      - "Delete button shows spinner icon"
+      - "Delete button is disabled"
+    tags: [delete, loading]
+
+  # ---- FORM VALIDATION ----
+
+  - id: F03-T26
+    name: "Quality threshold clamped between 0 and 100"
+    type: component
+    priority: P2
+    preconditions: "Create form open"
+    steps:
+      - "Enter 150 in quality field"
+    expected: "Value clamped to 100"
+    assertions:
+      - "Quality input value is 100"
+    tags: [validation, clamping]
+
+  - id: F03-T27
+    name: "Max retries clamped between 1 and 5"
+    type: component
+    priority: P2
+    preconditions: "Create form open"
+    steps:
+      - "Enter 10 in retries field"
+    expected: "Value clamped to 5"
+    assertions:
+      - "Retries input value is 5"
+    tags: [validation, clamping]

@@ -1,0 +1,486 @@
+# ============================================================
+# Data Model - Gestion des Cles API (170)
+# Module : AI Engine - FemiGlow
+# Date : 2026-05-25
+# ============================================================
+
+# ---------------------------------------------------------
+# 1. Nouvelle table : ai_engine_api_key
+# ---------------------------------------------------------
+tables:
+  ai_engine_api_key:
+    description: |
+      Stocke les cles API chiffrees pour les fournisseurs IA.
+      Chaque fournisseur ne peut avoir qu'une seule cle active a la fois
+      (contrainte unique partielle sur provider_type WHERE is_active = true).
+    columns:
+      id:
+        type: TEXT
+        primary_key: true
+        default: "gen_random_uuid()::text"
+        description: "Identifiant unique UUID"
+
+      provider_type:
+        type: TEXT
+        nullable: false
+        description: |
+          Type de fournisseur IA.
+          Valeurs attendues : 'openai', 'anthropic', 'google', 'elevenlabs', 'ollama'
+        enum: ['openai', 'anthropic', 'google', 'elevenlabs', 'ollama']
+
+      label:
+        type: TEXT
+        nullable: true
+        description: |
+          Label optionnel pour identifier la cle
+          (ex: "Production", "Staging", "Compte Marketing")
+
+      encrypted_key:
+        type: TEXT
+        nullable: false
+        description: |
+          Cle API chiffree au format "base64(iv):base64(authTag):base64(ciphertext)".
+          Algorithme : AES-256-GCM.
+          Ne doit JAMAIS etre expose dans une reponse API.
+
+      masked_key:
+        type: TEXT
+        nullable: false
+        description: |
+          Version masquee de la cle pour affichage UI.
+          Exemples : "sk-proj-...AbCd", "sk-ant-...XyZw", "AIza...1234"
+          Stockee a la creation pour eviter de dechiffrer pour l'affichage.
+
+      key_prefix:
+        type: TEXT
+        nullable: true
+        description: |
+          Prefixe de la cle (premiers caracteres non sensibles).
+          Exemples : "sk-proj-", "sk-ant-api03-", "AIza"
+          Utilise pour le filtrage et le diagnostique sans dechiffrement.
+
+      is_active:
+        type: BOOLEAN
+        nullable: false
+        default: true
+        description: |
+          Indique si cette cle est la cle active pour son fournisseur.
+          Une seule cle peut etre active par fournisseur (index unique partiel).
+
+      priority:
+        type: INTEGER
+        nullable: false
+        default: 10
+        description: |
+          Priorite de la cle dans la chaine de resolution.
+          10 = haute priorite (DB prend le dessus sur env vars).
+          Utilise pour le futur support multi-cles par fournisseur.
+
+      last_tested_at:
+        type: TIMESTAMPTZ
+        nullable: true
+        description: "Date/heure du dernier test de validite"
+
+      last_test_result:
+        type: TEXT
+        nullable: true
+        description: |
+          Resultat du dernier test de validite.
+          Valeurs : 'success', 'failure', null (jamais teste)
+        enum: ['success', 'failure']
+
+      last_test_error:
+        type: TEXT
+        nullable: true
+        description: |
+          Message d'erreur du dernier test echoue.
+          null si le dernier test a reussi ou si jamais teste.
+
+      expires_at:
+        type: TIMESTAMPTZ
+        nullable: true
+        description: |
+          Date d'expiration optionnelle de la cle.
+          Utilise pour les alertes de rotation (phase 2).
+
+      metadata:
+        type: JSONB
+        nullable: true
+        description: |
+          Metadonnees libres associees a la cle.
+          Exemples : { "account": "team-marketing", "quotaLimit": 10000 }
+
+      created_by:
+        type: TEXT
+        nullable: false
+        description: "Email de l'administrateur ayant cree la cle"
+
+      updated_by:
+        type: TEXT
+        nullable: true
+        description: "Email de l'administrateur ayant modifie la cle en dernier"
+
+      created_at:
+        type: TIMESTAMPTZ
+        nullable: false
+        default: "now()"
+        description: "Date de creation"
+
+      updated_at:
+        type: TIMESTAMPTZ
+        nullable: false
+        default: "now()"
+        description: "Date de derniere modification"
+
+    indexes:
+      ai_ak_provider_type_idx:
+        columns: [provider_type, is_active]
+        description: "Recherche rapide par fournisseur et statut actif"
+
+      ai_ak_active_idx:
+        columns: [is_active, priority]
+        description: "Liste des cles actives triees par priorite"
+
+      ai_ak_unique_active_provider:
+        columns: [provider_type]
+        unique: true
+        partial: "WHERE is_active = true"
+        description: |
+          Garantit qu'une seule cle est active par fournisseur.
+          Contrainte unique partielle PostgreSQL.
+
+  # ---------------------------------------------------------
+  # 2. Table d'audit : ai_engine_audit_log
+  # ---------------------------------------------------------
+  ai_engine_audit_log:
+    description: |
+      Journal d'audit pour toutes les operations sensibles du AI Engine.
+      Utilisee par la gestion des cles API mais aussi extensible
+      a d'autres operations futures.
+    columns:
+      id:
+        type: TEXT
+        primary_key: true
+        default: "gen_random_uuid()::text"
+        description: "Identifiant unique UUID"
+
+      action:
+        type: TEXT
+        nullable: false
+        description: |
+          Type d'action effectuee.
+          Exemples : 'api_key.created', 'api_key.updated', 'api_key.deleted', 'api_key.tested'
+
+      entity_type:
+        type: TEXT
+        nullable: false
+        description: |
+          Type d'entite concernee.
+          Exemples : 'api_key', 'provider_config', 'workflow', 'prompt'
+
+      entity_id:
+        type: TEXT
+        nullable: true
+        description: "ID de l'entite concernee (peut etre null pour les actions globales)"
+
+      actor_email:
+        type: TEXT
+        nullable: false
+        description: "Email de l'administrateur ayant effectue l'action"
+
+      details:
+        type: JSONB
+        nullable: true
+        description: |
+          Details supplementaires de l'action en format libre.
+          ATTENTION : ne doit JAMAIS contenir de cles API en clair.
+          Exemples : { "providerType": "openai", "maskedKey": "sk-...AbCd" }
+
+      ip_address:
+        type: TEXT
+        nullable: true
+        description: "Adresse IP du client (extraite des headers)"
+
+      user_agent:
+        type: TEXT
+        nullable: true
+        description: "User-Agent du navigateur"
+
+      created_at:
+        type: TIMESTAMPTZ
+        nullable: false
+        default: "now()"
+        description: "Date de creation de l'entree d'audit"
+
+    indexes:
+      ai_audit_action_idx:
+        columns: [action, created_at]
+        description: "Recherche par type d'action et date"
+
+      ai_audit_entity_idx:
+        columns: [entity_type, entity_id]
+        description: "Recherche par entite"
+
+      ai_audit_actor_idx:
+        columns: [actor_email, created_at]
+        description: "Recherche par acteur"
+
+# ---------------------------------------------------------
+# 3. Schemas de chiffrement
+# ---------------------------------------------------------
+encryption:
+  algorithm: "AES-256-GCM"
+  key_derivation:
+    function: "PBKDF2"
+    hash: "SHA-512"
+    iterations: 100000
+    key_length_bytes: 32
+    salt_source: "AI_ENGINE_ENCRYPTION_SALT"
+    master_key_source: "AI_ENGINE_ENCRYPTION_KEY"
+
+  iv:
+    length_bytes: 12
+    generation: "crypto.randomBytes(12)"
+
+  auth_tag:
+    length_bytes: 16
+
+  storage_format:
+    description: "base64(iv):base64(authTag):base64(ciphertext)"
+    separator: ":"
+    parts:
+      - name: "iv"
+        encoding: "base64"
+        length_bytes: 12
+      - name: "authTag"
+        encoding: "base64"
+        length_bytes: 16
+      - name: "ciphertext"
+        encoding: "base64"
+        length_bytes: "variable"
+
+# ---------------------------------------------------------
+# 4. Schemas de requete/reponse API
+# ---------------------------------------------------------
+api_schemas:
+  # GET /api/admin/ai-engine/config/api-keys
+  list_api_keys_response:
+    type: object
+    properties:
+      keys:
+        type: array
+        items:
+          $ref: "#/api_schemas/api_key_summary"
+      meta:
+        type: object
+        properties:
+          total:
+            type: integer
+          configuredCount:
+            type: integer
+          envVarCount:
+            type: integer
+
+  api_key_summary:
+    type: object
+    description: |
+      Resume d'une cle API pour affichage frontend.
+      Ne contient JAMAIS la cle en clair ni la cle chiffree.
+    properties:
+      id:
+        type: string
+        description: "UUID de la cle"
+      providerType:
+        type: string
+        enum: ['openai', 'anthropic', 'google', 'elevenlabs', 'ollama']
+      providerName:
+        type: string
+        description: "Nom d'affichage du fournisseur"
+      label:
+        type: string
+        nullable: true
+      maskedKey:
+        type: string
+        description: "Cle masquee pour affichage (ex: sk-...AbCd)"
+      keyPrefix:
+        type: string
+        nullable: true
+      source:
+        type: string
+        enum: ['database', 'env', 'none']
+      isActive:
+        type: boolean
+      lastTestedAt:
+        type: string
+        format: date-time
+        nullable: true
+      lastTestResult:
+        type: string
+        enum: ['success', 'failure', 'untested']
+      lastTestError:
+        type: string
+        nullable: true
+      expiresAt:
+        type: string
+        format: date-time
+        nullable: true
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+
+  # POST /api/admin/ai-engine/config/api-keys
+  create_update_api_key_request:
+    type: object
+    required: [providerType, apiKey]
+    properties:
+      providerType:
+        type: string
+        enum: ['openai', 'anthropic', 'google', 'elevenlabs', 'ollama']
+      apiKey:
+        type: string
+        minLength: 1
+        description: |
+          La cle API en clair.
+          Transmise via HTTPS uniquement.
+          Chiffree immediatement par le backend.
+      label:
+        type: string
+        maxLength: 100
+        nullable: true
+      baseUrl:
+        type: string
+        format: uri
+        nullable: true
+        description: "URL de base (requis pour Ollama, optionnel pour les autres)"
+      skipValidation:
+        type: boolean
+        default: false
+        description: "Si true, la cle n'est pas testee avant sauvegarde"
+
+  create_update_api_key_response:
+    type: object
+    properties:
+      key:
+        $ref: "#/api_schemas/api_key_summary"
+      validation:
+        type: object
+        properties:
+          valid:
+            type: boolean
+          latencyMs:
+            type: integer
+          error:
+            type: string
+            nullable: true
+
+  # DELETE /api/admin/ai-engine/config/api-keys/[id]
+  delete_api_key_response:
+    type: object
+    properties:
+      deleted:
+        type: boolean
+      fallbackAvailable:
+        type: boolean
+        description: "Indique si une variable d'environnement prend le relais"
+      fallbackSource:
+        type: string
+        nullable: true
+        description: "Nom de la variable d'environnement de fallback"
+
+  # POST /api/admin/ai-engine/config/api-keys/test
+  test_api_key_request:
+    type: object
+    required: [providerType]
+    properties:
+      providerType:
+        type: string
+        enum: ['openai', 'anthropic', 'google', 'elevenlabs', 'ollama']
+      apiKey:
+        type: string
+        description: "Cle a tester (si absente, teste la cle active resolue)"
+        nullable: true
+      baseUrl:
+        type: string
+        format: uri
+        nullable: true
+
+  test_api_key_response:
+    type: object
+    properties:
+      valid:
+        type: boolean
+      provider:
+        type: string
+      latencyMs:
+        type: integer
+      error:
+        type: string
+        nullable: true
+      details:
+        type: object
+        nullable: true
+        properties:
+          modelsAvailable:
+            type: integer
+          quotaRemaining:
+            type: integer
+            nullable: true
+          planType:
+            type: string
+            nullable: true
+
+# ---------------------------------------------------------
+# 5. Relations avec les tables existantes
+# ---------------------------------------------------------
+relations:
+  ai_engine_api_key_to_provider_config:
+    type: "logical (non FK)"
+    description: |
+      La cle API est liee au fournisseur via provider_type (meme valeur).
+      Pas de foreign key car les provider_configs peuvent etre crees
+      dynamiquement depuis les env vars (id "default-*").
+    from: "ai_engine_api_key.provider_type"
+    to: "ai_engine_provider_config.provider_type"
+
+  ai_engine_audit_log_to_api_key:
+    type: "logical (entity_id)"
+    description: |
+      Les entrees d'audit referençent les cles API via entity_id.
+      Pas de foreign key pour la flexibilite (l'entite peut etre supprimee).
+    from: "ai_engine_audit_log.entity_id"
+    to: "ai_engine_api_key.id"
+    condition: "entity_type = 'api_key'"
+
+# ---------------------------------------------------------
+# 6. Contraintes metier
+# ---------------------------------------------------------
+business_rules:
+  - rule: "Une seule cle active par fournisseur"
+    enforcement: "Unique index partiel (ai_ak_unique_active_provider)"
+    behavior: |
+      Lors de la creation d'une nouvelle cle pour un fournisseur
+      qui a deja une cle active, l'ancienne cle est desactivee
+      (is_active = false) avant l'insertion.
+
+  - rule: "Les cles ne sont jamais exposees en clair"
+    enforcement: "Logique applicative (service layer)"
+    behavior: |
+      - Les reponses API ne contiennent que masked_key
+      - encrypted_key n'est jamais serialise dans les reponses
+      - Les logs d'audit utilisent masked_key
+
+  - rule: "Chiffrement obligatoire"
+    enforcement: "Logique applicative (service layer)"
+    behavior: |
+      Si AI_ENGINE_ENCRYPTION_KEY n'est pas configuree,
+      les operations CRUD echouent avec HTTP 500
+      (code: ENCRYPTION_KEY_MISSING).
+
+  - rule: "Audit de toutes les operations"
+    enforcement: "Logique applicative (service layer)"
+    behavior: |
+      Chaque operation CRUD et test insere une entree
+      dans ai_engine_audit_log avec l'email de l'acteur.

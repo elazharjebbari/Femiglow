@@ -1,0 +1,30 @@
+feature: F24-postiz-payload-mapping
+critical: P1
+
+unit:
+  - id: F24-U-1
+    name: type='now' for publishMode=now
+  - id: F24-U-2
+    name: type='schedule' for publishMode=schedule
+  - id: F24-U-3
+    name: type='draft' for publishMode=draft
+  - id: F24-U-4
+    name: date defaults to now+1h when scheduledAt null
+  - id: F24-U-5
+    name: date is ISO8601
+  - id: F24-U-6
+    name: caption in posts[0].value[0].content
+  - id: F24-U-7
+    name: image array in posts[0].value[0].image[]
+  - id: F24-U-8
+    name: settings.__type = platform
+  - id: F24-U-9
+    name: settings.post_type maps carousel → 'post'
+  - id: F24-U-10
+    name: settings.post_type = format directly for reel/story
+  - id: F24-U-11
+    name: tags default femiglow when none provided
+  - id: F24-U-12
+    name: tags merged with user-provided
+  - id: F24-U-13
+    name: integration.id = account.remoteId

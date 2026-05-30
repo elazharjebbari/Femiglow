@@ -1,0 +1,224 @@
+feature: P4-video-player
+component: GenerationResult (video section)
+file: apps/web/src/components/admin/content-studio-v2/ai-engine/GenerationResult.tsx
+
+scenarios:
+  - id: P4-001
+    name: "Video section renders when videos array has items"
+    type: component
+    priority: P0
+    given: "GenerationResult is rendered with result containing 1 video"
+    steps:
+      - "Render <GenerationResult result={{ ..., videos: [mockVideo] }} />"
+    expected: "Videos section is visible with title 'Videos (1)'"
+    assertions:
+      - "screen.getByText(/vid.os.*1/i) is visible"
+      - "A <video> element is present in the DOM"
+
+  - id: P4-002
+    name: "Video section hidden when videos is empty array"
+    type: component
+    priority: P0
+    given: "GenerationResult is rendered with result.videos = []"
+    steps:
+      - "Render <GenerationResult result={{ ..., videos: [] }} />"
+    expected: "No video section visible"
+    assertions:
+      - "screen.queryByText(/vid.os/i) is null"
+
+  - id: P4-003
+    name: "Video section hidden when videos is undefined"
+    type: component
+    priority: P0
+    given: "GenerationResult is rendered with result.videos = undefined"
+    steps:
+      - "Render <GenerationResult result={{ ..., videos: undefined }} />"
+    expected: "No video section visible"
+    assertions:
+      - "screen.queryByText(/vid.os/i) is null"
+
+  - id: P4-004
+    name: "Video player has controls attribute"
+    type: component
+    priority: P0
+    given: "One video in the result"
+    steps:
+      - "Render and inspect the <video> element"
+    expected: "Video element has controls attribute"
+    assertions:
+      - "<video> element has attribute 'controls'"
+
+  - id: P4-005
+    name: "Video player has correct src"
+    type: component
+    priority: P0
+    given: "Video with url '/_media/ai-engine/mock/femiglow-reel-preview.mp4'"
+    steps:
+      - "Render and inspect the <video> src"
+    expected: "Video src matches the mock URL"
+    assertions:
+      - "<video> element has src='/_media/ai-engine/mock/femiglow-reel-preview.mp4'"
+
+  - id: P4-006
+    name: "Video player has poster when posterUrl provided"
+    type: component
+    priority: P1
+    given: "Video with posterUrl defined"
+    steps:
+      - "Render with video { posterUrl: '/_media/ai-engine/mock/poster.jpg' }"
+    expected: "Video element has poster attribute"
+    assertions:
+      - "<video> element has poster='/_media/ai-engine/mock/poster.jpg'"
+
+  - id: P4-007
+    name: "No poster attribute when posterUrl is undefined"
+    type: component
+    priority: P2
+    given: "Video with posterUrl undefined"
+    steps:
+      - "Render with video without posterUrl"
+    expected: "Video element does not have poster attribute"
+    assertions:
+      - "<video> element does not have poster attribute"
+
+  - id: P4-008
+    name: "Provider badge shows 'Mock' for mock videos"
+    type: component
+    priority: P0
+    given: "Video with provider='mock'"
+    steps:
+      - "Render and inspect badge overlay"
+    expected: "Badge with text 'Mock' is visible with warning color border"
+    assertions:
+      - "screen.getByText('Mock') is visible"
+      - "Badge element has border-color matching --cs-warning"
+
+  - id: P4-009
+    name: "Provider badge shows provider name for real videos"
+    type: component
+    priority: P1
+    given: "Video with provider='higgsfield'"
+    steps:
+      - "Render with video { provider: 'higgsfield' }"
+    expected: "Badge with text 'higgsfield' is visible with accent color"
+    assertions:
+      - "screen.getByText('higgsfield') is visible"
+
+  - id: P4-010
+    name: "Resolution badge displays correct dimensions"
+    type: component
+    priority: P1
+    given: "Video with width=1080, height=1920"
+    steps:
+      - "Render and inspect badges"
+    expected: "Badge '1080x1920' is visible"
+    assertions:
+      - "screen.getByText('1080x1920') is visible"
+
+  - id: P4-011
+    name: "Duration badge displays when durationSeconds provided"
+    type: component
+    priority: P1
+    given: "Video with durationSeconds=15"
+    steps:
+      - "Render and inspect badges"
+    expected: "Badge '15s' is visible"
+    assertions:
+      - "screen.getByText('15s') is visible"
+
+  - id: P4-012
+    name: "Duration badge hidden when durationSeconds is undefined"
+    type: component
+    priority: P2
+    given: "Video without durationSeconds"
+    steps:
+      - "Render with video { durationSeconds: undefined }"
+    expected: "No duration badge rendered"
+    assertions:
+      - "No badge with 's' suffix is present (beyond provider/resolution)"
+
+  - id: P4-013
+    name: "Grid layout for multiple videos"
+    type: component
+    priority: P1
+    given: "2 videos in the result"
+    steps:
+      - "Render with result.videos containing 2 entries"
+    expected: "2 video cards rendered in a grid"
+    assertions:
+      - "2 <video> elements are in the DOM"
+      - "Grid container has display: grid"
+
+  - id: P4-014
+    name: "Aspect ratio container preserves video dimensions"
+    type: component
+    priority: P1
+    given: "Video with width=1080, height=1920 (9:16 vertical)"
+    steps:
+      - "Render and inspect the aspect-ratio container"
+    expected: "Container paddingBottom is ~177.78% (1920/1080 * 100)"
+    assertions:
+      - "Aspect container has paddingBottom approximately 177.78%"
+
+  - id: P4-015
+    name: "Video aria-label is set for accessibility"
+    type: component
+    priority: P1
+    given: "One video rendered"
+    steps:
+      - "Render and inspect the video element aria attributes"
+    expected: "Video has aria-label='Video generee 1'"
+    assertions:
+      - "<video> has aria-label matching 'Video generee 1'"
+
+  - id: P4-016
+    name: "Mock generation result now includes video data"
+    type: unit
+    priority: P0
+    given: "MOCK_GENERATION_RESULT in ai-engine-handlers.ts"
+    steps:
+      - "Inspect MOCK_GENERATION_RESULT.videos"
+    expected: "videos array has 1 entry with url, width, height, provider"
+    assertions:
+      - "MOCK_GENERATION_RESULT.videos.length === 1"
+      - "MOCK_GENERATION_RESULT.videos[0].url is a non-empty string"
+      - "MOCK_GENERATION_RESULT.videos[0].provider === 'mock'"
+      - "MOCK_GENERATION_RESULT.videos[0].width === 1080"
+      - "MOCK_GENERATION_RESULT.videos[0].height === 1920"
+
+  - id: P4-017
+    name: "Video section positioned after images section"
+    type: component
+    priority: P2
+    given: "Result has both images and videos"
+    steps:
+      - "Render GenerationResult with images and videos"
+      - "Check DOM order"
+    expected: "Videos CollapsibleSection comes after Images CollapsibleSection"
+    assertions:
+      - "Videos section DOM node follows Images section DOM node"
+
+  - id: P4-018
+    name: "Video section default open"
+    type: component
+    priority: P2
+    given: "Videos present in result"
+    steps:
+      - "Render GenerationResult"
+    expected: "Video section is expanded by default (defaultOpen=true)"
+    assertions:
+      - "Video content is visible without clicking the header"
+
+  - id: P4-019
+    name: "Integration -- full generate flow shows video"
+    type: integration
+    priority: P0
+    given: "AIEngineCreatePage, mock handler returns video in result"
+    steps:
+      - "Fill brief form"
+      - "Click Generer"
+      - "Wait for generation to complete"
+    expected: "Result page shows video player with mock content"
+    assertions:
+      - "A <video> element is present in the page"
+      - "Video badges are visible"

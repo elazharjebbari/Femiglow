@@ -1,0 +1,14 @@
+feature: F17-budget-tracking
+
+component:
+  - name: BudgetIndicator green when > 50%
+  - name: BudgetIndicator orange when 20-50%
+  - name: BudgetIndicator red when < 20%
+  - name: banner visible when > 90% spent
+  - name: generation buttons disabled when remainingCents <= 0
+    expect: 'Générer un visuel IA' has aria-disabled='true' + tooltip
+
+contract:
+  - name: GET /generation-runs returns budget object
+    expect: response.budget.{dailyBudgetCents, dailySpentCents, remainingCents}
+  - name: any generate when budget exhausted → 402

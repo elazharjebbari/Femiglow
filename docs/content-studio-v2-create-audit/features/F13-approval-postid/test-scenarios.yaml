@@ -1,0 +1,44 @@
+feature: F13-approval-postid
+
+component:
+  - name: ApproveButton disabled when no draft
+    given: draft=null
+    expect: button has aria-disabled='true'
+  - name: ApproveButton disabled when no media
+    given: draft set, hasMedia=false
+    expect: button disabled, title='Attachez un visuel'
+  - name: ApproveButton disabled when brand blocked
+    given: brandBlocked=true
+    expect: button disabled, title contains 'Brand'
+  - name: ApproveButton enabled when all conditions met
+    expect: button clickable
+  - name: ApproveButton click calls POST /drafts/:id/approve
+    when: click
+    expect: fetch fired with method=POST
+  - name: success toast on 200
+    expect: 'Draft validé' toast visible
+  - name: error toast on 409
+    given: response 409
+    expect: error toast visible
+  - name: onApproved called with post object
+    given: response { post: {...} }
+    expect: onApproved called with post
+
+contract:
+  - name: POST /drafts/:id/approve (needs_review + media + brand pass) → 200
+    expect: response.post.id defined, draft.status='approved'
+  - name: POST /approve without media → 409 code='no_media_attached'
+  - name: POST /approve with brand blocked → 409 code='brand_review_blocked'
+  - name: POST /approve already approved → 200 idempotent with existing post
+
+e2e:
+  - name: full path: variant → media → approve → publish enabled
+    steps:
+      - generate variants, select first
+      - generate image
+      - click 'Valider et préparer la publication'
+      - wait toast
+    expect:
+      - Stepper 'Valider' active
+      - PublishActionGroup dropdown enabled
+      - postId visible in DOM (if exposed)

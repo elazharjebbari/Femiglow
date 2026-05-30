@@ -1,0 +1,42 @@
+feature: F08-cancel-scheduled
+critical: P1
+
+contract:
+  - id: F08-C-1
+    name: POST cancel happy path
+    given: post.status='scheduled'
+    expect: 200 post.status='cancelled'
+  - id: F08-C-2
+    name: POST cancel with reason
+    payload: '{ reason: "Plus pertinent" }'
+    expect: 200, cancelReason persisted
+  - id: F08-C-3
+    name: POST cancel already published 409
+    given: post.status='published'
+    expect: 409 invalid_state
+  - id: F08-C-4
+    name: POST cancel already cancelled 409
+  - id: F08-C-5
+    name: POST cancel cascades to job
+    expect: social_publish_job.status='cancelled'
+  - id: F08-C-6
+    name: POST cancel writes audit log
+
+component:
+  - id: F08-CO-1
+    name: cancel button in QuickEditDrawer
+  - id: F08-CO-2
+    name: confirmation modal
+    when: click cancel
+    expect: modal 'Êtes-vous sûr ?'
+  - id: F08-CO-3
+    name: confirm fires API
+  - id: F08-CO-4
+    name: toast 'Publication annulée'
+  - id: F08-CO-5
+    name: card removed from calendar
+
+e2e:
+  - id: F08-E-1
+    name: schedule then cancel
+    scenario_ref: S07

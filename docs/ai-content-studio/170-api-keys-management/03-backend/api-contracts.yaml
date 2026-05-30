@@ -1,0 +1,527 @@
+# ============================================================
+# API Contracts (OpenAPI 3.1) - Gestion des Cles API
+# Module : 170 - AI Keys Management
+# Base URL : /api/admin/ai-engine/config
+# Date : 2026-05-25
+# ============================================================
+
+openapi: "3.1.0"
+info:
+  title: "AI Engine - API Keys Management"
+  version: "1.0.0"
+  description: |
+    Endpoints de gestion des cles API pour les fournisseurs IA
+    du AI Engine FemiGlow. Tous les endpoints necessitent une
+    session admin valide (iron-session cookie).
+  contact:
+    name: "FemiGlow Engineering"
+
+servers:
+  - url: "/api/admin/ai-engine/config"
+    description: "API interne admin (relative)"
+
+security:
+  - sessionCookie: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: femiglow-admin-session
+      description: "Cookie de session iron-session chiffre"
+
+  schemas:
+    ProviderType:
+      type: string
+      enum:
+        - openai
+        - anthropic
+        - google
+        - elevenlabs
+        - ollama
+      description: "Type de fournisseur IA"
+
+    KeySource:
+      type: string
+      enum:
+        - database
+        - env
+        - none
+      description: "Source de la cle API resolue"
+
+    TestResult:
+      type: string
+      enum:
+        - success
+        - failure
+        - untested
+      description: "Resultat du dernier test de validite"
+
+    ApiKeySummary:
+      type: object
+      description: |
+        Resume d'une cle API pour affichage.
+        Ne contient JAMAIS la cle en clair ni le chiffre.
+      required:
+        - providerType
+        - providerName
+        - source
+        - isActive
+        - lastTestResult
+      properties:
+        id:
+          type: string
+          nullable: true
+          description: "UUID (null si source env ou none)"
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        providerType:
+          $ref: "#/components/schemas/ProviderType"
+        providerName:
+          type: string
+          description: "Nom d'affichage du fournisseur"
+          example: "OpenAI"
+        label:
+          type: string
+          nullable: true
+          description: "Label optionnel"
+          example: "Compte production"
+        maskedKey:
+          type: string
+          nullable: true
+          description: "Cle masquee (prefixe...4 derniers)"
+          example: "sk-proj-...AbCd"
+        keyPrefix:
+          type: string
+          nullable: true
+          description: "Prefixe de la cle"
+          example: "sk-proj-"
+        source:
+          $ref: "#/components/schemas/KeySource"
+        isActive:
+          type: boolean
+        lastTestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastTestResult:
+          $ref: "#/components/schemas/TestResult"
+        lastTestError:
+          type: string
+          nullable: true
+          description: "Message d'erreur du dernier test"
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        envVarName:
+          type: string
+          nullable: true
+          description: "Nom de la variable d'env (si source=env)"
+          example: "AI_ENGINE_OPENAI_API_KEY"
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ValidationDetails:
+      type: object
+      nullable: true
+      properties:
+        modelsAvailable:
+          type: integer
+          description: "Nombre de modeles disponibles"
+        quotaRemaining:
+          type: integer
+          nullable: true
+          description: "Quota restant (caracteres, tokens...)"
+        planType:
+          type: string
+          nullable: true
+          description: "Type de plan du compte"
+
+    ValidationResult:
+      type: object
+      required:
+        - valid
+        - provider
+        - latencyMs
+      properties:
+        valid:
+          type: boolean
+        provider:
+          type: string
+        latencyMs:
+          type: integer
+          description: "Latence du test en millisecondes"
+        error:
+          type: string
+          nullable: true
+        details:
+          $ref: "#/components/schemas/ValidationDetails"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: "Message d'erreur humain"
+        code:
+          type: string
+          description: "Code d'erreur machine"
+          enum:
+            - VALIDATION_ERROR
+            - VALIDATION_FAILED
+            - ENCRYPTION_KEY_MISSING
+            - PROVIDER_NOT_FOUND
+            - PROVIDER_ALREADY_EXISTS
+            - RATE_LIMIT_EXCEEDED
+            - DB_UNAVAILABLE
+        details:
+          type: object
+          nullable: true
+          description: "Details supplementaires (ex: erreurs Zod)"
+
+    ListMeta:
+      type: object
+      required:
+        - total
+        - configuredCount
+        - dbKeyCount
+        - envKeyCount
+      properties:
+        total:
+          type: integer
+          description: "Nombre total de fournisseurs"
+          example: 5
+        configuredCount:
+          type: integer
+          description: "Fournisseurs avec une cle (DB ou env)"
+          example: 3
+        dbKeyCount:
+          type: integer
+          description: "Cles stockees en base de donnees"
+          example: 2
+        envKeyCount:
+          type: integer
+          description: "Cles provenant des variables d'env"
+          example: 1
+
+paths:
+  /api-keys:
+    get:
+      operationId: listApiKeys
+      summary: "Lister les cles API (masquees)"
+      description: |
+        Retourne la liste des 5 fournisseurs avec leur cle API
+        masquee et leur statut. Les cles ne sont jamais retournees
+        en clair. Les fournisseurs sans cle sont retournes avec
+        source='none'.
+      tags:
+        - API Keys
+      responses:
+        "200":
+          description: "Liste des cles API"
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - keys
+                  - meta
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ApiKeySummary"
+                    minItems: 5
+                    maxItems: 5
+                  meta:
+                    $ref: "#/components/schemas/ListMeta"
+              example:
+                keys:
+                  - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    providerType: "openai"
+                    providerName: "OpenAI"
+                    label: "Compte production"
+                    maskedKey: "sk-proj-...AbCd"
+                    keyPrefix: "sk-proj-"
+                    source: "database"
+                    isActive: true
+                    lastTestedAt: "2026-05-25T10:30:00Z"
+                    lastTestResult: "success"
+                    lastTestError: null
+                    expiresAt: null
+                    envVarName: null
+                    createdAt: "2026-05-20T14:00:00Z"
+                    updatedAt: "2026-05-25T10:30:00Z"
+                  - id: null
+                    providerType: "anthropic"
+                    providerName: "Anthropic"
+                    label: null
+                    maskedKey: "sk-ant-...XyZw"
+                    keyPrefix: "sk-ant-"
+                    source: "env"
+                    isActive: true
+                    lastTestedAt: null
+                    lastTestResult: "untested"
+                    lastTestError: null
+                    expiresAt: null
+                    envVarName: "AI_ENGINE_ANTHROPIC_API_KEY"
+                    createdAt: null
+                    updatedAt: null
+                meta:
+                  total: 5
+                  configuredCount: 2
+                  dbKeyCount: 1
+                  envKeyCount: 1
+        "401":
+          description: "Session invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      operationId: createOrUpdateApiKey
+      summary: "Creer ou mettre a jour une cle API"
+      description: |
+        Cree une nouvelle cle API ou remplace la cle existante
+        pour un fournisseur. La cle est chiffree (AES-256-GCM)
+        avant stockage. Par defaut, la cle est testee (validation
+        du provider) avant sauvegarde.
+      tags:
+        - API Keys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - providerType
+                - apiKey
+              properties:
+                providerType:
+                  $ref: "#/components/schemas/ProviderType"
+                apiKey:
+                  type: string
+                  minLength: 1
+                  description: |
+                    Cle API en clair. Transmise via HTTPS.
+                    Chiffree immediatement par le backend.
+                  example: "sk-proj-abc123..."
+                label:
+                  type: string
+                  maxLength: 100
+                  nullable: true
+                  example: "Compte production"
+                baseUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+                  description: "URL de base (requis pour Ollama)"
+                  example: "http://localhost:11434"
+                skipValidation:
+                  type: boolean
+                  default: false
+                  description: "Sauter le test de validite"
+            example:
+              providerType: "openai"
+              apiKey: "sk-proj-abc123xyz789"
+              label: "Compte production"
+              skipValidation: false
+      responses:
+        "200":
+          description: "Cle creee ou mise a jour"
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - key
+                properties:
+                  key:
+                    $ref: "#/components/schemas/ApiKeySummary"
+                  validation:
+                    $ref: "#/components/schemas/ValidationResult"
+        "400":
+          description: "Erreur de validation du schema"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: "Session invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: "Cle API invalide (test echoue)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "La cle API n'est pas valide"
+                code: "VALIDATION_FAILED"
+                details:
+                  validationError: "Cle API invalide ou expiree"
+        "500":
+          description: "Erreur serveur (chiffrement non configure)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Cle de chiffrement non configuree"
+                code: "ENCRYPTION_KEY_MISSING"
+
+  /api-keys/{id}:
+    delete:
+      operationId: deleteApiKey
+      summary: "Supprimer une cle API"
+      description: |
+        Supprime une cle API stockee en base de donnees.
+        Indique si une variable d'environnement est disponible
+        en fallback.
+      tags:
+        - API Keys
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "UUID de la cle a supprimer"
+      responses:
+        "200":
+          description: "Cle supprimee"
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - deleted
+                  - fallbackAvailable
+                properties:
+                  deleted:
+                    type: boolean
+                    example: true
+                  fallbackAvailable:
+                    type: boolean
+                    description: "Env var disponible en fallback"
+                    example: true
+                  fallbackSource:
+                    type: string
+                    nullable: true
+                    description: "Nom de la variable d'env"
+                    example: "AI_ENGINE_OPENAI_API_KEY"
+        "401":
+          description: "Session invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Cle introuvable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Cle introuvable"
+                code: "PROVIDER_NOT_FOUND"
+
+  /api-keys/test:
+    post:
+      operationId: testApiKey
+      summary: "Tester la validite d'une cle API"
+      description: |
+        Teste la connectivite avec un fournisseur IA.
+        Peut tester la cle active resolue ou une cle fournie.
+        Rate-limite a 5 requetes par minute par session.
+      tags:
+        - API Keys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - providerType
+              properties:
+                providerType:
+                  $ref: "#/components/schemas/ProviderType"
+                apiKey:
+                  type: string
+                  nullable: true
+                  description: "Cle a tester (si absente, teste la cle resolue)"
+                baseUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+            examples:
+              testExisting:
+                summary: "Tester la cle active"
+                value:
+                  providerType: "openai"
+              testNew:
+                summary: "Tester une nouvelle cle"
+                value:
+                  providerType: "openai"
+                  apiKey: "sk-proj-abc123..."
+      responses:
+        "200":
+          description: "Resultat du test"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationResult"
+              examples:
+                success:
+                  summary: "Cle valide"
+                  value:
+                    valid: true
+                    provider: "openai"
+                    latencyMs: 245
+                    error: null
+                    details:
+                      modelsAvailable: 12
+                failure:
+                  summary: "Cle invalide"
+                  value:
+                    valid: false
+                    provider: "openai"
+                    latencyMs: 180
+                    error: "Cle API invalide ou expiree"
+                    details: null
+        "401":
+          description: "Session invalide"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Aucune cle configuree"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: "Rate limit depasse (5 tests/min)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Limite de taux depassee. Reessayez dans 1 minute."
+                code: "RATE_LIMIT_EXCEEDED"

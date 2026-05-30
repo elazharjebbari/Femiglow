@@ -1,0 +1,392 @@
+feature: F02-config-providers
+description: Provider card grid with health status, capabilities, model list, inline edit form, and connection testing
+component_under_test: apps/web/src/app/admin/content-studio-v2/ai-engine/config/page.tsx
+test_file: apps/web/src/app/admin/content-studio-v2/ai-engine/config/__tests__/config-page.test.tsx
+
+scenarios:
+  # ---- LOADING & ERROR ----
+
+  - id: F02-T01
+    name: "Loading state shows skeleton placeholders"
+    type: component
+    priority: P0
+    preconditions: "API response pending"
+    steps:
+      - "Render AIEngineConfigPage"
+      - "Before API resolves, inspect DOM"
+    expected: "3 skeleton placeholder divs with cs-bg-elevated background"
+    assertions:
+      - "3 div elements with minHeight 60, 80, 200 are present"
+      - "No provider card content is rendered"
+    tags: [loading, skeleton]
+
+  - id: F02-T02
+    name: "Error state shows error message with retry button"
+    type: component
+    priority: P0
+    preconditions: "GET /config/providers returns 500"
+    steps:
+      - "Mock fetch to return 500 error"
+      - "Render page and wait for fetch"
+    expected: "Red error section with text 'Impossible de charger la configuration' and Retry button"
+    assertions:
+      - "Text 'Impossible de charger la configuration' is visible"
+      - "Button 'Reessayer' is present"
+    tags: [error, retry]
+
+  - id: F02-T03
+    name: "Retry button re-fetches data"
+    type: component
+    priority: P1
+    preconditions: "Page is in error state"
+    steps:
+      - "Click the 'Reessayer' button"
+      - "Mock returns success on second attempt"
+    expected: "Data is re-fetched and providers are rendered"
+    assertions:
+      - "fetch was called again for /config/providers"
+      - "Provider cards appear after successful retry"
+    tags: [error, retry]
+
+  # ---- PROVIDER CARD RENDERING ----
+
+  - id: F02-T04
+    name: "Provider cards render in responsive grid"
+    type: component
+    priority: P0
+    preconditions: "3 providers returned from API"
+    steps:
+      - "Render page with 3 providers"
+    expected: "3 provider cards in a CSS grid with minmax(320px, 1fr)"
+    assertions:
+      - "3 ProviderCard instances rendered"
+      - "Grid container has gridTemplateColumns 'repeat(auto-fill, minmax(320px, 1fr))'"
+    tags: [rendering, layout]
+
+  - id: F02-T05
+    name: "Provider card shows provider name and priority"
+    type: component
+    priority: P0
+    preconditions: "Provider with name 'OpenAI', priority 10"
+    steps:
+      - "Render provider card"
+    expected: "Card displays 'OpenAI' and 'Priorite 10'"
+    assertions:
+      - "Text 'OpenAI' is visible"
+      - "Text 'Priorite 10' is visible"
+    tags: [rendering]
+
+  - id: F02-T06
+    name: "Health bar color matches health status"
+    type: component
+    priority: P0
+    preconditions: "Providers with different health statuses"
+    steps:
+      - "Render cards for healthy, degraded, and unhealthy providers"
+    expected: "Top bar colors: green, yellow, red respectively"
+    assertions:
+      - "Healthy provider bar has background 'var(--cs-success)'"
+      - "Degraded provider bar has background 'var(--cs-warning)'"
+      - "Unhealthy provider bar has background 'var(--cs-danger)'"
+    tags: [visual, health]
+
+  - id: F02-T07
+    name: "Unconfigured provider shows gray health bar and Inactif badge"
+    type: component
+    priority: P1
+    preconditions: "Provider with configured=false"
+    steps:
+      - "Render card for unconfigured provider"
+    expected: "Gray health bar, 'Inactif' badge, muted status dot"
+    assertions:
+      - "Health bar has background 'var(--cs-border)'"
+      - "Text 'Inactif' is visible"
+    tags: [visual, unconfigured]
+
+  - id: F02-T08
+    name: "Disabled provider card has reduced opacity"
+    type: component
+    priority: P1
+    preconditions: "Provider with isEnabled=false"
+    steps:
+      - "Render card"
+    expected: "Card has opacity: 0.55"
+    assertions:
+      - "Card wrapper has style opacity 0.55"
+    tags: [visual, disabled]
+
+  - id: F02-T09
+    name: "Fallback provider shows fallback badge"
+    type: component
+    priority: P1
+    preconditions: "Provider with isFallback=true"
+    steps:
+      - "Render card"
+    expected: "Badge with text 'fallback' in warning tone"
+    assertions:
+      - "Badge with text 'fallback' is present"
+    tags: [rendering, badge]
+
+  # ---- CAPABILITIES ----
+
+  - id: F02-T10
+    name: "Capability badges render for each provider capability"
+    type: component
+    priority: P0
+    preconditions: "Provider with capabilities: ['text', 'image', 'embedding']"
+    steps:
+      - "Render card"
+    expected: "3 capability badges: Texte, Image, Embed"
+    assertions:
+      - "Badge 'Texte' is visible"
+      - "Badge 'Image' is visible"
+      - "Badge 'Embed' is visible"
+    tags: [rendering, badges]
+
+  - id: F02-T11
+    name: "Capability badge colors match CAPABILITY_COLORS map"
+    type: component
+    priority: P2
+    preconditions: "Provider with capability 'image'"
+    steps:
+      - "Render card, inspect image capability badge"
+    expected: "Image badge uses var(--cs-saffron) color"
+    assertions:
+      - "Image badge element has color 'var(--cs-saffron)'"
+    tags: [visual, design-tokens]
+
+  # ---- MODEL LIST ----
+
+  - id: F02-T12
+    name: "Model list shows max 3 models"
+    type: component
+    priority: P0
+    preconditions: "Provider with 5 models"
+    steps:
+      - "Render card"
+    expected: "3 model names visible, text '+ 2 autres modeles'"
+    assertions:
+      - "3 model name elements in mono font"
+      - "Text '+ 2 autres modeles' is visible"
+    tags: [rendering, models]
+
+  - id: F02-T13
+    name: "Provider with exactly 3 models shows all, no overflow text"
+    type: component
+    priority: P1
+    preconditions: "Provider with 3 models"
+    steps:
+      - "Render card"
+    expected: "All 3 models shown, no '+ N autres' text"
+    assertions:
+      - "3 model names visible"
+      - "Text 'autres modeles' is NOT in the document"
+    tags: [rendering, models, edge-case]
+
+  - id: F02-T14
+    name: "Provider with 0 models shows no model section"
+    type: component
+    priority: P1
+    preconditions: "Provider with empty models array"
+    steps:
+      - "Render card"
+    expected: "No model list section rendered"
+    assertions:
+      - "No model name elements in the card"
+    tags: [rendering, empty-state]
+
+  - id: F02-T15
+    name: "Model cost display uses appropriate format"
+    type: component
+    priority: P2
+    preconditions: "Model with costPerUnit=500"
+    steps:
+      - "Render card with model having costPerUnit"
+    expected: "Displays '5c/u'"
+    assertions:
+      - "Text matching /c\\/u/ is visible for that model"
+    tags: [rendering, formatting]
+
+  # ---- EDIT FORM ----
+
+  - id: F02-T16
+    name: "Clicking 'Editer' opens inline edit form"
+    type: component
+    priority: P0
+    preconditions: "Provider card rendered, not editing"
+    steps:
+      - "Click 'Editer' button on a provider card"
+    expected: "Inline form appears below card body with pre-populated values"
+    assertions:
+      - "Priority input visible with current priority value"
+      - "Budget input visible"
+      - "Rate limit input visible"
+      - "Actif checkbox visible"
+      - "Fallback checkbox visible"
+    tags: [edit, form]
+
+  - id: F02-T17
+    name: "Edit form pre-populates with current provider values"
+    type: component
+    priority: P0
+    preconditions: "Provider: priority=10, budget=5000, rateLimit=120, enabled=true, fallback=false"
+    steps:
+      - "Click 'Editer'"
+      - "Check input values"
+    expected: "Priority=10, Budget=50 (5000/100), Rate=120, Enabled checked, Fallback unchecked"
+    assertions:
+      - "Priority input value is 10"
+      - "Budget input value is 50"
+      - "Rate limit input value is 120"
+      - "Actif checkbox is checked"
+      - "Fallback checkbox is not checked"
+    tags: [edit, form, pre-populate]
+
+  - id: F02-T18
+    name: "Ollama provider shows baseUrl field in edit form"
+    type: component
+    priority: P1
+    preconditions: "Provider with providerType='ollama'"
+    steps:
+      - "Click 'Editer' on Ollama provider"
+    expected: "Input with label 'URL de base Ollama' and type='url' is visible"
+    assertions:
+      - "Input with label 'URL de base Ollama' is present"
+      - "Input has type 'url'"
+    tags: [edit, ollama]
+
+  - id: F02-T19
+    name: "Non-Ollama provider does NOT show baseUrl field"
+    type: component
+    priority: P1
+    preconditions: "Provider with providerType='openai'"
+    steps:
+      - "Click 'Editer' on OpenAI provider"
+    expected: "No baseUrl input"
+    assertions:
+      - "No input with label 'URL de base Ollama' in the form"
+    tags: [edit, conditional-field]
+
+  - id: F02-T20
+    name: "Save calls API and shows success feedback"
+    type: component
+    priority: P0
+    preconditions: "Edit form open, API mock returns success"
+    steps:
+      - "Modify priority to 5"
+      - "Click 'Sauvegarder'"
+    expected: "POST called with correct body, green feedback 'Configuration sauvegardee' appears"
+    assertions:
+      - "fetch called with POST /config/providers"
+      - "Body includes id and priority: 5"
+      - "Text 'Configuration sauvegardee' appears"
+    tags: [edit, save, success]
+
+  - id: F02-T21
+    name: "Save failure shows error feedback"
+    type: component
+    priority: P0
+    preconditions: "Edit form open, API mock returns 500"
+    steps:
+      - "Click 'Sauvegarder'"
+    expected: "Red feedback 'Erreur lors de la sauvegarde' appears"
+    assertions:
+      - "Text 'Erreur lors de la sauvegarde' is visible"
+      - "Form remains open (not auto-dismissed)"
+    tags: [edit, save, error]
+
+  - id: F02-T22
+    name: "Success feedback auto-dismisses after 1200ms"
+    type: component
+    priority: P1
+    preconditions: "Save succeeded, feedback visible"
+    steps:
+      - "Wait 1200ms after success feedback"
+    expected: "Edit form closes, feedback disappears"
+    assertions:
+      - "After 1200ms, edit form is no longer in DOM"
+      - "Feedback message is gone"
+    tags: [edit, auto-dismiss, timing]
+
+  - id: F02-T23
+    name: "Cancel button closes edit form without saving"
+    type: component
+    priority: P0
+    preconditions: "Edit form open"
+    steps:
+      - "Modify priority to 99"
+      - "Click 'Annuler'"
+    expected: "Form closes, no API call, original values preserved"
+    assertions:
+      - "Edit form is no longer in DOM"
+      - "No POST request was made"
+    tags: [edit, cancel]
+
+  - id: F02-T24
+    name: "Edit button is disabled while form is open"
+    type: component
+    priority: P2
+    preconditions: "Edit form is open for a provider"
+    steps:
+      - "Check the 'Editer' button state"
+    expected: "Editer button has disabled attribute"
+    assertions:
+      - "Editer button is disabled"
+    tags: [edit, disabled]
+
+  # ---- TEST CONNECTION ----
+
+  - id: F02-T25
+    name: "Test connection shows spinner and disables button"
+    type: component
+    priority: P0
+    preconditions: "Configured provider card"
+    steps:
+      - "Click 'Tester' button"
+    expected: "RefreshCw icon spins (cs-spin class), button disabled during test"
+    assertions:
+      - "RefreshCw icon has class 'cs-spin'"
+      - "Tester button is disabled"
+    tags: [testing, spinner]
+
+  - id: F02-T26
+    name: "Test button disabled for unconfigured providers"
+    type: component
+    priority: P1
+    preconditions: "Provider with configured=false"
+    steps:
+      - "Inspect Tester button"
+    expected: "Button is disabled and has opacity 0.4"
+    assertions:
+      - "Tester button is disabled"
+      - "Button has opacity 0.4"
+    tags: [testing, disabled]
+
+  # ---- STAT CARDS ----
+
+  - id: F02-T27
+    name: "Stat cards show correct aggregate values"
+    type: component
+    priority: P1
+    preconditions: "3 providers (2 configured), 2 active workflows, 5 prompts, total budget 15000 cents"
+    steps:
+      - "Render page with mock data"
+    expected: "Stats: '2/3' providers, workflows count, prompts count, '150 MAD' budget"
+    assertions:
+      - "Text '2/3' visible in first stat card"
+      - "Text '150 MAD' visible in budget stat card"
+    tags: [rendering, stats]
+
+  - id: F02-T28
+    name: "ModelSelector integration in edit form"
+    type: component
+    priority: P1
+    preconditions: "Edit form open for a provider"
+    steps:
+      - "Open edit form"
+      - "Verify ModelSelector is rendered with correct props"
+    expected: "ModelSelector receives providerType and selectedModels from editModels state"
+    assertions:
+      - "ModelSelector component is in the DOM"
+      - "ModelSelector shows current model names as selected badges"
+    tags: [edit, model-selector, integration]

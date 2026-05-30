@@ -1,0 +1,190 @@
+Phase,TestID,TestName,TestType,Priority,File,Status
+P6-Stepper,P6-U01,Stepper renders 4 steps with correct labels,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U02,Step 1 (Brief) is active on initial load,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U03,Active step has accent color styling,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U04,Completed steps show green checkmark icon,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U05,Future steps are grayed out,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U06,Connector lines colored based on completion,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U07,Mode Mock badge visible when mockMode=true,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U08,Mode Mock badge hidden when mockMode=false,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U09,mapPhaseToSteps returns correct steps for brief phase,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U10,mapPhaseToSteps returns correct steps for generating phase,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U11,mapPhaseToSteps returns correct steps for review phase,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U12,mapPhaseToSteps returns correct steps for result phase,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U13,mapPhaseToSteps preserves last valid state on error phase,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U14,mapPhaseToSteps handles reviewing sub-state as review,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U15,Stepper renders without crashing with empty steps array,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-U16,Stepper step circles have correct ARIA labels,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/Stepper.test.tsx,planned
+P6-Stepper,P6-I01,Stepper is visible on create page after header,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P6-Stepper,P6-I02,Stepper updates when phase transitions from brief to generating,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P6-Stepper,P6-I03,Stepper updates when phase transitions to result,integration,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P6-Stepper,P6-E01,Stepper visible throughout golden path flow,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P6-Stepper,P6-E02,Stepper step 1 highlighted on page load,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P6-Stepper,P6-E03,Stepper responsive on mobile viewport (320px),e2e,P2,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P5-Publish,P5-U01,PublishSection renders when bridgeResult has draftId,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U02,PublishSection shows Mode Mock badge for mock draftIds,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U03,PublishSection hides Mode Mock badge for real draftIds,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U04,PublishSection mode toggle switches between now and schedule,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U05,PublishSection schedule mode shows datetime input,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U06,PublishSection publish button disabled when publishing,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U07,PublishSection shows success message after publish now,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U08,PublishSection shows success message after schedule,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U09,PublishSection shows error message on publish failure,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-U10,PublishSection schedule button disabled without datetime,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P5-Publish,P5-I01,Page creates fallback bridgeResult when API returns null,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P5-Publish,P5-I02,Fallback bridgeResult has mock-prefixed IDs,integration,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P5-Publish,P5-I03,PublishSection always visible after successful generation,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P5-Publish,P5-I04,Real bridgeResult from API used when available,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P5-Publish,P5-M01,MSW publish handler returns success for mode now,msw,P0,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P5-Publish,P5-M02,MSW publish handler returns success for mode schedule,msw,P1,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P5-Publish,P5-M03,MSW generate handler returns bridgeResult in response,msw,P0,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P5-Publish,P5-E01,Full golden path: brief to publish now succeeds,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P5-Publish,P5-E02,Full golden path: brief to schedule succeeds,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P5-Publish,P5-E03,Mode Mock badge visible in mock mode,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P3-Review,P3-U01,Toggle review checkbox renders in form,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U02,Toggle review changes humanReviewEnabled state,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U03,Toggle review is unchecked by default,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U04,Generation with toggle OFF skips review phase,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U05,Generation with toggle ON enters review phase,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U06,Mock reviewPayload contains script from generation,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U07,Mock reviewPayload contains caption from generation,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U08,Mock reviewPayload contains hashtags from generation,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U09,Mock reviewPayload contains images from generation,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U10,Mock reviewPayload contains qualityScores from generation,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U11,pendingResult stored when review toggle forces review,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U12,Approve in mock review transitions to result phase,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U13,Approve in mock review uses pendingResult as final result,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U14,Reject in mock review transitions to brief phase,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U15,Edit requested in mock review stays in review phase,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U16,Edit requested shows feedback textarea,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U17,pendingResult cleared on handleReset,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U18,humanReviewRequired sent in POST body when toggle is ON,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U19,humanReviewRequired not sent when toggle is OFF,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U20,Server-side review (status=review) works without toggle,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U21,ReviewPanel renders script section,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U22,ReviewPanel renders caption section,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U23,ReviewPanel renders hashtag chips,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U24,ReviewPanel renders image thumbnails,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U25,ReviewPanel renders quality score bars,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U26,ReviewPanel approve button calls onDecision with approved,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U27,ReviewPanel edit button opens feedback mode,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U28,ReviewPanel reject button opens feedback mode,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U29,ReviewPanel feedback confirm sends decision with text,unit,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-U30,ReviewPanel buttons disabled while submitting,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P3-Review,P3-M01,MSW handler returns review status when humanReviewRequired=true,msw,P0,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P3-Review,P3-M02,MSW handler returns completed status when humanReviewRequired=false,msw,P0,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P3-Review,P3-M03,MSW review handler returns completed after approval,msw,P1,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P3-Review,P3-E01,Toggle review ON shows review panel after generation,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P3-Review,P3-E02,Approve in review shows final result,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P3-Review,P3-E03,Reject in review returns to brief,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P3-Review,P3-E04,Edit request in review shows textarea,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P3-Review,P3-E05,Toggle review OFF generates directly to result,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P3-Review,P3-E06,Stepper shows step 3 active during review,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P4-Video,P4-U01,VideoPlayer section not rendered when videos is empty,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U02,VideoPlayer section not rendered when videos is undefined,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U03,VideoPlayer section renders when videos has one entry,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U04,VideoPlayer section renders when videos has multiple entries,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U05,Video element has controls attribute,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U06,Video element has preload=metadata attribute,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U07,Video source has correct src from video.url,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U08,Video source has correct type from video.mimeType,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U09,Duration badge shows formatted duration in seconds,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U10,Resolution badge shows widthxheight,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U11,Provider badge shows provider name,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U12,Duration badge hidden when durationMs is null,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U13,Resolution badge hidden when width or height is null,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U14,Provider badge hidden when provider is null,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U15,Fallback message shown when video.url is empty,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U16,CollapsibleSection title includes video count,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U17,Video section uses Film icon,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-U18,VideoAsset type exported from GenerationResult module,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+P4-Video,P4-M01,MSW mock includes non-empty videos array,msw,P0,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P4-Video,P4-M02,MSW mock video has valid URL and metadata,msw,P1,src/test/msw/__tests__/ai-engine-handlers.test.ts,planned
+P4-Video,P4-E01,Video section visible in result after generation,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P4-Video,P4-E02,Video player has controls visible,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P4-Video,P4-E03,Video badges (duration + resolution + provider) visible,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P1-TextModel,P1-U01,ModelPresetSelector renders 4 buttons,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U02,Auto button is selected by default,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U03,Clicking Rapide updates selected preset,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U04,Clicking Premium updates selected preset,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U05,Clicking Personnalise updates selected preset,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U06,Selected button has accent background,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U07,Non-selected buttons have elevated background,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U08,ModelSelector visible when preset is custom,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U09,ModelSelector hidden when preset is auto,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U10,ModelSelector hidden when preset is fast,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U11,ModelSelector hidden when preset is premium,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U12,Preset auto resolves to empty string model,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U13,Preset fast resolves to gpt-4o-mini,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U14,Preset premium resolves to claude-sonnet-4,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U15,Custom model passed via onCustomModelChange callback,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U16,ModelSelector receives capability=text filter,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U17,Buttons have correct ARIA attributes,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U18,Keyboard navigation works between buttons,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U19,Label prop changes the header text,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-U20,Component renders without optional props,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelPresetSelector.test.tsx,planned
+P1-TextModel,P1-I01,textModel field sent in POST /generate body,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P1-TextModel,P1-I02,textModel is empty string when preset is auto,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P1-TextModel,P1-I03,textModel is gpt-4o-mini when preset is fast,integration,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P1-TextModel,P1-I04,textModel is custom model ID when preset is custom,integration,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P1-TextModel,P1-E01,Model preset selector visible on create page,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P1-TextModel,P1-E02,Switching to Personnalise shows model dropdown,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P1-TextModel,P1-E03,Selecting Rapide and generating sends correct model,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P2-Advanced,P2-U01,AdvancedParams section closed by default,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U02,Clicking header opens the section,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U03,Clicking header again closes the section,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U04,Header shows Settings icon,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U05,Header shows ChevronDown when closed,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U06,Header shows ChevronUp when open,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U07,ModelPresetSelector rendered when section is open,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U08,Image ModelSelector rendered when section is open,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U09,Video ModelSelector rendered when showVideoModel is true,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U10,Video ModelSelector hidden when showVideoModel is false,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U11,Generate visuals toggle rendered and functional,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U12,Human review toggle rendered and functional,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U13,Generate visuals toggle is checked by default,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U14,Human review toggle is unchecked by default,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U15,Toggling generate visuals calls onGenerateVisualsChange,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U16,Toggling human review calls onHumanReviewEnabledChange,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U17,Image model change calls onImageModelChange,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U18,Video model change calls onVideoModelChange,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U19,Text preset change calls onTextModelPresetChange,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U20,Content not rendered in DOM when section is closed,unit,P1,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U21,Section has correct border and background styles,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-U22,Labels have cs-eyebrow class for model selectors,unit,P2,src/components/admin/content-studio-v2/ai-engine/__tests__/AdvancedParams.test.tsx,planned
+P2-Advanced,P2-I01,AdvancedParams visible in brief form on create page,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I02,showVideoModel false for text_post format,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I03,showVideoModel false for infographic format,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I04,showVideoModel true for reel format,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I05,showVideoModel true for carousel format,integration,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I06,imageModel sent in POST body,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I07,videoModel sent in POST body,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I08,generateVisuals sent in POST body,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I09,Toggle review in advanced params controls review flow,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I10,Changing format to text_post hides video model selector,integration,P1,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I11,Review toggle not duplicated outside advanced params,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-I12,ModelPresetSelector not duplicated outside advanced params,integration,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+P2-Advanced,P2-E01,Advanced params section visible and toggleable,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P2-Advanced,P2-E02,Video model hidden when format is text_post,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P2-Advanced,P2-E03,Video model visible when format is reel,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+P2-Advanced,P2-E04,Generate visuals toggle affects generation,e2e,P2,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-U01,Existing create page tests still pass after all changes,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+CROSS,X-U02,Existing GenerationResult tests still pass after video addition,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationResult.test.tsx,planned
+CROSS,X-U03,Existing GenerationProgress tests unaffected,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/GenerationProgress.test.tsx,planned
+CROSS,X-U04,Existing ModelSelector tests unaffected,unit,P0,src/components/admin/content-studio-v2/ai-engine/__tests__/ModelSelector.test.tsx,planned
+CROSS,X-U05,TypeScript build passes with zero errors,unit,P0,N/A (pnpm tsc --noEmit),planned
+CROSS,X-U06,No duplicate toggle review elements in final DOM,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+CROSS,X-U07,No duplicate ModelPresetSelector elements in final DOM,unit,P0,src/app/admin/content-studio-v2/ai-engine/create/__tests__/create-page.test.tsx,planned
+CROSS,X-I01,Full build succeeds (pnpm build),integration,P0,N/A (CI pipeline),planned
+CROSS,X-I02,Lint passes on all modified files,integration,P1,N/A (pnpm lint),planned
+CROSS,X-I03,No console errors during golden path,integration,P1,browser console check,planned
+CROSS,X-E01,Golden path without review: brief > generate > result > publish,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E02,Golden path with review: brief > generate > review > approve > result > publish,e2e,P0,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E03,Error recovery: brief > generate (error) > retry > result,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E04,Reset flow: result > modifier le brief > back to brief with empty form,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E05,Regenerate flow: result > regenerer > new result,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E06,Mobile viewport (375px): all components accessible,e2e,P2,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E07,Tablet viewport (768px): layout renders correctly,e2e,P2,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E08,Accessibility: all form elements have labels,e2e,P1,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E09,Accessibility: focus management on phase transitions,e2e,P2,e2e/content-studio-v2/ai-engine-create.spec.ts,planned
+CROSS,X-E10,Performance: page load under 3s,e2e,P2,e2e/content-studio-v2/ai-engine-create.spec.ts,planned

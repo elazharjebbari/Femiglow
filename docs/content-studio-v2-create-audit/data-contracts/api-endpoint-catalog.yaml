@@ -1,0 +1,251 @@
+# Catalogue des endpoints — Content Studio v2 Create
+# Source de vérité pour les contrats. Sert à générer les tests contract Vitest et les MSW handlers.
+
+version: "2.0.0-audit"
+baseUrl: /api/admin/content-studio
+
+# Conventions
+# - Tous les endpoints requièrent un cookie d'auth admin (Next.js middleware)
+# - Toutes les routes acceptent un header optionnel `Idempotency-Key` (uuid v4)
+# - Toutes les routes retournent JSON
+# - Codes d'erreur uniformes : 400 (validation), 401 (auth), 403 (RBAC), 404 (introuvable), 409 (conflit métier), 429 (rate limit), 500 (interne), 503 (provider down)
+
+endpoints:
+
+  - id: models-list
+    method: GET
+    path: /models
+    status: NEW
+    description: Liste les modèles disponibles pour un rôle, avec suggestion par format
+    query:
+      role: { required: true, enum: [chat, image, video] }
+      format: { required: false, enum: [post, story, reel, carousel] }
+    response_200:
+      models: ModelEntry[]
+      suggested: ModelEntry
+      providers: ProviderInfo[]
+    errors:
+      - 400: invalid role
+    tests:
+      - role=chat → returns ≥ 2 models
+      - role=image&format=reel → suggested.id includes 'gpt-image-1' or similar
+      - role=video → returns ≥ 1 mock entry
+      - role=invalid → 400
+
+  - id: ideas-create
+    method: POST
+    path: /ideas
+    status: EXISTING
+    extended: { model: optional<string> }
+    request_body:
+      campaignId: { type: string, nullable: true }
+      pillar: { required: true, enum: ContentPillar }
+      objective: { required: true, enum: ContentObjective }
+      platform: { required: true, enum: ContentPlatform }
+      format: { required: true, enum: ContentFormat }
+      prompt: { required: true, minLength: 8, maxLength: 2000 }
+      sourceType: { required: false }
+      sourceRef: { required: false }
+      model: { required: false, description: "<NEW> Override default text model" }
+    response_200:
+      idea: ContentIdea
+    headers:
+      Idempotency-Key: optional
+    errors:
+      - 400: validation error (missing pillar etc.)
+      - 401: not authenticated
+    tests:
+      - valid payload → 200
+      - missing pillar → 400
+      - prompt < 8 chars → 400
+      - prompt > 2000 chars → 400
+      - duplicate Idempotency-Key → 200 with same idea id
+
+  - id: ideas-generate
+    method: POST
+    path: /ideas/{id}/generate
+    status: EXISTING
+    extended: { model: optional<string> }
+    request_body:
+      model: { required: false, description: "<NEW> Override text model for this run" }
+    response_200:
+      idea: ContentIdea
+      brief: ContentBrief
+      drafts: ContentDraft[3]
+      runs: GenerationRun[]
+    errors:
+      - 402: daily budget exceeded
+      - 404: idea not found
+      - 409: idea status not in {idea, brief}
+    tests:
+      - valid → 200 returns 3 drafts
+      - budget exhausted → 402
+      - non-existent id → 404
+      - rerun on already-generated → 409 OR 200 with cached (idempotent)
+      - model override propagated to runs[0].model
+
+  - id: drafts-update
+    method: PATCH
+    path: /drafts/{id}
+    status: EXISTING
+    request_body:
+      caption: { required: false }
+      hook: { required: false }
+      cta: { required: false }
+      altText: { required: false }
+      hashtags: { required: false, type: array<string> }
+      mediaId: { required: false, nullable: true }
+    response_200:
+      draft: ContentDraft
+    tests:
+      - update caption alone → 200
+      - update mediaId → re-binds media
+      - invalid mediaId → 404 or 400
+      - re-brand-review triggered → response includes updated scoreTotal
+
+  - id: drafts-review
+    method: POST
+    path: /drafts/{id}/review
+    status: EXISTING
+    description: Trigger brand review, transitions draft to needs_review if currently generated
+    request_body: {}
+    response_200:
+      review: ContentBrandReview
+      draft: ContentDraft
+    tests:
+      - generated draft → 200, draft.status='needs_review'
+      - already needs_review → 200 idempotent
+      - blocked → returns violations
+
+  - id: drafts-generate-visual
+    method: POST
+    path: /drafts/{id}/generate-visual
+    status: EXISTING
+    extended: { kind: optional<string>, model: optional<string> }
+    request_body:
+      prompt: { required: true, minLength: 12, maxLength: 1800 }
+      size: { required: false, enum: ["1024x1024", "1024x1536", "1536x1024"] }
+      quality: { required: false, enum: [low, medium, high] }
+      kind: { required: false, enum: [image, video], default: image, description: "<NEW>" }
+      model: { required: false, description: "<NEW>" }
+    response_200:
+      media: StudioMediaItem
+      run: GenerationRun
+    errors:
+      - 402: budget exhausted
+      - 503: provider down
+    tests:
+      - kind=image, no model → uses default → 200 returns image media
+      - kind=video, no model → uses video default → 200 returns video media (kind=video)
+      - kind=video, mock mode → MP4 url 200 OK
+      - kind=invalid → 400
+      - prompt < 12 chars → 400
+
+  - id: drafts-approve
+    method: POST
+    path: /drafts/{id}/approve
+    status: EXISTING
+    request_body: {}
+    response_200:
+      post: ContentPost
+      draft: ContentDraft (status=approved)
+    errors:
+      - 409: brand_review_blocked
+      - 409: no_media_attached
+      - 409: already_approved (idempotent → 200 with existing post)
+    tests:
+      - needs_review + media + brand pass → 200, post.id assigned
+      - no media → 409 with code='no_media_attached'
+      - brand blocked → 409 with code='brand_review_blocked'
+      - already approved → 200 with existing post (idempotent)
+
+  - id: drafts-reject
+    method: POST
+    path: /drafts/{id}/reject
+    status: EXISTING
+    request_body:
+      reason: { required: false, maxLength: 500 }
+    response_200:
+      draft: ContentDraft (status=rejected)
+    tests:
+      - basic reject → 200
+      - with reason → reason persisted
+      - already rejected → 200 idempotent
+
+  - id: posts-publish-now
+    method: POST
+    path: /posts/{id}/publish-now
+    status: EXISTING
+    request_body:
+      accountId: { required: false }
+      idempotencyKey: { required: false }
+    response_200:
+      status: string
+      jobs: PublishJob[]
+    errors:
+      - 404: post not found
+      - 409: post.status not in {approved, scheduled}
+      - 409: no_account_connected
+    tests:
+      - approved post → 200 with jobs[]
+      - already published → 409
+      - mock mode → jobs[0].status='published' immediately
+
+  - id: posts-schedule
+    method: POST
+    path: /posts/{id}/schedule
+    status: EXISTING
+    request_body:
+      scheduledAt: { required: true, format: ISO8601 datetime }
+      accountId: { required: false }
+      idempotencyKey: { required: false }
+    response_200:
+      status: string
+      jobs: PublishJob[]
+    errors:
+      - 400: scheduledAt in the past
+      - 404: post not found
+      - 409: post.status not in {approved, scheduled}
+    tests:
+      - schedule future date → 200
+      - schedule past date → 400
+      - re-schedule existing → 200, scheduledAt updated
+
+  - id: posts-draft-on-provider
+    method: POST
+    path: /posts/{id}/draft-on-provider
+    status: EXISTING
+    request_body:
+      accountId: { required: false }
+      idempotencyKey: { required: false }
+    response_200:
+      status: string
+      jobs: PublishJob[]
+    tests:
+      - approved post → 200
+      - mock mode → delivery status='pending'
+
+  - id: generation-runs-list
+    method: GET
+    path: /generation-runs
+    status: EXISTING
+    query:
+      limit: { required: false, type: integer, default: 25 }
+    response_200:
+      runs: GenerationRun[]
+      budget: { dailyBudgetCents, dailySpentCents, remainingCents }
+    tests:
+      - limit=0 → no runs, only budget
+      - budget remaining < 20% → frontend should warn
+
+  - id: media-list
+    method: GET
+    path: /media
+    status: EXISTING
+    query:
+      compartment: { required: false, enum: [imported, ai_generated, all], default: all }
+    response_200:
+      items: StudioMediaItem[]
+    tests:
+      - compartment=all → returns mixed
+      - compartment=ai_generated → only AI items

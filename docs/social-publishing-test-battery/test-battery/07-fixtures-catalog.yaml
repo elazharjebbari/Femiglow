@@ -1,0 +1,121 @@
+version: "1.0.0"
+
+fixtures:
+  accounts:
+    instagram-active:
+      id: sa_e2e_ig_1
+      provider: postiz
+      platform: instagram
+      remoteId: postiz_ig_1
+      name: 'AlFenna Beauty (Test)'
+      status: active
+      capabilities: [{ format: post, mediaRequired: true, maxCaptionLength: 2200 }, ...]
+    instagram-disabled:
+      id: sa_e2e_ig_2
+      status: disabled
+    instagram-token-expired:
+      id: sa_e2e_ig_3
+      status: token_expired
+    facebook-active:
+      id: sa_e2e_fb_1
+      platform: facebook
+      status: active
+    dry-run:
+      id: sa_e2e_dry_1
+      provider: dry_run
+
+  posts:
+    approved:
+      id: post_e2e_1
+      draftId: draft_e2e_1
+      status: approved
+    scheduled:
+      id: post_e2e_2
+      status: scheduled
+      scheduledAt: '+1d'
+    published:
+      id: post_e2e_3
+      status: published
+      publishedAt: '-1h'
+    failed:
+      id: post_e2e_4
+      status: approved
+    cancelled:
+      id: post_e2e_5
+      status: cancelled
+
+  jobs:
+    queued-now:
+      id: spj_e2e_1
+      postId: post_e2e_1
+      status: queued
+      mode: now
+    queued-schedule:
+      id: spj_e2e_2
+      status: queued
+      scheduledAt: '+2h'
+    publishing:
+      id: spj_e2e_3
+      status: publishing
+      lockedAt: '-30s'
+    published:
+      id: spj_e2e_4
+      status: published
+      publishedAt: '-5min'
+    failed-rate-limit:
+      id: spj_e2e_5
+      status: failed
+      lastError: { code: provider_rate_limited, message: 'Postiz 429', retryable: true }
+      attemptCount: 3
+    failed-auth:
+      id: spj_e2e_6
+      status: failed
+      lastError: { code: token_expired, retryable: false }
+    cancelled:
+      id: spj_e2e_7
+      status: cancelled
+    retried:
+      id: spj_e2e_8
+      status: queued
+      attemptCount: 2
+
+  postiz-responses:
+    upload-success:
+      id: media_postiz_1
+      path: /uploads/media_postiz_1.jpg
+    posts-now-success:
+      id: postiz_post_1
+      status: SENT
+      permalink: 'https://instagram.com/p/abc123'
+    posts-schedule-success:
+      id: postiz_post_2
+      status: SCHEDULED
+    posts-draft-success:
+      id: postiz_draft_1
+      status: DRAFT
+    integrations-list:
+      - { id: postiz_ig_1, name: 'AlFenna Beauty', platform: instagram }
+      - { id: postiz_fb_1, name: 'AlFenna Beauty', platform: facebook }
+    analytics-day-7:
+      impressions: 1234
+      likes: 89
+      comments: 12
+      engagement: 0.082
+    error-401: { status: 401, message: 'Unauthorized' }
+    error-422-caption-too-long: { status: 422, message: 'Caption max 2200 chars' }
+    error-429-rate-limit: { status: 429, message: 'Rate limited' }
+    error-503-down: { status: 503 }
+
+  media:
+    ai-image-1080:
+      id: media_e2e_1
+      kind: image
+      previewUrl: 'https://example.com/test-1080.jpg'
+    ai-video-9x16:
+      id: media_e2e_2
+      kind: video
+      previewUrl: 'https://example.com/test-reel.mp4'
+    uploaded-image:
+      id: media_e2e_3
+      kind: image
+      source: upload

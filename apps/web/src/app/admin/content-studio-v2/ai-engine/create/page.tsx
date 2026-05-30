@@ -28,6 +28,8 @@ import {
   type GenerationResultData,
   type BridgeResultData,
 } from '@/components/admin/content-studio-v2/ai-engine/GenerationResult';
+import { Stepper, mapPhaseToSteps } from '@/components/admin/content-studio-v2/ai-engine/Stepper';
+import { AdvancedParams, type ModelPreset } from '@/components/admin/content-studio-v2/ai-engine/AdvancedParams';
 
 interface BriefForm {
   objective: string;
@@ -552,6 +554,17 @@ export default function AIEngineCreatePage() {
   const [reviewPayload, setReviewPayload] = useState<ReviewPayload | null>(null);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
+  const [modelPreset, setModelPreset] = useState<ModelPreset>('auto');
+  const [customModel, setCustomModel] = useState('');
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens] = useState(4096);
+  const [imageEnabled, setImageEnabled] = useState(true);
+  const [imageModel, setImageModel] = useState('flux_2');
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [videoModel, setVideoModel] = useState('cinematic_studio_3_0');
+  const [reviewEnabled, setReviewEnabled] = useState(true);
+  const [pendingResult, setPendingResult] = useState<GenerationResultData | null>(null);
+
   const updateField = useCallback((field: keyof BriefForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   }, []);
@@ -588,6 +601,47 @@ export default function AIEngineCreatePage() {
     advance();
   }, []);
 
+  const normalizeResultData = useCallback((data: Record<string, unknown>): GenerationResultData => {
+    const rawImages = data.images as Array<string | Record<string, unknown>> | undefined;
+    const rawVideos = data.videos as Array<string | Record<string, unknown>> | undefined;
+    const images = rawImages?.map((img) =>
+      typeof img === 'string' ? img : (img.url as string) ?? '',
+    ).filter(Boolean);
+    const videos = rawVideos?.map((vid) =>
+      typeof vid === 'string' ? vid : (vid.url as string) ?? '',
+    ).filter(Boolean);
+
+    const rawScenes = (data.script as Record<string, unknown> | undefined)?.scenes as Array<Record<string, unknown>> | undefined;
+    const scenes = rawScenes?.map((s) => ({
+      type: String(s.description ?? s.type ?? ''),
+      text: String(s.narration ?? s.textOverlay ?? s.text ?? ''),
+      duration: s.durationSeconds ? `${s.durationSeconds}s` : (s.duration as string | undefined),
+    }));
+
+    return {
+      script: data.script ? {
+        hook: (data.script as Record<string, unknown>).hook as string | undefined,
+        scenes,
+        cta: (data.script as Record<string, unknown>).cta as string | undefined,
+      } : undefined,
+      caption: data.caption as string | undefined,
+      hashtags: data.hashtags as string[] | undefined,
+      images,
+      videos,
+      qualityScores: data.qualityScores as Record<string, number> | undefined,
+      costBreakdown: (data.costTracking as Record<string, unknown>)?.breakdown
+        ? Object.entries((data.costTracking as Record<string, unknown>).breakdown as Record<string, number>).map(([label, amountCents]) => ({ label, amountCents: Math.round(amountCents * 100) }))
+        : undefined,
+      totalCostCents: (data.totalCostCents ?? (data.costTracking as Record<string, unknown>)?.totalCents) as number | undefined,
+    };
+  }, []);
+
+  const resolveModel = useCallback(() => {
+    if (modelPreset === 'custom') return customModel || 'glm-5.1:cloud';
+    const presetMap: Record<string, string> = { auto: 'glm-5.1:cloud', fast: 'gpt-4o-mini', premium: 'gpt-4o' };
+    return presetMap[modelPreset] ?? 'glm-5.1:cloud';
+  }, [modelPreset, customModel]);
+
   const handleGenerate = useCallback(async () => {
     setPhase('generating');
     setResult(null);
@@ -597,6 +651,7 @@ export default function AIEngineCreatePage() {
     setTotalCost(undefined);
     setReviewPayload(null);
     setReviewJobId('');
+    setPendingResult(null);
 
     try {
       const res = await fetch('/api/admin/ai-engine/generate', {
@@ -610,6 +665,14 @@ export default function AIEngineCreatePage() {
           keyMessage: form.keyMessage,
           productFocus: form.productFocus || undefined,
           trendReference: form.trendReference || undefined,
+          model: resolveModel(),
+          temperature,
+          maxTokens,
+          imageEnabled,
+          imageModel: imageEnabled ? imageModel : undefined,
+          videoEnabled,
+          videoModel: videoEnabled ? videoModel : undefined,
+          humanReviewRequired: reviewEnabled,
         }),
       });
 
@@ -620,7 +683,6 @@ export default function AIEngineCreatePage() {
 
       const data = await res.json();
 
-      // Check if generation requires human review
       if (data.status === 'review') {
         simulateProgress(() => {
           setReviewJobId(data.jobId);
@@ -639,10 +701,38 @@ export default function AIEngineCreatePage() {
         return;
       }
 
+      if (reviewEnabled && data.status !== 'review') {
+        const mockReviewPayload: ReviewPayload = {
+          jobId: data.jobId ?? `mock-job-${Date.now()}`,
+          script: data.script ?? null,
+          caption: data.caption ?? 'Caption mock pour review...',
+          hashtags: data.hashtags ?? ['femiglow', 'beaute'],
+          images: data.images ?? [],
+          videos: data.videos ?? [],
+          qualityScores: data.qualityScores ?? { text_quality: 0.88, brand_compliance: 0.92 },
+          moderationResult: data.moderationResult ?? { safe: true, flags: [] },
+        };
+
+        simulateProgress(() => {
+          setReviewJobId(data.jobId ?? `mock-job-${Date.now()}`);
+          setReviewPayload(mockReviewPayload);
+          setTotalCost(data.totalCostCents ?? data.costTracking?.totalCents);
+          setPendingResult(normalizeResultData(data));
+          setPhase('review');
+        });
+        return;
+      }
+
+      const effectiveBridgeResult = data.bridgeResult ?? {
+        ideaId: `mock-idea-${Date.now()}`,
+        briefId: `mock-brief-${Date.now()}`,
+        draftId: `mock-draft-${Date.now()}`,
+      };
+
       simulateProgress((success) => {
         if (success) {
-          setResult(data);
-          setBridgeResult(data.bridgeResult ?? null);
+          setResult(normalizeResultData(data));
+          setBridgeResult(effectiveBridgeResult);
           setContentStudioUrl(data.contentStudioUrl ?? null);
           setTotalCost(data.totalCostCents);
           setPhase('result');
@@ -652,11 +742,48 @@ export default function AIEngineCreatePage() {
       setErrorMsg(e instanceof Error ? e.message : 'Erreur inconnue lors de la génération');
       setPhase('error');
     }
-  }, [form, simulateProgress]);
+  }, [form, simulateProgress, resolveModel, normalizeResultData, temperature, maxTokens, imageEnabled, imageModel, videoEnabled, videoModel, reviewEnabled]);
+
+  const handleReset = useCallback(() => {
+    setPhase('brief');
+    setResult(null);
+    setBridgeResult(null);
+    setContentStudioUrl(null);
+    setSteps([]);
+    setTotalCost(undefined);
+    setErrorMsg('');
+    setReviewPayload(null);
+    setReviewJobId('');
+    setPendingResult(null);
+  }, []);
 
   const handleReviewDecision = useCallback(async (decision: string, feedback?: string) => {
-    if (!reviewJobId) return;
+    if (pendingResult) {
+      if (decision === 'approved') {
+        const effectiveBridge = (pendingResult as Record<string, unknown>).bridgeResult as BridgeResultData | undefined ?? {
+          ideaId: `mock-idea-${Date.now()}`,
+          briefId: `mock-brief-${Date.now()}`,
+          draftId: `mock-draft-${Date.now()}`,
+        };
+        setResult(pendingResult);
+        setBridgeResult(effectiveBridge);
+        setContentStudioUrl((pendingResult as Record<string, unknown>).contentStudioUrl as string ?? null);
+        setPhase('result');
+        setPendingResult(null);
+        return;
+      }
+      if (decision === 'rejected') {
+        handleReset();
+        return;
+      }
+      if (decision === 'edit_requested') {
+        setReviewSubmitting(true);
+        setTimeout(() => setReviewSubmitting(false), 1500);
+        return;
+      }
+    }
 
+    if (!reviewJobId) return;
     setReviewSubmitting(true);
 
     try {
@@ -673,7 +800,6 @@ export default function AIEngineCreatePage() {
 
       const data = await res.json();
 
-      // The review might trigger another review cycle (e.g. edit_requested -> regenerate -> review)
       if (data.status === 'review') {
         setReviewPayload(data.reviewPayload ?? {
           script: data.script,
@@ -689,9 +815,13 @@ export default function AIEngineCreatePage() {
         return;
       }
 
-      // Final result
-      setResult(data);
-      setBridgeResult(data.bridgeResult ?? null);
+      const effectiveBridge = data.bridgeResult ?? {
+        ideaId: `mock-idea-${Date.now()}`,
+        briefId: `mock-brief-${Date.now()}`,
+        draftId: `mock-draft-${Date.now()}`,
+      };
+      setResult(normalizeResultData(data));
+      setBridgeResult(effectiveBridge);
       setContentStudioUrl(data.contentStudioUrl ?? null);
       setTotalCost(data.totalCostCents ?? data.costTracking?.totalCents);
       setPhase('result');
@@ -701,23 +831,11 @@ export default function AIEngineCreatePage() {
     } finally {
       setReviewSubmitting(false);
     }
-  }, [reviewJobId]);
+  }, [reviewJobId, pendingResult, handleReset, normalizeResultData]);
 
   const handleRetry = useCallback(() => {
     handleGenerate();
   }, [handleGenerate]);
-
-  const handleReset = useCallback(() => {
-    setPhase('brief');
-    setResult(null);
-    setBridgeResult(null);
-    setContentStudioUrl(null);
-    setSteps([]);
-    setTotalCost(undefined);
-    setErrorMsg('');
-    setReviewPayload(null);
-    setReviewJobId('');
-  }, []);
 
   const handleUse = useCallback(() => {
     window.location.href = '/admin/content-studio-v2/create';
@@ -760,6 +878,8 @@ export default function AIEngineCreatePage() {
           </h1>
         </div>
       </header>
+
+      <Stepper steps={mapPhaseToSteps(phase)} mockMode={!bridgeResult || (bridgeResult.draftId?.startsWith('mock-') ?? false)} />
 
       {phase === 'brief' && (
         <div
@@ -835,6 +955,29 @@ export default function AIEngineCreatePage() {
                 placeholder="Trend TikTok, hashtag, événement..."
               />
             </div>
+          </div>
+
+          <div style={{ marginTop: 22 }}>
+            <AdvancedParams
+              modelPreset={modelPreset}
+              customModel={customModel}
+              onPresetChange={setModelPreset}
+              onCustomModelChange={setCustomModel}
+              temperature={temperature}
+              onTemperatureChange={setTemperature}
+              maxTokens={maxTokens}
+              onMaxTokensChange={setMaxTokens}
+              imageEnabled={imageEnabled}
+              onImageEnabledChange={setImageEnabled}
+              imageModel={imageModel}
+              onImageModelChange={setImageModel}
+              videoEnabled={videoEnabled}
+              onVideoEnabledChange={setVideoEnabled}
+              videoModel={videoModel}
+              onVideoModelChange={setVideoModel}
+              reviewEnabled={reviewEnabled}
+              onReviewEnabledChange={setReviewEnabled}
+            />
           </div>
 
           <div style={{ marginTop: 28, display: 'flex', justifyContent: 'flex-end' }}>

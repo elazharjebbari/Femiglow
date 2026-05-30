@@ -1,0 +1,18 @@
+feature: F10-caption-editor
+
+component:
+  - name: renders all 4 fields (hook/caption/cta/hashtags)
+  - name: autosave indicator updates idle → saving → saved
+    when: type in caption, wait 1500ms
+    expect: indicator status changes through cycle
+  - name: error state shown on PATCH 500
+    expect: red banner + retry button
+  - name: session expired shows reauth
+    given: PATCH returns 401
+    expect: indicator='session_expired' visible
+
+contract:
+  - name: PATCH /drafts/:id { caption } → 200
+  - name: PATCH with hashtags=[] clears tags
+  - name: PATCH triggers brand re-review
+    expect: response.draft.scoreTotal updated

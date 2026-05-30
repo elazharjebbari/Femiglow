@@ -1,0 +1,31 @@
+feature: F10-retry-failed-job
+critical: P1
+
+contract:
+  - id: F10-C-1
+    name: POST retry happy path
+    given: job failed
+    expect: 200, job.status='queued'
+  - id: F10-C-2
+    name: POST retry not in failed state 409
+  - id: F10-C-3
+    name: POST retry not found 404
+  - id: F10-C-4
+    name: increments attemptCount
+
+component:
+  - id: F10-CO-1
+    name: Retry button visible only on failed jobs
+  - id: F10-CO-2
+    name: click Retry fires POST
+  - id: F10-CO-3
+    name: toast 'Reprise demandée'
+  - id: F10-CO-4
+    name: job row status updates after refetch
+
+e2e:
+  - id: F10-E-1
+    name: failed then retried
+    scenario_ref: S06
+  - id: F10-E-2
+    name: retry still failing → second failure shown

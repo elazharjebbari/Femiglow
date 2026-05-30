@@ -1,0 +1,56 @@
+feature: F04-publish-action-group-ui
+critical: P0
+
+component:
+  - id: F04-CO-1
+    name: dropdown trigger disabled when postId=null
+    expect: button aria-disabled true
+  - id: F04-CO-2
+    name: dropdown trigger enabled when postId provided
+    expect: button enabled
+  - id: F04-CO-3
+    name: dropdown trigger disabled when disabled=true (brand blocked)
+    expect: button aria-disabled true
+  - id: F04-CO-4
+    name: hint visible without postId
+    expect: text 'Validez le draft pour activer la publication'
+  - id: F04-CO-5
+    name: hint hidden with postId
+    expect: text not visible
+  - id: F04-CO-6
+    name: 3 menuitems open dialogs
+    expect: 'Publier maintenant', 'Programmer', 'Brouillon Postiz' each opens corresponding Dialog
+  - id: F04-CO-7
+    name: mockMode badge inline visible
+    given: mockMode=true
+    expect: testid mockmode badge in footer
+  - id: F04-CO-8
+    name: mockMode badge hidden when false
+  - id: F04-CO-9
+    name: AutosaveIndicator status reflects prop
+    given: autosave.status='saving'
+    expect: spinner/text 'saving'
+  - id: F04-CO-10
+    name: onPublished callback fired on success
+    given: API returns 201 then onPublished called with 'now'
+  - id: F04-CO-11
+    name: footer has aria-label='Publier'
+  - id: F04-CO-12
+    name: dropdown trigger has aria-label='Options de publication'
+
+a11y:
+  - id: F04-A-1
+    name: axe scan dropdown closed
+    expect: 0 critical violations
+  - id: F04-A-2
+    name: axe scan dropdown + dialog open
+    expect: 0 critical
+  - id: F04-A-3
+    name: Esc closes dialog
+    expect: dialog hidden after Escape
+
+e2e:
+  - id: F04-E-1
+    name: dropdown opens + closes
+  - id: F04-E-2
+    name: 3 menu items navigable via keyboard

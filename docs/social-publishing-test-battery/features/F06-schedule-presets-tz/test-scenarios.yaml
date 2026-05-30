@@ -1,0 +1,40 @@
+feature: F06-schedule-presets-tz
+critical: P2
+
+unit:
+  - id: F06-U-1
+    name: addHours rounds to 5min
+    given: now = 10:03
+    when: addHours(now, 1)
+    expect: 11:05 (rounded up to 5min)
+  - id: F06-U-2
+    name: tomorrowAt(9) returns tomorrow 09:00 local
+  - id: F06-U-3
+    name: nextMondayAt(14) returns next Monday (never today)
+    given: today is Monday 10:00
+    expect: result is +7 days at 14:00, NOT today
+
+component:
+  - id: F06-CO-1
+    name: +1h button present
+    expect: testid schedule-preset-1h visible
+  - id: F06-CO-2
+    name: Demain 9h button present
+  - id: F06-CO-3
+    name: Lundi 14h button present
+  - id: F06-CO-4
+    name: clicking +1h updates input value
+    when: click preset
+    expect: input value = computed +1h ISO
+  - id: F06-CO-5
+    name: clicking Demain 9h updates input value
+  - id: F06-CO-6
+    name: clicking Lundi 14h updates input value
+  - id: F06-CO-7
+    name: timezone label visible
+    expect: testid schedule-timezone-label visible containing 'Fuseau'
+
+e2e:
+  - id: F06-E-1
+    name: presets visible in opened schedule dialog
+    scenario_ref: S02

@@ -1,0 +1,23 @@
+feature: F14-publish-now
+
+component:
+  - name: dropdown shows 3 options
+    expect: 'Publier maintenant', 'Programmer', 'Brouillon Postiz'
+  - name: dropdown disabled when postId is null
+    expect: trigger has aria-disabled='true'
+  - name: clicking 'Publier maintenant' opens dialog
+    expect: dialog with title 'Publier maintenant ?'
+  - name: dialog shows thumbnail + caption
+    given: draft + media bound
+    expect: <img> thumbnail + truncated caption visible
+  - name: confirm calls API
+    when: click Confirmer in dialog
+    expect: POST /posts/:postId/publish-now
+
+contract:
+  - name: publish-now (approved) → 200 with jobs[]
+  - name: publish-now (already published) → 409 idempotent or 200 cached
+  - name: publish-now mock mode → jobs[0].status='published'
+  - name: publish-now error mapping
+    given: server returns code='no_account_connected'
+    expect: toast 'Aucun compte connecté'

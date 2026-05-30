@@ -1,0 +1,52 @@
+feature: F19-postiz-adapter
+critical: P0
+
+unit:
+  - id: F19-U-1
+    name: publish mode=now → type='now'
+    expect: Postiz body.type='now'
+  - id: F19-U-2
+    name: publish mode=schedule → type='schedule' + date
+  - id: F19-U-3
+    name: publish mode=draft → type='draft'
+  - id: F19-U-4
+    name: media upload for each asset
+    given: 2 media items
+    expect: 2 calls to /upload
+  - id: F19-U-5
+    name: extracts remoteId from response
+    expect: result.remoteId matches Postiz post id
+  - id: F19-U-6
+    name: extracts permalink from response
+  - id: F19-U-7
+    name: handles 401 token expired
+    expect: throws code='token_expired'
+  - id: F19-U-8
+    name: handles 422 invalid payload
+    expect: throws code='invalid_payload', not retryable
+  - id: F19-U-9
+    name: handles 429 rate limit
+    expect: throws code='provider_rate_limited', retryable=true
+  - id: F19-U-10
+    name: handles 503 service unavailable
+    expect: retryable
+  - id: F19-U-11
+    name: handles network timeout
+    expect: code='provider_timeout', retryable
+  - id: F19-U-12
+    name: listCapabilities returns IG capabilities
+    given: account platform='instagram'
+    expect: post, reel, story, carousel
+  - id: F19-U-13
+    name: listCapabilities returns [] for disabled account
+  - id: F19-U-14
+    name: getInsights fetches analytics
+    expect: GET /analytics/post/:id?date=7
+  - id: F19-U-15
+    name: payload contains caption + image
+  - id: F19-U-16
+    name: payload settings.__type matches platform
+  - id: F19-U-17
+    name: payload settings.post_type matches format
+  - id: F19-U-18
+    name: secrets redacted from response logs

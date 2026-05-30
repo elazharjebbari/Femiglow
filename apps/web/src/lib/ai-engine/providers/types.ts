@@ -24,6 +24,7 @@ export const ProviderType = z.enum([
   'elevenlabs',
   'runway',
   'stability',
+  'higgsfield',
 ]);
 export type ProviderType = z.infer<typeof ProviderType>;
 
@@ -158,6 +159,8 @@ export interface VideoGenParams {
   prompt: string;
   imageUrl?: string;
   durationSeconds?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface VideoGenResult {

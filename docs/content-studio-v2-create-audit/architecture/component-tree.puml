@@ -1,0 +1,87 @@
+@startuml component-tree
+title Content Studio v2 — React component tree (target)
+
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor #FFFBF3
+  BorderColor #6B5BFF
+}
+
+[page.tsx\n(Server Component)] as PAGE
+[AppShell] as SHELL
+[CreateWorkspace\n(Client Component)] as CW
+
+PAGE --> SHELL
+SHELL --> CW
+
+package "Header" {
+  [Stepper] as STEP
+}
+
+package "Body — 3 cols" {
+  package "Left col" {
+    [IntentionForm] as IF
+    [ModelPicker\n(role=chat)] as MP1
+    IF ..> MP1 : <NEW>
+  }
+
+  package "Center col" {
+    [VariantsCompare] as VC
+    [MediaStudio] as MS
+    [ModelPicker\n(role=image)] as MP2
+    [ModelPicker\n(role=video)] as MP3
+    [MediaTypeToggle\n(image/video)] as MTT
+    [CaptionEditor] as CE
+    MS ..> MTT : <NEW>
+    MS ..> MP2 : <NEW>
+    MS ..> MP3 : <NEW>
+  }
+
+  package "Right col" {
+    [PreviewPane] as PP
+    [ApproveButton\n(Valider et préparer)] as APR
+    PP ..> APR : <NEW>
+  }
+}
+
+package "Footer" {
+  [PublishActionGroup] as PUB
+}
+
+CW --> STEP
+CW --> IF
+CW --> VC
+CW --> MS
+CW --> CE
+CW --> PP
+CW --> PUB
+
+package "Shared state" {
+  [StudioProvider\n+useStudio\n+useDraftAutosave] as CTX
+}
+
+CW --> CTX
+
+note bottom of MP1
+  ModelPicker — combobox (Radix Popover + cmdk)
+  Presets : Auto / Rapide / Premium / Custom
+  Source : GET /api/admin/content-studio/models?role=chat&format=<f>
+end note
+
+note bottom of MP2
+  ModelPicker — role=image
+  Suggestion : dall-e-3 (post/carousel), gpt-image-1 (story)
+end note
+
+note bottom of MP3
+  ModelPicker — role=video
+  Suggestion : mock-video-1.0 (mock) or veo-3 (real, backlog)
+end note
+
+note right of APR
+  Bouton dédié appelant POST /drafts/:id/approve
+  Crée content_post → postId disponible
+  Débloque PublishActionGroup
+end note
+
+@enduml

@@ -1,0 +1,430 @@
+feature: F14
+name: Analytics Dashboard
+source: apps/web/src/app/admin/content-studio-v2/ai-engine/analytics/page.tsx
+url: /admin/content-studio-v2/ai-engine/analytics
+
+scenarios:
+
+  # ---------------------------------------------------------------------------
+  # Loading State
+  # ---------------------------------------------------------------------------
+
+  - id: F14-001
+    title: Shows shimmer skeleton during data fetch
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch returns never-resolving promise
+      - render: AIEngineAnalyticsPage
+      - assert: 4 skeleton placeholder divs visible
+      - assert: skeletons have animation style containing "cs-shimmer"
+    expected: Loading state shows animated placeholders
+
+  # ---------------------------------------------------------------------------
+  # Error State
+  # ---------------------------------------------------------------------------
+
+  - id: F14-005
+    title: API error displays error banner
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves { ok: false, status: 500 }
+      - render: AIEngineAnalyticsPage
+      - await: loading complete
+      - assert: text "Impossible de charger les analytiques" visible
+      - assert: AlertTriangle icon visible
+    expected: Error state rendered
+
+  - id: F14-006
+    title: Error message from API displayed
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch rejects with Error("Erreur 503")
+      - render: AIEngineAnalyticsPage
+      - await: loading complete
+      - assert: text "Erreur 503" visible
+    expected: Specific error message shown
+
+  - id: F14-007
+    title: Retry button refetches data
+    priority: P0
+    type: unit
+    steps:
+      - mock: first fetch rejects, second fetch resolves with valid data
+      - render: AIEngineAnalyticsPage
+      - await: error state
+      - click: button "Reessayer"
+      - assert: data loaded and KPI cards appear
+    expected: Retry mechanism works
+
+  # ---------------------------------------------------------------------------
+  # Header & Navigation
+  # ---------------------------------------------------------------------------
+
+  - id: F14-010
+    title: Header shows "Analytiques" title
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with valid analytics data
+      - render: AIEngineAnalyticsPage
+      - await: data loaded
+      - assert: heading "Analytiques" visible
+      - assert: eyebrow "AI Engine" visible
+    expected: Page header rendered
+
+  - id: F14-011
+    title: Back arrow links to AI Engine dashboard
+    priority: P1
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - assert: Link with href="/admin/content-studio-v2/ai-engine" exists
+    expected: Navigation back to dashboard
+
+  - id: F14-012
+    title: Graphe link navigates to graph visualization
+    priority: P1
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - assert: link to "/admin/content-studio-v2/ai-engine/graph" exists
+      - assert: button "Graphe" with GitBranch icon visible
+    expected: Graph page link available
+
+  - id: F14-013
+    title: Configuration link navigates to config page
+    priority: P2
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - assert: link to "/admin/content-studio-v2/ai-engine/config" exists
+    expected: Config page link available
+
+  # ---------------------------------------------------------------------------
+  # Period Selector
+  # ---------------------------------------------------------------------------
+
+  - id: F14-020
+    title: Period selector defaults to month
+    priority: P0
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - assert: "30 jours" button has active styling (bold, elevated background)
+      - assert: "Dernieres 24h" button has inactive styling
+      - assert: "7 jours" button has inactive styling
+    expected: Default period is month
+
+  - id: F14-021
+    title: Clicking "Dernieres 24h" refetches with period=day
+    priority: P0
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - resetMocks: clear fetch calls
+      - click: button "Dernieres 24h"
+      - assert: fetch called with URL containing "period=day"
+    expected: Period change triggers API call
+
+  - id: F14-022
+    title: Clicking "7 jours" refetches with period=week
+    priority: P0
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - click: button "7 jours"
+      - assert: fetch called with URL containing "period=week"
+    expected: Week period API call
+
+  - id: F14-023
+    title: Actualiser button refetches current period
+    priority: P1
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage (default month)
+      - click: button "Actualiser"
+      - assert: fetch called again with "period=month"
+    expected: Manual refresh works
+
+  # ---------------------------------------------------------------------------
+  # KPI Cards
+  # ---------------------------------------------------------------------------
+
+  - id: F14-030
+    title: Generation count KPI displays today count
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with overview.generationsToday = 5, generationsWeek = 12, generationsMonth = 42
+      - render and load: AIEngineAnalyticsPage
+      - assert: KPI value "5" visible
+      - assert: sub-text contains "12 cette semaine / 42 ce mois"
+    expected: Generation count formatted correctly
+
+  - id: F14-031
+    title: Cost KPI displays month total in MAD
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with overview.costMonthCents = 350, costTodayCents = 15
+      - render and load: AIEngineAnalyticsPage
+      - assert: KPI value "3.50 MAD" visible
+      - assert: sub-text contains "0.15 MAD aujourd'hui"
+    expected: Cost computed and formatted in MAD
+
+  - id: F14-032
+    title: Quality KPI displays percentage
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with overview.avgQualityScore = 0.88
+      - render and load: AIEngineAnalyticsPage
+      - assert: KPI value "88%" visible
+      - assert: sub-text "Score moyen sur le mois"
+    expected: Quality score as percentage
+
+  - id: F14-033
+    title: Success rate KPI displays with error rate sub-text
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with overview.successRate = 92.0, errorRate = 8.0
+      - render and load: AIEngineAnalyticsPage
+      - assert: KPI value "92.0%" visible
+      - assert: sub-text "8.0% taux d'erreur"
+    expected: Success rate with error complement
+
+  - id: F14-034
+    title: KPI grid is responsive (auto-fit, minmax 200px)
+    priority: P2
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - query: KPI grid container
+      - assert: gridTemplateColumns is "repeat(auto-fit, minmax(200px, 1fr))"
+    expected: Responsive grid layout
+
+  # ---------------------------------------------------------------------------
+  # Node Health Summary
+  # ---------------------------------------------------------------------------
+
+  - id: F14-040
+    title: Node health section renders when nodeMetrics available
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with nodeMetrics = [
+          { nodeId: 'parseBrief', label: 'Analyse brief', provider: 'openai', avgLatencyMs: 1200, avgCostCents: 5, totalInvocations: 10, errorCount: 0, errorRate: 0, status: 'healthy' }
+        ]
+      - render and load: AIEngineAnalyticsPage
+      - assert: text "Sante des noeuds du pipeline" visible
+      - assert: text "Analyse brief" visible
+      - assert: text "10 inv." visible
+      - assert: text "0.05 MAD" visible
+    expected: Node health cards rendered
+
+  - id: F14-041
+    title: Healthy node has green left border
+    priority: P1
+    type: unit
+    steps:
+      - mock: with nodeMetric status='healthy'
+      - render and load: AIEngineAnalyticsPage
+      - assert: node card has borderLeft containing "var(--cs-success"
+    expected: Green indicator for healthy nodes
+
+  - id: F14-042
+    title: Degraded node has amber left border
+    priority: P1
+    type: unit
+    steps:
+      - mock: with nodeMetric status='degraded'
+      - assert: node card has borderLeft containing "var(--cs-warning"
+    expected: Amber indicator for degraded nodes
+
+  - id: F14-043
+    title: Error node has red left border and error count
+    priority: P1
+    type: unit
+    steps:
+      - mock: with nodeMetric status='error', errorCount=3
+      - assert: node card has borderLeft containing "var(--cs-danger"
+      - assert: text "3 err." visible in danger color
+    expected: Red indicator with error count for failed nodes
+
+  - id: F14-044
+    title: Empty node metrics shows informational message
+    priority: P1
+    type: unit
+    steps:
+      - mock: with nodeMetrics all having totalInvocations=0, avgCostCents=0
+      - render and load: AIEngineAnalyticsPage
+      - assert: text "Aucune donnee de noeud disponible" visible
+    expected: Empty state message for unused pipeline
+
+  - id: F14-045
+    title: Vue graphe link navigates to graph page
+    priority: P2
+    type: unit
+    steps:
+      - render and load: AIEngineAnalyticsPage
+      - assert: button "Vue graphe" links to /admin/content-studio-v2/ai-engine/graph
+    expected: Graph navigation from node health section
+
+  # ---------------------------------------------------------------------------
+  # Cost Charts
+  # ---------------------------------------------------------------------------
+
+  - id: F14-050
+    title: Cost by provider chart renders bars
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with costByProvider = [
+          { provider: 'openai', costCents: 320, count: 10 },
+          { provider: 'anthropic', costCents: 150, count: 5 }
+        ]
+      - render and load: AIEngineAnalyticsPage
+      - assert: text "Cout par fournisseur" visible
+      - assert: text "OpenAI" visible
+      - assert: text "Anthropic" visible
+      - assert: text "10 appels" visible
+      - assert: text "3.20 MAD" visible
+    expected: Provider cost breakdown rendered
+
+  - id: F14-051
+    title: Cost by node chart renders bars
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with costByNode = [
+          { nodeName: 'generateScript', costCents: 150, count: 12 }
+        ]
+      - render and load: AIEngineAnalyticsPage
+      - assert: text "Cout par noeud" visible
+      - assert: text "Script" visible (via NODE_LABELS mapping)
+      - assert: text "12 appels" visible
+      - assert: text "1.50 MAD" visible
+    expected: Node cost breakdown rendered
+
+  - id: F14-052
+    title: Empty provider chart shows placeholder message
+    priority: P1
+    type: unit
+    steps:
+      - mock: with costByProvider = []
+      - render and load: AIEngineAnalyticsPage
+      - assert: text "Aucune donnee de cout disponible" in provider section
+    expected: Empty state for no provider data
+
+  - id: F14-053
+    title: Bar widths proportional to max value
+    priority: P2
+    type: unit
+    steps:
+      - mock: with costByProvider = [
+          { provider: 'openai', costCents: 400, count: 8 },
+          { provider: 'anthropic', costCents: 200, count: 4 }
+        ]
+      - render and load: AIEngineAnalyticsPage
+      - assert: openai bar width is "100%" (it's the max)
+      - assert: anthropic bar width is "50%" (200/400 * 100)
+    expected: Proportional bar rendering
+
+  # ---------------------------------------------------------------------------
+  # Jobs Table
+  # ---------------------------------------------------------------------------
+
+  - id: F14-060
+    title: Recent jobs table renders with correct columns
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with recentJobs (2 jobs)
+      - render and load: AIEngineAnalyticsPage
+      - assert: text "Generations recentes" heading visible
+      - assert: table headers: Statut, Plateforme, Format, Type, Cout, Duree, Date
+      - assert: 2 table body rows
+    expected: Jobs table structure correct
+
+  - id: F14-061
+    title: Job status badges have correct tone
+    priority: P0
+    type: unit
+    steps:
+      - mock: with job status='completed'
+      - assert: Badge with text "Termine" and tone "success"
+    expected: Status badge mapping works
+
+  - id: F14-062
+    title: Failed job shows danger badge
+    priority: P1
+    type: unit
+    steps:
+      - mock: with job status='failed'
+      - assert: Badge with text "Echoue" and tone "danger"
+    expected: Failed status visually distinct
+
+  - id: F14-063
+    title: Job cost formatted from string to MAD
+    priority: P1
+    type: unit
+    steps:
+      - mock: with job.totalCostCents = "15"
+      - assert: cost column shows "0.15 MAD"
+    expected: String cost parsed and formatted
+
+  - id: F14-064
+    title: Job duration formatted correctly
+    priority: P1
+    type: unit
+    steps:
+      - mock: with jobs having durationMs = [500, 5000, null]
+      - assert: durations show "500ms", "5.0s", "-"
+    expected: Duration formatting covers all cases
+
+  - id: F14-065
+    title: Job date shows relative time
+    priority: P1
+    type: unit
+    steps:
+      - mock: with job.createdAt = 30 seconds ago
+      - assert: date column shows "maintenant"
+      - mock: with job.createdAt = 15 minutes ago
+      - assert: date column shows "il y a 15m"
+    expected: Relative date formatting
+
+  - id: F14-066
+    title: Results count badge shows job count
+    priority: P2
+    type: unit
+    steps:
+      - mock: with recentJobs.length = 5
+      - assert: Badge shows "5 resultats"
+    expected: Count badge accurate
+
+  - id: F14-067
+    title: Empty jobs shows placeholder
+    priority: P1
+    type: unit
+    steps:
+      - mock: with recentJobs = []
+      - render and load: AIEngineAnalyticsPage
+      - assert: text "Aucune generation enregistree" visible
+    expected: Empty table state
+
+msw_handlers:
+  required:
+    - "http.get('/api/admin/ai-engine/analytics')"
+  query_params:
+    - "period=day|week|month"
+    - "includeNodeMetrics=true"
+
+test_utilities:
+  MOCK_ANALYTICS: |
+    See apps/web/src/test/msw/ai-engine-handlers.ts for full mock.
+    The analytics handler returns overview stats, costByProvider,
+    costByNode, and recentJobs arrays.

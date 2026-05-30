@@ -1,0 +1,47 @@
+endpoint:
+  method: POST
+  path: /api/admin/content-studio/posts/{id}/publish-now
+  auth: admin cookie
+
+path_parameters:
+  id: { type: uuid, description: postId }
+
+request_body:
+  schema:
+    accountId: { type: string, required: false }
+    idempotencyKey: { type: string, required: false }
+
+response_201:
+  schema:
+    status: { enum: [queued, publishing, published] }
+    jobs:
+      type: array
+      items:
+        id: string
+        postId: string
+        accountId: string
+        provider: { enum: [postiz, dry_run] }
+        platform: { enum: [instagram, facebook] }
+        format: { enum: [post, story, reel, carousel] }
+        status: string
+        publishedAt: { format: date-time, nullable: true }
+
+response_400: { error: { code: invalid_input } }
+response_401: { error: { code: unauthorized } }
+response_404: { error: { code: not_found } }
+response_409:
+  variants:
+    - { code: invalid_state }
+    - { code: brand_review_blocked }
+    - { code: no_media_attached }
+    - { code: no_account_connected }
+    - { code: caption_too_long }
+    - { code: format_not_supported }
+    - { code: invalid_media_url }
+response_429: { error: { code: provider_rate_limited } }
+response_500: { error: { code: provider_unavailable } }
+
+idempotency:
+  scope: postId + accountId + mode
+  storage: social_publish_job.idempotencyKey UNIQUE
+  replay_behavior: 200 with same job.id

@@ -1,0 +1,323 @@
+@startuml AI Engine Create Page — Component Tree (NEW)
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam ComponentBackgroundColor #FBF7F1
+skinparam ComponentBorderColor #D1B799
+skinparam PackageBackgroundColor #F5F0E8
+skinparam PackageBorderColor #A89D90
+skinparam ArrowColor #2F2A26
+skinparam NoteBorderColor #A89D90
+skinparam NoteBackgroundColor #FFFFFF
+skinparam Shadowing false
+
+title **Component Tree — AI Engine Create Page (NEW)**\n//After all 6 UX fixes (P1-P6)//
+
+package "AIEngineCreatePage" as CreatePage #E8F5E9 {
+
+  component "**<header>**\nBackLink + Title" as Header
+  note bottom of Header
+    ArrowLeft link to /ai-engine
+    Title: "Nouvelle generation"
+    Eyebrow: "AI Engine"
+  end note
+
+  component "**<Stepper>**\n[P6 — NEW]" as Stepper #BBDEFB
+  note bottom of Stepper
+    Props:
+      steps: StepDef[]
+      mockMode?: boolean
+    4 steps:
+      1. Brief
+      2. Generation
+      3. Review
+      4. Publication
+    Maps Phase state to visual indicators
+    Badge "Mode Mock" when mockMode=true
+  end note
+
+  package "Phase: brief" as BriefPhase #FFF3E0 {
+
+    component "**<BriefForm>**\nMain form fields" as BriefForm
+    note bottom of BriefForm
+      Grid layout 2-col:
+        SelectField: Objectif (required)
+        SelectField: Plateforme (required)
+        SelectField: Format (required)
+        SelectField: Ton (required)
+      Full width:
+        TextAreaField: Message cle (required)
+        InputField: Focus produit
+        InputField: Reference tendance
+      Button: Generer (disabled if !isFormValid)
+    end note
+
+    component "**<AdvancedParams>**\n[P2 — NEW]" as AdvancedParams #E1BEE7
+    note right of AdvancedParams
+      CollapsibleSection, closed by default
+      Header: "Parametres avances"
+      Icon: Settings (lucide)
+    end note
+
+    package "AdvancedParams children" as APChildren {
+
+      component "**<ModelPresetSelector>**\n[P1 — NEW]\ncapability=text" as TextPreset #BBDEFB
+      note bottom of TextPreset
+        Segmented control 4 buttons:
+          Auto | Rapide | Premium | Personnalise
+        Props:
+          value: ModelPreset
+          onChange(preset)
+          customModel?: string
+          onCustomModelChange?(model)
+          capability: "text"
+        Mapping:
+          auto -> "" (backend decides)
+          fast -> "gpt-4o-mini"
+          premium -> "claude-sonnet-4-20250514"
+          custom -> opens ModelSelector
+      end note
+
+      component "**<ModelSelector>**\ncapability=text\n(shown when preset=custom)" as TextModelSelector
+      note bottom of TextModelSelector
+        Existing component, reused
+        providerType: "openai"
+        capabilityFilter: "text"
+        Uses cmdk + Radix Popover
+      end note
+
+      component "**<ModelSelector>**\ncapability=image" as ImageModelSelector
+      note bottom of ImageModelSelector
+        providerType: "openai" (DALL-E 3)
+        or "higgsfield" (Diffusion v2)
+        capabilityFilter: "image"
+      end note
+
+      component "**<ModelSelector>**\ncapability=video\n(conditional)" as VideoModelSelector #FFF9C4
+      note bottom of VideoModelSelector
+        providerType: "higgsfield"
+        capabilityFilter: "video"
+        **HIDDEN** when format is:
+          - text_post
+          - infographic
+        Shown for: reel, carousel,
+          story, single_image
+      end note
+
+      component "**Toggle**\nGenerer les visuels" as ToggleVisuals
+      note bottom of ToggleVisuals
+        <input type=checkbox>
+        Default: checked (true)
+        Controls: generateVisuals state
+      end note
+
+      component "**Toggle**\nReview humaine\n[P3 — NEW]" as ToggleReview #BBDEFB
+      note bottom of ToggleReview
+        <input type=checkbox>
+        Default: unchecked (false)
+        Controls: humanReviewEnabled state
+        When on: generation always passes
+        through review phase
+      end note
+    }
+  }
+
+  package "Phase: generating" as GeneratingPhase #E3F2FD {
+    component "**<GenerationProgress>**\nExisting component" as GenProgress
+    note bottom of GenProgress
+      Props:
+        steps: PipelineStep[]
+        totalCost?: number
+      Pipeline steps:
+        1. Analyse du brief
+        2. Enrichissement contextuel
+        3. Redaction du script
+        4. Generation des visuels
+        5. Controle qualite
+        6. Termine
+      Animated spinner per step
+      Duration tracking
+    end note
+  }
+
+  package "Phase: review" as ReviewPhase #FFF3E0 {
+    component "**<ReviewPanel>**\nExisting + enhanced" as ReviewPanel
+    note bottom of ReviewPanel
+      Props:
+        jobId: string
+        reviewPayload: ReviewPayload
+        onDecision(decision, feedback?)
+        submitting: boolean
+      Sections:
+        - Script preview (hook, scenes, CTA)
+        - Caption preview (pre-wrap)
+        - Hashtags (chips)
+        - Images (thumbnails)
+        - Quality scores (bars)
+      Buttons:
+        - Approuver (CheckCircle)
+        - Demander modifications (Edit3)
+        - Rejeter (XCircle)
+      Feedback textarea on edit/reject
+      **[P3 ENHANCED]**:
+        Handles mock pendingResult
+        Approve -> use pending as final
+        Reject -> handleReset()
+        Edit -> simulate re-generation
+    end note
+  }
+
+  package "Phase: result" as ResultPhase #F3E5F5 {
+    component "**<GenerationResult>**\nEnhanced" as GenResult
+    note bottom of GenResult
+      Props:
+        result: GenerationResultData
+        bridgeResult?: BridgeResultData
+        contentStudioUrl?: string
+        onUse(): void
+        onRegenerate(): void
+        regenerating?: boolean
+    end note
+
+    package "GenerationResult children" as GRChildren {
+
+      component "**ScriptSection**\nCollapsibleSection" as ScriptSection
+      note bottom of ScriptSection
+        defaultOpen = true
+        Icon: Sparkles
+        Content: hook + scenes + CTA
+        Scenes in styled blocks
+        with Badge(scene.type)
+      end note
+
+      component "**CaptionSection**\nCard with CopyButton" as CaptionSection
+      note bottom of CaptionSection
+        Full caption text
+        pre-wrap whitespace
+        CopyButton in top-right
+      end note
+
+      component "**HashtagChips**\nBadge row" as HashtagChips
+      note bottom of HashtagChips
+        Badge tone=accent, size=sm
+        Each tag prefixed with #
+      end note
+
+      component "**ImageGallery**\nCollapsibleSection" as ImageGallery
+      note bottom of ImageGallery
+        Grid: auto-fill, minmax(140px, 1fr)
+        <img> with objectFit: cover
+        aspect-ratio: 1
+      end note
+
+      component "**VideoPlayer**\n[P4 — NEW]" as VideoPlayer #BBDEFB
+      note bottom of VideoPlayer
+        CollapsibleSection: "Videos (N)"
+        Icon: Film (lucide)
+        HTML5 <video controls preload=metadata>
+        Badges per video:
+          - Duration (e.g. "15.0s")
+          - Resolution (e.g. "1080x1920")
+          - Provider (e.g. "mock", "higgsfield")
+        Shown only when videos[] is non-empty
+      end note
+
+      component "**QualityScores**\nCard with progress bars" as QualityScores
+      note bottom of QualityScores
+        QualityBar per score:
+          label (140px) + bar + percentage
+        Colors:
+          >=80% green
+          >=60% yellow
+          <60% red
+      end note
+
+      component "**CostBreakdown**\nCard with table" as CostBreakdown
+      note bottom of CostBreakdown
+        Table: label | amount (MAD)
+        Footer: Total row (bold)
+      end note
+
+      component "**PublishSection**\n[P5 — ENHANCED]" as PublishSection #BBDEFB
+      note bottom of PublishSection
+        **Always visible** (mock bridgeResult fallback)
+        Badge "Mode Mock" if draftId is mock
+        Mode toggle: [Publier maintenant | Planifier]
+        Schedule: datetime-local input
+        Button: Publier / Planifier
+        Success/Error message with icon
+        POST /api/admin/ai-engine/publish
+      end note
+    }
+
+    component "**ActionButtons**\nBottom row" as ActionButtons
+    note bottom of ActionButtons
+      - Regenerer (ghost, RefreshCw)
+      - Voir dans Bibliotheque (ghost, BookOpen)
+        (only if contentStudioUrl)
+      - Utiliser ce contenu (primary, ArrowRight)
+    end note
+  }
+
+  package "Phase: error" as ErrorPhase #FFEBEE {
+    component "**<ErrorPanel>**\nExisting" as ErrorPanel
+    note bottom of ErrorPanel
+      AlertTriangle icon
+      Error message
+      Buttons:
+        - Reessayer (primary, RefreshCw)
+        - Modifier le brief (ghost)
+    end note
+  }
+}
+
+' ========================================
+' Relationships
+' ========================================
+
+CreatePage --> Header
+CreatePage --> Stepper
+CreatePage --> BriefPhase : phase === 'brief'
+CreatePage --> GeneratingPhase : phase === 'generating'
+CreatePage --> ReviewPhase : phase === 'review'
+CreatePage --> ResultPhase : phase === 'result'
+CreatePage --> ErrorPhase : phase === 'error'
+
+BriefForm --> AdvancedParams
+AdvancedParams --> TextPreset
+TextPreset --> TextModelSelector : preset === 'custom'
+AdvancedParams --> ImageModelSelector
+AdvancedParams --> VideoModelSelector : showVideoModel
+AdvancedParams --> ToggleVisuals
+AdvancedParams --> ToggleReview
+
+GenResult --> ScriptSection
+GenResult --> CaptionSection
+GenResult --> HashtagChips
+GenResult --> ImageGallery
+GenResult --> VideoPlayer : videos.length > 0
+GenResult --> QualityScores : qualityScores present
+GenResult --> CostBreakdown : costBreakdown present
+GenResult --> PublishSection : always (bridgeResult fallback)
+GenResult --> ActionButtons
+
+' ========================================
+' State Machine
+' ========================================
+
+note as StateMachine
+  **State Machine (Phase):**
+  brief ─[Generate]──> generating
+  generating ─[success, no review]──> result
+  generating ─[success, review]──> review
+  generating ─[error]──> error
+  review ─[approve]──> result
+  review ─[reject]──> brief
+  review ─[edit]──> review (loop)
+  result ─[regenerate]──> generating
+  result ─[reset]──> brief
+  error ─[retry]──> generating
+  error ─[reset]──> brief
+end note
+
+@enduml

@@ -1,0 +1,54 @@
+title: social_publish_job state transitions
+description: |
+  Source : lib/social-publishing/state-machine.ts
+
+states:
+  - id: draft
+    label: Draft
+    note: rarely used (legacy)
+    next: [approved, queued, cancelled]
+  - id: approved
+    label: Approuvé
+    next: [queued, cancelled]
+  - id: queued
+    label: En queue
+    note: Initial state for new jobs (mode now/schedule/draft)
+    next: [publishing, cancelled, failed]
+  - id: publishing
+    label: En cours
+    note: lockedAt set, adapter in flight
+    next: [published, failed]
+  - id: published
+    label: Publié
+    note: terminal success, publishedAt set
+    next: []
+  - id: failed
+    label: Échec
+    note: lastError set, can be retried
+    next: [queued, cancelled]
+  - id: cancelled
+    label: Annulé
+    next: []
+
+transitions:
+  - { from: draft, to: approved, action: approve }
+  - { from: draft, to: queued, action: enqueue }
+  - { from: draft, to: cancelled, action: cancel }
+  - { from: approved, to: queued, action: enqueue }
+  - { from: approved, to: cancelled, action: cancel }
+  - { from: queued, to: publishing, action: acquireLock }
+  - { from: queued, to: cancelled, action: cancel }
+  - { from: queued, to: failed, action: preFlightFail }
+  - { from: publishing, to: published, action: adapterSucceeded }
+  - { from: publishing, to: failed, action: adapterFailed }
+  - { from: failed, to: queued, action: retry }
+  - { from: failed, to: cancelled, action: cancel }
+
+invariants:
+  - published and cancelled are terminal (no outgoing transitions)
+  - same state → same state is always idempotent (assertTransition returns true)
+  - any non-listed transition returns false (rejected)
+
+assertTransition:
+  signature: (from: JobStatus, to: JobStatus) → boolean
+  behavior: true if valid, false otherwise

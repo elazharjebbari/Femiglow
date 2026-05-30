@@ -1,0 +1,104 @@
+{
+  "$schema": "Mock model registry used by GET /api/admin/content-studio/models",
+  "models": [
+    {
+      "id": "gpt-4o-mini",
+      "provider": "openai",
+      "role": "chat",
+      "label": "GPT-4o mini",
+      "description": "Rapide, polyvalent, économique.",
+      "tier": "fast",
+      "capabilities": ["function-calling", "vision"],
+      "contextWindow": 128000,
+      "pricing": { "inputCentsPer1k": 0.015, "outputCentsPer1k": 0.06 },
+      "recommendedFor": ["post", "story"],
+      "source": "static",
+      "isDefault": true
+    },
+    {
+      "id": "gpt-4o",
+      "provider": "openai",
+      "role": "chat",
+      "label": "GPT-4o",
+      "description": "Équilibré, idéal contenus moyens-longs.",
+      "tier": "balanced",
+      "capabilities": ["function-calling", "vision"],
+      "contextWindow": 128000,
+      "pricing": { "inputCentsPer1k": 0.25, "outputCentsPer1k": 1.0 },
+      "recommendedFor": ["reel", "carousel"],
+      "source": "static",
+      "isDefault": false
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "provider": "anthropic",
+      "role": "chat",
+      "label": "Claude Sonnet 4.6",
+      "description": "Premium, texte raffiné, fr natif.",
+      "tier": "premium",
+      "capabilities": ["vision", "fr", "long-context"],
+      "contextWindow": 200000,
+      "pricing": { "inputCentsPer1k": 0.30, "outputCentsPer1k": 1.5 },
+      "recommendedFor": ["carousel"],
+      "source": "static",
+      "isDefault": false
+    },
+    {
+      "id": "gpt-image-1-mini",
+      "provider": "openai",
+      "role": "image",
+      "label": "GPT-Image-1 mini",
+      "description": "Image rapide, qualité moyenne.",
+      "tier": "fast",
+      "capabilities": ["square", "portrait"],
+      "pricing": { "perCall": 0.4 },
+      "recommendedFor": ["story"],
+      "source": "static",
+      "isDefault": true
+    },
+    {
+      "id": "dall-e-3",
+      "provider": "openai",
+      "role": "image",
+      "label": "DALL·E 3",
+      "description": "Image équilibrée, photoréaliste.",
+      "tier": "balanced",
+      "capabilities": ["square", "portrait", "landscape"],
+      "pricing": { "perCall": 4.0 },
+      "recommendedFor": ["post", "carousel"],
+      "source": "static",
+      "isDefault": false
+    },
+    {
+      "id": "gpt-image-1",
+      "provider": "openai",
+      "role": "image",
+      "label": "GPT-Image-1",
+      "description": "Image premium, ratios verticaux.",
+      "tier": "premium",
+      "capabilities": ["square", "portrait", "landscape", "vertical-9x16"],
+      "pricing": { "perCall": 8.0 },
+      "recommendedFor": ["reel"],
+      "source": "static",
+      "isDefault": false
+    },
+    {
+      "id": "mock-video-1.0",
+      "provider": "mock",
+      "role": "video",
+      "label": "Mock vidéo (1.0)",
+      "description": "Vidéo simulée — environnement mock.",
+      "tier": "fast",
+      "capabilities": ["vertical-9x16"],
+      "pricing": { "perCall": 0 },
+      "recommendedFor": ["reel", "story"],
+      "source": "static",
+      "isDefault": true
+    }
+  ],
+  "providers": [
+    { "id": "openai", "label": "OpenAI", "status": "healthy" },
+    { "id": "anthropic", "label": "Anthropic", "status": "healthy" },
+    { "id": "mock", "label": "Mock provider", "status": "mock" }
+  ]
+}

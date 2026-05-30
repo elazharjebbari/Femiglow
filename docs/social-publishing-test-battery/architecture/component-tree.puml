@@ -1,0 +1,78 @@
+@startuml component-tree
+title Admin UI — Social Publishing component tree
+
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor #FFFBF3
+  BorderColor #6B5BFF
+}
+
+[AppShell\n(Sidebar + Content)] as SHELL
+
+package "/admin/content-studio-v2/create" {
+  [CreateWorkspace] as CW
+  CW --> [Stepper]
+  CW --> [IntentionForm]
+  CW --> [VariantsCompare]
+  CW --> [MediaStudio]
+  CW --> [CaptionEditor]
+  CW --> [PreviewPane] as PP
+  CW --> [PublishActionGroup] as PAG
+  PP --> [ApproveButton] as AB
+  PAG --> [MockModeBadge\n(inline)]
+  PAG --> [ConfirmPreview\n(in dialogs)]
+  PAG ..> [G12 dialog enrichi] : thumbnail + caption
+}
+
+package "/admin/content-studio-v2/plan" {
+  [PlanPage]
+  [PlanPage] --> [Calendar] as CAL
+  [PlanPage] --> [JobQueue] as JQ
+  [PlanPage] --> [QuickEditDrawer] as QED
+  CAL --> [CalendarCard\n(one per post)] as CC
+  JQ --> [Job row\n(per job)]
+}
+
+package "/admin/content-studio-v2/library" {
+  [LibraryClient] as LIB
+  LIB --> [Library card\n(per draft/post)]
+}
+
+package "/admin/content-studio-v2/home" {
+  [HomePage]
+  [HomePage] --> [AccountHealthCard] as AHC
+  [HomePage] --> [Other widgets]
+}
+
+SHELL --> CW
+SHELL --> [PlanPage]
+SHELL --> LIB
+SHELL --> [HomePage]
+
+note right of PAG
+  3 modes via Radix Dropdown:
+  - Publier maintenant
+  - Programmer (presets + tz)
+  - Brouillon Postiz
+  Each opens a confirm Dialog
+  with G12 thumbnail+caption preview.
+end note
+
+note right of JQ
+  Polls /publish-jobs every 30s
+  via SWR / useSWR or interval.
+  Retry / Cancel buttons per row.
+end note
+
+note right of QED
+  Opens on calendar card
+  double-click.
+  Allows reschedule + cancel.
+end note
+
+note right of CC
+  Drag-drop for reschedule
+  (drops onto a new day cell).
+end note
+
+@enduml

@@ -1,0 +1,170 @@
+# Contract spec — generate-visual extended to support kind=video (mock + future real)
+# Phase 3+4 du runbook
+
+endpoint:
+  method: POST
+  path: /api/admin/content-studio/drafts/{id}/generate-visual
+  auth: admin cookie
+
+path_parameters:
+  id:
+    type: uuid
+    description: Draft ID
+
+request_body:
+  content_type: application/json
+  schema:
+    prompt:
+      type: string
+      required: true
+      minLength: 12
+      maxLength: 1800
+    size:
+      type: string
+      required: false
+      enum: ["1024x1024", "1024x1536", "1536x1024"]
+      default: "1024x1024"
+      description: ignored when kind=video (always 1080x1920)
+    quality:
+      type: string
+      required: false
+      enum: [low, medium, high]
+      default: low
+    kind:
+      type: string
+      required: false
+      enum: [image, video]
+      default: image
+      status: NEW
+    model:
+      type: string
+      required: false
+      description: e.g. "dall-e-3" for image, "mock-video-1.0" for video
+      status: NEW
+
+response_200:
+  schema:
+    media:
+      id: string
+      kind: string
+      compartment: string                # ai_generated
+      slug: string
+      alt: string
+      previewUrl: string
+      originalUrl: string
+      thumbnailUrl: string               # nullable for videos until poster generated
+      width: integer
+      height: integer
+      durationMs: integer                # only for kind=video
+      createdAt: string
+    run:
+      id: string
+      provider: string                   # mock | openai | …
+      model: string
+      status: string                     # succeeded | failed | fallback
+      costCents: integer
+      createdAt: string
+
+response_402:
+  description: budget exhausted
+  schema:
+    error: { code: budget_exceeded, message: string }
+
+response_400:
+  description: validation
+  schema:
+    error: { code: validation_error, fields: object }
+
+response_503:
+  description: provider down
+  schema:
+    error: { code: provider_down, provider: string }
+
+server_logic:
+
+  - step: 1
+    name: Validate input
+    detail: Zod schema, check that prompt length ≥ 12
+
+  - step: 2
+    name: Determine kind
+    detail: |
+      kind = req.kind ?? 'image'
+      If kind = 'video' and draft.format not in {reel, story}, warn but allow.
+
+  - step: 3
+    name: Determine model
+    detail: |
+      model = req.model
+        ?? suggestForFormat(draft.format).<kind>.id
+        ?? env.CONTENT_STUDIO_VIDEO_MODEL or CONTENT_STUDIO_IMAGE_MODEL
+
+  - step: 4
+    name: Budget check
+    detail: |
+      Compute expected cost via registry.pricing
+      If sum(today) + expected > dailyBudget → 402
+
+  - step: 5
+    name: Generate
+    detail: |
+      Switch:
+        - kind=image: generateStudioImage(prompt, size, quality, model)
+        - kind=video: generateStudioVideo(prompt, model, format=draft.format)
+      In mock mode (CONTENT_STUDIO_V2_MOCK_MODE=true OR model.provider='mock'):
+        - image → SVG → PNG (existing)
+        - video → return static MP4 URL from /public/_media/content-studio/mock/
+
+  - step: 6
+    name: Persist
+    detail: |
+      INSERT media (kind, compartment=ai_generated, originalUrl, dimensions, durationMs)
+      INSERT content_asset_binding (draftId, mediaId, role=primary)
+      INSERT content_generation_run (provider, model, costCents, status)
+
+  - step: 7
+    name: Return
+    detail: { media, run }
+
+mock_video_assets:
+
+  reel:
+    path: /public/_media/content-studio/mock/reel-9x16.mp4
+    public_url: /_media/content-studio/mock/reel-9x16.mp4
+    width: 1080
+    height: 1920
+    durationMs: 5000
+    poster: /_media/content-studio/mock/poster-9x16.jpg
+
+  story:
+    path: /public/_media/content-studio/mock/story-9x16.mp4
+    public_url: /_media/content-studio/mock/story-9x16.mp4
+    width: 1080
+    height: 1920
+    durationMs: 3000
+    poster: /_media/content-studio/mock/poster-9x16.jpg
+
+  # Other formats can also serve a mock if needed
+  carousel_video:
+    path: null
+    note: Carousel = images only in practice. No video mock.
+
+ffmpeg_recipe:
+  description: Generate the mock MP4 files
+  commands:
+    - |
+      ffmpeg -f lavfi -i color=c=0x6B5BFF:size=1080x1920:duration=5 \
+        -vf "drawtext=text='FemiGlow Mock Reel':fontcolor=white:fontsize=80:x=(w-text_w)/2:y=(h-text_h)/2:fontfile=/usr/share/fonts/truetype/dejavu/DejaVu-Bold.ttf" \
+        -c:v libx264 -pix_fmt yuv420p -profile:v baseline -level 3.0 \
+        -movflags +faststart -b:v 700k \
+        /var/www/femiglow-staging/apps/web/public/_media/content-studio/mock/reel-9x16.mp4
+    - |
+      ffmpeg -f lavfi -i color=c=0xFFB58E:size=1080x1920:duration=3 \
+        -vf "drawtext=text='FemiGlow Mock Story':fontcolor=white:fontsize=80:x=(w-text_w)/2:y=(h-text_h)/2:fontfile=/usr/share/fonts/truetype/dejavu/DejaVu-Bold.ttf" \
+        -c:v libx264 -pix_fmt yuv420p -profile:v baseline -level 3.0 \
+        -movflags +faststart -b:v 500k \
+        /var/www/femiglow-staging/apps/web/public/_media/content-studio/mock/story-9x16.mp4
+    - |
+      ffmpeg -f lavfi -i color=c=0x6B5BFF:size=1080x1920:duration=1 \
+        -frames:v 1 \
+        /var/www/femiglow-staging/apps/web/public/_media/content-studio/mock/poster-9x16.jpg

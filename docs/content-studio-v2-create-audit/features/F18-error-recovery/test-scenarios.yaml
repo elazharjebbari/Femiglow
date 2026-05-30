@@ -1,0 +1,19 @@
+feature: F18-error-recovery
+
+unit:
+  - name: formatError maps known code
+    given: { code: 'budget_exceeded' }
+    expect: 'Budget IA quotidien atteint.'
+  - name: formatError falls back to message on unknown code
+    given: { code: 'foo_bar', message: 'Unknown' }
+    expect: 'Unknown'
+
+component:
+  - name: publish error shows mapped message
+    given: response code='no_account_connected'
+    expect: toast 'Aucun compte social connecté.'
+  - name: generation error 503 shows provider down
+    expect: toast 'Provider indisponible'
+  - name: session expired triggers banner
+    given: PATCH 401
+    expect: banner 'Session expirée' + relogin button

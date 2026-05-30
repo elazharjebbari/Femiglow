@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetMemoryStore } from '@/lib/db/client';
 import type { PostizIntegration } from '@/lib/content-studio/postiz';
 import {
+  resolveDefaultAccount,
   syncPostizSocialAccounts,
   syncSocialAccounts,
 } from './admin-service';
@@ -101,6 +102,49 @@ describe('syncSocialAccounts', () => {
     const accounts = await syncSocialAccounts({ fetchPostizIntegrations: fetcher });
     const postiz = accounts.find((a) => a.provider === 'postiz');
     expect(postiz?.platform).toBe('instagram');
+  });
+});
+
+describe('resolveDefaultAccount (mode dry_run vs live)', () => {
+  const postizFetcher = () =>
+    vi.fn().mockResolvedValue([
+      { id: 'postiz_ig_1', identifier: 'instagram', name: 'AlFenna Beauty', disabled: false },
+    ] satisfies PostizIntegration[]);
+
+  it('mode dry_run : préfère le compte dry_run (aucune publication réelle)', async () => {
+    await syncSocialAccounts({ fetchPostizIntegrations: postizFetcher() });
+    const account = await resolveDefaultAccount('instagram', { mode: 'dry_run' });
+    expect(account?.provider).toBe('dry_run');
+  });
+
+  it('mode live : route vers Postiz (jamais dry_run)', async () => {
+    await syncSocialAccounts({ fetchPostizIntegrations: postizFetcher() });
+    const account = await resolveDefaultAccount('instagram', { mode: 'live' });
+    expect(account?.provider).toBe('postiz');
+    expect(account?.name).toBe('AlFenna Beauty');
+  });
+
+  it('mode live : épingle un compte précis via remoteId', async () => {
+    const fetcher = vi.fn().mockResolvedValue([
+      { id: 'postiz_a', identifier: 'instagram', name: 'Compte A' },
+      { id: 'postiz_b', identifier: 'instagram', name: 'Compte B' },
+    ] satisfies PostizIntegration[]);
+    await syncSocialAccounts({ fetchPostizIntegrations: fetcher });
+    const account = await resolveDefaultAccount('instagram', {
+      mode: 'live',
+      pinnedAccountId: 'postiz_b',
+    });
+    expect(account?.remoteId).toBe('postiz_b');
+    expect(account?.name).toBe('Compte B');
+  });
+
+  it('mode live : retombe sur null si aucun compte réel (pas de fallback dry_run)', async () => {
+    // Seuls les comptes dry_run existent ; Postiz indisponible.
+    await syncSocialAccounts({
+      fetchPostizIntegrations: vi.fn().mockResolvedValue([]),
+    });
+    const account = await resolveDefaultAccount('instagram', { mode: 'live' });
+    expect(account).toBeNull();
   });
 });
 

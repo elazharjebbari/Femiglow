@@ -1,0 +1,17 @@
+feature: F32-multi-account-publish
+critical: P1
+
+contract:
+  - id: F32-C-1
+    name: publish-now 1 account → 1 job
+  - id: F32-C-2
+    name: publish-now no accountId → 1 job (1st active)
+  - id: F32-C-3
+    name: bulk publish (custom API or UI batch) → N jobs
+
+e2e:
+  - id: F32-E-1
+    name: 1 post → 2 IG accounts → 2 jobs in queue
+    scenario_ref: S05
+  - id: F32-E-2
+    name: 1 fails, 1 succeeds → JobQueue reflects both

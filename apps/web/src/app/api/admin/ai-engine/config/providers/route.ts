@@ -128,11 +128,12 @@ function getDefaultProviders(): ProviderConfigResponse[] {
     {
       id: 'default-ollama',
       providerType: 'ollama',
-      name: 'Ollama (local)',
-      apiKeyEnvVar: 'AI_ENGINE_OLLAMA_BASE_URL',
+      name: 'Ollama',
+      apiKeyEnvVar: 'OLLAMA_PROVIDER_KEY',
       baseUrl: config.apiKeys.ollamaBaseUrl ?? 'http://localhost:11434',
       capabilities: ['text', 'embedding'],
       models: [
+        { name: 'glm-5.1:cloud', capability: 'text', costPer1MInput: 0, costPer1MOutput: 0 },
         { name: 'llama3.1:8b', capability: 'text', costPer1MInput: 0, costPer1MOutput: 0 },
         { name: 'nomic-embed-text', capability: 'embedding', costPer1MInput: 0 },
       ],
@@ -144,7 +145,34 @@ function getDefaultProviders(): ProviderConfigResponse[] {
       isEnabled: true,
       healthStatus: 'healthy',
       lastHealthCheck: now,
-      configured: !!config.apiKeys.ollamaBaseUrl,
+      configured: !!(config.apiKeys.ollamaBaseUrl || process.env.OLLAMA_PROVIDER_KEY),
+    },
+    {
+      id: 'default-higgsfield',
+      providerType: 'higgsfield',
+      name: 'Higgsfield AI',
+      apiKeyEnvVar: 'AI_ENGINE_HIGGSFIELD_API_KEY',
+      baseUrl: 'https://api.higgsfield.ai',
+      capabilities: ['image', 'video'],
+      models: [
+        { name: 'flux_2', capability: 'image', costPerUnit: 100 },
+        { name: 'flux_kontext', capability: 'image', costPerUnit: 100 },
+        { name: 'cinematic_studio_2_5', capability: 'image', costPerUnit: 200 },
+        { name: 'image_auto', capability: 'image', costPerUnit: 100 },
+        { name: 'cinematic_studio_3_0', capability: 'video', costPerUnit: 500 },
+        { name: 'veo3_1', capability: 'video', costPerUnit: 800 },
+        { name: 'kling3_0', capability: 'video', costPerUnit: 500 },
+        { name: 'wan2_7', capability: 'video', costPerUnit: 400 },
+      ],
+      rateLimitRpm: 60,
+      dailyBudgetCents: Math.round(config.budget.dailyCents * 0.15),
+      circuitBreakerConfig: { failureThreshold: 5, resetTimeoutMs: 60000, halfOpenMaxCalls: 1 },
+      priority: 15,
+      isFallback: false,
+      isEnabled: true,
+      healthStatus: 'healthy',
+      lastHealthCheck: now,
+      configured: !!process.env.AI_ENGINE_HIGGSFIELD_API_KEY,
     },
   ];
 }
@@ -169,7 +197,9 @@ export async function GET(): Promise<Response> {
           AI_ENGINE_ANTHROPIC_API_KEY: config.apiKeys.anthropic,
           AI_ENGINE_GOOGLE_API_KEY: config.apiKeys.google,
           AI_ENGINE_ELEVENLABS_API_KEY: config.apiKeys.elevenlabs,
+          AI_ENGINE_HIGGSFIELD_API_KEY: config.apiKeys.higgsfield,
           AI_ENGINE_OLLAMA_BASE_URL: config.apiKeys.ollamaBaseUrl,
+          OLLAMA_PROVIDER_KEY: config.apiKeys.ollamaBaseUrl || process.env.OLLAMA_PROVIDER_KEY,
         };
 
         const mapped: ProviderConfigResponse[] = rows.map((r) => ({
@@ -215,6 +245,17 @@ const providerUpdateSchema = z.object({
     resetTimeoutMs: z.number().int().positive(),
     halfOpenMaxCalls: z.number().int().positive(),
   }).optional(),
+  baseUrl: z.string().url().nullish(),
+  models: z.array(z.object({
+    name: z.string().min(1),
+    capability: z.enum(['text', 'image', 'video', 'tts', 'stt', 'embedding', 'music', 'moderation', 'vision']),
+    costPer1MInput: z.number().nonnegative().optional(),
+    costPer1MOutput: z.number().nonnegative().optional(),
+    costPerUnit: z.number().nonnegative().optional(),
+    maxTokens: z.number().int().positive().optional(),
+    supportsStructuredOutput: z.boolean().optional(),
+    supportsVision: z.boolean().optional(),
+  })).optional(),
 });
 
 export async function POST(request: Request): Promise<Response> {
@@ -239,6 +280,8 @@ export async function POST(request: Request): Promise<Response> {
     if (parsed.dailyBudgetCents !== undefined) updateData.dailyBudgetCents = parsed.dailyBudgetCents;
     if (parsed.rateLimitRpm !== undefined) updateData.rateLimitRpm = parsed.rateLimitRpm;
     if (parsed.circuitBreakerConfig !== undefined) updateData.circuitBreakerConfig = parsed.circuitBreakerConfig;
+    if (parsed.baseUrl !== undefined) updateData.baseUrl = parsed.baseUrl;
+    if (parsed.models !== undefined) updateData.models = parsed.models;
 
     const [updated] = await database
       .update(aiEngineProviderConfigs)

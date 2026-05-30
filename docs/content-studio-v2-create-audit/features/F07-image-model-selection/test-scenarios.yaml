@@ -1,0 +1,32 @@
+feature: F07-image-model-selection
+
+unit:
+  - name: suggestForFormat('post').image returns dall-e-3
+  - name: suggestForFormat('story').image returns gpt-image-1-mini
+  - name: registry contains gpt-image-1 entry
+
+component:
+  - name: ModelPicker shows in MediaStudio Générer tab
+    expect: data-role='image' picker visible
+  - name: default model is suggested for format
+    given: format='post'
+    expect: trigger displays 'DALL·E 3'
+  - name: changing model updates request
+    when: pick gpt-image-1 → click Générer
+    expect: POST /generate-visual body.model='gpt-image-1'
+  - name: warning if model doesn't support size
+    given: dall-e-3 + size=1024x1536
+    expect: toast or inline warning
+
+contract:
+  - name: POST /drafts/:id/generate-visual with model=dall-e-3 → 200
+  - name: with model='nonexistent' → 200 OR 400 (decided in impl)
+  - name: with kind=image+model+size → run.model recorded
+
+e2e:
+  - name: switch image model and re-generate
+    steps:
+      - generate first image with default model
+      - open ModelPicker, switch to gpt-image-1
+      - generate again
+    expect: second generation_run uses gpt-image-1, distinct media item created

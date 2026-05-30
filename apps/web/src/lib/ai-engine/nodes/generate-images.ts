@@ -1,5 +1,8 @@
 import { createLogger } from '../utils/logger';
 import { getEngineConfig } from '../config';
+import { ProviderSelector } from '../providers/selector';
+import type { ProviderConfig } from '../providers/types';
+import { resolveApiKey } from '../services/api-key-manager';
 
 const log = createLogger('node:generate-images');
 
@@ -64,49 +67,67 @@ function generateMockImage(index: number, width: number, height: number): MediaA
   };
 }
 
-async function generateOpenAIImage(
+async function buildProviderConfigs(config: ReturnType<typeof getEngineConfig>): Promise<ProviderConfig[]> {
+  const configs: ProviderConfig[] = [];
+  const providers = [
+    { type: 'openai', capability: 'image', priority: 10 },
+    { type: 'higgsfield', capability: 'image', priority: 15 },
+    { type: 'google', capability: 'image', priority: 30 },
+  ] as const;
+
+  for (const p of providers) {
+    const apiKey = await resolveApiKey(p.type);
+    if (!apiKey) continue;
+    configs.push({
+      id: `runtime-${p.type}`,
+      type: p.type,
+      name: p.type,
+      apiKeyEnvVar: `AI_ENGINE_${p.type.toUpperCase()}_API_KEY`,
+      capabilities: [p.capability],
+      models: [],
+      rateLimitRpm: 60,
+      dailyBudgetCents: config.budget.dailyCents,
+      circuitBreaker: { failureThreshold: 5, resetTimeoutMs: 60000, halfOpenMaxCalls: 1 },
+      priority: p.priority,
+      isFallback: p.priority > 10,
+      isEnabled: true,
+      healthStatus: 'healthy',
+    });
+  }
+  return configs;
+}
+
+async function generateProviderImage(
   prompt: string,
-  size: string,
+  width: number,
+  height: number,
   index: number,
-  apiKey: string,
-  model: string,
+  config: ReturnType<typeof getEngineConfig>,
 ): Promise<MediaAsset> {
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      prompt,
-      n: 1,
-      size,
-      quality: 'standard',
-      response_format: 'url',
-    }),
+  const providerConfigs = await buildProviderConfigs(config);
+  if (providerConfigs.length === 0) throw new Error('No image provider configured');
+
+  const selector = new ProviderSelector(providerConfigs);
+  const adapter = selector.selectProvider('generate_images', 'image');
+
+  const result = await adapter.generateImage({
+    model: config.providers.image.model,
+    prompt,
+    width,
+    height,
+    count: 1,
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => `${res.status}`);
-    throw new Error(`OpenAI image generation failed: ${text}`);
-  }
-
-  const json = (await res.json()) as { data?: Array<{ url?: string }> };
-  const url = json.data?.[0]?.url;
-  if (!url) throw new Error('No image URL in response');
-
-  const [w, h] = size.split('x').map(Number);
-  const costCents = size === '1024x1024' ? 4 : 8;
+  const imageUrl = result.data.images[0]?.url ?? result.data.images[0]?.base64 ?? '';
 
   return {
-    assetId: `openai-img-${Date.now()}-${index}`,
-    url,
+    assetId: `${adapter.name}-img-${Date.now()}-${index}`,
+    url: imageUrl,
     mimeType: 'image/png',
-    width: w ?? 1024,
-    height: h ?? 1024,
-    provider: `openai:${model}`,
-    costCents,
+    width,
+    height,
+    provider: `${adapter.name}:${config.providers.image.model}`,
+    costCents: result.costCents,
   };
 }
 
@@ -137,15 +158,15 @@ export async function generateImagesNode(state: Record<string, unknown>): Promis
     const prompt = buildImagePrompt(note, brand);
 
     try {
-      if (config.providers.image.default === 'mock' || !config.apiKeys.openai) {
+      if (config.providers.image.default === 'mock') {
         images.push(generateMockImage(i, platformSpec.width, platformSpec.height));
       } else {
-        const asset = await generateOpenAIImage(
+        const asset = await generateProviderImage(
           prompt,
-          platformSpec.size,
+          platformSpec.width,
+          platformSpec.height,
           i,
-          config.apiKeys.openai,
-          config.providers.image.model,
+          config,
         );
         images.push(asset);
         totalCost += asset.costCents;

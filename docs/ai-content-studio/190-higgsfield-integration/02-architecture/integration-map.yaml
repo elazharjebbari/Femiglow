@@ -1,0 +1,451 @@
+# Integration Map - Higgsfield AI Provider
+# Date: 2026-05-27
+# Scope: All integration points for adding Higgsfield as image/video provider
+# Reference: audit.md sections 3.1-3.10
+
+metadata:
+  provider: higgsfield
+  capabilities: [image, video]
+  priority: 15
+  base_url: https://api.higgsfield.ai
+  auth_method: Bearer token
+  total_files_modified: 10
+  total_files_created: 1
+  estimated_effort_hours: 7-9
+
+integration_points:
+  # =========================================================================
+  # IP-01: Type System — ProviderType enum
+  # =========================================================================
+  - id: IP-01
+    phase: 1
+    file: src/lib/ai-engine/providers/types.ts
+    change_type: modify
+    description: Add 'higgsfield' to ProviderType Zod enum
+    lines: 19-27
+    exact_change: |
+      Add 'higgsfield' as the last element of the z.enum array in ProviderType.
+      This enables TypeScript type-safety and Zod runtime validation for the new provider.
+    before: |
+      export const ProviderType = z.enum([
+        'openai', 'anthropic', 'google', 'ollama', 'elevenlabs', 'runway', 'stability',
+      ]);
+    after: |
+      export const ProviderType = z.enum([
+        'openai', 'anthropic', 'google', 'ollama', 'elevenlabs', 'runway', 'stability', 'higgsfield',
+      ]);
+    impact:
+      - All ProviderConfig objects now accept type: 'higgsfield'
+      - Zod validation allows 'higgsfield' as a valid provider type
+      - TypeScript union type ProviderType includes 'higgsfield'
+    dependencies: []
+    tested_by:
+      - build-check
+      - unit-types-providertype-includes-higgsfield
+
+  # =========================================================================
+  # IP-02: Environment Variables
+  # =========================================================================
+  - id: IP-02
+    phase: 1
+    file: src/lib/env.ts
+    change_type: modify
+    description: Add AI_ENGINE_HIGGSFIELD_API_KEY env var and update provider enums
+    lines: 138-152
+    exact_change: |
+      1. Add 'AI_ENGINE_HIGGSFIELD_API_KEY: z.string().optional()' to envSchema (after AI_ENGINE_OLLAMA_BASE_URL)
+      2. Add 'higgsfield' to AI_ENGINE_DEFAULT_IMAGE_PROVIDER enum
+      3. Add 'higgsfield' to AI_ENGINE_DEFAULT_VIDEO_PROVIDER enum
+      4. Add 'AI_ENGINE_HIGGSFIELD_API_KEY: process.env.AI_ENGINE_HIGGSFIELD_API_KEY' to parse block
+    before: |
+      AI_ENGINE_DEFAULT_IMAGE_PROVIDER: z.enum(['openai', 'google', 'stability', 'mock']).default('mock'),
+      AI_ENGINE_DEFAULT_VIDEO_PROVIDER: z.enum(['google', 'runway', 'mock']).default('mock'),
+    after: |
+      AI_ENGINE_HIGGSFIELD_API_KEY: z.string().optional(),
+      AI_ENGINE_DEFAULT_IMAGE_PROVIDER: z.enum(['openai', 'google', 'stability', 'higgsfield', 'mock']).default('mock'),
+      AI_ENGINE_DEFAULT_VIDEO_PROVIDER: z.enum(['google', 'runway', 'higgsfield', 'mock']).default('mock'),
+    impact:
+      - New env var recognized by Zod schema
+      - Operators can set AI_ENGINE_DEFAULT_IMAGE_PROVIDER=higgsfield
+      - Operators can set AI_ENGINE_DEFAULT_VIDEO_PROVIDER=higgsfield
+    dependencies: []
+    tested_by:
+      - build-check
+      - unit-env-schema-accepts-higgsfield-key
+      - unit-env-image-provider-enum-includes-higgsfield
+      - unit-env-video-provider-enum-includes-higgsfield
+
+  # =========================================================================
+  # IP-03: Engine Configuration Interface
+  # =========================================================================
+  - id: IP-03
+    phase: 1
+    file: src/lib/ai-engine/config/engine-config.ts
+    change_type: modify
+    description: Add 'higgsfield' to EngineConfig type unions and apiKeys
+    lines: 1-99
+    exact_change: |
+      1. Add 'higgsfield' to providers.image.default union type
+      2. Add 'higgsfield' to providers.video.default union type
+      3. Add 'higgsfield: string | undefined' to apiKeys interface
+      4. Add resolution line in getEngineConfig() apiKeys block
+    before: |
+      image: { default: 'openai' | 'google' | 'stability' | 'mock'; model: string };
+      video: { default: 'google' | 'runway' | 'mock' };
+      apiKeys: { openai; anthropic; google; elevenlabs; ollamaBaseUrl };
+    after: |
+      image: { default: 'openai' | 'google' | 'stability' | 'higgsfield' | 'mock'; model: string };
+      video: { default: 'google' | 'runway' | 'higgsfield' | 'mock' };
+      apiKeys: { openai; anthropic; google; elevenlabs; ollamaBaseUrl; higgsfield };
+    impact:
+      - EngineConfig correctly typed for Higgsfield
+      - getEngineConfig() resolves the Higgsfield API key from env
+    dependencies:
+      - IP-02  # env.ts must have the key defined
+    tested_by:
+      - build-check
+      - unit-config-apikeys-includes-higgsfield
+      - unit-config-image-default-accepts-higgsfield
+      - unit-config-video-default-accepts-higgsfield
+
+  # =========================================================================
+  # IP-04: API Key Manager
+  # =========================================================================
+  - id: IP-04
+    phase: 2
+    file: src/lib/ai-engine/services/api-key-manager.ts
+    change_type: modify
+    description: Add Higgsfield to PROVIDER_NAMES, ENV_KEY_MAP, and providers list
+    lines: 32-60
+    exact_change: |
+      1. Add 'higgsfield: "Higgsfield AI"' to PROVIDER_NAMES
+      2. Add 'higgsfield: ["AI_ENGINE_HIGGSFIELD_API_KEY"]' to ENV_KEY_MAP
+      3. Add 'higgsfield' to the providers array in listApiKeys()
+    impact:
+      - listApiKeys() returns Higgsfield entry
+      - resolveEnvKey('higgsfield') checks AI_ENGINE_HIGGSFIELD_API_KEY
+      - saveApiKey('higgsfield', ...) uses correct display name
+    dependencies:
+      - IP-01  # ProviderType must include 'higgsfield'
+    tested_by:
+      - unit-keymanager-provider-names-includes-higgsfield
+      - unit-keymanager-env-key-map-includes-higgsfield
+      - unit-keymanager-list-includes-higgsfield
+      - contract-api-keys-list-includes-higgsfield
+
+  # =========================================================================
+  # IP-05: API Key Validator
+  # =========================================================================
+  - id: IP-05
+    phase: 2
+    file: src/lib/ai-engine/services/api-key-validator.ts
+    change_type: modify
+    description: Add testHiggsfield() validation function and switch case
+    lines: 14-99
+    exact_change: |
+      1. Add case 'higgsfield': return await testHiggsfield(apiKey, start) in switch
+      2. Add testHiggsfield() function that calls GET /v1/models with Bearer auth
+    impact:
+      - validateApiKey('higgsfield', key) returns valid/invalid correctly
+      - Handles 200 (valid), 401 (invalid), 429 (valid but rate limited)
+    dependencies:
+      - IP-04  # Key manager must resolve the key
+    tested_by:
+      - unit-validator-higgsfield-valid-key
+      - unit-validator-higgsfield-invalid-key
+      - unit-validator-higgsfield-rate-limited
+      - unit-validator-higgsfield-server-error
+      - unit-validator-higgsfield-timeout
+
+  # =========================================================================
+  # IP-06: Model Discovery
+  # =========================================================================
+  - id: IP-06
+    phase: 3
+    file: src/lib/ai-engine/services/model-discovery.ts
+    change_type: modify
+    description: Add Higgsfield to DiscoverableProvider, fallback models, and fetcher
+    lines: 23-300
+    exact_change: |
+      1. Add '| "higgsfield"' to DiscoverableProvider type
+      2. Add 'video' to ModelEntry.role union type
+      3. Add higgsfield entry in FALLBACK_MODELS with 4 models
+      4. Add fetchHiggsfield() function
+      5. Add case 'higgsfield' in callFetcher() switch
+    impact:
+      - discoverModels('higgsfield') returns fallback models without API key
+      - discoverModels('higgsfield', { apiKey }) attempts live fetch
+      - ModelEntry can now represent video models
+    dependencies:
+      - IP-05  # Validator must be able to test the key
+    tested_by:
+      - unit-discovery-higgsfield-fallback
+      - unit-discovery-higgsfield-live-fetch
+      - unit-discovery-fetchhiggsfield-parses-response
+      - unit-discovery-fallback-has-image-and-video
+      - unit-discovery-cache-invalidation-higgsfield
+
+  # =========================================================================
+  # IP-07: Provider Adapter (NEW FILE)
+  # =========================================================================
+  - id: IP-07
+    phase: 4
+    file: src/lib/ai-engine/providers/adapters/higgsfield.ts
+    change_type: create
+    description: New HiggsFieldAdapter class implementing image and video generation
+    lines: 1-200 (new file)
+    exact_change: |
+      Create new file with HiggsFieldAdapter extending ProviderAdapter.
+      Implements:
+        - generateImage(): POST /v1/images/generate (synchronous)
+        - generateVideo(): POST /v1/videos/generate (async with polling)
+        - generateText(): throws NotImplementedError
+        - generateEmbedding(): throws NotImplementedError
+      Includes:
+        - Circuit breaker wrapping
+        - Retry policy with exponential backoff
+        - Cost tracking via ModelConfig.costPerUnit
+        - Video poll loop: 3s interval, 120 max attempts (6 min)
+    impact:
+      - New adapter available for ProviderSelector
+      - Image generation via Higgsfield API
+      - Video generation with async job polling
+    dependencies:
+      - IP-01  # ProviderType must include 'higgsfield'
+    tested_by:
+      - unit-adapter-generate-image-success
+      - unit-adapter-generate-image-error-500
+      - unit-adapter-generate-image-error-401
+      - unit-adapter-generate-image-cost-calculation
+      - unit-adapter-generate-video-sync
+      - unit-adapter-generate-video-async-poll
+      - unit-adapter-generate-video-poll-timeout
+      - unit-adapter-generate-video-poll-failure
+      - unit-adapter-generate-text-not-implemented
+      - unit-adapter-generate-embedding-not-implemented
+      - unit-adapter-circuit-breaker-opens
+      - unit-adapter-retry-respects-max
+
+  # =========================================================================
+  # IP-08: Provider Selector
+  # =========================================================================
+  - id: IP-08
+    phase: 5
+    file: src/lib/ai-engine/providers/selector.ts
+    change_type: modify
+    description: Add HiggsFieldAdapter import and case in createAdapter()
+    lines: 4-19
+    exact_change: |
+      1. Add: import { HiggsFieldAdapter } from './adapters/higgsfield'
+      2. Add: case 'higgsfield': return new HiggsFieldAdapter(config)
+    impact:
+      - ProviderSelector can now create and manage HiggsFieldAdapter instances
+      - selectProvider('...', 'image') can return HiggsFieldAdapter when priority allows
+      - selectProvider('...', 'video') can return HiggsFieldAdapter
+    dependencies:
+      - IP-07  # Adapter must exist
+    tested_by:
+      - unit-selector-creates-higgsfield-adapter
+      - unit-selector-selects-higgsfield-for-image
+      - unit-selector-selects-higgsfield-for-video
+      - unit-selector-fallback-excludes-higgsfield
+
+  # =========================================================================
+  # IP-09: Default Provider Registration (API route)
+  # =========================================================================
+  - id: IP-09
+    phase: 5
+    file: src/app/api/admin/ai-engine/config/providers/route.ts
+    change_type: modify
+    description: Add Higgsfield default provider config and envKeyMap entry
+    lines: 36-175
+    exact_change: |
+      1. Add default-higgsfield entry in getDefaultProviders() array
+         - id: 'default-higgsfield'
+         - providerType: 'higgsfield'
+         - capabilities: ['image', 'video']
+         - priority: 15
+         - 4 models (2 image + 2 video)
+         - dailyBudgetCents: 20% of daily budget
+      2. Add 'AI_ENGINE_HIGGSFIELD_API_KEY: config.apiKeys.higgsfield' to envKeyMap
+    impact:
+      - GET /api/admin/ai-engine/config/providers returns Higgsfield
+      - Config UI shows Higgsfield provider card
+      - configured=true when API key is set
+    dependencies:
+      - IP-03  # EngineConfig must have apiKeys.higgsfield
+    tested_by:
+      - contract-providers-list-includes-higgsfield
+      - contract-providers-higgsfield-has-image-video
+      - contract-providers-higgsfield-priority-15
+      - e2e-provider-card-visible
+      - e2e-provider-card-shows-capabilities
+
+  # =========================================================================
+  # IP-10: Models Discovery API Route
+  # =========================================================================
+  - id: IP-10
+    phase: 5
+    file: src/app/api/admin/ai-engine/config/providers/models/route.ts
+    change_type: modify
+    description: Add Higgsfield to VALID_PROVIDERS, PROVIDER_TO_DISCOVERY, POPULAR_MODELS
+    lines: 18-98
+    exact_change: |
+      1. Add 'higgsfield' to VALID_PROVIDERS Set
+      2. Add 'higgsfield: "higgsfield"' to PROVIDER_TO_DISCOVERY mapping
+      3. Add higgsfield entry to POPULAR_MODELS with 4 model IDs
+    impact:
+      - GET /config/providers/models?provider=higgsfield returns models
+      - Models sorted by popularity priority
+      - Capability filter works (image, video)
+    dependencies:
+      - IP-06  # Model discovery must support 'higgsfield'
+    tested_by:
+      - contract-models-route-accepts-higgsfield
+      - contract-models-route-returns-image-models
+      - contract-models-route-returns-video-models
+      - contract-models-route-filters-by-capability
+      - e2e-model-selector-shows-higgsfield-models
+
+# =========================================================================
+# Node Integration (not an integration point from audit, but required)
+# =========================================================================
+node_refactoring:
+  - id: NR-01
+    phase: 6
+    file: src/lib/ai-engine/nodes/generate-images.ts
+    change_type: modify
+    description: Refactor from direct OpenAI call to ProviderSelector pattern
+    impact:
+      - generate-images uses ProviderSelector instead of hardcoded OpenAI fetch
+      - Higgsfield automatically selected when configured as default image provider
+      - Mock fallback preserved for development
+    dependencies:
+      - IP-08  # Selector must support higgsfield
+    tested_by:
+      - unit-generate-images-uses-selector
+      - unit-generate-images-mock-fallback
+      - unit-generate-images-higgsfield-when-configured
+      - unit-generate-images-cost-tracking
+
+  - id: NR-02
+    phase: 6
+    file: src/lib/ai-engine/nodes/generate-video.ts
+    change_type: modify
+    description: Replace "not yet implemented" placeholder with ProviderSelector call
+    impact:
+      - generate-video uses ProviderSelector for real video generation
+      - Higgsfield's async polling handled transparently by the adapter
+      - Mock fallback preserved
+    dependencies:
+      - IP-08  # Selector must support higgsfield
+    tested_by:
+      - unit-generate-video-uses-selector
+      - unit-generate-video-mock-fallback
+      - unit-generate-video-higgsfield-when-configured
+      - unit-generate-video-cost-tracking
+
+# =========================================================================
+# Test Infrastructure
+# =========================================================================
+test_infrastructure:
+  - id: TI-01
+    phase: 7
+    file: src/test/msw/ai-engine-handlers.ts
+    change_type: modify
+    description: Add Higgsfield mock data, MSW handlers, and error handlers
+    impact:
+      - All unit and contract tests can mock Higgsfield API
+      - Error scenarios testable (429, 500, timeout, auth failure)
+
+  - id: TI-02
+    phase: 7
+    file: src/lib/ai-engine/providers/adapters/__tests__/higgsfield.test.ts
+    change_type: create
+    description: Unit tests for HiggsFieldAdapter (12+ tests)
+
+  - id: TI-03
+    phase: 7
+    file: src/lib/ai-engine/services/__tests__/api-key-validator-higgsfield.test.ts
+    change_type: create
+    description: Unit tests for testHiggsfield() validator (5 tests)
+
+  - id: TI-04
+    phase: 7
+    file: src/lib/ai-engine/services/__tests__/model-discovery-higgsfield.test.ts
+    change_type: create
+    description: Unit tests for Higgsfield model discovery (5 tests)
+
+  - id: TI-05
+    phase: 7
+    file: src/test/api-contracts/ai-engine-higgsfield.contract.test.ts
+    change_type: create
+    description: Contract tests for providers and models API routes (6 tests)
+
+  - id: TI-06
+    phase: 7
+    file: e2e/content-studio-v2/ai-engine-higgsfield.spec.ts
+    change_type: create
+    description: E2E tests for config UI integration (6 tests)
+
+# =========================================================================
+# Dependency Graph
+# =========================================================================
+dependency_graph:
+  IP-01: []
+  IP-02: []
+  IP-03: [IP-02]
+  IP-04: [IP-01]
+  IP-05: [IP-04]
+  IP-06: [IP-05]
+  IP-07: [IP-01]
+  IP-08: [IP-07]
+  IP-09: [IP-03]
+  IP-10: [IP-06]
+  NR-01: [IP-08]
+  NR-02: [IP-08]
+  TI-01: [IP-07]
+  TI-02: [IP-07]
+  TI-03: [IP-05]
+  TI-04: [IP-06]
+  TI-05: [IP-09, IP-10]
+  TI-06: [NR-01, NR-02]
+
+# =========================================================================
+# Risk Matrix
+# =========================================================================
+risks:
+  - id: R-01
+    description: Higgsfield API response format differs from assumed structure
+    probability: medium
+    impact: high
+    mitigation: MSW mocks isolate tests; adapter normalizes response
+    affected_points: [IP-07]
+
+  - id: R-02
+    description: Video generation exceeds 6-minute polling timeout
+    probability: medium
+    impact: medium
+    mitigation: Timeout is configurable; ProviderError is retryable
+    affected_points: [IP-07, NR-02]
+
+  - id: R-03
+    description: Regression on existing OpenAI image generation path
+    probability: low
+    impact: high
+    mitigation: Preserve existing code paths; comprehensive unit tests
+    affected_points: [NR-01]
+
+  - id: R-04
+    description: Rate limiting (429) during key validation
+    probability: medium
+    impact: low
+    mitigation: 429 treated as "valid key, just rate limited"
+    affected_points: [IP-05]
+
+  - id: R-05
+    description: Circular dependency in provider config builder
+    probability: low
+    impact: medium
+    mitigation: Isolate builder function; avoid importing from nodes
+    affected_points: [NR-01, NR-02]

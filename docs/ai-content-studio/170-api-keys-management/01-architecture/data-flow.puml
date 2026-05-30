@@ -1,0 +1,214 @@
+@startuml
+' ============================================================
+' Data Flow - Gestion des Cles API (170)
+' Module : AI Engine - FemiGlow
+' Date : 2026-05-25
+' ============================================================
+
+title Flux de donnees - Gestion des Cles API\nAI Engine FemiGlow
+
+skinparam participant {
+  BackgroundColor #FFF8F0
+  BorderColor #C4704F
+  FontColor #2D1810
+}
+skinparam sequence {
+  ArrowColor #C4704F
+  LifeLineBorderColor #C4704F
+  LifeLineBackgroundColor #FFF8F0
+  DividerBorderColor #C4704F
+}
+skinparam note {
+  BackgroundColor #F5F0E8
+  BorderColor #C4704F
+}
+
+actor "Admin FemiGlow" as admin
+participant "UI Config\n(React)" as ui
+participant "API Route\n(Next.js)" as api
+participant "ApiKeyManager\n(Service)" as manager
+participant "EncryptionService" as crypto
+participant "ApiKeyValidator" as validator
+database "PostgreSQL\n(ai_engine_api_key)" as db
+participant "Provider API\n(OpenAI/Anthropic/...)" as provider
+
+' ============================================================
+' SEQUENCE 1 : Creation d'une cle API
+' ============================================================
+
+== Flux 1 : Creation d'une cle API ==
+
+admin -> ui : Clique "Ajouter une cle"
+ui -> ui : Affiche ApiKeyForm\n(select fournisseur + input password)
+
+admin -> ui : Saisit la cle + selectionne le fournisseur
+ui -> ui : Validation client\n(format prefixe, longueur min)
+
+ui -> api : POST /api/admin/ai-engine/config/api-keys\n{ providerType, apiKey, label? }
+note right of api : HTTPS uniquement\nCle transmise en clair\ndans le body
+
+api -> api : requireAdminApi()\n(verifie session iron-session)
+api -> api : Zod validation\n(schema + contraintes)
+
+api -> manager : createOrUpdateKey(providerType, apiKey, label, session)
+
+manager -> crypto : mask(apiKey)
+crypto --> manager : maskedKey = "sk-...AbCd"
+
+manager -> crypto : encrypt(apiKey)
+note right of crypto
+  1. Derive la cle AES-256 via PBKDF2
+  2. Genere IV aleatoire (12 octets)
+  3. Chiffre avec AES-256-GCM
+  4. Recupere authTag (16 octets)
+  5. Retourne "base64(iv):base64(tag):base64(cipher)"
+end note
+crypto --> manager : encryptedKey
+
+group Validation de la cle [skipValidation = false]
+  manager -> validator : validate(providerType, apiKey)
+  validator -> provider : GET /v1/models\n(ou equivalent par fournisseur)
+  alt Cle valide
+    provider --> validator : 200 OK { models: [...] }
+    validator --> manager : { valid: true, latencyMs: 245 }
+  else Cle invalide
+    provider --> validator : 401 Unauthorized
+    validator --> manager : { valid: false, error: "Cle invalide" }
+    manager --> api : Erreur VALIDATION_FAILED
+    api --> ui : 422 { error, code: "VALIDATION_FAILED" }
+    ui -> ui : Affiche erreur\n"La cle n'est pas valide"
+  end
+end
+
+manager -> db : Desactive les cles existantes\nUPDATE SET is_active = false\nWHERE provider_type = X AND is_active = true
+
+manager -> db : INSERT ai_engine_api_key\n{ providerType, encryptedKey, maskedKey, ... }
+db --> manager : Nouvelle cle creee (id)
+
+manager -> db : INSERT ai_engine_audit_log\n{ action: 'api_key.created', ... }
+
+manager -> manager : invalidateKeyCache(providerType)
+
+manager --> api : { key: ApiKeySummary, validation: result }
+api --> ui : 200 { key, validation }
+
+ui -> ui : Toast "Cle configuree avec succes"
+ui -> ui : Recharge la liste des cles
+ui -> admin : Affiche la carte mise a jour
+
+' ============================================================
+' SEQUENCE 2 : Resolution de la cle pour un job de generation
+' ============================================================
+
+== Flux 2 : Resolution de la cle (DB > env) ==
+
+participant "AI Engine\nOrchestrator" as engine
+
+engine -> manager : resolveApiKey("openai")
+
+manager -> manager : Verifie le cache en memoire
+
+alt Cache HIT (TTL < 5 min)
+  manager --> engine : { key: "sk-xxx", source: "database" }
+else Cache MISS
+  manager -> db : SELECT FROM ai_engine_api_key\nWHERE provider_type = 'openai'\nAND is_active = true
+
+  alt Cle trouvee en DB
+    db --> manager : Row avec encryptedKey
+    manager -> crypto : decrypt(encryptedKey)
+    crypto --> manager : apiKey en clair
+    manager -> manager : setCachedKey("openai", apiKey, TTL=5min)
+    manager --> engine : { key: apiKey, source: "database" }
+  else Pas de cle en DB
+    db --> manager : No rows
+    manager -> manager : Fallback sur env vars\ngetEngineConfig().apiKeys.openai
+
+    alt Env var trouvee
+      manager --> engine : { key: envVarKey, source: "env" }
+    else Aucune cle
+      manager --> engine : { key: undefined, source: "none" }
+      note right : Le fournisseur sera marque\ncomme "non configure"
+    end
+  end
+end
+
+' ============================================================
+' SEQUENCE 3 : Test de validite d'une cle existante
+' ============================================================
+
+== Flux 3 : Test de validite ==
+
+admin -> ui : Clique "Tester" sur une carte
+ui -> api : POST /api/admin/ai-engine/config/api-keys/test\n{ providerType: "openai" }
+
+api -> api : requireAdminApi()
+api -> api : checkTestRateLimit(session.email)\n(max 5/min)
+
+alt Rate limit depasse
+  api --> ui : 429 { error: "Limite de taux depassee" }
+  ui -> admin : Badge "Reessayez dans 1 min"
+end
+
+api -> manager : testExistingKey("openai")
+manager -> manager : resolveApiKey("openai")
+manager -> crypto : decrypt(encryptedKey)
+crypto --> manager : apiKey
+
+manager -> validator : validate("openai", apiKey)
+validator -> provider : GET https://api.openai.com/v1/models\n(timeout: 10s)
+
+alt Succes
+  provider --> validator : 200 { data: [...] }
+  validator --> manager : { valid: true, latencyMs: 180, details: { modelsAvailable: 12 } }
+
+  manager -> db : UPDATE ai_engine_api_key\nSET last_tested_at, last_test_result = 'success'
+  manager -> db : INSERT ai_engine_audit_log\n{ action: 'api_key.tested', result: 'success' }
+
+  manager --> api : ValidationResult
+  api --> ui : 200 { valid: true, latencyMs: 180 }
+  ui -> ui : Badge vert "Valide (180ms)"
+
+else Echec
+  provider --> validator : 401 / timeout / erreur
+  validator --> manager : { valid: false, error: "Cle invalide", latencyMs: 0 }
+
+  manager -> db : UPDATE ai_engine_api_key\nSET last_test_result = 'failure', last_test_error = ...
+  manager -> db : INSERT ai_engine_audit_log\n{ action: 'api_key.tested', result: 'failure' }
+
+  manager --> api : ValidationResult
+  api --> ui : 200 { valid: false, error: "..." }
+  ui -> ui : Badge rouge "Invalide : Cle expiree"
+end
+
+' ============================================================
+' SEQUENCE 4 : Suppression d'une cle
+' ============================================================
+
+== Flux 4 : Suppression d'une cle ==
+
+admin -> ui : Clique "Supprimer"
+ui -> ui : Dialog de confirmation\n"Supprimer la cle pour OpenAI ?\nLa variable d'env prendra le relais."
+
+admin -> ui : Confirme la suppression
+
+ui -> api : DELETE /api/admin/ai-engine/config/api-keys/{id}
+api -> api : requireAdminApi()
+
+api -> manager : deleteKey(id, session)
+manager -> db : DELETE FROM ai_engine_api_key WHERE id = X
+db --> manager : Deleted
+
+manager -> manager : invalidateKeyCache(providerType)
+
+manager -> manager : Verifie si une env var existe\npour le fournisseur
+
+manager -> db : INSERT ai_engine_audit_log\n{ action: 'api_key.deleted' }
+
+manager --> api : { deleted: true, fallbackAvailable: true, fallbackSource: "AI_ENGINE_OPENAI_API_KEY" }
+api --> ui : 200 { deleted, fallbackAvailable, fallbackSource }
+
+ui -> ui : Toast "Cle supprimee. Variable d'env active."
+ui -> ui : Recharge la liste
+ui -> admin : Carte mise a jour (source: env)
+
+@enduml

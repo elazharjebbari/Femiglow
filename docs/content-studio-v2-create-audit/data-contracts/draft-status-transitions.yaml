@@ -1,0 +1,170 @@
+# Draft + Post status transitions reference
+# Source: lib/content-studio/state-machine.ts
+
+draft_states:
+  - id: idea
+    label: Idée
+    description: Brief input fields filled
+    next: [brief, generated, archived]
+    ui_visible: false  # frame step in UI represents idea state
+
+  - id: brief
+    label: Brief
+    description: Optional intermediate (often skipped in v2 flow)
+    next: [generated, rejected, archived]
+    ui_visible: false
+
+  - id: generated
+    label: Généré
+    description: Brief + 3 drafts created by POST /ideas/:id/generate
+    next: [needs_review, rejected, archived]
+    ui_visible: true
+    ui_step: generate
+
+  - id: needs_review
+    label: À valider
+    description: Variant selected → brand review running / done
+    next: [needs_review, approved, generated, rejected, archived]
+    ui_visible: true
+    ui_step: visual
+    enters_when: User clicks "Choisir cette variante" → POST /drafts/:id/review
+
+  - id: approved
+    label: Approuvé
+    description: Draft validated → content_post created
+    next: [scheduled, published, failed, archived]
+    ui_visible: true
+    ui_step: validate
+    enters_when: User clicks "Valider et préparer" → POST /drafts/:id/approve
+
+  - id: scheduled
+    label: Programmé
+    description: post.scheduledAt set in future
+    next: [published, failed, cancelled, approved]
+    ui_visible: true (under validate step)
+    enters_when: POST /posts/:id/schedule
+
+  - id: published
+    label: Publié
+    description: Delivered to providers
+    next: [measured, archived]
+    ui_visible: true (final state)
+    enters_when: POST /posts/:id/publish-now OR scheduled job fires
+
+  - id: failed
+    label: Échec
+    description: Provider error during publish
+    next: [scheduled, archived]
+    ui_visible: true (warning state)
+
+  - id: cancelled
+    label: Annulé
+    description: User cancelled before publish
+    next: [archived]
+    ui_visible: true
+
+  - id: rejected
+    label: Rejeté
+    description: Variant rejected by user
+    next: [archived, generated]
+    ui_visible: false (hidden from main flow)
+
+  - id: measured
+    label: Mesuré
+    description: Post-publish analytics gathered
+    next: [archived]
+    ui_visible: false
+
+  - id: archived
+    label: Archivé
+    description: Terminal
+    next: []
+    ui_visible: false
+
+ui_step_mapping:
+  # Maps draft.status → Stepper step (frame|generate|visual|validate)
+  idea: frame
+  brief: generate
+  generated: generate
+  needs_review: visual
+  approved: validate
+  scheduled: validate
+  published: validate
+  failed: validate
+  cancelled: validate
+  rejected: frame      # rejected variants don't advance UI
+  archived: frame
+  measured: validate
+
+ui_actions:
+
+  - name: enregistrer_idee
+    endpoint: POST /ideas
+    transitions: { from: null, to: idea }
+
+  - name: generer_variantes
+    endpoint: POST /ideas/{id}/generate
+    transitions: { from: idea, to: generated }
+    side_effects:
+      - INSERT 1 brief, 3 drafts (each starts at 'generated' then auto → 'needs_review' if option enabled)
+
+  - name: choisir_variante  # NEW UI auto-call
+    endpoint: POST /drafts/{id}/review
+    transitions: { from: generated, to: needs_review }
+    side_effects:
+      - Creates content_brand_review row
+      - Re-runs brand rules
+
+  - name: generer_visuel
+    endpoint: POST /drafts/{id}/generate-visual
+    transitions: { from: needs_review, to: needs_review }
+    side_effects:
+      - INSERT media, asset_binding, generation_run
+
+  - name: editer_caption
+    endpoint: PATCH /drafts/{id}
+    transitions: { from: needs_review, to: needs_review }
+    side_effects:
+      - UPDATE caption/hook/cta/hashtags
+      - Re-brand-review automatic
+
+  - name: valider_et_preparer  # NEW UI button
+    endpoint: POST /drafts/{id}/approve
+    transitions: { from: needs_review, to: approved }
+    side_effects:
+      - INSERT content_post (status=approved)
+      - Returns post object → frontend stores postId
+
+  - name: publier_maintenant
+    endpoint: POST /posts/{id}/publish-now
+    transitions: { from: approved, to: published }
+    side_effects:
+      - INSERT publish_jobs (one per account)
+
+  - name: programmer
+    endpoint: POST /posts/{id}/schedule
+    transitions: { from: approved, to: scheduled }
+    side_effects:
+      - INSERT publish_jobs scheduled
+      - UPDATE post.scheduledAt
+
+  - name: brouillon_postiz
+    endpoint: POST /posts/{id}/draft-on-provider
+    transitions: { from: approved, to: approved }   # status unchanged
+    side_effects:
+      - INSERT publish_jobs with publishMode='draft'
+
+  - name: rejeter_variante
+    endpoint: POST /drafts/{id}/reject
+    transitions: { from: any, to: rejected }
+
+  - name: archiver
+    endpoint: POST /drafts/{id}/archive
+    transitions: { from: any, to: archived }
+
+invariants:
+  - "A draft cannot be approved without media attached (server enforces)"
+  - "A draft cannot be approved if brand_review.status='blocked'"
+  - "A post can only be published from {approved, scheduled} states"
+  - "Scheduling requires scheduledAt > now() + minLeadTime (5 minutes)"
+  - "Each draft has at most one content_post (1:0..1 relationship)"
