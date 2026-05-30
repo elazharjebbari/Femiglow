@@ -54,8 +54,11 @@ refresh) qui nécessitaient une base réelle.
 
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
-**F-INS-05** (export PNG fragile — fonts/RTL/taille) : nécessite un test visuel Playwright/navigateur
-(seul finding restant, non runnable dans cet environnement).
+| **F-INS-05** | P2 | Export PNG durci : `serializeSvgForExport` force `xmlns` (sans quoi le SVG ne se charge pas comme `Image` → export blanc) + `width`/`height` explicites (mise à l'échelle correcte) + dimensions bornées ≥ 1 | `png-export.ts` | `png-export.test.ts` (xmlns/dimensions + rejet déterministe) | ✅ closed (fiabilité) |
+
+> Reliquat F-INS-05 : l'**embedding des polices** et le **miroir RTL** dans le PNG ne sont
+> vérifiables qu'avec un vrai navigateur (Playwright visuel) ; la **fiabilité de l'export**
+> (chargement + dimensions) est désormais corrigée et testée.
 
 > Note F-PERF-01/02 : le routage des queries **vers** les matviews horaires/journalières aurait
 > changé les chiffres affichés (perte de l'attribution session-level/cross-session). On a préféré
@@ -63,9 +66,10 @@ refresh) qui nécessitaient une base réelle.
 > **refresh manuel**. Le `refreshAllMatviews` est aussi déclenché par le bouton (les matviews
 > servent l'overview/insights et un éventuel routage futur). Le harnais PGlite reste disponible.
 
-**Bilan corrections : 25 findings traités** (5 P0/P1 + 20 P2, dont 3 vérifiés déjà corrects) sur 27.
-Suite analytics : 539 verts (dont 2 d'intégration PGlite). **Reste : F-INS-05** (export PNG — test
-visuel Playwright, seul finding ouvert).
+**Bilan corrections : 27 findings traités sur 27** (5 P0/P1 + 22 P2, dont 3 vérifiés déjà corrects).
+Suite analytics : **501 verts** en local sur ce périmètre (dont 2 d'intégration PGlite). Seul
+reliquat **non bloquant** : la finition **visuelle** de l'export PNG (polices/RTL) qui requiert un
+test Playwright navigateur — la fiabilité de l'export est, elle, corrigée.
 
 ## Validation locale
 
