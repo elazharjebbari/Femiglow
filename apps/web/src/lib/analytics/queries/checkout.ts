@@ -21,7 +21,7 @@ import type { TrackingEventLogEntry } from '@/lib/db/types';
 import { classifyTraffic, type TrafficBucket } from '../attribution';
 import type { AnalyticsFilters } from '../filters';
 import { resolveRange } from '../filters';
-import { getCachedAnalytics, setCachedAnalytics } from '../cache';
+import { analyticsCacheTtlMs, getCachedAnalytics, setCachedAnalytics } from '../cache';
 
 /** Étapes ordonnées du funnel checkout. */
 export const CHECKOUT_STAGES = [
@@ -112,10 +112,11 @@ export async function getCheckoutData(
   filters: AnalyticsFilters,
   now: Date = new Date(),
 ): Promise<CheckoutData> {
-  const cacheKey = `checkout:${JSON.stringify(filters)}`;
-  const cached = getCachedAnalytics<CheckoutData>(cacheKey, now.getTime());
-  if (cached) return cached;
   const range = resolveRange(filters, now);
+  const ttl = analyticsCacheTtlMs(range);
+  const cacheKey = `checkout:${JSON.stringify(filters)}`;
+  const cached = getCachedAnalytics<CheckoutData>(cacheKey, ttl, now.getTime());
+  if (cached) return cached;
   const events = await fetchEvents({
     from: range.from,
     to: range.to,
@@ -292,7 +293,7 @@ export async function getCheckoutData(
     topErrors,
     topAbandonedFields,
   };
-  setCachedAnalytics(cacheKey, result, now.getTime());
+  setCachedAnalytics(cacheKey, result, ttl, now.getTime());
   return result;
 }
 

@@ -27,7 +27,7 @@ import type {
 } from '@/lib/db/types';
 
 import { classifyTraffic, type TrafficBucket } from '../attribution';
-import { getCachedAnalytics, setCachedAnalytics } from '../cache';
+import { analyticsCacheTtlMs, getCachedAnalytics, setCachedAnalytics } from '../cache';
 import type { AnalyticsFilters } from '../filters';
 import { resolveRange } from '../filters';
 
@@ -95,10 +95,11 @@ export async function getCtaData(
   filters: AnalyticsFilters,
   now: Date = new Date(),
 ): Promise<CtaData> {
-  const cacheKey = `cta:${JSON.stringify(filters)}`;
-  const cached = getCachedAnalytics<CtaData>(cacheKey, now.getTime());
-  if (cached) return cached;
   const range = resolveRange(filters, now);
+  const ttl = analyticsCacheTtlMs(range);
+  const cacheKey = `cta:${JSON.stringify(filters)}`;
+  const cached = getCachedAnalytics<CtaData>(cacheKey, ttl, now.getTime());
+  if (cached) return cached;
 
   // On élargit la fenêtre de fetch à `from - 7j` pour pouvoir attribuer un
   // achat qui aurait reçu un CTA cliqué juste avant la période.
@@ -236,7 +237,7 @@ export async function getCtaData(
     topMessages,
     topPages,
   };
-  setCachedAnalytics(cacheKey, result, now.getTime());
+  setCachedAnalytics(cacheKey, result, ttl, now.getTime());
   return result;
 }
 

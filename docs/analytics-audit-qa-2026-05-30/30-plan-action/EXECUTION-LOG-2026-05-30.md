@@ -29,6 +29,7 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **F-INS-04** | P2 | Revenu funnel insights : `value × 100` — **déjà correct** (`aggregate.ts:226`) et testé | — | `aggregate.test.ts:208` | ✅ vérifié |
 | **F-INS-06** | P2 | Refresh concurrent : lock pessimiste + API **429 propre** (pas de 500) — **déjà géré** et testé | — | `refresh.test.ts:108` + `refresh/route.test.ts:96` | ✅ vérifié |
 | **F-PERF-04** | P2 | Cache court **opt-in** (`ANALYTICS_CACHE_TTL_MS`, **off par défaut**) sur getFunnelOverview/getCtaData/getCheckoutData → le trade-off de fraîcheur est levé (off = temps réel) | `cache.ts` + 3 queries | `cache.test.ts` + `cta.test.ts` F-PERF-04 | ✅ closed |
+| **F-PERF-01/02** | P2 | **Approche snapshot + refresh manuel** (validée) : longues fenêtres (≥30j) snapshotées par défaut (`analyticsCacheTtlMs`), bouton « Rafraîchir » (`POST /api/admin/analytics/refresh` → vide le snapshot + `refreshAllMatviews`). **Chiffres exacts** (pas d'approximation matview qui aurait dégradé KPI/top pages). | `cache.ts`, `api/.../refresh/route.ts`, `RefreshStatsButton.tsx`, `layout.tsx` | `cache.test.ts` (stratégie fenêtre), `refresh/route.test.ts`, `RefreshStatsButton.test.tsx` | ✅ closed |
 
 ## Harnais d'intégration PGlite (nouveau)
 
@@ -53,16 +54,18 @@ refresh) qui nécessitaient une base réelle.
 
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
-**F-INS-05** (export PNG fragile — fonts/RTL/taille) : nécessite un test visuel Playwright/navigateur.
-**F-PERF-01/02** (refonte agrégation in-memory → SQL + **routage matviews**) : les matviews
-`0010_analytics_matviews.sql` sont des pré-agrégations horaires/journalières qui **ne capturent pas**
-l'attribution session-level/cross-session → y router **changerait la précision** affichée à
-l'opérateur ⇒ **décision produit + refonte Sprint 2/3** (à ne pas faire à l'aveugle). Le harnais
-PGlite le rend testable. Voir `00-audit/findings-register.csv`.
+**F-INS-05** (export PNG fragile — fonts/RTL/taille) : nécessite un test visuel Playwright/navigateur
+(seul finding restant, non runnable dans cet environnement).
 
-**Bilan corrections : 24 findings traités** (5 P0/P1 + 19 P2, dont 3 vérifiés déjà corrects) sur 27.
-Suite analytics : 495 verts (dont 2 d'intégration PGlite sur le vrai chemin SQL). Reste : F-INS-05
-(test visuel), F-PERF-01/02 (refonte agrégation/matviews — décision produit).
+> Note F-PERF-01/02 : le routage des queries **vers** les matviews horaires/journalières aurait
+> changé les chiffres affichés (perte de l'attribution session-level/cross-session). On a préféré
+> l'**approche snapshot** validée avec l'opérateur : longues fenêtres mises en cache (exactes) +
+> **refresh manuel**. Le `refreshAllMatviews` est aussi déclenché par le bouton (les matviews
+> servent l'overview/insights et un éventuel routage futur). Le harnais PGlite reste disponible.
+
+**Bilan corrections : 25 findings traités** (5 P0/P1 + 20 P2, dont 3 vérifiés déjà corrects) sur 27.
+Suite analytics : 539 verts (dont 2 d'intégration PGlite). **Reste : F-INS-05** (export PNG — test
+visuel Playwright, seul finding ouvert).
 
 ## Validation locale
 
