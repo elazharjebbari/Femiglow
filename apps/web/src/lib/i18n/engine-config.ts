@@ -39,3 +39,39 @@ export const getResolvedEngineConfig = unstable_cache(
   [ENGINE_CONFIG_TAG],
   { tags: [ENGINE_CONFIG_TAG], revalidate: 300 },
 );
+
+export interface AdminEngineConfig {
+  payload: ResolvedEngineConfig;
+  version: number;
+  updatedAt: string;
+  updatedBy: { id: string; email: string } | null;
+  isDefault: boolean;
+}
+
+/**
+ * Lecture admin **non cachée** : expose la `version` (pour le `If-Match`
+ * optimiste) et le meta d'audit. Payload toujours validé → défauts OFF si la
+ * row est absente ou invalide (INV-13). Jamais d'erreur propagée.
+ */
+export async function getAdminEngineConfig(): Promise<AdminEngineConfig> {
+  const row = await getAppConfigRow(ENGINE_CONFIG_SECTION);
+  if (!row) {
+    return {
+      payload: DEFAULT_ENGINE_CONFIG,
+      version: 0,
+      updatedAt: new Date(0).toISOString(),
+      updatedBy: null,
+      isDefault: true,
+    };
+  }
+  const payload = safeParseEngineConfig(row.payload);
+  const isDefault =
+    JSON.stringify(payload) === JSON.stringify(DEFAULT_ENGINE_CONFIG);
+  return {
+    payload,
+    version: row.version,
+    updatedAt: row.updatedAt.toISOString(),
+    updatedBy: row.updatedBy,
+    isDefault,
+  };
+}
