@@ -103,7 +103,11 @@ jobs:
         working-directory: apps/web
 
       - name: Apply DB migrations
-        run: pnpm --filter web db:migrate
+        # Runner maison (remplace `drizzle-kit migrate`, qui wrappe chaque migration
+        # dans une transaction et casse CREATE EXTENSION / INDEX CONCURRENTLY).
+        # Lit DATABASE_URL depuis l'env du job. Idempotent (hash-based).
+        run: node scripts/_migrate-safe.mjs
+        working-directory: apps/web
 
       - name: Build Next.js
         run: pnpm --filter web build
