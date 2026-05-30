@@ -34,7 +34,7 @@ function setOffer(reason: 'purchase-intent' | 'frustration' | 'inline-contact' =
   const s = useChatStore.getState();
   s.setSession({
     sessionId: 'cs_lf_test',
-    language: 'fr-MA',
+    language: 'fr',
     greeting: '',
     suggestions: [],
     messages: [],
@@ -58,7 +58,7 @@ describe('<LeadFormBubble />', () => {
 
   describe('rendering selon status', () => {
     it('status=idle → rien ne s\'affiche (ou min footprint)', () => {
-      const { container } = render(<LeadFormBubble language="fr-MA" />);
+      const { container } = render(<LeadFormBubble language="fr" />);
       // Soit pas de region rendue, soit le composant retourne null
       const form = container.querySelector('form');
       expect(form).toBeNull();
@@ -66,7 +66,7 @@ describe('<LeadFormBubble />', () => {
 
     it('status=offered → quelque chose s\'affiche (CTA ou bulle visible)', () => {
       setOffer();
-      const { container } = render(<LeadFormBubble language="fr-MA" />);
+      const { container } = render(<LeadFormBubble language="fr" />);
       // Au minimum un bouton ou un texte de la copy doit être rendu
       const hasButtonOrLink = container.querySelector('button, a, [role="button"]');
       expect(hasButtonOrLink).not.toBeNull();
@@ -84,7 +84,7 @@ describe('<LeadFormBubble />', () => {
     it('le champ honeypot _phone_alt est rendu (caché)', () => {
       setOffer();
       useChatStore.getState().openLeadForm();
-      const { container } = render(<LeadFormBubble language="fr-MA" />);
+      const { container } = render(<LeadFormBubble language="fr" />);
       const honeypot = container.querySelector('input[name="_phone_alt"]');
       expect(honeypot).not.toBeNull();
       // Doit être visuellement caché (aria-hidden ou class)
@@ -114,7 +114,7 @@ describe('<LeadFormBubble />', () => {
   describe('régression — store integration', () => {
     it('lit reason+copyKey depuis useChatStore', () => {
       setOffer('frustration');
-      const { container } = render(<LeadFormBubble language="fr-MA" />);
+      const { container } = render(<LeadFormBubble language="fr" />);
       // Le composant doit se monter sans crash quand reason=frustration
       expect(container.firstChild).toBeTruthy();
     });
@@ -123,7 +123,7 @@ describe('<LeadFormBubble />', () => {
       const s = useChatStore.getState();
       s.setSession({
         sessionId: 'cs_already',
-        language: 'fr-MA',
+        language: 'fr',
         greeting: '',
         suggestions: [],
         messages: [],
@@ -137,7 +137,7 @@ describe('<LeadFormBubble />', () => {
       s.setLeadFormSuccess('Merci !');
       // Force le store à enregistrer leadCapturedSessionId
       // Note : c'est l'action setLeadFormSuccess qui le fait normalement
-      const { container } = render(<LeadFormBubble language="fr-MA" />);
+      const { container } = render(<LeadFormBubble language="fr" />);
       // Le composant s'affiche peut-être en mode success ou ne s'affiche pas
       // Selon la logique métier — on vérifie juste qu'il ne crash pas
       expect(container).toBeTruthy();

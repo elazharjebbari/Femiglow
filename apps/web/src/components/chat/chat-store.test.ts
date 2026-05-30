@@ -56,14 +56,14 @@ describe('useChatStore — F08 cycle SSE & UI state', () => {
     it('peuple sessionId/language/greeting/suggestions/messages', () => {
       useChatStore.getState().setSession({
         sessionId: 'cs_test',
-        language: 'fr-MA',
+        language: 'fr',
         greeting: 'Bonjour !',
         suggestions: [{ id: 'p1', key: 'pricing', label: 'Combien ?' } as any],
         messages: [],
       });
       const s = useChatStore.getState();
       expect(s.sessionId).toBe('cs_test');
-      expect(s.language).toBe('fr-MA');
+      expect(s.language).toBe('fr');
       expect(s.greeting).toBe('Bonjour !');
       expect(s.suggestions).toHaveLength(1);
     });
@@ -109,7 +109,7 @@ describe('useChatStore — F08 cycle SSE & UI state', () => {
       } as ChatMessageDto;
       useChatStore.getState().pushUserMessage(msg);
       const msgs = useChatStore.getState().messages;
-      expect(msgs[msgs.length - 1].id).toBe('u_1');
+      expect(msgs[msgs.length - 1]!.id).toBe('u_1');
     });
   });
 
@@ -118,7 +118,7 @@ describe('useChatStore — F08 cycle SSE & UI state', () => {
       const s = useChatStore.getState();
       s.setSession({
         sessionId: 'cs_offer',
-        language: 'fr-MA',
+        language: 'fr',
         greeting: '',
         suggestions: [],
         messages: [],
@@ -156,7 +156,7 @@ describe('useChatStore — F08 cycle SSE & UI state', () => {
       const s = useChatStore.getState();
       s.setSession({
         sessionId: 'cs_dismiss',
-        language: 'fr-MA',
+        language: 'fr',
         greeting: '',
         suggestions: [],
         messages: [],

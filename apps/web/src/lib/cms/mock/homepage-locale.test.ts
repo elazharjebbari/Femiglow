@@ -15,7 +15,7 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
     expect(content.hero.title).toBe(
       'Le pack FemiGlow. Deux gestes, un éclat révélé.',
     );
-    expect(content.hero.cta.label).toBe('Découvrir le rituel');
+    expect(content.hero.cta!.label).toBe('Découvrir le rituel');
   });
 
   it('AR : retourne le hero arabe (MSA féminin)', async () => {
@@ -24,7 +24,7 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
     expect(content.hero.title).toMatch(/[؀-ۿ]/);
     expect(content.hero.title).toBe('كيت فيمي قلو. حركتان، إشراق مكشوف.');
     // CTA en arabe — verbe au féminin (اكتشفي)
-    expect(content.hero.cta.label).toBe('اكتشفي الطقوس');
+    expect(content.hero.cta!.label).toBe('اكتشفي الطقوس');
   });
 
   it('EN : retourne le hero anglais', async () => {
@@ -32,12 +32,12 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
     expect(content.hero.title).toBe(
       'The FemiGlow kit. Two gestures, a revealed glow.',
     );
-    expect(content.hero.cta.label).toBe('Discover the ritual');
+    expect(content.hero.cta!.label).toBe('Discover the ritual');
   });
 
   it('default (no options) → FR', async () => {
     const content = await mockAdapter.getHomepageContent();
-    expect(content.hero.cta.label).toBe('Découvrir le rituel');
+    expect(content.hero.cta!.label).toBe('Découvrir le rituel');
   });
 
   it('locale=fr produit le même output que l’absence d’options', async () => {
@@ -74,7 +74,7 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
     const allTexts = [fr, ar, en].flatMap((h) => [
       h.hero.title,
       h.hero.subtitle,
-      h.hero.cta.label,
+      h.hero.cta!.label,
       h.manifeste.title,
       ...h.manifeste.paragraphs,
       ...h.avis.map((a) => a.quote),

@@ -73,11 +73,11 @@ describe('<MessageBubble />', () => {
       expect(caret).not.toBeNull();
     });
 
-    it('pas de caret en status=final', () => {
+    it('pas de caret en status=sent (message finalisé)', () => {
       const { container } = render(
-        <MessageBubble message={makeMsg({ status: 'final' })} />,
+        <MessageBubble message={makeMsg({ status: 'sent' })} />,
       );
-      // En status=final, pas de span aria-hidden pulse
+      // En status=sent (finalisé), pas de span aria-hidden pulse
       const carets = container.querySelectorAll('span.animate-pulse');
       expect(carets.length).toBe(0);
     });
