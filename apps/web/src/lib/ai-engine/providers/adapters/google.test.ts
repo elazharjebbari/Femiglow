@@ -1,9 +1,11 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { server, http, HttpResponse } from '@/test/msw/server';
 import type { ProviderConfig, TextGenParams, EmbeddingParams } from '../types';
 import { NotImplementedError } from '../types';
 
 // ---------------------------------------------------------------------------
-// Mock @langchain/google-genai
+// Mock @langchain/google-genai (module mock — texte). Les appels HTTP image
+// (generativelanguage.googleapis.com …:predict) passent par MSW (ARC-004).
 // ---------------------------------------------------------------------------
 
 let llmInvokeFn: ReturnType<typeof vi.fn>;
@@ -17,11 +19,14 @@ vi.mock('@langchain/google-genai', () => ({
   })),
 }));
 
-// Mock fetch for image generation API
-let fetchFn: ReturnType<typeof vi.fn>;
-vi.stubGlobal('fetch', (...args: unknown[]) => fetchFn(...args));
-
 import { GoogleAdapter } from './google';
+
+// RegExp matcher : l'URL contient le modèle + `:predict` + `?key=` dynamiques.
+const GOOGLE_IMAGE_RE = /generativelanguage\.googleapis\.com/;
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -35,17 +40,8 @@ function makeConfig(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
     apiKeyEnvVar: 'TEST_GOOGLE_API_KEY',
     capabilities: ['text', 'image'],
     models: [
-      {
-        name: 'gemini-2.0-flash',
-        capability: 'text',
-        costPer1MInput: 7.5,
-        costPer1MOutput: 30,
-      },
-      {
-        name: 'imagen-3.0-generate-002',
-        capability: 'image',
-        costPerUnit: 4,
-      },
+      { name: 'gemini-2.0-flash', capability: 'text', costPer1MInput: 7.5, costPer1MOutput: 30 },
+      { name: 'imagen-3.0-generate-002', capability: 'image', costPerUnit: 4 },
     ],
     rateLimitRpm: 60,
     dailyBudgetCents: 1000,
@@ -85,13 +81,11 @@ describe('GoogleAdapter', () => {
       usage_metadata: { input_tokens: 200, output_tokens: 80 },
     });
 
-    fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        predictions: [{ bytesBase64Encoded: 'aW1hZ2VfZGF0YQ==' }],
-      }),
-      text: vi.fn().mockResolvedValue(''),
-    });
+    server.use(
+      http.post(GOOGLE_IMAGE_RE, () =>
+        HttpResponse.json({ predictions: [{ bytesBase64Encoded: 'aW1hZ2VfZGF0YQ==' }] }),
+      ),
+    );
   });
 
   afterEach(() => {
@@ -122,55 +116,35 @@ describe('GoogleAdapter', () => {
   it('throws when API key is missing', async () => {
     delete process.env.TEST_GOOGLE_API_KEY;
     const noKeyAdapter = new GoogleAdapter(makeConfig());
-
-    await expect(noKeyAdapter.generateText(makeTextParams())).rejects.toThrow(
-      /Missing API key/,
-    );
+    await expect(noKeyAdapter.generateText(makeTextParams())).rejects.toThrow(/Missing API key/);
   }, 10_000);
 
   it('generateImage calls Google API', async () => {
+    // URL erronée -> MSW lèverait (onUnhandledRequest:'error').
     const result = await adapter.generateImage({
       model: 'imagen-3.0-generate-002',
       prompt: 'A beautiful Japanese camellia flower',
       count: 1,
     });
-
-    expect(fetchFn).toHaveBeenCalledWith(
-      expect.stringContaining('generativelanguage.googleapis.com'),
-      expect.objectContaining({ method: 'POST' }),
-    );
     expect(result.data.images).toHaveLength(1);
     expect(result.data.images[0]!.base64).toBe('aW1hZ2VfZGF0YQ==');
   });
 
   it('cost calculation for Gemini models', async () => {
     const result = await adapter.generateText(makeTextParams());
-    // 200 input tokens * 7.5/1M = 0.0015 cents
-    // 80 output tokens * 30/1M = 0.0024 cents
-    // Total = 0.0039 cents
     expect(result.costCents).toBeCloseTo(0.0039, 4);
     expect(result.tokensUsed.input).toBe(200);
     expect(result.tokensUsed.output).toBe(80);
   });
 
   it('does not support TTS (throws NotImplementedError)', () => {
-    expect(() =>
-      adapter.textToSpeech({ model: 'tts-1', text: 'Hello world' }),
-    ).toThrow(NotImplementedError);
-    expect(() =>
-      adapter.textToSpeech({ model: 'tts-1', text: 'Hello world' }),
-    ).toThrow(/textToSpeech is not implemented/);
+    expect(() => adapter.textToSpeech({ model: 'tts-1', text: 'Hello world' })).toThrow(NotImplementedError);
+    expect(() => adapter.textToSpeech({ model: 'tts-1', text: 'Hello world' })).toThrow(/textToSpeech is not implemented/);
   });
 
   it('does not support embedding (throws NotImplementedError)', async () => {
-    const params: EmbeddingParams = {
-      model: 'text-embedding-3-small',
-      input: 'Some text to embed',
-    };
-
+    const params: EmbeddingParams = { model: 'text-embedding-3-small', input: 'Some text to embed' };
     await expect(adapter.generateEmbedding(params)).rejects.toThrow(NotImplementedError);
-    await expect(adapter.generateEmbedding(params)).rejects.toThrow(
-      /generateEmbedding is not implemented/,
-    );
+    await expect(adapter.generateEmbedding(params)).rejects.toThrow(/generateEmbedding is not implemented/);
   });
 });
