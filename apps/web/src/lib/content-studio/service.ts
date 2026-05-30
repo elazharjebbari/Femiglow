@@ -358,6 +358,10 @@ export async function generateVisualForDraft(input: {
       finalPrompt,
       size: input.size,
       quality: input.quality,
+      // ACT-DA-005 — modèle INTENTIONNEL (choisi par l'opérateur) tracé à côté
+      // du modèle EXÉCUTÉ (colonne `model` = generated.model). En mock, l'exécuté
+      // est 'mock-*' ; sans cette trace on perdait le modèle réellement demandé.
+      intendedModel: input.model ?? null,
     },
     output: { mediaId: media.id, usage: generated.usage },
     status: 'succeeded',

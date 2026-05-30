@@ -14,6 +14,7 @@ import {
   createDrafts,
   getPrimaryAsset,
   upsertPrimaryAsset,
+  listGenerationRuns,
 } from './repository';
 
 beforeEach(() => {
@@ -105,6 +106,24 @@ describe('generateVisualForDraft — auto-bind du visuel au draft', () => {
     const asset = await getPrimaryAsset(draft.id);
     expect(asset).not.toBeNull();
     expect(asset?.mediaId).toBe(generated.id);
+  });
+
+  it('trace le modèle INTENTIONNEL distinct de l\'exécuté en mock (ACT-DA-005)', { timeout: 30000 }, async () => {
+    const draft = await makeDraft();
+    await generateVisualForDraft({
+      draftId: draft.id,
+      actorId: 'adm_test',
+      prompt: 'Trace du modèle choisi par l\'opérateur.',
+      size: '1024x1024',
+      quality: 'low',
+      model: 'gpt-image-1-mini', // choix opérateur
+      mode: 'mock', // exécution mock
+    });
+    const runs = await listGenerationRuns();
+    const run = runs[0]!; // le plus récent
+    // exécuté = mock ; intentionnel = le modèle choisi → traçabilité préservée
+    expect(run.model).toMatch(/^mock-/);
+    expect((run.input as Record<string, unknown>).intendedModel).toBe('gpt-image-1-mini');
   });
 
   it('remplace le binding précédent quand on régénère un visuel', { timeout: 60000 }, async () => {
