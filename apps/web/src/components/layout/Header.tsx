@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useId, useState } from 'react';
 import { Container } from '@/components/ui/Container';
-import { CartButton } from '@/components/commerce/CartButton';
 import { useChatStore } from '@/components/chat/chat-store';
 import { LocaleSwitcher } from '@/components/i18n/LocaleSwitcher';
 import { SommaireOverlay } from './SommaireOverlay';
@@ -98,15 +97,16 @@ export function Header() {
             </Link>
 
             <div className="flex items-center gap-2 md:gap-4">
-              <CartButton />
               {/*
-                Phase 5 — Switcher de locale public éditorial (desktop only).
-                Sur mobile (< md), il est intégré dans le SommaireOverlay
-                (économie d'espace, cohérence drawer). cf. PHASE-4-FINAL.md.
+                Phase 5 — Switcher de locale public éditorial. Visible sur
+                toutes tailles : le dropdown reste compact (endonyme seul) et
+                fonctionne en tap sur mobile. Une variante `inline` redondante
+                subsiste dans le SommaireOverlay (visible quand le drawer est
+                ouvert, qui recouvre le header). cf. PHASE-4-FINAL.md.
               */}
               <LocaleSwitcher
                 variant="dropdown"
-                className="hidden md:inline-flex"
+                className="inline-flex"
                 onOpenChange={setLocaleMenuOpen}
               />
               <div className="relative">

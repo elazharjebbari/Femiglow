@@ -37,6 +37,9 @@ export const dictionaryEn: WizardDictionary = {
     cityHintBilingual:
       'You can type in French or in Arabic (الدار البيضاء).',
     cityHintMatched: (matched) => `Recognised: ${matched}.`,
+    cityPopularLabel: 'Popular cities',
+    citySearching: 'Searching…',
+    cityFreeDelivery: 'Free',
     addressLine1Label: 'Address',
     addressLine1Placeholder: 'Street number and name',
     notesLabel: 'Note for the courier (optional)',
@@ -105,7 +108,7 @@ export const dictionaryEn: WizardDictionary = {
     phoneLabel: 'Phone',
     phonePlaceholder: '06 12 34 56 78',
     phoneHint: 'Moroccan mobile number. Format +212 6 XX XX XX XX.',
-    ctaDefault: 'Continue',
+    ctaDefault: 'Continue · pay on delivery',
     consentLabel: 'I want to be called back to confirm my order.',
     consentFootnotePrefix: 'No resale, no spam —',
     consentFootnoteLink: 'legal notice',
@@ -143,6 +146,7 @@ export const dictionaryEn: WizardDictionary = {
   shipping: {
     freeBadgeSrNote: (price) =>
       `Delivery normally ${price} MAD, currently free`,
+    freeBadgeLabel: 'Free',
   },
   stock: {
     inStock: 'In stock — shipped within 24-48h',

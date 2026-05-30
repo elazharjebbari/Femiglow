@@ -40,6 +40,9 @@ export const dictionaryAr: WizardDictionary = {
     cityHintBilingual:
       'يمكنك الكتابة بالعربية أو بالفرنسية (Casablanca).',
     cityHintMatched: (matched) => `تم التعرف على: ${matched}.`,
+    cityPopularLabel: 'المدن الشائعة',
+    citySearching: 'جارٍ البحث…',
+    cityFreeDelivery: 'مجاني',
     addressLine1Label: 'العنوان',
     addressLine1Placeholder: 'رقم الشارع واسمه',
     notesLabel: 'ملاحظة لعامل التوصيل (اختياري)',
@@ -106,8 +109,13 @@ export const dictionaryAr: WizardDictionary = {
     firstNamePlaceholder: 'ياسمين',
     phoneLabel: 'رقم الهاتف',
     phonePlaceholder: '06 12 34 56 78',
-    phoneHint: 'رقم هاتف محمول مغربي. الصيغة +212 6 XX XX XX XX.',
-    ctaDefault: 'متابعة',
+    // La séquence latine du numéro est encadrée par des isolats bidi
+    // (U+2066 LRI … U+2069 PDI) pour garder l'ordre +212 6 XX… intact dans
+    // un contexte RTL, sinon les groupes de chiffres sont ré-ordonnés.
+    phoneHint: 'رقم هاتف محمول مغربي. الصيغة ⁦+212 6 XX XX XX XX⁩.',
+    // Kolenda §5 W1 (P2) — le CTA porte la réassurance « paiement à la
+    // livraison » (désamorce la peur du paiement upfront), comme l'override FR.
+    ctaDefault: 'متابعة · الدفع عند الاستلام',
     consentLabel: 'أرغب في أن يتم الاتصال بي لتأكيد طلبي.',
     consentFootnotePrefix: 'بدون إعادة بيع، بدون رسائل مزعجة —',
     consentFootnoteLink: 'الإشعارات القانونية',
@@ -143,6 +151,7 @@ export const dictionaryAr: WizardDictionary = {
   },
   shipping: {
     freeBadgeSrNote: (price) => `سعر التوصيل عادةً ${price} درهم، وهو مجاني حالياً`,
+    freeBadgeLabel: 'مجانية',
   },
   stock: {
     inStock: 'متوفر — يُشحن خلال 24-48 ساعة',

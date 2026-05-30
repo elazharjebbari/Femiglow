@@ -58,6 +58,12 @@ export interface WizardDictionary {
     cityPlaceholder: string;
     cityHintBilingual: string;
     cityHintMatched: (matched: string) => string;
+    /** En-tête du listbox quand la query est vide (villes prioritaires). */
+    cityPopularLabel: string;
+    /** Statut de chargement du listbox. */
+    citySearching: string;
+    /** Prix de livraison nul ("Gratuit"). */
+    cityFreeDelivery: string;
     addressLine1Label: string;
     addressLine1Placeholder: string;
     notesLabel: string;
@@ -173,6 +179,8 @@ export interface WizardDictionary {
   /** CHA-232 — Réassurance livraison offerte (srNote). */
   shipping: {
     freeBadgeSrNote: (price: number) => string;
+    /** Libellé visible du badge livraison offerte. */
+    freeBadgeLabel: string;
   };
   /** CHA-232 — StockIndicator (statuts + opt-in retour). */
   stock: {

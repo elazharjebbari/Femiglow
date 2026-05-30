@@ -95,6 +95,8 @@ interface ShippingNoticeProps {
   catalogPriceMad?: number | null;
   /** Note lecteur d'écran i18n pour le badge livraison offerte. */
   freeBadgeSrNote: (price: number) => string;
+  /** Libellé visible i18n du badge livraison offerte. */
+  freeBadgeLabel: string;
 }
 
 function ShippingNotice({
@@ -103,6 +105,7 @@ function ShippingNotice({
   freeShipping,
   catalogPriceMad,
   freeBadgeSrNote,
+  freeBadgeLabel,
 }: ShippingNoticeProps) {
   return (
     <section
@@ -147,6 +150,7 @@ function ShippingNotice({
             <ShippingPriceDisplay
               displayPrice={`${catalogPriceMad} MAD`}
               freeShipping
+              freeLabel={freeBadgeLabel}
               size="sm"
               align="left"
               srNote={freeBadgeSrNote(catalogPriceMad)}
@@ -343,6 +347,10 @@ export function AddressStep({ cta }: AddressStepProps) {
               placeholder={t.address.cityPlaceholder}
               hint={t.address.cityHintBilingual}
               matchedHint={t.address.cityHintMatched}
+              popularCitiesLabel={t.address.cityPopularLabel}
+              searchingLabel={t.address.citySearching}
+              freeDeliveryLabel={t.address.cityFreeDelivery}
+              freeShippingLabel={t.shipping.freeBadgeLabel}
               required
               error={errors.city?.message}
               value={field.value ?? ''}
@@ -372,6 +380,7 @@ export function AddressStep({ cta }: AddressStepProps) {
           freeShipping={freeShipping}
           catalogPriceMad={addressDraft.cityDeliveryPriceMad ?? null}
           freeBadgeSrNote={t.shipping.freeBadgeSrNote}
+          freeBadgeLabel={t.shipping.freeBadgeLabel}
         />
 
         <TextAreaField

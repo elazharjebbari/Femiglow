@@ -37,6 +37,9 @@ export const dictionaryFr: WizardDictionary = {
     cityHintBilingual:
       'Vous pouvez taper en français ou en arabe (الدار البيضاء).',
     cityHintMatched: (matched) => `Reconnu : ${matched}.`,
+    cityPopularLabel: 'Villes populaires',
+    citySearching: 'Recherche…',
+    cityFreeDelivery: 'Gratuit',
     addressLine1Label: 'Adresse',
     addressLine1Placeholder: 'N° et nom de rue',
     notesLabel: 'Note pour le livreur (optionnel)',
@@ -146,6 +149,7 @@ export const dictionaryFr: WizardDictionary = {
   shipping: {
     freeBadgeSrNote: (price) =>
       `Livraison normalement à ${price} MAD, actuellement offerte`,
+    freeBadgeLabel: 'Offerte',
   },
   stock: {
     inStock: 'En stock — expédié sous 24-48h',
