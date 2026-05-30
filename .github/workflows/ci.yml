@@ -59,6 +59,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: quality
+    # Postgres éphémère avec pgvector (requis par les migrations chat). Le job
+    # attend que la DB soit prête via le healthcheck avant le 1er step.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: femiglow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # DATABASE_URL au niveau job → hérité par tous les steps ET par le webServer
+    # `pnpm start` que Playwright démarre (sinon le serveur retombe en memoryStore
+    # et la session admin ne persiste pas → login en échec).
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+      ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+      WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
+      CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
+      ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
+      ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+      # Le prototype Content Studio est gated ; l'e2e `content-studio.spec.ts`
+      # vérifie ses onglets → il faut l'activer (build + runtime serveur).
+      CONTENT_STUDIO_ENABLED: 'true'
+      # Génération de visuel : provider mock (déterministe, aucun appel externe).
+      # La génération de texte tombe déjà en fallback déterministe sans clé OpenAI.
+      CONTENT_STUDIO_IMAGE_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
 
@@ -76,18 +108,28 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: apps/web
 
+      - name: Apply DB migrations
+        # Runner maison (remplace `drizzle-kit migrate`, qui wrappe chaque migration
+        # dans une transaction et casse CREATE EXTENSION / INDEX CONCURRENTLY).
+        # Lit DATABASE_URL depuis l'env du job. Idempotent (hash-based).
+        run: node scripts/_migrate-safe.mjs
+        working-directory: apps/web
+
       - name: Build Next.js
         run: pnpm --filter web build
-        env:
-          ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
-          WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
-          CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
-          DATABASE_URL: ${{ secrets.CI_DATABASE_URL || '' }}
 
       - name: Run Content Studio E2E
         run: npx playwright test content-studio.spec.ts
         working-directory: apps/web
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
-          ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
-          ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7
