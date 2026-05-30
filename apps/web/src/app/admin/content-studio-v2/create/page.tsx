@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AppShell } from '@/components/admin/content-studio-v2/shell/AppShell';
 import { CreateWorkspace } from '@/components/admin/content-studio-v2/create/CreateWorkspace';
+import { isMediaStudioEnabled } from '@/lib/content-studio/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export default async function CreatePage() {
   const initials = session.email.split('@')[0]?.slice(0, 2) ?? 'EJ';
   return (
     <AppShell userEmail={session.email} userInitials={initials}>
-      <CreateWorkspace />
+      <CreateWorkspace mediaStudioEnabled={isMediaStudioEnabled()} />
     </AppShell>
   );
 }

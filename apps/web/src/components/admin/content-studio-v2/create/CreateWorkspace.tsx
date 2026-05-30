@@ -33,6 +33,8 @@ interface CreateWorkspaceProps {
   initialDrafts?: ContentDraft[];
   initialMediaItems?: StudioV2MediaItem[];
   initialDraftId?: string | null;
+  /** MP-AR-006 (BUG-004) — gates the media-studio tracks panel. */
+  mediaStudioEnabled?: boolean;
 }
 
 export function CreateWorkspace(props: CreateWorkspaceProps) {
@@ -45,12 +47,12 @@ export function CreateWorkspace(props: CreateWorkspaceProps) {
         selectedDraftId: props.initialDraftId ?? null,
       }}
     >
-      <CreateWorkspaceInner />
+      <CreateWorkspaceInner mediaStudioEnabled={props.mediaStudioEnabled ?? false} />
     </StudioProvider>
   );
 }
 
-function CreateWorkspaceInner() {
+function CreateWorkspaceInner({ mediaStudioEnabled = false }: { mediaStudioEnabled?: boolean }) {
   const {
     drafts,
     setDrafts,
@@ -281,6 +283,7 @@ function CreateWorkspaceInner() {
               setMediaItems((prev) => [item, ...prev.filter((m) => m.id !== item.id)]);
             }}
             format={(draft?.format ?? format) as ContentFormat | undefined}
+            mediaStudioEnabled={mediaStudioEnabled}
           />
           {draft ? (
             <CaptionEditor

@@ -323,3 +323,13 @@
 .cs-v2-shell .cs-btn-secondary:hover {
   background: var(--cs-clay);
 }
+
+/* MP-VO/SU/CO (BUG-004) — spinner for the media-studio track actions. */
+@keyframes cs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.cs-spin {
+  animation: cs-spin 0.9s linear infinite;
+}

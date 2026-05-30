@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/admin/content-studio-v2/primitives';
 import { MediaPicker } from '@/components/admin/content-studio-v2/media';
 import { formatDuration } from '@/components/admin/content-studio-v2/media/VideoPlayer';
+import { MediaStudioTracks } from './MediaStudioTracks';
 import type { StudioV2MediaItem, StudioV2Compartment } from '@/lib/content-studio-v2/media/types';
 import { useGenerationEstimator } from '@/lib/content-studio-v2/state/useGenerationEstimator';
 import type { ContentFormat } from '@/lib/content-studio/types';
@@ -34,6 +35,8 @@ interface MediaStudioProps {
   loading?: boolean;
   /** CS v2 Phase 3 — draft format drives the default kind (image vs video). */
   format?: ContentFormat;
+  /** MP-AR-006 (BUG-004) — gates the voice-over/subtitles/montage tracks panel. */
+  mediaStudioEnabled?: boolean;
 }
 
 type GenKind = 'image' | 'video';
@@ -49,6 +52,7 @@ export function MediaStudio({
   defaultVisualPrompt,
   loading,
   format,
+  mediaStudioEnabled = false,
 }: MediaStudioProps) {
   const [compartment, setCompartment] = useState<StudioV2Compartment | 'all'>('all');
   const [generating, setGenerating] = useState(false);
@@ -290,6 +294,10 @@ export function MediaStudio({
             </>
           ) : null}
         </div>
+      ) : null}
+
+      {mediaStudioEnabled && draftId && videoCapable && selectedMedia?.kind === 'video' ? (
+        <MediaStudioTracks draftId={draftId} />
       ) : null}
 
       {!draftId ? (
