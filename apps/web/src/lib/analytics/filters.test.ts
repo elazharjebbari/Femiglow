@@ -92,6 +92,15 @@ describe('parseFiltersFromSearchParams', () => {
     expect(r).toEqual(DEFAULT_FILTERS);
   });
 
+  it('F-FLT-01 — une clé invalide est ignorée, les clés valides sont conservées', () => {
+    const r = parseFiltersFromSearchParams(
+      new URLSearchParams('period=foo&device=desktop&traffic=meta'),
+    );
+    expect(r.device).toBe('desktop'); // valides conservés
+    expect(r.traffic).toBe('meta');
+    expect(r.period).toBe(DEFAULT_FILTERS.period); // invalide → défaut, sans tout jeter
+  });
+
   it('accepte un Record (pour Next.js searchParams)', () => {
     const r = parseFiltersFromSearchParams({ period: '30d', device: 'tablet', traffic: 'meta' });
     expect(r).toMatchObject({ period: '30d', device: 'tablet', traffic: 'meta' });

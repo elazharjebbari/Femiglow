@@ -248,6 +248,32 @@ describe('getCtaData — KPI totals', () => {
   });
 });
 
+describe('getCtaData — F-CTA-04 page majoritaire déterministe', () => {
+  it('choisit la page lexicographiquement plus petite à égalité de clics', async () => {
+    pushComp('c1', 'CTA');
+    pushEvent({
+      id: '1',
+      sessionId: 'S1',
+      anonymousId: 'A1',
+      eventName: 'cta_click',
+      componentId: 'c1',
+      pageRoute: '/zeta',
+      receivedAt: new Date('2026-05-06T10:00:00Z'),
+    });
+    pushEvent({
+      id: '2',
+      sessionId: 'S2',
+      anonymousId: 'A2',
+      eventName: 'cta_click',
+      componentId: 'c1',
+      pageRoute: '/alpha',
+      receivedAt: new Date('2026-05-06T10:01:00Z'),
+    });
+    const data = await getCtaData(filtersToday(), NOW);
+    expect(data.rows.find((r) => r.componentId === 'c1')?.pageRoute).toBe('/alpha');
+  });
+});
+
 describe('getCtaData — top messages & deleted components', () => {
   it('aggregates top messages by label across components', async () => {
     pushComp('c1', 'Découvrir');

@@ -358,7 +358,10 @@ function topByCount(counts: Map<string, number>): string | null {
   let best: string | null = null;
   let bestCount = -1;
   for (const [k, v] of counts) {
-    if (v > bestCount) {
+    // Tie-break déterministe : à égalité de comptage, on retient la clé la plus
+    // petite (lexicographique) — résultat stable quel que soit l'ordre de la Map.
+    // cf. docs/analytics-audit-qa-2026-05-30 — finding F-CTA-04.
+    if (v > bestCount || (v === bestCount && best !== null && k < best)) {
       best = k;
       bestCount = v;
     }

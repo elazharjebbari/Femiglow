@@ -105,8 +105,21 @@ export function parseFiltersFromSearchParams(
     to: get('to'),
   };
 
-  // Filtre les undefined avant parse (Zod default seulement si key absente).
-  const cleaned = Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined));
+  // Validation par champ : une clé invalide est ignorée sans invalider toute la
+  // sélection (F-FLT-01). Ex. `?period=foo&device=desktop` conserve `desktop`.
+  // Les défauts Zod ne s'appliquent qu'aux clés absentes.
+  const inEnum = (v: string | undefined, allowed: readonly string[]) =>
+    v !== undefined && allowed.includes(v) ? v : undefined;
+
+  const cleaned = Object.fromEntries(
+    Object.entries({
+      period: inEnum(raw.period, ANALYTICS_PERIODS),
+      device: inEnum(raw.device, ANALYTICS_DEVICES),
+      traffic: inEnum(raw.traffic, TRAFFIC_VALUES),
+      from: raw.from,
+      to: raw.to,
+    }).filter(([, v]) => v !== undefined),
+  );
 
   const parsed = AnalyticsFiltersSchema.safeParse(cleaned);
   if (!parsed.success) {

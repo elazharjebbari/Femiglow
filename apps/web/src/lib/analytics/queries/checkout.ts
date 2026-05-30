@@ -149,11 +149,13 @@ export async function getCheckoutData(
 
     if (s.purchaseServer) serverFallback += 1;
 
-    // Abandon : a démarré le checkout mais pas de purchase OU purchase au-delà
-    // de la fenêtre 60 min.
+    // Abandon : a démarré le checkout mais pas de purchase (fenêtre 60 min
+    // écoulée) OU purchase au-delà de la fenêtre 60 min.
     if (s.begin_checkout && s.beginCheckoutTs !== null) {
       if (!s.purchase) {
-        abandons += 1;
+        // Un begin_checkout récent (< 60 min) peut encore convertir : on ne le
+        // compte pas comme abandon tant que la fenêtre n'est pas écoulée. F-CHK-04.
+        if (now.getTime() - s.beginCheckoutTs > ABANDON_WINDOW_MS) abandons += 1;
       } else if (s.purchaseTs !== null && s.purchaseTs - s.beginCheckoutTs > ABANDON_WINDOW_MS) {
         abandons += 1;
       }

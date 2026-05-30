@@ -93,6 +93,20 @@ describe('getCheckoutData — AF-03 modèle BOOL_OR', () => {
   });
 });
 
+describe('getCheckoutData — F-CHK-04 fenêtre d’abandon', () => {
+  it('un begin_checkout récent (< 60 min) sans achat n’est pas compté abandon', async () => {
+    pushEvent({
+      id: '1',
+      sessionId: 's1',
+      eventName: 'begin_checkout',
+      receivedAt: new Date(NOW.getTime() - 5 * 60_000), // 5 min avant maintenant
+    });
+    const data = await getCheckoutData(FILTERS, NOW);
+    expect(data.totals.beginCheckout).toBe(1);
+    expect(data.totals.abandons).toBe(0); // fenêtre 60 min non écoulée
+  });
+});
+
 describe('getCheckoutData', () => {
   it('returns zero totals on empty store', async () => {
     const data = await getCheckoutData(FILTERS, NOW);

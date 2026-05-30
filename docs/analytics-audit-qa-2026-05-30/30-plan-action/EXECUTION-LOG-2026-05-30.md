@@ -14,6 +14,9 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **AF-05** | P1 | FilterBar globale masquée sur `/analytics/insights` (qui a sa propre barre) | `primitives/FilterBar.tsx` | `FilterBar.test.tsx` | ✅ closed |
 | **F-CTA-05** | P2 | Devise CTA par défaut = **MAD** | `CtaDashboard.tsx` | couvert par cta refetch + format | ✅ closed |
 | **F-PERF-03** | P2 | Suppression du double fetch au mount (hydratation depuis `initialData`) | 3 dashboards | `*Dashboard.refetch.test.tsx` (pas de fetch au mount) | ✅ closed |
+| **F-FLT-01** | P2 | Filtres invalides : clé invalide ignorée, clés valides conservées (plus de fallback global muet) | `filters.ts` | `filters.test.ts` F-FLT-01 | ✅ closed |
+| **F-CTA-04** | P2 | Page majoritaire déterministe à égalité (tie-break lexicographique) | `queries/cta.ts` | `cta.test.ts` F-CTA-04 | ✅ closed |
+| **F-CHK-04** | P2 | Abandons : un begin_checkout récent (< 60 min) sans achat n'est plus compté abandon | `queries/checkout.ts` | `checkout.test.ts` F-CHK-04 | ✅ closed |
 
 ## Décisions notables
 
@@ -27,10 +30,13 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
-F-CTA-02 (topPages vs fallback), F-CTA-03/04 (libellés, déterminisme), F-CHK-02/03/04 (libellé
-submissions, bords de fenêtre abandons), F-INS-02..06 (firstRun, refresh concurrent, export PNG),
-F-FLT-01 (fallback filtres), F-PERF-01/02/04 (matviews, cache), F-SEC-01 (requêtes paramétrées),
-F-FMT-01/02. Voir `00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
+F-CTA-02 (topPages vs fallback hors période), F-CTA-03 (libellé fallback clics=0/achats>0),
+F-CHK-02 (libellé « submissions »), F-CHK-03 (purchase juste après `to` → faux abandon),
+F-INS-02..06 (firstRun, refresh concurrent, export PNG), F-PERF-01/02/04 (matviews, cache),
+F-SEC-01 (requêtes paramétrées), F-FMT-01/02 (fuseau axe heure, semaine ISO). Voir
+`00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
+
+**Bilan corrections : 12 findings fermés** (5 P0/P1 + 7 P2) sur 27.
 
 ## Validation locale
 
