@@ -1,12 +1,10 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { server, http, HttpResponse } from '@/test/msw/server';
 import type { ProviderConfig, TextGenParams, ImageGenParams, EmbeddingParams } from '../types';
 
 // ---------------------------------------------------------------------------
-// Mock @langchain/openai
-//
-// We must define the mock inline so vi.restoreAllMocks() does not break it.
-// The key trick: return a fresh object from the constructor each time, using
-// closures over module-level spy functions that we reset in beforeEach.
+// Mock @langchain/openai (module mock — NOT fetch). Le SDK est mocké pour le
+// texte/embedding ; les appels HTTP (image, TTS) passent par MSW (ARC-004).
 // ---------------------------------------------------------------------------
 
 let llmInvokeFn: ReturnType<typeof vi.fn>;
@@ -24,11 +22,16 @@ vi.mock('@langchain/openai', () => ({
   })),
 }));
 
-// Mock fetch for image and TTS APIs
-let fetchFn: ReturnType<typeof vi.fn>;
-vi.stubGlobal('fetch', (...args: unknown[]) => fetchFn(...args));
-
 import { OpenAIAdapter } from './openai';
+
+const IMAGES_URL = 'https://api.openai.com/v1/images/generations';
+const SPEECH_URL = 'https://api.openai.com/v1/audio/speech';
+
+// ARC-004 — interception réseau MSW (fidèle au contrat OpenAI), au lieu de
+// remplacer globalThis.fetch. server.listen idempotent (cf. test/msw/server.ts).
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 // ---------------------------------------------------------------------------
 // Test config
@@ -80,22 +83,21 @@ describe('OpenAIAdapter', () => {
     process.env.TEST_OPENAI_API_KEY = 'sk-test-key-12345';
     adapter = new OpenAIAdapter(makeConfig());
 
-    // Reset our delegate fns
     llmInvokeFn = vi.fn().mockResolvedValue({
       content: 'Generated text content from OpenAI',
       usage_metadata: { input_tokens: 150, output_tokens: 75 },
     });
-
     embedQueryFn = vi.fn().mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]);
 
-    fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        data: [{ url: 'https://cdn.openai.com/generated-image.png' }],
-      }),
-      text: vi.fn().mockResolvedValue(''),
-      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-    });
+    // Handlers réseau par défaut (image + TTS), fidèles à la forme OpenAI.
+    server.use(
+      http.post(IMAGES_URL, () =>
+        HttpResponse.json({ data: [{ url: 'https://cdn.openai.com/generated-image.png' }] }),
+      ),
+      http.post(SPEECH_URL, () =>
+        new HttpResponse(new ArrayBuffer(8), { headers: { 'content-type': 'audio/mpeg' } }),
+      ),
+    );
   });
 
   afterEach(() => {
@@ -116,9 +118,6 @@ describe('OpenAIAdapter', () => {
 
   it('generateText tracks cost from usage_metadata', async () => {
     const result = await adapter.generateText(makeTextParams());
-    // 150 input tokens * 300/1M = 0.045 cents
-    // 75 output tokens * 600/1M = 0.045 cents
-    // Total = 0.09 cents
     expect(result.costCents).toBeCloseTo(0.09, 4);
     expect(result.tokensUsed.input).toBe(150);
     expect(result.tokensUsed.output).toBe(75);
@@ -133,11 +132,8 @@ describe('OpenAIAdapter', () => {
       height: 1024,
     };
 
+    // Si l'adapter appelait une AUTRE URL, MSW lèverait (onUnhandledRequest:error).
     const result = await adapter.generateImage(params);
-    expect(fetchFn).toHaveBeenCalledWith(
-      'https://api.openai.com/v1/images/generations',
-      expect.objectContaining({ method: 'POST' }),
-    );
     expect(result.data.images).toHaveLength(1);
     expect(result.data.images[0]!.url).toBe('https://cdn.openai.com/generated-image.png');
   });
@@ -151,19 +147,13 @@ describe('OpenAIAdapter', () => {
 
   it('throws when API key is missing', async () => {
     delete process.env.TEST_OPENAI_API_KEY;
-    // Use a fresh adapter with missing key -- the error fires before retry since it's not retryable
     const noKeyAdapter = new OpenAIAdapter(makeConfig());
-
-    await expect(noKeyAdapter.generateText(makeTextParams())).rejects.toThrow(
-      /Missing API key/,
-    );
+    await expect(noKeyAdapter.generateText(makeTextParams())).rejects.toThrow(/Missing API key/);
   }, 10_000);
 
   it('computeCostCents calculates correctly', () => {
-    // Access the protected method through bracket notation
     const computeCost = (adapter as unknown as { computeCostCents: (m: string, i: number, o: number) => number }).computeCostCents.bind(adapter);
     const cost = computeCost('gpt-4', 1_000_000, 1_000_000);
-    // 1M input * 300/1M = 300 cents, 1M output * 600/1M = 600 cents => 900 cents total
     expect(cost).toBeCloseTo(900, 2);
   });
 
@@ -172,7 +162,6 @@ describe('OpenAIAdapter', () => {
       model: 'text-embedding-3-small',
       input: 'Skincare product for daily ritual',
     };
-
     const result = await adapter.generateEmbedding(params);
     expect(Array.isArray(result.data)).toBe(true);
     expect(result.data).toEqual([0.1, 0.2, 0.3, 0.4, 0.5]);
@@ -185,11 +174,6 @@ describe('OpenAIAdapter', () => {
       text: 'Welcome to the world of Japanese skincare.',
       voice: 'alloy',
     });
-
-    expect(fetchFn).toHaveBeenCalledWith(
-      'https://api.openai.com/v1/audio/speech',
-      expect.objectContaining({ method: 'POST' }),
-    );
     expect(result.data.format).toBe('mp3');
     expect(typeof result.data.audioBase64).toBe('string');
   });
