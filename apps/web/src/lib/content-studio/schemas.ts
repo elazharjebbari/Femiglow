@@ -72,6 +72,42 @@ export const voiceoverGenerationSchema = z
   })
   .strict();
 
+// MP-SU-06 (BUG-004) — subtitles. Shape/bounds only; cross-cue structural rules
+// (overlap, ordering, CPS) live in validateCues (shared client/server).
+export const subtitlesGenerationSchema = z
+  .object({
+    script: z.string().trim().min(1).max(8000).optional(),
+    refine: z.boolean().default(false),
+  })
+  .strict();
+
+const cueSchema = z
+  .object({
+    index: z.number().int().nonnegative(),
+    startMs: z.number().int().nonnegative(),
+    endMs: z.number().int().positive(),
+    lines: z.array(z.string()).min(1).max(2),
+  })
+  .strict();
+
+const burnInStyleSchema = z
+  .object({
+    font: z.enum(['sans', 'serif', 'mono']),
+    sizePx: z.number().int().min(12).max(72),
+    position: z.enum(['top', 'middle', 'bottom']),
+    textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    boxColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    boxOpacity: z.number().min(0).max(1).optional(),
+  })
+  .strict();
+
+export const subtitlesSaveSchema = z
+  .object({
+    cues: z.array(cueSchema).max(200),
+    style: burnInStyleSchema,
+  })
+  .strict();
+
 export const draftRejectSchema = z
   .object({
     reason: z.string().max(500).optional(),

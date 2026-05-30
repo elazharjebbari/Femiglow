@@ -181,7 +181,8 @@ export interface AuditEvent {
   createdAt: Date;
 }
 
-export type MediaKind = 'image' | 'video' | 'audio';
+// MP-AR-005 (BUG-004): mirrors the media_kind DB enum (0064 added 'subtitles').
+export type MediaKind = 'image' | 'video' | 'audio' | 'subtitles';
 export type MediaSource = 'upload' | 'external';
 export type MediaStatus = 'pending' | 'processing' | 'ready' | 'failed' | 'passthrough';
 export type MediaQualityProfile = 'hero' | 'inline' | 'thumb';

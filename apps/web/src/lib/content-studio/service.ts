@@ -53,6 +53,7 @@ import {
   updateIdeaStatus,
   upsertPrimaryAsset,
   upsertBundleAssets,
+  getDraftBundle,
 } from './repository';
 import {
   buildPostizDraftPayload,
@@ -66,6 +67,15 @@ import type { ContentIdea } from './types';
 import { synthesizeVoiceover, type TtsProvider } from '@/lib/ai-engine/nodes/generate-voiceover';
 import { resolveProviderCredential } from './provider-credentials';
 import { getEngineConfig } from '@/lib/ai-engine/config';
+import {
+  serializeSrt,
+  sortAndReindex,
+  validateCues,
+  DEFAULT_BURN_IN_STYLE,
+  type Cue,
+  type BurnInStyle,
+} from '@/lib/ai-engine/subtitles/srt';
+import { generateSubtitlesForDraftCore } from '@/lib/ai-engine/subtitles/generate-subtitles-core';
 import { checkDailyBudget } from './budget';
 
 export { listIdeas, listDrafts, listPosts, listCampaigns, getCampaign, createCampaign, updateCampaign, updateCampaignStatus } from './repository';
@@ -688,6 +698,226 @@ export async function generateVoiceoverForDraft(
     provider: out.voiceover.provider,
     voice,
     costCents: out.costCents,
+    createdAt: media.createdAt.toISOString(),
+  };
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// MP-SU-03 (BUG-004) — per-draft subtitles (pipeline B). Generate canonical SRT
+// from the draft (rule-based, no network in mock), edit + save with server-side
+// validation, persisted as a role='subtitles' bundle asset (kind=subtitles).
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface SubtitlesForDraftInput {
+  draftId: string;
+  actorId: string | null;
+  script?: string;
+  refine?: boolean;
+  mode?: 'mock' | 'live';
+}
+
+export interface SaveSubtitlesInput {
+  draftId: string;
+  actorId: string | null;
+  cues: Cue[];
+  style: BurnInStyle;
+}
+
+export interface SubtitlesResult {
+  id: string;
+  draftId: string;
+  role: 'subtitles';
+  kind: 'subtitles';
+  slug: string;
+  cues: Cue[];
+  srt: string;
+  style: BurnInStyle;
+  cueCount: number;
+  previewUrl: string;
+  originalUrl: string;
+  provider: string;
+  costCents: number;
+  createdAt: string;
+}
+
+const SUBTITLES_VIDEO_FORMATS = new Set(['reel', 'story']);
+const SUBTITLES_PROMPT_VERSION = 'content-studio-subtitles-v0-2026-05-30';
+
+function emptySubtitlesResult(draftId: string, style: BurnInStyle): SubtitlesResult {
+  return {
+    id: '',
+    draftId,
+    role: 'subtitles',
+    kind: 'subtitles',
+    slug: '',
+    cues: [],
+    srt: '',
+    style,
+    cueCount: 0,
+    previewUrl: '',
+    originalUrl: '',
+    provider: 'rule-based',
+    costCents: 0,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export async function generateSubtitlesForDraft(
+  input: SubtitlesForDraftInput,
+): Promise<SubtitlesResult> {
+  const draft = await requireDraft(input.draftId);
+  if (!SUBTITLES_VIDEO_FORMATS.has(draft.format)) {
+    throw new HttpError('invalid_state', 'Sous-titres réservés aux formats vidéo (Reel/Story).');
+  }
+  const mode = input.mode ?? 'mock';
+  const refine = (input.refine ?? false) && mode === 'live';
+
+  let apiKey: string | undefined;
+  if (refine) {
+    apiKey = await resolveProviderCredential('openai');
+    if (!apiKey) {
+      throw new HttpError(
+        'invalid_state',
+        'Aucune clé IA configurée pour l’affinage. Désactivez l’affinage ou repassez en mock.',
+      );
+    }
+  }
+
+  await checkDailyBudget(0);
+
+  const rawText =
+    input.script?.trim() ||
+    [draft.hook, draft.caption].map((s) => (s ?? '').trim()).filter(Boolean).join('. ');
+
+  let out;
+  try {
+    out = await generateSubtitlesForDraftCore({
+      script: { hook: draft.hook ?? undefined },
+      rawText,
+      refine,
+      apiKey,
+      onProviderError: 'throw',
+    });
+  } catch (err) {
+    throw new HttpError('upstream_failed', 'Échec de l’affinage des sous-titres.', {
+      cause: String(err),
+    });
+  }
+
+  if (out.cues.length === 0) {
+    return emptySubtitlesResult(draft.id, DEFAULT_BURN_IN_STYLE);
+  }
+
+  // Auto-save the generated cues, reusing an existing style if present.
+  const existing = await getDraftBundle(draft.id);
+  const style =
+    (existing.subtitles?.meta.style as BurnInStyle | undefined) ?? DEFAULT_BURN_IN_STYLE;
+  return saveSubtitlesForDraft({
+    draftId: draft.id,
+    actorId: input.actorId,
+    cues: out.cues,
+    style,
+  });
+}
+
+export async function saveSubtitlesForDraft(input: SaveSubtitlesInput): Promise<SubtitlesResult> {
+  const draft = await requireDraft(input.draftId);
+  if (!SUBTITLES_VIDEO_FORMATS.has(draft.format)) {
+    throw new HttpError('invalid_state', 'Sous-titres réservés aux formats vidéo (Reel/Story).');
+  }
+
+  // Empty → clear the subtitles binding (idempotent), keep other roles.
+  if (input.cues.length === 0) {
+    await upsertBundleAssets({
+      draftId: draft.id,
+      assets: [{ mediaId: `srt:${draft.id}:cleared`, role: 'subtitles', meta: { srt: '', cueCount: 0, cleared: true } }],
+    });
+    return emptySubtitlesResult(draft.id, input.style);
+  }
+
+  const bundle = await getDraftBundle(draft.id);
+  const videoDurationMs = bundle.primary_video?.meta.durationMs as number | undefined;
+  const issues = validateCues(input.cues, { videoDurationMs });
+  const errors = issues.filter((i) => i.severity === 'error');
+  if (errors.length > 0) {
+    throw new HttpError('invalid_input', 'Sous-titres invalides.', { cueErrors: errors });
+  }
+
+  const cues = sortAndReindex(input.cues);
+  const srt = serializeSrt(cues);
+  const buffer = Buffer.from(srt, 'utf-8');
+
+  const media = await createMedia({
+    kind: 'subtitles',
+    source: 'upload',
+    slug: `content-studio-srt-${draft.id}-${createId().slice(0, 8)}`,
+    alt: `Sous-titres pour ${draft.variantLabel ?? draft.id}`,
+    originalFilename: `${draft.id}.srt`,
+    originalMime: 'application/x-subrip',
+    originalSizeBytes: buffer.byteLength,
+    status: 'passthrough',
+    qualityProfile: 'inline',
+    loadingStrategy: 'viewport',
+    overrides: {
+      contentStudio: {
+        origin: 'ai_generated',
+        kind: 'subtitles',
+        sourceDraftId: draft.id,
+        narration: srt,
+        promptVersion: SUBTITLES_PROMPT_VERSION,
+      },
+    },
+    createdBy: input.actorId,
+  });
+
+  const warnings = issues.filter((i) => i.severity === 'warning').length;
+  await upsertBundleAssets({
+    draftId: draft.id,
+    assets: [
+      {
+        mediaId: media.id,
+        role: 'subtitles',
+        meta: { srt, cueCount: cues.length, style: input.style, warnings },
+      },
+    ],
+  });
+
+  await insertGenerationRun({
+    ideaId: null,
+    briefId: draft.briefId,
+    provider: 'rule-based',
+    model: 'rule-based',
+    promptVersion: SUBTITLES_PROMPT_VERSION,
+    input: { draftId: draft.id, cueCount: cues.length, position: input.style.position },
+    output: { mediaId: media.id, srtBytes: buffer.byteLength },
+    status: 'succeeded',
+    costCents: 0,
+    errorMessage: null,
+    createdBy: input.actorId,
+  });
+
+  await logAuditEvent({
+    action: 'content_studio.subtitles.saved',
+    actorId: input.actorId,
+    resourceType: 'media',
+    resourceId: media.id,
+    meta: { draftId: draft.id, cueCount: cues.length, position: input.style.position },
+  });
+
+  return {
+    id: media.id,
+    draftId: draft.id,
+    role: 'subtitles',
+    kind: 'subtitles',
+    slug: media.slug,
+    cues,
+    srt,
+    style: input.style,
+    cueCount: cues.length,
+    previewUrl: media.originalUrl ?? '',
+    originalUrl: media.originalUrl ?? '',
+    provider: 'rule-based',
+    costCents: 0,
     createdAt: media.createdAt.toISOString(),
   };
 }

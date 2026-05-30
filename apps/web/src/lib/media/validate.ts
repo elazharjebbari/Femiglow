@@ -12,10 +12,14 @@ const IMAGE_MIME = new Set([
 const VIDEO_MIME = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 const AUDIO_MIME = new Set(['audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/webm', 'audio/aac']);
 
+// MP-AR-005 (BUG-004): subtitles are SRT/VTT text tracks.
+const SUBTITLE_MIME = new Set(['application/x-subrip', 'text/vtt', 'text/plain']);
+
 const MIME_BY_KIND: Record<MediaKind, Set<string>> = {
   image: IMAGE_MIME,
   video: VIDEO_MIME,
   audio: AUDIO_MIME,
+  subtitles: SUBTITLE_MIME,
 };
 
 export interface ValidatedUpload {
