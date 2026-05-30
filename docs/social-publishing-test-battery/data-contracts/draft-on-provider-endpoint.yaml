@@ -1,0 +1,26 @@
+endpoint:
+  method: POST
+  path: /api/admin/content-studio/posts/{id}/draft-on-provider
+  auth: admin cookie
+
+request_body:
+  schema:
+    accountId: { type: string, required: false }
+    idempotencyKey: { type: string, required: false }
+
+response_201:
+  schema:
+    status: { value: approved (unchanged) }
+    jobs: array with publishMode=draft, status=published (on Postiz side)
+
+response_409:
+  variants:
+    - { code: capability_not_supported, when: account.capabilities.supportsDraft=false }
+    - { code: invalid_state }
+    - { code: brand_review_blocked }
+    - { code: no_account_connected }
+
+side_effects:
+  - audit_log action='social.draft_created' (NOT 'published')
+  - content_post.status remains 'approved'
+  - content_postiz_delivery.status='sent'

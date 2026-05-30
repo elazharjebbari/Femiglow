@@ -1,0 +1,112 @@
+{
+  "$schema": "Fixture for MSW handlers and component tests",
+  "ideas": [
+    {
+      "id": "fixture-idea-1",
+      "campaignId": null,
+      "pillar": "rituel",
+      "objective": "consideration",
+      "platform": "instagram",
+      "format": "reel",
+      "prompt": "Présenter le rituel du soir FemiGlow comme un geste lent.",
+      "status": "generated",
+      "createdAt": "2026-05-28T10:00:00Z"
+    }
+  ],
+  "briefs": [
+    {
+      "id": "fixture-brief-1",
+      "ideaId": "fixture-idea-1",
+      "angle": "L'instant de soin = pause du quotidien",
+      "proof": "Routine 3 minutes prouvée par 87% des testeuses",
+      "cta": "Découvrir le rituel",
+      "mediaDirection": "Plan rapproché slow motion, lumière chaude",
+      "version": 1
+    }
+  ],
+  "drafts": [
+    {
+      "id": "fixture-draft-A",
+      "briefId": "fixture-brief-1",
+      "platform": "instagram",
+      "format": "reel",
+      "variantLabel": "A",
+      "hook": "Trois minutes. Une peau qui dit merci.",
+      "caption": "Le soir, je pose mon téléphone. Je m'occupe de moi. 3 minutes de soin. Une routine simple, lente, qui change tout.",
+      "cta": "Découvrir le rituel",
+      "altText": "Femme appliquant un soin du visage, lumière chaude",
+      "hashtags": ["#femiglow", "#rituel", "#skincare", "#slowliving"],
+      "status": "needs_review",
+      "scoreTotal": 85,
+      "createdAt": "2026-05-28T10:05:00Z"
+    },
+    {
+      "id": "fixture-draft-B",
+      "briefId": "fixture-brief-1",
+      "platform": "instagram",
+      "format": "reel",
+      "variantLabel": "B",
+      "hook": "Ton rituel du soir, c'est ton moment.",
+      "caption": "Tu mérites trois minutes pour toi. Notre rituel se pose comme une caresse, sans urgence. Réveille-toi avec une peau apaisée.",
+      "cta": "En savoir plus",
+      "altText": "Mains appliquant une crème en mouvement lent",
+      "hashtags": ["#femiglow", "#skincare", "#bienêtre"],
+      "status": "generated",
+      "scoreTotal": 72,
+      "createdAt": "2026-05-28T10:05:00Z"
+    },
+    {
+      "id": "fixture-draft-C",
+      "briefId": "fixture-brief-1",
+      "platform": "instagram",
+      "format": "reel",
+      "variantLabel": "C",
+      "hook": "Le luxe d'un instant pour soi.",
+      "caption": "Notre rituel : se reconnecter à soi en quelques gestes. Texture soyeuse, parfum doux, peau lumineuse au réveil. Bienvenue dans le slow skincare.",
+      "cta": "Découvrir",
+      "altText": "Geste lent d'application d'un soin sur le visage",
+      "hashtags": ["#femiglow", "#slowskincare", "#rituel", "#beauty"],
+      "status": "generated",
+      "scoreTotal": 90,
+      "createdAt": "2026-05-28T10:05:00Z"
+    }
+  ],
+  "brand_reviews": [
+    {
+      "id": "fixture-review-A",
+      "draftId": "fixture-draft-A",
+      "status": "pass",
+      "scoreTotal": 85,
+      "violations": []
+    },
+    {
+      "id": "fixture-review-B",
+      "draftId": "fixture-draft-B",
+      "status": "warning",
+      "scoreTotal": 72,
+      "violations": [
+        { "severity": "warning", "rule": "tone_softness", "message": "Le ton pourrait être plus chaleureux." }
+      ]
+    },
+    {
+      "id": "fixture-review-C",
+      "draftId": "fixture-draft-C",
+      "status": "pass",
+      "scoreTotal": 90,
+      "violations": []
+    }
+  ],
+  "posts": [],
+  "generation_runs": [
+    {
+      "id": "fixture-run-1",
+      "ideaId": "fixture-idea-1",
+      "briefId": "fixture-brief-1",
+      "provider": "mock",
+      "model": "gpt-4o-mini",
+      "status": "succeeded",
+      "costCents": 1,
+      "createdAt": "2026-05-28T10:05:00Z"
+    }
+  ]
+}

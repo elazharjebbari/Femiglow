@@ -1,0 +1,46 @@
+domain: copywriting
+operator_path:
+  endpoint: POST /api/admin/content-studio/ideas/{id}/generate
+  auth: requireAdminApi (cookie admin) + requireContentStudioEnabled (CONTENT_STUDIO_ENABLED=true)
+  request_body:
+    optional: true
+    shape: { model?: string(1..120) }   # ideasGenerateSchema; legacy callers send nothing
+  response_200:
+    idea: { id, status: 'generated', pillar, objective, platform, format, prompt }
+    brief: { id, ideaId, angle, proof, cta, mediaDirection, constraints }
+    drafts: "ContentDraft[] (3) { id, variantLabel, hook, caption, cta, altText, hashtags[], status:'generated' }"
+    runs: "[{ provider, model, costCents, status }]"
+  error_codes:
+    invalid_input: 422  # zod (rare ici, body optionnel)
+    not_found: 404      # idée inexistante (requireIdea)
+    forbidden: 403      # feature flag off / non admin -> 401
+    internal_error: 500 # OBSERVE: re-génération d'idée 'generated' (assertTransition non mappé) -> devrait etre 409 invalid_state
+  generation_engine:
+    module: src/lib/content-studio/generation.ts (generateForIdea)
+    key_resolution: "CONTENT_STUDIO_OPENAI_API_KEY ?? CHAT_OPENAI_API_KEY"  # NE consulte PAS OPENAI_API_KEY
+    behavior:
+      live: "si clé non vide -> POST api.openai.com/v1/chat/completions, response_format json_object, schema generationOutputSchema, max 3 drafts, provider=openai, cost=2c"
+      mock_or_fallback: "si clé vide/absente OU erreur LLM OU JSON invalide -> fallbackGeneration (deterministe), provider=fallback, model=deterministic-template, cost=0"
+    staging_reality: "TOUJOURS fallback (clé vide). cs_generation_mode cookie sans effet sur le texte."
+variation_path:
+  endpoint: POST /api/admin/content-studio/drafts/{id}/variation
+  request_body: { variantLabel?: string(1..100), promptOverride?: string(<=2000) }  # promptOverride IGNORE
+  response_200: { draft: ContentDraft }  # clone du parent (caption/hook/cta/altText/hashtags identiques), seul variantLabel change
+  error_codes: { not_found: 404, invalid_state: "si parent.status != regenerable" }
+model_picker:
+  endpoint: GET /api/admin/content-studio/models?role=chat|image|video&format=...
+  response: { models: ModelEntry[], suggested, providers, discovery: {provider:source} }
+  key_resolution_discovery: "AI_ENGINE_OPENAI_API_KEY || CONTENT_STUDIO_OPENAI_API_KEY || CHAT_OPENAI_API_KEY || OPENAI_API_KEY"  # DIFFERENT de generation.ts
+  observed_issue: "role=chat renvoie whisper-1 (STT) et gpt-3.5-turbo en source:'live' alors que generation.ts ne peut pas les utiliser"
+ai_engine_path:
+  endpoint: POST /api/admin/ai-engine/generate
+  enabled: AI_ENGINE_ENABLED=true
+  objective_enum: [awareness, engagement, conversion, education, entertainment, loyalty, ugc]  # INCOMPATIBLE avec CONTENT_OBJECTIVES
+  key_resolution: "AI_ENGINE_OPENAI_API_KEY || CONTENT_STUDIO_OPENAI_API_KEY || CHAT_OPENAI_API_KEY || OPENAI_API_KEY"  # retombe sur OPENAI_API_KEY (valide) -> LIVE-capable
+  nodes: { generate_script: 'fallbackScript si pas de clé', generate_caption: 'gpt-4o-mini, fallbackCaption sinon', generate_variants: 'gpt-4o-mini temp0.9, deterministic sinon' }
+  bridge: "content-studio-bridge.ts mappe A->B (mapObjective: engagement->consideration, awareness->notoriete, conversion->conversion, education->consideration, entertainment->notoriete; defaut consideration)"
+taxonomy_mismatch:
+  content_studio_objectives: [notoriete, consideration, conversion, reassurance, fidelisation]
+  ai_engine_objectives: [awareness, engagement, conversion, education, entertainment]
+  pillars: [rituel, produit, preuve, journal, maison, reassurance, saison, coulisses]
+  risk: "parseBriefNode jetterait ZodError sur un objective Content-Studio (ex: consideration)"

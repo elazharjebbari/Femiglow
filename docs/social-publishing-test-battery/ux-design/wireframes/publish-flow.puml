@@ -1,0 +1,21 @@
+@startsalt publish-flow
+title Publish flow — 3 dialogs
+{
+  {* PublishActionGroup footer *}
+  "Sauvegardé à 14:32" | <Mode mock> | [Publier ▼]
+  --
+  {* Dropdown opens *}
+  ^Publier maintenant^ "Envoie immédiatement au provider"
+  ^Programmer^         "Choisir une date / heure"
+  ^Brouillon Postiz^    "Envoie au provider en mode review"
+  --
+  {* Dialog publish-now *}
+  "Publier maintenant ?"
+  "Le post sera envoyé immédiatement au provider configuré."
+  {* G12 preview *}
+  {<thumb> | "Caption tronquée à 140 chars…" | 📱 instagram · post · Mode mock}
+  "Vérifie l'aperçu une dernière fois. Cette action ne peut pas être annulée."
+  --
+  [Annuler] | [Confirmer]
+}
+@endsalt

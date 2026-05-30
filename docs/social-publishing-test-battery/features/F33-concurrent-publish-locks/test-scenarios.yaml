@@ -1,0 +1,23 @@
+feature: F33-concurrent-publish-locks
+critical: P1
+
+unit:
+  - id: F33-U-1
+    name: tryAcquire success on unlocked job
+    expect: returns true, lockedAt set
+  - id: F33-U-2
+    name: tryAcquire fails if already locked
+    expect: returns false
+  - id: F33-U-3
+    name: race condition: 2 simultaneous acquires
+    given: Promise.all 2 acquire calls
+    expect: 1 succeeds, 1 fails
+  - id: F33-U-4
+    name: orphan lock detected (lockedAt > 5min, no update)
+    expect: lock released automatically
+  - id: F33-U-5
+    name: lock released on success
+  - id: F33-U-6
+    name: lock released on failure (terminal)
+  - id: F33-U-7
+    name: lock NOT released on transient failure during retry (kept)

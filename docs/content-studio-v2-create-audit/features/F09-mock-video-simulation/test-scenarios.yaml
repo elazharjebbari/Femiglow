@@ -1,0 +1,37 @@
+feature: F09-mock-video-simulation
+
+unit:
+  - name: generateMockVideo for reel returns reel-9x16 asset
+    expect: media.originalUrl ends with reel-9x16.mp4
+  - name: generateMockVideo for story returns story-9x16 asset
+  - name: generateMockVideo for post throws or warns (no video for post)
+  - name: cost is 0 cents
+
+component:
+  - name: PreviewPane renders <video> when kind=video
+    expect: video element present, controls attribute set
+  - name: poster image used as thumbnail
+    given: media.thumbnailUrl set
+    expect: video[poster] attribute set
+  - name: MockModeBadge present when mockMode=true
+    expect: badge visible
+
+contract:
+  - name: POST /drafts/:id/generate-visual { kind: 'video' } in mock mode
+    expect: 200, media.kind='video', media.previewUrl reachable
+  - name: GET /_media/content-studio/mock/reel-9x16.mp4 returns 200 video/mp4
+
+e2e:
+  - name: end-to-end mock video flow
+    steps:
+      - visit /admin/content-studio-v2/create
+      - select format Reel
+      - submit IntentionForm
+      - select variant
+      - tab Générer IA, kind=video (auto)
+      - click Générer
+      - wait for media binding
+    expect:
+      - video element with currentTime advancing after play
+      - file size < 2 MB (sanity)
+      - request to /_media/.../reel-9x16.mp4 200

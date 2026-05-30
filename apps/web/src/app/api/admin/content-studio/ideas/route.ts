@@ -47,7 +47,11 @@ export async function POST(request: Request): Promise<Response> {
     if (!parsed.success) {
       throw new HttpError('invalid_input', 'Idée invalide.', parsed.error.flatten());
     }
-    const idea = await createContentIdea({ ...parsed.data, actorId: session.adminId });
+    // CS v2 Phase 2 — `model` is accepted on the create payload but persisted
+    // only when generation runs (the UI passes it again to /generate). Strip
+    // it here so createContentIdea keeps its strict input shape.
+    const { model: _model, ...createInput } = parsed.data;
+    const idea = await createContentIdea({ ...createInput, actorId: session.adminId });
     const responseBody = { idea };
     if (idempotencyKey) await storeIdempotentResponse(idempotencyKey, responseBody);
     return NextResponse.json(responseBody, { status: 201 });

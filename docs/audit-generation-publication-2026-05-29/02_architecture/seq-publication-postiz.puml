@@ -1,0 +1,94 @@
+@startuml seq-publication-postiz
+' ============================================================================
+' Séquence — Publication : Approuver -> Publier maintenant -> bifurcation
+'   dry_run vs live (Postiz). Source vérifiée :
+'   content-studio/service.ts (approveContentDraft),
+'   social-publishing/admin-service.ts (publishContentPostNow, executeJob,
+'     resolveDefaultAccount), service.ts, adapters/{dry-run,postiz}.ts,
+'     repository.ts, postiz.ts, schema-social-publishing.ts.
+' ============================================================================
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam sequence {
+  ArrowColor #8F3F4A
+  LifeLineBorderColor #5A6E50
+  ParticipantBorderColor #8F3F4A
+  ParticipantBackgroundColor #FBE9E5
+}
+
+title Publication — Approuver puis Publier maintenant (dry_run | live)
+
+actor Operatrice as Op
+participant "ApproveButton" as Appr
+participant "PublishActionGroup" as UI
+participant "POST /posts/[id]/publish-now" as RNow
+participant "admin-service.ts" as Admin
+participant "resolveDefaultAccount\n(SOCIAL_PUBLISHING_MODE)" as Resolve
+participant "service.ts\npublishWithAdapter" as Svc
+participant "DryRunAdapter" as Dry
+participant "PostizAdapter" as Pz
+participant "postiz.ts" as PzLib
+participant "Postiz / IG-FB" as Postiz
+database "PostgreSQL" as DB
+
+== Approbation (crée content_post) ==
+Op -> Appr : Approuver le brouillon
+Appr -> DB : approveContentDraft -> review OK + asset présent\n=> approveDraft() crée content_post(status=approved)
+
+== Publier maintenant ==
+Op -> UI : « Publier maintenant »
+UI -> RNow : POST { accountId?, idempotencyKey? }
+RNow -> Admin : publishContentPostNow({postId,accountId,actorId,key})
+Admin -> Admin : getPostPublishability()\n(post approved/scheduled, draft approved,\nreview != blocked, capability+média HTTPS)
+alt non publiable
+  Admin --> RNow : <b>throw HttpError('invalid_state')</b> { errors[] }
+end
+Admin -> Resolve : defaultAccountForPlatform(platform)
+alt SOCIAL_PUBLISHING_MODE = dry_run (DÉFAUT)
+  Resolve --> Admin : compte provider='dry_run'
+else SOCIAL_PUBLISHING_MODE = live
+  Resolve -> Resolve : syncSocialAccounts({includePostiz:true})\n+ compte épinglé ou 1er Postiz actif
+  Resolve --> Admin : compte provider='postiz'
+end
+
+Admin -> DB : createPublishJob(status=queued, idempotencyKey, content+publishMode='now')
+Admin -> Admin : executeJob(jobId)
+Admin -> DB : tryAcquirePublishJobLock(queued|failed)\n=> status publishing
+Admin -> Svc : publishWithAdapter(adapter, {account,content,key})
+
+alt provider = dry_run
+  Svc -> Dry : publish(request)
+  Dry --> Svc : ok, remoteId=dry_<hash>,\npermalink=social.example.test/.../<id>\n(<b>RIEN posté sur le réseau</b>)
+else provider = postiz
+  Svc -> Pz : publish(request)
+  Pz -> PzLib : uploadPostizMediaFromUrl(media[0]) (retry 3)
+  PzLib -> Postiz : POST /api/public/v1/upload
+  Postiz --> PzLib : media {id,path}
+  Pz -> PzLib : createPostizDraft({type:'now',content,image,tags}) (retry 3)
+  PzLib -> Postiz : POST /api/public/v1/posts
+  Postiz --> PzLib : post {id, releaseURL?}
+  PzLib --> Pz : remoteId + permalink
+  Pz --> Svc : ok (publié réellement via Postiz -> IG/FB)
+end
+
+== Persistance résultat ==
+Svc --> Admin : SocialPublishResult
+Admin -> DB : recordPublishAttempt(succeeded/failed)
+alt succès
+  Admin -> DB : createPublication(remoteId,permalink,publishedAt)
+  Admin -> DB : updatePublishJobStatus(published)
+  Admin -> DB : updatePostPlanning(content_post -> published)\n(SAUF publishMode='draft' -> audit social.draft_created)
+else échec
+  Admin -> DB : updatePublishJobStatus(failed, lastError)
+  Admin -> DB : updatePostPlanning(content_post -> failed)
+  Admin -> Admin : sendSocialAlert (si != draft)
+end
+Admin --> RNow : { job, result }
+RNow --> UI : 201
+
+note over Dry
+  Mode dry_run = sécurité staging : le post passe à 'published'
+  et une social_publication factice est créée, MAIS aucun appel
+  réseau réel n'a lieu (permalien example.test, token non réel).
+end note
+@enduml

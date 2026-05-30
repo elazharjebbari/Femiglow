@@ -1,0 +1,308 @@
+feature: F01-navigation-sidebar
+description: Sidebar navigation with main nav, conditional AI Engine subnav, active states, and footer actions
+component_under_test: apps/web/src/components/admin/content-studio-v2/shell/Sidebar.tsx
+test_file: apps/web/src/components/admin/content-studio-v2/shell/__tests__/Sidebar.test.tsx
+
+scenarios:
+  # ---- MAIN NAV RENDERING ----
+
+  - id: F01-T01
+    name: "Sidebar renders 5 main nav items with correct labels"
+    type: component
+    priority: P0
+    preconditions: "Sidebar component mounted with any pathname"
+    steps:
+      - "Render Sidebar with pathname '/admin/content-studio-v2/home'"
+      - "Query all links inside nav[aria-label='Modes du Studio']"
+    expected: "5 links rendered: Accueil, Creation, Bibliotheque, Planning, AI Engine"
+    assertions:
+      - "nav element with aria-label 'Modes du Studio' exists"
+      - "5 link elements are children of that nav"
+      - "Text content matches: Accueil, Creation, Bibliotheque, Planning, AI Engine"
+    tags: [smoke, rendering]
+
+  - id: F01-T02
+    name: "Each main nav link has correct href"
+    type: component
+    priority: P0
+    preconditions: "Sidebar rendered"
+    steps:
+      - "Render Sidebar"
+      - "Check href attribute of each link"
+    expected: >
+      /admin/content-studio-v2/home,
+      /admin/content-studio-v2/create,
+      /admin/content-studio-v2/library,
+      /admin/content-studio-v2/plan,
+      /admin/content-studio-v2/ai-engine
+    assertions:
+      - "link 'Accueil' has href '/admin/content-studio-v2/home'"
+      - "link 'Creation' has href '/admin/content-studio-v2/create'"
+      - "link 'Bibliotheque' has href '/admin/content-studio-v2/library'"
+      - "link 'Planning' has href '/admin/content-studio-v2/plan'"
+      - "link 'AI Engine' has href '/admin/content-studio-v2/ai-engine'"
+    tags: [routing]
+
+  - id: F01-T03
+    name: "Each main nav item renders its icon"
+    type: component
+    priority: P1
+    preconditions: "Sidebar rendered"
+    steps:
+      - "Render Sidebar"
+      - "Verify each nav item contains an SVG element"
+    expected: "Each of the 5 main nav links contains an icon (SVG)"
+    assertions:
+      - "Each link contains at least one <svg> child"
+    tags: [rendering, icons]
+
+  # ---- ACTIVE STATE ----
+
+  - id: F01-T04
+    name: "Accueil is active when pathname matches /home"
+    type: component
+    priority: P0
+    preconditions: "pathname = '/admin/content-studio-v2/home'"
+    steps:
+      - "Render Sidebar with pathname '/admin/content-studio-v2/home'"
+      - "Find the Accueil link"
+    expected: "Accueil link has aria-current='page'"
+    assertions:
+      - "Link with text 'Accueil' has aria-current='page'"
+      - "No other main nav link has aria-current='page'"
+    tags: [active-state]
+
+  - id: F01-T05
+    name: "Creation is active for /create sub-routes via regex"
+    type: component
+    priority: P0
+    preconditions: "pathname = '/admin/content-studio-v2/create/new-post'"
+    steps:
+      - "Render Sidebar with pathname '/admin/content-studio-v2/create/new-post'"
+    expected: "Creation link is active, AI Engine is NOT active"
+    assertions:
+      - "Link 'Creation' has aria-current='page'"
+      - "Link 'AI Engine' does NOT have aria-current='page'"
+    tags: [active-state, regex]
+
+  - id: F01-T06
+    name: "AI Engine main nav is active only for exact /ai-engine path"
+    type: component
+    priority: P0
+    preconditions: "pathname = '/admin/content-studio-v2/ai-engine'"
+    steps:
+      - "Render Sidebar with exact pathname '/admin/content-studio-v2/ai-engine'"
+    expected: "AI Engine link has aria-current='page'"
+    assertions:
+      - "Link 'AI Engine' has aria-current='page'"
+    tags: [active-state, regex]
+
+  - id: F01-T07
+    name: "AI Engine main nav is NOT active for /ai-engine/config sub-route"
+    type: component
+    priority: P1
+    preconditions: "pathname = '/admin/content-studio-v2/ai-engine/config'"
+    steps:
+      - "Render Sidebar with pathname '/admin/content-studio-v2/ai-engine/config'"
+    expected: "AI Engine main link does NOT have aria-current (regex anchored to end)"
+    assertions:
+      - "Main nav 'AI Engine' link does NOT have aria-current='page'"
+    tags: [active-state, edge-case]
+
+  - id: F01-T08
+    name: "Active link shows left accent indicator bar"
+    type: component
+    priority: P2
+    preconditions: "pathname matches a main nav item"
+    steps:
+      - "Render Sidebar with pathname '/admin/content-studio-v2/home'"
+      - "Inspect active link for decorative indicator span"
+    expected: "Active link contains a span with aria-hidden, width: 2, background accent"
+    assertions:
+      - "Active link contains span[aria-hidden='true']"
+      - "That span has background 'var(--cs-accent)'"
+    tags: [visual, active-state]
+
+  # ---- AI ENGINE SUBNAV CONDITIONAL RENDERING ----
+
+  - id: F01-T09
+    name: "AI Engine subnav is shown when on /ai-engine route"
+    type: component
+    priority: P0
+    preconditions: "pathname = '/admin/content-studio-v2/ai-engine/config'"
+    steps:
+      - "Render Sidebar with ai-engine pathname"
+    expected: "nav[aria-label='AI Engine'] is in the DOM with 5 subnav links"
+    assertions:
+      - "nav element with aria-label 'AI Engine' exists"
+      - "5 subnav links are present"
+    tags: [conditional-rendering]
+
+  - id: F01-T10
+    name: "AI Engine subnav is hidden when NOT on /ai-engine route"
+    type: component
+    priority: P0
+    preconditions: "pathname = '/admin/content-studio-v2/home'"
+    steps:
+      - "Render Sidebar with non-ai-engine pathname"
+    expected: "nav[aria-label='AI Engine'] is NOT in the DOM"
+    assertions:
+      - "queryByRole('navigation', { name: 'AI Engine' }) returns null"
+    tags: [conditional-rendering]
+
+  - id: F01-T11
+    name: "AI Engine subnav renders correct 5 items"
+    type: component
+    priority: P0
+    preconditions: "pathname starts with /ai-engine"
+    steps:
+      - "Render Sidebar with pathname '/admin/content-studio-v2/ai-engine/knowledge'"
+      - "Query links in AI Engine nav"
+    expected: "5 links: Generer, Connaissances, Veille, Metriques, Config"
+    assertions:
+      - "Link 'Generer' with href ending /ai-engine/create"
+      - "Link 'Connaissances' with href ending /ai-engine/knowledge"
+      - "Link 'Veille' with href ending /ai-engine/trends"
+      - "Link 'Metriques' with href ending /ai-engine/analytics"
+      - "Link 'Config' with href ending /ai-engine/config"
+    tags: [subnav, rendering]
+
+  - id: F01-T12
+    name: "AI Engine subnav active state: Config highlighted on /config"
+    type: component
+    priority: P0
+    preconditions: "pathname = '/admin/content-studio-v2/ai-engine/config'"
+    steps:
+      - "Render Sidebar"
+      - "Find 'Config' subnav link"
+    expected: "Config link has aria-current='page'"
+    assertions:
+      - "Subnav link 'Config' has aria-current='page'"
+      - "Subnav link 'Generer' does NOT have aria-current='page'"
+    tags: [active-state, subnav]
+
+  - id: F01-T13
+    name: "AI Engine subnav active state works for nested sub-routes"
+    type: component
+    priority: P1
+    preconditions: "pathname = '/admin/content-studio-v2/ai-engine/knowledge/some-collection'"
+    steps:
+      - "Render Sidebar with deep nested knowledge path"
+    expected: "Connaissances link is active via startsWith"
+    assertions:
+      - "Subnav link 'Connaissances' has aria-current='page'"
+    tags: [active-state, subnav, edge-case]
+
+  - id: F01-T14
+    name: "Subnav has 'AI Engine' section header label"
+    type: component
+    priority: P2
+    preconditions: "on an ai-engine route"
+    steps:
+      - "Render Sidebar on ai-engine route"
+      - "Look for text 'AI Engine' as section label"
+    expected: "An uppercase 'AI ENGINE' span is visible above subnav links"
+    assertions:
+      - "Text 'AI Engine' is in the document"
+      - "The element has textTransform: 'uppercase'"
+    tags: [rendering, a11y]
+
+  # ---- BRAND HEADER ----
+
+  - id: F01-T15
+    name: "Brand header links to home and displays correct text"
+    type: component
+    priority: P1
+    preconditions: "Sidebar rendered"
+    steps:
+      - "Find the brand header link"
+    expected: "Link to /admin/content-studio-v2/home with text 'Femiglow' and 'Studio'"
+    assertions:
+      - "First link in sidebar has href '/admin/content-studio-v2/home'"
+      - "Contains text 'Femiglow'"
+      - "Contains text 'Studio'"
+    tags: [branding]
+
+  - id: F01-T16
+    name: "Brand logo circle shows 'F' character"
+    type: component
+    priority: P2
+    preconditions: "Sidebar rendered"
+    steps:
+      - "Find brand logo element"
+    expected: "A 32x32 circle with text 'F' and accent border"
+    assertions:
+      - "Element with text 'F' exists in header area"
+    tags: [branding, visual]
+
+  # ---- FOOTER ----
+
+  - id: F01-T17
+    name: "Footer renders ThemeToggle component"
+    type: component
+    priority: P1
+    preconditions: "Sidebar rendered"
+    steps:
+      - "Render Sidebar"
+      - "Look for ThemeToggle presence"
+    expected: "ThemeToggle component is rendered in the footer area"
+    assertions:
+      - "ThemeToggle is in the DOM"
+    tags: [footer]
+
+  - id: F01-T18
+    name: "Legacy studio link is rendered with correct href"
+    type: component
+    priority: P1
+    preconditions: "Sidebar rendered"
+    steps:
+      - "Find link with text 'Ancien'"
+    expected: "Link to /admin/content-studio-legacy with ExternalLink icon"
+    assertions:
+      - "Link with text 'Ancien' has href '/admin/content-studio-legacy'"
+      - "Link has title 'Voir l'ancien Studio'"
+    tags: [footer, routing]
+
+  # ---- EDGE CASES ----
+
+  - id: F01-T19
+    name: "Sidebar handles null pathname gracefully"
+    type: component
+    priority: P2
+    preconditions: "usePathname returns null"
+    steps:
+      - "Mock usePathname to return null"
+      - "Render Sidebar"
+    expected: "No crash, no active state, no subnav shown"
+    assertions:
+      - "Component renders without error"
+      - "No link has aria-current='page'"
+      - "AI Engine subnav is not visible"
+    tags: [edge-case, null-safety]
+
+  - id: F01-T20
+    name: "Sidebar has fixed width of 232px"
+    type: component
+    priority: P2
+    preconditions: "Sidebar rendered"
+    steps:
+      - "Check the aside element's inline style"
+    expected: "width: 232, minHeight: 100vh, position: sticky"
+    assertions:
+      - "aside element has style.width = 232"
+      - "aside element has style.position = 'sticky'"
+    tags: [layout, visual]
+
+  - id: F01-T21
+    name: "Sidebar uses correct ARIA landmarks"
+    type: accessibility
+    priority: P1
+    preconditions: "Sidebar rendered on ai-engine route"
+    steps:
+      - "Query navigation landmarks"
+    expected: "Two nav landmarks: 'Modes du Studio' and 'AI Engine'"
+    assertions:
+      - "getAllByRole('navigation') returns at least 2"
+      - "One has accessible name 'Modes du Studio'"
+      - "One has accessible name 'AI Engine'"
+    tags: [a11y]

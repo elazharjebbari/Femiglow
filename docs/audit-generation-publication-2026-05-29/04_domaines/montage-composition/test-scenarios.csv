@@ -1,0 +1,31 @@
+id,scenario,type,mode,preconditions,steps,expected,priority
+MC-01,Recadrage image valide via opérateur,nominal,both,"v2 enabled; session admin; JPEG 200x200","POST upload-and-crop multipart file+crop{0,0,100,100,alt}","201 media.previewUrl WebP servi 200, dimensions 100x100",high
+MC-02,Recadrage image ratio 4:5 avec zoom,nominal,both,"v2 enabled; session; PNG","Cropper ratio 4:5 zoom 1.5 -> confirm -> POST","201, preview WebP recadré au ratio, thumb 320px",high
+MC-03,Recadrage avec rotation 90/180/270,nominal,both,"v2 enabled; session; image","Cropper bouton rotation 90° -> recadrer sous-zone -> confirm","Crop fidèle au cadre affiché (à vérifier: rotate->extract)",high
+MC-04,Recadrage avec rotation libre (slider non multiple de 90),error,both,"v2 enabled; session","rotation 37° -> recadrer -> confirm","Crop NON décalé (risque de désalignement coordonnées react-easy-crop vs sharp)",medium
+MC-05,Upload image > 25 Mo,error,both,"v2 enabled; session","POST file 26MB","400 invalid_input 'Fichier trop volumineux'",high
+MC-06,Upload MIME image non supporté (gif),error,both,"v2 enabled; session","POST file image/gif","400 invalid_input 'Type d'image non supporté'",medium
+MC-07,crop JSON invalide / champ manquant,error,both,"v2 enabled; session","POST file sans crop","400 invalid_input 'Paramètre crop manquant'",high
+MC-08,crop avec x négatif,error,both,"v2 enabled; session","POST crop{x:-5,...}","400 invalid_input zod fieldErrors x",medium
+MC-09,POST corps non-multipart,error,both,"v2 enabled; session","POST body vide","Attendu 400 invalid_input; ACTUEL 500 internal_error (BUG)",medium
+MC-10,Upload sans session,error,both,"v2 enabled; pas de cookie","POST upload-and-crop","401 unauthorized",high
+MC-11,v2 désactivé,error,both,"CONTENT_STUDIO_V2_ENABLED!=true; session","POST upload-and-crop","invalid_state 'Content Studio v2 désactivé'",medium
+MC-12,Rate limit crop dépassé,error,both,"v2 enabled; session","31 POST en <60s même IP","429 rate_limited à la 31e",low
+MC-13,GET sur upload-and-crop,error,both,"-","GET upload-and-crop","405 Method Not Allowed",low
+MC-14,Découpe vidéo valide 0.5->2s,nominal,both,"v2 enabled; session; ffmpeg dispo; MP4 3s","POST upload-and-trim file+trim","201 durationSec~1.5, MP4 H.264 servi 200 + poster JPEG 200",high
+MC-15,Découpe vidéo durée > 90s,error,both,"v2 enabled; session","POST trim{0,120,alt}","400 invalid_input 'Durée trop longue (max 90s)'",high
+MC-16,Découpe plage vide (endSec<=startSec),error,both,"v2 enabled; session","POST trim{5,5,alt}","400 invalid_input 'plage de découpe vide'",medium
+MC-17,Upload vidéo > 200 Mo,error,both,"v2 enabled; session","POST file 210MB","400 invalid_input 'Vidéo trop volumineuse'",medium
+MC-18,Vidéo MIME non supporté (avi),error,both,"v2 enabled; session","POST file video/x-msvideo","400 invalid_input 'Type vidéo non supporté'",low
+MC-19,ffmpeg absent à la découpe,error,both,"v2 enabled; session; ffmpeg retiré + FFMPEG_PATH non défini","POST upload-and-trim","échec ffmpeg -> invalid_state/500 (fragilité binaire)",low
+MC-20,Poster non extractible (clip < 0.5s),recovery,both,"v2 enabled; session; clip 0.3s","POST trim valide","201 sans thumbnail (poster non-fatal, ship sans poster)",low
+MC-21,Compose image (graphe) format post,nominal,mock,"AI_ENGINE_ENABLED; POST /ai-engine/generate format post","POST generate","composition image sharp réelle (PAS placeholder 10o)",high
+MC-22,Compose vidéo mux voix-off+musique réel,nominal,mock,"graphe video_flow avec voiceover+music présents","exécuter compose sans mock ffmpeg","MP4 avec piste audio amix vérifiable ffprobe",high
+MC-23,Compose incrustation/piste sous-titres,nominal,mock,"video_flow avec SRT généré","compose","Vidéo avec sous-titres incrustés/muxés (ACTUEL: ignorés)",high
+MC-24,Transcode respecte maxFileSizeMb,nominal,mock,"composition vidéo > limite plateforme","transcodeExport","sortie <= maxFileSizeMb (ACTUEL: non appliqué)",medium
+MC-25,Bridge propage composition/exports vers bibliothèque,nominal,mock,"génération AI-Engine réussie","POST /ai-engine/generate puis ouvrir bibliothèque","média monté visible+publiable (ACTUEL: perdu)",high
+MC-26,Compose vidéo en LIVE sans clés,error,live,"clés OpenAI/Higgsfield vides","POST /ai-engine/generate format reel","échec propre amont (generate-video throw), pas de média corrompu",high
+MC-27,Compose sans source vidéo,recovery,both,"state.videos=[]","compose video_flow","createEmptyAsset('No video source available') sans crash",medium
+MC-28,Codec source vidéo non-H.264 + audio (compose -c:v copy),error,mock,"vidéo source VP9/HEVC + voiceover","compose mux","sortie lisible (ACTUEL: -c:v copy risque corruption)",medium
+MC-29,Cohérence stockage si driver != local,error,both,"MEDIA_STORAGE_DRIVER=vercelBlob","compose écrit média","média servi correctement (ACTUEL: chemin dur local -> 404 via /_media)",medium
+MC-30,Test intégration sharp/ffmpeg réels (anti-mock),nominal,mock,"ffmpeg/sharp installés","exécuter compose/transcode SANS vi.mock","magic bytes JPEG/MP4 + ffprobe durée/codec corrects",high

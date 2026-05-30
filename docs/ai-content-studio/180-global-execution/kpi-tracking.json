@@ -1,0 +1,404 @@
+{
+  "metadata": {
+    "projet": "FemiGlow AI Engine - Knowledge Edit + API Keys Management",
+    "branche": "feat/ai-engine-langgraph-mvp",
+    "date_creation": "2026-05-25",
+    "derniere_mise_a_jour": "2026-05-25",
+    "responsable": "Equipe Developpement"
+  },
+
+  "baseline": {
+    "description": "Etat de reference avant le debut de l'implementation",
+    "date_etablissement": "2026-05-25",
+    "tests_unitaires": {
+      "total": 622,
+      "passants": 622,
+      "echoues": 0,
+      "sautes": 0
+    },
+    "tests_e2e": {
+      "total": 27,
+      "passants": 27,
+      "echoues": 0
+    },
+    "couverture_globale_pct": null,
+    "fichiers_source_ai_engine": 58,
+    "routes_api_ai_engine": 20,
+    "pages_ui_ai_engine": 7
+  },
+
+  "objectifs": {
+    "tests_unitaires_nouveaux": {
+      "cible": 60,
+      "description": "Nombre minimum de nouveaux tests unitaires a ecrire pour les deux features"
+    },
+    "tests_integration_nouveaux": {
+      "cible": 30,
+      "description": "Nombre minimum de nouveaux tests de contrats API"
+    },
+    "tests_e2e_nouveaux": {
+      "cible": 12,
+      "description": "Nombre minimum de nouveaux tests E2E"
+    },
+    "couverture_nouveaux_fichiers_pct": {
+      "cible": 80,
+      "description": "Couverture minimum sur chaque nouveau fichier cree"
+    },
+    "couverture_securite_pct": {
+      "cible": 95,
+      "description": "Couverture minimum sur les fichiers de securite (chiffrement, masquage)"
+    },
+    "zero_regression": {
+      "cible": true,
+      "description": "Aucun test existant ne doit regressionner"
+    },
+    "zero_fuite_cle": {
+      "cible": true,
+      "description": "Aucune cle API ne doit apparaitre en clair dans les logs ou reponses"
+    },
+    "delai_livraison_heures": {
+      "cible": 42,
+      "marge_pct": 20,
+      "maximum": 50,
+      "description": "Effort total estime en heures de travail"
+    }
+  },
+
+  "kpis": {
+    "avancement_global": {
+      "id": "KPI-001",
+      "nom": "Pourcentage d'avancement global",
+      "description": "Proportion des taches completees par rapport au total",
+      "formule": "(taches_completees / taches_totales) * 100",
+      "unite": "%",
+      "cible": 100,
+      "seuil_alerte": 70,
+      "frequence_mesure": "quotidien",
+      "valeur_actuelle": 0,
+      "historique": []
+    },
+
+    "avancement_par_feature": {
+      "knowledge_edit": {
+        "id": "KPI-002a",
+        "nom": "Avancement Knowledge Edit",
+        "taches_totales": 26,
+        "taches_completees": 0,
+        "pourcentage": 0,
+        "detail_par_phase": {
+          "phase_1_backend": { "total": 6, "completees": 0 },
+          "phase_2_api": { "total": 5, "completees": 0 },
+          "phase_3_frontend": { "total": 6, "completees": 0 },
+          "phase_4_integration": { "total": 3, "completees": 0 },
+          "phase_5_tests": { "total": 6, "completees": 0 }
+        }
+      },
+      "api_keys_management": {
+        "id": "KPI-002b",
+        "nom": "Avancement API Keys Management",
+        "taches_totales": 28,
+        "taches_completees": 0,
+        "pourcentage": 0,
+        "detail_par_phase": {
+          "phase_1_backend": { "total": 7, "completees": 0 },
+          "phase_2_api": { "total": 6, "completees": 0 },
+          "phase_3_frontend": { "total": 7, "completees": 0 },
+          "phase_4_integration": { "total": 3, "completees": 0 },
+          "phase_5_tests": { "total": 5, "completees": 0 }
+        }
+      },
+      "commun": {
+        "id": "KPI-002c",
+        "nom": "Avancement taches communes",
+        "taches_totales": 13,
+        "taches_completees": 0,
+        "pourcentage": 0,
+        "detail_par_phase": {
+          "phase_1_migration": { "total": 1, "completees": 0 },
+          "phase_4_validation_croisee": { "total": 1, "completees": 0 },
+          "phase_6_correction": { "total": 6, "completees": 0 },
+          "phase_7_deploiement": { "total": 5, "completees": 0 }
+        }
+      }
+    },
+
+    "tests_ecrits": {
+      "id": "KPI-003",
+      "nom": "Tests ecrits",
+      "description": "Nombre total de nouveaux tests ecrits (unit + integration + E2E)",
+      "unite": "nombre",
+      "cible": 102,
+      "valeur_actuelle": 0,
+      "detail": {
+        "unitaires": {
+          "cible": 60,
+          "actuel": 0,
+          "par_fichier": {
+            "collections.test.ts": { "cible": 13, "actuel": 0 },
+            "documents.test.ts": { "cible": 11, "actuel": 0 },
+            "ingestion.test.ts": { "cible": 8, "actuel": 0 },
+            "encryption.test.ts": { "cible": 16, "actuel": 0 },
+            "api-key-service.test.ts": { "cible": 15, "actuel": 0 },
+            "engine-config.test.ts": { "cible": 6, "actuel": 0 },
+            "audit.test.ts": { "cible": 5, "actuel": 0 },
+            "knowledge-edit.test.tsx": { "cible": 16, "actuel": 0 },
+            "api-key-manager.test.tsx": { "cible": 11, "actuel": 0 }
+          }
+        },
+        "integration": {
+          "cible": 30,
+          "actuel": 0,
+          "par_fichier": {
+            "ai-engine-knowledge-edit.contract.test.ts": { "cible": 16, "actuel": 0 },
+            "ai-engine-api-keys.contract.test.ts": { "cible": 14, "actuel": 0 }
+          }
+        },
+        "e2e": {
+          "cible": 12,
+          "actuel": 0,
+          "par_fichier": {
+            "ai-engine-knowledge-edit.spec.ts": { "cible": 6, "actuel": 0 },
+            "ai-engine-api-keys.spec.ts": { "cible": 6, "actuel": 0 }
+          }
+        }
+      }
+    },
+
+    "tests_passants": {
+      "id": "KPI-004",
+      "nom": "Tests passants",
+      "description": "Nombre de tests passant avec succes (existants + nouveaux)",
+      "unite": "nombre",
+      "cible_minimum": 751,
+      "formule": "baseline.tests_unitaires.total + baseline.tests_e2e.total + tests_ecrits.actuel",
+      "valeur_actuelle": 649,
+      "detail": {
+        "unitaires_existants": { "total": 622, "passants": 622 },
+        "unitaires_nouveaux": { "total": 0, "passants": 0 },
+        "e2e_existants": { "total": 27, "passants": 27 },
+        "e2e_nouveaux": { "total": 0, "passants": 0 }
+      }
+    },
+
+    "tests_echoues": {
+      "id": "KPI-005",
+      "nom": "Tests echoues",
+      "description": "Nombre total de tests en echec",
+      "unite": "nombre",
+      "cible": 0,
+      "seuil_alerte": 1,
+      "valeur_actuelle": 0,
+      "detail": {
+        "critiques": 0,
+        "eleves": 0,
+        "moyens": 0,
+        "faibles": 0
+      }
+    },
+
+    "couverture_code": {
+      "id": "KPI-006",
+      "nom": "Couverture de code",
+      "description": "Pourcentage de couverture sur les nouveaux fichiers",
+      "unite": "%",
+      "cible": 80,
+      "valeur_actuelle": null,
+      "detail_par_fichier": {
+        "knowledge/collections.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 90 },
+        "knowledge/documents.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 90 },
+        "knowledge/ingestion.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 80 },
+        "security/encryption.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 95 },
+        "security/audit.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 90 },
+        "providers/api-key-service.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 90 },
+        "config/engine-config.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 85 },
+        "knowledge/[slug]/route.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 85 },
+        "documents/[docId]/route.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 85 },
+        "providers/[id]/api-key/route.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 85 },
+        "providers/[id]/api-key/test/route.ts": { "lignes": null, "branches": null, "fonctions": null, "cible": 85 }
+      }
+    },
+
+    "regressions": {
+      "id": "KPI-007",
+      "nom": "Regressions detectees",
+      "description": "Nombre de tests existants qui ont regressionne",
+      "unite": "nombre",
+      "cible": 0,
+      "seuil_alerte": 1,
+      "valeur_actuelle": 0,
+      "historique": []
+    },
+
+    "securite_fuites_cles": {
+      "id": "KPI-008",
+      "nom": "Fuites de cles API detectees",
+      "description": "Nombre de fois ou une cle API a ete trouvee en clair dans les logs, reponses API, ou code source",
+      "unite": "nombre",
+      "cible": 0,
+      "seuil_alerte": 1,
+      "valeur_actuelle": 0,
+      "verification": {
+        "dans_les_logs": false,
+        "dans_les_reponses_api": false,
+        "dans_le_code_source": false,
+        "dans_le_dom_html": false
+      }
+    },
+
+    "temps_de_reponse_api": {
+      "id": "KPI-009",
+      "nom": "Temps de reponse des nouveaux endpoints",
+      "description": "Latence moyenne des nouveaux endpoints API en millisecondes",
+      "unite": "ms",
+      "cibles": {
+        "GET_knowledge_slug": { "cible_ms": 200, "seuil_alerte_ms": 500, "actuel_ms": null },
+        "PUT_knowledge_slug": { "cible_ms": 300, "seuil_alerte_ms": 800, "actuel_ms": null },
+        "GET_document": { "cible_ms": 200, "seuil_alerte_ms": 500, "actuel_ms": null },
+        "PUT_document": { "cible_ms": 5000, "seuil_alerte_ms": 10000, "actuel_ms": null },
+        "PUT_api_key": { "cible_ms": 200, "seuil_alerte_ms": 500, "actuel_ms": null },
+        "DELETE_api_key": { "cible_ms": 100, "seuil_alerte_ms": 300, "actuel_ms": null },
+        "POST_api_key_test": { "cible_ms": 10000, "seuil_alerte_ms": 15000, "actuel_ms": null }
+      }
+    },
+
+    "effort_consomme": {
+      "id": "KPI-010",
+      "nom": "Effort consomme",
+      "description": "Heures de travail consommees par rapport a l'estimation",
+      "unite": "heures",
+      "estime": 42,
+      "marge": 50,
+      "consomme": 0,
+      "detail_par_phase": {
+        "phase_1": { "estime": 8, "consomme": 0 },
+        "phase_2": { "estime": 6, "consomme": 0 },
+        "phase_3": { "estime": 8, "consomme": 0 },
+        "phase_4": { "estime": 4, "consomme": 0 },
+        "phase_5": { "estime": 10, "consomme": 0 },
+        "phase_6": { "estime": 4, "consomme": 0 },
+        "phase_7": { "estime": 2, "consomme": 0 }
+      }
+    },
+
+    "features_completees": {
+      "id": "KPI-011",
+      "nom": "Fonctionnalites completees",
+      "description": "Statut de completion de chaque fonctionnalite individuelle",
+      "detail": {
+        "knowledge_edit": {
+          "edition_collection_nom": { "statut": "a_faire", "date_completion": null },
+          "edition_collection_slug": { "statut": "a_faire", "date_completion": null },
+          "edition_collection_description": { "statut": "a_faire", "date_completion": null },
+          "edition_collection_categorie": { "statut": "a_faire", "date_completion": null },
+          "edition_document_titre": { "statut": "a_faire", "date_completion": null },
+          "edition_document_contenu": { "statut": "a_faire", "date_completion": null },
+          "edition_document_source_type": { "statut": "a_faire", "date_completion": null },
+          "edition_document_source_url": { "statut": "a_faire", "date_completion": null },
+          "re_indexation_auto": { "statut": "a_faire", "date_completion": null },
+          "validation_slug_unique": { "statut": "a_faire", "date_completion": null },
+          "ui_formulaire_edition_collection": { "statut": "a_faire", "date_completion": null },
+          "ui_formulaire_edition_document": { "statut": "a_faire", "date_completion": null },
+          "toast_succes_erreur": { "statut": "a_faire", "date_completion": null }
+        },
+        "api_keys_management": {
+          "chiffrement_aes_256_gcm": { "statut": "a_faire", "date_completion": null },
+          "stockage_cle_chiffree_en_base": { "statut": "a_faire", "date_completion": null },
+          "masquage_cle_api": { "statut": "a_faire", "date_completion": null },
+          "endpoint_put_api_key": { "statut": "a_faire", "date_completion": null },
+          "endpoint_delete_api_key": { "statut": "a_faire", "date_completion": null },
+          "endpoint_get_api_key_status": { "statut": "a_faire", "date_completion": null },
+          "endpoint_test_api_key": { "statut": "a_faire", "date_completion": null },
+          "priorite_db_sur_env_var": { "statut": "a_faire", "date_completion": null },
+          "fallback_env_var": { "statut": "a_faire", "date_completion": null },
+          "ui_champ_cle_masque": { "statut": "a_faire", "date_completion": null },
+          "ui_toggle_visibilite": { "statut": "a_faire", "date_completion": null },
+          "ui_bouton_test": { "statut": "a_faire", "date_completion": null },
+          "ui_bouton_supprimer": { "statut": "a_faire", "date_completion": null },
+          "ui_indicateur_source": { "statut": "a_faire", "date_completion": null },
+          "audit_log": { "statut": "a_faire", "date_completion": null }
+        }
+      }
+    },
+
+    "gates_validation": {
+      "id": "KPI-012",
+      "nom": "Gates de validation passees",
+      "description": "Statut de chaque gate de validation entre les phases",
+      "detail": {
+        "gate_1_backend": {
+          "statut": "non_evalue",
+          "date": null,
+          "criteres": {
+            "typescript_compile": null,
+            "tests_existants_passent": null,
+            "fonctions_metier_implementees": null,
+            "migration_generee": null
+          }
+        },
+        "gate_2_api": {
+          "statut": "non_evalue",
+          "date": null,
+          "criteres": {
+            "endpoints_repondent": null,
+            "schemas_zod_valident": null,
+            "auth_admin_fonctionne": null,
+            "masquage_cle_fonctionne": null,
+            "typescript_compile": null
+          }
+        },
+        "gate_3_frontend": {
+          "statut": "non_evalue",
+          "date": null,
+          "criteres": {
+            "typescript_compile": null,
+            "eslint_passe": null,
+            "primitives_cs_v2_utilisees": null,
+            "spinners_implementes": null,
+            "erreurs_affichees": null
+          }
+        },
+        "gate_4_integration": {
+          "statut": "non_evalue",
+          "date": null,
+          "criteres": {
+            "scenarios_ke_fonctionnent": null,
+            "scenarios_akm_fonctionnent": null,
+            "pas_fuite_cle": null,
+            "cas_erreur_geres": null
+          }
+        },
+        "gate_5_tests": {
+          "statut": "non_evalue",
+          "date": null,
+          "criteres": {
+            "zero_echec_unitaire": null,
+            "zero_echec_e2e": null,
+            "couverture_atteinte": null,
+            "nombre_tests_augmente": null,
+            "msw_handlers_complets": null
+          }
+        }
+      }
+    }
+  },
+
+  "tableau_de_bord": {
+    "description": "Resume visuel pour le suivi quotidien",
+    "derniere_mise_a_jour": "2026-05-25",
+    "indicateurs_cles": {
+      "avancement_global_pct": 0,
+      "tests_total": 649,
+      "tests_passants": 649,
+      "tests_echoues": 0,
+      "couverture_moyenne_pct": null,
+      "regressions": 0,
+      "fuites_securite": 0,
+      "effort_consomme_heures": 0,
+      "effort_restant_heures": 42,
+      "risques_ouverts_eleves": 3,
+      "gates_passees": "0/5"
+    },
+    "statut_global": "non_demarre",
+    "commentaire": "En attente du debut de l'implementation"
+  }
+}

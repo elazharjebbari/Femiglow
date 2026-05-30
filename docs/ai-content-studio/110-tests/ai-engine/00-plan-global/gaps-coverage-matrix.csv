@@ -1,0 +1,51 @@
+Gap#,Catégorie,Description,Priorité,Type test,Fichier test,Statut,Tests
+1,UI Opérateur,Édition brief après génération et régénération,Critique,E2E Playwright,ai-engine-brief-edit-regen.spec.ts,En cours,6
+2,UI Opérateur,Navigation inter-pages complète,Critique,E2E Playwright,ai-engine-navigation.spec.ts,En cours,8
+3,UI Opérateur,Pré-remplissage depuis tendance,Critique,E2E Playwright,ai-engine-navigation.spec.ts (test #4),En cours,1
+4,UI Opérateur,Copier caption clipboard,Haut,RTL Vitest,ClipboardCopy.test.tsx,En cours,6
+5,UI Opérateur,Scroll résultats longs,Bas,Non planifié,-,Backlog,0
+6,UI Opérateur,Responsive mobile 375px,Critique,E2E Playwright,ai-engine-responsive.spec.ts,En cours,8
+7,UI Opérateur,Dark mode rendering,Moyen,Non planifié,-,Backlog,0
+8,UI Opérateur,Keyboard navigation,Moyen,E2E Playwright,ai-engine-keyboard.spec.ts,En cours,6
+9,UI Opérateur,Session expirée pendant génération,Critique,E2E Playwright,ai-engine-session-expired.spec.ts,En cours,6
+10,UI Opérateur,Refresh page pendant génération,Moyen,Non planifié,-,Backlog,0
+11,Backend,Pipeline bout-en-bout réel (avec LLM),Critique,Non planifié (coûteux),-,Backlog,0
+12,Backend,RAG round-trip réel,Haut,Non planifié,-,Backlog,0
+13,Backend,Checkpointing MemorySaver réel,Critique,Non planifié,-,Backlog,0
+14,Backend,Circuit breaker integration,Moyen,Vitest,retry-convergence.test.ts,En cours,indirectly
+15,Backend,Retry loop convergence,Moyen,Vitest,retry-convergence.test.ts,En cours,6
+16,Backend,Budget guard réel,Moyen,Non planifié,-,Backlog,0
+17,Backend,Concurrent generations safety,Critique,Vitest,concurrent.test.ts,En cours,6
+18,Backend,DB transaction integrity,Moyen,Non planifié,-,Backlog,0
+19,Backend,Job cleanup/TTL,Bas,Non planifié,-,Backlog,0
+20,Backend,Rate limiting,Bas,Non planifié,-,Backlog,0
+21,API,SSE generate-stream contract,Haut,Vitest Contract,ai-engine-stream.contract.test.ts,En cours,6
+22,API,Analytics nodeMetrics SQL réel,Moyen,Non planifié,-,Backlog,0
+23,API,Knowledge ingest URL,Moyen,Non planifié,-,Backlog,0
+24,API,Knowledge seed contract,Bas,Non planifié,-,Backlog,0
+25,API,Integrations Postiz réel,Moyen,Non planifié,-,Backlog,0
+26,API,Publish schedule date validation,Moyen,Non planifié,-,Backlog,0
+27,API,Review edit_requested cycle,Haut,Non planifié,-,Backlog,0
+28,API,Config workflows format default,Bas,Non planifié,-,Backlog,0
+29,API,Config prompts format default,Bas,Non planifié,-,Backlog,0
+30,API,Config providers POST update,Moyen,Non planifié,-,Backlog,0
+31,Composant,Review Panel (script/caption/buttons/feedback),Haut,RTL Vitest,ReviewPanel.test.tsx,En cours,12
+32,Composant,Publish Section (mode toggle/datetime/loading),Haut,RTL Vitest,PublishSection.test.tsx,En cours,10
+33,Composant,Sidebar AI Engine sub-nav,Moyen,Non planifié,-,Backlog,0
+34,Composant,Loading states (7 fichiers),Moyen,RTL Vitest,loading-states.test.tsx,En cours,7
+35,Composant,Error banners across pages,Moyen,RTL Vitest,ErrorBanners.test.tsx,En cours,8
+36,State,LangGraph state Annotation reducers,Haut,Vitest,state-reducers.test.ts,En cours,12
+37,State,State corruption (mauvais type),Haut,Vitest,state-reducers.test.ts,En cours,included
+38,Data,Cost tracking integrity mathématique,Moyen,Vitest,quality-integrity.test.ts,En cours,8
+39,Data,Quality score dimensions poids,Moyen,Vitest,quality-integrity.test.ts,En cours,included
+40,Data,Trend scorer weights,Moyen,Vitest,quality-integrity.test.ts,En cours,included
+41,Sécurité,XSS dans brief,Haut,Vitest,security.test.ts,En cours,8
+42,Sécurité,Injection SQL via knowledge,Moyen,Vitest,security.test.ts,En cours,included
+43,Sécurité,API key leak dans logs,Moyen,Vitest,security.test.ts,En cours,included
+44,Sécurité,CORS,Bas,Non planifié,-,Backlog,0
+45,Sécurité,File path traversal,Critique,Vitest,security.test.ts,En cours,included
+46,Perf,Latence P95,Bas,Non planifié,-,Backlog,0
+47,Perf,Memory leak MemorySaver,Moyen,Non planifié,-,Backlog,0
+48,Perf,Bundle size,Bas,Non planifié,-,Backlog,0
+49,Perf,DB query performance pgvector,Bas,Non planifié,-,Backlog,0
+50,Perf,Concurrent WebSocket,Bas,Non planifié,-,Backlog,0

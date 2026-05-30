@@ -1,0 +1,55 @@
+feature: F03-draft-on-postiz
+critical: P1
+
+unit:
+  - id: F03-U-1
+    name: sendContentPostToDraft happy path
+    expect: job created mode=draft, executeJob with type='draft'
+  - id: F03-U-2
+    name: sendContentPostToDraft skips capability check on capability.supportsDraft=false
+    expect: throws code=capability_not_supported
+  - id: F03-U-3
+    name: post.status remains 'approved' after draft creation
+    expect: no UPDATE on content_post status
+  - id: F03-U-4
+    name: audit log action='social.draft_created' (not 'published')
+    expect: row inserted with that action
+
+contract:
+  - id: F03-C-1
+    name: POST draft-on-provider happy path
+    expect: 201 with jobs[0].mode='draft', status='published' (postiz side)
+  - id: F03-C-2
+    name: capability not supported 409
+    given: account has no draft capability
+    expect: 409 code=capability_not_supported
+  - id: F03-C-3
+    name: idempotency replay
+    expect: 200 with existing job
+  - id: F03-C-4
+    name: postiz 500 → 502 to client
+    given: Postiz upstream 500
+    expect: 502 or 503 with code=provider_unavailable
+
+component:
+  - id: F03-CO-1
+    name: dropdown shows Brouillon Postiz
+    expect: menuitem 'Brouillon Postiz' visible
+  - id: F03-CO-2
+    name: dialog confirm
+    when: click Brouillon Postiz
+    expect: dialog visible with title 'Envoyer en brouillon ?'
+  - id: F03-CO-3
+    name: confirm fires API
+    expect: POST /draft-on-provider with method=POST
+  - id: F03-CO-4
+    name: success toast
+    expect: 'Brouillon envoyé au provider'
+
+e2e:
+  - id: F03-E-1
+    name: golden path Brouillon Postiz
+    scenario_ref: S03
+  - id: F03-E-2
+    name: post status remains approved (not published)
+    scenario_ref: S03

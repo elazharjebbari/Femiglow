@@ -1,0 +1,33 @@
+feature: F23-retry-backoff
+critical: P1
+
+unit:
+  - id: F23-U-1
+    name: 1 attempt on success
+    expect: adapter called once
+  - id: F23-U-2
+    name: retries 3 times on 503
+    given: 3 503 then success
+    expect: 4 total calls
+  - id: F23-U-3
+    name: max attempts reached → throws
+    given: always 503
+    expect: 3 calls, then throws code='provider_unavailable'
+  - id: F23-U-4
+    name: no retry on 422
+    given: 422
+    expect: 1 call, throws
+  - id: F23-U-5
+    name: no retry on 409
+  - id: F23-U-6
+    name: backoff delays [100, 300, 900]
+    using: fake timers, advance after each attempt
+    expect: exact delays measured
+  - id: F23-U-7
+    name: isTransientStatus(429)=true
+  - id: F23-U-8
+    name: isTransientStatus(422)=false
+  - id: F23-U-9
+    name: network error retried
+    given: fetch rejects with network error
+    expect: retry

@@ -1,0 +1,92 @@
+@startuml state-machine
+title Content Studio v2 — Draft + Post status transitions
+
+[*] --> idea : POST /ideas
+
+state "idea" as IDEA {
+  IDEA : draft initial brief input
+}
+
+state "brief" as BRIEF {
+  BRIEF : optional intermediate
+}
+
+state "generated" as GEN {
+  GEN : variants created
+  GEN : not yet reviewed
+}
+
+state "needs_review" as NR {
+  NR : awaiting human selection
+  NR : brand_review attached
+}
+
+state "approved" as APP {
+  APP : variant + media chosen
+  APP : content_post row exists
+}
+
+state "scheduled" as SCH {
+  SCH : scheduledAt in future
+}
+
+state "published" as PUB {
+  PUB : delivered to provider(s)
+}
+
+state "rejected" as REJ
+state "failed" as FAIL
+state "cancelled" as CAN
+state "archived" as ARCH
+state "measured" as MEAS
+
+IDEA --> BRIEF : auto (some flows)
+IDEA --> GEN : POST /ideas/:id/generate\n(creates brief + drafts)
+BRIEF --> GEN : auto on draft create
+
+GEN --> NR : POST /drafts/:id/review\n<<UI auto-call on variant select>>
+GEN --> REJ : POST /drafts/:id/reject
+
+NR --> NR : PATCH /drafts/:id\n(re-brand-review)
+NR --> APP : POST /drafts/:id/approve\n<<NEW UI: Valider button>>
+NR --> GEN : POST /drafts/:id/variation\n(creates copy variation)
+NR --> REJ : POST /drafts/:id/reject
+
+APP --> PUB : POST /posts/:id/publish-now
+APP --> SCH : POST /posts/:id/schedule
+APP --> APP : POST /posts/:id/draft-on-provider\n(creates Postiz draft, status unchanged)
+APP --> ARCH : POST /drafts/:id/archive
+
+SCH --> PUB : auto when scheduledAt reached
+SCH --> CAN : POST /posts/:id/cancel
+SCH --> FAIL : provider error
+SCH --> APP : POST /posts/:id/reschedule (back to approved)
+
+PUB --> MEAS : analytics snapshot
+PUB --> ARCH
+
+REJ --> GEN : optional rerun
+REJ --> ARCH
+
+FAIL --> SCH : retry
+FAIL --> ARCH
+
+MEAS --> ARCH
+CAN --> ARCH
+ARCH --> [*]
+
+note right of NR
+  <<UI Gap fix>>
+  Today: no UI path moves draft from `generated`
+  to `needs_review`. Fix: call `/drafts/:id/review`
+  automatically on variant select.
+end note
+
+note right of APP
+  <<UI Gap fix>>
+  Today: `approve` is never called from UI.
+  Fix: add explicit "Valider et préparer la
+  publication" button in PreviewPane.
+end note
+
+@enduml

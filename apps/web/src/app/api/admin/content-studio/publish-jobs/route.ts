@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdminApi, requireContentStudioEnabled } from '@/lib/content-studio/auth';
-import { formatErrorResponse } from '@/lib/errors/http-error';
+import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { listPublishJobsForAdmin } from '@/lib/social-publishing/admin-service';
 
 export const runtime = 'nodejs';
@@ -17,8 +17,13 @@ export async function GET(request: Request): Promise<Response> {
   try {
     requireContentStudioEnabled();
     await requireAdminApi();
-    const filters = querySchema.parse(Object.fromEntries(new URL(request.url).searchParams.entries()));
-    const jobs = await listPublishJobsForAdmin(filters);
+    const parsed = querySchema.safeParse(
+      Object.fromEntries(new URL(request.url).searchParams.entries()),
+    );
+    if (!parsed.success) {
+      throw new HttpError('invalid_input', 'Filtres invalides.', parsed.error.flatten());
+    }
+    const jobs = await listPublishJobsForAdmin(parsed.data);
     return NextResponse.json({ jobs });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

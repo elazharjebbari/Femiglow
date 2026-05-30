@@ -1,0 +1,123 @@
+title: Error codes catalog
+description: |
+  Liste exhaustive des codes d'erreur applicatifs émis par le pipeline publish.
+  Source : lib/social-publishing/errors.ts + lib/content-studio-v2/errors/messages.ts
+
+codes:
+  # Pre-flight / pre-validation
+  invalid_state:
+    http: 409
+    retryable: false
+    fr: État de draft invalide pour cette action.
+    when: post.status not in {approved, scheduled}
+  invalid_input:
+    http: 400
+    retryable: false
+    fr: Requête invalide.
+    when: Zod parse fail
+  not_found:
+    http: 404
+    retryable: false
+    fr: Ressource introuvable.
+  invalid_date:
+    http: 400
+    fr: La date doit être dans le futur.
+  min_lead_time:
+    http: 400
+    fr: La date doit être au moins 5 minutes dans le futur.
+
+  # Brand & content
+  brand_review_blocked:
+    http: 409
+    fr: Le contenu est bloqué par la revue brand.
+  no_media_attached:
+    http: 409
+    fr: Aucun média attaché au draft.
+  caption_too_long:
+    http: 409
+    fr: La caption dépasse la longueur maximale.
+  invalid_media_url:
+    http: 409
+    fr: URL média invalide (doit être HTTPS).
+  format_not_supported:
+    http: 409
+    fr: Format non supporté pour ce compte.
+
+  # Account
+  no_account_connected:
+    http: 409
+    fr: Aucun compte social connecté.
+  account_disabled:
+    http: 409
+    fr: Compte désactivé.
+  token_expired:
+    http: 401
+    fr: Compte expiré, reconnectez-le.
+  permission_denied:
+    http: 403
+    fr: Permission refusée.
+  capability_not_supported:
+    http: 409
+    fr: Ce compte ne supporte pas cette action.
+
+  # Provider (transient)
+  provider_rate_limited:
+    http: 429
+    retryable: true
+    fr: Trop de requêtes, réessayez dans un instant.
+  provider_timeout:
+    http: 408
+    retryable: true
+    fr: Délai de réponse dépassé.
+  provider_temporarily_unavailable:
+    http: 425
+    retryable: true
+    fr: Provider temporairement indisponible.
+  provider_unavailable:
+    http: 503
+    retryable: true
+    fr: Provider indisponible.
+
+  # Provider (non-retryable)
+  invalid_payload:
+    http: 422
+    retryable: false
+    fr: Payload invalide côté provider.
+  conflict:
+    http: 409
+    retryable: false
+    fr: Conflit de ressource.
+
+  # Budget / quota
+  budget_exceeded:
+    http: 402
+    retryable: false
+    fr: Budget IA quotidien atteint.
+  rate_limit_exceeded:
+    http: 429
+    retryable: true
+    fr: Trop de requêtes, réessayez dans un instant.
+
+  # State machine
+  version_conflict:
+    http: 409
+    retryable: false
+    fr: Le draft a été modifié ailleurs. Rechargez la page.
+  already_terminal:
+    http: 409
+    retryable: false
+    fr: Action impossible — état terminal.
+
+  # Auth (top-level)
+  unauthorized:
+    http: 401
+    retryable: false
+    fr: Session expirée, veuillez vous reconnecter.
+  forbidden:
+    http: 403
+    retryable: false
+    fr: Action non autorisée.
+  session_expired:
+    http: 401
+    retryable: false
+    fr: Session expirée, veuillez vous reconnecter.

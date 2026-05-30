@@ -1,0 +1,1358 @@
+{
+ "target_architecture": "ADR-0007 Option1: converge vers A (LangGraph); create-flow = UI au-dessus de A",
+ "universe_count": 102,
+ "rows": [
+  {
+   "id": "BUG-001",
+   "type": "BUG",
+   "severity": "blocker",
+   "domain": "generation-image",
+   "component": "src/lib/content-studio/image-generation.ts + generate-visual route",
+   "title": "Flux create operateur: generation LIVE entierement cassee (OpenAI key non lue, Higgsfield ",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-005",
+    "T-010",
+    "T-101",
+    "T-102"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-002",
+   "type": "BUG",
+   "severity": "blocker",
+   "domain": "generation-video",
+   "component": "src/lib/content-studio/video-generation.ts:104-116 + src/lib/content-studio/higg",
+   "title": "Génération vidéo LIVE entièrement non-fonctionnelle: credential Higgsfield incomplet (clé ",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-102",
+    "T-103"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-003",
+   "type": "BUG",
+   "severity": "blocker",
+   "domain": "publication-postiz",
+   "component": "src/app/api/cron/content-studio/social-publish-scheduler/route.ts + src/lib/soci",
+   "title": "La publication PROGRAMMÉE ne s'exécute jamais: le scheduler n'est branché à aucun cron",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-103b"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-004",
+   "type": "BUG",
+   "severity": "blocker",
+   "domain": "voix-off",
+   "component": "src/lib/ai-engine/orchestrator.ts (GenerationResult, buildResultFromState), src/",
+   "title": "Voiceover/music/subtitles/composition/exports jamais exposés au-delà du graphe: l'opérateu",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-104"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-005",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "copywriting",
+   "component": "src/lib/content-studio/generation.ts:66-102 (generateForIdea) + service.ts:99-17",
+   "title": "Génération de texte opérateur figée en fallback déterministe (jamais LLM) — MOCK et LIVE i",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-005",
+    "T-010",
+    "T-201"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-006",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "create-ui-flow",
+   "component": "ModelPicker.tsx + /api/admin/content-studio/models/route.ts + image-generation.t",
+   "title": "Le picker propose des modeles live (OpenAI/Higgsfield) qui throwent tous a la generation —",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-005",
+    "T-101",
+    "T-202"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-007",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "generation-image",
+   "component": "src/app/api/admin/content-studio/models/route.ts + ModelPicker.tsx",
+   "title": "Picker modeles: badges 'Live' mensongers — modeles non generables affiches comme disponibl",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-005",
+    "T-101",
+    "T-202"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-008",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "generation-video",
+   "component": "src/lib/content-studio/video-generation.ts:157,187",
+   "title": "Endpoints Higgsfield codés en SYNC alors que l'API réelle est ASYNC (submit+poll différent",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-102",
+    "T-103"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-009",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "generation-video",
+   "component": "GET /api/admin/content-studio/models?role=video ↔ src/lib/content-studio/video-g",
+   "title": "Desync picker↔backend: 8 modèles vidéo Higgsfield 'live' proposés que generateStudioVideo ",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-103"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-010",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "test-mock-infrastructure",
+   "component": "src/lib/content-studio/video-generation.test.ts + video-generation.ts (polling)",
+   "title": "Suite tout-verte (1695 passed) mais EXIT 1 : unhandled rejection masquée par fake timers",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-001",
+    "T-002"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-011",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "test-mock-infrastructure",
+   "component": "image-generation.ts / video-generation.ts (chemins live) + env staging",
+   "title": "Génération LIVE entièrement non-fonctionnelle aujourd'hui et non couverte par un test qui ",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-012",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "voix-off",
+   "component": "src/lib/ai-engine/nodes/generate-voiceover.ts, src/lib/ai-engine/nodes/generate-",
+   "title": "Voix-off et musique cassées même en MOCK: ffmpeg 'lavfi' indisponible dans le process stag",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "root-cause-refuted"
+  },
+  {
+   "id": "BUG-013",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "voix-off",
+   "component": "src/lib/ai-engine/nodes/generate-video.ts (generateMockVideo), src/lib/ai-engine",
+   "title": "Flux vidéo mock cassé: la vidéo de base échoue (lavfi) → asset vide, donc compose/transcod",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "root-cause-refuted"
+  },
+  {
+   "id": "BUG-014",
+   "type": "BUG",
+   "severity": "critical",
+   "domain": "voix-off",
+   "component": "src/app/admin/content-studio-v2/ai-engine/create/page.tsx (TONES), src/app/api/a",
+   "title": "Mismatch d'enum 'tone': l'UI AI-Engine propose des tons (empowering/authentic/urgent) reje",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-203"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-015",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "copywriting",
+   "component": "src/lib/content-studio/generation.ts (B) vs src/lib/ai-engine/nodes/generate-scr",
+   "title": "Deux systèmes de génération de texte parallèles non connectés (operator create vs AI-Engin",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-901"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-016",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "copywriting",
+   "component": "src/app/api/admin/content-studio/models/route.ts + src/lib/ai-engine/services/mo",
+   "title": "Desync picker de modèles: whisper-1 (STT) et gpt-3.5-turbo proposés en 'live' alors que la",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-202"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-017",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "copywriting",
+   "component": "src/app/api/admin/content-studio/drafts/[id]/variation/route.ts -> service.creat",
+   "title": "La 'variation' de draft ne régénère aucun texte — clone exact du parent, promptOverride ig",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-305"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-018",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "copywriting",
+   "component": "src/lib/ai-engine/nodes/generate-script.test.ts, generate-caption.test.ts, gener",
+   "title": "Tests des nœuds AI-Engine ne couvrent QUE le fallback (LLM mocké en rejet) — chemin LIVE j",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-019",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "create-ui-flow",
+   "component": "IntentionForm.tsx (ModelPicker role=chat) + models/route.ts discoveryRoleToStudi",
+   "title": "Picker 'Modèle de génération' (texte) liste 106 modeles dont whisper-1, sora-2, omni-moder",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-202"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-020",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "create-ui-flow",
+   "component": "/api/admin/content-studio/ideas/[id]/generate/route.ts + generation.ts + CreateW",
+   "title": "Generation de texte/variantes ignore le cookie cs_generation_mode et tombe silencieusement",
+   "primary_workstream": "frontend",
+   "existing_tasks": [
+    "T-201"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-021",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "create-ui-flow",
+   "component": "GenerationModeToggle.tsx + MediaStudio.tsx + StudioContext (mockMode)",
+   "title": "GenerationModeToggle defaut 'mock' contredit health.mockMode=false (etat affiche incoheren",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-413"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-022",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "create-ui-flow",
+   "component": "CreateWorkspace.tsx onCreated (lignes 195-228)",
+   "title": "Echec de generation de variantes silencieux: idee creee sans variantes, sans erreur a l'op",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-304"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-023",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "create-ui-flow",
+   "component": "e2e/content-studio-social-publishing-draft.spec.ts:227 (cleanupSeed) vs schema a",
+   "title": "E2E publish-draft Postiz casse sur 'relation audit_event does not exist' (table reelle = a",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-003"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-024",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "create-ui-flow",
+   "component": "models/route.ts materialiseDiscoveredModel + ModelPicker badge Live",
+   "title": "Higgsfield discovery renvoie source='fallback' mais les modeles sont materialises avec sou",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-202"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-025",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-image",
+   "component": "src/lib/content-studio/image-generation.ts (generateHiggsfieldImage) + video-gen",
+   "title": "Endpoints Higgsfield image/video synchrones faux (API reelle = async submit+poll)",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-102",
+    "T-103"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-026",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-image",
+   "component": "src/lib/ai-engine/nodes/generate-images.ts vs src/lib/content-studio/image-gener",
+   "title": "Deux systemes de generation image non connectes — le flux operateur n'atteint jamais le no",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-901"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-027",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-image",
+   "component": "vitest suite (video-generation.test.ts) + image-generation.test.ts",
+   "title": "Rapport de tests tout-vert masque un echec process (vitest EXIT 1) et un mauvais contrat H",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-001",
+    "T-002"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-028",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-image",
+   "component": "ModelPicker.tsx (allowCustom + items discovery) -> image-generation.ts routing",
+   "title": "Picker autorise des id custom et des modeles decouverts non routables (flux_2, veo3_1) -> ",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-101"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-029",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-video",
+   "component": "e2e/content-studio-v2/create-mock-video.spec.ts:28 + src/components/admin/conten",
+   "title": "E2E create-mock-video:8 échoue: le test attend « Générer un visuel IA » mais le bouton vid",
+   "primary_workstream": "design",
+   "existing_tasks": [
+    "T-003",
+    "T-415"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-030",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-video",
+   "component": "src/lib/ai-engine/nodes/generate-video.ts + src/lib/ai-engine/nodes/compose.ts +",
+   "title": "Pipeline vidéo AI-Engine (generate-video/compose) jamais exécuté en réel: zéro MP4 produit",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-901"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-031",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-video",
+   "component": "src/lib/ai-engine/nodes/compose.ts:15 + compose.test.ts / transcode-export.test.",
+   "title": "Tests vidéo polluent le stockage média de PRODUCTION avec des stubs texte (mock de writeFi",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-306"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-032",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "generation-video",
+   "component": "src/lib/content-studio/video-generation.test.ts:198-224 + video-generation.ts:20",
+   "title": "Vitest EXIT 1 (unhandled rejection) masqué par 1695 'passed' — test polling status=failed ",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-001",
+    "T-002"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-033",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "montage-composition",
+   "component": "src/lib/ai-engine/nodes/compose.ts, src/lib/ai-engine/nodes/transcode-export.ts,",
+   "title": "Le montage AI-Engine (compose/transcode) est inatteignable par l'opérateur du create flow",
+   "primary_workstream": "frontend",
+   "existing_tasks": [
+    "T-104"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-034",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "montage-composition",
+   "component": "src/lib/ai-engine/bridge/content-studio-bridge.ts",
+   "title": "Le bridge ne propage pas composition/exports/thumbnails vers la bibliothèque",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-104"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-035",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "montage-composition",
+   "component": "src/lib/ai-engine/nodes/compose.test.ts, transcode-export.test.ts, .media-storag",
+   "title": "Les tests de compose/transcode mockent intégralement sharp+ffmpeg+fs — zéro preuve réelle,",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-306",
+    "T-307"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-036",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "montage-composition",
+   "component": "src/lib/ai-engine/nodes/compose.ts, src/lib/ai-engine/nodes/generate-subtitles.t",
+   "title": "Les sous-titres sont générés mais jamais incrustés ni muxés par compose",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-307"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-037",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "publication-postiz",
+   "component": "src/lib/social-publishing/adapters/postiz.ts + src/lib/content-studio/postiz.ts ",
+   "title": "Mode LIVE Postiz jamais exercé end-to-end (upload média + POST /posts + extraction release",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-038",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "publication-postiz",
+   "component": "src/lib/content-studio/service.ts (cancelScheduledPost L568, reschedulePost L603",
+   "title": "Cancel/Reschedule orphelinent les social_publish_job 'queued' (incohérence d'état latente)",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-301",
+    "T-302"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-039",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "publication-postiz",
+   "component": "src/lib/social-publishing/admin-service.ts:566-612 resolveDefaultAccount",
+   "title": "resolveDefaultAccount: en live, choix implicite du PREMIER compte Postiz actif (risque de ",
+   "primary_workstream": "frontend",
+   "existing_tasks": [
+    "T-303"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-040",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "publication-postiz",
+   "component": "src/app/api/admin/content-studio/posts/[id]/postiz-draft/route.ts + service.crea",
+   "title": "Route legacy /postiz-draft (createDraftInPostiz) appelle DIRECTEMENT l'API Postiz réelle, ",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-020"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-041",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "src/lib/content-studio/**.test.ts, src/lib/ai-engine/**.test.ts, src/lib/social-",
+   "title": "0 test sur 95 n'assert un effet backend réel ; 58 mockent fetch — les doublures ne reflète",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-042",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "e2e/content-studio-social-publishing-draft.spec.ts (lignes 207, 227)",
+   "title": "E2E draft Postiz interroge la table 'audit_event' (singulier) inexistante — test impossibl",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-003"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-043",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "src/app/api/admin/content-studio/models/route.ts + src/lib/ai-engine/services/mo",
+   "title": "Le picker de modèles propose des modèles 'live' (gpt-image-1) servis depuis un cache mémoi",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-202",
+    "T-410"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-045",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "src/lib/social-publishing/adapters/dry-run.ts + src/test/fixtures/social-publish",
+   "title": "Mock dry-run et fixtures Postiz divergent de l'API Postiz réelle (formats/permalinks ficti",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006",
+    "T-308"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-046",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "apps/web/vitest.setup.ts + src/test/msw/* (handlers ad-hoc)",
+   "title": "MSW présent mais non câblé en harnais global de parité ; vitest.setup mocke trop largement",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006",
+    "T-010"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-047",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "src/lib/ai-engine/nodes/* (16 nœuds) vs src/lib/content-studio/* + bridge/conten",
+   "title": "Ponts (A) AI-Engine LangGraph et (B) create-flow : la couverture porte sur (A) tandis que ",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-010",
+    "T-901"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-048",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "voix-off",
+   "component": "src/lib/content-studio/* , src/components/admin/content-studio-v2/create/* , src",
+   "title": "Le flux opérateur réel (/admin/content-studio-v2/create) n'a AUCUN lien avec voix-off/musi",
+   "primary_workstream": "frontend",
+   "existing_tasks": [
+    "T-901"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-049",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "voix-off",
+   "component": "src/lib/ai-engine/config/engine-config.ts, .env, src/lib/ai-engine/nodes/generat",
+   "title": "Aucun provider TTS réel utilisable: provider=mock, ElevenLabs non configuré, OpenAI non sé",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-304"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-050",
+   "type": "BUG",
+   "severity": "major",
+   "domain": "voix-off",
+   "component": "src/lib/ai-engine/nodes/generate-music.ts",
+   "title": "Musique: aucun provider réel — node 100% mock (silence). Aucune génération musicale n'exis",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-304"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-051",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "copywriting",
+   "component": "src/lib/content-studio/service.ts:153 assertTransition + ideas/[id]/generate/rou",
+   "title": "Re-générer une idée déjà 'generated' renvoie HTTP 500 internal_error opaque",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-309"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-052",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "copywriting",
+   "component": "parse-brief.ts:8 (enum AI-Engine) vs types.ts CONTENT_OBJECTIVES; generation.ts:",
+   "title": "Taxonomies d'objectifs/piliers incompatibles entre les deux systèmes; bug de français dans",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-412"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-053",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "create-ui-flow",
+   "component": "generate-visual mock path + MediaStudio adaptation (json.media.previewUrl ?? ori",
+   "title": "Media IA mock: originalUrl=null et previewUrl pointe sur un thumbnail AVIF (pas l'image pl",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-054",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "create-ui-flow",
+   "component": "ApproveButton.tsx + errors/messages.ts formatError + service.ts approve",
+   "title": "formatError ecrase le message serveur utile par un libelle generique (approve sans media =",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-414"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-055",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "create-ui-flow",
+   "component": "MediaStudio.tsx (label bouton ligne 240) + e2e/content-studio-v2/create-mock-vid",
+   "title": "E2E create-mock-video echoue: le test clique 'Générer un visuel IA' mais le bouton dit 'Gé",
+   "primary_workstream": "design",
+   "existing_tasks": [
+    "T-003"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-056",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "generation-image",
+   "component": "src/lib/content-studio/image-generation.ts (routing step 1) + service.ts insertG",
+   "title": "Mode mock ignore le modele selectionne — perte de tracabilite dans generation_run",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-057",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "generation-image",
+   "component": "registry.ts pricing.perCall vs service.ts visualCostEstimate vs image-generation",
+   "title": "Estimation cout image incoherente entre couches (registry / service / image-generation)",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-058",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "src/lib/ai-engine/nodes/transcode-export.ts",
+   "title": "transcode-export ne respecte ni codec plateforme ni maxFileSizeMb (limite jamais appliquée",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-059",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "src/lib/ai-engine/nodes/compose.ts",
+   "title": "composeVideo utilise -c:v copy en muxant l'audio : risque de container/codec incompatible",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-060",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "src/app/api/admin/content-studio-v2/media/upload-and-crop/route.ts, upload-and-t",
+   "title": "upload-and-crop/trim: corps non-multipart → 500 internal_error au lieu de 400",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-061",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "src/lib/content-studio-v2/media/upload-image.ts, src/components/admin/content-st",
+   "title": "Recadrage avec rotation: ordre rotate→extract et système de coordonnées react-easy-crop no",
+   "primary_workstream": "frontend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-062",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "src/lib/content-studio-v2/media/upload-image.ts, upload-video.ts vs src/lib/ai-e",
+   "title": "Incohérence de chemin de stockage: upload v2 (storage adapter) vs compose/transcode (chemi",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-063",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "publication-postiz",
+   "component": "src/lib/social-publishing/admin-service.ts (upsertSocialAccount / listAdminSocia",
+   "title": "Capabilities sociales persistées en base sont STALE (supportsDraft absent, dry_run instagr",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-064",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "publication-postiz",
+   "component": "e2e/content-studio-social-publishing-draft.spec.ts (cleanupSeed L227) + base de ",
+   "title": "Échec E2E 'social-publishing-draft:25' est un faux positif: crash de TEARDOWN (table audit",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-003"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-065",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "publication-postiz",
+   "component": "src/lib/social-publishing/admin-service.ts:614-639 buildSocialContent",
+   "title": "buildSocialContent force metadata.dryRun=true même en mode live (label trompeur dans la pa",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-308"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-066",
+   "type": "BUG",
+   "severity": "minor",
+   "domain": "voix-off",
+   "component": "src/lib/ai-engine/nodes/generate-subtitles.ts",
+   "title": "Sous-titres: fonctionnel (JS pur) mais output jamais exposé, et SRT tronqué à 120 caractèr",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-067",
+   "type": "BUG",
+   "severity": "info",
+   "domain": "generation-video",
+   "component": "src/app/api/admin/content-studio/drafts/[id]/generate-visual/route.ts + service.",
+   "title": "MOCK opérateur vidéo: works (vérifié) — POST generate-visual kind=video renvoie un MP4 jou",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-068",
+   "type": "BUG",
+   "severity": "info",
+   "domain": "montage-composition",
+   "component": "src/lib/content-studio-v2/media/upload-video.ts vs src/lib/ai-engine/nodes/compo",
+   "title": "upload-and-trim utilise ffmpeg système (PATH) tandis que compose/transcode utilisent ffmpe",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "BUG-069",
+   "type": "BUG",
+   "severity": "info",
+   "domain": "publication-postiz",
+   "component": "src/lib/social-publishing/admin-service.ts:48-60 (adapters map) + contracts.ts S",
+   "title": "meta_graph déclaré comme provider mais adapter = null (throw invalid_state si jamais sélec",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-902"
+   ],
+   "status_in_register": "open"
+  },
+  {
+   "id": "MISS-001",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "copywriting",
+   "component": "",
+   "title": "Le cookie cs_generation_mode (mock|live) n'a AUCUN effet sur la generation de texte operat",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-201"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-002",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "create-ui-flow",
+   "component": "",
+   "title": "ModelPicker auto-sélectionne le suggested 'live' au montage (sans ouverture du picker), ar",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-202"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-003",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "generation-image",
+   "component": "",
+   "title": "Defaut d'architecture transverse: resolution de cle divergente entre AI-Engine (resolveApi",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-005"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-004",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "generation-video",
+   "component": "",
+   "title": "Aucun nettoyage des 977 jpg stubs (10-14o) deja presents dans le stockage prod: risque qu'",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-306"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-005",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "montage-composition",
+   "component": "",
+   "title": "L'orchestrateur AI-Engine perd composition/exports/thumbnails AVANT le bridge (buildResult",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-104"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-006",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "publication-postiz",
+   "component": "",
+   "title": "Double-publication possible: publish-now n'invalide pas un social_publish_job 'queued' pro",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-204"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-007",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "",
+   "title": "model-discovery sert des modeles OpenAI 'live' confirmes (OPENAI_API_KEY reel present) — l",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-005"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-008",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "",
+   "title": "Le contract test MSW existant (content-studio-handlers.contract.test.ts) ne couvre PAS les",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-009",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "test-mock-infrastructure",
+   "component": "",
+   "title": "image-generation.ts utilise toujours les endpoints Higgsfield synchrones faux (/v1/images/",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-006",
+    "T-102",
+    "T-103"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-010",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "voix-off",
+   "component": "",
+   "title": "Le SRT et tous les assets .media-storage sont servis publiquement via /_media SANS authent",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-021"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-011",
+   "type": "MISS",
+   "severity": "major",
+   "domain": "voix-off",
+   "component": "",
+   "title": "Aucun node media ne pousse jamais dans state.errors: l'echec audio/video est structurellem",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-304"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-012",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "copywriting",
+   "component": "",
+   "title": "Le model selectionne dans le picker n'est jamais persiste ni honore: l'idee ne garde pas l",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-201"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-013",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "copywriting",
+   "component": "",
+   "title": "generateForIdea utilise `??` qui ne neutralise pas une cle vide — fragilite de resolution ",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-005",
+    "T-201"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-014",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "copywriting",
+   "component": "",
+   "title": "Le hashtag/altText du fallback texte est cable en dur, identique pour toute idee, sans auc",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-412"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-015",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "create-ui-flow",
+   "component": "",
+   "title": "allowCustom=true: l'opérateur peut taper n'importe quel id de modèle, transmis non validé ",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-202"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-016",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "create-ui-flow",
+   "component": "",
+   "title": "Le défaut serveur de generate-visual est 'mock' (route.ts:28-29), ignorant CONTENT_STUDIO_",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-413"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-017",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "create-ui-flow",
+   "component": "",
+   "title": "Bouton 'Régénérer' renvoie l'ancien model d'état sans le re-synchroniser au kind/format co",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-413"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-018",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "generation-image",
+   "component": "",
+   "title": "role=chat expose des modeles non-chat (whisper-1 STT, davinci-002/babbage-002 completions,",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-202"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-019",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "generation-image",
+   "component": "",
+   "title": "Discovery Higgsfield echoue a chaque appel non-cache (host mort api.higgsfield.ai/v1 + Bea",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-202"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-020",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "generation-image",
+   "component": "",
+   "title": "Fallback silencieux du noeud generate-images: tout echec provider est avale en image mock ",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-304"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-021",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "generation-video",
+   "component": "",
+   "title": "VideoPlayer affiche `src=''` pour un asset fallback/empty et tente de lire une video inexi",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-304"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-022",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "generation-video",
+   "component": "",
+   "title": "Le routeur video utilise startsWith('hf-') (prefixe interne) au lieu de provider==='higgsf",
+   "primary_workstream": "architecture",
+   "existing_tasks": [
+    "T-103"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-023",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "generation-video",
+   "component": "",
+   "title": "MOCK_ASSETS ne couvre que reel/story: une generation video mock sur format=post/carousel t",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-415"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-024",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "generation-video",
+   "component": "",
+   "title": "MEDIA_DIR = join(process.cwd(),'../../.media-storage/ai-engine') est fragile: depend du cw",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-306",
+    "T-411"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-025",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "",
+   "title": "Le chemin sans audio de composeVideo n'est qu'une copie binaire readFile/writeFile — aucun",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-307"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-026",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "",
+   "title": "transcode-export: fallback 'passthrough' copie la composition non transcodee quand l'expor",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-304",
+    "T-307"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-027",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "montage-composition",
+   "component": "",
+   "title": "upload-and-crop/trim: aucune limite de pixels/resolution en entree — risque d'epuisement m",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-307"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-028",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "publication-postiz",
+   "component": "",
+   "title": "Re-programmation via /schedule crée un second job queued au lieu de muter l'existant (clé ",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-204"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-029",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "publication-postiz",
+   "component": "",
+   "title": "/publishability renvoie des capabilities persistées stale dans l'objet account, alors qu'i",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-308"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-030",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "test-mock-infrastructure",
+   "component": "",
+   "title": "resolvedKeyCache (api-key-manager) TTL 5min sans invalidation env: un changement de cle .e",
+   "primary_workstream": "data",
+   "existing_tasks": [
+    "T-410"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-031",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "test-mock-infrastructure",
+   "component": "",
+   "title": "vitest.setup.ts mocke globalement next/navigation (push/replace/refresh = no-op) — les tes",
+   "primary_workstream": "architecture",
+   "existing_tasks": [],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-032",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "voix-off",
+   "component": "",
+   "title": "MEDIA_DIR resout via process.cwd()+'../../' — couplage implicite au cwd de lancement, cass",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-306",
+    "T-411"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-033",
+   "type": "MISS",
+   "severity": "minor",
+   "domain": "voix-off",
+   "component": "",
+   "title": "getEngineConfig() met en cache la config en singleton module: changer le provider TTS/les ",
+   "primary_workstream": "backend",
+   "existing_tasks": [
+    "T-410"
+   ],
+   "status_in_register": "missed"
+  },
+  {
+   "id": "MISS-034",
+   "type": "MISS",
+   "severity": "info",
+   "domain": "create-ui-flow",
+   "component": "",
+   "title": "GenerationModeToggle persiste le cookie sur path=/ (toute l'app), pas seulement l'admin, m",
+   "primary_workstream": "ui-ux",
+   "existing_tasks": [
+    "T-413"
+   ],
+   "status_in_register": "missed"
+  }
+ ]
+}

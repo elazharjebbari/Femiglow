@@ -1,0 +1,78 @@
+ID,Categorie,Description,Priorite,Fichier,Statut
+T-ENC-01,Chiffrement,Round-trip encrypt/decrypt cle OpenAI,CRITIQUE,encryption-service.test.ts,A faire
+T-ENC-02,Chiffrement,Round-trip pour chaque fournisseur (5 providers),CRITIQUE,encryption-service.test.ts,A faire
+T-ENC-03,Chiffrement,Round-trip cles de longueurs differentes (courte/longue/unicode/speciaux),CRITIQUE,encryption-service.test.ts,A faire
+T-ENC-04,Chiffrement,IV unique a chaque chiffrement du meme plaintext,CRITIQUE,encryption-service.test.ts,A faire
+T-ENC-05,Chiffrement,Detection falsification du ciphertext (tamper detection),CRITIQUE,encryption-service.test.ts,A faire
+T-ENC-06,Chiffrement,Detection falsification de l'authTag,CRITIQUE,encryption-service.test.ts,A faire
+T-ENC-07,Chiffrement,Echec dechiffrement avec cle master differente,ELEVE,encryption-service.test.ts,A faire
+T-ENC-08,Chiffrement,Echec dechiffrement avec salt different,ELEVE,encryption-service.test.ts,A faire
+T-ENC-09,Chiffrement,Rejet format de stockage invalide,MOYEN,encryption-service.test.ts,A faire
+T-ENC-10,Chiffrement,Erreur propre si cle master absente (service indisponible),ELEVE,encryption-service.test.ts,A faire
+T-ENC-11,Chiffrement,Format de stockage base64:base64:base64 valide avec tailles IV/authTag correctes,MOYEN,encryption-service.test.ts,A faire
+T-ENC-12,Masquage,Masquage correct pour tous les prefixes (sk-proj/sk-ant/AIza/gsk_/http/https/court/vide),ELEVE,encryption-service.test.ts,A faire
+T-MGR-01,ApiKeyManager,Creation cle avec chiffrement et retour masque,CRITIQUE,api-key-manager.test.ts,A faire
+T-MGR-02,ApiKeyManager,Liste cles masquees - jamais de cle en clair dans la serialisation,CRITIQUE,api-key-manager.test.ts,A faire
+T-MGR-03,ApiKeyManager,Mise a jour : desactive ancienne cle et cree la nouvelle,ELEVE,api-key-manager.test.ts,A faire
+T-MGR-04,ApiKeyManager,Suppression avec fallback env var disponible,ELEVE,api-key-manager.test.ts,A faire
+T-MGR-05,ApiKeyManager,Suppression sans fallback disponible,ELEVE,api-key-manager.test.ts,A faire
+T-MGR-06,ApiKeyManager,Resolution cle : priorite DB sur env var,CRITIQUE,api-key-manager.test.ts,A faire
+T-MGR-07,ApiKeyManager,Resolution cle : fallback sur env var si pas de DB,ELEVE,api-key-manager.test.ts,A faire
+T-MGR-08,ApiKeyManager,Resolution cle : source=none si aucune cle configuree,MOYEN,api-key-manager.test.ts,A faire
+T-MGR-09,ApiKeyManager,Suppression ID inexistant retourne erreur,MOYEN,api-key-manager.test.ts,A faire
+T-MGR-10,ApiKeyManager,Cache invalide apres createOrUpdate,ELEVE,api-key-manager.test.ts,A faire
+T-VAL-01,Validation,Validation OpenAI reussie (MSW retourne 200),ELEVE,api-key-validator.test.ts,A faire
+T-VAL-02,Validation,Validation echouee (MSW retourne 401),ELEVE,api-key-validator.test.ts,A faire
+T-VAL-03,Validation,Timeout du fournisseur (10s depasse),MOYEN,api-key-validator.test.ts,A faire
+T-VAL-04,Validation,Fournisseur inconnu rejete proprement,MOYEN,api-key-validator.test.ts,A faire
+T-GET-01,Route API,GET retourne 5 fournisseurs avec cles masquees,CRITIQUE,route.test.ts,A faire
+T-GET-02,Route API,GET non-authentifie rejete avec 401,CRITIQUE,route.test.ts,A faire
+T-GET-03,Route API,GET meta-informations correctes (counts DB/env),MOYEN,route.test.ts,A faire
+T-POST-01,Route API,POST creation reussie avec chiffrement et masquage,CRITIQUE,route.test.ts,A faire
+T-POST-02,Route API,POST schema Zod invalide retourne 400,ELEVE,route.test.ts,A faire
+T-POST-03,Route API,POST non-authentifie rejete avec 401,CRITIQUE,route.test.ts,A faire
+T-POST-04,Route API,POST cle jamais stockee en clair en base,CRITIQUE,route.test.ts,A faire
+T-DEL-01,Route API,DELETE reussie avec info fallback,ELEVE,route-delete.test.ts,A faire
+T-DEL-02,Route API,DELETE ID inexistant retourne 404,MOYEN,route-delete.test.ts,A faire
+T-DEL-03,Route API,DELETE non-authentifie rejete avec 401,CRITIQUE,route-delete.test.ts,A faire
+T-TEST-01,Route API,POST /test cle valide retourne succes,ELEVE,route-test.test.ts,A faire
+T-TEST-02,Route API,POST /test cle invalide retourne echec,ELEVE,route-test.test.ts,A faire
+T-TEST-03,Route API,POST /test rate limit apres 5 requetes/min,ELEVE,route-test.test.ts,A faire
+T-TEST-04,Route API,POST /test non-authentifie rejete avec 401,CRITIQUE,route-test.test.ts,A faire
+T-SEC-01,Securite,GET ne retourne jamais de cle en clair ni de chiffre,CRITIQUE,api-keys-security.test.ts,A faire
+T-SEC-02,Securite,Audit log ne contient jamais de cle en clair,CRITIQUE,api-keys-security.test.ts,A faire
+T-SEC-03,Securite,Injection SQL via providerType rejetee par Zod,ELEVE,api-keys-security.test.ts,A faire
+T-SEC-04,Securite,XSS dans le label est echappe,ELEVE,api-keys-security.test.ts,A faire
+T-SEC-05,Securite,Session expiree rejetee sur toutes les routes (4 endpoints),ELEVE,api-keys-security.test.ts,A faire
+T-SEC-06,Securite,Aucune reponse API ne contient le champ encryptedKey,CRITIQUE,api-keys-security.test.ts,A faire
+T-CARD-01,Composant UI,ApiKeyCard affiche la cle masquee pas la cle en clair,CRITIQUE,api-key-card.test.tsx,A faire
+T-CARD-02,Composant UI,ApiKeyCard non configure affiche bouton Configurer,ELEVE,api-key-card.test.tsx,A faire
+T-CARD-03,Composant UI,ApiKeyCard source env n'affiche pas Edit/Delete,ELEVE,api-key-card.test.tsx,A faire
+T-CARD-04,Composant UI,ApiKeyCard clic Tester appelle onTest(providerType),MOYEN,api-key-card.test.tsx,A faire
+T-CARD-05,Composant UI,ApiKeyCard spinner pendant testing=true,MOYEN,api-key-card.test.tsx,A faire
+T-FORM-01,Composant UI,ApiKeyForm soumission appelle onSave avec les donnees,ELEVE,api-key-form.test.tsx,A faire
+T-FORM-02,Composant UI,ApiKeyForm validation format cle en temps reel,ELEVE,api-key-form.test.tsx,A faire
+T-FORM-03,Composant UI,ApiKeyForm mode edit : fournisseur pre-selectionne et desactive,MOYEN,api-key-form.test.tsx,A faire
+T-FORM-04,Composant UI,ApiKeyForm champ type=password avec autoComplete=off,ELEVE,api-key-form.test.tsx,A faire
+T-FORM-05,Composant UI,ApiKeyForm annulation appelle onCancel,MOYEN,api-key-form.test.tsx,A faire
+T-FORM-06,Composant UI,ApiKeyForm bouton desactive pendant saving=true,MOYEN,api-key-form.test.tsx,A faire
+T-MASK-01,Composant UI,KeyMaskDisplay affiche la cle masquee en font mono,MOYEN,key-mask-display.test.tsx,A faire
+T-MASK-02,Composant UI,KeyMaskDisplay badge Base de donnees pour source=database,MOYEN,key-mask-display.test.tsx,A faire
+T-MASK-03,Composant UI,KeyMaskDisplay badge Env var pour source=env,MOYEN,key-mask-display.test.tsx,A faire
+E2E-AK-01,E2E CRUD,Ajouter une nouvelle cle API pour OpenAI,CRITIQUE,api-keys-crud.spec.ts,A faire
+E2E-AK-02,E2E CRUD,Voir affichage masque des cles (sk-...xxxx),CRITIQUE,api-keys-crud.spec.ts,A faire
+E2E-AK-03,E2E CRUD,Editer une cle API existante,ELEVE,api-keys-crud.spec.ts,A faire
+E2E-AK-04,E2E CRUD,Supprimer une cle avec confirmation,ELEVE,api-keys-crud.spec.ts,A faire
+E2E-AK-05,E2E CRUD,Tester validite cle (succes),ELEVE,api-keys-crud.spec.ts,A faire
+E2E-AK-06,E2E CRUD,Tester validite cle (echec - cle invalide),ELEVE,api-keys-crud.spec.ts,A faire
+E2E-AK-07,E2E CRUD,Naviguer vers onglet Cles API,MOYEN,api-keys-crud.spec.ts,A faire
+E2E-AK-08,E2E CRUD,Configurer plusieurs fournisseurs consecutivement,MOYEN,api-keys-crud.spec.ts,A faire
+E2E-AK-09,E2E UX,Cle avec caracteres speciaux,MOYEN,api-keys-ux.spec.ts,A faire
+E2E-AK-10,E2E UX,Annuler formulaire ajout/edition,MOYEN,api-keys-ux.spec.ts,A faire
+E2E-AK-11,E2E UX,Gestion erreur serveur (500),MOYEN,api-keys-ux.spec.ts,A faire
+E2E-AK-12,E2E UX,Layout responsive mobile,FAIBLE,api-keys-ux.spec.ts,A faire
+E2E-AK-13,E2E UX,Navigation au clavier,MOYEN,api-keys-ux.spec.ts,A faire
+E2E-AK-14,E2E Securite,Cle jamais visible dans le DOM,CRITIQUE,api-keys-security.spec.ts,A faire
+E2E-AK-15,E2E Securite,Session expiree pendant operation sur cle,ELEVE,api-keys-security.spec.ts,A faire
+E2E-AK-16,E2E Securite,Cle pas dans localStorage/sessionStorage,ELEVE,api-keys-security.spec.ts,A faire
+E2E-AK-17,E2E Securite,Reponses reseau ne contiennent pas de cle en clair,CRITIQUE,api-keys-security.spec.ts,A faire

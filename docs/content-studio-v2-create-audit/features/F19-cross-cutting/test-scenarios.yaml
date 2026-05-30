@@ -1,0 +1,29 @@
+feature: F19-cross-cutting
+
+a11y:
+  - name: axe-core scan zero critical violations
+    tool: axe-playwright
+  - name: all buttons have accessible name
+  - name: combobox ModelPicker has aria-expanded
+  - name: dialog focus trap (tab does not escape)
+  - name: dialog esc close
+
+dark_mode:
+  - name: snapshot dark mode matches design
+  - name: text contrast ≥ 4.5:1 (axe contrast rule)
+
+responsive:
+  - name: desktop ≥1280 shows 3 cols
+  - name: tablet 1024-1280 shows 2 cols
+  - name: mobile <1024 shows 1 col stacked
+  - name: no horizontal scroll on any size
+
+keyboard:
+  - name: Cmd+S triggers autosave flush
+  - name: Esc closes dialog
+  - name: Tab order is top→bottom
+
+mock_badge:
+  - name: MockModeBadge visible when mockMode=true
+  - name: MockModeBadge hidden when mockMode=false
+  - name: badge in Stepper AND PublishActionGroup

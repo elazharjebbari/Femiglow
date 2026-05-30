@@ -1,0 +1,20 @@
+feature: F11-preview-pane
+
+component:
+  - name: renders aspect 1:1 for post
+  - name: renders aspect 9:16 for reel
+  - name: image media rendered as <img>
+    given: media.kind='image'
+    expect: <img> element
+  - name: video media rendered as <video controls>
+    given: media.kind='video'
+    expect: <video> element, controls attribute, poster set
+  - name: empty state shown when no draft
+    given: selectedDraft=null
+    expect: text 'Décrivez votre intention'
+  - name: caption visible under media
+  - name: Valider button visible when draft has media + caption
+    given: media + caption
+    expect: button 'Valider et préparer la publication'
+  - name: Valider button disabled when media missing
+    expect: button has aria-disabled='true'

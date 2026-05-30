@@ -2,6 +2,7 @@
 
 import { Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
 import type { StudioV2MediaItem } from '@/lib/content-studio-v2/media/types';
+import { VideoPlayer } from './VideoPlayer';
 
 export type PreviewPlatform = 'instagram' | 'facebook';
 export type PreviewFormat = 'post' | 'story' | 'reel' | 'carousel';
@@ -291,17 +292,7 @@ function renderMedia(media: StudioV2MediaItem | null, fit: 'cover' | 'contain') 
     );
   }
   if (media.kind === 'video') {
-    return (
-      <video
-        src={media.previewUrl}
-        poster={media.thumbnailUrl ?? undefined}
-        muted
-        loop
-        playsInline
-        autoPlay
-        style={{ width: '100%', height: '100%', objectFit: fit, display: 'block' }}
-      />
-    );
+    return <VideoPlayer media={media} fit={fit} />;
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element

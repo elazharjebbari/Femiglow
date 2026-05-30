@@ -1,0 +1,554 @@
+feature: F17
+name: Cross-Cutting Concerns
+sources:
+  - apps/web/src/components/admin/content-studio-v2/shell/Sidebar.tsx
+  - apps/web/src/app/admin/content-studio-v2/ai-engine/create/page.tsx
+  - apps/web/src/app/admin/content-studio-v2/ai-engine/analytics/page.tsx
+  - apps/web/src/app/admin/content-studio-v2/ai-engine/trends/page.tsx
+  - apps/web/src/app/admin/content-studio-v2/ai-engine/graph/page.tsx
+  - apps/web/src/app/admin/content-studio-v2/ai-engine/config/page.tsx
+  - apps/web/src/app/admin/content-studio-v2/ai-engine/knowledge/page.tsx
+
+scenarios:
+
+  # ===========================================================================
+  # DARK MODE
+  # ===========================================================================
+
+  - id: F17-DM-001
+    title: Dark mode toggle inverts background colors
+    priority: P0
+    type: e2e
+    pages: [all AI Engine pages]
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine
+      - assert: background is light (warm white family)
+      - click: ThemeToggle button in sidebar
+      - assert: --cs-bg-base resolves to dark value
+      - assert: --cs-bg-elevated resolves to dark elevated value
+      - assert: --cs-bg-sunken resolves to darkest value
+    expected: All background tokens invert correctly
+
+  - id: F17-DM-002
+    title: Dark mode preserves text readability
+    priority: P0
+    type: e2e
+    pages: [create, analytics, trends, graph]
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/create
+      - activate: dark mode
+      - assert: all --cs-fg-primary text is light-colored
+      - assert: all --cs-fg-secondary text is visible against dark bg
+      - assert: all --cs-fg-muted text has sufficient contrast
+      - assert: no text has same color as its background
+    expected: No invisible text in dark mode
+
+  - id: F17-DM-003
+    title: Accent color remains constant across themes
+    priority: P1
+    type: e2e
+    steps:
+      - navigate: any AI Engine page
+      - record: accent color value in light mode
+      - toggle: dark mode
+      - assert: accent color unchanged (--cs-accent = #D1B799)
+    expected: Brand gold color consistent
+
+  - id: F17-DM-004
+    title: Dark mode borders are visible but subtle
+    priority: P1
+    type: e2e
+    steps:
+      - activate: dark mode
+      - navigate: /admin/content-studio-v2/ai-engine/analytics
+      - assert: card borders (--cs-border-hair) visible as dark gray lines
+      - assert: cards are visually distinct from background
+    expected: Card separation maintained
+
+  - id: F17-DM-005
+    title: Status colors remain effective in dark mode
+    priority: P1
+    type: e2e
+    steps:
+      - activate: dark mode
+      - navigate: /admin/content-studio-v2/ai-engine/graph
+      - assert: green (success) dots visible and identifiable
+      - assert: amber (warning) dots visible and identifiable
+      - assert: red (danger) dots visible and identifiable
+    expected: Semantic colors work in both themes
+
+  - id: F17-DM-006
+    title: Dark mode on Create page -- form elements readable
+    priority: P0
+    type: e2e
+    steps:
+      - activate: dark mode
+      - navigate: /admin/content-studio-v2/ai-engine/create
+      - assert: select dropdowns have dark background with light text
+      - assert: textarea has dark background with light text
+      - assert: input fields have dark background with light text
+      - assert: labels visible against dark background
+      - assert: required asterisks visible (red against dark)
+    expected: Form elements fully functional in dark mode
+
+  - id: F17-DM-007
+    title: Dark mode on Quality scores -- color bars visible
+    priority: P1
+    type: e2e
+    steps:
+      - activate: dark mode
+      - view: GenerationResult with quality scores
+      - assert: green/amber/red bars visible against dark sunken background
+      - assert: percentage text readable
+    expected: Quality visualization works in dark mode
+
+  # ===========================================================================
+  # RESPONSIVE DESIGN
+  # ===========================================================================
+
+  - id: F17-RS-001
+    title: No horizontal scroll at 320px viewport
+    priority: P0
+    type: e2e
+    pages: [create, analytics, trends, graph, knowledge, config]
+    steps:
+      - setViewport: { width: 320, height: 568 }
+      - navigate: each AI Engine page
+      - assert: document.documentElement.scrollWidth <= document.documentElement.clientWidth
+      - assert: no horizontal scrollbar visible (except tables with overflowX:auto)
+    expected: No horizontal overflow on smallest mobile
+
+  - id: F17-RS-002
+    title: Brief form collapses to single column on mobile
+    priority: P0
+    type: e2e
+    steps:
+      - setViewport: { width: 375, height: 667 }
+      - navigate: /admin/content-studio-v2/ai-engine/create
+      - assert: form grid adapts (each select takes full width)
+      - assert: all form fields accessible and usable
+    expected: Brief form responsive on iPhone SE width
+    note: The grid uses 1fr 1fr which may need media query; verify behavior
+
+  - id: F17-RS-003
+    title: KPI cards stack on narrow viewport
+    priority: P0
+    type: e2e
+    steps:
+      - setViewport: { width: 375, height: 667 }
+      - navigate: /admin/content-studio-v2/ai-engine/analytics
+      - assert: KPI cards stack vertically (1 per row)
+      - assert: each card takes full width
+    expected: auto-fit minmax(200px) handles narrow viewport
+
+  - id: F17-RS-004
+    title: Cost charts stack on narrow viewport
+    priority: P1
+    type: e2e
+    steps:
+      - setViewport: { width: 375, height: 667 }
+      - navigate: /admin/content-studio-v2/ai-engine/analytics
+      - assert: provider and node cost charts stack vertically
+    expected: 2-column grid collapses
+
+  - id: F17-RS-005
+    title: Trend score bars stack on mobile
+    priority: P1
+    type: e2e
+    steps:
+      - setViewport: { width: 375, height: 667 }
+      - navigate: /admin/content-studio-v2/ai-engine/trends
+      - assert: 2x2 score grid collapses to single column
+    expected: Score bars readable on mobile
+
+  - id: F17-RS-006
+    title: Graph nodes wrap on narrow viewport
+    priority: P1
+    type: e2e
+    steps:
+      - setViewport: { width: 375, height: 667 }
+      - navigate: /admin/content-studio-v2/ai-engine/graph
+      - assert: nodes in each row wrap to fit (flex-wrap: wrap active)
+      - assert: all nodes remain visible and clickable
+    expected: Graph adapts to narrow viewport
+
+  - id: F17-RS-007
+    title: Jobs table scrolls horizontally on mobile
+    priority: P1
+    type: e2e
+    steps:
+      - setViewport: { width: 375, height: 667 }
+      - navigate: /admin/content-studio-v2/ai-engine/analytics
+      - assert: jobs table container has overflowX: auto
+      - assert: table is scrollable but page is not
+    expected: Table overflow contained
+
+  - id: F17-RS-008
+    title: Sidebar responsive behavior
+    priority: P0
+    type: e2e
+    steps:
+      - setViewport: { width: 375, height: 667 }
+      - navigate: /admin/content-studio-v2/ai-engine
+      - assert: sidebar either collapses or becomes a hamburger menu
+      - assert: main content takes full width
+    expected: Sidebar adapts on mobile
+
+  # ===========================================================================
+  # ACCESSIBILITY
+  # ===========================================================================
+
+  - id: F17-A11Y-001
+    title: All form fields have associated labels
+    priority: P0
+    type: unit
+    pages: [create]
+    steps:
+      - render: AIEngineCreatePage
+      - assert: each <select> has an associated <label> element
+      - assert: each <textarea> has an associated <label> element
+      - assert: each <input> has an associated <label> element
+    expected: Labels programmatically associated
+
+  - id: F17-A11Y-002
+    title: Required fields have required attribute
+    priority: P0
+    type: unit
+    pages: [create]
+    steps:
+      - render: AIEngineCreatePage
+      - assert: objective select has required attribute
+      - assert: platform select has required attribute
+      - assert: format select has required attribute
+      - assert: tone select has required attribute
+      - assert: keyMessage textarea has required attribute
+    expected: Required semantics correct
+
+  - id: F17-A11Y-003
+    title: Graph nodes have role="button" and tabIndex
+    priority: P0
+    type: unit
+    pages: [graph]
+    steps:
+      - render: GraphViewerPage
+      - query: all non-terminal node cards
+      - assert: each has role="button"
+      - assert: each has tabIndex={0}
+      - assert: START and END nodes do NOT have role="button"
+    expected: Graph nodes keyboard-accessible
+
+  - id: F17-A11Y-004
+    title: Focus visible on all interactive elements
+    priority: P0
+    type: e2e
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/create
+      - tab: through all form elements
+      - assert: each focused element has visible border-color change
+    expected: Focus rings visible
+
+  - id: F17-A11Y-005
+    title: Heading hierarchy is correct (no level skipping)
+    priority: P1
+    type: unit
+    pages: [create, analytics, graph, trends]
+    steps:
+      - render: each page
+      - query: all heading elements (h1-h6)
+      - assert: h1 exists (page title)
+      - assert: h2 follows h1 (not h3 directly after h1)
+      - assert: no skipped levels
+    expected: Semantic heading structure
+
+  - id: F17-A11Y-006
+    title: Color contrast meets WCAG AA for all text
+    priority: P0
+    type: e2e
+    tool: axe-core or similar
+    steps:
+      - navigate: each AI Engine page (light mode)
+      - run: axe color contrast audit
+      - assert: no color contrast violations
+      - toggle: dark mode
+      - run: axe color contrast audit again
+      - assert: no color contrast violations in dark mode
+    expected: AA contrast in both themes
+
+  - id: F17-A11Y-007
+    title: Error messages are perceivable by screen readers
+    priority: P1
+    type: unit
+    steps:
+      - trigger: error on Create page (mock 500)
+      - assert: error message container has appropriate semantics
+      - assert: error text is not just icon-based (text content exists)
+    expected: Error messages accessible
+
+  - id: F17-A11Y-008
+    title: Buttons are not icon-only without aria-label
+    priority: P1
+    type: unit
+    pages: [all]
+    steps:
+      - query: all button elements across AI Engine pages
+      - assert: each button either has text content OR aria-label
+      - assert: no buttons with only SVG children and no label
+    expected: All buttons have accessible names
+
+  # ===========================================================================
+  # KEYBOARD NAVIGATION
+  # ===========================================================================
+
+  - id: F17-KB-001
+    title: Tab through all Create page interactive elements
+    priority: P0
+    type: e2e
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/create
+      - tab: sequentially through all elements
+      - expected_order:
+          - Back arrow link
+          - Objective select
+          - Platform select
+          - Format select
+          - Tone select
+          - Message cle textarea
+          - Focus produit input
+          - Reference tendance input
+          - Generer button
+      - assert: tab order matches visual layout (top to bottom, left to right)
+    expected: Logical tab order
+
+  - id: F17-KB-002
+    title: Enter activates Generate button when form valid
+    priority: P0
+    type: e2e
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/create
+      - fill: all required fields
+      - focus: Generer button
+      - keydown: Enter
+      - assert: generation phase activates
+    expected: Enter key submits form
+
+  - id: F17-KB-003
+    title: Tab through Analytics page controls
+    priority: P1
+    type: e2e
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/analytics
+      - tab: through period selector buttons, Actualiser, Graphe, Configuration
+      - assert: all controls reachable via keyboard
+    expected: Analytics fully keyboard navigable
+
+  - id: F17-KB-004
+    title: Tab through Graph page nodes
+    priority: P1
+    type: e2e
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/graph
+      - tab: through node cards
+      - assert: each non-terminal node receives focus
+      - keydown: Enter on focused node
+      - assert: node expands
+      - keydown: Escape or Enter again
+      - assert: node collapses
+    expected: Graph nodes keyboard interactive
+
+  - id: F17-KB-005
+    title: Escape closes feedback textarea in review panel
+    priority: P1
+    type: unit
+    steps:
+      - goToReviewPhase: (standard)
+      - click: "Rejeter" button
+      - assert: feedback textarea visible
+      - assert: Annuler button visible (keyboard equivalent of Escape)
+    expected: Escape/Cancel mechanism available
+    note: Actual Escape key handling may need to be verified in implementation
+
+  - id: F17-KB-006
+    title: Tab through Trend category filter pills
+    priority: P2
+    type: e2e
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/trends
+      - tab: to "Toutes" pill, then to category pills
+      - keydown: Enter on a category pill
+      - assert: category filter applied
+    expected: Filter pills keyboard accessible
+
+  # ===========================================================================
+  # SESSION EXPIRED
+  # ===========================================================================
+
+  - id: F17-SE-001
+    title: 401 on Create page generation redirects to login
+    priority: P0
+    type: e2e
+    steps:
+      - navigate: /admin/content-studio-v2/ai-engine/create
+      - fill: form fields
+      - mock: POST /api/admin/ai-engine/generate returns 401
+      - click: Generer
+      - assert: redirect to login page
+      - assert: session expired message visible (or error handler triggers redirect)
+    expected: Unauthorized triggers login redirect
+
+  - id: F17-SE-002
+    title: 401 on Analytics page fetch redirects to login
+    priority: P0
+    type: e2e
+    steps:
+      - mock: GET /api/admin/ai-engine/analytics returns 401
+      - navigate: /admin/content-studio-v2/ai-engine/analytics
+      - assert: redirect to login page
+    expected: Analytics auth check works
+
+  - id: F17-SE-003
+    title: 401 on Trends page fetch redirects to login
+    priority: P1
+    type: e2e
+    steps:
+      - mock: GET /api/admin/ai-engine/trends returns 401
+      - navigate: /admin/content-studio-v2/ai-engine/trends
+      - assert: redirect to login page
+    expected: Trends auth check works
+
+  # ===========================================================================
+  # NETWORK ERROR
+  # ===========================================================================
+
+  - id: F17-NE-001
+    title: Network error on Create page shows error phase
+    priority: P0
+    type: unit
+    steps:
+      - render: AIEngineCreatePage
+      - fillRequiredFields:
+      - mock: fetch rejects with TypeError("Failed to fetch")
+      - click: Generer
+      - assert: error phase displayed
+      - assert: "Reessayer" button visible
+      - assert: "Modifier le brief" button visible
+    expected: Graceful error with recovery options
+
+  - id: F17-NE-002
+    title: Network error on Analytics page shows retry
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch rejects with TypeError("Network error")
+      - render: AIEngineAnalyticsPage
+      - assert: error banner with "Reessayer" button
+    expected: Analytics fallback UI
+
+  - id: F17-NE-003
+    title: Network error on Trends page degrades to empty
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch rejects
+      - render: TrendsPage
+      - assert: empty state shown (trends = [])
+      - assert: "Lancer une collecte" button available
+    expected: Trends silent degradation
+
+  - id: F17-NE-004
+    title: Network error on Graph page shows retry
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch rejects
+      - render: GraphViewerPage
+      - assert: error banner with "Reessayer" button
+    expected: Graph fallback UI
+
+  - id: F17-NE-005
+    title: Retry after network recovery loads data
+    priority: P0
+    type: unit
+    steps:
+      - mock: first fetch rejects, second resolves with valid data
+      - render: AIEngineAnalyticsPage
+      - await: error state
+      - click: "Reessayer"
+      - assert: data loaded, KPI cards appear
+    expected: Recovery after transient failure
+
+  # ===========================================================================
+  # LOADING STATES
+  # ===========================================================================
+
+  - id: F17-LD-001
+    title: Analytics skeleton placeholders show shimmer animation
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch never resolves
+      - render: AIEngineAnalyticsPage
+      - assert: skeleton divs have animation property containing "cs-shimmer"
+      - assert: background uses linear-gradient
+    expected: Shimmer animation active
+
+  - id: F17-LD-002
+    title: Graph skeleton placeholders during load
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch never resolves
+      - render: GraphViewerPage
+      - assert: 3 skeleton divs visible
+    expected: Graph loading state
+
+  - id: F17-LD-003
+    title: Trends skeleton cards during load
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch never resolves
+      - render: TrendsPage
+      - assert: 4 skeleton card divs visible
+    expected: Trends loading state
+
+  - id: F17-LD-004
+    title: Button loading spinner on publish action
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch never resolves (publish endpoint)
+      - click: Publier button
+      - assert: Button shows cs-spinner class
+      - assert: Button is disabled
+    expected: Publish button loading indicator
+
+  - id: F17-LD-005
+    title: Refresh button spinner during trends refresh
+    priority: P2
+    type: unit
+    steps:
+      - render and load: TrendsPage
+      - mock: refresh fetch slow
+      - click: Actualiser
+      - assert: RefreshCw icon has animate-spin class
+      - assert: button disabled
+    expected: Refresh loading feedback
+
+msw_handlers:
+  required:
+    - "All AI Engine handlers from ai-engine-handlers.ts"
+  error_variants:
+    - "aiEngineErrorHandlers.generate500"
+    - "aiEngineErrorHandlers.generate429"
+    - "aiEngineErrorHandlers.healthTimeout"
+    - "aiEngineErrorHandlers.healthDisabled"
+  session_variant:
+    - "http.get/post('*', () => HttpResponse.json({ error: 'Unauthorized' }, { status: 401 }))"
+
+test_tools:
+  e2e:
+    - Playwright for viewport testing, dark mode, keyboard navigation
+    - axe-core for accessibility auditing
+  unit:
+    - Vitest + @testing-library/react for component-level tests
+    - MSW for API mocking

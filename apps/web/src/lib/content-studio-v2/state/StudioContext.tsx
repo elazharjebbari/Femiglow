@@ -56,6 +56,8 @@ export interface StudioState {
   selectedDraftId: string | null;
   loading: boolean;
   error: string | null;
+  /** Mirrors CONTENT_STUDIO_V2_MOCK_MODE — surfaced via /api/admin/content-studio/health. */
+  mockMode: boolean;
 }
 
 export interface StudioActions {
@@ -99,6 +101,17 @@ export function StudioProvider({ children, initial, skipInitialFetch = false }: 
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(initial?.selectedDraftId ?? null);
   const [loading, setLoading] = useState(!skipInitialFetch && !initial);
   const [error, setError] = useState<string | null>(null);
+  const [mockMode, setMockMode] = useState(false);
+
+  useEffect(() => {
+    if (skipInitialFetch) return;
+    fetch('/api/admin/content-studio/health')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { mockMode?: boolean } | null) => {
+        if (j && typeof j.mockMode === 'boolean') setMockMode(j.mockMode);
+      })
+      .catch(() => {});
+  }, [skipInitialFetch]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -160,6 +173,7 @@ export function StudioProvider({ children, initial, skipInitialFetch = false }: 
       selectedDraftId,
       loading,
       error,
+      mockMode,
       setIdeas,
       setDrafts,
       setPosts,
@@ -179,6 +193,7 @@ export function StudioProvider({ children, initial, skipInitialFetch = false }: 
       selectedDraftId,
       loading,
       error,
+      mockMode,
       selectDraft,
       upsertDraft,
       removeIdea,

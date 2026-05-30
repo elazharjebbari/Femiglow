@@ -256,6 +256,10 @@ export interface MediaOverrides {
     promptVersion?: string;
     sourceDraftId?: string;
     sourceIdeaId?: string;
+    /** CS v2 create-audit Phase 3+4 — discriminator for AI-generated video assets. */
+    kind?: 'image' | 'video';
+    /** CS v2 Phase 4 — poster image URL for AI-generated videos. */
+    posterUrl?: string;
     /**
      * Content Studio v2 (refonte) metadata. Pre-baked preview + thumbnail
      * URLs computed at upload time so the MediaPicker v2 has no N+1.

@@ -1,0 +1,23 @@
+@startsalt proposed-step-4-validate
+title Content Studio v2 — Étape 4 Valider (Preview + Approve + Publish)
+{
+  {* Stepper *}
+  {[Cadrer✓] | [Générer✓] | [Visuel✓] | [Valider*] }
+  --
+  .. | .. |
+  {
+    {* Preview Pane *}
+    "Aperçu Instagram · Reel · 9:16"
+    {* video element controls *}
+    "[▶ play] [0:00 / 0:05]"
+    "Caption preview tronquée…"
+    "#femiglow #rituel #skincare"
+    --
+    "🆕 Bouton Valider :"
+    [Valider et préparer la publication]
+    .
+  }
+  --
+  "Sauvegardé à 14:32" | [Publier ▼]
+}
+@endsalt

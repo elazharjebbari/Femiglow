@@ -1,0 +1,26 @@
+feature: F15-account-selection
+critical: P1
+
+component:
+  - id: F15-CO-1
+    name: dropdown hidden when 1 account
+  - id: F15-CO-2
+    name: dropdown visible when ≥2 active accounts
+  - id: F15-CO-3
+    name: dropdown lists alphabetically
+  - id: F15-CO-4
+    name: choice forwarded to API as accountId
+    expect: body.accountId = selected
+  - id: F15-CO-5
+    name: disabled accounts hidden from dropdown
+
+contract:
+  - id: F15-C-1
+    name: accountId optional in body
+  - id: F15-C-2
+    name: server picks first active when accountId omitted
+
+e2e:
+  - id: F15-E-1
+    name: multi-platform bulk publish
+    scenario_ref: S05

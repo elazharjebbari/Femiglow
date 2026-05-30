@@ -1,0 +1,419 @@
+feature: F06-model-selector
+description: Popover model picker with cmdk search, selection toggle, manual entry, role badges, source indicator, and client cache
+component_under_test: apps/web/src/components/admin/content-studio-v2/ai-engine/ModelSelector.tsx
+test_file: apps/web/src/components/admin/content-studio-v2/ai-engine/__tests__/ModelSelector.test.tsx
+
+scenarios:
+  # ---- TRIGGER RENDERING ----
+
+  - id: F06-T01
+    name: "Trigger shows placeholder when no models selected"
+    type: component
+    priority: P0
+    preconditions: "selectedModels=[]"
+    steps:
+      - "Render ModelSelector with empty selectedModels"
+    expected: "Button shows 'Selectionner des modeles' placeholder"
+    assertions:
+      - "Text 'Selectionner des modeles' visible in trigger"
+      - "No model badges rendered"
+    tags: [rendering, placeholder]
+
+  - id: F06-T02
+    name: "Trigger shows model badges when models selected"
+    type: component
+    priority: P0
+    preconditions: "selectedModels=['gpt-4o', 'gpt-3.5-turbo']"
+    steps:
+      - "Render ModelSelector"
+    expected: "2 badge elements with model names and X remove buttons"
+    assertions:
+      - "Badge 'gpt-4o' visible in trigger"
+      - "Badge 'gpt-3.5-turbo' visible in trigger"
+      - "Each badge has an X button"
+    tags: [rendering, badges]
+
+  - id: F06-T03
+    name: "Trigger has correct ARIA attributes"
+    type: accessibility
+    priority: P0
+    preconditions: "ModelSelector rendered, closed"
+    steps:
+      - "Check trigger button attributes"
+    expected: "aria-haspopup='listbox', aria-expanded=false"
+    assertions:
+      - "Trigger has aria-haspopup='listbox'"
+      - "Trigger has aria-expanded='false'"
+    tags: [a11y]
+
+  - id: F06-T04
+    name: "Trigger is disabled when disabled prop is true"
+    type: component
+    priority: P1
+    preconditions: "disabled=true"
+    steps:
+      - "Render ModelSelector with disabled=true"
+    expected: "Button has opacity 0.5, pointer-events none"
+    assertions:
+      - "Button style has opacity 0.5"
+      - "Button style has pointerEvents 'none'"
+    tags: [disabled]
+
+  # ---- POPOVER OPEN/CLOSE ----
+
+  - id: F06-T05
+    name: "Clicking trigger opens popover and fetches models"
+    type: component
+    priority: P0
+    preconditions: "Closed, API returns 5 models"
+    steps:
+      - "Click trigger button"
+    expected: "Popover opens, GET /config/providers/models called, models listed"
+    assertions:
+      - "Popover content visible"
+      - "fetch called with /config/providers/models?provider={type}"
+      - "5 model items rendered"
+    tags: [popover, fetch]
+
+  - id: F06-T06
+    name: "Popover auto-focuses search input"
+    type: component
+    priority: P1
+    preconditions: "Trigger clicked"
+    steps:
+      - "Open popover"
+    expected: "Search input receives focus"
+    assertions:
+      - "Search input has autoFocus"
+    tags: [popover, focus]
+
+  - id: F06-T07
+    name: "Search is reset to empty on each open"
+    type: component
+    priority: P1
+    preconditions: "Previously typed search, closed, re-opened"
+    steps:
+      - "Open popover, type 'gpt', close, re-open"
+    expected: "Search input is empty on re-open"
+    assertions:
+      - "Search input value is ''"
+    tags: [popover, reset]
+
+  # ---- LOADING AND ERROR ----
+
+  - id: F06-T08
+    name: "Loading state shows spinner in popover"
+    type: component
+    priority: P0
+    preconditions: "Fetch in progress"
+    steps:
+      - "Open popover, before API resolves"
+    expected: "Command.Loading with spinning border and 'Chargement...' text"
+    assertions:
+      - "Text 'Chargement...' visible in popover"
+      - "Spinner element present"
+    tags: [loading, popover]
+
+  - id: F06-T09
+    name: "Error state shows error message in popover"
+    type: component
+    priority: P0
+    preconditions: "Fetch returns HTTP 500"
+    steps:
+      - "Open popover, API fails"
+    expected: "Red error text 'Erreur : HTTP 500'"
+    assertions:
+      - "Text matching 'Erreur :' visible"
+      - "source set to 'fallback'"
+    tags: [error, popover]
+
+  - id: F06-T10
+    name: "Empty results show 'Aucun modele trouve' message"
+    type: component
+    priority: P1
+    preconditions: "Search yields no matches"
+    steps:
+      - "Open popover, type unmatched search term"
+    expected: "Command.Empty message 'Aucun modele trouve'"
+    assertions:
+      - "Text 'Aucun modele trouve' visible"
+    tags: [empty-state, search]
+
+  # ---- SEARCH AND SELECTION ----
+
+  - id: F06-T11
+    name: "cmdk search filters models by name"
+    type: component
+    priority: P0
+    preconditions: "5 models loaded: gpt-4o, gpt-3.5-turbo, text-embedding-3-small, dall-e-3, whisper-1"
+    steps:
+      - "Type 'gpt' in search"
+    expected: "Only gpt-4o and gpt-3.5-turbo visible"
+    assertions:
+      - "2 model items visible"
+      - "gpt-4o and gpt-3.5-turbo shown"
+    tags: [search, filtering]
+
+  - id: F06-T12
+    name: "Clicking model toggles selection on"
+    type: component
+    priority: P0
+    preconditions: "gpt-4o not in selectedModels"
+    steps:
+      - "Click gpt-4o item"
+    expected: "onModelsChange called with [...selectedModels, 'gpt-4o']"
+    assertions:
+      - "onModelsChange called"
+      - "New array includes 'gpt-4o'"
+    tags: [selection, toggle]
+
+  - id: F06-T13
+    name: "Clicking selected model toggles selection off"
+    type: component
+    priority: P0
+    preconditions: "gpt-4o in selectedModels"
+    steps:
+      - "Click gpt-4o item"
+    expected: "onModelsChange called with selectedModels minus 'gpt-4o'"
+    assertions:
+      - "onModelsChange called"
+      - "New array does NOT include 'gpt-4o'"
+    tags: [selection, toggle]
+
+  - id: F06-T14
+    name: "Selected model shows checkmark in accent color"
+    type: component
+    priority: P1
+    preconditions: "gpt-4o is selected"
+    steps:
+      - "Open popover, find gpt-4o item"
+    expected: "Check icon is accent-colored"
+    assertions:
+      - "Check icon has color 'var(--cs-accent)'"
+    tags: [visual, selection]
+
+  - id: F06-T15
+    name: "Unselected model shows transparent checkmark"
+    type: component
+    priority: P2
+    preconditions: "gpt-4o is not selected"
+    steps:
+      - "Open popover, find gpt-4o item"
+    expected: "Check icon has color 'transparent'"
+    assertions:
+      - "Check icon has color 'transparent'"
+    tags: [visual, selection]
+
+  # ---- MANUAL ENTRY ----
+
+  - id: F06-T16
+    name: "Custom entry option appears for unknown model name"
+    type: component
+    priority: P0
+    preconditions: "Models loaded, search text 'my-custom-model' not in list"
+    steps:
+      - "Type 'my-custom-model' in search"
+    expected: "Custom entry option 'Ajouter my-custom-model' appears"
+    assertions:
+      - "Item with text matching 'Ajouter' and 'my-custom-model' visible"
+    tags: [manual-entry, search]
+
+  - id: F06-T17
+    name: "Clicking custom entry adds model to selection"
+    type: component
+    priority: P0
+    preconditions: "Custom entry option visible"
+    steps:
+      - "Click 'Ajouter my-custom-model'"
+    expected: "onModelsChange called with new model added, search cleared"
+    assertions:
+      - "onModelsChange called with 'my-custom-model' in array"
+      - "Search input cleared to ''"
+    tags: [manual-entry, selection]
+
+  - id: F06-T18
+    name: "Custom entry hidden when search matches existing model"
+    type: component
+    priority: P1
+    preconditions: "Search text is 'gpt-4o' which exists in list"
+    steps:
+      - "Type 'gpt-4o' exactly"
+    expected: "No custom entry option"
+    assertions:
+      - "No 'Ajouter' option visible"
+    tags: [manual-entry, edge-case]
+
+  - id: F06-T19
+    name: "Custom entry hidden when search matches already-selected model"
+    type: component
+    priority: P1
+    preconditions: "Search text 'my-model' already in selectedModels"
+    steps:
+      - "Type 'my-model' (already selected)"
+    expected: "No custom entry option"
+    assertions:
+      - "No 'Ajouter' option visible"
+    tags: [manual-entry, edge-case]
+
+  # ---- ROLE BADGES ----
+
+  - id: F06-T20
+    name: "Chat model shows 'chat' role badge"
+    type: component
+    priority: P1
+    preconditions: "Model with role='chat'"
+    steps:
+      - "Open popover, find model"
+    expected: "Role badge 'CHAT' with accent colors"
+    assertions:
+      - "Badge text 'chat' in uppercase visible"
+      - "Badge has accent-bg background"
+    tags: [rendering, role-badge]
+
+  - id: F06-T21
+    name: "Embedding model shows 'embedding' role badge in green"
+    type: component
+    priority: P2
+    preconditions: "Model with role='embedding'"
+    steps:
+      - "Open popover, find model"
+    expected: "Role badge 'EMBEDDING' with green tint"
+    assertions:
+      - "Badge text 'embedding' visible"
+      - "Badge has green foreground color"
+    tags: [rendering, role-badge]
+
+  # ---- SOURCE INDICATOR ----
+
+  - id: F06-T22
+    name: "Live source shows green dot and 'Live' text"
+    type: component
+    priority: P1
+    preconditions: "Fresh fetch, no cache"
+    steps:
+      - "Open popover, API responds"
+    expected: "Footer: green dot, text 'Live', model count"
+    assertions:
+      - "Green dot (background #22c55e) visible"
+      - "Text 'Live' visible"
+    tags: [source-indicator, live]
+
+  - id: F06-T23
+    name: "Cache source shows blue dot and 'Cache' text"
+    type: component
+    priority: P1
+    preconditions: "Same provider opened second time"
+    steps:
+      - "Open popover (cached)"
+    expected: "Footer: blue dot, text 'Cache'"
+    assertions:
+      - "Blue dot (background #3b82f6) visible"
+      - "Text 'Cache' visible"
+    tags: [source-indicator, cache]
+
+  - id: F06-T24
+    name: "Fallback source shows amber dot and 'Statique' text"
+    type: component
+    priority: P1
+    preconditions: "API returned source='fallback'"
+    steps:
+      - "Open popover"
+    expected: "Footer: amber dot, text 'Statique'"
+    assertions:
+      - "Amber dot (background #f59e0b) visible"
+      - "Text 'Statique' visible"
+    tags: [source-indicator, fallback]
+
+  - id: F06-T25
+    name: "Model count shown in footer"
+    type: component
+    priority: P2
+    preconditions: "5 models loaded"
+    steps:
+      - "Check footer text"
+    expected: "Text '(5 modeles)'"
+    assertions:
+      - "Text matching '5 modele' visible"
+    tags: [source-indicator, count]
+
+  # ---- REFRESH ----
+
+  - id: F06-T26
+    name: "Refresh button clears cache and re-fetches"
+    type: component
+    priority: P0
+    preconditions: "Popover open, models from cache"
+    steps:
+      - "Click refresh button"
+    expected: "Cache entry deleted, new GET request made, loading shown"
+    assertions:
+      - "New GET /config/providers/models request"
+      - "Loading state shown briefly"
+      - "Source changes from 'cache' to 'live' after response"
+    tags: [refresh, cache]
+
+  - id: F06-T27
+    name: "Refresh button has correct aria-label"
+    type: accessibility
+    priority: P2
+    preconditions: "Popover open"
+    steps:
+      - "Find refresh button"
+    expected: "aria-label='Rafraichir la liste des modeles'"
+    assertions:
+      - "Button has aria-label matching 'Rafraichir la liste des modeles'"
+    tags: [a11y, refresh]
+
+  - id: F06-T28
+    name: "Refresh button spins during loading"
+    type: component
+    priority: P2
+    preconditions: "Refresh triggered, loading=true"
+    steps:
+      - "Check RefreshCw icon style"
+    expected: "Icon has animation 'cs-spin 600ms linear infinite'"
+    assertions:
+      - "RefreshCw icon style.animation matches cs-spin"
+    tags: [refresh, animation]
+
+  # ---- REMOVE FROM TRIGGER ----
+
+  - id: F06-T29
+    name: "Clicking X on badge removes model without opening popover"
+    type: component
+    priority: P0
+    preconditions: "selectedModels=['gpt-4o', 'gpt-3.5-turbo'], popover closed"
+    steps:
+      - "Click X button on 'gpt-4o' badge"
+    expected: "onModelsChange called without 'gpt-4o', popover stays closed"
+    assertions:
+      - "onModelsChange called with ['gpt-3.5-turbo']"
+      - "Popover does NOT open"
+    tags: [remove, trigger]
+
+  - id: F06-T30
+    name: "Remove badge X has correct aria-label"
+    type: accessibility
+    priority: P2
+    preconditions: "Badge for 'gpt-4o'"
+    steps:
+      - "Find X button on badge"
+    expected: "aria-label='Retirer gpt-4o'"
+    assertions:
+      - "Element has aria-label 'Retirer gpt-4o'"
+    tags: [a11y, remove]
+
+  # ---- CLIENT CACHE ----
+
+  - id: F06-T31
+    name: "Cache stores result per provider:capability key"
+    type: component
+    priority: P1
+    preconditions: "Open for openai (no capability), then for openai with capability='embedding'"
+    steps:
+      - "Open for openai -> fetches"
+      - "Open for openai:embedding -> fetches (different cache key)"
+    expected: "Two separate cache entries, two separate API calls"
+    assertions:
+      - "Two GET requests with different query params"
+    tags: [cache, isolation]

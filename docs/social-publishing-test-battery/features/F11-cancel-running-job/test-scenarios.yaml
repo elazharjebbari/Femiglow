@@ -1,0 +1,29 @@
+feature: F11-cancel-running-job
+critical: P2
+
+contract:
+  - id: F11-C-1
+    name: POST cancel queued job
+    expect: 200 status='cancelled'
+  - id: F11-C-2
+    name: POST cancel publishing job (with active lock)
+    expect: 200, lockedAt cleared
+  - id: F11-C-3
+    name: POST cancel already terminal 409
+  - id: F11-C-4
+    name: POST cancel with reason persisted
+
+component:
+  - id: F11-CO-1
+    name: Cancel button visible on queued/publishing
+  - id: F11-CO-2
+    name: click Cancel fires POST
+  - id: F11-CO-3
+    name: toast 'Job annulé'
+  - id: F11-CO-4
+    name: row updates to cancelled status
+
+e2e:
+  - id: F11-E-1
+    name: queued job cancelled before worker pickup
+    scenario_ref: S07

@@ -10,6 +10,86 @@
  * Swap this file to migrate to Option B or C.
  */
 
+/* ============================== PORTAL FALLBACK ============================== */
+/* Radix Popover/Dialog/DropdownMenu render in <body> via React Portal — they
+ * are detached from the `.cs-v2-shell` subtree and therefore do not inherit
+ * the `--cs-*` tokens defined below. Without this :root fallback, any
+ * `background: var(--cs-bg-elevated)` on a portal-rendered surface resolves
+ * to `transparent`, making the dialog/popover overlap visually with the
+ * page content behind. The light-theme palette is the safe default; the
+ * scoped `.cs-v2-shell[data-theme=...]` blocks below still override per
+ * theme on in-tree elements thanks to selector specificity.
+ *
+ * All names are `--cs-*` prefixed, so this :root block is namespace-safe and
+ * does not collide with the legacy admin or the public site. */
+:root {
+  /* Surfaces — opaque so dialogs/popovers don't bleed through. */
+  --cs-bg-base: #FBF6F1;
+  --cs-bg-elevated: #FFFFFF;
+  --cs-bg-sunken: #F2EBE3;
+  --cs-bg-feature: #EDE3D5;
+  --cs-bg-overlay: rgba(26, 20, 17, 0.45);
+
+  --cs-fg-primary: #1A1411;
+  --cs-fg-secondary: #6B5E54;
+  --cs-fg-muted: #A89D90;
+  --cs-fg-on-accent: #FFFFFF;
+
+  --cs-accent: #9C2A47;
+  --cs-accent-hover: #7B1F3A;
+  --cs-accent-soft: #C0566F;
+  --cs-accent-bg: #F6DDE4;
+
+  --cs-success: #5A7560;
+  --cs-success-bg: #DCE5DD;
+  --cs-warning: #C28846;
+  --cs-warning-bg: #F5E5CC;
+  --cs-danger: #B8323A;
+  --cs-danger-bg: #F5DCDE;
+
+  --cs-border-hair: rgba(122, 78, 63, 0.14);
+  --cs-border: rgba(122, 78, 63, 0.24);
+  --cs-border-strong: rgba(122, 78, 63, 0.42);
+  --cs-border-focus: rgba(156, 42, 71, 0.55);
+
+  --cs-shadow-sm: 0 1px 2px rgba(26, 20, 17, 0.04);
+  --cs-shadow-md: 0 4px 14px rgba(26, 20, 17, 0.07);
+  --cs-shadow-lg: 0 14px 40px rgba(26, 20, 17, 0.10);
+
+  --cs-radius-sm: 4px;
+  --cs-radius: 8px;
+  --cs-radius-md: 12px;
+  --cs-radius-lg: 16px;
+  --cs-radius-full: 9999px;
+
+  --cs-z-base: 0;
+  --cs-z-sticky: 30;
+  --cs-z-overlay: 50;
+  --cs-z-modal: 80;
+  --cs-z-toast: 90;
+
+  --cs-motion-fast: 150ms;
+  --cs-motion-base: 220ms;
+  --cs-motion-slow: 320ms;
+  --cs-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode portals — mirror the dark `.cs-v2-shell` block below.
+ * Triggered when the user OS prefers dark AND the page hasn't forced a
+ * theme override via the in-tree `.cs-v2-shell[data-theme='light']`. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cs-bg-base: #1A1411;
+    --cs-bg-elevated: #211A16;
+    --cs-bg-sunken: #120E0B;
+    --cs-bg-feature: #2A211B;
+    --cs-bg-overlay: rgba(0, 0, 0, 0.65);
+    --cs-fg-primary: #FBF6F1;
+    --cs-fg-secondary: #C2B5A9;
+    --cs-fg-muted: #7A6E63;
+  }
+}
+
 .cs-v2-shell {
   /* Typography variables come from next/font (see fonts.ts) */
   --cs-font-display: var(--cs-font-display, ui-serif);

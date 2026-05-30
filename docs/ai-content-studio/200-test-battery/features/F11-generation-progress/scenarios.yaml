@@ -1,0 +1,302 @@
+feature: F11
+name: Generation Progress
+source: apps/web/src/components/admin/content-studio-v2/ai-engine/GenerationProgress.tsx
+
+scenarios:
+
+  # ---------------------------------------------------------------------------
+  # Rendering -- Initial State
+  # ---------------------------------------------------------------------------
+
+  - id: F11-001
+    title: Component renders with pipeline title
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with 6 default steps (all pending)
+      - assert: heading "Pipeline de generation" is visible
+    expected: Title rendered correctly
+
+  - id: F11-002
+    title: All 6 default pipeline steps rendered
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with PIPELINE_STEPS (all pending)
+      - assert: text "Analyse du brief" visible
+      - assert: text "Enrichissement contextuel" visible
+      - assert: text "Redaction du script" visible
+      - assert: text "Generation des visuels" visible
+      - assert: text "Controle qualite" visible
+      - assert: text "Termine" visible
+    expected: All 6 step labels displayed
+
+  - id: F11-003
+    title: All steps show pending icon when status is pending
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with all steps status='pending'
+      - assert: 6 Circle icons rendered (gray color)
+      - assert: no Loader2 icons (no spinners)
+      - assert: no CheckCircle2 icons (no checkmarks)
+      - assert: no XCircle icons (no error marks)
+    expected: All steps display pending state
+
+  - id: F11-004
+    title: Connector lines between steps are gray when pending
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationProgress with all steps pending
+      - assert: 5 connector divs exist (between 6 steps)
+      - assert: each connector has background var(--cs-border)
+    expected: Connectors show neutral state
+
+  # ---------------------------------------------------------------------------
+  # Status Transitions
+  # ---------------------------------------------------------------------------
+
+  - id: F11-010
+    title: Running step shows spinner icon with animation
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with step[0].status='running', rest pending
+      - assert: first step icon is Loader2 with class 'cs-spin'
+      - assert: first step label has fontWeight 600
+      - assert: first step icon color is var(--cs-accent)
+    expected: Running step visually distinct with spinner
+
+  - id: F11-011
+    title: Completed step shows green checkmark
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with step[0].status='done', step[1].status='running'
+      - assert: first step icon is CheckCircle2
+      - assert: first step icon color is var(--cs-success)
+      - assert: connector after first step has background var(--cs-success)
+    expected: Done step shows success indicator and green connector
+
+  - id: F11-012
+    title: Error step shows red X icon
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with step[2].status='error'
+      - assert: step[2] icon is XCircle
+      - assert: step[2] icon color is var(--cs-danger)
+    expected: Error step visually indicates failure
+
+  - id: F11-013
+    title: Mixed statuses render correctly (done, done, running, pending, pending, pending)
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with steps:
+          - { id: 'parse_brief', status: 'done', durationMs: 1200 }
+          - { id: 'enrich_knowledge', status: 'done', durationMs: 900 }
+          - { id: 'generate_script', status: 'running' }
+          - { id: 'generate_images', status: 'pending' }
+          - { id: 'quality_check', status: 'pending' }
+          - { id: 'done', status: 'pending' }
+      - assert: 2 CheckCircle2 icons
+      - assert: 1 Loader2 spinner
+      - assert: 3 Circle icons (pending)
+      - assert: first 2 connectors green, remaining gray
+    expected: Progressive pipeline state displayed correctly
+
+  - id: F11-014
+    title: Step label is muted color when pending, primary when active or done
+    priority: P1
+    type: unit
+    steps:
+      - render: with step[0] done, step[1] running, step[2] pending
+      - assert: step[0] label color is var(--cs-fg-primary)
+      - assert: step[1] label color is var(--cs-fg-primary) with fontWeight 600
+      - assert: step[2] label color is var(--cs-fg-muted)
+    expected: Text styling reflects step status
+
+  # ---------------------------------------------------------------------------
+  # Duration Display
+  # ---------------------------------------------------------------------------
+
+  - id: F11-020
+    title: Step duration shown in milliseconds when < 1000ms
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationProgress with step[0].durationMs = 450
+      - assert: text "450ms" visible in monospace font
+    expected: Sub-second durations formatted as milliseconds
+
+  - id: F11-021
+    title: Step duration shown in seconds when >= 1000ms
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationProgress with step[0].durationMs = 2500
+      - assert: text "2.5s" visible in monospace font
+    expected: Multi-second durations formatted with one decimal
+
+  - id: F11-022
+    title: Duration not shown for steps without durationMs
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationProgress with step[0].durationMs = undefined
+      - assert: no duration text next to step[0] label
+    expected: Missing duration gracefully hidden
+
+  # ---------------------------------------------------------------------------
+  # Elapsed Timer
+  # ---------------------------------------------------------------------------
+
+  - id: F11-030
+    title: Elapsed timer visible when at least one step is running
+    priority: P0
+    type: unit
+    steps:
+      - useFakeTimers: true
+      - render: GenerationProgress with step[0].status='running'
+      - assert: elapsed timer element visible (cs-mono text)
+      - advanceTimersByTime: 5000
+      - assert: elapsed timer shows approximately "5.0s"
+    expected: Timer ticks while pipeline is running
+
+  - id: F11-031
+    title: Elapsed timer hidden when no steps are running
+    priority: P1
+    type: unit
+    steps:
+      - render: GenerationProgress with all steps status='pending'
+      - assert: no elapsed timer text visible
+    expected: Timer not displayed when pipeline idle
+
+  - id: F11-032
+    title: Elapsed timer stops when all steps complete
+    priority: P1
+    type: unit
+    steps:
+      - useFakeTimers: true
+      - render: GenerationProgress with step[0] running
+      - advanceTimersByTime: 3000
+      - rerender: with all steps done
+      - record: current elapsed value
+      - advanceTimersByTime: 5000
+      - assert: elapsed timer hidden (isRunning becomes false)
+    expected: Timer stops ticking when pipeline finishes
+
+  - id: F11-033
+    title: Timer updates every 200ms (interval precision)
+    priority: P2
+    type: unit
+    steps:
+      - useFakeTimers: true
+      - render: GenerationProgress with one step running
+      - advanceTimersByTime: 600
+      - assert: timer has been updated (at least 2-3 interval ticks)
+    expected: Timer refresh rate is 200ms
+
+  # ---------------------------------------------------------------------------
+  # Cost Display
+  # ---------------------------------------------------------------------------
+
+  - id: F11-040
+    title: Cost footer shown when totalCost prop defined
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with totalCost={150}
+      - assert: text "Cout estime" visible
+      - assert: text "1.50 MAD" visible in monospace font
+    expected: Cost section rendered with formatted value
+
+  - id: F11-041
+    title: Cost footer hidden when totalCost is undefined
+    priority: P0
+    type: unit
+    steps:
+      - render: GenerationProgress with totalCost={undefined}
+      - assert: text "Cout estime" NOT in document
+    expected: Cost section not rendered
+
+  - id: F11-042
+    title: Cost of 0 centimes shows "0.00 MAD"
+    priority: P2
+    type: unit
+    steps:
+      - render: GenerationProgress with totalCost={0}
+      - assert: text "0.00 MAD" visible
+    expected: Zero cost rendered correctly (totalCost=0 is not undefined/null)
+
+  - id: F11-043
+    title: Large cost displays correctly
+    priority: P2
+    type: unit
+    steps:
+      - render: GenerationProgress with totalCost={12345}
+      - assert: text "123.45 MAD" visible
+    expected: Multi-digit costs formatted without truncation
+
+  # ---------------------------------------------------------------------------
+  # Container Styling
+  # ---------------------------------------------------------------------------
+
+  - id: F11-050
+    title: Container has elevated background and shadow
+    priority: P2
+    type: unit
+    steps:
+      - render: GenerationProgress with default steps
+      - assert: container div has background var(--cs-bg-elevated)
+      - assert: container div has border 1px solid var(--cs-border-hair)
+      - assert: container div has borderRadius var(--cs-radius-md)
+      - assert: container div has boxShadow var(--cs-shadow-sm)
+    expected: Component matches CS v2 card styling
+
+  # ---------------------------------------------------------------------------
+  # Last Step (no connector)
+  # ---------------------------------------------------------------------------
+
+  - id: F11-055
+    title: Last step has no connector line below it
+    priority: P2
+    type: unit
+    steps:
+      - render: GenerationProgress with 6 steps
+      - assert: last step (id='done') has no connector div child
+      - assert: 5 connector divs total (not 6)
+    expected: Terminal step correctly omits trailing connector
+
+  # ---------------------------------------------------------------------------
+  # CSS Animation Injection
+  # ---------------------------------------------------------------------------
+
+  - id: F11-060
+    title: cs-spin keyframes injected via style tag
+    priority: P2
+    type: unit
+    steps:
+      - render: GenerationProgress with one running step
+      - query: style element within the component
+      - assert: style text contains "@keyframes cs-spin"
+      - assert: style text contains "animation: cs-spin 0.8s linear infinite"
+    expected: Spinner animation definition present in DOM
+
+msw_handlers:
+  required: []
+  note: >
+    GenerationProgress is a pure presentational component driven entirely by
+    props. No API calls are made. All data comes from the parent Create page.
+
+test_utilities:
+  createSteps: |
+    function createSteps(statuses: StepStatus[]): PipelineStep[] {
+      return PIPELINE_STEPS.map((s, i) => ({
+        ...s,
+        status: statuses[i] ?? 'pending',
+        durationMs: statuses[i] === 'done' ? 800 + Math.random() * 2200 : undefined,
+      }));
+    }

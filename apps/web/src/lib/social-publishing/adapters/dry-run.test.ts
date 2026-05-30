@@ -47,8 +47,15 @@ describe('DryRunSocialPublishingAdapter', () => {
   });
 
   it('refuse un format non supporté par la plateforme', async () => {
+    // Facebook ne supporte pas `carousel` côté dry-run (aligné sur Postiz).
     const adapter = new DryRunSocialPublishingAdapter();
-    const result = await adapter.publish(request({ content: { ...request().content, format: 'story' } }));
+    const fbAccount: SocialAccount = { ...account, platform: 'facebook' };
+    const result = await adapter.publish(
+      request({
+        account: fbAccount,
+        content: { ...request().content, platform: 'facebook', format: 'carousel' },
+      }),
+    );
     expect(result).toMatchObject({ ok: false, error: { code: 'unsupported_format' } });
   });
 

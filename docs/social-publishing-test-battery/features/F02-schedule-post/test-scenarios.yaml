@@ -1,0 +1,109 @@
+feature: F02-schedule-post
+critical: P0
+
+unit:
+  - id: F02-U-1
+    name: scheduleContentPost happy path
+    given: post approved + scheduledAt future
+    expect: job created status=queued mode=schedule
+  - id: F02-U-2
+    name: scheduleContentPost rejects past date
+    given: scheduledAt = now - 1h
+    expect: throws HttpError code=invalid_date
+  - id: F02-U-3
+    name: scheduleContentPost rejects min lead time
+    given: scheduledAt = now + 30s
+    expect: throws HttpError code=min_lead_time
+  - id: F02-U-4
+    name: scheduleContentPost idempotent
+    given: same idempotencyKey
+    expect: returns existing job
+  - id: F02-U-5
+    name: worker picks scheduled job when due
+    given: 1 job queued scheduledAt = now - 1min
+    when: runScheduledPublishJobs()
+    expect: job executed, status=published
+  - id: F02-U-6
+    name: worker skips not-yet-due jobs
+    given: 1 job scheduledAt = now + 10min
+    when: runScheduledPublishJobs()
+    expect: job stays queued, no execution
+  - id: F02-U-7
+    name: worker respects max per run
+    given: 10 jobs due, max=5
+    expect: only 5 executed, 5 remain queued for next run
+
+contract:
+  - id: F02-C-1
+    name: POST schedule happy path
+    payload: '{ scheduledAt: futureISO }'
+    expect: 201 with jobs[0].status=queued, scheduledAt set
+  - id: F02-C-2
+    name: POST schedule missing scheduledAt
+    payload: '{}'
+    expect: 400
+  - id: F02-C-3
+    name: POST schedule invalid format
+    payload: '{ scheduledAt: "tomorrow" }'
+    expect: 400
+  - id: F02-C-4
+    name: POST schedule past date
+    payload: '{ scheduledAt: yesterdayISO }'
+    expect: 400 code=invalid_date
+  - id: F02-C-5
+    name: POST schedule min lead time
+    payload: '{ scheduledAt: nowPlus30sISO }'
+    expect: 400 code=min_lead_time
+  - id: F02-C-6
+    name: POST schedule with accountId
+    payload: '{ scheduledAt, accountId: "sa_1" }'
+    expect: 201 job.accountId=sa_1
+  - id: F02-C-7
+    name: POST schedule idempotency replay
+    given: existing job with key='k1'
+    expect: 200 with same job.id
+
+component:
+  - id: F02-CO-1
+    name: schedule dialog opens
+    when: click Publier → Programmer
+    expect: dialog visible with datetime-local input
+  - id: F02-CO-2
+    name: 3 preset buttons present
+    expect: testids schedule-preset-1h, -tomorrow-9, -monday-14 all visible
+  - id: F02-CO-3
+    name: +1h preset sets value
+    when: click +1h preset
+    expect: input value is approximately now+1h ISO
+  - id: F02-CO-4
+    name: Demain 9h preset
+    when: click preset
+    expect: input value is tomorrow at 09:00 local
+  - id: F02-CO-5
+    name: Lundi 14h preset
+    when: click preset
+    expect: input value is next Monday at 14:00 local (skipping current Monday if today)
+  - id: F02-CO-6
+    name: timezone label visible
+    expect: testid schedule-timezone-label visible containing 'Fuseau'
+  - id: F02-CO-7
+    name: confirm fires API call
+    when: pick date, click Programmer
+    expect: fetch POST /schedule with body.scheduledAt
+  - id: F02-CO-8
+    name: success toast
+    expect: 'Publication programmée'
+
+e2e:
+  - id: F02-E-1
+    name: golden path schedule
+    scenario_ref: S02
+  - id: F02-E-2
+    name: schedule preset workflow (+1h, +1day, +next Monday)
+    scenario_ref: S02
+  - id: F02-E-3
+    name: schedule then job appears in Calendar with future date
+    scenario_ref: S12
+  - id: F02-E-4
+    name: cron worker picks up scheduled job (mocked time advance)
+    scenario_ref: S15

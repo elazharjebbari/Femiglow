@@ -280,9 +280,11 @@ test.describe.serial('create post — golden path', () => {
     await expect(publishBtn).toBeVisible();
     await expect(publishBtn).toContainText(/publier/i);
 
-    // Since no post has been approved yet, the hint should be visible
+    // Since no post has been approved yet, the hint should be visible.
+    // CS v2 Phase 6: wording changed from "Approuvez" → "Validez" to align
+    // with the new ApproveButton CTA in PreviewPane.
     await expect(
-      footer.getByText(/approuvez le draft pour activer la publication/i),
+      footer.getByText(/validez le draft pour activer la publication/i),
     ).toBeVisible();
   });
 });

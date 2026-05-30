@@ -1,0 +1,61 @@
+{
+  "$schema": "Mock media items for MSW handlers + tests",
+  "items": [
+    {
+      "id": "mock-img-1080-1080",
+      "kind": "image",
+      "compartment": "ai_generated",
+      "slug": "mock-img-1080-1080",
+      "alt": "Image mock générée 1080x1080",
+      "thumbnailUrl": "/_media/content-studio/mock/sample-1080.png",
+      "previewUrl": "/_media/content-studio/mock/sample-1080.png",
+      "originalUrl": "/_media/content-studio/mock/sample-1080.png",
+      "width": 1080,
+      "height": 1080,
+      "durationMs": null,
+      "createdAt": "2026-05-28T10:10:00Z"
+    },
+    {
+      "id": "mock-img-1080-1350",
+      "kind": "image",
+      "compartment": "ai_generated",
+      "slug": "mock-img-1080-1350",
+      "alt": "Image mock générée 1080x1350 (4:5)",
+      "thumbnailUrl": "/_media/content-studio/mock/sample-1080-1350.png",
+      "previewUrl": "/_media/content-studio/mock/sample-1080-1350.png",
+      "originalUrl": "/_media/content-studio/mock/sample-1080-1350.png",
+      "width": 1080,
+      "height": 1350,
+      "durationMs": null,
+      "createdAt": "2026-05-28T10:10:00Z"
+    },
+    {
+      "id": "mock-vid-reel",
+      "kind": "video",
+      "compartment": "ai_generated",
+      "slug": "mock-vid-reel",
+      "alt": "Vidéo mock reel 9:16",
+      "thumbnailUrl": "/_media/content-studio/mock/poster-9x16.jpg",
+      "previewUrl": "/_media/content-studio/mock/reel-9x16.mp4",
+      "originalUrl": "/_media/content-studio/mock/reel-9x16.mp4",
+      "width": 1080,
+      "height": 1920,
+      "durationMs": 5000,
+      "createdAt": "2026-05-28T10:15:00Z"
+    },
+    {
+      "id": "mock-vid-story",
+      "kind": "video",
+      "compartment": "ai_generated",
+      "slug": "mock-vid-story",
+      "alt": "Vidéo mock story 9:16",
+      "thumbnailUrl": "/_media/content-studio/mock/poster-9x16.jpg",
+      "previewUrl": "/_media/content-studio/mock/story-9x16.mp4",
+      "originalUrl": "/_media/content-studio/mock/story-9x16.mp4",
+      "width": 1080,
+      "height": 1920,
+      "durationMs": 3000,
+      "createdAt": "2026-05-28T10:15:00Z"
+    }
+  ]
+}

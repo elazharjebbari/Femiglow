@@ -1,0 +1,396 @@
+# MSW Test Scenarios -- Higgsfield AI Provider Integration
+# Date: 2026-05-27
+# Total: 18 scenarios
+
+suite: higgsfield-msw-handlers
+description: >
+  Scenarios verifying that MSW handlers correctly mock Higgsfield AI
+  provider data across all API endpoints used by the Config UI.
+
+# =============================================================================
+# Provider List Handlers
+# =============================================================================
+
+scenarios:
+
+  - id: MSW-HF-001
+    title: Handler returns Higgsfield in provider list
+    handler: aiEngineHandlers (GET /config/providers)
+    mock_data: MOCK_PROVIDERS
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/providers
+    expected_response:
+      status: 200
+      body:
+        providers:
+          - providerType: openai
+          - providerType: anthropic
+          - providerType: higgsfield
+    assertions:
+      - Response includes an entry with providerType 'higgsfield'
+      - Higgsfield entry has capabilities ['image', 'video']
+      - Higgsfield entry has priority 15
+      - Higgsfield entry has 2 models
+      - Higgsfield entry has healthStatus 'healthy'
+      - Higgsfield entry has configured true
+    priority: critical
+
+  - id: MSW-HF-002
+    title: Provider update handler accepts Higgsfield data
+    handler: providerHandlers (POST /config/providers)
+    request:
+      method: POST
+      url: /api/admin/ai-engine/config/providers
+      body:
+        id: prov-003
+        providerType: higgsfield
+        priority: 5
+        dailyBudgetCents: 50
+        rateLimitRpm: 120
+        isEnabled: true
+        isFallback: false
+    expected_response:
+      status: 200
+      body:
+        provider:
+          id: prov-003
+          providerType: higgsfield
+          priority: 5
+    assertions:
+      - Response contains updated provider
+      - providerType is preserved as 'higgsfield'
+      - Updated fields reflect new values
+    priority: high
+
+# =============================================================================
+# Model Discovery Handlers
+# =============================================================================
+
+  - id: MSW-HF-003
+    title: Model discovery returns Higgsfield image + video models
+    handler: modelDiscoveryHandlers (GET /config/providers/models)
+    mock_data: MOCK_MODEL_DISCOVERY.higgsfield
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/providers/models?provider=higgsfield
+    expected_response:
+      status: 200
+      body:
+        models:
+          - id: higgsfield-diffusion-v2
+            role: image
+          - id: higgsfield-video-v1
+            role: video
+        source: live
+    assertions:
+      - Exactly 2 models returned
+      - First model has role 'image'
+      - Second model has role 'video'
+      - Source is 'live'
+    priority: critical
+
+  - id: MSW-HF-004
+    title: Model discovery filters Higgsfield by capability (image only)
+    handler: modelDiscoveryHandlers
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/providers/models?provider=higgsfield&capability=image
+    expected_response:
+      status: 200
+      body:
+        models:
+          - id: higgsfield-diffusion-v2
+            role: image
+    assertions:
+      - Only 1 model returned (image)
+      - Video model is filtered out
+    priority: high
+
+  - id: MSW-HF-005
+    title: Model discovery filters Higgsfield by capability (video only)
+    handler: modelDiscoveryHandlers
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/providers/models?provider=higgsfield&capability=video
+    expected_response:
+      status: 200
+      body:
+        models:
+          - id: higgsfield-video-v1
+            role: video
+    assertions:
+      - Only 1 model returned (video)
+      - Image model is filtered out
+    note: >
+      Requires 'video' entry in roleMap inside the model discovery handler.
+    priority: high
+
+  - id: MSW-HF-006
+    title: Model discovery fallback handler for Higgsfield
+    handler: modelDiscoveryErrorHandlers.higgsfieldFallback
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/providers/models?provider=higgsfield
+    expected_response:
+      status: 200
+      body:
+        source: fallback
+        models:
+          - id: higgsfield-diffusion-v2
+          - id: higgsfield-video-v1
+    assertions:
+      - Source is 'fallback' (not 'live')
+      - Same 2 models returned as live
+    priority: high
+
+  - id: MSW-HF-007
+    title: Model discovery 500 error for Higgsfield only
+    handler: modelDiscoveryErrorHandlers.higgsfield500
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/providers/models?provider=higgsfield
+    expected_response:
+      status: 500
+      body:
+        error: Higgsfield model discovery failed
+    assertions:
+      - Status is 500
+      - Error message mentions Higgsfield
+      - Other providers still return normally (handler checks provider param)
+    priority: medium
+
+# =============================================================================
+# API Key Handlers
+# =============================================================================
+
+  - id: MSW-HF-008
+    title: API keys list includes Higgsfield (database source)
+    handler: apiKeysHandlers (GET /config/api-keys)
+    mock_data: MOCK_API_KEYS with Higgsfield database entry
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/api-keys
+    expected_response:
+      status: 200
+      body:
+        apiKeys:
+          - providerType: higgsfield
+            providerName: Higgsfield AI
+            source: database
+            masked: hf-****ab12
+            isActive: true
+    assertions:
+      - Higgsfield entry exists in apiKeys array
+      - source is 'database'
+      - masked key starts with 'hf-'
+      - isActive is true
+    priority: critical
+
+  - id: MSW-HF-009
+    title: API key creation for Higgsfield
+    handler: apiKeysHandlers (POST /config/api-keys)
+    request:
+      method: POST
+      url: /api/admin/ai-engine/config/api-keys
+      body:
+        providerType: higgsfield
+        apiKey: hf-new-key-12345
+        label: Higgsfield Production
+    expected_response:
+      status: 201
+      body:
+        apiKey:
+          id: ak-new
+          providerType: higgsfield
+          source: database
+    assertions:
+      - Status is 201 (created)
+      - apiKey.providerType is 'higgsfield'
+      - apiKey.source is 'database'
+      - apiKey has an id assigned
+    priority: high
+
+  - id: MSW-HF-010
+    title: API key test valid for Higgsfield
+    handler: apiKeysHandlers (POST /config/api-keys/test)
+    request:
+      method: POST
+      url: /api/admin/ai-engine/config/api-keys/test
+      body:
+        providerType: higgsfield
+    expected_response:
+      status: 200
+      body:
+        result:
+          valid: true
+          provider: higgsfield
+          latencyMs: 150
+    assertions:
+      - result.valid is true
+      - result.provider is 'higgsfield'
+      - latencyMs is a positive number
+    priority: high
+
+  - id: MSW-HF-011
+    title: API key test invalid for Higgsfield (401 error handler)
+    handler: apiKeysErrorHandlers.testHiggsfield401
+    request:
+      method: POST
+      url: /api/admin/ai-engine/config/api-keys/test
+      body:
+        providerType: higgsfield
+    expected_response:
+      status: 200
+      body:
+        result:
+          valid: false
+          provider: higgsfield
+          error: Invalid Higgsfield API key
+    assertions:
+      - result.valid is false
+      - result.error contains 'Invalid'
+      - Other providers still return valid (handler checks providerType)
+    priority: high
+
+  - id: MSW-HF-012
+    title: API key test 500 for Higgsfield
+    handler: apiKeysErrorHandlers.testHiggsfield500
+    request:
+      method: POST
+      url: /api/admin/ai-engine/config/api-keys/test
+      body:
+        providerType: higgsfield
+    expected_response:
+      status: 500
+      body:
+        error: Higgsfield API unreachable
+    assertions:
+      - Status is 500
+      - Error message references Higgsfield
+    priority: medium
+
+  - id: MSW-HF-013
+    title: API key test timeout for Higgsfield
+    handler: apiKeysErrorHandlers.testHiggsFieldTimeout
+    request:
+      method: POST
+      url: /api/admin/ai-engine/config/api-keys/test
+      body:
+        providerType: higgsfield
+    expected_response:
+      delayed: 15000ms
+      body:
+        result:
+          valid: false
+          error: Timeout
+    assertions:
+      - Response is delayed by 15 seconds
+      - result.valid is false
+      - Test client should timeout before receiving response
+    priority: low
+
+  - id: MSW-HF-014
+    title: API key deletion for Higgsfield
+    handler: apiKeysHandlers (DELETE /config/api-keys/:id)
+    request:
+      method: DELETE
+      url: /api/admin/ai-engine/config/api-keys/ak-hf-001
+    expected_response:
+      status: 200
+      body:
+        success: true
+        fallbackToEnv: false
+    assertions:
+      - success is true
+      - Handler is provider-agnostic (same handler for all providers)
+    priority: high
+
+# =============================================================================
+# Health Endpoint
+# =============================================================================
+
+  - id: MSW-HF-015
+    title: Health check shows Higgsfield as image/video provider
+    handler: aiEngineHandlers (GET /health)
+    mock_data: MOCK_HEALTH with Higgsfield
+    request:
+      method: GET
+      url: /api/admin/ai-engine/health
+    expected_response:
+      status: 200
+      body:
+        providers:
+          image:
+            configured: true
+            provider: higgsfield
+          video:
+            configured: true
+            provider: higgsfield
+    assertions:
+      - image.provider is 'higgsfield'
+      - video.provider is 'higgsfield'
+      - Both are configured: true
+    priority: medium
+
+# =============================================================================
+# Error & Edge Cases
+# =============================================================================
+
+  - id: MSW-HF-016
+    title: Fallback when Higgsfield unavailable in provider list
+    handler: custom (override GET /config/providers)
+    description: >
+      Override to return providers WITHOUT Higgsfield, simulating
+      a scenario where the provider registration failed.
+    request:
+      method: GET
+      url: /api/admin/ai-engine/config/providers
+    expected_response:
+      status: 200
+      body:
+        providers:
+          - providerType: openai
+          - providerType: anthropic
+    assertions:
+      - No Higgsfield entry in providers array
+      - UI renders only OpenAI and Anthropic cards
+      - No crash or error when Higgsfield is absent
+    priority: medium
+
+  - id: MSW-HF-017
+    title: Provider update 500 for Higgsfield only
+    handler: aiEngineErrorHandlers.providerUpdateHiggsfield500
+    request:
+      method: POST
+      url: /api/admin/ai-engine/config/providers
+      body:
+        id: prov-003
+        providerType: higgsfield
+        priority: 5
+    expected_response:
+      status: 500
+      body:
+        error: Failed to update Higgsfield configuration
+    assertions:
+      - Status is 500
+      - Error message mentions Higgsfield
+      - Other provider updates still succeed
+    priority: medium
+
+  - id: MSW-HF-018
+    title: Concurrent model discovery for Higgsfield and OpenAI
+    handler: modelDiscoveryHandlers
+    description: >
+      Verify that requesting models for two providers simultaneously
+      returns correct, isolated results.
+    requests:
+      - method: GET
+        url: /api/admin/ai-engine/config/providers/models?provider=higgsfield
+      - method: GET
+        url: /api/admin/ai-engine/config/providers/models?provider=openai
+    assertions:
+      - Higgsfield response contains image/video models
+      - OpenAI response contains chat/image/embedding/tts models
+      - No cross-contamination between provider results
+    priority: medium

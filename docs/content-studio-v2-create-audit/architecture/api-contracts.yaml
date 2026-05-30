@@ -1,0 +1,381 @@
+openapi: 3.0.3
+info:
+  title: Content Studio v2 — Create flow API surface
+  version: "2.0.0-audit"
+  description: |
+    Surface API touchée par la page /admin/content-studio-v2/create.
+    Inclut les routes existantes ET les extensions proposées (marquées <NEW>).
+
+servers:
+  - url: https://staging.femiglow-maroc.com
+  - url: http://localhost:8012
+
+paths:
+  /api/admin/content-studio/models:
+    get:
+      summary: <NEW> List available models (chat/image/video) with suggestion
+      parameters:
+        - name: role
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [chat, image, video]
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [post, story, reel, carousel]
+      responses:
+        '200':
+          description: Models list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items: { $ref: '#/components/schemas/ModelEntry' }
+                  suggested: { $ref: '#/components/schemas/ModelEntry' }
+                  providers:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProviderInfo' }
+
+  /api/admin/content-studio/ideas:
+    post:
+      summary: Create new idea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pillar, objective, platform, format, prompt]
+              properties:
+                campaignId: { type: string, nullable: true }
+                pillar: { type: string }
+                objective: { type: string }
+                platform: { type: string }
+                format: { type: string }
+                prompt: { type: string, minLength: 8, maxLength: 2000 }
+                sourceType: { type: string }
+                sourceRef: { type: string }
+                model:
+                  type: string
+                  description: <NEW> Override default text generation model
+      responses:
+        '200': { description: Idea created }
+        '400': { description: Validation error }
+
+  /api/admin/content-studio/ideas/{id}/generate:
+    post:
+      summary: Generate brief + 3 drafts from idea
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                model:
+                  type: string
+                  description: <NEW> Override text model just for this run
+      responses:
+        '200':
+          description: Generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  idea: { $ref: '#/components/schemas/ContentIdea' }
+                  brief: { $ref: '#/components/schemas/ContentBrief' }
+                  drafts:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentDraft' }
+                  runs:
+                    type: array
+                    items: { $ref: '#/components/schemas/GenerationRun' }
+        '402': { description: Daily budget exhausted }
+
+  /api/admin/content-studio/drafts/{id}:
+    patch:
+      summary: Update draft (autosave)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                caption: { type: string }
+                hook: { type: string }
+                cta: { type: string }
+                altText: { type: string }
+                hashtags:
+                  type: array
+                  items: { type: string }
+                mediaId: { type: string, nullable: true }
+      responses:
+        '200': { description: Updated }
+
+  /api/admin/content-studio/drafts/{id}/generate-visual:
+    post:
+      summary: Generate visual (image or video)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt: { type: string, minLength: 12, maxLength: 1800 }
+                size: { type: string, enum: ["1024x1024", "1024x1536", "1536x1024"] }
+                quality: { type: string, enum: [low, medium, high] }
+                kind:
+                  type: string
+                  enum: [image, video]
+                  default: image
+                  description: <NEW>
+                model:
+                  type: string
+                  description: <NEW>
+      responses:
+        '200': { description: Media generated }
+        '402': { description: Budget exhausted }
+
+  /api/admin/content-studio/drafts/{id}/review:
+    post:
+      summary: Trigger brand review (idempotent)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Review created }
+
+  /api/admin/content-studio/drafts/{id}/approve:
+    post:
+      summary: Approve draft and create content_post
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Post created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post: { $ref: '#/components/schemas/ContentPost' }
+        '409': { description: brand_review_blocked OR no_media_attached }
+
+  /api/admin/content-studio/drafts/{id}/reject:
+    post:
+      summary: Reject draft
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { reason: { type: string } }
+      responses:
+        '200': { description: Rejected }
+
+  /api/admin/content-studio/posts/{id}/publish-now:
+    post:
+      summary: Publish immediately
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+                idempotencyKey: { type: string }
+      responses:
+        '200':
+          description: Jobs created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  jobs:
+                    type: array
+                    items: { $ref: '#/components/schemas/PublishJob' }
+
+  /api/admin/content-studio/posts/{id}/schedule:
+    post:
+      summary: Schedule publication
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduledAt]
+              properties:
+                scheduledAt: { type: string, format: date-time }
+                accountId: { type: string }
+                idempotencyKey: { type: string }
+      responses:
+        '200': { description: Scheduled }
+
+  /api/admin/content-studio/posts/{id}/draft-on-provider:
+    post:
+      summary: Send to provider as draft
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+                idempotencyKey: { type: string }
+      responses:
+        '200': { description: Draft sent }
+
+  /api/admin/content-studio/generation-runs:
+    get:
+      summary: List runs + daily budget
+      parameters:
+        - { name: limit, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: Runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items: { $ref: '#/components/schemas/GenerationRun' }
+                  budget:
+                    type: object
+                    properties:
+                      dailyBudgetCents: { type: integer }
+                      dailySpentCents: { type: integer }
+                      remainingCents: { type: integer }
+
+  /api/admin/content-studio/media:
+    get:
+      summary: List media items
+      parameters:
+        - name: compartment
+          in: query
+          schema:
+            type: string
+            enum: [imported, ai_generated, all]
+      responses:
+        '200': { description: Media list }
+
+components:
+  schemas:
+    ModelEntry:
+      type: object
+      required: [id, provider, role, label]
+      properties:
+        id: { type: string, example: "gpt-4o-mini" }
+        provider: { type: string, example: "openai" }
+        role: { type: string, enum: [chat, image, video] }
+        label: { type: string, example: "GPT-4o mini" }
+        description: { type: string }
+        tier: { type: string, enum: [fast, balanced, premium] }
+        capabilities:
+          type: array
+          items: { type: string }
+        contextWindow: { type: integer }
+        pricing:
+          type: object
+          properties:
+            inputCentsPer1k: { type: number }
+            outputCentsPer1k: { type: number }
+        recommendedFor:
+          type: array
+          items:
+            type: string
+            enum: [post, story, reel, carousel]
+        source: { type: string, enum: [live, cache, static] }
+
+    ProviderInfo:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        status: { type: string, enum: [healthy, degraded, down, mock] }
+
+    ContentIdea:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        # ... see types.ts
+
+    ContentBrief:
+      type: object
+      properties:
+        id: { type: string }
+        ideaId: { type: string }
+        version: { type: integer }
+
+    ContentDraft:
+      type: object
+      properties:
+        id: { type: string }
+        briefId: { type: string }
+        variantLabel: { type: string }
+        caption: { type: string }
+        hook: { type: string }
+        cta: { type: string }
+        hashtags:
+          type: array
+          items: { type: string }
+        altText: { type: string }
+        status: { type: string }
+        scoreTotal: { type: integer }
+
+    ContentPost:
+      type: object
+      properties:
+        id: { type: string }
+        draftId: { type: string }
+        status: { type: string }
+        scheduledAt: { type: string, format: date-time, nullable: true }
+        publishedAt: { type: string, format: date-time, nullable: true }
+
+    GenerationRun:
+      type: object
+      properties:
+        id: { type: string }
+        provider: { type: string }
+        model: { type: string }
+        status: { type: string }
+        costCents: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    PublishJob:
+      type: object
+      properties:
+        id: { type: string }
+        postId: { type: string }
+        provider: { type: string }
+        status: { type: string }
+        scheduledAt: { type: string, format: date-time, nullable: true }

@@ -512,6 +512,13 @@
       "when": 1779500000064,
       "tag": "0062_social_publishing",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1779600000063,
+      "tag": "0063_ai_engine_tables",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,57 @@
+@startuml c4-system-context
+' ============================================================================
+' FemiGlow Content Studio v2 / AI Engine — C4 Niveau 1 : Contexte système
+' Source: audit code 2026-05-29 (apps/web/src). Notation C4 "robuste" sans
+' dépendance réseau (rectangle/database/actor) pour rendu hors-ligne.
+' ============================================================================
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam rectangle {
+  BackgroundColor #F7F3EE
+  BorderColor #8F3F4A
+  RoundCorner 12
+}
+skinparam database {
+  BackgroundColor #EAF1E8
+  BorderColor #5A6E50
+}
+skinparam actor {
+  BorderColor #2F2A26
+}
+
+title Niveau 1 — Contexte système : génération + publication FemiGlow
+
+actor "Opératrice\n(fondatrice / admin)" as Operator
+
+rectangle "Content Studio v2 / AI Engine\n(Next.js 14 App Router · PM2 web:8012)" as System #FBE9E5 {
+}
+
+' ── Systèmes externes de génération ──
+rectangle "OpenAI API\napi.openai.com" as OpenAI #FFFFFF
+rectangle "Higgsfield\nplatform.higgsfield.ai\n(image hf-* / video hf-video-*)" as Higgsfield #FFFFFF
+
+' ── Publication ──
+rectangle "Postiz (self-hosted)\nPOSTIZ_BASE_URL\n/api/public/v1/*" as Postiz #FFFFFF
+rectangle "Instagram" as Instagram #FFFFFF
+rectangle "Facebook" as Facebook #FFFFFF
+
+' ── Stockage ──
+database "PostgreSQL + pgvector\n(content-studio, social-publishing,\nai-engine knowledge chunks)" as DB
+
+' ── Relations ──
+Operator --> System : utilise via navigateur HTTPS\n(/admin/content-studio-v2/*)
+
+System --> OpenAI : HTTPS — texte (chat/completions),\nimages (gpt-image / dall-e),\nembeddings (text-embedding-3-small)
+System --> Higgsfield : HTTPS — Authorization: Key KEY_ID:KEY_SECRET\n(image + vidéo ; chemins async à valider)
+System --> Postiz : HTTPS — Authorization (clé)\nupload + posts + integrations + analytics
+Postiz --> Instagram : publie / programme
+Postiz --> Facebook : publie / programme
+System --> DB : SQL (drizzle) + recherche vectorielle pgvector (RAG)
+
+note bottom of System
+  Deux pipelines de génération coexistent dans CE système :
+  (A) AI Engine LangGraph  — /admin/.../ai-engine/*  → /api/admin/ai-engine/*
+  (B) Create flow opérateur — /admin/.../create      → /api/admin/content-studio/*
+  Publication (dry_run par défaut | live=Postiz) commune aux deux.
+end note
+@enduml

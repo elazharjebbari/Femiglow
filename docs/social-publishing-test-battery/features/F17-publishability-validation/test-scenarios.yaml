@@ -1,0 +1,30 @@
+feature: F17-publishability-validation
+critical: P0
+
+unit:
+  - id: F17-U-1
+    name: post not found → 404
+  - id: F17-U-2
+    name: post.status=cancelled → 409 invalid_state
+  - id: F17-U-3
+    name: draft.status not approved → 409
+  - id: F17-U-4
+    name: brand review blocked → 409
+  - id: F17-U-5
+    name: no active account → 409 no_account_connected
+  - id: F17-U-6
+    name: account disabled → 409
+  - id: F17-U-7
+    name: capability format mismatch → 409
+  - id: F17-U-8
+    name: capability mediaRequired + no media → 409 no_media_attached
+  - id: F17-U-9
+    name: media not ready → 409
+  - id: F17-U-10
+    name: media http (not https) → 409 invalid_media_url
+  - id: F17-U-11
+    name: caption too long → 409 caption_too_long
+  - id: F17-U-12
+    name: > 25 hashtags → warning logged but not blocking
+  - id: F17-U-13
+    name: all checks pass → returns true

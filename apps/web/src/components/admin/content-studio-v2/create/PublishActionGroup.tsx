@@ -2,15 +2,44 @@
 
 import { useState } from 'react';
 import * as RadixDropdown from '@radix-ui/react-dropdown-menu';
-import { ChevronDown, Calendar, Send, ClipboardSignature } from 'lucide-react';
+import { ChevronDown, Calendar, Send, ClipboardSignature, Film, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Dialog } from '@/components/admin/content-studio-v2/primitives';
 import { AutosaveIndicator } from './CaptionEditor';
+import { MockModeBadge } from './MockModeBadge';
+import { formatError } from '@/lib/content-studio-v2/errors/messages';
+import { VideoPlayer, formatDuration } from '@/components/admin/content-studio-v2/media/VideoPlayer';
+import type { StudioV2MediaItem } from '@/lib/content-studio-v2/media/types';
 import type { AutosaveStatus } from '@/lib/content-studio-v2/state/StudioContext';
+
+/** CS v2 Phase 7 G12 — Minimal preview slice surfaced inside the publish
+ * confirmation dialogs (thumbnail + truncated caption + platform/format).
+ * Optional: when omitted, the dialogs fall back to the pre-G12 minimal text. */
+export interface PublishConfirmPreview {
+  thumbnailUrl: string | null;
+  caption: string;
+  platform: string;
+  format: string;
+  /** Distinction vidéo vs image. Si vidéo, ConfirmPreview rend un mini player. */
+  mediaKind?: 'image' | 'video' | null;
+  /** URL du média complet (pour rendre le mini player vidéo). */
+  mediaPreviewUrl?: string | null;
+  /** Alt accessible. */
+  mediaAlt?: string | null;
+  /** Durée en secondes (vidéo). */
+  durationSec?: number | null;
+  /** Dimensions du média. */
+  width?: number | null;
+  height?: number | null;
+}
 
 interface PublishActionGroupProps {
   /** ID of the post derived from the current draft. May be null while not approved yet. */
   postId: string | null;
+  /** CS v2 Phase 6 — mirrors the global mock-mode flag for inline badging. */
+  mockMode?: boolean;
+  /** CS v2 Phase 7 G12 — visual recap rendered inside the confirm dialogs. */
+  preview?: PublishConfirmPreview | null;
   /** Autosave state from `useDraftAutosave` — passed in instead of recomputed
    * so this component does not need its own context wiring. */
   autosave: {
@@ -33,6 +62,8 @@ export function PublishActionGroup({
   autosave,
   disabled,
   onPublished,
+  mockMode = false,
+  preview,
 }: PublishActionGroupProps) {
   const [mode, setMode] = useState<ConfirmMode>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -56,21 +87,25 @@ export function PublishActionGroup({
         body,
       });
       if (!res.ok) {
-        const json = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-        throw new Error(json?.error?.message ?? `HTTP ${res.status}`);
+        const json = (await res.json().catch(() => null)) as {
+          error?: { code?: string; message?: string };
+        } | null;
+        // CS v2 Phase 6 — surface the structured error envelope (code+message)
+        // so the catch block can map it through formatError().
+        throw json?.error ?? new Error(`HTTP ${res.status}`);
       }
-      toast.success(
+      const baseSuccess =
         target === 'now'
           ? 'Publication lancée'
           : target === 'schedule'
             ? 'Publication programmée'
-            : 'Brouillon envoyé au provider',
-      );
+            : 'Brouillon envoyé au provider';
+      toast.success(mockMode ? `${baseSuccess} (mock)` : baseSuccess);
       onPublished?.(target);
       setMode(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erreur publication';
-      toast.error(`Publication : ${message}`);
+      // CS v2 Phase 6 — map known server codes to friendly messages.
+      toast.error(`Publication : ${formatError(err)}`);
     } finally {
       setSubmitting(false);
     }
@@ -97,9 +132,10 @@ export function PublishActionGroup({
           lastSavedAt={autosave.lastSavedAt}
           error={autosave.error}
         />
+        {mockMode ? <MockModeBadge /> : null}
         {!postId ? (
           <span style={{ fontSize: 12, color: 'var(--cs-fg-muted)' }}>
-            Approuvez le draft pour activer la publication.
+            Validez le draft pour activer la publication.
           </span>
         ) : null}
       </div>
@@ -173,6 +209,7 @@ export function PublishActionGroup({
           </>
         }
       >
+        {preview ? <ConfirmPreview preview={preview} mockMode={mockMode} /> : null}
         <p style={{ margin: 0, color: 'var(--cs-fg-secondary)', fontSize: 'var(--cs-text-sm)' }}>
           Vérifie l&apos;aperçu une dernière fois. Cette action ne peut pas être annulée une fois le
           contenu publié côté plateforme.
@@ -201,24 +238,66 @@ export function PublishActionGroup({
           </>
         }
       >
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--cs-fg-secondary)' }}>Date et heure</span>
-          <input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(event) => setScheduledAt(event.target.value)}
-            min={defaultScheduledAt()}
-            style={{
-              padding: '10px 12px',
-              background: 'var(--cs-bg-base)',
-              border: '1px solid var(--cs-border)',
-              borderRadius: 'var(--cs-radius-sm)',
-              color: 'var(--cs-fg-primary)',
-              fontFamily: 'var(--cs-font-body)',
-              fontSize: 'var(--cs-text-sm)',
-            }}
-          />
-        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {preview ? <ConfirmPreview preview={preview} mockMode={mockMode} /> : null}
+          {/* CS v2 Phase 7 polish — schedule presets */}
+          <div
+            style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}
+            aria-label="Raccourcis de programmation"
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              data-testid="schedule-preset-1h"
+              onClick={() => setScheduledAt(toLocalISO(addHours(new Date(), 1)))}
+            >
+              +1h
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              data-testid="schedule-preset-tomorrow-9"
+              onClick={() => setScheduledAt(toLocalISO(tomorrowAt(9)))}
+            >
+              Demain 9h
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              data-testid="schedule-preset-monday-14"
+              onClick={() => setScheduledAt(toLocalISO(nextMondayAt(14)))}
+            >
+              Lundi 14h
+            </Button>
+          </div>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--cs-fg-secondary)' }}>Date et heure</span>
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(event) => setScheduledAt(event.target.value)}
+              min={defaultScheduledAt()}
+              style={{
+                padding: '10px 12px',
+                background: 'var(--cs-bg-base)',
+                border: '1px solid var(--cs-border)',
+                borderRadius: 'var(--cs-radius-sm)',
+                color: 'var(--cs-fg-primary)',
+                fontFamily: 'var(--cs-font-body)',
+                fontSize: 'var(--cs-text-sm)',
+              }}
+            />
+            <span
+              data-testid="schedule-timezone-label"
+              style={{ fontSize: 11, color: 'var(--cs-fg-muted)' }}
+            >
+              Fuseau : {Intl.DateTimeFormat().resolvedOptions().timeZone}
+            </span>
+          </label>
+        </div>
       </Dialog>
 
       <Dialog
@@ -243,11 +322,161 @@ export function PublishActionGroup({
           </>
         }
       >
+        {preview ? <ConfirmPreview preview={preview} mockMode={mockMode} /> : null}
         <p style={{ margin: 0, color: 'var(--cs-fg-secondary)', fontSize: 'var(--cs-text-sm)' }}>
           Le draft sera créé côté provider, prêt à être publié manuellement.
         </p>
       </Dialog>
     </footer>
+  );
+}
+
+/**
+ * CS v2 Phase 7 G12 — visual recap rendered inside each publish confirmation
+ * dialog. Shows a thumbnail (if any), a truncated caption, plateforme/format
+ * tags, and the mock-mode hint when applicable.
+ */
+function ConfirmPreview({
+  preview,
+  mockMode,
+}: {
+  preview: PublishConfirmPreview;
+  mockMode: boolean;
+}) {
+  const truncated =
+    preview.caption.length > 140 ? `${preview.caption.slice(0, 140)}…` : preview.caption;
+  const isVideo = preview.mediaKind === 'video' && Boolean(preview.mediaPreviewUrl);
+  const mediaForPlayer: StudioV2MediaItem | null = isVideo
+    ? {
+        id: 'confirm-preview',
+        kind: 'video',
+        compartment: 'ai_generated',
+        alt: preview.mediaAlt ?? '',
+        slug: 'confirm-preview',
+        thumbnailUrl: preview.thumbnailUrl,
+        previewUrl: preview.mediaPreviewUrl as string,
+        originalUrl: preview.mediaPreviewUrl as string,
+        durationSec: preview.durationSec ?? null,
+        width: preview.width ?? null,
+        height: preview.height ?? null,
+        createdAt: new Date().toISOString(),
+      }
+    : null;
+  return (
+    <div
+      data-testid="publish-confirm-preview"
+      style={{
+        display: 'flex',
+        gap: 12,
+        marginBottom: 12,
+        padding: 10,
+        borderRadius: 'var(--cs-radius-sm)',
+        background: 'var(--cs-bg-sunken)',
+      }}
+    >
+      <div
+        style={{
+          width: 64,
+          height: 80,
+          borderRadius: 6,
+          flexShrink: 0,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
+        {mediaForPlayer ? (
+          <VideoPlayer media={mediaForPlayer} fit="cover" controls="none" compact />
+        ) : preview.thumbnailUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={preview.thumbnailUrl}
+            alt=""
+            data-testid="publish-confirm-thumbnail-img"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <div
+            aria-hidden
+            style={{
+              width: '100%',
+              height: '100%',
+              background: 'var(--cs-bg-base)',
+              border: '1px dashed var(--cs-border)',
+              borderRadius: 6,
+            }}
+          />
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 13,
+            color: 'var(--cs-fg-primary)',
+            lineHeight: 1.4,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}
+        >
+          {truncated}
+        </p>
+        <div
+          style={{
+            marginTop: 6,
+            display: 'flex',
+            gap: 6,
+            flexWrap: 'wrap',
+            fontSize: 11,
+            color: 'var(--cs-fg-muted)',
+          }}
+        >
+          <span data-testid="publish-confirm-platform">📱 {preview.platform}</span>
+          <span data-testid="publish-confirm-format">· {preview.format}</span>
+          {mockMode ? <span style={{ color: 'var(--cs-warning)' }}>· Mode mock</span> : null}
+        </div>
+        {preview.mediaKind ? (
+          <div
+            data-testid="publish-confirm-media-meta"
+            style={{
+              marginTop: 4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 11,
+              color: 'var(--cs-fg-secondary)',
+              fontFamily: 'var(--cs-font-mono, ui-monospace)',
+            }}
+          >
+            {preview.mediaKind === 'video' ? (
+              <Film size={11} aria-hidden style={{ color: 'var(--cs-accent)' }} />
+            ) : (
+              <ImageIcon size={11} aria-hidden style={{ color: 'var(--cs-accent)' }} />
+            )}
+            <span style={{ fontWeight: 600 }}>
+              {preview.mediaKind === 'video' ? 'Vidéo' : 'Image'}
+            </span>
+            {preview.mediaKind === 'video' && preview.durationSec ? (
+              <>
+                <span aria-hidden style={{ opacity: 0.5 }}>·</span>
+                <span>{formatDuration(preview.durationSec)}</span>
+              </>
+            ) : null}
+            {preview.width && preview.height ? (
+              <>
+                <span aria-hidden style={{ opacity: 0.5 }}>·</span>
+                <span>
+                  {preview.width}×{preview.height}
+                </span>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -330,4 +559,28 @@ function defaultScheduledAt(): string {
 function toLocalISO(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// CS v2 Phase 7 polish — schedule preset helpers.
+function addHours(d: Date, hours: number): Date {
+  const out = new Date(d);
+  out.setHours(out.getHours() + hours);
+  out.setMinutes(Math.ceil(out.getMinutes() / 5) * 5, 0, 0);
+  return out;
+}
+
+function tomorrowAt(hour: number): Date {
+  const out = new Date();
+  out.setDate(out.getDate() + 1);
+  out.setHours(hour, 0, 0, 0);
+  return out;
+}
+
+function nextMondayAt(hour: number): Date {
+  const out = new Date();
+  const day = out.getDay(); // 0=dim..6=sam
+  const daysUntilMonday = (8 - day) % 7 || 7; // never today, always next Monday
+  out.setDate(out.getDate() + daysUntilMonday);
+  out.setHours(hour, 0, 0, 0);
+  return out;
 }

@@ -1,0 +1,57 @@
+feature_id,feature,scenario,test_type,priority,file,status
+F01,Stepper,renders 4 steps,component,P0,Stepper.test.tsx,existing
+F01,Stepper,active step from status,component,P0,Stepper.test.tsx,existing
+F01,Stepper,mock badge visible,component,P1,Stepper.test.tsx,new
+F01,Stepper,navigates past steps,component,P1,Stepper.test.tsx,new
+F02,IntentionForm,renders all formats,component,P0,IntentionForm.test.tsx,existing
+F02,IntentionForm,validation Zod,component,P0,IntentionForm.test.tsx,existing
+F02,IntentionForm,POST /ideas with model,contract,P0,ideas.contract.test.ts,new
+F03,ModelPicker,fetches on open,component,P0,ModelPicker.test.tsx,new
+F03,ModelPicker,shows suggested for format,component,P0,ModelPicker.test.tsx,new
+F03,ModelPicker,custom input,component,P1,ModelPicker.test.tsx,new
+F03,ModelPicker,GET /models contract,contract,P0,models.contract.test.ts,new
+F04,Generation,returns 3 drafts,contract,P0,ideas-generate.contract.test.ts,existing
+F04,Generation,budget exhausted 402,contract,P0,ideas-generate.contract.test.ts,new
+F04,Generation,fallback when no key,unit,P0,generation.test.ts,existing
+F05,VariantsCompare,renders 3 cards,component,P0,VariantsCompare.test.tsx,existing
+F05,VariantsCompare,select triggers review,component,P0,VariantsCompare.test.tsx,new
+F05,VariantsCompare,reject opens dialog,component,P0,VariantsCompare.test.tsx,existing
+F05,VariantsCompare,POST /review contract,contract,P0,drafts-review.contract.test.ts,new
+F06,MediaStudio,tabs library/generate,component,P0,MediaStudio.test.tsx,new
+F06,MediaStudio,budget indicator,component,P1,MediaStudio.test.tsx,existing
+F07,ImageModel,picker shows models,component,P0,ModelPicker.test.tsx,new
+F07,ImageModel,size adapts to model,unit,P1,image-generation.test.ts,new
+F08,VideoModel,toggle default video for reel,component,P0,MediaStudio.test.tsx,new
+F08,VideoModel,POST /generate-visual kind=video,contract,P0,drafts-generate-visual.contract.test.ts,new
+F09,MockVideo,generateMockVideo unit,unit,P0,video-generation.test.ts,new
+F09,MockVideo,PreviewPane renders video,component,P0,PreviewPane.test.tsx,existing
+F09,MockVideo,E2E reel mock flow,e2e,P0,create-mock-video.spec.ts,new
+F10,CaptionEditor,autosave debounce,component,P0,CaptionEditor.test.tsx,existing
+F10,CaptionEditor,session expired indicator,component,P1,CaptionEditor.test.tsx,existing
+F11,PreviewPane,renders by platform/format,component,P0,PreviewPane.test.tsx,existing
+F11,PreviewPane,empty state,component,P1,PreviewPane.test.tsx,new
+F12,Autosave,debounce 1500ms,unit,P0,StudioContext.test.tsx,existing
+F12,Autosave,flush on unmount,component,P1,StudioContext.test.tsx,new
+F13,Approve,button disabled states,component,P0,ApproveButton.test.tsx,new
+F13,Approve,calls POST /approve,component,P0,ApproveButton.test.tsx,new
+F13,Approve,POST /approve contract,contract,P0,drafts-approve.contract.test.ts,new
+F14,Publish,dropdown shows 3 options,component,P0,PublishActionGroup.test.tsx,existing
+F14,Publish,publish-now mock 200,contract,P0,posts-publish-now.contract.test.ts,new
+F15,Schedule,datepicker default,component,P0,PublishActionGroup.test.tsx,existing
+F15,Schedule,past date 400,contract,P0,posts-schedule.contract.test.ts,new
+F16,DraftProvider,option present,component,P1,PublishActionGroup.test.tsx,existing
+F17,Budget,indicator color,component,P1,BudgetIndicator.test.tsx,new
+F17,Budget,blocks generation when 0,component,P0,MediaStudio.test.tsx,new
+F18,Errors,formatError mapping,unit,P1,errors.test.ts,new
+F18,Errors,publish error toast,component,P1,PublishActionGroup.test.tsx,new
+F19,A11y,axe scan zero violations,e2e,P1,create-a11y.spec.ts,new
+F19,DarkMode,snapshot dark,e2e,P2,create-dark-mode.spec.ts,new
+F19,Responsive,1 col mobile,e2e,P2,create-responsive.spec.ts,new
+F19,Keyboard,Cmd+S flush,e2e,P2,create-keyboard.spec.ts,new
+ALL,GoldenPath,full create to publish,e2e,P0,create-golden-path.spec.ts,new
+ALL,StepProgression,full progression,e2e,P0,create-step-progression.spec.ts,new
+ALL,ModelSwitching,switch text+image+video models,e2e,P0,create-model-switching.spec.ts,new
+ALL,BudgetExhaustion,402 toast,e2e,P1,create-budget-exhaustion.spec.ts,new
+ALL,ErrorRecovery,network errors,e2e,P1,create-error-recovery.spec.ts,new
+ALL,Scheduling,schedule + reschedule,e2e,P1,create-scheduling.spec.ts,new
+ALL,ConcurrentEdits,409 conflict,e2e,P2,create-concurrent-edits.spec.ts,new

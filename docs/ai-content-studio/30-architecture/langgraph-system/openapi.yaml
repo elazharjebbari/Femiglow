@@ -1,0 +1,380 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow AI Engine API
+  version: 1.0.0
+  description: >
+    API REST pour le moteur de génération de contenu IA basé sur LangGraph.
+    Génère du texte, des images, des vidéos et des compositions multimédia
+    prêtes à publier sur les réseaux sociaux.
+
+servers:
+  - url: http://127.0.0.1:8012
+    description: Staging
+
+paths:
+  /api/admin/ai-engine/health:
+    get:
+      summary: Statut du système
+      description: Retourne l'état de santé du moteur IA, les providers configurés et les budgets.
+      tags: [System]
+      responses:
+        '200':
+          description: Statut OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  providers:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        configured: { type: boolean }
+                        provider: { type: string }
+                  budget:
+                    type: object
+                    properties:
+                      dailyCents: { type: integer }
+                      maxPerJobCents: { type: integer }
+                  quality:
+                    type: object
+                    properties:
+                      threshold: { type: number }
+                      humanReviewRequired: { type: boolean }
+                  version: { type: string }
+                  timestamp: { type: string, format: date-time }
+
+  /api/admin/ai-engine/generate:
+    post:
+      summary: Lancer une génération de contenu
+      description: >
+        Exécute le pipeline LangGraph complet : brief → enrichissement RAG →
+        script → images/vidéo → caption → qualité → modération → review → variantes.
+      tags: [Generation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Génération réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationResult'
+        '400':
+          description: Erreur de validation
+        '401':
+          description: Non authentifié
+        '500':
+          description: Échec de la génération
+        '503':
+          description: AI Engine désactivé
+
+  /api/admin/ai-engine/generate-stream:
+    post:
+      summary: Génération avec streaming SSE
+      description: >
+        Même pipeline que /generate mais avec des événements Server-Sent Events
+        en temps réel montrant la progression nœud par nœud.
+      tags: [Generation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Stream SSE
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/admin/ai-engine/jobs:
+    get:
+      summary: Lister les jobs de génération
+      tags: [Jobs]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, running, completed, failed, review] }
+        - name: stats
+          in: query
+          schema: { type: string, enum: ['true', 'false'] }
+      responses:
+        '200':
+          description: Liste des jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobRow'
+                  stats:
+                    type: object
+
+  /api/admin/ai-engine/jobs/{id}/review:
+    post:
+      summary: Soumettre une décision de review humaine
+      tags: [Jobs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [approved, rejected, edit_requested]
+                feedback: { type: string }
+      responses:
+        '200':
+          description: Review soumise, résultat final
+
+  /api/admin/ai-engine/trends:
+    get:
+      summary: Tendances et signaux de veille
+      tags: [Trends]
+      parameters:
+        - name: minScore
+          in: query
+          schema: { type: number, default: 0.4 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: categories
+          in: query
+          schema: { type: string }
+          description: Catégories séparées par virgules
+        - name: refresh
+          in: query
+          schema: { type: string, enum: ['true'] }
+      responses:
+        '200':
+          description: Tendances scorées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trends:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScoredTrend'
+                  meta:
+                    type: object
+
+  /api/admin/ai-engine/publish:
+    post:
+      summary: Publier un contenu via Postiz
+      tags: [Publication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [draftId, mode]
+              properties:
+                draftId: { type: string }
+                mode: { type: string, enum: [now, schedule] }
+                scheduledAt: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Publication réussie
+
+  /api/admin/ai-engine/integrations:
+    get:
+      summary: Lister les intégrations sociales Postiz
+      tags: [Publication]
+      responses:
+        '200':
+          description: Intégrations disponibles
+
+  /api/admin/ai-engine/knowledge:
+    get:
+      summary: Lister les collections de connaissances
+      tags: [Knowledge]
+      responses:
+        '200':
+          description: Collections
+    post:
+      summary: Créer une collection
+      tags: [Knowledge]
+
+  /api/admin/ai-engine/knowledge/{slug}/documents:
+    get:
+      summary: Lister les documents d'une collection
+      tags: [Knowledge]
+    post:
+      summary: Ingérer un document
+      tags: [Knowledge]
+
+  /api/admin/ai-engine/knowledge/embed:
+    post:
+      summary: Générer les embeddings pour les documents non indexés
+      tags: [Knowledge]
+      responses:
+        '200':
+          description: Embeddings générés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documentsProcessed: { type: integer }
+                  chunksCreated: { type: integer }
+
+  /api/admin/ai-engine/analytics:
+    get:
+      summary: Métriques et analytics
+      tags: [Analytics]
+
+  /api/admin/ai-engine/config/workflows:
+    get:
+      summary: Lister les configurations de workflow
+      tags: [Configuration]
+    post:
+      summary: Créer/modifier un workflow
+      tags: [Configuration]
+
+  /api/admin/ai-engine/config/providers:
+    get:
+      summary: Lister les providers IA
+      tags: [Configuration]
+    post:
+      summary: Modifier un provider
+      tags: [Configuration]
+
+  /api/admin/ai-engine/config/prompts:
+    get:
+      summary: Lister les prompt templates
+      tags: [Configuration]
+    post:
+      summary: Créer un prompt template
+      tags: [Configuration]
+
+components:
+  schemas:
+    GenerateRequest:
+      type: object
+      required: [platform, format, contentType, briefInput]
+      properties:
+        platform:
+          type: string
+          enum: [instagram, facebook, tiktok, pinterest, youtube, linkedin, twitter, threads]
+        format:
+          type: string
+          enum: [post, story, reel, carousel, short, pin, article]
+        contentType:
+          type: string
+          description: Pilier de contenu (produit, rituel, preuve, etc.)
+        briefInput:
+          type: object
+          required: [objective, keyMessage]
+          properties:
+            objective:
+              type: string
+              enum: [awareness, engagement, conversion, education, entertainment]
+            tone:
+              type: string
+              enum: [professional, casual, playful, luxurious, educational, inspiring]
+            targetAudience: { type: string }
+            productFocus: { type: string }
+            keyMessage: { type: string }
+            constraints: { type: array, items: { type: string } }
+            seasonalContext: { type: string }
+            trendReference: { type: string }
+            language: { type: string }
+            maxBudgetCents: { type: integer }
+
+    GenerationResult:
+      type: object
+      properties:
+        jobId: { type: string }
+        status: { type: string, enum: [completed, review, failed] }
+        script:
+          type: object
+          properties:
+            hook: { type: string }
+            scenes: { type: array }
+            cta: { type: string }
+            voiceoverRequired: { type: boolean }
+            musicRequired: { type: boolean }
+        caption: { type: string }
+        hashtags: { type: array, items: { type: string } }
+        images: { type: array }
+        videos: { type: array }
+        qualityScores:
+          type: object
+          additionalProperties: { type: number }
+        moderationResult:
+          type: object
+          properties:
+            safe: { type: boolean }
+            flags: { type: array, items: { type: string } }
+        costTracking:
+          type: object
+          properties:
+            totalCents: { type: number }
+            breakdown: { type: object }
+        errors: { type: array }
+        durationMs: { type: integer }
+        bridgeResult:
+          type: object
+          properties:
+            ideaId: { type: string }
+            briefId: { type: string }
+            draftId: { type: string }
+        contentStudioUrl: { type: string }
+
+    JobRow:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string }
+        platform: { type: string }
+        format: { type: string }
+        contentType: { type: string }
+        totalCostCents: { type: number }
+        durationMs: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    ScoredTrend:
+      type: object
+      properties:
+        id: { type: string }
+        source: { type: string }
+        category: { type: string }
+        title: { type: string }
+        description: { type: string }
+        compositeScore: { type: number }
+        brandRelevance: { type: number }
+        viralPotential: { type: number }
+        timeSensitivity: { type: number }
+        contentFeasibility: { type: number }
+        suggestedFormats: { type: array, items: { type: string } }
+        opportunityWindow: { type: string }
+        riskAssessment: { type: string, enum: [low, medium, high] }

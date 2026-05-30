@@ -1,0 +1,394 @@
+feature: F04-config-prompts
+description: Prompt template CRUD with versioning, variable pills, quality scores, and default protection
+component_under_test: apps/web/src/app/admin/content-studio-v2/ai-engine/config/page.tsx
+test_file: apps/web/src/app/admin/content-studio-v2/ai-engine/config/__tests__/config-page.test.tsx
+
+scenarios:
+  # ---- EMPTY STATE ----
+
+  - id: F04-T01
+    name: "Empty state shown when no prompts exist"
+    type: component
+    priority: P0
+    preconditions: "API returns empty prompts array, tab=prompts"
+    steps:
+      - "Render page, switch to prompts tab"
+    expected: "EmptyState with FileText icon and 'Aucun prompt personnalise' title"
+    assertions:
+      - "Text 'Aucun prompt personnalise' is visible"
+      - "CTA 'Creer un prompt' button is visible"
+    tags: [empty-state]
+
+  - id: F04-T02
+    name: "Empty state CTA opens create form"
+    type: component
+    priority: P0
+    preconditions: "On empty state"
+    steps:
+      - "Click 'Creer un prompt' CTA"
+    expected: "Form appears with heading 'Creer un prompt'"
+    assertions:
+      - "Text 'Creer un prompt' visible as heading"
+    tags: [empty-state, form]
+
+  # ---- PROMPT CARD RENDERING ----
+
+  - id: F04-T03
+    name: "Prompt cards render in responsive grid"
+    type: component
+    priority: P0
+    preconditions: "API returns 4 prompts"
+    steps:
+      - "Render page, switch to prompts tab"
+    expected: "4 prompt cards in grid with minmax(380px, 1fr)"
+    assertions:
+      - "4 prompt card elements rendered"
+    tags: [rendering, layout]
+
+  - id: F04-T04
+    name: "Prompt card shows name and node name"
+    type: component
+    priority: P0
+    preconditions: "Prompt: name='Analyse Brief v2', nodeName='parse_brief'"
+    steps:
+      - "Render card"
+    expected: "Name and node name displayed"
+    assertions:
+      - "Text 'Analyse Brief v2' is visible"
+      - "Text 'parse_brief' is visible in mono font"
+    tags: [rendering]
+
+  - id: F04-T05
+    name: "Active prompt shows 'Active' badge"
+    type: component
+    priority: P1
+    preconditions: "Prompt with isActive=true"
+    steps:
+      - "Render card"
+    expected: "Badge 'Active' in success tone"
+    assertions:
+      - "Badge with text 'Active' is visible"
+    tags: [rendering, badge]
+
+  - id: F04-T06
+    name: "Version badge shows current version"
+    type: component
+    priority: P1
+    preconditions: "Prompt with version=5"
+    steps:
+      - "Render card"
+    expected: "Badge 'v5' in accent tone"
+    assertions:
+      - "Badge with text 'v5' is visible"
+    tags: [rendering, badge, versioning]
+
+  - id: F04-T07
+    name: "System prompt preview truncates at 200 chars"
+    type: component
+    priority: P1
+    preconditions: "Prompt with 500-char systemPrompt"
+    steps:
+      - "Render card"
+    expected: "Preview shows first 200 chars followed by ellipsis"
+    assertions:
+      - "Preview text length is approximately 201 characters (200 + ellipsis)"
+      - "Preview ends with '...'"
+    tags: [rendering, truncation]
+
+  - id: F04-T08
+    name: "System prompt under 200 chars shown in full"
+    type: component
+    priority: P2
+    preconditions: "Prompt with 100-char systemPrompt"
+    steps:
+      - "Render card"
+    expected: "Full text shown without ellipsis"
+    assertions:
+      - "Full system prompt text visible"
+      - "No ellipsis character"
+    tags: [rendering, truncation, edge-case]
+
+  # ---- VARIABLE PILLS ----
+
+  - id: F04-T09
+    name: "Variable pills render first 5 variables in saffron"
+    type: component
+    priority: P0
+    preconditions: "Prompt with variables=['platform', 'format', 'objective', 'tone', 'language']"
+    steps:
+      - "Render card"
+    expected: "5 pills: {platform}, {format}, {objective}, {tone}, {language}"
+    assertions:
+      - "5 pill elements with mono font and saffron color"
+      - "Each pill wraps variable name in curly braces"
+    tags: [rendering, variables]
+
+  - id: F04-T10
+    name: "More than 5 variables shows overflow count"
+    type: component
+    priority: P1
+    preconditions: "Prompt with 8 variables"
+    steps:
+      - "Render card"
+    expected: "5 pills + text '+3'"
+    assertions:
+      - "5 pill elements visible"
+      - "Text '+3' visible"
+    tags: [rendering, variables, overflow]
+
+  - id: F04-T11
+    name: "Empty variables array renders no pills"
+    type: component
+    priority: P2
+    preconditions: "Prompt with variables=[]"
+    steps:
+      - "Render card"
+    expected: "No variable pills section"
+    assertions:
+      - "No pill elements in card"
+    tags: [rendering, variables, edge-case]
+
+  # ---- QUALITY AND USAGE ----
+
+  - id: F04-T12
+    name: "Quality score displayed as percentage with star"
+    type: component
+    priority: P1
+    preconditions: "Prompt with avgQualityScore='0.85'"
+    steps:
+      - "Render card"
+    expected: "Star icon and '85%' text"
+    assertions:
+      - "Text '85%' is visible"
+      - "Star icon present"
+    tags: [rendering, quality]
+
+  - id: F04-T13
+    name: "Null quality score hides quality section"
+    type: component
+    priority: P2
+    preconditions: "Prompt with avgQualityScore=null"
+    steps:
+      - "Render card"
+    expected: "No star icon or percentage"
+    assertions:
+      - "No star icon in footer area"
+    tags: [rendering, edge-case]
+
+  - id: F04-T14
+    name: "Usage count displayed with lightning icon"
+    type: component
+    priority: P1
+    preconditions: "Prompt with usageCount=42"
+    steps:
+      - "Render card"
+    expected: "Lightning icon and '42 utilisations'"
+    assertions:
+      - "Text '42 utilisations' is visible"
+    tags: [rendering, usage]
+
+  # ---- DEFAULT PROTECTION ----
+
+  - id: F04-T15
+    name: "Default prompt hides Edit and Delete buttons"
+    type: component
+    priority: P0
+    preconditions: "Prompt with id='default-parse-brief'"
+    steps:
+      - "Render card"
+    expected: "No 'Editer' or 'Supprimer' buttons"
+    assertions:
+      - "Card does not contain 'Editer' button"
+      - "Card does not contain 'Supprimer' button"
+    tags: [default-protection]
+
+  - id: F04-T16
+    name: "Custom prompt shows Edit and Delete buttons"
+    type: component
+    priority: P0
+    preconditions: "Prompt with id='custom-prompt-123'"
+    steps:
+      - "Render card"
+    expected: "Both buttons visible"
+    assertions:
+      - "'Editer' button is present"
+      - "'Supprimer' button is present"
+    tags: [rendering, crud]
+
+  # ---- CREATE FORM ----
+
+  - id: F04-T17
+    name: "Create button opens form with defaults"
+    type: component
+    priority: P0
+    preconditions: "On prompts tab"
+    steps:
+      - "Click 'Creer un prompt' header button"
+    expected: "Form with heading 'Creer un prompt', node defaults to 'parse_brief'"
+    assertions:
+      - "Form heading 'Creer un prompt' visible"
+      - "Node select value is 'parse_brief'"
+      - "Name input empty"
+      - "System prompt textarea empty"
+      - "User prompt template textarea empty"
+      - "Variables input empty"
+    tags: [create, form]
+
+  - id: F04-T18
+    name: "Save disabled when name or system prompt empty"
+    type: component
+    priority: P0
+    preconditions: "Create form open"
+    steps:
+      - "Leave name empty, type system prompt"
+      - "Check save button"
+    expected: "Save button disabled"
+    assertions:
+      - "Sauvegarder button is disabled"
+    tags: [validation]
+
+  - id: F04-T19
+    name: "Save disabled when system prompt empty even with name filled"
+    type: component
+    priority: P0
+    preconditions: "Create form, name filled, system prompt empty"
+    steps:
+      - "Type name 'Test', leave system prompt empty"
+    expected: "Save button disabled"
+    assertions:
+      - "Sauvegarder button is disabled"
+    tags: [validation]
+
+  - id: F04-T20
+    name: "Node select shows all 9 options"
+    type: component
+    priority: P1
+    preconditions: "Create form open"
+    steps:
+      - "Inspect node select options"
+    expected: "9 options: Parse brief through Generate variants"
+    assertions:
+      - "Select has 9 option elements"
+      - "Values include parse_brief, enrich_knowledge, generate_script, quality_check, moderate, generate_variants"
+    tags: [form, options]
+
+  - id: F04-T21
+    name: "Variables parsed correctly from comma-separated input"
+    type: component
+    priority: P1
+    preconditions: "Form filled with variables='platform, format, , objective '"
+    steps:
+      - "Submit form"
+    expected: "POST body contains variables: ['platform', 'format', 'objective']"
+    assertions:
+      - "Empty entries filtered out"
+      - "Whitespace trimmed"
+      - "Array has 3 elements"
+    tags: [form, parsing]
+
+  - id: F04-T22
+    name: "Save button text is 'Sauvegarder' for new prompt"
+    type: component
+    priority: P1
+    preconditions: "Create form (no id)"
+    steps:
+      - "Check save button text"
+    expected: "Button text is 'Sauvegarder'"
+    assertions:
+      - "Button text is exactly 'Sauvegarder'"
+    tags: [form, ui-text]
+
+  # ---- EDIT FORM (VERSIONING) ----
+
+  - id: F04-T23
+    name: "Edit button pre-populates form with prompt data"
+    type: component
+    priority: P0
+    preconditions: "Prompt: name='Brief v1', nodeName='parse_brief', variables=['a','b']"
+    steps:
+      - "Click 'Editer' on prompt card"
+    expected: "Form titled 'Editer le prompt', fields pre-populated"
+    assertions:
+      - "Form heading 'Editer le prompt'"
+      - "Name input value is 'Brief v1'"
+      - "Node select value is 'parse_brief'"
+      - "Variables input value is 'a, b'"
+    tags: [edit, form, pre-populate]
+
+  - id: F04-T24
+    name: "Edit form save button says 'Creer nouvelle version'"
+    type: component
+    priority: P0
+    preconditions: "Edit form open (has id)"
+    steps:
+      - "Check save button text"
+    expected: "Button text is 'Creer nouvelle version'"
+    assertions:
+      - "Button text is 'Creer nouvelle version'"
+    tags: [edit, versioning, ui-text]
+
+  - id: F04-T25
+    name: "Editing sends id in payload for version creation"
+    type: component
+    priority: P0
+    preconditions: "Edit form open for prompt id='abc'"
+    steps:
+      - "Save form"
+    expected: "POST body includes id='abc'"
+    assertions:
+      - "POST body has id field"
+      - "toast.success called with 'Nouvelle version du prompt creee'"
+    tags: [edit, versioning, api]
+
+  # ---- DELETE ----
+
+  - id: F04-T26
+    name: "Delete triggers confirm dialog with prompt name"
+    type: component
+    priority: P0
+    preconditions: "Custom prompt card"
+    steps:
+      - "Click 'Supprimer'"
+    expected: "window.confirm with message matching prompt name"
+    assertions:
+      - "window.confirm called with 'Supprimer le prompt'"
+    tags: [delete, confirm]
+
+  - id: F04-T27
+    name: "Confirmed delete calls API and shows 'Prompt desactive' toast"
+    type: component
+    priority: P0
+    preconditions: "Confirm returns true, DELETE returns 200"
+    steps:
+      - "Delete and confirm"
+    expected: "DELETE request sent, toast 'Prompt desactive'"
+    assertions:
+      - "DELETE /config/prompts/{id} called"
+      - "toast.success with 'Prompt desactive'"
+    tags: [delete, api, toast]
+
+  - id: F04-T28
+    name: "Delete spinner shows during deletion"
+    type: component
+    priority: P2
+    preconditions: "Delete in progress"
+    steps:
+      - "Check button state during delete"
+    expected: "Loader2 icon spinning, button disabled"
+    assertions:
+      - "Delete button shows spinner"
+      - "Button is disabled"
+    tags: [delete, loading]
+
+  - id: F04-T29
+    name: "Cancel form closes without saving"
+    type: component
+    priority: P1
+    preconditions: "Form open"
+    steps:
+      - "Click 'Annuler'"
+    expected: "Form closes, no API call"
+    assertions:
+      - "Form not in DOM"
+      - "No POST request"
+    tags: [cancel, form]

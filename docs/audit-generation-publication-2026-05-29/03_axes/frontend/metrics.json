@@ -1,0 +1,155 @@
+{
+  "axis": "frontend",
+  "capturedAt": "2026-05-29",
+  "branch": "feat/ai-engine-langgraph-mvp",
+  "criticality": "critical",
+  "scope": "Architecture composants React (CreateWorkspace, MediaStudio, PublishActionGroup, StudioContext), etat optimiste vs serveur, hydratation, cookie cs_generation_mode, propagation metadonnees media, gestion erreurs typees client",
+
+  "findings": {
+    "total": 15,
+    "bySeverity": {
+      "blocker": 1,
+      "critical": 3,
+      "major": 8,
+      "minor": 3
+    },
+    "ids": [
+      "BUG-004", "BUG-006", "BUG-007", "BUG-014", "BUG-019", "BUG-020",
+      "BUG-021", "BUG-022", "BUG-023", "BUG-024", "BUG-028", "BUG-029",
+      "BUG-053", "BUG-054", "BUG-055"
+    ],
+    "byMockState": {
+      "works": 5,
+      "partial": 5,
+      "broken": 3,
+      "n/a": 2
+    },
+    "byLiveState": {
+      "works": 1,
+      "partial": 2,
+      "broken": 7,
+      "untested": 3,
+      "n/a": 2
+    }
+  },
+
+  "missedFrontendIssues": {
+    "total": 8,
+    "ids": ["MISS-001", "MISS-002", "MISS-015", "MISS-016", "MISS-017", "MISS-021", "MISS-031", "MISS-034"],
+    "bySeverity": { "major": 3, "minor": 5 }
+  },
+
+  "topFindingIds": ["BUG-004", "BUG-006", "BUG-020", "BUG-021", "BUG-022"],
+
+  "parity": {
+    "mockOperableViaUi": true,
+    "liveGenerationConfigurableAtFreeze": false,
+    "liveDemonstrableAtFreeze": false,
+    "createFlowMockEqualsLiveForText": true,
+    "createFlowLiveBrokenForMedia": true
+  },
+
+  "operatorJourneys": {
+    "playwrightTotal": 39,
+    "playwrightPassed": 37,
+    "playwrightFailed": 2,
+    "passRatePct": 94.9,
+    "failuresAreTestDefectsNotApp": true,
+    "failingSpecs": [
+      "e2e/content-studio-v2/create-mock-video.spec.ts (BUG-029/BUG-055 — selecteur libelle bouton obsolete)",
+      "e2e/content-studio-social-publishing-draft.spec.ts (BUG-023 — seed sur table audit_event au lieu de audit_events)"
+    ]
+  },
+
+  "tests": {
+    "createFlowComponentTestFiles": 12,
+    "stateContextTestFiles": 1,
+    "componentTestsUsingMsw": 3,
+    "vitestReportedPassed": 1695,
+    "vitestReportedFailed": 0,
+    "vitestProcessExitCode": 1,
+    "vitestExitAnomaly": true,
+    "nextNavigationGloballyStubbedNoop": true,
+    "parityHarnessPresent": false
+  },
+
+  "mechanisms": {
+    "singleSourceOfTruthForGenerationMode": false,
+    "generationModeCookieReadByTextRoute": false,
+    "generationModeCookieReadByVisualRoute": true,
+    "toggleEnvDefaultWiredFromHealth": false,
+    "modeToggleHasThreeDivergentSources": true,
+    "pickerReflectsRealGenerationCapability": false,
+    "pickerAutoSelectsSuggestedEagerly": true,
+    "pickerAllowsCustomUnvalidatedModelId": true,
+    "liveModelBadgeTrustworthy": false,
+    "typedErrorHandlingApplied": "partial",
+    "createWorkspaceOnCreatedSurfacesError": false,
+    "formatErrorPrefersServerMessage": false,
+    "optimisticStateReconciledOnAutosave": true,
+    "optimisticApproveStatusForcedLocally": true,
+    "studioContextExposedOnWindow": true,
+    "ssrHydrationGuardOnToggle": true,
+    "aiEngineResultDtoCarriesAudioCompositionExports": false,
+    "mockMediaExposesFullResolutionOriginal": false,
+    "videoPlayerGuardsEmptySrc": false,
+    "generationModeCookieScopedToAdminPath": false
+  },
+
+  "stateOfTruthSources": {
+    "generationMode": [
+      "cookie cs_generation_mode (toggle, defaut code en dur 'mock')",
+      "StudioContext.mockMode <- health.mockMode (env CONTENT_STUDIO_V2_MOCK_MODE)",
+      "generate-visual/route.ts defaut code en dur 'mock'"
+    ],
+    "divergentSourceCount": 3,
+    "persistenceKeys": {
+      "localStorage": "cs-generation-mode",
+      "cookie": "cs_generation_mode"
+    }
+  },
+
+  "components": {
+    "pipelinesParallel": 2,
+    "operatorUsesPipeline": "B (content-studio / create flow)",
+    "bridgeDirection": "A->B unidirectionnel",
+    "audited": [
+      "CreateWorkspace.tsx",
+      "StudioContext.tsx",
+      "MediaStudio.tsx",
+      "PublishActionGroup.tsx",
+      "ModelPicker.tsx",
+      "IntentionForm.tsx",
+      "GenerationModeToggle.tsx",
+      "ai-engine/GenerationResult.tsx"
+    ]
+  },
+
+  "evidenceRefs": {
+    "createWorkspaceSilentCatch": "CreateWorkspace.tsx:226",
+    "createWorkspaceNoElseOnNotOk": "CreateWorkspace.tsx:201",
+    "toggleNoEnvDefault": "MediaStudio.tsx:179",
+    "toggleDefaultHardcodedMock": "GenerationModeToggle.tsx:44",
+    "cookieReadOnlyByVisualRoute": "drafts/[id]/generate-visual/route.ts:27",
+    "pickerEagerFetch": "ModelPicker.tsx:103-105",
+    "pickerAutoSelectSuggested": "ModelPicker.tsx:114-118",
+    "textPickerRoleChat": "IntentionForm.tsx:347-348",
+    "aiEngineResultDtoMissingAudio": "GenerationResult.tsx:6-19",
+    "mediaPreviewFallbackToThumb": "MediaStudio.tsx:127-128",
+    "videoButtonLabelConditional": "MediaStudio.tsx:240",
+    "scheduleInertAck": "PublishActionGroup.tsx:102-103",
+    "nextNavigationStub": "vitest.setup.ts:63",
+    "vitestSummary": "01_audit/evidence/vitest-summary.json",
+    "playwrightJourneys": "01_audit/evidence/playwright-operator-journeys.txt"
+  },
+
+  "estimatedDebt": {
+    "unit": "jours-homme",
+    "p0AlignModeAndPicker": 4,
+    "p1TypedErrors": 1.5,
+    "p2DtoAndMediaContract": 3,
+    "p3FixTestsAndParityHarness": 3,
+    "totalDays": 11.5,
+    "confidence": "medium"
+  }
+}

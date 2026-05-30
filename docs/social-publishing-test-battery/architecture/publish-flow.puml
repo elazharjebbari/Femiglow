@@ -1,0 +1,92 @@
+@startuml publish-flow
+title Social Publishing — Sequence diagram (3 modes : now / schedule / draft)
+
+actor Operator as U
+participant "PublishActionGroup" as UI
+participant "/api/.../publish-now\n(or schedule\nor draft-on-provider)" as API
+participant "admin-service.\npublishContentPostNow" as SVC
+participant "repository\n(insertPublishJob)" as REPO
+participant "publishWithAdapter" as ADP
+participant "Postiz API" as POSTIZ
+database "DB" as DB
+
+== Mode = publish-now ==
+U -> UI : clicks Publier maintenant
+UI -> UI : opens confirm dialog\n(G12 preview)
+U -> UI : confirm
+UI -> API : POST /posts/:id/publish-now\n{ accountId?, idempotencyKey? }
+API -> SVC : publishContentPostNow(input)
+SVC -> REPO : findByIdempotencyKey?
+alt key already used
+  REPO --> SVC : existingJob
+  SVC --> API : { job: existingJob } (cached)
+else new
+  SVC -> SVC : getPostPublishability()\n(post status, draft approved,\nbrand pass, media, caption len)
+  alt unpublishable
+    SVC --> API : 409 { error: { code: '...' } }
+    API --> UI : 409
+    UI --> U : toast mapped error
+  else publishable
+    SVC -> REPO : createPublishJob(queued, mode=now)
+    REPO -> DB : INSERT social_publish_job
+    SVC -> REPO : tryAcquireLock(jobId)
+    REPO -> DB : UPDATE status=publishing, lockedAt=now
+    SVC -> ADP : publishWithAdapter(postiz, request)
+    ADP -> POSTIZ : POST /upload (media)
+    POSTIZ --> ADP : { id, path }
+    ADP -> POSTIZ : POST /posts (type='now')
+    POSTIZ --> ADP : { id: postizPostId, ... }
+    ADP --> SVC : { remoteId, permalink? }
+    SVC -> REPO : recordPublishAttempt(succeeded)
+    SVC -> REPO : createPublication(remoteId, ...)
+    SVC -> REPO : updatePostPlanning(published)
+    SVC -> DB : UPDATE content_postiz_delivery status='sent', postizPostId
+    SVC -> DB : INSERT audit_log social.publish.published
+    SVC --> API : { jobs: [{ status: 'published' }] }
+    API --> UI : 201
+    UI --> U : toast "Publication lancée"
+  end
+end
+
+== Mode = schedule ==
+U -> UI : clicks Programmer
+UI -> UI : opens dialog with date picker + presets (+1h/Demain 9h/Lundi 14h)
+U -> UI : pick date, confirm
+UI -> API : POST /posts/:id/schedule\n{ scheduledAt: ISO, accountId? }
+API -> SVC : scheduleContentPost(input)
+SVC -> SVC : getPostPublishability + validate scheduledAt > now+60s
+SVC -> REPO : createPublishJob(queued, mode=schedule, scheduledAt)
+REPO -> DB : INSERT
+SVC --> API : { jobs: [{ status: 'queued', scheduledAt }] }
+API --> UI : 201
+UI --> U : toast "Publication programmée"
+
+note over SVC,POSTIZ
+  Worker cron (every 5min)
+  picks up scheduled jobs
+  via runScheduledPublishJobs()
+  and executes the same
+  ADP flow above.
+end note
+
+== Mode = draft ==
+U -> UI : clicks Brouillon Postiz
+UI -> API : POST /posts/:id/draft-on-provider
+API -> SVC : sendContentPostToDraft(input)
+SVC -> SVC : checks capability.supportsDraft
+SVC -> REPO : createPublishJob(queued, mode=draft, scheduledAt=null)
+SVC -> ADP : publishWithAdapter (mode=draft)
+ADP -> POSTIZ : POST /posts (type='draft')
+POSTIZ --> ADP : { id (draft id) }
+note right of POSTIZ
+  Draft sits in Postiz UI;
+  NOT published to Instagram.
+  Operator must approve from
+  Postiz dashboard to publish.
+end note
+ADP --> SVC : { remoteId, mode: 'draft' }
+SVC -> DB : INSERT audit_log social.draft_created
+SVC --> API : { jobs: [{ ...mode='draft' }] }
+UI --> U : toast "Brouillon envoyé au provider"
+
+@enduml

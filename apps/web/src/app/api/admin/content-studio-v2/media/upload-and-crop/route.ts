@@ -46,7 +46,14 @@ export async function POST(request: Request): Promise<Response> {
     });
     if (!rate.ok) throw new HttpError('rate_limited', 'Trop de requêtes');
 
-    const form = await request.formData();
+    // ACT-BE-034 (BUG-060) : un corps non-multipart faisait throw request.formData()
+    // (TypeError → 500 internal_error opaque). On renvoie un 400 invalid_input clair.
+    let form: FormData;
+    try {
+      form = await request.formData();
+    } catch {
+      throw new HttpError('invalid_input', 'Corps multipart/form-data attendu.');
+    }
     const file = form.get('file');
     const cropRaw = form.get('crop');
     if (!(file instanceof File)) throw new HttpError('invalid_input', 'Fichier manquant');

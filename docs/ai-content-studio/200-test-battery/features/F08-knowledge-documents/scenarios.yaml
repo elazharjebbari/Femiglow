@@ -1,0 +1,471 @@
+feature: F08-knowledge-documents
+description: Document list in collections with add (text/URL), view modal, edit modal (re-chunk warning), delete confirmation
+component_under_test: apps/web/src/app/admin/content-studio-v2/ai-engine/knowledge/page.tsx
+test_file: apps/web/src/app/admin/content-studio-v2/ai-engine/knowledge/__tests__/knowledge-page.test.tsx
+
+scenarios:
+  # ---- DOCUMENT LIST ----
+
+  - id: F08-T01
+    name: "Document list renders when collection expanded"
+    type: component
+    priority: P0
+    preconditions: "Collection expanded with 3 documents"
+    steps:
+      - "Expand collection"
+    expected: "3 document rows with title, chunk badge, source type, date, action buttons"
+    assertions:
+      - "3 document row elements visible"
+      - "Each row has FileText icon, title, badge, and 3 action buttons"
+    tags: [rendering, list]
+
+  - id: F08-T02
+    name: "Document with chunks shows green badge 'N chunks'"
+    type: component
+    priority: P0
+    preconditions: "Document with chunkCount=12"
+    steps:
+      - "Render document row"
+    expected: "Badge '12 chunks' in success tone"
+    assertions:
+      - "Badge text '12 chunks' visible"
+    tags: [rendering, badge]
+
+  - id: F08-T03
+    name: "Document with 0 chunks shows 'Non indexe' warning badge"
+    type: component
+    priority: P0
+    preconditions: "Document with chunkCount=0"
+    steps:
+      - "Render document row"
+    expected: "Badge 'Non indexe' in warning tone"
+    assertions:
+      - "Badge text 'Non indexe' visible"
+    tags: [rendering, badge, edge-case]
+
+  - id: F08-T04
+    name: "Loading documents shows spinner"
+    type: component
+    priority: P0
+    preconditions: "Documents being fetched"
+    steps:
+      - "Expand collection, before documents load"
+    expected: "Loader2 spinner with 'Chargement des documents...'"
+    assertions:
+      - "Text 'Chargement des documents...' visible"
+      - "Spinner visible"
+    tags: [loading]
+
+  - id: F08-T05
+    name: "Empty collection shows no-documents message"
+    type: component
+    priority: P1
+    preconditions: "Collection expanded, documents array empty"
+    steps:
+      - "Expand collection with 0 docs"
+    expected: "Text 'Aucun document dans cette collection.'"
+    assertions:
+      - "Text 'Aucun document dans cette collection.' visible"
+    tags: [empty-state]
+
+  - id: F08-T06
+    name: "Document row shows source type and date"
+    type: component
+    priority: P1
+    preconditions: "Document: sourceType='text', createdAt='2025-12-01T10:30:00Z'"
+    steps:
+      - "Render document row"
+    expected: "Text 'text' and formatted date visible"
+    assertions:
+      - "Text 'text' in mono font visible"
+      - "Date formatted in French locale visible"
+    tags: [rendering, detail]
+
+  # ---- ADD DOCUMENT ----
+
+  - id: F08-T07
+    name: "Add button opens inline form with source type toggle"
+    type: component
+    priority: P0
+    preconditions: "Collection expanded"
+    steps:
+      - "Click 'Ajouter un document'"
+    expected: "Inline form with Text/URL toggle, default to Text"
+    assertions:
+      - "Source toggle visible with 'Texte' and 'URL' options"
+      - "Texte option is active"
+      - "Title input visible"
+      - "Content textarea visible"
+    tags: [add, form]
+
+  - id: F08-T08
+    name: "Switching to URL mode shows URL input"
+    type: component
+    priority: P0
+    preconditions: "Add form open in text mode"
+    steps:
+      - "Click 'URL' toggle"
+    expected: "URL input visible, title/content hidden"
+    assertions:
+      - "URL input with Link icon addon visible"
+      - "Title input NOT visible"
+      - "Content textarea NOT visible"
+    tags: [add, form, toggle]
+
+  - id: F08-T09
+    name: "Switching back to Text mode shows title + content"
+    type: component
+    priority: P1
+    preconditions: "Add form in URL mode"
+    steps:
+      - "Click 'Texte' toggle"
+    expected: "Title and content fields visible, URL hidden"
+    assertions:
+      - "Title input visible"
+      - "Content textarea visible"
+    tags: [add, form, toggle]
+
+  - id: F08-T10
+    name: "Text mode: submit disabled when title or content empty"
+    type: component
+    priority: P0
+    preconditions: "Text mode, title filled, content empty"
+    steps:
+      - "Check Ingerer button"
+    expected: "Button disabled"
+    assertions:
+      - "Ingerer button is disabled"
+    tags: [validation]
+
+  - id: F08-T11
+    name: "URL mode: submit disabled when URL empty"
+    type: component
+    priority: P0
+    preconditions: "URL mode, URL field empty"
+    steps:
+      - "Check Ingerer button"
+    expected: "Button disabled"
+    assertions:
+      - "Ingerer button is disabled"
+    tags: [validation]
+
+  - id: F08-T12
+    name: "Successful text ingestion shows success banner"
+    type: component
+    priority: P0
+    preconditions: "Text form filled, POST returns { chunkCount: 5 }"
+    steps:
+      - "Fill title and content, click Ingerer"
+    expected: "Banner 'Document ingere avec 5 chunks', form resets"
+    assertions:
+      - "Text matching 'Document ingere avec 5 chunks' visible"
+      - "Form fields cleared"
+      - "Form closed (showForm reset)"
+    tags: [add, success, ingestion]
+
+  - id: F08-T13
+    name: "Successful URL ingestion works"
+    type: component
+    priority: P1
+    preconditions: "URL form filled, POST returns success"
+    steps:
+      - "Enter URL, click Ingerer"
+    expected: "POST body contains { sourceType: 'url', url: '...' }"
+    assertions:
+      - "POST body has sourceType 'url'"
+      - "POST body has url field"
+    tags: [add, url, api]
+
+  - id: F08-T14
+    name: "Ingestion error shows inline error"
+    type: component
+    priority: P0
+    preconditions: "POST returns 400 with error"
+    steps:
+      - "Submit form, API returns error"
+    expected: "Red error inline in form, form stays open"
+    assertions:
+      - "AlertTriangle icon in form"
+      - "Error message text visible"
+      - "Form still open"
+    tags: [add, error]
+
+  - id: F08-T15
+    name: "Ingestion loading state disables inputs"
+    type: component
+    priority: P1
+    preconditions: "Form submitted, response pending"
+    steps:
+      - "Submit form, check state during request"
+    expected: "Ingerer button loading, inputs disabled, toggle disabled"
+    assertions:
+      - "Button has loading state"
+      - "Title input disabled"
+      - "Content textarea disabled"
+      - "Toggle buttons disabled"
+    tags: [add, loading]
+
+  - id: F08-T16
+    name: "Cancel closes add form and resets fields"
+    type: component
+    priority: P1
+    preconditions: "Add form with data entered"
+    steps:
+      - "Click 'Annuler'"
+    expected: "Form closes, fields reset, no POST"
+    assertions:
+      - "Form not in DOM"
+      - "No POST request"
+    tags: [add, cancel]
+
+  # ---- VIEW MODAL ----
+
+  - id: F08-T17
+    name: "View button opens modal with document content"
+    type: component
+    priority: P0
+    preconditions: "Document in list, GET /documents/{id} returns content"
+    steps:
+      - "Click eye button on document"
+    expected: "Modal overlay with title, metadata, full content"
+    assertions:
+      - "Modal overlay visible (position fixed, inset 0)"
+      - "Document title in modal header"
+      - "Source type, chunk count, date in metadata"
+      - "Full content in pre element"
+    tags: [view, modal]
+
+  - id: F08-T18
+    name: "View modal shows loading spinner during content fetch"
+    type: component
+    priority: P1
+    preconditions: "Modal open, content being fetched"
+    steps:
+      - "Open view modal, before content loads"
+    expected: "Loader2 spinner with 'Chargement...' text"
+    assertions:
+      - "Text 'Chargement...' visible in modal"
+    tags: [view, loading]
+
+  - id: F08-T19
+    name: "View modal shows fallback when no content"
+    type: component
+    priority: P2
+    preconditions: "Content is null"
+    steps:
+      - "Open view modal for doc with no content"
+    expected: "Text 'Aucun contenu disponible.'"
+    assertions:
+      - "Text 'Aucun contenu disponible.' visible"
+    tags: [view, edge-case]
+
+  - id: F08-T20
+    name: "Clicking overlay background closes view modal"
+    type: component
+    priority: P1
+    preconditions: "View modal open"
+    steps:
+      - "Click on the semi-transparent overlay"
+    expected: "Modal closes"
+    assertions:
+      - "viewingDoc state is null"
+      - "Modal not in DOM"
+    tags: [view, close]
+
+  - id: F08-T21
+    name: "Clicking X button closes view modal"
+    type: component
+    priority: P1
+    preconditions: "View modal open"
+    steps:
+      - "Click X close button"
+    expected: "Modal closes"
+    assertions:
+      - "Modal not in DOM"
+    tags: [view, close]
+
+  - id: F08-T22
+    name: "Clicking inside modal content does not close it"
+    type: component
+    priority: P1
+    preconditions: "View modal open"
+    steps:
+      - "Click inside the modal panel"
+    expected: "Modal stays open (stopPropagation)"
+    assertions:
+      - "Modal still in DOM"
+    tags: [view, modal, propagation]
+
+  # ---- EDIT MODAL ----
+
+  - id: F08-T23
+    name: "Edit button opens modal with pre-populated title"
+    type: component
+    priority: P0
+    preconditions: "Document: title='Guide Ingredients'"
+    steps:
+      - "Click pencil button on document"
+    expected: "Edit modal with title input pre-filled, content loading"
+    assertions:
+      - "Modal title 'Modifier le document' visible"
+      - "Title input value is 'Guide Ingredients'"
+    tags: [edit, modal]
+
+  - id: F08-T24
+    name: "Edit modal fetches and displays content"
+    type: component
+    priority: P0
+    preconditions: "GET /documents/{id} returns content text"
+    steps:
+      - "Open edit modal, wait for content"
+    expected: "Content textarea populated with fetched text"
+    assertions:
+      - "Textarea value contains fetched content"
+      - "Character count displayed"
+    tags: [edit, fetch, content]
+
+  - id: F08-T25
+    name: "Re-chunk warning appears when content modified"
+    type: component
+    priority: P0
+    preconditions: "Edit modal with loaded content"
+    steps:
+      - "Modify content text"
+    expected: "Yellow warning banner with RefreshCw icon about re-chunking"
+    assertions:
+      - "Warning text matching 're-chunking' visible"
+      - "RefreshCw icon visible"
+      - "Warning background is var(--cs-warning-bg)"
+    tags: [edit, re-chunk, warning]
+
+  - id: F08-T26
+    name: "Re-chunk warning NOT shown when content unchanged"
+    type: component
+    priority: P1
+    preconditions: "Edit modal, content not modified"
+    steps:
+      - "Only change title"
+    expected: "No yellow warning banner"
+    assertions:
+      - "No warning about re-chunking visible"
+    tags: [edit, re-chunk, edge-case]
+
+  - id: F08-T27
+    name: "Save disabled when title empty"
+    type: component
+    priority: P0
+    preconditions: "Edit modal, title cleared"
+    steps:
+      - "Clear title input"
+    expected: "Enregistrer button disabled"
+    assertions:
+      - "Enregistrer button has disabled attribute"
+    tags: [edit, validation]
+
+  - id: F08-T28
+    name: "Successful edit shows appropriate success message"
+    type: component
+    priority: P0
+    preconditions: "PATCH returns { reChunked: true, chunkCount: 8 }"
+    steps:
+      - "Modify content and save"
+    expected: "Success message 'Document mis a jour -- 8 chunks re-generes'"
+    assertions:
+      - "Text matching 'mis a jour' and '8 chunks re-generes' visible"
+      - "Modal closes"
+      - "Documents and collections refreshed"
+    tags: [edit, save, success]
+
+  - id: F08-T29
+    name: "Edit with no changes closes silently"
+    type: component
+    priority: P1
+    preconditions: "Edit modal, no changes made"
+    steps:
+      - "Click Enregistrer without changes"
+    expected: "Modal closes, no PATCH request"
+    assertions:
+      - "No PATCH request"
+      - "Modal closed"
+    tags: [edit, no-op]
+
+  - id: F08-T30
+    name: "Edit error shows inline error in modal"
+    type: component
+    priority: P1
+    preconditions: "PATCH returns 500"
+    steps:
+      - "Save, API fails"
+    expected: "Red error message in modal, modal stays open"
+    assertions:
+      - "AlertTriangle icon in modal"
+      - "Error message visible"
+      - "Modal still open"
+    tags: [edit, error]
+
+  - id: F08-T31
+    name: "Edit overlay click blocked during save"
+    type: component
+    priority: P2
+    preconditions: "Save in progress"
+    steps:
+      - "Click overlay background while saving"
+    expected: "Modal stays open (savingDoc check)"
+    assertions:
+      - "Modal still in DOM"
+    tags: [edit, modal, protection]
+
+  # ---- DELETE DOCUMENT ----
+
+  - id: F08-T32
+    name: "Delete button shows confirm banner with document title"
+    type: component
+    priority: P0
+    preconditions: "Document in expanded collection"
+    steps:
+      - "Click trash button"
+    expected: "Red confirm banner with 'Supprimer ce document ?' and doc title"
+    assertions:
+      - "Text 'Supprimer ce document ?' visible"
+      - "Document title bold in banner"
+      - "'Annuler' and 'Supprimer' buttons visible"
+    tags: [delete, confirm]
+
+  - id: F08-T33
+    name: "Confirm delete calls API and shows success"
+    type: component
+    priority: P0
+    preconditions: "Confirm visible, DELETE returns 200"
+    steps:
+      - "Click 'Supprimer' in confirm"
+    expected: "DELETE called, success message, documents and collections refreshed"
+    assertions:
+      - "DELETE /knowledge/{slug}/documents/{docId} called"
+      - "Success message matching 'supprime' visible"
+    tags: [delete, api, success]
+
+  - id: F08-T34
+    name: "Cancel delete dismisses confirm"
+    type: component
+    priority: P1
+    preconditions: "Confirm visible"
+    steps:
+      - "Click 'Annuler'"
+    expected: "Confirm banner gone, no DELETE"
+    assertions:
+      - "Confirm banner not in DOM"
+      - "No DELETE request"
+    tags: [delete, cancel]
+
+  - id: F08-T35
+    name: "Delete loading shows spinner on confirm button"
+    type: component
+    priority: P2
+    preconditions: "Delete in progress"
+    steps:
+      - "Check button state during delete"
+    expected: "Supprimer button loading, Annuler disabled"
+    assertions:
+      - "Supprimer button has loading state"
+      - "Annuler button is disabled"
+    tags: [delete, loading]

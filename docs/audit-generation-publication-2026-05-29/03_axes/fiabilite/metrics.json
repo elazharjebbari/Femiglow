@@ -1,0 +1,148 @@
+{
+  "axis": "fiabilite",
+  "capturedAt": "2026-05-29",
+  "branch": "feat/ai-engine-langgraph-mvp",
+  "source": "01_audit/_consolidated.json (findings confirmes/adjusted) + 01_audit/missed-issues.csv + evidence/",
+  "criticality": "blocker",
+
+  "findingsTouchingAxis": {
+    "total": 35,
+    "fromConfirmedRegister": 27,
+    "fromMissedIssues": 8,
+    "bySeverity": {
+      "blocker": 4,
+      "critical": 7,
+      "major": 22,
+      "minor": 2
+    },
+    "blockers": ["BUG-001", "BUG-002", "BUG-003", "BUG-004"],
+    "criticals": ["BUG-005", "BUG-006", "BUG-007", "BUG-008", "BUG-009", "BUG-010", "BUG-011"],
+    "topFindingIds": ["BUG-003", "BUG-001", "BUG-010", "BUG-005", "BUG-038"]
+  },
+
+  "modeOutcomeDistribution": {
+    "comment": "Repartition mock/live des 34 findings du registre confirme rattaches a l'axe (BUG-004 exclu du calcul mock/live ci-dessous car compte parmi les 35 ; valeurs reproductibles depuis _consolidated.json champs mock/live).",
+    "mock": { "works": 8, "broken": 8, "partial": 5, "untested": 2, "n/a": 11 },
+    "live": { "broken": 17, "partial": 3, "untested": 8, "n/a": 6 }
+  },
+
+  "pipelineReliabilityScore": {
+    "operatorPathsExercised": 9,
+    "operatorPathsWorkingMock": 6,
+    "operatorPathsWorkingLive": 0,
+    "liveGenerationWorkingForOperator": false,
+    "scheduledPublicationWorks": false,
+    "immediatePublicationWorksMock": true,
+    "immediatePublicationProvenLive": false
+  },
+
+  "reliabilityMechanisms": {
+    "stateMachineExists": true,
+    "stateMachineSound": true,
+    "optimisticLockExists": true,
+    "idempotencyKeysExist": true,
+    "idempotencyDedupAcrossNowVsSchedule": false,
+    "manualRetryTransitionExists": true,
+    "automaticRetryOfFailedJobs": false,
+    "backoffPolicyExists": true,
+    "backoffPolicyWiredIntoWorker": false,
+    "schedulerWorkerImplemented": true,
+    "schedulerWorkerTriggered": false,
+    "cancelReschedulePropagatesToJob": false,
+    "dryRunGuardrailComplete": false,
+    "legacyRouteBypassesDryRunGuard": true,
+    "explicitAccountSelectionEnforced": false,
+    "degradationFlaggedToOperator": false,
+    "longPollingOffloadedFromRequestHandler": false
+  },
+
+  "scheduledPublication": {
+    "workerFunction": "runScheduledPublishJobs",
+    "triggeredByVercelCron": false,
+    "triggeredBySystemdTimer": false,
+    "relayedByTickCron": false,
+    "vercelCronEntriesTotal": 15,
+    "vercelCronEntryForScheduler": false,
+    "queuedJobsObservedInDb": 0,
+    "jobsByPublishMode": { "now": 11, "draft": 1, "schedule": 0 },
+    "evidence": "GET /api/admin/content-studio/publish-jobs?status=queued => 0 ; grep runScheduledPublishJobs hors tests => route+worker only ; cron/tick/route.ts ne l'appelle pas"
+  },
+
+  "envSplitImpact": {
+    "openaiKeyPresentInProcess": true,
+    "openaiKeyValid": true,
+    "openaiKeyMappedInEnvTs": false,
+    "createFlowReadsOpenaiFallback": false,
+    "contentStudioOpenaiKeyEmpty": true,
+    "higgsfieldCredentialComplete": false,
+    "cheapFixUnblocksOpenaiLive": true
+  },
+
+  "testRealityDrift": {
+    "vitestReportedPassed": 1695,
+    "vitestReportedFailed": 0,
+    "vitestReportedSuccess": true,
+    "vitestProcessExitCode": 1,
+    "exitCodeMatchesReport": false,
+    "unhandledRejectionPresent": true,
+    "testFilesInScope": 95,
+    "testFilesAssertingRealBackendEffect": 0,
+    "testFilesMockingFetchOrProviders": 58,
+    "ratioTestsAssertingRealEffect": 0.0,
+    "e2eOperatorJourneysPassed": 37,
+    "e2eOperatorJourneysFailed": 2,
+    "e2eTestQueryingNonexistentTable": true,
+    "mswInstalled": true,
+    "mswWiredAsParityHarness": false,
+    "mockLiveParityTestsExist": false
+  },
+
+  "latentReliabilityHazards": {
+    "comment": "Defauts inertes aujourd'hui mais armes des que le scheduler (BUG-003) sera branche.",
+    "count": 5,
+    "items": [
+      { "id": "BUG-038", "hazard": "publication d'un post annule / a l'ancienne date (job orphelin)" },
+      { "id": "MISS-006", "hazard": "double publication (publish-now + job programme pre-existant)" },
+      { "id": "MISS-028", "hazard": "double publication (reschedule cree un 2e job queued)" },
+      { "id": "BUG-039", "hazard": "publication sur le mauvais compte client (1er compte Postiz implicite)" },
+      { "id": "BUG-040", "hazard": "route legacy /postiz-draft poste reellement malgre dry_run" }
+    ]
+  },
+
+  "silentFailurePatterns": {
+    "count": 6,
+    "items": ["BUG-005", "BUG-020", "BUG-022", "MISS-020", "MISS-026", "BUG-012"],
+    "description": "fallback/catch transformant un echec en faux succes (template fige, image 404, audio vide, export passthrough, variantes manquantes, degradation muette du mode)"
+  },
+
+  "runtimeHazards": {
+    "syncPollingTimeoutMs": 300000,
+    "syncPollingInRequestHandler": true,
+    "mediaDirDependsOnCwd": true,
+    "testStubsInProdStorageCount": 977,
+    "videoPlayerGuardsEmptySrc": false
+  },
+
+  "remediation": {
+    "p0Count": 4,
+    "p1Count": 5,
+    "p2Count": 4,
+    "p3Count": 3,
+    "cheapestHighImpactFix": "mapper OPENAI_API_KEY en fallback du flux create (BUG-001/BUG-005)",
+    "highestRiskFix": "brancher le scheduler (BUG-003) UNIQUEMENT apres correction de la deduplication/orphelins (BUG-038/MISS-006/MISS-028) sous peine de doubles publications reelles",
+    "estimatedDebt": {
+      "p0DaysApprox": 3,
+      "p1WeeksApprox": 2,
+      "unit": "ingenieur, ordre de grandeur indicatif"
+    }
+  },
+
+  "definitionOfDone": {
+    "liveGenerationProvenForOperator": false,
+    "scheduledPublicationProvenEndToEnd": false,
+    "mockLiveParityProven": false,
+    "ciGatesOnExitCode": false,
+    "noDoublePublicationProven": false,
+    "axisClosable": false
+  }
+}

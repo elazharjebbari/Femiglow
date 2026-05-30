@@ -1,0 +1,14 @@
+feature: F39-responsive-publish-ui
+critical: P3
+
+e2e:
+  - id: F39-E-1
+    name: 1440x900 no overflow on create page
+  - id: F39-E-2
+    name: 1024x768 no overflow
+  - id: F39-E-3
+    name: 414x900 no overflow (mobile)
+  - id: F39-E-4
+    name: dropdown clickable at 414
+  - id: F39-E-5
+    name: calendar list view default on mobile

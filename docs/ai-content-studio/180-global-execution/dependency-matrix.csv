@@ -1,0 +1,80 @@
+ID_Tache,Nom_Tache,Feature,Phase,Effort_Heures,Depend_De,Fichiers_Concernes,Priorite,Statut
+T1.1.1,Ajouter updatedAt aux tables Knowledge,KE,Phase 1,0.25,,schema-ai-engine.ts,Critique,A_Faire
+T1.1.2,Implementer updateCollection(),KE,Phase 1,0.75,T1.1.1,knowledge/collections.ts,Critique,A_Faire
+T1.1.3,Implementer getCollectionById(),KE,Phase 1,0.25,T1.1.1,knowledge/collections.ts,Haute,A_Faire
+T1.1.4,Creer et implementer updateDocument(),KE,Phase 1,0.75,T1.1.1,knowledge/documents.ts (nouveau),Critique,A_Faire
+T1.1.5,Implementer getDocumentById(),KE,Phase 1,0.25,T1.1.1,knowledge/documents.ts,Haute,A_Faire
+T1.1.6,Refactorer reindexDocument(),KE,Phase 1,0.75,T1.1.4,knowledge/ingestion.ts,Critique,A_Faire
+T1.2.1,Ajouter encryptedApiKey et apiKeySetAt au schema,AKM,Phase 1,0.33,,schema-ai-engine.ts,Critique,A_Faire
+T1.2.2,Creer service chiffrement AES-256-GCM,AKM,Phase 1,1.0,,security/encryption.ts (nouveau),Critique,A_Faire
+T1.2.3,Implementer maskApiKey(),AKM,Phase 1,0.25,T1.2.2,security/encryption.ts,Haute,A_Faire
+T1.2.4,Creer service CRUD api-key-service,AKM,Phase 1,1.0,"T1.2.1,T1.2.2",providers/api-key-service.ts (nouveau),Critique,A_Faire
+T1.2.5,Implementer testApiKey() par provider,AKM,Phase 1,1.0,T1.2.4,providers/api-key-service.ts,Haute,A_Faire
+T1.2.6,Modifier getEngineConfig() pour priorite DB,AKM,Phase 1,0.75,"T1.2.2,T1.2.4",config/engine-config.ts,Critique,A_Faire
+T1.2.7,Creer service audit,AKM,Phase 1,0.25,,security/audit.ts (nouveau),Moyenne,A_Faire
+T1.3.1,Generer et appliquer migration Drizzle,Commune,Phase 1,0.5,"T1.1.1,T1.2.1",drizzle/migrations/,Critique,A_Faire
+T2.1.1,GET /knowledge/[slug],KE,Phase 2,0.5,"T1.1.2,T1.1.3",knowledge/[slug]/route.ts,Haute,A_Faire
+T2.1.2,PUT /knowledge/[slug],KE,Phase 2,0.75,"T1.1.2,T1.1.3",knowledge/[slug]/route.ts,Critique,A_Faire
+T2.1.3,GET /knowledge/[slug]/documents/[docId],KE,Phase 2,0.5,"T1.1.4,T1.1.5",knowledge/[slug]/documents/[docId]/route.ts,Haute,A_Faire
+T2.1.4,PUT /knowledge/[slug]/documents/[docId],KE,Phase 2,0.75,"T1.1.4,T1.1.5,T1.1.6",knowledge/[slug]/documents/[docId]/route.ts,Critique,A_Faire
+T2.1.5,Ajouter requireAdminApi et formatErrorResponse partout,KE,Phase 2,0.5,"T2.1.1,T2.1.2,T2.1.3,T2.1.4",Toutes les routes KE,Critique,A_Faire
+T2.2.1,PUT /providers/[id]/api-key,AKM,Phase 2,0.75,"T1.2.4,T1.2.7",providers/[id]/api-key/route.ts (nouveau),Critique,A_Faire
+T2.2.2,DELETE /providers/[id]/api-key,AKM,Phase 2,0.33,"T1.2.4,T1.2.7",providers/[id]/api-key/route.ts,Haute,A_Faire
+T2.2.3,GET /providers/[id]/api-key,AKM,Phase 2,0.33,"T1.2.3,T1.2.4",providers/[id]/api-key/route.ts,Haute,A_Faire
+T2.2.4,POST /providers/[id]/api-key/test,AKM,Phase 2,0.75,T1.2.5,providers/[id]/api-key/test/route.ts (nouveau),Haute,A_Faire
+T2.2.5,Enrichir GET /config/providers avec hasApiKey,AKM,Phase 2,0.5,"T1.2.3,T1.2.4",config/providers/route.ts,Haute,A_Faire
+T2.2.6,Ajouter audit logging sur routes API Keys,AKM,Phase 2,0.33,"T1.2.7,T2.2.1,T2.2.2",Toutes les routes AKM,Moyenne,A_Faire
+T3.1.1,Bouton Editer sur collection,KE,Phase 3,0.33,"T2.1.1,T2.1.2",knowledge/page.tsx,Haute,A_Faire
+T3.1.2,Formulaire inline edition collection,KE,Phase 3,1.0,T3.1.1,knowledge/page.tsx,Critique,A_Faire
+T3.1.3,Bouton Editer sur document,KE,Phase 3,0.33,"T2.1.3,T2.1.4",knowledge/page.tsx,Haute,A_Faire
+T3.1.4,Formulaire inline edition document,KE,Phase 3,1.0,T3.1.3,knowledge/page.tsx,Critique,A_Faire
+T3.1.5,Handlers handleUpdateCollection et handleUpdateDocument,KE,Phase 3,0.67,"T3.1.2,T3.1.4",knowledge/page.tsx,Critique,A_Faire
+T3.1.6,Gestion etats editingColId et editingDocId,KE,Phase 3,0.33,"T3.1.2,T3.1.4",knowledge/page.tsx,Haute,A_Faire
+T3.2.1,Lien Gerer cle API dans ProviderCard,AKM,Phase 3,0.25,"T2.2.1,T2.2.3",config/page.tsx,Haute,A_Faire
+T3.2.2,Composant ApiKeyManager,AKM,Phase 3,1.5,T3.2.1,ApiKeyManager.tsx (nouveau) ou config/page.tsx,Critique,A_Faire
+T3.2.3,Integration PUT api-key dans ApiKeyManager,AKM,Phase 3,0.5,T3.2.2,ApiKeyManager.tsx,Critique,A_Faire
+T3.2.4,Integration POST api-key/test dans ApiKeyManager,AKM,Phase 3,0.5,T3.2.2,ApiKeyManager.tsx,Haute,A_Faire
+T3.2.5,Integration DELETE api-key dans ApiKeyManager,AKM,Phase 3,0.33,T3.2.2,ApiKeyManager.tsx,Haute,A_Faire
+T3.2.6,Affichage statut cle dans ProviderCard,AKM,Phase 3,0.5,"T3.2.2,T2.2.5",config/page.tsx,Haute,A_Faire
+T3.2.7,Section Securite dans header config,AKM,Phase 3,0.25,T3.2.6,config/page.tsx,Faible,A_Faire
+T4.1,Integration flux edition collection,KE,Phase 4,0.75,"T3.1.2,T3.1.5",Integration test,Critique,A_Faire
+T4.2,Integration flux edition document,KE,Phase 4,0.75,"T3.1.4,T3.1.5",Integration test,Critique,A_Faire
+T4.3,Integration cas erreur KE,KE,Phase 4,0.5,"T4.1,T4.2",Integration test,Haute,A_Faire
+T4.4,Integration flux ajout/test cle API,AKM,Phase 4,0.75,"T3.2.3,T3.2.4",Integration test,Critique,A_Faire
+T4.5,Integration priorite DB vs env var,AKM,Phase 4,0.5,T4.4,Integration test,Critique,A_Faire
+T4.6,Integration suppression cle avec confirmation,AKM,Phase 4,0.33,T3.2.5,Integration test,Haute,A_Faire
+T4.7,Validation croisee sessions de generation,Commune,Phase 4,0.42,"T4.4,T4.5",Integration test,Moyenne,A_Faire
+T5.1.1,Tests unitaires updateCollection,KE,Phase 5,0.75,T1.1.2,collections.test.ts,Critique,A_Faire
+T5.1.2,Tests unitaires updateDocument,KE,Phase 5,0.75,T1.1.4,documents.test.ts,Critique,A_Faire
+T5.1.3,Tests unitaires reindexDocument,KE,Phase 5,0.75,T1.1.6,ingestion.test.ts,Critique,A_Faire
+T5.1.4,Tests unitaires encrypt/decrypt,AKM,Phase 5,0.5,T1.2.2,encryption.test.ts,Critique,A_Faire
+T5.1.5,Tests unitaires maskApiKey,AKM,Phase 5,0.25,T1.2.3,encryption.test.ts,Haute,A_Faire
+T5.1.6,Tests unitaires api-key-service,AKM,Phase 5,0.75,T1.2.4,api-key-service.test.ts,Critique,A_Faire
+T5.1.7,Tests unitaires testApiKey,AKM,Phase 5,0.5,T1.2.5,api-key-service.test.ts,Haute,A_Faire
+T5.1.8,Tests unitaires getEngineConfigAsync,AKM,Phase 5,0.5,T1.2.6,engine-config.test.ts,Critique,A_Faire
+T5.2.1,Tests contrats PUT /knowledge/[slug],KE,Phase 5,0.75,"T2.1.1,T2.1.2",ai-engine-knowledge-edit.contract.test.ts,Critique,A_Faire
+T5.2.2,Tests contrats GET /knowledge/[slug],KE,Phase 5,0.33,T2.1.1,ai-engine-knowledge-edit.contract.test.ts,Haute,A_Faire
+T5.2.3,Tests contrats PUT documents/[docId],KE,Phase 5,0.75,"T2.1.3,T2.1.4",ai-engine-knowledge-edit.contract.test.ts,Critique,A_Faire
+T5.2.4,Tests contrats PUT api-key,AKM,Phase 5,0.5,T2.2.1,ai-engine-api-keys.contract.test.ts,Critique,A_Faire
+T5.2.5,Tests contrats DELETE api-key,AKM,Phase 5,0.33,T2.2.2,ai-engine-api-keys.contract.test.ts,Haute,A_Faire
+T5.2.6,Tests contrats POST api-key/test,AKM,Phase 5,0.5,T2.2.4,ai-engine-api-keys.contract.test.ts,Haute,A_Faire
+T5.2.7,Tests contrats GET providers enrichi,AKM,Phase 5,0.33,T2.2.5,ai-engine-api-keys.contract.test.ts,Haute,A_Faire
+T5.3.1,E2E edition collection,KE,Phase 5,0.75,T4.1,ai-engine-knowledge-edit.spec.ts,Critique,A_Faire
+T5.3.2,E2E edition document,KE,Phase 5,0.75,T4.2,ai-engine-knowledge-edit.spec.ts,Critique,A_Faire
+T5.3.3,E2E erreur slug duplique,KE,Phase 5,0.33,T4.3,ai-engine-knowledge-edit.spec.ts,Haute,A_Faire
+T5.3.4,E2E ajout cle API,AKM,Phase 5,0.75,T4.4,ai-engine-api-keys.spec.ts,Critique,A_Faire
+T5.3.5,E2E test cle API,AKM,Phase 5,0.5,T4.4,ai-engine-api-keys.spec.ts,Haute,A_Faire
+T5.3.6,E2E suppression cle API,AKM,Phase 5,0.25,T4.6,ai-engine-api-keys.spec.ts,Haute,A_Faire
+T6.1,Execution batterie complete et collecte echecs,Commune,Phase 6,0.5,Phase 5,Rapport de tests,Critique,A_Faire
+T6.2,Classification des echecs,Commune,Phase 6,0.25,T6.1,Documentation,Critique,A_Faire
+T6.3,Correction echecs critiques,Commune,Phase 6,2.0,T6.2,Fichiers sources,Critique,A_Faire
+T6.4,Re-test regression apres corrections,Commune,Phase 6,0.5,T6.3,Rapport de tests,Critique,A_Faire
+T6.5,Correction echecs mineurs,Commune,Phase 6,0.5,T6.4,Fichiers sources,Moyenne,A_Faire
+T6.6,Execution finale et verification 0 echec,Commune,Phase 6,0.25,T6.5,Rapport final,Critique,A_Faire
+T7.1,Revue de code et securite,Commune,Phase 7,0.33,T6.6,Code review,Critique,A_Faire
+T7.2,Migration Drizzle en staging,Commune,Phase 7,0.25,"T6.6,T1.3.1",drizzle/migrations/,Critique,A_Faire
+T7.3,Definir AI_ENGINE_ENCRYPTION_KEY en staging,AKM,Phase 7,0.08,T7.1,.env staging,Critique,A_Faire
+T7.4,Deploiement staging,Commune,Phase 7,0.25,"T7.2,T7.3",Serveur staging,Critique,A_Faire
+T7.5,Smoke tests manuels,Commune,Phase 7,0.5,T7.4,Manuel,Critique,A_Faire
+T7.6,Verification logs pour fuites cles,AKM,Phase 7,0.17,T7.5,Logs serveur,Critique,A_Faire
+T7.7,Documentation changelog,Commune,Phase 7,0.17,T7.5,CHANGELOG.md,Faible,A_Faire

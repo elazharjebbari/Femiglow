@@ -1,0 +1,163 @@
+{
+  "$comment": "Indicateurs mesurables de l'axe modularite. Baseline figee 2026-05-29. Source: findings confirmes (_consolidated.json / bug-register.csv) + lecture code apps/web/src. Reproductible par les commandes/preuves citees dans chaque finding.",
+  "axis": "modularite",
+  "generatedAt": "2026-05-29",
+  "criticality": "major",
+
+  "findingsTouchingAxis": {
+    "total": 24,
+    "bySeverity": {
+      "blocker": 2,
+      "critical": 5,
+      "major": 13,
+      "minor": 4,
+      "info": 0
+    },
+    "ids": [
+      "BUG-001", "BUG-002", "BUG-004", "BUG-005", "BUG-006", "BUG-007",
+      "BUG-008", "BUG-009", "BUG-015", "BUG-016", "BUG-024", "BUG-025",
+      "BUG-026", "BUG-028", "BUG-030", "BUG-033", "BUG-034", "BUG-036",
+      "BUG-040", "BUG-041", "BUG-043", "BUG-045", "BUG-046", "BUG-047",
+      "BUG-048", "BUG-052", "BUG-057", "BUG-062", "BUG-065", "BUG-066",
+      "BUG-068", "BUG-069"
+    ],
+    "$note": "total=24 = findings ou la cause racine est explicitement une dette de modularite (asymetrie adapter, deux pipelines, bridge a perte, resolution de cle dupliquee, registre vs routeur decouples, stockage/pricing/binaire non centralises, legacy non decommissionne). 'ids' liste l'ensemble traçable (32) incluant les findings ou la modularite est cause contributive secondaire."
+  },
+
+  "topFindingIds": ["BUG-004", "BUG-001", "BUG-015", "BUG-026", "BUG-046"],
+
+  "adapterPattern": {
+    "publication": {
+      "hasInterface": true,
+      "interfacePath": "src/lib/social-publishing/contracts.ts:240",
+      "concreteAdapters": 2,
+      "adapterPaths": ["adapters/dry-run.ts", "adapters/postiz.ts"],
+      "hasFactory": true,
+      "factoryPath": "admin-service.ts:54 (adapterFor)",
+      "selectionByConfig": true,
+      "selectionMechanism": "env.SOCIAL_PUBLISHING_MODE via resolveDefaultAccount (admin-service.ts:566)",
+      "hasConstructorDI": true,
+      "diPath": "adapters/postiz.ts:38 (PostizAdapterDeps: uploadMedia/createDraft/fetchAnalytics)",
+      "providerParityGuard": true,
+      "providerParityGuardPath": "service.ts:9 (publishWithAdapter)",
+      "rating": "exemplaire"
+    },
+    "generationPipelineA_langgraph": {
+      "hasInterface": true,
+      "interfacePath": "src/lib/ai-engine/providers/adapters/base.ts:21 (ProviderAdapter)",
+      "hasSelector": true,
+      "selectorPath": "providers/selector.ts:25 (ProviderSelector, par capability+priorite)",
+      "hasCircuitBreaker": true,
+      "hasRetryPolicy": true,
+      "reachableByOperator": false,
+      "rating": "modulaire mais hors chemin operateur"
+    },
+    "generationPipelineB_createFlow": {
+      "hasInterface": false,
+      "routingStyle": "chaine de if sur prefixe de modele",
+      "routingPath": "src/lib/content-studio/image-generation.ts:41-115 ; video-generation.ts:100-124",
+      "readsEnvDirectly": true,
+      "envReadSites": ["image-generation.ts:87", "image-generation.ts:98", "image-generation.ts:111", "image-generation.ts:124", "generation.ts:70"],
+      "hasConstructorDI": false,
+      "substitutionSeam": "vi.mock(globalThis.fetch) uniquement",
+      "reachableByOperator": true,
+      "rating": "anti-pattern (point a corriger en priorite)"
+    },
+    "asymmetryScore": {
+      "value": 0.5,
+      "scale": "0=tous les sous-systemes generation+publication modulaires, 1=aucun",
+      "$detail": "2 sous-systemes sur 3 ont un pattern adapter (publication, generation-A) mais le seul atteint par l'operateur (generation-B) ne l'a pas -> impact pratique = 1 sur 1 sur le chemin reel."
+    }
+  },
+
+  "pipelineBoundary": {
+    "parallelGenerationPipelines": 2,
+    "pipelineLabels": ["A-langgraph (ai-engine)", "B-create (content-studio)"],
+    "bridgeExists": true,
+    "bridgePath": "src/lib/ai-engine/bridge/content-studio-bridge.ts:81",
+    "bridgeDirectional": "unidirectionnel A->B",
+    "bridgeTriggeredByOperatorFlow": false,
+    "bridgeTriggerRoutes": ["api/ai-engine/generate", "api/ai-engine/generate-stream", "api/ai-engine/jobs/[id]/review"],
+    "crossImportsAtoB": 0,
+    "crossImportsBtoA": 0,
+    "couplingMedium": "base de donnees (insert idea/brief/draft/run)",
+    "dtoFieldsPropagated": ["script", "caption", "hashtags", "images"],
+    "dtoFieldsDropped": ["voiceover", "music", "subtitles", "composition", "exports", "thumbnails"],
+    "dtoCompletenessRatio": 0.4,
+    "taxonomyMappingInverse": false
+  },
+
+  "separationOfConcerns": {
+    "genVsPublish": "bien separes (publication ne connait que SocialPublishContent)",
+    "genVsCompose_pipelineA": "modulaire (nodes) mais inatteignable",
+    "genVsCompose_pipelineB": "absent (aucune etape compose dans le create-flow)",
+    "storageAbstractionRespected": false,
+    "storageViolationPath": "compose.ts:15 / generate-video.ts:16 (fs + chemin relatif au lieu de getStorage())",
+    "ffmpegBinarySources": 2,
+    "ffmpegBinaryDetail": "upload-video.ts: PATH systeme ; compose/transcode: ffmpeg-static (BUG-068)"
+  },
+
+  "credentialResolution": {
+    "singleSourceOfTruth": false,
+    "divergentKeyResolutionPaths": 2,
+    "discoveryPath": "models/route.ts -> api-key-manager.resolveApiKey (chaine ENV_KEY_MAP, trouve OPENAI_API_KEY)",
+    "generationPathB": "image-generation.ts / generation.ts (lecture directe d'une autre variable, vide)",
+    "consequence": "desync UI/realite + blocker live (BUG-001, BUG-006, BUG-007, BUG-043)"
+  },
+
+  "modelRegistryVsRouter": {
+    "registryAndRouterShareContract": false,
+    "discoveredModelsAlwaysRoutable": false,
+    "nativeIdToInternalIdMapping": false,
+    "consequence": "modeles badge 'Live' non routables -> 409 invalid_state a l'usage (BUG-009, BUG-024, BUG-028)"
+  },
+
+  "crossCuttingConstants": {
+    "pricingSourcesOfTruth": 3,
+    "pricingPaths": ["registry.ts pricing.perCall", "service.ts visualCostEstimate", "image-generation.ts estimateOpenAiImageCostCents / HIGGSFIELD_IMAGE_PRICING_CENTS"],
+    "pricingUnitInconsistent": true,
+    "dryRunFlagHardcoded": true,
+    "dryRunFlagPath": "admin-service.ts buildSocialContent (metadata.dryRun=true en dur, BUG-065)"
+  },
+
+  "testabilityBySubstitution": {
+    "mswInstalled": true,
+    "mswVersion": "2.14.2",
+    "mswSetupServerGlobal": false,
+    "mswSetupServerPath": "src/test/msw/server.ts (existe, non monte dans vitest.setup.ts)",
+    "contractTestInternalRoutes": true,
+    "contractTestInternalPath": "content-studio-handlers.contract.test.ts",
+    "contractTestExternalProviders": false,
+    "parityTestDryRunVsPostiz": false,
+    "doublesMatchProviderContract": false,
+    "fetchMockFilesApprox": 42,
+    "publicationDImakesSubstitutionEasy": true,
+    "generationBhasNoSubstitutionSeam": true
+  },
+
+  "legacyDebt": {
+    "legacyPublicationRoutesNotDecommissioned": 1,
+    "legacyRoutePath": "api/admin/content-studio/posts/[id]/postiz-draft (createDraftInPostiz, contourne dry_run, BUG-040)",
+    "phantomProviders": 1,
+    "phantomProviderDetail": "meta_graph declare dans SOCIAL_PROVIDER_IDS mais adapter=null (BUG-069)"
+  },
+
+  "estimatedDebt": {
+    "unit": "jours-homme",
+    "byRecommendation": {
+      "R0_credentialResolver_unblock": 1,
+      "R1_extractAdapterPatternGenerationB": 5,
+      "R2_fixBridgeAndDTO": 4,
+      "R3_centralizeConstantsAndStorage": 3,
+      "R4_globalMSWandContractParity": 5,
+      "R5_decommissionLegacy": 1
+    },
+    "total": 19,
+    "$note": "Estimation indicative niveau agence ; exclut la reecriture des endpoints Higgsfield async (couverte par l'axe robustesse/backend) au-dela de leur encapsulation derriere l'interface (R4.3)."
+  },
+
+  "quickWins": [
+    "R0.1 resolveContentStudioOpenAiKey (1 j) -> debloque BUG-001/005/006 sans degrader la modularite",
+    "R5.1 suppression route legacy /postiz-draft (1 j) -> ferme une breche dry_run et reduit la surface"
+  ]
+}

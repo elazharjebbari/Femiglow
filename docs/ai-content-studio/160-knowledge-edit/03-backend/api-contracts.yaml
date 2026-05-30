@@ -1,0 +1,475 @@
+# API Contracts -- Knowledge Edit
+# Format : OpenAPI 3.1 (simplifie)
+
+openapi: "3.1.0"
+info:
+  title: FemiGlow AI Engine - Knowledge Edit API
+  version: "1.1.0"
+  description: >
+    Endpoints de mise a jour (PATCH) et de recuperation detaillee (GET)
+    pour les collections et documents de la base de connaissances AI Engine.
+
+servers:
+  - url: http://localhost:3000
+    description: Developpement local
+  - url: https://staging.femiglow.com
+    description: Environnement de staging
+
+security:
+  - cookieAuth: []
+
+paths:
+  /api/admin/ai-engine/knowledge/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-z0-9-]+$"
+          example: "brand-femiglow"
+        description: Slug unique de la collection
+
+    patch:
+      operationId: updateCollection
+      summary: Mettre a jour une collection
+      description: >
+        Mise a jour partielle d'une collection existante.
+        Le slug n'est pas modifiable. Au moins un champ doit etre fourni.
+      tags:
+        - Knowledge Collections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCollectionRequest"
+            examples:
+              rename:
+                summary: Renommer une collection
+                value:
+                  name: "Brand Guidelines FemiGlow (v2)"
+              change-category:
+                summary: Changer la categorie
+                value:
+                  category: "psychology"
+              update-all:
+                summary: Mettre a jour tous les champs
+                value:
+                  name: "Brand Guidelines FemiGlow (v2)"
+                  description: "Identite de marque mise a jour 2026"
+                  category: "brand"
+              clear-description:
+                summary: Supprimer la description
+                value:
+                  description: null
+      responses:
+        "200":
+          description: Collection mise a jour avec succes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [collection]
+                properties:
+                  collection:
+                    $ref: "#/components/schemas/CollectionRow"
+              example:
+                collection:
+                  id: "abc-123-uuid"
+                  name: "Brand Guidelines FemiGlow (v2)"
+                  slug: "brand-femiglow"
+                  description: "Identite de marque mise a jour 2026"
+                  category: "brand"
+                  documentCount: 5
+                  chunkCount: 42
+                  lastIndexedAt: "2026-05-24T14:30:00.000Z"
+                  isActive: true
+                  createdAt: "2026-04-01T10:00:00.000Z"
+                  updatedAt: "2026-05-25T09:15:00.000Z"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/admin/ai-engine/knowledge/{slug}/documents/{docId}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-z0-9-]+$"
+          example: "brand-femiglow"
+        description: Slug de la collection
+      - name: docId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          example: "doc-456-uuid"
+        description: ID du document
+
+    get:
+      operationId: getDocumentById
+      summary: Recuperer un document complet
+      description: >
+        Retourne le detail complet d'un document, incluant le contenu
+        textuel (contentText). Ce champ n'est pas inclus dans la liste
+        des documents pour des raisons de performance.
+      tags:
+        - Knowledge Documents
+      responses:
+        "200":
+          description: Document recupere avec succes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [document]
+                properties:
+                  document:
+                    $ref: "#/components/schemas/DocumentDetail"
+              example:
+                document:
+                  id: "doc-456-uuid"
+                  collectionId: "abc-123-uuid"
+                  title: "Guide des ingredients japonais"
+                  sourceType: "text"
+                  sourceUrl: null
+                  contentText: "Le Tsubaki (Camellia japonica) est une huile precieuse..."
+                  metadata: null
+                  chunkCount: 15
+                  createdAt: "2026-05-01T08:00:00.000Z"
+                  updatedAt: "2026-05-20T14:00:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: updateDocument
+      summary: Mettre a jour un document
+      description: >
+        Mise a jour partielle d'un document. Si le champ `content` est
+        fourni, les chunks existants sont supprimes et le nouveau contenu
+        est re-decoupe et re-embedde (operation potentiellement longue).
+        Si seul le `title` est fourni, la mise a jour est immediate.
+      tags:
+        - Knowledge Documents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDocumentRequest"
+            examples:
+              title-only:
+                summary: Modifier uniquement le titre (pas de re-chunking)
+                value:
+                  title: "Guide des ingredients japonais (Edition 2026)"
+              content-only:
+                summary: Modifier le contenu (declenche re-chunking)
+                value:
+                  content: "Le Tsubaki (Camellia japonica) est une huile precieuse extraite des graines..."
+              both:
+                summary: Modifier titre et contenu
+                value:
+                  title: "Guide complet des ingredients J-Beauty"
+                  content: "Nouveau contenu complet..."
+      responses:
+        "200":
+          description: Document mis a jour avec succes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateDocumentResponse"
+              examples:
+                with-rechunk:
+                  summary: Avec re-chunking
+                  value:
+                    success: true
+                    chunkCount: 18
+                    reChunked: true
+                without-rechunk:
+                  summary: Sans re-chunking (titre seul)
+                  value:
+                    success: true
+                    chunkCount: 15
+                    reChunked: false
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          description: Echec de la mise a jour (erreur embedding, DB)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
+                    example: "Update failed"
+                  detail:
+                    type: string
+                    example: "OpenAI API rate limit exceeded"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Cookie de session admin genere par requireAdminApi()
+
+  schemas:
+    CollectionRow:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - category
+        - documentCount
+        - chunkCount
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant unique de la collection
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Nom lisible de la collection
+        slug:
+          type: string
+          pattern: "^[a-z0-9-]+$"
+          minLength: 1
+          maxLength: 100
+          description: Identifiant URL-safe (non modifiable)
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Description optionnelle
+        category:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Categorie thematique
+        documentCount:
+          type: integer
+          minimum: 0
+          description: Nombre de documents (cache)
+        chunkCount:
+          type: integer
+          minimum: 0
+          description: Nombre de chunks (cache)
+        lastIndexedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date de derniere indexation
+        isActive:
+          type: boolean
+          description: Soft-delete flag
+        createdAt:
+          type: string
+          format: date-time
+          description: Date de creation
+        updatedAt:
+          type: string
+          format: date-time
+          description: Date de derniere modification
+
+    DocumentDetail:
+      type: object
+      required:
+        - id
+        - collectionId
+        - title
+        - sourceType
+        - chunkCount
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        collectionId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        sourceType:
+          type: string
+          enum: [text, url]
+        sourceUrl:
+          type: string
+          format: uri
+          nullable: true
+        contentText:
+          type: string
+          nullable: true
+          description: Contenu textuel complet du document
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+        chunkCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateCollectionRequest:
+      type: object
+      description: >
+        Au moins un champ doit etre fourni parmi name, description, category.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        category:
+          type: string
+          minLength: 1
+          maxLength: 50
+      additionalProperties: false
+
+    UpdateDocumentRequest:
+      type: object
+      description: >
+        Au moins un champ doit etre fourni parmi title, content.
+        Si content est fourni, le re-chunking et re-embedding sont declenches.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        content:
+          type: string
+          minLength: 1
+          description: >
+            Nouveau contenu textuel. Declenche le re-chunking
+            et le re-embedding de tous les chunks.
+      additionalProperties: false
+
+    UpdateDocumentResponse:
+      type: object
+      required:
+        - success
+        - chunkCount
+        - reChunked
+      properties:
+        success:
+          type: boolean
+        chunkCount:
+          type: integer
+          minimum: 0
+          description: Nombre de chunks apres la mise a jour
+        reChunked:
+          type: boolean
+          description: true si le contenu a ete re-decoupe et re-embedde
+
+    HttpErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - unauthorized
+                - forbidden
+                - not_found
+                - invalid_input
+                - internal_error
+            message:
+              type: string
+            details:
+              description: Details supplementaires (erreurs Zod, etc.)
+
+    ValidationErrorResponse:
+      type: object
+      required: [error, details]
+      properties:
+        error:
+          type: string
+          example: "Validation error"
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              path:
+                type: array
+                items:
+                  type: string
+
+  responses:
+    Unauthorized:
+      description: Session admin invalide ou expiree
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpErrorResponse"
+          example:
+            error:
+              code: "unauthorized"
+              message: "Session expired"
+
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpErrorResponse"
+          example:
+            error:
+              code: "not_found"
+              message: 'Collection "xyz" not found'
+
+    ValidationError:
+      description: Donnees de la requete invalides
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+          example:
+            error: "Validation error"
+            details:
+              - code: "too_small"
+                minimum: 1
+                type: "string"
+                inclusive: true
+                message: "Le nom est obligatoire"
+                path: ["name"]

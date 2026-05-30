@@ -1,0 +1,39 @@
+feature: F05-confirm-dialog-preview
+critical: P1
+
+component:
+  - id: F05-CO-1
+    name: shows thumbnail when thumbnailUrl provided
+    expect: img element with src
+  - id: F05-CO-2
+    name: shows placeholder when thumbnailUrl=null
+    expect: no img, dashed div present
+  - id: F05-CO-3
+    name: caption truncated to 140 chars
+    given: caption length=200
+    expect: text contains exactly 140 chars + ellipsis
+  - id: F05-CO-4
+    name: caption shown fully if < 140
+    given: caption length=50
+    expect: no ellipsis
+  - id: F05-CO-5
+    name: platform tag visible
+    given: platform='instagram'
+    expect: testid publish-confirm-platform contains 'instagram'
+  - id: F05-CO-6
+    name: format tag visible
+    given: format='reel'
+    expect: testid publish-confirm-format contains 'reel'
+  - id: F05-CO-7
+    name: mock mode tag visible
+    given: mockMode=true
+    expect: text 'Mode mock' visible inside preview
+  - id: F05-CO-8
+    name: preview hidden when preview=null
+    expect: no testid publish-confirm-preview
+  - id: F05-CO-9
+    name: preview present in publish-now dialog
+  - id: F05-CO-10
+    name: preview present in schedule dialog
+  - id: F05-CO-11
+    name: preview present in draft dialog

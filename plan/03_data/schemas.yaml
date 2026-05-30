@@ -1,0 +1,248 @@
+# Schémas machine-lisibles — Pipeline génération + publication
+# FemiGlow Content Studio v2 / AI Engine. Source de vérité: apps/web/src/lib/db/schema*.ts
+# Décrit l'EXISTANT (current) + la CIBLE (target) conçue par le workstream DATA.
+# Aucune modification de code: ce fichier est un contrat de conception.
+
+meta:
+  baseline: docs/audit-generation-publication-2026-05-29
+  target_architecture: ADR-0007 Option 1 (LangGraph moteur unique)
+  drizzle_schema_files:
+    - apps/web/src/lib/db/schema.ts
+    - apps/web/src/lib/db/schema-content-studio.ts
+    - apps/web/src/lib/db/schema-social-publishing.ts
+    - apps/web/src/lib/db/schema-ai-engine.ts
+
+# ---------------------------------------------------------------------------
+# Inventaire canonique des noms de table (source unique pour les harnais de test)
+# INV-3 / BUG-023 / BUG-042 / BUG-064
+# ---------------------------------------------------------------------------
+table_name_registry:
+  audit:
+    real_name: audit_events           # PLURIEL — schema.ts:268
+    wrong_name_in_tests: audit_event  # SINGULIER — n'existe pas (to_regclass=NULL)
+    note: "Les E2E DOIVENT dériver le nom du schéma Drizzle, jamais d'un littéral."
+  publication:
+    - social_account
+    - social_credential
+    - social_publish_job
+    - social_publish_attempt
+    - social_publication
+    - social_publish_event
+  content:
+    - content_post
+    - content_draft
+    - content_generation_run
+  e2e_db_preflight_assertions:
+    # Pré-vol: chaque table référencée par un E2E DB doit exister (sinon rouge explicite)
+    - "to_regclass('public.audit_events') IS NOT NULL"
+    - "to_regclass('public.audit_event') IS NULL"   # garde anti-régression du nom faux
+    - "to_regclass('public.content_post') IS NOT NULL"
+    - "to_regclass('public.social_publish_job') IS NOT NULL"
+
+# ---------------------------------------------------------------------------
+# audit_events (EXISTANT — vérité)
+# ---------------------------------------------------------------------------
+audit_events:
+  table: audit_events
+  primary_key: id
+  columns:
+    id: { type: text, nullable: false }
+    action: { type: text, nullable: false }
+    actor_id: { type: text, nullable: true }
+    resource_type: { type: text, nullable: true }
+    resource_id: { type: text, nullable: true }
+    meta: { type: jsonb, nullable: false, default: "{}" }
+    created_at: { type: timestamptz, nullable: false, default: now() }
+  indexes:
+    - { name: audit_events_created_at_idx, on: [created_at] }
+    - { name: audit_events_action_idx, on: [action] }
+
+# ---------------------------------------------------------------------------
+# social_publish_job (EXISTANT + CIBLE)
+# INV-1 (idempotence) / MISS-006 ; INV-2 (cohérence) / BUG-038
+# ---------------------------------------------------------------------------
+social_publish_job:
+  table: social_publish_job
+  primary_key: id
+  columns:
+    id: { type: text, nullable: false }
+    post_id: { type: text, nullable: false, fk: "content_post.id ON DELETE CASCADE" }
+    account_id: { type: text, nullable: false, fk: "social_account.id ON DELETE RESTRICT" }
+    provider: { type: "enum(dry_run,meta_graph,postiz)", nullable: false }
+    platform: { type: "enum(instagram,facebook)", nullable: false }
+    format: { type: "enum(post,story,reel,carousel)", nullable: false }
+    status: { type: "enum(draft,approved,queued,publishing,published,failed,cancelled)", nullable: false, default: queued }
+    idempotency_key: { type: text, nullable: false }
+    content: { type: jsonb, nullable: false, default: "{}" }
+    scheduled_at: { type: timestamptz, nullable: true }
+    published_at: { type: timestamptz, nullable: true }
+    locked_at: { type: timestamptz, nullable: true }
+    attempt_count: { type: integer, nullable: false, default: 0 }
+    last_error: { type: jsonb, nullable: true }   # column last_error_json
+    requested_by: { type: text, nullable: true, fk: "admin_users.id ON DELETE SET NULL" }
+    created_at: { type: timestamptz, nullable: false, default: now() }
+    updated_at: { type: timestamptz, nullable: false, default: now() }
+  indexes_existing:
+    - { name: social_publish_job_idempotency_unique, unique: true, on: [idempotency_key] }
+    - { name: social_publish_job_post_idx, on: [post_id, created_at] }
+    - { name: social_publish_job_account_status_idx, on: [account_id, status] }
+    - { name: social_publish_job_status_scheduled_idx, on: [status, scheduled_at] }
+  state_machine:
+    terminal: [published, cancelled]
+    non_terminal: [draft, approved, queued, publishing, failed]
+    transitions:
+      draft: [approved, cancelled]
+      approved: [queued, cancelled]
+      queued: [publishing, cancelled, failed]
+      publishing: [published, failed]
+      published: []
+      failed: [queued, cancelled]
+      cancelled: []
+
+  # ---- CIBLE (conçu par DATA) ----
+  target_idempotency:
+    key_format: "content-studio:{postId}:{accountId}"   # SANS suffixe temporel/mode (était :now / :<ISO>)
+    current_bug: "defaultIdempotencyKey injecte scheduledAt.toISOString() (schedule) ou 'now' (publish-now) -> clés disjointes -> double publication possible"
+    rule: "reschedule mute scheduled_at du job existant; publish-now réutilise/annule le job queued préexistant"
+  target_indexes_additive:
+    - name: social_publish_job_active_unique
+      unique: true
+      on: [post_id, account_id]
+      where: "status IN ('queued','publishing')"
+      purpose: "INV-1 — au plus 1 job actif par (post,compte); empêche structurellement le double-job"
+      reversible: true   # DROP INDEX
+  target_invariants:
+    INV-1: "au plus 1 social_publish_job non-terminal (queued|publishing) par (post_id, account_id)"
+    INV-2: "content_post.status=cancelled => tous les jobs non-terminaux du post -> cancelled; content_post.scheduled_at=T => job queued.scheduled_at=T"
+
+# ---------------------------------------------------------------------------
+# social_publication (EXISTANT — preuve anti-doublon)
+# ---------------------------------------------------------------------------
+social_publication:
+  table: social_publication
+  primary_key: id
+  columns:
+    id: { type: text, nullable: false }
+    job_id: { type: text, nullable: false, fk: "social_publish_job.id ON DELETE CASCADE" }
+    post_id: { type: text, nullable: false, fk: "content_post.id ON DELETE CASCADE" }
+    account_id: { type: text, nullable: false, fk: "social_account.id ON DELETE RESTRICT" }
+    provider: { type: "enum(dry_run,meta_graph,postiz)", nullable: false }
+    platform: { type: "enum(instagram,facebook)", nullable: false }
+    remote_id: { type: text, nullable: false }
+    permalink: { type: text, nullable: true }
+    status: { type: "enum(published,removed,unknown)", nullable: false, default: published }
+    published_at: { type: timestamptz, nullable: false }
+    metadata: { type: jsonb, nullable: false, default: "{}" }
+    created_at: { type: timestamptz, nullable: false, default: now() }
+  indexes:
+    - { name: social_publication_job_unique, unique: true, on: [job_id] }
+    - { name: social_publication_provider_remote_unique, unique: true, on: [provider, remote_id] }
+    - { name: social_publication_post_idx, on: [post_id, created_at] }
+  anti_doublon_probe: "count(social_publication WHERE post_id=X) doit rester = 1 après publish-now + tick scheduler"
+
+# ---------------------------------------------------------------------------
+# content_post (EXISTANT) — pivot de la cohérence d'état
+# INV-2 / BUG-038
+# ---------------------------------------------------------------------------
+content_post:
+  table: content_post
+  primary_key: id
+  columns:
+    id: { type: text, nullable: false }
+    draft_id: { type: text, nullable: false, fk: "content_draft.id ON DELETE CASCADE" }
+    status: { type: text, nullable: false, default: approved }   # approved|scheduled|published|cancelled (string libre)
+    scheduled_at: { type: timestamptz, nullable: true }
+    published_at: { type: timestamptz, nullable: true }
+    cancelled_at: { type: timestamptz, nullable: true }   # column cancelledAt
+    cancel_reason: { type: text, nullable: true }          # column cancelReason
+  cross_entity_rule: "INV-2 — mutations cancel/reschedule DOIVENT propager aux social_publish_job liés (transaction)"
+
+# ---------------------------------------------------------------------------
+# content_generation_run (EXISTANT + CIBLE)
+# INV-4 / BUG-056
+# ---------------------------------------------------------------------------
+content_generation_run:
+  table: content_generation_run
+  primary_key: id
+  columns_existing:
+    id: { type: text, nullable: false }
+    idea_id: { type: text, nullable: true }
+    brief_id: { type: text, nullable: true }
+    provider: { type: text, nullable: false }
+    model: { type: text, nullable: false }          # modèle EXECUTÉ (mock-low-cost-image en mock)
+    prompt_version: { type: text, nullable: false }
+    input: { type: jsonb, nullable: false, default: "{}" }   # column input_json
+    output: { type: jsonb, nullable: false, default: "{}" }
+    status: { type: text, nullable: false, default: succeeded }
+    cost_cents: { type: integer, nullable: false, default: 0 }
+    error_message: { type: text, nullable: true }
+    created_at: { type: timestamptz, nullable: false, default: now() }
+  current_bug: "en mock, model='mock-low-cost-image' en dur (image-generation.ts:247) écrase gpt-image-1-mini choisi; cost=0"
+  target_option_a_migration:
+    - { add_column: intended_model, type: text, nullable: true, purpose: "modèle CHOISI par l'opérateur" }
+    - { add_column: estimated_cost_cents, type: integer, nullable: true, purpose: "coût estimé du modèle intentionnel (simulation mock)" }
+    reversible: true   # DROP COLUMN
+  target_option_b_no_migration:
+    store_in: "input_json.intendedModel + input_json.estimatedCostCents"
+  decision_ref: ADR-0008 / ADR-0011
+
+# ---------------------------------------------------------------------------
+# Registre de modèles routables (CIBLE — donnée de référence)
+# INV-7 / BUG-028 / MISS-003
+# ---------------------------------------------------------------------------
+model_registry:
+  purpose: "Source unique id-modèle -> routable/provider/keyRef; le picker ne propose que routable=true"
+  current_bug:
+    - "ModelPicker allowCustom=true + discovery Higgsfield (flux_2, flux_kontext, seedream_v5_lite, nano_banana_2...) -> non routables -> 409 en live"
+    - "image-generation.ts:31-39 route seulement préfixes mock-/hf-/gpt-image-/dall-e-"
+    - "MISS-003: résolution clé divergente AI-Engine resolveApiKey (DB+ENV_KEY_MAP) vs create env.CONTENT_STUDIO_OPENAI_API_KEY direct"
+  entry_shape:
+    id: "ex: gpt-image-1"
+    provider: "openai | higgsfield | mock"
+    role: "image | video | text"
+    routable: "bool — false => le picker ne le propose pas; sélection => erreur métier explicite"
+    keyRef: "clé logique résolue par resolveProviderCredential (unique, partagée A/B/picker)"
+  credential_resolution_contract:
+    function: resolveProviderCredential(keyRef)
+    order: [db_encrypted, env_key_map]
+    shared_by: [ai_engine_A, content_studio_create_B, model_picker]
+    invariant: "une clé en DB (saveApiKey) DOIT être lisible par le flux create (aujourd'hui invisible)"
+
+# ---------------------------------------------------------------------------
+# media + stockage (EXISTANT + CIBLE d'isolation)
+# INV-6 / MISS-030
+# ---------------------------------------------------------------------------
+media:
+  table: media
+  primary_key: id
+  columns_subset:
+    id: { type: text }
+    kind: { type: "enum(image,video,audio)" }
+    source: { type: "enum(upload,external)" }
+    slug: { type: text, nullable: false }
+    status: { type: "media_status enum", default: pending }
+    deleted_at: { type: timestamptz, nullable: true }
+  indexes:
+    - { name: media_slug_unique, unique: true, on: [slug], where: "deleted_at IS NULL" }
+  storage_contract_target:
+    env_var: MEDIA_LOCAL_DIR   # défaut actuel relatif './.media-storage' (env.ts:21)
+    rule: "racine ABSOLUE indépendante de process.cwd()"
+    current_bug:
+      - "generate-voiceover.ts:13 et transcode-export.ts:15: join(process.cwd(),'../../.media-storage/ai-engine') -> cwd-relatif"
+    test_isolation:
+      root: tmpdir_dédié
+      db: db_de_test_isolée
+      invariant: "0 row media / fichier hors tmpdir ne touche la prod (diff vide avant/après)"
+  cache_lifecycle_target:
+    caches: [resolvedKeyCache, modelCache]   # api-key-manager.ts:255-294, TTL 5min
+    current_bug: "invalidateCache seulement sur saveApiKey/deleteApiKey (DB); pas sur changement env"
+    target_invariant: "invalidation aussi sur changement env; test 'clé changée pendant fenêtre TTL'"
+
+# ---------------------------------------------------------------------------
+# Instrument de mesure (CIBLE — INV-5 / BUG-032)
+# ---------------------------------------------------------------------------
+test_signal_contract:
+  invariant: "rapport 'tout vert' <=> process exit 0"
+  current_bug: "vitest '1695 passed' mais exit 1 (Unhandled Rejection 'Higgsfield video failed' depuis video-generation.ts:206, fake-timer leak video-generation.test.ts:198-224)"
+  gate_rule: "la CI lit le code de sortie, pas la ligne 'N passed'; aucune promesse de polling pendante"
+  probe: "pnpm exec vitest run; echo $?  ==> 0  ET  grep 'Unhandled Rejection' (sortie) vide"

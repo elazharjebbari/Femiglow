@@ -1,0 +1,156 @@
+# MSW Handlers — Content Studio v2 Create
+# Source de vérité pour les handlers à implémenter ou enrichir dans src/test/msw/
+
+file: src/test/msw/content-studio-v2-handlers.ts
+
+handlers:
+
+  - id: get_models
+    method: GET
+    path: /api/admin/content-studio/models
+    description: Returns mock model registry
+    response:
+      models:
+        - { id: gpt-4o-mini, provider: openai, role: chat, label: GPT-4o mini, tier: fast, recommendedFor: [post, story], isDefault: true }
+        - { id: gpt-4o, provider: openai, role: chat, label: GPT-4o, tier: balanced, recommendedFor: [reel, carousel] }
+        - { id: dall-e-3, provider: openai, role: image, label: DALL·E 3, tier: balanced, recommendedFor: [post, carousel] }
+        - { id: mock-video-1.0, provider: mock, role: video, label: Mock video, tier: fast, recommendedFor: [reel, story], isDefault: true }
+      suggested: dynamic-based-on-query
+      providers:
+        - { id: openai, label: OpenAI, status: healthy }
+        - { id: mock, label: Mock, status: mock }
+
+  - id: post_ideas
+    method: POST
+    path: /api/admin/content-studio/ideas
+    response_default:
+      idea: { id: 'mock-idea-1', status: 'idea' }
+    error_variants:
+      - prompt < 8 chars → 400
+      - missing pillar → 400
+
+  - id: post_ideas_generate
+    method: POST
+    path: /api/admin/content-studio/ideas/:id/generate
+    response_default:
+      idea: { id: 'mock-idea-1', status: 'generated' }
+      brief: { id: 'mock-brief-1', ideaId: 'mock-idea-1', version: 1 }
+      drafts:
+        - { id: 'mock-draft-A', briefId: 'mock-brief-1', variantLabel: 'A', caption: 'Variant A …', status: 'generated', scoreTotal: 85 }
+        - { id: 'mock-draft-B', briefId: 'mock-brief-1', variantLabel: 'B', caption: 'Variant B …', status: 'generated', scoreTotal: 72 }
+        - { id: 'mock-draft-C', briefId: 'mock-brief-1', variantLabel: 'C', caption: 'Variant C …', status: 'generated', scoreTotal: 90 }
+      runs:
+        - { id: 'run-1', provider: 'mock', model: 'gpt-4o-mini', status: 'succeeded', costCents: 1 }
+    error_variants:
+      - budget exhausted → 402 { error: { code: 'budget_exceeded', message: 'Budget atteint' } }
+
+  - id: patch_drafts
+    method: PATCH
+    path: /api/admin/content-studio/drafts/:id
+    response_default:
+      draft: { id, caption, hook, ..., scoreTotal: 88 }
+
+  - id: post_drafts_review
+    method: POST
+    path: /api/admin/content-studio/drafts/:id/review
+    response_default:
+      review: { id: 'review-1', draftId, status: 'pass', scoreTotal: 88, violations: [] }
+      draft: { id, status: 'needs_review' }
+
+  - id: post_drafts_generate_visual
+    method: POST
+    path: /api/admin/content-studio/drafts/:id/generate-visual
+    response_default_image:
+      media:
+        id: 'mock-img-1'
+        kind: image
+        compartment: ai_generated
+        previewUrl: /_media/content-studio/mock/sample-1080.png
+        originalUrl: /_media/content-studio/mock/sample-1080.png
+        thumbnailUrl: /_media/content-studio/mock/sample-1080.png
+        width: 1080
+        height: 1080
+      run: { id: 'run-img', provider: 'mock', model: 'dall-e-3', status: 'succeeded', costCents: 4 }
+    response_default_video:
+      media:
+        id: 'mock-vid-1'
+        kind: video
+        compartment: ai_generated
+        previewUrl: /_media/content-studio/mock/reel-9x16.mp4
+        originalUrl: /_media/content-studio/mock/reel-9x16.mp4
+        thumbnailUrl: /_media/content-studio/mock/poster-9x16.jpg
+        width: 1080
+        height: 1920
+        durationMs: 5000
+      run: { id: 'run-vid', provider: 'mock', model: 'mock-video-1.0', status: 'succeeded', costCents: 0 }
+    error_variants:
+      - budget → 402
+      - kind=invalid → 400
+      - provider down → 503
+
+  - id: post_drafts_approve
+    method: POST
+    path: /api/admin/content-studio/drafts/:id/approve
+    response_default:
+      draft: { id, status: 'approved' }
+      post: { id: 'mock-post-1', draftId, status: 'approved' }
+    error_variants:
+      - no media → 409 code='no_media_attached'
+      - brand blocked → 409 code='brand_review_blocked'
+
+  - id: post_drafts_reject
+    method: POST
+    path: /api/admin/content-studio/drafts/:id/reject
+    response_default:
+      draft: { id, status: 'rejected', rejectionReason }
+
+  - id: post_posts_publish_now
+    method: POST
+    path: /api/admin/content-studio/posts/:id/publish-now
+    response_default:
+      status: 'published'
+      jobs:
+        - { id: 'job-pub-1', postId, provider: 'mock', status: 'published' }
+
+  - id: post_posts_schedule
+    method: POST
+    path: /api/admin/content-studio/posts/:id/schedule
+    response_default:
+      status: 'scheduled'
+      jobs:
+        - { id: 'job-sch-1', postId, provider: 'mock', status: 'queued', scheduledAt }
+
+  - id: post_posts_draft_provider
+    method: POST
+    path: /api/admin/content-studio/posts/:id/draft-on-provider
+    response_default:
+      status: 'approved'
+      jobs:
+        - { id: 'job-draft-1', postId, provider: 'mock', status: 'pending', publishMode: 'draft' }
+
+  - id: get_generation_runs
+    method: GET
+    path: /api/admin/content-studio/generation-runs
+    response_default:
+      runs: []
+      budget:
+        dailyBudgetCents: 100
+        dailySpentCents: 8
+        remainingCents: 92
+
+  - id: get_media
+    method: GET
+    path: /api/admin/content-studio/media
+    response_default:
+      items:
+        - { id: 'mock-img-1', kind: 'image', previewUrl: '/_media/content-studio/mock/sample-1080.png', compartment: 'ai_generated' }
+        - { id: 'mock-vid-1', kind: 'video', previewUrl: '/_media/content-studio/mock/reel-9x16.mp4', compartment: 'ai_generated' }
+
+  - id: get_health
+    method: GET
+    path: /api/admin/content-studio/health
+    response_default:
+      ok: true
+      mode: 'drizzle'
+      version: '2.0.0'
+      mockMode: true

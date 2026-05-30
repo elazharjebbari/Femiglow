@@ -1,0 +1,140 @@
+{
+  "axis": "design",
+  "capturedAt": "2026-05-29",
+  "baseline": {
+    "branch": "feat/ai-engine-langgraph-mvp",
+    "operatorFlow": "B (/admin/content-studio-v2/create)",
+    "tokenSourceOfTruth": "apps/web/src/styles/content-studio-v2/tokens.css"
+  },
+  "axisCriticality": "major",
+  "findingsTouchingAxis": {
+    "total": 13,
+    "bySeverity": {
+      "blocker": 1,
+      "critical": 2,
+      "major": 4,
+      "minor": 6,
+      "info": 0
+    },
+    "directVisualDeception": ["BUG-007", "BUG-024", "BUG-021"],
+    "inheritedNotOwned": ["BUG-001", "BUG-002", "BUG-003", "BUG-004", "BUG-006"],
+    "ownedByDesign": ["BUG-053", "BUG-066"],
+    "ids": ["BUG-006", "BUG-007", "BUG-021", "BUG-024", "BUG-028", "BUG-053", "BUG-066", "BUG-067"]
+  },
+  "missedIssuesTouchingAxis": {
+    "count": 9,
+    "ids": ["MISS-001", "MISS-002", "MISS-004", "MISS-010", "MISS-016", "MISS-017", "MISS-021", "MISS-023", "MISS-034"]
+  },
+  "newDesignOriginatedIssues": {
+    "count": 3,
+    "items": [
+      {"id": "MISS-DESIGN-001", "title": "--cs-fg-muted sous WCAG AA sur bg-base et bg-elevated", "severity": "minor"},
+      {"id": "MISS-DESIGN-002", "title": "MockModeBadge (warning) et badge Live (success 9px) sous WCAG AA", "severity": "minor"},
+      {"id": "MISS-DESIGN-003", "title": "Primitives atomiques promises (Phase 0.6) non livrees; styles inline dupliques", "severity": "minor"}
+    ]
+  },
+  "designTokenSystem": {
+    "distinctTokenCount": 68,
+    "scopedNamespace": "--cs-*",
+    "scopeSelector": ".cs-v2-shell",
+    "themesSupported": ["light", "dark"],
+    "portalFallbackRootBlock": true,
+    "tokenCategories": {
+      "surfaces": 5,
+      "foreground": 4,
+      "accent": 4,
+      "status": 6,
+      "borders": 4,
+      "shadows": 3,
+      "radius": 5,
+      "typeScale": 9,
+      "spacing": 10,
+      "zIndex": 5,
+      "motion": 4
+    }
+  },
+  "mechanismsPresent": {
+    "designTokensCentralized": true,
+    "darkModeTokens": true,
+    "prefersReducedMotionHandled": true,
+    "prefersReducedMotionInV2TokensFile": false,
+    "ariaLabelsOnMediaControls": true,
+    "radiogroupForMediaKind": true,
+    "videoBadgeWithDuration": true,
+    "imageVideoDistinctionExplicit": true,
+    "regenerateAffordanceConditional": true,
+    "decrocherAffordancePresent": true,
+    "platformPreviewMultiPlatform": true,
+    "platformPreviewMultiFormat": true,
+    "atomicButtonPrimitivesShipped": false,
+    "errorStateForEmptyOrMissingMedia": false,
+    "previewUsesFullResolution": false,
+    "modelBadgeReflectsRealCapability": false,
+    "modeToggleSingleSourceOfTruth": false,
+    "a11yContrastLintInCi": false,
+    "subtitleSlotInUi": false
+  },
+  "imageVideoDistinction": {
+    "kindToggleRadiogroup": true,
+    "buttonLabelConditionalOnKind": true,
+    "videoBadgePermanent": true,
+    "durationDisplayed": true,
+    "dimensionsAndRatioDisplayed": true,
+    "videoDisabledOutsideReelStoryWithReason": true,
+    "mockVideoFormatsCovered": ["reel", "story"],
+    "mockVideoFormatsUncovered": ["post", "carousel"]
+  },
+  "previewFidelity": {
+    "platformsRendered": ["instagram", "facebook"],
+    "formatsRendered": ["post", "story", "reel", "carousel"],
+    "rendersFromPreviewUrl": true,
+    "previewUrlIsLowResThumbnailInMock": true,
+    "originalUrlNullInMock": true,
+    "emptySrcRendersBlackFrame": true,
+    "fidelityVsRealNetworkProven": false
+  },
+  "accessibilityContrast": {
+    "wcagLevelTarget": "AA",
+    "method": "WCAG 2.1 relative luminance ratio on exact tokens.css hex values",
+    "pairsMeasured": 9,
+    "pairsFailingAANormal": 3,
+    "pairsLargeOnly": 2,
+    "pairsPassingAANormal": 4,
+    "measurements": [
+      {"pair": "--cs-fg-muted / --cs-bg-base", "ratio": 2.48, "verdict": "FAIL_AA", "usage": "texte tertiaire/hints 10-11px"},
+      {"pair": "--cs-fg-muted / --cs-bg-elevated", "ratio": 2.66, "verdict": "FAIL_AA", "usage": "en-tete source picker 10px, meta modele"},
+      {"pair": "--cs-warning / --cs-warning-bg", "ratio": 2.46, "verdict": "FAIL_AA", "usage": "MockModeBadge"},
+      {"pair": "--cs-success / --cs-success-bg", "ratio": 3.93, "verdict": "AA_LARGE_ONLY", "usage": "badge Live 9px (insuffisant pour 9px)"},
+      {"pair": "--cs-accent / --cs-bg-base", "ratio": 6.9, "verdict": "PASS_AA", "usage": "liens/accents"},
+      {"pair": "--cs-fg-on-accent / --cs-accent", "ratio": 7.41, "verdict": "PASS_AA", "usage": "bouton primaire"},
+      {"pair": "--cs-fg-secondary / --cs-bg-base", "ratio": 5.83, "verdict": "PASS_AA", "usage": "texte secondaire"},
+      {"pair": "DARK --cs-accent / --cs-bg-base", "ratio": 4.91, "verdict": "PASS_AA", "usage": "accent sombre"},
+      {"pair": "DARK --cs-fg-muted / --cs-bg-base", "ratio": 3.68, "verdict": "AA_LARGE_ONLY", "usage": "texte muet sombre"}
+    ]
+  },
+  "trustSignalIntegrity": {
+    "liveBadgeReflectsGenerationCapability": false,
+    "liveBadgeForcedSourceLive": true,
+    "liveModelsGenerable": 0,
+    "liveModelsAdvertisedImageRole": 14,
+    "liveModelsAdvertisedChatRole": 106,
+    "modelAutoSelectedAtMountWithoutPickerOpen": true,
+    "modeToggleAndMockBadgeAgree": false
+  },
+  "implementationConsistency": {
+    "inlineStyleDrivenComponents": true,
+    "atomicButtonRecipes": 3,
+    "pillBadgePatternReimplementations": 5,
+    "hardcodedNonTokenColorsInPreview": true,
+    "legacySectorialColorsRetained": ["--cs-clay", "--cs-sage", "--cs-saffron", "--cs-violet"]
+  },
+  "estimatedDebt": {
+    "trustSignalFixes": {"items": 3, "effort": "S", "note": "badge source veridique + mode unique + disable non-routable"},
+    "previewFidelityFixes": {"items": 2, "effort": "M", "note": "plus grande derivee + etat erreur media"},
+    "a11yContrastFixes": {"items": 3, "effort": "S", "note": "retune fg-muted + badges + lint CI"},
+    "consistencyDebt": {"items": 3, "effort": "M", "note": "primitives atomiques + slot media avance + resync regenerer"},
+    "totalActionableItems": 11,
+    "blockersOwnedByAxis": 0
+  },
+  "topFindingIds": ["BUG-007", "BUG-024", "BUG-021", "BUG-053", "BUG-066"]
+}

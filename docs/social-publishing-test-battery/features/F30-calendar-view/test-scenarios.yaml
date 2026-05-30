@@ -1,0 +1,37 @@
+feature: F30-calendar-view
+critical: P1
+
+component:
+  - id: F30-CO-1
+    name: renders 3 view tabs (week/month/list)
+  - id: F30-CO-2
+    name: URL syncs ?view=month
+  - id: F30-CO-3
+    name: status filter dropdown multi-select
+  - id: F30-CO-4
+    name: platform filter
+  - id: F30-CO-5
+    name: pillar filter
+  - id: F30-CO-6
+    name: renders 5 posts in correct day cells
+  - id: F30-CO-7
+    name: empty state when no posts in window
+  - id: F30-CO-8
+    name: week navigation (prev/next/today)
+  - id: F30-CO-9
+    name: month navigation
+  - id: F30-CO-10
+    name: drag-drop opens reschedule modal
+  - id: F30-CO-11
+    name: drag to past day rejected
+  - id: F30-CO-12
+    name: double-click opens QuickEditDrawer
+  - id: F30-CO-13
+    name: status badge correct color
+  - id: F30-CO-14
+    name: pillar dot color
+
+e2e:
+  - id: F30-E-1
+    name: week of content visualization
+    scenario_ref: S12

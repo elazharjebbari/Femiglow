@@ -1,0 +1,132 @@
+{
+  "axis": "process",
+  "baselineDate": "2026-05-29",
+  "branch": "feat/ai-engine-langgraph-mvp",
+  "criticality": "blocker",
+  "sources": [
+    "01_audit/bug-register.csv",
+    "01_audit/gap-matrix.csv",
+    "01_audit/mock-live-parity.csv",
+    "01_audit/missed-issues.csv",
+    "01_audit/evidence/vitest-summary.json",
+    "01_audit/evidence/vitest-run.txt",
+    "01_audit/evidence/playwright-operator-journeys.txt",
+    "01_audit/evidence/runtime-env-state.md",
+    "01_audit/evidence/ffmpeg-binary-verification.md",
+    ".github/workflows/ci.yml",
+    "apps/web/vercel.json",
+    "apps/web/src/lib/env.ts"
+  ],
+  "findingsTouchingAxis": {
+    "total": 27,
+    "bySeverity": {
+      "blocker": 3,
+      "critical": 6,
+      "major": 13,
+      "minor": 5,
+      "info": 0
+    },
+    "blockerIds": ["BUG-001", "BUG-003", "BUG-004"],
+    "criticalIds": ["BUG-005", "BUG-006", "BUG-010", "BUG-011", "BUG-027", "BUG-032"],
+    "majorIds": ["BUG-007", "BUG-018", "BUG-023", "BUG-025", "BUG-029", "BUG-031", "BUG-035", "BUG-037", "BUG-041", "BUG-042", "BUG-043", "BUG-045", "BUG-046", "BUG-047"],
+    "minorIds": ["BUG-040", "BUG-055", "BUG-064", "BUG-057", "BUG-002"],
+    "missedIssueIds": ["MISS-003", "MISS-004", "MISS-007", "MISS-008", "MISS-009", "MISS-013", "MISS-024", "MISS-030", "MISS-031", "MISS-032", "MISS-033"]
+  },
+  "ciGate": {
+    "gateGreenButProcessExit1": true,
+    "vitestReportedResult": "ALL GREEN (1695 passed, 0 failed)",
+    "vitestProcessExitCode": 1,
+    "vitestUnhandledRejections": 1,
+    "playwrightExitCode": 1,
+    "playwrightSpecsTotal": 39,
+    "playwrightSpecsPassed": 37,
+    "playwrightSpecsFailed": 2,
+    "operatorJourneyE2EGreen": false,
+    "ciFailsOnExitCode": "propagated_via_pnpm_-r_test_but_perceived_green_on_summary",
+    "globalUnhandledRejectionGuardPresent": false,
+    "globalAfterEachTimerCleanupPresent": false
+  },
+  "testFidelity": {
+    "periphery_test_files_estimated": 95,
+    "tests_asserting_real_backend_effect": 0,
+    "files_mocking_fetch_in_src_estimated": 42,
+    "aiEngineNodeTests_cover_live_path": false,
+    "aiEngineNodeTests_cover_fallback_only": true,
+    "higgsfield_tests_use_fictional_sync_endpoints": true,
+    "compose_transcode_tests_fully_mock_native_libs": true,
+    "real_ffmpeg_sharp_integration_tests": 0,
+    "ffmpeg_sharp_actually_installed": true
+  },
+  "mockLiveParity": {
+    "mswInstalled": true,
+    "mswGlobalServerMounted": false,
+    "mswPolicyAllNetworkViaMsw": false,
+    "contractTestForInternalRoutes": true,
+    "contractTestForExternalProviders": false,
+    "dryRunVsPostizParityTest": false,
+    "operatorParityProvableInLiveToday": false,
+    "scenariosWithMockLiveDivergence": 18,
+    "scenariosBrokenInBothModes": 5
+  },
+  "smokeTest": {
+    "operatorSmokeInCI": false,
+    "smokeCliScriptExists": true,
+    "smokeCliScript": "apps/web/scripts/smoke-content-studio.ts",
+    "smokeCliWiredInCI": false,
+    "smokeCliRefusesLiveByDefault": true,
+    "ciIncludesAiEngineInVitestScope": false,
+    "coverageOptInOnly": true,
+    "coverageInstrumentsAiEngine16Nodes": false
+  },
+  "envDrift": {
+    "openaiApiKeyPresentInProcess": true,
+    "openaiApiKeyLength": 164,
+    "openaiApiKeyDeclaredInEnvTs": false,
+    "contentStudioOpenAiKeyEmpty": true,
+    "chatOpenAiKeyEmpty": true,
+    "distinctCredentialResolutionChains": 3,
+    "pickerAdvertisesLiveButGeneratorCannotHonor": true,
+    "nullishCoalescingMasksEmptyStringInGeneration": true,
+    "higgsfieldCredentialComplete": false,
+    "higgsfieldKeyHasColonSeparator": false,
+    "higgsfieldSecretPresent": false
+  },
+  "bootValidation": {
+    "credentialsValidatedAtBoot": false,
+    "envVarsAllOptionalNoCrossCheck": true,
+    "failFastOnIncompleteCredential": false,
+    "engineConfigCachedAsSingleton": true,
+    "keyAndModelCacheTtlMinutes": 5,
+    "cacheInvalidatedOnEnvChange": false,
+    "envChangeRequiresProcessRestart": true
+  },
+  "deploymentExecution": {
+    "schedulerRouteExists": true,
+    "schedulerRoute": "apps/web/src/app/api/cron/content-studio/social-publish-scheduler/route.ts",
+    "schedulerInVercelCrons": false,
+    "schedulerRelayedByTick": false,
+    "stagingRuntime": "pm2_next_start",
+    "vercelCronsHonoredOnStaging": false,
+    "anySystemdOrCrontabTriggerForScheduler": false,
+    "scheduledPublicationExecutes": false,
+    "ciCheckRouteHasTrigger": false
+  },
+  "legacyAndHygiene": {
+    "legacyPostizDraftRouteBypassesDryRun": true,
+    "pricingConstantsDuplicatedAcrossLayers": 3,
+    "testStubsPollutingProdMediaStorageCount": 977,
+    "mediaDirIsRelativeCwdCoupled": true,
+    "testsIsolatedViaTmpdir": false
+  },
+  "debtEstimate": {
+    "unit": "person-days",
+    "p0_honestGate": 2,
+    "p0_unblockLiveOpenAiAndEnvSoT": 2,
+    "p1_wireSchedulerExecution": 2,
+    "p1_mockLiveParityHarness": 6,
+    "p1_operatorSmokeInCI": 2,
+    "p2_cacheInvalidationAndLegacyCleanup": 3,
+    "total": 17
+  },
+  "topProcessFindings": ["BUG-010", "BUG-003", "BUG-001", "BUG-041", "BUG-046"]
+}

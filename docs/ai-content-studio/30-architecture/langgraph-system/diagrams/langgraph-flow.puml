@@ -1,0 +1,199 @@
+@startuml langgraph-flow
+title LangGraph 1.0 — Flow principal de génération
+
+skinparam activity {
+    BackgroundColor #F8F9FA
+    BorderColor #333333
+    FontSize 12
+}
+
+start
+
+partition "**Entrée & Enrichissement**" {
+    :parse_brief;
+    note right
+        Validation Pydantic
+        Merge defaults workflow
+    end note
+
+    fork
+        :enrich_knowledge;
+        note right
+            pgvector RAG
+            5 collections
+            Cohere rerank
+        end note
+    fork again
+        :enrich_trends;
+        note right
+            Tendances scorées
+            Fenêtre d'opportunité
+        end note
+    end fork
+}
+
+partition "**Génération Script**" {
+    :generate_script;
+    note right
+        Claude Sonnet 4.6
+        → ScriptOutputSchema
+        hook, scenes, CTA
+        visual_direction
+    end note
+}
+
+if (format?) then (reel/short/story_video)
+    partition "**Pipeline Vidéo**" {
+        :generate_video;
+        note right
+            Google Veo 2
+            Multi-scene
+            1080×1920
+        end note
+
+        if (voiceover_required?) then (oui)
+            :generate_voiceover;
+            note right
+                ElevenLabs V3
+                Voix configurable
+            end note
+        endif
+
+        if (music_required?) then (oui)
+            :generate_music;
+            note right
+                MusicGen / Suno
+                Mood from script
+            end note
+        endif
+
+        :generate_subtitles;
+        note right
+            Whisper → SRT
+            Style configurable
+        end note
+    }
+
+elseif (format?) then (carousel)
+    partition "**Pipeline Carrousel**" {
+        :generate_cover_slide;
+        :generate_content_slides;
+        note right
+            GPT Image 2 / Imagen 4
+            N slides (3-10)
+        end note
+        :generate_cta_slide;
+        :ensure_visual_coherence;
+    }
+
+elseif (format?) then (feed/story/pin)
+    partition "**Pipeline Image**" {
+        :generate_images;
+        note right
+            GPT Image 2 / Imagen 4
+            Platform specs
+            Brand style preset
+        end note
+    }
+
+else (text_only)
+endif
+
+partition "**Caption**" {
+    :generate_caption;
+    note right
+        GPT-4.1-mini
+        Platform-optimized
+        + hashtags + CTA
+    end note
+}
+
+partition "**Composition & Export**" {
+    :compose;
+    note right
+        FFmpeg (vidéo)
+        Pillow (image)
+        Text overlays
+        Audio mix
+        Color grading
+    end note
+
+    :transcode_export;
+    note right
+        Multi-format
+        Par plateforme
+        Thumbnails
+    end note
+}
+
+partition "**Contrôle Qualité**" #FFFDE7 {
+    :quality_check;
+    note right
+        GPT-4.1 vision
+        Score 0-1 par dimension:
+        visual, text, brand, hook
+    end note
+
+    if (score >= threshold?) then (oui)
+        :moderate;
+        note right
+            OpenAI Moderation
+            Brand safety rules
+        end note
+
+        if (safe?) then (oui)
+        elseif (can_retry?) then (flagged)
+            :adjust_prompt;
+            -> retour generate_script;
+            stop
+        else (blocked)
+            :log_blocked;
+            stop
+        endif
+    elseif (retries < max?) then (retry)
+        :adjust_temperature;
+        -> retour generate_script;
+        stop
+    else (fail)
+        :log_failure;
+        stop
+    endif
+}
+
+partition "**Validation Humaine**" #E3F2FD {
+    :human_review;
+    note right
+        **INTERRUPT**
+        LangGraph pause
+        Checkpoint state
+        UI: preview + scores
+    end note
+
+    if (decision?) then (approved)
+    elseif (decision?) then (rejected)
+        -> retour generate_script;
+        stop
+    else (edit_requested)
+        -> retour generate_script (avec corrections);
+        stop
+    endif
+}
+
+partition "**Variantes & Publication**" {
+    :generate_variants;
+    note right
+        2-3 variantes caption
+        Score comparatif
+    end note
+
+    :publish;
+    note right
+        API sociale
+        Multi-plateforme
+        Audit trail
+    end note
+}
+
+stop
+
+@enduml

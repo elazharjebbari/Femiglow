@@ -1,0 +1,28 @@
+feature: F34-quick-edit-drawer
+critical: P1
+
+component:
+  - id: F34-CO-1
+    name: opens on double-click
+  - id: F34-CO-2
+    name: pre-fills scheduledAt
+  - id: F34-CO-3
+    name: shows platform + format read-only
+  - id: F34-CO-4
+    name: caption preview
+  - id: F34-CO-5
+    name: account name visible
+  - id: F34-CO-6
+    name: Enregistrer fires PATCH /reschedule
+  - id: F34-CO-7
+    name: Annuler la publication fires POST /cancel
+  - id: F34-CO-8
+    name: Voir le post navigates
+  - id: F34-CO-9
+    name: Esc closes
+  - id: F34-CO-10
+    name: click outside closes
+  - id: F34-CO-11
+    name: a11y: focus trap when open
+  - id: F34-CO-12
+    name: validation: past date inline error

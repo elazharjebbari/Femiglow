@@ -1,0 +1,269 @@
+@startuml Higgsfield Integration Data Flow
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 180
+skinparam defaultFontName "Segoe UI"
+skinparam sequenceGroupBorderColor #888888
+skinparam sequenceGroupBackgroundColor #F5F5F5
+skinparam noteFontSize 10
+
+title FemiGlow AI Engine - Higgsfield Integration Data Flow
+footer 2026-05-27 | All 4 scenarios covered
+
+actor "Operator\n(Admin UI)" as op
+participant "Config Page\n/ai-engine/config" as configUI
+participant "API Keys Route\n/config/api-keys" as apiKeysRoute
+participant "Providers Route\n/config/providers" as provRoute
+participant "Models Route\n/config/providers/models" as modelsRoute
+participant "ApiKeyManager\napi-key-manager.ts" as keyMgr
+participant "ApiKeyValidator\napi-key-validator.ts" as keyVal
+participant "ModelDiscovery\nmodel-discovery.ts" as disco
+participant "EngineConfig\nengine-config.ts" as engConf
+participant "ProviderSelector\nselector.ts" as selector
+participant "HiggsFieldAdapter\nhiggsfield.ts" as adapter
+participant "CircuitBreaker" as cb
+participant "RetryPolicy" as retry
+participant "CostTracker\ncost-tracker.ts" as cost
+database "Database\nai_engine_*" as db
+participant "Higgsfield API\napi.higgsfield.ai" as hfApi
+
+' =============================================================================
+' SCENARIO 1: Operator configures Higgsfield API key
+' =============================================================================
+
+group #E8F5E9 Scenario 1 — Configure Higgsfield API Key
+
+op -> configUI : Navigate to Config > API Keys tab
+configUI -> apiKeysRoute : GET /api/admin/ai-engine/config/api-keys
+apiKeysRoute -> keyMgr : listApiKeys()
+keyMgr -> db : SELECT FROM ai_engine_api_keys\nWHERE isActive = true
+db --> keyMgr : [] (no key yet)
+keyMgr -> keyMgr : resolveEnvKey('higgsfield')\nchecks AI_ENGINE_HIGGSFIELD_API_KEY
+keyMgr --> apiKeysRoute : ApiKeyInfo[]\nhiggsfield: source='none'
+apiKeysRoute --> configUI : { apiKeys: [..., { providerType: 'higgsfield',\nsource: 'none', isActive: false }] }
+configUI --> op : Shows Higgsfield row\n"Non configure" status
+
+op -> configUI : Enter API key: hf_sk_abc...xyz\nClick "Enregistrer"
+configUI -> apiKeysRoute : POST /api/admin/ai-engine/config/api-keys\n{ providerType: 'higgsfield', apiKey: 'hf_sk_abc...xyz' }
+apiKeysRoute -> keyMgr : saveApiKey('higgsfield', 'hf_sk_abc...xyz')
+keyMgr -> keyMgr : encrypt(apiKey)
+keyMgr -> db : UPDATE ai_engine_api_keys SET isActive=false\nWHERE providerType='higgsfield'
+keyMgr -> db : INSERT INTO ai_engine_api_keys\n{ providerType, encryptedKey, keyPrefix, keyLastFour }
+db --> keyMgr : { id: 'ak-hf-001' }
+keyMgr -> keyMgr : invalidateCache('higgsfield')
+keyMgr --> apiKeysRoute : ApiKeyInfo { source: 'database', masked: 'hf_sk_****xyz' }
+apiKeysRoute --> configUI : 201 { apiKey: { ... } }
+configUI --> op : Key saved. Badge "database"
+
+op -> configUI : Click "Tester"
+configUI -> apiKeysRoute : POST /api/admin/ai-engine/config/api-keys/test\n{ providerType: 'higgsfield' }
+apiKeysRoute -> keyMgr : testApiKey('higgsfield')
+keyMgr -> keyMgr : resolveApiKey('higgsfield')\n-> decrypt from DB
+keyMgr -> keyVal : validateApiKey('higgsfield', decryptedKey)
+keyVal -> hfApi : GET /v1/models\nAuthorization: Bearer hf_sk_abc...xyz
+hfApi --> keyVal : 200 OK { models: [...] }
+keyVal --> keyMgr : { valid: true, latencyMs: 150 }
+keyMgr -> db : UPDATE ai_engine_api_keys\nSET lastTestedAt=now, lastTestResult='valid'
+keyMgr --> apiKeysRoute : { valid: true, provider: 'higgsfield', latencyMs: 150 }
+apiKeysRoute --> configUI : { result: { valid: true } }
+configUI --> op : Green badge "Valide"\nLatency: 150ms
+
+end
+
+' =============================================================================
+' SCENARIO 2: Operator selects Higgsfield as image provider
+' =============================================================================
+
+group #E3F2FD Scenario 2 — Select Higgsfield as Image Provider
+
+op -> configUI : Open Providers tab
+configUI -> provRoute : GET /api/admin/ai-engine/config/providers
+provRoute -> engConf : getEngineConfig()
+engConf --> provRoute : { apiKeys: { higgsfield: 'hf_sk_...' }, ... }
+provRoute -> provRoute : getDefaultProviders()\nincludes default-higgsfield
+provRoute --> configUI : { providers: [..., {\n  id: 'default-higgsfield',\n  providerType: 'higgsfield',\n  capabilities: ['image', 'video'],\n  priority: 15,\n  configured: true\n}] }
+configUI --> op : Higgsfield card visible\nCapabilities: image, video\nPriority: 15\nStatus: configured
+
+op -> configUI : Click Higgsfield card\n> "Models" tab
+configUI -> modelsRoute : GET /api/admin/ai-engine/config/providers/models\n?provider=higgsfield
+modelsRoute -> keyMgr : resolveApiKey('higgsfield')
+keyMgr --> modelsRoute : 'hf_sk_abc...xyz'
+modelsRoute -> disco : discoverModels('higgsfield', { apiKey })
+disco -> disco : Check cache -> miss
+disco -> hfApi : GET /v1/models\nAuthorization: Bearer hf_sk_abc...xyz
+hfApi --> disco : { models: [\n  { id: 'higgsfield-diffusion-v2', type: 'image' },\n  { id: 'higgsfield-xl-v1', type: 'image' },\n  { id: 'higgsfield-video-v1', type: 'video' },\n  { id: 'higgsfield-video-fast', type: 'video' }\n] }
+disco -> disco : dedupeMerge(live, fallback)\nCache with 5min TTL
+disco --> modelsRoute : { models: [...], source: 'live' }
+modelsRoute -> modelsRoute : sortModels() by POPULAR_MODELS priority
+modelsRoute --> configUI : { models: [\n  { id: 'higgsfield-diffusion-v2', role: 'image' },\n  { id: 'higgsfield-xl-v1', role: 'image' },\n  { id: 'higgsfield-video-v1', role: 'video' },\n  { id: 'higgsfield-video-fast', role: 'video' }\n], source: 'live' }
+configUI --> op : Model selector shows 4 models\nGrouped by capability
+
+op -> configUI : Set Higgsfield as default image provider\nSelect model: higgsfield-diffusion-v2
+configUI -> provRoute : POST /api/admin/ai-engine/config/providers\n{ id: 'default-higgsfield', isEnabled: true }
+
+note over op
+  Environment variable updated:
+  AI_ENGINE_DEFAULT_IMAGE_PROVIDER=higgsfield
+  AI_ENGINE_DEFAULT_IMAGE_MODEL=higgsfield-diffusion-v2
+end note
+
+end
+
+' =============================================================================
+' SCENARIO 3: Image generation job with Higgsfield
+' =============================================================================
+
+group #FFF3E0 Scenario 3 — Image Generation via Higgsfield
+
+participant "generate-images\nnode" as imgNode
+participant "LangGraph\nOrchestrator" as graph
+
+op -> configUI : Submit generation brief\n"Reel Instagram - Soin des ongles"
+configUI -> graph : POST /api/admin/ai-engine/generate\n{ platform: 'instagram', format: 'reel', ... }
+
+graph -> imgNode : generateImagesNode(state)
+imgNode -> engConf : getEngineConfig()
+engConf --> imgNode : { providers.image.default: 'higgsfield',\napiKeys.higgsfield: defined }
+
+imgNode -> imgNode : buildProviderConfigs(config)\n-> ProviderConfig[] with higgsfield at priority 15
+imgNode -> selector : new ProviderSelector(configs, jobId)
+imgNode -> selector : selectProvider('generate_images', 'image')
+selector -> selector : Filter: isEnabled && hasCapability('image')\n&& healthStatus != 'unhealthy'\n&& circuitBreaker != OPEN\n&& dailyBudget not exceeded
+selector -> selector : Sort by priority ASC\n-> higgsfield (15) wins over openai/google
+selector --> imgNode : HiggsFieldAdapter
+
+loop i = 0 to imageCount-1
+  imgNode -> adapter : generateImage({\n  model: 'higgsfield-diffusion-v2',\n  prompt: '...',\n  width: 1080, height: 1920\n})
+
+  adapter -> cb : execute(fn)
+  cb -> retry : execute(fn)
+
+  retry -> hfApi : POST /v1/images/generate\nAuthorization: Bearer hf_sk_abc...xyz\n{\n  model: 'higgsfield-diffusion-v2',\n  prompt: '...',\n  num_images: 1,\n  width: 1080, height: 1920\n}
+
+  hfApi --> retry : 200 {\n  images: [{\n    url: 'https://cdn.higgsfield.ai/gen/img-001.png'\n  }]\n}
+
+  retry --> cb : ImageGenResult
+  cb --> adapter : ImageGenResult
+  adapter -> adapter : computeCost:\nmodelConfig.costPerUnit * count\n= 500 * 1 = 5.00 cents
+  adapter --> imgNode : ProviderCallResult<ImageGenResult> {\n  data: { images: [{ url: '...' }] },\n  costCents: 5.00,\n  latencyMs: 1200,\n  provider: 'Higgsfield AI',\n  model: 'higgsfield-diffusion-v2'\n}
+
+  imgNode -> cost : recordCost(jobId, 'higgsfield', 5.00)
+  cost -> db : INSERT INTO ai_engine_cost_ledger
+end
+
+imgNode --> graph : { images: [...],\ncostTracking: { totalCents: 5.00 } }
+
+end
+
+' =============================================================================
+' SCENARIO 4: Video generation with async polling
+' =============================================================================
+
+group #FCE4EC Scenario 4 — Video Generation with Async Polling
+
+participant "generate-video\nnode" as vidNode
+
+graph -> vidNode : generateVideoNode(state)
+vidNode -> engConf : getEngineConfig()
+engConf --> vidNode : { providers.video.default: 'higgsfield' }
+
+vidNode -> selector : selectProvider('generate_video', 'video')
+selector --> vidNode : HiggsFieldAdapter (priority 15, video capable)
+
+vidNode -> adapter : generateVideo({\n  model: 'higgsfield-video-v1',\n  prompt: 'Scene 1: Gros plan mains...',\n  durationSeconds: 15\n})
+
+adapter -> cb : execute(fn)
+cb -> retry : execute(fn)
+
+retry -> hfApi : POST /v1/videos/generate\n{\n  model: 'higgsfield-video-v1',\n  prompt: '...',\n  duration_seconds: 15\n}
+
+hfApi --> retry : 200 {\n  job_id: 'hf-job-abc123',\n  status: 'queued'\n}
+
+note over adapter
+  No video_url in response
+  -> Enter polling loop
+end note
+
+loop Poll for completion (max 120 * 3s = 6min)
+  adapter -> adapter : sleep(3000ms)
+  adapter -> hfApi : GET /v1/videos/status/hf-job-abc123\nAuthorization: Bearer hf_sk_abc...xyz
+
+  alt status: 'processing'
+    hfApi --> adapter : { status: 'processing', progress: 45 }
+    note over adapter : Continue polling...
+  else status: 'completed'
+    hfApi --> adapter : { status: 'completed',\nvideo_url: 'https://cdn.higgsfield.ai/gen/vid-001.mp4' }
+  else status: 'failed'
+    hfApi --> adapter : { status: 'failed', error: 'Content policy' }
+    adapter -> adapter : throw ProviderError(retryable: false)
+  end
+end
+
+adapter -> adapter : buildVideoResult()\ncostPerUnit: 2000 = 20.00 cents
+retry --> cb : VideoGenResult
+cb --> adapter : VideoGenResult
+
+adapter --> vidNode : ProviderCallResult<VideoGenResult> {\n  data: { videoUrl: 'https://cdn.higgsfield.ai/...' },\n  costCents: 20.00,\n  latencyMs: 45000,\n  provider: 'Higgsfield AI',\n  model: 'higgsfield-video-v1'\n}
+
+vidNode -> cost : recordCost(jobId, 'higgsfield', 20.00)
+cost -> db : INSERT INTO ai_engine_cost_ledger
+
+vidNode --> graph : { videos: [{ url: '...', provider: 'higgsfield:higgsfield-video-v1' }],\ncostTracking: { totalCents: 25.00 } }
+
+end
+
+' =============================================================================
+' SCENARIO 5: Circuit breaker + fallback
+' =============================================================================
+
+group #EFEBE9 Scenario 5 — Failure & Fallback Path
+
+imgNode -> adapter : generateImage(...)
+adapter -> cb : execute(fn)
+cb -> retry : execute(fn)
+retry -> hfApi : POST /v1/images/generate
+hfApi --> retry : 500 Internal Server Error
+
+retry -> retry : Attempt 2 (delay 1s + jitter)
+retry -> hfApi : POST /v1/images/generate
+hfApi --> retry : 500 Internal Server Error
+
+retry -> retry : Attempt 3 (delay 2s + jitter)
+retry -> hfApi : POST /v1/images/generate
+hfApi --> retry : 500 Internal Server Error
+
+retry -> retry : Attempt 4 (delay 4s + jitter)
+retry -> hfApi : POST /v1/images/generate
+hfApi --> retry : 500 Internal Server Error
+
+retry --> cb : throw ProviderError(retryable: true)
+cb -> cb : failureCount++ (now 1 of 5)
+cb --> adapter : throw ProviderError
+
+note over adapter
+  After 5 consecutive failures:
+  circuitBreaker state -> OPEN
+  All subsequent calls rejected instantly
+  After 60s -> HALF_OPEN (1 probe call)
+end note
+
+adapter --> imgNode : throw ProviderError
+
+imgNode -> imgNode : Catch error\nFallback to mock
+
+note over imgNode
+  Alternative: use selectFallback()
+  to try OpenAI or Google
+end note
+
+imgNode -> selector : selectFallback('generate_images',\n'image', 'default-higgsfield')
+selector -> selector : Filter: exclude higgsfield\n-> OpenAI (priority 10) or Google (30)
+selector --> imgNode : OpenAIAdapter (fallback)
+
+imgNode -> imgNode : Retry with OpenAI adapter
+
+end
+
+@enduml

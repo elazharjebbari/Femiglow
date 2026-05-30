@@ -6,6 +6,7 @@ import { HttpError } from '@/lib/errors/http-error';
 import {
   approveContentDraft,
   createContentIdea,
+  createVariation,
   generateVisualForDraft,
   reviewContentDraft,
 } from './service';
@@ -14,6 +15,7 @@ import {
   createDrafts,
   getPrimaryAsset,
   upsertPrimaryAsset,
+  listGenerationRuns,
 } from './repository';
 
 beforeEach(() => {
@@ -105,6 +107,37 @@ describe('generateVisualForDraft — auto-bind du visuel au draft', () => {
     const asset = await getPrimaryAsset(draft.id);
     expect(asset).not.toBeNull();
     expect(asset?.mediaId).toBe(generated.id);
+  });
+
+  it('trace le modèle INTENTIONNEL distinct de l\'exécuté en mock (ACT-DA-005)', { timeout: 30000 }, async () => {
+    const draft = await makeDraft();
+    await generateVisualForDraft({
+      draftId: draft.id,
+      actorId: 'adm_test',
+      prompt: 'Trace du modèle choisi par l\'opérateur.',
+      size: '1024x1024',
+      quality: 'low',
+      model: 'gpt-image-1-mini', // choix opérateur
+      mode: 'mock', // exécution mock
+    });
+    const runs = await listGenerationRuns();
+    const run = runs[0]!; // le plus récent
+    // exécuté = mock ; intentionnel = le modèle choisi → traçabilité préservée
+    expect(run.model).toMatch(/^mock-/);
+    expect((run.input as Record<string, unknown>).intendedModel).toBe('gpt-image-1-mini');
+  });
+
+  it('createVariation RÉGÉNÈRE un texte différent du parent (ACT-BE-014)', async () => {
+    const draft = await makeDraft();
+    const variation = await createVariation({
+      draftId: draft.id,
+      promptOverride: 'Mets l’accent sur la patience et la lenteur du geste.',
+      mode: 'mock',
+    });
+    expect(variation).not.toBeNull();
+    expect(variation!.parentDraftId).toBe(draft.id);
+    // régénéré (fallback varié + prompt+override) ≠ clone identique du parent
+    expect(variation!.caption).not.toBe(draft.caption);
   });
 
   it('remplace le binding précédent quand on régénère un visuel', { timeout: 60000 }, async () => {

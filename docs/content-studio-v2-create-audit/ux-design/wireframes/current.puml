@@ -1,0 +1,45 @@
+@startsalt current
+title Content Studio v2 — Create (état actuel)
+{
+  {* Stepper}
+  {[Cadrer*] | [Générer] | [Visuel disabled] | [Valider disabled] }
+  --
+  {
+    {* Intention Form *}
+    "Format"
+    [Post] [Story]
+    [Reel] [Carousel]
+    "Pilier"
+    ^Rituel^
+    "Objectif"
+    ^Considération^
+    "Plateforme"
+    ^Instagram^
+    "Intention"
+    "..."
+    [Enregistrer l'idée]
+  } |
+  {
+    {* Variants Compare *}
+    {[Variant A] | [Variant B] | [Variant C]}
+
+    {* Media Studio *}
+    "Visuel"
+    [Décrocher] [Générer un visuel IA]
+    {* MediaPicker grid *}
+
+    {* Caption Editor *}
+    "Caption"
+    "..."
+    "Sauvegardé"
+  } |
+  {
+    {* Preview Pane *}
+    "Aperçu Instagram - Post"
+    {* image preview *}
+    "Caption preview"
+  }
+  --
+  "Approuvez le draft pour activer la publication." | [Publier disabled]
+}
+@endsalt

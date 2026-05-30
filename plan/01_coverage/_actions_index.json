@@ -1,0 +1,1035 @@
+{
+ "actions": [
+  {
+   "id_action": "ACT-ARC-004",
+   "ws": "architecture",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-041",
+    "BUG-046",
+    "BUG-011",
+    "BUG-027",
+    "BUG-047",
+    "BUG-035",
+    "MISS-031"
+   ],
+   "t_ref": "T-006;T-010;T-001;T-002"
+  },
+  {
+   "id_action": "ACT-ARC-005",
+   "ws": "architecture",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-018",
+    "BUG-045",
+    "MISS-008",
+    "MISS-009",
+    "BUG-037",
+    "BUG-027"
+   ],
+   "t_ref": "T-006"
+  },
+  {
+   "id_action": "ACT-ARC-013",
+   "ws": "architecture",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-011",
+    "MISS-007",
+    "BUG-043"
+   ],
+   "t_ref": "T-005"
+  },
+  {
+   "id_action": "ACT-ARC-008",
+   "ws": "architecture",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-016",
+    "BUG-019",
+    "BUG-024",
+    "BUG-043",
+    "MISS-019",
+    "MISS-007"
+   ],
+   "t_ref": "T-202"
+  },
+  {
+   "id_action": "ACT-ARC-001",
+   "ws": "architecture",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-004",
+    "MISS-005"
+   ],
+   "t_ref": "T-104"
+  },
+  {
+   "id_action": "ACT-ARC-002",
+   "ws": "architecture",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-034"
+   ],
+   "t_ref": "T-104"
+  },
+  {
+   "id_action": "ACT-ARC-009",
+   "ws": "architecture",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-031",
+    "BUG-035",
+    "BUG-062"
+   ],
+   "t_ref": "T-306;T-411;T-307"
+  },
+  {
+   "id_action": "ACT-ARC-006",
+   "ws": "architecture",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-037"
+   ],
+   "t_ref": "T-103b;T-204;T-301;T-302"
+  },
+  {
+   "id_action": "ACT-ARC-007",
+   "ws": "architecture",
+   "priorite": "P1",
+   "audit_lie": [
+    "MISS-009",
+    "MISS-022",
+    "BUG-037"
+   ],
+   "t_ref": "T-103;T-006"
+  },
+  {
+   "id_action": "ACT-ARC-003",
+   "ws": "architecture",
+   "priorite": "P2",
+   "audit_lie": [
+    "BUG-015",
+    "BUG-026"
+   ],
+   "t_ref": "T-901"
+  },
+  {
+   "id_action": "ACT-ARC-010",
+   "ws": "architecture",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-015",
+    "BUG-026",
+    "BUG-047"
+   ],
+   "t_ref": "T-901"
+  },
+  {
+   "id_action": "ACT-ARC-012",
+   "ws": "architecture",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-047",
+    "BUG-011"
+   ],
+   "t_ref": "T-010;T-006"
+  },
+  {
+   "id_action": "ACT-ARC-011",
+   "ws": "architecture",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-052",
+    "BUG-069"
+   ],
+   "t_ref": "T-412"
+  },
+  {
+   "id_action": "ACT-BE-001",
+   "ws": "backend",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-010"
+   ],
+   "t_ref": "T-001;T-002"
+  },
+  {
+   "id_action": "ACT-BE-002",
+   "ws": "backend",
+   "priorite": "P5",
+   "audit_lie": [
+    "MISS-004",
+    "MISS-024",
+    "MISS-032"
+   ],
+   "t_ref": "T-306;T-411"
+  },
+  {
+   "id_action": "ACT-BE-003",
+   "ws": "backend",
+   "priorite": "P5",
+   "audit_lie": [
+    "MISS-033"
+   ],
+   "t_ref": "T-410"
+  },
+  {
+   "id_action": "ACT-BE-004",
+   "ws": "backend",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-012",
+    "BUG-013"
+   ],
+   "t_ref": "T-902"
+  },
+  {
+   "id_action": "ACT-BE-010",
+   "ws": "backend",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-001",
+    "BUG-005",
+    "MISS-013"
+   ],
+   "t_ref": "T-005;T-101"
+  },
+  {
+   "id_action": "ACT-BE-011",
+   "ws": "backend",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-001",
+    "BUG-025"
+   ],
+   "t_ref": "T-102"
+  },
+  {
+   "id_action": "ACT-BE-012",
+   "ws": "backend",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-002",
+    "BUG-008",
+    "BUG-025",
+    "BUG-030"
+   ],
+   "t_ref": "T-102;T-103"
+  },
+  {
+   "id_action": "ACT-BE-013",
+   "ws": "backend",
+   "priorite": "P2",
+   "audit_lie": [
+    "BUG-005",
+    "MISS-013",
+    "MISS-014",
+    "MISS-018"
+   ],
+   "t_ref": "T-201;T-202;T-412"
+  },
+  {
+   "id_action": "ACT-BE-014",
+   "ws": "backend",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-017",
+    "MISS-017"
+   ],
+   "t_ref": "T-305;T-413"
+  },
+  {
+   "id_action": "ACT-BE-015",
+   "ws": "backend",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-022",
+    "MISS-011",
+    "MISS-020",
+    "MISS-021"
+   ],
+   "t_ref": "T-304"
+  },
+  {
+   "id_action": "ACT-BE-016",
+   "ws": "backend",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-051"
+   ],
+   "t_ref": "T-309"
+  },
+  {
+   "id_action": "ACT-BE-017",
+   "ws": "backend",
+   "priorite": "P2",
+   "audit_lie": [
+    "BUG-014"
+   ],
+   "t_ref": "T-203"
+  },
+  {
+   "id_action": "ACT-BE-020",
+   "ws": "backend",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-040"
+   ],
+   "t_ref": "T-020"
+  },
+  {
+   "id_action": "ACT-BE-021",
+   "ws": "backend",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-003"
+   ],
+   "t_ref": "T-103b"
+  },
+  {
+   "id_action": "ACT-BE-022",
+   "ws": "backend",
+   "priorite": "P1",
+   "audit_lie": [
+    "MISS-028"
+   ],
+   "t_ref": "T-204"
+  },
+  {
+   "id_action": "ACT-BE-023",
+   "ws": "backend",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-063",
+    "BUG-065",
+    "MISS-029"
+   ],
+   "t_ref": "T-308"
+  },
+  {
+   "id_action": "ACT-BE-024",
+   "ws": "backend",
+   "priorite": "P5",
+   "audit_lie": [
+    "MISS-010"
+   ],
+   "t_ref": "T-021"
+  },
+  {
+   "id_action": "ACT-BE-030",
+   "ws": "backend",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-049",
+    "BUG-050",
+    "MISS-011"
+   ],
+   "t_ref": "T-304"
+  },
+  {
+   "id_action": "ACT-BE-031",
+   "ws": "backend",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-036",
+    "BUG-059",
+    "BUG-066",
+    "MISS-025",
+    "MISS-026"
+   ],
+   "t_ref": "T-307"
+  },
+  {
+   "id_action": "ACT-BE-032",
+   "ws": "backend",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-058",
+    "BUG-059",
+    "MISS-026"
+   ],
+   "t_ref": "T-902"
+  },
+  {
+   "id_action": "ACT-BE-033",
+   "ws": "backend",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-067",
+    "MISS-023"
+   ],
+   "t_ref": "T-415"
+  },
+  {
+   "id_action": "ACT-BE-034",
+   "ws": "backend",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-060",
+    "BUG-068",
+    "MISS-027"
+   ],
+   "t_ref": "T-902"
+  },
+  {
+   "id_action": "ACT-BE-035",
+   "ws": "backend",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-057"
+   ],
+   "t_ref": "T-902"
+  },
+  {
+   "id_action": "ACT-DA-001",
+   "ws": "data",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-023",
+    "BUG-042",
+    "BUG-064"
+   ],
+   "t_ref": "T-003"
+  },
+  {
+   "id_action": "ACT-DA-002",
+   "ws": "data",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-023",
+    "BUG-042",
+    "BUG-064"
+   ],
+   "t_ref": "T-003"
+  },
+  {
+   "id_action": "ACT-DA-003",
+   "ws": "data",
+   "priorite": "P1",
+   "audit_lie": [
+    "MISS-006"
+   ],
+   "t_ref": "T-204"
+  },
+  {
+   "id_action": "ACT-DA-004",
+   "ws": "data",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-038"
+   ],
+   "t_ref": "T-301"
+  },
+  {
+   "id_action": "ACT-DA-005",
+   "ws": "data",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-056"
+   ],
+   "t_ref": "T-902"
+  },
+  {
+   "id_action": "ACT-DA-006",
+   "ws": "data",
+   "priorite": "P1",
+   "audit_lie": [
+    "BUG-028",
+    "MISS-003"
+   ],
+   "t_ref": "T-101;T-005"
+  },
+  {
+   "id_action": "ACT-DA-007",
+   "ws": "data",
+   "priorite": "P4",
+   "audit_lie": [
+    "MISS-030"
+   ],
+   "t_ref": "T-410;T-411"
+  },
+  {
+   "id_action": "ACT-DA-008",
+   "ws": "data",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-032"
+   ],
+   "t_ref": "T-001;T-002"
+  },
+  {
+   "id_action": "ACT-DS-001",
+   "ws": "design",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-029",
+    "BUG-055"
+   ],
+   "t_ref": "T-003"
+  },
+  {
+   "id_action": "ACT-DS-002",
+   "ws": "design",
+   "priorite": "P0",
+   "audit_lie": [
+    "BUG-029",
+    "BUG-055"
+   ],
+   "t_ref": "T-003;T-415"
+  },
+  {
+   "id_action": "ACT-DS-003",
+   "ws": "design",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-007",
+    "BUG-021"
+   ],
+   "t_ref": ""
+  },
+  {
+   "id_action": "ACT-DS-004",
+   "ws": "design",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-053",
+    "MISS-021",
+    "MISS-004"
+   ],
+   "t_ref": ""
+  },
+  {
+   "id_action": "ACT-DS-005",
+   "ws": "design",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-004",
+    "BUG-066"
+   ],
+   "t_ref": "T-104"
+  },
+  {
+   "id_action": "ACT-DS-006",
+   "ws": "design",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-007",
+    "BUG-021"
+   ],
+   "t_ref": ""
+  },
+  {
+   "id_action": "ACT-FE-001",
+   "ws": "frontend",
+   "priorite": "P2",
+   "audit_lie": [
+    "BUG-020"
+   ],
+   "t_ref": "T-201"
+  },
+  {
+   "id_action": "ACT-FE-002",
+   "ws": "frontend",
+   "priorite": "P2",
+   "audit_lie": [
+    "BUG-020"
+   ],
+   "t_ref": "T-413"
+  },
+  {
+   "id_action": "ACT-FE-003",
+   "ws": "frontend",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-033"
+   ],
+   "t_ref": "T-104"
+  },
+  {
+   "id_action": "ACT-FE-004",
+   "ws": "frontend",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-033",
+    "BUG-048"
+   ],
+   "t_ref": "T-104;T-901"
+  },
+  {
+   "id_action": "ACT-FE-005",
+   "ws": "frontend",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-048"
+   ],
+   "t_ref": "T-901;T-104"
+  },
+  {
+   "id_action": "ACT-FE-006",
+   "ws": "frontend",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-039"
+   ],
+   "t_ref": "T-303"
+  },
+  {
+   "id_action": "ACT-FE-007",
+   "ws": "frontend",
+   "priorite": "P5",
+   "audit_lie": [
+    "BUG-061"
+   ],
+   "t_ref": "T-902"
+  },
+  {
+   "id_action": "ACT-FE-008",
+   "ws": "frontend",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-020",
+    "BUG-033",
+    "BUG-039"
+   ],
+   "t_ref": "T-414"
+  },
+  {
+   "id_action": "ACT-FE-009",
+   "ws": "frontend",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-033",
+    "BUG-048"
+   ],
+   "t_ref": "T-104;T-901"
+  },
+  {
+   "id_action": "ACT-UX-001",
+   "ws": "ui-ux",
+   "priorite": "P2",
+   "audit_lie": [
+    "BUG-006",
+    "BUG-007"
+   ],
+   "t_ref": "T-202;T-005;T-101"
+  },
+  {
+   "id_action": "ACT-UX-002",
+   "ws": "ui-ux",
+   "priorite": "P2",
+   "audit_lie": [
+    "BUG-009"
+   ],
+   "t_ref": "T-202;T-103"
+  },
+  {
+   "id_action": "ACT-UX-003",
+   "ws": "ui-ux",
+   "priorite": "P2",
+   "audit_lie": [
+    "MISS-002",
+    "MISS-015"
+   ],
+   "t_ref": "T-202"
+  },
+  {
+   "id_action": "ACT-UX-004",
+   "ws": "ui-ux",
+   "priorite": "P2",
+   "audit_lie": [
+    "MISS-012"
+   ],
+   "t_ref": "T-201;T-202"
+  },
+  {
+   "id_action": "ACT-UX-005",
+   "ws": "ui-ux",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-021",
+    "MISS-016"
+   ],
+   "t_ref": "T-413"
+  },
+  {
+   "id_action": "ACT-UX-006",
+   "ws": "ui-ux",
+   "priorite": "P3",
+   "audit_lie": [
+    "MISS-001",
+    "MISS-034"
+   ],
+   "t_ref": "T-413;T-201"
+  },
+  {
+   "id_action": "ACT-UX-007",
+   "ws": "ui-ux",
+   "priorite": "P3",
+   "audit_lie": [
+    "BUG-054"
+   ],
+   "t_ref": "T-414"
+  },
+  {
+   "id_action": "ACT-UX-008",
+   "ws": "ui-ux",
+   "priorite": "P4",
+   "audit_lie": [
+    "BUG-053"
+   ],
+   "t_ref": ""
+  }
+ ],
+ "coverage": {
+  "BUG-041": [
+   "ACT-ARC-004"
+  ],
+  "BUG-046": [
+   "ACT-ARC-004"
+  ],
+  "BUG-011": [
+   "ACT-ARC-004",
+   "ACT-ARC-013",
+   "ACT-ARC-012"
+  ],
+  "BUG-027": [
+   "ACT-ARC-004",
+   "ACT-ARC-005"
+  ],
+  "BUG-047": [
+   "ACT-ARC-004",
+   "ACT-ARC-010",
+   "ACT-ARC-012"
+  ],
+  "BUG-035": [
+   "ACT-ARC-004",
+   "ACT-ARC-009"
+  ],
+  "MISS-031": [
+   "ACT-ARC-004"
+  ],
+  "BUG-018": [
+   "ACT-ARC-005"
+  ],
+  "BUG-045": [
+   "ACT-ARC-005"
+  ],
+  "MISS-008": [
+   "ACT-ARC-005"
+  ],
+  "MISS-009": [
+   "ACT-ARC-005",
+   "ACT-ARC-007"
+  ],
+  "BUG-037": [
+   "ACT-ARC-005",
+   "ACT-ARC-006",
+   "ACT-ARC-007"
+  ],
+  "MISS-007": [
+   "ACT-ARC-013",
+   "ACT-ARC-008"
+  ],
+  "BUG-043": [
+   "ACT-ARC-013",
+   "ACT-ARC-008"
+  ],
+  "BUG-016": [
+   "ACT-ARC-008"
+  ],
+  "BUG-019": [
+   "ACT-ARC-008"
+  ],
+  "BUG-024": [
+   "ACT-ARC-008"
+  ],
+  "MISS-019": [
+   "ACT-ARC-008"
+  ],
+  "BUG-004": [
+   "ACT-ARC-001",
+   "ACT-DS-005"
+  ],
+  "MISS-005": [
+   "ACT-ARC-001"
+  ],
+  "BUG-034": [
+   "ACT-ARC-002"
+  ],
+  "BUG-031": [
+   "ACT-ARC-009"
+  ],
+  "BUG-062": [
+   "ACT-ARC-009"
+  ],
+  "MISS-022": [
+   "ACT-ARC-007"
+  ],
+  "BUG-015": [
+   "ACT-ARC-003",
+   "ACT-ARC-010"
+  ],
+  "BUG-026": [
+   "ACT-ARC-003",
+   "ACT-ARC-010"
+  ],
+  "BUG-052": [
+   "ACT-ARC-011"
+  ],
+  "BUG-069": [
+   "ACT-ARC-011"
+  ],
+  "BUG-010": [
+   "ACT-BE-001"
+  ],
+  "MISS-004": [
+   "ACT-BE-002",
+   "ACT-DS-004"
+  ],
+  "MISS-024": [
+   "ACT-BE-002"
+  ],
+  "MISS-032": [
+   "ACT-BE-002"
+  ],
+  "MISS-033": [
+   "ACT-BE-003"
+  ],
+  "BUG-012": [
+   "ACT-BE-004"
+  ],
+  "BUG-013": [
+   "ACT-BE-004"
+  ],
+  "BUG-001": [
+   "ACT-BE-010",
+   "ACT-BE-011"
+  ],
+  "BUG-005": [
+   "ACT-BE-010",
+   "ACT-BE-013"
+  ],
+  "MISS-013": [
+   "ACT-BE-010",
+   "ACT-BE-013"
+  ],
+  "BUG-025": [
+   "ACT-BE-011",
+   "ACT-BE-012"
+  ],
+  "BUG-002": [
+   "ACT-BE-012"
+  ],
+  "BUG-008": [
+   "ACT-BE-012"
+  ],
+  "BUG-030": [
+   "ACT-BE-012"
+  ],
+  "MISS-014": [
+   "ACT-BE-013"
+  ],
+  "MISS-018": [
+   "ACT-BE-013"
+  ],
+  "BUG-017": [
+   "ACT-BE-014"
+  ],
+  "MISS-017": [
+   "ACT-BE-014"
+  ],
+  "BUG-022": [
+   "ACT-BE-015"
+  ],
+  "MISS-011": [
+   "ACT-BE-015",
+   "ACT-BE-030"
+  ],
+  "MISS-020": [
+   "ACT-BE-015"
+  ],
+  "MISS-021": [
+   "ACT-BE-015",
+   "ACT-DS-004"
+  ],
+  "BUG-051": [
+   "ACT-BE-016"
+  ],
+  "BUG-014": [
+   "ACT-BE-017"
+  ],
+  "BUG-040": [
+   "ACT-BE-020"
+  ],
+  "BUG-003": [
+   "ACT-BE-021"
+  ],
+  "MISS-028": [
+   "ACT-BE-022"
+  ],
+  "BUG-063": [
+   "ACT-BE-023"
+  ],
+  "BUG-065": [
+   "ACT-BE-023"
+  ],
+  "MISS-029": [
+   "ACT-BE-023"
+  ],
+  "MISS-010": [
+   "ACT-BE-024"
+  ],
+  "BUG-049": [
+   "ACT-BE-030"
+  ],
+  "BUG-050": [
+   "ACT-BE-030"
+  ],
+  "BUG-036": [
+   "ACT-BE-031"
+  ],
+  "BUG-059": [
+   "ACT-BE-031",
+   "ACT-BE-032"
+  ],
+  "BUG-066": [
+   "ACT-BE-031",
+   "ACT-DS-005"
+  ],
+  "MISS-025": [
+   "ACT-BE-031"
+  ],
+  "MISS-026": [
+   "ACT-BE-031",
+   "ACT-BE-032"
+  ],
+  "BUG-058": [
+   "ACT-BE-032"
+  ],
+  "BUG-067": [
+   "ACT-BE-033"
+  ],
+  "MISS-023": [
+   "ACT-BE-033"
+  ],
+  "BUG-060": [
+   "ACT-BE-034"
+  ],
+  "BUG-068": [
+   "ACT-BE-034"
+  ],
+  "MISS-027": [
+   "ACT-BE-034"
+  ],
+  "BUG-057": [
+   "ACT-BE-035"
+  ],
+  "BUG-023": [
+   "ACT-DA-001",
+   "ACT-DA-002"
+  ],
+  "BUG-042": [
+   "ACT-DA-001",
+   "ACT-DA-002"
+  ],
+  "BUG-064": [
+   "ACT-DA-001",
+   "ACT-DA-002"
+  ],
+  "MISS-006": [
+   "ACT-DA-003"
+  ],
+  "BUG-038": [
+   "ACT-DA-004"
+  ],
+  "BUG-056": [
+   "ACT-DA-005"
+  ],
+  "BUG-028": [
+   "ACT-DA-006"
+  ],
+  "MISS-003": [
+   "ACT-DA-006"
+  ],
+  "MISS-030": [
+   "ACT-DA-007"
+  ],
+  "BUG-032": [
+   "ACT-DA-008"
+  ],
+  "BUG-029": [
+   "ACT-DS-001",
+   "ACT-DS-002"
+  ],
+  "BUG-055": [
+   "ACT-DS-001",
+   "ACT-DS-002"
+  ],
+  "BUG-007": [
+   "ACT-DS-003",
+   "ACT-DS-006",
+   "ACT-UX-001"
+  ],
+  "BUG-021": [
+   "ACT-DS-003",
+   "ACT-DS-006",
+   "ACT-UX-005"
+  ],
+  "BUG-053": [
+   "ACT-DS-004",
+   "ACT-UX-008"
+  ],
+  "BUG-020": [
+   "ACT-FE-001",
+   "ACT-FE-002",
+   "ACT-FE-008"
+  ],
+  "BUG-033": [
+   "ACT-FE-003",
+   "ACT-FE-004",
+   "ACT-FE-008",
+   "ACT-FE-009"
+  ],
+  "BUG-048": [
+   "ACT-FE-004",
+   "ACT-FE-005",
+   "ACT-FE-009"
+  ],
+  "BUG-039": [
+   "ACT-FE-006",
+   "ACT-FE-008"
+  ],
+  "BUG-061": [
+   "ACT-FE-007"
+  ],
+  "BUG-006": [
+   "ACT-UX-001"
+  ],
+  "BUG-009": [
+   "ACT-UX-002"
+  ],
+  "MISS-002": [
+   "ACT-UX-003"
+  ],
+  "MISS-015": [
+   "ACT-UX-003"
+  ],
+  "MISS-012": [
+   "ACT-UX-004"
+  ],
+  "MISS-016": [
+   "ACT-UX-005"
+  ],
+  "MISS-001": [
+   "ACT-UX-006"
+  ],
+  "MISS-034": [
+   "ACT-UX-006"
+  ],
+  "BUG-054": [
+   "ACT-UX-007"
+  ]
+ },
+ "uncovered": []
+}

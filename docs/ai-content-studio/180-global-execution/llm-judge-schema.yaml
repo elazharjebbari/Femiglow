@@ -1,0 +1,310 @@
+# ============================================================================
+# LLM-Judge Annotation Schema v1.0
+# Structure de sortie pour l'evaluation de code par LLM
+# ============================================================================
+#
+# USAGE: Chaque LLM-juge produit un document conforme a ce schema.
+#        Les annotations sont ensuite agregeables par fichier, module, projet.
+#
+# PRINCIPES:
+#   - Score 0-10 sur chaque axe (0=critique, 5=acceptable, 8=bon, 10=exemplaire)
+#   - Chaque finding est actionable (verdict + action concrete)
+#   - Confiance explicite du juge (low/medium/high) pour ponderer les resultats
+#   - Separation stricte entre fait observe et jugement
+
+# ============================================================================
+# 1. METADATA — Identifie le juge, le contexte, le scope
+# ============================================================================
+meta:
+  judge_id: "claude-opus-4.7"          # Identifiant du LLM-juge
+  judge_version: "1M-context"          # Version/variante
+  evaluation_date: "2026-05-26T20:30:00Z"
+  scope: "feat/knowledge-edit+api-keys" # Branche ou PR evaluee
+  commit_ref: "c46e9b2"                # SHA du commit evalue
+  evaluation_mode: "deep"              # quick | standard | deep | adversarial
+  total_files_reviewed: 21
+  total_units_reviewed: 47
+  wall_time_seconds: null              # Temps reel si mesure
+
+# ============================================================================
+# 2. AXES D'EVALUATION — Dimensions orthogonales de qualite
+# ============================================================================
+# Chaque axe a:
+#   - id: identifiant machine
+#   - label: nom lisible
+#   - description: ce que l'axe mesure
+#   - weight: poids dans le score global (somme = 1.0)
+#   - perspective: qui se soucie de cet axe
+
+axes:
+  - id: correctness
+    label: "Correction fonctionnelle"
+    description: "Le code fait-il exactement ce qu'il est cense faire? Logique, calculs, flux de donnees."
+    weight: 0.20
+    perspective: "developpeur"
+
+  - id: security
+    label: "Securite"
+    description: "Absence de vulnerabilites: injection, fuite de donnees, auth bypass, crypto faible."
+    weight: 0.20
+    perspective: "securite"
+
+  - id: robustness
+    label: "Robustesse"
+    description: "Gestion des erreurs, edge cases, etats invalides, degradation gracieuse."
+    weight: 0.15
+    perspective: "ops/SRE"
+
+  - id: operator_ux
+    label: "Experience operateur"
+    description: "Feedback visuel, etats de chargement, messages d'erreur clairs, prevention des erreurs utilisateur."
+    weight: 0.15
+    perspective: "operateur_frontend"
+
+  - id: maintainability
+    label: "Maintenabilite"
+    description: "Lisibilite, modularite, nommage, separation des responsabilites, dette technique."
+    weight: 0.10
+    perspective: "developpeur"
+
+  - id: test_coverage
+    label: "Couverture de tests"
+    description: "Les chemins critiques sont-ils testes? Qualite et pertinence des assertions."
+    weight: 0.10
+    perspective: "QA"
+
+  - id: performance
+    label: "Performance"
+    description: "Complexite algorithmique, requetes N+1, fuites memoire, bundles inutiles."
+    weight: 0.05
+    perspective: "ops/SRE"
+
+  - id: non_regression
+    label: "Non-regression"
+    description: "Les fonctionnalites existantes sont-elles preservees? Compatibilite ascendante."
+    weight: 0.05
+    perspective: "QA"
+
+# ============================================================================
+# 3. ECHELLE DE SCORING
+# ============================================================================
+scoring_scale:
+  0: "Critique — faille bloquante, perte de donnees ou vulnerabilite exploitable"
+  1: "Tres mauvais — dysfonctionnement majeur evident"
+  2: "Mauvais — plusieurs problemes significatifs"
+  3: "Insuffisant — ne repond pas aux exigences minimales"
+  4: "Mediocre — fonctionne mais avec des lacunes importantes"
+  5: "Acceptable — fonctionne, lacunes mineures"
+  6: "Correct — repond aux attentes, quelques ameliorations possibles"
+  7: "Bon — solide, bien structure"
+  8: "Tres bon — au-dessus des attentes, peu de remarques"
+  9: "Excellent — quasi exemplaire"
+  10: "Exemplaire — reference, rien a redire"
+
+# ============================================================================
+# 4. SEVERITE DES FINDINGS
+# ============================================================================
+severity_levels:
+  critical:
+    label: "Critique"
+    description: "Bloquant en production. Faille de securite, perte de donnees, crash garanti."
+    emoji: "🔴"
+    sla_fix: "Avant merge"
+
+  major:
+    label: "Majeur"
+    description: "Dysfonctionnement probable en conditions reelles. Bug visible par l'operateur."
+    emoji: "🟠"
+    sla_fix: "Avant deploy staging"
+
+  moderate:
+    label: "Modere"
+    description: "Edge case non gere, UX degradee, test manquant sur chemin critique."
+    emoji: "🟡"
+    sla_fix: "Sprint courant"
+
+  minor:
+    label: "Mineur"
+    description: "Amelioration de qualite, nommage, style, test supplementaire."
+    emoji: "🟢"
+    sla_fix: "Backlog"
+
+  info:
+    label: "Observation"
+    description: "Note pour reference future, pas d'action requise immediatement."
+    emoji: "🔵"
+    sla_fix: null
+
+# ============================================================================
+# 5. STRUCTURE D'UN FINDING (annotation unitaire)
+# ============================================================================
+# Chaque finding represente UNE observation sur UNE unite de code.
+
+finding_schema:
+  id: "F-001"                           # Identifiant unique sequentiel
+  axis: "security"                      # Axe d'evaluation concerne (ref axes[].id)
+  severity: "critical"                  # critical | major | moderate | minor | info
+  confidence: "high"                    # low (50-70%) | medium (70-85%) | high (85-95%) | certain (95%+)
+
+  location:
+    file: "src/lib/ai-engine/services/api-key-manager.ts"
+    line_start: 279
+    line_end: 281
+    function: "resolveApiKey"
+    context: "catch block after decrypt failure"
+
+  observation: |
+    Description factuelle de ce qui est observe dans le code.
+    Pas de jugement ici — uniquement les faits.
+
+  impact: |
+    Consequence concrete si ce probleme n'est pas corrige.
+    Qui est affecte? Quel scenario declenche le probleme?
+
+  verdict: "fail"                       # pass | warn | fail | skip
+  # pass  = conforme aux attentes
+  # warn  = acceptable mais ameliorable
+  # fail  = non conforme, action requise
+  # skip  = hors scope ou non evaluable
+
+  action:
+    type: "fix"                         # fix | test | refactor | document | investigate
+    description: "Ajouter un log d'alerte securite et un test verifiant le fallback"
+    effort: "S"                         # XS (<15min) | S (<1h) | M (<4h) | L (<1j) | XL (>1j)
+    test_needed: true
+    test_description: "Simuler un echec de decrypt et verifier que le log securite est emis"
+
+  related_findings: ["F-002", "F-015"]  # Liens vers findings connexes
+
+# ============================================================================
+# 6. STRUCTURE D'UNE UNITE EVALUEE (fonction, composant, route)
+# ============================================================================
+
+unit_evaluation_schema:
+  unit_id: "svc:api-key-manager:resolveApiKey"
+  unit_type: "function"                 # function | component | route | hook | class | module
+  file: "src/lib/ai-engine/services/api-key-manager.ts"
+  name: "resolveApiKey"
+  lines: [253, 293]
+  description: "Resout la cle API pour un provider: cache > DB (decrypt) > env"
+
+  scores:
+    correctness: { score: 7, rationale: "Logique de resolution correcte, chain DB>env respectee" }
+    security: { score: 4, rationale: "Fallback silencieux sur echec decrypt, pas de log securite" }
+    robustness: { score: 6, rationale: "Cache TTL OK, mais pas de retry sur decrypt failure" }
+    operator_ux: { score: null, rationale: "N/A — fonction backend, pas d'impact UI direct" }
+    maintainability: { score: 7, rationale: "Code lisible, bon nommage, responsabilite claire" }
+    test_coverage: { score: 0, rationale: "ZERO test — 8 chemins identifies, aucun couvert" }
+    performance: { score: 8, rationale: "Cache en memoire avec TTL, evite les requetes DB repetees" }
+    non_regression: { score: 9, rationale: "Nouvelle fonction, pas de risque de regression" }
+
+  composite_score: 5.1                  # Moyenne ponderee selon axes[].weight
+  findings: ["F-001", "F-002", "F-003"] # IDs des findings sur cette unite
+  risk_level: "high"                    # low | medium | high | critical
+
+# ============================================================================
+# 7. STRUCTURE D'UN FICHIER EVALUE
+# ============================================================================
+
+file_evaluation_schema:
+  file_path: "src/lib/ai-engine/services/api-key-manager.ts"
+  file_type: "service"                  # service | route | component | schema | test | config | util
+  lines_total: 298
+  lines_new: 298                        # Lignes ajoutees dans ce diff
+  complexity: "high"                    # low | medium | high (jugement qualitatif)
+
+  units: []                             # Liste de unit_evaluation_schema
+  findings: []                          # Tous les findings sur ce fichier (union des units)
+
+  scores_aggregate:                     # Moyenne des scores des unites du fichier
+    correctness: 7.2
+    security: 4.5
+    robustness: 6.0
+    operator_ux: null
+    maintainability: 7.0
+    test_coverage: 0.0
+    performance: 8.0
+    non_regression: 9.0
+
+  composite_score: 5.3
+  top_risk: "Fichier entierement non teste — 41 chemins critiques sans couverture"
+
+# ============================================================================
+# 8. STRUCTURE DU RAPPORT GLOBAL (top-level)
+# ============================================================================
+
+report_schema:
+  meta: {}                              # Ref section 1
+
+  summary:
+    total_findings: 0
+    by_severity:
+      critical: 0
+      major: 0
+      moderate: 0
+      minor: 0
+      info: 0
+    by_axis:
+      correctness: 0
+      security: 0
+      robustness: 0
+      operator_ux: 0
+      maintainability: 0
+      test_coverage: 0
+      performance: 0
+      non_regression: 0
+    by_verdict:
+      pass: 0
+      warn: 0
+      fail: 0
+      skip: 0
+
+  global_scores:                        # Moyenne ponderee de tous les fichiers
+    correctness: 0.0
+    security: 0.0
+    robustness: 0.0
+    operator_ux: 0.0
+    maintainability: 0.0
+    test_coverage: 0.0
+    performance: 0.0
+    non_regression: 0.0
+    composite: 0.0
+
+  gate_decision: "CONDITIONAL_PASS"     # PASS | CONDITIONAL_PASS | FAIL
+  # PASS            = Aucun finding critical/major, composite >= 7.0
+  # CONDITIONAL_PASS = Des findings major existent mais un plan de remediation est viable
+  # FAIL            = Findings critical non resolus OU composite < 5.0
+
+  gate_conditions: []                   # Liste des conditions a remplir pour passer de CONDITIONAL a PASS
+
+  files: []                             # Liste de file_evaluation_schema
+  findings: []                          # Liste complete de tous les findings, triee par severite
+
+  recommendations:                      # Top 5 actions a plus fort impact
+    - priority: 1
+      action: ""
+      effort: ""
+      impact: ""
+    - priority: 2
+      action: ""
+      effort: ""
+      impact: ""
+
+# ============================================================================
+# 9. REGLES DU JUGE
+# ============================================================================
+# Contraintes que le LLM-juge DOIT respecter lors de l'annotation.
+
+judge_rules:
+  - "Chaque observation DOIT etre verifiable dans le code source (citez fichier:ligne)"
+  - "Ne jamais inventer un probleme qui n'existe pas — confiance 'low' si incertain"
+  - "Separer strictement fait (observation) et jugement (verdict)"
+  - "Un score de 0 sur test_coverage signifie ZERO test, pas 'tests insuffisants'"
+  - "operator_ux est null pour les fichiers backend purs (services, routes sans UI)"
+  - "Les findings 'info' ne comptent pas dans le gate_decision"
+  - "Le composite_score est la moyenne ponderee des axes, arrondie a 1 decimale"
+  - "Chaque finding DOIT avoir une action concrete avec effort estime"
+  - "Ne pas penaliser l'absence de tests sur du code pre-existant non modifie"
+  - "Evaluer le code tel qu'il EST, pas tel qu'il DEVRAIT etre dans un monde ideal"
+  - "Les findings de securite sur du code manipulant des secrets sont toujours >= major"
+  - "Un axe avec score null est exclu du calcul du composite (pas de division par zero)"

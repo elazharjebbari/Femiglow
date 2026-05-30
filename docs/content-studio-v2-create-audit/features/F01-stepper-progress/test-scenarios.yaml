@@ -1,0 +1,77 @@
+feature: F01-stepper-progress
+component: Stepper
+
+unit:
+  - name: deriveActiveStep returns 'frame' for null draft
+    when: draft is null
+    expect: 'frame'
+
+  - name: deriveActiveStep returns 'generate' for status=generated
+    when: draft.status = 'generated'
+    expect: 'generate'
+
+  - name: deriveActiveStep returns 'visual' for status=needs_review
+    when: draft.status = 'needs_review'
+    expect: 'visual'
+
+  - name: deriveActiveStep returns 'validate' for status=approved
+    when: draft.status = 'approved'
+    expect: 'validate'
+
+  - name: deriveActiveStep returns 'frame' for status=rejected
+    when: draft.status = 'rejected'
+    expect: 'frame'
+
+component:
+  - name: renders 4 step labels
+    expect: ['Cadrer', 'Générer', 'Visuel', 'Valider'] visible
+
+  - name: shows aria-current=step on active
+    given: draft.status='needs_review'
+    expect: button labelled 'Visuel' has aria-current='step'
+
+  - name: future steps have aria-disabled=true
+    given: draft.status='generated'
+    expect: 'Visuel' and 'Valider' buttons have aria-disabled='true'
+
+  - name: shows MockModeBadge when mockMode=true
+    given: mockMode=true
+    expect: text 'Mode mock' visible
+
+  - name: hides MockModeBadge when mockMode=false
+    given: mockMode=false
+    expect: text 'Mode mock' not visible
+
+  - name: clicking past step fires onStepClick with key
+    given: draft.status='needs_review', click on 'Cadrer'
+    expect: onStepClick called with 'frame'
+
+  - name: clicking future step does not fire onStepClick
+    given: draft.status='generated', click on 'Valider'
+    expect: onStepClick not called (disabled button)
+
+  - name: future step has tooltip
+    given: draft.status='generated'
+    expect: 'Visuel' button has title attribute containing 'Complétez'
+
+e2e:
+  - name: stepper progresses idea → generated
+    steps:
+      - visit /admin/content-studio-v2/create
+      - fill IntentionForm
+      - click Enregistrer
+      - wait for variants to appear
+    expect: Stepper active step = 'Générer'
+
+  - name: stepper progresses generated → needs_review on variant select
+    steps:
+      - given variants visible
+      - click 'Choisir cette variante' on first variant
+      - wait for autoreview
+    expect: Stepper active step = 'Visuel'
+
+  - name: stepper progresses needs_review → approved on Valider click
+    steps:
+      - given draft in needs_review with media
+      - click 'Valider et préparer la publication'
+    expect: Stepper active step = 'Valider'

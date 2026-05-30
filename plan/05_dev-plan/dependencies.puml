@@ -1,0 +1,179 @@
+@startuml dependencies
+title FemiGlow Content Studio v2 — Graphe de dependances des ACTIONs (P0..P5)
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #555555
+skinparam rectangle {
+  BorderColor #333333
+  FontSize 11
+}
+
+legend top left
+  Alias logiques (deps des CSV) :
+  ARC-MSW = ARC-004 | ARC-RESOLVE-CRED = ARC-013
+  ARC-BRIDGE = ARC-002/003 | DATA-SYNC-JOB = DA-004
+  Fleche A --> B : B depend de A (A doit preceder B)
+end legend
+
+' ===== P0 — Verite + parite (non negociable) =====
+package "P0 - Verite + parite" #E8F0FE {
+  rectangle "ACT-ARC-004\nMSW global + gate exit-code" as ARC004
+  rectangle "ACT-BE-001\ndrain fake-timer" as BE001
+  rectangle "ACT-DA-008\nexit-code = verite" as DA008
+  rectangle "ACT-DA-001\ntable audit_events reelle" as DA001
+  rectangle "ACT-DA-002\nE2E DB schema Drizzle" as DA002
+  rectangle "ACT-DS-001\ncontrat image/video + 2 E2E" as DS001
+  rectangle "ACT-DS-002\ngarde anti-regression" as DS002
+  rectangle "ACT-ARC-005\ncontract-tests fideles" as ARC005
+  rectangle "ACT-ARC-013\nresolveProviderCredential" as ARC013
+  rectangle "ACT-BE-010\nOpenAI image+texte live" as BE010
+  rectangle "ACT-ARC-008\npicker = generateur" as ARC008
+  rectangle "ACT-BE-020\nlegacy /postiz-draft off" as BE020
+}
+
+' ===== P1 — Moteur unique + 4 blockers =====
+package "P1 - Moteur unique + 4 blockers" #FDEDED {
+  rectangle "ACT-ARC-001\nGenerationResult complet" as ARC001
+  rectangle "ACT-ARC-002\npont bidirectionnel idempotent" as ARC002
+  rectangle "ACT-DA-006\nregistre modeles routables" as DA006
+  rectangle "ACT-ARC-009\nstockage media unifie" as ARC009
+  rectangle "ACT-ARC-006\nfile de jobs async" as ARC006
+  rectangle "ACT-ARC-007\nHiggsfield async + routage" as ARC007
+  rectangle "ACT-BE-011\nimage Higgsfield async" as BE011
+  rectangle "ACT-BE-012\nvideo Higgsfield async" as BE012
+  rectangle "ACT-DA-003\ncle idempotence publication" as DA003
+  rectangle "ACT-BE-022\nidempotence (GARDE-FOU DUR)" as BE022 #FFD9D9
+  rectangle "ACT-DA-004\nsync content_post<->job" as DA004 #FFD9D9
+  rectangle "ACT-BE-021\nscheduler live (GARDE)" as BE021 #FFB3B3
+}
+
+' ===== P2 — Honnetete + amorce convergence =====
+package "P2 - Honnetete + amorce B->A" #FEF7E0 {
+  rectangle "ACT-BE-013\ntexte reellement LLM" as BE013
+  rectangle "ACT-BE-017\nenum tone aligne" as BE017
+  rectangle "ACT-ARC-003\nfacade invokeEngine" as ARC003
+  rectangle "ACT-UX-001\npicker honnete" as UX001
+  rectangle "ACT-UX-002\ncatalogue video aligne" as UX002
+  rectangle "ACT-UX-003\nfin pre-selection KO" as UX003
+  rectangle "ACT-UX-004\nmodele choisi honore" as UX004
+  rectangle "ACT-FE-002\nhelper mode generation" as FE002
+  rectangle "ACT-FE-001\npropager mode texte" as FE001
+}
+
+' ===== P3 — Robustesse =====
+package "P3 - Robustesse" #E6F4EA {
+  rectangle "ACT-BE-016\nre-gen idee 409" as BE016
+  rectangle "ACT-BE-014\nvariation draft reelle" as BE014
+  rectangle "ACT-BE-015\nfallbacks audibles" as BE015
+  rectangle "ACT-BE-023\ndry_run honnete" as BE023
+  rectangle "ACT-FE-006\ncompte Postiz explicite" as FE006
+  rectangle "ACT-FE-008\nerreurs HttpError UI" as FE008
+  rectangle "ACT-UX-005\nsource unique mock/live" as UX005
+  rectangle "ACT-UX-006\nfin toggle fantome texte" as UX006
+  rectangle "ACT-UX-007\nmessage echec actionnable" as UX007
+  rectangle "ACT-DS-003\ncontraste WCAG AA" as DS003
+  rectangle "ACT-DA-005\nmodele intentionnel trace" as DA005
+}
+
+' ===== P4 — Compose reel + montage =====
+package "P4 - Compose reel + montage" #EDE7F6 {
+  rectangle "ACT-BE-002\nMEDIA_DIR absolu + purge" as BE002
+  rectangle "ACT-DA-007\nisolation stockage test" as DA007
+  rectangle "ACT-BE-030\nvoix-off/musique reels" as BE030
+  rectangle "ACT-BE-031\ncompose reel + sous-titres" as BE031
+  rectangle "ACT-BE-034\nrobustesse uploads" as BE034
+  rectangle "ACT-FE-004\nMediaStudio -> moteur A" as FE004
+  rectangle "ACT-FE-005\nvoix-off/montage UI" as FE005
+  rectangle "ACT-FE-003\nmetadonnees media" as FE003
+  rectangle "ACT-FE-009\nreconciliation optimiste" as FE009
+  rectangle "ACT-DS-004\napercu fidele + erreur" as DS004
+  rectangle "ACT-DS-005\nslots UI livrables A" as DS005
+  rectangle "ACT-UX-008\napercu pleine resolution" as UX008
+}
+
+' ===== P5 — Convergence finale + dette =====
+package "P5 - Convergence finale + dette" #ECEFF1 {
+  rectangle "ACT-ARC-012\ngate smoke operateur" as ARC012
+  rectangle "ACT-ARC-010\nbascule par flag" as ARC010
+  rectangle "ACT-ARC-011\ntaxonomies unifiees" as ARC011
+  rectangle "ACT-BE-003\nconfig/caches invalidables" as BE003
+  rectangle "ACT-BE-004\nre-verif pipeline PM2" as BE004
+  rectangle "ACT-BE-032\ntranscode codec/taille" as BE032
+  rectangle "ACT-BE-033\ngarde kind=video" as BE033
+  rectangle "ACT-BE-035\npricing centralise" as BE035
+  rectangle "ACT-FE-007\nrecadrage rotation" as FE007
+  rectangle "ACT-DS-006\nprimitives tokens" as DS006
+}
+
+' ===== Dependances P0 =====
+ARC004 --> ARC005
+ARC004 --> ARC013
+ARC004 --> ARC008
+ARC013 --> ARC008
+ARC013 --> BE010
+BE001 --> BE010
+DA001 --> DA002
+DS001 --> DS002
+
+' ===== Dependances P1 =====
+ARC001 --> ARC002
+ARC009 --> ARC006
+ARC006 --> ARC007
+ARC007 --> BE011
+ARC013 --> BE011
+ARC004 --> BE011
+BE011 --> BE012
+ARC004 --> BE012
+BE022 --> BE021
+DA004 --> BE021
+
+' ===== Dependances P2 =====
+BE010 --> BE013
+ARC013 --> BE013
+ARC001 --> ARC003
+ARC002 --> ARC003
+ARC008 --> UX001
+ARC013 --> UX001
+UX001 --> UX002
+UX001 --> UX003
+UX001 --> UX004
+FE002 --> FE001
+
+' ===== Dependances P3 =====
+BE013 --> BE014
+ARC003 --> BE015
+ARC004 --> BE023
+FE002 --> FE008
+ARC013 --> UX005
+UX005 --> UX006
+
+' ===== Dependances P4 =====
+ARC013 --> BE002
+BE002 --> BE031
+ARC003 --> BE031
+BE015 --> BE030
+ARC013 --> BE030
+BE002 --> BE034
+ARC003 --> FE004
+ARC001 --> FE004
+FE004 --> FE005
+FE004 --> FE003
+FE009 --> FE003
+FE004 --> FE009
+DS004 --> DS005
+
+' ===== Dependances P5 =====
+ARC004 --> ARC012
+ARC003 --> ARC010
+ARC012 --> ARC010
+ARC001 --> ARC011
+BE030 --> BE003
+BE030 --> BE004
+ARC003 --> BE004
+BE031 --> BE032
+BE015 --> BE032
+BE010 --> BE035
+DS003 --> DS006
+
+@enduml

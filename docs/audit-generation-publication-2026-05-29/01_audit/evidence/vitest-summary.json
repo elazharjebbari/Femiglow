@@ -1,0 +1,14 @@
+{
+  "tool": "vitest 2.1.x",
+  "command": "pnpm exec vitest run src/lib/content-studio src/lib/social-publishing src/lib/ai-engine src/components/admin/content-studio-v2",
+  "capturedAt": "2026-05-29",
+  "numTotalTestSuites": 434,
+  "numTotalTests": 1695,
+  "numPassedTests": 1695,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "reportedResult": "ALL GREEN (1695 passed, 0 failed)",
+  "processExitCode": 1,
+  "exitAnomaly": "Process exits 1 despite 0 failed tests — unhandled promise rejection in src/lib/content-studio/video-generation.test.ts (fake-timer polling test \"polling status=failed\")",
+  "interpretation": "A CI gate keyed on the summary line passes; a gate keyed on exit code fails. Canonical test-vs-reality drift."
+}

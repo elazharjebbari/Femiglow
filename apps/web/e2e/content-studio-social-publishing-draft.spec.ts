@@ -28,7 +28,10 @@ test('envoie un post Content Studio en brouillon Postiz depuis l interface admin
   page.on('dialog', (dialog) => dialog.accept());
 
   try {
-    await page.goto('/admin/content-studio');
+    // /admin/content-studio redirige vers v2 quand CONTENT_STUDIO_V2_DEFAULT=true ;
+    // le module legacy (panneau « Publication directe » + « Brouillon Postiz »)
+    // reste accessible sur /admin/content-studio-legacy (URL de rollback stable).
+    await page.goto('/admin/content-studio-legacy');
     await ensureAuthOrSkip(page);
 
     await expect(page.getByRole('heading', { name: 'Studio contenu' })).toBeVisible();
@@ -203,7 +206,7 @@ async function expectDraftJobInDb(postId: string) {
 
     // Audit event emitted
     const events = await sql<{ action: string; resource_id: string | null }[]>`
-      select action, resource_id from audit_event
+      select action, resource_id from audit_events
       where action = 'social.draft_created' and resource_id = ${postId}
     `;
     expect(events.length).toBeGreaterThanOrEqual(1);
@@ -224,7 +227,7 @@ async function cleanupSeed(ids: SeedIds) {
   const sql = postgres(databaseUrl, { max: 1, prepare: false });
   try {
     await sql.begin(async (tx) => {
-      await tx`delete from audit_event where resource_id = ${ids.postId}`;
+      await tx`delete from audit_events where resource_id = ${ids.postId}`;
       await tx`delete from social_publication where post_id = ${ids.postId}`;
       await tx`delete from social_publish_event where job_id in (select id from social_publish_job where post_id = ${ids.postId})`;
       await tx`delete from social_publish_job where post_id = ${ids.postId}`;

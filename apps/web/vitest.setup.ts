@@ -46,6 +46,12 @@ process.env.CRON_SECRET = process.env.CRON_SECRET ?? 'c'.repeat(32);
 
 afterEach(() => {
   cleanup();
+  // Filet global anti-fuite de fake timers (ACT-BE-001 / BUG-010) : aucun test
+  // ne doit laisser des fake timers actifs, sinon des callbacks/timers en
+  // attente fuient dans le test suivant et peuvent produire une unhandled
+  // rejection qui fait sortir le process en EXIT 1 malgré « tests passed ».
+  vi.clearAllTimers();
+  vi.useRealTimers();
 });
 
 vi.mock('next/font/google', () => ({

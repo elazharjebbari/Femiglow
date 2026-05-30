@@ -1,0 +1,27 @@
+endpoint:
+  method: PATCH
+  path: /api/admin/content-studio/posts/{id}/reschedule
+  auth: admin cookie
+
+request_body:
+  required: true
+  schema:
+    scheduledAt: { type: string, format: date-time, required: true }
+
+response_200:
+  schema:
+    post: { id, status: scheduled, scheduledAt: new }
+
+response_400:
+  variants:
+    - { code: invalid_input }
+    - { code: invalid_date, when: past }
+    - { code: min_lead_time }
+response_409:
+  variants:
+    - { code: invalid_state, when: post.status not in {approved, scheduled} }
+
+side_effects:
+  - UPDATE content_post.scheduledAt
+  - UPDATE social_publish_job.scheduledAt (if status='queued')
+  - audit_log action='social.publish.rescheduled'

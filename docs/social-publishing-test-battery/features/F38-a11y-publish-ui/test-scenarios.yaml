@@ -1,0 +1,19 @@
+feature: F38-a11y-publish-ui
+critical: P2
+
+e2e:
+  - id: F38-E-1
+    name: axe scan create page
+    expect: 0 critical violations
+  - id: F38-E-2
+    name: axe scan plan page
+  - id: F38-E-3
+    name: axe scan library page
+  - id: F38-E-4
+    name: axe scan home page
+  - id: F38-E-5
+    name: dialog focus trap (Tab cycles inside)
+  - id: F38-E-6
+    name: dialog Esc closes
+  - id: F38-E-7
+    name: all buttons have accessible name

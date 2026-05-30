@@ -538,6 +538,23 @@ describe('PlatformPreview — Cross-cutting', () => {
     expect(video).toHaveAttribute('src', '/video.mp4');
   });
 
+  it('renderMedia with video goes through VideoPlayer (VIDÉO badge + duration visible)', () => {
+    const media = buildVideoMedia();
+    const { container } = render(
+      <PlatformPreview
+        platform="instagram"
+        format="reel"
+        media={media}
+        caption="Reel video"
+      />,
+    );
+    const player = container.querySelector('[data-cs-video-player]');
+    expect(player).not.toBeNull();
+    const badge = container.querySelector('[data-cs-video-badge]');
+    expect(badge).not.toBeNull();
+    expect(badge?.textContent).toMatch(/VIDÉO/);
+  });
+
   it('formatHashtags escapes HTML entities correctly (XSS prevention)', () => {
     const xssCaption = '<script>alert("xss")</script> #safe';
     const { container } = render(

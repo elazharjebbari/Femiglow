@@ -1,0 +1,94 @@
+# Media types — Content Studio v2
+
+types:
+
+  StudioV2MediaItem:
+    description: Generic media item used by MediaPicker & MediaStudio
+    fields:
+      id: { type: string }
+      kind: { type: string, enum: [image, video] }
+      compartment: { type: string, enum: [imported, ai_generated, stock] }
+      slug: { type: string }
+      alt: { type: string, optional: true }
+      thumbnailUrl: { type: string, nullable: true }
+      previewUrl: { type: string, description: URL playable in browser }
+      originalUrl: { type: string }
+      width: { type: integer, optional: true }
+      height: { type: integer, optional: true }
+      durationMs: { type: integer, nullable: true, description: Only set for kind=video }
+      createdAt: { type: string, format: date-time }
+
+  StudioV2Compartment:
+    enum: [imported, ai_generated, stock, all]
+
+# Aspect ratios per format
+aspect_ratios:
+  post:      "4:5 or 1:1"      # mostly 4:5 in IG feed
+  story:     "9:16"
+  reel:      "9:16"
+  carousel:  "4:5 or 1:1"
+
+# Recommended dimensions
+dimensions:
+  post_4x5:      { width: 1080, height: 1350 }
+  post_1x1:      { width: 1080, height: 1080 }
+  story_9x16:    { width: 1080, height: 1920 }
+  reel_9x16:     { width: 1080, height: 1920 }
+  carousel_4x5:  { width: 1080, height: 1350 }
+
+# MIME types supported
+mime_types:
+  image:
+    - image/png
+    - image/jpeg
+    - image/webp
+  video:
+    - video/mp4
+    - video/quicktime
+
+# Constraints
+constraints:
+  max_image_size_mb: 8
+  max_video_size_mb: 100
+  max_video_duration_s_reel: 90
+  max_video_duration_s_story: 60
+
+# Mock assets registered in registry
+mock_assets:
+  reel_video:
+    id: mock-reel-9x16
+    kind: video
+    compartment: ai_generated
+    slug: mock-reel-9x16
+    alt: "Mock reel demo (mode mock)"
+    previewUrl: /_media/content-studio/mock/reel-9x16.mp4
+    originalUrl: /_media/content-studio/mock/reel-9x16.mp4
+    thumbnailUrl: /_media/content-studio/mock/poster-9x16.jpg
+    width: 1080
+    height: 1920
+    durationMs: 5000
+
+  story_video:
+    id: mock-story-9x16
+    kind: video
+    compartment: ai_generated
+    slug: mock-story-9x16
+    alt: "Mock story demo"
+    previewUrl: /_media/content-studio/mock/story-9x16.mp4
+    originalUrl: /_media/content-studio/mock/story-9x16.mp4
+    thumbnailUrl: /_media/content-studio/mock/poster-9x16.jpg
+    width: 1080
+    height: 1920
+    durationMs: 3000
+
+  generic_image:
+    id: mock-image-1x1
+    kind: image
+    compartment: ai_generated
+    slug: mock-image-1x1
+    alt: "Mock generated image"
+    previewUrl: /_media/content-studio/mock/sample-1080.png
+    originalUrl: /_media/content-studio/mock/sample-1080.png
+    thumbnailUrl: /_media/content-studio/mock/sample-1080.png
+    width: 1080
+    height: 1080

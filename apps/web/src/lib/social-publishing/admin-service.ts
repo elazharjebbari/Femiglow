@@ -160,7 +160,14 @@ function mapPostizProviderToPlatform(value: string | undefined): SocialPlatform 
 
 export async function listAdminSocialAccounts(): Promise<SocialAccount[]> {
   const accounts = await listSocialAccounts();
-  return accounts.length > 0 ? accounts : syncSocialAccounts();
+  const base = accounts.length > 0 ? accounts : await syncSocialAccounts();
+  // ACT-BE-065 (BUG-065) : capabilities RECALCULÉES à la volée depuis le code
+  // adapter (source unique), au lieu de servir les capabilities persistées
+  // potentiellement périmées (supportsDraft / reel / story manquants).
+  return base.map((account) => ({
+    ...account,
+    capabilities: adapterFor(account.provider).listCapabilities(account),
+  }));
 }
 
 export async function getPostPublishability(input: {
@@ -175,7 +182,7 @@ export async function getPostPublishability(input: {
   errors: string[];
 }> {
   const { post, draft, account } = await resolvePostDraftAccount(input.postId, input.accountId ?? null);
-  const content = await buildSocialContent(post.id, draft, post.scheduledAt);
+  const content = await buildSocialContent(post.id, draft, post.scheduledAt, account.provider);
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -552,17 +559,66 @@ async function resolvePostDraftAccount(postId: string, accountId: string | null)
 }
 
 async function defaultAccountForPlatform(platform: SocialPlatform): Promise<SocialAccount | null> {
-  const accounts = await listAdminSocialAccounts();
-  // Préférence dry_run actif (sécurité staging), puis premier compte actif compatible.
-  const eligible = accounts.filter((account) => account.platform === platform && account.status === 'active');
+  return resolveDefaultAccount(platform, {
+    mode: env.SOCIAL_PUBLISHING_MODE,
+    pinnedAccountId: env.SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID,
+  });
+}
+
+/**
+ * Choisit le compte social par défaut pour une plateforme.
+ * Exporté avec injection (mode/pinnedAccountId) pour testabilité — la prod
+ * appelle via {@link defaultAccountForPlatform} qui lit la config env.
+ */
+export async function resolveDefaultAccount(
+  platform: SocialPlatform,
+  opts: { mode?: 'dry_run' | 'live'; pinnedAccountId?: string | null } = {},
+): Promise<SocialAccount | null> {
+  const live = (opts.mode ?? env.SOCIAL_PUBLISHING_MODE) === 'live';
+
+  let eligible = (await listAdminSocialAccounts()).filter(
+    (account) => account.platform === platform && account.status === 'active',
+  );
+
+  if (!live) {
+    // Mode dry_run (défaut, sécurité staging) : préférence au compte simulé,
+    // puis premier compte actif compatible. Aucune publication réelle.
+    return (
+      eligible.find((account) => account.provider === 'dry_run') ??
+      eligible[0] ??
+      null
+    );
+  }
+
+  // Mode live : on publie réellement via Postiz. S'assurer que les comptes
+  // Postiz sont bien synchronisés (ils ne le sont pas toujours en base si seuls
+  // les comptes dry_run ont été persistés auparavant).
+  if (!eligible.some((account) => account.provider === 'postiz')) {
+    await syncSocialAccounts({ includePostiz: true });
+    eligible = (await listSocialAccounts()).filter(
+      (account) => account.platform === platform && account.status === 'active',
+    );
+  }
+
+  // Compte cible explicitement épinglé (id interne OU remoteId Postiz).
+  const pinned = opts.pinnedAccountId ?? env.SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID;
+  if (pinned) {
+    const match = eligible.find(
+      (account) => account.id === pinned || account.remoteId === pinned,
+    );
+    if (match) return match;
+  }
+
+  // Sinon : premier compte Postiz actif, puis tout compte réel non-dry_run.
+  // En mode live on évite délibérément de retomber sur dry_run.
   return (
-    eligible.find((account) => account.provider === 'dry_run') ??
-    eligible[0] ??
+    eligible.find((account) => account.provider === 'postiz') ??
+    eligible.find((account) => account.provider !== 'dry_run') ??
     null
   );
 }
 
-async function buildSocialContent(postId: string, draft: Awaited<ReturnType<typeof getDraft>> & {}, scheduledAt: Date | null): Promise<SocialPublishContent> {
+async function buildSocialContent(postId: string, draft: Awaited<ReturnType<typeof getDraft>> & {}, scheduledAt: Date | null, accountProvider: string): Promise<SocialPublishContent> {
   if (!draft) throw new HttpError('not_found', 'Brouillon introuvable.');
   const asset = await getPrimaryAsset(draft.id);
   const media = asset ? await getMediaWithRelations(asset.mediaId) : null;
@@ -585,7 +641,9 @@ async function buildSocialContent(postId: string, draft: Awaited<ReturnType<type
       : [],
     scheduledAt,
     tags,
-    metadata: { dryRun: true, contentStudioDraftId: draft.id },
+    // ACT-BE-023 (BUG-063) : dryRun reflète l'adapter RÉELLEMENT résolu, pas un
+    // `true` forcé. Un post via l'adapter dry_run = simulé ; via Postiz = réel.
+    metadata: { dryRun: accountProvider === 'dry_run', contentStudioDraftId: draft.id },
   };
 }
 

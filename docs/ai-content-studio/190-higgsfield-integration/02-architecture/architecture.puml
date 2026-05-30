@@ -1,0 +1,324 @@
+@startuml Higgsfield AI Engine Provider Architecture
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam packageBorderColor #555555
+skinparam classBorderColor #444444
+skinparam classFontSize 11
+skinparam noteBackgroundColor #FFFDE7
+
+title FemiGlow AI Engine - Provider Architecture with Higgsfield
+footer Updated 2026-05-27 | Higgsfield Integration
+
+' =============================================================================
+' LangGraph Nodes (entry points)
+' =============================================================================
+
+package "LangGraph Nodes" as nodes #E8F5E9 {
+  class "generate-images.ts" as genImages {
+    +generateImagesNode(state): state
+    --
+    Uses ProviderSelector
+    for 'image' capability
+  }
+
+  class "generate-video.ts" as genVideo {
+    +generateVideoNode(state): state
+    --
+    Uses ProviderSelector
+    for 'video' capability
+  }
+
+  class "generate-script.ts" as genScript {
+    +generateScriptNode(state): state
+    --
+    Uses ProviderSelector
+    for 'text' capability
+  }
+
+  class "generate-caption.ts" as genCaption {
+    +generateCaptionNode(state): state
+  }
+
+  class "compose.ts" as compose {
+    +composeNode(state): state
+    --
+    FFmpeg assembly
+    Provider-agnostic
+  }
+}
+
+' =============================================================================
+' Provider Selection Layer
+' =============================================================================
+
+package "Provider Selection" as selection #E3F2FD {
+  class "ProviderSelector" as selector {
+    -configs: ProviderConfig[]
+    -adapters: Map<string, ProviderAdapter>
+    -tenantId: string
+    ..
+    +selectProvider(node, capability, budget?): ProviderAdapter
+    +selectFallback(node, capability, exclude): ProviderAdapter
+    +getAdapter(providerId): ProviderAdapter?
+    +listAvailable(capability): ProviderAdapter[]
+    --
+    <<Filters>>
+    isEnabled
+    hasCapability
+    healthStatus != unhealthy
+    circuitBreaker != OPEN
+    dailyBudget not exceeded
+    ..
+    <<Sort>>
+    priority ASC (lower = higher priority)
+  }
+
+  note right of selector
+    Provider priority order:
+    10 - OpenAI (text, image, tts)
+    **15 - Higgsfield (image, video)**
+    20 - Anthropic (text, vision)
+    30 - Google (text, image, video)
+    40 - ElevenLabs (tts)
+    99 - Ollama (text, embedding)
+  end note
+
+  class "createAdapter(config)" as factory <<function>> {
+    switch(config.type):
+      'openai' -> OpenAIAdapter
+      'anthropic' -> AnthropicAdapter
+      'google' -> GoogleAdapter
+      **'higgsfield' -> HiggsFieldAdapter**
+      default -> Error
+  }
+}
+
+' =============================================================================
+' Adapter Hierarchy
+' =============================================================================
+
+package "Provider Adapters" as adapters #FFF3E0 {
+  abstract class "ProviderAdapter" as base {
+    +config: ProviderConfig
+    #circuitBreaker: CircuitBreaker
+    #retryPolicy: RetryPolicy
+    -_lastCostCents: number
+    ..
+    +{abstract} generateText(params): ProviderCallResult<TextGenResult>
+    +{abstract} generateImage(params): ProviderCallResult<ImageGenResult>
+    +{abstract} generateEmbedding(params): ProviderCallResult<number[]>
+    +generateVideo(params): ProviderCallResult<VideoGenResult>
+    +textToSpeech(params): ProviderCallResult<TtsResult>
+    +generateMusic(params): ProviderCallResult<MusicGenResult>
+    ..
+    #computeCostCents(model, input, output): number
+    #getApiKey(): string
+  }
+
+  class "OpenAIAdapter" as openai {
+    +generateText(): ...
+    +generateImage(): POST openai.com/v1/images/generations
+    +generateEmbedding(): OpenAIEmbeddings
+    +textToSpeech(): POST openai.com/v1/audio/speech
+  }
+
+  class "AnthropicAdapter" as anthropic {
+    +generateText(): ChatAnthropic
+    +generateTextWithVision(): multimodal
+    +generateImage(): NotImplementedError
+    +generateEmbedding(): NotImplementedError
+  }
+
+  class "GoogleAdapter" as google {
+    +generateText(): ChatGoogleGenerativeAI
+    +generateImage(): POST googleapis.com/v1/models/:predict
+    +generateEmbedding(): NotImplementedError
+  }
+
+  class "HiggsFieldAdapter" as higgsfield #FFD54F {
+    +generateImage(): POST higgsfield.ai/v1/images/generate
+    +generateVideo(): POST higgsfield.ai/v1/videos/generate
+    +generateText(): NotImplementedError
+    +generateEmbedding(): NotImplementedError
+    --
+    -buildVideoResult(url, model, start)
+    -sleep(ms): Promise<void>
+    ..
+    <<Video Generation>>
+    1. Submit job (POST /videos/generate)
+    2. If sync: return video_url
+    3. Else poll: GET /videos/status/{job_id}
+       - Interval: 3s
+       - Max: 120 attempts (6 min)
+       - On 'completed': return
+       - On 'failed': throw ProviderError
+  }
+}
+
+' =============================================================================
+' Resilience Layer
+' =============================================================================
+
+package "Resilience" as resilience #FCE4EC {
+  class "CircuitBreaker" as cb {
+    -state: CLOSED | OPEN | HALF_OPEN
+    -failureCount: number
+    -failureThreshold: 5
+    -resetTimeoutMs: 60000
+    -halfOpenMaxCalls: 1
+    ..
+    +execute<T>(fn): Promise<T>
+    +getState(): string
+    +reset(): void
+    --
+    CLOSED: all calls pass through
+    -> OPEN after 5 consecutive failures
+    OPEN: all calls rejected immediately
+    -> HALF_OPEN after 60s timeout
+    HALF_OPEN: 1 probe call allowed
+    -> CLOSED on success
+    -> OPEN on failure
+  }
+
+  class "RetryPolicy" as retry {
+    -maxRetries: 3
+    -baseDelayMs: 1000
+    -maxDelayMs: 60000
+    -exponentialBase: 2
+    ..
+    +execute<T>(fn, isRetryable?): Promise<T>
+    --
+    Exponential backoff with jitter
+    Non-retryable: 400, 401, 403, 404, 422
+    Retryable: 429, 500, 502, 503, 504
+  }
+}
+
+' =============================================================================
+' Cost Tracking
+' =============================================================================
+
+package "Cost Tracking" as costs #F3E5F5 {
+  class "globalCostTracker" as costTracker {
+    +getDailySpend(tenantId): number
+    +recordCost(tenantId, provider, cost): void
+    --
+    Used by ProviderSelector to
+    enforce dailyBudgetCents
+  }
+
+  database "ai_engine_cost_ledger" as ledger {
+    provider: text
+    model: text
+    costCents: number
+    tokensInput: number
+    tokensOutput: number
+    tenantId: text
+    timestamp: datetime
+  }
+}
+
+' =============================================================================
+' Configuration
+' =============================================================================
+
+package "Configuration" as config #EFEBE9 {
+  class "EngineConfig" as engineConfig {
+    +providers.image.default: '...| higgsfield | mock'
+    +providers.video.default: '...| higgsfield | mock'
+    +apiKeys.higgsfield: string | undefined
+    +budget.dailyCents: number
+  }
+
+  class "ProviderConfig" as providerConfig {
+    +id: string
+    +type: ProviderType
+    +capabilities: ProviderCapability[]
+    +models: ModelConfig[]
+    +priority: number
+    +dailyBudgetCents: number
+    +circuitBreaker: CircuitBreakerConfig
+    +isEnabled: boolean
+    +healthStatus: ProviderHealth
+  }
+
+  class "env.ts" as envTs {
+    AI_ENGINE_HIGGSFIELD_API_KEY
+    AI_ENGINE_DEFAULT_IMAGE_PROVIDER
+    AI_ENGINE_DEFAULT_VIDEO_PROVIDER
+  }
+}
+
+' =============================================================================
+' External APIs
+' =============================================================================
+
+cloud "Higgsfield AI API" as hfApi #FFD54F {
+  [POST /v1/images/generate]
+  [POST /v1/videos/generate]
+  [GET /v1/videos/status/{id}]
+  [GET /v1/models]
+}
+
+cloud "OpenAI API" as openaiApi {
+  [POST /v1/images/generations]
+  [POST /v1/chat/completions]
+}
+
+cloud "Google AI API" as googleApi {
+  [POST /v1/models/:predict]
+}
+
+cloud "Anthropic API" as anthropicApi {
+  [POST /v1/messages]
+}
+
+' =============================================================================
+' Relationships
+' =============================================================================
+
+' Nodes -> Selector
+genImages --> selector : selectProvider('image')
+genVideo --> selector : selectProvider('video')
+genScript --> selector : selectProvider('text')
+genCaption --> selector : selectProvider('text')
+
+' Selector -> Factory
+selector --> factory : getOrCreateAdapter()
+
+' Factory -> Adapters
+factory --> openai
+factory --> anthropic
+factory --> google
+factory ..> higgsfield : **NEW**
+
+' Adapter hierarchy
+base <|-- openai
+base <|-- anthropic
+base <|-- google
+base <|-- higgsfield
+
+' Resilience composition
+base *-- cb : circuitBreaker
+base *-- retry : retryPolicy
+
+' Cost tracking
+selector --> costTracker : check daily budget
+base --> costTracker : record cost
+
+costTracker --> ledger : persist
+
+' Config
+selector --> providerConfig : uses
+engineConfig --> envTs : reads from
+
+' External APIs
+higgsfield --> hfApi : HTTPS
+openai --> openaiApi : HTTPS
+google --> googleApi : HTTPS
+anthropic --> anthropicApi : HTTPS
+
+@enduml

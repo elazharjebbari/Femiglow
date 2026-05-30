@@ -1,0 +1,13 @@
+feature: F26-postiz-analytics-fetch
+critical: P3
+
+unit:
+  - id: F26-U-1
+    name: getPostizPostAnalytics happy path
+    expect: returns metrics shape
+  - id: F26-U-2
+    name: handles 404 (post not yet measured)
+  - id: F26-U-3
+    name: parses metrics structure
+  - id: F26-U-4
+    name: caches result for 1h (optional)

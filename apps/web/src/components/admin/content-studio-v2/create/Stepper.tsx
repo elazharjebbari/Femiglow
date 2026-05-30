@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react';
 import type { ContentDraft, ContentStatus } from '@/lib/content-studio/types';
+import { MockModeBadge } from './MockModeBadge';
 
 export type StepKey = 'frame' | 'generate' | 'visual' | 'validate';
 
@@ -13,6 +14,8 @@ interface StepperProps {
   /** Override the active step (e.g. user scrolled). */
   activeStep?: StepKey;
   onStepClick?: (step: StepKey) => void;
+  /** CS v2 Phase 5 — surface the global mock-mode indicator inline. */
+  mockMode?: boolean;
 }
 
 const STEPS: { key: StepKey; label: string; description: string }[] = [
@@ -53,29 +56,55 @@ export function deriveActiveStep(
 
 const STEP_ORDER: StepKey[] = STEPS.map((s) => s.key);
 
-export function Stepper({ draft, hasMedia = false, activeStep, onStepClick }: StepperProps) {
+export function Stepper({
+  draft,
+  hasMedia = false,
+  activeStep,
+  onStepClick,
+  mockMode = false,
+}: StepperProps) {
   const computed = activeStep ?? deriveActiveStep(draft ?? null, hasMedia);
   const activeIdx = STEP_ORDER.indexOf(computed);
 
   return (
-    <ol
-      className="cs-stepper"
-      aria-label="Étapes de création"
-      style={{
-        display: 'flex',
-        gap: 12,
-        padding: 14,
-        background: 'var(--cs-bg-elevated)',
-        border: '1px solid var(--cs-border-hair)',
-        borderRadius: 'var(--cs-radius-md)',
-        listStyle: 'none',
-        margin: 0,
-      }}
+    <div
+      className="cs-stepper-wrapper"
+      style={{ position: 'relative' }}
     >
+      {mockMode ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 1,
+          }}
+        >
+          <MockModeBadge />
+        </div>
+      ) : null}
+      <ol
+        className="cs-stepper"
+        aria-label="Étapes de création"
+        style={{
+          display: 'flex',
+          gap: 12,
+          padding: 14,
+          background: 'var(--cs-bg-elevated)',
+          border: '1px solid var(--cs-border-hair)',
+          borderRadius: 'var(--cs-radius-md)',
+          listStyle: 'none',
+          margin: 0,
+        }}
+      >
       {STEPS.map((step, idx) => {
         const isActive = idx === activeIdx;
         const isDone = idx < activeIdx;
         const isFuture = idx > activeIdx;
+        const prevLabel = idx > 0 ? STEPS[idx - 1]?.label : undefined;
+        const futureTitle = isFuture && prevLabel
+          ? `Complétez l'étape « ${prevLabel} » pour continuer`
+          : undefined;
         return (
           <li
             key={step.key}
@@ -85,7 +114,9 @@ export function Stepper({ draft, hasMedia = false, activeStep, onStepClick }: St
               type="button"
               onClick={() => onStepClick?.(step.key)}
               disabled={isFuture}
+              title={futureTitle}
               aria-current={isActive ? 'step' : undefined}
+              aria-disabled={isFuture ? 'true' : undefined}
               data-step={step.key}
               data-state={isActive ? 'active' : isDone ? 'done' : 'future'}
               style={{
@@ -164,6 +195,7 @@ export function Stepper({ draft, hasMedia = false, activeStep, onStepClick }: St
           </li>
         );
       })}
-    </ol>
+      </ol>
+    </div>
   );
 }

@@ -1,0 +1,34 @@
+feature: F12-idempotency
+critical: P0
+
+unit:
+  - id: F12-U-1
+    name: findByIdempotencyKey returns existing
+  - id: F12-U-2
+    name: race condition: Promise.all 2 calls same key
+    when: 2 simultaneous publishContentPostNow
+    expect: 1 job created, both calls return same id
+  - id: F12-U-3
+    name: server generates key when client omits
+    expect: key matches pattern content-studio:postId:accountId:mode
+  - id: F12-U-4
+    name: key includes scheduledAt for schedule mode
+  - id: F12-U-5
+    name: idempotencyKey UNIQUE constraint enforced at DB
+
+contract:
+  - id: F12-C-1
+    name: 2nd call with same body returns same job id
+  - id: F12-C-2
+    name: Idempotency-Key header used as fallback
+  - id: F12-C-3
+    name: different keys → 2 distinct jobs
+
+e2e:
+  - id: F12-E-1
+    name: double-click guard
+    when: rapidly click Publier confirm twice
+    expect: only 1 job in queue
+    scenario_ref: S11
+  - id: F12-E-2
+    name: server returns cached on replay

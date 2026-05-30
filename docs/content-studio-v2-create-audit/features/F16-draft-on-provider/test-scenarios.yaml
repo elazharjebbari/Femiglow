@@ -1,0 +1,15 @@
+feature: F16-draft-on-provider
+
+contract:
+  - name: draft-on-provider (approved) → 200
+    expect: response.jobs[].publishMode='draft'
+  - name: mock mode → delivery status='pending'
+  - name: auth fail → 200 but delivery status='auth_failed'
+
+component:
+  - name: dropdown option present
+  - name: dialog confirm exists
+  - name: API call on confirm
+  - name: success toast with optional 'Ouvrir' action
+    given: response.jobs[0].provider_url defined
+    expect: toast action button visible

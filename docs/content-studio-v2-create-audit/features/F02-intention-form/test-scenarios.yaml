@@ -1,0 +1,31 @@
+feature: F02-intention-form
+component: IntentionForm
+
+component:
+  - name: renders all 4 format radio cards
+    expect: post, story, reel, carousel visible
+  - name: required fields validation
+    given: prompt < 8 chars
+    expect: aria-invalid on textarea + error message
+  - name: format change fires onFormatChange
+    when: click 'Reel' card
+    expect: onFormatChange called with 'reel'
+  - name: ModelPicker rendered with role=chat
+    expect: ModelPicker present in DOM with data-role='chat'
+  - name: ModelPicker re-fetches on format change
+    when: change format from 'post' to 'reel'
+    expect: ModelPicker emits new fetch with format=reel
+  - name: submit sends model in payload
+    when: model=gpt-4o selected, click Enregistrer
+    expect: POST /ideas with body.model='gpt-4o'
+  - name: submit without model defaults to suggested
+    given: no model selected
+    expect: POST /ideas without model field; server uses suggestForFormat default
+
+contract:
+  - name: POST /ideas with model=gpt-4o
+    body: { pillar, objective, platform, format, prompt, model: 'gpt-4o' }
+    expect: 200, idea created
+  - name: POST /ideas with model=invalid
+    body: { ..., model: 'definitely-not-a-model' }
+    expect: 200 (model accepted as opaque, server logs warn) OR 400 (strict validation)

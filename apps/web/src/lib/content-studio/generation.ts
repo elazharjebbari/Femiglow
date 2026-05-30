@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { env } from '@/lib/env';
 import type { ContentIdea } from './types';
+import { HttpError } from '@/lib/errors/http-error';
+import { resolveProviderCredential } from './provider-credentials';
 
 const generatedBriefSchema = z.object({
   angle: z.string(),
@@ -54,12 +56,54 @@ export interface GenerationResult {
 
 const PROMPT_VERSION = 'content-studio-v0-2026-05-14';
 
-export async function generateForIdea(idea: ContentIdea): Promise<GenerationResult> {
-  const apiKey = env.CONTENT_STUDIO_OPENAI_API_KEY ?? env.CHAT_OPENAI_API_KEY;
+/**
+ * CS v2 create-audit Phase 2 — caller can override the text model id for a
+ * single generation run. Falls back to env.CONTENT_STUDIO_TEXT_MODEL when not
+ * provided. Logged on the resulting `content_generation_run.model` row.
+ */
+export interface GenerateForIdeaOptions {
+  model?: string;
+  /**
+   * Mode de génération propagé depuis le cookie `cs_generation_mode`
+   * (ACT-BE-013). `mock` force le fallback déterministe (jamais d'appel LLM,
+   * même si une clé est présente dans le process) ; `live` exige une clé
+   * résolue (sinon erreur explicite, pas une dégradation silencieuse).
+   */
+  mode?: 'mock' | 'live';
+}
+
+export async function generateForIdea(
+  idea: ContentIdea,
+  opts: GenerateForIdeaOptions = {},
+): Promise<GenerationResult> {
+  const model = opts.model ?? env.CONTENT_STUDIO_TEXT_MODEL;
+
+  // En mode mock explicite : résultat déterministe assumé, on ne touche jamais
+  // le LLM (sinon le mode mock partirait en live au déploiement, là où une clé
+  // OPENAI_API_KEY est présente dans le process).
+  if (opts.mode === 'mock') {
+    return fallbackGeneration(idea);
+  }
+
+  // Résolution de clé UNIFIÉE (ACT-ARC-013 / ACT-BE-010-texte) : chaîne d'env
+  // incl. OPENAI_API_KEY, chaîne vide neutralisée — ferme le split BUG-005
+  // (le `??` historique laissait passer une chaîne vide et n'allait jamais
+  // chercher OPENAI_API_KEY).
+  const apiKey = await resolveProviderCredential('openai');
+
+  // Mode live explicite sans clé : erreur claire (pas un fallback silencieux
+  // qui ferait croire que le live fonctionne).
+  if (opts.mode === 'live' && !apiKey) {
+    throw new HttpError(
+      'invalid_state',
+      'Mode live : aucune clé OpenAI résolue (CONTENT_STUDIO_OPENAI_API_KEY / OPENAI_API_KEY). Configure la clé ou repasse en mode mock.',
+    );
+  }
+
   if (!apiKey) return fallbackGeneration(idea);
 
   try {
-    const body = buildOpenAIBody(idea);
+    const body = buildOpenAIBody(idea, model);
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -77,7 +121,7 @@ export async function generateForIdea(idea: ContentIdea): Promise<GenerationResu
     const parsed = generationOutputSchema.parse(raw);
     return {
       provider: 'openai',
-      model: env.CONTENT_STUDIO_TEXT_MODEL,
+      model,
       promptVersion: PROMPT_VERSION,
       brief: parsed.brief,
       drafts: parsed.drafts.slice(0, 3),
@@ -88,9 +132,9 @@ export async function generateForIdea(idea: ContentIdea): Promise<GenerationResu
   }
 }
 
-function buildOpenAIBody(idea: ContentIdea): Record<string, unknown> {
+function buildOpenAIBody(idea: ContentIdea, model: string): Record<string, unknown> {
   return {
-    model: env.CONTENT_STUDIO_TEXT_MODEL,
+    model,
     temperature: 0.65,
     response_format: { type: 'json_object' },
     messages: [
@@ -151,30 +195,68 @@ function fallbackGeneration(
   };
 
   const base = idea.prompt.replace(/\s+/g, ' ').trim();
+
+  // ACT-BE-013 (variation du fallback) — hooks VARIÉS par format et hashtags
+  // par pilier, au lieu d'un bloc figé identique pour tout (un reel ne reçoit
+  // plus le hook d'un post). Combiné au prompt (présent dans la caption), deux
+  // idées de format/pilier/prompt distincts produisent des textes distincts —
+  // ce qui permet aussi à la régénération de variation (BE-014) de différer.
+  const hooksByFormat = {
+    reel: [
+      'Un geste lent capté en mouvement : la main retrouve sa lumière.',
+      'Quelques secondes au ralenti, et l’éclat naturel revient.',
+      'Le rituel en mouvement : un soin qui ne triche pas.',
+    ],
+    story: [
+      'Un instant suspendu : la main, la lumière, le geste.',
+      'Le temps d’une story, ralentir pour retrouver l’éclat.',
+      'À garder près de soi : le rituel qui prend soin sans abîmer.',
+    ],
+    carousel: [
+      'Étape par étape, la main retrouve sa lumière.',
+      'Trois gestes, une routine : l’éclat naturel se construit.',
+      'À faire défiler : le rituel FemiGlow, pas à pas.',
+    ],
+    post: [
+      'Un geste lent, une main qui retrouve sa lumière.',
+      'La lumière revient quand le geste ralentit.',
+      'Recevoir le rituel, c’est choisir un soin qui ne triche pas.',
+    ],
+  } satisfies Record<string, [string, string, string]>;
+  // `satisfies` garde les clés littérales concrètes : `.post` (et l'accès par
+  // clé connue) reste un tuple défini sous noUncheckedIndexedAccess.
+  const hooks = hooksByFormat[idea.format as keyof typeof hooksByFormat] ?? hooksByFormat.post;
+  const hashtagsByPillar: Record<string, string[]> = {
+    produit: ['femiglow', 'kitfemiglow', 'soindesongles'],
+    rituel: ['femiglow', 'rituel', 'ritueldebeaute'],
+    education: ['femiglow', 'conseilsongles', 'soindesongles'],
+  };
+  const pillarTags = hashtagsByPillar[idea.pillar] ?? ['femiglow', 'maisonfemiglow', 'soindesongles'];
+
   const drafts: GeneratedDraft[] = [
     {
       variantLabel: 'sobre',
-      hook: 'Un geste lent, une main qui retrouve sa lumière.',
+      hook: hooks[0],
       caption: `${base}. Chez FemiGlow, le soin commence par un geste précis et patient. Sans vernis, sans abrasion, le rituel accompagne l’éclat naturel de l’ongle.\n\n${brief.cta}.`,
       cta: brief.cta,
       altText: 'Main posée près du rituel FemiGlow dans une lumière naturelle.',
-      hashtags: ['femiglow', 'rituel', 'soindesongles'],
+      hashtags: [...pillarTags],
     },
     {
       variantLabel: 'sensorielle',
-      hook: 'La lumière revient quand le geste ralentit.',
+      hook: hooks[1],
       caption: `${base}. Une texture, une pause, un éclat qui ne cherche pas à couvrir. Le rituel FemiGlow se transmet comme une attention discrète, avec soin.\n\n${brief.cta}.`,
       cta: brief.cta,
       altText: 'Détail de mains et de matière dans une ambiance crème et sauge.',
-      hashtags: ['femiglow', 'maisonfemiglow', 'ritueldebeaute'],
+      hashtags: [pillarTags[0]!, 'maisonfemiglow', 'ritueldebeaute'],
     },
     {
       variantLabel: 'conversion douce',
-      hook: 'Recevoir le rituel, c’est choisir un soin qui ne triche pas.',
+      hook: hooks[2],
       caption: `${base}. Le kit FemiGlow accompagne les ongles avec précision, sans vernis ni abrasion. Une routine courte, mais pensée pour durer dans le geste.\n\n${brief.cta}.`,
       cta: brief.cta,
       altText: 'Kit FemiGlow présenté avec des mains dans une lumière douce.',
-      hashtags: ['femiglow', 'kitfemiglow', 'onglesnaturels'],
+      hashtags: [pillarTags[0]!, 'kitfemiglow', 'onglesnaturels'],
     },
   ];
 

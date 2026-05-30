@@ -1,0 +1,21 @@
+feature: F27-audit-log-events
+critical: P1
+
+unit:
+  - id: F27-U-1
+    name: published job logs social.publish.published
+    expect: audit_log row with action, actorId, resourceType, resourceId
+  - id: F27-U-2
+    name: failed job logs social.publish.failed
+  - id: F27-U-3
+    name: scheduled job logs social.publish.scheduled
+  - id: F27-U-4
+    name: cancelled logs cancellation
+  - id: F27-U-5
+    name: retry logs retry event
+  - id: F27-U-6
+    name: draft logs social.draft_created (NOT published)
+  - id: F27-U-7
+    name: meta includes jobId, provider, platform, remoteId
+  - id: F27-U-8
+    name: actorId='system' when worker, else admin id

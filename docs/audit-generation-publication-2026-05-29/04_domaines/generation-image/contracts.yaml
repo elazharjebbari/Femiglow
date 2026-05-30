@@ -1,0 +1,55 @@
+domain: generation-image
+operator_flow: system_B
+endpoint:
+  path: POST /api/admin/content-studio/drafts/{id}/generate-visual
+  auth: requireAdminApi (cookie session) ; 401 si non authentifie
+  feature_flag: requireContentStudioEnabled
+  inputs:
+    body:
+      prompt: {type: string, min: 12, max: 1800, required: true}
+      size: {enum: [1024x1024, 1024x1536, 1536x1024], default: 1024x1536}
+      quality: {enum: [low, medium, high], default: low}
+      kind: {enum: [image, video], default: image}
+      model: {type: string, min: 1, max: 120, optional: true}
+    cookie:
+      cs_generation_mode: {enum: [mock, live], default_if_absent: mock}
+  outputs:
+    success:
+      status: 200
+      body: {media: {id, slug, kind, source, compartment, status, alt, caption, originalUrl, thumbUrl, previewUrl, width, height, durationMs?, createdAt}}
+  error_codes:
+    invalid_input: {http: 400, when: payload zod invalide}
+    invalid_state:
+      http: 409
+      when:
+        - mode=live & model=gpt-image-*/dall-e-* & CONTENT_STUDIO_OPENAI_API_KEY vide
+        - mode=live & model=hf-* & credential Higgsfield incomplet
+        - mode=live & model non reconnu & CONTENT_STUDIO_OPENAI_API_KEY vide
+        - budget quotidien depasse (checkDailyBudget)
+    upstream_failed: {http: 502, when: provider repond en erreur (live fonctionnel)}
+    not_found: {http: 404, when: draft introuvable}
+routing_generateStudioImage:
+  order: [mode, model, env]
+  rules:
+    - if mode==mock -> mock (SVG->PNG, provider=mock, model=mock-low-cost-image, cost=0) [IGNORE input.model]
+    - elif model matches ^mock- -> mock
+    - elif model matches ^hf- -> higgsfield (requiert higgsfieldAuthHeader != null, sinon invalid_state)
+    - elif model matches ^(gpt-image-|dall-e-) -> openai (requiert CONTENT_STUDIO_OPENAI_API_KEY, sinon invalid_state)
+    - elif mode==live -> openai default (requiert CONTENT_STUDIO_OPENAI_API_KEY)
+    - else env fallback (CONTENT_STUDIO_IMAGE_PROVIDER)
+mock_vs_live:
+  mock: {status: works, cost: 0, asset: SVG->PNG optimise AVIF, traceability: PERD le modele choisi}
+  live:
+    openai: {status: broken_today, reason: CONTENT_STUDIO_OPENAI_API_KEY vide (OPENAI_API_KEY valide mais non lu par ce chemin)}
+    higgsfield: {status: broken_today, reason: credential incomplet (sans secret) + endpoints synchrones faux}
+model_picker:
+  endpoint: GET /api/admin/content-studio/models?role={chat|image|video}&format={...}
+  outputs: {models: [ModelEntry], suggested, providers, discovery: {provider: live|cache|fallback|no-key|error}}
+  source_field_BUG: materialiseDiscoveredModel force source='live' meme pour discovery=fallback
+  key_source_divergence: picker=resolveApiKey(OPENAI_API_KEY) ; generateur=env.CONTENT_STUDIO_OPENAI_API_KEY
+higgsfield_real_api:
+  base: https://platform.higgsfield.ai
+  auth: 'Authorization: Key KEY_ID:KEY_SECRET'
+  image: {submit: POST /v1/text2image/<model>, poll: GET /v1/requests/{id}/status}
+  video: {submit: POST /v1/image2video/<model>, poll: GET /v1/requests/{id}/status}
+  code_today_WRONG: {image: /v1/images/generate (sync), video: /v1/videos/generate + /v1/videos/status/{id}}

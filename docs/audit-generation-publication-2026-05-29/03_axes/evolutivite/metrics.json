@@ -1,0 +1,180 @@
+{
+  "axis": "evolutivite",
+  "capturedAt": "2026-05-29",
+  "baseline": "feat/ai-engine-langgraph-mvp",
+  "criticality": "major",
+  "method": "Indicateurs derives des findings confirmes (_consolidated.json) et verifies sur le code (apps/web/src). Reproductibles: chaque booleen/compte renvoie a un fichier:ligne ou a un id de finding.",
+
+  "findingsTouchingAxis": {
+    "total": 21,
+    "bySeverity": {
+      "blocker": 4,
+      "critical": 4,
+      "major": 7,
+      "minor": 5,
+      "info": 1
+    },
+    "blockerIds": ["BUG-001", "BUG-002", "BUG-003", "BUG-004"],
+    "criticalIds": ["BUG-006", "BUG-008", "BUG-009", "BUG-025"],
+    "majorIds": ["BUG-007", "BUG-015", "BUG-024", "BUG-026", "BUG-039", "BUG-049", "BUG-050"],
+    "minorIds": ["BUG-028", "BUG-038", "BUG-062", "BUG-063"],
+    "infoIds": ["BUG-069"],
+    "missedIssueIds": ["MISS-003", "MISS-005", "MISS-006", "MISS-022", "MISS-024", "MISS-028", "MISS-030", "MISS-032", "MISS-033"],
+    "comment": "Tous les blockers de l'audit sont des symptomes d'un defaut d'evolutivite (double pipeline / pont lossy / asynchronisme absent / worker non cable)."
+  },
+
+  "providerExtensibility": {
+    "hasProviderAdapterAbstraction": true,
+    "abstractionPath": "src/lib/ai-engine/providers/adapters/base.ts",
+    "adapterRegisteredViaSwitchCase": true,
+    "registeredAdaptersCount": 4,
+    "registeredAdapters": ["openai", "anthropic", "google", "higgsfield"],
+    "operatorPipelineUsesAbstraction": false,
+    "operatorPipelineRoutingStrategy": "prefix-hardcoded (startsWith mock-/hf-/gpt-image-/dall-e-)",
+    "operatorRoutingFiles": ["src/lib/content-studio/image-generation.ts", "src/lib/content-studio/video-generation.ts"],
+    "providerConfigIsClosedEnum": true,
+    "providerSlotsDeclared": ["text", "image", "video", "tts"],
+    "providerSlotsMissing": ["music"],
+    "videoSlotsDeclaredWithoutAdapter": ["runway", "google"],
+    "keyResolutionMechanismsCount": 2,
+    "keyResolutionDivergent": true,
+    "touchPointsToAddOneProvider": 8,
+    "touchPointsDetail": ["adapter pipeline A", "branche routing pipeline B", "enum EngineConfig.providers", "apiKeys EngineConfig", "resolution de cle (x2 mecanismes)", "mapping ID natif->route", "DTO de sortie GenerationResult + bridge", "rendu UI + test de parite"]
+  },
+
+  "bridgeAtoB": {
+    "bridgePresent": true,
+    "bridgePath": "src/lib/ai-engine/bridge/content-studio-bridge.ts",
+    "bridgeDirection": "unidirectional A->B",
+    "outputDtoFieldsPropagated": ["script", "caption", "hashtags", "images", "videos", "qualityScores", "moderationResult", "costTracking", "errors"],
+    "outputDtoFieldsDropped": ["voiceover", "music", "subtitles", "composition", "exports", "thumbnails"],
+    "mediaCapabilitiesReachableByOperator": false,
+    "relatedFindings": ["BUG-004", "BUG-033", "BUG-034", "MISS-005"]
+  },
+
+  "modelCatalogCoherence": {
+    "discoveryDecoupledFromRouter": true,
+    "discoveredLiveModelsRoutable": false,
+    "liveBadgeReflectsRealSource": false,
+    "customModelIdAllowedUnvalidated": true,
+    "exampleNonRoutableLiveModels": ["flux_2", "veo3_1", "kling3_0", "seedance_2_0"],
+    "relatedFindings": ["BUG-006", "BUG-007", "BUG-009", "BUG-024", "BUG-028", "MISS-022"]
+  },
+
+  "socialNetworkExtensibility": {
+    "adapterMapPresent": true,
+    "adapterMapPath": "src/lib/social-publishing/admin-service.ts:48-52",
+    "declaredProviderIds": ["dry_run", "meta_graph", "postiz"],
+    "implementedAdapters": ["dry_run", "postiz"],
+    "phantomProviders": ["meta_graph"],
+    "perNetworkCapabilitiesPersistedStale": true,
+    "newNetworkPathPrimarily": "postiz-aggregator (28+ canaux)",
+    "relatedFindings": ["BUG-069", "BUG-063"]
+  },
+
+  "pollingAndScale": {
+    "generationPollingBlocksRequest": true,
+    "pollIntervalMs": 5000,
+    "pollTimeoutMs": 300000,
+    "maxWorkerOccupancyPerLiveGenerationMs": 300000,
+    "generationJobQueueExists": false,
+    "pollingResumesAfterRestart": false,
+    "backpressureOrThrottling": false,
+    "pollingFiles": ["src/lib/content-studio/video-generation.ts:12-13", "src/lib/ai-engine/providers/adapters/higgsfield.ts:17-18"],
+    "higgsfieldEndpointsAsyncCorrect": false,
+    "relatedFindings": ["BUG-008", "BUG-025"]
+  },
+
+  "publicationJobQueue": {
+    "queueStructureExists": true,
+    "perJobLockExists": true,
+    "workerWiredToCron": false,
+    "schedulerInVercelCron": false,
+    "vercelCronCount": 15,
+    "tickRelaysScheduler": false,
+    "runtimeDeployment": "PM2 next start (vercel.json non honore)",
+    "workerConcurrencyModel": "serial-for-loop",
+    "workerDefaultLimit": 5,
+    "workerMaxLimit": 20,
+    "idempotencyKeysUnified": false,
+    "doublePublicationPossible": true,
+    "cancelRescheduleOrphansJobs": true,
+    "relatedFindings": ["BUG-003", "BUG-038", "MISS-006", "MISS-028"]
+  },
+
+  "multiAccount": {
+    "explicitAccountSelectionEnforced": false,
+    "defaultAccountPinConfigured": false,
+    "fallbackStrategy": "first-active-postiz-account (ordre non deterministe)",
+    "wrongClientAccountRisk": true,
+    "realAccountsInDb": 6,
+    "realPostizInstagramAccounts": 4,
+    "relatedFindings": ["BUG-039"]
+  },
+
+  "runtimeConfigLifecycle": {
+    "engineConfigSingletonCached": true,
+    "engineConfigPath": "src/lib/ai-engine/config/engine-config.ts:51-52",
+    "hotReloadSupported": false,
+    "resetEngineConfigCalledAtRuntime": false,
+    "keyCacheTtlMs": 300000,
+    "keyCacheInvalidatedOnEnvChange": false,
+    "providerActivationRequiresRestart": true,
+    "relatedFindings": ["MISS-030", "MISS-033"]
+  },
+
+  "mediaStorageScaleOut": {
+    "storagePathCoupledToCwd": true,
+    "cwdRelativeExpression": "join(process.cwd(), '../../.media-storage/ai-engine')",
+    "nodesUsingCwdRelativeStorage": 6,
+    "unifiedStorageAdapterUsedEverywhere": false,
+    "scaleOutSafe": false,
+    "relatedFindings": ["MISS-024", "MISS-032", "BUG-062"]
+  },
+
+  "evolutivitySafetyNet": {
+    "mockLiveParityHarness": false,
+    "mswInstalled": true,
+    "mswVersion": "2.14.2",
+    "mswWiredAsGlobalParityHarness": false,
+    "externalProvidersCoveredByContractTests": false,
+    "liveDiscoveredModelCoveredByTest": false,
+    "testsAssertingRealBackendEffect": 0,
+    "testsTotalSampled": 95,
+    "testsMockingFetch": 58,
+    "suiteReportsAllGreen": true,
+    "suiteProcessExitCode": 1,
+    "relatedFindings": ["BUG-010", "BUG-032", "BUG-041", "BUG-046", "MISS-008", "MISS-022"]
+  },
+
+  "debtEstimate": {
+    "unit": "person-days",
+    "method": "estimation d'agence, regroupee par lot de recommandations P0-P3 (state.md)",
+    "items": [
+      { "lot": "P0 deblocage (cle unifiee, cron worker, selection compte, trappe meta_graph)", "days": 4 },
+      { "lot": "P1 coutures (router par provider, badge source, DTO pont, slot music, Higgsfield async)", "days": 12 },
+      { "lot": "P2 scale (file de generation, worker concurrent+idempotence, hot-reload config, stockage unifie)", "days": 15 },
+      { "lot": "P3 garde-fou (harnais parite MSW, runbook ajout provider/reseau)", "days": 6 }
+    ],
+    "totalDays": 37,
+    "convergenceAtoBNotIncluded": true,
+    "convergenceAtoBNote": "Consolider A et B en un seul pipeline a adapters (objectif touchPointsToAddOneProvider=1) est un chantier additionnel ~15-25 j non chiffre ici."
+  },
+
+  "kpiTargets": {
+    "touchPointsToAddOneProvider_current": 8,
+    "touchPointsToAddOneProvider_target": 1,
+    "mediaCapabilitiesReachableByOperator_current": false,
+    "mediaCapabilitiesReachableByOperator_target": true,
+    "discoveredLiveModelsRoutable_current": false,
+    "discoveredLiveModelsRoutable_target": true,
+    "workerWiredToCron_current": false,
+    "workerWiredToCron_target": true,
+    "mockLiveParityHarness_current": false,
+    "mockLiveParityHarness_target": true,
+    "providerActivationRequiresRestart_current": true,
+    "providerActivationRequiresRestart_target": false,
+    "suiteProcessExitCode_current": 1,
+    "suiteProcessExitCode_target": 0
+  }
+}

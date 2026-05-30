@@ -1,0 +1,22 @@
+endpoint:
+  method: POST
+  path: /api/admin/content-studio/publish-jobs/{id}/retry
+  auth: admin cookie
+
+request_body: empty
+
+response_200:
+  schema:
+    job: PublishJob (status='queued', attemptCount++)
+
+response_409:
+  variants:
+    - { code: invalid_state, when: job.status != 'failed' }
+response_404:
+  variants:
+    - { code: not_found }
+
+side_effects:
+  - UPDATE social_publish_job SET status='queued', lockedAt=null, attemptCount=attemptCount+1
+  - audit_log action='social.publish.retried'
+  - Triggers executeJob (sync or async via worker)

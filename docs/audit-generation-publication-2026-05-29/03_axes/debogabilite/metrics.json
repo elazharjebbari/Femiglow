@@ -1,0 +1,121 @@
+{
+  "axis": "debogabilite",
+  "baseline_date": "2026-05-29",
+  "branch": "feat/ai-engine-langgraph-mvp",
+  "criticality": "critical",
+  "source_of_truth": {
+    "bug_register": "01_audit/bug-register.csv",
+    "missed_issues": "01_audit/missed-issues.csv",
+    "mock_live_parity": "01_audit/mock-live-parity.csv",
+    "evidence_dir": "01_audit/evidence/"
+  },
+  "findings_touching_axis": {
+    "comment": "Findings dont la débogabilité est cause aggravante directe (observabilité, trace, échec silencieux, feedback erreur, parité test).",
+    "by_severity": {
+      "blocker": 4,
+      "critical": 4,
+      "major": 12,
+      "minor": 6
+    },
+    "total_bug_ids": 26,
+    "bug_ids": [
+      "BUG-001", "BUG-002", "BUG-003", "BUG-004",
+      "BUG-005", "BUG-010", "BUG-020", "BUG-022",
+      "BUG-006", "BUG-007", "BUG-008", "BUG-018", "BUG-024", "BUG-025",
+      "BUG-027", "BUG-030", "BUG-032", "BUG-034", "BUG-041", "BUG-043",
+      "BUG-045", "BUG-046",
+      "BUG-012", "BUG-013", "BUG-051", "BUG-054"
+    ],
+    "missed_issue_ids": [
+      "MISS-008", "MISS-009", "MISS-010", "MISS-011",
+      "MISS-012", "MISS-024", "MISS-030", "MISS-031",
+      "MISS-032", "MISS-033"
+    ]
+  },
+  "register_totals_for_context": {
+    "confirmed_bugs": { "blocker": 4, "critical": 8, "major": 35, "minor": 18, "info": 3, "total": 68 },
+    "missed_issues": { "major": 11, "minor": 22, "info": 1, "total": 34 }
+  },
+  "mechanism_presence": {
+    "comment": "true = mécanisme de débogabilité présent ET câblé/opérationnel ; false = absent ou défini mais non câblé.",
+    "structured_logger_defined": true,
+    "single_unified_logger": false,
+    "correlation_id_generated_in_middleware": false,
+    "withLogContext_call_sites_outside_definition": 0,
+    "operator_generation_routes_log_errors": false,
+    "format_error_response_logs_cause": false,
+    "ai_engine_logger_has_pii_redaction": false,
+    "log_level_env_var_unified": false,
+    "node_failures_pushed_to_state_errors": false,
+    "quality_gate_detects_missing_media": false,
+    "ui_surfaces_generation_failure_to_operator": false,
+    "server_error_message_preserved_in_ui": false,
+    "trace_table_content_generation_run_exists": true,
+    "trace_table_content_generation_run_has_correlation_id": false,
+    "trace_table_social_publish_event_exists": true,
+    "social_publish_event_emitted_for_scheduled_posts": false,
+    "trace_persisted_mode_reflects_reality": false,
+    "health_endpoint_reports_live_capability": false,
+    "health_endpoint_reports_key_credential_readiness": false,
+    "model_picker_badge_reflects_real_capability": false,
+    "msw_installed": true,
+    "msw_mounted_globally": false,
+    "contract_tests_for_external_providers": false,
+    "contract_tests_for_internal_routes": true,
+    "media_served_with_auth": false,
+    "test_storage_isolated_from_prod": false,
+    "ci_gate_keyed_on_exit_code": false
+  },
+  "test_signal_integrity": {
+    "vitest_reported_passed": 1695,
+    "vitest_reported_failed": 0,
+    "vitest_process_exit_code": 1,
+    "report_vs_process_consistent": false,
+    "exit_anomaly_finding_ids": ["BUG-010", "BUG-027", "BUG-032"],
+    "global_afterEach_timer_drain_present": false,
+    "next_navigation_globally_mocked": true,
+    "comment": "1695 'passed' coexiste avec exit code 1 — décalage rapport/réalité canonique (cf. evidence/vitest-summary.json)."
+  },
+  "silent_failure_inventory": {
+    "comment": "Points où un échec ne produit ni erreur typée remontée, ni trace serveur utile.",
+    "empty_catch_blocks_in_operator_create_flow": 1,
+    "operator_create_flow_empty_catch_ref": "BUG-022 (CreateWorkspace.onCreated)",
+    "route_500_without_logged_cause": true,
+    "route_500_ref": "formatErrorResponse (http-error.ts) + generate-visual/route.ts catch",
+    "ai_engine_nodes_returning_empty_asset_logged_as_success": 4,
+    "ai_engine_nodes_ref": ["generate-voiceover.ts", "generate-music.ts", "generate-video.ts", "compose.ts"],
+    "job_completed_with_no_media_observed": true,
+    "job_completed_quality_score_observed": 0.91
+  },
+  "observability_coverage": {
+    "loggers_distinct_implementations": 2,
+    "logger_files": ["src/lib/logging/logger.ts", "src/lib/ai-engine/utils/logger.ts"],
+    "log_level_env_vars_distinct": 2,
+    "log_level_env_vars": ["LOG_LEVEL", "AI_ENGINE_LOG_LEVEL"],
+    "content_studio_generation_path_logger_usage": "none",
+    "ai_engine_generate_route_logging": "raw console.error (unstructured, uncorrelated)",
+    "memory_caches_without_realtime_invalidation": 3,
+    "memory_caches_ref": ["model-discovery (TTL 5min)", "api-key-manager resolvedKeyCache (TTL 5min)", "engine-config singleton (no runtime reset)"]
+  },
+  "live_observability_gap": {
+    "live_generation_configurable_in_staging": false,
+    "openai_key_present_in_process": true,
+    "openai_key_mapped_in_env_ts": false,
+    "openai_key_visible_to_create_flow": false,
+    "higgsfield_credential_complete": false,
+    "scheduler_wired_to_cron": false,
+    "live_breakage_visible_via_any_diagnostic_endpoint": false,
+    "comment": "Parité live non démontrable au gel ; et même cassé, l'état n'est exposé par aucune surface de diagnostic (health ne renvoie que mockMode)."
+  },
+  "estimated_debt": {
+    "unit": "developer-days",
+    "p0_make_live_failure_visible_and_stop_lying": 4,
+    "p1_remove_silent_operator_failures": 2,
+    "p2_restore_test_signal_integrity": 3,
+    "p3_unify_and_harden_observability": 6,
+    "total": 15,
+    "confidence": "medium",
+    "note": "Estimation à partir du nombre de points d'intégration à câbler (logger/corrélation/health/MSW) plus que d'écriture neuve — la plupart des mécanismes existent mais ne sont pas montés."
+  },
+  "top_finding_ids": ["BUG-010", "BUG-022", "BUG-004", "BUG-003", "BUG-046"]
+}

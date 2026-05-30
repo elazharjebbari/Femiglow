@@ -1,0 +1,22 @@
+feature: F28-alerts-webhook
+critical: P2
+
+unit:
+  - id: F28-U-1
+    name: sends alert on failure
+    given: job failed mode=now
+    expect: POST to webhook URL
+  - id: F28-U-2
+    name: skips alert for mode=draft failure
+  - id: F28-U-3
+    name: skips alert if webhook URL not configured
+  - id: F28-U-4
+    name: non-blocking on webhook timeout
+    given: webhook hangs
+    expect: job result returned normally after 5s
+  - id: F28-U-5
+    name: fallback to CHAT_ALERTS_WEBHOOK_URL
+  - id: F28-U-6
+    name: payload contains severity (critical for max retries, warning otherwise)
+  - id: F28-U-7
+    name: payload contains jobId, postId, errorCode

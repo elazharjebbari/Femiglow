@@ -1,0 +1,53 @@
+feature: F09-publish-jobs-queue-ui
+critical: P0
+
+contract:
+  - id: F09-C-1
+    name: GET publish-jobs happy path
+    expect: 200 with jobs array
+  - id: F09-C-2
+    name: GET filter by status
+    query: '?status=failed'
+    expect: only failed jobs
+  - id: F09-C-3
+    name: GET pagination via limit
+  - id: F09-C-4
+    name: GET filter by accountId
+
+component:
+  - id: F09-CO-1
+    name: renders empty state when no jobs
+    expect: text 'Aucun job'
+  - id: F09-CO-2
+    name: renders 5 jobs from fixture
+    expect: 5 row elements
+  - id: F09-CO-3
+    name: badge color by status
+    expect: queued→accent, published→success, failed→danger
+  - id: F09-CO-4
+    name: lastError shown on failed row
+  - id: F09-CO-5
+    name: Retry button visible on failed only
+  - id: F09-CO-6
+    name: Cancel button visible on queued/publishing only
+  - id: F09-CO-7
+    name: polling every 30s
+    given: fake timers
+    expect: 2 fetch calls after 60s
+  - id: F09-CO-8
+    name: polling pauses when document hidden
+    expect: no fetch when document.hidden=true
+  - id: F09-CO-9
+    name: refetch immediate after retry click
+  - id: F09-CO-10
+    name: filter by status query string
+    when: change status select
+    expect: fetch with new ?status=
+
+e2e:
+  - id: F09-E-1
+    name: queue shows job after publish-now
+    scenario_ref: S01
+  - id: F09-E-2
+    name: queue updates from queued→publishing→published
+    scenario_ref: S01

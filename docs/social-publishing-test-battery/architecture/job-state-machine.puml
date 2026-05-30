@@ -1,0 +1,90 @@
+@startuml job-state-machine
+title social_publish_job — State Machine
+
+[*] --> draft : create (rarely used,\nlegacy path)
+
+state "draft" as DR {
+  DR : initial state\n(unused in current flow)
+}
+
+state "approved" as AP {
+  AP : draft → approved\n(also rarely used)
+}
+
+state "queued" as QU {
+  QU : initial state for all new jobs\n(now / schedule / draft modes)
+  QU : scheduledAt may be future or null
+  QU : lockedAt = null
+}
+
+state "publishing" as PB {
+  PB : lockedAt set\nworker (or sync caller)\nis executing
+  PB : adapter.publish() in flight
+}
+
+state "published" as PR {
+  PR : terminal success
+  PR : publishedAt set
+  PR : publication row exists
+}
+
+state "failed" as FL {
+  FL : last attempt failed
+  FL : lastError set
+  FL : can be retried (→ queued)
+  FL : or cancelled (terminal)
+}
+
+state "cancelled" as CN {
+  CN : terminal
+  CN : explicit operator action\nor system cancellation
+}
+
+' Transitions
+DR --> AP : approve
+DR --> CN : cancel
+DR --> QU : direct enqueue (system)
+
+AP --> QU : enqueue (executeJob)
+AP --> CN : cancel
+
+QU --> PB : tryAcquireLock\n(success)
+QU --> CN : cancelPublishJob
+QU --> FL : pre-flight validation\nfailure (rare)
+
+PB --> PR : adapter succeeded
+PB --> FL : adapter failed\n(retryable or terminal)
+
+FL --> QU : retryPublishJob\n(operator click)
+FL --> CN : cancelPublishJob
+
+PR --> [*]
+CN --> [*]
+
+' Idempotent self-loops
+QU --> QU : (no-op if already queued)
+PB --> PB : (no-op if already locked)
+
+note right of QU
+  Retry policy:
+  - 3 attempts max (default)
+  - exp backoff [100,300,900,1500]ms
+  - Only on transient errors (5xx, 429, 408)
+end note
+
+note right of FL
+  retryPublishJob:
+  - resets status to queued
+  - clears lockedAt
+  - increments attemptCount
+  - re-runs executeJob
+end note
+
+note bottom of PB
+  Lock prevents 2 workers
+  from picking the same job.
+  lockedAt = now() when acquired.
+  Released on success/failure.
+end note
+
+@enduml

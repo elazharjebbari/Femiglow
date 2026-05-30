@@ -1,27 +1,41 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { server, http, HttpResponse } from '@/test/msw/server';
 
 import { sendSocialAlert } from './alerts';
 
-const originalFetch = globalThis.fetch;
+/**
+ * ARC-004 (migration MSW) — ce test interceptait fetch via globalThis.fetch=vi.fn().
+ * Migré vers MSW (handlers réseau fidèles) pour la parité mock/live et la
+ * compatibilité avec le futur harnais global. server.listen est idempotent
+ * (cf. test/msw/server.ts), donc le test fonctionne en isolé ET sous un montage
+ * global. onUnhandledRequest:'error' garantit qu'aucun POST n'échappe au mock.
+ */
+const SLACK_URL = 'https://hooks.slack.test/abc';
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 describe('sendSocialAlert', () => {
-  beforeEach(() => {
-    globalThis.fetch = vi.fn() as unknown as typeof fetch;
-  });
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
-
   it('no-op + false quand aucune URL configurée', async () => {
+    // Aucun handler enregistré : si un fetch partait, MSW lèverait (error).
     const ok = await sendSocialAlert({ title: 'X' }, { webhookUrl: undefined });
     expect(ok).toBe(false);
-    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it('POST JSON Slack-compatible quand URL configurée', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    let captured: { url: string; method: string; body: Record<string, unknown> } | null = null;
+    server.use(
+      http.post(SLACK_URL, async ({ request }) => {
+        captured = {
+          url: request.url,
+          method: request.method,
+          body: (await request.json()) as Record<string, unknown>,
+        };
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+
     const ok = await sendSocialAlert(
       {
         title: 'Postiz 503',
@@ -29,31 +43,31 @@ describe('sendSocialAlert', () => {
         severity: 'critical',
         fields: [{ label: 'jobId', value: 'job_1' }],
       },
-      { webhookUrl: 'https://hooks.slack.test/abc' },
+      { webhookUrl: SLACK_URL },
     );
+
     expect(ok).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const call = fetchMock.mock.calls[0];
-    if (!call) throw new Error('expected one fetch call');
-    expect(call[0]).toBe('https://hooks.slack.test/abc');
-    expect(call[1]?.method).toBe('POST');
-    const body = JSON.parse(call[1]?.body as string);
+    expect(captured).not.toBeNull();
+    expect(captured!.url).toBe(SLACK_URL);
+    expect(captured!.method).toBe('POST');
+    const body = captured!.body as {
+      text?: string;
+      attachments?: Array<{ color?: string; fields?: Array<Record<string, unknown>> }>;
+    };
     expect(body.text).toBe('Postiz 503');
     expect(body.attachments?.[0]?.color).toBe('#dc2626');
     expect(body.attachments?.[0]?.fields?.[0]).toMatchObject({ title: 'jobId', value: 'job_1' });
   });
 
-  it('renvoie false si fetch lève', async () => {
-    const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-    const ok = await sendSocialAlert({ title: 'X' }, { webhookUrl: 'https://hooks.slack.test/abc' });
+  it('renvoie false si fetch lève (erreur réseau)', async () => {
+    server.use(http.post(SLACK_URL, () => HttpResponse.error()));
+    const ok = await sendSocialAlert({ title: 'X' }, { webhookUrl: SLACK_URL });
     expect(ok).toBe(false);
   });
 
   it('renvoie false sur status != 2xx', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 500 }));
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
-    const ok = await sendSocialAlert({ title: 'X' }, { webhookUrl: 'https://hooks.slack.test/abc' });
+    server.use(http.post(SLACK_URL, () => new HttpResponse(null, { status: 500 })));
+    const ok = await sendSocialAlert({ title: 'X' }, { webhookUrl: SLACK_URL });
     expect(ok).toBe(false);
   });
 });

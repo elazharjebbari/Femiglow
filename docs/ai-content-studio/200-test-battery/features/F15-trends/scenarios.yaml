@@ -1,0 +1,411 @@
+feature: F15
+name: Trends (Veille & Tendances)
+source: apps/web/src/app/admin/content-studio-v2/ai-engine/trends/page.tsx
+url: /admin/content-studio-v2/ai-engine/trends
+
+scenarios:
+
+  # ---------------------------------------------------------------------------
+  # Loading & Initial Render
+  # ---------------------------------------------------------------------------
+
+  - id: F15-001
+    title: Shows skeleton placeholders during initial load
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch returns never-resolving promise
+      - render: TrendsPage
+      - assert: 4 skeleton div placeholders visible (160px height each)
+    expected: Loading state displayed
+
+  - id: F15-002
+    title: Header renders with title and action buttons
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with MOCK_TRENDS
+      - render: TrendsPage
+      - await: data loaded
+      - assert: eyebrow "AI Engine" visible
+      - assert: heading "Veille & Tendances" visible
+      - assert: button "Actualiser" visible
+      - assert: button "Dashboard" visible
+    expected: Page header fully rendered
+
+  # ---------------------------------------------------------------------------
+  # Trend Card Rendering
+  # ---------------------------------------------------------------------------
+
+  - id: F15-010
+    title: Trend card displays title and description
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with trend titled "J-Beauty Minimalisme"
+      - render and load: TrendsPage
+      - assert: heading "J-Beauty Minimalisme" visible
+      - assert: description text visible
+    expected: Trend content displayed
+
+  - id: F15-011
+    title: Category badge displays with correct color
+    priority: P0
+    type: unit
+    steps:
+      - mock: with trend.category = "routine"
+      - render and load: TrendsPage
+      - assert: badge "Routine" visible
+      - assert: badge background color contains "#3B82F6" (routine color)
+    expected: Category pill styled correctly
+
+  - id: F15-012
+    title: Source label displayed
+    priority: P1
+    type: unit
+    steps:
+      - mock: with trend.source = "seasonal"
+      - render and load: TrendsPage
+      - assert: text "Saisonnier" visible as source label
+    expected: Source mapped to French label
+
+  - id: F15-013
+    title: Composite score displayed as integer percentage
+    priority: P0
+    type: unit
+    steps:
+      - mock: with trend.compositeScore = 0.85
+      - render and load: TrendsPage
+      - assert: text "85" visible in monospace font inside gradient box
+    expected: Score formatted and displayed
+
+  - id: F15-014
+    title: All four score bars render with correct labels
+    priority: P0
+    type: unit
+    steps:
+      - mock: with trend having brandRelevance=0.9, viralPotential=0.7, timeSensitivity=0.5, contentFeasibility=0.9
+      - render and load: TrendsPage
+      - assert: "Marque" label with value "90"
+      - assert: "Viralite" label with value "70"
+      - assert: "Urgence" label with value "50"
+      - assert: "Faisabilite" label with value "90"
+    expected: Four-dimension scoring grid rendered
+
+  - id: F15-015
+    title: Score bar widths proportional to value
+    priority: P2
+    type: unit
+    steps:
+      - mock: with trend.brandRelevance = 0.75
+      - assert: "Marque" progress bar width is "75%"
+    expected: Bar visual matches numeric value
+
+  # ---------------------------------------------------------------------------
+  # Risk Assessment
+  # ---------------------------------------------------------------------------
+
+  - id: F15-020
+    title: Low risk trend hides risk indicator
+    priority: P1
+    type: unit
+    steps:
+      - mock: with trend.riskAssessment = "low"
+      - render and load: TrendsPage
+      - assert: no AlertTriangle icon visible in trend card header
+      - assert: no risk label text visible
+    expected: Low risk suppressed
+
+  - id: F15-021
+    title: Medium risk shows amber indicator
+    priority: P0
+    type: unit
+    steps:
+      - mock: with trend.riskAssessment = "medium"
+      - render and load: TrendsPage
+      - assert: AlertTriangle icon visible
+      - assert: text "Moyen" visible with warning color
+    expected: Medium risk visually highlighted
+
+  - id: F15-022
+    title: High risk shows red indicator
+    priority: P0
+    type: unit
+    steps:
+      - mock: with trend.riskAssessment = "high"
+      - render and load: TrendsPage
+      - assert: AlertTriangle icon visible
+      - assert: text "Eleve" visible with danger color
+    expected: High risk visually alarming
+
+  # ---------------------------------------------------------------------------
+  # Suggested Formats & Opportunity Window
+  # ---------------------------------------------------------------------------
+
+  - id: F15-025
+    title: Suggested formats displayed as pills
+    priority: P1
+    type: unit
+    steps:
+      - mock: with trend.suggestedFormats = ["reel", "carousel"]
+      - render and load: TrendsPage
+      - assert: pill "reel" visible
+      - assert: pill "carousel" visible
+    expected: Format suggestions shown
+
+  - id: F15-026
+    title: Opportunity window displayed with Clock icon
+    priority: P1
+    type: unit
+    steps:
+      - mock: with trend.opportunityWindow = "evergreen"
+      - render and load: TrendsPage
+      - assert: Clock icon visible
+      - assert: text "evergreen" visible
+    expected: Time window indicated
+
+  # ---------------------------------------------------------------------------
+  # External Link
+  # ---------------------------------------------------------------------------
+
+  - id: F15-030
+    title: External link icon visible when originalUrl present
+    priority: P1
+    type: unit
+    steps:
+      - mock: with trend.originalUrl = "https://example.com/trend"
+      - render and load: TrendsPage
+      - assert: ExternalLink icon within an anchor with target="_blank"
+      - assert: link href is "https://example.com/trend"
+    expected: Source link available
+
+  - id: F15-031
+    title: External link hidden when originalUrl absent
+    priority: P2
+    type: unit
+    steps:
+      - mock: with trend.originalUrl = undefined
+      - render and load: TrendsPage
+      - assert: no anchor with target="_blank" in trend card
+    expected: No broken external link
+
+  # ---------------------------------------------------------------------------
+  # Create Content Action
+  # ---------------------------------------------------------------------------
+
+  - id: F15-035
+    title: "Creer un contenu" button links to create page with trend params
+    priority: P0
+    type: unit
+    steps:
+      - mock: with trend.title = "J-Beauty Minimalisme", trend.category = "routine"
+      - render and load: TrendsPage
+      - assert: button "Creer un contenu" with Sparkles icon visible
+      - assert: parent link href contains "/ai-engine/create?trend=J-Beauty%20Minimalisme&category=routine"
+    expected: Deep link to create page with pre-fill params
+
+  - id: F15-036
+    title: Special characters in trend title are URL-encoded
+    priority: P2
+    type: unit
+    steps:
+      - mock: with trend.title = "Routine Matin & Soir"
+      - assert: link href contains "trend=Routine%20Matin%20%26%20Soir"
+    expected: URL encoding applied correctly
+
+  # ---------------------------------------------------------------------------
+  # Category Filters
+  # ---------------------------------------------------------------------------
+
+  - id: F15-040
+    title: "Toutes" filter button visible and active by default
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with trends across multiple categories
+      - render and load: TrendsPage
+      - assert: button "Toutes" visible with accent background and white text
+    expected: Default "all" filter active
+
+  - id: F15-041
+    title: Category filter buttons generated from trend data
+    priority: P0
+    type: unit
+    steps:
+      - mock: with trends having categories ["routine", "ingredient", "aesthetic"]
+      - render and load: TrendsPage
+      - assert: button "Routine" visible
+      - assert: button "Ingredient" visible
+      - assert: button "Esthetique" visible
+    expected: Dynamic category filters
+
+  - id: F15-042
+    title: Clicking category filter triggers refetch with categories param
+    priority: P0
+    type: unit
+    steps:
+      - render and load: TrendsPage
+      - resetMocks: clear fetch calls
+      - click: "Routine" category button
+      - assert: fetch called with URL containing "categories=routine"
+    expected: Category filter applied to API call
+
+  - id: F15-043
+    title: Clicking active category deselects it (back to all)
+    priority: P1
+    type: unit
+    steps:
+      - render and load: TrendsPage
+      - click: "Routine" button (select it)
+      - click: "Routine" button again (deselect)
+      - assert: "Toutes" button returns to active state
+      - assert: fetch called without categories param
+    expected: Toggle behavior on category filter
+
+  - id: F15-044
+    title: Active category button shows colored background
+    priority: P2
+    type: unit
+    steps:
+      - render and load: TrendsPage
+      - click: "Routine" button
+      - assert: "Routine" button has background #3B82F6 and white text
+      - assert: "Toutes" button reverts to transparent/inactive state
+    expected: Active filter visually distinct
+
+  # ---------------------------------------------------------------------------
+  # Refresh
+  # ---------------------------------------------------------------------------
+
+  - id: F15-050
+    title: Actualiser button triggers refresh
+    priority: P0
+    type: unit
+    steps:
+      - render and load: TrendsPage
+      - click: button "Actualiser"
+      - assert: fetch called with "refresh=true" param
+    expected: Refresh signal sent to backend
+
+  - id: F15-051
+    title: Refresh spinner active during refresh
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch returns slow-resolving promise for refresh
+      - render and load: TrendsPage
+      - click: button "Actualiser"
+      - assert: RefreshCw icon has class "animate-spin"
+      - assert: button "Actualiser" is disabled
+    expected: Loading feedback during refresh
+
+  - id: F15-052
+    title: Refresh spinner stops after data loads
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch resolves after delay
+      - click: button "Actualiser"
+      - await: fetch completes
+      - assert: RefreshCw icon does NOT have "animate-spin"
+      - assert: button enabled again
+    expected: Loading state clears
+
+  # ---------------------------------------------------------------------------
+  # Empty State
+  # ---------------------------------------------------------------------------
+
+  - id: F15-060
+    title: Empty trends shows centered placeholder
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves with { trends: [] }
+      - render and load: TrendsPage
+      - assert: TrendingUp icon (32px) visible
+      - assert: text "Aucune tendance detectee pour le moment." visible
+      - assert: button "Lancer une collecte" visible
+    expected: Empty state displayed
+
+  - id: F15-061
+    title: "Lancer une collecte" triggers refresh
+    priority: P1
+    type: unit
+    steps:
+      - mock: fetch resolves with { trends: [] }
+      - render and load: TrendsPage
+      - click: button "Lancer une collecte"
+      - assert: fetch called with "refresh=true"
+    expected: Empty state refresh action works
+
+  # ---------------------------------------------------------------------------
+  # API Error
+  # ---------------------------------------------------------------------------
+
+  - id: F15-065
+    title: API failure shows empty trends (graceful degradation)
+    priority: P0
+    type: unit
+    steps:
+      - mock: fetch resolves { ok: false, status: 500 }
+      - render and load: TrendsPage
+      - assert: empty state shown (trends set to [])
+    expected: Error silently degrades to empty state
+    note: The component catches errors and sets trends to [], no error banner
+
+  # ---------------------------------------------------------------------------
+  # Multiple Trends Rendering
+  # ---------------------------------------------------------------------------
+
+  - id: F15-070
+    title: Multiple trend cards render in order
+    priority: P0
+    type: unit
+    steps:
+      - mock: with 3 trends, compositeScores = [0.92, 0.78, 0.55]
+      - render and load: TrendsPage
+      - assert: 3 article elements rendered
+      - assert: first card score "92", second "78", third "55"
+    expected: All trends listed in API order
+
+  - id: F15-071
+    title: Trends from different categories show different colors
+    priority: P2
+    type: unit
+    steps:
+      - mock: with trends having categories [routine, aesthetic, news]
+      - assert: first card category badge blue (#3B82F6)
+      - assert: second card category badge pink (#EC4899)
+      - assert: third card category badge red (#EF4444)
+    expected: Color diversity across categories
+
+msw_handlers:
+  required:
+    - "http.get('/api/admin/ai-engine/trends')"
+  mock_data: |
+    See MOCK_TRENDS in apps/web/src/test/msw/ai-engine-handlers.ts
+    Contains one trend: "J-Beauty Minimalisme" with compositeScore 0.85
+
+test_utilities:
+  createTrend: |
+    function createTrend(overrides: Partial<ScoredTrend>): ScoredTrend {
+      return {
+        id: 'trend-test',
+        source: 'seasonal',
+        category: 'routine',
+        title: 'Test Trend',
+        description: 'Test description',
+        brandRelevance: 0.8,
+        viralPotential: 0.6,
+        timeSensitivity: 0.5,
+        contentFeasibility: 0.9,
+        compositeScore: 0.7,
+        suggestedFormats: ['reel'],
+        suggestedHooks: ['Test hook'],
+        opportunityWindow: 'evergreen',
+        riskAssessment: 'low',
+        detectedAt: new Date().toISOString(),
+        status: 'new',
+        ...overrides,
+      };
+    }

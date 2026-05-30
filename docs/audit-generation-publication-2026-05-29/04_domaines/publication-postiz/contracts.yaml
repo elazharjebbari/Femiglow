@@ -1,0 +1,111 @@
+domain: publication-postiz
+description: Publication de content_post approuvés vers Instagram/Facebook via adapters dry_run|postiz.
+mode_selection:
+  env: SOCIAL_PUBLISHING_MODE
+  values:
+    dry_run: { default: true, behavior: "Simule, ne poste rien, permalien factice social.example.test" }
+    live: { behavior: "Publie via Postiz reel (POSTIZ_BASE_URL/POSTIZ_API_KEY)" }
+  note: "Le cookie cs_generation_mode N'A AUCUN effet sur la publication (uniquement generation visuelle)."
+
+endpoints:
+  - path: POST /api/admin/content-studio/posts/{id}/publish-now
+    auth: requireAdminApi (401 sinon) + requireContentStudioEnabled
+    body: { accountId?: string, idempotencyKey?: string }
+    header_alt: Idempotency-Key
+    output_201: { job: SocialPublishJob, result: SocialPublishResult }
+    errors: [invalid_input(400), invalid_state(409 'Post non publiable' + errors[]), not_found(404), unauthorized(401)]
+    mock: "WORKS — job dry_run published, permalink factice"
+    live: "UNTESTED — publierait reellement sur IG"
+
+  - path: POST /api/admin/content-studio/posts/{id}/schedule
+    body: { scheduledAt: string(datetime, future), accountId?, idempotencyKey? }
+    output_201: { job: SocialPublishJob }  # status=queued
+    side_effect: "content_post -> scheduled"
+    errors: [invalid_input(400 'date invalide/passee'), invalid_state(409 non programmable), not_found(404)]
+    mock: "BROKEN(execution) — job queued cree mais jamais execute (aucun cron branche)"
+    live: "BROKEN(execution) — idem"
+
+  - path: POST /api/admin/content-studio/posts/{id}/draft-on-provider
+    body: { accountId?, idempotencyKey? }
+    output_201: { job: SocialPublishJob(publishMode=draft), result }
+    side_effect: "content_post.status INCHANGE; audit social.draft_created; permalink /draft/"
+    errors: [invalid_input(400), invalid_state(409 'Mode brouillon non supporte' | non publiable), not_found(404)]
+    mock: "WORKS — prouve par probe (publishMode=draft, dry_run, permalink .../draft/dry_...)"
+    live: "UNTESTED — type=draft valide cote Postiz mais non exerce"
+
+  - path: POST /api/admin/content-studio/posts/{id}/postiz-draft
+    status: DEPRECATED (Sunset 2026-08-01, headers RFC8594)
+    body: { integrationId: string(required), scheduledAt?, tags? }
+    behavior: "Appelle createDraftInPostiz -> API Postiz REELLE, IGNORE SOCIAL_PUBLISHING_MODE (contournement dry_run)"
+    risk: major
+    mock: "n/a (pas de simulation)"
+    live: "UNTESTED — posterait reellement meme en staging dry_run"
+
+  - path: GET /api/admin/content-studio/posts/{id}/publishability
+    query: { accountId? }
+    output: { publishability: { postId, account, publishable, content, warnings[], errors[] } }
+    mock: "WORKS — prouve"
+    live: "WORKS (lecture)"
+
+  - path: GET /api/admin/content-studio/publish-jobs
+    query: { status?, postId?, accountId? }
+    output: { jobs: [{ job, events[], publications[] }] }
+    mock: "WORKS — 11 jobs dry_run"
+    live: "WORKS (lecture)"
+
+  - path: GET /api/admin/social/accounts
+    output: { accounts: SocialAccount[] }
+    note: "capabilities PERSISTEES stale (supportsDraft absent, reel/story manquants dry_run)"
+    mock: "PARTIAL"
+    live: "PARTIAL"
+
+  - path: POST /api/cron/content-studio/social-publish-scheduler
+    auth: "Bearer CRON_SECRET (401 sinon)"
+    body: { limit?: number }
+    output: { checked, executed, succeeded, failed, skipped, tookMs, errors[] }
+    status: "ORPHELIN — aucun cron ne l'appelle (absent vercel.json, pas de crontab, tick ne relaie pas)"
+    mock: "BROKEN(jamais declenche)"
+    live: "BROKEN(jamais declenche)"
+
+postiz_provider_contract:
+  base_url: https://postiz.lumiereacademy.com
+  auth_header: "authorization: <cle brute>  (PAS Bearer)"  # PROUVE 200
+  endpoints:
+    list_integrations: { method: GET, path: /api/public/v1/integrations, verified: "HTTP 200, 4 comptes IG reels" }
+    upload_media: { method: POST, path: /api/public/v1/upload, body: multipart(file), verified: false }
+    create_post: { method: POST, path: /api/public/v1/posts, verified: false }
+    analytics: { method: GET, path: /api/public/v1/analytics/post/{id}, verified: false }
+  create_post_payload:
+    type: "now|schedule|draft  (draft = revue sans publier)"
+    date: ISO8601
+    tags: [{ value, label }]
+    posts: [{ integration: { id }, value: [{ content, image: [{ id, path }] }], settings: { __type: platform, post_type: format } }]
+  permalink_extraction: [releaseURL, release_url, permalink, url]
+
+job_lifecycle:
+  states: [draft, approved, queued, publishing, published, failed, cancelled]
+  transitions:
+    draft: [approved, cancelled]
+    approved: [queued, cancelled]
+    queued: [publishing, cancelled, failed]
+    publishing: [published, failed]
+    failed: [queued, cancelled]
+    published: []
+    cancelled: []
+  idempotency_key: "content-studio:{postId}:{accountId}:{now|draft|<iso>}"
+  lock: "tryAcquirePublishJobLock (optimiste, status->publishing + lockedAt, allowedFrom [queued,failed])"
+  retry: "publishWithAdapter withRetry attempts=3 sur erreurs retryable (provider_rate_limited, provider_unavailable)"
+
+error_codes:
+  social_publish: [token_expired, permission_denied, media_not_public, provider_rate_limited(retryable), provider_unavailable(retryable), unsupported_format, invalid_request, duplicate_external_post, unknown_provider_error]
+  http: [invalid_input(400), unauthorized(401), not_found(404), invalid_state(409), upstream_failed]
+
+known_gaps:
+  - "Scheduler non branche -> programmation inerte (BLOCKER)"
+  - "Live ecriture non exercee end-to-end (untested)"
+  - "Capabilities persistees stale (supportsDraft / reel / story)"
+  - "cancel/reschedule orphelinent les jobs queued"
+  - "/postiz-draft legacy ignore dry_run"
+  - "resolveDefaultAccount live = 1er compte Postiz sans pin (risque mauvais compte client)"
+  - "metadata.dryRun=true en dur meme en live"
+  - "meta_graph provider null (trappe invalid_state)"

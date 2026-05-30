@@ -1,0 +1,136 @@
+# Contract spec — GET /api/admin/content-studio/models
+# Endpoint nouveau à implémenter en Phase 1 du runbook
+
+endpoint:
+  method: GET
+  path: /api/admin/content-studio/models
+  auth: admin cookie
+
+query_parameters:
+  role:
+    required: true
+    type: string
+    enum: [chat, image, video]
+  format:
+    required: false
+    type: string
+    enum: [post, story, reel, carousel]
+
+response_200:
+  content_type: application/json
+  schema:
+    models: array<ModelEntry>
+    suggested: ModelEntry
+    providers: array<ProviderInfo>
+
+response_400:
+  body: { error: { code: "invalid_role", message: "..." } }
+
+types:
+
+  ModelEntry:
+    id: string                          # e.g. "gpt-4o-mini"
+    provider: string                    # openai | anthropic | google | mock
+    role: string                        # chat | image | video
+    label: string                       # human-readable
+    description: string                 # optional, 1-2 lines
+    tier: string                        # fast | balanced | premium
+    capabilities: array<string>         # ["function-calling", "vision", "fr", "long-context"]
+    contextWindow: integer              # optional, tokens
+    pricing:
+      inputCentsPer1k: number           # optional
+      outputCentsPer1k: number          # optional
+      perCall: number                   # optional (image/video)
+    recommendedFor: array<string>       # ContentFormat[]
+    source: string                      # live | cache | static
+    isDefault: boolean
+
+  ProviderInfo:
+    id: string                          # openai | anthropic | …
+    label: string
+    status: string                      # healthy | degraded | down | mock
+    notes: string                       # optional
+
+# Implementation notes
+
+# 1. Loaded from a static registry in `lib/content-studio-v2/models/registry.ts`
+# 2. The route enriches with live status from `lib/ai-engine/providers/selector.ts` if available
+#    (so `providers[].status` can reflect down/degraded)
+# 3. The `suggested` field is computed by `suggestForFormat(format)` from registry
+# 4. `source: 'static'` always for v1; can become 'live' when we plug a model discovery API
+
+# Examples
+
+example_request_chat_post:
+  url: /api/admin/content-studio/models?role=chat&format=post
+  response:
+    models:
+      - id: gpt-4o-mini
+        provider: openai
+        role: chat
+        label: GPT-4o mini
+        tier: fast
+        capabilities: [function-calling, vision]
+        contextWindow: 128000
+        pricing: { inputCentsPer1k: 0.015, outputCentsPer1k: 0.06 }
+        recommendedFor: [post, story]
+        source: static
+        isDefault: true
+      - id: gpt-4o
+        provider: openai
+        role: chat
+        label: GPT-4o
+        tier: balanced
+        capabilities: [function-calling, vision]
+        contextWindow: 128000
+        pricing: { inputCentsPer1k: 0.25, outputCentsPer1k: 1.0 }
+        recommendedFor: [reel, carousel]
+        source: static
+        isDefault: false
+      - id: claude-sonnet-4-6
+        provider: anthropic
+        role: chat
+        label: Claude Sonnet 4.6
+        tier: premium
+        capabilities: [vision, fr, long-context]
+        contextWindow: 200000
+        pricing: { inputCentsPer1k: 0.30, outputCentsPer1k: 1.5 }
+        recommendedFor: [carousel]
+        source: static
+        isDefault: false
+    suggested:
+      id: gpt-4o-mini
+      provider: openai
+      role: chat
+      tier: fast
+      recommendedFor: [post, story]
+    providers:
+      - id: openai
+        label: OpenAI
+        status: healthy
+      - id: anthropic
+        label: Anthropic
+        status: healthy
+
+example_request_video_reel:
+  url: /api/admin/content-studio/models?role=video&format=reel
+  response:
+    models:
+      - id: mock-video-1.0
+        provider: mock
+        role: video
+        label: Mock vidéo
+        tier: fast
+        capabilities: [vertical-9x16]
+        pricing: { perCall: 0 }
+        recommendedFor: [reel, story]
+        source: static
+        isDefault: true
+    suggested:
+      id: mock-video-1.0
+      provider: mock
+      role: video
+    providers:
+      - id: mock
+        label: Mock provider
+        status: mock

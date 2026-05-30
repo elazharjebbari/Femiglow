@@ -1,0 +1,20 @@
+feature: F31-library-status-badges
+critical: P2
+
+component:
+  - id: F31-CO-1
+    name: renders 5 items from fixture
+  - id: F31-CO-2
+    name: search filter applies
+  - id: F31-CO-3
+    name: status filter URL-synced
+  - id: F31-CO-4
+    name: pillar filter URL-synced
+  - id: F31-CO-5
+    name: platform filter URL-synced
+  - id: F31-CO-6
+    name: badge color by status (table-driven)
+  - id: F31-CO-7
+    name: click item navigates
+  - id: F31-CO-8
+    name: empty state when no items match filter

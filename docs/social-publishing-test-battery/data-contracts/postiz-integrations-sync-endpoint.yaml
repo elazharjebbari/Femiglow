@@ -1,0 +1,27 @@
+endpoint:
+  method: POST
+  path: /api/admin/content-studio/postiz/integrations/sync
+  auth: admin cookie
+
+request_body: empty
+
+response_200:
+  schema:
+    accounts:
+      type: array
+      items: SocialAccount
+    summary:
+      total: integer
+      added: integer
+      updated: integer
+      disabled: integer  # marked as disabled because no longer returned by Postiz
+
+response_401:
+  variants:
+    - { code: token_expired, when: Postiz API returns 401 }
+
+side_effects:
+  - Calls Postiz GET /api/public/v1/integrations
+  - UPSERTs social_account rows
+  - Soft-disables rows not returned
+  - audit_log action='social.account.synced'

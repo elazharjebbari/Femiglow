@@ -1,0 +1,21 @@
+feature: F14-account-health-card
+critical: P2
+
+component:
+  - id: F14-CO-1
+    name: empty state when no accounts
+  - id: F14-CO-2
+    name: renders 3 accounts from fixture
+  - id: F14-CO-3
+    name: status badge colors
+    expect: active→success, token_expired→warning, disabled→neutral
+  - id: F14-CO-4
+    name: last publish timestamp visible
+  - id: F14-CO-5
+    name: last error visible if failed in 7d
+  - id: F14-CO-6
+    name: Sync button visible
+  - id: F14-CO-7
+    name: click Sync fires POST integrations/sync
+  - id: F14-CO-8
+    name: refetches after sync success

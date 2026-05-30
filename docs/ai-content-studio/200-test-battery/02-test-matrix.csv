@@ -1,0 +1,435 @@
+FeatureID,FeatureName,Scenario,TestType,Priority,Status,TestFile
+F01,Navigation/Sidebar,Sidebar renders all AI Engine links,component,P0,planned,dashboard.test.tsx
+F01,Navigation/Sidebar,Active link is highlighted on current page,component,P0,planned,dashboard.test.tsx
+F01,Navigation/Sidebar,Navigate to Dashboard from sidebar,e2e,P0,planned,ai-engine-navigation.spec.ts
+F01,Navigation/Sidebar,Navigate to Create from sidebar,e2e,P0,planned,ai-engine-navigation.spec.ts
+F01,Navigation/Sidebar,Navigate to Knowledge from sidebar,e2e,P0,planned,ai-engine-navigation.spec.ts
+F01,Navigation/Sidebar,Navigate to Configuration from sidebar,e2e,P0,planned,ai-engine-navigation.spec.ts
+F01,Navigation/Sidebar,Navigate to Analytics from sidebar,e2e,P0,planned,ai-engine-navigation.spec.ts
+F01,Navigation/Sidebar,Navigate to Trends from sidebar,e2e,P0,planned,ai-engine-navigation.spec.ts
+F01,Navigation/Sidebar,Navigate to Graph from sidebar,e2e,P1,planned,ai-engine-navigation.spec.ts
+F01,Navigation/Sidebar,Sub-navigation items expand on click,e2e,P1,planned,ai-engine-sidebar-subnav.spec.ts
+F01,Navigation/Sidebar,Sub-navigation collapses on second click,e2e,P1,planned,ai-engine-sidebar-subnav.spec.ts
+F01,Navigation/Sidebar,Sidebar collapses on mobile viewport,e2e,P1,planned,ai-engine-sidebar-subnav.spec.ts
+F01,Navigation/Sidebar,Sidebar hamburger toggles on mobile,e2e,P2,planned,ai-engine-sidebar-subnav.spec.ts
+F01,Navigation/Sidebar,Deep link to config page works,component,P1,planned,dashboard.test.tsx
+F01,Navigation/Sidebar,Dashboard shows health status widget,component,P0,planned,dashboard.test.tsx
+F01,Navigation/Sidebar,Dashboard shows recent jobs widget,component,P1,planned,dashboard.test.tsx
+F01,Navigation/Sidebar,Dashboard shows cost summary widget,component,P1,planned,dashboard.test.tsx
+F01,Navigation/Sidebar,Dashboard handles health API failure gracefully,component,P1,planned,dashboard.test.tsx
+F01,Navigation/Sidebar,Dashboard loading skeleton renders,component,P1,planned,loading-states.test.tsx
+F01,Navigation/Sidebar,Dashboard renders in dark mode,e2e,P2,planned,ai-engine-dark-mode.spec.ts
+F02,Config Providers,Provider list renders with name and status,component,P0,planned,config-page.test.tsx
+F02,Config Providers,Provider health badge shows healthy/unhealthy,component,P0,planned,config-page.test.tsx
+F02,Config Providers,Provider capabilities are displayed,component,P1,planned,config-page.test.tsx
+F02,Config Providers,Provider priority order is correct,component,P1,planned,config-page.test.tsx
+F02,Config Providers,Toggle provider enabled/disabled,component,P0,planned,config-page.test.tsx
+F02,Config Providers,Edit provider configuration,component,P1,planned,config-page.test.tsx
+F02,Config Providers,Provider list loading state,component,P1,planned,config-page.test.tsx
+F02,Config Providers,Provider list empty state,component,P1,planned,config-page.test.tsx
+F02,Config Providers,Provider list error state,component,P1,planned,config-page.test.tsx
+F02,Config Providers,GET /config/providers returns provider list,contract,P0,planned,ai-engine-config.contract.test.ts
+F02,Config Providers,GET /config/providers returns correct shape,contract,P0,planned,ai-engine-config.contract.test.ts
+F02,Config Providers,GET /config/providers/models returns model list,contract,P1,planned,ai-engine-config.contract.test.ts
+F02,Config Providers,GET /config/providers 401 without auth,contract,P0,planned,ai-engine-config.contract.test.ts
+F02,Config Providers,Provider selector in UI shows all providers,unit,P0,planned,selector.test.ts
+F02,Config Providers,Provider selector filters by capability,unit,P0,planned,selector.test.ts
+F02,Config Providers,Provider selector respects priority order,unit,P0,planned,selector.test.ts
+F02,Config Providers,Provider selector falls back on failure,unit,P0,planned,selector.test.ts
+F02,Config Providers,Provider selector returns null when none available,unit,P1,planned,selector.test.ts
+F02,Config Providers,Provider adapter OpenAI initialization,unit,P0,planned,openai.test.ts
+F02,Config Providers,Provider adapter Anthropic initialization,unit,P0,planned,anthropic.test.ts
+F02,Config Providers,Provider adapter Google initialization,unit,P0,planned,google.test.ts
+F02,Config Providers,Provider adapter base interface compliance,unit,P0,planned,base.test.ts
+F02,Config Providers,Circuit breaker opens after threshold failures,unit,P0,planned,circuit-breaker.test.ts
+F02,Config Providers,Circuit breaker resets after timeout,unit,P1,planned,circuit-breaker.test.ts
+F02,Config Providers,Circuit breaker half-open state,unit,P1,planned,circuit-breaker.test.ts
+F02,Config Providers,Retry logic applies exponential backoff,unit,P0,planned,retry.test.ts
+F02,Config Providers,Retry logic respects max attempts,unit,P0,planned,retry.test.ts
+F02,Config Providers,Retry logic does not retry 4xx errors,unit,P1,planned,retry.test.ts
+F02,Config Providers,Cost tracker records per-call cost,unit,P0,planned,cost-tracker.test.ts
+F02,Config Providers,Cost tracker aggregates by provider,unit,P1,planned,cost-tracker.test.ts
+F02,Config Providers,Cost tracker enforces budget limit,unit,P0,planned,cost-tracker.test.ts
+F02,Config Providers,E2E: config page loads provider list,e2e,P0,planned,ai-engine-config.spec.ts
+F02,Config Providers,E2E: provider health status visible,e2e,P1,planned,ai-engine-config.spec.ts
+F02,Config Providers,E2E: provider fallback scenario,e2e,P1,planned,ai-engine-provider-fallback.spec.ts
+F03,Config Workflows,Workflow list renders,component,P0,planned,config-page.test.tsx
+F03,Config Workflows,Workflow create form opens,component,P1,planned,config-page.test.tsx
+F03,Config Workflows,Workflow create form validates required fields,component,P1,planned,config-page.test.tsx
+F03,Config Workflows,Workflow edit saves changes,component,P1,planned,config-page.test.tsx
+F03,Config Workflows,Workflow delete confirms before removing,component,P1,planned,config-page.test.tsx
+F03,Config Workflows,GET /config/workflows returns list,contract,P0,planned,ai-engine-config.contract.test.ts
+F03,Config Workflows,GET /config/workflows/:id returns detail,contract,P1,planned,ai-engine-config.contract.test.ts
+F03,Config Workflows,POST /config/workflows creates workflow,contract,P1,planned,ai-engine-config.contract.test.ts
+F03,Config Workflows,E2E: workflow tab shows list,e2e,P1,planned,ai-engine-config.spec.ts
+F04,Config Prompts,Prompt list renders,component,P0,planned,config-page.test.tsx
+F04,Config Prompts,Prompt create form opens,component,P1,planned,config-page.test.tsx
+F04,Config Prompts,Prompt edit updates content,component,P1,planned,config-page.test.tsx
+F04,Config Prompts,Prompt preview renders markdown,component,P2,planned,config-page.test.tsx
+F04,Config Prompts,Prompt delete confirms before removing,component,P1,planned,config-page.test.tsx
+F04,Config Prompts,GET /config/prompts returns list,contract,P0,planned,ai-engine-config.contract.test.ts
+F04,Config Prompts,POST /config/prompts/:id updates prompt,contract,P1,planned,ai-engine-config.contract.test.ts
+F04,Config Prompts,E2E: prompt tab shows list,e2e,P1,planned,ai-engine-config.spec.ts
+F05,Config API Keys,API key list shows all 5 providers,component,P0,planned,config-page.test.tsx
+F05,Config API Keys,API key masked display format correct,component,P0,planned,config-page.test.tsx
+F05,Config API Keys,API key source badge (database/env/none),component,P0,planned,config-page.test.tsx
+F05,Config API Keys,API key save dialog opens,component,P1,planned,config-page.test.tsx
+F05,Config API Keys,API key save encrypts and stores,component,P0,planned,config-page.test.tsx
+F05,Config API Keys,API key delete with confirmation,component,P1,planned,config-page.test.tsx
+F05,Config API Keys,API key test button triggers validation,component,P0,planned,config-page.test.tsx
+F05,Config API Keys,API key test shows valid result,component,P1,planned,config-page.test.tsx
+F05,Config API Keys,API key test shows invalid result,component,P1,planned,config-page.test.tsx
+F05,Config API Keys,GET /config/api-keys returns all providers,contract,P0,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,GET /config/api-keys never returns raw key,contract,P0,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,POST /config/api-keys creates new key,contract,P0,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,POST /config/api-keys 503 when encryption unavailable,contract,P0,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,POST /config/api-keys 422 on invalid input,contract,P1,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,DELETE /config/api-keys/:id removes key,contract,P0,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,DELETE /config/api-keys/:id 404 not found,contract,P1,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,POST /config/api-keys/test validates key,contract,P0,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,POST /config/api-keys/test 429 rate limited,contract,P1,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,POST /config/api-keys/test returns invalid result,contract,P1,planned,ai-engine-api-keys.contract.test.ts
+F05,Config API Keys,API key manager resolves env key priority,unit,P0,planned,api-key-manager.test.ts
+F05,Config API Keys,API key manager lists all 5 providers,unit,P0,planned,api-key-manager.test.ts
+F05,Config API Keys,API key manager saves encrypted key,unit,P0,planned,api-key-manager.test.ts
+F05,Config API Keys,API key manager deletes key with fallback,unit,P0,planned,api-key-manager.test.ts
+F05,Config API Keys,API key manager tests key against provider,unit,P0,planned,api-key-manager.test.ts
+F05,Config API Keys,API key validator validates OpenAI key format,unit,P0,planned,api-key-validator.test.ts
+F05,Config API Keys,API key validator validates Anthropic key format,unit,P0,planned,api-key-validator.test.ts
+F05,Config API Keys,API key validator rejects invalid format,unit,P0,planned,api-key-validator.test.ts
+F05,Config API Keys,Encryption service encrypts and decrypts,unit,P0,planned,encryption-service.test.ts
+F05,Config API Keys,Encryption service handles missing key,unit,P0,planned,encryption-service.test.ts
+F05,Config API Keys,Model discovery lists models per provider,unit,P1,planned,model-discovery.test.ts
+F05,Config API Keys,Model discovery caches results,unit,P1,planned,model-discovery.test.ts
+F05,Config API Keys,E2E: API keys page loads,e2e,P0,planned,ai-engine-api-keys.spec.ts
+F05,Config API Keys,E2E: save new API key,e2e,P0,planned,ai-engine-api-keys.spec.ts
+F05,Config API Keys,E2E: delete API key,e2e,P1,planned,ai-engine-api-keys.spec.ts
+F05,Config API Keys,E2E: test API key,e2e,P0,planned,ai-engine-api-keys.spec.ts
+F06,Model Selector,Dropdown renders available models,component,P0,planned,ModelSelector.test.tsx
+F06,Model Selector,Model cost is displayed per model,component,P1,planned,ModelSelector.test.tsx
+F06,Model Selector,Selected model updates parent state,component,P0,planned,ModelSelector.test.tsx
+F06,Model Selector,Filter models by capability (text/image/video),component,P1,planned,ModelSelector.test.tsx
+F06,Model Selector,Empty model list shows fallback message,component,P2,planned,ModelSelector.test.tsx
+F06,Model Selector,Model discovery returns OpenAI models,unit,P0,planned,model-discovery.test.ts
+F06,Model Selector,Model discovery returns Anthropic models,unit,P0,planned,model-discovery.test.ts
+F06,Model Selector,Model discovery returns Google models,unit,P0,planned,model-discovery.test.ts
+F06,Model Selector,Model discovery handles unavailable provider,unit,P1,planned,model-discovery.test.ts
+F07,Knowledge Collections,Collection list renders with name and doc count,component,P0,planned,knowledge-page.test.tsx
+F07,Knowledge Collections,Collection list handles empty state,component,P1,planned,knowledge-page.test.tsx
+F07,Knowledge Collections,Collection category badge renders,component,P1,planned,knowledge-page.test.tsx
+F07,Knowledge Collections,Collection active/inactive toggle,component,P1,planned,knowledge-page.test.tsx
+F07,Knowledge Collections,Collection search filters by name,component,P1,planned,knowledge-page.test.tsx
+F07,Knowledge Collections,GET /knowledge returns collection list,contract,P0,planned,ai-engine-knowledge.contract.test.ts
+F07,Knowledge Collections,GET /knowledge returns correct shape,contract,P0,planned,ai-engine-knowledge.contract.test.ts
+F07,Knowledge Collections,GET /knowledge 401 without auth,contract,P0,planned,ai-engine-knowledge.contract.test.ts
+F07,Knowledge Collections,GET /knowledge/:slug returns single collection,contract,P1,planned,ai-engine-knowledge-deep.contract.test.ts
+F07,Knowledge Collections,GET /knowledge/:slug 404 not found,contract,P1,planned,ai-engine-knowledge-deep.contract.test.ts
+F07,Knowledge Collections,PATCH /knowledge/:slug updates collection,contract,P0,planned,ai-engine-knowledge-edit.contract.test.ts
+F07,Knowledge Collections,PATCH /knowledge/:slug 404 not found,contract,P1,planned,ai-engine-knowledge-edit.contract.test.ts
+F07,Knowledge Collections,PATCH /knowledge/:slug 422 invalid body,contract,P1,planned,ai-engine-knowledge-edit.contract.test.ts
+F07,Knowledge Collections,Collection CRUD operations in service,unit,P0,planned,collections.test.ts
+F07,Knowledge Collections,Collection create validates required fields,unit,P0,planned,collections.test.ts
+F07,Knowledge Collections,Collection slug generation from name,unit,P1,planned,collections.test.ts
+F07,Knowledge Collections,Collection delete cascades documents,unit,P1,planned,collections.test.ts
+F07,Knowledge Collections,E2E: knowledge page loads collection list,e2e,P0,planned,ai-engine-knowledge.spec.ts
+F07,Knowledge Collections,E2E: knowledge collection click opens detail,e2e,P1,planned,ai-engine-knowledge.spec.ts
+F07,Knowledge Collections,E2E: knowledge edit collection name,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+F07,Knowledge Collections,E2E: knowledge edit collection description,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+F08,Knowledge Documents,Document list renders within collection,component,P0,planned,knowledge-page.test.tsx
+F08,Knowledge Documents,Document upload form opens,component,P1,planned,knowledge-page.test.tsx
+F08,Knowledge Documents,Document preview renders content,component,P1,planned,knowledge-page.test.tsx
+F08,Knowledge Documents,Document delete with confirmation,component,P1,planned,knowledge-page.test.tsx
+F08,Knowledge Documents,Document chunk count is displayed,component,P2,planned,knowledge-page.test.tsx
+F08,Knowledge Documents,GET /knowledge/:slug/documents returns list,contract,P0,planned,ai-engine-knowledge-deep.contract.test.ts
+F08,Knowledge Documents,GET /knowledge/:slug/documents/:docId returns detail,contract,P0,planned,ai-engine-knowledge-edit.contract.test.ts
+F08,Knowledge Documents,PATCH /knowledge/:slug/documents/:docId updates doc,contract,P0,planned,ai-engine-knowledge-edit.contract.test.ts
+F08,Knowledge Documents,PATCH document with content triggers re-chunking,contract,P0,planned,ai-engine-knowledge-edit.contract.test.ts
+F08,Knowledge Documents,PATCH document without content preserves chunks,contract,P1,planned,ai-engine-knowledge-edit.contract.test.ts
+F08,Knowledge Documents,Document ingestion parses text content,unit,P0,planned,ingestion.test.ts
+F08,Knowledge Documents,Document ingestion splits into chunks,unit,P0,planned,ingestion.test.ts
+F08,Knowledge Documents,Document ingestion handles large documents,unit,P1,planned,ingestion.test.ts
+F08,Knowledge Documents,Document ingestion validates encoding,unit,P1,planned,ingestion.test.ts
+F08,Knowledge Documents,Document retrieval returns ranked chunks,unit,P0,planned,retrieval.test.ts
+F08,Knowledge Documents,Document retrieval filters by collection,unit,P1,planned,retrieval.test.ts
+F08,Knowledge Documents,E2E: upload document to collection,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+F08,Knowledge Documents,E2E: edit document content,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+F08,Knowledge Documents,E2E: delete document from collection,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+F09,Knowledge Embeddings,Embedding progress indicator renders,component,P1,planned,knowledge-page.test.tsx
+F09,Knowledge Embeddings,Embedding status badge (indexed/pending),component,P1,planned,knowledge-page.test.tsx
+F09,Knowledge Embeddings,POST /knowledge/embed triggers embedding,contract,P0,planned,ai-engine-knowledge-deep.contract.test.ts
+F09,Knowledge Embeddings,POST /knowledge/embed returns chunk count,contract,P1,planned,ai-engine-knowledge-deep.contract.test.ts
+F09,Knowledge Embeddings,POST /knowledge/seed creates initial data,contract,P1,planned,ai-engine-knowledge-deep.contract.test.ts
+F09,Knowledge Embeddings,Seed data creates expected collections,unit,P0,planned,seed-data.test.ts
+F09,Knowledge Embeddings,RAG roundtrip: embed then retrieve,unit,P0,planned,rag-roundtrip.test.ts
+F09,Knowledge Embeddings,E2E: trigger embed from knowledge page,e2e,P1,planned,ai-engine-knowledge-flow.spec.ts
+F09,Knowledge Embeddings,E2E: seed knowledge base,e2e,P1,planned,ai-engine-knowledge-flow.spec.ts
+F10,Content Creation,Brief form renders all fields,component,P0,planned,create-page.test.tsx
+F10,Content Creation,Brief form validates required objective,component,P0,planned,create-page.test.tsx
+F10,Content Creation,Brief form validates required platform,component,P0,planned,create-page.test.tsx
+F10,Content Creation,Brief form validates required format,component,P0,planned,create-page.test.tsx
+F10,Content Creation,Brief form tone selector works,component,P1,planned,create-page.test.tsx
+F10,Content Creation,Brief form key message text input,component,P1,planned,create-page.test.tsx
+F10,Content Creation,Brief form product focus selector,component,P1,planned,create-page.test.tsx
+F10,Content Creation,Brief form submit triggers generation,component,P0,planned,create-page.test.tsx
+F10,Content Creation,Brief form disabled during generation,component,P1,planned,create-page.test.tsx
+F10,Content Creation,Brief form preserves values on error,component,P1,planned,create-page.test.tsx
+F10,Content Creation,POST /generate validates brief schema,contract,P0,planned,ai-engine-generate.contract.test.ts
+F10,Content Creation,POST /generate returns generation result,contract,P0,planned,ai-engine-generate.contract.test.ts
+F10,Content Creation,POST /generate 422 on missing required fields,contract,P0,planned,ai-engine-generate.contract.test.ts
+F10,Content Creation,POST /generate 429 on rate limit,contract,P0,planned,ai-engine-generate.contract.test.ts
+F10,Content Creation,POST /generate 500 on provider error,contract,P0,planned,ai-engine-generate.contract.test.ts
+F10,Content Creation,Parse brief node extracts platform,unit,P0,planned,parse-brief.test.ts
+F10,Content Creation,Parse brief node extracts format,unit,P0,planned,parse-brief.test.ts
+F10,Content Creation,Parse brief node extracts objective,unit,P0,planned,parse-brief.test.ts
+F10,Content Creation,Parse brief node handles missing fields,unit,P1,planned,parse-brief.test.ts
+F10,Content Creation,Generate script node produces scenes,unit,P0,planned,generate-script.test.ts
+F10,Content Creation,Generate script node respects platform constraints,unit,P0,planned,generate-script.test.ts
+F10,Content Creation,Generate caption node produces text,unit,P0,planned,generate-caption.test.ts
+F10,Content Creation,Generate caption node includes hashtags,unit,P1,planned,generate-caption.test.ts
+F10,Content Creation,Compose node assembles final result,unit,P0,planned,compose.test.ts
+F10,Content Creation,Orchestrator runs full pipeline,unit,P0,planned,orchestrator.test.ts
+F10,Content Creation,Orchestrator handles pipeline errors,unit,P0,planned,orchestrator.test.ts
+F10,Content Creation,Orchestrator tracks duration,unit,P1,planned,orchestrator.test.ts
+F10,Content Creation,E2E: fill brief and generate,e2e,P0,planned,ai-engine-create.spec.ts
+F10,Content Creation,E2E: brief validation errors shown,e2e,P1,planned,ai-engine-create.spec.ts
+F10,Content Creation,E2E: generation result displayed,e2e,P0,planned,ai-engine-create.spec.ts
+F10,Content Creation,E2E: edit brief and regenerate,e2e,P1,planned,ai-engine-brief-edit-regen.spec.ts
+F11,Generation Progress,Progress component renders phases,component,P0,planned,GenerationProgress.test.tsx
+F11,Generation Progress,Progress component shows current phase,component,P0,planned,GenerationProgress.test.tsx
+F11,Generation Progress,Progress component shows completed phases,component,P1,planned,GenerationProgress.test.tsx
+F11,Generation Progress,Progress component shows error phase,component,P0,planned,GenerationProgress.test.tsx
+F11,Generation Progress,Progress component shows percentage,component,P1,planned,GenerationProgress.test.tsx
+F11,Generation Progress,Progress component cancel button,component,P1,planned,GenerationProgress.test.tsx
+F11,Generation Progress,Progress component animates transitions,component,P2,planned,GenerationProgress.test.tsx
+F11,Generation Progress,POST /generate-stream returns SSE events,contract,P0,planned,ai-engine-stream.contract.test.ts
+F11,Generation Progress,POST /generate-stream event format correct,contract,P0,planned,ai-engine-stream.contract.test.ts
+F11,Generation Progress,POST /generate-stream error event,contract,P1,planned,ai-engine-stream.contract.test.ts
+F11,Generation Progress,POST /generate-stream abort handling,contract,P1,planned,ai-engine-stream.contract.test.ts
+F11,Generation Progress,E2E: SSE progress updates render,e2e,P0,planned,ai-engine-sse-streaming.spec.ts
+F11,Generation Progress,E2E: SSE progress shows all phases,e2e,P1,planned,ai-engine-sse-streaming.spec.ts
+F11,Generation Progress,E2E: SSE error triggers error UI,e2e,P1,planned,ai-engine-sse-streaming.spec.ts
+F12,HITL Review,Review panel renders generation result,component,P0,planned,ReviewPanel.test.tsx
+F12,HITL Review,Review panel approve button,component,P0,planned,ReviewPanel.test.tsx
+F12,HITL Review,Review panel reject button,component,P0,planned,ReviewPanel.test.tsx
+F12,HITL Review,Review panel edit mode,component,P0,planned,ReviewPanel.test.tsx
+F12,HITL Review,Review panel requeue for regeneration,component,P1,planned,ReviewPanel.test.tsx
+F12,HITL Review,Review panel shows quality scores,component,P1,planned,ReviewPanel.test.tsx
+F12,HITL Review,Review panel shows moderation result,component,P1,planned,ReviewPanel.test.tsx
+F12,HITL Review,Review panel shows cost tracking,component,P2,planned,ReviewPanel.test.tsx
+F12,HITL Review,POST /jobs/:id/review approve action,contract,P0,planned,ai-engine-jobs.contract.test.ts
+F12,HITL Review,POST /jobs/:id/review reject action,contract,P0,planned,ai-engine-jobs.contract.test.ts
+F12,HITL Review,POST /jobs/:id/review 404 invalid job,contract,P1,planned,ai-engine-jobs.contract.test.ts
+F12,HITL Review,Human review node pauses pipeline,unit,P0,planned,human-review.test.ts
+F12,HITL Review,Human review node resumes on approve,unit,P0,planned,human-review.test.ts
+F12,HITL Review,Human review node handles reject,unit,P0,planned,human-review.test.ts
+F12,HITL Review,Human review node timeout,unit,P1,planned,human-review.test.ts
+F12,HITL Review,Quality check node scores content,unit,P0,planned,quality-check.test.ts
+F12,HITL Review,Moderate node flags unsafe content,unit,P0,planned,moderate.test.ts
+F12,HITL Review,Moderate node passes safe content,unit,P0,planned,moderate.test.ts
+F12,HITL Review,E2E: review page shows pending job,e2e,P0,planned,ai-engine-hitl-review.spec.ts
+F12,HITL Review,E2E: approve generation,e2e,P0,planned,ai-engine-hitl-review.spec.ts
+F12,HITL Review,E2E: reject generation,e2e,P1,planned,ai-engine-hitl-review.spec.ts
+F12,HITL Review,E2E: edit and re-approve,e2e,P1,planned,ai-engine-review-edit-cycle.spec.ts
+F12,HITL Review,E2E: regenerate from review,e2e,P1,planned,ai-engine-review-edit-cycle.spec.ts
+F13,Publish Flow,Publish section renders platform options,component,P0,planned,PublishSection.test.tsx
+F13,Publish Flow,Publish section select platform,component,P0,planned,PublishSection.test.tsx
+F13,Publish Flow,Publish section publish now button,component,P0,planned,PublishSection.test.tsx
+F13,Publish Flow,Publish section schedule for later,component,P1,planned,PublishSection.test.tsx
+F13,Publish Flow,Publish section shows success confirmation,component,P0,planned,PublishSection.test.tsx
+F13,Publish Flow,Publish section shows error on failure,component,P1,planned,PublishSection.test.tsx
+F13,Publish Flow,Publish section disabled when no content,component,P1,planned,PublishSection.test.tsx
+F13,Publish Flow,POST /publish publishes content,contract,P0,planned,ai-engine-publish.contract.test.ts
+F13,Publish Flow,POST /publish returns postId,contract,P0,planned,ai-engine-publish.contract.test.ts
+F13,Publish Flow,POST /publish 422 invalid platform,contract,P1,planned,ai-engine-publish.contract.test.ts
+F13,Publish Flow,POST /publish 500 provider error,contract,P1,planned,ai-engine-publish.contract.test.ts
+F13,Publish Flow,POST /publish schedule mode,contract,P1,planned,ai-engine-publish-schedule.contract.test.ts
+F13,Publish Flow,POST /publish schedule validates datetime,contract,P1,planned,ai-engine-publish-schedule.contract.test.ts
+F13,Publish Flow,E2E: publish to Instagram,e2e,P0,planned,ai-engine-publish.spec.ts
+F13,Publish Flow,E2E: publish to Facebook,e2e,P1,planned,ai-engine-publish.spec.ts
+F13,Publish Flow,E2E: schedule publish for later,e2e,P1,planned,ai-engine-publish.spec.ts
+F13,Publish Flow,E2E: publish error handling,e2e,P1,planned,ai-engine-publish.spec.ts
+F14,Analytics Dashboard,Analytics overview cards render,component,P0,planned,analytics-page.test.tsx
+F14,Analytics Dashboard,Analytics cost by provider chart,component,P1,planned,analytics-page.test.tsx
+F14,Analytics Dashboard,Analytics cost by node chart,component,P1,planned,analytics-page.test.tsx
+F14,Analytics Dashboard,Analytics recent jobs table,component,P0,planned,analytics-page.test.tsx
+F14,Analytics Dashboard,Analytics date range selector,component,P1,planned,analytics-page.test.tsx
+F14,Analytics Dashboard,Analytics loading skeleton,component,P1,planned,analytics-page.test.tsx
+F14,Analytics Dashboard,Analytics error state,component,P1,planned,analytics-page.test.tsx
+F14,Analytics Dashboard,GET /analytics returns overview,contract,P0,planned,ai-engine-analytics-deep.contract.test.ts
+F14,Analytics Dashboard,GET /analytics returns cost breakdown,contract,P0,planned,ai-engine-analytics-deep.contract.test.ts
+F14,Analytics Dashboard,GET /analytics returns recent jobs,contract,P1,planned,ai-engine-analytics-deep.contract.test.ts
+F14,Analytics Dashboard,GET /analytics 401 without auth,contract,P0,planned,ai-engine-analytics-deep.contract.test.ts
+F14,Analytics Dashboard,E2E: analytics page loads,e2e,P0,planned,ai-engine-analytics.spec.ts
+F14,Analytics Dashboard,E2E: analytics shows generation count,e2e,P1,planned,ai-engine-analytics.spec.ts
+F14,Analytics Dashboard,E2E: analytics shows cost total,e2e,P1,planned,ai-engine-analytics.spec.ts
+F15,Trends,Trends list renders with scores,component,P0,planned,trends-page.test.tsx
+F15,Trends,Trends score badge color coding,component,P1,planned,trends-page.test.tsx
+F15,Trends,Trends category filter,component,P1,planned,trends-page.test.tsx
+F15,Trends,Trends suggested formats display,component,P1,planned,trends-page.test.tsx
+F15,Trends,Trends opportunity window badge,component,P2,planned,trends-page.test.tsx
+F15,Trends,Trends loading state,component,P1,planned,trends-page.test.tsx
+F15,Trends,GET /trends returns trend list,contract,P0,planned,ai-engine-trends.contract.test.ts
+F15,Trends,GET /trends returns composite scores,contract,P0,planned,ai-engine-trends.contract.test.ts
+F15,Trends,GET /trends 401 without auth,contract,P0,planned,ai-engine-trends.contract.test.ts
+F15,Trends,Trends collector gathers signals,unit,P0,planned,collectors.test.ts
+F15,Trends,Trends scorer computes composite score,unit,P0,planned,scorer.test.ts
+F15,Trends,Trends scorer weights brand relevance,unit,P1,planned,scorer.test.ts
+F15,Trends,Trends engine ranks by score,unit,P0,planned,engine.test.ts
+F15,Trends,Trends engine filters by threshold,unit,P1,planned,engine.test.ts
+F15,Trends,Enrich trends node enriches state,unit,P0,planned,enrich-trends.test.ts
+F15,Trends,E2E: trends page loads,e2e,P0,planned,ai-engine-trends.spec.ts
+F15,Trends,E2E: trends list shows scores,e2e,P1,planned,ai-engine-trends.spec.ts
+F15,Trends,E2E: trends category filter works,e2e,P1,planned,ai-engine-trends.spec.ts
+F16,Graph Visualization,Graph renders nodes,component,P0,planned,graph-page.test.tsx
+F16,Graph Visualization,Graph renders edges between nodes,component,P0,planned,graph-page.test.tsx
+F16,Graph Visualization,Graph highlights active node,component,P1,planned,graph-page.test.tsx
+F16,Graph Visualization,Graph zoom controls,component,P1,planned,graph-page.test.tsx
+F16,Graph Visualization,Graph node click shows details,component,P1,planned,graph-page.test.tsx
+F16,Graph Visualization,Graph builder constructs valid graph,unit,P0,planned,builder.test.ts
+F16,Graph Visualization,Graph routing selects correct path,unit,P0,planned,routing.test.ts
+F16,Graph Visualization,Graph state reducers merge correctly,unit,P0,planned,state-reducers.test.ts
+F16,Graph Visualization,Graph state initialization,unit,P0,planned,state.test.ts
+F16,Graph Visualization,E2E: graph page loads,e2e,P0,planned,ai-engine-graph.spec.ts
+F16,Graph Visualization,E2E: graph nodes visible,e2e,P1,planned,ai-engine-graph.spec.ts
+F16,Graph Visualization,E2E: graph zoom interaction,e2e,P2,planned,ai-engine-graph.spec.ts
+F16,Graph Visualization,E2E: graph node click,e2e,P1,planned,ai-engine-graph.spec.ts
+F17,Cross-cutting,Loading skeleton renders for each page,component,P0,planned,loading-states.test.tsx
+F17,Cross-cutting,Error banner renders error message,component,P0,planned,ErrorBanners.test.tsx
+F17,Cross-cutting,Error banner retry button works,component,P1,planned,ErrorBanners.test.tsx
+F17,Cross-cutting,Error banner dismisses,component,P1,planned,ErrorBanners.test.tsx
+F17,Cross-cutting,Clipboard copy copies text,component,P0,planned,ClipboardCopy.test.tsx
+F17,Cross-cutting,Clipboard copy shows success feedback,component,P1,planned,ClipboardCopy.test.tsx
+F17,Cross-cutting,Generation result renders script,component,P0,planned,GenerationResult.test.tsx
+F17,Cross-cutting,Generation result renders caption,component,P0,planned,GenerationResult.test.tsx
+F17,Cross-cutting,Generation result renders hashtags,component,P1,planned,GenerationResult.test.tsx
+F17,Cross-cutting,Generation result renders images,component,P1,planned,GenerationResult.test.tsx
+F17,Cross-cutting,Generation result renders quality scores,component,P0,planned,GenerationResult.test.tsx
+F17,Cross-cutting,Generation result renders cost tracking,component,P1,planned,GenerationResult.test.tsx
+F17,Cross-cutting,Generation result shows library link,component,P1,planned,GenerationResult.test.tsx
+F17,Cross-cutting,Content Studio bridge creates idea,unit,P0,planned,content-studio-bridge.test.ts
+F17,Cross-cutting,Content Studio bridge creates brief,unit,P0,planned,content-studio-bridge.test.ts
+F17,Cross-cutting,Content Studio bridge creates draft,unit,P0,planned,content-studio-bridge.test.ts
+F17,Cross-cutting,Engine config loads from environment,unit,P0,planned,engine-config.test.ts
+F17,Cross-cutting,Engine config validates budget limits,unit,P0,planned,engine-config.test.ts
+F17,Cross-cutting,Engine config validates quality threshold,unit,P1,planned,engine-config.test.ts
+F17,Cross-cutting,Logger creates structured log entries,unit,P1,planned,logger.test.ts
+F17,Cross-cutting,Logger redacts API keys,unit,P0,planned,logger.test.ts
+F17,Cross-cutting,Schema validation accepts valid brief,unit,P0,planned,schemas.test.ts
+F17,Cross-cutting,Schema validation rejects missing platform,unit,P0,planned,schemas.test.ts
+F17,Cross-cutting,Schema validation rejects invalid format,unit,P0,planned,schemas.test.ts
+F17,Cross-cutting,Media type validation for images,unit,P1,planned,media.test.ts
+F17,Cross-cutting,Platform specs for Instagram,unit,P0,planned,platform-specs.test.ts
+F17,Cross-cutting,Platform specs for TikTok,unit,P0,planned,platform-specs.test.ts
+F17,Cross-cutting,Platform specs for LinkedIn,unit,P1,planned,platform-specs.test.ts
+F17,Cross-cutting,Job repository creates job record,unit,P0,planned,repository.test.ts
+F17,Cross-cutting,Job repository updates job status,unit,P0,planned,repository.test.ts
+F17,Cross-cutting,Job repository queries by status,unit,P1,planned,repository.test.ts
+F17,Cross-cutting,Budget guard enforces daily limit,unit,P0,planned,budget-guard.test.ts
+F17,Cross-cutting,Budget guard enforces per-job limit,unit,P0,planned,budget-guard.test.ts
+F17,Cross-cutting,Checkpointing saves state,unit,P0,planned,checkpointing.test.ts
+F17,Cross-cutting,Checkpointing restores state,unit,P0,planned,checkpointing.test.ts
+F17,Cross-cutting,CORS headers are correct,unit,P0,planned,cors.test.ts
+F17,Cross-cutting,DB transaction commits on success,unit,P0,planned,db-transaction.test.ts
+F17,Cross-cutting,DB transaction rolls back on error,unit,P0,planned,db-transaction.test.ts
+F17,Cross-cutting,Job lifecycle end-to-end,unit,P0,planned,job-lifecycle.test.ts
+F17,Cross-cutting,Pipeline real integration test,unit,P0,planned,pipeline-real.test.ts
+F17,Cross-cutting,Rate limiting enforces request limit,unit,P0,planned,rate-limiting.test.ts
+F17,Cross-cutting,Rate limiting returns 429 when exceeded,unit,P0,planned,rate-limiting.test.ts
+F17,Cross-cutting,Security: XSS in keyMessage is safe,unit,P0,planned,security.test.ts
+F17,Cross-cutting,Security: SQL injection in brief is safe,unit,P0,planned,security.test.ts
+F17,Cross-cutting,Security: API key never in logs,unit,P0,planned,security.test.ts
+F17,Cross-cutting,Security: path traversal in jobId blocked,unit,P0,planned,security.test.ts
+F17,Cross-cutting,Security: extremely long input handled,unit,P1,planned,security.test.ts
+F17,Cross-cutting,Security: unicode input handled,unit,P1,planned,security.test.ts
+F17,Cross-cutting,Concurrent: two generations do not interfere,unit,P0,planned,concurrent.test.ts
+F17,Cross-cutting,Concurrent: unique jobId per call,unit,P0,planned,concurrent.test.ts
+F17,Cross-cutting,Concurrent: cost tracking independent,unit,P1,planned,concurrent.test.ts
+F17,Cross-cutting,Concurrent: errors isolated between calls,unit,P0,planned,concurrent.test.ts
+F17,Cross-cutting,Quality integrity checks pass,unit,P0,planned,quality-integrity.test.ts
+F17,Cross-cutting,Retry convergence reaches success,unit,P0,planned,retry-convergence.test.ts
+F17,Cross-cutting,Performance: bundle size within budget,unit,P1,planned,bundle.test.ts
+F17,Cross-cutting,Performance: latency under threshold,unit,P1,planned,latency.test.ts
+F17,Cross-cutting,Performance: memory usage stable,unit,P2,planned,memory.test.ts
+F17,Cross-cutting,GET /health returns enabled status,contract,P0,planned,ai-engine-health.contract.test.ts
+F17,Cross-cutting,GET /health returns provider status,contract,P0,planned,ai-engine-health.contract.test.ts
+F17,Cross-cutting,GET /health timeout handling,contract,P1,planned,ai-engine-health.contract.test.ts
+F17,Cross-cutting,GET /health disabled mode response,contract,P1,planned,ai-engine-health.contract.test.ts
+F17,Cross-cutting,GET /jobs returns job list,contract,P0,planned,ai-engine-jobs.contract.test.ts
+F17,Cross-cutting,GET /jobs returns stats,contract,P0,planned,ai-engine-jobs.contract.test.ts
+F17,Cross-cutting,GET /integrations returns list,contract,P0,planned,ai-engine-integrations.contract.test.ts
+F17,Cross-cutting,GET /integrations 401 without auth,contract,P0,planned,ai-engine-integrations.contract.test.ts
+F17,Cross-cutting,E2E: dark mode toggle applies to all pages,e2e,P1,planned,ai-engine-dark-mode.spec.ts
+F17,Cross-cutting,E2E: keyboard Tab navigation works,e2e,P1,planned,ai-engine-keyboard.spec.ts
+F17,Cross-cutting,E2E: keyboard Enter activates buttons,e2e,P1,planned,ai-engine-keyboard.spec.ts
+F17,Cross-cutting,E2E: responsive layout 375px,e2e,P1,planned,ai-engine-responsive.spec.ts
+F17,Cross-cutting,E2E: responsive layout 768px,e2e,P1,planned,ai-engine-responsive.spec.ts
+F17,Cross-cutting,E2E: responsive layout 1280px,e2e,P1,planned,ai-engine-responsive.spec.ts
+F17,Cross-cutting,E2E: accessibility audit no violations,e2e,P0,planned,ai-engine-a11y.spec.ts
+F17,Cross-cutting,E2E: session expired redirects to login,e2e,P0,planned,ai-engine-session-expired.spec.ts
+F17,Cross-cutting,E2E: page refresh preserves state,e2e,P1,planned,ai-engine-refresh-recovery.spec.ts
+F17,Cross-cutting,E2E: concurrent generation safety,e2e,P1,planned,ai-engine-concurrent.spec.ts
+F17,Cross-cutting,E2E: budget guard blocks over-limit,e2e,P0,planned,ai-engine-budget-guard.spec.ts
+F17,Cross-cutting,E2E: provider fallback on failure,e2e,P1,planned,ai-engine-provider-fallback.spec.ts
+F17,Cross-cutting,Generate images node produces image assets,unit,P0,planned,generate-images.test.ts
+F17,Cross-cutting,Generate video node produces video asset,unit,P1,planned,generate-video.test.ts
+F17,Cross-cutting,Generate voiceover node produces audio,unit,P1,planned,generate-voiceover.test.ts
+F17,Cross-cutting,Generate music node produces music track,unit,P1,planned,generate-music.test.ts
+F17,Cross-cutting,Generate subtitles node produces SRT,unit,P1,planned,generate-subtitles.test.ts
+F17,Cross-cutting,Generate variants node produces alternatives,unit,P1,planned,generate-variants.test.ts
+F17,Cross-cutting,Transcode export node produces final output,unit,P1,planned,transcode-export.test.ts
+F17,Cross-cutting,Enrich knowledge node adds context,unit,P0,planned,enrich-knowledge.test.ts
+S01,Golden Path,Navigate to AI Engine dashboard,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Click Nouvelle generation IA,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Verify create page loaded,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Fill objective: Engagement communaute,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Fill platform: Instagram,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Fill format: Carrousel,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Fill tone: Premium / Luxe,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Fill key message,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Fill product focus,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Click Generer,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Pipeline progress is visible,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Result appears with script,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Caption is displayed,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Quality scores are displayed,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S01,Golden Path,Voir dans la Bibliotheque link present,e2e,P0,planned,ai-engine-scenario-golden-path.spec.ts
+S02,Error Recovery,Navigate to create page,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Fill brief form,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Mock generate API fails first call,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Click Generer triggers failing call,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Error phase is visible,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Error message is displayed,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Click Reessayer,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Second call succeeds,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Generating phase starts after retry,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S02,Error Recovery,Result phase shows after retry,e2e,P0,planned,ai-engine-scenario-error-recovery.spec.ts
+S03,Knowledge Flow,Navigate to knowledge page,e2e,P0,planned,ai-engine-knowledge-flow.spec.ts
+S03,Knowledge Flow,Seed knowledge base,e2e,P0,planned,ai-engine-knowledge-flow.spec.ts
+S03,Knowledge Flow,Verify collections created,e2e,P0,planned,ai-engine-knowledge-flow.spec.ts
+S03,Knowledge Flow,Upload document to collection,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+S03,Knowledge Flow,Edit document content,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+S03,Knowledge Flow,Trigger embed for collection,e2e,P0,planned,ai-engine-knowledge-flow.spec.ts
+S03,Knowledge Flow,Verify chunk count updated,e2e,P1,planned,ai-engine-knowledge-flow.spec.ts
+S03,Knowledge Flow,Edit collection name,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+S03,Knowledge Flow,Edit collection description,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+S03,Knowledge Flow,Delete document from collection,e2e,P1,planned,ai-engine-knowledge-edit.spec.ts
+S04,Review Cycle,Generate content from brief,e2e,P0,planned,ai-engine-hitl-review.spec.ts
+S04,Review Cycle,Review panel appears,e2e,P0,planned,ai-engine-hitl-review.spec.ts
+S04,Review Cycle,Quality scores visible,e2e,P0,planned,ai-engine-hitl-review.spec.ts
+S04,Review Cycle,Edit caption in review,e2e,P1,planned,ai-engine-review-edit-cycle.spec.ts
+S04,Review Cycle,Approve edited content,e2e,P0,planned,ai-engine-hitl-review.spec.ts
+S04,Review Cycle,Reject and regenerate,e2e,P1,planned,ai-engine-review-edit-cycle.spec.ts
+S04,Review Cycle,Publish approved content,e2e,P0,planned,ai-engine-publish.spec.ts
+S04,Review Cycle,Verify library link after publish,e2e,P1,planned,ai-engine-hitl-review.spec.ts
+S05,Budget Guard,Set low budget limit,e2e,P0,planned,ai-engine-budget-guard.spec.ts
+S05,Budget Guard,Generate content near limit,e2e,P0,planned,ai-engine-budget-guard.spec.ts
+S05,Budget Guard,Budget warning displayed,e2e,P0,planned,ai-engine-budget-guard.spec.ts
+S05,Budget Guard,Exceed budget triggers block,e2e,P0,planned,ai-engine-budget-guard.spec.ts
+S05,Budget Guard,429 error shown to user,e2e,P0,planned,ai-engine-budget-guard.spec.ts
+S05,Budget Guard,Budget resets after period,e2e,P1,planned,ai-engine-budget-guard.spec.ts
+S06,Multi-platform,Generate for Instagram post,e2e,P0,planned,ai-engine-multi-format.spec.ts
+S06,Multi-platform,Generate for Instagram carousel,e2e,P0,planned,ai-engine-multi-format.spec.ts
+S06,Multi-platform,Generate for TikTok reel,e2e,P1,planned,ai-engine-multi-format.spec.ts
+S06,Multi-platform,Generate for LinkedIn post,e2e,P1,planned,ai-engine-multi-format.spec.ts
+S06,Multi-platform,Publish Instagram post,e2e,P0,planned,ai-engine-publish.spec.ts
+S06,Multi-platform,Publish Facebook post,e2e,P1,planned,ai-engine-publish.spec.ts

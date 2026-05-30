@@ -1,0 +1,418 @@
+feature: F07-knowledge-collections
+description: Knowledge collection list with expand/collapse, CRUD forms, category badges, stats dashboard
+component_under_test: apps/web/src/app/admin/content-studio-v2/ai-engine/knowledge/page.tsx
+test_file: apps/web/src/app/admin/content-studio-v2/ai-engine/knowledge/__tests__/knowledge-page.test.tsx
+
+scenarios:
+  # ---- LOADING & ERROR ----
+
+  - id: F07-T01
+    name: "Loading state shows 4 skeleton placeholders"
+    type: component
+    priority: P0
+    preconditions: "API response pending"
+    steps:
+      - "Render KnowledgeBasePage before API resolves"
+    expected: "4 skeleton div placeholders with varying heights"
+    assertions:
+      - "4 skeleton elements visible"
+      - "No collection content rendered"
+    tags: [loading, skeleton]
+
+  - id: F07-T02
+    name: "Error state shows red error section"
+    type: component
+    priority: P0
+    preconditions: "GET /knowledge returns 500"
+    steps:
+      - "Render page, API fails"
+    expected: "Red error section with 'Impossible de charger la base de connaissances'"
+    assertions:
+      - "AlertTriangle icon visible"
+      - "Text 'Impossible de charger la base de connaissances' visible"
+      - "Error message details visible"
+    tags: [error]
+
+  # ---- EMPTY STATE ----
+
+  - id: F07-T03
+    name: "Empty state shown when no collections"
+    type: component
+    priority: P0
+    preconditions: "API returns empty collections array"
+    steps:
+      - "Render page"
+    expected: "Centered empty state with BookOpen icon and 'Aucune collection' title"
+    assertions:
+      - "Text 'Aucune collection' visible"
+      - "BookOpen icon visible"
+      - "Seed instruction text visible"
+    tags: [empty-state]
+
+  # ---- STATS DASHBOARD ----
+
+  - id: F07-T04
+    name: "Stats dashboard shows aggregate counts"
+    type: component
+    priority: P0
+    preconditions: "5 collections, 12 docs total, 48 chunks total, 1 pending"
+    steps:
+      - "Render page with data"
+    expected: "4 stat cards: Collections=5, Documents=12, Chunks=48, En attente=1"
+    assertions:
+      - "Stat 'Collections' value is 5"
+      - "Stat 'Documents' value is 12"
+      - "Stat 'Chunks' value is 48"
+      - "Stat 'En attente' value is 1"
+    tags: [stats, rendering]
+
+  - id: F07-T05
+    name: "Pending stat uses warning tone when > 0"
+    type: component
+    priority: P1
+    preconditions: "1 collection with docs > 0 and chunks === 0"
+    steps:
+      - "Check 'En attente' stat card"
+    expected: "Warning tone color applied"
+    assertions:
+      - "Stat card icon background is var(--cs-warning-bg)"
+    tags: [stats, visual]
+
+  - id: F07-T06
+    name: "Pending stat uses success tone when 0"
+    type: component
+    priority: P2
+    preconditions: "All collections have chunks > 0 or docs === 0"
+    steps:
+      - "Check 'En attente' stat card"
+    expected: "Success tone color applied"
+    assertions:
+      - "Stat card icon background is var(--cs-success-bg)"
+    tags: [stats, visual]
+
+  # ---- COLLECTION LIST ----
+
+  - id: F07-T07
+    name: "Collections render as expandable sections"
+    type: component
+    priority: P0
+    preconditions: "3 collections returned"
+    steps:
+      - "Render page"
+    expected: "3 clickable collection headers with chevron, name, category badge, stats"
+    assertions:
+      - "3 section elements"
+      - "Each has a button child for expand/collapse"
+    tags: [rendering, list]
+
+  - id: F07-T08
+    name: "Collection shows name, category badge, doc/chunk counts"
+    type: component
+    priority: P0
+    preconditions: "Collection: name='Fiches Produits', category='brand', docCount=5, chunkCount=20"
+    steps:
+      - "Render collection header"
+    expected: "Name 'Fiches Produits', badge 'Marque' (sage), '5 docs', '20 chunks'"
+    assertions:
+      - "Text 'Fiches Produits' visible"
+      - "Badge 'Marque' visible"
+      - "Text '5' followed by 'docs' visible"
+      - "Text '20' followed by 'chunks' visible"
+    tags: [rendering, detail]
+
+  - id: F07-T09
+    name: "Category badge maps correctly for each category"
+    type: component
+    priority: P1
+    preconditions: "Collections with different categories"
+    steps:
+      - "Render collections with categories: science, platform, strategy"
+    expected: "Badges: Science (accent), Plateforme (violet), Strategie (saffron)"
+    assertions:
+      - "Badge 'Science' present"
+      - "Badge 'Plateforme' present"
+      - "Badge 'Strategie' present"
+    tags: [rendering, badge]
+
+  - id: F07-T10
+    name: "Last indexed date shown in French format"
+    type: component
+    priority: P2
+    preconditions: "Collection with lastIndexedAt='2025-12-01T10:30:00Z'"
+    steps:
+      - "Render collection"
+    expected: "Text 'Indexe : 1 dec. 2025, 10:30'"
+    assertions:
+      - "Text matching 'Indexe' with formatted date visible"
+    tags: [rendering, date-format]
+
+  - id: F07-T11
+    name: "Null lastIndexedAt shows 'Jamais'"
+    type: component
+    priority: P2
+    preconditions: "Collection with lastIndexedAt=null"
+    steps:
+      - "Render collection"
+    expected: "Text 'Indexe : Jamais'"
+    assertions:
+      - "Text 'Jamais' visible in indexed section"
+    tags: [rendering, edge-case]
+
+  # ---- EXPAND / COLLAPSE ----
+
+  - id: F07-T12
+    name: "Clicking collection header expands it"
+    type: component
+    priority: P0
+    preconditions: "Collection collapsed"
+    steps:
+      - "Click collection header button"
+    expected: "Expanded panel with documents area, ChevronDown icon"
+    assertions:
+      - "Expanded panel visible below header"
+      - "ChevronDown icon shown (not ChevronRight)"
+    tags: [expand, toggle]
+
+  - id: F07-T13
+    name: "Clicking expanded collection collapses it"
+    type: component
+    priority: P0
+    preconditions: "Collection expanded"
+    steps:
+      - "Click same collection header again"
+    expected: "Panel hidden, ChevronRight icon"
+    assertions:
+      - "Expanded panel not visible"
+      - "ChevronRight icon shown"
+    tags: [collapse, toggle]
+
+  - id: F07-T14
+    name: "Expanding one collection collapses any previously expanded"
+    type: component
+    priority: P1
+    preconditions: "Collection A expanded"
+    steps:
+      - "Click Collection B header"
+    expected: "Collection A collapses, Collection B expands"
+    assertions:
+      - "Only Collection B expanded panel visible"
+    tags: [expand, exclusive]
+
+  - id: F07-T15
+    name: "First expand triggers document fetch"
+    type: component
+    priority: P0
+    preconditions: "Collection not yet expanded"
+    steps:
+      - "Click collection header"
+    expected: "GET /knowledge/{slug}/documents called"
+    assertions:
+      - "fetch called for /knowledge/{slug}/documents"
+    tags: [expand, fetch]
+
+  - id: F07-T16
+    name: "Subsequent expand uses cached documents (no re-fetch)"
+    type: component
+    priority: P1
+    preconditions: "Collection expanded then collapsed then expanded again"
+    steps:
+      - "Expand, collapse, expand"
+    expected: "Only one GET /documents request total"
+    assertions:
+      - "fetch for documents called exactly once"
+    tags: [expand, cache]
+
+  # ---- CREATE COLLECTION ----
+
+  - id: F07-T17
+    name: "New collection button opens inline form"
+    type: component
+    priority: P0
+    preconditions: "On knowledge page"
+    steps:
+      - "Click 'Nouvelle collection'"
+    expected: "Inline form with Nom, Slug, Description, Categorie fields"
+    assertions:
+      - "Text 'Nouvelle collection' heading visible in form"
+      - "Nom input visible"
+      - "Slug input visible"
+      - "Description input visible"
+      - "Categorie select visible"
+    tags: [create, form]
+
+  - id: F07-T18
+    name: "Slug auto-generates from name"
+    type: component
+    priority: P0
+    preconditions: "Create form open, slug empty"
+    steps:
+      - "Type 'Fiches Produits Beaute' in Nom"
+    expected: "Slug auto-fills with 'fiches-produits-beaute'"
+    assertions:
+      - "Slug input value is 'fiches-produits-beaute'"
+    tags: [create, slug-auto]
+
+  - id: F07-T19
+    name: "Manually editing slug stops auto-sync"
+    type: component
+    priority: P1
+    preconditions: "Create form, slug auto-generated"
+    steps:
+      - "Manually change slug to 'custom-slug'"
+      - "Change name"
+    expected: "Slug stays 'custom-slug', not overwritten by name change"
+    assertions:
+      - "Slug input value remains 'custom-slug'"
+    tags: [create, slug-manual]
+
+  - id: F07-T20
+    name: "Save disabled when name or slug empty"
+    type: component
+    priority: P0
+    preconditions: "Create form, name empty"
+    steps:
+      - "Check Creer button"
+    expected: "Creer button disabled"
+    assertions:
+      - "Creer button has disabled attribute"
+    tags: [validation]
+
+  - id: F07-T21
+    name: "Slug input restricts to lowercase alphanumeric and hyphens"
+    type: component
+    priority: P1
+    preconditions: "Create form"
+    steps:
+      - "Type 'Hello World!' in slug"
+    expected: "Input value is 'helloworld' (uppercase and special chars stripped)"
+    assertions:
+      - "Slug input value contains only [a-z0-9-]"
+    tags: [validation, slug]
+
+  - id: F07-T22
+    name: "Successful create shows success message and refreshes"
+    type: component
+    priority: P0
+    preconditions: "POST /knowledge returns 200"
+    steps:
+      - "Fill form and click Creer"
+    expected: "Success banner, form closes, fetchCollections called"
+    assertions:
+      - "Success message matching 'creee' visible"
+      - "Form closed"
+      - "GET /knowledge called again"
+    tags: [create, success]
+
+  - id: F07-T23
+    name: "Create error shows inline error message"
+    type: component
+    priority: P0
+    preconditions: "POST /knowledge returns 400"
+    steps:
+      - "Fill form and click Creer, API returns error"
+    expected: "Red error message inline in form"
+    assertions:
+      - "AlertTriangle icon in form"
+      - "Error message text visible"
+      - "Form stays open"
+    tags: [create, error]
+
+  - id: F07-T24
+    name: "Cancel closes create form"
+    type: component
+    priority: P1
+    preconditions: "Create form open"
+    steps:
+      - "Click 'Annuler'"
+    expected: "Form closes, no POST request"
+    assertions:
+      - "Form not in DOM"
+      - "No POST request"
+    tags: [create, cancel]
+
+  # ---- EDIT COLLECTION ----
+
+  - id: F07-T25
+    name: "Edit button opens form with pre-populated values"
+    type: component
+    priority: P0
+    preconditions: "Collection: name='Marque', slug='marque', category='brand', desc='Brand info'"
+    steps:
+      - "Expand collection, click 'Modifier'"
+    expected: "Edit form with slug label, pre-populated name/desc/category"
+    assertions:
+      - "Text 'Modifier la collection' visible"
+      - "Text 'slug: marque' visible"
+      - "Nom input value is 'Marque'"
+      - "Description input value is 'Brand info'"
+      - "Category select value is 'brand'"
+    tags: [edit, form, pre-populate]
+
+  - id: F07-T26
+    name: "Edit with no changes closes silently"
+    type: component
+    priority: P1
+    preconditions: "Edit form open, no modifications"
+    steps:
+      - "Click 'Enregistrer' without changes"
+    expected: "Form closes, no PATCH request"
+    assertions:
+      - "No PATCH request sent"
+      - "Form closed"
+    tags: [edit, no-op]
+
+  - id: F07-T27
+    name: "Edit sends only changed fields in PATCH"
+    type: component
+    priority: P1
+    preconditions: "Edit form, only name changed"
+    steps:
+      - "Change name to 'New Name', click Enregistrer"
+    expected: "PATCH body contains only { name: 'New Name' }"
+    assertions:
+      - "PATCH called with body containing name"
+      - "Body does NOT contain description or category"
+    tags: [edit, partial-update]
+
+  # ---- DELETE COLLECTION ----
+
+  - id: F07-T28
+    name: "Delete button shows confirm banner"
+    type: component
+    priority: P0
+    preconditions: "Collection expanded"
+    steps:
+      - "Click 'Supprimer la collection'"
+    expected: "Red confirm banner with collection name bolded"
+    assertions:
+      - "Text 'Supprimer cette collection ?' visible"
+      - "Collection name bolded in banner"
+      - "'Annuler' and 'Supprimer' buttons visible"
+    tags: [delete, confirm]
+
+  - id: F07-T29
+    name: "Confirm delete calls API and shows success"
+    type: component
+    priority: P0
+    preconditions: "Confirm banner visible, DELETE returns 200"
+    steps:
+      - "Click 'Supprimer' in confirm banner"
+    expected: "DELETE /knowledge/{slug} called, success message shown"
+    assertions:
+      - "DELETE request to /knowledge/{slug}"
+      - "Success message matching 'supprimee' visible"
+      - "Expanded id reset to null"
+    tags: [delete, api, success]
+
+  - id: F07-T30
+    name: "Cancel delete dismisses confirm banner"
+    type: component
+    priority: P1
+    preconditions: "Confirm banner visible"
+    steps:
+      - "Click 'Annuler' in banner"
+    expected: "Banner disappears, no DELETE request"
+    assertions:
+      - "Confirm banner not in DOM"
+      - "No DELETE request"
+    tags: [delete, cancel]

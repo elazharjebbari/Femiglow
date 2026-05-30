@@ -114,6 +114,14 @@ const envSchema = z.object({
   CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED: z.enum(['true', 'false']).default('false'),
   POSTIZ_BASE_URL: z.string().url().optional(),
   POSTIZ_API_KEY: z.string().optional(),
+  // Publication réelle vs simulée. 'dry_run' (défaut) = aucune publication réelle
+  // (sécurité staging). 'live' = route vers le provider réel (Postiz) et publie
+  // vraiment sur les comptes connectés.
+  SOCIAL_PUBLISHING_MODE: z.enum(['dry_run', 'live']).default('dry_run'),
+  // En mode 'live', cible un compte précis (id interne du compte social OU id
+  // d'intégration Postiz). Si absent, le premier compte Postiz actif de la
+  // plateforme est utilisé.
+  SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID: z.string().optional(),
   CONTENT_STUDIO_DEFAULT_TIMEZONE: z.string().min(3).default('Africa/Casablanca'),
   CONTENT_STUDIO_OPENAI_API_KEY: z.string().optional(),
   CONTENT_STUDIO_TEXT_MODEL: z.string().min(1).default('gpt-4o-mini'),
@@ -128,6 +136,42 @@ const envSchema = z.object({
   // Set to 'true' once Phase 7 polish + Phase 5 /plan completes; rollback
   // is a flag flip away.
   CONTENT_STUDIO_V2_DEFAULT: z.enum(['true', 'false']).default('false'),
+  // CS v2 create-audit — Phase 1: global mock mode for /create flow (text + image + video + publish).
+  // When 'true', all generation paths and publish jobs return mocked responses for safe staging / E2E.
+  CONTENT_STUDIO_V2_MOCK_MODE: z.enum(['true', 'false']).default('false'),
+  // Video generation provider. 'mock' serves static MP4 from /public/_media/content-studio/mock/.
+  CONTENT_STUDIO_VIDEO_PROVIDER: z.enum(['mock', 'higgsfield', 'veo', 'sora']).default('mock'),
+  // Default video model id used by the mock pipeline + as fallback when no model picked in UI.
+  CONTENT_STUDIO_VIDEO_MODEL: z.string().min(1).default('mock-video-1.0'),
+
+  // — AI Engine (LangGraph-based content generation) ————————————————————
+  AI_ENGINE_ENABLED: z.enum(['true', 'false']).default('false'),
+  AI_ENGINE_OPENAI_API_KEY: z.string().optional(),
+  AI_ENGINE_ANTHROPIC_API_KEY: z.string().optional(),
+  AI_ENGINE_GOOGLE_API_KEY: z.string().optional(),
+  AI_ENGINE_ELEVENLABS_API_KEY: z.string().optional(),
+  AI_ENGINE_HIGGSFIELD_API_KEY: z.string().optional(),
+  // Higgsfield exige un credential en 2 parties (KEY_ID:KEY_SECRET). Soit
+  // AI_ENGINE_HIGGSFIELD_API_KEY contient déjà "KEY_ID:KEY_SECRET", soit on
+  // fournit le secret séparément ici.
+  AI_ENGINE_HIGGSFIELD_API_SECRET: z.string().optional(),
+  // Hôte API Higgsfield. Défaut = hôte officiel (platform.higgsfield.ai).
+  // L'ancien 'api.higgsfield.ai' a une origine morte (HTTP 522).
+  AI_ENGINE_HIGGSFIELD_BASE_URL: z.string().url().default('https://platform.higgsfield.ai'),
+  AI_ENGINE_OLLAMA_BASE_URL: z.string().url().optional(),
+  AI_ENGINE_DEFAULT_TEXT_PROVIDER: z.enum(['openai', 'anthropic', 'google', 'ollama']).default('openai'),
+  AI_ENGINE_DEFAULT_TEXT_MODEL: z.string().min(1).default('gpt-4.1-mini'),
+  AI_ENGINE_DEFAULT_IMAGE_PROVIDER: z.enum(['openai', 'google', 'stability', 'higgsfield', 'mock']).default('mock'),
+  AI_ENGINE_DEFAULT_IMAGE_MODEL: z.string().min(1).default('gpt-image-1'),
+  AI_ENGINE_DEFAULT_VIDEO_PROVIDER: z.enum(['google', 'runway', 'higgsfield', 'mock']).default('mock'),
+  AI_ENGINE_DEFAULT_TTS_PROVIDER: z.enum(['elevenlabs', 'openai', 'google', 'mock']).default('mock'),
+  AI_ENGINE_DAILY_BUDGET_CENTS: z.coerce.number().int().nonnegative().default(1000),
+  AI_ENGINE_MAX_BUDGET_PER_JOB_CENTS: z.coerce.number().int().nonnegative().default(100),
+  AI_ENGINE_QUALITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.7),
+  AI_ENGINE_HUMAN_REVIEW_REQUIRED: z.enum(['true', 'false']).default('true'),
+  AI_ENGINE_LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  AI_ENGINE_ENCRYPTION_KEY: z.string().optional(),
+  AI_ENGINE_ENCRYPTION_SALT: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -199,6 +243,8 @@ export const env = envSchema.parse({
   CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED: process.env.CONTENT_STUDIO_LEGACY_POSTIZ_DISABLED,
   POSTIZ_BASE_URL: process.env.POSTIZ_BASE_URL,
   POSTIZ_API_KEY: process.env.POSTIZ_API_KEY,
+  SOCIAL_PUBLISHING_MODE: process.env.SOCIAL_PUBLISHING_MODE,
+  SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID: process.env.SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID,
   CONTENT_STUDIO_DEFAULT_TIMEZONE: process.env.CONTENT_STUDIO_DEFAULT_TIMEZONE,
   CONTENT_STUDIO_OPENAI_API_KEY: process.env.CONTENT_STUDIO_OPENAI_API_KEY,
   CONTENT_STUDIO_TEXT_MODEL: process.env.CONTENT_STUDIO_TEXT_MODEL,
@@ -208,4 +254,29 @@ export const env = envSchema.parse({
     process.env.CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS,
   CONTENT_STUDIO_V2_ENABLED: process.env.CONTENT_STUDIO_V2_ENABLED,
   CONTENT_STUDIO_V2_DEFAULT: process.env.CONTENT_STUDIO_V2_DEFAULT,
+  CONTENT_STUDIO_V2_MOCK_MODE: process.env.CONTENT_STUDIO_V2_MOCK_MODE,
+  CONTENT_STUDIO_VIDEO_PROVIDER: process.env.CONTENT_STUDIO_VIDEO_PROVIDER,
+  CONTENT_STUDIO_VIDEO_MODEL: process.env.CONTENT_STUDIO_VIDEO_MODEL,
+  AI_ENGINE_ENABLED: process.env.AI_ENGINE_ENABLED,
+  AI_ENGINE_OPENAI_API_KEY: process.env.AI_ENGINE_OPENAI_API_KEY,
+  AI_ENGINE_ANTHROPIC_API_KEY: process.env.AI_ENGINE_ANTHROPIC_API_KEY,
+  AI_ENGINE_GOOGLE_API_KEY: process.env.AI_ENGINE_GOOGLE_API_KEY,
+  AI_ENGINE_ELEVENLABS_API_KEY: process.env.AI_ENGINE_ELEVENLABS_API_KEY,
+  AI_ENGINE_HIGGSFIELD_API_KEY: process.env.AI_ENGINE_HIGGSFIELD_API_KEY,
+  AI_ENGINE_HIGGSFIELD_API_SECRET: process.env.AI_ENGINE_HIGGSFIELD_API_SECRET,
+  AI_ENGINE_HIGGSFIELD_BASE_URL: process.env.AI_ENGINE_HIGGSFIELD_BASE_URL,
+  AI_ENGINE_OLLAMA_BASE_URL: process.env.AI_ENGINE_OLLAMA_BASE_URL,
+  AI_ENGINE_DEFAULT_TEXT_PROVIDER: process.env.AI_ENGINE_DEFAULT_TEXT_PROVIDER,
+  AI_ENGINE_DEFAULT_TEXT_MODEL: process.env.AI_ENGINE_DEFAULT_TEXT_MODEL,
+  AI_ENGINE_DEFAULT_IMAGE_PROVIDER: process.env.AI_ENGINE_DEFAULT_IMAGE_PROVIDER,
+  AI_ENGINE_DEFAULT_IMAGE_MODEL: process.env.AI_ENGINE_DEFAULT_IMAGE_MODEL,
+  AI_ENGINE_DEFAULT_VIDEO_PROVIDER: process.env.AI_ENGINE_DEFAULT_VIDEO_PROVIDER,
+  AI_ENGINE_DEFAULT_TTS_PROVIDER: process.env.AI_ENGINE_DEFAULT_TTS_PROVIDER,
+  AI_ENGINE_DAILY_BUDGET_CENTS: process.env.AI_ENGINE_DAILY_BUDGET_CENTS,
+  AI_ENGINE_MAX_BUDGET_PER_JOB_CENTS: process.env.AI_ENGINE_MAX_BUDGET_PER_JOB_CENTS,
+  AI_ENGINE_QUALITY_THRESHOLD: process.env.AI_ENGINE_QUALITY_THRESHOLD,
+  AI_ENGINE_HUMAN_REVIEW_REQUIRED: process.env.AI_ENGINE_HUMAN_REVIEW_REQUIRED,
+  AI_ENGINE_LOG_LEVEL: process.env.AI_ENGINE_LOG_LEVEL,
+  AI_ENGINE_ENCRYPTION_KEY: process.env.AI_ENGINE_ENCRYPTION_KEY,
+  AI_ENGINE_ENCRYPTION_SALT: process.env.AI_ENGINE_ENCRYPTION_SALT,
 });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminApi, requireContentStudioEnabled } from '@/lib/content-studio/auth';
-import { formatErrorResponse } from '@/lib/errors/http-error';
+import { formatErrorResponse, HttpError } from '@/lib/errors/http-error';
 import { cancelScheduledPost } from '@/lib/content-studio/service';
 import { postCancelSchema } from '@/lib/content-studio/schemas';
 
@@ -14,8 +14,16 @@ export async function POST(
   try {
     requireContentStudioEnabled();
     const session = await requireAdminApi();
-    const body = postCancelSchema.parse(await request.json());
-    const post = await cancelScheduledPost({ postId: params.id, reason: body.reason, actorId: session.adminId });
+    const json = await request.json().catch(() => ({}));
+    const parsed = postCancelSchema.safeParse(json);
+    if (!parsed.success) {
+      throw new HttpError('invalid_input', 'Payload annulation invalide.', parsed.error.flatten());
+    }
+    const post = await cancelScheduledPost({
+      postId: params.id,
+      reason: parsed.data.reason,
+      actorId: session.adminId,
+    });
     return NextResponse.json({ post });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

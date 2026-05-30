@@ -1,0 +1,69 @@
+@startuml c4-container
+' ============================================================================
+' FemiGlow Content Studio v2 / AI Engine — C4 Niveau 2 : Conteneurs
+' Source: apps/web (Next.js 14 App Router). PM2 process "web" sur :8012,
+' proxifié par LiteSpeed vers staging.femiglow-maroc.com.
+' ============================================================================
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam rectangle {
+  BackgroundColor #F7F3EE
+  BorderColor #8F3F4A
+  RoundCorner 10
+}
+skinparam database {
+  BackgroundColor #EAF1E8
+  BorderColor #5A6E50
+}
+skinparam actor { BorderColor #2F2A26 }
+
+title Niveau 2 — Conteneurs
+
+actor "Opératrice" as Operator
+
+rectangle "LiteSpeed (reverse proxy)\nstaging.femiglow-maroc.com :443" as LS #FFFFFF
+
+rectangle "PM2 process \"web\" — Node.js :8012" as PM2 #FBE9E5 {
+
+  rectangle "Next.js 14 App Router" as Next {
+    rectangle "Pages Admin (RSC + CSR)\n/admin/content-studio-v2/{create, library, calendar}\n/admin/content-studio-v2/ai-engine/{create,config,knowledge,trends,graph,analytics}" as Pages #FFFFFF
+    rectangle "API Routes — Content Studio (B)\n/api/admin/content-studio/{ideas,drafts,posts,publish-jobs,...}\nruntime=nodejs" as ApiCS #FFFFFF
+    rectangle "API Routes — AI Engine (A)\n/api/admin/ai-engine/{generate,generate-stream(SSE),jobs,knowledge,config,publish}\nruntime=nodejs" as ApiAI #FFFFFF
+    rectangle "API Routes — Cron\n/api/cron/content-studio/{social-publish-scheduler,postiz-sync,\nretry-deliveries,insights-ingestion,weekly-failure-digest,...}\n(Bearer CRON_SECRET)" as ApiCron #FFFFFF
+    rectangle "Couche métier (lib/)\nai-engine/* (LangGraph 0.2.74 + @langchain/*)\ncontent-studio/* · social-publishing/*\nmedia worker (sharp 0.34.5, ffmpeg-static, fluent-ffmpeg)" as Lib #FFFFFF
+  }
+}
+
+rectangle "Déclencheur cron externe\n(Vercel cron / tick / scheduler système → POST)" as CronTick #FFFFFF
+
+database "PostgreSQL 16" as PG {
+  rectangle "extension pgvector\n(ai_engine_knowledge_chunk.embedding vector(1536),\nindex HNSW cosine)" as PGV #FFFFFF
+}
+
+rectangle "OpenAI API" as OpenAI #FFFFFF
+rectangle "Higgsfield platform.higgsfield.ai" as HF #FFFFFF
+rectangle "Postiz self-hosted (/api/public/v1)" as Postiz #FFFFFF
+rectangle "Stockage médias\n.media-storage/ + /public/_media" as Storage #FFFFFF
+
+Operator --> LS : HTTPS
+LS --> Next : proxy HTTP :8012
+Pages --> ApiCS : fetch (cookie session admin + cs_generation_mode)
+Pages --> ApiAI : fetch (page ai-engine/create → /generate)
+ApiCS --> Lib
+ApiAI --> Lib
+ApiCron --> Lib
+CronTick --> ApiCron : POST Bearer CRON_SECRET
+Lib --> PG : SQL drizzle 0.45
+Lib --> PGV : SELECT ... embedding <=> vecteur (RAG)
+Lib --> OpenAI : HTTPS
+Lib --> HF : HTTPS
+Lib --> Postiz : HTTPS
+Lib --> Storage : lecture/écriture buffers
+
+note right of PM2
+  Un seul runtime Node ; pas de worker dédié.
+  Les jobs de publication s'exécutent in-process,
+  déclenchés par les routes API ou par le cron
+  social-publish-scheduler (worker.ts).
+end note
+@enduml

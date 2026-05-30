@@ -1,0 +1,156 @@
+Phase,TestID,TestName,TestType,Priority,File,Status
+1,T-001,ProviderType enum includes higgsfield,unit,P0,src/lib/ai-engine/providers/types.ts,planned
+1,T-002,ProviderType Zod parse accepts higgsfield,unit,P0,src/lib/ai-engine/providers/types.ts,planned
+1,T-003,ProviderType Zod parse rejects unknown provider,unit,P1,src/lib/ai-engine/providers/types.ts,planned
+1,T-004,env schema accepts AI_ENGINE_HIGGSFIELD_API_KEY,unit,P0,src/lib/env.ts,planned
+1,T-005,AI_ENGINE_DEFAULT_IMAGE_PROVIDER enum includes higgsfield,unit,P0,src/lib/env.ts,planned
+1,T-006,AI_ENGINE_DEFAULT_VIDEO_PROVIDER enum includes higgsfield,unit,P0,src/lib/env.ts,planned
+1,T-007,env parse block maps AI_ENGINE_HIGGSFIELD_API_KEY,unit,P1,src/lib/env.ts,planned
+1,T-008,EngineConfig.apiKeys includes higgsfield field,unit,P0,src/lib/ai-engine/config/engine-config.ts,planned
+1,T-009,EngineConfig.providers.image.default accepts higgsfield,unit,P0,src/lib/ai-engine/config/engine-config.ts,planned
+1,T-010,EngineConfig.providers.video.default accepts higgsfield,unit,P0,src/lib/ai-engine/config/engine-config.ts,planned
+1,T-011,getEngineConfig resolves higgsfield key from env,unit,P1,src/lib/ai-engine/config/engine-config.ts,planned
+1,T-012,getEngineConfig returns undefined when key not set,unit,P1,src/lib/ai-engine/config/engine-config.ts,planned
+1,T-013,TypeScript compilation passes (pnpm tsc --noEmit),build,P0,N/A,planned
+1,T-014,Next.js build passes (pnpm build),build,P0,N/A,planned
+2,T-015,PROVIDER_NAMES includes higgsfield: Higgsfield AI,unit,P0,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-016,ENV_KEY_MAP includes higgsfield entry,unit,P0,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-017,listApiKeys returns higgsfield entry,unit,P0,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-018,listApiKeys higgsfield shows source:none when unconfigured,unit,P1,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-019,listApiKeys higgsfield shows source:env when env var set,unit,P1,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-020,listApiKeys higgsfield shows source:database when DB key exists,unit,P1,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-021,saveApiKey encrypts and stores higgsfield key,unit,P0,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-022,resolveApiKey resolves higgsfield from DB,unit,P0,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-023,resolveApiKey falls back to env for higgsfield,unit,P1,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-024,invalidateCache clears higgsfield cache,unit,P2,src/lib/ai-engine/services/api-key-manager.ts,planned
+2,T-025,testHiggsfield returns valid on 200 OK,unit,P0,src/lib/ai-engine/services/api-key-validator.ts,planned
+2,T-026,testHiggsfield returns invalid on 401,unit,P0,src/lib/ai-engine/services/api-key-validator.ts,planned
+2,T-027,testHiggsfield returns valid on 429 (rate limited),unit,P1,src/lib/ai-engine/services/api-key-validator.ts,planned
+2,T-028,testHiggsfield returns invalid on 500,unit,P1,src/lib/ai-engine/services/api-key-validator.ts,planned
+2,T-029,testHiggsfield handles network timeout,unit,P1,src/lib/ai-engine/services/api-key-validator.ts,planned
+2,T-030,validateApiKey dispatches to testHiggsfield for higgsfield,unit,P0,src/lib/ai-engine/services/api-key-validator.ts,planned
+2,T-031,No regression: testOpenAI still works,regression,P0,src/lib/ai-engine/services/api-key-validator.ts,planned
+2,T-032,No regression: testAnthropic still works,regression,P0,src/lib/ai-engine/services/api-key-validator.ts,planned
+3,T-033,DiscoverableProvider type includes higgsfield,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-034,ModelEntry role type includes video,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-035,FALLBACK_MODELS has higgsfield entry,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-036,FALLBACK_MODELS.higgsfield has image models,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-037,FALLBACK_MODELS.higgsfield has video models,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-038,discoverModels(higgsfield) returns fallback without key,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-039,discoverModels(higgsfield) returns live models with key,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-040,discoverModels(higgsfield) caches results for 5 min,unit,P1,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-041,fetchHiggsfield parses API response correctly,unit,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-042,fetchHiggsfield assigns image role for image models,unit,P1,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-043,fetchHiggsfield assigns video role for video models,unit,P1,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-044,fetchHiggsfield throws on non-200 response,unit,P1,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-045,callFetcher routes to fetchHiggsfield,unit,P1,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-046,callFetcher returns null for higgsfield without apiKey,unit,P1,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-047,invalidateModelCache clears higgsfield cache entry,unit,P2,src/lib/ai-engine/services/model-discovery.ts,planned
+3,T-048,No regression: discoverModels(openai) still works,regression,P0,src/lib/ai-engine/services/model-discovery.ts,planned
+4,T-049,HiggsFieldAdapter extends ProviderAdapter,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-050,HiggsFieldAdapter constructor sets config,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-051,generateImage sends correct POST request,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-052,generateImage parses image URL response,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-053,generateImage parses base64 response,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-054,generateImage sends negative_prompt when provided,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-055,generateImage sends quality and style when provided,unit,P2,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-056,generateImage calculates cost from ModelConfig.costPerUnit,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-057,generateImage cost scales with count parameter,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-058,generateImage throws ProviderError on 500 (retryable),unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-059,generateImage throws ProviderError on 401 (not retryable),unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-060,generateImage throws ProviderError on 429 (retryable),unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-061,generateImage uses Authorization Bearer header,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-062,generateImage throws when API key not set,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-063,generateVideo submits job correctly,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-064,generateVideo returns immediately on sync response,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-065,generateVideo polls until completed,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-066,generateVideo throws on poll status failed,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-067,generateVideo throws on poll timeout (6 min),unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-068,generateVideo poll timeout error is retryable,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-069,generateVideo continues polling on transient 500,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-070,generateVideo sends image_url when provided,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-071,generateVideo calculates cost from ModelConfig.costPerUnit,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-072,generateText throws NotImplementedError,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-073,generateEmbedding throws NotImplementedError,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-074,circuit breaker wraps generateImage,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-075,circuit breaker wraps generateVideo,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-076,circuit breaker opens after 5 consecutive failures,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-077,circuit breaker rejects calls when open,unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-078,retry policy retries on retryable errors,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-079,retry policy does not retry on non-retryable errors,unit,P0,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-080,retry policy respects maxRetries (3),unit,P1,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-081,latencyMs is correctly measured,unit,P2,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+4,T-082,provider field set to adapter name,unit,P2,src/lib/ai-engine/providers/adapters/higgsfield.ts,planned
+5,T-083,createAdapter returns HiggsFieldAdapter for type higgsfield,unit,P0,src/lib/ai-engine/providers/selector.ts,planned
+5,T-084,createAdapter throws for unknown provider type,unit,P1,src/lib/ai-engine/providers/selector.ts,planned
+5,T-085,selectProvider selects higgsfield for image capability,unit,P0,src/lib/ai-engine/providers/selector.ts,planned
+5,T-086,selectProvider selects higgsfield for video capability,unit,P0,src/lib/ai-engine/providers/selector.ts,planned
+5,T-087,selectProvider respects priority ordering (higgsfield=15),unit,P0,src/lib/ai-engine/providers/selector.ts,planned
+5,T-088,selectFallback excludes higgsfield when specified,unit,P1,src/lib/ai-engine/providers/selector.ts,planned
+5,T-089,selectProvider skips higgsfield when disabled,unit,P1,src/lib/ai-engine/providers/selector.ts,planned
+5,T-090,selectProvider skips higgsfield when unhealthy,unit,P1,src/lib/ai-engine/providers/selector.ts,planned
+5,T-091,selectProvider skips higgsfield when circuit breaker open,unit,P1,src/lib/ai-engine/providers/selector.ts,planned
+5,T-092,selectProvider skips higgsfield when budget exceeded,unit,P1,src/lib/ai-engine/providers/selector.ts,planned
+5,T-093,getDefaultProviders includes default-higgsfield,unit,P0,src/app/api/admin/ai-engine/config/providers/route.ts,planned
+5,T-094,default-higgsfield has capabilities image and video,unit,P0,src/app/api/admin/ai-engine/config/providers/route.ts,planned
+5,T-095,default-higgsfield has priority 15,unit,P1,src/app/api/admin/ai-engine/config/providers/route.ts,planned
+5,T-096,default-higgsfield has 4 models,unit,P1,src/app/api/admin/ai-engine/config/providers/route.ts,planned
+5,T-097,default-higgsfield configured=true when key set,unit,P0,src/app/api/admin/ai-engine/config/providers/route.ts,planned
+5,T-098,default-higgsfield configured=false when key absent,unit,P1,src/app/api/admin/ai-engine/config/providers/route.ts,planned
+5,T-099,envKeyMap includes AI_ENGINE_HIGGSFIELD_API_KEY,unit,P1,src/app/api/admin/ai-engine/config/providers/route.ts,planned
+5,T-100,VALID_PROVIDERS includes higgsfield,unit,P0,src/app/api/admin/ai-engine/config/providers/models/route.ts,planned
+5,T-101,PROVIDER_TO_DISCOVERY maps higgsfield,unit,P0,src/app/api/admin/ai-engine/config/providers/models/route.ts,planned
+5,T-102,POPULAR_MODELS includes higgsfield models,unit,P1,src/app/api/admin/ai-engine/config/providers/models/route.ts,planned
+5,T-103,No regression: createAdapter still works for openai,regression,P0,src/lib/ai-engine/providers/selector.ts,planned
+5,T-104,No regression: createAdapter still works for anthropic,regression,P0,src/lib/ai-engine/providers/selector.ts,planned
+5,T-105,No regression: createAdapter still works for google,regression,P0,src/lib/ai-engine/providers/selector.ts,planned
+6,T-106,generate-images uses ProviderSelector,unit,P0,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-107,generate-images selects higgsfield when default=higgsfield,unit,P0,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-108,generate-images selects openai when default=openai,regression,P0,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-109,generate-images uses mock when default=mock,regression,P0,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-110,generate-images falls back to mock on adapter error,unit,P0,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-111,generate-images tracks cost correctly,unit,P0,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-112,generate-images carousel generates multiple images,unit,P1,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-113,generate-images passes correct width/height for platform,unit,P1,src/lib/ai-engine/nodes/generate-images.ts,planned
+6,T-114,generate-video uses ProviderSelector,unit,P0,src/lib/ai-engine/nodes/generate-video.ts,planned
+6,T-115,generate-video selects higgsfield when default=higgsfield,unit,P0,src/lib/ai-engine/nodes/generate-video.ts,planned
+6,T-116,generate-video uses mock when default=mock,regression,P0,src/lib/ai-engine/nodes/generate-video.ts,planned
+6,T-117,generate-video tracks cost correctly,unit,P0,src/lib/ai-engine/nodes/generate-video.ts,planned
+6,T-118,generate-video falls back to mock on adapter error,unit,P0,src/lib/ai-engine/nodes/generate-video.ts,planned
+6,T-119,generate-video passes correct duration from scenes,unit,P1,src/lib/ai-engine/nodes/generate-video.ts,planned
+6,T-120,generate-video vertical format uses 1080x1920,unit,P2,src/lib/ai-engine/nodes/generate-video.ts,planned
+7,T-121,MSW: Higgsfield image generation returns URL,msw,P0,src/test/msw/ai-engine-handlers.ts,planned
+7,T-122,MSW: Higgsfield video generation returns video_url,msw,P0,src/test/msw/ai-engine-handlers.ts,planned
+7,T-123,MSW: Higgsfield model listing returns models,msw,P0,src/test/msw/ai-engine-handlers.ts,planned
+7,T-124,MSW: Higgsfield video poll returns completed,msw,P1,src/test/msw/ai-engine-handlers.ts,planned
+7,T-125,MSW: Higgsfield 429 rate limit error handler,msw,P1,src/test/msw/ai-engine-handlers.ts,planned
+7,T-126,MSW: Higgsfield 500 server error handler,msw,P1,src/test/msw/ai-engine-handlers.ts,planned
+7,T-127,MSW: Higgsfield 401 auth error handler,msw,P1,src/test/msw/ai-engine-handlers.ts,planned
+7,T-128,MSW: Higgsfield video status failed handler,msw,P1,src/test/msw/ai-engine-handlers.ts,planned
+7,T-129,MSW: MOCK_PROVIDERS includes higgsfield entry,msw,P0,src/test/msw/ai-engine-handlers.ts,planned
+7,T-130,MSW: MOCK_API_KEYS includes higgsfield entry,msw,P0,src/test/msw/ai-engine-handlers.ts,planned
+7,T-131,MSW: MOCK_MODEL_DISCOVERY includes higgsfield entry,msw,P0,src/test/msw/ai-engine-handlers.ts,planned
+7,T-132,Contract: GET /config/providers includes higgsfield,contract,P0,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-133,Contract: GET /config/providers higgsfield has image+video,contract,P0,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-134,Contract: GET /config/providers/models?provider=higgsfield returns models,contract,P0,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-135,Contract: GET models?provider=higgsfield&capability=image filters correctly,contract,P1,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-136,Contract: GET models?provider=higgsfield&capability=video filters correctly,contract,P1,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-137,Contract: GET /config/api-keys includes higgsfield,contract,P0,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-138,Contract: POST /config/api-keys/test with higgsfield returns valid,contract,P1,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-139,Contract: POST /config/api-keys/test with higgsfield returns invalid,contract,P1,src/test/api-contracts/ai-engine-higgsfield.contract.test.ts,planned
+7,T-140,E2E: Higgsfield provider card visible in config page,e2e,P0,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-141,E2E: Higgsfield card shows image and video capabilities,e2e,P0,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-142,E2E: Higgsfield card shows priority 15,e2e,P1,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-143,E2E: Model selector shows Higgsfield image models,e2e,P0,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-144,E2E: Model selector shows Higgsfield video models,e2e,P0,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-145,E2E: API key management shows Higgsfield row,e2e,P0,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-146,E2E: API key test returns valid for Higgsfield,e2e,P1,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-147,E2E: Image provider selector includes Higgsfield,e2e,P1,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-148,E2E: Video provider selector includes Higgsfield,e2e,P1,e2e/content-studio-v2/ai-engine-higgsfield.spec.ts,planned
+7,T-149,Full build: pnpm tsc --noEmit passes,build,P0,N/A,planned
+7,T-150,Full build: pnpm build passes,build,P0,N/A,planned
+7,T-151,Full test suite: pnpm vitest run 0 failures,regression,P0,N/A,planned
+7,T-152,Full E2E suite: pnpm playwright test 0 failures,regression,P0,N/A,planned
+7,T-153,No regression: existing OpenAI tests pass,regression,P0,N/A,planned
+7,T-154,No regression: existing Google tests pass,regression,P0,N/A,planned
+7,T-155,No regression: existing Anthropic tests pass,regression,P0,N/A,planned

@@ -1,0 +1,54 @@
+@startuml c4-architecture-globale
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Architecture Globale — Femiglow AI Content Engine\n(Vérifié mai 2026)
+
+Person(operator, "Opérateur Marketing", "Crée et publie du contenu")
+Person(admin, "Administrateur", "Configure le système")
+
+System_Boundary(platform, "Femiglow AI Content Platform") {
+    Container(frontend, "Frontend", "Next.js 14 + React", "UI de création, config, analytics, graph viewer")
+    Container(api, "API Backend", "FastAPI (Python 3.12)", "REST + WebSocket, auth RBAC, routing")
+    Container(engine, "LangGraph Engine", "LangGraph 1.0 + Python", "Orchestration de la chaîne de génération multimédia")
+    Container(workers, "Workers", "BullMQ + Python", "Exécution asynchrone des jobs de génération")
+    Container(knowledge, "Knowledge Base", "pgvector + RAG + Reranker", "Base de connaissances vectorielle configurable")
+    Container(trends, "Trend Engine", "Python + Cron collectors", "Veille tendances multi-source, scoring, recommandations")
+    Container(media, "Media Pipeline", "FFmpeg + Pillow", "Composition, montage, transcodage, sous-titres")
+
+    ContainerDb(postgres, "PostgreSQL 16", "Principal", "Jobs, configs, prompts, audit, checkpoints LangGraph, pgvector")
+    ContainerDb(redis, "Redis 7", "Cache + Queue", "BullMQ queues, cache providers, pub/sub progress, rate limits")
+    ContainerDb(s3, "S3 / MinIO", "Object Storage", "Images, vidéos, audio, exports, knowledge docs")
+    ContainerDb(clickhouse, "ClickHouse", "Analytics (V1+)", "Events génération, métriques, coûts détaillés")
+}
+
+System_Ext(openai, "OpenAI", "GPT-4.1, GPT Image 2, Whisper, TTS\n$2-$8/1M tokens text\n$0.03-$0.08/image")
+System_Ext(anthropic, "Anthropic", "Claude Sonnet 4.6, Haiku 4.5, Opus 4.7\n$3-$5/1M input")
+System_Ext(google, "Google AI", "Gemini 2.5 Pro/Flash, Imagen 4, Veo 2\n$0.35/sec vidéo")
+System_Ext(runway, "Runway / Kling / Seedance", "Gen-4.5, Kling 3.0, Seedance 2.0\nSubscription + WaveSpeedAI API")
+System_Ext(elevenlabs, "ElevenLabs", "Multilingual V3, Scribe v2\n$15-$30/M chars TTS")
+System_Ext(music, "Music Gen", "MusicGen (Meta open-source)\nStable Audio 2.0, Suno v5 (wrappers)")
+System_Ext(social, "Réseaux Sociaux", "Instagram, Facebook, TikTok, Pinterest\nYouTube, LinkedIn, X, Threads")
+
+operator --> frontend : Crée du contenu
+admin --> frontend : Configure workflows, providers, knowledge
+frontend --> api : REST + WebSocket + SSE
+api --> engine : Lance les workflows LangGraph
+api --> workers : Enqueue jobs BullMQ
+engine --> knowledge : RAG queries (similarity + rerank)
+engine --> trends : Contexte tendances scorées
+engine --> media : Composition + transcodage
+workers --> engine : Exécute le graphe
+engine --> postgres : Checkpoints + state
+engine --> redis : Cache + pub/sub progress
+media --> s3 : Upload assets générés
+api --> clickhouse : Métriques et événements
+
+engine --> openai : Text + Image + TTS
+engine --> anthropic : Text + Vision
+engine --> google : Text + Image + Video
+engine --> runway : Video
+engine --> elevenlabs : TTS voix-off
+engine --> music : Musique
+api --> social : Publication multi-plateforme
+
+@enduml

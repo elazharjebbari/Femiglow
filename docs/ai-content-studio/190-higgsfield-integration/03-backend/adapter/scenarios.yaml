@@ -1,0 +1,581 @@
+# HiggsFieldAdapter -- Test Scenarios
+#
+# Document: 190-HF/03-backend/adapter/scenarios.yaml
+# Date: 2026-05-27
+# Coverage: Unit tests for HiggsFieldAdapter (adapters/higgsfield.ts)
+# Test file: apps/web/src/lib/ai-engine/providers/adapters/__tests__/higgsfield.test.ts
+#
+# Conventions:
+#   type: unit | integration
+#   priority: P0 (blocker), P1 (critical), P2 (important), P3 (nice-to-have)
+#   mock: describes the MSW/fetch mock setup
+#   assertions: list of expected outcomes
+
+scenarios:
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # IMAGE GENERATION -- Success paths
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-001
+    name: "generateImage returns valid result on 200"
+    type: unit
+    priority: P0
+    method: generateImage
+    mock: "fetch returns 200 with { images: [{ url: 'https://cdn.higgsfield.ai/img1.png' }] }"
+    input:
+      model: "higgsfield-diffusion-v2"
+      prompt: "Cherry blossom skincare product"
+      width: 1024
+      height: 1024
+      count: 1
+    assertions:
+      - "result.data.images has length 1"
+      - "result.data.images[0].url === 'https://cdn.higgsfield.ai/img1.png'"
+      - "result.costCents === modelConfig.costPerUnit (500)"
+      - "result.latencyMs > 0"
+      - "result.provider === 'Higgsfield AI'"
+      - "result.model === 'higgsfield-diffusion-v2'"
+      - "result.tokensUsed.input === 0 && result.tokensUsed.output === 0"
+
+  - id: HF-ADAPT-002
+    name: "generateImage handles multiple images (count=3)"
+    type: unit
+    priority: P0
+    method: generateImage
+    mock: "fetch returns 200 with { images: [{url:'a'},{url:'b'},{url:'c'}] }"
+    input:
+      model: "higgsfield-diffusion-v2"
+      prompt: "J-Beauty product trio"
+      count: 3
+    assertions:
+      - "result.data.images has length 3"
+      - "result.costCents === 500 * 3 = 1500"
+      - "fetch was called with body containing num_images: 3"
+
+  - id: HF-ADAPT-003
+    name: "generateImage sends negative_prompt when provided"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch returns 200 with single image"
+    input:
+      model: "higgsfield-diffusion-v2"
+      prompt: "Minimal cream jar"
+      negativePrompt: "text, watermark, logo"
+    assertions:
+      - "fetch body contains negative_prompt: 'text, watermark, logo'"
+      - "result.data.images has length 1"
+
+  - id: HF-ADAPT-004
+    name: "generateImage sends quality and style when provided"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch returns 200 with single image"
+    input:
+      model: "higgsfield-diffusion-v2"
+      prompt: "HD product shot"
+      quality: "hd"
+      style: "photorealistic"
+    assertions:
+      - "fetch body contains quality: 'hd'"
+      - "fetch body contains style: 'photorealistic'"
+
+  - id: HF-ADAPT-005
+    name: "generateImage uses default width/height when not specified"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch returns 200"
+    input:
+      model: "higgsfield-diffusion-v2"
+      prompt: "Default size image"
+    assertions:
+      - "fetch body contains width: 1024"
+      - "fetch body contains height: 1024"
+      - "fetch body contains num_images: 1"
+
+  - id: HF-ADAPT-006
+    name: "generateImage uses custom base URL from config"
+    type: unit
+    priority: P1
+    method: generateImage
+    setup: "ProviderConfig.baseUrl = 'https://staging.higgsfield.local'"
+    mock: "fetch returns 200"
+    input:
+      model: "higgsfield-diffusion-v2"
+      prompt: "Test"
+    assertions:
+      - "fetch URL starts with 'https://staging.higgsfield.local/images/generate'"
+      - "NOT 'https://api.higgsfield.ai/v1/images/generate'"
+
+  - id: HF-ADAPT-007
+    name: "generateImage cost is 0 when model not found in config"
+    type: unit
+    priority: P2
+    method: generateImage
+    mock: "fetch returns 200 with single image"
+    setup: "ProviderConfig.models = [] (empty)"
+    input:
+      model: "unknown-model"
+      prompt: "Test"
+    assertions:
+      - "result.costCents === 0"
+      - "result.data.images has length 1"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # IMAGE GENERATION -- Error paths
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-010
+    name: "generateImage throws on 401 Unauthorized (non-retryable)"
+    type: unit
+    priority: P0
+    method: generateImage
+    mock: "fetch returns 401 with { error: 'Invalid API key' }"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === false"
+      - "error.statusCode === 401"
+      - "error.message contains 'Higgsfield image generation failed'"
+      - "retryPolicy.execute was called once (no retries for 401)"
+
+  - id: HF-ADAPT-011
+    name: "generateImage throws on 403 Forbidden (non-retryable)"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch returns 403"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === false"
+      - "error.statusCode === 403"
+
+  - id: HF-ADAPT-012
+    name: "generateImage retries on 429 Rate Limit"
+    type: unit
+    priority: P0
+    method: generateImage
+    mock: "fetch returns 429 twice, then 200 on 3rd call"
+    assertions:
+      - "result.data.images has length 1 (success on retry)"
+      - "fetch was called 3 times"
+      - "result.latencyMs includes retry delays"
+
+  - id: HF-ADAPT-013
+    name: "generateImage retries on 500 Internal Server Error"
+    type: unit
+    priority: P0
+    method: generateImage
+    mock: "fetch returns 500 once, then 200"
+    assertions:
+      - "result.data.images has length 1"
+      - "fetch was called 2 times"
+
+  - id: HF-ADAPT-014
+    name: "generateImage throws after retry exhaustion on 500"
+    type: unit
+    priority: P0
+    method: generateImage
+    mock: "fetch returns 500 on all 4 attempts (1 + 3 retries)"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === true"
+      - "error.statusCode === 500"
+      - "fetch was called 4 times"
+
+  - id: HF-ADAPT-015
+    name: "generateImage retries on 502 Bad Gateway"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch returns 502 once, then 200"
+    assertions:
+      - "fetch was called 2 times"
+      - "result succeeds"
+
+  - id: HF-ADAPT-016
+    name: "generateImage retries on 503 Service Unavailable"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch returns 503 once, then 200"
+    assertions:
+      - "fetch was called 2 times"
+      - "result succeeds"
+
+  - id: HF-ADAPT-017
+    name: "generateImage throws on request timeout (AbortError)"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch hangs for > 30s (REQUEST_TIMEOUT_MS)"
+    assertions:
+      - "throws Error with name 'AbortError' or 'TimeoutError'"
+      - "retryPolicy retries the timeout as a retryable error"
+
+  - id: HF-ADAPT-018
+    name: "generateImage throws on missing API key"
+    type: unit
+    priority: P0
+    method: generateImage
+    setup: "process.env[apiKeyEnvVar] is not set"
+    assertions:
+      - "throws Error with message containing 'Missing API key'"
+      - "fetch was never called"
+
+  - id: HF-ADAPT-019
+    name: "generateImage throws on 400 Bad Request (non-retryable)"
+    type: unit
+    priority: P1
+    method: generateImage
+    mock: "fetch returns 400 with { error: 'Invalid model' }"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === false"
+      - "error.statusCode === 400"
+      - "fetch was called 1 time only"
+
+  - id: HF-ADAPT-020
+    name: "generateImage handles malformed JSON response gracefully"
+    type: unit
+    priority: P2
+    method: generateImage
+    mock: "fetch returns 200 but body is not valid JSON"
+    assertions:
+      - "throws SyntaxError or ProviderError"
+      - "circuit breaker records a failure"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # VIDEO GENERATION -- Success paths
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-030
+    name: "generateVideo completes on first poll"
+    type: unit
+    priority: P0
+    method: generateVideo
+    mock:
+      submit: "POST returns 202 with { job_id: 'j1', status: 'queued' }"
+      poll_1: "GET returns 200 with { status: 'completed', video_url: 'https://cdn.higgsfield.ai/v1.mp4' }"
+    input:
+      model: "higgsfield-video-v1"
+      prompt: "FemiGlow product reveal"
+      durationSeconds: 5
+    assertions:
+      - "result.data.videoUrl === 'https://cdn.higgsfield.ai/v1.mp4'"
+      - "result.costCents === modelConfig.costPerUnit (2000)"
+      - "result.latencyMs >= POLL_INTERVAL_MS (5000)"
+      - "result.provider === 'Higgsfield AI'"
+
+  - id: HF-ADAPT-031
+    name: "generateVideo completes after 3 polls (processing -> completed)"
+    type: unit
+    priority: P0
+    method: generateVideo
+    mock:
+      submit: "POST returns 202 with { job_id: 'j2' }"
+      poll_1: "GET returns { status: 'queued' }"
+      poll_2: "GET returns { status: 'processing' }"
+      poll_3: "GET returns { status: 'completed', video_url: 'https://cdn.higgsfield.ai/v2.mp4' }"
+    assertions:
+      - "result.data.videoUrl === 'https://cdn.higgsfield.ai/v2.mp4'"
+      - "status poll endpoint was called 3 times"
+      - "result.latencyMs >= 3 * POLL_INTERVAL_MS"
+
+  - id: HF-ADAPT-032
+    name: "generateVideo sends image_url for image-to-video"
+    type: unit
+    priority: P1
+    method: generateVideo
+    mock:
+      submit: "POST returns 202"
+      poll_1: "GET returns completed"
+    input:
+      model: "higgsfield-video-v1"
+      prompt: "Animate this product image"
+      imageUrl: "https://example.com/product.jpg"
+    assertions:
+      - "submit body contains image_url: 'https://example.com/product.jpg'"
+
+  - id: HF-ADAPT-033
+    name: "generateVideo uses default durationSeconds (5) when not specified"
+    type: unit
+    priority: P2
+    method: generateVideo
+    mock:
+      submit: "POST returns 202"
+      poll_1: "completed"
+    input:
+      model: "higgsfield-video-v1"
+      prompt: "Short clip"
+    assertions:
+      - "submit body contains duration_seconds: 5"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # VIDEO GENERATION -- Error paths
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-040
+    name: "generateVideo throws on submit 401"
+    type: unit
+    priority: P0
+    method: generateVideo
+    mock:
+      submit: "POST returns 401"
+    assertions:
+      - "throws ProviderError with retryable: false"
+      - "poll endpoint was never called"
+
+  - id: HF-ADAPT-041
+    name: "generateVideo throws when job status is 'failed'"
+    type: unit
+    priority: P0
+    method: generateVideo
+    mock:
+      submit: "POST returns 202 with { job_id: 'j-fail' }"
+      poll_1: "GET returns { status: 'failed', error: 'Content policy violation' }"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === false"
+      - "error.message contains 'Content policy violation'"
+
+  - id: HF-ADAPT-042
+    name: "generateVideo throws on poll timeout (5min exceeded)"
+    type: unit
+    priority: P0
+    method: generateVideo
+    mock:
+      submit: "POST returns 202"
+      poll_all: "GET always returns { status: 'processing' }"
+    setup: "Override POLL_TIMEOUT_MS to 100ms for test speed"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === true"
+      - "error.message contains 'timed out'"
+
+  - id: HF-ADAPT-043
+    name: "generateVideo handles completed response without video_url"
+    type: unit
+    priority: P1
+    method: generateVideo
+    mock:
+      submit: "POST returns 202"
+      poll_1: "GET returns { status: 'completed' } (no video_url)"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === false"
+      - "error.message contains 'no video_url'"
+
+  - id: HF-ADAPT-044
+    name: "generateVideo continues polling through transient 500 on poll"
+    type: unit
+    priority: P1
+    method: generateVideo
+    mock:
+      submit: "POST returns 202"
+      poll_1: "GET returns 500"
+      poll_2: "GET returns 500"
+      poll_3: "GET returns { status: 'completed', video_url: '...' }"
+    assertions:
+      - "result.data.videoUrl is defined"
+      - "polling continued despite 500 errors"
+
+  - id: HF-ADAPT-045
+    name: "generateVideo throws immediately on poll 401"
+    type: unit
+    priority: P1
+    method: generateVideo
+    mock:
+      submit: "POST returns 202"
+      poll_1: "GET returns 401"
+    assertions:
+      - "throws ProviderError"
+      - "error.retryable === false"
+      - "error.statusCode === 401"
+
+  - id: HF-ADAPT-046
+    name: "generateVideo retries submit on 429 Rate Limit"
+    type: unit
+    priority: P1
+    method: generateVideo
+    mock:
+      submit_1: "POST returns 429"
+      submit_2: "POST returns 202"
+      poll_1: "completed"
+    assertions:
+      - "result succeeds"
+      - "submit was called twice"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # CIRCUIT BREAKER
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-050
+    name: "Circuit breaker opens after 5 consecutive image failures"
+    type: unit
+    priority: P0
+    method: generateImage
+    mock: "fetch always returns 500"
+    setup: "circuitBreaker config: failureThreshold=5"
+    assertions:
+      - "first 5 calls each attempt retries (4 attempts each = 20 fetches)"
+      - "6th call throws ProviderError 'Circuit breaker is open' immediately"
+      - "no fetch call on 6th invocation"
+
+  - id: HF-ADAPT-051
+    name: "Circuit breaker transitions OPEN -> HALF_OPEN after resetTimeoutMs"
+    type: unit
+    priority: P1
+    method: generateImage
+    setup: "circuitBreaker: failureThreshold=1, resetTimeoutMs=100"
+    mock: "first call: 500; after 150ms: second call 200"
+    assertions:
+      - "first call fails -> circuit opens"
+      - "immediate second call throws 'Circuit breaker is open'"
+      - "after 150ms, third call succeeds (half-open probe)"
+      - "fourth call succeeds (circuit closed again)"
+
+  - id: HF-ADAPT-052
+    name: "Circuit breaker re-opens from HALF_OPEN on probe failure"
+    type: unit
+    priority: P2
+    method: generateImage
+    setup: "circuitBreaker: failureThreshold=1, resetTimeoutMs=100"
+    mock: "all calls return 500"
+    assertions:
+      - "first call fails -> OPEN"
+      - "after resetTimeoutMs, probe call fails -> re-OPEN"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # NOT IMPLEMENTED METHODS
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-060
+    name: "generateText throws NotImplementedError"
+    type: unit
+    priority: P0
+    method: generateText
+    assertions:
+      - "throws NotImplementedError"
+      - "error.message contains 'generateText'"
+      - "error.message contains 'Higgsfield'"
+
+  - id: HF-ADAPT-061
+    name: "generateEmbedding throws NotImplementedError"
+    type: unit
+    priority: P0
+    method: generateEmbedding
+    assertions:
+      - "throws NotImplementedError"
+      - "error.message contains 'generateEmbedding'"
+
+  - id: HF-ADAPT-062
+    name: "textToSpeech throws NotImplementedError (inherited from base)"
+    type: unit
+    priority: P2
+    method: textToSpeech
+    assertions:
+      - "throws NotImplementedError"
+      - "error.message contains 'textToSpeech'"
+
+  - id: HF-ADAPT-063
+    name: "generateMusic throws NotImplementedError (inherited from base)"
+    type: unit
+    priority: P2
+    method: generateMusic
+    assertions:
+      - "throws NotImplementedError"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # AUTHORIZATION HEADER
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-070
+    name: "generateImage sends correct Authorization header"
+    type: unit
+    priority: P0
+    method: generateImage
+    setup: "process.env.AI_ENGINE_HIGGSFIELD_API_KEY = 'hf-test-key-123'"
+    mock: "fetch returns 200"
+    assertions:
+      - "fetch headers contain Authorization: 'Bearer hf-test-key-123'"
+
+  - id: HF-ADAPT-071
+    name: "generateVideo sends correct Authorization header on submit and polls"
+    type: unit
+    priority: P0
+    method: generateVideo
+    setup: "process.env.AI_ENGINE_HIGGSFIELD_API_KEY = 'hf-key'"
+    mock: "submit 202, poll completed"
+    assertions:
+      - "submit fetch headers contain Authorization: 'Bearer hf-key'"
+      - "poll fetch headers contain Authorization: 'Bearer hf-key'"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # EDGE CASES
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - id: HF-ADAPT-080
+    name: "generateImage handles base64 response instead of URL"
+    type: unit
+    priority: P2
+    method: generateImage
+    mock: "fetch returns 200 with { images: [{ base64: 'iVBOR...' }] }"
+    assertions:
+      - "result.data.images[0].base64 === 'iVBOR...'"
+      - "result.data.images[0].url is undefined"
+
+  - id: HF-ADAPT-081
+    name: "generateImage handles empty images array gracefully"
+    type: unit
+    priority: P2
+    method: generateImage
+    mock: "fetch returns 200 with { images: [] }"
+    assertions:
+      - "result.data.images has length 0"
+      - "result.costCents === 0 (count defaults to 1 but API returned 0)"
+
+  - id: HF-ADAPT-082
+    name: "generateVideo handles unknown status value during polling"
+    type: unit
+    priority: P2
+    method: generateVideo
+    mock:
+      submit: "POST returns 202"
+      poll_1: "GET returns { status: 'initializing' }"
+      poll_2: "GET returns { status: 'completed', video_url: '...' }"
+    assertions:
+      - "polling continues through unknown 'initializing' status"
+      - "result succeeds on second poll"
+
+  - id: HF-ADAPT-083
+    name: "generateImage truncates long error bodies to 500 chars"
+    type: unit
+    priority: P3
+    method: generateImage
+    mock: "fetch returns 400 with a 2000-character error body"
+    assertions:
+      - "ProviderError.message length is reasonable (not 2000+ chars)"
+      - "error body is truncated in the message"
+
+# ─────────────────────────────────────────────────────────────────────
+# Summary
+# ─────────────────────────────────────────────────────────────────────
+#
+# Total scenarios: 34
+# By priority:
+#   P0: 14 (must-pass for merge)
+#   P1: 12 (expected for release)
+#   P2:  6 (nice to have)
+#   P3:  2 (edge cases)
+#
+# By method:
+#   generateImage:   20
+#   generateVideo:    8
+#   generateText:     1
+#   generateEmbedding:1
+#   textToSpeech:     1
+#   generateMusic:    1
+#   circuit breaker:  3 (cross-method)

@@ -1,0 +1,68 @@
+# Manifest de la baseline d'audit — FIGÉ
+# Ne pas réécrire. Évolutions via CHANGELOG.md + nouveaux ADR (cf. decisions/adr-0001).
+
+name: audit-generation-publication
+title: "Audit génération + publication — FemiGlow Content Studio v2 / AI Engine"
+version: "1.0.0"
+freeze_date: "2026-05-29"
+status: frozen
+branch: feat/ai-engine-langgraph-mvp
+
+scope:
+  in:
+    - "Pipeline génération (A: AI-Engine LangGraph 16 nœuds ; B: Content-Studio create flow)"
+    - "Briques: generation-image, generation-video, voix-off, copywriting, montage-composition, publication-postiz"
+    - "Publication sociale (adapters dry-run/postiz, jobs, crons, state-machine)"
+    - "Parcours opérateur UI /admin/content-studio-v2/create + infrastructure de test/mocks"
+  out:
+    - "Site marketing, checkout, catalogue, tracking/GTM, emailing, légales, auth admin"
+
+environment:
+  runtime: "Next.js 14 App Router · PM2 'web':8012 (build prod) · proxy LiteSpeed → staging.femiglow-maroc.com"
+  data: "PostgreSQL + pgvector"
+  key_stack: "@langchain/langgraph 0.2.74 · @langchain/* · msw 2.14.2 · drizzle 0.45 · sharp 0.34.5 · ffmpeg/ffprobe présents"
+
+method:
+  principle: "Vérité = comportement réel exercé par un opérateur, pas le rapport de tests"
+  modes: "Chaque fonctionnalité qualifiée en mock ET live ; non vérifié dans les deux = cassé par défaut"
+  verification: "Audit adversarial multi-agents (find → réfute) ; vérificateurs eux-mêmes contre-vérifiés"
+  evidence_baseline:
+    - "vitest: 1695 'passed' / 0 failed mais process EXIT 1 (BUG-010)"
+    - "Playwright parcours opérateur (mock): 37 passed / 2 failed"
+    - "Génération live non configurable au gel (clé create vide; credential Higgsfield incomplet)"
+
+metrics:
+  findings_confirmed: 68
+  by_severity:
+    blocker: 4
+    critical: 8
+    major: 35
+    minor: 18
+    info: 3
+  findings_refuted: 1            # BUG-044 (cf. findings/_refuted.md)
+  findings_adjusted: 9
+  missed_issues: 34
+  blockers: [BUG-001, BUG-002, BUG-003, BUG-004]
+  axes_total: 11
+  axes_blocker: [backend, fiabilite, process, robustesse]
+  domains: 6
+  backlog_tasks: 34
+  traceability: "100% (chaque finding référencé en action-plan/backlog)"
+
+fingerprint:
+  algo: sha256
+  file_count: 137
+  checksums_file: SHA256SUMS.txt
+  aggregate: "21cb8dd9d99df9a66f4816f3b57dbd208e342c21adb7a975bdd7954223a1c7b2"
+
+contents:
+  - 01_audit/        # méthodologie, périmètre, registres, findings, evidence
+  - 02_architecture/ # C4 + séquences + data-flow + registres JSON
+  - 03_axes/         # 11 diagnostics transversaux
+  - 04_domaines/     # 6 briques (spec/état/contrats/scénarios)
+  - 05_test-strategy/# stratégie + parité mock/live + traçabilité
+  - 06_action-plan/  # plan priorisé + backlog + dépendances
+  - 07_runbook/      # exécution + boucle correction/re-test/vérif
+  - decisions/       # ADR 0001-0007
+
+definition_of_done: "Système 100% fonctionnel, prouvé par des tests orientés opérateur qui passent À L'IDENTIQUE en mock ET en live."

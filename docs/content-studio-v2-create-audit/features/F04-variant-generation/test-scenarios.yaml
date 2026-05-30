@@ -1,0 +1,40 @@
+feature: F04-variant-generation
+
+contract:
+  - name: POST /ideas/:id/generate returns 3 drafts
+    expect: drafts.length === 3
+  - name: returns runs array with model+provider+costCents
+    expect: runs[0].model && runs[0].provider
+  - name: budget exhausted → 402
+    given: env.CONTENT_STUDIO_DAILY_GENERATION_BUDGET_CENTS=1 + spent=1
+    expect: 402, error.code='budget_exceeded'
+  - name: fallback template when no API key
+    given: no CONTENT_STUDIO_OPENAI_API_KEY
+    expect: provider='fallback', cost=0
+
+component:
+  - name: estimateur visible pendant génération
+    given: génération en cours
+    expect: progress bar + text 'Génération…' visible
+  - name: estimateur disparaît après réception
+    given: drafts reçus
+    expect: progress bar gone
+  - name: regenerer bouton present
+    given: drafts reçus
+    expect: button 'Régénérer' visible
+  - name: regenerer déclenche nouvelle chaine
+    when: click 'Régénérer'
+    expect: new POST /ideas/:id/generate, new drafts upserted
+  - name: badge modèle visible
+    expect: badge with text containing 'Généré par gpt-4o-mini' (or selected)
+
+e2e:
+  - name: golden path text generation
+    steps:
+      - submit IntentionForm
+      - wait drafts
+    expect: 3 variants visible, scoreTotal each
+
+  - name: budget banner shown if remaining < 20%
+    given: budget.remainingCents / dailyBudgetCents < 0.2
+    expect: warning visible

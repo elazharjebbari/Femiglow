@@ -1,0 +1,26 @@
+feature: F25-postiz-media-upload
+critical: P1
+
+unit:
+  - id: F25-U-1
+    name: uploadPostizMediaFromUrl happy path
+    given: media URL https://example.com/img.jpg
+    expect: returns { id, path }
+  - id: F25-U-2
+    name: handles 401 unauthorized
+  - id: F25-U-3
+    name: handles 413 payload too large
+  - id: F25-U-4
+    name: parses response shape
+  - id: F25-U-5
+    name: retries on 503
+  - id: F25-U-6
+    name: bulk upload for multiple media
+    given: 3 media items
+    expect: 3 sequential or parallel uploads
+  - id: F25-U-7
+    name: stops on first upload error (no partial commit)
+
+contract:
+  - id: F25-C-1
+    name: publish-now skips upload if media has Postiz cache

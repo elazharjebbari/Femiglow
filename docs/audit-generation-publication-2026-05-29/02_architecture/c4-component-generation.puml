@@ -1,0 +1,122 @@
+@startuml c4-component-generation
+' ============================================================================
+' C4 Niveau 3 — Composants : les DEUX pipelines de génération + le pont
+' Source vérifiée :
+'   (A) src/lib/ai-engine/graph/builder.ts + nodes/* + orchestrator.ts
+'   (B) src/lib/content-studio/{generation,image-generation,video-generation}.ts
+'   PONT src/lib/ai-engine/bridge/content-studio-bridge.ts (UNIDIRECTIONNEL A->B)
+' ============================================================================
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam rectangle { RoundCorner 8 }
+skinparam component { BorderColor #8F3F4A BackgroundColor #FBE9E5 }
+skinparam database { BackgroundColor #EAF1E8 BorderColor #5A6E50 }
+
+title Niveau 3 — Composants de génération : pipeline A (LangGraph) vs B (Create flow)
+
+' ====================================================================
+' PIPELINE A — AI ENGINE LANGGRAPH
+' ====================================================================
+rectangle "PIPELINE A — AI Engine LangGraph" as A #F2E8F0 {
+  component "Page /ai-engine/create" as APage
+  component "POST /api/admin/ai-engine/generate\n(+ generate-stream SSE)" as AGen
+  component "orchestrator.ts\nrunGeneration / resumeGeneration\nengine.invoke (thread_id=jobId)" as Orch
+  component "graph/builder.ts\nStateGraph (state.ts, routing.ts)" as Graph
+
+  package "nodes/* (séquence builder.ts)" as Nodes {
+    component "parseBrief" as N1
+    component "enrichKnowledge\n(RAG pgvector + fallback statique)" as N2
+    component "enrichTrends" as N3
+    component "generateScript\n(@langchain LLM)" as N4
+    component "generateImages\n(ProviderSelector: openai/higgsfield/google\nsinon mock /_media/ai-engine/mock)" as N5
+    component "generateVideo\n(ffmpeg-static drawtext MP4 local)" as N6
+    component "generateVoiceover" as N7
+    component "generateMusic" as N8
+    component "generateSubtitles" as N9
+    component "generateCaption" as N10
+    component "compose" as N11
+    component "transcodeExport\n(ffmpeg/ffprobe)" as N12
+    component "qualityCheck\n[routeAfterQuality]" as N13
+    component "moderate\n[routeAfterModeration]" as N14
+    component "reviewGate (humanReview)\n[routeAfterHumanReview / interrupt HITL]" as N15
+    component "generateVariants" as N16
+  }
+}
+
+' ====================================================================
+' PIPELINE B — CONTENT STUDIO CREATE FLOW (ce qu'utilise l'opératrice)
+' ====================================================================
+rectangle "PIPELINE B — Content Studio Create flow" as B #E8F1EE {
+  component "Pages /create (CreateWorkspace,\nIntentionForm, MediaStudio, PreviewPane,\nGenerationModeToggle, ModelPicker)" as BPage
+  component "POST /ideas/[id]/generate" as BIdea
+  component "POST /drafts/[id]/generate-visual\n(lit cookie cs_generation_mode)" as BVisual
+  component "content-studio/service.ts\ngenerateIdeaDrafts / generateVisualForDraft" as BSvc
+  component "generation.ts\ngenerateForIdea (OpenAI chat\nsinon fallback déterministe)" as BText
+  component "image-generation.ts\nrouting modèle/mode :\nmock SVG | OpenAI gpt-image | Higgsfield hf-*" as BImg
+  component "video-generation.ts\nmock MP4 statique (reel/story)\n| Higgsfield hf-video-* (submit+poll)" as BVid
+  component "higgsfield-auth.ts\nKey KEY_ID:KEY_SECRET" as HAuth
+}
+
+' ── Services externes / stockage ──
+database "PostgreSQL + pgvector" as DB
+rectangle "OpenAI" as OpenAI #FFFFFF
+rectangle "Higgsfield" as HF #FFFFFF
+rectangle "Media worker\n(sharp, ffmpeg) + storage" as MW #FFFFFF
+
+' ── PONT A -> B (unidirectionnel) ──
+component "bridge/content-studio-bridge.ts\nbridgeToContentStudio()\ncrée idea+brief+draft+generation_run" as Bridge #FFE9C7
+
+' ── Câblage A ──
+APage --> AGen
+AGen --> Orch
+Orch --> Graph
+Graph --> N1
+N1 --> N2
+N2 --> N3
+N3 --> N4
+N4 --> N5 : image_flow / carousel_flow
+N4 --> N6 : video_flow
+N4 --> N10 : caption_only
+N6 --> N7 --> N8 --> N9 --> N10
+N5 --> N10
+N10 --> N11 --> N12 --> N13
+N13 --> N14 : pass
+N14 --> N15 : safe
+N15 --> N16 : approved
+N2 ..> DB : searchKnowledge (RAG)
+N5 ..> OpenAI
+N5 ..> HF
+
+' ── Câblage B ──
+BPage --> BIdea
+BPage --> BVisual
+BIdea --> BSvc
+BVisual --> BSvc
+BSvc --> BText
+BSvc --> BImg
+BSvc --> BVid
+BImg --> HAuth
+BVid --> HAuth
+BText ..> OpenAI
+BImg ..> OpenAI
+BImg ..> HF
+BVid ..> HF
+BSvc --> MW
+BSvc --> DB
+
+' ── Le pont : A écrit dans les tables de B ──
+AGen --> Bridge : si status != failed (non bloquant)
+Bridge --> DB : insert content_idea/brief/draft/generation_run
+
+note as NoteSep
+  SÉPARATION RÉELLE A / B
+  - L'opératrice sur /create n'invoque JAMAIS LangGraph :
+    elle passe par content-studio/service.ts (pipeline B).
+  - Le PONT est UNIDIRECTIONNEL : la route /api/admin/ai-engine/generate
+    appelle bridgeToContentStudio() pour matérialiser le résultat A
+    en enregistrements Content Studio. B n'appelle jamais A.
+  - Voix-off / musique / sous-titres / compose / transcode N'EXISTENT
+    QUE dans le pipeline A. Le create flow (B) ne génère qu'image OU
+    vidéo (mock/Higgsfield) — ces étapes A sont INATTEIGNABLES depuis /create.
+end note
+@enduml

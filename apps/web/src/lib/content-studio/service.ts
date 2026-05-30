@@ -9,7 +9,9 @@ import { getStorage } from '@/lib/media/storage';
 import { runWorkerOnce } from '@/lib/media/worker/process-job';
 import { reviewDraftContent } from './brand-rules';
 import { generateForIdea } from './generation';
+import { imageCostCents } from './pricing';
 import { generateStudioImage } from './image-generation';
+import { generateStudioVideo } from './video-generation';
 import { assertTransition } from './state-machine';
 import {
   approveDraft,
@@ -78,6 +80,8 @@ export interface StudioMediaItem {
   previewUrl: string | null;
   width: number | null;
   height: number | null;
+  /** Duration in milliseconds for videos. Null for images. */
+  durationMs?: number | null;
   createdAt: Date;
 }
 
@@ -96,10 +100,20 @@ export async function createContentIdea(input: Parameters<typeof createIdea>[0])
 export async function generateIdeaDrafts(input: {
   ideaId: string;
   actorId: string | null;
+  /** CS v2 Phase 2 — optional override of the text-generation model for this run. */
+  model?: string;
+  /** ACT-BE-013 — mode mock/live propagé du cookie cs_generation_mode. */
+  mode?: 'mock' | 'live';
 }) {
   const idea = await requireIdea(input.ideaId);
+  // ACT-BE-016 (BUG-051) : valider la transition AVANT toute écriture
+  // (génération LLM, brief, drafts, run). Sinon une idée déjà « generated »
+  // (transition generated→generated interdite) faisait créer brief+drafts+run
+  // PUIS échouait, laissant des écritures partielles/orphelines. assertTransition
+  // lève déjà HttpError('invalid_state') → 409 lisible (pas un 500 opaque).
+  assertTransition(idea.status, 'generated');
   await checkDailyBudget(2);
-  const generation = await generateForIdea(idea);
+  const generation = await generateForIdea(idea, { model: input.model, mode: input.mode });
   const brief = await createBrief({
     ideaId: idea.id,
     angle: generation.brief.angle,
@@ -145,7 +159,7 @@ export async function generateIdeaDrafts(input: {
   for (const draft of drafts) {
     await reviewContentDraft({ draftId: draft.id });
   }
-  assertTransition(idea.status, 'generated');
+  // (transition déjà validée en tête de fonction — ACT-BE-016)
   await updateIdeaStatus(idea.id, 'generated');
   await logAuditEvent({
     action: 'content_studio.idea.generated',
@@ -154,7 +168,23 @@ export async function generateIdeaDrafts(input: {
     resourceId: idea.id,
     meta: { provider: generation.provider, drafts: drafts.length },
   });
-  return { idea: { ...idea, status: 'generated' as const }, brief, drafts };
+  // CS v2 Phase 7 polish (G07) — surface the generation run metadata so the
+  // UI can display "Généré par {model} · {cost}¢". One entry per
+  // /ideas/:id/generate call today; an array shape leaves room for batched
+  // multi-run generations later.
+  return {
+    idea: { ...idea, status: 'generated' as const },
+    brief,
+    drafts,
+    runs: [
+      {
+        provider: generation.provider,
+        model: generation.model,
+        costCents: generation.provider === 'fallback' ? 0 : 2,
+        status: generation.provider === 'fallback' ? 'fallback' : 'succeeded',
+      },
+    ],
+  };
 }
 
 export async function updateContentDraft(input: {
@@ -260,9 +290,30 @@ export async function generateVisualForDraft(input: {
   prompt: string;
   size: '1024x1024' | '1024x1536' | '1536x1024';
   quality: 'low' | 'medium' | 'high';
+  /** CS v2 Phase 3 — image (default, legacy) or video discriminator. */
+  kind?: 'image' | 'video';
+  /** CS v2 Phase 3 — optional model id override (image or video model). */
+  model?: string;
+  /** Mode mock/live propagé depuis le cookie côté route handler. */
+  mode?: 'mock' | 'live';
 }) {
   const draft = await requireDraft(input.draftId);
-  const visualCostEstimate = input.quality === 'high' ? 8 : input.quality === 'medium' ? 4 : 2;
+  if (input.kind === 'video') {
+    return generateVideoForDraft({
+      draftId: draft.id,
+      draft,
+      actorId: input.actorId,
+      prompt: input.prompt,
+      model: input.model,
+      mode: input.mode,
+    });
+  }
+  // ACT-BE-035 — coût pré-check budget depuis la MÊME source que le coût
+  // enregistré (./pricing). En mock, génération gratuite → 0.
+  const visualCostEstimate = imageCostCents(
+    input.mode === 'mock' ? undefined : input.model ?? env.CONTENT_STUDIO_IMAGE_MODEL,
+    input.quality,
+  );
   await checkDailyBudget(visualCostEstimate);
   const finalPrompt = buildVisualPrompt({
     draft,
@@ -272,6 +323,8 @@ export async function generateVisualForDraft(input: {
     prompt: finalPrompt,
     size: input.size,
     quality: input.quality,
+    model: input.model,
+    mode: input.mode,
   });
   const media = await createMedia({
     kind: 'image',
@@ -311,6 +364,10 @@ export async function generateVisualForDraft(input: {
       finalPrompt,
       size: input.size,
       quality: input.quality,
+      // ACT-DA-005 — modèle INTENTIONNEL (choisi par l'opérateur) tracé à côté
+      // du modèle EXÉCUTÉ (colonne `model` = generated.model). En mock, l'exécuté
+      // est 'mock-*' ; sans cette trace on perdait le modèle réellement demandé.
+      intendedModel: input.model ?? null,
     },
     output: { mediaId: media.id, usage: generated.usage },
     status: 'succeeded',
@@ -337,6 +394,117 @@ export async function generateVisualForDraft(input: {
     throw new HttpError('upstream_failed', 'Image générée mais optimisation média non finalisée.');
   }
   return generatedMedia;
+}
+
+/**
+ * CS v2 create-audit Phase 3+4 — generate a video asset and bind it to the
+ * draft. Today only the mock provider is wired (Veo/Sora are backlog). The
+ * caller (route handler) already validated the kind=video and any model id.
+ */
+async function generateVideoForDraft(args: {
+  draftId: string;
+  draft: Awaited<ReturnType<typeof requireDraft>>;
+  actorId: string | null;
+  prompt: string;
+  model?: string;
+  mode?: 'mock' | 'live';
+}) {
+  const { draft } = args;
+  // Mock video has cost 0; still keep budget call for parity with future
+  // real providers. Estimate 2c so the daily cap notion stays consistent.
+  await checkDailyBudget(0);
+  const generated = await generateStudioVideo({
+    format: draft.format,
+    prompt: args.prompt,
+    model: args.model,
+    mode: args.mode,
+  });
+  const media = await createMedia({
+    kind: 'video',
+    source: 'upload',
+    slug: `content-studio-ai-video-${draft.id}-${createId().slice(0, 8)}`,
+    alt: draft.altText ?? draft.hook ?? 'Vidéo générée pour FemiGlow',
+    caption: `Vidéo mock générée pour ${draft.variantLabel}`,
+    originalFilename: `${draft.id}.mp4`,
+    originalMime: generated.mime,
+    originalSizeBytes: generated.sizeBytes,
+    originalWidth: generated.width,
+    originalHeight: generated.height,
+    originalDurationMs: generated.durationMs,
+    originalUrl: generated.publicUrl,
+    status: 'passthrough',
+    qualityProfile: 'inline',
+    loadingStrategy: 'viewport',
+    overrides: {
+      contentStudio: {
+        origin: 'ai_generated',
+        provider: generated.provider,
+        promptVersion: 'content-studio-video-v0-2026-05-28',
+        sourceDraftId: draft.id,
+        kind: 'video',
+        posterUrl: generated.posterUrl,
+      },
+    },
+    createdBy: args.actorId,
+  });
+  await upsertPrimaryAsset({ draftId: draft.id, mediaId: media.id });
+  await insertGenerationRun({
+    ideaId: null,
+    briefId: draft.briefId,
+    provider: generated.provider,
+    model: generated.model,
+    promptVersion: 'content-studio-video-v0-2026-05-28',
+    input: {
+      draftId: draft.id,
+      prompt: args.prompt,
+      kind: 'video',
+      format: draft.format,
+    },
+    output: {
+      mediaId: media.id,
+      publicUrl: generated.publicUrl,
+      posterUrl: generated.posterUrl,
+      usage: generated.usage,
+    },
+    status: 'succeeded',
+    costCents: generated.estimatedCostCents,
+    errorMessage: null,
+    createdBy: args.actorId,
+  });
+  await logAuditEvent({
+    action: 'content_studio.video.generated',
+    actorId: args.actorId,
+    resourceType: 'media',
+    resourceId: media.id,
+    meta: {
+      draftId: draft.id,
+      provider: generated.provider,
+      model: generated.model,
+      format: draft.format,
+    },
+  });
+  // Video uses status='passthrough' and bypasses the image worker, so it
+  // does not show up in listContentStudioMedia (which filters kind=image,
+  // status=ready). Build the StudioMediaItem directly from what we already
+  // know about the freshly-inserted row.
+  const out: StudioMediaItem = {
+    id: media.id,
+    slug: media.slug,
+    kind: media.kind,
+    source: media.source,
+    compartment: 'ai_generated',
+    status: media.status,
+    alt: media.alt,
+    caption: media.caption,
+    originalUrl: media.originalUrl,
+    thumbUrl: generated.posterUrl,
+    previewUrl: media.originalUrl,
+    width: media.originalWidth,
+    height: media.originalHeight,
+    durationMs: generated.durationMs,
+    createdAt: media.createdAt,
+  };
+  return out;
 }
 
 function isContentStudioAiMedia(overrides: { contentStudio?: unknown } | null | undefined): boolean {
@@ -444,10 +612,45 @@ export async function archiveContentPost(postId: string) {
   return archiveEntity('post', postId);
 }
 
-export async function createVariation(input: { draftId: string; variantLabel?: string }) {
+export async function createVariation(input: {
+  draftId: string;
+  variantLabel?: string;
+  promptOverride?: string;
+  mode?: 'mock' | 'live';
+}) {
   const draft = await requireDraft(input.draftId);
   assertTransition(draft.status, 'generated');
-  return createDraftVariation(draft.id, { variantLabel: input.variantLabel });
+
+  // ACT-BE-014 (BUG-017) — RÉGÉNÉRER réellement le texte au lieu de cloner le
+  // parent à l'identique : on remonte à l'idée via le brief et on relance la
+  // génération en consommant promptOverride (injecté dans le prompt). Le
+  // fallback varié (hooks/hashtags) garantit que la variation diffère même en
+  // mock. Repli sur un clone si l'idée/brief est introuvable.
+  const brief = await getBrief(draft.briefId);
+  const idea = brief ? await getIdea(brief.ideaId) : null;
+  if (idea) {
+    const variationIdea = input.promptOverride
+      ? { ...idea, prompt: `${idea.prompt}\n\nVariation demandée : ${input.promptOverride}` }
+      : idea;
+    const gen = await generateForIdea(variationIdea, { mode: input.mode });
+    const fresh = gen.drafts[0];
+    if (fresh) {
+      return createDraftVariation(draft.id, {
+        variantLabel: input.variantLabel ?? fresh.variantLabel,
+        caption: fresh.caption,
+        hook: fresh.hook,
+        cta: fresh.cta,
+        altText: fresh.altText,
+        hashtags: fresh.hashtags,
+        promptOverride: input.promptOverride,
+      });
+    }
+  }
+
+  return createDraftVariation(draft.id, {
+    variantLabel: input.variantLabel,
+    promptOverride: input.promptOverride,
+  });
 }
 
 export async function reschedulePost(input: { postId: string; scheduledAt: string }) {

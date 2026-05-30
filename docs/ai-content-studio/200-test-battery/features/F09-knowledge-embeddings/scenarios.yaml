@@ -1,0 +1,324 @@
+feature: F09-knowledge-embeddings
+description: Embedding generation button, success/error banners, pending document warning, and stats integration
+component_under_test: apps/web/src/app/admin/content-studio-v2/ai-engine/knowledge/page.tsx
+test_file: apps/web/src/app/admin/content-studio-v2/ai-engine/knowledge/__tests__/knowledge-page.test.tsx
+
+scenarios:
+  # ---- BUTTON RENDERING ----
+
+  - id: F09-T01
+    name: "Embed button rendered in header with Sparkles icon"
+    type: component
+    priority: P0
+    preconditions: "Knowledge page loaded with collections"
+    steps:
+      - "Render knowledge page"
+    expected: "Button 'Generer les embeddings' with Sparkles icon in header"
+    assertions:
+      - "Button with text 'Generer les embeddings' visible"
+      - "Sparkles icon visible in button"
+    tags: [rendering, button]
+
+  - id: F09-T02
+    name: "Button shows loading spinner while embedding"
+    type: component
+    priority: P0
+    preconditions: "Embed button clicked, POST pending"
+    steps:
+      - "Click embed button"
+    expected: "Button shows loading state with spinner"
+    assertions:
+      - "Button has loading prop true"
+      - "Button text still says 'Generer les embeddings'"
+    tags: [loading, button]
+
+  - id: F09-T03
+    name: "Button prevents double-click during processing"
+    type: component
+    priority: P1
+    preconditions: "Embedding in progress"
+    steps:
+      - "Try clicking button again"
+    expected: "Button is in loading state and click has no additional effect"
+    assertions:
+      - "Only one POST /knowledge/embed request sent"
+    tags: [loading, anti-double-click]
+
+  # ---- SUCCESS BANNER ----
+
+  - id: F09-T04
+    name: "Success banner shows document and chunk stats"
+    type: component
+    priority: P0
+    preconditions: "POST returns { documentsProcessed: 3, chunksCreated: 45 }"
+    steps:
+      - "Click embed, API returns success"
+    expected: "Green banner with '3 documents traites, 45 chunks crees'"
+    assertions:
+      - "CheckCircle2 icon visible"
+      - "Banner has background var(--cs-success-bg)"
+      - "Text '3 documents traites' visible"
+      - "Text '45' visible in bold"
+      - "Text 'chunks crees' visible"
+    tags: [success, banner]
+
+  - id: F09-T05
+    name: "Success banner with single document uses singular form"
+    type: component
+    priority: P1
+    preconditions: "POST returns { documentsProcessed: 1, chunksCreated: 8 }"
+    steps:
+      - "Click embed, API returns success"
+    expected: "Banner with '1 document traite, 8 chunks crees'"
+    assertions:
+      - "Text '1 document traite' (no 's') visible"
+    tags: [success, pluralization]
+
+  - id: F09-T06
+    name: "Success banner shows custom message when present"
+    type: component
+    priority: P0
+    preconditions: "POST returns { documentsProcessed: 0, chunksCreated: 0, message: 'Aucun document en attente...' }"
+    steps:
+      - "Click embed with no pending docs"
+    expected: "Green banner with the custom message text"
+    assertions:
+      - "Text 'Aucun document en attente' visible"
+      - "No numeric stats displayed"
+    tags: [success, message, edge-case]
+
+  - id: F09-T07
+    name: "Success banner with partial errors shows error list"
+    type: component
+    priority: P0
+    preconditions: "POST returns { documentsProcessed: 2, chunksCreated: 20, errors: ['Doc A: OpenAI rate limit', 'Doc B: empty content'] }"
+    steps:
+      - "Click embed, API returns 207 with errors"
+    expected: "Green banner with stats AND red error list below"
+    assertions:
+      - "Stats text '2 documents traites' visible"
+      - "Error list visible"
+      - "Text 'Doc A: OpenAI rate limit' visible in error list"
+      - "Text 'Doc B: empty content' visible in error list"
+      - "Error items have color var(--cs-danger)"
+    tags: [success, partial-failure, error-list]
+
+  # ---- ERROR BANNER ----
+
+  - id: F09-T08
+    name: "Error banner shown when embed fails"
+    type: component
+    priority: P0
+    preconditions: "POST returns 500 with error"
+    steps:
+      - "Click embed, API returns error"
+    expected: "Red banner with AlertTriangle and error message"
+    assertions:
+      - "AlertTriangle icon visible"
+      - "Banner has background var(--cs-danger-bg)"
+      - "Error message text visible"
+    tags: [error, banner]
+
+  - id: F09-T09
+    name: "Error banner for missing OpenAI key"
+    type: component
+    priority: P1
+    preconditions: "POST returns 400 with 'Cle API OpenAI non configuree'"
+    steps:
+      - "Click embed without API key"
+    expected: "Red banner with specific message"
+    assertions:
+      - "Text matching 'OpenAI non configuree' visible"
+    tags: [error, config]
+
+  - id: F09-T10
+    name: "Error banner for DB unavailable"
+    type: component
+    priority: P1
+    preconditions: "POST returns 503"
+    steps:
+      - "Click embed with DB down"
+    expected: "Red banner with error text"
+    assertions:
+      - "Error banner visible with text"
+    tags: [error, db]
+
+  # ---- STATE CLEANUP ----
+
+  - id: F09-T11
+    name: "Previous results cleared on new embed click"
+    type: component
+    priority: P0
+    preconditions: "Previous embedResult visible"
+    steps:
+      - "Click embed button again"
+    expected: "Previous success banner disappears, loading starts"
+    assertions:
+      - "embedResult is null during new request"
+      - "embedError is null during new request"
+      - "Previous banner not visible"
+    tags: [cleanup, state]
+
+  - id: F09-T12
+    name: "Previous error cleared on new embed click"
+    type: component
+    priority: P1
+    preconditions: "Previous embedError visible"
+    steps:
+      - "Click embed button again"
+    expected: "Previous error banner disappears, loading starts"
+    assertions:
+      - "Error banner gone"
+      - "Loading state active"
+    tags: [cleanup, state]
+
+  # ---- COLLECTIONS REFRESH ----
+
+  - id: F09-T13
+    name: "Collections refreshed after successful embed"
+    type: component
+    priority: P0
+    preconditions: "Embed success"
+    steps:
+      - "Complete embed, check collection data"
+    expected: "fetchCollections called to update chunk counts"
+    assertions:
+      - "GET /knowledge called after embed success"
+      - "Chunk counts updated in UI"
+    tags: [refresh, integration]
+
+  - id: F09-T14
+    name: "Collections NOT refreshed after embed failure"
+    type: component
+    priority: P2
+    preconditions: "Embed fails"
+    steps:
+      - "Embed fails, check for refresh"
+    expected: "No fetchCollections call after error"
+    assertions:
+      - "GET /knowledge not called after error"
+    tags: [refresh, error, edge-case]
+
+  # ---- PENDING STAT WARNING ----
+
+  - id: F09-T15
+    name: "Pending stat card shows count of collections with unindexed docs"
+    type: component
+    priority: P0
+    preconditions: "2 collections with docs > 0 and chunks === 0"
+    steps:
+      - "Render page"
+    expected: "En attente stat value is 2"
+    assertions:
+      - "Stat card 'En attente' shows value 2"
+    tags: [stats, pending]
+
+  - id: F09-T16
+    name: "Pending stat uses warning tone when pending > 0"
+    type: component
+    priority: P1
+    preconditions: "pendingDocs > 0"
+    steps:
+      - "Check stat card styling"
+    expected: "Warning-toned icon background"
+    assertions:
+      - "Database icon container has warning background"
+    tags: [stats, visual, warning]
+
+  - id: F09-T17
+    name: "Pending stat uses success tone when pending === 0"
+    type: component
+    priority: P1
+    preconditions: "All docs are indexed"
+    steps:
+      - "Check stat card styling"
+    expected: "Success-toned icon background"
+    assertions:
+      - "Database icon container has success background"
+    tags: [stats, visual, success]
+
+  - id: F09-T18
+    name: "Pending count updates after successful embed"
+    type: component
+    priority: P0
+    preconditions: "2 pending before embed, all indexed after"
+    steps:
+      - "Verify 'En attente' is 2"
+      - "Embed successfully"
+      - "Check 'En attente' after refresh"
+    expected: "Pending count drops to 0 after collections refresh"
+    assertions:
+      - "Stat value changes from 2 to 0"
+      - "Tone changes from warning to success"
+    tags: [stats, integration, lifecycle]
+
+  # ---- API CONTRACT ----
+
+  - id: F09-T19
+    name: "Embed POST sends correct request"
+    type: api-contract
+    priority: P0
+    preconditions: "Admin authenticated"
+    steps:
+      - "Trigger embed"
+    expected: "POST /api/admin/ai-engine/knowledge/embed with no body"
+    assertions:
+      - "Method is POST"
+      - "URL matches /knowledge/embed"
+      - "No request body"
+    tags: [api, contract]
+
+  - id: F09-T20
+    name: "Embed handles 207 partial success status"
+    type: api-contract
+    priority: P1
+    preconditions: "Some documents error during embedding"
+    steps:
+      - "API returns 207 with errors array"
+    expected: "Client treats 207 as success with errors"
+    assertions:
+      - "embedResult is set (not null)"
+      - "embedResult.errors array is non-empty"
+      - "embedError is null (207 is not a fetch error)"
+    tags: [api, partial-success]
+
+  # ---- EDGE CASES ----
+
+  - id: F09-T21
+    name: "Empty pending list results in zero-count message"
+    type: component
+    priority: P1
+    preconditions: "No documents with chunkCount === 0"
+    steps:
+      - "Click embed"
+    expected: "Returns message about no pending documents"
+    assertions:
+      - "embedResult.message contains 'attente'"
+    tags: [edge-case, no-op]
+
+  - id: F09-T22
+    name: "Embed button is enabled when not loading"
+    type: component
+    priority: P2
+    preconditions: "Page loaded, not embedding"
+    steps:
+      - "Check button state"
+    expected: "Button is not disabled, not loading"
+    assertions:
+      - "Button does not have disabled attribute"
+      - "Button loading prop is false"
+    tags: [button, state]
+
+  - id: F09-T23
+    name: "Success banner renders errors list as HTML ul/li"
+    type: component
+    priority: P2
+    preconditions: "embedResult with errors array of 2 items"
+    steps:
+      - "Check error list DOM structure"
+    expected: "ul element with 2 li children"
+    assertions:
+      - "ul element exists inside success banner"
+      - "2 li elements inside ul"
+      - "li elements have font-size var(--cs-text-xs)"
+    tags: [rendering, structure]

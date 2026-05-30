@@ -1,0 +1,530 @@
+# Data Model -- Knowledge Edit
+# Ce fichier decrit le modele de donnees existant, les modifications,
+# et les schemas de requete/reponse pour la feature Knowledge Edit.
+
+---
+
+# ====================================================================
+# 1. TABLES EXISTANTES (avec modifications)
+# ====================================================================
+
+tables:
+
+  ai_engine_knowledge_collection:
+    description: >
+      Regroupement thematique de documents dans la base de connaissances.
+      Chaque collection a un slug unique et une categorie.
+    columns:
+      id:
+        type: TEXT
+        constraints: [PRIMARY KEY]
+        default: "gen_random_uuid()::text"
+        description: Identifiant unique UUID
+
+      name:
+        type: TEXT
+        constraints: [NOT NULL]
+        description: Nom lisible de la collection
+        validation:
+          min_length: 1
+          max_length: 200
+
+      slug:
+        type: TEXT
+        constraints: [NOT NULL, UNIQUE]
+        description: Identifiant URL-safe (NON MODIFIABLE apres creation)
+        validation:
+          pattern: "^[a-z0-9-]+$"
+          min_length: 1
+          max_length: 100
+
+      description:
+        type: TEXT
+        constraints: [NULLABLE]
+        description: Description de la collection
+        validation:
+          max_length: 500
+
+      category:
+        type: TEXT
+        constraints: [NOT NULL]
+        description: >
+          Categorie thematique. Valeurs existantes : science, platform,
+          strategy, operations, trends, brand, craft
+        validation:
+          min_length: 1
+          max_length: 50
+
+      document_count:
+        type: INTEGER
+        constraints: [NOT NULL]
+        default: 0
+        description: Compteur cache du nombre de documents
+
+      chunk_count:
+        type: INTEGER
+        constraints: [NOT NULL]
+        default: 0
+        description: Compteur cache du nombre de chunks
+
+      last_indexed_at:
+        type: TIMESTAMP WITH TIME ZONE
+        constraints: [NULLABLE]
+        description: Date de derniere indexation (embedding)
+
+      is_active:
+        type: BOOLEAN
+        constraints: [NOT NULL]
+        default: true
+        description: Soft-delete flag
+
+      created_at:
+        type: TIMESTAMP WITH TIME ZONE
+        constraints: [NOT NULL]
+        default: NOW()
+        description: Date de creation
+
+      updated_at:  # NOUVEAU
+        type: TIMESTAMP WITH TIME ZONE
+        constraints: [NOT NULL]
+        default: NOW()
+        description: Date de derniere modification (mise a jour a chaque PATCH)
+        added_by: knowledge-edit-feature
+
+    indexes:
+      ai_kc_slug_unique:
+        type: UNIQUE
+        columns: [slug]
+      ai_kc_category_idx:
+        type: INDEX
+        columns: [category, is_active]
+
+  ai_engine_knowledge_document:
+    description: >
+      Unite de contenu textuel ingere dans une collection.
+      Un document peut provenir d'un texte saisi ou d'une URL fetchee.
+    columns:
+      id:
+        type: TEXT
+        constraints: [PRIMARY KEY]
+        default: "gen_random_uuid()::text"
+
+      collection_id:
+        type: TEXT
+        constraints: [NOT NULL, FOREIGN KEY -> ai_engine_knowledge_collection.id]
+        on_delete: CASCADE
+
+      title:
+        type: TEXT
+        constraints: [NOT NULL]
+        description: Titre du document
+        validation:
+          min_length: 1
+          max_length: 500
+
+      source_type:
+        type: TEXT
+        constraints: [NOT NULL]
+        description: "'text' ou 'url' (NON MODIFIABLE)"
+
+      source_url:
+        type: TEXT
+        constraints: [NULLABLE]
+        description: URL source pour les documents de type 'url'
+
+      content_text:
+        type: TEXT
+        constraints: [NULLABLE]
+        description: >
+          Contenu textuel complet du document.
+          Null pour les documents non encore charges.
+
+      metadata:
+        type: JSONB
+        constraints: [NULLABLE]
+        description: Metadonnees additionnelles (chunkIndex, sourceUrl, etc.)
+
+      chunk_count:
+        type: INTEGER
+        constraints: [NOT NULL]
+        default: 0
+        description: Nombre de chunks generes
+
+      created_at:
+        type: TIMESTAMP WITH TIME ZONE
+        constraints: [NOT NULL]
+        default: NOW()
+
+      updated_at:  # NOUVEAU
+        type: TIMESTAMP WITH TIME ZONE
+        constraints: [NOT NULL]
+        default: NOW()
+        description: Date de derniere modification
+        added_by: knowledge-edit-feature
+
+    indexes:
+      ai_kd_collection_idx:
+        type: INDEX
+        columns: [collection_id, created_at]
+      ai_kd_source_type_idx:
+        type: INDEX
+        columns: [source_type]
+
+  ai_engine_knowledge_chunk:
+    description: >
+      Fragment de texte issu du decoupage d'un document, avec son vecteur
+      d'embedding. Les chunks sont supprimes et re-crees lors d'une mise
+      a jour du contenu du document parent.
+    columns:
+      id:
+        type: TEXT
+        constraints: [PRIMARY KEY]
+        default: "gen_random_uuid()::text"
+
+      collection_id:
+        type: TEXT
+        constraints: [NOT NULL, FOREIGN KEY -> ai_engine_knowledge_collection.id]
+        on_delete: CASCADE
+
+      document_id:
+        type: TEXT
+        constraints: [NOT NULL, FOREIGN KEY -> ai_engine_knowledge_document.id]
+        on_delete: CASCADE
+
+      content:
+        type: TEXT
+        constraints: [NOT NULL]
+        description: Contenu textuel du chunk
+
+      metadata:
+        type: JSONB
+        constraints: [NULLABLE]
+        description: "{chunkIndex, totalChunks, ...}"
+
+      embedding:
+        type: VECTOR(1536)
+        constraints: [NULLABLE]
+        description: Vecteur d'embedding genere par OpenAI text-embedding-3-small
+
+      created_at:
+        type: TIMESTAMP WITH TIME ZONE
+        constraints: [NOT NULL]
+        default: NOW()
+
+    indexes:
+      ai_kch_collection_idx:
+        type: INDEX
+        columns: [collection_id]
+      ai_kch_document_idx:
+        type: INDEX
+        columns: [document_id]
+    notes: >
+      L'index HNSW pgvector est cree par migration SQL separee :
+      CREATE INDEX ai_kch_embedding_hnsw_idx ON ai_engine_knowledge_chunk
+      USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+
+# ====================================================================
+# 2. OPERATIONS UPDATE -- SCHEMAS
+# ====================================================================
+
+operations:
+
+  update_collection:
+    description: Mise a jour partielle d'une collection
+    method: PATCH
+    path: "/api/admin/ai-engine/knowledge/{slug}"
+    path_params:
+      slug:
+        type: string
+        description: Slug unique de la collection
+        example: "brand-femiglow"
+
+    request_schema:
+      content_type: application/json
+      zod_schema: |
+        z.object({
+          name: z.string().min(1).max(200).optional(),
+          description: z.string().max(500).nullable().optional(),
+          category: z.string().min(1).max(50).optional(),
+        }).refine(
+          (data) => data.name !== undefined
+            || data.description !== undefined
+            || data.category !== undefined,
+          { message: 'At least one field must be provided' },
+        )
+      fields:
+        name:
+          type: string
+          required: false
+          description: Nouveau nom de la collection
+          example: "Brand Guidelines FemiGlow (v2)"
+        description:
+          type: string | null
+          required: false
+          description: Nouvelle description (null pour supprimer)
+          example: "Identite de marque mise a jour 2026"
+        category:
+          type: string
+          required: false
+          description: Nouvelle categorie
+          example: "brand"
+      constraints:
+        - Au moins un champ doit etre fourni
+        - Le slug n'est PAS modifiable
+
+    response_schema:
+      success:
+        status: 200
+        body:
+          collection:
+            type: CollectionRow
+            description: La collection mise a jour
+        example: |
+          {
+            "collection": {
+              "id": "abc-123",
+              "name": "Brand Guidelines FemiGlow (v2)",
+              "slug": "brand-femiglow",
+              "description": "Identite de marque mise a jour 2026",
+              "category": "brand",
+              "documentCount": 5,
+              "chunkCount": 42,
+              "lastIndexedAt": "2026-05-24T14:30:00Z",
+              "isActive": true,
+              "createdAt": "2026-04-01T10:00:00Z",
+              "updatedAt": "2026-05-25T09:15:00Z"
+            }
+          }
+      errors:
+        - status: 400
+          description: Donnees invalides (Zod validation)
+        - status: 401
+          description: Non authentifie
+        - status: 404
+          description: Collection introuvable
+
+  get_document:
+    description: Recuperation du contenu complet d'un document
+    method: GET
+    path: "/api/admin/ai-engine/knowledge/{slug}/documents/{docId}"
+    path_params:
+      slug:
+        type: string
+        example: "brand-femiglow"
+      docId:
+        type: string
+        example: "doc-456"
+
+    response_schema:
+      success:
+        status: 200
+        body:
+          document:
+            type: DocumentDetail
+            description: Le document complet avec son contenu textuel
+        example: |
+          {
+            "document": {
+              "id": "doc-456",
+              "collectionId": "abc-123",
+              "title": "Guide des ingredients japonais",
+              "sourceType": "text",
+              "sourceUrl": null,
+              "contentText": "Le Tsubaki (Camellia japonica)...",
+              "metadata": null,
+              "chunkCount": 15,
+              "createdAt": "2026-05-01T08:00:00Z",
+              "updatedAt": "2026-05-20T14:00:00Z"
+            }
+          }
+      errors:
+        - status: 401
+          description: Non authentifie
+        - status: 404
+          description: Collection ou document introuvable
+
+  update_document:
+    description: >
+      Mise a jour d'un document. Si le contenu (content) est modifie,
+      les chunks existants sont supprimes et le contenu est re-decoupe
+      et re-embedde. Si seul le titre est modifie, pas de re-chunking.
+    method: PATCH
+    path: "/api/admin/ai-engine/knowledge/{slug}/documents/{docId}"
+    path_params:
+      slug:
+        type: string
+        example: "brand-femiglow"
+      docId:
+        type: string
+        example: "doc-456"
+
+    request_schema:
+      content_type: application/json
+      zod_schema: |
+        z.object({
+          title: z.string().min(1).max(500).optional(),
+          content: z.string().min(1).optional(),
+        }).refine(
+          (data) => data.title !== undefined || data.content !== undefined,
+          { message: 'At least one field must be provided' },
+        )
+      fields:
+        title:
+          type: string
+          required: false
+          description: Nouveau titre du document
+          example: "Guide des ingredients japonais (Edition 2026)"
+        content:
+          type: string
+          required: false
+          description: >
+            Nouveau contenu textuel. Declenche le re-chunking et
+            le re-embedding de tous les chunks du document.
+          example: "Le Tsubaki (Camellia japonica) est une huile..."
+      constraints:
+        - Au moins un champ doit etre fourni
+        - sourceType n'est PAS modifiable
+        - sourceUrl n'est PAS modifiable
+
+    response_schema:
+      success:
+        status: 200
+        body:
+          success:
+            type: boolean
+            value: true
+          chunkCount:
+            type: number
+            description: Nombre de chunks apres la mise a jour
+          reChunked:
+            type: boolean
+            description: true si le contenu a ete re-decoupe et re-embedde
+        example: |
+          {
+            "success": true,
+            "chunkCount": 18,
+            "reChunked": true
+          }
+      errors:
+        - status: 400
+          description: Donnees invalides (Zod validation)
+        - status: 401
+          description: Non authentifie
+        - status: 404
+          description: Collection ou document introuvable
+        - status: 500
+          description: >
+            Echec de la mise a jour (erreur API OpenAI, erreur DB).
+            Les donnees originales sont preservees grace au rollback transactionnel.
+
+# ====================================================================
+# 3. INTERFACES TYPESCRIPT
+# ====================================================================
+
+typescript_interfaces:
+
+  CollectionRow:
+    location: "src/lib/ai-engine/knowledge/collections.ts"
+    fields:
+      - { name: id, type: string }
+      - { name: name, type: string }
+      - { name: slug, type: string }
+      - { name: description, type: "string | null" }
+      - { name: category, type: string }
+      - { name: documentCount, type: number }
+      - { name: chunkCount, type: number }
+      - { name: lastIndexedAt, type: "Date | null" }
+      - { name: isActive, type: boolean }
+      - { name: createdAt, type: Date }
+      - { name: updatedAt, type: Date }  # NOUVEAU
+
+  UpdateCollectionData:
+    location: "src/lib/ai-engine/knowledge/collections.ts"
+    added_by: knowledge-edit-feature
+    fields:
+      - { name: name, type: string, optional: true }
+      - { name: description, type: "string | null", optional: true }
+      - { name: category, type: string, optional: true }
+
+  DocumentDetail:
+    location: "src/lib/ai-engine/knowledge/collections.ts"
+    added_by: knowledge-edit-feature
+    fields:
+      - { name: id, type: string }
+      - { name: collectionId, type: string }
+      - { name: title, type: string }
+      - { name: sourceType, type: string }
+      - { name: sourceUrl, type: "string | null" }
+      - { name: contentText, type: "string | null" }
+      - { name: metadata, type: "Record<string, unknown> | null" }
+      - { name: chunkCount, type: number }
+      - { name: createdAt, type: Date }
+      - { name: updatedAt, type: Date }
+
+  UpdateDocumentData:
+    location: "src/lib/ai-engine/knowledge/ingestion.ts"
+    added_by: knowledge-edit-feature
+    fields:
+      - { name: title, type: string, optional: true }
+      - { name: content, type: string, optional: true }
+
+  UpdateDocumentResult:
+    location: "src/lib/ai-engine/knowledge/ingestion.ts"
+    added_by: knowledge-edit-feature
+    fields:
+      - { name: success, type: boolean }
+      - { name: chunkCount, type: number }
+      - { name: reChunked, type: boolean }
+      - { name: error, type: string, optional: true }
+
+# ====================================================================
+# 4. RELATIONS ENTRE TABLES
+# ====================================================================
+
+relations:
+  - parent: ai_engine_knowledge_collection
+    child: ai_engine_knowledge_document
+    fk: collection_id
+    on_delete: CASCADE
+    cardinality: "1:N"
+
+  - parent: ai_engine_knowledge_document
+    child: ai_engine_knowledge_chunk
+    fk: document_id
+    on_delete: CASCADE
+    cardinality: "1:N"
+
+  - parent: ai_engine_knowledge_collection
+    child: ai_engine_knowledge_chunk
+    fk: collection_id
+    on_delete: CASCADE
+    cardinality: "1:N"
+    note: "FK denormalisee pour performance des requetes de recherche"
+
+# ====================================================================
+# 5. CONTRAINTES D'INTEGRITE
+# ====================================================================
+
+integrity_constraints:
+  - name: slug_immutable
+    description: >
+      Le slug d'une collection ne doit jamais etre modifie apres creation.
+      Il sert de cle stable pour les URLs et les references internes.
+    enforcement: API-level (le champ n'est pas accepte dans le schema PATCH)
+
+  - name: source_type_immutable
+    description: >
+      Le sourceType d'un document ne peut pas etre modifie (text/url).
+    enforcement: API-level (le champ n'est pas accepte dans le schema PATCH)
+
+  - name: chunk_document_consistency
+    description: >
+      Lors d'un re-chunking, tous les anciens chunks sont supprimes
+      AVANT l'insertion des nouveaux, dans une meme transaction.
+    enforcement: Transaction DB
+
+  - name: collection_counts_consistency
+    description: >
+      Les compteurs documentCount et chunkCount de la collection
+      sont recalcules apres chaque operation de modification.
+    enforcement: Appel explicite a updateCollectionCounts()

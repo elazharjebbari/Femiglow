@@ -1,0 +1,44 @@
+feature: F06-media-studio
+
+component:
+  - name: tabs Bibliothèque + Générer IA present
+    expect: 2 tabs visible
+  - name: tab Générer shows ModelPicker
+    when: switch to Générer
+    expect: ModelPicker present
+  - name: toggle Image/Vidéo present when format supports both
+    given: format='reel'
+    expect: toggle visible
+  - name: hide toggle for post format
+    given: format='post'
+    expect: only image option
+  - name: model defaults to suggested
+    given: format='reel', tab Générer, toggle=vidéo
+    expect: ModelPicker.value = mock-video-1.0
+  - name: bibliothèque tab shows MediaPicker
+    expect: grid items rendered
+
+  - name: generate button calls API with kind+model
+    given: prompt filled, model selected, kind=video
+    when: click Générer
+    expect: POST /drafts/:id/generate-visual with body.kind='video', body.model='…'
+
+  - name: budget exceeded → toast + no generation
+    given: response 402
+    expect: toast.error with budget message
+
+e2e:
+  - name: generate image for post
+    steps:
+      - select format Post
+      - tab Générer IA
+      - click Générer (default model)
+    expect: image attached, preview shows
+
+  - name: generate mock video for reel
+    steps:
+      - select format Reel
+      - tab Générer IA
+      - kind=video (auto)
+      - click Générer
+    expect: video element visible, src is /_media/.../reel-9x16.mp4

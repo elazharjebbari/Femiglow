@@ -1,0 +1,35 @@
+feature: F18-error-mapping-ui
+critical: P1
+
+unit:
+  - id: F18-U-1
+    name: formatError maps each known code
+    table:
+      - { code: budget_exceeded, expectContains: 'Budget IA' }
+      - { code: brand_review_blocked, expectContains: 'brand' }
+      - { code: no_account_connected, expectContains: 'compte social' }
+      - { code: token_expired, expectContains: 'expir' }
+      - { code: provider_rate_limited, expectContains: 'requêtes' }
+      - { code: provider_unavailable, expectContains: 'indisponible' }
+      - { code: caption_too_long, expectContains: 'longueur' }
+      - { code: invalid_media_url, expectContains: 'HTTPS' }
+      - { code: min_lead_time, expectContains: '5 minutes' }
+  - id: F18-U-2
+    name: unknown code falls back to message
+    given: { code: 'foo_bar', message: 'Custom message' }
+    expect: 'Custom message'
+  - id: F18-U-3
+    name: no code no message → fallback string
+    expect: 'Une erreur est survenue.'
+  - id: F18-U-4
+    name: Error instance returns its message
+  - id: F18-U-5
+    name: raw string returned as-is
+
+component:
+  - id: F18-CO-1
+    name: PublishActionGroup uses formatError on publish error
+    given: API 409 code=brand_review_blocked
+    expect: toast contains French message
+  - id: F18-CO-2
+    name: JobQueue retry uses formatError on retry error

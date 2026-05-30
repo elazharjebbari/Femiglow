@@ -1,0 +1,25 @@
+@startsalt proposed-media-with-model
+title Content Studio v2 — MediaStudio refactor avec ModelPicker + Toggle vidéo
+{
+  {* Header *}
+  "Visuel" | "92¢ / 100¢" | [Décrocher] [Générer un visuel IA]
+  --
+  {* Tabs *}
+  {[Bibliothèque] | [Générer IA*]}
+  --
+  {* Generate tab *}
+  "🆕 Type de média"
+  ( ) Image | (X) Vidéo  <recommandé pour reel>
+
+  "🆕 Modèle de génération vidéo"
+  ^Mock vidéo · mock · fast  ▼^
+
+  "Description du visuel"
+  "..."
+
+  [Générer]
+  --
+  "Progression : 30%"
+  ".... ≈ 5s en général"
+}
+@endsalt
