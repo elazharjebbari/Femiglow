@@ -27,6 +27,7 @@ import type {
 } from '@/lib/db/types';
 
 import { classifyTraffic, type TrafficBucket } from '../attribution';
+import { getCachedAnalytics, setCachedAnalytics } from '../cache';
 import type { AnalyticsFilters } from '../filters';
 import { resolveRange } from '../filters';
 
@@ -94,6 +95,9 @@ export async function getCtaData(
   filters: AnalyticsFilters,
   now: Date = new Date(),
 ): Promise<CtaData> {
+  const cacheKey = `cta:${JSON.stringify(filters)}`;
+  const cached = getCachedAnalytics<CtaData>(cacheKey, now.getTime());
+  if (cached) return cached;
   const range = resolveRange(filters, now);
 
   // On élargit la fenêtre de fetch à `from - 7j` pour pouvoir attribuer un
@@ -220,7 +224,7 @@ export async function getCtaData(
   const totalPurchases = rows.reduce((s, r) => s + r.purchasesAttributed, 0);
   const totalRevenue = rows.reduce((s, r) => s + r.revenueAttributedCents, 0);
 
-  return {
+  const result: CtaData = {
     range: { from: range.from.toISOString(), to: range.to.toISOString() },
     totals: {
       impressions: totalImpressions,
@@ -232,6 +236,8 @@ export async function getCtaData(
     topMessages,
     topPages,
   };
+  setCachedAnalytics(cacheKey, result, now.getTime());
+  return result;
 }
 
 /* ─────────────────────────────────────────────────────────────────────

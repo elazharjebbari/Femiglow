@@ -28,6 +28,7 @@ Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 
 | **F-INS-02** | P2 | « Dernière mise à jour : {refreshedAt} » — **déjà affiché** (`InsightsView.tsx:396`) | — | — | ✅ vérifié |
 | **F-INS-04** | P2 | Revenu funnel insights : `value × 100` — **déjà correct** (`aggregate.ts:226`) et testé | — | `aggregate.test.ts:208` | ✅ vérifié |
 | **F-INS-06** | P2 | Refresh concurrent : lock pessimiste + API **429 propre** (pas de 500) — **déjà géré** et testé | — | `refresh.test.ts:108` + `refresh/route.test.ts:96` | ✅ vérifié |
+| **F-PERF-04** | P2 | Cache court **opt-in** (`ANALYTICS_CACHE_TTL_MS`, **off par défaut**) sur getFunnelOverview/getCtaData/getCheckoutData → le trade-off de fraîcheur est levé (off = temps réel) | `cache.ts` + 3 queries | `cache.test.ts` + `cta.test.ts` F-PERF-04 | ✅ closed |
 
 ## Harnais d'intégration PGlite (nouveau)
 
@@ -53,13 +54,15 @@ refresh) qui nécessitaient une base réelle.
 ## Reste ouvert (P2, non bloquant) — pour une itération suivante
 
 **F-INS-05** (export PNG fragile — fonts/RTL/taille) : nécessite un test visuel Playwright/navigateur.
-**F-PERF-01/02** (refonte agrégation in-memory → SQL + routage matviews) et **F-PERF-04** (cache) :
-chantier « Sprint 2/3 », gros effort multi-fichiers ; le **harnais PGlite** le débloque (base réelle
-en test). Voir `00-audit/findings-register.csv` et `30-plan-action/plan-action.csv`.
+**F-PERF-01/02** (refonte agrégation in-memory → SQL + **routage matviews**) : les matviews
+`0010_analytics_matviews.sql` sont des pré-agrégations horaires/journalières qui **ne capturent pas**
+l'attribution session-level/cross-session → y router **changerait la précision** affichée à
+l'opérateur ⇒ **décision produit + refonte Sprint 2/3** (à ne pas faire à l'aveugle). Le harnais
+PGlite le rend testable. Voir `00-audit/findings-register.csv`.
 
-**Bilan corrections : 23 findings traités** (5 P0/P1 + 18 P2, dont 3 vérifiés déjà corrects) sur 27.
-Suite analytics : 489 verts (dont 2 d'intégration PGlite sur le vrai chemin SQL). Reste : F-INS-05,
-F-PERF-01/02/04.
+**Bilan corrections : 24 findings traités** (5 P0/P1 + 19 P2, dont 3 vérifiés déjà corrects) sur 27.
+Suite analytics : 495 verts (dont 2 d'intégration PGlite sur le vrai chemin SQL). Reste : F-INS-05
+(test visuel), F-PERF-01/02 (refonte agrégation/matviews — décision produit).
 
 ## Validation locale
 

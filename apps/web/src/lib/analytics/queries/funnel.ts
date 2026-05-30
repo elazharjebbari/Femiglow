@@ -22,6 +22,7 @@ import type { TrackingEventLogEntry } from '@/lib/db/types';
 import { classifyTraffic, type TrafficBucket } from '../attribution';
 import type { AnalyticsFilters } from '../filters';
 import { resolveRange } from '../filters';
+import { getCachedAnalytics, setCachedAnalytics } from '../cache';
 
 export const FUNNEL_STAGES = [
   'view',
@@ -151,6 +152,9 @@ export async function getFunnelOverview(
   filters: AnalyticsFilters,
   now: Date = new Date(),
 ): Promise<FunnelOverviewData> {
+  const cacheKey = `funnel-overview:${JSON.stringify(filters)}`;
+  const cached = getCachedAnalytics<FunnelOverviewData>(cacheKey, now.getTime());
+  if (cached) return cached;
   const range = resolveRange(filters, now);
   const events = await fetchEvents({
     from: range.from,
@@ -217,11 +221,13 @@ export async function getFunnelOverview(
     };
   });
 
-  return {
+  const result: FunnelOverviewData = {
     range: { from: range.from.toISOString(), to: range.to.toISOString() },
     steps,
     totalSessions: sessions.size,
   };
+  setCachedAnalytics(cacheKey, result, now.getTime());
+  return result;
 }
 
 export async function getFunnelByPage(

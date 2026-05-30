@@ -2,7 +2,7 @@
  * Tests des queries CTA — attribution last-click 7j, KPI globaux, top msg/page.
  * cf. docs/analytics/06-tests-strategy.md §3 et 05-onglets-specs.md §4
  */
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { memoryStore, resetMemoryStore } from '@/lib/db/client';
 import type {
@@ -10,6 +10,7 @@ import type {
   TrackingEventLogEntry,
 } from '@/lib/db/types';
 
+import { __clearAnalyticsCache } from '../cache';
 import { getCtaData } from './cta';
 import type { AnalyticsFilters } from '../filters';
 
@@ -245,6 +246,39 @@ describe('getCtaData — KPI totals', () => {
     expect(data.totals.clicks).toBe(1);
     expect(data.totals.conversionRate).toBeCloseTo(1, 5);
     expect(data.totals.revenueAttributedCents).toBe(25000);
+  });
+});
+
+describe('getCtaData — F-PERF-04 cache opt-in', () => {
+  afterEach(() => {
+    delete process.env.ANALYTICS_CACHE_TTL_MS;
+    __clearAnalyticsCache();
+  });
+
+  it('cache actif : un 2e appel ignore les nouveaux events (servi du cache)', async () => {
+    process.env.ANALYTICS_CACHE_TTL_MS = '30000';
+    pushComp('c1', 'CTA');
+    pushEvent({ id: '1', sessionId: 'S1', anonymousId: 'A1', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:00:00Z') });
+    const first = await getCtaData(filtersToday(), NOW);
+    expect(first.totals.clicks).toBe(1);
+
+    pushEvent({ id: '2', sessionId: 'S2', anonymousId: 'A2', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:01:00Z') });
+    const second = await getCtaData(filtersToday(), NOW);
+    expect(second.totals.clicks).toBe(1); // servi du cache
+
+    __clearAnalyticsCache();
+    const third = await getCtaData(filtersToday(), NOW);
+    expect(third.totals.clicks).toBe(2); // recalcul frais
+  });
+
+  it('défaut (cache off) : chaque appel reflète les données fraîches', async () => {
+    pushComp('c1', 'CTA');
+    pushEvent({ id: '1', sessionId: 'S1', anonymousId: 'A1', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:00:00Z') });
+    const first = await getCtaData(filtersToday(), NOW);
+    pushEvent({ id: '2', sessionId: 'S2', anonymousId: 'A2', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:01:00Z') });
+    const second = await getCtaData(filtersToday(), NOW);
+    expect(first.totals.clicks).toBe(1);
+    expect(second.totals.clicks).toBe(2);
   });
 });
 
