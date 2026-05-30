@@ -1179,3 +1179,27 @@ describe('exportPlan — valeur de conversion (T-01/T-02/T-03)', () => {
     expect(html).toContain('{ value: {{DLV - value}}');
   });
 });
+
+describe('exportPlan — langue (page_locale → GA4)', () => {
+  it('GA4 Config (gaawc) pose page_locale via fieldsToSet (→ envoyé à tous les events)', () => {
+    const tags = (exportPlan(buildPlan(), 'production').json as any).containerVersion.tag;
+    const cfg = tags.find((t: any) => t.type === 'gaawc');
+    const fields = cfg.parameter.find((p: any) => p.key === 'fieldsToSet');
+    expect(fields).toBeDefined();
+    const rows = fields.list.map((row: any) => {
+      const m = Object.fromEntries(row.map.map((x: any) => [x.key, x.value]));
+      return [m.fieldName, m.value];
+    });
+    expect(rows).toEqual(
+      expect.arrayContaining([['page_locale', '{{DLV - page.locale}}']]),
+    );
+  });
+
+  it('DLV - page.locale lit la locale du site (page.locale)', () => {
+    const variables = (exportPlan(buildPlan(), 'production').json as any)
+      .containerVersion.variable;
+    const v = variables.find((x: any) => x.name === 'DLV - page.locale');
+    expect(v).toBeDefined();
+    expect(v.parameter.find((p: any) => p.key === 'name').value).toBe('page.locale');
+  });
+});

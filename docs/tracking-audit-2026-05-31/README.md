@@ -70,6 +70,7 @@ tests verts**.
 | T-03 | ✅ Fait | Meta `custom_data` value/currency (purchase, generate_lead, lead_capture) |
 | T-06 | ✅ Fait | `getKitLeadValue()` (prix kit promo) → route lead chat → `LeadFormBubble` |
 | T-07 | ✅ Fait | `googleAdapter.supports` = events server-scope only (GA4 client-only) |
+| T-10 | ✅ Fait | **Langue → GA4** : `provider.tsx` capture la locale du **site** (préfixe URL → cookie `NEXT_LOCALE`), exposée à tous les events GA4 via `page_locale` (GA4 Config `fieldsToSet`) → « quelle langue convertit ». Déclarer la custom dimension `page_locale` côté GA4 |
 | T-05 | 🔁 Re-scopé | Pinterest = **CAPI-only par design v2** (hors `PROVIDER_IDS`), pas un bug. Le ré-ajouter au container = **feature** (schéma+UI+DB) → décision PO |
 | T-04 | 🟡 Partiel | `buildGtmContainer` marqué `@deprecated`. Retrait route/UI = follow-up |
 | T-09 | 🟡 Partiel | `gtm/builders.ts` marqué `@deprecated`. Rebranche drift→`exportPlan` = follow-up (refactor non trivial) |

@@ -179,6 +179,18 @@ function ga4Setting(parameter: string, placeholder: string): GtmParameter {
   };
 }
 
+// Une ligne `fieldsToSet` du GA4 Config (`gaawc`) : MAP { fieldName, value }.
+// Les champs posés sur la config sont envoyés avec TOUS les events GA4.
+function ga4Field(fieldName: string, placeholder: string): GtmParameter {
+  return {
+    type: 'MAP',
+    map: [
+      { type: 'TEMPLATE', key: 'fieldName', value: fieldName },
+      { type: 'TEMPLATE', key: 'value', value: placeholder },
+    ],
+  };
+}
+
 // Events Meta où value/currency sont injectés EN CLAIR dans le 3e arg de
 // `fbq('track', …)`. Restreint aux conversions TOUJOURS valorisées :
 // interpoler `{{DLV - value}}` dans un objet JS inline produirait `value: ,`
@@ -377,6 +389,10 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
 
   // ─── GA4 Configuration tag ───────────────────────────────────────
   if (idVars.ga4) {
+    // `page_locale` posé sur la config → envoyé avec TOUS les events GA4.
+    // Permet de segmenter conversions/revenu par langue du site (fr/ar/en).
+    // Déclarer une custom dimension `page_locale` côté GA4 pour l'exploiter.
+    const localeVar = ensureDlv('DLV - page.locale', DATALAYER_PATHS.pageLocale);
     tags.push({
       tagId: nextTag(),
       name: 'GA4 Cfg',
@@ -384,6 +400,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       parameter: [
         { type: 'TEMPLATE', key: 'measurementId', value: idVars.ga4 },
         { type: 'BOOLEAN', key: 'sendPageView', value: 'false' },
+        { type: 'LIST', key: 'fieldsToSet', list: [ga4Field('page_locale', localeVar)] },
       ],
       priority: { type: 'INTEGER', key: 'priority', value: '80' },
       tagFiringOption: 'ONCE_PER_EVENT',

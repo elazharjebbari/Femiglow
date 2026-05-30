@@ -25,6 +25,12 @@ export const DATALAYER_PATHS = {
   items: 'params.items',
   /** Canal d'attribution (gating) — `DataLayerEntry.attribution.channel`. */
   attributionChannel: 'attribution.channel',
+  /**
+   * Locale **du site** (langue active : `fr`/`ar`/`en`), pas la langue du
+   * navigateur — `DataLayerEntry.page.locale`. Exposée à GA4 (param
+   * `page_locale`) pour segmenter les conversions par langue.
+   */
+  pageLocale: 'page.locale',
 } as const;
 
 export type DataLayerPathKey = keyof typeof DATALAYER_PATHS;

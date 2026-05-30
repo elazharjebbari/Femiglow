@@ -62,6 +62,8 @@ describe('DATALAYER_PATHS — contrat avec DataLayerEntry réelle', () => {
     expect(resolvePath(entry, DATALAYER_PATHS.currency)).toBe('MAD');
     expect(resolvePath(entry, DATALAYER_PATHS.transactionId)).toBe('tx_1');
     expect(resolvePath(entry, DATALAYER_PATHS.items)).toEqual([{ item_id: 'kit' }]);
+    // Langue du site (page.locale) — pour GA4 « quelle langue convertit ».
+    expect(resolvePath(entry, DATALAYER_PATHS.pageLocale)).toBe('fr-MA');
   });
 
   it('le chemin legacy `ecommerce.value` ne résout PAS (preuve du bug T-01)', () => {
