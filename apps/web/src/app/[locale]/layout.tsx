@@ -20,6 +20,7 @@
  *
  * @see docs/i18n-strategy-2026-05/03-backend/server-rendering.md
  */
+import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
@@ -28,8 +29,16 @@ import type { ReactNode } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { isLocaleSwitcherV2Enabled } from '@/components/i18n/locale-switcher-flag';
+import { LocaleSuggestionEngine } from '@/components/i18n/LocaleSuggestionEngine';
 import { LocaleTransitionProvider } from '@/components/i18n/locale-transition-context';
-import { getLocaleConfig, isLocale, LOCALES } from '@/i18n.config';
+import {
+  getLocaleConfig,
+  isLocale,
+  LOCALE_COOKIE_NAME,
+  LOCALES,
+} from '@/i18n.config';
+import { getResolvedEngineConfig } from '@/lib/i18n/engine-config';
+import { resolveSuggestedLocale } from '@/lib/i18n/suggested-locale';
 
 interface LocaleLayoutProps {
   children: ReactNode;
@@ -74,6 +83,27 @@ export default async function LocaleLayout({
   const config = getLocaleConfig(params.locale);
   const localeScript = buildLocaleScript(params.locale, config.direction);
 
+  // Lot L12 — amorces serveur du moteur de suggestion (no-flash, ADR-006).
+  // Lire headers()/cookies() rend les routes `[locale]/*` dynamiques : c'est
+  // assumé, c'est le prix de la détection anti-flash côté serveur (INV-2).
+  // Moteur OFF par défaut (INV-13) ⇒ inerte tant que l'admin ne l'allume pas.
+  const v2Enabled = isLocaleSwitcherV2Enabled();
+  let suggestion: Awaited<ReturnType<typeof resolveSuggestedLocale>> | null =
+    null;
+  let engineConfig = null as Awaited<
+    ReturnType<typeof getResolvedEngineConfig>
+  > | null;
+  if (v2Enabled) {
+    const cookieStore = cookies();
+    const cookieLocaleRaw = cookieStore.get(LOCALE_COOKIE_NAME)?.value;
+    suggestion = resolveSuggestedLocale({
+      servedLocale: params.locale,
+      acceptLanguage: headers().get('accept-language'),
+      cookieLocale: isLocale(cookieLocaleRaw) ? cookieLocaleRaw : null,
+    });
+    engineConfig = await getResolvedEngineConfig();
+  }
+
   return (
     <NextIntlClientProvider
       locale={params.locale}
@@ -100,13 +130,26 @@ export default async function LocaleLayout({
         sans reload + voile + annonceur aria-live). Flag off ⇒ chrome direct
         (comportement V1, zéro régression).
       */}
-      {isLocaleSwitcherV2Enabled() ? (
+      {v2Enabled ? (
         <LocaleTransitionProvider>
           <Header />
           <main id="main" tabIndex={-1}>
             {children}
           </main>
           <Footer />
+          {/*
+            Lot L12 — moteur de suggestion monté dans le provider (utilise
+            `useLocaleSwitch`). Ne rend rien tant qu'un breakpoint n'est pas
+            atteint et que le moteur n'est pas allumé (INV-13). La devinette
+            ne s'affiche que si elle diffère de la langue servie (INV-20).
+          */}
+          {suggestion && engineConfig && suggestion.differsFromServed ? (
+            <LocaleSuggestionEngine
+              guessedLocale={suggestion.suggested}
+              confidence={suggestion.confidence}
+              config={engineConfig}
+            />
+          ) : null}
         </LocaleTransitionProvider>
       ) : (
         <>
