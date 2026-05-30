@@ -16,6 +16,7 @@
  */
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 import { ChatComposer } from './ChatComposer';
@@ -31,6 +32,7 @@ interface ChatPanelProps {
 export function ChatPanel({ page }: ChatPanelProps) {
   const isOpen = useChatStore((s) => s.isOpen);
   const language = useChatStore((s) => s.language);
+  const setLanguage = useChatStore((s) => s.setLanguage);
   const close = useChatStore((s) => s.close);
   const panelRef = useRef<HTMLDivElement>(null);
   // CHA-244 — Position scroll de la page sous-jacente, sauvegardée à
@@ -38,7 +40,31 @@ export function ChatPanel({ page }: ChatPanelProps) {
   // pose sur <body> remet le scroll à 0 sur certains navigateurs).
   const savedScrollYRef = useRef<number>(0);
 
-  useChatSession(page);
+  // Phase 9bis — locale de la page dérivée du 1er segment d'URL. Pilote :
+  //  1. la langue de la session chat (pills + greeting + réponses scriptées),
+  //  2. la langue du store (rendu RTL + libellés du panel en arabe).
+  // Le chat ne gère que fr / ar (ar-MA réservé darija) ; les pages /en
+  // retombent sur fr côté chat (pas d'instruction LLM dédiée EN à ce stade).
+  const pathname = usePathname();
+  const segments = pathname.split('/').filter(Boolean);
+  const firstSegment = segments[0];
+  const chatLanguage: 'fr' | 'ar' = firstSegment === 'ar' ? 'ar' : 'fr';
+
+  // Phase 9bis — page « dé-localisée » pour le matching des pills (questions
+  // prédéfinies). Les canned-pairs ciblent des chemins non préfixés (`/kit`),
+  // alors que la page réelle est `/ar/kit` : sans normalisation, `pageMatches`
+  // échoue et aucune pill n'apparaît sur /ar. On retire le segment locale.
+  const isLocaleSeg =
+    firstSegment === 'fr' || firstSegment === 'ar' || firstSegment === 'en';
+  const delocalizedPage =
+    '/' + (isLocaleSeg ? segments.slice(1) : segments).join('/');
+
+  // Aligne le store dès que la locale change (bascule FR↔AR sans reload).
+  useEffect(() => {
+    if (language !== chatLanguage) setLanguage(chatLanguage);
+  }, [chatLanguage, language, setLanguage]);
+
+  useChatSession(page ?? delocalizedPage, chatLanguage);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils/cn';
 import type { StepName } from '@/lib/checkout/schemas/common';
+import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 
 /**
  * Indicateur visuel de progression dans le wizard.
@@ -31,14 +32,6 @@ interface WizardStepIndicatorProps {
   className?: string;
 }
 
-const DEFAULT_LABELS: Record<StepName, string> = {
-  cart_review: 'Panier',
-  lead: 'Vos coordonnées',
-  address: 'Livraison',
-  payment: 'Paiement',
-  thank_you: 'Confirmation',
-};
-
 export function WizardStepIndicator({
   steps,
   currentStep,
@@ -46,18 +39,27 @@ export function WizardStepIndicator({
   timesPerStep,
   className,
 }: WizardStepIndicatorProps) {
+  const { t } = useWizardTranslation();
   const currentIdx = steps.indexOf(currentStep);
+
+  const defaultLabels: Record<StepName, string> = {
+    cart_review: t.stepIndicator.labelCartReview,
+    lead: t.stepIndicator.labelLead,
+    address: t.stepIndicator.labelAddress,
+    payment: t.stepIndicator.labelPayment,
+    thank_you: t.stepIndicator.labelThankYou,
+  };
 
   return (
     <nav
-      aria-label="Progression du wizard"
+      aria-label={t.stepIndicator.navAriaLabel}
       className={cn('flex w-full justify-between gap-3', className)}
     >
       <ol className="flex w-full items-baseline gap-3 sm:gap-5">
         {steps.map((step, i) => {
           const state =
             i < currentIdx ? 'done' : i === currentIdx ? 'current' : 'upcoming';
-          const label = labels?.[step] ?? DEFAULT_LABELS[step];
+          const label = labels?.[step] ?? defaultLabels[step];
           const time = timesPerStep?.[step];
           return (
             <li

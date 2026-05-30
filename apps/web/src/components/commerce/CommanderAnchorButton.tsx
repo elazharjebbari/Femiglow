@@ -65,6 +65,13 @@ interface CommanderAnchorButtonProps {
   source?: 'pack_section' | 'hero' | string;
   /** Label de tracking explicite (par défaut, le `children` textuel). */
   trackingLabel?: string;
+  /**
+   * Libellé localisé du bouton. Défaut FR « Commander » — préserve les
+   * usages legacy `(marketing)/kit`. Le caller serveur localisé (layout
+   * `/[locale]/kit`) passe la traduction `common.commander`. Sert aussi de
+   * fallback au label de tracking quand `children` n'est pas une string.
+   */
+  label?: string;
 }
 
 export function CommanderAnchorButton({
@@ -79,6 +86,7 @@ export function CommanderAnchorButton({
   accent,
   source,
   trackingLabel,
+  label = 'Commander',
 }: CommanderAnchorButtonProps) {
   const { emit } = useTracking();
 
@@ -126,7 +134,7 @@ export function CommanderAnchorButton({
         source: 'pack_section',
         cta_label:
           trackingLabel ??
-          (typeof children === 'string' ? children : 'Commander'),
+          (typeof children === 'string' ? children : label),
         cta_accent: accent ?? 'default',
       });
     }
@@ -141,6 +149,7 @@ export function CommanderAnchorButton({
     accent,
     trackingLabel,
     children,
+    label,
   ]);
 
   return (
@@ -154,7 +163,7 @@ export function CommanderAnchorButton({
       data-cta-source={source ?? undefined}
       className={cn(accent && accentClasses[accent])}
     >
-      {children ?? 'Commander'}
+      {children ?? label}
     </Button>
   );
 }

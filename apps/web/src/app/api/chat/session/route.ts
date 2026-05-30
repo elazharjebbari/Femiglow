@@ -11,6 +11,7 @@ import {
   assertChatEnabled,
 } from '@/lib/chat/feature-flag';
 import {
+  chatLanguageSchema,
   chatSessionRefreshInput,
   type ChatSessionSnapshot,
 } from '@/lib/chat/contracts';
@@ -33,7 +34,13 @@ export async function GET(req: NextRequest): Promise<Response> {
   try {
     const url = new URL(req.url);
     const page = url.searchParams.get('page') ?? undefined;
-    const session = await sessionService.getOrCreate({ page });
+    // Phase 9bis — la locale de la page (`?lang=ar`) pilote la langue de la
+    // session : greeting, pills (questions prédéfinies) et réponses scriptées
+    // sont servis dans cette langue. Validation stricte via le schéma Zod ;
+    // toute valeur invalide est ignorée (repli FR côté getOrCreate).
+    const langParsed = chatLanguageSchema.safeParse(url.searchParams.get('lang'));
+    const language = langParsed.success ? langParsed.data : undefined;
+    const session = await sessionService.getOrCreate({ page, language });
     const snapshot = await sessionService.snapshot(session.id);
     if (!snapshot) {
       return NextResponse.json({ error: 'session-not-found' }, { status: 404 });

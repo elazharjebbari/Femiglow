@@ -1,13 +1,24 @@
 import 'server-only';
+import { getTranslations } from 'next-intl/server';
 import type { RituelVideo } from '@/lib/schemas';
-import { VideoPlayer4Gestes } from './VideoPlayer4Gestes';
+import {
+  VideoPlayer4Gestes,
+  type VideoPlayer4GestesStrings,
+} from './VideoPlayer4Gestes';
 import { resolveComponentSlot } from '@/lib/components/resolver';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 
 interface VideoPlayer4GestesBoundProps {
   video: RituelVideo;
   componentKey: string;
   /** Slot par défaut : 'poster'. */
   slot?: string;
+  /**
+   * Phase 7 wiring — locale active pour résoudre les libellés UI localisés
+   * (`marketing.rituel.video`). `?? DEFAULT_LOCALE` garde le comportement FR
+   * pour les callers legacy. Mirror du pattern `VideoPlayer4GestesKitBound`.
+   */
+  locale?: Locale;
 }
 
 /**
@@ -19,12 +30,35 @@ export async function VideoPlayer4GestesBound({
   video,
   componentKey,
   slot = 'poster',
+  locale,
 }: VideoPlayer4GestesBoundProps) {
-  const resolved = await resolveComponentSlot(componentKey, slot);
+  const [resolved, t] = await Promise.all([
+    resolveComponentSlot(componentKey, slot),
+    getTranslations({
+      locale: locale ?? DEFAULT_LOCALE,
+      namespace: 'marketing.rituel.video',
+    }),
+  ]);
+  const strings: VideoPlayer4GestesStrings = {
+    kicker: t('kicker'),
+    title: t('title'),
+    subtitle: t('subtitle'),
+    transcriptShow: t('transcript_show'),
+    transcriptHide: t('transcript_hide'),
+    postCta: t('post_cta'),
+    poster: {
+      kicker: t('poster.kicker'),
+      titleLine1: t('poster.title_line1'),
+      titleLine2: t('poster.title_line2'),
+      subtitleLine1: t('poster.subtitle_line1'),
+      subtitleLine2: t('poster.subtitle_line2'),
+      playAriaPrefix: t('poster.play_aria_prefix'),
+    },
+  };
   const useBinding = !!(resolved?.binding?.isActive && resolved?.media);
 
   if (!useBinding || !resolved?.media) {
-    return <VideoPlayer4Gestes video={video} />;
+    return <VideoPlayer4Gestes video={video} strings={strings} />;
   }
 
   // Pick the largest JPEG (or PNG) variant for poster compatibility — many
@@ -46,5 +80,5 @@ export async function VideoPlayer4GestesBound({
     },
   };
 
-  return <VideoPlayer4Gestes video={overriddenVideo} />;
+  return <VideoPlayer4Gestes video={overriddenVideo} strings={strings} />;
 }

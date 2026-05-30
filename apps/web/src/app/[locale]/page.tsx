@@ -17,7 +17,10 @@ import { GestesGrid } from '@/components/sections/GestesGrid';
 import { HeroBound } from '@/components/sections/HeroBound';
 import { JournalExtraitsBound } from '@/components/sections/JournalExtraitsBound';
 import { Manifeste } from '@/components/sections/Manifeste';
-import { NewsletterBlock } from '@/components/sections/NewsletterBlock';
+import {
+  NewsletterBlock,
+  getNewsletterBlockStringsForLocale,
+} from '@/components/sections/NewsletterBlock';
 import { ScrollMilestonesTracker } from '@/components/tracking/ScrollMilestonesTracker';
 import { Fleuron } from '@/components/ui/Fleuron';
 import { isLocale, type Locale } from '@/i18n.config';
@@ -106,11 +109,16 @@ export default async function HomePage({ params }: PageProps) {
   setRequestLocale(locale);
 
   // Phase 3 T3.2/T3.3 : pass locale aux fetches CMS (impl mock fait fallback FR).
-  const [content, journalArticles, tGestes] = await Promise.all([
+  const [content, journalArticles, tGestes, tAvis, newsletterStrings] = await Promise.all([
     cms.getHomepageContent({ locale }),
     cms.getArticles({ limit: 3, featured: true, locale }),
     // Phase 7C — kicker localisé pour `<GestesGrid>` (default prop FR).
     getTranslations({ locale, namespace: 'marketing.home.gestes' }),
+    // Phase 9bis — kicker/title localisés pour `<AvisStrip>` (défauts FR
+    // « Voix » / « Celles qui ont essayé. » fuitaient sur /ar).
+    getTranslations({ locale, namespace: 'marketing.home.avis' }),
+    // Phase 8 — strings localisés du bloc newsletter (sinon défaut FR).
+    getNewsletterBlockStringsForLocale(locale),
   ]);
 
   return (
@@ -126,11 +134,14 @@ export default async function HomePage({ params }: PageProps) {
       <Fleuron />
       <AvisStripBound
         testimonials={content.avis}
+        kicker={tAvis('kicker_default')}
+        title={tAvis('title_default')}
+        formatInitiee={(date) => tAvis('initiee_prefix', { date })}
         componentKey="home-avis-strip"
       />
       <Fleuron />
-      <JournalExtraitsBound articles={journalArticles} />
-      <NewsletterBlock />
+      <JournalExtraitsBound articles={journalArticles} locale={locale} />
+      <NewsletterBlock {...newsletterStrings} />
     </>
   );
 }

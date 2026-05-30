@@ -22,13 +22,32 @@ interface CompositionRevealProps {
    * de cards (Kolenda §4.3 — pédagogie d'ensemble).
    */
   explodedView?: KitExplodedView;
+  /**
+   * Phase 7E — en-tête localisé (kicker/title/description). Défaut FR si
+   * absent — préserve les usages legacy et les tests qui rendent sans header.
+   */
+  header?: { kicker: string; title: string; description: string };
+  /**
+   * Phase 7E — libellé localisé du lien « Lire le détail » des cards.
+   * Défaut FR si absent. Forwardé à chaque `<CompositionCard>`.
+   */
+  cardCta?: string;
 }
+
+const DEFAULT_COMPOSITION_HEADER = {
+  kicker: 'La composition',
+  title: 'Trois objets, trois gestes.',
+  description:
+    'Le kit tient dans une main. Chaque pièce a sa place dans le geste, sa place sur la table de chevet, sa place dans la saison.',
+};
 
 export function CompositionReveal({
   items,
   ingredientsAnchor = 'ingredients-details',
   mediaSlots,
   explodedView,
+  header = DEFAULT_COMPOSITION_HEADER,
+  cardCta,
 }: CompositionRevealProps) {
   const cols =
     items.length >= 4 ? 'lg:grid-cols-4' : items.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2';
@@ -42,13 +61,12 @@ export function CompositionReveal({
     >
       <Container width="wide">
         <div className="mb-10 max-w-2xl space-y-4">
-          <Kicker>La composition</Kicker>
+          <Kicker>{header.kicker}</Kicker>
           <Heading id="composition-title" as="h2" size="display-sm">
-            Trois objets, trois gestes.
+            {header.title}
           </Heading>
           <Text size="body" tone="secondary" prose>
-            Le kit tient dans une main. Chaque pièce a sa place dans le geste,
-            sa place sur la table de chevet, sa place dans la saison.
+            {header.description}
           </Text>
         </div>
         {/* Vue éclatée annotée — optionnelle, ne rend rien si absente du CMS.
@@ -88,6 +106,7 @@ export function CompositionReveal({
                   index={index}
                   detailsHref={`#${ingredientsAnchor}-${item.id}`}
                   mediaSlot={mediaSlots?.[item.id]}
+                  {...(cardCta !== undefined ? { ctaLabel: cardCta } : {})}
                 />
               </Reveal>
             </li>

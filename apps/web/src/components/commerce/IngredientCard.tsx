@@ -19,15 +19,22 @@ export interface IngredientCardProps {
   ingredient: IngredientDetailed;
   subProductId: string;
   accentColor?: SubProductAccentColor;
+  /**
+   * Phase 9 i18n — affiche l'INCI latin entre parenthèses (AR), toléré par
+   * l'audit strict. FR/EN : INCI nu (défaut, inchangé).
+   */
+  inciInParens?: boolean;
 }
 
 export function IngredientCard({
   ingredient,
   subProductId,
   accentColor,
+  inciInParens = false,
 }: IngredientCardProps): JSX.Element {
   const accent = resolveAccentHex(accentColor);
   const pct = ingredient.concentrationPct;
+  const inciLabel = inciInParens ? `(${ingredient.inci})` : ingredient.inci;
 
   return (
     <div
@@ -50,7 +57,7 @@ export function IngredientCard({
         )}
       </div>
       <p className="mt-1 text-xs text-encre/55 font-body">
-        {ingredient.inci}
+        {inciLabel}
         {ingredient.inciDefinition ? (
           <InciTooltip
             inciTerm={ingredient.inci}

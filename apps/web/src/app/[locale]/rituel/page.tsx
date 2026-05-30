@@ -112,10 +112,48 @@ export default async function RituelPage({ params }: PageProps) {
   const locale = params.locale as Locale;
   setRequestLocale(locale);
 
-  const tHowto = await getTranslations({
+  const [tHowto, tJournalGrid, tSciences, tJournal] = await Promise.all([
+    getTranslations({
+      locale,
+      namespace: 'marketing.rituel.howto',
+    }),
+    // Phase 7 wiring — en-tête localisé de la grille « Pour aller plus loin ».
+    getTranslations({
+      locale,
+      namespace: 'marketing.rituel.journal_grid',
+    }),
+    // Phase 9 i18n — kicker section + schéma anatomique localisés.
+    getTranslations({
+      locale,
+      namespace: 'marketing.rituel.sciences',
+    }),
+    // Phase 9bis — libellés catégorie + CTA du JournalGrid (« Lire le journal »
+    // + « Maison/Voix/Pratique » fuitaient FR sur /ar/rituel).
+    getTranslations({ locale, namespace: 'marketing.journal' }),
+  ]);
+  // Phase 9bis — kicker « Conversation » de l'interview fondatrice localisé.
+  const tInterview = await getTranslations({
     locale,
-    namespace: 'marketing.rituel.howto',
+    namespace: 'marketing.rituel.interview.section',
   });
+  const journalCategoryLabels = {
+    maison: tJournal('categories.maison'),
+    saison: tJournal('categories.saison'),
+    voix: tJournal('categories.voix'),
+    matieres: tJournal('categories.matieres'),
+    pratique: tJournal('categories.pratique'),
+  };
+
+  const sciencesStrings = {
+    kicker: tSciences('section.kicker'),
+    schemaLabels: {
+      matrice: tSciences('schema.matrice'),
+      lit: tSciences('schema.lit'),
+      plaque: tSciences('schema.plaque'),
+      aria: tSciences('schema.aria'),
+      caption: tSciences('schema.caption'),
+    },
+  };
 
   // Phase 3 T3.2/T3.4 : pass locale aux fetches CMS.
   const [content, journalArticles, homepage] = await Promise.all([
@@ -160,19 +198,23 @@ export default async function RituelPage({ params }: PageProps) {
       <VideoPlayer4GestesBound
         video={content.videoGestes}
         componentKey="rituel-video-4-gestes"
+        locale={locale}
       />
       <Fleuron />
-      <SciencesDuSoin data={content.sciences} />
+      <SciencesDuSoin data={content.sciences} strings={sciencesStrings} />
       <Fleuron />
       <InterviewQRBound
         data={content.interview}
         componentKey="rituel-portrait-salma"
+        kicker={tInterview('kicker')}
       />
       <PivotBanner data={content.pivot} />
       <JournalGridBound
         articles={finalArticles}
-        kicker="Pour aller plus loin"
-        title="Trois lectures de la maison."
+        kicker={tJournalGrid('kicker')}
+        title={tJournalGrid('title')}
+        ctaLabel={tJournal('grid.cta')}
+        categoryLabels={journalCategoryLabels}
         variant="symmetric"
         limit={3}
       />

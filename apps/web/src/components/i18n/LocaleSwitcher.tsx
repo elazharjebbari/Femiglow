@@ -307,7 +307,14 @@ function DropdownSwitcher({
           'md:px-1 md:text-xs md:underline-offset-4',
         )}
       >
-        {activeLocale.toUpperCase()}
+        {/*
+          Phase 9bis — on affiche l'endonyme (« العربية » sur /ar,
+          « Français » sur /fr) plutôt que le code latin `AR`/`FR`/`EN` :
+          ce dernier fuitait du latin sur les pages arabes (règle « aucun
+          latin sauf FemiGlow »). L'endonyme dans sa propre écriture est
+          aussi le choix le plus accessible (langue présentée dans sa langue).
+        */}
+        {getLocaleConfig(activeLocale).displayNameNative}
       </button>
 
       {open && (

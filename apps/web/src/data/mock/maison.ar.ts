@@ -12,7 +12,7 @@
  *
  * Voix : MSA simplifié, adresse féminine systématique (impératifs
  * féminins type `اكتشفي`). Termes de marque préservés en latin :
- * `Paste`, `Powder`, `Step 4`, `FemiGlow`. Lexique : `دار` pour maison,
+ * `عجينة`, `بودرة`, `الخطوة 4`, `FemiGlow`. Lexique : `دار` pour maison,
  * `الكيت` pour kit, `الطقوس` pour rituel.
  *
  * @see docs/i18n-content-2026-05/03-seed-data/component-bindings-ar.csv
@@ -47,7 +47,7 @@ export const mockMaisonAr: MaisonPageContent = {
     ],
     image: {
       src: '/maison/maison-origine.png',
-      alt: 'طاولة عمل ورشة في الرباط، ضوء بعد الظهر على علب Paste وPowder',
+      alt: 'طاولة عمل ورشة في الرباط، ضوء بعد الظهر على علب عجينة وبودرة',
       width: 960,
       height: 1200,
     },
@@ -63,7 +63,7 @@ export const mockMaisonAr: MaisonPageContent = {
     ],
     image: {
       src: '/maison/fondatrice-mains.svg',
-      alt: 'ورشة الرباط، نهاية بعد الظهر. مؤسِّستنا تُحضِّر Paste، حركة بطيئة، ملاحظة متواصلة',
+      alt: 'ورشة الرباط، نهاية بعد الظهر. مؤسِّستنا تُحضِّر عجينة، حركة بطيئة، ملاحظة متواصلة',
       width: 960,
       height: 1200,
     },
@@ -86,7 +86,7 @@ export const mockMaisonAr: MaisonPageContent = {
       },
       {
         src: '/maison/atelier-2.svg',
-        alt: 'طاولة عمل بميزان دقيق، علب Paste وPowder، دفتر مفتوح',
+        alt: 'طاولة عمل بميزان دقيق، علب عجينة وبودرة، دفتر مفتوح',
         width: 1600,
         height: 1067,
       },
@@ -105,7 +105,7 @@ export const mockMaisonAr: MaisonPageContent = {
         ...m,
         nom: 'شمع النحل',
         origine: 'يُجمَع في سوس، بشراكة مع تعاونية عائلية.',
-        pourquoi: 'يُليِّن طوق الظفر ويُمسك Paste دون أن يُصلِّبها.',
+        pourquoi: 'يُليِّن طوق الظفر ويُمسك عجينة دون أن يُصلِّبها.',
       };
     }
     if (m.id === 'jojoba') {
@@ -121,7 +121,7 @@ export const mockMaisonAr: MaisonPageContent = {
         ...m,
         nom: 'كاولين مُلمِّع',
         origine: 'طين معدني مغربي، محجر مراكش.',
-        pourquoi: 'يُلمِّع الظفر دون أن يُجفِّفه — هو من يُنشِّط مُلمِّع Step 4.',
+        pourquoi: 'يُلمِّع الظفر دون أن يُجفِّفه — هو من يُنشِّط مُلمِّع الخطوة 4.',
       };
     }
     // riz
@@ -130,7 +130,7 @@ export const mockMaisonAr: MaisonPageContent = {
       nom: 'بودرة الأرزّ',
       origine: 'زراعات بيولوجية من آسيا، قطاع متتبَّع.',
       pourquoi:
-        'ماصّ لطيف — هي من تمنح Powder لمستها المطفأة قبيل اللمعان.',
+        'ماصّ لطيف — هي من تمنح بودرة لمستها المطفأة قبيل اللمعان.',
     };
   }),
 
@@ -217,7 +217,7 @@ export const mockMaisonAr: MaisonPageContent = {
       titre: 'تصفّحي الكيت',
       image: {
         src: c.image.src,
-        alt: 'كيت FemiGlow مفتوح: Paste وPowder ومُلمِّع موضوعة على قماش كريمي',
+        alt: 'كيت FemiGlow مفتوح: عجينة وبودرة ومُلمِّع موضوعة على قماش كريمي',
         width: c.image.width,
         height: c.image.height,
       },

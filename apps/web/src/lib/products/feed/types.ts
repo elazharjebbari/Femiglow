@@ -137,6 +137,15 @@ export interface ProductFeedHero {
   /** Microcopy coût/usage. Ex « ≈ 0,75 € par soin sur 30 jours ». */
   perUsageHint?: string;
   /**
+   * Phase 7 wiring — gabarit ICU localisé du bandeau économie, avec les
+   * placeholders `{amount}` / `{currency}` / `{pct}` (ex AR « توفّرين
+   * {amount} {currency} · {pct} % »). Renseigné par `localizeKitProductFeed`
+   * pour les locales non-défaut ; absent en FR (le bandeau garde alors la
+   * sortie byte-identique de `formatSavingsLabel`). `<PriceBlock>` substitue
+   * les valeurs calculées au rendu.
+   */
+  savingsPhrase?: string;
+  /**
    * Accent visuel du CTA primaire. `sauge-dark` est le défaut Kolenda
    * (contraste fort, conversion). `champagne` = fallback luxe doux.
    * `terracotta` = bandeau économie/CTA secondaire (couleur littérale

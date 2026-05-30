@@ -18,6 +18,7 @@
   },
   "common": {
     "back": "Retour à l’accueil",
+    "commander": "Commander",
     "close": "Fermer",
     "cancel": "Annuler",
     "read": "Lire",
@@ -32,7 +33,8 @@
     "facultative": "(facultatif)",
     "confirm_consent": "J’accepte que mon message soit lu par la maison FemiGlow afin d’y répondre.",
     "sources": "Sources",
-    "dotted_sources": "Sources · {count}"
+    "dotted_sources": "Sources · {count}",
+    "skip_to_content": "Aller au contenu"
   },
   "navigation": {
     "home": "La maison",
@@ -43,7 +45,10 @@
     "contact": "Contact",
     "account": "Mon compte",
     "cart": "Panier",
+    "cart_aria_empty": "Panier, vide",
+    "cart_aria_items": "Panier, {count, plural, one {# article} other {# articles}}",
     "menu_summary": "Sommaire de navigation",
+    "menu_close": "Fermer",
     "menu_label": "Sommaire",
     "menu_hint_arrow": "Voir le pack ci-dessous",
     "locale_switcher_label": "Langue",
@@ -72,7 +77,18 @@
       "tagline": "Maison marocaine de soin pour les ongles. Le rituel, en cinq minutes.",
       "address": "FemiGlow · 25 bis avenue Patrice Lumumba, Rabat",
       "copyright": "© {year} FemiGlow — Rabat. Tous droits réservés.",
-      "copyright_minimal": "© {year} FemiGlow — Rabat."
+      "copyright_minimal": "© {year} FemiGlow — Rabat.",
+      "legal_links": {
+        "mentions_legales": "Mentions légales",
+        "cgv": "Conditions Générales de Vente",
+        "cgu": "Conditions Générales d'Utilisation",
+        "confidentialite": "Politique de confidentialité",
+        "cookies": "Politique cookies",
+        "retours_remboursements": "Retours & remboursements",
+        "livraison": "Politique de livraison",
+        "securite_produits": "Sécurité produits",
+        "faq": "FAQ — Service client"
+      }
     },
     "commerce_header": {
       "back_home": "Retour à la maison"
@@ -143,10 +159,16 @@
         },
         "kicker_default": "Voix",
         "title_default": "Celles qui ont essayé.",
+        "initiee_prefix": "Initiée depuis {date}",
         "rating_score": "4,8",
         "rating_count": "287",
         "rating_label": "4,8/5 — 287 initiées",
         "rating_aria": "Note moyenne 4,8 sur 5, sur 287 retours d'initiées."
+      },
+      "journal": {
+        "kicker": "Le journal",
+        "title": "Lettres saisonnières.",
+        "cta": "Lire le journal"
       }
     },
     "kit": {
@@ -247,9 +269,11 @@
           "kicker": "La composition",
           "title": "Trois objets, trois gestes.",
           "description": "Le kit tient dans une main. Chaque pièce a sa place dans le geste, sa place sur la table de chevet, sa place dans la saison."
-        }
+        },
+        "card_cta": "Lire le détail"
       },
       "comparatif": {
+        "axis_label": "Axe",
         "title_vernis": "Vernis classique",
         "title_rituel": "Pack FemiGlow",
         "row": {
@@ -364,28 +388,74 @@
           "kicker": "Le détail",
           "title": "La composition lue ligne par ligne.",
           "description": "Tout est dit : noms d’usage, INCI, fonction, origine, concentration. Pas d’angle mort, pas de promesse cachée derrière une formule."
-        }
+        },
+        "columns": {
+          "ingredient": "Ingrédient",
+          "inci": "INCI",
+          "function": "Fonction",
+          "origin": "Origine"
+        },
+        "post_cta": "Voir le pack"
       },
       "hands": {
         "kicker": "Trois mains",
         "title": "Trois mains, trois saisons.",
-        "description": "Photos non retouchées, prises chez nos initiées au bout de plusieurs mois de rituel. La plaque retrouve sa nervure, sans recette miracle."
+        "description": "Photos non retouchées, prises chez nos initiées au bout de plusieurs mois de rituel. La plaque retrouve sa nervure, sans recette miracle.",
+        "labels": {
+          "before": "Avant",
+          "after": "Après",
+          "initiee_since": "Initiée depuis {date}"
+        }
       },
       "hero": {
         "kicker": "Le rituel",
         "savings": "Économie {savings} MAD",
-        "cta_commander": "Commander le rituel"
+        "cta_commander": "Commander le rituel",
+        "reviews": "{count, plural, one {# avis} other {# avis}}",
+        "reviews_aria": "Note {rating} sur 5 basée sur {count, plural, one {# avis} other {# avis}}",
+        "chips": {
+          "no_polish": "Sans vernis",
+          "no_uv": "Sans UV",
+          "no_acetone": "Sans acétone"
+        },
+        "trust": {
+          "delivery": "Livraison offerte",
+          "cod": "Paiement à la livraison"
+        }
       },
       "commander": {
         "kicker_default": "Commander le rituel",
         "title_default": "Trois gestes, livrés chez vous.",
         "subtitle_default": "Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison gratuite en 24-48 heures."
       },
+      "sticky": {
+        "aria_region": "Achat rapide"
+      },
       "pivot_final": {
         "kicker": "Le geste",
         "title": "Posez le geste.",
         "body": "Le rituel commence quand vous le décidez. Cinq minutes le soir, une saison, et la plaque retrouve sa cadence.",
         "cta_secondary": "Lire encore"
+      },
+      "journal_grid": {
+        "kicker": "Pour aller plus loin",
+        "title": "Trois lectures."
+      },
+      "video": {
+        "kicker": "Les gestes",
+        "title": "Quatre gestes, en un seul plan.",
+        "subtitle": "Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.",
+        "transcript_show": "Lire la transcription",
+        "transcript_hide": "Masquer la transcription",
+        "post_cta": "Voir le pack ci-dessous",
+        "poster": {
+          "kicker": "La manucure japonaise",
+          "title_line1": "Brille 3 semaines.",
+          "title_line2": "Sans vernis.",
+          "subtitle_line1": "Cire d’abeille, silicates, poudre de perle.",
+          "subtitle_line2": "4 gestes en 90 secondes — c’est tout.",
+          "play_aria_prefix": "Lancer la vidéo :"
+        }
       },
       "product_feed": {
         "hero": {
@@ -405,6 +475,18 @@
           "notice_offert": "offert",
           "livraison": "Livraison au Maroc"
         },
+        "value_breakdown": {
+          "paste": "1 Paste · 30 ml",
+          "powder": "2 Powder · 30 g",
+          "buffer": "Polissoir 4 zones",
+          "notice": "Notice rituel + carte",
+          "shipping": "Livraison au Maroc",
+          "free": "offert",
+          "savings_phrase": "Vous économisez {amount} {currency} · {pct} %"
+        },
+        "per_usage": {
+          "phrase": "≈ {amount} {currency} par soin sur {days} jours"
+        },
         "steps": {
           "header": {
             "kicker": "En tout",
@@ -414,6 +496,7 @@
           "post_cta": {
             "label": "Démarrer le rituel"
           },
+          "result_label": "Résultat",
           "preparation": {
             "kicker": "Préparation",
             "title": "Préparez vos ongles",
@@ -456,6 +539,7 @@
         },
         "social_proof": {
           "count_label_geo": "{count} maisons en France",
+          "reviews_count": "{count, plural, one {# avis} other {# avis}}",
           "fallback_quote": "Cinq minutes le soir, c’est devenu un signal de fin de journée.",
           "fallback_author": "Lina, Rabat"
         }
@@ -488,6 +572,30 @@
         "savings_label": "Économie",
         "savings_value": "121 MAD",
         "note": "Prix séparés indicatifs — la maison ne vend pas chaque pièce isolément."
+      },
+      "rituals": {
+        "kicker": "LES VOIX DE LA MAISON",
+        "empty_title": "La maison écoute.",
+        "empty_subtitle": "Soyez la première à partager votre rituel.",
+        "headline_singular": "Une initiée a partagé son rituel. Elle le reprendrait.",
+        "headline_plural": "{total} initiées ont partagé. {oui} reprendraient le rituel.",
+        "read_link": "Lire les {total} rituels partagés",
+        "card_anonymous": "Une initiée",
+        "card_initiated_since": "Initiée depuis {date}",
+        "card_recommend_badge": "Reviendrait",
+        "wall_kicker": "RITUELS PARTAGÉS",
+        "wall_title": "Les voix de la maison.",
+        "tag_labels": {
+          "ongles-plus-lisses": "ongles plus lisses",
+          "plaque-souple": "plaque souple",
+          "cuticules-apaisees": "cuticules apaisees",
+          "plus-de-casse": "plus de casse",
+          "eclat-naturel": "eclat naturel",
+          "rituel-devenu-habitude": "rituel devenu habitude",
+          "mains-detendues": "mains detendues",
+          "fini-brillant": "fini brillant",
+          "halal": "halal"
+        }
       }
     },
     "maison": {
@@ -552,6 +660,10 @@
         "section": {
           "kicker": "Les matières",
           "title": "Quatre matières, choisies une à une."
+        },
+        "labels": {
+          "origine": "Origine",
+          "pourquoi": "Pourquoi"
         }
       },
       "engagements": {
@@ -632,6 +744,20 @@
           "powder": "Powder",
           "step4": "Step 4",
           "polissage": "Polissage"
+        },
+        "kicker": "Les gestes",
+        "title": "Quatre gestes, en un seul plan.",
+        "subtitle": "Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.",
+        "transcript_show": "Lire la transcription",
+        "transcript_hide": "Masquer la transcription",
+        "post_cta": "Voir le pack ci-dessous",
+        "poster": {
+          "kicker": "La manucure japonaise",
+          "title_line1": "Brille 3 semaines.",
+          "title_line2": "Sans vernis.",
+          "subtitle_line1": "Cire d’abeille, silicates, poudre de perle.",
+          "subtitle_line2": "4 gestes en 90 secondes — c’est tout.",
+          "play_aria_prefix": "Lancer la vidéo :"
         }
       },
       "sciences": {
@@ -655,7 +781,14 @@
         },
         "source_1": "Tanaka H. (2021). Beeswax-based barrier creams in cold-induced nail fragility. Journal of Cosmetic Dermatology 20(4).",
         "source_2": "Benyahia L. (2019). Kaolin clay polishing in non-invasive nail care. Annales de Dermatologie et de Vénéréologie 146(8).",
-        "source_3": "Halal Cosmetics Council (2023). Standards for halal cosmetic ingredient sourcing and certification — public framework."
+        "source_3": "Halal Cosmetics Council (2023). Standards for halal cosmetic ingredient sourcing and certification — public framework.",
+        "schema": {
+          "caption": "Coupe anatomique simplifiée : la matrice fabrique la kératine, le lit unguéal soutient la plaque, la plaque protège la pulpe du doigt.",
+          "aria": "Coupe anatomique simplifiée d’un ongle : matrice, lit unguéal, plaque kératinisée",
+          "matrice": "Matrice",
+          "lit": "Lit unguéal",
+          "plaque": "Plaque"
+        }
       },
       "interview": {
         "section": {
@@ -689,6 +822,10 @@
         "cta_label": "Recevoir le pack — 199 MAD"
       },
       "journal_cross": {
+        "kicker": "Pour aller plus loin",
+        "title": "Trois lectures de la maison."
+      },
+      "journal_grid": {
         "kicker": "Pour aller plus loin",
         "title": "Trois lectures de la maison."
       }
@@ -732,7 +869,9 @@
         },
         "error": {
           "body": "L’envoi n’a pas abouti. Réessayez ou écrivez-nous à {email}."
-        }
+        },
+        "gdpr_consent_text": "J’accepte que mon message soit lu par la maison FemiGlow afin d’y répondre. Voir nos",
+        "gdpr_consent_link": "mentions légales"
       },
       "faq": {
         "kicker": "Foire aux questions",
@@ -767,7 +906,9 @@
         "kicker_write": "Écrire",
         "kicker_atelier": "Atelier",
         "response_time": "Réponse sous 24 heures ouvrées, depuis Rabat.",
-        "appointment_only": "Sur rendez-vous."
+        "appointment_only": "Sur rendez-vous.",
+        "street_address": "25 bis avenue Patrice Lumumba",
+        "district": "Rabat"
       }
     },
     "journal": {
@@ -792,7 +933,9 @@
       "grid": {
         "kicker": "Le journal",
         "title": "Lettres saisonnières.",
-        "cta": "Lire le journal"
+        "cta": "Lire le journal",
+        "load_more": "Voir d’autres articles",
+        "all_read": "Vous avez tout lu."
       },
       "categories": {
         "all": "Toutes",
@@ -847,7 +990,12 @@
         },
         "body": {
           "hiver": "Quand l’air sec descend sur Rabat en janvier..."
-        }
+        },
+        "reading_time": "{min} min de lecture",
+        "read_article": "Lire l’article",
+        "featured_badge": "à la une",
+        "read_aria": "Lire « {title} » — {category}",
+        "read_featured_aria": "Lire l’article à la une : {title}"
       },
       "breadcrumb": {
         "home": "Accueil",
@@ -984,7 +1132,15 @@
         "description": "Trois lettres par saison. Aucune urgence."
       },
       "sticky_cta": {
-        "aria": "Achat rapide"
+        "aria": "Achat rapide",
+        "commander": "Commander"
+      }
+    },
+    "common": {
+      "newsletter_block": {
+        "kicker": "Lettre de la maison",
+        "title": "Une lettre par saison.",
+        "description": "Quatre fois par an, une lettre brève sur les gestes, les matières et la lumière de la maison. Aucun envoi commercial."
       }
     }
   },

@@ -5,11 +5,21 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { Reveal } from '@/components/patterns/Reveal';
 import { Footnote, SourcesList } from '@/components/patterns/Footnote';
-import { SchemaSVG } from '@/components/patterns/SchemaSVG';
+import { SchemaSVG, type SchemaSVGLabels } from '@/components/patterns/SchemaSVG';
 
 interface SciencesDuSoinProps {
   data: RituelSciences;
+  /**
+   * Phase 9 i18n — libellés localisés (kicker de section + schéma anatomique).
+   * Défaut FR si absent — préserve les usages legacy + les tests.
+   */
+  strings?: {
+    kicker: string;
+    schemaLabels: SchemaSVGLabels;
+  };
 }
+
+const DEFAULT_KICKER = 'Sciences du soin';
 
 const REF_PATTERN = /\[(\d+)\]/;
 
@@ -19,7 +29,7 @@ function parseSourceRef(ref?: string): number | null {
   return match?.[1] ? Number.parseInt(match[1], 10) : null;
 }
 
-export function SciencesDuSoin({ data }: SciencesDuSoinProps) {
+export function SciencesDuSoin({ data, strings }: SciencesDuSoinProps) {
   return (
     <section
       aria-labelledby="sciences-titre"
@@ -29,7 +39,7 @@ export function SciencesDuSoin({ data }: SciencesDuSoinProps) {
         <div className="mx-auto max-w-3xl text-center">
           <Reveal>
             <Kicker tone="default" withRule>
-              Sciences du soin
+              {strings?.kicker ?? DEFAULT_KICKER}
             </Kicker>
           </Reveal>
           <Reveal delay={80}>
@@ -66,7 +76,7 @@ export function SciencesDuSoin({ data }: SciencesDuSoinProps) {
         </div>
 
         <div className="mt-20 flex justify-center">
-          <SchemaSVG />
+          <SchemaSVG {...(strings ? { labels: strings.schemaLabels } : {})} />
         </div>
 
         <div className="mx-auto mt-12 max-w-3xl">

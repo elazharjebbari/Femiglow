@@ -7,6 +7,12 @@ import type { Currency } from '@/lib/products/currency';
 
 interface StickyCartCTAProps {
   productName: string;
+  /**
+   * Libellé `aria-label` de la région (« Achat rapide »). Localisé via
+   * `marketing.kit.sticky.aria_region` et passé par le layout `/[locale]/kit`.
+   * Optionnel pour les call-sites legacy (FR) qui n'ont pas encore wiré l'i18n.
+   */
+  ariaRegion?: string;
   priceCents: number;
   /**
    * Prix promotionnel optionnel — si fourni et `< priceCents`, la sticky
@@ -21,6 +27,7 @@ interface StickyCartCTAProps {
 
 export function StickyCartCTA({
   productName,
+  ariaRegion = 'Achat rapide',
   priceCents,
   promoPriceCents = null,
   currency,
@@ -57,7 +64,7 @@ export function StickyCartCTA({
   return (
     <div
       role="region"
-      aria-label="Achat rapide"
+      aria-label={ariaRegion}
       data-visible={dataVisible}
       data-chat-open={chatOpen ? 'true' : 'false'}
       aria-hidden={chatOpen}

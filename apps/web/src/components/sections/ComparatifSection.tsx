@@ -13,9 +13,28 @@ interface ComparatifSectionProps {
    * au-dessus de la table en triptyque, dans l'ordre lexico des keys.
    */
   productMediaSlots?: ReactNode[];
+  /**
+   * Phase 7E — en-tête localisé (kicker/title/description). Défaut FR si
+   * absent — préserve les usages legacy et les tests rendus sans header.
+   */
+  header?: { kicker: string; title: string; description: string };
+  /** Phase 9bis — libellé « Axe » localisé de l'en-tête de table. */
+  axisLabel?: string;
 }
 
-export function ComparatifSection({ data, productMediaSlots }: ComparatifSectionProps) {
+const DEFAULT_COMPARATIF_HEADER = {
+  kicker: 'Comparatif',
+  title: 'Vernis classique et rituel FemiGlow.',
+  description:
+    'Sans dénigrer, deux approches différentes. À chacune sa place dans une vie, à chacune ses contraintes. Lisez à voix haute : chaque ligne se tient.',
+};
+
+export function ComparatifSection({
+  data,
+  productMediaSlots,
+  header = DEFAULT_COMPARATIF_HEADER,
+  axisLabel,
+}: ComparatifSectionProps) {
   return (
     <section
       aria-labelledby="comparatif-title"
@@ -23,14 +42,12 @@ export function ComparatifSection({ data, productMediaSlots }: ComparatifSection
     >
       <Container width="wide">
         <div className="mb-10 max-w-2xl space-y-4">
-          <Kicker>Comparatif</Kicker>
+          <Kicker>{header.kicker}</Kicker>
           <Heading id="comparatif-title" as="h2" size="display-sm">
-            Vernis classique et rituel FemiGlow.
+            {header.title}
           </Heading>
           <Text size="body" tone="secondary" prose>
-            Sans dénigrer, deux approches différentes. À chacune sa place dans
-            une vie, à chacune ses contraintes. Lisez à voix haute&#x202f;:
-            chaque ligne se tient.
+            {header.description}
           </Text>
         </div>
         {productMediaSlots && productMediaSlots.length > 0 && (
@@ -46,7 +63,7 @@ export function ComparatifSection({ data, productMediaSlots }: ComparatifSection
             ))}
           </ul>
         )}
-        <ComparatifTable data={data} />
+        <ComparatifTable data={data} axisLabel={axisLabel} />
       </Container>
     </section>
   );

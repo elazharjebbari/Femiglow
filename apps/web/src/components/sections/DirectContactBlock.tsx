@@ -6,7 +6,8 @@
  *  - `getDirectContactStringsForLocale(locale)` — helper exporté.
  *
  * Clés `marketing.contact.direct.{kicker_write,kicker_atelier,response_time,
- * appointment_only}` — déjà présentes FR / AR / EN.
+ * appointment_only,street_address,district}` — présentes FR / AR / EN.
+ * L'adresse atelier est localisée (translittération arabe alignée au footer).
  *
  * @see docs/i18n-strategy-2026-05/PHASE-7-AUDIT.md §A2
  */
@@ -22,12 +23,21 @@ export interface DirectContactStrings {
   kickerAtelier: string;
   responseTime: string;
   appointmentOnly: string;
+  /** Adresse atelier localisée (rue). Garde les chiffres en latin. */
+  streetAddress: string;
+  /** Ville/quartier localisé. */
+  district: string;
 }
 
 interface DirectContactBlockProps {
   email: string;
-  streetAddress: string;
-  district: string;
+  /**
+   * Adresse rue affichée. Optionnelle : si absente, on prend
+   * `strings.streetAddress` (localisé). Conservée pour compat appelants legacy.
+   */
+  streetAddress?: string;
+  /** Ville/quartier affiché. Si absent, `strings.district` (localisé). */
+  district?: string;
   strings?: DirectContactStrings;
 }
 
@@ -36,6 +46,8 @@ const LEGACY_FR: DirectContactStrings = {
   kickerAtelier: 'Atelier',
   responseTime: 'Réponse sous 24 heures ouvrées, depuis Rabat.',
   appointmentOnly: 'Sur rendez-vous.',
+  streetAddress: '25 bis avenue Patrice Lumumba',
+  district: 'Rabat',
 };
 
 export async function getDirectContactStringsForLocale(
@@ -50,6 +62,8 @@ export async function getDirectContactStringsForLocale(
     kickerAtelier: t('kicker_atelier'),
     responseTime: t('response_time'),
     appointmentOnly: t('appointment_only'),
+    streetAddress: t('street_address'),
+    district: t('district'),
   };
 }
 
@@ -59,6 +73,8 @@ export function DirectContactBlock({
   district,
   strings = LEGACY_FR,
 }: DirectContactBlockProps) {
+  const resolvedStreetAddress = streetAddress ?? strings.streetAddress;
+  const resolvedDistrict = district ?? strings.district;
   return (
     <section className="border-t border-encre/10 bg-creme py-16 sm:py-20">
       <Container width="content">
@@ -80,9 +96,9 @@ export function DirectContactBlock({
           <div className="space-y-3 border-t border-sauge pt-6 md:border-t-0 md:border-s md:ps-12 md:pt-0">
             <Kicker>{strings.kickerAtelier}</Kicker>
             <Text size="body" tone="default">
-              {streetAddress}
+              {resolvedStreetAddress}
               <br />
-              {district}
+              {resolvedDistrict}
             </Text>
             <Text size="caption" tone="tertiary">
               {strings.appointmentOnly}

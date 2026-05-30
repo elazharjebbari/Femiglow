@@ -2,16 +2,18 @@ import type { KitComparatif } from '@/lib/schemas';
 
 interface ComparatifTableProps {
   data: KitComparatif;
+  /** Phase 9bis — en-tête de colonne « Axe » localisé. Défaut FR. */
+  axisLabel?: string;
 }
 
-export function ComparatifTable({ data }: ComparatifTableProps) {
+export function ComparatifTable({ data, axisLabel = 'Axe' }: ComparatifTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead className="bg-encre text-creme text-start">
           <tr>
             <th scope="col" className="p-4 font-medium uppercase tracking-[0.12em] text-[11px]">
-              Axe
+              {axisLabel}
             </th>
             <th scope="col" className="p-4 font-display text-base normal-case tracking-normal">
               {data.titreVernis}

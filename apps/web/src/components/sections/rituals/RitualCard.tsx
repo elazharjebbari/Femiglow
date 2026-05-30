@@ -5,12 +5,42 @@ import type { RitualTestimonialPublic } from '@/lib/schemas/rituals';
 
 type Variant = 'compact' | 'default';
 
+/**
+ * Phase 7 wiring — libellés STRUCTURELS localisés de la carte (PAS le
+ * témoignage : `data.body`/auteur restent seed data, hors scope). Défaut FR
+ * si absent — préserve les usages legacy `(marketing)/kit` et les tests.
+ */
+export interface RitualCardStrings {
+  /** Libellé d'autrice anonyme (« Une initiée »). */
+  anonymous: string;
+  /** Gabarit « Initiée depuis {date} » (placeholder ICU `{date}`). */
+  initiatedSince: string;
+  /** Badge « Reviendrait ». */
+  recommendBadge: string;
+  /** Map slug du catalogue → libellé localisé du tag (chips d'attitude). */
+  tagLabels: Record<string, string>;
+}
+
+export const DEFAULT_RITUAL_CARD_STRINGS: RitualCardStrings = {
+  anonymous: 'Une initiée',
+  initiatedSince: 'Initiée depuis {date}',
+  recommendBadge: 'Reviendrait',
+  tagLabels: {},
+};
+
 interface RitualCardProps {
   data: RitualTestimonialPublic;
   variant?: Variant;
   className?: string;
   onPhotoClick?: (photoIndex: number) => void;
   highlighted?: boolean;
+  /** Phase 7 wiring — libellés localisés (défaut FR). */
+  strings?: RitualCardStrings;
+}
+
+/** Humanise un slug de tag : fallback quand absent de `tagLabels`. */
+function humanizeTag(slug: string): string {
+  return slug.replace(/-/g, ' ');
 }
 
 const MONTHS_FR = [
@@ -52,10 +82,11 @@ export function RitualCard({
   className,
   onPhotoClick,
   highlighted,
+  strings = DEFAULT_RITUAL_CARD_STRINGS,
 }: RitualCardProps) {
   const initiatedSince = formatInitiatedSince(data.signature.initiatedSince);
   const firstName = data.signature.isAnonymous || !data.signature.firstName
-    ? 'Une initiée'
+    ? strings.anonymous
     : data.signature.firstName;
   const city = data.signature.city;
   const photo = data.photos[0];
@@ -166,11 +197,15 @@ export function RitualCard({
           {city ? `, ${city}` : ''}
         </p>
         {initiatedSince && (
-          <p className="text-xs">Initiée depuis {initiatedSince}</p>
+          <p className="text-xs">
+            {strings.initiatedSince.replace('{date}', initiatedSince)}
+          </p>
         )}
         {data.ritualTags.length > 0 && (
           <p className="mt-1 text-xs text-sauge-dark">
-            {data.ritualTags.map((tag) => tag.replace(/-/g, ' ')).join(' · ')}
+            {data.ritualTags
+              .map((tag) => strings.tagLabels[tag] ?? humanizeTag(tag))
+              .join(' · ')}
           </p>
         )}
         {showBadge && (
@@ -178,7 +213,7 @@ export function RitualCard({
             data-testid="ritual-card-badge-recommend"
             className="mt-2 inline-flex w-fit border-t border-sauge-soft pt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-sauge-dark font-inter"
           >
-            Reviendrait
+            {strings.recommendBadge}
           </span>
         )}
       </footer>

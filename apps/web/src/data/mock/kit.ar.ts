@@ -11,15 +11,20 @@
  * sont redéfinis explicitement pour que TS valide le shape exact.
  *
  * Voix : MSA simplifié, adresse féminine systématique (impératifs
- * féminins). Termes de marque préservés en latin : `Paste`, `Powder`,
- * `Step 4`, `Polish & Shine`, `FemiGlow`, `MAD`, `INCI`, `Cosmos Organic`,
- * `Ecocert`, `Vegan`, `EVE Vegan`, `DHL`. Devise affichée en MAD (et non
- * « درهم ») pour cohérence du composant <PriceDisplay>.
+ * féminins). Termes de marque préservés en latin : `عجينة`, `بودرة`,
+ * Phase 9 : termes de marque TRADUITS en arabe (عجينة, بودرة, الخطوة 4,
+ * تلميع وإشراق). Seuls restent en latin : `FemiGlow`, les noms INCI et les
+ * labels de certification entre parenthèses (Cosmos Organic, EVE Vegan,
+ * Ecocert), tolérés par l'audit strict. Devise affichée en درهم sur /ar.
  *
  * @see docs/i18n-content-2026-05/03-seed-data/component-bindings-ar.csv
  */
 import type { KitPageContent } from '@/lib/schemas';
 
+import {
+  KIT_VIDEO_COVER_ARIA_LABEL_AR,
+  KIT_VIDEO_COVER_SVG_AR,
+} from './kit-video-cover';
 import { mockKitPageContent } from './kit';
 import { mockRituelAr } from './rituel.ar';
 
@@ -31,36 +36,36 @@ export const mockKitPageContentAr: KitPageContent = {
     name: 'كيت FemiGlow',
     tagline: 'مانيكور ياباني. حركتان، مُلمِّع، إشراقة.',
     description:
-      'يجمع كيت FemiGlow علبتين — Paste مُملِّسة وPowder مُلمِّعة — ومُلمِّع Step 4 Polish & Shine. مانيكور ياباني، صيغ في الرباط من قِبَل فريقنا. دون طلاء. دون احتكاك. خمس دقائق كلّ يوم تكفي.',
+      'يجمع كيت FemiGlow علبتين — عجينة مُملِّسة وبودرة مُلمِّعة — ومُلمِّع الخطوة 4 تلميع وإشراق. مانيكور ياباني، صيغ في الرباط من قِبَل فريقنا. دون طلاء. دون احتكاك. خمس دقائق كلّ يوم تكفي.',
     images: [
       {
         src: '/products/kit-principale.png',
-        alt: 'كيت FemiGlow مفتوح على خلفية باستيلية — علبة Paste خضراء مريمية، علبة Powder وردية ناعمة، مُلمِّع Step 4 أزرق سماوي، موجة وردية ناعمة، حرف FemiGlow',
+        alt: 'كيت FemiGlow مفتوح على خلفية باستيلية — علبة عجينة خضراء مريمية، علبة بودرة وردية ناعمة، مُلمِّع الخطوة 4 أزرق سماوي، موجة وردية ناعمة، حرف FemiGlow',
         width: 1600,
         height: 2000,
       },
       {
         src: '/products/kit-detail-mains.png',
-        alt: 'أيادٍ بأظافر طبيعية، قصيرة إلى متوسّطة، لامعة بطبيعتها بعد طقوس Paste-Powder-Polish',
+        alt: 'أيادٍ بأظافر طبيعية، قصيرة إلى متوسّطة، لامعة بطبيعتها بعد طقوس عجينة-بودرة-تلميع',
         width: 1600,
         height: 1067,
       },
     ],
     composition: [
       {
-        name: '1 Paste',
+        name: '1 عجينة',
         origin: 'الأطلس المغربي · سوس-ماسة',
         description:
           'عجينة كريمية ناعمة. شمع نحل، زيت جوجوبا، توكوفيرول. تُغلِّف اللوحة دون أن تخنقها.',
       },
       {
-        name: '2 Powder',
+        name: '2 بودرة',
         origin: 'المغرب · آسيا بيولوجية',
         description:
           'بودرة بيضاء ناعمة. طلق تجميلي، بودرة أرزّ، سيليكا. تمتصّ الفائض، تُلمِّع السطح.',
       },
       {
-        name: 'مُلمِّع Step 4 Polish & Shine',
+        name: 'مُلمِّع الخطوة 4 تلميع وإشراق',
         origin: 'ورشة الرباط · كاولين مراكش',
         description:
           'مُلمِّع مستطيل أزرق سماوي. ثلاثة أوجه، ثلاث درجات. يكشف اللمعان الطبيعي.',
@@ -72,7 +77,7 @@ export const mockKitPageContentAr: KitPageContent = {
   composition: [
     {
       id: '1-paste',
-      name: '1 Paste',
+      name: '1 عجينة',
       sensation: 'دافئة عند اللمس.',
       accentColor: 'sauge',
       shortDescription:
@@ -83,7 +88,7 @@ export const mockKitPageContentAr: KitPageContent = {
         '12% شمع نحل مُذاب على حرارة منخفضة من قِبَل تعاونية النحل في الأطلس المتوسّط. ثلاث دقائق من التطبيق، اللمسة مطفأة.',
       image: {
         src: '/products/kit-base.svg',
-        alt: 'علبة مربّعة شفّافة بحواف مُضلَّعة، ملصق دائري أخضر مريمي «1 paste»، عجينة كريمية ناعمة',
+        alt: 'علبة مربّعة شفّافة بحواف مُضلَّعة، ملصق دائري أخضر مريمي «1 عجينة»، عجينة كريمية ناعمة',
         width: 1200,
         height: 1500,
       },
@@ -117,24 +122,24 @@ export const mockKitPageContentAr: KitPageContent = {
         },
       ],
       certifications: [
-        { label: 'Cosmos Organic', body: 'Ecocert' },
-        { label: 'Vegan', body: 'EVE Vegan' },
+        { label: 'شهادة عضوية', body: '(Cosmos Organic — Ecocert)' },
+        { label: 'نباتي', body: '(EVE Vegan)' },
       ],
     },
     {
       id: '2-powder',
-      name: '2 Powder',
+      name: '2 بودرة',
       sensation: 'تنزلق، دون أن تُغبِّر.',
       accentColor: 'petale',
       shortDescription:
-        'بودرة بيضاء ناعمة، تُوضع فوق Paste. تمتصّ الفائض، تُلمِّع السطح.',
+        'بودرة بيضاء ناعمة، تُوضع فوق عجينة. تمتصّ الفائض، تُلمِّع السطح.',
       volume: '8 غ',
       usageHint: 'قبضة تُلمِّع اليد كاملة',
       narrative:
-        'بودرة معدنية ناعمة، تُوضع مباشرة بعد Paste. الطلق يمتصّ الفائض، السيليكا تُلمِّع السطح. دون أبيض، دون رمادي.',
+        'بودرة معدنية ناعمة، تُوضع مباشرة بعد عجينة. الطلق يمتصّ الفائض، السيليكا تُلمِّع السطح. دون أبيض، دون رمادي.',
       image: {
         src: '/products/kit-fortifiant.svg',
-        alt: 'علبة مربّعة شفّافة بحواف مُضلَّعة، ملصق دائري وردي ناعم «2 powder»، بودرة بيضاء ناعمة',
+        alt: 'علبة مربّعة شفّافة بحواف مُضلَّعة، ملصق دائري وردي ناعم «2 بودرة»، بودرة بيضاء ناعمة',
         width: 1200,
         height: 1500,
       },
@@ -155,7 +160,7 @@ export const mockKitPageContentAr: KitPageContent = {
           origin: 'آسيا بيولوجية',
           concentrationPct: 30,
           inciDefinition:
-            'نشا أرزّ مطحون ناعما. يمتصّ فائض Paste دون تجفيف.',
+            'نشا أرزّ مطحون ناعما. يمتصّ فائض عجينة دون تجفيف.',
         },
         {
           name: 'سيليكا',
@@ -167,11 +172,11 @@ export const mockKitPageContentAr: KitPageContent = {
             'الشكل التجميلي للسيليكات. تمنح الانزلاق وتكشف اللمعان عند التلميع.',
         },
       ],
-      certifications: [{ label: 'Cosmos Organic', body: 'Ecocert' }],
+      certifications: [{ label: 'شهادة عضوية', body: '(Cosmos Organic — Ecocert)' }],
     },
     {
       id: 'polissoir-step-4',
-      name: 'مُلمِّع Step 4 — Polish & Shine',
+      name: 'مُلمِّع الخطوة 4 — تلميع وإشراق',
       shortDescription:
         'مُلمِّع مستطيل أزرق سماوي. ثلاثة أوجه، ثلاث درجات. يكشف اللمعان الطبيعي.',
       volume: '90 ملم',
@@ -182,7 +187,7 @@ export const mockKitPageContentAr: KitPageContent = {
         'مُلمِّع بثلاثة أوجه، من الأخشن إلى الأنعم. الوجه الأخير يكشف اللمعان، دون مذيب ولا طلاء. يُغسل بماء فاتر.',
       image: {
         src: '/products/kit-lime.svg',
-        alt: 'مُلمِّع مستطيل أزرق سماوي ورمادي فاتح، يحمل علامة «Step 4 Polish & Shine»، ثلاثة أوجه تلميع',
+        alt: 'مُلمِّع مستطيل أزرق سماوي ورمادي فاتح، يحمل علامة «الخطوة 4 تلميع وإشراق»، ثلاثة أوجه تلميع',
         width: 1200,
         height: 1500,
       },
@@ -204,7 +209,7 @@ export const mockKitPageContentAr: KitPageContent = {
             'طين أبيض ناعم مُستخرَج محلّيا. يُلمِّع دون أن يخدش، يكشف اللمعان الطبيعي للظفر.',
         },
         {
-          name: 'حبر تجميلي Step 4 Polish & Shine',
+          name: 'حبر تجميلي الخطوة 4 تلميع وإشراق',
           inci: 'Cosmetic Ink',
           function: 'علامة دون مذيب',
           origin: 'أوروبا',
@@ -220,7 +225,12 @@ export const mockKitPageContentAr: KitPageContent = {
     ...mockKitPageContent.videoSrc,
     ...mockRituelAr.videoGestes,
     youtubeUrl: mockKitPageContent.videoSrc.youtubeUrl,
-    posterCoverSvg: mockKitPageContent.videoSrc.posterCoverSvg,
+    // Cover SVG localisé AR : `<title>` + aria-label en arabe (FemiGlow latin).
+    posterCoverSvg: {
+      source: 'inline' as const,
+      inline: KIT_VIDEO_COVER_SVG_AR,
+      meta: { ariaLabel: KIT_VIDEO_COVER_ARIA_LABEL_AR },
+    },
   },
 
   comparatif: {
@@ -241,19 +251,19 @@ export const mockKitPageContentAr: KitPageContent = {
       {
         axis: 'التعافي',
         vernis: 'ظفر مُجفَّف تحت الطبقة، أحيانا مُضعَّف.',
-        rituel: 'لوحة مرطّبة، جلد ميّت ليّن، تلميع بالكاولين Step 4.',
+        rituel: 'لوحة مرطّبة، جلد ميّت ليّن، تلميع بالكاولين الخطوة 4.',
       },
       {
         axis: 'التكلفة السنوية',
-        vernis: 'طلاء + مزيل + كور إصلاحية، حوالي 1 500 MAD.',
+        vernis: 'طلاء + مزيل + كور إصلاحية، حوالي 1 500 درهم.',
         rituel:
-          'كيت FemiGlow بـ199 MAD يصمد أربعة إلى خمسة أشهر. أي حوالي 500 MAD في السنة.',
+          'كيت FemiGlow بـ199 درهم يصمد أربعة إلى خمسة أشهر. أي حوالي 500 درهم في السنة.',
       },
       {
         axis: 'أثر المادّة',
         vernis: 'مذيبات متطايرة، صيغ بأساس بتروكيميائي شائعة.',
         rituel:
-          'شمع نحل، جوجوبا، طلق معدني، أرزّ، كاولين. شهادة Cosmos Organic.',
+          'شمع نحل، جوجوبا، طلق معدني، أرزّ، كاولين. شهادة عضوية (Cosmos Organic).',
       },
       {
         axis: 'الوقت اليومي',
@@ -268,7 +278,7 @@ export const mockKitPageContentAr: KitPageContent = {
       id: 'duree-pack',
       question: 'كم من الوقت يدوم الكيت؟',
       answer:
-        'في الاستعمال اليومي، يصمد الكيت أربعة إلى خمسة أشهر. تفرغ Paste أوّلا، تليها Powder. المُلمِّع يدوم حوالي سنة. نُقدِّم تعبئات إضافية ابتداء من خريف 2026.',
+        'في الاستعمال اليومي، يصمد الكيت أربعة إلى خمسة أشهر. تفرغ عجينة أوّلا، تليها بودرة. المُلمِّع يدوم حوالي سنة. نُقدِّم تعبئات إضافية ابتداء من خريف 2026.',
     },
     {
       id: 'frequence',
@@ -280,11 +290,11 @@ export const mockKitPageContentAr: KitPageContent = {
       id: 'compatibilite-vernis',
       question: 'هل أستطيع الاستمرار في وضع الطلاء؟',
       answer:
-        'تتكيّف الطقوس مع الطلاء وإن صُمِّمت للاستغناء عنه. ضعي Paste وPowder في الأمسيات دون طلاء. اللوحة تتنفّس، الطقوس تُرسي بطئها.',
+        'يتكيّف الكيت مع الطلاء وإن صُمِّم للاستغناء عنه. ضعي عجينة وبودرة في الأمسيات دون طلاء. اللوحة تتنفّس، والكيت يُرسي بطأه.',
     },
     {
       id: 'grossesse',
-      question: 'هل تناسب الطقوس فترة الحمل؟',
+      question: 'هل يناسب الكيت فترة الحمل؟',
       answer:
         'كلّ الصيغ دون مذيبات متطايرة، دون فثالات، دون تولوين. ننصح بالحوار مع طبيبتك: العناية تُبنى بالثقة.',
     },
@@ -292,7 +302,7 @@ export const mockKitPageContentAr: KitPageContent = {
       id: 'expedition',
       question: 'ما هي مدد التوصيل؟',
       answer:
-        'الرباط: 24 ساعة. باقي المغرب: 48 إلى 72 ساعة. توصيل مجّاني. الخارج: ندرس كلّ وجهة، الإرسال عبر DHL مع تتبّع.',
+        'الرباط: 24 ساعة. باقي المغرب: 48 إلى 72 ساعة. توصيل مجّاني. الخارج: ندرس كلّ وجهة، الإرسال عبر دي إتش إل مع تتبّع.',
     },
     {
       id: 'retours',
@@ -308,7 +318,7 @@ export const mockKitPageContentAr: KitPageContent = {
     },
     {
       id: 'adolescentes',
-      question: 'هل تناسب الطقوس المراهقات؟',
+      question: 'هل يناسب الكيت المراهقات؟',
       answer:
         'نعم، ابتداء من سنّ الرابعة عشرة. الصيغ لطيفة، الحركات بسيطة. غالبا ما يكون لقاءً أوّل مع العناية البطيئة.',
     },

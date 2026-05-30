@@ -43,10 +43,8 @@ import {
   useWizardStore,
 } from '@/lib/checkout/state/wizard-store';
 import { useLeadCaptureMutation } from '@/lib/checkout/state/use-wizard-mutations';
-import {
-  DEFAULT_WIZARD_COPY,
-  DEFAULT_WIZARD_FEATURES,
-} from '@/lib/checkout/copy/wizard-copy';
+import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
+import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import type { WizardContext } from '@/lib/tracking/checkout-events';
 import { useCheckoutIntentTrigger } from '@/lib/tracking/use-checkout-intent';
 import { useFormTracking } from '@/lib/tracking/use-form-tracking';
@@ -101,6 +99,7 @@ interface LeadCaptureStepProps {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
+  const { t } = useWizardTranslation();
   const firstNameId = useId();
   const phoneId = useId();
   const consentId = useId();
@@ -206,15 +205,15 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
       if (code === 'invalid_input') {
         setError('phone', {
           type: 'server',
-          message: 'Un champ n\u2019a pas été accepté. Vérifiez vos informations.',
+          message: t.leadStep.errorInvalidField,
         });
       }
       // Sinon : déjà affiché via mutation.error bandeau plus bas.
     }
   });
 
-  const ctaLabel = cta ?? 'Continuer';
-  const heading = title ?? 'Vos coordonnées';
+  const ctaLabel = cta ?? t.leadStep.ctaDefault;
+  const heading = title ?? t.leadStep.heading;
   const submitting = mutation.status === 'loading';
 
   // Erreur réseau ou serveur non-mappée.
@@ -223,11 +222,11 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
     const e = mutation.error;
     if (e.code === 'invalid_input') return null; // déjà mappé sur les champs
     if (e.code === 'rate_limited')
-      return 'Trop d\u2019envois. Réessayez dans quelques instants.';
+      return t.leadStep.errorRateLimited;
     if (e.httpStatus === 0)
-      return 'Connexion réseau impossible. Vérifiez votre réseau, puis réessayez.';
-    return e.message || 'Un instant — la commande n\u2019a pas pu démarrer. Réessayez.';
-  }, [mutation.error]);
+      return t.leadStep.errorNetwork;
+    return e.message || t.leadStep.errorGeneric;
+  }, [mutation.error, t.leadStep]);
 
   // Kolenda §5 W4 — Trust #5 (memory & personalization).
   // ResumeBanner si la cliente a déjà commencé puis a refresh : leadDraft
@@ -269,7 +268,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
       {shouldShowResumeBanner && (
         <ResumeBanner
           firstName={leadDraftFirstName}
-          template={DEFAULT_WIZARD_COPY.resumeBannerTemplate}
+          template={t.resumeBanner.template}
         />
       )}
 
@@ -289,7 +288,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
           )}
         </Heading>
         <Text size="small" tone="secondary">
-          Deux informations seulement — nous vous rappelons pour confirmer.
+          {t.leadStep.subtitle}
         </Text>
       </header>
 
@@ -299,7 +298,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
           aria-hidden="true"
           className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
         >
-          <label htmlFor={honeypotId}>Site web (ne pas remplir)</label>
+          <label htmlFor={honeypotId}>{t.leadStep.honeypotLabel}</label>
           <input
             id={honeypotId}
             type="text"
@@ -318,12 +317,12 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                 <div className="relative">
                   <TextField
                     id={firstNameId}
-                    label="Votre prénom"
+                    label={t.leadStep.firstNameLabel}
                     autoComplete="given-name"
                     inputMode="text"
                     required
                     error={errors.firstName?.message}
-                    placeholder="Yasmine"
+                    placeholder={t.leadStep.firstNamePlaceholder}
                     {...firstNameProps}
                     onFocus={handleFieldFocus('firstName')}
                     onChange={(e) => {
@@ -341,10 +340,10 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                   {DEFAULT_WIZARD_FEATURES.phoneMask ? (
                     <PhoneMaskInput
                       id={phoneId}
-                      label="Téléphone"
+                      label={t.leadStep.phoneLabel}
                       required
-                      placeholder="06 12 34 56 78"
-                      hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
+                      placeholder={t.leadStep.phonePlaceholder}
+                      hint={t.leadStep.phoneHint}
                       error={errors.phone?.message}
                       {...phoneProps}
                       onFocus={handleFieldFocus('phone')}
@@ -356,13 +355,13 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                   ) : (
                     <TextField
                       id={phoneId}
-                      label="Téléphone"
+                      label={t.leadStep.phoneLabel}
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
                       required
-                      placeholder="06 12 34 56 78"
-                      hint="Numéro mobile Maroc. Format +212 6 XX XX XX XX."
+                      placeholder={t.leadStep.phonePlaceholder}
+                      hint={t.leadStep.phoneHint}
                       error={errors.phone?.message}
                       {...phoneProps}
                       onFocus={handleFieldFocus('phone')}
@@ -396,16 +395,16 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
               {/* Kolenda §5 W1 (P10) — formulation opt-in désirable
                   (« Je veux ») au lieu d'opt-in passif (« J'accepte »).
                   Cialdini Commitment principle + Trust #6 (plain language). */}
-              Je veux être rappelée pour confirmer ma commande.
+              {t.leadStep.consentLabel}
               <span className="mt-1 block text-xs text-encre/55">
-                Pas de revente, pas de spam —{' '}
+                {t.leadStep.consentFootnotePrefix}{' '}
                 <Link
                   href="/mentions-legales"
                   target="_blank"
                   rel="noreferrer"
                   className="underline decoration-encre/40 underline-offset-4 hover:decoration-encre"
                 >
-                  mentions légales
+                  {t.leadStep.consentFootnoteLink}
                 </Link>
                 .
               </span>

@@ -22,7 +22,7 @@ import { useEffect } from 'react';
 import { useChatStore } from '../chat-store';
 import type { ChatSessionSnapshot } from '@/lib/chat/contracts';
 
-export function useChatSession(initialPage?: string): void {
+export function useChatSession(initialPage?: string, lang?: string): void {
   const sessionId = useChatStore((s) => s.sessionId);
   const hasMessages = useChatStore((s) => s.messages.length > 0);
   const hasSuggestions = useChatStore((s) => s.suggestions.length > 0);
@@ -38,6 +38,9 @@ export function useChatSession(initialPage?: string): void {
     let cancelled = false;
     const params = new URLSearchParams();
     if (initialPage) params.set('page', initialPage);
+    // Phase 9bis — propage la locale de la page pour que la session soit
+    // créée/alignée dans la bonne langue (pills + greeting + réponses AR).
+    if (lang) params.set('lang', lang);
     fetch(`/api/chat/session${params.toString() ? `?${params.toString()}` : ''}`, {
       credentials: 'include',
     })
@@ -72,6 +75,7 @@ export function useChatSession(initialPage?: string): void {
     hasSuggestions,
     isStreaming,
     initialPage,
+    lang,
     setSession,
     setError,
   ]);

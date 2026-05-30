@@ -51,6 +51,11 @@ export interface CompositionCardProps {
    * passer directement ici (le composant ne fait pas la résolution).
    */
   contextualSlot?: ReactNode;
+  /**
+   * Phase 7E — libellé localisé du lien éditorial vers la fiche INCI.
+   * Défaut FR « Lire le détail » — préserve les usages legacy et les tests.
+   */
+  ctaLabel?: string;
 }
 
 export function CompositionCard({
@@ -59,6 +64,7 @@ export function CompositionCard({
   detailsHref,
   mediaSlot,
   contextualSlot,
+  ctaLabel = 'Lire le détail',
 }: CompositionCardProps): JSX.Element {
   const sensation = formatSensation(subProduct);
   const number = formatIndex(index);
@@ -126,7 +132,7 @@ export function CompositionCard({
             className="inline-flex items-center gap-1 pt-1 text-xs uppercase tracking-[0.18em] text-encre underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876]/40"
             data-testid={`composition-card-link-${subProduct.id}`}
           >
-            Lire le détail <span aria-hidden="true">↓</span>
+            {ctaLabel} <span aria-hidden="true">↓</span>
           </a>
         ) : null}
       </div>

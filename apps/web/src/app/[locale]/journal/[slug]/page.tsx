@@ -18,7 +18,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ArticleHeroBound } from '@/components/sections/ArticleHeroBound';
 import { ArticleProse } from '@/components/sections/ArticleProse';
 import { AuthorCard } from '@/components/sections/AuthorCard';
-import { NewsletterBlock } from '@/components/sections/NewsletterBlock';
+import {
+  NewsletterBlock,
+  getNewsletterBlockStringsForLocale,
+} from '@/components/sections/NewsletterBlock';
 import { ReadingProgress } from '@/components/sections/ReadingProgress';
 import { RelatedArticlesBound } from '@/components/sections/RelatedArticlesBound';
 import { ShareButtons } from '@/components/sections/ShareButtons';
@@ -130,9 +133,11 @@ export default async function ArticlePage({ params }: PageProps) {
   const article = await cms.getArticleBySlug(params.slug, { locale });
   if (!article) notFound();
 
-  const [{ html, headings }, sameCategory] = await Promise.all([
+  const [{ html, headings }, sameCategory, newsletterStrings] = await Promise.all([
     renderMarkdown(article.body),
     cms.getArticles({ category: article.category, limit: 4, locale }),
+    // Phase 7E — strings du bloc newsletter localisés.
+    getNewsletterBlockStringsForLocale(locale),
   ]);
 
   const related = sameCategory
@@ -159,7 +164,7 @@ export default async function ArticlePage({ params }: PageProps) {
         ])}
       />
 
-      <ArticleHeroBound article={article} />
+      <ArticleHeroBound article={article} locale={locale} />
 
       <Container width="content" className="py-12 sm:py-16">
         <div className="grid gap-12 xl:grid-cols-[1fr_220px] xl:gap-16">
@@ -176,9 +181,9 @@ export default async function ArticlePage({ params }: PageProps) {
         </div>
       </Container>
 
-      <NewsletterBlock source={`article-${article.slug}`} />
+      <NewsletterBlock source={`article-${article.slug}`} {...newsletterStrings} />
 
-      <RelatedArticlesBound articles={related} />
+      <RelatedArticlesBound articles={related} locale={locale} />
     </>
   );
 }

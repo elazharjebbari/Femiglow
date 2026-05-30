@@ -56,6 +56,14 @@ export interface KitCommanderSectionProps {
    * `/products/kit-principale.png`.
    */
   packImage?: { src: string; alt: string };
+  /**
+   * Phase 8 (7E-13) — langue du wizard checkout embarqué. Injectée dans le
+   * `formContext` → `useWizardTranslation` sélectionne le dictionnaire
+   * (`fr`/`ar`). En `ar`, on n'applique PAS l'override `copy` FR : le wizard
+   * utilise le dictionnaire AR complet. Le système checkout ne gère que
+   * `fr`/`ar` ; `en` retombe sur `fr` (en attendant `en.ts`).
+   */
+  wizardLanguage?: 'fr' | 'ar';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,7 +92,13 @@ export function KitCommanderSection({
   subtitle = 'Quelques coordonnées, une adresse au Maroc, et nous nous occupons du reste. Livraison gratuite en 24-48&nbsp;heures.',
   preface,
   packImage,
+  wizardLanguage,
 }: KitCommanderSectionProps) {
+  // Phase 8 (7E-13) — injecte la langue dans le formContext du wizard. En AR,
+  // le dictionnaire AR (`useWizardTranslation`) pilote tous les libellés.
+  const formContext: WizardFormContext = wizardLanguage
+    ? { ...KIT_FORM_CONTEXT, language: wizardLanguage }
+    : KIT_FORM_CONTEXT;
   return (
     <section
       id="commander-femiglow"
@@ -134,18 +148,24 @@ export function KitCommanderSection({
 
         <div className="mx-auto max-w-2xl rounded border border-encre/10 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
           <WizardShell
-            formContext={KIT_FORM_CONTEXT}
+            formContext={formContext}
             steps={[...KIT_STEPS]}
             initialCart={initialCart}
             cartRecapThumbnailSrc={packImage?.src}
-            copy={{
-              title: 'Commander le rituel FemiGlow',
-              // Kolenda §5 W1 (P2) — CTA outcome qui désamorce la peur
-              // du paiement upfront (Trust #1 loss aversion).
-              ctaLead: 'Continuer · paiement à la livraison',
-              ctaAddress: 'Confirmer la commande',
-              thankYouTitle: 'Commande reçue, on vous rappelle.',
-            }}
+            // FR : override marketing custom. AR : pas d'override → le
+            // dictionnaire AR complet (`dictionaryAr`) fournit tous les libellés.
+            copy={
+              wizardLanguage === 'ar'
+                ? undefined
+                : {
+                    title: 'Commander le rituel FemiGlow',
+                    // Kolenda §5 W1 (P2) — CTA outcome qui désamorce la peur
+                    // du paiement upfront (Trust #1 loss aversion).
+                    ctaLead: 'Continuer · paiement à la livraison',
+                    ctaAddress: 'Confirmer la commande',
+                    thankYouTitle: 'Commande reçue, on vous rappelle.',
+                  }
+            }
             paymentMethods={['cod']}
           />
         </div>

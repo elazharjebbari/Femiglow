@@ -36,8 +36,15 @@ describe('SEED_RITUALS — distribution éditoriale', () => {
     }
   });
 
-  it('exactement 3 featured (cap maison)', () => {
-    expect(getSeedStats().featured).toBe(3);
+  it('3 featured par locale (cap maison FR/AR/EN — Phase 7E-11)', () => {
+    // Le module « voix de la maison » affiche 3 cartes featured et filtre par
+    // langue (repli FR). Chaque locale doit donc avoir exactement 3 featured.
+    const featuredByLang = (lang: 'fr' | 'ar' | 'en') =>
+      SEED_RITUALS.filter((r) => r.featured && (r.language ?? 'fr') === lang).length;
+    expect(featuredByLang('fr')).toBe(3);
+    expect(featuredByLang('ar')).toBe(3);
+    expect(featuredByLang('en')).toBe(3);
+    expect(getSeedStats().featured).toBe(9);
   });
 
   it('PENDING > 0 pour alimenter la queue admin', () => {

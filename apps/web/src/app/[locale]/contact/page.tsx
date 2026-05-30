@@ -25,7 +25,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { ContactForm } from '@/components/forms/ContactForm';
+import {
+  ContactForm,
+  type ContactFormStrings,
+} from '@/components/forms/ContactForm';
 import {
   ContactCrossLinks,
   ContactHero,
@@ -49,6 +52,13 @@ import { contactTypeSchema, type ContactType } from '@/lib/schemas';
 const CONTACT_EMAIL = 'info@femiglow-maroc.com';
 const CONTACT_PHONE = '+212 630-035905';
 const SITE_URL = 'https://femiglow-maroc.com';
+
+/**
+ * Token sentinel pour isoler le préfixe de `form.error.body` (qui contient
+ * un `{email}` ICU). On interpole ce token puis on split dessus : ErrorState
+ * rend lui-même le lien email + le point final.
+ */
+const EMAIL_TOKEN = '@@EMAIL@@';
 
 const FAQ_IDS = ['duree', 'fragiles', 'livraison', 'formation', 'echantillon'] as const;
 
@@ -132,6 +142,36 @@ export default async function ContactPage({
   const t = await getTranslations({ locale, namespace: 'marketing.contact' });
   const defaultType = resolveDefaultType(searchParams?.type);
 
+  // Phase 7 wiring — libellés localisés du formulaire (composant client).
+  const contactFormStrings: ContactFormStrings = {
+    fieldName: t('form.field.name'),
+    fieldEmail: t('form.field.email'),
+    fieldPhone: t('form.field.phone'),
+    fieldCompany: t('form.field.company'),
+    fieldRole: t('form.field.role'),
+    fieldOrderNumber: t('form.field.order_number'),
+    fieldOrderNumberHint: t('form.field.order_number_hint'),
+    fieldMessage: t('form.field.message'),
+    fieldMessageHint: t('form.field.message_hint'),
+    honeypotLabel: t('form.honeypot_label'),
+    typeLegend: t('form.type.legend'),
+    typeQuestion: t('form.type.question'),
+    typeOrder: t('form.type.order'),
+    typeProfessional: t('form.type.professional'),
+    gdprConsentText: t('form.gdpr_consent_text'),
+    gdprConsentLink: t('form.gdpr_consent_link'),
+    newsletterConsent: t('form.newsletter_consent'),
+    submit: t('form.submit'),
+    successTitle: t('form.success.title'),
+    successBody: t('form.success.body'),
+    // `error.body` catalogue = « … à {email}. » ; le composant ErrorState
+    // rend lui-même le lien email + le point final. On ne conserve donc que
+    // le préfixe situé avant le `{email}` (split sur un sentinel).
+    errorBody: t('form.error.body', { email: EMAIL_TOKEN })
+      .split(EMAIL_TOKEN)[0]!
+      .trimEnd(),
+  };
+
   // Phase 7C — Pré-résolution des strings localisés. Les composants
   // section restent sync (compat tests vitest) ; on leur passe un objet
   // plain qui inclut les bonnes traductions FR/AR/EN.
@@ -179,8 +219,6 @@ export default async function ContactPage({
       <ContactHero email={CONTACT_EMAIL} strings={contactHeroStrings} />
       <DirectContactBlock
         email={CONTACT_EMAIL}
-        streetAddress="25 bis avenue Patrice Lumumba"
-        district="Rabat"
         strings={directContactStrings}
       />
       <section
@@ -196,7 +234,7 @@ export default async function ContactPage({
           >
             {t('form.section_title')}
           </Heading>
-          <ContactForm defaultType={defaultType} />
+          <ContactForm defaultType={defaultType} strings={contactFormStrings} />
         </Container>
       </section>
       <FAQAccordion items={faqs} header={faqHeader} />

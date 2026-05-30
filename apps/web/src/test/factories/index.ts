@@ -127,3 +127,24 @@ export const STATUSES_LIFECYCLE: LeadStatus[] = [
   'lost',
   'archived',
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 factories (test-strategy-2026-05) — pattern object avec traits
+// ─────────────────────────────────────────────────────────────────────────────
+// Re-exports des nouvelles factories utilisant le pattern defineFactory.
+// Coexistent avec les factories function-based historiques ci-dessus.
+// Référence : docs/test-strategy-2026-05/03-data-strategy.md
+
+export { defineFactory, createCounter, testId, type Factory } from './base';
+export { trackingEventFactory } from './tracking-event.factory';
+export { cartItemFactory, cartSnapshotFactory } from './cart-snapshot.factory';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat factories (chat-test-strategy-2026-05)
+// ─────────────────────────────────────────────────────────────────────────────
+export { chatSessionFactory, type ChatSessionLike } from './chat-session.factory';
+export { chatMessageFactory, type ChatMessageLike } from './chat-message.factory';
+export { chatLeadFactory, type ChatLeadLike } from './chat-lead.factory';
+export { chatInstructionFactory, type ChatInstructionLike } from './chat-instruction.factory';
+export { chatProviderFactory, type ChatProviderConfigLike, type ProviderKind } from './chat-provider.factory';
+export { maFirstName, maLastName, maFullName, maPhone, maPhoneInternational, maCity } from './helpers/ma-aligned';

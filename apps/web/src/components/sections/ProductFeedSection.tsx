@@ -41,12 +41,22 @@ interface ProductFeedSectionProps {
   product: Product;
   /** Slug d'ancre pour le test E2E (default `product-feed`). */
   anchorId?: string;
+  /** Phase 9bis — libellé localisé du badge « Résultat » (step `isResult`). */
+  resultLabel?: string;
+  /**
+   * Libellé localisé du compteur d'avis (ex. « 287 avis » / « 287 تقييم »).
+   * Défaut FR « {count} avis » si absent — préserve le rendu legacy. Les
+   * chiffres restent latins (cohérence de marque).
+   */
+  reviewsCountLabel?: string;
 }
 
 export function ProductFeedSection({
   feed,
   product,
   anchorId = 'product-feed',
+  resultLabel,
+  reviewsCountLabel,
 }: ProductFeedSectionProps) {
   return (
     <section
@@ -94,6 +104,7 @@ export function ProductFeedSection({
           steps={feed.steps}
           header={feed.stepsHeader}
           postCta={feed.stepsPostCta}
+          resultLabel={resultLabel}
         />
 
         {/* 3 — Promesses (3 claims) ------------------------------------- */}
@@ -120,7 +131,7 @@ export function ProductFeedSection({
             </span>
             <span className="text-encre/50">·</span>
             <span className="text-encre/70 tabular-nums">
-              {feed.socialProof.reviewsCount} avis
+              {reviewsCountLabel ?? `${feed.socialProof.reviewsCount} avis`}
             </span>
           </div>
           <blockquote className="mt-4">

@@ -24,11 +24,11 @@
 import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { KitPageLayoutV1 } from '@/components/marketing/kit-layout/KitPageLayoutV1';
 import { KitPageLayoutV2 } from '@/components/marketing/kit-layout/KitPageLayoutV2';
-import { isLocale, type Locale } from '@/i18n.config';
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n.config';
 import { cms } from '@/lib/cms';
 import { KIT_LAYOUT_VERSION } from '@/lib/feature-flags/kit-layout';
 import { buildKitProductFeed } from '@/lib/products/feed/kit-feed';
@@ -76,24 +76,52 @@ export async function generateMetadata({
   }
   const og = (await resolveOgImage('kit-og')) ?? FALLBACK_OG;
 
-  // Phase 5 SEO override (admin CMS) — cf. /kit legacy. Non-locale-aware
-  // pour l'instant ; Phase 3 étendra `resolvePageWithComponents` pour
-  // accepter params.locale et chercher l'override par locale.
+  // Phase 7E — fallback titre/description localisé (FR/AR/EN) quand aucun
+  // override SEO admin n'existe. Sans cela, `/ar/kit` et `/en/kit` héritaient
+  // du fallback FR hardcodé (`FALLBACK_TITLE`/`FALLBACK_DESCRIPTION`).
+  const tMeta = await getTranslations({
+    locale: params.locale,
+    namespace: 'marketing.kit.metadata',
+  });
+  const localizedFallbackTitle = tMeta('title_fallback');
+  const localizedFallbackDescription = tMeta('description_fallback');
+
+  // Phase 5 SEO override (admin CMS) — cf. /kit legacy. L'override admin garde
+  // la priorité ; on n'injecte que le fallback localisé (utilisé si aucun
+  // override publié). Non-locale-aware côté override pour l'instant ; Phase 3
+  // étendra `resolvePageWithComponents` pour chercher l'override par locale.
   const seo = await resolvePageWithComponents({
     pageScope: 'product',
     pageTargetKey: KIT_PRODUCT_SLUG,
     locale: KIT_LOCALE,
-    fallback: { title: FALLBACK_TITLE, description: FALLBACK_DESCRIPTION },
+    fallback: {
+      title: localizedFallbackTitle,
+      description: localizedFallbackDescription,
+    },
     components: [
       { componentKey: 'kit-hero', overridableFields: ['title', 'ogTitle'] },
     ],
   });
 
+  // `resolvePageWithComponents` n'est pas encore locale-aware côté override
+  // (il tourne sur `KIT_LOCALE` = fr) : en non-FR, `seo.title` renverrait donc
+  // le titre FR de l'override `kit-hero`. On force le fallback localisé pour
+  // /ar et /en, tout en préservant la cascade override admin pour /fr (défaut).
+  const isDefaultLocale = params.locale === DEFAULT_LOCALE;
+  const metaTitle = isDefaultLocale ? seo.title : localizedFallbackTitle;
+  const metaDescription = isDefaultLocale
+    ? seo.description
+    : localizedFallbackDescription;
+  const ogTitle = isDefaultLocale ? seo.og.title : localizedFallbackTitle;
+  const ogDescription = isDefaultLocale
+    ? seo.og.description
+    : localizedFallbackDescription;
+
   const canonicalPath = `/${params.locale}/kit`;
 
   return {
-    title: seo.title,
-    description: seo.description,
+    title: metaTitle,
+    description: metaDescription,
     alternates: {
       canonical: seo.canonical ?? canonicalPath,
       languages: {
@@ -112,8 +140,8 @@ export async function generateMetadata({
           : params.locale === 'en'
             ? 'en_US'
             : 'fr_MA',
-      title: seo.og.title,
-      description: seo.og.description,
+      title: ogTitle,
+      description: ogDescription,
       images: [
         { url: og.url, width: og.width, height: og.height, alt: og.alt },
       ],

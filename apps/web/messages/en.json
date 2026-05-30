@@ -13,6 +13,7 @@
   },
   "common": {
     "back": "Back to home",
+    "commander": "Order",
     "close": "Close",
     "cancel": "Cancel",
     "read": "Read",
@@ -27,7 +28,8 @@
     "facultative": "(optional)",
     "confirm_consent": "I agree that my message may be read by Maison FemiGlow in order to reply.",
     "sources": "Sources",
-    "dotted_sources": "Sources · {count}"
+    "dotted_sources": "Sources · {count}",
+    "skip_to_content": "Skip to content"
   },
   "navigation": {
     "home": "The maison",
@@ -38,7 +40,10 @@
     "contact": "Contact",
     "account": "My account",
     "cart": "Cart",
+    "cart_aria_empty": "Cart, empty",
+    "cart_aria_items": "Cart, {count, plural, one {# item} other {# items}}",
     "menu_summary": "Navigation summary",
+    "menu_close": "Close",
     "menu_label": "Summary",
     "menu_hint_arrow": "See the pack below",
     "locale_switcher_label": "Language",
@@ -67,7 +72,18 @@
       "tagline": "Moroccan maison of nail care. The ritual, in five minutes.",
       "address": "FemiGlow · 25 bis avenue Patrice Lumumba, Rabat",
       "copyright": "© {year} FemiGlow — Rabat. All rights reserved.",
-      "copyright_minimal": "© {year} FemiGlow — Rabat."
+      "copyright_minimal": "© {year} FemiGlow — Rabat.",
+      "legal_links": {
+        "mentions_legales": "Legal notice",
+        "cgv": "Terms and Conditions of Sale",
+        "cgu": "Terms of Use",
+        "confidentialite": "Privacy policy",
+        "cookies": "Cookie policy",
+        "retours_remboursements": "Returns & refunds",
+        "livraison": "Shipping policy",
+        "securite_produits": "Product safety",
+        "faq": "FAQ — Customer service"
+      }
     },
     "commerce_header": {
       "back_home": "Back to the maison"
@@ -138,10 +154,16 @@
         },
         "kicker_default": "Voices",
         "title_default": "Those who have tried.",
+        "initiee_prefix": "Member since {date}",
         "rating_score": "4.8",
         "rating_count": "287",
         "rating_label": "4.8/5 — 287 reviews",
         "rating_aria": "Average rating 4.8 out of 5, across 287 reviews."
+      },
+      "journal": {
+        "kicker": "The journal",
+        "title": "Seasonal letters.",
+        "cta": "Read the journal"
       }
     },
     "kit": {
@@ -242,9 +264,11 @@
           "kicker": "The composition",
           "title": "Three objects, three gestures.",
           "description": "The kit fits in one hand. Each piece has its place in the gesture, its place on the bedside table, its place in the season."
-        }
+        },
+        "card_cta": "Read the detail"
       },
       "comparatif": {
+        "axis_label": "Axis",
         "title_vernis": "Classic polish",
         "title_rituel": "FemiGlow pack",
         "row": {
@@ -359,28 +383,74 @@
           "kicker": "The detail",
           "title": "The composition read line by line.",
           "description": "Everything is said: common names, INCI, function, origin, concentration. No blind spots, no promise hidden behind a formula."
-        }
+        },
+        "columns": {
+          "ingredient": "Ingredient",
+          "inci": "INCI",
+          "function": "Function",
+          "origin": "Origin"
+        },
+        "post_cta": "See the kit"
       },
       "hands": {
         "kicker": "Three hands",
         "title": "Three hands, three seasons.",
-        "description": "Unretouched photographs, taken at our initiates' homes after several months of ritual. The plate regains its grain, with no miracle recipe."
+        "description": "Unretouched photographs, taken at our initiates' homes after several months of ritual. The plate regains its grain, with no miracle recipe.",
+        "labels": {
+          "before": "Before",
+          "after": "After",
+          "initiee_since": "Initiated since {date}"
+        }
       },
       "hero": {
         "kicker": "The ritual",
         "savings": "Save {savings} MAD",
-        "cta_commander": "Order the ritual"
+        "cta_commander": "Order the ritual",
+        "reviews": "{count, plural, one {# review} other {# reviews}}",
+        "reviews_aria": "Rated {rating} out of 5 based on {count, plural, one {# review} other {# reviews}}",
+        "chips": {
+          "no_polish": "No polish",
+          "no_uv": "No UV",
+          "no_acetone": "No acetone"
+        },
+        "trust": {
+          "delivery": "Free delivery",
+          "cod": "Cash on delivery"
+        }
       },
       "commander": {
         "kicker_default": "Order the ritual",
         "title_default": "Three gestures, delivered to your home.",
         "subtitle_default": "A few details, an address in Morocco, and we take care of the rest. Free delivery in 24-48 hours."
       },
+      "sticky": {
+        "aria_region": "Quick purchase"
+      },
       "pivot_final": {
         "kicker": "The gesture",
         "title": "Make the gesture.",
         "body": "The ritual begins when you decide. Five minutes in the evening, one season, and the nail plate returns to its cadence.",
         "cta_secondary": "Read more"
+      },
+      "journal_grid": {
+        "kicker": "Going further",
+        "title": "Three reads."
+      },
+      "video": {
+        "kicker": "The gestures",
+        "title": "Four gestures, in a single shot.",
+        "subtitle": "Ninety seconds, a slow rhythm, the gesture before the words.",
+        "transcript_show": "Read the transcript",
+        "transcript_hide": "Hide the transcript",
+        "post_cta": "See the pack below",
+        "poster": {
+          "kicker": "The Japanese manicure",
+          "title_line1": "Shines for 3 weeks.",
+          "title_line2": "No polish.",
+          "subtitle_line1": "Beeswax, silicates, pearl powder.",
+          "subtitle_line2": "4 gestures in 90 seconds — that's all.",
+          "play_aria_prefix": "Play the video:"
+        }
       },
       "product_feed": {
         "hero": {
@@ -400,6 +470,18 @@
           "notice_offert": "included",
           "livraison": "Shipping in Morocco"
         },
+        "value_breakdown": {
+          "paste": "1 Paste · 30 ml",
+          "powder": "2 Powder · 30 g",
+          "buffer": "4-zone buffer",
+          "notice": "Ritual guide + card",
+          "shipping": "Delivery in Morocco",
+          "free": "free",
+          "savings_phrase": "You save {amount} {currency} · {pct}%"
+        },
+        "per_usage": {
+          "phrase": "≈ {amount} {currency} per use over {days} days"
+        },
         "steps": {
           "header": {
             "kicker": "In total",
@@ -409,6 +491,7 @@
           "post_cta": {
             "label": "Start the ritual"
           },
+          "result_label": "Result",
           "preparation": {
             "kicker": "Preparation",
             "title": "Prepare your nails",
@@ -451,6 +534,7 @@
         },
         "social_proof": {
           "count_label_geo": "{count} maisons in France",
+          "reviews_count": "{count, plural, one {# review} other {# reviews}}",
           "fallback_quote": "Five minutes in the evening — it has become a signal that the day is ending.",
           "fallback_author": "Lina, Rabat"
         }
@@ -483,6 +567,30 @@
         "savings_label": "You save",
         "savings_value": "121 MAD",
         "note": "Indicative separate prices — the house does not sell pieces individually."
+      },
+      "rituals": {
+        "kicker": "THE VOICES OF THE MAISON",
+        "empty_title": "The maison listens.",
+        "empty_subtitle": "Be the first to share your ritual.",
+        "headline_singular": "One initiate shared her ritual. She would do it again.",
+        "headline_plural": "{total} initiates shared. {oui} would repeat the ritual.",
+        "read_link": "Read the {total} shared rituals",
+        "card_anonymous": "An initiate",
+        "card_initiated_since": "Initiate since {date}",
+        "card_recommend_badge": "Would return",
+        "wall_kicker": "SHARED RITUALS",
+        "wall_title": "The voices of the maison.",
+        "tag_labels": {
+          "ongles-plus-lisses": "smoother nails",
+          "plaque-souple": "suppler nail plate",
+          "cuticules-apaisees": "soothed cuticles",
+          "plus-de-casse": "less breakage",
+          "eclat-naturel": "natural glow",
+          "rituel-devenu-habitude": "ritual become habit",
+          "mains-detendues": "relaxed hands",
+          "fini-brillant": "glossy finish",
+          "halal": "halal"
+        }
       }
     },
     "maison": {
@@ -547,6 +655,10 @@
         "section": {
           "kicker": "The materials",
           "title": "Four materials, chosen one by one."
+        },
+        "labels": {
+          "origine": "Origin",
+          "pourquoi": "Why"
         }
       },
       "engagements": {
@@ -627,6 +739,20 @@
           "powder": "Powder",
           "step4": "Step 4",
           "polissage": "Buffing"
+        },
+        "kicker": "The gestures",
+        "title": "Four gestures, in a single take.",
+        "subtitle": "Ninety seconds, a slow rhythm, the gesture before the words.",
+        "transcript_show": "Read the transcript",
+        "transcript_hide": "Hide the transcript",
+        "post_cta": "See the pack below",
+        "poster": {
+          "kicker": "Japanese manicure",
+          "title_line1": "Shines for 3 weeks.",
+          "title_line2": "Without polish.",
+          "subtitle_line1": "Beeswax, silicates, pearl powder.",
+          "subtitle_line2": "4 gestures in 90 seconds — that’s all.",
+          "play_aria_prefix": "Play the video:"
         }
       },
       "sciences": {
@@ -650,7 +776,14 @@
         },
         "source_1": "Tanaka H. (2021). Beeswax-based barrier creams in cold-induced nail fragility. Journal of Cosmetic Dermatology 20(4).",
         "source_2": "Benyahia L. (2019). Kaolin clay polishing in non-invasive nail care. Annales de Dermatologie et de Vénéréologie 146(8).",
-        "source_3": "Halal Cosmetics Council (2023). Standards for halal cosmetic ingredient sourcing and certification — public framework."
+        "source_3": "Halal Cosmetics Council (2023). Standards for halal cosmetic ingredient sourcing and certification — public framework.",
+        "schema": {
+          "caption": "Simplified anatomical cross-section: the matrix produces keratin, the nail bed supports the plate, the plate protects the fingertip pulp.",
+          "aria": "Simplified anatomical cross-section of a nail: matrix, nail bed, keratinised plate",
+          "matrice": "Matrix",
+          "lit": "Nail bed",
+          "plaque": "Plate"
+        }
       },
       "interview": {
         "section": {
@@ -686,6 +819,10 @@
       "journal_cross": {
         "kicker": "To go further",
         "title": "Three readings from the maison."
+      },
+      "journal_grid": {
+        "kicker": "To go further",
+        "title": "Three reads from the maison."
       }
     },
     "contact": {
@@ -727,7 +864,9 @@
         },
         "error": {
           "body": "The message did not go through. Try again or write to us at {email}."
-        }
+        },
+        "gdpr_consent_text": "I agree that my message may be read by Maison FemiGlow in order to reply. See our",
+        "gdpr_consent_link": "legal notice"
       },
       "faq": {
         "kicker": "Frequently asked questions",
@@ -762,7 +901,9 @@
         "kicker_write": "Write",
         "kicker_atelier": "Atelier",
         "response_time": "Reply within 24 working hours, from Rabat.",
-        "appointment_only": "By appointment only."
+        "appointment_only": "By appointment only.",
+        "street_address": "25 bis avenue Patrice Lumumba",
+        "district": "Rabat"
       }
     },
     "journal": {
@@ -787,7 +928,9 @@
       "grid": {
         "kicker": "The journal",
         "title": "Seasonal letters.",
-        "cta": "Read the journal"
+        "cta": "Read the journal",
+        "load_more": "See more articles",
+        "all_read": "You have read everything."
       },
       "categories": {
         "all": "All",
@@ -842,7 +985,12 @@
         },
         "body": {
           "hiver": "When the dry air settles over Rabat in January…"
-        }
+        },
+        "reading_time": "{min} min read",
+        "read_article": "Read the article",
+        "featured_badge": "Featured",
+        "read_aria": "Read “{title}” — {category}",
+        "read_featured_aria": "Read the featured article: {title}"
       },
       "breadcrumb": {
         "home": "Home",
@@ -979,7 +1127,15 @@
         "description": "Three letters per season. No urgency."
       },
       "sticky_cta": {
-        "aria": "Quick purchase"
+        "aria": "Quick purchase",
+        "commander": "Order"
+      }
+    },
+    "common": {
+      "newsletter_block": {
+        "kicker": "Letter from the maison",
+        "title": "One letter per season.",
+        "description": "Four times a year, a short letter on the gestures, the materials and the light of the maison. No commercial mailing."
       }
     }
   },

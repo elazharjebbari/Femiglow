@@ -23,6 +23,7 @@ import { NumberBadge } from '@/components/kit/NumberBadge';
 import { NarrativeIntro } from './NarrativeIntro';
 import { PostCtaLink } from './PostCtaLink';
 import { ResponsiveIngredientList } from './ResponsiveIngredientList';
+import type { IngredientsTableLabels } from './IngredientsTable';
 import { resolveAccentHex } from '@/lib/composition/copy';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import type { SubProduct } from '@/lib/schemas';
@@ -32,6 +33,10 @@ export interface SubProductBlockProps {
   index: number;
   anchor: string;
   defaultOpen?: boolean;
+  /** Phase 9 i18n — libellés de colonnes ingrédients (table + INCI parens). */
+  ingredientLabels?: IngredientsTableLabels;
+  /** Phase 9 i18n — libellé du lien « Voir le pack » localisé. Défaut FR. */
+  postCtaLabel?: string;
 }
 
 /**
@@ -56,6 +61,8 @@ export function SubProductBlock({
   index,
   anchor,
   defaultOpen = false,
+  ingredientLabels,
+  postCtaLabel,
 }: SubProductBlockProps): JSX.Element {
   const isDesktop = useIsDesktop();
   const [open, setOpen] = useState(defaultOpen);
@@ -128,6 +135,7 @@ export function SubProductBlock({
             ingredients={subProduct.ingredients}
             subProductId={subProduct.id}
             accentColor={subProduct.accentColor}
+            {...(ingredientLabels ? { labels: ingredientLabels } : {})}
           />
 
           {subProduct.certifications.length > 0 ? (
@@ -147,7 +155,10 @@ export function SubProductBlock({
             </ul>
           ) : null}
 
-          <PostCtaLink subProductId={subProduct.id} />
+          <PostCtaLink
+            subProductId={subProduct.id}
+            {...(postCtaLabel ? { label: postCtaLabel } : {})}
+          />
         </div>
       </details>
     </article>

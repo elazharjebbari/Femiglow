@@ -3,9 +3,12 @@ import type { ReactNode } from 'react';
 import type { Article } from '@/lib/schemas';
 import { RelatedArticles } from './RelatedArticles';
 import { ArticleCardBound } from './ArticleCardBound';
+import type { Locale } from '@/i18n.config';
 
 interface RelatedArticlesBoundProps {
   articles: Article[];
+  /** Phase 7 wiring — locale active forwardée à chaque `ArticleCardBound`. */
+  locale?: Locale;
 }
 
 /**
@@ -18,7 +21,10 @@ interface RelatedArticlesBoundProps {
  * indexé par slug et passé au composant `RelatedArticles` qui s'en sert s'il
  * est fourni, sinon fallback sur `<ArticleCard>` standard.
  */
-export async function RelatedArticlesBound({ articles }: RelatedArticlesBoundProps) {
+export async function RelatedArticlesBound({
+  articles,
+  locale,
+}: RelatedArticlesBoundProps) {
   const cards: Record<string, ReactNode> = {};
   await Promise.all(
     articles.map(async (article) => {
@@ -27,6 +33,7 @@ export async function RelatedArticlesBound({ articles }: RelatedArticlesBoundPro
           article={article}
           headingLevel="h3"
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 33vw, 100vw"
+          {...(locale ? { locale } : {})}
         />
       );
     }),

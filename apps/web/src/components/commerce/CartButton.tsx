@@ -1,13 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useCartStore, selectCartCount } from '@/lib/stores/cart-store';
 
 export function CartButton() {
+  const t = useTranslations('navigation');
   const count = useCartStore(selectCartCount);
   const hydrated = useCartStore((s) => s.hydrated);
   const display = hydrated ? count : 0;
-  const ariaLabel = `Panier${display > 0 ? `, ${display} article${display > 1 ? 's' : ''}` : ', vide'}`;
+  const ariaLabel =
+    display > 0
+      ? t('cart_aria_items', { count: display })
+      : t('cart_aria_empty');
 
   return (
     <Link
@@ -33,7 +38,7 @@ export function CartButton() {
           <span className="absolute -end-0.5 -top-0.5 h-2 w-2 rounded-full bg-encre" />
         )}
       </span>
-      <span className="hidden md:inline">Panier</span>
+      <span className="hidden md:inline">{t('cart')}</span>
       <span
         aria-hidden="true"
         className="hidden h-6 min-w-6 items-center justify-center rounded-full bg-encre px-1.5 text-[11px] text-creme md:inline-flex"

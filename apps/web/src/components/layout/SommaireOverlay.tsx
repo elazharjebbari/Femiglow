@@ -5,12 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { LocaleSwitcher } from '@/components/i18n/LocaleSwitcher';
-import {
-  menuEntries,
-  menuSeasonLabel,
-  menuSignature,
-} from '@/lib/menu-descriptions';
 import { cn } from '@/lib/utils/cn';
+import { useSommaireStrings } from './use-header-strings';
 
 interface SommaireOverlayProps {
   open: boolean;
@@ -23,6 +19,8 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
   const titleId = useId();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  const strings = useSommaireStrings();
+  const { entries: menuEntries } = strings;
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -113,14 +111,14 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
           className="fixed inset-0 z-[var(--z-modal)] flex flex-col bg-creme"
         >
           <h2 id={titleId} className="sr-only">
-            Sommaire de navigation
+            {strings.summaryTitle}
           </h2>
 
           <header className="flex h-[72px] items-center justify-between px-6 md:h-[72px] lg:px-12">
             <Link
               href="/"
               onClick={onClose}
-              aria-label="FemiGlow — Accueil"
+              aria-label={strings.logoAria}
               className="font-script text-2xl leading-none text-encre transition-opacity hover:opacity-70 md:text-[26px]"
             >
               FemiGlow
@@ -131,7 +129,7 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
               onClick={onClose}
               className="font-body text-[11px] uppercase tracking-[0.2em] text-encre underline decoration-encre/40 underline-offset-4 transition-colors hover:decoration-encre md:text-xs"
             >
-              Fermer
+              {strings.close}
             </button>
           </header>
 
@@ -142,7 +140,7 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
             transition={{ delay: reduceMotion ? 0 : 0.18 }}
             className="px-6 font-body text-[10px] uppercase tracking-[0.22em] text-encre/40 lg:px-12"
           >
-            {menuSeasonLabel}
+            {strings.seasonLabel}
           </motion.p>
 
           <ul className="mx-auto mt-10 flex w-full max-w-[var(--max-width-page)] flex-1 flex-col gap-y-8 px-6 md:mt-14 md:gap-y-10 lg:px-[14vw]">
@@ -235,7 +233,7 @@ export function SommaireOverlay({ open, onClose }: SommaireOverlayProps) {
             className="mx-auto flex w-full max-w-[var(--max-width-page)] items-end justify-end px-6 pb-8 pt-12 lg:px-[14vw]"
           >
             <span className="font-script text-base text-encre/55 md:text-lg">
-              {menuSignature}
+              {strings.signature}
             </span>
           </motion.div>
         </motion.div>

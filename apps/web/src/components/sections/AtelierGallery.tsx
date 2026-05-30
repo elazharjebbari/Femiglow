@@ -20,9 +20,18 @@ interface AtelierGalleryProps {
    * `data.gallerie`. Si absent ou plus court → fallback vers l'item.
    */
   mediaSlotsByIndex?: AtelierGalleryMediaSlot[];
+  /** Phase 9bis — kicker localisé (« L'atelier »). Défaut FR. */
+  kicker?: string;
+  /** Phase 9bis — titre localisé (« Rabat, deux pièces calmes. »). Défaut FR. */
+  title?: string;
 }
 
-export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps) {
+export function AtelierGallery({
+  data,
+  mediaSlotsByIndex,
+  kicker = 'L’atelier',
+  title = 'Rabat, deux pièces calmes.',
+}: AtelierGalleryProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [active, setActive] = useState<number | null>(null);
 
@@ -40,9 +49,9 @@ export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps)
     <section className="bg-creme py-16 sm:py-24">
       <Container width="page">
         <div className="mb-10 flex flex-col gap-3 sm:max-w-[60ch]">
-          <Kicker tone="champagne">L’atelier</Kicker>
+          <Kicker tone="champagne">{kicker}</Kicker>
           <Heading as="h2" size="display-md" italic="auto" balance>
-            Rabat, deux pièces calmes.
+            {title}
           </Heading>
           <p className="font-body text-sm uppercase tracking-[0.18em] text-encre/60">
             {data.adresse} — {data.quartier}

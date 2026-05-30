@@ -38,6 +38,7 @@ import { TextField } from '@/components/forms/Field';
 import { ApiError } from '@/lib/checkout/client/api-errors';
 import { wizardClient } from '@/lib/checkout/client/wizard-client';
 import { ensureVisitorId } from '@/lib/checkout/client/visitor-id';
+import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import { emailSchema } from '@/lib/checkout/schemas/common';
 import type { GetStockResponse, StockStatus } from '@/lib/checkout/schemas/stock';
 
@@ -105,6 +106,7 @@ interface StockNotifyFormProps {
 }
 
 function StockNotifyForm({ variantId }: StockNotifyFormProps) {
+  const { t } = useWizardTranslation();
   const emailId = useId();
   const consentId = useId();
   const [email, setEmail] = useState('');
@@ -142,7 +144,7 @@ function StockNotifyForm({ variantId }: StockNotifyFormProps) {
           }),
         });
         if (!res.ok) {
-          let msg = 'Inscription impossible. Réessayez plus tard.';
+          let msg = t.stock.notifyErrorDefault;
           try {
             const body = (await res.json()) as { message?: string };
             if (body.message) msg = body.message;
@@ -153,17 +155,19 @@ function StockNotifyForm({ variantId }: StockNotifyFormProps) {
         }
         setSubmitState('success');
       } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : 'Erreur inattendue.');
+        setErrorMsg(
+          err instanceof Error ? err.message : t.stock.notifyErrorUnexpected,
+        );
         setSubmitState('error');
       }
     },
-    [canSubmit, email, variantId],
+    [canSubmit, email, variantId, t.stock],
   );
 
   if (submitState === 'success') {
     return (
       <Text size="small" tone="secondary" className="text-encre">
-        Inscrite. Nous vous écrivons dès le retour du rituel.
+        {t.stock.notifySuccess}
       </Text>
     );
   }
@@ -173,16 +177,16 @@ function StockNotifyForm({ variantId }: StockNotifyFormProps) {
       onSubmit={onSubmit}
       noValidate
       className="space-y-4"
-      aria-label="M'avertir du retour en stock"
+      aria-label={t.stock.notifyFormAriaLabel}
     >
       <TextField
         id={emailId}
         type="email"
         inputMode="email"
         autoComplete="email"
-        label="Votre email"
+        label={t.stock.notifyEmailLabel}
         required
-        placeholder="vous@exemple.ma"
+        placeholder={t.stock.notifyEmailPlaceholder}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
@@ -195,10 +199,7 @@ function StockNotifyForm({ variantId }: StockNotifyFormProps) {
           checked={consent}
           onChange={(e) => setConsent(e.target.checked)}
         />
-        <span>
-          J&rsquo;accepte d&rsquo;être prévenue du retour en stock. Aucun
-          autre usage de cet email.
-        </span>
+        <span>{t.stock.notifyConsentLabel}</span>
       </label>
 
       {errorMsg && (
@@ -215,7 +216,7 @@ function StockNotifyForm({ variantId }: StockNotifyFormProps) {
         disabled={!canSubmit}
         data-testid="stock-notify-submit"
       >
-        Me prévenir
+        {t.stock.notifySubmit}
       </Button>
     </form>
   );
@@ -226,6 +227,7 @@ function StockNotifyForm({ variantId }: StockNotifyFormProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function InStockPill() {
+  const { t } = useWizardTranslation();
   return (
     <div
       role="status"
@@ -234,12 +236,13 @@ function InStockPill() {
       data-testid="stock-indicator-in-stock"
     >
       <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-sauge-soft" />
-      En stock — expédié sous 24-48h
+      {t.stock.inStock}
     </div>
   );
 }
 
 function LowStockBanner({ count }: { count: number }) {
+  const { t } = useWizardTranslation();
   return (
     <div
       role="status"
@@ -247,13 +250,14 @@ function LowStockBanner({ count }: { count: number }) {
       className="rounded border border-petale-dark/25 bg-petale-soft/30 px-3 py-2 text-xs text-encre"
       data-testid="stock-indicator-low-stock"
     >
-      <span className="font-medium">Il n&rsquo;en reste que {count}</span> —
-      pensez à commander avant épuisement.
+      <span className="font-medium">{t.stock.lowStock(count)}</span>
+      {t.stock.lowStockSuffix}
     </div>
   );
 }
 
 function OutOfStockBlock({ variantId }: { variantId: string }) {
+  const { t } = useWizardTranslation();
   return (
     <div
       role="status"
@@ -263,11 +267,10 @@ function OutOfStockBlock({ variantId }: { variantId: string }) {
     >
       <div className="space-y-1">
         <Text size="small" className="text-encre font-medium">
-          Rupture momentanée
+          {t.stock.outOfStockTitle}
         </Text>
         <Text size="small" tone="secondary">
-          Le rituel est en réassort. Laissez-nous votre email — vous serez
-          prévenue dès qu&rsquo;il revient.
+          {t.stock.outOfStockBody}
         </Text>
       </div>
       <StockNotifyForm variantId={variantId} />

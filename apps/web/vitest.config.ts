@@ -13,7 +13,12 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: [
+      './vitest.setup.ts',
+      './src/test/setup/vitest.faker.ts',
+      './src/test/setup/msw.setup.ts',
+      './src/test/setup/matchers.setup.ts',
+    ],
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
     /**

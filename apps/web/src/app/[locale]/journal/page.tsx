@@ -22,7 +22,10 @@ import {
   JournalHero,
   getJournalHeroStringsForLocale,
 } from '@/components/sections/JournalHero';
-import { NewsletterBlock } from '@/components/sections/NewsletterBlock';
+import {
+  NewsletterBlock,
+  getNewsletterBlockStringsForLocale,
+} from '@/components/sections/NewsletterBlock';
 import { isLocale, type Locale } from '@/i18n.config';
 import { cms } from '@/lib/cms';
 import { resolveOgImage } from '@/lib/components/og-image';
@@ -106,14 +109,28 @@ export default async function JournalPage({ params, searchParams }: PageProps) {
   const locale = params.locale as Locale;
   setRequestLocale(locale);
 
-  const [tCross, journalHeroStrings] = await Promise.all([
-    getTranslations({
-      locale,
-      namespace: 'marketing.journal.cross.maison',
-    }),
-    // Phase 7C — strings du hero pré-résolus (composant sync).
-    getJournalHeroStringsForLocale(locale),
-  ]);
+  const [tCross, tCategories, journalHeroStrings, newsletterStrings] =
+    await Promise.all([
+      getTranslations({
+        locale,
+        namespace: 'marketing.journal.cross.maison',
+      }),
+      // Phase 7 wiring — libellés des pills catégories + nav aria.
+      getTranslations({ locale, namespace: 'marketing.journal.categories' }),
+      // Phase 7C — strings du hero pré-résolus (composant sync).
+      getJournalHeroStringsForLocale(locale),
+      // Phase 7E — strings du bloc newsletter localisés.
+      getNewsletterBlockStringsForLocale(locale),
+    ]);
+
+  const categoryPillLabels = {
+    all: tCategories('all'),
+    maison: tCategories('maison'),
+    saison: tCategories('saison'),
+    voix: tCategories('voix'),
+    matieres: tCategories('matieres'),
+    pratique: tCategories('pratique'),
+  };
 
   const active = parseCategory(searchParams.category);
   const activeKey = active ?? 'all';
@@ -139,6 +156,7 @@ export default async function JournalPage({ params, searchParams }: PageProps) {
       key={article.slug}
       article={article}
       headingLevel={cardHeadingLevel}
+      locale={locale}
     />
   ));
 
@@ -146,9 +164,13 @@ export default async function JournalPage({ params, searchParams }: PageProps) {
     <>
       <JsonLd data={blogSchema(jsonLdArticles)} />
       <JournalHero strings={journalHeroStrings} />
-      {featured && <FeaturedArticleBound article={featured} />}
+      {featured && <FeaturedArticleBound article={featured} locale={locale} />}
       <div className="bg-creme pt-12 sm:pt-16">
-        <CategoryPills active={activeKey} />
+        <CategoryPills
+          active={activeKey}
+          labels={categoryPillLabels}
+          ariaLabel={tCategories('aria')}
+        />
       </div>
       <ArticleGrid
         initialArticles={grid}
@@ -156,8 +178,9 @@ export default async function JournalPage({ params, searchParams }: PageProps) {
         initialCursor={initialCursor}
         category={activeKey}
         cardHeadingLevel={cardHeadingLevel}
+        localizeAppendedCards
       />
-      <NewsletterBlock source="journal-bottom" />
+      <NewsletterBlock source="journal-bottom" {...newsletterStrings} />
       <CrossLinkBanner
         kicker={tCross('kicker')}
         title={tCross('title')}

@@ -5,11 +5,13 @@
  */
 
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import { Button } from '@/components/ui/Button';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
 
 export function CartReviewStep() {
+  const { t } = useWizardTranslation();
   const cart = useWizardStore((s) => s.cartSnapshot);
   const goToStep = useWizardStore((s) => s.goToStep);
 
@@ -21,11 +23,10 @@ export function CartReviewStep() {
     >
       <header className="space-y-2">
         <Heading as="h2" size="md" italic="always" id="wizard-cart-heading">
-          Votre panier
+          {t.cartReview.heading}
         </Heading>
         <Text size="small" tone="secondary">
-          Étape de revue disponible en mode B (`/commander`). Implémentation
-          complète en Phase 9.
+          {t.cartReview.subtitle}
         </Text>
       </header>
       {cart && (
@@ -43,7 +44,7 @@ export function CartReviewStep() {
         </ul>
       )}
       <Button variant="primary" onClick={() => goToStep('lead')}>
-        Vos coordonnées
+        {t.cartReview.ctaContinue}
       </Button>
     </section>
   );

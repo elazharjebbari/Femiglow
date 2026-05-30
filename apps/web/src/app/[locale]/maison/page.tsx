@@ -113,7 +113,36 @@ export default async function MaisonPage({ params }: PageProps) {
   setRequestLocale(locale);
 
   // Phase 3 T3.2 : pass locale (impl mock ignore, Sanity impl Phase 3.3).
-  const content = await cms.getMaisonPageContent({ locale });
+  const [content, tMatieres, tEngagements, tAtelier] = await Promise.all([
+    cms.getMaisonPageContent({ locale }),
+    // Phase 7 wiring — en-tête localisé de la grille des matières.
+    getTranslations({ locale, namespace: 'marketing.maison.matieres.section' }),
+    // Phase 7 wiring — en-tête localisé de la grille des engagements.
+    getTranslations({
+      locale,
+      namespace: 'marketing.maison.engagements.section',
+    }),
+    // Phase 9bis — kicker/titre de la section atelier (« L'atelier » /
+    // « Rabat, deux pièces calmes. » fuitaient FR sur /ar).
+    getTranslations({ locale, namespace: 'marketing.maison.atelier.section' }),
+  ]);
+  const matieresHeader = {
+    kicker: tMatieres('kicker'),
+    title: tMatieres('title'),
+  };
+  // Phase 9 i18n — libellés des termes (Origine/Pourquoi) des cartes matière.
+  const tMatieresLabels = await getTranslations({
+    locale,
+    namespace: 'marketing.maison.matieres.labels',
+  });
+  const matieresLabels = {
+    origine: tMatieresLabels('origine'),
+    pourquoi: tMatieresLabels('pourquoi'),
+  };
+  const engagementsHeader = {
+    kicker: tEngagements('kicker'),
+    title: tEngagements('title'),
+  };
 
   return (
     <>
@@ -150,9 +179,20 @@ export default async function MaisonPage({ params }: PageProps) {
         componentKey="maison-fondatrice-mains"
         slot="avatar"
       />
-      <AtelierGalleryBound data={content.atelier} />
-      <MatieresGrid matieres={content.matieres} />
-      <EngagementsGrid engagements={content.engagements} />
+      <AtelierGalleryBound
+        data={content.atelier}
+        kicker={tAtelier('kicker')}
+        title={tAtelier('title')}
+      />
+      <MatieresGrid
+        matieres={content.matieres}
+        header={matieresHeader}
+        labels={matieresLabels}
+      />
+      <EngagementsGrid
+        engagements={content.engagements}
+        header={engagementsHeader}
+      />
       <CrossLinkTriptyque links={content.crossLinks} />
     </>
   );

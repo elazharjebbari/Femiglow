@@ -8,6 +8,10 @@ import { RitualCard } from './RitualCard';
 import { RitualPhotoLightbox } from './RitualPhotoLightbox';
 import { RitualsWallFilters, type RitualsFilterKey } from './RitualsWallFilters';
 import { RitualsWizard } from './wizard/RitualsWizard';
+import {
+  DEFAULT_RITUALS_WALL_STRINGS,
+  type RitualsWallStrings,
+} from './strings';
 import { useWallUrlState } from '@/lib/rituals/hooks/use-wall-url-state';
 import type {
   RitualSummary,
@@ -29,10 +33,19 @@ import type {
 
 interface RitualsWallDrawerProps {
   productKey: string;
+  /**
+   * Phase 7 wiring — libellés STRUCTURELS localisés (défaut FR). Résolus côté
+   * serveur dans le layout `/[locale]/kit` et injectés ici (ce composant est
+   * client + fetche les données via API, donc les libellés transitent en prop).
+   */
+  strings?: RitualsWallStrings;
 }
 
 
-export function RitualsWallDrawer({ productKey }: RitualsWallDrawerProps) {
+export function RitualsWallDrawer({
+  productKey,
+  strings = DEFAULT_RITUALS_WALL_STRINGS,
+}: RitualsWallDrawerProps) {
   const { isOpen, view, close, setView, scrollToSlug } = useWallUrlState();
   const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -53,6 +66,7 @@ export function RitualsWallDrawer({ productKey }: RitualsWallDrawerProps) {
           onSwitchView={setView}
           scrollToSlug={scrollToSlug}
           reduceMotion={!!reduceMotion}
+          strings={strings}
         />
       )}
     </AnimatePresence>,
@@ -67,6 +81,7 @@ interface DrawerSurfaceProps {
   onSwitchView: (view: 'list' | 'wizard' | 'policy') => void;
   scrollToSlug: string | null;
   reduceMotion: boolean;
+  strings: RitualsWallStrings;
 }
 
 interface ListResponse {
@@ -81,6 +96,7 @@ function DrawerSurface({
   onSwitchView,
   scrollToSlug,
   reduceMotion,
+  strings,
 }: DrawerSurfaceProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -133,6 +149,10 @@ function DrawerSurface({
         product_key: productKey,
         limit: '12',
       });
+      // TODO(7E-11): le drawer « voir tout » fetche côté client et ne connaît pas
+      // la locale active. Pour localiser le mur complet, threader la locale en
+      // prop (depuis le layout `/[locale]/kit`) puis ajouter `params.set('language', locale)`
+      // — l'API /api/rituals/list accepte déjà le filtre `language` (repli FR).
       if (filter === 'with_photos') params.set('with_photos', '1');
       if (filter === 'halal') params.set('tags', 'halal');
       if (filter === 'recent') params.set('sort', 'recent');
@@ -245,22 +265,28 @@ function DrawerSurface({
           >
             <span aria-hidden="true" className="text-xl">✕</span>
           </button>
-          <Kicker tone="sauge">RITUELS PARTAGÉS</Kicker>
+          <Kicker tone="sauge">{strings.kicker}</Kicker>
           <h2
             id="rituals-wall-title"
             className="mt-1 font-cormorant text-2xl font-light text-encre"
           >
-            Les voix de la maison.
+            {strings.title}
           </h2>
           <Fleuron size="sm" tone="champagne" className="my-3" />
           {summary && total > 0 ? (
             <div className="space-y-1">
               <p className="font-cormorant text-lg italic text-encre">
-                {total} initiées ont partagé. {oui} reprendraient le rituel.
+                {strings.headlinePlural
+                  .replace('{total}', String(total))
+                  .replace('{oui}', String(oui))}
               </p>
               {topTags.length > 0 && (
                 <p className="font-inter text-xs text-encre/60">
-                  {topTags.map((t) => t.tag.replace(/-/g, ' ')).join(' · ')}
+                  {topTags
+                    .map(
+                      (t) => strings.card.tagLabels[t.tag] ?? t.tag.replace(/-/g, ' '),
+                    )
+                    .join(' · ')}
                 </p>
               )}
             </div>
@@ -310,6 +336,7 @@ function DrawerSurface({
                     data={item}
                     variant="default"
                     highlighted={item.publicSlug === scrollToSlug}
+                    strings={strings.card}
                     onPhotoClick={(idx) =>
                       setLightbox({ slug: item.publicSlug, index: idx })
                     }
