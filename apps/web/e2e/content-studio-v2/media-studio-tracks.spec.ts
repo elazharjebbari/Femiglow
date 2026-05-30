@@ -14,6 +14,14 @@ import { registerCreateMocks, ensureCreatePageLoaded } from './create-helpers';
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
 async function registerTrackMocks(page: import('@playwright/test').Page) {
+  // MP-VO ergonomics — suggested narration fetched on panel mount.
+  await page.route('**/api/admin/content-studio/drafts/*/voiceover-script', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ script: 'Le rituel FemiGlow, un geste lent et apaisant.' }),
+    }),
+  );
   await page.route('**/api/admin/content-studio/drafts/*/generate-voiceover', (route) =>
     route.fulfill({
       status: 200,
@@ -27,6 +35,7 @@ async function registerTrackMocks(page: import('@playwright/test').Page) {
           provider: 'mock',
           voice: 'mock',
           durationSec: 4,
+          script: 'Le rituel FemiGlow, un geste lent et apaisant.',
         },
       }),
     }),
@@ -90,7 +99,10 @@ test.describe('Content Studio v2 — media studio tracks (voice-over / subtitles
     const panel = page.locator('[data-cs-media-tracks]');
     await expect(panel).toBeVisible({ timeout: 10_000 });
 
-    // Voice-over → audio player.
+    // Voice-over → the narration textarea is prefilled (editable), then generate.
+    const script = page.locator('[data-cs-voiceover-script]');
+    await expect(script).toHaveValue(/FemiGlow/i, { timeout: 10_000 });
+    await script.fill('Texte de voix-off ajusté par l’opérateur.');
     await page.locator('[data-cs-generate-voiceover]').click();
     await expect(page.locator('[data-cs-voiceover-player]')).toBeVisible({ timeout: 10_000 });
 
@@ -109,6 +121,9 @@ test.describe('Content Studio v2 — media studio tracks (voice-over / subtitles
 
   test('compose surfaces a 409 error inline when no primary video exists', async ({ page }) => {
     await registerCreateMocks(page);
+    await page.route('**/api/admin/content-studio/drafts/*/voiceover-script', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ script: 'x' }) }),
+    );
     // override compose with a 409 to verify error surfacing.
     await page.route('**/api/admin/content-studio/drafts/*/compose', (route) =>
       route.fulfill({

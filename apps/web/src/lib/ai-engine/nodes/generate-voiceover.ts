@@ -145,11 +145,8 @@ async function generateElevenLabsTTS(
  * The per-draft service path uses this pure-JS generator instead so mock
  * voice-over is actually functional. Writes a valid PCM s16le mono WAV.
  */
-async function generateSilentWav(
-  durationSeconds: number,
-  jobId: string,
-): Promise<{ filePath: string; fileName: string }> {
-  await mkdir(MEDIA_DIR, { recursive: true });
+/** Pure silent PCM s16le mono WAV bytes (no fs). */
+function buildSilentWavBuffer(durationSeconds: number): Buffer {
   const sampleRate = 44100;
   const numSamples = Math.max(1, Math.floor(durationSeconds * sampleRate));
   const dataSize = numSamples * 2; // 16-bit mono
@@ -167,10 +164,66 @@ async function generateSilentWav(
   buf.writeUInt16LE(16, 34); // bits per sample
   buf.write('data', 36);
   buf.writeUInt32LE(dataSize, 40);
+  return buf;
+}
+
+async function generateSilentWav(
+  durationSeconds: number,
+  jobId: string,
+): Promise<{ filePath: string; fileName: string }> {
+  await mkdir(MEDIA_DIR, { recursive: true });
+  const buf = buildSilentWavBuffer(durationSeconds);
   const fileName = `voiceover-${jobId}-${Date.now()}.wav`;
   const filePath = join(MEDIA_DIR, fileName);
   await writeFile(filePath, buf);
   return { filePath, fileName };
+}
+
+/** Fetch OpenAI TTS audio bytes (no fs). */
+async function fetchOpenAITTSBuffer(
+  text: string,
+  apiKey: string,
+  voice?: string,
+): Promise<{ buffer: Buffer; costCents: number }> {
+  const res = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: 'tts-1',
+      input: text.slice(0, 4096),
+      voice: voice && voice !== 'mock' ? voice : 'nova',
+      response_format: 'mp3',
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => `${res.status}`);
+    throw new Error(`OpenAI TTS failed: ${errText}`);
+  }
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return { buffer, costCents: (text.slice(0, 4096).length / 1_000_000) * 1500 };
+}
+
+/** Fetch ElevenLabs TTS audio bytes (no fs). */
+async function fetchElevenLabsTTSBuffer(
+  text: string,
+  apiKey: string,
+): Promise<{ buffer: Buffer; costCents: number }> {
+  const voiceId = 'EXAVITQu4vr4xnSDxMaL';
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'xi-api-key': apiKey },
+    body: JSON.stringify({
+      text: text.slice(0, 5000),
+      model_id: 'eleven_multilingual_v2',
+      voice_settings: { stability: 0.6, similarity_boost: 0.75 },
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => `${res.status}`);
+    throw new Error(`ElevenLabs TTS failed: ${errText}`);
+  }
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return { buffer, costCents: (text.slice(0, 5000).length / 1000) * 3 };
 }
 
 export type TtsProvider = 'openai' | 'elevenlabs' | 'mock';
@@ -191,7 +244,13 @@ export interface SynthesizeVoiceoverInput {
 }
 
 export interface SynthesizeVoiceoverOutput {
-  voiceover: MediaAsset;
+  /** Audio bytes — the caller persists them via its own storage (pipeline B uses
+   *  getStorage(); the AI-engine MEDIA_DIR is NOT used here, so the per-draft
+   *  service is independent of that dir's writability). */
+  buffer: Buffer;
+  mimeType: string;
+  durationMs: number;
+  provider: string;
   text: string;
   costCents: number;
   /** true when a silent fallback replaced a failed provider call. */
@@ -202,108 +261,23 @@ export interface SynthesizeVoiceoverOutput {
 export async function synthesizeVoiceover(
   input: SynthesizeVoiceoverInput,
 ): Promise<SynthesizeVoiceoverOutput> {
-  const { text, jobId, provider, apiKey, onProviderError, voice } = input;
-  const estimatedDuration = estimateDurationSeconds(text);
+  const { text, provider, apiKey, onProviderError, voice } = input;
+  const durationMs = estimateDurationSeconds(text) * 1000;
   try {
     if (provider === 'openai' && apiKey) {
-      const result = await generateOpenAITTS(text, apiKey, jobId);
-      const fileStat = await stat(result.filePath).catch(() => null);
-      return {
-        voiceover: {
-          assetId: `openai-vo-${Date.now()}`,
-          url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
-          mimeType: 'audio/mpeg',
-          durationMs: estimatedDuration * 1000,
-          fileSizeBytes: fileStat?.size ?? 0,
-          provider: 'openai:tts-1',
-          generationParams: { textLength: text.length, voice: voice ?? 'nova' },
-          costCents: result.costCents,
-        },
-        text,
-        costCents: result.costCents,
-        degraded: false,
-        truncated: text.length > 4096,
-      };
+      const { buffer, costCents } = await fetchOpenAITTSBuffer(text, apiKey, voice);
+      return { buffer, mimeType: 'audio/mpeg', durationMs, provider: 'openai:tts-1', text, costCents, degraded: false, truncated: text.length > 4096 };
     }
     if (provider === 'elevenlabs' && apiKey) {
-      const result = await generateElevenLabsTTS(text, apiKey, jobId);
-      const fileStat = await stat(result.filePath).catch(() => null);
-      return {
-        voiceover: {
-          assetId: `elevenlabs-vo-${Date.now()}`,
-          url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
-          mimeType: 'audio/mpeg',
-          durationMs: estimatedDuration * 1000,
-          fileSizeBytes: fileStat?.size ?? 0,
-          provider: 'elevenlabs:eleven_multilingual_v2',
-          generationParams: { textLength: text.length },
-          costCents: result.costCents,
-        },
-        text,
-        costCents: result.costCents,
-        degraded: false,
-        truncated: text.length > 5000,
-      };
+      const { buffer, costCents } = await fetchElevenLabsTTSBuffer(text, apiKey);
+      return { buffer, mimeType: 'audio/mpeg', durationMs, provider: 'elevenlabs:eleven_multilingual_v2', text, costCents, degraded: false, truncated: text.length > 5000 };
     }
-    // mock (or a provider with no key) → deterministic silent track, no network.
-    const result = await generateSilentWav(estimatedDuration, jobId);
-    const fileStat = await stat(result.filePath).catch(() => null);
-    return {
-      voiceover: {
-        assetId: `mock-vo-${Date.now()}`,
-        url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
-        mimeType: 'audio/wav',
-        durationMs: estimatedDuration * 1000,
-        fileSizeBytes: fileStat?.size ?? 0,
-        provider: 'mock',
-        generationParams: { textLength: text.length, silent: true },
-        costCents: 0,
-      },
-      text,
-      costCents: 0,
-      degraded: false,
-      truncated: false,
-    };
+    // mock (or a provider with no key) → deterministic silent WAV, no network, no fs.
+    return { buffer: buildSilentWavBuffer(durationMs / 1000), mimeType: 'audio/wav', durationMs, provider: 'mock', text, costCents: 0, degraded: false, truncated: false };
   } catch (err) {
     if (onProviderError === 'throw') throw err;
     // silent_fallback: never crash the autonomous pipeline.
-    try {
-      const result = await generateSilentWav(estimatedDuration, jobId);
-      const fileStat = await stat(result.filePath).catch(() => null);
-      return {
-        voiceover: {
-          assetId: `fallback-vo-${Date.now()}`,
-          url: `${MEDIA_URL_PREFIX}/${result.fileName}`,
-          mimeType: 'audio/wav',
-          durationMs: estimatedDuration * 1000,
-          fileSizeBytes: fileStat?.size ?? 0,
-          provider: 'fallback',
-          generationParams: { error: String(err), silent: true },
-          costCents: 0,
-        },
-        text,
-        costCents: 0,
-        degraded: true,
-        truncated: false,
-      };
-    } catch (ffmpegErr) {
-      return {
-        voiceover: {
-          assetId: `empty-vo-${Date.now()}`,
-          url: '',
-          mimeType: 'audio/wav',
-          durationMs: 0,
-          fileSizeBytes: 0,
-          provider: 'fallback',
-          generationParams: { error: String(ffmpegErr) },
-          costCents: 0,
-        },
-        text,
-        costCents: 0,
-        degraded: true,
-        truncated: false,
-      };
-    }
+    return { buffer: buildSilentWavBuffer(durationMs / 1000), mimeType: 'audio/wav', durationMs, provider: 'fallback', text, costCents: 0, degraded: true, truncated: false };
   }
 }
 

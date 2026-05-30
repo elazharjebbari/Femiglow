@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Mic, Captions, Clapperboard, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Mic, Captions, Clapperboard, Loader2, Wand2 } from 'lucide-react';
 
 /**
  * MP-VO/SU/CO UI (BUG-004) — the "Studio média" tracks panel. Shown in the
@@ -17,6 +17,7 @@ interface VoiceoverResult {
   provider: string;
   voice: string;
   durationSec: number | null;
+  script: string;
 }
 interface SubtitlesResult {
   id: string;
@@ -37,11 +38,11 @@ interface Props {
   draftId: string;
 }
 
-async function postJson<T>(url: string): Promise<T> {
+async function postJson<T>(url: string, body: Record<string, unknown> = {}): Promise<T> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: '{}',
+    body: JSON.stringify(body),
   });
   const json = (await res.json().catch(() => null)) as { media?: T; error?: { message?: string } } | null;
   if (!res.ok || !json?.media) {
@@ -89,16 +90,22 @@ export function MediaStudioTracks({ draftId }: Props) {
   const [composed, setComposed] = useState<ComposeResult | null>(null);
   const [busy, setBusy] = useState<'vo' | 'su' | 'co' | null>(null);
   const [error, setError] = useState<{ track: 'vo' | 'su' | 'co'; message: string } | null>(null);
+  // MP-VO ergonomics — editable narration text the operator controls.
+  const [voScript, setVoScript] = useState('');
+  const [scriptLoading, setScriptLoading] = useState(false);
+
+  const base = `/api/admin/content-studio/drafts/${draftId}`;
 
   const run = async <T,>(
     track: 'vo' | 'su' | 'co',
     url: string,
     set: (v: T) => void,
+    body?: Record<string, unknown>,
   ) => {
     setBusy(track);
     setError(null);
     try {
-      set(await postJson<T>(url));
+      set(await postJson<T>(url, body));
     } catch (e) {
       setError({ track, message: e instanceof Error ? e.message : 'Erreur inconnue.' });
     } finally {
@@ -106,7 +113,44 @@ export function MediaStudioTracks({ draftId }: Props) {
     }
   };
 
-  const base = `/api/admin/content-studio/drafts/${draftId}`;
+  // Suggest a narration text (no audio) so the operator can review/edit first.
+  async function suggestScript() {
+    setScriptLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${base}/voiceover-script`);
+      const json = (await res.json().catch(() => null)) as
+        | { script?: string; error?: { message?: string } }
+        | null;
+      if (!res.ok || typeof json?.script !== 'string') {
+        throw new Error(json?.error?.message ?? `Échec (${res.status}).`);
+      }
+      setVoScript(json.script);
+    } catch (e) {
+      setError({ track: 'vo', message: e instanceof Error ? e.message : 'Erreur inconnue.' });
+    } finally {
+      setScriptLoading(false);
+    }
+  }
+
+  // Prefill the narration once when the panel mounts for this draft.
+  useEffect(() => {
+    void suggestScript();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId]);
+
+  function generateVoiceover() {
+    const trimmed = voScript.trim();
+    void run<VoiceoverResult>(
+      'vo',
+      `${base}/generate-voiceover`,
+      (v) => {
+        setVoiceover(v);
+        if (v.script) setVoScript(v.script);
+      },
+      trimmed ? { script: trimmed } : {},
+    );
+  }
 
   return (
     <section style={panelStyle} aria-label="Studio média" data-cs-media-tracks>
@@ -122,22 +166,57 @@ export function MediaStudioTracks({ draftId }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500, fontSize: 13 }}>
           <Mic size={14} aria-hidden /> Voix-off
         </div>
-        <button
-          type="button"
-          style={btnStyle}
-          onClick={() => run<VoiceoverResult>('vo', `${base}/generate-voiceover`, setVoiceover)}
-          disabled={busy !== null}
-          data-cs-generate-voiceover
-        >
-          {busy === 'vo' ? <Loader2 size={14} className="cs-spin" aria-hidden /> : <Mic size={14} aria-hidden />}
-          {voiceover ? 'Regénérer la voix-off' : 'Générer la voix-off'}
-        </button>
+        <label htmlFor="cs-vo-script" style={{ fontSize: 11, color: 'var(--cs-text-muted, #6b6258)' }}>
+          Texte de la voix-off — modifiable avant génération.
+        </label>
+        <textarea
+          id="cs-vo-script"
+          value={voScript}
+          onChange={(e) => setVoScript(e.target.value)}
+          rows={4}
+          maxLength={4000}
+          placeholder="Saisissez ou ajustez le texte de la voix-off…"
+          disabled={scriptLoading}
+          data-cs-voiceover-script
+          style={{
+            fontSize: 13,
+            padding: 8,
+            borderRadius: 8,
+            border: '1px solid var(--cs-border, #e6e1da)',
+            resize: 'vertical',
+            fontFamily: 'inherit',
+          }}
+        />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            style={btnStyle}
+            onClick={() => void suggestScript()}
+            disabled={busy !== null || scriptLoading}
+            data-cs-voiceover-suggest
+          >
+            {scriptLoading ? <Loader2 size={14} className="cs-spin" aria-hidden /> : <Wand2 size={14} aria-hidden />}
+            Proposer un texte
+          </button>
+          <button
+            type="button"
+            style={{ ...btnStyle, opacity: voScript.trim() ? 1 : 0.5 }}
+            onClick={generateVoiceover}
+            disabled={busy !== null || scriptLoading || !voScript.trim()}
+            data-cs-generate-voiceover
+            title={!voScript.trim() ? 'Saisissez d’abord le texte de la voix-off.' : undefined}
+          >
+            {busy === 'vo' ? <Loader2 size={14} className="cs-spin" aria-hidden /> : <Mic size={14} aria-hidden />}
+            {voiceover ? 'Regénérer la voix-off' : 'Générer la voix-off'}
+          </button>
+        </div>
         {voiceover ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <audio controls src={voiceover.previewUrl} style={{ width: '100%' }} data-cs-voiceover-player />
             <span style={{ fontSize: 11, color: 'var(--cs-text-muted, #6b6258)' }}>
               {voiceover.provider} · {voiceover.durationSec ?? '?'}s
+              {voiceover.provider === 'mock' ? ' · piste silencieuse (mode mock)' : ''}
             </span>
           </div>
         ) : null}

@@ -550,6 +550,8 @@ export interface VoiceoverResult {
   durationSec: number | null;
   provider: string;
   voice: string;
+  /** The narration text actually used to produce the audio (MP-VO ergonomics). */
+  script: string;
   costCents: number;
   createdAt: string;
 }
@@ -561,6 +563,28 @@ const VOICEOVER_PROMPT_VERSION = 'content-studio-voiceover-v0-2026-05-30';
 function buildVoiceoverTextFromDraft(draft: Awaited<ReturnType<typeof requireDraft>>): string {
   const parts = [draft.hook, draft.caption].map((s) => (s ?? '').trim()).filter(Boolean);
   return parts.length > 0 ? parts.join('. ') : 'Le rituel FemiGlow.';
+}
+
+/**
+ * MP-VO ergonomics — return a suggested narration text WITHOUT generating audio,
+ * so the operator can review/edit it before producing the voice-over. If a
+ * voice-over already exists for the draft, its stored narration is returned so
+ * edits round-trip; otherwise the draft-derived suggestion is returned.
+ */
+export async function suggestVoiceoverScript(draftId: string): Promise<{ script: string }> {
+  const draft = await requireDraft(draftId);
+  if (!VOICEOVER_VIDEO_FORMATS.has(draft.format)) {
+    throw new HttpError('invalid_state', 'Voix-off réservée aux formats vidéo (Reel/Story).');
+  }
+  const bundle = await getDraftBundle(draft.id);
+  const existing = bundle.voiceover?.mediaId ? await findMediaById(bundle.voiceover.mediaId) : null;
+  const stored =
+    existing &&
+    typeof (existing.overrides?.contentStudio as { narration?: unknown } | undefined)?.narration ===
+      'string'
+      ? ((existing.overrides!.contentStudio as { narration: string }).narration as string)
+      : null;
+  return { script: stored?.trim() || buildVoiceoverTextFromDraft(draft) };
 }
 
 function ttsCostEstimateCents(provider: TtsProvider, textLength: number): number {
@@ -619,21 +643,26 @@ export async function generateVoiceoverForDraft(
     });
   }
 
-  if (!out.voiceover.url) {
-    throw new HttpError('upstream_failed', 'Génération audio indisponible (ffmpeg).');
+  if (!out.buffer || out.buffer.byteLength === 0) {
+    throw new HttpError('upstream_failed', 'Génération audio indisponible.');
   }
 
-  const ext = out.voiceover.mimeType === 'audio/wav' ? 'wav' : 'mp3';
+  // Persist via the SAME storage abstraction the image path uses (writable +
+  // served under /_media → /media-files), NOT the AI-engine MEDIA_DIR.
+  const ext = out.mimeType === 'audio/wav' ? 'wav' : 'mp3';
+  const key = `content-studio/voiceover/${draft.id}-${createId('vo').slice(0, 12)}.${ext}`;
+  const stored = await getStorage().put({ key, body: out.buffer, contentType: out.mimeType });
+
   const media = await createMedia({
     kind: 'audio',
     source: 'upload',
     slug: `content-studio-vo-${draft.id}-${createId().slice(0, 8)}`,
     alt: `Voix-off pour ${draft.variantLabel ?? draft.id}`,
     originalFilename: `${draft.id}.${ext}`,
-    originalMime: out.voiceover.mimeType,
-    originalSizeBytes: out.voiceover.fileSizeBytes,
-    originalDurationMs: out.voiceover.durationMs,
-    originalUrl: out.voiceover.url,
+    originalMime: out.mimeType,
+    originalSizeBytes: out.buffer.byteLength,
+    originalDurationMs: out.durationMs,
+    originalUrl: stored.url,
     status: 'passthrough',
     qualityProfile: 'inline',
     loadingStrategy: 'viewport',
@@ -641,7 +670,7 @@ export async function generateVoiceoverForDraft(
       contentStudio: {
         origin: 'ai_generated',
         kind: 'audio',
-        provider: out.voiceover.provider,
+        provider: out.provider,
         sourceDraftId: draft.id,
         voice,
         narration: text,
@@ -658,7 +687,7 @@ export async function generateVoiceoverForDraft(
       {
         mediaId: media.id,
         role: 'voiceover',
-        meta: { provider: out.voiceover.provider, voice, durationMs: out.voiceover.durationMs },
+        meta: { provider: out.provider, voice, durationMs: out.durationMs },
       },
     ],
   });
@@ -666,11 +695,11 @@ export async function generateVoiceoverForDraft(
   await insertGenerationRun({
     ideaId: null,
     briefId: draft.briefId,
-    provider: out.voiceover.provider,
+    provider: out.provider,
     model: provider === 'mock' ? 'mock' : provider,
     promptVersion: VOICEOVER_PROMPT_VERSION,
     input: { draftId: draft.id, script: text, voice, mode, intendedProvider: provider },
-    output: { mediaId: media.id, durationMs: out.voiceover.durationMs, truncated: out.truncated },
+    output: { mediaId: media.id, durationMs: out.durationMs, truncated: out.truncated },
     status: 'succeeded',
     costCents: out.costCents,
     errorMessage: null,
@@ -682,7 +711,7 @@ export async function generateVoiceoverForDraft(
     actorId: input.actorId,
     resourceType: 'media',
     resourceId: media.id,
-    meta: { draftId: draft.id, provider: out.voiceover.provider, voice, mode },
+    meta: { draftId: draft.id, provider: out.provider, voice, mode },
   });
 
   return {
@@ -692,11 +721,12 @@ export async function generateVoiceoverForDraft(
     kind: 'audio',
     alt: media.alt,
     slug: media.slug,
-    previewUrl: media.originalUrl ?? out.voiceover.url,
-    originalUrl: media.originalUrl ?? out.voiceover.url,
-    durationSec: out.voiceover.durationMs ? Math.round(out.voiceover.durationMs / 1000) : null,
-    provider: out.voiceover.provider,
+    previewUrl: media.originalUrl ?? stored.url,
+    originalUrl: media.originalUrl ?? stored.url,
+    durationSec: out.durationMs ? Math.round(out.durationMs / 1000) : null,
+    provider: out.provider,
     voice,
+    script: text,
     costCents: out.costCents,
     createdAt: media.createdAt.toISOString(),
   };

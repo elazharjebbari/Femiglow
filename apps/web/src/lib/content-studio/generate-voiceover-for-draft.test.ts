@@ -6,6 +6,7 @@ import { resetEngineConfig } from '@/lib/ai-engine/config';
 import {
   createContentIdea,
   generateVoiceoverForDraft,
+  suggestVoiceoverScript,
   reviewContentDraft,
 } from './service';
 import { createBrief, createDrafts, getDraftBundle } from './repository';
@@ -67,7 +68,9 @@ describe('generateVoiceoverForDraft (MP-VO-02)', () => {
     expect(result.kind).toBe('audio');
     expect(result.provider).toBe('mock');
     expect(result.costCents).toBe(0);
-    expect(result.originalUrl).toMatch(/\/_media\/ai-engine\/voiceover-.*\.wav$/);
+    // stored via getStorage() under the served content-studio path (NOT the
+    // AI-engine MEDIA_DIR, which the prod server can't write to).
+    expect(result.originalUrl).toMatch(/\/content-studio\/voiceover\/.*\.wav$/);
     expect(result.durationSec).toBeGreaterThan(0);
   });
 
@@ -124,5 +127,48 @@ describe('generateVoiceoverForDraft (MP-VO-02)', () => {
     await expect(
       generateVoiceoverForDraft({ draftId: 'cd_missing', actorId: 'adm_test', mode: 'mock' }),
     ).rejects.toBeInstanceOf(HttpError);
+  });
+
+  it('returns the script actually used in the result', async () => {
+    const draft = await makeDraft('reel');
+    const result = await generateVoiceoverForDraft({
+      draftId: draft.id,
+      actorId: 'adm_test',
+      script: 'Mon texte de voix-off sur-mesure.',
+      mode: 'mock',
+    });
+    expect(result.script).toBe('Mon texte de voix-off sur-mesure.');
+  });
+});
+
+describe('suggestVoiceoverScript (MP-VO ergonomics)', () => {
+  it('suggests a draft-derived narration without producing audio', async () => {
+    const draft = await makeDraft('reel');
+    const { script } = await suggestVoiceoverScript(draft.id);
+    expect(typeof script).toBe('string');
+    expect(script.length).toBeGreaterThan(0);
+    // no voice-over asset was created by suggesting.
+    const { getDraftBundle } = await import('./repository');
+    expect((await getDraftBundle(draft.id)).voiceover).toBeUndefined();
+  });
+
+  it('round-trips the operator-edited script: after generating with a custom text, the suggestion returns it', async () => {
+    const draft = await makeDraft('reel');
+    await generateVoiceoverForDraft({
+      draftId: draft.id,
+      actorId: 'adm_test',
+      script: 'Texte édité par l’opérateur.',
+      mode: 'mock',
+    });
+    const { script } = await suggestVoiceoverScript(draft.id);
+    expect(script).toBe('Texte édité par l’opérateur.');
+  });
+
+  it('rejects non-video formats (409)', async () => {
+    const draft = await makeDraft('post');
+    await expect(suggestVoiceoverScript(draft.id)).rejects.toMatchObject({
+      code: 'invalid_state',
+      status: 409,
+    });
   });
 });

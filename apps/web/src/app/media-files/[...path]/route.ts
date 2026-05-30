@@ -66,6 +66,9 @@ const TYPE_BY_EXT: Record<string, string> = {
   webm: 'video/webm',
   mp3: 'audio/mpeg',
   opus: 'audio/ogg',
+  wav: 'audio/wav',
+  srt: 'application/x-subrip',
+  vtt: 'text/vtt',
 };
 
 export async function GET(
