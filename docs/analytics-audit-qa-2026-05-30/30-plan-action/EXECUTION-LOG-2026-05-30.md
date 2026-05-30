@@ -1,7 +1,20 @@
 # Journal d'exécution — corrections analytics (2026-05-30)
 
 Branche : `fix/analytics-qa-2026-05` (worktree isolé depuis `master`, sans toucher au WIP i18n).
-Stack : Vitest 2.1 (Node 22). Suite analytics complète : **479 tests verts, 47 fichiers, 0 régression**.
+Stack : Vitest 2.1 (Node 22). Suite analytics complète : **~500 tests verts, 0 régression**.
+
+## Vérification navigateur (Chromium)
+
+- **F-INS-05 — VÉRIFIÉ en vrai navigateur** (`e2e/png-export-browser.spec.ts`, vert) : le SVG
+  sérialisé (xmlns + width/height) se charge comme `Image`, se dessine sur canvas et produit un
+  **PNG valide et non vide** (titre + courbe réellement rendus, >500 px hors fond) — ce que jsdom
+  ne peut pas tester.
+- **AF-01 + refresh manuel** : spec e2e admin `e2e/analytics-browser-verify.spec.ts` (pattern
+  standard storageState, comme `admin-analytics-insights.spec.ts`) — destinée au pipeline e2e CI
+  (serveur + DB). En local sans Postgres, le login admin (memoryStore) réussit mais la session
+  iron-session n'est pas conservée à la navigation suivante : limite d'environnement, pas du code ;
+  ces deux comportements sont par ailleurs prouvés au niveau composant/route
+  (`*Dashboard.refetch.test.tsx`, `RefreshStatsButton.test.tsx`, `refresh/route.test.ts`).
 
 ## Findings corrigés (rouge → vert)
 
