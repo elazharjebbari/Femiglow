@@ -63,7 +63,7 @@ describe('INV-7 — reduced-motion : bascule directe', () => {
     const { result } = renderHook(() => useLocaleTransition());
     act(() => result.current.switchTo('ar', 'header'));
     expect(document.documentElement.dir).toBe('rtl'); // INV-2
-    expect(h.replace).toHaveBeenCalledWith('/ar/kit?utm_source=ig'); // INV-4
+    expect(h.replace).toHaveBeenCalledWith('/ar/kit?utm_source=ig', { scroll: false }); // INV-4
     expect(h.emit).toHaveBeenCalledWith(
       'locale_switch',
       expect.objectContaining({ from: 'fr', to: 'ar', transition: 'reduced' }),
@@ -84,7 +84,7 @@ describe('mode View Transitions', () => {
     act(() => result.current.switchTo('ar', 'footer'));
     expect(startViewTransition).toHaveBeenCalledTimes(1);
     expect(document.documentElement.dir).toBe('rtl');
-    expect(h.replace).toHaveBeenCalledWith('/ar/kit?utm_source=ig');
+    expect(h.replace).toHaveBeenCalledWith('/ar/kit?utm_source=ig', { scroll: false });
     expect(h.emit).toHaveBeenCalledWith(
       'locale_switch',
       expect.objectContaining({ transition: 'vt', surface: 'footer' }),
@@ -101,7 +101,7 @@ describe('mode voile (fallback)', () => {
     expect(result.current.veil.active).toBe(true);
     expect(h.replace).not.toHaveBeenCalled();
     act(() => vi.advanceTimersByTime(200));
-    expect(h.replace).toHaveBeenCalledWith('/en/kit?utm_source=ig');
+    expect(h.replace).toHaveBeenCalledWith('/en/kit?utm_source=ig', { scroll: false });
     expect(h.emit).toHaveBeenCalledWith(
       'locale_switch',
       expect.objectContaining({ transition: 'veil', to: 'en' }),

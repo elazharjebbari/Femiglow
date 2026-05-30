@@ -75,7 +75,9 @@ export function useLocaleTransition(): UseLocaleTransition {
         try {
           applyHtmlLocale(target);
           announceLocale(target);
-          router.replace(url);
+          // `scroll: false` — App Router scrolle en haut par défaut ; on
+          // l'inhibe pour préserver la position de lecture (INV-3).
+          router.replace(url, { scroll: false });
           track(kind);
         } catch {
           if (typeof window !== 'undefined') window.location.assign(url);
