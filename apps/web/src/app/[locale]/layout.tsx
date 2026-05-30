@@ -27,6 +27,8 @@ import type { ReactNode } from 'react';
 
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { isLocaleSwitcherV2Enabled } from '@/components/i18n/locale-switcher-flag';
+import { LocaleTransitionProvider } from '@/components/i18n/locale-transition-context';
 import { getLocaleConfig, isLocale, LOCALES } from '@/i18n.config';
 
 interface LocaleLayoutProps {
@@ -92,11 +94,29 @@ export default async function LocaleLayout({
         préfixées — pas de duplication.
         cf. docs/i18n-strategy-2026-05/PHASE-7-AUDIT.md §A4.
       */}
-      <Header />
-      <main id="main" tabIndex={-1}>
-        {children}
-      </main>
-      <Footer />
+      {/*
+        Lot L3 — derrière le flag, on enveloppe le chrome dans le
+        `LocaleTransitionProvider` (une seule instance du moteur de bascule
+        sans reload + voile + annonceur aria-live). Flag off ⇒ chrome direct
+        (comportement V1, zéro régression).
+      */}
+      {isLocaleSwitcherV2Enabled() ? (
+        <LocaleTransitionProvider>
+          <Header />
+          <main id="main" tabIndex={-1}>
+            {children}
+          </main>
+          <Footer />
+        </LocaleTransitionProvider>
+      ) : (
+        <>
+          <Header />
+          <main id="main" tabIndex={-1}>
+            {children}
+          </main>
+          <Footer />
+        </>
+      )}
     </NextIntlClientProvider>
   );
 }

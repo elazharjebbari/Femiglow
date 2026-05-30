@@ -76,18 +76,21 @@ afterEach(() => {
 // ─────────────────────────────────────────────────────────────────────────
 
 describe('LocaleSwitcher dropdown (desktop)', () => {
-  it('affiche le code de la locale active en majuscules (FR par défaut)', () => {
+  it("affiche l'endonyme de la locale active (Français par défaut)", () => {
     render(<LocaleSwitcher variant="dropdown" />);
     const trigger = screen.getByTestId('locale-switcher-trigger');
-    expect(trigger).toHaveTextContent('FR');
+    // Phase 9bis — endonyme dans sa propre écriture (pas de code latin AR).
+    expect(trigger).toHaveTextContent('Français');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
   });
 
-  it('change le label si la locale active change (AR)', () => {
+  it('change le label si la locale active change (AR → العربية)', () => {
     mockLocale = 'ar';
     render(<LocaleSwitcher variant="dropdown" />);
-    expect(screen.getByTestId('locale-switcher-trigger')).toHaveTextContent('AR');
+    expect(screen.getByTestId('locale-switcher-trigger')).toHaveTextContent(
+      'العربية',
+    );
   });
 
   it('click sur le trigger ouvre le menu avec 3 options (FR/AR/EN)', () => {

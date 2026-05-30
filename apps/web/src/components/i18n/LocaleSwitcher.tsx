@@ -44,6 +44,8 @@ import {
 } from 'react';
 
 import { usePathname, useRouter } from '@/i18n/navigation';
+import { isLocaleSwitcherV2Enabled } from './locale-switcher-flag';
+import { useLocaleSwitch } from './locale-transition-context';
 import {
   DEFAULT_LOCALE,
   getEnabledLocales,
@@ -146,16 +148,33 @@ function LocaleSwitcherInner({
   const [isPending, startTransition] = useTransition();
   const locales = useMemo(() => getEnabledLocales(), []);
 
+  // V2 (lot L3) — si le provider est monté ET le flag actif, on bascule
+  // SANS rechargement via le moteur de transition ; sinon comportement V1
+  // (next-intl router.replace). Garde additive → zéro régression flag off.
+  const localeSwitch = useLocaleSwitch();
+  const v2Enabled = isLocaleSwitcherV2Enabled();
   const handleSelect = useCallback(
     (next: Locale) => {
       if (next !== effectiveLocale) {
-        startTransition(() => {
-          router.replace(pathname, { locale: next });
-        });
+        if (localeSwitch && v2Enabled) {
+          localeSwitch.switchTo(next, variant === 'inline' ? 'drawer' : 'header');
+        } else {
+          startTransition(() => {
+            router.replace(pathname, { locale: next });
+          });
+        }
       }
       onSelect?.(next);
     },
-    [effectiveLocale, onSelect, pathname, router],
+    [
+      effectiveLocale,
+      onSelect,
+      pathname,
+      router,
+      localeSwitch,
+      v2Enabled,
+      variant,
+    ],
   );
 
   if (locales.length <= 1) {
