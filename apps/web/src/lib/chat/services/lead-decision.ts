@@ -1,22 +1,34 @@
 /**
- * CHA-207 — Décision : faut-il OFFRIR le formulaire de capture lead ?
+ * CHA-207 / CHA-225 / CHA-230 — Décision : faut-il OFFRIR le formulaire
+ * de capture lead ?
  *
- * Règles dérivées de `19-lead-capture-form.md §4.1` :
+ * Règles dérivées de `19-lead-capture-form.md §4.1` + `20-langchain-…md §2.6` :
  *  - Au plus UN formulaire par session (anti-spam UX).
- *  - Au moins 2 messages assistant échangés (sauf `explicit-request`).
- *  - 7 raisons métier qui peuvent l'enclencher (ordre de priorité) :
+ *  - Au moins 2 messages assistant échangés (sauf raisons fortes).
+ *  - 9 raisons métier qui peuvent l'enclencher (ordre de priorité) :
+ *      0. inline-contact      — numéro de téléphone détecté en clair
  *      1. explicit-request    — l'utilisateur demande un humain
- *      2. b2b                 — revente / pro
+ *      1bis. purchase-intent  — intention d'achat explicite (1er tour)
+ *      8. negotiation         — marchandage / demande de rabais (CHA-230)
+ *      9. wholesaler          — gros volume / grossiste / pro (CHA-230)
+ *      2. b2b                 — revente / pro (générique)
  *      3. frustration         — émotion négative répétée
  *      4. out-of-knowledge    — l'IA admet ne pas savoir
  *      5. objection-repeat    — même objection 2× sans progrès
  *      6. long-no-progress    — ≥ 5 tours sans intent commercial
  *      7. after-hours         — hors horaires d'ouverture (lun–sam 9h–17h)
  *
+ * Pourquoi `negotiation` et `wholesaler` AVANT `b2b` :
+ *  - `negotiation` est une décision *commerciale* (politique de prix) qui
+ *    ne doit JAMAIS être prise par l'IA. On escalade dès le 1er tour.
+ *  - `wholesaler` est un cas de pricing volume — hors-périmètre IA. On
+ *    escalade dès le 1er tour pour confier au commercial.
+ *
  * Cette décision NE persiste pas le lead — elle ne fait que produire un
  * verdict que l'orchestrateur transforme en SSE `lead-form-offer`.
  *
  * cf. docs/chat-assistant/19-lead-capture-form.md §4
+ *     docs/chat-assistant/20-langchain-robustness-plan.md §2.6
  */
 
 import type { ChatIntent } from './intent';
@@ -37,6 +49,12 @@ export type LeadFormReason =
   // dans le formulaire ; on présente le widget pour capturer proprement
   // (consent + validation) au lieu de le perdre.
   | 'inline-contact'
+  // CHA-230 — Marchandage actif (rabais/réduction). Escalade humaine
+  // immédiate : politique commerciale hors-périmètre IA.
+  | 'negotiation'
+  // CHA-230 — Demande de gros volume (grossiste, distributeur, institut).
+  // Escalade commerciale immédiate : pricing volume hors-périmètre IA.
+  | 'wholesaler'
   | 'manual';
 
 export type LeadFormCopyKey =
@@ -47,6 +65,10 @@ export type LeadFormCopyKey =
   | 'b2b'
   | 'purchase-intent'
   | 'inline-contact'
+  // CHA-230 — copy spécifique à la négociation (pivot humain calme).
+  | 'negotiation'
+  // CHA-230 — copy spécifique au volume pro (escalade commerciale).
+  | 'wholesaler'
   | 'manual';
 
 export interface LeadDecisionInput {
@@ -105,6 +127,49 @@ const OUT_OF_KNOWLEDGE_PATTERNS = [
 
 function isOutOfKnowledge(reply: string): boolean {
   return OUT_OF_KNOWLEDGE_PATTERNS.some((p) => p.test(reply));
+}
+
+/**
+ * CHA-230 v5 — Filet de sécurité « LLM annonce un formulaire ».
+ *
+ * Bugs récurrents en prod : le LLM répond une formule type « le petit
+ * formulaire ci-dessous prend trente secondes » MAIS la décision lead-form
+ * dit shouldOffer=false (intent regex ne matche pas, score < shortcut,
+ * etc.). Le visiteur lit une promesse de formulaire qui n'apparaît jamais.
+ *
+ * Politique : si l'assistant ANNONCE explicitement un formulaire, on
+ * force l'offre quoi qu'en dise la décision principale. C'est mieux
+ * d'afficher un faux positif d'offre qu'un visiteur bloqué — le
+ * commercial humain valide en aval.
+ *
+ * Patterns dérivés des copies dans `instruction-defaults.ts` + variantes
+ * observées en prod.
+ */
+export const PROMISED_FORM_PATTERNS: RegExp[] = [
+  /formulaire\s+(juste\s+)?(ci[-\s]?dessous|en\s+dessous|qui\s+s['’]?affiche|sous\s+(ce|mon)\s+message)/i,
+  /petit\s+formulaire/i,
+  /le\s+formulaire\s+ci[-\s]?dessous/i,
+  /trente\s+secondes/i,
+  /\bprénom\s+et\s+(votre\s+)?numéro\b/i,
+  /\bvalidez\s+(vos\s+)?coordonnées\b/i,
+  /\blaissez[-\s]moi\s+(votre\s+)?prénom\b/i,
+  /\bje\s+note\s+(votre\s+)?prénom\b/i,
+  // CHA-230 v6 — Le LLM peut paraphraser sans le mot « formulaire ».
+  // Cas prod 2026-05-08 : « La suite se règle juste en dessous » →
+  // l'utilisateur attend un widget qui n'arrive pas. Tous ces motifs
+  // sous-entendent « regardez sous mon message » dans un contexte chat
+  // où il n'y a JAMAIS rien d'autre que le form sous le message.
+  /\bla\s+suite\s+(se\s+|s['’])?(règle|passe|joue|fait|enregistre|note|continue|finalise)\b/i,
+  /\b(juste|directement)\s+(en|au|ci[-\s]?)[-\s]?dessous\b/i,
+  /\b(en|au|ci[-\s]?)[-\s]?dessous\s+(pour|vous\s+(pourrez|pouvez|allez)|permet|nous)\b/i,
+  /\b(on|nous|je)\s+(enregistre|note|valide|finalise|continue|prend)\s+.{0,30}(en|ci[-\s]?|au)[-\s]?dessous\b/i,
+  /\b(remplissez|complétez|laissez|donnez|écrivez|tapez)\s+.{0,30}(en|ci[-\s]?|au|juste)[-\s]?dessous\b/i,
+];
+
+/** True si la réponse assistant annonce un formulaire explicitement. */
+export function assistantPromisedForm(reply: string): boolean {
+  if (!reply) return false;
+  return PROMISED_FORM_PATTERNS.some((p) => p.test(reply));
 }
 
 /** Compte les messages user dans l'historique. */
@@ -206,6 +271,33 @@ export function shouldOfferLeadForm(input: LeadDecisionInput): LeadDecisionResul
       shouldOffer: true,
       reason: 'purchase-intent',
       copyKey: 'purchase-intent',
+      debug: { userCount },
+    };
+  }
+
+  // CHA-230 — Rule 8. Négociation explicite (rabais, réduction, marchandage).
+  //   Politique commerciale : l'IA NE NÉGOCIE PAS. On escalade dès le
+  //   1er tour vers un humain qui décide la remise/le geste commercial.
+  //   Sinon, l'IA invente une politique de prix → risque réputationnel
+  //   et financier (l'agent humain devra honorer ou contredire).
+  if (input.currentIntent === 'negotiation') {
+    return {
+      shouldOffer: true,
+      reason: 'negotiation',
+      copyKey: 'negotiation',
+      debug: { userCount },
+    };
+  }
+
+  // CHA-230 — Rule 9. Fournisseur / grossiste / volume pro.
+  //   Pricing volume = hors-périmètre IA (dépend du stock, des marges,
+  //   des conditions logistiques). On escalade dès le 1er tour vers le
+  //   commercial qui propose une offre adaptée.
+  if (input.currentIntent === 'wholesaler') {
+    return {
+      shouldOffer: true,
+      reason: 'wholesaler',
+      copyKey: 'wholesaler',
       debug: { userCount },
     };
   }

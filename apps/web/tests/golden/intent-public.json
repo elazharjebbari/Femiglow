@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "exportedAt": "2026-05-08T10:40:42.483Z",
+  "rows": [],
+  "countBySource": {},
+  "countByIntent": {},
+  "skipped": true,
+  "errors": [
+    "--offline flag set"
+  ]
+}

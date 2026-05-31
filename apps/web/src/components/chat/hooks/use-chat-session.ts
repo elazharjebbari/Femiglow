@@ -64,7 +64,15 @@ export function useChatSession(initialPage?: string, lang?: string): void {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError((err as Error).message);
+        // CHA-230 Phase 2 — Erreur de chargement de session : non
+        // retryable côté UI (le retry est déjà fait par useEffect au
+        // remount). Pas de lastUserText (rien d'envoyé encore).
+        setError({
+          code: 'session-load-failed',
+          message: (err as Error).message,
+          retryable: false,
+          lastUserText: null,
+        });
       });
     return () => {
       cancelled = true;

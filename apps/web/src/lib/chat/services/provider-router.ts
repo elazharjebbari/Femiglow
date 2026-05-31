@@ -147,6 +147,38 @@ export const providerRouter = {
     );
   },
 
+  /**
+   * CHA-230 Phase 2 — Choisit le PROCHAIN provider disponible pour un rôle,
+   * en excluant celui qu'on a déjà sélectionné comme primaire. Utilisé par
+   * `respond-stream.runnable.ts` pour le fallback automatique.
+   *
+   * Retourne `null` si aucun autre provider valide n'existe — le runnable
+   * appellera alors juste retry-only sur le primaire.
+   *
+   * Critère "valide" identique à `choose()` : breaker fermé, quota dispo.
+   * On NE remet PAS à zéro le breaker — si le secondaire est lui aussi
+   * cassé, autant remonter l'erreur tout de suite.
+   */
+  async chooseFallback(
+    role: ChatProviderConfigRow['role'],
+    excludeId: string,
+  ): Promise<{
+    config: ChatProviderConfigDecoded;
+    adapter: ChatProvider;
+    row: ChatProviderConfigRow;
+  } | null> {
+    const candidates = await providerRepo.listByRole(role, true);
+    for (const row of candidates) {
+      if (row.id === excludeId) continue;
+      if (await isOpenAsync(row.id)) continue;
+      if (quotaExceeded(row)) continue;
+      const config = providerRepo.decode(row);
+      const adapter = instantiateProvider(config);
+      return { config, adapter, row };
+    }
+    return null;
+  },
+
   recordFailure,
   recordSuccess,
 };

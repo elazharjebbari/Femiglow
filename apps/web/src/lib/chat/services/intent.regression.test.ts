@@ -71,8 +71,9 @@ describe('F25 — intent detection — étendu & régression', () => {
       expect(classifyIntent(input)).toMatchIntent(expected);
     });
 
-    // Patterns avec \b après "livr" — gap I2 connu
-    it.fails('"Livraison à Casablanca ?" → shipping (gap regex — \\b après livr)', () => {
+    // Gap I2 (\b après "livr") FERMÉ par la réconciliation cha-230 : le
+    // super-set de patterns `strong` couvre désormais "Livraison à …".
+    it('"Livraison à Casablanca ?" → shipping (gap I2 fermé — cha-230)', () => {
       expect(classifyIntent('Livraison à Casablanca ?')).toMatchIntent('shipping');
     });
   });

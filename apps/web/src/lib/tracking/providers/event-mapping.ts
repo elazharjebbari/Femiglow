@@ -414,6 +414,14 @@ const MAP: Record<string, EventMapping> = {
   chat_conversion_attributed: {
     google_ga4: { name: 'chat_conversion_attributed', isStandard: false },
   },
+  // CHA-231 gap 1 — récupération d'offre via /api/chat/lead-status
+  chat_lead_form_recovered: {
+    google_ga4: { name: 'chat_lead_form_recovered', isStandard: false },
+  },
+  // CHA-231 gap 4 — observabilité contrat SSE (interne)
+  chat_sse_invalid_event: {
+    google_ga4: { name: 'chat_sse_invalid_event', isStandard: false },
+  },
 };
 
 export function getEventMapping(eventName: string): EventMapping | null {

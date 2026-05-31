@@ -348,10 +348,86 @@ describe("règle 7 — after-hours", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Règle 8 — Engagement (CHAT-064)
+// Règle 8 — Negotiation (CHA-230)
 // ---------------------------------------------------------------------------
 
-describe("règle 8 — engagement (CHAT-064)", () => {
+describe("règle 8 — negotiation (CHA-230)", () => {
+  it("propose dès le 1er tour si l'intent est `negotiation`", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      history: [userMsg('Vous me faites un rabais ?')],
+      currentIntent: 'negotiation' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(true);
+    expect(result.reason).toBe('negotiation');
+    expect(result.copyKey).toBe('negotiation');
+  });
+
+  it("propose même en horaires ouvrés (politique commerciale stricte)", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      // Mardi 10 h Maroc
+      now: new Date('2026-05-12T09:00:00Z'),
+      history: [userMsg('Avez-vous un code promo ?')],
+      currentIntent: 'negotiation' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(true);
+    expect(result.reason).toBe('negotiation');
+  });
+
+  it("ne propose pas si déjà offert (gate respecté)", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      alreadyOffered: true,
+      history: [userMsg('Vous me faites un rabais ?')],
+      currentIntent: 'negotiation' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Règle 9 — Wholesaler (CHA-230)
+// ---------------------------------------------------------------------------
+
+describe("règle 9 — wholesaler (CHA-230)", () => {
+  it("propose dès le 1er tour si l'intent est `wholesaler`", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      history: [userMsg('Je suis grossiste, vous fournissez ?')],
+      currentIntent: 'wholesaler' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(true);
+    expect(result.reason).toBe('wholesaler');
+    expect(result.copyKey).toBe('wholesaler');
+  });
+
+  it("propose dès le 1er tour pour 'grande quantité'", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      history: [userMsg('Je voudrais une grande quantité')],
+      currentIntent: 'wholesaler' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(true);
+    expect(result.reason).toBe('wholesaler');
+  });
+
+  it("ne propose pas si déjà offert (gate respecté)", () => {
+    const result = shouldOfferLeadForm({
+      ...baseInput,
+      alreadyOffered: true,
+      history: [userMsg('Je voudrais une grande quantité')],
+      currentIntent: 'wholesaler' as ChatIntent,
+    });
+    expect(result.shouldOffer).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Règle 10 — Engagement (CHAT-064)
+// ---------------------------------------------------------------------------
+
+describe("règle 10 — engagement (CHAT-064)", () => {
   it("propose après 6 messages user même sur intent non stagnant (ingredient)", () => {
     const result = shouldOfferLeadForm({
       ...baseInput,

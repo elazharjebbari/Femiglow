@@ -19,7 +19,8 @@ export default defineConfig({
       './src/test/setup/msw.setup.ts',
       './src/test/setup/matchers.setup.ts',
     ],
-    include: ['src/**/*.test.{ts,tsx}'],
+    // CHA-230 — `scripts/**` couvre sync-intent-datasets.test.ts (golden-set).
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.{ts,tsx}'],
     css: false,
     /**
      * Coverage scopée — on n'audite pas tout le repo (bruit énorme,

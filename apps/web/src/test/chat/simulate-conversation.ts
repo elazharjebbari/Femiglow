@@ -190,6 +190,13 @@ export function buildEventRepoMock() {
           simStores.events.push({ sessionId, type, payload });
         },
       ),
+      // CHA-231 v7 — utilisé par l'orchestrator pour distinguer un lead
+      // auto-créé d'un lead explicitement soumis (event chat_lead_form_submit).
+      hasEventOfType: vi.fn(async (sessionId: string, type: string) => {
+        return simStores.events.some(
+          (e) => e.sessionId === sessionId && e.type === type,
+        );
+      }),
       hasLeadOfferForSession: vi.fn(async (sessionId: string) =>
         simStores.events.some(
           (e) => e.sessionId === sessionId && e.type === 'chat_lead_form_offered',

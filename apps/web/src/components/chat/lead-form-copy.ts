@@ -1,10 +1,16 @@
 /**
- * CHA-211 — Copy multilingue du formulaire de capture lead.
+ * CHA-211 / CHA-225 / CHA-230 — Copy multilingue du formulaire de capture lead.
  *
  * Variantes par `copyKey` (raison qui a déclenché l'offre) × langue.
  * - Le ton est doux, jamais autoritaire ; on évite le forcing (Kolenda).
  * - Les CTAs sont courts, max 2 mots quand possible.
  * - Le message de succès donne un horizon clair (« on vous appelle »).
+ *
+ * v3 / CHA-230 :
+ *  - Ajout de `negotiation` (marchandage / rabais → pivot humain calme).
+ *  - Ajout de `wholesaler` (gros volume / pro → escalade commerciale).
+ *  - L'objectif éditorial : ne PAS négocier, ne PAS donner un prix
+ *    volume — rediriger avec respect vers une équipe humaine qualifiée.
  *
  * CHA-228 — Règle anti-redondance avec le message LLM qui précède :
  *   `intro` n'est PAS un second pitch. C'est une ligne **opérationnelle
@@ -14,6 +20,7 @@
  *   l'opérationnel. Voir `instruction-defaults.ts` §"Capter le contact".
  *
  * cf. docs/chat-assistant/19-lead-capture-form.md §5.2
+ *     docs/chat-assistant/20-langchain-robustness-plan.md §2.6
  */
 
 import type { ChatLanguage } from '@/lib/chat/contracts';
@@ -27,6 +34,10 @@ export type CopyKey =
   // CHA-225 — Achat explicite ("je veux commander") + coordonnées en clair.
   | 'purchase-intent'
   | 'inline-contact'
+  // CHA-230 — Marchandage (rabais/réduction) → pivot humain.
+  | 'negotiation'
+  // CHA-230 — Volume pro (grossiste/distributeur) → pivot commercial.
+  | 'wholesaler'
   | 'manual';
 
 export interface LeadFormCopy {
@@ -122,6 +133,31 @@ const FR: Record<CopyKey, LeadFormCopy> = {
     successFallback:
       'Merci ! Vos coordonnées sont bien enregistrées — une conseillère vous rappelle dans la journée.',
   },
+  // CHA-230 — Négociation : ton calme, on ne s'engage pas sur un prix,
+  // on confie à une équipe humaine qui peut décider.
+  negotiation: {
+    ...FR_BASE,
+    intro:
+      'Pour les conditions commerciales personnalisées, je transmets votre contact à notre équipe — elle revient vers vous aujourd’hui avec une proposition claire.',
+    cta: 'Être contactée',
+    submit: 'Demander un appel',
+    noteLabel: 'Précisez votre besoin (optionnel)',
+    notePlaceholder: 'Ex. budget, plusieurs kits, code promo cherché',
+    successFallback:
+      'Merci ! Notre équipe vous rappelle aujourd’hui pour vous proposer une offre adaptée.',
+  },
+  // CHA-230 — Volume pro : ton respectueux et clair, le commercial gère.
+  wholesaler: {
+    ...FR_BASE,
+    intro:
+      'Pour les volumes professionnels (institut, salon, distribution), je transmets votre contact à notre équipe commerciale — elle revient avec une offre adaptée à votre projet.',
+    cta: 'Être contactée (pro)',
+    submit: 'Demander une offre',
+    noteLabel: 'Type de projet et volume estimé',
+    notePlaceholder: 'Ex. institut à Casablanca, ~50 kits/mois',
+    successFallback:
+      'Merci ! Notre équipe commerciale vous contacte rapidement avec une offre dédiée.',
+  },
   manual: {
     ...FR_BASE,
     intro: 'On vous rappelle dès qu’on est dispo.',
@@ -183,6 +219,30 @@ const AR: Record<CopyKey, LeadFormCopy> = {
     cta: 'تأكيد بياناتي',
     submit: 'تأكيد',
     successFallback: 'شكراً لك! بياناتكِ مسجَّلة — مستشارة ستتصل بك اليوم.',
+  },
+  // CHA-230 — Négociation (AR).
+  negotiation: {
+    ...AR_BASE,
+    intro:
+      'للشروط التجارية الخاصة، سأرسل اتصالكِ إلى فريقنا — سيعودون إليكِ اليوم بعرضٍ واضح.',
+    cta: 'اتصلوا بي',
+    submit: 'طلب مكالمة',
+    noteLabel: 'حدّدي حاجتكِ (اختياري)',
+    notePlaceholder: 'مثال: ميزانية، عدّة أطقم، كود ترويج',
+    successFallback:
+      'شكراً لكِ! فريقنا سيتّصل بكِ اليوم لتقديم عرضٍ ملائم.',
+  },
+  // CHA-230 — Volume pro (AR).
+  wholesaler: {
+    ...AR_BASE,
+    intro:
+      'للكميات التجارية (معهد، صالون، توزيع)، سأرسل اتصالكِ إلى فريقنا التجاري — سيقدّمون عرضاً ملائماً لمشروعكِ.',
+    cta: 'اتصلوا بي (محترف)',
+    submit: 'طلب عرض',
+    noteLabel: 'نوع المشروع والكمية التقديرية',
+    notePlaceholder: 'مثال: معهد بالدار البيضاء، نحو 50 طقم/شهر',
+    successFallback:
+      'شكراً لكِ! فريقنا التجاري سيتواصل معكِ بعرضٍ مخصّص.',
   },
   manual: {
     ...AR_BASE,
@@ -249,6 +309,30 @@ const AR_MA: Record<CopyKey, LeadFormCopy> = {
     submit: 'Sawybi',
     successFallback:
       'Choukrane ! L-info dyalek mssejjla — wa7da mn l-mostachirat ghadi t3yt lik l-yom.',
+  },
+  // CHA-230 — Négociation (AR-MA Darija).
+  negotiation: {
+    ...AR_MA_BASE,
+    intro:
+      'Bach nfehmou m3aki f chchroot l-tijariya, ghadi nsift l-contact dyalek l l-équipe — ghadi y3ytou lik l-yom b 3ard wadeh.',
+    cta: '3ytouli',
+    submit: 'Tlb mokalama',
+    noteLabel: 'Wddehi 7ajtek (ikhtiyari)',
+    notePlaceholder: 'Mtl. budget, b3da kits, code promo',
+    successFallback:
+      'Choukrane ! L-équipe dyalna ghadi t3yt lik l-yom b 3ard mounassib.',
+  },
+  // CHA-230 — Volume pro (AR-MA Darija).
+  wholesaler: {
+    ...AR_MA_BASE,
+    intro:
+      'L l-kamiyat l-tijariya (institut, salon, tawzi3), ghadi nsift l-contact dyalek l l-équipe l-tijariya — ghadi y3tou lik 3ard mounassib l mochroo3 dyalek.',
+    cta: '3ytouli (pro)',
+    submit: 'Tlb 3ard',
+    noteLabel: 'Nou3 l-mochroo3 w l-kamiya',
+    notePlaceholder: 'Mtl. institut f Casa, ~50 kits/chhar',
+    successFallback:
+      'Choukrane ! L-équipe l-tijariya ghadi tt3awn m3ak b 3ard khass.',
   },
   manual: {
     ...AR_MA_BASE,

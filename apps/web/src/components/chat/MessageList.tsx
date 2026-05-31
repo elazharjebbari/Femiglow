@@ -12,6 +12,7 @@ import { useChatStore } from './chat-store';
 import { useCannedPair } from './hooks/use-canned-pair';
 import { LeadFormBubble } from './LeadFormBubble';
 import { MessageBubble } from './MessageBubble';
+import { RetryChip } from './RetryChip';
 
 export function MessageList() {
   const messages = useChatStore((s) => s.messages);
@@ -106,9 +107,17 @@ export function MessageList() {
         </ul>
       )}
       {error && (
-        <p role="alert" className="mt-2 text-xs text-rose-600">
-          {error}
-        </p>
+        <div className="mt-2">
+          <p role="alert" className="text-xs text-rose-600">
+            {error.message ?? error.code}
+          </p>
+          {/*
+            CHA-230 Phase 2 — `RetryChip` se rend lui-même conditionnellement
+            (retryable + lastUserText non-null + pas de stream en cours).
+            On le mount inconditionnellement ici, c'est lui qui décide.
+          */}
+          <RetryChip />
+        </div>
       )}
     </div>
   );

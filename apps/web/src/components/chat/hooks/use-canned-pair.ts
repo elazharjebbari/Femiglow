@@ -137,7 +137,14 @@ export function useCannedPair(): {
           });
         }
       } catch (err) {
-        useChatStore.getState().setError((err as Error).message);
+        // CHA-230 — `setError` attend un ChatErrorState structuré (cf.
+        // réconciliation : l'erreur du store est devenue un objet).
+        useChatStore.getState().setError({
+          code: 'unknown',
+          message: (err as Error).message,
+          retryable: false,
+          lastUserText: null,
+        });
       }
     },
     [emit],

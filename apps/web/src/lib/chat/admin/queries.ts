@@ -15,12 +15,14 @@ import {
   chatConversationEvent,
   chatFaqEntry,
   chatFeedback,
+  chatGoldenIntentSet,
   chatKnowledgeSource,
   chatLead,
   chatMessage,
   chatProviderConfig,
   chatSession,
   chatThemePreset,
+  type ChatMessageRow,
   type ChatCannedPairRow,
   type ChatFaqEntryRow,
   type ChatLeadRow,
@@ -408,6 +410,228 @@ export const adminQueries = {
       .from(chatConversationEvent)
       .orderBy(desc(chatConversationEvent.occurredAt))
       .limit(limit);
+  },
+
+  // -------------------------------------------------------------------------
+  // CHA-230 Phase 3 — curator / quality dashboard
+  // -------------------------------------------------------------------------
+
+  /**
+   * Liste paginée des messages user récents avec leur intent classifié,
+   * pour la page `/admin/chat/intent-curator`.
+   *
+   * Filtres optionnels : intent, langue, méthode (regex/llm), date min.
+   * Par défaut : derniers 7 j, role=user, limit 100, ordre desc.
+   */
+  async listMessagesForCurator(
+    opts: {
+      intent?: string;
+      language?: string;
+      method?: 'regex' | 'llm' | 'llm-fixed' | 'golden' | 'manual';
+      since?: Date;
+      limit?: number;
+    } = {},
+  ): Promise<ChatMessageRow[]> {
+    const db = requireChatDb();
+    const start = opts.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const conds = [
+      eq(chatMessage.role, 'user'),
+      gte(chatMessage.createdAt, start),
+      isNotNull(chatMessage.intentTag),
+    ];
+    if (opts.intent) conds.push(eq(chatMessage.intentTag, opts.intent));
+    if (opts.language) conds.push(eq(chatMessage.language, opts.language));
+    if (opts.method) conds.push(eq(chatMessage.intentMethod, opts.method));
+
+    return db
+      .select()
+      .from(chatMessage)
+      .where(and(...conds))
+      .orderBy(desc(chatMessage.createdAt))
+      .limit(opts.limit ?? 100);
+  },
+
+  /**
+   * Aggrégats pour le quality dashboard. Retourne, pour la fenêtre
+   * donnée, le nombre de messages user par intent_tag, par méthode,
+   * et la part golden-tagué.
+   */
+  async qualityKpis(window: KpiWindow = '7d') {
+    const db = requireChatDb();
+    const start = windowStart(window);
+
+    // Distribution par intent.
+    const byIntent = await db
+      .select({
+        intent: chatMessage.intentTag,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentTag),
+        ),
+      )
+      .groupBy(chatMessage.intentTag)
+      .orderBy(desc(sql`COUNT(*)`));
+
+    // Distribution par méthode (regex vs llm vs llm-fixed).
+    const byMethod = await db
+      .select({
+        method: chatMessage.intentMethod,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentMethod),
+        ),
+      )
+      .groupBy(chatMessage.intentMethod);
+
+    // Distribution par confiance.
+    const byConfidence = await db
+      .select({
+        confidence: chatMessage.intentConfidence,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentConfidence),
+        ),
+      )
+      .groupBy(chatMessage.intentConfidence);
+
+    // Total golden-set (cumulé, indépendant de la fenêtre).
+    const [goldenTotal] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatGoldenIntentSet);
+
+    return {
+      byIntent: byIntent.map((r) => ({ intent: r.intent ?? '∅', count: r.n })),
+      byMethod: byMethod.map((r) => ({ method: r.method ?? '∅', count: r.n })),
+      byConfidence: byConfidence.map((r) => ({
+        confidence: r.confidence ?? '∅',
+        count: r.n,
+      })),
+      goldenTotal: goldenTotal?.n ?? 0,
+    };
+  },
+
+  // -------------------------------------------------------------------------
+  // CHA-231 Phase 6 — Lead funnel & resilience (quality dashboard widget)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Aggrégats du funnel lead-form sur la fenêtre choisie. Retourne :
+   *   - offered  : nombre d'offres `chat_lead_form_offered` poussées au client.
+   *   - submitted: nombre de leads créés via `chat_lead_form_submit` (capture
+   *                explicite avec consent RGPD).
+   *   - autoCreated : nombre de leads `chat_lead_auto_created` (filet
+   *                inline-contact — phone détecté en clair sans formulaire).
+   *   - dismissed: nombre d'offres rejetées par l'utilisateur.
+   *   - byReason : ventilation des offres par `payload->>'reason'`.
+   *   - retryFallbackCount : compte des bascules retry/fallback provider.
+   *
+   * Utilisé par `/admin/chat/quality` (widget « Lead funnel & résilience »).
+   *
+   * Implémentation : on lit `chat_conversation_event` (append-only KPI) et
+   * pas `chat_lead` direct — pour rester homogène avec les autres KPIs et
+   * pour pouvoir filtrer sur la fenêtre temps via `occurred_at`.
+   */
+  async leadFunnelKpis(window: KpiWindow = '7d') {
+    const db = requireChatDb();
+    const start = windowStart(window);
+
+    // Total des offres + ventilation par raison (purchase-intent / negotiation
+    // / wholesaler / etc). On récupère en un seul scan.
+    const byReasonRows = await db.execute<{ reason: string; n: number }>(sql`
+      SELECT
+        COALESCE(payload->>'reason', 'unknown') AS reason,
+        COUNT(*)::int AS n
+        FROM chat_conversation_event
+       WHERE type = 'chat_lead_form_offered'
+         AND occurred_at >= ${start.toISOString()}::timestamptz
+       GROUP BY reason
+       ORDER BY n DESC
+    `);
+    const byReason = (
+      (byReasonRows as { rows?: Array<{ reason: string; n: number }> }).rows ??
+      []
+    ).map((r) => ({ reason: r.reason, count: Number(r.n) }));
+    const offered = byReason.reduce((sum, r) => sum + r.count, 0);
+
+    // Capture (RGPD) — submission explicite du formulaire.
+    const [submitted] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_form_submit'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Capture filet de sécurité — phone détecté inline.
+    const [autoCreated] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_auto_created'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Dismissals (utilisateur a fermé l'offre sans soumettre).
+    const [dismissed] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_form_dismiss'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Retry/fallback provider (CHA-230 Phase 2 — si streaming a dû basculer).
+    const [retryFallback] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_provider_retry_or_fallback'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Taux de capture = (submit + auto-created) / offered. Saturé à 100 %
+    // pour rester lisible (si auto > offered, signe que le filet inline
+    // joue à plein avant que l'utilisateur n'ait vu d'offre).
+    const captures =
+      (submitted?.n ?? 0) + (autoCreated?.n ?? 0);
+    const captureRate =
+      offered > 0
+        ? Math.min(100, Math.round((captures / offered) * 1000) / 10)
+        : 0;
+
+    return {
+      offered,
+      submitted: submitted?.n ?? 0,
+      autoCreated: autoCreated?.n ?? 0,
+      dismissed: dismissed?.n ?? 0,
+      captureRate,
+      byReason,
+      retryFallbackCount: retryFallback?.n ?? 0,
+    };
   },
 
   /**

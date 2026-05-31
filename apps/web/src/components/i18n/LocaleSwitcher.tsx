@@ -61,27 +61,25 @@ import { cn } from '@/lib/utils/cn';
 
 /**
  * Lit la locale active de manière résiliente :
- *  - Sous `NextIntlClientProvider` (routes `[locale]/*`) : utilise `useLocale()`
- *    pour bénéficier de la source canonique
- *  - Hors provider (routes legacy `(marketing)/*` côté SSR sans i18n) :
- *    retourne `null` (le composant rendra `null`)
- *  - Fallback runtime : parse le premier segment du pathname si présent
+ *  - Routes `[locale]/*` : le préfixe URL (`/fr`, `/ar`, `/en`) est la
+ *    source canonique → on le lit directement.
+ *  - Routes non préfixées `(marketing)/*` (`/`, `/kit`, …) : depuis la
+ *    Phase 7C, elles sont enveloppées par `NextIntlClientProvider` avec
+ *    `DEFAULT_LOCALE` (FR). Le switcher DOIT donc s'y afficher, FR actif,
+ *    et la bascule navigue vers `/<locale>/…`. On retourne donc
+ *    `DEFAULT_LOCALE` plutôt que `null`.
  *
- * Ce design garantit que :
- *  - Le composant ne crash JAMAIS dans un layout sans provider
- *  - Le composant ne s'affiche QUE sur les routes effectivement localisées
+ * Avant 7C ces routes n'avaient pas de provider et on rendait `null` pour
+ * éviter le crash de `useLocale()` — ce n'est plus le cas (cf. les deux
+ * layouts publics qui montent tous deux le provider).
  */
-function useActiveLocaleSafe(): Locale | null {
-  // useLocale() throw "No intl context" hors provider — on l'isole dans
-  // un try/catch via une wrapper Hook…mais les hooks ne supportent pas le
-  // try/catch direct. Alternative : on lit le pathname raw, et SI le premier
-  // segment est une locale supportée, on l'utilise. Sinon null.
+function useActiveLocaleSafe(): Locale {
   const rawPath = useRawPathname() ?? '/';
   const first = rawPath.split('/').filter(Boolean)[0];
   if (first && isLocale(first)) {
     return first;
   }
-  return null;
+  return DEFAULT_LOCALE;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,12 +122,12 @@ export interface LocaleSwitcherProps {
  * `[locale]/*` (présence du `NextIntlClientProvider`) avant d'appeler les
  * hooks `useLocale()` / `useTranslations()` qui requièrent le provider.
  *
- * Sur les routes legacy (`(marketing)/*` sans i18n), retourne `null` pour
- * éviter le crash de prerender Next.js — gracieusement masqué.
+ * Les deux layouts publics (`(marketing)/*` ET `[locale]/*`) montent
+ * `NextIntlClientProvider` : la locale active est donc toujours résolue
+ * (préfixe URL ou `DEFAULT_LOCALE`) et le switcher s'affiche partout.
  */
 export function LocaleSwitcher(props: LocaleSwitcherProps) {
   const activeLocale = useActiveLocaleSafe();
-  if (!activeLocale) return null;
   return <LocaleSwitcherInner {...props} activeLocale={activeLocale} />;
 }
 

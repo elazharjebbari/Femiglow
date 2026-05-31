@@ -69,6 +69,13 @@ const envSchema = z.object({
   CHAT_LEAD_WEBHOOK_URL: z.string().url().optional(),
   CHAT_LEAD_WEBHOOK_SECRET: z.string().min(16).optional(),
   CHAT_LEAD_CONSENT_VERSION: z.string().min(4).default('2026-05-06'),
+  // CHA-230 Phase 2 — Feature flags pour l'opt-in progressif des Runnables LangChain.
+  // Default `false` → comportement byte-identique à pré-CHA-230. Ship dark, flip
+  // par déploiement, rollback en variant l'env. Pas de toggle DB pour l'instant
+  // (gain marginal vs. complexité — on l'ajoutera si on a vraiment besoin de
+  // bascule à chaud sans redeploy).
+  CHAT_LLM_INTENT_ENABLED: z.enum(['true', 'false']).default('false'),
+  CHAT_PROVIDER_FALLBACK_ENABLED: z.enum(['true', 'false']).default('false'),
   // CHA-260 — Outbound webhook unifié (order, cart-abandon, contact, …).
   // Priorité sur CHAT_LEAD_WEBHOOK_URL ; fallback rétrocompat si absent.
   OUTBOUND_WEBHOOK_URL: z.string().url().optional(),
@@ -188,6 +195,8 @@ export const env = envSchema.parse({
   CHAT_LEAD_WEBHOOK_URL: process.env.CHAT_LEAD_WEBHOOK_URL,
   CHAT_LEAD_WEBHOOK_SECRET: process.env.CHAT_LEAD_WEBHOOK_SECRET,
   CHAT_LEAD_CONSENT_VERSION: process.env.CHAT_LEAD_CONSENT_VERSION,
+  CHAT_LLM_INTENT_ENABLED: process.env.CHAT_LLM_INTENT_ENABLED,
+  CHAT_PROVIDER_FALLBACK_ENABLED: process.env.CHAT_PROVIDER_FALLBACK_ENABLED,
   OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
   OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
   SNAP_CAPI_TOKEN: process.env.SNAP_CAPI_TOKEN,

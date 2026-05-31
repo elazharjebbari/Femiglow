@@ -153,6 +153,10 @@ export const chatLeadTriggerReasonSchema = z.enum([
   // CHA-225 — Nouvelles raisons (intent d'achat / coordonnées posées en clair).
   'purchase-intent',
   'inline-contact',
+  // CHA-230 — Marchandage (rabais/réduction) → escalade humaine immédiate.
+  'negotiation',
+  // CHA-230 — Volume pro (grossiste/distributeur/institut) → escalade commerciale.
+  'wholesaler',
   'manual',
 ]);
 export type ChatLeadTriggerReason = z.infer<typeof chatLeadTriggerReasonSchema>;
@@ -283,6 +287,13 @@ export const chatStreamEvent = z.discriminatedUnion('event', [
       messageId: z.string().optional(),
       code: z.string(),
       message: z.string().optional(),
+      // CHA-230 Phase 2 — Indique au client si l'erreur est transitoire
+      // (réseau, timeout, 5xx, rate-limit). Quand `true`, l'UI peut
+      // proposer un chip "Réessayer". Quand `false` (auth, content-filter,
+      // charter-blocked), inutile de réessayer.
+      // Optional pour rétro-compatibilité : si absent, le client traite
+      // comme `false` (pas de retry proposé).
+      retryable: z.boolean().optional(),
     }),
   }),
   // CHA-208 — Offre proactive du formulaire de capture lead. Événement
@@ -302,8 +313,17 @@ export const chatStreamEvent = z.discriminatedUnion('event', [
         // CHA-225 — Nouvelles copies (intent d'achat / coordonnées en clair).
         'purchase-intent',
         'inline-contact',
+        // CHA-230 — Pivot humain (marchandage) + escalade commerciale (volume pro).
+        'negotiation',
+        'wholesaler',
         'manual',
       ]),
+      // CHA-231 (gap 3) — `force=true` indique que l'utilisateur a
+      // RE-DEMANDÉ explicitement le formulaire (« envoyez moi le
+      // formulaire ») après l'avoir précédemment dismissé. Le client
+      // doit alors bypasser `leadOfferDismissedSessionId` et ré-afficher.
+      // Optional pour rétro-compat ; absent = comportement legacy.
+      force: z.boolean().optional(),
     }),
   }),
 ]);
@@ -419,6 +439,25 @@ export const adminSourceInput = z.object({
   body: z.string().max(200_000).optional(), // markdown / snippet inline
 });
 export type AdminSourceInput = z.infer<typeof adminSourceInput>;
+
+// ---------------------------------------------------------------------------
+// CHA-230 Phase 3 — Admin curator (intent golden-set).
+//
+// Input du POST /api/admin/chat/intent-curator/[messageId] : l'admin
+// confirme ou corrige l'intent classifié pour un message visiteuse,
+// ce qui crée une ligne `chat_golden_intent_set`.
+//
+// `expectedIntent` accepte n'importe quelle string non vide pour rester
+// future-proof (ajout d'intents sans changer le schema). La validation
+// "intent connu" est faite côté UI (dropdown) et au moment de
+// l'export-script (avertissement si intent inconnu rencontré).
+// ---------------------------------------------------------------------------
+
+export const adminGoldenIntentInput = z.object({
+  expectedIntent: z.string().min(1).max(40),
+  notes: z.string().max(500).optional(),
+});
+export type AdminGoldenIntentInput = z.infer<typeof adminGoldenIntentInput>;
 
 export const adminConversationsListQuery = z.object({
   q: z.string().max(200).optional(),

@@ -238,6 +238,18 @@ export const chatMessage = pgTable(
       .default('sent'),
     errorCode: text('error_code'),
     parentMessageId: text('parent_message_id'),
+    // CHA-230 — Tag d'intent persisté pour observabilité, debug admin
+    // et futur pipeline d'enrichissement (golden-set). Nullable car
+    // les anciens messages n'ont pas été classés ; les nouveaux le sont
+    // au moment de la persistance dans l'orchestrator.
+    //
+    //   intentTag        : la classe d'intent retenue (ex. 'purchase-intent')
+    //   intentMethod     : qui a classé ? 'regex' (Phase 1) | 'llm' | 'golden'
+    //   intentConfidence : 'low' | 'medium' | 'high' — pour filtrer le
+    //                      curator UI vers les cas ambigus uniquement.
+    intentTag: text('intent_tag'),
+    intentMethod: text('intent_method'),
+    intentConfidence: text('intent_confidence'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -247,6 +259,10 @@ export const chatMessage = pgTable(
       t.createdAt,
     ),
     statusIdx: index('chat_message_status_idx').on(t.status),
+    // CHA-230 — Index pour le quality-dashboard admin (filtre par intent
+    // sur la fenêtre 7j/30j). On indexe seulement sur intentTag : les
+    // cas par méthode/confiance se filtrent par WHERE secondaire.
+    intentIdx: index('chat_message_intent_idx').on(t.intentTag, t.createdAt),
     // L'index GIN tsvector est créé en SQL brut dans la migration
     // (Drizzle ne sait pas exprimer `to_tsvector(...)` via le DSL).
   }),
@@ -385,6 +401,10 @@ export const chatConversationEvent = pgTable(
         // CHA-225 — formalisation d'un lead `inline-contact` en lead
         // formel après soumission du formulaire (consent RGPD propre).
         'chat_lead_form_upgrade',
+        // CHA-230 — Tracé quand `respond-stream.runnable.ts` a dû retry
+        // ou bascule vers un provider de fallback. Permet d'auditer la
+        // résilience inter-providers depuis /admin/chat/quality.
+        'chat_provider_retry_or_fallback',
         // Webhook dispatch pour leads inline-contact (numéro détecté dans le chat).
         'inline_contact_webhook_sent',
         'inline_contact_webhook_failed',
@@ -493,6 +513,11 @@ export const chatLead = pgTable(
         // le chat → on capture proprement via le formulaire).
         'purchase-intent',
         'inline-contact',
+        // CHA-230 — negotiation (marchandage / rabais) + wholesaler
+        // (volume pro / grossiste). Les deux escaladent vers l'humain
+        // dès le 1er tour. cf. docs/chat-assistant/20-…md §2.6.
+        'negotiation',
+        'wholesaler',
         'manual',
       ],
     }).notNull(),
@@ -797,6 +822,54 @@ export const chatFaqEntry = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// chat_golden_intent_set (CHA-230 Phase 3)
+//
+// Jeu de référence (golden-set) curé par l'admin pour les régressions
+// CI sur la classification d'intent. Chaque ligne est un exemple
+// "texte → intent attendu" validé manuellement par un humain.
+//
+// Cycle de vie :
+//   1. Admin tag manuellement un message via le curator UI →
+//      INSERT golden(text, expected_intent, source_*).
+//   2. Script `pnpm chat:export-golden` exporte les rows en JSON →
+//      tests/golden/intent-fixtures.json.
+//   3. CI charge la fixture et vérifie que `classifyIntent(text).intent
+//      === expected_intent` ≥ 90 % du temps.
+//
+// `source_message_id` / `source_session_id` sont nullable car :
+//   - L'admin peut ajouter un exemple synthétique non lié à un message.
+//   - Si on `forget()` un visiteur (RGPD), le message est supprimé en
+//     cascade mais le golden-text reste (dérivé anonymisé).
+// ---------------------------------------------------------------------------
+
+export const chatGoldenIntentSet = pgTable(
+  'chat_golden_intent_set',
+  {
+    id: text('id').primaryKey(), // cg_xxxxxxxx
+    text: text('text').notNull(),
+    language: text('language', { enum: ['fr', 'ar', 'ar-MA'] }).notNull(),
+    expectedIntent: text('expected_intent').notNull(),
+    sourceMessageId: text('source_message_id').references(
+      () => chatMessage.id,
+      { onDelete: 'set null' },
+    ),
+    sourceSessionId: text('source_session_id').references(
+      () => chatSession.id,
+      { onDelete: 'set null' },
+    ),
+    curatorEmail: text('curator_email').notNull(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    intentIdx: index('chat_golden_intent_idx').on(t.expectedIntent),
+    languageIdx: index('chat_golden_lang_idx').on(t.language),
+    sourceMsgIdx: index('chat_golden_source_msg_idx').on(t.sourceMessageId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Inferred row / insert types
 // ---------------------------------------------------------------------------
 
@@ -821,6 +894,9 @@ export type ChatRuntimeSettingRow = typeof chatRuntimeSetting.$inferSelect;
 export type ChatRuntimeSettingInsert = typeof chatRuntimeSetting.$inferInsert;
 export type ChatLeadRow = typeof chatLead.$inferSelect;
 export type ChatLeadInsert = typeof chatLead.$inferInsert;
+// CHA-230 Phase 3 — golden-set
+export type ChatGoldenIntentRow = typeof chatGoldenIntentSet.$inferSelect;
+export type ChatGoldenIntentInsert = typeof chatGoldenIntentSet.$inferInsert;
 export type ChatIntentCentroidRow = typeof chatIntentCentroid.$inferSelect;
 export type ChatIntentCentroidInsert = typeof chatIntentCentroid.$inferInsert;
 export type ChatIntentExampleRow = typeof chatIntentExample.$inferSelect;

@@ -164,9 +164,9 @@ describe('DEFAULT_INSTRUCTION_AR_MA_V2 (CHA-245 — connaissance produit, darija
   });
 });
 
-describe('DEFAULT_INSTRUCTION_NOTES_V2 (CHA-245 — bump v2.4)', () => {
-  it('commence par le label v2.4', () => {
-    expect(DEFAULT_INSTRUCTION_NOTES_V2.startsWith('v2.4-')).toBe(true);
+describe('DEFAULT_INSTRUCTION_NOTES_V2 (CHA-245 + CHA-230 — bump v2.5)', () => {
+  it('commence par le label v2.5', () => {
+    expect(DEFAULT_INSTRUCTION_NOTES_V2.startsWith('v2.5-')).toBe(true);
   });
 
   it('mentionne les ajouts clés (composition, 199 dh, livraison concrète, brillance 3 semaines, questions complexes)', () => {
