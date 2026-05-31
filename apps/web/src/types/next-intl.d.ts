@@ -20,7 +20,6 @@ declare module 'next-intl' {
   // next-intl utilise cette info pour :
   //   - autocomplete des keys dans useTranslations / getTranslations
   //   - type-check des plurals / interpolations
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface AppConfig {
     Messages: typeof messages;
   }
