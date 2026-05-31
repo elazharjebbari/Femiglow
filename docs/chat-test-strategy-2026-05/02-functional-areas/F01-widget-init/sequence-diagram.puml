@@ -1,0 +1,81 @@
+@startuml F01 Sequence — Widget initialization
+title F01 — Widget initialization (lazy mount + portal + feature flag)
+
+skinparam style strictuml
+skinparam responseMessageBelowArrow true
+autonumber
+
+actor Visiteur as v
+participant "Page hôte\n(Kit/Journal)" as page
+participant "<ChatWidgetDeferred>" as deferred
+participant "<ChatWidget>" as widget
+participant "useFeatureFlag" as ff
+participant "useChatSession" as us
+participant "POST /api/chat/session" as api
+participant "DB (chat_session,\nchat_runtime_setting)" as db
+participant "Document body\n(portal)" as body
+
+v -> page : Visite /kit
+activate page
+page -> deferred : <ChatWidgetDeferred />\n(stub léger, SSR-safe)
+deferred --> page : Stub rendu (0 ko JS visible)
+page --> v : LCP attaint < 2.5s
+
+page -> deferred : requestIdleCallback fired
+deferred -> widget : dynamic import (lazy)
+activate widget
+widget -> ff : useFeatureFlag('CHAT_ENABLED')
+activate ff
+ff -> db : SELECT * FROM chat_runtime_setting\nWHERE key='chat_enabled'
+db --> ff : { value: true }
+ff --> widget : enabled=true
+deactivate ff
+
+alt CHAT_ENABLED = true
+  widget -> us : useChatSession()
+  activate us
+  us -> us : Lire cookie 'chat_session_id'
+  alt cookie absent
+    us -> api : POST { pageUrl, language?, utm? }
+    activate api
+    api -> db : INSERT INTO chat_session
+    db --> api : { sessionId, visitorId }
+    api --> us : 200 { sessionId, visitorId, language }
+    deactivate api
+    us -> us : Set-Cookie chat_session_id, visitor_id
+  else cookie présent
+    us -> us : Reprise session (pas de POST)
+  end
+  us --> widget : { sessionId, visitorId, isReady=true }
+  deactivate us
+
+  widget -> body : Portal mount <ChatLauncher>
+  body --> v : Launcher visible bas-droite (animation fade-in)
+
+else CHAT_ENABLED = false
+  ff --> widget : enabled=false
+  widget --> deferred : null
+  deferred --> page : (DOM vide)
+end
+deactivate widget
+deactivate page
+
+== Cas d'échec POST session ==
+
+opt POST /api/chat/session échoue
+  us -> api : POST (tentative 1)
+  api -> us : 500
+  us -> us : Backoff 500ms
+  us -> api : POST (tentative 2)
+  api -> us : 500
+  us -> us : Backoff 1500ms
+  us -> api : POST (tentative 3)
+  alt tentative 3 OK
+    api -> us : 200
+  else tentative 3 échoue
+    us -> widget : isReady=false, error
+    widget -> body : Launcher hidden OU fallback "Contactez-nous"
+  end
+end
+
+@enduml

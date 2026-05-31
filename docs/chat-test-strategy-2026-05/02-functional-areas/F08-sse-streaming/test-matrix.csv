@@ -1,0 +1,29 @@
+id,layer,scenario,tags,priority,covers_risk,state
+F08-U-01,unit,sse-reader parses well-formed event,@smoke,P0,—,planned
+F08-U-02,unit,sse-reader handles multiline data,@smoke,P1,—,planned
+F08-U-03,unit,sse-reader skips empty heartbeat lines,@smoke,P1,—,planned
+F08-U-04,unit,sse-reader handles malformed JSON gracefully,@critical,P0,—,planned
+F08-U-05,unit,sse-reader respects abort signal,@critical,P0,R5,planned
+F08-U-06,unit,sse-reader parses 1000 chunks in <50ms,@perf,P1,—,planned
+F08-I-01,integration,full pipeline emits start/chunk*/end correctly,@smoke @critical,P0,—,planned
+F08-I-02,integration,pipeline emits error event when LLM throws,@critical,P0,—,planned
+F08-I-03,integration,pipeline emits lead-form-offer when triggered,@critical,P0,—,planned
+F08-I-04,integration,emit message_complete event is contractual ChatStreamEvent,@critical,P0,C5,planned
+F08-I-05,integration,SSE stream gracefully aborted on client disconnect,@critical,P0,R5,planned
+F08-C-01,component,useChatSend opens SSE stream on send,@smoke,P0,—,planned
+F08-C-02,component,useChatSend appends chunks to last assistant message,@smoke @critical,P0,—,planned
+F08-C-03,component,useChatSend handles error event with toast,@critical,P0,—,planned
+F08-C-04,component,useChatSend aborts in-flight stream when sendMessage called again,@critical,P0,R5,planned
+F08-C-05,component,useChatSend shows heartbeat after 10s of silence,@smoke,P1,—,planned
+F08-C-06,component,useChatSend handles connection drop mid-stream (partial state),@critical,P0,—,planned
+F08-C-07,component,useChatSend handles non-SSE response (HTML 500) → toast,@critical,P0,—,planned
+F08-C-08,component,humanize jitter applies on chunks in prod mode,@smoke,P2,—,planned
+F08-C-09,component,humanize disabled when NEXT_PUBLIC_TEST_MODE=true,@smoke,P1,—,planned
+F08-E-01,e2e,visitor sends message receives full assistant reply,@smoke @critical,P0,—,planned
+F08-E-02,e2e,visitor sees streaming chunks progressively,@critical,P0,—,planned
+F08-E-03,e2e,visitor cancels send mid-stream → request aborted,@critical,P0,R5,planned
+F08-MSW-01,msw,POST /api/chat/message returns valid SSE stream,—,—,—,planned
+F08-MSW-02,msw,POST /api/chat/message returns error event mid-stream,—,—,—,planned
+F08-MSW-03,msw,POST /api/chat/message returns lead-form-offer event,—,—,—,planned
+F08-MSW-04,msw,POST /api/chat/message slow chunks (5s delay between),—,—,—,planned
+F08-MSW-05,msw,POST /api/chat/message returns HTML 500 (non-SSE),—,—,—,planned

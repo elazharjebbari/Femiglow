@@ -1,0 +1,26 @@
+id,layer,scenario,tags,priority,covers_risk,owner_team,state
+F01-U-01,unit,useFeatureFlag returns true when env+DB both enabled,@smoke,P0,—,Frontend,planned
+F01-U-02,unit,useFeatureFlag caches result for 30s,@smoke,P1,—,Frontend,planned
+F01-U-03,unit,useChatSession generates new visitor_id if no cookie,@smoke,P0,I8,Frontend,planned
+F01-U-04,unit,useChatSession reuses existing chat_session_id cookie,@smoke,P0,—,Frontend,planned
+F01-U-05,unit,useChatSession retries POST /session 2x on 500,@critical,P1,—,Frontend,planned
+F01-I-01,integration,POST /api/chat/session creates row + sets cookies,@critical,P0,—,Backend,planned
+F01-I-02,integration,POST /api/chat/session reuses session if cookie valid,@critical,P0,—,Backend,planned
+F01-I-03,integration,POST /api/chat/session returns 503 when chat_enabled=false,@critical,P0,—,Backend,planned
+F01-C-01,component,ChatWidgetDeferred mounts ChatWidget after requestIdleCallback,@smoke,P0,—,Frontend,planned
+F01-C-02,component,ChatLauncher visible after mount when CHAT_ENABLED=true,@smoke,P0,—,Frontend,planned
+F01-C-03,component,ChatLauncher hidden when CHAT_ENABLED=false,@critical,P0,—,Frontend,planned
+F01-C-04,component,ChatLauncher fade-in animation (motion-preference reduce respected),@a11y,P1,—,Frontend,planned
+F01-C-05,component,ChatWidget portal renders in document.body,@smoke,P1,—,Frontend,planned
+F01-C-06,component,Error boundary catches lazy load failure,@critical,P1,—,Frontend,planned
+F01-C-07,component,No CLS on launcher mount,@smoke,P1,—,Frontend,planned
+F01-C-08,component,Launcher labeled correctly for screen readers,@a11y,P0,—,Frontend,planned
+F01-C-09,component,Launcher positioned bottom-right for fr-MA locale,@visual,P1,—,Frontend,planned
+F01-C-10,component,Launcher positioned bottom-left for ar-MA locale,@visual,P1,—,Frontend,planned
+F01-E-01,e2e,Widget loads on /kit and launcher visible within 1s,@smoke @critical,P0,—,Frontend,planned
+F01-E-02,e2e,Click launcher → panel opens (visible + focused),@critical,P0,—,Frontend,planned
+F01-E-03,e2e,Widget invisible when CHAT_ENABLED=false (no DOM element),@critical,P0,—,Frontend,planned
+F01-E-04,e2e,Widget LCP impact < 30ms vs page without widget,@perf,P1,—,Frontend,planned
+F01-MSW-01,msw,POST /api/chat/session → 200 stub,—,—,—,Frontend,planned
+F01-MSW-02,msw,POST /api/chat/session → 500 then 200 retry,—,—,—,Frontend,planned
+F01-MSW-03,msw,POST /api/chat/session → 503 (chat_disabled),—,—,—,Frontend,planned

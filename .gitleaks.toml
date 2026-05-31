@@ -50,4 +50,7 @@ regexes = [
   '''placeholder''',
   # Postgres ephemere de CI/e2e (user=pass=postgres, host=localhost) — non secret.
   '''postgres(?:ql)?://postgres:postgres@localhost''',
+  # URLs d'exemple de bases de TEST dans la doc (password=test, host=localhost
+  # ou testcontainers, db=femiglow_test) — placeholders, non secrets.
+  '''postgres(?:ql)?://[^:\s]+:test@''',
 ]

@@ -1,0 +1,6 @@
+id,layer,scenario,tags,priority,covers_risk,state
+F44-U-01,unit,Nominal happy path,@smoke,P1,—,planned
+F44-U-02,unit,Edge case input vide / null,@critical,P1,—,planned
+F44-I-01,integration,Pipeline avec dépendances réelles,@critical,P1,—,planned
+F44-C-01,component,UI/Component nominal,@smoke,P1,—,planned
+F44-E-01,e2e,Parcours bout-en-bout,@critical,P1,—,planned

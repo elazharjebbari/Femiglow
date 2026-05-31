@@ -1,0 +1,61 @@
+id,area,category,layer_unit,layer_integration,layer_component,layer_e2e,layer_msw,priority,risk_audit,owner,test_count_target,coverage_target_pct,blocking_release
+F01,Widget initialization (lazy mount + portal + feature flag),Widget UI,3,2,4,1,2,P1,—,Frontend,12,90,yes
+F02,Launcher toggle (open/close mobile drawer),Widget UI,2,0,5,1,0,P1,—,Frontend,10,90,yes
+F03,Language detect (browser + URL + cookie),Widget UI,4,0,2,1,1,P1,—,Frontend,12,90,yes
+F04,Composer input (validation enter shortcut paste),Widget UI,3,0,8,1,0,P1,—,Frontend,14,90,yes
+F05,Message bubble (role timestamp markdown link),Widget UI,2,0,6,0,0,P1,—,Frontend,10,85,no
+F06,Message list virtualization (scroll auto-anchor),Widget UI,1,0,5,1,0,P2,—,Frontend,8,85,no
+F07,Feedback thumbs (up/down + comment),Widget UI,2,0,4,1,1,P1,—,Frontend,8,85,no
+F08,SSE streaming reception (chunks end error abort),Widget UI,2,4,6,3,2,P0,C5 R5,Frontend,16,95,yes
+F09,Humanize jitter (cadence punctuation pause),Widget UI,4,0,3,0,0,P2,—,Frontend,8,90,no
+F10,Canned suggestions (pills page-aware click),Widget UI,2,1,5,2,1,P1,I3,Frontend,11,90,yes
+F11,Lead form bubble (capture submit validation),Widget UI,3,2,8,2,1,P0,—,Frontend,16,95,yes
+F12,Visitor cookie (persistence A/B variant),Widget UI,4,1,1,1,0,P1,I8,Frontend,8,90,yes
+F13,Theme RTL (tokens dark mode),Widget UI,1,0,4,2,0,P2,—,Frontend,8,85,no
+F14,POST /api/chat/session,API,3,4,0,1,1,P0,—,Backend,12,95,yes
+F15,POST /api/chat/message (SSE),API,3,8,0,3,3,P0,C2 C5 C6 R5,Backend,20,95,yes
+F16,POST /api/chat/session/forget (RGPD),API,4,3,0,1,1,P0,F54,Backend,10,95,yes
+F17,GET /api/chat/health,API,2,2,0,1,0,P1,—,Backend,7,90,no
+F18,POST /api/chat/feedback,API,3,2,0,1,1,P1,—,Backend,8,90,no
+F19,POST /api/chat/event,API,2,2,0,0,0,P2,—,Backend,5,85,no
+F20,GET /api/chat/theme,API,2,1,0,0,0,P2,—,Backend,4,85,no
+F21,GET /api/chat/canned-pair,API,3,2,0,1,1,P1,—,Backend,8,90,yes
+F22,POST /api/chat/lead/contact,API,4,5,0,2,2,P0,—,Backend,15,95,yes
+F23,Sanitize PII (phone email IBAN CNI MA),Orchestrator,8,2,0,0,0,P0,I7,Backend,15,98,yes
+F24,Detect language (text + cookie),Orchestrator,5,1,0,0,0,P1,—,Backend,8,95,no
+F25,Intent detection (cascade regex+vector),Orchestrator,12,3,0,0,1,P0,I2,Backend,22,95,yes
+F26,Charter filter (inbound + outbound),Orchestrator,6,2,0,1,0,P0,M4,Backend,12,98,yes
+F27,Moderation (inbound bloquante + outbound),Orchestrator,5,4,0,2,2,P0,C2,Backend,15,98,yes
+F28,FAQ gateway (embedding match → bypass LLM),Orchestrator,4,5,0,2,2,P0,I3 R2,Backend,15,95,yes
+F29,RAG retrieve (HNSW pgvector cosine),Orchestrator,3,4,0,1,1,P0,I6,Backend,10,95,yes
+F30,Memory window (12 msg sans cap tokens),Orchestrator,3,2,0,0,0,P1,R3,Backend,8,90,yes
+F31,Provider router + circuit breaker,Orchestrator,8,4,0,2,2,P0,C3 C6 I5,Backend,20,98,yes
+F32,LLM streaming (chunks + cost + error),Orchestrator,5,3,0,2,3,P0,R5,Backend,15,95,yes
+F33,Lead decision (10 règles),Orchestrator,10,3,0,2,1,P0,M6,Backend,18,98,yes
+F34,Persist message + KPI events + attribution,Orchestrator,5,4,0,1,0,P0,I1 M1,Backend,14,95,yes
+F35,Budget guard runtime,Orchestrator,4,3,0,1,2,P0,C4,Backend,12,98,yes
+F36,Rate limiting (IP+session+visitor),Orchestrator,5,3,0,1,1,P0,I4,Backend,12,98,yes
+F37,Admin overview dashboard,Admin,1,1,3,2,1,P1,—,Frontend,8,85,no
+F38,Admin conversations list (filter search date),Admin,2,1,4,2,1,P1,—,Frontend,10,85,no
+F39,Admin conversation detail (history actions),Admin,2,2,4,2,1,P1,—,Frontend,10,85,no
+F40,Admin leads CRUD + outcome + export CSV,Admin,3,3,6,3,2,P0,I1 ¹,Frontend,18,90,yes
+F41,Admin care queue (SLA tracking),Admin,2,2,3,2,1,P1,—,Frontend,10,85,no
+F42,Admin analytics (funnel CSAT cost),Admin,2,2,4,2,1,P1,—,Frontend,11,85,no
+F43,Admin audit log,Admin,2,1,3,1,1,P1,—,Frontend,8,85,no
+F44,Admin KPIs deep-dive,Admin,2,2,3,1,1,P1,—,Frontend,9,85,no
+F45,Admin providers CRUD + breaker reset,Admin,3,2,5,2,1,P0,—,Frontend,13,90,yes
+F46,Admin instructions versions (FR/AR/AR-MA),Admin,3,2,4,2,1,P0,F53,Frontend,12,90,yes
+F47,Admin FAQ CRUD + embedding compute,Admin,3,3,5,2,2,P0,I3,Frontend,15,90,yes
+F48,Admin canned pairs CRUD + versioning,Admin,3,3,5,2,2,P0,—,Frontend,15,90,yes
+F49,Admin knowledge sources (URL/PDF ingestion),Admin,2,3,4,2,2,P1,—,Frontend,13,85,no
+F50,Admin themes presets,Admin,1,1,4,1,1,P2,—,Frontend,8,80,no
+F51,Admin system toggles (chat_enabled rate limit),Admin,2,2,3,1,1,P0,—,Frontend,9,90,yes
+F52,Admin language detection stats,Admin,1,1,3,1,0,P2,—,Frontend,6,80,no
+F53,Cross — multilingual (FR/AR/AR-MA cohérence),Cross,4,3,5,3,2,P0,—,Both,17,95,yes
+F54,Cross — RGPD (purge oubli export),Cross,3,4,2,3,2,P0,F16,Both,14,95,yes
+F55,Cross — webhooks lead delivery + retry,Cross,3,5,1,2,3,P0,M3,Backend,14,95,yes
+F56,Cross — Slack alerts (frustration SLA budget),Cross,3,3,1,1,2,P1,—,Backend,10,90,no
+F57,Cross — observability (events latency P95),Cross,3,4,2,2,1,P0,M1 M2,Both,12,90,yes
+F58,Cross — multi-provider matrix (9 providers),Cross,5,3,1,2,2,P1,—,Backend,13,88,no
+F59,Cross — embeddings + vector store (pgvector HNSW),Cross,4,3,0,1,1,P0,—,Backend,9,95,yes
+F60,Cross — cron jobs (KB sync intent recompute digest),Cross,3,4,1,1,1,P0,F58 ²,Backend,10,90,yes

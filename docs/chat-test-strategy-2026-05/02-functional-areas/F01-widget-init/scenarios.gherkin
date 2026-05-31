@@ -1,0 +1,82 @@
+# language: fr
+
+Fonctionnalité: Initialisation du widget chat
+  En tant que visiteur du site
+  Je veux que le chat s'affiche rapidement et discrètement
+  Afin de pouvoir y accéder quand j'en ai besoin sans dégrader ma navigation
+
+  Contexte:
+    Étant donné que je suis sur la page "/kit"
+    Et que la feature flag "CHAT_ENABLED" est à true
+    Et que le serveur "/api/chat/session" répond normalement
+
+  Scénario: Affichage du launcher après le chargement initial
+    Étant donné que la page est en cours de chargement
+    Quand le LCP est atteint
+    Et qu'un délai d'idle est observé
+    Alors le launcher du chat doit être visible dans le coin bas-droit
+    Et il ne doit pas y avoir de saut de mise en page (CLS = 0)
+    Et le launcher doit avoir un label accessible "Ouvrir le chat"
+
+  Scénario: Création de session anonyme en arrière-plan
+    Étant donné que je n'ai pas de cookie "chat_session_id"
+    Quand le widget se monte
+    Alors une requête POST vers "/api/chat/session" est envoyée
+    Et un cookie "chat_session_id" est posé
+    Et un cookie "visitor_id" est posé
+    Et le payload contient l'URL de la page et la langue détectée
+
+  Scénario: Reprise de session existante
+    Étant donné que j'ai un cookie "chat_session_id" valide
+    Quand le widget se monte
+    Alors aucune requête POST vers "/api/chat/session" n'est envoyée
+    Et le launcher est immédiatement disponible
+
+  Scénario: Feature flag désactivé
+    Étant donné que la feature flag "CHAT_ENABLED" est à false
+    Quand la page se charge
+    Alors aucun élément du widget n'est présent dans le DOM
+    Et aucune requête vers "/api/chat/*" n'est envoyée
+
+  Scénario: Échec POST session avec retry
+    Étant donné que la première requête POST /api/chat/session retourne 500
+    Et que la seconde requête retourne 200
+    Quand le widget se monte
+    Alors le launcher devient visible
+    Et le cookie de session est posé
+    Et un seul retry a été effectué
+
+  Scénario: Échec persistant POST session — fallback
+    Étant donné que toutes les requêtes POST /api/chat/session retournent 500
+    Quand le widget se monte
+    Alors le launcher est masqué OU affiche un fallback "Contactez-nous"
+    Et un événement d'erreur est loggé en télémétrie
+
+  Scénario: Navigation mobile
+    Étant donné que mon viewport est 390x844
+    Quand je clique sur le launcher
+    Alors le panel s'ouvre en plein écran
+    Et le focus est sur le composer
+    Et l'arrière-plan est inerte (focus trap actif)
+
+  Scénario: Locale arabe (RTL)
+    Étant donné que la locale est "ar-MA"
+    Quand le widget se monte
+    Alors le launcher est positionné bas-gauche
+    Et la direction du panel est RTL
+    Et les icônes (flèches, etc.) sont miroir
+
+  Scénario: Préférence "reduced motion"
+    Étant donné que mon navigateur a "prefers-reduced-motion: reduce"
+    Quand le widget se monte
+    Alors le launcher apparaît sans animation de fade-in
+    Et l'ouverture du panel se fait sans transition
+
+  Scénario: Plusieurs navigations client-side
+    Étant donné que je suis sur "/kit"
+    Et que le widget est monté
+    Quand je navigue vers "/journal/article-1" (client-side)
+    Et que je navigue de nouveau vers "/kit"
+    Alors le widget est toujours présent (pas de remount intempestif)
+    Et il n'y a qu'une seule session active
+    Et le DOM ne contient qu'une seule instance du portail
