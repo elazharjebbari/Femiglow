@@ -4,10 +4,10 @@ import { EditorialLetter } from './EditorialLetter';
 import { expectNoAxeViolations } from '@/test/axe';
 
 describe('EditorialLetter', () => {
-  it('rend la signature « Souheila »', () => {
+  it('rend la signature de la fondatrice (anonymisée — politique no-founder)', () => {
     render(<EditorialLetter firstName="Salma" />);
-    expect(screen.getByText('Souheila')).toBeInTheDocument();
-    expect(screen.getByText(/fondatrice/i)).toBeInTheDocument();
+    expect(screen.getByText('notre fondatrice')).toBeInTheDocument();
+    expect(screen.getByText('Fondatrice · FemiGlow')).toBeInTheDocument();
   });
 
   it('rend le mot d’ouverture personnalisé', () => {

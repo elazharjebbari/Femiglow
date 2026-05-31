@@ -71,6 +71,10 @@ describe('SEED_RITUALS — distribution éditoriale', () => {
       'Kénitra',
       'Autre',
       null,
+      // Villes en arabe pour les avis localisés AR (endonymes).
+      'الرباط', // Rabat
+      'الدار البيضاء', // Casablanca
+      'سلا', // Salé
     ]);
     for (const r of SEED_RITUALS) {
       expect(allowed.has(r.authorCity)).toBe(true);

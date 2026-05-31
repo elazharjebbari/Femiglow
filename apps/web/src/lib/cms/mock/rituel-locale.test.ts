@@ -25,7 +25,8 @@ describe('mockAdapter.getRituelPageContent — locale dispatch', () => {
     expect(content.hero.title).toBe('مانيكور ياباني. حركتان. إشراقة بطيئة.');
     // CTA pivot — verbe au féminin (استلمي)
     expect(content.pivot.cta.label).toMatch(/استلمي/);
-    expect(content.pivot.cta.label).toMatch(/MAD/);
+    // Devise localisée en arabe : « درهم » (dirham), pas le code latin « MAD ».
+    expect(content.pivot.cta.label).toMatch(/درهم/);
   });
 
   it('EN : retourne le hero anglais', async () => {

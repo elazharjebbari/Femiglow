@@ -23,8 +23,8 @@ describe('mockAdapter.getHomepageContent — locale dispatch', () => {
     // Le titre doit contenir des caractères arabes
     expect(content.hero.title).toMatch(/[؀-ۿ]/);
     expect(content.hero.title).toBe('كيت فيمي قلو. حركتان، إشراق مكشوف.');
-    // CTA en arabe — verbe au féminin (اكتشفي)
-    expect(content.hero.cta!.label).toBe('اكتشفي الطقوس');
+    // CTA en arabe — verbe au féminin (اكتشفي) ; focus produit « الكيت » (le kit)
+    expect(content.hero.cta!.label).toBe('اكتشفي الكيت');
   });
 
   it('EN : retourne le hero anglais', async () => {

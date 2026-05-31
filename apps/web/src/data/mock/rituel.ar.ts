@@ -12,7 +12,8 @@
  *
  * Voix : MSA simplifié, adresse féminine systématique (impératifs
  * féminins). Termes de marque préservés en latin : `عجينة`, `بودرة`,
- * Phase 9 : termes de marque traduits (عجينة/بودرة/الخطوة 4/تلميع), loanwords
+ * Phase 9 : step-names de marque préservés en latin (Paste/Powder/Step 4),
+ * générique localisé (تلميع = polissage), loanwords
  * japonais translittérés (كاواي/تشيغيري), INCI rendu en arabe avec l'acronyme
  * entre parenthèses. Restent en latin : `FemiGlow`, l'acronyme `(INCI)` entre
  * parenthèses et citations académiques (V.O.). Lexique :
@@ -75,9 +76,11 @@ export const mockRituelAr: RituelPageContent = {
     transcript:
       'الموضة الكبرى «كلين غيرل» للأظافر هي المانيكور الياباني. لكن، هناك شيء يجب أن تعرفيه قطعا.\n\nالمانيكور الياباني هو في الواقع عناية تُطبَّق على لوحة الظفر وتُغذِّيها وتُلمِّعها لمدّة ثلاثة أسابيع على الأقلّ.\n\nبالطبع، إن كانت أظافرك متعَبة أو مخطّطة أو تمّت إزالة سابقة بشكل سيّئ، النتيجة لن تكون في أفضل حالاتها. عليك أوّلا أن تعتني بأظافرك حتى تُرمَّم بأقصى ما يمكن للحصول على نتيجة مُثلى.\n\nفي المقابل، بما أنّ المانيكور الياباني يحتوي على شمع نحل، سيليكات، بودرة لؤلؤ وأشياء جميلة كثيرة، فإنّه يساعد على ترميم لوحتك. إنّها عناية عميقة.',
     chapters: [
-      { key: 'paste', label: 'عجينة', startSeconds: 0 },
-      { key: 'powder', label: 'بودرة', startSeconds: 18 },
-      { key: 'step-4', label: 'الخطوة 4', startSeconds: 42 },
+      // Step-names de marque préservés en latin (comme FR/EN) ; le générique
+      // « polissage » reste localisé.
+      { key: 'paste', label: 'Paste', startSeconds: 0 },
+      { key: 'powder', label: 'Powder', startSeconds: 18 },
+      { key: 'step-4', label: 'Step 4', startSeconds: 42 },
       { key: 'polissage', label: 'تلميع', startSeconds: 68 },
     ],
     provenance: 'صُوِّر في ورشة الرباط، مارس 2026.',
@@ -97,7 +100,7 @@ export const mockRituelAr: RituelPageContent = {
         id: 'kaolin',
         titre: 'الكاولين المُلمِّع',
         paragraphe:
-          'طين أبيض لطيف. حين تُملَّس اللوحة، لا يحفر مُلمِّع الخطوة 4 — بل يكشف اللمعان الطبيعي للكيراتين².',
+          'طين أبيض لطيف. حين تُملَّس اللوحة، لا يحفر مُلمِّع Step 4 — بل يكشف اللمعان الطبيعي للكيراتين².',
         sourceRef: '[2]',
       },
       {
