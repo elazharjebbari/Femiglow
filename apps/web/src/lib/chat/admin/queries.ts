@@ -318,4 +318,112 @@ export const adminQueries = {
       goldenTotal: goldenTotal?.n ?? 0,
     };
   },
+
+  // -------------------------------------------------------------------------
+  // CHA-231 Phase 6 — Lead funnel & resilience (quality dashboard widget)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Aggrégats du funnel lead-form sur la fenêtre choisie. Retourne :
+   *   - offered  : nombre d'offres `chat_lead_form_offered` poussées au client.
+   *   - submitted: nombre de leads créés via `chat_lead_form_submit` (capture
+   *                explicite avec consent RGPD).
+   *   - autoCreated : nombre de leads `chat_lead_auto_created` (filet
+   *                inline-contact — phone détecté en clair sans formulaire).
+   *   - dismissed: nombre d'offres rejetées par l'utilisateur.
+   *   - byReason : ventilation des offres par `payload->>'reason'`.
+   *   - retryFallbackCount : compte des bascules retry/fallback provider.
+   *
+   * Utilisé par `/admin/chat/quality` (widget « Lead funnel & résilience »).
+   *
+   * Implémentation : on lit `chat_conversation_event` (append-only KPI) et
+   * pas `chat_lead` direct — pour rester homogène avec les autres KPIs et
+   * pour pouvoir filtrer sur la fenêtre temps via `occurred_at`.
+   */
+  async leadFunnelKpis(window: KpiWindow = '7d') {
+    const db = requireChatDb();
+    const start = windowStart(window);
+
+    // Total des offres + ventilation par raison (purchase-intent / negotiation
+    // / wholesaler / etc). On récupère en un seul scan.
+    const byReasonRows = await db.execute<{ reason: string; n: number }>(sql`
+      SELECT
+        COALESCE(payload->>'reason', 'unknown') AS reason,
+        COUNT(*)::int AS n
+        FROM chat_conversation_event
+       WHERE type = 'chat_lead_form_offered'
+         AND occurred_at >= ${start.toISOString()}::timestamptz
+       GROUP BY reason
+       ORDER BY n DESC
+    `);
+    const byReason = (
+      (byReasonRows as { rows?: Array<{ reason: string; n: number }> }).rows ??
+      []
+    ).map((r) => ({ reason: r.reason, count: Number(r.n) }));
+    const offered = byReason.reduce((sum, r) => sum + r.count, 0);
+
+    // Capture (RGPD) — submission explicite du formulaire.
+    const [submitted] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_form_submit'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Capture filet de sécurité — phone détecté inline.
+    const [autoCreated] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_auto_created'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Dismissals (utilisateur a fermé l'offre sans soumettre).
+    const [dismissed] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_form_dismiss'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Retry/fallback provider (CHA-230 Phase 2 — si streaming a dû basculer).
+    const [retryFallback] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_provider_retry_or_fallback'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Taux de capture = (submit + auto-created) / offered. Saturé à 100 %
+    // pour rester lisible (si auto > offered, signe que le filet inline
+    // joue à plein avant que l'utilisateur n'ait vu d'offre).
+    const captures =
+      (submitted?.n ?? 0) + (autoCreated?.n ?? 0);
+    const captureRate =
+      offered > 0
+        ? Math.min(100, Math.round((captures / offered) * 1000) / 10)
+        : 0;
+
+    return {
+      offered,
+      submitted: submitted?.n ?? 0,
+      autoCreated: autoCreated?.n ?? 0,
+      dismissed: dismissed?.n ?? 0,
+      captureRate,
+      byReason,
+      retryFallbackCount: retryFallback?.n ?? 0,
+    };
+  },
 };

@@ -13,7 +13,8 @@ import { useCallback, useRef } from 'react';
 import { useChatStore } from '../chat-store';
 import { readSseStream } from '../sse-reader';
 import { humanizeStream } from '../humanize.client';
-import type { ChatLanguage } from '@/lib/chat/contracts';
+import type { ChatLanguage, ChatLeadTriggerReason } from '@/lib/chat/contracts';
+import { chatLeadTriggerReasonSchema } from '@/lib/chat/contracts';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
 export function useChatSend(): {
@@ -49,6 +50,10 @@ export function useChatSend(): {
 
     const controller = new AbortController();
     abortRef.current = controller;
+
+    // CHA-231 (gap 1) — Hoisted hors du `try` pour être lisible depuis
+    // le `finally` qui réconcilie via /api/chat/lead-status.
+    let sawLeadFormOffer = false;
 
     try {
       // Pipeline : SSE → buffer chunks → cadenceur (humanizeStream)
@@ -87,11 +92,23 @@ export function useChatSend(): {
       );
 
       let firstTokenAt: number | null = null;
+      // CHA-231 (gap 1) — On track si on a vu un `lead-form-offer`
+      // pendant le stream. Si NON et que l'utilisateur a clos le panel
+      // ou si le SSE a été coupé, on pull /api/chat/lead-status après
+      // pour réconcilier l'état. (Hoisted plus haut pour scope `finally`.)
 
       for await (const ev of readSseStream({
         url: '/api/chat/message',
         body: { sessionId: state.sessionId, text: trimmed },
         signal: controller.signal,
+        onInvalidEvent: (info) => {
+          // CHA-231 (gap 4) — observable côté télémétrie pour debug.
+          emit('chat_sse_invalid_event', {
+            session_id: state.sessionId,
+            raw_event: info.rawEvent,
+            issues: info.issues,
+          });
+        },
       })) {
         if (ev.event === 'start') {
           if (ev.data.language && ev.data.language !== state.language) {
@@ -128,10 +145,15 @@ export function useChatSend(): {
           });
         } else if (ev.event === 'lead-form-offer') {
           // CHA-213 — Pousse l'offre dans le store ; affichage géré par <MessageList>.
+          // CHA-231 (gap 3) — `force` permet au serveur de bypasser une
+          // dismissal antérieure quand l'utilisateur a explicitement
+          // re-demandé le formulaire.
+          sawLeadFormOffer = true;
           useChatStore.getState().receiveLeadOffer({
             messageId: ev.data.messageId,
             reason: ev.data.reason,
             copyKey: ev.data.copyKey,
+            force: ev.data.force ?? false,
           });
           emit('chat_lead_form_offered', {
             session_id: state.sessionId,
@@ -171,6 +193,58 @@ export function useChatSend(): {
       }
     } finally {
       abortRef.current = null;
+      // CHA-231 (gap 1) — Réconciliation post-SSE :
+      //   Si le SSE n'a pas livré de `lead-form-offer` (drop réseau,
+      //   timeout, throttle Cloudflare…), on pull /api/chat/lead-status
+      //   pour vérifier si le serveur en avait un en attente. L'API
+      //   retourne au plus 1 offre récente — si elle existe et qu'on
+      //   ne l'a pas déjà capturée, on déclenche `receiveLeadOffer`
+      //   en différé. Best-effort : toute erreur ici est swallow.
+      if (!sawLeadFormOffer && state.sessionId) {
+        try {
+          const resp = await fetch(
+            `/api/chat/lead-status?sessionId=${encodeURIComponent(state.sessionId)}`,
+            { credentials: 'include' },
+          );
+          if (resp.ok) {
+            const data = (await resp.json()) as {
+              ok: true;
+              hasPendingOffer: boolean;
+              leadCaptured: boolean;
+              lastOffer?: {
+                messageId: string;
+                reason: string;
+                copyKey: string;
+                force: boolean;
+              };
+            };
+            if (data.hasPendingOffer && data.lastOffer && !data.leadCaptured) {
+              // Validation Zod : on ne fait pas confiance à la valeur
+              // brute de `reason` côté serveur (peut être un enum
+              // étendu plus tard sans coordination).
+              const reasonParsed = chatLeadTriggerReasonSchema.safeParse(
+                data.lastOffer.reason,
+              );
+              if (reasonParsed.success) {
+                const reason: ChatLeadTriggerReason = reasonParsed.data;
+                useChatStore.getState().receiveLeadOffer({
+                  messageId: data.lastOffer.messageId,
+                  reason,
+                  copyKey: data.lastOffer.copyKey,
+                  force: data.lastOffer.force,
+                });
+                emit('chat_lead_form_recovered', {
+                  session_id: state.sessionId,
+                  message_id: data.lastOffer.messageId,
+                  reason,
+                });
+              }
+            }
+          }
+        } catch {
+          // Network is fucked — pas grave, l'utilisateur retentera.
+        }
+      }
     }
   }, []);
 

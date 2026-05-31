@@ -4,13 +4,22 @@
  * `fetch` + `ReadableStream` permettent de POST avec body JSON tout
  * en lisant les évènements `event: …\ndata: …\n\n`. Plus puissant que
  * `EventSource` qui ne supporte que GET sans body.
+ *
+ * CHA-231 — Validation Zod côté client (gap 4) :
+ *   Chaque event SSE est validé par `chatStreamEvent.safeParse`. Si
+ *   le payload ne respecte pas le contrat (server bug, attaque MITM,
+ *   décalage de version), on log et on skip l'event au lieu de
+ *   crasher l'iteration. Cela protège l'UI contre des deltas mal
+ *   formés ou des champs renommés sans coordination.
  */
-import type { ChatStreamEvent } from '@/lib/chat/contracts';
+import { chatStreamEvent, type ChatStreamEvent } from '@/lib/chat/contracts';
 
 export interface SseReaderOptions {
   url: string;
   body: unknown;
   signal?: AbortSignal;
+  /** CHA-231 — callback opt-in pour observer les events invalides (debug/telemetry). */
+  onInvalidEvent?: (info: { rawEvent: string; rawData: string; issues: string }) => void;
 }
 
 export async function* readSseStream(
@@ -40,7 +49,7 @@ export async function* readSseStream(
       while ((separator = buffer.indexOf('\n\n')) !== -1) {
         const block = buffer.slice(0, separator);
         buffer = buffer.slice(separator + 2);
-        const ev = parseSseBlock(block);
+        const ev = parseSseBlock(block, opts.onInvalidEvent);
         if (ev) yield ev;
       }
     }
@@ -49,7 +58,19 @@ export async function* readSseStream(
   }
 }
 
-function parseSseBlock(block: string): ChatStreamEvent | null {
+/**
+ * Parse + valide un bloc SSE. Retourne `null` si :
+ *   - L'event field est manquant.
+ *   - Le JSON data est invalide.
+ *   - Le payload ne respecte pas le schéma `chatStreamEvent`.
+ *
+ * Le callback `onInvalidEvent` permet d'observer les violations sans
+ * qu'elles cassent le stream — utile pour le monitoring en prod.
+ */
+export function parseSseBlock(
+  block: string,
+  onInvalidEvent?: SseReaderOptions['onInvalidEvent'],
+): ChatStreamEvent | null {
   let event = '';
   const dataLines: string[] = [];
   for (const line of block.split('\n')) {
@@ -58,12 +79,25 @@ function parseSseBlock(block: string): ChatStreamEvent | null {
   }
   if (!event) return null;
   let data: unknown = null;
-  if (dataLines.length > 0) {
+  const rawData = dataLines.join('\n');
+  if (rawData) {
     try {
-      data = JSON.parse(dataLines.join('\n'));
+      data = JSON.parse(rawData);
     } catch {
-      data = null;
+      onInvalidEvent?.({ rawEvent: event, rawData, issues: 'JSON parse failed' });
+      return null;
     }
   }
-  return { event, data } as ChatStreamEvent;
+  // CHA-231 — validation Zod (gap 4). On ne fait pas confiance à la
+  // structure du serveur : un mismatch = skip + log.
+  const parsed = chatStreamEvent.safeParse({ event, data });
+  if (!parsed.success) {
+    onInvalidEvent?.({
+      rawEvent: event,
+      rawData,
+      issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', '),
+    });
+    return null;
+  }
+  return parsed.data;
 }

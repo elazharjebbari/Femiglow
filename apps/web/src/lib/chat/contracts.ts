@@ -267,6 +267,12 @@ export const chatStreamEvent = z.discriminatedUnion('event', [
         'wholesaler',
         'manual',
       ]),
+      // CHA-231 (gap 3) — `force=true` indique que l'utilisateur a
+      // RE-DEMANDÉ explicitement le formulaire (« envoyez moi le
+      // formulaire ») après l'avoir précédemment dismissé. Le client
+      // doit alors bypasser `leadOfferDismissedSessionId` et ré-afficher.
+      // Optional pour rétro-compat ; absent = comportement legacy.
+      force: z.boolean().optional(),
     }),
   }),
 ]);

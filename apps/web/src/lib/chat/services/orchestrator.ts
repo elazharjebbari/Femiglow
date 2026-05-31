@@ -285,6 +285,13 @@ export async function* streamReply(
     const { stream, final } = respondOut;
     // Trace KPI les tentatives (utile pour Sentry et le quality dashboard).
     if (fallbackEnabled && respondOut.attempts.length > 1) {
+      // CHA-231 Phase 6 — Tags LangSmith-style. Permet à un future export
+      // vers un tracer externe (LangSmith, Sentry Spans) de classifier
+      // l'événement sans devoir replonger dans le payload. Format :
+      //   ['chat', 'pipeline:respond-stream', 'outcome:retried|fallback']
+      const triggeredFallback = respondOut.attempts.some(
+        (a) => a.providerId === fallbackAdapter?.id,
+      );
       await eventRepo.append(input.session.id, 'chat_provider_retry_or_fallback', {
         servedBy: respondOut.servedBy,
         attempts: respondOut.attempts.map((a) => ({
@@ -293,6 +300,12 @@ export async function* streamReply(
           code: a.error?.code,
           durationMs: a.durationMs,
         })),
+        tags: [
+          'chat',
+          'pipeline:respond-stream',
+          triggeredFallback ? 'outcome:fallback' : 'outcome:retried',
+          `served-by:${respondOut.servedBy.providerId}`,
+        ],
       });
     }
     for await (const chunk of stream) {
@@ -408,9 +421,28 @@ export async function* streamReply(
           enabled: true,
         });
 
-        // CHA-230 v5 — Filet de sécurité « LLM promet le formulaire ».
-        // cf. `lead-decision.ts#assistantPromisedForm` pour la politique.
-        const llmPromisedForm = !alreadyOffered && assistantPromisedForm(aggregated);
+        // CHA-230 v5 + CHA-231 v7 — Filet de sécurité « LLM promet le formulaire ».
+        //
+        // Bug prod 2026-05-08 : un lead auto-créé (inline-contact, nom
+        // par défaut « Visiteur ») suffisait à mettre `alreadyOffered=true`
+        // et à éteindre le filet. L'utilisateur lisait alors « validez vos
+        // coordonnées via le petit formulaire juste en dessous » sans
+        // qu'aucun widget ne s'affiche — promesse trahie.
+        //
+        // Politique corrigée : on bloque le filet UNIQUEMENT si l'utilisateur
+        // a déjà fait une soumission EXPLICITE (event `chat_lead_form_submit`).
+        // Tant que la soumission n'est pas confirmée, le LLM peut re-promettre
+        // le form et le widget s'affichera (force=true → bypass dismiss aussi).
+        // Le store client dédoublonne via `pendingLeadOffer`, donc montrer
+        // plusieurs fois le même message-id ne crée pas de doublon visuel.
+        //
+        // cf. `lead-decision.ts#assistantPromisedForm` pour les patterns.
+        const explicitlySubmitted = await eventRepo.hasEventOfType(
+          input.session.id,
+          'chat_lead_form_submit',
+        );
+        const llmPromisedForm =
+          !explicitlySubmitted && assistantPromisedForm(aggregated);
 
         let finalDecision = decision;
         if (!decision.shouldOffer && llmPromisedForm) {
@@ -429,10 +461,38 @@ export async function* streamReply(
         }
 
         if (finalDecision.shouldOffer && finalDecision.reason && finalDecision.copyKey) {
+          // CHA-231 (gap 3) — Bypass de la dismissal :
+          //   Si la raison est 'explicit-request' (l'user a tapé
+          //   « envoyez moi le formulaire » / « donnez le formulaire »)
+          //   ou 'inline-contact' (l'user a posé son numéro en clair)
+          //   ou 'llm-promised-form' (le LLM a promis le formulaire),
+          //   on force l'affichage côté client même s'il avait dismissé
+          //   précédemment. C'est une demande active = consent.
+          const force =
+            finalDecision.reason === 'explicit-request' ||
+            finalDecision.reason === 'inline-contact' ||
+            finalDecision.debug?.safetyNet === 'llm-promised-form';
+          // CHA-231 Phase 6 — Tags LangSmith-style. Permet au quality
+          // dashboard et à un futur export tracer (LangSmith) de filtrer
+          // par dimension sans introspecter le payload. Convention :
+          //   ['chat', 'pipeline:lead-decision', 'reason:<reason>',
+          //    'language:<lang>', 'force:true?']
+          const eventTags: string[] = [
+            'chat',
+            'pipeline:lead-decision',
+            `reason:${finalDecision.reason}`,
+            `language:${language}`,
+          ];
+          if (force) eventTags.push('force:true');
+          if (finalDecision.debug?.safetyNet === 'llm-promised-form') {
+            eventTags.push('safety-net:llm-promised-form');
+          }
           await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
             messageId: assistantMessage.id,
             reason: finalDecision.reason,
             copyKey: finalDecision.copyKey,
+            force,
+            tags: eventTags,
           });
           yield {
             event: 'lead-form-offer',
@@ -440,6 +500,7 @@ export async function* streamReply(
               messageId: assistantMessage.id,
               reason: finalDecision.reason,
               copyKey: finalDecision.copyKey,
+              force,
             },
           };
         }

@@ -219,6 +219,23 @@ describe('intent — robustesse adversariale (CHA-225)', () => {
       expect(detectIntent('bghit nshri kit dyalkom daba')).toBe('purchase-intent');
     });
 
+    // CHA-230 v7 — Darija écrite en SCRIPT ARABE (gap pré-existant).
+    // Ces formes sont détectées comme `ar-MA` côté lang.detect (cf.
+    // DARIJA_AR_TOKENS), mais l'intent classifier ne les couvrait pas →
+    // tombait en `misc` → pas de form de capture côté chat.
+    it.each([
+      'بغيت نشري الكيت',
+      'بغيت نطلب الكيت',
+      'بغيت نشري الطقم',
+      'بغيت الكيت',
+      'بغينا نشري الكيت',
+      'نشري الكيت',
+      'نطلب الكيت',
+      'نطلب الطقم',
+    ])('détecte purchase-intent sur Darija-AR-script "%s"', (input) => {
+      expect(detectIntent(input)).toBe('purchase-intent');
+    });
+
     it("Phrase qui mêle FR/AR/Darija — détection robuste", () => {
       // Un visiteur réel peut mélanger : "Salam, je voudrais ntleb le kit"
       const r = classifyIntent('Salam, je voudrais ntleb le kit');
@@ -392,6 +409,79 @@ describe('intent — CHA-230 (commander seul / negotiation / wholesaler)', () =>
       // promo seul matche objection-price (1) ET negotiation (1) — l'ordre
       // des règles détermine le gagnant.
       expect(r.score).toBeLessThanOrEqual(2);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Frustration — robustesse étendue (CHA-230 v7)
+  // ---------------------------------------------------------------------------
+  // Cause-racine : le pattern initial était trop étroit. « Personne ne répond
+  // c'est inadmissible !! » et « Je suis énervée » retombaient en `misc`,
+  // empêchant le déclenchement du safety-net via `frustration` (tour 2+).
+  //
+  // Particularité technique : `\b` JS ne reconnaît pas les caractères accentués
+  // (é, è, à) comme des caractères de mot, donc « énervée » échouait avec un
+  // simple `\b...\b`. On utilise des lookarounds `(?<![a-zA-Zà-ÿ])...(?![a-zA-Zà-ÿ])`
+  // pour les patterns avec accents.
+  // ---------------------------------------------------------------------------
+  describe('frustration — variantes étendues (CHA-230)', () => {
+    it.each([
+      // Strong patterns (score 2 chacun)
+      "C'est inadmissible !",
+      'Inacceptable cette situation',
+      "C'est un scandale",
+      'Scandaleux !',
+      'Je suis énervée',
+      'Je suis énervé par votre service',
+      "Je suis en colère",
+      'Je suis furieuse',
+      'Personne ne répond',
+      "Personne ne me répond depuis 3 jours",
+      "Personne ne me rappelle",
+      "J'en ai marre !",
+      "C'est nul",
+      "C'est vraiment nul votre service",
+      "C'est n'importe quoi",
+      "C'est une honte",
+      "C'est abusé !",
+      "C'est vraiment abusé",
+    ])('détecte frustration sur "%s"', (input) => {
+      expect(detectIntent(input)).toBe('frustration');
+    });
+
+    it.each([
+      // Standard patterns (mécontentement)
+      'Je suis mécontente',
+      'Je ne suis pas content',
+      'Je suis pas contente',
+      'Je suis déçue par votre service',
+      "C'est décevant",
+    ])('détecte frustration (standard) sur "%s"', (input) => {
+      expect(detectIntent(input)).toBe('frustration');
+    });
+
+    it.each([
+      // Darija (Latin + Arabe)
+      'safi',
+      'baraka',
+      'يكفي',
+      'محتقن',
+      'متضايقة',
+    ])('détecte frustration (multilingue) sur "%s"', (input) => {
+      expect(detectIntent(input)).toBe('frustration');
+    });
+
+    it("strong pattern frustration → score ≥ 2", () => {
+      const r = classifyIntent("C'est inadmissible !");
+      expect(r.intent).toBe('frustration');
+      expect(r.score).toBeGreaterThanOrEqual(2);
+    });
+
+    it("anti-faux-positif : phrase neutre ne déclenche PAS frustration", () => {
+      // Une question informationnelle ne doit jamais matcher frustration.
+      expect(detectIntent("C'est combien le kit ?")).not.toBe('frustration');
+      expect(detectIntent('Bonjour')).not.toBe('frustration');
+      expect(detectIntent("Je voudrais des informations")).not.toBe('frustration');
     });
   });
 });

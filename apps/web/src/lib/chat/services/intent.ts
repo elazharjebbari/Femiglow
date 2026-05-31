@@ -100,9 +100,19 @@ const RULES: PatternRule[] = [
   {
     intent: 'pricing',
     patterns: [
-      /\b(prix|combien|coute|coûte|tarif|tarifs|cost|price|abordable)\b/i,
+      // CHA-231 — `(?<![a-zA-Zà-ÿ])X(?![a-zA-Zà-ÿ])` simule \b en multilingue
+      // (le \b natif JS échoue après les accents é/è/ç).
+      /(?<![a-zA-Zà-ÿ])(prix|combien|coute|coûte|tarif|tarifs|cost|price|abordable|c['’]?est\s+combien|ça\s+vaut|ca\s+vaut)(?![a-zA-Zà-ÿ])/i,
       /\b(chhal|kifach taman|t9awim|bch7al)\b/i,
       /(سعر|ثمن|كم)/,
+    ],
+    // CHA-231 — anti-faux-positifs :
+    // - « combien de fois » (routine) ne doit PAS être pricing
+    // - « tarif de livraison » est OK comme pricing, mais
+    //   « temps de livraison » est shipping (négation needed)
+    negate: [
+      /\bcombien\s+(de\s+)?(fois|temps)\b/i,
+      /\btemps\s+de\s+livraison\b/i,
     ],
   },
   // CHA-230 — Négociation explicite (marchandage / demande de rabais).
@@ -114,7 +124,11 @@ const RULES: PatternRule[] = [
     // Patterns FORTS — formulations qui ne peuvent PAS vouloir dire autre
     // chose. Ce sont des demandes commerciales actives.
     strong: [
-      /\b(rabais|remise|n[ée]goci(?:er|ation|ons|able)|baisser\s+le\s+prix|geste\s+commercial|prix\s+sp[ée]cial|code\s+(?:promo|promotion|reduction|réduction))\b/i,
+      // CHA-231 — `baisser le prix/tarif` est exclusif à la négociation.
+      // On élargit avec « pouvez-vous baisser » même sans complément, et
+      // on capture aussi « tarif » seul après « baisser » (sinon
+      // « baisser le tarif » match seulement pricing via le mot « tarif »).
+      /\b(rabais|remise|n[ée]goci(?:er|ation|ons|able)|baisser\s+(?:le\s+)?(?:prix|tarif|tarifs)|pouvez[-\s]?vous\s+baisser|geste\s+commercial|prix\s+sp[ée]cial|code\s+(?:promo|promotion|reduction|réduction))\b/i,
       /\b(faire\s+un\s+effort|effort\s+commercial|faire\s+un\s+prix)\b/i,
       // Darija : « tnzli/khessmi/3tini takhfid » — demandes explicites de remise.
       /\b(tnzli\s+(?:liya\s+)?(?:taman|prix|chwiya)|khessmi\s+(?:liya\s+)?chi|3tini\s+(?:wahd\s+)?(?:takhfid|tnzil|prix\s+special)|naqsalna|tkhfid|chi\s+takhfid)\b/i,
@@ -182,13 +196,19 @@ const RULES: PatternRule[] = [
       // lettres accentuées (« quantité » → `é` est non-word → `\b` échoue).
       // Le pattern `(?![a-zA-Zà-ÿ])` simule correctement la fin de mot
       // multilingue et matche aussi "quantité" en fin de phrase.
-      /(?<![a-zA-Zà-ÿ])(grande\s+quantit[ée]s?|gros\s+volume|en\s+gros|achat\s+en\s+gros|grossiste)(?![a-zA-Zà-ÿ])/i,
-      /\b(revendre|revente|distribut(?:eur|rice|eurs|rices|ion)|fournisseur|stock(?:er|age)?\s+(?:pour|en|un)\s+stock?)\b/i,
-      /(?<![a-zA-Zà-ÿ])(plusieurs\s+(?:dizaines|centaines|milliers|kits)|\d{2,}\s+(?:unit[ée]s?|pi[èe]ces?|kits?))(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])(grande\s+quantit[ée]s?|grosse\s+quantit[ée]s?|gros\s+volume|en\s+gros|achat\s+en\s+gros|grossiste)(?![a-zA-Zà-ÿ])/i,
+      // CHA-231 — `revendeur` seul est un signal exclusif wholesaler.
+      // On élargit aussi à `partenariat` (très utilisé par les pros).
+      /(?<![a-zA-Zà-ÿ])(revendeur|revendeuse|revendeurs|revendre|revente|distribut(?:eur|rice|eurs|rices|ion)|fournisseur|partenariat)(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])(plusieurs\s+(?:dizaines|centaines|milliers|kits)|\d{2,}\s+(?:unit[ée]s?|pi[èe]ces?|kits?|bo[iî]tes?))(?![a-zA-Zà-ÿ])/i,
       // Institut/salon de beauté + professionnel(le) esthétique. On accepte
       // le « de l'esthétique » optionnel pour matcher « professionnelle de
       // l'esthétique » (formulation très courante chez les pros MA).
       /(?<![a-zA-Zà-ÿ])(institut\s+de\s+beaut[ée]|salon\s+de\s+beaut[ée]|professionnelle?\s+(?:de\s+l['’]?\s*)?(?:beaut[ée]|esth[ée]tique))(?![a-zA-Zà-ÿ])/i,
+      // CHA-231 — « j'ai un institut » / « pour mon institut » → wholesaler
+      // (b2b prend les cas génériques mais wholesaler est plus prioritaire
+      // pour escalader vers commercial).
+      /(?<![a-zA-Zà-ÿ])(j['’]?ai\s+un\s+(?:institut|salon|cabinet|spa)|pour\s+mon\s+(?:institut|salon|cabinet|spa))(?![a-zA-Zà-ÿ])/i,
       // AR : « بالجملة / كميات كبيرة / موزع / إعادة بيع ».
       /(بالجملة|كميات\s+كبيرة|موزع|إعادة\s+بيع|توزيع)/,
       // Darija FR-script : « b jomla / kamiya kbira / mwaza3 / 3awd l bi3 ».
@@ -197,9 +217,8 @@ const RULES: PatternRule[] = [
     patterns: [
       // Volume implicite (« plusieurs unités », « plusieurs pièces »).
       /\b(plusieurs\s+(?:unit[ée]s?|pi[èe]ces?|kits?|exemplaires))\b/i,
-      // Pro contexte (sans nécessairement le volume — déjà strong dans b2b
-      // mais on capture ici aussi pour le scoring).
-      /\b(pour\s+mon\s+(?:institut|salon|cabinet|spa)|pharmacie)\b/i,
+      // Pharmacie professionnelle (vente en officine).
+      /\b(pharmacie)\b/i,
     ],
   },
   // CHA-161 — B2B : revente, gros, salon, professionnel.
@@ -215,25 +234,72 @@ const RULES: PatternRule[] = [
   // CHA-161 — Demande explicite de rappel / contact humain.
   {
     intent: 'callback-request',
+    // CHA-231 — patterns FORTS pour les demandes de rappel directes.
+    // « rappelez-moi / rappele-moi / appelez-moi » sont des demandes
+    // exclusivement transactionnelles → score 2 pour battre routine.
+    strong: [
+      // « rappelle-moi / rappelez moi / rappele moi » — toutes les
+      // inflexions du verbe rappeler avec « moi » (avec ou sans tiret).
+      /(?<![a-zA-Zà-ÿ])(rappel[a-zà-ÿ]{0,4})[\s-]+moi(?![a-zA-Zà-ÿ])/i,
+      // « appelle-moi / appelez moi » — verbe appeler avec « moi ».
+      /(?<![a-zA-Zà-ÿ])(appel[a-zà-ÿ]{0,4})[\s-]+moi(?![a-zA-Zà-ÿ])/i,
+      // « pouvez-vous me rappeler/appeler » — formulation polie.
+      /\bpouvez[-\s]?vous\s+me\s+(?:rappeler|appeler)\b/i,
+      // « je veux/voudrais qu'on me rappelle » / « rappel téléphonique ».
+      /\b(rappel\s+t[ée]l[ée]phonique|qu['’]on\s+me\s+rappelle)\b/i,
+    ],
     patterns: [
-      /\b(rappel|rappele|appel|appelle|téléphone|telephone|whats?app|conseill|conseiller|conseillère|parler à|parler a|humain|agent|live)\b/i,
+      // CHA-231 — multilingual word boundary pour les inflexions
+      // (rappelle, rappelez, rappellement, appel, appelez…).
+      // Le `\w*` ne marche pas sur les accents donc on liste explicitement.
+      /(?<![a-zA-Zà-ÿ])(rappel|rappelle|rappelez|rappele|rappeler|appel|appeler|appelez|appelle|t[ée]l[ée]phon[a-zà-ÿ]*|whats?app|conseill[a-zà-ÿ]*|humain|agent|live)(?![a-zA-Zà-ÿ])/i,
+      /\b(parler\s+[àa]|parler\s+avec)\b/i,
       /\b(3yt liya|sift liya|kaykellem ma3aya|wahed humain|wahed insan)\b/i,
       /(اتصل|اتصلوا|واتساب|متصل)/,
     ],
   },
   // CHA-161 — Frustration / impatience : signaux émotionnels.
+  // CHA-230 v7 — Élargi : énervé / inadmissible / personne ne répond /
+  // marre / scandale / honteux / mécontent. Ces formulations sont
+  // courantes en prod et doivent déclencher l'escalade humaine via
+  // la règle frustration de `lead-decision`.
   {
     intent: 'frustration',
+    // Patterns FORTS — formulations à charge émotionnelle exclusives
+    // qui n'ont aucun autre sens raisonnable dans un contexte support.
+    // CHA-230 v7 — On utilise les lookarounds `(?<![a-zA-Zà-ÿ])...(?![a-zA-Zà-ÿ])`
+    // au lieu de `\b` pour les mots qui contiennent des accents : le `\b`
+    // natif JS ne fonctionne pas correctement après une lettre non-ASCII
+    // (« énervée », « décevant » → `é` n'est pas un word char → pas de boundary).
+    strong: [
+      /(?<![a-zA-Zà-ÿ])(inadmissible|inacceptable|scandaleux|scandale|honteux|honte)(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])([ée]nerv[ée]e?s?|en\s+col[èe]re|furieuse?s?|furieux)(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])(personne\s+ne\s+(r[ée]pond|me\s+r[ée]pond|me\s+rappelle|m['’]?aide))(?![a-zA-Zà-ÿ])/i,
+      /\bj['’]?en\s+ai\s+marre\b/i,
+      /\b(c['’]?est\s+(?:vraiment\s+)?(?:nul|n['’]?importe\s+quoi|une\s+honte))\b/i,
+      /(?<![a-zA-Zà-ÿ])(c['’]?est\s+(?:vraiment\s+)?abus[ée]?)(?![a-zA-Zà-ÿ])/i,
+    ],
     patterns: [
       /\b(j['’]ai déjà demandé|encore|toujours pas|pas de réponse|n['’]importe quoi|ça suffit|tu comprends pas|on tourne en rond)\b/i,
+      /(?<![a-zA-Zà-ÿ])(m[ée]content[ée]?s?|pas\s+content[ée]?s?|d[ée]çue?s?|d[ée]cevant[ée]?s?)(?![a-zA-Zà-ÿ])/i,
       /\b(safi|baraka|kheliw|matb9awch)\b/i,
-      /(يكفي|تكلم بصراحة)/,
+      /(يكفي|تكلم بصراحة|محتقن|متضايقة|متضايق)/,
     ],
   },
   {
     intent: 'shipping',
+    // CHA-231 — patterns forts : « vous livrez à X / temps de livraison »
+    // sont presque exclusivement shipping.
+    strong: [
+      /(?<![a-zA-Zà-ÿ])(vous\s+livrez|temps\s+de\s+livraison|d[ée]lai\s+de\s+livraison|livraison\s+(?:en\s+)?(?:combien|quand|sous))(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])(livrez\s+(?:[àa]|au|aux|en|sur)|livraison\s+(?:[àa]|au|aux|en|sur))(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])(livraison\s+gratuite|frais\s+de\s+livraison|frais\s+de\s+port)(?![a-zA-Zà-ÿ])/i,
+    ],
     patterns: [
-      /\b(livr|expédition|delai|délai|delivery|shipping|colis|tracking)\b/i,
+      // CHA-231 — multilingual word boundary (le `\b` natif ne matche
+      // PAS après une lettre accentuée — « livré » → `é` non-word →
+      // pas de boundary). On liste explicitement les inflexions courantes.
+      /(?<![a-zA-Zà-ÿ])(livr[ée]e?s?|livre?z?|livraison|livrer|livrons|livraisons|exp[ée]di[a-zà-ÿ]*|d[ée]lai[a-zà-ÿ]*|delivery|shipping|colis|tracking)(?![a-zA-Zà-ÿ])/i,
       /\b(toussel|wsoul|delai dyal)\b/i,
       /(توصيل|ارسال|متى)/,
     ],
@@ -260,10 +326,19 @@ const RULES: PatternRule[] = [
       // (bug prod 2026-05-08 : « Je veux l'acheter » tombait en misc parce
       // que l'apostrophe casse le `[a-zA-Zà-ÿ'’-]+\s+` qui exigeait un
       // espace après le pronom).
-      /\bje\s+(veux|voudrais|souhaite|peux|vais|aimerais|voulais)\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(?:l['’])?(commander|acheter|prendre|payer)\b/i,
+      // CHA-231 — On ajoute `on` comme sujet alternatif (« on veut acheter
+      // / on voudrait commander ») et `finaliser` au verbe d'action
+      // (« finaliser ma commande / finaliser l'achat »). On élargit aussi
+      // les inflexions du modal (veut/voudrait/voulons/voulez/aimerions...).
+      /\b(je|on)\s+(veux|veut|voudrais|voudrait|voudrions|voudriez|souhaite|souhaitons|souhaitez|peux|peut|vais|va|aimerais|aimerait|aimerions|aimeriez|voulais|voulait|voulions|voulez)\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(?:l['’])?(commander|acheter|prendre|payer|finaliser)\b/i,
       // Variante sans modal explicite : « j'aimerais ... commander » via
       // l'élision « j' » (cas où le tokenizer ne voit pas l'espace).
-      /\bj['’]?aimerais\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(?:l['’])?(commander|acheter|prendre|payer)\b/i,
+      /\bj['’]?aimerais\s+(?:[a-zA-Zà-ÿ'’-]+\s+){0,3}(?:l['’])?(commander|acheter|prendre|payer|finaliser)\b/i,
+      // CHA-231 — « finaliser/valider/payer ma commande » : finalisation
+      // active = purchase-intent (et non order-status). Le negate
+      // ci-dessous a été affiné pour ne PAS tuer ce cas.
+      /\b(finaliser|valider|effectuer|compl[ée]ter|payer)\s+(ma|une|cette|la|notre|leur)\s+commande\b/i,
+      /\bfinaliser\s+(?:l['’]?)?(achat|paiement|commande)\b/i,
       /\b(j['’]?achète|j['’]?ach[eè]te|je\s+l['’]?achète|je\s+le\s+prends|je\s+les\s+prends)\b/i,
       /\b(passer|faire|valider)\s+(une\s+|la\s+)?commande\b/i,
       /\bok\s+je\s+(prends|commande|veux|achète)\b/i,
@@ -292,8 +367,27 @@ const RULES: PatternRule[] = [
       // sont uniques au "comment commander/acheter" en darija → score 2.
       /\bbghit\s+(nshri|ntleb|nakhdo|nakhod)\b/i,
       /\bkifach\s+(ntleb|nshri|n3mel\s+commande)\b/i,
+      // CHA-231 — Darija : « nshri/ntleb » SEUL avec « kit/hadshi/chi »
+      // (sans bghit). « nshri kit » = je veux acheter le kit, formulation
+      // courante en chat où le verbe modal est omis.
+      /\b(nshri|ntleb|nakhdo|nakhod)\s+(kit|hadshi|chi|dakshi)\b/i,
       // AR : "je veux commander/acheter".
-      /(أريد\s+(أن\s+)?(أطلب|أشتري|أن\s+أشتري|أن\s+أطلب)|أطلبه|اشتريه)/,
+      // CHA-231 — On élargit pour matcher « أريد شراء الكيت / الطقم » et
+      // « أريد طلب الطقم » — ces formes contiennent « شراء/طلب » comme
+      // nom verbal (masdar), donc on accepte l'une OU l'autre.
+      /(أريد\s+(?:أن\s+)?(?:أطلب|أشتري|شراء|طلب|أن\s+أشتري|أن\s+أطلب)|أطلبه|اشتريه|أريد\s+(?:الطقم|الكيت|شراء\s+الكيت|طلب\s+الطقم|شراء\s+الطقم|طلب\s+الكيت))/,
+      // CHA-230 v7 — Darija en SCRIPT ARABE (gap pré-existant). « بغيت »
+      // = « je veux » en darija (cf. DARIJA_AR_TOKENS dans dictionary.ts).
+      // Le détecteur de langue identifie correctement ces messages en
+      // `ar-MA`, mais aucun pattern d'intent ne couvrait le couple
+      // (بغيت + verbe d'achat) ni le verbe d'achat seul + objet kit.
+      // Conséquence prod : « بغيت نشري الكيت » tombait en `misc` →
+      // pas de form. On corrige ici avec deux patterns symétriques
+      // aux variantes script latin déjà présentes (bghit nshri / nshri kit).
+      /(بغيت|بغينا)\s+(نشري|نطلب|ناخد|ناخذ|نشريه|نطلبه|ندير\s+طلب|ندير\s+كوموند)/,
+      /(نشري|نطلب|ناخد|ناخذ)\s+(الكيت|الطقم|هاد\s+الكيت|هاد\s+الطقم|هادشي|دكشي)/,
+      // « بغيت + objet » sans verbe explicite (« بغيت الكيت » = « je veux le kit »).
+      /بغيت\s+(الكيت|الطقم|هاد\s+الكيت|هاد\s+الطقم)/,
     ],
     patterns: [
       /\bje\s+(veux|voudrais|souhaite|peux|vais)\s+(le\s+kit|votre\s+kit|ce\s+kit)\b/i,
@@ -306,27 +400,50 @@ const RULES: PatternRule[] = [
     // Négateurs — si l'utilisateur parle d'une commande passée, ce
     // n'est PAS un signal d'achat (c'est `order-status`).
     // CHA-230 v5 — On étend aussi à « j'ai déjà acheté » pour symétrie.
+    // CHA-231 — On retire le bare `\bma\s+commande\b` (trop large : il
+    //   tuait « finaliser ma commande » qui est PURCHASE-intent).
+    //   On garde seulement les formes claires de SUIVI :
+    //   « ma commande est », « où est ma commande », « suivi/suivre ma commande ».
     negate: [
       /\bj['’]ai\s+(déjà\s+)?command[ée]\b/i,
       /\bj['’]ai\s+(déjà\s+)?ach[eè]t[eé]\b/i,
-      /\bma\s+commande\b/i, // "ma commande" = suivi
       /\bj['’]ai\s+pass[ée]?\s+(une\s+)?commande\b/i,
-      /\bma\s+commande\s+est\b/i,
+      /\bma\s+commande\s+(?:est|n['’]?est|a|n['’]?a|n['’]?arrive)\b/i,
       /\boù\s+est\s+ma\s+commande\b/i,
+      /\b(suivre|suivi\s+de)\s+ma\s+commande\b/i,
     ],
   },
   {
     intent: 'routine',
+    // CHA-231 — patterns FORTS : « comment ça marche / fois par jour /
+    // comment l'appliquer » sont presque exclusifs à la routine.
+    strong: [
+      /\bcomment\s+(?:ça|ca)\s+marche\b/i,
+      /\b(?:combien\s+de\s+)?fois\s+par\s+jour\b/i,
+      /\bcomment\s+(?:l['’]?|le\s+|la\s+)?appliquer\b/i,
+      /\bcomment\s+(?:l['’]?|le\s+|la\s+)?utiliser\b/i,
+    ],
     patterns: [
-      /\b(rituel|routine|étape|comment utiliser|use it|application|matin|soir|posologie)\b/i,
+      // CHA-231 — multilingual word boundary pour matcher « étape /
+      // étapes / matin / soir » qui contiennent des accents ou des
+      // formes ambiguës.
+      /(?<![a-zA-Zà-ÿ])(rituel|routine|[ée]tapes?|comment\s+utiliser|use\s+it|application|matin|soir|posologie)(?![a-zA-Zà-ÿ])/i,
       /\b(kifach n3mel|nesta3mel)\b/i,
       /(كيفاش|كيف استعمل)/,
     ],
   },
   {
     intent: 'ingredient',
+    // CHA-231 — patterns FORTS : « INCI / matières premières / c'est quoi
+    // dedans » sont exclusifs à l'intent ingredient.
+    strong: [
+      /(?<![a-zA-Zà-ÿ])(inci|liste\s+inci|mati[èe]res\s+premi[èe]res|c['’]?est\s+quoi\s+dedans|de\s+quoi\s+(?:c['’]?est|est)\s+fait)(?![a-zA-Zà-ÿ])/i,
+      /(?<![a-zA-Zà-ÿ])(ingr[ée]dients?|ingredients?)(?![a-zA-Zà-ÿ])/i,
+    ],
     patterns: [
-      /\b(ingredient|ingrédient|composition|paraben|silicone|naturel|bio|formula|formule|toxic)\b/i,
+      // CHA-231 — multilingual word boundary (le `\b` natif JS échoue
+      // sur les accents : « ingrédients » / « formule » / « naturel »).
+      /(?<![a-zA-Zà-ÿ])(composition|paraben[s]?|silicone[s]?|naturel|naturelle|bio|formula|formule|toxic|toxique)(?![a-zA-Zà-ÿ])/i,
       /\b(mkawnat|tabi3i)\b/i,
       /(مكونات|طبيعي)/,
     ],
@@ -341,6 +458,12 @@ const RULES: PatternRule[] = [
       /(?<![a-zA-Zà-ÿ])(command[eé]e?s?|order|suivi|tracking|expédiée|expediee|reçue?s?|recue?s?|envoyée?s?|envoy)(?![a-zA-Zà-ÿ])/i,
       /\b(commande dyali|wach toussel)\b/i,
       /(طلب|طلبية)/,
+    ],
+    // CHA-231 — anti-faux-positifs : « أريد شراء/طلب الطقم » est un
+    // intent d'achat, pas un suivi. La présence de أريد/أطلبه/اشتريه
+    // (verbes au futur d'achat) invalide order-status.
+    negate: [
+      /(?:أريد\s+(?:طلب|شراء|أن\s+أطلب|أن\s+أشتري)|أطلبه|اشتريه|أريد\s+(?:الطقم|الكيت))/,
     ],
   },
   {

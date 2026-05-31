@@ -67,6 +67,16 @@ export default async function ChatQualityPage({
     byConfidence: [],
     goldenTotal: 0,
   }));
+  // CHA-231 Phase 6 — Funnel lead + résilience provider, sur la même fenêtre.
+  const funnel = await adminQueries.leadFunnelKpis(window).catch(() => ({
+    offered: 0,
+    submitted: 0,
+    autoCreated: 0,
+    dismissed: 0,
+    captureRate: 0,
+    byReason: [] as Array<{ reason: string; count: number }>,
+    retryFallbackCount: 0,
+  }));
 
   const totalIntent = kpis.byIntent.reduce((sum, r) => sum + r.count, 0);
   const totalMethod = kpis.byMethod.reduce((sum, r) => sum + r.count, 0);
@@ -152,6 +162,85 @@ export default async function ChatQualityPage({
           total={totalConf}
         />
       </div>
+
+      {/* ----- CHA-231 Phase 6 — Lead funnel & résilience ---------------- */}
+      <section className="mt-6">
+        <header className="mb-2">
+          <h2 className="text-lg font-semibold">Lead funnel & résilience</h2>
+          <p className="text-xs text-stone-600">
+            Capture in-chat — déclenchements, soumissions, et bascules de
+            provider sur la fenêtre. Source : `chat_conversation_event`.
+          </p>
+        </header>
+
+        <div className="mb-3 grid gap-3 sm:grid-cols-4">
+          <KpiCard
+            label="Offres envoyées"
+            value={funnel.offered.toLocaleString('fr-FR')}
+            hint="event chat_lead_form_offered"
+          />
+          <KpiCard
+            label="Taux de capture"
+            value={`${funnel.captureRate}%`}
+            hint={`${funnel.submitted + funnel.autoCreated} / ${funnel.offered} offres`}
+            tone={funnel.captureRate < 15 && funnel.offered > 10 ? 'warn' : 'ok'}
+          />
+          <KpiCard
+            label="Soumissions explicites"
+            value={funnel.submitted.toLocaleString('fr-FR')}
+            hint={`+ ${funnel.autoCreated} auto (téléphone in-chat)`}
+          />
+          <KpiCard
+            label="Retry / fallback provider"
+            value={funnel.retryFallbackCount.toLocaleString('fr-FR')}
+            hint="basculé sur secondaire"
+            tone={funnel.retryFallbackCount > 0 ? 'warn' : 'ok'}
+          />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <DistributionCard
+            title="Offres par raison (CHA-231 tags)"
+            rows={funnel.byReason.map((r) => ({
+              label: r.reason,
+              count: r.count,
+            }))}
+            total={funnel.offered}
+          />
+          <div className="rounded-md border border-stone-200 bg-white p-3 text-[12px] text-stone-600">
+            <p className="mb-1 text-sm font-semibold text-stone-900">
+              Lecture des tags
+            </p>
+            <ul className="list-disc space-y-1 pl-4">
+              <li>
+                <code className="rounded bg-stone-100 px-1">purchase-intent</code>,{' '}
+                <code className="rounded bg-stone-100 px-1">negotiation</code>,{' '}
+                <code className="rounded bg-stone-100 px-1">wholesaler</code> —
+                signaux à fort revenu : devraient peser le plus.
+              </li>
+              <li>
+                <code className="rounded bg-stone-100 px-1">explicit-request</code>,{' '}
+                <code className="rounded bg-stone-100 px-1">manual</code> —
+                demande directe ou « LLM a promis le formulaire ».
+              </li>
+              <li>
+                <code className="rounded bg-stone-100 px-1">inline-contact</code>{' '}
+                — téléphone détecté en clair (filet de sécurité).
+              </li>
+              <li>
+                <code className="rounded bg-stone-100 px-1">b2b</code>,{' '}
+                <code className="rounded bg-stone-100 px-1">frustration</code>,{' '}
+                <code className="rounded bg-stone-100 px-1">out-of-knowledge</code>{' '}
+                — signaux secondaires.
+              </li>
+              <li className="pt-1 text-stone-500">
+                Dismissals : {funnel.dismissed.toLocaleString('fr-FR')} sur la
+                fenêtre.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
       <p className="mt-4 text-[11px] text-stone-500">
         <Link

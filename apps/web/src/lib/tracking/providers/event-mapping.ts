@@ -139,6 +139,10 @@ const MAP: Record<string, EventMapping> = {
   },
   chat_lead_webhook_sent: { google_ga4: 'chat_lead_webhook_sent' },
   chat_lead_webhook_failed: { google_ga4: 'chat_lead_webhook_failed' },
+  // CHA-231 gap 1 — récupération d'offre via /api/chat/lead-status
+  chat_lead_form_recovered: { google_ga4: 'chat_lead_form_recovered' },
+  // CHA-231 gap 4 — observabilité contrat SSE (interne)
+  chat_sse_invalid_event: { google_ga4: 'chat_sse_invalid_event' },
   chat_suggestion_clicked: { google_ga4: 'chat_suggestion_clicked' },
   chat_feedback: { google_ga4: 'chat_feedback' },
   chat_language_switch: { google_ga4: 'chat_language_switch' },
