@@ -39,7 +39,10 @@ export function resolveRitualCardStrings(
 ): RitualCardStrings {
   return {
     anonymous: t('card_anonymous'),
-    initiatedSince: t('card_initiated_since'),
+    // `{date}` est un placeholder de gabarit substitué plus tard par le
+    // composant (RitualCard). On le préserve littéralement ici, sinon next-intl
+    // jette FORMATTING_ERROR (variable `date` non fournie).
+    initiatedSince: t('card_initiated_since', { date: '{date}' }),
     recommendBadge: t('card_recommend_badge'),
     tagLabels: resolveTagLabels(t),
   };

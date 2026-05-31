@@ -1474,5 +1474,22 @@
       "headline_many": "{total} initiées ont partagé. {oui} reprendraient le rituel.",
       "read_all": "Lire les {total} rituels partagés"
     }
+  },
+  "consentBanner": {
+    "title": "On respecte ta vie privée",
+    "description": "On utilise des cookies pour mesurer l’audience et améliorer ton expérience. Tu peux tout accepter, tout refuser ou personnaliser.",
+    "learnMore": "En savoir plus :",
+    "categories": {
+      "analytics_storage": "Mesure d’audience",
+      "ad_storage": "Publicité",
+      "ad_user_data": "Partage des données pub",
+      "ad_personalization": "Personnalisation pub",
+      "functional_storage": "Préférences fonctionnelles"
+    },
+    "rejectAll": "Tout refuser",
+    "customize": "Personnaliser",
+    "close": "Fermer",
+    "save": "Enregistrer mes choix",
+    "acceptAll": "Tout accepter"
   }
 }

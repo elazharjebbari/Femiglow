@@ -1469,5 +1469,22 @@
       "headline_many": "{total} initiates have shared. {oui} would do the ritual again.",
       "read_all": "Read the {total} shared rituals"
     }
+  },
+  "consentBanner": {
+    "title": "We respect your privacy",
+    "description": "We use cookies to measure audience and improve your experience. You can accept all, reject all or customize.",
+    "learnMore": "Learn more:",
+    "categories": {
+      "analytics_storage": "Audience measurement",
+      "ad_storage": "Advertising",
+      "ad_user_data": "Ad data sharing",
+      "ad_personalization": "Ad personalization",
+      "functional_storage": "Functional preferences"
+    },
+    "rejectAll": "Reject all",
+    "customize": "Customize",
+    "close": "Close",
+    "save": "Save my choices",
+    "acceptAll": "Accept all"
   }
 }

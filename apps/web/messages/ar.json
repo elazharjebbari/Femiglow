@@ -1469,5 +1469,22 @@
       "headline_many": "{total} متبنّيات شاركن. {oui} ستعدن إلى الطقوس.",
       "read_all": "اقرئي الطقوس الـ{total} المُشاركة"
     }
+  },
+  "consentBanner": {
+    "title": "نحترم خصوصيتك",
+    "description": "نستخدم ملفات تعريف الارتباط لقياس الجمهور وتحسين تجربتك. يمكنك قبول الكل أو رفض الكل أو التخصيص.",
+    "learnMore": "اعرفي المزيد:",
+    "categories": {
+      "analytics_storage": "قياس الجمهور",
+      "ad_storage": "الإعلانات",
+      "ad_user_data": "مشاركة بيانات الإعلانات",
+      "ad_personalization": "تخصيص الإعلانات",
+      "functional_storage": "التفضيلات الوظيفية"
+    },
+    "rejectAll": "رفض الكل",
+    "customize": "تخصيص",
+    "close": "إغلاق",
+    "save": "حفظ اختياراتي",
+    "acceptAll": "قبول الكل"
   }
 }
