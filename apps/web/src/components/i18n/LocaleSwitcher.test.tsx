@@ -261,20 +261,21 @@ describe('LocaleSwitcher inline (mobile / SommaireOverlay)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// Résilience hors provider next-intl
+// Routes non préfixées `(marketing)/*` (Phase 7C : provider FR monté)
 // ─────────────────────────────────────────────────────────────────────────
 
-describe('LocaleSwitcher résilience hors provider', () => {
-  it('rend null si le pathname n\'a pas de préfixe locale (routes legacy)', async () => {
-    // Force un pathname sans préfixe locale : `useActiveLocaleSafe` retourne null
-    // → le composant rend null sans appeler `useLocale()` (pas de crash).
+describe('LocaleSwitcher sur routes non préfixées (legacy marketing)', () => {
+  it("s'affiche avec la locale par défaut (FR) quand le pathname n'a pas de préfixe locale", async () => {
+    // Depuis la Phase 7C, `(marketing)/*` est enveloppé par
+    // NextIntlClientProvider (locale FR). `useActiveLocaleSafe` retourne donc
+    // DEFAULT_LOCALE et le switcher DOIT s'afficher (FR actif) au lieu de null.
     vi.doMock('next/navigation', () => ({
       usePathname: () => '/journal/foo',
     }));
     vi.resetModules();
     const { LocaleSwitcher: Fresh } = await import('./LocaleSwitcher');
-    const { container } = render(<Fresh />);
-    expect(container.firstChild).toBeNull();
+    const { getByTestId } = render(<Fresh />);
+    expect(getByTestId('locale-switcher-trigger')).toHaveTextContent('Français');
     vi.doUnmock('next/navigation');
   });
 });
