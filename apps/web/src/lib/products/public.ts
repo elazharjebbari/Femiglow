@@ -67,5 +67,24 @@ export async function buildKitPublicProduct(): Promise<PublicProduct> {
       primary?.inventoryStatus === undefined
         ? mockKit.inStock
         : primary.inventoryStatus !== 'out_of_stock',
+    primaryVariantSku: primary?.sku ?? mockKit.primaryVariantSku,
+    primaryVariantId: primary?.id ?? mockKit.primaryVariantId,
   };
+}
+
+/**
+ * Valeur monétaire d'un lead = **prix du kit avec la promotion** (prix
+ * effectivement payé). Sert à valoriser les conversions `generate_lead`
+ * (chat, formulaires) pour le bidding value-based Meta/Google Ads.
+ *
+ * Server-authoritative : la valeur n'est jamais dupliquée côté client.
+ * `value` en unité majeure (MAD), pas en centimes — aligné sur le contrat
+ * dataLayer (`params.value`) et sur le checkout (`total / 100`).
+ *
+ * cf. docs/tracking-audit-2026-05-31 (T-06).
+ */
+export async function getKitLeadValue(): Promise<{ value: number; currency: string }> {
+  const kit = await buildKitPublicProduct();
+  const effectiveCents = kit.promoPriceCents ?? kit.priceCents;
+  return { value: effectiveCents / 100, currency: kit.currency };
 }

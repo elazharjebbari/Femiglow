@@ -1,0 +1,116 @@
+@startuml reset-feature-dataflow
+title FemiGlow — Reset Feature · Flux runtime (hard reset via UI)
+
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName "Inter"
+skinparam defaultFontSize 11
+skinparam sequenceArrowThickness 1.2
+
+actor Admin as A
+participant "Wizard\n(client)" as W
+participant "API\n/api/admin/reset" as API
+participant "Orchestrator" as O
+participant "JobStore\n(in-memory)" as JS
+participant "Phases" as P
+database "PostgreSQL" as DB
+participant "Filesystem" as FS
+
+== Phase 0 · Preflight (lecture seule) ==
+A -> W : ouvre /admin/settings/reset
+W -> API : GET /preflight?mode=hard
+API -> P : preflight()
+P -> DB : SELECT counts par table
+P -> FS : ls .media-storage, df -h
+P --> API : { ok, plan, impact, warnings }
+API --> W : 200 { plan: [...], rowCounts, mediaCount, diskFree }
+W -> A : affiche Preview + Confirm
+
+== Phase 1 · Confirmation typée ==
+A -> W : tape "HARD RESET" + clique Démarrer
+W -> API : POST /run\n{ mode: 'hard', preserve: ['admin_users'], confirm: 'HARD RESET' }
+API -> API : validate (auth + rate-limit + Lock acquire)
+API -> JS : createJob(mode, plan)
+API -> O : start(job)  ' fire-and-forget
+API --> W : 202 { jobId }
+W -> API : EventSource GET /jobs/{jobId}/stream
+
+== Phase 2 · Backup (obligatoire) ==
+O -> JS : emit phase.start(backup)
+O -> P : runBackup()
+P -> FS : pg_dump → /var/backups/.../db.sql.gz
+P -> FS : tar -czf media.tar.gz .media-storage/
+P -> FS : write manifest.json (sizes, sha256)
+P --> O : { backupId, sizes }
+O -> JS : emit phase.complete(backup) + audit
+JS --> W : SSE event { phase: 'backup', status: 'done' }
+
+== Phase 3 · Audit counts (snapshot pré-reset) ==
+O -> P : runAuditCounts()
+P -> DB : SELECT count(*) par table critique
+P --> O : { before: { products: 1, variants: 2, ... } }
+O -> JS : emit phase.complete(audit)
+
+== Phase 4 · Wipe DB ==
+O -> JS : emit phase.start(wipe-db)
+O -> P : runWipeDb(plan)
+P -> DB : DROP SCHEMA public CASCADE
+P -> DB : CREATE SCHEMA public
+P -> DB : DROP SCHEMA IF EXISTS drizzle CASCADE
+P --> O : { dropped: 27 tables }
+O -> JS : emit phase.complete(wipe-db)
+
+== Phase 5 · Wipe média ==
+O -> JS : emit phase.start(wipe-media)
+O -> P : runWipeMedia()
+P -> FS : rm -rf .media-storage/*
+P --> O : { removed: 596 dirs, freed: '704 MB' }
+O -> JS : emit phase.complete(wipe-media)
+
+== Phase 6 · Migrate (schema) ==
+O -> JS : emit phase.start(migrate)
+O -> P : runMigrate()
+P -> DB : drizzle-kit migrate (applique 27 fichiers)
+P --> O : { applied: 27 }
+O -> JS : emit phase.complete(migrate)
+
+== Phase 7 · Seed (16 seeders) ==
+O -> JS : emit phase.start(seed)
+O -> P : runSeed(SEEDERS_REGISTRY)
+loop pour chaque seeder
+  P -> P : seeder.run(ctx)
+  P -> JS : emit seeder.progress(label, fraction)
+  P -> DB : INSERT/UPSERT
+  P -> FS : upload média (jpg, srcset)
+  JS --> W : SSE event { seeder: 'products', fraction: 0.3 }
+end
+P --> O : { completed: 16, skipped: 0, errors: 0 }
+O -> JS : emit phase.complete(seed)
+
+== Phase 8 · Verify (post-reset) ==
+O -> JS : emit phase.start(verify)
+O -> P : runVerify()
+P -> DB : SELECT count(*) (compare avec before)
+P -> P : HTTP GET /kit (vérifie image + prix 199)
+P -> P : HTTP GET /admin/settings (vérifie 7 cards)
+P --> O : { passed: 12, failed: 0, warnings: 1 }
+O -> JS : emit phase.complete(verify)
+
+== Phase 9 · Cleanup ==
+O -> P : pruneBackups(keep=5)
+P -> FS : rm -rf old backups
+O -> JS : emit job.complete + audit
+
+JS --> W : SSE event { type: 'job.complete', summary: {...} }
+W -> A : affiche Report (stats, lien backup, lien audit)
+W -> API : close EventSource
+
+== Cas d'erreur — auto-rollback ==
+note over O,P #FFE0E0
+  Si erreur phase wipe/migrate/seed après backup OK :
+  Orchestrator → Restore.fromBackup(backupId)
+  → restaure DB depuis db.sql.gz
+  → restaure média depuis media.tar.gz
+  → émet phase.complete(rollback) + audit
+end note
+
+@enduml

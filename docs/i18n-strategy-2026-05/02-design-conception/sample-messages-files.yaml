@@ -1,0 +1,469 @@
+# Sample messages files — exemples concrets par locale
+#
+# Fichier YAML doc qui illustre la structure attendue pour messages/[locale].json.
+# Référence : translation-keys-schema.json + naming-conventions.md
+# Lecture : 10 min — pour copy-paste rapide et illustration des patterns.
+
+# ============================================================================
+# 1. STRUCTURE MINIMALE — messages/fr.json (locale par défaut)
+# ============================================================================
+
+fr_minimal_example:
+  _description: |
+    Exemple minimal d'un fichier messages/fr.json fonctionnel.
+    Couvre les namespaces obligatoires (common, navigation) + 1-2 sections marketing.
+
+  content:
+    $schema: "../docs/i18n-strategy-2026-05/02-design-conception/translation-keys-schema.json"
+    _meta:
+      locale: "fr"
+      completeness_pct: 100
+      last_reviewed_by: "founder@femiglow.local"
+      last_reviewed_at: "2026-05-27T14:30:00Z"
+      translator_notes: "Locale source — référence canonique"
+
+    common:
+      back: "Retour"
+      continue: "Continuer"
+      cancel: "Annuler"
+      save: "Enregistrer"
+      loading: "Chargement…"
+      error: "Une erreur s'est produite"
+      required: "Champ requis"
+      optional: "Optionnel"
+      yes: "Oui"
+      no: "Non"
+      confirm: "Confirmer"
+      close: "Fermer"
+
+    navigation:
+      home: "Accueil"
+      kit: "Le kit"
+      maison: "Maison FemiGlow"
+      rituel: "Le rituel"
+      journal: "Journal"
+      contact: "Contact"
+      legal_menu: "Mentions"
+
+    marketing:
+      hero:
+        title: "Le rituel ongles, en cinq minutes."
+        subtitle: "Trois gestes, une saison."
+        cta_primary: "Découvrir le kit"
+        cta_secondary: "Voir le rituel"
+      kit:
+        title: "Le kit FemiGlow"
+        description: "Tout pour un rituel ongles complet."
+        cta: "Commander le kit"
+
+# ============================================================================
+# 2. STRUCTURE COMPLÈTE — messages/fr.json (production)
+# ============================================================================
+
+fr_complete_example:
+  _description: |
+    Exemple complet d'un fichier messages/fr.json de production.
+    Couvre 100% des namespaces avec sections marketing détaillées.
+    Estimation : ~500-700 clés au total pour FemiGlow.
+
+  content:
+    _meta:
+      locale: "fr"
+      completeness_pct: 100
+      last_reviewed_by: "founder@femiglow.local"
+      last_reviewed_at: "2026-05-27T14:30:00Z"
+
+    common:
+      back: "Retour"
+      continue: "Continuer"
+      cancel: "Annuler"
+      save: "Enregistrer"
+      delete: "Supprimer"
+      edit: "Modifier"
+      add: "Ajouter"
+      remove: "Retirer"
+      submit: "Envoyer"
+      reset: "Réinitialiser"
+      loading: "Chargement…"
+      error: "Une erreur s'est produite"
+      success: "Succès"
+      warning: "Attention"
+      required: "Champ requis"
+      optional: "Optionnel"
+      yes: "Oui"
+      no: "Non"
+      confirm: "Confirmer"
+      close: "Fermer"
+      open: "Ouvrir"
+      previous: "Précédent"
+      next: "Suivant"
+      view_all: "Tout voir"
+      learn_more: "En savoir plus"
+      read_more: "Lire la suite"
+
+    navigation:
+      home: "Accueil"
+      kit: "Le kit"
+      maison: "Maison FemiGlow"
+      rituel: "Le rituel"
+      journal: "Journal"
+      contact: "Contact"
+      legal_menu: "Mentions"
+      account: "Mon compte"
+      cart: "Panier"
+      search: "Rechercher"
+
+    marketing:
+      hero:
+        title: "Le rituel ongles, en cinq minutes."
+        subtitle: "Trois gestes, une saison."
+        cta_primary: "Découvrir le kit"
+        cta_secondary: "Voir le rituel"
+        badge_text: "Nouvelle saison"
+
+      kit:
+        title: "Le kit FemiGlow"
+        description: "Tout pour un rituel ongles complet, sans effort, à domicile."
+        cta: "Commander le kit"
+        bullets:
+          - "Tools professionnels"
+          - "Vernis longue tenue"
+          - "Soin nourrissant"
+        price_from: "À partir de {price, number, ::currency/MAD}"
+        social_proof_count: "Déjà {count, plural, =0 {commandé} =1 {1 cliente} other {# clientes}}"
+
+      maison:
+        title: "Maison FemiGlow"
+        subtitle: "Notre univers, vos rituels."
+
+      rituel:
+        title: "Le rituel"
+        description: "Cinq minutes, trois gestes, une intention."
+        steps:
+          - title: "Préparer"
+            description: "Cuticules, longueur"
+          - title: "Soigner"
+            description: "Base nourrissante"
+          - title: "Sublimer"
+            description: "Couleur, finition"
+
+      manifest:
+        statement_1: "On ne vend pas un produit. On accompagne un geste."
+        statement_2: "Le rituel précède la beauté."
+
+      contact:
+        title: "Contactez-nous"
+        subtitle: "Une question ? Nous sommes là."
+        form_label_name: "Votre prénom"
+        form_label_email: "Votre email"
+        form_label_message: "Votre message"
+        form_cta: "Envoyer"
+        thank_you: "Merci, nous revenons vers vous sous 24h."
+
+      journal:
+        title: "Journal"
+        subtitle: "Pensées, rituels, conseils."
+        cta_all_articles: "Tous les articles"
+        category_label: "Catégorie"
+
+    wizard:
+      step_1:
+        title: "Votre kit"
+      step_2:
+        title: "Livraison"
+      step_3:
+        title: "Paiement"
+      shipping:
+        fields:
+          first_name: "Prénom"
+          last_name: "Nom"
+          email: "Email"
+          phone: "Téléphone"
+          address: "Adresse"
+          city: "Ville"
+          postal_code: "Code postal"
+          country: "Pays"
+        errors:
+          required: "Ce champ est requis"
+          email_invalid: "Format email invalide"
+          phone_invalid: "Format téléphone invalide"
+      payment:
+        method:
+          cmi: "Carte bancaire (CMI)"
+          cod: "Paiement à la livraison"
+        cta_pay: "Payer {amount, number, ::currency/MAD}"
+        secure_notice: "Paiement sécurisé"
+      confirmation:
+        title: "Merci pour votre commande"
+        order_number: "Commande #{order_id}"
+        delivery_eta: "Livraison sous 2-3 jours"
+
+    legal:
+      menu:
+        mentions_legales: "Mentions légales"
+        cgv: "Conditions générales de vente"
+        confidentialite: "Politique de confidentialité"
+        cookies: "Cookies"
+
+    email:
+      welcome:
+        subject: "Bienvenue chez FemiGlow"
+        greeting: "Bonjour {user_name},"
+        body: "Merci de rejoindre l'univers FemiGlow."
+        cta: "Découvrir nos produits"
+      order_confirmation:
+        subject: "Votre commande #{order_id} est confirmée"
+        greeting: "Bonjour {user_name},"
+        summary: "Récapitulatif de votre commande"
+
+    errors:
+      404:
+        title: "Page introuvable"
+        description: "Cette page n'existe pas ou a été déplacée."
+        cta_home: "Retour à l'accueil"
+      500:
+        title: "Une erreur est survenue"
+        description: "Nous travaillons à résoudre le problème."
+      network:
+        offline: "Pas de connexion internet"
+        timeout: "La requête a expiré"
+        retry: "Réessayer"
+
+    seo:
+      home:
+        title: "FemiGlow — Le rituel ongles à domicile"
+        description: "Découvrez Maison FemiGlow : un rituel ongles complet, des produits sélectionnés, livré au Maroc."
+        og_title: "FemiGlow"
+        og_description: "Le rituel ongles, en cinq minutes."
+        twitter_card: "summary_large_image"
+      kit:
+        title: "Le kit FemiGlow — Rituel ongles complet"
+        description: "Le pack complet pour un rituel ongles à domicile : tools, vernis, soin."
+
+# ============================================================================
+# 3. STRUCTURE messages/ar.json (RTL + traductions arabe)
+# ============================================================================
+
+ar_example:
+  _description: |
+    Exemple messages/ar.json — arabe (Maroc).
+    Locale RTL, charset UTF-8.
+    Note traducteur : utiliser arabe standard moderne (MSA) avec touches Darija acceptables pour FemiGlow.
+
+  content:
+    _meta:
+      locale: "ar"
+      completeness_pct: 85
+      last_reviewed_by: "translator@femiglow.local"
+      last_reviewed_at: "2026-05-27T10:00:00Z"
+      translator_notes: "Arabe MSA + Darija marocain. Reviewed by native speaker."
+
+    common:
+      back: "رجوع"
+      continue: "متابعة"
+      cancel: "إلغاء"
+      save: "حفظ"
+      loading: "جاري التحميل…"
+      error: "حدث خطأ"
+      required: "حقل إجباري"
+      yes: "نعم"
+      no: "لا"
+      confirm: "تأكيد"
+      close: "إغلاق"
+
+    navigation:
+      home: "الرئيسية"
+      kit: "الكيت"
+      maison: "بيت فيمي قلو"
+      rituel: "الطقوس"
+      journal: "المجلة"
+      contact: "اتصال"
+
+    marketing:
+      hero:
+        title: "طقوس الأظافر في خمس دقائق."
+        subtitle: "ثلاث حركات، موسم واحد."
+        cta_primary: "اكتشفي الكيت"
+        cta_secondary: "شاهدي الطقوس"
+      kit:
+        title: "كيت فيمي قلو"
+        description: "كل ما يلزم لطقوس أظافر كاملة، بدون جهد، في البيت."
+        cta: "اطلبي الكيت"
+        price_from: "ابتداء من {price, number, ::currency/MAD}"
+
+    errors:
+      404:
+        title: "الصفحة غير موجودة"
+        description: "هذه الصفحة غير موجودة أو تم نقلها."
+        cta_home: "العودة للرئيسية"
+
+# ============================================================================
+# 4. STRUCTURE messages/en.json (anglais)
+# ============================================================================
+
+en_example:
+  _description: |
+    Exemple messages/en.json — anglais.
+    Locale LTR, marché tier-1 (US, UK, international).
+
+  content:
+    _meta:
+      locale: "en"
+      completeness_pct: 70
+      last_reviewed_by: "translator@femiglow.local"
+      last_reviewed_at: "2026-05-26T16:00:00Z"
+      translator_notes: "Native English. Adapt 'Maison' as proper noun (do not translate)."
+
+    common:
+      back: "Back"
+      continue: "Continue"
+      cancel: "Cancel"
+      save: "Save"
+      loading: "Loading…"
+      error: "An error occurred"
+      required: "Required"
+      yes: "Yes"
+      no: "No"
+      confirm: "Confirm"
+      close: "Close"
+
+    navigation:
+      home: "Home"
+      kit: "The Kit"
+      maison: "Maison FemiGlow"
+      rituel: "The Ritual"
+      journal: "Journal"
+      contact: "Contact"
+
+    marketing:
+      hero:
+        title: "Your nail ritual, in five minutes."
+        subtitle: "Three gestures, one season."
+        cta_primary: "Discover the kit"
+        cta_secondary: "See the ritual"
+      kit:
+        title: "The FemiGlow Kit"
+        description: "Everything for a complete nail ritual at home, effortlessly."
+        cta: "Order the kit"
+        price_from: "From {price, number, ::currency/MAD}"
+
+# ============================================================================
+# 5. PATTERNS AVANCÉS
+# ============================================================================
+
+advanced_patterns:
+
+  # ICU plural rules
+  plural_examples:
+    fr:
+      cart_items_count: "{count, plural, =0 {Panier vide} =1 {1 article} other {# articles}}"
+    ar:
+      cart_items_count: "{count, plural, =0 {السلة فارغة} =1 {منتج واحد} =2 {منتجان} few {# منتجات} many {# منتجاً} other {# منتج}}"
+    en:
+      cart_items_count: "{count, plural, =0 {Empty cart} =1 {1 item} other {# items}}"
+
+    # NB: arabe a 6 formes de pluriel (zero, one, two, few, many, other) vs FR/EN qui ont 2-3 formes.
+
+  # ICU select (gender/category)
+  select_examples:
+    fr:
+      welcome_user: "{gender, select, female {Bienvenue} male {Bienvenu} other {Bienvenue}} {name} !"
+    en:
+      welcome_user: "Welcome {name}!"
+
+  # ICU number formatting
+  number_examples:
+    fr:
+      price: "À partir de {price, number, ::currency/MAD}"          # → "À partir de 299,00 MAD"
+      large_number: "{count, number, ::compact-short}"               # → "1,2k"
+      percentage: "{value, number, ::percent}"                       # → "85 %"
+    ar:
+      price: "ابتداء من {price, number, ::currency/MAD}"
+      large_number: "{count, number, ::compact-short}"
+    en:
+      price: "From {price, number, ::currency/MAD}"
+      large_number: "{count, number, ::compact-short}"               # → "1.2K"
+      percentage: "{value, number, ::percent}"                       # → "85%"
+
+  # ICU date formatting
+  date_examples:
+    fr:
+      published_at: "Publié le {date, date, long}"                  # → "Publié le 27 mai 2026"
+      time_ago: "{date, relative}"                                  # → "il y a 2 jours"
+    ar:
+      published_at: "نُشر في {date, date, long}"
+      time_ago: "{date, relative}"
+    en:
+      published_at: "Published on {date, date, long}"               # → "Published on May 27, 2026"
+      time_ago: "{date, relative}"                                  # → "2 days ago"
+
+  # Rich text (HTML safe via next-intl t.rich)
+  rich_text_examples:
+    fr:
+      hero_description: |
+        Le rituel <bold>ongles</bold> en cinq minutes.
+        <italic>Pour vous.</italic>
+    ar:
+      hero_description: |
+        طقوس <bold>الأظافر</bold> في خمس دقائق.
+        <italic>لك.</italic>
+
+# ============================================================================
+# 6. ANTI-PATTERNS À ÉVITER
+# ============================================================================
+
+anti_patterns:
+
+  - description: "Clé hardcodée non extraite"
+    bad: |
+      // src/app/page.tsx
+      <h1>Le rituel ongles, en cinq minutes.</h1>
+    good: |
+      const t = useTranslations('marketing.hero');
+      <h1>{t('title')}</h1>
+
+  - description: "Concaténation au lieu d'interpolation"
+    bad: |
+      const greeting = t('hello') + ' ' + name + '!';
+    good: |
+      // messages/fr.json: "hello_user": "Bonjour {name} !"
+      const greeting = t('hello_user', { name });
+
+  - description: "Pluriel via if/else au lieu d'ICU"
+    bad: |
+      const text = count === 0 ? 'Aucun' : count === 1 ? '1 article' : `${count} articles`;
+    good: |
+      // messages/fr.json: "items_count": "{count, plural, =0 {Aucun} =1 {1 article} other {# articles}}"
+      const text = t('items_count', { count });
+
+  - description: "Langue dans la clé"
+    bad: |
+      "hero_title_fr": "Le rituel"
+      "hero_title_ar": "الطقوس"
+    good: |
+      // messages/fr.json
+      "marketing.hero.title": "Le rituel"
+      // messages/ar.json
+      "marketing.hero.title": "الطقوس"
+
+  - description: "Trop plat ou trop profond"
+    bad_too_flat: |
+      "marketing_kit_hero_title": "..."
+    bad_too_deep: |
+      "marketing.pages.kit.sections.hero.elements.title.value": "..."
+    good: |
+      "marketing.kit.hero_title": "..."
+
+# ============================================================================
+# 7. CHECKLIST AVANT MERGE
+# ============================================================================
+
+merge_checklist:
+  - "[ ] Toutes les clés FR sont définies"
+  - "[ ] Schema JSON validé (pnpm i18n:validate-schema)"
+  - "[ ] Aucune string hardcoded en JSX (eslint i18n/no-hardcoded passes)"
+  - "[ ] Clés cohérentes avec naming-conventions.md"
+  - "[ ] Tests vitest passent (snapshot inclus)"
+  - "[ ] Playwright @smoke passes (i18n flows)"
+  - "[ ] Translator-friendly : _meta complété si update significatif"
+  - "[ ] Pas de breaking key rename non documenté"

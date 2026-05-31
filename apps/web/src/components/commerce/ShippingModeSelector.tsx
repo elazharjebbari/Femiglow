@@ -3,6 +3,7 @@
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils/cn';
 import type { ShippingMode } from '@/lib/schemas';
+import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
 
 interface OptionConfig {
   value: ShippingMode;
@@ -18,13 +19,14 @@ interface ShippingModeSelectorProps {
   onChange: (value: ShippingMode) => void;
   onBlur?: () => void;
   disabledExpress?: boolean;
+  freeShipping?: boolean;
 }
 
 export const ShippingModeSelector = forwardRef<
   HTMLDivElement,
   ShippingModeSelectorProps
 >(function ShippingModeSelector(
-  { options, name, value, onChange, onBlur, disabledExpress },
+  { options, name, value, onChange, onBlur, disabledExpress, freeShipping = false },
   ref,
 ) {
   return (
@@ -59,9 +61,16 @@ export const ShippingModeSelector = forwardRef<
                 className="h-4 w-4 accent-encre"
               />
               <span className="font-medium text-encre">{opt.title}</span>
-              <span className="ml-auto text-sm text-encre/70">{opt.price}</span>
+              <span className="ms-auto text-sm text-encre/70">
+                <ShippingPriceDisplay
+                  displayPrice={opt.price}
+                  freeShipping={freeShipping}
+                  size="sm"
+                  align="right"
+                />
+              </span>
             </span>
-            <span className="pl-7 text-xs text-encre/60">{opt.hint}</span>
+            <span className="ps-7 text-xs text-encre/60">{opt.hint}</span>
           </label>
         );
       })}

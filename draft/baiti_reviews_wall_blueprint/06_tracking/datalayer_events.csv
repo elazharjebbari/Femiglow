@@ -1,0 +1,11 @@
+event,when,payload_required,payload_optional
+reviews_wall_open,on drawer open,room_slug,product_key;source_spot_key
+reviews_wall_close,on drawer close,room_slug,product_key;duration_ms
+reviews_wall_filter_change,on filter chip click,room_slug,product_key;filter_key;filter_value
+reviews_wall_sort_change,on sort change,room_slug,product_key;sort
+reviews_wall_load_more,on load more click,room_slug,product_key;page_index
+reviews_wall_review_impression,on card enters viewport,room_slug,review_id;product_key;rating
+reviews_wall_open_product,on CTA "voir produit",room_slug,product_key;review_id
+reviews_wall_start_submit,on click leave review,room_slug,product_key,
+reviews_wall_submit_success,on submit success,room_slug,product_key;review_id
+reviews_wall_submit_error,on submit error,room_slug,product_key;error_code

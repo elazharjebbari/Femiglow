@@ -17,9 +17,20 @@ export type DeliveryStatus = 'pending' | 'in_progress' | 'succeeded' | 'failed' 
 
 export type WebhookEventName =
   | 'lead.created'
+  | 'lead.step2_completed'
+  | 'lead.step1_abandoned'
   | 'lead.status_changed'
   | 'lead.note_added'
-  | 'order.created';
+  | 'chat_lead.created'
+  | 'cart.abandoned'
+  | 'order.created'
+  | 'contact.submitted'
+  | 'ritual.approved'
+  | 'ritual.rejected'
+  | 'ritual.hidden'
+  | 'ritual.restored'
+  | 'ritual.featured_on'
+  | 'ritual.featured_off';
 
 export interface AdminUser {
   id: string;
@@ -32,14 +43,42 @@ export interface AdminUser {
 
 export interface Lead {
   id: string;
-  email: string;
+  /**
+   * Les leads chat et wizard peuvent être phone-only. `email` vaut `null`
+   * tant qu'aucun opt-in email n'a été capturé.
+   * cf. CHA-225/CHA-230 — unification de /admin/leads.
+   */
+  email: string | null;
   phone: string | null;
   name: string | null;
+  city?: string | null;
+  country?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
   status: LeadStatus;
   source: string | null;
   consentMarketing: boolean;
   createdAt: Date;
   updatedAt: Date;
+  /**
+   * CHA-229 — ID de la session de chat à l'origine du lead (`cs_…`).
+   * Présent uniquement pour les vrais leads chat (`source='chat:…'`) ;
+   * `null` pour les leads ecommerce et wizard. Permet à `/admin/leads` d'ouvrir la
+   * fenêtre rapide `ConversationQuickView` sans round-trip
+   * supplémentaire pour résoudre `chat_lead.session_id`.
+   */
+  chatSessionId?: string | null;
+  journeyStage?: 'lead' | 'address' | 'payment' | 'purchased' | 'abandoned_step1';
+  dataPct?: number;
+  webhookSummary?:
+    | 'none'
+    | 'pending'
+    | 'sent'
+    | 'failed'
+    | 'disabled'
+    | 'skipped'
+    | 'step2_sent'
+    | 'step1_abandoned_sent';
 }
 
 export interface Order {
@@ -99,6 +138,35 @@ export interface WebhookDelivery {
   responseBody: string | null;
   errorCode: string | null;
   latencyMs: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// CHA-260 — Outbound webhook log (payload PLAT).
+export type OutboundSource =
+  | 'order'
+  | 'chat-lead'
+  | 'cart-abandon'
+  | 'contact'
+  | 'newsletter'
+  | 'lead-step2'
+  | 'lead-step1-abandon'
+  | 'inline-contact';
+export type OutboundStatus = 'pending' | 'sent' | 'failed' | 'skipped' | 'disabled';
+
+export interface OutboundWebhookLogRow {
+  id: string;
+  source: OutboundSource;
+  sourceId: string;
+  idempotencyKey: string;
+  eventName: string;
+  payload: Record<string, unknown>;
+  status: OutboundStatus;
+  attemptCount: number;
+  lastError: string | null;
+  responseStatus: number | null;
+  latencyMs: number | null;
+  sentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -177,6 +245,28 @@ export interface MediaOverrides {
    * Si absent, on tombe sur la couleur dominante de la palette.
    */
   backgroundFill?: string;
+  /**
+   * Métadonnées internes au Content Studio. Elles permettent d'isoler les
+   * visuels générés par IA des médias importés sans modifier l'usage global
+   * de la médiathèque.
+   */
+  contentStudio?: {
+    origin?: 'ai_generated' | 'imported';
+    provider?: string;
+    promptVersion?: string;
+    sourceDraftId?: string;
+    sourceIdeaId?: string;
+    /**
+     * Content Studio v2 (refonte) metadata. Pre-baked preview + thumbnail
+     * URLs computed at upload time so the MediaPicker v2 has no N+1.
+     */
+    v2?: {
+      previewUrl?: string;
+      thumbnailUrl?: string | null;
+      crop?: { x: number; y: number; width: number; height: number; rotation: number; aspectRatio: string | null };
+      trim?: { startSec: number; endSec: number };
+    };
+  };
   /**
    * Si true, demande au pipeline (au seed ou re-générer) de cropper
    * physiquement les variants à l'aspectRatioHint du slot (centré sur le
@@ -467,6 +557,20 @@ export interface TrackingSetting<TValue = unknown> {
   value: TValue;
   updatedAt: Date;
   updatedBy: string | null;
+}
+
+/**
+ * Ligne `visitor_attribution` (in-memory + DB). Le `*Touch` est un
+ * objet libre — typé strictement par
+ * `lib/tracking/attribution/types.ts → ChannelTouch`.
+ */
+export interface VisitorAttributionRow {
+  visitorId: string;
+  firstTouch: unknown;
+  lastTouch: unknown;
+  paidHistory: unknown;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -784,3 +888,202 @@ export interface ResolvedField<T = unknown> {
 }
 
 export type ResolvedFields = Record<string, ResolvedField>;
+
+/* ─────────────────────────────────────────────────────────────────
+ * Analytics Insights (cf. docs/analytics-insights/)
+ * ───────────────────────────────────────────────────────────────── */
+
+export interface InsightsEventDailyRow {
+  id: string;
+  date: string; // YYYY-MM-DD
+  eventName: string;
+  eventCategory: string;
+  env: string;
+  device: string;
+  locale: string;
+  count: number;
+  uniqueSessions: number;
+  conversionCount: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsPageDailyRow {
+  id: string;
+  date: string;
+  pageRoute: string;
+  pageViews: number;
+  uniqueSessions: number;
+  uniqueVisitors: number;
+  eventsTotal: number;
+  scroll75Count: number;
+  conversions: number;
+  bounceCount: number;
+  avgTimeSeconds: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsComponentDailyRow {
+  id: string;
+  date: string;
+  componentId: string;
+  componentName: string | null;
+  pageRoute: string | null;
+  eventName: string;
+  count: number;
+  uniqueSessions: number;
+  conversionCount: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsSectionDailyRow {
+  id: string;
+  date: string;
+  pageRoute: string;
+  sectionId: string;
+  views: number;
+  avgDwellSeconds: number;
+  uniqueSessions: number;
+  refreshedAt: Date;
+}
+
+export interface InsightsFunnelDailyRow {
+  id: string;
+  date: string;
+  viewItem: number;
+  addToCart: number;
+  beginCheckout: number;
+  addPaymentInfo: number;
+  purchase: number;
+  generateLead: number;
+  uniquePurchasers: number;
+  revenueTotalCents: number;
+  refreshedAt: Date;
+}
+
+export type InsightsRefreshTrigger = 'cron' | 'manual';
+export type InsightsRefreshStatus = 'running' | 'success' | 'failed' | 'skipped';
+
+export interface InsightsRefreshRunRow {
+  id: string;
+  trigger: InsightsRefreshTrigger;
+  status: InsightsRefreshStatus;
+  startedAt: Date;
+  finishedAt: Date | null;
+  durationsMs: Record<string, number>;
+  counts: Record<string, number>;
+  errorCode: string | null;
+  errorMessage: string | null;
+  triggeredBy: string | null;
+}
+
+// =========================================================================
+// Rituels partagés — cf. docs/reviews-wall/execution/
+// =========================================================================
+
+export type RitualSignal = 'oui' | 'hesite' | 'non';
+export type RitualStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN';
+export type RitualSource =
+  | 'web'
+  | 'email_j45'
+  | 'manual'
+  | 'import_csv'
+  | 'import_json'
+  | 'import_zip';
+export type RitualLanguage = 'fr' | 'ar' | 'en';
+export type RitualPhotoFacesStatus =
+  | 'PENDING_CHECK'
+  | 'OK'
+  | 'MANUAL_REVIEW'
+  | 'REJECTED_FACE';
+
+export interface RitualTestimonial {
+  id: string;
+  publicSlug: string;
+  productKey: string;
+  body: string;
+  bodyOriginal: string | null;
+  wouldRecommend: RitualSignal;
+  ritualTags: string[];
+  authorFirstName: string | null;
+  authorCity: string | null;
+  initiatedSince: string | null;
+  isAnonymous: boolean;
+  language: RitualLanguage;
+  status: RitualStatus;
+  source: RitualSource;
+  customerHash: string | null;
+  orderId: string | null;
+  verifiedPurchase: boolean;
+  featured: boolean;
+  moderationNote: string | null;
+  autoFlags: string[];
+  importBatchId: string | null;
+  importRowId: string | null;
+  createdAt: Date;
+  publishedAt: Date | null;
+  updatedAt: Date;
+}
+
+export interface RitualTestimonialPhoto {
+  id: string;
+  testimonialId: string;
+  url: string;
+  thumbUrl: string;
+  focalX: string;
+  focalY: string;
+  width: number;
+  height: number;
+  byteSize: number;
+  mime: string;
+  alt: string | null;
+  facesStatus: RitualPhotoFacesStatus;
+  facesCount: number;
+  facesCheckAt: Date | null;
+  position: number;
+  createdAt: Date;
+}
+
+export type ProductReviewPhotoStatus = 'draft' | 'published' | 'archived';
+
+export interface ProductReviewPhoto {
+  id: string;
+  productId: string;
+  reviewId: string | null;
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  blurDataUrl: string | null;
+  displayOrder: number;
+  status: ProductReviewPhotoStatus;
+  reviewerInitials: string | null;
+  reviewerCity: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RitualAuditEntry {
+  id: string;
+  testimonialId: string | null;
+  actorId: string | null;
+  action: string;
+  note: string | null;
+  payload: Record<string, unknown>;
+  createdAt: Date;
+  /** Hash SHA-256 de l'entrée précédente dans la chaîne (null pour la première). */
+  previousHash: string | null;
+  /** Signature HMAC SHA-256 du contenu canonique + previousHash. */
+  signature: string | null;
+}
+
+export interface RitualAggregateRow {
+  productKey: string;
+  totalCount: number;
+  ouiCount: number;
+  hesiteCount: number;
+  nonCount: number;
+  withPhotosCount: number;
+  topTags: Array<{ tag: string; count: number }>;
+  lastPublishedAt: Date | null;
+  refreshedAt: Date;
+}

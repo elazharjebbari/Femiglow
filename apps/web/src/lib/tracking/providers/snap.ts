@@ -1,13 +1,80 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
 import { hashIdentity } from './hashing';
-import { isEventSupported, mapEventName } from './event-mapping';
+import { isEventSupported } from './event-mapping';
+import { getMappedName } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
 
 function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<string, unknown> {
-  const eventNameMapped = mapEventName(ctx.eventName, 'snap') ?? 'CUSTOM_EVENT';
+  const eventNameMapped = getMappedName(ctx, 'snap') ?? 'CUSTOM_EVENT';
   const hashed = hashIdentity(ctx.identity ?? {});
+  const userData = ctx.userData ?? {};
+  const address = userData.address ?? {};
+  const items = Array.isArray(ctx.params.items)
+    ? (ctx.params.items as Array<{
+        item_id?: string;
+        item_category?: string;
+        price?: number;
+        quantity?: number;
+      }>)
+    : [];
+  const attributionClickId =
+    ctx.attribution?.click_id_field === 'sccid' || ctx.attribution?.click_id_field === 'ScCid'
+      ? ctx.attribution.click_id
+      : undefined;
+  const scClickId =
+    (ctx.params.sc_click_id as string | undefined) ??
+    (ctx.params.ScCid as string | undefined) ??
+    (ctx.params.sccid as string | undefined) ??
+    attributionClickId;
+
+  // Per Snap CAPI v3 spec: city and country are hashed when not pre-hashed.
+  // If identity provides plain text, hashIdentity already produces hashed.ct and hashed.country.
+  // If userData provides pre-hashed values or plain text, resolve accordingly.
+  const geoCity = hashed.ct ?? address.city ?? ctx.identity?.city ?? ctx.params.geo_city ?? ctx.params.city;
+  const geoCountry = hashed.country ?? address.country ?? ctx.identity?.country ?? ctx.params.geo_country ?? ctx.params.country;
+  const geoRegion = ctx.params.geo_region as string | undefined;
+
+  // Per Snap CAPI v3 spec: content_ids (not item_ids), content_category as array,
+  // number_items as array of string quantities, event_id in custom_data.
+  const contentIds = items.length > 0 ? items.map((i) => i.item_id).filter(Boolean) : undefined;
+  const contentCategory = (items[0]?.item_category ?? ctx.params.item_category) as string | undefined;
+  const numberItemsArr = items.length > 0
+    ? items.map((i) => String(Number(i.quantity) || 1))
+    : undefined;
+
+  // Per Snap CAPI v3 spec: custom_data fields vary per event type.
+  // - ADD_CART: event_id, value, currency, content_ids, content_category, number_items
+  // - PAGE_VIEW: event_id, content_category, content_ids
+  // - PURCHASE: event_id, value, currency, content_ids, content_category, number_items, order_id
+  // - START_CHECKOUT: event_id, value, currency, content_ids, content_category, number_items, order_id
+  // - VIEW_CONTENT: event_id, value, currency, content_ids, content_category, order_id
+  // Client-side-only fields (delivery_method, payment_info_available, sign_up_method)
+  // are handled by SnapPixelEvents, not CAPI.
+  const customData: Record<string, unknown> = {
+    event_id: ctx.eventId,
+    currency: ctx.params.currency,
+    value: ctx.params.value,
+    content_ids: contentIds,
+    content_category: contentCategory ? [contentCategory] : undefined,
+  };
+
+  // number_items: only for ADD_CART, PURCHASE, START_CHECKOUT (per CAPI spec)
+  if (['ADD_CART', 'PURCHASE', 'START_CHECKOUT'].includes(eventNameMapped)) {
+    customData.number_items = numberItemsArr;
+  }
+
+  // order_id: only for PURCHASE, START_CHECKOUT, VIEW_CONTENT (per CAPI spec)
+  if (['PURCHASE', 'START_CHECKOUT', 'VIEW_CONTENT'].includes(eventNameMapped)) {
+    customData.order_id = ctx.params.transaction_id;
+  }
+
+  // Remove undefined values from custom_data (Snap rejects null/undefined)
+  for (const key of Object.keys(customData)) {
+    if (customData[key] === undefined) delete customData[key];
+  }
+
   return {
     data: [
       {
@@ -17,23 +84,19 @@ function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<
         event_source_url: ctx.pageUrl,
         action_source: 'website',
         user_data: {
-          em: hashed.em ? [hashed.em] : undefined,
-          ph: hashed.ph ? [hashed.ph] : undefined,
+          em: userData.sha256_email_address ? [userData.sha256_email_address] : hashed.em ? [hashed.em] : undefined,
+          ph: userData.sha256_phone_number ? [userData.sha256_phone_number] : hashed.ph ? [hashed.ph] : undefined,
+          fn: address.sha256_first_name ? [address.sha256_first_name] : hashed.fn ? [hashed.fn] : undefined,
+          ln: address.sha256_last_name ? [address.sha256_last_name] : hashed.ln ? [hashed.ln] : undefined,
+          ct: geoCity,
+          country: geoCountry,
+          st: geoRegion ? hashed.ct ? hashed.ct : geoRegion : undefined,
           client_ip_address: ctx.ipAnonymized,
-          client_user_agent: ctx.uaHash,
-          sc_click_id: ctx.params.sc_click_id,
+          client_user_agent: ctx.userAgent ?? ctx.uaHash,
+          sc_click_id: scClickId,
+          sc_cookie1: ctx.params.sc_cookie1 as string | undefined,
         },
-        custom_data: {
-          currency: ctx.params.currency,
-          value: ctx.params.value,
-          item_ids: Array.isArray(ctx.params.items)
-            ? (ctx.params.items as Array<{ item_id?: string }>).map((i) => i.item_id)
-            : undefined,
-          number_items: Array.isArray(ctx.params.items)
-            ? (ctx.params.items as unknown[]).length
-            : undefined,
-          transaction_id: ctx.params.transaction_id,
-        },
+        custom_data: customData,
       },
     ],
     ...(provider.testEventCode ? { test_event_code: provider.testEventCode } : {}),
@@ -73,7 +136,7 @@ export const snapAdapter: ProviderAdapter = {
   },
   clientSnippet(provider: TrackingProvider): string | null {
     if (provider.status !== 'enabled' || !provider.pixelId) return null;
-    return `(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};a.queue=[];var s='script';r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)})(window,document,'https://sc-static.net/scevent.min.js');snaptr('init','${provider.pixelId}');snaptr('track','PAGE_VIEW');`;
+    return `(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};a.queue=[];var s='script';r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)})(window,document,'https://sc-static.net/scevent.min.js');snaptr('init','${provider.pixelId}');window.__fg_snap_pixel_id='${provider.pixelId}';`;
   },
   cspHosts() {
     return {
@@ -82,3 +145,5 @@ export const snapAdapter: ProviderAdapter = {
     };
   },
 };
+
+export const __test__ = { buildPayload };

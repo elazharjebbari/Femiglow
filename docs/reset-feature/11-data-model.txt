@@ -1,0 +1,162 @@
+FEMIGLOW · RESET FEATURE · DATA MODEL & IMPACT MATRIX
+======================================================
+
+Légende :
+  ●  TRUNCATE garanti pour ce mode
+  ◐  TRUNCATE si l'admin n'a pas coché la préservation
+  ○  Préservé par défaut (non touché)
+  ✱  Toujours préservé (jamais wipe, sauf flag CLI explicite réservé)
+  ⊘  Touché uniquement en mode hard (DROP SCHEMA)
+  +  Recréé par seed après wipe
+
+Table                       | soft | medium | hard | custom-* | seed après wipe | seeder responsable
+----------------------------+------+--------+------+----------+-----------------+---------------------------
+SYSTEM
+admin_users                 |  ○   |   ✱    |  ✱   |    ✱     |  +  (idempot.)  | seed-admin.ts
+app_config                  |  +   |   ●    |  ⊘   |   ●(sys) |  + (4 sections) | seed-admin.ts
+app_config_snapshots        |  ○   |   ●    |  ⊘   |   ●(sys) |       -         | -
+audit_events                |  ○   |   ✱    |  ✱   |    ✱     |  +              | -
+drizzle.__drizzle_migrations|  ○   |   ○    |  ⊘   |    ○     |  + (migrate)    | drizzle-kit migrate
+
+USERS / COMMERCIAL
+leads                       |  ○   |   ○    |  ○   |   ◐      |       -         | -
+lead_events                 |  ○   |   ○    |  ○   |   ◐      |       -         | -
+orders                      |  ○   |   ○    |  ○   |   ◐      |       -         | -
+order_items                 |  ○   |   ○    |  ○   |   ◐      |       -         | -
+chat_lead                   |  ○   |   ○    |  ○   |   ◐      |       -         | -
+
+COMMERCE (produits & checkout)
+products                    |  +   |   ●    |  ⊘   |   ●(com) |  +              | seed-products.ts
+product_variants            |  +   |   ●    |  ⊘   |   ●(com) |  +              | seed-products.ts
+product_snapshots           |  +   |   ●    |  ⊘   |   ●(com) |  +              | seed-products.ts
+product_stock               |  +   |   ●    |  ⊘   |   ●(com) |  +              | seed-products.ts
+form_config                 |  +   |   ●    |  ⊘   |   ●(com) |  + (kit+commander)| seed form-config seeder
+form_config_history         |  ○   |   ●    |  ⊘   |   ●(com) |       -         | -
+form_variant_assignment     |  ○   |   ●    |  ⊘   |   ●(com) |       -         | -
+checkout_idempotency        |  ○   |   ●    |  ⊘   |   ●(com) |       -         | -
+delivery_cities             |  +   |   ●    |  ⊘   |   ●(com) |  + (~430 villes)| seed-delivery-cities.ts
+
+CONTENT (CMS + médias éditoriaux)
+site_components             |  +   |   ●    |  ⊘   |   ●(con) |  +              | components seeder
+component_field_bindings    |  ○   |   ●    |  ⊘   |   ●(con) |  +              | components seeder
+component_field_history     |  ○   |   ●    |  ⊘   |   ●(con) |       -         | -
+component_media_bindings    |  +   |   ●    |  ⊘   |   ●(con) |  +              | components seeder
+component_animations        |  +   |   ●    |  ⊘   |   ●(con) |  +              | components seeder
+component_animation_bindings|  +   |   ●    |  ⊘   |   ●(con) |  +              | components seeder
+media                       |  ◐   |   ●    |  ⊘   |   ●(con) |  + (scan docs)  | seed-media.ts
+media_jobs                  |  ○   |   ●    |  ⊘   |   ●(con) |       -         | -
+media_tags                  |  +   |   ●    |  ⊘   |   ●(con) |  +              | seed-media.ts
+media_to_tags               |  +   |   ●    |  ⊘   |   ●(con) |  +              | seed-media.ts
+media_usages                |  ○   |   ●    |  ⊘   |   ●(con) |       -         | -
+media_variants              |  +   |   ●    |  ⊘   |   ●(con) |  +              | seed-media.ts
+seo_overrides               |  +   |   ●    |  ⊘   |   ●(con) |  + (13)         | seed-seo.ts
+seo_settings                |  +   |   ●    |  ⊘   |   ●(con) |  +              | seed-seo.ts
+seo_audit_snapshots         |  ○   |   ●    |  ⊘   |   ●(con) |       -         | -
+ritual_testimonials         |  ◐   |   ●    |  ⊘   |   ●(con) |  + (~50)        | seed-rituals.ts
+ritual_testimonial_photos   |  ◐   |   ●    |  ⊘   |   ●(con) |  +              | seed-rituals.ts
+ritual_audit_log            |  ○   |   ●    |  ⊘   |   ●(con) |       -         | -
+ritual_aggregate            |  ◐   |   ●    |  ⊘   |   ●(con) |  + (computed)   | -
+
+TRACKING / ANALYTICS
+tracking_components         |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+tracking_component_events   |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+tracking_consent_snapshots  |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+tracking_event_definitions  |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+tracking_events_log         |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+tracking_pages              |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+tracking_pages_components   |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+tracking_providers          |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+tracking_settings           |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+experiments                 |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+experiment_variants         |  +   |   ●    |  ⊘   |   ●(trk) |  +              | seed-tracking.ts
+experiment_assignments      |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+insights_event_daily        |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+insights_page_daily         |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+insights_component_daily    |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+insights_section_daily      |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+insights_funnel_daily       |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+insights_refresh_run        |  ○   |   ●    |  ⊘   |   ●(trk) |       -         | -
+
+CHAT
+chat_session                |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+chat_message                |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+chat_instruction_version    |  +   |   ●    |  ⊘   |   ●(chat)|  + (v1+v2)      | chat-instructions seeders
+chat_theme_preset           |  +   |   ●    |  ⊘   |   ●(chat)|  +              | chat-theme seeder
+chat_provider_config        |  +   |   ●    |  ⊘   |   ●(chat)|  + (from .env)  | chat-providers seeder
+chat_runtime_setting        |  +   |   ●    |  ⊘   |   ●(chat)|  +              | chat seeder
+chat_knowledge_chunk        |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+chat_knowledge_embedding    |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+chat_knowledge_source       |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+chat_feedback               |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+chat_conversation_event     |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+chat_rate_limit_bucket      |  ○   |   ●    |  ⊘   |   ●(chat)|       -         | -
+
+WEBHOOKS
+webhook_endpoints           |  ○   |   ●    |  ⊘   |    ○     |       -         | -
+webhook_deliveries          |  ○   |   ●    |  ⊘   |    ○     |       -         | -
+outbound_webhook_log        |  ○   |   ●    |  ⊘   |    ○     |       -         | -
+
+
+FILESYSTEM IMPACT
+=================
+
+/var/www/femiglow/.media-storage/    | conservé (soft/medium) · WIPÉ (hard) · choix (custom)
+/var/www/femiglow/apps/web/.next/    | conservé (soft/medium) · WIPÉ (hard) · conservé (custom default)
+/var/www/femiglow/apps/web/.media-storage/ | LEGACY — sera supprimé en hard (orphelin)
+/var/backups/femiglow/               | créé/rempli automatiquement avant tout destructif
+
+
+PRESERVATION OPTIONS (cocheables dans le wizard)
+================================================
+
+Default cochées (préservé) sauf en hard ou explicitement décoché :
+  admin_users              (✱ toujours préservé)
+  audit_events             (✱ toujours préservé)
+  orders + order_items
+  leads + lead_events
+  chat_lead
+  ritual_testimonials + ritual_testimonial_photos + ritual_audit_log
+
+En hard, ces tables sont préservées via :
+  1. backup pré-DROP (pg_dump complet)
+  2. après migrate vide, on RESTORE uniquement ces tables depuis le backup
+     (pg_restore -t table_name) avant de lancer les seeders.
+
+Cf. lib/reset/phases/preserve.ts (sous-phase intercalée entre migrate et seed).
+
+
+ROW COUNT CIBLES POST-RESET CANONIQUE (état attendu)
+====================================================
+
+products            : 1   (Pack FemiGlow)
+product_variants    : 1   (FEMI-KIT-100 à 199 dh / 390 dh anchor)
+delivery_cities     : ~430 (Sendit MA)
+seo_overrides       : 13
+seo_settings        : 1
+form_config         : 2   (wizard_kit, wizard_commander)
+chat_instruction_version : 3 (v1 FR/AR/AR-MA + v2)
+chat_theme_preset   : 1
+media               : ~48 (scan docs/images/values + originaux composants)
+site_components     : ~30
+ritual_testimonials : ~50 (si seedés)
+admin_users         : 1   (bootstrap)
+app_config          : 4   (navigation, flags, rbac, branding)
+
+
+VALIDATION POST-RESET (phase verify)
+=====================================
+
+Checks taggés ✅ critique / ⚠ warn :
+
+✅ DB tables présentes (≥ 60)
+✅ Migrations appliquées (drizzle.__drizzle_migrations ≥ 27)
+✅ Admin bootstrap recréé (admin_users count ≥ 1)
+✅ Produit Pack FemiGlow présent (slug='le-kit')
+✅ Variante FEMI-KIT-100 prix 199 dh (promo_price_cents=19900)
+✅ Image kit principale existe sur disque ET référencée dans DB
+✅ /kit retourne HTTP 200 contenant "199"
+✅ /admin/login retourne HTTP 200
+✅ /admin/settings (auth admin) retourne 7 cards
+⚠ Variante stale FEMI-KIT-30 absente
+⚠ Aucun média orphelin (media DB sans fichier disque)
+⚠ Aucun fichier disque sans entrée media DB

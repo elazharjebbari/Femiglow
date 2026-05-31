@@ -1,0 +1,60 @@
+module,test_file,description,language_coverage,priority,coverage_target,assignee
+lib/chat/services/intent/regex-layer.ts,regex-layer.test.ts,Match patterns multilingues + edge cases punctuation,fr+ar+ar-MA,P0,95,dev_intermediate
+lib/chat/services/intent/embedding-layer.ts,embedding-layer.test.ts,Cosine similarity threshold + tie-breaking,fr+ar+ar-MA,P0,90,dev_intermediate
+lib/chat/services/intent/llm-mini-layer.ts,llm-mini-layer.test.ts,Schema Zod output + cost budget assertion,fr+ar+ar-MA,P0,90,dev_intermediate
+lib/chat/services/intent/detect-intent.ts,detect-intent.test.ts,Cascade flow + early exit + matrix 150 examples,fr+ar+ar-MA,P0,95,dev_intermediate
+lib/chat/services/retrieval/router.ts,router.test.ts,decide() routing per intent + audience filter,fr+ar+ar-MA,P0,90,dev_lead
+lib/chat/services/retrieval/faq-gateway.ts,faq-gateway.test.ts,Threshold per-entry + rank top results,fr+ar+ar-MA,P0,90,dev_lead
+lib/chat/services/retrieval/rag.ts,rag.test.ts,HNSW similarity + filtre audience+lang,fr+ar+ar-MA,P0,85,dev_lead
+lib/chat/services/retrieval/rerank.ts,rerank.test.ts,Heuristique scoring + tie breaking,fr+ar+ar-MA,P1,80,dev_lead
+lib/chat/services/tools/get-product.ts,get-product.test.ts,Whitelist output + Zod validation,—,P0,95,dev_intermediate
+lib/chat/services/tools/get-delivery-info.ts,get-delivery-info.test.ts,City aliases + fallback unknown city,fr+ar+ar-MA,P0,95,dev_intermediate
+lib/chat/services/tools/search-faq.ts,search-faq.test.ts,Ranking + min score,fr+ar+ar-MA,P0,95,dev_intermediate
+lib/chat/services/canned/resolve-salutations.ts,resolve-salutations.test.ts,Audience + page pattern matching,fr+ar+ar-MA,P0,95,dev_lead
+lib/chat/services/canned/serve-pair-by-key.ts,serve-pair-by-key.test.ts,Transactional persist 2 messages + events,fr+ar+ar-MA,P0,95,dev_lead
+lib/chat/services/canned/get-ephemeral-llm-note.ts,get-ephemeral-llm-note.test.ts,Note injection + recent window check,fr+ar+ar-MA,P0,95,dev_lead
+lib/chat/services/orchestrator/stream-reply.ts,stream-reply.test.ts,Pipeline cascade + 7 events emitted,fr+ar+ar-MA,P0,85,dev_lead
+lib/chat/services/orchestrator/sse-emitter.ts,sse-emitter.test.ts,SSE frame format + backpressure,—,P0,90,dev_lead
+lib/chat/services/orchestrator/breaker.ts,breaker.test.ts,3-fail cooldown + reset + half-open state,—,P0,95,dev_lead
+lib/chat/services/orchestrator/service-level.ts,service-level.test.ts,5 levels transitions + cooldown,—,P0,95,dev_lead
+lib/chat/providers/openai.ts,openai.test.ts,Mock OpenAI client + error handling,—,P1,80,dev_intermediate
+lib/chat/providers/anthropic.ts,anthropic.test.ts,Mock Anthropic client,—,P1,80,dev_intermediate
+lib/chat/providers/mistral.ts,mistral.test.ts,Mock Mistral client,—,P1,75,dev_intermediate
+lib/chat/providers/gemini.ts,gemini.test.ts,Mock Gemini client,—,P2,70,dev_intermediate
+lib/chat/providers/routing.ts,routing.test.ts,Priority + failover + cost ranking,—,P0,90,dev_lead
+lib/chat/store/chat-store.ts,chat-store.test.ts,Actions + selectors + immutability,—,P0,90,dev_intermediate
+lib/chat/store/migrations.ts,migrations.test.ts,persist v1 → v2 migrate + data integrity,—,P0,95,dev_intermediate
+lib/chat/store/sanitization.ts,sanitization.test.ts,30d expiry + remove sensitive fields,—,P0,95,dev_intermediate
+lib/chat/store/selectors.ts,selectors.test.ts,Memoization + correct slice,—,P1,85,dev_intermediate
+lib/chat/errors/chat-error.ts,chat-error.test.ts,Hierarchy + serialization,—,P0,95,dev_intermediate
+lib/chat/errors/types.ts,error-types.test.ts,Localization FR/AR/AR-MA per type,fr+ar+ar-MA,P0,95,dev_intermediate
+lib/chat/sanitize/pii.ts,pii.test.ts,Phone + email + address redaction,fr+ar+ar-MA,P0,95,dev_lead
+hooks/useChatSSE.ts,useChatSSE.test.ts,fetch + reader + abort + parse 7 events,—,P0,85,dev_intermediate
+hooks/useLocalStream.ts,useLocalStream.test.ts,wpm + jitter + reduced-motion + cancel,—,P0,90,dev_intermediate
+hooks/useChatSession.ts,useChatSession.test.ts,init + rehydrate + 30d expiry,—,P0,85,dev_intermediate
+hooks/usePrefersReducedMotion.ts,usePrefersReducedMotion.test.ts,matchMedia listener + initial state,—,P1,90,dev_intermediate
+components/chat/ChatLauncher.tsx,ChatLauncher.test.tsx,Pulse + badge + a11y,—,P1,80,dev_intermediate
+components/chat/ChatPanel.tsx,ChatPanel.test.tsx,FSM transitions + lazy mount,—,P0,80,dev_intermediate
+components/chat/MessageBubble.tsx,MessageBubble.test.tsx,Variants user/assistant/canned + RTL,fr+ar+ar-MA,P0,80,dev_intermediate
+components/chat/SuggestionPills.tsx,SuggestionPills.test.tsx,Click handler + a11y + keyboard,—,P0,80,dev_intermediate
+components/chat/Composer.tsx,Composer.test.tsx,Autosize + cmd+enter + max length,—,P0,80,dev_intermediate
+components/chat/LeadForm.tsx,LeadForm.test.tsx,Zod validation + submit + error display,fr+ar+ar-MA,P0,85,dev_intermediate
+components/chat/TypingDots.tsx,TypingDots.test.tsx,Stagger + reduced-motion off,—,P2,75,dev_intermediate
+components/chat/ToastServiceLevel.tsx,ToastServiceLevel.test.tsx,Show only on degradation + i18n,fr+ar+ar-MA,P1,80,dev_intermediate
+components/chat/SourcesPopover.tsx,SourcesPopover.test.tsx,Click + a11y + content,—,P1,80,dev_intermediate
+lib/i18n/microcopy-loader.ts,microcopy-loader.test.ts,FR + AR + AR-MA loading + fallback,fr+ar+ar-MA,P0,90,dev_intermediate
+lib/chat/services/webhooks/sign.ts,sign.test.ts,HMAC SHA-256 + dual-key support,—,P0,95,dev_lead
+lib/chat/services/webhooks/retry.ts,retry.test.ts,Exponential backoff 3x + idempotency key,—,P0,90,dev_lead
+lib/chat/services/budget/watcher.ts,watcher.test.ts,Threshold detection + service level switch,—,P0,90,dev_lead
+lib/chat/services/rgpd/export.ts,export.test.ts,All tables collected + format,—,P0,95,dev_lead
+lib/chat/services/rgpd/forget.ts,forget.test.ts,Anonymization transactional + audit log,—,P0,95,dev_lead
+lib/chat/services/rate-limit/token-bucket.ts,token-bucket.test.ts,Bucket algorithm + per-IP + per-phone,—,P0,90,dev_lead
+components/admin/AdminLayout.tsx,AdminLayout.test.tsx,Sidebar nav + active state,—,P2,70,dev_lead
+components/admin/CommandPalette.tsx,CommandPalette.test.tsx,Cmd+K open + fuzzy search,—,P2,70,dev_lead
+components/admin/BulkActions.tsx,BulkActions.test.tsx,Select multiple + confirm + apply,—,P1,80,dev_lead
+components/admin/Filters.tsx,Filters.test.tsx,URL persistence + reset,—,P1,80,dev_lead
+app/admin/intents/[id]/page.tsx,intent-editor.test.tsx,Add example + recompute trigger,—,P1,75,dev_lead
+app/admin/suggestions/[id]/preview/page.tsx,suggestion-preview.test.tsx,Live preview rendering,—,P1,75,dev_lead
+app/admin/tools/page.tsx,tools-sandbox.test.tsx,Try tool with JSON input + display result,—,P1,75,dev_lead
+app/admin/leads/page.tsx,leads-inbox.test.tsx,Status filter + bulk status change,—,P1,75,dev_lead
+app/admin/health/page.tsx,health-dashboard.test.tsx,Real-time updates + service level display,—,P2,70,dev_lead

@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Wizard — Onboarding Google Ads Server CAPI",
+  "description": "Procédure OAuth + configuration des Conversion Actions",
+  "version": "1.0.0",
+  "name": "google-ads-onboarding",
+  "steps": [
+    {
+      "id": "intro",
+      "index": 1,
+      "label": "Bienvenue",
+      "component": "StepIntro",
+      "showsBack": false,
+      "showsNext": true,
+      "nextLabel": "Commencer",
+      "content": {
+        "title": "Activer Google Ads server-side",
+        "body": "Cette configuration permet d'envoyer les conversions directement depuis le serveur FemiGlow vers Google Ads, sans dépendre du tag client. Avantages : bypass des ad-blockers, fiabilité maximale, conformité ePrivacy.",
+        "estimatedTime": "5 minutes"
+      }
+    },
+    {
+      "id": "customer-id",
+      "index": 2,
+      "label": "Customer ID",
+      "component": "StepCustomerId",
+      "showsBack": true,
+      "showsNext": true,
+      "fields": [
+        {
+          "id": "customerId",
+          "type": "text",
+          "label": "Google Ads Customer ID",
+          "placeholder": "1234567890",
+          "required": true,
+          "validation": {
+            "pattern": "^[0-9]{10}$",
+            "errorMessage": "10 chiffres requis"
+          },
+          "helperText": "Trouvable en haut à droite de ton interface Google Ads (sans tirets)"
+        }
+      ]
+    },
+    {
+      "id": "oauth",
+      "index": 3,
+      "label": "Connexion",
+      "component": "StepOAuth",
+      "showsBack": true,
+      "showsNext": false,
+      "content": {
+        "title": "Autoriser FemiGlow à uploader des conversions",
+        "body": "Tu vas être redirigé(e) vers Google pour autoriser FemiGlow à uploader des conversions sur ton compte Google Ads.\n\nPermissions demandées :\n• ads_conversions:write (uploader des conversions)\n• Lecture seule des Conversion Actions de ton compte",
+        "scopes": ["adwords"]
+      },
+      "primaryAction": {
+        "label": "Se connecter avec Google Ads",
+        "action": "oauth_redirect",
+        "target": "/api/admin/tracking/google-ads/oauth/start?customerId={customerId}"
+      },
+      "callbackHandling": {
+        "successPath": "/admin/tracking/google-ads/onboarding?step=mapping",
+        "errorPath": "/admin/tracking/google-ads/onboarding?step=oauth&error=auth_failed"
+      }
+    },
+    {
+      "id": "mapping",
+      "index": 4,
+      "label": "Mapping",
+      "component": "StepConversionMapping",
+      "showsBack": true,
+      "showsNext": true,
+      "description": "Map les événements FemiGlow aux Conversion Actions de ton compte Google Ads.",
+      "data": {
+        "loadEventsFrom": "/api/admin/tracking/events/categorization",
+        "loadGoogleAdsActionsFrom": "/api/admin/tracking/google-ads/conversion-actions",
+        "filterEvents": "isConversion === true && googleAdsCategory !== null"
+      },
+      "fields": [
+        {
+          "id": "mappings",
+          "type": "dynamic_table",
+          "label": "Conversion mapping",
+          "columns": [
+            { "id": "eventName", "label": "Événement FemiGlow", "readonly": true },
+            { "id": "category", "label": "Catégorie", "readonly": true },
+            { "id": "conversionActionLabel", "label": "Conversion Action Google Ads", "type": "select", "optionsFromColumn": "category" }
+          ],
+          "rows": [
+            { "eventName": "purchase", "category": "purchase", "conversionActionLabel": "" },
+            { "eventName": "lead_capture", "category": "lead", "conversionActionLabel": "" },
+            { "eventName": "generate_lead", "category": "lead", "conversionActionLabel": "" },
+            { "eventName": "phone_call_initiated", "category": "contact", "conversionActionLabel": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "test",
+      "index": 5,
+      "label": "Test",
+      "component": "StepTestConversion",
+      "showsBack": true,
+      "showsNext": false,
+      "description": "Envoyons une conversion test pour valider la configuration.",
+      "primaryAction": {
+        "label": "Envoyer test purchase",
+        "endpoint": "POST /api/admin/tracking/test-event",
+        "body": {
+          "providerId": "{providerId}",
+          "eventName": "purchase",
+          "params": {
+            "transaction_id": "test-{timestamp}",
+            "value": 1.00,
+            "currency": "MAD",
+            "email": "test@femiglow-maroc.com"
+          }
+        }
+      },
+      "successContent": {
+        "title": "✅ Test réussi",
+        "body": "La conversion test a été envoyée à Google Ads avec succès.\nLatence : {latencyMs}ms"
+      },
+      "errorContent": {
+        "title": "❌ Test échoué",
+        "body": "Erreur : {error}\nVérifie tes Conversion Actions ou re-fais l'authentification."
+      }
+    },
+    {
+      "id": "activate",
+      "index": 6,
+      "label": "Activation",
+      "component": "StepActivate",
+      "showsBack": false,
+      "showsNext": false,
+      "content": {
+        "title": "Activer en production ?",
+        "body": "Les conversions seront immédiatement envoyées à Google Ads dès qu'un achat réel sera effectué.\n\n• Tag client gtag.js : reste actif (cohabitation)\n• Dédup via event_id : automatique côté Google\n• Quotas API : surveillés (≤ 15k/jour)"
+      },
+      "primaryAction": {
+        "label": "Activer Google Ads CAPI",
+        "endpoint": "PATCH /api/admin/tracking/providers/{providerId}",
+        "body": { "status": "enabled" }
+      }
+    }
+  ],
+  "errorHandling": {
+    "onAnyError": "showInlineError",
+    "retryStrategy": "manual"
+  }
+}

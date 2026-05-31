@@ -1,0 +1,17 @@
+MOBILE (bottom sheet)
+
++------------------------------+
+|  __  Avis & experiences  [X] |
+|  4.9★ (39)                   |
+|  [histogram mini]            |
+|  Chips: Tous | Photos | ...  |
+|  Trier: Recommandes v        |
+|------------------------------|
+|  [Card]                      |
+|  [Card]                      |
+|  [Card]                      |
+|------------------------------|
+|  [Afficher plus] 10/39       |
+|------------------------------|
+|  [Laisser un avis]           |
++------------------------------+

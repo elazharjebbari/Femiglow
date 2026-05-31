@@ -1,0 +1,55 @@
+workflow:
+  name: ai-content-studio-v0
+  states:
+    - idea
+    - brief
+    - generated
+    - needs_review
+    - approved
+    - scheduled
+    - published
+    - measured
+    - rejected
+    - failed
+    - cancelled
+  transitions:
+    - from: idea
+      to: brief
+      action: generate_brief
+      actor: admin_or_ai
+    - from: brief
+      to: generated
+      action: generate_drafts
+      actor: ai
+    - from: generated
+      to: needs_review
+      action: run_brand_review
+      actor: system
+    - from: needs_review
+      to: approved
+      action: approve
+      actor: human
+    - from: needs_review
+      to: rejected
+      action: reject
+      actor: human
+    - from: approved
+      to: scheduled
+      action: schedule_postiz
+      actor: human
+    - from: scheduled
+      to: published
+      action: import_published_status
+      actor: system
+    - from: scheduled
+      to: cancelled
+      action: cancel_post
+      actor: human
+guards:
+  schedule_postiz:
+    - draft_status_is_approved
+    - brand_review_not_blocked
+    - media_ready
+    - postiz_integration_active
+    - scheduled_at_in_future
+

@@ -14,7 +14,7 @@ describe('MatieresGrid', () => {
         expect.stringMatching(/cire/i),
         expect.stringMatching(/jojoba/i),
         expect.stringMatching(/kaolin/i),
-        expect.stringMatching(/mica/i),
+        expect.stringMatching(/poudre de riz/i),
       ]),
     );
   });

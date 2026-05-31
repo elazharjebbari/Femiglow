@@ -15,6 +15,7 @@ import type {
   ChatLanguage,
   ChatLeadTriggerReason,
   ChatMessageDto,
+  ChatSuggestionPill,
 } from '@/lib/chat/contracts';
 
 interface ChatPersistedState {
@@ -72,7 +73,7 @@ interface ChatVolatileState {
   // CHA-230 Phase 2 — Structuré (était `string | null`).
   error: ChatErrorState | null;
   greeting: string;
-  suggestions: string[];
+  suggestions: ChatSuggestionPill[];
   leadOffer: LeadOfferState;
   // CHA-231 (gap 2) — Offre en attente quand l'UI est occupée.
   pendingLeadOffer: PendingLeadOffer | null;
@@ -87,7 +88,7 @@ interface ChatActions {
     sessionId: string;
     language: ChatLanguage;
     greeting: string;
-    suggestions: string[];
+    suggestions: ChatSuggestionPill[];
     messages: ChatMessageDto[];
   }): void;
   beginStreaming(messageId: string): void;
@@ -103,6 +104,13 @@ interface ChatActions {
   setError(error: ChatErrorState | null): void;
   /** CHA-230 Phase 2 — Clear l'erreur (équivaut à `setError(null)`). */
   clearError(): void;
+  // CHA-310 — Reset des SuggestionPills (utilisé dès qu'un message part,
+  // libre ou cliqué). Ne touche pas à `messages` / `greeting`.
+  clearSuggestions(): void;
+  // CHA-300 — Push direct d'une bulle assistant (canned-pair) sans passer
+  // par le flux streaming. Utilisé quand le serveur retourne déjà la
+  // `scripted_reply_*` complète. Réinitialise les pills (one-shot).
+  pushAssistantMessage(message: ChatMessageDto): void;
   // CHA-212 — Actions formulaire lead.
   receiveLeadOffer(payload: {
     messageId: string;
@@ -129,6 +137,34 @@ const initialLeadOffer: LeadOfferState = {
   errorMessage: null,
   successMessage: null,
 };
+
+/**
+ * CHA-229 — Raisons « fortes » qui passent outre un précédent `dismiss`.
+ *
+ * Sémantique :
+ *   - `explicit-request` : la visiteuse a demandé explicitement à parler à
+ *     un humain (« je veux qu'on m'appelle »).
+ *   - `purchase-intent` : intention d'achat claire (« je veux commander »).
+ *   - `inline-contact`  : la visiteuse a déjà tapé son numéro dans le chat —
+ *     refuser de réafficher la bulle ferait perdre un lead chaud côté UI
+ *     (le lead anonyme côté DB est déjà créé en parallèle, cf.
+ *     `orchestrator.ts` §"Filet de sécurité commerciale").
+ *   - `manual` : déclenchement explicite (jamais bloqué).
+ *
+ * Les autres raisons (`frustration`, `after-hours`, `out-of-knowledge`,
+ * `objection-repeat`, `long-no-progress`, `b2b`) sont des heuristiques
+ * « soft » : si la visiteuse a déjà fermé une fois la bulle, on respecte
+ * son choix pour le reste de la session — pas de spam.
+ *
+ * cf. docs/chat-assistant/19-lead-capture-form.md §6.2 (« Re-offre après
+ * dismiss »).
+ */
+const STRONG_LEAD_REASONS: ReadonlySet<ChatLeadTriggerReason> = new Set([
+  'explicit-request',
+  'purchase-intent',
+  'inline-contact',
+  'manual',
+]);
 
 const initial: ChatPersistedState & ChatVolatileState = {
   sessionId: null,
@@ -195,12 +231,22 @@ export const useChatStore = create<ChatState>()(
         })),
       pushUserMessage: (m) =>
         set((s) => ({ messages: [...s.messages, m], hasInteracted: true })),
+      clearSuggestions: () => set({ suggestions: [] }),
+      pushAssistantMessage: (m) =>
+        set((s) => ({
+          // CHA-300 v2 — on n'éteint plus le bloc suggestions ici. Le retrait
+          // est fait *par pill cliquée* dans `use-canned-pair.ts`, ce qui
+          // autorise plusieurs micro-décisions de conversion dans la même
+          // session (cf. dossier-chat-v2/00-vision/02-conversion-playbook §1).
+          messages: [...s.messages, m],
+        })),
       setError: (error) => set({ error }),
       clearError: () => set({ error: null }),
-      // CHA-212 — Lead form actions
-      // CHA-231 (gap 2 + 3) — Logique de réception ré-écrite :
+      // CHA-212 / CHA-229 / CHA-231 — Lead form actions.
+      // Logique de réception (gap 2 + 3) :
       //   1. Si lead déjà capturé pour la session → ignore (success final).
-      //   2. Si user a dismissé ET `force !== true` → ignore.
+      //   2. Si user a dismissé ET pas de bypass (force OU intention forte)
+      //      → ignore.
       //   3. Si l'offer courante est ACTIVE (status=open|submitting) →
       //      buffer dans `pendingLeadOffer` (sera promue après dismiss/success).
       //   4. Sinon (idle ou offered passive) → écrase avec la nouvelle.
@@ -208,8 +254,12 @@ export const useChatStore = create<ChatState>()(
         set((s) => {
           // 1. Lead déjà soumis avec succès → on n'ouvre plus.
           if (s.leadCapturedSessionId === s.sessionId) return {};
-          // 2. Dismissal session sticky — bypassable par `force`.
-          if (s.leadOfferDismissedSessionId === s.sessionId && !force) return {};
+          // 2. Dismissal session sticky — bypassable par `force` (CHA-231,
+          //    re-demande explicite) OU par une intention forte (CHA-229 —
+          //    achat explicite / demande humain / numéro tapé en clair) :
+          //    sinon on rate la conversion au moment exact où elle est mûre.
+          const bypassDismiss = force || STRONG_LEAD_REASONS.has(reason);
+          if (s.leadOfferDismissedSessionId === s.sessionId && !bypassDismiss) return {};
           // 3. Buffer si UI active (l'utilisateur est en train de remplir).
           //    On évite d'écraser ses inputs — on stockera la dernière offre
           //    reçue pour la promouvoir dès que le formulaire se libère.
@@ -227,8 +277,13 @@ export const useChatStore = create<ChatState>()(
           // 4. État idle / offered passif / error → on remplace.
           //    Si `force=true` et user avait dismissé, on RÉINITIALISE
           //    `leadOfferDismissedSessionId` pour ne pas re-bloquer la
-          //    prochaine offre passive.
+          //    prochaine offre passive. (Un bypass « intention forte » ne
+          //    réinitialise PAS : les soft suivantes restent bloquées.)
           return {
+            // Si la précédente offre avait été dismiss, on remet la jauge
+            // à zéro côté UI (le flag persistant `leadOfferDismissedSessionId`
+            // est volontairement conservé : si la visiteuse re-dismiss cette
+            // bulle « forte », les *soft* suivantes restent bloquées).
             leadOffer: {
               status: 'offered',
               triggeringMessageId: messageId,
@@ -307,3 +362,7 @@ export const useChatStore = create<ChatState>()(
     },
   ),
 );
+
+if (typeof window !== 'undefined') {
+  (window as unknown as { __chatStore?: unknown }).__chatStore = useChatStore;
+}

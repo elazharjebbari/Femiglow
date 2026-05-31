@@ -1,0 +1,25 @@
+case_id,feature,layer,operator_gesture_or_precondition,expected,linked_finding
+TC-LAY-001,FN-LAY-09,vitest,"resolveRange today (heure Maroc)","bornes minuit Casablanca",AF-04
+TC-LAY-002,FN-LAY-09,vitest,"resolveRange yesterday/7d/30d/90d/all","bornes correctes + comparaison même durée",
+TC-LAY-003,FN-LAY-09,vitest,"period=custom from/to","bornes = from/to fournis",
+TC-LAY-004,FN-LAY-08,vitest,"?period=foo&device=desktop","device conservé, period défaut",F-FLT-01
+TC-LAY-005,FN-LAY-08,vitest,"custom from>to","erreur de validation (pas fallback muet)",F-FLT-01
+TC-LAY-006,FN-LAY-07,vitest,"localStorage filtres < 30j","rechargés; >30j ignorés",
+TC-LAY-007,FN-LAY-10,vitest,"formatCurrency 19900 cents MAD","'199 MAD' (pas €, pas 1,99)",AF-02
+TC-LAY-008,FN-LAY-10,vitest,"formatBucket week 2025-12-29 / 2026-01-01","semaine ISO correcte aux bords",F-FMT-02
+TC-LAY-009,FN-LAY-10,vitest,"formatBucket hour","heure dans le fuseau d'affichage choisi",F-FMT-01
+TC-LAY-010,FN-LAY-10,vitest,"formatNumber/percent/duration/delta null","'—' / direction flat",
+TC-LAY-011,FN-LAY-11,vitest,"utm/referrer variés","bucket trafic correct",
+TC-LAY-012,FN-LAY-13,rtl,"DataTable clic en-tête","tri asc/desc",
+TC-LAY-013,FN-LAY-13,rtl,"DataTable 0 ligne","EmptyState",
+TC-LAY-014,FN-LAY-16,rtl,"ErrorState","message + bouton Réessayer fonctionnel",
+TC-LAY-015,FN-LAY-18,rtl,"ExportCsvButton clic","CSV généré avec bonnes colonnes",
+TC-LAY-016,FN-LAY-19,rtl,"Tooltip focus clavier","contenu annoncé (aria)",
+TC-LAY-017,FN-LAY-06,rtl,"filtre non défaut","bouton Réinitialiser visible puis reset",
+TC-LAY-018,FN-LAY-02,playwright,"changer d'onglet","query params conservés",
+TC-LAY-019,FN-LAY-03,playwright,"reload après filtre","filtres persistés (URL+localStorage)",
+TC-LAY-020,FN-LAY-04,playwright,"arrivée sur un onglet","indicateur 'Mobile uniquement' visible",AF-05
+TC-LAY-021,FN-LAY-01,playwright,"non-admin","redirigé vers login",
+TC-LAY-022,FN-LAY-01,playwright,"GET API sans session","401",
+TC-PERF-001,FN-FUN-01,playwright,"mount onglet","1 appel/endpoint (intercept réseau)",F-PERF-03
+TC-LAY-023,FN-LAY-03,a11y,"axe FilterBar + tabs","selects labellisés; focus visible",

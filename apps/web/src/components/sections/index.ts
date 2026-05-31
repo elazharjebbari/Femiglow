@@ -28,3 +28,5 @@ export { CartHero } from './CartHero';
 export { TrustSignals } from './TrustSignals';
 export { JournalCrossLink } from './JournalCrossLink';
 export type { JournalCrossLinkProps } from './JournalCrossLink';
+export { ProductFeedSection } from './ProductFeedSection';
+export { ProductFeedSectionBound } from './ProductFeedSectionBound';

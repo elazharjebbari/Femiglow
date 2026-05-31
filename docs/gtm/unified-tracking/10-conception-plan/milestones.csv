@@ -1,0 +1,22 @@
+id,phase,milestone,deliverable,duration_days,depends_on,owner,validation_gate
+M0,Discovery,Document conceptuel approuvé,docs/gtm/18-unified-tracking-system-conceptual.md,5,,Lead+Younes,Approval Amal+lead
+M1,Conception,Dossier technique complet,docs/gtm/unified-tracking/,10,M0,Younes+Lead,Self-review + lead sign-off
+M2,Design,Maquettes Figma haute fidélité,Figma file,7,M1,Designer(externe ou Younes),Amal+Aïcha approve
+M3a,Backend,Schema Postgres + migrations Drizzle,02-data/migration.sql + lib/db/schema/tracking-plan.ts,3,M2,Younes,Migration dry-run pass
+M3b,Backend,Repository + Service + Validator,lib/tracking/plan/*,5,M3a,Younes,Unit tests pass 100%
+M3c,Backend,API endpoints (9 routes),app/api/admin/tracking/plans/*,4,M3b,Younes,OpenAPI validated + integration tests pass
+M3d,Backend,Exporter unifié remplacement,lib/tracking/plan/exporter.ts,3,M3c,Younes,Snapshot tests vs legacy export pass
+M4a,Frontend,Composants UI primitives + composés,src/components/tracking/*,6,M3c,Younes,Storybook stories complete
+M4b,Frontend,Wizard 5 steps,src/components/tracking/wizard/*,8,M4a,Younes,E2E wizard happy path pass
+M4c,Frontend,Expert mode 3 colonnes,src/components/tracking/expert/*,6,M4a,Younes,E2E expert flow pass
+M4d,Frontend,Home + Sync + History pages,src/app/admin/tracking/*,4,M4a,Younes,E2E navigation pass
+M4e,Frontend,i18n fr + structure ar,locales/fr/tracking-admin.json,3,M4d,Younes,Tests i18n pass
+M5a,Tests,Suite Jest unitaire,__tests__/lib/tracking/plan/*,5,M3d M4d,Younes,Coverage ≥ 80%
+M5b,Tests,Suite Playwright E2E,e2e/tracking/*,5,M4e,Younes,All E2E pass
+M5c,Tests,MSW handlers + fixtures,mocks/handlers/tracking.ts,2,M3c,Younes,Frontend tests passent en offline
+M5d,Tests,Test ultime d'intégration,14-tests/integration/ultimate-test.md,3,M5a M5b M5c,Younes+Lead,Full flow validé
+M5e,Runbook,Deployment + Rollback + Incident,13-runbook/*,3,M5d,Younes+Lead,Runbook rehearsed in staging
+M5f,Migration,Migration prod staged,scripts/migrate-tracking-plan.ts,2,M5e,Younes+Lead+DBA,Dry-run pass on prod copy
+M5g,Release,Go-live + monitoring,N/A,1,M5f,Lead,Smoke tests pass + drift OK 24h
+M6,Post,Feedback 7 jours + tuning,docs/post-release-feedback.md,7,M5g,Lead+Amal,Amal sign-off
+M7,Cleanup,Drop legacy tables (T+90),scripts/drop-legacy-tracking-v1.sql,1,M6+90 days,Younes,Final cleanup

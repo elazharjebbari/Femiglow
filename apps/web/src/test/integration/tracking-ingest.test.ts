@@ -157,6 +157,67 @@ describe('POST /api/track', () => {
     expect(stored[0]?.isConversion).toBe(true);
   });
 
+  it('accepte user_data et attribution Snapchat sans rejeter le batch', async () => {
+    const res = await POST(
+      buildRequest({
+        events: [
+          makeEvent({
+            event: 'purchase',
+            params: {
+              transaction_id: 'tx_snap_1',
+              currency: 'MAD',
+              value: 249,
+              ScCid: 'sc-click-query-1',
+              event_tag: 'snap_checkout',
+              description: 'Commande attribuée Snapchat',
+              geo_city: 'Marrakech',
+              geo_country: 'MA',
+              items: [
+                {
+                  item_id: 'sku_snap_1',
+                  item_name: 'Routine',
+                  item_category: 'skincare',
+                  price: 249,
+                  quantity: 1,
+                  currency: 'MAD',
+                },
+              ],
+            },
+            user_data: {
+              sha256_email_address: 'e'.repeat(64),
+              sha256_phone_number: 'f'.repeat(64),
+              address: {
+                sha256_first_name: 'a'.repeat(64),
+                city: 'Marrakech',
+                country: 'MA',
+              },
+            },
+            attribution: {
+              channel: 'snapchat',
+              is_paid: true,
+              strategy: 'paid_social',
+              reason: 'click_id',
+              click_id: 'sc-click-query-1',
+              click_id_field: 'ScCid',
+              utm: { source: 'snapchat', medium: 'paid_social', campaign: 'snap_test' },
+            },
+          }),
+        ],
+      }),
+    );
+    expect(res.status).toBe(202);
+    const body = await res.json();
+    expect(body).toMatchObject({ ok: true, accepted: 1, rejected: 0, duplicates: 0 });
+    const stored = Array.from(memoryStore().trackingEventsLog.values());
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.isConversion).toBe(true);
+    expect(stored[0]?.payload).toMatchObject({
+      transaction_id: 'tx_snap_1',
+      ScCid: 'sc-click-query-1',
+      geo_city: 'Marrakech',
+    });
+  });
+
   it('dedup : un même event_id n\'est compté qu\'une fois', async () => {
     const eventId = uuidv7();
     const res = await POST(

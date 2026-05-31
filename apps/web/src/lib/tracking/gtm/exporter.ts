@@ -9,7 +9,9 @@
 import { buildContainer, type BuildOptions, ENV_DEFAULTS } from './builders';
 import { prettyPrint, minified } from './pretty';
 import { computeStats, computeMeta } from './stats';
+import { lintContainer, type LintReport } from './linter';
 import type { GtmContainer, GtmEnvironment, GtmStats, GtmMeta } from './types';
+import type { GtmEnvConfigDTO } from './config-schema';
 
 export interface GtmExport {
   container: GtmContainer;
@@ -18,6 +20,7 @@ export interface GtmExport {
   stats: GtmStats;
   meta: GtmMeta;
   env: GtmEnvironment;
+  lintReport: LintReport;
 }
 
 export const gtmExporter = {
@@ -27,7 +30,11 @@ export const gtmExporter = {
     const min = minified(container);
     const stats = computeStats(container);
     const meta = computeMeta(pretty);
-    return { container, pretty, minified: min, stats, meta, env: opts.env };
+    const lintReport = lintContainer({
+      container,
+      envConfig: (opts.config as GtmEnvConfigDTO | undefined) ?? undefined,
+    });
+    return { container, pretty, minified: min, stats, meta, env: opts.env, lintReport };
   },
 
   envs(): GtmEnvironment[] {
@@ -36,3 +43,4 @@ export const gtmExporter = {
 };
 
 export type { GtmEnvironment, GtmStats, GtmMeta } from './types';
+export type { LintReport, LintIssue } from './linter';

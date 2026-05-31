@@ -1,0 +1,290 @@
+# Phases d'exécution du projet Unified Tracking Plan v2
+# Format YAML structuré, parsable par CI ou outils d'orchestration.
+
+project: tracking-plan-v2
+version: "2.0.0"
+owner: Younes
+lead: Lead dev
+stakeholders:
+  - Amal (Marketing Manager — UAT primaire)
+  - Aïcha (CMO — Validation produit)
+  - DBA (Migration prod)
+
+phases:
+
+  - id: P0
+    name: Discovery
+    duration_days: 5
+    objective: Aligner vision et valider périmètre/budget
+    start_trigger: "Document conceptuel finalisé"
+    actions:
+      - lecture_critique_conceptuel
+      - reunion_validation_perimetre
+      - lecture_critique_dossier_technique
+      - confirmation_budget_sprints
+      - decision_go_nogo
+    deliverables:
+      - docs/gtm/18-unified-tracking-system-conceptual.md
+      - docs/gtm/unified-tracking/
+      - decision_record_go.md
+    gate:
+      criteria:
+        - document_concept_approved: [Amal, Lead, Aïcha]
+        - dossier_technique_reviewed: [Lead, Younes]
+        - decision_go_signed: Lead
+        - calendar_sprint_1_6_published: true
+    on_pass: P1
+    on_fail: ABORT (or restart P0)
+
+  - id: P1
+    name: Build
+    duration_days: 30
+    objective: Implémenter tout le code (backend, frontend, tests, migration script)
+    sub_phases:
+      - id: S1
+        name: Sprint 1 — Data + Backend foundations
+        tickets: [TP2-001, TP2-002, TP2-003, TP2-004, TP2-005, TP2-006, TP2-007, TP2-008]
+      - id: S2
+        name: Sprint 2 — Backend API + Export
+        tickets: [TP2-009, TP2-010, TP2-011, TP2-012, TP2-013, TP2-014, TP2-015, TP2-016]
+      - id: S3
+        name: Sprint 3 — Frontend primitives + Home
+        tickets: [TP2-017, TP2-018, TP2-019, TP2-020, TP2-021, TP2-022, TP2-023, TP2-024]
+      - id: S4
+        name: Sprint 4 — Wizard
+        tickets: [TP2-025, TP2-026, TP2-027, TP2-028, TP2-029, TP2-030, TP2-031, TP2-032]
+      - id: S5
+        name: Sprint 5 — Expert + Sync + History + i18n
+        tickets: [TP2-033, TP2-034, TP2-035, TP2-036, TP2-037, TP2-038, TP2-039, TP2-040]
+      - id: S6
+        name: Sprint 6 — Tests + Migration + Release prep
+        tickets: [TP2-041, TP2-042, TP2-043, TP2-044, TP2-045, TP2-046, TP2-047, TP2-048, TP2-049]
+    deliverables:
+      - release_tracking_plan_v2 branch ready
+      - all_tests_green: true
+      - migration_script_ready: true
+      - runbook_draft: true
+    gate:
+      criteria:
+        - tickets_closed: TP2-001..TP2-049
+        - ci_green_on_release_branch: true
+        - jest_coverage_gte: 80
+        - playwright_e2e_pass_rate: 100
+        - axe_violations: 0
+        - lighthouse_a11y_min: 95
+        - docs_up_to_date: true
+    on_pass: P2
+    on_fail: ITERATE_P1
+
+  - id: P2
+    name: Validate
+    duration_days: 5
+    objective: Vérifier le système bout-en-bout avant migration prod
+    actions:
+      - day_1:
+          - deploy_staging
+          - smoke_tests_manual
+          - check_grafana_metrics
+      - day_2:
+          - amal_onboarding_session
+          - amal_uat_journey_1
+          - amal_uat_journey_2
+          - bug_triage
+      - day_3:
+          - amal_uat_journey_3_4_5
+          - bug_fixes_p0_p1
+      - day_4:
+          - ultimate_integration_test
+      - day_5:
+          - migration_dry_run_on_prod_copy
+          - rollback_rehearsal
+    deliverables:
+      - uat_report.md
+      - migration_dry_run_report.md
+      - go_nogo_release_decision.md
+    gate:
+      criteria:
+        - smoke_tests_pass: true
+        - amal_score_min: 4
+        - ultimate_test_pass: true
+        - migration_dry_run_diff: 0
+        - rollback_tested: true
+        - p0_bugs_open: 0
+    on_pass: P3
+    on_fail: ITERATE_P1_OR_P2
+
+  - id: P3
+    name: Migrate
+    duration_days: 1
+    objective: Migrer la prod sans interruption
+    window_hour: "14:00-15:00"
+    actions:
+      - t_minus_3_days:
+          - stakeholder_announcement
+          - dba_review
+      - t_minus_1_day:
+          - full_db_backup
+          - verify_feature_flag_off
+          - verify_permissions
+      - day_j_minute_0:
+          - announcement_migration_in_progress
+      - day_j_minute_5:
+          - verify_backup_ok
+      - day_j_minute_10:
+          - run_migration_script_prod_mode
+      - day_j_minute_30:
+          - verify_tables_state
+      - day_j_minute_40:
+          - smoke_test_admin_session_only
+      - day_j_minute_55:
+          - communication_migration_complete
+    deliverables:
+      - migration_log.txt
+      - migration_completion_report.md
+    gate:
+      criteria:
+        - migration_script_exit_code: 0
+        - legacy_v1_tables_intact: true
+        - smoke_admin_test_pass: true
+        - sre_alerts_during_window: 0
+    on_pass: P4
+    on_fail: ROLLBACK_P3
+
+  - id: P4
+    name: Release
+    duration_days: 7
+    objective: Activer pour tous les admins via rollout progressif
+    sub_phases:
+      - id: R0
+        day: 0
+        name: Activation interne (Younes only)
+        actions:
+          - flag_enable_for_user: younes
+          - younes_uses_system_for_24h
+          - monitor_metrics
+      - id: R1
+        day: 1
+        name: Activation Amal
+        actions:
+          - amal_onboarding_live_30min
+          - flag_enable_for_user: amal
+          - support_active_window: 8h
+      - id: R2
+        day: 2
+        name: Activation full
+        actions:
+          - flag_global_enable: true
+          - internal_comm
+      - id: R3
+        days: "3-7"
+        name: Surveillance
+        actions:
+          - hourly_drift_check
+          - daily_bug_triage
+          - daily_metrics_review
+    deliverables:
+      - metrics_7days.md
+      - user_feedback.md
+      - phase_5_decision.md
+    gate:
+      criteria:
+        - all_admins_migrated: true
+        - drift_critical_unresolved: 0
+        - regression_observed: false
+        - amal_score_post_release_min: 4
+        - ga4_events_received_stable: true
+    on_pass: P5
+    on_fail: ROLLBACK_FEATURE_FLAG
+
+  - id: P5
+    name: Cleanup
+    duration_days: 90
+    objective: Supprimer le legacy
+    milestones:
+      - t_plus_30_days:
+          - audit_legacy_traffic_zero
+          - remove_legacy_frontend_code
+          - keep_redirect_middleware
+      - t_plus_60_days:
+          - audit_legacy_db_usage_zero
+          - final_communication
+      - t_plus_90_days:
+          - drop_legacy_v1_tables
+          - remove_feature_flag
+          - git_tag_cleanup_complete
+    deliverables:
+      - pr_cleanup_legacy
+      - tag_tracking_plan_v2_cleanup_complete
+    gate:
+      criteria:
+        - legacy_code_deleted: true
+        - legacy_tables_dropped: true
+        - feature_flag_removed: true
+        - final_docs_archived: true
+    on_pass: PROJECT_COMPLETE
+    on_fail: EXTEND_P5
+
+decision_points:
+  - id: D1
+    after_phase: P0
+    description: GO/NO-GO sur le projet global
+    decider: Lead dev (with Amal + Aïcha input)
+    no_go_action: project_postponed_or_redefined
+
+  - id: D2
+    after_phase: P2
+    description: GO/NO-GO sur la release
+    decider: Lead dev
+    no_go_action: iterate_p1_or_p2
+
+  - id: D3
+    after_subphase: P4.R1
+    description: GO sur rollout full
+    decider: Lead dev
+    no_go_action: rollback_feature_flag
+
+  - id: D4
+    after_milestone: P5.t_plus_90_days
+    description: Drop legacy tables
+    decider: Lead dev + DBA
+    no_go_action: extend_transition_period
+
+risks_mitigation_per_phase:
+  P0:
+    - risk: scope_creep
+      mitigation: strict scope documented
+  P1:
+    - risk: sprint_delay
+      mitigation: buffer in sprint 6 + descope plan
+  P2:
+    - risk: uat_failure
+      mitigation: extend phase, no rush
+  P3:
+    - risk: migration_corruption
+      mitigation: backup + non_destructive + dry_run
+  P4:
+    - risk: regression_in_prod
+      mitigation: progressive rollout + feature flag rollback
+  P5:
+    - risk: residual_legacy_traffic
+      mitigation: audit + extend if needed
+
+communication_per_phase:
+  P0:
+    audience: [Lead, Amal, Aïcha, Younes]
+    cadence: 1 review meeting
+  P1:
+    audience: [Lead, Younes]
+    cadence: daily standup + weekly demo
+  P2:
+    audience: [Lead, Amal, Younes]
+    cadence: daily checkpoint
+  P3:
+    audience: [All]
+    cadence: T-3, T-1, T0, T+1h, T+1d
+  P4:
+    audience: [All admins]
+    cadence: daily comm during 7 days
+  P5:
+    audience: [Lead, Younes]
+    cadence: monthly check

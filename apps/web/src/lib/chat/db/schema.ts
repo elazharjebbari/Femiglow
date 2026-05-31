@@ -148,7 +148,19 @@ export const chatProviderConfig = pgTable(
 export const chatSession = pgTable(
   'chat_session',
   {
-    id: text('id').primaryKey(), // cs_xxxxxxxx
+    id: text('id').primaryKey(), // cs_xxxxxxxx OU s_xxx (wizard pivot)
+    /**
+     * CHA-LEAD-V2-01 — Discriminateur entre conversations chat réelles
+     * (`'chat'`, default) et "ghost sessions" wizard utilisées comme pivot
+     * FK pour `chat_lead` (`'wizard_pivot'`). `'system'` couvre les flows
+     * système (newsletter standalone, admin seed) qui n'ont ni interface
+     * chat ni wizard.
+     *
+     * Cf. docs/chat-conversations-leads-fix-2026-05/01-design-conception/data-model.md
+     */
+    kind: text('kind', { enum: ['chat', 'wizard_pivot', 'system'] })
+      .notNull()
+      .default('chat'),
     visitorId: text('visitor_id').notNull(),
     fingerprintHash: text('fingerprint_hash'),
     language: text('language').notNull().default('fr'),
@@ -183,6 +195,11 @@ export const chatSession = pgTable(
     statusIdx: index('chat_session_status_idx').on(t.status, t.lastSeenAt),
     convIdx: index('chat_session_conv_idx').on(t.convertedAt),
     pageIdx: index('chat_session_page_idx').on(t.page),
+    kindStatusIdx: index('chat_session_kind_status_idx').on(
+      t.kind,
+      t.status,
+      t.lastSeenAt,
+    ),
   }),
 );
 
@@ -388,6 +405,13 @@ export const chatConversationEvent = pgTable(
         // ou bascule vers un provider de fallback. Permet d'auditer la
         // résilience inter-providers depuis /admin/chat/quality.
         'chat_provider_retry_or_fallback',
+        // Webhook dispatch pour leads inline-contact (numéro détecté dans le chat).
+        'inline_contact_webhook_sent',
+        'inline_contact_webhook_failed',
+        // CHAT-066 — escalade frustration : 2 messages user consécutifs
+        // détectés comme `frustration` → alerte Slack #chat-care et trace
+        // KPI (analytics : tx frustration / session, MTTR Care, etc.).
+        'frustration_detected',
       ],
     }).notNull(),
     payload: jsonb('payload'),
@@ -505,6 +529,7 @@ export const chatLead = pgTable(
     consentAt: timestamp('consent_at', { withTimezone: true }).notNull().defaultNow(),
     visitorId: text('visitor_id').notNull(),
     fingerprintHash: text('fingerprint_hash'),
+    identityHash: text('identity_hash').notNull(),
     page: text('page'),
     referrer: text('referrer'),
     utm: jsonb('utm').$type<Record<string, string>>(),
@@ -529,6 +554,78 @@ export const chatLead = pgTable(
       .notNull()
       .default('pending'),
     convertedOrderId: text('converted_order_id'),
+
+    // ──────────────────────────────────────────────────────────────────────
+    // CHA-230 — Extensions wizard checkout funnel.
+    // Toutes nullable ou avec DEFAULT pour préserver les leads legacy.
+    // ──────────────────────────────────────────────────────────────────────
+
+    // Identité étendue (opt-in step 4 et step 2)
+    lastName: text('last_name'),
+    email: text('email'),
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    emailConsent: boolean('email_consent').notNull().default(false),
+
+    // Adresse de livraison (step 2)
+    shippingCity: text('shipping_city'),
+    shippingAddressLine1: text('shipping_address_line1'),
+    shippingAddressLine2: text('shipping_address_line2'),
+    shippingPostalCode: text('shipping_postal_code'),
+    shippingCountry: text('shipping_country').notNull().default('MA'),
+    shippingNotes: text('shipping_notes'),
+
+    // Préférence paiement (step 3)
+    preferredPaymentMethod: text('preferred_payment_method', {
+      enum: ['cod', 'bank_transfer', 'card'],
+    }),
+
+    // Source / Form context (cohérent avec la taxonomie tracking — cf.
+    // apps/web/src/lib/tracking/checkout-events.ts)
+    source: text('source', {
+      enum: ['chat_widget', 'wizard_kit', 'wizard_commander', 'newsletter', 'admin', 'inline'],
+    })
+      .notNull()
+      .default('chat_widget'),
+    formId: text('form_id'),
+    formMode: text('form_mode', {
+      enum: ['wizard_embed', 'wizard_cart', 'legacy_cart', 'chat'],
+    }),
+    variantKey: text('variant_key', { enum: ['A', 'B', 'control'] }),
+
+    // Ad attribution (Google / Meta)
+    gclid: text('gclid'),
+    fbp: text('fbp'),
+    fbc: text('fbc'),
+
+    // Snapshot panier au moment de la capture
+    cartSnapshot: jsonb('cart_snapshot').$type<{
+      items: Array<{ sku: string; name: string; quantity: number; unitPriceCents: number }>;
+      totalCents: number;
+      currency: string;
+    }>(),
+    cartTotalCents: integer('cart_total_cents'),
+    cartCurrency: text('cart_currency'),
+
+    // Progression du tunnel (horloges par step)
+    lastTouchedStep: text('last_touched_step', {
+      enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+    }),
+    leadCapturedAt: timestamp('lead_captured_at', { withTimezone: true }),
+    addressCompletedAt: timestamp('address_completed_at', { withTimezone: true }),
+    paymentSelectedAt: timestamp('payment_selected_at', { withTimezone: true }),
+    purchasedAt: timestamp('purchased_at', { withTimezone: true }),
+
+    // CHA-260 — anti-doublon pour le scan outbound cart-abandon (cron tick).
+    // Posé une seule fois après envoi (succès OU échec final) du webhook
+    // `cart.abandoned` pour empêcher tout re-spam.
+    abandonWebhookAt: timestamp('abandon_webhook_at', { withTimezone: true }),
+    // Leads webhook multi-step — horloges dédiées pour l'observabilité admin
+    // et les scans idempotents. L'idempotency-key outbound reste la source de
+    // vérité anti-doublon; ces timestamps évitent les rescans et accélèrent
+    // les filtres parcours.
+    step2WebhookAt: timestamp('step2_webhook_at', { withTimezone: true }),
+    step1AbandonWebhookAt: timestamp('step1_abandon_webhook_at', { withTimezone: true }),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -538,6 +635,189 @@ export const chatLead = pgTable(
     outcomeIdx: index('chat_lead_outcome_idx').on(t.outcome, t.createdAt),
     webhookIdx: index('chat_lead_webhook_idx').on(t.webhookStatus, t.createdAt),
     phoneIdx: index('chat_lead_phone_idx').on(t.phoneE164),
+    // CHA-230 — Indexes funnel
+    sourceIdx: index('chat_lead_source_idx').on(t.source, t.createdAt),
+    formIdx: index('chat_lead_form_idx').on(t.formId, t.formMode, t.createdAt),
+    stepIdx: index('chat_lead_step_idx').on(t.lastTouchedStep, t.createdAt),
+    step2WebhookIdx: index('chat_lead_step2_webhook_idx').on(t.step2WebhookAt),
+    // CHA-240 — Composite unique on (session_id, identity_hash) allows
+    // multiple leads per session (different identities) while blocking
+    // true duplicates (same session + same phone+name).
+    sessionIdentityUniqIdx: uniqueIndex('chat_lead_session_identity_unique_idx').on(
+      t.sessionId,
+      t.identityHash,
+    ),
+    identityHashIdx: index('chat_lead_identity_hash_idx').on(t.identityHash),
+  }),
+);
+
+// ===========================================================================
+// CHA-300 — V5/V6 : intents, canned pairs, FAQ entries
+// ===========================================================================
+//
+// Architecture cascade (cf. docs/dossier-chat-v2/03-backend/intent-detection.md) :
+//   1) intent detection → centroid match (HNSW cosine)
+//   2) canned-pair match (exact key) → scripted reply local-stream
+//   3) FAQ entry match (HNSW cosine on question_embedding)
+//   4) RAG + LLM fallback
+//
+// Cf. docs/dossier-chat-v2/02-data/data-dictionary.csv lignes 2-53.
+
+// ---------------------------------------------------------------------------
+// chat_intent_centroid — vecteur agrégé par intent (cascade level 1)
+// ---------------------------------------------------------------------------
+
+export const chatIntentCentroid = pgTable(
+  'chat_intent_centroid',
+  {
+    id: text('id').primaryKey(), // ic_xxxxxxxx
+    intent: text('intent').notNull(), // ex. 'pricing', 'shipping', 'usage'
+    language: text('language', { enum: ['all', 'fr', 'ar', 'ar-MA'] })
+      .notNull()
+      .default('all'),
+    vector: customVector('vector', { dimensions: 1536 }).notNull(),
+    sampleCount: integer('sample_count').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    intentLangIdx: uniqueIndex('chat_ic_intent_lang_idx').on(t.intent, t.language),
+    // Index HNSW créé en SQL brut dans la migration.
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_intent_example — dataset de phrases labellisées (entraine centroïdes)
+// ---------------------------------------------------------------------------
+
+export const chatIntentExample = pgTable(
+  'chat_intent_example',
+  {
+    id: text('id').primaryKey(), // ie_xxxxxxxx
+    intent: text('intent').notNull(),
+    language: text('language', { enum: ['fr', 'ar', 'ar-MA'] }).notNull(),
+    text: text('text').notNull(),
+    addedBy: text('added_by').notNull(),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    intentLangIdx: index('chat_ie_intent_lang_idx').on(t.intent, t.language),
+    activeIdx: index('chat_ie_active_idx')
+      .on(t.intent)
+      .where(sql`${t.deletedAt} IS NULL`),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_canned_pair — paires (question pré-écrite ↔ réponse scriptée)
+// Sert les SuggestionPills sur le widget (page-aware via page_pattern).
+// ---------------------------------------------------------------------------
+
+export const chatCannedPair = pgTable(
+  'chat_canned_pair',
+  {
+    id: text('id').primaryKey(), // cnp_xxxxxxxx
+    key: text('key').notNull(), // ex. 'price-kit', 'shipping-cod-rabat'
+    pagePattern: text('page_pattern').notNull().default('*'),
+    audience: text('audience', { enum: ['all', 'b2c', 'b2b'] })
+      .notNull()
+      .default('all'),
+    order: integer('order').notNull().default(0),
+    enabled: boolean('enabled').notNull().default(true),
+    labelFr: text('label_fr').notNull(),
+    labelAr: text('label_ar').notNull(),
+    labelArMa: text('label_ar_ma').notNull(),
+    scriptedReplyFr: text('scripted_reply_fr').notNull(),
+    scriptedReplyAr: text('scripted_reply_ar').notNull(),
+    scriptedReplyArMa: text('scripted_reply_ar_ma').notNull(),
+    ctaLabel: text('cta_label'),
+    ctaUrl: text('cta_url'),
+    allowFollowupLlm: boolean('allow_followup_llm').notNull().default(true),
+    // CHA-310 — Conversion-focused pills.
+    // Si `triggersLeadForm = true`, le widget ouvre le formulaire de lead
+    // après la `scripted_reply_*` (le pitch reste, le form se pose juste
+    // sous la bulle). `leadFormCopyKey` choisit la variante de copy/CTA
+    // (cf. lead-form-copy.ts) ; default 'purchase-intent' côté client si null.
+    triggersLeadForm: boolean('triggers_lead_form').notNull().default(false),
+    leadFormCopyKey: text('lead_form_copy_key', {
+      enum: [
+        'explicit-request',
+        'out-of-knowledge',
+        'objection',
+        'after-hours',
+        'b2b',
+        'purchase-intent',
+        'inline-contact',
+        'manual',
+      ],
+    }),
+    status: text('status', { enum: ['draft', 'review', 'published', 'archived'] })
+      .notNull()
+      .default('draft'),
+    currentVersionId: text('current_version_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    keyUniqIdx: uniqueIndex('chat_cnp_key_idx').on(t.key),
+    publishedIdx: index('chat_cnp_published_idx')
+      .on(t.pagePattern, t.audience, t.order)
+      .where(sql`${t.status} = 'published' AND ${t.enabled} = true`),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_canned_pair_version — historique immutable des body publiés
+// ---------------------------------------------------------------------------
+
+export const chatCannedPairVersion = pgTable(
+  'chat_canned_pair_version',
+  {
+    id: text('id').primaryKey(), // cnv_xxxxxxxx
+    pairId: text('pair_id')
+      .notNull()
+      .references(() => chatCannedPair.id, { onDelete: 'cascade' }),
+    bodyFr: text('body_fr').notNull(),
+    bodyAr: text('body_ar').notNull(),
+    bodyArMa: text('body_ar_ma').notNull(),
+    bodyHash: text('body_hash').notNull(), // sha256 du tuple body_*
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+    publishedBy: text('published_by').notNull(),
+  },
+  (t) => ({
+    pairIdx: index('chat_cnv_pair_idx').on(t.pairId, t.publishedAt),
+    pairHashIdx: uniqueIndex('chat_cnv_pair_hash_idx').on(t.pairId, t.bodyHash),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// chat_faq_entry — FAQ avec embedding question (cascade level 3)
+// ---------------------------------------------------------------------------
+
+export const chatFaqEntry = pgTable(
+  'chat_faq_entry',
+  {
+    id: text('id').primaryKey(), // fq_xxxxxxxx
+    key: text('key').notNull(),
+    language: text('language', { enum: ['fr', 'ar', 'ar-MA'] }).notNull(),
+    questionCanonical: text('question_canonical').notNull(),
+    questionEmbedding: customVector('question_embedding', { dimensions: 1536 }).notNull(),
+    scriptedReply: text('scripted_reply').notNull(),
+    intentHint: text('intent_hint'), // FK soft → chatIntentCentroid.intent
+    threshold: numeric('threshold').notNull().default('0.85'),
+    enabled: boolean('enabled').notNull().default(true),
+    audience: text('audience', { enum: ['all', 'b2c', 'b2b'] })
+      .notNull()
+      .default('all'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    keyLangIdx: uniqueIndex('chat_fq_key_lang_idx').on(t.key, t.language),
+    enabledIdx: index('chat_fq_enabled_idx')
+      .on(t.language, t.audience)
+      .where(sql`${t.enabled} = true`),
+    // Index HNSW sur question_embedding créé en SQL brut dans la migration.
   }),
 );
 
@@ -617,3 +897,13 @@ export type ChatLeadInsert = typeof chatLead.$inferInsert;
 // CHA-230 Phase 3 — golden-set
 export type ChatGoldenIntentRow = typeof chatGoldenIntentSet.$inferSelect;
 export type ChatGoldenIntentInsert = typeof chatGoldenIntentSet.$inferInsert;
+export type ChatIntentCentroidRow = typeof chatIntentCentroid.$inferSelect;
+export type ChatIntentCentroidInsert = typeof chatIntentCentroid.$inferInsert;
+export type ChatIntentExampleRow = typeof chatIntentExample.$inferSelect;
+export type ChatIntentExampleInsert = typeof chatIntentExample.$inferInsert;
+export type ChatCannedPairRow = typeof chatCannedPair.$inferSelect;
+export type ChatCannedPairInsert = typeof chatCannedPair.$inferInsert;
+export type ChatCannedPairVersionRow = typeof chatCannedPairVersion.$inferSelect;
+export type ChatCannedPairVersionInsert = typeof chatCannedPairVersion.$inferInsert;
+export type ChatFaqEntryRow = typeof chatFaqEntry.$inferSelect;
+export type ChatFaqEntryInsert = typeof chatFaqEntry.$inferInsert;

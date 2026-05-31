@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BAITI dataLayer events - reviews wall",
+  "type": "object",
+  "properties": {
+    "event": {
+      "type": "string"
+    },
+    "room_slug": {
+      "type": "string"
+    },
+    "product_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "event",
+    "room_slug"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,157 @@
+{
+  "$meta": {
+    "title": "Events & Telemetry contract — Locale Switcher V2",
+    "sourceOfTruth": "../CONTRACT.md §4 (noms d'events figés) + dossier §11 (mesure & A/B)",
+    "schemaVersion": 1,
+    "emitMechanism": "window.dataLayer.push(entry) via useTracking() (mirror apps/web/src/lib/tracking/datalayer.ts + checkout-events.ts builders)",
+    "sink": {
+      "primary": "GTM dataLayer → GA4 (events custom) + Meta CAPI/Pixel",
+      "server": "GA4 measurement / Meta : aucune PII envoyée ; events purement comportementaux",
+      "notes": "Les builders sont des fonctions pures (pas d'accès window) ; l'émission est faite par le composant via useTracking(), comme checkout-events. schema_version figé par event."
+    },
+    "conformanceRules": [
+      "Les NOMS d'events sont figés par CONTRACT §4 : locale_switch, locale_nudge_shown, locale_nudge_accepted, locale_nudge_dismissed. Ne pas renommer.",
+      "Les CHAMPS de payload de CONTRACT §4 sont obligatoires et typés. Les champs ajoutés ici (event_id, timestamp, schema_version, transversaux dataLayer) sont des enrichissements d'infra, jamais en conflit avec §4.",
+      "Locale ∈ {fr,ar,en} ; Surface ∈ {header,drawer,footer,nudge} ; transition ∈ {vt,veil,reduced,reload} (CONTRACT §4 — noter: 'veil' et non 'fallback')."
+    ]
+  },
+
+  "enums": {
+    "Locale": ["fr", "ar", "en"],
+    "Surface": ["header", "drawer", "footer", "nudge"],
+    "Transition": ["vt", "veil", "reduced", "reload"]
+  },
+
+  "commonFields": {
+    "description": "Champs transverses ajoutés par useTracking()/dataLayer à TOUT event (mirror datalayer.ts). Non listés dans CONTRACT §4 mais portés par l'infra dataLayer existante.",
+    "fields": {
+      "event_id": { "type": "string", "format": "uuid", "description": "Idempotence / dédup côté sink." },
+      "timestamp": { "type": "string", "format": "iso-8601", "example": "2026-05-30T10:12:03.114Z" },
+      "schema_version": { "type": "integer", "example": 1 },
+      "consent": { "type": "object", "description": "État de consentement (TrackingConsentState) — gate les tags pixel." }
+    }
+  },
+
+  "events": [
+    {
+      "name": "locale_switch",
+      "whenFired": "Une bascule de langue est effectivement appliquée (router.replace lancé), depuis n'importe quelle surface. PAS émis si clic sur la langue active (INV-11 no-op).",
+      "contractPayload": {
+        "from": { "type": "Locale", "required": true, "description": "Locale servie avant la bascule." },
+        "to": { "type": "Locale", "required": true, "description": "Locale cible." },
+        "surface": { "type": "Surface", "required": true, "description": "D'où le switch a été déclenché." },
+        "page": { "type": "string", "required": true, "description": "Pathname localisé courant (sans querystring), ex: '/fr/kit'." },
+        "transition": { "type": "Transition", "required": true, "description": "Chemin de transition réellement emprunté : 'vt' (View Transitions), 'veil' (fallback framer), 'reduced' (prefers-reduced-motion, instantané), 'reload' (fallback hors-ligne/erreur)." }
+      },
+      "constraints": [
+        "from !== to (une bascule no-op n'émet rien — INV-11).",
+        "transition='reduced' implique aucune animation jouée.",
+        "transition='reload' n'arrive qu'en fallback d'erreur (INV-12 / edge case hors-ligne)."
+      ],
+      "example": {
+        "event": "locale_switch",
+        "event_id": "0f2c8c2a-1f3e-4f7a-9b21-6a2d3e4f5a6b",
+        "timestamp": "2026-05-30T10:12:03.114Z",
+        "schema_version": 1,
+        "from": "fr",
+        "to": "ar",
+        "surface": "header",
+        "page": "/fr/kit",
+        "transition": "vt"
+      },
+      "sink": "dataLayer → GA4 event 'locale_switch' (dims: from,to,surface,transition) ; KPI nord = add_to_cart par langue servie (dossier §11)."
+    },
+
+    {
+      "name": "locale_nudge_shown",
+      "whenFired": "Le nudge contextuel one-shot s'affiche (langue navigateur ≠ langue servie, résolu côté serveur sans flash). Émis UNE fois par visiteur (gardé par maxImpressionsPerVisitor + cookie locale_nudge_dismissed).",
+      "contractPayload": {
+        "suggested": { "type": "Locale", "required": true, "description": "Locale suggérée (résultat de resolveSuggestedLocale())." },
+        "served": { "type": "Locale", "required": true, "description": "Locale actuellement servie." },
+        "page": { "type": "string", "required": true, "description": "Pathname localisé où le nudge apparaît." }
+      },
+      "constraints": [
+        "suggested !== served (sinon pas de nudge).",
+        "Au plus N impressions/visiteur où N = nudge.maxImpressionsPerVisitor (défaut 1)."
+      ],
+      "example": {
+        "event": "locale_nudge_shown",
+        "event_id": "8b7a6c5d-4e3f-2a1b-9c8d-7e6f5a4b3c2d",
+        "timestamp": "2026-05-30T10:11:58.002Z",
+        "schema_version": 1,
+        "suggested": "ar",
+        "served": "fr",
+        "page": "/fr"
+      },
+      "sink": "dataLayer → GA4 event 'locale_nudge_shown' ; numérateur du taux d'acceptation du nudge (H2 dossier §11)."
+    },
+
+    {
+      "name": "locale_nudge_accepted",
+      "whenFired": "Le visiteur clique le nudge → bascule vers la langue suggérée. Suivi immédiatement d'un locale_switch (surface='nudge').",
+      "contractPayload": {
+        "suggested": { "type": "Locale", "required": true, "description": "Locale suggérée acceptée." },
+        "page": { "type": "string", "required": true, "description": "Pathname où l'acceptation a eu lieu." }
+      },
+      "constraints": [
+        "Toujours précédé d'un locale_nudge_shown pour le même visiteur.",
+        "Génère aussi un locale_switch { to: suggested, surface:'nudge' }.",
+        "Pose le cookie locale_nudge_dismissed (one-shot scellé)."
+      ],
+      "example": {
+        "event": "locale_nudge_accepted",
+        "event_id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+        "timestamp": "2026-05-30T10:12:01.500Z",
+        "schema_version": 1,
+        "suggested": "ar",
+        "page": "/fr"
+      },
+      "sink": "dataLayer → GA4 event 'locale_nudge_accepted' ; numérateur du taux d'acceptation."
+    },
+
+    {
+      "name": "locale_nudge_dismissed",
+      "whenFired": "Le visiteur ferme le nudge (clic ✕) sans accepter. Pose le cookie locale_nudge_dismissed → jamais réaffiché.",
+      "contractPayload": {
+        "suggested": { "type": "Locale", "required": true, "description": "Locale qui avait été suggérée." },
+        "page": { "type": "string", "required": true, "description": "Pathname où le dismiss a eu lieu." }
+      },
+      "constraints": [
+        "Toujours précédé d'un locale_nudge_shown.",
+        "Mutuellement exclusif avec locale_nudge_accepted pour un même affichage.",
+        "Pose le cookie locale_nudge_dismissed (one-shot scellé)."
+      ],
+      "example": {
+        "event": "locale_nudge_dismissed",
+        "event_id": "9f8e7d6c-5b4a-3210-fedc-ba9876543210",
+        "timestamp": "2026-05-30T10:12:09.880Z",
+        "schema_version": 1,
+        "suggested": "ar",
+        "page": "/fr"
+      },
+      "sink": "dataLayer → GA4 event 'locale_nudge_dismissed' ; complément du taux (shown = accepted + dismissed + ignoré)."
+    }
+  ],
+
+  "verify": {
+    "functional": [
+      "locale_switch émis pour chaque surface (header/drawer/footer/nudge) avec from/to corrects.",
+      "Aucun locale_switch sur clic langue active (INV-11).",
+      "nudge_shown émis au plus maxImpressionsPerVisitor fois ; accepted XOR dismissed scelle le one-shot.",
+      "transition reflète le vrai chemin (vt vs veil vs reduced vs reload) — testé en mockant startViewTransition et matchMedia reduced-motion."
+    ],
+    "dataIntegrity": [
+      "Tous les champs CONTRACT §4 présents et typés (Locale/Surface/Transition validés par les enums).",
+      "page = pathname localisé sans querystring (pas de fuite d'UTM/PII dans 'page').",
+      "schema_version figé à 1 ; bump documenté si la taxonomie change."
+    ],
+    "security": [
+      "Aucune PII dans les payloads (pas d'email/téléphone/IP). Conforme à la stance privacy (server-detection.md : pas de géoloc IP).",
+      "Émission gated par consent (comme datalayer.ts) avant push vers les pixels."
+    ],
+    "failureModes": [
+      "Si dataLayer/window absent (SSR), le builder ne throw pas (fonction pure) ; l'émission est no-op côté serveur.",
+      "transition='reload' n'apparaît qu'en chemin d'erreur — sa présence anormale en volume = signal de régression à monitorer."
+    ]
+  }
+}

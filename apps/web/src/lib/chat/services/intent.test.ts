@@ -80,6 +80,11 @@ describe('intent detection', () => {
       'Je veux commander',
       'Je veux commander le kit',
       'Je voudrais acheter votre kit',
+      // Élision pronom complément avant verbe d'action (bug 2026-05-12) :
+      // l'apostrophe collée au verbe doit être tolérée par la regex.
+      "Je veux l'acheter",
+      "Je voudrais l'acheter",
+      "Je souhaite l'acheter",
       "Je l'achète",
       'Je le prends',
       'Comment commander ?',

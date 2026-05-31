@@ -15,9 +15,11 @@ interface InterviewQRProps {
    * `data.portrait`. Garde la légende (nomInterviewee) intacte.
    */
   portraitSlot?: ReactNode;
+  /** Phase 9bis — kicker localisé (« Conversation »). Défaut FR. */
+  kicker?: string;
 }
 
-export function InterviewQR({ data, portraitSlot }: InterviewQRProps) {
+export function InterviewQR({ data, portraitSlot, kicker = 'Conversation' }: InterviewQRProps) {
   const exergueIndex = Math.floor(data.questions.length / 2);
 
   return (
@@ -59,7 +61,7 @@ export function InterviewQR({ data, portraitSlot }: InterviewQRProps) {
           <div className="lg:col-span-8">
             <Reveal>
               <Kicker tone="champagne" withRule>
-                Conversation
+                {kicker}
               </Kicker>
             </Reveal>
             <Reveal delay={80}>

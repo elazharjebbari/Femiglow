@@ -1,0 +1,24 @@
+case_id,feature,layer,operator_gesture_or_precondition,expected,linked_finding
+TC-CHK-001,FN-CHK-09,vitest,"sessions a étapes variées","chaque étape = nb sessions distinctes (BOOL_OR)",
+TC-CHK-002,FN-CHK-08,vitest,"begin_checkout > view_cart (arrivée directe)","progression clampée/expliquée (pas >100% brut)",AF-03
+TC-CHK-003,FN-CHK-09,vitest,"add_shipping_info et add_shipping","traités comme même étape",
+TC-CHK-004,FN-CHK-09,vitest,"purchase sans checkout_submit","submit implicite = true",
+TC-CHK-005,FN-CHK-09,vitest,"purchase_server","compté en purchase + serverFallback isolé",
+TC-CHK-006,FN-CHK-11,vitest,"begin sans purchase, ancienneté >60min","abandon = oui",
+TC-CHK-007,FN-CHK-11,vitest,"begin a t-5min, pas de purchase, now<60min","abandon = non",F-CHK-04
+TC-CHK-008,FN-CHK-11,vitest,"begin fin période, purchase apres 'to'","non abandon (fenêtre fetch élargie)",F-CHK-03
+TC-CHK-009,FN-CHK-11,vitest,"purchase >60min apres begin","abandon = oui",
+TC-CHK-010,FN-CHK-10,vitest,"submit en 0,4s (bot)","exclu du TTS (sampleSize n'inclut pas)",
+TC-CHK-011,FN-CHK-10,vitest,"durée 90min","cappée a 1800s",
+TC-CHK-012,FN-CHK-10,vitest,"jeu de durées connu","P25/P50/P75/P95 corrects (interpolation)",
+TC-CHK-013,FN-CHK-10,vitest,"valeurs <600 et >=550","buckets 12x50s; dernier bucket overflow",
+TC-CHK-014,FN-CHK-08,vitest,"form_validation_error x N","top erreurs group by (field,code) trié",
+TC-CHK-015,FN-CHK-08,vitest,"form_abandon last_field","top champs abandonnés trié",
+TC-CHK-016,FN-CHK-08,vitest,"events sans consent","exclus",
+TC-CHK-017,FN-CHK-12,msw,"GET /checkout sans session","401",
+TC-CHK-018,FN-CHK-02,rtl,"initialData rendu","KPI+stepper+TTS+erreurs+abandons affichés",
+TC-CHK-019,FN-CHK-02,rtl,"changement filtre via URL","4 zones refetch et changent",AF-01
+TC-CHK-020,FN-CHK-03,rtl,"KPI submissions","libellé cohérent (achats) et valeur",F-CHK-02
+TC-CHK-021,FN-CHK-05,rtl,"histogramme","12 buckets rendus + percentiles",
+TC-CHK-022,FN-CHK-02,playwright,"period 7d, lire décrochage","étape de drop max visible",
+TC-CHK-023,FN-CHK-04,a11y,"axe sur /checkout","aucune violation critique; stepper accessible",AF-03

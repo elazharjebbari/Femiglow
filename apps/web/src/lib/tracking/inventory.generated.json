@@ -1,0 +1,2941 @@
+{
+  "generatedAt": "2026-05-14T20:02:08.263Z",
+  "components": [
+    {
+      "name": "MobileFocusGuard",
+      "path": "src/components/a11y/MobileFocusGuard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "AdminShell",
+      "path": "src/components/admin/AdminShell.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CheckoutAbandonedFields",
+      "path": "src/components/admin/analytics/checkout/CheckoutAbandonedFields.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "CheckoutDashboard",
+      "path": "src/components/admin/analytics/checkout/CheckoutDashboard.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "CheckoutFormErrors",
+      "path": "src/components/admin/analytics/checkout/CheckoutFormErrors.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "CheckoutFunnelStepper",
+      "path": "src/components/admin/analytics/checkout/CheckoutFunnelStepper.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "CheckoutKpiGrid",
+      "path": "src/components/admin/analytics/checkout/CheckoutKpiGrid.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "CheckoutTimeToSubmit",
+      "path": "src/components/admin/analytics/checkout/CheckoutTimeToSubmit.tsx",
+      "category": "form_submit"
+    },
+    {
+      "name": "CtaDashboard",
+      "path": "src/components/admin/analytics/cta/CtaDashboard.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "CtaKpiGrid",
+      "path": "src/components/admin/analytics/cta/CtaKpiGrid.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "CtaTable",
+      "path": "src/components/admin/analytics/cta/CtaTable.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "CtaTopMessages",
+      "path": "src/components/admin/analytics/cta/CtaTopMessages.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "CtaTopPages",
+      "path": "src/components/admin/analytics/cta/CtaTopPages.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "FunnelByPageSankey",
+      "path": "src/components/admin/analytics/funnel/FunnelByPageSankey.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FunnelDashboard",
+      "path": "src/components/admin/analytics/funnel/FunnelDashboard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FunnelDataTable",
+      "path": "src/components/admin/analytics/funnel/FunnelDataTable.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FunnelDropOff",
+      "path": "src/components/admin/analytics/funnel/FunnelDropOff.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FunnelGlobal",
+      "path": "src/components/admin/analytics/funnel/FunnelGlobal.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ExportPngButton",
+      "path": "src/components/admin/analytics/insights/ExportPngButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "KpiCard",
+      "path": "src/components/admin/analytics/insights/InsightsCharts.tsx",
+      "category": "card"
+    },
+    {
+      "name": "InsightsDrawer",
+      "path": "src/components/admin/analytics/insights/InsightsDrawer.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "InsightsView",
+      "path": "src/components/admin/analytics/insights/InsightsView.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveByDevice",
+      "path": "src/components/admin/analytics/live/LiveByDevice.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveByPage",
+      "path": "src/components/admin/analytics/live/LiveByPage.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveBySource",
+      "path": "src/components/admin/analytics/live/LiveBySource.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveDashboard",
+      "path": "src/components/admin/analytics/live/LiveDashboard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveEventStream",
+      "path": "src/components/admin/analytics/live/LiveEventStream.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveFunnel",
+      "path": "src/components/admin/analytics/live/LiveFunnel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveKpiBig",
+      "path": "src/components/admin/analytics/live/LiveKpiBig.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LiveStatusBanner",
+      "path": "src/components/admin/analytics/live/LiveStatusBanner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "OverviewKpiGrid",
+      "path": "src/components/admin/analytics/overview/OverviewKpiGrid.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "OverviewSessionsChart",
+      "path": "src/components/admin/analytics/overview/OverviewSessionsChart.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "OverviewTopPages",
+      "path": "src/components/admin/analytics/overview/OverviewTopPages.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "OverviewTopSources",
+      "path": "src/components/admin/analytics/overview/OverviewTopSources.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AnalyticsTabs",
+      "path": "src/components/admin/analytics/primitives/AnalyticsTabs.tsx",
+      "category": "tab"
+    },
+    {
+      "name": "AnalyticsTooltip",
+      "path": "src/components/admin/analytics/primitives/AnalyticsTooltip.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ChartFrame",
+      "path": "src/components/admin/analytics/primitives/ChartFrame.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DataTable",
+      "path": "src/components/admin/analytics/primitives/DataTable.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EmptyState",
+      "path": "src/components/admin/analytics/primitives/EmptyState.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ErrorState",
+      "path": "src/components/admin/analytics/primitives/ErrorState.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ExportCsvButton",
+      "path": "src/components/admin/analytics/primitives/ExportCsvButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "FilterBar",
+      "path": "src/components/admin/analytics/primitives/FilterBar.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "KpiCard",
+      "path": "src/components/admin/analytics/primitives/KpiCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Skeleton",
+      "path": "src/components/admin/analytics/primitives/Skeleton.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ChatAdminNav",
+      "path": "src/components/admin/chat/ChatAdminNav.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "ConversationQuickView",
+      "path": "src/components/admin/chat/ConversationQuickView.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FaqForm",
+      "path": "src/components/admin/chat/FaqForm.tsx",
+      "category": "section_faq"
+    },
+    {
+      "name": "ImportFromFileButton",
+      "path": "src/components/admin/chat/ImportFromFileButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "InstructionEditor",
+      "path": "src/components/admin/chat/InstructionEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LeadOutcomeSelect",
+      "path": "src/components/admin/chat/LeadOutcomeSelect.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PipelineGraph",
+      "path": "src/components/admin/chat/PipelineGraph.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProviderForm",
+      "path": "src/components/admin/chat/ProviderForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "SuggestionForm",
+      "path": "src/components/admin/chat/SuggestionForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "SystemDashboard",
+      "path": "src/components/admin/chat/SystemDashboard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AnimationProfileSelector",
+      "path": "src/components/admin/components/AnimationProfileSelector.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BulkActionBar",
+      "path": "src/components/admin/components/BulkActionBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ComponentBulkActionBar",
+      "path": "src/components/admin/components/ComponentBulkActionBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ComponentDetailPanel",
+      "path": "src/components/admin/components/ComponentDetailPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ComponentList",
+      "path": "src/components/admin/components/ComponentList.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ComponentsBulkPanel",
+      "path": "src/components/admin/components/ComponentsBulkPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DisplayModePanel",
+      "path": "src/components/admin/components/DisplayModePanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EditorWithPreview",
+      "path": "src/components/admin/components/EditorWithPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ConflictModal",
+      "path": "src/components/admin/components/fields/ConflictModal.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "BooleanEditor",
+      "path": "src/components/admin/components/fields/editors/BooleanEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BreadcrumbSegmentEditor",
+      "path": "src/components/admin/components/fields/editors/BreadcrumbSegmentEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ColorTokenEditor",
+      "path": "src/components/admin/components/fields/editors/ColorTokenEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CtaEditor",
+      "path": "src/components/admin/components/fields/editors/CtaEditor.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "EnumEditor",
+      "path": "src/components/admin/components/fields/editors/EnumEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "IconEditor",
+      "path": "src/components/admin/components/fields/editors/IconEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "KickerEditor",
+      "path": "src/components/admin/components/fields/editors/KickerEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LinkEditor",
+      "path": "src/components/admin/components/fields/editors/LinkEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ListEditor",
+      "path": "src/components/admin/components/fields/editors/ListEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MultilineEditor",
+      "path": "src/components/admin/components/fields/editors/MultilineEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "NumberEditor",
+      "path": "src/components/admin/components/fields/editors/NumberEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "QuoteEditor",
+      "path": "src/components/admin/components/fields/editors/QuoteEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RecordEditor",
+      "path": "src/components/admin/components/fields/editors/RecordEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RichTextEditor",
+      "path": "src/components/admin/components/fields/editors/RichTextEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TextEditor",
+      "path": "src/components/admin/components/fields/editors/TextEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FieldDiffView",
+      "path": "src/components/admin/components/fields/FieldDiffView.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FieldRow",
+      "path": "src/components/admin/components/fields/FieldRow.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FieldsPanel",
+      "path": "src/components/admin/components/fields/FieldsPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "HistoryTimeline",
+      "path": "src/components/admin/components/fields/HistoryTimeline.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ScheduleDialog",
+      "path": "src/components/admin/components/fields/ScheduleDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaPickerDrawer",
+      "path": "src/components/admin/components/MediaPickerDrawer.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "PreviewFrame",
+      "path": "src/components/admin/components/PreviewFrame.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PreviewListener",
+      "path": "src/components/admin/components/PreviewListener.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeedRunnerForm",
+      "path": "src/components/admin/components/SeedRunnerForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "SelectAllCheckbox",
+      "path": "src/components/admin/components/SelectAllCheckbox.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SlotCard",
+      "path": "src/components/admin/components/SlotCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "AudienceDetailActions",
+      "path": "src/components/admin/emails/audiences/AudienceDetailActions.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AudiencePreview",
+      "path": "src/components/admin/emails/audiences/AudiencePreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AudienceRulesBuilder",
+      "path": "src/components/admin/emails/audiences/AudienceRulesBuilder.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AudienceWizard",
+      "path": "src/components/admin/emails/audiences/AudienceWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProductAutocomplete",
+      "path": "src/components/admin/emails/audiences/ProductAutocomplete.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RuleEditor",
+      "path": "src/components/admin/emails/audiences/RuleEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TagAutocomplete",
+      "path": "src/components/admin/emails/audiences/TagAutocomplete.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TemplateAutocomplete",
+      "path": "src/components/admin/emails/audiences/TemplateAutocomplete.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AutomationWizard",
+      "path": "src/components/admin/emails/automation/AutomationWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FrequencySettings",
+      "path": "src/components/admin/emails/automation/FrequencySettings.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepEditor",
+      "path": "src/components/admin/emails/automation/StepEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepList",
+      "path": "src/components/admin/emails/automation/StepList.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BulkActionsBar",
+      "path": "src/components/admin/emails/cockpit/BulkActionsBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CommandPalette",
+      "path": "src/components/admin/emails/cockpit/CommandPalette.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FilteredTable",
+      "path": "src/components/admin/emails/cockpit/FilteredTable.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "KpiHeader",
+      "path": "src/components/admin/emails/cockpit/KpiHeader.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SavedViewsSidebar",
+      "path": "src/components/admin/emails/cockpit/SavedViewsSidebar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TransactionalCockpit",
+      "path": "src/components/admin/emails/cockpit/TransactionalCockpit.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GlobalCommandPalette",
+      "path": "src/components/admin/emails/GlobalCommandPalette.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ListmonkFrame",
+      "path": "src/components/admin/emails/ListmonkFrame.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TemplateEditor",
+      "path": "src/components/admin/emails/templates/TemplateEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CampaignWizard",
+      "path": "src/components/admin/emails/wizard/CampaignWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "IconImage",
+      "path": "src/components/admin/icons.tsx",
+      "category": "media_image"
+    },
+    {
+      "name": "LeadNoteForm",
+      "path": "src/components/admin/LeadNoteForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "LeadStatusMenu",
+      "path": "src/components/admin/LeadStatusMenu.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "LegalEmptyState",
+      "path": "src/components/admin/legal/EmptyState.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "HealthRecheckButton",
+      "path": "src/components/admin/legal/HealthRecheckButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "LegalEditor",
+      "path": "src/components/admin/legal/LegalEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LegalHistoryDrawer",
+      "path": "src/components/admin/legal/LegalHistoryDrawer.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "LegalListFilters",
+      "path": "src/components/admin/legal/LegalListFilters.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "LegalWizard",
+      "path": "src/components/admin/legal/LegalWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PlacementMatrix",
+      "path": "src/components/admin/legal/PlacementMatrix.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SlugRedirectsManager",
+      "path": "src/components/admin/legal/SlugRedirectsManager.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TemplateVarsEditor",
+      "path": "src/components/admin/legal/TemplateVarsEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ToastProvider",
+      "path": "src/components/admin/legal/Toast.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LoginForm",
+      "path": "src/components/admin/LoginForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "MediaDetailActions",
+      "path": "src/components/admin/media/MediaDetailActions.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaFilters",
+      "path": "src/components/admin/media/MediaFilters.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "MediaLibraryGrid",
+      "path": "src/components/admin/media/MediaLibraryGrid.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaTile",
+      "path": "src/components/admin/media/MediaTile.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MediaUpdateForm",
+      "path": "src/components/admin/media/MediaUpdateForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "MediaUploadForm",
+      "path": "src/components/admin/media/MediaUploadForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "CopyButton",
+      "path": "src/components/admin/products/CopyButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "FeedRevalidateButton",
+      "path": "src/components/admin/products/FeedRevalidateButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "ProductCreateForm",
+      "path": "src/components/admin/products/ProductCreateForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "ProductDetailEditor",
+      "path": "src/components/admin/products/ProductDetailEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProductHistoryPanel",
+      "path": "src/components/admin/products/ProductHistoryPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProductPublishButton",
+      "path": "src/components/admin/products/ProductPublishButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "ProductsBulkActionBar",
+      "path": "src/components/admin/products/ProductsBulkActionBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProductsBulkPanel",
+      "path": "src/components/admin/products/ProductsBulkPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "VariantPriceInput",
+      "path": "src/components/admin/products/VariantPriceInput.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "VariantsEditor",
+      "path": "src/components/admin/products/VariantsEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BulkActionBar",
+      "path": "src/components/admin/rituals/BulkActionBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RitualActionsClient",
+      "path": "src/components/admin/rituals/RitualActionsClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RitualNeighborsBar",
+      "path": "src/components/admin/rituals/RitualNeighborsBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RitualsAdminFilters",
+      "path": "src/components/admin/rituals/RitualsAdminFilters.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "RitualsAdminSearch",
+      "path": "src/components/admin/rituals/RitualsAdminSearch.tsx",
+      "category": "search"
+    },
+    {
+      "name": "RitualsAdminTable",
+      "path": "src/components/admin/rituals/RitualsAdminTable.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RitualsImportClient",
+      "path": "src/components/admin/rituals/RitualsImportClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RitualSweepView",
+      "path": "src/components/admin/rituals/RitualSweepView.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ShortcutsCheatsheet",
+      "path": "src/components/admin/rituals/ShortcutsCheatsheet.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FacebookPreview",
+      "path": "src/components/admin/seo/previews/FacebookPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SerpPreview",
+      "path": "src/components/admin/seo/previews/SerpPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TwitterPreview",
+      "path": "src/components/admin/seo/previews/TwitterPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeoBulkActionBar",
+      "path": "src/components/admin/seo/SeoBulkActionBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeoBulkPanel",
+      "path": "src/components/admin/seo/SeoBulkPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeoHistoryPanel",
+      "path": "src/components/admin/seo/SeoHistoryPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeoLinterPanel",
+      "path": "src/components/admin/seo/SeoLinterPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeoOverrideEditor",
+      "path": "src/components/admin/seo/SeoOverrideEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeoSettingsEditor",
+      "path": "src/components/admin/seo/SeoSettingsEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BrandingEditor",
+      "path": "src/components/admin/settings/BrandingEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ConfigDiff",
+      "path": "src/components/admin/settings/ConfigDiff.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DeliveryCitiesEditor",
+      "path": "src/components/admin/settings/DeliveryCitiesEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FlagsEditor",
+      "path": "src/components/admin/settings/FlagsEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "FormConfigCard",
+      "path": "src/components/admin/settings/FormConfigCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "FormConfigEditor",
+      "path": "src/components/admin/settings/FormConfigEditor.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "FormConfigEditorShell",
+      "path": "src/components/admin/settings/FormConfigEditorShell.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "FormConfigHistory",
+      "path": "src/components/admin/settings/FormConfigHistory.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "NavEditor",
+      "path": "src/components/admin/settings/NavEditor.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "RbacEditor",
+      "path": "src/components/admin/settings/RbacEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ResetWizard",
+      "path": "src/components/admin/settings/reset/ResetWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepConfirm",
+      "path": "src/components/admin/settings/reset/steps/StepConfirm.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepCustomOptions",
+      "path": "src/components/admin/settings/reset/steps/StepCustomOptions.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepExecute",
+      "path": "src/components/admin/settings/reset/steps/StepExecute.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepMode",
+      "path": "src/components/admin/settings/reset/steps/StepMode.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepPreservation",
+      "path": "src/components/admin/settings/reset/steps/StepPreservation.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepPreview",
+      "path": "src/components/admin/settings/reset/steps/StepPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepReport",
+      "path": "src/components/admin/settings/reset/steps/StepReport.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepWelcome",
+      "path": "src/components/admin/settings/reset/steps/StepWelcome.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SectionCard",
+      "path": "src/components/admin/settings/SectionCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "SectionEditorShell",
+      "path": "src/components/admin/settings/SectionEditorShell.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SectionHistory",
+      "path": "src/components/admin/settings/SectionHistory.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeedersRunner",
+      "path": "src/components/admin/settings/SeedersRunner.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProvidersAnalyticsTable",
+      "path": "src/components/admin/tracking/analytics/ProvidersAnalyticsTable.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ConsentBannerSettingsForm",
+      "path": "src/components/admin/tracking/ConsentBannerSettingsForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "EventCategorizationTable",
+      "path": "src/components/admin/tracking/events/EventCategorizationTable.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DriftBanner",
+      "path": "src/components/admin/tracking/gtm/DriftBanner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "DriftBannerServer",
+      "path": "src/components/admin/tracking/gtm/DriftBannerServer.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "GtmAdminTabs",
+      "path": "src/components/admin/tracking/gtm/GtmAdminTabs.tsx",
+      "category": "tab"
+    },
+    {
+      "name": "GtmConfigClient",
+      "path": "src/components/admin/tracking/gtm/GtmConfigClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmConfigDiff",
+      "path": "src/components/admin/tracking/gtm/GtmConfigDiff.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmConfigForm",
+      "path": "src/components/admin/tracking/gtm/GtmConfigForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "GtmConfigVersionList",
+      "path": "src/components/admin/tracking/gtm/GtmConfigVersionList.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmCsvImport",
+      "path": "src/components/admin/tracking/gtm/GtmCsvImport.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmEnvTabs",
+      "path": "src/components/admin/tracking/gtm/GtmEnvTabs.tsx",
+      "category": "tab"
+    },
+    {
+      "name": "GtmExportClient",
+      "path": "src/components/admin/tracking/gtm/GtmExportClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmFullscreenPreview",
+      "path": "src/components/admin/tracking/gtm/GtmFullscreenPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmGraphCanvas",
+      "path": "src/components/admin/tracking/gtm/GtmGraphCanvas.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmHelpSteps",
+      "path": "src/components/admin/tracking/gtm/GtmHelpSteps.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "IconDownload",
+      "path": "src/components/admin/tracking/gtm/GtmIcons.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmJsonPreview",
+      "path": "src/components/admin/tracking/gtm/GtmJsonPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmLinterReport",
+      "path": "src/components/admin/tracking/gtm/GtmLinterReport.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmMetaInfo",
+      "path": "src/components/admin/tracking/gtm/GtmMetaInfo.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmStatsGrid",
+      "path": "src/components/admin/tracking/gtm/GtmStatsGrid.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmTemplatePicker",
+      "path": "src/components/admin/tracking/gtm/GtmTemplatePicker.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GtmVisualizationClient",
+      "path": "src/components/admin/tracking/gtm/GtmVisualizationClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PingTimeline",
+      "path": "src/components/admin/tracking/gtm/PingTimeline.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SyncCard",
+      "path": "src/components/admin/tracking/gtm/SyncCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "SyncIndicator",
+      "path": "src/components/admin/tracking/gtm/SyncIndicator.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SyncStatusLive",
+      "path": "src/components/admin/tracking/gtm/SyncStatusLive.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SyncStatusView",
+      "path": "src/components/admin/tracking/gtm/SyncStatusView.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ValidatePairWizard",
+      "path": "src/components/admin/tracking/gtm/ValidatePairWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ValidationDiffViewer",
+      "path": "src/components/admin/tracking/gtm/ValidationDiffViewer.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "InventoryPanel",
+      "path": "src/components/admin/tracking/InventoryPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LogsPanel",
+      "path": "src/components/admin/tracking/LogsPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CloneAndEditButton",
+      "path": "src/components/admin/tracking/mappings/CloneAndEditButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "ConfirmDialog",
+      "path": "src/components/admin/tracking/mappings/ConfirmDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingAuditTimeline",
+      "path": "src/components/admin/tracking/mappings/MappingAuditTimeline.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingCreateWizard",
+      "path": "src/components/admin/tracking/mappings/MappingCreateWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingDiffViewer",
+      "path": "src/components/admin/tracking/mappings/MappingDiffViewer.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingExportButton",
+      "path": "src/components/admin/tracking/mappings/MappingExportButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "MappingHelpPanel",
+      "path": "src/components/admin/tracking/mappings/MappingHelpPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingMatrix",
+      "path": "src/components/admin/tracking/mappings/MappingMatrix.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingTestModal",
+      "path": "src/components/admin/tracking/mappings/MappingTestModal.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "MappingVersionEditor",
+      "path": "src/components/admin/tracking/mappings/MappingVersionEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MappingVersionsList",
+      "path": "src/components/admin/tracking/mappings/MappingVersionsList.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProvidersPanel",
+      "path": "src/components/admin/tracking/ProvidersPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ReseedEventsButton",
+      "path": "src/components/admin/tracking/ReseedEventsButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "TestPanel",
+      "path": "src/components/admin/tracking/TestPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TrackingShell",
+      "path": "src/components/admin/tracking/TrackingShell.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "WebhookCreateForm",
+      "path": "src/components/admin/WebhookCreateForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "ChatComposer",
+      "path": "src/components/chat/ChatComposer.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ChatHeader",
+      "path": "src/components/chat/ChatHeader.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ChatLauncher",
+      "path": "src/components/chat/ChatLauncher.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ChatPanel",
+      "path": "src/components/chat/ChatPanel.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ChatWidget",
+      "path": "src/components/chat/ChatWidget.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ChatWidgetMount",
+      "path": "src/components/chat/ChatWidgetMount.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LeadFormBubble",
+      "path": "src/components/chat/LeadFormBubble.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "MessageBubble",
+      "path": "src/components/chat/MessageBubble.tsx",
+      "category": "card"
+    },
+    {
+      "name": "MessageList",
+      "path": "src/components/chat/MessageList.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ShippingPriceDisplay",
+      "path": "src/components/checkout/ShippingPriceDisplay.tsx",
+      "category": "card"
+    },
+    {
+      "name": "CityAutocomplete",
+      "path": "src/components/checkout/wizard/components/CityAutocomplete.tsx",
+      "category": "card"
+    },
+    {
+      "name": "AddressStep",
+      "path": "src/components/checkout/wizard/steps/AddressStep.tsx",
+      "category": "card"
+    },
+    {
+      "name": "CartReviewStep",
+      "path": "src/components/checkout/wizard/steps/CartReviewStep.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "LeadCaptureStep",
+      "path": "src/components/checkout/wizard/steps/LeadCaptureStep.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ThankYouStep",
+      "path": "src/components/checkout/wizard/steps/ThankYouStep.tsx",
+      "category": "card"
+    },
+    {
+      "name": "StockIndicator",
+      "path": "src/components/checkout/wizard/StockIndicator.tsx",
+      "category": "card"
+    },
+    {
+      "name": "WizardShell",
+      "path": "src/components/checkout/wizard/WizardShell.tsx",
+      "category": "card"
+    },
+    {
+      "name": "WizardStepIndicator",
+      "path": "src/components/checkout/wizard/WizardStepIndicator.tsx",
+      "category": "card"
+    },
+    {
+      "name": "AddToCartButton",
+      "path": "src/components/commerce/AddToCartButton.tsx",
+      "category": "cta_primary",
+      "description": "Bouton principal d'ajout au panier — émet add_to_cart avec items + value.",
+      "events": [
+        "add_to_cart"
+      ]
+    },
+    {
+      "name": "CartButton",
+      "path": "src/components/commerce/CartButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "CartContents",
+      "path": "src/components/commerce/CartContents.tsx",
+      "category": "commerce_cart",
+      "description": "Page panier — view_cart au mount + begin_checkout au clic « Passer commande ».",
+      "events": [
+        "view_cart",
+        "begin_checkout"
+      ]
+    },
+    {
+      "name": "CartItem",
+      "path": "src/components/commerce/CartItem.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "CartLayout",
+      "path": "src/components/commerce/CartLayout.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "CartSkeleton",
+      "path": "src/components/commerce/CartSkeleton.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "CartSummary",
+      "path": "src/components/commerce/CartSummary.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "CheckoutFlow",
+      "path": "src/components/commerce/CheckoutFlow.tsx",
+      "category": "commerce_checkout",
+      "events": [
+        "begin_checkout",
+        "lead_capture",
+        "generate_lead",
+        "address_completed",
+        "add_payment_info",
+        "purchase"
+      ]
+    },
+    {
+      "name": "CheckoutPage",
+      "path": "src/components/commerce/CheckoutPage.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "CommanderAnchorButton",
+      "path": "src/components/commerce/CommanderAnchorButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "ComparatifTable",
+      "path": "src/components/commerce/ComparatifTable.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "EmptyCartState",
+      "path": "src/components/commerce/EmptyCartState.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "ErrorBanner",
+      "path": "src/components/commerce/ErrorBanner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "FAQAccordion",
+      "path": "src/components/commerce/FAQAccordion.tsx",
+      "category": "accordion"
+    },
+    {
+      "name": "HandsTestimonialCarousel",
+      "path": "src/components/commerce/HandsTestimonialCarousel.tsx",
+      "category": "section_testimonial"
+    },
+    {
+      "name": "IngredientsTable",
+      "path": "src/components/commerce/IngredientsTable.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "LeaveCheckoutModal",
+      "path": "src/components/commerce/LeaveCheckoutModal.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "MerciClient",
+      "path": "src/components/commerce/MerciClient.tsx",
+      "category": "commerce_checkout",
+      "description": "Page merci — émet purchase une fois la commande chargée (transaction_id, value, items GA4).",
+      "events": [
+        "purchase"
+      ]
+    },
+    {
+      "name": "MerciOrchestrator",
+      "path": "src/components/commerce/MerciOrchestrator.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "MiniCartSlideOver",
+      "path": "src/components/commerce/MiniCartSlideOver.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "MobileCheckoutBar",
+      "path": "src/components/commerce/MobileCheckoutBar.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "OrderSummaryAccordion",
+      "path": "src/components/commerce/OrderSummaryAccordion.tsx",
+      "category": "accordion"
+    },
+    {
+      "name": "OrderSummarySticky",
+      "path": "src/components/commerce/OrderSummarySticky.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "PaymentLoadingOverlay",
+      "path": "src/components/commerce/PaymentLoadingOverlay.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "PaymentMethodSelector",
+      "path": "src/components/commerce/PaymentMethodSelector.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "PriceDisplay",
+      "path": "src/components/commerce/PriceDisplay.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "ProductCard",
+      "path": "src/components/commerce/ProductCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ProgressBar3Steps",
+      "path": "src/components/commerce/ProgressBar3Steps.tsx",
+      "category": "progress"
+    },
+    {
+      "name": "PromoCodeInput",
+      "path": "src/components/commerce/PromoCodeInput.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "QuantitySelector",
+      "path": "src/components/commerce/QuantitySelector.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "ShippingModeSelector",
+      "path": "src/components/commerce/ShippingModeSelector.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "AddressStep",
+      "path": "src/components/commerce/steps/AddressStep.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "InfoStep",
+      "path": "src/components/commerce/steps/InfoStep.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "PaymentStep",
+      "path": "src/components/commerce/steps/PaymentStep.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "StickyCartCTA",
+      "path": "src/components/commerce/StickyCartCTA.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "TermsCheckbox",
+      "path": "src/components/commerce/TermsCheckbox.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "ContactForm",
+      "path": "src/components/forms/ContactForm.tsx",
+      "category": "form_input",
+      "description": "Formulaire de contact — émet contact_submit (intent) + generate_lead (succès).",
+      "events": [
+        "contact_submit",
+        "generate_lead"
+      ]
+    },
+    {
+      "name": "ErrorState",
+      "path": "src/components/forms/ErrorState.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "FieldShell",
+      "path": "src/components/forms/Field.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "FormTypeSelector",
+      "path": "src/components/forms/FormTypeSelector.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "NewsletterForm",
+      "path": "src/components/forms/NewsletterForm.tsx",
+      "category": "newsletter",
+      "description": "Formulaire newsletter — newsletter_submit (intent) + generate_lead (succès).",
+      "events": [
+        "newsletter_submit",
+        "generate_lead"
+      ]
+    },
+    {
+      "name": "SuccessState",
+      "path": "src/components/forms/SuccessState.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "MatiereIcon",
+      "path": "src/components/icons/matieres/MatiereIcon.tsx",
+      "category": "card"
+    },
+    {
+      "name": "CheckoutHeader",
+      "path": "src/components/layout/CheckoutHeader.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "CommerceHeader",
+      "path": "src/components/layout/CommerceHeader.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "Footer",
+      "path": "src/components/layout/Footer.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "FooterMinimal",
+      "path": "src/components/layout/FooterMinimal.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "Header",
+      "path": "src/components/layout/Header.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "SkipLink",
+      "path": "src/components/layout/SkipLink.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "SommaireOverlay",
+      "path": "src/components/layout/SommaireOverlay.tsx",
+      "category": "navigation"
+    },
+    {
+      "name": "CheckoutConsentText",
+      "path": "src/components/legal/CheckoutConsentText.tsx",
+      "category": "commerce_checkout"
+    },
+    {
+      "name": "FooterLegalLinks",
+      "path": "src/components/legal/FooterLegalLinks.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LegalContactBlock",
+      "path": "src/components/legal/LegalContactBlock.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LegalPrintButton",
+      "path": "src/components/legal/LegalPrintButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "LegalRelatedLinks",
+      "path": "src/components/legal/LegalRelatedLinks.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Footnote",
+      "path": "src/components/patterns/Footnote.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Reveal",
+      "path": "src/components/patterns/Reveal.tsx",
+      "category": "card"
+    },
+    {
+      "name": "SchemaSVG",
+      "path": "src/components/patterns/SchemaSVG.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ScrollProgress",
+      "path": "src/components/patterns/ScrollProgress.tsx",
+      "category": "progress"
+    },
+    {
+      "name": "ArticleCard",
+      "path": "src/components/sections/ArticleCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ArticleCardBound",
+      "path": "src/components/sections/ArticleCardBound.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ArticleGrid",
+      "path": "src/components/sections/ArticleGrid.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ArticleHero",
+      "path": "src/components/sections/ArticleHero.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "ArticleHeroBound",
+      "path": "src/components/sections/ArticleHeroBound.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "ArticleMeta",
+      "path": "src/components/sections/ArticleMeta.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ArticleProse",
+      "path": "src/components/sections/ArticleProse.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "AtelierGallery",
+      "path": "src/components/sections/AtelierGallery.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "AtelierGalleryBound",
+      "path": "src/components/sections/AtelierGalleryBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "AuthorCard",
+      "path": "src/components/sections/AuthorCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "AvisStrip",
+      "path": "src/components/sections/AvisStrip.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "AvisStripBound",
+      "path": "src/components/sections/AvisStripBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "CartHero",
+      "path": "src/components/sections/CartHero.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "CategoryPills",
+      "path": "src/components/sections/CategoryPills.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ComparatifSection",
+      "path": "src/components/sections/ComparatifSection.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ComparatifSectionBound",
+      "path": "src/components/sections/ComparatifSectionBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "CompositionReveal",
+      "path": "src/components/sections/CompositionReveal.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "CompositionRevealBound",
+      "path": "src/components/sections/CompositionRevealBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ContactCrossLinks",
+      "path": "src/components/sections/ContactCrossLinks.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ContactHero",
+      "path": "src/components/sections/ContactHero.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "CrossLinkBanner",
+      "path": "src/components/sections/CrossLinkBanner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "CrossLinkCard",
+      "path": "src/components/sections/CrossLinkCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "CrossLinks",
+      "path": "src/components/sections/CrossLinks.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "CrossLinkTriptyque",
+      "path": "src/components/sections/CrossLinkTriptyque.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "DirectContactBlock",
+      "path": "src/components/sections/DirectContactBlock.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "EditorialLetter",
+      "path": "src/components/sections/EditorialLetter.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "EngagementCard",
+      "path": "src/components/sections/EngagementCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "EngagementsGrid",
+      "path": "src/components/sections/EngagementsGrid.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "FAQAccordion",
+      "path": "src/components/sections/FAQAccordion.tsx",
+      "category": "accordion"
+    },
+    {
+      "name": "FAQContextuelle",
+      "path": "src/components/sections/FAQContextuelle.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "FeaturedArticle",
+      "path": "src/components/sections/FeaturedArticle.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "FeaturedArticleBound",
+      "path": "src/components/sections/FeaturedArticleBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "GestesGrid",
+      "path": "src/components/sections/GestesGrid.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "HandsTestimonials",
+      "path": "src/components/sections/HandsTestimonials.tsx",
+      "category": "section_testimonial"
+    },
+    {
+      "name": "HandsTestimonialsBound",
+      "path": "src/components/sections/HandsTestimonialsBound.tsx",
+      "category": "section_testimonial"
+    },
+    {
+      "name": "Hero",
+      "path": "src/components/sections/Hero.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroBound",
+      "path": "src/components/sections/HeroBound.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroLifestyle",
+      "path": "src/components/sections/HeroLifestyle.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroLifestyleBound",
+      "path": "src/components/sections/HeroLifestyleBound.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroMaison",
+      "path": "src/components/sections/HeroMaison.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroMaisonBound",
+      "path": "src/components/sections/HeroMaisonBound.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroProduit",
+      "path": "src/components/sections/HeroProduit.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroProduitBound",
+      "path": "src/components/sections/HeroProduitBound.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "IngredientsDetails",
+      "path": "src/components/sections/IngredientsDetails.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "IngredientsDetailsBound",
+      "path": "src/components/sections/IngredientsDetailsBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "InterviewQR",
+      "path": "src/components/sections/InterviewQR.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "InterviewQRBound",
+      "path": "src/components/sections/InterviewQRBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "JournalCrossLink",
+      "path": "src/components/sections/JournalCrossLink.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "JournalExtraits",
+      "path": "src/components/sections/JournalExtraits.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "JournalExtraitsBound",
+      "path": "src/components/sections/JournalExtraitsBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "JournalGrid",
+      "path": "src/components/sections/JournalGrid.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "JournalGridBound",
+      "path": "src/components/sections/JournalGridBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "JournalHero",
+      "path": "src/components/sections/JournalHero.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "KitCommanderSection",
+      "path": "src/components/sections/KitCommanderSection.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "KitCommanderSectionBound",
+      "path": "src/components/sections/KitCommanderSectionBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "Manifeste",
+      "path": "src/components/sections/Manifeste.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "MatiereCard",
+      "path": "src/components/sections/MatiereCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "MatieresGrid",
+      "path": "src/components/sections/MatieresGrid.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "NewsletterBlock",
+      "path": "src/components/sections/NewsletterBlock.tsx",
+      "category": "newsletter"
+    },
+    {
+      "name": "OrderHero",
+      "path": "src/components/sections/OrderHero.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "OrderRecap",
+      "path": "src/components/sections/OrderRecap.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "PivotBanner",
+      "path": "src/components/sections/PivotBanner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "PivotFinal",
+      "path": "src/components/sections/PivotFinal.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "PreparationGesture",
+      "path": "src/components/sections/PreparationGesture.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ProductFeedSection",
+      "path": "src/components/sections/ProductFeedSection.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ProductFeedSectionBound",
+      "path": "src/components/sections/ProductFeedSectionBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ReadingProgress",
+      "path": "src/components/sections/ReadingProgress.tsx",
+      "category": "progress"
+    },
+    {
+      "name": "RelatedArticles",
+      "path": "src/components/sections/RelatedArticles.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "RelatedArticlesBound",
+      "path": "src/components/sections/RelatedArticlesBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "RitualCard",
+      "path": "src/components/sections/rituals/RitualCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "RitualPhotoLightbox",
+      "path": "src/components/sections/rituals/RitualPhotoLightbox.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "RitualsModule",
+      "path": "src/components/sections/rituals/RitualsModule.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "RitualsModuleBound",
+      "path": "src/components/sections/rituals/RitualsModuleBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "RitualsModuleSkeleton",
+      "path": "src/components/sections/rituals/RitualsModuleSkeleton.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "RitualsWallDrawer",
+      "path": "src/components/sections/rituals/RitualsWallDrawer.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "RitualsWallFilters",
+      "path": "src/components/sections/rituals/RitualsWallFilters.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "RitualsWizard",
+      "path": "src/components/sections/rituals/wizard/RitualsWizard.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "SciencesDuSoin",
+      "path": "src/components/sections/SciencesDuSoin.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "SectionNarrative",
+      "path": "src/components/sections/SectionNarrative.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "SectionNarrativeBound",
+      "path": "src/components/sections/SectionNarrativeBound.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ShareButtons",
+      "path": "src/components/sections/ShareButtons.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "TableOfContents",
+      "path": "src/components/sections/TableOfContents.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "TestimonialCard",
+      "path": "src/components/sections/TestimonialCard.tsx",
+      "category": "section_testimonial"
+    },
+    {
+      "name": "TimelineSteps",
+      "path": "src/components/sections/TimelineSteps.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "TrustSignals",
+      "path": "src/components/sections/TrustSignals.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "VideoPlayer4Gestes",
+      "path": "src/components/sections/VideoPlayer4Gestes.tsx",
+      "category": "section_video",
+      "description": "Vidéo des 4 gestes — distingue user-initiated (clic sur controls) vs autoplay",
+      "events": [
+        "video_user_play",
+        "video_autoplay_view",
+        "video_complete",
+        "video_transcript_open"
+      ]
+    },
+    {
+      "name": "VideoPlayer4GestesBound",
+      "path": "src/components/sections/VideoPlayer4GestesBound.tsx",
+      "category": "media_video"
+    },
+    {
+      "name": "YouTubeEmbed",
+      "path": "src/components/sections/YouTubeEmbed.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "ConsentBanner",
+      "path": "src/components/tracking/ConsentBanner.tsx",
+      "category": "banner"
+    },
+    {
+      "name": "DebugOverlay",
+      "path": "src/components/tracking/DebugOverlay.tsx",
+      "category": "card"
+    },
+    {
+      "name": "PixelLoader",
+      "path": "src/components/tracking/PixelLoader.tsx",
+      "category": "card"
+    },
+    {
+      "name": "PromotionTracker",
+      "path": "src/components/tracking/PromotionTracker.tsx",
+      "category": "section_promotion",
+      "description": "Émet `view_promotion` (taxonomie GA4) une fois quand le bandeau entre dans le viewport.",
+      "events": [
+        "view_promotion"
+      ]
+    },
+    {
+      "name": "ScrollDepthTracker",
+      "path": "src/components/tracking/ScrollDepthTracker.tsx",
+      "category": "section_content",
+      "description": "Émet `journal_read_75` (ou eventName) une fois quand l'utilisateur a lu ≥ 75 % du contenu.",
+      "events": [
+        "scroll",
+        "journal_read_75"
+      ]
+    },
+    {
+      "name": "ScrollMilestonesTracker",
+      "path": "src/components/tracking/ScrollMilestonesTracker.tsx",
+      "category": "engagement",
+      "description": "Émet `scroll` aux seuils 25/50/75/90 %, une seule fois par seuil par session de page.",
+      "events": [
+        "scroll"
+      ]
+    },
+    {
+      "name": "ViewItemTracker",
+      "path": "src/components/tracking/ViewItemTracker.tsx",
+      "category": "section_hero",
+      "description": "Émet view_item au mount d'une page produit (taxonomie GA4 e-commerce).",
+      "events": [
+        "view_item"
+      ]
+    },
+    {
+      "name": "Button",
+      "path": "src/components/ui/Button.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "ButtonLink",
+      "path": "src/components/ui/ButtonLink.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "ConfirmationModal",
+      "path": "src/components/ui/ConfirmationModal.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "Container",
+      "path": "src/components/ui/Container.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Fleuron",
+      "path": "src/components/ui/Fleuron.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Heading",
+      "path": "src/components/ui/Heading.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Image",
+      "path": "src/components/ui/Image.tsx",
+      "category": "media_image"
+    },
+    {
+      "name": "Kicker",
+      "path": "src/components/ui/Kicker.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Logo",
+      "path": "src/components/ui/Logo.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Reassurance",
+      "path": "src/components/ui/Reassurance.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Stack",
+      "path": "src/components/ui/Stack.tsx",
+      "category": "card"
+    },
+    {
+      "name": "Text",
+      "path": "src/components/ui/Text.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ToastProvider",
+      "path": "src/components/ui/Toast.tsx",
+      "category": "card"
+    }
+  ],
+  "pages": [
+    {
+      "route": "/(marketing)",
+      "title": "Maison de soin pour les ongles \\u2014 \\u00e0 Rabat",
+      "category": "landing",
+      "filePath": "src/app/(marketing)/page.tsx"
+    },
+    {
+      "route": "/admin",
+      "title": "/admin",
+      "category": "admin",
+      "filePath": "src/app/admin/page.tsx"
+    },
+    {
+      "route": "/admin/analytics",
+      "title": "/admin/analytics",
+      "category": "admin",
+      "filePath": "src/app/admin/analytics/page.tsx"
+    },
+    {
+      "route": "/admin/analytics/checkout",
+      "title": "/admin/analytics/checkout",
+      "category": "admin",
+      "filePath": "src/app/admin/analytics/checkout/page.tsx"
+    },
+    {
+      "route": "/admin/analytics/cta",
+      "title": "/admin/analytics/cta",
+      "category": "admin",
+      "filePath": "src/app/admin/analytics/cta/page.tsx"
+    },
+    {
+      "route": "/admin/analytics/funnel",
+      "title": "/admin/analytics/funnel",
+      "category": "admin",
+      "filePath": "src/app/admin/analytics/funnel/page.tsx"
+    },
+    {
+      "route": "/admin/analytics/insights",
+      "title": "/admin/analytics/insights",
+      "category": "admin",
+      "filePath": "src/app/admin/analytics/insights/page.tsx"
+    },
+    {
+      "route": "/admin/analytics/live",
+      "title": "/admin/analytics/live",
+      "category": "admin",
+      "filePath": "src/app/admin/analytics/live/page.tsx"
+    },
+    {
+      "route": "/admin/audit",
+      "title": "/admin/audit",
+      "category": "admin",
+      "filePath": "src/app/admin/audit/page.tsx"
+    },
+    {
+      "route": "/admin/chat",
+      "title": "/admin/chat",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/page.tsx"
+    },
+    {
+      "route": "/admin/chat/analytics",
+      "title": "/admin/chat/analytics",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/analytics/page.tsx"
+    },
+    {
+      "route": "/admin/chat/audit",
+      "title": "/admin/chat/audit",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/audit/page.tsx"
+    },
+    {
+      "route": "/admin/chat/care",
+      "title": "/admin/chat/care",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/care/page.tsx"
+    },
+    {
+      "route": "/admin/chat/conversations",
+      "title": "/admin/chat/conversations",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/conversations/page.tsx"
+    },
+    {
+      "route": "/admin/chat/conversations/:id",
+      "title": "/admin/chat/conversations/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/conversations/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/chat/faq",
+      "title": "/admin/chat/faq",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/faq/page.tsx"
+    },
+    {
+      "route": "/admin/chat/faq/:id",
+      "title": "/admin/chat/faq/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/faq/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/chat/faq/new",
+      "title": "/admin/chat/faq/new",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/faq/new/page.tsx"
+    },
+    {
+      "route": "/admin/chat/instructions",
+      "title": "/admin/chat/instructions",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/instructions/page.tsx"
+    },
+    {
+      "route": "/admin/chat/instructions/:id",
+      "title": "/admin/chat/instructions/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/instructions/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/chat/instructions/new",
+      "title": "/admin/chat/instructions/new",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/instructions/new/page.tsx"
+    },
+    {
+      "route": "/admin/chat/kpis",
+      "title": "/admin/chat/kpis",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/kpis/page.tsx"
+    },
+    {
+      "route": "/admin/chat/lang",
+      "title": "Darija (alphabet latin)",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/lang/page.tsx"
+    },
+    {
+      "route": "/admin/chat/leads",
+      "title": "/admin/chat/leads",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/leads/page.tsx"
+    },
+    {
+      "route": "/admin/chat/providers",
+      "title": "/admin/chat/providers",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/providers/page.tsx"
+    },
+    {
+      "route": "/admin/chat/providers/new",
+      "title": "/admin/chat/providers/new",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/providers/new/page.tsx"
+    },
+    {
+      "route": "/admin/chat/sources",
+      "title": "/admin/chat/sources",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/sources/page.tsx"
+    },
+    {
+      "route": "/admin/chat/sources/new",
+      "title": "/admin/chat/sources/new",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/sources/new/page.tsx"
+    },
+    {
+      "route": "/admin/chat/suggestions",
+      "title": "/admin/chat/suggestions",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/suggestions/page.tsx"
+    },
+    {
+      "route": "/admin/chat/suggestions/:id",
+      "title": "/admin/chat/suggestions/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/suggestions/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/chat/suggestions/new",
+      "title": "/admin/chat/suggestions/new",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/suggestions/new/page.tsx"
+    },
+    {
+      "route": "/admin/chat/system",
+      "title": "/admin/chat/system",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/system/page.tsx"
+    },
+    {
+      "route": "/admin/chat/themes",
+      "title": "/admin/chat/themes",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/themes/page.tsx"
+    },
+    {
+      "route": "/admin/components",
+      "title": "/admin/components",
+      "category": "admin",
+      "filePath": "src/app/admin/components/page.tsx"
+    },
+    {
+      "route": "/admin/components/:key",
+      "title": "/admin/components/:key",
+      "category": "admin",
+      "filePath": "src/app/admin/components/[key]/page.tsx"
+    },
+    {
+      "route": "/admin/components/:key/fields/:fieldKey/history",
+      "title": "/admin/components/:key/fields/:fieldKey/history",
+      "category": "admin",
+      "filePath": "src/app/admin/components/[key]/fields/[fieldKey]/history/page.tsx"
+    },
+    {
+      "route": "/admin/components/:key/preview",
+      "title": "/admin/components/:key/preview",
+      "category": "admin",
+      "filePath": "src/app/admin/components/[key]/preview/page.tsx"
+    },
+    {
+      "route": "/admin/components/animations",
+      "title": "/admin/components/animations",
+      "category": "admin",
+      "filePath": "src/app/admin/components/animations/page.tsx"
+    },
+    {
+      "route": "/admin/components/scheduled",
+      "title": "/admin/components/scheduled",
+      "category": "admin",
+      "filePath": "src/app/admin/components/scheduled/page.tsx"
+    },
+    {
+      "route": "/admin/components/seed",
+      "title": "/admin/components/seed",
+      "category": "admin",
+      "filePath": "src/app/admin/components/seed/page.tsx"
+    },
+    {
+      "route": "/admin/emails",
+      "title": "/admin/emails",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/page.tsx"
+    },
+    {
+      "route": "/admin/emails/audiences",
+      "title": "/admin/emails/audiences",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/audiences/page.tsx"
+    },
+    {
+      "route": "/admin/emails/audiences/:id",
+      "title": "/admin/emails/audiences/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/audiences/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/audiences/new",
+      "title": "/admin/emails/audiences/new",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/audiences/new/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation",
+      "title": "/admin/emails/automation",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation/:id/edit",
+      "title": "/admin/emails/automation/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation/new",
+      "title": "/admin/emails/automation/new",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/new/page.tsx"
+    },
+    {
+      "route": "/admin/emails/automation/runs/:id",
+      "title": "/admin/emails/automation/runs/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/automation/runs/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/campaigns",
+      "title": "/admin/emails/campaigns",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/campaigns/page.tsx"
+    },
+    {
+      "route": "/admin/emails/campaigns/:id",
+      "title": "/admin/emails/campaigns/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/campaigns/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/campaigns/:id/edit",
+      "title": "/admin/emails/campaigns/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/campaigns/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/emails/events",
+      "title": "/admin/emails/events",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/events/page.tsx"
+    },
+    {
+      "route": "/admin/emails/listmonk/::path*",
+      "title": "/admin/emails/listmonk/::path*",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/listmonk/[[...path]]/page.tsx"
+    },
+    {
+      "route": "/admin/emails/templates",
+      "title": "/admin/emails/templates",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/templates/page.tsx"
+    },
+    {
+      "route": "/admin/emails/templates/:id/edit",
+      "title": "/admin/emails/templates/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/templates/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/emails/templates/new",
+      "title": "/admin/emails/templates/new",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/templates/new/page.tsx"
+    },
+    {
+      "route": "/admin/emails/transactional",
+      "title": "/admin/emails/transactional",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/transactional/page.tsx"
+    },
+    {
+      "route": "/admin/emails/transactional/:id",
+      "title": "/admin/emails/transactional/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/emails/transactional/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/leads",
+      "title": "/admin/leads",
+      "category": "admin",
+      "filePath": "src/app/admin/leads/page.tsx"
+    },
+    {
+      "route": "/admin/leads/:id",
+      "title": "/admin/leads/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/leads/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/legal",
+      "title": "/admin/legal",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/page.tsx"
+    },
+    {
+      "route": "/admin/legal/:slug/edit",
+      "title": "/admin/legal/:slug/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/[slug]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/legal/health",
+      "title": "/admin/legal/health",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/health/page.tsx"
+    },
+    {
+      "route": "/admin/legal/new",
+      "title": "/admin/legal/new",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/new/page.tsx"
+    },
+    {
+      "route": "/admin/legal/placements",
+      "title": "/admin/legal/placements",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/placements/page.tsx"
+    },
+    {
+      "route": "/admin/legal/redirects",
+      "title": "/admin/legal/redirects",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/redirects/page.tsx"
+    },
+    {
+      "route": "/admin/legal/template-vars",
+      "title": "/admin/legal/template-vars",
+      "category": "admin",
+      "filePath": "src/app/admin/legal/template-vars/page.tsx"
+    },
+    {
+      "route": "/admin/login",
+      "title": "Connexion — Console FemiGlow",
+      "category": "admin",
+      "filePath": "src/app/admin/login/page.tsx"
+    },
+    {
+      "route": "/admin/media",
+      "title": "/admin/media",
+      "category": "admin",
+      "filePath": "src/app/admin/media/page.tsx"
+    },
+    {
+      "route": "/admin/media/:id",
+      "title": "/admin/media/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/media/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/media/duplicates",
+      "title": "/admin/media/duplicates",
+      "category": "admin",
+      "filePath": "src/app/admin/media/duplicates/page.tsx"
+    },
+    {
+      "route": "/admin/media/settings",
+      "title": "/admin/media/settings",
+      "category": "admin",
+      "filePath": "src/app/admin/media/settings/page.tsx"
+    },
+    {
+      "route": "/admin/media/upload",
+      "title": "/admin/media/upload",
+      "category": "admin",
+      "filePath": "src/app/admin/media/upload/page.tsx"
+    },
+    {
+      "route": "/admin/products",
+      "title": "/admin/products",
+      "category": "admin",
+      "filePath": "src/app/admin/products/page.tsx"
+    },
+    {
+      "route": "/admin/products/:slug",
+      "title": "/admin/products/:slug",
+      "category": "admin",
+      "filePath": "src/app/admin/products/[slug]/page.tsx"
+    },
+    {
+      "route": "/admin/products/:slug/seo",
+      "title": "/admin/products/:slug/seo",
+      "category": "admin",
+      "filePath": "src/app/admin/products/[slug]/seo/page.tsx"
+    },
+    {
+      "route": "/admin/products/feed",
+      "title": "/admin/products/feed",
+      "category": "admin",
+      "filePath": "src/app/admin/products/feed/page.tsx"
+    },
+    {
+      "route": "/admin/products/new",
+      "title": "/admin/products/new",
+      "category": "admin",
+      "filePath": "src/app/admin/products/new/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/:id",
+      "title": "/admin/rituals/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/archived",
+      "title": "/admin/rituals/archived",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/archived/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/best-practices",
+      "title": "/admin/rituals/best-practices",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/best-practices/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/import",
+      "title": "Import — Rituels",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/import/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/import/help",
+      "title": "Aide — Import Rituels",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/import/help/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/insights",
+      "title": "/admin/rituals/insights",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/insights/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/published",
+      "title": "/admin/rituals/published",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/published/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/queue",
+      "title": "/admin/rituals/queue",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/queue/page.tsx"
+    },
+    {
+      "route": "/admin/rituals/queue/sweep",
+      "title": "/admin/rituals/queue/sweep",
+      "category": "admin",
+      "filePath": "src/app/admin/rituals/queue/sweep/page.tsx"
+    },
+    {
+      "route": "/admin/seo",
+      "title": "/admin/seo",
+      "category": "admin",
+      "filePath": "src/app/admin/seo/page.tsx"
+    },
+    {
+      "route": "/admin/seo/:id",
+      "title": "/admin/seo/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/seo/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/seo/new",
+      "title": "/admin/seo/new",
+      "category": "admin",
+      "filePath": "src/app/admin/seo/new/page.tsx"
+    },
+    {
+      "route": "/admin/seo/settings",
+      "title": "/admin/seo/settings",
+      "category": "admin",
+      "filePath": "src/app/admin/seo/settings/page.tsx"
+    },
+    {
+      "route": "/admin/settings",
+      "title": "/admin/settings",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/page.tsx"
+    },
+    {
+      "route": "/admin/settings/branding",
+      "title": "/admin/settings/branding",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/branding/page.tsx"
+    },
+    {
+      "route": "/admin/settings/delivery-cities",
+      "title": "/admin/settings/delivery-cities",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/delivery-cities/page.tsx"
+    },
+    {
+      "route": "/admin/settings/flags",
+      "title": "/admin/settings/flags",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/flags/page.tsx"
+    },
+    {
+      "route": "/admin/settings/form-config",
+      "title": "/admin/settings/form-config",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/form-config/page.tsx"
+    },
+    {
+      "route": "/admin/settings/form-config/:key",
+      "title": "/admin/settings/form-config/:key",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/form-config/[key]/page.tsx"
+    },
+    {
+      "route": "/admin/settings/navigation",
+      "title": "/admin/settings/navigation",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/navigation/page.tsx"
+    },
+    {
+      "route": "/admin/settings/rbac",
+      "title": "/admin/settings/rbac",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/rbac/page.tsx"
+    },
+    {
+      "route": "/admin/settings/reset",
+      "title": "Reset — Console FemiGlow",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/reset/page.tsx"
+    },
+    {
+      "route": "/admin/settings/seeders",
+      "title": "/admin/settings/seeders",
+      "category": "admin",
+      "filePath": "src/app/admin/settings/seeders/page.tsx"
+    },
+    {
+      "route": "/admin/tracking",
+      "title": "/admin/tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/analytics/providers",
+      "title": "Analytics Providers — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/analytics/providers/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events",
+      "title": "/admin/tracking/events",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/categorization",
+      "title": "Catégorisation Google Ads — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/categorization/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings",
+      "title": "Mappings event ↔ vendors — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/:id",
+      "title": "/admin/tracking/events/mappings/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/:id/audit",
+      "title": "/admin/tracking/events/mappings/:id/audit",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/[id]/audit/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/:id/edit",
+      "title": "/admin/tracking/events/mappings/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/events/mappings/compare/:a/:b",
+      "title": "/admin/tracking/events/mappings/compare/:a/:b",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/events/mappings/compare/[a]/[b]/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/gtm",
+      "title": "/admin/tracking/gtm",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/gtm/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/gtm/sync-status",
+      "title": "GTM Sync Status — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/gtm/sync-status/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/gtm/validate-pair",
+      "title": "Valider import GTM — Tracking",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/gtm/validate-pair/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/inventory",
+      "title": "/admin/tracking/inventory",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/inventory/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/logs",
+      "title": "/admin/tracking/logs",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/logs/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/providers",
+      "title": "/admin/tracking/providers",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/providers/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/settings",
+      "title": "/admin/tracking/settings",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/settings/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/test",
+      "title": "/admin/tracking/test",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/test/page.tsx"
+    },
+    {
+      "route": "/admin/webhooks",
+      "title": "/admin/webhooks",
+      "category": "admin",
+      "filePath": "src/app/admin/webhooks/page.tsx"
+    },
+    {
+      "route": "/admin/webhooks/:id/deliveries",
+      "title": "/admin/webhooks/:id/deliveries",
+      "category": "admin",
+      "filePath": "src/app/admin/webhooks/[id]/deliveries/page.tsx"
+    },
+    {
+      "route": "/admin/webhooks/new",
+      "title": "/admin/webhooks/new",
+      "category": "admin",
+      "filePath": "src/app/admin/webhooks/new/page.tsx"
+    },
+    {
+      "route": "/commander",
+      "title": "Commander",
+      "category": "commerce",
+      "filePath": "src/app/commander/page.tsx"
+    },
+    {
+      "route": "/contact",
+      "title": "Contact \\u2014 la maison vous écrit",
+      "category": "content",
+      "filePath": "src/app/(marketing)/contact/page.tsx"
+    },
+    {
+      "route": "/dev/checkout-wizard",
+      "title": "Wizard checkout — preview",
+      "category": "dev",
+      "filePath": "src/app/dev/checkout-wizard/page.tsx"
+    },
+    {
+      "route": "/dev/media-demo",
+      "title": "/dev/media-demo",
+      "category": "dev",
+      "filePath": "src/app/dev/media-demo/page.tsx"
+    },
+    {
+      "route": "/journal",
+      "title": "/journal",
+      "category": "content",
+      "filePath": "src/app/(marketing)/journal/page.tsx"
+    },
+    {
+      "route": "/journal/:slug",
+      "title": "Article introuvable",
+      "category": "content",
+      "filePath": "src/app/(marketing)/journal/[slug]/page.tsx"
+    },
+    {
+      "route": "/kit",
+      "title": "/kit",
+      "category": "landing",
+      "filePath": "src/app/(marketing)/kit/page.tsx"
+    },
+    {
+      "route": "/legal/:slug",
+      "title": "Page introuvable",
+      "category": "landing",
+      "filePath": "src/app/legal/[slug]/page.tsx"
+    },
+    {
+      "route": "/maison",
+      "title": "La maison \\u2014 Rabat",
+      "category": "landing",
+      "filePath": "src/app/(marketing)/maison/page.tsx"
+    },
+    {
+      "route": "/mentions-legales",
+      "title": "Mentions légales — FemiGlow",
+      "category": "landing",
+      "filePath": "src/app/(marketing)/mentions-legales/page.tsx"
+    },
+    {
+      "route": "/merci",
+      "title": "Merci",
+      "category": "commerce",
+      "filePath": "src/app/(commerce)/merci/page.tsx"
+    },
+    {
+      "route": "/panier",
+      "title": "Le panier",
+      "category": "commerce",
+      "filePath": "src/app/(commerce)/panier/page.tsx"
+    },
+    {
+      "route": "/rituel",
+      "title": "Le rituel \\u2014 manucure japonaise halal, deux gestes",
+      "category": "landing",
+      "filePath": "src/app/(marketing)/rituel/page.tsx"
+    }
+  ]
+}

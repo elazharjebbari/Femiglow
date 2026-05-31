@@ -1,0 +1,22 @@
+@startuml
+title Reviews Wall - API sequence
+
+actor User
+participant "Frontend" as FE
+participant "Reviews API" as API
+
+User -> FE : open drawer
+FE -> API : GET /api/reviews/summary?room=chambre
+API --> FE : summary
+FE -> API : GET /api/reviews/list?room=chambre&limit=10
+API --> FE : reviews + cursor
+
+User -> FE : click load more
+FE -> API : GET /api/reviews/list?cursor=...&limit=10
+API --> FE : next reviews
+
+User -> FE : submit review
+FE -> API : POST /api/reviews/submit
+API --> FE : 202 Accepted (pending)
+
+@enduml

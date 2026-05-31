@@ -13,7 +13,8 @@ describe('JournalHero', () => {
 
   it('expose une intro lead', () => {
     render(<JournalHero />);
-    expect(screen.getByText(/r\u00e9cits saisonniers/i)).toBeInTheDocument();
+    expect(screen.getByText(/une lettre par mois/i)).toBeInTheDocument();
+    expect(screen.getByText(/\u00e9crit \u00e0 rabat/i)).toBeInTheDocument();
   });
 
   it('respecte axe', async () => {

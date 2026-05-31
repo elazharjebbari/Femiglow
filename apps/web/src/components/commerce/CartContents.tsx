@@ -122,7 +122,7 @@ export function CartContents() {
                 </button>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-end">
               <Text size="body" tone="default">
                 {formatPrice(item.unitPriceCents * item.quantity)}
               </Text>

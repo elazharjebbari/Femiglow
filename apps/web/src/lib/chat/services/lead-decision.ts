@@ -369,7 +369,24 @@ export function shouldOfferLeadForm(input: LeadDecisionInput): LeadDecisionResul
     };
   }
 
+  // 8. Engagement (CHAT-064) — l'utilisateur a posé ≥ 6 questions, ce qui
+  // dénote un intérêt soutenu (produit, livraison, ingrédients…) sans
+  // toutefois déclencher une raison commerciale explicite. On propose le
+  // formulaire en mode `manual` (intro douce) — il pourra dismisser. Cette
+  // règle est volontairement après `long-no-progress` pour ne pas écraser
+  // sa copy plus spécifique.
+  if (userCount >= ENGAGEMENT_THRESHOLD) {
+    return {
+      shouldOffer: true,
+      reason: 'long-no-progress',
+      copyKey: 'manual',
+      debug: { userCount, trigger: 'engagement' },
+    };
+  }
+
   return { shouldOffer: false, debug: { userCount, currentIntent: input.currentIntent } };
 }
+
+const ENGAGEMENT_THRESHOLD = 6;
 
 export const leadDecision = { shouldOfferLeadForm };

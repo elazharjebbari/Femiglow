@@ -1,5 +1,29 @@
 'use client';
 
+/**
+ * CHA-233 — Mode B (panier /commander) re-routé sur la chaîne wizard.
+ *
+ * Avant : `POST /api/checkout` mono-shot ; le lead n'était jamais persisté,
+ * le webhook chat-lead ne déclenchait pas, et les events tracking étaient
+ * désaligné du wizard /kit.
+ *
+ * Après : on emprunte la chaîne CHA-230/231/232 du wizard :
+ *   - step 0 → POST `/api/checkout/lead`           (persiste le lead + webhook)
+ *   - step 1 → PATCH `/api/checkout/lead/[id]/address`
+ *   - step 2 → PATCH `/api/checkout/lead/[id]/payment` (cod silencieux)
+ *              + POST  `/api/checkout/order`
+ *              + (opt) PATCH `/api/checkout/order/[id]/email` si recapEmail
+ *
+ * Bénéfices :
+ *   - Leads enregistrés à chaque étape ; relance commerciale possible.
+ *   - Webhook chat-lead branché identiquement.
+ *   - Funnel tracking aligné : begin_checkout / lead_capture / address_completed
+ *     / add_payment_info / purchase (cf. event-catalog CHA-230).
+ *
+ * @tracking-category commerce_checkout
+ * @tracking-events begin_checkout, lead_capture, generate_lead, address_completed, add_payment_info, purchase
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -22,6 +46,14 @@ import {
   saveLastOrder,
 } from '@/lib/stores/checkout-draft';
 import { computeShippingCents } from '@/lib/utils/shipping';
+import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
+import { wizardClient, ApiError } from '@/lib/checkout/client/wizard-client';
+import {
+  ensureSessionId,
+  ensureVisitorId,
+} from '@/lib/checkout/client/visitor-id';
+import { consumeIdempotencyKey } from '@/lib/checkout/client/idempotency-key';
+import { DEFAULT_CONSENT_VERSION } from '@/lib/checkout/state/wizard-store';
 import { Button } from '@/components/ui/Button';
 import { Heading } from '@/components/ui/Heading';
 import { Text } from '@/components/ui/Text';
@@ -38,23 +70,12 @@ import { PaymentStep } from './steps/PaymentStep';
 import { routes } from '@/lib/routes';
 import { useTracking } from '@/lib/tracking/use-tracking';
 
-const stepLabels = ['Informations', 'Livraison', 'Paiement'] as const;
+const stepLabels = ['Informations', 'Livraison', 'Confirmation'] as const;
 
 const fieldsByStep: Record<CheckoutStep, ReadonlyArray<string>> = {
-  0: [
-    'contact.firstName',
-    'contact.lastName',
-    'contact.email',
-    'contact.phone',
-  ],
-  1: [
-    'address.line1',
-    'address.quartier',
-    'address.city',
-    'address.cityOther',
-    'address.shippingMode',
-  ],
-  2: ['paymentMethod', 'consent'],
+  0: ['contact.firstName', 'contact.phone', 'consent'],
+  1: ['address.city', 'address.line1', 'address.notes'],
+  2: ['paymentMethod', 'recapEmail'],
 };
 
 type SubmitError = { title: string; description?: string };
@@ -63,11 +84,9 @@ interface CheckoutFlowProps {
   onLeaveModalChange?: (controls: { open: () => void }) => void;
 }
 
-/**
- * @tracking-category commerce_checkout
- * @tracking-events add_shipping_info, add_payment_info
- * @tracking-description Funnel checkout — add_shipping_info au passage étape 1→2, add_payment_info à la soumission finale.
- */
+const FORM_ID = 'cart-checkout-v1';
+const FORM_MODE = 'wizard_cart' as const;
+
 export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
@@ -75,12 +94,14 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
   const subtotal = useCartStore(selectSubtotalCents);
   const clearCart = useCartStore((s) => s.clear);
   const { emit } = useTracking();
+  const { freeShipping } = useShippingConfig();
 
   const [step, setStep] = useState<CheckoutStep>(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<SubmitError | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  const [leadId, setLeadId] = useState<string | null>(null);
 
   const methods = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutFormSchema),
@@ -88,24 +109,17 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
     defaultValues: {
       contact: {
         firstName: '',
-        lastName: '',
-        email: '',
         phone: '',
-        acceptNewsletter: false,
-        createAccount: false,
       },
       address: {
+        city: '',
         line1: '',
-        line2: '',
-        quartier: '',
-        city: undefined,
-        cityOther: '',
-        postalCode: '',
+        notes: '',
         country: 'MA',
-        shippingMode: 'standard',
       },
       paymentMethod: 'cod' as CheckoutPaymentMethod,
       promoCode: '',
+      recapEmail: '',
       consent: undefined as unknown as true,
     },
   });
@@ -132,15 +146,36 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
   }, [watchedValues]);
 
   const city = useWatch({ control: methods.control, name: 'address.city' });
-  const shippingMode = useWatch({
-    control: methods.control,
-    name: 'address.shippingMode',
-  });
+  // CHA-233 : Mode B n'a plus de sélecteur de mode — toujours 'standard'.
+  const shippingMode = 'standard' as const;
   const shipping = useMemo(
-    () => (items.length === 0 ? 0 : computeShippingCents({ city, mode: shippingMode })),
-    [items.length, city, shippingMode],
+    () =>
+      items.length === 0
+        ? 0
+        : computeShippingCents({ city, mode: shippingMode, freeShipping }),
+    [items.length, city, freeShipping],
+  );
+  // Prix catalogue (référence non offerte) — sert au strikethrough.
+  const catalogShipping = useMemo(
+    () =>
+      items.length === 0
+        ? 0
+        : computeShippingCents({ city, mode: shippingMode }),
+    [items.length, city],
   );
   const total = subtotal + shipping;
+
+  // `begin_checkout` migré vers `checkout_intent` (1ère frappe, cf.
+  // InfoStep + useCheckoutIntentTrigger). On purge `lead_create.__new__`
+  // au mount pour éviter une collision idempotency avec un parcours
+  // wizard /kit antérieur (clés partagées en sessionStorage).
+  const purgeLeadCreateRef = useRef(false);
+  useEffect(() => {
+    if (purgeLeadCreateRef.current) return;
+    if (!hydrated || items.length === 0) return;
+    purgeLeadCreateRef.current = true;
+    consumeIdempotencyKey('lead_create', null);
+  }, [hydrated, items]);
 
   const focusStepHeading = (target: CheckoutStep) => {
     const id =
@@ -192,24 +227,175 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
     );
   }
 
+  function buildCartSnapshot() {
+    return {
+      items: items.map((it) => ({
+        // CHA-233 — Préfère le SKU variant DB (rempli côté AddToCartButton
+        // via `product.primaryVariantSku`). Fallback sur le slug produit
+        // (résolu par le serveur via `products.slug` → primary variant),
+        // puis sur l'id produit en dernier recours.
+        sku: it.variantSku || it.productSlug || it.productId,
+        name: it.productName,
+        quantity: it.quantity,
+        unitPriceCents: it.unitPriceCents,
+        ...(it.variantId ? { variantId: it.variantId } : {}),
+      })),
+      totalCents: subtotal,
+      currency: 'MAD',
+    };
+  }
+
+  function buildFormContext() {
+    return {
+      formId: FORM_ID,
+      formMode: FORM_MODE,
+      variantKey: 'control' as const,
+      source: 'wizard_commander' as const,
+      language: 'fr' as const,
+    };
+  }
+
+  function setNetworkError(err: unknown, fallbackTitle: string) {
+    if (err instanceof ApiError) {
+      if (err.code === 'invalid_input') {
+        setError({
+          title: 'Vérifions les informations saisies.',
+          description: 'Quelques champs nécessitent un ajustement.',
+        });
+        return;
+      }
+      if (err.code === 'rate_limited') {
+        setError({
+          title: 'Un instant.',
+          description: 'Trop d\u2019envois — réessayez dans quelques instants.',
+        });
+        return;
+      }
+      if (err.httpStatus === 0) {
+        setError({
+          title: 'Connexion impossible.',
+          description: 'Vérifiez votre réseau, puis réessayez.',
+        });
+        return;
+      }
+    }
+    setError({
+      title: fallbackTitle,
+      description: 'Veuillez réessayer dans quelques instants.',
+    });
+  }
+
+  async function handleStep0Submit() {
+    const values = methods.getValues();
+    const visitorId = ensureVisitorId() ?? 'v_cart_unknown';
+    const sessionId = ensureSessionId() ?? 's_cart_unknown';
+    // NB : `begin_checkout` n'est plus émis ici. Le signal d'intent
+    // est désormais porté par `checkout_intent` (1ère frappe dans
+    // InfoStep, cf. useCheckoutIntentTrigger).
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await wizardClient.createLead({
+        formContext: buildFormContext(),
+        firstName: values.contact.firstName.trim(),
+        phone: values.contact.phone,
+        consent: true,
+        consentVersion: DEFAULT_CONSENT_VERSION,
+        visitorId,
+        sessionId,
+        language: 'fr',
+        cartSnapshot: buildCartSnapshot(),
+        page: typeof window !== 'undefined' ? window.location.pathname : undefined,
+        referrer:
+          typeof document !== 'undefined' ? document.referrer || undefined : undefined,
+      });
+      setLeadId(res.leadId);
+      // Tracking — lead_capture (custom) + generate_lead (GA4 standard).
+      // `schema_version: 'v1'` est requis par le schéma serveur des events
+      // wizard custom (cf. lib/tracking/schemas.ts). Sans cela, l'event est
+      // rejeté côté `/api/track` avec `Invalid literal value`.
+      emit('lead_capture', {
+        form_id: FORM_ID,
+        form_mode: FORM_MODE,
+        step_name: 'lead',
+        variant_key: 'control',
+        lead_id: res.leadId,
+        schema_version: 'v1',
+        method: 'wizard',
+        contact_channels: ['phone'],
+        currency: 'MAD',
+        value: total / 100,
+      });
+      emit('generate_lead', {
+        currency: 'MAD',
+        value: total / 100,
+      });
+      return true;
+    } catch (err) {
+      setNetworkError(err, 'Impossible de valider vos coordonnées.');
+      return false;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleStep1Submit() {
+    const values = methods.getValues();
+    if (!leadId) {
+      setError({
+        title: 'Session interrompue.',
+        description: 'Reprenez à l\u2019étape précédente.',
+      });
+      return false;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await wizardClient.patchAddress(leadId, {
+        city: values.address.city.trim(),
+        addressLine1: (values.address.line1 ?? '').trim() || '',
+        country: 'MA',
+        notes: values.address.notes?.trim() || undefined,
+        shippingMode: 'standard',
+      });
+      emit('add_shipping_info', {
+        currency: 'MAD',
+        value: total / 100,
+        shipping_tier: shippingMode,
+        form_id: FORM_ID,
+        form_mode: FORM_MODE,
+        step_name: 'address',
+        lead_id: leadId,
+        items: items.map((it) => ({
+          item_id: it.productId,
+          item_name: it.productName,
+          price: it.unitPriceCents / 100,
+          quantity: it.quantity,
+        })),
+      });
+      return true;
+    } catch (err) {
+      setNetworkError(err, 'Adresse non enregistrée.');
+      return false;
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function nextStep() {
     const valid = await methods.trigger(fieldsByStep[step] as never);
     if (!valid) return;
+
+    if (step === 0) {
+      const ok = await handleStep0Submit();
+      if (!ok) return;
+    } else if (step === 1) {
+      const ok = await handleStep1Submit();
+      if (!ok) return;
+    }
+
     if (step < 2) {
       const target = (step + 1) as CheckoutStep;
-      if (step === 1) {
-        emit('add_shipping_info', {
-          currency: 'MAD',
-          value: total / 100,
-          shipping_tier: shippingMode ?? 'standard',
-          items: items.map((it) => ({
-            item_id: it.productId,
-            item_name: it.productName,
-            price: it.unitPriceCents / 100,
-            quantity: it.quantity,
-          })),
-        });
-      }
       setStep(target);
       const label = stepLabels[target];
       setAnnouncement(`Étape ${target + 1} sur 3 : ${label}.`);
@@ -234,61 +420,97 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
   }
 
   async function onSubmit(values: CheckoutForm) {
+    if (!leadId) {
+      setError({
+        title: 'Session interrompue.',
+        description: 'Reprenez à l\u2019étape « Informations ».',
+      });
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
-    emit('add_payment_info', {
-      currency: 'MAD',
-      value: total / 100,
-      payment_type: values.paymentMethod,
-      items: items.map((it) => ({
-        item_id: it.productId,
-        item_name: it.productName,
-        price: it.unitPriceCents / 100,
-        quantity: it.quantity,
-      })),
-    });
     try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+      // 1) PATCH /lead/[id]/payment (cod silencieux — pas de choix UI Mode B)
+      await wizardClient.patchPayment(leadId, { paymentMethod: 'cod' });
+      emit('add_payment_info', {
+        currency: 'MAD',
+        value: total / 100,
+        payment_type: 'cod',
+        form_id: FORM_ID,
+        form_mode: FORM_MODE,
+        step_name: 'payment',
+        lead_id: leadId,
+        items: items.map((it) => ({
+          item_id: it.productId,
+          item_name: it.productName,
+          price: it.unitPriceCents / 100,
+          quantity: it.quantity,
+        })),
       });
-      if (!response.ok) {
-        const data = (await response
-          .json()
-          .catch(() => ({}))) as Record<string, unknown>;
-        throw new Error(typeof data.error === 'string' ? data.error : 'CHECKOUT_FAILED');
+
+      // 2) POST /order
+      const orderRes = await wizardClient.createOrder({
+        leadId,
+        formContext: buildFormContext(),
+        items: buildCartSnapshot().items,
+        expectedTotalCents: total,
+        currency: 'MAD',
+        paymentMethod: 'cod',
+        shippingMode: 'standard',
+      });
+
+      // 3) Tracking purchase
+      emit('purchase', {
+        transaction_id: orderRes.orderId,
+        currency: 'MAD',
+        value: orderRes.totalCents / 100,
+        payment_type: 'cod',
+        form_id: FORM_ID,
+        form_mode: FORM_MODE,
+        step_name: 'thank_you',
+        lead_id: leadId,
+        items: items.map((it) => ({
+          item_id: it.productId,
+          item_name: it.productName,
+          price: it.unitPriceCents / 100,
+          quantity: it.quantity,
+        })),
+      });
+
+      // 4) Opt-in email (best-effort — l'échec n'empêche pas la conversion).
+      const recapEmail = (values.recapEmail ?? '').trim();
+      if (recapEmail) {
+        try {
+          await wizardClient.optInEmail(orderRes.orderId, {
+            email: recapEmail,
+            emailConsent: true,
+          });
+        } catch {
+          /* silencieux — l'order est créé, l'opt-in est secondaire */
+        }
       }
-      const { orderId } = (await response.json()) as { orderId: string };
+
       saveLastOrder({
-        orderId,
+        orderId: orderRes.orderId,
         firstName: values.contact.firstName,
-        email: values.contact.email,
+        email: recapEmail || undefined,
         items,
         subtotal,
         shipping,
         total,
         address: values.address,
-        paymentMethod: values.paymentMethod,
+        paymentMethod: 'cod',
         createdAt: new Date().toISOString(),
+        catalogShippingCents: catalogShipping,
+        freeShipping,
       });
       clearCart();
       clearCheckoutDraft();
-      router.push(routes.merci(orderId));
-    } catch (caught) {
+      router.push(routes.merci(orderRes.orderId));
+    } catch (err) {
       setSubmitting(false);
-      const message =
-        caught instanceof Error ? caught.message : 'CHECKOUT_FAILED';
-      setError({
-        title:
-          message === 'INVALID_PAYLOAD'
-            ? 'Vérifions les informations saisies.'
-            : 'Le paiement n\u2019a pas abouti.',
-        description:
-          message === 'INVALID_PAYLOAD'
-            ? 'Quelques champs nécessitent un ajustement.'
-            : 'Veuillez réessayer dans quelques instants.',
-      });
+      setNetworkError(err, 'Le paiement n\u2019a pas abouti.');
     }
   }
 
@@ -304,6 +526,8 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
           subtotalCents={subtotal}
           shippingCents={shipping}
           totalCents={total}
+          catalogShippingCents={catalogShipping}
+          freeShipping={freeShipping}
         />
       </div>
 
@@ -328,6 +552,7 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
               <form
                 onSubmit={methods.handleSubmit(onSubmit)}
                 className="space-y-10"
+                data-testid="checkout-form"
               >
                 {step === 0 && <InfoStep />}
                 {step === 1 && <AddressStep />}
@@ -347,6 +572,8 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
                       variant="primary"
                       size="lg"
                       onClick={nextStep}
+                      loading={submitting}
+                      data-testid={`checkout-step-${step}-next`}
                     >
                       Continuer
                     </Button>
@@ -356,6 +583,7 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
                       variant="primary"
                       size="lg"
                       loading={submitting}
+                      data-testid="checkout-submit"
                     >
                       Confirmer la commande
                     </Button>
@@ -371,6 +599,8 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
               subtotalCents={subtotal}
               shippingCents={shipping}
               totalCents={total}
+              catalogShippingCents={catalogShipping}
+              freeShipping={freeShipping}
             />
           </div>
         </div>

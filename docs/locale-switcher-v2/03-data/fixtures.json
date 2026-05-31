@@ -1,0 +1,233 @@
+{
+  "$meta": {
+    "title": "Test fixtures — Locale Switcher V2 config + Accept-Language mapping",
+    "sourceOfTruth": "config-schema.yaml (forme + validationRules) ; server-detection.md (resolveSuggestedLocale)",
+    "usage": "Importé par les tests Vitest (validation Zod) et MSW handlers (07-tests/msw-handlers.md). Chaque fixture cible une règle de validation ou un cas de détection."
+  },
+
+  "configFixtures": {
+    "valid_default": {
+      "description": "Config canonique valide (= defaults CONTRACT §3). Doit safeParse().success === true.",
+      "expectValid": true,
+      "config": {
+        "locales": [
+          { "code": "fr", "enabled": true, "endonym": "Français", "direction": "ltr", "order": 1 },
+          { "code": "ar", "enabled": true, "endonym": "العربية", "direction": "rtl", "order": 2 },
+          { "code": "en", "enabled": true, "endonym": "English", "direction": "ltr", "order": 3 }
+        ],
+        "defaultLocale": "fr",
+        "nudge": { "enabled": true, "maxImpressionsPerVisitor": 1 },
+        "surfaces": {
+          "header": { "variant": "dropdown" },
+          "drawer": { "variant": "pills" },
+          "footer": { "variant": "pills" }
+        },
+        "transition": { "durationMs": 280, "easing": "cubic-bezier(0.22,1,0.36,1)" }
+      }
+    },
+
+    "invalid_two_defaults": {
+      "description": "Deux locales prétendent être défaut (champ defaultLocale scalaire OK, mais on simule l'ambiguïté via un champ legacy + une 2e entrée marquée). Règle violée : V-DEFAULT-ONE / cohérence. Doit fail → fallback defaults (INV-12).",
+      "expectValid": false,
+      "violatesRules": ["V-DEFAULT-ONE"],
+      "config": {
+        "locales": [
+          { "code": "fr", "enabled": true, "endonym": "Français", "direction": "ltr", "order": 1, "isDefault": true },
+          { "code": "ar", "enabled": true, "endonym": "العربية", "direction": "rtl", "order": 2, "isDefault": true },
+          { "code": "en", "enabled": true, "endonym": "English", "direction": "ltr", "order": 3 }
+        ],
+        "defaultLocale": "fr",
+        "nudge": { "enabled": true, "maxImpressionsPerVisitor": 1 },
+        "surfaces": {
+          "header": { "variant": "dropdown" },
+          "drawer": { "variant": "pills" },
+          "footer": { "variant": "pills" }
+        },
+        "transition": { "durationMs": 280, "easing": "cubic-bezier(0.22,1,0.36,1)" }
+      },
+      "note": "Le champ `isDefault` est inconnu du schéma → .strict() rejette (additionalProperties:false). Couvre AUSSI l'anti-injection de clés."
+    },
+
+    "invalid_default_disabled": {
+      "description": "defaultLocale référence une locale enabled:false. Règle violée : V-DEFAULT-ENABLED. Doit fail → defaults (INV-12).",
+      "expectValid": false,
+      "violatesRules": ["V-DEFAULT-ENABLED"],
+      "config": {
+        "locales": [
+          { "code": "fr", "enabled": false, "endonym": "Français", "direction": "ltr", "order": 1 },
+          { "code": "ar", "enabled": true, "endonym": "العربية", "direction": "rtl", "order": 2 },
+          { "code": "en", "enabled": true, "endonym": "English", "direction": "ltr", "order": 3 }
+        ],
+        "defaultLocale": "fr",
+        "nudge": { "enabled": true, "maxImpressionsPerVisitor": 1 },
+        "surfaces": {
+          "header": { "variant": "dropdown" },
+          "drawer": { "variant": "pills" },
+          "footer": { "variant": "pills" }
+        },
+        "transition": { "durationMs": 280, "easing": "cubic-bezier(0.22,1,0.36,1)" }
+      }
+    },
+
+    "invalid_ar_ltr": {
+      "description": "ar avec direction ltr. Règle violée : V-AR-RTL. Doit fail (casse INV-2).",
+      "expectValid": false,
+      "violatesRules": ["V-AR-RTL"],
+      "config": {
+        "locales": [
+          { "code": "fr", "enabled": true, "endonym": "Français", "direction": "ltr", "order": 1 },
+          { "code": "ar", "enabled": true, "endonym": "العربية", "direction": "ltr", "order": 2 },
+          { "code": "en", "enabled": true, "endonym": "English", "direction": "ltr", "order": 3 }
+        ],
+        "defaultLocale": "fr",
+        "nudge": { "enabled": true, "maxImpressionsPerVisitor": 1 },
+        "surfaces": {
+          "header": { "variant": "dropdown" },
+          "drawer": { "variant": "pills" },
+          "footer": { "variant": "pills" }
+        },
+        "transition": { "durationMs": 280, "easing": "cubic-bezier(0.22,1,0.36,1)" }
+      }
+    },
+
+    "invalid_empty_endonym": {
+      "description": "endonym vide. Règle violée : V-ENDONYM. Doit fail.",
+      "expectValid": false,
+      "violatesRules": ["V-ENDONYM"],
+      "config": {
+        "locales": [
+          { "code": "fr", "enabled": true, "endonym": "", "direction": "ltr", "order": 1 },
+          { "code": "ar", "enabled": true, "endonym": "العربية", "direction": "rtl", "order": 2 },
+          { "code": "en", "enabled": true, "endonym": "English", "direction": "ltr", "order": 3 }
+        ],
+        "defaultLocale": "fr",
+        "nudge": { "enabled": true, "maxImpressionsPerVisitor": 1 },
+        "surfaces": {
+          "header": { "variant": "dropdown" },
+          "drawer": { "variant": "pills" },
+          "footer": { "variant": "pills" }
+        },
+        "transition": { "durationMs": 280, "easing": "cubic-bezier(0.22,1,0.36,1)" }
+      }
+    },
+
+    "valid_single_locale": {
+      "description": "Une seule locale active (fr). Config valide ; côté UI le LocaleSwitcher rend null (dossier §10.6 '1 seule locale active'). Couvre V-AT-LEAST-ONE-ENABLED (1 suffit) + V-DEFAULT-ENABLED.",
+      "expectValid": true,
+      "config": {
+        "locales": [
+          { "code": "fr", "enabled": true, "endonym": "Français", "direction": "ltr", "order": 1 },
+          { "code": "ar", "enabled": false, "endonym": "العربية", "direction": "rtl", "order": 2 },
+          { "code": "en", "enabled": false, "endonym": "English", "direction": "ltr", "order": 3 }
+        ],
+        "defaultLocale": "fr",
+        "nudge": { "enabled": false, "maxImpressionsPerVisitor": 0 },
+        "surfaces": {
+          "header": { "variant": "dropdown" },
+          "drawer": { "variant": "pills" },
+          "footer": { "variant": "pills" }
+        },
+        "transition": { "durationMs": 280, "easing": "cubic-bezier(0.22,1,0.36,1)" }
+      }
+    },
+
+    "valid_ar_disabled": {
+      "description": "ar désactivée (fr + en actifs). Valide. Vérifie que le switcher n'expose pas ar et que le nudge ne suggère jamais une locale disabled.",
+      "expectValid": true,
+      "config": {
+        "locales": [
+          { "code": "fr", "enabled": true, "endonym": "Français", "direction": "ltr", "order": 1 },
+          { "code": "ar", "enabled": false, "endonym": "العربية", "direction": "rtl", "order": 2 },
+          { "code": "en", "enabled": true, "endonym": "English", "direction": "ltr", "order": 3 }
+        ],
+        "defaultLocale": "fr",
+        "nudge": { "enabled": true, "maxImpressionsPerVisitor": 1 },
+        "surfaces": {
+          "header": { "variant": "dropdown" },
+          "drawer": { "variant": "pills" },
+          "footer": { "variant": "pills" }
+        },
+        "transition": { "durationMs": 280, "easing": "cubic-bezier(0.22,1,0.36,1)" }
+      }
+    }
+  },
+
+  "acceptLanguageFixtures": {
+    "description": "Mapping Accept-Language header (+ cookie NEXT_LOCALE) → locale suggérée par resolveSuggestedLocale(). Voir 04-backend/server-detection.md pour les règles de précédence. enabledLocales par défaut = [fr,ar,en].",
+    "cases": [
+      {
+        "name": "explicit_cookie_wins",
+        "acceptLanguage": "ar-MA,ar;q=0.9,fr;q=0.5",
+        "cookieNextLocale": "en",
+        "servedLocale": "en",
+        "expectedSuggested": null,
+        "reason": "Cookie NEXT_LOCALE = choix explicite → on ne suggère rien (served == résolu). Précédence cookie > Accept-Language."
+      },
+      {
+        "name": "arabic_browser_french_page",
+        "acceptLanguage": "ar-MA,ar;q=0.9,fr;q=0.4",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "expectedSuggested": "ar",
+        "reason": "Pas de cookie ; navigateur primaire = ar ≠ served fr → suggère ar (déclenche le nudge)."
+      },
+      {
+        "name": "english_browser_french_page",
+        "acceptLanguage": "en-US,en;q=0.9",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "expectedSuggested": "en",
+        "reason": "Navigateur en ≠ served fr → suggère en."
+      },
+      {
+        "name": "french_browser_french_page_noop",
+        "acceptLanguage": "fr-FR,fr;q=0.9,en;q=0.5",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "expectedSuggested": null,
+        "reason": "Navigateur fr == served fr → aucune suggestion."
+      },
+      {
+        "name": "unsupported_language_falls_through",
+        "acceptLanguage": "de-DE,de;q=0.9,es;q=0.7",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "expectedSuggested": null,
+        "reason": "Aucune langue supportée dans l'en-tête → pas de suggestion (on ne pousse pas une langue non demandée)."
+      },
+      {
+        "name": "quality_ordering_picks_highest_supported",
+        "acceptLanguage": "de;q=1.0,ar;q=0.8,en;q=0.6",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "expectedSuggested": "ar",
+        "reason": "On ignore les non-supportées (de) et on prend la supportée de plus haut q (ar 0.8 > en 0.6)."
+      },
+      {
+        "name": "suggested_locale_disabled_no_nudge",
+        "acceptLanguage": "ar-MA,ar;q=0.9",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "enabledLocales": ["fr", "en"],
+        "expectedSuggested": null,
+        "reason": "ar demandée mais DÉSACTIVÉE en config (valid_ar_disabled) → on ne suggère jamais une locale non servable."
+      },
+      {
+        "name": "empty_header",
+        "acceptLanguage": "",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "expectedSuggested": null,
+        "reason": "En-tête vide/absent → pas de suggestion (privacy : pas de géoloc IP de secours)."
+      },
+      {
+        "name": "wildcard_only",
+        "acceptLanguage": "*",
+        "cookieNextLocale": null,
+        "servedLocale": "fr",
+        "expectedSuggested": null,
+        "reason": "Wildcard seul = aucune préférence exprimée → pas de suggestion."
+      }
+    ]
+  }
+}

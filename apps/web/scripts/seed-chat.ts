@@ -9,6 +9,9 @@
  * Idempotent : un nouveau lancement n'écrase pas ce qui existe.
  *
  * Usage : `pnpm tsx scripts/seed-chat.ts`
+ *
+ * Exporte aussi `runChatInstructionsSeed()`, `runChatThemeSeed()` et
+ * `runChatProvidersSeed()` pour réutilisation côté Seeders Runner.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -21,13 +24,16 @@ try {
   for (const line of raw.split(/\r?\n/)) {
     const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/i.exec(line);
     if (!m) continue;
-    if (m[1].startsWith('#')) continue;
-    if (process.env[m[1]] === undefined) {
-      let v = m[2];
+    const key = m[1];
+    const rawValue = m[2];
+    if (!key || rawValue === undefined) continue;
+    if (key.startsWith('#')) continue;
+    if (process.env[key] === undefined) {
+      let v = rawValue;
       if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
         v = v.slice(1, -1);
       }
-      process.env[m[1]] = v;
+      process.env[key] = v;
     }
   }
 } catch {
@@ -37,7 +43,6 @@ try {
 import { env } from '@/lib/env';
 import { requireChatDb } from '@/lib/chat/db/client';
 import {
-  chatInstructionVersion,
   chatProviderConfig,
   chatThemePreset,
 } from '@/lib/chat/db/schema';
@@ -59,11 +64,20 @@ const DEFAULT_THEME_TOKENS: Record<string, string | number> = {
   '--chat-shadow': '0 12px 32px rgb(28 25 23 / 0.10)',
 };
 
-async function seedInstructionDefault(): Promise<void> {
+export interface ChatSeedReport {
+  created: boolean;
+  id: string | null;
+  message: string;
+}
+
+export async function runChatInstructionsSeed(): Promise<ChatSeedReport> {
   const existing = await instructionRepo.active('default');
   if (existing) {
-    console.log('[seed-chat] instruction active déjà présente :', existing.id);
-    return;
+    return {
+      created: false,
+      id: existing.id,
+      message: `Instruction active déjà présente (${existing.id})`,
+    };
   }
   const created = await instructionRepo.create({
     scope: 'default',
@@ -74,10 +88,14 @@ async function seedInstructionDefault(): Promise<void> {
     createdBy: 'system',
   });
   await instructionRepo.activate(created.id);
-  console.log('[seed-chat] instruction créée + activée :', created.id);
+  return {
+    created: true,
+    id: created.id,
+    message: `Instruction créée + activée (${created.id})`,
+  };
 }
 
-async function seedThemeDefault(): Promise<void> {
+export async function runChatThemeSeed(): Promise<ChatSeedReport> {
   const db = requireChatDb();
   const existing = await db
     .select()
@@ -85,8 +103,11 @@ async function seedThemeDefault(): Promise<void> {
     .where(eq(chatThemePreset.isDefault, true))
     .limit(1);
   if (existing[0]) {
-    console.log('[seed-chat] theme par défaut déjà présent :', existing[0].id);
-    return;
+    return {
+      created: false,
+      id: existing[0].id,
+      message: `Theme par défaut déjà présent (${existing[0].id})`,
+    };
   }
   const id = createId('ct');
   await db.insert(chatThemePreset).values({
@@ -119,15 +140,28 @@ async function seedThemeDefault(): Promise<void> {
     ],
     enabled: true,
   });
-  console.log('[seed-chat] theme par défaut créé :', id);
+  return {
+    created: true,
+    id,
+    message: `Theme par défaut créé (${id})`,
+  };
 }
 
-async function seedProviders(): Promise<void> {
+export interface ChatProvidersReport {
+  created: number;
+  skipped: boolean;
+  message: string;
+}
+
+export async function runChatProvidersSeed(): Promise<ChatProvidersReport> {
   const db = requireChatDb();
   const existing = await db.select().from(chatProviderConfig).limit(1);
   if (existing[0]) {
-    console.log('[seed-chat] providers déjà présents → skip');
-    return;
+    return {
+      created: 0,
+      skipped: true,
+      message: 'Providers déjà présents → skip',
+    };
   }
   // Cf. doc 18 §4.6 — plafonds explicites pour la cible v2.
   const CHAT_DEFAULTS = {
@@ -143,6 +177,7 @@ async function seedProviders(): Promise<void> {
     { env: env.CHAT_MISTRAL_API_KEY, kind: 'mistral', label: 'Mistral Small' },
   ];
   let priority = 100;
+  let created = 0;
   for (const p of todo) {
     if (!p.env) continue;
     await providerRepo.create({
@@ -155,8 +190,27 @@ async function seedProviders(): Promise<void> {
       egressAllowed: false,
       parameters: CHAT_DEFAULTS,
     });
-    console.log(`[seed-chat] provider créé : ${p.label} (priority ${priority})`);
+    created += 1;
     priority += 10;
+
+    // M5+ : créer aussi le rôle 'embedding' associé pour les providers qui
+    // supportent les embeddings (OpenAI, Gemini, Mistral). Sans ça, le seeder
+    // FAQ + intents skipe car aucun provider avec role='embedding' n'est
+    // enabled. Le bouton "Seed défauts" devient inutile en prod.
+    if (p.kind === 'openai' || p.kind === 'gemini' || p.kind === 'mistral') {
+      await providerRepo.create({
+        kind: p.kind,
+        label: `${p.label} (embedding)`,
+        role: 'embedding',
+        priority,
+        enabled: true,
+        apiKey: p.env,
+        egressAllowed: false,
+        parameters: CHAT_DEFAULTS,
+      });
+      created += 1;
+      priority += 10;
+    }
   }
   if (env.CHAT_OLLAMA_BASE_URL) {
     await providerRepo.create({
@@ -169,8 +223,13 @@ async function seedProviders(): Promise<void> {
       egressAllowed: false,
       parameters: CHAT_DEFAULTS,
     });
-    console.log(`[seed-chat] provider créé : Ollama (priority ${priority})`);
+    created += 1;
   }
+  return {
+    created,
+    skipped: false,
+    message: `${created} provider(s) créé(s)`,
+  };
 }
 
 async function main(): Promise<void> {
@@ -182,13 +241,22 @@ async function main(): Promise<void> {
     console.error('[seed-chat] CHAT_PROVIDER_KEY est requis pour chiffrer les clés providers');
     process.exit(1);
   }
-  await seedInstructionDefault();
-  await seedThemeDefault();
-  await seedProviders();
+  const instr = await runChatInstructionsSeed();
+  console.log(`[seed-chat] instruction : ${instr.message}`);
+  const theme = await runChatThemeSeed();
+  console.log(`[seed-chat] theme : ${theme.message}`);
+  const providers = await runChatProvidersSeed();
+  console.log(`[seed-chat] providers : ${providers.message}`);
   console.log('[seed-chat] terminé');
 }
 
-main().catch((err) => {
-  console.error('[seed-chat] erreur', err);
-  process.exit(1);
-});
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error('[seed-chat] erreur', err);
+    process.exit(1);
+  });
+}

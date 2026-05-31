@@ -1,0 +1,10 @@
+slug,title,status,source,note
+mentions-legales,Mentions légales,draft,messages json,json-translated
+cgv,Conditions générales de vente,draft,docs/legal-pages/60-content/conditions-generales-vente.md,fr-canonical-referenced
+cgu,Conditions générales d'utilisation,draft,docs/legal-pages/60-content/conditions-generales-utilisation.md,fr-canonical-referenced
+confidentialite,Politique de confidentialité,draft,docs/legal-pages/60-content/politique-confidentialite.md,fr-canonical-referenced
+cookies,Politique cookies,draft,docs/legal-pages/60-content/politique-cookies.md,fr-canonical-referenced
+retours-remboursements,Politique de retours et remboursements,draft,docs/legal-pages/60-content/politique-retours-remboursements.md,fr-canonical-referenced
+livraison,Politique de livraison,draft,docs/legal-pages/60-content/politique-livraison.md,fr-canonical-referenced
+securite-produits,Sécurité et avertissements produits cosmétiques,draft,docs/legal-pages/60-content/avertissements-securite-produits.md,fr-canonical-referenced
+faq,FAQ — Service client,draft,docs/legal-pages/60-content/faq-service-client.md,fr-canonical-referenced

@@ -1,0 +1,226 @@
+# Catalogue des tools (function calling)
+# Format YAML : un fichier source de vérité, parsé au boot pour
+# enregistrer les tools dans `tool_registry`.
+
+version: "2026.05.13-v1"
+
+tools:
+  - name: get_product
+    enabled: true
+    wave: V5
+    description_fr: "Retourne les informations publiques d'un produit (prix, composition, bénéfices) à partir de son slug."
+    description_en: "Returns public info about a product (price, composition, claims) by slug."
+    input_schema:
+      type: object
+      required: [slug]
+      properties:
+        slug:
+          type: string
+          minLength: 3
+          maxLength: 60
+          pattern: "^[a-z0-9-]+$"
+          description: "Slug URL-safe du produit (ex. 'pack-femiglow')"
+    output_schema:
+      type: object
+      properties:
+        found: { type: boolean }
+        slug: { type: string }
+        nameFr: { type: string }
+        nameAr: { type: string }
+        nameArMa: { type: string }
+        priceMad: { type: number }
+        anchorMad: { type: number }
+        currency: { type: string, enum: [MAD] }
+        composition: { type: array, items: { type: string } }
+        claims: { type: array, items: { type: string } }
+        imageUrl: { type: string, format: uri }
+        urlFr: { type: string, format: uri }
+        urlAr: { type: string, format: uri }
+        # CHAMPS WHITELISTÉS — jamais : costMad, marginPct, stockQty interne
+      required: [found]
+    handler_path: "lib/chat/tools/get-product.ts"
+    rate_limit_per_min: 60
+    timeout_ms: 1500
+    cache:
+      enabled: true
+      ttl_seconds: 300  # 5 min
+      key: "tool:get_product:{slug}"
+    audit: standard
+    failure_mode:
+      on_not_found:
+        result: { found: false, did_you_mean: [] }
+        # `did_you_mean` calculé via fuzzy distance sur tous les slugs
+
+  - name: get_delivery_info
+    enabled: true
+    wave: V5
+    description_fr: "Retourne le délai et le tarif de livraison pour une ville marocaine. Accepte les variantes (Casablanca, Casa, الدار البيضاء, dar lbida)."
+    description_en: "Delivery ETA + price for a Moroccan city (handles aliases)."
+    input_schema:
+      type: object
+      required: [city]
+      properties:
+        city:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: "Nom de la ville en FR, AR, ou darija (alias gérés en backend)"
+    output_schema:
+      type: object
+      properties:
+        found: { type: boolean }
+        city: { type: string }
+        normalizedSlug: { type: string }
+        etaMin: { type: integer, description: "Heures min" }
+        etaMax: { type: integer, description: "Heures max" }
+        priceMad: { type: number }
+        freeFromMad: { type: number }
+        source: { type: string, enum: [sendit, manual, custom] }
+      required: [found]
+    handler_path: "lib/chat/tools/get-delivery-info.ts"
+    rate_limit_per_min: 60
+    timeout_ms: 1000
+    cache:
+      enabled: true
+      ttl_seconds: 3600
+      key: "tool:get_delivery_info:{city_normalized}"
+    audit: standard
+    failure_mode:
+      on_not_found:
+        result: { found: false, suggestions: [] }
+
+  - name: search_faq
+    enabled: true
+    wave: V5
+    description_fr: "Recherche dans la base de connaissances de la maison. À utiliser quand le contexte RAG initial ne suffit pas."
+    description_en: "Searches the company knowledge base."
+    input_schema:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 3
+          maxLength: 300
+        language:
+          type: string
+          enum: [fr, ar, ar-MA, auto]
+          default: auto
+        audience:
+          type: string
+          enum: [all, b2c, b2b]
+          default: all
+    output_schema:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              url: { type: string }
+              snippet: { type: string }
+              relevance: { type: number }
+        count: { type: integer }
+      required: [results, count]
+    handler_path: "lib/chat/tools/search-faq.ts"
+    rate_limit_per_min: 30
+    timeout_ms: 2000
+    cache:
+      enabled: false  # toujours frais
+    audit: standard
+    failure_mode:
+      on_error:
+        result: { results: [], count: 0 }
+
+  - name: check_promo
+    enabled: false  # activé en V7
+    wave: V7
+    description_fr: "Vérifie si un code promo est valide et retourne ses conditions."
+    description_en: "Validates a promo code and returns its conditions."
+    input_schema:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 30
+          pattern: "^[A-Z0-9-]+$"
+    output_schema:
+      type: object
+      properties:
+        valid: { type: boolean }
+        code: { type: string }
+        discountPct: { type: number }
+        discountAmountMad: { type: number }
+        expiresAt: { type: string, format: date-time }
+        minOrderMad: { type: number }
+        conditions: { type: array, items: { type: string } }
+      required: [valid]
+    handler_path: "lib/chat/tools/check-promo.ts"
+    rate_limit_per_min: 30
+    timeout_ms: 1000
+    cache:
+      enabled: false  # promos peuvent changer en temps réel
+    audit: extended  # log code testé pour détecter brute-force
+    failure_mode:
+      on_invalid:
+        result: { valid: false }
+
+  - name: get_order_status
+    enabled: false  # activé en V7, dépend tracking Sendit
+    wave: V7
+    description_fr: "Retourne l'état d'une commande. Auth obligatoire par email associé à la commande."
+    description_en: "Returns order status. Auth required (email)."
+    input_schema:
+      type: object
+      required: [orderNumber, email]
+      properties:
+        orderNumber:
+          type: string
+          minLength: 4
+          maxLength: 30
+        email:
+          type: string
+          format: email
+    output_schema:
+      type: object
+      properties:
+        found: { type: boolean }
+        authMatch: { type: boolean }
+        orderNumber: { type: string }
+        status: { type: string, enum: [pending, confirmed, prepared, shipped, delivered, cancelled, returned] }
+        carrier: { type: string }
+        trackingNumber: { type: string }
+        trackingUrl: { type: string, format: uri }
+        eta: { type: string, format: date-time }
+        lastUpdate: { type: string, format: date-time }
+      required: [found, authMatch]
+    handler_path: "lib/chat/tools/get-order-status.ts"
+    rate_limit_per_min: 5  # anti-énumération
+    timeout_ms: 2000
+    cache:
+      enabled: true
+      ttl_seconds: 60  # actualisé fréquemment
+      key: "tool:get_order_status:{orderNumber}:{emailHash}"
+    audit: extended  # log toutes tentatives pour anti-brute-force
+    failure_mode:
+      on_auth_mismatch:
+        result: { found: true, authMatch: false }
+        # On retourne found:true pour ne pas leaker l'info d'existence,
+        # mais authMatch:false coupe court.
+
+# Allowlist runtime (env CHAT_TOOL_ALLOWLIST)
+# Liste les tools effectivement activés en runtime.
+# Override les `enabled: true` au-dessus si différent.
+allowlist_default: "get_product,get_delivery_info,search_faq"
+
+# Politique globale
+policy:
+  whitelist_only_fields: true  # impossible d'exposer un champ non listé dans output_schema
+  zod_validation: true         # input ET output passés au Zod parser
+  log_all_calls: true          # chat_tool_call_log obligatoire
+  rate_limit_per_session_per_min: 20  # toutes tools confondues
+  fail_open: false             # si tool fail, LLM continue sans (pas d'erreur 500)

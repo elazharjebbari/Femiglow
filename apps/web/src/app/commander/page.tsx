@@ -5,8 +5,10 @@ import { routes } from '@/lib/routes';
 
 export const metadata: Metadata = {
   title: 'Commander',
-  description: 'Trois étapes mesurées pour confirmer votre commande FemiGlow.',
+  description:
+    'Trois étapes mesurées pour confirmer votre commande FemiGlow : coordonnées, livraison, validation. Paiement à la livraison disponible.',
   robots: { index: false, follow: false },
+  alternates: { canonical: '/commander' },
 };
 
 export default function CommanderPage() {

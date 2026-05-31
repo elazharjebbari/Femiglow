@@ -1,0 +1,407 @@
+openapi: 3.1.0
+info:
+  title: FemiGlow Chat API v2
+  version: 2.0.0
+  description: |
+    API publique (`/api/chat/*`) et admin (`/api/admin/chat/*`).
+    Toutes les routes utilisent JSON sauf le streaming SSE pour `/api/chat/message`.
+
+servers:
+  - url: https://www.femiglow.ma
+    description: Production
+  - url: http://localhost:3000
+    description: Local
+
+tags:
+  - name: chat-public
+    description: Routes accessibles sans authentification
+  - name: chat-admin
+    description: Routes admin (iron-session)
+  - name: chat-cron
+    description: Crons internes (auth CRON_SECRET)
+
+paths:
+  /api/chat/session:
+    post:
+      tags: [chat-public]
+      summary: Initialiser ou récupérer une session chat
+      operationId: createOrGetSession
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitorToken: { type: string }
+                pathname: { type: string }
+                audience: { type: string, enum: [all, b2c, b2b], default: all }
+                language: { type: string, enum: [fr, ar, ar-MA, auto], default: auto }
+      responses:
+        '200':
+          description: Snapshot de la session avec greeting + suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionSnapshot'
+
+  /api/chat/message:
+    post:
+      tags: [chat-public]
+      summary: Envoyer un message utilisateur (SSE streaming)
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, text]
+              properties:
+                sessionId: { type: string, format: uuid }
+                text: { type: string, minLength: 1, maxLength: 2000 }
+                pathname: { type: string }
+      responses:
+        '200':
+          description: Stream SSE
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Événements SSE :
+                  - event: meta (provider, model, messageId)
+                  - event: delta (data: <text chunk>)
+                  - event: source (data: { chunkId, label, url })
+                  - event: tool_call (data: { tool, status })
+                  - event: lead_form_offered (data: { reason })
+                  - event: done (data: { totalCost, latencyMs })
+                  - event: error (data: { code, message })
+        '429':
+          description: Rate limited
+        '503':
+          description: Service level 3 (canned only)
+
+  /api/chat/canned-pair/{key}:
+    post:
+      tags: [chat-public]
+      summary: Servir une paire canned via clé
+      operationId: serveCannedPair
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId]
+              properties:
+                sessionId: { type: string, format: uuid }
+                language: { type: string, enum: [fr, ar, ar-MA] }
+                pathname: { type: string }
+      responses:
+        '200':
+          description: Paire servie, deux messages persistés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userMessageId: { type: string, format: uuid }
+                  assistantMessageId: { type: string, format: uuid }
+                  scriptedReply: { type: string }
+                  ctaLabel: { type: string, nullable: true }
+                  ctaUrl: { type: string, nullable: true }
+                  allowFollowupLLM: { type: boolean }
+        '404':
+          description: Pair not found
+        '403':
+          description: Pair not for this audience
+
+  /api/chat/lead:
+    post:
+      tags: [chat-public]
+      summary: Soumettre coordonnées lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadInput'
+      responses:
+        '200': { description: Lead persisté + webhook envoyé }
+        '400': { description: Validation Zod failed }
+
+  /api/chat/feedback:
+    post:
+      tags: [chat-public]
+      summary: Thumbs up/down sur une réponse assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messageId, rating]
+              properties:
+                messageId: { type: string, format: uuid }
+                rating: { type: integer, enum: [-1, 1] }
+                note: { type: string, maxLength: 500 }
+      responses:
+        '200': { description: Feedback enregistré }
+
+  /api/admin/chat/intents:
+    get:
+      tags: [chat-admin]
+      summary: Liste des intents et statistiques 30j
+      security: [{ ironSession: [] }]
+      responses:
+        '200':
+          description: Tableau intents + KPIs
+    post:
+      tags: [chat-admin]
+      summary: Ajouter un nouvel intent au catalogue
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/intents/{name}/examples:
+    post:
+      tags: [chat-admin]
+      summary: Ajouter exemple(s) pour un intent
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/intents/recompute:
+    post:
+      tags: [chat-admin]
+      summary: Recalculer les centroïdes
+      security: [{ ironSession: [] }]
+      responses:
+        '202': { description: Job lancé en background }
+
+  /api/admin/chat/suggestions:
+    get:
+      tags: [chat-admin]
+      summary: Liste paires canned (filtrables par page)
+      security: [{ ironSession: [] }]
+    post:
+      tags: [chat-admin]
+      summary: Créer paire canned (draft)
+      security: [{ ironSession: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CannedPairInput'
+
+  /api/admin/chat/suggestions/{key}:
+    get: { security: [{ ironSession: [] }], tags: [chat-admin] }
+    patch: { security: [{ ironSession: [] }], tags: [chat-admin] }
+    delete:
+      security: [{ ironSession: [] }]
+      tags: [chat-admin]
+      description: Soft delete (status = archived)
+
+  /api/admin/chat/suggestions/{key}/publish:
+    post:
+      tags: [chat-admin]
+      summary: Workflow draft|review → published
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/faq:
+    get: { tags: [chat-admin], security: [{ ironSession: [] }] }
+    post: { tags: [chat-admin], security: [{ ironSession: [] }] }
+
+  /api/admin/chat/tools:
+    get:
+      tags: [chat-admin]
+      summary: Liste tools + statistiques 24h
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/tools/{name}/test:
+    post:
+      tags: [chat-admin]
+      summary: Sandbox test d'un tool
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/sources:
+    get: { tags: [chat-admin], security: [{ ironSession: [] }] }
+    post:
+      tags: [chat-admin]
+      summary: Ingérer une nouvelle source KB
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/conversations:
+    get:
+      tags: [chat-admin]
+      summary: Liste conversations (filtres intent, language, unresolved)
+      security: [{ ironSession: [] }]
+      parameters:
+        - in: query
+          name: intent
+          schema: { type: string }
+        - in: query
+          name: language
+          schema: { type: string }
+        - in: query
+          name: unresolved
+          schema: { type: boolean }
+
+  /api/admin/chat/conversations/{id}:
+    get:
+      tags: [chat-admin]
+      summary: Détail conversation avec marqueurs
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/leads:
+    get:
+      tags: [chat-admin]
+      summary: Liste leads avec filtres
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/health:
+    get:
+      tags: [chat-admin]
+      summary: Service level + historique
+      security: [{ ironSession: [] }]
+    post:
+      tags: [chat-admin]
+      summary: Reset service level manuel
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/gdpr/export:
+    post:
+      tags: [chat-admin]
+      summary: Export RGPD d'un lead
+      security: [{ ironSession: [] }]
+
+  /api/admin/chat/gdpr/forget:
+    post:
+      tags: [chat-admin]
+      summary: Droit à l'oubli
+      security: [{ ironSession: [] }]
+
+  /api/cron/chat-knowledge-sync:
+    post:
+      tags: [chat-cron]
+      summary: Sync KB depuis products + delivery_cities
+      security: [{ cronSecret: [] }]
+      responses:
+        '200':
+          description: Résumé du run
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  productsProcessed: { type: integer }
+                  citiesProcessed: { type: integer }
+                  embeddingsCreated: { type: integer }
+                  durationMs: { type: integer }
+
+  /api/cron/chat-intent-recompute:
+    post:
+      tags: [chat-cron]
+      summary: Recalcule centroïdes
+      security: [{ cronSecret: [] }]
+
+  /api/cron/chat-budget-watch:
+    post:
+      tags: [chat-cron]
+      summary: Vérifie budget mensuel + ajuste service level
+      security: [{ cronSecret: [] }]
+
+  /api/cron/gdpr-purge:
+    post:
+      tags: [chat-cron]
+      summary: Purge données expirées
+      security: [{ cronSecret: [] }]
+
+components:
+  securitySchemes:
+    ironSession:
+      type: apiKey
+      in: cookie
+      name: femiglow_chat_session
+    cronSecret:
+      type: apiKey
+      in: header
+      name: x-cron-secret
+
+  schemas:
+    ChatSessionSnapshot:
+      type: object
+      properties:
+        sessionId: { type: string, format: uuid }
+        visitorToken: { type: string }
+        language: { type: string }
+        greeting: { type: string }
+        suggestions:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              label: { type: string }
+        consentVersion: { type: string }
+        serviceLevel: { type: integer, enum: [0, 1, 2, 3, 4] }
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/ChatMessageDTO' }
+
+    ChatMessageDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string, enum: [user, assistant, system] }
+        content: { type: string }
+        language: { type: string }
+        createdAt: { type: string, format: date-time }
+        meta:
+          type: object
+          properties:
+            source: { type: string, enum: [llm, canned, faq, suggestion, tool-augmented] }
+            pairKey: { type: string, nullable: true }
+            ctaLabel: { type: string, nullable: true }
+            ctaUrl: { type: string, nullable: true }
+            sources:
+              type: array
+              items:
+                type: object
+                properties:
+                  label: { type: string }
+                  url: { type: string, nullable: true }
+
+    LeadInput:
+      type: object
+      required: [sessionId, phone, consentVersion]
+      properties:
+        sessionId: { type: string, format: uuid }
+        name: { type: string, maxLength: 80 }
+        phone: { type: string, pattern: '^\+?[0-9 ]{8,16}$' }
+        email: { type: string, format: email }
+        city: { type: string, maxLength: 80 }
+        reason: { type: string }
+        consentVersion: { type: string }
+
+    CannedPairInput:
+      type: object
+      required: [key, pagePattern, audience, labelFr, scriptedReplyFr]
+      properties:
+        key: { type: string, pattern: '^[a-z0-9-]+$' }
+        pagePattern: { type: string }
+        audience: { type: string, enum: [all, b2c, b2b] }
+        order: { type: integer }
+        enabled: { type: boolean }
+        labelFr: { type: string }
+        labelAr: { type: string }
+        labelArMa: { type: string }
+        scriptedReplyFr: { type: string }
+        scriptedReplyAr: { type: string }
+        scriptedReplyArMa: { type: string }
+        ctaLabel: { type: string }
+        ctaUrl: { type: string }
+        allowFollowupLLM: { type: boolean }

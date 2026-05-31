@@ -7,13 +7,23 @@ import { adminQueries } from '@/lib/chat/admin/queries';
 import { isChatEnabled } from '@/lib/chat/feature-flag';
 import { maskSecret } from '@/lib/chat/secrets';
 import { requireAdmin } from '@/lib/auth/require-admin';
+import { DeleteProviderButton } from './DeleteProviderButton';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProvidersPage() {
+const FLASH_MESSAGES: Record<string, string> = {
+  deleted: 'Provider supprimé.',
+};
+
+export default async function ProvidersPage({
+  searchParams,
+}: {
+  searchParams: { ok?: string };
+}) {
   const session = await requireAdmin('/admin/chat/providers');
   const enabled = isChatEnabled();
   const providers = enabled ? await adminQueries.listProviders().catch(() => []) : [];
+  const flash = searchParams.ok ? FLASH_MESSAGES[searchParams.ok] : null;
 
   return (
     <AdminShell adminEmail={session.email} active="chat">
@@ -32,6 +42,14 @@ export default async function ProvidersPage() {
           + Nouveau provider
         </a>
       </header>
+      {flash ? (
+        <div
+          role="status"
+          className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+        >
+          {flash}
+        </div>
+      ) : null}
 
       <div className="overflow-x-auto rounded-md border border-stone-200 bg-white">
         <table className="min-w-full divide-y divide-stone-200 text-sm">
@@ -46,12 +64,13 @@ export default async function ProvidersPage() {
               <th className="px-3 py-2">Quota mens.</th>
               <th className="px-3 py-2">Consommé</th>
               <th className="px-3 py-2">Statut</th>
+              <th className="px-3 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
             {providers.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-stone-500">
+                <td colSpan={10} className="px-3 py-6 text-center text-stone-500">
                   Aucun provider configuré.
                 </td>
               </tr>
@@ -88,6 +107,9 @@ export default async function ProvidersPage() {
                         off
                       </span>
                     )}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <DeleteProviderButton id={p.id} label={p.label} />
                   </td>
                 </tr>
               ))

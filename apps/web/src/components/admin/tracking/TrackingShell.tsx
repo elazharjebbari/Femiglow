@@ -1,25 +1,30 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { DriftBannerServer } from '@/components/admin/tracking/gtm/DriftBannerServer';
 
 export type TrackingTab =
   | 'dashboard'
+  | 'plans'
+  | 'providers'
   | 'inventory'
   | 'events'
-  | 'providers'
+  | 'mappings'
+  | 'attribution'
   | 'test'
   | 'logs'
-  | 'gtm'
   | 'settings';
 
 const TABS: Array<{ key: TrackingTab; href: string; label: string }> = [
   { key: 'dashboard', href: '/admin/tracking', label: 'Vue d’ensemble' },
+  { key: 'plans', href: '/admin/tracking/plans', label: 'Plans (unifié)' },
+  { key: 'providers', href: '/admin/tracking/providers', label: 'Providers' },
   { key: 'inventory', href: '/admin/tracking/inventory', label: 'Inventaire' },
   { key: 'events', href: '/admin/tracking/events', label: 'Événements' },
-  { key: 'providers', href: '/admin/tracking/providers', label: 'Pixels' },
+  { key: 'mappings', href: '/admin/tracking/events/mappings', label: 'Mappings vendors' },
+  { key: 'attribution', href: '/admin/tracking/attribution', label: 'Attribution' },
   { key: 'test', href: '/admin/tracking/test', label: 'Tester' },
   { key: 'logs', href: '/admin/tracking/logs', label: 'Logs' },
-  { key: 'gtm', href: '/admin/tracking/gtm', label: 'Export GTM' },
   { key: 'settings', href: '/admin/tracking/settings', label: 'Réglages' },
 ];
 
@@ -40,6 +45,7 @@ export function TrackingShell({
 }: TrackingShellProps) {
   return (
     <AdminShell adminEmail={adminEmail} active="tracking">
+      <DriftBannerServer />
       <header className="mb-6">
         <p className="text-xs uppercase tracking-wide text-stone-500">Tracking</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">{title}</h1>

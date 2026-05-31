@@ -12,7 +12,14 @@ export type ErrorCode =
   | 'validation_failed'
   | 'version_conflict'
   | 'field_removed'
-  | 'schedule_in_past';
+  | 'schedule_in_past'
+  // Event mappings
+  | 'cannot_edit_default'
+  | 'cannot_delete_default'
+  | 'cannot_delete_active'
+  | 'version_deleted'
+  // Content Studio
+  | 'budget_exceeded';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
   unauthorized: 401,
@@ -28,6 +35,11 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   version_conflict: 409,
   field_removed: 409,
   schedule_in_past: 400,
+  cannot_edit_default: 403,
+  cannot_delete_default: 403,
+  cannot_delete_active: 403,
+  version_deleted: 409,
+  budget_exceeded: 429,
 };
 
 export class HttpError extends Error {

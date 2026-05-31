@@ -57,6 +57,19 @@ vi.mock('../repos/event', () => ({
     append: vi.fn(async (sessionId: string, type: string, payload: unknown) => {
       events.push({ sessionId, type, payload });
     }),
+    hasLeadOfferForSession: vi.fn(async (sessionId: string) =>
+      events.some(
+        (e) => e.sessionId === sessionId && e.type === 'chat_lead_form_offered',
+      ),
+    ),
+    hasLeadOfferForMessage: vi.fn(async (sessionId: string, messageId: string) =>
+      events.some(
+        (e) =>
+          e.sessionId === sessionId &&
+          e.type === 'chat_lead_form_offered' &&
+          (e.payload as { messageId?: string } | null)?.messageId === messageId,
+      ),
+    ),
   },
 }));
 
@@ -81,6 +94,17 @@ vi.mock('../repos/provider', () => ({
   providerRepo: {
     incrementConsumed: vi.fn(async () => {}),
   },
+}));
+
+vi.mock('../repos/lead', () => ({
+  leadRepo: {
+    hasLeadForSession: vi.fn(async () => false),
+    create: vi.fn(async () => ({ id: 'cl_test' })),
+  },
+}));
+
+vi.mock('../runtime-setting', () => ({
+  getRuntimeBool: vi.fn(async (_key: string, fallback: boolean) => fallback),
 }));
 
 vi.mock('../rag/service', () => ({

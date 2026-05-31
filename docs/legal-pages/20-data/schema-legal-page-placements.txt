@@ -1,0 +1,70 @@
+TABLE public.legal_page_placements (NOUVELLE)
+=============================================
+Matrice (page × zone) : où une page apparaît, dans quel ordre.
+
+Colonne          | Type                         | Notes
+-----------------|------------------------------|------------------------
+page_slug        | text NOT NULL                | FK legal_pages.slug
+zone_key         | text NOT NULL                | FK legal_zones.key
+display_order    | integer NOT NULL DEFAULT 0   | Ordre dans la zone
+is_visible       | boolean NOT NULL DEFAULT TRUE| Show/hide sans supprimer
+label_override   | text                         | Si NULL, utilise legal_pages.title.
+                 |                              | Sinon ex: "Mentions" plus court
+created_at       | timestamp with time zone NOT NULL DEFAULT now()
+updated_at       | timestamp with time zone NOT NULL DEFAULT now()
+
+CONTRAINTES
+- PK (page_slug, zone_key)
+- FK page_slug → legal_pages(slug) ON UPDATE CASCADE ON DELETE CASCADE
+- FK zone_key → legal_zones(key) ON UPDATE CASCADE ON DELETE RESTRICT
+- CHECK (label_override IS NULL OR length(label_override) BETWEEN 1 AND 80)
+
+INDEX
+- (zone_key, display_order) WHERE is_visible — query type footer
+
+QUERIES TYPES
+
+-- Render footer-main
+SELECT
+  p.slug, COALESCE(pl.label_override, p.title) AS label,
+  pl.display_order
+FROM legal_page_placements pl
+JOIN legal_pages p ON p.slug = pl.page_slug
+WHERE pl.zone_key = 'footer-main'
+  AND pl.is_visible = TRUE
+  AND p.status = 'published'
+ORDER BY pl.display_order, p.title;
+
+-- Matrice admin (toutes les combinaisons)
+SELECT p.slug, p.title, z.key, z.label,
+  EXISTS (
+    SELECT 1 FROM legal_page_placements pl
+    WHERE pl.page_slug = p.slug AND pl.zone_key = z.key AND pl.is_visible
+  ) AS is_placed
+FROM legal_pages p
+CROSS JOIN legal_zones z
+ORDER BY p.slug, z.display_order;
+
+-- Health check : page publiée sans placement
+SELECT p.slug, p.title
+FROM legal_pages p
+WHERE p.status = 'published'
+  AND NOT EXISTS (
+    SELECT 1 FROM legal_page_placements pl
+    WHERE pl.page_slug = p.slug AND pl.is_visible
+  );
+
+MIGRATION
+---------
+CREATE TABLE legal_page_placements (
+  page_slug text NOT NULL REFERENCES legal_pages(slug) ON UPDATE CASCADE ON DELETE CASCADE,
+  zone_key text NOT NULL REFERENCES legal_zones(key) ON UPDATE CASCADE ON DELETE RESTRICT,
+  display_order integer NOT NULL DEFAULT 0,
+  is_visible boolean NOT NULL DEFAULT TRUE,
+  label_override text CHECK (label_override IS NULL OR length(label_override) BETWEEN 1 AND 80),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  PRIMARY KEY (page_slug, zone_key)
+);
+
+CREATE INDEX idx_placements_zone_order ON legal_page_placements (zone_key, display_order) WHERE is_visible = TRUE;

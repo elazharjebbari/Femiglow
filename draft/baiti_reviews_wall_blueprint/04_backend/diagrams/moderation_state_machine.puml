@@ -1,0 +1,11 @@
+@startuml
+title Review moderation - state machine
+
+[*] --> PENDING
+PENDING --> APPROVED : approve
+PENDING --> REJECTED : reject
+APPROVED --> HIDDEN : hide
+HIDDEN --> APPROVED : unhide
+REJECTED --> PENDING : reopen (optional)
+
+@enduml

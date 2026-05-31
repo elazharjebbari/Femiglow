@@ -1,0 +1,154 @@
+phase: M5.7
+name: "Éditeur HTML templates + preview + variables auto + CTA library"
+duration_estimate_days: [7, 12]
+depends_on: [M5.2]
+gate_test: "../11-tests/03-playwright-e2e/07-m5.7-ultimate.spec.md"
+
+objectives:
+  - Tables email_template_custom + email_template_custom_version
+  - Resolver de contexte (lead → variables auto)
+  - Renderer Handlebars + sanitization DOMPurify
+  - Catalogue de variables disponibles
+  - Bibliothèque de composants HTML (CTA, divider, encadré...)
+  - Template par défaut FemiGlow (high-caliber, charte respectée)
+  - Éditeur UI (vue Sections + vue Source Monaco)
+  - Preview live iframe sandboxed
+  - Test send à un admin
+  - Versionning automatique + rollback
+
+tickets:
+
+  - id: M5.7.0
+    title: "Migration email_template_custom + version"
+    description: |
+      Tables + indexes. Seed 6 starters (blank, default-femiglow, ...).
+    estimate_days: 1
+    docs:
+      - "../02-backend/07-templates-engine.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/template-schema.test.ts"
+    deliverable: "Migration 0050 + seed"
+
+  - id: M5.7.1
+    title: "Catalogue de variables + resolver de contexte"
+    description: |
+      buildEmailContext() : leads + orders + user_event + URLs auto.
+    estimate_days: 1.5
+    docs:
+      - "../04-ui-ux/06-template-editor.md#catalogue-de-variables-disponibles"
+      - "../02-backend/07-templates-engine.md#resolver-de-contexte"
+    tests:
+      - jest: "11-tests/01-jest-unit/context-resolver.test.ts"
+    deliverable: "lib/mail/templates/custom/context-resolver.ts"
+
+  - id: M5.7.2
+    title: "Renderer Handlebars + sanitization"
+    description: |
+      renderTemplate() avec cache, DOMPurify, inline CSS, validation.
+    estimate_days: 1
+    tests:
+      - jest: "11-tests/01-jest-unit/template-renderer.test.ts"
+    deliverable: "lib/mail/templates/custom/render.ts + sanitize.ts"
+
+  - id: M5.7.3
+    title: "Template par défaut FemiGlow + 5 starters"
+    description: |
+      Le default-femiglow.html (haut calibre, charte) + variants
+      (blank, order-confirm, cart-aband, welcome, newsletter).
+    estimate_days: 1.5
+    docs:
+      - "../04-ui-ux/07-default-template-femiglow.html"
+    tests:
+      - jest: "11-tests/01-jest-unit/templates-render-fixtures.test.ts"
+    deliverable: "6 fichiers .html dans starters/"
+
+  - id: M5.7.4
+    title: "CRUD endpoints + versioning"
+    description: |
+      List, create, update (= new version), activate version (rollback),
+      delete (soft).
+    estimate_days: 1
+    docs:
+      - "../02-backend/07-templates-engine.md#versionning-logic"
+    tests:
+      - msw: "11-tests/02-msw-integration/templates-crud.test.spec.md"
+    deliverable: "Endpoints + actions"
+
+  - id: M5.7.5
+    title: "Preview + test-send endpoints"
+    description: |
+      Render avec mock/real, retourne HTML pour iframe.
+      Test send avec source=admin.template-test.
+    estimate_days: 1
+    tests:
+      - msw: "11-tests/02-msw-integration/templates-preview.test.spec.md"
+    deliverable: "2 endpoints"
+
+  - id: M5.7.6
+    title: "Composant TemplateEditor (Source view)"
+    description: |
+      Monaco editor avec syntax highlight HTML + autocomplete variables.
+    estimate_days: 1.5
+    docs:
+      - "../04-ui-ux/06-template-editor.md#éditeur-html"
+    tests:
+      - jest: "11-tests/01-jest-unit/template-editor-source.test.spec.md"
+    deliverable: "components/admin/emails/templates/TemplateEditor.tsx (mode source)"
+
+  - id: M5.7.7
+    title: "Composant TemplateEditor (Sections view)"
+    description: |
+      Block builder visuel avec drag-handles. Parse / unparse HTML <→> sections.
+    estimate_days: 2
+    docs:
+      - "../04-ui-ux/06-template-editor.md#éditeur-html"
+    tests:
+      - jest: "11-tests/01-jest-unit/template-editor-sections.test.spec.md"
+    deliverable: "Mode sections"
+
+  - id: M5.7.8
+    title: "Composants Preview + Variables panel + Components library"
+    description: |
+      Iframe sandbox + panneau variables résolues + bibliothèque drag-drop.
+    estimate_days: 1.5
+    docs:
+      - "../04-ui-ux/06-template-editor.md"
+    tests:
+      - jest: "11-tests/01-jest-unit/template-preview.test.spec.md"
+    deliverable: "3 composants"
+
+  - id: M5.7.9
+    title: "Page list + page edit + page history"
+    description: |
+      /admin/emails/templates, /[slug]/edit, /[slug]/versions.
+    estimate_days: 1
+    docs:
+      - "../03-frontend/01-routes-map.md"
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/template-edit.spec.md"
+    deliverable: "3 pages"
+
+  - id: M5.7.10
+    title: "Intégration wizard campaign + automation"
+    description: |
+      Le sélecteur de template propose les custom templates en plus des
+      built-in. Affiche un preview thumbnail.
+    estimate_days: 0.5
+    deliverable: "Wizard updates"
+
+  - id: M5.7.11
+    title: "Test ultime M5.7"
+    description: |
+      E2E : créer template depuis default, modifier, ajouter CTA,
+      preview avec real lead, test send, rollback à v1, vérifier rollback OK.
+    estimate_days: 1
+    tests:
+      - playwright: "11-tests/03-playwright-e2e/07-m5.7-ultimate.spec.md"
+    deliverable: "Test passe"
+
+gate_exit_criteria:
+  - "Default template rendu en Gmail / Apple Mail / Outlook validé visuellement"
+  - "Variables auto-résolues correctement (mock + real)"
+  - "Sanitization rejet script/iframe testé"
+  - "Versionning + rollback préservent historique"
+  - "Test ultime passe"

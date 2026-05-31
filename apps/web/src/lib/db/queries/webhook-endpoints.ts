@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
 import { createId } from '@/lib/ids';
-import { encryptSecret, generateWebhookSecret } from '@/lib/crypto/encryption';
+import { decryptSecret, encryptSecret, generateWebhookSecret } from '@/lib/crypto/encryption';
 import type { WebhookEndpoint, WebhookEventName } from '@/lib/db/types';
 
 function rowToEndpoint(row: typeof schema.webhookEndpoints.$inferSelect): WebhookEndpoint {
@@ -114,6 +114,35 @@ export async function rotateWebhookSecret(id: string): Promise<{
   };
   store.webhookEndpoints.set(id, next);
   return { endpoint: next, plainSecret };
+}
+
+export async function revealWebhookSecret(id: string): Promise<string> {
+  const endpoint = await getWebhookEndpoint(id);
+  if (!endpoint) throw new Error(`Endpoint ${id} introuvable`);
+  return decryptSecret(endpoint.encryptedSecret);
+}
+
+export async function setWebhookSecret(
+  id: string,
+  plainSecret: string,
+): Promise<WebhookEndpoint> {
+  const encryptedSecret = encryptSecret(plainSecret);
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .update(schema.webhookEndpoints)
+      .set({ encryptedSecret, updatedAt: new Date() })
+      .where(and(eq(schema.webhookEndpoints.id, id), isNull(schema.webhookEndpoints.deletedAt)))
+      .returning();
+    if (!rows[0]) throw new Error(`Endpoint ${id} introuvable`);
+    return rowToEndpoint(rows[0]);
+  }
+  const store = memoryStore();
+  const ep = store.webhookEndpoints.get(id);
+  if (!ep || ep.deletedAt) throw new Error(`Endpoint ${id} introuvable`);
+  const next: WebhookEndpoint = { ...ep, encryptedSecret, updatedAt: new Date() };
+  store.webhookEndpoints.set(id, next);
+  return next;
 }
 
 export async function deleteWebhookEndpoint(id: string): Promise<void> {

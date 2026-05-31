@@ -1,0 +1,36 @@
+term_fr,term_ar_expected,term_en_expected,fr_count,ar_count,en_count,fr_ok,ar_ok,en_ok,notes
+Maison FemiGlow,دار FemiGlow / Maison FemiGlow (Latin),Maison FemiGlow,6,6,7,yes,yes,yes,"AR uses 'دار FemiGlow' (6×) — equivalent semantic. FR uses 'Maison FemiGlow' phrase + 'la maison' references; EN keeps 'Maison FemiGlow' Latin."
+le kit,الكيت,the kit,6,38,8,partial,yes,yes,"FR uses 'le pack' as canonical, 'kit' alternative; AR mix الكيت (23)+كيت (38); EN consistent."
+le rituel,الطقوس,the ritual,63,45,64,yes,yes,yes,Core voice term. AR uses الطقوس uniformly; EN 'ritual' aligned.
+la maison,دار / المنزل,maison,55,65,55,yes,yes,yes,AR uses دار (preferred MSA register for brand-house); EN keeps Latin 'maison' per style-guide.
+le geste,الحركة / اللمسة,the gesture,41,12,41,yes,yes,yes,AR alternates حركة (kit composition) and لمسة (pivot final 'ضعي اللمسة'); EN 'gesture' consistent.
+la saison,الموسم,the season,15,7,15,yes,yes,yes,All locales aligned.
+la couleur,اللون,the color,0,0,0,no,no,no,"FR/EN: 0×, AR: 0×. Intentional? Brand voice is 'sans vernis, sans couleur' — coherent."
+les ongles,الأظافر,nails,19,13,12,yes,yes,yes,Core anatomy term. EN slightly lower (12) due to substitution by 'nail' singular.
+le vernis,الطلاء,polish,16,4,39,yes,yes,partial,AR uses الطلاء (only 4× — comparatif rituel/vernis section); EN 'polish' count noisy from 'polishing/polished' (only ~23 strict).
+en cinq minutes,في خمس دقائق,in five minutes,22,22,22,yes,yes,yes,"Signature timing claim, perfectly aligned 22/22/22."
+trois gestes,ثلاث حركات,three gestures,3,3,3,yes,yes,yes,"Coexists with 'quatre gestes/أربع حركات' (3×) — kit composition shows 3 gestes; rituel page shows 4 — voulu, à valider produit."
+paiement à la livraison,الدفع عند الاستلام,cash on delivery,5,5,5,yes,yes,yes,Trust-row anchor — perfectly aligned 5/5/5.
+livraison offerte,شحن مجاني,free shipping,7,0,7,yes,partial,yes,AR uses 'توصيل مجّاني' (22×) NOT 'شحن مجاني' (0×) — semantically correct for Morocco MSA but deviates from style guide CSV expectation.
+MAD,MAD,MAD,1,1,7,partial,yes,yes,FR uses 'dh' inline (1× MAD); AR keeps 'MAD' literal in 1 place + uses 'درهم' elsewhere; EN consistent 'MAD' (7×).
+FemiGlow,FemiGlow (Latin),FemiGlow,62,58,62,yes,yes,yes,Brand name preserved Latin in all locales — correct.
+Rabat,الرباط,Rabat,60,60,60,yes,yes,yes,"Origin city, perfectly aligned 60/60/60."
+Casablanca,الدار البيضاء,Casablanca,6,6,6,yes,yes,yes,Aligned 6×.
+Maroc,المغرب,Morocco,28,24,16,yes,yes,yes,EN slightly lower (16 vs 28) — natural since FR uses 'au Maroc' more often.
+commande,الطلب,order,34,10,35,yes,yes,yes,AR lower count (10) — chat/checkout flows use shorter passives.
+panier,السلة,cart,18,0,18,yes,partial,yes,"AR uses سلّة (with shadda, 13×) and سلّتي (1×) — not السلة (0×). Different vocalization than style guide CSV expectation."
+confirmation,التأكيد,confirmation,6,4,5,yes,yes,yes,Aligned across locales.
+livraison,الشحن,shipping,26,0,19,yes,partial,partial,AR uses 'التوصيل' (13×) / 'توصيل' (22×) — not 'الشحن' (0×). EN 'shipping' (19×) coexists with 'delivery' — both used.
+téléphone,الهاتف,phone,5,4,5,yes,yes,yes,Aligned 5/4/5.
+Paste,Paste (Latin),Paste,32,30,35,yes,yes,yes,Product proper noun preserved Latin in AR — correct.
+Powder,Powder (Latin),Powder,23,23,38,yes,yes,yes,Product proper noun preserved Latin in AR — correct.
+Polish / polissoir,مُلمِّع + Polish (Latin),polish / buffer,35,40,35,yes,yes,partial,FR 'polissoir' canonical (7×); AR uses مُلمِّع (8x) + 'Polish' Latin (6×); EN mixes 'polish' product / 'buffer' instrument — both terms used.
+INCI,INCI (Latin),INCI,4,3,4,yes,yes,yes,"Scientific abbreviation preserved Latin — correct (FR 4, AR 3, EN 4)."
+halal,حلال,halal,18,14,18,yes,yes,yes,"Religious certification term, aligned 18/14/18."
+vegan,فيغان / نباتي,vegan,2,3,2,yes,partial,yes,AR uses 'نباتي' (3×) — semantically correct for MSA register; 'فيغان' (0×) absent. Style guide accepts both.
+édition de la saison,إصدار الموسم,season's edition,0,0,0,no,no,no,ABSENT in all 3 locales. Concept missing entirely from copy — no seasonal positioning headline.
+manucure,مانيكور,manicure,21,21,21,yes,yes,yes,"Core service term, aligned 21/21/21."
+éclat,إشراقة,glow,7,5,69,yes,yes,partial,EN count high (69) noisy from 'FemiGlow' brand name; AR إشراقة used 5×.
+Marrakech,مراكش,Marrakech,4,4,4,yes,yes,yes,Aligned 4/4/4 — kaolin sourcing reference.
+Step 4 (polissoir),Step 4 (Latin),Step 4,18,18,18,yes,yes,yes,"Product spec preserved Latin, aligned 18×."
+Atlas (massif),الأطلس,Atlas,2,2,2,yes,yes,yes,Geographic reference for material origin (cire d'abeille).

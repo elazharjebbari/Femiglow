@@ -23,9 +23,14 @@ interface JournalGridProps {
    * Typiquement fourni par `JournalGridBound`.
    */
   mediaSlots?: Record<string, ReactNode>;
+  /**
+   * Phase 9bis — libellés de catégorie localisés (« Maison », « Voix »…).
+   * Défaut FR. Fournis par `JournalGridBound` depuis `marketing.journal.categories`.
+   */
+  categoryLabels?: Record<Article['category'], string>;
 }
 
-const categoryLabels: Record<Article['category'], string> = {
+const DEFAULT_CATEGORY_LABELS: Record<Article['category'], string> = {
   maison: 'Maison',
   saison: 'Saison',
   voix: 'Voix',
@@ -41,6 +46,7 @@ export function JournalGrid({
   variant = 'symmetric',
   limit,
   mediaSlots,
+  categoryLabels = DEFAULT_CATEGORY_LABELS,
 }: JournalGridProps) {
   const visible = limit ? articles.slice(0, limit) : articles;
   if (visible.length === 0) return null;
@@ -66,9 +72,17 @@ export function JournalGrid({
         </div>
 
         {variant === 'asymmetric' ? (
-          <AsymmetricLayout articles={visible} mediaSlots={mediaSlots} />
+          <AsymmetricLayout
+            articles={visible}
+            mediaSlots={mediaSlots}
+            categoryLabels={categoryLabels}
+          />
         ) : (
-          <SymmetricLayout articles={visible} mediaSlots={mediaSlots} />
+          <SymmetricLayout
+            articles={visible}
+            mediaSlots={mediaSlots}
+            categoryLabels={categoryLabels}
+          />
         )}
       </Container>
     </section>
@@ -78,9 +92,10 @@ export function JournalGrid({
 interface LayoutProps {
   articles: Article[];
   mediaSlots?: Record<string, ReactNode>;
+  categoryLabels: Record<Article['category'], string>;
 }
 
-function SymmetricLayout({ articles, mediaSlots }: LayoutProps) {
+function SymmetricLayout({ articles, mediaSlots, categoryLabels }: LayoutProps) {
   return (
     <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12">
       {articles.map((article) => (
@@ -88,13 +103,14 @@ function SymmetricLayout({ articles, mediaSlots }: LayoutProps) {
           key={article.slug}
           article={article}
           mediaSlot={mediaSlots?.[article.slug]}
+          categoryLabels={categoryLabels}
         />
       ))}
     </div>
   );
 }
 
-function AsymmetricLayout({ articles, mediaSlots }: LayoutProps) {
+function AsymmetricLayout({ articles, mediaSlots, categoryLabels }: LayoutProps) {
   const [hero, ...rest] = articles;
   if (!hero) return null;
   return (
@@ -104,6 +120,7 @@ function AsymmetricLayout({ articles, mediaSlots }: LayoutProps) {
         variant="hero"
         className="lg:col-span-3"
         mediaSlot={mediaSlots?.[hero.slug]}
+        categoryLabels={categoryLabels}
       />
       <div className="flex flex-col gap-10 lg:col-span-2">
         {rest.slice(0, 2).map((article) => (
@@ -111,6 +128,7 @@ function AsymmetricLayout({ articles, mediaSlots }: LayoutProps) {
             key={article.slug}
             article={article}
             mediaSlot={mediaSlots?.[article.slug]}
+            categoryLabels={categoryLabels}
           />
         ))}
       </div>
@@ -123,9 +141,10 @@ interface ArticleCardProps {
   variant?: 'card' | 'hero';
   className?: string;
   mediaSlot?: ReactNode;
+  categoryLabels: Record<Article['category'], string>;
 }
 
-function ArticleCard({ article, variant = 'card', className, mediaSlot }: ArticleCardProps) {
+function ArticleCard({ article, variant = 'card', className, mediaSlot, categoryLabels }: ArticleCardProps) {
   const ratio = variant === 'hero' ? '4:3' : '4:5';
   const headingSize = variant === 'hero' ? 'display-sm' : 'sm';
   return (
@@ -168,7 +187,15 @@ function ArticleCard({ article, variant = 'card', className, mediaSlot }: Articl
   );
 }
 
-function ArticleMiniCard({ article, mediaSlot }: { article: Article; mediaSlot?: ReactNode }) {
+function ArticleMiniCard({
+  article,
+  mediaSlot,
+  categoryLabels,
+}: {
+  article: Article;
+  mediaSlot?: ReactNode;
+  categoryLabels: Record<Article['category'], string>;
+}) {
   return (
     <article className="group flex gap-5">
       <Link href={`/journal/${article.slug}`} className="block w-32 flex-none sm:w-40">

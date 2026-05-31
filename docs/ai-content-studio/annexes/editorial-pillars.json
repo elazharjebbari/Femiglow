@@ -1,0 +1,42 @@
+{
+  "version": "2026-05-14",
+  "pillars": [
+    {
+      "key": "rituel",
+      "label": "Rituel",
+      "goal": "Transmettre le geste et la patience",
+      "formats": ["post", "carousel", "story"]
+    },
+    {
+      "key": "produit",
+      "label": "Produit",
+      "goal": "Présenter le kit sans agressivité commerciale",
+      "formats": ["post", "story"]
+    },
+    {
+      "key": "preuve",
+      "label": "Preuve",
+      "goal": "Rassurer avec témoignage, matière, sourcing, usage",
+      "formats": ["carousel", "post"]
+    },
+    {
+      "key": "journal",
+      "label": "Journal",
+      "goal": "Transformer articles et conseils en contenus sociaux",
+      "formats": ["carousel", "story"]
+    },
+    {
+      "key": "maison",
+      "label": "Maison",
+      "goal": "Renforcer l’identité, Casablanca, fondatrice, soin lent",
+      "formats": ["post", "story"]
+    },
+    {
+      "key": "saison",
+      "label": "Saison",
+      "goal": "Relier le rituel au moment de l’année",
+      "formats": ["post", "story", "reel"]
+    }
+  ]
+}
+

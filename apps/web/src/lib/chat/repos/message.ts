@@ -3,6 +3,7 @@
  */
 import { and, desc, eq, sql } from 'drizzle-orm';
 
+import { rowsOf } from '@/lib/db/exec';
 import { createId } from '@/lib/ids';
 
 import { requireChatDb } from '../db/client';
@@ -69,7 +70,7 @@ export const messageRepo = {
        ORDER BY created_at DESC
        LIMIT ${limit}
     `);
-    return rows.rows ?? (rows as unknown as ChatMessageRow[]);
+    return rowsOf(rows);
   },
 
   /** Sliding window pour la mémoire conversationnelle. */

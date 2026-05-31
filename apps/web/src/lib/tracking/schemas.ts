@@ -70,7 +70,15 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
   file_download: z
     .object({ file_name: z.string().optional(), file_extension: z.string().optional() })
     .strict(),
-  form_start: z.object({ form_id: z.string().optional() }).strict(),
+  form_start: z
+    .object({
+      form_id: z.string().optional(),
+      first_field: z.string().optional(),
+      form_mode: z
+        .enum(['wizard_embed', 'wizard_cart', 'legacy_cart'])
+        .optional(),
+    })
+    .strict(),
   form_submit: z.object({ form_id: z.string().optional() }).strict(),
   view_item_list: ecommerceParams,
   select_item: ecommerceParams,
@@ -287,6 +295,157 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       intent_dominant: z.string().optional(),
     })
     .strict(),
+
+  // — Checkout wizard (CHA-230) — cf. docs/checkout-funnel/05-plan-action.md §2.
+  // Les builders pures sont dans `lib/tracking/checkout-events.ts`. Ici on
+  // valide la shape côté serveur pour rejeter les payloads malformés.
+  // Les champs `form_id` / `form_mode` / `step_name` / `variant_key` sont
+  // les attributs transverses normalisés ; `schema_version` permet de pivot
+  // les dashboards si la taxonomie évolue (`v1` pour l'instant).
+  lead_capture: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      method: z.enum(['wizard', 'chat', 'newsletter']),
+      contact_channels: z.array(z.enum(['phone', 'email', 'sms'])).max(3),
+      currency: z.string().length(3),
+      value: z.number().nonnegative().optional(),
+    })
+    .strict(),
+  address_completed: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      shipping_tier: z.string().max(40).optional(),
+      city_code: z.string().max(60).optional(),
+      currency: z.string().length(3),
+      items: z.array(itemSchema).max(50).optional(),
+      value: z.number().nonnegative().optional(),
+    })
+    .strict(),
+  wizard_error: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      source: z.enum(['client_validation', 'api', 'network', 'stock']),
+      error_code: z.string().min(1).max(80),
+      field_name: z.string().max(60).optional(),
+      http_status: z.number().int().min(100).max(599).optional(),
+    })
+    .strict(),
+  wizard_abandoned: z
+    .object({
+      form_id: z.string().min(1).max(60),
+      form_mode: z.enum(['wizard_embed', 'wizard_cart', 'legacy_cart']),
+      step_name: z.enum(['cart_review', 'lead', 'address', 'payment', 'thank_you']),
+      variant_key: z.enum(['A', 'B', 'control']).nullable(),
+      lead_id: z.string().min(1).max(40).optional(),
+      schema_version: z.literal('v1'),
+      last_step_reached: z.enum([
+        'cart_review',
+        'lead',
+        'address',
+        'payment',
+        'thank_you',
+      ]),
+      time_on_wizard_ms: z.number().int().nonnegative(),
+      last_field: z.string().max(60).optional(),
+    })
+    .strict(),
+
+  // — Wizard micro-events Kolenda §5 (Phase W0 du plan wizard-kit-optim) :
+  // identifient précisément où la friction se trouve à l'intérieur d'un step.
+  wizard_field_filled: z
+    .object({
+      field_name: z.enum([
+        'firstName',
+        'phone',
+        'consent',
+        'city',
+        'addressLine1',
+        'notes',
+      ]),
+      step_name: z.enum(['lead', 'address']),
+      form_id: z.string().min(1).max(60),
+      time_since_focus_ms: z.number().int().nonnegative(),
+    })
+    .strict(),
+
+  wizard_field_corrected: z
+    .object({
+      field_name: z.enum([
+        'firstName',
+        'phone',
+        'consent',
+        'city',
+        'addressLine1',
+        'notes',
+      ]),
+      step_name: z.enum(['lead', 'address']),
+      attempts: z.number().int().positive(),
+    })
+    .strict(),
+
+  wizard_step_abandoned: z
+    .object({
+      step_name: z.enum(['lead', 'address']),
+      fields_completed: z.number().int().nonnegative(),
+      time_in_step_ms: z.number().int().nonnegative(),
+    })
+    .strict(),
+
+  wizard_resume_shown: z
+    .object({
+      step_name: z.enum(['lead', 'address']),
+      time_since_last_visit_ms: z.number().int().nonnegative(),
+    })
+    .strict(),
+
+  wizard_resume_dismissed: z
+    .object({
+      step_name: z.enum(['lead', 'address']),
+    })
+    .strict(),
+
+  // — Kit landing reorder (L0 du plan kit-landing-reorder-2026-05) :
+  // mesure de l'arc Kolenda hero→preuve→décision et du temps avant
+  // visibilité du wizard (cible : ≥45s en v2 vs ~12s en v1).
+  kit_section_viewed: z
+    .object({
+      /** ID stable de la section (kebab-case). Liste ouverte pour
+       *  permettre d'instrumenter v1 et v2 sans changement de schéma. */
+      section_id: z.string().min(2).max(60),
+      /** Position 1-indexed dans l'ordre actuel (varie entre v1/v2). */
+      position: z.number().int().positive().max(20),
+      /** % de la section visible au moment du fire (IntersectionObserver). */
+      viewport_pct: z.number().min(0).max(100),
+      /** Version du layout en cours pour segmenter dans Plausible. */
+      layout_version: z.enum(['v1', 'v2']),
+    })
+    .strict(),
+
+  kit_wizard_visible_first_time: z
+    .object({
+      /** Temps écoulé depuis le LCP jusqu'à la première visibilité du
+       *  wizard (≥50% en viewport). Mesure la "fraîcheur" du commit. */
+      time_from_page_load_ms: z.number().int().nonnegative(),
+      /** Profondeur de scroll % au moment où le wizard devient visible. */
+      scroll_depth_pct: z.number().min(0).max(100),
+      layout_version: z.enum(['v1', 'v2']),
+    })
+    .strict(),
 };
 
 export type KnownEventName = keyof typeof eventSchemas;
@@ -352,6 +511,20 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   chat_error: 'engagement',
   chat_rate_limit_hit: 'engagement',
   chat_conversion_attributed: 'custom',
+  // — Checkout wizard
+  lead_capture: 'lead',
+  address_completed: 'ecommerce',
+  wizard_error: 'engagement',
+  wizard_abandoned: 'engagement',
+  // Wizard micro-events (Kolenda §5 — wizard-kit-optim W0).
+  wizard_field_filled: 'engagement',
+  wizard_field_corrected: 'engagement',
+  wizard_step_abandoned: 'engagement',
+  wizard_resume_shown: 'engagement',
+  wizard_resume_dismissed: 'engagement',
+  // Kit landing reorder (kit-landing-reorder-2026-05 L0).
+  kit_section_viewed: 'engagement',
+  kit_wizard_visible_first_time: 'engagement',
 };
 
 export function getEventCategory(name: string): TrackingEventCategory {

@@ -1,0 +1,23 @@
+{
+  "color": {
+    "brand": {
+      "primary": "#0F3D2E",
+      "accent": "#1F7A5A"
+    },
+    "surface": {
+      "drawer_bg": "rgba(255,255,255,0.90)",
+      "overlay": "rgba(0,0,0,0.35)",
+      "border": "rgba(0,0,0,0.10)"
+    }
+  },
+  "radius": {
+    "card": 16,
+    "chip": 999
+  },
+  "motion": {
+    "fast_ms": 150,
+    "medium_ms": 220,
+    "slow_ms": 300,
+    "ease_standard": "cubic-bezier(0.4, 0.0, 0.2, 1)"
+  }
+}

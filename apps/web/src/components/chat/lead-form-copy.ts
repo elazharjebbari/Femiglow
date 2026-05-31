@@ -12,6 +12,13 @@
  *  - L'objectif éditorial : ne PAS négocier, ne PAS donner un prix
  *    volume — rediriger avec respect vers une équipe humaine qualifiée.
  *
+ * CHA-228 — Règle anti-redondance avec le message LLM qui précède :
+ *   `intro` n'est PAS un second pitch. C'est une ligne **opérationnelle
+ *   complémentaire** qui ajoute ce que le LLM ne dit pas (timing, étape
+ *   suivante, garantie). Maximum ~12 mots, une seule idée nouvelle.
+ *   Le LLM porte la chaleur et le contexte ; le widget porte
+ *   l'opérationnel. Voir `instruction-defaults.ts` §"Capter le contact".
+ *
  * cf. docs/chat-assistant/19-lead-capture-form.md §5.2
  *     docs/chat-assistant/20-langchain-robustness-plan.md §2.6
  */
@@ -60,8 +67,8 @@ export interface LeadFormCopy {
 }
 
 const FR_BASE: LeadFormCopy = {
-  intro:
-    'Si vous préférez, on peut vous rappeler — partagez juste votre prénom et numéro, on s’occupe du reste.',
+  // Fallback générique : rappel sous 2 h, pas de pitch (le LLM porte le pitch).
+  intro: 'Réponse en moins de 2 h, en horaires d’ouverture.',
   cta: 'Être rappelée',
   dismiss: 'Plus tard',
   firstNameLabel: 'Prénom',
@@ -82,51 +89,45 @@ const FR_BASE: LeadFormCopy = {
 const FR: Record<CopyKey, LeadFormCopy> = {
   'explicit-request': {
     ...FR_BASE,
-    intro:
-      'Avec plaisir ! Laissez-nous votre prénom et numéro, et une conseillère humaine vous rappelle dès que possible.',
+    intro: 'Réponse de la conseillère sous 2 h, en horaires d’ouverture.',
     cta: 'Être rappelée',
   },
   'out-of-knowledge': {
     ...FR_BASE,
-    intro:
-      'Cette question mérite une vraie conseillère. Je peux organiser un rappel rapide — laissez-moi votre prénom et numéro.',
+    intro: 'Une conseillère humaine prend le relais.',
     cta: 'Demander un rappel',
   },
   objection: {
     ...FR_BASE,
-    intro:
-      'On peut en parler de vive voix si vous préférez : laissez-nous votre prénom et numéro, on vous appelle.',
+    intro: 'Court échange, sans engagement.',
     cta: 'Parler à une conseillère',
   },
   'after-hours': {
     ...FR_BASE,
-    intro:
-      'Notre équipe est joignable lun–sam 9h–17h. Laissez-nous votre numéro, on vous rappelle dès l’ouverture.',
+    intro: 'On rappelle dès l’ouverture (lun–sam, 9 h).',
     cta: 'Être rappelée demain',
   },
   b2b: {
     ...FR_BASE,
-    intro:
-      'Pour un projet de revente ou pro, mieux vaut un échange direct. Laissez-nous votre prénom + numéro.',
+    intro: 'On revient vers vous sous 48 h pour cadrer le projet.',
     cta: 'Être contactée (pro)',
     noteLabel: 'Type de projet (institut, pharmacie, e-commerce…)',
-    notePlaceholder: 'Ex. salon esthétique à Casablanca',
+    notePlaceholder: 'Ex. salon esth\u00E9tique \u00E0 Rabat',
   },
   'purchase-intent': {
     ...FR_BASE,
-    intro:
-      'Avec plaisir. Laissez-moi votre prénom et votre numéro : une conseillère valide votre commande, confirme l’adresse, et le kit part dans la journée. Paiement en main propre, à la livraison.',
+    // Complément du LLM : pas de re-pitch, juste l'horizon temporel + paiement.
+    intro: 'Rappel dans la journée · paiement en main propre à la réception.',
     cta: 'Commander mon kit',
     submit: 'Valider ma commande',
     successFallback:
       'Merci ! Une conseillère vous appelle dans la journée pour confirmer la livraison. À tout de suite ✨',
     noteLabel: 'Une précision ? (ville, étage, créneau)',
-    notePlaceholder: 'Ex. Casablanca, plutôt en fin d’après-midi',
+    notePlaceholder: 'Ex. Rabat, plut\u00F4t en fin d\u2019apr\u00E8s-midi',
   },
   'inline-contact': {
     ...FR_BASE,
-    intro:
-      'Pour valider votre commande proprement, confirmez ici votre prénom et votre numéro. Je n’enregistre rien tant que vous n’avez pas validé ce formulaire.',
+    intro: 'Rien n’est enregistré tant que ce formulaire n’est pas validé.',
     cta: 'Confirmer mes coordonnées',
     submit: 'Valider',
     successFallback:
@@ -159,15 +160,13 @@ const FR: Record<CopyKey, LeadFormCopy> = {
   },
   manual: {
     ...FR_BASE,
-    intro:
-      'Préférez-vous qu’on vous rappelle ? Laissez-nous votre prénom et numéro, on s’occupe du reste.',
+    intro: 'On vous rappelle dès qu’on est dispo.',
     cta: 'Être rappelée',
   },
 };
 
 const AR_BASE: LeadFormCopy = {
-  intro:
-    'إذا تفضلين، يمكننا الاتصال بك — فقط شاركي اسمك ورقمك ونحن نتولى الباقي.',
+  intro: 'ردّ خلال ساعتين، في أوقات العمل.',
   cta: 'اتصلوا بي',
   dismiss: 'لاحقاً',
   firstNameLabel: 'الاسم',
@@ -185,32 +184,30 @@ const AR_BASE: LeadFormCopy = {
 const AR: Record<CopyKey, LeadFormCopy> = {
   'explicit-request': {
     ...AR_BASE,
-    intro: 'بكل سرور! اتركي لنا اسمك ورقم هاتفك، وستتصل بك مستشارة بشرية في أقرب وقت ممكن.',
+    intro: 'ردّ المستشارة خلال ساعتين، في أوقات العمل.',
   },
   'out-of-knowledge': {
     ...AR_BASE,
-    intro:
-      'هذا السؤال يستحق مستشارة حقيقية. يمكنني ترتيب مكالمة سريعة — اتركي لي اسمك ورقمك.',
+    intro: 'مستشارة بشريّة تتولّى الباقي.',
   },
   objection: {
     ...AR_BASE,
-    intro: 'يمكننا التحدث مباشرة إذا تفضلين: اتركي لنا اسمك ورقمك ونتصل بك.',
+    intro: 'مكالمة قصيرة، دون التزام.',
   },
   'after-hours': {
     ...AR_BASE,
-    intro: 'فريقنا متاح من الإثنين إلى السبت من 9 صباحاً إلى 5 مساءً. اتركي رقمك، سنعاود الاتصال عند الفتح.',
+    intro: 'نعاود الاتصال عند الفتح (الإثنين–السبت، 9 ص).',
     cta: 'اتصلوا بي غداً',
   },
   b2b: {
     ...AR_BASE,
-    intro: 'لمشروع إعادة بيع أو احترافي، يفضل تبادل مباشر. اتركي اسمك ورقمك.',
+    intro: 'نعود إليكِ خلال 48 ساعة لتأطير المشروع.',
     cta: 'اتصلوا بي (احترافي)',
     noteLabel: 'نوع المشروع (معهد، صيدلية، تجارة إلكترونية...)',
   },
   'purchase-intent': {
     ...AR_BASE,
-    intro:
-      'بكلّ سرور. اتركي اسمكِ ورقمكِ : مستشارة تؤكّد الطلب وتنظّم التوصيل، والطقم ينطلق في يومه. الدفع نقداً، عند الاستلام.',
+    intro: 'مكالمة في اليوم نفسه · الدفع نقداً عند الاستلام.',
     cta: 'اطلبي طقمي',
     submit: 'تأكيد الطلب',
     successFallback: 'شكراً لك! ستتصل بك مستشارة اليوم لتأكيد التوصيل. إلى اللقاء ✨',
@@ -218,8 +215,7 @@ const AR: Record<CopyKey, LeadFormCopy> = {
   },
   'inline-contact': {
     ...AR_BASE,
-    intro:
-      'لتثبيت الطلب بشكلٍ صحيح، أكدي هنا اسمكِ ورقمكِ. لا يُسجَّل شيء حتى تؤكدي عبر هذا النموذج.',
+    intro: 'لا يُسجَّل شيء حتى يُؤكَّد هذا النموذج.',
     cta: 'تأكيد بياناتي',
     submit: 'تأكيد',
     successFallback: 'شكراً لك! بياناتكِ مسجَّلة — مستشارة ستتصل بك اليوم.',
@@ -250,13 +246,12 @@ const AR: Record<CopyKey, LeadFormCopy> = {
   },
   manual: {
     ...AR_BASE,
-    intro: 'هل تفضلين أن نتصل بك؟ اتركي اسمك ورقمك، نتولى الباقي.',
+    intro: 'نتّصل بكِ بمجرّد توفّرنا.',
   },
 };
 
 const AR_MA_BASE: LeadFormCopy = {
-  intro:
-    'Ila bghiti, n9edro n3ytou lik — 3tina smiyetk ou ra9mk, ou hna ghadi ndirou ba9i.',
+  intro: 'Jawab f a9al mn sa3atayn, f l-wa9t d l-khdma.',
   cta: '3yt liya',
   dismiss: 'Mn b3d',
   firstNameLabel: 'Smiya',
@@ -277,34 +272,30 @@ const AR_MA_BASE: LeadFormCopy = {
 const AR_MA: Record<CopyKey, LeadFormCopy> = {
   'explicit-request': {
     ...AR_MA_BASE,
-    intro:
-      'Marhban ! 3tina smiyetk ou ra9mk, ou wa7da men l-mostachirat ghadi t3yt lik f a9rab wa9t.',
+    intro: 'Mostachira ghadi t3yt lik f a9al mn sa3atayn, f l-wa9t d l-khdma.',
   },
   'out-of-knowledge': {
     ...AR_MA_BASE,
-    intro:
-      'Had souaal khassou wa7da insania. N9eder nrettab lik wa7d 3ayta sari3a — 3tini smiyetk ou ra9mk.',
+    intro: 'Wa7da insania ghadi tkhdem 3la l-ba9i.',
   },
   objection: {
     ...AR_MA_BASE,
-    intro: 'N9edro ntkellmou direct ila bghiti : 3tina smiyetk ou ra9mk, ou hna nta3ytou lik.',
+    intro: 'Mokalama 9sira, bla iltizam.',
   },
   'after-hours': {
     ...AR_MA_BASE,
-    intro:
-      'L-équipe dyalna khdma men tnin l sebt 9h–17h. 3ti lina ra9mk, nta3ytou lik fhel l-7el.',
+    intro: 'Kanrj3o nta3ytou f l-7l (tnin–sebt, 9h).',
     cta: '3yt liya ghedda',
   },
   b2b: {
     ...AR_MA_BASE,
-    intro: 'L-mochroo3 dyal byi3 wlla professionel, a7sen tkellem direct. 3tina smiya + ra9m.',
+    intro: 'Kanrj3o lik f 48 sa3a bach n2attrou l-mochroo3.',
     cta: '3yt liya (pro)',
     noteLabel: 'Nou3 l-mochroo3 (institut, sayda7iya, e-commerce…)',
   },
   'purchase-intent': {
     ...AR_MA_BASE,
-    intro:
-      'B koll farah. 3tini smiytek w ra9mek : wahda mn l-mostachirat ghadi ttouafq 3la l-talab w tdebber l-livraison, w l-kit kayemchi f nharo. L-khalss cash, f-blasstou.',
+    intro: '3ayta f nhar l-yawm · l-khalss cash f-blasstou.',
     cta: 'Tlb l-kit dyali',
     submit: 'Wafqi 3la l-talab',
     successFallback:
@@ -313,8 +304,7 @@ const AR_MA: Record<CopyKey, LeadFormCopy> = {
   },
   'inline-contact': {
     ...AR_MA_BASE,
-    intro:
-      'Bach n7afdo l-talab b sahel, akkdi hna smiytek w ra9mek. Ma kanssejjel walou hetta tssawybi had l-formulaire.',
+    intro: 'Walou ma kayetssjjel hetta yetsift had l-formulaire.',
     cta: 'Akkdi l-info',
     submit: 'Sawybi',
     successFallback:
@@ -346,7 +336,7 @@ const AR_MA: Record<CopyKey, LeadFormCopy> = {
   },
   manual: {
     ...AR_MA_BASE,
-    intro: 'Wach kat-fadli n3yto lik ? 3ti lina smiyetk ou ra9mk, ou hna nedirou ba9i.',
+    intro: 'Kanta3yto lik mlli kanwasslo.',
   },
 };
 

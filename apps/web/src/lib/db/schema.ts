@@ -1,5 +1,6 @@
 import {
   bigint,
+  bigserial,
   boolean,
   integer,
   jsonb,
@@ -80,14 +81,25 @@ export const orders = pgTable(
     leadId: text('lead_id')
       .notNull()
       .references(() => leads.id, { onDelete: 'cascade' }),
+    // CHA-230 — FK optionnelle vers chat_lead pour relier l'order au lead
+    // capturé via le wizard. NULL pour les orders legacy.
+    chatLeadId: text('chat_lead_id'),
     totalCents: integer('total_cents').notNull(),
     currency: text('currency').notNull(),
     shippingMode: text('shipping_mode').notNull(),
     paymentMethod: text('payment_method').notNull(),
+    // CHA-230 — Form context (taxonomie tracking, cohérent avec chat_lead)
+    formId: text('form_id'),
+    formMode: text('form_mode', {
+      enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+    }),
+    variantKey: text('variant_key', { enum: ['A', 'B', 'control'] }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     leadIdx: index('orders_lead_idx').on(t.leadId),
+    chatLeadIdx: index('orders_chat_lead_idx').on(t.chatLeadId),
+    formIdx: index('orders_form_idx').on(t.formId, t.formMode, t.createdAt),
   }),
 );
 
@@ -125,6 +137,60 @@ export const leadEvents = pgTable(
     createdAtIdx: index('lead_events_created_at_idx').on(t.createdAt),
   }),
 );
+
+// — lead_tag (M5.5) ───────────────────────────────────────────────────────
+// Tags attribuables à un lead manuellement ou via automation steps.
+// Utilisable comme filtre dans audience builder (has_tag/not_has_tag).
+export const leadTag = pgTable(
+  'lead_tag',
+  {
+    id: text('id').primaryKey(),
+    leadId: text('lead_id')
+      .notNull()
+      .references(() => leads.id, { onDelete: 'cascade' }),
+    tag: text('tag').notNull(),
+    source: text('source', { enum: ['manual', 'automation', 'import'] })
+      .notNull()
+      .default('manual'),
+    sourceRef: text('source_ref'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    leadTagUnique: uniqueIndex('lead_tag_unique').on(t.leadId, t.tag),
+    tagIdx: index('idx_lead_tag_tag').on(t.tag),
+    leadIdx: index('idx_lead_tag_lead').on(t.leadId),
+  }),
+);
+
+export type LeadTagRow = typeof leadTag.$inferSelect;
+export type LeadTagInsert = typeof leadTag.$inferInsert;
+
+// — user_event (M5.2) ─────────────────────────────────────────────────────
+// Source de vérité unifiée des events utilisateur (web/email/server/admin).
+// Voir docs/emailing/admin-evolution/01-data/01-tables.md#user_event
+export const userEvent = pgTable(
+  'user_event',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    email: text('email').notNull(),
+    eventName: text('event_name').notNull(),
+    ts: timestamp('ts', { withTimezone: true }).notNull().defaultNow(),
+    properties: jsonb('properties').notNull().default({}),
+    sessionId: text('session_id'),
+    source: text('source', { enum: ['web', 'server', 'email', 'admin', 'import'] }).notNull(),
+    leadId: text('lead_id').references(() => leads.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    // Index simple posé dans 0040 (FK constraint). Les heavy indexes
+    // (email+ts, event_name+ts, GIN(properties)) sont dans 0041 CONCURRENTLY.
+    leadIdx: index('idx_user_event_lead_id').on(t.leadId),
+  }),
+);
+
+export type UserEventRow = typeof userEvent.$inferSelect;
+export type UserEventInsert = typeof userEvent.$inferInsert;
+export type UserEventSource = 'web' | 'server' | 'email' | 'admin' | 'import';
 
 export const webhookEndpoints = pgTable('webhook_endpoints', {
   id: text('id').primaryKey(),
@@ -165,6 +231,36 @@ export const webhookDeliveries = pgTable(
     ),
     statusIdx: index('webhook_deliveries_status_idx').on(t.status),
     nextAttemptIdx: index('webhook_deliveries_next_attempt_idx').on(t.nextAttemptAt),
+  }),
+);
+
+// CHA-260 — Outbound webhook log : observabilité + idempotency pour les
+// triggers métier (order, chat-lead, cart-abandon, contact, newsletter)
+// qui POSTent un payload PLAT vers `OUTBOUND_WEBHOOK_URL`.
+// Différence avec `webhook_deliveries` : pas de FK vers un endpoint
+// stocké en DB — l'URL/secret viennent de l'env (1 destination unique).
+export const outboundWebhookLog = pgTable(
+  'outbound_webhook_log',
+  {
+    id: text('id').primaryKey(),
+    source: text('source').notNull(),
+    sourceId: text('source_id').notNull(),
+    idempotencyKey: text('idempotency_key').notNull(),
+    eventName: text('event_name').notNull(),
+    payload: jsonb('payload').notNull().default({}),
+    status: text('status').notNull().default('pending'),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    lastError: text('last_error'),
+    responseStatus: integer('response_status'),
+    latencyMs: integer('latency_ms'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idemIdx: uniqueIndex('outbound_webhook_log_idem_idx').on(t.idempotencyKey),
+    sourceIdx: index('outbound_webhook_log_source_idx').on(t.source, t.sourceId),
+    statusIdx: index('outbound_webhook_log_status_idx').on(t.status, t.createdAt),
   }),
 );
 
@@ -418,11 +514,14 @@ export const trackingComponentCategoryEnum = pgEnum('tracking_component_category
   'progress',
   'banner',
   'section_hero',
+  'section_promotion',
+  'section_video',
   'section_content',
   'section_testimonial',
   'section_faq',
   'commerce_cart',
   'commerce_checkout',
+  'engagement',
   'chat',
   'admin',
 ]);
@@ -473,6 +572,16 @@ export const trackingConsentStateEnum = pgEnum('tracking_consent_state', [
   'granted',
   'denied',
   'pending',
+]);
+
+// Migration 0029 — catégorie Conversion Action Google Ads (default + override).
+export const googleAdsCategoryEnum = pgEnum('google_ads_category', [
+  'purchase',
+  'lead',
+  'contact',
+  'signup',
+  'view_content',
+  'none',
 ]);
 
 export const trackingPages = pgTable(
@@ -550,11 +659,90 @@ export const trackingEventDefinitions = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     // Migration 0009 — funnel mapping pour TOF/MOF/BOF/CONVERSION
     funnelStage: trackingFunnelStageEnum('funnel_stage').notNull().default('none'),
+    // Migration 0029 — catégorie Google Ads par défaut (override possible via tracking_event_overrides).
+    googleAdsCategoryDefault: googleAdsCategoryEnum('google_ads_category_default')
+      .notNull()
+      .default('none'),
   },
   (t) => ({
     nameUnique: uniqueIndex('tracking_event_def_name_unique').on(t.name),
     categoryIdx: index('tracking_event_def_category_idx').on(t.category),
     funnelStageIdx: index('tracking_event_def_funnel_stage_idx').on(t.funnelStage),
+  }),
+);
+
+// Migration 0030 — override admin de la catégorie Google Ads par event (D-005).
+export const trackingEventOverrides = pgTable(
+  'tracking_event_overrides',
+  {
+    id: text('id').primaryKey(),
+    eventName: text('event_name')
+      .notNull()
+      .references(() => trackingEventDefinitions.name, { onDelete: 'cascade' }),
+    googleAdsCategory: googleAdsCategoryEnum('google_ads_category').notNull(),
+    updatedBy: text('updated_by'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    note: text('note'),
+  },
+  (t) => ({
+    eventNameUnique: uniqueIndex('tracking_event_overrides_event_name_unique').on(t.eventName),
+    eventNameIdx: index('tracking_event_overrides_event_name_idx').on(t.eventName),
+  }),
+);
+
+// Migration 0032 — Event mappings : versionning event_canonique → vendor.
+// cf. docs/event-mappings/10-architecture/adr-001-versioning-strategy.md
+export const eventMappingVersions = pgTable(
+  'event_mapping_versions',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    notes: text('notes'),
+    status: text('status').notNull(),
+    isActive: boolean('is_active').notNull().default(false),
+    isDefault: boolean('is_default').notNull().default(false),
+    mappings: jsonb('mappings').notNull().default({}),
+    clonedFrom: text('cloned_from'),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    activatedAt: timestamp('activated_at', { withTimezone: true }),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (t) => ({
+    oneActiveIdx: uniqueIndex('event_mapping_versions_one_active')
+      .on(t.isActive)
+      .where(sql`is_active = true`),
+    statusIdx: index('event_mapping_versions_status_idx').on(t.status, t.createdAt),
+    defaultIdx: uniqueIndex('event_mapping_versions_default_idx')
+      .on(t.isDefault)
+      .where(sql`is_default = true`),
+    mappingsGin: index('event_mapping_versions_mappings_gin').using(
+      'gin',
+      t.mappings,
+    ),
+  }),
+);
+
+// Migration 0033 — audit log structuré.
+export const eventMappingAudit = pgTable(
+  'event_mapping_audit',
+  {
+    id: text('id').primaryKey(),
+    versionId: text('version_id'),
+    action: text('action').notNull(),
+    actorId: text('actor_id').notNull(),
+    before: jsonb('before'),
+    after: jsonb('after'),
+    meta: jsonb('meta').notNull().default({}),
+    ipAnonymized: text('ip_anonymized'),
+    uaHash: text('ua_hash'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    versionIdx: index('event_mapping_audit_version_idx').on(t.versionId, t.createdAt),
+    actorIdx: index('event_mapping_audit_actor_idx').on(t.actorId, t.createdAt),
+    actionIdx: index('event_mapping_audit_action_idx').on(t.action, t.createdAt),
   }),
 );
 
@@ -637,6 +825,8 @@ export const trackingEventsLog = pgTable(
     trafficMedium: text('traffic_medium'),
     experimentId: text('experiment_id'),
     experimentVariant: text('experiment_variant'),
+    // Migration 0028 — Google click ID capturé en middleware (cookie first-touch).
+    gclid: text('gclid'),
   },
   (t) => ({
     eventIdUnique: uniqueIndex('tracking_events_log_event_id_unique').on(t.eventId),
@@ -656,6 +846,9 @@ export const trackingEventsLog = pgTable(
       t.sessionId,
     ),
     nameReceivedIdx: index('tracking_events_log_name_received_idx').on(t.eventName, t.receivedAt),
+    gclidIdx: index('tracking_events_log_gclid_idx')
+      .on(t.gclid)
+      .where(sql`gclid IS NOT NULL`),
   }),
 );
 
@@ -693,6 +886,31 @@ export const trackingSettings = pgTable(
   },
   (t) => ({
     keyUnique: uniqueIndex('tracking_settings_key_unique').on(t.key),
+  }),
+);
+
+/**
+ * Snapshot d'attribution multi-canal par visitor_id. Cf.
+ * docs/tracking-attribution/. Sert :
+ *   - de source de vérité cross-session (le cookie est limité à 4KB)
+ *   - de support au debugger admin (inspecter un visitor par ID)
+ *   - de pré-requis pour les dispatchers serveur (Meta CAPI, Google Ads OCI…)
+ *
+ * `first_touch` est immuable après le 1er insert. `last_touch` est
+ * refresh à chaque touche. `paid_history` est LRU 20 (dedup click_id).
+ */
+export const visitorAttribution = pgTable(
+  'visitor_attribution',
+  {
+    visitorId: text('visitor_id').primaryKey(),
+    firstTouch: jsonb('first_touch').notNull(),
+    lastTouch: jsonb('last_touch').notNull(),
+    paidHistory: jsonb('paid_history').notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    updatedIdx: index('visitor_attribution_updated_at_idx').on(t.updatedAt),
   }),
 );
 
@@ -1248,3 +1466,791 @@ export const experimentAssignments = pgTable(
     variantIdx: index('experiment_assignments_variant_idx').on(t.variantId),
   }),
 );
+
+/* ─────────────────────────────────────────────────────────────────────
+ * ANALYTICS INSIGHTS — agrégations pré-calculées + orchestration
+ * cf. docs/analytics-insights/02-data.md
+ *
+ * Six tables :
+ *  - insights_event_daily       : event × jour × env × device × locale
+ *  - insights_page_daily        : page_route × jour
+ *  - insights_component_daily   : component × event × jour
+ *  - insights_section_daily     : section × page × jour (avec dwell)
+ *  - insights_funnel_daily      : 1 ligne par jour (funnel ecommerce)
+ *  - insights_refresh_run       : historique des runs (lock + audit)
+ *
+ * Toutes les agrégations sont incrémentales (`INSERT … ON CONFLICT DO UPDATE`)
+ * et anonymisées par construction. Aucune PII n'est stockée.
+ * ───────────────────────────────────────────────────────────────────── */
+
+export const insightsEventDaily = pgTable(
+  'insights_event_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(), // YYYY-MM-DD UTC
+    eventName: text('event_name').notNull(),
+    eventCategory: text('event_category').notNull(),
+    env: text('env').notNull(),
+    device: text('device').notNull(),
+    locale: text('locale').notNull(),
+    count: integer('count').notNull(),
+    uniqueSessions: integer('unique_sessions').notNull(),
+    conversionCount: integer('conversion_count').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    ievUnique: uniqueIndex('iev_unique').on(
+      t.date,
+      t.eventName,
+      t.env,
+      t.device,
+      t.locale,
+    ),
+    ievDateIdx: index('iev_date_idx').on(t.date),
+    ievEventIdx: index('iev_event_idx').on(t.eventName, t.date),
+    ievCategoryIdx: index('iev_category_idx').on(t.eventCategory, t.date),
+    ievEnvIdx: index('iev_env_idx').on(t.env, t.date),
+  }),
+);
+
+export const insightsPageDaily = pgTable(
+  'insights_page_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    pageRoute: text('page_route').notNull(),
+    pageViews: integer('page_views').notNull().default(0),
+    uniqueSessions: integer('unique_sessions').notNull().default(0),
+    uniqueVisitors: integer('unique_visitors').notNull().default(0),
+    eventsTotal: integer('events_total').notNull().default(0),
+    scroll75Count: integer('scroll_75_count').notNull().default(0),
+    conversions: integer('conversions').notNull().default(0),
+    bounceCount: integer('bounce_count').notNull().default(0),
+    avgTimeSeconds: integer('avg_time_seconds').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    ipaUnique: uniqueIndex('ipa_unique').on(t.date, t.pageRoute),
+    ipaDateIdx: index('ipa_date_idx').on(t.date),
+    ipaRouteIdx: index('ipa_route_idx').on(t.pageRoute, t.date),
+    ipaPvIdx: index('ipa_pv_idx').on(t.pageViews, t.date),
+  }),
+);
+
+export const insightsComponentDaily = pgTable(
+  'insights_component_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    componentId: text('component_id').notNull(),
+    componentName: text('component_name'),
+    pageRoute: text('page_route'),
+    eventName: text('event_name').notNull(),
+    count: integer('count').notNull().default(0),
+    uniqueSessions: integer('unique_sessions').notNull().default(0),
+    conversionCount: integer('conversion_count').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    icoUnique: uniqueIndex('ico_unique').on(
+      t.date,
+      t.componentId,
+      t.eventName,
+      t.pageRoute,
+    ),
+    icoDateIdx: index('ico_date_idx').on(t.date),
+    icoComponentIdx: index('ico_component_idx').on(t.componentId, t.date),
+    icoEventIdx: index('ico_event_idx').on(t.eventName, t.date),
+    icoCountIdx: index('ico_count_idx').on(t.count, t.date),
+  }),
+);
+
+export const insightsSectionDaily = pgTable(
+  'insights_section_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    pageRoute: text('page_route').notNull(),
+    sectionId: text('section_id').notNull(),
+    views: integer('views').notNull().default(0),
+    avgDwellSeconds: integer('avg_dwell_seconds').notNull().default(0),
+    uniqueSessions: integer('unique_sessions').notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    iseUnique: uniqueIndex('ise_unique').on(t.date, t.pageRoute, t.sectionId),
+    iseDateIdx: index('ise_date_idx').on(t.date),
+    iseRouteIdx: index('ise_route_idx').on(t.pageRoute, t.date),
+    iseDwellIdx: index('ise_dwell_idx').on(t.avgDwellSeconds, t.date),
+  }),
+);
+
+export const insightsFunnelDaily = pgTable(
+  'insights_funnel_daily',
+  {
+    id: text('id').primaryKey(),
+    date: text('date').notNull(),
+    viewItem: integer('view_item').notNull().default(0),
+    addToCart: integer('add_to_cart').notNull().default(0),
+    beginCheckout: integer('begin_checkout').notNull().default(0),
+    addPaymentInfo: integer('add_payment_info').notNull().default(0),
+    purchase: integer('purchase').notNull().default(0),
+    generateLead: integer('generate_lead').notNull().default(0),
+    uniquePurchasers: integer('unique_purchasers').notNull().default(0),
+    revenueTotalCents: bigint('revenue_total_cents', { mode: 'number' }).notNull().default(0),
+    refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    ifuUnique: uniqueIndex('ifu_date_unique').on(t.date),
+    ifuDateIdx: index('ifu_date_idx').on(t.date),
+  }),
+);
+
+export const insightsRefreshRun = pgTable(
+  'insights_refresh_run',
+  {
+    id: text('id').primaryKey(),
+    trigger: text('trigger').notNull(), // 'cron' | 'manual'
+    status: text('status').notNull(), // 'running' | 'success' | 'failed' | 'skipped'
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    durationsMs: jsonb('durations_ms').notNull().default({}),
+    counts: jsonb('counts').notNull().default({}),
+    errorCode: text('error_code'),
+    errorMessage: text('error_message'),
+    triggeredBy: text('triggered_by'),
+  },
+  (t) => ({
+    irfStartedIdx: index('irf_started_idx').on(t.startedAt),
+    irfStatusIdx: index('irf_status_idx').on(t.status, t.startedAt),
+  }),
+);
+
+// ===========================================================================
+// Rituels partagés — cf. docs/reviews-wall/execution/01-architecture-detaillee.md
+// ===========================================================================
+
+export const ritualSignal = pgEnum('ritual_signal', ['oui', 'hesite', 'non']);
+
+export const ritualStatus = pgEnum('ritual_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'HIDDEN',
+]);
+
+export const ritualSource = pgEnum('ritual_source', [
+  'web',
+  'email_j45',
+  'manual',
+  'import_csv',
+  'import_json',
+  'import_zip',
+]);
+
+export const ritualLanguage = pgEnum('ritual_language', ['fr', 'ar', 'en']);
+
+export const ritualPhotoFacesStatus = pgEnum('ritual_photo_faces_status', [
+  'PENDING_CHECK',
+  'OK',
+  'MANUAL_REVIEW',
+  'REJECTED_FACE',
+]);
+
+export const ritualTestimonials = pgTable(
+  'ritual_testimonials',
+  {
+    id: text('id').primaryKey(),
+    publicSlug: text('public_slug').notNull(),
+    productKey: text('product_key').notNull(),
+    body: text('body').notNull(),
+    bodyOriginal: text('body_original'),
+    wouldRecommend: ritualSignal('would_recommend').notNull(),
+    ritualTags: jsonb('ritual_tags').$type<string[]>().notNull().default([]),
+    authorFirstName: text('author_first_name'),
+    authorCity: text('author_city'),
+    initiatedSince: text('initiated_since'),
+    isAnonymous: boolean('is_anonymous').notNull().default(false),
+    language: ritualLanguage('language').notNull().default('fr'),
+    status: ritualStatus('status').notNull().default('PENDING'),
+    source: ritualSource('source').notNull(),
+    customerHash: text('customer_hash'),
+    orderId: text('order_id'),
+    verifiedPurchase: boolean('verified_purchase').notNull().default(false),
+    featured: boolean('featured').notNull().default(false),
+    moderationNote: text('moderation_note'),
+    autoFlags: jsonb('auto_flags').$type<string[]>().notNull().default([]),
+    importBatchId: text('import_batch_id'),
+    importRowId: text('import_row_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    rtPublicSlugUnique: uniqueIndex('rt_public_slug_unique').on(t.publicSlug),
+    rtStatusProductIdx: index('rt_status_product_idx').on(t.status, t.productKey),
+    rtPublishedAtIdx: index('rt_published_at_idx').on(t.publishedAt),
+    rtCustomerHashIdx: index('rt_customer_hash_idx').on(t.customerHash),
+  }),
+);
+
+export const ritualTestimonialPhotos = pgTable(
+  'ritual_testimonial_photos',
+  {
+    id: text('id').primaryKey(),
+    testimonialId: text('testimonial_id').notNull(),
+    url: text('url').notNull(),
+    thumbUrl: text('thumb_url').notNull(),
+    focalX: text('focal_x').notNull().default('0.500'),
+    focalY: text('focal_y').notNull().default('0.500'),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    byteSize: integer('byte_size').notNull(),
+    mime: text('mime').notNull(),
+    alt: text('alt'),
+    facesStatus: ritualPhotoFacesStatus('faces_status').notNull().default('PENDING_CHECK'),
+    facesCount: integer('faces_count').notNull().default(0),
+    facesCheckAt: timestamp('faces_check_at', { withTimezone: true }),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    rtpTestimonialIdx: index('rtp_testimonial_idx').on(t.testimonialId, t.position),
+    rtpFacesPendingIdx: index('rtp_faces_pending_idx').on(t.facesStatus),
+  }),
+);
+
+export const ritualAuditLog = pgTable(
+  'ritual_audit_log',
+  {
+    id: text('id').primaryKey(),
+    testimonialId: text('testimonial_id'),
+    actorId: text('actor_id'),
+    action: text('action').notNull(),
+    note: text('note'),
+    payload: jsonb('payload').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    previousHash: text('previous_hash'),
+    signature: text('signature'),
+  },
+  (t) => ({
+    ralTestimonialIdx: index('ral_testimonial_idx').on(t.testimonialId, t.createdAt),
+    ralActorIdx: index('ral_actor_idx').on(t.actorId, t.createdAt),
+  }),
+);
+
+export const ritualAggregate = pgTable('ritual_aggregate', {
+  productKey: text('product_key').primaryKey(),
+  totalCount: integer('total_count').notNull().default(0),
+  ouiCount: integer('oui_count').notNull().default(0),
+  hesiteCount: integer('hesite_count').notNull().default(0),
+  nonCount: integer('non_count').notNull().default(0),
+  withPhotosCount: integer('with_photos_count').notNull().default(0),
+  topTags: jsonb('top_tags').$type<Array<{ tag: string; count: number }>>().notNull().default([]),
+  lastPublishedAt: timestamp('last_published_at', { withTimezone: true }),
+  refreshedAt: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ===========================================================================
+// CHA-230 — Wizard checkout funnel
+// ---------------------------------------------------------------------------
+// 4 tables transverses au tunnel :
+//   - form_config             — config versionnée par formulaire (wizard_kit, …)
+//   - form_config_history     — audit log de chaque mise à jour
+//   - product_stock           — stock par variant (SKU) avec available/reserved
+//   - form_variant_assignment — stickiness A/B (visitor_id, form_id)
+//   - checkout_idempotency    — clés d'idempotence des appels API (TTL 24h)
+//
+// Cf. docs/checkout-funnel/08-architecture-data.md §3.2–3.5.
+// ===========================================================================
+
+export const formConfig = pgTable(
+  'form_config',
+  {
+    id: text('id').primaryKey(),
+    /** Clé stable du formulaire (`wizard_kit`, `wizard_commander`, …). UNIQUE. */
+    key: text('key').notNull(),
+    version: integer('version').notNull().default(1),
+    active: boolean('active').notNull().default(true),
+    /**
+     * JSONB validé côté code (cf. `apps/web/src/lib/checkout/form-config/schema.ts`).
+     * Contient : steps[], modes[], defaults, copy, validation.
+     */
+    config: jsonb('config').notNull().default(sql`'{}'::jsonb`),
+    description: text('description'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by'),
+    updatedBy: text('updated_by'),
+  },
+  (t) => ({
+    keyUnique: uniqueIndex('form_config_key_unique').on(t.key),
+    activeIdx: index('form_config_active_idx').on(t.active, t.updatedAt),
+  }),
+);
+
+export const formConfigHistory = pgTable(
+  'form_config_history',
+  {
+    id: text('id').primaryKey(),
+    formConfigId: text('form_config_id')
+      .notNull()
+      .references(() => formConfig.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    version: integer('version').notNull(),
+    config: jsonb('config').notNull(),
+    description: text('description'),
+    actorId: text('actor_id'),
+    action: text('action', {
+      enum: ['create', 'update', 'activate', 'deactivate', 'rollback'],
+    }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    formIdx: index('form_config_history_form_idx').on(t.formConfigId, t.version),
+    versionUnique: uniqueIndex('form_config_history_version_unique').on(
+      t.formConfigId,
+      t.version,
+    ),
+  }),
+);
+
+export const productStock = pgTable(
+  'product_stock',
+  {
+    /** PK = product_variants.id (1-1 avec un variant). */
+    variantId: text('variant_id')
+      .primaryKey()
+      .references(() => productVariants.id, { onDelete: 'cascade' }),
+    sku: text('sku').notNull(),
+    /** Stock physique disponible. >= 0 (CHECK SQL). */
+    available: integer('available').notNull().default(0),
+    /** Stock réservé par orders in-flight. >= 0. */
+    reserved: integer('reserved').notNull().default(0),
+    /** Seuil "derniers exemplaires" affiché côté UI. */
+    thresholdLow: integer('threshold_low').notNull().default(5),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: text('updated_by'),
+  },
+  (t) => ({
+    skuUnique: uniqueIndex('product_stock_sku_unique').on(t.sku),
+    availableIdx: index('product_stock_available_idx').on(t.available, t.reserved),
+  }),
+);
+
+export const formVariantAssignment = pgTable(
+  'form_variant_assignment',
+  {
+    visitorId: text('visitor_id').notNull(),
+    formId: text('form_id').notNull(),
+    variantKey: text('variant_key', { enum: ['A', 'B', 'control'] }).notNull(),
+    experimentKey: text('experiment_key'),
+    assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.visitorId, t.formId] }),
+    formVariantIdx: index('form_variant_assignment_form_variant_idx').on(
+      t.formId,
+      t.variantKey,
+      t.assignedAt,
+    ),
+  }),
+);
+
+export const checkoutIdempotency = pgTable(
+  'checkout_idempotency',
+  {
+    /** Clé opaque générée client (UUID / ulid). */
+    key: text('key').notNull(),
+    /** Opération concernée — borne la portée d'idempotence. */
+    scope: text('scope', {
+      enum: [
+        'lead_create',
+        'address_update',
+        'payment_select',
+        'order_create',
+        'email_optin',
+      ],
+    }).notNull(),
+    /** ID de la ressource créée (chat_lead.id ou orders.id). */
+    resourceId: text('resource_id'),
+    /** SHA256 du payload de requête — détecte les changements entre 2 tentatives. */
+    requestHash: text('request_hash').notNull(),
+    /** Payload exact de la réponse à re-servir (replay). */
+    responseJson: jsonb('response_json').notNull(),
+    responseStatus: integer('response_status').notNull().default(200),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true })
+      .notNull()
+      .default(sql`(now() + interval '24 hours')`),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.key, t.scope] }),
+    expiresIdx: index('checkout_idempotency_expires_idx').on(t.expiresAt),
+  }),
+);
+
+// ===========================================================================
+// DELIV-CITIES — Catalogue de villes de livraison (migration 0023)
+// ---------------------------------------------------------------------------
+// Source initiale = fixture sendit (429 villes uniques après dedup par slug
+// en gardant le pk le plus petit). Sert l'autocomplete UI, la tarification
+// par ville (MAD), l'affichage du délai (`delivery_eta`) et l'admin CRUD.
+//
+// Règles clés :
+//   - `delivery_price_mad` est en MAD entier (PAS centimes — règle produit).
+//   - `slug` est la clé métier stable (ASCII).
+//   - `source` indique la provenance (sendit | manual | custom) pour éviter
+//     d'écraser une édition admin lors d'une réimportation.
+// ===========================================================================
+
+export const deliveryCities = pgTable(
+  'delivery_cities',
+  {
+    id: text('id').primaryKey(),
+    /** Slug ASCII stable (slugify du nom FR). UNIQUE — clé métier. */
+    slug: text('slug').notNull(),
+    /** Libellé Latin/FR (affichage canonique). */
+    nameFr: text('name_fr').notNull(),
+    /** Libellé Arabe (nullable pour sources non-MA). */
+    nameAr: text('name_ar'),
+    /** ISO 3166-1 alpha-2. Défaut 'MA'. */
+    countryCode: text('country_code').notNull().default('MA'),
+    /** Prix livraison en MAD entier (PAS centimes). */
+    deliveryPriceMad: integer('delivery_price_mad').notNull(),
+    /** Bucket SLA texte (ex. "24h", "24h - 48h"). Affiché tel quel UI. */
+    deliveryEta: text('delivery_eta').notNull(),
+    /** Visible côté client si actif. */
+    isActive: boolean('is_active').notNull().default(true),
+    /** Provenance — restreint via CHECK. */
+    source: text('source', { enum: ['sendit', 'manual', 'custom'] })
+      .notNull()
+      .default('sendit'),
+    /** Référence externe d'audit (ex. "sendit:617"). */
+    externalRef: text('external_ref'),
+    /** Alias additionnels matchables côté autocomplete. */
+    aliases: jsonb('aliases').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** Métadonnées libres pour évolutions futures sans migration. */
+    metadata: jsonb('metadata')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    /** Ordre manuel (admin « épingle » p. ex. Casablanca en 1er). */
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by'),
+    updatedBy: text('updated_by'),
+  },
+  (t) => ({
+    slugUnique: uniqueIndex('delivery_cities_slug_unique').on(t.slug),
+    activeNameIdx: index('delivery_cities_active_name_idx').on(
+      t.isActive,
+      t.nameFr,
+    ),
+    countryActiveIdx: index('delivery_cities_country_active_idx').on(
+      t.countryCode,
+      t.isActive,
+    ),
+    // Index expression géré côté migration (text_pattern_ops sur lower(name_fr))
+    // — non exprimable en Drizzle. Visible uniquement à l'usage `lower(name_fr)
+    // LIKE 'x%'`.
+  }),
+);
+
+// — Inferred types — — — — — — — — — — — — — — — — — — — — — — — — — — — —
+export type FormConfigRow = typeof formConfig.$inferSelect;
+export type FormConfigInsert = typeof formConfig.$inferInsert;
+export type FormConfigHistoryRow = typeof formConfigHistory.$inferSelect;
+export type FormConfigHistoryInsert = typeof formConfigHistory.$inferInsert;
+export type ProductStockRow = typeof productStock.$inferSelect;
+export type ProductStockInsert = typeof productStock.$inferInsert;
+export type FormVariantAssignmentRow = typeof formVariantAssignment.$inferSelect;
+export type FormVariantAssignmentInsert = typeof formVariantAssignment.$inferInsert;
+export type CheckoutIdempotencyRow = typeof checkoutIdempotency.$inferSelect;
+export type CheckoutIdempotencyInsert = typeof checkoutIdempotency.$inferInsert;
+export type DeliveryCityRow = typeof deliveryCities.$inferSelect;
+export type DeliveryCityInsert = typeof deliveryCities.$inferInsert;
+
+// ===========================================================================
+// GTM Poka-Yoke (D-001) — Surveillance runtime de la cohérence GTM
+// cf. docs/gtm-poka-yoke/20-data/01-data-model.md
+// ===========================================================================
+
+export const gtmSentinelPings = pgTable(
+  'gtm_sentinel_pings',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull(),
+    containerId: text('container_id').notNull(),
+    gtmId: text('gtm_id'),
+    bundleId: text('bundle_id').notNull(),
+    mappingVersion: text('mapping_version').notNull(),
+    configVersion: text('config_version').notNull(),
+    manifestMismatch: boolean('manifest_mismatch').notNull().default(false),
+    manifestMismatchDetails: text('manifest_mismatch_details'),
+    uaHash: text('ua_hash'),
+    ipHash: text('ip_hash'),
+    pageUrlHash: text('page_url_hash'),
+    rawPayload: jsonb('raw_payload').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  },
+  (t) => ({
+    receivedAtDesc: index('idx_gtm_pings_received_at_desc').on(t.receivedAt),
+    containerBundle: index('idx_gtm_pings_container_bundle').on(t.containerId, t.bundleId),
+    mappingVReceived: index('idx_gtm_pings_mapping_v_received').on(t.mappingVersion, t.receivedAt),
+  }),
+);
+
+export const gtmDriftState = pgTable('gtm_drift_state', {
+  id: text('id').primaryKey(),
+  status: text('status', { enum: ['ok', 'warning', 'critical'] }).notNull(),
+  since: timestamp('since', { withTimezone: true }).notNull(),
+  reasonsJson: jsonb('reasons_json').$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+  lastPingId: text('last_ping_id'),
+  lastCheckAt: timestamp('last_check_at', { withTimezone: true }).notNull().defaultNow(),
+  adminSnapshot: jsonb('admin_snapshot').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const gtmDriftHistory = pgTable(
+  'gtm_drift_history',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()::text`),
+    at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+    previousStatus: text('previous_status', { enum: ['ok', 'warning', 'critical'] }),
+    newStatus: text('new_status', { enum: ['ok', 'warning', 'critical'] }).notNull(),
+    reasonsJson: jsonb('reasons_json').$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+    triggeredByPingId: text('triggered_by_ping_id'),
+  },
+  (t) => ({
+    atDesc: index('idx_gtm_drift_history_at_desc').on(t.at),
+  }),
+);
+
+export const gtmSentinelDailyAggregates = pgTable(
+  'gtm_sentinel_daily_aggregates',
+  {
+    day: text('day').notNull(),
+    bundleId: text('bundle_id').notNull(),
+    mappingVersion: text('mapping_version').notNull(),
+    configVersion: text('config_version').notNull(),
+    containerId: text('container_id').notNull(),
+    pingsCount: integer('pings_count').notNull().default(0),
+    driftDetected: boolean('drift_detected').notNull().default(false),
+    firstPingAt: timestamp('first_ping_at', { withTimezone: true }).notNull(),
+    lastPingAt: timestamp('last_ping_at', { withTimezone: true }).notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.day, t.bundleId] }),
+    dayDesc: index('idx_gtm_daily_agg_day_desc').on(t.day),
+  }),
+);
+
+export type GtmSentinelPingRow = typeof gtmSentinelPings.$inferSelect;
+export type GtmSentinelPingInsert = typeof gtmSentinelPings.$inferInsert;
+export type GtmDriftStateRow = typeof gtmDriftState.$inferSelect;
+export type GtmDriftStateInsert = typeof gtmDriftState.$inferInsert;
+export type GtmDriftHistoryRow = typeof gtmDriftHistory.$inferSelect;
+export type GtmDriftHistoryInsert = typeof gtmDriftHistory.$inferInsert;
+export type GtmSentinelDailyAggregateRow = typeof gtmSentinelDailyAggregates.$inferSelect;
+export type GtmSentinelDailyAggregateInsert = typeof gtmSentinelDailyAggregates.$inferInsert;
+
+// — Legal pages — — — — — — — — — — — — — — — — — — — — — — — — — — — — — —
+export const legalPageStatusEnum = pgEnum('legal_page_status', [
+  'draft',
+  'review',
+  'published',
+  'archived',
+]);
+
+export const legalLinkStatusEnum = pgEnum('legal_link_status', [
+  'ok',
+  'page_missing',
+  'page_draft',
+  'http_4xx',
+  'http_5xx',
+  'timeout',
+]);
+
+export const legalPages = pgTable(
+  'legal_pages',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    bodyMd: text('body_md').notNull(),
+    status: legalPageStatusEnum('status').notNull().default('draft'),
+    version: integer('version').notNull().default(1),
+    includeInSearch: boolean('include_in_search').notNull().default(false),
+    canonicalUrl: text('canonical_url'),
+    locale: text('locale').notNull().default('fr-MA'),
+    requireLegalReview: boolean('require_legal_review').notNull().default(true),
+    lastLegalReviewAt: timestamp('last_legal_review_at', { withTimezone: true }),
+    lastLegalReviewBy: text('last_legal_review_by').references(() => adminUsers.id, {
+      onDelete: 'set null',
+    }),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    submittedBy: text('submitted_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    publishedBy: text('published_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    updatedBy: text('updated_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+  },
+  (t) => ({
+    slugUnique: uniqueIndex('legal_pages_slug_unique').on(t.slug),
+    statusIdx: index('idx_legal_pages_status').on(t.status),
+    updatedAtIdx: index('idx_legal_pages_updated_at').on(t.updatedAt),
+  }),
+);
+
+export const legalPagesHistory = pgTable(
+  'legal_pages_history',
+  {
+    id: text('id').primaryKey(),
+    pageId: text('page_id')
+      .notNull()
+      .references(() => legalPages.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    version: integer('version').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    bodyMd: text('body_md').notNull(),
+    metadataJson: jsonb('metadata_json').notNull().default({}),
+    statusAtSnapshot: legalPageStatusEnum('status_at_snapshot').notNull(),
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull(),
+    publishedBy: text('published_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+    gitCommitSha: text('git_commit_sha'),
+    gitCommitAt: timestamp('git_commit_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pageVersionUnique: uniqueIndex('legal_history_page_version_unique').on(t.pageId, t.version),
+    pageVersionIdx: index('idx_legal_history_page_version').on(t.pageId, t.version),
+    slugDateIdx: index('idx_legal_history_slug_date').on(t.slug, t.publishedAt),
+  }),
+);
+
+export const legalZones = pgTable('legal_zones', {
+  key: text('key').primaryKey(),
+  label: text('label').notNull(),
+  description: text('description'),
+  maxItemsRecommended: integer('max_items_recommended').notNull().default(5),
+  isRequired: boolean('is_required').notNull().default(false),
+  displayOrder: integer('display_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const legalPagePlacements = pgTable(
+  'legal_page_placements',
+  {
+    pageSlug: text('page_slug')
+      .notNull()
+      .references(() => legalPages.slug, { onUpdate: 'cascade', onDelete: 'cascade' }),
+    zoneKey: text('zone_key')
+      .notNull()
+      .references(() => legalZones.key, { onUpdate: 'cascade', onDelete: 'restrict' }),
+    displayOrder: integer('display_order').notNull().default(0),
+    isVisible: boolean('is_visible').notNull().default(true),
+    labelOverride: text('label_override'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.pageSlug, t.zoneKey] }),
+    zoneOrderIdx: index('idx_placements_zone_order').on(t.zoneKey, t.displayOrder),
+  }),
+);
+
+export const legalTemplateVars = pgTable('legal_template_vars', {
+  key: text('key').primaryKey(),
+  value: text('value'),
+  label: text('label').notNull(),
+  description: text('description'),
+  isRequired: boolean('is_required').notNull().default(true),
+  sensitive: boolean('sensitive').notNull().default(false),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedBy: text('updated_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+});
+
+export const legalLinkHealthSnapshot = pgTable(
+  'legal_link_health_snapshot',
+  {
+    id: text('id').primaryKey(),
+    checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
+    zoneKey: text('zone_key').notNull(),
+    pageSlug: text('page_slug').notNull(),
+    status: legalLinkStatusEnum('status').notNull(),
+    httpCode: integer('http_code'),
+    latencyMs: integer('latency_ms'),
+    notes: text('notes'),
+  },
+  (t) => ({
+    checkedAtIdx: index('idx_lhs_checked_at').on(t.checkedAt),
+    linkIdx: index('idx_lhs_link').on(t.zoneKey, t.pageSlug, t.checkedAt),
+    anomalyIdx: index('idx_lhs_anomaly').on(t.status),
+  }),
+);
+
+export type LegalPageRow = typeof legalPages.$inferSelect;
+export type LegalPageInsert = typeof legalPages.$inferInsert;
+export type LegalPageHistoryRow = typeof legalPagesHistory.$inferSelect;
+export type LegalPageHistoryInsert = typeof legalPagesHistory.$inferInsert;
+export type LegalZoneRow = typeof legalZones.$inferSelect;
+export type LegalZoneInsert = typeof legalZones.$inferInsert;
+export type LegalPagePlacementRow = typeof legalPagePlacements.$inferSelect;
+export type LegalPagePlacementInsert = typeof legalPagePlacements.$inferInsert;
+export type LegalTemplateVarRow = typeof legalTemplateVars.$inferSelect;
+export type LegalTemplateVarInsert = typeof legalTemplateVars.$inferInsert;
+export type LegalLinkHealthSnapshotRow = typeof legalLinkHealthSnapshot.$inferSelect;
+export type LegalLinkHealthSnapshotInsert = typeof legalLinkHealthSnapshot.$inferInsert;
+
+export const legalSlugRedirects = pgTable('legal_slug_redirects', {
+  oldSlug: text('old_slug').primaryKey(),
+  newSlug: text('new_slug').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: text('created_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+});
+
+export type LegalSlugRedirectRow = typeof legalSlugRedirects.$inferSelect;
+export type LegalSlugRedirectInsert = typeof legalSlugRedirects.$inferInsert;
+
+/* ─────────────────────────────────────────────────────────────────
+ * Product review photos (galerie hero)
+ * cf. docs/kit-hero-optim/02-architecture.md §2.2
+ * ───────────────────────────────────────────────────────────────── */
+
+export const productReviewPhotos = pgTable(
+  'product_review_photos',
+  {
+    id: text('id').primaryKey(),
+    productId: text('product_id').notNull(),
+    reviewId: text('review_id'),
+    src: text('src').notNull(),
+    alt: text('alt').notNull().default('Photo cliente'),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    blurDataUrl: text('blur_data_url'),
+    displayOrder: integer('display_order').notNull().default(0),
+    status: text('status', { enum: ['draft', 'published', 'archived'] })
+      .notNull()
+      .default('published'),
+    reviewerInitials: text('reviewer_initials'),
+    reviewerCity: text('reviewer_city'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    productOrderIdx: index('idx_review_photos_product').on(
+      t.productId,
+      t.status,
+      t.displayOrder,
+    ),
+  }),
+);
+
+export type ProductReviewPhotoRow = typeof productReviewPhotos.$inferSelect;
+export type ProductReviewPhotoInsert = typeof productReviewPhotos.$inferInsert;

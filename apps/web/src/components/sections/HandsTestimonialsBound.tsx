@@ -1,7 +1,10 @@
 import 'server-only';
 import type { ReactNode } from 'react';
 import { HandsTestimonials } from './HandsTestimonials';
-import type { HandsTestimonialMediaSlots } from '@/components/commerce/HandsTestimonialCarousel';
+import type {
+  HandsTestimonialMediaSlots,
+  HandsTestimonialLabels,
+} from '@/components/commerce/HandsTestimonialCarousel';
 import { ComponentMedia } from '@/lib/components/ComponentMedia';
 import { resolveComponentSlot } from '@/lib/components/resolver';
 import type { HandsTestimonial } from '@/lib/schemas';
@@ -9,6 +12,10 @@ import type { HandsTestimonial } from '@/lib/schemas';
 interface HandsTestimonialsBoundProps {
   items: HandsTestimonial[];
   componentKey?: string;
+  /** Phase 7E — en-tête localisé forwardé à `<HandsTestimonials>`. */
+  header?: { kicker: string; title: string; description: string };
+  /** Phase 9 i18n — libellés avant/après + « initiée depuis » localisés. */
+  labels?: HandsTestimonialLabels;
 }
 
 /**
@@ -19,6 +26,8 @@ interface HandsTestimonialsBoundProps {
 export async function HandsTestimonialsBound({
   items,
   componentKey = 'kit-hands-testimonials',
+  header,
+  labels,
 }: HandsTestimonialsBoundProps) {
   const entries = await Promise.all(
     items.map(async (item): Promise<[string, HandsTestimonialMediaSlots] | null> => {
@@ -65,6 +74,8 @@ export async function HandsTestimonialsBound({
     <HandsTestimonials
       items={items}
       mediaSlotsByItemId={mediaSlotsByItemId}
+      header={header}
+      {...(labels ? { labels } : {})}
     />
   );
 }

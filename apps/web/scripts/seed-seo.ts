@@ -5,6 +5,7 @@
  *
  * Usage : `pnpm tsx scripts/seed-seo.ts`
  */
+import './_load-env.mjs';
 import { upsertOverride, upsertSeoSettings } from '@/lib/db/queries/seo';
 import { seoSettingsDefault } from '@/lib/seo/defaults';
 import { FEMIGLOW_KNOWN_PAGES } from '@/lib/seo/known-pages';
@@ -278,7 +279,13 @@ async function main(): Promise<void> {
   );
 }
 
-if (require.main === module) {
+// Auto-execute when run directly (ESM-compatible). Guarded pour permettre
+// l'import sans déclencher l'exécution (utilisé par lib/seeders/items/seo.ts).
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
   main().catch((err) => {
     console.error('[seed-seo] erreur:', err);
     process.exit(1);

@@ -23,7 +23,7 @@ interface Params {
   params: { slug: string };
 }
 
-const SITE_URL = 'https://femiglow.ma';
+const SITE_URL = 'https://femiglow-maroc.com';
 
 export async function generateStaticParams() {
   const articles = await cms.getArticles({ limit: 100 });

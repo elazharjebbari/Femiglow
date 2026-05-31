@@ -8,7 +8,7 @@ interface FormTypeOption {
   label: string;
 }
 
-const options: ReadonlyArray<FormTypeOption> = [
+const DEFAULT_OPTIONS: ReadonlyArray<FormTypeOption> = [
   { value: 'question', label: 'Une question' },
   { value: 'order', label: 'Une commande' },
   { value: 'professional', label: 'Un échange professionnel' },
@@ -19,6 +19,8 @@ interface FormTypeSelectorProps {
   onChange: (next: ContactType) => void;
   name?: string;
   legend?: string;
+  /** Phase 7 wiring — options localisées. Défaut FR si absent. */
+  options?: ReadonlyArray<FormTypeOption>;
 }
 
 export function FormTypeSelector({
@@ -26,6 +28,7 @@ export function FormTypeSelector({
   onChange,
   name = 'type',
   legend = 'Quel type de message\u202F?',
+  options = DEFAULT_OPTIONS,
 }: FormTypeSelectorProps) {
   return (
     <fieldset className="space-y-3">

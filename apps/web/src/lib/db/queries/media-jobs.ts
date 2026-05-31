@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, lte, sql as dsql } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
+import { rowsOf } from '@/lib/db/exec';
 import { createId } from '@/lib/ids';
 import type { MediaJob, MediaJobKind, MediaJobStatus } from '@/lib/db/types';
 
@@ -88,8 +89,15 @@ export async function claimNextPendingJob(): Promise<MediaJob | null> {
       )
       RETURNING *
     `;
-    const result = (await drizzle.execute(claimSql)) as unknown as { rows: MediaJob[] };
-    return result.rows[0] ?? null;
+    // Cf. lib/db/exec.ts — db.execute() shape diverges between Neon ({rows:[]})
+    // and postgres-js (array direct). Use rowsOf() to handle both safely.
+    // The `as unknown as ...` escape hatch is needed because Drizzle's
+    // execute<T> requires T extends record-shape ; MediaJob isn't.
+    const result = (await drizzle.execute(claimSql)) as unknown as
+      | { rows: MediaJob[] }
+      | MediaJob[];
+    const rows = rowsOf(result);
+    return rows[0] ? rowToMediaJob(rows[0]) : null;
   }
   const store = memoryStore();
   const candidates = Array.from(store.mediaJobs.values())
@@ -183,6 +191,36 @@ export async function findJobById(id: string): Promise<MediaJob | null> {
   return memoryStore().mediaJobs.get(id) ?? null;
 }
 
+function rowToMediaJob(row: MediaJob | Record<string, unknown>): MediaJob {
+  const r = row as Record<string, unknown>;
+  return {
+    id: String(r.id),
+    mediaId: String(r.mediaId ?? r.media_id),
+    kind: String(r.kind) as MediaJobKind,
+    status: String(r.status) as MediaJobStatus,
+    attemptCount: Number(r.attemptCount ?? r.attempt_count ?? 0),
+    nextAttemptAt: toDate(r.nextAttemptAt ?? r.next_attempt_at),
+    errorMessage: nullableString(r.errorMessage ?? r.error_message),
+    payload: (r.payload as Record<string, unknown> | null) ?? {},
+    startedAt: nullableDate(r.startedAt ?? r.started_at),
+    finishedAt: nullableDate(r.finishedAt ?? r.finished_at),
+    createdAt: toDate(r.createdAt ?? r.created_at),
+  };
+}
+
+function toDate(value: unknown): Date {
+  return value instanceof Date ? value : new Date(String(value));
+}
+
+function nullableDate(value: unknown): Date | null {
+  if (value === null || value === undefined) return null;
+  return toDate(value);
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
 export async function listJobsByMedia(mediaId: string, limit = 20): Promise<MediaJob[]> {
   const drizzle = db();
   if (drizzle) {
@@ -242,12 +280,15 @@ export async function recoverFailedJobs(sinceDays = 7): Promise<number> {
   const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
   const now = new Date();
   if (drizzle) {
+    // CHA — `.returning(fields)` collapse sur l'union `DrizzleNeon | DrizzlePg`
+    // (seul l'overload sans args survit). On ne consomme que `.length` ici,
+    // donc l'overload no-arg est strictement équivalent et évite tout cast.
     const rows = await drizzle
       .update(schema.mediaJobs)
       .set({ status: 'pending', attemptCount: 0, nextAttemptAt: now, errorMessage: null })
       .where(and(eq(schema.mediaJobs.status, 'failed'), lte(schema.mediaJobs.createdAt, now)))
-      .returning({ id: schema.mediaJobs.id });
-    return rows.filter((r) => r).length;
+      .returning();
+    return rows.length;
   }
   const store = memoryStore();
   let count = 0;

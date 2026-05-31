@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { SeoOverride, SeoScope } from '@/lib/seo/types';
-import { OG_TEMPLATES, SEO_SCOPES } from '@/lib/seo/types';
+import { SEO_SCOPES } from '@/lib/seo/types';
 import { seoOverrideUpsertSchema } from '@/lib/seo/schemas';
 import type { AuditReport } from '@/lib/seo/rules/types';
 import { SeoLinterPanel } from '@/components/admin/seo/SeoLinterPanel';
+import { OgImagePicker } from '@/components/admin/seo/OgImagePicker';
 import { SerpPreview } from '@/components/admin/seo/previews/SerpPreview';
 import { FacebookPreview } from '@/components/admin/seo/previews/FacebookPreview';
 import { TwitterPreview } from '@/components/admin/seo/previews/TwitterPreview';
@@ -294,8 +295,8 @@ export function SeoOverrideEditor({
   }
 
   // Preview values used by SerpPreview / FacebookPreview / TwitterPreview
-  const previewUrl = state.canonical || `https://femiglow.com/${state.targetKey || ''}`;
-  let previewHost = 'femiglow.com';
+  const previewUrl = state.canonical || `https://femiglow-maroc.com/${state.targetKey || ''}`;
+  let previewHost = 'femiglow-maroc.com';
   try {
     previewHost = new URL(previewUrl).host;
   } catch {
@@ -430,7 +431,7 @@ export function SeoOverrideEditor({
             type="text"
             value={state.canonical}
             onChange={(e) => setState((s) => ({ ...s, canonical: e.target.value }))}
-            placeholder="https://femiglow.com/page"
+            placeholder="https://femiglow-maroc.com/page"
             className="w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-sm"
           />
         </Field>
@@ -477,37 +478,22 @@ export function SeoOverrideEditor({
             className="w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-sm"
           />
         </Field>
-        <Field label="OG image — média ID" field="ogImageMediaId">
-          <input
-            type="text"
-            value={state.ogImageMediaId}
-            onChange={(e) => setState((s) => ({ ...s, ogImageMediaId: e.target.value }))}
-            placeholder="med_..."
-            className="w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-sm font-mono"
-          />
-        </Field>
-        <Field label="OG image — template" field="ogImageTemplate">
-          <select
-            value={state.ogImageTemplate ?? ''}
-            onChange={(e) =>
+        <div className="lg:col-span-2" data-testid="seo-override-og-image-field">
+          <OgImagePicker
+            value={{
+              mediaId: state.ogImageMediaId === '' ? null : state.ogImageMediaId,
+              template: state.ogImageTemplate === '' ? null : state.ogImageTemplate,
+            }}
+            onChange={(next) =>
               setState((s) => ({
                 ...s,
-                ogImageTemplate:
-                  e.target.value === ''
-                    ? ''
-                    : (e.target.value as SeoOverride['ogImageTemplate']),
+                ogImageMediaId: next.mediaId ?? '',
+                ogImageTemplate: next.template ?? '',
               }))
             }
-            className="w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-sm"
-          >
-            <option value="">— aucun —</option>
-            {OG_TEMPLATES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </Field>
+            dynamicEnabled={process.env.NEXT_PUBLIC_SEO_OG_DYNAMIC === 'true'}
+          />
+        </div>
         <Field label="Twitter card" field="twitterCard">
           <select
             value={state.twitterCard}

@@ -1,16 +1,21 @@
 import type { HomepageContent } from '@/lib/schemas';
 
+/**
+ * Audit 08/09 — Hero, gestes 5\u21923, manifeste, témoins.
+ * Centre de gravité : Rabat. Produit nommé : Pack FemiGlow.
+ */
 export const mockHomepage: HomepageContent = {
   hero: {
     variant: 'editorial',
-    kicker: 'Maison de Casablanca',
-    title: 'Le rituel ongles, en cinq minutes.',
-    subtitle: 'Trois gestes, une saison. Une beauté lente, ancrée au Maroc.',
+    kicker: 'Maison de Rabat',
+    title: 'Le pack FemiGlow. Deux gestes, un éclat révélé.',
+    subtitle:
+      'Manucure japonaise halal, pensée à Rabat. Sans vernis, sans abrasion.',
     cta: { label: 'Découvrir le rituel', href: '/rituel', variant: 'primary' },
-    ctaSecondary: { label: 'Voir le kit', href: '/kit', variant: 'link' },
+    ctaSecondary: { label: 'Recevoir le pack', href: '/kit', variant: 'link' },
     image: {
       src: '/journal/hero-accueil.svg',
-      alt: 'Mains posées sur une table en bois, lumière douce de fin de matinée',
+      alt: 'Coffret pastel FemiGlow ouvert, pot paste sauge et pot powder rose poudré, polissoir bleu ciel, lumière naturelle de fin de matinée',
       width: 1600,
       height: 2000,
     },
@@ -18,41 +23,32 @@ export const mockHomepage: HomepageContent = {
   gestes: [
     {
       ordre: 1,
-      titre: 'Préparer',
-      duree: '1 minute',
-      description: 'Nettoyer, déposer la main au repos.',
+      titre: 'Paste',
+      duree: '2 minutes',
+      description:
+        'Pâte crème onctueuse, posée sur ongle sec. Filme, lisse, prépare.',
     },
     {
       ordre: 2,
-      titre: 'Limer',
-      duree: '1 minute',
-      description: 'Donner la forme. Sans précipitation.',
+      titre: 'Powder',
+      duree: '2 minutes',
+      description:
+        'Poudre fine blanche, déposée sur la paste. Absorbe, lustre, réveille.',
     },
     {
       ordre: 3,
-      titre: 'Hydrater les cuticules',
+      titre: 'Polish & Shine',
       duree: '1 minute',
-      description: 'Une goutte d\u2019huile, repousser doucement.',
-    },
-    {
-      ordre: 4,
-      titre: 'Appliquer la base',
-      duree: '1 minute',
-      description: 'Couche fine, sans surcharge.',
-    },
-    {
-      ordre: 5,
-      titre: 'Sceller',
-      duree: '1 minute',
-      description: 'Fortifiant en finition, laisser sécher.',
+      description:
+        'Polissoir Step 4 passé en mouvements lents. La brillance naturelle apparaît.',
     },
   ],
   manifeste: {
     kicker: 'Manifeste',
     title: 'La beauté lente est une attention.',
     paragraphs: [
-      'Nous croyons que les ongles tiennent quand on leur prête le temps qu\u2019ils demandent.',
-      'Pas plus, pas moins. Cinq minutes par jour, un soin sans démonstration.',
+      'Nous croyons que les ongles révèlent ce qu\u2019on leur prête. Le geste, le temps, la patience.',
+      'Cinq minutes par jour. Deux gestes et un polissoir. Aucune démonstration.',
     ],
   },
   avis: [
@@ -62,7 +58,7 @@ export const mockHomepage: HomepageContent = {
       authorContext: 'Casablanca',
       initieeDepuis: 'Janvier 2025',
       quote:
-        'Mes ongles ne cassent plus depuis trois mois. Je ne pensais pas que cinq minutes le soir suffiraient.',
+        'Trois mois sans casse. Cinq minutes par soir suffisent.',
       handImage: {
         src: '/avis/mains-salma.svg',
         alt: 'Mains au repos sur un plaid clair, lumière naturelle',
@@ -75,7 +71,8 @@ export const mockHomepage: HomepageContent = {
       authorFirstName: 'Yasmine',
       authorContext: 'Rabat',
       initieeDepuis: 'Mars 2024',
-      quote: 'C\u2019est devenu un moment pour moi. Le rituel rythme ma fin de journée.',
+      quote:
+        'Le rituel rythme ma fin de journée. C\u2019est devenu un moment pour moi.',
       handImage: {
         src: '/avis/mains-yasmine.svg',
         alt: 'Mains qui tiennent une tasse en céramique, posées sur une table en bois',
@@ -88,7 +85,8 @@ export const mockHomepage: HomepageContent = {
       authorFirstName: 'Inès',
       authorContext: 'Marrakech',
       initieeDepuis: 'Octobre 2023',
-      quote: 'La base a une finition naturelle qui me ressemble enfin.',
+      quote:
+        'La paste donne un fini qui me ressemble. Naturel, sans vernis.',
       handImage: {
         src: '/avis/mains-ines.svg',
         alt: 'Mains croisées sur un drap de lin, ongles nus aux reflets pétale',
@@ -97,5 +95,9 @@ export const mockHomepage: HomepageContent = {
       },
     },
   ],
-  journalExtraitsSlugs: ['hiver-ongles-patience', 'matieres-d-ailleurs', 'cinq-minutes-le-soir'],
+  journalExtraitsSlugs: [
+    'hiver-ongles-patience',
+    'matieres-d-ailleurs',
+    'paste-et-powder-deux-gestes',
+  ],
 };

@@ -29,6 +29,7 @@ import { vi } from 'vitest';
 
 import type { ChatStreamEvent } from '@/lib/chat/contracts';
 import type { ChatLeadInsert, ChatLeadRow } from '@/lib/chat/db/schema';
+import { computeIdentityHash } from '@/lib/chat/repos/identity-hash';
 import { server } from '@/test/msw/server';
 import { encodeSseStream, type SsePart } from '@/test/msw/openai-handlers';
 import { http, HttpResponse } from 'msw';
@@ -196,6 +197,19 @@ export function buildEventRepoMock() {
           (e) => e.sessionId === sessionId && e.type === type,
         );
       }),
+      hasLeadOfferForSession: vi.fn(async (sessionId: string) =>
+        simStores.events.some(
+          (e) => e.sessionId === sessionId && e.type === 'chat_lead_form_offered',
+        ),
+      ),
+      hasLeadOfferForMessage: vi.fn(async (sessionId: string, messageId: string) =>
+        simStores.events.some(
+          (e) =>
+            e.sessionId === sessionId &&
+            e.type === 'chat_lead_form_offered' &&
+            (e.payload as { messageId?: string } | null)?.messageId === messageId,
+        ),
+      ),
     },
   };
 }
@@ -239,7 +253,15 @@ export function buildRagServiceMock() {
 export function buildLeadRepoMock() {
   return {
     leadRepo: {
-      create: vi.fn(async (insert: Omit<ChatLeadInsert, 'id'> & { id?: string }) => {
+      create: vi.fn(async (insert: Omit<ChatLeadInsert, 'id' | 'identityHash'> & { id?: string }) => {
+        // Simulate ON CONFLICT (sessionId, identityHash) DO NOTHING:
+        // if a lead with the same (sessionId, identityHash) exists, return it.
+        const identityHash = computeIdentityHash(insert.phoneE164, insert.firstName);
+        for (const existing of simStores.leads.values()) {
+          if (existing.sessionId === insert.sessionId && existing.identityHash === identityHash) {
+            return existing;
+          }
+        }
         const id = insert.id ?? `cl_${Math.random().toString(36).slice(2, 10)}`;
         const row: ChatLeadRow = {
           id,
@@ -254,6 +276,7 @@ export function buildLeadRepoMock() {
           consentAt: insert.consentAt ?? new Date(),
           visitorId: insert.visitorId,
           fingerprintHash: insert.fingerprintHash ?? null,
+          identityHash: identityHash,
           page: insert.page ?? null,
           referrer: insert.referrer ?? null,
           utm: insert.utm ?? null,
@@ -268,6 +291,36 @@ export function buildLeadRepoMock() {
           handledAt: insert.handledAt ?? null,
           outcome: insert.outcome ?? 'pending',
           convertedOrderId: insert.convertedOrderId ?? null,
+          // CHA-230 — Extensions wizard checkout funnel.
+          lastName: insert.lastName ?? null,
+          email: insert.email ?? null,
+          emailVerifiedAt: insert.emailVerifiedAt ?? null,
+          emailConsent: insert.emailConsent ?? false,
+          shippingCity: insert.shippingCity ?? null,
+          shippingAddressLine1: insert.shippingAddressLine1 ?? null,
+          shippingAddressLine2: insert.shippingAddressLine2 ?? null,
+          shippingPostalCode: insert.shippingPostalCode ?? null,
+          shippingCountry: insert.shippingCountry ?? 'MA',
+          shippingNotes: insert.shippingNotes ?? null,
+          preferredPaymentMethod: insert.preferredPaymentMethod ?? null,
+          source: insert.source ?? 'chat_widget',
+          formId: insert.formId ?? null,
+          formMode: insert.formMode ?? null,
+          variantKey: insert.variantKey ?? null,
+          gclid: insert.gclid ?? null,
+          fbp: insert.fbp ?? null,
+          fbc: insert.fbc ?? null,
+          cartSnapshot: insert.cartSnapshot ?? null,
+          cartTotalCents: insert.cartTotalCents ?? null,
+          cartCurrency: insert.cartCurrency ?? null,
+          lastTouchedStep: insert.lastTouchedStep ?? null,
+          leadCapturedAt: insert.leadCapturedAt ?? null,
+          addressCompletedAt: insert.addressCompletedAt ?? null,
+          paymentSelectedAt: insert.paymentSelectedAt ?? null,
+          purchasedAt: insert.purchasedAt ?? null,
+          abandonWebhookAt: insert.abandonWebhookAt ?? null,
+          step2WebhookAt: insert.step2WebhookAt ?? null,
+          step1AbandonWebhookAt: insert.step1AbandonWebhookAt ?? null,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -283,6 +336,13 @@ export function buildLeadRepoMock() {
       findBySession: vi.fn(async (sessionId: string) => {
         const leads = [...simStores.leads.values()].filter(
           (l) => l.sessionId === sessionId,
+        );
+        leads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return leads[0] ?? null;
+      }),
+      findBySessionAndIdentity: vi.fn(async (sessionId: string, identityHash: string) => {
+        const leads = [...simStores.leads.values()].filter(
+          (l) => l.sessionId === sessionId && l.identityHash === identityHash,
         );
         leads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         return leads[0] ?? null;

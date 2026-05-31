@@ -1,0 +1,110 @@
+@startuml flow-lead-form
+title Flow analytique — Soumission lead form
+
+skinparam shadowing false
+
+actor Visiteur as V
+participant "Wizard\nStep 1 Form" as F
+participant "trackEvent()" as TE
+participant "GTM" as GTM
+participant "GA4" as GA4
+participant "Google Ads" as Ads
+participant "Meta CAPI" as Meta
+participant "Server /api/leads" as API
+
+V -> F : Saisit email + clic "Continuer"
+F -> API : POST /api/leads
+API -> API : Crée lead en DB
+API --> F : 200 { leadId }
+
+F -> TE : trackEvent('lead_form_submit', {form_id: 'wizard_kit', value:0, currency:'MAD'})
+TE -> GTM : dataLayer.push('lead_form_submit')
+
+GTM -> GA4 : generate_lead event
+note right : measurementId = G-5VHP17SDZM\n(via {{CONST - GA4 Measurement ID}})
+GA4 --> GTM : 200
+
+GTM -> Ads : conversion lead-form-MAD
+note right : Customer = AW-987654321
+Ads --> GTM : 200
+
+GTM -> Meta : Lead event (HTML tag fbq)
+Meta --> GTM : (browser pixel)
+
+TE -> API : POST /api/track {event:'lead_form_submit', ...}
+note right : Pour CAPI matching\n(Meta + GA4 Measurement Protocol)
+API -> Meta : Lead via CAPI (server)
+Meta --> API : 200
+API --> TE : 200
+
+@enduml
+
+@startuml flow-purchase
+title Flow analytique — Confirmation purchase
+
+skinparam shadowing false
+
+participant "ThankYouStep\n(client)" as TY
+participant "trackEvent()" as TE
+participant "GTM" as GTM
+participant "GA4" as GA4
+participant "Server\n/api/orders/confirm-email" as API
+participant "Meta CAPI" as Meta
+participant "GA4 MP" as GA4MP
+
+TY -> TE : trackEvent('purchase', {transaction_id, value, currency, items})
+
+TE -> GTM : push 'purchase'
+GTM -> GA4 : purchase event
+GA4 --> GTM : 200
+
+TE -> API : POST /api/orders/confirm-email + tracking
+note right : Server-side fires Meta CAPI\n+ optional GA4 MP duplicate
+API -> Meta : Purchase CAPI (avec email hash)
+Meta --> API : 200
+API -> GA4MP : purchase via Measurement Protocol
+GA4MP --> API : 204
+API --> TE : 200
+
+note over GA4
+  GA4 reçoit l'event 2x mais
+  déduplique via event_id partagé
+  entre browser pixel et MP.
+end note
+
+@enduml
+
+@startuml flow-consent
+title Flow consentement → tracking
+
+skinparam shadowing false
+
+participant "Browser" as B
+participant "Cookie Banner" as CB
+participant "GTM" as GTM
+participant "trackEvent()" as TE
+participant "Meta CAPI server" as MetaSrv
+
+B -> GTM : Page load
+GTM -> GTM : consent default = denied (all)
+
+note over GTM
+  GA4 envoie des pings cookieless
+  (mode "Consent denied"), pas d'events
+  complets, pas de cookies tiers.
+end note
+
+B -> CB : Affiche bannière
+B -> CB : Click "Accepter tout"
+CB -> GTM : gtag('consent', 'update', { ad_storage:'granted', analytics_storage:'granted', ... })
+GTM -> GTM : Active les tags GA4/Meta/Ads bufférisés
+
+B -> TE : trackEvent('add_to_cart')
+TE -> GTM : dataLayer push
+GTM -> GTM : Vérifie consent → ok → fire tags
+
+TE -> MetaSrv : POST /api/track
+MetaSrv -> MetaSrv : Read consent cookie\nVerify ad_storage === 'granted'
+MetaSrv --> TE : 200 (or skipped si denied)
+
+@enduml

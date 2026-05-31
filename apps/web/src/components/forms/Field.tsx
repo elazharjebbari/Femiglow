@@ -22,10 +22,10 @@ export function FieldShell({ id, label, hint, error, required, children, trailin
   const errorId = error ? `${id}-error` : undefined;
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium text-encre">
+      <label htmlFor={id} className="block text-start text-sm font-medium text-encre">
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-1 text-encre/50">
+          <span aria-hidden="true" className="ms-1 text-encre/50">
             *
           </span>
         )}
@@ -76,6 +76,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       <input
         ref={ref}
         id={id}
+        // CHA-231 : auto-détection LTR/RTL selon le contenu (utile en bilingue
+        // FR/AR). Override possible via prop `dir` sur l'appelant.
+        dir="auto"
         required={required}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
@@ -141,6 +144,8 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
         <textarea
           ref={ref}
           id={id}
+          // CHA-231 : auto-détection LTR/RTL pour la saisie bilingue FR/AR.
+          dir="auto"
           rows={rows}
           required={required}
           maxLength={maxLength}

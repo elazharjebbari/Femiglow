@@ -11,13 +11,13 @@ export const menuEntries: MenuEntry[] = [
   {
     label: 'Le rituel',
     href: routes.rituel,
-    description: 'Quatre gestes, quatre minutes, matin et soir.',
+    description: 'Manucure japonaise halal. Deux gestes, un polissoir.',
     vignette: { src: '/maison/cross-rituel.png', alt: '' },
   },
   {
-    label: 'Le kit',
+    label: 'Le pack',
     href: routes.kit,
-    description: 'Six pièces pensées pour les saisons sèches.',
+    description: 'Paste, powder, polissoir Step 4. Cinq minutes par soir.',
     vignette: { src: '/maison/cross-kit.png', alt: '' },
   },
   {
@@ -29,7 +29,7 @@ export const menuEntries: MenuEntry[] = [
   {
     label: 'La maison',
     href: routes.maison,
-    description: "Casablanca, l'atelier, les mains qui font.",
+    description: "Rabat, l'atelier de notre fondatrice, les mains qui font.",
     vignette: { src: '/maison/atelier-1.png', alt: '' },
   },
   {
@@ -40,6 +40,6 @@ export const menuEntries: MenuEntry[] = [
   },
 ];
 
-export const menuSeasonLabel = 'Saison du printemps — Casablanca';
-export const menuSeasonLabelShort = 'Printemps · Casa';
-export const menuSignature = 'Casablanca, saison du printemps.';
+export const menuSeasonLabel = 'Saison du printemps — Rabat';
+export const menuSeasonLabelShort = 'Printemps · Rabat';
+export const menuSignature = 'Rabat, saison du printemps.';

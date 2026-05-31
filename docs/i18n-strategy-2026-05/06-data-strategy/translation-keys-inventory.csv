@@ -1,0 +1,148 @@
+key,namespace,source_file,current_fr_value,priority,extraction_status
+common.back,common,components/ui/back-button.tsx,Retour,P0,pending
+common.continue,common,components/ui/button.tsx,Continuer,P0,pending
+common.cancel,common,components/ui/button.tsx,Annuler,P0,pending
+common.save,common,components/admin/save-button.tsx,Enregistrer,P0,pending
+common.delete,common,components/admin/delete-button.tsx,Supprimer,P1,pending
+common.edit,common,components/admin/edit-button.tsx,Modifier,P1,pending
+common.add,common,components/ui/add-button.tsx,Ajouter,P1,pending
+common.submit,common,components/ui/form.tsx,Envoyer,P0,pending
+common.loading,common,components/ui/loading.tsx,Chargement…,P0,pending
+common.error,common,components/ui/error.tsx,Une erreur est survenue,P0,pending
+common.success,common,components/ui/success.tsx,Succès,P0,pending
+common.required,common,components/ui/form-field.tsx,Champ requis,P0,pending
+common.optional,common,components/ui/form-field.tsx,Optionnel,P1,pending
+common.yes,common,components/ui/dialog.tsx,Oui,P0,pending
+common.no,common,components/ui/dialog.tsx,Non,P0,pending
+common.confirm,common,components/ui/dialog.tsx,Confirmer,P0,pending
+common.close,common,components/ui/dialog.tsx,Fermer,P0,pending
+common.retry,common,components/ui/error.tsx,Réessayer,P0,pending
+common.view_all,common,components/ui/section.tsx,Tout voir,P1,pending
+common.read_more,common,components/ui/section.tsx,Lire la suite,P1,pending
+navigation.home,navigation,components/header/main-nav.tsx,Accueil,P0,pending
+navigation.kit,navigation,components/header/main-nav.tsx,Le kit,P0,pending
+navigation.maison,navigation,components/header/main-nav.tsx,La maison,P0,pending
+navigation.rituel,navigation,components/header/main-nav.tsx,Le rituel,P0,pending
+navigation.journal,navigation,components/header/main-nav.tsx,Journal,P0,pending
+navigation.contact,navigation,components/header/main-nav.tsx,Contact,P0,pending
+navigation.account,navigation,components/header/main-nav.tsx,Mon compte,P1,pending
+navigation.cart,navigation,components/header/cart-icon.tsx,Panier,P0,pending
+navigation.search,navigation,components/header/search-button.tsx,Recherche,P1,pending
+navigation.legal_menu,navigation,components/footer/legal-menu.tsx,Mentions,P1,pending
+navigation.social.instagram,navigation,components/footer/social.tsx,Suivre sur Instagram,P2,pending
+navigation.social.tiktok,navigation,components/footer/social.tsx,Suivre sur TikTok,P2,pending
+navigation.footer.copyright,navigation,components/footer/copyright.tsx,© 2026 FemiGlow. Tous droits réservés.,P1,pending
+marketing.hero.title,marketing,app/(marketing)/page.tsx,"Le rituel ongles, en cinq minutes.",P0,pending
+marketing.hero.subtitle,marketing,app/(marketing)/page.tsx,"Trois gestes, une saison.",P0,pending
+marketing.hero.cta_primary,marketing,app/(marketing)/page.tsx,Découvrir le rituel,P0,pending
+marketing.hero.cta_secondary,marketing,app/(marketing)/page.tsx,Voir le kit,P0,pending
+marketing.hero.tagline,marketing,app/(marketing)/page.tsx,"Une beauté lente, ancrée au Maroc.",P0,pending
+marketing.kit.title,marketing,app/(marketing)/kit/page.tsx,Le kit FemiGlow,P0,pending
+marketing.kit.description,marketing,app/(marketing)/kit/page.tsx,Tout pour un rituel ongles complet à la maison.,P0,pending
+marketing.kit.price_label,marketing,app/(marketing)/kit/page.tsx,"À partir de {price, number, ::currency/MAD}",P0,pending
+marketing.kit.cta_primary,marketing,app/(marketing)/kit/page.tsx,Commander le kit,P0,pending
+marketing.kit.cta_secondary,marketing,app/(marketing)/kit/page.tsx,Découvrir les composants,P1,pending
+marketing.kit.stock_count,marketing,app/(marketing)/kit/page.tsx,"{count, plural, =0 {En rupture} one {Plus qu'un en stock} other {# kits disponibles}}",P0,pending
+marketing.kit.feature_1.title,marketing,app/(marketing)/kit/page.tsx,Geste essuyer,P1,pending
+marketing.kit.feature_1.description,marketing,app/(marketing)/kit/page.tsx,Préparer les ongles en douceur.,P1,pending
+marketing.kit.feature_2.title,marketing,app/(marketing)/kit/page.tsx,Geste appliquer,P1,pending
+marketing.kit.feature_2.description,marketing,app/(marketing)/kit/page.tsx,Poser la couleur en deux gestes.,P1,pending
+marketing.kit.feature_3.title,marketing,app/(marketing)/kit/page.tsx,Geste protéger,P1,pending
+marketing.kit.feature_3.description,marketing,app/(marketing)/kit/page.tsx,Sceller pour une tenue de saison.,P1,pending
+marketing.kit.faq.title,marketing,app/(marketing)/kit/page.tsx,Questions fréquentes,P1,pending
+marketing.kit.faq.q1,marketing,app/(marketing)/kit/page.tsx,Combien de temps tient le rituel ?,P1,pending
+marketing.kit.faq.a1,marketing,app/(marketing)/kit/page.tsx,Trois mois en moyenne avec une bonne hygiène d'application.,P1,pending
+marketing.kit.faq.q2,marketing,app/(marketing)/kit/page.tsx,Le kit convient-il à tous les types d'ongles ?,P1,pending
+marketing.kit.faq.a2,marketing,app/(marketing)/kit/page.tsx,Oui — les formulations sont pensées pour tous les profils.,P1,pending
+marketing.maison.title,marketing,app/(marketing)/maison/page.tsx,Maison FemiGlow,P0,pending
+marketing.maison.subtitle,marketing,app/(marketing)/maison/page.tsx,"La maison, le rituel, la beauté.",P0,pending
+marketing.maison.intro,marketing,app/(marketing)/maison/page.tsx,FemiGlow est une maison de beauté lente.,P0,pending
+marketing.maison.manifesto.statement_1,marketing,app/(marketing)/maison/page.tsx,Nous croyons à la lenteur.,P0,pending
+marketing.maison.manifesto.statement_2,marketing,app/(marketing)/maison/page.tsx,Nous croyons à la qualité.,P0,pending
+marketing.maison.manifesto.statement_3,marketing,app/(marketing)/maison/page.tsx,"Nous croyons à l'ancrage local, marocain.",P0,pending
+marketing.maison.values.title,marketing,app/(marketing)/maison/page.tsx,Nos valeurs,P1,pending
+marketing.maison.values.lenteur,marketing,app/(marketing)/maison/page.tsx,Lenteur — la beauté prend son temps,P1,pending
+marketing.maison.values.tracabilite,marketing,app/(marketing)/maison/page.tsx,Traçabilité — chaque ingrédient compte,P1,pending
+marketing.maison.values.local,marketing,app/(marketing)/maison/page.tsx,Local — fabrication au Maroc,P1,pending
+marketing.rituel.title,marketing,app/(marketing)/rituel/page.tsx,Le rituel,P0,pending
+marketing.rituel.subtitle,marketing,app/(marketing)/rituel/page.tsx,Trois gestes pour une saison.,P0,pending
+marketing.rituel.step_1.title,marketing,app/(marketing)/rituel/page.tsx,Préparer,P0,pending
+marketing.rituel.step_1.body,marketing,app/(marketing)/rituel/page.tsx,Essuyer la surface des ongles pour qu'elle accroche.,P1,pending
+marketing.rituel.step_2.title,marketing,app/(marketing)/rituel/page.tsx,Appliquer,P0,pending
+marketing.rituel.step_2.body,marketing,app/(marketing)/rituel/page.tsx,Poser deux couches fines en respectant le temps de séchage.,P1,pending
+marketing.rituel.step_3.title,marketing,app/(marketing)/rituel/page.tsx,Sceller,P0,pending
+marketing.rituel.step_3.body,marketing,app/(marketing)/rituel/page.tsx,Fixer la couleur avec la couche de protection.,P1,pending
+marketing.contact.title,marketing,app/(marketing)/contact/page.tsx,Nous contacter,P1,pending
+marketing.contact.subtitle,marketing,app/(marketing)/contact/page.tsx,Une question ? Une commande sur mesure ?,P1,pending
+marketing.contact.form.name,marketing,app/(marketing)/contact/page.tsx,Votre prénom,P1,pending
+marketing.contact.form.email,marketing,app/(marketing)/contact/page.tsx,Votre email,P1,pending
+marketing.contact.form.message,marketing,app/(marketing)/contact/page.tsx,Votre message,P1,pending
+marketing.contact.form.submit,marketing,app/(marketing)/contact/page.tsx,Envoyer le message,P1,pending
+marketing.contact.faq.title,marketing,app/(marketing)/contact/page.tsx,Questions fréquentes,P1,pending
+marketing.contact.faq.delivery_q,marketing,app/(marketing)/contact/page.tsx,Quel est le délai de livraison ?,P1,pending
+marketing.contact.faq.delivery_a,marketing,app/(marketing)/contact/page.tsx,2 à 5 jours ouvrés selon la ville.,P1,pending
+marketing.contact.faq.return_q,marketing,app/(marketing)/contact/page.tsx,Puis-je retourner un produit ?,P1,pending
+marketing.contact.faq.return_a,marketing,app/(marketing)/contact/page.tsx,Oui — sous 14 jours après réception.,P1,pending
+marketing.journal.title,marketing,app/(marketing)/journal/page.tsx,Le journal,P2,pending
+marketing.journal.subtitle,marketing,app/(marketing)/journal/page.tsx,Rituels et conversations.,P2,pending
+marketing.journal.read_more,marketing,app/(marketing)/journal/page.tsx,Continuer la lecture,P2,pending
+marketing.journal.no_articles,marketing,app/(marketing)/journal/page.tsx,Pas encore d'article publié.,P2,pending
+wizard.step_1.title,wizard,components/checkout/step-product.tsx,Choisir votre kit,P0,pending
+wizard.step_2.title,wizard,components/checkout/step-shipping.tsx,Livraison,P0,pending
+wizard.step_3.title,wizard,components/checkout/step-payment.tsx,Paiement,P0,pending
+wizard.step_4.title,wizard,components/checkout/step-confirmation.tsx,Confirmation,P0,pending
+wizard.shipping.fields.first_name,wizard,components/checkout/shipping-form.tsx,Prénom,P0,pending
+wizard.shipping.fields.last_name,wizard,components/checkout/shipping-form.tsx,Nom,P0,pending
+wizard.shipping.fields.email,wizard,components/checkout/shipping-form.tsx,Email,P0,pending
+wizard.shipping.fields.phone,wizard,components/checkout/shipping-form.tsx,Téléphone,P0,pending
+wizard.shipping.fields.address,wizard,components/checkout/shipping-form.tsx,Adresse,P0,pending
+wizard.shipping.fields.city,wizard,components/checkout/shipping-form.tsx,Ville,P0,pending
+wizard.shipping.fields.postal_code,wizard,components/checkout/shipping-form.tsx,Code postal,P0,pending
+wizard.shipping.errors.required,wizard,components/checkout/shipping-form.tsx,Ce champ est requis,P0,pending
+wizard.shipping.errors.email_invalid,wizard,components/checkout/shipping-form.tsx,Email invalide,P0,pending
+wizard.shipping.errors.phone_invalid,wizard,components/checkout/shipping-form.tsx,Numéro de téléphone invalide,P0,pending
+wizard.payment.method.cmi,wizard,components/checkout/payment-method.tsx,Carte bancaire,P0,pending
+wizard.payment.method.cod,wizard,components/checkout/payment-method.tsx,Paiement à la livraison,P0,pending
+wizard.payment.confirm,wizard,components/checkout/payment-confirm.tsx,Confirmer le paiement,P0,pending
+wizard.confirmation.title,wizard,components/checkout/step-confirmation.tsx,Merci pour votre commande,P0,pending
+wizard.confirmation.subtitle,wizard,components/checkout/step-confirmation.tsx,Vous recevrez un email de confirmation sous peu.,P0,pending
+legal.cgv.title,legal,app/legal/cgv/page.tsx,Conditions générales de vente,P0,pending
+legal.mentions_legales.title,legal,app/legal/mentions-legales/page.tsx,Mentions légales,P0,pending
+legal.confidentialite.title,legal,app/legal/confidentialite/page.tsx,Politique de confidentialité,P0,pending
+legal.cookies.title,legal,app/legal/cookies/page.tsx,Politique de cookies,P1,pending
+legal.retours.title,legal,app/legal/retours-remboursements/page.tsx,Retours et remboursements,P1,pending
+email.welcome.subject,email,lib/mail/templates/welcome.tsx,Bienvenue chez FemiGlow,P1,pending
+email.welcome.greeting,email,lib/mail/templates/welcome.tsx,"Bonjour {name},",P1,pending
+email.welcome.body,email,lib/mail/templates/welcome.tsx,"Bienvenue dans la maison FemiGlow. Voici votre rituel.",P1,pending
+email.welcome.cta,email,lib/mail/templates/welcome.tsx,Découvrir mon rituel,P1,pending
+email.order_confirmation.subject,email,lib/mail/templates/order-confirmation.tsx,Votre commande #{order_id} est confirmée,P0,pending
+email.order_confirmation.greeting,email,lib/mail/templates/order-confirmation.tsx,"Bonjour {name},",P0,pending
+email.order_confirmation.body,email,lib/mail/templates/order-confirmation.tsx,Votre commande a bien été reçue.,P0,pending
+email.order_shipped.subject,email,lib/mail/templates/order-shipped.tsx,Votre commande est en route,P0,pending
+email.order_delivered.subject,email,lib/mail/templates/order-delivered.tsx,Votre commande est arrivée,P0,pending
+errors.404.title,errors,app/not-found.tsx,Page introuvable,P0,pending
+errors.404.description,errors,app/not-found.tsx,"La page que vous cherchez n'existe pas ou a été déplacée.",P0,pending
+errors.404.cta_home,errors,app/not-found.tsx,"Retour à l'accueil",P0,pending
+errors.500.title,errors,app/error.tsx,Une erreur est survenue,P0,pending
+errors.500.description,errors,app/error.tsx,"Veuillez réessayer dans quelques instants.",P0,pending
+errors.500.cta_retry,errors,app/error.tsx,Réessayer,P0,pending
+errors.network.offline,errors,components/ui/network-status.tsx,Vous êtes hors ligne,P1,pending
+errors.network.timeout,errors,components/ui/network-status.tsx,La requête a expiré,P1,pending
+errors.validation.required,errors,components/ui/form-field.tsx,Ce champ est requis,P0,pending
+errors.validation.email_invalid,errors,components/ui/form-field.tsx,Adresse email invalide,P0,pending
+errors.validation.phone_invalid,errors,components/ui/form-field.tsx,Numéro de téléphone invalide,P0,pending
+errors.payment.declined,errors,components/checkout/payment-method.tsx,Paiement refusé. Veuillez vérifier vos informations.,P0,pending
+errors.stock.unavailable,errors,components/checkout/cart-recap.tsx,Ce produit n'est plus disponible.,P0,pending
+seo.home.title,seo,app/(marketing)/page.tsx,FemiGlow — Le rituel ongles 5 minutes,P0,pending
+seo.home.description,seo,app/(marketing)/page.tsx,"Maison de beauté slow au Maroc. Découvrez le rituel ongles complet en 5 minutes.",P0,pending
+seo.home.og_title,seo,app/(marketing)/page.tsx,FemiGlow — Le rituel ongles 5 minutes,P0,pending
+seo.kit.title,seo,app/(marketing)/kit/page.tsx,Le kit FemiGlow — Rituel ongles complet,P0,pending
+seo.kit.description,seo,app/(marketing)/kit/page.tsx,"Le kit FemiGlow contient tout ce qu'il faut pour un rituel ongles complet à la maison.",P0,pending
+seo.maison.title,seo,app/(marketing)/maison/page.tsx,Maison FemiGlow — beauté lente,P1,pending
+seo.maison.description,seo,app/(marketing)/maison/page.tsx,"Découvrez les valeurs de la maison FemiGlow : lenteur, traçabilité, local.",P1,pending
+seo.rituel.title,seo,app/(marketing)/rituel/page.tsx,Le rituel FemiGlow,P1,pending
+seo.rituel.description,seo,app/(marketing)/rituel/page.tsx,"Trois gestes simples pour des ongles parfaits pendant toute une saison.",P1,pending
+seo.contact.title,seo,app/(marketing)/contact/page.tsx,Contact FemiGlow,P2,pending
+seo.contact.description,seo,app/(marketing)/contact/page.tsx,"Une question ? Contactez la maison FemiGlow.",P2,pending
+seo.journal.title,seo,app/(marketing)/journal/page.tsx,Le journal FemiGlow,P2,pending
+seo.journal.description,seo,app/(marketing)/journal/page.tsx,"Rituels, savoir-faire et conversations sur la beauté lente.",P2,pending

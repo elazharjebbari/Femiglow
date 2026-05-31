@@ -22,7 +22,6 @@ export function CrossLinkCard({ link }: CrossLinkCardProps) {
           height={link.image.height}
           ratio="4:5"
           sizes="(min-width: 1024px) 28vw, 100vw"
-          className="transition-transform duration-700 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         />
       </div>
       <div className="mt-5 space-y-2">

@@ -102,8 +102,8 @@ export function MiniCartSlideOver() {
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          'absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-creme shadow-xl transition-transform duration-base ease-out-soft motion-reduce:transition-none',
-          isOpen ? 'translate-x-0' : 'translate-x-full',
+          'absolute end-0 top-0 flex h-full w-full max-w-md flex-col bg-creme shadow-xl transition-transform duration-base ease-out-soft motion-reduce:transition-none',
+          isOpen ? 'translate-x-0' : 'translate-x-full rtl:-translate-x-full',
         )}
       >
         <header className="flex items-center justify-between border-b border-encre/10 px-6 py-5">

@@ -1,0 +1,29 @@
+@startuml
+title Wireframe Desktop - Reviews Wall Drawer
+
+salt
+{
+{+
+  {# [X]  Avis & experiences de nos clients  |  Comment nos avis sont verifies }
+  {+ 4.9 ★  (39 avis) }
+  {+ [#####-----] 5★  28 }
+  {+ [###-------] 4★   8 }
+  {+ [#---------] 3★   2 }
+  {+ [----------] 2★   1 }
+  {+ [----------] 1★   0 }
+  {+ Confort immediat [====] }
+  {+ Parents & seniors [=== ] }
+  {+ Utilisation quotidienne [====] }
+  {+ (chips) Tous | Avec photos | Sans photos | Genoux soulages | ... }
+  {+ Trier: [Recommandes v] }
+  {+
+    [Card] Walid (Rabat) 5★  "Couleur elegante..."  [Voir le produit]
+    [Card] Zohra (Safi) 5★  "Bonne finition..."    [Voir le produit]
+    [Card] ...
+  }
+  {+ [Afficher plus d'avis]  10/39 }
+  {# [Laisser un avis]   [Voir le produit selectionne] }
+}
+}
+
+@enduml

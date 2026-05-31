@@ -18,6 +18,7 @@
  *
  * Cf. docs/components-cms/architecture/03-seed-pipeline.md
  */
+import './_load-env.mjs';
 import { seedComponentFields } from '@/lib/components/seed-pipeline';
 
 interface CliOpts {
@@ -57,6 +58,7 @@ async function main(): Promise<void> {
   if (report.warnings.length > 0) {
     for (const w of report.warnings) console.warn(`⚠︎  ${w}`);
   }
+  process.exit(0);
 }
 
 main().catch((err) => {

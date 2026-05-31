@@ -16,7 +16,12 @@
  */
 import { logger } from '@/lib/logging/logger';
 
-import type { ChatStreamEvent } from '../contracts';
+import type {
+  ChatCannedPairLeadCopyKey,
+  ChatLanguage,
+  ChatLeadTriggerReason,
+  ChatStreamEvent,
+} from '../contracts';
 import type {
   ChatProviderMessage,
   ChatStreamRequest,
@@ -33,25 +38,24 @@ import { sessionRepo } from '../repos/session';
 import { providerRouter } from './provider-router';
 import { sanitizeAndRedact } from './sanitize';
 import { charterFilter } from './charter-filter';
-import { classifyIntent } from './intent';
-import { assistantPromisedForm, shouldOfferLeadForm } from './lead-decision';
+import { moderateChatText, decideOnModeration } from './moderation';
+import { detectIntent, type ChatIntent } from './intent';
+import { classifyByEmbedding } from './intent-vector';
+import {
+  embedTexts,
+  EmbeddingProviderUnavailableError,
+} from './embeddings';
+import { faqRepo } from '../repos/faq';
+import { shouldOfferLeadForm } from './lead-decision';
+import { detectAssistantReplyLeadTrigger } from './assistant-reply-lead-trigger';
+import { notifyHotLead } from './lead-alerts';
+import { dispatchInlineContactWebhook } from '@/lib/webhooks/outbound/sources/from-inline-contact';
+import { notifyFrustrationSpike } from './frustration-alerts';
 import { detectInlineContact } from './phone-detect';
 import { ragService, type RetrievedChunk } from '../rag/service';
 import { getRuntimeBool } from '../runtime-setting';
 import { leadRepo } from '../repos/lead';
 import { env } from '@/lib/env';
-// CHA-230 Phase 2 — Runnables LangChain-style derrière feature flags.
-// Quand les flags sont OFF (défaut), le comportement est byte-identique
-// à pré-CHA-230. Quand ON, on bénéficie respectivement de la
-// classification LLM tool-call (avec fallback regex automatique) et du
-// retry+fallback streaming inter-providers.
-import {
-  isLlmIntentEnabled,
-  isProviderFallbackEnabled,
-} from '../feature-flag';
-import { classifyIntentRunnable } from '../runnables/classify-intent.runnable';
-import { respondStreamRunnable } from '../runnables/respond-stream.runnable';
-import type { ClassifiedIntent } from '../schemas/intent';
 
 const MEMORY_WINDOW = 12;
 
@@ -61,30 +65,20 @@ interface StreamReplyInput {
   signal?: AbortSignal;
 }
 
+interface LeadOfferPayload {
+  messageId: string;
+  reason: ChatLeadTriggerReason;
+  copyKey: ChatCannedPairLeadCopyKey;
+}
+
 export async function* streamReply(
   input: StreamReplyInput,
 ): AsyncIterable<ChatStreamEvent> {
   const t0 = Date.now();
   const sanitized = sanitizeAndRedact(input.text);
   const language = detectLanguage(sanitized.contentSafe);
-  // CHA-230 — Pipeline d'intent : regex toujours, LLM tool-call si flag.
-  //  - regexClassif : sortie brute du classifieur regex pondéré (Phase 1).
-  //  - classified : sortie du runnable Phase 2 — soit identique au regex
-  //    (flag off OU shortcut score≥2 OU panne LLM), soit LLM-corrected.
-  // Les deux servent :
-  //  - dashboard /admin/chat/quality (Phase 3) : mesure de confiance,
-  //  - curator UI (Phase 3) : filtre des low-confidence à revoir,
-  //  - lead-decision : utilise `classified.intent` (peut différer du regex
-  //    quand le LLM corrige une formulation ambiguë que regex a ratée).
-  const regexClassif = classifyIntent(sanitized.contentSafe);
-  const classified = await runIntentPipeline(
-    sanitized.contentSafe,
-    regexClassif,
-    input.signal,
-  );
-  const intentTag = classified.intent;
-  const intentMethod = classified.method;
-  const intentConfidence = classified.confidence;
+  let intentTag = detectIntent(sanitized.contentSafe);
+  let intentSource: 'regex' | 'vector' = intentTag === 'misc' ? 'vector' : 'regex';
   const charterIn = charterFilter.inbound(sanitized.contentSafe);
   if (!charterIn.allowed) {
     yield {
@@ -92,21 +86,55 @@ export async function* streamReply(
       data: {
         code: charterIn.reason ?? 'charter-blocked',
         message: charterIn.rewriteHint,
-        // CHA-230 — charter-blocked n'est PAS retryable : la réponse
-        // serait à nouveau bloquée. UI ne propose pas de chip retry.
-        retryable: false,
       },
     };
     return;
   }
 
+  // CHA-006 — On embed la question UNE FOIS et on partage le vecteur
+  // avec la cascade FAQ (L3) et le classifieur d'intent vectoriel.
+  // Si le provider d'embedding est down, on retombe sur regex-only +
+  // RAG+LLM (cascade silencieuse — aucune erreur côté visiteuse).
+  let questionVector: number[] | null = null;
+  try {
+    const embedResult = await embedTexts([sanitized.contentSafe]);
+    questionVector = embedResult.vectors[0] ?? null;
+  } catch (err) {
+    if (!(err instanceof EmbeddingProviderUnavailableError)) {
+      logger.warn('chat.orchestrator.embed_skipped', {
+        sessionId: input.session.id,
+        reason: (err as Error).message,
+      });
+    }
+  }
+
+  // Upgrade intent si la regex a échoué (misc) mais que le vecteur
+  // matche un centroïde au-dessus du seuil. Le tag upgradé sert :
+  //   - aux KPI (`message_sent_user.intent`),
+  //   - à `lead-decision` (déclenchement formulaire selon intent),
+  //   - aux logs admin.
+  if (questionVector && intentTag === 'misc') {
+    try {
+      const vectorMatch = await classifyByEmbedding(questionVector, language);
+      if (vectorMatch) {
+        intentTag = vectorMatch.intent;
+        logger.info('chat.orchestrator.intent_upgrade', {
+          sessionId: input.session.id,
+          intent: vectorMatch.intent,
+          score: vectorMatch.score,
+          sampleCount: vectorMatch.sampleCount,
+        });
+      }
+    } catch (err) {
+      logger.warn('chat.orchestrator.intent_vector_failed', {
+        sessionId: input.session.id,
+        reason: (err as Error).message,
+      });
+    }
+  }
+  intentSource = intentTag === 'misc' ? 'vector' : intentSource;
+
   // Persiste le message user
-  // CHA-230 — On stocke l'intent + méthode + confidence sur la ligne
-  // pour alimenter le dashboard /admin/chat/quality (Phase 3) sans
-  // avoir à rejouer la classification a posteriori. La confidence
-  // est un label `low|medium|high` calculé à partir du score brut :
-  // c'est le format que consomme directement le curator UI (Phase 3)
-  // pour filtrer "uniquement les low".
   const userMessage = await messageRepo.create({
     sessionId: input.session.id,
     role: 'user',
@@ -115,21 +143,12 @@ export async function* streamReply(
     contentSafe: sanitized.contentSafe,
     language,
     status: 'sent',
-    intentTag,
-    intentMethod,
-    intentConfidence,
   });
   await eventRepo.append(input.session.id, 'message_sent_user', {
     messageId: userMessage.id,
     redactions: sanitized.redactions,
     intent: intentTag,
-    intentMethod,
-    intentScore: regexClassif.score,
-    // CHA-230 Phase 2 — `intentReason` n'est pas une colonne ; on le passe
-    // dans l'event KPI pour pouvoir le surfacer dans le quality dashboard
-    // (Phase 3) sans nouvelle migration.
-    intentReason: classified.reason,
-    intentConfidence,
+    intentSource,
     charter: charterIn.reason ?? null,
   });
   await sessionRepo.update(input.session.id, { language });
@@ -139,18 +158,106 @@ export async function* streamReply(
   if (!instruction) {
     yield {
       event: 'error',
-      data: {
-        code: 'no-instruction',
-        message: 'No active instruction',
-        // CHA-230 — config-issue : pas de retry tant que l'admin
-        // n'aura pas réactivé une instruction. Surface comme erreur
-        // dure côté UI.
-        retryable: false,
-      },
+      data: { code: 'no-instruction', message: 'No active instruction' },
     };
     return;
   }
   const recent = await messageRepo.recentForMemory(input.session.id, MEMORY_WINDOW);
+
+  // CHAT-066 — Escalade Care si l'utilisateur exprime une frustration
+  // récurrente. Non bloquant : `notifyFrustrationSpike` swallow tout
+  // (DB down, Slack down) pour préserver la latence first-token.
+  if (intentTag === 'frustration') {
+    void notifyFrustrationSpike({
+      sessionId: input.session.id,
+      history: recent.map((m) => ({ role: m.role, content: m.content })),
+      currentIntent: intentTag,
+      adminBaseUrl: env.NEXT_PUBLIC_SITE_URL,
+    });
+  }
+
+  // CHA-301 — Cascade L3 : match FAQ vectoriel avant RAG+LLM.
+  //
+  // Si la question matche une `chat_faq_entry` au-dessus de son
+  // threshold (calibré ~0.60 pour text-embedding-3-small), on sert
+  // directement la `scripted_reply` sans solliciter le LLM. Économise
+  // coût + latence (~400ms vs ~2-4s) et garantit une réponse cohérente
+  // éditorialement (textes validés par le PO).
+  //
+  // Réutilise `questionVector` déjà calculé ci-dessus pour l'intent
+  // vectoriel — pas de re-embed.
+  try {
+    if (questionVector) {
+      const faqMatch = await faqRepo.matchByEmbedding(questionVector, {
+        language,
+        audience: 'all',
+      });
+      if (faqMatch) {
+        const reply = faqMatch.scriptedReply;
+        const assistantMessage = await messageRepo.create({
+          sessionId: input.session.id,
+          role: 'assistant',
+          content: reply,
+          contentSafe: reply,
+          language,
+          status: 'sent',
+          parentMessageId: userMessage.id,
+          modelName: `faq:${faqMatch.key}`,
+        });
+        const latencyMs = Date.now() - t0;
+        await eventRepo.append(input.session.id, 'message_sent_agent', {
+          messageId: assistantMessage.id,
+          source: 'faq',
+          faqKey: faqMatch.key,
+          score: faqMatch.score,
+          threshold: faqMatch.threshold,
+          intentHint: faqMatch.intentHint,
+          tokensIn: 0,
+          tokensOut: 0,
+          latencyMs,
+        });
+        logger.info('chat.orchestrator.faq_hit', {
+          sessionId: input.session.id,
+          faqKey: faqMatch.key,
+          score: faqMatch.score,
+          threshold: faqMatch.threshold,
+        });
+        yield {
+          event: 'start',
+          data: { messageId: assistantMessage.id, language },
+        };
+        yield {
+          event: 'chunk',
+          data: { messageId: assistantMessage.id, delta: reply },
+        };
+        yield {
+          event: 'end',
+          data: { messageId: assistantMessage.id, latencyMs },
+        };
+        const leadOffer = await maybeBuildLeadOfferAndCaptureInline({
+          session: input.session,
+          userMessage,
+          recent,
+          assistantMessageId: assistantMessage.id,
+          assistantReply: reply,
+          sanitizedContentRaw: sanitized.contentRaw,
+          language,
+          intentTag,
+        });
+        if (leadOffer) {
+          yield { event: 'lead-form-offer', data: leadOffer };
+        }
+        return;
+      }
+    }
+  } catch (err) {
+    if (!(err instanceof EmbeddingProviderUnavailableError)) {
+      logger.warn('chat.orchestrator.faq_skipped', {
+        sessionId: input.session.id,
+        reason: (err as Error).message,
+      });
+    }
+  }
 
   // CHA-097 — RAG retrieve. Si aucune source disponible (pas de
   // provider embedding ou index vide), on continue sans RAG.
@@ -200,38 +307,40 @@ export async function* streamReply(
       sessionId: input.session.id,
       error: (err as Error).message,
     });
-    yield {
-      event: 'error',
-      data: {
-        code: 'no-provider',
-        message: 'no provider available',
-        // CHA-230 — Tous les providers sont indisponibles (breaker
-        // ouvert ou quota épuisé). Retryable = true car typiquement
-        // le breaker se ferme après cooldown (30s par défaut).
-        retryable: true,
-      },
-    };
+    yield { event: 'error', data: { code: 'no-provider', message: 'no provider available' } };
     return;
   }
   const { adapter, row } = chosen;
 
-  // CHA-230 Phase 2 — Si le flag fallback est activé, on pré-résout un
-  // provider secondaire dès maintenant (avant le streaming) — on ne le
-  // déclenche qu'en cas de panne du primaire (cf. respond-stream.runnable).
-  // Best-effort : un échec ici (aucun secondaire dispo, breaker ouvert) est
-  // dégradé en "primary-only retry" — pas une raison de tout arrêter.
-  let fallbackAdapter: typeof adapter | null = null;
-  if (isProviderFallbackEnabled()) {
-    try {
-      const fb = await providerRouter.chooseFallback('chat', row.id);
-      fallbackAdapter = fb?.adapter ?? null;
-    } catch (err) {
-      logger.warn('chat.orchestrator.fallback_resolution_failed', {
-        sessionId: input.session.id,
-        primaryId: row.id,
-        error: (err as Error).message,
-      });
-    }
+  // ⭐ Moderation INBOUND (QW2 Sprint 1 live-systems-fix).
+  // Référence : docs/live-systems-fix-2026-05/06-system-chat-openai.md
+  // Flag-gated (LIVE_CHAT_MODERATION) — default OFF pour rétrocompat.
+  // Si flagged → on remplace par message scripté + log + retour anticipé.
+  // Fail-soft : si OpenAI Moderation down → continue (heuristique
+  // charterFilter reste active comme garantie minimum).
+  const inboundMod = await moderateChatText(adapter, sanitized.contentSafe, {
+    sessionId: input.session.id,
+    direction: 'inbound',
+  });
+  if (inboundMod.flagged) {
+    const decision = decideOnModeration(inboundMod, 'inbound');
+    logger.info('chat.input_moderated', {
+      sessionId: input.session.id,
+      categories: inboundMod.categories,
+      action: decision.action,
+    });
+    // Émet la réponse scriptée via la séquence SSE standard start → chunk → end
+    // (le `message_complete` précédent n'existait pas dans l'union d'events → le
+    // client l'ignorait, donc le message de modération n'était jamais affiché).
+    const moderatedContent =
+      decision.scriptedMessage ?? 'Je ne suis pas en mesure de répondre à cela.';
+    yield { event: 'start', data: { messageId: 'moderated_input', language } };
+    yield {
+      event: 'chunk',
+      data: { messageId: 'moderated_input', delta: moderatedContent },
+    };
+    yield { event: 'end', data: { messageId: 'moderated_input', latencyMs: 0 } };
+    return;
   }
 
   // Pré-crée un message assistant en streaming
@@ -271,43 +380,7 @@ export async function* streamReply(
       language,
       signal: input.signal,
     };
-    // CHA-230 Phase 2 — Le runnable enveloppe `streamChat()` avec retry
-    // + fallback quand le flag est ON. Quand OFF, il appelle juste
-    // `primary.streamChat(req)` sans surcouche → comportement byte-identique
-    // à pré-CHA-230 (cf. tests `respond-stream.runnable.test.ts > flag off`).
-    const fallbackEnabled = isProviderFallbackEnabled();
-    const respondOut = await respondStreamRunnable({
-      primaryProvider: adapter,
-      fallbackProvider: fallbackAdapter,
-      request: req,
-      retryFallbackEnabled: fallbackEnabled,
-    });
-    const { stream, final } = respondOut;
-    // Trace KPI les tentatives (utile pour Sentry et le quality dashboard).
-    if (fallbackEnabled && respondOut.attempts.length > 1) {
-      // CHA-231 Phase 6 — Tags LangSmith-style. Permet à un future export
-      // vers un tracer externe (LangSmith, Sentry Spans) de classifier
-      // l'événement sans devoir replonger dans le payload. Format :
-      //   ['chat', 'pipeline:respond-stream', 'outcome:retried|fallback']
-      const triggeredFallback = respondOut.attempts.some(
-        (a) => a.providerId === fallbackAdapter?.id,
-      );
-      await eventRepo.append(input.session.id, 'chat_provider_retry_or_fallback', {
-        servedBy: respondOut.servedBy,
-        attempts: respondOut.attempts.map((a) => ({
-          providerId: a.providerId,
-          outcome: a.outcome,
-          code: a.error?.code,
-          durationMs: a.durationMs,
-        })),
-        tags: [
-          'chat',
-          'pipeline:respond-stream',
-          triggeredFallback ? 'outcome:fallback' : 'outcome:retried',
-          `served-by:${respondOut.servedBy.providerId}`,
-        ],
-      });
-    }
+    const { stream, final } = await adapter.streamChat(req);
     for await (const chunk of stream) {
       if (!chunk.delta) continue;
       if (firstTokenAt == null) firstTokenAt = Date.now();
@@ -331,6 +404,32 @@ export async function* streamReply(
         code: 'charter-out',
         reason: charterOut.reason,
         detected: charterOut.detected,
+      });
+    }
+
+    // ⭐ Moderation OUTBOUND (QW2 Sprint 1 live-systems-fix).
+    // Si la sortie est flagged sur catégorie hard (sexual/minors,
+    // violence/graphic), on log + alerte admin. Si soft (harassment),
+    // on log seulement (la réponse aggregée est déjà envoyée au client
+    // via stream — on ne peut pas la "reprendre"). À termes : moderation
+    // pre-stream-flush si latence acceptable.
+    const outboundMod = await moderateChatText(adapter, aggregated, {
+      sessionId: input.session.id,
+      direction: 'outbound',
+    });
+    if (outboundMod.flagged) {
+      const decision = decideOnModeration(outboundMod, 'outbound');
+      logger.warn('chat.output_moderated', {
+        sessionId: input.session.id,
+        messageId: assistantMessage.id,
+        categories: outboundMod.categories,
+        action: decision.action,
+      });
+      await eventRepo.append(input.session.id, 'error', {
+        messageId: assistantMessage.id,
+        code: 'moderation-out',
+        reason: decision.action,
+        detected: outboundMod.categories,
       });
     }
 
@@ -366,215 +465,18 @@ export async function* streamReply(
       data: { messageId: assistantMessage.id, latencyMs },
     };
 
-    // CHA-208 / CHA-225 — Décision lead-form-offer post-réponse. Best-effort :
-    // toute erreur ici ne doit pas faire échouer le flux principal.
-    //
-    // CRITIQUE : on doit utiliser `sanitized.contentRaw` (et non
-    // `contentSafe`) pour la détection téléphone, parce que `sanitize`
-    // remplace les numéros par `[téléphone]` avant d'envoyer au LLM.
-    // Sans ça, le détecteur ne verrait jamais le numéro et on
-    // perdrait toujours le lead.
-    try {
-      const leadEnabled = await getRuntimeBool('lead_form_enabled', true);
-      if (leadEnabled) {
-        const alreadyOffered = await leadRepo.hasLeadForSession(input.session.id);
-
-        // CHA-225 — Détection du téléphone dans le message BRUT (avant
-        // redaction). C'est ce verdict qu'on injecte ensuite dans
-        // `lead-decision` pour qu'il choisisse correctement la raison
-        // 'inline-contact' (priorité maximale).
-        const detection = detectInlineContact(sanitized.contentRaw);
-        const phoneDetected =
-          detection.phoneE164 != null &&
-          (detection.confidence === 'high' || detection.confidence === 'medium');
-
-        // `recent` inclut DÉJÀ `userMessage` (persisté juste avant
-        // `recentForMemory`). On ne le pousse PAS une 2e fois (sinon
-        // userCount est inflaté, ce qui peut déclencher à tort
-        // `after-hours` ou `long-no-progress`). On se contente de
-        // substituer son contenu par la version brute pour que la
-        // règle 0 (`looksLikePhone`) puisse voir les chiffres.
-        const fullHistory = recent.map((m) => ({
-          id: m.id,
-          role: m.role,
-          content:
-            m.id === userMessage.id ? sanitized.contentRaw : m.content,
-          createdAt: m.createdAt,
-        }));
-        // Si jamais userMessage n'est pas dans `recent` (cas limite :
-        // memory window saturée), on l'ajoute en bout de liste pour
-        // que `lastUserMsg` dans lead-decision pointe au bon endroit.
-        if (!fullHistory.some((m) => m.id === userMessage.id)) {
-          fullHistory.push({
-            id: userMessage.id,
-            role: userMessage.role,
-            content: sanitized.contentRaw,
-            createdAt: userMessage.createdAt,
-          });
-        }
-
-        const decision = shouldOfferLeadForm({
-          history: fullHistory,
-          currentIntent: intentTag,
-          assistantReply: aggregated,
-          alreadyOffered,
-          enabled: true,
-        });
-
-        // CHA-230 v5 + CHA-231 v7 — Filet de sécurité « LLM promet le formulaire ».
-        //
-        // Bug prod 2026-05-08 : un lead auto-créé (inline-contact, nom
-        // par défaut « Visiteur ») suffisait à mettre `alreadyOffered=true`
-        // et à éteindre le filet. L'utilisateur lisait alors « validez vos
-        // coordonnées via le petit formulaire juste en dessous » sans
-        // qu'aucun widget ne s'affiche — promesse trahie.
-        //
-        // Politique corrigée : on bloque le filet UNIQUEMENT si l'utilisateur
-        // a déjà fait une soumission EXPLICITE (event `chat_lead_form_submit`).
-        // Tant que la soumission n'est pas confirmée, le LLM peut re-promettre
-        // le form et le widget s'affichera (force=true → bypass dismiss aussi).
-        // Le store client dédoublonne via `pendingLeadOffer`, donc montrer
-        // plusieurs fois le même message-id ne crée pas de doublon visuel.
-        //
-        // cf. `lead-decision.ts#assistantPromisedForm` pour les patterns.
-        const explicitlySubmitted = await eventRepo.hasEventOfType(
-          input.session.id,
-          'chat_lead_form_submit',
-        );
-        const llmPromisedForm =
-          !explicitlySubmitted && assistantPromisedForm(aggregated);
-
-        let finalDecision = decision;
-        if (!decision.shouldOffer && llmPromisedForm) {
-          logger.warn('chat.orchestrator.lead_safety_net_triggered', {
-            sessionId: input.session.id,
-            messageId: assistantMessage.id,
-            currentIntent: intentTag,
-            reason: 'llm-promised-form',
-          });
-          finalDecision = {
-            shouldOffer: true,
-            reason: 'manual',
-            copyKey: 'manual',
-            debug: { ...decision.debug, safetyNet: 'llm-promised-form' },
-          };
-        }
-
-        if (finalDecision.shouldOffer && finalDecision.reason && finalDecision.copyKey) {
-          // CHA-231 (gap 3) — Bypass de la dismissal :
-          //   Si la raison est 'explicit-request' (l'user a tapé
-          //   « envoyez moi le formulaire » / « donnez le formulaire »)
-          //   ou 'inline-contact' (l'user a posé son numéro en clair)
-          //   ou 'llm-promised-form' (le LLM a promis le formulaire),
-          //   on force l'affichage côté client même s'il avait dismissé
-          //   précédemment. C'est une demande active = consent.
-          const force =
-            finalDecision.reason === 'explicit-request' ||
-            finalDecision.reason === 'inline-contact' ||
-            finalDecision.debug?.safetyNet === 'llm-promised-form';
-          // CHA-231 Phase 6 — Tags LangSmith-style. Permet au quality
-          // dashboard et à un futur export tracer (LangSmith) de filtrer
-          // par dimension sans introspecter le payload. Convention :
-          //   ['chat', 'pipeline:lead-decision', 'reason:<reason>',
-          //    'language:<lang>', 'force:true?']
-          const eventTags: string[] = [
-            'chat',
-            'pipeline:lead-decision',
-            `reason:${finalDecision.reason}`,
-            `language:${language}`,
-          ];
-          if (force) eventTags.push('force:true');
-          if (finalDecision.debug?.safetyNet === 'llm-promised-form') {
-            eventTags.push('safety-net:llm-promised-form');
-          }
-          await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
-            messageId: assistantMessage.id,
-            reason: finalDecision.reason,
-            copyKey: finalDecision.copyKey,
-            force,
-            tags: eventTags,
-          });
-          yield {
-            event: 'lead-form-offer',
-            data: {
-              messageId: assistantMessage.id,
-              reason: finalDecision.reason,
-              copyKey: finalDecision.copyKey,
-              force,
-            },
-          };
-        }
-
-        // CHA-225 — Filet de sécurité commerciale.
-        //
-        // Si l'utilisateur a écrit son numéro EN CLAIR dans son dernier
-        // message ET qu'aucun lead n'existe encore pour la session, on
-        // crée un lead automatique en fallback. Le widget de capture
-        // est tout de même proposé (cf. décision ci-dessus, raison
-        // 'inline-contact') pour le consent RGPD propre. Si le visiteur
-        // ferme la conversation sans soumettre le formulaire, on n'a
-        // PAS perdu le lead — c'est précisément le bug reporté par
-        // l'utilisateur ("ya rien dans les leads de admin").
-        if (!alreadyOffered && phoneDetected) {
-          try {
-            const snapshotMessages = fullHistory.slice(-6).map((m) => ({
-              role:
-                m.role === 'assistant'
-                  ? ('assistant' as const)
-                  : ('user' as const),
-              content: m.content.slice(0, 400),
-              at: m.createdAt.toISOString(),
-            }));
-            const autoLead = await leadRepo.create({
-              sessionId: input.session.id,
-              triggeringMessageId: userMessage.id,
-              triggerReason: 'inline-contact',
-              firstName: detection.firstName ?? 'Visiteur',
-              phoneE164: detection.phoneE164!,
-              phoneRaw:
-                detection.phoneRaw ?? sanitized.contentRaw.slice(0, 40),
-              note: 'Capture automatique — coordonnées détectées dans le chat. À confirmer par l\'agent humain.',
-              consentVersion: `${env.CHAT_LEAD_CONSENT_VERSION}+inline-fallback`,
-              consentAt: new Date(),
-              visitorId: input.session.visitorId,
-              fingerprintHash: input.session.fingerprintHash ?? null,
-              page: input.session.page ?? null,
-              referrer: input.session.referrer ?? null,
-              utm: input.session.utm ?? null,
-              language,
-              intentAtCapture: intentTag,
-              snapshotMessages,
-            });
-            await eventRepo.append(
-              input.session.id,
-              'chat_lead_auto_created',
-              {
-                leadId: autoLead.id,
-                triggerReason: 'inline-contact',
-                confidence: detection.confidence,
-                phoneCountry: detection.phoneMeta?.country ?? null,
-                source: 'phone-in-chat',
-              },
-            );
-            logger.info('chat.orchestrator.inline_contact_auto_lead', {
-              sessionId: input.session.id,
-              leadId: autoLead.id,
-              confidence: detection.confidence,
-            });
-          } catch (err) {
-            // On ne casse pas le flux — log + KPI suffisent.
-            logger.warn('chat.orchestrator.inline_contact_auto_lead_failed', {
-              sessionId: input.session.id,
-              error: (err as Error).message,
-            });
-          }
-        }
-      }
-    } catch (err) {
-      logger.warn('chat.orchestrator.lead_decision_failed', {
-        sessionId: input.session.id,
-        error: (err as Error).message,
-      });
+    const leadOffer = await maybeBuildLeadOfferAndCaptureInline({
+      session: input.session,
+      userMessage,
+      recent,
+      assistantMessageId: assistantMessage.id,
+      assistantReply: aggregated,
+      sanitizedContentRaw: sanitized.contentRaw,
+      language,
+      intentTag,
+    });
+    if (leadOffer) {
+      yield { event: 'lead-form-offer', data: leadOffer };
     }
   } catch (err) {
     const e = err as { code?: string; message?: string; retryable?: boolean };
@@ -600,11 +502,6 @@ export async function* streamReply(
         messageId: assistantMessage.id,
         code: e.code ?? 'unknown',
         message: e.message,
-        // CHA-230 — Propage le retryable décidé côté provider/runnable
-        // pour que l'UI puisse afficher un chip "Réessayer" sur les
-        // erreurs transitoires (timeout, 5xx, rate-limit) et le
-        // masquer sur les erreurs dures (auth, content-filter).
-        retryable: e.retryable ?? true,
       },
     };
   }
@@ -619,85 +516,168 @@ function pickInstructionByLang(
   return instruction.body;
 }
 
-/**
- * CHA-230 — Mappe le score d'intent brut (0+) vers un label `low|medium|
- * high` qu'on persiste sur `chat_message.intent_confidence`.
- *
- * Choix des seuils :
- *   - 0  → 'low'    (intent = 'misc', aucun signal exploitable)
- *   - 1  → 'low'    (1 pattern standard — risque de faux positif)
- *   - 2  → 'medium' (1 pattern strong OU 2 standards — signal net)
- *   - 3+ → 'high'   (combo strong + standard, ou 2× strong — sans ambiguïté)
- *
- * Ces seuils alignent la sortie du regex classifier sur ce que sortira
- * le LLM tool-call en Phase 2 (confidence ∈ [0, 1] mappée → label),
- * pour que le dashboard `/admin/chat/quality` reçoive un signal homogène
- * quel que soit le mode de classification actif.
- */
-function scoreToConfidence(score: number): 'low' | 'medium' | 'high' {
-  if (score >= 3) return 'high';
-  if (score >= 2) return 'medium';
-  return 'low';
-}
-
-/**
- * CHA-230 Phase 2 — Pipeline d'intent unifié (regex + LLM optionnel).
- *
- * - Flag OFF (`CHAT_LLM_INTENT_ENABLED=false`, défaut) : retourne le
- *   résultat regex avec `method: 'regex'` — comportement identique à
- *   pré-CHA-230 Phase 1.
- * - Flag ON sans clé OpenAI : idem (le runnable détecte llmConfig=null
- *   et fait fallback regex direct).
- * - Flag ON avec clé : appelle `classifyIntentRunnable` qui décide :
- *     * Regex shortcut (score ≥ 2) → method 'regex'.
- *     * LLM tool-call valide → method 'llm'.
- *     * LLM corrigé via OutputFixingParser → method 'llm-fixed'.
- *     * Tout panne → fallback regex avec method 'regex'.
- *
- * Garantie : ne throw JAMAIS. En cas de panne LLM, on dégrade au regex
- * sans interrompre le flux principal.
- */
-async function runIntentPipeline(
-  text: string,
-  regexClassif: ReturnType<typeof classifyIntent>,
-  signal?: AbortSignal,
-): Promise<ClassifiedIntent> {
-  // Mode flag-off : court-circuit complet, pas d'allocation runnable.
-  if (!isLlmIntentEnabled()) {
-    return {
-      intent: regexClassif.intent,
-      confidence: scoreToConfidence(regexClassif.score),
-      method: 'regex',
-      regexScore: regexClassif.score > 0 ? regexClassif.score : null,
-      reason: null,
-    };
-  }
-
-  // Mode flag-on : on délègue au runnable. Si pas de clé OpenAI, on passe
-  // `null` et le runnable fait fallback regex direct.
-  const apiKey = env.CHAT_OPENAI_API_KEY;
-  const llmConfig = apiKey ? { apiKey } : null;
-  // Le runnable est garanti no-throw — pas de try/catch nécessaire ici,
-  // mais on en met un par paranoïa pour blinder l'orchestrator (un bug
-  // futur dans le runnable ne doit JAMAIS empêcher la réponse).
+async function maybeBuildLeadOfferAndCaptureInline(input: {
+  session: ChatSessionRow;
+  userMessage: ChatMessageRow;
+  recent: ChatMessageRow[];
+  assistantMessageId: string;
+  assistantReply: string;
+  sanitizedContentRaw: string;
+  language: ChatLanguage;
+  intentTag: ChatIntent;
+}): Promise<LeadOfferPayload | null> {
   try {
-    return await classifyIntentRunnable({
-      text,
-      regex: regexClassif,
-      llmConfig,
-      signal,
+    const leadEnabled = await getRuntimeBool('lead_form_enabled', true);
+    if (!leadEnabled) return null;
+
+    const leadAlreadyCaptured = await leadRepo.hasLeadForSession(input.session.id);
+    const offerAlreadyEmitted =
+      await eventRepo.hasLeadOfferForSession(input.session.id);
+    const offerAlreadyEmittedForMessage =
+      await eventRepo.hasLeadOfferForMessage(
+        input.session.id,
+        input.assistantMessageId,
+      );
+    const alreadyOffered = leadAlreadyCaptured || offerAlreadyEmitted;
+
+    // CRITIQUE: detecter les telephones sur le texte brut, pas sur
+    // contentSafe, car sanitize remplace les numeros par [telephone].
+    const detection = detectInlineContact(input.sanitizedContentRaw);
+    const phoneDetected =
+      detection.phoneE164 != null &&
+      (detection.confidence === 'high' || detection.confidence === 'medium');
+
+    const fullHistory = input.recent.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content:
+        m.id === input.userMessage.id ? input.sanitizedContentRaw : m.content,
+      createdAt: m.createdAt,
+    }));
+    if (!fullHistory.some((m) => m.id === input.userMessage.id)) {
+      fullHistory.push({
+        id: input.userMessage.id,
+        role: input.userMessage.role,
+        content: input.sanitizedContentRaw,
+        createdAt: input.userMessage.createdAt,
+      });
+    }
+
+    let offer: LeadOfferPayload | null = null;
+    const decision = shouldOfferLeadForm({
+      history: fullHistory,
+      currentIntent: input.intentTag,
+      assistantReply: input.assistantReply,
+      alreadyOffered,
+      enabled: true,
     });
+
+    if (
+      decision.shouldOffer &&
+      decision.reason &&
+      decision.copyKey &&
+      !offerAlreadyEmittedForMessage
+    ) {
+      offer = {
+        messageId: input.assistantMessageId,
+        reason: decision.reason,
+        copyKey: decision.copyKey,
+      };
+      await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
+        ...offer,
+        source: 'lead-decision',
+        detectorVersion: 'lead-decision/v1',
+      });
+    } else if (!alreadyOffered && !offerAlreadyEmittedForMessage) {
+      const assistantTrigger = detectAssistantReplyLeadTrigger({
+        assistantReply: input.assistantReply,
+        currentIntent: input.intentTag,
+        language: input.language,
+      });
+      if (
+        assistantTrigger.shouldOffer &&
+        assistantTrigger.reason &&
+        assistantTrigger.copyKey
+      ) {
+        offer = {
+          messageId: input.assistantMessageId,
+          reason: assistantTrigger.reason,
+          copyKey: assistantTrigger.copyKey,
+        };
+        await eventRepo.append(input.session.id, 'chat_lead_form_offered', {
+          ...offer,
+          source: assistantTrigger.source,
+          confidence: assistantTrigger.confidence,
+          matchedPatterns: assistantTrigger.matchedPatterns,
+          detectorVersion: 'assistant-reply-lead-trigger/v1',
+        });
+      }
+    }
+
+    if (phoneDetected) {
+      try {
+        const snapshotMessages = fullHistory.slice(-6).map((m) => ({
+          role:
+            m.role === 'assistant'
+              ? ('assistant' as const)
+              : ('user' as const),
+          content: m.content.slice(0, 400),
+          at: m.createdAt.toISOString(),
+        }));
+        const autoLead = await leadRepo.create({
+          sessionId: input.session.id,
+          triggeringMessageId: input.userMessage.id,
+          triggerReason: 'inline-contact',
+          firstName: detection.firstName ?? 'Visiteur',
+          phoneE164: detection.phoneE164!,
+          phoneRaw:
+            detection.phoneRaw ?? input.sanitizedContentRaw.slice(0, 40),
+          note: 'Capture automatique — coordonnées détectées dans le chat. À confirmer par l\'agent humain.',
+          consentVersion: `${env.CHAT_LEAD_CONSENT_VERSION}+inline-fallback`,
+          consentAt: new Date(),
+          visitorId: input.session.visitorId,
+          fingerprintHash: input.session.fingerprintHash ?? null,
+          page: input.session.page ?? null,
+          referrer: input.session.referrer ?? null,
+          utm: input.session.utm ?? null,
+          language: input.language,
+          intentAtCapture: input.intentTag,
+          snapshotMessages,
+        });
+        await eventRepo.append(input.session.id, 'chat_lead_auto_created', {
+          leadId: autoLead.id,
+          triggerReason: 'inline-contact',
+          confidence: detection.confidence,
+          phoneCountry: detection.phoneMeta?.country ?? null,
+          source: 'phone-in-chat',
+        });
+        logger.info('chat.orchestrator.inline_contact_auto_lead', {
+          sessionId: input.session.id,
+          leadId: autoLead.id,
+          confidence: detection.confidence,
+        });
+        void notifyHotLead(autoLead, { adminBaseUrl: env.NEXT_PUBLIC_SITE_URL });
+        void dispatchInlineContactWebhook(autoLead).catch((err: unknown) => {
+          logger.warn('chat.orchestrator.inline_contact_webhook_failed', {
+            leadId: autoLead.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      } catch (err) {
+        logger.warn('chat.orchestrator.inline_contact_auto_lead_failed', {
+          sessionId: input.session.id,
+          error: (err as Error).message,
+        });
+      }
+    }
+
+    return offer;
   } catch (err) {
-    logger.warn('chat.orchestrator.intent_pipeline_failed', {
+    logger.warn('chat.orchestrator.lead_decision_failed', {
+      sessionId: input.session.id,
       error: (err as Error).message,
     });
-    return {
-      intent: regexClassif.intent,
-      confidence: scoreToConfidence(regexClassif.score),
-      method: 'regex',
-      regexScore: regexClassif.score > 0 ? regexClassif.score : null,
-      reason: null,
-    };
+    return null;
   }
 }
 

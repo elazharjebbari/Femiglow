@@ -18,10 +18,31 @@ export interface DispatchContext {
   userId?: string | null;
   consent: TrackingConsentState;
   uaHash: string;
+  /** User-Agent string en clair (pour Snap CAPI qui exige le UA non-hashé). */
+  userAgent?: string;
   ipAnonymized: string;
   device: 'mobile' | 'tablet' | 'desktop';
   locale: string;
   params: Record<string, unknown>;
+  userData?: {
+    sha256_email_address?: string;
+    sha256_phone_number?: string;
+    address?: {
+      sha256_first_name?: string;
+      sha256_last_name?: string;
+      city?: string;
+      country?: string;
+    };
+  };
+  attribution?: {
+    channel: string;
+    is_paid: boolean;
+    strategy: string;
+    reason: string;
+    click_id?: string;
+    click_id_field?: string;
+    utm?: Record<string, string | undefined>;
+  };
   /** Identité éventuelle (email/phone/nom) — non hachée. Hashing à la charge de l'adapter. */
   identity?: {
     email?: string;
@@ -37,6 +58,17 @@ export interface DispatchContext {
   fbc?: string;
   ttclid?: string;
   gclid?: string;
+  /**
+   * Mappings event_name → vendor_name résolus depuis la version active
+   * d'event_mapping_versions. Si présent, les adapters DOIVENT utiliser
+   * cette valeur au lieu d'appeler `mapEventName` directement. cf. ADR-001.
+   */
+  resolvedMappings?: Partial<
+    Record<
+      TrackingProviderKind,
+      { mappedName: string; isCustom: boolean; notes: string | null }
+    >
+  >;
 }
 
 export interface ProviderAdapter {

@@ -1,0 +1,73 @@
+================================================================================
+WIREFRAME : Éditeur de matrice — /admin/tracking/events/mappings/[id]/edit
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Console FemiGlow ▸ Tracking ▸ Events ▸ Mappings ▸ v3 ▸ Modifier                │
+├────────────────────────────────────────────────────────────────────────────────┤
+│  ⚠ Édition d'une version active                                                │
+│  Sauvegarder créera une NOUVELLE version draft (D-001 immutable).              │
+│  L'active v3 reste inchangée jusqu'à l'activation de la nouvelle version.      │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ Filtres : 🔍 [filtre event...]   ☐ Conversion only   Provider : [Tous ▼]      │
+│                                                                                │
+│ ┌──────────────────────────────────────────────────────────────────────────┐  │
+│ │                  │ Meta       │ GA4         │ Ads        │ TikTok     │..│  │
+│ │ Event canonique  │            │             │            │            │  │  │
+│ │ ─────────────────┼────────────┼─────────────┼────────────┼────────────┤  │  │
+│ │ page_view        │ PageView   │ page_view   │  —         │ Pageview   │..│  │
+│ │ view_item        │ ViewContent│ view_item   │  —         │ ViewContent│..│  │
+│ │ add_to_cart      │ AddToCart  │ add_to_cart │  —         │ AddToCart  │..│  │
+│ │ form_start ⚡    │ form_start │ form_start  │  —         │  —         │..│  │
+│ │                  │ (custom)📝 │             │            │            │  │  │
+│ │ begin_checkout 🎯 │ checkout_  │ begin_      │  —         │ InitiateC. │..│  │
+│ │                  │ intent     │ checkout    │            │            │  │  │
+│ │                  │ (custom)   │             │            │            │  │  │
+│ │ lead_capture 🎯  │ Lead       │ lead_       │ generate_  │  —         │..│  │
+│ │                  │            │ capture     │ lead       │            │  │  │
+│ │ purchase 🎯      │ Purchase   │ purchase    │ purchase   │ CompletePay│..│  │
+│ │ ...              │ ...        │ ...         │ ...        │ ...        │..│  │
+│ └──────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                │
+│ Cellule éditée (click sur cellule) :                                          │
+│ ┌──────────────────────────────────────────────────────────────────────────┐  │
+│ │ form_start × Meta                                                  [✕]   │  │
+│ │                                                                            │  │
+│ │ mappedName :  [form_start___________________________]                    │  │
+│ │   ✅ conforme regex Meta /^[A-Za-z][A-Za-z0-9_ ]{0,39}$/                 │  │
+│ │                                                                            │  │
+│ │ ☑ Custom event Meta (fbq('trackCustom', ...))                            │  │
+│ │ ☑ Activé (dispatching ON)                                                │  │
+│ │                                                                            │  │
+│ │ Notes (optionnel) :                                                       │  │
+│ │ [Meta CustomEvent — séparé d'InitiateCheckout pour ne pas polluer ...]   │  │
+│ │                                                                            │  │
+│ │                                          [Annuler]  [Appliquer]          │  │
+│ └──────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                │
+│ ──────────────────────────────────────────────                                │
+│ 3 modifications en attente.                                                    │
+│ [Annuler les modifs]  [Tester avant sauvegarde]  [💾 Sauvegarder → v4 draft] │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+LÉGENDE :
+  🎯 = event marqué isConversion=true dans le catalog
+  ⚡ = au moins une cellule isCustom=true
+  📝 = au moins une cellule avec notes
+  —  = mappedName null (pas de dispatch)
+
+INTERACTIONS :
+  - Click cellule → ouvre le popover éditeur (à la place)
+  - Arrow keys naviguent entre cellules en mode focus (clavier-first)
+  - Bouton "Tester" → ouvre MappingTestModal
+  - Bouton "Sauvegarder" → POST PUT → redirect vers /v4 (la nouvelle version)
+  - Si dirty + leave page → confirm beforeunload
+  - Filtres "Conversion only" cache les rows isConversion=false
+
+A11Y :
+  - <table role="table">, <caption>, <thead>, <tbody>
+  - Cellule = <td>, contient un <button> qui ouvre le popover (focusable)
+  - Popover = <dialog> ou role="dialog" + aria-modal
+  - Focus trap dans le popover, Esc ferme
+  - Tab cycle normalement après fermeture du popover

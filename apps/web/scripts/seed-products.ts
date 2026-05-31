@@ -5,6 +5,8 @@
  *
  * Usage : `pnpm tsx scripts/seed-products.ts`
  */
+import './_load-env.mjs';
+import { sql } from 'drizzle-orm';
 import {
   createProduct,
   getProductBySlug,
@@ -14,7 +16,28 @@ import {
   upsertVariant,
 } from '@/lib/db/queries/products';
 import { upsertOverride } from '@/lib/db/queries/seo';
+import { db } from '@/lib/db/client';
 import type { Product, ProductVariant } from '@/lib/products/types';
+
+const DEFAULT_STOCK_AVAILABLE = 100;
+const DEFAULT_STOCK_THRESHOLD = 5;
+
+/**
+ * S'assure que chaque variante du produit a une ligne `product_stock`
+ * (avec 100 unités disponibles par défaut). Idempotent : si la ligne
+ * existe déjà, on la laisse intacte (l'admin a la priorité).
+ */
+async function ensureDefaultStockForProduct(productId: string, actorId: string | null): Promise<void> {
+  const conn = db();
+  if (!conn) return;
+  await conn.execute(sql`
+    INSERT INTO product_stock (variant_id, sku, available, reserved, threshold_low, updated_at, updated_by)
+    SELECT v.id, v.sku, ${DEFAULT_STOCK_AVAILABLE}, 0, ${DEFAULT_STOCK_THRESHOLD}, NOW(), ${actorId}
+    FROM product_variants v
+    WHERE v.product_id = ${productId}
+    ON CONFLICT (variant_id) DO NOTHING
+  `);
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://femiglow.com';
 
@@ -43,78 +66,65 @@ interface ProductSeed {
   };
 }
 
+/*
+ * Source de vérité : `apps/web/src/data/mock/product.ts` (`mockKit`).
+ *
+ * - Audit 08/09 : Pack FemiGlow (manucure japonaise halal), anchoring 199 dh
+ *   payé / 289 dh référence (révision 2026-05-22) — devise MAD. La pipeline marketing
+ *   (`buildKitPublicProduct`) prend ses valeurs depuis la première variante,
+ *   donc le SKU `FEMI-KIT-100` doit rester la première variante seedée pour
+ *   que la sticky CTA et le PriceDisplay héro affichent bien 199,00 dhs.
+ * - Le seed historique (3 formats 30/100/200 mL en EUR) datait d'un concept
+ *   « soin intime » avant le pivot 08/09 ; les SKUs orphelins sont
+ *   supprimés ici pour aligner DB et `mockKit`.
+ */
+
+const KIT_DESCRIPTION = [
+  'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine.',
+  'Une manucure japonaise halal, formulée à Rabat par notre équipe.',
+  'Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
+].join(' ');
+
 const SEEDS: ProductSeed[] = [
   {
     slug: 'le-kit',
-    title: 'Le Kit FemiGlow',
-    tagline: 'Le rituel intime complet, pensé au Maroc.',
-    description: [
-      'Le Kit FemiGlow réunit les trois gestes du Rituel : nettoyer en douceur,',
-      'équilibrer le pH, hydrater. Formulé sans parfum agressif, validé en clinique,',
-      'inspiré du hammam — pour une routine quotidienne apaisée.',
-    ].join(' '),
+    title: 'Pack FemiGlow',
+    tagline: 'Manucure japonaise halal. Deux gestes, un polissoir, un éclat.',
+    description: KIT_DESCRIPTION,
     category: 'kit',
-    tags: ['rituel', 'soin intime', 'pH', 'hammam'],
+    tags: ['rituel', 'manucure', 'halal', 'paste-powder', 'polissoir'],
     featured: true,
     variants: [
       {
-        sku: 'FEMI-KIT-30',
-        label: 'Format découverte (30 mL)',
-        priceCents: 2900,
-        weightG: 80,
-        attributes: { volume: '30 mL', usage: 'découverte' },
-      },
-      {
         sku: 'FEMI-KIT-100',
-        label: 'Format complet (100 mL)',
-        priceCents: 4900,
-        promoPriceCents: 4400,
+        label: 'Pack complet — paste + powder + polissoir',
+        // Anchoring 199 dh payé / 289 dh référence (révision 2026-05-22 —
+        // ancien 390 dh ajusté pour cohérence wizard recap).
+        priceCents: 28900,
+        promoPriceCents: 19900,
         weightG: 220,
-        attributes: { volume: '100 mL', usage: 'rituel quotidien' },
-      },
-      {
-        sku: 'FEMI-KIT-200',
-        label: 'Format duo (200 mL)',
-        priceCents: 8900,
-        weightG: 420,
-        inventoryStatus: 'low_stock',
-        attributes: { volume: '200 mL', usage: 'duo / cure longue' },
+        attributes: { format: 'pack complet', usage: 'rituel quotidien' },
       },
     ],
     seo: {
-      title: 'Le Kit FemiGlow — Rituel intime complet 30/100/200 mL',
+      title: 'Pack FemiGlow — manucure japonaise halal',
       description:
-        'Le Kit FemiGlow : nettoyant doux, soin pH-équilibré, brume hydratante. 3 formats. Livraison Maroc + Europe. Conçu en clinique.',
+        'Pack FemiGlow — paste, powder et polissoir Step 4. Manucure japonaise halal, formulée à Rabat. Livraison offerte au Maroc.',
       structuredData: {
         '@context': 'https://schema.org',
         '@type': 'Product',
-        name: 'Le Kit FemiGlow',
-        description:
-          'Soin intime complet : nettoyant doux, soin pH-équilibré, brume hydratante.',
+        name: 'Pack FemiGlow',
+        description: KIT_DESCRIPTION,
         brand: { '@type': 'Brand', name: 'FemiGlow' },
         offers: [
           {
             '@type': 'Offer',
-            sku: 'FEMI-KIT-30',
-            priceCurrency: 'EUR',
-            price: '29.00',
-            availability: 'https://schema.org/InStock',
-            url: `${SITE_URL}/kit`,
-          },
-          {
-            '@type': 'Offer',
             sku: 'FEMI-KIT-100',
-            priceCurrency: 'EUR',
-            price: '44.00',
+            priceCurrency: 'MAD',
+            // Prix affiché = prix payé (promo active). Le strike 289 dh
+            // est porté côté UI (<PriceDisplay>) via `promoPriceCents`.
+            price: '199.00',
             availability: 'https://schema.org/InStock',
-            url: `${SITE_URL}/kit`,
-          },
-          {
-            '@type': 'Offer',
-            sku: 'FEMI-KIT-200',
-            priceCurrency: 'EUR',
-            price: '89.00',
-            availability: 'https://schema.org/LimitedAvailability',
             url: `${SITE_URL}/kit`,
           },
         ],
@@ -162,7 +172,7 @@ async function ensureProduct(seed: ProductSeed, actorId: string | null) {
       label: v.label,
       priceCents: v.priceCents,
       promoPriceCents: v.promoPriceCents ?? null,
-      currency: 'EUR',
+      currency: 'MAD',
       inventoryStatus: v.inventoryStatus ?? 'available',
       weightG: v.weightG ?? null,
       attributes: v.attributes ?? {},
@@ -170,6 +180,11 @@ async function ensureProduct(seed: ProductSeed, actorId: string | null) {
     });
     position += 1;
   }
+
+  // CHA — Stock par défaut : 100 unités disponibles par variante.
+  // Idempotent (ON CONFLICT DO NOTHING) — un re-seed ne réinitialise pas
+  // le stock géré par l'admin via /admin/products/stock.
+  await ensureDefaultStockForProduct(product.id, actorId);
 
   // Publish — snapshot + status='published'
   await publishProduct(seed.slug, actorId, 'seed');
@@ -217,7 +232,14 @@ async function main(): Promise<void> {
   );
 }
 
-if (require.main === module) {
+// Détection « exécuté directement » en ESM (`apps/web` est un module ESM
+// : `"type": "module"`, donc `require` n'existe pas). On compare le path
+// du fichier courant à `process.argv[1]` après normalisation file://.
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
   main().catch((err) => {
     console.error('[seed-products] erreur:', err);
     process.exit(1);

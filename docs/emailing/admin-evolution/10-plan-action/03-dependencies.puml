@@ -1,0 +1,37 @@
+@startuml dependencies
+!theme plain
+title M5 — Dépendances entre phases et tickets
+
+skinparam rectangle {
+  BackgroundColor #F5F1ED
+  BorderColor #5A6B5E
+}
+
+rectangle "M5.1\nInbox" as M51 #E8F0E8
+rectangle "M5.2\nEvents" as M52 #E8F0E8
+rectangle "M5.3\nAudiences" as M53 #E8F0E8
+rectangle "M5.4\nCampaigns" as M54 #E8F0E8
+rectangle "M5.5\nAutomation" as M55 #E8F0E8
+rectangle "M5.6\nPolish" as M56 #E8F0E8
+
+' Dépendances inter-phases
+M52 --> M53 : user_event requis pour\nrules engagement/activité
+M53 --> M54 : audiences requises pour\nwizard campagne
+M53 --> M55 : rules-compiler réutilisé\npour branch conditions
+M52 --> M55 : user_event requis pour\nwait_for_event resume
+M51 --> M56 : Cmd-K à étendre
+M52 --> M56
+M53 --> M56
+M54 --> M56
+M55 --> M56
+
+' Parallélisable
+note as N1
+  M5.1 et M5.2 sont
+  indépendants → peuvent
+  être faits en parallèle
+end note
+N1 .. M51
+N1 .. M52
+
+@enduml

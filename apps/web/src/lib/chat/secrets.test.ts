@@ -27,11 +27,17 @@ describe('chat secrets', () => {
   it('rejects ciphertext that has been tampered', async () => {
     const { encryptSecret, decryptSecret } = await import('./secrets');
     const encoded = encryptSecret('payload');
+    // `Buffer.prototype.map()` est hérité d'`Uint8Array` et retourne un
+    // `Uint8Array`, pas un `Buffer`. Or `Uint8Array.toString()` n'accepte
+    // pas d'argument d'encodage. On re-wrappe explicitement le résultat
+    // dans un `Buffer` avant `.toString('base64')` pour récupérer le
+    // bon overload.
+    const tamperedBytes = Buffer.from(encoded.ciphertext, 'base64').map(
+      (b, i) => (i === 0 ? b ^ 0xff : b),
+    );
     const tampered = {
       ...encoded,
-      ciphertext: Buffer.from(encoded.ciphertext, 'base64')
-        .map((b, i) => (i === 0 ? b ^ 0xff : b))
-        .toString('base64'),
+      ciphertext: Buffer.from(tamperedBytes).toString('base64'),
     };
     expect(() => decryptSecret(tampered)).toThrow();
   });

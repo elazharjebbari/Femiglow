@@ -1,12 +1,27 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
+import { logger } from '@/lib/logging/logger';
 import { hashIdentity, sha256Hex } from './hashing';
-import { isEventSupported, mapEventName } from './event-mapping';
+import { isEventSupported } from './event-mapping';
+import { getMappedName } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
 
 function buildPayload(provider: TrackingProvider, ctx: DispatchContext): Record<string, unknown> {
-  const eventNameMapped = mapEventName(ctx.eventName, 'tiktok') ?? 'CustomEvent';
+  // Sprint 4 A1 — Audit identifié comme inconsistance : TikTok fallback
+  // à 'CustomEvent' littéral pollue les analytics TikTok Events Manager.
+  // On loggue désormais un warning pour que l'admin sache + puisse
+  // mapper explicitement via l'UI admin (event-mappings).
+  // Référence : docs/live-systems-audit-2026-05/01-audit-baseline.md
+  const explicitMapped = getMappedName(ctx, 'tiktok');
+  const eventNameMapped = explicitMapped ?? 'CustomEvent';
+  if (!explicitMapped) {
+    logger.warn('tracking.tiktok.event_unmapped_fallback', {
+      eventName: ctx.eventName,
+      fallback: 'CustomEvent',
+      hint: 'Configure mapping via /admin/event-mappings to avoid pollution.',
+    });
+  }
   const hashed = hashIdentity(ctx.identity ?? {});
   const externalId = ctx.externalId ?? ctx.userId ?? ctx.anonymousId;
   return {
@@ -90,3 +105,5 @@ export const tiktokAdapter: ProviderAdapter = {
     };
   },
 };
+
+export const __test__ = { buildPayload };

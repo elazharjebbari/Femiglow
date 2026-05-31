@@ -1,0 +1,60 @@
+================================================================================
+WIREFRAME : Comparaison de versions — /mappings/compare/[a]/[b]
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Console FemiGlow ▸ Tracking ▸ Events ▸ Mappings ▸ Comparer                     │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│  Comparaison    v2 (archived)   ↔   v3 (active)                                │
+│                                                                                │
+│  Mode d'affichage : [Side-by-side] | Inline                                    │
+│                                                                                │
+│  Résumé : 3 modifications     🟢 +1 ajout    🔴 -0 suppression    🟡 ±2 modif │
+│                                                                                │
+│  Filtre : ☐ Modifications uniquement   Provider : [Tous ▼]                    │
+│                                                                                │
+│  ┌──────────────────┬────────────────────────────┬────────────────────────────┐│
+│  │ Event × Provider │ v2 (avant)                  │ v3 (après)                 ││
+│  ├──────────────────┼────────────────────────────┼────────────────────────────┤│
+│  │ 🟢 begin_checkout│  ──                          │  Meta : checkout_intent   ││
+│  │   meta           │                              │  (custom)                  ││
+│  │                  │                              │                            ││
+│  │ 🟡 form_start    │  Meta : form_start_v1        │  Meta : form_start         ││
+│  │   meta           │  (custom)                    │  (custom)                  ││
+│  │                  │                              │                            ││
+│  │ 🟡 lead_capture  │  Ads : —                     │  Ads : generate_lead       ││
+│  │   google_ads     │  (disabled)                  │  (enabled)                 ││
+│  │                  │                              │                            ││
+│  │ ✓ purchase       │  Meta : Purchase             │  Meta : Purchase           ││
+│  │   meta           │                              │  (inchangé)                ││
+│  │                  │                              │                            ││
+│  │ ... (29 autres lignes inchangées — masquées si filtre actif)             ││
+│  └──────────────────┴────────────────────────────┴────────────────────────────┘│
+│                                                                                │
+│  ─────────────────────────                                                    │
+│  Actions :                                                                     │
+│    [Adopter v3 et l'activer →]    [Retourner à la liste]                      │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+LÉGENDE :
+  🟢 = Cellule ajoutée (vide → non-vide)
+  🔴 = Cellule supprimée (non-vide → vide)
+  🟡 = Cellule modifiée (non-vide → non-vide différent)
+  ✓  = Inchangé
+
+MODE INLINE :
+  Affichage condensé sur 1 colonne. Cellule modifiée :
+
+  🟡 form_start × meta
+     - form_start_v1 (custom)
+     + form_start (custom)
+
+  Style "git diff" : ligne barrée rouge / ligne verte underline.
+
+INTERACTIONS :
+  - Click sur une ligne → scroll smooth + highlight 3s
+  - Toggle "Modifications uniquement" : filtre les ✓
+  - Filter Provider : ne montre que les cellules d'un provider
+  - "Adopter v3 et l'activer" : raccourci pour activate sans repasser par liste

@@ -24,15 +24,23 @@ export const navDefault: NavConfig = {
       position: 2,
     },
     { key: 'media', label: 'Médias', href: '/admin/media', icon: 'image', position: 3 },
-    { key: 'tracking', label: 'Tracking', href: '/admin/tracking', icon: 'activity', position: 4 },
-    { key: 'webhooks', label: 'Webhooks', href: '/admin/webhooks', icon: 'webhook', position: 5 },
-    { key: 'audit', label: 'Audit', href: '/admin/audit', icon: 'list', position: 6 },
+    { key: 'legal', label: 'Pages légales', href: '/admin/legal', icon: 'file', position: 4 },
+    {
+      key: 'content-studio',
+      label: 'Studio contenu',
+      href: '/admin/content-studio',
+      icon: 'sparkles',
+      position: 5,
+    },
+    { key: 'tracking', label: 'Tracking', href: '/admin/tracking', icon: 'activity', position: 6 },
+    { key: 'webhooks', label: 'Webhooks', href: '/admin/webhooks', icon: 'webhook', position: 7 },
+    { key: 'audit', label: 'Audit', href: '/admin/audit', icon: 'list', position: 8 },
     {
       key: 'settings',
       label: 'Réglages',
       href: '/admin/settings',
       icon: 'gear',
-      position: 7,
+      position: 9,
       requiresRole: 'admin',
     },
   ],
@@ -44,6 +52,7 @@ export const flagsDefault: FlagsConfig = {
     betaSeo: false,
     productsCmsEnabled: true,
     appConfigUiEnabled: true,
+    freeShipping: true,
   },
 };
 
@@ -56,6 +65,8 @@ export const rbacDefault: RbacConfig = {
       media: ['read', 'write', 'publish', 'delete'],
       users: ['read', 'write', 'publish', 'delete'],
       'app-config': ['read', 'write', 'publish', 'delete'],
+      legal: ['read', 'write', 'publish', 'delete'],
+      'content-studio': ['read', 'write', 'publish', 'delete'],
     },
     admin: {
       components: ['read', 'write', 'publish'],
@@ -64,6 +75,8 @@ export const rbacDefault: RbacConfig = {
       media: ['read', 'write', 'publish'],
       users: ['read'],
       'app-config': ['read', 'write'],
+      legal: ['read', 'write', 'publish'],
+      'content-studio': ['read', 'write', 'publish'],
     },
     editor: {
       components: ['read', 'write'],
@@ -72,6 +85,8 @@ export const rbacDefault: RbacConfig = {
       media: ['read', 'write'],
       users: [],
       'app-config': ['read'],
+      legal: ['read', 'write'],
+      'content-studio': ['read', 'write'],
     },
     viewer: {
       components: ['read'],
@@ -80,6 +95,8 @@ export const rbacDefault: RbacConfig = {
       media: ['read'],
       users: [],
       'app-config': ['read'],
+      legal: ['read'],
+      'content-studio': ['read'],
     },
   },
 };

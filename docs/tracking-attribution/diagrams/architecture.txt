@@ -1,0 +1,98 @@
+─────────────────────────────────────────────────────────────────────────
+  ATTRIBUTION MULTI-CANAL — ARCHITECTURE GÉNÉRALE (phase 1)
+─────────────────────────────────────────────────────────────────────────
+
+
+  [VISITEUR]
+      │
+      ├─ URL: femiglow-maroc.com/kit?gclid=abc&utm_source=google
+      └─ Référent: https://google.com/aclk?sa=...
+      │
+      ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  CLIENT (Next.js + React)                                       │
+  │                                                                 │
+  │  ╔══════════════════════════════════════════════════════════╗   │
+  │  ║ AttributionCaptureBridge (au mount du TrackingProvider)  ║   │
+  │  ║                                                          ║   │
+  │  ║  1. parseUrl + referrer                                  ║   │
+  │  ║  2. detectChannel() → ChannelTouch                       ║   │
+  │  ║  3. lit cookie `fg_attr`                                 ║   │
+  │  ║  4. si nouveau touch → POST /api/track/attribution       ║   │
+  │  ║  5. update cookie `fg_attr` (90j, SameSite=Lax)          ║   │
+  │  ╚══════════════════════════════════════════════════════════╝   │
+  │                                                                 │
+  │                                                                 │
+  │  ╔══════════════════════════════════════════════════════════╗   │
+  │  ║ TrackingClient.emit(event, params, opts)                 ║   │
+  │  ║                                                          ║   │
+  │  ║  1. lit cookie `fg_attr` (sync)                          ║   │
+  │  ║  2. applyStrategy(snapshot, current_strategy)            ║   │
+  │  ║  3. entry.attribution = { channel, click_id, ... }       ║   │
+  │  ║  4. dataLayer.push(entry)                                ║   │
+  │  ╚══════════════════════════════════════════════════════════╝   │
+  └────────────────────┬────────────────────────────────────────────┘
+                       │
+                       │ POST /api/track/attribution
+                       ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  SERVER (Next.js API route)                                     │
+  │                                                                 │
+  │  /api/track/attribution                                         │
+  │     • valid body (Zod)                                          │
+  │     • upsertAttribution(visitor_id, touch)                      │
+  │         ├─ INSERT si nouveau visitor                            │
+  │         ├─ UPDATE last_touch                                    │
+  │         └─ APPEND paid_history (LRU 20, dedup click_id)         │
+  └────────────────────┬────────────────────────────────────────────┘
+                       │
+                       ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  POSTGRES                                                       │
+  │                                                                 │
+  │  TABLE visitor_attribution                                      │
+  │    visitor_id      TEXT PRIMARY KEY                             │
+  │    first_touch     JSONB    (immutable après 1er insert)        │
+  │    last_touch      JSONB    (refreshed à chaque touch)          │
+  │    paid_history    JSONB    (array de touches, LRU 20)          │
+  │    created_at, updated_at                                       │
+  └─────────────────────────────────────────────────────────────────┘
+
+
+  ─────────────────────────────────────────────────────────────────
+                              ↓ exporter GTM
+  ─────────────────────────────────────────────────────────────────
+
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  GTM CONTAINER (généré par l'exporter FemiGlow)                 │
+  │                                                                 │
+  │  Variables ajoutées :                                           │
+  │    DLV - attribution.channel                                    │
+  │    DLV - attribution.is_paid                                    │
+  │    DLV - attribution.click_id                                   │
+  │    DLV - attribution.strategy                                   │
+  │                                                                 │
+  │  Pour chaque couple (event × provider) :                        │
+  │  getAttributionMode(eventKey, provider) ∈ {primary, broadcast}  │
+  │                                                                 │
+  │    broadcast  →  trigger sans condition d'attribution           │
+  │                  Couvre :                                       │
+  │                  • audience pure (page_view, view_item,         │
+  │                    view_cart, add_payment_info, …)              │
+  │                  • secondary conv Ads (add_to_cart,             │
+  │                    checkout_intent, sign_up, newsletter,        │
+  │                    video_complete, journal_read, …)             │
+  │                  • intent funnel Meta (InitiateCheckout,        │
+  │                    AddToCart, AddPaymentInfo, …)                │
+  │                                                                 │
+  │    primary    →  trigger AVEC condition :                       │
+  │                  attribution.channel MATCH_REGEX                │
+  │                    ^(<provider>|direct|organic|broadcast)$      │
+  │                  Couvre :                                       │
+  │                  • Ads : recommendedRole='primary'              │
+  │                    (purchase, lead_capture, contact_submit,     │
+  │                    chat_message_sent, …)                        │
+  │                  • Meta : Purchase, Lead                        │
+  │                  • TikTok : CompletePayment, SubmitForm         │
+  └─────────────────────────────────────────────────────────────────┘

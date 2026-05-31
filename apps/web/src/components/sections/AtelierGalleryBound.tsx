@@ -10,6 +10,9 @@ import { resolveComponentSlot } from '@/lib/components/resolver';
 interface AtelierGalleryBoundProps {
   data: Atelier;
   componentKey?: string;
+  /** Phase 9bis — kicker/titre localisés de la section atelier. */
+  kicker?: string;
+  title?: string;
 }
 
 const SLOT_KEYS = ['atelier-1', 'atelier-2', 'atelier-3'] as const;
@@ -21,6 +24,8 @@ const SLOT_KEYS = ['atelier-1', 'atelier-2', 'atelier-3'] as const;
 export async function AtelierGalleryBound({
   data,
   componentKey = 'maison-atelier-gallery',
+  kicker,
+  title,
 }: AtelierGalleryBoundProps) {
   const resolutions = await Promise.all(
     SLOT_KEYS.map((slot) => resolveComponentSlot(componentKey, slot)),
@@ -33,7 +38,7 @@ export async function AtelierGalleryBound({
   );
 
   if (!allActive) {
-    return <AtelierGallery data={data} />;
+    return <AtelierGallery data={data} kicker={kicker} title={title} />;
   }
 
   const mediaSlotsByIndex: AtelierGalleryMediaSlot[] = SLOT_KEYS.map((slot) => ({
@@ -57,5 +62,12 @@ export async function AtelierGalleryBound({
     ),
   }));
 
-  return <AtelierGallery data={data} mediaSlotsByIndex={mediaSlotsByIndex} />;
+  return (
+    <AtelierGallery
+      data={data}
+      mediaSlotsByIndex={mediaSlotsByIndex}
+      kicker={kicker}
+      title={title}
+    />
+  );
 }

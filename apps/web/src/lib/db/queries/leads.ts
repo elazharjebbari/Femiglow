@@ -1,7 +1,12 @@
-import { and, asc, desc, eq, gte, lte, ilike, or, sql as dsql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, ilike, or } from 'drizzle-orm';
 import { db, memoryStore, schema } from '@/lib/db/client';
+import { chatDb } from '@/lib/chat/db/client';
+import { chatLead } from '@/lib/chat/db/schema';
+import type { ChatLeadRow } from '@/lib/chat/db/schema';
 import { createId } from '@/lib/ids';
 import type { Lead, LeadStatus, Order, OrderItem } from '@/lib/db/types';
+import { computeLeadJourney, type LeadOutboundWebhookStatuses } from '@/lib/admin/leads/journey';
+import { listLatestOutboundLogsBySourceIds } from '@/lib/webhooks/outbound/log-queries';
 
 export interface LeadFilters {
   status?: LeadStatus;
@@ -11,6 +16,86 @@ export interface LeadFilters {
   page?: number;
   pageSize?: number;
   sort?: 'created_desc' | 'created_asc';
+}
+
+/**
+ * CHA-225 — Mappe l'outcome chat vers le statut Lead admin.
+ * `pending`   → 'new'        (lead capté, pas encore traité)
+ * `reached`   → 'contacted'  (rappelée, en cours)
+ * `no-answer` → 'contacted'  (on a essayé, on retentera)
+ * `converted` → 'converted'
+ * `discarded` → 'lost'
+ */
+function chatOutcomeToLeadStatus(outcome: ChatLeadRow['outcome']): LeadStatus {
+  switch (outcome) {
+    case 'pending':
+      return 'new';
+    case 'reached':
+    case 'no-answer':
+      return 'contacted';
+    case 'converted':
+      return 'converted';
+    case 'discarded':
+      return 'lost';
+    default:
+      return 'new';
+  }
+}
+
+/** Convertit un `chat_lead` en `Lead` pour l'affichage admin unifié. */
+function chatLeadToLead(
+  row: ChatLeadRow,
+  outboundStatuses: LeadOutboundWebhookStatuses = {},
+): Lead {
+  const journey = computeLeadJourney(row, outboundStatuses);
+  const isChatWidgetLead = row.source === 'chat_widget';
+  const fullName = [row.firstName, row.lastName].filter(Boolean).join(' ').trim();
+  return {
+    id: row.id, // garde le préfixe `cl_…` pour disambiguation
+    email: row.email ?? null,
+    phone: row.phoneE164,
+    name: fullName || row.firstName,
+    city: row.shippingCity ?? null,
+    country: row.shippingCountry ?? null,
+    addressLine1: row.shippingAddressLine1 ?? null,
+    addressLine2: row.shippingAddressLine2 ?? null,
+    status: chatOutcomeToLeadStatus(row.outcome),
+    source: isChatWidgetLead ? `chat:${row.triggerReason}` : row.source,
+    consentMarketing: false,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    // CHA-229 — Permet à /admin/leads de wirer la QuickView conversation.
+    // Les leads wizard réutilisent aussi chat_lead + session_id pour le FK,
+    // mais ne doivent pas être présentés comme conversations chat.
+    chatSessionId: isChatWidgetLead ? row.sessionId : null,
+    journeyStage: journey.stage,
+    dataPct: journey.dataPct,
+    webhookSummary: journey.webhookSummary,
+  };
+}
+
+/** Filtre côté mémoire un Lead unifié selon les filtres admin. */
+function matchesLeadFilter(lead: Lead, filters: LeadFilters): boolean {
+  if (filters.status && lead.status !== filters.status) return false;
+  if (filters.from && lead.createdAt < filters.from) return false;
+  if (filters.to && lead.createdAt > filters.to) return false;
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    const hay = [
+      lead.email,
+      lead.name,
+      lead.phone,
+      lead.city,
+      lead.country,
+      lead.addressLine1,
+      lead.source,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  return true;
 }
 
 export interface LeadListResult {
@@ -25,6 +110,7 @@ export async function listLeads(filters: LeadFilters = {}): Promise<LeadListResu
   const pageSize = filters.pageSize ?? 25;
   const drizzle = db();
   if (drizzle) {
+    // 1. Leads ecommerce historiques.
     const conditions = [] as ReturnType<typeof eq>[];
     if (filters.status) conditions.push(eq(schema.leads.status, filters.status));
     if (filters.from) conditions.push(gte(schema.leads.createdAt, filters.from));
@@ -39,37 +125,81 @@ export async function listLeads(filters: LeadFilters = {}): Promise<LeadListResu
       if (search) conditions.push(search);
     }
     const where = conditions.length ? and(...conditions) : undefined;
-    const orderCol =
-      filters.sort === 'created_asc'
-        ? asc(schema.leads.createdAt)
-        : desc(schema.leads.createdAt);
-    const rowsQ = drizzle
+    const ecommerceRows = await drizzle
       .select()
       .from(schema.leads)
       .where(where)
-      .orderBy(orderCol)
-      .limit(pageSize)
-      .offset((page - 1) * pageSize);
-    const totalQ = drizzle
-      .select({ c: dsql<number>`count(*)::int` })
-      .from(schema.leads)
-      .where(where);
-    const [rows, totalRows] = await Promise.all([rowsQ, totalQ]);
-    return { rows, total: totalRows[0]?.c ?? 0, page, pageSize };
+      .orderBy(desc(schema.leads.createdAt));
+
+    // Les commandes wizard créent encore une row legacy `leads` pour le FK
+    // `orders.lead_id`, tout en gardant la source de vérité funnel dans
+    // `chat_lead`. Sans cette exclusion, /admin/leads affiche le même client
+    // deux fois : legacy `new` + wizard `converted`.
+    const orderLinks = await drizzle
+      .select({
+        leadId: schema.orders.leadId,
+        chatLeadId: schema.orders.chatLeadId,
+      })
+      .from(schema.orders);
+    const legacyLeadIdsLinkedToWizard = new Set(
+      orderLinks
+        .filter((row) => row.chatLeadId)
+        .map((row) => row.leadId),
+    );
+
+    // 2. Leads issus du chat (CHA-225). On charge tout puis on filtre
+    //    en mémoire — le mapping outcome→status diffère et un UNION
+    //    SQL deviendrait illisible. Volume attendu < 10k pour un seul
+    //    écran admin, OK en pratique.
+    const cdb = chatDb();
+    const chatRows: Lead[] = [];
+    if (cdb) {
+      const all = await cdb
+        .select()
+        .from(chatLead)
+        .orderBy(desc(chatLead.createdAt));
+      const chatLeadRows = all as ChatLeadRow[];
+      const ids = chatLeadRows.map((row) => row.id);
+      const [step2Logs, step1AbandonLogs] = await Promise.all([
+        listLatestOutboundLogsBySourceIds('lead-step2', ids),
+        listLatestOutboundLogsBySourceIds('lead-step1-abandon', ids),
+      ]);
+      for (const row of chatLeadRows) {
+        const mapped = chatLeadToLead(row, {
+          step2: step2Logs.get(row.id)?.status,
+          step1Abandon: step1AbandonLogs.get(row.id)?.status,
+        });
+        if (matchesLeadFilter(mapped, filters)) chatRows.push(mapped);
+      }
+    }
+
+    // 3. Merge + tri + pagination.
+    const merged: Lead[] = [
+      ...(ecommerceRows as Lead[])
+        .filter((r) => !legacyLeadIdsLinkedToWizard.has(r.id))
+        .map((r) => ({
+          ...r,
+          // Lead.email peut désormais être null (chat leads). Pour les
+          // leads ecommerce, on conserve la string (Drizzle infère
+          // string mais on s'aligne sur le type unifié).
+          email: r.email ?? null,
+        })),
+      ...chatRows,
+    ];
+    merged.sort((a, b) =>
+      filters.sort === 'created_asc'
+        ? a.createdAt.getTime() - b.createdAt.getTime()
+        : b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+    const total = merged.length;
+    const paged = merged.slice((page - 1) * pageSize, page * pageSize);
+    return { rows: paged, total, page, pageSize };
   }
+  // Mode mémoire (tests). Ne fusionne pas chat_lead — les tests qui
+  // veulent l'union utilisent la branche DB drizzle ci-dessus.
   const store = memoryStore();
   const all = Array.from(store.leads.values());
-  let rows = all.filter((l) => {
-    if (filters.status && l.status !== filters.status) return false;
-    if (filters.from && l.createdAt < filters.from) return false;
-    if (filters.to && l.createdAt > filters.to) return false;
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      const haystack = `${l.email} ${l.name ?? ''} ${l.phone ?? ''}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    return true;
-  });
+  let rows = all.filter((l) => matchesLeadFilter(l, filters));
   rows.sort((a, b) =>
     filters.sort === 'created_asc'
       ? a.createdAt.getTime() - b.createdAt.getTime()
@@ -86,6 +216,43 @@ export async function getLeadById(id: string): Promise<{
   items: OrderItem[];
 } | null> {
   const drizzle = db();
+  // Les ids `cl_xxx` désignent des rows `chat_lead`. Depuis le wizard, cette
+  // table porte aussi les leads checkout et peut avoir une commande liée via
+  // `orders.chat_lead_id`.
+  if (id.startsWith('cl_')) {
+    const cdb = chatDb();
+    if (!cdb) return null;
+    const rows = await cdb
+      .select()
+      .from(chatLead)
+      .where(eq(chatLead.id, id))
+      .limit(1);
+    const row = rows[0] as ChatLeadRow | undefined;
+    if (!row) return null;
+    const [step2Logs, step1AbandonLogs] = await Promise.all([
+      listLatestOutboundLogsBySourceIds('lead-step2', [id]),
+      listLatestOutboundLogsBySourceIds('lead-step1-abandon', [id]),
+    ]);
+    const lead = chatLeadToLead(row, {
+      step2: step2Logs.get(id)?.status,
+      step1Abandon: step1AbandonLogs.get(id)?.status,
+    });
+    if (!drizzle) return { lead, order: null, items: [] };
+    const orderRows = await drizzle
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.chatLeadId, id))
+      .limit(1);
+    const order = orderRows[0] ?? null;
+    const items = order
+      ? await drizzle.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id))
+      : [];
+    return {
+      lead,
+      order: order ? (order as Order) : null,
+      items: items as OrderItem[],
+    };
+  }
   if (drizzle) {
     const leadRows = await drizzle
       .select()
@@ -104,7 +271,7 @@ export async function getLeadById(id: string): Promise<{
       ? await drizzle.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id))
       : [];
     return {
-      lead,
+      lead: { ...lead, email: lead.email ?? null },
       order: order ? (order as Order) : null,
       items: items as OrderItem[],
     };
@@ -140,7 +307,10 @@ export async function createLead(input: {
   };
   const drizzle = db();
   if (drizzle) {
-    await drizzle.insert(schema.leads).values(lead);
+    // CHA-225 — Le type `Lead.email` est désormais `string | null`
+    // (les chat leads n'ont pas d'email). Mais `createLead` reçoit
+    // toujours un `input.email` non-null, donc on caste sans risque.
+    await drizzle.insert(schema.leads).values({ ...lead, email: lead.email! });
     return lead;
   }
   memoryStore().leads.set(lead.id, lead);

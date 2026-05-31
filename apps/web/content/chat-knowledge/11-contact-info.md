@@ -17,22 +17,26 @@ Le canal préféré est WhatsApp : **+212 630 035 905**. On répond du
 **lundi au samedi, de 9 h à 17 h** (heure du Maroc, UTC+1). Le numéro
 est aussi joignable en appel direct sur les mêmes plages.
 
+Par e-mail : **info@femiglow-maroc.com** — réponse sous 24 h ouvrées.
+
 ### Faits liés
 - WhatsApp : `https://wa.me/212630035905`.
+- E-mail : `info@femiglow-maroc.com`.
 - Pas de réponse le dimanche (rappel automatique le lundi matin).
 
 ## Où se trouve FemiGlow ?
 
 Notre adresse :
 
-> **Avenue Patrice Lumumba, Rabat Hassan, Maroc.**
+> **25 bis avenue Patrice Lumumba, Rabat Hassan, Maroc.**
 
-Le retrait en boutique est possible sur rendez-vous (à organiser via
-WhatsApp).
+L'atelier de Rabat est l'adresse de la maison — siège de la fondatrice
+Souheila, biologiste et formulatrice. Le retrait en boutique est
+possible sur rendez-vous (à organiser via WhatsApp).
 
 ### Variations linguistiques
-- **AR** : شارع باتريس لومومبا، الرباط (حسان).
-- **AR-MA** : 3la chari3 Patrice Lumumba, R-Rbat Hassan.
+- **AR** : 25 مكرر شارع باتريس لومومبا، الرباط (حسان).
+- **AR-MA** : 25 mukrar 3la chari3 Patrice Lumumba, R-Rbat Hassan.
 
 ## Quels sont les horaires d'ouverture ?
 

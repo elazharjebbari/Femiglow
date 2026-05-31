@@ -1,0 +1,110 @@
+@startuml reset-feature-architecture
+title FemiGlow — Reset Feature · Architecture des composants
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName "Inter"
+skinparam defaultFontSize 11
+
+' ============== Frontend ==============
+package "Frontend · /admin/settings/reset" #E8DCC9 {
+  component "page.tsx\n(Server Component)" as ResetPage
+  component "ResetWizard.tsx\n(Client, state machine)" as Wizard
+  component "useResetStream.ts\n(SSE hook)" as Hook
+  component "WizardStep*\n(Welcome/Mode/Custom/\nPreservation/Preview/\nConfirm/Execute/Report)" as Steps
+  component "ImpactPreview.tsx\n(row count diff)" as Impact
+  component "TypedConfirm.tsx\n(typed input)" as TypedConfirm
+  component "PhaseProgress.tsx\n(progress + ETA)" as PhaseProgress
+}
+
+' ============== API ==============
+package "API · /api/admin/reset" #D9D3C9 {
+  component "POST /run\n(start a job)" as ApiRun
+  component "GET /jobs/[id]/stream\n(SSE)" as ApiStream
+  component "GET /jobs/[id]\n(snapshot)" as ApiSnap
+  component "POST /jobs/[id]/cancel" as ApiCancel
+  component "GET /preflight\n(plan + impact)" as ApiPreflight
+  component "POST /restore\n(restore from backup)" as ApiRestore
+  component "GET /backups\n(list backups)" as ApiBackups
+}
+
+' ============== Backend ==============
+package "Backend · lib/reset" #C9CDD9 {
+  component "orchestrator.ts\n(phase loop, abort, events)" as Orchestrator
+  component "planner.ts\n(mode → phases)" as Planner
+  component "job-store.ts\n(in-memory singleton)" as JobStore
+  component "phases/\n  preflight.ts\n  backup.ts\n  audit-counts.ts\n  wipe-db.ts\n  wipe-media.ts\n  migrate.ts\n  seed.ts\n  verify.ts\n  cleanup-backups.ts" as Phases
+  component "restore.ts\n(rollback from backup)" as Restore
+  component "types.ts" as Types
+  component "lock.ts\n(global mutex)" as Lock
+}
+
+' ============== Existing reused ==============
+package "Existing (reused)" #C9D9CD {
+  component "lib/seeders/registry.ts\n(SEEDERS_REGISTRY)" as Seeders
+  component "lib/seeders/orchestrator\n(used by phases/seed)" as SeederOrch
+  component "lib/audit/log-event" as Audit
+  component "lib/auth/require-admin" as Auth
+  component "components/admin/AdminShell" as Shell
+}
+
+' ============== System ==============
+package "System I/O" #D9C9CD {
+  database "PostgreSQL" as DB
+  folder ".media-storage/" as MediaFS
+  folder "/var/backups/femiglow/" as BackupFS
+  folder ".next/cache" as NextCache
+}
+
+' ============== CLI ==============
+package "CLI" #D9D9C9 {
+  component "scripts/reset.ts\n(commander/yargs)" as Cli
+}
+
+' ============== Relations ==============
+ResetPage --> Wizard
+Wizard --> Steps
+Wizard --> Hook
+Steps --> Impact
+Steps --> TypedConfirm
+Steps --> PhaseProgress
+Hook ..> ApiStream : EventSource
+Wizard ..> ApiRun : fetch POST
+Wizard ..> ApiPreflight : fetch GET
+Wizard ..> ApiCancel : fetch POST
+Wizard ..> ApiBackups : fetch GET
+ResetPage --> Auth
+ResetPage --> Shell
+
+ApiRun --> Auth
+ApiRun --> Lock
+ApiRun --> JobStore
+ApiRun --> Planner
+ApiRun --> Orchestrator
+ApiStream --> JobStore
+ApiSnap --> JobStore
+ApiCancel --> JobStore
+ApiPreflight --> Planner
+ApiPreflight --> Phases : phases.preflight()
+ApiPreflight --> Phases : phases.auditCounts()
+ApiRestore --> Restore
+ApiBackups --> BackupFS
+
+Orchestrator --> Planner
+Orchestrator --> Phases
+Orchestrator --> JobStore : emit events
+Orchestrator --> Audit
+Phases --> DB
+Phases --> MediaFS
+Phases --> BackupFS
+Phases --> SeederOrch
+Phases --> Seeders
+Restore --> DB
+Restore --> MediaFS
+Restore --> BackupFS
+
+Cli --> Planner
+Cli --> Orchestrator
+Cli --> Restore
+
+@enduml

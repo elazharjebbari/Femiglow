@@ -33,6 +33,35 @@ const config: Config = {
           soft: 'var(--color-champagne-soft)',
           dark: 'var(--color-champagne-dark)',
         },
+        // Content Studio v2 — scoped tokens (only used under .cs-v2-shell).
+        cs: {
+          'bg-base': 'var(--cs-bg-base)',
+          'bg-elevated': 'var(--cs-bg-elevated)',
+          'bg-sunken': 'var(--cs-bg-sunken)',
+          'bg-feature': 'var(--cs-bg-feature)',
+          'fg-primary': 'var(--cs-fg-primary)',
+          'fg-secondary': 'var(--cs-fg-secondary)',
+          'fg-muted': 'var(--cs-fg-muted)',
+          'fg-on-accent': 'var(--cs-fg-on-accent)',
+          accent: 'var(--cs-accent)',
+          'accent-hover': 'var(--cs-accent-hover)',
+          'accent-soft': 'var(--cs-accent-soft)',
+          'accent-bg': 'var(--cs-accent-bg)',
+          clay: 'var(--cs-clay)',
+          sage: 'var(--cs-sage)',
+          saffron: 'var(--cs-saffron)',
+          violet: 'var(--cs-violet)',
+          success: 'var(--cs-success)',
+          'success-bg': 'var(--cs-success-bg)',
+          warning: 'var(--cs-warning)',
+          'warning-bg': 'var(--cs-warning-bg)',
+          danger: 'var(--cs-danger)',
+          'danger-bg': 'var(--cs-danger-bg)',
+          'border-hair': 'var(--cs-border-hair)',
+          'border-cs': 'var(--cs-border)',
+          'border-strong': 'var(--cs-border-strong)',
+          'border-focus': 'var(--cs-border-focus)',
+        },
       },
       fontFamily: {
         display: ['var(--font-cormorant)', 'Cormorant Garamond', 'Georgia', 'serif'],
@@ -78,6 +107,27 @@ const config: Config = {
         'out-soft': 'cubic-bezier(0.22, 1, 0.36, 1)',
         'in-out-silk': 'cubic-bezier(0.65, 0, 0.35, 1)',
         'in-quiet': 'cubic-bezier(0.4, 0, 1, 1)',
+      },
+      keyframes: {
+        // §4.6 — micro-pulse discret du CTA pack (3,5 s, amplitude 2 %).
+        // Volontairement faible : on cherche un signal d'attention, pas
+        // une animation criarde. `motion-safe:` désactive auto si l'OS
+        // demande `prefers-reduced-motion`.
+        'soft-pulse': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.02)' },
+        },
+        // §5 W4 — fade-in du WizardCheckmark (200 ms, ease-out).
+        // Apparait quand un champ devient valide. Utilisé par
+        // `motion-safe:animate-fade-in`.
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(2px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'soft-pulse': 'soft-pulse 3.5s ease-in-out infinite',
+        'fade-in': 'fade-in 0.2s ease-out',
       },
     },
   },

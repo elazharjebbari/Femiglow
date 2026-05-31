@@ -26,15 +26,19 @@ import {
 import { chatLeadContactInput } from '@/lib/chat/contracts';
 import { eventRepo } from '@/lib/chat/repos/event';
 import { leadRepo } from '@/lib/chat/repos/lead';
+import { computeIdentityHash } from '@/lib/chat/repos/identity-hash';
 import { messageRepo } from '@/lib/chat/repos/message';
 import { sessionRepo } from '@/lib/chat/repos/session';
 import { rateLimit } from '@/lib/chat/services/rate-limit';
 import { detectIntent } from '@/lib/chat/services/intent';
 import { dispatchLeadWebhook } from '@/lib/chat/services/lead-webhook';
+import { notifyHotLead } from '@/lib/chat/services/lead-alerts';
 import { getRuntimeBool } from '@/lib/chat/runtime-setting';
 import { env } from '@/lib/env';
 import { parsePhone, PhoneParseError } from '@/lib/phone';
 import { logger } from '@/lib/logging/logger';
+import { sendTransactional } from '@/lib/mail/send';
+import { getKitLeadValue } from '@/lib/products/public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -104,17 +108,6 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'session-not-found' }, { status: 404 });
   }
 
-  // Idempotence : 1 lead par session — sauf cas d'upgrade (CHA-225) :
-  // si le lead existant est un fallback `inline-contact` (auto-créé
-  // parce que le visiteur a tapé son numéro dans le chat), on AUTORISE
-  // le formulaire à le formaliser plutôt que de renvoyer 409. Le
-  // formulaire apporte le consent RGPD propre + la validation du
-  // numéro, donc on n'a pas envie de le bloquer.
-  const existing = await leadRepo.findBySession(session.id);
-  if (existing && existing.triggerReason !== 'inline-contact') {
-    return NextResponse.json({ error: 'lead-already-captured' }, { status: 409 });
-  }
-
   // Normalisation téléphone — invalid → 422 avec code lisible côté UI.
   let phone;
   try {
@@ -122,6 +115,22 @@ export async function POST(req: NextRequest): Promise<Response> {
   } catch (err) {
     const code = err instanceof PhoneParseError ? err.code : 'invalid-phone';
     return NextResponse.json({ error: 'invalid-phone', code }, { status: 422 });
+  }
+
+  // Idempotence : 1 lead par (session, identité) — sauf cas d'upgrade (CHA-225) :
+  // si le lead existant est un fallback `inline-contact` (auto-créé
+  // parce que le visiteur a tapé son numéro dans le chat), on AUTORISE
+  // le formulaire à le formaliser plutôt que de renvoyer 409. Le
+  // formulaire apporte le consent RGPD propre + la validation du
+  // numéro, donc on n'a pas envie de le bloquer.
+  //
+  // CHA-240 — On vérifie par identité (phone+name hash) et non par
+  // session seule : un visiteur qui donne un numéro différent dans la
+  // même session peut légitimement créer un nouveau lead.
+  const identityHash = computeIdentityHash(phone.e164, parsed.data.firstName.trim());
+  const existing = await leadRepo.findBySessionAndIdentity(session.id, identityHash);
+  if (existing && existing.triggerReason !== 'inline-contact') {
+    return NextResponse.json({ error: 'lead-already-captured' }, { status: 409 });
   }
 
   // Snapshot des derniers messages — utile pour l'agent humain.
@@ -191,6 +200,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     phoneType: phone.type,
   });
 
+  // CHAT-066 — Alerte Slack pour lead "chaud" (purchase-intent,
+  // callback-request, explicit-request, inline-contact). Non bloquant :
+  // toute erreur est swallowée par `notifyHotLead`.
+  void notifyHotLead(lead, { adminBaseUrl: env.NEXT_PUBLIC_SITE_URL });
+
   // Webhook (non bloquant côté client : on lance et on attend en
   // arrière-plan, mais on capture le résultat pour la réponse afin que
   // l'admin voie le statut. Le timeout est de 8s donc l'UX reste fluide).
@@ -205,10 +219,43 @@ export async function POST(req: NextRequest): Promise<Response> {
     });
   }
 
+  // M1.B.2 — Notification interne : envoie un mail à info@ pour que
+  // l'équipe puisse recontacter dans la journée. Fire-and-forget.
+  const outcomeContext = snapshot
+    .map((m) => `${m.role}: ${m.content}`)
+    .join('\n')
+    .slice(0, 1900);
+  void sendTransactional({
+    template: 'lead-notification',
+    to: { email: env.MAIL_REPLY_TO ?? 'info@femiglow-maroc.com' },
+    payload: {
+      leadName: lead.firstName,
+      leadPhone: lead.phoneE164,
+      leadEmail: null,
+      intent: intentAtCapture ?? 'unknown',
+      outcomeContext: outcomeContext || '(pas de contexte)',
+      adminUrl: `${env.NEXT_PUBLIC_SITE_URL}/admin/leads/${lead.id}`,
+    },
+    idempotencyKey: `lead-notif:${lead.id}`,
+    source: 'api.chat.lead.contact',
+  }).catch((err: unknown) => {
+    logger.error('mail.lead_notification.dispatch_error', {
+      leadId: lead.id,
+      error: String(err),
+    });
+  });
+
+  // T-06 — valeur du lead = prix du kit AVEC promo (server-authoritative).
+  // Renvoyée au client pour que `generate_lead` parte valorisé (bidding
+  // value-based Meta/Ads). Fail-soft : si le prix est indisponible, on omet
+  // value/currency plutôt que d'émettre une currency orpheline.
+  const leadValue = await getKitLeadValue().catch(() => null);
+
   return NextResponse.json({
     ok: true,
     leadId: lead.id,
     outcomeMessage: OUTCOME_MESSAGES[parsed.data.language] ?? OUTCOME_MESSAGES.fr,
     webhookStatus,
+    ...(leadValue ? { value: leadValue.value, currency: leadValue.currency } : {}),
   });
 }

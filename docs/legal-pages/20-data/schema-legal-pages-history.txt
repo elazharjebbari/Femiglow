@@ -1,0 +1,87 @@
+TABLE public.legal_pages_history (NOUVELLE)
+=============================================
+Snapshot immutable de chaque publication. Permet l'audit, le rollback,
+le diff entre versions. JAMAIS modifié après insertion.
+
+Colonne             | Type                          | Notes
+--------------------|-------------------------------|------------------------
+id                  | text PK                       | lph_<random>
+page_id             | text NOT NULL                 | FK legal_pages.id
+slug                | text NOT NULL                 | dup pour query rapide
+version             | integer NOT NULL              | Numéro de version publiée
+title               | text NOT NULL                 | Snapshot
+description         | text                          | Snapshot
+body_md             | text NOT NULL                 | Snapshot complet
+metadata_json       | jsonb                         | { canonical_url, include_in_search, ... }
+status_at_snapshot  | legal_page_status NOT NULL   | 'published' typiquement
+published_at        | timestamp with time zone NOT NULL
+published_by        | text                          | FK admin_users.id
+git_commit_sha      | text                          | sha du commit auto (peut être NULL si échec)
+git_commit_at       | timestamp with time zone     | Quand le job background a commité
+created_at          | timestamp with time zone NOT NULL DEFAULT now()
+
+CONTRAINTES
+- PK (id)
+- UNIQUE (page_id, version)
+- FK page_id → legal_pages(id) ON DELETE CASCADE
+- FK published_by → admin_users(id) ON DELETE SET NULL
+- CHECK (version >= 1)
+
+INDEX
+- (page_id, version DESC) — historique d'une page
+- (slug, published_at DESC) — recherche cross-page par date
+
+USAGE
+
+-- Récupérer la dernière version publiée d'une page
+SELECT * FROM legal_pages_history
+WHERE slug = 'mentions-legales' AND status_at_snapshot = 'published'
+ORDER BY version DESC LIMIT 1;
+
+-- Diff entre deux versions
+SELECT v1.body_md, v2.body_md, v1.published_at, v2.published_at
+FROM legal_pages_history v1
+JOIN legal_pages_history v2 ON v2.page_id = v1.page_id
+WHERE v1.page_id = $1 AND v1.version = 2 AND v2.version = 3;
+
+-- Restore d'une version ancienne (admin action)
+UPDATE legal_pages SET
+  body_md = (SELECT body_md FROM legal_pages_history WHERE page_id = $1 AND version = 2),
+  status = 'draft',  -- restore = repasse en draft
+  updated_by = current_admin,
+  updated_at = NOW()
+WHERE id = $1;
+
+MIGRATION
+---------
+CREATE TABLE legal_pages_history (
+  id text PRIMARY KEY,
+  page_id text NOT NULL REFERENCES legal_pages(id) ON DELETE CASCADE,
+  slug text NOT NULL,
+  version integer NOT NULL CHECK (version >= 1),
+  title text NOT NULL,
+  description text,
+  body_md text NOT NULL,
+  metadata_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status_at_snapshot legal_page_status NOT NULL,
+  published_at timestamp with time zone NOT NULL,
+  published_by text REFERENCES admin_users(id) ON DELETE SET NULL,
+  git_commit_sha text,
+  git_commit_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  UNIQUE (page_id, version)
+);
+
+CREATE INDEX idx_legal_history_page_version ON legal_pages_history (page_id, version DESC);
+CREATE INDEX idx_legal_history_slug_date ON legal_pages_history (slug, published_at DESC);
+
+-- Bloque toute modification après insertion (audit immuable)
+CREATE OR REPLACE FUNCTION legal_pages_history_immutable() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'legal_pages_history is immutable — INSERT only';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_legal_history_no_update
+  BEFORE UPDATE OR DELETE ON legal_pages_history
+  FOR EACH ROW EXECUTE FUNCTION legal_pages_history_immutable();

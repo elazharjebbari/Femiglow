@@ -3,8 +3,9 @@
  *
  * Chunks + embeddings. Recherche vector via `<=>` (cosine distance).
  */
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 
+import { rowsOf } from '@/lib/db/exec';
 import { createId } from '@/lib/ids';
 
 import { requireChatDb } from '../db/client';
@@ -55,6 +56,30 @@ export const sourceRepo = {
       .select()
       .from(chatKnowledgeSource)
       .where(eq(chatKnowledgeSource.enabled, true));
+  },
+
+  /**
+   * CHA-098 — Liste les sources éligibles à un re-sync automatique.
+   * Filtre sur `enabled`, `kind` (seules les URLs peuvent être refetched
+   * sans intervention humaine) et `freshness` (par défaut volatile).
+   */
+  async listForResync(opts?: {
+    kinds?: Array<'url' | 'markdown' | 'pdf' | 'docx' | 'faq' | 'snippet'>;
+    freshness?: Array<'evergreen' | 'seasonal' | 'volatile'>;
+  }): Promise<ChatKnowledgeSourceRow[]> {
+    const db = requireChatDb();
+    const kinds = opts?.kinds ?? ['url'];
+    const freshness = opts?.freshness ?? ['volatile'];
+    return db
+      .select()
+      .from(chatKnowledgeSource)
+      .where(
+        and(
+          eq(chatKnowledgeSource.enabled, true),
+          inArray(chatKnowledgeSource.kind, kinds),
+          inArray(chatKnowledgeSource.freshness, freshness),
+        ),
+      );
   },
 
   async findByHash(rawHash: string, language: string) {
@@ -153,15 +178,7 @@ export const embeddingRepo = {
       ORDER BY ke.vector <=> ${vectorLiteral}::vector ASC
       LIMIT ${limit}
     `);
-    const list = (rows.rows ?? (rows as unknown as Array<Record<string, unknown>>)) as Array<{
-      chunk_id: string;
-      source_id: string;
-      content: string;
-      score: number;
-      metadata: Record<string, unknown> | null;
-      source_label: string;
-      source_locator: string | null;
-    }>;
+    const list = rowsOf(rows);
     return list
       .filter((r) => Number(r.score) >= minScore)
       .map((r) => ({

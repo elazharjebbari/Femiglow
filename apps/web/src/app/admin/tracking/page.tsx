@@ -27,6 +27,17 @@ export default async function TrackingDashboardPage() {
       title="Vue d’ensemble"
       description="Activité tracking des dernières 24 heures."
     >
+      <div className="mb-4 flex items-center justify-end">
+        <form action="/api/admin/tracking/seed-defaults" method="POST">
+          <button
+            type="submit"
+            className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm hover:bg-stone-50"
+            title="Re-seed les event mappings + providers analytics par défaut"
+          >
+            Seed défauts (events + providers)
+          </button>
+        </form>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Événements (24h)" value={events24h} />
         <Kpi label="Conversions récentes" value={conversions24h} />

@@ -1,0 +1,165 @@
+{
+  "$schema": "https://design-tokens.org/schema.json",
+  "$meta": {
+    "feature": "Locale Switcher V2 — « Le voile de langue »",
+    "sourceOfTruth": "../CONTRACT.md",
+    "scope": "NEUTRAL switcher only — no warm pop, no pulse, no flag, no emoji (CONTRACT §5).",
+    "brandHexSource": "Brand charter (memory note): Sauge #C5DBC4 / Crème #FBF8F1 / Encre #2C2A28 / Pétale #F2CECC.",
+    "variance": "Kit playbook Annexe A uses slightly different hexes (sauge #A8B89E, ivoire #F7F4EE, encre #2A2E2A, rose #E8D5D0). Switcher uses the brand-charter hexes above; only neutrals + a sauge dot are ever used, so warm/marque tokens are referenced for documentation only and MUST NOT appear on the switcher.",
+    "consumedBy": ["LocaleSwitcher", "useLocaleTransition", "LocaleVeil", "LocaleNudge"]
+  },
+
+  "brand": {
+    "$comment": "Reference palette. The switcher is allowed to use ONLY: encre (text), creme (panel/veil), sauge (active dot). Petale and any warm pop are documented for context and FORBIDDEN on the switcher.",
+    "encre":  { "value": "#2C2A28", "type": "color", "role": "ink — titles/UI text, never pure black" },
+    "creme":  { "value": "#FBF8F1", "type": "color", "role": "cream — panel/veil background, neutral" },
+    "sauge":  { "value": "#C5DBC4", "type": "color", "role": "sage — active-language dot ONLY (single restrained accent)" },
+    "petale": { "value": "#F2CECC", "type": "color", "role": "petal — brand accent, FORBIDDEN on switcher (documented only)" }
+  },
+
+  "color": {
+    "switcher": {
+      "text":           { "value": "rgba(44, 42, 40, 0.80)", "type": "color", "ref": "encre/80", "usage": "trigger & inactive labels — never pure black (CONTRACT §5 color.switcher.text)" },
+      "textActive":     { "value": "#2C2A28", "type": "color", "ref": "encre", "usage": "active language label (CONTRACT §5 color.switcher.active)" },
+      "activeDot":      { "value": "#C5DBC4", "type": "color", "ref": "sauge", "usage": "active marker dot, end-aligned, 6px (CONTRACT §5 color.switcher.active)" },
+      "hoverBg":        { "value": "rgba(44, 42, 40, 0.04)", "type": "color", "ref": "encre/[0.04]", "usage": "item/trigger hover fill (CONTRACT §5 color.switcher.hover)" },
+      "underline":      { "value": "rgba(44, 42, 40, 0.40)", "type": "color", "ref": "encre/40", "usage": "trigger underline, underline-offset 4px" },
+      "chevron":        { "value": "rgba(44, 42, 40, 0.60)", "type": "color", "ref": "encre/60", "usage": "12px chevron, opacity 60%" },
+      "border":         { "value": "rgba(44, 42, 40, 0.10)", "type": "color", "ref": "encre/10", "usage": "panel border" },
+      "focusRing":      { "value": "#2C2A28", "type": "color", "ref": "encre", "usage": "focus-visible ring, neutral (never sauge/marque)" }
+    },
+    "panel": {
+      "bg":             { "value": "rgba(251, 248, 241, 0.95)", "type": "color", "ref": "creme/95", "usage": "dropdown panel background + backdrop-blur" },
+      "shadow":         { "value": "0 1px 2px 0 rgba(44, 42, 40, 0.06), 0 2px 8px -2px rgba(44, 42, 40, 0.08)", "type": "shadow", "ref": "shadow-sm", "usage": "soft elevation" }
+    },
+    "pill": {
+      "activeBg":       { "value": "#2C2A28", "type": "color", "ref": "encre", "usage": "active pill fill (mobile/footer)" },
+      "activeText":     { "value": "#FBF8F1", "type": "color", "ref": "creme", "usage": "active pill text" },
+      "inactiveText":   { "value": "rgba(44, 42, 40, 0.60)", "type": "color", "ref": "encre/60", "usage": "inactive pill text" }
+    },
+    "veil": {
+      "bg":             { "value": "#FBF8F1", "type": "color", "ref": "creme", "usage": "LocaleVeil overlay — ivory neutral, NEVER white flash (#fff forbidden)" }
+    },
+    "nudge": {
+      "dot":            { "value": "#C5DBC4", "type": "color", "ref": "sauge", "usage": "pearl marker dot — only restrained accent allowed on nudge" },
+      "text":           { "value": "rgba(44, 42, 40, 0.80)", "type": "color", "ref": "encre/80", "usage": "micro-label (بالعربية ؟ / In English?)" },
+      "bg":             { "value": "rgba(251, 248, 241, 0.96)", "type": "color", "ref": "creme/96", "usage": "pearl background" },
+      "dismiss":        { "value": "rgba(44, 42, 40, 0.50)", "type": "color", "ref": "encre/50", "usage": "dismiss ✕ glyph" }
+    }
+  },
+
+  "motion": {
+    "$comment": "Durations/easings per CONTRACT §5. Charter bounds: 280–560ms, soft curves, never <200ms. prefers-reduced-motion ⇒ all → 0ms (INV-7).",
+    "switch": {
+      "duration":   { "value": "280ms", "type": "duration", "ref": "motion.switch.duration", "usage": "cross-fade of the document during locale switch (View Transitions root)" },
+      "easing":     { "value": "cubic-bezier(0.22, 1, 0.36, 1)", "type": "cubicBezier", "ref": "motion.switch.easing", "usage": "soft ease for the switch fade" }
+    },
+    "veil": {
+      "fadeIn":     { "value": "160ms", "type": "duration", "ref": "motion.veil.fadeIn", "usage": "LocaleVeil opacity 0→1 (fallback)" },
+      "fadeOut":    { "value": "160ms", "type": "duration", "ref": "motion.veil.fadeOut", "usage": "LocaleVeil opacity 1→0 (fallback)" },
+      "easing":     { "value": "cubic-bezier(0.22, 1, 0.36, 1)", "type": "cubicBezier", "usage": "same soft curve as switch" }
+    },
+    "panel": {
+      "open":       { "value": "180ms", "type": "duration", "ref": "motion.panel.open", "usage": "dropdown open: opacity 0→1 + translateY(-4px→0)" },
+      "openEasing": { "value": "ease-out", "type": "cubicBezier", "ref": "motion.panel.open", "usage": "dropdown open easing" },
+      "translateY": { "value": "-4px", "type": "dimension", "usage": "initial offset of panel before settling to 0" }
+    },
+    "chevron": {
+      "rotateDuration": { "value": "200ms", "type": "duration", "usage": "chevron 0→180° on open" },
+      "rotateEasing":   { "value": "ease-out", "type": "cubicBezier", "usage": "chevron rotation easing" },
+      "rotateOpen":     { "value": "180deg", "type": "rotation", "usage": "open state rotation" }
+    },
+    "pill": {
+      "colorTransition": { "value": "200ms", "type": "duration", "usage": "transition-colors on pill state change" }
+    },
+    "nudge": {
+      "appear":     { "value": "300ms", "type": "duration", "usage": "pearl opacity fade-in (one-shot)" },
+      "easing":     { "value": "ease-out", "type": "cubicBezier", "usage": "pearl appear easing" }
+    },
+    "reducedMotion": {
+      "$comment": "INV-7: prefers-reduced-motion ⇒ instant, no animation, still no reload.",
+      "all":        { "value": "0ms", "type": "duration", "usage": "override every duration above to 0; switch becomes instantaneous (transition='reduced')" }
+    }
+  },
+
+  "typography": {
+    "$comment": "Inter for the trigger/UI; Cormorant italic for endonyms inside the panel (signals « language »).",
+    "trigger": {
+      "fontFamily":     { "value": "Inter, system-ui, sans-serif", "type": "fontFamily", "usage": "trigger label" },
+      "fontSize":       { "value": "0.75rem", "type": "dimension", "ref": "text-xs", "usage": "12px trigger" },
+      "fontWeight":     { "value": 400, "type": "fontWeight" },
+      "letterSpacing":  { "value": "0.08em", "type": "dimension", "ref": "tracking-[0.08em]", "usage": "measured tracking" },
+      "case":           { "value": "normal", "type": "textCase", "usage": "no uppercase on endonyms" }
+    },
+    "panelEndonym": {
+      "fontFamily":     { "value": "'Cormorant Garamond', serif", "type": "fontFamily", "usage": "endonyms in dropdown panel" },
+      "fontStyle":      { "value": "italic", "type": "fontStyle", "usage": "Cormorant italic — signals language, editorial" },
+      "fontWeight":     { "value": 400, "type": "fontWeight" },
+      "fontSize":       { "value": "1.0625rem", "type": "dimension", "usage": "17px panel item" },
+      "lineHeight":     { "value": 1.3, "type": "number" }
+    },
+    "pill": {
+      "fontFamily":     { "value": "Inter, system-ui, sans-serif", "type": "fontFamily", "usage": "pill label" },
+      "fontSize":       { "value": "0.8125rem", "type": "dimension", "usage": "13px" },
+      "fontWeight":     { "value": 500, "type": "fontWeight" }
+    },
+    "nudge": {
+      "fontFamily":     { "value": "Inter, system-ui, sans-serif", "type": "fontFamily", "usage": "micro-label" },
+      "fontSize":       { "value": "0.75rem", "type": "dimension", "usage": "12px" },
+      "fontWeight":     { "value": 400, "type": "fontWeight" }
+    },
+    "endonyms": {
+      "$comment": "Exact glyphs to render — never ISO codes, never flags (CONTRACT §1, §5).",
+      "fr": { "value": "Français", "dir": "ltr" },
+      "ar": { "value": "العربية", "dir": "rtl" },
+      "en": { "value": "English", "dir": "ltr" }
+    }
+  },
+
+  "spacing": {
+    "$comment": "Logical properties only (start/end, ms-/me-) — RTL-safe, never physical left/right on the switcher.",
+    "triggerPaddingBlock":  { "value": "8px", "type": "dimension" },
+    "triggerPaddingInline": { "value": "10px", "type": "dimension" },
+    "panelPadding":         { "value": "6px", "type": "dimension", "usage": "panel inner padding around items" },
+    "itemPaddingBlock":     { "value": "10px", "type": "dimension" },
+    "itemPaddingInline":    { "value": "14px", "type": "dimension" },
+    "panelGap":             { "value": "2px", "type": "dimension", "usage": "gap between items" },
+    "panelOffset":          { "value": "8px", "type": "dimension", "usage": "panel offset below trigger (block-start gap)" },
+    "panelRadius":          { "value": "8px", "type": "dimension", "ref": "rounded" },
+    "pillGap":              { "value": "8px", "type": "dimension" },
+    "pillPaddingInline":    { "value": "16px", "type": "dimension" },
+    "pillRadius":           { "value": "8px", "type": "dimension", "ref": "rounded" },
+    "nudgeOffset":          { "value": "6px", "type": "dimension", "usage": "pearl offset from switcher (block-end), logical" },
+    "nudgePadding":         { "value": "6px 10px", "type": "dimension" },
+    "dotSize":              { "value": "6px", "type": "dimension", "usage": "active dot + nudge dot" },
+    "underlineOffset":      { "value": "4px", "type": "dimension", "ref": "underline-offset-4" }
+  },
+
+  "size": {
+    "chevron":   { "value": "12px", "type": "dimension" },
+    "panelMinInline": { "value": "160px", "type": "dimension", "usage": "min panel inline size" }
+  },
+
+  "tap": {
+    "min":            { "value": "44px", "type": "dimension", "ref": "tap.min", "usage": "min touch target — pills, trigger, dismiss (CONTRACT §5)" },
+    "pillMinBlock":   { "value": "44px", "type": "dimension" },
+    "pillMinInline":  { "value": "44px", "type": "dimension" },
+    "dismissTarget":  { "value": "44px", "type": "dimension", "usage": "nudge ✕ hit area even if glyph smaller" }
+  },
+
+  "focus": {
+    "ring": {
+      "color":  { "value": "#2C2A28", "type": "color", "ref": "encre", "usage": "focus-visible ring — neutral encre, never marque/sauge" },
+      "width":  { "value": "2px", "type": "dimension" },
+      "offset": { "value": "2px", "type": "dimension" },
+      "style":  { "value": "solid", "type": "string" }
+    }
+  },
+
+  "zIndex": {
+    "$comment": "Ordered so the veil sits above page chrome during transition but the nudge stays anchored to the switcher.",
+    "switcherPanel": { "value": 50,  "type": "number", "usage": "dropdown panel above header content" },
+    "nudge":         { "value": 60,  "type": "number", "usage": "pearl above switcher, below veil" },
+    "veil":          { "value": 9990, "type": "number", "usage": "LocaleVeil overlay above all page content during switch" }
+  }
+}

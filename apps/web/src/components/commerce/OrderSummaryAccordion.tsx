@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import { formatPrice } from '@/lib/utils/format-price';
+import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
 import type { CartItem as CartItemData } from '@/lib/schemas';
 import { cn } from '@/lib/utils/cn';
 
@@ -10,6 +11,8 @@ interface OrderSummaryAccordionProps {
   subtotalCents: number;
   shippingCents: number;
   totalCents: number;
+  catalogShippingCents?: number;
+  freeShipping?: boolean;
 }
 
 export function OrderSummaryAccordion({
@@ -17,6 +20,8 @@ export function OrderSummaryAccordion({
   subtotalCents,
   shippingCents,
   totalCents,
+  catalogShippingCents,
+  freeShipping = false,
 }: OrderSummaryAccordionProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -34,7 +39,7 @@ export function OrderSummaryAccordion({
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-encre"
       >
         <span className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-encre/70">
           <ChevronIcon open={open} />
@@ -77,7 +82,18 @@ export function OrderSummaryAccordion({
           </div>
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-sm text-encre/70">Livraison</dt>
-            <dd className="text-sm text-encre">{formatPrice(shippingCents)}</dd>
+            <dd className="text-sm text-encre">
+              {freeShipping && catalogShippingCents && catalogShippingCents > 0 ? (
+                <ShippingPriceDisplay
+                  displayPrice={formatPrice(catalogShippingCents)}
+                  freeShipping
+                  size="sm"
+                  align="right"
+                />
+              ) : (
+                formatPrice(shippingCents)
+              )}
+            </dd>
           </div>
         </dl>
       </div>

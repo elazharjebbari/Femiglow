@@ -1,0 +1,30 @@
+@startuml
+!theme plain
+title FemiGlow AI Content Studio - System Context
+
+actor "Fondatrice / Admin" as Admin
+rectangle "FemiGlow Next.js Admin" as Femiglow {
+  rectangle "Content Studio UI" as UI
+  rectangle "Content Studio API" as API
+  database "PostgreSQL / Drizzle" as DB
+  rectangle "Media System" as Media
+  rectangle "Products / Journal / CMS" as Sources
+  rectangle "Tracking / Analytics" as Tracking
+}
+
+cloud "OpenAI / Image Provider" as AI
+cloud "Postiz Self-hosted" as Postiz
+cloud "Instagram / Facebook" as Social
+
+Admin --> UI
+UI --> API
+API --> DB
+API --> Media
+API --> Sources
+API --> Tracking
+API --> AI : generate / judge
+API --> Postiz : integrations / upload / posts
+Postiz --> Social : publish
+Postiz --> API : analytics/status sync (pull or webhook)
+@enduml
+

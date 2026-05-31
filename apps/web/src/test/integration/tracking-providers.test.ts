@@ -149,8 +149,12 @@ describe('Adapter Meta', () => {
   });
 });
 
-describe('Adapter Google GA4', () => {
-  it('envoie un event sur Measurement Protocol', async () => {
+// T-07 (audit 2026-05-31) — GA4 = client GTM uniquement. Le dispatch MP
+// serveur ne fire QUE pour les events server-scope (ex. `refund`), sans tag
+// gaawe client → pas de double-comptage. Ces tests valident donc GA4 via un
+// event server-scope (`refund`), pas via un event client (`purchase`).
+describe('Adapter Google GA4 (server-scope only — T-07)', () => {
+  it('envoie un event server-scope sur Measurement Protocol', async () => {
     let capturedBody: unknown = null;
     server.use(
       http.post('https://www.google-analytics.com/mp/collect', async ({ request }) => {
@@ -164,7 +168,7 @@ describe('Adapter Google GA4', () => {
       pixelId: 'G-ABC123',
       capiToken: 'api-secret',
     });
-    const out = await dispatchToProviders(makeCtx());
+    const out = await dispatchToProviders(makeCtx({ eventName: 'refund' }));
     expect(out.dispatched).toContain('google_ga4');
     const body = capturedBody as {
       client_id: string;
@@ -172,7 +176,7 @@ describe('Adapter Google GA4', () => {
       consent: Record<string, string>;
     };
     expect(body.client_id).toBe('aid_test_42');
-    expect(body.events[0]?.name).toBe('purchase');
+    expect(body.events[0]?.name).toBe('refund');
     expect(body.consent.ad_user_data).toBe('GRANTED');
   });
 
@@ -184,7 +188,7 @@ describe('Adapter Google GA4', () => {
       capiToken: 'api-secret',
     });
     const out = await dispatchToProviders(
-      makeCtx({ consent: { ...DENIED_CONSENT, ad_storage: 'granted' } }),
+      makeCtx({ eventName: 'refund', consent: { ...DENIED_CONSENT, ad_storage: 'granted' } }),
     );
     expect(out.results.google_ga4?.status).toBe('skipped');
   });
@@ -197,7 +201,7 @@ describe('Adapter Google GA4', () => {
       capiToken: 'api-secret',
       enabledEvents: ['view_item'],
     });
-    const out = await dispatchToProviders(makeCtx());
+    const out = await dispatchToProviders(makeCtx({ eventName: 'refund' }));
     expect(out.results.google_ga4?.error).toBe('event_disabled');
   });
 });
@@ -227,7 +231,7 @@ describe('Adapter TikTok', () => {
       data: Array<{ event: string; user: { external_id: string[] } }>;
     };
     expect(body.event_source_id).toBe('TT_PIXEL_42');
-    expect(body.data[0]?.event).toBe('CompletePayment');
+    expect(body.data[0]?.event).toBe('Purchase');
     expect(body.data[0]?.user.external_id[0]).toMatch(/^[0-9a-f]{64}$/);
   });
 });
@@ -265,7 +269,10 @@ describe('Dispatcher multi-providers', () => {
       capiToken: 't3',
     });
     const out = await dispatchToProviders(makeCtx());
-    expect(out.dispatched.sort()).toEqual(['google_ga4', 'meta', 'tiktok']);
+    // T-07 — `purchase` est un event CLIENT : GA4 part via le tag gaawe (GTM),
+    // pas via le MP serveur (sinon double-comptage). Le dispatch serveur ne
+    // contient donc que Meta + TikTok (CAPI). GA4 serveur = events server-scope.
+    expect(out.dispatched.sort()).toEqual(['meta', 'tiktok']);
   });
 
   it("ne dispatch rien si aucun provider n'est enabled", async () => {

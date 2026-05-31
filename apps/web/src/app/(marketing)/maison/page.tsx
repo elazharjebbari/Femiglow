@@ -11,7 +11,7 @@ import { SectionNarrativeBound } from '@/components/sections/SectionNarrativeBou
 import { JsonLd, localBusinessSchema, organizationSchema } from '@/lib/seo/json-ld';
 import { resolveOgImage } from '@/lib/components/og-image';
 
-const SITE_URL = 'https://femiglow.ma';
+const SITE_URL = 'https://femiglow-maroc.com';
 
 const FALLBACK_OG = {
   url: '/og/maison.svg',
@@ -23,21 +23,23 @@ const FALLBACK_OG = {
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('maison-og')) ?? FALLBACK_OG;
   return {
-    title: 'La maison \u2014 Casablanca',
+    title: 'La maison \u2014 Rabat',
     description:
-      'FemiGlow, maison de soin pour les ongles \u00e9dit\u00e9e \u00e0 Casablanca. L\u2019origine, la fondatrice, l\u2019atelier, les mati\u00e8res et nos quatre engagements.',
+      'FemiGlow, maison de soin pour les ongles \u00e9dit\u00e9e \u00e0 Rabat par notre fondatrice, biologiste et formulatrice. L\u2019origine, l\u2019atelier au 25 bis avenue Patrice Lumumba, les mati\u00e8res, les engagements halal et locaux.',
     alternates: { canonical: '/maison' },
     openGraph: {
       type: 'website',
-      title: 'La maison FemiGlow \u2014 Casablanca',
-      description: 'Maison de soin pour les ongles, \u00e9dit\u00e9e \u00e0 Casablanca.',
+      title: 'La maison FemiGlow \u2014 Rabat',
+      description:
+        'Maison de soin pour les ongles, \u00e9dit\u00e9e \u00e0 Rabat. Manucure japonaise halal.',
       url: `${SITE_URL}/maison`,
       images: [{ url: og.url, width: og.width, height: og.height, alt: og.alt }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'La maison FemiGlow \u2014 Casablanca',
-      description: 'Maison de soin pour les ongles, \u00e9dit\u00e9e \u00e0 Casablanca.',
+      title: 'La maison FemiGlow \u2014 Rabat',
+      description:
+        'Maison de soin pour les ongles, \u00e9dit\u00e9e \u00e0 Rabat. Manucure japonaise halal.',
       images: [og.url],
     },
   };
@@ -54,7 +56,7 @@ export default async function MaisonPage() {
         data={localBusinessSchema({
           name: 'FemiGlow',
           url: `${SITE_URL}/maison`,
-          addressLocality: 'Casablanca',
+          addressLocality: 'Rabat',
           addressCountry: 'MA',
           streetAddress: content.atelier.adresse,
           areaServed: content.atelier.quartier,

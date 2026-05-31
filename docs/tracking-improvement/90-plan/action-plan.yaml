@@ -1,0 +1,157 @@
+---
+# Plan d'action séquencé (high-level)
+# Référence détaillée : 90-plan/dev-plan.csv
+
+version: 1.0.0
+feature: tracking-improvement
+target_branch: master
+
+phases:
+  - id: phase-0-prep
+    label: "Préparation"
+    duration_estimate_h: 4
+    parallelizable: false
+    tasks:
+      - git pull master + branch feature
+      - Migrations DB rédigées et validées
+      - Doc à jour
+      - Tests existants verts (baseline)
+    gates:
+      - all_existing_tests_green: true
+
+  - id: phase-1-quick-wins
+    label: "Quick wins (Chantier 1 — fixes faciles)"
+    duration_estimate_h: 4
+    parallelizable: false
+    dependencies: [phase-0-prep]
+    tasks: [T01, T07, T08, T09, T13, T14]
+    gates:
+      - CONVERSION_EVENTS_includes_lead_capture: true
+      - form_start_event_in_catalog: true
+
+  - id: phase-2-migrations
+    label: "Migrations DB + schémas"
+    duration_estimate_h: 4
+    parallelizable: false
+    dependencies: [phase-0-prep]
+    tasks: [T02, T03, T04, T05, T06]
+    gates:
+      - migrations_applied_in_staging: true
+
+  - id: phase-3-google-ads-server
+    label: "Chantier 1 — Google Ads server-side CAPI"
+    duration_estimate_h: 12
+    parallelizable: false
+    dependencies: [phase-2-migrations]
+    tasks: [T15, T16, T17, T18, T19, T20]
+    gates:
+      - test_event_dispatched_to_google_ads_capi: true
+      - latency_under_800ms: true
+
+  - id: phase-4-form-start
+    label: "Chantier 1 — form_start emission + begin_checkout refactor"
+    duration_estimate_h: 5
+    parallelizable: true
+    dependencies: [phase-1-quick-wins]
+    tasks: [T10, T11, T12]
+    gates:
+      - form_start_fires_on_kit_first_focus: true
+      - begin_checkout_not_at_mount: true
+
+  - id: phase-5-gtm-uxn
+    label: "Chantier 2 — GTM Editor UX"
+    duration_estimate_h: 12
+    parallelizable: true
+    dependencies: [phase-2-migrations]
+    tasks: [T21, T22, T23, T24, T25, T26]
+    gates:
+      - prefill_from_providers_works: true
+      - edit_version_clone_works: true
+
+  - id: phase-6-categorization
+    label: "Chantier 3 — Categorization UI"
+    duration_estimate_h: 8
+    parallelizable: true
+    dependencies: [phase-2-migrations]
+    tasks: [T27, T28, T29, T30]
+    gates:
+      - override_persists: true
+
+  - id: phase-7-observability
+    label: "Chantier 4 — Observability"
+    duration_estimate_h: 9
+    parallelizable: true
+    dependencies: [phase-3-google-ads-server]
+    tasks: [T31, T32, T33, T34, T35]
+    gates:
+      - dashboards_render: true
+      - consent_update_propagates: true
+
+  - id: phase-8-tests
+    label: "Suite tests Jest + Playwright"
+    duration_estimate_h: 21
+    parallelizable: false
+    dependencies: [phase-3-google-ads-server, phase-4-form-start, phase-5-gtm-uxn, phase-6-categorization]
+    tasks: [T36, T37, T38, T39, T40, T41, T42, T43, T44, T45, T46, T47, T48]
+    gates:
+      - all_tests_green: true
+      - coverage_above_80: true
+      - ultimate_pipeline_test_green: true
+
+  - id: phase-9-deploy
+    label: "Déploiement + post-deploy monitoring"
+    duration_estimate_h: 7
+    parallelizable: false
+    dependencies: [phase-8-tests]
+    tasks: [T49, T50, T51, T52]
+    gates:
+      - smoke_tests_pass_after_deploy: true
+      - no_critical_errors_in_24h: true
+
+success_criteria:
+  - "Test ultime pipeline vert en CI"
+  - "Google Ads server-side dispatch succès ≥ 95%"
+  - "/kit fire form_start au focus, begin_checkout au click Continue"
+  - "Pré-remplissage GTM depuis Providers fonctionne"
+  - "Modification d'une version existante crée un clone"
+  - "Override de catégorie Google Ads persiste"
+  - "Dashboards /admin/tracking/analytics/providers chargent"
+
+decision_log:
+  - date: 2026-05-13
+    decision: "Approche dual-track Google Ads (client + server avec event_id dédup)"
+    rationale: "Standard recommandé Google, cohabite avec gtag.js, dédup native"
+  - date: 2026-05-13
+    decision: "form_start custom event séparé de begin_checkout"
+    rationale: "Éviter pollution Meta InitiateCheckout sur page view déguisé"
+  - date: 2026-05-13
+    decision: "Pré-remplissage opt-in (bouton 'Importer depuis Providers')"
+    rationale: "Préserve flexibilité override par version + diff visuel"
+  - date: 2026-05-13
+    decision: "Édition de version = clone (jamais in-place update)"
+    rationale: "Audit trail préservé, rollback facile"
+  - date: 2026-05-13
+    decision: "Categorization hybride (default code + override admin DB)"
+    rationale: "Sécurité code + flexibilité marketing"
+
+risks_summary:
+  - id: R1
+    risk: "OAuth Google Ads bloquant"
+    severity: high
+    mitigation: "Implémentation progressive : commencer par Enhanced Conv, puis Offline Conv"
+  - id: R2
+    risk: "Régression checkout (toucher mapping events)"
+    severity: medium
+    mitigation: "Feature flag par event + tests e2e exhaustifs"
+  - id: R3
+    risk: "Migration DB invalide"
+    severity: high
+    mitigation: "Test en staging avant prod + backup auto"
+  - id: R4
+    risk: "Latence dispatch trop élevée"
+    severity: medium
+    mitigation: "Timeout 2s par provider + parallelisation"
+  - id: R5
+    risk: "Désync GTM ↔ Providers (admin oublie de re-sync)"
+    severity: low
+    mitigation: "Diff visuel + bouton 'Sync depuis Providers' présent en permanence"

@@ -1,0 +1,15 @@
+phase,task,owner,files_or_modules,estimate
+M1,Migration tables,dev,drizzle migrations + schema,1d
+M1,Repositories,dev,src/lib/content-studio/repos,1d
+M1,Brand rules engine,dev,src/lib/content-studio/brand,1d
+M2,Postiz bridge,dev,src/lib/content-studio/postiz,1d
+M2,Generation service,dev,src/lib/content-studio/generation,1d
+M2,Admin API routes,dev,src/app/api/admin/content-studio,1d
+M3,Admin shell nav,dev,components/admin/AdminShell + page routes,0.5d
+M3,Wizard create,dev,components/admin/content-studio,1.5d
+M3,Draft editor preview,dev,components/admin/content-studio,2d
+M3,Calendar minimal,dev,components/admin/content-studio,1d
+M4,Postiz staging smoke,devops,env + bridge,1d
+M5,Unit/contract/e2e tests,dev,tests,2d
+M5,Runbook final,devops,docs,1d
+

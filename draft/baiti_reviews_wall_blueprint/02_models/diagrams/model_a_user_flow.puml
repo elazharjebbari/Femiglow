@@ -1,0 +1,18 @@
+@startuml
+title Modèle A - user flow (drawer)
+
+actor User
+
+state "Scene" as S
+state "Reviews Drawer" as D
+state "Product Modal" as P
+state "Photo Lightbox" as L
+
+S --> D : click reviews spot
+D --> P : click "Voir le produit"
+P --> D : back to reviews (optional)
+D --> L : tap photo
+L --> D : close
+D --> S : close drawer
+
+@enduml

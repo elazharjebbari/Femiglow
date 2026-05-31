@@ -1,0 +1,28 @@
+field,type,nullable,default,description,validation
+event_mapping_versions.id,text,no,—,"PK. Format: 'emv_<ulid>' généré par createId('emv'). Cas spécial: '__default__' pour le factory.",createId('emv') ou littéral '__default__'
+event_mapping_versions.name,text,no,—,"Nom lisible. Ex: 'v3 — édition Sara 2026-05-13'.",z.string().min(1).max(120)
+event_mapping_versions.notes,text,yes,null,"Notes admin optionnelles. Affichées dans la liste.",z.string().max(2000).nullable()
+event_mapping_versions.status,text,no,—,"Statut. draft|active|archived|deleted.",enum 4 valeurs
+event_mapping_versions.is_active,boolean,no,false,"true si version active (1 max). Synced avec status='active'.",bool. Index unique conditionnel.
+event_mapping_versions.is_default,boolean,no,false,"true seulement pour '__default__'. Read-only via UI.",bool. Index unique conditionnel.
+event_mapping_versions.mappings,jsonb,no,'{}',"La matrice complète eventName → providerKind → MappingCell.",schema Zod mappingsByProviderSchema
+event_mapping_versions.cloned_from,text,yes,null,"FK self vers la version source (édition clone).",text. FK self ON DELETE SET NULL.
+event_mapping_versions.created_by,text,no,—,"admin_id de l'auteur. 'system' pour le seed.",text
+event_mapping_versions.created_at,timestamptz,no,now(),"Date création.",timestamptz
+event_mapping_versions.activated_at,timestamptz,yes,null,"Date d'activation. null avant 1re activation.",timestamptz
+event_mapping_versions.archived_at,timestamptz,yes,null,"Date d'archivage si applicable.",timestamptz
+event_mapping_versions.deleted_at,timestamptz,yes,null,"Date soft-delete si applicable.",timestamptz
+event_mapping_audit.id,text,no,—,"PK. Format: 'ema_<ulid>'.",createId('ema')
+event_mapping_audit.version_id,text,yes,null,"FK vers event_mapping_versions. null si version supprimée.",text. FK ON DELETE SET NULL.
+event_mapping_audit.action,text,no,—,"Type d'action. enum 10 valeurs.",enum
+event_mapping_audit.actor_id,text,no,—,"admin_id qui a déclenché l'action.",text
+event_mapping_audit.before,jsonb,yes,null,"Snapshot mappings avant l'action (si applicable).",jsonb
+event_mapping_audit.after,jsonb,yes,null,"Snapshot mappings après l'action (si applicable).",jsonb
+event_mapping_audit.meta,jsonb,no,'{}',"Extras (env, sha256, eventName testé...). Schema libre.",jsonb
+event_mapping_audit.ip_anonymized,text,yes,null,"IP /16 (IPv4) ou /48 (IPv6). RGPD-safe.",text. hashIp().
+event_mapping_audit.ua_hash,text,yes,null,"sha256 du User-Agent.",text
+event_mapping_audit.created_at,timestamptz,no,now(),"Date de l'action.",timestamptz
+MappingCell.mappedName,string|null,yes,null,"Nom de l'event tel qu'envoyé au vendor. null = pas de dispatch.",par-provider Zod (cf. adr-004)
+MappingCell.isCustom,boolean,no,false,"Meta uniquement: true ⇒ CustomEvent (trackCustom). Ignoré ailleurs.",bool
+MappingCell.isEnabled,boolean,no,true,"Feature flag par cellule. false ⇒ skip dispatch même si mappedName défini.",bool
+MappingCell.notes,string|null,yes,null,"Notes admin inline (tooltip).",z.string().max(200).nullable()

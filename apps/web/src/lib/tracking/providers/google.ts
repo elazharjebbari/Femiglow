@@ -1,11 +1,15 @@
 import { decryptCapiToken } from '@/lib/db/queries/tracking/providers';
 import type { TrackingProvider, TrackingProviderResult } from '@/lib/db/types';
-import { isEventSupported, mapEventName } from './event-mapping';
+import { isEventSupported } from './event-mapping';
+import { getMappedName } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
+import { findEventInCatalog } from '@/lib/tracking/event-catalog';
 
 function buildMpPayload(ctx: DispatchContext): Record<string, unknown> {
-  const eventNameMapped = mapEventName(ctx.eventName, 'google_ga4') ?? ctx.eventName;
+  // Si pas de mapping résolu, fallback au nom canonique (comportement
+  // historique : GA4 accepte n'importe quel event name custom).
+  const eventNameMapped = getMappedName(ctx, 'google_ga4') ?? ctx.eventName;
   const baseParams: Record<string, unknown> = {
     ...ctx.params,
     page_location: ctx.pageUrl,
@@ -29,8 +33,15 @@ function buildMpPayload(ctx: DispatchContext): Record<string, unknown> {
 
 export const googleAdapter: ProviderAdapter = {
   kind: 'google_ga4',
+  // T-07 (audit 2026-05-31) — décision PO : **GA4 = client GTM uniquement**.
+  // Les events client (scope `web`/`both`) sont déjà envoyés par le tag
+  // `gaawe` du container GTM. GA4 ne déduplique PAS gtag ↔ Measurement
+  // Protocol → les envoyer aussi côté serveur double le revenu/les
+  // conversions. On restreint donc le dispatch MP serveur aux events
+  // **server-scope** (ex. `refund`), qui n'ont aucun tag gaawe client.
   supports(eventName: string): boolean {
-    return isEventSupported(eventName, 'google_ga4');
+    if (!isEventSupported(eventName, 'google_ga4')) return false;
+    return findEventInCatalog(eventName)?.scope === 'server';
   },
   async dispatch(provider: TrackingProvider, ctx: DispatchContext): Promise<TrackingProviderResult> {
     const startedAt = Date.now();
@@ -58,9 +69,17 @@ export const googleAdapter: ProviderAdapter = {
       error: result.ok ? undefined : result.body.slice(0, 200),
     };
   },
-  clientSnippet(provider: TrackingProvider): string | null {
-    if (provider.status !== 'enabled' || !provider.pixelId) return null;
-    return `(function(){var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${provider.pixelId}';document.head.appendChild(s);})();window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('consent','default',{ad_storage:'denied',analytics_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',functional_storage:'denied'});gtag('config','${provider.pixelId}',{send_page_view:false});`;
+  clientSnippet(): string | null {
+    // GA4 est bootstrapé via GTM (tag gaawc dans le container exporté).
+    // Si on injecte aussi gtag.js standalone côté client, on a :
+    //   - double config GA4 (gtag('config','G-XXX') × 2)
+    //   - double envoi des events (1 fois par le tag gaawe GTM,
+    //     1 fois par l'auto-tracking gtag du config standalone)
+    // Le user voyait `gtag("event", "purchase", {send_to:"G-XXX"})`
+    // après chaque event complet : c'était l'auto-tracking gtag du
+    // config standalone.
+    // Source unique = GTM. Le client snippet renvoie null.
+    return null;
   },
   cspHosts() {
     return {

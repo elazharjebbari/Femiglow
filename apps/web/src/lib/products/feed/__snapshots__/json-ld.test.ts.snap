@@ -1,0 +1,82 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`productSchema (Schema.org Product) avec enrichissement > snapshot du JSON-LD enrichi pour \`/kit\` (golden test) 1`] = `
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "bestRating": "5.0",
+    "ratingValue": "4.8",
+    "reviewCount": 287,
+    "worstRating": "1.0",
+  },
+  "brand": {
+    "@type": "Brand",
+    "name": "FemiGlow",
+  },
+  "description": "Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.",
+  "image": [
+    "https://femiglow-maroc.com/products/kit-principale.png",
+    "https://femiglow-maroc.com/products/kit-detail-mains.png",
+  ],
+  "name": "Pack FemiGlow",
+  "offers": {
+    "@type": "Offer",
+    "areaServed": "MA",
+    "availability": "https://schema.org/InStock",
+    "price": "289.00",
+    "priceCurrency": "MAD",
+    "seller": {
+      "@type": "Organization",
+      "name": "FemiGlow",
+    },
+    "url": "https://femiglow-maroc.com/kit",
+  },
+  "review": [
+    {
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": "Amal, Rabat",
+      },
+      "reviewBody": "Trois mois, et l’ongle a retrouvé sa nervure. J’ai cessé de le forcer.",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": "5.0",
+        "ratingValue": "4.8",
+        "worstRating": "1.0",
+      },
+    },
+    {
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": "Lina, Casablanca",
+      },
+      "reviewBody": "Cinq minutes le soir, c’est devenu un signal de fin de journée.",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": "5.0",
+        "ratingValue": "4.8",
+        "worstRating": "1.0",
+      },
+    },
+    {
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": "Sara, Marrakech",
+      },
+      "reviewBody": "Je ne reviendrai pas au vernis. La main suffit à elle-même.",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": "5.0",
+        "ratingValue": "4.8",
+        "worstRating": "1.0",
+      },
+    },
+  ],
+  "sku": "fg-kit-001",
+}
+`;

@@ -36,6 +36,10 @@ description = "Faux secrets utilisés dans la doc et les tests"
 paths = [
   '''(.*?)(\.lock|\.lockb|pnpm-lock\.yaml)''',
   '''docs/admin/specifications/.*\.md''',
+  '''docs/dossier-chat-v2/.*''',
+  '''docs/audit/.*''',
+  '''docs/i18n-strategy-2026-05/.*''',
+  '''docs/i18n-content-2026-05/.*''',
   '''.*/__fixtures__/.*''',
   '''.*\.example$''',
   '''\.gitleaks\.toml''',
@@ -44,4 +48,6 @@ regexes = [
   '''USER:PASSWORD@ep-xxx''',
   '''argon2id\$.*PASS''',
   '''placeholder''',
+  # Postgres ephemere de CI/e2e (user=pass=postgres, host=localhost) — non secret.
+  '''postgres(?:ql)?://postgres:postgres@localhost''',
 ]

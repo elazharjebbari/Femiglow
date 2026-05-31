@@ -1,11 +1,5 @@
 'use client';
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type SyntheticEvent,
-} from 'react';
+import type { CSSProperties } from 'react';
 import type {
   MediaLoadingStrategy,
   PaletteEntry,
@@ -34,7 +28,6 @@ export interface MediaImageClientProps {
   className?: string;
   style?: CSSProperties;
   strategy: MediaLoadingStrategy;
-  onLoad?: () => void;
   /**
    * Mode d'adaptation de l'image au cadre de l'interface.
    * - cover (défaut)  → l'image remplit, peut rogner.
@@ -123,7 +116,6 @@ export function MediaImageClient({
   palette,
   className,
   style,
-  onLoad,
   objectFit = 'cover',
   objectPosition = 'center',
   focalX,
@@ -131,30 +123,6 @@ export function MediaImageClient({
   slotAspectRatio,
   backgroundFill,
 }: MediaImageClientProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-
-  const handleLoad = (_e: SyntheticEvent<HTMLImageElement>) => {
-    setIsLoaded(true);
-    onLoad?.();
-  };
-
-  /**
-   * Fix critique : si l'image est déjà cachée par le navigateur au moment où
-   * React attache le listener `onLoad`, l'évènement load a déjà été tiré et
-   * jamais on ne basculerait `isLoaded` à true → image invisible (opacity 0)
-   * et seul le blurhash en background s'affiche, l'utilisateur perçoit une
-   * page « floutée à jamais ». On synchronise après le mount.
-   */
-  useEffect(() => {
-    const node = imgRef.current;
-    if (!node) return;
-    if (node.complete && node.naturalWidth > 0) {
-      setIsLoaded(true);
-      onLoad?.();
-    }
-  }, [onLoad, fallbackUrl]);
-
   // Si le slot impose un ratio, il a priorité sur le ratio naturel : sinon
   // les grilles deviennent hétérogènes dès qu'une image source est mal
   // proportionnée (un triptyque wide-and-short va casser l'alignement).
@@ -188,14 +156,17 @@ export function MediaImageClient({
     ...style,
   };
 
+  // Pas de fade-in opacity : sur certains mobiles (iOS Safari ancien, Android
+  // avec décodeur AVIF capricieux, cache navigateur + hydratation React), le
+  // signal `onLoad` peut ne jamais arriver et l'image restait à opacity:0
+  // (page « floutée à jamais »). Le blurhash en background couvre déjà la
+  // phase de chargement — l'image apparaît dès que le navigateur la peint.
   const imgStyle: CSSProperties = {
     width: '100%',
     height: '100%',
     display: 'block',
     objectFit,
     objectPosition: positionValue,
-    opacity: isLoaded ? 1 : 0,
-    transition: 'opacity 200ms ease-out',
   };
 
   const fallbackEntry = byFormat.find((b) => b.format === 'jpeg' || b.format === 'png');
@@ -214,7 +185,6 @@ export function MediaImageClient({
           />
         ))}
       <img
-        ref={imgRef}
         src={fallbackUrl}
         srcSet={fallbackSrcset}
         sizes={fallbackSrcset ? sizes : undefined}
@@ -224,7 +194,6 @@ export function MediaImageClient({
         loading={loading}
         fetchPriority={fetchPriority}
         decoding={decoding}
-        onLoad={handleLoad}
         style={imgStyle}
         className="media-img"
       />

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BAITI hotspot style preset - review plaque",
+  "type": "object",
+  "properties": {
+    "preset": {
+      "type": "string",
+      "enum": [
+        "default",
+        "review_plaque"
+      ]
+    },
+    "pulse": {
+      "type": "boolean"
+    },
+    "dot_visible": {
+      "type": "boolean"
+    },
+    "glow_intensity": {
+      "type": "number"
+    },
+    "glow_color": {
+      "type": "string"
+    },
+    "blur_px": {
+      "type": "integer"
+    },
+    "hover_expand": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "preset"
+  ],
+  "additionalProperties": true
+}

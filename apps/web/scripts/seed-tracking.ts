@@ -1,3 +1,4 @@
+import './_load-env.mjs';
 import path from 'node:path';
 import { upsertTrackingPage } from '@/lib/db/queries/tracking/pages';
 import {
@@ -10,8 +11,21 @@ import { EVENT_CATALOG } from '@/lib/tracking/event-catalog';
 import { scanInventory, writeManifest } from '@/lib/tracking/inventory/scanner';
 import type { TrackingProviderKind } from '@/lib/db/types';
 
-async function main(): Promise<void> {
-  const projectRoot = path.resolve(__dirname, '..');
+export interface TrackingSeedReport {
+  pages: number;
+  components: number;
+  events: number;
+  providers: number;
+}
+
+export async function runTrackingSeed(opts: {
+  onProgress?: (label: string, fraction?: number) => void;
+} = {}): Promise<TrackingSeedReport> {
+  const projectRoot = path.resolve(
+    path.dirname(new URL(import.meta.url).pathname),
+    '..',
+  );
+  opts.onProgress?.('Scan inventory (components + pages)', 0.05);
   const manifest = await scanInventory({
     componentsRoot: path.join(projectRoot, 'src', 'components'),
     pagesRoot: path.join(projectRoot, 'src', 'app'),
@@ -19,6 +33,7 @@ async function main(): Promise<void> {
   });
   await writeManifest(manifest, path.join(projectRoot, 'src', 'lib', 'tracking', 'inventory.generated.json'));
 
+  opts.onProgress?.(`Upsert ${EVENT_CATALOG.length} event definitions`, 0.2);
   for (const def of EVENT_CATALOG) {
     await upsertEventDefinition({
       name: def.name,
@@ -32,6 +47,7 @@ async function main(): Promise<void> {
     });
   }
 
+  opts.onProgress?.(`Upsert ${manifest.pages.length} pages`, 0.4);
   const pageIdByRoute = new Map<string, string>();
   for (const page of manifest.pages) {
     const upserted = await upsertTrackingPage({
@@ -42,6 +58,7 @@ async function main(): Promise<void> {
     pageIdByRoute.set(page.route, upserted.id);
   }
 
+  opts.onProgress?.(`Upsert ${manifest.components.length} components`, 0.55);
   const componentIdByPath = new Map<string, string>();
   for (const component of manifest.components) {
     const upserted = await upsertTrackingComponent({
@@ -53,6 +70,7 @@ async function main(): Promise<void> {
     componentIdByPath.set(component.path, upserted.id);
   }
 
+  opts.onProgress?.('Attachement components → pages', 0.75);
   for (const [route, pageId] of pageIdByRoute) {
     for (const component of manifest.components) {
       if (!routeMatchesComponent(route, component.path)) continue;
@@ -62,6 +80,7 @@ async function main(): Promise<void> {
     }
   }
 
+  opts.onProgress?.('Upsert providers tracking', 0.9);
   const providers: TrackingProviderKind[] = [
     'meta',
     'tiktok',
@@ -74,12 +93,17 @@ async function main(): Promise<void> {
     await upsertTrackingProvider({ kind, status: 'disabled' });
   }
 
-  console.log('seed:tracking ok', {
+  return {
     pages: manifest.pages.length,
     components: manifest.components.length,
     events: EVENT_CATALOG.length,
     providers: providers.length,
-  });
+  };
+}
+
+async function main(): Promise<void> {
+  const report = await runTrackingSeed();
+  console.log('seed:tracking ok', report);
 }
 
 function routeMatchesComponent(route: string, componentPath: string): boolean {
@@ -99,7 +123,13 @@ function routeMatchesComponent(route: string, componentPath: string): boolean {
   return lowerPath.includes('/sections/');
 }
 
-main().catch((err) => {
-  console.error('seed:tracking failed', err);
-  process.exit(1);
-});
+const isMainModule =
+  typeof process.argv[1] === 'string' &&
+  import.meta.url === new URL(`file://${process.argv[1]}`).href;
+
+if (isMainModule) {
+  main().catch((err) => {
+    console.error('seed:tracking failed', err);
+    process.exit(1);
+  });
+}

@@ -44,7 +44,6 @@ export const DEFAULT_ALLOWED_SCHEMES: SanitizeOptions['allowedHrefSchemes'] = [
   'tel',
 ];
 
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 function _markEncodingUsed(): void {
   // Force le bundler à conserver l'import canonique de l'encoding ; pratique
   // pour valider qu'on n'introduit pas de dépendance circulaire si on étend.

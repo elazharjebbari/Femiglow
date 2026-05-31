@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 const EVENT_OPTIONS = [
   { value: 'lead.created', label: 'Lead créé' },
+  { value: 'lead.step2_completed', label: 'Adresse lead complétée' },
   { value: 'lead.status_changed', label: 'Statut lead modifié' },
   { value: 'lead.note_added', label: 'Note lead ajoutée' },
   { value: 'order.created', label: 'Commande créée' },
@@ -60,13 +61,13 @@ export function WebhookCreateForm() {
         <p className="text-sm font-medium text-emerald-900">Endpoint créé.</p>
         <div>
           <p className="text-xs uppercase tracking-wide text-emerald-700">
-            Secret HMAC (visible une seule fois)
+            Secret HMAC
           </p>
           <code className="mt-1 block break-all rounded bg-white px-3 py-2 text-xs">
             {secret}
           </code>
           <p className="mt-2 text-xs text-emerald-800">
-            Conservez-le immédiatement. Vous ne pourrez plus le récupérer.
+            Vous pourrez aussi le retrouver, le copier ou le remplacer depuis la liste des webhooks.
           </p>
         </div>
         <button

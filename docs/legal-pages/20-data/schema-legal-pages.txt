@@ -1,0 +1,97 @@
+TABLE public.legal_pages (NOUVELLE)
+=====================================
+Représente l'état courant d'une page légale. Une seule ligne par slug.
+
+Colonne             | Type                          | Notes
+--------------------|-------------------------------|------------------------
+id                  | text PK                       | lp_<random>
+slug                | text UNIQUE NOT NULL          | mentions-legales, cgv, ...
+title               | text NOT NULL                 | Titre affiché (H1)
+description         | text                          | Meta description (160 chars)
+body_md             | text NOT NULL                 | Contenu Markdown
+status              | legal_page_status NOT NULL    | enum: draft, review, published, archived
+                    | DEFAULT 'draft'                |
+version             | integer NOT NULL DEFAULT 1   | Incrémenté à chaque publish
+include_in_search   | boolean NOT NULL DEFAULT FALSE| Override SEO (noindex par défaut)
+canonical_url       | text                          | URL canonique si != slug
+locale              | text NOT NULL DEFAULT 'fr-MA' | V2 : multi-langue
+require_legal_review| boolean NOT NULL DEFAULT TRUE | Si TRUE, banner "Validation juriste requise"
+last_legal_review_at| timestamp with time zone     | Date dernière validation juriste
+last_legal_review_by| text                          | FK admin_users.id
+submitted_at        | timestamp with time zone     | Lors du Submit-Review
+submitted_by        | text                          | FK admin_users.id
+published_at        | timestamp with time zone     | Lors du Publish
+published_by        | text                          | FK admin_users.id
+created_at          | timestamp with time zone NOT NULL DEFAULT now()
+updated_at          | timestamp with time zone NOT NULL DEFAULT now()
+created_by          | text                          | FK admin_users.id
+updated_by          | text                          | FK admin_users.id
+
+CONTRAINTES
+- PK (id)
+- UNIQUE (slug)
+- CHECK (slug ~ '^[a-z0-9-]+$' AND length(slug) BETWEEN 2 AND 80)
+- CHECK (length(title) BETWEEN 3 AND 200)
+- CHECK (description IS NULL OR length(description) <= 200)
+- CHECK (body_md IS NOT NULL AND length(body_md) >= 10)
+- CHECK (version >= 1)
+- CHECK (locale IN ('fr-MA', 'ar-MA'))
+- FK (submitted_by, published_by, created_by, updated_by) → admin_users(id) ON DELETE SET NULL
+
+ENUM legal_page_status
+- 'draft'      : brouillon, non-visible publiquement
+- 'review'     : en attente de revue par un autre admin
+- 'published'  : visible publiquement
+- 'archived'   : retirée mais conservée pour audit
+
+INDEX
+- (slug) — implicite via UNIQUE
+- (status) WHERE status IN ('published', 'review')
+- (updated_at DESC)
+
+QUERIES TYPES
+
+-- Liste admin
+SELECT id, slug, title, status, version, updated_at, updated_by
+FROM legal_pages
+ORDER BY status, updated_at DESC;
+
+-- Render public d'une page
+SELECT body_md, title, description, include_in_search
+FROM legal_pages
+WHERE slug = $1 AND status = 'published'
+LIMIT 1;
+
+-- Pages à publier (en review)
+SELECT * FROM legal_pages WHERE status = 'review' ORDER BY submitted_at;
+
+-- Migration (création)
+CREATE TYPE legal_page_status AS ENUM ('draft', 'review', 'published', 'archived');
+
+CREATE TABLE legal_pages (
+  id text PRIMARY KEY,
+  slug text NOT NULL UNIQUE
+    CHECK (slug ~ '^[a-z0-9-]+$' AND length(slug) BETWEEN 2 AND 80),
+  title text NOT NULL CHECK (length(title) BETWEEN 3 AND 200),
+  description text CHECK (description IS NULL OR length(description) <= 200),
+  body_md text NOT NULL CHECK (length(body_md) >= 10),
+  status legal_page_status NOT NULL DEFAULT 'draft',
+  version integer NOT NULL DEFAULT 1 CHECK (version >= 1),
+  include_in_search boolean NOT NULL DEFAULT FALSE,
+  canonical_url text,
+  locale text NOT NULL DEFAULT 'fr-MA' CHECK (locale IN ('fr-MA', 'ar-MA')),
+  require_legal_review boolean NOT NULL DEFAULT TRUE,
+  last_legal_review_at timestamp with time zone,
+  last_legal_review_by text REFERENCES admin_users(id) ON DELETE SET NULL,
+  submitted_at timestamp with time zone,
+  submitted_by text REFERENCES admin_users(id) ON DELETE SET NULL,
+  published_at timestamp with time zone,
+  published_by text REFERENCES admin_users(id) ON DELETE SET NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by text REFERENCES admin_users(id) ON DELETE SET NULL,
+  updated_by text REFERENCES admin_users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_legal_pages_status ON legal_pages (status) WHERE status IN ('published', 'review');
+CREATE INDEX idx_legal_pages_updated_at ON legal_pages (updated_at DESC);

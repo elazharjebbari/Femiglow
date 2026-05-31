@@ -27,6 +27,7 @@ import type {
 } from '@/lib/db/types';
 
 import { classifyTraffic, type TrafficBucket } from '../attribution';
+import { analyticsCacheTtlMs, getCachedAnalytics, setCachedAnalytics } from '../cache';
 import type { AnalyticsFilters } from '../filters';
 import { resolveRange } from '../filters';
 
@@ -95,6 +96,10 @@ export async function getCtaData(
   now: Date = new Date(),
 ): Promise<CtaData> {
   const range = resolveRange(filters, now);
+  const ttl = analyticsCacheTtlMs(range);
+  const cacheKey = `cta:${JSON.stringify(filters)}`;
+  const cached = getCachedAnalytics<CtaData>(cacheKey, ttl, now.getTime());
+  if (cached) return cached;
 
   // On élargit la fenêtre de fetch à `from - 7j` pour pouvoir attribuer un
   // achat qui aurait reçu un CTA cliqué juste avant la période.
@@ -195,8 +200,12 @@ export async function getCtaData(
     byPage.set(route, acc);
   }
   for (const att of attributions) {
-    const acc = byPage.get(att.clickPageRoute);
-    if (acc) acc.purchases += 1;
+    // L'achat peut être attribué à un clic survenu hors de [from,to] (fallback
+    // 7 j) : on crée alors l'entrée de page pour réconcilier topPages avec les
+    // totals. cf. docs/analytics-audit-qa-2026-05-30 — finding F-CTA-02.
+    const acc = byPage.get(att.clickPageRoute) ?? { impressions: 0, clicks: 0, purchases: 0 };
+    acc.purchases += 1;
+    byPage.set(att.clickPageRoute, acc);
   }
   const topPages: CtaTopPage[] = Array.from(byPage.entries())
     .map(([pageRoute, v]) => ({
@@ -206,7 +215,7 @@ export async function getCtaData(
       purchasesAttributed: v.purchases,
       conversionRate: v.clicks > 0 ? v.purchases / v.clicks : null,
     }))
-    .filter((p) => p.clicks > 0 || p.impressions > 0)
+    .filter((p) => p.clicks > 0 || p.impressions > 0 || p.purchasesAttributed > 0)
     .sort((a, b) => b.purchasesAttributed - a.purchasesAttributed || b.clicks - a.clicks)
     .slice(0, 10);
 
@@ -216,7 +225,7 @@ export async function getCtaData(
   const totalPurchases = rows.reduce((s, r) => s + r.purchasesAttributed, 0);
   const totalRevenue = rows.reduce((s, r) => s + r.revenueAttributedCents, 0);
 
-  return {
+  const result: CtaData = {
     range: { from: range.from.toISOString(), to: range.to.toISOString() },
     totals: {
       impressions: totalImpressions,
@@ -228,6 +237,8 @@ export async function getCtaData(
     topMessages,
     topPages,
   };
+  setCachedAnalytics(cacheKey, result, ttl, now.getTime());
+  return result;
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -294,11 +305,10 @@ function attributePurchases(
     }
     if (!attributed || !attributed.componentId) continue;
 
-    const value = readNumber(p.payload, 'value', 'amount', 'amount_cents');
     out.push({
       componentId: attributed.componentId,
       clickPageRoute: attributed.pageRoute,
-      valueCents: value !== null ? value : 0,
+      valueCents: readValueCents(p.payload),
       purchaseEventId: p.eventId,
     });
   }
@@ -359,7 +369,10 @@ function topByCount(counts: Map<string, number>): string | null {
   let best: string | null = null;
   let bestCount = -1;
   for (const [k, v] of counts) {
-    if (v > bestCount) {
+    // Tie-break déterministe : à égalité de comptage, on retient la clé la plus
+    // petite (lexicographique) — résultat stable quel que soit l'ordre de la Map.
+    // cf. docs/analytics-audit-qa-2026-05-30 — finding F-CTA-04.
+    if (v > bestCount || (v === bestCount && best !== null && k < best)) {
       best = k;
       bestCount = v;
     }
@@ -381,24 +394,25 @@ interface FetchOpts {
 async function fetchEvents(opts: FetchOpts): Promise<TrackingEventLogEntry[]> {
   const drizzle = db();
   if (drizzle) {
-    const conditions: string[] = [];
-    conditions.push(`received_at >= '${opts.from.toISOString()}'`);
-    conditions.push(`received_at < '${opts.to.toISOString()}'`);
-    conditions.push(`consent_snapshot->>'analytics_storage' = 'granted'`);
-    if (opts.device) conditions.push(`device = '${escape(opts.device)}'`);
-    if (opts.traffic) conditions.push(`traffic_source = '${escape(opts.traffic)}'`);
-    const where = conditions.join(' AND ');
+    // Requête paramétrée (F-SEC-01) : les valeurs de filtre sont liées, pas
+    // interpolées dans la chaîne SQL.
+    const conditions = [
+      sql`received_at >= ${opts.from.toISOString()}`,
+      sql`received_at < ${opts.to.toISOString()}`,
+      sql`consent_snapshot->>'analytics_storage' = 'granted'`,
+    ];
+    if (opts.device) conditions.push(sql`device = ${opts.device}`);
+    if (opts.traffic) conditions.push(sql`traffic_source = ${opts.traffic}`);
+    const whereSql = sql.join(conditions, sql` AND `);
     const rows = await drizzle.execute(
-      sql.raw(
-        `SELECT id, event_id, event_name, event_category, page_id, component_id,
+      sql`SELECT id, event_id, event_name, event_category, page_id, component_id,
                 page_route, anonymous_id, session_id, user_id, consent_snapshot,
                 payload, ua_hash, ip_anonymized, device, locale, is_conversion,
                 providers_dispatched, providers_results, received_at, schema_version,
                 traffic_source, traffic_medium, experiment_id, experiment_variant
          FROM tracking_events_log
-         WHERE ${where}
+         WHERE ${whereSql}
          ORDER BY received_at ASC`,
-      ),
     );
     return (rows as unknown as Record<string, unknown>[]).map(rowToEntry);
   }
@@ -445,10 +459,6 @@ async function fetchComponents(): Promise<Map<string, TrackingComponent>> {
   }
   const store = memoryStore();
   return new Map(store.trackingComponents);
-}
-
-function escape(s: string): string {
-  return s.replace(/'/g, "''");
 }
 
 function rowToEntry(row: Record<string, unknown>): TrackingEventLogEntry {
@@ -520,4 +530,22 @@ function readNumber(
     }
   }
   return null;
+}
+
+/**
+ * Lit la valeur d'un achat et la normalise en **cents**.
+ *
+ * Les events checkout émettent `value`/`amount` en **unité majeure** (MAD) —
+ * cf. `lib/tracking/checkout-events.ts` (Enhanced Ecommerce GA4 : `currency` +
+ * `value`). On multiplie donc par 100. Les clés `amount_cents`/`value_cents`
+ * (si jamais émises) sont déjà en cents et prises telles quelles.
+ *
+ * cf. docs/analytics-audit-qa-2026-05-30 — finding AF-02 (revenu attribué ÷100).
+ */
+function readValueCents(obj: Record<string, unknown>): number {
+  const cents = readNumber(obj, 'amount_cents', 'value_cents');
+  if (cents !== null) return Math.round(cents);
+  const major = readNumber(obj, 'value', 'amount');
+  if (major !== null) return Math.round(major * 100);
+  return 0;
 }

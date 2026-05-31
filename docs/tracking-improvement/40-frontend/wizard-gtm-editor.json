@@ -1,0 +1,206 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Wizard — Créer une nouvelle version GTM",
+  "description": "Configuration déclarative consommée par GtmCreateWizard.tsx",
+  "version": "1.0.0",
+  "name": "create-gtm-version",
+  "steps": [
+    {
+      "id": "source",
+      "index": 1,
+      "label": "Source",
+      "component": "StepSource",
+      "showsBack": false,
+      "showsNext": true,
+      "nextLabel": "Continuer",
+      "fields": [
+        {
+          "id": "seedFrom",
+          "type": "radio",
+          "label": "À partir de quoi ?",
+          "required": true,
+          "options": [
+            { "value": "providers", "label": "Providers actuels (recommandé)", "icon": "⚡", "description": "Pré-rempli depuis /admin/tracking/pixels" },
+            { "value": "version", "label": "Version existante (clone)", "icon": "📋", "description": "Sélectionne une version précédente comme base" },
+            { "value": "template", "label": "Template prédéfini", "icon": "📁", "description": "Minimal · GA-only · GA+Meta · Full" },
+            { "value": "empty", "label": "Vide", "icon": "▢", "description": "Tout à zéro, je remplis manuellement" }
+          ]
+        },
+        {
+          "id": "sourceVersionId",
+          "type": "select",
+          "label": "Version source",
+          "showIf": "seedFrom === 'version'",
+          "optionsFrom": "/api/admin/tracking/gtm",
+          "required": true
+        },
+        {
+          "id": "templateId",
+          "type": "select",
+          "label": "Template",
+          "showIf": "seedFrom === 'template'",
+          "options": [
+            { "value": "minimal", "label": "Minimal (GA4 seul)" },
+            { "value": "ga_only", "label": "GA4 + GTM" },
+            { "value": "ga_meta", "label": "GA4 + Meta + GTM" },
+            { "value": "full", "label": "Full (GA4 + Meta + Google Ads + TikTok + GTM)" }
+          ],
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "naming",
+      "index": 2,
+      "label": "Nom",
+      "component": "StepNaming",
+      "showsBack": true,
+      "showsNext": true,
+      "fields": [
+        {
+          "id": "name",
+          "type": "text",
+          "label": "Nom de la version",
+          "placeholder": "v3 — Mai 2026",
+          "required": true,
+          "validation": { "minLength": 3, "maxLength": 80 }
+        },
+        {
+          "id": "notes",
+          "type": "textarea",
+          "label": "Notes (optionnel)",
+          "placeholder": "Première version avec Google Ads server-side…",
+          "validation": { "maxLength": 500 }
+        }
+      ]
+    },
+    {
+      "id": "env-production",
+      "index": 3,
+      "label": "Production",
+      "component": "StepEnvFields",
+      "envKey": "production",
+      "showsBack": true,
+      "showsNext": true,
+      "showsSync": true,
+      "syncSource": "providers",
+      "fields": [
+        { "id": "metaPixelId", "type": "text", "label": "Meta Pixel ID", "placeholder": "21796824…" },
+        { "id": "ga4MeasurementId", "type": "text", "label": "GA4 Measurement ID", "placeholder": "G-XXXX" },
+        { "id": "googleAdsCustomerId", "type": "text", "label": "Google Ads Customer ID", "placeholder": "1234567890" },
+        {
+          "id": "googleAdsConvLabels",
+          "type": "group",
+          "label": "Google Ads Conversion Labels",
+          "fields": [
+            { "id": "purchase", "type": "text", "label": "Purchase", "placeholder": "AbCdEf123Abc" },
+            { "id": "lead", "type": "text", "label": "Lead", "placeholder": "XyZ789xyZ123" },
+            { "id": "contact", "type": "text", "label": "Contact" },
+            { "id": "signup", "type": "text", "label": "Sign up" }
+          ]
+        },
+        { "id": "tiktokPixelId", "type": "text", "label": "TikTok Pixel ID" },
+        { "id": "snapPixelId", "type": "text", "label": "Snap Pixel ID" },
+        { "id": "pinterestTagId", "type": "text", "label": "Pinterest Tag ID" }
+      ]
+    },
+    {
+      "id": "env-broadcast",
+      "index": 4,
+      "label": "Broadcast",
+      "component": "StepBroadcast",
+      "showsBack": true,
+      "showsNext": true,
+      "description": "Souhaites-tu propager les valeurs Production vers les autres environnements ?",
+      "fields": [
+        {
+          "id": "broadcastTargets",
+          "type": "multicheckbox",
+          "label": "Cibles",
+          "options": [
+            { "value": "stage", "label": "Stage", "default": true },
+            { "value": "preview", "label": "Preview", "default": false },
+            { "value": "dev", "label": "Dev", "default": false }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "env-stage",
+      "index": 5,
+      "label": "Stage",
+      "component": "StepEnvFields",
+      "envKey": "stage",
+      "showsBack": true,
+      "showsNext": true,
+      "showsSync": true,
+      "showIf": "true"
+    },
+    {
+      "id": "env-preview",
+      "index": 6,
+      "label": "Preview",
+      "component": "StepEnvFields",
+      "envKey": "preview",
+      "showsBack": true,
+      "showsNext": true
+    },
+    {
+      "id": "env-dev",
+      "index": 7,
+      "label": "Dev",
+      "component": "StepEnvFields",
+      "envKey": "dev",
+      "showsBack": true,
+      "showsNext": true
+    },
+    {
+      "id": "review",
+      "index": 8,
+      "label": "Récap",
+      "component": "StepReview",
+      "showsBack": true,
+      "showsNext": false,
+      "primaryAction": {
+        "label": "Créer la version",
+        "endpoint": "POST /api/admin/tracking/gtm"
+      }
+    },
+    {
+      "id": "activate",
+      "index": 9,
+      "label": "Activer",
+      "component": "StepActivate",
+      "showsBack": false,
+      "showsNext": false,
+      "fields": [
+        {
+          "id": "activateNow",
+          "type": "radio",
+          "label": "Activer maintenant ?",
+          "options": [
+            { "value": "yes", "label": "Oui, activer cette version", "default": true },
+            { "value": "later", "label": "Plus tard (rester sur la version actuelle)" }
+          ]
+        }
+      ],
+      "primaryAction": {
+        "label": "Terminer",
+        "action": "navigate",
+        "target": "/admin/tracking/gtm"
+      }
+    }
+  ],
+  "transitions": {
+    "source.next": [
+      { "if": "seedFrom === 'providers'", "to": "naming", "withPrefill": "GET /api/admin/tracking/providers/snapshot" },
+      { "if": "seedFrom === 'version'", "to": "naming", "withPrefill": "GET /api/admin/tracking/gtm/{sourceVersionId}" },
+      { "if": "seedFrom === 'template'", "to": "naming", "withPrefill": "templates/{templateId}.json" },
+      { "else": "naming" }
+    ]
+  },
+  "completionState": {
+    "navigate": "/admin/tracking/gtm",
+    "toast": "Version créée"
+  }
+}

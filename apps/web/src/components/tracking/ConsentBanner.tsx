@@ -14,6 +14,63 @@ const ALL_DENIED: TrackingConsentState = DENIED_CONSENT;
 
 const HAS_CHOSEN_KEY = 'fg_consent_chosen';
 
+export interface ConsentBannerLegalLink {
+  slug: string;
+  label: string;
+}
+
+/**
+ * Libellés affichés, fournis traduits par le layout serveur
+ * (`getTranslations({ locale })` → namespace `consentBanner`). Le composant
+ * étant rendu dans le layout RACINE (au-dessus de `NextIntlClientProvider`),
+ * on passe les strings en props plutôt que via `useTranslations`.
+ */
+export interface ConsentBannerLabels {
+  title: string;
+  description: string;
+  learnMore: string;
+  categories: {
+    analytics_storage: string;
+    ad_storage: string;
+    ad_user_data: string;
+    ad_personalization: string;
+    functional_storage: string;
+  };
+  rejectAll: string;
+  customize: string;
+  close: string;
+  save: string;
+  acceptAll: string;
+}
+
+/** Défaut FR — pour les contextes sans i18n (admin, tests). */
+export const DEFAULT_CONSENT_LABELS: ConsentBannerLabels = {
+  title: 'On respecte ta vie privée',
+  description:
+    'On utilise des cookies pour mesurer l’audience et améliorer ton expérience. Tu peux tout accepter, tout refuser ou personnaliser.',
+  learnMore: 'En savoir plus :',
+  categories: {
+    analytics_storage: 'Mesure d’audience',
+    ad_storage: 'Publicité',
+    ad_user_data: 'Partage des données pub',
+    ad_personalization: 'Personnalisation pub',
+    functional_storage: 'Préférences fonctionnelles',
+  },
+  rejectAll: 'Tout refuser',
+  customize: 'Personnaliser',
+  close: 'Fermer',
+  save: 'Enregistrer mes choix',
+  acceptAll: 'Tout accepter',
+};
+
+const CONSENT_CATEGORIES = [
+  'analytics_storage',
+  'ad_storage',
+  'ad_user_data',
+  'ad_personalization',
+  'functional_storage',
+] as const;
+
 export interface ConsentBannerProps {
   /**
    * Si false, le bandeau n'est jamais affiché (cas pays sans obligation
@@ -27,11 +84,21 @@ export interface ConsentBannerProps {
    * que la session ne reste pas en denied par défaut.
    */
   defaultGranted?: boolean;
+  /**
+   * Liens vers les pages légales (politique cookies / confidentialité) à
+   * afficher dans le bandeau. Hydratés depuis `legal_page_placements`
+   * (zone `cookie-banner-links`) côté layout serveur.
+   */
+  legalLinks?: ConsentBannerLegalLink[];
+  /** Libellés traduits (défaut FR). Fournis par le layout serveur. */
+  labels?: ConsentBannerLabels;
 }
 
 export function ConsentBanner({
   enabled = true,
   defaultGranted = false,
+  legalLinks = [],
+  labels = DEFAULT_CONSENT_LABELS,
 }: ConsentBannerProps = {}): JSX.Element | null {
   const [visible, setVisible] = useState(false);
   const [open, setOpen] = useState(false);
@@ -71,25 +138,30 @@ export function ConsentBanner({
       className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-2xl border border-stone-200 bg-white/95 p-5 shadow-lg backdrop-blur"
     >
       <h2 id="consent-title" className="text-base font-medium text-stone-900">
-        On respecte ta vie privée
+        {labels.title}
       </h2>
-      <p className="mt-1 text-sm text-stone-600">
-        On utilise des cookies pour mesurer l&rsquo;audience et améliorer ton
-        expérience. Tu peux tout accepter, tout refuser ou personnaliser.
-      </p>
+      <p className="mt-1 text-sm text-stone-600">{labels.description}</p>
+      {legalLinks.length > 0 ? (
+        <p className="mt-2 text-xs text-stone-500">
+          {labels.learnMore}{' '}
+          {legalLinks.map((link, idx) => (
+            <span key={link.slug}>
+              <a
+                href={`/legal/${link.slug}`}
+                className="underline underline-offset-2 hover:text-stone-700"
+              >
+                {link.label}
+              </a>
+              {idx < legalLinks.length - 1 ? ' · ' : ''}
+            </span>
+          ))}
+        </p>
+      ) : null}
       {open && (
         <div className="mt-3 grid gap-2 text-sm">
-          {(
-            [
-              ['analytics_storage', 'Mesure d\u2019audience'],
-              ['ad_storage', 'Publicité'],
-              ['ad_user_data', 'Partage des données pub'],
-              ['ad_personalization', 'Personnalisation pub'],
-              ['functional_storage', 'Préférences fonctionnelles'],
-            ] as const
-          ).map(([key, label]) => (
+          {CONSENT_CATEGORIES.map((key) => (
             <label key={key} className="flex items-center justify-between gap-3 rounded-lg bg-stone-50 px-3 py-2">
-              <span>{label}</span>
+              <span>{labels.categories[key]}</span>
               <input
                 type="checkbox"
                 checked={state[key] === 'granted'}
@@ -107,14 +179,14 @@ export function ConsentBanner({
           onClick={(): void => persist(ALL_DENIED)}
           className="rounded-full border border-stone-300 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100"
         >
-          Tout refuser
+          {labels.rejectAll}
         </button>
         <button
           type="button"
           onClick={(): void => setOpen((v) => !v)}
           className="rounded-full border border-stone-300 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100"
         >
-          {open ? 'Fermer' : 'Personnaliser'}
+          {open ? labels.close : labels.customize}
         </button>
         {open && (
           <button
@@ -122,15 +194,15 @@ export function ConsentBanner({
             onClick={(): void => persist(state)}
             className="rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800"
           >
-            Enregistrer mes choix
+            {labels.save}
           </button>
         )}
         <button
           type="button"
           onClick={(): void => persist(ALL_GRANTED)}
-          className="ml-auto rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800"
+          className="ms-auto rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800"
         >
-          Tout accepter
+          {labels.acceptAll}
         </button>
       </div>
     </div>

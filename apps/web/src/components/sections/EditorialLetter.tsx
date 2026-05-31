@@ -19,7 +19,7 @@ export function EditorialLetter({ firstName }: EditorialLetterProps) {
       <Container width="prose">
         <div className="space-y-6 text-center">
           <Fleuron tone="champagne" size="md" />
-          <Kicker>Un mot de Salma</Kicker>
+          <Kicker>Un mot de notre fondatrice</Kicker>
           <h2
             id="editorial-letter-heading"
             className="font-display text-2xl text-encre [text-wrap:balance]"
@@ -30,9 +30,9 @@ export function EditorialLetter({ firstName }: EditorialLetterProps) {
 
         <div className="mx-auto mt-10 max-w-[640px] space-y-5 text-justify font-display text-[15px] leading-[1.75] text-encre/85">
           <p className="first-letter:font-display first-letter:text-3xl first-letter:font-medium first-letter:text-encre">
-            {opening} Chaque kit est préparé à la main, à Casablanca, dans un
-            atelier où l&rsquo;on prend le temps. Vous recevrez votre commande
-            dans quelques jours.
+            {opening} Chaque pack est préparé à la main, à Rabat, dans un
+            atelier où l&rsquo;on prend le temps. La paste prépare, la powder
+            révèle, le polissoir lustre. L&rsquo;éclat reviendra doucement.
           </p>
           <p>
             En l&rsquo;attente, choisissez un soir calme. Posez les pots sur une
@@ -49,10 +49,10 @@ export function EditorialLetter({ firstName }: EditorialLetterProps) {
             className="text-3xl text-encre"
             style={{ fontFamily: 'var(--font-pinyon), cursive' }}
           >
-            Salma
+            notre fondatrice
           </p>
           <p className="mt-1 text-xs uppercase tracking-[0.18em] text-encre/50">
-            Fondatrice
+            Fondatrice · FemiGlow
           </p>
         </div>
       </Container>

@@ -51,6 +51,9 @@ CREATE TABLE IF NOT EXISTS "chat_lead" (
       'frustration',
       'after-hours',
       'b2b',
+      -- CHA-225 — Nouvelles raisons (intent d'achat / coordonnées en clair).
+      'purchase-intent',
+      'inline-contact',
       'manual'
     )
   ),

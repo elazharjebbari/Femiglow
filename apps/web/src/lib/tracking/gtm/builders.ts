@@ -91,7 +91,25 @@ export const ENV_DEFAULTS: Record<GtmEnvironment, GtmEnvConfig> = {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const param = (key: string, value: string, type: 'template' | 'boolean' | 'integer' = 'template'): GtmParameter => ({
+// Le format d'EXPORT du conteneur GTM (utilisé par l'UI « Importer un
+// conteneur ») exige des enums **UPPERCASE** pour les `type` de Parameter,
+// Trigger, customEventFilter, et `tagFiringOption`. Vérifié sur 4 conteneurs
+// réels en exportFormatVersion 2 (Shopify/Stape/Wix/Planet-Caravan) :
+//   - parameter.type ∈ { TEMPLATE | BOOLEAN | INTEGER | LIST | MAP |
+//                        TAG_REFERENCE | TRIGGER_REFERENCE }
+//   - trigger.type   ∈ { PAGEVIEW | CUSTOM_EVENT | CLICK | … }
+//   - filter.type    ∈ { EQUALS | CONTAINS | REGEX | … }
+//   - tagFiringOption∈ { ONCE_PER_EVENT | ONCE_PER_LOAD | UNLIMITED }
+// Les enums lowercase (`template`, `pageview`, `customEvent`…) déclenchent
+// « Error deserializing enum type [Type]. Unrecognized value [...] » alors
+// même que l'API REST (tagmanager.googleapis.com) les accepte — l'UI
+// d'import est plus stricte. Tag.type et Variable.type, eux, restent
+// lowercase (identifiants stables : `gaawc`, `gaawe`, `html`, `c`, `v`…).
+const param = (
+  key: string,
+  value: string,
+  type: 'TEMPLATE' | 'BOOLEAN' | 'INTEGER' = 'TEMPLATE',
+): GtmParameter => ({
   type,
   key,
   value,
@@ -103,16 +121,23 @@ const resetIds = () => {
   idCounter = 1;
 };
 
+// GTM impose des `folderId` en base-10 (« Invalid parent_folder_id (base
+// 10 number expected) ») : le format `F-00` est refusé à l'import. Les
+// IDs ci-dessous sont des chaînes numériques pures. Comme `folderId`,
+// `tagId`, `triggerId`, `variableId` vivent dans des espaces de noms
+// disjoints côté GTM, des collisions d'entiers entre types n'ont pas
+// d'effet — chaque référence (`parentFolderId`, `firingTriggerId`…) cible
+// son propre tableau.
 const FOLDER_IDS = {
-  config: 'F-00',
-  page: 'F-01',
-  ecommerce: 'F-02',
-  lead: 'F-03',
-  conversions: 'F-04',
-  fgCustom: 'F-05',
-  consent: 'F-06',
-  helpers: 'F-07',
-  chat: 'F-08',
+  config: '1',
+  page: '2',
+  ecommerce: '3',
+  lead: '4',
+  conversions: '5',
+  fgCustom: '6',
+  consent: '7',
+  helpers: '8',
+  chat: '9',
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,20 +145,23 @@ const FOLDER_IDS = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const BUILTIN_LIST: GtmBuiltInVariable[] = [
-  { type: 'pageUrl', name: 'Page URL' },
-  { type: 'pageHostname', name: 'Page Hostname' },
-  { type: 'pagePath', name: 'Page Path' },
-  { type: 'referrer', name: 'Referrer' },
-  { type: 'clickElement', name: 'Click Element' },
-  { type: 'clickClasses', name: 'Click Classes' },
-  { type: 'clickId', name: 'Click ID' },
-  { type: 'clickUrl', name: 'Click URL' },
-  { type: 'clickText', name: 'Click Text' },
-  { type: 'formElement', name: 'Form Element' },
-  { type: 'formClasses', name: 'Form Classes' },
-  { type: 'formId', name: 'Form ID' },
-  { type: 'formText', name: 'Form Text' },
-  { type: 'event', name: 'Event' },
+  // Built-in variables : le format d'import GTM exige UPPER_SNAKE_CASE
+  // (`PAGE_URL`, `CLICK_ELEMENT`…), pas du camelCase. Vérifié sur conteneurs
+  // réels exportFormatVersion 2.
+  { type: 'PAGE_URL', name: 'Page URL' },
+  { type: 'PAGE_HOSTNAME', name: 'Page Hostname' },
+  { type: 'PAGE_PATH', name: 'Page Path' },
+  { type: 'REFERRER', name: 'Referrer' },
+  { type: 'CLICK_ELEMENT', name: 'Click Element' },
+  { type: 'CLICK_CLASSES', name: 'Click Classes' },
+  { type: 'CLICK_ID', name: 'Click ID' },
+  { type: 'CLICK_URL', name: 'Click URL' },
+  { type: 'CLICK_TEXT', name: 'Click Text' },
+  { type: 'FORM_ELEMENT', name: 'Form Element' },
+  { type: 'FORM_CLASSES', name: 'Form Classes' },
+  { type: 'FORM_ID', name: 'Form ID' },
+  { type: 'FORM_TEXT', name: 'Form Text' },
+  { type: 'EVENT', name: 'Event' },
 ];
 
 export function buildBuiltinList(): GtmBuiltInVariable[] {
@@ -160,8 +188,8 @@ function buildDLV(name: string, dataLayerName: string, folder: string = FOLDER_I
     type: 'v',
     parameter: [
       param('name', dataLayerName),
-      param('dataLayerVersion', '2', 'integer'),
-      param('setDefaultValue', 'false', 'boolean'),
+      param('dataLayerVersion', '2', 'INTEGER'),
+      param('setDefaultValue', 'false', 'BOOLEAN'),
     ],
     variableId: nextId(),
     parentFolderId: folder,
@@ -236,7 +264,7 @@ export function buildAllVariables(env: GtmEnvironment, cfg: GtmEnvConfig): GtmVa
 function buildPageViewAllPages(): GtmTrigger {
   return {
     name: 'PV — All Pages',
-    type: 'pageview',
+    type: 'PAGEVIEW',
     triggerId: nextId(),
     parentFolderId: FOLDER_IDS.page,
   };
@@ -245,13 +273,13 @@ function buildPageViewAllPages(): GtmTrigger {
 function buildCustomEvent(eventName: string, folderId: string): GtmTrigger {
   return {
     name: `CE — ${eventName}`,
-    type: 'customEvent',
+    type: 'CUSTOM_EVENT',
     customEventFilter: [
       {
-        type: 'equals',
+        type: 'EQUALS',
         parameter: [
-          { type: 'template', key: 'arg0', value: '{{_event}}' },
-          { type: 'template', key: 'arg1', value: eventName },
+          { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+          { type: 'TEMPLATE', key: 'arg1', value: eventName },
         ],
       },
     ],
@@ -260,7 +288,24 @@ function buildCustomEvent(eventName: string, folderId: string): GtmTrigger {
   };
 }
 
+// Events de conversion : key events GA4 + Custom Conversions Meta. Routés
+// vers le dossier « 04 — Conversions » indépendamment de leur catégorie
+// d'origine (ecommerce/lead) pour matcher la sémantique GTM standard.
+// `chat_lead_form_submit` et `chat_lead_webhook_sent` priment sur le préfixe
+// `chat_` (qui irait sinon dans le dossier Chat).
+const CONVERSION_EVENTS = new Set<string>([
+  'purchase',
+  'refund',
+  'generate_lead',
+  'sign_up',
+  'contact_submit',
+  'newsletter_submit',
+  'chat_lead_form_submit',
+  'chat_lead_webhook_sent',
+]);
+
 function categoryToFolder(category: string, eventName: string): string {
+  if (CONVERSION_EVENTS.has(eventName)) return FOLDER_IDS.conversions;
   if (eventName.startsWith('chat_')) return FOLDER_IDS.chat;
   if (eventName.startsWith('fg_')) return FOLDER_IDS.fgCustom;
   switch (category) {
@@ -303,11 +348,11 @@ function buildGa4ConfigTag(triggers: GtmTrigger[]): GtmTag {
     type: 'gaawc',
     parameter: [
       param('measurementId', '{{CONST - GA4 Measurement ID}}'),
-      param('sendPageView', 'false', 'boolean'),
+      param('sendPageView', 'false', 'BOOLEAN'),
     ],
     firingTriggerId: [findTriggerId(triggers, 'PV — All Pages')],
-    priority: { type: 'integer', value: '80' },
-    tagFiringOption: 'oncePerEvent',
+    priority: { type: 'INTEGER', key: 'priority', value: '80' },
+    tagFiringOption: 'ONCE_PER_EVENT',
     parentFolderId: FOLDER_IDS.config,
   };
 }
@@ -315,12 +360,16 @@ function buildGa4ConfigTag(triggers: GtmTrigger[]): GtmTag {
 function buildGa4EventTag(ev: EventCatalogEntry, triggers: GtmTrigger[]): GtmTag | null {
   if (!ev.defaultProviders.includes('google_ga4')) return null;
   const ga4Name = mapEventName(ev.name, 'google_ga4') ?? ev.name;
+  // Le template GA4 Event (`gaawe`) v2 exige `measurementIdOverride`
+  // (« vendorTemplate.parameter.measurementIdOverride : Vous devez indiquer
+  // une valeur »). Le champ `measurementId` est réservé au tag de config
+  // (`gaawc`) et déclenche une erreur de validation côté UI.
   return {
     name: `GA4 Evt — ${ev.name}`,
     type: 'gaawe',
     parameter: [
       param('eventName', ga4Name),
-      param('measurementId', '{{CONST - GA4 Measurement ID}}'),
+      param('measurementIdOverride', '{{CONST - GA4 Measurement ID}}'),
     ],
     firingTriggerId: [findTriggerId(triggers, `CE — ${ev.name}`)],
     parentFolderId: categoryToFolder(ev.category, ev.name),
@@ -330,19 +379,40 @@ function buildGa4EventTag(ev: EventCatalogEntry, triggers: GtmTrigger[]): GtmTag
 function buildMetaEventTag(ev: EventCatalogEntry, triggers: GtmTrigger[]): GtmTag | null {
   const metaName = mapEventName(ev.name, 'meta');
   if (!metaName) return null;
+  // Le nom du tag inclut l'event FemiGlow source pour éviter les doublons
+  // quand plusieurs events FemiGlow mappent vers le même event Meta
+  // (ex. view_item_list / view_item / view_cart → tous ViewContent).
   return {
-    name: `Meta Evt — ${metaName}`,
+    name: `Meta Evt — ${ev.name} (${metaName})`,
     type: 'html',
     parameter: [
       param(
         'html',
         `<script>fbq('track', '${metaName}', { event_id: {{DLV - event_id}} });</script>`,
       ),
-      param('supportDocumentWrite', 'false', 'boolean'),
+      param('supportDocumentWrite', 'false', 'BOOLEAN'),
     ],
     firingTriggerId: [findTriggerId(triggers, `CE — ${ev.name}`)],
     setupTag: [{ tagName: 'Meta Init — production', stopOnSetupFailure: false }],
     parentFolderId: categoryToFolder(ev.category, ev.name),
+  };
+}
+
+function buildMetaInitTag(triggers: GtmTrigger[], cfg: GtmEnvConfig): GtmTag {
+  return {
+    name: 'Meta Init — production',
+    type: 'html',
+    parameter: [
+      param(
+        'html',
+        `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${cfg.metaPixelId}');fbq('track','PageView');</script>`,
+      ),
+      param('supportDocumentWrite', 'false', 'BOOLEAN'),
+    ],
+    firingTriggerId: [findTriggerId(triggers, 'PV — All Pages')],
+    priority: { type: 'INTEGER', key: 'priority', value: '70' },
+    tagFiringOption: 'ONCE_PER_EVENT',
+    parentFolderId: FOLDER_IDS.config,
   };
 }
 
@@ -356,6 +426,8 @@ export function buildAllTags(triggers: GtmTrigger[], cfg: GtmEnvConfig): GtmTag[
     }
   }
   if (cfg.enabledProviders.includes('meta') && cfg.metaPixelId) {
+    // Meta Init doit être créé avant les Meta Events qui le référencent en setupTag.
+    tags.push(buildMetaInitTag(triggers, cfg));
     for (const ev of EVENT_CATALOG) {
       const tag = buildMetaEventTag(ev, triggers);
       if (tag) tags.push(tag);
@@ -400,6 +472,14 @@ export interface BuildOptions {
   exportTime?: Date;
 }
 
+/**
+ * @deprecated Générateur GTM **legacy** (utilisé seulement par le
+ * drift-detector via `gtm/snapshot.ts`, aucune route d'export). Ne gère que
+ * GA4 + Meta (ni Google Ads/awct, ni Conversion Linker, ni TikTok/Snap/
+ * Pinterest, ni value/currency). Cf. audit `docs/tracking-audit-2026-05-31`
+ * (T-09). **Source canonique = `plan/exporter.ts` (`exportPlan`).**
+ * Follow-up : rebrancher le drift-detector sur `exportPlan` puis retirer ce module.
+ */
 export function buildContainer(opts: BuildOptions): GtmContainer {
   resetIds();
 

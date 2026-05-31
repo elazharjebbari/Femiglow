@@ -11,22 +11,38 @@ interface AdminShellProps {
     | 'tracking'
     | 'analytics'
     | 'components'
+    | 'i18n'
     | 'settings'
     | 'audit'
     | 'seo'
     | 'products'
-    | 'chat';
+    | 'content-studio'
+    | 'chat'
+    | 'rituals'
+    | 'legal'
+    | 'emails'
+    | 'kit-video'
+    | 'kit-composition'
+    | 'kit-pack';
   children: ReactNode;
 }
 
 const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }> = [
   { href: '/admin', key: 'dashboard', label: 'Tableau de bord' },
   { href: '/admin/leads', key: 'leads', label: 'Leads' },
+  { href: '/admin/rituals/queue', key: 'rituals', label: 'Rituels partagés' },
   { href: '/admin/media', key: 'media', label: 'Médias' },
   { href: '/admin/components', key: 'components', label: 'Composants' },
+  { href: '/admin/i18n', key: 'i18n', label: 'Traductions / i18n' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
+  { href: '/admin/kit/video', key: 'kit-video', label: 'Vidéo /kit' },
+  { href: '/admin/kit/composition', key: 'kit-composition', label: 'Composition /kit' },
+  { href: '/admin/kit/pack', key: 'kit-pack', label: 'Pack /kit' },
+  { href: '/admin/legal', key: 'legal', label: 'Pages légales' },
   { href: '/admin/products', key: 'products', label: 'Produits' },
+  { href: '/admin/content-studio', key: 'content-studio', label: 'Studio contenu' },
   { href: '/admin/chat', key: 'chat', label: 'Chat' },
+  { href: '/admin/emails', key: 'emails', label: 'Emails' },
   { href: '/admin/webhooks', key: 'webhooks', label: 'Webhooks' },
   { href: '/admin/tracking', key: 'tracking', label: 'Tracking' },
   { href: '/admin/analytics', key: 'analytics', label: 'Analytics' },
@@ -75,7 +91,13 @@ export function AdminShell({ adminEmail, active, children }: AdminShellProps) {
           </button>
         </form>
       </aside>
-      <main className="flex-1 px-6 py-8 lg:px-10">{children}</main>
+      {/* min-w-0 + overflow-x-hidden : sans ça, un enfant à contenu
+          large (pre JSON, table dense…) empêche le flex item `main` de
+          rétrécir sous viewport, ce qui crée du scroll horizontal au
+          niveau de la page. Les conteneurs internes qui *veulent*
+          défiler horizontalement (ex. <pre overflow-auto>) le font
+          dans leur propre boîte sans déborder. */}
+      <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-8 lg:px-10">{children}</main>
     </div>
   );
 }

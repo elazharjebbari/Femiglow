@@ -26,3 +26,25 @@ test-results
 
 # Storybook
 storybook-static
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Claude Code worktrees (chaque worktree est un repo Git séparé,
+# ne doit jamais être committé en gitlink dans le repo principal)
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# Brouillons locaux (notes perso, dumps GTM Tag Assistant, etc.)
+draft/
+
+# Media storage (régénérable par seeders — cf. docs/reset-feature)
+# Les fichiers optimisés (avif/webp/jpeg variants + originaux) vivent
+# sur disque mais sont produits par le pipeline seed-components/seed-media.
+# Ne pas tracker pour éviter 10k+ blobs binaires par re-seed.
+.media-storage/
+
+# Backups
+/var/backups/femiglow/
+.emailing-secrets.local
+.env.bak.*

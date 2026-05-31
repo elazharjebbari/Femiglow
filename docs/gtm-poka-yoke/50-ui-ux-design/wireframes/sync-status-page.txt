@@ -1,0 +1,71 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  /admin/tracking/gtm/sync-status                                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌─[TrackingShell — tabs]─────────────────────────────────────────────────────────┐
+│ ⚙ Pixels   📤 GTM configs   📋 Mappings vendors   🔍 GTM Sync   📥 Valider GTM │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ GTM Sync Status                                       Mise à jour : il y a 12s │
+│ Surveillance du tracking client en production via sentinel pings. [↻ Refresh] │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────────────────────────────────────┐│
+│ │ 🟢  Tout est cohérent                                                       ││
+│ │     Dernier ping : il y a 12 secondes                                       ││
+│ │     Container : GTM-XXXX  ·  Bundle actif : a7c4f2e9b81d                    ││
+│ └─────────────────────────────────────────────────────────────────────────────┘│
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────┬─────────────────────────┬──────────────────────────┐
+│ Mapping vendors         │ Config GTM              │ Bundle ID                │
+│ ─────────────────────── │ ─────────────────────── │ ──────────────────────── │
+│ Admin :       v17       │ Admin :       v4        │ Admin :   a7c4f2e9b81d   │
+│ GTM runtime : v17 ✓     │ GTM runtime : v4 ✓      │ Runtime : a7c4f2e9b81d ✓ │
+│                         │                         │                          │
+│ ✅ Cohérent depuis 3j   │ ✅ Cohérent depuis 8j   │ ✅ Manifest check OK     │
+└─────────────────────────┴─────────────────────────┴──────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Pings par jour (30 derniers jours)                                             │
+│                                                                                │
+│                                                              ▄ ▄ █ █ ▄ ▄ ▄ ▄ █ │
+│                                                          ▄ ▄ █ █ █ █ █ █ █ █ █ │
+│                                                  ▄ ▄ ▄ ▄ █ █ █ █ █ █ █ █ █ █ █ │
+│                                          ▄ ▄ ▄ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ │
+│                                  ▄ ▄ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ │
+│                                                                                │
+│ 13 ── 15 ── 17 ── 19 ── 21 ── 23 ── 25 ── 27 ── 29 ── 31 ── 02 ── 04 ──── 13   │
+│                       ↑ drift v16→v17 résolu                       ↑ aujourd'hui│
+│                                                                                │
+│ Total 30j : 92 340 pings  ·  Drifts détectés : 1 (résolu)                     │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Dernières transitions de statut                                                │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│                                                                                │
+│ 2026-05-12 14:23  critical → ok        mapping_version_drift (v16 → v17)       │
+│ 2026-05-12 11:47  ok → critical        mapping_version_drift (v17 → v16)       │
+│ 2026-05-04 09:30  warning → ok         bundle_mismatch                         │
+│ 2026-04-22 16:02  ok → warning         silence_excess (8h sans ping)           │
+│                                                                                │
+│ [Voir l'historique complet →]                                                  │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ 💡 Comment ça marche ?                                            [Replier ▲]  │
+│ ────────────────────────────────────────────────────────────────────────────── │
+│                                                                                │
+│ Cette page surveille en temps réel la cohérence entre ce que tu configures    │
+│ côté admin et ce que GTM exécute réellement en production. À chaque pageview, │
+│ un petit ping est envoyé du Container GTM vers FemiGlow avec les versions     │
+│ actives. Si l'admin et GTM divergent, un drift est détecté et signalé.        │
+│                                                                                │
+│ Les 3 couches de protection :                                                  │
+│  • Couche A — page "Valider import GTM" : vérification avant import           │
+│  • Couche B — cette page : détection runtime continue                         │
+│  • Couche C — bundleId partagé : si tu oublies un des deux fichiers, on voit  │
+└────────────────────────────────────────────────────────────────────────────────┘

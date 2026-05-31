@@ -190,11 +190,21 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     name: 'form_start',
     category: 'engagement',
     scope: 'web',
-    description: 'D\u00e9but d\u2019interaction avec un formulaire',
+    description: 'D\u00e9but d\u2019interaction avec un formulaire (premier focus champ)',
     isConversion: false,
     applicableCategories: ['form_input'],
     defaultProviders: ['google_ga4'],
-    paramsSchema: { type: 'object', properties: { form_id: { type: 'string' } } },
+    paramsSchema: {
+      type: 'object',
+      properties: {
+        form_id: { type: 'string' },
+        first_field: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+      },
+    },
   },
   {
     name: 'form_submit',
@@ -267,10 +277,22 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     paramsSchema: ecommerceParams(),
   },
   {
+    name: 'checkout_intent',
+    category: 'ecommerce',
+    scope: 'web',
+    description:
+      'Intention checkout \u2014 1\u00e8re frappe dans le formulaire lead (InitiateCheckout / begin_checkout / conv Ads).',
+    isConversion: true,
+    applicableCategories: ['commerce_checkout', 'form_input'],
+    defaultProviders: COMMERCE_PROVIDERS,
+    paramsSchema: ecommerceParams({ first_field: { type: 'string' } }),
+  },
+  {
     name: 'begin_checkout',
     category: 'ecommerce',
     scope: 'both',
-    description: 'D\u00e9but du tunnel checkout',
+    description:
+      'D\u00e9but du tunnel checkout (legacy \u2014 d\u00e9pr\u00e9ci\u00e9 au profit de checkout_intent).',
     isConversion: true,
     applicableCategories: ['commerce_checkout', 'cta_primary'],
     defaultProviders: COMMERCE_PROVIDERS,
@@ -367,7 +389,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Cr\u00e9ation d\u2019un compte',
     isConversion: true,
     applicableCategories: ['form_submit'],
-    defaultProviders: ['google_ga4', 'meta', 'tiktok'],
+    defaultProviders: ['google_ga4', 'meta', 'tiktok', 'snap'],
     paramsSchema: { type: 'object', properties: { method: { type: 'string' } } },
   },
   {
@@ -985,6 +1007,147 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
         attribution_window_days: { type: 'number' },
         messages_in_session: { type: 'number' },
         intent_dominant: { type: 'string' },
+      },
+    },
+  },
+
+  // ===========================================================================
+  // CHA-230 — Checkout funnel wizard events.
+  // Voir docs/checkout-funnel/05-plan-action.md §2 PR #1 et
+  //      docs/checkout-funnel/09-architecture-frontend.md §6.
+  //
+  // Tous les events embarquent les attributs transverses :
+  //   form_id, form_mode, step_name, variant_key, lead_id?, schema_version.
+  // Fabriqués par les builders de `apps/web/src/lib/tracking/checkout-events.ts`.
+  // ===========================================================================
+  {
+    name: 'lead_capture',
+    category: 'lead',
+    scope: 'web',
+    description:
+      'Capture lead step 1 wizard (téléphone + ville pré-soumis ; lead_id créé).',
+    isConversion: true,
+    applicableCategories: ['form_submit', 'commerce_checkout'],
+    defaultProviders: ['google_ga4', 'meta', 'google_ads', 'snap'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name', 'method', 'lead_id'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: { type: 'string', enum: ['lead'] },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        method: { type: 'string', enum: ['wizard', 'chat', 'newsletter'] },
+        contact_channels: {
+          type: 'array',
+          items: { type: 'string', enum: ['phone', 'email', 'sms'] },
+        },
+        currency: { type: 'string' },
+        value: { type: 'number' },
+        schema_version: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'address_completed',
+    category: 'ecommerce',
+    scope: 'web',
+    description:
+      'Step 2 wizard (adresse + ville validées). Pas une conversion, signal de progression.',
+    isConversion: false,
+    applicableCategories: ['form_submit', 'commerce_checkout'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: { type: 'string', enum: ['address'] },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        shipping_tier: { type: 'string' },
+        city_code: { type: 'string' },
+        currency: { type: 'string' },
+        value: { type: 'number' },
+        items: { type: 'array', items: ITEM_SCHEMA },
+        schema_version: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'wizard_error',
+    category: 'custom',
+    scope: 'web',
+    description:
+      'Erreur wizard (validation client, API, réseau, stock). error_code stable côté UI.',
+    isConversion: false,
+    applicableCategories: ['form_input', 'commerce_checkout'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name', 'source', 'error_code'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: {
+          type: 'string',
+          enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+        },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        source: {
+          type: 'string',
+          enum: ['client_validation', 'api', 'network', 'stock'],
+        },
+        error_code: { type: 'string' },
+        field_name: { type: 'string' },
+        http_status: { type: 'number' },
+        schema_version: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'wizard_abandoned',
+    category: 'custom',
+    scope: 'web',
+    description:
+      'Abandon du wizard (pagehide / unmount sans purchase). Mesure le drop-off par étape.',
+    isConversion: false,
+    applicableCategories: ['commerce_checkout'],
+    defaultProviders: ['google_ga4'],
+    paramsSchema: {
+      type: 'object',
+      required: ['form_id', 'form_mode', 'step_name', 'last_step_reached', 'time_on_wizard_ms'],
+      properties: {
+        form_id: { type: 'string' },
+        form_mode: {
+          type: 'string',
+          enum: ['wizard_embed', 'wizard_cart', 'legacy_cart'],
+        },
+        step_name: {
+          type: 'string',
+          enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+        },
+        variant_key: { type: ['string', 'null'], enum: ['A', 'B', 'control', null] },
+        lead_id: { type: 'string' },
+        last_step_reached: {
+          type: 'string',
+          enum: ['cart_review', 'lead', 'address', 'payment', 'thank_you'],
+        },
+        time_on_wizard_ms: { type: 'number' },
+        last_field: { type: 'string' },
+        schema_version: { type: 'string' },
       },
     },
   },

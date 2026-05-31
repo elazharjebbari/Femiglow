@@ -1,0 +1,90 @@
+@startuml sequence-publish-flow
+title Séquence — Publication d'une page (Draft → Review → Published)
+
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName Inter
+
+actor "Admin A\n(rédacteur)" as A1
+actor "Admin B\n(reviewer)" as A2
+participant "Editor" as E
+participant "API\n/api/admin/legal" as API
+participant "Git job\n(background)" as GIT
+database "legal_pages" as DB
+database "legal_pages_history" as DBH
+database "audit_events" as AE
+participant "Git remote\nlegal-versions branch" as REMOTE
+
+== Étape 1 — Soumettre en revue ==
+
+A1 -> E : Click "Soumettre à revue"
+E -> API : POST /api/admin/legal/{slug}/submit-review
+API -> DB : UPDATE status = 'review',\nsubmitted_by = A1.id, submitted_at = NOW()
+DB --> API : ok
+API -> AE : INSERT audit\naction = 'legal.review.submitted',\nactorId = A1, meta = { slug, version }
+API --> E : { status: 'review' }
+E -> A1 : Toast "En attente de revue"
+
+note over A1, A2 #LightYellow
+  Notification optionnelle :
+  email aux co-admins (V2)
+  ou affichage dans
+  /admin/legal/list filter=review
+end note
+
+== Étape 2 — Revue et publication ==
+
+A2 -> E : Visite /admin/legal/{slug}/edit
+E -> API : GET /api/admin/legal/{slug}
+API -> DB : SELECT
+DB --> API : page (status=review)
+API --> E : page
+E -> A2 : Affiche éditeur + bouton "Publier"
+
+A2 -> E : Click "Publier"
+E -> E : Modal confirm typed\n"Tape PUBLIER pour valider"
+A2 -> E : Tape "PUBLIER"
+E -> API : POST /api/admin/legal/{slug}/publish
+
+API -> DB : BEGIN transaction
+API -> DB : UPDATE status = 'published',\npublished_at = NOW(),\npublished_by = A2.id,\nversion = current + 1
+API -> DBH : INSERT history snapshot\n(slug, version, body_md, metadata,\npublished_at, published_by)
+API -> AE : INSERT audit\naction = 'legal.published',\nactorId = A2, meta = {...}
+API -> DB : COMMIT
+DB --> API : ok
+
+API -> GIT : enqueue git commit job\n(non-blocking)
+API --> E : { published: true, version }
+E -> A2 : Toast "Publiée ✅"
+
+== Étape 3 — Auto-commit git (background) ==
+
+GIT -> DB : SELECT page WHERE slug
+DB --> GIT : current state
+GIT -> REMOTE : git checkout legal-versions
+GIT -> REMOTE : git add content/legal/{slug}.{v}.md
+GIT -> REMOTE : git commit -m "publish {slug} v{version}"
+GIT -> REMOTE : git push
+REMOTE --> GIT : ok
+
+GIT -> AE : INSERT audit\naction = 'legal.git.committed',\nmeta = { commit_sha, slug, version }
+
+note right of REMOTE
+  Branch `legal-versions` est
+  une source de vérité externe :
+  - Audit pour juriste
+  - Recovery si DB perdue
+  - Diff lisible (git log)
+end note
+
+== Étape 4 — Si modification post-publication ==
+
+A1 -> E : Modifie la page (déjà published)
+E -> API : PATCH status = 'draft'\n(new working copy)
+note over DB
+  La version "published" reste
+  en DB jusqu'à la prochaine
+  publication. L'admin a 1 draft
+  + 1 published à la fois.
+end note
+
+@enduml

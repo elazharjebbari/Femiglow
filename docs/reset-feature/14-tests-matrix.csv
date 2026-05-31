@@ -1,0 +1,108 @@
+id,layer,framework,file,scenario,assertions,priority,blocking
+TJ01,unit,Jest,lib/reset/config-schema.test.ts,Parse valid soft config,returns parsed config without throw,P0,yes
+TJ02,unit,Jest,lib/reset/config-schema.test.ts,Reject hard with confirm RESET,Zod error message about HARD RESET,P0,yes
+TJ03,unit,Jest,lib/reset/config-schema.test.ts,Reject custom without domains,Zod error required domains,P0,yes
+TJ04,unit,Jest,lib/reset/config-schema.test.ts,Reject keepBackups < 0,Zod number out of range,P1,no
+TJ05,unit,Jest,lib/reset/config-schema.test.ts,Default preserve list applied,Parsed config has full default,P0,yes
+TJ06,unit,Jest,lib/reset/lock.test.ts,acquireLock first time returns true,returns true,P0,yes
+TJ07,unit,Jest,lib/reset/lock.test.ts,acquireLock twice returns false,returns false second time,P0,yes
+TJ08,unit,Jest,lib/reset/lock.test.ts,releaseLock allows new acquire,returns true after release,P0,yes
+TJ09,unit,Jest,lib/reset/lock.test.ts,File lock honored across processes,fs.lock contention,P1,no
+TJ10,unit,Jest,lib/reset/job-store.test.ts,createJob returns valid id,id matches pattern rst_,P0,yes
+TJ11,unit,Jest,lib/reset/job-store.test.ts,Event buffer capped at 500,buffer length 500 max,P0,yes
+TJ12,unit,Jest,lib/reset/job-store.test.ts,Job GC after TTL,job removed after 1h,P1,no
+TJ13,unit,Jest,lib/reset/job-store.test.ts,Multiple subscribers receive event,3 listeners notified,P0,yes
+TJ14,unit,Jest,lib/reset/job-store.test.ts,Abort signal triggers cancel,subscribers get cancel event,P0,yes
+TJ15,unit,Jest,lib/reset/phases/preflight.test.ts,DB unreachable returns DB_UNREACHABLE,error code matches,P0,yes
+TJ16,unit,Jest,lib/reset/phases/preflight.test.ts,Disk low triggers DISK_LOW,error code DISK_LOW,P0,yes
+TJ17,unit,Jest,lib/reset/phases/preflight.test.ts,Bootstrap env missing,BOOTSTRAP_ENV_MISSING,P0,yes
+TJ18,unit,Jest,lib/reset/phases/preflight.test.ts,Happy path returns plan + impact,plan has 10 phases for hard,P0,yes
+TJ19,unit,Jest,lib/reset/phases/backup.test.ts,pg_dump mock succeeds,manifest created with sha256,P0,yes
+TJ20,unit,Jest,lib/reset/phases/backup.test.ts,pg_dump fails,BACKUP_PG_DUMP_FAILED,P0,yes
+TJ21,unit,Jest,lib/reset/phases/backup.test.ts,Backup too small triggers BACKUP_TOO_SMALL,error,P0,yes
+TJ22,unit,Jest,lib/reset/phases/backup.test.ts,sha256 mismatch detection,validation error,P0,yes
+TJ23,unit,Jest,lib/reset/phases/backup.test.ts,wipeMedia=false skips tar,no media.tar.gz in manifest,P0,yes
+TJ24,unit,Jest,lib/reset/phases/audit-counts.test.ts,Counts all critical tables,returns map of counts,P0,yes
+TJ25,unit,Jest,lib/reset/phases/wipe-db.test.ts,drop-schema strategy,DROP SCHEMA + CREATE SCHEMA executed,P0,yes
+TJ26,unit,Jest,lib/reset/phases/wipe-db.test.ts,truncate strategy,TRUNCATE on listed tables only,P0,yes
+TJ27,unit,Jest,lib/reset/phases/wipe-db.test.ts,Preserve list respected,preserved tables not truncated,P0,yes
+TJ28,unit,Jest,lib/reset/phases/wipe-db.test.ts,Transaction rollback on partial fail,DB state unchanged,P0,yes
+TJ29,unit,Jest,lib/reset/phases/wipe-media.test.ts,Removes all dirs in .media-storage,fs empty after,P0,yes
+TJ30,unit,Jest,lib/reset/phases/wipe-media.test.ts,Preserves .gitkeep,.gitkeep still present,P1,no
+TJ31,unit,Jest,lib/reset/phases/wipe-media.test.ts,EACCES yields WIPE_MEDIA_FAILED warning,non-critical,P0,yes
+TJ32,unit,Jest,lib/reset/phases/migrate.test.ts,drizzle-kit migrate success,parses stdout for applied count,P0,yes
+TJ33,unit,Jest,lib/reset/phases/migrate.test.ts,migrate fails non-zero exit,MIGRATE_FAILED,P0,yes
+TJ34,unit,Jest,lib/reset/phases/migrate.test.ts,Timeout 60s,MIGRATE_TIMEOUT,P1,no
+TJ35,unit,Jest,lib/reset/phases/seed.test.ts,Delegates to seeders orchestrator,calls runSeeders with full registry,P0,yes
+TJ36,unit,Jest,lib/reset/phases/seed.test.ts,Critical seeder failure aborts,SEED_CONTRACT_BROKEN,P0,yes
+TJ37,unit,Jest,lib/reset/phases/seed.test.ts,Non-critical failure continues,returns warning in stats,P0,yes
+TJ38,unit,Jest,lib/reset/phases/verify.test.ts,All checks pass,passed=9 failed=0,P0,yes
+TJ39,unit,Jest,lib/reset/phases/verify.test.ts,Variant FEMI-KIT-100 wrong price fails check,critical fail,P0,yes
+TJ40,unit,Jest,lib/reset/phases/verify.test.ts,HTTP /kit smoke fail,warning,P0,yes
+TJ41,unit,Jest,lib/reset/phases/cleanup-backups.test.ts,Keeps N most recent,prunes count = total - N,P0,yes
+TJ42,unit,Jest,lib/reset/phases/cleanup-backups.test.ts,N=0 keeps zero (warns),warning issued,P1,no
+TJ43,unit,Jest,lib/reset/planner.test.ts,soft mode → 4 phases,plan.phases length 4,P0,yes
+TJ44,unit,Jest,lib/reset/planner.test.ts,hard mode → 10 phases,plan.phases length 10,P0,yes
+TJ45,unit,Jest,lib/reset/planner.test.ts,custom commerce only → wipe-db on commerce tables,plan.tables = commerce list,P0,yes
+TJ46,unit,Jest,lib/reset/planner.test.ts,custom no wipeMedia skips wipe-media phase,phase absent,P0,yes
+TJ47,unit,Jest,lib/reset/orchestrator.test.ts,Happy path emits expected events,event sequence matches,P0,yes
+TJ48,unit,Jest,lib/reset/orchestrator.test.ts,Cancel during phase 3 stops cleanly,subsequent phases skipped,P0,yes
+TJ49,unit,Jest,lib/reset/orchestrator.test.ts,Critical phase failure post-backup triggers rollback,restoreFromBackup called,P0,yes
+TJ50,unit,Jest,lib/reset/orchestrator.test.ts,Non-critical failure continues,no rollback called,P0,yes
+TJ51,unit,Jest,lib/reset/orchestrator.test.ts,Rollback failure emits ROLLBACK_DB_FAILED,exit 91 simulated,P0,yes
+TJ52,unit,Jest,lib/reset/orchestrator.test.ts,Audit logEvent called per phase,N audit calls,P0,yes
+TJ53,unit,Jest,lib/reset/restore.test.ts,Restore from valid backup,DB tables restored,P0,yes
+TJ54,unit,Jest,lib/reset/restore.test.ts,sha256 mismatch refused,ROLLBACK_SHA256_MISMATCH,P0,yes
+TJ55,unit,Jest,lib/reset/restore.test.ts,Missing backup dir,ROLLBACK_BACKUP_MISSING,P0,yes
+TR01,api,Jest+supertest,api/admin/reset/run/route.test.ts,Unauth returns 401,status 401,P0,yes
+TR02,api,Jest+supertest,api/admin/reset/run/route.test.ts,Auth with valid config returns 202 jobId,jobId in body,P0,yes
+TR03,api,Jest+supertest,api/admin/reset/run/route.test.ts,Lock held returns 409,LOCK_HELD,P0,yes
+TR04,api,Jest+supertest,api/admin/reset/run/route.test.ts,Rate limit exceeded returns 429,RATE_LIMIT_EXCEEDED,P0,yes
+TR05,api,Jest+supertest,api/admin/reset/run/route.test.ts,Confirm mismatch returns 400,CONFIRM_TEXT_MISMATCH,P0,yes
+TR06,api,Jest+supertest,api/admin/reset/preflight/route.test.ts,Returns plan + impact for soft,plan length 4,P0,yes
+TR07,api,Jest+supertest,api/admin/reset/preflight/route.test.ts,Returns warnings on DISK_LOW,warnings array,P0,yes
+TR08,api,Jest+supertest,api/admin/reset/jobs/[id]/stream/route.test.ts,SSE Content-Type,text/event-stream,P0,yes
+TR09,api,Jest+supertest,api/admin/reset/jobs/[id]/stream/route.test.ts,Keepalive every 15s,2 keepalive after 30s,P1,no
+TR10,api,Jest+supertest,api/admin/reset/jobs/[id]/cancel/route.test.ts,Cancel sets abort,job.abort.signal.aborted true,P0,yes
+TR11,api,Jest+supertest,api/admin/reset/restore/route.test.ts,Invalid backup-id returns 404,404,P0,yes
+TR12,api,Jest+supertest,api/admin/reset/backups/route.test.ts,Lists by mtime desc,sorted,P0,yes
+TC01,cli,Jest,scripts/reset.test.ts,No subcommand prints help,help shown exit 0,P0,yes
+TC02,cli,Jest,scripts/reset.test.ts,run --dry-run does not call destructive,phases.wipe-db not called,P0,yes
+TC03,cli,Jest,scripts/reset.test.ts,run --confirm missing exit 4,exit code 4,P0,yes
+TC04,cli,Jest,scripts/reset.test.ts,run --mode=hard --no-backup refused,exit code 4,P0,yes
+TC05,cli,Jest,scripts/reset.test.ts,restore --backup-id missing exit 2,exit code 2,P0,yes
+TC06,cli,Jest,scripts/reset.test.ts,list-backups empty dir returns OK,exit 0 empty list,P0,yes
+TC07,cli,Jest,scripts/reset.test.ts,Exit codes mapping all errors,each error → expected exit,P0,yes
+TUI01,unit,Jest+RTL,components/admin/settings/reset/ResetWizard.test.tsx,Renders welcome by default,h1 Welcome present,P0,yes
+TUI02,unit,Jest+RTL,components/admin/settings/reset/ResetWizard.test.tsx,Next advances to mode,h1 Mode present,P0,yes
+TUI03,unit,Jest+RTL,components/admin/settings/reset/ResetWizard.test.tsx,Back returns to previous,navigation works,P0,yes
+TUI04,unit,Jest+RTL,components/admin/settings/reset/ResetWizard.test.tsx,Skip custom step when mode!=custom,jumps to preservation,P0,yes
+TUI05,unit,Jest+RTL,components/admin/settings/reset/steps/StepMode.test.tsx,Selecting hard requires HARD RESET,confirm placeholder updated,P0,yes
+TUI06,unit,Jest+RTL,components/admin/settings/reset/steps/StepCustomOptions.test.tsx,At least one domain required,Next disabled,P0,yes
+TUI07,unit,Jest+RTL,components/admin/settings/reset/steps/StepPreservation.test.tsx,admin_users always disabled checked,checkbox disabled+checked,P0,yes
+TUI08,unit,Jest+RTL,components/admin/settings/reset/steps/StepPreview.test.tsx,Preflight failure shows banner,error visible,P0,yes
+TUI09,unit,Jest+RTL,components/admin/settings/reset/steps/StepPreview.test.tsx,ImpactTable shows diff rows,3 rows minimum,P0,yes
+TUI10,unit,Jest+RTL,components/admin/settings/reset/widgets/TypedConfirmInput.test.tsx,Match enables next,enabled at match,P0,yes
+TUI11,unit,Jest+RTL,components/admin/settings/reset/widgets/TypedConfirmInput.test.tsx,Case sensitive,reset != RESET,P0,yes
+TUI12,unit,Jest+RTL,components/admin/settings/reset/widgets/PhaseProgress.test.tsx,aria-progressbar attrs,aria-valuenow set,P0,yes
+TUI13,unit,Jest+RTL,components/admin/settings/reset/hooks/useResetStream.test.tsx,Connects EventSource,close on unmount,P0,yes
+TUI14,unit,Jest+RTL,components/admin/settings/reset/hooks/useResetStream.test.tsx,Fallback polling on SSE error,fetch /jobs/[id] called,P0,yes
+TUI15,unit,Jest+RTL,components/admin/settings/reset/hooks/useResetConfig.test.tsx,Reducer NEXT advances step,state.step changes,P0,yes
+TUI16,unit,Jest+RTL,components/admin/settings/reset/hooks/useResetConfig.test.tsx,Reducer rejects invalid mode,state unchanged,P0,yes
+TMSW01,integration,MSW+RTL,components/admin/settings/reset/ResetWizard.integration.test.tsx,Happy path soft dry-run,reaches Report step,P0,yes
+TMSW02,integration,MSW+RTL,components/admin/settings/reset/ResetWizard.integration.test.tsx,Mock SSE stream emits 10 events,PhaseProgress updates,P0,yes
+TMSW03,integration,MSW+RTL,components/admin/settings/reset/ResetWizard.integration.test.tsx,Server returns 409 lock held,blocking banner shown,P0,yes
+TMSW04,integration,MSW+RTL,components/admin/settings/reset/ResetWizard.integration.test.tsx,Cancel during execute aborts,POST cancel called,P0,yes
+TMSW05,integration,MSW+RTL,components/admin/settings/reset/ResetWizard.integration.test.tsx,Rollback flow visible on error,rollback section appears,P0,yes
+TE01,e2e,Playwright,e2e/reset-wizard.spec.ts,Open /admin/settings/reset auth,page rendered,P0,yes
+TE02,e2e,Playwright,e2e/reset-wizard.spec.ts,Soft dry-run happy path,Report visible+exit code,P0,yes
+TE03,e2e,Playwright,e2e/reset-wizard.spec.ts,Custom mode with commerce only,plan shows commerce tables,P0,yes
+TE04,e2e,Playwright,e2e/reset-wizard.spec.ts,Confirm text validation,Démarrer disabled until match,P0,yes
+TE05,e2e,Playwright,e2e/reset-wizard.spec.ts,Cancel during phase 3,job cancelled status,P0,yes
+TE06,e2e,Playwright,e2e/reset-wizard-hard.spec.ts,Hard mode requires HARD RESET text,confirm enforces,P0,yes
+TE07,e2e,Playwright,e2e/reset-wizard-hard.spec.ts,Simulated migrate failure triggers rollback UI,rollback complete shown,P1,no
+TE08,e2e,Playwright,e2e/reset-wizard-a11y.spec.ts,Wizard navigable keyboard,no mouse no error,P0,yes
+TE09,e2e,Playwright,e2e/reset-wizard-a11y.spec.ts,axe no critical violations,axe report clean,P0,yes
+TE10,e2e,Playwright,e2e/reset-wizard.spec.ts,Resume in-progress job on refresh,wizard skips to execute step,P1,no
+TE11,e2e,Playwright,e2e/reset-wizard.spec.ts,Lock held by another tab,wizard blocked at confirm,P0,yes
+TOTAL,,,,80 cas de test,,,P0=72 / P1=8

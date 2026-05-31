@@ -1,0 +1,275 @@
+<!doctype html>
+<!--
+  ====================================================================
+  FemiGlow — Template email par défaut
+  ====================================================================
+  Charte : palette sauge / crème / encre · typo Pinyon Script (logo),
+  Cormorant Garamond (titres), Inter (body) · ton complice tutoiement
+  sans emoji ni urgence. Compatible Gmail, Outlook, Apple Mail.
+
+  Variables Handlebars supportées (voir 06-template-editor.md) :
+    {{firstName}} {{city}} {{orderId}} {{orderTotal}}
+    {{ctaUrl}} {{ctaLabel}} {{unsubscribeUrl}}
+    {{kickerText}} {{titleText}} {{bodyHtml}}
+
+  Width : 600px (standard email). Mobile-first : sections stack < 480px
+  via media queries client-side.
+-->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="color-scheme" content="light only">
+    <meta name="supported-color-schemes" content="light">
+    <title>{{subject}}</title>
+
+    <!-- Webfonts FemiGlow. Fallback stack inclus dans tous les styles
+         pour les clients qui ne supportent pas (Outlook desktop). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+
+    <style>
+      /* Reset minimal */
+      body, table, td, p, a, h1, h2, h3 { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      table { border-collapse: collapse; }
+      img { display: block; max-width: 100%; height: auto; }
+      a { color: inherit; text-decoration: none; }
+
+      /* Tokens FemiGlow */
+      .fg-bg-creme    { background-color: #FBF8F1; }
+      .fg-bg-white    { background-color: #FFFFFF; }
+      .fg-bg-stone    { background-color: #F5F5F4; }
+      .fg-bg-sauge    { background-color: #7C9A8A; }    /* email-tuned */
+      .fg-text-encre  { color: #2C2A28; }
+      .fg-text-soft   { color: #4A4744; }
+      .fg-text-muted  { color: #7C7A75; }
+      .fg-text-sauge  { color: #4F6D52; }
+      .fg-text-creme  { color: #FBF8F1; }
+      .fg-text-champ  { color: #C8A876; }
+      .fg-border-stone { border: 1px solid #E7E5E4; }
+      .fg-border-champ { border-color: #C8A876; }
+
+      /* Typo */
+      .fg-pinyon      { font-family: "Pinyon Script", "Brush Script MT", cursive; }
+      .fg-cormorant   { font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif; font-weight: 400; }
+      .fg-inter       { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+      /* Mobile responsive */
+      @media only screen and (max-width: 480px) {
+        .fg-container  { width: 100% !important; max-width: 100% !important; }
+        .fg-px-32      { padding-left: 24px !important; padding-right: 24px !important; }
+        .fg-pinyon-lg  { font-size: 36px !important; }
+        .fg-h1         { font-size: 28px !important; }
+        .fg-h2         { font-size: 22px !important; }
+        .fg-two-col td { display: block !important; width: 100% !important; }
+      }
+
+      /* Dark mode lectures Gmail iOS — on force light pour garder la charte */
+      @media (prefers-color-scheme: dark) {
+        .fg-force-light { background-color: #FBF8F1 !important; color: #2C2A28 !important; }
+      }
+    </style>
+
+    <!--[if mso]>
+    <style type="text/css">
+      /* Outlook desktop fallbacks */
+      .fg-cormorant { font-family: Georgia, "Times New Roman", serif !important; }
+      .fg-pinyon { font-family: Georgia, "Times New Roman", serif !important; font-style: italic !important; }
+      .fg-cta-mso { padding: 16px 32px !important; }
+    </style>
+    <![endif]-->
+  </head>
+
+  <body class="fg-bg-creme fg-force-light" style="margin:0;padding:0;background-color:#FBF8F1;">
+    <!-- Preheader (text invisible visible dans la preview Gmail/Apple) -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;visibility:hidden;opacity:0;color:transparent;height:0;width:0;">
+      {{preheader}}
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="fg-bg-creme" style="background-color:#FBF8F1;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+
+          <!-- ================= CONTAINER ================= -->
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="fg-container fg-bg-white"
+                 style="width:600px;max-width:600px;background-color:#FFFFFF;border-radius:8px;overflow:hidden;">
+
+            <!-- ===== HEADER (wordmark + tagline) ===== -->
+            <tr>
+              <td align="center" class="fg-px-32" style="padding:48px 32px 32px;">
+                <p class="fg-pinyon fg-pinyon-lg fg-text-encre"
+                   style="margin:0;font-family:'Pinyon Script',Georgia,serif;font-size:44px;line-height:1;color:#2C2A28;">
+                  FemiGlow
+                </p>
+                <p class="fg-inter fg-text-muted"
+                   style="margin:14px 0 0;font-family:Inter,sans-serif;font-size:11px;letter-spacing:0.18em;color:#7C7A75;text-transform:uppercase;font-weight:500;">
+                  Rituels conscients · Maroc
+                </p>
+              </td>
+            </tr>
+
+            <!-- ===== FLEURON CHAMPAGNE ===== -->
+            <tr>
+              <td align="center" style="padding:0;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="border-top:1px solid #C8A876;width:64px;height:1px;line-height:1px;font-size:1px;">&nbsp;</td>
+                    <td class="fg-text-champ" style="padding:0 10px;color:#C8A876;font-size:14px;line-height:1;">&#x25C6;</td>
+                    <td style="border-top:1px solid #C8A876;width:64px;height:1px;line-height:1px;font-size:1px;">&nbsp;</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- ===== KICKER ===== -->
+            <tr>
+              <td align="center" class="fg-px-32" style="padding:32px 32px 0;">
+                <p class="fg-inter fg-text-sauge"
+                   style="margin:0;font-family:Inter,sans-serif;font-size:11px;letter-spacing:0.18em;color:#4F6D52;text-transform:uppercase;font-weight:500;">
+                  {{kickerText}}
+                </p>
+              </td>
+            </tr>
+
+            <!-- ===== TITLE (Cormorant Garamond) ===== -->
+            <tr>
+              <td align="center" class="fg-px-32" style="padding:16px 32px 0;">
+                <h1 class="fg-cormorant fg-text-encre fg-h1"
+                    style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:32px;line-height:1.25;color:#2C2A28;letter-spacing:-0.01em;">
+                  {{titleText}}
+                </h1>
+              </td>
+            </tr>
+
+            <!-- ===== LEAD (intro italic Cormorant) ===== -->
+            <tr>
+              <td align="center" class="fg-px-32" style="padding:20px 32px 0;">
+                <p class="fg-cormorant fg-text-soft"
+                   style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:400;font-size:18px;line-height:1.55;color:#4A4744;">
+                  {{leadText}}
+                </p>
+              </td>
+            </tr>
+
+            <!-- ===== BODY (Inter, html-injectable) ===== -->
+            <tr>
+              <td class="fg-px-32" style="padding:32px 32px 0;">
+                <div class="fg-inter fg-text-encre"
+                     style="font-family:Inter,sans-serif;font-size:16px;line-height:1.7;color:#2C2A28;">
+                  {{{bodyHtml}}}
+                </div>
+              </td>
+            </tr>
+
+            <!-- ===== ENCADRÉ RÉCAP (optionnel) ===== -->
+            <tr>
+              <td class="fg-px-32" style="padding:24px 32px 0;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td class="fg-bg-stone fg-border-stone"
+                        style="background-color:#F5F5F4;border:1px solid #E7E5E4;border-radius:6px;padding:20px;font-family:Inter,sans-serif;font-size:14px;line-height:1.6;color:#44403C;">
+                      {{{recapBoxHtml}}}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- ===== CTA PRINCIPAL ===== -->
+            <tr>
+              <td align="center" style="padding:36px 32px 8px;">
+                <!--[if mso]>
+                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word"
+                             href="{{ctaUrl}}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="12%" stroke="f" fillcolor="#7C9A8A">
+                  <w:anchorlock/>
+                  <center style="color:#FBF8F1;font-family:Arial,sans-serif;font-size:14px;font-weight:500;">
+                    {{ctaLabel}} →
+                  </center>
+                </v:roundrect>
+                <![endif]-->
+                <!--[if !mso]><!-- -->
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" bgcolor="#7C9A8A" class="fg-bg-sauge"
+                        style="background-color:#7C9A8A;border-radius:6px;">
+                      <a href="{{ctaUrl}}" target="_blank"
+                         class="fg-inter fg-text-creme"
+                         style="display:inline-block;padding:15px 32px;font-family:Inter,sans-serif;font-size:14px;font-weight:500;color:#FBF8F1;text-decoration:none;letter-spacing:0.02em;line-height:1;border-radius:6px;">
+                        {{ctaLabel}} &nbsp;&rarr;
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <!--<![endif]-->
+              </td>
+            </tr>
+
+            <!-- ===== CTA SECONDAIRE (lien ghost) ===== -->
+            <tr>
+              <td align="center" class="fg-px-32" style="padding:16px 32px 0;">
+                <p style="margin:0;font-family:Inter,sans-serif;font-size:14px;color:#4F6D52;line-height:1.6;">
+                  <a href="{{secondaryUrl}}" target="_blank"
+                     style="color:#4F6D52;text-decoration:underline;text-underline-offset:3px;">
+                    {{secondaryLabel}}
+                  </a>
+                </p>
+              </td>
+            </tr>
+
+            <!-- ===== SIGNATURE ===== -->
+            <tr>
+              <td class="fg-px-32" style="padding:40px 32px 16px;">
+                <p class="fg-cormorant fg-text-encre"
+                   style="margin:0 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:20px;color:#2C2A28;line-height:1.4;">
+                  Avec soin,
+                </p>
+                <p class="fg-inter fg-text-soft"
+                   style="margin:0;font-family:Inter,sans-serif;font-size:14px;color:#4A4744;line-height:1.4;">
+                  — La maison FemiGlow
+                </p>
+              </td>
+            </tr>
+
+            <!-- ===== FOOTER ===== -->
+            <tr>
+              <td class="fg-bg-creme" style="background-color:#FBF8F1;padding:0;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" class="fg-px-32" style="padding:32px 32px 16px;">
+                      <p class="fg-inter fg-text-muted"
+                         style="margin:0 0 12px;font-family:Inter,sans-serif;font-size:12px;color:#7C7A75;line-height:1.7;">
+                        FemiGlow — Rabat, Maroc
+                      </p>
+                      <p class="fg-inter fg-text-muted"
+                         style="margin:0;font-family:Inter,sans-serif;font-size:12px;color:#7C7A75;line-height:1.7;">
+                        <a href="{{unsubscribeUrl}}" style="color:#7C7A75;text-decoration:underline;text-underline-offset:2px;">Se désinscrire</a>
+                        &nbsp;·&nbsp;
+                        <a href="https://femiglow-maroc.com/mentions-legales" style="color:#7C7A75;text-decoration:underline;text-underline-offset:2px;">Mentions légales</a>
+                        &nbsp;·&nbsp;
+                        <a href="https://femiglow-maroc.com" style="color:#7C7A75;text-decoration:underline;text-underline-offset:2px;">femiglow-maroc.com</a>
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="padding:0 32px 32px;">
+                      <p class="fg-inter fg-text-muted"
+                         style="margin:0;font-family:Inter,sans-serif;font-size:10px;color:#A8A29E;line-height:1.6;letter-spacing:0.02em;">
+                        Tu reçois cet email parce que tu fais partie de notre cercle.
+                        <br>Nous respectons ta boîte de réception.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+          <!-- ================= /CONTAINER ================= -->
+
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

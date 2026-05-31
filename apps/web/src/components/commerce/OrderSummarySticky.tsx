@@ -4,6 +4,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { formatPrice } from '@/lib/utils/format-price';
+import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
 import type { CartItem as CartItemData } from '@/lib/schemas';
 
 interface OrderSummaryStickyProps {
@@ -11,6 +12,9 @@ interface OrderSummaryStickyProps {
   subtotalCents: number;
   shippingCents: number;
   totalCents: number;
+  /** Prix catalogue (avant offre) — sert au strikethrough quand freeShipping=true. */
+  catalogShippingCents?: number;
+  freeShipping?: boolean;
 }
 
 export function OrderSummarySticky({
@@ -18,6 +22,8 @@ export function OrderSummarySticky({
   subtotalCents,
   shippingCents,
   totalCents,
+  catalogShippingCents,
+  freeShipping = false,
 }: OrderSummaryStickyProps) {
   return (
     <aside
@@ -64,7 +70,16 @@ export function OrderSummarySticky({
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-base text-encre/70">Livraison</dt>
             <dd className="text-base text-encre">
-              {formatPrice(shippingCents)}
+              {freeShipping && catalogShippingCents && catalogShippingCents > 0 ? (
+                <ShippingPriceDisplay
+                  displayPrice={formatPrice(catalogShippingCents)}
+                  freeShipping
+                  size="md"
+                  align="right"
+                />
+              ) : (
+                formatPrice(shippingCents)
+              )}
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-4 border-t border-encre/15 pt-4">

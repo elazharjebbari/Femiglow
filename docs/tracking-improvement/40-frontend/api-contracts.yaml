@@ -1,0 +1,169 @@
+# 40.7 — API contracts (client expectations)
+# Décrit ce que le client attend des routes serveur.
+# À cross-référencer avec 30-backend/api-endpoints.yaml.
+
+contracts:
+  - name: GET /api/admin/tracking/gtm
+    expects:
+      status: 200
+      body:
+        activeId: string | null
+        versions: GtmConfigVersion[]
+    onError:
+      401: redirect to /admin/login
+      500: toast error + retry button
+
+  - name: GET /api/admin/tracking/gtm/{id}
+    expects:
+      status: 200
+      body: GtmConfigVersion
+    onError:
+      404: redirect to /admin/tracking/gtm with toast
+      401: redirect login
+      500: toast error
+
+  - name: POST /api/admin/tracking/gtm
+    request:
+      body:
+        name: string (3-80 chars)
+        notes: string (max 500)
+        cloneFrom: string | null
+        perEnv: GtmConfigPerEnv
+    expects:
+      status: 201
+      body:
+        versionId: string
+    onError:
+      400: inline validation errors per field
+      409: toast "Nom déjà utilisé"
+      500: toast error
+
+  - name: POST /api/admin/tracking/gtm/{id}/activate
+    expects:
+      status: 200
+      body:
+        activeId: string
+    onError:
+      404: toast "Version introuvable"
+      500: toast error
+
+  - name: DELETE /api/admin/tracking/gtm/{id}
+    expects:
+      status: 204
+    onError:
+      409: toast "Impossible de supprimer la version active"
+      404: toast "Version déjà supprimée"
+      500: toast error
+
+  - name: GET /api/admin/tracking/providers/snapshot
+    expects:
+      status: 200
+      body: ProvidersSnapshot
+      headers:
+        cache-control: private, max-age=60
+    onError:
+      500: toast "Snapshot indisponible — saisie manuelle requise"
+
+  - name: GET /api/admin/tracking/events/categorization
+    expects:
+      status: 200
+      body: EventCategoryRow[]
+    onError:
+      500: toast error
+
+  - name: PUT /api/admin/tracking/events/categorization
+    request:
+      body:
+        eventName: string
+        googleAdsCategory: 'purchase' | 'lead' | 'contact' | 'sign_up' | 'view_content' | null
+        note: string | null
+    expects:
+      status: 200
+    onError:
+      404: toast "Event inconnu"
+      500: toast error + rollback optimistic update
+
+  - name: GET /api/admin/tracking/analytics/providers
+    request:
+      query:
+        window: '24h' | '7d' | '30d'
+    expects:
+      status: 200
+      body: ProviderAnalyticsRow[]
+    onError:
+      500: show "Stats indisponibles" placeholder
+
+  - name: POST /api/admin/tracking/test-event
+    request:
+      body:
+        providerId: string
+        eventName: string
+        params: object
+    expects:
+      status: 200
+      body:
+        status: 'success' | 'failed' | 'skipped'
+        latencyMs: number
+        error: string | null
+    onError:
+      500: toast error
+    timeoutMs: 5000
+
+# Types client
+types:
+  GtmConfigVersion:
+    id: string
+    name: string
+    notes: string | null
+    clonedFrom: string | null
+    perEnv: GtmConfigPerEnv
+    createdAt: string (ISO)
+    createdBy: string
+
+  GtmConfigPerEnv:
+    production: GtmConfigEnv
+    stage: GtmConfigEnv
+    preview: GtmConfigEnv
+    dev: GtmConfigEnv
+
+  GtmConfigEnv:
+    metaPixelId: string
+    ga4MeasurementId: string
+    googleAdsCustomerId: string
+    googleAdsConvLabels: Record<string, string>
+    tiktokPixelId: string
+    snapPixelId: string
+    pinterestTagId: string
+    cookieDomain: string
+    defaultCurrency: string
+    enabledProviders: string[]
+
+  ProvidersSnapshot:
+    metaPixelId: string | null
+    ga4MeasurementId: string | null
+    googleAdsCustomerId: string | null
+    googleAdsConvLabels: Record<string, string>
+    tiktokPixelId: string | null
+    snapPixelId: string | null
+    pinterestTagId: string | null
+    gtmContainerId: string | null
+    providersCount: number
+    fetchedAt: string
+
+  EventCategoryRow:
+    name: string
+    isConversion: boolean
+    googleAdsCategoryDefault: 'purchase' | 'lead' | 'contact' | 'sign_up' | 'view_content' | null
+    googleAdsCategoryOverride: 'purchase' | 'lead' | 'contact' | 'sign_up' | 'view_content' | null
+    overrideUpdatedBy: string | null
+    overrideUpdatedAt: string | null
+
+  ProviderAnalyticsRow:
+    kind: string
+    total: number
+    success: number
+    successRate: number  # 0..1
+    latencyP50Ms: number
+    latencyP95Ms: number
+    errors24h: number
+    lastError: string | null

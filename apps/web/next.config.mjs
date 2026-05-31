@@ -1,11 +1,49 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Plugin next-intl : injecte la config de chargement des messages côté serveur.
+// Le chemin pointe vers `src/i18n/request.ts` qui exporte `getRequestConfig`.
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  env: {
+    // Date du build, injectée au moment de `next build`. Utilisée par le
+    // sitemap pour `lastModified` des routes statiques : un build identique
+    // ne change pas la date (vs `new Date()` au runtime qui faisait passer
+    // toutes les routes pour "modifiées" à chaque déploiement).
+    // cf. apps/web/src/app/sitemap.ts + docs/seo-action-plan-2026-05/05-frontend-public-design.md
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString(),
+  },
+  // Monorepo pnpm — Next.js scanne par défaut depuis `apps/web/` ce qui rate
+  // les `node_modules` hoistés à la racine. Sans `outputFileTracingRoot`, les
+  // vendor chunks (framer-motion, zod, etc.) ne sont pas inclus dans
+  // `.next/server/vendor-chunks/` → erreurs `Cannot find module ./vendor-chunks/…`
+  // au runtime `pnpm start`. cf. github.com/vercel/next.js/issues/52553
+  outputFileTracingRoot: path.join(__dirname, '../..'),
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   experimental: {
-    optimizePackageImports: ['framer-motion', 'zustand'],
-    serverComponentsExternalPackages: ['@node-rs/argon2', 'sharp', 'fluent-ffmpeg', 'ffmpeg-static'],
+    optimizePackageImports: ['framer-motion'],
+    serverComponentsExternalPackages: ['@node-rs/argon2', 'sharp', 'fluent-ffmpeg', 'ffmpeg-static', 'isomorphic-dompurify', 'jsdom'],
     instrumentationHook: true,
+    // Note : `optimizeCss` (critters) NON utilisé — Next 14.2 ne bundle plus
+    // critters pour App Router (streaming RSC incompatible). Pour réduire le
+    // render-blocking CSS, on s'appuie sur :
+    //  - split admin-fields.css (gain ~11 KB sur pages publiques)
+    //  - cache headers (HTML no-store + chunks immutable) → cf. headers()
+    //  - tailwind purge (config existante)
   },
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -36,6 +74,11 @@ const nextConfig = {
     // route handler réelle, qui vit sous `app/media-files/`.
     return [
       { source: '/_media/:path*', destination: '/media-files/:path*' },
+      // Legacy /favicon.ico → on sert le favicon dynamique généré par
+      // `app/icon.tsx`. Les browsers modernes utilisent le <link rel=icon>
+      // (auto-injecté) ; ce rewrite est juste pour les outils/clients
+      // historiques qui requêtent encore /favicon.ico par défaut.
+      { source: '/favicon.ico', destination: '/icon' },
     ];
   },
   async headers() {
@@ -55,8 +98,31 @@ const nextConfig = {
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
         ],
       },
+      // Chunks JS/CSS hashés : immutable 1 an. Le hash change à chaque
+      // déploiement, on peut donc cacher agressivement sans risque de stale.
+      // Évite que l'utilisateur charge un chunk obsolète après un déploy.
+      // Uniquement en production : en dev les chunks ne sont PAS hashés
+      // (`layout.js`), un cache immutable y figerait un bundle obsolète et
+      // casserait le rechargement après édition.
+      ...(process.env.NODE_ENV === 'production'
+        ? [
+            {
+              source: '/_next/static/:path*',
+              headers: [
+                { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+              ],
+            },
+          ]
+        : []),
+      // Images optimisées Next servies dynamiquement : cache court côté CDN.
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+        ],
+      },
     ];
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

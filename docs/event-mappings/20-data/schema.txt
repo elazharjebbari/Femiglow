@@ -1,0 +1,102 @@
+================================================================================
+EVENT MAPPINGS — DDL SCHEMA (PostgreSQL)
+================================================================================
+
+table: event_mapping_versions
+--------------------------------------------------------------------------------
+id                text          PRIMARY KEY
+name              text          NOT NULL                    -- "v3 — édition Sara"
+notes             text          NULL                        -- optionnel admin
+status            text          NOT NULL CHECK (status IN ('draft','active','archived','deleted'))
+is_active         boolean       NOT NULL DEFAULT false
+is_default        boolean       NOT NULL DEFAULT false      -- __default__ only
+mappings          jsonb         NOT NULL                    -- la matrice complète
+cloned_from       text          NULL REFERENCES event_mapping_versions(id)
+created_by        text          NOT NULL                    -- admin_id
+created_at        timestamptz   NOT NULL DEFAULT now()
+activated_at      timestamptz   NULL
+archived_at       timestamptz   NULL
+deleted_at        timestamptz   NULL
+
+constraints:
+  one_active_version : UNIQUE (is_active) WHERE is_active = true
+  no_delete_default  : CHECK (NOT (is_default = true AND status = 'deleted'))
+
+indexes:
+  event_mapping_versions_status_idx          ON (status, created_at DESC)
+  event_mapping_versions_default_idx         ON (is_default) WHERE is_default = true
+  event_mapping_versions_mappings_gin        USING GIN (mappings)
+  event_mapping_versions_cloned_from_idx     ON (cloned_from)
+
+retention:
+  FIFO max 50 rows (active+default toujours préservés)
+
+
+table: event_mapping_audit
+--------------------------------------------------------------------------------
+id                text          PRIMARY KEY
+version_id        text          NULL REFERENCES event_mapping_versions(id) ON DELETE SET NULL
+action            text          NOT NULL CHECK (action IN ('create','edit','activate','archive','delete','restore','duplicate','reset_to_default','export_gtm','test_event'))
+actor_id          text          NOT NULL                    -- admin_id
+before            jsonb         NULL                         -- snapshot avant si applicable
+after             jsonb         NULL                         -- snapshot après si applicable
+meta              jsonb         NOT NULL DEFAULT '{}'        -- extras (env export, sha256, etc.)
+ip_anonymized     text          NULL
+ua_hash           text          NULL
+created_at        timestamptz   NOT NULL DEFAULT now()
+
+indexes:
+  event_mapping_audit_version_idx   ON (version_id, created_at DESC)
+  event_mapping_audit_actor_idx     ON (actor_id, created_at DESC)
+  event_mapping_audit_action_idx    ON (action, created_at DESC)
+
+retention:
+  Conservé indéfiniment (audit légal). Cleanup possible >2 ans via archive.
+
+
+JSONB SHAPE: event_mapping_versions.mappings
+--------------------------------------------------------------------------------
+{
+  "<eventName>": {
+    "meta":       { "mappedName": "...", "isCustom": bool, "isEnabled": bool, "notes": "..." | null },
+    "google_ga4": { ... },
+    "google_ads": { ... },
+    "tiktok":     { ... },
+    "snap":       { ... },
+    "pinterest":  { ... }
+  },
+  ...
+}
+
+
+ENUMS (TypeScript / Drizzle)
+--------------------------------------------------------------------------------
+MappingVersionStatus = 'draft' | 'active' | 'archived' | 'deleted'
+MappingAuditAction   = 'create' | 'edit' | 'activate' | 'archive' | 'delete'
+                       | 'restore' | 'duplicate' | 'reset_to_default'
+                       | 'export_gtm' | 'test_event'
+ProviderKind         = 'meta' | 'google_ga4' | 'google_ads'
+                       | 'tiktok' | 'snap' | 'pinterest'
+                       | 'gtm' | 'custom'   -- 'gtm' et 'custom' ne portent
+                                            -- pas de mapping cellule en V1
+
+
+VIEWS RECOMMANDÉES (optionnel V1)
+--------------------------------------------------------------------------------
+CREATE VIEW v_active_mapping AS
+  SELECT id, mappings FROM event_mapping_versions WHERE is_active = true;
+
+-- Pour query rapide par cellule (V2 si besoin)
+CREATE VIEW v_active_mapping_cells AS
+  SELECT
+    v.id AS version_id,
+    event_name,
+    provider_kind,
+    cell->>'mappedName'  AS mapped_name,
+    (cell->>'isCustom')::boolean  AS is_custom,
+    (cell->>'isEnabled')::boolean AS is_enabled,
+    cell->>'notes' AS notes
+  FROM event_mapping_versions v,
+       jsonb_each(v.mappings) AS m(event_name, providers),
+       jsonb_each(m.providers) AS p(provider_kind, cell)
+  WHERE v.is_active = true;

@@ -1,0 +1,6 @@
+id,name,depends_on,description,risk,rollback
+0028,add_event_id_to_events_log,0027,"ALTER TABLE tracking_events_log ADD COLUMN event_id text, gclid text + index",low,"ALTER TABLE … DROP COLUMN event_id, gclid"
+0029,add_google_ads_category_default,0028,"ALTER TABLE tracking_event_definitions ADD COLUMN google_ads_category_default text CHECK",low,"ALTER TABLE … DROP COLUMN google_ads_category_default"
+0030,create_tracking_event_overrides,0029,"CREATE TABLE tracking_event_overrides (PK event_name, google_ads_category, note, updated_by, updated_at, created_at)",low,"DROP TABLE tracking_event_overrides"
+0031,extend_tracking_providers_config,0030,"Aucune migration de schéma — extension JSONB config (cf. doc). Migration data : pour les providers google_ads existants, on ajoute config.googleAdsConversionActions vide.",low,"UPDATE tracking_providers SET config = config - 'googleAdsConversionActions' WHERE kind = 'google_ads'"
+0032,seed_google_ads_categories_default,0030,"Seed UPDATE tracking_event_definitions SET google_ads_category_default = 'purchase' WHERE name = 'purchase'; etc. (cf. event-catalog-target.csv pour la liste complète)",low,"UPDATE tracking_event_definitions SET google_ads_category_default = NULL"

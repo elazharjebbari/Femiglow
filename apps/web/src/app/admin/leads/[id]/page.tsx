@@ -21,24 +21,73 @@ export default async function AdminLeadDetailPage({ params }: { params: { id: st
         <a href="/admin/leads" className="underline-offset-2 hover:underline">
           Leads
         </a>{' '}
-        / <span className="text-stone-700">{data.lead.email}</span>
+        / <span className="text-stone-700">{data.lead.email ?? data.lead.phone ?? data.lead.id}</span>
       </nav>
       <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
-            {data.lead.name ?? data.lead.email}
+            {data.lead.name ?? data.lead.email ?? data.lead.phone ?? '—'}
           </h1>
-          <p className="mt-1 text-sm text-stone-600">{data.lead.email}</p>
+          {data.lead.email ? (
+            <p className="mt-1 text-sm text-stone-600">{data.lead.email}</p>
+          ) : null}
           {data.lead.phone ? (
             <p className="text-sm text-stone-600">{data.lead.phone}</p>
           ) : null}
+          {data.lead.source ? (
+            <p className="mt-1 text-xs text-stone-500">
+              Source : <span className="font-mono">{data.lead.source}</span>
+            </p>
+          ) : null}
         </div>
-        <LeadStatusMenu
-          leadId={data.lead.id}
-          current={data.lead.status}
-          options={transitions}
-        />
+        {/* Pour une row chat_lead (chat ou wizard), le statut est dérivé
+            de chat_lead.outcome ; on désactive le menu de transition
+            jusqu'à la mise en place de la passerelle d'écriture admin. */}
+        {data.lead.id.startsWith('cl_') ? (
+          <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
+            statut : {data.lead.status} ({labelForSource(data.lead.source)})
+          </span>
+        ) : (
+          <LeadStatusMenu
+            leadId={data.lead.id}
+            current={data.lead.status}
+            options={transitions}
+          />
+        )}
       </header>
+      <section aria-label="Parcours lead" className="mb-8 rounded-md border border-stone-200 bg-white p-4">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">Parcours</h2>
+        <div className="mt-3 grid gap-3 text-sm sm:grid-cols-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-stone-500">Étape</p>
+            <p className="mt-1 font-medium text-stone-900">{labelForJourney(data.lead.journeyStage)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-stone-500">Données</p>
+            <p className="mt-1 font-medium text-stone-900">
+              {typeof data.lead.dataPct === 'number' ? `${data.lead.dataPct}%` : '—'}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-stone-500">Webhook</p>
+            <p className="mt-1 font-medium text-stone-900">{labelForWebhook(data.lead.webhookSummary)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-stone-500">Ville</p>
+            <p className="mt-1 font-medium text-stone-900">{data.lead.city ?? '—'}</p>
+          </div>
+        </div>
+        {data.lead.addressLine1 || data.lead.addressLine2 ? (
+          <div className="mt-4 border-t border-stone-100 pt-3 text-sm">
+            <p className="text-xs uppercase tracking-wide text-stone-500">Adresse</p>
+            <p className="mt-1 text-stone-800">
+              {[data.lead.addressLine1, data.lead.addressLine2, data.lead.country]
+                .filter(Boolean)
+                .join(', ')}
+            </p>
+          </div>
+        ) : null}
+      </section>
       <section aria-label="Commande" className="mb-8 rounded-md border border-stone-200 bg-white p-4">
         <h2 className="text-sm font-medium uppercase tracking-wide text-stone-500">Commande</h2>
         {data.order ? (
@@ -101,6 +150,51 @@ export default async function AdminLeadDetailPage({ params }: { params: { id: st
       </section>
     </AdminShell>
   );
+}
+
+function labelForSource(source?: string | null): string {
+  if (!source) return 'source inconnue';
+  if (source.startsWith('chat:')) return 'chat';
+  if (source.startsWith('wizard')) return 'wizard checkout';
+  return source;
+}
+
+function labelForJourney(stage?: string | null): string {
+  switch (stage) {
+    case 'lead':
+      return 'Lead capturé';
+    case 'address':
+      return 'Adresse complétée';
+    case 'payment':
+      return 'Paiement sélectionné';
+    case 'purchased':
+      return 'Achat finalisé';
+    case 'abandoned_step1':
+      return 'Abandon step 1 envoyé';
+    default:
+      return '—';
+  }
+}
+
+function labelForWebhook(status?: string | null): string {
+  switch (status) {
+    case 'step2_sent':
+      return 'lead.step2_completed envoyé';
+    case 'step1_abandoned_sent':
+      return 'lead.step1_abandoned envoyé';
+    case 'sent':
+      return 'chat_lead.created envoyé';
+    case 'failed':
+      return 'Échec webhook';
+    case 'disabled':
+      return 'Webhook désactivé';
+    case 'skipped':
+      return 'Webhook ignoré';
+    case 'pending':
+      return 'En attente';
+    default:
+      return '—';
+  }
 }
 
 function labelForEventType(type: string): string {

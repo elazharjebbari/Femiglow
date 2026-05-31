@@ -19,7 +19,7 @@ import { ArticleTemplate } from '../../_templates/article';
 import { ProductTemplate } from '../../_templates/product';
 import { DefaultTemplate } from '../../_templates/default';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const TARGET_KEY_RE = /^[a-z0-9][a-z0-9:_-]*$/;
 

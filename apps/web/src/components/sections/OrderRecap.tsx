@@ -1,6 +1,7 @@
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { formatPrice } from '@/lib/utils/format-price';
+import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
 import type { LastOrderPayload } from '@/lib/stores/checkout-draft';
 
 const paymentLabel: Record<LastOrderPayload['paymentMethod'], string> = {
@@ -9,6 +10,12 @@ const paymentLabel: Record<LastOrderPayload['paymentMethod'], string> = {
   cod: 'Paiement à la livraison',
 };
 
+/**
+ * CHA-230 — map legacy slug → label affiché. Sert uniquement aux drafts
+ * pré-CHA-230 (où `city` était un slug comme `casablanca`). Pour les
+ * commandes post-CHA-230, `address.city` est déjà un texte libre normalisé
+ * par le combobox, donc on l'affiche tel quel via le fallback `?? city`.
+ */
 const cityLabel: Record<string, string> = {
   casablanca: 'Casablanca',
   rabat: 'Rabat',
@@ -20,7 +27,6 @@ const cityLabel: Record<string, string> = {
   oujda: 'Oujda',
   tetouan: 'Tétouan',
   sale: 'Salé',
-  autre: '',
 };
 
 interface OrderRecapProps {
@@ -28,6 +34,7 @@ interface OrderRecapProps {
 }
 
 export function OrderRecap({ order }: OrderRecapProps) {
+  // Backward-compat : ancien draft avec `city='autre'` + `cityOther` rempli.
   const cityDisplay =
     order.address.city === 'autre'
       ? order.address.cityOther ?? '—'
@@ -78,7 +85,20 @@ export function OrderRecap({ order }: OrderRecapProps) {
               </div>
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="text-encre/70">Livraison</dt>
-                <dd className="text-encre">{formatPrice(order.shipping)}</dd>
+                <dd className="text-encre">
+                  {order.freeShipping &&
+                  order.catalogShippingCents &&
+                  order.catalogShippingCents > 0 ? (
+                    <ShippingPriceDisplay
+                      displayPrice={formatPrice(order.catalogShippingCents)}
+                      freeShipping
+                      size="sm"
+                      align="right"
+                    />
+                  ) : (
+                    formatPrice(order.shipping)
+                  )}
+                </dd>
               </div>
               <div className="flex items-baseline justify-between gap-3 border-t border-encre/10 pt-2">
                 <dt className="font-medium text-encre">Total</dt>
@@ -94,9 +114,9 @@ export function OrderRecap({ order }: OrderRecapProps) {
               Adresse
             </p>
             <address className="not-italic text-sm leading-[1.7] text-encre/80">
-              <p>{order.address.line1}</p>
+              {order.address.line1 && <p>{order.address.line1}</p>}
               {order.address.line2 && <p>{order.address.line2}</p>}
-              <p>{order.address.quartier}</p>
+              {order.address.quartier && <p>{order.address.quartier}</p>}
               <p>{cityDisplay}</p>
               {order.address.postalCode && <p>{order.address.postalCode}</p>}
               <p className="pt-2 text-encre/60">Maroc</p>
@@ -110,9 +130,15 @@ export function OrderRecap({ order }: OrderRecapProps) {
             <p className="text-sm text-encre/80">
               {paymentLabel[order.paymentMethod]}
             </p>
-            <p className="text-xs text-encre/60">
-              Une copie détaillée sera envoyée à {order.email}.
-            </p>
+            {order.email ? (
+              <p className="text-xs text-encre/60">
+                Une copie détaillée sera envoyée à {order.email}.
+              </p>
+            ) : (
+              <p className="text-xs text-encre/60">
+                Vous serez rappelée au numéro indiqué pour confirmer.
+              </p>
+            )}
           </div>
         </div>
       </Container>

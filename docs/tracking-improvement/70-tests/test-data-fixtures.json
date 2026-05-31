@@ -1,0 +1,169 @@
+{
+  "$comment": "Fixtures de données utilisées par les tests Jest + Playwright",
+  "providers": {
+    "meta_enabled": {
+      "id": "tp_meta_001",
+      "kind": "meta",
+      "status": "enabled",
+      "pixelId": "2179682406197934",
+      "capiToken": "fixture-encrypted",
+      "config": {},
+      "enabledEvents": ["purchase", "lead_capture", "generate_lead", "form_start"]
+    },
+    "google_ga4_enabled": {
+      "id": "tp_ga4_001",
+      "kind": "google_ga4",
+      "status": "enabled",
+      "pixelId": "G-5VHP17SDZM",
+      "config": { "apiSecret": "fixture-encrypted" },
+      "enabledEvents": ["*"]
+    },
+    "google_ads_enabled": {
+      "id": "tp_gads_001",
+      "kind": "google_ads",
+      "status": "enabled",
+      "pixelId": "AW-18136327114",
+      "config": {
+        "googleAdsCustomerId": "7082602195",
+        "googleAdsConversionActions": {
+          "purchase": {
+            "actionLabel": "AbCdEf123Abc",
+            "category": "purchase",
+            "defaultValue": 19900,
+            "defaultCurrency": "MAD"
+          },
+          "lead_capture": {
+            "actionLabel": "XyZ789xyZ123",
+            "category": "lead"
+          }
+        },
+        "googleAdsOAuth": {
+          "refreshToken": "fixture-encrypted",
+          "iv": "fixture-iv",
+          "tag": "fixture-tag"
+        }
+      },
+      "enabledEvents": ["purchase", "lead_capture", "generate_lead"]
+    },
+    "pinterest_error": {
+      "id": "tp_pin_001",
+      "kind": "pinterest",
+      "status": "error",
+      "pixelId": "2613...",
+      "lastError": "HTTP 401 token expired",
+      "errorCount24h": 234,
+      "enabledEvents": []
+    }
+  },
+  "gtmVersions": {
+    "minimal": {
+      "id": "v_minimal",
+      "name": "Minimal — GA4 only",
+      "perEnv": {
+        "production": {
+          "metaPixelId": "",
+          "ga4MeasurementId": "G-5VHP17SDZM",
+          "googleAdsCustomerId": "",
+          "googleAdsConvLabels": {},
+          "tiktokPixelId": "",
+          "snapPixelId": "",
+          "pinterestTagId": "",
+          "cookieDomain": "auto",
+          "defaultCurrency": "MAD",
+          "enabledProviders": ["google_ga4"]
+        }
+      }
+    },
+    "full": {
+      "id": "v_full",
+      "name": "Full — all providers",
+      "perEnv": {
+        "production": {
+          "metaPixelId": "2179682406197934",
+          "ga4MeasurementId": "G-5VHP17SDZM",
+          "googleAdsCustomerId": "7082602195",
+          "googleAdsConvLabels": {
+            "purchase": "AbCdEf123Abc",
+            "lead": "XyZ789xyZ123",
+            "contact": "PqR456pqR123"
+          },
+          "tiktokPixelId": "C12345...",
+          "snapPixelId": "test-snap-pixel",
+          "pinterestTagId": "2613...",
+          "cookieDomain": "auto",
+          "defaultCurrency": "MAD",
+          "enabledProviders": ["meta", "google_ga4", "google_ads", "tiktok", "snap", "pinterest", "gtm"]
+        }
+      }
+    }
+  },
+  "events": {
+    "form_start": {
+      "event_id": "11111111-1111-4111-8111-111111111111",
+      "name": "form_start",
+      "received_at": "2026-05-13T12:00:00.000Z",
+      "params": {
+        "form_id": "wizard_kit",
+        "form_name": "Wizard Kit",
+        "first_field": "firstName"
+      }
+    },
+    "lead_capture": {
+      "event_id": "22222222-2222-4222-8222-222222222222",
+      "name": "lead_capture",
+      "received_at": "2026-05-13T12:01:00.000Z",
+      "params": {
+        "firstName": "Sara",
+        "phone": "+212600000000",
+        "consentVersion": "1.0"
+      }
+    },
+    "begin_checkout": {
+      "event_id": "33333333-3333-4333-8333-333333333333",
+      "name": "begin_checkout",
+      "received_at": "2026-05-13T12:02:00.000Z",
+      "params": {
+        "currency": "MAD",
+        "value": 199,
+        "items": [
+          { "item_id": "FEMI-KIT-100", "item_name": "Pack FemiGlow", "quantity": 1, "price": 199 }
+        ]
+      }
+    },
+    "purchase": {
+      "event_id": "44444444-4444-4444-8444-444444444444",
+      "name": "purchase",
+      "received_at": "2026-05-13T12:05:00.000Z",
+      "params": {
+        "transaction_id": "o_test_ultimate_001",
+        "currency": "MAD",
+        "value": 199,
+        "items": [
+          { "item_id": "FEMI-KIT-100", "item_name": "Pack FemiGlow", "quantity": 1, "price": 199 }
+        ]
+      }
+    }
+  },
+  "consent": {
+    "denied": {
+      "ad_storage": "denied",
+      "analytics_storage": "denied",
+      "ad_user_data": "denied",
+      "ad_personalization": "denied",
+      "functional_storage": "denied"
+    },
+    "granted": {
+      "ad_storage": "granted",
+      "analytics_storage": "granted",
+      "ad_user_data": "granted",
+      "ad_personalization": "granted",
+      "functional_storage": "granted"
+    }
+  },
+  "users": {
+    "admin": {
+      "id": "u_test_admin",
+      "email": "admin@femiglow-maroc.com"
+    }
+  }
+}

@@ -54,7 +54,7 @@ function makeCtx(overrides: Partial<DispatchContext> = {}): DispatchContext {
 }
 
 describe('Adapter Snap', () => {
-  it('envoie un event sur tr.snapchat.com', async () => {
+  it('envoie un event complet sur tr.snapchat.com avec dedup, attribution et ecommerce', async () => {
     let captured: unknown = null;
     server.use(
       http.post('https://tr.snapchat.com/v3/:pixel/events', async ({ request }) => {
@@ -68,10 +68,81 @@ describe('Adapter Snap', () => {
       pixelId: 'snap_pix',
       capiToken: 'snap-token',
     });
-    const out = await dispatchToProviders(makeCtx());
+    const out = await dispatchToProviders(
+      makeCtx({
+        anonymousId: 'anon_snap_42',
+        params: {
+          transaction_id: 'tx_99',
+          currency: 'MAD',
+          value: 99,
+          event_tag: 'checkout_paid',
+          description: 'Commande test Snapchat',
+          items: [
+            { item_id: 'sku_a', item_name: 'Soin', item_category: 'skincare', quantity: 2, price: 49.5 },
+          ],
+        },
+        userData: {
+          sha256_email_address: 'e'.repeat(64),
+          sha256_phone_number: 'f'.repeat(64),
+          address: {
+            sha256_first_name: 'a'.repeat(64),
+            city: 'Marrakech',
+            country: 'MA',
+          },
+        },
+        attribution: {
+          channel: 'snapchat',
+          is_paid: true,
+          strategy: 'paid_social',
+          reason: 'click_id',
+          click_id: 'sc-click-99',
+          click_id_field: 'ScCid',
+          utm: { source: 'snapchat', campaign: 'ramadan' },
+        },
+      }),
+    );
     expect(out.dispatched).toContain('snap');
-    const c = captured as { data: Array<{ event_name: string }> };
-    expect(c.data[0]?.event_name).toBe('PURCHASE');
+    const c = captured as {
+      data: Array<{
+        event_name: string;
+        action_source: string;
+        event_id: string;
+        user_data: Record<string, unknown>;
+        custom_data: Record<string, unknown>;
+      }>;
+    };
+    // Source de vérité : `lib/tracking/providers/snap.ts` (CAPI v3 spec).
+    //  - `action_source` : `'website'` (string minuscule, spec officielle).
+    //  - `user_data`     : `ct` (city) et `country` ; pas de `geo_*`.
+    //  - `custom_data`   : `order_id` (pas `transaction_id`), `content_ids`
+    //    (pas `item_ids`), `content_category` Array (pas string),
+    //    `number_items` Array<string> (pas number). Le champ `event_id` est
+    //    dupliqué dans custom_data (utile pour dedup côté Snap).
+    //
+    // Les champs `event_tag`, `description`, `client_deduplication_id`,
+    // `uuid_c1` ne sont pas dans la spec CAPI v3 ; l'adapter ne les pose
+    // donc pas. Les retirer des assertions.
+    expect(c.data[0]).toMatchObject({
+      event_name: 'PURCHASE',
+      action_source: 'website',
+      event_id: '01900000-0000-7000-8000-000000000099',
+    });
+    expect(c.data[0]?.user_data).toMatchObject({
+      em: ['e'.repeat(64)],
+      ph: ['f'.repeat(64)],
+      fn: ['a'.repeat(64)],
+      ct: 'Marrakech',
+      country: 'MA',
+      sc_click_id: 'sc-click-99',
+    });
+    expect(c.data[0]?.custom_data).toMatchObject({
+      currency: 'MAD',
+      value: 99,
+      order_id: 'tx_99',
+      content_ids: ['sku_a'],
+      content_category: ['skincare'],
+      number_items: ['2'],
+    });
   });
 
   it('skip si access_token absent', async () => {
@@ -122,7 +193,11 @@ describe('Adapter GTM', () => {
     expect(out.results.gtm?.error).toBe('client_only');
   });
 
-  it('clientSnippet renvoie un script avec le GTM ID', () => {
+  it('clientSnippet retourne null — GTM est désormais bootstrappé SSR (GtmHeadScript)', () => {
+    // GTM doit être chargé dans le HTML initial pour que Tag Assistant
+    // / Preview Mode détecte le conteneur. L'injection est donc faite
+    // server-side via <GtmHeadScript />, et l'adapter renvoie null
+    // pour que PixelLoader (client) ne le re-charge pas.
     const adapter = getAdapter('gtm');
     expect(adapter).toBeTruthy();
     const snippet = adapter!.clientSnippet?.({
@@ -144,6 +219,6 @@ describe('Adapter GTM', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    expect(snippet).toContain('GTM-XYZ');
+    expect(snippet).toBeNull();
   });
 });

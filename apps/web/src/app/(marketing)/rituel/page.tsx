@@ -21,14 +21,14 @@ const FALLBACK_OG = {
 export async function generateMetadata(): Promise<Metadata> {
   const og = (await resolveOgImage('rituel-og')) ?? FALLBACK_OG;
   return {
-    title: 'Le rituel \u2014 quatre gestes, une m\u00e9thode lente',
+    title: 'Le rituel \u2014 manucure japonaise halal, deux gestes',
     description:
-      'Origine japonaise, sciences du soin, t\u00e9moignage. Le rituel FemiGlow racont\u00e9 sans pr\u00e9cipitation.',
+      'Origine japonaise, sciences du soin, interview de notre fondatrice \u00E0 Rabat. Le rituel FemiGlow racont\u00E9 sans pr\u00E9cipitation.',
     alternates: { canonical: '/rituel' },
     openGraph: {
       type: 'article',
       title: 'Le rituel FemiGlow',
-      description: 'Quatre gestes, une m\u00e9thode lente, racont\u00e9e \u00e0 Casablanca.',
+      description: 'Deux gestes, un polissoir, une m\u00e9thode lente, racont\u00e9e \u00e0 Rabat.',
       locale: 'fr_MA',
       siteName: 'FemiGlow',
       images: [{ url: og.url, width: og.width, height: og.height, alt: og.alt }],
@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'Le rituel FemiGlow',
-      description: 'Quatre gestes, une m\u00e9thode lente, racont\u00e9e \u00e0 Casablanca.',
+      description: 'Deux gestes, un polissoir, une m\u00e9thode lente, racont\u00e9e \u00e0 Rabat.',
       images: [og.url],
     },
   };
@@ -61,7 +61,7 @@ export default async function RituelPage() {
         data={howToSchema({
           name: 'Le rituel FemiGlow',
           description:
-            'Cinq gestes en cinq minutes pour le soin lent des ongles, expliqu\u00e9s pas \u00e0 pas.',
+            'Deux gestes et un polissoir en cinq minutes pour le soin lent des ongles, expliqu\u00e9s pas \u00e0 pas \u2014 manucure japonaise halal.',
           totalTimeIso: 'PT5M',
           slug: '/rituel',
           steps: homepage.gestes.map((g) => ({

@@ -8,9 +8,46 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import {
+  VideoPosterCover,
+  DEFAULT_VIDEO_POSTER_STRINGS,
+  type VideoPosterStrings,
+} from '@/components/kit/VideoPosterCover';
+import { VideoChaptersFromRituel } from '@/components/kit/VideoChapters';
+import { VideoIFrameTracker } from '@/components/kit/VideoIFrameTracker';
+import { VideoPostCta } from '@/components/kit/VideoPostCta';
+import { parseYouTubeUrl } from '@/lib/video/youtube-url';
+
+/**
+ * Phase 7E — libellés UI localisés de la section vidéo. Tous optionnels :
+ * défaut FR si absents (préserve les usages legacy `/rituel` + tests). Les
+ * paragraphes de la transcription NE sont PAS ici (contenu long, hors scope).
+ */
+export interface VideoPlayer4GestesStrings {
+  kicker: string;
+  title: string;
+  subtitle: string;
+  transcriptShow: string;
+  transcriptHide: string;
+  /** Phase 9bis — libellé du lien post-vidéo (« Voir le pack ci-dessous »). */
+  postCta: string;
+  poster: VideoPosterStrings;
+}
+
+const DEFAULT_VIDEO_STRINGS: VideoPlayer4GestesStrings = {
+  kicker: 'Les gestes',
+  title: 'Quatre gestes, en un seul plan.',
+  subtitle: 'Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.',
+  transcriptShow: 'Lire la transcription',
+  transcriptHide: 'Masquer la transcription',
+  postCta: 'Voir le pack ci-dessous',
+  poster: DEFAULT_VIDEO_POSTER_STRINGS,
+};
 
 interface VideoPlayer4GestesProps {
   video: RituelVideo;
+  /** Phase 7E — libellés UI localisés. Défaut FR si absent. */
+  strings?: VideoPlayer4GestesStrings;
 }
 
 const VIDEO_ID = 'rituel-4-gestes';
@@ -22,8 +59,156 @@ const VIDEO_ID = 'rituel-4-gestes';
  *   (IntersectionObserver). Émet video_user_play UNIQUEMENT pour les plays utilisateur, video_autoplay_view
  *   au franchissement des 25 % de durée, video_complete à la fin (une fois), video_transcript_open à
  *   l'ouverture de la transcription. cf. docs/analytics/03-events-funnel-audit.md §6.1.
+ *
+ * CHA-243 — Dispatcher backend :
+ *   - Si `video.youtubeUrl` est défini ET parsable → délègue à `<YouTubeEmbed>`
+ *     (iframe `youtube-nocookie.com`, sans cookies tant que pas de lecture).
+ *   - Sinon → player HTML5 self-hosted historique avec autoplay au scroll.
  */
-export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
+export function VideoPlayer4Gestes({
+  video,
+  strings = DEFAULT_VIDEO_STRINGS,
+}: VideoPlayer4GestesProps) {
+  const youtubeParsed = video.youtubeUrl ? parseYouTubeUrl(video.youtubeUrl) : null;
+  if (youtubeParsed) {
+    return <YouTubeVariant video={video} strings={strings} />;
+  }
+  return <SelfHostedVariant video={video} strings={strings} />;
+}
+
+/**
+ * Variante YouTube — iframe `youtube-nocookie.com`. Garde la transcription
+ * dépliable (pas d'auto-captions YouTube pour les Shorts FR/AR garantis).
+ */
+function YouTubeVariant({
+  video,
+  strings = DEFAULT_VIDEO_STRINGS,
+}: VideoPlayer4GestesProps) {
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [played, setPlayed] = useState(false);
+  const [currentSeconds, setCurrentSeconds] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const transcriptId = useId();
+  const titleId = useId();
+  const { emit } = useTracking();
+
+  const toggleTranscript = useCallback((): void => {
+    setShowTranscript((prev) => {
+      const next = !prev;
+      if (next) {
+        emit('video_transcript_open', {
+          video_id: VIDEO_ID,
+          video_title: 'Rituel — 4 gestes',
+        });
+      }
+      return next;
+    });
+  }, [emit]);
+
+  const handlePlay = useCallback((): void => {
+    setPlayed(true);
+    emit('video_user_play', {
+      video_id: VIDEO_ID,
+      video_title: 'Rituel — 4 gestes',
+      video_provider: 'youtube',
+    });
+  }, [emit]);
+
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="bg-[#E8EDE3] py-20 lg:py-28"
+      data-testid="video-section-youtube"
+    >
+      <Container width="page">
+        <div className="mx-auto max-w-3xl text-center">
+          <Kicker tone="champagne" withRule>
+            {strings.kicker}
+          </Kicker>
+          <Heading
+            id={titleId}
+            as="h2"
+            size="display-md"
+            italic="always"
+            className="mt-5"
+          >
+            {strings.title}
+          </Heading>
+          <Text size="body" tone="secondary" className="mt-4">
+            {strings.subtitle}
+          </Text>
+          {video.provenance ? (
+            <p
+              data-testid="video-provenance"
+              className="mt-2 font-display italic text-xs leading-[1.5] uppercase tracking-[0.1em] text-encre/50"
+            >
+              {video.provenance}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="relative mx-auto mt-12 aspect-[9/16] w-full max-w-md overflow-hidden rounded-md">
+          <VideoPosterCover
+            ref={iframeRef}
+            video={video}
+            videoId={VIDEO_ID}
+            iframeTitle="Rituel — quatre gestes en vidéo"
+            played={played}
+            onPlay={handlePlay}
+            strings={strings.poster}
+          />
+          {played ? (
+            <VideoIFrameTracker
+              iframeRef={iframeRef}
+              videoId={VIDEO_ID}
+              onCurrentTime={setCurrentSeconds}
+            />
+          ) : null}
+        </div>
+
+        <VideoChaptersFromRituel
+          video={video}
+          videoId={VIDEO_ID}
+          currentSeconds={currentSeconds}
+        />
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={toggleTranscript}
+            aria-expanded={showTranscript}
+            aria-controls={transcriptId}
+            className="inline-flex items-center gap-2 text-kicker uppercase font-medium text-encre/70 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-encre focus-visible:ring-offset-2 focus-visible:ring-offset-creme-warm"
+          >
+            {showTranscript ? strings.transcriptHide : strings.transcriptShow}
+          </button>
+        </div>
+
+        <div
+          id={transcriptId}
+          hidden={!showTranscript}
+          className="mx-auto mt-8 max-w-prose space-y-4"
+        >
+          {video.transcript.split('\n\n').map((paragraphe, i) => (
+            <Text key={i} size="body" tone="secondary">
+              {paragraphe}
+            </Text>
+          ))}
+        </div>
+
+        <VideoPostCta videoId={VIDEO_ID} label={strings.postCta} />
+      </Container>
+    </section>
+  );
+}
+
+/**
+ * Variante self-hosted — player HTML5 avec autoplay au scroll. Code historique.
+ */
+function SelfHostedVariant({
+  video,
+  strings = DEFAULT_VIDEO_STRINGS,
+}: VideoPlayer4GestesProps) {
   const ref = useRef<HTMLVideoElement>(null);
   const reduced = useReducedMotion();
   const [showTranscript, setShowTranscript] = useState(false);
@@ -104,12 +289,12 @@ export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
   return (
     <section
       aria-labelledby={titleId}
-      className="bg-creme-warm py-20 lg:py-28"
+      className="bg-[#E8EDE3] py-20 lg:py-28"
     >
       <Container width="page">
         <div className="mx-auto max-w-3xl text-center">
           <Kicker tone="champagne" withRule>
-            Les gestes
+            {strings.kicker}
           </Kicker>
           <Heading
             id={titleId}
@@ -118,10 +303,10 @@ export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
             italic="always"
             className="mt-5"
           >
-            Cinq gestes, en un seul plan.
+            {strings.title}
           </Heading>
           <Text size="body" tone="secondary" className="mt-4">
-            Quatre-vingt-dix secondes, un rythme lent, le geste avant les mots.
+            {strings.subtitle}
           </Text>
         </div>
 
@@ -162,7 +347,7 @@ export function VideoPlayer4Gestes({ video }: VideoPlayer4GestesProps) {
             aria-controls={transcriptId}
             className="inline-flex items-center gap-2 text-kicker uppercase font-medium text-encre/70 underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-encre focus-visible:ring-offset-2 focus-visible:ring-offset-creme-warm"
           >
-            {showTranscript ? 'Masquer la transcription' : 'Lire la transcription'}
+            {showTranscript ? strings.transcriptHide : strings.transcriptShow}
           </button>
         </div>
 

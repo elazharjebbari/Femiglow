@@ -1,0 +1,38 @@
+@startuml sequence-publish
+title Séquence : admin publie une nouvelle version de plan
+
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+
+actor "Amal\n(admin)" as A
+participant "Wizard UI" as W
+participant "Store\n(Zustand)" as S
+participant "POST /plans/:id/validate" as V
+participant "POST /plans/:id/activate" as Act
+participant "TrackingPlanService" as Svc
+participant "Validator" as Val
+participant "Postgres" as DB
+participant "Cache resolver" as Cache
+participant "Drift detector" as Drift
+
+A -> W : Termine wizard, clic "Activer"
+W -> S : save()
+S -> V : POST { plan }
+V -> Val : validate(plan)
+Val --> V : { ok: true }
+V --> S : { ok }
+S -> Act : POST
+Act -> Svc : activate(id)
+Svc -> DB : BEGIN
+Svc -> DB : UPDATE plans SET status='archived' WHERE status='active'
+Svc -> DB : UPDATE plans SET status='active', activatedAt=NOW() WHERE id=:id
+Svc -> DB : INSERT INTO trackingPlanAudit (action='activate', ...)
+Svc -> DB : COMMIT
+Svc -> Cache : invalidate()
+Svc -> Drift : snapshot(plan.bundleId)
+Svc --> Act : { plan, bundleId }
+Act --> S : 200
+S -> W : afficher message succès + bouton "Télécharger JSON"
+W --> A : ✓ Plan activé — bundleId = abc123...
+
+@enduml

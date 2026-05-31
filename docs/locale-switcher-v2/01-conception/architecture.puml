@@ -1,0 +1,59 @@
+@startuml architecture
+title Locale Switcher V2 — Vue composants (client + admin + backend)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Client (website public)" {
+  [LocaleSwitcher\n(header dropdown / pills)] as SW
+  [LocaleNudge\n(perle one-shot)] as NUDGE
+  [LocaleVeil\n(overlay fallback)] as VEIL
+  [useLocaleTransition\n(hook)] as HOOK
+  [buildSwitchUrl\n(helper)] as URL
+}
+
+package "Frontend partagé" {
+  [i18n.config.ts\n(LOCALES, DIRECTION)] as CFG
+  [next-intl navigation\n(router.replace soft-nav)] as NAV
+  [<html dir/lang>\n(impératif au switch)] as HTML
+  [analytics/track\n(events)] as TRACK
+}
+
+package "Backend (Route Handlers)" {
+  [GET /api/i18n/config\n(public, caché, ETag)] as APIPUB
+  [GET/PUT /api/admin/i18n/config\n(admin, audit)] as APIADM
+  [resolveSuggestedLocale()\n(Accept-Language + cookie)] as DETECT
+}
+
+package "Admin" {
+  [/admin/i18n\n(pilotage + preview)] as ADMINUI
+}
+
+database "Postgres" {
+  [i18n_locale_config] as DB
+  [audit_log] as AUDIT
+}
+
+SW --> HOOK : onSelect(locale)
+NUDGE --> HOOK : accept
+HOOK --> URL : build cible (preserve UTM)
+HOOK --> HTML : set lang/dir (INV-2)
+HOOK --> NAV : router.replace
+HOOK --> VEIL : fallback si pas de View Transitions
+HOOK --> TRACK : locale_switch
+NUDGE --> TRACK : nudge_shown/accepted/dismissed
+SW --> APIPUB : lit config (SSR + cache)
+NUDGE ..> DETECT : suggested (résolu serveur, no-flash)
+ADMINUI --> APIADM : GET/PUT config
+APIADM --> DB : read/write
+APIADM --> AUDIT : who/when/before-after
+APIPUB --> DB : read (cache)
+DETECT ..> CFG : locales actives
+HOOK --> CFG : DIRECTION[locale]
+
+note bottom of HOOK
+  Cœur no-reload :
+  startViewTransition(apply) | veil | direct (reduced-motion)
+  fallback ultime : window.location.assign (offline)
+end note
+@enduml

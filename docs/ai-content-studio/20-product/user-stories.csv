@@ -1,0 +1,14 @@
+id,role,story,acceptance
+ACS-US-001,fondatrice,"Je crée une idée de post depuis un pilier éditorial","L'idée est sauvegardée avec pilier objectif canal format"
+ACS-US-002,fondatrice,"Je génère un brief structuré depuis une idée","Le brief liste angle preuve CTA interdits médias recommandés"
+ACS-US-003,fondatrice,"Je génère trois captions conformes à la voix FemiGlow","Chaque caption a un score marque et peut être éditée"
+ACS-US-004,fondatrice,"Je choisis un média existant fidèle au produit","Le média vient du système media et conserve source droits usage"
+ACS-US-005,fondatrice,"Je prévisualise le post comme Instagram et Facebook","La preview affiche crop format caption hashtags et avertissements"
+ACS-US-006,fondatrice,"Je bloque un contenu qui ne respecte pas la charte","Le statut devient rejected avec raison et audit"
+ACS-US-007,fondatrice,"J'approuve un post avant programmation","Seul un post approved peut être schedule"
+ACS-US-008,admin,"Je synchronise les comptes Postiz connectés","Les integrations actives sont stockées avec profile identifier disabled"
+ACS-US-009,admin,"Je programme un post via Postiz","Le post conserve postizPostId postizIntegrationId scheduledAt"
+ACS-US-010,admin,"Je vois les erreurs de publication","Erreur technique lisible retry possible et logs corrélés"
+ACS-US-011,admin,"Je retire un post programmé","Le post passe cancelled et l'action est auditée"
+ACS-US-012,fondatrice,"Je consulte les performances d'une campagne","La page affiche posts publiés notes manuelles clics UTM et métriques disponibles"
+

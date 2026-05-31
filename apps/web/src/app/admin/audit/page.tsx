@@ -25,6 +25,20 @@ const RESOURCE_TYPES: Record<string, { type: string; label: string }> = {
     type: 'component_media_binding',
     label: 'Bindings médias',
   },
+  legalPage: { type: 'legal_page', label: 'Pages légales' },
+};
+
+// Mapping des actions legal.* vers un libellé FR pour la colonne "Action".
+const LEGAL_ACTION_LABELS: Record<string, string> = {
+  'legal.page.created': 'Page créée',
+  'legal.page.updated': 'Page mise à jour',
+  'legal.page.archived': 'Page archivée',
+  'legal.page.submitted-review': 'Soumise à revue',
+  'legal.page.published': 'Publiée',
+  'legal.page.restored': 'Restaurée',
+  'legal.placement.upserted': 'Placement modifié',
+  'legal.placement.toggled': 'Placement togglé',
+  'legal.template-var.updated': 'Variable modifiée',
 };
 
 function formatParis(d: Date): string {
@@ -97,6 +111,8 @@ export default async function AuditPage({ searchParams }: PageProps): Promise<JS
               const componentKey =
                 typeof meta.componentKey === 'string' ? meta.componentKey : null;
               const fieldKey = typeof meta.fieldKey === 'string' ? meta.fieldKey : null;
+              const legalSlug = typeof meta.slug === 'string' ? meta.slug : null;
+              const isLegal = e.action.startsWith('legal.');
               return (
                 <tr key={e.id} data-action={e.action}>
                   <td className="px-3 py-2 align-top">
@@ -105,15 +121,31 @@ export default async function AuditPage({ searchParams }: PageProps): Promise<JS
                     </time>
                   </td>
                   <td className="px-3 py-2 align-top">
-                    <code className="font-mono text-xs text-stone-700">
-                      {e.action}
-                    </code>
+                    {isLegal && LEGAL_ACTION_LABELS[e.action] ? (
+                      <span
+                        className="text-xs text-stone-800"
+                        title={e.action}
+                      >
+                        {LEGAL_ACTION_LABELS[e.action]}
+                      </span>
+                    ) : (
+                      <code className="font-mono text-xs text-stone-700">
+                        {e.action}
+                      </code>
+                    )}
                   </td>
                   <td className="px-3 py-2 align-top text-stone-600">
                     {e.actorId ?? '—'}
                   </td>
                   <td className="px-3 py-2 align-top">
-                    {componentKey && fieldKey ? (
+                    {isLegal && legalSlug ? (
+                      <Link
+                        href={`/admin/legal/${legalSlug}/edit`}
+                        className="text-stone-900 hover:underline"
+                      >
+                        /legal/{legalSlug}
+                      </Link>
+                    ) : componentKey && fieldKey ? (
                       <Link
                         href={`/admin/components/${componentKey}/fields/${fieldKey}/history`}
                         className="text-stone-900 hover:underline"

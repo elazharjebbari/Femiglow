@@ -14,6 +14,12 @@ import * as schema from '@/lib/db/schema';
 import type {
   AdminUser,
   AuditEvent,
+  InsightsComponentDailyRow,
+  InsightsEventDailyRow,
+  InsightsFunnelDailyRow,
+  InsightsPageDailyRow,
+  InsightsRefreshRunRow,
+  InsightsSectionDailyRow,
   Lead,
   LeadEvent,
   Media,
@@ -32,6 +38,7 @@ import type {
   TrackingPageComponent,
   TrackingProvider,
   TrackingSetting,
+  VisitorAttributionRow,
   SiteComponent,
   ComponentMediaBinding,
   ComponentAnimation,
@@ -40,6 +47,12 @@ import type {
   ComponentFieldHistoryEntry,
   WebhookDelivery,
   WebhookEndpoint,
+  OutboundWebhookLogRow,
+  RitualTestimonial,
+  RitualTestimonialPhoto,
+  RitualAuditEntry,
+  RitualAggregateRow,
+  ProductReviewPhoto,
 } from '@/lib/db/types';
 
 interface Store {
@@ -50,6 +63,7 @@ interface Store {
   leadEvents: Map<string, LeadEvent>;
   webhookEndpoints: Map<string, WebhookEndpoint>;
   webhookDeliveries: Map<string, WebhookDelivery>;
+  outboundWebhookLog: Map<string, OutboundWebhookLogRow>;
   auditEvents: Map<string, AuditEvent>;
   loginAttempts: Map<string, { ip: string; email: string; failedAt: Date }>;
   rateLimitCounters: Map<string, { count: number; resetAt: number }>;
@@ -70,12 +84,30 @@ interface Store {
   trackingConsentSnapshots: Map<string, TrackingConsentSnapshot>;
   trackingConsentOrder: string[];
   trackingSettings: Map<string, TrackingSetting>;
+  /**
+   * Snapshot d'attribution multi-canal par visitor_id. Cf.
+   * docs/tracking-attribution/. Mode in-memory (sans DB).
+   */
+  visitorAttribution: Map<string, VisitorAttributionRow>;
   siteComponents: Map<string, SiteComponent>;
   componentMediaBindings: Map<string, ComponentMediaBinding>;
   componentAnimations: Map<string, ComponentAnimation>;
   componentAnimationBindings: Map<string, ComponentAnimationBinding>;
   componentFieldBindings: Map<string, ComponentFieldBinding>;
   componentFieldHistory: Map<string, ComponentFieldHistoryEntry>;
+  insightsEventDaily: Map<string, InsightsEventDailyRow>;
+  insightsPageDaily: Map<string, InsightsPageDailyRow>;
+  insightsComponentDaily: Map<string, InsightsComponentDailyRow>;
+  insightsSectionDaily: Map<string, InsightsSectionDailyRow>;
+  insightsFunnelDaily: Map<string, InsightsFunnelDailyRow>;
+  insightsRefreshRun: Map<string, InsightsRefreshRunRow>;
+  // Rituels partagés
+  ritualTestimonials: Map<string, RitualTestimonial>;
+  ritualTestimonialPhotos: Map<string, RitualTestimonialPhoto>;
+  ritualAuditLog: Map<string, RitualAuditEntry>;
+  ritualAggregate: Map<string, RitualAggregateRow>;
+  // Photos clientes pour la galerie hero produit
+  productReviewPhotos: Map<string, ProductReviewPhoto>;
 }
 
 const globalAny = globalThis as typeof globalThis & { __femiglowStore?: Store };
@@ -89,6 +121,7 @@ function makeStore(): Store {
     leadEvents: new Map(),
     webhookEndpoints: new Map(),
     webhookDeliveries: new Map(),
+    outboundWebhookLog: new Map(),
     auditEvents: new Map(),
     loginAttempts: new Map(),
     rateLimitCounters: new Map(),
@@ -109,12 +142,24 @@ function makeStore(): Store {
     trackingConsentSnapshots: new Map(),
     trackingConsentOrder: [],
     trackingSettings: new Map(),
+    visitorAttribution: new Map(),
     siteComponents: new Map(),
     componentMediaBindings: new Map(),
     componentAnimations: new Map(),
     componentAnimationBindings: new Map(),
     componentFieldBindings: new Map(),
     componentFieldHistory: new Map(),
+    insightsEventDaily: new Map(),
+    insightsPageDaily: new Map(),
+    insightsComponentDaily: new Map(),
+    insightsSectionDaily: new Map(),
+    insightsFunnelDaily: new Map(),
+    insightsRefreshRun: new Map(),
+    ritualTestimonials: new Map(),
+    ritualTestimonialPhotos: new Map(),
+    ritualAuditLog: new Map(),
+    ritualAggregate: new Map(),
+    productReviewPhotos: new Map(),
   };
 }
 
@@ -129,7 +174,7 @@ export function resetMemoryStore(): void {
   globalAny.__femiglowStore = makeStore();
 }
 
-type DrizzleDb =
+export type DrizzleDb =
   | ReturnType<typeof drizzleNeon<typeof schema>>
   | ReturnType<typeof drizzlePg<typeof schema>>;
 const dbCache = globalAny as typeof globalAny & { __femiglowDb?: DrizzleDb | null };
@@ -142,6 +187,7 @@ export function db(): DrizzleDb | null {
   if (dbCache.__femiglowDb !== undefined) return dbCache.__femiglowDb;
   const url = process.env.DATABASE_URL;
   if (!url) {
+    console.warn('[db] Aucune connexion DATABASE_URL — mode mémoire (données perdues au redémarrage).');
     dbCache.__femiglowDb = null;
     return null;
   }
@@ -153,6 +199,20 @@ export function db(): DrizzleDb | null {
     dbCache.__femiglowDb = drizzlePg(client, { schema }) as DrizzleDb;
   }
   return dbCache.__femiglowDb;
+}
+
+/**
+ * Tests uniquement — injecte un drizzle de test (ex. PGlite, Postgres in-process)
+ * pour exercer le vrai chemin SQL sans base distante. Passer `null` rebascule en
+ * mode mémoire. cf. docs/analytics-audit-qa-2026-05-30 (harnais d'intégration).
+ */
+export function __setTestDb(testDb: DrizzleDb | null): void {
+  dbCache.__femiglowDb = testDb;
+}
+
+/** Tests uniquement — réinitialise le cache (force la ré-évaluation de `db()`). */
+export function __resetTestDb(): void {
+  dbCache.__femiglowDb = undefined;
 }
 
 export { schema };

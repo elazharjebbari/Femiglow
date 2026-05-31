@@ -1,0 +1,57 @@
+id,name,type,scope,priority,file,why
+T01,renderLegalMarkdown returns sanitized HTML,unit,backend,critical,src/lib/legal/render.test.ts,Évite XSS dans contenu publié
+T02,substituteVars replaces all known vars,unit,backend,critical,src/lib/legal/vars.test.ts,Variables vitales (RC ICE)
+T03,substituteVars leaves unknown vars highlighted in preview,unit,backend,high,src/lib/legal/vars.test.ts,UX éditeur
+T04,detectMissingVars finds required missing,unit,backend,critical,src/lib/legal/vars.test.ts,Bloque publish si var manquante
+T05,publishPage increments version,unit,backend,critical,src/lib/legal/publish.test.ts,Cohérence versioning
+T06,publishPage creates immutable history,unit,backend,critical,src/lib/legal/publish.test.ts,Audit trail
+T07,publishPage rejects without confirm text,unit,backend,critical,src/lib/legal/publish.test.ts,Anti-erreur
+T08,publishPage rejects in wrong state,unit,backend,high,src/lib/legal/publish.test.ts,Workflow valide
+T09,restoreVersion creates draft from history,unit,backend,high,src/lib/legal/publish.test.ts,Recovery
+T10,linkVerifier detects 404,unit,backend,medium,src/lib/legal/link-verifier.test.ts,Cron health
+T11,sitemap excludes noindex pages,unit,backend,high,src/app/sitemap.test.ts,SEO compliance
+T12,robots txt allows /legal/ but pages have noindex,unit,backend,high,src/app/robots.test.ts,SEO compliance
+T13,API GET /api/admin/legal returns list (admin),integration,backend,critical,api/admin/legal.test.ts,Permissions
+T14,API GET /api/admin/legal 401 without session,integration,backend,critical,api/admin/legal.test.ts,Sécurité
+T15,API PUT /api/admin/legal/:slug saves draft,integration,backend,critical,api/admin/legal.test.ts,Save flow
+T16,API POST /publish requires permission,integration,backend,critical,api/admin/legal.test.ts,RBAC
+T17,API POST /publish rejects without legal.publish,integration,backend,critical,api/admin/legal.test.ts,RBAC
+T18,API public /api/legal/placements/footer-main returns active links,integration,backend,critical,api/legal.test.ts,Public surface
+T19,API public excludes archived links,integration,backend,high,api/legal.test.ts,Health
+T20,LegalPageEditor renders MD pane + preview,component,frontend,high,components/LegalPageEditor.test.tsx,UI smoke
+T21,LegalPageEditor auto-saves after interval,component,frontend,high,components/LegalPageEditor.test.tsx,Anti-data-loss
+T22,LegalPageEditor blocks publish if missing vars,component,frontend,critical,components/LegalPageEditor.test.tsx,Anti-error
+T23,LegalPagesListTable filters by status,component,frontend,medium,components/LegalPagesListTable.test.tsx,UX
+T24,LegalPlacementsMatrix toggles placement optimistic,component,frontend,medium,components/LegalPlacementsMatrix.test.tsx,UX
+T25,FooterLegalLinks renders from API,component,frontend,critical,components/FooterLegalLinks.test.tsx,Footer health
+T26,CookieBannerLegalLinks renders configured links,component,frontend,critical,components/CookieBannerLegalLinks.test.tsx,Compliance
+T27,CheckoutConsentText renders with links,component,frontend,critical,components/CheckoutConsentText.test.tsx,Checkout compliance
+T28,useLegalPage returns cached data,hook,frontend,medium,hooks/useLegalPage.test.ts,SWR cache
+T29,useLegalEditorAutoSave saves on interval,hook,frontend,high,hooks/useLegalEditorAutoSave.test.ts,Anti-data-loss
+T30,axe accessibility public page,e2e,a11y,critical,e2e/legal-public-a11y.spec.ts,WCAG
+T31,axe accessibility admin editor,e2e,a11y,critical,e2e/legal-admin-a11y.spec.ts,WCAG
+T32,E2E flow create + edit + publish,e2e,full,critical,e2e/legal-create-publish.spec.ts,Critical path
+T33,E2E flow restore old version,e2e,full,high,e2e/legal-restore.spec.ts,Recovery
+T34,E2E flow archive then unarchive,e2e,full,medium,e2e/legal-archive.spec.ts,Lifecycle
+T35,E2E public page renders + meta robots noindex,e2e,full,critical,e2e/legal-public-render.spec.ts,SEO compliance
+T36,E2E sitemap.xml does not include noindex pages,e2e,full,critical,e2e/legal-sitemap.spec.ts,SEO compliance
+T37,E2E footer link click navigates and renders,e2e,full,critical,e2e/legal-footer-links.spec.ts,Public link health
+T38,E2E cookie banner shows configured links,e2e,full,critical,e2e/legal-cookie-banner.spec.ts,Compliance
+T39,E2E checkout consent has CGV + privacy links,e2e,full,critical,e2e/legal-checkout-consent.spec.ts,Compliance
+T40,E2E mobile menu shows legal links,e2e,full,high,e2e/legal-mobile-menu.spec.ts,Mobile UX
+T41,E2E variable substitution end to end,e2e,full,critical,e2e/legal-template-vars.spec.ts,Critical UX
+T42,E2E broken link detected by cron,e2e,full,medium,e2e/legal-cron.spec.ts,Health
+T43,E2E hard 404 on slug not found,e2e,full,medium,e2e/legal-not-found.spec.ts,UX
+T44,E2E auto-save survives page reload,e2e,full,high,e2e/legal-autosave.spec.ts,Anti-data-loss
+T45,E2E conflict on concurrent edit,e2e,full,medium,e2e/legal-concurrent-edit.spec.ts,Race condition
+T46,Visual regression public page,visual,frontend,medium,e2e/legal-public-visual.spec.ts,Style regression
+T47,Visual regression admin editor,visual,frontend,medium,e2e/legal-admin-visual.spec.ts,Style regression
+T48,Lighthouse accessibility ≥ 95,e2e,a11y,critical,e2e/legal-lighthouse.spec.ts,WCAG
+T49,Lighthouse SEO ≥ 95 (public pages with index),e2e,seo,medium,e2e/legal-lighthouse.spec.ts,SEO health
+T50,Git sync commits to legal-versions branch,integration,backend,medium,src/lib/legal/git-sync.test.ts,Backup
+T51,Restore from git script recreates pages,integration,backend,low,scripts/restore-legal-from-git.test.ts,Disaster recovery
+T52,Audit log records all privileged actions,integration,backend,high,src/lib/legal/audit.test.ts,Compliance
+T53,All 9 preconfigured pages exist after seed,integration,backend,critical,db/seed.test.ts,Bootstrap
+T54,seedPlacements creates default zones+placements,integration,backend,high,db/seed.test.ts,Bootstrap
+T55,Chat assistant does not link to non-published slugs,integration,backend,high,src/lib/chat/legal-guard.test.ts,Anti-hallucination
+T56,Ultimate test : full lifecycle on one page,e2e,full,critical,e2e/legal-ultimate.spec.ts,Confidence

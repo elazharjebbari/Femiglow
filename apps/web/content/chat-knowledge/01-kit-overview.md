@@ -1,48 +1,59 @@
-# Kit FemiGlow — composition & usage
+# Pack FemiGlow — composition & usage
 
 > **Tags** : `kit-overview`, `rituals`
 > **Audience** : `public` · **Freshness** : `evergreen`
 > **Locuteur** : produit
 > **Source ID suggéré** : `ks_kit_overview`
 
-## Que contient le kit FemiGlow ?
+## Que contient le pack FemiGlow ?
 
-Le kit FemiGlow est un rituel complet pour les ongles, **édité et expédié
-depuis Rabat** vers toutes les villes du Maroc en 24 à 72 h. Il contient
-un sérum fortifiant à appliquer matin et soir, un baume de cuticules, et
-un guide papier qui décrit le geste pas à pas. Le rituel prend 90 secondes.
+Le pack FemiGlow est un rituel complet de **manucure japonaise halal**,
+**édité et expédié depuis Rabat** (25 bis avenue Patrice Lumumba) vers
+toutes les villes du Maroc en 24 à 72 h. Il contient trois objets :
+
+1. **Paste FemiGlow** — base nourrissante vert sauge à la cire d'abeille
+   et au jojoba, qui filme et fortifie la kératine.
+2. **Powder FemiGlow** — poudre minérale rose poudré (talc cosmétique,
+   poudre de riz, kaolin) qui lustre et révèle l'éclat naturel.
+3. **Polissoir Step 4 Polish & Shine** — outil bleu ciel qui finalise
+   le geste, sans abrasion.
+
+Le rituel prend **cinq minutes par soir** — deux gestes et un polissoir.
 
 > Important : FemiGlow n'est pas un institut. On ne prodigue pas de soin
-> sur place : on conçoit le kit et on le livre chez la cliente.
+> sur place : on conçoit le pack et on le livre chez la cliente. Une
+> conseillère confirme chaque commande par WhatsApp avant l'expédition.
 
 ### Faits liés
-- Un flacon de sérum tient en moyenne 6 à 8 semaines pour deux mains.
-- Le baume cuticules est conçu pour être appliqué le soir, après le sérum.
-- Le guide est rédigé en français, arabe et darija.
+- Le pack tient en moyenne **trois à quatre mois** d'usage régulier.
+- Tous les ingrédients sont **halal** et d'origine naturelle.
+- Le guide papier est rédigé en français, arabe et darija.
 
-## Comment utilise-t-on le kit au quotidien ?
+## Comment utilise-t-on le pack au quotidien ?
 
-Le rituel est court et doux. On applique le sérum sur l'ongle propre, on
-masse la cuticule avec le baume, on laisse poser. Pas besoin de gants ni
-de lampe. Le geste fait partie du soin du soir, comme une crème pour le
-visage.
+Le rituel est court et doux. On dépose une noisette de **paste** sur
+chaque ongle propre, on lustre lentement avec le polissoir Step 4. On
+applique ensuite la **powder**, on polit à nouveau jusqu'à ce que la
+lumière revienne. Pas besoin de vernis, pas de lampe UV, pas d'acétone.
 
 ### Faits liés
-- Pas besoin de retirer le vernis pour utiliser le sérum (il est
-  miscible).
-- Le rituel n'interfère pas avec un vernis classique posé par-dessus.
+- Le pack remplace le vernis classique pour celles qui veulent un éclat
+  naturel sans produits chimiques agressifs.
+- Compatible avec une manucure ponctuelle : on peut poser un vernis
+  par-dessus, le geste japonais reste un soin de fond.
 - L'application est indolore et sans odeur prononcée.
 
 ## Combien de temps avant de voir un résultat ?
 
 Le rituel demande de la régularité : la majorité des clientes voient une
-différence sur la souplesse et la couleur après 4 à 6 semaines d'usage
-constant. Ce n'est pas un soin instantané — c'est un changement de
-terrain.
+différence sur la souplesse et la brillance après **2 à 4 semaines**
+d'usage régulier. Ce n'est pas un soin instantané — c'est un changement
+de terrain.
 
 ### Faits liés
 - Cycle de pousse de l'ongle : 3 à 6 mois pour un renouvellement complet.
-- Effets visibles d'abord sur la cuticule, ensuite sur la plaque d'ongle.
+- Effets visibles d'abord sur la brillance, ensuite sur la résistance
+  de la plaque.
 
 ### Ne JAMAIS dire
 - "Vous verrez une différence en 3 jours" (faux).

@@ -6,13 +6,38 @@
  * Sert d'outil d'investigation rapide pour incidents (ex. pic de
  * `error` après bascule de provider).
  */
+import { sql } from 'drizzle-orm';
 import Link from 'next/link';
 
 import { AdminShell } from '@/components/admin/AdminShell';
 import { ChatAdminNav } from '@/components/admin/chat/ChatAdminNav';
+import { CleanupGhostsButton } from '@/components/admin/chat/CleanupGhostsButton';
 import { adminQueries } from '@/lib/chat/admin/queries';
+import { requireChatDb } from '@/lib/chat/db/client';
+import { chatLead, chatSession } from '@/lib/chat/db/schema';
 import { isChatEnabled } from '@/lib/chat/feature-flag';
 import { requireAdmin } from '@/lib/auth/require-admin';
+
+interface PollutionSnapshot {
+  sessionByKind: Array<{ kind: string; n: number }>;
+  leadBySource: Array<{ source: string; n: number }>;
+}
+
+async function loadPollutionSnapshot(): Promise<PollutionSnapshot> {
+  const db = requireChatDb();
+  const kinds = await db
+    .select({ kind: chatSession.kind, n: sql<number>`COUNT(*)` })
+    .from(chatSession)
+    .groupBy(chatSession.kind);
+  const sources = await db
+    .select({ source: chatLead.source, n: sql<number>`COUNT(*)` })
+    .from(chatLead)
+    .groupBy(chatLead.source);
+  return {
+    sessionByKind: kinds.map((r) => ({ kind: r.kind, n: Number(r.n) })),
+    leadBySource: sources.map((r) => ({ source: r.source, n: Number(r.n) })),
+  };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +74,17 @@ export default async function ChatAuditPage({
   const filtered =
     filter === 'all' ? events : events.filter((e) => e.type === filter);
 
+  // CHA-LEAD-V2 — Snapshot pollution pour la section dédiée.
+  const pollution = await loadPollutionSnapshot().catch(() => ({
+    sessionByKind: [],
+    leadBySource: [],
+  }));
+  const totalSessions = pollution.sessionByKind.reduce((s, r) => s + r.n, 0);
+  const wizardPivot =
+    pollution.sessionByKind.find((r) => r.kind === 'wizard_pivot')?.n ?? 0;
+  const pollutionPct =
+    totalSessions > 0 ? Math.round((wizardPivot / totalSessions) * 100) : 0;
+
   return (
     <AdminShell adminEmail={session.email} active="chat">
       <ChatAdminNav active="audit" />
@@ -78,6 +114,65 @@ export default async function ChatAuditPage({
           );
         })}
       </nav>
+
+      {/* CHA-LEAD-V2 — Section "Santé pollution chat_session" */}
+      <section className="mb-6 rounded-md border border-stone-200 bg-white p-4">
+        <h2 className="text-lg font-semibold tracking-tight">
+          Santé pollution chat_session
+        </h2>
+        <p className="mt-1 text-sm text-stone-600">
+          Vue synthétique : répartition par <code>kind</code> et{' '}
+          <code>source</code>, signal de pollution wizard.
+        </p>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-stone-500">
+              Sessions par kind
+            </h3>
+            <table className="w-full text-sm">
+              <tbody>
+                {pollution.sessionByKind.map((r) => (
+                  <tr key={r.kind} className="border-b border-stone-100 last:border-0">
+                    <td className="py-1 font-mono text-xs">{r.kind}</td>
+                    <td className="py-1 text-right tabular-nums">{r.n}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-stone-500">
+              Leads par source
+            </h3>
+            <table className="w-full text-sm">
+              <tbody>
+                {pollution.leadBySource.map((r) => (
+                  <tr key={r.source} className="border-b border-stone-100 last:border-0">
+                    <td className="py-1 font-mono text-xs">{r.source}</td>
+                    <td className="py-1 text-right tabular-nums">{r.n}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <p className="mt-4 text-sm text-stone-700">
+          Pollution rate :{' '}
+          <strong
+            className={
+              pollutionPct > 50 ? 'text-rose-700' : pollutionPct > 25 ? 'text-amber-700' : 'text-emerald-700'
+            }
+          >
+            {pollutionPct}%
+          </strong>{' '}
+          (<span className="tabular-nums">{wizardPivot}</span> wizard_pivot /{' '}
+          <span className="tabular-nums">{totalSessions}</span> total)
+        </p>
+
+        <CleanupGhostsButton />
+      </section>
 
       <div className="overflow-x-auto rounded-md border border-stone-200 bg-white">
         <table className="w-full text-left text-sm">

@@ -1,0 +1,247 @@
+# Plan d'action — Pages légales FemiGlow
+# Séquencé par milestone, priorité critique d'abord.
+
+meta:
+  project: legal-pages
+  version: 1.0.0
+  start_date: 2026-05-15
+  target_launch: 2026-06-30
+  total_effort_days: 35
+  team_size: 3  # 1 backend, 1 frontend, 1 product/content (+ juriste externe)
+
+milestones:
+
+  - id: M0
+    name: "Foundation — Data layer"
+    duration_days: 3
+    start: 2026-05-15
+    end: 2026-05-19
+    goal: "Schema DB + seed + types prêts"
+    deliverables:
+      - 7 migrations Drizzle (0033-0039)
+      - Seed script avec 8 zones + 21 vars + 9 pages templates + 17 placements
+      - Types TypeScript partagés (Zod schemas)
+    acceptance_criteria:
+      - Migrations applicables sur env vide sans erreur
+      - Rollback de chaque migration testée
+      - Seed produit toutes les données attendues
+      - `pnpm tsc` pass
+    risks: low
+
+  - id: M1
+    name: "Backend core — Logic + API"
+    duration_days: 8
+    start: 2026-05-20
+    end: 2026-05-30
+    depends_on: [M0]
+    goal: "API admin + public + workflow publish fonctionnels"
+    deliverables:
+      - renderLegalMarkdown + sanitization
+      - publishPage transactional flow
+      - 12 API routes (admin + public)
+      - RBAC permissions
+      - SEO: noindex default + sitemap exclusion
+      - Audit logging
+    acceptance_criteria:
+      - "POST /publish refuse sans confirm 'PUBLIER'"
+      - "POST /publish refuse si variables required manquantes"
+      - "POST /publish refuse si permission absente"
+      - "GET /api/admin/legal 401 sans session"
+      - sitemap.xml n'inclut pas les pages noindex
+      - Tests Jest backend passent
+    risks: medium  # Sanitization HTML : XSS possible si mal fait
+
+  - id: M2
+    name: "Frontend public"
+    duration_days: 5
+    start: 2026-06-02
+    end: 2026-06-06
+    depends_on: [M1]
+    goal: "Pages publiques + footer + cookie banner + checkout"
+    deliverables:
+      - LegalPageLayout (charte FemiGlow)
+      - Public page rendering (ISR + force-static)
+      - FooterLegalLinks + refactor Footer
+      - CookieBannerLegalLinks + refactor ConsentBanner
+      - CheckoutConsentText + refactor checkout
+      - Mobile menu legal links
+    acceptance_criteria:
+      - "/legal/cgv accessible avec layout charte"
+      - "meta robots = noindex par défaut"
+      - "Footer affiche dynamiquement les liens"
+      - "Banner cookies contient liens actifs"
+      - "Checkout consentement bloque le submit si non coché"
+      - "axe pass sur /legal/cgv"
+    risks: low
+
+  - id: M3
+    name: "Frontend admin"
+    duration_days: 10
+    start: 2026-06-08
+    end: 2026-06-19
+    depends_on: [M1]
+    goal: "Interface admin complète"
+    deliverables:
+      - Liste admin avec filtres/recherche
+      - Éditeur MD split-pane + preview live
+      - Wizard create-legal-page (5 steps)
+      - Matrice placements (drag-drop)
+      - Editor variables template
+      - Drawer historique + restore
+      - Dashboard health
+      - Modal publish (checklist + tape PUBLIER)
+      - Auto-save 30s
+    acceptance_criteria:
+      - "Création + édition + publication en < 2 min pour power user"
+      - "Auto-save survit au reload (test e2e)"
+      - "Variables manquantes bloquent publish"
+      - "axe pass sur tous les écrans admin"
+      - "Lighthouse a11y ≥ 95"
+    risks: medium  # CodeMirror config + scroll sync
+
+  - id: M4
+    name: "Backend services secondaires"
+    duration_days: 3
+    start: 2026-06-22
+    end: 2026-06-24
+    depends_on: [M1]
+    goal: "Cron + git sync + health + chat guard"
+    deliverables:
+      - Cron link health (Vercel cron)
+      - Git sync service (background, non-blocking)
+      - Restore from git script
+      - Health endpoint /api/health/legal
+      - Chat legal-guard (validate slugs)
+    acceptance_criteria:
+      - "Cron exécute en < 60s pour 50 liens"
+      - "Git sync commite sur branche legal-versions"
+      - "Health endpoint return 503 si broken_links > 0"
+      - "Chat ne propose pas de slug inexistant"
+    risks: medium  # SSH key management
+    optional: true  # Git sync et chat guard peuvent slipper en V1.1
+
+  - id: M5
+    name: "Content + Legal review"
+    duration_days: 5  # parallèle, dépend du juriste
+    start: 2026-06-08
+    end: 2026-06-25  # large fenêtre pour juriste
+    depends_on: [M0]
+    parallel_with: [M2, M3]
+    goal: "9 pages prêtes + revue juriste + publiées"
+    deliverables:
+      - 9 templates affinés au cas FemiGlow
+      - Variables remplies (RC, ICE, adresse)
+      - Revue juriste OK pour les 9 pages
+      - Publication initiale
+    acceptance_criteria:
+      - "Toutes les variables required remplies"
+      - "Email juriste avec PDF approuvé pour les 9 pages"
+      - "9 pages avec status=published"
+      - "Cohérence inter-pages vérifiée (variables identiques)"
+    risks: high  # Délais juriste
+    blockers_potentials:
+      - "Juriste indisponible"
+      - "Modifications majeures demandées tardivement"
+    mitigation:
+      - "Contacter juriste dès M0 (briefing)"
+      - "Envoi de pages au fil de l'eau dès M3 finished"
+
+  - id: M6
+    name: "QA — Tests complets"
+    duration_days: 5
+    start: 2026-06-22
+    end: 2026-06-26
+    depends_on: [M2, M3]
+    goal: "Couverture tests 85%+, e2e ultimate passant"
+    deliverables:
+      - 50+ tests Jest unit
+      - 15+ Playwright scenarios
+      - Ultimate test
+      - MSW handlers complets
+      - Visual regression (Storybook)
+      - axe + Lighthouse CI
+    acceptance_criteria:
+      - "Coverage Jest > 85%"
+      - "Tous les 50+ scénarios test passent"
+      - "Test ultimate < 5 min"
+      - "Pas de flaky sur 3 runs"
+      - "axe : 0 violations"
+      - "Lighthouse a11y ≥ 95"
+    risks: medium
+
+  - id: M7
+    name: "Ops — Deploy + monitoring"
+    duration_days: 2
+    start: 2026-06-29
+    end: 2026-06-30
+    depends_on: [M5, M6]
+    goal: "Production live + monitoring actif"
+    deliverables:
+      - Deploy production
+      - Migrations appliquées
+      - Cron configuré
+      - Monitoring dashboards Sentry/PostHog
+      - Alertes Slack
+      - Synthetic monitoring Better Stack
+      - Communication interne équipe
+    acceptance_criteria:
+      - "9 pages accessibles publiquement"
+      - "Footer + cookie banner + checkout intégrés"
+      - "Health endpoint 200"
+      - "Sentry: 0 errors legal après 24h"
+      - "Lighthouse production ≥ 95"
+    risks: low
+
+post_launch:
+  - id: P1
+    name: "Stabilisation (sem 1)"
+    duration_days: 5
+    activities:
+      - Monitoring quotidien
+      - Patch bugs P1/P2 détectés
+      - Feedback Maya + support
+
+  - id: P2
+    name: "V1.1 — Améliorations"
+    duration_days: 10
+    optional: true
+    activities:
+      - Git sync (si pas dans V1)
+      - Chat legal-guard renforcé
+      - PDF export pour juriste
+      - Bulk republish on variable change
+      - i18n FR/AR
+
+  - id: P3
+    name: "V2 — Évolutions"
+    duration_days: 20
+    optional: true
+    activities:
+      - 4-eyes workflow obligatoire
+      - Notifications email aux co-admins
+      - ETag optimistic locking
+      - Multi-langue complet
+      - Public PDF download
+
+critical_path:
+  - M0 (data) → M1 (backend) → M3 (frontend admin) → M5 (content) → M6 (QA) → M7 (deploy)
+  - Total durée critique : 33 jours ouvrés (≈ 7 sem)
+
+slack_in_plan:
+  - M2 (public frontend) peut commencer en parallèle M3 dès M1 fini
+  - M4 (services secondaires) est optionnel pour V1
+  - M5 (content) peut démarrer en parallèle dès M0 (briefing juriste)
+
+key_dates:
+  - 2026-05-15 : kickoff
+  - 2026-05-20 : data layer prêt
+  - 2026-05-30 : backend core OK
+  - 2026-06-19 : admin UI fonctionnelle
+  - 2026-06-25 : revue juriste OK
+  - 2026-06-30 : launch production
+
+contacts:
+  product_owner: Maya
+  tech_lead: TBD
+  juriste: TBD (à briefer dès M0)
+  qa_lead: TBD

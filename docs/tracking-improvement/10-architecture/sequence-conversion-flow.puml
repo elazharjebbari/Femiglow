@@ -1,0 +1,61 @@
+@startuml sequence-conversion-flow
+title Séquence — purchase de bout en bout (architecture cible)
+
+skinparam backgroundColor #FBF8F1
+skinparam defaultFontName Inter
+
+actor User as U
+participant "Browser" as B
+participant "TrackingClient" as TC
+participant "/api/checkout/order" as ORDER
+participant "/api/track" as TRACK
+participant "Dispatcher" as DISP
+participant "Google Ads CAPI" as GADS
+participant "Meta CAPI" as META
+participant "GA4 MP" as GA
+participant "Google Ads gtag" as TAG
+database "tracking_events_log" as LOG
+
+U -> B : Submit "Commander" sur /kit
+B -> ORDER : POST /api/checkout/order
+ORDER -> ORDER : reserve stock, create order
+ORDER --> B : 201 { orderId, totalCents }
+
+note right of B
+  event_id généré
+  côté client (UUID v4)
+end note
+
+B -> TC : emit('purchase', { orderId, event_id, value, items })
+TC -> TC : batch (1500ms)
+
+par parallel
+  TC -> TAG : gtag('event', 'conversion', {\n  transaction_id, event_id,\n  send_to: 'AW-XXX/AbCdEf' })
+  TAG -> GADS : POST conversion (client)
+else
+  TC -> TRACK : POST /api/track { events: [...] }
+  TRACK -> TRACK : validate + consent check
+  TRACK -> DISP : dispatch(event, providers)
+  par
+    DISP -> GADS : POST :uploadClickConversions\n+ event_id
+    GADS --> DISP : { result: ok }
+  also
+    DISP -> META : POST graph.facebook.com\n+ event_id
+    META --> DISP : { events_received: 1 }
+  also
+    DISP -> GA : POST measurement protocol\n+ event_id
+    GA --> DISP : { }
+  end
+  DISP -> LOG : INSERT log with providers_results
+  DISP --> TRACK : ok
+  TRACK --> TC : 200 { received: 1 }
+end
+
+note over GADS
+  Google Ads reçoit
+  DEUX conversions avec
+  le même event_id.
+  → dédup automatique côté Google.
+end note
+
+@enduml

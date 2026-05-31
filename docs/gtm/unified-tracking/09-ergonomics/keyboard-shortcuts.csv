@@ -1,0 +1,32 @@
+shortcut,context,action,mode,notes
+Cmd/Ctrl+S,Wizard|Expert,Sauvegarder brouillon,both,Toast confirmation
+Cmd/Ctrl+Enter,Wizard|Expert,Activer le plan,both,Ouvre modal confirmation
+Cmd/Ctrl+K,Global,Ouvrir command palette,both,Recherche + actions
+Cmd/Ctrl+/,Expert,Toggle JSON preview,expert,Affiche/masque panel droit
+Cmd/Ctrl+E,Wizard|Expert,Basculer Wizard ↔ Expert,both,Conserve l'état
+Cmd/Ctrl+Z,Wizard|Expert,Annuler dernière modification,both,5 niveaux undo
+Cmd/Ctrl+Shift+Z,Wizard|Expert,Refaire,both,Idem
+Cmd/Ctrl+,,Wizard|Expert,Aller à paramètres,both,
+Esc,Modal,Fermer modal,both,
+Esc,Wizard,Quitter wizard (avec confirm si dirty),wizard,
+Enter,Modal,Confirmer action primaire,both,Sauf si focus sur autre bouton
+Tab,Global,Navigation suivante,both,Ordre logique
+Shift+Tab,Global,Navigation précédente,both,
+Arrow Right,Stepper,Step suivant (si autorisé),wizard,Sinon shake
+Arrow Left,Stepper,Step précédent,wizard,
+Arrow Up/Down,EventMatrix,Naviguer entre events,both,
+Space,Checkbox|Switch,Toggle,both,Standard a11y
+1-5,Stepper,Aller à step N (si autorisé),wizard,
+?,Global,Afficher liste raccourcis,both,Modal d'aide
+/,Global,Focus barre de recherche,both,
+Cmd/Ctrl+D,Plan list,Cloner plan sélectionné,both,Crée nouveau brouillon
+Cmd/Ctrl+A,EventMatrix,Sélectionner tous events,expert,
+Cmd/Ctrl+Shift+A,EventMatrix,Désélectionner tous events,expert,
+Cmd/Ctrl+P,Expert,Imprimer plan (PDF view),expert,Pour archive
+Cmd/Ctrl+R,Global,Refresh status sync,both,Force re-fetch
+Cmd/Ctrl+H,Global,Voir historique versions,both,
+Cmd/Ctrl+I,Expert,Insert/import config externe,expert,Avancé
+g h,Global (vim mode),Go to home tracking,both,Si vim mode activé
+g p,Global (vim mode),Go to plans list,both,
+g s,Global (vim mode),Go to sync page,both,
+g v,Global (vim mode),Go to history,both,

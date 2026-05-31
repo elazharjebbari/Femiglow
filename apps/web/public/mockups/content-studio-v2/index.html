@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mockups Content Studio v2 — Comparaison</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=recoleta@500&f[]=cabinet-grotesk@700&f[]=garet@400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400&family=DM+Sans:wght@400&family=Manrope:wght@400&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: #1a1411;
+      color: #FBF6F1;
+      min-height: 100vh;
+      padding: 60px 40px;
+    }
+    .header { text-align: center; margin-bottom: 48px; }
+    .header h1 {
+      font-family: 'Recoleta', serif; font-weight: 500; font-size: 44px;
+      letter-spacing: -0.02em; margin-bottom: 12px;
+    }
+    .header p { color: #A89D90; max-width: 620px; margin: 0 auto; }
+
+    .grid {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    }
+    .card {
+      background: #211A16; border: 1px solid rgba(251,246,241,0.08);
+      border-radius: 12px; overflow: hidden;
+      transition: transform .25s, border-color .25s;
+    }
+    .card:hover { transform: translateY(-4px); border-color: rgba(216,90,120,0.4); }
+    .card .swatch { height: 110px; display: grid; place-items: center; position: relative; }
+    .card .swatch::after { content: ''; position: absolute; right: 12px; bottom: 12px; width: 20px; height: 20px; border-radius: 4px; }
+    .card.a .swatch { background: linear-gradient(135deg, #FBF6F1 0%, #E8DDD0 100%); }
+    .card.a .swatch::after { background: #9C2A47; }
+    .card.b .swatch { background: linear-gradient(135deg, #FAF7F2 0%, #FFE6EC 100%); }
+    .card.b .swatch::after { background: #C2436F; }
+    .card.c .swatch { background: linear-gradient(135deg, #F7F4EF 0%, #E0CFB4 100%); }
+    .card.c .swatch::after { background: #8E2E47; }
+
+    .card .body { padding: 22px; }
+    .card .name {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+      color: #A89D90; margin-bottom: 6px;
+    }
+    .card.a .name { font-family: 'JetBrains Mono', monospace; }
+    .card.b .name { font-family: 'Geist Mono', monospace; }
+    .card.c .name { letter-spacing: 0.22em; }
+    .card .title { font-size: 24px; margin-bottom: 10px; letter-spacing: -0.01em; }
+    .card.a .title { font-family: 'Recoleta', serif; font-weight: 500; }
+    .card.b .title { font-family: 'Cabinet Grotesk', sans-serif; font-weight: 700; }
+    .card.c .title { font-family: 'Garet', sans-serif; font-weight: 400; }
+    .card .desc { font-size: 14px; color: #C2B5A9; line-height: 1.55; margin-bottom: 22px; }
+    .card.a .desc { font-family: 'Newsreader', serif; }
+    .card.c .desc { font-family: 'Manrope', sans-serif; }
+
+    .card .typo-row {
+      display: flex; flex-direction: column; gap: 6px;
+      padding: 14px 0; border-top: 1px solid rgba(251,246,241,0.08); margin-bottom: 14px;
+      font-size: 12px;
+    }
+    .card .typo-row div { display: flex; justify-content: space-between; color: #C2B5A9; }
+    .card .typo-row div span { color: #A89D90; font-size: 11px; }
+
+    .palette { display: flex; gap: 6px; margin-bottom: 22px; }
+    .palette div { width: 28px; height: 28px; border-radius: 4px; }
+
+    .open {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px; background: #D85A78; color: white;
+      border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 500;
+      transition: background .2s;
+    }
+    .open:hover { background: #E07B9B; }
+
+    .footer { text-align: center; margin-top: 60px; color: #6E665F; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Mockups — Content Studio v2</h1>
+    <p>Trois directions esthétiques distinctes pour l'écran <strong>« Visuel »</strong> du nouveau Studio. Chaque mockup gère light + dark mode (toggle ☀/☾ en haut à droite).</p>
+  </div>
+
+  <div class="grid">
+
+    <div class="card a">
+      <div class="swatch">
+        <span style="font-family: 'Recoleta', serif; font-weight: 500; font-size: 64px; color: #9C2A47;">Aa</span>
+      </div>
+      <div class="body">
+        <p class="name">Option A</p>
+        <h2 class="title">Editorial élégant</h2>
+        <p class="desc">Magazine warm-toned. Serifs sophistiqués, papier crème, rose terracotta. Évoque Kinfolk, Cereal, Vogue Online.</p>
+        <div class="typo-row">
+          <div>Display <span>Recoleta · Serif</span></div>
+          <div>Body <span>Newsreader · Serif</span></div>
+          <div>Mono <span>JetBrains Mono</span></div>
+        </div>
+        <div class="palette">
+          <div style="background: #FBF6F1; border: 1px solid rgba(0,0,0,0.1);"></div>
+          <div style="background: #E8DDD0;"></div>
+          <div style="background: #7A4E3F;"></div>
+          <div style="background: #9C2A47;"></div>
+          <div style="background: #5A7560;"></div>
+          <div style="background: #C28846;"></div>
+        </div>
+        <a class="open" href="./option-a-editorial.html">
+          Ouvrir le mockup
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="card b">
+      <div class="swatch">
+        <span style="font-family: 'Cabinet Grotesk', sans-serif; font-weight: 700; font-size: 60px; color: #C2436F; letter-spacing: -0.02em;">Aa</span>
+      </div>
+      <div class="body">
+        <p class="name">Option B</p>
+        <h2 class="title">Modern warm</h2>
+        <p class="desc">Géométrique chaleureux. Grotesque moderne, rose vif, mint subtle, coins arrondis. Évoque Linear, Notion mais réchauffé.</p>
+        <div class="typo-row">
+          <div>Display <span>Cabinet Grotesk · Sans</span></div>
+          <div>Body <span>DM Sans · Sans</span></div>
+          <div>Mono <span>Geist Mono</span></div>
+        </div>
+        <div class="palette">
+          <div style="background: #FAF7F2; border: 1px solid rgba(0,0,0,0.1);"></div>
+          <div style="background: #F1ECE3;"></div>
+          <div style="background: #2C2825;"></div>
+          <div style="background: #C2436F;"></div>
+          <div style="background: #7FBCA8;"></div>
+          <div style="background: #D89B4A;"></div>
+        </div>
+        <a class="open" href="./option-b-modern-warm.html">
+          Ouvrir le mockup
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="card c">
+      <div class="swatch">
+        <span style="font-family: 'Garet', sans-serif; font-weight: 400; font-size: 62px; color: #8E2E47; letter-spacing: -0.025em;">Aa</span>
+      </div>
+      <div class="body">
+        <p class="name">Option C</p>
+        <h2 class="title">Soft luxury</h2>
+        <p class="desc">Humanist géométrique. Champagne, velvet rose, olive. Asymétrique, dense considéré. Évoque Aesop, The Row, Loro Piana.</p>
+        <div class="typo-row">
+          <div>Display <span>Garet · Humanist</span></div>
+          <div>Body <span>Manrope · Sans</span></div>
+          <div>Mono <span>JetBrains Mono</span></div>
+        </div>
+        <div class="palette">
+          <div style="background: #F7F4EF; border: 1px solid rgba(0,0,0,0.1);"></div>
+          <div style="background: #E0CFB4;"></div>
+          <div style="background: #3A2F25;"></div>
+          <div style="background: #8E2E47;"></div>
+          <div style="background: #6B7A4F;"></div>
+          <div style="background: #B23F5C;"></div>
+        </div>
+        <a class="open" href="./option-c-soft-luxury.html">
+          Ouvrir le mockup
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Mockups Content Studio v2 · 2026-05-22 · Phase 0 du plan de refonte<br/>
+    Chaque mockup est un fichier HTML autonome avec light + dark mode. Toggle ☀/☾ en topbar.
+  </div>
+</body>
+</html>

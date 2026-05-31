@@ -1,0 +1,18 @@
+option_id,dimension,label,score_impact,score_effort,score_risk,decision
+LOC_A,localisation,Module intégré FemiGlow,5,3,2,retenu
+LOC_B,localisation,Microservice séparé,3,5,3,rejet_v0
+LOC_C,localisation,Postiz AI direct,2,1,4,rejet
+AUTO_A,automation,Humain valide avant publication,5,2,1,retenu
+AUTO_C,automation,Publication IA automatique,4,2,5,rejet_v0
+IMG_A,media,Sélection médias existants,5,2,1,retenu
+IMG_B,media,Génération avec références produit,4,4,3,poc
+IMG_C,media,Génération sans référence,2,1,5,rejet
+BRAND_B,brand_safety,Rule engine déterministe,5,3,1,retenu
+BRAND_C,brand_safety,LLM juge complémentaire,4,3,2,retenu
+UX_A,ux,Wizard création post,5,3,1,retenu
+UX_B,ux,Kanban éditorial,4,3,1,retenu
+UX_C,ux,Calendrier visuel,4,3,2,retenu
+POSTIZ_A,integration,Bridge API Postiz,5,3,2,retenu
+POSTIZ_B,integration,Proxy complet Postiz,2,5,4,rejet
+FEED_C,feedback,UTM et tracking site,5,3,1,retenu
+

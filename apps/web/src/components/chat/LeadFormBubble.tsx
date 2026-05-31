@@ -33,6 +33,7 @@ import { useTracking } from '@/lib/tracking/use-tracking';
 
 import { useChatStore } from './chat-store';
 import { getLeadFormCopy, type CopyKey } from './lead-form-copy';
+import { loadLeadPrefill, saveLeadPrefill } from './lead-prefill';
 
 const COUNTRY_HINTS: { value: ChatLeadCountryHint; label: string; flag: string; cc: string }[] = [
   { value: 'MA', label: 'Maroc', flag: '🇲🇦', cc: '+212' },
@@ -78,8 +79,27 @@ export function LeadFormBubble({
   const [note, setNote] = useState('');
   const [honeypot, setHoneypot] = useState(''); // doit rester vide
   const [touched, setTouched] = useState({ firstName: false, phone: false });
+  const [prefilled, setPrefilled] = useState(false);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const status = leadOffer.status;
+
+  // CHAT-063 — Pré-remplissage depuis localStorage si un précédent lead
+  // a été soumis sur ce navigateur dans les 90 derniers jours. On ne
+  // charge qu'une seule fois et seulement si les champs sont encore
+  // vides (évite d'écraser ce que l'utilisateur a tapé entre temps).
+  useEffect(() => {
+    if (prefilled) return;
+    if (status !== 'open' && status !== 'offered') return;
+    const data = loadLeadPrefill();
+    if (!data) {
+      setPrefilled(true);
+      return;
+    }
+    setFirstName((cur) => (cur ? cur : data.firstName));
+    setPhone((cur) => (cur ? cur : data.phone));
+    setCountry((cur) => (cur !== 'MA' ? cur : data.country));
+    setPrefilled(true);
+  }, [status, prefilled]);
 
   // Tracking offered → view (au moment où la bulle est montée).
   useEffect(() => {
@@ -219,12 +239,28 @@ export function LeadFormBubble({
         setLeadFormError(data.error || 'submit-failed');
         return;
       }
-      const data: { ok: boolean; leadId: string; outcomeMessage: string } = await res.json();
+      const data: {
+        ok: boolean;
+        leadId: string;
+        outcomeMessage: string;
+        value?: number;
+        currency?: string;
+      } = await res.json();
       setLeadFormSuccess(data.outcomeMessage || copy.successFallback);
+      saveLeadPrefill({
+        firstName: firstName.trim(),
+        phone: phone.trim(),
+        country,
+      });
+      // T-06 — `generate_lead` valorisé au prix du kit (avec promo), fourni
+      // par la réponse serveur. On n'émet `currency` QUE si `value` est
+      // présente (currency orpheline = signal invalide GA4/Meta).
       emit('generate_lead', {
         method: 'chat',
         lead_id: data.leadId,
-        currency: 'MAD',
+        ...(typeof data.value === 'number' && data.value > 0
+          ? { value: data.value, currency: data.currency ?? 'MAD' }
+          : {}),
       });
     } catch (err) {
       setLeadFormError((err as Error).message || 'network-error');

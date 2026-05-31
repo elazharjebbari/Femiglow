@@ -21,13 +21,13 @@ const orderedOptions: ReadonlyArray<PaymentOption> = [
   {
     value: 'card',
     title: 'Carte bancaire',
-    hint: 'Visa, Mastercard via Stripe.',
+    hint: 'Visa, Mastercard — bientôt disponible.',
     icon: 'card',
   },
   {
     value: 'cmi',
     title: 'Carte marocaine (CMI)',
-    hint: 'Banques marocaines, paiement sécurisé.',
+    hint: 'Banques marocaines — bientôt disponible.',
     icon: 'cmi',
   },
 ];
@@ -52,14 +52,18 @@ export const PaymentMethodSelector = forwardRef<
     >
       {orderedOptions.map((opt) => {
         const checked = value === opt.value;
+        const disabled = opt.value !== 'cod';
         return (
           <label
             key={opt.value}
             className={cn(
               'flex min-h-[96px] cursor-pointer flex-col gap-2 border px-4 py-3 transition-colors',
-              checked
-                ? 'border-encre bg-encre/5'
-                : 'border-encre/15 hover:border-encre/30',
+              disabled && 'cursor-not-allowed opacity-40',
+              !disabled &&
+                (checked
+                  ? 'border-encre bg-encre/5'
+                  : 'border-encre/15 hover:border-encre/30'),
+              disabled && 'border-encre/10',
             )}
           >
             <span className="flex items-center gap-3">
@@ -70,12 +74,13 @@ export const PaymentMethodSelector = forwardRef<
                 checked={checked}
                 onChange={() => onChange(opt.value)}
                 onBlur={onBlur}
+                disabled={disabled}
                 className="h-4 w-4 accent-encre"
               />
               <PaymentIcon kind={opt.icon} />
               <span className="font-medium text-encre">{opt.title}</span>
             </span>
-            <span className="pl-7 text-xs text-encre/60">{opt.hint}</span>
+            <span className="ps-7 text-xs text-encre/60">{opt.hint}</span>
           </label>
         );
       })}

@@ -1,0 +1,128 @@
+LOCALE SWITCHER V2 — CHECKLIST DE LIVRAISON
+============================================
+(cocher [x] uniquement quand vérifié sur preview réel + tests verts)
+
+--- CONCEPTION / CONTRAT ---
+[ ] CONTRACT.md respecté (noms, tokens, events, INV-1..INV-12)
+[ ] ADR à jour si un choix a changé
+
+--- FRONTEND ---
+[ ] buildSwitchUrl : insert/replace + UTM préservé (INV-4)
+[ ] useLocaleTransition : 4 modes (vt / veil / reduced / reload)
+[ ] no-op sur langue active (INV-11)
+[ ] dir/lang posés AVANT la frame (INV-2) — pas d'état LTR visible sur /ar
+[ ] scroll préservé au switch (INV-3)
+[ ] aucun reload en nominal (INV-1)
+[ ] LocaleVeil : fondu cross-browser (fallback)
+[ ] LiveAnnouncer : annonce aria-live au switch (INV-10)
+[ ] endonymes FR/AR/EN, 0 latin sur /ar (INV-6)
+[ ] switcher : neutres only, pas de pop chaud, pas de pulse, pas de drapeau
+[ ] caché en wizard + chrome admin (INV-5)
+
+--- DÉTECTION / NUDGE ---
+[ ] resolveSuggestedLocale : précédence cookie > Accept-Language > défaut
+[ ] nudge résolu serveur (pas de flash)
+[ ] nudge one-shot : montré 1x, dismiss permanent (cookie)
+[ ] jamais de modale, jamais sur wizard
+[ ] events nudge_shown/accepted/dismissed conformes (CONTRACT §4)
+
+--- BACKEND / DATA ---
+[ ] migration i18n_locale_config (additive)
+[ ] GET /api/i18n/config public + cache + ETag
+[ ] config invalide => valeurs par défaut (INV-12)
+[ ] GET/PUT /api/admin/i18n/config : authz + validation + audit + concurrence
+[ ] event locale_switch conforme (CONTRACT §4)
+
+--- ADMIN ---
+[ ] /admin/i18n : toggle/endonyme/reorder/default/nudge/variant
+[ ] preview FR/AR/EN (dont RTL) sans muter la locale réelle
+[ ] garde-fous : pas de désactivation du défaut / de toutes les locales
+[ ] audit before/after enregistré
+
+--- ACCESSIBILITÉ ---
+[ ] clavier complet (Up/Down/Home/End/Esc, roving tabindex)
+[ ] focus géré après switch
+[ ] contraste AAA (encre/crème)
+[ ] prefers-reduced-motion => bascule directe (INV-7)
+[ ] sans-JS : liens hreflang fonctionnels (INV-8)
+[ ] axe : 0 violation critique par locale
+
+--- SEO ---
+[ ] hreflang alternates présents (INV-9)
+[ ] URLs localisées intactes, x-default = fr
+
+--- TESTS / QUALITÉ ---
+[ ] Vitest : 4 modes hook + helpers + config + nudge verts
+[ ] Playwright : 6 pages x 3 locales + RTL + mobile + nudge + admin + wizard caché
+[ ] MSW : handlers config 200/invalide/500, PUT 200/401/422/409
+[ ] coverage-matrix.csv : chaque INV-1..INV-12 a >=1 test vert (aucune ligne vide)
+[ ] test négatif vérifié pour chaque invariant (vert trompeur écarté)
+
+--- NON-RÉGRESSION ---
+[ ] i18n-scan-fr = 0
+[ ] i18n-scan-latin-ar = 0 (hors FemiGlow)
+[ ] build prod vert + pages 200 (FR/AR/EN)
+[ ] wizard checkout intact (CHA-231)
+[ ] typecheck 0 erreur (périmètre) + lint OK
+
+--- LIVRAISON (SWITCHER) ---
+[ ] flag localeSwitcherV2 on (ou A/B configuré)
+[ ] télémétrie locale_switch vérifiée (events remontent)
+[ ] rollback N1 (flag off) testé
+[ ] surveillance 24-48h planifiée (taux bascule + add-to-cart par langue)
+
+============================================
+MOTEUR DE SUGGESTION (10-suggestion-engine)
+============================================
+
+--- DEVINETTE / POLITIQUE (PURES) ---
+[ ] guessPreferredLocale : consensus AR (S1+S3+S4) haute confiance
+[ ] contradiction (cookie fr vs Accept-Language ar) => confiance basse / abstention
+[ ] Accept-Language q-weights respectés ; adLocale (utm) pondéré
+[ ] IP-géo jamais signal dur / jamais seul (INV-20)
+[ ] signal manquant => valeur conservatrice (jamais show)
+[ ] evaluateSuggestionPolicy : table de vérité complète + test négatif par invariant
+
+--- INVARIANTS MOTEUR ---
+[ ] OFF par défaut pour tous : aucun prompt tant qu'un profil n'est pas activé (INV-13)
+[ ] zones calmes inviolables : jamais en checkout/form actif (INV-14, plancher non désactivable)
+[ ] jamais en lecture longue engagée (INV-15)
+[ ] fréquence bornée : <=1 / cooldown ; dismiss persistant définitif (INV-16)
+[ ] moment opportun seulement : show au breakpoint, defer sinon, abandon au TTL (INV-17)
+[ ] pilotable : créer/éditer/supprimer profils trigger ET never sans redeploy (INV-18)
+[ ] auditable : chaque décision tracée (raison + profil) ; vue d'audit (INV-19)
+[ ] non-intrusion : jamais d'auto-redirect ; prompt non-modal dismissible (INV-20)
+
+--- RUNTIME / PROMPT ---
+[ ] moteur off => 0 listener, 0 coût
+[ ] defer-to-breakpoint (scrollEnd/idle/exitIntent) + TTL d'abandon
+[ ] accept => bascule sans reload (réutilise useLocaleTransition)
+[ ] LocaleSuggestionPrompt : 2 choix symétriques (rester/passer), non-modal
+[ ] reduced-motion => prompt statique (sans animation), toujours utile
+[ ] perle (mismatch léger) / toast (exit-rescue) selon profil
+
+--- CONFIG / ADMIN / AUDIT ---
+[ ] section app_config i18n_suggestion_engine seedée OFF
+[ ] config invalide => moteur off (INV-13)
+[ ] checkout/form never-profiles NON désactivables (INV-14 floor)
+[ ] admin : toggle global + par profil ; builder no-code de profils ; dry-run/simulate
+[ ] admin : authz + validation + audit before/after (snapshots)
+[ ] vue /admin/i18n/engine/audit reflète montré/supprimé + raison + profil
+[ ] audit santé : show-rate au breakpoint ~100%, dismiss<2s bas, 0 fuite zone calme
+
+--- TESTS MOTEUR ---
+[ ] Vitest : guess + policy (table) + signals fail-safe + config
+[ ] Playwright : off-défaut, breakpoint-only, zones calmes, dismiss, accept no-reload, exit-intent, idle, reduced-motion
+[ ] MSW : config engine off/on/invalide + sink des 5 events
+[ ] axe : prompt non-modal 0 violation
+[ ] coverage-matrix moteur : INV-13..INV-20 chacun >=1 test + 1 négatif (aucune ligne vide)
+
+--- NON-RÉGRESSION MOTEUR ---
+[ ] scanners i18n = 0 ; build vert ; wizard intact (INV-5/INV-14)
+[ ] le LocaleNudge de base ne double pas le moteur (ADR-010)
+
+--- LIVRAISON (MOTEUR) ---
+[ ] flag localeSuggestionEngine livré OFF (tous profils trigger off)
+[ ] activation progressive profil par profil sous A/B + lecture audit
+[ ] rollback granulaire (désactiver un profil) ET global (engineEnabled=false / flag off) testés
+[ ] télémétrie des 5 events suggestion vérifiée

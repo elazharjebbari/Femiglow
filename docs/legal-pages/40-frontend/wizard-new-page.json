@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Wizard — Créer une nouvelle page légale",
+  "version": "1.0.0",
+  "name": "create-legal-page",
+  "steps": [
+    {
+      "id": "type",
+      "index": 1,
+      "label": "Type",
+      "component": "StepType",
+      "showsBack": false,
+      "showsNext": true,
+      "fields": [
+        {
+          "id": "type",
+          "type": "radio",
+          "label": "Quel type de page ?",
+          "required": true,
+          "options": [
+            { "value": "custom",   "label": "Page personnalisée",     "icon": "✏",  "description": "Je rédige de zéro" },
+            { "value": "policy",   "label": "Politique spécifique",   "icon": "📋", "description": "Ex: Politique anti-spam, anti-fraude" },
+            { "value": "charter",  "label": "Charte / Manifeste",     "icon": "📜", "description": "Page éditoriale formelle" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "metadata",
+      "index": 2,
+      "label": "Métadonnées",
+      "component": "StepMetadata",
+      "showsBack": true,
+      "showsNext": true,
+      "fields": [
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Titre de la page",
+          "placeholder": "Ex: Politique anti-fraude",
+          "required": true,
+          "validation": { "minLength": 3, "maxLength": 200 }
+        },
+        {
+          "id": "slug",
+          "type": "text",
+          "label": "URL (slug)",
+          "placeholder": "politique-anti-fraude",
+          "required": true,
+          "helperText": "Auto-généré depuis le titre. Lowercase, tirets, pas d'accents.",
+          "validation": { "pattern": "^[a-z0-9-]+$", "minLength": 2, "maxLength": 80 },
+          "autogenerateFrom": "title"
+        },
+        {
+          "id": "description",
+          "type": "textarea",
+          "label": "Description courte (méta)",
+          "placeholder": "Résumé en 1-2 phrases (max 160 caractères)",
+          "validation": { "maxLength": 200 }
+        }
+      ]
+    },
+    {
+      "id": "content",
+      "index": 3,
+      "label": "Contenu",
+      "component": "StepContent",
+      "showsBack": true,
+      "showsNext": true,
+      "fields": [
+        {
+          "id": "body_md",
+          "type": "markdown-editor",
+          "label": "Contenu (Markdown)",
+          "placeholder": "## Titre de section\n\nVotre contenu ici…",
+          "required": true,
+          "validation": { "minLength": 10 },
+          "showPreview": true,
+          "showToolbar": true,
+          "highlightUnfilledVars": true
+        }
+      ]
+    },
+    {
+      "id": "placements",
+      "index": 4,
+      "label": "Placement",
+      "component": "StepPlacements",
+      "showsBack": true,
+      "showsNext": true,
+      "description": "Où afficher cette page ?",
+      "fields": [
+        {
+          "id": "placements",
+          "type": "multicheckbox-grouped",
+          "label": "Zones du site",
+          "optionsFrom": "/api/admin/legal/zones",
+          "groupBy": "category",
+          "helperText": "Au moins 1 placement est recommandé"
+        }
+      ]
+    },
+    {
+      "id": "seo",
+      "index": 5,
+      "label": "SEO & publication",
+      "component": "StepSeoPublish",
+      "showsBack": true,
+      "showsNext": false,
+      "fields": [
+        {
+          "id": "include_in_search",
+          "type": "toggle",
+          "label": "Inclure dans la recherche Google",
+          "default": false,
+          "helperText": "Recommandé : décoché pour les pages légales. Cocher seulement pour FAQ ou pages d'utilité publique.",
+          "confirmIfChecked": "Vous activez l'indexation pour cette page. Êtes-vous sûr ?"
+        },
+        {
+          "id": "canonical_url",
+          "type": "text",
+          "label": "URL canonique (optionnel)",
+          "showIf": "include_in_search",
+          "helperText": "Laisser vide si pas de canonical custom",
+          "validation": { "format": "uri-reference" }
+        }
+      ],
+      "primaryAction": {
+        "label": "Créer la page (en brouillon)",
+        "endpoint": "POST /api/admin/legal",
+        "onSuccess": {
+          "action": "navigate",
+          "target": "/admin/legal/{slug}/edit"
+        }
+      }
+    }
+  ],
+  "completionState": {
+    "navigate": "/admin/legal",
+    "toast": "Page créée en brouillon. Tu peux maintenant la rédiger et la soumettre à revue."
+  }
+}

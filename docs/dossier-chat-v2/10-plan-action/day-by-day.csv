@@ -1,0 +1,132 @@
+date,day,sprint,wave,who,what,deliverable,depends_on,sync_point,status
+2026-05-13,Wed,S1-D1,V5,po_selma,Kickoff meeting + go/no-go review,Kickoff notes + signed go,—,Kickoff 14h,planned
+2026-05-13,Wed,S1-D1,V5,dev_lead,Setup project dependencies (Drizzle 0.45+pgvector+Zod+Zustand),package.json + tsconfig.json updated,—,—,planned
+2026-05-13,Wed,S1-D1,V5,dev_lead,Init migrations folder + scripts npm run db:migrate up/down,scripts/db/* + drizzle.config.ts,—,—,planned
+2026-05-13,Wed,S1-D1,V5,dev_intermediate,Project skeleton lib/chat/* directories,lib/chat/services + lib/chat/repos + lib/chat/types/,—,—,planned
+2026-05-13,Wed,S1-D1,V5,designer,Figma file FemiGlow Chat V2 — design tokens import,Figma library tokens,—,—,planned
+2026-05-13,Wed,S1-D1,V5,content_yasmine,Audit microcopy.csv FR baseline,Validation 30 strings FR primary,—,—,planned
+2026-05-14,Thu,S1-D2,V5,dev_lead,CHAT-001 — Migrations 0017-0020 (intent + canned tables) up/down,4 migrations + rollback test pass,Day 1 skeleton,—,planned
+2026-05-14,Thu,S1-D2,V5,dev_intermediate,Setup ESLint+Prettier+Husky pre-commit,.eslintrc + .prettierrc + husky/,—,—,planned
+2026-05-14,Thu,S1-D2,V5,dev_intermediate,Init Vitest+Playwright base config,vitest.config.ts + playwright.config.ts,—,—,planned
+2026-05-14,Thu,S1-D2,V5,designer,Wireframes admin first pass (intents + suggestions screens),Figma admin v0.1,—,—,planned
+2026-05-14,Thu,S1-D2,V5,content_yasmine,Brainstorm canned pairs (10 nouvelles paires),Doc draft 10 paires FR,—,—,planned
+2026-05-15,Fri,S1-D3,V5,dev_lead,CHAT-002 — Migrations 0021-0024 (RAG + tools tables) + index HNSW,4 migrations + HNSW vérifié,CHAT-001,—,planned
+2026-05-15,Fri,S1-D3,V5,dev_intermediate,CHAT-018 — ChatError hierarchy + types,lib/chat/errors/* + tests,—,—,planned
+2026-05-15,Fri,S1-D3,V5,designer,Wireframes admin pass 2 (FAQ + leads inbox),Figma admin v0.2,Day 2,—,planned
+2026-05-15,Fri,S1-D3,V5,content_yasmine,Traduction 10 paires en AR (Yasmine),Doc 10 paires FR+AR,Day 2 draft,—,planned
+2026-05-15,Fri,S1-D3,V5,all,Demo skeleton infrastructure interne,Skeleton qui run + test rollback live,—,Demo interne 16h,planned
+2026-05-18,Mon,S1-D4,V5,dev_lead,CHAT-003 — Migrations 0025-0027 + RGPD retention fields,3 migrations + audit RGPD checklist,CHAT-002,—,planned
+2026-05-18,Mon,S1-D4,V5,dev_intermediate,CHAT-004 — Seed scripts intents + pairs + faq,db:seed:dev fonctionnel,CHAT-003,—,planned
+2026-05-18,Mon,S1-D4,V5,designer,Wireframes admin pass 3 (tools sandbox + health),Figma admin v0.3 finale,Day 3,—,planned
+2026-05-18,Mon,S1-D4,V5,content_yasmine,Traduction 10 paires en AR-MA (Naima review),Doc 10 paires FR+AR+AR-MA validée,Day 3,—,planned
+2026-05-18,Mon,S1-D4,V5,po_selma,Validation wireframes admin (designer review),Figma admin signed off,Day 3 designer,Sync 11h,planned
+2026-05-19,Tue,S1-D5,V5,dev_lead,CHAT-005 — Intent regex layer + patterns,detectIntent regex match 80%+ examples,CHAT-004,—,planned
+2026-05-19,Tue,S1-D5,V5,dev_intermediate,Setup MSW handlers infra,mocks/handlers/* base,—,—,planned
+2026-05-19,Tue,S1-D5,V5,designer,Spec components MessageBubble + Composer (Figma → tokens),Components spec Figma → JSON tokens export,—,—,planned
+2026-05-19,Tue,S1-D5,V5,content_yasmine,Audit FAQ existante (extraire 30 entries depuis support tickets),Doc 30 entries FAQ draft FR,—,—,planned
+2026-05-19,Tue,S1-D5,V5,care_karim,Onboarding admin dashboard (mock screens walk-through),Notion notes care feedback,—,Sync 14h,planned
+2026-05-20,Wed,S1-D6,V5,dev_lead,CHAT-006 — Intent embedding layer + centroïdes script,Centroïdes 3 intents pré-calculés,CHAT-005,—,planned
+2026-05-20,Wed,S1-D6,V5,dev_intermediate,CHAT-020 — Tests intent detection 50 examples,Coverage matrice tests passe,CHAT-005,—,planned
+2026-05-20,Wed,S1-D6,V5,designer,Spec ChatLauncher + Panel animations (handoff hjson),animations.hjson exporté,Day 5,—,planned
+2026-05-20,Wed,S1-D6,V5,content_yasmine,Traduction 30 FAQ en AR + AR-MA,Doc 30 entries FAQ trilingue draft,Day 5,—,planned
+2026-05-20,Wed,S1-D6,V5,po_selma,Mid-sprint check 🟢🟡🔴,Slack récap status au team,—,Sync 10h,planned
+2026-05-21,Thu,S1-D7,V5,dev_lead,CHAT-007 — Intent LLM mini fallback (cost validated),Cost mesuré < 0.0001 USD/call,CHAT-006,—,planned
+2026-05-21,Thu,S1-D7,V5,dev_intermediate,Tests embedding cascade,Tests embed cascade verts,CHAT-006,—,planned
+2026-05-21,Thu,S1-D7,V5,designer,Validation a11y design tokens (contrastes Inter+Noto),axe-core preview pass tokens,—,—,planned
+2026-05-21,Thu,S1-D7,V5,content_yasmine,Validation native speaker AR-MA (Naima session 2h),30 FAQ AR-MA validées,Day 6,Sync 14h,planned
+2026-05-22,Fri,S1-D8,V5,dev_lead,CHAT-008 — detectIntent() unified + tests accuracy 85%+,Pipeline cascade complète testée,CHAT-007,—,planned
+2026-05-22,Fri,S1-D8,V5,dev_intermediate,CHAT-009 — Retrieval router decide(),decide() routing matrix all intents,CHAT-008,—,planned
+2026-05-22,Fri,S1-D8,V5,all,Demo S1-W1 + Retro mi-sprint,Demo live + actions retro,Tout S1-W1,Demo 16h + Retro 17h,planned
+2026-05-25,Mon,S1-D9,V5,dev_lead,CHAT-010 — FAQ gateway tryFaqGateway() avec threshold per-entry,FAQ gateway tested 30 entries,CHAT-009,—,planned
+2026-05-25,Mon,S1-D9,V5,dev_intermediate,CHAT-011 — Tool get_product (whitelist Zod),Tool tests get_product passent,CHAT-009,—,planned
+2026-05-25,Mon,S1-D9,V5,designer,Validation final design tokens (po_selma + designer review),Tokens.yaml signed off,Day 7 a11y,Sync 14h,planned
+2026-05-25,Mon,S1-D9,V5,content_yasmine,Microcopy.csv complète (70 keys),Microcopy.csv published Notion,Day 7,—,planned
+2026-05-26,Tue,S1-D10,V5,dev_lead,CHAT-014 — Canned engine resolveSalutations,resolveSalutations pages + audience tested,CHAT-010,—,planned
+2026-05-26,Tue,S1-D10,V5,dev_intermediate,CHAT-012 — Tool get_delivery_info (city aliases),Tool tests delivery passent,CHAT-009,—,planned
+2026-05-26,Tue,S1-D10,V5,dev_intermediate,CHAT-013 — Tool search_faq (ranked results),Tool tests search_faq passent,CHAT-009,—,planned
+2026-05-26,Tue,S1-D10,V5,designer,Onboarding designer → dev handoff (live pairing 2h),Notion handoff notes,—,Sync 10h,planned
+2026-05-26,Tue,S1-D10,V5,care_karim,Définition leads workflow (Hot/Warm/Cold + SLAs),Doc leads workflow Notion,—,Sync 14h,planned
+2026-05-27,Wed,S1-D11,V5,dev_lead,CHAT-015 — Canned engine servePairByKey + persist 2 messages tx,Pair served + events transactionnels OK,CHAT-014,—,planned
+2026-05-27,Wed,S1-D11,V5,dev_intermediate,CHAT-019 — Provider routing + breaker + failover,3-fail cooldown logic tested,CHAT-017 prep,—,planned
+2026-05-27,Wed,S1-D11,V5,designer,Spec LeadForm inline + states (Figma final),LeadForm Figma signed,—,—,planned
+2026-05-27,Wed,S1-D11,V5,content_yasmine,FAQ +20 trilingue (total 50),Doc 50 FAQ trilingue complet,Day 6,—,planned
+2026-05-28,Thu,S1-D12,V5,dev_lead,CHAT-016 — getEphemeralLLMNote (continuity injection),Note continuity test passe,CHAT-015,—,planned
+2026-05-28,Thu,S1-D12,V5,dev_lead,CHAT-017 — Orchestrator streamReply() pipeline (7 SSE events),Orchestrator stream 7 events tested,CHAT-016,—,planned
+2026-05-28,Thu,S1-D12,V5,dev_intermediate,Tests integration providers (MSW),Integration tests verts,CHAT-019,—,planned
+2026-05-28,Thu,S1-D12,V5,care_karim,Première session admin dashboard mock (Yasmine),Care feedback first impression,—,Sync 14h,planned
+2026-05-29,Fri,S1-D13,V5,dev_lead,CHAT-019 finalisation breaker,Breaker 3-fail cooldown live,Day 11 prep,—,planned
+2026-05-29,Fri,S1-D13,V5,dev_intermediate,Buffer + bug fixing + cleanup S1 tickets,Tous S1 tickets Done,—,—,planned
+2026-05-29,Fri,S1-D13,V5,all,Demo S1 finale + Retro S1,Demo live S1 backend pipeline + actions retro,Tout S1,Demo 14h + Retro 16h,planned
+2026-06-01,Mon,S2-D1,V5,dev_lead,CHAT-021 — API /api/chat/session POST,POST session retourne snapshot,CHAT-017,—,planned
+2026-06-01,Mon,S2-D1,V5,dev_intermediate,CHAT-026 — Frontend ChatLauncher + lazy panel,Launcher live + pulse + badge,—,—,planned
+2026-06-01,Mon,S2-D1,V5,designer,Validation FE handoff (live pairing avec dev_intermediate),Notion notes,—,Sync 10h,planned
+2026-06-01,Mon,S2-D1,V5,content_yasmine,Validation microcopy in-app (dev_intermediate preview),Microcopy.csv validated in-app,—,—,planned
+2026-06-02,Tue,S2-D2,V5,dev_lead,CHAT-022 — API /api/chat/message SSE,SSE streams 7 events types,CHAT-021,—,planned
+2026-06-02,Tue,S2-D2,V5,dev_intermediate,CHAT-027 — Frontend ChatPanel + FSM 8 états,FSM transitions all tested,CHAT-026,—,planned
+2026-06-02,Tue,S2-D2,V5,designer,Audit visuel preview Vercel S2-D1,Designer feedback Notion,Day 1,—,planned
+2026-06-03,Wed,S2-D3,V5,dev_lead,CHAT-023 — API /api/chat/canned-pair POST,API canned-pair retourne scriptedReply,CHAT-015,—,planned
+2026-06-03,Wed,S2-D3,V5,dev_intermediate,CHAT-028 — Zustand store + persist v2 migration,Store complet + persist v2 tested,CHAT-027,—,planned
+2026-06-03,Wed,S2-D3,V5,po_selma,Mid-sprint S2 check + scope cutter si dérapage,Slack récap,—,Sync 10h,planned
+2026-06-04,Thu,S2-D4,V5,dev_lead,CHAT-024 — API /api/chat/lead POST + webhook n8n (HMAC + retries),Lead créé + webhook réussi 3x retry,CHAT-017,—,planned
+2026-06-04,Thu,S2-D4,V5,dev_intermediate,CHAT-029 — useChatSSE hook (fetch + reader + parse 7 types),Hook SSE tests passent,CHAT-022,—,planned
+2026-06-04,Thu,S2-D4,V5,content_yasmine,Validation suggestions defaut (admin draft → review → published),Suggestions published staging,—,—,planned
+2026-06-05,Fri,S2-D5,V5,dev_lead,CHAT-025 — API /api/chat/feedback POST,Feedback vote idempotent,CHAT-022,—,planned
+2026-06-05,Fri,S2-D5,V5,dev_intermediate,CHAT-030 — useLocalStream hook (wpm + jitter + reduced-motion),Local stream tests passent,CHAT-028,—,planned
+2026-06-05,Fri,S2-D5,V5,all,Demo mi-S2 + Retro mi-sprint,Demo live + actions retro,Tout S2-W1,Demo 16h + Retro 17h,planned
+2026-06-08,Mon,S2-D6,V5,dev_lead,CHAT-036 — Admin dashboard layout + sidebar,Admin shell live + 12 nav links,—,—,planned
+2026-06-08,Mon,S2-D6,V5,dev_intermediate,CHAT-031 — MessageBubble (user/assistant/canned + LTR/RTL),MessageBubble all variants live,CHAT-027,—,planned
+2026-06-08,Mon,S2-D6,V5,designer,Audit visuel admin shell + composants chat,Designer feedback,—,—,planned
+2026-06-08,Mon,S2-D6,V5,content_yasmine,Validation copy admin (tooltips + helpers),Copy admin validée,—,—,planned
+2026-06-09,Tue,S2-D7,V5,dev_lead,CHAT-037 — Admin conversations list + detail drawer,Conversations admin live + filtres URL,CHAT-022,—,planned
+2026-06-09,Tue,S2-D7,V5,dev_intermediate,CHAT-032 + CHAT-033 — SuggestionPills + Composer,Pills + Composer live + a11y,CHAT-031,—,planned
+2026-06-10,Wed,S2-D8,V5,dev_lead,CHAT-038 — Admin intents CRUD + examples + recompute trigger,Admin intents CRUD live,CHAT-008,—,planned
+2026-06-10,Wed,S2-D8,V5,dev_intermediate,CHAT-034 — Frontend LeadForm inline + Zod + i18n,LeadForm live trilingue validé,CHAT-027,—,planned
+2026-06-10,Wed,S2-D8,V5,care_karim,Première utilisation admin (Yasmine + Karim live),Feedback session ergonomy,—,Sync 14h,planned
+2026-06-11,Thu,S2-D9,V5,dev_lead,CHAT-039 — Admin suggestions CRUD + workflow draft/review/published,Suggestions admin live + preview,CHAT-015,—,planned
+2026-06-11,Thu,S2-D9,V5,dev_intermediate,CHAT-035 — A11y audit + axe-core CI integration,axe-core CI gate green,CHAT-031,—,planned
+2026-06-11,Thu,S2-D9,V5,content_yasmine,Suggestions production push (admin → live staging),Suggestions live staging,Day 8,—,planned
+2026-06-12,Fri,S2-D10,V5,dev_lead,CHAT-040 + CHAT-041 + CHAT-042 — Admin FAQ + Tools sandbox + KB sources,Admin pages live,CHAT-010 CHAT-011 CHAT-013,—,planned
+2026-06-12,Fri,S2-D10,V5,dev_intermediate,Buffer + bug fix + polish,Tickets in_progress closed,—,—,planned
+2026-06-12,Fri,S2-D10,V5,all,Demo mi-S2 final + ajustements,Demo live + scope decisions,Tout S2-W1,Demo 16h,planned
+2026-06-15,Mon,S2-D11,V5,dev_lead,CHAT-043 + CHAT-044 — Admin leads + health dashboards,Admin leads + health live,CHAT-024,—,planned
+2026-06-15,Mon,S2-D11,V5,dev_intermediate,CHAT-045 + CHAT-046 — Cron kb-sync + intent-recompute,Crons activés staging,CHAT-042 CHAT-006,—,planned
+2026-06-15,Mon,S2-D11,V5,care_karim,Validation leads admin (workflow Hot/Warm/Cold),Care signoff leads,—,Sync 14h,planned
+2026-06-16,Tue,S2-D12,V5,dev_lead,CHAT-047 + CHAT-048 — Cron budget-watch + gdpr-purge,Crons + service level switch + RGPD,CHAT-019 CHAT-003,—,planned
+2026-06-16,Tue,S2-D12,V5,dev_intermediate,CHAT-049 — Tests unit Jest coverage 80%+,Coverage 80% report,—,—,planned
+2026-06-16,Tue,S2-D12,V5,designer,Audit visuel final V5 (chat + admin),Designer signoff V5,—,—,planned
+2026-06-17,Wed,S2-D13,V5,dev_lead,CHAT-050 — Tests integration API+DB all endpoints,Integration tests verts,—,—,planned
+2026-06-17,Wed,S2-D13,V5,dev_intermediate,CHAT-051 — Tests E2E Playwright (greeting + suggestion + LLM + lead),E2E tests verts,CHAT-034,—,planned
+2026-06-17,Wed,S2-D13,V5,po_selma,Mid-sprint S2-W2 final check 🟢🟡🔴,Slack récap,—,Sync 10h,planned
+2026-06-18,Thu,S2-D14,V5,dev_lead,CHAT-052 — Test ULTIMATE pipeline (chaos + happy),Test ULTIME passe,CHAT-051,—,planned
+2026-06-18,Thu,S2-D14,V5,dev_intermediate,CHAT-053 — MSW handlers all providers,MSW handlers complets,—,—,planned
+2026-06-18,Thu,S2-D14,V5,dev_lead,CHAT-054 — Sentry alerts + tags chat.area,Sentry alerts configurés,CHAT-018,—,planned
+2026-06-19,Fri,S2-D15,V5,dev_lead,CHAT-055 — Dashboards Business + Editorial Recharts,Dashboards staging,CHAT-022,—,planned
+2026-06-19,Fri,S2-D15,V5,dev_lead,CHAT-056 — Runbook deploy.md + rollback.md,Runbook docs published,—,—,planned
+2026-06-19,Fri,S2-D15,V5,po_selma,CHAT-057 — Training Yasmine + Karim admin (Loom + Q&A),Training session done + Loom recorded,CHAT-039,Training 14h,planned
+2026-06-19,Fri,S2-D15,V5,all,Demo S2 finale + Retro S2 + Go/No-Go V5 ship,Demo live V5 + Go decision,Tout V5,Demo 15h + Retro 16h30 + Go/No-Go 17h30,planned
+2026-06-22,Mon,SHIP,V5,dev_lead,Production deploy V5 (smoke test post-deploy),V5 en prod + smoke test green,V5 Go,Deploy 10h,planned
+2026-06-22,Mon,SHIP,V5,po_selma,Annonce interne `#chat-launch`,Slack announce + KPI baseline,Deploy success,Sync 11h,planned
+2026-06-22,Mon,SHIP,V5,care_karim,Care team go-live (premières conversations monitoring),Care monitoring active,Deploy success,—,planned
+2026-06-23,Tue,POST,V5,dev_lead,Post-launch monitoring + bug fixing,No P0/P1 incidents,—,—,planned
+2026-06-24,Wed,POST,V5,po_selma,Premier review KPI 48h post-launch,KPI report J+2,Deploy,—,planned
+2026-06-25,Thu,POST,V5,dev_lead,Hotfixes si applicable + tag v5.0.1,Release tag,—,—,planned
+2026-06-26,Fri,POST,V5,po_selma,V5 retrospective + V6 kickoff prep,V6 kickoff agenda,V5 ship,Retro 14h + V6 prep 16h,planned
+2026-06-29,Mon,S3-D1,V6,po_selma,V6 kickoff,V6 sprint planning + scope confirm,V5 ship,Kickoff 10h,planned
+2026-06-29,Mon,S3-D1,V6,dev_intermediate,CHAT-058 — A/B engine cookie variant assigner,Assigner live 30j cookie,—,—,planned
+2026-06-29,Mon,S3-D1,V6,content_yasmine,CHAT-061 — Canned pairs +25 trilingual,25 pairs admin live,—,—,planned
+2026-06-29,Mon,S3-D1,V6,content_yasmine,CHAT-062 — FAQ entries +30 trilingual,30 FAQ admin live,—,—,planned
+2026-07-03,Fri,S3-D5,V6,po_selma,Mi-sprint V6 check,Slack récap status,—,Sync 10h,planned
+2026-07-10,Fri,S3-D10,V6,all,Demo S3 + Retro,Demo live V6 sprint 1,Tout S3,Demo 14h + Retro 16h,planned
+2026-07-13,Mon,S4-D1,V6,dev_lead,CHAT-065 — Mode anonyme RGPD,Mode anonyme live,—,—,planned
+OK, là on stopp 2026-07-24,Fri,S4-D10,V6,all,Demo S4 + Retro + Go V6,V6 ship decision,Tout V6,Demo 14h + Go 17h,planned
+2026-07-27,Mon,SHIP,V6,dev_lead,Production deploy V6,V6 en prod,V6 Go,Deploy 10h,planned
+2026-08-03,Mon,S5-D1,V7,dev_lead,CHAT-071 — Sendit tracking API,Sendit auth + cache OK,—,—,planned
+2026-08-14,Fri,S5-D10,V7,all,Demo S5 + Retro,Demo live V7 sprint 1,Tout S5,Demo 14h + Retro 16h,planned
+2026-08-17,Mon,S6-D1,V7,dev_lead,CHAT-073 — Promo engine refactor,Promo engine live,—,—,planned
+2026-08-28,Fri,S6-D10,V7,all,Demo S6 + Retro,Demo live V7 sprint 2,Tout S6,Demo 14h + Retro 16h,planned
+2026-08-31,Mon,S7-D1,V7,dev_intermediate,CHAT-075 — B2B LeadForm advanced,B2B LeadForm live,—,—,planned
+2026-09-04,Fri,S7-D5,V7,po_selma,Mi-sprint V7-S7 check,Slack récap,—,Sync 10h,planned
+2026-09-11,Fri,S7-D10,V7,all,Demo S7 + Retro,Demo live,Tout S7,Demo 14h + Retro 16h,planned
+2026-09-14,Mon,S8-D1,V7,designer,CHAT-077 — Dark mode tokens + toggle (designer + dev),Dark mode tokens design,—,—,planned
+2026-09-25,Fri,S8-D10,V7,all,Demo S8 + Retro + Go V7,V7 ship decision,Tout V7,Demo 14h + Go 17h,planned
+2026-09-28,Mon,SHIP,V7,dev_lead,Production deploy V7,V7 en prod,V7 Go,Deploy 10h,planned

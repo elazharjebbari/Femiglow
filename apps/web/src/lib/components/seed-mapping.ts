@@ -3,18 +3,38 @@
  * slot d’un composant du registre.
  *
  * Format :
- *   sourcePath (relatif à `docs/images/values/`) → { componentKey, slot }
+ *   sourcePath (relatif à `docs/images/values/`) → { componentKey, slot,
+ *                                                    autoActivate? }
  *
  * Cette table est utilisée par le pipeline `seed-from-docs` pour :
  *   1. Ingérer le PNG comme `Media` (via `optimizeImage` + storage adapter).
  *   2. Créer un `componentMediaBindings` (componentKey, slot, mediaId).
  *
- * Sécurité : binding créé avec `isActive=false` par défaut, sauf si
- * `--auto-activate` est passé au CLI.
+ * Activation (Option B — cf. `seed-pipeline.ts`) :
+ *  - À la CRÉATION du binding (premier seed) : `isActive=true` par défaut.
+ *    Le site est immédiatement utilisable après le seed, pas besoin d'aller
+ *    cliquer dans l'admin pour chaque slot.
+ *  - À la MISE À JOUR d'un binding existant : `isActive` est PRÉSERVÉ.
+ *    Si l'admin a désactivé un slot via la CMS, un re-seed ne le réactive
+ *    pas en silence.
+ *  - `--auto-activate` (CLI) ou `mapping.autoActivate: true` forcent la
+ *    réactivation même sur un binding désactivé manuellement — à utiliser
+ *    quand on veut explicitement remettre tout en route après un override
+ *    admin (debug, rollback éditorial).
  */
 export interface SeedMappingEntry {
   componentKey: string;
   slot: string;
+  /**
+   * Si vrai, force `isActive=true` même sur un binding préexistant désactivé
+   * par l'admin (cf. Option B dans `seed-pipeline.ts`). À réserver aux assets
+   * que l'éditorial considère comme la source canon non-négociable
+   * (ex. CHA-243 — hero kit pointe systématiquement sur `image-produit.png`).
+   * En pratique, sur un fresh-seed cette option est redondante (création =
+   * actif par défaut) ; elle sert surtout aux re-seeds pour restaurer un slot
+   * après un override admin temporaire.
+   */
+  autoActivate?: boolean;
 }
 
 export const IMAGE_TO_COMPONENT: Record<string, SeedMappingEntry> = {
@@ -32,9 +52,40 @@ export const IMAGE_TO_COMPONENT: Record<string, SeedMappingEntry> = {
   'rituel/poster-video.png': { componentKey: 'rituel-video-4-gestes', slot: 'poster' },
   'rituel/og-rituel.png': { componentKey: 'rituel-og', slot: 'og' },
 
-  /* ───── kit/ ───── */
-  'kit/kit-principale.png': { componentKey: 'kit-hero-produit', slot: 'primary' },
+  /* ───── kit/ ─────
+   * `image-produit.png` est l'image de référence pour le hero kit (CHA-243).
+   * Le composant `kit-hero-produit` ramène l'image au ratio 4:5 via Next/Image
+   * + `object-cover`, donc l'image source n'a pas besoin d'être pré-cropée :
+   * c'est l'image qui s'adapte au composant, pas l'inverse.
+   *
+   * `autoActivate: true` — marque ce slot comme canon non-négociable :
+   * même si un admin l'a désactivé via la CMS, un re-seed le ré-active
+   * (rollback éditorial). Sur un fresh-seed cette option est redondante
+   * (création = actif par défaut depuis Option B) — elle reste là pour
+   * documenter explicitement que `image-produit.png` est la source canon
+   * du hero kit.
+   *
+   * `kit-principale.png` reste disponible comme Media (toujours seedé), mais
+   * sans auto-binding — utile pour A/B test depuis l'admin.
+   */
+  'kit/image-produit.png': {
+    componentKey: 'kit-hero-produit',
+    slot: 'primary',
+    autoActivate: true,
+  },
   'kit/kit-detail-mains.png': { componentKey: 'kit-detail-mains', slot: 'primary' },
+  /**
+   * §4.6 — packshot canon de la section « Le Pack ». `autoActivate: true`
+   * = ce binding est non-négociable : un re-seed le restaure même si
+   * l'admin l'a désactivé. L'admin peut bien sûr pointer ce slot vers
+   * un autre media du catalogue depuis `/admin/components` (changement
+   * éditorial respecté tant qu'un re-seed n'est pas déclenché).
+   */
+  'kit/kit-pack-shot.png': {
+    componentKey: 'kit-pack-visual',
+    slot: 'primary',
+    autoActivate: true,
+  },
   'kit/kit-base.png': { componentKey: 'kit-comparatif', slot: 'kit-base' },
   'kit/kit-fortifiant.png': { componentKey: 'kit-comparatif', slot: 'kit-fortifiant' },
   'kit/kit-lime.png': { componentKey: 'kit-comparatif', slot: 'kit-lime' },
@@ -113,6 +164,19 @@ export const IMAGE_TO_COMPONENT: Record<string, SeedMappingEntry> = {
   'journal/og-journal.png': { componentKey: 'journal-og', slot: 'og' },
 };
 
+/**
+ * Assets présents sur disque mais intentionnellement non bindés à un composant.
+ * Ils sont quand même importés en `Media` par `seed-media.ts` (utiles pour
+ * A/B testing depuis l'admin), mais ne créent pas de binding éditorial.
+ *
+ * Garde-fou : le test de couverture `seed-mapping.test.ts` ne considère pas
+ * ces fichiers comme « unmapped » (donc pas d'échec CI quand ils existent).
+ */
+export const INTENTIONALLY_UNMAPPED: ReadonlySet<string> = new Set([
+  // Hero kit alternatif — l'image active est `kit/image-produit.png` (cf. CHA-243).
+  'kit/kit-principale.png',
+]);
+
 export function findMappingFor(sourcePath: string): SeedMappingEntry | undefined {
   return IMAGE_TO_COMPONENT[sourcePath];
 }
@@ -123,8 +187,11 @@ export function listSeedSourcePaths(): string[] {
 
 /**
  * Liste des fichiers présents sous `docs/images/values/` mais NON mappés
- * dans `IMAGE_TO_COMPONENT`. Utilisé pour le rapport CLI `--report`.
+ * dans `IMAGE_TO_COMPONENT` (et non listés comme intentionnellement non mappés).
+ * Utilisé pour le rapport CLI `--report`.
  */
 export function listUnmapped(filesPresent: string[]): string[] {
-  return filesPresent.filter((f) => !IMAGE_TO_COMPONENT[f]);
+  return filesPresent.filter(
+    (f) => !IMAGE_TO_COMPONENT[f] && !INTENTIONALLY_UNMAPPED.has(f),
+  );
 }

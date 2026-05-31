@@ -20,9 +20,18 @@ interface AtelierGalleryProps {
    * `data.gallerie`. Si absent ou plus court → fallback vers l'item.
    */
   mediaSlotsByIndex?: AtelierGalleryMediaSlot[];
+  /** Phase 9bis — kicker localisé (« L'atelier »). Défaut FR. */
+  kicker?: string;
+  /** Phase 9bis — titre localisé (« Rabat, deux pièces calmes. »). Défaut FR. */
+  title?: string;
 }
 
-export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps) {
+export function AtelierGallery({
+  data,
+  mediaSlotsByIndex,
+  kicker = 'L’atelier',
+  title = 'Rabat, deux pièces calmes.',
+}: AtelierGalleryProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [active, setActive] = useState<number | null>(null);
 
@@ -40,9 +49,9 @@ export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps)
     <section className="bg-creme py-16 sm:py-24">
       <Container width="page">
         <div className="mb-10 flex flex-col gap-3 sm:max-w-[60ch]">
-          <Kicker tone="champagne">L’atelier</Kicker>
+          <Kicker tone="champagne">{kicker}</Kicker>
           <Heading as="h2" size="display-md" italic="auto" balance>
-            Casablanca, deux pièces calmes.
+            {title}
           </Heading>
           <p className="font-body text-sm uppercase tracking-[0.18em] text-encre/60">
             {data.adresse} — {data.quartier}
@@ -67,7 +76,7 @@ export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps)
                   className="group block w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-encre/40 focus-visible:ring-offset-4 focus-visible:ring-offset-creme"
                 >
                   {thumb ? (
-                    <div className="aspect-[3/2] w-full overflow-hidden bg-encre/5 transition-transform duration-700 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
+                    <div className="aspect-[3/2] w-full overflow-hidden bg-encre/5">
                       {thumb}
                     </div>
                   ) : (
@@ -78,7 +87,6 @@ export function AtelierGallery({ data, mediaSlotsByIndex }: AtelierGalleryProps)
                       height={img.height}
                       ratio="3:2"
                       sizes="(min-width: 1024px) 33vw, 100vw"
-                      className="transition-transform duration-700 group-hover:scale-[1.02] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                     />
                   )}
                 </button>

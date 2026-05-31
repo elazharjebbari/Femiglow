@@ -124,6 +124,18 @@ describe('formatBucket', () => {
     expect(out).toMatch(/^S\d{1,2}$/);
   });
 
+  it('F-FMT-01 — heure ancrée sur le fuseau Maroc (pas le TZ du client)', () => {
+    // 23:30 UTC = 00:30 à Casablanca (+01).
+    expect(formatBucket('2026-05-06T23:30:00Z', 'hour')).toBe('00h30');
+  });
+
+  it('F-FMT-02 — semaine ISO correcte aux bords d’année', () => {
+    // midi UTC pour rester sur la même date civile quel que soit le TZ du process.
+    expect(formatBucket('2026-01-01T12:00:00Z', 'week')).toBe('S1'); // jeudi → S1 2026
+    expect(formatBucket('2025-12-29T12:00:00Z', 'week')).toBe('S1'); // lundi même semaine ISO
+    expect(formatBucket('2025-12-28T12:00:00Z', 'week')).toBe('S52'); // dimanche → S52 2025
+  });
+
   it('input invalid → ""', () => {
     expect(formatBucket('not a date', 'day')).toBe('');
   });

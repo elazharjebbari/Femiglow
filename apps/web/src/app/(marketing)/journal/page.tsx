@@ -29,8 +29,8 @@ export async function generateMetadata({
   const titleSuffix = active ? ` — ${categoryLabels[active]}` : '';
   const canonical = active ? `/journal?category=${active}` : '/journal';
   const description = active
-    ? `Journal FemiGlow — articles de la catégorie ${categoryLabels[active].toLowerCase()}, écrits à Casablanca.`
-    : 'Le carnet de la maison FemiGlow — récits saisonniers, matières et voix d’initiées, publiés au rythme des saisons.';
+    ? `Journal FemiGlow — articles de la catégorie ${categoryLabels[active].toLowerCase()}, écrits à Rabat.`
+    : 'Le carnet de la maison FemiGlow — récits saisonniers, matières et voix d’initiées, écrits à Rabat et publiés au rythme des saisons.';
   const og = (await resolveOgImage('journal-og')) ?? FALLBACK_OG;
   return {
     title: `Le carnet de la maison${titleSuffix}`,
@@ -97,13 +97,13 @@ export default async function JournalPage({ searchParams }: JournalPageProps) {
       <NewsletterBlock source="journal-bottom" />
       <CrossLinkBanner
         kicker="La maison"
-        title={'L\u2019atelier de Casablanca.'}
-        description={'Visiter l\u2019adresse, comprendre comment se fabrique le rituel, rencontrer les voix qui l\u2019\u00e9crivent.'}
+        title={'L\u2019atelier de Rabat.'}
+        description={'Visiter l\u2019adresse au 25 bis avenue Patrice Lumumba, comprendre comment se fabrique le rituel, rencontrer les voix qui l\u2019\u00e9crivent.'}
         ctaLabel="Visiter la maison"
         href="/maison"
         image={{
           src: '/journal/crosslink-maison.png',
-          alt: 'Vue intérieure de l\u2019atelier FemiGlow à Casablanca',
+          alt: 'Vue intérieure de l\u2019atelier FemiGlow à Rabat',
           width: 1600,
           height: 1067,
         }}

@@ -1,0 +1,292 @@
+@startuml erd
+' Diagramme ERD chat FemiGlow v2
+' Inclut tables existantes (rappel) + nouvelles tables v2
+
+!theme cerulean-outline
+title Chat FemiGlow v2 — Modèle de données cible
+
+skinparam linetype ortho
+
+' ========== EXISTANT ==========
+package "Existant (rappel)" #DDDDDD {
+
+  entity "chat_session" as session {
+    * id : uuid
+    --
+    visitor_token : text
+    language : text
+    consent_version : text
+    created_at : timestamptz
+    updated_at : timestamptz
+    last_seen_at : timestamptz
+    meta : jsonb
+  }
+
+  entity "chat_message" as message {
+    * id : uuid
+    --
+    * session_id : uuid <<FK>>
+    role : text  // user/assistant/system
+    content : text
+    intent : text
+    language : text
+    provider : text
+    model : text
+    cost : numeric
+    latency_ms : int
+    first_token_ms : int
+    rag_hits : jsonb
+    tool_calls : jsonb
+    meta : jsonb  // source: suggestion|canned|faq|llm, pairKey, etc.
+    created_at : timestamptz
+  }
+
+  entity "chat_conversation_event" as event {
+    * id : uuid
+    session_id : uuid <<FK>>
+    message_id : uuid <<FK>>
+    type : text   // 27+ types: message_sent_*, intent_*, canned_used, ...
+    payload : jsonb
+    created_at : timestamptz
+  }
+
+  entity "chat_lead" as lead {
+    * id : uuid
+    --
+    session_id : uuid <<FK>>
+    name : text
+    phone_e164 : text
+    email : text
+    city : text
+    consent_version : text
+    reason : text   // explicit-request, inline-contact, ...
+    raw_message_id : uuid
+    notified_at : timestamptz
+    created_at : timestamptz
+  }
+
+  entity "chat_knowledge_source" as ksrc {
+    * id : uuid
+    kind : text   // url/md/pdf/docx/faq/snippet
+    label : text
+    language : text
+    tags : text[]
+    audience : text  // public/b2b/all
+    freshness : text // evergreen/seasonal/volatile
+    raw_hash : text  <<UNIQUE per lang>>
+    chunk_count : int
+    enabled : bool
+    created_at : timestamptz
+  }
+
+  entity "chat_knowledge_chunk" as kchunk {
+    * id : uuid
+    * source_id : uuid <<FK>>
+    ordinal : int
+    content : text
+    content_hash : text
+    tokens : int
+    metadata : jsonb
+  }
+
+  entity "chat_knowledge_embedding" as kemb {
+    * id : uuid
+    * chunk_id : uuid <<FK>>
+    embedder_provider : text
+    embedder_model : text
+    dim : int
+    vector : vector(1536)  // pgvector
+  }
+
+  entity "chat_instruction_version" as instr {
+    * id : uuid
+    label : text
+    body : text
+    body_ar : text
+    body_ar_ma : text
+    notes : text
+    enabled : bool
+    created_at : timestamptz
+  }
+
+  entity "chat_theme_preset" as theme {
+    * id : uuid
+    name : text
+    tokens : jsonb
+    page_salutations : jsonb
+    enabled : bool
+  }
+
+  entity "chat_provider_config" as provider_cfg {
+    * id : uuid
+    provider : text
+    encrypted_api_key : text
+    enabled : bool
+    priority : int
+  }
+
+  entity "chat_rate_limit_bucket" as rl {
+    * id : uuid
+    bucket_key : text
+    window_start : timestamptz
+    count : int
+  }
+
+  entity "chat_runtime_setting" as rt {
+    * key : text
+    value : jsonb
+  }
+
+  entity "chat_feedback" as fb {
+    * id : uuid
+    message_id : uuid <<FK>>
+    rating : int  // 1 or -1
+    note : text
+    created_at : timestamptz
+  }
+}
+
+' ========== NOUVEAU v2 ==========
+package "Nouveau v2" #CCEEFF {
+
+  entity "chat_intent_centroid" as centroid <<NEW>> {
+    * id : uuid
+    * intent : text  <<UNIQUE>>
+    language : text  // 'all' or specific
+    vector : vector(1536)
+    sample_count : int
+    updated_at : timestamptz
+  }
+
+  entity "chat_intent_example" as iex <<NEW>> {
+    * id : uuid
+    * intent : text
+    language : text  // fr/ar/ar-MA
+    text : text
+    added_by : text
+    added_at : timestamptz
+    deleted_at : timestamptz
+  }
+
+  entity "chat_canned_pair" as canned <<NEW>> {
+    * id : uuid
+    * key : text  <<UNIQUE>>
+    page_pattern : text  // e.g. /kit, /, /kit/*
+    audience : text       // all/b2c/b2b
+    order : int
+    enabled : bool
+    label_fr : text
+    label_ar : text
+    label_ar_ma : text
+    scripted_reply_fr : text
+    scripted_reply_ar : text
+    scripted_reply_ar_ma : text
+    cta_label : text
+    cta_url : text
+    allow_followup_llm : bool
+    status : text   // draft/review/published
+    current_version_id : uuid <<FK>>
+    created_at : timestamptz
+    updated_at : timestamptz
+  }
+
+  entity "chat_canned_pair_version" as cannedv <<NEW>> {
+    * id : uuid
+    * pair_id : uuid <<FK>>
+    body_fr : text
+    body_ar : text
+    body_ar_ma : text
+    body_hash : text
+    published_at : timestamptz
+    published_by : text
+  }
+
+  entity "chat_faq_entry" as faq <<NEW>> {
+    * id : uuid
+    * key : text  <<UNIQUE per language>>
+    language : text
+    question_canonical : text
+    question_embedding : vector(1536)
+    scripted_reply : text
+    intent_hint : text  // FK soft to intent name
+    threshold : numeric  // default 0.85
+    enabled : bool
+    audience : text
+    created_at : timestamptz
+    updated_at : timestamptz
+  }
+
+  entity "chat_tool" as tool <<NEW>> {
+    * id : uuid
+    * name : text  <<UNIQUE>>
+    description : text  // shown to LLM
+    input_schema : jsonb   // Zod / JSON schema
+    output_schema : jsonb
+    handler_path : text   // ref to backend handler
+    enabled : bool
+    rate_limit_per_min : int
+    timeout_ms : int
+  }
+
+  entity "chat_tool_call_log" as toollog <<NEW>> {
+    * id : uuid
+    session_id : uuid <<FK>>
+    message_id : uuid <<FK>>
+    tool_name : text
+    params : jsonb
+    result : jsonb
+    status : text  // ok/error/timeout
+    error : text
+    duration_ms : int
+    created_at : timestamptz
+  }
+
+  entity "chat_knowledge_origin" as korigin <<NEW>> {
+    * source_id : uuid <<FK>>
+    entity_type : text  // product/city/promo
+    entity_id : text
+    last_sync_at : timestamptz
+    source_hash : text
+  }
+
+  entity "chat_health_state" as health <<NEW>> {
+    * id : uuid
+    service_level : int  // 0..4
+    reason : text
+    triggered_by : text  // breaker/budget/manual
+    created_at : timestamptz
+  }
+}
+
+' ========== RELATIONS ==========
+session ||--o{ message
+session ||--o{ event
+session ||--o{ lead
+message ||--o{ fb
+message ||--o{ event
+message ||--o{ toollog
+ksrc ||--o{ kchunk
+kchunk ||--o{ kemb
+canned ||--o{ cannedv
+canned ||--o{ message : "via meta.pairKey"
+ksrc ||--o{ korigin
+
+note bottom of centroid
+  Une ligne par intent.
+  Recalculé hebdomadairement
+  via cron-intent-recompute.
+end note
+
+note bottom of canned
+  Workflow draft → review → published.
+  Versioning via chat_canned_pair_version
+  pour audit & rollback éditorial.
+end note
+
+note bottom of faq
+  Seuil cosine ≥ 0.85 par défaut,
+  ajustable par entrée.
+  Pas de versioning lourd (low impact).
+end note
+
+@enduml

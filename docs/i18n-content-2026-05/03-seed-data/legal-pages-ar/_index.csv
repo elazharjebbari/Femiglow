@@ -1,0 +1,10 @@
+slug,title,status,source,note
+mentions-legales,الإشعارات القانونية,draft,messages json,json-translated
+cgv,الشروط العامة للبيع,draft,docs/legal-pages/60-content/conditions-generales-vente.md,stub
+cgu,شروط استخدام الموقع,draft,docs/legal-pages/60-content/conditions-generales-utilisation.md,stub
+confidentialite,سياسة الخصوصية,draft,docs/legal-pages/60-content/politique-confidentialite.md,stub
+cookies,سياسة ملفات تعريف الارتباط,draft,docs/legal-pages/60-content/politique-cookies.md,stub
+retours-remboursements,سياسة الإرجاع والاسترداد,draft,docs/legal-pages/60-content/politique-retours-remboursements.md,stub
+livraison,سياسة التوصيل,draft,docs/legal-pages/60-content/politique-livraison.md,stub
+securite-produits,السلامة وتحذيرات منتجات التجميل,draft,docs/legal-pages/60-content/avertissements-securite-produits.md,stub
+faq,الأسئلة الشائعة — خدمة العملاء,draft,docs/legal-pages/60-content/faq-service-client.md,stub

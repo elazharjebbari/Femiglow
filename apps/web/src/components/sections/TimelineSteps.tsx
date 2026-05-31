@@ -5,7 +5,7 @@ import { Kicker } from '@/components/ui/Kicker';
 const steps = [
   {
     title: 'Préparation',
-    hint: 'Sous 24 h, à la main, à Casablanca.',
+    hint: 'Sous 24 h, à la main, à Rabat.',
     state: 'active',
   },
   {
@@ -15,7 +15,7 @@ const steps = [
   },
   {
     title: 'Livraison',
-    hint: '3 à 5 jours ouvrés au Maroc.',
+    hint: 'Rabat 24 h · Maroc 48 à 72 h.',
     state: 'pending',
   },
 ] as const;
@@ -28,7 +28,7 @@ export function TimelineSteps() {
     >
       <Container width="content">
         <div className="space-y-8 text-center">
-          <Kicker>Suivi de votre kit</Kicker>
+          <Kicker>Suivi de votre pack</Kicker>
           <Heading as="h2" id="timeline-heading" size="md">
             Trois étapes, à votre rythme.
           </Heading>

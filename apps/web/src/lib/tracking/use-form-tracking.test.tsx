@@ -17,12 +17,10 @@ interface CapturedEvent {
 function makeProviderValue(events: CapturedEvent[]): TrackingContextValue {
   return {
     client: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       emit: (name: string, params: Record<string, unknown>) => {
         events.push({ name, params });
       },
       flushSync: () => {},
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any,
     consent: {
       ad_storage: 'denied',
@@ -91,7 +89,12 @@ describe('useFormTracking', () => {
 
     const startEvents = events.filter((e) => e.name === 'form_start');
     expect(startEvents).toHaveLength(1);
-    expect(startEvents[0]?.params).toEqual({ form_id: 'contact-form' });
+    // form_start porte désormais `first_field` (D-004) — le premier champ
+    // focusé est capturé pour permettre la segmentation côté GA4.
+    expect(startEvents[0]?.params).toEqual({
+      form_id: 'contact-form',
+      first_field: 'email',
+    });
   });
 
   it('emits form_field_focus once per field (idempotent)', () => {

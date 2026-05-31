@@ -1,17 +1,17 @@
-# Pourquoi le kit n'est pas un soin médical
+# Pourquoi le pack n'est pas un soin médical
 
 > **Tags** : `objections`, `ingredients`
 > **Audience** : `public` · **Freshness** : `evergreen`
 > **Locuteur** : éditorial
 > **Source ID suggéré** : `ks_obj_not_medical`
 
-## Le kit FemiGlow soigne-t-il une mycose, un eczéma ou une infection ?
+## Le pack FemiGlow soigne-t-il une mycose, un eczéma ou une infection ?
 
-Non. Le kit FemiGlow est un soin esthétique de confort. Il n'est pas
-indiqué pour traiter une affection médicale — quelle qu'elle soit. Si
-vous décrivez un symptôme (douleur, démangeaison, ongle décollé,
-rougeur), nous préférons que vous consultiez un médecin ou un
-dermatologue avant tout usage.
+Non. Le pack FemiGlow est un soin esthétique de confort — une manucure
+japonaise halal. Il n'est pas indiqué pour traiter une affection
+médicale, quelle qu'elle soit. Si vous décrivez un symptôme (douleur,
+démangeaison, ongle décollé, rougeur), nous préférons que vous
+consultiez un médecin ou un dermatologue avant tout usage.
 
 ### Reformulation à proposer (chat)
 - "Je préfère ne pas me prononcer là-dessus, c'est un terrain médical.
@@ -32,6 +32,6 @@ immédiatement le formulaire de rappel pour qu'une conseillère humaine
 prenne le relais avec prudence.
 
 ### Faits liés
-- Le sérum n'est pas testé pour les pathologies de l'ongle.
+- Le pack n'est pas testé pour les pathologies de l'ongle.
 - Pas de revendication médicale autorisée par la réglementation
   cosmétique marocaine.

@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Wizard — Modifier une version GTM existante (clone)",
+  "description": "Édition = création d'une nouvelle version dérivée de l'originale (audit trail).",
+  "version": "1.0.0",
+  "name": "edit-gtm-version",
+  "steps": [
+    {
+      "id": "confirm",
+      "index": 1,
+      "label": "Confirmation",
+      "component": "StepEditConfirm",
+      "showsBack": false,
+      "showsNext": true,
+      "nextLabel": "Continuer",
+      "description": "La modification crée une NOUVELLE version (audit trail préservé). L'ancienne version reste accessible.",
+      "fields": [
+        {
+          "id": "newName",
+          "type": "text",
+          "label": "Nom de la nouvelle version",
+          "placeholder": "v2.1 — patch",
+          "required": true,
+          "default": "{originalName} — copy",
+          "validation": { "minLength": 3, "maxLength": 80 }
+        },
+        {
+          "id": "notes",
+          "type": "textarea",
+          "label": "Notes de modification",
+          "placeholder": "Corrige le Meta Pixel ID en production…"
+        }
+      ]
+    },
+    {
+      "id": "env-production",
+      "index": 2,
+      "label": "Production",
+      "component": "StepEnvFields",
+      "envKey": "production",
+      "showsBack": true,
+      "showsNext": true,
+      "showsSync": true,
+      "syncSource": "providers",
+      "prefilledFrom": "originalVersion.perEnv.production",
+      "highlight": "modifications"
+    },
+    {
+      "id": "env-stage",
+      "index": 3,
+      "label": "Stage",
+      "component": "StepEnvFields",
+      "envKey": "stage",
+      "showsBack": true,
+      "showsNext": true,
+      "showsSync": true,
+      "prefilledFrom": "originalVersion.perEnv.stage"
+    },
+    {
+      "id": "env-preview",
+      "index": 4,
+      "label": "Preview",
+      "component": "StepEnvFields",
+      "envKey": "preview",
+      "showsBack": true,
+      "showsNext": true,
+      "prefilledFrom": "originalVersion.perEnv.preview"
+    },
+    {
+      "id": "env-dev",
+      "index": 5,
+      "label": "Dev",
+      "component": "StepEnvFields",
+      "envKey": "dev",
+      "showsBack": true,
+      "showsNext": true,
+      "prefilledFrom": "originalVersion.perEnv.dev"
+    },
+    {
+      "id": "diff",
+      "index": 6,
+      "label": "Récap diff",
+      "component": "StepDiff",
+      "showsBack": true,
+      "showsNext": false,
+      "description": "Voici les modifications par rapport à la version originale",
+      "primaryAction": {
+        "label": "Sauvegarder {newName}",
+        "endpoint": "POST /api/admin/tracking/gtm",
+        "bodyExtras": {
+          "cloneFrom": "{originalVersionId}"
+        }
+      }
+    },
+    {
+      "id": "activate",
+      "index": 7,
+      "label": "Activation",
+      "component": "StepActivate",
+      "showsBack": false,
+      "fields": [
+        {
+          "id": "activateNow",
+          "type": "radio",
+          "label": "Activer {newName} maintenant ?",
+          "options": [
+            { "value": "yes", "label": "Oui, activer maintenant", "default": false },
+            { "value": "later", "label": "Plus tard" }
+          ]
+        }
+      ],
+      "primaryAction": {
+        "label": "Terminer",
+        "action": "navigate",
+        "target": "/admin/tracking/gtm"
+      }
+    }
+  ],
+  "diffRules": {
+    "highlightStyle": "background:rgba(252,211,77,0.2);border-left:3px solid #f59e0b",
+    "groupBy": "env",
+    "showUnchanged": false
+  },
+  "abandonGuard": {
+    "enabled": true,
+    "message": "Les modifications non sauvegardées seront perdues. Quitter quand même ?"
+  }
+}

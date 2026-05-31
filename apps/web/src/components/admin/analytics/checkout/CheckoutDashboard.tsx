@@ -2,17 +2,19 @@
  * CheckoutDashboard — orchestrateur client de l'onglet Checkout.
  * cf. docs/analytics/05-onglets-specs.md §5
  *
- * Reçoit les données pré-chargées par le RSC et refetch quand les filtres
- * URL changent.
+ * Source de vérité = l'URL (réactif via `useAnalyticsFilters`). Le RSC a
+ * pré-chargé `initialData` ; on ne refetch que lorsque l'admin change un filtre.
+ * cf. docs/analytics-audit-qa-2026-05-30 — AF-01 (réactivité) + F-PERF-03.
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { AnalyticsFilters } from '@/lib/analytics/filters';
 import { filtersToSearchParams } from '@/lib/analytics/filters';
 import type { CheckoutData } from '@/lib/analytics/queries/checkout';
 
+import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
 import { CheckoutAbandonedFields } from './CheckoutAbandonedFields';
 import { CheckoutFormErrors } from './CheckoutFormErrors';
 import { CheckoutFunnelStepper } from './CheckoutFunnelStepper';
@@ -28,14 +30,20 @@ export function CheckoutDashboard({
   initialFilters,
   initialData,
 }: CheckoutDashboardProps) {
-  const [filters] = useState<AnalyticsFilters>(initialFilters);
+  const { filters } = useAnalyticsFilters();
   const [data, setData] = useState<CheckoutData>(initialData);
   const [loading, setLoading] = useState(false);
   const [, setError] = useState<string | null>(null);
+  const initialQs = filtersToSearchParams(initialFilters).toString();
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
-    let cancelled = false;
     const params = filtersToSearchParams(filters).toString();
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      if (params === initialQs) return;
+    }
+    let cancelled = false;
     const q = params ? `?${params}` : '';
     setLoading(true);
     setError(null);
@@ -57,7 +65,7 @@ export function CheckoutDashboard({
     return () => {
       cancelled = true;
     };
-  }, [filters]);
+  }, [filters, initialQs]);
 
   return (
     <div className="flex flex-col gap-6" data-testid="checkout-dashboard">
