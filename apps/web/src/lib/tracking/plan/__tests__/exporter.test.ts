@@ -187,22 +187,29 @@ describe('exportPlan — structure GTM', () => {
     }
   });
 
-  it('emits one PAGEVIEW + one CUSTOM_EVENT trigger per event (+ attribution triggers for conversions)', () => {
-    const result = exportPlan(buildPlan(), 'production');
-    const triggers = (result.json as any).containerVersion.trigger;
+  it('emits one PAGEVIEW + one CUSTOM_EVENT trigger per event (+ attribution triggers for primary conversions)', () => {
+    // generate_lead reste primary pour Meta ; purchase est broadcast (C3).
+    const plan = buildPlan({
+      events: [
+        { key: 'page_view', providers: { ga4: true, meta: true } },
+        { key: 'purchase', providers: { ga4: true, meta: true } },
+        { key: 'generate_lead', providers: { ga4: true, meta: true } },
+      ],
+    });
+    const triggers = (exportPlan(plan, 'production').json as any).containerVersion.trigger;
     expect(triggers.filter((t: any) => t.type === 'PAGEVIEW')).toHaveLength(1);
-    // Standard CE triggers : 1 par event (page_view + purchase = 2)
+    // Standard CE triggers : 1 par event (page_view + purchase + generate_lead = 3)
     const standardCE = triggers.filter(
       (t: any) => t.type === 'CUSTOM_EVENT' && !t.name.includes('[attr / '),
     );
-    expect(standardCE).toHaveLength(2);
-    // Attribution-gated CE triggers : pour `purchase` (conversion event)
-    // × providers actifs (meta). page_view est audience donc aucun.
+    expect(standardCE).toHaveLength(3);
+    // Attribution-gated CE : generate_lead (Meta primary). purchase = broadcast
+    // → aucun trigger [attr / meta] pour purchase.
     const attrCE = triggers.filter(
       (t: any) => t.type === 'CUSTOM_EVENT' && t.name.includes('[attr / '),
     );
-    expect(attrCE.length).toBeGreaterThanOrEqual(1);
-    expect(attrCE.find((t: any) => t.name === 'CE — purchase [attr / meta]')).toBeDefined();
+    expect(attrCE.find((t: any) => t.name === 'CE — generate_lead [attr / meta]')).toBeDefined();
+    expect(attrCE.find((t: any) => t.name === 'CE — purchase [attr / meta]')).toBeUndefined();
   });
 
   it('CUSTOM_EVENT triggers carry an EQUALS customEventFilter on {{_event}}', () => {
@@ -302,8 +309,9 @@ describe('exportPlan — structure GTM', () => {
       (t: any) => t.triggerId === snapPurchase.firingTriggerId[0],
     );
     expect(snapPurchaseTrigger.name).toBe('CE — purchase [attr / snap]');
+    // C1 — allowlist élargie + chaîne vide (source unique BROADCAST_FALLBACK_CHANNELS)
     expect(snapPurchaseTrigger.filter[0].parameter[1].value).toBe(
-      '^(snap|direct|organic|broadcast)$',
+      '^(snap|direct|organic|social_organic|email|broadcast|unknown|)$',
     );
     const snapCheckout = tags.find(
       (t: any) => t.name === 'Snap Evt — checkout_intent → START_CHECKOUT',
@@ -753,43 +761,43 @@ describe('exportPlan — structure GTM', () => {
     const tags = (result.json as any).containerVersion.tag;
     const triggers = (result.json as any).containerVersion.trigger;
 
-    // Trois triggers attribution doivent exister (meta, google_ads, tiktok)
+    // Ads + TikTok restent attribution-gated pour purchase. Meta purchase est
+    // BROADCAST (C3) → PAS de trigger [attr / meta], le tag Meta fire sur le
+    // trigger standard.
     const attrTriggers = triggers.filter(
       (t: any) => t.type === 'CUSTOM_EVENT' && t.name.includes('[attr / '),
     );
     const metaAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr / meta]');
     const adsAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr / google_ads]');
     const ttAttr = attrTriggers.find((t: any) => t.name === 'CE — purchase [attr / tiktok]');
-    expect(metaAttr).toBeDefined();
+    expect(metaAttr).toBeUndefined(); // C3 — Meta purchase broadcast
     expect(adsAttr).toBeDefined();
     expect(ttAttr).toBeDefined();
 
     // customEventFilter doit contenir UN SEUL filtre (matching event name).
-    // GTM rejette plusieurs entrées : "Un déclencheur d'événement
-    // personnalisé doit comporter un seul filtre d'événement personnalisé".
-    expect(metaAttr.customEventFilter).toHaveLength(1);
-    expect(metaAttr.customEventFilter[0].type).toBe('EQUALS');
-    // Le filtre d'attribution (MATCH_REGEX) doit aller dans `filter`,
-    // pas dans customEventFilter.
-    expect(metaAttr.filter).toBeDefined();
-    const regexFilter = metaAttr.filter.find((f: any) => f.type === 'MATCH_REGEX');
+    // Le filtre d'attribution (MATCH_REGEX) va dans `filter`, pas customEventFilter.
+    expect(adsAttr.customEventFilter).toHaveLength(1);
+    expect(adsAttr.customEventFilter[0].type).toBe('EQUALS');
+    expect(adsAttr.filter).toBeDefined();
+    const regexFilter = adsAttr.filter.find((f: any) => f.type === 'MATCH_REGEX');
     expect(regexFilter).toBeDefined();
     expect(regexFilter.parameter[0].value).toBe('{{DLV - attribution.channel}}');
-    expect(regexFilter.parameter[1].value).toBe('^(meta|direct|organic|broadcast)$');
+    expect(regexFilter.parameter[1].value).toBe(
+      '^(google_ads|direct|organic|social_organic|email|broadcast|unknown|)$',
+    );
 
-    // Le tag Meta doit être câblé sur le trigger attribution, pas standard
+    // Le tag Meta (broadcast) fire sur le trigger STANDARD, pas un trigger attr.
+    const standardTrigger = triggers.find((t: any) => t.name === 'CE — purchase');
     const metaTag = tags.find((t: any) => t.name === 'Meta Evt — purchase (Purchase)');
-    expect(metaTag.firingTriggerId).toEqual([metaAttr.triggerId]);
-    // Idem pour Ads
+    expect(metaTag.firingTriggerId).toEqual([standardTrigger.triggerId]);
+    // Ads + TikTok câblés sur leur trigger attribution.
     const adsTag = tags.find((t: any) => t.type === 'awct');
     expect(adsTag.firingTriggerId).toEqual([adsAttr.triggerId]);
-    // Idem TikTok
     const ttTag = tags.find((t: any) => t.name === 'TikTok Evt — purchase → Purchase');
     expect(ttTag.firingTriggerId).toEqual([ttAttr.triggerId]);
 
     // Le tag GA4 reste sur le trigger standard (analytics neutre)
     const ga4Tag = tags.find((t: any) => t.name === 'GA4 Evt — purchase');
-    const standardTrigger = triggers.find((t: any) => t.name === 'CE — purchase');
     expect(ga4Tag.firingTriggerId).toEqual([standardTrigger.triggerId]);
   });
 
@@ -843,14 +851,15 @@ describe('exportPlan — structure GTM', () => {
     const triggers = (result.json as any).containerVersion.trigger;
 
     // ── Meta side ──
-    // purchase → Purchase (Meta primary) → attribution-gated
+    // purchase → Purchase (Meta BROADCAST depuis C3) → trigger STANDARD
     const metaPurchase = tags.find((t: any) =>
       t.name.startsWith('Meta Evt — purchase'),
     );
     const metaPurchaseTrigger = triggers.find(
       (t: any) => t.triggerId === metaPurchase.firingTriggerId[0],
     );
-    expect(metaPurchaseTrigger.name).toBe('CE — purchase [attr / meta]');
+    expect(metaPurchaseTrigger.name).toBe('CE — purchase');
+    expect(metaPurchaseTrigger.filter).toBeUndefined();
 
     // checkout_intent → InitiateCheckout (Meta non-primary) → broadcast
     const metaCheckout = tags.find((t: any) =>
@@ -942,7 +951,9 @@ describe('exportPlan — structure GTM', () => {
           config: { ga4MeasurementId: 'G-X', metaPixelId: '1234', gtmContainerId: 'GTM-Y' },
         },
       ],
-      events: [{ key: 'purchase', providers: { ga4: true, meta: true } }],
+      // generate_lead reste primary pour Meta (purchase = broadcast depuis C3)
+      // → c'est lui qui crée le trigger attribution + la DLV.
+      events: [{ key: 'generate_lead', providers: { ga4: true, meta: true } }],
     });
     const result = exportPlan(plan, 'production');
     const variables = (result.json as any).containerVersion.variable;

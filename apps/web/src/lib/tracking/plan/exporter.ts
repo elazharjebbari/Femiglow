@@ -9,6 +9,7 @@ import {
 import type { AdsConversionCategory } from '@/lib/tracking/providers/event-mapping';
 import { findEventInCatalog } from '@/lib/tracking/event-catalog';
 import { DATALAYER_PATHS } from '@/lib/tracking/datalayer-paths';
+import { BROADCAST_FALLBACK_CHANNELS } from '@/lib/tracking/attribution/types';
 
 /**
  * Politique de gating attribution PAR PROVIDER (cf. event-mapping.ts
@@ -602,9 +603,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       ],
       // filter : conditions additionnelles évaluées APRÈS le matching
       // du nom d'event. C'est ici qu'on met le filtre d'attribution.
-      // MATCH_REGEX → fire si channel = providerKey OU direct OU
-      // organic. Le visiteur direct/organic est broadcasté à tous les
-      // pixels payants (politique défaut, cf. docs/tracking-attribution/04).
+      // MATCH_REGEX → fire si channel = providerKey OU l'un des canaux
+      // fallback broadcast (direct, organic, social_organic, email, …) OU
+      // canal vide (1er event avant résolution). La liste est la SOURCE DE
+      // VÉRITÉ UNIQUE partagée avec le gate serveur (BROADCAST_FALLBACK_CHANNELS)
+      // → plus de dérive client/serveur (cf. docs/tracking-attribution-audit-2026-05-31).
       filter: [
         {
           type: 'MATCH_REGEX',
@@ -617,7 +620,9 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             {
               type: 'TEMPLATE',
               key: 'arg1',
-              value: `^(${providerKey}|direct|organic|broadcast)$`,
+              // `…|)$` : le `|` final autorise la chaîne vide (canal non encore
+              // résolu) pour ne perdre aucune conversion pendant la capture.
+              value: `^(${providerKey}|${BROADCAST_FALLBACK_CHANNELS.join('|')}|)$`,
             },
           ],
         },

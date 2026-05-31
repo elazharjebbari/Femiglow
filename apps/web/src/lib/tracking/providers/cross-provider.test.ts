@@ -392,7 +392,9 @@ describe('cross-provider payload structure', () => {
 
 describe('cross-provider attribution mode consistency', () => {
   const PRIMARY_EVENTS: Record<string, string[]> = {
-    meta: ['purchase', 'generate_lead', 'lead_capture', 'chat_lead_form_submit'],
+    // C3 (audit 2026-05-31) — `purchase` est BROADCAST pour Meta (pas primary) ;
+    // il reste primary pour google_ads/tiktok/snap. Couvert par le test dédié ci-dessous.
+    meta: ['generate_lead', 'lead_capture', 'chat_lead_form_submit'],
     google_ads: ['purchase', 'generate_lead', 'lead_capture', 'contact_submit', 'chat_message_sent', 'chat_lead_form_submit'],
     tiktok: ['purchase', 'generate_lead'],
     snap: ['purchase', 'sign_up', 'lead_capture', 'generate_lead', 'chat_lead_form_submit'],
@@ -405,6 +407,13 @@ describe('cross-provider attribution mode consistency', () => {
       });
     }
   }
+
+  it('purchase → BROADCAST pour Meta (C3) mais primary pour les autres pixels', () => {
+    expect(getAttributionMode('purchase', 'meta')).toBe('broadcast');
+    expect(getAttributionMode('purchase', 'google_ads')).toBe('primary');
+    expect(getAttributionMode('purchase', 'tiktok')).toBe('primary');
+    expect(getAttributionMode('purchase', 'snap')).toBe('primary');
+  });
 
   it('les événements secondaires sont broadcast pour google_ads', () => {
     const secondary = ['add_to_cart', 'checkout_intent', 'sign_up', 'newsletter_submit', 'video_complete', 'file_download', 'chat_widget_open'];

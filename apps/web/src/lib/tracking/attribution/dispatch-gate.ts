@@ -24,7 +24,7 @@ import {
 import { findAttributionByVisitor } from './repository';
 import { getAttributionStrategy } from './server';
 import { applyStrategy } from './strategy';
-import type { AttributionChannel } from './types';
+import { BROADCAST_FALLBACK_CHANNELS, type AttributionChannel } from './types';
 
 /**
  * Map provider kind → canal d'attribution attendu. Les providers
@@ -46,14 +46,11 @@ const PROVIDER_TO_CHANNEL: Record<TrackingProviderKind, AttributionChannel | nul
  * Canaux où on broadcast à tous les pixels payants (politique défaut).
  * Visiteur sans canal identifiable OU stratégie broadcast OU pas de
  * snapshot serveur → on autorise tout le monde.
+ *
+ * Source de vérité UNIQUE partagée avec l'export GTM client (`plan/exporter.ts`)
+ * via `BROADCAST_FALLBACK_CHANNELS` (`./types`) — évite la dérive client/serveur.
  */
-const BROADCAST_CHANNELS = new Set<string>([
-  'direct',
-  'organic',
-  'social_organic',
-  'broadcast',
-  'unknown',
-]);
+const BROADCAST_CHANNELS = new Set<string>(BROADCAST_FALLBACK_CHANNELS);
 
 /**
  * Mappe `TrackingProviderKind` → `AttributionProvider` (event-mapping).
