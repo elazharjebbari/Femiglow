@@ -80,7 +80,7 @@ export const PaymentMethodSelector = forwardRef<
               <PaymentIcon kind={opt.icon} />
               <span className="font-medium text-encre">{opt.title}</span>
             </span>
-            <span className="pl-7 text-xs text-encre/60">{opt.hint}</span>
+            <span className="ps-7 text-xs text-encre/60">{opt.hint}</span>
           </label>
         );
       })}

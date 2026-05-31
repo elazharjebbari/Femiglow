@@ -12,6 +12,8 @@ interface JournalGridBoundProps {
   ctaLabel?: string;
   variant?: 'symmetric' | 'asymmetric';
   limit?: number;
+  /** Phase 9bis — libellés de catégorie localisés. */
+  categoryLabels?: Record<Article['category'], string>;
 }
 
 /**
@@ -29,6 +31,7 @@ export async function JournalGridBound({
   ctaLabel,
   variant = 'symmetric',
   limit,
+  categoryLabels,
 }: JournalGridBoundProps) {
   const visibles = limit ? articles.slice(0, limit) : articles;
 
@@ -76,6 +79,7 @@ export async function JournalGridBound({
       variant={variant}
       limit={limit}
       mediaSlots={mediaSlots}
+      categoryLabels={categoryLabels}
     />
   );
 }

@@ -21,8 +21,67 @@ const CONTACT_EMAIL = 'info@femiglow-maroc.com';
 
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
+/**
+ * Phase 7 wiring — libellés localisés du formulaire de contact
+ * (`marketing.contact.form.*`). Tous optionnels via `DEFAULT_CONTACT_FORM_STRINGS`
+ * (FR) — préserve les usages legacy + les tests qui rendent sans strings.
+ */
+export interface ContactFormStrings {
+  fieldName: string;
+  fieldEmail: string;
+  fieldPhone: string;
+  fieldCompany: string;
+  fieldRole: string;
+  fieldOrderNumber: string;
+  fieldOrderNumberHint: string;
+  fieldMessage: string;
+  fieldMessageHint: string;
+  honeypotLabel: string;
+  typeLegend: string;
+  typeQuestion: string;
+  typeOrder: string;
+  typeProfessional: string;
+  gdprConsentText: string;
+  gdprConsentLink: string;
+  newsletterConsent: string;
+  submit: string;
+  successTitle: string;
+  successBody: string;
+  errorBody: string;
+}
+
+export const DEFAULT_CONTACT_FORM_STRINGS: ContactFormStrings = {
+  fieldName: 'Votre prénom',
+  fieldEmail: 'Votre email',
+  fieldPhone: 'Téléphone',
+  fieldCompany: 'Raison sociale',
+  fieldRole: 'Votre fonction',
+  fieldOrderNumber: 'Numéro de commande',
+  fieldOrderNumberHint: 'Le numéro figure dans votre email de confirmation.',
+  fieldMessage: 'Votre message',
+  fieldMessageHint:
+    'Au moins 20 caractères, pour que nous puissions répondre justement.',
+  honeypotLabel: 'Site web (ne pas remplir)',
+  typeLegend: 'Quel type de message ?',
+  typeQuestion: 'Une question',
+  typeOrder: 'Une commande',
+  typeProfessional: 'Un échange professionnel',
+  gdprConsentText:
+    'J’accepte que mon message soit lu par la maison FemiGlow afin d’y répondre. Voir nos',
+  gdprConsentLink: 'mentions légales',
+  newsletterConsent:
+    'Je souhaite recevoir la lettre saisonnière. Une lettre par saison. Aucun envoi commercial.',
+  submit: 'Envoyer mon message',
+  successTitle: 'Bien reçu. La maison vous répond.',
+  successBody:
+    'Nous lisons chaque message avec attention. Réponse sous 24 heures ouvrées.',
+  errorBody: 'L’envoi n’a pas abouti. Réessayez ou écrivez-nous à',
+};
+
 interface ContactFormProps {
   defaultType?: ContactType;
+  /** Phase 7 wiring — libellés localisés. Défaut FR si absent. */
+  strings?: ContactFormStrings;
 }
 
 const conditionalFieldClasses = cn(
@@ -36,7 +95,10 @@ const conditionalFieldClasses = cn(
  * @tracking-events contact_submit, generate_lead
  * @tracking-description Formulaire de contact — émet contact_submit (intent) + generate_lead (succès).
  */
-export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
+export function ContactForm({
+  defaultType = 'question',
+  strings = DEFAULT_CONTACT_FORM_STRINGS,
+}: ContactFormProps) {
   const [status, setStatus] = useState<Status>('idle');
   const { emit } = useTracking();
 
@@ -135,7 +197,7 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
   }
 
   if (status === 'success') {
-    return <SuccessState />;
+    return <SuccessState title={strings.successTitle} body={strings.successBody} />;
   }
 
   const showOrderField = type === 'order';
@@ -147,13 +209,19 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
       <FormTypeSelector
         value={type}
         onChange={(next) => setValue('type', next, { shouldValidate: true })}
+        legend={strings.typeLegend}
+        options={[
+          { value: 'question', label: strings.typeQuestion },
+          { value: 'order', label: strings.typeOrder },
+          { value: 'professional', label: strings.typeProfessional },
+        ]}
       />
 
       <div
         aria-hidden="true"
         className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
       >
-        <label htmlFor="contact-website">Site web (ne pas remplir)</label>
+        <label htmlFor="contact-website">{strings.honeypotLabel}</label>
         <input
           id="contact-website"
           type="text"
@@ -166,7 +234,7 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
       <div className="grid gap-6 sm:grid-cols-2">
         <TextField
           id="contact-name"
-          label="Votre prénom"
+          label={strings.fieldName}
           autoComplete="given-name"
           required
           error={errors.name?.message}
@@ -174,7 +242,7 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
         />
         <TextField
           id="contact-email"
-          label="Votre email"
+          label={strings.fieldEmail}
           type="email"
           inputMode="email"
           autoComplete="email"
@@ -190,8 +258,8 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
       >
         <TextField
           id="contact-order-number"
-          label="Numéro de commande"
-          hint="Le numéro figure dans votre email de confirmation."
+          label={strings.fieldOrderNumber}
+          hint={strings.fieldOrderNumberHint}
           autoComplete="off"
           required={showOrderField}
           error={errors.orderNumber?.message}
@@ -206,7 +274,7 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
         <div className="grid gap-6 sm:grid-cols-2">
           <TextField
             id="contact-phone"
-            label="Téléphone"
+            label={strings.fieldPhone}
             type="tel"
             inputMode="tel"
             autoComplete="tel"
@@ -216,7 +284,7 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
           />
           <TextField
             id="contact-company"
-            label="Raison sociale"
+            label={strings.fieldCompany}
             autoComplete="organization"
             required={showProfessionalFields}
             error={errors.companyName?.message}
@@ -225,7 +293,7 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
         </div>
         <TextField
           id="contact-role"
-          label="Votre fonction"
+          label={strings.fieldRole}
           autoComplete="organization-title"
           required={showProfessionalFields}
           error={errors.role?.message}
@@ -235,8 +303,8 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
 
       <TextAreaField
         id="contact-message"
-        label="Votre message"
-        hint="Au moins 20 caractères, pour que nous puissions répondre justement."
+        label={strings.fieldMessage}
+        hint={strings.fieldMessageHint}
         rows={6}
         required
         showCounter
@@ -254,13 +322,12 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
             {...register('gdprConsent')}
           />
           <span>
-            J{'\u2019'}accepte que mon message soit lu par la maison FemiGlow afin
-            d{'\u2019'}y répondre. Voir nos{' '}
+            {strings.gdprConsentText}{' '}
             <Link
               href="/mentions-legales"
               className="underline decoration-encre/40 underline-offset-4 hover:decoration-encre"
             >
-              mentions légales
+              {strings.gdprConsentLink}
             </Link>
             .
           </span>
@@ -277,10 +344,7 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
             className="mt-1 h-4 w-4 accent-encre"
             {...register('newsletterOptIn')}
           />
-          <span>
-            Je souhaite recevoir la lettre saisonnière. Une lettre par saison.
-            Aucun envoi commercial.
-          </span>
+          <span>{strings.newsletterConsent}</span>
         </label>
       </div>
 
@@ -291,9 +355,11 @@ export function ContactForm({ defaultType = 'question' }: ContactFormProps) {
           size="lg"
           loading={status === 'submitting'}
         >
-          Envoyer mon message
+          {strings.submit}
         </Button>
-        {networkError && <ErrorState email={CONTACT_EMAIL} />}
+        {networkError && (
+          <ErrorState email={CONTACT_EMAIL} body={strings.errorBody} />
+        )}
       </div>
     </form>
   );

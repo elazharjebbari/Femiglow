@@ -106,7 +106,7 @@ export async function insertRitual(input: {
   authorCity?: string | null;
   initiatedSince?: string | null;
   isAnonymous?: boolean;
-  language?: 'fr' | 'ar';
+  language?: 'fr' | 'ar' | 'en';
   source: RitualTestimonial['source'];
   customerHash?: string | null;
   orderId?: string | null;
@@ -306,25 +306,43 @@ export async function listRituals(query: RitualListQuery): Promise<RitualListRes
   const drizzle = db();
 
   if (drizzle) {
-    const conditions = [
+    // Conditions communes (hors langue + curseur), partagées par la sonde de
+    // repli langue et la requête principale.
+    const baseConditions = [
       eq(schema.ritualTestimonials.productKey, query.productKey),
       eq(schema.ritualTestimonials.status, 'APPROVED'),
     ];
     if (query.featured) {
-      conditions.push(eq(schema.ritualTestimonials.featured, true));
+      baseConditions.push(eq(schema.ritualTestimonials.featured, true));
     }
     if (query.signal) {
-      conditions.push(eq(schema.ritualTestimonials.wouldRecommend, query.signal));
+      baseConditions.push(eq(schema.ritualTestimonials.wouldRecommend, query.signal));
     }
     if (query.withPhotos) {
-      conditions.push(
+      baseConditions.push(
         dsql`EXISTS (SELECT 1 FROM ${schema.ritualTestimonialPhotos} p WHERE p.testimonial_id = ${schema.ritualTestimonials.id} AND p.faces_status = 'OK')`,
       );
     }
     if (query.tags && query.tags.length > 0) {
-      conditions.push(
+      baseConditions.push(
         dsql`(${schema.ritualTestimonials.ritualTags})::jsonb ?| ${query.tags}::text[]`,
       );
+    }
+
+    const conditions = [...baseConditions];
+    // Phase 7E-11 — filtre langue avec repli FR. Si la locale demandée n'a aucun
+    // témoignage (mêmes filtres), on retombe sur FR pour ne jamais vider le module.
+    if (query.language) {
+      let effectiveLanguage: RitualTestimonial['language'] = query.language;
+      if (query.language !== 'fr') {
+        const probe = (await drizzle
+          .select({ id: schema.ritualTestimonials.id })
+          .from(schema.ritualTestimonials)
+          .where(and(...baseConditions, eq(schema.ritualTestimonials.language, query.language)))
+          .limit(1)) as Array<{ id: string }>;
+        if (probe.length === 0) effectiveLanguage = 'fr';
+      }
+      conditions.push(eq(schema.ritualTestimonials.language, effectiveLanguage));
     }
     if (cursor) {
       conditions.push(
@@ -395,6 +413,21 @@ export async function listRituals(query: RitualListQuery): Promise<RitualListRes
       if (!query.tags || query.tags.length === 0) return true;
       return query.tags.some((t) => r.ritualTags.includes(t));
     });
+
+  // Phase 7E-11 — filtre langue avec repli FR (miroir de la branche Drizzle).
+  // Si la locale demandée n'a aucun témoignage (mêmes filtres), on retombe sur
+  // FR (`language === 'fr'` ou langue absente) pour ne jamais vider le module.
+  if (query.language) {
+    const isFr = (r: RitualTestimonial) => r.language === 'fr' || r.language == null;
+    const inRequested = rows.filter((r) => r.language === query.language);
+    const effective =
+      query.language === 'fr' || inRequested.length > 0
+        ? rows.filter((r) =>
+            query.language === 'fr' ? isFr(r) : r.language === query.language,
+          )
+        : rows.filter(isFr);
+    rows = effective;
+  }
 
   rows.sort((a, b) => {
     const ta = a.publishedAt?.getTime() ?? 0;

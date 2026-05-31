@@ -14,6 +14,31 @@ import {
   type AttributionStrategy,
 } from '@/lib/tracking/attribution/types';
 import type { TrackingConsentState } from '@/lib/db/types';
+import { isLocale, DEFAULT_LOCALE, LOCALE_COOKIE_NAME } from '@/i18n.config';
+
+/**
+ * Locale **du site** (langue active `fr`/`ar`/`en`) pour `page.locale` du
+ * dataLayer — pas la langue du navigateur. Permet à GA4 de répondre à
+ * « quelle langue convertit le plus » (param `page_locale`).
+ *
+ * Priorité : préfixe URL (stratégie 'always' → `/[locale]/…`) → cookie
+ * `NEXT_LOCALE` (choix explicite) → langue navigateur (2 lettres si supportée)
+ * → `DEFAULT_LOCALE`.
+ */
+function resolveSiteLocale(): string {
+  if (typeof window === 'undefined') return DEFAULT_LOCALE;
+  const seg = window.location.pathname.split('/')[1];
+  if (isLocale(seg)) return seg;
+  if (typeof document !== 'undefined') {
+    const m = document.cookie.match(
+      new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE_NAME}=([^;]+)`),
+    );
+    if (m && isLocale(m[1])) return m[1]!;
+  }
+  const nav =
+    typeof navigator !== 'undefined' ? (navigator.language || '').slice(0, 2) : '';
+  return isLocale(nav) ? nav : DEFAULT_LOCALE;
+}
 
 export interface TrackingContextValue {
   client: TrackingClient;
@@ -73,8 +98,9 @@ export function TrackingProvider({
           path: typeof window !== 'undefined' ? window.location.pathname : '',
           title: typeof document !== 'undefined' ? document.title : '',
           referrer: typeof document !== 'undefined' ? document.referrer : '',
-          locale:
-            typeof navigator !== 'undefined' ? navigator.language || 'fr-FR' : 'fr-FR',
+          // Locale du site (langue active), pas navigator.language — pour
+          // suivre quelle langue convertit (GA4 `page_locale`).
+          locale: resolveSiteLocale(),
         }),
         // Lecture via ref pour refléter un changement de stratégie sans
         // recréer le client (rare, mais utile pour les tests).

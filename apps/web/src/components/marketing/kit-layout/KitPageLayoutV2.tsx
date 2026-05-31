@@ -36,6 +36,7 @@
  * Tests : Playwright `@kit-layout-v2` dans `apps/web/e2e/kit-layout-v2.spec.ts`.
  */
 import { Suspense } from 'react';
+import { getTranslations } from 'next-intl/server';
 
 import { FAQContextuelle } from '@/components/sections';
 import { VideoPlayer4GestesKitBound } from '@/components/sections/VideoPlayer4GestesKitBound';
@@ -48,20 +49,69 @@ import { JournalGridBound } from '@/components/sections/JournalGridBound';
 import { ProductFeedSectionBound } from '@/components/sections/ProductFeedSectionBound';
 import { RitualsModuleBound } from '@/components/sections/rituals/RitualsModuleBound';
 import { RitualsWallDrawer } from '@/components/sections/rituals/RitualsWallDrawer';
+import { resolveRitualsWallStrings } from '@/components/sections/rituals/strings';
 import { KitCommanderSectionBound } from '@/components/sections/KitCommanderSectionBound';
 import { GeoPromoSlideHeaderSlot } from '@/components/promo/GeoPromoSlideHeaderSlot';
+import { DEFAULT_LOCALE } from '@/i18n.config';
 import { JsonLd, faqPageSchema } from '@/lib/seo/json-ld';
 
 import type { KitPageLayoutProps } from './types';
 
-export function KitPageLayoutV2({
+export async function KitPageLayoutV2({
   content,
   journalArticles,
   dbProduct,
   productJsonLd,
   reviewStats,
   ritualSummary,
+  locale,
 }: KitPageLayoutProps) {
+  const effectiveLocale = locale ?? DEFAULT_LOCALE;
+  // Phase 7E — strings de niveau layout (kicker/title JournalGrid) localisées.
+  // `?? DEFAULT_LOCALE` : le legacy `(marketing)/kit` ne passe pas de locale.
+  const [tKit, tRituals, tJournal] = await Promise.all([
+    getTranslations({ locale: effectiveLocale, namespace: 'marketing.kit' }),
+    // Phase 7 wiring — libellés du drawer « rituels partagés » (client
+    // component) résolus côté serveur puis injectés en prop.
+    getTranslations({
+      locale: effectiveLocale,
+      namespace: 'marketing.kit.rituals',
+    }),
+    // Phase 9bis — libellés de catégorie + CTA du JournalGrid localisés.
+    getTranslations({
+      locale: effectiveLocale,
+      namespace: 'marketing.journal',
+    }),
+  ]);
+  const journalCategoryLabels = {
+    maison: tJournal('categories.maison'),
+    saison: tJournal('categories.saison'),
+    voix: tJournal('categories.voix'),
+    matieres: tJournal('categories.matieres'),
+    pratique: tJournal('categories.pratique'),
+  };
+  // Drawer (client) : libellés STRUCTURELS résolus serveur. Les témoignages
+  // restent seed data (hors scope i18n).
+  const wallStrings = resolveRitualsWallStrings(
+    tRituals as unknown as Parameters<typeof resolveRitualsWallStrings>[0],
+  );
+  // Phase 7E (7E-10) — composition ingrédients locale-aware (cf. V1).
+  const ingredientsComposition =
+    (locale ?? DEFAULT_LOCALE) === DEFAULT_LOCALE
+      ? resolveKitComposition().map((it) => it.subProduct)
+      : content.composition;
+  // Phase 9 i18n — libellés de colonnes ingrédients localisés (cf. V1).
+  const ingredientLabels = {
+    ingredient: tKit('ingredients.columns.ingredient'),
+    inci: tKit('ingredients.columns.inci'),
+    function: tKit('ingredients.columns.function'),
+    origin: tKit('ingredients.columns.origin'),
+    regionAria: tKit('ingredients.section.kicker'),
+    inciInParens: effectiveLocale === 'ar',
+  };
+  // Phase 7E (7E-10) — vidéo localisée (transcript), cf. V1.
+  const localizedVideo =
+    (locale ?? DEFAULT_LOCALE) === DEFAULT_LOCALE ? undefined : content.videoSrc;
   return (
     <div id="contenu-kit" className="pb-24 lg:pb-0" data-kit-layout="v2">
       <GeoPromoSlideHeaderSlot />
@@ -73,6 +123,11 @@ export function KitPageLayoutV2({
         product={dbProduct}
         reassurances={content.reassurances}
         componentKey="kit-hero-produit"
+        locale={locale}
+        // Phase 7E — nom + tagline localisés depuis le CMS (FR/AR/EN) pour
+        // remplacer le nom DB FR ("Pack FemiGlow") et la tagline FR hardcodée.
+        displayName={content.product.name}
+        taglineFallback={content.product.tagline}
         // Count badge avis depuis le module rituels (47 en DB courante).
         // Fallback handsTestimonials si rituals vide. L'ancre cliquable
         // cible #rituals-module-title (cf. HeroProduitBound).
@@ -84,10 +139,18 @@ export function KitPageLayoutV2({
       />
 
       {/* — 2. PREUVE 1 : Composition (qualité formule) — §4.3 */}
-      <CompositionRevealBound items={content.composition} />
+      <CompositionRevealBound
+        items={content.composition}
+        header={{
+          kicker: tKit('composition.section.kicker'),
+          title: tKit('composition.section.title'),
+          description: tKit('composition.section.description'),
+        }}
+        cardCta={tKit('composition.card_cta')}
+      />
 
       {/* — 3. PREUVE 2 : Vidéo 4 gestes (usage in vivo) — §4.4 */}
-      <VideoPlayer4GestesKitBound />
+      <VideoPlayer4GestesKitBound locale={locale} videoOverride={localizedVideo} />
 
       {/*
         — 4. PACK + STEPS (§4.6 + §4.7) — DENSITÉ COMMERCIALE —
@@ -99,6 +162,7 @@ export function KitPageLayoutV2({
         product={dbProduct}
         content={content}
         reviewStats={reviewStats}
+        locale={locale}
       />
 
       {/*
@@ -108,7 +172,7 @@ export function KitPageLayoutV2({
         L'utilisateur arrive ici avec 3 preuves fortes en tête (composition,
         usage, pack) → conversion à chaud maximal sans scroll excessif.
       */}
-      <KitCommanderSectionBound />
+      <KitCommanderSectionBound locale={locale} />
 
       {/*
         — 6. RÉASSURANCE POST-DÉCISION : Trois mains §4.10 —
@@ -116,12 +180,31 @@ export function KitPageLayoutV2({
         pour les utilisateurs qui ont scrollé au-delà sans commander.
         Avant/après visuels → restaure la projection de soi (« moi dans 3 mois »).
       */}
-      <HandsTestimonialsBound items={content.handsTestimonials} />
+      <HandsTestimonialsBound
+        items={content.handsTestimonials}
+        header={{
+          kicker: tKit('hands.kicker'),
+          title: tKit('hands.title'),
+          description: tKit('hands.description'),
+        }}
+        labels={{
+          before: tKit('hands.labels.before'),
+          after: tKit('hands.labels.after'),
+          initieeSince: tKit('hands.labels.initiee_since', { date: '{date}' }),
+        }}
+      />
 
       {/* — 7. DÉTAIL TECHNIQUE : Ingrédients approfondis §4.5 — */}
       <IngredientsDetailsBound
-        composition={resolveKitComposition().map((it) => it.subProduct)}
+        composition={ingredientsComposition}
         componentKey="kit-detail-mains"
+        ingredientLabels={ingredientLabels}
+        postCtaLabel={tKit('ingredients.post_cta')}
+        header={{
+          kicker: tKit('ingredients.section.kicker'),
+          title: tKit('ingredients.section.title'),
+          description: tKit('ingredients.section.description'),
+        }}
       />
 
       {/*
@@ -130,22 +213,31 @@ export function KitPageLayoutV2({
         ce module qui alimente le compteur du badge hero et son ancre.
         Position post-wizard : capte les hésitants à grande échelle.
       */}
-      <RitualsModuleBound productKey="pack-femiglow" />
+      <RitualsModuleBound productKey="pack-femiglow" locale={effectiveLocale} />
 
       {/* — 9. OBJECTIONS : FAQ §4.9 — */}
-      <FAQContextuelle items={content.faq} />
+      <FAQContextuelle
+        items={content.faq}
+        header={{
+          kicker: tKit('faq.section.kicker'),
+          title: tKit('faq.section.title'),
+          description: tKit('faq.section.description'),
+        }}
+      />
 
       {/* — 10. BOTTOM FUNNEL : Journal §4.12 — */}
       <JournalGridBound
         articles={journalArticles}
-        kicker="Pour aller plus loin"
-        title="Trois lectures."
+        kicker={tKit('journal_grid.kicker')}
+        title={tKit('journal_grid.title')}
+        ctaLabel={tJournal('grid.cta')}
+        categoryLabels={journalCategoryLabels}
         variant="symmetric"
       />
 
       {/* — 11. OVERLAY : RitualsWallDrawer (Suspense) — */}
       <Suspense fallback={null}>
-        <RitualsWallDrawer productKey="pack-femiglow" />
+        <RitualsWallDrawer productKey="pack-femiglow" strings={wallStrings} />
       </Suspense>
 
       {/*

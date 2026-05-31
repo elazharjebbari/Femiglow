@@ -18,7 +18,15 @@
  * perf perçue (FCP) du /kit qui doit rester sub-2s.
  */
 
-import { Suspense, lazy, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 
 import {
   selectCanProceedFromLead,
@@ -26,17 +34,20 @@ import {
   useWizardStore,
   type WizardFormContext,
 } from '@/lib/checkout/state/wizard-store';
+import { shouldSyncFormContext } from '@/lib/checkout/state/form-context-sync';
 import type { CartSnapshot, StepName } from '@/lib/checkout/schemas/common';
 
 import { WizardStepIndicator } from './WizardStepIndicator';
 import { TimeEstimateBadge } from './TimeEstimateBadge';
 import { WizardCartRecap } from './WizardCartRecap';
 import { LeadCaptureStep } from './steps/LeadCaptureStep';
-import {
-  DEFAULT_WIZARD_COPY,
-  DEFAULT_WIZARD_FEATURES,
-} from '@/lib/checkout/copy/wizard-copy';
+import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
 import { formatCartCompareAt } from '@/lib/checkout/helpers/cart-compare-at-format';
+import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
+import {
+  getWizardDictionary,
+  type DictionaryLanguage,
+} from '@/lib/checkout/i18n/dictionary';
 
 // Steps lazy-loaded — pas encore implémentés (phases 6-7).
 // On garde la structure pour ne pas avoir à modifier le shell à chaque
@@ -57,6 +68,12 @@ const CartReviewStep = lazy(() =>
     .then((m) => ({ default: m.CartReviewStep }))
     .catch(() => ({ default: () => <StepUnavailable name="cart_review" /> })),
 );
+
+// SSR-safe : `useLayoutEffect` n'existe pas côté serveur (warning React). On
+// retombe sur `useEffect` lors du rendu serveur, et on utilise le layout effect
+// côté client pour committer la langue AVANT le paint (zéro flash FR sur /ar).
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -103,21 +120,29 @@ export interface WizardShellProps {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StepUnavailable({ name }: { name: StepName }) {
+  const { t } = useWizardTranslation();
   return (
     <div className="rounded border border-encre/15 bg-creme p-6 text-sm text-encre/60">
-      L&apos;étape «&nbsp;{name}&nbsp;» n&apos;est pas encore disponible.
+      {t.shell.stepUnavailable(name)}
     </div>
   );
 }
 
-function HydrationFallback() {
+function HydrationFallback({ language }: { language?: DictionaryLanguage }) {
+  // Phase 9bis — avant hydratation du store, `useWizardTranslation` retombe
+  // sur la langue par défaut (FR), ce qui faisait fuiter « Un instant… » en
+  // SSR sur /ar. On privilégie la langue connue côté serveur (`formContext`)
+  // pour rendre « لحظة من فضلك… » dès le premier paint.
+  const dict = language ? getWizardDictionary(language) : undefined;
+  const { t } = useWizardTranslation();
   return (
     <div
       role="status"
       aria-live="polite"
+      dir={language === 'ar' ? 'rtl' : undefined}
       className="grid min-h-[320px] place-items-center text-sm text-encre/50"
     >
-      Un instant…
+      {(dict ?? t).shell.hydrating}
     </div>
   );
 }
@@ -136,6 +161,7 @@ export function WizardShell({
   header,
   footer,
 }: WizardShellProps) {
+  const { t, dir } = useWizardTranslation();
   const hydrated = useWizardHydrated();
   const currentStep = useWizardStore((s) => s.currentStep);
   const storedFormContext = useWizardStore((s) => s.formContext);
@@ -148,14 +174,16 @@ export function WizardShell({
   // Snycro formContext une fois hydraté. Si la persisted version diffère
   // (ex. user a changé d'A/B variant), on overrides — la source de vérité
   // est ce qui est passé en props par le serveur.
-  useEffect(() => {
+  // `language` est inclus dans le dirty-check : la route (`/ar`, `/en`, `/fr`)
+  // est la SOURCE DE VÉRITÉ de la langue. Sans cela, un `formContext` persisté
+  // d'une visite FR antérieure (mêmes formId/mode/variant) masquait la langue
+  // de la route et le wizard restait en français sur /ar. Layout effect →
+  // commit avant paint, donc pas de flash FR transitoire.
+  useIsomorphicLayoutEffect(() => {
     if (!hydrated) return;
-    const needsUpdate =
-      !storedFormContext ||
-      storedFormContext.formId !== formContext.formId ||
-      storedFormContext.formMode !== formContext.formMode ||
-      storedFormContext.variantKey !== formContext.variantKey;
-    if (needsUpdate) setFormContext(formContext);
+    if (shouldSyncFormContext(storedFormContext, formContext)) {
+      setFormContext(formContext);
+    }
   }, [hydrated, storedFormContext, formContext, setFormContext]);
 
   // Snapshot panier : si fourni en props et différent du persisted, écrase.
@@ -237,7 +265,7 @@ export function WizardShell({
     }
   }, [currentStep, copy]);
 
-  if (!hydrated) return <HydrationFallback />;
+  if (!hydrated) return <HydrationFallback language={formContext.language} />;
 
   // Debug-only — utile en dev pour vérifier que le state est synced.
   if (process.env.NODE_ENV !== 'production') {
@@ -252,16 +280,25 @@ export function WizardShell({
   }
 
   // Kolenda §5 W2 — réassurance temps + indicator enrichi.
-  // Wizard-copy + features par défaut (W5 admin override viendra plus tard).
-  const wizardCopy = DEFAULT_WIZARD_COPY;
+  // Features par défaut (W5 admin override viendra plus tard). Les microcopies
+  // sont pilotées par le dictionnaire i18n (`t.shell.*`) pour couvrir AR/EN ;
+  // les unités de durée restent latines ("60 s").
   const features = DEFAULT_WIZARD_FEATURES;
   const stepTimes = features.timeEstimate
     ? {
-        lead: wizardCopy.timeEstimateLead,
-        address: wizardCopy.timeEstimateAddress,
-        thank_you: wizardCopy.timeEstimateThankYou,
+        lead: t.shell.timeEstimateLead,
+        address: t.shell.timeEstimateAddress,
+        thank_you: t.shell.timeEstimateThankYou,
       }
     : undefined;
+  // Libellés des steps de l'indicateur (FR par défaut via dict).
+  const stepLabels = {
+    cart_review: t.stepIndicator.labelCartReview,
+    lead: t.stepIndicator.labelLead,
+    address: t.stepIndicator.labelAddress,
+    payment: t.stepIndicator.labelPayment,
+    thank_you: t.stepIndicator.labelThankYou,
+  };
 
   // Cart à afficher : initial (props serveur) prioritaire, sinon
   // celui du store (hydraté). Empêche le clignotement « pas de cart »
@@ -269,7 +306,7 @@ export function WizardShell({
   const cartForRecap = initialCart ?? storedCart ?? null;
 
   return (
-    <div className="space-y-6" data-testid="wizard-shell">
+    <div className="space-y-6" data-testid="wizard-shell" dir={dir}>
       {/* Kolenda §5 W3 P1 — récap panier permanent en premier enfant.
           Sticky mobile pour rester visible pendant le scroll.
           Le `priceCompareAt` est calculé dynamiquement depuis le snapshot
@@ -280,18 +317,25 @@ export function WizardShell({
           cart={cartForRecap}
           thumbnailSrc={cartRecapThumbnailSrc}
           priceCompareAt={formatCartCompareAt(cartForRecap)}
+          ariaLabel={t.cartRecap.ariaLabel}
+          packLabel={t.cartRecap.packLabel}
+          shippingIncludedLabel={t.cartRecap.shippingIncluded}
+          currencyLabel={t.cartRecap.currency}
         />
       )}
       {header}
       {features.timeEstimate && (
-        <TimeEstimateBadge label={wizardCopy.timeEstimateTotal} />
+        <TimeEstimateBadge label={t.shell.timeEstimateTotal} />
       )}
       <WizardStepIndicator
         steps={steps}
         currentStep={currentStep}
+        labels={stepLabels}
         timesPerStep={stepTimes}
       />
-      <Suspense fallback={<HydrationFallback />}>{stepView}</Suspense>
+      <Suspense fallback={<HydrationFallback language={formContext.language} />}>
+        {stepView}
+      </Suspense>
       {footer}
     </div>
   );

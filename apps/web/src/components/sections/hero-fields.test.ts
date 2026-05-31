@@ -108,4 +108,66 @@ describe('mergeHeroFields', () => {
     const out = mergeHeroFields(baseData, fields);
     expect(out.title).toBe('Mock title');
   });
+
+  // Phase 7B — locale-aware merge.
+  describe('locale-aware merge (Phase 7B)', () => {
+    it('preserves data when locale is non-default and source is default', () => {
+      // Cas type : AR avec mock localisé `data.title = 'كيت...'` et
+      // `fields.title = { value: 'Le rituel...', source: 'default' }`.
+      // → on doit garder `data.title` (AR).
+      const fields: ResolvedFields = {
+        title: { value: 'Le rituel ongles, en cinq minutes.', meta: { source: 'default', version: 0, locale: 'ar' } },
+        kicker: { value: 'Maison de Rabat', meta: { source: 'default', version: 0, locale: 'ar' } },
+      };
+      const dataAr: HeroData = {
+        ...baseData,
+        title: 'كيت فيمي قلو. حركتان، إشراق مكشوف.',
+        kicker: 'دار الرباط',
+      };
+      const out = mergeHeroFields(dataAr, fields, { locale: 'ar' });
+      expect(out.title).toBe('كيت فيمي قلو. حركتان، إشراق مكشوف.');
+      expect(out.kicker).toBe('دار الرباط');
+    });
+
+    it('accepts binding values in non-default locale (seed delivered)', () => {
+      const fields: ResolvedFields = {
+        title: { value: 'كيت محدّث', meta: { source: 'binding', version: 1, locale: 'ar' } },
+      };
+      const dataAr: HeroData = { ...baseData, title: 'وحدة fallback' };
+      const out = mergeHeroFields(dataAr, fields, { locale: 'ar' });
+      // bindings AR ont priorité même en non-default locale.
+      expect(out.title).toBe('كيت محدّث');
+    });
+
+    it('accepts default values when locale equals defaultLocale (FR)', () => {
+      const fields: ResolvedFields = {
+        title: { value: 'Title FR defaut', meta: { source: 'default', version: 0, locale: 'fr' } },
+      };
+      const out = mergeHeroFields(baseData, fields, { locale: 'fr' });
+      expect(out.title).toBe('Title FR defaut');
+    });
+
+    it('back-compat: no options → comportement historique (default accepté)', () => {
+      const fields: ResolvedFields = {
+        title: { value: 'Title FR defaut', meta: { source: 'default', version: 0, locale: 'fr' } },
+      };
+      const out = mergeHeroFields(baseData, fields);
+      expect(out.title).toBe('Title FR defaut');
+    });
+
+    it('rejects default CTA in non-default locale', () => {
+      const fields: ResolvedFields = {
+        cta: {
+          value: { label: 'Découvrir le rituel', href: '/rituel', variant: 'primary' },
+          meta: { source: 'default', version: 0, locale: 'ar' },
+        },
+      };
+      const dataAr: HeroData = {
+        ...baseData,
+        cta: { label: 'اكتشفي الطقوس', href: '/rituel', variant: 'primary' },
+      };
+      const out = mergeHeroFields(dataAr, fields, { locale: 'ar' });
+      expect(out.cta?.label).toBe('اكتشفي الطقوس');
+    });
+  });
 });

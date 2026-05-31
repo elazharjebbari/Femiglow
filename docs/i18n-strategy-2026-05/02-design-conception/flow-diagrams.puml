@@ -1,0 +1,152 @@
+@startuml flow-diagrams
+!theme cerulean-outline
+
+' Diagram 1: First visit, locale detection
+title FemiGlow i18n — User flows
+
+newpage 1 — First visit (locale detection)
+actor "Visitor" as V
+participant "Browser" as B
+participant "Vercel Edge" as E
+participant "Next.js Middleware" as MW
+participant "next-intl" as NI
+participant "Layout / Page" as PG
+
+V -> B : Type femiglow.ma
+B -> E : GET /
+E -> MW : Request
+MW -> NI : detectLocale(request)
+NI -> NI : Check path → none
+NI -> NI : Check cookie → none (first visit)
+NI -> NI : Parse Accept-Language: ar-MA, ar;q=0.9, fr;q=0.8
+NI -> NI : Best match 'ar'
+NI --> MW : 'ar'
+MW -> B : 302 Redirect /ar/\n+ Set-Cookie NEXT_LOCALE=ar
+B -> E : GET /ar/
+E -> MW : Request
+MW -> NI : Path has 'ar' → use
+MW -> PG : Render with locale=ar
+PG -> PG : Load messages/ar.json
+PG -> PG : <html lang="ar" dir="rtl">
+PG --> B : HTML rendered AR RTL
+B --> V : Display in Arabic
+
+newpage 2 — User switches language
+actor "Visitor on /fr/kit" as V2
+participant "Browser" as B2
+participant "LocaleSwitcher (client)" as LS
+participant "next-intl Router" as Router
+participant "Server" as S
+
+V2 -> LS : Click "🌐 FR" → dropdown
+LS --> V2 : Show options: 🇫🇷 FR ✓ | 🇲🇦 AR | 🇬🇧 EN
+V2 -> LS : Click AR
+LS -> Router : router.replace(pathname, { locale: 'ar' })
+Router -> B2 : Update URL to /ar/kit
+B2 -> S : GET /ar/kit\n+ Cookie NEXT_LOCALE=ar (auto-updated)
+S --> B2 : HTML rendered AR
+B2 --> V2 : Page in Arabic RTL
+S --> Analytics : event 'locale_changed' { from: 'fr', to: 'ar' }
+
+newpage 3 — Admin edits CMS content with i18n
+actor "Founder (admin)" as F
+participant "Browser" as B3
+participant "Admin /admin/components/123/edit" as Admin
+participant "Server Action" as Action
+participant "Drizzle ORM" as Drizzle
+participant "PostgreSQL" as DB
+
+F -> B3 : Open admin component edit
+B3 -> Admin : GET /admin/components/abc/edit
+Admin -> Drizzle : queryFieldBindings(componentId)
+Drizzle -> DB : SELECT * FROM component_field_bindings\nWHERE component_id = ?\nGROUP BY (field_key, locale)
+DB --> Drizzle : { title: { fr: "...", ar: null, en: null } }
+Drizzle --> Admin : data
+Admin --> B3 : UI avec tabs FR/AR/EN par field
+F -> B3 : Click AR tab → write Arabic value
+F -> B3 : Click "Save Draft"
+B3 -> Action : POST upsertFieldBinding\n{ componentId, fieldKey: 'title', locale: 'ar', value: '...' }
+Action -> Drizzle : INSERT ... ON CONFLICT UPDATE
+Drizzle -> DB : INSERT INTO component_field_bindings
+DB --> Drizzle : OK
+Action --> B3 : { ok: true }
+B3 --> F : Toast "AR translation saved"
+B3 -> B3 : Show AR tab as ✅
+F -> B3 : Repeat for EN
+F -> B3 : Click "Publish"
+Action -> Drizzle : UPDATE status='published'\nWHERE component_id AND fieldKey AND locale IN ('fr','ar','en')
+Drizzle -> DB : UPDATE
+DB --> Drizzle : OK
+
+newpage 4 — Public page rendering (RSC server-side)
+participant "Browser" as B4
+participant "Vercel Edge" as E4
+participant "Next.js RSC" as RSC
+participant "messages/ar.json" as JSON
+participant "Drizzle" as Dr
+participant "DB" as DB4
+
+B4 -> E4 : GET /ar/kit
+E4 -> RSC : Render page
+RSC -> RSC : params.locale = 'ar'
+RSC -> JSON : import('messages/ar.json')
+JSON --> RSC : { common: {...}, marketing: {...} }
+RSC -> Dr : queryComponentBindings({ componentId: 'kit-hero', locale: 'ar', fallback: 'fr' })
+Dr -> DB4 : SELECT value FROM component_field_bindings\nWHERE component_id AND locale='ar'
+DB4 --> Dr : { title: "حزمة فيمي قلو" }
+note right : Si vide, fallback FR
+Dr --> RSC : translated content
+RSC -> RSC : Render TSX with t('marketing.hero.title')
+RSC -> RSC : <html lang="ar" dir="rtl">
+RSC --> B4 : HTML server-rendered
+B4 --> B4 : Hydrate (NextIntlClientProvider)
+
+newpage 5 — Add new locale (Spanish)
+actor "Founder" as F5
+participant "Admin /admin/i18n/languages" as AdminLang
+participant "Server Action" as Act
+participant "DB" as DB5
+participant "Translator (external)" as Trans
+
+F5 -> AdminLang : Open i18n languages
+AdminLang --> F5 : List: FR ✅, AR ✅, EN ✅
+F5 -> AdminLang : Click "+ Add Spanish"
+AdminLang --> F5 : Form: code=es, name=Español, dir=ltr
+F5 -> AdminLang : Submit
+AdminLang -> Act : addLocale({ code: 'es', ... })
+Act -> DB5 : INSERT INTO i18n_locales\n(code='es', enabled=false, ...)
+DB5 --> Act : OK
+Act --> AdminLang : Created (disabled)
+F5 -> Trans : Send messages/fr.json + glossary
+Trans -> Trans : Translate
+Trans -> F5 : Return messages/es.json
+F5 -> AdminLang : Upload messages/es.json (or PR GitHub)
+F5 -> AdminLang : Toggle "Enable Spanish"
+Act -> DB5 : UPDATE i18n_locales SET enabled=true WHERE code='es'
+Act --> AdminLang : OK
+AdminLang -> AdminLang : Trigger CI deploy (es.json bundled)
+F5 -> AdminLang : Verify /es/kit accessible
+AdminLang --> F5 : ✅ ES live
+
+newpage 6 — Error handling: missing key
+participant "Browser" as B6
+participant "RSC" as R6
+participant "next-intl" as N6
+participant "Sentry" as Snt
+participant "messages/ar.json" as J_AR
+participant "messages/fr.json" as J_FR
+
+B6 -> R6 : GET /ar/some-page
+R6 -> J_AR : useTranslations('marketing')
+J_AR --> R6 : { hero: { title: "..." } }
+R6 -> R6 : t('hero.cta_new')\n⚠️ MISSING in AR
+R6 -> N6 : missingKey hook fires
+N6 -> J_FR : Fallback to 'fr'
+J_FR --> N6 : t('hero.cta_new') = "Découvrir"
+N6 -> Snt : Log warning { key: 'marketing.hero.cta_new', locale: 'ar' }
+N6 --> R6 : "Découvrir" (FR fallback)
+R6 --> B6 : Display French text (graceful)
+Snt -> Snt : Aggregate missing keys
+Snt -> Snt : Daily report email to admin
+
+@enduml

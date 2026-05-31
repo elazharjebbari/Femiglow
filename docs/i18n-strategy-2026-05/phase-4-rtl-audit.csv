@@ -1,0 +1,2 @@
+file,line,class_physical,rule,priority,context
+apps/web/src/components/kit/VideoPosterCover.tsx,209,left-1,left->start,P0,"className=""absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 grid h-16 w-16 place-items-center rounded-full shadow-lg motion-safe:transition-transform motion-safe:group-hover:scale-110"""

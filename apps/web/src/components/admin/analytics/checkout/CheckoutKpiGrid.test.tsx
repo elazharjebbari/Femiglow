@@ -20,7 +20,7 @@ describe('CheckoutKpiGrid', () => {
     render(<CheckoutKpiGrid totals={TOTALS} />);
     expect(screen.getByText('Vues panier')).toBeInTheDocument();
     expect(screen.getByText('Begin checkout')).toBeInTheDocument();
-    expect(screen.getByText('Soumissions')).toBeInTheDocument();
+    expect(screen.getByText('Achats')).toBeInTheDocument();
     expect(screen.getByText('Abandons')).toBeInTheDocument();
   });
 

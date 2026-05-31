@@ -1,0 +1,54 @@
+Lot,ID,Tache,Type,DependDe,Effort,Priorite,Invariants,Tests,DoD
+L0,T0.1,Brancher feat/locale-switcher-v2,chore,,XS,P0,,,branche creee
+L0,T0.2,Ajouter flag localeSwitcherV2 (off),feature-flag,T0.1,XS,P0,,,flag lisible off par defaut
+L0,T0.3,Capturer baseline (typecheck/lint/build/scanners/E2E actuel),qa,T0.2,S,P0,INV-6,baseline,etat vert archive
+L1,T1.1,Creer lib/i18n/build-switch-url.ts (UTM-safe),frontend,T0.3,S,P0,INV-4,U-URL-*,cas verts
+L1,T1.2,deriveLocale util (1er segment, defaut fr),frontend,T0.3,XS,P0,,U-URL-DERIVE,defaut gere
+L1,T1.3,Tests Vitest helpers,test,T1.1;T1.2,S,P0,INV-4,U-URL-*,100% cas
+L2,T2.1,Hook useLocaleTransition (4 modes),frontend,T1.3,M,P0,INV-1;INV-2;INV-3;INV-7;INV-11,U-HOOK-*,4 modes verts
+L2,T2.2,Helpers announce/prefersReducedMotion/afterFade,frontend,T2.1,S,P0,INV-10,U-HOOK-HELPERS,purs testes
+L2,T2.3,Tests Vitest hook (vt/veil/reduced/reload/no-op),test,T2.1;T2.2,M,P0,INV-1;INV-2;INV-11,U-HOOK-*,paths couverts
+L3,T3.1,LocaleItem + variantes dropdown/pills/segmented,frontend,T2.3,M,P0,INV-6;INV-11,I-SW-*,endonymes 0 latin
+L3,T3.2,LocaleVeil (overlay framer),frontend,T2.3,S,P0,,I-VEIL,phases ok
+L3,T3.3,LiveAnnouncer (aria-live),frontend,T2.3,XS,P0,INV-10,I-A11Y-LIVE,annonce unique
+L3,T3.4,Montage Header/Drawer/Footer derriere flag,frontend,T3.1,S,P0,INV-5,I-SW-HIDDEN,cache wizard/admin
+L3,T3.5,Tests integration (TL + MSW config),test,T3.1;T3.2;T3.3,M,P0,INV-5;INV-6;INV-11;INV-12,I-SW-*,a11y clavier ok
+L4,T4.1,Migration i18n_locale_config,backend,T0.3,S,P0,INV-12,I-API-*,table + seed defaut
+L4,T4.2,GET /api/i18n/config (public cache+ETag),backend,T4.1,S,P0,INV-12,I-API-PUB,200 + defaults si invalide
+L4,T4.3,GET/PUT /api/admin/i18n/config (authz+validation+audit),backend,T4.1,M,P0,,I-API-ADM,401/200/422/409
+L4,T4.4,Tests Vitest API (MSW + DB test),test,T4.2;T4.3,M,P0,INV-12,I-API-*,authz+validation
+L5,T5.1,resolveSuggestedLocale (Accept-Language+cookie),backend,T4.2,S,P0,,U-DET-*,precedence ok
+L5,T5.2,LocaleNudge (perle one-shot, dismiss cookie),frontend,T5.1;T2.3,M,P1,,I-NUDGE-*,1x/visiteur
+L5,T5.3,Tests nudge + detection,test,T5.1;T5.2,M,P1,,U-DET-*;I-NUDGE-*,events corrects
+L6,T6.1,Page /admin/i18n (form + preview FR/AR/EN+RTL),admin,T4.3,M,P1,,I-ADMIN-*;E-ADMIN-*,authz+preview
+L6,T6.2,Audit + garde-fous (default/all),admin,T6.1,S,P1,,I-ADMIN-GUARD,audit before/after
+L6,T6.3,Tests admin (authz/validation/audit/preview),test,T6.1;T6.2,M,P1,,I-ADMIN-*,couverts
+L7,T7.1,Playwright E2E (6 pages x 3 locales + RTL),test,T3.5;T5.3,L,P0,INV-1..INV-4;INV-9,E-SWITCH-*,no-reload+RTL
+L7,T7.2,Playwright nudge/admin/wizard-cache/clavier/no-JS,test,T7.1,M,P0,INV-5;INV-8;INV-10,E-*,verts
+L7,T7.3,axe a11y par locale,test,T7.1,S,P0,INV-7;INV-10,E-AXE-*,0 violation critique
+L7,T7.4,Garde-fous (scanners i18n + build + wizard),qa,T7.1,S,P0,INV-5;INV-6,GUARD,0 regression
+L7,T7.5,coverage-matrix sans trou,qa,T7.1;T7.2;T7.3,S,P0,INV-1..INV-12,MATRIX,chaque INV couvert
+L8,T8.1,Flag on (ou A/B B1 vs B2),release,T7.5,S,P0,,,stable
+L8,T8.2,Verifier telemetrie locale_switch,qa,T8.1,S,P0,,,events remontent
+L8,T8.3,Runbook sortie + rollback teste,release,T8.1,S,P0,,,rollback ok
+L9,T9.1,guessPreferredLocale (faisceau S1..S7 pondere),frontend,T1.3,M,P1,INV-20,EU-GUESS-*,consensus+contradiction
+L9,T9.2,suggestion-signals types + valeurs par defaut sures,frontend,T9.1,S,P1,,EU-SIG-*,fail-safe conservateur
+L9,T9.3,evaluateSuggestionPolicy (pure: never->trigger->budget->moment),frontend,T9.2,M,P1,INV-13;INV-14;INV-15;INV-16;INV-17;INV-18,EU-POL-*,table de verite
+L9,T9.4,Tests Vitest table de verite + negatifs,test,T9.1;T9.3,M,P1,INV-13;INV-14;INV-17,EU-*,negatif par invariant
+L10,T10.1,useLocaleSuggestionEngine (collecte + defer + budget),frontend,T9.4;T2.3,M,P1,INV-13;INV-16;INV-17,EU-RT-*,inerte si off
+L10,T10.2,Detecteur de breakpoint (scrollEnd/idle/exitIntent + TTL),frontend,T10.1,M,P1,INV-17,EU-BREAK-*,abandon TTL
+L10,T10.3,LocaleSuggestionPrompt (perle/toast 2 choix non-modal),frontend,T10.1,M,P1,INV-20,EU-PROMPT-*,a11y non-modal
+L10,T10.4,Cablage accept -> useLocaleTransition (no-reload),frontend,T10.3;T2.1,S,P1,INV-1,EU-ACCEPT,bascule sans reload
+L10,T10.5,Tests runtime (suppress/defer/show/accept/dismiss/abandon),test,T10.1;T10.2;T10.3,M,P1,INV-13;INV-14;INV-15;INV-16;INV-17;INV-20,EU-RT-*,tous chemins
+L11,T11.1,Seed section i18n_suggestion_engine (off + profils),backend,T4.1,S,P1,INV-13,EU-CFG-*,off par defaut
+L11,T11.2,Validation Zod (engine off si invalide + plancher zones calmes),backend,T11.1,M,P1,INV-13;INV-14,EU-CFG-*,floor non desactivable
+L11,T11.3,Onglet admin Moteur (toggle global + par profil),admin,T11.1;T6.3,M,P1,INV-18,EU-ADMIN-*,CRUD profils
+L11,T11.4,Builder no-code de profils (trigger + never) + dry-run,admin,T11.3,L,P1,INV-18,EU-ADMIN-BUILD,simulate
+L11,T11.5,Vue audit /admin/i18n/engine/audit,admin,T11.3,M,P1,INV-19,EU-AUDIT-*,montre/supprime+raison
+L11,T11.6,Tests config+admin+audit,test,T11.2;T11.3;T11.4;T11.5,M,P1,INV-18;INV-19,EU-ADMIN-*;EU-AUDIT-*,couverts
+L12,T12.1,Playwright moteur (off-defaut/breakpoint/zones calmes),test,T10.5;T11.6,L,P1,INV-13;INV-14;INV-15;INV-17,EU-E2E-*,prompt au breakpoint
+L12,T12.2,Playwright accept/dismiss/exit-intent/idle/reduced-motion,test,T12.1,M,P1,INV-16;INV-20,EU-E2E-*,no-redirect
+L12,T12.3,axe a11y prompt (non-modal),test,T12.1,S,P1,,EU-AXE,0 violation
+L12,T12.4,Garde-fous (scanners i18n + build + wizard),qa,T12.1,S,P1,INV-5;INV-6,EU-GUARD,0 regression
+L12,T12.5,coverage-matrix moteur sans trou,qa,T12.1;T12.2;T12.3,S,P1,INV-13;INV-14;INV-15;INV-16;INV-17;INV-18;INV-19;INV-20,EU-MATRIX,negatif par INV
+L12,T12.6,Activation progressive profil par profil + audit,release,T12.5,M,P1,INV-13,,A/B + lecture audit

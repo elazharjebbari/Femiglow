@@ -57,11 +57,22 @@ export function computePackSavings(
  *   prix XXL.
  * - Convention typographique française : espace insécable U+00A0 avant
  *   l'unité, `·` et `%`.
+ * - `phraseTemplate` (Phase 7 wiring) : gabarit ICU localisé optionnel
+ *   (placeholders `{amount}` / `{currency}` / `{pct}`). Fourni pour les
+ *   locales non-défaut → interpolé tel quel (sa propre ponctuation prime).
+ *   Absent → sortie FR byte-identique historique.
  */
 export function formatSavingsLabel(
   savings: PackSavings,
   currencyUnit: string = '€',
+  phraseTemplate?: string,
 ): string {
+  if (phraseTemplate) {
+    return phraseTemplate
+      .replace('{amount}', String(savings.eur))
+      .replace('{currency}', currencyUnit)
+      .replace('{pct}', String(savings.pct));
+  }
   const NBSP = ' ';
   return `Vous économisez ${savings.eur}${NBSP}${currencyUnit}${NBSP}·${NBSP}${savings.pct}${NBSP}%`;
 }

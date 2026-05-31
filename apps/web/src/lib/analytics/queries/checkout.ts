@@ -21,6 +21,7 @@ import type { TrackingEventLogEntry } from '@/lib/db/types';
 import { classifyTraffic, type TrafficBucket } from '../attribution';
 import type { AnalyticsFilters } from '../filters';
 import { resolveRange } from '../filters';
+import { analyticsCacheTtlMs, getCachedAnalytics, setCachedAnalytics } from '../cache';
 
 /** Étapes ordonnées du funnel checkout. */
 export const CHECKOUT_STAGES = [
@@ -112,6 +113,10 @@ export async function getCheckoutData(
   now: Date = new Date(),
 ): Promise<CheckoutData> {
   const range = resolveRange(filters, now);
+  const ttl = analyticsCacheTtlMs(range);
+  const cacheKey = `checkout:${JSON.stringify(filters)}`;
+  const cached = getCachedAnalytics<CheckoutData>(cacheKey, ttl, now.getTime());
+  if (cached) return cached;
   const events = await fetchEvents({
     from: range.from,
     to: range.to,
@@ -122,6 +127,26 @@ export async function getCheckoutData(
   // Aggregate session-level booleans across the funnel + first beginCheckout
   // ts (pour TTS et calcul abandons).
   const sessions = aggregateSessions(events);
+
+  // F-CHK-03 : un achat peut survenir juste après la fin de période (la session
+  // a démarré le checkout dans [from,to] mais convertit à to+Δ). On récupère les
+  // purchases dans (to, to+60min] pour ne pas compter ces sessions comme abandons
+  // à tort. Ces events ne comptent PAS dans les KPI/funnel de la période.
+  const latePurchaseTs = new Map<string, number>();
+  {
+    const late = await fetchEvents({
+      from: range.to,
+      to: new Date(range.to.getTime() + ABANDON_WINDOW_MS),
+      device: filters.device === 'all' ? undefined : filters.device,
+      traffic: filters.traffic === 'all' ? undefined : filters.traffic,
+    });
+    for (const e of late) {
+      if (e.eventName !== 'purchase' && e.eventName !== 'purchase_server') continue;
+      const t = e.receivedAt.getTime();
+      const prev = latePurchaseTs.get(e.sessionId);
+      if (prev === undefined || t < prev) latePurchaseTs.set(e.sessionId, t);
+    }
+  }
 
   // KPI + funnel counts
   const stepCounts: Record<CheckoutStage, number> = {
@@ -135,7 +160,7 @@ export async function getCheckoutData(
   let abandons = 0;
   let serverFallback = 0;
 
-  for (const s of sessions.values()) {
+  for (const [sessionId, s] of sessions.entries()) {
     // Funnel cumulatif : pour passer au step N, il faut tous les steps < N
     // OU au moins le begin_checkout (les "skip" steps sont OK — un user peut
     // sauter add_shipping si pas applicable). Convention : on ne remonte pas
@@ -149,17 +174,31 @@ export async function getCheckoutData(
 
     if (s.purchaseServer) serverFallback += 1;
 
-    // Abandon : a démarré le checkout mais pas de purchase OU purchase au-delà
-    // de la fenêtre 60 min.
+    // Abandon : a démarré le checkout mais pas de purchase (fenêtre 60 min
+    // écoulée) OU purchase au-delà de la fenêtre 60 min.
     if (s.begin_checkout && s.beginCheckoutTs !== null) {
       if (!s.purchase) {
-        abandons += 1;
+        // Un begin_checkout récent (< 60 min) peut encore convertir : on ne le
+        // compte pas comme abandon tant que la fenêtre n'est pas écoulée (F-CHK-04).
+        // Ni s'il a converti juste après la fin de période (F-CHK-03).
+        const lateTs = latePurchaseTs.get(sessionId);
+        const convertedSoon =
+          lateTs !== undefined && lateTs - s.beginCheckoutTs <= ABANDON_WINDOW_MS;
+        if (now.getTime() - s.beginCheckoutTs > ABANDON_WINDOW_MS && !convertedSoon) {
+          abandons += 1;
+        }
       } else if (s.purchaseTs !== null && s.purchaseTs - s.beginCheckoutTs > ABANDON_WINDOW_MS) {
         abandons += 1;
       }
     }
   }
 
+  // Modèle BOOL_OR : chaque étape compte les sessions ayant émis l'event,
+  // indépendamment des autres (un visiteur peut entrer directement au
+  // begin_checkout sans view_cart). `progressionFromPrevious` peut donc dépasser
+  // 100 % (étape plus peuplée que la précédente) ; le `dropoffToNext` est clampé
+  // à 0 car un « drop-off négatif » n'a pas de sens à afficher.
+  // cf. docs/analytics-audit-qa-2026-05-30 — finding AF-03.
   const steps: CheckoutFunnelStep[] = CHECKOUT_STAGES.map((stage, idx) => {
     const cur = stepCounts[stage];
     const prev = idx > 0 ? stepCounts[CHECKOUT_STAGES[idx - 1]!] : null;
@@ -172,7 +211,7 @@ export async function getCheckoutData(
       progressionFromPrevious:
         prev !== null && prev > 0 ? cur / prev : null,
       dropoffToNext:
-        next !== null && cur > 0 ? 1 - next / cur : null,
+        next !== null && cur > 0 ? Math.max(0, 1 - next / cur) : null,
     };
   });
 
@@ -246,7 +285,7 @@ export async function getCheckoutData(
     .sort((a, b) => b.abandons - a.abandons)
     .slice(0, 10);
 
-  return {
+  const result: CheckoutData = {
     range: { from: range.from.toISOString(), to: range.to.toISOString() },
     totals,
     steps,
@@ -254,6 +293,8 @@ export async function getCheckoutData(
     topErrors,
     topAbandonedFields,
   };
+  setCachedAnalytics(cacheKey, result, ttl, now.getTime());
+  return result;
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -405,25 +446,24 @@ interface FetchOpts {
 async function fetchEvents(opts: FetchOpts): Promise<TrackingEventLogEntry[]> {
   const drizzle = db();
   if (drizzle) {
-    const conditions: string[] = [];
-    conditions.push(`received_at >= '${opts.from.toISOString()}'`);
-    conditions.push(`received_at < '${opts.to.toISOString()}'`);
-    conditions.push(`consent_snapshot->>'analytics_storage' = 'granted'`);
-    if (opts.device) conditions.push(`device = '${escape(opts.device)}'`);
-    if (opts.traffic) conditions.push(`traffic_source = '${escape(opts.traffic)}'`);
-
-    const where = conditions.join(' AND ');
+    // Requête paramétrée (F-SEC-01) : valeurs liées, pas interpolées.
+    const conditions = [
+      sql`received_at >= ${opts.from.toISOString()}`,
+      sql`received_at < ${opts.to.toISOString()}`,
+      sql`consent_snapshot->>'analytics_storage' = 'granted'`,
+    ];
+    if (opts.device) conditions.push(sql`device = ${opts.device}`);
+    if (opts.traffic) conditions.push(sql`traffic_source = ${opts.traffic}`);
+    const whereSql = sql.join(conditions, sql` AND `);
     const rows = await drizzle.execute(
-      sql.raw(
-        `SELECT id, event_id, event_name, event_category, page_id, component_id,
+      sql`SELECT id, event_id, event_name, event_category, page_id, component_id,
                 page_route, anonymous_id, session_id, user_id, consent_snapshot,
                 payload, ua_hash, ip_anonymized, device, locale, is_conversion,
                 providers_dispatched, providers_results, received_at, schema_version,
                 traffic_source, traffic_medium, experiment_id, experiment_variant
          FROM tracking_events_log
-         WHERE ${where}
+         WHERE ${whereSql}
          ORDER BY received_at ASC`,
-      ),
     );
     return (rows as unknown as Record<string, unknown>[]).map(rowToEntry);
   }
@@ -439,10 +479,6 @@ async function fetchEvents(opts: FetchOpts): Promise<TrackingEventLogEntry[]> {
   if (opts.traffic) entries = entries.filter((e) => trafficOf(e) === opts.traffic);
   entries.sort((a, b) => a.receivedAt.getTime() - b.receivedAt.getTime());
   return entries;
-}
-
-function escape(s: string): string {
-  return s.replace(/'/g, "''");
 }
 
 function rowToEntry(row: Record<string, unknown>): TrackingEventLogEntry {

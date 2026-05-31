@@ -7,6 +7,12 @@ import type { Currency } from '@/lib/products/currency';
 
 interface StickyCartCTAProps {
   productName: string;
+  /**
+   * Libellé `aria-label` de la région (« Achat rapide »). Localisé via
+   * `marketing.kit.sticky.aria_region` et passé par le layout `/[locale]/kit`.
+   * Optionnel pour les call-sites legacy (FR) qui n'ont pas encore wiré l'i18n.
+   */
+  ariaRegion?: string;
   priceCents: number;
   /**
    * Prix promotionnel optionnel — si fourni et `< priceCents`, la sticky
@@ -21,6 +27,7 @@ interface StickyCartCTAProps {
 
 export function StickyCartCTA({
   productName,
+  ariaRegion = 'Achat rapide',
   priceCents,
   promoPriceCents = null,
   currency,
@@ -57,12 +64,12 @@ export function StickyCartCTA({
   return (
     <div
       role="region"
-      aria-label="Achat rapide"
+      aria-label={ariaRegion}
       data-visible={dataVisible}
       data-chat-open={chatOpen ? 'true' : 'false'}
       aria-hidden={chatOpen}
       style={{ zIndex: 'var(--z-sticky)' }}
-      className="fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:left-auto lg:right-6 lg:w-[340px] lg:rounded-md lg:border"
+      className="fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">

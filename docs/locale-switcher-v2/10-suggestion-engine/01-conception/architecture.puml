@@ -1,0 +1,48 @@
+@startuml engine-architecture
+title Moteur de suggestion — pipeline signaux → politique → décision → prompt
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "Serveur (RSC)" {
+  [guessPreferredLocale()\n(faisceau S1..S7 pondéré)] as GUESS
+  [resolveSuggestedLocale()\n(base : accept-lang + cookie)] as DETECT
+  [app_config\nsection i18n_suggestion_engine] as CFG
+}
+
+package "Client (runtime)" {
+  [collectSignals()\n(engagement/intention/tâche)] as SIGNALS
+  [useLocaleSuggestionEngine\n(orchestrateur)] as ENGINE
+  [evaluateSuggestionPolicy()\n(pure: never→trigger→budget→moment)] as POLICY
+  [breakpoint detector\n(defer-to-breakpoint + TTL)] as BREAK
+  [LocaleSuggestionPrompt\n(perle / toast, 2 choix)] as PROMPT
+  [useLocaleTransition\n(bascule sans reload)] as TRANS
+}
+
+package "Observabilité" {
+  [analytics\n(5 events suggestion)] as TRACK
+  [/admin/i18n/engine/audit] as AUDIT
+}
+
+GUESS --> ENGINE : {guessedLocale, confidence} (prop, no-flash)
+DETECT --> GUESS : amorce
+CFG --> ENGINE : profils + poids + caps + flags
+CFG --> POLICY : config
+SIGNALS --> ENGINE : signaux temps réel
+ENGINE --> POLICY : (signals, config)
+POLICY --> ENGINE : decision {eligible, profileMatched, reason}
+ENGINE --> BREAK : si eligible → attendre moment opportun (INV-17)
+BREAK --> PROMPT : show au breakpoint (ou abandon TTL)
+PROMPT --> TRANS : accept → switchTo(suggested,'nudge')
+PROMPT --> TRACK : shown / accepted / dismissed
+POLICY --> TRACK : evaluated (decision+reason+profile)
+TRACK --> AUDIT : alimente la vue d'audit (INV-19)
+
+note bottom of POLICY
+  Ordre : 1) never-profiles (zones calmes, INV-14/15)
+          2) engineEnabled? sinon suppress (INV-13)
+          3) triggers activés (priorité, confiance, budget INV-16)
+          4) moment opportun (INV-17)
+  Pure & déterministe → testable par table de vérité.
+end note
+@enduml

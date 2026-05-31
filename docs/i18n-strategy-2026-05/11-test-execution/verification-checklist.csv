@@ -1,0 +1,141 @@
+id,category,check,expected,actual,pass_fail,notes
+V001,coverage-code,Coverage lines src/lib/i18n/*,>= 90%,,,Wave 1 exit criterion
+V002,coverage-code,Coverage branches src/lib/i18n/*,>= 85%,,,Wave 1
+V003,coverage-code,Coverage lines src/components/i18n/*,>= 85%,,,Wave 2 exit
+V004,coverage-code,Coverage lines src/app/api/i18n/*,>= 90%,,,Wave 3
+V005,coverage-code,Coverage lines src/app/api/admin/i18n/*,>= 90%,,,Wave 3
+V006,coverage-code,Coverage middleware.ts locale logic,= 100%,,,Wave 3 critical
+V007,coverage-code,Coverage src/lib/checkout/i18n/dictionary.ts,= 100%,,,CHA-231 regression
+V008,coverage-code,Coverage src/lib/i18n/repos/*,>= 90%,,,Wave 3
+V009,coverage-code,Coverage components header footer i18n parts,>= 80%,,,Wave 2
+V010,coverage-code,Coverage delta vs baseline,>= -1%,,,No coverage regression
+V011,coverage-keys,Coverage clés FR,= 100%,,,Bloquant CI
+V012,coverage-keys,Coverage clés AR,>= 90%,,,Warn si moins
+V013,coverage-keys,Coverage clés EN,>= 90%,,,Warn si moins
+V014,coverage-keys,Pas de missing key fr.json,= 0,,,Source of truth complet
+V015,coverage-keys,Pas de orphan key (présent mais inutilisé),< 10,,,ESLint i18n/no-orphan-keys
+V016,coverage-keys,Drift detection keys(fr) == keys(ar),Yes,,,Snapshot test
+V017,coverage-keys,Drift detection keys(fr) == keys(en),Yes,,,Snapshot test
+V018,coverage-keys,Pas de string hardcodée dans src/components,= 0,,,ESLint i18n/no-hardcoded-strings
+V019,coverage-keys,Pas de string hardcodée dans src/app,= 0,,,ESLint i18n/no-hardcoded-strings
+V020,coverage-keys,Format clés respecté (namespace.key.sub_key),= 100%,,,ESLint i18n/key-format
+V021,routing,Middleware locale resolution path > cookie > header,Verified,,,Test middleware.test.ts
+V022,routing,Redirect / to /fr (default),Verified,,,E2E test
+V023,routing,Redirect /contact to /fr/contact,Verified,,,E2E test
+V024,routing,Pages /fr/* rendent FR,Verified,,,E2E test
+V025,routing,Pages /ar/* rendent AR,Verified,,,E2E test
+V026,routing,Pages /en/* rendent EN,Verified,,,E2E test
+V027,routing,404 sur /xx/* (locale inconnue) redirect,Verified,,,E2E + integration test
+V028,routing,Cookie NEXT_LOCALE pose sur switch,Verified,,,E2E test
+V029,routing,Cookie NEXT_LOCALE persiste après reload,Verified,,,E2E test
+V030,routing,Cookie NEXT_LOCALE expire après 1 an,Verified,,,Integration test
+V031,seo,hreflang tags présents sur toutes pages,Verified,,,E2E sur 5 pages
+V032,seo,hreflang fr-FR sur version FR,Verified,,,E2E
+V033,seo,hreflang ar-MA sur version AR,Verified,,,E2E
+V034,seo,hreflang en sur version EN,Verified,,,E2E
+V035,seo,hreflang x-default present,Verified,,,E2E
+V036,seo,Canonical URL respecte locale,Verified,,,E2E
+V037,seo,og:locale meta tag présent,Verified,,,E2E
+V038,seo,og:locale:alternate sur les autres locales,Verified,,,E2E
+V039,seo,JSON-LD localisé (Product name, description),Verified,,,Integration + E2E
+V040,seo,Sitemap.xml inclut /{locale}/* pour chaque page,Verified,,,Build check
+V041,rtl,html lang attribute fr/ar/en correct,Verified,,,Wave 6
+V042,rtl,html dir=rtl sur pages AR,Verified,,,Wave 6
+V043,rtl,html dir=ltr sur pages FR et EN,Verified,,,Wave 6
+V044,rtl,html dir update après switch sans reload,Verified,,,Wave 4 regression test
+V045,rtl,Tailwind logical properties (ms- au lieu de ml-),Verified,,,Lint + visual review
+V046,rtl,Pas de margin-left/right en CSS hors logical,Verified,,,Visual + grep
+V047,rtl,Icons chevron flipped en RTL,Verified,,,Visual snapshot
+V048,rtl,Forms label aligned à droite en RTL,Verified,,,Visual
+V049,rtl,Animation translateX corrigée pour RTL,Verified,,,Visual
+V050,rtl,Tooltips positionnés correctement RTL,Verified,,,Visual
+V051,a11y,axe-core violations critical = 0 sur 18 scans,Verified,,,Wave 6 exit
+V052,a11y,axe-core violations serious = 0 sur 18 scans,Verified,,,Wave 6 exit
+V053,a11y,LocaleSwitcher aria-haspopup=menu,Verified,,,Wave 2 + Wave 6
+V054,a11y,LocaleSwitcher aria-expanded toggle,Verified,,,Wave 2 + Wave 6
+V055,a11y,LocaleSwitcher aria-current sur active,Verified,,,Wave 2 + Wave 6
+V056,a11y,LocaleSwitcher keyboard nav Tab/Enter/Esc/Arrow,Verified,,,Wave 4
+V057,a11y,Focus visible avec contraste >= 3:1,Verified,,,Visual manual review
+V058,a11y,Focus order logique en RTL (inversé),Verified,,,Wave 6 manual review
+V059,a11y,Skip-to-content link visible au focus,Verified,,,Wave 6
+V060,a11y,Formulaires inputs ont label associé,Verified,,,Wave 6
+V061,components,LocaleSwitcher render FR/AR/EN OK,Verified,,,Wave 2
+V062,components,Header menu items localisés,Verified,,,Wave 2
+V063,components,Footer links légaux localisés,Verified,,,Wave 2
+V064,components,LangAttribute applique lang+dir au mount,Verified,,,Wave 2 + Wave 4
+V065,components,HreflangTags génère toutes locales actives,Verified,,,Wave 2
+V066,components,Forms placeholders localisés,Verified,,,Wave 2
+V067,components,Forms validation messages localisés,Verified,,,Wave 2
+V068,components,Wizard step 1-5 FR + AR identiques struct,Verified,,,CHA-231 regression
+V069,components,Newsletter form FR/AR/EN,Verified,,,Wave 2 + Wave 4
+V070,components,Lead form FR/AR/EN,Verified,,,Wave 2 + Wave 4
+V071,api,GET /api/i18n/coverage 200 OK,Verified,,,Wave 3
+V072,api,GET /api/i18n/coverage shape Zod valid,Verified,,,Wave 3
+V073,api,GET /api/i18n/coverage 401 sans auth,Verified,,,Wave 3
+V074,api,GET /api/i18n/coverage 429 sur rate limit,Verified,,,Wave 3
+V075,api,GET /api/i18n/missing-keys?locale=ar,Verified,,,Wave 3
+V076,api,POST /api/admin/i18n/upsert-message 200,Verified,,,Wave 3
+V077,api,POST /api/admin/i18n/upsert-message 422 validation,Verified,,,Wave 3
+V078,api,POST /api/admin/i18n/upsert-message audit log,Verified,,,Wave 3
+V079,api,POST /api/admin/i18n/upsert-message revalidateTag,Verified,,,Wave 3
+V080,api,POST /api/i18n/locale/switch cookie set,Verified,,,Wave 3
+V081,perf,Lighthouse Performance FR >= 90,Verified,,,Wave 7
+V082,perf,Lighthouse Performance AR >= 90,Verified,,,Wave 7
+V083,perf,Lighthouse Performance EN >= 90,Verified,,,Wave 7
+V084,perf,Lighthouse Accessibility >= 95 (3 locales),Verified,,,Wave 7
+V085,perf,Lighthouse SEO >= 90 (3 locales),Verified,,,Wave 7
+V086,perf,LCP < 2.5s sur 3 locales,Verified,,,Wave 7
+V087,perf,CLS < 0.1 sur 3 locales,Verified,,,Wave 7
+V088,perf,Bundle messages/fr.json < 15 KB gzipped,Verified,,,Wave 7
+V089,perf,Bundle messages/ar.json < 18 KB gzipped,Verified,,,Wave 7
+V090,perf,Bundle messages/en.json < 15 KB gzipped,Verified,,,Wave 7
+V091,perf,Total JS bundle delta < +5% baseline,Verified,,,Wave 7
+V092,perf,Lazy loading messages par locale active,Verified,,,Wave 7
+V093,robustness,Fuzz resolveLocale 1000 runs no crash,Verified,,,Wave 8
+V094,robustness,Fuzz matchLocale 500 runs valid output,Verified,,,Wave 8
+V095,robustness,Fuzz formatCurrency NaN Infinity,Verified,,,Wave 8
+V096,robustness,Cookie corrompu NEXT_LOCALE=invalid fallback,Verified,,,Wave 8
+V097,robustness,Path double slashes //ar///kit handled,Verified,,,Wave 8
+V098,robustness,Unicode escape /ar/k%C3%A9t works,Verified,,,Wave 8
+V099,robustness,XSS protection sanitize HTML entities,Verified,,,Wave 8
+V100,robustness,RTL override U+202E character stripped,Verified,,,Wave 8
+V101,robustness,Locale switch during fetch no FR/AR mix,Verified,,,Wave 8
+V102,robustness,Network failure during translations load,Verified,,,Wave 8
+V103,visual,Snapshots home FR/AR/EN desktop OK,Verified,,,Wave 5
+V104,visual,Snapshots home FR/AR/EN mobile OK,Verified,,,Wave 5
+V105,visual,Snapshots kit FR/AR/EN desktop+mobile OK,Verified,,,Wave 5
+V106,visual,Snapshots checkout step1 FR/AR/EN OK,Verified,,,Wave 5
+V107,visual,Snapshots maison FR/AR/EN OK,Verified,,,Wave 5
+V108,visual,Visual diff threshold respecté (<0.5%),Verified,,,Wave 5
+V109,visual,Aucun diff inattendu (tous reviewed),Verified,,,Wave 5
+V110,visual,Mask appliqué sur éléments dynamiques,Verified,,,Wave 5
+V111,db,Migration i18n_locales appliquée,Verified,,,Wave 3 setup
+V112,db,Migration i18n_translation_keys appliquée,Verified,,,Wave 3 setup
+V113,db,Migration i18n_translation_values appliquée,Verified,,,Wave 3 setup
+V114,db,Seed i18n minimal présent (3 locales),Verified,,,Wave 3 setup
+V115,db,Soft delete locale respecté (enabled=false),Verified,,,Wave 3
+V116,db,DB rollback propre entre tests,Verified,,,Wave 3
+V117,wizard,WizardDictionary FR keys count = AR keys count,Verified,,,CHA-231
+V118,wizard,WizardStep 1 FR + AR rendu OK,Verified,,,Wave 2 + Wave 4
+V119,wizard,WizardStep 2 FR + AR rendu OK,Verified,,,Wave 2 + Wave 4
+V120,wizard,WizardStep 3 FR + AR rendu OK,Verified,,,Wave 2 + Wave 4
+V121,wizard,WizardStep 4 FR + AR rendu OK,Verified,,,Wave 2 + Wave 4
+V122,wizard,WizardStep 5 FR + AR rendu OK,Verified,,,Wave 2 + Wave 4
+V123,wizard,Wizard switch locale mid-flow conserve data,Verified,,,Wave 4 mid-funnel
+V124,bugs,P0 ouverts,= 0,,,Exit criterion
+V125,bugs,P1 ouverts,< 5,,,Exit criterion
+V126,bugs,P2 ouverts,< 20,,,Exit criterion warn
+V127,bugs,Flaky tests sur 3 runs,= 0,,,Exit criterion
+V128,bugs,Tests skip sans ticket,= 0,,,Code review check
+V129,docs,CHANGELOG mis à jour,Verified,,,Phase 6 doc
+V130,docs,Tests régression P0/P1 ajoutés,Verified,,,Phase 6 doc
+V131,docs,Post-mortem rédigé pour P0,Verified,,,Phase 6 doc
+V132,docs,test-matrix.csv mis à jour,Verified,,,Phase 6 doc
+V133,docs,Verification checklist 100% remplie,Verified,,,Ce fichier
+V134,git,Tag baseline créé pré-batterie,Verified,,,Git tag check
+V135,git,Tag passed créé post-batterie,Verified,,,Git tag check
+V136,signoff,Signoff lead technique,Verified,,,Comment PR ou doc
+V137,signoff,Signoff founder,Verified,,,Doc ou Slack confirmé
+V138,signoff,Démo équipe 15 min tenue,Verified,,,Calendar event
+V139,reporting,Synthèse finale compilée,Verified,,,communication-templates.md T3
+V140,reporting,One-pager exec partagé,Verified,,,communication-templates.md T5

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { listPlacementsForZone } from '@/lib/legal/repository';
 
@@ -20,16 +21,28 @@ export async function FooterLegalLinks({
   className,
   linkClassName,
 }: FooterLegalLinksProps) {
+  // Phase 8 — libellés localisés par slug (`navigation.footer.legal_links`),
+  // fallback sur le titre DB / labelOverride si aucune clé. Les titres légaux
+  // DB restent FR ; on prend la clé i18n quand elle existe pour /ar & /en.
+  const t = await getTranslations({ namespace: 'navigation.footer.legal_links' });
+  const localizeLabel = (slug: string, fallback: string): string => {
+    const key = slug.replace(/-/g, '_');
+    return t.has(key) ? t(key) : fallback;
+  };
+
   let links: Array<{ slug: string; label: string }> = [];
   try {
     const rows = await listPlacementsForZone(zoneKey);
-    links = rows.map((r) => ({ slug: r.pageSlug, label: r.labelOverride ?? r.title }));
+    links = rows.map((r) => ({
+      slug: r.pageSlug,
+      label: localizeLabel(r.pageSlug, r.labelOverride ?? r.title),
+    }));
   } catch {
     links = [];
   }
 
   if (links.length === 0) {
-    links = DEFAULT_LINKS;
+    links = DEFAULT_LINKS.map((l) => ({ slug: l.slug, label: localizeLabel(l.slug, l.label) }));
   }
 
   return (

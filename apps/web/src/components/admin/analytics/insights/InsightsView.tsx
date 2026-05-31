@@ -342,6 +342,16 @@ function OverviewPanel() {
 
   return (
     <div className="flex flex-col gap-6" data-testid="overview-panel">
+      {data.firstRun && (
+        <div
+          data-testid="insights-first-run"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+        >
+          Les données agrégées n’ont pas encore été calculées. Lancez un premier
+          rafraîchissement (bouton « Rafraîchir ») pour peupler les vues — ceci
+          n’indique pas une absence de trafic.
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <KpiCard
           label="Total events"

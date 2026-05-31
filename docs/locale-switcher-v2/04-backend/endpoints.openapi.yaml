@@ -1,0 +1,309 @@
+openapi: 3.1.0
+info:
+  title: Locale Switcher V2 — Config API
+  version: 1.0.0
+  description: >
+    Endpoints de configuration du sélecteur de langue FemiGlow (FR/AR/EN).
+    Lecture publique cachée + écriture admin avec audit & concurrence optimiste.
+    Source de vérité : docs/locale-switcher-v2/CONTRACT.md §2/§3/§6.
+    Forme d'erreur alignée sur apps/web/src/lib/errors/http-error.ts.
+  contact:
+    name: FemiGlow Platform
+
+servers:
+  - url: /
+    description: Same-origin (Next.js App Router route handlers)
+
+tags:
+  - name: public
+    description: Lecture sans authentification, cachée (INV-12 → defaults si invalide).
+  - name: admin
+    description: Lecture/écriture admin, RBAC + audit + optimistic concurrency.
+
+paths:
+  /api/i18n/config:
+    get:
+      tags: [public]
+      operationId: getPublicLocaleConfig
+      summary: Config publique du switcher (no-auth, cachée, ETag).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: Config validée (ou defaults si DB invalide — INV-12).
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              example: public, max-age=30, s-maxage=300, stale-while-revalidate=86400
+            ETag:
+              schema: { type: string }
+              example: W/"ilc-7"
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicConfigEnvelope' }
+        '304':
+          description: Non modifié (If-None-Match == ETag courant). Pas de corps.
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/admin/i18n/config:
+    get:
+      tags: [admin]
+      operationId: getAdminLocaleConfig
+      summary: Config admin (auth, non cachée, inclut updatedBy + version).
+      security:
+        - adminSession: []
+      responses:
+        '200':
+          description: Config résolue avec meta complète (version pivot du PUT).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminConfigEnvelope' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    put:
+      tags: [admin]
+      operationId: putAdminLocaleConfig
+      summary: Met à jour la config (validation Zod, audit, snapshot, optimistic lock).
+      security:
+        - adminSession: []
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PutConfigBody' }
+      responses:
+        '200':
+          description: Config mise à jour ; version incrémentée ; snapshot créé.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PutConfigResult' }
+        '400': { $ref: '#/components/responses/InvalidInput' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/VersionConflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+components:
+
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: femiglow_admin_session
+      description: >
+        Cookie de session admin (cf. apps/web/src/lib/auth/session.ts, SESSION_COOKIE).
+        Décodé par getAdminSession(). RBAC vérifié en plus de l'authentification.
+
+  parameters:
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Version courante de la config (optimistic lock). NaN/absent ⇒ 400.
+      schema: { type: integer, minimum: 1 }
+      example: 7
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: ETag connu du client ; s'il correspond ⇒ 304.
+      schema: { type: string }
+      example: W/"ilc-7"
+
+  schemas:
+
+    Locale:
+      type: string
+      enum: [fr, ar, en]
+    Direction:
+      type: string
+      enum: [ltr, rtl]
+    Surface:
+      type: string
+      enum: [header, drawer, footer, nudge]
+    SurfaceVariant:
+      type: string
+      enum: [dropdown, pills, toggle]
+
+    LocaleEntry:
+      type: object
+      additionalProperties: false
+      required: [code, enabled, endonym, order]
+      properties:
+        code: { $ref: '#/components/schemas/Locale' }
+        enabled: { type: boolean }
+        endonym: { type: string, minLength: 1, maxLength: 40, example: "العربية" }
+        direction: { $ref: '#/components/schemas/Direction' }
+        order: { type: integer, minimum: 1, maximum: 99 }
+
+    SurfaceCfg:
+      type: object
+      additionalProperties: false
+      required: [variant]
+      properties:
+        variant: { $ref: '#/components/schemas/SurfaceVariant' }
+
+    LocaleConfigPayload:
+      type: object
+      additionalProperties: false
+      required: [locales, defaultLocale, nudge, surfaces, transition]
+      description: Forme canonique — voir 03-data/config-schema.yaml (validationRules trans-champs).
+      properties:
+        locales:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items: { $ref: '#/components/schemas/LocaleEntry' }
+        defaultLocale: { $ref: '#/components/schemas/Locale' }
+        nudge:
+          type: object
+          additionalProperties: false
+          required: [enabled, maxImpressionsPerVisitor]
+          properties:
+            enabled: { type: boolean }
+            maxImpressionsPerVisitor: { type: integer, minimum: 0, maximum: 3 }
+        surfaces:
+          type: object
+          additionalProperties: false
+          required: [header, drawer, footer]
+          properties:
+            header: { $ref: '#/components/schemas/SurfaceCfg' }
+            drawer: { $ref: '#/components/schemas/SurfaceCfg' }
+            footer: { $ref: '#/components/schemas/SurfaceCfg' }
+        transition:
+          type: object
+          additionalProperties: false
+          required: [durationMs, easing]
+          properties:
+            durationMs: { type: integer, minimum: 200, maximum: 560 }
+            easing: { type: string, example: "cubic-bezier(0.22,1,0.36,1)" }
+
+    PublicMeta:
+      type: object
+      additionalProperties: false
+      required: [version, updatedAt, isDefault]
+      properties:
+        version: { type: integer, example: 7 }
+        updatedAt: { type: string, format: date-time }
+        isDefault:
+          type: boolean
+          description: true si la config servie provient des defaults (INV-12), pas de la DB validée.
+
+    AdminMeta:
+      allOf:
+        - $ref: '#/components/schemas/PublicMeta'
+        - type: object
+          properties:
+            updatedBy:
+              type: [object, "null"]
+              properties:
+                id: { type: string }
+                email: { type: string, format: email }
+
+    PublicConfigEnvelope:
+      type: object
+      additionalProperties: false
+      required: [payload, meta]
+      properties:
+        payload: { $ref: '#/components/schemas/LocaleConfigPayload' }
+        meta: { $ref: '#/components/schemas/PublicMeta' }
+
+    AdminConfigEnvelope:
+      type: object
+      additionalProperties: false
+      required: [payload, meta]
+      properties:
+        payload: { $ref: '#/components/schemas/LocaleConfigPayload' }
+        meta: { $ref: '#/components/schemas/AdminMeta' }
+
+    PutConfigBody:
+      type: object
+      additionalProperties: false
+      required: [payload]
+      properties:
+        payload: { $ref: '#/components/schemas/LocaleConfigPayload' }
+        note:
+          type: string
+          maxLength: 500
+          description: Commentaire d'audit optionnel (stocké dans le snapshot + audit meta).
+
+    PutConfigResult:
+      type: object
+      additionalProperties: false
+      required: [payload, meta, snapshotId]
+      properties:
+        payload: { $ref: '#/components/schemas/LocaleConfigPayload' }
+        meta: { $ref: '#/components/schemas/AdminMeta' }
+        snapshotId: { type: string, example: "ilcsnap_01J..." }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [unauthorized, forbidden, not_found, invalid_input, validation_failed, version_conflict, conflict, internal_error]
+            message: { type: string }
+            details:
+              description: >
+                Pour validation_failed : tableau d'issues Zod (chacune avec params.rule = code de validationRules,
+                ex. V-AR-RTL). Pour version_conflict : { currentVersion }.
+
+  responses:
+    Unauthorized:
+      description: Session admin requise.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: unauthorized, message: "Session requise" } }
+    Forbidden:
+      description: RBAC refusé (ou garde-fou destructif).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: forbidden, message: "Permission write requise" } }
+    InvalidInput:
+      description: If-Match manquant/NaN ou JSON malformé.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: invalid_input, message: 'Header "If-Match" requis (version courante).' } }
+    ValidationFailed:
+      description: Payload invalide (Zod / validationRules).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error:
+              code: validation_failed
+              message: "Payload invalide"
+              details:
+                - path: ["locales", 1, "direction"]
+                  message: "ar must be rtl"
+                  params: { rule: "V-AR-RTL" }
+    VersionConflict:
+      description: If-Match périmé (édition concurrente).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error:
+              code: version_conflict
+              message: "Version stale : courante=8, fournie=7"
+              details: { currentVersion: 8 }
+    InternalError:
+      description: Erreur interne inattendue.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: { code: internal_error, message: "Erreur interne" } }

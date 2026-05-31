@@ -13,7 +13,10 @@
  *    construction du cart snapshot ; on centralise ici pour réutilisation
  *    éventuelle (page promo, landing, etc.).
  */
+import { getTranslations } from 'next-intl/server';
+
 import { mockKit } from '@/data/mock';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 import {
   KIT_PRODUCT_SLUG,
   getKitProductCached,
@@ -41,6 +44,12 @@ interface KitCommanderSectionBoundProps
    * à partir du DB Product + variantes.
    */
   initialCartOverride?: CartSnapshot;
+  /**
+   * Phase 7E — locale active. Résout kicker/titre/sous-titre depuis
+   * `marketing.kit.commander` (FR/AR/EN). Un override explicite via props
+   * (`kicker`/`title`/`subtitle`) reste prioritaire.
+   */
+  locale?: Locale;
 }
 
 function buildCartSnapshotFromMock(): CartSnapshot {
@@ -62,8 +71,14 @@ function buildCartSnapshotFromMock(): CartSnapshot {
 
 export async function KitCommanderSectionBound({
   initialCartOverride,
+  locale,
   ...rest
 }: KitCommanderSectionBoundProps) {
+  const { kicker, title, subtitle, ...restProps } = rest;
+  const t = await getTranslations({
+    locale: locale ?? DEFAULT_LOCALE,
+    namespace: 'marketing.kit.commander',
+  });
   let initialCart: CartSnapshot;
 
   if (initialCartOverride) {
@@ -132,7 +147,13 @@ export async function KitCommanderSectionBound({
     <KitCommanderSection
       initialCart={initialCart}
       packImage={primaryHeroImage}
-      {...rest}
+      kicker={kicker ?? t('kicker_default')}
+      title={title ?? t('title_default')}
+      subtitle={subtitle ?? t('subtitle_default')}
+      // Phase 8 (7E-13) — langue d'affichage du wizard checkout (fr/ar/en).
+      // La persistance reste fr|ar : `en` est ramené à `fr` côté serveur (CHA-232).
+      wizardLanguage={locale}
+      {...restProps}
     />
   );
 }

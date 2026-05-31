@@ -1,0 +1,63 @@
+ID,Layer,Target,Scenario,Given,When,Then,Invariant(s),MSW,Priority
+VU-01,unit,buildSwitchUrl,"Insert locale segment on unprefixed path","Path /kit with current locale fr (no prefix)","buildSwitchUrl(/kit, , ar) called","Returns /ar/kit",INV-4,N,P0
+VU-02,unit,buildSwitchUrl,"Replace existing locale segment","Path /fr/kit","buildSwitchUrl(/fr/kit, , ar)","Returns /ar/kit (fr replaced not duplicated)",INV-4,N,P0
+VU-03,unit,buildSwitchUrl,"Replace locale on root localized path","Path /fr","buildSwitchUrl(/fr, , en)","Returns /en",INV-4 INV-9,N,P0
+VU-04,unit,buildSwitchUrl,"Preserve single querystring param","Path /fr/kit search ?ref=home","buildSwitchUrl(/fr/kit, ?ref=home, ar)","Returns /ar/kit?ref=home",INV-4,N,P0
+VU-05,unit,buildSwitchUrl,"Preserve UTM cluster verbatim","Path /fr/kit search ?utm_source=meta&utm_medium=cpc&utm_campaign=glow","switch to ar","Returns /ar/kit?utm_source=meta&utm_medium=cpc&utm_campaign=glow (order + all keys intact)",INV-4,N,P0
+VU-06,unit,buildSwitchUrl,"Preserve repeated/array query keys","Search ?tag=a&tag=b","switch to en","Both tag=a and tag=b survive in order",INV-4,N,P1
+VU-07,unit,buildSwitchUrl,"Preserve encoded query values","Search ?q=cr%C3%A8me%20mains","switch to ar","Encoded value not double-encoded nor decoded",INV-4,N,P1
+VU-08,unit,buildSwitchUrl,"Preserve hash fragment","Path /fr/journal#section-3","switch to en","Returns /en/journal#section-3",INV-4,N,P2
+VU-09,unit,buildSwitchUrl,"Trailing slash path normalized","Path /fr/kit/","switch to ar","Returns /ar/kit/ (slash policy preserved consistently)",INV-4 INV-9,N,P1
+VU-10,unit,buildSwitchUrl,"Deep nested dynamic path","Path /fr/journal/mon-rituel-du-soir","switch to ar","Returns /ar/journal/mon-rituel-du-soir",INV-4,N,P1
+VU-11,unit,buildSwitchUrl,"Switch to same locale yields identical URL","Path /fr/kit?utm=x current fr","buildSwitchUrl(... fr)","Returns /fr/kit?utm=x unchanged (no-op friendly)",INV-11,N,P1
+VU-12,unit,buildSwitchUrl,"Empty / bare root path","Path / no locale prefix","switch to ar","Returns /ar",INV-4 INV-9,N,P1
+VU-13,unit,buildSwitchUrl,"Path with locale-like but non-locale first segment","Path /free/kit (free != locale)","switch to ar","Inserts not replaces -> /ar/free/kit",INV-4,N,P2
+VU-14,unit,buildSwitchUrl,"Querystring with empty value param","Search ?utm_term=","switch to en","Empty param preserved /en/...?utm_term=",INV-4,N,P2
+VU-15,integration,useLocaleTransition,"VT path applies dir/lang then soft-navigates","document.startViewTransition exists + no reduced-motion","hook switch fr->ar invoked","startViewTransition called once; inside callback html.lang=ar and html.dir=rtl set BEFORE router.replace; router.replace(/ar/... {locale:ar})",INV-1 INV-2,N,P0
+VU-16,integration,useLocaleTransition,"Veil fallback path when VT unsupported","startViewTransition undefined (Firefox sim) + no reduced-motion","switch fr->ar","LocaleVeil fade sequence runs; apply() sets dir/lang behind veil; router.replace called; NO full reload",INV-1 INV-2,N,P0
+VU-17,integration,useLocaleTransition,"Reduced-motion path applies instantly no animation","matchMedia(prefers-reduced-motion:reduce)=true","switch fr->ar","apply() runs directly; no startViewTransition no veil; dir/lang set; router.replace called; transition event payload transition=reduced",INV-7 INV-1 INV-2,N,P0
+VU-18,integration,useLocaleTransition,"Active-locale click is a no-op","current locale fr","switch(fr) invoked","No startViewTransition no veil no router.replace no dir/lang mutation no announce no event",INV-11,N,P0
+VU-19,integration,useLocaleTransition,"dir/lang synced in same frame as content (no LTR flash)","current fr","switch to ar under VT","Within startViewTransition callback dir becomes rtl synchronously before router.replace resolves (assert call order)",INV-2,N,P0
+VU-20,integration,useLocaleTransition,"Switch ar->fr flips rtl back to ltr","current ar (html dir=rtl)","switch to fr","html.dir=ltr html.lang=fr applied; router.replace fr",INV-2,N,P1
+VU-21,integration,useLocaleTransition,"Switch fr->en stays ltr","current fr","switch to en","html.dir stays ltr html.lang=en; router.replace en",INV-2,N,P2
+VU-22,integration,useLocaleTransition,"Offline/soft-nav error falls back to reload","router.replace rejects/throws (offline sim)","switch fr->ar","window.location.assign(target) invoked as last-resort; transition event transition=reload",INV-1 INV-12,N,P0
+VU-23,integration,useLocaleTransition,"aria-live announce emitted on switch","live region present current fr","switch to ar","announce(ar) writes localized message into aria-live=polite region (e.g. arabic label)",INV-10,N,P0
+VU-24,integration,useLocaleTransition,"No announce / no event on no-op","current fr","switch(fr)","aria-live region untouched; no locale_switch event",INV-10 INV-11,N,P1
+VU-25,integration,useLocaleTransition,"Scroll position not reset by hook","window.scrollY=800 current fr","switch to ar via soft-nav","Hook does not call scrollTo/scroll reset; scrollY preserved (router.replace soft-nav not assign)",INV-3,N,P1
+VU-26,integration,useLocaleTransition,"VT callback rejection still navigates","startViewTransition present but ready promise rejects","switch fr->ar","Navigation still completes (router.replace ran in callback); no thrown error escapes; graceful",INV-1 INV-12,N,P1
+VU-27,unit,config schema (Zod),"Valid canonical config parses","CONTRACT §3 canonical config object","schema.parse(config)","Succeeds; 3 locales enabled defaultLocale fr nudge.maxImpressionsPerVisitor=1",INV-12,N,P0
+VU-28,unit,config schema (Zod),"Invalid config rejected and defaults applied","Config missing defaultLocale / bad enum / negative order","safeParse","Returns error; loader substitutes DEFAULT config (never throws to UI)",INV-12,N,P0
+VU-29,unit,config schema (Zod),"Single-locale config -> switcher null intent","Only fr enabled","parse + getEnabledLocales","enabled length 1 -> component renders null (flag downstream)",INV-12,N,P1
+VU-30,unit,config schema (Zod),"ar disabled config","locales ar enabled=false","parse","ar excluded from enabled list; fr/en remain; defaultLocale still valid",INV-12,N,P1
+VU-31,unit,config schema (Zod),"defaultLocale not in enabled set is rejected","defaultLocale=ar but ar.enabled=false","safeParse","Validation error -> fallback to defaults",INV-12,N,P1
+VU-32,unit,config schema (Zod),"Unknown extra keys ignored or stripped","Config with rogue surface topbar","parse","Either stripped or rejected; no crash; defaults safe",INV-12,N,P2
+VU-33,unit,config schema (Zod),"transition.durationMs out of charte bounds flagged","durationMs=50 (<200 snappy)","parse/validate","Rejected or clamped per schema; never <200ms reaches runtime",INV-12,N,P2
+VU-34,unit,config schema (Zod),"Direction defaults derived for ar","ar entry without explicit direction","parse","direction resolves to rtl (default mapping)",INV-2 INV-12,N,P2
+VU-35,unit,resolveSuggestedLocale,"Accept-Language ar primary -> suggests ar","No NEXT_LOCALE cookie; Accept-Language ar then fr;q=0.8","resolveSuggestedLocale(headers)","Returns ar",INV-12,N,P0
+VU-36,unit,resolveSuggestedLocale,"Cookie present short-circuits suggestion","NEXT_LOCALE=fr cookie set; Accept-Language ar","resolve","Returns null/served (no nudge) because explicit choice wins",INV-12,N,P0
+VU-37,unit,resolveSuggestedLocale,"Precedence cookie > Accept-Language > default","cookie en + Accept-Language ar","resolve","cookie en wins; suggested != served only when no cookie",INV-12,N,P1
+VU-38,unit,resolveSuggestedLocale,"Unsupported language falls to default","Accept-Language de-DE then zh","resolve","No supported match -> defaultLocale fr; no nudge",INV-12,N,P1
+VU-39,unit,resolveSuggestedLocale,"Quality-weighted parse picks highest q supported","Accept-Language en;q=0.4 then ar;q=0.9","resolve","Returns ar (highest q among supported)",INV-12,N,P1
+VU-40,unit,resolveSuggestedLocale,"Malformed Accept-Language never throws","Header garbage tokens","resolve","Returns default fr fail-soft no throw",INV-12,N,P1
+VU-41,unit,resolveSuggestedLocale,"Suggested equals served -> no nudge","served ar + Accept-Language ar","resolve+nudge-decision","suggested==served -> nudge suppressed",INV-12,N,P2
+VU-42,unit,resolveSuggestedLocale,"locale_nudge_dismissed cookie suppresses suggestion","cookie locale_nudge_dismissed=1; Accept-Language ar served fr","resolve","Suggestion suppressed (one-shot honored server-side)",INV-12,N,P1
+VU-43,integration,events emission,"locale_switch payload shape (CONTRACT §4)","VT path fr->ar from header on /kit","switch completes","Emits locale_switch {from:fr to:ar surface:header page:/kit transition:vt}",INV-1,Y,P0
+VU-44,integration,events emission,"locale_switch transition=veil on fallback","Veil path fr->ar from footer","switch","Emits payload with surface:footer transition:veil",INV-1,Y,P1
+VU-45,integration,events emission,"locale_switch transition=reduced","reduced-motion fr->en drawer","switch","Emits {from:fr to:en surface:drawer transition:reduced}",INV-7,Y,P1
+VU-46,integration,events emission,"locale_switch transition=reload on offline","offline fallback fr->ar","switch","Emits payload with transition:reload before/with assign",INV-1,Y,P1
+VU-47,integration,events emission,"No locale_switch on active no-op","current fr","click fr","Zero locale_switch events captured",INV-11,Y,P1
+VU-48,integration,events emission,"Analytics sink failure does not block switch","sink POST returns 500 (MSW)","switch fr->ar","Navigation still completes; error swallowed; no UI break",INV-1 INV-12,Y,P1
+VU-49,integration,LocaleNudge,"Shown once then impression cap honored","Config nudge.enabled maxImpressions=1; suggested ar served fr; no dismiss cookie","render LocaleNudge","Emits locale_nudge_shown {suggested:ar served:fr page} exactly once; not re-shown on rerender",INV-12,Y,P0
+VU-50,integration,LocaleNudge,"Dismiss sets cookie and never re-shows","Nudge shown","user clicks dismiss","Sets locale_nudge_dismissed cookie; emits locale_nudge_dismissed {suggested:ar page}; nudge unmounts; re-render shows nothing",INV-12,Y,P0
+VU-51,integration,LocaleNudge,"Accept triggers switch + accepted event","Nudge shown suggested ar","user clicks nudge (accept)","Emits locale_nudge_accepted {suggested:ar page}; useLocaleTransition switch to ar runs (no-reload)",INV-1 INV-12,Y,P0
+VU-52,integration,LocaleNudge,"Suppressed when dismiss cookie already set","locale_nudge_dismissed cookie present","render","No nudge rendered; no locale_nudge_shown",INV-12,Y,P1
+VU-53,integration,LocaleNudge,"Suppressed when suggested==served","served ar suggested ar","render","No nudge; no event",INV-12,Y,P1
+VU-54,integration,LocaleNudge,"Suppressed when nudge.enabled=false in config","config nudge.enabled=false","render","No nudge regardless of Accept-Language",INV-12,Y,P1
+VU-55,integration,LocaleNudge,"Never shown inside wizard surface","wizard/checkout context flag active","render","Nudge not mounted (mirrors switcher hidden rule)",INV-5,N,P1
+VU-56,integration,LocaleNudge,"Config API down -> nudge defaults safe","GET /api/i18n/config 500","render","Falls back to defaults; no crash; nudge suppressed or default behavior; switcher still works",INV-12,Y,P1
+VU-57,integration,config loader,"Public config fetched unauthenticated + cached","GET /api/i18n/config 200 valid (MSW)","loader fetch","Returns parsed config; cache headers respected; no auth header required",INV-12,Y,P1
+VU-58,integration,config loader,"Invalid public config body -> defaults","GET /api/i18n/config 200 but malformed JSON/schema","loader fetch","safeParse fails -> default config returned; never throws",INV-12,Y,P0
+VU-59,integration,LocaleSwitcher render,"Endonyms rendered in own script not ISO code","enabled fr/ar/en","render dropdown panel","Items show Français / العربية / English; arabic item contains arabic chars; no flag/emoji nodes",INV-6,N,P1
+VU-60,integration,LocaleSwitcher render,"Hidden when <=1 enabled locale","getEnabledLocales returns [fr]","render","Component returns null",INV-12,N,P2
+VU-61,integration,LocaleSwitcher styling,"Neutral-only styling no pop/pulse classes","render switcher","inspect classNames","No saturated brand-pop bg / no animate-pulse on trigger; only encre/creme/sauge-accent",INV-6,N,P2
+VU-62,integration,useLocaleTransition,"Veil uses LocaleVeil component (not reload)","Firefox sim","switch","LocaleVeil mounted with fadeIn/fadeOut ~160ms tokens; unmounts after; assign NOT called",INV-1,N,P1

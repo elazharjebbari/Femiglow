@@ -7,6 +7,10 @@ import type { KitComparatif } from '@/lib/schemas';
 interface ComparatifSectionBoundProps {
   data: KitComparatif;
   componentKey?: string;
+  /** Phase 7E — en-tête localisé forwardé à `<ComparatifSection>`. */
+  header?: { kicker: string; title: string; description: string };
+  /** Phase 9bis — libellé « Axe » localisé. */
+  axisLabel?: string;
 }
 
 const SLOTS = ['kit-base', 'kit-fortifiant', 'kit-lime'] as const;
@@ -18,6 +22,8 @@ const SLOTS = ['kit-base', 'kit-fortifiant', 'kit-lime'] as const;
 export async function ComparatifSectionBound({
   data,
   componentKey = 'kit-comparatif',
+  header,
+  axisLabel,
 }: ComparatifSectionBoundProps) {
   const resolutions = await Promise.all(
     SLOTS.map((slot) => resolveComponentSlot(componentKey, slot)),
@@ -27,12 +33,14 @@ export async function ComparatifSectionBound({
   );
 
   if (!allActive) {
-    return <ComparatifSection data={data} />;
+    return <ComparatifSection data={data} header={header} axisLabel={axisLabel} />;
   }
 
   return (
     <ComparatifSection
       data={data}
+      header={header}
+      axisLabel={axisLabel}
       productMediaSlots={SLOTS.map((slot) => (
         <ComponentMedia
           key={slot}

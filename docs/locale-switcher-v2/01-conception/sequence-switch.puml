@@ -1,0 +1,37 @@
+@startuml sequence-switch
+title Séquence — Bascule de langue sans reload (FR → AR)
+
+actor Visiteuse as U
+participant "LocaleSwitcher" as SW
+participant "useLocaleTransition" as H
+participant "buildSwitchUrl" as URL
+participant "document\n(startViewTransition)" as VT
+participant "<html>" as HTML
+participant "next-intl router" as R
+participant "analytics" as T
+
+U -> SW : clic « العربية »
+SW -> H : switch('ar')
+H -> H : if 'ar' === current → no-op (INV-11) ; sinon continue
+H -> URL : build('/fr/kit?utm=x','ar')
+URL --> H : '/ar/kit?utm=x' (INV-4)
+alt prefers-reduced-motion (INV-7)
+  H -> HTML : lang=ar, dir=rtl
+  H -> R : replace('/ar/kit?utm=x',{locale:ar})
+  H -> T : locale_switch{transition:'reduced'}
+else View Transitions dispo (ADR-001)
+  H -> VT : startViewTransition(apply)
+  activate VT
+  VT -> H : apply()
+  H -> HTML : lang=ar, dir=rtl  (avant la nouvelle frame → INV-2)
+  H -> H : announce('ar') via aria-live (INV-10)
+  H -> R : replace('/ar/kit?utm=x',{locale:ar})  (scroll préservé INV-3)
+  H -> T : locale_switch{transition:'vt'}
+  VT --> U : fondu croisé 280ms (courbe charte)
+  deactivate VT
+else fallback voile (ADR-002, Firefox)
+  H -> T : (idem, transition:'veil')
+  note right of H : LocaleVeil opacity 0→1 (160ms)\napply()\n1→0 (160ms)
+end
+note over U : Aucun reload, aucun flash, RTL en place.
+@enduml

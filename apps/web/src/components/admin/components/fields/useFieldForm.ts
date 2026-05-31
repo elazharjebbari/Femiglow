@@ -255,8 +255,11 @@ export function useFieldForm({
     let firstError: string | null = null;
     for (const key of keys) {
       try {
+        // T3.8 — la route publish lit la locale en query string (`?locale=ar`).
+        // Sans ce param, le serveur retombait sur 'fr' et ne publiait jamais
+        // les drafts AR / EN. Cf. apps/web/src/app/api/admin/components/[key]/fields/[fieldKey]/publish/route.ts.
         const res = await fetch(
-          `/api/admin/components/${encodeURIComponent(componentKey)}/fields/${encodeURIComponent(key)}/publish`,
+          `/api/admin/components/${encodeURIComponent(componentKey)}/fields/${encodeURIComponent(key)}/publish?locale=${encodeURIComponent(locale)}`,
           {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -282,7 +285,7 @@ export function useFieldForm({
     dispatch({ type: 'PUBLISH_SUCCEEDED' });
     // 3) Rafraîchir les champs (les drafts sont devenus published).
     await reloadFromServer();
-  }, [componentKey, persistField, reloadFromServer]);
+  }, [componentKey, locale, persistField, reloadFromServer]);
 
   // Cleanup des timers quand le hook est démonté.
   useEffect(() => {

@@ -23,6 +23,7 @@ import { NumberBadge } from '@/components/kit/NumberBadge';
 import { NarrativeIntro } from './NarrativeIntro';
 import { PostCtaLink } from './PostCtaLink';
 import { ResponsiveIngredientList } from './ResponsiveIngredientList';
+import type { IngredientsTableLabels } from './IngredientsTable';
 import { resolveAccentHex } from '@/lib/composition/copy';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import type { SubProduct } from '@/lib/schemas';
@@ -32,6 +33,10 @@ export interface SubProductBlockProps {
   index: number;
   anchor: string;
   defaultOpen?: boolean;
+  /** Phase 9 i18n — libellés de colonnes ingrédients (table + INCI parens). */
+  ingredientLabels?: IngredientsTableLabels;
+  /** Phase 9 i18n — libellé du lien « Voir le pack » localisé. Défaut FR. */
+  postCtaLabel?: string;
 }
 
 /**
@@ -56,6 +61,8 @@ export function SubProductBlock({
   index,
   anchor,
   defaultOpen = false,
+  ingredientLabels,
+  postCtaLabel,
 }: SubProductBlockProps): JSX.Element {
   const isDesktop = useIsDesktop();
   const [open, setOpen] = useState(defaultOpen);
@@ -98,12 +105,12 @@ export function SubProductBlock({
           <NumberBadge
             label={String(index + 1).padStart(2, '0')}
             hex={accent}
-            className="!relative !top-0 !left-0 shrink-0"
+            className="!relative !top-0 !start-0 shrink-0"
           />
           <h3 className="flex-1 font-display text-2xl text-encre">
             {subProduct.name} — {subProduct.volume}
             {subProduct.usageHint ? (
-              <span className="ml-2 font-body italic text-base text-encre/55">
+              <span className="ms-2 font-body italic text-base text-encre/55">
                 · {subProduct.usageHint}
               </span>
             ) : null}
@@ -128,6 +135,7 @@ export function SubProductBlock({
             ingredients={subProduct.ingredients}
             subProductId={subProduct.id}
             accentColor={subProduct.accentColor}
+            {...(ingredientLabels ? { labels: ingredientLabels } : {})}
           />
 
           {subProduct.certifications.length > 0 ? (
@@ -147,7 +155,10 @@ export function SubProductBlock({
             </ul>
           ) : null}
 
-          <PostCtaLink subProductId={subProduct.id} />
+          <PostCtaLink
+            subProductId={subProduct.id}
+            {...(postCtaLabel ? { label: postCtaLabel } : {})}
+          />
         </div>
       </details>
     </article>

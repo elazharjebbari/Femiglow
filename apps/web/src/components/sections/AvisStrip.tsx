@@ -15,6 +15,12 @@ interface AvisStripProps {
    * (ex : `<ComponentMedia>`). Si absent pour un id, fallback sur `handImage`.
    */
   mediaSlotsByTestimonialId?: Record<string, ReactNode>;
+  /**
+   * Formateur localisé du libellé « Initiée depuis {date} ». Reçoit la date
+   * brute du testimonial et retourne le texte affiché. Phase 9bis — sans lui,
+   * `TestimonialCard` retombe sur le préfixe FR hardcodé.
+   */
+  formatInitiee?: (date: string) => string;
 }
 
 export function AvisStrip({
@@ -22,6 +28,7 @@ export function AvisStrip({
   kicker = 'Voix',
   title = 'Celles qui ont essayé.',
   mediaSlotsByTestimonialId,
+  formatInitiee,
 }: AvisStripProps) {
   if (testimonials.length === 0) return null;
   return (
@@ -42,6 +49,11 @@ export function AvisStrip({
                 <TestimonialCard
                   testimonial={t}
                   mediaSlot={mediaSlotsByTestimonialId?.[t.id]}
+                  initieeLabel={
+                    t.initieeDepuis && formatInitiee
+                      ? formatInitiee(t.initieeDepuis)
+                      : undefined
+                  }
                 />
               </li>
               {index < testimonials.length - 1 && (

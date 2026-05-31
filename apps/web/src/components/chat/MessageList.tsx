@@ -18,6 +18,10 @@ export function MessageList() {
   const greeting = useChatStore((s) => s.greeting);
   const suggestions = useChatStore((s) => s.suggestions);
   const language = useChatStore((s) => s.language);
+  // Phase 9bis — libellés a11y localisés (fuite FR en lecteur d'écran sur /ar).
+  const isAr = language === 'ar' || language === 'ar-MA';
+  const conversationLabel = isAr ? 'المحادثة' : 'Conversation';
+  const quickSuggestionsLabel = isAr ? 'اقتراحات سريعة' : 'Suggestions rapides';
   const error = useChatStore((s) => s.error);
   const leadOfferStatus = useChatStore((s) => s.leadOffer.status);
   const leadOfferMessageId = useChatStore((s) => s.leadOffer.triggeringMessageId);
@@ -44,7 +48,7 @@ export function MessageList() {
       ref={containerRef}
       role="log"
       aria-live="polite"
-      aria-label="Conversation"
+      aria-label={conversationLabel}
       data-testid="chat-message-list"
       // CHA-mobile-focus — Marqueur consommé par le useEffect anti-scroll
       // iOS du ChatPanel : c'est CETTE liste dont on doit restaurer le
@@ -87,7 +91,7 @@ export function MessageList() {
         // les CTAs initiaux n'ont plus leur place.
         <ul
           className="mt-4 flex flex-col gap-2"
-          aria-label="Suggestions rapides"
+          aria-label={quickSuggestionsLabel}
         >
           {suggestions.map((s, idx) => (
             <li key={s.key}>
@@ -225,7 +229,7 @@ function SuggestionPill({
       className={[
         'group flex w-full items-center gap-3 rounded-2xl',
         'border border-rose-200/80 bg-gradient-to-br from-white to-rose-50/60',
-        'px-4 py-3 text-left text-sm font-medium text-stone-800',
+        'px-4 py-3 text-start text-sm font-medium text-stone-800',
         'shadow-sm transition-all duration-150',
         'hover:border-rose-300 hover:shadow-md hover:from-rose-50/80 hover:to-rose-50',
         'active:scale-[0.985]',

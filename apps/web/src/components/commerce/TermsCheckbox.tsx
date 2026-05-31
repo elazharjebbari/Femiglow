@@ -40,7 +40,7 @@ export const TermsCheckbox = forwardRef<HTMLInputElement, TermsCheckboxProps>(
           </span>
         </label>
         {error && (
-          <p role="alert" className="pl-7 text-xs text-petale-dark">
+          <p role="alert" className="ps-7 text-xs text-petale-dark">
             {error}
           </p>
         )}

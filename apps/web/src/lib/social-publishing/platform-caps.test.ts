@@ -49,7 +49,7 @@ describe('applyPlatformCaps — Instagram carrousel', () => {
     const r = applyPlatformCaps(items, 'instagram');
     expect(r.accepted).toHaveLength(10);
     expect(r.rejected).toHaveLength(2);
-    expect(r.rejected[0].reason).toContain('Plus de 10 images');
+    expect(r.rejected[0]!.reason).toContain('Plus de 10 images');
   });
 
   it('1 image + 1 video → mix accepté (Insta acceptsMixed=true)', () => {
@@ -63,20 +63,20 @@ describe('applyPlatformCaps — Instagram carrousel', () => {
   it('mime non supporté → rejeté', () => {
     const r = applyPlatformCaps([makeImage('bad', 'image/gif')], 'instagram');
     expect(r.accepted).toHaveLength(0);
-    expect(r.rejected[0].reason).toContain('Mime type non supporté');
+    expect(r.rejected[0]!.reason).toContain('Mime type non supporté');
   });
 
   it('vidéo > 90s → rejetée (limite Reels)', () => {
     const r = applyPlatformCaps([makeVideo('long', 120)], 'instagram');
     expect(r.accepted).toHaveLength(0);
-    expect(r.rejected[0].reason).toContain('> 90s');
+    expect(r.rejected[0]!.reason).toContain('> 90s');
   });
 
   it('fichier > 100MB → rejeté', () => {
     const big = makeImage('big', 'image/jpeg', 200 * 1024 * 1024);
     const r = applyPlatformCaps([big], 'instagram');
     expect(r.accepted).toHaveLength(0);
-    expect(r.rejected[0].reason).toContain('100MB');
+    expect(r.rejected[0]!.reason).toContain('100MB');
   });
 });
 
@@ -98,8 +98,8 @@ describe('applyPlatformCaps — TikTok (mode exclusif)', () => {
       'tiktok',
     );
     expect(r.accepted).toHaveLength(1);
-    expect(r.accepted[0].id).toBe('vid');
-    expect(r.rejected[0].reason).toContain('mix images+vidéo');
+    expect(r.accepted[0]!.id).toBe('vid');
+    expect(r.rejected[0]!.reason).toContain('mix images+vidéo');
   });
 
   it('40 images → 35 acceptées (Photo Mode cap)', () => {
@@ -134,9 +134,9 @@ describe('applyPlatformCaps — Pinterest (single pin)', () => {
     const items = Array.from({ length: 3 }, (_, i) => makeImage(`img-${i}`));
     const r = applyPlatformCaps(items, 'pinterest');
     expect(r.accepted).toHaveLength(1);
-    expect(r.accepted[0].id).toBe('img-0');
+    expect(r.accepted[0]!.id).toBe('img-0');
     expect(r.rejected).toHaveLength(2);
-    expect(r.rejected[0].reason).toContain('Carrousel non supporté');
+    expect(r.rejected[0]!.reason).toContain('Carrousel non supporté');
   });
 });
 
@@ -147,7 +147,7 @@ describe('applyPlatformCaps — Facebook', () => {
       'facebook',
     );
     expect(r.accepted).toHaveLength(1);
-    expect(r.accepted[0].id).toBe('vid-1');
+    expect(r.accepted[0]!.id).toBe('vid-1');
   });
 
   it('multi-images sans vidéo → carrousel jusqu\'à 10', () => {

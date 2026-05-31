@@ -1,0 +1,90 @@
+term_fr,term_ar,term_en,context,do_not_translate,notes
+FemiGlow,FemiGlow,FemiGlow,Nom de marque (brand name),true,Toujours conservé tel quel — aucune translittération
+Maison,Maison,Maison,"Signature marque (ex: ""Maison FemiGlow"")",true,Mot français signature gardé en AR et EN — évoque luxe sobre français
+Maison FemiGlow,Maison FemiGlow,Maison FemiGlow,Nom long de la marque,true,Bloc nominal entier préservé
+Le kit,الكيت,The kit,Produit principal (kit de soin ongles),false,En AR « الكيت » est l'emprunt accepté (préféré à « المجموعة »)
+Le rituel,الطقوس,The ritual,"Concept-clé de la marque (cf. ""rituel ongles"")",false,"En AR « الطقوس » est plus éditorial que « الروتين » (à bannir)"
+Le rituel ongles,طقوس الأظافر,The nail ritual,Slogan / concept descriptif,false,Forme nominale préservée structure FR→AR→EN
+Les ongles,الأظافر,Nails,Anatomie cible du produit,false,Standard
+Le vernis,طلاء الأظافر,Nail polish,Produit (vernis à ongles),false,"Forme longue en AR (« طلاء الأظافر ») préférée à « ورنيش » (transliteration)"
+La base,القاعدة,Base coat,Première couche du rituel,false,Terme métier
+Le top coat,الطبقة العلوية,Top coat,Couche de finition,false,"En AR forme native ; « توب كوت » à éviter sauf publicité"
+La pose,اللمسة / الطلاء,Application,Action d'appliquer le vernis,false,"« اللمسة » (la touche) plus délicat pour copy marketing ; « الطلاء » plus technique"
+Le soin,العناية,Care,Catégorie produit / philosophie marque,false,"En AR « العناية » couvre care/soin globalement"
+La manucure,العناية بالأظافر,Manicure,Service complet,false,"En AR forme descriptive ; « مانيكور » emprunt accepté en contexte salon"
+Le geste,اللمسة / الحركة,Gesture,Étape rituel (mot-clé éditorial),false,"« اللمسة » pour copy marketing (sensoriel) ; « الحركة » plus neutre"
+La couleur,اللون,Color,Attribut produit,false,Standard
+La teinte,اللون / الدرجة,Shade,Nuance précise,false,"En FR « teinte » est plus précis que « couleur » ; en AR distinction moins forte"
+Ivoire,عاجي,Ivory,Nom de couleur FemiGlow,false,Traduction directe
+Sable,رملي,Sand,Nom de couleur FemiGlow,false,Traduction directe
+Café,بنّي قهوة,Café,Nom de couleur FemiGlow,false,"Café conservé en EN (mot français accepté) ; AR avec qualifiant"
+Nude,بشري,Nude,Nom de couleur FemiGlow,false,"En FR mot anglais accepté ; en AR « بشري » (couleur peau)"
+Nacre,لؤلؤي,Pearl,Nom de couleur FemiGlow,false,Traduction poétique
+Champagne,شامبانيا,Champagne,Nom de couleur FemiGlow,false,"Mot international préservé ; en AR translittération « شامبانيا »"
+Noisette,بندقي,Hazelnut,Nom de couleur FemiGlow,false,Traduction directe
+La livraison,التوصيل,Shipping,Logistique commande,false,Standard
+La livraison à domicile,التوصيل إلى المنزل,Home delivery,Service livraison,false,Forme descriptive complète
+Le paiement à la livraison,الدفع عند الاستلام,Cash on delivery,Méthode paiement Maroc,false,"Très commun au Maroc — terme métier fixé"
+CMI,CMI,CMI,Centre Monétique Interbancaire (Maroc),true,Acronyme institutionnel préservé
+Le paiement sécurisé,الدفع الآمن,Secure payment,Argument confiance,false,Standard
+La carte bancaire,البطاقة البنكية,Credit card,Méthode paiement,false,Standard
+Le panier,السلّة,Cart,UI commerce,false,Standard
+La commande,الطلب,Order,UI commerce,false,Standard
+Le numéro de commande,رقم الطلب,Order number,UI commerce,false,Standard
+Le total,المجموع,Total,UI commerce,false,Standard
+Le sous-total,المجموع الفرعي,Subtotal,UI commerce,false,Standard
+Les frais de port,تكاليف التوصيل,Shipping fees,UI commerce,false,Standard
+Le code promo,رمز الخصم,Promo code,UI commerce,false,Standard
+Madame,سيدتي,Madam,"Adresse polie (rare, légal/CRM)",false,"En EN « Ma'am » sonne strange — préférer aucune salutation genrée"
+Bonjour,السلام عليكم,Hello,Greeting standard,false,"En AR « السلام عليكم » est universel ; « مرحبا » plus chaleureux pour newsletter"
+Merci,شكرا,Thank you,Politesse de base,false,Standard
+À bientôt,إلى اللقاء,See you soon,Au revoir éditorial,false,"En AR « بسلامة » darija plus chaud (newsletter uniquement)"
+Continuer,متابعة,Continue,CTA / wizard,false,Standard
+Retour,رجوع,Back,Navigation,false,Standard
+Annuler,إلغاء,Cancel,Action,false,Standard
+Découvrir,اكتشفي,Discover,"CTA marketing (verbe féminin AR)",false,"En AR forme féminine singulière obligatoire (FemiGlow s'adresse aux femmes)"
+Composer,أنشئي,Compose,"CTA personnalisation (verbe féminin AR)",false,En AR forme féminine singulière obligatoire
+Recevoir,استلمي,Receive,Verbe action,false,En AR forme féminine singulière
+Choisir,اختاري,Choose,CTA configuration,false,En AR forme féminine singulière
+En savoir plus,المزيد من المعلومات,Learn more,CTA secondaire,false,Standard
+Disponible,متوفّر,Available,Stock UI,false,Standard
+Indisponible,غير متوفّر,Unavailable,Stock UI,false,Standard
+Bientôt de retour,متوفّر قريبا,Back soon,Stock UI,false,Sobre — pas de « Hurry! »
+Le journal,المجلّة,The journal,Section éditoriale (blog),false,"« المجلّة » (magazine/revue) — plus éditorial que « المدوّنة » (blog)"
+L'article,المقال,Article,Item de journal,false,Standard
+Le contact,الاتصال,Contact,Page support,false,"Verbe AR « اتصلي » dans le CTA féminin"
+La page,الصفحة,Page,Navigation,false,Standard
+L'erreur,الخطأ,Error,UI système,false,Standard
+Ce champ est requis,هذا الحقل مطلوب,This field is required,Validation formulaire,false,Standard
+Format invalide,تنسيق غير صحيح,Invalid format,Validation formulaire,false,Standard
+Le téléphone,الهاتف,Phone,Champ formulaire,false,Standard
+L'e-mail,البريد الإلكتروني,Email,Champ formulaire,false,En FR « e-mail » avec trait d'union préféré à « email »
+L'adresse,العنوان,Address,Champ formulaire,false,Standard
+La ville,المدينة,City,Champ formulaire,false,Standard
+Le code postal,الرمز البريدي,Postal code,Champ formulaire,false,Standard
+Le prénom,الاسم الشخصي,First name,Champ formulaire,false,En AR forme officielle ; « الاسم الأوّل » accepté
+Le nom,اسم العائلة,Last name,Champ formulaire,false,En AR forme complète préférée à « اللقب »
+Newsletter,النشرة الإخبارية,Newsletter,Inscription emails,false,Mot AR officiel ; « نيوزلتر » à éviter (anglicisme)
+S'inscrire,اشتركي,Sign up,CTA newsletter,false,En AR forme féminine
+Se désinscrire,إلغاء الاشتراك,Unsubscribe,CTA newsletter,false,Standard
+La confidentialité,الخصوصية,Privacy,Page légale,false,Standard
+Les cookies,ملفّات الارتباط,Cookies,Page légale,false,"En AR forme officielle ; « كوكيز » emprunt à éviter en légal"
+CGV,الشروط والأحكام,Terms of service,Page légale,false,"Conditions Générales de Vente — AR / EN formes officielles"
+Les mentions légales,الإشعارات القانونية,Legal notices,Page légale,false,Standard
+La politique,السياسة,Policy,Légal,false,Standard
+Le droit,الحقّ,Right,Légal,false,Standard
+Le consentement,الموافقة,Consent,RGPD/légal,false,Standard
+Le client,الزبونة / العميلة,Customer,Persona,false,"En AR forme féminine (FemiGlow s'adresse à des clientes)"
+La cliente,الزبونة,Customer (female),Persona,false,En AR forme féminine systématique
+La fondatrice,المؤسِّسة,Founder,À-propos,false,En AR forme féminine systématique
+L'atelier,الورشة,Workshop,À-propos,false,Standard
+Casablanca,الدار البيضاء,Casablanca,Lieu (HQ),false,"En FR/EN nom international préservé ; en AR nom arabe officiel « الدار البيضاء »"
+Le Maroc,المغرب,Morocco,Pays,false,Standard
+Marocaine,مغربية,Moroccan,Adjectif (féminin),false,En AR forme féminine
+MAD,درهم,MAD,Devise (dirham marocain),false,"En AR « درهم » accepté ; « MAD » aussi possible pour cohérence avec prix internationaux"
+Dirham,درهم,Dirham,Devise (forme longue),false,Standard
+Le rituel ongles en cinq minutes,طقوس الأظافر في خمس دقائق,Nail care in five minutes,Slogan / headline d'accueil,false,Phrase clé marque — vérifier cohérence partout
+Composer mon kit,أنشئي كيتك,Compose your kit,CTA primaire FR « mon » devient « ton » en AR/EN (adresse à la cliente),false,Adaptation pronominale (français = je / autres = tu)
+Découvrir le rituel,اكتشفي الطقوس,Discover the ritual,CTA primaire,false,Standard
+Un kit pensé pour vous,كيت مصمَّم من أجلك,A kit designed for you,Argument USP,false,"En AR « من أجلك » (féminin singulier)"
+Trois gestes une couleur,ثلاث حركات لون واحد,Three gestures one color,Slogan rituel,false,Phrase structurée nominale courte

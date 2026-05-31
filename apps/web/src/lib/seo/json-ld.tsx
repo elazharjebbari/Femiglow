@@ -23,9 +23,11 @@ export function organizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
     sameAs: ['https://www.instagram.com/femiglow'],
+    // LEGAL-V2 — Anonymisé : pas d'exposition du prénom personnel dans le JSON-LD public.
+    // Conservation du jobTitle (informationnel sans PII).
     founder: {
       '@type': 'Person',
-      name: 'Souheila',
+      name: 'Founder',
       jobTitle: 'Biologiste, formulatrice et formatrice',
     },
     contactPoint: {

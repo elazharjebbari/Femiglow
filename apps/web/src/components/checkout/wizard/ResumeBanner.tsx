@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation';
 import { formatResumeBanner } from '@/lib/checkout/helpers/resume-banner-template';
 
 export interface ResumeBannerProps {
@@ -31,10 +32,12 @@ export interface ResumeBannerProps {
 
 export function ResumeBanner({
   firstName,
-  template = 'Bon retour, {firstName} — on reprend où vous en étiez.',
+  template,
   autoHideMs = 5000,
 }: ResumeBannerProps): JSX.Element | null {
   const { emit } = useTracking();
+  const { t } = useWizardTranslation();
+  const resolvedTemplate = template ?? t.resumeBanner.template;
   const [visible, setVisible] = useState(true);
   const fired = useRef(false);
   const currentStep = useWizardStore((s) => s.currentStep);
@@ -73,13 +76,13 @@ export function ResumeBanner({
       data-testid="wizard-resume-banner"
       className="flex items-center justify-between gap-3 rounded border border-champagne-dark/25 bg-champagne-soft/40 px-3 py-2 text-sm text-encre"
     >
-      <span>{formatResumeBanner(template, firstName)}</span>
+      <span>{formatResumeBanner(resolvedTemplate, firstName)}</span>
       <button
         type="button"
         onClick={handleDismiss}
-        aria-label="Fermer la bannière de bienvenue"
+        aria-label={t.resumeBanner.dismissAriaLabel}
         data-testid="wizard-resume-dismiss"
-        className="-mr-1 ml-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-encre/50 hover:text-encre focus-visible:outline focus-visible:outline-2 focus-visible:outline-encre/40"
+        className="-me-1 ms-2 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-encre/50 hover:text-encre focus-visible:outline focus-visible:outline-2 focus-visible:outline-encre/40"
       >
         ✕
       </button>

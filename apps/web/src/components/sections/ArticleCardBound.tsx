@@ -1,14 +1,21 @@
 import 'server-only';
+import { getTranslations } from 'next-intl/server';
 import type { Article } from '@/lib/schemas';
-import { ArticleCard } from './ArticleCard';
+import { ArticleCard, type ArticleCardStrings } from './ArticleCard';
 import { ComponentMedia } from '@/lib/components/ComponentMedia';
 import { resolveComponentSlot } from '@/lib/components/resolver';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 
 interface ArticleCardBoundProps {
   article: Article;
   priority?: boolean;
   sizes?: string;
   headingLevel?: 'h2' | 'h3';
+  /**
+   * Phase 7 wiring — locale active pour résoudre les libellés localisés
+   * (`marketing.journal.article.*`). `?? DEFAULT_LOCALE` garde le FR legacy.
+   */
+  locale?: Locale;
 }
 
 /**
@@ -22,9 +29,26 @@ export async function ArticleCardBound({
   priority,
   sizes,
   headingLevel,
+  locale,
 }: ArticleCardBoundProps) {
   const componentKey = `journal-article-${article.slug}`;
-  const resolved = await resolveComponentSlot(componentKey, 'cover');
+  const activeLocale = locale ?? DEFAULT_LOCALE;
+  const [resolved, tArticle, tCategories] = await Promise.all([
+    resolveComponentSlot(componentKey, 'cover'),
+    getTranslations({ locale: activeLocale, namespace: 'marketing.journal.article' }),
+    getTranslations({ locale: activeLocale, namespace: 'marketing.journal.categories' }),
+  ]);
+
+  const categoryLabel = tCategories(article.category);
+  const strings: ArticleCardStrings = {
+    categoryLabel,
+    readingTime: tArticle('reading_time', { min: article.readingTimeMinutes }),
+    readAriaLabel: tArticle('read_aria', {
+      title: article.title,
+      category: categoryLabel,
+    }),
+  };
+
   const useBinding = !!(resolved?.binding?.isActive && resolved?.media);
 
   if (!useBinding) {
@@ -34,6 +58,8 @@ export async function ArticleCardBound({
         priority={priority}
         sizes={sizes}
         headingLevel={headingLevel}
+        strings={strings}
+        locale={activeLocale}
       />
     );
   }
@@ -44,6 +70,8 @@ export async function ArticleCardBound({
       priority={priority}
       sizes={sizes}
       headingLevel={headingLevel}
+      strings={strings}
+      locale={activeLocale}
       mediaSlot={
         <ComponentMedia
           componentKey={componentKey}

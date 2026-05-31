@@ -60,6 +60,28 @@ export interface HeroProduitProps {
    * Si undefined, le badge reste un span statique.
    */
   reviewsAnchorHref?: string;
+  /**
+   * Phase 7E — Strings UI localisés (kicker, CTA, économie). Résolus
+   * server-side dans `HeroProduitBound` via `marketing.kit.hero`. Chaque
+   * champ retombe sur le défaut FR si `strings` (ou le champ) est absent —
+   * compat tests vitest qui rendent `<HeroProduit>` sans `strings`.
+   */
+  strings?: {
+    kicker: string;
+    ctaLabel: string;
+    /** Libellé économie déjà formaté (montant inclus), ou absent si pas de promo. */
+    savingsLabel?: string;
+    /** Phase 9bis — libellé avis localisé (« {n} avis » / « {n} تقييم »). */
+    reviewsLabel?: string;
+    /** Phase 9bis — aria-label complet du badge avis localisé. */
+    reviewsAriaLabel?: string;
+  };
+  /**
+   * Phase 7E — Nom produit affiché dans le H1 + l'aria galerie. Localisé
+   * via le contenu CMS (`content.product.name`). Défaut : `product.name`
+   * (= nom DB canonique, conservé pour le tracking/cart).
+   */
+  displayName?: string;
 }
 
 const SAGE_LIGHT = '#A8B89E';
@@ -74,11 +96,19 @@ export function HeroProduit({
   commanderMode = 'wizard-anchor',
   eventIdSeed,
   reviewsAnchorHref,
+  strings,
+  displayName,
 }: HeroProduitProps): JSX.Element {
   const promo = computePromo(product.priceCents, product.promoPriceCents);
   const savings = product.promoPriceCents
     ? Math.round((product.priceCents - product.promoPriceCents) / 100)
     : 0;
+
+  // Phase 7E — chaque string retombe sur le défaut FR si non fourni.
+  const heroName = displayName ?? product.name;
+  const heroKicker = strings?.kicker ?? 'Le rituel';
+  const heroCtaLabel = strings?.ctaLabel ?? 'Commander le rituel';
+  const heroSavingsLabel = strings?.savingsLabel ?? `Économie ${savings} MAD`;
 
   return (
     <section
@@ -98,15 +128,15 @@ export function HeroProduit({
           <div className="-mx-4 lg:mx-0">
             <HeroGallery
               images={galleryImages}
-              ariaLabel={`Galerie ${product.name}`}
+              ariaLabel={`Galerie ${heroName}`}
             />
           </div>
 
           {/* Colonne droite — Contenu */}
           <div className="space-y-5 lg:pt-4">
-            <Kicker>Le rituel</Kicker>
+            <Kicker>{heroKicker}</Kicker>
             <Heading id="hero-kit-title" as="h1" size="display-md">
-              {product.name}
+              {heroName}
             </Heading>
 
             {fields.reviewBadgeEnabled && reviewStats.reviewsCount > 0 ? (
@@ -114,6 +144,8 @@ export function HeroProduit({
                 rating={reviewStats.rating}
                 reviewsCount={reviewStats.reviewsCount}
                 href={reviewsAnchorHref}
+                reviewsLabel={strings?.reviewsLabel}
+                ariaLabel={strings?.reviewsAriaLabel}
               />
             ) : null}
 
@@ -141,7 +173,7 @@ export function HeroProduit({
                   className="text-[15px] font-medium tabular-nums tracking-[0.005em]"
                   style={{ color: SAGE_LIGHT }}
                 >
-                  Économie {savings}&nbsp;MAD
+                  {heroSavingsLabel}
                 </span>
               ) : null}
             </div>
@@ -165,7 +197,7 @@ export function HeroProduit({
                   priceCents={promo.effectivePriceCents}
                   currency={product.currency}
                 >
-                  Commander le rituel
+                  {heroCtaLabel}
                 </CommanderAnchorButton>
               ) : (
                 <AddToCartButton
@@ -174,7 +206,7 @@ export function HeroProduit({
                   fullWidth
                   redirectTo="/panier"
                 >
-                  Commander le rituel
+                  {heroCtaLabel}
                 </AddToCartButton>
               )}
             </div>

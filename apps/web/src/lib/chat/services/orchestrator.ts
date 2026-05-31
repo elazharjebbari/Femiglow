@@ -329,16 +329,17 @@ export async function* streamReply(
       categories: inboundMod.categories,
       action: decision.action,
     });
+    // Émet la réponse scriptée via la séquence SSE standard start → chunk → end
+    // (le `message_complete` précédent n'existait pas dans l'union d'events → le
+    // client l'ignorait, donc le message de modération n'était jamais affiché).
+    const moderatedContent =
+      decision.scriptedMessage ?? 'Je ne suis pas en mesure de répondre à cela.';
+    yield { event: 'start', data: { messageId: 'moderated_input', language } };
     yield {
-      event: 'message_complete',
-      data: {
-        messageId: 'moderated_input',
-        content:
-          decision.scriptedMessage ??
-          'Je ne suis pas en mesure de répondre à cela.',
-        moderated: true,
-      },
+      event: 'chunk',
+      data: { messageId: 'moderated_input', delta: moderatedContent },
     };
+    yield { event: 'end', data: { messageId: 'moderated_input', latencyMs: 0 } };
     return;
   }
 

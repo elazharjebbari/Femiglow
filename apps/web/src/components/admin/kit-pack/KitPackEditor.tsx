@@ -330,7 +330,7 @@ export function KitPackEditor({
             id="countLabelGeo"
             value={state.countLabelGeo}
             onChange={(e) => set('countLabelGeo', e.target.value)}
-            placeholder="287 maisons en France"
+            placeholder="287 maisons au Maroc"
             className={baseFieldClasses}
           />
         </Field>

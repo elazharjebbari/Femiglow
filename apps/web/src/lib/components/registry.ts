@@ -417,7 +417,7 @@ export const SITE_COMPONENT_REGISTRY: SiteComponentSeed[] = [
   },
   {
     key: 'rituel-portrait-salma',
-    name: 'Portrait Souheila',
+    name: 'Portrait fondatrice',
     description: 'Portrait éditorial de la fondatrice, intégré dans la lettre (avatar rond ≤ 480 px).',
     category: 'card',
     pageGroup: 'rituel',

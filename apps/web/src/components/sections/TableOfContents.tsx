@@ -41,14 +41,14 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
       </p>
       <ul className="space-y-2">
         {headings.map((h) => (
-          <li key={h.id} className={cn(h.depth === 3 && 'pl-4')}>
+          <li key={h.id} className={cn(h.depth === 3 && 'ps-4')}>
             <a
               href={`#${h.id}`}
               aria-current={activeId === h.id ? 'location' : undefined}
               className={cn(
-                'block border-l border-transparent pl-3 leading-snug transition-colors',
+                'block border-s border-transparent ps-3 leading-snug transition-colors',
                 activeId === h.id
-                  ? 'border-l-encre text-encre'
+                  ? 'border-s-encre text-encre'
                   : 'text-encre/50 hover:text-encre',
               )}
             >

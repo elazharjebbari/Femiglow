@@ -4,7 +4,34 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
 const TRANSITION = { duration: 1.2, ease: [0.65, 0, 0.35, 1] as const };
 
-export function SchemaSVG({ className }: { className?: string }) {
+/**
+ * Phase 9 i18n — libellés anatomiques localisés (légendes SVG + aria +
+ * figcaption). Défaut FR si absent → préserve les usages legacy.
+ */
+export interface SchemaSVGLabels {
+  matrice: string;
+  lit: string;
+  plaque: string;
+  aria: string;
+  caption: string;
+}
+
+const DEFAULT_SCHEMA_LABELS: SchemaSVGLabels = {
+  matrice: 'Matrice',
+  lit: 'Lit unguéal',
+  plaque: 'Plaque',
+  aria: 'Coupe anatomique simplifiée d’un ongle : matrice, lit unguéal, plaque kératinisée',
+  caption:
+    'Coupe anatomique simplifiée : la matrice fabrique la kératine, le lit unguéal soutient la plaque, la plaque protège la pulpe du doigt.',
+};
+
+export function SchemaSVG({
+  className,
+  labels = DEFAULT_SCHEMA_LABELS,
+}: {
+  className?: string;
+  labels?: SchemaSVGLabels;
+}) {
   const reduced = useReducedMotion();
 
   const initialPath = reduced ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 };
@@ -15,7 +42,7 @@ export function SchemaSVG({ className }: { className?: string }) {
       <figure className={className}>
         <svg
           role="img"
-          aria-label="Coupe anatomique simplifiée d\u2019un ongle\u202F: matrice, lit unguéal, plaque kératinisée"
+          aria-label={labels.aria}
           viewBox="0 0 480 320"
           xmlns="http://www.w3.org/2000/svg"
           className="h-auto w-full max-w-[480px]"
@@ -97,23 +124,20 @@ export function SchemaSVG({ className }: { className?: string }) {
           <text x="170" y="288" textAnchor="middle"
                 fontFamily="Inter, sans-serif" fontSize="11"
                 fill="var(--color-encre)" fillOpacity="0.7">
-            Matrice
+            {labels.matrice}
           </text>
           <text x="270" y="92" textAnchor="middle"
                 fontFamily="Inter, sans-serif" fontSize="11"
                 fill="var(--color-encre)" fillOpacity="0.7">
-            Lit unguéal
+            {labels.lit}
           </text>
           <text x="360" y="92" textAnchor="middle"
                 fontFamily="Inter, sans-serif" fontSize="11"
                 fill="var(--color-encre)" fillOpacity="0.7">
-            Plaque
+            {labels.plaque}
           </text>
         </svg>
-        <figcaption className="sr-only">
-          Coupe anatomique simplifiée&#8239;: la matrice fabrique la kératine, le lit
-          unguéal soutient la plaque, la plaque protège la pulpe du doigt.
-        </figcaption>
+        <figcaption className="sr-only">{labels.caption}</figcaption>
       </figure>
     </LazyMotion>
   );

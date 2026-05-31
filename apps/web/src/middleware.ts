@@ -1,8 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { decodeSession, SESSION_COOKIE } from '@/lib/auth/session';
+import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE_NAME } from '@/i18n.config';
 import { buildChatCspExtensions } from '@/lib/chat/csp';
 import { buildTrackingCspExtensions } from '@/lib/tracking/providers/csp';
 import { legacyRedirectIfNeeded } from '@/lib/tracking/plan/legacy-redirect';
+import { isI18nEnabled } from '@/lib/i18n/feature-flag';
+import { resolveLegacyLocaleRedirect } from '@/lib/i18n/legacy-locale-redirect';
 
 export const config = {
   matcher: [
@@ -100,6 +103,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const legacy = legacyRedirectIfNeeded(request);
   if (legacy) return legacy;
 
+  // L8 — Quand l'i18n est activée, l'entrée par défaut bascule sur l'arbre
+  // localisé : `/` → `/fr`, `/kit` → `/fr/kit`… (cookie NEXT_LOCALE respecté).
+  // Seules les racines disposant d'un miroir `[locale]/` sont redirigées ;
+  // les routes legacy sans équivalent restent servies telles quelles.
+  // La query (UTM inclus) est préservée par le clone de `nextUrl` (INV-4).
+  if (isI18nEnabled()) {
+    const cookieLocale = request.cookies.get(LOCALE_COOKIE_NAME)?.value;
+    const target = resolveLegacyLocaleRedirect(pathname, cookieLocale);
+    if (target) {
+      const url = request.nextUrl.clone();
+      url.pathname = target;
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (isAdmin && !PUBLIC_ADMIN_PATHS.has(pathname)) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;
     let session = null;
@@ -138,6 +156,15 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
   requestHeaders.set('content-security-policy', csp);
+  // i18n SSR — expose la locale active (1er segment d'URL) au root layout
+  // pour qu'il rende `<html lang/dir>` côté serveur. Source unique partagée
+  // serveur+client ⇒ zéro mismatch d'hydratation, zéro flash LTR avant paint.
+  // Routes legacy sans préfixe ⇒ DEFAULT_LOCALE (cohérent avec l'ancien "fr").
+  const firstSegment = pathname.split('/')[1];
+  requestHeaders.set(
+    'x-locale',
+    isLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE,
+  );
 
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   res.headers.set('content-security-policy', csp);

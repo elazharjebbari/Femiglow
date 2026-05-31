@@ -239,17 +239,28 @@ export function LeadFormBubble({
         setLeadFormError(data.error || 'submit-failed');
         return;
       }
-      const data: { ok: boolean; leadId: string; outcomeMessage: string } = await res.json();
+      const data: {
+        ok: boolean;
+        leadId: string;
+        outcomeMessage: string;
+        value?: number;
+        currency?: string;
+      } = await res.json();
       setLeadFormSuccess(data.outcomeMessage || copy.successFallback);
       saveLeadPrefill({
         firstName: firstName.trim(),
         phone: phone.trim(),
         country,
       });
+      // T-06 — `generate_lead` valorisé au prix du kit (avec promo), fourni
+      // par la réponse serveur. On n'émet `currency` QUE si `value` est
+      // présente (currency orpheline = signal invalide GA4/Meta).
       emit('generate_lead', {
         method: 'chat',
         lead_id: data.leadId,
-        currency: 'MAD',
+        ...(typeof data.value === 'number' && data.value > 0
+          ? { value: data.value, currency: data.currency ?? 'MAD' }
+          : {}),
       });
     } catch (err) {
       setLeadFormError((err as Error).message || 'network-error');

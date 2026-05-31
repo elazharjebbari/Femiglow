@@ -1,0 +1,36 @@
+@startuml bug-reactivite-filtres
+title AF-01 — Réactivité des filtres : chemin cassé (Funnel/CTA/Checkout) vs correct (Insights)
+
+state "Chemin CASSÉ\n(Funnel / CTA / Checkout)" as Bad {
+  [*] --> Mount
+  Mount : const [filters] = useState(initialFilters)
+  Mount : const [data] = useState(initialData)
+  Mount --> EffectOnce : useEffect([filters]) (1 seule fois)
+  EffectOnce : fetch /api/.../<tab>?<filters figés>
+  EffectOnce --> Displayed
+  Displayed --> URLChanged : opérateur change un filtre
+  URLChanged : router.replace(?period=30d)
+  URLChanged --> RscRerender : RSC renvoie de nouvelles props
+  RscRerender --> Displayed : useState IGNORE les props\nuseEffect NE se relance PAS
+  note right of RscRerender #FFCCCC
+    Résultat : affichage figé
+    sur les données du 1er rendu
+  end note
+}
+
+state "Chemin CORRECT\n(Insights — référence)" as Good {
+  [*] --> Mount2
+  Mount2 : useInsightsFilters() lit l'URL\nvia useSearchParams (useMemo)
+  Mount2 --> Fetch2 : useInsightsFetch(url)\nuseEffect([url])
+  Fetch2 --> Displayed2
+  Displayed2 --> URLChanged2 : opérateur change la fenêtre
+  URLChanged2 : router.replace(?window=30d)
+  URLChanged2 --> Recompute : useSearchParams change\n-> filters recalculés -> url change
+  Recompute --> Fetch2 : refetch automatique
+  note right of Recompute #CCFFCC
+    Résultat : données à jour
+  end note
+}
+
+Bad --> Good : **correctif AF-01** = aligner les 3 dashboards\nsur le pattern Insights (lire l'URL, refetch sur changement)
+@enduml

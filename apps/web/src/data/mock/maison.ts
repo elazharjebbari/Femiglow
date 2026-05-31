@@ -2,7 +2,7 @@ import type { MaisonPageContent } from '@/lib/schemas';
 
 /**
  * Audit 08/09 — Maison FemiGlow à Rabat (25 bis avenue Patrice Lumumba).
- * Fondatrice : Souheila, biologiste, formulatrice, formatrice.
+ * Fondatrice : Notre fondatrice, biologiste et formulatrice, formulatrice, formatrice.
  * Ajout engagement halal, signature géographique cohérente.
  */
 export const mockMaison: MaisonPageContent = {
@@ -24,7 +24,7 @@ export const mockMaison: MaisonPageContent = {
     paragraphs: [
       'FemiGlow est n\u00e9 d\u2019un constat simple : les ongles tiennent quand on leur pr\u00eate le temps qu\u2019ils demandent. Pas plus, pas moins. Cinq minutes le soir, deux gestes mesur\u00e9s et un polissoir.',
       'L\u2019id\u00e9e a pris forme \u00e0 Rabat, dans un atelier de l\u2019avenue Patrice Lumumba o\u00f9 la lumi\u00e8re tombe juste avant 18 heures. Trois m\u00e9tiers se sont assis autour d\u2019une table : la formulation, la mati\u00e8re, l\u2019\u00e9criture. Une seule conviction \u2014 la beaut\u00e9 lente est une attention, jamais une performance.',
-      'Souheila est biologiste. Elle a suivi plusieurs formations en fabrication cosm\u00e9tique avant d\u2019\u00e9diter ses premi\u00e8res marques de soins naturels. Aujourd\u2019hui, elle anime des formations dans le m\u00eame atelier o\u00f9 FemiGlow est con\u00e7u. Le rituel n\u2019est pas une d\u00e9couverte \u2014 c\u2019est une transmission.',
+      'Notre fondatrice est biologiste. Elle a suivi plusieurs formations en fabrication cosm\u00e9tique avant d\u2019\u00e9diter ses premi\u00e8res marques de soins naturels. Aujourd\u2019hui, elle anime des formations dans le m\u00eame atelier o\u00f9 FemiGlow est con\u00e7u. Le rituel n\u2019est pas une d\u00e9couverte \u2014 c\u2019est une transmission.',
     ],
     image: {
       src: '/maison/maison-origine.png',
@@ -36,14 +36,14 @@ export const mockMaison: MaisonPageContent = {
   },
   fondatrice: {
     kicker: 'La fondatrice',
-    titre: 'Souheila, biologiste et formulatrice.',
+    titre: 'Notre fondatrice, biologiste et formulatrice.',
     paragraphs: [
-      'Souheila tient un master en biologie. Elle a suivi plusieurs formations sp\u00e9cialis\u00e9es en fabrication de produits cosm\u00e9tiques. Avant FemiGlow, elle a \u00e9dit\u00e9 plusieurs marques de soins naturels \u2014 et chacune lui a appris quelque chose sur le geste, la mati\u00e8re, la tra\u00e7abilit\u00e9.',
+      'Notre fondatrice tient un master en biologie. Elle a suivi plusieurs formations sp\u00e9cialis\u00e9es en fabrication de produits cosm\u00e9tiques. Avant FemiGlow, elle a \u00e9dit\u00e9 plusieurs marques de soins naturels \u2014 et chacune lui a appris quelque chose sur le geste, la mati\u00e8re, la tra\u00e7abilit\u00e9.',
       'Elle anime aujourd\u2019hui des formations dans l\u2019atelier de Rabat, ouvertes aux jeunes formulatrices marocaines. FemiGlow est sa maison la plus lente.',
     ],
     image: {
       src: '/maison/fondatrice-mains.svg',
-      alt: 'Atelier de Rabat, fin d\u2019apr\u00e8s-midi. Souheila pr\u00e9pare une paste, geste lent, observation continue',
+      alt: 'Atelier de Rabat, fin d\u2019apr\u00e8s-midi. notre fondatrice pr\u00e9pare une paste, geste lent, observation continue',
       width: 960,
       height: 1200,
     },
@@ -54,7 +54,7 @@ export const mockMaison: MaisonPageContent = {
     quartier: 'Rabat',
     description: [
       'L\u2019atelier tient dans deux pi\u00e8ces calmes : un plan de travail clair, une biblioth\u00e8que d\u2019ouvrages techniques et de carnets, des \u00e9chantillons de mati\u00e8res rang\u00e9s par saison.',
-      'On y formule en petites s\u00e9ries. On y re\u00e7oit Souheila sur rendez-vous, le mardi et le jeudi, pour les formations et les consultations.',
+      'On y formule en petites s\u00e9ries. On y re\u00e7oit notre fondatrice sur rendez-vous, le mardi et le jeudi, pour les formations et les consultations.',
     ],
     gallerie: [
       {
@@ -146,7 +146,7 @@ export const mockMaison: MaisonPageContent = {
       ordre: 6,
       titre: 'Transmission',
       description:
-        'Souheila forme r\u00e9guli\u00e8rement des esth\u00e9ticiennes et des formulatrices \u00e0 la manucure japonaise, dans l\u2019atelier de Rabat.',
+        'Notre équipe forme r\u00e9guli\u00e8rement des esth\u00e9ticiennes et des formulatrices \u00e0 la manucure japonaise, dans l\u2019atelier de Rabat.',
     },
   ],
   crossLinks: [

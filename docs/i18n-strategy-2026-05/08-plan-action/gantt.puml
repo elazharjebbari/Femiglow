@@ -1,0 +1,275 @@
+@startgantt
+title Plan d'action i18n FemiGlow — 11 semaines (S0 -> S11)
+projectscale weekly
+project starts 2026-06-01
+
+' === Calendar : jours non-travaillés ===
+saturday are closed
+sunday are closed
+
+' === Ressources ===
+[Fondatrice] is 30% busy
+[Lead] is 100% busy
+[Dev] is 100% busy
+[Translator AR] is 100% busy
+[Translator EN] is 100% busy
+[QA] is 100% busy
+
+' === Phase 0 — Étude validée (S0) ===
+[T0.1 Relecture étude] lasts 2 days and is colored in LightSkyBlue
+[T0.1 Relecture étude] is assigned to [Fondatrice] and [Lead]
+[T0.2 Réunion décision GO] lasts 1 day and is colored in LightSkyBlue
+[T0.2 Réunion décision GO] starts at [T0.1 Relecture étude]'s end
+[T0.3 Rédaction ADRs] lasts 2 days and is colored in LightSkyBlue
+[T0.3 Rédaction ADRs] starts at [T0.2 Réunion décision GO]'s end
+[T0.3 Rédaction ADRs] is assigned to [Lead]
+[T0.4 Setup tracking] lasts 1 day and is colored in LightSkyBlue
+[T0.4 Setup tracking] starts at [T0.3 Rédaction ADRs]'s end
+
+[M1 GO/NO-GO signed] happens at [T0.4 Setup tracking]'s end
+
+' === Phase 1 — Foundation (S1-S2) ===
+[T1.1 Install next-intl] lasts 1 day and is colored in LightGreen
+[T1.1 Install next-intl] starts at [T0.4 Setup tracking]'s end
+[T1.1 Install next-intl] is assigned to [Dev]
+
+[T1.2 Middleware locale] lasts 2 days and is colored in LightGreen
+[T1.2 Middleware locale] starts at [T1.1 Install next-intl]'s end
+[T1.2 Middleware locale] is assigned to [Lead] and [Dev]
+
+[T1.3 Structure locale] lasts 1 day and is colored in LightGreen
+[T1.3 Structure locale] starts at [T1.2 Middleware locale]'s end
+[T1.3 Structure locale] is assigned to [Dev]
+
+[T1.4 Fichiers messages] lasts 1 day and is colored in LightGreen
+[T1.4 Fichiers messages] starts at [T1.3 Structure locale]'s end
+[T1.4 Fichiers messages] is assigned to [Dev]
+
+[T1.5 LocaleSwitcher] lasts 1 day and is colored in LightGreen
+[T1.5 LocaleSwitcher] starts at [T1.4 Fichiers messages]'s end
+[T1.5 LocaleSwitcher] is assigned to [Dev]
+
+[T1.6 E2E baseline] lasts 2 days and is colored in LightGreen
+[T1.6 E2E baseline] starts at [T1.5 LocaleSwitcher]'s end
+[T1.6 E2E baseline] is assigned to [Dev] and [QA]
+
+[T1.7 Feature flag] lasts 1 day and is colored in LightGreen
+[T1.7 Feature flag] starts at [T1.6 E2E baseline]'s end
+[T1.7 Feature flag] is assigned to [Lead]
+
+[T1.8 Review P1] lasts 1 day and is colored in LightGreen
+[T1.8 Review P1] starts at [T1.7 Feature flag]'s end
+
+[M2 Foundation OK] happens at [T1.8 Review P1]'s end
+
+' === Phase 2 — Content extraction (S3-S4) ===
+[T2.1 Audit strings] lasts 2 days and is colored in LightYellow
+[T2.1 Audit strings] starts at [T1.8 Review P1]'s end
+[T2.1 Audit strings] is assigned to [Dev]
+
+[T2.2 Script AST] lasts 3 days and is colored in LightYellow
+[T2.2 Script AST] starts at [T2.1 Audit strings]'s end
+[T2.2 Script AST] is assigned to [Lead]
+
+[T2.3 Extract home] lasts 2 days and is colored in LightYellow
+[T2.3 Extract home] starts at [T2.2 Script AST]'s end
+[T2.3 Extract home] is assigned to [Dev]
+
+[T2.4 Extract maison] lasts 1 day and is colored in LightYellow
+[T2.4 Extract maison] starts at [T2.3 Extract home]'s end
+[T2.4 Extract maison] is assigned to [Dev]
+
+[T2.5 Extract kit] lasts 2 days and is colored in LightYellow
+[T2.5 Extract kit] starts at [T2.4 Extract maison]'s end
+[T2.5 Extract kit] is assigned to [Dev]
+
+[T2.6 Extract rituel] lasts 1 day and is colored in LightYellow
+[T2.6 Extract rituel] starts at [T2.5 Extract kit]'s end
+[T2.6 Extract rituel] is assigned to [Dev]
+
+[T2.7 Extract journal] lasts 2 days and is colored in LightYellow
+[T2.7 Extract journal] starts at [T2.6 Extract rituel]'s end
+[T2.7 Extract journal] is assigned to [Dev]
+
+[T2.8 Validation voix FR] lasts 2 days and is colored in LightYellow
+[T2.8 Validation voix FR] starts at [T2.7 Extract journal]'s end
+[T2.8 Validation voix FR] is assigned to [Fondatrice] and [Dev]
+
+[T2.9 ESLint rule] lasts 2 days and is colored in LightYellow
+[T2.9 ESLint rule] starts at [T2.8 Validation voix FR]'s end
+[T2.9 ESLint rule] is assigned to [Lead]
+
+[T2.10 Traduction EN] lasts 2 days and is colored in LightYellow
+[T2.10 Traduction EN] starts at [T2.8 Validation voix FR]'s end
+[T2.10 Traduction EN] is assigned to [Translator EN] and [Dev]
+
+[M3 Content extracted] happens at [T2.10 Traduction EN]'s end
+
+' === Phase 3 — CMS multilingue (S5) ===
+[T3.1 Repo getByLocale] lasts 1 day and is colored in Plum
+[T3.1 Repo getByLocale] starts at [T2.10 Traduction EN]'s end
+[T3.1 Repo getByLocale] is assigned to [Dev]
+
+[T3.2 UI Admin onglets] lasts 2 days and is colored in Plum
+[T3.2 UI Admin onglets] starts at [T3.1 Repo getByLocale]'s end
+[T3.2 UI Admin onglets] is assigned to [Dev]
+
+[T3.3 Migration data] lasts 1 day and is colored in Plum
+[T3.3 Migration data] starts at [T3.1 Repo getByLocale]'s end
+[T3.3 Migration data] is assigned to [Lead]
+
+[T3.4 Intégration frontend] lasts 2 days and is colored in Plum
+[T3.4 Intégration frontend] starts at [T3.2 UI Admin onglets]'s end
+[T3.4 Intégration frontend] is assigned to [Dev]
+
+[T3.5 Tests CMS multilang] lasts 1 day and is colored in Plum
+[T3.5 Tests CMS multilang] starts at [T3.4 Intégration frontend]'s end
+[T3.5 Tests CMS multilang] is assigned to [Dev]
+
+[M4 CMS multilang ready] happens at [T3.5 Tests CMS multilang]'s end
+
+' === Phase 4 — RTL + AR (S6) ===
+[T4.1 Audit RTL] lasts 1 day and is colored in LightCoral
+[T4.1 Audit RTL] starts at [T3.5 Tests CMS multilang]'s end
+[T4.1 Audit RTL] is assigned to [Dev]
+
+[T4.2 Refactor Tailwind] lasts 2 days and is colored in LightCoral
+[T4.2 Refactor Tailwind] starts at [T4.1 Audit RTL]'s end
+[T4.2 Refactor Tailwind] is assigned to [Dev]
+
+[T4.3 html dir dynamic] lasts 1 day and is colored in LightCoral
+[T4.3 html dir dynamic] starts at [T4.2 Refactor Tailwind]'s end
+[T4.3 html dir dynamic] is assigned to [Dev]
+
+[T4.4 Font Cairo] lasts 1 day and is colored in LightCoral
+[T4.4 Font Cairo] starts at [T4.3 html dir dynamic]'s end
+[T4.4 Font Cairo] is assigned to [Dev]
+
+[T4.5 Visual RTL] lasts 2 days and is colored in LightCoral
+[T4.5 Visual RTL] starts at [T4.4 Font Cairo]'s end
+[T4.5 Visual RTL] is assigned to [QA] and [Dev]
+
+[T4.6 A11y RTL] lasts 1 day and is colored in LightCoral
+[T4.6 A11y RTL] starts at [T4.5 Visual RTL]'s end
+[T4.6 A11y RTL] is assigned to [QA]
+
+[M5 RTL ready] happens at [T4.6 A11y RTL]'s end
+
+' === Phase 5 — Workflow translateur (S7) ===
+[T5.1 Export-Import] lasts 2 days and is colored in Khaki
+[T5.1 Export-Import] starts at [T4.6 A11y RTL]'s end
+[T5.1 Export-Import] is assigned to [Dev]
+
+[T5.2 Doc translateur] lasts 1 day and is colored in Khaki
+[T5.2 Doc translateur] starts at [T5.1 Export-Import]'s end
+[T5.2 Doc translateur] is assigned to [Lead]
+
+[T5.3 Traduction AR] lasts 5 days and is colored in Khaki
+[T5.3 Traduction AR] starts at [T5.2 Doc translateur]'s end
+[T5.3 Traduction AR] is assigned to [Translator AR]
+
+[T5.4 Intégration AR] lasts 1 day and is colored in Khaki
+[T5.4 Intégration AR] starts at [T5.3 Traduction AR]'s end
+[T5.4 Intégration AR] is assigned to [Dev]
+
+[T5.5 Validation native] lasts 1 day and is colored in Khaki
+[T5.5 Validation native] starts at [T5.4 Intégration AR]'s end
+
+[M6 AR translated] happens at [T5.5 Validation native]'s end
+
+' === Phase 6 — Tests denses (S8-S9) ===
+[T6.1 Pyramide unit] lasts 2 days and is colored in LightSalmon
+[T6.1 Pyramide unit] starts at [T5.5 Validation native]'s end
+[T6.1 Pyramide unit] is assigned to [Dev] and [QA]
+
+[T6.2 Pyramide integration] lasts 2 days and is colored in LightSalmon
+[T6.2 Pyramide integration] starts at [T6.1 Pyramide unit]'s end
+[T6.2 Pyramide integration] is assigned to [Dev]
+
+[T6.3 E2E 3 locales] lasts 3 days and is colored in LightSalmon
+[T6.3 E2E 3 locales] starts at [T6.2 Pyramide integration]'s end
+[T6.3 E2E 3 locales] is assigned to [QA]
+
+[T6.4 Visual regression] lasts 2 days and is colored in LightSalmon
+[T6.4 Visual regression] starts at [T6.3 E2E 3 locales]'s end
+[T6.4 Visual regression] is assigned to [QA]
+
+[T6.5 A11y scans] lasts 1 day and is colored in LightSalmon
+[T6.5 A11y scans] starts at [T6.4 Visual regression]'s end
+[T6.5 A11y scans] is assigned to [QA]
+
+[T6.6 Lighthouse CI] lasts 1 day and is colored in LightSalmon
+[T6.6 Lighthouse CI] starts at [T6.5 A11y scans]'s end
+[T6.6 Lighthouse CI] is assigned to [Lead]
+
+[T6.7 Coverage gates] lasts 1 day and is colored in LightSalmon
+[T6.7 Coverage gates] starts at [T6.6 Lighthouse CI]'s end
+[T6.7 Coverage gates] is assigned to [Lead]
+
+[T6.8 ESLint error mode] lasts 1 day and is colored in LightSalmon
+[T6.8 ESLint error mode] starts at [T6.7 Coverage gates]'s end
+[T6.8 ESLint error mode] is assigned to [Lead]
+
+[T6.9 Boucle correction] lasts 3 days and is colored in LightSalmon
+[T6.9 Boucle correction] starts at [T6.8 ESLint error mode]'s end
+
+[M7 Tests pass] happens at [T6.9 Boucle correction]'s end
+
+' === Phase 7 — Deploy + obs (S10) ===
+[T7.1 Vercel flags] lasts 1 day and is colored in LightSeaGreen
+[T7.1 Vercel flags] starts at [T6.9 Boucle correction]'s end
+[T7.1 Vercel flags] is assigned to [Lead]
+
+[T7.2 Snapshot DB] lasts 1 day and is colored in LightSeaGreen
+[T7.2 Snapshot DB] starts at [T7.1 Vercel flags]'s end
+[T7.2 Snapshot DB] is assigned to [Lead]
+
+[T7.3 Canary 10pct] lasts 1 day and is colored in LightSeaGreen
+[T7.3 Canary 10pct] starts at [T7.2 Snapshot DB]'s end
+[T7.3 Canary 10pct] is assigned to [Lead] and [QA]
+
+[T7.4 Canary 50pct] lasts 1 day and is colored in LightSeaGreen
+[T7.4 Canary 50pct] starts at [T7.3 Canary 10pct]'s end
+
+[T7.5 Canary 100pct] lasts 1 day and is colored in LightSeaGreen
+[T7.5 Canary 100pct] starts at [T7.4 Canary 50pct]'s end
+
+[T7.6 Sentry tag locale] lasts 1 day and is colored in LightSeaGreen
+[T7.6 Sentry tag locale] starts at [T7.3 Canary 10pct]'s end
+[T7.6 Sentry tag locale] is assigned to [Dev]
+
+[T7.7 Analytics locale] lasts 1 day and is colored in LightSeaGreen
+[T7.7 Analytics locale] starts at [T7.6 Sentry tag locale]'s end
+[T7.7 Analytics locale] is assigned to [Dev]
+
+[T7.8 Rollback testé] lasts 1 day and is colored in LightSeaGreen
+[T7.8 Rollback testé] starts at [T7.5 Canary 100pct]'s end
+[T7.8 Rollback testé] is assigned to [Lead] and [QA]
+
+[M8 Deploy 100pct] happens at [T7.8 Rollback testé]'s end
+
+' === Phase 8 — Stabilisation (S11) ===
+[T8.1 Bug bash] lasts 2 days and is colored in PowderBlue
+[T8.1 Bug bash] starts at [T7.8 Rollback testé]'s end
+
+[T8.2 A11y approfondi] lasts 2 days and is colored in PowderBlue
+[T8.2 A11y approfondi] starts at [T8.1 Bug bash]'s end
+[T8.2 A11y approfondi] is assigned to [QA]
+
+[T8.3 Perf approfondi] lasts 1 day and is colored in PowderBlue
+[T8.3 Perf approfondi] starts at [T8.1 Bug bash]'s end
+[T8.3 Perf approfondi] is assigned to [Lead]
+
+[T8.4 Doc finale] lasts 2 days and is colored in PowderBlue
+[T8.4 Doc finale] starts at [T8.2 A11y approfondi]'s end
+[T8.4 Doc finale] is assigned to [Lead] and [Dev]
+
+[T8.5 Post-mortem] lasts 1 day and is colored in PowderBlue
+[T8.5 Post-mortem] starts at [T8.4 Doc finale]'s end
+
+[M9 Stable & shipped] happens at [T8.5 Post-mortem]'s end
+
+' === Légende ===
+caption Phases : 0=Bleu, 1=Vert, 2=Jaune, 3=Pourpre, 4=Corail, 5=Khaki, 6=Saumon, 7=Vert d'eau, 8=Bleu poudré
+
+@endgantt

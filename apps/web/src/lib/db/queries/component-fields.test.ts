@@ -352,3 +352,97 @@ describe('purgeFieldHistoryBefore', () => {
     expect(await purgeFieldHistoryBefore(cutoff)).toBe(0);
   });
 });
+
+/**
+ * T3.8 — isolation des bindings par locale.
+ *
+ * Le schéma a un index unique partiel `(componentId, fieldKey, locale)` par
+ * status. Le repo doit donc traiter FR/AR/EN comme des rows totalement
+ * indépendantes : créer en AR ne doit pas écraser ou polluer la row FR.
+ */
+describe('component-fields — isolation par locale (T3.8)', () => {
+  it('getDraftBinding retourne null pour AR quand seul un draft FR existe', async () => {
+    await upsertDraftBinding({
+      componentId,
+      fieldKey: 'title',
+      locale: 'fr',
+      value: { v: 'Bonjour' },
+      authorId: 'admin_1',
+    });
+    expect(await getDraftBinding(componentId, 'title', 'ar')).toBeNull();
+    expect(await getDraftBinding(componentId, 'title', 'en')).toBeNull();
+    // FR existe bien.
+    const fr = await getDraftBinding(componentId, 'title', 'fr');
+    expect(fr?.value).toEqual({ v: 'Bonjour' });
+    expect(fr?.locale).toBe('fr');
+  });
+
+  it('upsertDraftBinding crée des rows indépendantes par locale', async () => {
+    const fr = await upsertDraftBinding({
+      componentId,
+      fieldKey: 'title',
+      locale: 'fr',
+      value: { v: 'Bonjour' },
+      authorId: 'admin_1',
+    });
+    const ar = await upsertDraftBinding({
+      componentId,
+      fieldKey: 'title',
+      locale: 'ar',
+      value: { v: 'مرحبا' },
+      authorId: 'admin_1',
+    });
+    const en = await upsertDraftBinding({
+      componentId,
+      fieldKey: 'title',
+      locale: 'en',
+      value: { v: 'Hello' },
+      authorId: 'admin_1',
+    });
+    // 3 IDs distincts → 3 rows.
+    expect(new Set([fr.id, ar.id, en.id]).size).toBe(3);
+    expect(fr.locale).toBe('fr');
+    expect(ar.locale).toBe('ar');
+    expect(en.locale).toBe('en');
+    // Chaque locale conserve sa valeur.
+    expect((await getDraftBinding(componentId, 'title', 'fr'))?.value).toEqual({
+      v: 'Bonjour',
+    });
+    expect((await getDraftBinding(componentId, 'title', 'ar'))?.value).toEqual({
+      v: 'مرحبا',
+    });
+    expect((await getDraftBinding(componentId, 'title', 'en'))?.value).toEqual({
+      v: 'Hello',
+    });
+  });
+
+  it('publishBinding(draft AR) ne touche pas au published FR existant', async () => {
+    // FR : déjà publié.
+    const frPub = await ensureSeedPublishedBinding({
+      componentId,
+      fieldKey: 'title',
+      locale: 'fr',
+      value: { v: 'Bonjour' },
+    });
+    // AR : draft → publish.
+    const arDraft = await upsertDraftBinding({
+      componentId,
+      fieldKey: 'title',
+      locale: 'ar',
+      value: { v: 'مرحبا' },
+      authorId: 'admin_1',
+    });
+    const arPub = await publishBinding({
+      bindingId: arDraft.id,
+      actorId: 'admin_1',
+    });
+    expect(arPub.locale).toBe('ar');
+    expect(arPub.status).toBe('published');
+
+    // FR doit toujours être présent en published et inchangé.
+    const frStill = await getPublishedBinding(componentId, 'title', 'fr');
+    expect(frStill?.id).toBe(frPub.id);
+    expect(frStill?.value).toEqual({ v: 'Bonjour' });
+    expect(frStill?.status).toBe('published');
+  });
+});

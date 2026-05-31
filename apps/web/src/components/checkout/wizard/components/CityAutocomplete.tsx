@@ -117,6 +117,14 @@ export interface CityAutocompleteProps {
    * dans un layout spécifique). Le styling de base reste dans le composant.
    */
   className?: string;
+  /** En-tête du groupe villes prioritaires. i18n côté appelant, défaut FR. */
+  popularCitiesLabel?: string;
+  /** Statut de chargement du listbox. i18n côté appelant, défaut FR. */
+  searchingLabel?: string;
+  /** Libellé prix de livraison nul. i18n côté appelant, défaut FR. */
+  freeDeliveryLabel?: string;
+  /** Libellé du badge livraison offerte. i18n côté appelant, défaut FR. */
+  freeShippingLabel?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -168,6 +176,10 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
     testId,
     autoComplete = 'address-level2',
     className,
+    popularCitiesLabel = 'Villes populaires',
+    searchingLabel = 'Recherche…',
+    freeDeliveryLabel = 'Gratuit',
+    freeShippingLabel = 'Offerte',
   } = props;
 
   // Id stable pour wiring ARIA — peut être surchargé par le parent.
@@ -433,7 +445,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
               className="px-3 py-2 text-xs text-encre/50"
               aria-live="polite"
             >
-              Recherche…
+              {searchingLabel}
             </li>
           )}
           {isPopularView && items.length > 0 && (
@@ -441,7 +453,7 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
               role="presentation"
               className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-encre/45"
             >
-              Villes populaires
+              {popularCitiesLabel}
             </li>
           )}
           {items.map((city, index) => {
@@ -472,19 +484,20 @@ export function CityAutocomplete(props: CityAutocompleteProps) {
                   )}
                 </div>
                 <div className="shrink-0 whitespace-nowrap text-xs text-encre/60">
-                  <div className="flex justify-end text-right">
+                  <div className="flex justify-end text-end">
                     <ShippingPriceDisplay
                       displayPrice={
                         city.deliveryPriceMad === 0
-                          ? 'Gratuit'
+                          ? freeDeliveryLabel
                           : `${city.deliveryPriceMad} MAD`
                       }
                       freeShipping={freeShipping && city.deliveryPriceMad > 0}
+                      freeLabel={freeShippingLabel}
                       size="xs"
                       align="right"
                     />
                   </div>
-                  <div className="text-right text-encre/45">
+                  <div className="text-end text-encre/45">
                     {city.deliveryEta}
                   </div>
                 </div>

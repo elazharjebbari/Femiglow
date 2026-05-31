@@ -1,0 +1,33 @@
+@startuml flux-analytics
+title Flux analytics — RSC -> API -> query -> DB (onglets Funnel / CTA / Checkout)
+
+actor "Opérateur admin" as Op
+participant "FilterBar\n(client)" as FB
+participant "<Tab>Page\n(RSC force-dynamic)" as RSC
+participant "<Tab>Dashboard\n(client)" as DASH
+participant "GET /api/admin/analytics/<tab>" as API
+participant "lib/analytics/queries/<tab>.ts" as Q
+database "tracking_events_log\n(+ tracking_components)" as DB
+
+== Chargement initial ==
+Op -> RSC : ouvre /admin/analytics/<tab>?period=7d
+RSC -> Q : get<Tab>Data(filters)
+Q -> DB : SELECT * WHERE consent='granted'\nAND received_at in [from,to] AND device/traffic
+DB --> Q : events (toute la période, en mémoire)
+Q -> Q : aggregateSessions / attribution / percentiles
+Q --> RSC : <Tab>Data (pré-chargé)
+RSC -> DASH : props initialFilters + initialData
+DASH -> API : useEffect -> GET (REFETCH redondant au mount)
+API -> Q : get<Tab>Data(filters)
+Q --> API : <Tab>Data
+API --> DASH : JSON (mêmes données recalculées)
+DASH --> Op : KPIs + charts + tables
+
+== Changement de filtre (BUG AF-01) ==
+Op -> FB : sélectionne "30 jours" / "Desktop"
+FB -> FB : router.replace(?period=30d&device=desktop)
+note over RSC : RSC re-render (force-dynamic)\net renvoie de nouvelles props
+note over DASH #FFCCCC : useState(initialFilters) FIGÉ\nuseEffect([filters]) NE se redéclenche PAS\n=> aucun refetch, affichage inchangé
+DASH --> Op : **mêmes chiffres qu'avant** (faux)
+
+@enduml

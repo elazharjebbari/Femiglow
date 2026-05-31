@@ -19,8 +19,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 import { CommanderAnchorButton } from '@/components/commerce/CommanderAnchorButton';
+import { isLocale } from '@/i18n.config';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
@@ -71,6 +73,25 @@ export function PriceBlock({
   const { hero, currency, socialProof } = feed;
   const { emit } = useTracking();
   const sectionRef = useRef<HTMLDivElement | null>(null);
+
+  // Phase 9 i18n STRICT — locale active (premier segment du pathname). Sur
+  // /ar, on remplace le code devise latin (MAD/AED) par درهم pour le prix XXL
+  // et le bandeau économie. Hors /ar : sortie inchangée (code ISO).
+  const path = usePathname() ?? '/';
+  const firstSeg = path.split('/').filter(Boolean)[0];
+  const isArabic = !!firstSeg && isLocale(firstSeg) && firstSeg === 'ar';
+  const currencyDisplay =
+    isArabic && currency === 'MAD'
+      ? 'درهم'
+      : isArabic && currency === 'AED'
+        ? 'درهم إماراتي'
+        : currency;
+  // Unité passée à `formatSavingsLabel` : درهم sur /ar, sinon MAD/€ legacy.
+  const savingsUnit = isArabic
+    ? currencyDisplay
+    : currency === 'MAD'
+      ? 'MAD'
+      : '€';
 
   // Prix effectif (promo-aware) — utilisé pour computeSavings et CTA.
   const promo = computePromo(product.priceCents, product.promoPriceCents);
@@ -160,7 +181,7 @@ export function PriceBlock({
         >
           <span className="font-display text-5xl text-encre tabular-nums">
             {(promo.effectivePriceCents / 100).toFixed(0)}{' '}
-            <span className="text-2xl text-encre/70">{currency}</span>
+            <span className="text-2xl text-encre/70">{currencyDisplay}</span>
           </span>
           {hero.priceCompareAt && (
             <span
@@ -185,7 +206,11 @@ export function PriceBlock({
             data-testid="pack-savings-badge"
             className="mx-auto inline-flex max-w-fit items-center gap-1 rounded-full bg-[#C28A6E]/12 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-[#8A4F36]"
           >
-            {formatSavingsLabel(savings, currency === 'MAD' ? 'MAD' : '€')}
+            {formatSavingsLabel(
+              savings,
+              savingsUnit,
+              hero.savingsPhrase,
+            )}
           </p>
         )}
       </div>

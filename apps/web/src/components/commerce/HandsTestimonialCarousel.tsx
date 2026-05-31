@@ -8,6 +8,23 @@ export interface HandsTestimonialMediaSlots {
   after?: ReactNode;
 }
 
+/**
+ * Phase 9 i18n — libellés localisés (avant/après + « initiée depuis »).
+ * `initieeSince` est un gabarit avec `{date}`. Défaut FR si absent.
+ */
+export interface HandsTestimonialLabels {
+  before: string;
+  after: string;
+  /** Gabarit contenant `{date}`. */
+  initieeSince: string;
+}
+
+const DEFAULT_HANDS_LABELS: HandsTestimonialLabels = {
+  before: 'Avant',
+  after: 'Après',
+  initieeSince: 'Initiée depuis {date}',
+};
+
 interface HandsTestimonialCarouselProps {
   items: HandsTestimonial[];
   /**
@@ -15,11 +32,14 @@ interface HandsTestimonialCarouselProps {
    * absent → fallback vers `beforeImage`/`afterImage`.
    */
   mediaSlotsByItemId?: Record<string, HandsTestimonialMediaSlots>;
+  /** Phase 9 i18n — libellés localisés. Défaut FR. */
+  labels?: HandsTestimonialLabels;
 }
 
 export function HandsTestimonialCarousel({
   items,
   mediaSlotsByItemId,
+  labels = DEFAULT_HANDS_LABELS,
 }: HandsTestimonialCarouselProps) {
   return (
     <ul
@@ -52,7 +72,7 @@ export function HandsTestimonialCarousel({
                 />
               )}
               <figcaption className="text-[11px] uppercase tracking-[0.18em] text-encre/60">
-                Avant
+                {labels.before}
               </figcaption>
             </figure>
             <figure className="space-y-2">
@@ -71,7 +91,7 @@ export function HandsTestimonialCarousel({
                 />
               )}
               <figcaption className="text-[11px] uppercase tracking-[0.18em] text-encre/60">
-                Après
+                {labels.after}
               </figcaption>
             </figure>
           </div>
@@ -85,7 +105,7 @@ export function HandsTestimonialCarousel({
               <>
                 {' · '}
                 <em className="font-script not-italic text-encre/70">
-                  Initiée depuis {item.initieeDepuis}
+                  {labels.initieeSince.replace('{date}', item.initieeDepuis)}
                 </em>
               </>
             ) : null}

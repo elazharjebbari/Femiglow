@@ -9,7 +9,10 @@ export type LegalAuditAction =
   | 'legal.page.restored'
   | 'legal.placement.upserted'
   | 'legal.placement.toggled'
-  | 'legal.template-var.updated';
+  | 'legal.template-var.updated'
+  // LEGAL-V2 — nouveaux events
+  | 'legal.template-var.created'
+  | 'legal.cleanup.e2e';
 
 export async function logLegalEvent(
   action: LegalAuditAction,

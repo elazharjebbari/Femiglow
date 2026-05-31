@@ -1,5 +1,6 @@
 import 'server-only';
 import type { ComponentProps } from 'react';
+import { getTranslations } from 'next-intl/server';
 import { HeroProduit, type HeroProduitFields } from './HeroProduit';
 import { resolveComponentFields } from '@/lib/components/field-resolver';
 import {
@@ -12,6 +13,7 @@ import {
   type ProductReviewStats,
 } from '@/lib/products/reviews';
 import type { ResolvedFields } from '@/lib/db/types';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 
 type HeroProduitBoundProps = Omit<
   ComponentProps<typeof HeroProduit>,
@@ -25,6 +27,24 @@ type HeroProduitBoundProps = Omit<
    * témoignages visibles plus bas dans la page — au lieu du starter 287.
    */
   reviewsCountOverride?: number;
+  /**
+   * Phase 7B — Locale active. Propagée à `resolveComponentFields` pour
+   * lire les bindings AR/EN. Sans valeur, défaut FR (legacy).
+   */
+  locale?: Locale;
+  /**
+   * Phase 7E — Nom produit localisé (CMS `content.product.name`). Affiché
+   * dans le H1 du hero. Le `product.name` (nom DB canonique) reste utilisé
+   * pour le tracking + cart afin de ne pas fragmenter les rapports analytics.
+   */
+  displayName?: string;
+  /**
+   * Phase 7E — Tagline localisée (CMS `content.product.tagline`). Sert de
+   * fallback quand aucun binding `kit-hero-produit/tagline` n'existe pour la
+   * locale active — remplace l'ancien fallback FR hardcodé qui fuitait sur
+   * `/ar/kit` et `/en/kit`.
+   */
+  taglineFallback?: string;
 };
 
 /**
@@ -47,10 +67,14 @@ export async function HeroProduitBound({
   observeId,
   commanderMode,
   reviewsCountOverride,
+  locale,
+  displayName,
+  taglineFallback,
 }: HeroProduitBoundProps): Promise<JSX.Element> {
+  const effectiveLocale = locale ?? DEFAULT_LOCALE;
   const productFallback = product.images[0];
-  const [resolvedFields, rawGalleryImages, statsOrNull] = await Promise.all([
-    resolveComponentFields(componentKey),
+  const [resolvedFields, rawGalleryImages, statsOrNull, tHero] = await Promise.all([
+    resolveComponentFields(componentKey, effectiveLocale),
     getKitHeroGalleryImages({
       productId: product.id,
       maxTotal: pickNumber(undefined, 7),
@@ -68,23 +92,49 @@ export async function HeroProduitBound({
         : undefined,
     }),
     getProductReviewStats(product.id),
+    // Phase 7E — strings UI du hero (kicker, CTA, économie) localisés.
+    getTranslations({
+      locale: effectiveLocale,
+      namespace: 'marketing.kit.hero',
+    }),
   ]);
 
+  // Phase 7E — économie en MAD (entier) pour le libellé localisé `savings`.
+  const savings = product.promoPriceCents
+    ? Math.round((product.priceCents - product.promoPriceCents) / 100)
+    : 0;
+  const heroStrings = {
+    kicker: tHero('kicker'),
+    ctaLabel: tHero('cta_commander'),
+    savingsLabel: savings > 0 ? tHero('savings', { savings }) : undefined,
+  };
+
   // Fields avec fallback sur defaults solides
+  // Phase 7B — En non-default locale, on ignore les valeurs `source === 'default'`
+  // (= valeurs FR du registry) afin que `data.product` ou les helpers de page
+  // localisés puissent fournir le bon contenu. Cf. PHASE-7-AUDIT.md §A6.
+  const acceptDefault = effectiveLocale === DEFAULT_LOCALE;
   const fields: HeroProduitFields = {
     tagline: pickString(
       resolvedFields.tagline,
-      'Manucure japonaise. Deux gestes, un polissoir. La main se révèle.',
+      taglineFallback ??
+        'Manucure japonaise. Deux gestes, un polissoir. La main se révèle.',
+      acceptDefault,
     ),
-    description: pickString(resolvedFields.description, ''),
+    description: pickString(resolvedFields.description, '', acceptDefault),
     attributeChips: pickStringArray(
       resolvedFields.attributeChips,
-      ['Sans vernis', 'Sans UV', 'Sans acétone'],
+      // Phase 7E — fallback localisé (FR/AR/EN) depuis `marketing.kit.hero.chips`.
+      // En FR, ces valeurs sont identiques aux anciennes constantes hardcodées.
+      [tHero('chips.no_polish'), tHero('chips.no_uv'), tHero('chips.no_acetone')],
+      acceptDefault,
     ),
-    trustRow: pickStringArray(resolvedFields.trustRow, [
-      'Livraison offerte',
-      'Paiement à la livraison',
-    ]),
+    trustRow: pickStringArray(
+      resolvedFields.trustRow,
+      // Phase 7E — fallback localisé (FR/AR/EN) depuis `marketing.kit.hero.trust`.
+      [tHero('trust.delivery'), tHero('trust.cod')],
+      acceptDefault,
+    ),
     reviewBadgeEnabled: pickBoolean(resolvedFields.reviewBadgeEnabled, true),
     ctaPulseEnabled: pickBoolean(resolvedFields.ctaPulseEnabled, true),
   };
@@ -106,9 +156,24 @@ export async function HeroProduitBound({
       : DEFAULT_KIT_REVIEW_STATS);
   const reviewStats: ProductReviewStats = fallbackStats;
 
+  // Phase 9bis — libellé avis localisé (« {n} avis » → « {n} تقييم »). En FR
+  // le rendu reste identique ; le badge n'a plus de "avis" hardcodé.
+  const ratingDisplay = (Math.round(reviewStats.rating * 10) / 10)
+    .toString()
+    .replace('.', ',');
+  const reviewsStrings = {
+    reviewsLabel: tHero('reviews', { count: reviewStats.reviewsCount }),
+    reviewsAriaLabel: tHero('reviews_aria', {
+      count: reviewStats.reviewsCount,
+      rating: ratingDisplay,
+    }),
+  };
+
   return (
     <HeroProduit
       product={product}
+      displayName={displayName}
+      strings={{ ...heroStrings, ...reviewsStrings }}
       reassurances={reassurances}
       galleryImages={galleryImages}
       fields={fields}
@@ -125,8 +190,16 @@ export async function HeroProduitBound({
   );
 }
 
-function pickString(field: ResolvedFields[string] | undefined, fallback: string): string {
-  const v = field?.value;
+function pickString(
+  field: ResolvedFields[string] | undefined,
+  fallback: string,
+  acceptDefault = true,
+): string {
+  if (!field) return fallback;
+  // Phase 7B — En non-default locale, on refuse `source === 'default'`
+  // (= valeurs FR du registry) pour préserver le fallback localisé.
+  if (!acceptDefault && field.meta.source === 'default') return fallback;
+  const v = field.value;
   return typeof v === 'string' && v.trim().length > 0 ? v : fallback;
 }
 
@@ -138,8 +211,11 @@ function pickBoolean(field: ResolvedFields[string] | undefined, fallback: boolea
 function pickStringArray(
   field: ResolvedFields[string] | undefined,
   fallback: string[],
+  acceptDefault = true,
 ): string[] {
-  const v = field?.value;
+  if (!field) return fallback;
+  if (!acceptDefault && field.meta.source === 'default') return fallback;
+  const v = field.value;
   if (!Array.isArray(v)) return fallback;
   const cleaned = v
     .filter((item): item is string => typeof item === 'string')

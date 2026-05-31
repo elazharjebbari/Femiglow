@@ -2,6 +2,8 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+import { clearAnalyticsCache } from './src/lib/analytics/cache';
+
 // jsdom n'implémente pas ResizeObserver — utilisé par cmdk (CommandPalette M5.1).
 if (typeof globalThis.ResizeObserver === 'undefined') {
   class MockResizeObserver {
@@ -46,6 +48,7 @@ process.env.CRON_SECRET = process.env.CRON_SECRET ?? 'c'.repeat(32);
 
 afterEach(() => {
   cleanup();
+  clearAnalyticsCache(); // évite la pollution inter-tests (cache long-window par défaut)
 });
 
 vi.mock('next/font/google', () => ({
