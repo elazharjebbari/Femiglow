@@ -441,7 +441,7 @@ test.describe('CHA-231 gap 3 — force=true bypasse leadOfferDismissedSessionId'
     await expect(offer).toHaveAttribute('data-reason', 'explicit-request');
   });
 
-  test("dismissal pré-seedée SANS force → form NON visible", async ({ page }) => {
+  test("dismissal pré-seedée SANS force, raison SOFT → form NON visible", async ({ page }) => {
     await page.addInitScript((sessionId) => {
       const persisted = {
         state: {
@@ -462,16 +462,19 @@ test.describe('CHA-231 gap 3 — force=true bypasse leadOfferDismissedSessionId'
       buildMessageStream({
         messageId: 'm_no_force',
         leadOffer: {
-          reason: 'purchase-intent',
-          copyKey: 'purchase-intent',
+          // Raison SOFT (heuristique) : sans force ET après un dismiss, le
+          // store la bloque. NB : une raison FORTE (purchase-intent…) bypasse
+          // via STRONG_LEAD_REASONS — cas couvert par le test voisin.
+          reason: 'objection-repeat',
+          copyKey: 'objection',
           // pas de force → comportement legacy.
         },
       }),
     );
     await page.goto('/');
-    await sendMessage(page, 'Je veux commander');
+    await sendMessage(page, 'Je veux réfléchir');
 
-    // L'offre ne doit PAS réapparaître après dismissal.
+    // L'offre SOFT ne doit PAS réapparaître après dismissal.
     await page.waitForTimeout(2000);
     await expect(page.getByTestId('chat-lead-offer')).toHaveCount(0);
   });
