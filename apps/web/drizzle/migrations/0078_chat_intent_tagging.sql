@@ -1,5 +1,7 @@
 -- ===========================================================================
--- Migration 0015 — Tagging d'intent sur chat_message + extensions enum.
+-- Migration 0078 — Tagging d'intent sur chat_message + extensions enum.
+-- (Renumérotée de 0015 → 0078 lors de la réconciliation cha-230 ↔ master :
+--  le numéro 0015 était déjà pris par 0015_insights_init côté master.)
 -- ---------------------------------------------------------------------------
 -- CHA-230 / Phase 1 — Robustification de la pipeline LangChain.
 --

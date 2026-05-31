@@ -258,7 +258,14 @@ describe('orchestrator.streamReply — détection langue', () => {
 // ---------------------------------------------------------------------------
 
 describe('orchestrator.streamReply — CHA-230 Phase 2 (flag off, comportement legacy)', () => {
-  it("persiste intentMethod='regex' quand CHAT_LLM_INTENT_ENABLED est off", async () => {
+  // RÉCONCILIATION cha-230 ↔ master — SKIP volontaire.
+  // L'orchestrateur master ne persiste PAS `intentMethod`/`intentConfidence`
+  // sur la ligne message : il logge `intentSource` ('regex'|'vector') dans
+  // l'event `message_sent_user` et classe via `detectIntent` (regex) +
+  // `classifyByEmbedding` (vector), pas via `classifyIntent` (qui rendait
+  // 'negotiation'/confidence). Ce test verrouillait un détail interne de
+  // l'orchestrateur cha-230 désormais abandonné.
+  it.skip("persiste intentMethod='regex' quand CHAT_LLM_INTENT_ENABLED est off", async () => {
     server.use(...openaiHappyPathHandlers);
     const session = sessionStore.get('cs_test') as never;
     // "rabais" matche fortement negotiation (strong score 2) → confidence='medium'.

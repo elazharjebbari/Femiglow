@@ -204,7 +204,7 @@ describe('useChatStore — F08 cycle SSE & UI state', () => {
     it('reset() ramène à l\'état initial volatile (preserved persisted ?)', () => {
       const s = useChatStore.getState();
       s.open();
-      s.setError('boom');
+      s.setError({ code: 'unknown', message: 'boom', retryable: false, lastUserText: null });
       s.reset();
       const after = useChatStore.getState();
       expect(after.isOpen).toBe(false);
@@ -253,14 +253,29 @@ describe('chat-store — receiveLeadOffer (CHA-231 gap 2 + 3)', () => {
     expect(useChatStore.getState().leadOffer.status).toBe('idle');
   });
 
-  it('ignore l\'offre si dismissal est posée ET force=false', () => {
+  it('ignore l\'offre SOFT si dismissal est posée ET force=false', () => {
+    // NB : seules les raisons « soft » (heuristiques) sont bloquées après un
+    // dismiss. Les intentions fortes (purchase-intent, explicit-request…)
+    // bypassent via STRONG_LEAD_REASONS — couvert par le test dédié ci-dessous.
+    useChatStore.setState({ leadOfferDismissedSessionId: SESSION });
+    useChatStore.getState().receiveLeadOffer({
+      messageId: 'm1',
+      reason: 'objection-repeat',
+      copyKey: 'objection',
+    });
+    expect(useChatStore.getState().leadOffer.status).toBe('idle');
+  });
+
+  it('RÉ-OFFRE une intention FORTE même après dismiss (STRONG_LEAD_REASONS)', () => {
+    // Conversion : si la visiteuse dit explicitement vouloir acheter après
+    // avoir fermé la bulle, on re-propose le formulaire (docs §6.2).
     useChatStore.setState({ leadOfferDismissedSessionId: SESSION });
     useChatStore.getState().receiveLeadOffer({
       messageId: 'm1',
       reason: 'purchase-intent',
       copyKey: 'purchase-intent',
     });
-    expect(useChatStore.getState().leadOffer.status).toBe('idle');
+    expect(useChatStore.getState().leadOffer.status).toBe('offered');
   });
 
   it('GAP 3 — force=true bypasse la dismissal', () => {

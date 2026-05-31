@@ -17,7 +17,6 @@
 import { logger } from '@/lib/logging/logger';
 
 import type {
-  ChatCannedPairLeadCopyKey,
   ChatLanguage,
   ChatLeadTriggerReason,
   ChatStreamEvent,
@@ -46,7 +45,7 @@ import {
   EmbeddingProviderUnavailableError,
 } from './embeddings';
 import { faqRepo } from '../repos/faq';
-import { shouldOfferLeadForm } from './lead-decision';
+import { shouldOfferLeadForm, type LeadFormCopyKey } from './lead-decision';
 import { detectAssistantReplyLeadTrigger } from './assistant-reply-lead-trigger';
 import { notifyHotLead } from './lead-alerts';
 import { dispatchInlineContactWebhook } from '@/lib/webhooks/outbound/sources/from-inline-contact';
@@ -68,7 +67,7 @@ interface StreamReplyInput {
 interface LeadOfferPayload {
   messageId: string;
   reason: ChatLeadTriggerReason;
-  copyKey: ChatCannedPairLeadCopyKey;
+  copyKey: LeadFormCopyKey;
 }
 
 export async function* streamReply(
