@@ -11,6 +11,7 @@ import { AdminShell } from '@/components/admin/AdminShell';
 import { ChatAdminNav } from '@/components/admin/chat/ChatAdminNav';
 import { ConversationQuickView } from '@/components/admin/chat/ConversationQuickView';
 import { LeadOutcomeSelect } from '@/components/admin/chat/LeadOutcomeSelect';
+import { SourceBadge } from '@/components/admin/chat/SourceBadge';
 import { adminQueries } from '@/lib/chat/admin/queries';
 import { isChatEnabled } from '@/lib/chat/feature-flag';
 import {
@@ -24,7 +25,13 @@ import type { ChatLeadRow } from '@/lib/chat/db/schema';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  searchParams?: { outcome?: string; trigger?: string; hot?: string };
+  searchParams?: {
+    outcome?: string;
+    trigger?: string;
+    hot?: string;
+    /** CHA-LEAD-V2 — Si =1, inclut les leads wizard (debug). */
+    includeWizard?: string;
+  };
 }
 
 const OUTCOMES: ReadonlyArray<ChatLeadRow['outcome']> = [
@@ -55,6 +62,8 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
   const outcome = (searchParams?.outcome ?? '').trim();
   const trigger = (searchParams?.trigger ?? '').trim();
   const hotOnly = searchParams?.hot === '1';
+  // CHA-LEAD-V2 — Toggle pour inclure les leads wizard (vue debug).
+  const includeWizard = searchParams?.includeWizard === '1';
 
   let rows: ChatLeadRow[] = [];
   let queryError: string | null = null;
@@ -66,6 +75,11 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
           : undefined,
         triggerReason: TRIGGERS.includes(trigger as ChatLeadRow['triggerReason'])
           ? (trigger as ChatLeadRow['triggerReason'])
+          : undefined,
+        // CHA-LEAD-V2 — undefined = filtre par défaut (chat_widget + inline).
+        // Quand includeWizard=1, on passe explicitement toutes les sources.
+        sources: includeWizard
+          ? ['chat_widget', 'inline', 'wizard_kit', 'wizard_commander', 'newsletter', 'admin']
           : undefined,
         limit: 200,
       });
@@ -181,6 +195,19 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
           />
           Hot only
         </label>
+        <label
+          className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-amber-800"
+          title="Inclure les leads source=wizard_* (debug — pour analyser la pollution)"
+        >
+          <input
+            type="checkbox"
+            name="includeWizard"
+            value="1"
+            defaultChecked={includeWizard}
+            className="h-4 w-4"
+          />
+          Inclure wizard (debug)
+        </label>
         <button
           type="submit"
           className="rounded-md bg-stone-900 px-3 py-1.5 text-white"
@@ -238,9 +265,13 @@ export default async function ChatLeadsPage({ searchParams }: PageProps) {
                   <td className="px-3 py-2 font-medium text-stone-900">{l.firstName}</td>
                   <td className="px-3 py-2 font-mono text-xs">{l.phoneE164}</td>
                   <td className="px-3 py-2">
-                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">
-                      {l.triggerReason}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex w-fit rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">
+                        {l.triggerReason}
+                      </span>
+                      {/* CHA-LEAD-V2 — Badge source : visible toujours pour traçabilité */}
+                      <SourceBadge source={l.source} withTooltip />
+                    </div>
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-1">

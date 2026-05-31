@@ -28,6 +28,9 @@ const envSchema = z.object({
   ADMIN_BOOTSTRAP_NAME: z.string().min(1).optional(),
   // Chat assistant (cf. docs/chat-assistant/15-plan-action.md CHA-001/CHA-008).
   CHAT_ENABLED: z.enum(['true', 'false']).default('false'),
+  // CHA-LEAD-V2 — Active les filtres admin V2 (kind discriminator + source filtering).
+  // Cf. docs/chat-conversations-leads-fix-2026-05/00-context/decisions-architecturales.md ADR-002.
+  CHAT_ADMIN_FILTERS_V2: z.enum(['true', 'false']).default('false'),
   // LEGAL-V2 — Active nouveau naming vars + presetVarsForPage + UI create-var.
   // Cf. docs/pages-legales-fix-2026-05/00-context/decisions-architecturales.md ADR-002.
   LEGAL_VARS_V2: z.enum(['true', 'false']).default('false'),
@@ -165,6 +168,7 @@ export const env = envSchema.parse({
   ADMIN_BOOTSTRAP_PASSWORD: process.env.ADMIN_BOOTSTRAP_PASSWORD,
   ADMIN_BOOTSTRAP_NAME: process.env.ADMIN_BOOTSTRAP_NAME,
   CHAT_ENABLED: process.env.CHAT_ENABLED,
+  CHAT_ADMIN_FILTERS_V2: process.env.CHAT_ADMIN_FILTERS_V2,
   LEGAL_VARS_V2: process.env.LEGAL_VARS_V2,
   I18N_ENABLED: process.env.I18N_ENABLED,
   CHAT_PROVIDER_KEY: process.env.CHAT_PROVIDER_KEY,

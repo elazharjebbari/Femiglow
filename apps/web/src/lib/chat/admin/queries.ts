@@ -26,6 +26,50 @@ import {
   type ChatLeadRow,
   type ChatSessionRow,
 } from '../db/schema';
+import {
+  ADMIN_CHAT_VISIBLE_KINDS,
+  ADMIN_CHAT_VISIBLE_LEAD_SOURCES,
+  type ChatSessionKind,
+} from '../db/kind';
+import { isChatAdminFiltersV2Enabled } from '../feature-flag';
+
+// ----------------------------------------------------------------------------
+// CHA-LEAD-V2 — Helpers pour filtres admin V2 (kind + source).
+// ----------------------------------------------------------------------------
+
+/**
+ * Construit la SQL condition pour filtrer `chat_session` par kind.
+ * Quand le feature flag est off, renvoie undefined (no-op).
+ */
+function buildKindFilter(kinds?: ReadonlyArray<ChatSessionKind>) {
+  if (!isChatAdminFiltersV2Enabled()) return undefined;
+  const allowed = kinds && kinds.length > 0 ? kinds : ADMIN_CHAT_VISIBLE_KINDS;
+  return inArray(chatSession.kind, [...allowed]);
+}
+
+/**
+ * Construit la SQL condition pour filtrer `chat_lead` par source.
+ * Quand le feature flag est off, renvoie undefined (no-op).
+ */
+function buildSourceFilter(sources?: ReadonlyArray<ChatLeadRow['source']>) {
+  if (!isChatAdminFiltersV2Enabled()) return undefined;
+  const allowed = sources && sources.length > 0 ? sources : ADMIN_CHAT_VISIBLE_LEAD_SOURCES;
+  return inArray(chatLead.source, [...allowed]);
+}
+
+/**
+ * Condition SQL : "la session a au moins un chat_message user/sent".
+ * Returns undefined quand le filtre est désactivé.
+ */
+function buildHasUserMessageFilter() {
+  if (!isChatAdminFiltersV2Enabled()) return undefined;
+  return sql`EXISTS (
+    SELECT 1 FROM ${chatMessage} m
+     WHERE m.session_id = ${chatSession.id}
+       AND m.role = 'user'
+       AND m.status = 'sent'
+  )`;
+}
 
 export type KpiWindow = 'today' | 'yesterday' | '7d' | '30d' | '90d' | 'all';
 
@@ -174,28 +218,37 @@ export const adminQueries = {
      *  - undefined : pas de filtre.
      */
     converted?: 'yes' | 'no';
+    /**
+     * CHA-LEAD-V2 — Filtre `kind` (default `['chat']` quand flag V2 ON).
+     * Override pour vues de debug ou pages d'audit dédiées.
+     */
+    kinds?: ReadonlyArray<ChatSessionKind>;
+    /**
+     * CHA-LEAD-V2 — Si true (default), exclut les sessions sans
+     * `chat_message` role='user' status='sent'. Désactivable via
+     * `?debug=ghosts`.
+     */
+    withMessagesOnly?: boolean;
     limit?: number;
   }) {
     const db = requireChatDb();
     const limit = opts.limit ?? 50;
+    const withMessagesOnly = opts.withMessagesOnly ?? true;
 
     // Pré-calcule l'ensemble des session ids "convertis" si nécessaire.
-    // On utilise un sous-set côté Node plutôt qu'un JOIN à chaque requête,
-    // pour ne pas dupliquer les lignes (un session peut avoir plusieurs
-    // chat_lead) et garder la requête principale lisible.
     let convertedIdsFilter: { ids: Set<string> } | null = null;
     if (opts.converted) {
       const ids = await this.convertedSessionIds({
         fromDate: opts.fromDate,
         toDate: opts.toDate,
+        kinds: opts.kinds,
       });
       convertedIdsFilter = { ids: new Set(ids) };
     }
 
     if (opts.q && opts.q.trim().length > 0) {
-      // Recherche full-text : trouve les sessions qui contiennent un
-      // message matching la query, retourne la session unique la plus
-      // récente.
+      // Recherche full-text. Le filtre kind est appliqué en post-Node faute
+      // de pouvoir l'injecter proprement dans la requête SQL ci-dessous.
       const rows = await db.execute<ChatSessionRow>(sql`
         SELECT s.*
           FROM chat_session s
@@ -207,7 +260,13 @@ export const adminQueries = {
          ORDER BY s.last_seen_at DESC
          LIMIT ${limit}
       `);
-      const list = rowsOf(rows);
+      let list = rowsOf(rows);
+      if (isChatAdminFiltersV2Enabled()) {
+        const allowedKinds = opts.kinds && opts.kinds.length > 0
+          ? new Set<ChatSessionKind>(opts.kinds)
+          : new Set<ChatSessionKind>(ADMIN_CHAT_VISIBLE_KINDS);
+        list = list.filter((s) => allowedKinds.has(s.kind as ChatSessionKind));
+      }
       if (!convertedIdsFilter) return list;
       return list.filter((s) =>
         opts.converted === 'yes'
@@ -217,6 +276,12 @@ export const adminQueries = {
     }
 
     const conds = [];
+    const kindCond = buildKindFilter(opts.kinds);
+    if (kindCond) conds.push(kindCond);
+    if (withMessagesOnly) {
+      const msgCond = buildHasUserMessageFilter();
+      if (msgCond) conds.push(msgCond);
+    }
     if (opts.language) conds.push(eq(chatSession.language, opts.language));
     if (opts.status) conds.push(eq(chatSession.status, opts.status));
     if (opts.fromDate) conds.push(gte(chatSession.openedAt, opts.fromDate));
@@ -245,9 +310,16 @@ export const adminQueries = {
    * marqué converted). Sert de filtre pour `listConversations` et de
    * marqueur visuel ("voyant") dans la table.
    */
-  async convertedSessionIds(opts: { fromDate?: Date; toDate?: Date } = {}): Promise<string[]> {
+  async convertedSessionIds(opts: {
+    fromDate?: Date;
+    toDate?: Date;
+    /** CHA-LEAD-V2 — Default ['chat']. */
+    kinds?: ReadonlyArray<ChatSessionKind>;
+  } = {}): Promise<string[]> {
     const db = requireChatDb();
     const conds: ReturnType<typeof eq>[] = [isNotNull(chatSession.convertedAt)];
+    const kindCond = buildKindFilter(opts.kinds);
+    if (kindCond) conds.push(kindCond);
     if (opts.fromDate) conds.push(gte(chatSession.openedAt, opts.fromDate));
     if (opts.toDate) conds.push(lte(chatSession.openedAt, opts.toDate));
     const sessionRows = await db
@@ -255,7 +327,11 @@ export const adminQueries = {
       .from(chatSession)
       .where(and(...conds));
 
+    // CHA-LEAD-V2 — Lead-based conversions filtrées par source (sinon un
+    // wizard_kit converted polluerait ici).
     const leadConds: ReturnType<typeof eq>[] = [eq(chatLead.outcome, 'converted')];
+    const leadSourceCond = buildSourceFilter();
+    if (leadSourceCond) leadConds.push(leadSourceCond);
     if (opts.fromDate) leadConds.push(gte(chatLead.createdAt, opts.fromDate));
     if (opts.toDate) leadConds.push(lte(chatLead.createdAt, opts.toDate));
     const leadRows = await db
@@ -280,10 +356,17 @@ export const adminQueries = {
     triggerReason?: ChatLeadRow['triggerReason'];
     fromDate?: Date;
     toDate?: Date;
+    /**
+     * CHA-LEAD-V2 — Filtre `source` (default `['chat_widget', 'inline']`
+     * quand flag V2 ON). Override possible (ex. `/admin/leads` veut tout).
+     */
+    sources?: ReadonlyArray<ChatLeadRow['source']>;
     limit?: number;
   } = {}): Promise<ChatLeadRow[]> {
     const db = requireChatDb();
     const conds: ReturnType<typeof eq>[] = [];
+    const sourceCond = buildSourceFilter(opts.sources);
+    if (sourceCond) conds.push(sourceCond);
     if (opts.outcome) conds.push(eq(chatLead.outcome, opts.outcome));
     if (opts.triggerReason) conds.push(eq(chatLead.triggerReason, opts.triggerReason));
     if (opts.fromDate) conds.push(gte(chatLead.createdAt, opts.fromDate));
@@ -438,18 +521,26 @@ export const adminQueries = {
    * directement dans `/admin/chat/leads` ou `/admin/chat/conversations`
    * pour filtrer / paginer.
    */
-  async careOverview(opts: { limit?: number } = {}): Promise<{
+  async careOverview(opts: {
+    limit?: number;
+    /** CHA-LEAD-V2 — Default ['chat_widget', 'inline']. */
+    sources?: ReadonlyArray<ChatLeadRow['source']>;
+  } = {}): Promise<{
     pendingLeads: ChatLeadRow[];
     frustrationEvents: Array<{ sessionId: string; occurredAt: Date }>;
   }> {
     const db = requireChatDb();
     const limit = opts.limit ?? 200;
     const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const sourceCond = buildSourceFilter(opts.sources);
+
+    const pendingConds: ReturnType<typeof eq>[] = [eq(chatLead.outcome, 'pending')];
+    if (sourceCond) pendingConds.push(sourceCond);
 
     const pendingLeads = await db
       .select()
       .from(chatLead)
-      .where(eq(chatLead.outcome, 'pending'))
+      .where(and(...pendingConds))
       .orderBy(desc(chatLead.createdAt))
       .limit(limit);
 
