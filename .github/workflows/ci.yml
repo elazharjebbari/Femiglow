@@ -139,6 +139,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: quality
+    # Postgres éphémère : `global.setup` s'authentifie en admin → sans vraie DB
+    # la session ne persiste pas (memoryStore) → `page.waitForURL` timeout.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: femiglow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # Env au niveau job → hérité par build, migrate ET le webServer Playwright.
+    # `NEXT_PUBLIC_*` sont inlinés au build ; `I18N_ENABLED` relu au runtime.
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+      ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+      WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
+      CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
+      ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
+      ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+      I18N_ENABLED: 'true'
+      NEXT_PUBLIC_I18N_ENABLED: 'true'
+      NEXT_PUBLIC_LOCALE_SWITCHER_V2: 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -156,33 +184,25 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: apps/web
 
-      # Build avec l'i18n activé. Les flags `NEXT_PUBLIC_*` sont inlinés au
-      # build (lus côté navigateur) ; `I18N_ENABLED` est relu au runtime par
-      # le serveur (cf. lib/i18n/feature-flag.ts).
+      - name: Apply DB migrations
+        run: node scripts/_migrate-safe.mjs
+        working-directory: apps/web
+
       - name: Build Next.js (i18n on)
         run: pnpm --filter web build
-        env:
-          I18N_ENABLED: 'true'
-          NEXT_PUBLIC_I18N_ENABLED: 'true'
-          NEXT_PUBLIC_LOCALE_SWITCHER_V2: 'true'
-          ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
-          WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
-          CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
-          DATABASE_URL: ${{ secrets.CI_DATABASE_URL || '' }}
 
-      # `pnpm start` (webServer Playwright) hérite de l'env de ce step :
-      # `I18N_ENABLED=true` doit y être pour que les routes [locale] servent
-      # les traductions ET que la spec (qui lit process.env.I18N_ENABLED) ne
-      # se skip pas.
       - name: Run i18n full-translation E2E
         run: npx playwright test i18n/full-translation.spec.ts
         working-directory: apps/web
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
-          I18N_ENABLED: 'true'
-          NEXT_PUBLIC_I18N_ENABLED: 'true'
-          NEXT_PUBLIC_LOCALE_SWITCHER_V2: 'true'
-          ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
-          WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
-          CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
-          DATABASE_URL: ${{ secrets.CI_DATABASE_URL || '' }}
+
+      - name: Upload Playwright artifacts (i18n)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-i18n
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7
