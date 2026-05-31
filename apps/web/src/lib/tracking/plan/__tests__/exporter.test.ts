@@ -97,10 +97,12 @@ describe('exportPlan — structure GTM', () => {
     });
   });
 
-  it('emits GA4 Config (gaawc) + one GA4 Event tag (gaawe) per event', () => {
+  it('emits GA4 Config (googtag) + one GA4 Event tag (gaawe) per event', () => {
     const result = exportPlan(buildPlan(), 'production');
     const tags = (result.json as any).containerVersion.tag;
-    expect(tags.filter((t: any) => t.type === 'gaawc')).toHaveLength(1);
+    expect(
+      tags.filter((t: any) => t.type === 'googtag' && t.name === 'GA4 Cfg'),
+    ).toHaveLength(1);
     expect(tags.filter((t: any) => t.type === 'gaawe')).toHaveLength(2);
   });
 
@@ -114,7 +116,7 @@ describe('exportPlan — structure GTM', () => {
     const result = exportPlan(plan, 'production');
     const tags = (result.json as any).containerVersion.tag;
     expect(tags.filter((t: any) => t.type === 'gaawe').length).toBe(0);
-    expect(tags.filter((t: any) => t.type === 'gaawc').length).toBe(0);
+    expect(tags.filter((t: any) => t.name === 'GA4 Cfg').length).toBe(0);
   });
 
   it('emits Meta Init + per-event html tags (NOT cvt_meta community templates)', () => {
@@ -603,7 +605,7 @@ describe('exportPlan — structure GTM', () => {
     });
     const result = exportPlan(plan, 'production');
     const tags = (result.json as any).containerVersion.tag;
-    const adsCfg = tags.find((t: any) => t.type === 'googtag');
+    const adsCfg = tags.find((t: any) => t.type === 'googtag' && t.name === 'Ads Cfg');
     expect(adsCfg).toBeDefined();
     expect(adsCfg.name).toBe('Ads Cfg');
     const params = Object.fromEntries(
@@ -638,7 +640,9 @@ describe('exportPlan — structure GTM', () => {
     });
     const result = exportPlan(plan, 'production');
     const tags = (result.json as any).containerVersion.tag;
-    expect(tags.filter((t: any) => t.type === 'googtag').length).toBe(0);
+    // NB : la config GA4 est désormais elle aussi un `googtag` ; on cible donc
+    // l'absence de la config Ads par son NOM, pas par le type.
+    expect(tags.filter((t: any) => t.name === 'Ads Cfg').length).toBe(0);
   });
 
   it('Enhanced Conversions désactivable via envConfig.googleAdsEnhancedConversions=false', () => {
@@ -1181,14 +1185,14 @@ describe('exportPlan — valeur de conversion (T-01/T-02/T-03)', () => {
 });
 
 describe('exportPlan — langue (page_locale → GA4)', () => {
-  it('GA4 Config (gaawc) pose page_locale via fieldsToSet (→ envoyé à tous les events)', () => {
+  it('GA4 Config (googtag) pose page_locale via configSettingsTable (→ envoyé à tous les events)', () => {
     const tags = (exportPlan(buildPlan(), 'production').json as any).containerVersion.tag;
-    const cfg = tags.find((t: any) => t.type === 'gaawc');
-    const fields = cfg.parameter.find((p: any) => p.key === 'fieldsToSet');
+    const cfg = tags.find((t: any) => t.type === 'googtag' && t.name === 'GA4 Cfg');
+    const fields = cfg.parameter.find((p: any) => p.key === 'configSettingsTable');
     expect(fields).toBeDefined();
     const rows = fields.list.map((row: any) => {
       const m = Object.fromEntries(row.map.map((x: any) => [x.key, x.value]));
-      return [m.fieldName, m.value];
+      return [m.parameter, m.parameterValue];
     });
     expect(rows).toEqual(
       expect.arrayContaining([['page_locale', '{{DLV - page.locale}}']]),

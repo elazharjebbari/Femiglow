@@ -179,14 +179,15 @@ function ga4Setting(parameter: string, placeholder: string): GtmParameter {
   };
 }
 
-// Une ligne `fieldsToSet` du GA4 Config (`gaawc`) : MAP { fieldName, value }.
-// Les champs posés sur la config sont envoyés avec TOUS les events GA4.
-function ga4Field(fieldName: string, placeholder: string): GtmParameter {
+// Une ligne `configSettingsTable` de la Balise Google (`googtag`) :
+// MAP { parameter, parameterValue }. Les réglages posés sur la config GA4
+// sont envoyés avec TOUS les events GA4 de la même destination.
+function ga4ConfigSetting(parameter: string, value: string): GtmParameter {
   return {
     type: 'MAP',
     map: [
-      { type: 'TEMPLATE', key: 'fieldName', value: fieldName },
-      { type: 'TEMPLATE', key: 'value', value: placeholder },
+      { type: 'TEMPLATE', key: 'parameter', value: parameter },
+      { type: 'TEMPLATE', key: 'parameterValue', value: value },
     ],
   };
 }
@@ -387,7 +388,14 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     return placeholder;
   }
 
-  // ─── GA4 Configuration tag ───────────────────────────────────────
+  // ─── GA4 Configuration tag (Balise Google / googtag) ─────────────
+  // Google a RETIRÉ la balise « Configuration GA4 » (`gaawc`) en 2024 :
+  // l'import GTM la rejette désormais (« Nom de colonne inconnu » sur ses
+  // paramètres). On émet la Balise Google (`googtag`) à la place — elle
+  // initialise la destination GA4 et porte les réglages de config
+  // (`send_page_view`, `page_locale`) via `configSettingsTable`
+  // (colonnes `parameter` / `parameterValue`). Les events `gaawe`
+  // (measurementIdOverride sur la même mesure) en héritent.
   if (idVars.ga4) {
     // `page_locale` posé sur la config → envoyé avec TOUS les events GA4.
     // Permet de segmenter conversions/revenu par langue du site (fr/ar/en).
@@ -396,11 +404,17 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     tags.push({
       tagId: nextTag(),
       name: 'GA4 Cfg',
-      type: 'gaawc',
+      type: 'googtag',
       parameter: [
-        { type: 'TEMPLATE', key: 'measurementId', value: idVars.ga4 },
-        { type: 'BOOLEAN', key: 'sendPageView', value: 'false' },
-        { type: 'LIST', key: 'fieldsToSet', list: [ga4Field('page_locale', localeVar)] },
+        { type: 'TEMPLATE', key: 'tagId', value: idVars.ga4 },
+        {
+          type: 'LIST',
+          key: 'configSettingsTable',
+          list: [
+            ga4ConfigSetting('send_page_view', 'false'),
+            ga4ConfigSetting('page_locale', localeVar),
+          ],
+        },
       ],
       priority: { type: 'INTEGER', key: 'priority', value: '80' },
       tagFiringOption: 'ONCE_PER_EVENT',
