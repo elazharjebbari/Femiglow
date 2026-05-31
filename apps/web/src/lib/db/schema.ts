@@ -1648,7 +1648,7 @@ export const ritualSource = pgEnum('ritual_source', [
   'import_zip',
 ]);
 
-export const ritualLanguage = pgEnum('ritual_language', ['fr', 'ar']);
+export const ritualLanguage = pgEnum('ritual_language', ['fr', 'ar', 'en']);
 
 export const ritualPhotoFacesStatus = pgEnum('ritual_photo_faces_status', [
   'PENDING_CHECK',

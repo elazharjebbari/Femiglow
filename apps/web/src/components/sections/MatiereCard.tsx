@@ -5,7 +5,11 @@ import { cn } from '@/lib/utils/cn';
 
 interface MatiereCardProps {
   matiere: Matiere;
+  /** Phase 9 i18n — libellés des termes (Origine/Pourquoi). Défaut FR. */
+  labels?: { origine: string; pourquoi: string };
 }
+
+const DEFAULT_MATIERE_LABELS = { origine: 'Origine', pourquoi: 'Pourquoi' };
 
 const ambianceClass: Record<Matiere['ambiance'], string> = {
   champagne: 'bg-champagne/20',
@@ -14,7 +18,10 @@ const ambianceClass: Record<Matiere['ambiance'], string> = {
   petale: 'bg-petale/30',
 };
 
-export function MatiereCard({ matiere }: MatiereCardProps) {
+export function MatiereCard({
+  matiere,
+  labels = DEFAULT_MATIERE_LABELS,
+}: MatiereCardProps) {
   return (
     <article
       className={cn(
@@ -29,13 +36,13 @@ export function MatiereCard({ matiere }: MatiereCardProps) {
       <dl className="space-y-4 border-t border-encre/10 pt-4 font-body text-sm text-encre/80">
         <div className="space-y-1">
           <dt className="font-display text-xs uppercase tracking-[0.18em] text-encre/50">
-            Origine
+            {labels.origine}
           </dt>
           <dd>{matiere.origine}</dd>
         </div>
         <div className="space-y-1">
           <dt className="font-display text-xs uppercase tracking-[0.18em] text-encre/50">
-            Pourquoi
+            {labels.pourquoi}
           </dt>
           <dd>{matiere.pourquoi}</dd>
         </div>

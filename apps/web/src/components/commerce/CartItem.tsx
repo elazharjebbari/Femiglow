@@ -87,7 +87,7 @@ export function CartItem({ item }: CartItemProps) {
         </div>
       </div>
 
-      <div className="text-right">
+      <div className="text-end">
         <Text size="body" tone="default" className="font-display text-xl">
           {formatPrice(item.unitPriceCents * item.quantity)}
         </Text>

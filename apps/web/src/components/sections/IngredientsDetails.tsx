@@ -4,17 +4,34 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { SubProductBlock } from '@/components/commerce/SubProductBlock';
+import type { IngredientsTableLabels } from '@/components/commerce/IngredientsTable';
 import type { SubProduct } from '@/lib/schemas';
 
 interface IngredientsDetailsProps {
   composition: SubProduct[];
   anchor?: string;
+  /** Phase 9 i18n — libellés de colonnes ingrédients localisés. Défaut FR. */
+  ingredientLabels?: IngredientsTableLabels;
+  /** Phase 9 i18n — libellé « Voir le pack » localisé. Défaut FR. */
+  postCtaLabel?: string;
   /**
    * Slot media résolu côté serveur — affiché en bandeau d'illustration au-
    * dessus de la table (4:3, doux). Optionnel.
    */
   mediaSlot?: ReactNode;
+  /**
+   * Phase 7E — en-tête localisé (kicker/title/description). Défaut FR si
+   * absent — préserve les usages legacy et les tests rendus sans header.
+   */
+  header?: { kicker: string; title: string; description: string };
 }
+
+const DEFAULT_INGREDIENTS_HEADER = {
+  kicker: 'Le détail',
+  title: 'La composition lue ligne par ligne.',
+  description:
+    'Tout est dit : noms d’usage, INCI, fonction, origine, concentration. Pas d’angle mort, pas de promesse cachée derrière une formule.',
+};
 
 /**
  * Section « Le détail · La composition lue ligne par ligne. » de `/kit`.
@@ -30,6 +47,9 @@ export function IngredientsDetails({
   composition,
   anchor = 'ingredients-details',
   mediaSlot,
+  header = DEFAULT_INGREDIENTS_HEADER,
+  ingredientLabels,
+  postCtaLabel,
 }: IngredientsDetailsProps) {
   return (
     <section
@@ -39,14 +59,12 @@ export function IngredientsDetails({
     >
       <Container width="wide">
         <div className="mb-12 max-w-2xl space-y-4">
-          <Kicker>Le détail</Kicker>
+          <Kicker>{header.kicker}</Kicker>
           <Heading id="ingredients-title" as="h2" size="display-sm">
-            La composition lue ligne par ligne.
+            {header.title}
           </Heading>
           <Text size="body" tone="secondary" prose>
-            Tout est dit&#x202f;: noms d’usage, INCI, fonction, origine,
-            concentration. Pas d’angle mort, pas de promesse cachée derrière
-            une formule.
+            {header.description}
           </Text>
         </div>
         {mediaSlot ? (
@@ -60,6 +78,8 @@ export function IngredientsDetails({
               index={index}
               anchor={anchor}
               defaultOpen={index === 0}
+              {...(ingredientLabels ? { ingredientLabels } : {})}
+              {...(postCtaLabel ? { postCtaLabel } : {})}
             />
           ))}
         </div>

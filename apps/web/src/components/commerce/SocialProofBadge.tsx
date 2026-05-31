@@ -7,6 +7,11 @@ export interface SocialProofBadgeProps {
   href?: string;
   size?: 'sm' | 'md';
   ariaLabel?: string;
+  /**
+   * Libellé avis localisé déjà pluralisé (ex. « 52 avis » / « 52 تقييم »).
+   * Si absent, fallback FR « {n} avis ». Phase 9bis.
+   */
+  reviewsLabel?: string;
   className?: string;
 }
 
@@ -26,14 +31,14 @@ export function SocialProofBadge({
   href,
   size = 'md',
   ariaLabel,
+  reviewsLabel: reviewsLabelProp,
   className,
 }: SocialProofBadgeProps): JSX.Element {
   const clampedRating = clamp(rating, 0, 5);
   const ratingFr = formatRatingFr(clampedRating);
-  const reviewsLabel = `${reviewsCount} ${reviewsCount === 1 ? 'avis' : 'avis'}`;
+  const reviewsLabel = reviewsLabelProp ?? `${reviewsCount} avis`;
   const label =
-    ariaLabel ??
-    `Note ${ratingFr} sur 5 basée sur ${reviewsCount} ${reviewsCount === 1 ? 'avis' : 'avis'}`;
+    ariaLabel ?? `Note ${ratingFr} sur 5 basée sur ${reviewsCount} avis`;
 
   const content = (
     <>

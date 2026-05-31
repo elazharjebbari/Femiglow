@@ -82,7 +82,7 @@ export function InciTooltip({
         aria-expanded={open}
         aria-controls={popoverId}
         data-testid={`inci-tooltip-trigger-${subProductId}-${inciTerm}`}
-        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-encre/55 hover:text-encre focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-creme"
+        className="ms-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-encre/55 hover:text-encre focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-creme"
       >
         <span aria-hidden="true">ⓘ</span>
       </button>
@@ -91,7 +91,7 @@ export function InciTooltip({
           id={popoverId}
           role="tooltip"
           data-testid={`inci-tooltip-popover-${subProductId}-${inciTerm}`}
-          className="absolute left-0 top-full z-50 mt-2 block w-64 max-w-xs rounded-md border border-encre/10 bg-creme p-3 shadow-md"
+          className="absolute start-0 top-full z-50 mt-2 block w-64 max-w-xs rounded-md border border-encre/10 bg-creme p-3 shadow-md"
         >
           <span className="block text-[10px] uppercase tracking-[0.18em] text-encre/55">
             {inciTerm}

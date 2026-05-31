@@ -44,7 +44,7 @@ export interface SeedRitual {
   authorCity: string | null;
   initiatedSince: string | null;
   isAnonymous?: boolean;
-  language?: 'fr' | 'ar';
+  language?: 'fr' | 'ar' | 'en';
   source: RitualSource;
   verifiedPurchase: boolean;
   status: RitualStatus;
@@ -67,7 +67,7 @@ const PHOTO_R11 = { url: '/reviews/reviews11.jpg', width: 1000, height: 990, alt
 const PHOTO_R12 = { url: '/reviews/reviews12.jpg', width: 1000, height: 800, alt: 'Pull rose, main' } as const;
 
 export const SEED_RITUALS: SeedRitual[] = [
-  // ---------- Featured (3 — émotionnels et précis) ----------
+  // ---------- Featured FR (3 — émotionnels et précis) ----------
   {
     body: 'Trois mois et l’ongle a retrouvé sa nervure. J’ai cessé de le forcer. Les cuticules ont apaisé doucement, sans que je m’en rende compte. Le matin je passe la lime, le soir je polis. C’est devenu un repère plus qu’un soin.',
     wouldRecommend: 'oui',
@@ -75,6 +75,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     authorFirstName: 'Amal',
     authorCity: 'Rabat',
     initiatedSince: '3 mois',
+    language: 'fr',
     source: 'email_j45',
     verifiedPurchase: true,
     status: 'APPROVED',
@@ -89,6 +90,7 @@ export const SEED_RITUALS: SeedRitual[] = [
     authorFirstName: 'Souad',
     authorCity: 'Casablanca',
     initiatedSince: '6 semaines',
+    language: 'fr',
     source: 'email_j45',
     verifiedPurchase: true,
     status: 'APPROVED',
@@ -103,11 +105,109 @@ export const SEED_RITUALS: SeedRitual[] = [
     authorFirstName: 'Khadija',
     authorCity: 'Salé',
     initiatedSince: '2 mois',
+    language: 'fr',
     source: 'email_j45',
     verifiedPurchase: true,
     status: 'APPROVED',
     featured: true,
     daysAgo: 4,
+    photos: [PHOTO_R7, PHOTO_R11],
+  },
+
+  // ---------- Featured AR (3 — miroir arabe MSA des featured, Phase 7E-11) ----------
+  // Voix maison : adresse féminine, sans emoji ni « ! ». Termes produit traduits
+  // (paste→العجينة, polish→المُلمِّع) et prénoms/villes translittérés en arabe.
+  // Seul `FemiGlow` reste en latin. Repli FR géré côté listRituals si absents.
+  {
+    body: 'بعد ثلاثة أشهر استعاد الظفر تموجه الطبيعي، وكففت عن إجهاده. هدأت الأظافر شيئا فشيئا دون أن أنتبه. في الصباح أمرر المبرد، وفي المساء أصقل بالمُلمِّع. صار الأمر طقسا أكثر منه مجرد عناية.',
+    wouldRecommend: 'oui',
+    ritualTags: ['plus-de-casse', 'cuticules-apaisees', 'rituel-devenu-habitude'],
+    authorFirstName: 'أمل',
+    authorCity: 'الرباط',
+    initiatedSince: '3 mois',
+    language: 'ar',
+    source: 'email_j45',
+    verifiedPurchase: true,
+    status: 'APPROVED',
+    featured: true,
+    daysAgo: 17,
+    photos: [PHOTO_R2],
+  },
+  {
+    body: 'كان ظفري ينشطر عند أي حركة. جربت ست قواعد صلبة وسبعة زيوت دون فائدة. علمني الطقس أن أغذي الظفر لا أن أغطيه. بعد ستة أسابيع صارت الصفيحة متجانسة، ولن أعود إلى الوراء.',
+    wouldRecommend: 'oui',
+    ritualTags: ['plaque-souple', 'plus-de-casse'],
+    authorFirstName: 'سعاد',
+    authorCity: 'الدار البيضاء',
+    initiatedSince: '6 semaines',
+    language: 'ar',
+    source: 'email_j45',
+    verifiedPurchase: true,
+    status: 'APPROVED',
+    featured: true,
+    daysAgo: 8,
+    photos: [PHOTO_R10],
+  },
+  {
+    body: 'يعجبني صدق هذه الدار، فهي لا تعد بشيء بل ترافق. رائحة العجينة رائحة عناية لا كيمياء. يمنح المُلمِّع لمعانا ناعما بلا تلك الطبقة القاسية. سألتني بناتي عن سر لمعان يدي.',
+    wouldRecommend: 'oui',
+    ritualTags: ['eclat-naturel', 'fini-brillant', 'rituel-devenu-habitude'],
+    authorFirstName: 'خديجة',
+    authorCity: 'سلا',
+    initiatedSince: '2 mois',
+    language: 'ar',
+    source: 'email_j45',
+    verifiedPurchase: true,
+    status: 'APPROVED',
+    featured: true,
+    daysAgo: 3,
+    photos: [PHOTO_R7, PHOTO_R11],
+  },
+
+  // ---------- Featured EN (3 — miroir anglais sobre des featured, Phase 7E-11) ----------
+  {
+    body: 'Three months in and the nail has found its ridge again. I stopped forcing it. The cuticles settled quietly, almost without my noticing. In the morning I pass the file, in the evening I polish. It has become a marker more than a treatment.',
+    wouldRecommend: 'oui',
+    ritualTags: ['plus-de-casse', 'cuticules-apaisees', 'rituel-devenu-habitude'],
+    authorFirstName: 'Amal',
+    authorCity: 'Rabat',
+    initiatedSince: '3 mois',
+    language: 'en',
+    source: 'email_j45',
+    verifiedPurchase: true,
+    status: 'APPROVED',
+    featured: true,
+    daysAgo: 16,
+    photos: [PHOTO_R2],
+  },
+  {
+    body: 'My nail split at the slightest touch. I tried six hard bases, seven oils, nothing. The ritual taught me not to cover the nail but to nourish it. Six weeks on, the plate has become even. I am not going back.',
+    wouldRecommend: 'oui',
+    ritualTags: ['plaque-souple', 'plus-de-casse'],
+    authorFirstName: 'Souad',
+    authorCity: 'Casablanca',
+    initiatedSince: '6 semaines',
+    language: 'en',
+    source: 'email_j45',
+    verifiedPurchase: true,
+    status: 'APPROVED',
+    featured: true,
+    daysAgo: 7,
+    photos: [PHOTO_R10],
+  },
+  {
+    body: 'I like that the house is honest: nothing is promised, you are accompanied. The paste smells of care, not chemistry. The polish gives a soft, bright finish, without the hard lacquer of varnish. My daughters asked me why my hands shine.',
+    wouldRecommend: 'oui',
+    ritualTags: ['eclat-naturel', 'fini-brillant', 'rituel-devenu-habitude'],
+    authorFirstName: 'Khadija',
+    authorCity: 'Salé',
+    initiatedSince: '2 mois',
+    language: 'en',
+    source: 'email_j45',
+    verifiedPurchase: true,
+    status: 'APPROVED',
+    featured: true,
+    daysAgo: 2,
     photos: [PHOTO_R7, PHOTO_R11],
   },
 
@@ -431,8 +531,8 @@ export const SEED_RITUALS: SeedRitual[] = [
     body: 'كنت أبحث عن طقس طبيعي لأظافري. هذا الطقس أعطاني نتيجة بعد ثلاثة أسابيع. أنا سعيدة.',
     wouldRecommend: 'oui',
     ritualTags: ['plaque-souple'],
-    authorFirstName: 'Zahra',
-    authorCity: 'Rabat',
+    authorFirstName: 'زهرة',
+    authorCity: 'الرباط',
     initiatedSince: '3 semaines',
     language: 'ar',
     source: 'email_j45',

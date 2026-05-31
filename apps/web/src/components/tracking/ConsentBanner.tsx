@@ -156,7 +156,7 @@ export function ConsentBanner({
         <button
           type="button"
           onClick={(): void => persist(ALL_GRANTED)}
-          className="ml-auto rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800"
+          className="ms-auto rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800"
         >
           Tout accepter
         </button>

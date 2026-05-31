@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'La maison \u2014 Rabat',
     description:
-      'FemiGlow, maison de soin pour les ongles \u00e9dit\u00e9e \u00e0 Rabat par Souheila, biologiste et formulatrice. L\u2019origine, l\u2019atelier au 25 bis avenue Patrice Lumumba, les mati\u00e8res, les engagements halal et locaux.',
+      'FemiGlow, maison de soin pour les ongles \u00e9dit\u00e9e \u00e0 Rabat par notre fondatrice, biologiste et formulatrice. L\u2019origine, l\u2019atelier au 25 bis avenue Patrice Lumumba, les mati\u00e8res, les engagements halal et locaux.',
     alternates: { canonical: '/maison' },
     openGraph: {
       type: 'website',

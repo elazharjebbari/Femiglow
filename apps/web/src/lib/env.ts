@@ -28,6 +28,14 @@ const envSchema = z.object({
   ADMIN_BOOTSTRAP_NAME: z.string().min(1).optional(),
   // Chat assistant (cf. docs/chat-assistant/15-plan-action.md CHA-001/CHA-008).
   CHAT_ENABLED: z.enum(['true', 'false']).default('false'),
+  // LEGAL-V2 — Active nouveau naming vars + presetVarsForPage + UI create-var.
+  // Cf. docs/pages-legales-fix-2026-05/00-context/decisions-architecturales.md ADR-002.
+  LEGAL_VARS_V2: z.enum(['true', 'false']).default('false'),
+  // I18N — Active le routing locale-aware (path-based /[locale]/) + middleware
+  // next-intl. Par défaut OFF → zéro régression : toutes les routes legacy
+  // (`/kit`, `/maison`, ...) continuent de fonctionner en FR uniquement.
+  // Cf. docs/i18n-strategy-2026-05/08-plan-action/feature-flags.md
+  I18N_ENABLED: z.enum(['true', 'false']).default('false'),
   CHAT_PROVIDER_KEY: z.string().min(32).optional(),
   CHAT_TOTAL_BUDGET_EUR_MONTHLY: z.coerce.number().nonnegative().default(0),
   CHAT_DEFAULT_LANGUAGE: z.enum(['fr', 'ar', 'ar-MA']).default('fr'),
@@ -157,6 +165,8 @@ export const env = envSchema.parse({
   ADMIN_BOOTSTRAP_PASSWORD: process.env.ADMIN_BOOTSTRAP_PASSWORD,
   ADMIN_BOOTSTRAP_NAME: process.env.ADMIN_BOOTSTRAP_NAME,
   CHAT_ENABLED: process.env.CHAT_ENABLED,
+  LEGAL_VARS_V2: process.env.LEGAL_VARS_V2,
+  I18N_ENABLED: process.env.I18N_ENABLED,
   CHAT_PROVIDER_KEY: process.env.CHAT_PROVIDER_KEY,
   CHAT_TOTAL_BUDGET_EUR_MONTHLY: process.env.CHAT_TOTAL_BUDGET_EUR_MONTHLY,
   CHAT_DEFAULT_LANGUAGE: process.env.CHAT_DEFAULT_LANGUAGE,

@@ -133,3 +133,81 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
           retention-days: 7
+
+  i18n:
+    name: i18n E2E (couverture traductions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+    # NON-BLOQUANT : gate de COUVERTURE i18n pour le feature en cours (le
+    # ConsentBanner + quelques composants ne sont pas encore traduits). On
+    # garde le signal sans bloquer le merge. TODO: retirer `continue-on-error`
+    # quand la traduction intégrale est finie (cf. finalisation i18n).
+    continue-on-error: true
+    # Postgres éphémère : `global.setup` s'authentifie en admin → sans vraie DB
+    # la session ne persiste pas (memoryStore) → `page.waitForURL` timeout.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: femiglow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # Env au niveau job → hérité par build, migrate ET le webServer Playwright.
+    # `NEXT_PUBLIC_*` sont inlinés au build ; `I18N_ENABLED` relu au runtime.
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+      ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+      WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
+      CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
+      ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
+      ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+      I18N_ENABLED: 'true'
+      NEXT_PUBLIC_I18N_ENABLED: 'true'
+      NEXT_PUBLIC_LOCALE_SWITCHER_V2: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: apps/web
+
+      - name: Apply DB migrations
+        run: node scripts/_migrate-safe.mjs
+        working-directory: apps/web
+
+      - name: Build Next.js (i18n on)
+        run: pnpm --filter web build
+
+      - name: Run i18n full-translation E2E
+        run: npx playwright test i18n/full-translation.spec.ts
+        working-directory: apps/web
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+
+      - name: Upload Playwright artifacts (i18n)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-i18n
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7

@@ -41,12 +41,22 @@ interface ProductFeedSectionProps {
   product: Product;
   /** Slug d'ancre pour le test E2E (default `product-feed`). */
   anchorId?: string;
+  /** Phase 9bis — libellé localisé du badge « Résultat » (step `isResult`). */
+  resultLabel?: string;
+  /**
+   * Libellé localisé du compteur d'avis (ex. « 287 avis » / « 287 تقييم »).
+   * Défaut FR « {count} avis » si absent — préserve le rendu legacy. Les
+   * chiffres restent latins (cohérence de marque).
+   */
+  reviewsCountLabel?: string;
 }
 
 export function ProductFeedSection({
   feed,
   product,
   anchorId = 'product-feed',
+  resultLabel,
+  reviewsCountLabel,
 }: ProductFeedSectionProps) {
   return (
     <section
@@ -62,7 +72,7 @@ export function ProductFeedSection({
         {/*             col droite (PackVisual centré verticalement)   */}
         <div className="grid grid-cols-1 gap-12 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-16">
           {/* Colonne gauche — texte + prix */}
-          <div className="space-y-5 text-center md:text-left">
+          <div className="space-y-5 text-center md:text-start">
             <Kicker tone="champagne">{feed.hero.kicker}</Kicker>
             <Heading id="product-feed-title" as="h2" size="display-md">
               {feed.hero.title}
@@ -94,6 +104,7 @@ export function ProductFeedSection({
           steps={feed.steps}
           header={feed.stepsHeader}
           postCta={feed.stepsPostCta}
+          resultLabel={resultLabel}
         />
 
         {/* 3 — Promesses (3 claims) ------------------------------------- */}
@@ -120,7 +131,7 @@ export function ProductFeedSection({
             </span>
             <span className="text-encre/50">·</span>
             <span className="text-encre/70 tabular-nums">
-              {feed.socialProof.reviewsCount} avis
+              {reviewsCountLabel ?? `${feed.socialProof.reviewsCount} avis`}
             </span>
           </div>
           <blockquote className="mt-4">
@@ -140,7 +151,7 @@ export function ProductFeedSection({
 /** Item promesse : icône SVG + libellé + détail. */
 function FeedClaimItem({ claim }: { claim: ProductFeedClaim }) {
   return (
-    <li className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
+    <li className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-start">
       <span
         className={cn(
           'inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full',

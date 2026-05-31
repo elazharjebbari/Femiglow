@@ -45,7 +45,7 @@ export function HeroMaison({ data, mediaSlot }: HeroMaisonProps) {
       )}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-6 top-10 opacity-20 sm:right-16 sm:top-16"
+        className="pointer-events-none absolute end-6 top-10 opacity-20 sm:end-16 sm:top-16"
       >
         <Fleuron size="lg" tone="champagne" />
       </div>

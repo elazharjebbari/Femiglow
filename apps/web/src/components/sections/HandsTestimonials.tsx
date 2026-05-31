@@ -5,6 +5,7 @@ import { Text } from '@/components/ui/Text';
 import {
   HandsTestimonialCarousel,
   type HandsTestimonialMediaSlots,
+  type HandsTestimonialLabels,
 } from '@/components/commerce/HandsTestimonialCarousel';
 import type { HandsTestimonial } from '@/lib/schemas';
 
@@ -15,9 +16,28 @@ interface HandsTestimonialsProps {
    * au carousel.
    */
   mediaSlotsByItemId?: Record<string, HandsTestimonialMediaSlots>;
+  /**
+   * Phase 7E — en-tête localisé (kicker/title/description). Défaut FR si
+   * absent — préserve les usages legacy et les tests qui rendent sans header.
+   */
+  header?: { kicker: string; title: string; description: string };
+  /** Phase 9 i18n — libellés avant/après + « initiée depuis » localisés. */
+  labels?: HandsTestimonialLabels;
 }
 
-export function HandsTestimonials({ items, mediaSlotsByItemId }: HandsTestimonialsProps) {
+const DEFAULT_HANDS_HEADER = {
+  kicker: 'Trois mains',
+  title: 'Trois mains, trois saisons.',
+  description:
+    'Photos non retouchées, prises chez nos initiées au bout de plusieurs mois de rituel. La plaque retrouve sa nervure, sans recette miracle.',
+};
+
+export function HandsTestimonials({
+  items,
+  mediaSlotsByItemId,
+  header = DEFAULT_HANDS_HEADER,
+  labels,
+}: HandsTestimonialsProps) {
   return (
     <section
       aria-labelledby="hands-title"
@@ -25,16 +45,19 @@ export function HandsTestimonials({ items, mediaSlotsByItemId }: HandsTestimonia
     >
       <Container width="wide">
         <div className="mb-10 max-w-2xl space-y-4">
-          <Kicker>Trois mains</Kicker>
+          <Kicker>{header.kicker}</Kicker>
           <Heading id="hands-title" as="h2" size="display-sm">
-            Trois mains, trois saisons.
+            {header.title}
           </Heading>
           <Text size="body" tone="secondary" prose>
-            Photos non retouchées, prises chez nos initiées au bout de plusieurs
-            mois de rituel. La plaque retrouve sa nervure, sans recette miracle.
+            {header.description}
           </Text>
         </div>
-        <HandsTestimonialCarousel items={items} mediaSlotsByItemId={mediaSlotsByItemId} />
+        <HandsTestimonialCarousel
+          items={items}
+          mediaSlotsByItemId={mediaSlotsByItemId}
+          {...(labels ? { labels } : {})}
+        />
       </Container>
     </section>
   );

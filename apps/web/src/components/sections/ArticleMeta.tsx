@@ -6,9 +6,27 @@ interface ArticleMetaProps {
   author: ArticleAuthor;
   publishedAt: Date;
   readingTimeMinutes: number;
+  /**
+   * Phase 7 wiring — durée de lecture déjà interpolée et localisée
+   * (`marketing.journal.article.reading_time`). Défaut FR si absent.
+   */
+  readingTimeLabel?: string;
+  /**
+   * Phase 9 i18n — locale active pour formater la date (mois arabes sur
+   * /ar). Défaut FR si absent.
+   */
+  locale?: string;
 }
 
-export function ArticleMeta({ author, publishedAt, readingTimeMinutes }: ArticleMetaProps) {
+export function ArticleMeta({
+  author,
+  publishedAt,
+  readingTimeMinutes,
+  readingTimeLabel,
+  locale,
+}: ArticleMetaProps) {
+  const readingTime =
+    readingTimeLabel ?? `${readingTimeMinutes} min de lecture`;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-body text-xs uppercase tracking-[0.1em] text-encre/50">
       {author.avatar ? (
@@ -23,9 +41,9 @@ export function ArticleMeta({ author, publishedAt, readingTimeMinutes }: Article
       ) : null}
       <span>{author.name}</span>
       <span aria-hidden="true" className="text-encre/30">·</span>
-      <time dateTime={publishedAt.toISOString()}>{formatArticleDate(publishedAt)}</time>
+      <time dateTime={publishedAt.toISOString()}>{formatArticleDate(publishedAt, locale)}</time>
       <span aria-hidden="true" className="text-encre/30">·</span>
-      <span>{readingTimeMinutes}&nbsp;min de lecture</span>
+      <span>{readingTime}</span>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { ComponentMedia } from '@/lib/components/ComponentMedia';
 import { resolveComponentSlot } from '@/lib/components/resolver';
 import { resolveComponentFields } from '@/lib/components/field-resolver';
 import { mergeHeroFields } from './hero-fields';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 
 interface HeroBoundProps {
   data: HeroData;
@@ -16,6 +17,13 @@ interface HeroBoundProps {
    * fallback si la cascade tombe sur `none`.
    */
   componentKey: string;
+  /**
+   * Phase 7B — Locale active de la page courante. Sans valeur, on
+   * suppose `DEFAULT_LOCALE` (FR) pour rester back-compat avec le legacy.
+   * Avec valeur, les bindings + defaults FR ne peuvent pas écraser un
+   * `data` localisé (mock AR/EN) — cf. `mergeHeroFields` §Phase 7B.
+   */
+  locale?: Locale;
 }
 
 /**
@@ -25,14 +33,27 @@ interface HeroBoundProps {
  *      fusionne dans `data` via `mergeHeroFields`.
  *
  * Le rendu reste assuré par `<Hero>`, qui ignore tout du CMS.
+ *
+ * Locale-aware (Phase 7B) :
+ *   - `resolveComponentFields(key, locale)` → cherche le binding correspondant
+ *     à la locale active. Si absent, retombe sur le `defaultValue` du registry
+ *     (toujours FR).
+ *   - `mergeHeroFields(data, fields, { locale })` → en AR/EN, refuse le
+ *     `default` FR pour ne pas écraser la valeur du mock localisé.
  */
-export async function HeroBound({ data, priority = true, componentKey }: HeroBoundProps) {
+export async function HeroBound({
+  data,
+  priority = true,
+  componentKey,
+  locale,
+}: HeroBoundProps) {
+  const effectiveLocale = locale ?? DEFAULT_LOCALE;
   const [resolved, fields] = await Promise.all([
     resolveComponentSlot(componentKey, 'primary'),
-    resolveComponentFields(componentKey),
+    resolveComponentFields(componentKey, effectiveLocale),
   ]);
   const useBinding = !!(resolved?.binding?.isActive && resolved?.media);
-  const merged = mergeHeroFields(data, fields);
+  const merged = mergeHeroFields(data, fields, { locale });
 
   if (!useBinding) {
     return <Hero data={merged} priority={priority} />;

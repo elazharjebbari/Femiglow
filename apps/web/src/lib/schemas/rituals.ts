@@ -13,7 +13,7 @@ import { z } from 'zod';
 export const RitualSignalSchema = z.enum(['oui', 'hesite', 'non']);
 export type RitualSignal = z.infer<typeof RitualSignalSchema>;
 
-export const RitualLanguageSchema = z.enum(['fr', 'ar']);
+export const RitualLanguageSchema = z.enum(['fr', 'ar', 'en']);
 export type RitualLanguage = z.infer<typeof RitualLanguageSchema>;
 
 /** Liste fermée des tags du catalogue maison. */
@@ -163,6 +163,12 @@ export const RitualListQuerySchema = z.object({
   tags: z.array(RitualTagSchema).optional(),
   signal: RitualSignalSchema.optional(),
   featured: z.boolean().optional(),
+  /**
+   * Filtre de langue éditoriale (Phase 7E-11). Si renseigné, ne renvoie que les
+   * témoignages de cette langue — avec repli FR si aucun ne correspond, pour que
+   * le module ne soit jamais vide sur une locale sans seed dédié.
+   */
+  language: z.enum(['fr', 'ar', 'en']).optional(),
   sort: RitualListSortSchema,
   cursor: z.string().nullable().optional(),
   limit: z.number().int().min(1).max(24).default(12),

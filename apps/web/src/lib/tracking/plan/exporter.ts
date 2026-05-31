@@ -7,6 +7,8 @@ import {
   getEventMapping,
 } from '@/lib/tracking/providers/event-mapping';
 import type { AdsConversionCategory } from '@/lib/tracking/providers/event-mapping';
+import { findEventInCatalog } from '@/lib/tracking/event-catalog';
+import { DATALAYER_PATHS } from '@/lib/tracking/datalayer-paths';
 
 /**
  * Politique de gating attribution PAR PROVIDER (cf. event-mapping.ts
@@ -38,6 +40,7 @@ type GtmParameter = {
   key?: string;
   value?: string;
   list?: GtmParameter[];
+  map?: GtmParameter[];
 };
 
 interface GtmTag {
@@ -146,6 +149,58 @@ function snapEventNameFor(eventKey: string): string | null {
 function tiktokEventNameFor(eventKey: string): string | null {
   return getEventMapping(eventKey)?.tiktok?.name ?? null;
 }
+
+// ─── Détection « event monétaire » (catalogue) ───────────────────────
+// Le plan `TrackingEvent` ne porte pas la catégorie ; on dérive du catalogue
+// (source de vérité) si l'event déclare `value` / `transaction_id`.
+function catalogParamProps(eventKey: string): Record<string, unknown> | null {
+  const props = (
+    findEventInCatalog(eventKey)?.paramsSchema as
+      | { properties?: Record<string, unknown> }
+      | undefined
+  )?.properties;
+  return props ?? null;
+}
+function eventHasValue(eventKey: string): boolean {
+  return Boolean(catalogParamProps(eventKey)?.value);
+}
+function eventHasTransactionId(eventKey: string): boolean {
+  return Boolean(catalogParamProps(eventKey)?.transaction_id);
+}
+
+// Une ligne `eventSettingsTable` GA4 (`gaawe`) : MAP { parameter, parameterValue }.
+function ga4Setting(parameter: string, placeholder: string): GtmParameter {
+  return {
+    type: 'MAP',
+    map: [
+      { type: 'TEMPLATE', key: 'parameter', value: parameter },
+      { type: 'TEMPLATE', key: 'parameterValue', value: placeholder },
+    ],
+  };
+}
+
+// Une ligne `fieldsToSet` du GA4 Config (`gaawc`) : MAP { fieldName, value }.
+// Les champs posés sur la config sont envoyés avec TOUS les events GA4.
+function ga4Field(fieldName: string, placeholder: string): GtmParameter {
+  return {
+    type: 'MAP',
+    map: [
+      { type: 'TEMPLATE', key: 'fieldName', value: fieldName },
+      { type: 'TEMPLATE', key: 'value', value: placeholder },
+    ],
+  };
+}
+
+// Events Meta où value/currency sont injectés EN CLAIR dans le 3e arg de
+// `fbq('track', …)`. Restreint aux conversions TOUJOURS valorisées :
+// interpoler `{{DLV - value}}` dans un objet JS inline produirait `value: ,`
+// (script cassé) si la value manquait. Les autres events ecommerce restent
+// en `{}` côté pixel — leur valeur passe par GA4 (param vide toléré) / awct.
+const META_VALUE_EVENTS: ReadonlySet<string> = new Set([
+  'purchase',
+  'generate_lead',
+  'lead_capture',
+]);
 
 // Built-in variables that ship with every GTM container by default.
 // Note: AD_STORAGE / ANALYTICS_STORAGE are NOT built-in variable types
@@ -334,6 +389,10 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
 
   // ─── GA4 Configuration tag ───────────────────────────────────────
   if (idVars.ga4) {
+    // `page_locale` posé sur la config → envoyé avec TOUS les events GA4.
+    // Permet de segmenter conversions/revenu par langue du site (fr/ar/en).
+    // Déclarer une custom dimension `page_locale` côté GA4 pour l'exploiter.
+    const localeVar = ensureDlv('DLV - page.locale', DATALAYER_PATHS.pageLocale);
     tags.push({
       tagId: nextTag(),
       name: 'GA4 Cfg',
@@ -341,6 +400,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       parameter: [
         { type: 'TEMPLATE', key: 'measurementId', value: idVars.ga4 },
         { type: 'BOOLEAN', key: 'sendPageView', value: 'false' },
+        { type: 'LIST', key: 'fieldsToSet', list: [ga4Field('page_locale', localeVar)] },
       ],
       priority: { type: 'INTEGER', key: 'priority', value: '80' },
       tagFiringOption: 'ONCE_PER_EVENT',
@@ -560,14 +620,33 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     if (!triggerId) continue;
 
     if (event.providers.ga4 && idVars.ga4) {
+      const ga4Parameter: GtmParameter[] = [
+        { type: 'TEMPLATE', key: 'eventName', value: event.key },
+        { type: 'TEMPLATE', key: 'measurementIdOverride', value: idVars.ga4 },
+      ];
+      // T-02 — transmettre value/currency(/transaction_id) à GA4 pour les
+      // events monétaires (sinon revenu GA4 = 0). Un param absent au runtime
+      // est ignoré par GA4 (pas d'erreur, contrairement à l'inline Meta).
+      if (eventHasValue(event.key)) {
+        const settings: GtmParameter[] = [
+          ga4Setting('value', ensureDlv('DLV - value', DATALAYER_PATHS.value)),
+          ga4Setting('currency', ensureDlv('DLV - currency', DATALAYER_PATHS.currency)),
+        ];
+        if (eventHasTransactionId(event.key)) {
+          settings.push(
+            ga4Setting(
+              'transaction_id',
+              ensureDlv('DLV - transaction_id', DATALAYER_PATHS.transactionId),
+            ),
+          );
+        }
+        ga4Parameter.push({ type: 'LIST', key: 'eventSettingsTable', list: settings });
+      }
       tags.push({
         tagId: nextTag(),
         name: `GA4 Evt — ${event.key}`,
         type: 'gaawe',
-        parameter: [
-          { type: 'TEMPLATE', key: 'eventName', value: event.key },
-          { type: 'TEMPLATE', key: 'measurementIdOverride', value: idVars.ga4 },
-        ],
+        parameter: ga4Parameter,
         firingTriggerId: [triggerId],
         parentFolderId: '2',
       });
@@ -584,6 +663,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         getAttributionMode(event.key, 'meta') === 'primary'
           ? ensureAttributionTrigger(event.key, 'meta')
           : triggerId;
+      // T-03 — custom_data (3e arg fbq) : value/currency pour les conversions
+      // valorisées (sinon Purchase/Lead Meta sans valeur → ROAS Meta dégradé).
+      const metaCd = META_VALUE_EVENTS.has(event.key)
+        ? `{ value: ${ensureDlv('DLV - value', DATALAYER_PATHS.value)}, currency: '${ensureDlv('DLV - currency', DATALAYER_PATHS.currency)}' }`
+        : '{}';
       tags.push({
         tagId: nextTag(),
         name: `Meta Evt — ${event.key} (${metaName})`,
@@ -598,7 +682,7 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             // et n'est pas le bon emplacement pour eventID.
             // cf. https://developers.facebook.com/docs/marketing-api/conversions-api/deduplicate-pixel-and-server-events
             // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.9
-            value: `<script>fbq('track', '${metaName}', {}, { eventID: {{DLV - event_id}} });</script>`,
+            value: `<script>fbq('track', '${metaName}', ${metaCd}, { eventID: {{DLV - event_id}} });</script>`,
           },
           { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
         ],
@@ -619,9 +703,12 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       if (labelVar) {
         // DLVs ecommerce nécessaires pour la conversion (transaction,
         // currency, value). Idempotent — déjà créés au besoin.
-        const txnIdVar = ensureDlv('DLV - ecommerce.transaction_id', 'ecommerce.transaction_id');
-        const currencyVar = ensureDlv('DLV - ecommerce.currency', 'ecommerce.currency');
-        const valueVar = ensureDlv('DLV - ecommerce.value', 'ecommerce.value');
+        // T-01 — la valeur vit sous `params.*` dans le dataLayer (jamais
+        // `ecommerce.*`, jamais poussé). Lire le bon chemin sinon awct envoie
+        // conversionValue/currencyCode/orderId = undefined → ROAS faux + doublons.
+        const txnIdVar = ensureDlv('DLV - transaction_id', DATALAYER_PATHS.transactionId);
+        const currencyVar = ensureDlv('DLV - currency', DATALAYER_PATHS.currency);
+        const valueVar = ensureDlv('DLV - value', DATALAYER_PATHS.value);
         // Catégorie API Google Ads (param `conversionCategory` du tag
         // awct). Permet à Ads d'associer la conversion à la bonne
         // catégorie côté reporting + bidding.

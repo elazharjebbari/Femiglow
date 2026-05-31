@@ -21,9 +21,26 @@
  *  - public : <HeroProduit>, <StickyCartCTA>, fiche produit catalogue,
  *  - admin : panneau « Vitrine » de <VariantsEditor>.
  */
+'use client';
+
+import { usePathname } from 'next/navigation';
+
 import { computePromo, formatPromoSavings } from '@/lib/utils/promo';
 import { formatPrice } from '@/lib/utils/format-price';
 import type { Currency } from '@/lib/products/currency';
+import { isLocale } from '@/i18n.config';
+
+/**
+ * Phase 9 i18n — lit la locale active de façon résiliente depuis le premier
+ * segment du pathname (`/ar/kit` → `ar`). Hors route localisée (admin,
+ * legacy `(marketing)`), retourne `undefined` → `formatPrice` conserve sa
+ * sortie FR/EN byte-identique (suffixe code ISO `MAD`).
+ */
+function useActiveLocale(): string | undefined {
+  const path = usePathname() ?? '/';
+  const first = path.split('/').filter(Boolean)[0];
+  return first && isLocale(first) ? first : undefined;
+}
 
 export type PriceDisplaySize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -88,10 +105,15 @@ export function PriceDisplay({
   layout = 'stack',
   className,
 }: PriceDisplayProps) {
+  const locale = useActiveLocale();
   const promo = computePromo(priceCents, promoPriceCents);
   const sizes = SIZE_CLASSES[size];
+  // Wrapper locale-aware : `formatPromoSavings` consomme un `(cents, currency)`
+  // → on injecte la locale active pour le suffixe arabe (درهم) sur /ar.
+  const fmt = (cents: number, cur: Currency | string) =>
+    formatPrice(cents, cur, locale);
   const savingsLabel = showSavings
-    ? formatPromoSavings(promo, currency, formatPrice)
+    ? formatPromoSavings(promo, currency, fmt)
     : null;
 
   // -- Cas sans promo : un seul prix ---------------------------------------
@@ -105,9 +127,9 @@ export function PriceDisplay({
         ]
           .filter(Boolean)
           .join(' ')}
-        aria-label={`Prix : ${formatPrice(priceCents, currency)}`}
+        aria-label={`Prix : ${fmt(priceCents, currency)}`}
       >
-        {formatPrice(priceCents, currency)}
+        {fmt(priceCents, currency)}
       </span>
     );
   }
@@ -126,7 +148,7 @@ export function PriceDisplay({
   return (
     <span
       className={wrapperClass}
-      aria-label={`Prix : ${formatPrice(promo.effectivePriceCents, currency)}, prix initial ${formatPrice(promo.originalPriceCents, currency)}`}
+      aria-label={`Prix : ${fmt(promo.effectivePriceCents, currency)}, prix initial ${fmt(promo.originalPriceCents, currency)}`}
     >
       <span
         className={[
@@ -140,7 +162,7 @@ export function PriceDisplay({
             sizes.active,
           ].join(' ')}
         >
-          {formatPrice(promo.effectivePriceCents, currency)}
+          {fmt(promo.effectivePriceCents, currency)}
         </span>
         <span
           // Prix barré : on garde la même typo Cormorant, en plus petit, en
@@ -152,7 +174,7 @@ export function PriceDisplay({
           ].join(' ')}
           aria-hidden="true"
         >
-          {formatPrice(promo.originalPriceCents, currency)}
+          {fmt(promo.originalPriceCents, currency)}
         </span>
       </span>
       {savingsLabel ? (

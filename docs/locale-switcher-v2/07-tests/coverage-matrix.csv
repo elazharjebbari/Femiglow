@@ -1,0 +1,24 @@
+Requirement/Invariant,Description,Vitest IDs,Playwright IDs,Manual/Other,Status
+INV-1,Switch never reloads (except offline/error fallback),VU-15 VU-16 VU-22 VU-26 VU-43 VU-48 VU-51 VU-62,PW-01 PW-05 PW-11 PW-17 PW-21 PW-24 PW-37 PW-40,beforeunload sentinel + navigation-id assertion,Covered
+INV-2,FR->AR html[dir]=rtl in same fade (no LTR flash),VU-15 VU-16 VU-17 VU-19 VU-20 VU-21 VU-34,PW-02 PW-05 PW-08 PW-10 PW-23 PW-28 PW-34 PW-35 PW-39 PW-40,rAF frame sampling for no LTR-flash,Covered
+INV-3,Scroll preserved on switch,VU-25,PW-03 PW-09 PW-40,scrollY delta assertion,Covered
+INV-4,Querystring/UTM preserved (/fr/kit?utm -> /ar/kit?utm),VU-01 VU-02 VU-03 VU-04 VU-05 VU-06 VU-07 VU-08 VU-09 VU-10 VU-12 VU-13 VU-14,PW-04 PW-06 PW-07 PW-12,—,Covered
+INV-5,Switcher absent on /admin/* and during wizard checkout (CHA-231),VU-55,PW-19 PW-20 PW-41,PUT /api/admin/i18n/config 401 guard (msw §2),Covered
+INV-6,0 latin on /ar (except FemiGlow) + no FR/EN leak; endonyms only,VU-59 VU-61,PW-36,Existing i18n scanners stay green (CI guard),Covered
+INV-7,prefers-reduced-motion -> instant switch no animation still no reload,VU-17 VU-45,PW-21,—,Covered
+INV-8,No-JS -> functional <a hreflang> links (graceful + SEO),—,PW-22 PW-23,noscript anchor inspection,Covered
+INV-9,SEO hreflang alternates kept; localized URLs intact,VU-03 VU-09 VU-12,PW-31 PW-32 PW-33,head <link rel=alternate> inspection,Covered
+INV-10,Language change announced to screen readers (aria-live polite),VU-23 VU-24,PW-24 PW-26 PW-27 PW-28 PW-29 PW-30,axe + aria-live region read,Covered
+INV-11,Click active locale = no-op (no transition no navigation),VU-11 VU-18 VU-24 VU-47,PW-14 PW-25 PW-39,—,Covered
+INV-12,Invalid config / API down -> defaults; switcher functional,VU-22 VU-27 VU-28 VU-29 VU-30 VU-31 VU-32 VU-33 VU-34 VU-35 VU-36 VU-37 VU-38 VU-39 VU-40 VU-41 VU-42 VU-48 VU-52 VU-53 VU-54 VU-56 VU-57 VU-58 VU-60,PW-15 PW-16 PW-17 PW-18 PW-37 PW-38,msw config invalid/500 scenarios,Covered
+REQ-endonyms,Labels are endonyms in own script (Français/العربية/English) no ISO-only no flag,VU-59,PW-36,visual review components-spec,Covered
+REQ-neutral-styling,Switcher neutral-only (no warm pop / no pulse / no flag / no emoji) Kolenda guard,VU-61,PW-27 PW-28,charte/design review,Covered
+REQ-nudge-logic,Nudge one-shot: shown<=max impressions then dismiss cookie permanent; accept switches,VU-42 VU-49 VU-50 VU-51 VU-52 VU-53,PW-15 PW-16 PW-17 PW-18,—,Covered
+REQ-suggested-locale,resolveSuggestedLocale precedence cookie>Accept-Language>default fail-soft,VU-35 VU-36 VU-37 VU-38 VU-39 VU-40 VU-41,PW-15 PW-18,server-detection.md review,Covered
+REQ-admin-authz,Admin config write admin-only + audit; 401/422/409 handled,—,PW-20,msw PUT 200/401/422/409 (§2) + admin integration,Covered
+REQ-cache,Public config readable unauthenticated and cached (Cache-Control),VU-57,—,msw cache headers assertion,Covered
+REQ-fallback-chain,Fallback chain VT->veil->direct->offline reload each path exercised,VU-15 VU-16 VU-17 VU-22 VU-62,PW-21 PW-37,—,Covered
+REQ-events-shape,Events conform to CONTRACT §4 payload shapes,VU-43 VU-44 VU-45 VU-46 VU-49 VU-50 VU-51,—,events-telemetry.json contract,Covered
+REQ-surfaces,Switcher on header(dropdown)+drawer(pills)+footer(pills),VU-59,PW-11 PW-12 PW-13 PW-39,—,Covered
+REQ-keyboard-a11y,Full keyboard operation (open/arrow/Home/End/Esc/select) focus managed,—,PW-24 PW-25,APG menu pattern review,Covered
+REQ-rtl-logical,RTL-safe logical alignment (no hardcoded left/right) mirror-safe,VU-20,PW-35 PW-39,—,Covered

@@ -12,16 +12,19 @@ export interface NoCommitmentBadgeProps {
   label?: string;
   /** Sub italique sous le label. */
   sub?: string;
+  /** CHA-232 — aria-label i18n (défaut FR pour le rendu hors contexte). */
+  ariaLabel?: string;
 }
 
 export function NoCommitmentBadge({
   label = 'Aucun paiement maintenant',
   sub = 'Vous payez à la livraison, en main',
+  ariaLabel = 'Garantie sans engagement',
 }: NoCommitmentBadgeProps): JSX.Element {
   return (
     <section
       role="note"
-      aria-label="Garantie sans engagement"
+      aria-label={ariaLabel}
       data-testid="wizard-no-commitment-badge"
       className="flex items-start gap-3 rounded border border-sauge-dark/25 bg-sauge-soft/40 p-3"
     >

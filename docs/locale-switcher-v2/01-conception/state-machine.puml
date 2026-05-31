@@ -1,0 +1,42 @@
+@startuml state-machine
+title Machine à états — Transition de langue
+
+[*] --> Idle
+
+Idle --> NoOp : clic langue active (INV-11)
+NoOp --> Idle : ferme le panneau
+
+Idle --> Resolving : clic autre langue
+Resolving --> ApplyDirect : prefers-reduced-motion (INV-7)
+Resolving --> ApplyVT : startViewTransition dispo
+Resolving --> ApplyVeil : pas de View Transitions
+
+state ApplyVT {
+  [*] --> SetDirLang : dans le callback
+  SetDirLang --> Announce : aria-live (INV-10)
+  Announce --> SoftNav : router.replace
+  SoftNav --> Crossfade : fondu 280ms
+  Crossfade --> [*]
+}
+
+state ApplyVeil {
+  [*] --> FadeIn : voile 0→1 (160ms)
+  FadeIn --> SetDirLang2 : set dir/lang + softnav
+  SetDirLang2 --> FadeOut : voile 1→0 (160ms)
+  FadeOut --> [*]
+}
+
+ApplyDirect --> Done
+ApplyVT --> Done
+ApplyVeil --> Done
+Done --> Idle : track locale_switch ; focus géré
+
+Resolving --> OfflineFallback : soft-nav échoue / offline
+OfflineFallback --> [*] : window.location.assign (reload de secours)
+
+note right of Done
+  Invariants vérifiés :
+  no-reload (INV-1), dir RTL (INV-2),
+  scroll (INV-3), UTM (INV-4), event émis
+end note
+@enduml

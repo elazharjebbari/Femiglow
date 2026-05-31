@@ -58,7 +58,10 @@ export default async function LegalPage({ params }: PageProps) {
   const vars = await listAllTemplateVars();
   const rendered = await renderLegalMarkdownWithDbVars(
     page.bodyMd,
-    vars.map((v) => ({ key: v.key, value: v.value })),
+    // LEGAL-V2 — `sensitive` est nécessaire pour que buildPublicVarMap
+    // applique le placeholder "information sur demande" sur les vars
+    // sensibles (ICE, COMPANY_RC, etc.).
+    vars.map((v) => ({ key: v.key, value: v.value, sensitive: v.sensitive })),
     { mode: 'public', now: page.publishedAt ?? page.updatedAt },
   );
 

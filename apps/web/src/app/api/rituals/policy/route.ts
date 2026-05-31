@@ -14,7 +14,7 @@ Pour préserver l'intimité de notre maison, nous publions des mains, des gestes
 Si vous souhaitez retirer votre voix, écrivez-nous à info@femiglow-maroc.com. Nous l'archiverons sous trois jours.
 
 Avec soin,
-Souheila · FemiGlow`;
+L'équipe FemiGlow`;
 
 export function GET() {
   return NextResponse.json(

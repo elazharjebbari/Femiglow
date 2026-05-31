@@ -1,0 +1,38 @@
+Component,State,Trigger,Visual,Motion,A11y(announce/role),Notes
+Dropdown trigger,idle,Page load,"Endonyme actif Inter 12px encre/80, souligné encre/40, chevron 12px opacité 60%",None,"role=button; aria-haspopup=menu; aria-expanded=false; aria-controls=panel; aria-label localisé",Neutre uniquement (CONTRACT §5)
+Dropdown trigger,hover,Pointer enter,"Fond encre/[0.04]","transition 200ms ease",aria-expanded=false,Pas de pop chaud
+Dropdown trigger,focus,Tab / focus-visible,"Ring encre 2px offset 2px",None,Focusable; annonce du label,Ring neutre jamais sauge
+Dropdown trigger,open,Click/Enter/Space/Down,"Chevron rotation 180°; panneau visible","panel opacity 0→1 + translateY(-4px→0) 180ms ease-out; chevron 200ms ease-out",aria-expanded=true; focus déplacé sur item actif (roving tabindex),Reduced-motion ⇒ instantané
+Dropdown trigger,disabled,1 seule locale active,"Composant rendu null (absent)",None,Aucun rôle (non rendu),Edge case 1 locale ⇒ null
+Dropdown trigger,loading,Config en cours / API,"Trigger rendu avec valeurs par défaut (jamais skeleton bloquant)",None,role intact,INV-12 fallback défauts; pas d'écran cassé
+Dropdown panel item,idle,Panel open,"Endonyme Cormorant italic 17px; inactif encre/80; actif encre + point sauge end",None,role=menuitemradio; aria-checked sur actif; tabindex roving,Chaque item porte son dir propre
+Dropdown panel item,hover,Pointer enter,"Fond encre/[0.04]","transition 200ms",aria-checked inchangé,—
+Dropdown panel item,focus,Arrow ↑↓/Home/End,"Ring encre + fond hover","None (focus move)",Item focus annoncé par SR (endonyme + état),Roving tabindex; Home=premier End=dernier
+Dropdown panel item,active(selected),Click langue ≠ active,"Bascule: fondu document; nouvelle langue active marquée point sauge","Fondu VT 280ms cubic-bezier(0.22,1,0.36,1) OU veil 160/160ms; reduced ⇒ 0ms",aria-live polite annonce nouvelle langue (INV-10); focus retourne au trigger,Émet locale_switch {transition: vt|veil|reduced}
+Dropdown panel item,active(no-op),Click langue active,"Panneau se ferme; aucun changement","Aucune transition",aria-expanded=false; pas d'annonce,INV-11 no-op; pas d'event
+Dropdown panel,open,Trigger open,"creme/95 backdrop-blur, bordure encre/10, shadow-sm, end-0","opacity+translateY 180ms ease-out",role=menu; aria-labelledby trigger,Alignement logique miroir RTL
+Dropdown panel,closing,Esc/click outside/blur,"Panneau disparaît; focus retour trigger","fade-out 180ms (ou instantané reduced)",aria-expanded=false; focus trigger,Esc ferme sans changer de langue
+Pills item,idle,Render,"Inactif texte encre/60 transparent; actif fond encre texte crème","None",role=group; bouton; actif aria-pressed=true,Min 44x44px
+Pills item,hover,Pointer enter,"Inactif: léger fond encre/[0.04]","transition-colors 200ms",—,—
+Pills item,focus,Tab/focus-visible,"Ring encre 2px offset 2px","None",Focusable; label annoncé,Ring neutre
+Pills item,active(selected),Tap langue ≠ active,"Devient actif (encre/crème); bascule document","transition-colors 200ms + fondu document (vt/veil/reduced)",aria-live polite (INV-10); aria-pressed mis à jour,Émet locale_switch surface=drawer|footer
+Pills item,active(tap feedback),:active press,"Léger feedback :active (pas de scale agressif)","subtil",—,Pas de pop chaud
+Pills item,no-op,Tap langue active,"Aucun changement","Aucune",Pas d'annonce; aria-pressed déjà true,INV-11
+Pills item,disabled,1 seule locale,"Groupe non rendu",None,Aucun rôle,Edge case
+Segmented toggle,idle,Render (variant A/B),"Conteneur creme/95 bordure encre/10; actif encre/crème; inactifs encre/60","None",role=radiogroup; segments role=radio aria-checked; roving tabindex,Variant flag localeSwitcherV2 (H1)
+Segmented toggle,hover,Pointer enter segment inactif,"Fond encre/[0.04]","transition 200ms",—,—
+Segmented toggle,focus,Tab/Arrow,"Ring encre sur segment","None (focus move)",Segment focus annoncé,Arrow ↔ entre segments (radiogroup)
+Segmented toggle,active(selected),Click/Enter segment ≠ actif,"Indicateur actif glisse vers segment; bascule document","slide 200ms ease-out + fondu document; reduced ⇒ instantané",aria-live polite (INV-10); aria-checked mis à jour,Émet locale_switch surface=header
+Segmented toggle,no-op,Click segment actif,"Aucun changement","Aucune",Pas d'annonce,INV-11
+Segmented toggle,disabled,1 locale,"Non rendu",None,—,Edge case
+Nudge pearl,idle(shown),"Server: Accept-Language ≠ served; cookie absent; cap OK","Point sauge 6px + micro-label encre/80; fond creme/96; ancré sous switcher (offset logique)","opacity fade-in 300ms ease-out",role complémentaire; ne vole pas le focus; non modal,Émet locale_nudge_shown; 1x/visiteur
+Nudge pearl,hover,Pointer enter,"Léger renforcement du label","subtil",—,Pas d'urgence/clignotement
+Nudge pearl,focus,Tab,"Ring encre sur label et sur ✕","None",Focusable; ✕ a aria-label dismiss,Hit area ✕ 44px
+Nudge pearl,active(accept),Click label/point,"Bascule vers suggested; perle disparaît","fondu document (vt/veil/reduced)",aria-live polite annonce langue (INV-10),Émet locale_nudge_accepted; cookie dismiss
+Nudge pearl,active(dismiss),Click ✕,"Perle disparaît définitivement","fade-out court",—,Émet locale_nudge_dismissed; jamais ré-affiché
+Nudge pearl,disabled(suppressed),Cookie dismiss présent OR cap atteint OR wizard OR /admin,"Non rendu",None,Aucun rôle,INV-5 jamais wizard/admin
+LocaleVeil,idle(unmounted),Pas de transition / reduced-motion,"Absent du DOM",None,aria-hidden si monté,Reduced-motion ⇒ jamais monté (INV-7)
+LocaleVeil,active(fadeIn),apply() sans VT (fallback),"Overlay crème inset 0 z-9990; pas de spinner/texte","opacity 0→1 160ms cubic-bezier(0.22,1,0.36,1)",aria-hidden=true; n'annonce pas (le switcher annonce),Crème jamais blanc pur
+LocaleVeil,active(occlude),Pendant apply(),"Opacité 1, page invisible; flip dir derrière","statique opacity 1",—,dir/lang posés ici (INV-2)
+LocaleVeil,active(fadeOut),apply() terminé,"Nouvelle langue/RTL révélée","opacity 1→0 160ms; pointer-events none",—,Émet transition=veil
+LocaleVeil,error,Offline / soft-nav échoue,"Reload de secours (window.location.assign)","N/A (reload)",Annonce via reload natif,"transition=reload (INV-1 exception, INV-12)"

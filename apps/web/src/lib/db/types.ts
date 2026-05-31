@@ -989,7 +989,7 @@ export type RitualSource =
   | 'import_csv'
   | 'import_json'
   | 'import_zip';
-export type RitualLanguage = 'fr' | 'ar';
+export type RitualLanguage = 'fr' | 'ar' | 'en';
 export type RitualPhotoFacesStatus =
   | 'PENDING_CHECK'
   | 'OK'

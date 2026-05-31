@@ -83,7 +83,7 @@ export function VideoChapters({
       className="mx-auto mt-6 max-w-md"
       data-testid="video-chapters"
     >
-      <ol className="grid grid-cols-4 gap-x-3 gap-y-1 text-left [font-variant-numeric:tabular-nums]">
+      <ol className="grid grid-cols-4 gap-x-3 gap-y-1 text-start [font-variant-numeric:tabular-nums]">
         {chapters.map((chapter, index) => {
           const isActive = index === activeIndex;
           return (
@@ -94,7 +94,7 @@ export function VideoChapters({
                 aria-current={isActive ? 'step' : undefined}
                 data-testid={`video-chapter-${chapter.key}`}
                 data-active={isActive ? 'true' : 'false'}
-                className="group block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3] rounded-sm"
+                className="group block w-full text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3] rounded-sm"
               >
                 <span
                   aria-hidden="true"

@@ -43,8 +43,8 @@ export function CheckoutHeader({ onLeaveClick }: CheckoutHeaderProps) {
             className="text-xs uppercase tracking-[0.18em] text-encre/70 transition-colors hover:text-encre"
           >
             <span aria-hidden="true">←</span>
-            <span className="ml-2 hidden sm:inline">Retour au panier</span>
-            <span className="ml-2 sm:hidden">Panier</span>
+            <span className="ms-2 hidden sm:inline">Retour au panier</span>
+            <span className="ms-2 sm:hidden">Panier</span>
           </Link>
         </div>
       </Container>

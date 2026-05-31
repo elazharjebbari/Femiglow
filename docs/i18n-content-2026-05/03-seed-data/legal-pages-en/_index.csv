@@ -1,0 +1,10 @@
+slug,title,status,source,note
+mentions-legales,Legal notices,draft,messages json,json-translated
+cgv,Terms and conditions of sale,draft,docs/legal-pages/60-content/conditions-generales-vente.md,stub
+cgu,Terms of use,draft,docs/legal-pages/60-content/conditions-generales-utilisation.md,stub
+confidentialite,Privacy policy,draft,docs/legal-pages/60-content/politique-confidentialite.md,stub
+cookies,Cookies policy,draft,docs/legal-pages/60-content/politique-cookies.md,stub
+retours-remboursements,Returns and refunds policy,draft,docs/legal-pages/60-content/politique-retours-remboursements.md,stub
+livraison,Shipping policy,draft,docs/legal-pages/60-content/politique-livraison.md,stub
+securite-produits,Cosmetic products safety and warnings,draft,docs/legal-pages/60-content/avertissements-securite-produits.md,stub
+faq,FAQ — Customer service,draft,docs/legal-pages/60-content/faq-service-client.md,stub

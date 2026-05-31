@@ -11,6 +11,7 @@ import type { Root, Element } from 'hast';
 
 import { env } from '@/lib/env';
 import {
+  buildPublicVarMap,
   buildVarMap,
   detectVarsInTemplate,
   MISSING_VAR_REGEX,
@@ -202,11 +203,20 @@ export async function renderLegalMarkdown(
 
 export async function renderLegalMarkdownWithDbVars(
   bodyMd: string,
-  dbVars: ReadonlyArray<{ key: string; value: string | null }>,
+  dbVars: ReadonlyArray<{ key: string; value: string | null; sensitive?: boolean }>,
   opts: Omit<RenderLegalOptions, 'variables'> = {},
 ): Promise<RenderedLegal> {
+  // LEGAL-V2 — En mode public, masque les vars sensibles via buildPublicVarMap.
+  // En admin-preview, utilise buildVarMap (vraies valeurs).
+  const isPublic = (opts.mode ?? 'public') === 'public';
+  const variables = isPublic
+    ? buildPublicVarMap(
+        dbVars.map((v) => ({ ...v, sensitive: v.sensitive ?? false })),
+        { mode: opts.mode, now: opts.now },
+      )
+    : buildVarMap(dbVars, { mode: opts.mode, now: opts.now });
   return renderLegalMarkdown(bodyMd, {
     ...opts,
-    variables: buildVarMap(dbVars, { mode: opts.mode, now: opts.now }),
+    variables,
   });
 }

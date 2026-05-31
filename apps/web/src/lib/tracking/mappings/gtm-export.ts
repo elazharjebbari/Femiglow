@@ -194,6 +194,14 @@ function sanitizeGtmName(raw: string): string {
   return raw.replace(/:/g, ' -').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * @deprecated Générateur GTM **legacy** (route `mappings/[id]/export-gtm`).
+ * Ne PAS faire évoluer. Défauts connus (audit `docs/tracking-audit-2026-05-31`,
+ * T-04/T-08) : aucune balise de linkage (Conversion Linker / Google tag),
+ * awct mal câblé (`conversionLabel` = nom d'event, `conversionId` = Customer
+ * ID), DLV mal pathés (top-level au lieu de `params.*`), aucune value/currency.
+ * **Source canonique = `plan/exporter.ts` (`exportPlan`).** Migration prévue.
+ */
 export function buildGtmContainer(input: GtmExportInput): GtmExportOutput {
   const triggers: GtmTrigger[] = [];
   const tags: GtmTag[] = [];

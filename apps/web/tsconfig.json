@@ -20,9 +20,10 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/messages/*": ["./messages/*"]
     }
   },
-  "include": ["next-env.d.ts", "src/**/*", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "src/**/*", "messages/**/*.json", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

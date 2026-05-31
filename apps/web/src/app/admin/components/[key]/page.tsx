@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { LOCALES, type Locale } from '@/i18n.config';
 import { getSiteComponentByKey } from '@/lib/db/queries/site-components';
 import { listBindingsWithMediaByComponent } from '@/lib/db/queries/component-bindings';
 import {
@@ -10,8 +11,9 @@ import {
 } from '@/lib/db/queries/component-animations';
 import { listBindingsByComponent as listFieldBindingsByComponent } from '@/lib/db/queries/component-fields';
 import { ComponentDetailPanel } from '@/components/admin/components/ComponentDetailPanel';
-import { EditorWithPreview } from '@/components/admin/components/EditorWithPreview';
 import { loadInitialFields } from '@/components/admin/components/fields/load-initial-fields';
+import type { FieldDirtyState } from '@/components/admin/components/fields/types';
+import { LocaleEditorShell } from '@/components/admin/i18n/LocaleEditorShell';
 import {
   IconArrowLeft,
   IconExternalLink,
@@ -68,8 +70,26 @@ export default async function AdminComponentDetailPage({
   ]);
 
   const fieldDefs = component.fields ?? [];
-  const initialFields =
-    fieldDefs.length > 0 ? await loadInitialFields(component, fieldDefs, 'fr') : null;
+
+  // T3.8 — chargement par locale en parallèle. Default = 'fr' s'il n'y a aucun
+  // binding pour AR / EN (le formulaire retombe sur `defaultValue` du registre).
+  // Le throw est swallow-é localement : une locale en erreur ne doit pas casser
+  // l'édition des deux autres (priorité contrainte 1 : aucune régression admin).
+  const initialFieldsByLocale =
+    fieldDefs.length > 0
+      ? (Object.fromEntries(
+          await Promise.all(
+            LOCALES.map(async (loc) => {
+              try {
+                const fields = await loadInitialFields(component, fieldDefs, loc);
+                return [loc, fields] as const;
+              } catch {
+                return [loc, {} as Record<string, FieldDirtyState>] as const;
+              }
+            }),
+          ),
+        ) as Partial<Record<Locale, Record<string, FieldDirtyState>>>)
+      : null;
 
   const activeBindings = bindings.filter((b) => b.isActive).length;
   const draftFieldsCount = Array.isArray(fieldBindings)
@@ -178,7 +198,7 @@ export default async function AdminComponentDetailPage({
         allAnimations={allAnimations}
       />
 
-      {initialFields ? (
+      {initialFieldsByLocale ? (
         <section aria-labelledby="editor-heading" className="mt-10">
           <div className="mb-4 flex items-center gap-2 border-b border-stone-200 pb-2">
             <IconType className="h-4 w-4 text-stone-500" />
@@ -189,14 +209,17 @@ export default async function AdminComponentDetailPage({
               Contenu éditorial
             </h2>
             <span className="text-[11px] text-stone-400">
-              · {fieldDefs.length} champ{fieldDefs.length > 1 ? 's' : ''}
+              · {fieldDefs.length} champ{fieldDefs.length > 1 ? 's' : ''} · multilingue
+              (FR / AR / EN)
             </span>
           </div>
-          <EditorWithPreview
+          {/* T3.8 — LocaleEditorShell tient l'état activeLocale et re-mount
+            * EditorWithPreview au switch. Le contrat admin reste FR-only
+            * (chrome), seul le contenu édité est multilingue. */}
+          <LocaleEditorShell
             componentKey={component.key}
             fieldDefs={fieldDefs}
-            initialFields={initialFields}
-            locale="fr"
+            initialFieldsByLocale={initialFieldsByLocale}
           />
         </section>
       ) : null}

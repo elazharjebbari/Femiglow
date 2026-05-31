@@ -22,6 +22,20 @@ export interface WizardCartRecapProps {
   priceCompareAt?: string;
   /** Classes additionnelles sur le wrapper. */
   className?: string;
+  /**
+   * CHA-232 — Libellés i18n (injectés par le WizardShell client). Server
+   * Component pur : on ne peut pas appeler `useWizardTranslation` ici, donc
+   * les copies arrivent en props. Les défauts FR conservent le rendu hors
+   * contexte (tests, prévisualisation).
+   */
+  ariaLabel?: string;
+  packLabel?: (quantity: number) => string;
+  shippingIncludedLabel?: string;
+  /**
+   * Phase 9 — libellé devise localisé (MAD en fr/en, درهم en ar). Remplace le
+   * code `cart.currency` brut dans le total ET le prix barré. Défaut FR = code.
+   */
+  currencyLabel?: string;
 }
 
 export function WizardCartRecap({
@@ -32,18 +46,31 @@ export function WizardCartRecap({
   thumbnailSrc = '/products/kit-principale.png',
   priceCompareAt,
   className,
+  ariaLabel = 'Récapitulatif de votre commande',
+  packLabel = (quantity) => `${quantity} × Pack FemiGlow`,
+  shippingIncludedLabel = 'livraison incluse',
+  currencyLabel,
 }: WizardCartRecapProps): JSX.Element | null {
   if (!cart || !cart.items || cart.items.length === 0) return null;
 
   const totalQty = cart.items.reduce((acc, it) => acc + it.quantity, 0);
-  const totalLabel = `${(cart.totalCents / 100).toFixed(0)} ${cart.currency}`;
+  // Phase 9 — devise localisée : on substitue le code `cart.currency` par le
+  // libellé localisé (درهم sur /ar). Les chiffres restent latins (marque).
+  const currencyDisplay = currencyLabel ?? cart.currency;
+  const totalLabel = `${(cart.totalCents / 100).toFixed(0)} ${currencyDisplay}`;
+  // Prix barré localisé : on remplace le code devise brut dans la chaîne déjà
+  // formatée (ex. « 289 MAD » → « 289 درهم »).
+  const compareAtLabel =
+    priceCompareAt && currencyLabel
+      ? priceCompareAt.replace(cart.currency, currencyLabel)
+      : priceCompareAt;
   const productDetailLabel = cart.items.map((i) => i.name).join(' + ');
-  const headLabel = `${totalQty} × Pack FemiGlow`;
+  const headLabel = packLabel(totalQty);
 
   return (
     <aside
       role="region"
-      aria-label="Récapitulatif de votre commande"
+      aria-label={ariaLabel}
       data-testid="wizard-cart-recap"
       className={cn(
         // Mobile : sticky top-0 z-30 + backdrop blur + bord bas
@@ -64,7 +91,7 @@ export function WizardCartRecap({
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-encre">{headLabel}</p>
           <p className="hidden text-xs text-encre/60 sm:block">
-            {productDetailLabel} · livraison incluse
+            {productDetailLabel} · {shippingIncludedLabel}
           </p>
         </div>
         <p className="flex items-baseline gap-2 text-sm">
@@ -74,12 +101,12 @@ export function WizardCartRecap({
           >
             {totalLabel}
           </span>
-          {priceCompareAt && (
+          {compareAtLabel && (
             <span
               className="text-xs text-encre/40 line-through"
               data-testid="wizard-cart-recap-compare-at"
             >
-              {priceCompareAt}
+              {compareAtLabel}
             </span>
           )}
         </p>

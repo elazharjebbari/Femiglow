@@ -37,6 +37,9 @@ export const dictionaryFr: WizardDictionary = {
     cityHintBilingual:
       'Vous pouvez taper en français ou en arabe (الدار البيضاء).',
     cityHintMatched: (matched) => `Reconnu : ${matched}.`,
+    cityPopularLabel: 'Villes populaires',
+    citySearching: 'Recherche…',
+    cityFreeDelivery: 'Gratuit',
     addressLine1Label: 'Adresse',
     addressLine1Placeholder: 'N° et nom de rue',
     notesLabel: 'Note pour le livreur (optionnel)',
@@ -81,5 +84,89 @@ export const dictionaryFr: WizardDictionary = {
     orderGeneric: "Un instant — la commande n'a pas pu être finalisée.",
     emailGeneric:
       "L'inscription n'a pas pu être enregistrée. Réessayez.",
+  },
+  stepIndicator: {
+    navAriaLabel: 'Progression du wizard',
+    labelCartReview: 'Panier',
+    labelLead: 'Vos coordonnées',
+    labelAddress: 'Livraison',
+    labelPayment: 'Paiement',
+    labelThankYou: 'Confirmation',
+  },
+  shell: {
+    timeEstimateTotal: '≈ 90 secondes pour confirmer',
+    timeEstimateLead: '60 s',
+    timeEstimateAddress: '30 s',
+    timeEstimateThankYou: '5 s',
+    stepUnavailable: (name) =>
+      `L'étape « ${name} » n'est pas encore disponible.`,
+    hydrating: 'Un instant…',
+  },
+  leadStep: {
+    heading: 'Vos coordonnées',
+    subtitle: 'Deux informations seulement — nous vous rappelons pour confirmer.',
+    firstNameLabel: 'Votre prénom',
+    firstNamePlaceholder: 'Yasmine',
+    phoneLabel: 'Téléphone',
+    phonePlaceholder: '06 12 34 56 78',
+    phoneHint: 'Numéro mobile Maroc. Format +212 6 XX XX XX XX.',
+    ctaDefault: 'Continuer',
+    consentLabel: 'Je veux être rappelée pour confirmer ma commande.',
+    consentFootnotePrefix: 'Pas de revente, pas de spam —',
+    consentFootnoteLink: 'mentions légales',
+    honeypotLabel: 'Site web (ne pas remplir)',
+    errorRateLimited: 'Trop d’envois. Réessayez dans quelques instants.',
+    errorNetwork:
+      'Connexion réseau impossible. Vérifiez votre réseau, puis réessayez.',
+    errorGeneric: 'Un instant — la commande n’a pas pu démarrer. Réessayez.',
+    errorInvalidField:
+      'Un champ n’a pas été accepté. Vérifiez vos informations.',
+  },
+  resumeBanner: {
+    template: 'Bon retour, {firstName} — on reprend où vous en étiez.',
+    dismissAriaLabel: 'Fermer la bannière de bienvenue',
+  },
+  noCommitment: {
+    label: 'Aucun paiement maintenant',
+    sub: 'Vous payez à la livraison, en main',
+    ariaLabel: 'Garantie sans engagement',
+  },
+  cartRecap: {
+    ariaLabel: 'Récapitulatif de votre commande',
+    packLabel: (quantity) => `${quantity} × Pack FemiGlow`,
+    shippingIncluded: 'livraison incluse',
+    currency: 'MAD',
+  },
+  packThumb: {
+    alt: 'Pack FemiGlow',
+  },
+  cartReview: {
+    heading: 'Votre panier',
+    subtitle:
+      'Étape de revue disponible en mode B (`/commander`). Implémentation complète en Phase 9.',
+    ctaContinue: 'Vos coordonnées',
+  },
+  shipping: {
+    freeBadgeSrNote: (price) =>
+      `Livraison normalement à ${price} MAD, actuellement offerte`,
+    freeBadgeLabel: 'Offerte',
+  },
+  stock: {
+    inStock: 'En stock — expédié sous 24-48h',
+    lowStock: (count) => `Il n’en reste que ${count}`,
+    lowStockSuffix: ' — pensez à commander avant épuisement.',
+    outOfStockTitle: 'Rupture momentanée',
+    outOfStockBody:
+      'Le rituel est en réassort. Laissez-nous votre email — vous serez prévenue dès qu’il revient.',
+    notifyFormAriaLabel: "M'avertir du retour en stock",
+    notifyEmailLabel: 'Votre email',
+    notifyEmailPlaceholder: 'vous@exemple.ma',
+    notifyConsentLabel:
+      'J’accepte d’être prévenue du retour en stock. Aucun autre usage de cet email.',
+    notifySubmit: 'Me prévenir',
+    notifySuccess: 'Inscrite. Nous vous écrivons dès le retour du rituel.',
+    notifyErrorDefault: 'Inscription impossible. Réessayez plus tard.',
+    notifyErrorUnexpected: 'Erreur inattendue.',
+    unavailable: 'Stock indisponible.',
   },
 };

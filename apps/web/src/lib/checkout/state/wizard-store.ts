@@ -29,9 +29,9 @@ import { create, type StateCreator } from 'zustand';
 import { createJSONStorage, persist, type PersistOptions } from 'zustand/middleware';
 
 import type { FormMode, VariantKey } from '@/lib/tracking/checkout-events';
+import type { DictionaryLanguage } from '@/lib/checkout/i18n/dictionary';
 import type {
   CartSnapshot,
-  Language,
   PaymentMethod,
   ShippingMode,
   StepName,
@@ -50,8 +50,12 @@ export interface WizardFormContext {
   /**
    * CHA-231 — Langue de saisie / d'UI courante. Optionnel : défaut `fr`.
    * Sert à projeter le bon dictionnaire i18n et le bon `dir` (LTR/RTL).
+   *
+   * CHA-232 — Langue d'AFFICHAGE (`DictionaryLanguage` = `fr|ar|en`), sur-ensemble
+   * de la langue persistée (`languageSchema` reste `fr|ar`). L'anglais ne sert
+   * qu'au rendu ; à la persistance, `en` est ramené à `fr` (cf. use-wizard-mutations).
    */
-  language?: Language;
+  language?: DictionaryLanguage;
 }
 
 export interface LeadDraft {
@@ -160,7 +164,7 @@ export interface WizardState {
   setLeadId: (id: string) => void;
   setOrderId: (id: string) => void;
   /** CHA-231 — Bascule la langue courante (FR ↔ AR). */
-  setLanguage: (lang: Language) => void;
+  setLanguage: (lang: DictionaryLanguage) => void;
   reset: () => void;
   setHydrated: () => void;
   /** wizard-kit-optim W0 — actions tracking enrichi */
@@ -547,6 +551,6 @@ export function selectPreviousStep(state: WizardState): StepName | null {
  * CHA-231 — Langue effective courante (défaut `fr`). Centralisé pour éviter
  * la duplication `formContext.language ?? 'fr'` dans chaque composant.
  */
-export function selectLanguage(state: WizardState): Language {
+export function selectLanguage(state: WizardState): DictionaryLanguage {
   return state.formContext?.language ?? 'fr';
 }

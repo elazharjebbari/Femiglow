@@ -1,0 +1,18 @@
+marche,langue_principale,locale_code,direction,devise_business,format_date,format_numero,population_cible,priorite
+Maroc francophone,Français,fr-MA,LTR,MAD,"27/05/2026","1 234,56",urbain 25-45,P1
+Maroc arabophone/darija,Arabe,ar-MA,RTL,MAD,"٢٧ مايو ٢٠٢٦","١٬٢٣٤٫٥٦",urbain + périurbain 30-55,P1
+Maroc anglophone (expat),Anglais,en-MA,LTR,MAD,"May 27 2026","1,234.56",expat tier-1,P2
+France/Belgique/Suisse FR,Français,fr-FR,LTR,EUR (V2),"27/05/2026","1 234,56",diaspora + tier-1,P2
+USA/UK,Anglais,en-US,LTR,USD (V2),"May 27 2026","1,234.56",export tier-1,P2
+Espagne,Espagnol,es-ES,LTR,EUR (V2),"27/05/2026","1.234,56",export méditerranée,P3
+Italie,Italien,it-IT,LTR,EUR (V2),"27/05/2026","1.234,56",export méditerranée,P3
+Allemagne,Allemand,de-DE,LTR,EUR (V2),"27.05.2026","1.234,56",export tier-1,P3
+Tunisie/Algérie,Arabe + Français,ar-TN/fr-TN,RTL/LTR,DZD/TND,"27/05/2026","1 234,56",MENA voisins,P3
+Émirats/Arabie/Qatar,Arabe,ar-AE,RTL,MAD ou AED (V2),"٢٧ مايو ٢٠٢٦","١٬٢٣٤٫٥٦",MENA Gulf,P3
+
+# Légende priorités :
+# P1 = MVP (3 mois) — must-have lancement initial
+# P2 = V1.5 (6 mois) — ajout après validation MVP
+# P3 = V2+ (12+ mois) — expansion long terme
+# Toutes les langues respectent BCP-47
+# Devise "(V2)" = pas implémenté V1, MAD partout V1

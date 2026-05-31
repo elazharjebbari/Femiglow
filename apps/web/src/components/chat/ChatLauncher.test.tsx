@@ -33,9 +33,11 @@ describe('ChatLauncher (positionnement)', () => {
     const button = container.querySelector('[data-testid="chat-launcher"]');
     expect(button?.className).toContain('bottom-5');
     expect(button?.className).toContain('sm:bottom-7');
-    expect(button?.className).toContain('sm:right-7');
+    // RTL-ready : on utilise `end-*` (logical property) qui devient
+    // `right-*` en LTR et `left-*` en RTL automatiquement.
+    expect(button?.className).toContain('sm:end-7');
     expect(button?.className).not.toContain('bottom-24');
-    expect(button?.className).not.toMatch(/sm:right-\[\d+px\]/);
+    expect(button?.className).not.toMatch(/sm:end-\[\d+px\]/);
   });
 
   it('sur `/kit` : remonte à `bottom-24` (mobile, au-dessus du sticky bar) et se décale à gauche du sticky en desktop', () => {
@@ -43,9 +45,9 @@ describe('ChatLauncher (positionnement)', () => {
     const { container } = render(<ChatLauncher />);
     const button = container.querySelector('[data-testid="chat-launcher"]');
     expect(button?.className).toContain('bottom-24');
-    expect(button?.className).toContain('sm:right-[372px]');
-    // Pas de conflit Tailwind (`sm:right-7` ne doit plus être émis sur /kit).
-    expect(button?.className).not.toContain('sm:right-7');
+    expect(button?.className).toContain('sm:end-[372px]');
+    // Pas de conflit Tailwind (`sm:end-7` ne doit plus être émis sur /kit).
+    expect(button?.className).not.toContain('sm:end-7');
   });
 
   // CHA-244 — Le launcher doit partager le token z-index du panel

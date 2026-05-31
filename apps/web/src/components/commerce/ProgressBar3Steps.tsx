@@ -28,7 +28,7 @@ export function ProgressBar3Steps({
       <div className="relative h-px bg-encre/15">
         <div
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 bg-encre transition-[width] duration-base ease-out-soft"
+          className="absolute inset-y-0 start-0 bg-encre transition-[width] duration-base ease-out-soft"
           style={{ width: `${fill}%` }}
         />
         <ol className="absolute inset-x-0 -top-3 flex justify-between">
@@ -82,9 +82,9 @@ export function ProgressBar3Steps({
             key={label}
             className={cn(
               'flex-1',
-              index === 0 && 'text-left',
+              index === 0 && 'text-start',
               index === 1 && 'text-center',
-              index === 2 && 'text-right',
+              index === 2 && 'text-end',
               index === currentStep && 'text-encre',
             )}
           >

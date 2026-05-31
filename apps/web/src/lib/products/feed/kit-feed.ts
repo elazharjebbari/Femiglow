@@ -240,7 +240,7 @@ function buildSocialProof(
     authorLabel: 'authorLabel' in top ? top.authorLabel : top.label,
     // Kolenda §4.6 — libellé géographique plus chaleureux que « avis ».
     // Le builder produit un défaut ; l'override admin peut le personnaliser.
-    countLabelGeo: `${effective.reviewsCount} maisons en France`,
+    countLabelGeo: `${effective.reviewsCount} maisons au Maroc`,
   };
 }
 

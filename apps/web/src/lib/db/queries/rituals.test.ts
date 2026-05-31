@@ -146,6 +146,49 @@ describe('listRituals', () => {
     expect(result.items).toHaveLength(1);
   });
 
+  it('filtre par langue : ne renvoie que la locale demandée si elle existe', async () => {
+    // 15 FR (baseRitual défaut) + 2 AR explicites.
+    await insertRitual({ ...baseRitual, language: 'ar', publishedAt: new Date('2026-06-02') });
+    await insertRitual({ ...baseRitual, language: 'ar', publishedAt: new Date('2026-06-03') });
+    const ar = await listRituals({
+      productKey: 'pack-femiglow',
+      language: 'ar',
+      sort: 'recommended',
+      limit: 24,
+    });
+    expect(ar.items).toHaveLength(2);
+    expect(ar.items.every((i) => i.language === 'ar')).toBe(true);
+  });
+
+  it('repli FR : si la locale demandée n’a aucun témoignage, retombe sur FR', async () => {
+    // Aucun EN seedé → doit retomber sur les 15 FR (jamais vide).
+    const en = await listRituals({
+      productKey: 'pack-femiglow',
+      language: 'en',
+      sort: 'recommended',
+      limit: 24,
+    });
+    expect(en.items).toHaveLength(15);
+    expect(en.items.every((i) => i.language === 'fr')).toBe(true);
+  });
+
+  it('language=fr renvoie exactement le résultat sans filtre (byte-identique)', async () => {
+    const withFr = await listRituals({
+      productKey: 'pack-femiglow',
+      language: 'fr',
+      sort: 'recommended',
+      limit: 24,
+    });
+    const noLang = await listRituals({
+      productKey: 'pack-femiglow',
+      sort: 'recommended',
+      limit: 24,
+    });
+    expect(withFr.items.map((i) => i.publicSlug)).toEqual(
+      noLang.items.map((i) => i.publicSlug),
+    );
+  });
+
   it('pagine via cursor stable (aucun doublon)', async () => {
     const p1 = await listRituals({
       productKey: 'pack-femiglow',

@@ -12,6 +12,8 @@ interface InterviewQRBoundProps {
    */
   componentKey: string;
   slot?: string;
+  /** Phase 9bis — kicker localisé (« Conversation »). */
+  kicker?: string;
 }
 
 /**
@@ -21,17 +23,19 @@ export async function InterviewQRBound({
   data,
   componentKey,
   slot = 'avatar',
+  kicker,
 }: InterviewQRBoundProps) {
   const resolved = await resolveComponentSlot(componentKey, slot);
   const useBinding = !!(resolved?.binding?.isActive && resolved?.media);
 
   if (!useBinding) {
-    return <InterviewQR data={data} />;
+    return <InterviewQR data={data} kicker={kicker} />;
   }
 
   return (
     <InterviewQR
       data={data}
+      kicker={kicker}
       portraitSlot={
         <ComponentMedia
           componentKey={componentKey}

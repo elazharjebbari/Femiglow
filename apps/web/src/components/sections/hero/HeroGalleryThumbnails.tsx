@@ -26,7 +26,7 @@ export function HeroGalleryThumbnails({
   return (
     <ul
       className={cn(
-        'flex max-h-[600px] flex-col gap-3 overflow-y-auto pr-1',
+        'flex max-h-[600px] flex-col gap-3 overflow-y-auto pe-1',
         '[scrollbar-width:thin] [&::-webkit-scrollbar]:w-1',
         '[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-encre/15',
         className,

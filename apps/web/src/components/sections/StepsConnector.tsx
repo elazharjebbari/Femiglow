@@ -26,7 +26,7 @@ export function StepsConnector({
       <span
         aria-hidden={ariaHidden}
         data-testid="steps-connector-desktop"
-        className="pointer-events-none absolute left-0 right-0 top-6 hidden h-px border-t border-dashed border-encre/15 lg:block"
+        className="pointer-events-none absolute inset-x-0 top-6 hidden h-px border-t border-dashed border-encre/15 lg:block"
       />
       {/* Mobile : timeline verticale à 24 px depuis la gauche (centre de
           la pastille 48 px). `bottom-2 top-2` ménage 8 px de respiration
@@ -34,7 +34,7 @@ export function StepsConnector({
       <span
         aria-hidden={ariaHidden}
         data-testid="steps-connector-mobile"
-        className="pointer-events-none absolute bottom-2 left-6 top-2 w-px bg-encre/10 sm:hidden"
+        className="pointer-events-none absolute bottom-2 start-6 top-2 w-px bg-encre/10 sm:hidden"
       />
     </>
   );

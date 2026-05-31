@@ -33,12 +33,15 @@ export interface StepsTimelineProps {
   steps: ProductFeedStep[];
   header?: ProductFeedStepsHeader;
   postCta?: ProductFeedStepsPostCta;
+  /** Phase 9bis — libellé localisé du badge « Résultat ». */
+  resultLabel?: string;
 }
 
 export function StepsTimeline({
   steps,
   header,
   postCta,
+  resultLabel,
 }: StepsTimelineProps): JSX.Element {
   const reduceMotion = useReducedMotion();
   const { emit } = useTracking();
@@ -131,7 +134,7 @@ export function StepsTimeline({
               className="relative"
             >
               {reduceMotion ? (
-                <StepCard step={step} />
+                <StepCard step={step} resultLabel={resultLabel} />
               ) : (
                 <m.div
                   initial={{ opacity: 0, y: 12 }}
@@ -143,7 +146,7 @@ export function StepsTimeline({
                     ease: [0.22, 1, 0.36, 1],
                   }}
                 >
-                  <StepCard step={step} />
+                  <StepCard step={step} resultLabel={resultLabel} />
                 </m.div>
               )}
             </li>

@@ -103,7 +103,7 @@ function PhoneField({
         htmlFor="checkout-phone"
         className="block text-sm font-medium text-encre"
       >
-        Téléphone <span aria-hidden="true" className="ml-1 text-encre/50">*</span>
+        Téléphone <span aria-hidden="true" className="ms-1 text-encre/50">*</span>
       </label>
       <div
         className="flex items-center gap-2 border-b border-encre/30 transition-colors aria-[invalid=true]:border-petale-dark"
@@ -177,7 +177,7 @@ function ConsentCheckbox() {
         </span>
       </label>
       {error && (
-        <p role="alert" className="pl-7 text-xs text-petale-dark">
+        <p role="alert" className="ps-7 text-xs text-petale-dark">
           {error}
         </p>
       )}

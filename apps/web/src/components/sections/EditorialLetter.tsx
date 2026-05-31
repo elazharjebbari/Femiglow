@@ -19,7 +19,7 @@ export function EditorialLetter({ firstName }: EditorialLetterProps) {
       <Container width="prose">
         <div className="space-y-6 text-center">
           <Fleuron tone="champagne" size="md" />
-          <Kicker>Un mot de Souheila</Kicker>
+          <Kicker>Un mot de notre fondatrice</Kicker>
           <h2
             id="editorial-letter-heading"
             className="font-display text-2xl text-encre [text-wrap:balance]"
@@ -49,7 +49,7 @@ export function EditorialLetter({ firstName }: EditorialLetterProps) {
             className="text-3xl text-encre"
             style={{ fontFamily: 'var(--font-pinyon), cursive' }}
           >
-            Souheila
+            notre fondatrice
           </p>
           <p className="mt-1 text-xs uppercase tracking-[0.18em] text-encre/50">
             Fondatrice · FemiGlow

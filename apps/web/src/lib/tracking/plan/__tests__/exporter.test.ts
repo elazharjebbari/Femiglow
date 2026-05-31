@@ -569,9 +569,10 @@ describe('exportPlan — structure GTM', () => {
     expect(params.conversionId).toBe('{{CONST - Google Ads Conversion ID}}');
     expect(params.conversionLabel).toBe('{{CONST - Ads Label - purchase}}');
     expect(params.conversionCategory).toBe('PURCHASE');
-    expect(params.orderId).toBe('{{DLV - ecommerce.transaction_id}}');
-    expect(params.currencyCode).toBe('{{DLV - ecommerce.currency}}');
-    expect(params.conversionValue).toBe('{{DLV - ecommerce.value}}');
+    // T-01 — la valeur vit sous params.* (pas ecommerce.*, jamais poussé).
+    expect(params.orderId).toBe('{{DLV - transaction_id}}');
+    expect(params.currencyCode).toBe('{{DLV - currency}}');
+    expect(params.conversionValue).toBe('{{DLV - value}}');
     // Enhanced Conversions activé par défaut (admin override possible
     // via envConfig.googleAdsEnhancedConversions).
     expect(params.enableEnhancedConversions).toBe('true');
@@ -1105,5 +1106,100 @@ describe('exportPlan — edge cases', () => {
     const result = exportPlan(plan, 'production');
     const tags = (result.json as any).containerVersion.tag;
     expect(tags.length).toBe(0); // no Config tag, no event tags
+  });
+});
+
+describe('exportPlan — valeur de conversion (T-01/T-02/T-03)', () => {
+  // T-01 — les DLV de conversion lisent params.* (pas ecommerce.*)
+  it('DLV - value/currency/transaction_id lisent params.* (jamais ecommerce.*)', () => {
+    const variables = (exportPlan(buildPlan(), 'production').json as any)
+      .containerVersion.variable;
+    const pathOf = (name: string) =>
+      variables
+        .find((v: any) => v.name === name)
+        ?.parameter.find((p: any) => p.key === 'name')?.value;
+    expect(pathOf('DLV - value')).toBe('params.value');
+    expect(pathOf('DLV - currency')).toBe('params.currency');
+    expect(pathOf('DLV - transaction_id')).toBe('params.transaction_id');
+    // L'ancien chemin buggé ne doit plus exister.
+    expect(variables.find((v: any) => v.name === 'DLV - ecommerce.value')).toBeUndefined();
+  });
+
+  // T-02 — GA4 (gaawe) transmet la valeur pour les events monétaires
+  it('GA4 (gaawe) transmet value/currency/transaction_id pour purchase', () => {
+    const tags = (exportPlan(buildPlan(), 'production').json as any).containerVersion.tag;
+    const ga4 = tags.find((t: any) => t.name === 'GA4 Evt — purchase');
+    const settings = ga4.parameter.find((p: any) => p.key === 'eventSettingsTable');
+    expect(settings).toBeDefined();
+    const rows = settings.list.map((row: any) => {
+      const m = Object.fromEntries(row.map.map((x: any) => [x.key, x.value]));
+      return [m.parameter, m.parameterValue];
+    });
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        ['value', '{{DLV - value}}'],
+        ['currency', '{{DLV - currency}}'],
+        ['transaction_id', '{{DLV - transaction_id}}'],
+      ]),
+    );
+  });
+
+  it('GA4 (gaawe) n’ajoute PAS de eventSettingsTable pour page_view (non monétaire)', () => {
+    const tags = (exportPlan(buildPlan(), 'production').json as any).containerVersion.tag;
+    const ga4Pv = tags.find((t: any) => t.name === 'GA4 Evt — page_view');
+    expect(ga4Pv.parameter.find((p: any) => p.key === 'eventSettingsTable')).toBeUndefined();
+  });
+
+  // T-03 — Meta (fbq) injecte value/currency en custom_data pour les conversions
+  it('Meta (fbq) injecte value/currency en custom_data pour purchase', () => {
+    const tags = (exportPlan(buildPlan(), 'production').json as any).containerVersion.tag;
+    const meta = tags.find((t: any) => t.name === 'Meta Evt — purchase (Purchase)');
+    const html = meta.parameter.find((p: any) => p.key === 'html').value;
+    expect(html).toContain("{ value: {{DLV - value}}, currency: '{{DLV - currency}}' }");
+    expect(html).toContain('eventID: {{DLV - event_id}}');
+  });
+
+  it('Meta (fbq) garde un custom_data vide pour page_view (non valorisé)', () => {
+    const tags = (exportPlan(buildPlan(), 'production').json as any).containerVersion.tag;
+    const meta = tags.find((t: any) => t.name.startsWith('Meta Evt — page_view'));
+    const html = meta.parameter.find((p: any) => p.key === 'html').value;
+    expect(html).toContain("fbq('track', 'PageView', {},");
+  });
+
+  // T-06 (câblage) — generate_lead est valorisé côté GA4 ET Meta
+  it('generate_lead transmet la valeur à GA4 et Meta', () => {
+    const plan = buildPlan({
+      events: [{ key: 'generate_lead', providers: { ga4: true, meta: true } }],
+    });
+    const tags = (exportPlan(plan, 'production').json as any).containerVersion.tag;
+    const ga4 = tags.find((t: any) => t.name === 'GA4 Evt — generate_lead');
+    expect(ga4.parameter.find((p: any) => p.key === 'eventSettingsTable')).toBeDefined();
+    const meta = tags.find((t: any) => t.name.startsWith('Meta Evt — generate_lead'));
+    const html = meta.parameter.find((p: any) => p.key === 'html').value;
+    expect(html).toContain('{ value: {{DLV - value}}');
+  });
+});
+
+describe('exportPlan — langue (page_locale → GA4)', () => {
+  it('GA4 Config (gaawc) pose page_locale via fieldsToSet (→ envoyé à tous les events)', () => {
+    const tags = (exportPlan(buildPlan(), 'production').json as any).containerVersion.tag;
+    const cfg = tags.find((t: any) => t.type === 'gaawc');
+    const fields = cfg.parameter.find((p: any) => p.key === 'fieldsToSet');
+    expect(fields).toBeDefined();
+    const rows = fields.list.map((row: any) => {
+      const m = Object.fromEntries(row.map.map((x: any) => [x.key, x.value]));
+      return [m.fieldName, m.value];
+    });
+    expect(rows).toEqual(
+      expect.arrayContaining([['page_locale', '{{DLV - page.locale}}']]),
+    );
+  });
+
+  it('DLV - page.locale lit la locale du site (page.locale)', () => {
+    const variables = (exportPlan(buildPlan(), 'production').json as any)
+      .containerVersion.variable;
+    const v = variables.find((x: any) => x.name === 'DLV - page.locale');
+    expect(v).toBeDefined();
+    expect(v.parameter.find((p: any) => p.key === 'name').value).toBe('page.locale');
   });
 });

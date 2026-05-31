@@ -1,0 +1,45 @@
+@startuml engine-eligibility
+title Machine à états — éligibilité d'une suggestion (par visiteur/session)
+
+[*] --> Observing
+
+state Observing {
+  [*] --> Collecting
+  Collecting --> Collecting : signal mis à jour
+}
+
+Observing --> Suppressed : never-profile match (checkout/form/deep-read/...)\n[INV-14/15] reason=neverProfile
+Observing --> Suppressed : engineEnabled=false\n[INV-13] reason=engine-off
+Observing --> Suppressed : budget épuisé / dismiss persistant\n[INV-16]
+Observing --> Suppressed : guessed==served || confidence<seuil
+
+Observing --> Eligible : trigger match + confiance OK + budget OK
+
+state Eligible {
+  [*] --> WaitingBreakpoint
+  WaitingBreakpoint --> WaitingBreakpoint : pas encore de breakpoint
+  WaitingBreakpoint --> Abandoned : TTL dépassé (aucun moment opportun)\n[INV-17]
+  WaitingBreakpoint --> Showing : breakpoint atteint (faible charge)
+}
+
+Showing --> Accepted : clic « passer »\n→ useLocaleTransition (sans reload)
+Showing --> DismissedSession : ignore / ✕ (session)
+Showing --> DismissedPersistent : « ne plus proposer »\n[INV-16]
+Showing --> Abandoned : auto-effacement (non traité)
+
+Accepted --> [*]
+DismissedPersistent --> [*]
+DismissedSession --> Observing : budget décrémenté (cooldown)
+Abandoned --> Observing : budget décrémenté
+Suppressed --> [*]
+
+note right of Showing
+  Émet locale_suggestion_shown.
+  Jamais de modale. Toujours 2 choix symétriques.
+  Auto-redirect interdit (INV-20).
+end note
+note right of Suppressed
+  Émet locale_suggestion_suppressed{reason, neverProfile}
+  → audit (INV-19)
+end note
+@enduml

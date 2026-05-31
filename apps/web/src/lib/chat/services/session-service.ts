@@ -39,6 +39,17 @@ export const sessionService = {
     const existing = await sessionRepo.getActiveByVisitor(visitorId);
     if (existing) {
       await sessionRepo.touch(existing.id);
+      // Phase 9bis — si la locale de la page (ex. visiteuse passée sur /ar)
+      // diffère de la langue de la session existante, on la met à jour : le
+      // prochain snapshot servira alors le greeting + les pills + les
+      // réponses scriptées dans la bonne langue. Sans ça, une session
+      // créée en FR resterait FR même après bascule vers l'arabe.
+      if (opts.language && existing.language !== opts.language) {
+        const updated = await sessionRepo.update(existing.id, {
+          language: opts.language,
+        });
+        return updated ?? existing;
+      }
       return existing;
     }
     const instruction = await instructionRepo.active('default');

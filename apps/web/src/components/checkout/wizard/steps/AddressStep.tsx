@@ -62,10 +62,7 @@ import { CityAutocomplete } from '../components/CityAutocomplete';
 import { NoCommitmentBadge } from '../NoCommitmentBadge';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
 import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
-import {
-  DEFAULT_WIZARD_COPY,
-  DEFAULT_WIZARD_FEATURES,
-} from '@/lib/checkout/copy/wizard-copy';
+import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Schema validation client (miroir simplifié de `patchLeadAddressInputSchema`)
@@ -96,6 +93,10 @@ interface ShippingNoticeProps {
   body: string;
   freeShipping: boolean;
   catalogPriceMad?: number | null;
+  /** Note lecteur d'écran i18n pour le badge livraison offerte. */
+  freeBadgeSrNote: (price: number) => string;
+  /** Libellé visible i18n du badge livraison offerte. */
+  freeBadgeLabel: string;
 }
 
 function ShippingNotice({
@@ -103,6 +104,8 @@ function ShippingNotice({
   body,
   freeShipping,
   catalogPriceMad,
+  freeBadgeSrNote,
+  freeBadgeLabel,
 }: ShippingNoticeProps) {
   return (
     <section
@@ -147,9 +150,10 @@ function ShippingNotice({
             <ShippingPriceDisplay
               displayPrice={`${catalogPriceMad} MAD`}
               freeShipping
+              freeLabel={freeBadgeLabel}
               size="sm"
               align="left"
-              srNote={`Livraison normalement à ${catalogPriceMad} MAD, actuellement offerte`}
+              srNote={freeBadgeSrNote(catalogPriceMad)}
             />
           </div>
         )}
@@ -343,6 +347,10 @@ export function AddressStep({ cta }: AddressStepProps) {
               placeholder={t.address.cityPlaceholder}
               hint={t.address.cityHintBilingual}
               matchedHint={t.address.cityHintMatched}
+              popularCitiesLabel={t.address.cityPopularLabel}
+              searchingLabel={t.address.citySearching}
+              freeDeliveryLabel={t.address.cityFreeDelivery}
+              freeShippingLabel={t.shipping.freeBadgeLabel}
               required
               error={errors.city?.message}
               value={field.value ?? ''}
@@ -371,6 +379,8 @@ export function AddressStep({ cta }: AddressStepProps) {
           body={shippingBody}
           freeShipping={freeShipping}
           catalogPriceMad={addressDraft.cityDeliveryPriceMad ?? null}
+          freeBadgeSrNote={t.shipping.freeBadgeSrNote}
+          freeBadgeLabel={t.shipping.freeBadgeLabel}
         />
 
         <TextAreaField
@@ -410,8 +420,9 @@ export function AddressStep({ cta }: AddressStepProps) {
             financier. */}
         {DEFAULT_WIZARD_FEATURES.noCommitmentBadge && (
           <NoCommitmentBadge
-            label={DEFAULT_WIZARD_COPY.noCommitmentLabel}
-            sub={DEFAULT_WIZARD_COPY.noCommitmentSub}
+            label={t.noCommitment.label}
+            sub={t.noCommitment.sub}
+            ariaLabel={t.noCommitment.ariaLabel}
           />
         )}
 

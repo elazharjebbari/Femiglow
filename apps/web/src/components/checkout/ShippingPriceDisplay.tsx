@@ -30,6 +30,8 @@ interface ShippingPriceDisplayProps {
   size?: 'xs' | 'sm' | 'md';
   align?: 'left' | 'right';
   srNote?: string;
+  /** Libellé du badge "offert" — i18n côté appelant. Défaut FR. */
+  freeLabel?: string;
   className?: string;
 }
 
@@ -39,6 +41,7 @@ export function ShippingPriceDisplay({
   size = 'sm',
   align = 'left',
   srNote,
+  freeLabel = 'Offerte',
   className,
 }: ShippingPriceDisplayProps) {
   if (!freeShipping) {
@@ -75,7 +78,7 @@ export function ShippingPriceDisplay({
           sizeClasses[size],
         )}
       >
-        Offerte
+        {freeLabel}
       </span>
       {srNote && <span className="sr-only">{srNote}.</span>}
     </span>
