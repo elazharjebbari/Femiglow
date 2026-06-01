@@ -231,33 +231,48 @@ export const orderRepo = {
       throw err;
     }
 
-    // 3. Crée le legacy `leads` row (FK orders.lead_id).
-    const legacyLeadId = await resolveLegacyLeadId(input.contact);
-
-    // 4. Insère l'order et ses items.
+    // 3-4. Lead legacy + insert order/items. Si quoi que ce soit échoue APRÈS
+    //      la réserve, on LIBÈRE les réservations pour ne pas fuiter du stock.
     const orderId = createId('o');
-    await conn.insert(orders).values({
-      id: orderId,
-      leadId: legacyLeadId,
-      chatLeadId: input.chatLeadId,
-      totalCents: input.expectedTotalCents,
-      currency: input.currency,
-      shippingMode: input.shippingMode,
-      paymentMethod: input.paymentMethod,
-      formId: input.formContext.formId,
-      formMode: input.formContext.formMode,
-      variantKey: input.formContext.variantKey ?? null,
-    });
+    try {
+      const legacyLeadId = await resolveLegacyLeadId(input.contact);
+      await conn.insert(orders).values({
+        id: orderId,
+        leadId: legacyLeadId,
+        chatLeadId: input.chatLeadId,
+        totalCents: input.expectedTotalCents,
+        currency: input.currency,
+        shippingMode: input.shippingMode,
+        paymentMethod: input.paymentMethod,
+        formId: input.formContext.formId,
+        formMode: input.formContext.formMode,
+        variantKey: input.formContext.variantKey ?? null,
+      });
 
-    const itemInserts = variantMatches.map((v) => ({
-      id: createId('oi'),
-      orderId,
-      sku: v.sku,
-      name: v.name,
-      quantity: v.quantity,
-      unitPriceCents: v.unitPriceCents,
-    }));
-    await conn.insert(orderItems).values(itemInserts);
+      const itemInserts = variantMatches.map((v) => ({
+        id: createId('oi'),
+        orderId,
+        sku: v.sku,
+        name: v.name,
+        quantity: v.quantity,
+        unitPriceCents: v.unitPriceCents,
+      }));
+      await conn.insert(orderItems).values(itemInserts);
+    } catch (err) {
+      for (const v of variantMatches) {
+        await stockRepo.release(v.variantId, v.quantity);
+      }
+      throw err;
+    }
+
+    // 5. COMMIT du stock : la commande est posée (COD, état terminal — pas de
+    //    flux de livraison qui résoudrait la réservation). On consomme donc la
+    //    réservation : `available -= qty`, `reserved -= qty`. SANS ce commit,
+    //    `reserved` fuit à chaque commande jusqu'à atteindre `available` →
+    //    faux `out_of_stock` PERMANENT (bug 2026-06-01 : reserved bloqué à 100).
+    for (const v of variantMatches) {
+      await stockRepo.commit(v.variantId, v.quantity);
+    }
 
     const orderRows = await conn
       .select()
