@@ -1,0 +1,24 @@
+@startuml state-lead
+title OWBS — Machine à états du lead (côté métier)
+skinparam shadowing false
+[*] --> Draft : newLeadId() (client)
+Draft --> Captured : lead_create upsert (phone+consent)
+Captured --> AddressDone : address_update upsert
+AddressDone --> PaymentSelected : payment_select upsert
+PaymentSelected --> Purchased : order_create (idempotent strict)
+Purchased --> [*]
+
+Captured --> Abandoned : scanner (timeout sans conversion)
+AddressDone --> Abandoned : scanner
+PaymentSelected --> Abandoned : scanner
+Abandoned --> Purchased : reprise tardive (idempotent)
+
+note right of Captured
+  Row chat_lead partielle persistée
+  => alimente scanner + funnel analytics
+end note
+note right of Purchased
+  order_create embarque le snapshot complet
+  => indépendant des écritures de fond en vol
+end note
+@enduml

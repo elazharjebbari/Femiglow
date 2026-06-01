@@ -1,0 +1,27 @@
+@startuml seq-beacon-flush
+title OWBS — Séquence : fermeture d'onglet → flush beacon (zéro perte)
+autonumber
+skinparam shadowing false
+actor User
+participant "document" as Doc
+participant "beacon-flush" as B
+participant "lead-sync-queue" as Q
+participant "/api/checkout/lead/sync" as SYNC
+participant "lead-service" as SVC
+database "chat_lead" as DB
+
+User -> Doc : ferme / masque l'onglet
+Doc -> B : pagehide / visibilitychange=hidden
+B -> Q : pending() (envelopes restantes)
+alt file non vide
+  B -> SYNC : navigator.sendBeacon(batch {envelopes[]})\n(Idempotency-Key dans le corps)
+  note right of SYNC : fire-and-forget, survit à la navigation
+  SYNC -> SVC : applyBatch(envelopes)
+  loop pour chaque envelope
+    SVC -> DB : upsert idempotent (tolère désordre)
+  end
+  SYNC --> B : (pas de feedback exploitable)
+else file vide
+  B --> Doc : no-op
+end
+@enduml

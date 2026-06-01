@@ -1,0 +1,13 @@
+from_state,event,to_state,guard,side_effect,idempotent
+Draft,lead_create,Captured,"phone valide + consent",upsert chat_lead + enqueue(lead_capi),yes
+Captured,address_update,AddressDone,"leadId existe (sinon upsert crée)",upsert adresse,yes
+Captured,lead_create(replay),Captured,"même Idempotency-Key",replay réponse (no-op),yes
+AddressDone,payment_select,PaymentSelected,"address_completed_at non-null",upsert paiement,yes
+AddressDone,address_update(replay),AddressDone,"même clé / désordre",merge last-writer,yes
+PaymentSelected,order_create,Purchased,"snapshot complet présent",createOrder + markPurchased + enqueue(order_webhook,purchase_capi,purchase_ga4),yes(strict)
+Captured,scanner_timeout,Abandoned,"pas de conversion depuis T",enqueue(cart_abandoned_webhook),yes
+AddressDone,scanner_timeout,Abandoned,"pas de conversion depuis T",enqueue(cart_abandoned_webhook),yes
+PaymentSelected,scanner_timeout,Abandoned,"pas de conversion depuis T",enqueue(cart_abandoned_webhook),yes
+Abandoned,order_create,Purchased,"reprise tardive",createOrder (idempotent),yes(strict)
+any,beacon_flush,same,"pagehide + file non vide",applyBatch upsert,yes
+any,order_create(replay),Purchased,"même Idempotency-Key(order_create)",replay (0 doublon commande),yes

@@ -1,0 +1,25 @@
+module_id,layer,name,path,kind,status,responsibility,depends_on
+M-CLI-01,client,lead-id,src/lib/checkout/client/lead-id.ts,new,planned,"Génère/valide le leadId client (cl_...)",@/lib/ids
+M-CLI-02,client,lead-sync-queue,src/lib/checkout/state/lead-sync-queue.ts,new,planned,"File FIFO/leadId, retry backoff, miroir sessionStorage",M-CLI-04;M-CLI-05
+M-CLI-03,client,beacon-flush,src/lib/checkout/client/beacon-flush.ts,new,planned,"Flush de secours sendBeacon sur pagehide/visibilitychange",M-CLI-02
+M-CLI-04,client,wizard-client,src/lib/checkout/client/wizard-client.ts,modified,planned,"Ajoute send(envelope) + appel /sync batch + keepalive",M-CLI-06
+M-CLI-05,client,idempotency-key,src/lib/checkout/client/idempotency-key.ts,reused,stable,"Clé idempotence (scope,leadId) en sessionStorage",-
+M-CLI-06,client,api-errors,src/lib/checkout/client/api-errors.ts,reused,stable,"Typage erreurs réseau/retryable",-
+M-CLI-07,client,wizard-store,src/lib/checkout/state/wizard-store.ts,modified,planned,"goToStep optimiste (flag-gated)",M-CLI-02
+M-CLI-08,client,use-wizard-mutations,src/lib/checkout/state/use-wizard-mutations.ts,modified,planned,"Enqueue au lieu d'await (flag ON), legacy si OFF",M-CLI-01;M-CLI-02;M-CLI-07
+M-CLI-09,client,use-chat-send,src/components/chat/hooks/use-chat-send.ts,modified,deferred,"Applique le pattern optimiste au funnel chat (FR-09)",M-CLI-02
+M-API-01,server,route-lead-create,src/app/api/checkout/lead/route.ts,modified,planned,"POST upsert-by-leadId (id client)",M-APP-01
+M-API-02,server,route-lead-address,src/app/api/checkout/lead/[leadId]/address/route.ts,modified,planned,"PATCH upsert adresse",M-APP-01
+M-API-03,server,route-lead-payment,src/app/api/checkout/lead/[leadId]/payment/route.ts,modified,planned,"PATCH upsert paiement",M-APP-01
+M-API-04,server,route-lead-sync,src/app/api/checkout/lead/sync/route.ts,new,planned,"POST batch idempotent (live keepalive + beacon)",M-APP-01
+M-API-05,server,route-order,src/app/api/checkout/order/route.ts,modified,planned,"Conversion: snapshot complet + enqueue outbox",M-APP-01;M-OBX-01
+M-APP-01,server,lead-service,src/lib/checkout/services/lead-service.ts,new,planned,"Orchestration upsert + enqueue outbox (transactionnel)",M-DOM-01;M-OBX-01;M-DOM-02
+M-DOM-01,server,wizard-lead-repo,src/lib/checkout/repos/lead-repo.ts,modified,planned,"create->upsert + upsertAddress/Payment",-
+M-DOM-02,server,idempotency-repo,src/lib/checkout/repos/idempotency-repo.ts,reused,stable,"lookup/store réponse idempotente",-
+M-OBX-01,server,lead-outbox-repo,src/lib/leads/outbox/lead-outbox-repo.ts,new,planned,"enqueue/pickBatch/markDone/reschedule",-
+M-OBX-02,server,lead-outbox-processor,src/lib/leads/outbox/lead-outbox-processor.ts,new,planned,"pickAndProcessBatch + dispatch handlers",M-OBX-01;M-OBX-03
+M-OBX-03,server,lead-outbox-handlers,src/lib/leads/outbox/handlers/,new,planned,"Adapters: serverFire CAPI/GA4, dispatchOrderWebhook",-
+M-WRK-01,worker,cron-lead-outbox,src/app/api/cron/lead-outbox/route.ts,new,planned,"Endpoint cron (Bearer CRON_SECRET, maxDuration=60)",M-OBX-02
+M-DB-01,db,migration-lead-outbox,prisma/migrations/*,new,planned,"Table lead_event_outbox + colonnes nullables",-
+M-CFG-01,config,env-flag,src/lib/env.ts,modified,planned,"CHECKOUT_OPTIMISTIC_WIZARD_ENABLED + NEXT_PUBLIC mirror",-
+M-CFG-02,ops,systemd-timer,deploy/systemd/femiglow-cron-lead-outbox.timer,new,planned,"Timer 60s (calqué sur email-outbox)",M-WRK-01

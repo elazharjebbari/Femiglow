@@ -1,0 +1,53 @@
+@startuml c4-container
+title OWBS — C4 Niveau 2 : Conteneurs & modules
+skinparam shadowing false
+left to right direction
+
+package "CLIENT (navigateur)" {
+  [Wizard steps] as steps
+  [wizard-store\n(transition optimiste)] as store
+  [lead-sync-queue\n(retry/backoff, miroir)] as queue
+  [beacon-flush] as beacon
+  [wizard-client + /sync] as client
+  [use-tracking.emit] as emit
+}
+
+package "SERVEUR (route handlers)" {
+  [/api/checkout/lead[...]/] as apiGran
+  [/api/checkout/lead/sync/] as apiSync
+  [lead-service\n(application)] as svc
+  [wizard-lead-repo\n(upsert)] as repo
+  [idempotency-repo] as idem
+  [lead-outbox-repo] as obxRepo
+}
+
+database "PostgreSQL" {
+  [chat_lead] as tLead
+  [checkout_idempotency] as tIdem
+  [lead_event_outbox] as tObx
+}
+
+package "WORKER (cron 60s)" {
+  [/api/cron/lead-outbox/] as cron
+  [lead-outbox-processor] as proc
+  [handlers: CAPI/GA4/webhook] as handlers
+}
+
+steps --> store : goToStep() optimiste
+steps --> queue : enqueue(envelope)
+queue --> client : send (keepalive)
+beacon --> apiSync : sendBeacon(batch)
+client --> apiGran
+apiGran --> svc
+apiSync --> svc
+svc --> repo
+svc --> idem
+svc --> obxRepo
+repo --> tLead
+idem --> tIdem
+obxRepo --> tObx
+cron --> proc
+proc --> tObx : pickBatch (SKIP LOCKED)
+proc --> handlers
+steps ..> emit : tracking client immédiat
+@enduml

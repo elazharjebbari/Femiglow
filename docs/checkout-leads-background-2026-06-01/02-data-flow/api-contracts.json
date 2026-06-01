@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OWBS — Contrats d'API checkout (lead)",
+  "version": "1.0.0",
+  "conventions": {
+    "headers": {
+      "Idempotency-Key": "string ^[A-Za-z0-9_-]{16,128}$ (live fetch). Omis pour sendBeacon → porté dans le corps."
+    },
+    "errorEnvelope": { "error": { "code": "string", "message": "string" } },
+    "leadId": "^cl_[0-9a-z]{20,}$"
+  },
+  "endpoints": [
+    {
+      "id": "lead_create",
+      "method": "POST",
+      "path": "/api/checkout/lead",
+      "summary": "Upsert-by-leadId (création/complétion). leadId fourni par le client.",
+      "request": { "schema": "createLeadInputSchema", "requires": ["leadId", "phone", "consentVersion", "sessionId", "visitorId", "formContext", "cartSnapshot"] },
+      "responses": {
+        "201": { "body": { "leadId": "string", "status": "created|completed", "nextStep": "address" } },
+        "200": { "body": { "leadId": "string", "status": "replayed", "nextStep": "address" }, "when": "Idempotency replay" },
+        "409": { "body": "errorEnvelope", "when": "même clé, payload différent" },
+        "422": { "body": "errorEnvelope", "when": "validation Zod" }
+      },
+      "idempotency": { "scope": "lead_create", "key": "(scope, leadId)" }
+    },
+    {
+      "id": "address_update",
+      "method": "PATCH",
+      "path": "/api/checkout/lead/{leadId}/address",
+      "summary": "Upsert adresse (crée la row si absente — arrivée désordonnée).",
+      "request": { "schema": "patchLeadAddressInputSchema" },
+      "responses": {
+        "200": { "body": { "leadId": "string", "status": "address_completed", "nextStep": "payment" } },
+        "404": { "body": "errorEnvelope", "when": "leadId absent ET upsert désactivé (mode strict)" }
+      },
+      "idempotency": { "scope": "address_update", "key": "(scope, leadId)" }
+    },
+    {
+      "id": "payment_select",
+      "method": "PATCH",
+      "path": "/api/checkout/lead/{leadId}/payment",
+      "summary": "Upsert préférence de paiement.",
+      "request": { "schema": "patchLeadPaymentInputSchema" },
+      "responses": {
+        "200": { "body": { "leadId": "string", "status": "payment_selected", "nextStep": "thank_you" } },
+        "409": { "body": "errorEnvelope" }
+      },
+      "idempotency": { "scope": "payment_select", "key": "(scope, leadId)" }
+    },
+    {
+      "id": "lead_sync_batch",
+      "method": "POST",
+      "path": "/api/checkout/lead/sync",
+      "summary": "Batch idempotent (live keepalive OU sendBeacon). Tolère le désordre.",
+      "request": { "schema": "beacon-payload.schema.json", "body": { "envelopes": "Envelope[]" }, "maxEnvelopes": 32, "maxBytes": 60000 },
+      "responses": {
+        "200": { "body": { "results": [{ "mutationId": "string", "ok": "boolean", "status": "applied|replayed|rejected" }] } },
+        "202": { "when": "sendBeacon (pas de lecture de réponse côté client)" },
+        "413": { "body": "errorEnvelope", "when": "batch trop volumineux" }
+      },
+      "idempotency": { "scope": "per-envelope", "key": "(envelope.scope, envelope.leadId)" }
+    },
+    {
+      "id": "order_create",
+      "method": "POST",
+      "path": "/api/checkout/order",
+      "summary": "Conversion synchrone. Embarque le snapshot complet. Enqueue effets outbox.",
+      "request": { "schema": "createOrderInputSchema", "requires": ["leadId", "snapshot"] },
+      "responses": {
+        "200": { "body": { "orderId": "string", "leadId": "string" } },
+        "409": { "body": "errorEnvelope", "when": "double conversion (idempotent strict)" }
+      },
+      "idempotency": { "scope": "order_create", "key": "(scope, leadId)" }
+    }
+  ]
+}
