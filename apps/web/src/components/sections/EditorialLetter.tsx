@@ -1,6 +1,24 @@
+import localFont from 'next/font/local';
 import { Container } from '@/components/ui/Container';
 import { Fleuron } from '@/components/ui/Fleuron';
 import { Kicker } from '@/components/ui/Kicker';
+
+/**
+ * Pinyon Script — police décorative utilisée UNIQUEMENT pour la signature de la
+ * lettre éditoriale (cf. page /merci). On l'initialise ici, et non dans le root
+ * layout, pour que `next/font` ne précharge le woff2 + n'injecte le `@font-face`
+ * (CSS render-blocking) QUE sur les routes qui rendent ce composant. Les pages
+ * publiques sans `EditorialLetter` (ex. /kit) n'embarquent donc plus Pinyon.
+ * La variable `--font-pinyon` est scopée à la `<section>` ci-dessous.
+ * cf. docs/image-optimization-audit-2026-06-01 (priorité 2 — dégraissage polices).
+ */
+const pinyon = localFont({
+  src: '../../../public/fonts/pinyon-script.woff2',
+  weight: '400',
+  style: 'normal',
+  display: 'swap',
+  variable: '--font-pinyon',
+});
 
 interface EditorialLetterProps {
   firstName?: string;
@@ -14,7 +32,7 @@ export function EditorialLetter({ firstName }: EditorialLetterProps) {
   return (
     <section
       aria-labelledby="editorial-letter-heading"
-      className="border-b border-encre/10 bg-creme-warm/40 py-20"
+      className={`${pinyon.variable} border-b border-encre/10 bg-creme-warm/40 py-20`}
     >
       <Container width="prose">
         <div className="space-y-6 text-center">

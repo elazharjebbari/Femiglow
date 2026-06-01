@@ -83,23 +83,23 @@ const inter = localFont({
   variable: '--font-inter',
 });
 
-const pinyon = localFont({
-  src: '../../public/fonts/pinyon-script.woff2',
-  weight: '400',
-  style: 'normal',
-  display: 'swap',
-  variable: '--font-pinyon',
-});
-
-// Phase 4.3 — Police arabe Cairo (Google Fonts) chargée à côté d'Inter/Cormorant.
-// Activée via CSS `[lang='ar']` dans globals.css — pas de bandwidth perdu en
-// LTR car next/font/google subsette automatiquement à `subsets: ['arabic']`.
-// `display: 'swap'` évite le FOIT (Flash of Invisible Text) sur transition.
+// Phase 4.3 — Police arabe Cairo (Google Fonts), activée via `html[lang='ar']`
+// dans globals.css (la variable `--font-cairo` doit rester sur <html>, là où le
+// sélecteur applique la font-family).
+//
+// `preload: false` (priorité 2 — dégraissage polices, cf.
+// docs/image-optimization-audit-2026-06-01) : sans ça, `next/font` préchargeait
+// le woff2 arabe sur TOUTES les pages (y compris FR/EN) via <link rel=preload
+// as=font> — gaspillage net, car en LTR le sélecteur `[lang='ar']` ne matche
+// jamais. Désormais Cairo n'est plus préchargée ; en FR/EN elle n'est même pas
+// téléchargée (aucun texte ne l'applique) ; en AR elle se charge à la demande
+// en `display: swap` (fallback système le temps du fetch).
 const cairo = Cairo({
   subsets: ['arabic'],
   weight: ['400', '500', '700'],
   style: 'normal',
   display: 'swap',
+  preload: false,
   variable: '--font-cairo',
 });
 
@@ -169,7 +169,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={activeLocale}
       dir={direction}
-      className={`${cormorant.variable} ${inter.variable} ${pinyon.variable} ${cairo.variable}`}
+      className={`${cormorant.variable} ${inter.variable} ${cairo.variable}`}
     >
       <body className="min-h-screen bg-creme font-body text-encre antialiased">
         {/* GTM bootstrap — chargé synchroniquement pour que Tag
