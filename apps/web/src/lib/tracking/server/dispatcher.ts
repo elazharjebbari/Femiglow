@@ -6,6 +6,7 @@ import { logger } from '@/lib/logging/logger';
 import { resolveEventMapping } from '@/lib/tracking/mappings/resolver';
 import { PROVIDER_KINDS_FOR_MAPPING } from '@/lib/tracking/mappings/types';
 import { shouldDispatchByAttribution } from '@/lib/tracking/attribution/dispatch-gate';
+import { decideMetaForEvent } from './lead-as-purchase';
 
 export interface DispatchOutcome {
   dispatched: string[];
@@ -67,43 +68,88 @@ export async function dispatchToProviders(ctx: DispatchContext): Promise<Dispatc
     if (provider.enabledEvents.length > 0 && !provider.enabledEvents.includes(ctx.eventName)) {
       return [provider.kind, { status: 'skipped', latencyMs: 0, attempts: 0, error: 'event_disabled' }];
     }
+    // ── Meta lead-as-purchase (audit meta-lead-as-purchase-2026-06-01) ──
+    // Confusion VOLONTAIRE lead→Purchase côté Meta uniquement, sans doublon.
+    // Décidé AVANT le gate attribution : un lead-as-Purchase est un signal
+    // Purchase BROADCAST (comme `purchase`, cf. C3) donc non gaté. Flag OFF
+    // par défaut → `passthrough` → comportement inchangé.
+    let dispatchCtx: DispatchContext = ctxWithMappings;
+    let skipAttributionGate = false;
+    if (provider.kind === 'meta') {
+      const decision = decideMetaForEvent({
+        eventName: ctx.eventName,
+        method: ctx.params.method,
+        visitorId: ctx.anonymousId,
+      });
+      if (decision.action === 'suppress') {
+        logger.debug('tracking.dispatch.lead_as_purchase_suppress', {
+          event_name: ctx.eventName,
+          visitor: ctx.anonymousId,
+          reason: decision.reason,
+        });
+        return [
+          provider.kind,
+          { status: 'skipped', latencyMs: 0, attempts: 0, error: `lead_as_purchase_suppress:${decision.reason}` },
+        ];
+      }
+      if (decision.action === 'as_purchase') {
+        // On traite ce lead comme un Purchase Meta : nom overridé + event_id de
+        // parcours (dédup Pixel↔CAPI). La valeur (prix kit) reste portée par
+        // `ctx.params` → reprise telle quelle par l'adapter Meta.
+        dispatchCtx = {
+          ...ctxWithMappings,
+          eventId: decision.journeyId,
+          resolvedMappings: {
+            ...ctxWithMappings.resolvedMappings,
+            meta: { mappedName: 'Purchase', isCustom: false, notes: 'lead_as_purchase' },
+          },
+        };
+        skipAttributionGate = true; // signal Purchase broadcast
+      } else if (decision.journeyId) {
+        // purchase normal : event_id de parcours pour dédup Pixel↔CAPI.
+        dispatchCtx = { ...ctxWithMappings, eventId: decision.journeyId };
+      }
+    }
+
     // Phase 2 — Gate attribution multi-canal. Skip si la stratégie
     // active n'attribue pas l'event à ce provider. Audience events et
     // providers neutres (GA4, GTM) sont toujours autorisés. Cf.
     // docs/tracking-attribution/.
-    const gate = await shouldDispatchByAttribution({
-      visitorId: ctx.anonymousId,
-      providerKind: provider.kind,
-      eventName: ctx.eventName,
-    }).catch((err) => {
-      logger.warn('tracking.dispatch.attribution_gate_degraded', {
-        kind: provider.kind,
-        event_name: ctx.eventName,
-        error: err instanceof Error ? err.message : String(err),
+    if (!skipAttributionGate) {
+      const gate = await shouldDispatchByAttribution({
+        visitorId: ctx.anonymousId,
+        providerKind: provider.kind,
+        eventName: ctx.eventName,
+      }).catch((err) => {
+        logger.warn('tracking.dispatch.attribution_gate_degraded', {
+          kind: provider.kind,
+          event_name: ctx.eventName,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        // Fallback safe : on autorise si la gate est down (best-effort)
+        return null;
       });
-      // Fallback safe : on autorise si la gate est down (best-effort)
-      return null;
-    });
-    if (gate && !gate.allowed) {
-      logger.debug('tracking.dispatch.attribution_skip', {
-        kind: provider.kind,
-        event_name: ctx.eventName,
-        reason: gate.reason,
-        attributed_channel: gate.attributedChannel,
-        strategy: gate.strategy,
-      });
-      return [
-        provider.kind,
-        {
-          status: 'skipped',
-          latencyMs: 0,
-          attempts: 0,
-          error: `attribution_skip:${gate.attributedChannel}`,
-        },
-      ];
+      if (gate && !gate.allowed) {
+        logger.debug('tracking.dispatch.attribution_skip', {
+          kind: provider.kind,
+          event_name: ctx.eventName,
+          reason: gate.reason,
+          attributed_channel: gate.attributedChannel,
+          strategy: gate.strategy,
+        });
+        return [
+          provider.kind,
+          {
+            status: 'skipped',
+            latencyMs: 0,
+            attempts: 0,
+            error: `attribution_skip:${gate.attributedChannel}`,
+          },
+        ];
+      }
     }
     try {
-      const result = await adapter.dispatch(provider, ctxWithMappings);
+      const result = await adapter.dispatch(provider, dispatchCtx);
       return [provider.kind, result];
     } catch (err) {
       logger.error('tracking.dispatch.adapter_threw', {

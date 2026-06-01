@@ -327,6 +327,10 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         value: total / 100,
       });
       emit('generate_lead', {
+        // `method` discrimine la SOURCE du lead pour le pont Meta lead→Purchase
+        // (audit meta-lead-as-purchase-2026-06-01). Le serveur ne traite comme
+        // Purchase Meta que les sources éligibles {chat, abandoned_cart}.
+        method: 'abandoned_cart',
         currency: 'MAD',
         value: total / 100,
       });

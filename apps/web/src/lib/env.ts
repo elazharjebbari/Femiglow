@@ -76,6 +76,14 @@ const envSchema = z.object({
   // bascule à chaud sans redeploy).
   CHAT_LLM_INTENT_ENABLED: z.enum(['true', 'false']).default('false'),
   CHAT_PROVIDER_FALLBACK_ENABLED: z.enum(['true', 'false']).default('false'),
+  // Audit meta-lead-as-purchase-2026-06-01 — Compter les leads (chat + panier
+  // abandonné) comme `Purchase` côté Meta, sans doublon avec le vrai purchase.
+  // Défaut OFF (zéro impact). NEXT_PUBLIC mirror pour gater l'émission client.
+  META_LEAD_AS_PURCHASE_ENABLED: z.enum(['true', 'false']).default('false'),
+  NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED: z.enum(['true', 'false']).default('false'),
+  // Fenêtre de dédup du parcours lead→achat (heures). Au-delà, un purchase
+  // n'est plus considéré comme « le même parcours » qu'un lead antérieur.
+  META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
   // CHA-260 — Outbound webhook unifié (order, cart-abandon, contact, …).
   // Priorité sur CHAT_LEAD_WEBHOOK_URL ; fallback rétrocompat si absent.
   OUTBOUND_WEBHOOK_URL: z.string().url().optional(),
@@ -197,6 +205,11 @@ export const env = envSchema.parse({
   CHAT_LEAD_CONSENT_VERSION: process.env.CHAT_LEAD_CONSENT_VERSION,
   CHAT_LLM_INTENT_ENABLED: process.env.CHAT_LLM_INTENT_ENABLED,
   CHAT_PROVIDER_FALLBACK_ENABLED: process.env.CHAT_PROVIDER_FALLBACK_ENABLED,
+  META_LEAD_AS_PURCHASE_ENABLED: process.env.META_LEAD_AS_PURCHASE_ENABLED,
+  NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED:
+    process.env.NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED,
+  META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS:
+    process.env.META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS,
   OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
   OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
   SNAP_CAPI_TOKEN: process.env.SNAP_CAPI_TOKEN,
