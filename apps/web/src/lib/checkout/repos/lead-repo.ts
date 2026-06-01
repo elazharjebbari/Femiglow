@@ -121,6 +121,91 @@ export const wizardLeadRepo = {
     return existing[0]!;
   },
 
+  /**
+   * OWBS — upsert-by-leadId (ADR-0002). Le `id` est fourni par le client
+   * (`cl_…`) AVANT tout appel réseau, ce qui rend les étapes indépendantes et
+   * autorise l'envoi en tâche de fond (idempotent au rejeu/désordre).
+   *
+   * Sémantique : INSERT … ON CONFLICT (id) DO UPDATE en **fill-forward** —
+   * on rafraîchit les champs de capture mais on **préserve** la progression
+   * (`leadCapturedAt`, `lastTouchedStep`, et les colonnes adresse/paiement qui
+   * ne sont pas écrites ici). La cohérence `visitorId` est contrôlée en amont
+   * par le service (anti-collision inter-visiteurs).
+   *
+   * @see docs/checkout-leads-background-2026-06-01/00-conception/decisions/ADR-0002-client-leadid-upsert.md
+   */
+  async upsertWizardLead(
+    id: string,
+    input: CreateWizardLeadInput,
+  ): Promise<ChatLeadRow> {
+    const phoneE164 = normalizePhoneToE164Maroc(input.phone);
+    if (!phoneE164) throw new InvalidPhoneError();
+
+    const db = requireChatDb();
+    const now = new Date();
+    const identityHash = computeIdentityHash(phoneE164, input.firstName.trim());
+    const insert: ChatLeadInsert = {
+      id,
+      sessionId: input.sessionId,
+      visitorId: input.visitorId,
+      firstName: input.firstName.trim(),
+      phoneE164,
+      phoneRaw: input.phone,
+      consentVersion: input.consentVersion,
+      consentAt: now,
+      language: input.language,
+      triggerReason: 'purchase-intent',
+      source: input.source,
+      page: input.page ?? null,
+      referrer: input.referrer ?? null,
+      utm: input.utm ?? null,
+      formId: input.formId,
+      formMode: input.formMode,
+      variantKey: input.variantKey ?? null,
+      cartSnapshot: input.cartSnapshot ?? null,
+      cartTotalCents: input.cartSnapshot?.totalCents ?? null,
+      cartCurrency: input.cartSnapshot?.currency ?? null,
+      lastTouchedStep: 'lead',
+      leadCapturedAt: now,
+      gclid: input.gclid ?? null,
+      fbp: input.fbp ?? null,
+      fbc: input.fbc ?? null,
+      identityHash,
+    };
+    // Fill-forward : on NE met PAS à jour leadCapturedAt / lastTouchedStep /
+    // colonnes adresse-paiement → la progression du lead est préservée.
+    const rows = await db
+      .insert(chatLead)
+      .values(insert)
+      .onConflictDoUpdate({
+        target: chatLead.id,
+        set: {
+          firstName: insert.firstName,
+          phoneE164,
+          phoneRaw: insert.phoneRaw,
+          consentVersion: insert.consentVersion,
+          language: insert.language,
+          source: insert.source,
+          page: insert.page,
+          referrer: insert.referrer,
+          utm: insert.utm,
+          formId: insert.formId,
+          formMode: insert.formMode,
+          variantKey: insert.variantKey,
+          cartSnapshot: insert.cartSnapshot,
+          cartTotalCents: insert.cartTotalCents,
+          cartCurrency: insert.cartCurrency,
+          gclid: insert.gclid,
+          fbp: insert.fbp,
+          fbc: insert.fbc,
+          identityHash,
+          updatedAt: now,
+        },
+      })
+      .returning();
+    return rows[0]!;
+  },
+
   async getById(id: string): Promise<ChatLeadRow | null> {
     const db = requireChatDb();
     const rows = await db.select().from(chatLead).where(eq(chatLead.id, id)).limit(1);
