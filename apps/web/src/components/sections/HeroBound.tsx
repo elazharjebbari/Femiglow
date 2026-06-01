@@ -3,6 +3,7 @@ import type { Hero as HeroData } from '@/lib/schemas';
 import { Hero } from './Hero';
 import { ComponentMedia } from '@/lib/components/ComponentMedia';
 import { resolveComponentSlot } from '@/lib/components/resolver';
+import { buildHeroPreload } from '@/lib/media/preload';
 import { resolveComponentFields } from '@/lib/components/field-resolver';
 import { mergeHeroFields } from './hero-fields';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
@@ -59,19 +60,43 @@ export async function HeroBound({
     return <Hero data={merged} priority={priority} />;
   }
 
+  const heroSizes = '(min-width: 1024px) 45vw, 100vw';
+  // Preload LCP : précharge l'image hero dans le MEILLEUR format (avif/webp)
+  // via <link rel=preload as=image imagesrcset type=…>. React 18.3 / Next 14
+  // hoiste ce <link> dans <head>. Réutilise la MÊME résolution (resolveConfig
+  // + pickVariants) que le rendu → preload jamais gaspillé. Audit
+  // docs/image-optimization-audit-2026-06-01.
+  const heroPreload =
+    priority && resolved?.media
+      ? await buildHeroPreload(resolved.media.id, 'hero', heroSizes)
+      : null;
+
   return (
-    <Hero
-      data={merged}
-      priority={priority}
-      mediaSlot={
-        <ComponentMedia
-          componentKey={componentKey}
-          slot="primary"
-          context="hero"
-          sizes="(min-width: 1024px) 45vw, 100vw"
-          forcePriority={priority}
+    <>
+      {heroPreload ? (
+        <link
+          rel="preload"
+          as="image"
+          href={heroPreload.href}
+          imageSrcSet={heroPreload.imageSrcset}
+          imageSizes={heroPreload.imageSizes}
+          type={heroPreload.type}
+          fetchPriority="high"
         />
-      }
-    />
+      ) : null}
+      <Hero
+        data={merged}
+        priority={priority}
+        mediaSlot={
+          <ComponentMedia
+            componentKey={componentKey}
+            slot="primary"
+            context="hero"
+            sizes={heroSizes}
+            forcePriority={priority}
+          />
+        }
+      />
+    </>
   );
 }
