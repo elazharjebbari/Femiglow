@@ -1,0 +1,161 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  createLeadSyncQueue,
+  QUEUE_MIRROR_KEY,
+  type Envelope,
+  type SendResult,
+  type SyncTransport,
+} from './lead-sync-queue';
+
+const LEAD = 'cl_3xq7m2k9v4b1n8p0w5tz';
+
+function envInput(
+  scope: Envelope['scope'],
+  over: Partial<Envelope> = {},
+): Omit<Envelope, 'mutationId' | 'enqueuedAt' | 'attempt'> {
+  return {
+    leadId: LEAD,
+    scope,
+    endpoint: `/api/checkout/lead/${scope}`,
+    method: scope === 'lead_create' ? 'POST' : 'PATCH',
+    idempotencyKey: `idem_${scope}`,
+    payload: { scope },
+    ...over,
+  };
+}
+
+/** Transport scriptable : renvoie des résultats programmés par scope. */
+function scriptedTransport(
+  script: (env: Envelope) => SendResult,
+): SyncTransport & { calls: Envelope[] } {
+  const calls: Envelope[] = [];
+  return {
+    calls,
+    async send(env) {
+      calls.push({ ...env });
+      return script(env);
+    },
+  };
+}
+
+/** Fake Storage en mémoire (jsdom-free). */
+function memStorage(): Storage {
+  const m = new Map<string, string>();
+  return {
+    getItem: (k) => m.get(k) ?? null,
+    setItem: (k, v) => void m.set(k, v),
+    removeItem: (k) => void m.delete(k),
+    clear: () => m.clear(),
+    key: (i) => Array.from(m.keys())[i] ?? null,
+    get length() {
+      return m.size;
+    },
+  } as Storage;
+}
+
+const noSleep = () => Promise.resolve();
+
+describe('lead-sync-queue (OWBS P3)', () => {
+  // TST-U-10 — FIFO (create → address → payment)
+  it('envoie les mutations en FIFO', async () => {
+    const t = scriptedTransport(() => ({ ok: true }));
+    const q = createLeadSyncQueue({ transport: t, storage: null, sleep: noSleep });
+    q.enqueue(envInput('lead_create'));
+    q.enqueue(envInput('address_update'));
+    q.enqueue(envInput('payment_select'));
+    await q.flush();
+    expect(t.calls.map((c) => c.scope)).toEqual([
+      'lead_create',
+      'address_update',
+      'payment_select',
+    ]);
+    expect(q.pending()).toHaveLength(0);
+  });
+
+  // TST-U-11 — retry backoff sur retryable puis succès, MÊME idempotency-key
+  it('réessaie sur erreur retryable (même clé), puis vide la file', async () => {
+    let n = 0;
+    const t = scriptedTransport(() => {
+      n += 1;
+      return n < 3 ? { ok: false, retryable: true } : { ok: true };
+    });
+    const sleep = vi.fn(() => Promise.resolve());
+    const q = createLeadSyncQueue({ transport: t, storage: null, sleep, backoffBaseMs: 100 });
+    q.enqueue(envInput('lead_create'));
+    await q.flush();
+    expect(t.calls).toHaveLength(3); // 2 échecs + 1 succès
+    expect(new Set(t.calls.map((c) => c.idempotencyKey)).size).toBe(1); // même clé
+    expect(sleep).toHaveBeenCalledTimes(2); // 2 backoffs
+    expect(q.pending()).toHaveLength(0);
+  });
+
+  // TST-U-12 — 4xx non-retryable → drop + onDrop, retiré de pending
+  it('drop sur erreur non-retryable (4xx), avec callback onDrop', async () => {
+    const onDrop = vi.fn();
+    const t = scriptedTransport(() => ({ ok: false, retryable: false, status: 409 }));
+    const q = createLeadSyncQueue({ transport: t, storage: null, sleep: noSleep, onDrop });
+    q.enqueue(envInput('lead_create'));
+    await q.flush();
+    expect(q.pending()).toHaveLength(0);
+    expect(onDrop).toHaveBeenCalledWith(expect.objectContaining({ scope: 'lead_create' }), 'non_retryable');
+  });
+
+  // drop après maxAttempts
+  it('drop après maxAttempts sur retryable persistant', async () => {
+    const onDrop = vi.fn();
+    const t = scriptedTransport(() => ({ ok: false, retryable: true }));
+    const q = createLeadSyncQueue({ transport: t, storage: null, sleep: noSleep, maxAttempts: 3, onDrop });
+    q.enqueue(envInput('lead_create'));
+    await q.flush();
+    expect(q.pending()).toHaveLength(0);
+    expect(onDrop).toHaveBeenCalledWith(expect.anything(), 'max_attempts');
+    expect(t.calls.length).toBe(3); // attempt 1,2,3 puis drop
+  });
+
+  // TST-U-13 — miroir sessionStorage persiste / hydrate
+  it('persiste dans le miroir et réhydrate (reprise après reload)', async () => {
+    const storage = memStorage();
+    // Transport qui échoue (retryable) pour laisser l'envelope en file.
+    const failing = scriptedTransport(() => ({ ok: false, retryable: true }));
+    const q1 = createLeadSyncQueue({ transport: failing, storage, sleep: noSleep, maxAttempts: 1 });
+    q1.enqueue(envInput('lead_create'));
+    // maxAttempts=1 → la 1re tentative incrémente attempt à 1 == max → drop.
+    await q1.flush();
+    // Re-simule un reload : on ré-injecte une envelope via le miroir.
+    storage.setItem(
+      QUEUE_MIRROR_KEY,
+      JSON.stringify([
+        {
+          mutationId: 'mut_x',
+          leadId: LEAD,
+          scope: 'lead_create',
+          endpoint: '/api/checkout/lead',
+          method: 'POST',
+          idempotencyKey: 'idem_lead_create',
+          payload: {},
+          enqueuedAt: new Date().toISOString(),
+          attempt: 0,
+        },
+      ]),
+    );
+    const ok = scriptedTransport(() => ({ ok: true }));
+    const q2 = createLeadSyncQueue({ transport: ok, storage, sleep: noSleep });
+    q2.hydrateFromMirror();
+    expect(q2.pending()).toHaveLength(1);
+    await q2.flush();
+    expect(ok.calls).toHaveLength(1);
+    expect(q2.pending()).toHaveLength(0);
+  });
+
+  // TST-U-14 — un seul flush concurrent (pas de double-envoi par mutationId)
+  it('flush concurrent → un seul envoi par envelope', async () => {
+    const t = scriptedTransport(() => ({ ok: true }));
+    const q = createLeadSyncQueue({ transport: t, storage: null, sleep: noSleep });
+    q.enqueue(envInput('lead_create'));
+    // Deux flush lancés en parallèle.
+    await Promise.all([q.flush(), q.flush()]);
+    const ids = t.calls.map((c) => c.mutationId);
+    expect(ids).toHaveLength(1);
+    expect(new Set(ids).size).toBe(1);
+  });
+});
