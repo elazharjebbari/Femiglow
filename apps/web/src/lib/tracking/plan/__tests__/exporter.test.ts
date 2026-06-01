@@ -203,7 +203,8 @@ describe('exportPlan — structure GTM', () => {
       (t: any) =>
         t.type === 'CUSTOM_EVENT' &&
         t.name.startsWith('CE — ') && // exclut les triggers d'exception (BLK — …)
-        !t.name.includes('[attr / '),
+        !t.name.includes('[attr / ') &&
+        !t.name.includes('[lead→purchase]'), // exclut le trigger pixel lead→Purchase
     );
     expect(standardCE).toHaveLength(3);
     // Attribution-gated CE : generate_lead (Meta primary). purchase = broadcast
@@ -1253,5 +1254,65 @@ describe('exportPlan — langue (page_locale → GA4)', () => {
     const v = variables.find((x: any) => x.name === 'DLV - page.locale');
     expect(v).toBeDefined();
     expect(v.parameter.find((p: any) => p.key === 'name').value).toBe('page.locale');
+  });
+});
+
+describe('exportPlan — pont lead→Meta Purchase (pixels Purchase sur les events lead)', () => {
+  const leadPlan = () =>
+    buildPlan({
+      events: [
+        { key: 'page_view', providers: { ga4: true, meta: true } },
+        { key: 'purchase', providers: { ga4: true, meta: true } },
+        { key: 'generate_lead', providers: { ga4: true, meta: true } },
+        { key: 'lead_capture', providers: { ga4: true, meta: true } },
+      ],
+    });
+
+  function cv(plan = leadPlan()) {
+    return (exportPlan(plan, 'production').json as any).containerVersion;
+  }
+
+  it('crée un pixel Meta Purchase pour generate_lead ET lead_capture', () => {
+    const tags = cv().tag;
+    const gl = tags.find((t: any) => t.name === 'Meta Evt — generate_lead→Purchase (Purchase)');
+    const lc = tags.find((t: any) => t.name === 'Meta Evt — lead_capture→Purchase (Purchase)');
+    expect(gl).toBeDefined();
+    expect(lc).toBeDefined();
+    const html = gl.parameter.find((p: any) => p.key === 'html').value;
+    expect(html).toMatch(/fbq\('track', 'Purchase'/);
+    // value/currency portés + eventID = jpid de parcours (dédup native)
+    expect(html).toMatch(/value:\s*\{\{DLV - value\}\}/);
+    expect(html).toMatch(/currency:\s*'\{\{DLV - currency\}\}'/);
+    expect(html).toMatch(/eventID:\s*\{\{DLV - meta_purchase_eid\}\}/);
+  });
+
+  it('le trigger lead→purchase filtre sur method éligible (jamais newsletter)', () => {
+    const triggers = cv().trigger;
+    const t = triggers.find((x: any) => x.name === 'CE — generate_lead [lead→purchase]');
+    expect(t).toBeDefined();
+    expect(t.type).toBe('CUSTOM_EVENT');
+    // customEventFilter sur generate_lead + filter regex method ∈ {chat, abandoned_cart}
+    expect(t.customEventFilter[0].parameter.find((p: any) => p.key === 'arg1').value).toBe('generate_lead');
+    const rgx = t.filter[0].parameter.find((p: any) => p.key === 'arg1').value;
+    expect(rgx).toBe('^(chat|abandoned_cart)$');
+    expect(rgx).not.toMatch(/newsletter/);
+    const lc = triggers.find((x: any) => x.name === 'CE — lead_capture [lead→purchase]');
+    expect(lc.filter[0].parameter.find((p: any) => p.key === 'arg1').value).toBe('^(wizard)$');
+  });
+
+  it('expose les variables DLV - method et DLV - meta_purchase_eid', () => {
+    const vars = cv().variable;
+    const method = vars.find((v: any) => v.name === 'DLV - method');
+    const eid = vars.find((v: any) => v.name === 'DLV - meta_purchase_eid');
+    expect(method.parameter.find((p: any) => p.key === 'name').value).toBe('params.method');
+    expect(eid.parameter.find((p: any) => p.key === 'name').value).toBe('params.meta_purchase_eid');
+  });
+
+  it('le pixel lead→Purchase est broadcast (fire sur son propre trigger, pas attribution-gated)', () => {
+    const c = cv();
+    const tag = c.tag.find((t: any) => t.name === 'Meta Evt — generate_lead→Purchase (Purchase)');
+    const trigName = c.trigger.find((t: any) => t.triggerId === tag.firingTriggerId[0]).name;
+    expect(trigName).toBe('CE — generate_lead [lead→purchase]');
+    expect(trigName).not.toContain('[attr / ');
   });
 });

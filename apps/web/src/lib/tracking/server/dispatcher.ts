@@ -94,11 +94,18 @@ export async function dispatchToProviders(ctx: DispatchContext): Promise<Dispatc
       }
       if (decision.action === 'as_purchase') {
         // On traite ce lead comme un Purchase Meta : nom overridé + event_id de
-        // parcours (dédup Pixel↔CAPI). La valeur (prix kit) reste portée par
-        // `ctx.params` → reprise telle quelle par l'adapter Meta.
+        // PARCOURS (dédup Pixel↔CAPI). On privilégie le `meta_purchase_eid` (jpid)
+        // posé par le client (cookie de parcours) → MÊME eventID que le pixel
+        // Purchase du lead ET que les autres signaux du parcours → Meta n'en
+        // compte qu'UN. Fallback `journeyId` serveur si le client ne l'a pas porté.
+        // La valeur (prix kit / panier) reste portée par `ctx.params`.
+        const jpid =
+          typeof ctx.params.meta_purchase_eid === 'string' && ctx.params.meta_purchase_eid.length > 0
+            ? ctx.params.meta_purchase_eid
+            : decision.journeyId;
         dispatchCtx = {
           ...ctxWithMappings,
-          eventId: decision.journeyId,
+          eventId: jpid,
           resolvedMappings: {
             ...ctxWithMappings.resolvedMappings,
             meta: { mappedName: 'Purchase', isCustom: false, notes: 'lead_as_purchase' },
@@ -106,15 +113,22 @@ export async function dispatchToProviders(ctx: DispatchContext): Promise<Dispatc
         };
         skipAttributionGate = true; // signal Purchase broadcast
       }
-      // Achat NORMAL (sans lead préalable) : on NE TOUCHE PAS à `event_id`. Il
-      // reste l'`event_id` client (uuidv7), identique à celui que le pixel GTM
-      // envoie via `{{DLV - event_id}}` → dédup native Meta Pixel↔CAPI du même
-      // achat. (Écraser par `journeyId` ici cassait cette dédup → double-comptage,
-      // car le client emit n'applique PAS le journeyId — cf. plan A3 partiel.)
-      // Le `journeyId` ne sert qu'au lead `as_purchase` (pas de pixel jumeau) ;
-      // quand un lead précède un achat, cet achat est de toute façon supprimé
-      // côté CAPI (ledger) et bloqué côté pixel (trigger BLK).
-      // Audit meta-lead-as-purchase-2026-06-01 — Fix dédup.
+      // Achat NORMAL (passthrough) :
+      //  - si un lead a précédé, le client porte le jpid de parcours
+      //    (`meta_purchase_eid`) sur l'achat → on l'utilise comme `event_id` →
+      //    la CAPI de l'achat réel déduplique avec le lead MÊME si le ledger
+      //    serveur a été perdu (restart). Robustesse anti-doublon CAPI.
+      //  - sinon (achat direct), on NE TOUCHE PAS à `event_id` : il reste
+      //    l'`event_id` client (uuidv7), partagé avec le pixel `{{DLV - event_id}}`
+      //    → dédup native Pixel↔CAPI standard (Fix A). Écraser par un journeyId
+      //    cassait cette dédup (le client emit ne l'appliquait pas).
+      else if (
+        ctx.eventName === 'purchase' &&
+        typeof ctx.params.meta_purchase_eid === 'string' &&
+        ctx.params.meta_purchase_eid.length > 0
+      ) {
+        dispatchCtx = { ...ctxWithMappings, eventId: ctx.params.meta_purchase_eid };
+      }
     }
 
     // Phase 2 — Gate attribution multi-canal. Skip si la stratégie

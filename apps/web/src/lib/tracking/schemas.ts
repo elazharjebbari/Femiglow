@@ -26,6 +26,8 @@ const purchaseParams = ecommerceParams.extend({
   transaction_id: z.string().min(1),
   tax: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative().optional(),
+  // jpid de parcours (présent si un lead a précédé) — dédup CAPI avec le lead.
+  meta_purchase_eid: z.string().optional(),
 });
 
 const generateLeadParams = z
@@ -34,6 +36,8 @@ const generateLeadParams = z
     value: z.number().nonnegative().optional(),
     lead_id: z.string().optional(),
     method: z.string().optional(),
+    // eventID de parcours Meta Purchase (jpid) — porté pour dédup Pixel↔CAPI.
+    meta_purchase_eid: z.string().optional(),
   })
   .strict();
 
@@ -314,6 +318,8 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       contact_channels: z.array(z.enum(['phone', 'email', 'sms'])).max(3),
       currency: z.string().length(3),
       value: z.number().nonnegative().optional(),
+      // eventID de parcours Meta Purchase (jpid) — dédup Pixel↔CAPI.
+      meta_purchase_eid: z.string().optional(),
     })
     .strict(),
   address_completed: z

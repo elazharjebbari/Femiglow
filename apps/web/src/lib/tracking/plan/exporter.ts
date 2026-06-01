@@ -968,6 +968,71 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     }
   }
 
+  // ─── Pont lead→Meta Purchase : pixels PURCHASE sur les events lead ───────
+  // (audit meta-lead-purchase-pixel-2026-06-01). Pour les sources éligibles
+  // (chat / panier abandonné / wizard) on fait fire un pixel Meta `Purchase`
+  // EN PLUS du pixel `Lead`, avec `eventID = {{DLV - meta_purchase_eid}}` (le
+  // jpid de parcours) → MÊME eventID que la CAPI et que les autres signaux Purchase
+  // du même parcours → Meta déduplique nativement → 1 SEUL Purchase compté.
+  // Broadcast (non attribution-gated), comme la CAPI lead-as-purchase. Filtré
+  // par `method` → newsletter/contact ne firent JAMAIS Purchase.
+  if (idVars.meta) {
+    const LEAD_PURCHASE_SOURCES: Array<{ eventKey: string; methods: string[] }> = [
+      { eventKey: 'generate_lead', methods: ['chat', 'abandoned_cart'] },
+      { eventKey: 'lead_capture', methods: ['wizard'] },
+    ];
+    const methodVar = ensureDlv('DLV - method', DATALAYER_PATHS.method);
+    const eidVar = ensureDlv('DLV - meta_purchase_eid', DATALAYER_PATHS.metaPurchaseEid);
+    for (const src of LEAD_PURCHASE_SOURCES) {
+      if (!eventTriggerByKey[src.eventKey]) continue; // event absent du plan
+      const trigId = nextTrigger();
+      triggers.push({
+        triggerId: trigId,
+        name: `CE — ${src.eventKey} [lead→purchase]`,
+        type: 'CUSTOM_EVENT',
+        customEventFilter: [
+          {
+            type: 'EQUALS',
+            parameter: [
+              { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+              { type: 'TEMPLATE', key: 'arg1', value: src.eventKey },
+            ],
+          },
+        ],
+        // Ne fire QUE pour les méthodes éligibles (jamais newsletter/contact).
+        filter: [
+          {
+            type: 'MATCH_REGEX',
+            parameter: [
+              { type: 'TEMPLATE', key: 'arg0', value: methodVar },
+              { type: 'TEMPLATE', key: 'arg1', value: `^(${src.methods.join('|')})$` },
+            ],
+          },
+        ],
+        parentFolderId: '2',
+      });
+      const cd = `{ value: ${ensureDlv('DLV - value', DATALAYER_PATHS.value)}, currency: '${ensureDlv('DLV - currency', DATALAYER_PATHS.currency)}' }`;
+      tags.push({
+        tagId: nextTag(),
+        name: `Meta Evt — ${src.eventKey}→Purchase (Purchase)`,
+        type: 'html',
+        parameter: [
+          {
+            type: 'TEMPLATE',
+            key: 'html',
+            // eventID = jpid de parcours → dédup native avec la CAPI + les autres
+            // signaux Purchase du parcours (lead_capture/generate_lead/purchase).
+            value: `<script>fbq('track', 'Purchase', ${cd}, { eventID: ${eidVar} });</script>`,
+          },
+          { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
+        ],
+        firingTriggerId: [trigId],
+        setupTag: [{ tagName: META_INIT_NAME, stopOnSetupFailure: false }],
+        parentFolderId: '2',
+      });
+    }
+  }
+
   const containerName = `FemiGlow Web — ${env}`;
   const accountId = '0';
   const containerId = cfg.gtmContainerId ?? 'GTM-UNSET';

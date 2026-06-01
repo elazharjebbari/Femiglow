@@ -23,6 +23,10 @@ export const DATALAYER_PATHS = {
   transactionId: 'params.transaction_id',
   /** Lignes produit (GA4 items / Meta contents) — `params.items`. */
   items: 'params.items',
+  /** eventID de parcours Meta Purchase (jpid) — `params.meta_purchase_eid`. */
+  metaPurchaseEid: 'params.meta_purchase_eid',
+  /** Source du lead (chat/abandoned_cart/wizard…) — `params.method`. */
+  method: 'params.method',
   /** Canal d'attribution (gating) — `DataLayerEntry.attribution.channel`. */
   attributionChannel: 'attribution.channel',
   /**

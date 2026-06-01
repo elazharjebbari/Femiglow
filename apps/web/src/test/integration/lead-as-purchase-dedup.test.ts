@@ -193,4 +193,60 @@ describe('API /api/track — pont lead→Meta Purchase (anti-doublon, CAPI réel
     expect(metaEvents).toHaveLength(2);
     expect(metaEvents[0]?.event_id).not.toBe(metaEvents[1]?.event_id);
   });
+
+  it("8. lead chat avec jpid -> CAPI Purchase porte le MEME event_id (jpid que le pixel)", async () => {
+    const v = "aid_jpid_solo"; const jpid = "jpid_shared_abc123";
+    await POST(buildRequest({ events: [ event({ event: "generate_lead", user: { anonymous_id: v, session_id: 'sess_' + v }, params: { method: "chat", value: 199, currency: "MAD", meta_purchase_eid: jpid } }) ] }));
+    expect(metaNames()).toEqual(["Purchase"]);
+    expect(metaEvents[0]?.event_id).toBe(jpid);
+  });
+
+  it("9. S2 chat->commande : generate_lead(chat) puis generate_lead(cart) MEME jpid -> 2 envois CAPI au MEME event_id (Meta dedup -> 1)", async () => {
+    const v = "aid_seq_journey"; const jpid = "jpid_journey_xyz789";
+    await POST(buildRequest({ events: [ event({ event: "generate_lead", user: { anonymous_id: v, session_id: 'sess_' + v }, params: { method: "chat", value: 199, currency: "MAD", meta_purchase_eid: jpid } }) ] }));
+    await POST(buildRequest({ events: [ event({ event: "generate_lead", user: { anonymous_id: v, session_id: 'sess_' + v }, params: { method: "abandoned_cart", value: 249, currency: "MAD", meta_purchase_eid: jpid } }) ] }));
+    const purchases = metaEvents.filter((e) => e.event_name === "Purchase");
+    expect(purchases.length).toBe(2);
+    expect(purchases[0]?.event_id).toBe(jpid);
+    expect(purchases[1]?.event_id).toBe(jpid);
+  });
+
+  it("10. ROBUSTESSE ledger perdu (restart) : purchase porte le jpid → CAPI dédup avec le lead", async () => {
+    const v = "aid_ledger_loss"; const jpid = "jpid_resilient_001";
+    // lead chat (pose le jpid, marque le ledger)
+    await POST(buildRequest({ events: [ event({ event: "generate_lead", user: { anonymous_id: v, session_id: "sess_" + v }, params: { method: "chat", value: 199, currency: "MAD", meta_purchase_eid: jpid } }) ] }));
+    // simule un RESTART serveur → le ledger en mémoire est vidé
+    __clearLeadAsPurchaseLedger();
+    // l'achat réel arrive : sans ledger il n'est PAS supprimé, MAIS il porte le
+    // jpid (cookie persistant) → la CAPI envoie Purchase au MÊME event_id → dédup.
+    await POST(
+      buildRequest({
+        events: [
+          event({
+            event: "purchase",
+            user: { anonymous_id: v, session_id: "sess_" + v },
+            params: {
+              transaction_id: "tx_ll",
+              currency: "MAD",
+              value: 199,
+              meta_purchase_eid: jpid,
+              items: [{ item_id: "kit", item_name: "Kit", price: 199, quantity: 1, currency: "MAD" }],
+            },
+          }),
+        ],
+      }),
+    );
+    const purchases = metaEvents.filter((e) => e.event_name === "Purchase");
+    expect(purchases.length).toBe(2); // lead + achat (ledger perdu → achat non supprimé)
+    expect(purchases[0]?.event_id).toBe(jpid);
+    expect(purchases[1]?.event_id).toBe(jpid); // MÊME event_id → Meta n'en compte qu'1
+  });
+
+  it("11. achat DIRECT (sans lead) → event_id CLIENT (pas de jpid), dédup Pixel↔CAPI standard", async () => {
+    const v = "aid_direct_jpid"; const clientEid = uuidv7();
+    await POST(buildRequest({ events: [ purchase(v, clientEid) ] }));
+    const purchases = metaEvents.filter((e) => e.event_name === "Purchase");
+    expect(purchases.length).toBe(1);
+    expect(purchases[0]?.event_id).toBe(clientEid); // pas de meta_purchase_eid → event_id client
+  });
 });

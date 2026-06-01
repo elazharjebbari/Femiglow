@@ -69,7 +69,7 @@ import { AddressStep } from './steps/AddressStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { routes } from '@/lib/routes';
 import { useTracking } from '@/lib/tracking/use-tracking';
-import { markLeadAsPurchaseCookie } from '@/lib/tracking/lead-purchase-cookie';
+import { getJourneyPurchaseId, readJourneyPurchaseId } from '@/lib/tracking/lead-purchase-cookie';
 
 const stepLabels = ['Informations', 'Livraison', 'Confirmation'] as const;
 
@@ -315,6 +315,10 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
       // `schema_version: 'v1'` est requis par le schéma serveur des events
       // wizard custom (cf. lib/tracking/schemas.ts). Sans cela, l'event est
       // rejeté côté `/api/track` avec `Invalid literal value`.
+      // `eventID` de parcours (jpid) partagé : lead_capture + generate_lead (et
+      // la dédup de l'achat réel) portent le MÊME eventID → 1 seul Purchase Meta
+      // compté (pixel + CAPI). No-op si flag OFF.
+      const jpid = getJourneyPurchaseId();
       emit('lead_capture', {
         form_id: FORM_ID,
         form_mode: FORM_MODE,
@@ -326,6 +330,7 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         contact_channels: ['phone'],
         currency: 'MAD',
         value: total / 100,
+        ...(jpid ? { meta_purchase_eid: jpid } : {}),
       });
       emit('generate_lead', {
         // `method` discrimine la SOURCE du lead pour le pont Meta lead→Purchase
@@ -334,10 +339,8 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         method: 'abandoned_cart',
         currency: 'MAD',
         value: total / 100,
+        ...(jpid ? { meta_purchase_eid: jpid } : {}),
       });
-      // Marque le parcours (cookie) → GTM bloque le Purchase pixel du vrai
-      // achat pour éviter le doublon avec le lead-Purchase CAPI. No-op si OFF.
-      markLeadAsPurchaseCookie();
       return true;
     } catch (err) {
       setNetworkError(err, 'Impossible de valider vos coordonnées.');
@@ -468,7 +471,11 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         shippingMode: 'standard',
       });
 
-      // 3) Tracking purchase
+      // 3) Tracking purchase. Si un lead a précédé (cookie jpid posé), l'achat
+      // réel porte le MÊME jpid → la CAPI déduplique avec le lead même si le
+      // ledger serveur a été perdu (restart). Achat direct (sans lead) : pas de
+      // jpid → event_id client (dédup Pixel↔CAPI standard).
+      const purchaseJpid = readJourneyPurchaseId();
       emit('purchase', {
         transaction_id: orderRes.orderId,
         currency: 'MAD',
@@ -478,6 +485,7 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         form_mode: FORM_MODE,
         step_name: 'thank_you',
         lead_id: leadId,
+        ...(purchaseJpid ? { meta_purchase_eid: purchaseJpid } : {}),
         items: items.map((it) => ({
           item_id: it.productId,
           item_name: it.productName,

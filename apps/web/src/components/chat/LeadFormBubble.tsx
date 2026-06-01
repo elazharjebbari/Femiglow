@@ -30,7 +30,7 @@ import type {
   ChatLeadTriggerReason,
 } from '@/lib/chat/contracts';
 import { useTracking } from '@/lib/tracking/use-tracking';
-import { markLeadAsPurchaseCookie } from '@/lib/tracking/lead-purchase-cookie';
+import { getJourneyPurchaseId } from '@/lib/tracking/lead-purchase-cookie';
 
 import { useChatStore } from './chat-store';
 import { getLeadFormCopy, type CopyKey } from './lead-form-copy';
@@ -256,16 +256,18 @@ export function LeadFormBubble({
       // T-06 — `generate_lead` valorisé au prix du kit (avec promo), fourni
       // par la réponse serveur. On n'émet `currency` QUE si `value` est
       // présente (currency orpheline = signal invalide GA4/Meta).
+      // Pont lead→Meta Purchase : on crée/lit le `eventID` de parcours (jpid) et
+      // on le porte sur `generate_lead` → le pixel Purchase ET la CAPI utilisent
+      // le MÊME eventID → dédup native Meta (+ cookie pour bloquer l'achat réel).
+      const jpid = getJourneyPurchaseId();
       emit('generate_lead', {
         method: 'chat',
         lead_id: data.leadId,
+        ...(jpid ? { meta_purchase_eid: jpid } : {}),
         ...(typeof data.value === 'number' && data.value > 0
           ? { value: data.value, currency: data.currency ?? 'MAD' }
           : {}),
       });
-      // Pont lead→Meta Purchase : marque le parcours (cookie) pour que GTM
-      // bloque le Purchase pixel du vrai achat → dédup. No-op si flag OFF.
-      markLeadAsPurchaseCookie();
     } catch (err) {
       setLeadFormError((err as Error).message || 'network-error');
     }
