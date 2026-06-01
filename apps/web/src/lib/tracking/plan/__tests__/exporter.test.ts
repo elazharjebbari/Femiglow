@@ -200,7 +200,10 @@ describe('exportPlan — structure GTM', () => {
     expect(triggers.filter((t: any) => t.type === 'PAGEVIEW')).toHaveLength(1);
     // Standard CE triggers : 1 par event (page_view + purchase + generate_lead = 3)
     const standardCE = triggers.filter(
-      (t: any) => t.type === 'CUSTOM_EVENT' && !t.name.includes('[attr / '),
+      (t: any) =>
+        t.type === 'CUSTOM_EVENT' &&
+        t.name.startsWith('CE — ') && // exclut les triggers d'exception (BLK — …)
+        !t.name.includes('[attr / '),
     );
     expect(standardCE).toHaveLength(3);
     // Attribution-gated CE : generate_lead (Meta primary). purchase = broadcast
@@ -799,6 +802,40 @@ describe('exportPlan — structure GTM', () => {
     // Le tag GA4 reste sur le trigger standard (analytics neutre)
     const ga4Tag = tags.find((t: any) => t.name === 'GA4 Evt — purchase');
     expect(ga4Tag.firingTriggerId).toEqual([standardTrigger.triggerId]);
+  });
+
+  it('Meta purchase porte un blockingTriggerId anti-doublon lead→Purchase (cookie + BLK trigger)', () => {
+    const plan = buildPlan({
+      providers: [{ id: 'meta', active: true }],
+      envProfiles: [
+        { env: 'production', config: { metaPixelId: '1234', gtmContainerId: 'GTM-Y' } },
+      ],
+      events: [{ key: 'purchase', providers: { meta: true } }],
+    });
+    const json = exportPlan(plan, 'production').json as any;
+    const tags = json.containerVersion.tag;
+    const metaPurchase = tags.find((t: any) => t.name?.startsWith('Meta Evt — purchase'));
+    expect(metaPurchase.blockingTriggerId).toHaveLength(1);
+    // Le trigger d'exception existe et lit le cookie.
+    const blk = json.containerVersion.trigger.find(
+      (t: any) => t.triggerId === metaPurchase.blockingTriggerId[0],
+    );
+    expect(blk.name).toContain('BLK');
+    expect(JSON.stringify(blk.filter)).toContain('Cookie - fg_meta_lead_purchase');
+    // La variable 1st-party cookie (type 'k') est émise.
+    const cookieVar = json.containerVersion.variable.find(
+      (v: any) => v.name === 'Cookie - fg_meta_lead_purchase' && v.type === 'k',
+    );
+    expect(cookieVar).toBeDefined();
+    // Un event NON-purchase (ex. view_item) n'a PAS de blockingTriggerId Meta.
+    const plan2 = buildPlan({
+      providers: [{ id: 'meta', active: true }],
+      envProfiles: [{ env: 'production', config: { metaPixelId: '1234', gtmContainerId: 'GTM-Y' } }],
+      events: [{ key: 'view_item', providers: { meta: true } }],
+    });
+    const json2 = exportPlan(plan2, 'production').json as any;
+    const metaView = json2.containerVersion.tag.find((t: any) => t.name?.startsWith('Meta Evt — view_item'));
+    expect(metaView.blockingTriggerId).toBeUndefined();
   });
 
   it('gating per-provider — checkout_intent broadcast pour Meta (InitiateCheckout=non-primary) ET pour Ads (secondary)', () => {

@@ -50,6 +50,8 @@ interface GtmTag {
   type: string;
   parameter: GtmParameter[];
   firingTriggerId?: string[];
+  /** Triggers d'exception : le tag NE fire PAS si l'un d'eux fire. */
+  blockingTriggerId?: string[];
   setupTag?: Array<{ tagName: string; stopOnSetupFailure: boolean }>;
   tagFiringOption?: 'ONCE_PER_EVENT' | 'UNLIMITED' | 'ONCE_PER_LOAD';
   priority?: GtmParameter;
@@ -633,6 +635,60 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     return id;
   }
 
+  // ─── Pont lead→Meta Purchase : trigger d'exception du purchase pixel ──
+  // (audit meta-lead-as-purchase-2026-06-01). Le tag Meta `Purchase` du VRAI
+  // achat est bloqué quand le cookie `fg_meta_lead_purchase` est posé (= un
+  // lead chat/panier a déjà été compté comme Purchase via la CAPI) → zéro
+  // doublon pixel. INERTE tant que le client ne pose pas le cookie (flag
+  // NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED OFF) → ajout sans risque.
+  let leadPurchaseBlockTriggerId: string | null = null;
+  function ensureLeadPurchaseBlockTrigger(): string {
+    if (leadPurchaseBlockTriggerId) return leadPurchaseBlockTriggerId;
+    // Variable 1st-party cookie (type 'k').
+    const cookieVar = 'Cookie - fg_meta_lead_purchase';
+    if (!dlvByName.has(cookieVar)) {
+      variables.push({
+        variableId: nextVariable(),
+        name: cookieVar,
+        type: 'k',
+        parameter: [
+          { type: 'TEMPLATE', key: 'name', value: 'fg_meta_lead_purchase' },
+          { type: 'BOOLEAN', key: 'decodeCookie', value: 'true' },
+        ],
+        parentFolderId: '3',
+      });
+      dlvByName.set(cookieVar, `{{${cookieVar}}}`);
+    }
+    const id = nextTrigger();
+    triggers.push({
+      triggerId: id,
+      name: 'BLK — lead-purchase déjà compté (anti-doublon Meta)',
+      type: 'CUSTOM_EVENT',
+      customEventFilter: [
+        {
+          type: 'EQUALS',
+          parameter: [
+            { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+            { type: 'TEMPLATE', key: 'arg1', value: 'purchase' },
+          ],
+        },
+      ],
+      // Cookie non vide → bloque (fire de l'exception). MATCH_REGEX `.+`.
+      filter: [
+        {
+          type: 'MATCH_REGEX',
+          parameter: [
+            { type: 'TEMPLATE', key: 'arg0', value: `{{${cookieVar}}}` },
+            { type: 'TEMPLATE', key: 'arg1', value: '.+' },
+          ],
+        },
+      ],
+      parentFolderId: '2',
+    });
+    leadPurchaseBlockTriggerId = id;
+    return id;
+  }
+
   // ─── Per-event tags (GA4 + Meta, wired to CUSTOM_EVENT triggers) ─
   for (const event of sortedEvents) {
     const triggerId = eventTriggerByKey[event.key];
@@ -706,6 +762,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
           { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
         ],
         firingTriggerId: [metaTriggerId],
+        // Anti-doublon lead→Purchase : le Purchase pixel du vrai achat est
+        // bloqué si un lead a déjà compté (cookie posé). Inerte si flag OFF.
+        ...(event.key === 'purchase'
+          ? { blockingTriggerId: [ensureLeadPurchaseBlockTrigger()] }
+          : {}),
         setupTag: [{ tagName: META_INIT_NAME, stopOnSetupFailure: false }],
         parentFolderId: '2',
       });

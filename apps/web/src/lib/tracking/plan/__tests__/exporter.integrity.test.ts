@@ -87,6 +87,7 @@ interface GtmTag {
   type: string;
   parameter: GtmParam[];
   firingTriggerId?: string[];
+  blockingTriggerId?: string[];
   setupTag?: Array<{ tagName: string }>;
 }
 interface GtmTrigger {
@@ -173,7 +174,10 @@ describe('GTM container — intégrité référentielle', () => {
 
   it('aucun trigger orphelin (chaque trigger est référencé par ≥1 tag)', () => {
     const { tags, triggers } = container();
-    const used = new Set(tags.flatMap((t) => t.firingTriggerId ?? []));
+    // Un trigger peut être référencé en FIRING ou en BLOCKING (exception).
+    const used = new Set(
+      tags.flatMap((t) => [...(t.firingTriggerId ?? []), ...(t.blockingTriggerId ?? [])]),
+    );
     const orphans = triggers.filter((tr) => !used.has(tr.triggerId)).map((tr) => tr.name);
     expect(orphans).toEqual([]);
   });

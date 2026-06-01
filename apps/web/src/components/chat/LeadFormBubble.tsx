@@ -30,6 +30,7 @@ import type {
   ChatLeadTriggerReason,
 } from '@/lib/chat/contracts';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { markLeadAsPurchaseCookie } from '@/lib/tracking/lead-purchase-cookie';
 
 import { useChatStore } from './chat-store';
 import { getLeadFormCopy, type CopyKey } from './lead-form-copy';
@@ -262,6 +263,9 @@ export function LeadFormBubble({
           ? { value: data.value, currency: data.currency ?? 'MAD' }
           : {}),
       });
+      // Pont lead→Meta Purchase : marque le parcours (cookie) pour que GTM
+      // bloque le Purchase pixel du vrai achat → dédup. No-op si flag OFF.
+      markLeadAsPurchaseCookie();
     } catch (err) {
       setLeadFormError((err as Error).message || 'network-error');
     }

@@ -69,6 +69,7 @@ import { AddressStep } from './steps/AddressStep';
 import { PaymentStep } from './steps/PaymentStep';
 import { routes } from '@/lib/routes';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { markLeadAsPurchaseCookie } from '@/lib/tracking/lead-purchase-cookie';
 
 const stepLabels = ['Informations', 'Livraison', 'Confirmation'] as const;
 
@@ -334,6 +335,9 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         currency: 'MAD',
         value: total / 100,
       });
+      // Marque le parcours (cookie) → GTM bloque le Purchase pixel du vrai
+      // achat pour éviter le doublon avec le lead-Purchase CAPI. No-op si OFF.
+      markLeadAsPurchaseCookie();
       return true;
     } catch (err) {
       setNetworkError(err, 'Impossible de valider vos coordonnées.');
