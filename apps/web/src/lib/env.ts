@@ -81,6 +81,13 @@ const envSchema = z.object({
   // Défaut OFF (zéro impact). NEXT_PUBLIC mirror pour gater l'émission client.
   META_LEAD_AS_PURCHASE_ENABLED: z.enum(['true', 'false']).default('false'),
   NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED: z.enum(['true', 'false']).default('false'),
+  // OWBS — Optimistic Wizard & Background Lead Sync. ON => le wizard avance de
+  // façon optimiste et synchronise les leads en tâche de fond (file + beacon +
+  // outbox). OFF (défaut) => comportement legacy (await bloquant), bit-à-bit.
+  // NEXT_PUBLIC mirror pour gater le chemin client.
+  // cf. docs/checkout-leads-background-2026-06-01/.
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: z.enum(['true', 'false']).default('false'),
+  NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: z.enum(['true', 'false']).default('false'),
   // Fenêtre de dédup du parcours lead→achat (heures). Au-delà, un purchase
   // n'est plus considéré comme « le même parcours » qu'un lead antérieur.
   META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
@@ -208,6 +215,9 @@ export const env = envSchema.parse({
   META_LEAD_AS_PURCHASE_ENABLED: process.env.META_LEAD_AS_PURCHASE_ENABLED,
   NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED:
     process.env.NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED,
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: process.env.CHECKOUT_OPTIMISTIC_WIZARD_ENABLED,
+  NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED:
+    process.env.NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED,
   META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS:
     process.env.META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS,
   OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
