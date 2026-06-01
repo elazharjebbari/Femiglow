@@ -105,10 +105,16 @@ export async function dispatchToProviders(ctx: DispatchContext): Promise<Dispatc
           },
         };
         skipAttributionGate = true; // signal Purchase broadcast
-      } else if (decision.journeyId) {
-        // purchase normal : event_id de parcours pour dédup Pixel↔CAPI.
-        dispatchCtx = { ...ctxWithMappings, eventId: decision.journeyId };
       }
+      // Achat NORMAL (sans lead préalable) : on NE TOUCHE PAS à `event_id`. Il
+      // reste l'`event_id` client (uuidv7), identique à celui que le pixel GTM
+      // envoie via `{{DLV - event_id}}` → dédup native Meta Pixel↔CAPI du même
+      // achat. (Écraser par `journeyId` ici cassait cette dédup → double-comptage,
+      // car le client emit n'applique PAS le journeyId — cf. plan A3 partiel.)
+      // Le `journeyId` ne sert qu'au lead `as_purchase` (pas de pixel jumeau) ;
+      // quand un lead précède un achat, cet achat est de toute façon supprimé
+      // côté CAPI (ledger) et bloqué côté pixel (trigger BLK).
+      // Audit meta-lead-as-purchase-2026-06-01 — Fix dédup.
     }
 
     // Phase 2 — Gate attribution multi-canal. Skip si la stratégie

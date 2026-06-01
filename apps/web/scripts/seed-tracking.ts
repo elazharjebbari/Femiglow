@@ -6,7 +6,10 @@ import {
   upsertTrackingComponent,
 } from '@/lib/db/queries/tracking/components';
 import { upsertEventDefinition } from '@/lib/db/queries/tracking/event-definitions';
-import { upsertTrackingProvider } from '@/lib/db/queries/tracking/providers';
+import {
+  upsertTrackingProvider,
+  findTrackingProviderByKind,
+} from '@/lib/db/queries/tracking/providers';
 import { EVENT_CATALOG } from '@/lib/tracking/event-catalog';
 import { scanInventory, writeManifest } from '@/lib/tracking/inventory/scanner';
 import type { TrackingProviderKind } from '@/lib/db/types';
@@ -90,7 +93,15 @@ export async function runTrackingSeed(opts: {
     'pinterest',
   ];
   for (const kind of providers) {
-    await upsertTrackingProvider({ kind, status: 'disabled' });
+    // Idempotence NON-destructive : on crée la ligne provider si absente (en
+    // 'disabled' par défaut), mais on NE downgrade JAMAIS un provider déjà
+    // configuré. Sinon un `seed:full`/provision re-désactive un provider activé
+    // en prod (incident 2026-05-31 : meta/tiktok/snap repassés en disabled →
+    // CAPI coupée). cf. audit meta-lead-as-purchase-2026-06-01.
+    const existing = await findTrackingProviderByKind(kind);
+    if (!existing) {
+      await upsertTrackingProvider({ kind, status: 'disabled' });
+    }
   }
 
   return {

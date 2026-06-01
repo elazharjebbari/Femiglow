@@ -105,6 +105,19 @@ describe('dispatchToProviders × lead→Meta Purchase (flag ON)', () => {
     expect(payload?.event_name).toBe('Purchase');
   });
 
+  it('purchase SANS lead → CAPI garde event_id CLIENT (dédup Pixel↔CAPI), PAS le journeyId', async () => {
+    // Régression : le dispatcher écrasait event_id par le journeyId pour TOUT
+    // purchase → cassait la dédup native avec le pixel (qui envoie l'event_id
+    // client). On vérifie que l'achat normal conserve l'event_id client.
+    const out = await dispatchToProviders(
+      ctx({ eventName: 'purchase', eventId: 'e_client_solo', anonymousId: 'v_solo2' }),
+    );
+    expect(out.results.meta?.status).toBe('sent');
+    const payload = lastMetaPayload();
+    expect(payload?.event_id).toBe('e_client_solo');
+    expect(payload?.event_id).not.toBe(deriveMetaPurchaseJourneyId('v_solo2'));
+  });
+
   it('lead newsletter (non éligible) → PAS de Meta Purchase override', async () => {
     const out = await dispatchToProviders(
       ctx({ eventName: 'generate_lead', anonymousId: 'v_news', params: { method: 'newsletter', value: 0 } }),
