@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logging/logger';
 import { pickAndProcessBatch } from '@/lib/leads/outbox/lead-outbox-processor';
+import { registerLeadEffectHandlers } from '@/lib/leads/outbox/register-handlers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   try {
+    registerLeadEffectHandlers();
     const result = await pickAndProcessBatch();
     logger.info('cron.lead_outbox.completed', result);
     return NextResponse.json({ ok: true, ...result });

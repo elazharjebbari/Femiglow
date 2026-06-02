@@ -37,6 +37,8 @@ import { createOrderInputSchema } from '@/lib/checkout/schemas/order';
 import { dispatchOrderWebhook } from '@/lib/webhooks/outbound/sources/from-order';
 import { sendTransactional } from '@/lib/mail/send';
 import { recordOrderPlaced } from '@/lib/user-events/bridges/server-actions';
+import { env } from '@/lib/env';
+import { leadOutboxRepo } from '@/lib/leads/outbox/lead-outbox-repo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -195,24 +197,58 @@ export async function POST(req: NextRequest): Promise<Response> {
         req.headers.get('x-real-ip') ??
         null;
       const leadSnapshot = lead;
-      void dispatchOrderWebhook({
-        order: { id: orderId, totalCents, currency },
-        items: input.items.map((it) => ({
-          sku: it.sku,
-          name: it.name,
-          quantity: it.quantity,
-          variantKey: input.formContext.variantKey ?? null,
-        })),
-        lead: leadSnapshot,
-        shippingMode: input.shippingMode,
-        paymentMethod: input.paymentMethod,
-        ip,
-      }).catch((err: unknown) => {
-        logger.error('outbound.webhook.order.dispatch_error', {
-          orderId,
-          error: String(err),
+      const webhookItems = input.items.map((it) => ({
+        sku: it.sku,
+        name: it.name,
+        quantity: it.quantity,
+        variantKey: input.formContext.variantKey ?? null,
+      }));
+      if (env.CHECKOUT_OPTIMISTIC_WIZARD_ENABLED === 'true') {
+        // OWBS (P5) — durable : on enfile l'invocation du webhook dans
+        // `lead_event_outbox` (le worker l'appellera, avec retry, en survivant à
+        // un restart). dedupeKey=orderId → un seul webhook par commande. Fallback
+        // inline si l'enqueue échoue, pour que le webhook parte quand même.
+        try {
+          await leadOutboxRepo.enqueue({
+            type: 'order_webhook',
+            leadId: input.leadId,
+            dedupeKey: orderId,
+            payload: {
+              orderId,
+              totalCents,
+              currency,
+              items: webhookItems,
+              shippingMode: input.shippingMode,
+              paymentMethod: input.paymentMethod,
+              ip,
+            },
+          });
+        } catch (err) {
+          logger.error('owbs.order_webhook.enqueue_failed', { orderId, error: String(err) });
+          void dispatchOrderWebhook({
+            order: { id: orderId, totalCents, currency },
+            items: webhookItems,
+            lead: leadSnapshot,
+            shippingMode: input.shippingMode,
+            paymentMethod: input.paymentMethod,
+            ip,
+          }).catch(() => {});
+        }
+      } else {
+        void dispatchOrderWebhook({
+          order: { id: orderId, totalCents, currency },
+          items: webhookItems,
+          lead: leadSnapshot,
+          shippingMode: input.shippingMode,
+          paymentMethod: input.paymentMethod,
+          ip,
+        }).catch((err: unknown) => {
+          logger.error('outbound.webhook.order.dispatch_error', {
+            orderId,
+            error: String(err),
+          });
         });
-      });
+      }
 
       // M1.B.3 — Confirmation de commande au client (si on a un email).
       // Pas tous les leads ont fourni un email — on tente uniquement si
