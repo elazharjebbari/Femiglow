@@ -378,6 +378,27 @@ interface SeedLocaleContext {
 }
 
 /**
+ * Coerce une valeur CSV (toujours une string) vers la forme à stocker en
+ * `jsonb`. Les champs ARRAY (`["a","b"]`) et OBJET (`{"href":…}`) doivent être
+ * stockés comme tableaux/objets jsonb (sinon le composant reçoit une string et
+ * casse). Les champs TEXTE — y compris les messages ICU qui commencent par `{`
+ * (`{count, plural, …}`) mais ne sont PAS du JSON — restent des strings (le
+ * `JSON.parse` échoue → fallback). On ne tente le parse que sur `[`/`{`.
+ */
+export function coerceCsvValue(raw: string): unknown {
+  const t = raw.trim();
+  if (t.startsWith('[') || t.startsWith('{')) {
+    try {
+      const parsed: unknown = JSON.parse(t);
+      if (parsed !== null && typeof parsed === 'object') return parsed;
+    } catch {
+      // Pas du JSON valide (ex. ICU) → on garde la string brute.
+    }
+  }
+  return raw;
+}
+
+/**
  * Seed une locale donnée. Lit le CSV, valide chaque row, regroupe par
  * triplet `(componentId, fieldKey, locale)`, applique l'invariant I0
  * (admin priorité), insère par batches.
@@ -458,7 +479,7 @@ export async function seedOneLocale(
       if (!ctx.dryRun) {
         await updateBindingValue(
           target,
-          row.value,
+          coerceCsvValue(row.value),
           row.notes ? row.notes : null,
         );
       }
@@ -476,7 +497,7 @@ export async function seedOneLocale(
       componentId,
       fieldKey: row.fieldKey,
       locale: ctx.locale,
-      value: row.value,
+      value: coerceCsvValue(row.value),
       status: ctx.status,
       version: nextVersion,
       publishedAt: ctx.status === 'published' ? now : null,

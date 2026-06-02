@@ -23,6 +23,7 @@ import type { SiteComponent } from '@/lib/db/types';
 import {
   ensureCsvHeaders,
   parseBindingsCsv,
+  coerceCsvValue,
   parseCsvRaw,
   PreflightError,
   runI18nBindingsSeed,
@@ -94,6 +95,29 @@ afterEach(async () => {
 /* ────────────────────────────────────────────────────────────────
  * 1. parseCsvRaw — RFC 4180 minimal
  * ────────────────────────────────────────────────────────────── */
+
+describe('coerceCsvValue', () => {
+  it('garde une string texte', () => {
+    expect(coerceCsvValue('Commander')).toBe('Commander');
+    expect(coerceCsvValue('مانيكور ياباني')).toBe('مانيكور ياباني');
+  });
+  it('parse un array JSON → tableau jsonb', () => {
+    expect(coerceCsvValue('["بدون طلاء", "بدون UV"]')).toEqual([
+      'بدون طلاء',
+      'بدون UV',
+    ]);
+  });
+  it('parse un objet JSON → objet jsonb', () => {
+    expect(coerceCsvValue('{"href":"/rituel","label":"اكتشفي"}')).toEqual({
+      href: '/rituel',
+      label: 'اكتشفي',
+    });
+  });
+  it('garde un message ICU (commence par { mais pas du JSON) en string', () => {
+    const icu = '{count, plural, =0 {لا منتجات} other {# منتجات}}';
+    expect(coerceCsvValue(icu)).toBe(icu);
+  });
+});
 
 describe('parseCsvRaw', () => {
   it('parses simple comma-separated rows', () => {

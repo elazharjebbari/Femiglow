@@ -510,3 +510,88 @@ rituel-video,chapter__step4,ar,Step 4,draft,
 rituel-video,duration_display,ar,90″,draft,
 rituel-video,provenance,ar,صُوِّر في ورشة الرباط، مارس 2026.,draft,
 rituel-video,transcript,ar,الموضة الكبرى clean girl للأظافر هي المانيكور الياباني. لكن، هناك شيء يجب أن تعرفيه قطعا...,draft,
+global-promo-slide-header,ariaLabel,ar,عرض FemiGlow اليوم,draft,i18n-complete
+global-promo-slide-header,ctaLabel,ar,اطلبي الآن,draft,i18n-complete
+global-promo-slide-header,fallbackMessageTemplate,ar,عرض {dateShort} — المغرب,draft,i18n-complete
+global-promo-slide-header,messageTemplate,ar,عرض {dateShort} — {city},draft,i18n-complete
+home-hero,cta,ar,"{""href"":""/rituel"",""label"":""اكتشفي الطقوس"",""variant"":""primary""}",draft,i18n-complete
+home-hero,ctaSecondary,ar,"{""href"":""/kit"",""label"":""شاهدي الكيت"",""variant"":""link""}",draft,i18n-complete
+home-avis-strip,heading,ar,اللواتي جرّبن.,draft,i18n-complete
+home-avis-strip,kicker,ar,أصوات,draft,i18n-complete
+home-avis-strip,reviews,ar,"{""items"":[{""fields"":{""id"":{""v"":""t1""},""quote"":{""v"":""لم تعد أظافري تتكسّر منذ ثلاثة أشهر. لم أتخيّل أنّ خمس دقائق مساءً ستكفي.""},""authorContext"":{""v"":""الدار البيضاء""},""initieeDepuis"":{""v"":""يناير 2025""},""authorFirstName"":{""v"":""سلمى""}}},{""fields"":{""id"":{""v"":""t2""},""quote"":{""v"":""صار لحظةً تخصّني وحدي. الطقوس تُنظِّم نهاية يومي.""},""authorContext"":{""v"":""الرباط""},""initieeDepuis"":{""v"":""مارس 2024""},""authorFirstName"":{""v"":""ياسمين""}}},{""fields"":{""id"":{""v"":""t3""},""quote"":{""v"":""تمنح القاعدة لمسةً طبيعيةً تُشبهني أخيرًا.""},""authorContext"":{""v"":""مراكش""},""initieeDepuis"":{""v"":""أكتوبر 2023""},""authorFirstName"":{""v"":""إيناس""}}}]}",draft,i18n-complete
+maison-cross-links,links,ar,"{""items"":[{""fields"":{""id"":{""v"":""rituel""},""href"":{""href"":""/rituel"",""label"":""اقرئي الطقوس"",""external"":false},""label"":{""v"":""اقرئي الطقوس""},""kicker"":{""v"":""الطقوس""},""description"":null}},{""fields"":{""id"":{""v"":""journal""},""href"":{""href"":""/journal"",""label"":""اليوميات"",""external"":false},""label"":{""v"":""اليوميات""},""kicker"":{""v"":""اليوميات""},""description"":null}},{""fields"":{""id"":{""v"":""kit""},""href"":{""href"":""/kit"",""label"":""شاهدي الكيت"",""external"":false},""label"":{""v"":""شاهدي الكيت""},""kicker"":{""v"":""الكيت""},""description"":null}}]}",draft,i18n-complete
+journal-article-avril-soleil-bas,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-avril-soleil-bas,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-avril-soleil-bas,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-avril-soleil-bas,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-avril-soleil-bas,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-cinq-minutes-le-soir,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-hiver-ongles-patience,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-hiver-ongles-patience,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-hiver-ongles-patience,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-hiver-ongles-patience,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-hiver-ongles-patience,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-huile-d-argan-vraie,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-huile-d-argan-vraie,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-huile-d-argan-vraie,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-huile-d-argan-vraie,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-huile-d-argan-vraie,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-la-maison-au-printemps,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-la-maison-au-printemps,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-la-maison-au-printemps,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-la-maison-au-printemps,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-la-maison-au-printemps,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-la-poudre-de-kaolin,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-la-table-comme-atelier,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-la-table-comme-atelier,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-la-table-comme-atelier,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-la-table-comme-atelier,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-la-table-comme-atelier,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-matieres-d-ailleurs,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-matieres-d-ailleurs,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-matieres-d-ailleurs,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-matieres-d-ailleurs,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-matieres-d-ailleurs,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-pluie-de-mars,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-pluie-de-mars,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-pluie-de-mars,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-pluie-de-mars,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-pluie-de-mars,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-ranger-son-rituel,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-ranger-son-rituel,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-ranger-son-rituel,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-ranger-son-rituel,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-ranger-son-rituel,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-visiter-l-atelier,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-visiter-l-atelier,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-visiter-l-atelier,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-visiter-l-atelier,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-visiter-l-atelier,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-voix-d-amal,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-voix-d-amal,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-voix-d-amal,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-voix-d-amal,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-voix-d-amal,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-voix-de-lina,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-voix-de-lina,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-voix-de-lina,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-voix-de-lina,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-voix-de-lina,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete
+journal-article-voix-de-sara,authorFallbackBio,ar,قلم ضيف من دار FemiGlow.,draft,i18n-complete
+journal-article-voix-de-sara,relatedHeading,ar,اقرئي بعد ذلك,draft,i18n-complete
+journal-article-voix-de-sara,shareLabel,ar,مشاركة,draft,i18n-complete
+journal-article-voix-de-sara,tocHeading,ar,في هذه الصفحة,draft,i18n-complete
+journal-article-voix-de-sara,breadcrumbRoot,ar,"{""href"":""/journal"",""label"":""اليوميات""}",draft,i18n-complete

@@ -510,3 +510,88 @@ rituel-video,chapter__step4,en,Step 4,draft,
 rituel-video,duration_display,en,90″,draft,
 rituel-video,provenance,en,"Filmed in the Rabat atelier, March 2026.",draft,
 rituel-video,transcript,en,The big clean-girl trend for nails is the Japanese manicure. But there is something you need to know first…,draft,
+global-promo-slide-header,ariaLabel,en,FemiGlow's offer of the day,draft,i18n-complete
+global-promo-slide-header,ctaLabel,en,Order now,draft,i18n-complete
+global-promo-slide-header,fallbackMessageTemplate,en,{dateShort} offer — Morocco,draft,i18n-complete
+global-promo-slide-header,messageTemplate,en,{dateShort} offer — {city},draft,i18n-complete
+home-hero,cta,en,"{""href"":""/rituel"",""label"":""Discover the ritual"",""variant"":""primary""}",draft,i18n-complete
+home-hero,ctaSecondary,en,"{""href"":""/kit"",""label"":""See the kit"",""variant"":""link""}",draft,i18n-complete
+home-avis-strip,heading,en,Those who tried.,draft,i18n-complete
+home-avis-strip,kicker,en,Voices,draft,i18n-complete
+home-avis-strip,reviews,en,"{""items"":[{""fields"":{""id"":{""v"":""t1""},""quote"":{""v"":""My nails haven't broken in three months. I never thought five minutes in the evening would be enough.""},""authorContext"":{""v"":""Casablanca""},""initieeDepuis"":{""v"":""January 2025""},""authorFirstName"":{""v"":""Salma""}}},{""fields"":{""id"":{""v"":""t2""},""quote"":{""v"":""It has become a moment just for me. The ritual sets the rhythm of my evening.""},""authorContext"":{""v"":""Rabat""},""initieeDepuis"":{""v"":""March 2024""},""authorFirstName"":{""v"":""Yasmine""}}},{""fields"":{""id"":{""v"":""t3""},""quote"":{""v"":""The base has a natural finish that finally looks like me.""},""authorContext"":{""v"":""Marrakech""},""initieeDepuis"":{""v"":""October 2023""},""authorFirstName"":{""v"":""Inès""}}}]}",draft,i18n-complete
+maison-cross-links,links,en,"{""items"":[{""fields"":{""id"":{""v"":""rituel""},""href"":{""href"":""/rituel"",""label"":""Read the ritual"",""external"":false},""label"":{""v"":""Read the ritual""},""kicker"":{""v"":""The ritual""},""description"":null}},{""fields"":{""id"":{""v"":""journal""},""href"":{""href"":""/journal"",""label"":""The journal"",""external"":false},""label"":{""v"":""The journal""},""kicker"":{""v"":""The journal""},""description"":null}},{""fields"":{""id"":{""v"":""kit""},""href"":{""href"":""/kit"",""label"":""See the kit"",""external"":false},""label"":{""v"":""See the kit""},""kicker"":{""v"":""The kit""},""description"":null}}]}",draft,i18n-complete
+journal-article-avril-soleil-bas,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-avril-soleil-bas,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-avril-soleil-bas,shareLabel,en,Share,draft,i18n-complete
+journal-article-avril-soleil-bas,tocHeading,en,On this page,draft,i18n-complete
+journal-article-avril-soleil-bas,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-cinq-minutes-le-soir,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,shareLabel,en,Share,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,tocHeading,en,On this page,draft,i18n-complete
+journal-article-cinq-minutes-le-soir,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-hiver-ongles-patience,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-hiver-ongles-patience,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-hiver-ongles-patience,shareLabel,en,Share,draft,i18n-complete
+journal-article-hiver-ongles-patience,tocHeading,en,On this page,draft,i18n-complete
+journal-article-hiver-ongles-patience,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-huile-d-argan-vraie,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-huile-d-argan-vraie,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-huile-d-argan-vraie,shareLabel,en,Share,draft,i18n-complete
+journal-article-huile-d-argan-vraie,tocHeading,en,On this page,draft,i18n-complete
+journal-article-huile-d-argan-vraie,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,shareLabel,en,Share,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,tocHeading,en,On this page,draft,i18n-complete
+journal-article-la-cuisine-comme-laboratoire,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-la-maison-au-printemps,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-la-maison-au-printemps,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-la-maison-au-printemps,shareLabel,en,Share,draft,i18n-complete
+journal-article-la-maison-au-printemps,tocHeading,en,On this page,draft,i18n-complete
+journal-article-la-maison-au-printemps,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-la-poudre-de-kaolin,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,shareLabel,en,Share,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,tocHeading,en,On this page,draft,i18n-complete
+journal-article-la-poudre-de-kaolin,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-la-table-comme-atelier,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-la-table-comme-atelier,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-la-table-comme-atelier,shareLabel,en,Share,draft,i18n-complete
+journal-article-la-table-comme-atelier,tocHeading,en,On this page,draft,i18n-complete
+journal-article-la-table-comme-atelier,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-matieres-d-ailleurs,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-matieres-d-ailleurs,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-matieres-d-ailleurs,shareLabel,en,Share,draft,i18n-complete
+journal-article-matieres-d-ailleurs,tocHeading,en,On this page,draft,i18n-complete
+journal-article-matieres-d-ailleurs,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-pluie-de-mars,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-pluie-de-mars,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-pluie-de-mars,shareLabel,en,Share,draft,i18n-complete
+journal-article-pluie-de-mars,tocHeading,en,On this page,draft,i18n-complete
+journal-article-pluie-de-mars,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-ranger-son-rituel,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-ranger-son-rituel,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-ranger-son-rituel,shareLabel,en,Share,draft,i18n-complete
+journal-article-ranger-son-rituel,tocHeading,en,On this page,draft,i18n-complete
+journal-article-ranger-son-rituel,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-visiter-l-atelier,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-visiter-l-atelier,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-visiter-l-atelier,shareLabel,en,Share,draft,i18n-complete
+journal-article-visiter-l-atelier,tocHeading,en,On this page,draft,i18n-complete
+journal-article-visiter-l-atelier,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-voix-d-amal,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-voix-d-amal,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-voix-d-amal,shareLabel,en,Share,draft,i18n-complete
+journal-article-voix-d-amal,tocHeading,en,On this page,draft,i18n-complete
+journal-article-voix-d-amal,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-voix-de-lina,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-voix-de-lina,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-voix-de-lina,shareLabel,en,Share,draft,i18n-complete
+journal-article-voix-de-lina,tocHeading,en,On this page,draft,i18n-complete
+journal-article-voix-de-lina,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
+journal-article-voix-de-sara,authorFallbackBio,en,Guest contributor at the FemiGlow maison.,draft,i18n-complete
+journal-article-voix-de-sara,relatedHeading,en,Read next,draft,i18n-complete
+journal-article-voix-de-sara,shareLabel,en,Share,draft,i18n-complete
+journal-article-voix-de-sara,tocHeading,en,On this page,draft,i18n-complete
+journal-article-voix-de-sara,breadcrumbRoot,en,"{""href"":""/journal"",""label"":""Journal""}",draft,i18n-complete
