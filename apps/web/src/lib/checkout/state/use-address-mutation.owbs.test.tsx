@@ -11,9 +11,11 @@ import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { useAddressMutation } from '@/lib/checkout/state/use-wizard-mutations';
 import type { CartSnapshot } from '@/lib/checkout/schemas/common';
 
-const patchAddressMock = vi.fn(() => Promise.resolve());
-const patchPaymentMock = vi.fn(() => Promise.resolve());
-const createOrderMock = vi.fn(() => Promise.resolve({ orderId: 'ord_1', currency: 'MAD', totalCents: 32000 }));
+const patchAddressMock = vi.fn((..._a: unknown[]) => Promise.resolve());
+const patchPaymentMock = vi.fn((..._a: unknown[]) => Promise.resolve());
+const createOrderMock = vi.fn((..._a: unknown[]) =>
+  Promise.resolve({ orderId: 'ord_1', currency: 'MAD', totalCents: 32000 }),
+);
 const flushMock = vi.fn(() => Promise.resolve());
 
 vi.mock('@/lib/checkout/client/wizard-client', () => ({

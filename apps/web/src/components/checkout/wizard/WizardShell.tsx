@@ -40,6 +40,7 @@ import type { CartSnapshot, StepName } from '@/lib/checkout/schemas/common';
 import { WizardStepIndicator } from './WizardStepIndicator';
 import { TimeEstimateBadge } from './TimeEstimateBadge';
 import { WizardSyncIndicator } from './WizardSyncIndicator';
+import { WizardStepAnnouncer } from './WizardStepAnnouncer';
 import { WizardCartRecap } from './WizardCartRecap';
 import { LeadCaptureStep } from './steps/LeadCaptureStep';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
@@ -336,6 +337,9 @@ export function WizardShell({
       />
       {/* OWBS F05 — indicateur discret de sync dégradée (non bloquant). */}
       <WizardSyncIndicator />
+      {/* OWBS F08-S13 — annonce a11y du changement d'étape (flux optimiste
+          instantané : sans ça, un lecteur d'écran ne sait pas qu'on a avancé). */}
+      <WizardStepAnnouncer label={stepLabels[currentStep]} />
       <Suspense fallback={<HydrationFallback language={formContext.language} />}>
         {stepView}
       </Suspense>
