@@ -18,7 +18,7 @@
 import { forwardRef, useState, useEffect, type ChangeEvent, type InputHTMLAttributes } from 'react';
 
 import { TextField } from '@/components/forms/Field';
-import { formatPhoneFR } from '@/lib/checkout/helpers/phone-mask';
+import { formatPhoneFR, toLocalMoroccanDigits } from '@/lib/checkout/helpers/phone-mask';
 
 export interface PhoneMaskInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -32,26 +32,27 @@ export const PhoneMaskInput = forwardRef<HTMLInputElement, PhoneMaskInputProps>(
   function PhoneMaskInput({ value, defaultValue, onChange, ...rest }, ref) {
     const initial =
       typeof value === 'string'
-        ? formatPhoneFR(value)
+        ? formatPhoneFR(toLocalMoroccanDigits(value))
         : typeof defaultValue === 'string'
-          ? formatPhoneFR(defaultValue)
+          ? formatPhoneFR(toLocalMoroccanDigits(defaultValue))
           : '';
     const [displayValue, setDisplayValue] = useState<string>(initial);
 
     // Sync displayValue si le parent change la valeur (ex. reset après refresh).
     useEffect(() => {
       if (typeof value === 'string') {
-        setDisplayValue(formatPhoneFR(value));
+        setDisplayValue(formatPhoneFR(toLocalMoroccanDigits(value)));
       }
     }, [value]);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-      const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
-      const masked = formatPhoneFR(raw);
-      setDisplayValue(masked);
-      // Remplace la value RAW dans l'événement pour que RHF reçoive
-      // les digits seuls (compat avec le `.transform` Zod existant).
-      e.target.value = raw;
+      // Normalise d'abord (international `+212`/`00212` → local) AVANT de masquer,
+      // sinon les formats internationaux sont tronqués à 10 chiffres → illisible.
+      const local = toLocalMoroccanDigits(e.target.value);
+      setDisplayValue(formatPhoneFR(local));
+      // Remplace la value dans l'événement pour que RHF reçoive la forme locale
+      // (chiffres seuls), compatible avec le `.transform` Zod existant.
+      e.target.value = local;
       onChange?.(e);
     };
 
