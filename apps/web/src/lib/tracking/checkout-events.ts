@@ -166,6 +166,13 @@ export interface LeadCaptureInput {
   currency?: string;
   /** Valeur attendue (ex. snapshot panier MAD). Optionnel. */
   value?: number;
+  /**
+   * eventID de PARCOURS Meta Purchase (jpid). Quand présent, partagé avec le
+   * `generate_lead` et le `purchase` du même parcours → Meta déduplique
+   * (Pixel↔CAPI). Omis si le flag lead-as-Purchase est OFF. Cf.
+   * `lib/tracking/lead-purchase-cookie.ts`.
+   */
+  meta_purchase_eid?: string;
 }
 
 export interface LeadCaptureEvent extends WizardContext {
@@ -174,6 +181,7 @@ export interface LeadCaptureEvent extends WizardContext {
   contact_channels: Array<'phone' | 'email' | 'sms'>;
   currency: string;
   value?: number;
+  meta_purchase_eid?: string;
 }
 
 /**
@@ -187,6 +195,7 @@ export function buildLeadCaptureEvent(input: LeadCaptureInput): LeadCaptureEvent
     contact_channels: input.contact_channels ?? ['phone'],
     currency: input.currency ?? DEFAULT_CURRENCY,
     value: input.value,
+    meta_purchase_eid: input.meta_purchase_eid,
   }) as LeadCaptureEvent;
 }
 
@@ -426,6 +435,14 @@ export interface PurchaseInput {
   shipping?: number;
   coupon?: string;
   payment_type?: PaymentType;
+  /**
+   * eventID de PARCOURS Meta Purchase (jpid) LU (non créé) sur l'achat réel.
+   * Présent si un lead a précédé dans le parcours → la CAPI de l'achat
+   * déduplique avec le lead même si le ledger serveur a été perdu (restart).
+   * Omis pour un achat direct (event_id client standard). Parité avec le
+   * `CheckoutFlow` legacy. Cf. `lib/tracking/lead-purchase-cookie.ts`.
+   */
+  meta_purchase_eid?: string;
 }
 
 export interface PurchaseEvent extends WizardContext {
@@ -438,6 +455,7 @@ export interface PurchaseEvent extends WizardContext {
   shipping?: number;
   coupon?: string;
   payment_type?: PaymentType;
+  meta_purchase_eid?: string;
 }
 
 export function buildPurchaseEvent(input: PurchaseInput): PurchaseEvent {
@@ -450,6 +468,7 @@ export function buildPurchaseEvent(input: PurchaseInput): PurchaseEvent {
     shipping: input.shipping,
     coupon: input.coupon,
     payment_type: input.payment_type,
+    meta_purchase_eid: input.meta_purchase_eid,
   }) as PurchaseEvent;
 }
 

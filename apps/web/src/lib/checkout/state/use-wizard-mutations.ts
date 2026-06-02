@@ -52,6 +52,10 @@ import {
 } from '@/lib/tracking/checkout-events';
 import { hashIdentityBrowser } from '@/lib/tracking/providers/hashing-browser';
 import { getEventIdentityFields } from '@/lib/tracking/providers/event-mapping';
+import {
+  getJourneyPurchaseId,
+  readJourneyPurchaseId,
+} from '@/lib/tracking/lead-purchase-cookie';
 import type { CartItemSnapshot } from '@/lib/checkout/schemas/common';
 import { normalizePhoneToE164Maroc } from '@/lib/checkout/schemas/common';
 import type { EmitOptions } from '@/lib/tracking/client';
@@ -242,6 +246,15 @@ export function useLeadCaptureMutation(): {
         setLeadId(leadId);
         goToStep('address');
         setSuccess();
+        // Pont lead→Meta Purchase (parité `CheckoutFlow`) : on crée/lit le
+        // `eventID` de parcours (jpid) et on le porte sur `lead_capture` ET
+        // `generate_lead` → le pixel Purchase du lead ET la CAPI partagent le
+        // MÊME eventID → dédup native Meta (+ cookie qui bloquera l'achat
+        // réel). No-op si le flag NEXT_PUBLIC lead-as-Purchase est OFF.
+        const jpid = getJourneyPurchaseId();
+        const leadValue = cartSnapshot?.totalCents
+          ? cartSnapshot.totalCents / 100
+          : undefined;
         // Tracking — lead_capture (conversion) — hydratée pour
         // Enhanced Conversions Google Ads + Advanced Matching Meta.
         const userData = await buildUserDataForEvent(
@@ -265,12 +278,24 @@ export function useLeadCaptureMutation(): {
             method: 'wizard',
             contact_channels: ['phone'],
             currency: cartSnapshot?.currency ?? 'MAD',
-            value: cartSnapshot?.totalCents
-              ? cartSnapshot.totalCents / 100
-              : undefined,
+            value: leadValue,
+            meta_purchase_eid: jpid ?? undefined,
           }),
           { userData },
         );
+        // `generate_lead` (GA4 standard) — c'est CET event, avec
+        // `method:'abandoned_cart'` (source éligible) + `meta_purchase_eid`,
+        // que le serveur traite comme Meta Purchase (cf.
+        // `lib/tracking/server/lead-as-purchase.ts`). `value`/`currency`
+        // seulement si `value > 0` (currency orpheline = signal invalide).
+        emit('generate_lead', {
+          method: 'abandoned_cart',
+          lead_id: leadId,
+          ...(jpid ? { meta_purchase_eid: jpid } : {}),
+          ...(typeof leadValue === 'number' && leadValue > 0
+            ? { value: leadValue, currency: cartSnapshot?.currency ?? 'MAD' }
+            : {}),
+        });
         return { leadId };
       } catch (e) {
         setError(e);
@@ -495,6 +520,11 @@ export function useAddressMutation(): {
             country: input.country,
           },
         );
+        // Si un lead a précédé (cookie jpid posé), l'achat réel porte le MÊME
+        // jpid → la CAPI déduplique avec le lead même si le ledger serveur a été
+        // perdu (restart). Achat direct → null → event_id client standard.
+        // Parité avec le `CheckoutFlow` legacy.
+        const purchaseJpid = readJourneyPurchaseId();
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.purchase,
@@ -511,6 +541,7 @@ export function useAddressMutation(): {
               currency: res.currency,
             })),
             payment_type: DEFAULT_PAYMENT_METHOD,
+            meta_purchase_eid: purchaseJpid ?? undefined,
           }),
           { userData: userDataPurchase },
         );
@@ -670,7 +701,12 @@ export function useOrderCreateMutation(): {
         setOrderId(res.orderId);
         goToStep('thank_you');
         setSuccess();
-        // Conversion finale (purchase)
+        // Conversion finale (purchase). Si un lead a précédé (cookie jpid posé),
+        // l'achat réel porte le MÊME jpid → la CAPI déduplique avec le lead même
+        // si le ledger serveur a été perdu (restart). Achat direct (sans lead) :
+        // `readJourneyPurchaseId()` renvoie null → event_id client standard.
+        // Parité avec `CheckoutFlow`.
+        const purchaseJpid = readJourneyPurchaseId();
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.purchase,
@@ -693,6 +729,7 @@ export function useOrderCreateMutation(): {
               currency: res.currency,
             })),
             payment_type: input.paymentMethod,
+            meta_purchase_eid: purchaseJpid ?? undefined,
           }),
         );
         return { orderId: res.orderId };
