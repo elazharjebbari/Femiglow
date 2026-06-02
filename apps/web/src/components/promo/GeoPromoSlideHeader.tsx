@@ -129,7 +129,11 @@ export function GeoPromoSlideHeader() {
       aria-label={payload.ariaLabel ?? 'Offre FemiGlow'}
       data-testid="geo-promo-slide-header"
       className={[
-        'sticky top-0 z-[calc(var(--z-sticky)+1)] border-b shadow-sm',
+        // S'épingle SOUS le header sticky (qui reste au-dessus en z-index) pour
+        // ne jamais recouvrir la nav + le switch de langue au scroll. `top-14`
+        // (56px) = hauteur du header mobile au repos ; en mode scrollé (64px) le
+        // léger recouvrement haut est masqué derrière le header (z supérieur).
+        'sticky top-14 z-[calc(var(--z-sticky)+1)] border-b shadow-sm',
         themeClass(payload.theme),
         density,
         animation,

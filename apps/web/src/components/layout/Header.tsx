@@ -70,13 +70,12 @@ export function Header() {
         data-chat-open={chatOpen ? 'true' : 'false'}
         className={cn(
           'sticky top-0 transition-[background-color,backdrop-filter,height,border-color,transform,opacity] duration-[280ms] ease-out',
-          // Le menu de langue (popover ancré dans le header) doit passer
-          // AU-DESSUS de la barre promo sticky (`z-[calc(var(--z-sticky)+1)]`).
-          // Le header créant son propre contexte d'empilement, le popover ne
-          // peut pas en sortir : on élève donc tout le header d'un cran au-dessus
-          // de la promo tant que le menu de langue est ouvert (sinon le menu est
-          // rogné par la barre « Offre du … »). Fermé → z nominal (promo au-dessus).
-          localeMenuOpen ? 'z-[calc(var(--z-sticky)+2)]' : 'z-[var(--z-sticky)]',
+          // Le header (nav + switch de langue + son popover ancré) doit TOUJOURS
+          // rester au-dessus de la barre promo sticky (`z-[calc(var(--z-sticky)+1)]`),
+          // sinon, au scroll, la promo recouvre le menu et le bouton langue devient
+          // inaccessible. La promo, elle, s'épingle SOUS le header (`top-14`).
+          // On reste sous `--z-overlay` (200) → drawers/modales passent au-dessus.
+          'z-[calc(var(--z-sticky)+2)]',
           // CHA-244 — chat ouvert : slide-up + fade-out, pointer-events
           // off pour laisser passer les clics sur le panel chat.
           // `motion-reduce` : on garde le fade mais pas le translate.
