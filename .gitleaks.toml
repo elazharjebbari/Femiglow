@@ -41,6 +41,7 @@ paths = [
   '''docs/i18n-strategy-2026-05/.*''',
   '''docs/i18n-content-2026-05/.*''',
   '''docs/checkout-leads-background-2026-06-01/.*''',
+  '''docs/owbs-ui-test-battery-2026-06-02/.*''',
   '''.*/__fixtures__/.*''',
   '''.*\.example$''',
   '''\.gitleaks\.toml''',

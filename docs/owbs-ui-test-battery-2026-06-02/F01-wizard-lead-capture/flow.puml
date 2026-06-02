@@ -1,0 +1,27 @@
+@startuml F01-flow
+title F01 — Capture lead optimiste (POV UI)
+autonumber
+skinparam shadowing false
+actor Salma
+participant "LeadCaptureStep" as UI
+participant "react-hook-form" as RHF
+participant "wizard-store" as Store
+participant "lead-sync-queue" as Q
+participant "/api/checkout/lead" as API
+
+Salma -> UI : remplit prénom/téléphone/consent
+UI -> RHF : validation onChange
+RHF --> UI : isValid=true -> submit ENABLED
+Salma -> UI : clic "Continuer"
+alt flag ON (optimiste)
+  UI -> Store : setLeadId(newLeadId) + goToStep('address')
+  Store --> Salma : étape address visible (< 1.5s)
+  UI -> Q : enqueue(lead_create) [non-awaité]
+  Q -> API : POST (en fond, Idempotency-Key)
+else flag OFF (legacy)
+  UI -> API : await createLead()
+  API --> UI : 201
+  UI -> Store : goToStep('address')
+end
+note over UI : honeypot rempli => succès silencieux, aucun envoi
+@enduml

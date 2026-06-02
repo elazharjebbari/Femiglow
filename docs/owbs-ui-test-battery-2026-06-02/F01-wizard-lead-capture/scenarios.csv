@@ -1,0 +1,20 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F01-S01,RTL,P0,Salma,form lead ouvert,saisie prénom valide + tel valide + consent,bouton submit passe enabled,toBeEnabled(),RSK-22
+F01-S02,RTL,P0,Salma,form lead ouvert,prénom 1 caractère,submit reste disabled + message,aria-invalid firstName,RSK-22
+F01-S03,RTL,P0,Salma,form lead ouvert,tel < 6 chiffres,submit reste disabled,disabled,RSK-22
+F01-S04,RTL,P0,bot,form lead ouvert,honeypot website rempli,submit ne déclenche pas d'envoi (succès silencieux),pas d'appel réseau,RSK-02
+F01-S05,RTL,P0,Salma,champs valides,consent décoché,submit disabled,disabled,RSK-22
+F01-S06,RTL,P1,Salma,form ouvert,cible 1er input[text] (honeypot) par erreur,le test DOIT cibler par name,garde-fou sélection,RSK-02
+F01-S07,RTL,P1,Salma,form ouvert,frappe puis efface prénom,submit redevient disabled,toBeDisabled(),-
+F01-S08,RTL,P1,Salma,form ouvert,saisie tel format 06 00 00 00 00,valeur normalisée acceptée,isValid,-
+F01-S09,RTL,P1,Salma,AR/RTL,saisie tel latin,séquence latine préservée (dir),valeur correcte,RSK-12
+F01-S10,PW,P0,Salma,/fr/kit flag ON + /lead bridé 6s,remplir + submit,wizard-step-address visible < 1.5s,timing,RSK-01
+F01-S11,PW,P0,Salma,flag ON + /lead aborté,remplir + submit,address visible + envelope en file (pas d'erreur),pas d'alert,RSK-01
+F01-S12,PW,P0,Yassine,flag ON,double-tap submit,une seule transition + un seul lead,1 lead,RSK-04
+F01-S13,PW,P0,Salma,flag OFF + /lead bridé 6s,remplir + submit,address visible SEULEMENT après réponse,legacy,RSK-18
+F01-S14,RTL,P0,Salma,flag ON,submit,createLead NON appelé + enqueue appelé + goToStep address,store.currentStep=address,RSK-01
+F01-S15,RTL,P0,Salma,flag OFF,submit,wizardClient.createLead appelé (legacy),appel,RSK-18
+F01-S20,RTL,P1,bot,flag ON,honeypot rempli + submit,aucune envelope enfilée,enqueue 0,RSK-02
+F01-S21,MSW,P1,Salma,flag ON,/lead renvoie 201,envelope retirée de la file (succès),pending 0,-
+F01-S22,PW,P0,Salma,clavier,navigation Tab firstName->phone->consent->submit,ordre focus logique,focus order,RSK-13
+F01-S23,RTL,P0,Salma,wizard,axe sur l'étape lead,0 violation,axe,RSK-13

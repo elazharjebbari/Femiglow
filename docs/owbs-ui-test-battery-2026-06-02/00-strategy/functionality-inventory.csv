@@ -1,0 +1,56 @@
+func_id,module,functionality,surface,public,primary_ui,depends_on,risk,test_coverage_today,priority
+FN-001,F01,Saisie étape lead_capture (firstName/phone/consent/honeypot),frontend,acheteuse,LeadCaptureStep (wizard-step-lead),wizard-store,medium,partiel(unit),P0
+FN-002,F01,Validation locale onChange + déverrouillage submit (isValid),frontend,acheteuse,LeadCaptureStep,react-hook-form,high,faible,P0
+FN-003,F01,Transition optimiste lead->address (goToStep avant réseau),frontend,acheteuse,useLeadCaptureMutation,lead-sync-queue,high,partiel(unit+e2e),P0
+FN-004,F01,Masque téléphone (phoneMask) + normalisation,frontend,acheteuse,LeadCaptureStep,wizard-copy,medium,faible,P1
+FN-005,F01,Honeypot website -> submit invalide (anti-bot),frontend,acheteuse/bot,LeadCaptureStep,zod,medium,faible,P1
+FN-006,F02,Conversion address->payment(cod)->order (synchrone),fullstack,acheteuse,AddressStep,order route,high,partiel(unit),P0
+FN-007,F02,Flush de garantie avant conversion (lead persisté),fullstack,acheteuse,useAddressMutation,lead-sync-queue,high,faible,P0
+FN-008,F02,Snapshot complet -> conversion fiable sans écriture de fond,backend,système,order route,lead-repo,high,partiel(int),P0
+FN-009,F02,Erreurs conversion (stock/price/network) + UI,fullstack,acheteuse,AddressStep (wizard-address-error),order route,high,faible,P0
+FN-010,F02,Thank-you + opt-in email,frontend,acheteuse,ThankYouStep,order email route,medium,faible,P1
+FN-011,F03,File de sync: FIFO/retry/backoff/drop (effets perceptibles),frontend,système,lead-sync-queue,api-errors,high,bon(unit+msw),P0
+FN-012,F03,Transport HTTP keepalive + Idempotency-Key,frontend,système,lead-sync-transport,fetch,high,bon(msw),P1
+FN-013,F03,Miroir sessionStorage (persistance file),frontend,système,lead-sync-queue,sessionStorage,medium,bon(unit),P1
+FN-014,F04,Beacon flush pagehide/visibilitychange,frontend,acheteuse,beacon-flush,navigator.sendBeacon,high,partiel(unit+e2e),P0
+FN-015,F04,Endpoint batch /sync (idempotent, plafonds, 204 flag OFF),backend,système,/api/checkout/lead/sync,lead-service,high,bon(unit),P0
+FN-016,F04,Reprise reload (hydrateFromMirror + reflush),frontend,acheteuse,lead-sync-singleton,sessionStorage,high,faible,P0
+FN-017,F05,Indicateur dégradé FR-11 (UX erreur non bloquante),frontend,acheteuse,wizard-store.syncDegraded + indicateur,onDrop,high,faible(signal only),P0
+FN-018,F05,Navigation reste libre malgré sync dégradée,frontend,acheteuse,wizard,wizard-store,high,faible,P0
+FN-019,F06,Réseau lent (3G) -> UI non gelée,frontend,acheteuse,wizard,MSW/route,high,faible,P0
+FN-020,F06,Réseau coupé -> envelope en file -> reprise,frontend,acheteuse,lead-sync-queue,MSW,high,partiel,P0
+FN-021,F06,5xx transitoire -> retry silencieux,frontend,acheteuse,lead-sync-queue,MSW,medium,bon(msw),P1
+FN-022,F06,409 idempotency -> drop sans boucle,frontend,acheteuse,lead-sync-queue,MSW,medium,bon(msw),P1
+FN-023,F07,Chat lead optimiste (succès immédiat),frontend,acheteuse,LeadFormBubble (chat-lead-form),flags,high,partiel(unit),P0
+FN-024,F07,Tracking valorisé generate_lead en fond (value serveur),fullstack,acheteuse,LeadFormBubble,/api/chat/lead/contact,high,faible,P0
+FN-025,F07,Chat erreur réseau en optimiste (best-effort),frontend,acheteuse,LeadFormBubble,MSW,medium,faible,P1
+FN-026,F08,i18n FR/AR/EN du parcours optimiste,frontend,acheteuse,WizardShell/LeadFormBubble,next-intl,medium,faible,P1
+FN-027,F08,RTL (AR) layout + saisie + soumission,frontend,acheteuse,WizardShell,i18n,medium,faible,P1
+FN-028,F08,a11y axe (wizard + chat) sous comportement optimiste,frontend,acheteuse,steps,axe,high,faible,P0
+FN-029,F08,Focus management + lecteur d'écran (annonces d'étape),frontend,acheteuse,WizardShell,aria-live,medium,faible,P1
+FN-030,F09,Resume banner (reprise visiteur),frontend,acheteuse,ResumeBanner (wizard-resume-banner),wizard-store persist,medium,faible,P1
+FN-031,F09,Hydratation store + cohérence étape/leadId,frontend,acheteuse,WizardShell,zustand persist,high,faible,P0
+FN-032,F09,Double-onglet (2 wizards) cohérence,frontend,acheteuse,WizardShell,sessionStorage,medium,faible,P1
+FN-033,F10,Admin leads liste + filtres + états,frontend,opérateur,admin/leads,LeadStatusMenu,high,faible,P0
+FN-034,F10,Admin lead détail (capture/adresse/conversion/abandon),frontend,opérateur,admin/leads/[id],queries,high,faible,P0
+FN-035,F10,Admin actions (statut/notes/tags),frontend,opérateur,LeadStatusMenu/LeadNoteForm,routes,medium,faible,P1
+FN-036,F10,Reflet temps réel d'un lead optimiste (capturé en fond),fullstack,opérateur,admin/leads,upsert,high,faible,P0
+FN-037,F11,Admin supervision outbox (pending/processing/done/dead),frontend,opérateur,GAP: pas d'UI -> à spécifier,lead_event_outbox,high,absent,P0
+FN-038,F11,Rejeu manuel d'un effet dead,fullstack,opérateur,GAP UI/SQL,lead-outbox-repo,high,absent,P1
+FN-039,F11,Worker cron: exécution + rapport + auth,backend,opérateur,/api/cron/lead-outbox,processor,high,bon(unit),P1
+FN-040,F11,Backlog outbox -> alerte/visibilité,ops,opérateur,observabilité,logs,high,faible,P0
+FN-041,F12,Activation flag (client+serveur) cohérente,fullstack,opérateur,env + flags,build,high,faible,P0
+FN-042,F12,Kill-switch (flag OFF) sans redeploy,fullstack,opérateur,env,wizard,high,faible,P0
+FN-043,F12,Parité legacy (flag OFF == comportement actuel),fullstack,opérateur,toutes surfaces,flag,high,partiel,P0
+FN-044,F12,Incohérence client ON / serveur OFF -> garde-fou,fullstack,opérateur,/sync 204 + routes,flags,medium,partiel,P1
+FN-045,F13,Rate-limit /sync (429 + Retry-After),backend,système/opérateur,/api/checkout/lead/sync,checkRateLimit,medium,bon(unit),P1
+FN-046,F13,Plafonds batch (32 envelopes / 60KB -> 413),backend,système,/sync,zod,medium,bon(unit),P1
+FN-047,F13,leadId client falsifié -> rejet (regex + visitorId),backend,système,lead-service/sync,zod,high,partiel,P0
+FN-048,F13,Anti-collision inter-visiteurs (LeadVisitorMismatch 409),backend,système,lead route,lead-service,high,bon(unit),P1
+FN-049,F14,Idempotence end-to-end (double-submit/back-nav/rejeu),fullstack,système,routes+queue,idempotency,high,partiel,P0
+FN-050,F14,Désordre (address avant create) toléré,backend,système,/sync+upsert,lead-repo,medium,bon(int),P1
+FN-051,F14,Intégrité états chat_lead (timestamps monotones),backend,système,lead-repo,db,high,faible,P0
+FN-052,F14,Dédup effets (UNIQUE type/lead/dedupe) -> pas de doublon webhook,backend,système,lead-outbox-repo,db,high,bon(int),P1
+FN-053,F14,Scanner d'abandon préservé (rows partielles écrites),fullstack,opérateur,scanner,lead-repo,high,faible,P0
+FN-054,F14,Tracking/attribution: valeur conversion préservée en optimiste,fullstack,système,emit/webhook,tracking,high,faible,P0
+FN-055,F14,Webhook durable: dead -> visible/rejeu, pas de perte,fullstack,opérateur,outbox,handlers,high,partiel,P1

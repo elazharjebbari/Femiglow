@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "dossier": "owbs-ui-test-battery-2026-06-02",
+  "title": "OWBS — Batterie de tests UI/opérateur",
+  "version": "1.0.0",
+  "scope": "feat/owbs-lead-background",
+  "philosophy": "Tester du point de vue opérateur/utilisateur; robustesse > nombre de tests.",
+  "layers": ["RTL(vitest)", "MSW", "Playwright"],
+  "strategy": {
+    "inventory": "00-strategy/functionality-inventory.csv",
+    "risks": "00-strategy/risk-register.csv",
+    "traceability": "00-strategy/traceability-matrix.csv",
+    "tooling": "00-strategy/tooling-and-harness.md",
+    "gates": "00-strategy/quality-gates.md"
+  },
+  "modules": [
+    { "id": "F01", "name": "Wizard capture lead optimiste", "public": "acheteuse", "rich": true },
+    { "id": "F02", "name": "Wizard conversion + flush", "public": "acheteuse", "rich": true },
+    { "id": "F03", "name": "File de sync background", "public": "systeme", "rich": false },
+    { "id": "F04", "name": "Zero-perte beacon + reprise", "public": "acheteuse", "rich": true },
+    { "id": "F05", "name": "Indicateur degrade FR-11", "public": "acheteuse", "rich": false, "gap": "WizardSyncIndicator a construire" },
+    { "id": "F06", "name": "Reseau degrade / offline", "public": "acheteuse", "rich": false },
+    { "id": "F07", "name": "Funnel chat optimiste", "public": "acheteuse", "rich": true },
+    { "id": "F08", "name": "i18n / RTL / a11y", "public": "acheteuse", "rich": false },
+    { "id": "F09", "name": "Reprise & persistance", "public": "acheteuse", "rich": false },
+    { "id": "F10", "name": "Admin leads", "public": "operateur", "rich": true },
+    { "id": "F11", "name": "Admin outbox & worker", "public": "operateur", "rich": true, "gap": "Pas d'UI outbox (RSK-15)" },
+    { "id": "F12", "name": "Flag / rollout / parite legacy", "public": "operateur", "rich": false },
+    { "id": "F13", "name": "Rate-limit / securite", "public": "systeme", "rich": false },
+    { "id": "F14", "name": "Integrite / idempotence / tracking", "public": "systeme", "rich": true }
+  ],
+  "module_files": ["README.md", "scenarios.csv", "test-plan.md", "business-scenarios.md (modules riches)", "flow.puml (si pertinent)"],
+  "execution": {
+    "action_plan": "90-execution/action-plan.md",
+    "runbook": "90-execution/runbook.md",
+    "correction_loop": "90-execution/correction-loop.md",
+    "commands": "90-execution/commands.txt",
+    "reporting": "90-execution/reporting-and-dashboards.md",
+    "ci": "90-execution/ci-pipeline.yaml",
+    "waves": ["V1 nominal+parite", "V2 reseau+zero-perte", "V3 degrade+a11y", "V4 chat", "V5 admin", "V6 securite+integrite"]
+  },
+  "release_criteria": [
+    "100% fonctionnalites avec >=1 scenario P0 vert",
+    "tous risques severity=high couverts et verts",
+    "zero-perte prouve chromium ET webkit",
+    "double-conversion impossible prouve",
+    "lead optimiste visible en admin + effet dead detectable/rejouable",
+    "0 defaut S1/S2 ouvert"
+  ]
+}

@@ -1,0 +1,15 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F03-S01,RTL,P0,système,3 envelopes,flush,envoi FIFO create->address->payment,ordre,-
+F03-S02,RTL,P0,système,transport 503x2 puis 201,flush+fake timers,3 envois MÊME clé + file vidée,même idem-key,-
+F03-S03,RTL,P0,système,transport 4xx,flush,drop sans retry + onDrop,onDrop(non_retryable),-
+F03-S04,RTL,P0,système,retryable persistant,flush maxAttempts,drop + onDrop(max_attempts),onDrop,RSK-09
+F03-S05,RTL,P0,système,backoff,flush,delais bornés (<=4s) + jitter,backoff borné,RSK-09
+F03-S06,RTL,P0,système,enqueue,appel,n'attend pas (non bloquant),retour immédiat,-
+F03-S07,RTL,P0,système,double flush concurrent,Promise.all,un envoi par mutationId,dedup,-
+F03-S08,RTL,P1,système,miroir,enqueue,sessionStorage reflète la file,miroir,-
+F03-S09,RTL,P1,système,miroir + reload simulé,hydrateFromMirror,recharge + reflush,pending,RSK-06
+F03-S10,MSW,P1,système,leadFlaky(2),flush,retry réel via transport HTTP même clé,header,-
+F03-S11,MSW,P1,système,networkError,flush,reste pending; vide au rétablissement,pending->0,RSK-09
+F03-S12,RTL,P1,système,miroir corrompu (JSON invalide),hydrateFromMirror,ignore sans crash,no-op,-
+F03-S13,RTL,P1,système,storage indisponible,enqueue,fonctionne en mémoire,no throw,-
+F03-S20,RTL,P0,acheteuse(effet),retry en cours,observer,aucun effet UI négatif (pas de spinner/erreur),UI calme,-
