@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { env } from '@/lib/env';
+import { LOCALES } from '@/i18n.config';
 
 export default function robots(): MetadataRoute.Robots {
   const base = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
@@ -36,7 +37,11 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: 'ClaudeBot', disallow: '/' },
       { userAgent: 'Google-Extended', disallow: '/' },
     ],
-    sitemap: `${base}/sitemap.xml`,
+    // Sitemap principal (toutes langues) + un sitemap par langue.
+    sitemap: [
+      `${base}/sitemap.xml`,
+      ...LOCALES.map((loc) => `${base}/${loc}/sitemap.xml`),
+    ],
     host: base,
   };
 }
