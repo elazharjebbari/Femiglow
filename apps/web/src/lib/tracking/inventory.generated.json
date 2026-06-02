@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-14T20:02:08.263Z",
+  "generatedAt": "2026-06-02T13:03:48.483Z",
   "components": [
     {
       "name": "MobileFocusGuard",
@@ -217,6 +217,11 @@
       "category": "card"
     },
     {
+      "name": "RefreshStatsButton",
+      "path": "src/components/admin/analytics/primitives/RefreshStatsButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
       "name": "Skeleton",
       "path": "src/components/admin/analytics/primitives/Skeleton.tsx",
       "category": "admin"
@@ -225,6 +230,11 @@
       "name": "ChatAdminNav",
       "path": "src/components/admin/chat/ChatAdminNav.tsx",
       "category": "navigation"
+    },
+    {
+      "name": "CleanupGhostsButton",
+      "path": "src/components/admin/chat/CleanupGhostsButton.tsx",
+      "category": "cta_secondary"
     },
     {
       "name": "ConversationQuickView",
@@ -247,6 +257,16 @@
       "category": "admin"
     },
     {
+      "name": "IntentCuratorRow",
+      "path": "src/components/admin/chat/IntentCuratorRow.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "KindBadge",
+      "path": "src/components/admin/chat/KindBadge.tsx",
+      "category": "admin"
+    },
+    {
       "name": "LeadOutcomeSelect",
       "path": "src/components/admin/chat/LeadOutcomeSelect.tsx",
       "category": "admin"
@@ -262,6 +282,11 @@
       "category": "form_input"
     },
     {
+      "name": "SourceBadge",
+      "path": "src/components/admin/chat/SourceBadge.tsx",
+      "category": "admin"
+    },
+    {
       "name": "SuggestionForm",
       "path": "src/components/admin/chat/SuggestionForm.tsx",
       "category": "form_input"
@@ -269,6 +294,11 @@
     {
       "name": "SystemDashboard",
       "path": "src/components/admin/chat/SystemDashboard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SystemDocs",
+      "path": "src/components/admin/chat/SystemDocs.tsx",
       "category": "admin"
     },
     {
@@ -447,6 +477,351 @@
       "category": "card"
     },
     {
+      "name": "CaptionEditor",
+      "path": "src/components/admin/content-studio-v2/create/CaptionEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CreateWorkspace",
+      "path": "src/components/admin/content-studio-v2/create/CreateWorkspace.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "IntentionForm",
+      "path": "src/components/admin/content-studio-v2/create/IntentionForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "MediaStudio",
+      "path": "src/components/admin/content-studio-v2/create/MediaStudio.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PreviewPane",
+      "path": "src/components/admin/content-studio-v2/create/PreviewPane.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PublishActionGroup",
+      "path": "src/components/admin/content-studio-v2/create/PublishActionGroup.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Stepper",
+      "path": "src/components/admin/content-studio-v2/create/Stepper.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "VariantsCompare",
+      "path": "src/components/admin/content-studio-v2/create/VariantsCompare.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AccountHealthCard",
+      "path": "src/components/admin/content-studio-v2/home/AccountHealthCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ActivityFeed",
+      "path": "src/components/admin/content-studio-v2/home/ActivityFeed.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BrandHealthCard",
+      "path": "src/components/admin/content-studio-v2/home/BrandHealthCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "DraftsAwaitingCard",
+      "path": "src/components/admin/content-studio-v2/home/DraftsAwaitingCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "HomeClient",
+      "path": "src/components/admin/content-studio-v2/home/HomeClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "MetricCard",
+      "path": "src/components/admin/content-studio-v2/home/MetricCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "PostsThisWeekCard",
+      "path": "src/components/admin/content-studio-v2/home/PostsThisWeekCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "TopPerformersCard",
+      "path": "src/components/admin/content-studio-v2/home/TopPerformersCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "BulkActionBar",
+      "path": "src/components/admin/content-studio-v2/library/BulkActionBar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LibraryClient",
+      "path": "src/components/admin/content-studio-v2/library/LibraryClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LibraryFilters",
+      "path": "src/components/admin/content-studio-v2/library/LibraryFilters.tsx",
+      "category": "filter"
+    },
+    {
+      "name": "LibraryGrid",
+      "path": "src/components/admin/content-studio-v2/library/LibraryGrid.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LibrarySearch",
+      "path": "src/components/admin/content-studio-v2/library/LibrarySearch.tsx",
+      "category": "search"
+    },
+    {
+      "name": "ImageCropper",
+      "path": "src/components/admin/content-studio-v2/media/ImageCropper.tsx",
+      "category": "media_image"
+    },
+    {
+      "name": "MediaPicker",
+      "path": "src/components/admin/content-studio-v2/media/MediaPicker.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PlatformPreview",
+      "path": "src/components/admin/content-studio-v2/media/PlatformPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Uploader",
+      "path": "src/components/admin/content-studio-v2/media/Uploader.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "VideoTrimmer",
+      "path": "src/components/admin/content-studio-v2/media/VideoTrimmer.tsx",
+      "category": "media_video"
+    },
+    {
+      "name": "Calendar",
+      "path": "src/components/admin/content-studio-v2/plan/Calendar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CalendarCard",
+      "path": "src/components/admin/content-studio-v2/plan/CalendarCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "JobQueue",
+      "path": "src/components/admin/content-studio-v2/plan/JobQueue.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PlanMetrics",
+      "path": "src/components/admin/content-studio-v2/plan/PlanMetrics.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "QuickEditDrawer",
+      "path": "src/components/admin/content-studio-v2/plan/QuickEditDrawer.tsx",
+      "category": "modal"
+    },
+    {
+      "name": "Badge",
+      "path": "src/components/admin/content-studio-v2/primitives/Badge.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Button",
+      "path": "src/components/admin/content-studio-v2/primitives/Button.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "Dialog",
+      "path": "src/components/admin/content-studio-v2/primitives/Dialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Input",
+      "path": "src/components/admin/content-studio-v2/primitives/Input.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Skeleton",
+      "path": "src/components/admin/content-studio-v2/primitives/Skeleton.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Toaster",
+      "path": "src/components/admin/content-studio-v2/primitives/Toaster.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AppShell",
+      "path": "src/components/admin/content-studio-v2/shell/AppShell.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CommandPalette",
+      "path": "src/components/admin/content-studio-v2/shell/CommandPalette.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EmptyState",
+      "path": "src/components/admin/content-studio-v2/shell/EmptyState.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "KeyboardCheatsheet",
+      "path": "src/components/admin/content-studio-v2/shell/KeyboardCheatsheet.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Sidebar",
+      "path": "src/components/admin/content-studio-v2/shell/Sidebar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StudioShellProviders",
+      "path": "src/components/admin/content-studio-v2/shell/StudioShellProviders.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ThemeProvider",
+      "path": "src/components/admin/content-studio-v2/shell/ThemeProvider.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ThemeToggle",
+      "path": "src/components/admin/content-studio-v2/shell/ThemeToggle.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Topbar",
+      "path": "src/components/admin/content-studio-v2/shell/Topbar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AnalyticsDashboard",
+      "path": "src/components/admin/content-studio/AnalyticsDashboard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ArchiveButton",
+      "path": "src/components/admin/content-studio/ArchiveButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "BriefEditor",
+      "path": "src/components/admin/content-studio/BriefEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "BudgetSummary",
+      "path": "src/components/admin/content-studio/BudgetSummary.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CampaignSelect",
+      "path": "src/components/admin/content-studio/CampaignSelect.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CancelDialog",
+      "path": "src/components/admin/content-studio/CancelDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ContentStudioClient",
+      "path": "src/components/admin/content-studio/ContentStudioClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DeliveryStatusBadge",
+      "path": "src/components/admin/content-studio/DeliveryStatusBadge.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DraftEditor",
+      "path": "src/components/admin/content-studio/DraftEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EditorialCalendar",
+      "path": "src/components/admin/content-studio/EditorialCalendar.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "IdeaForm",
+      "path": "src/components/admin/content-studio/IdeaForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "LearningNoteForm",
+      "path": "src/components/admin/content-studio/LearningNoteForm.tsx",
+      "category": "form_input"
+    },
+    {
+      "name": "LoadMore",
+      "path": "src/components/admin/content-studio/LoadMore.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PlatformPreview",
+      "path": "src/components/admin/content-studio/PlatformPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PostizHealthPanel",
+      "path": "src/components/admin/content-studio/PostizHealthPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PostizPanel",
+      "path": "src/components/admin/content-studio/PostizPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "RejectDialog",
+      "path": "src/components/admin/content-studio/RejectDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SectionTitle",
+      "path": "src/components/admin/content-studio/SectionTitle.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "Select",
+      "path": "src/components/admin/content-studio/Select.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SocialPublishingPanel",
+      "path": "src/components/admin/content-studio/SocialPublishingPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StudioGuide",
+      "path": "src/components/admin/content-studio/StudioGuide.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StudioTabs",
+      "path": "src/components/admin/content-studio/StudioTabs.tsx",
+      "category": "tab"
+    },
+    {
+      "name": "UtmBuilder",
+      "path": "src/components/admin/content-studio/UtmBuilder.tsx",
+      "category": "admin"
+    },
+    {
       "name": "AudienceDetailActions",
       "path": "src/components/admin/emails/audiences/AudienceDetailActions.tsx",
       "category": "admin"
@@ -457,6 +832,11 @@
       "category": "admin"
     },
     {
+      "name": "AudienceRowActions",
+      "path": "src/components/admin/emails/audiences/AudienceRowActions.tsx",
+      "category": "admin"
+    },
+    {
       "name": "AudienceRulesBuilder",
       "path": "src/components/admin/emails/audiences/AudienceRulesBuilder.tsx",
       "category": "admin"
@@ -464,6 +844,16 @@
     {
       "name": "AudienceWizard",
       "path": "src/components/admin/emails/audiences/AudienceWizard.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CountryAutocomplete",
+      "path": "src/components/admin/emails/audiences/CountryAutocomplete.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "DurationInput",
+      "path": "src/components/admin/emails/audiences/DurationInput.tsx",
       "category": "admin"
     },
     {
@@ -557,9 +947,49 @@
       "category": "admin"
     },
     {
+      "name": "EngineEditor",
+      "path": "src/components/admin/i18n/EngineEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "EngineSimulator",
+      "path": "src/components/admin/i18n/EngineSimulator.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LocaleEditorShell",
+      "path": "src/components/admin/i18n/LocaleEditorShell.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "LocaleTabs",
+      "path": "src/components/admin/i18n/LocaleTabs.tsx",
+      "category": "tab"
+    },
+    {
       "name": "IconImage",
       "path": "src/components/admin/icons.tsx",
       "category": "media_image"
+    },
+    {
+      "name": "KitCompositionEditor",
+      "path": "src/components/admin/kit-composition/KitCompositionEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "KitPackEditor",
+      "path": "src/components/admin/kit-pack/KitPackEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CoverSvgEditor",
+      "path": "src/components/admin/kit-video/CoverSvgEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "KitVideoEditor",
+      "path": "src/components/admin/kit-video/KitVideoEditor.tsx",
+      "category": "media_video"
     },
     {
       "name": "LeadNoteForm",
@@ -657,6 +1087,16 @@
       "category": "form_input"
     },
     {
+      "name": "OutboxSupervisionContainer",
+      "path": "src/components/admin/OutboxSupervisionContainer.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "OutboxSupervisionPanel",
+      "path": "src/components/admin/OutboxSupervisionPanel.tsx",
+      "category": "admin"
+    },
+    {
       "name": "CopyButton",
       "path": "src/components/admin/products/CopyButton.tsx",
       "category": "cta_secondary"
@@ -752,6 +1192,16 @@
       "category": "admin"
     },
     {
+      "name": "BulkDeleteConfirmDialog",
+      "path": "src/components/admin/seo/BulkDeleteConfirmDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "OgImagePicker",
+      "path": "src/components/admin/seo/OgImagePicker.tsx",
+      "category": "media_image"
+    },
+    {
       "name": "FacebookPreview",
       "path": "src/components/admin/seo/previews/FacebookPreview.tsx",
       "category": "admin"
@@ -764,6 +1214,16 @@
     {
       "name": "TwitterPreview",
       "path": "src/components/admin/seo/previews/TwitterPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ResetSettingsConfirmDialog",
+      "path": "src/components/admin/seo/ResetSettingsConfirmDialog.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeoAuditLogPanel",
+      "path": "src/components/admin/seo/SeoAuditLogPanel.tsx",
       "category": "admin"
     },
     {
@@ -917,6 +1377,16 @@
       "category": "admin"
     },
     {
+      "name": "AttributionSettingsClient",
+      "path": "src/components/admin/tracking/attribution/AttributionSettingsClient.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "CapiTokenField",
+      "path": "src/components/admin/tracking/CapiTokenField.tsx",
+      "category": "admin"
+    },
+    {
       "name": "ConsentBannerSettingsForm",
       "path": "src/components/admin/tracking/ConsentBannerSettingsForm.tsx",
       "category": "form_input"
@@ -937,134 +1407,14 @@
       "category": "banner"
     },
     {
-      "name": "GtmAdminTabs",
-      "path": "src/components/admin/tracking/gtm/GtmAdminTabs.tsx",
-      "category": "tab"
-    },
-    {
-      "name": "GtmConfigClient",
-      "path": "src/components/admin/tracking/gtm/GtmConfigClient.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmConfigDiff",
-      "path": "src/components/admin/tracking/gtm/GtmConfigDiff.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmConfigForm",
-      "path": "src/components/admin/tracking/gtm/GtmConfigForm.tsx",
-      "category": "form_input"
-    },
-    {
-      "name": "GtmConfigVersionList",
-      "path": "src/components/admin/tracking/gtm/GtmConfigVersionList.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmCsvImport",
-      "path": "src/components/admin/tracking/gtm/GtmCsvImport.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmEnvTabs",
-      "path": "src/components/admin/tracking/gtm/GtmEnvTabs.tsx",
-      "category": "tab"
-    },
-    {
-      "name": "GtmExportClient",
-      "path": "src/components/admin/tracking/gtm/GtmExportClient.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmFullscreenPreview",
-      "path": "src/components/admin/tracking/gtm/GtmFullscreenPreview.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmGraphCanvas",
-      "path": "src/components/admin/tracking/gtm/GtmGraphCanvas.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmHelpSteps",
-      "path": "src/components/admin/tracking/gtm/GtmHelpSteps.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "IconDownload",
-      "path": "src/components/admin/tracking/gtm/GtmIcons.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmJsonPreview",
-      "path": "src/components/admin/tracking/gtm/GtmJsonPreview.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmLinterReport",
-      "path": "src/components/admin/tracking/gtm/GtmLinterReport.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmMetaInfo",
-      "path": "src/components/admin/tracking/gtm/GtmMetaInfo.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmStatsGrid",
-      "path": "src/components/admin/tracking/gtm/GtmStatsGrid.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmTemplatePicker",
-      "path": "src/components/admin/tracking/gtm/GtmTemplatePicker.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "GtmVisualizationClient",
-      "path": "src/components/admin/tracking/gtm/GtmVisualizationClient.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "PingTimeline",
-      "path": "src/components/admin/tracking/gtm/PingTimeline.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "SyncCard",
-      "path": "src/components/admin/tracking/gtm/SyncCard.tsx",
-      "category": "card"
-    },
-    {
-      "name": "SyncIndicator",
-      "path": "src/components/admin/tracking/gtm/SyncIndicator.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "SyncStatusLive",
-      "path": "src/components/admin/tracking/gtm/SyncStatusLive.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "SyncStatusView",
-      "path": "src/components/admin/tracking/gtm/SyncStatusView.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "ValidatePairWizard",
-      "path": "src/components/admin/tracking/gtm/ValidatePairWizard.tsx",
-      "category": "admin"
-    },
-    {
-      "name": "ValidationDiffViewer",
-      "path": "src/components/admin/tracking/gtm/ValidationDiffViewer.tsx",
-      "category": "admin"
-    },
-    {
       "name": "InventoryPanel",
       "path": "src/components/admin/tracking/InventoryPanel.tsx",
       "category": "admin"
+    },
+    {
+      "name": "LeadWebhookSettingsForm",
+      "path": "src/components/admin/tracking/LeadWebhookSettingsForm.tsx",
+      "category": "form_input"
     },
     {
       "name": "LogsPanel",
@@ -1127,8 +1477,88 @@
       "category": "admin"
     },
     {
-      "name": "ProvidersPanel",
-      "path": "src/components/admin/tracking/ProvidersPanel.tsx",
+      "name": "EventMatrixRow",
+      "path": "src/components/admin/tracking/plans/EventMatrixRow.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "IdInput",
+      "path": "src/components/admin/tracking/plans/IdInput.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "JsonPreview",
+      "path": "src/components/admin/tracking/plans/JsonPreview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "PlanDetailActions",
+      "path": "src/components/admin/tracking/plans/PlanDetailActions.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "SeedCanonicalButton",
+      "path": "src/components/admin/tracking/plans/SeedCanonicalButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "StatusBadge",
+      "path": "src/components/admin/tracking/plans/StatusBadge.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "AudienceStrategyPanel",
+      "path": "src/components/admin/tracking/plans/wizard/AudienceStrategyPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "GoogleAdsConversionLabelsEditor",
+      "path": "src/components/admin/tracking/plans/wizard/GoogleAdsConversionLabelsEditor.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepEnvProfiles",
+      "path": "src/components/admin/tracking/plans/wizard/StepEnvProfiles.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepEvents",
+      "path": "src/components/admin/tracking/plans/wizard/StepEvents.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepProviders",
+      "path": "src/components/admin/tracking/plans/wizard/StepProviders.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepReview",
+      "path": "src/components/admin/tracking/plans/wizard/StepReview.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "StepSettings",
+      "path": "src/components/admin/tracking/plans/wizard/StepSettings.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "TrackingHelpPanel",
+      "path": "src/components/admin/tracking/plans/wizard/TrackingHelpPanel.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "WizardStepper",
+      "path": "src/components/admin/tracking/plans/WizardStepper.tsx",
+      "category": "admin"
+    },
+    {
+      "name": "ProviderConfigCard",
+      "path": "src/components/admin/tracking/ProviderConfigCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ProviderConfigList",
+      "path": "src/components/admin/tracking/ProviderConfigList.tsx",
       "category": "admin"
     },
     {
@@ -1150,6 +1580,16 @@
       "name": "WebhookCreateForm",
       "path": "src/components/admin/WebhookCreateForm.tsx",
       "category": "form_input"
+    },
+    {
+      "name": "RetryDeliveryButton",
+      "path": "src/components/admin/webhooks/RetryDeliveryButton.tsx",
+      "category": "cta_secondary"
+    },
+    {
+      "name": "WebhookSecretField",
+      "path": "src/components/admin/webhooks/WebhookSecretField.tsx",
+      "category": "admin"
     },
     {
       "name": "ChatComposer",
@@ -1177,6 +1617,11 @@
       "category": "card"
     },
     {
+      "name": "ChatWidgetDeferred",
+      "path": "src/components/chat/ChatWidgetDeferred.tsx",
+      "category": "card"
+    },
+    {
       "name": "ChatWidgetMount",
       "path": "src/components/chat/ChatWidgetMount.tsx",
       "category": "card"
@@ -1197,6 +1642,11 @@
       "category": "card"
     },
     {
+      "name": "RetryChip",
+      "path": "src/components/chat/RetryChip.tsx",
+      "category": "card"
+    },
+    {
       "name": "ShippingPriceDisplay",
       "path": "src/components/checkout/ShippingPriceDisplay.tsx",
       "category": "card"
@@ -1205,6 +1655,21 @@
       "name": "CityAutocomplete",
       "path": "src/components/checkout/wizard/components/CityAutocomplete.tsx",
       "category": "card"
+    },
+    {
+      "name": "NoCommitmentBadge",
+      "path": "src/components/checkout/wizard/NoCommitmentBadge.tsx",
+      "category": "card"
+    },
+    {
+      "name": "PhoneMaskInput",
+      "path": "src/components/checkout/wizard/PhoneMaskInput.tsx",
+      "category": "card"
+    },
+    {
+      "name": "ResumeBanner",
+      "path": "src/components/checkout/wizard/ResumeBanner.tsx",
+      "category": "banner"
     },
     {
       "name": "AddressStep",
@@ -1232,13 +1697,43 @@
       "category": "card"
     },
     {
+      "name": "TimeEstimateBadge",
+      "path": "src/components/checkout/wizard/TimeEstimateBadge.tsx",
+      "category": "card"
+    },
+    {
+      "name": "WizardCartRecap",
+      "path": "src/components/checkout/wizard/WizardCartRecap.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "WizardCheckmark",
+      "path": "src/components/checkout/wizard/WizardCheckmark.tsx",
+      "category": "card"
+    },
+    {
+      "name": "WizardMobilePackThumb",
+      "path": "src/components/checkout/wizard/WizardMobilePackThumb.tsx",
+      "category": "card"
+    },
+    {
       "name": "WizardShell",
       "path": "src/components/checkout/wizard/WizardShell.tsx",
       "category": "card"
     },
     {
+      "name": "WizardStepAnnouncer",
+      "path": "src/components/checkout/wizard/WizardStepAnnouncer.tsx",
+      "category": "card"
+    },
+    {
       "name": "WizardStepIndicator",
       "path": "src/components/checkout/wizard/WizardStepIndicator.tsx",
+      "category": "card"
+    },
+    {
+      "name": "WizardSyncIndicator",
+      "path": "src/components/checkout/wizard/WizardSyncIndicator.tsx",
       "category": "card"
     },
     {
@@ -1249,6 +1744,11 @@
       "events": [
         "add_to_cart"
       ]
+    },
+    {
+      "name": "AttributeChips",
+      "path": "src/components/commerce/AttributeChips.tsx",
+      "category": "commerce_cart"
     },
     {
       "name": "CartButton",
@@ -1334,6 +1834,16 @@
       "category": "section_testimonial"
     },
     {
+      "name": "InciTooltip",
+      "path": "src/components/commerce/InciTooltip.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "IngredientCard",
+      "path": "src/components/commerce/IngredientCard.tsx",
+      "category": "card"
+    },
+    {
       "name": "IngredientsTable",
       "path": "src/components/commerce/IngredientsTable.tsx",
       "category": "commerce_cart"
@@ -1368,6 +1878,11 @@
       "category": "commerce_checkout"
     },
     {
+      "name": "NarrativeIntro",
+      "path": "src/components/commerce/NarrativeIntro.tsx",
+      "category": "commerce_cart"
+    },
+    {
       "name": "OrderSummaryAccordion",
       "path": "src/components/commerce/OrderSummaryAccordion.tsx",
       "category": "accordion"
@@ -1388,14 +1903,14 @@
       "category": "commerce_cart"
     },
     {
+      "name": "PostCtaLink",
+      "path": "src/components/commerce/PostCtaLink.tsx",
+      "category": "cta_primary"
+    },
+    {
       "name": "PriceDisplay",
       "path": "src/components/commerce/PriceDisplay.tsx",
       "category": "commerce_cart"
-    },
-    {
-      "name": "ProductCard",
-      "path": "src/components/commerce/ProductCard.tsx",
-      "category": "card"
     },
     {
       "name": "ProgressBar3Steps",
@@ -1413,8 +1928,18 @@
       "category": "commerce_cart"
     },
     {
+      "name": "ResponsiveIngredientList",
+      "path": "src/components/commerce/ResponsiveIngredientList.tsx",
+      "category": "commerce_cart"
+    },
+    {
       "name": "ShippingModeSelector",
       "path": "src/components/commerce/ShippingModeSelector.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "SocialProofBadge",
+      "path": "src/components/commerce/SocialProofBadge.tsx",
       "category": "commerce_cart"
     },
     {
@@ -1438,8 +1963,18 @@
       "category": "commerce_cart"
     },
     {
+      "name": "SubProductBlock",
+      "path": "src/components/commerce/SubProductBlock.tsx",
+      "category": "commerce_cart"
+    },
+    {
       "name": "TermsCheckbox",
       "path": "src/components/commerce/TermsCheckbox.tsx",
+      "category": "commerce_cart"
+    },
+    {
+      "name": "TrustRow",
+      "path": "src/components/commerce/TrustRow.tsx",
       "category": "commerce_cart"
     },
     {
@@ -1483,8 +2018,78 @@
       "category": "form_input"
     },
     {
+      "name": "LiveAnnouncer",
+      "path": "src/components/i18n/LiveAnnouncer.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LocaleTransitionProvider",
+      "path": "src/components/i18n/locale-transition-context.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LocaleSuggestionEngine",
+      "path": "src/components/i18n/LocaleSuggestionEngine.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LocaleSuggestionPrompt",
+      "path": "src/components/i18n/LocaleSuggestionPrompt.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LocaleSwitcher",
+      "path": "src/components/i18n/LocaleSwitcher.tsx",
+      "category": "card"
+    },
+    {
+      "name": "LocaleVeil",
+      "path": "src/components/i18n/LocaleVeil.tsx",
+      "category": "card"
+    },
+    {
       "name": "MatiereIcon",
       "path": "src/components/icons/matieres/MatiereIcon.tsx",
+      "category": "card"
+    },
+    {
+      "name": "CompositionCard",
+      "path": "src/components/kit/CompositionCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "MediaCrossfade",
+      "path": "src/components/kit/MediaCrossfade.tsx",
+      "category": "card"
+    },
+    {
+      "name": "NumberBadge",
+      "path": "src/components/kit/NumberBadge.tsx",
+      "category": "card"
+    },
+    {
+      "name": "SensationLine",
+      "path": "src/components/kit/SensationLine.tsx",
+      "category": "card"
+    },
+    {
+      "name": "VideoChapters",
+      "path": "src/components/kit/VideoChapters.tsx",
+      "category": "media_video"
+    },
+    {
+      "name": "VideoIFrameTracker",
+      "path": "src/components/kit/VideoIFrameTracker.tsx",
+      "category": "media_video"
+    },
+    {
+      "name": "VideoPostCta",
+      "path": "src/components/kit/VideoPostCta.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "DEFAULT_VIDEO_POSTER_STRINGS",
+      "path": "src/components/kit/VideoPosterCover.tsx",
       "category": "card"
     },
     {
@@ -1548,6 +2153,16 @@
       "category": "card"
     },
     {
+      "name": "KitPageLayoutV1",
+      "path": "src/components/marketing/kit-layout/KitPageLayoutV1.tsx",
+      "category": "card"
+    },
+    {
+      "name": "KitPageLayoutV2",
+      "path": "src/components/marketing/kit-layout/KitPageLayoutV2.tsx",
+      "category": "card"
+    },
+    {
       "name": "Footnote",
       "path": "src/components/patterns/Footnote.tsx",
       "category": "card"
@@ -1566,6 +2181,16 @@
       "name": "ScrollProgress",
       "path": "src/components/patterns/ScrollProgress.tsx",
       "category": "progress"
+    },
+    {
+      "name": "GeoPromoSlideHeader",
+      "path": "src/components/promo/GeoPromoSlideHeader.tsx",
+      "category": "card"
+    },
+    {
+      "name": "GeoPromoSlideHeaderSlot",
+      "path": "src/components/promo/GeoPromoSlideHeaderSlot.tsx",
+      "category": "card"
     },
     {
       "name": "ArticleCard",
@@ -1748,6 +2373,31 @@
       "category": "section_hero"
     },
     {
+      "name": "HeroGallery",
+      "path": "src/components/sections/hero/HeroGallery.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroGalleryArrow",
+      "path": "src/components/sections/hero/HeroGalleryArrow.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroGalleryDots",
+      "path": "src/components/sections/hero/HeroGalleryDots.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroGalleryMain",
+      "path": "src/components/sections/hero/HeroGalleryMain.tsx",
+      "category": "section_hero"
+    },
+    {
+      "name": "HeroGalleryThumbnails",
+      "path": "src/components/sections/hero/HeroGalleryThumbnails.tsx",
+      "category": "section_hero"
+    },
+    {
       "name": "HeroBound",
       "path": "src/components/sections/HeroBound.tsx",
       "category": "section_hero"
@@ -1873,6 +2523,16 @@
       "category": "section_content"
     },
     {
+      "name": "PackVisual",
+      "path": "src/components/sections/PackVisual.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "PackVisualBound",
+      "path": "src/components/sections/PackVisualBound.tsx",
+      "category": "section_content"
+    },
+    {
       "name": "PivotBanner",
       "path": "src/components/sections/PivotBanner.tsx",
       "category": "banner"
@@ -1885,6 +2545,11 @@
     {
       "name": "PreparationGesture",
       "path": "src/components/sections/PreparationGesture.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "PriceBlock",
+      "path": "src/components/sections/PriceBlock.tsx",
       "category": "section_content"
     },
     {
@@ -1973,6 +2638,36 @@
       "category": "cta_secondary"
     },
     {
+      "name": "StepCard",
+      "path": "src/components/sections/StepCard.tsx",
+      "category": "card"
+    },
+    {
+      "name": "StepIcon",
+      "path": "src/components/sections/StepIcon.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "StepsConnector",
+      "path": "src/components/sections/StepsConnector.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "StepsHeader",
+      "path": "src/components/sections/StepsHeader.tsx",
+      "category": "section_content"
+    },
+    {
+      "name": "StepsPostCtaLink",
+      "path": "src/components/sections/StepsPostCtaLink.tsx",
+      "category": "cta_primary"
+    },
+    {
+      "name": "StepsTimeline",
+      "path": "src/components/sections/StepsTimeline.tsx",
+      "category": "section_content"
+    },
+    {
       "name": "TableOfContents",
       "path": "src/components/sections/TableOfContents.tsx",
       "category": "section_content"
@@ -1993,6 +2688,11 @@
       "category": "section_content"
     },
     {
+      "name": "ValueBreakdownList",
+      "path": "src/components/sections/ValueBreakdownList.tsx",
+      "category": "section_content"
+    },
+    {
       "name": "VideoPlayer4Gestes",
       "path": "src/components/sections/VideoPlayer4Gestes.tsx",
       "category": "section_video",
@@ -2010,9 +2710,19 @@
       "category": "media_video"
     },
     {
+      "name": "VideoPlayer4GestesKitBound",
+      "path": "src/components/sections/VideoPlayer4GestesKitBound.tsx",
+      "category": "media_video"
+    },
+    {
       "name": "YouTubeEmbed",
       "path": "src/components/sections/YouTubeEmbed.tsx",
       "category": "section_content"
+    },
+    {
+      "name": "AttributionCaptureBridge",
+      "path": "src/components/tracking/AttributionCaptureBridge.tsx",
+      "category": "card"
     },
     {
       "name": "ConsentBanner",
@@ -2022,6 +2732,11 @@
     {
       "name": "DebugOverlay",
       "path": "src/components/tracking/DebugOverlay.tsx",
+      "category": "card"
+    },
+    {
+      "name": "GtmHeadScript",
+      "path": "src/components/tracking/GtmHeadScript.tsx",
       "category": "card"
     },
     {
@@ -2056,6 +2771,11 @@
       "events": [
         "scroll"
       ]
+    },
+    {
+      "name": "SnapPixelEvents",
+      "path": "src/components/tracking/SnapPixelEvents.tsx",
+      "category": "card"
     },
     {
       "name": "ViewItemTracker",
@@ -2133,6 +2853,54 @@
     }
   ],
   "pages": [
+    {
+      "route": "/:locale",
+      "title": "FemiGlow",
+      "category": "landing",
+      "filePath": "src/app/[locale]/page.tsx"
+    },
+    {
+      "route": "/:locale/contact",
+      "title": "Contact",
+      "category": "landing",
+      "filePath": "src/app/[locale]/contact/page.tsx"
+    },
+    {
+      "route": "/:locale/journal",
+      "title": "Journal",
+      "category": "landing",
+      "filePath": "src/app/[locale]/journal/page.tsx"
+    },
+    {
+      "route": "/:locale/journal/:slug",
+      "title": "Article",
+      "category": "landing",
+      "filePath": "src/app/[locale]/journal/[slug]/page.tsx"
+    },
+    {
+      "route": "/:locale/kit",
+      "title": "/:locale/kit",
+      "category": "landing",
+      "filePath": "src/app/[locale]/kit/page.tsx"
+    },
+    {
+      "route": "/:locale/legal/:slug",
+      "title": "Legal",
+      "category": "landing",
+      "filePath": "src/app/[locale]/legal/[slug]/page.tsx"
+    },
+    {
+      "route": "/:locale/maison",
+      "title": "La maison",
+      "category": "landing",
+      "filePath": "src/app/[locale]/maison/page.tsx"
+    },
+    {
+      "route": "/:locale/rituel",
+      "title": "Le rituel",
+      "category": "landing",
+      "filePath": "src/app/[locale]/rituel/page.tsx"
+    },
     {
       "route": "/(marketing)",
       "title": "Maison de soin pour les ongles \\u2014 \\u00e0 Rabat",
@@ -2260,6 +3028,12 @@
       "filePath": "src/app/admin/chat/instructions/new/page.tsx"
     },
     {
+      "route": "/admin/chat/intent-curator",
+      "title": "/admin/chat/intent-curator",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/intent-curator/page.tsx"
+    },
+    {
       "route": "/admin/chat/kpis",
       "title": "/admin/chat/kpis",
       "category": "admin",
@@ -2288,6 +3062,12 @@
       "title": "/admin/chat/providers/new",
       "category": "admin",
       "filePath": "src/app/admin/chat/providers/new/page.tsx"
+    },
+    {
+      "route": "/admin/chat/quality",
+      "title": "/admin/chat/quality",
+      "category": "admin",
+      "filePath": "src/app/admin/chat/quality/page.tsx"
     },
     {
       "route": "/admin/chat/sources",
@@ -2372,6 +3152,66 @@
       "title": "/admin/components/seed",
       "category": "admin",
       "filePath": "src/app/admin/components/seed/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio",
+      "title": "/admin/content-studio",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio-legacy",
+      "title": "Content Studio · Legacy",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio-legacy/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio-v2",
+      "title": "/admin/content-studio-v2",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio-v2/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio-v2/_dev/preview",
+      "title": "/admin/content-studio-v2/_dev/preview",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio-v2/_dev/preview/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio-v2/create",
+      "title": "/admin/content-studio-v2/create",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio-v2/create/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio-v2/home",
+      "title": "/admin/content-studio-v2/home",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio-v2/home/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio-v2/library",
+      "title": "/admin/content-studio-v2/library",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio-v2/library/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio-v2/plan",
+      "title": "/admin/content-studio-v2/plan",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio-v2/plan/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio/dashboard",
+      "title": "/admin/content-studio/dashboard",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio/dashboard/page.tsx"
+    },
+    {
+      "route": "/admin/content-studio/health",
+      "title": "/admin/content-studio/health",
+      "category": "admin",
+      "filePath": "src/app/admin/content-studio/health/page.tsx"
     },
     {
       "route": "/admin/emails",
@@ -2482,6 +3322,48 @@
       "filePath": "src/app/admin/emails/transactional/[id]/page.tsx"
     },
     {
+      "route": "/admin/i18n",
+      "title": "Éditeur multilingue de contenu",
+      "category": "admin",
+      "filePath": "src/app/admin/i18n/page.tsx"
+    },
+    {
+      "route": "/admin/i18n/engine",
+      "title": "/admin/i18n/engine",
+      "category": "admin",
+      "filePath": "src/app/admin/i18n/engine/page.tsx"
+    },
+    {
+      "route": "/admin/i18n/engine/audit",
+      "title": "/admin/i18n/engine/audit",
+      "category": "admin",
+      "filePath": "src/app/admin/i18n/engine/audit/page.tsx"
+    },
+    {
+      "route": "/admin/kit/composition",
+      "title": "/admin/kit/composition",
+      "category": "admin",
+      "filePath": "src/app/admin/kit/composition/page.tsx"
+    },
+    {
+      "route": "/admin/kit/composition/:id",
+      "title": "/admin/kit/composition/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/kit/composition/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/kit/pack",
+      "title": "/admin/kit/pack",
+      "category": "admin",
+      "filePath": "src/app/admin/kit/pack/page.tsx"
+    },
+    {
+      "route": "/admin/kit/video",
+      "title": "/admin/kit/video",
+      "category": "admin",
+      "filePath": "src/app/admin/kit/video/page.tsx"
+    },
+    {
       "route": "/admin/leads",
       "title": "/admin/leads",
       "category": "admin",
@@ -2492,6 +3374,12 @@
       "title": "/admin/leads/:id",
       "category": "admin",
       "filePath": "src/app/admin/leads/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/leads/outbox",
+      "title": "/admin/leads/outbox",
+      "category": "admin",
+      "filePath": "src/app/admin/leads/outbox/page.tsx"
     },
     {
       "route": "/admin/legal",
@@ -2534,6 +3422,12 @@
       "title": "/admin/legal/template-vars",
       "category": "admin",
       "filePath": "src/app/admin/legal/template-vars/page.tsx"
+    },
+    {
+      "route": "/admin/live-health",
+      "title": "/admin/live-health",
+      "category": "admin",
+      "filePath": "src/app/admin/live-health/page.tsx"
     },
     {
       "route": "/admin/login",
@@ -2668,6 +3562,12 @@
       "filePath": "src/app/admin/seo/[id]/page.tsx"
     },
     {
+      "route": "/admin/seo/audit-log",
+      "title": "/admin/seo/audit-log",
+      "category": "admin",
+      "filePath": "src/app/admin/seo/audit-log/page.tsx"
+    },
+    {
       "route": "/admin/seo/new",
       "title": "/admin/seo/new",
       "category": "admin",
@@ -2752,6 +3652,12 @@
       "filePath": "src/app/admin/tracking/analytics/providers/page.tsx"
     },
     {
+      "route": "/admin/tracking/attribution",
+      "title": "/admin/tracking/attribution",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/attribution/page.tsx"
+    },
+    {
       "route": "/admin/tracking/events",
       "title": "/admin/tracking/events",
       "category": "admin",
@@ -2794,24 +3700,6 @@
       "filePath": "src/app/admin/tracking/events/mappings/compare/[a]/[b]/page.tsx"
     },
     {
-      "route": "/admin/tracking/gtm",
-      "title": "/admin/tracking/gtm",
-      "category": "admin",
-      "filePath": "src/app/admin/tracking/gtm/page.tsx"
-    },
-    {
-      "route": "/admin/tracking/gtm/sync-status",
-      "title": "GTM Sync Status — Tracking",
-      "category": "admin",
-      "filePath": "src/app/admin/tracking/gtm/sync-status/page.tsx"
-    },
-    {
-      "route": "/admin/tracking/gtm/validate-pair",
-      "title": "Valider import GTM — Tracking",
-      "category": "admin",
-      "filePath": "src/app/admin/tracking/gtm/validate-pair/page.tsx"
-    },
-    {
       "route": "/admin/tracking/inventory",
       "title": "/admin/tracking/inventory",
       "category": "admin",
@@ -2822,6 +3710,48 @@
       "title": "/admin/tracking/logs",
       "category": "admin",
       "filePath": "src/app/admin/tracking/logs/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/plans",
+      "title": "/admin/tracking/plans",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/plans/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/plans/:id",
+      "title": "/admin/tracking/plans/:id",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/plans/[id]/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/plans/:id/diagnostics",
+      "title": "/admin/tracking/plans/:id/diagnostics",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/plans/[id]/diagnostics/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/plans/:id/edit",
+      "title": "/admin/tracking/plans/:id/edit",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/plans/[id]/edit/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/plans/:id/expert",
+      "title": "/admin/tracking/plans/:id/expert",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/plans/[id]/expert/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/plans/:id/history",
+      "title": "/admin/tracking/plans/:id/history",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/plans/[id]/history/page.tsx"
+    },
+    {
+      "route": "/admin/tracking/plans/new",
+      "title": "/admin/tracking/plans/new",
+      "category": "admin",
+      "filePath": "src/app/admin/tracking/plans/new/page.tsx"
     },
     {
       "route": "/admin/tracking/providers",
@@ -2849,7 +3779,7 @@
     },
     {
       "route": "/admin/webhooks/:id/deliveries",
-      "title": "/admin/webhooks/:id/deliveries",
+      "title": "Timeout pendant l’appel webhook",
       "category": "admin",
       "filePath": "src/app/admin/webhooks/[id]/deliveries/page.tsx"
     },
