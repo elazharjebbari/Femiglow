@@ -158,4 +158,30 @@ describe('lead-sync-queue (OWBS P3)', () => {
     expect(ids).toHaveLength(1);
     expect(new Set(ids).size).toBe(1);
   });
+
+  // F03-S05 — backoff BORNÉ (anti retry-storm batterie/CPU, RSK-09)
+  it('le backoff est plafonné (maxBackoffMs) — pas de retry-storm', async () => {
+    const delays: number[] = [];
+    const sleep = vi.fn((ms: number) => {
+      delays.push(ms);
+      return Promise.resolve();
+    });
+    const t = scriptedTransport(() => ({ ok: false, retryable: true }));
+    const q = createLeadSyncQueue({
+      transport: t,
+      storage: null,
+      sleep,
+      maxAttempts: 8,
+      backoffBaseMs: 250,
+      maxBackoffMs: 4000,
+      now: () => 0, // jitter déterministe (0)
+    });
+    q.enqueue(envInput('lead_create'));
+    await q.flush();
+    expect(delays.length).toBeGreaterThan(0);
+    // Aucun délai ne dépasse le plafond (250*2^n capé à 4000, jitter=0).
+    for (const d of delays) expect(d).toBeLessThanOrEqual(4000);
+    // Croissance monotone jusqu'au plafond puis stable (pas d'explosion).
+    expect(Math.max(...delays)).toBe(4000);
+  });
 });
