@@ -9,7 +9,7 @@
  *
  * @see docs/checkout-leads-background-2026-06-01/00-conception/decisions/ADR-0004-lead-event-outbox.md
  */
-import { eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 
 import { db as getDb } from '@/lib/db/client';
 import { rowsOf } from '@/lib/db/exec';
@@ -135,5 +135,44 @@ export const leadOutboxRepo = {
       })
       .where(eq(leadEventOutbox.id, row.id));
     return { dead, attempts };
+  },
+
+  // ── Supervision opérateur (F11) ─────────────────────────────────────────
+
+  /** Compteurs par statut (pour le tableau de bord admin). */
+  async counts(): Promise<Record<string, number>> {
+    const res = (await requireDb().execute(sql`
+      SELECT status, count(*)::int AS n FROM lead_event_outbox GROUP BY status;
+    `)) as unknown as { rows: { status: string; n: number }[] } | { status: string; n: number }[];
+    const out: Record<string, number> = { pending: 0, processing: 0, done: 0, dead: 0 };
+    for (const r of rowsOf(res)) out[String(r.status)] = Number(r.n);
+    return out;
+  },
+
+  /** Liste les effets d'un statut (les plus récents d'abord). */
+  async listByStatus(
+    status: LeadEventOutboxRow['status'],
+    limit = 50,
+  ): Promise<LeadEventOutboxRow[]> {
+    const rows = await requireDb()
+      .select()
+      .from(leadEventOutbox)
+      .where(eq(leadEventOutbox.status, status))
+      .orderBy(desc(leadEventOutbox.updatedAt))
+      .limit(limit);
+    return rows;
+  },
+
+  /**
+   * Rejoue un effet `dead` : repasse `pending`, `attempts=0`, `next_attempt_at=now`.
+   * Ne touche QUE les `dead` (anti-erreur). Retourne `true` si une row a été rejouée.
+   */
+  async replay(id: string, now: Date = new Date()): Promise<boolean> {
+    const rows = await requireDb()
+      .update(leadEventOutbox)
+      .set({ status: 'pending', attempts: 0, nextAttemptAt: now, lastError: null, updatedAt: now })
+      .where(and(eq(leadEventOutbox.id, id), eq(leadEventOutbox.status, 'dead')))
+      .returning();
+    return rows.length > 0;
   },
 };
