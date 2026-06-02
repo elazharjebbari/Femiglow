@@ -48,12 +48,17 @@ export const SEEDABLE_LOCALES: readonly Locale[] = LOCALES.filter(
 /** Taille des batchs d'insertion Drizzle (compromis perf/lock). */
 export const BATCH_SIZE = 100;
 
-/** Chemin par défaut du dossier CSV (relatif à la racine du repo). */
+/**
+ * Chemin par défaut du dossier CSV (`<repo>/docs/...`), résolu depuis le cwd
+ * (`apps/web` — WorkingDirectory du service + cwd des scripts seed). Résolu au
+ * RUNTIME (`process.cwd()`) et non via `new URL(..., import.meta.url)` : ce
+ * dernier fait échouer le build webpack quand ce module entre dans le bundle de
+ * l'app (registry seeders → /api/admin/seeders), car webpack tente de résoudre
+ * le DOSSIER comme un module-asset. Même convention que `seed-pipeline.ts`.
+ */
 export const DEFAULT_CSV_DIR = path.resolve(
-  // apps/web/src/lib/i18n/ → repo root
-  // 5 niveaux : i18n/ → lib/ → src/ → web/ → apps/ → root
-  new URL('../../../../../docs/i18n-content-2026-05/03-seed-data', import.meta.url)
-    .pathname,
+  process.cwd(),
+  '../../docs/i18n-content-2026-05/03-seed-data',
 );
 
 /* ────────────────────────────────────────────────────────────────
