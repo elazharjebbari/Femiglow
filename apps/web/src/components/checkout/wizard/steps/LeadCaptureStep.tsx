@@ -348,8 +348,11 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                       required
                       // Le numéro reste toujours LTR (même en AR) : un numéro de
                       // téléphone est une séquence latine qui ne doit jamais être
-                      // ré-ordonnée par le contexte RTL.
+                      // ré-ordonnée par le contexte RTL. Mais l'ALIGNEMENT du champ
+                      // doit suivre la langue : en AR on aligne à droite (comme le
+                      // reste du formulaire) tout en gardant l'ordre des chiffres.
                       dir="ltr"
+                      className={dir === 'rtl' ? 'text-right' : undefined}
                       placeholder={t.leadStep.phonePlaceholder}
                       hint={t.leadStep.phoneHint}
                       error={errors.phone?.message}
@@ -369,6 +372,7 @@ export function LeadCaptureStep({ cta, title }: LeadCaptureStepProps) {
                       autoComplete="tel"
                       required
                       dir="ltr"
+                      className={dir === 'rtl' ? 'text-right' : undefined}
                       placeholder={t.leadStep.phonePlaceholder}
                       hint={t.leadStep.phoneHint}
                       error={errors.phone?.message}
