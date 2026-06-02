@@ -19,8 +19,43 @@ import type { MetadataRoute } from 'next';
 
 import { cms } from '@/lib/cms';
 import { env } from '@/lib/env';
+import { DEFAULT_LOCALE, LOCALES } from '@/i18n.config';
 import { listPublishedSearchablePages } from '@/lib/legal/repository';
 import { routes } from '@/lib/routes';
+
+/**
+ * URL localisée d'un chemin canonique, calquée sur la convention des pages
+ * `[locale]/*` (hreflang `{fr:/fr/…, ar:/ar/…, en:/en/…}`) : préfixe `/[locale]`
+ * pour TOUTES les locales (FR inclus). Le chemin racine `/` devient `/[locale]/`.
+ */
+function localizedPath(locale: string, path: string): string {
+  return path === '/' ? `/${locale}/` : `/${locale}${path}`;
+}
+
+/**
+ * Émet une entrée sitemap PAR locale pour un même chemin (donc chaque URL
+ * traduite est un `<loc>` à part entière), chacune portant les alternates
+ * hreflang `fr`/`ar`/`en` + `x-default` (→ FR). Conforme aux recommandations
+ * Google (chaque variante référence toutes les variantes).
+ */
+function localizedEntries(
+  base: string,
+  path: string,
+  lastModified: MetadataRoute.Sitemap[number]['lastModified'],
+  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
+  priority: number,
+): MetadataRoute.Sitemap {
+  const languages: Record<string, string> = {};
+  for (const loc of LOCALES) languages[loc] = `${base}${localizedPath(loc, path)}`;
+  languages['x-default'] = `${base}${localizedPath(DEFAULT_LOCALE, path)}`;
+  return LOCALES.map((loc) => ({
+    url: `${base}${localizedPath(loc, path)}`,
+    lastModified,
+    changeFrequency,
+    priority,
+    alternates: { languages },
+  }));
+}
 
 /**
  * Date du build, ré-évaluée à chaque `next build` via la section `env` de
@@ -38,27 +73,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
   const buildDate = getBuildDate();
 
+  // Pages statiques marketing — chacune déclinée FR/AR/EN (toutes traduites via
+  // les routes `[locale]/*`) avec alternates hreflang.
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: `${base}${routes.home}`, lastModified: buildDate, changeFrequency: 'weekly', priority: 1 },
-    { url: `${base}${routes.rituel}`, lastModified: buildDate, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${base}${routes.kit}`, lastModified: buildDate, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${base}${routes.journal}`, lastModified: buildDate, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${base}${routes.maison}`, lastModified: buildDate, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${base}${routes.contact}`, lastModified: buildDate, changeFrequency: 'yearly', priority: 0.4 },
+    ...localizedEntries(base, routes.home, buildDate, 'weekly', 1),
+    ...localizedEntries(base, routes.rituel, buildDate, 'monthly', 0.9),
+    ...localizedEntries(base, routes.kit, buildDate, 'weekly', 0.9),
+    ...localizedEntries(base, routes.journal, buildDate, 'weekly', 0.8),
+    ...localizedEntries(base, routes.maison, buildDate, 'monthly', 0.7),
+    ...localizedEntries(base, routes.contact, buildDate, 'yearly', 0.4),
   ];
 
   let articleEntries: MetadataRoute.Sitemap = [];
   try {
     const articles = await cms.getArticles({ limit: 100 });
-    articleEntries = articles.map((article) => ({
-      url: `${base}${routes.article(article.slug)}`,
-      // Priorité à la fraîcheur réelle : `updatedAt` reflète la dernière
-      // modification éditoriale ; `publishedAt` ne sert que pour les
-      // articles jamais modifiés depuis publication.
-      lastModified: article.updatedAt ?? article.publishedAt,
-      changeFrequency: 'monthly',
-      priority: 0.6,
-    }));
+    // Chaque article est rendu en FR/AR/EN (`[locale]/journal/[slug]`) → 1 entrée
+    // par locale + alternates. Fraîcheur : `updatedAt` (fallback `publishedAt`).
+    articleEntries = articles.flatMap((article) =>
+      localizedEntries(
+        base,
+        routes.article(article.slug),
+        article.updatedAt ?? article.publishedAt,
+        'monthly',
+        0.6,
+      ),
+    );
   } catch {
     articleEntries = [];
   }

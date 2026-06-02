@@ -123,7 +123,12 @@ export async function generateMetadata({
     title: metaTitle,
     description: metaDescription,
     alternates: {
-      canonical: seo.canonical ?? canonicalPath,
+      // L'override SEO admin (`seo.canonical`) est FR-only (non locale-aware) :
+      // on ne l'applique qu'en FR. En AR/EN il faisait canonicaliser `/ar/kit`
+      // et `/en/kit` vers `/kit` → pages traduites non indexées (et incohérentes
+      // avec le sitemap + les hreflang). Cf. resolvePageWithComponents non
+      // locale-aware côté override (à étendre en Phase 3).
+      canonical: isDefaultLocale ? seo.canonical ?? canonicalPath : canonicalPath,
       languages: {
         fr: '/fr/kit',
         ar: '/ar/kit',
