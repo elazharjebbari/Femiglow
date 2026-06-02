@@ -90,6 +90,7 @@ export function createLeadSyncQueue(opts: CreateLeadSyncQueueOptions): LeadSyncQ
 
   let queue: Envelope[] = [];
   let currentFlush: Promise<void> | null = null;
+  let reflushRequested = false;
 
   function persist(): void {
     if (!storage) return;
@@ -149,13 +150,28 @@ export function createLeadSyncQueue(opts: CreateLeadSyncQueueOptions): LeadSyncQ
     }
   }
 
-  /** Draine la file. Un seul flush concurrent : les appels suivants attendent
-   *  le flush en cours (await fiable pour le beacon et les tests). */
+  /**
+   * Draine la file. Un seul flush concurrent ; mais une envelope ajoutée
+   * PENDANT (ou juste après) un flush déclenche un **re-drain** : sans ça, un
+   * `enqueue` survenant juste après un flush (ex. le flush d'init du singleton
+   * sur file vide) verrait `currentFlush` encore posé et son envelope ne serait
+   * jamais envoyée (bug live-sync détecté par l'e2e). cf. test « re-drain ».
+   */
   function flush(): Promise<void> {
-    if (currentFlush) return currentFlush;
-    currentFlush = doFlush().finally(() => {
-      currentFlush = null;
-    });
+    if (currentFlush) {
+      reflushRequested = true;
+      return currentFlush;
+    }
+    currentFlush = (async () => {
+      try {
+        do {
+          reflushRequested = false;
+          await doFlush();
+        } while (reflushRequested && queue.length > 0);
+      } finally {
+        currentFlush = null;
+      }
+    })();
     return currentFlush;
   }
 

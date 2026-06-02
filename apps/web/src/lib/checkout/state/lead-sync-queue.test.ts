@@ -159,6 +159,22 @@ describe('lead-sync-queue (OWBS P3)', () => {
     expect(new Set(ids).size).toBe(1);
   });
 
+  // GARDE-FOU (bug live-sync e2e) — un enqueue juste APRÈS un flush (file vide,
+  // ex. flush d'init du singleton) doit quand même envoyer l'envelope, SANS
+  // qu'on rappelle flush() explicitement. Avec le bug (currentFlush posé +
+  // pas de re-drain), l'envelope restait non envoyée.
+  it('enqueue juste après un flush d\'init (file vide) → envelope bien envoyée', async () => {
+    const t = scriptedTransport(() => ({ ok: true }));
+    const q = createLeadSyncQueue({ transport: t, storage: null, sleep: noSleep });
+    void q.flush(); // flush d'init sur file vide → currentFlush posé
+    q.enqueue(envInput('lead_create')); // déclenche void flush() en interne (re-drain attendu)
+    // On NE rappelle PAS flush() : on laisse tourner les microtasks/macrotasks.
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(t.calls).toHaveLength(1);
+    expect(q.pending()).toHaveLength(0);
+  });
+
   // F03-S05 — backoff BORNÉ (anti retry-storm batterie/CPU, RSK-09)
   it('le backoff est plafonné (maxBackoffMs) — pas de retry-storm', async () => {
     const delays: number[] = [];

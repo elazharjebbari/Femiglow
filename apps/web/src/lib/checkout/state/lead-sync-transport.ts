@@ -10,7 +10,14 @@
 import { isRetryableApiError, parseApiError } from '@/lib/checkout/client/api-errors';
 import type { Envelope, SyncTransport } from './lead-sync-queue';
 
-export function createHttpSyncTransport(fetchImpl: typeof fetch = fetch): SyncTransport {
+export function createHttpSyncTransport(
+  // IMPORTANT : on enveloppe `globalThis.fetch` au lieu de capturer `fetch`
+  // détaché. En navigateur, appeler une référence `fetch` détachée lève
+  // « Illegal invocation » (TypeError) car `this` doit être le `Window`. Le
+  // wrapper appelle `globalThis.fetch(...)` avec le bon receiver, et lit la
+  // valeur au moment de l'appel (compatible MSW qui patche globalThis.fetch).
+  fetchImpl: typeof fetch = (...args) => globalThis.fetch(...args),
+): SyncTransport {
   return {
     async send(env: Envelope) {
       try {
