@@ -15,8 +15,28 @@
 import { env } from '@/lib/env';
 import { wizardLeadRepo } from '@/lib/checkout/repos/lead-repo';
 import { wizardSessionRepo } from '@/lib/checkout/repos/session-repo';
-import type { CreateLeadInput } from '@/lib/checkout/schemas/lead';
+import {
+  createLeadInputSchema,
+  patchLeadAddressInputSchema,
+  patchLeadPaymentInputSchema,
+  type CreateLeadInput,
+} from '@/lib/checkout/schemas/lead';
 import type { CreateWizardLeadInput } from '@/lib/checkout/repos/lead-repo';
+
+export type BatchScope = 'lead_create' | 'address_update' | 'payment_select';
+
+export interface BatchEnvelope {
+  mutationId: string;
+  leadId: string;
+  scope: BatchScope;
+  payload: unknown;
+}
+
+export interface BatchItemResult {
+  mutationId: string;
+  ok: boolean;
+  status: 'applied' | 'rejected';
+}
 
 /** Le leadId client cible une row appartenant à un AUTRE visiteur. */
 export class LeadVisitorMismatchError extends Error {
@@ -92,5 +112,57 @@ export const leadService = {
 
     const lead = await wizardLeadRepo.createWizardLead(fields);
     return { leadId: lead.id, upserted: false };
+  },
+
+  /**
+   * OWBS — applique un lot d'envelopes (flush live keepalive OU beacon). Chaque
+   * envelope est traitée indépendamment et **idempotemment** (upsert / patch
+   * idempotents) ; le désordre est toléré. Une envelope invalide est `rejected`
+   * sans faire échouer le reste. cf. ADR-0005 / endpoint /api/checkout/lead/sync.
+   */
+  async applyBatch(envelopes: BatchEnvelope[]): Promise<BatchItemResult[]> {
+    const results: BatchItemResult[] = [];
+    for (const env of envelopes) {
+      try {
+        if (env.scope === 'lead_create') {
+          const parsed = createLeadInputSchema.safeParse(env.payload);
+          if (!parsed.success) {
+            results.push({ mutationId: env.mutationId, ok: false, status: 'rejected' });
+            continue;
+          }
+          await leadService.applyLeadCreate(parsed.data);
+        } else if (env.scope === 'address_update') {
+          const parsed = patchLeadAddressInputSchema.safeParse(env.payload);
+          if (!parsed.success) {
+            results.push({ mutationId: env.mutationId, ok: false, status: 'rejected' });
+            continue;
+          }
+          await wizardLeadRepo.patchAddress(env.leadId, {
+            city: parsed.data.city,
+            addressLine1: parsed.data.addressLine1 ?? '',
+            addressLine2: parsed.data.addressLine2 ?? null,
+            postalCode: parsed.data.postalCode ?? null,
+            country: parsed.data.country,
+            notes: parsed.data.notes ?? null,
+          });
+        } else if (env.scope === 'payment_select') {
+          const parsed = patchLeadPaymentInputSchema.safeParse(env.payload);
+          if (!parsed.success) {
+            results.push({ mutationId: env.mutationId, ok: false, status: 'rejected' });
+            continue;
+          }
+          await wizardLeadRepo.patchPayment(env.leadId, {
+            paymentMethod: parsed.data.paymentMethod,
+          });
+        } else {
+          results.push({ mutationId: env.mutationId, ok: false, status: 'rejected' });
+          continue;
+        }
+        results.push({ mutationId: env.mutationId, ok: true, status: 'applied' });
+      } catch {
+        results.push({ mutationId: env.mutationId, ok: false, status: 'rejected' });
+      }
+    }
+    return results;
   },
 };

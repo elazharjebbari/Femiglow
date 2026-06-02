@@ -7,6 +7,7 @@
  *
  * @see ./lead-sync-queue.ts
  */
+import { installBeaconFlush } from './beacon-flush';
 import { createLeadSyncQueue, type LeadSyncQueue } from './lead-sync-queue';
 import { createHttpSyncTransport } from './lead-sync-transport';
 
@@ -19,6 +20,8 @@ export function getLeadSyncQueue(): LeadSyncQueue {
     // confirmées et on tente de les renvoyer (idempotent côté serveur).
     instance.hydrateFromMirror();
     void instance.flush();
+    // Flush de dernier recours à la fermeture/masquage de l'onglet (zéro perte).
+    installBeaconFlush(instance);
   }
   return instance;
 }
