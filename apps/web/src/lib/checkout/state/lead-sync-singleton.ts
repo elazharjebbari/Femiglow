@@ -10,12 +10,25 @@
 import { installBeaconFlush } from './beacon-flush';
 import { createLeadSyncQueue, type LeadSyncQueue } from './lead-sync-queue';
 import { createHttpSyncTransport } from './lead-sync-transport';
+import { useWizardStore } from './wizard-store';
 
 let instance: LeadSyncQueue | null = null;
 
 export function getLeadSyncQueue(): LeadSyncQueue {
   if (!instance) {
-    instance = createLeadSyncQueue({ transport: createHttpSyncTransport() });
+    instance = createLeadSyncQueue({
+      transport: createHttpSyncTransport(),
+      // FR-11 — une envelope abandonnée (4xx / maxAttempts) signale une sync
+      // dégradée à l'UI (indicateur discret, non bloquant). Le beacon reste le
+      // filet de secours à la fermeture de l'onglet.
+      onDrop: () => {
+        try {
+          useWizardStore.getState().markSyncDegraded();
+        } catch {
+          /* hors React/SSR — best-effort */
+        }
+      },
+    });
     // Reprise après un rechargement de page : on recharge les envelopes non
     // confirmées et on tente de les renvoyer (idempotent côté serveur).
     instance.hydrateFromMirror();

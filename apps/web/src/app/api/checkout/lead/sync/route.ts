@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logging/logger';
 import { errorResponse } from '@/lib/checkout/api/response';
+import { checkRateLimit } from '@/lib/rate-limit/check';
 import { leadService, type BatchEnvelope } from '@/lib/checkout/services/lead-service';
 
 export const runtime = 'nodejs';
@@ -25,6 +26,17 @@ export const dynamic = 'force-dynamic';
 
 const MAX_ENVELOPES = 32;
 const MAX_BYTES = 60_000;
+// Anti-abus : un onglet flushe par étape + au pagehide → 40/min/IP est large.
+const RATE_LIMIT = 40;
+const RATE_WINDOW_MS = 60_000;
+
+function clientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
+  );
+}
 
 const batchEnvelopeSchema = z.object({
   mutationId: z.string().min(1).max(64),
@@ -44,6 +56,19 @@ export async function POST(req: NextRequest): Promise<Response> {
   // Feature OFF → no-op silencieux (le beacon ne doit jamais échouer bruyamment).
   if (env.CHECKOUT_OPTIMISTIC_WIZARD_ENABLED !== 'true') {
     return new NextResponse(null, { status: 204 });
+  }
+
+  // Rate-limit par IP (anti-abus de l'endpoint public).
+  const rl = await checkRateLimit({
+    key: `owbs:sync:${clientIp(req)}`,
+    limit: RATE_LIMIT,
+    windowMs: RATE_WINDOW_MS,
+  });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: { code: 'rate_limited', message: 'Trop de requêtes.' } },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+    );
   }
 
   // sendBeacon envoie un Blob → on lit le texte (content-type non garanti).

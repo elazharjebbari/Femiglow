@@ -110,6 +110,10 @@ export interface WizardState {
   leadId: string | null;
   orderId: string | null;
 
+  // OWBS — sync de fond dégradée (drop persistant d'une envelope) → permet à
+  // l'UI d'afficher un indicateur discret non bloquant (FR-11). Éphémère.
+  syncDegraded: boolean;
+
   // Contexte form / variant
   formContext: WizardFormContext | null;
 
@@ -163,6 +167,8 @@ export interface WizardState {
   mergePaymentDraft: (patch: Partial<PaymentDraft>) => void;
   setLeadId: (id: string) => void;
   setOrderId: (id: string) => void;
+  /** OWBS — signale une sync de fond dégradée (FR-11). */
+  markSyncDegraded: () => void;
   /** CHA-231 — Bascule la langue courante (FR ↔ AR). */
   setLanguage: (lang: DictionaryLanguage) => void;
   reset: () => void;
@@ -229,6 +235,7 @@ const INITIAL: Omit<
   | 'mergePaymentDraft'
   | 'setLeadId'
   | 'setOrderId'
+  | 'markSyncDegraded'
   | 'setLanguage'
   | 'reset'
   | 'setHydrated'
@@ -240,6 +247,7 @@ const INITIAL: Omit<
 > = {
   leadId: null,
   orderId: null,
+  syncDegraded: false,
   formContext: null,
   cartSnapshot: null,
   currentStep: 'lead',
@@ -273,6 +281,7 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
     set((state) => ({ paymentDraft: { ...state.paymentDraft, ...patch } })),
   setLeadId: (id) => set({ leadId: id }),
   setOrderId: (id) => set({ orderId: id }),
+  markSyncDegraded: () => set({ syncDegraded: true }),
   setLanguage: (lang) =>
     set((state) => ({
       formContext: state.formContext

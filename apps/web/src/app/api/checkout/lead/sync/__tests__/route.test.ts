@@ -21,12 +21,15 @@ import { POST } from '../route';
 
 const LEAD = 'cl_3xq7m2k9v4b1n8p0w5tz';
 
-function makeReq(body: unknown): Request {
+function makeReq(body: unknown, ip?: string): Request {
   return new Request('http://test/api/checkout/lead/sync', {
     method: 'POST',
     body: typeof body === 'string' ? body : JSON.stringify(body),
+    headers: ip ? { 'x-forwarded-for': ip } : undefined,
   });
 }
+
+const VALID = { envelopes: [{ mutationId: 'm', leadId: LEAD, scope: 'lead_create', payload: {} }] };
 
 beforeEach(() => {
   envMock.CHECKOUT_OPTIMISTIC_WIZARD_ENABLED = 'true';
@@ -81,5 +84,17 @@ describe('POST /api/checkout/lead/sync', () => {
       makeReq({ envelopes: [{ mutationId: 'm1', leadId: 'bad', scope: 'lead_create', payload: {} }] }) as never,
     );
     expect(res.status).toBe(400);
+  });
+
+  // TST-I-18 — rate-limit par IP (au-delà du seuil → 429).
+  it('rate-limit par IP : 429 au-delà du seuil', async () => {
+    const ip = '203.0.113.77'; // IP dédiée pour isoler le compteur
+    for (let i = 0; i < 40; i += 1) {
+      const res = await POST(makeReq(VALID, ip) as never);
+      expect(res.status).toBe(200);
+    }
+    const over = await POST(makeReq(VALID, ip) as never);
+    expect(over.status).toBe(429);
+    expect(over.headers.get('Retry-After')).toBeTruthy();
   });
 });
