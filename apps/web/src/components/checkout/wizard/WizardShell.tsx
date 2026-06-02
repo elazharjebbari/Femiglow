@@ -39,6 +39,7 @@ import type { CartSnapshot, StepName } from '@/lib/checkout/schemas/common';
 
 import { WizardStepIndicator } from './WizardStepIndicator';
 import { TimeEstimateBadge } from './TimeEstimateBadge';
+import { WizardSyncIndicator } from './WizardSyncIndicator';
 import { WizardCartRecap } from './WizardCartRecap';
 import { LeadCaptureStep } from './steps/LeadCaptureStep';
 import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
@@ -333,6 +334,8 @@ export function WizardShell({
         labels={stepLabels}
         timesPerStep={stepTimes}
       />
+      {/* OWBS F05 — indicateur discret de sync dégradée (non bloquant). */}
+      <WizardSyncIndicator />
       <Suspense fallback={<HydrationFallback language={formContext.language} />}>
         {stepView}
       </Suspense>

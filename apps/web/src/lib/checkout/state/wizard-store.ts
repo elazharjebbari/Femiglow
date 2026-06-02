@@ -169,6 +169,8 @@ export interface WizardState {
   setOrderId: (id: string) => void;
   /** OWBS — signale une sync de fond dégradée (FR-11). */
   markSyncDegraded: () => void;
+  /** OWBS — efface le signal (après un réessai réussi). */
+  clearSyncDegraded: () => void;
   /** CHA-231 — Bascule la langue courante (FR ↔ AR). */
   setLanguage: (lang: DictionaryLanguage) => void;
   reset: () => void;
@@ -236,6 +238,7 @@ const INITIAL: Omit<
   | 'setLeadId'
   | 'setOrderId'
   | 'markSyncDegraded'
+  | 'clearSyncDegraded'
   | 'setLanguage'
   | 'reset'
   | 'setHydrated'
@@ -282,6 +285,7 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
   setLeadId: (id) => set({ leadId: id }),
   setOrderId: (id) => set({ orderId: id }),
   markSyncDegraded: () => set({ syncDegraded: true }),
+  clearSyncDegraded: () => set({ syncDegraded: false }),
   setLanguage: (lang) =>
     set((state) => ({
       formContext: state.formContext
