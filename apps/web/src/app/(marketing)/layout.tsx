@@ -15,6 +15,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { DEFAULT_LOCALE } from '@/i18n.config';
+import { getMenuHintEnabled } from '@/lib/layout/menu-hint-config';
 
 export default async function MarketingLayout({
   children,
@@ -26,10 +27,11 @@ export default async function MarketingLayout({
   // ici : ça créerait un comportement imprévisible pour les routes legacy.
   setRequestLocale(DEFAULT_LOCALE);
   const messages = await getMessages();
+  const menuHintEnabled = await getMenuHintEnabled();
 
   return (
     <NextIntlClientProvider locale={DEFAULT_LOCALE} messages={messages}>
-      <Header />
+      <Header menuHintEnabled={menuHintEnabled} />
       <main id="main" tabIndex={-1}>
         {children}
       </main>

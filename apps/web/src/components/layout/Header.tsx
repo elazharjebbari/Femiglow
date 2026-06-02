@@ -12,7 +12,16 @@ import { useHeaderStrings } from './use-header-strings';
 const HINT_DELAY_MS = 8000;
 const HINT_STORAGE_KEY = 'femiglow.menu.hinted';
 
-export function Header() {
+interface HeaderProps {
+  /**
+   * Active l'indice animé « ↑ Voir le pack ci-dessous » ancré au menu.
+   * Piloté par le flag admin `menuHintEnabled` (lu serveur dans les layouts).
+   * OFF par défaut : il chevauchait la barre promo sticky sur mobile.
+   */
+  menuHintEnabled?: boolean;
+}
+
+export function Header({ menuHintEnabled = false }: HeaderProps = {}) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -40,6 +49,8 @@ export function Header() {
   }, []);
 
   useEffect(() => {
+    // Flag admin OFF → l'indice ne s'arme jamais (cf. menu-hint-config.ts).
+    if (!menuHintEnabled) return;
     if (typeof window === 'undefined') return;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     if (sessionStorage.getItem(HINT_STORAGE_KEY) === '1') return;
@@ -49,7 +60,7 @@ export function Header() {
       }
     }, HINT_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [menuHintEnabled]);
 
   function dismissHint() {
     setShowHint(false);
@@ -127,7 +138,7 @@ export function Header() {
                 >
                   {strings.menuLabel}
                 </button>
-                {showHint && !localeMenuOpen && (
+                {menuHintEnabled && showHint && !localeMenuOpen && (
                   <span
                     aria-hidden="true"
                     onClick={dismissHint}

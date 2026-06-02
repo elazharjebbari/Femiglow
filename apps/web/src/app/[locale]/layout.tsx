@@ -31,6 +31,7 @@ import {
   LOCALES,
 } from '@/i18n.config';
 import { getResolvedEngineConfig } from '@/lib/i18n/engine-config';
+import { getMenuHintEnabled } from '@/lib/layout/menu-hint-config';
 import { resolveSuggestedLocale } from '@/lib/i18n/suggested-locale';
 
 interface LocaleLayoutProps {
@@ -61,6 +62,7 @@ export default async function LocaleLayout({
   setRequestLocale(params.locale);
 
   const messages = await getMessages();
+  const menuHintEnabled = await getMenuHintEnabled();
 
   // Lot L12 — amorces serveur du moteur de suggestion (no-flash, ADR-006).
   // Lire headers()/cookies() rend les routes `[locale]/*` dynamiques : c'est
@@ -106,7 +108,7 @@ export default async function LocaleLayout({
       */}
       {v2Enabled ? (
         <LocaleTransitionProvider>
-          <Header />
+          <Header menuHintEnabled={menuHintEnabled} />
           <main id="main" tabIndex={-1}>
             {children}
           </main>
@@ -127,7 +129,7 @@ export default async function LocaleLayout({
         </LocaleTransitionProvider>
       ) : (
         <>
-          <Header />
+          <Header menuHintEnabled={menuHintEnabled} />
           <main id="main" tabIndex={-1}>
             {children}
           </main>

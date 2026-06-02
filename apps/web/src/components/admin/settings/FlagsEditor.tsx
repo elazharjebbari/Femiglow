@@ -17,6 +17,8 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   appConfigUiEnabled: 'Affiche /admin/settings (cette page).',
   freeShipping:
     'Livraison offerte sur toutes les villes (les prix catalogue sont barrés à l’affichage). Désactiver pour facturer la livraison.',
+  menuHintEnabled:
+    'Affiche l’indice animé « ↑ Voir le pack ci-dessous » près du menu (header), après 8 s. Désactivé par défaut : il chevauchait la barre promo sticky sur mobile.',
 };
 
 export function FlagsEditor({ initialFlags, meta }: FlagsEditorProps) {
