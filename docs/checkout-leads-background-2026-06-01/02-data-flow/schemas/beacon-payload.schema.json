@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://femiglow/owbs/beacon-payload.schema.json",
+  "title": "Payload batch /api/checkout/lead/sync (beacon + keepalive)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["envelopes"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "sentVia": { "type": "string", "enum": ["beacon", "keepalive", "reload-recovery"] },
+    "envelopes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["mutationId", "leadId", "scope", "idempotencyKey", "payload"],
+        "properties": {
+          "mutationId": { "type": "string", "format": "uuid" },
+          "leadId": { "type": "string", "pattern": "^cl_[0-9a-z]{20,}$" },
+          "scope": { "type": "string", "enum": ["lead_create", "address_update", "payment_select"] },
+          "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9_-]{16,128}$" },
+          "payload": { "type": "object" }
+        }
+      }
+    }
+  },
+  "x-notes": "sendBeacon n'autorise pas d'en-têtes custom : l'Idempotency-Key est portée par champ. order_create est EXCLU du beacon (conversion = chemin synchrone awaité)."
+}

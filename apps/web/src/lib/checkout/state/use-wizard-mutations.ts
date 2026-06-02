@@ -35,6 +35,10 @@ import {
   ensureSessionId,
   ensureVisitorId,
 } from '@/lib/checkout/client/visitor-id';
+import { newLeadId } from '@/lib/checkout/client/lead-id';
+import { getOrCreateIdempotencyKey } from '@/lib/checkout/client/idempotency-key';
+import { isOptimisticWizardClientEnabled } from '@/lib/checkout/flags';
+import { getLeadSyncQueue } from '@/lib/checkout/state/lead-sync-singleton';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import {
@@ -197,7 +201,7 @@ export function useLeadCaptureMutation(): {
       const visitorId = ensureVisitorId() ?? 'v_unknown_visitor';
       const sessionId = ensureSessionId() ?? 's_unknown_session';
       try {
-        const res = await wizardClient.createLead({
+        const leadBody = {
           formContext: {
             formId: formContext.formId,
             formMode: formContext.formMode,
@@ -210,12 +214,32 @@ export function useLeadCaptureMutation(): {
           consentVersion: input.consentVersion,
           visitorId,
           sessionId,
-          language: 'fr',
+          language: 'fr' as const,
           cartSnapshot: cartSnapshot ?? undefined,
           page: typeof window !== 'undefined' ? window.location.pathname : undefined,
           referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
-        });
-        setLeadId(res.leadId);
+        };
+
+        // OWBS — chemin optimiste : leadId généré client, on AVANCE
+        // immédiatement (goToStep), et on envoie la création en tâche de fond
+        // (file de sync idempotente). Flag OFF → legacy (await bloquant).
+        // cf. docs/checkout-leads-background-2026-06-01 (ADR-0001/0002/0003).
+        let leadId: string;
+        if (isOptimisticWizardClientEnabled()) {
+          leadId = newLeadId();
+          getLeadSyncQueue().enqueue({
+            leadId,
+            scope: 'lead_create',
+            endpoint: '/api/checkout/lead',
+            method: 'POST',
+            idempotencyKey: getOrCreateIdempotencyKey('lead_create', leadId),
+            payload: { ...leadBody, leadId },
+          });
+        } else {
+          const res = await wizardClient.createLead(leadBody);
+          leadId = res.leadId;
+        }
+        setLeadId(leadId);
         goToStep('address');
         setSuccess();
         // Tracking — lead_capture (conversion) — hydratée pour
@@ -236,7 +260,7 @@ export function useLeadCaptureMutation(): {
               formMode: formContext.formMode,
               variantKey: formContext.variantKey,
               stepName: 'lead',
-              leadId: res.leadId,
+              leadId,
             }),
             method: 'wizard',
             contact_channels: ['phone'],
@@ -247,7 +271,7 @@ export function useLeadCaptureMutation(): {
           }),
           { userData },
         );
-        return { leadId: res.leadId };
+        return { leadId };
       } catch (e) {
         setError(e);
         emitEvent(
@@ -344,6 +368,14 @@ export function useAddressMutation(): {
       });
 
       // ── 1) PATCH address ─────────────────────────────────────────────────
+      // OWBS — garantit que le lead (potentiellement créé en tâche de fond en
+      // mode optimiste) est bien persisté côté serveur AVANT la conversion :
+      // patchAddress / createOrder référencent `leadId`. Flush quasi instantané
+      // s'il a déjà abouti pendant la saisie de l'adresse. cf. ADR-0002 (snapshot).
+      if (isOptimisticWizardClientEnabled()) {
+        await getLeadSyncQueue().flush();
+      }
+
       try {
         await wizardClient.patchAddress(leadId, {
           city: input.city.trim(),

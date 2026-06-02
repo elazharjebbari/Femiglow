@@ -1,0 +1,32 @@
+@startuml seq-happy-path-optimistic
+title OWBS — Séquence : étape lead_capture (chemin nominal optimiste)
+autonumber
+skinparam shadowing false
+actor User
+participant "Step (UI)" as UI
+participant "wizard-store" as Store
+participant "lead-sync-queue" as Q
+participant "wizard-client" as C
+participant "/api/checkout/lead" as API
+participant "lead-service" as SVC
+database "chat_lead" as DB
+participant "lead_event_outbox" as OBX
+
+User -> UI : remplit + clic "Continuer"
+UI -> UI : validation Zod locale (sync)
+alt invalide
+  UI --> User : message inline (bloque)
+else valide
+  UI -> Store : goToStep('address')  // OPTIMISTE
+  Store --> User : étape suivante visible (< 50 ms)
+  UI -> Q : enqueue(lead_create envelope, leadId client)
+  Q -> C : send(envelope) [keepalive], non-awaité
+  C -> API : POST {leadId, ...} + Idempotency-Key
+  API -> SVC : applyLeadCreate(...)
+  SVC -> DB : upsert chat_lead (ON CONFLICT)
+  SVC -> OBX : enqueue effets (même txn)
+  SVC --> API : {leadId, replayed:false}
+  API --> C : 201
+  C --> Q : ok → retire du miroir
+end
+@enduml

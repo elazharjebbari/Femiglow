@@ -1,0 +1,18 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F02-S01,PW,P0,Salma,parcours nominal flag ON,remplir address + commander,thank_you visible + 1 commande,wizard-step-thankyou,RSK-03
+F02-S02,PW,P0,Yassine,address valide,double-tap commander,une seule commande / un seul thank_you,1 order,RSK-04
+F02-S03,PW,P0,Salma,/order renvoie 409 stock,commander,reste sur address + wizard-address-error,erreur visible,-
+F02-S04,PW,P0,Salma,/order renvoie 422 price,commander,message prix + pas de thank_you,erreur,-
+F02-S05,PW,P0,Salma,flag ON + create en file (/lead bridé),atteindre address vite + commander,flush awaité -> conversion OK,thank_you,RSK-03
+F02-S06,RTL,P0,Salma,flag ON,submit address,flush() awaité AVANT patchAddress,ordre d'appels,RSK-03
+F02-S07,INT,P0,système,flag ON aucune écriture lead préalable,order avec snapshot complet,commande créée,row order,-
+F02-S08,INT,P0,système,flag ON,double order_create même idem-key,une commande,count=1,RSK-04
+F02-S10,MSW,P0,Salma,/order network error,commander,address-error + pas de thank_you,erreur,-
+F02-S11,MSW,P0,Salma,/order 500,commander,erreur visible (retry manuel possible),erreur,-
+F02-S12,PW,P1,Salma,erreur puis retry,commander 2x (échec puis succès),thank_you sans double commande,1 order,RSK-04
+F02-S13,RTL,P1,Salma,flag OFF,submit address,pas de flush (legacy),pas d'appel flush,RSK-18
+F02-S14,INT,P0,système,flag ON conversion,enqueue order_webhook dedupeKey=orderId,1 row outbox,unique,RSK-21
+F02-S15,INT,P1,système,flag OFF conversion,void dispatchOrderWebhook (legacy),pas d'enqueue,legacy,RSK-18
+F02-S20,RTL,P1,Salma,thank_you,opt-in email,confirmation email,wizard-email-confirmation-success,-
+F02-S21,PW,P1,Salma,thank_you,clic nouvelle commande,reset wizard,wizard-step-cart/lead,-
+F02-S22,RTL,P0,Salma,erreur conversion,axe + role alert,erreur annoncée,aria,RSK-13

@@ -1,0 +1,23 @@
+@startuml seq-retry-failure
+title OWBS — Séquence : échec réseau + retry idempotent (UI jamais bloquée)
+autonumber
+skinparam shadowing false
+participant "Step (UI)" as UI
+participant "wizard-store" as Store
+participant "lead-sync-queue" as Q
+participant "wizard-client" as C
+participant "/api/checkout/lead" as API
+
+UI -> Store : goToStep(...) OPTIMISTE
+UI -> Q : enqueue(envelope, Idempotency-Key=K)
+Q -> C : send (attempt 1)
+C -> API : POST ... K
+API --> C : 503 (origine lente / timeout)
+C --> Q : {ok:false, retryable:true}
+note over Q : backoff 250ms*2^n + jitter\nattempt++ ; reste en miroir
+Q -> C : send (attempt 2)
+C -> API : POST ... K (MÊME clé)
+API --> C : 201 (exécution fraîche) \nou replay si déjà commit
+C --> Q : ok → retire du miroir
+note over UI : aucune incidence : l'utilisateur a déjà avancé
+@enduml

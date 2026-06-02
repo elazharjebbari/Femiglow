@@ -1,0 +1,15 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F10-S01,RTL,P0,Nadia,liste leads avec états variés,render,états captured/address/purchased/abandoned affichés,libellés états,-
+F10-S02,RTL,P0,Nadia,liste,filtrer par état=captured,seuls les captured listés,filtre,-
+F10-S03,RTL,P1,Nadia,liste,filtrer par source/date,résultat cohérent,filtre,-
+F10-S04,RTL,P0,Nadia,liste vide,render,état vide propre (pas d'erreur),empty state,-
+F10-S05,RTL,P0,Nadia,détail lead capturé,render,chronologie capture + panier + attribution,détail,-
+F10-S06,RTL,P0,Nadia,détail lead converti,render,purchased_at + commande liée,conversion,-
+F10-S07,RTL,P1,Nadia,détail lead abandonné,render,timestamps + statut abandon,abandon,-
+F10-S08,RTL,P1,Nadia,détail,leadId client cl_,affiché correctement,cl_,-
+F10-S10,RTL,P1,Nadia,LeadStatusMenu,changer statut,statut MAJ + feedback,action,-
+F10-S11,RTL,P1,Nadia,LeadNoteForm,ajouter note,note enregistrée,note,-
+F10-S20,PW,P0,Nadia,acheteuse vient de capturer en optimiste,ouvrir /admin/leads,le lead apparaît avec état captured,visible,RSK-14
+F10-S21,INT,P0,système,upsert optimiste,projection liste,lead optimiste == lead legacy (rendu),indistinct,RSK-14
+F10-S22,RTL,P0,Nadia,liste,axe,0 violation,axe,RSK-13
+F10-S23,PW,P1,Nadia,sans auth,/admin/leads,redirigé/refusé,auth,-

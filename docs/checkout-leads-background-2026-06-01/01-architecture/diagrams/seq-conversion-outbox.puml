@@ -1,0 +1,29 @@
+@startuml seq-conversion-outbox
+title OWBS — Séquence : conversion (order) + effets durables via outbox
+autonumber
+skinparam shadowing false
+participant "Step (UI)" as UI
+participant "wizard-client" as C
+participant "/api/checkout/order" as API
+participant "lead-service" as SVC
+database "chat_lead" as LEAD
+database "orders" as ORD
+participant "lead_event_outbox" as OBX
+participant "cron lead-outbox" as CRON
+participant "handlers (CAPI/GA4/webhook)" as H
+
+UI -> C : createOrder(snapshot complet)  // AWAITED (conversion)
+C -> API : POST + Idempotency-Key(order_create)
+API -> SVC : applyOrder(snapshot)
+group transaction
+  SVC -> LEAD : upsert (réconcilie si écritures de fond en retard)
+  SVC -> ORD : createOrder + markPurchased
+  SVC -> OBX : enqueue(order.created webhook + purchase CAPI/GA4)
+end
+SVC --> API : {orderId}
+API --> C : 200 → UI: thank_you
+== plus tard (<= 90s) ==
+CRON -> OBX : pickBatch (FOR UPDATE SKIP LOCKED)
+CRON -> H : exécute effets
+H --> CRON : ok → markDone (sinon reschedule/backoff)
+@enduml

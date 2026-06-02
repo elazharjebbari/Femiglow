@@ -1,0 +1,12 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F07-S01,RTL,P0,Salma,flag ON + fetch jamais résolu,remplir + submit,status success immédiat,leadOffer.status=success,RSK-11
+F07-S02,RTL,P0,Salma,flag OFF + fetch jamais résolu,remplir + submit,reste submitting,status submitting,RSK-18
+F07-S03,RTL,P0,bot,form chat,honeypot _phone_alt rempli,succès silencieux sans envoi,no fetch,-
+F07-S04,RTL,P0,Salma,form chat,saisie invalide (prénom court),validation locale bloque,pas d'envoi,-
+F07-S05,MSW,P0,Salma,flag ON + chatLeadOk(value=289),submit,generate_lead émis avec value/currency serveur,emit value,RSK-10
+F07-S06,RTL,P0,Salma,flag ON,submit,markLeadAsPurchaseCookie appelé,cookie,-
+F07-S07,MSW,P1,Salma,flag ON + chatLeadError,submit,UI reste en success (best-effort),pas d'erreur,RSK-11
+F07-S08,MSW,P1,Salma,flag OFF + chatLeadError,submit,UI passe en error,status error,RSK-18
+F07-S10,PW,P1,Salma,chat lead offert + /chat/lead bridé,submit,confirmation < 1s,timing,-
+F07-S11,RTL,P1,Salma,AR/RTL,form chat,dir rtl + libellés AR,RTL,RSK-12
+F07-S12,RTL,P0,Salma,form chat,axe,0 violation,axe,RSK-13

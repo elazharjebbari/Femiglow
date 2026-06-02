@@ -1,0 +1,70 @@
+# OWBS — pipeline CI de la batterie UI/opérateur (esquisse réutilisable).
+# But : exécuter la batterie par vagues, avec gates, sur PR de la branche OWBS.
+# Adapter au runner réel (GitHub Actions / GitLab). Non câblé par défaut.
+
+name: owbs-ui-test-battery
+
+on:
+  pull_request:
+    branches: [feat/owbs-lead-background, master]
+  workflow_dispatch: {}
+
+env:
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: "true"
+  NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: "true"
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C apps/web tsc --noEmit
+      - run: pnpm -C apps/web eslint .
+      - run: pnpm -C apps/web db:validate
+
+  unit-msw:
+    # Vagues V1..V4 + V6 (RTL + MSW + intégration pglite) — pas de build requis.
+    runs-on: ubuntu-latest
+    needs: static
+    strategy:
+      matrix:
+        wave:
+          - "src/components/checkout/wizard src/lib/checkout/state/use-wizard-mutations.test.tsx src/lib/checkout/services"        # V1
+          - "src/lib/checkout/state src/app/api/checkout/lead/sync"                                                                # V2
+          - "src/components/chat/LeadFormBubble.owbs.test.tsx"                                                                      # V4
+          - "src/components/admin src/lib/leads/outbox src/app/api/cron/lead-outbox"                                               # V5
+    steps:
+      - uses: actions/checkout@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C apps/web vitest run ${{ matrix.wave }}
+
+  e2e:
+    # Vagues nécessitant le build flag-ON (:3100).
+    runs-on: ubuntu-latest
+    needs: unit-msw
+    steps:
+      - uses: actions/checkout@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C apps/web build
+      - run: pnpm -C apps/web start & npx -y wait-on http://127.0.0.1:3100/fr/kit
+      - run: PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm -C apps/web playwright test e2e/owbs-ui-*.spec.ts --project=chromium
+
+  e2e-webkit-zeroloss:
+    # Gate zéro-perte multi-navigateur (R-07 iOS/pagehide).
+    runs-on: ubuntu-latest
+    needs: e2e
+    env:
+      PLAYWRIGHT_CROSS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C apps/web build
+      - run: pnpm -C apps/web start & npx -y wait-on http://127.0.0.1:3100/fr/kit
+      - run: PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm -C apps/web playwright test e2e/owbs-ui-zeroloss.spec.ts --project=webkit
+
+  gate:
+    runs-on: ubuntu-latest
+    needs: [e2e, e2e-webkit-zeroloss]
+    steps:
+      - run: echo "Gate batterie OWBS : toutes les vagues vertes (cf. reporting-and-dashboards.md)."

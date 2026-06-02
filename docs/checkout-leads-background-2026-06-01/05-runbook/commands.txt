@@ -1,0 +1,78 @@
+OWBS — Commandes d'exécution (copier/coller). cwd = apps/web sauf mention.
+=============================================================================
+
+[SETUP]
+  git switch -c feat/owbs-lead-background          # depuis master
+  pnpm install
+
+[FLAGS DEV]  (.env.local)
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=false
+  NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=false
+  # Activer pour tester le chemin optimiste :
+  # CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true
+  # NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true
+
+[QUALITY GATES — par tâche]
+  pnpm lint
+  pnpm tsc --noEmit
+  pnpm vitest run src/lib/checkout src/lib/leads/outbox
+  pnpm vitest run --coverage src/lib/checkout/state/lead-sync-queue.test.ts
+
+[MIGRATION]  (Drizzle ORM — pas Prisma)
+  # 1) ajouter la table au schema TS (src/lib/leads/db/schema-lead-outbox.ts)
+  pnpm db:generate                 # genere le SQL dans drizzle/migrations/NNNN_*.sql
+  pnpm db:migrate                  # applique en local
+  pnpm db:validate                 # valide la coherence des migrations
+  pnpm db:migrate-safe             # applique en prod (script garde-fou _migrate-safe.mjs)
+  # rollback : DROP TABLE lead_event_outbox (+ retirer le CHECK chat_lead.id)
+
+[VITEST — par phase]
+  pnpm vitest run src/lib/checkout                          # P1 (upsert, service, routes)
+  pnpm vitest run src/lib/leads/outbox                      # P2 (outbox, processor)
+  pnpm vitest run src/lib/checkout/state                    # P3 (lead-sync-queue, store)
+  pnpm vitest run src/app/api/checkout/lead                 # routes + /sync (P1/P4)
+
+[BUILD :3100 — requis avant e2e]  (cf. workflow images/fonts)
+  # 1) arrêter l'ancien serveur
+  lsof -ti:3100 | xargs -r kill ; sleep 2
+  # 2) rebuild
+  pnpm build
+  # 3) démarrer (flag ON pour tester l'optimiste)
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true \
+  NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true \
+  PORT=3100 pnpm start
+  # 4) attendre 200
+  curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3100/fr/kit
+
+[PLAYWRIGHT — e2e]
+  PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm playwright test e2e/owbs-*.spec.ts --project=chromium
+  # critiques multi-navigateur (R-07) :
+  PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm playwright test e2e/owbs-optimistic.spec.ts e2e/owbs-beacon.spec.ts --project=webkit
+
+[WORKER CRON — local test]
+  curl -i -X POST http://127.0.0.1:3100/api/cron/lead-outbox \
+       -H "Authorization: Bearer $CRON_SECRET"
+  # attendu : 200 {ok:true, picked, done, rescheduled, dead}
+  # sans secret -> 401
+
+[WORKER CRON — prod (systemd, calqué sur email-outbox)]
+  sudo systemctl status  femiglow-cron-lead-outbox.timer
+  sudo systemctl start   femiglow-cron-lead-outbox.timer
+  sudo systemctl stop    femiglow-cron-lead-outbox.timer    # kill-switch worker
+  journalctl -u femiglow-cron-lead-outbox.service -n 100 --no-pager
+
+[OBSERVABILITE — requêtes SQL utiles]
+  -- backlog outbox
+  SELECT status, count(*) FROM lead_event_outbox GROUP BY status;
+  -- rows dead a rejouer
+  SELECT id,type,lead_id,attempts,last_error FROM lead_event_outbox WHERE status='dead' ORDER BY updated_at DESC LIMIT 50;
+  -- rejouer une row dead
+  UPDATE lead_event_outbox SET status='pending', attempts=0, next_attempt_at=now() WHERE id='lox_...';
+
+[PUSH]  (helper HTTPS gh — le push SSH n'a pas les droits)
+  git -c credential.helper='!gh auth git-credential' \
+      push https://github.com/elazharjebbari/Femiglow.git HEAD:feat/owbs-lead-background
+
+[FULL SUITE — avant GA]
+  pnpm lint && pnpm tsc --noEmit && pnpm vitest run && \
+  PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm playwright test e2e/owbs-*.spec.ts

@@ -1,0 +1,11 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F13-S01,INT,P1,bot,/sync flag ON,41 requêtes même IP,429 + Retry-After,status 429,RSK-19
+F13-S02,INT,P1,Salma,/sync usage normal (qq req),flush+beacon,jamais 429,200,RSK-19
+F13-S03,INT,P1,système,batch 33 envelopes,POST /sync,rejet (max 32),400/413,-
+F13-S04,INT,P1,système,corps > 60KB,POST /sync,413,status,-
+F13-S10,INT,P0,bot,/lead leadId='bad',POST,400 (regex),status,RSK-17
+F13-S11,INT,P0,bot,/sync envelope leadId invalide,POST,400,status,RSK-17
+F13-S12,INT,P1,bot,/lead leadId d'un autre visiteur,POST,409 mismatch,LeadVisitorMismatch,-
+F13-S20,RTL,P1,bot,wizard honeypot website rempli,submit,aucun lead,no enqueue,RSK-02
+F13-S21,RTL,P1,bot,chat honeypot _phone_alt rempli,submit,aucun lead,no fetch,-
+F13-S22,INT,P1,système,logs sync/outbox,inspecter,aucune PII en clair,no PII,-

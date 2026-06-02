@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://femiglow/owbs/wizard-mutation-envelope.schema.json",
+  "title": "Envelope de mutation wizard (file de synchronisation client)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mutationId", "leadId", "scope", "endpoint", "method", "idempotencyKey", "payload", "enqueuedAt", "attempt"],
+  "properties": {
+    "mutationId": { "type": "string", "format": "uuid", "description": "Identité transport (dédup double-flush)" },
+    "leadId": { "type": "string", "pattern": "^cl_[0-9a-z]{20,}$" },
+    "scope": { "type": "string", "enum": ["lead_create", "address_update", "payment_select", "order_create", "email_optin"] },
+    "endpoint": { "type": "string", "description": "Chemin granulaire ciblé (ex: /api/checkout/lead)" },
+    "method": { "type": "string", "enum": ["POST", "PATCH"] },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9_-]{16,128}$" },
+    "payload": { "type": "object", "description": "Validé par le schéma Zod du scope correspondant" },
+    "enqueuedAt": { "type": "string", "format": "date-time" },
+    "attempt": { "type": "integer", "minimum": 0, "maximum": 6 }
+  }
+}

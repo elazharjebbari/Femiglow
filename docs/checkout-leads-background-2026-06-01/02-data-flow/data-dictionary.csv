@@ -1,0 +1,38 @@
+entity,field,type,nullable,scope_written,pii,description,constraint
+chat_lead,id,text,false,client,no,Identifiant lead généré client,"PK; ^cl_[0-9a-z]{20,}$"
+chat_lead,phone,text,false,lead_create,yes,Téléphone E164 Maroc,normalizePhoneToE164Maroc
+chat_lead,first_name,text,true,lead_create,yes,Prénom,-
+chat_lead,consent_version,text,false,lead_create,no,Version de consentement acceptée,-
+chat_lead,language,text,false,lead_create,no,Langue (fr/ar/en),-
+chat_lead,visitor_id,text,false,lead_create,no,Id visiteur (corrélation tracking),"cohérence vérifiée à l'upsert"
+chat_lead,session_id,text,false,lead_create,no,Id session chat/wizard,FK chat_session
+chat_lead,source,text,false,lead_create,no,Origine (wizard_kit/...),-
+chat_lead,cart_snapshot,jsonb,false,lead_create,no,Snapshot panier (items+prix),-
+chat_lead,utm,jsonb,true,lead_create,no,Paramètres UTM,-
+chat_lead,gclid,text,true,lead_create,no,Google click id,-
+chat_lead,fbp,text,true,lead_create,no,Meta browser id,-
+chat_lead,fbc,text,true,lead_create,no,Meta click id,-
+chat_lead,city,text,true,address_update,yes,Ville de livraison,-
+chat_lead,address_line1,text,true,address_update,yes,Adresse ligne 1,-
+chat_lead,address_line2,text,true,address_update,yes,Adresse ligne 2,-
+chat_lead,postal_code,text,true,address_update,no,Code postal,-
+chat_lead,country,text,true,address_update,no,Pays,-
+chat_lead,notes,text,true,address_update,yes,Notes livraison,-
+chat_lead,address_completed_at,timestamptz,true,address_update,no,Horodatage adresse complétée,monotone
+chat_lead,payment_method,text,true,payment_select,no,cod/bank_transfer/card,-
+chat_lead,payment_selected_at,timestamptz,true,payment_select,no,Horodatage paiement choisi,monotone
+chat_lead,purchased_at,timestamptz,true,order_create,no,Horodatage conversion,INV-4
+chat_lead,step1_abandon_webhook_at,timestamptz,true,scanner,no,Horodatage relance abandon,-
+chat_lead,created_at,timestamptz,false,lead_create,no,Création,-
+lead_event_outbox,id,text,false,server,no,Id effet,"PK; lox_..."
+lead_event_outbox,type,text,false,server,no,Type d'effet,enum
+lead_event_outbox,lead_id,text,false,server,no,Lead concerné,FK chat_lead.id
+lead_event_outbox,dedupe_key,text,false,server,no,Clé d'idempotence d'effet,"UNIQUE(type,lead_id,dedupe_key)"
+lead_event_outbox,payload,jsonb,false,server,no,Données de l'effet,schema lead-event-outbox.schema.json
+lead_event_outbox,status,text,false,server,no,pending/processing/done/dead,-
+lead_event_outbox,attempts,int,false,server,no,Nb tentatives,defaut 0
+lead_event_outbox,max_attempts,int,false,server,no,Max tentatives,defaut 8
+lead_event_outbox,next_attempt_at,timestamptz,false,server,no,Prochaine tentative,index drain
+lead_event_outbox,last_error,text,true,server,no,Dernier échec (sans PII),-
+lead_event_outbox,created_at,timestamptz,false,server,no,Création,-
+lead_event_outbox,updated_at,timestamptz,false,server,no,MAJ,-

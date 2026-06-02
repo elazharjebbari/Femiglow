@@ -1,0 +1,13 @@
+risk_id,category,description,likelihood,impact,severity,mitigation,owner,trigger_metric
+R-01,data,Perte de lead si fermeture onglet avant flush,medium,high,high,"sendBeacon sur pagehide/visibilitychange + miroir sessionStorage + recovery reload + idempotence",WS-Frontend,owbs.beacon.sent vs enqueue
+R-02,consistency,Arrivee desordonnee (address avant create),high,medium,medium,"upsert cree la row si absente + FIFO/leadId cote client",WS-Backend,TST-I-03
+R-03,duplication,Double effet tracking/webhook (retry/beacon),medium,high,high,"Idempotency-Key + UNIQUE(type,leadId,dedupe_key) + event_id partage",WS-Backend,taux doublons CAPI
+R-04,perf,Backlog outbox si origine/handler lent,medium,medium,medium,"worker batch + backoff + alerte pending>seuil + scaling cadence cron",WS-Ops,lead_event_outbox.pending
+R-05,security,leadId client falsifie / injection,low,medium,medium,"regex stricte + verif visitorId coherent + validation Zod + rate-limit /sync",WS-Backend,4xx /sync
+R-06,ux,Avancer puis echec serveur silencieux,medium,medium,medium,"indicateur discret FR-11 + retry + logs/alertes",WS-Frontend,owbs.queue.dropped
+R-07,compat,Comportement iOS Safari (pagehide/bfcache),medium,high,high,"ecouter pagehide ET visibilitychange + tests Playwright WebKit",WS-QA,TST-E-03 sur webkit
+R-08,migration,Lock long sur CHECK chat_lead.id,low,medium,medium,"ADD CONSTRAINT NOT VALID puis VALIDATE hors heure de pointe",WS-Backend,duree migration
+R-09,rollout,Regression non detectee au flag ON,low,high,high,"ramp progressif + kill-switch + dashboards + canary",WS-Ops,taux conversion/erreur
+R-10,scope,Derive (offline/PWA premature),medium,low,low,"N3 explicitement hors scope; ADR-0005 option future",PO,-
+R-11,beacon,Batch > 64KB tronque par keepalive/beacon,low,medium,low,"payloads petits + plafond maxEnvelopes/maxBytes + 413",WS-Backend,TST-I-14
+R-12,idempotency,Clé purgee trop tot empeche correction legitime,low,low,low,"purge cle sur succes uniquement; 409 documente",WS-Frontend,409 rate

@@ -1,0 +1,14 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F04-S01,PW,P0,Salma,flag ON + /lead aborté + file non vide,visibilitychange:hidden,POST /sync avec lead_create + cl_,requête /sync,RSK-05
+F04-S02,PW,P0,Salma,idem,pagehide,POST /sync (couvre bfcache),requête,RSK-05
+F04-S03,PW(webkit),P0,Salma,iOS Safari,masquage onglet,beacon part (R-07),requête,RSK-05
+F04-S04,RTL,P0,Salma,file vide,pagehide,aucun envoi,beacon 0,-
+F04-S05,RTL,P1,Salma,sendBeacon absent,pagehide,fallback fetch keepalive,fetch,-
+F04-S10,INT,P0,système,flag OFF,POST /sync,204 no-op,status 204,RSK-18
+F04-S11,INT,P0,système,flag ON batch valide,POST /sync,applyBatch + 200 results,200,-
+F04-S12,INT,P0,système,désordre address avant create,POST /sync,toutes transmises (toléré),applied,-
+F04-S13,INT,P1,système,corps > 60KB,POST /sync,413,status,-
+F04-S14,INT,P1,système,envelope leadId invalide,POST /sync,400,status,RSK-17
+F04-S20,PW,P0,Salma,envelope en file + reload,recharger la page,reflush -> file vidée, 1 seul lead,1 lead,RSK-06
+F04-S21,PW,P1,Salma,reload puis re-beacon,reload + pagehide,idempotent (pas de doublon),1 lead,RSK-06
+F04-S22,RTL,P0,Salma,beacon-flush installé,teardown,listeners retirés (pagehide no-op),no call,-

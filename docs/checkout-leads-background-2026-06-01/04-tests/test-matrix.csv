@@ -1,0 +1,49 @@
+test_id,layer,module,scenario,given,when,then,requirement,browser
+TST-U-00,unit,env,Flag parse,env sans var,parse env,"flag=false par defaut, mirror NEXT_PUBLIC present",FR-10,-
+TST-U-01,unit,lead-id,Format leadId,-,newLeadId x10k,"matche ^cl_[0-9a-z]{20,}$ sans collision",FR-01,-
+TST-U-02,unit,schemas,Validation entree,payload,parse Zod,"leadId requis/valide; parite JSON Schema",FR-01;FR-04,-
+TST-U-03,unit,lead-service,Orchestration,repos+idem mock,applyLeadCreate,"upsert puis outbox.enqueue dans txn",FR-04;FR-08,-
+TST-U-04,unit,outbox-processor,Dispatch type,handlers mock,process row,"bon handler; done si OK / reschedule si KO",FR-08,-
+TST-U-10,unit,lead-sync-queue,FIFO,3 envelopes,flush,"ordre create->address->payment respecte",FR-03,-
+TST-U-11,unit,lead-sync-queue,Retry backoff,transport 503,flush+fake timers,"backoff exp+jitter; attempt++; reste pending",NFR-04,-
+TST-U-12,unit,lead-sync-queue,Drop 4xx,transport 400,flush,"drop + log owbs.queue.dropped",R-06,-
+TST-U-13,unit,lead-sync-queue,Mirror,enqueue,reload+hydrate,"rehydrate + reflush idempotent",FR-06,-
+TST-U-14,unit,lead-sync-queue,Dedup,double flush,concurrent,"1 envoi par mutationId",FR-04,-
+TST-U-15,unit,use-wizard-mutations,Optimiste,flag ON,submit,"goToStep AVANT enqueue",FR-02,-
+TST-U-16,unit,use-wizard-mutations,Legacy,flag OFF,submit,"await PUIS goToStep (legacy)",FR-10,-
+TST-U-17,unit,beacon-flush,Beacon,pagehide,visibilityhidden,"sendBeacon(/sync) avec pending; order_create exclu",FR-06,-
+TST-U-18,unit,use-chat-send,Chat enqueue,chat submit,enqueue,"envelope chat en file",FR-09,-
+TST-U-19,unit,logging,No PII,mutation,log,"owbs.* sans PII en clair",NFR-10,-
+TST-M-01,msw,lead-sync-queue,Latence,leadCreateSlow 5s,enqueue,"UI non bloquee; pending contient",FR-02,-
+TST-M-02,msw,lead-sync-queue,Retry sans doublon,503 x2,flush+timers,"3 req meme Idempotency-Key; pending vide",FR-04;NFR-04,-
+TST-M-03,msw,lead-sync-queue,409 ignore,leadCreateConflict,flush,"retire sans retry infini",FR-04,-
+TST-M-04,msw,lead-sync-queue,Reseau coupe,networkError,flush,"reste pending; vide au retablissement",NFR-04,-
+TST-M-05,msw,sync,Batch idempotent,syncBatchOk,re-POST batch,"meme resultat (idempotent)",FR-06,-
+TST-I-00,integration,migration,Up/down,DB vide,migrate,"table+index+UNIQUE+CHECK; down propre",FR-08,-
+TST-I-01,integration,lead-repo,Upsert cree,DB vide,upsertWizardLead,"row creee (id client)",FR-04,-
+TST-I-02,integration,lead-repo,Fill-forward,row partielle,re-upsert null,"ne degrade pas colonne renseignee",FR-04,-
+TST-I-03,integration,lead-repo,Desordre,DB vide,upsertAddress avant create,"row partielle creee",R-02,-
+TST-I-04,integration,lead-repo,Securite,row existante,upsert visitorId different,"rejet",R-05,-
+TST-I-05,integration,outbox-repo,Enqueue/pick,row pending,pickBatch,"renvoie dus",FR-08,-
+TST-I-06,integration,outbox-repo,Skip locked,2 runners,pickBatch concurrent,"pas de chevauchement",FR-08,-
+TST-I-07,integration,outbox-repo,Backoff/dead,row echouee,reschedule xN,"backoff puis dead apres max",NFR-05,-
+TST-I-08,integration,outbox-repo,Unique dedup,meme cle,double enqueue,"1 seule row",FR-04,-
+TST-I-09,integration,lead-service,Txn rollback,enqueue throw,applyLeadCreate,"upsert rollback (INV-5)",FR-08,-
+TST-I-10,integration,outbox-processor,Handler KO/OK,row pending,process,"KO->reschedule; OK->done",FR-08,-
+TST-I-11,integration,cron,Auth,sans/avec secret,POST cron,"401 sans; 200+rapport avec",FR-08,-
+TST-R-OFF,integration,routes,Parite legacy,flag OFF,call routes,"reponses identiques master",FR-10,-
+TST-I-12,integration,sync,Batch applique,batch 3,POST /sync,"tout applique; idempotent",FR-06,-
+TST-I-13,integration,sync,Desordre batch,address avant create,POST /sync,"converge OK",R-02,-
+TST-I-14,integration,sync,Trop gros,batch > max,POST /sync,"413",R-11,-
+TST-I-15,integration,order,Conversion sans fond,aucune ecriture prealable,order_create snapshot,"commande creee",FR-07,-
+TST-I-16,integration,order,Double conversion,meme idem-key,2x order_create,"1 commande",FR-04,-
+TST-I-17,integration,order,Effets enqueues,conversion,order_create,"outbox: order_webhook+purchase_capi+purchase_ga4",FR-08,-
+TST-I-18,integration,sync,Rate-limit,bursts,POST /sync,"limite par visitorId/IP",R-05,-
+TST-E-01,e2e,wizard,UI sans reseau,route lead retardee 5s,submit,"step suivant < 50ms",FR-02,chromium;webkit
+TST-E-02,e2e,wizard,3 etapes sans gel,throttle 3s,parcours,"chaque transition < 50ms",NFR-01,chromium
+TST-E-03,e2e,beacon,Fermeture->persiste,abort live + close,pagehide,"POST /sync avec envelope",NFR-02,chromium;webkit
+TST-E-04,e2e,recovery,Reload,enqueue+echec,reload,"reflush; converge; idempotent",FR-06,chromium
+TST-E-05,e2e,conversion,Parcours complet,nominal,order_create,"thank_you + order + effets",FR-07,chromium
+TST-E-06,e2e,chat,Chat sans attente,route chat retardee,submit,"confirmation < 50ms",FR-09,chromium
+TST-E-07,e2e,ux,Indicateur FR-11,N echecs,flush,"indicateur discret; navigation libre",FR-11,chromium
+TST-E-OFF,e2e,wizard,Garde-fou legacy,flag OFF + reseau retarde,submit,"step suivant seulement apres reponse",FR-10,chromium

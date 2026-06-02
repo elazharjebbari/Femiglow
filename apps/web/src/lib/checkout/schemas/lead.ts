@@ -30,6 +30,17 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const createLeadInputSchema = z.object({
+  /**
+   * OWBS — leadId généré côté client (`cl_…`). Optionnel pour rester
+   * back-compat avec le legacy (le serveur en génère un si absent). S'il est
+   * fourni, le serveur fait un upsert-by-leadId idempotent (ADR-0002).
+   * Validé strictement pour éviter l'injection d'ids arbitraires.
+   * @see docs/checkout-leads-background-2026-06-01
+   */
+  leadId: z
+    .string()
+    .regex(/^cl_[0-9a-z]{20,}$/, 'leadId invalide (format cl_… attendu).')
+    .optional(),
   formContext: formContextSchema,
   /** Prénom (champ 1 du step). */
   firstName: z.string().trim().min(2, 'Prénom requis (au moins 2 caractères).').max(60),

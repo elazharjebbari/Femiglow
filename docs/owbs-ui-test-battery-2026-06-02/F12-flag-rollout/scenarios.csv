@@ -1,0 +1,12 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F12-S01,FULL,P0,Nadia,build flag ON,parcours,optimiste actif,timing,RSK-17
+F12-S02,PW,P0,Nadia,build flag OFF,parcours,legacy (succès après réponse),legacy,RSK-18
+F12-S03,PW,P0,Nadia,flag ON puis OFF (kill-switch),basculer,retour legacy sans redeploy,bascule,RSK-18
+F12-S04,PW,P0,Nadia,flag OFF,parcours,aucun appel /sync ni enqueue,no /sync,RSK-18
+F12-S10,RTL,P0,Salma,flag OFF,submit lead,wizardClient.createLead appelé (legacy),appel,RSK-18
+F12-S11,RTL,P0,Salma,flag ON,submit lead,enqueue (optimiste),enqueue,RSK-17
+F12-S12,RTL,P0,Salma,flag OFF,submit address,pas de flush,no flush,RSK-18
+F12-S13,RTL,P1,Salma,flag OFF chat,submit,legacy (succès après réponse),legacy,RSK-18
+F12-S14,RTL,P0,Salma,flag OFF,toutes surfaces,parité bit-à-bit (snapshots réponses),parité,RSK-18
+F12-S20,INT,P1,système,serveur OFF,POST /sync,204 (garde-fou),204,RSK-17
+F12-S21,INT,P1,système,serveur OFF,POST /lead avec leadId client,legacy createWizardLead (id serveur),legacy,RSK-17

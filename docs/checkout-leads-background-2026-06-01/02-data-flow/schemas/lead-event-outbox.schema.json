@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://femiglow/owbs/lead-event-outbox.schema.json",
+  "title": "Payload d'une row lead_event_outbox (effet de bord durable)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "leadId", "dedupeKey", "payload"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["purchase_capi", "purchase_ga4", "order_webhook", "cart_abandoned_webhook", "lead_capi"]
+    },
+    "leadId": { "type": "string", "pattern": "^cl_[0-9a-z]{20,}$" },
+    "dedupeKey": {
+      "type": "string",
+      "description": "event_id / clé métier garantissant l'unicité de l'effet (UNIQUE(type,leadId,dedupeKey))"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Données nécessaires au handler",
+      "properties": {
+        "eventId": { "type": "string", "description": "Aligné avec le tracking client (dédoublonnage cross-canal)" },
+        "value": { "type": "number" },
+        "currency": { "type": "string", "default": "MAD" },
+        "userData": { "type": "object", "description": "PII hachée (jamais en clair) pour CAPI" },
+        "orderId": { "type": "string" },
+        "webhookSource": { "type": "string", "enum": ["order", "cart"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "x-handlers": {
+    "purchase_capi": "delegue a serverFire (Meta CAPI) — reutilise le dispatcher existant",
+    "purchase_ga4": "delegue a serverFire (GA4 Measurement Protocol)",
+    "order_webhook": "delegue a dispatchOrderWebhook (lib/webhooks/outbound/sources/from-order)",
+    "cart_abandoned_webhook": "delegue au dispatcher webhook (source cart)",
+    "lead_capi": "Meta Lead/Purchase selon lead-as-purchase (cf. flag META_LEAD_AS_PURCHASE_ENABLED)"
+  }
+}

@@ -1,0 +1,11 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F06-S01,PW,P0,Salma,latence 6s sur /lead,submit lead,address < 1.5s,timing,RSK-01
+F06-S02,PW,P0,Salma,latence 6s sur toutes routes checkout,parcours,chaque transition < 1.5s,timing,RSK-01
+F06-S03,PW,P0,Salma,offline (context.setOffline),submit + close,beacon /sync au close,requête,RSK-05
+F06-S04,MSW,P0,Salma,abort puis recovery,flush,reste pending puis vidée,convergence,RSK-09
+F06-S05,PW,P0,Salma,offline puis online,submit offline + revenir online,lead persisté 1x,1 lead,-
+F06-S06,MSW,P1,Salma,503x2 puis 201,flush,retry silencieux + succès,même clé,RSK-09
+F06-S07,MSW,P1,Salma,409,flush,drop sans boucle,1 envoi,-
+F06-S08,PW,P0,Salma,latence,observer pendant retry,aucun message d'erreur prématuré,no alert,RSK-08
+F06-S09,RTL,P1,système,retry persistant,fake timers,backoff borné (pas de storm),delais capés,RSK-09
+F06-S10,PW,P0,Salma,offline total parcours complet,remplir + commander offline,conversion impossible mais lead capturé + message clair,erreur conversion + lead OK,-

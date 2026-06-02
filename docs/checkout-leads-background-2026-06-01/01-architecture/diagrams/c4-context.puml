@@ -1,0 +1,23 @@
+@startuml c4-context
+title OWBS — C4 Niveau 1 : Contexte système
+skinparam shadowing false
+skinparam rectangle {
+  BackgroundColor #FBF8F1
+  BorderColor #2b2b2b
+}
+actor "Acheteuse (mobile/Maroc)" as user
+rectangle "Frontend FemiGlow\n(Next.js App Router, navigateur)" as fe
+rectangle "Backend FemiGlow\n(Next route handlers, LiteSpeed, Node)" as be
+database "PostgreSQL" as db
+rectangle "Worker cron\n(systemd timer 60s)" as cron
+cloud "Plateformes pub\n(Meta CAPI, GA4 MP)" as ads
+cloud "Webhook sortant\n(CRM / automation)" as wh
+
+user --> fe : saisit le formulaire (wizard)
+fe --> be : envelopes lead (idempotentes, background)
+fe ..> ads : tracking client (emit, immédiat)
+be --> db : upsert chat_lead + lead_event_outbox (txn)
+cron --> db : drain lead_event_outbox (FOR UPDATE SKIP LOCKED)
+cron --> ads : tracking serveur (CAPI/GA4)
+cron --> wh : webhook order.created / cart.abandoned
+@enduml

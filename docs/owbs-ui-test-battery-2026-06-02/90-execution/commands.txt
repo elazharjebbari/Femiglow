@@ -1,0 +1,51 @@
+OWBS — Batterie UI/opérateur : commandes d'exécution. cwd = apps/web.
+==================================================================
+
+[CIBLAGE FIN (boucle de correction)]
+  pnpm vitest run src/components/checkout/wizard/steps/LeadCaptureStep.owbs.test.tsx
+  pnpm vitest run src/lib/checkout/state           # file/transport/beacon
+  pnpm vitest run src/components/chat               # chat funnel
+  pnpm vitest run --coverage <chemin-cible>
+
+[PAR VAGUE — Vitest]
+  V1: pnpm vitest run src/components/checkout/wizard src/lib/checkout/state/use-wizard-mutations.test.tsx src/lib/checkout/services
+  V2: pnpm vitest run src/lib/checkout/state/lead-sync-queue.test.ts src/lib/checkout/state/lead-sync-queue.msw.test.ts src/lib/checkout/state/beacon-flush.test.ts src/app/api/checkout/lead/sync
+  V3: pnpm vitest run src/components/checkout/wizard   # + *.a11y.test.tsx (axe)
+  V4: pnpm vitest run src/components/chat/LeadFormBubble.owbs.test.tsx
+  V5: pnpm vitest run src/components/admin src/lib/leads/outbox src/app/api/cron/lead-outbox
+  V6: pnpm vitest run src/app/api/checkout/lead/sync src/lib/checkout/services src/lib/leads/outbox
+
+[TYPECHECK / LINT / SECRETS]
+  pnpm tsc --noEmit
+  pnpm eslint <fichiers>
+  # gitleaks tourne en pre-commit ; allowlister le dossier de doc si fixtures.
+
+[BUILD :3100 — flag ON (e2e optimiste)]
+  lsof -ti:3100 | xargs -r kill ; sleep 2
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true pnpm build
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true PORT=3100 pnpm start
+  curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3100/fr/kit
+
+[BUILD :3100 — flag OFF (e2e legacy / parité F12-S02)]
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=false NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=false pnpm build && PORT=3100 pnpm start
+
+[PLAYWRIGHT]
+  PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm playwright test e2e/owbs-ui-*.spec.ts --project=chromium --reporter=list
+  # webkit (gate zéro-perte R-07) :
+  PLAYWRIGHT_CROSS=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm playwright test e2e/owbs-ui-zeroloss.spec.ts --project=webkit
+  # admin (auth via global.setup) :
+  PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm playwright test e2e/owbs-ui-admin-leads.spec.ts --project=chromium
+
+[SUPERVISION OUTBOX (F11 — procédure opérateur)]
+  -- backlog par statut
+  SELECT status, count(*) FROM lead_event_outbox GROUP BY status;
+  -- effets dead à rejouer
+  SELECT id,type,lead_id,attempts,last_error FROM lead_event_outbox WHERE status='dead' ORDER BY updated_at DESC LIMIT 50;
+  -- rejouer un dead
+  UPDATE lead_event_outbox SET status='pending', attempts=0, next_attempt_at=now() WHERE id='lox_...';
+  -- worker (local) :
+  curl -i -X POST http://127.0.0.1:3100/api/cron/lead-outbox -H "Authorization: Bearer $CRON_SECRET"
+
+[FULL — gate de release batterie]
+  pnpm tsc --noEmit && pnpm vitest run && \
+  PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 pnpm playwright test e2e/owbs-ui-*.spec.ts

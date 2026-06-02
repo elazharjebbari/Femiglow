@@ -1,0 +1,65 @@
+@startuml er-diagram
+title OWBS — Diagramme entité-relation
+skinparam shadowing false
+hide circle
+skinparam linetype ortho
+
+entity "chat_session" as session {
+  * id : text <<PK>>
+  --
+  visitor_id : text
+  language : text
+}
+
+entity "chat_lead" as lead {
+  * id : text <<PK>> (cl_...)
+  --
+  session_id : text <<FK>>
+  phone : text
+  first_name : text
+  consent_version : text
+  cart_snapshot : jsonb
+  address_* : text
+  payment_method : text
+  address_completed_at : timestamptz
+  payment_selected_at : timestamptz
+  purchased_at : timestamptz
+  step1_abandon_webhook_at : timestamptz
+}
+
+entity "orders" as ord {
+  * id : text <<PK>>
+  --
+  lead_id : text <<FK>>
+  total : int
+  payment_method : text
+  created_at : timestamptz
+}
+
+entity "checkout_idempotency" as idem {
+  * key : text <<PK>>
+  * scope : text <<PK>>
+  --
+  request_hash : text
+  response_json : jsonb
+  resource_id : text
+}
+
+entity "lead_event_outbox" as obx {
+  * id : text <<PK>> (lox_...)
+  --
+  lead_id : text <<FK>>
+  type : text
+  dedupe_key : text
+  payload : jsonb
+  status : text
+  attempts : int
+  next_attempt_at : timestamptz
+  == UNIQUE(type, lead_id, dedupe_key) ==
+}
+
+session ||--o{ lead
+lead ||--o| ord
+lead ||--o{ obx
+idem }o--o| lead : resource_id
+@enduml

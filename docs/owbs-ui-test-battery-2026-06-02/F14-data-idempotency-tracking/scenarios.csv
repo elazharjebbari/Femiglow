@@ -1,0 +1,18 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F14-S01,PW,P0,Yassine,flag ON,double-tap submit lead,1 lead,count=1,RSK-04
+F14-S02,PW,P0,Yassine,flag ON,double-tap commander,1 commande,count=1,RSK-04
+F14-S03,INT,P0,système,même Idempotency-Key,rejeu lead_create,replay sans doublon,1 row,-
+F14-S04,INT,P0,système,même idem-key order,rejeu order_create,1 commande,count=1,RSK-04
+F14-S05,PW,P0,Salma,beacon + reload combinés,close + reload,1 lead,count=1,RSK-06
+F14-S06,INT,P1,système,address avant create (/sync),applyBatch,converge,row complète,RSK-20
+F14-S07,INT,P1,système,désordre rejeu,applyBatch x2,idempotent,convergence,-
+F14-S10,INT,P0,système,re-upsert avec null,upsert,ne dégrade pas (fill-forward),valeurs conservées,RSK-20
+F14-S11,INT,P0,système,timestamps,upserts successifs,monotones (pas de régression),monotone,RSK-20
+F14-S12,INT,P1,système,double enqueue effet,enqueue,1 row (UNIQUE dedupe),dedup,RSK-21
+F14-S13,INT,P1,système,webhook order,conversion,1 order_webhook (dedupe orderId),unique,RSK-21
+F14-S20,INT,P0,système,capture + abandon,scanner,row partielle présente -> relance,scanner,-
+F14-S21,PW,P1,Nadia,abandon,admin,lead abandoned visible,état,-
+F14-S30,MSW,P0,Salma,chat flag ON value=289,submit,generate_lead value=289 (préservée),value,RSK-10
+F14-S31,INT,P0,système,wizard conversion,purchase,purchase émis 1x avec value/items,value,RSK-10
+F14-S32,INT,P1,système,effet dead rejoué,replay,pas de doublon CRM (dedupe),idempotent,RSK-21
+F14-S33,INT,P1,système,pont lead->Meta Purchase,cookie,dédoublonnage achat,no double,-
