@@ -29,6 +29,7 @@ import { productsSeeder } from './items/products';
 import { deliveryCitiesSeeder } from './items/delivery-cities';
 import { seoSeeder } from './items/seo';
 import { componentsSeeder } from './items/components';
+import { i18nBindingsSeeder } from './items/i18n-bindings';
 import { mediaSeeder } from './items/media';
 import { chatInstructionsSeeder } from './items/chat-instructions';
 import { chatInstructionsV2Seeder } from './items/chat-instructions-v2';
@@ -137,6 +138,16 @@ export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
     estimatedDurationMs: 25_000,
     idempotent: true,
     run: componentsSeeder,
+  },
+  {
+    id: 'i18n-bindings',
+    group: 'content',
+    label: 'Traductions composants (AR + EN)',
+    description:
+      'Publie les bindings i18n AR + EN des champs Content Studio depuis docs/i18n-content-2026-05 (parité FR). Idempotent : préserve les éditions admin (I0).',
+    estimatedDurationMs: 3_000,
+    idempotent: true,
+    run: i18nBindingsSeeder,
   },
   {
     id: 'media',

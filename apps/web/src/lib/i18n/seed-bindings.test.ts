@@ -269,7 +269,31 @@ describe('runI18nBindingsSeed — happy path', () => {
     expect(bindings).toHaveLength(2);
     for (const b of bindings) {
       expect(b.status).toBe('draft');
+      expect(b.publishedAt).toBeNull();
       expect(['ar', 'en']).toContain(b.locale);
+    }
+  });
+
+  it('insère en `published` (publishedAt posé) quand status=published (seeder provisioning)', async () => {
+    seedComponent('home-hero');
+    const dir = await tmpCsvDir({
+      'component-bindings-ar.csv':
+        HEADER + 'home-hero,title,ar,مرحبا,draft,\n',
+      'component-bindings-en.csv':
+        HEADER + 'home-hero,title,en,Welcome,draft,\n',
+    });
+    const report = await runI18nBindingsSeed({
+      locales: ['ar', 'en'],
+      csvDir: dir,
+      skipReportWrite: true,
+      status: 'published',
+    });
+    expect(report.totals.inserted).toBe(2);
+    const bindings = Array.from(memoryStore().componentFieldBindings.values());
+    expect(bindings).toHaveLength(2);
+    for (const b of bindings) {
+      expect(b.status).toBe('published');
+      expect(b.publishedAt).toBeInstanceOf(Date);
     }
   });
 });

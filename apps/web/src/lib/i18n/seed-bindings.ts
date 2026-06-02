@@ -68,6 +68,14 @@ export interface RunOptions {
   reportPath?: string;
   /** Si true, n'écrit pas le rapport sur disque (utile en tests). */
   skipReportWrite?: boolean;
+  /**
+   * Statut des bindings nouvellement insérés. `draft` (défaut) = workflow CLI
+   * (le founder publie via l'admin). `published` = provisioning (seeder
+   * `i18n-bindings`) → le contenu localisé est live immédiatement, à parité
+   * avec les bindings FR (eux aussi seedés `published`). N'affecte QUE les
+   * insertions : l'invariant I0 (admin priorité) préserve tout binding existant.
+   */
+  status?: 'draft' | 'published';
 }
 
 export interface BindingCsvRow {
@@ -360,6 +368,8 @@ interface SeedLocaleContext {
   slugMap: Map<string, string>;
   dryRun: boolean;
   forceUpdate: boolean;
+  /** Statut des bindings insérés (`draft` par défaut). */
+  status: 'draft' | 'published';
 }
 
 /**
@@ -462,9 +472,9 @@ export async function seedOneLocale(
       fieldKey: row.fieldKey,
       locale: ctx.locale,
       value: row.value,
-      status: 'draft',
+      status: ctx.status,
       version: nextVersion,
-      publishedAt: null,
+      publishedAt: ctx.status === 'published' ? now : null,
       scheduledAt: null,
       notes: row.notes ? row.notes : null,
       authorId: null,
@@ -577,6 +587,7 @@ export async function runI18nBindingsSeed(
       slugMap,
       dryRun: opts.dryRun ?? false,
       forceUpdate: opts.forceUpdate ?? false,
+      status: opts.status ?? 'draft',
     });
     perLocale.push(r);
     logger.info('seed.i18n-bindings.locale.end', {
