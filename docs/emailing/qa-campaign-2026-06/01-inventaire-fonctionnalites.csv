@@ -1,0 +1,74 @@
+id,module,fonctionnalite,surface,acteur,fichiers_sources_cles,etat_connu_audit_2026-06,priorite_test
+F-001,01-dashboard-sante,KPIs dashboard (envoyés/livrés/échecs/taux 7j),UI admin,Opérateur,src/app/admin/emails/page.tsx;src/lib/mail/transactional/summary.ts,KPI Livrés structurellement à 0 (webhook Stalwart cassé),P0
+F-002,01-dashboard-sante,Badge santé emailing (ok/degraded/incident),UI admin,Opérateur,src/lib/admin/emails/health.ts;src/app/api/admin/emails/health/route.ts,Aveugle aux crons morts et à Listmonk down,P0
+F-003,01-dashboard-sante,Navigation/layout section emails,UI admin,Opérateur,src/app/admin/emails/layout.tsx,OK apparent,P2
+F-004,01-dashboard-sante,Command palette globale (Cmd+K),UI admin,Opérateur,src/components/admin/emails/GlobalCommandPalette.tsx,Non audité en profondeur,P2
+F-010,02-cockpit-transactionnel,Recherche/filtres outbox (freetext+filtres typés),UI admin,Opérateur,src/components/admin/emails/cockpit/TransactionalCockpit.tsx;src/lib/mail/transactional/search.ts;filters-parser.ts,COUNT(*) plein scan; filtre exact case-sensitive vs ilike,P1
+F-011,02-cockpit-transactionnel,Pagination des résultats,UI admin,Opérateur,cockpit/FilteredTable.tsx,ABSENTE — offset jamais modifiable (50 max),P0
+F-012,02-cockpit-transactionnel,Sélection multiple + select-all,UI admin,Opérateur,cockpit/FilteredTable.tsx,Select-all limité à la page visible sans avertissement,P1
+F-013,02-cockpit-transactionnel,Bulk retry,UI admin + API,Opérateur,cockpit/BulkActionsBar.tsx;api/admin/emails/transactional/bulk-retry;lib/mail/transactional/bulk-actions.ts,Erreurs HTTP avalées côté UI (faux succès),P0
+F-014,02-cockpit-transactionnel,Bulk suppress,UI admin + API,Opérateur,bulk-suppress route;bulk-actions.ts;suppression.ts,Idem F-013 + ne blockliste pas dans Listmonk,P0
+F-015,02-cockpit-transactionnel,KPI header + sparklines + tendances,UI admin,Opérateur,cockpit/KpiHeader.tsx;summary.ts,Hausse échecs affichée en vert; sparkline queued=données delivered,P1
+F-016,02-cockpit-transactionnel,Vues sauvegardées (saved views),UI admin + API,Opérateur,cockpit/SavedViewsSidebar.tsx;api/admin/emails/views,No-op (sélection ne charge pas les filtres); création=alert stub,P1
+F-017,02-cockpit-transactionnel,Export CSV,UI admin,Opérateur,TransactionalCockpit.tsx,Stub window.alert,P2
+F-018,02-cockpit-transactionnel,Page détail email (timeline événements + retry unitaire),UI admin,Opérateur,app/admin/emails/transactional/[id]/page.tsx;lib/admin/emails/actions.ts,Retry unitaire OK (revalidate présent),P1
+F-019,02-cockpit-transactionnel,Command palette cockpit,UI admin,Opérateur,cockpit/CommandPalette.tsx,Non audité en profondeur,P2
+F-030,03-campagnes,Liste campagnes + statuts,UI admin,Opérateur,app/admin/emails/campaigns/page.tsx,Compteurs sent/open/click non fiables (poll 24h),P1
+F-031,03-campagnes,Wizard création campagne (audience→template→planif),UI admin,Opérateur,components/admin/emails/wizard/CampaignWizard.tsx;lib/admin/emails/wizard-actions.ts,finalizeCampaign non transactionnel → campagne fantôme/double envoi,P0
+F-032,03-campagnes,Édition campagne draft,UI admin,Opérateur,campaigns/[id]/edit/page.tsx,Non audité en profondeur,P1
+F-033,03-campagnes,Détail campagne (métriques),UI admin,Opérateur,campaigns/[id]/page.tsx,deliveredCount jamais alimenté (colonne morte),P1
+F-034,03-campagnes,Sync statuts/métriques Listmonk (poll),backend cron,Système,lib/mail/campaigns/listmonk-status-sync.ts;api/cron/tick,Fenêtre 24h → métriques gelées; transitions non gardées,P0
+F-040,04-audiences,Builder de règles (AND/OR + 15 types de règles),UI admin,Opérateur,components/admin/emails/audiences/AudienceRulesBuilder.tsx;RuleEditor.tsx;lib/mail/audiences/rules-types.ts,Règle country compile en TRUE; engagement email non corrélé au lead,P0
+F-041,04-audiences,Preview taille + échantillon d'audience,UI admin + API,Opérateur,AudiencePreview.tsx;api preview-size/preview-sample;lib/mail/audiences/preview.ts,OK apparent mais dépend du compilateur buggé,P1
+F-042,04-audiences,Compilation règles → SQL,backend,Système,lib/mail/audiences/rules-compiler.ts,sql.raw sur days (safe via Zod mais fragile); has_tag dépend de lead_tag drifté,P0
+F-043,04-audiences,Création/édition/suppression audience,UI admin + API,Opérateur,audiences/new;audiences/[id];api/admin/emails/audiences,Gestion erreurs UI correcte (contraste cockpit),P1
+F-044,04-audiences,Snapshot d'audience (figer les membres),UI admin + backend,Opérateur,AudienceDetailActions.tsx;lib/mail/audiences/snapshot.ts,Zombie running à vie si crash; idempotence renvoie le zombie,P0
+F-045,04-audiences,Exclusions (suppression/bounce/optout flags),UI + backend,Opérateur,schemas.ts;rules-compiler.ts (exclusions),Non testé finement,P1
+F-046,04-audiences,Autocomplétions (tags/produits/pays/templates),UI admin,Opérateur,TagAutocomplete;ProductAutocomplete;CountryAutocomplete;TemplateAutocomplete,Non audité,P2
+F-050,05-automations,Liste automations + activation/désactivation,UI admin,Opérateur,app/admin/emails/automation/page.tsx,Toggle actif sans effet réel si trigger non câblé,P0
+F-051,05-automations,Wizard création automation (trigger+steps),UI admin,Opérateur,automation/AutomationWizard.tsx;StepEditor.tsx;StepList.tsx,triggerType/Config/Conditions persistés mais JAMAIS lus par le runtime,P0
+F-052,05-automations,Réglages fréquence (quiet hours/cooldown/daily cap),UI admin,Opérateur,automation/FrequencySettings.tsx;lib/mail/automation/frequency.ts,100% code mort — jamais appelé + bugs tz/minuit,P0
+F-053,05-automations,Steps V2 (send/wait/branch/tag/update_lead/webhook/wait_for_event),backend,Système,lib/mail/automation/step-types-v2.ts;runner.ts;step-handlers/*,Échecs de steps ignorés; webhook sans timeout,P0
+F-054,05-automations,Runner (tick cron + reprise des runs),backend cron,Système,lib/mail/automation/runner.ts;api/cron/email-automation,AUCUN timer systemd; runs orphelins running+nextActionAt=NULL,P0
+F-055,05-automations,Détail d'un run (timeline),UI admin,Opérateur,automation/runs/[id]/page.tsx,Non audité en profondeur,P1
+F-056,05-automations,Édition automation avec runs en cours,UI + backend,Opérateur,automation-mutations.ts;step-path.ts,Adressage par index sans versioning → mauvais step rejoué,P0
+F-057,05-automations,wait_for_event (resume + sweep timeout),backend,Système,lib/mail/automation/resume.ts;user-events/insert.ts,Course resume vs sweep; onTimeout=abort ignoré,P1
+F-058,05-automations,Trigger cart-abandoned-1h (seul câblé),backend,Système,webhooks/outbound/cart-abandon-scanner.ts:188,Contexte placeholder figé; automation inactive en prod,P1
+F-060,06-templates,Liste templates (catalogue+customs),UI admin,Opérateur,app/admin/emails/templates/page.tsx;lib/mail/catalog.ts,OK apparent,P1
+F-061,06-templates,Éditeur template custom (HTML+vars+sujet),UI admin,Opérateur,templates/TemplateEditor.tsx;lib/mail/templates/custom/*,Sanitize/render à tester (XSS; vars manquantes),P0
+F-062,06-templates,Versioning templates (historique+commit),UI + API,Opérateur,api templates/[id]/versions;email_template_custom_version,Non audité en profondeur,P1
+F-063,06-templates,Preview template (rendu serveur),UI + API,Opérateur,api templates/[id]/preview;custom/render.ts;context-resolver.ts,Échec rendu → comportement à vérifier,P1
+F-064,06-templates,Starters (default-femiglow.html),UI + API,Opérateur,api templates/starters;templates/starters/,Non audité,P2
+F-065,06-templates,Templates transactionnels React (6),backend,Système,lib/mail/templates/*.tsx;render.ts,Échec rendu AVANT insert outbox → email perdu sans trace,P0
+F-070,07-webhooks-entrants-evenements,Webhook Stalwart (delivered/bounce/complaint),API entrante,Système,api/mail/webhook/stalwart/route.ts;stalwart-parser.ts,URL prod cassée (admin.*); events orphelins perdus; corrélation messageId fragile,P0
+F-071,07-webhooks-entrants-evenements,Webhook Listmonk (bounce/campaign.*),API entrante,Système,api/mail/webhook/listmonk/route.ts;listmonk-dispatcher.ts;listmonk-parser.ts,Hard/soft non distingués; pas de blocklist Listmonk; transitions non gardées,P0
+F-072,07-webhooks-entrants-evenements,Chaîne bounce→suppression→outbox→subscriber_link,backend,Système,dispatcher+suppression.ts+schema,Chaîne partielle (3 chemins incohérents),P0
+F-073,07-webhooks-entrants-evenements,Page /admin/emails/events (flux événements),UI admin,Opérateur,app/admin/emails/events/page.tsx,Non audité en profondeur,P1
+F-074,07-webhooks-entrants-evenements,Bridge événements → user_events,backend,Système,user-events/bridges/email-webhooks.ts,Fire-and-forget non monitoré,P2
+F-080,08-pipeline-outbox-crons,Enqueue sendTransactional (validation+suppression+render),backend,Système,lib/mail/send.ts;render.ts;catalog.ts,Render avant INSERT; enqueue hors transaction; erreurs avalées,P0
+F-081,08-pipeline-outbox-crons,Envoi SMTP (transport+pool+timeouts),backend,Système,lib/mail/client.ts,rejectUnauthorized:false; singleton sans health-check,P1
+F-082,08-pipeline-outbox-crons,Outbox claim+drain (cron email-outbox),backend cron,Système,lib/mail/outbox.ts;api/cron/email-outbox,Lignes sending bloquées à vie (pas de reaper); batch 100 vs maxDuration 60s,P0
+F-083,08-pipeline-outbox-crons,Retry/backoff/DLQ,backend,Système,outbox.ts;backoff.ts,Pas de classif permanent/transient; DLQ silencieuse; bounced_soft jamais ramassé,P0
+F-084,08-pipeline-outbox-crons,Suppression list (check à l'envoi),backend,Système,suppression.ts;send.ts,Bloque aussi les adresses internes (notifications leads),P0
+F-085,08-pipeline-outbox-crons,Rate limiting envois,backend,Système,lib/mail/rate-limit.ts,Non audité en profondeur,P1
+F-086,08-pipeline-outbox-crons,Lien unsubscribe signé (token),backend+public,Client,unsub-token.ts;api/mail/unsubscribe,catch{} vide → {{unsubscribe_url}} littéral possible,P1
+F-090,09-parcours-client,Opt-in email post-achat (page merci),UI publique + API,Client,api/checkout/order/[orderId]/email/route.ts;lead_tag,CASSÉ EN PROD (drift uuid/text — 500),P0
+F-091,09-parcours-client,Confirmation de commande,backend déclenché,Client,api/checkout/order/route.ts:325-363,0 envoyée en 30j (email absent au moment du checkout),P0
+F-092,09-parcours-client,Formulaire newsletter (+confirm double opt-in),UI publique,Client,NewsletterForm;api newsletter;newsletter-confirm.tsx,1 seul envoi en 30j; 0 subscriber_link créé,P0
+F-093,09-parcours-client,Accusé réception contact,UI publique,Client,ContactForm;api contact;contact-acknowledgement.tsx,OK apparent (1 envoyé),P1
+F-094,09-parcours-client,Notification interne nouveau lead chat,backend déclenché,Opérateur,api/chat/lead/contact;lead-notification.tsx,Vulnérable à la suppression de l'adresse interne,P0
+F-095,09-parcours-client,Page unsubscribe publique,UI publique,Client,api/mail/unsubscribe/route.ts,Tests existants à densifier,P1
+F-096,09-parcours-client,Email panier abandonné (template+automation),backend,Client,cart-abandoned.tsx;automation cart-abandoned-1h,Inactif en prod; contexte placeholder,P1
+F-097,09-parcours-client,Reset mot de passe,backend,Client,password-reset.tsx,JAMAIS câblé (aucun call-site) — code mort,P2
+F-100,10-integration-listmonk,Client API Listmonk (auth/listes/subscribers/campagnes),backend,Système,lib/mail/listmonk/client.ts,Pas de timeout/retry/429; pagination cassée (cap 50),P0
+F-101,10-integration-listmonk,Push snapshot → liste éphémère Listmonk,backend,Système,lib/mail/campaigns/listmonk-sync.ts,Non atomique; push partiel non rejouable; 1 POST/contact,P0
+F-102,10-integration-listmonk,Cleanup listes éphémères expirées,backend cron,Système,listmonk-sync.ts:226;api/cron/email-listmonk-cleanup,Aucun timer; course avec purge → fuite de listes,P0
+F-103,10-integration-listmonk,Purge snapshots expirés,backend cron,Système,lib/mail/audiences/purge.ts;api/cron/email-audience-purge,Aucun timer; course avec cleanup,P0
+F-104,10-integration-listmonk,Iframe admin Listmonk (proxy),UI admin,Opérateur,ListmonkFrame.tsx;api/listmonk/[...path],Proxy strippe CSP/X-Frame-Options (XSS surface),P1
+F-105,10-integration-listmonk,Sync abonnés (subscriber_link),backend,Système,email_subscriber_link;listmonk client,0 ligne en prod — jamais alimenté,P0
+F-110,11-infra-monitoring,Timers systemd des 6 crons email,infra,Système,/etc/systemd/system/femiglow-cron-*,5 sur 6 ABSENTS,P0
+F-111,11-infra-monitoring,Webhook Stalwart configuré (URL+secret),infra,Système,config Stalwart (/etc/stalwart-mail),URL admin.* ne résout pas (64k erreurs/jour),P0
+F-112,11-infra-monitoring,Config bounces Listmonk,infra,Système,settings Listmonk (bounce.*),bounce.enabled=false,P0
+F-113,11-infra-monitoring,Healthcheck bout-en-bout (cron mort/Listmonk down/fraîcheur),backend+UI,Opérateur,lib/admin/emails/health.ts,À étendre (angles morts),P0
+F-114,11-infra-monitoring,Observabilité (logs structurés + compteurs DLQ),backend,Système,logger usages lib/mail/**,DLQ sans alerte,P1
+F-115,11-infra-monitoring,Cron rituals-email-j45,backend cron,Système,api/cron/rituals-email-j45;lib/rituals/email-provider.ts,Stub TODO + fallback console silencieux,P2

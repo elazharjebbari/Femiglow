@@ -1,0 +1,82 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+AUD-CMP-001,Règle email_pattern,"contains compile en ILIKE %v% et matche les emails contenant le motif",integration,db,P1,"Sur jeu seedé : seuls les leads dont l'email contient le motif sont retournés",F-042
+AUD-CMP-002,Règle email_pattern,"starts compile en ILIKE v%",integration,db,P2,"Seuls les emails commençant par le motif matchent",F-042
+AUD-CMP-003,Règle email_pattern,"ends compile en ILIKE %v",integration,db,P2,"Seuls les emails finissant par le motif matchent",F-042
+AUD-CMP-004,Règle email_pattern,"equals compile en eq()",integration,db,P1,"Seul l'email exact matche",F-042
+AUD-CMP-005,Règle email_pattern,"in compile en inArray",integration,db,P1,"Seuls les emails de la liste matchent",F-042
+AUD-CMP-006,Règle email_pattern,"motif avec % est échappé (pas de wildcard injecté)",unit,vitest,P1,"% et _ du motif sont escaped \\% \\_",F-042
+AUD-CMP-007,Règle country,"compile en TRUE (ÉCART A-AUD-1)",unit,vitest,P0,"Le SQL contient TRUE → matche tout le monde (RED)",F-040
+AUD-CMP-008,Règle country,"sur DB le filtre country NE réduit PAS l'ensemble (bug prouvé)",integration,db,P0,"count(country=MA) == count(total) — preuve du bug",F-040
+AUD-CMP-009,Règle consent_marketing,"true ne matche que les leads consentants",integration,db,P0,"Seuls consent_marketing=true retournés",F-042
+AUD-CMP-010,Règle consent_marketing,"false ne matche que les non-consentants",integration,db,P1,"Seuls consent_marketing=false retournés",F-042
+AUD-CMP-011,Règle created_at,"after sélectionne les leads créés après la date",integration,db,P1,"Leads créés après la borne uniquement",F-042
+AUD-CMP-012,Règle created_at,"before sélectionne les leads créés avant",integration,db,P2,"Leads créés avant la borne uniquement",F-042
+AUD-CMP-013,Règle created_at,"between borne inclusive des deux côtés",integration,db,P2,"Leads dans l'intervalle uniquement",F-042
+AUD-CMP-014,Règle created_at,"within 7d → now()-interval",integration,db,P2,"Leads créés dans les 7 derniers jours",F-042
+AUD-CMP-015,Règle created_at,"date invalide lève",unit,vitest,P1,"compileRule throw sur 'not-a-date'",F-042
+AUD-CMP-016,Règle order_count,"gte 3 ne matche que ≥ 3 commandes",integration,db,P0,"Lead à 2 commandes exclu, lead à 3 inclus",F-042
+AUD-CMP-017,Règle order_count,"between [1,2] borne correctement",integration,db,P2,"Lead à 0 et à 3 exclus, 1 et 2 inclus",F-042
+AUD-CMP-018,Règle order_count,"since restreint la fenêtre de comptage",integration,db,P1,"Commandes hors fenêtre non comptées",F-042
+AUD-CMP-019,Règle order_total,"gte 100000 (cents) ne matche que les gros paniers cumulés",integration,db,P1,"SUM total_cents ≥ seuil uniquement",F-042
+AUD-CMP-020,Règle order_total,"lead sans commande → SUM 0 → exclu d'un gte>0",integration,db,P2,"COALESCE(SUM,0)=0 exclu",F-042
+AUD-CMP-021,Règle has_ordered_product,"EXISTS sur form_id ciblé",integration,db,P2,"Seuls les leads ayant commandé le produit matchent",F-042
+AUD-CMP-022,Règle last_order_at,"within 30d sur MAX(created_at)",integration,db,P2,"Leads dont la dernière commande < 30j matchent",F-042
+AUD-CMP-023,Règle email_opened,"EXISTS global NON corrélé au lead (ÉCART A-AUD-2)",integration,db,P0,"Un lead SANS ouverture matche quand même si UN évènement opened existe (bug)",F-040
+AUD-CMP-024,Règle email_opened,"minCount>1 compile en COUNT(*)>=n",unit,vitest,P2,"SQL contient COUNT(*) >= minCount",F-042
+AUD-CMP-025,Règle email_clicked,"EXISTS type=clicked (NON corrélé, ÉCART A-AUD-2)",integration,db,P0,"Même tout-ou-rien que email_opened",F-040
+AUD-CMP-026,Règle received_without_open,"sent>=threshold AND opened=0",integration,db,P1,"Logique threshold respectée (mais non corrélée — documenter)",F-042
+AUD-CMP-027,Règle inactive_since,"NOT EXISTS user_event récent",integration,db,P1,"Lead actif récemment exclu, lead inactif inclus",F-042
+AUD-CMP-028,Règle inactive_since,"days=0 et days=3650 (bornes) compilent",unit,vitest,P1,"Pas de throw ; SQL borné (ÉCART A-AUD-3 sql.raw)",F-042
+AUD-CMP-029,Règle session_count,"gte sur COUNT DISTINCT session_id",integration,db,P2,"Compte les sessions distinctes correctement",F-042
+AUD-CMP-030,Règle has_tag,"EXISTS lead_tag au vrai schéma (ÉCART A-AUD-5 drift)",integration,db,P0,"Seul le lead taggé matche — attrape le drift uuid/text",F-042
+AUD-CMP-031,Règle not_has_tag,"NOT EXISTS lead_tag",integration,db,P1,"Seuls les leads NON taggés matchent",F-042
+AUD-CMP-032,Combinaison AND,"all = AND de toutes les conditions",integration,db,P0,"Seuls les leads satisfaisant TOUTES matchent",F-040
+AUD-CMP-033,Combinaison OR,"any = OR des conditions",integration,db,P1,"Leads satisfaisant AU MOINS UNE matchent",F-040
+AUD-CMP-034,Combinaison imbriquée,"all[A, any[B,C]] sémantique exacte",integration,db,P0,"A ET (B OU C) vérifié sur jeu seedé",F-040
+AUD-CMP-035,Groupe vide,"all vide → TRUE, any vide → FALSE",unit,vitest,P1,"compileGroup conforme",F-042
+AUD-CMP-036,Profondeur,"depth>4 lève max depth",unit,vitest,P0,"compileRulesToSql throw /max depth/",F-042
+AUD-CMP-037,Exclusion hard_bounce,"retire les emails suppressés reason=hard_bounce",integration,db,P0,"Lead hard_bounce absent du résultat",F-045
+AUD-CMP-038,Exclusion unsubscribe,"retire les emails reason=unsubscribe",integration,db,P0,"Lead désinscrit absent",F-045
+AUD-CMP-039,Exclusion manual_suppression,"retire reason=manual_admin",integration,db,P1,"Lead suppression manuelle absent",F-045
+AUD-CMP-040,Exclusion marketing_optout,"ajoute consent_marketing=true",integration,db,P1,"Leads non consentants retirés quand flag actif",F-045
+AUD-CMP-041,Exclusion combinée,"plusieurs flags retirent l'union des emails",integration,db,P1,"Union des suppressions respectée",F-045
+AUD-CMP-042,Exclusion désactivée,"tous flags false → aucune exclusion appliquée",unit,vitest,P2,"applyExclusions retourne base inchangée (sémantiquement)",F-045
+AUD-CMP-043,Sécurité,"aucune string-concat de valeur dans le SQL",unit,vitest,P1,"Les valeurs passent par paramètres Drizzle (inspection chunks)",F-042
+AUD-PRE-001,Preview taille,"previewAudienceSize retourne le count exact",integration,db,P0,"size == nombre réel de leads matchant",F-041
+AUD-PRE-002,Preview taille,"timeout statement_timeout appliqué",integration,db,P2,"SET LOCAL statement_timeout exécuté dans la tx",F-041
+AUD-PRE-003,Preview échantillon,"sample limité à cappedLimit (≤50) + size total",integration,db,P1,"samples.length ≤ limit ; size == total",F-041
+AUD-PRE-004,Preview échantillon,"limit hors borne est cappé à [1,50]",unit,vitest,P2,"limit=999 → 50 ; limit=0 → 1",F-041
+AUD-PRE-005,Preview API,"POST preview-size 422 sur rules invalides",integration,db,P1,"Status 422 sur kind inconnu",F-041
+AUD-PRE-006,Preview API,"POST preview-size 200 + size/durationMs",integration,db,P1,"Body contient size et durationMs",F-041
+AUD-SNAP-001,Snapshot happy,"cycle running→done avec size correcte",integration,db,P0,"status=done ; size == membres matérialisés",F-044
+AUD-SNAP-002,Snapshot membres,"INSERT…SELECT matérialise exactement les leads matchant",integration,db,P0,"snapshot_member contient les bons emails",F-044
+AUD-SNAP-003,Snapshot erreur,"compile fail → status=errored + erroredReason",integration,db,P1,"status=errored sur règles profondeur 5",F-044
+AUD-SNAP-004,Snapshot idempotence,"même snapshotKey renvoie l'existant sans réinsérer",integration,db,P0,"insert non rappelé ; même snapshotId retourné",F-044
+AUD-SNAP-005,Snapshot zombie,"snapshot running orphelin (crash) reste running (ÉCART A-AUD-4)",integration,db,P0,"status reste running à vie — preuve du zombie",F-044
+AUD-SNAP-006,Snapshot zombie+idempotence,"re-snapshot même key renvoie le zombie running inutilisable (ÉCART A-AUD-4)",integration,db,P0,"snapshotId == zombie ; status running renvoyé (bug prouvé)",F-044
+AUD-SNAP-007,Snapshot audience supprimée,"audience soft-deleted → throw",integration,db,P1,"Erreur /deleted/",F-044
+AUD-SNAP-008,Snapshot audience absente,"id inexistant → throw",integration,db,P1,"Erreur /not found/",F-044
+AUD-SNAP-009,Snapshot metadata,"source+campaignId stockés dans metadata",integration,db,P2,"metadata.source/campaignId persistés",F-044
+AUD-SNAP-010,Snapshot purgeableAfter,"purgeableAfter ≈ now+90j",integration,db,P2,"purgeableAfter dans la fenêtre attendue",F-044
+AUD-PURGE-001,Purge,"purge supprime les snapshots dont purgeableAfter < now()",integration,db,P1,"Snapshots expirés supprimés, récents conservés",F-044
+AUD-PURGE-002,Purge,"course purge vs cleanup Listmonk documentée",integration,db,P2,"Pas de double suppression incohérente",F-044
+AUD-BLD-001,Builder UI,"état vide affiche « Aucun critère » + bouton ajouter",component,msw,P1,"Empty state visible",F-040
+AUD-BLD-002,Builder UI,"ajout d'une règle via menu pousse la condition",component,msw,P0,"onChange reçoit conditions=[order_count]",F-040
+AUD-BLD-003,Builder UI,"suppression d'une règle retire la condition",component,msw,P0,"onChange reçoit conditions=[]",F-040
+AUD-BLD-004,Builder UI,"toggle ET↔OU change kind",component,msw,P1,"kind passe à 'any'",F-040
+AUD-BLD-005,Builder UI,"ajout sous-groupe kind opposé au parent",component,msw,P1,"sous-groupe kind='any' sous parent 'all'",F-040
+AUD-BLD-006,Builder UI,"masque ajout-groupe à maxDepth",component,msw,P2,"add-group-btn absent à depth==maxDepth",F-040
+AUD-BLD-007,Builder UI,"édition d'une règle propage la valeur",component,msw,P1,"tag passe de vip à premium dans onChange",F-040
+AUD-BLD-008,Builder UI,"réordonnancement ne perd aucune condition",component,msw,P2,"conditions conservées après move",F-040
+AUD-BLD-009,Builder UI,"toggle masqué avec 1 seule condition",component,msw,P2,"toggle-combinator absent",F-040
+AUD-AC-001,Autocomplete tags,"saisie déclenche fetch et propose les tags",component,msw,P1,"Liste de suggestions affichée depuis l'API",F-046
+AUD-AC-002,Autocomplete tags,"erreur 500 → pas de faux résultats",component,msw,P1,"Aucune suggestion fantôme ; message ou liste vide",F-046
+AUD-AC-003,Autocomplete produits,"propose les produits filtrés",component,msw,P2,"Suggestions produit depuis l'API",F-046
+AUD-AC-004,Autocomplete templates,"propose les templates",component,msw,P2,"Suggestions template depuis l'API",F-046
+AUD-CRUD-001,Création audience,"POST valide crée l'audience",integration,db,P1,"Ligne email_audience insérée",F-043
+AUD-CRUD-002,Création audience,"slug invalide → 422",integration,db,P1,"Status 422 sur slug non kebab",F-043
+AUD-CRUD-003,Création audience,"slug dupliqué → 409",integration,db,P1,"Status 409 sur contrainte unique",F-043
+AUD-CRUD-004,Suppression référencée,"suppression d'une audience liée à une campagne est protégée",integration,db,P0,"Refus ou soft-delete ; la campagne ne casse pas (FK audience_id)",F-043
+AUD-CRUD-005,Suppression simple,"audience non référencée → soft-delete deletedAt",integration,db,P1,"deletedAt posé ; absente des listes actives",F-043
+AUD-E2E-001,Parcours opérateur,"Créer audience Casablanca + acheteuses sans ouverture 60j et vérifier preview",e2e,playwright,P0,"Preview size cohérente ; échantillon contient les bonnes clientes",F-040
+AUD-E2E-002,Parcours opérateur,"Snapshot puis usage en campagne",e2e,playwright,P1,"Snapshot done ; campagne consomme la liste éphémère",F-044

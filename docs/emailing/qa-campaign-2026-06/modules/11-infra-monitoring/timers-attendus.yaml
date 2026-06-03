@@ -1,0 +1,67 @@
+# timers-attendus.yaml — Manifeste des timers systemd email (source de vérité).
+#
+# Consommé par specs/check-timers.sh : le script liste l'état serveur
+# (systemctl) et le compare à ce manifeste. Tout écart (timer manquant,
+# désactivé, cadence divergente) fait échouer le script (exit != 0).
+#
+# Cadences : OnUnitActiveSec pour les boucles courtes, OnCalendar pour le
+# quotidien. L'ordre cleanup(03:10) AVANT purge(03:30) matérialise la garde
+# anti-fuite de listes Listmonk (cf. module 10).
+version: 1
+bearer_env: CRON_SECRET        # toutes les routes attendent Authorization: Bearer $CRON_SECRET
+base_url: "http://127.0.0.1:8011"   # prod next-server (cf. mémoire projet)
+
+timers:
+  - name: femiglow-cron-email-outbox
+    route: /api/cron/email-outbox
+    schedule_kind: interval
+    on_unit_active_sec: 60
+    enabled: true
+    description: "Drain de la file email_outbox (claim + send)."
+
+  - name: femiglow-cron-email-automation
+    route: /api/cron/email-automation
+    schedule_kind: interval
+    on_unit_active_sec: 60
+    enabled: true
+    description: "Tick runner automation + sweep wait_for_event timeouts."
+
+  - name: femiglow-cron-email-campaign-sync
+    route: /api/cron/email-campaign-sync
+    schedule_kind: interval
+    on_unit_active_sec: 300
+    enabled: true
+    description: "Poll des métriques/statuts campagnes Listmonk (pas de webhook campagne)."
+
+  - name: femiglow-cron-email-listmonk-cleanup
+    route: /api/cron/email-listmonk-cleanup
+    schedule_kind: calendar
+    on_calendar: "*-*-* 03:10:00"
+    enabled: true
+    description: "Suppression des listes Listmonk éphémères expirées. AVANT la purge."
+
+  - name: femiglow-cron-email-audience-purge
+    route: /api/cron/email-audience-purge
+    schedule_kind: calendar
+    on_calendar: "*-*-* 03:30:00"
+    enabled: true
+    description: "Purge des snapshots expirés. APRÈS le cleanup (garde anti-fuite)."
+
+  - name: femiglow-cron-rituals-email-j45
+    route: /api/cron/rituals-email-j45
+    schedule_kind: calendar
+    on_calendar: "*-*-* 09:00:00"
+    enabled: true
+    description: "Invitation J+45 aux initiées (review wall)."
+
+# Probes infra annexes (non-timer) vérifiées par check-timers.sh --probes.
+probes:
+  webhook_stalwart:
+    # L'URL DOIT résoudre (pas de NXDOMAIN comme admin.femiglow-maroc.com en prod)
+    # et répondre 401 sur un token vide (donc être vivante).
+    url_env: FEMIGLOW_STALWART_WEBHOOK_URL
+    expect_status_on_empty_token: 401
+  listmonk_bounce:
+    # settings Listmonk : bounce.enabled doit être true (false en prod = audit).
+    setting: "bounce.enabled"
+    expect: true

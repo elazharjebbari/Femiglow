@@ -1,0 +1,68 @@
+@startuml flux-sante
+' Diagramme d'états du badge santé emailing — ÉTAT CIBLE (pas l'existant).
+' Le niveau global = pire check (worst-wins). Rendu : plantuml flux-sante.puml
+title Badge santé /admin/emails — machine d'états cible (worst-wins)
+
+state "Évaluation des checks" as Eval {
+  state "smtpConfigured" as c1
+  state "db joignable" as c2
+  state "outboxStuck (>5min)" as c3
+  state "dlq24h" as c4
+  state "pendingNow" as c5
+  state "lastDeliveredAt (fraîcheur)" as c6
+  state "cron outbox heartbeat" as c7
+  state "cron automation/listmonk" as c8
+  state "Listmonk joignable" as c9
+  state "webhook Stalwart (events 24h)" as c10
+}
+
+[*] --> Eval : checkEmailingHealth(now)
+
+state OK <<choice>>
+state DEGRADED <<choice>>
+state INCIDENT <<choice>>
+
+Eval --> Verdict
+
+state "Verdict (worst-wins)" as Verdict
+
+state "🟢 ok" as L_OK
+state "🟡 degraded" as L_DEG
+state "🔴 incident" as L_INC
+
+' --- Règles INCIDENT (priorité maximale) ---
+Verdict --> L_INC : SMTP manquant
+Verdict --> L_INC : DB indisponible
+Verdict --> L_INC : DLQ 24h > 10
+Verdict --> L_INC : lastDelivered > 72h
+Verdict --> L_INC : cron outbox muet (>5min)
+Verdict --> L_INC : webhook muet 24h ET envois > 0
+
+' --- Règles DEGRADED (si aucun incident) ---
+Verdict --> L_DEG : outbox stuck > 0
+Verdict --> L_DEG : DLQ 24h dans [1..10]
+Verdict --> L_DEG : pending > 50
+Verdict --> L_DEG : lastDelivered dans ]24h..72h]
+Verdict --> L_DEG : cron automation/listmonk en retard
+Verdict --> L_DEG : Listmonk down/timeout
+
+' --- OK seulement si AUCUN des ci-dessus ---
+Verdict --> L_OK : tous checks verts\nET lastDelivered <= 24h\nET crons vivants
+
+L_OK : summary "🟢 Système OK"
+L_DEG : summary "🟡 Dégradé"
+L_DEG : détail = anomalies join(' · ')
+L_INC : summary "🔴 Incident"
+L_INC : détail actionnable (nomme le check fautif)
+
+L_OK --> [*]
+L_DEG --> [*]
+L_INC --> [*]
+
+note right of L_OK
+  ANTI-RÉGRESSION (audit F-002) :
+  interdit d'atteindre 🟢 si
+  lastDelivered = null / > 24h
+  ou un cron critique est mort.
+end note
+@enduml

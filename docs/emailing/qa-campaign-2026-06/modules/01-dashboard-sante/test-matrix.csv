@@ -1,0 +1,49 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+DSH-UNIT-001,KPIs dashboard,"pct(num,den) avec den=0 retourne le tiret —",unit,vitest,P0,"sortie === '—', pas de 'NaN %' ni division",F-001
+DSH-UNIT-002,KPIs dashboard,"pct(108,120) formate '90.0 %'",unit,vitest,P1,"chaîne === '90.0 %' (1 décimale)",F-001
+DSH-UNIT-003,KPIs dashboard,"fmt(1234) formate en fr-FR avec séparateur de milliers",unit,vitest,P2,"sortie contient '1' et '234' séparés (espace insécable)",F-001
+DSH-MSW-010,KPIs dashboard,"état vide (0 envoi 7j) — toutes cartes à 0",component,msw,P1,"chaque carte affiche '0'; Livrés affiche '—'",F-001
+DSH-MSW-011,KPIs dashboard,"état nominal — 6 cartes peuplées valeurs distinctes",component,msw,P1,"Envoyés/Livrés/Échecs/DLQ/En attente/Total rendus avec leurs valeurs",F-001
+DSH-MSW-012,KPIs dashboard,"carte Échecs >0 prend le ton ambre",component,msw,P1,"classe text-amber-700 présente sur la valeur Échecs",F-001
+DSH-MSW-013,KPIs dashboard,"carte DLQ >0 prend le ton rose",component,msw,P1,"classe text-rose-700 présente sur la valeur DLQ",F-001
+DSH-MSW-014,KPIs dashboard,"En attente >50 prend le ton ambre (seuil cron 60s)",component,msw,P1,"ton ambre actif quand pendingNow=51",F-001
+DSH-MSW-015,KPIs dashboard,"sous-libellé Livrés = pourcentage des envoyés",component,msw,P1,"texte '90.0 % des envoyés' quand 108/120",F-001
+DSH-MSW-016,KPIs dashboard,"gros volume (envoyés 50 000) formaté fr-FR",component,msw,P2,"valeur affichée avec séparateurs de milliers",F-001
+DSH-MSW-017,KPIs dashboard,"tableau Derniers envois vide → ligne 'Aucun envoi sur la période.'",component,msw,P2,"ligne vide présente, colSpan=5",F-001
+DSH-MSW-018,KPIs dashboard,"REGRESSION F-001 : Livrés=0 alors qu'Envoyés=4200 → carte en alerte",component,msw,P0,"carte Livrés affiche alerte (ton rose) + libellé anomalie webhook",F-001
+DSH-MSW-019,KPIs dashboard,"REGRESSION F-001 : Envoyés>0 & Livrés=0 → bannière 'delivery silencieux'",component,msw,P0,"avertissement visible distinct du simple '0'",F-001
+DSH-MSW-020,KPIs dashboard,"erreur 500 sur lecture KPI → message d'erreur, pas de cartes fantômes à 0",component,msw,P0,"role=alert ou état d'erreur; AUCUNE carte affichée à 0 trompeur",F-001
+DSH-MSW-021,KPIs dashboard,"timeout lecture KPI (hang) → état chargement visible",component,msw,P1,"squelette/skeleton visible, pas de 0 prématuré",F-001
+DSH-MSW-022,KPIs dashboard,"i18n fr — libellés des 6 cartes en français",component,msw,P2,"'Envoyés','Livrés','Échecs','DLQ','En attente','Total tentatives' présents",F-001
+DSH-MSW-030,Badge santé,"niveau ok — tous checks verts → 🟢 Système OK",component,msw,P0,"summary contient '🟢' et 'Système OK'; classe emerald",F-002
+DSH-MSW-031,Badge santé,"SMTP non configuré → 🔴 incident + liste vars manquantes",component,msw,P0,"badge rose 'Incident'; détail liste SMTP_USER/SMTP_PASSWORD",F-002
+DSH-MSW-032,Badge santé,"DB indispo → 🔴 incident + message DB",component,msw,P0,"badge rose; détail 'DB indispo'",F-002
+DSH-MSW-033,Badge santé,"outbox stuck (sending>5min) → 🟡 dégradé + compte stuck",component,msw,P1,"badge ambre; 'X stuck en sending > 5 min'",F-002
+DSH-MSW-034,Badge santé,"DLQ 24h entre 1 et 10 → 🟡 dégradé",component,msw,P1,"badge ambre; 'X DLQ sur 24h'",F-002
+DSH-MSW-035,Badge santé,"DLQ 24h > 10 → 🔴 incident",component,msw,P0,"badge rose; niveau incident",F-002
+DSH-MSW-036,Badge santé,"pending > 50 → 🟡 dégradé",component,msw,P1,"badge ambre; 'X pending en attente'",F-002
+DSH-MSW-037,Badge santé,"worst-wins — DLQ>10 (incident) + pending>50 (dégradé) → 🔴 incident",component,msw,P0,"niveau global = incident (pire check)",F-002
+DSH-MSW-038,Badge santé,"REGRESSION F-002 : dernier delivered=null → badge ne reste PAS vert",component,msw,P0,"niveau >= degraded; détail 'jamais livré'",F-002
+DSH-MSW-039,Badge santé,"REGRESSION F-002 : dernier delivered > 24h → 🟡 dégradé",component,msw,P0,"niveau degraded; libellé fraîcheur webhook",F-002
+DSH-MSW-040,Badge santé,"REGRESSION F-002 : dernier delivered > 72h → 🔴 incident",component,msw,P0,"niveau incident",F-002
+DSH-MSW-041,Badge santé,"REGRESSION F-002 : cron outbox mort (pas de tick 5min) → 🔴 incident",component,msw,P0,"niveau incident; détail 'cron outbox muet'",F-002
+DSH-MSW-042,Badge santé,"REGRESSION F-002 : Listmonk down → 🟡 dégradé",component,msw,P1,"niveau >= degraded; détail Listmonk",F-002
+DSH-MSW-043,Badge santé,"REGRESSION F-002 : webhook Stalwart muet 24h (0 event, envois>0) → 🔴 incident",component,msw,P0,"niveau incident; détail webhook silencieux",F-002
+DSH-MSW-044,Badge santé,"détail déroulable au clic — liste les 6+ checks avec ✓/✗",component,msw,P1,"<details>/summary ouvert montre la liste",F-002
+DSH-MSW-045,Badge santé,"badge focusable et ouvrable au clavier (a11y)",component,msw,P1,"summary atteignable au clavier, déroule",F-002
+DSH-UNIT-041,Badge santé,"checkEmailingHealth — SMTP manquant pousse 'incident'",unit,vitest,P0,"report.level==='incident'; checks.smtpConfigured.ok===false",F-002
+DSH-UNIT-042,Badge santé,"checkEmailingHealth — stuckCount>0 pousse 'degraded'",unit,vitest,P1,"level>=degraded; outboxStuck.ok===false",F-002
+DSH-UNIT-043,Badge santé,"checkEmailingHealth — dlqCount>10 pousse 'incident'",unit,vitest,P0,"level==='incident'",F-002
+DSH-UNIT-044,Badge santé,"REGRESSION F-002 : lastDeliveredAt>24h DOIT influencer le niveau",unit,vitest,P0,"level !== 'ok' quand lastDeliveredAt ancien (test rouge avant fix)",F-002
+DSH-UNIT-045,Badge santé,"REGRESSION F-002 : absence de heartbeat cron pousse incident",unit,vitest,P0,"level==='incident' quand cron muet",F-002
+DSH-UNIT-046,Badge santé,"now injectable → fenêtres 5min/24h déterministes",unit,vitest,P1,"résultat stable avec now figé",F-002
+DSH-DB-050,Badge santé,"route /api/admin/emails/health renvoie report contre vraie DB",integration,db,P1,"200 + JSON conforme HealthReport; checks calculés sur DB seedée",F-002
+DSH-DB-051,Badge santé,"health non-admin → 401/redirect (requireAdmin)",integration,db,P0,"accès refusé sans session admin",F-002
+DSH-MSW-060,Command palette,"⌘K ouvre la palette globale",component,msw,P2,"role=dialog visible après ⌘K",F-004
+DSH-MSW-061,Command palette,"filtre fuzzy 'camp' surface 'Campagnes'",component,msw,P2,"item Campagnes visible, autres masqués",F-004
+DSH-MSW-062,Command palette,"↓↓ Enter navigue et exécute router.push",component,msw,P2,"navigation déclenchée vers href de l'item actif",F-004
+DSH-MSW-063,Command palette,"Esc ferme la palette",component,msw,P2,"role=dialog disparaît",F-004
+DSH-MSW-064,Command palette,"requête sans match → 'Aucun résultat' role=status",component,msw,P2,"texte 'Aucun résultat' présent",F-004
+DSH-MSW-065,Command palette,"a11y — aria-activedescendant suit l'item actif",component,msw,P2,"aria-activedescendant === id de l'item sélectionné",F-004
+DSH-E2E-070,Navigation,"dashboard → quick-link Transactionnel charge le cockpit",e2e,playwright,P2,"URL /admin/emails/transactional; cockpit monté",F-003
+DSH-E2E-071,Navigation,"badge santé visible et déroulable dans le vrai header",e2e,playwright,P2,"summary cliquable, détail visible",F-002

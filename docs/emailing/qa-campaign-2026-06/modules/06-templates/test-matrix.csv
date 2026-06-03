@@ -1,0 +1,51 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+TPL-EDI-001,Éditeur CRUD,"champs sujet/preheader/source préremplis depuis le template",component,msw,P1,"Valeurs initiales affichées dans les inputs",F-061
+TPL-EDI-002,Éditeur CRUD,"insertion de variable ajoute {{var}} en fin de source",component,msw,P1,"La textarea source contient {{lastName}} après clic",F-061
+TPL-EDI-003,Éditeur CRUD,"bouton enregistrer désactivé si aucun changement",component,msw,P1,"Bouton « Aucun changement » disabled",F-061
+TPL-EDI-004,Éditeur CRUD,"modification active le bouton enregistrer",component,msw,P1,"Bouton « Créer une version » activé après edit",F-062
+TPL-EDI-005,Éditeur validation,"customVars JSON invalide → message d'erreur preview",component,msw,P0,"« customVars JSON invalide » affiché ; pas d'appel preview",F-063
+TPL-EDI-006,Éditeur validation,"sujet vide refusé à l'enregistrement (Zod min 1)",component,msw,P1,"Erreur de validation 422 affichée",F-061
+TPL-EDI-007,Éditeur preview,"preview debouncée appelle l'API après 600ms",component,msw,P1,"POST /preview intercepté avec le bon body",F-063
+TPL-EDI-008,Éditeur preview,"preview 500 → message d'erreur, iframe non corrompue",component,msw,P0,"Message d'erreur affiché ; pas de faux rendu",F-063
+TPL-EDI-009,Éditeur preview,"preview 422 → erreur de validation affichée",component,msw,P1,"Détail d'erreur visible",F-063
+TPL-EDI-010,Éditeur preview,"preview hang → indicateur de chargement visible",component,msw,P1,"Spinner « ... » visible pendant le pending",F-063
+TPL-EDI-011,Éditeur versioning,"création de version 200 ajoute en tête de liste",component,msw,P1,"Nouvelle version en haut de la liste des versions",F-062
+TPL-EDI-012,Éditeur versioning,"création de version 401 → message, liste inchangée",component,msw,P0,"Erreur affichée ; aucune version fantôme ajoutée",F-062
+TPL-EDI-013,Éditeur versioning,"création de version 500 → message générique",component,msw,P0,"Erreur affichée ; bouton réactivé",F-062
+TPL-EDI-014,Éditeur versioning,"restauration de version demande confirmation",component,msw,P1,"confirm() appelé ; champs remplacés si confirmé",F-062
+TPL-EDI-015,Éditeur versioning,"restauration annulée ne change rien",component,msw,P2,"confirm()=false → source inchangée",F-062
+TPL-EDI-016,Éditeur liste vide,"aucune version affiche « Aucune version »",component,msw,P2,"Texte vide affiché",F-062
+TPL-SAN-001,Sanitize XSS,"balise <script> retirée",unit,vitest,P0,"Sortie ne contient pas <script>",F-061
+TPL-SAN-002,Sanitize XSS,"attribut onerror retiré",unit,vitest,P0,"Sortie ne contient pas onerror=",F-061
+TPL-SAN-003,Sanitize XSS,"href javascript: neutralisé",unit,vitest,P0,"Sortie ne contient pas href=\"javascript:",F-061
+TPL-SAN-004,Sanitize XSS,"src data:text/html neutralisé",unit,vitest,P0,"Sortie ne contient pas data:text/html",F-061
+TPL-SAN-005,Sanitize XSS,"<svg><script> retiré",unit,vitest,P0,"Sortie ne contient ni <svg onload ni <script>",F-061
+TPL-SAN-006,Sanitize XSS,"<iframe>/<object>/<embed> retirés",unit,vitest,P0,"Aucune de ces balises en sortie",F-061
+TPL-SAN-007,Sanitize XSS,"style expression()/url(javascript:) neutralisé",unit,vitest,P1,"Pas d'expression( ni javascript: dans style",F-061
+TPL-SAN-008,Sanitize XSS,"handlers on* divers (onload/onmouseover/onclick) retirés",unit,vitest,P0,"Aucun attribut on* en sortie",F-061
+TPL-SAN-009,Sanitize XSS,"entités encodées &#x6a;avascript ne raniment pas un vecteur",unit,vitest,P1,"Pas de javascript: décodé exécutable",F-061
+TPL-SAN-010,Sanitize XSS,"<a href=vbscript:> neutralisé",unit,vitest,P1,"Pas de vbscript: en sortie",F-061
+TPL-SAN-011,Sanitize XSS,"<base href> retiré (détournement de liens relatifs)",unit,vitest,P1,"Pas de <base en sortie",F-061
+TPL-SAN-012,Sanitize XSS,"<meta http-equiv refresh> retiré",unit,vitest,P2,"Pas de refresh meta exécutable",F-061
+TPL-SAN-013,Sanitize preserve,"balises sûres conservées (a/strong/br/table/img)",unit,vitest,P1,"Ces balises restent présentes",F-061
+TPL-SAN-014,Sanitize preserve,"attributs sûrs conservés (href https, style couleur, width)",unit,vitest,P1,"Attributs légitimes conservés",F-061
+TPL-REN-001,Render custom,"variables {{var}} échappées par défaut (XSS)",unit,vitest,P0,"<script> injecté via var devient &lt;script&gt;",F-061
+TPL-REN-002,Render custom,"{{{var}}} HTML est sanitizé",unit,vitest,P0,"script retiré, <strong> conservé",F-061
+TPL-REN-003,Render custom,"variable manquante → chaîne vide (pas de crash)",unit,vitest,P1,"{{missing}} rend vide",F-063
+TPL-REN-004,Render custom,"#if conditionnel supporté",unit,vitest,P2,"Branche if/else correcte",F-061
+TPL-REN-005,Render custom,"cache LRU : même source rend correctement plusieurs fois",unit,vitest,P2,"Rendus successifs corrects",F-061
+TPL-TRX-001,Render transactionnel,"order-confirmation payload valide rend HTML+texte+sujet",unit,vitest,P0,"subject contient l'orderId ; html non vide ; snapshot stable",F-065
+TPL-TRX-002,Render transactionnel,"order-confirmation payload invalide (itemsCount négatif) lève",unit,vitest,P0,"renderTemplate throw Zod (à tracer côté pipeline, A-TPL-1)",F-065
+TPL-TRX-003,Render transactionnel,"contact-acknowledgement rend correctement",unit,vitest,P1,"subject contient le prénom ; snapshot",F-065
+TPL-TRX-004,Render transactionnel,"newsletter-confirm rend l'URL de confirmation",unit,vitest,P1,"html contient confirmUrl",F-065
+TPL-TRX-005,Render transactionnel,"lead-notification rend nom+téléphone",unit,vitest,P1,"subject contient leadName et leadPhone",F-065
+TPL-TRX-006,Render transactionnel,"cart-abandoned rend l'URL de reprise",unit,vitest,P1,"html contient resumeUrl",F-065
+TPL-TRX-007,Render transactionnel,"password-reset rend (prêt à câbler, A-TPL-4)",unit,vitest,P2,"html contient resetUrl ; non câblé documenté",F-065
+TPL-TRX-008,Render transactionnel,"slug inconnu → throw Unknown template",unit,vitest,P1,"renderTemplate throw /Unknown template/",F-065
+TPL-TRX-009,Render transactionnel,"chaque template inclut le lien de désinscription",unit,vitest,P0,"html contient unsubscribe_url ou un lien de désabonnement",F-065
+TPL-UNS-001,Unsubscribe,"footer rendu ne laisse pas {{unsubscribe_url}} littéral après substitution",unit,vitest,P0,"Après substitution pipeline, pas de {{unsubscribe_url}} brut (A-TPL-3)",F-086
+TPL-UNS-002,Unsubscribe,"URL de désinscription est signée (token)",unit,vitest,P1,"L'URL contient un token signé non vide",F-086
+TPL-UNS-003,Unsubscribe,"lien de désinscription TOUJOURS présent dans context-resolver",unit,vitest,P1,"context.unsubscribeUrl défini et non vide",F-086
+TPL-STA-001,Starters,"liste des starters renvoie default-femiglow",integration,db,P2,"GET /starters contient default-femiglow",F-064
+TPL-STA-002,Starters,"contenu starter est du HTML sanitizable valide",unit,vitest,P2,"Le starter passe sanitize sans perdre sa structure",F-064
+TPL-E2E-001,Parcours opérateur,"éditer un template, prévisualiser, créer une version, vérifier rendu",e2e,playwright,P1,"Preview cohérente ; version persistée ; pas de script dans le rendu",F-061

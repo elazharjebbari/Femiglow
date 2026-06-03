@@ -1,0 +1,80 @@
+module: "03-campagnes"
+ref_inventaire: [F-030, F-031, F-032, F-033, F-034]
+description: >
+  Plan de tests campagnes : wizard (composant+MSW), finalisation atomique
+  (intégration vraie DB), sync statuts/métriques (machine d'états), CRUD draft.
+
+suites:
+  - id: campaign-wizard-msw
+    couche: vitest+msw
+    fichier: specs/campaign-wizard.msw.test.tsx
+    cible: src/components/admin/emails/wizard/CampaignWizard.tsx
+    prerequis:
+      - "Serveur MSW partagé @/test/msw/server"
+      - "Actions wizard-actions mockées via vi.mock (finalizeCampaign/updateCampaignDraft)"
+    couvre: [CMP-MSW-001, CMP-MSW-002, CMP-MSW-003, CMP-MSW-004, CMP-MSW-005,
+             CMP-MSW-006, CMP-MSW-007, CMP-MSW-008, CMP-MSW-009, CMP-MSW-010,
+             CMP-MSW-015, CMP-MSW-016, CMP-MSW-017, CMP-MSW-018, CMP-MSW-022,
+             CMP-MSW-023, CMP-MSW-024, CMP-MSW-025, CMP-MSW-026, CMP-MSW-027,
+             CMP-MSW-028, CMP-MSW-029, CMP-MSW-030]
+    grille_echecs: [200, 401, 422, 500, hang]
+    ordre: 1
+
+  - id: campaign-wizard-validation-unit
+    couche: vitest
+    fichier: specs/campaign-wizard.msw.test.tsx
+    cible: "validate()/estimatedAudience (logique pure extraite ou via composant)"
+    couvre: [CMP-UNIT-031, CMP-UNIT-032, CMP-MSW-011, CMP-MSW-012, CMP-MSW-013,
+             CMP-MSW-014, CMP-MSW-019, CMP-MSW-020, CMP-MSW-021]
+    ordre: 2
+
+  - id: finalize-atomicity-integration
+    couche: vitest+db
+    fichier: specs/finalize-atomicity.integration.test.ts
+    cible: src/lib/admin/emails/wizard-actions.ts::finalizeCampaign
+    prerequis:
+      - "DATABASE_URL_TEST défini vers femiglow_test"
+      - "Migrations drizzle appliquées (email_campaign_link, enum status)"
+      - "Listmonk client mocké (vi.mock) avec création campagne + updateStatus"
+      - "requireAdmin mocké"
+    couvre: [CMP-INT-001, CMP-INT-002, CMP-INT-003, CMP-INT-004, CMP-INT-005,
+             CMP-INT-006, CMP-INT-007, CMP-INT-008, CMP-INT-009, CMP-INT-010,
+             CMP-INT-011, CMP-INT-012, CMP-INT-025, CMP-INT-026, CMP-INT-027,
+             CMP-INT-028]
+    serialise: true
+    ordre: 3
+
+  - id: status-sync-integration
+    couche: vitest+db
+    fichier: specs/finalize-atomicity.integration.test.ts
+    cible: src/lib/mail/campaigns/listmonk-status-sync.ts::syncCampaignStatuses
+    prerequis:
+      - "DB de test seedée avec campagnes à divers statuts"
+      - "listmonk.campaigns.get mocké (payloads variés)"
+    couvre: [CMP-INT-013, CMP-INT-014, CMP-INT-015, CMP-INT-016, CMP-INT-017,
+             CMP-INT-018, CMP-INT-019, CMP-INT-020, CMP-INT-021, CMP-INT-022,
+             CMP-INT-023, CMP-INT-024]
+    serialise: true
+    ordre: 4
+
+  - id: state-machine-unit
+    couche: vitest
+    fichier: specs/finalize-atomicity.integration.test.ts
+    cible: "isLegalTransition / mapping Listmonk→FemiGlow"
+    couvre: [CMP-UNIT-033, CMP-UNIT-034]
+    ordre: 5
+
+  - id: campaign-e2e
+    couche: playwright
+    fichier: e2e/emails-campaigns.spec.ts
+    prerequis:
+      - "Build local + DB de test + Mailpit"
+      - "Listmonk stub local"
+    couvre: [CMP-E2E-001, CMP-E2E-002, CMP-E2E-003, CMP-E2E-004]
+    ordre: 6
+
+oracles_transverses:
+  - "Aucun faux succès : un échec HTTP laisse l'état antérieur + message visible."
+  - "finalizeCampaign : 1 seule campagne Listmonk même au retry (garde status!=draft)."
+  - "Transitions de statut : régressions terminales rejetées."
+  - "Métriques affichées == état Listmonk pollé (dans la fenêtre)."

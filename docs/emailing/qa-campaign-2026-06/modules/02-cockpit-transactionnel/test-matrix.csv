@@ -1,0 +1,93 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+CKP-UNIT-001,Recherche/filtres,"parseFilters('status:failed') → 1 filtre status [failed]",unit,vitest,P0,"filters[0].key==='status' && value===['failed']",F-010
+CKP-UNIT-002,Recherche/filtres,"parseFilters('status:pending,sending') → liste 2 statuts",unit,vitest,P1,"value===['pending','sending']",F-010
+CKP-UNIT-003,Recherche/filtres,"status inconnu → ParseError nommée",unit,vitest,P1,"errors[0].message contient le statut fautif",F-010
+CKP-UNIT-004,Recherche/filtres,"to:\"a b@c\" (quotes) → value avec espace conservé",unit,vitest,P1,"value==='a b@c' (tokenizer respecte les quotes)",F-010
+CKP-UNIT-005,Recherche/filtres,"REGRESSION F-010 : to:exact insensible à la casse (état cible)",unit,vitest,P1,"filtre exact mappe vers ilike, pas eq case-sensitive",F-010
+CKP-UNIT-006,Recherche/filtres,"after:-24h → date = now-24h (now injecté)",unit,vitest,P1,"value === now-86400000ms",F-010
+CKP-UNIT-007,Recherche/filtres,"after:today → minuit local du jour",unit,vitest,P1,"heures/min/sec === 0",F-010
+CKP-UNIT-008,Recherche/filtres,"attempts:>3 → operator '>' value 3",unit,vitest,P1,"operator==='>' && value===3",F-010
+CKP-UNIT-009,Recherche/filtres,"attempts:abc → ParseError format",unit,vitest,P1,"errors non vide, format invalide",F-010
+CKP-UNIT-010,Recherche/filtres,"has:warn → ParseError (seul error supporté)",unit,vitest,P2,"errors[0].message mentionne error",F-010
+CKP-UNIT-011,Recherche/filtres,"token libre 'fatima' → freetext",unit,vitest,P1,"freetext==='fatima', filters vide",F-010
+CKP-UNIT-012,Recherche/filtres,"clé inconnue 'foo:bar' → freetext (pas d'erreur)",unit,vitest,P2,"freetext contient 'foo:bar'",F-010
+CKP-UNIT-013,Recherche/filtres,"input vide → result vide sans erreur",unit,vitest,P2,"filters/errors/freetext vides",F-010
+CKP-UNIT-014,Recherche/filtres,"hostile : valeur avec %/_ → globToSqlPattern échappe _",unit,vitest,P0,"underscore échappé en \\_ ; pas de wildcard accidentel",F-010
+CKP-UNIT-015,Recherche/filtres,"hostile : injection \"'; DROP\" → traitée comme freetext littéral",unit,vitest,P0,"pas d'interprétation, paramétrée",F-010
+CKP-UNIT-016,Recherche/filtres,"serialize→deserialize round-trip conserve les filtres",unit,vitest,P1,"deserializeFilters(serializeFilters(f)) === f",F-010
+CKP-UNIT-017,Recherche/filtres,"quote non fermée → tokenisation ne crashe pas",unit,vitest,P2,"retour défini, pas d'exception",F-010
+CKP-DB-018,Recherche/filtres,"REGRESSION F-010 : COUNT n'est pas un plein scan à chaque requête",integration,db,P1,"plan utilise borne/estimation avant count exact (window truncated)",F-010
+CKP-DB-019,Recherche/filtres,"listOutboxFiltered status:failed renvoie uniquement failed",integration,db,P1,"toutes rows.status==='failed'",F-010
+CKP-DB-020,Recherche/filtres,"freetext matche to_email OU to_name OU template",integration,db,P1,"row par chaque branche du OR présent",F-010
+CKP-MSW-020,Pagination,"REGRESSION F-011 : total=5000 → contrôle page suivante présent",component,msw,P0,"bouton 'suivant' rendu (pagination existe)",F-011
+CKP-MSW-021,Pagination,"clic suivant → POST search avec offset=50",component,msw,P0,"body.pagination.offset===50",F-011
+CKP-MSW-022,Pagination,"clic précédent depuis page 2 → offset=0",component,msw,P0,"offset===0",F-011
+CKP-MSW-023,Pagination,"borne basse : précédent désactivé en page 1",component,msw,P1,"bouton précédent disabled à offset 0",F-011
+CKP-MSW-024,Pagination,"borne haute : suivant désactivé sur dernière page",component,msw,P1,"suivant disabled quand offset+rows>=total",F-011
+CKP-MSW-025,Pagination,"indicateur 'X–Y sur total' exact",component,msw,P1,"texte '51–100 sur 5 000' en page 2",F-011
+CKP-MSW-026,Pagination,"changement de filtre → reset page 1 (offset 0)",component,msw,P1,"offset===0 après applyParseResult",F-011
+CKP-MSW-027,Pagination,"changement de tri → reset page 1",component,msw,P1,"offset===0 après onSortChange",F-011
+CKP-MSW-028,Pagination,"total<=50 → contrôles pagination masqués/désactivés",component,msw,P2,"pas de bouton suivant actif",F-011
+CKP-MSW-030,Sélection,"cocher une ligne → compteur 'N sélectionnés'",component,msw,P1,"selection-count affiche 1",F-012
+CKP-MSW-031,Sélection,"shift+click → sélection de la plage",component,msw,P1,"toutes les lignes intermédiaires sélectionnées",F-012
+CKP-MSW-032,Sélection,"select-all coche les 50 visibles + indeterminate quand partiel",component,msw,P1,"checkbox header checked; indeterminate si partiel",F-012
+CKP-MSW-033,Sélection,"REGRESSION F-012 : select-all avec total>50 affiche avertissement",component,msw,P1,"message 'X sur cette page · sélectionner les N filtrés'",F-012
+CKP-MSW-034,Sélection,"sélection étendue 'tous les filtrés' propage le count réel",component,msw,P1,"bulk porte sur total, pas 50",F-012
+CKP-MSW-035,Sélection,"re-décocher select-all vide la sélection",component,msw,P2,"selection size 0",F-012
+CKP-MSW-040,Bulk retry,"200 nominal → résultat partiel affiché + sélection vidée",component,msw,P0,"'X relancés, Y ignorés' visible; selection vidée APRÈS succès",F-013
+CKP-MSW-041,Bulk retry,"REGRESSION F-013 : 401 → erreur visible, sélection CONSERVÉE",component,msw,P0,"role=alert session expirée; selection-count inchangé",F-013
+CKP-MSW-042,Bulk retry,"422 (ids invalides) → message validation, champ identifiable",component,msw,P0,"erreur validation affichée; pas de faux succès",F-013
+CKP-MSW-043,Bulk retry,"500 → message générique + bouton réessayer + sélection conservée",component,msw,P0,"alerte + retry + selection conservée",F-013
+CKP-MSW-044,Bulk retry,"hang/timeout → état chargement, pas de double-soumission",component,msw,P0,"bouton désactivé/spinner; 1 seul POST",F-013
+CKP-MSW-045,Bulk retry,"network error → erreur visible, pas de crash",component,msw,P0,"alerte présente; selection conservée",F-013
+CKP-MSW-046,Bulk retry,"résultat skipped (wrong_status) → raison affichée par id",component,msw,P1,"liste skippedIds avec raison 'wrong_status'",F-013
+CKP-DB-047,Bulk retry,"bulkRetry ne relance que failed/dlq/bounced_soft",integration,db,P0,"row 'sent' → skipped wrong_status; row 'failed' → retried+pending",F-013
+CKP-DB-048,Bulk retry,"bulkRetry id inexistant → skipped not_found",integration,db,P1,"skippedIds contient {reason:'not_found'}",F-013
+CKP-DB-049,Bulk retry,">500 ids → throw cap (route renvoie 422)",integration,db,P1,"erreur cap remontée; pas d'update partiel",F-013
+CKP-MSW-050,Bulk suppress,"200 → confirmation honorée + comptes suppressed/skipped",component,msw,P0,"window.confirm appelé; résultat affiché",F-014
+CKP-MSW-051,Bulk suppress,"REGRESSION F-014 : 500 → erreur visible, sélection conservée",component,msw,P0,"alerte; selection inchangée; pas de faux succès",F-014
+CKP-MSW-052,Bulk suppress,"401 → message session, sélection conservée",component,msw,P0,"role=alert; selection conservée",F-014
+CKP-MSW-053,Bulk suppress,"422 → message validation",component,msw,P0,"erreur validation visible",F-014
+CKP-MSW-054,Bulk suppress,"annulation de la confirmation → aucun POST",component,msw,P1,"confirm=false ⇒ 0 appel réseau",F-014
+CKP-MSW-055,Bulk suppress,"hang → loading + pas de double soumission",component,msw,P1,"1 seul POST; bouton désactivé",F-014
+CKP-MSW-056,Bulk suppress,"REGRESSION F-014 : succès suppress déclenche aussi blocklist Listmonk",component,msw,P0,"POST blocklist Listmonk observé (état cible)",F-014
+CKP-DB-057,Bulk suppress,"bulkSuppress insère email_suppression + passe rows suppressed",integration,db,P0,"row dans email_suppression; outbox.status='suppressed'",F-014
+CKP-DB-058,Bulk suppress,"REGRESSION F-014 : suppressé ne reçoit plus transactionnel NI campagne",integration,db,P0,"sendTransactional bloqué + exclusion snapshot campagne",F-014
+CKP-MSW-060,KPI header,"REGRESSION F-015 : hausse échecs (failedPct>0) affichée en ROUGE",component,msw,P1,"carte Échecs : tendance rouge, pas emerald",F-015
+CKP-MSW-061,KPI header,"baisse échecs (failedPct<0) en vert",component,msw,P1,"tendance verte sur baisse d'échecs",F-015
+CKP-MSW-062,KPI header,"REGRESSION F-015 : sparkline 'En file' utilise les data queued",component,msw,P1,"path SVG queued != path delivered",F-015
+CKP-MSW-063,KPI header,"failed>=seuil → mode alerte (bordure rouge + badge)",component,msw,P1,"data-testid kpi-failed contient 'attention'",F-015
+CKP-MSW-064,KPI header,"hardBounced>0 → alerte",component,msw,P1,"kpi-hard-bounced alerte active",F-015
+CKP-MSW-065,KPI header,"clic carte Échecs → applique filtre status:failed,dlq",component,msw,P1,"onKpiClick('failed') → parseFilters status failed,dlq",F-015
+CKP-MSW-066,KPI header,"erreur summary → bannière + bouton réessayer",component,msw,P1,"role=alert; Réessayer câblé",F-015
+CKP-MSW-067,KPI header,"auto-refresh 5s déclenche un nouveau GET summary",component,msw,P2,"2e fetch après 5s (fake timers)",F-015
+CKP-MSW-070,Saved views,"REGRESSION F-016 : sélection d'une vue APPLIQUE ses filtres",component,msw,P1,"POST search reçoit le filterState de la vue",F-016
+CKP-MSW-071,Saved views,"vue active surlignée (aria-current)",component,msw,P2,"view button aria-current='true'",F-016
+CKP-MSW-072,Saved views,"REGRESSION F-016 : 'Nouvelle vue' ouvre un vrai formulaire (pas alert)",component,msw,P1,"pas de window.alert; formulaire de création monté",F-016
+CKP-MSW-073,Saved views,"création persiste via POST /views",component,msw,P1,"POST /api/admin/emails/views avec name+filterState",F-016
+CKP-MSW-074,Saved views,"rename PATCH + échec 500 → message + nom inchangé",component,msw,P1,"sur 500 le nom local n'est pas modifié",F-016
+CKP-MSW-075,Saved views,"delete avec confirmation → DELETE /views/[id]",component,msw,P1,"confirm=true ⇒ DELETE émis; vue retirée",F-016
+CKP-MSW-076,Saved views,"vues système non éditables (pas de menu rename/delete)",component,msw,P1,"section système sans menu 3-points",F-016
+CKP-DB-077,Saved views,"createView isole par ownerEmail; updateView refuse vue d'autrui",integration,db,P1,"throw 'Cannot edit another admin view'",F-016
+CKP-MSW-080,Export CSV,"REGRESSION F-017 : export déclenche un téléchargement (pas window.alert)",component,msw,P2,"pas d'alert; Blob/anchor download créé",F-017
+CKP-MSW-081,Export CSV,"CSV échappe les virgules dans le sujet (guillemets)",component,msw,P2,"champ avec virgule entouré de quotes",F-017
+CKP-MSW-082,Export CSV,"CSV échappe les guillemets internes (doublés)",component,msw,P2,"\" interne → \"\"",F-017
+CKP-MSW-083,Export CSV,"encodage UTF-8 BOM pour accents fr (Excel)",component,msw,P2,"BOM présent; accents préservés",F-017
+CKP-MSW-090,Command palette,"⌘K ouvre la palette cockpit",component,msw,P2,"dialog visible",F-019
+CKP-MSW-091,Command palette,"saisie 'status:' propose les valeurs de statut",component,msw,P2,"groupe Statuts affiché",F-019
+CKP-MSW-092,Command palette,"Entrée applique les filtres résolus (onApply)",component,msw,P1,"onApply reçoit parseResult; tableau re-filtré",F-019
+CKP-MSW-093,Command palette,"input erroné → compteur d'erreurs affiché",component,msw,P2,"badge 'N erreurs' présent",F-019
+CKP-MSW-094,Command palette,"Esc ferme la palette",component,msw,P2,"dialog fermé",F-019
+CKP-MSW-100,Page détail,"id inconnu → notFound (404 propre)",integration,db,P1,"getOutboxRow null → notFound()",F-018
+CKP-MSW-101,Page détail,"retry unitaire sur failed → retryOutboxAction + revalidatePath",e2e,playwright,P1,"bouton Renvoyer présent si failed; action appelée",F-018
+CKP-MSW-102,Page détail,"row delivered → pas de bouton Renvoyer (canRetry false)",component,msw,P2,"bouton absent quand status delivered",F-018
+CKP-MSW-103,Page détail,"timeline affiche les events ordonnés desc",component,msw,P1,"events triés par ts décroissant",F-018
+CKP-MSW-104,Page détail,"transitions de statut affichables (sent→delivered→opened)",component,msw,P1,"timeline montre la séquence d'événements",F-018
+CKP-MSW-105,Page détail,"preview HTML rendue en iframe sandbox",component,msw,P2,"iframe sandbox='' avec srcDoc",F-018
+CKP-E2E-110,Incident,"tri 200 échecs SMTP → sélection → retry → vérif partiel",e2e,playwright,P0,"après retry, statuts repassent pending; compteur honnête",F-013
+CKP-E2E-111,Incident,"session expirée en plein bulk → message, sélection conservée",e2e,playwright,P0,"401 mid-bulk: alerte + sélection intacte",F-013
+CKP-E2E-112,Incident,"pagination réelle : atteindre la ligne 51+",e2e,playwright,P0,"page 2 chargée; lignes 51+ visibles",F-011
+CKP-A11Y-120,Accessibilité,"tableau : aria-sort sur colonnes triables",component,msw,P2,"th[aria-sort] présent sur Date/Statut/Template/Att.",F-012
+CKP-A11Y-121,Accessibilité,"checkbox 'Sélectionner tout' labellisée",component,msw,P2,"aria-label='Sélectionner tout'",F-012
+CKP-A11Y-122,Accessibilité,"bulk bar role=toolbar labellisée",component,msw,P2,"role='toolbar' aria-label présent",F-013
+CKP-I18N-123,i18n,"libellés tableau et actions en français",component,msw,P2,"'Destinataire','Statut','Retry sélection' etc.",F-012

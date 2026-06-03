@@ -1,0 +1,116 @@
+# Plan d'exécution machine-lisible — Module 02 Cockpit transactionnel
+module: "02-cockpit-transactionnel"
+refs_inventaire: [F-010, F-011, F-012, F-013, F-014, F-015, F-016, F-017, F-018, F-019]
+prerequis_globaux:
+  - "apps/web/src/test/msw/server.ts + handlers/emails.ts (defaultEmailHandlers, failWith)"
+  - "apps/web/src/test/factories/emails.ts (makeOutboxRow, makeSummary, makeView)"
+  - "vitest.setup.ts : server.listen({ onUnhandledRequest: 'error' })"
+  - "mock next/navigation (useRouter.push, useSearchParams) pour TransactionalCockpit"
+
+suites:
+  - nom: "filters-parser-unit"
+    fichier_spec: "apps/web/src/lib/mail/transactional/filters-parser.test.ts"
+    couche: vitest
+    ordre: 0
+    duree_estimee_s: 5
+    prerequis: ["now injecté pour after/before"]
+    ids_matrice: [CKP-UNIT-001, CKP-UNIT-002, CKP-UNIT-003, CKP-UNIT-004, CKP-UNIT-005, CKP-UNIT-006, CKP-UNIT-007, CKP-UNIT-008, CKP-UNIT-009, CKP-UNIT-010, CKP-UNIT-011, CKP-UNIT-012, CKP-UNIT-013, CKP-UNIT-014, CKP-UNIT-015, CKP-UNIT-016, CKP-UNIT-017]
+
+  - nom: "search-db"
+    fichier_spec: "apps/web/src/lib/mail/transactional/__qa__/search.db.test.ts"
+    couche: db
+    ordre: 3
+    duree_estimee_s: 16
+    prerequis: ["Postgres femiglow_test migrée", "seed outbox (petit + 5000)", "truncateEmailTables"]
+    ids_matrice: [CKP-DB-018, CKP-DB-019, CKP-DB-020]
+
+  - nom: "cockpit-pagination"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/cockpit-pagination.msw.test.tsx"
+    couche: msw
+    ordre: 1
+    duree_estimee_s: 14
+    prerequis: ["handler POST /transactional/search renvoyant total=5000"]
+    ids_matrice: [CKP-MSW-020, CKP-MSW-021, CKP-MSW-022, CKP-MSW-023, CKP-MSW-024, CKP-MSW-025, CKP-MSW-026, CKP-MSW-027, CKP-MSW-028]
+
+  - nom: "cockpit-selection"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/selection.msw.test.tsx"
+    couche: msw
+    ordre: 1
+    duree_estimee_s: 10
+    prerequis: []
+    ids_matrice: [CKP-MSW-030, CKP-MSW-031, CKP-MSW-032, CKP-MSW-033, CKP-MSW-034, CKP-MSW-035]
+
+  - nom: "cockpit-bulk-actions"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/cockpit-bulk-actions.msw.test.tsx"
+    couche: msw
+    ordre: 1
+    duree_estimee_s: 26
+    prerequis: ["failWith.{unauthorized,validation,serverError,hang,network}", "stub window.confirm"]
+    ids_matrice: [CKP-MSW-040, CKP-MSW-041, CKP-MSW-042, CKP-MSW-043, CKP-MSW-044, CKP-MSW-045, CKP-MSW-046, CKP-MSW-050, CKP-MSW-051, CKP-MSW-052, CKP-MSW-053, CKP-MSW-054, CKP-MSW-055, CKP-MSW-056]
+
+  - nom: "bulk-actions-db"
+    fichier_spec: "apps/web/src/lib/mail/transactional/__qa__/bulk-actions.db.test.ts"
+    couche: db
+    ordre: 3
+    duree_estimee_s: 18
+    prerequis: ["Postgres femiglow_test", "seed statuts mixtes", "suppression check câblée"]
+    ids_matrice: [CKP-DB-047, CKP-DB-048, CKP-DB-049, CKP-DB-057, CKP-DB-058]
+
+  - nom: "kpi-header-semantics"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/kpi-header-semantics.msw.test.tsx"
+    couche: msw
+    ordre: 1
+    duree_estimee_s: 12
+    prerequis: ["handler GET /transactional/summary", "fake timers pour auto-refresh"]
+    ids_matrice: [CKP-MSW-060, CKP-MSW-061, CKP-MSW-062, CKP-MSW-063, CKP-MSW-064, CKP-MSW-065, CKP-MSW-066, CKP-MSW-067]
+
+  - nom: "saved-views"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/saved-views.msw.test.tsx"
+    couche: msw
+    ordre: 1
+    duree_estimee_s: 14
+    prerequis: ["handlers GET/POST/PATCH/DELETE /views", "stub window.confirm"]
+    ids_matrice: [CKP-MSW-070, CKP-MSW-071, CKP-MSW-072, CKP-MSW-073, CKP-MSW-074, CKP-MSW-075, CKP-MSW-076, CKP-DB-077]
+
+  - nom: "export-csv"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/export-csv.msw.test.tsx"
+    couche: msw
+    ordre: 2
+    duree_estimee_s: 8
+    prerequis: ["stub URL.createObjectURL + anchor click"]
+    ids_matrice: [CKP-MSW-080, CKP-MSW-081, CKP-MSW-082, CKP-MSW-083]
+
+  - nom: "command-palette-cockpit"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/command-palette.msw.test.tsx"
+    couche: msw
+    ordre: 2
+    duree_estimee_s: 9
+    prerequis: ["cmdk monté"]
+    ids_matrice: [CKP-MSW-090, CKP-MSW-091, CKP-MSW-092, CKP-MSW-093, CKP-MSW-094]
+
+  - nom: "detail-page"
+    fichier_spec: "apps/web/src/app/admin/emails/transactional/[id]/__qa__/detail.msw.test.tsx"
+    couche: msw
+    ordre: 2
+    duree_estimee_s: 11
+    prerequis: ["factory timeline events"]
+    ids_matrice: [CKP-MSW-100, CKP-MSW-102, CKP-MSW-103, CKP-MSW-104, CKP-MSW-105]
+
+  - nom: "a11y-i18n"
+    fichier_spec: "apps/web/src/components/admin/emails/cockpit/__qa__/a11y-i18n.msw.test.tsx"
+    couche: msw
+    ordre: 2
+    duree_estimee_s: 6
+    prerequis: []
+    ids_matrice: [CKP-A11Y-120, CKP-A11Y-121, CKP-A11Y-122, CKP-I18N-123]
+
+  - nom: "cockpit-incident-e2e"
+    fichier_spec: "apps/web/e2e/emails-cockpit-incident.spec.ts"
+    couche: playwright
+    ordre: 9
+    duree_estimee_s: 70
+    prerequis:
+      - "projet setup (storageState .auth/admin.json)"
+      - "build local + DB de test seedée (200 failed) — JAMAIS la prod"
+      - "stub SMTP (Mailpit) + déclenchement manuel cron email-outbox"
+    ids_matrice: [CKP-E2E-110, CKP-E2E-111, CKP-E2E-112, CKP-MSW-101]

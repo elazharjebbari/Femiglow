@@ -1,0 +1,96 @@
+module: "05-automations"
+ref_inventaire: [F-050, F-051, F-052, F-053, F-054, F-055, F-056, F-057, F-058]
+description: >
+  Plan d'exécution machine-lisible du module Automations. Doctrine
+  "promesse UI = comportement réel" : chaque réglage exposé a un test de
+  câblage. Les suites marquées expect_red encodent l'oracle CIBLE et doivent
+  échouer sur l'implémentation actuelle (audit 2026-06-03) jusqu'au fix.
+
+prerequisites:
+  db:
+    name: femiglow_test
+    migrate: "drizzle-kit migrate (vraies migrations)"
+    truncate_between_tests: true
+    tables: [email_automation, email_automation_run, lead_tag, leads, email_outbox, email_event, user_event, email_suppression]
+  env:
+    - MAIL_UNSUB_TOKEN_SECRET=test-secret-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    - CRON_SECRET=test-cron-secret
+  fakes:
+    - "@/lib/db/client mocké via makeFakeDrizzle pour les suites unit"
+    - "sendTransactional mocké pour les suites runner unit"
+    - "MSW server (src/test/msw/server) pour les suites composant"
+  clock: "vi.useFakeTimers() pour quiet-hours/cooldown/wait ; now injecté dans tickAutomation(now)"
+
+suites:
+  - id: AUT-UNIT-frequency
+    file: specs/frequency-quiet-hours.test.ts
+    layer: unit
+    runner: vitest
+    targets: [src/lib/mail/automation/frequency.ts]
+    covers: [AUT-UNIT-030, AUT-UNIT-031, AUT-UNIT-032, AUT-UNIT-033, AUT-UNIT-034, AUT-UNIT-035, AUT-UNIT-036, AUT-UNIT-037, AUT-UNIT-038, AUT-UNIT-040, AUT-UNIT-042, AUT-UNIT-043, AUT-UNIT-044]
+    expect_red: true
+    notes: "table-driven heures x tz x DST ; encode l'oracle CIBLE wall-clock local"
+
+  - id: AUT-INT-runner-recovery
+    file: specs/runner-recovery.integration.test.ts
+    layer: integration
+    runner: vitest
+    db: true
+    targets: [src/lib/mail/automation/runner.ts, src/lib/mail/automation/resume.ts]
+    covers: [AUT-INT-090, AUT-INT-091, AUT-INT-092, AUT-INT-093, AUT-INT-081, AUT-INT-110, AUT-INT-113, AUT-INT-114, AUT-INT-115]
+    expect_red: partial
+    notes: "claim concurrent réel, crash mid-tick, orphelin running+nextActionAt=NULL, wait_for_event timeout abort"
+    serialize: true
+
+  - id: AUT-MSW-wizard
+    file: specs/automation-wizard.msw.test.tsx
+    layer: component
+    runner: vitest
+    msw: true
+    targets: [src/components/admin/emails/automation/AutomationWizard.tsx]
+    covers: [AUT-MSW-130, AUT-MSW-135, AUT-MSW-138, AUT-MSW-139, AUT-MSW-140, AUT-MSW-141, AUT-MSW-142, AUT-MSW-143]
+    notes: "grille d'échecs sur submit ; anti faux-succès ; anti double-submit"
+
+  - id: AUT-INT-triggers-wiring
+    file: specs/triggers-wiring.integration.test.ts
+    layer: integration
+    runner: vitest
+    db: true
+    targets: [src/lib/mail/automation/triggers.ts]
+    covers: [AUT-INT-001, AUT-INT-002, AUT-INT-010, AUT-INT-011, AUT-INT-012, AUT-INT-017, AUT-INT-046, AUT-INT-050, AUT-INT-051]
+    expect_red: true
+    optional: true
+    notes: "câblage triggerType/conditions/cooldown/dailyCap — RED tant que dispatcher absent"
+
+  - id: AUT-INT-steps-failure
+    file: specs/step-failure.integration.test.ts
+    layer: integration
+    runner: vitest
+    db: true
+    targets: [src/lib/mail/automation/runner.ts, src/lib/mail/automation/step-handlers]
+    covers: [AUT-INT-064, AUT-INT-066, AUT-INT-068, AUT-UNIT-070, AUT-INT-071]
+    expect_red: true
+    optional: true
+    notes: "échecs tag/update_lead/webhook ne doivent pas avancer ; webhook timeout"
+
+  - id: AUT-E2E-journeys
+    file: e2e/emails-automations.spec.ts
+    layer: e2e
+    runner: playwright
+    base_url: local-test-build
+    covers: [AUT-E2E-160, AUT-E2E-161, AUT-E2E-162, AUT-E2E-163]
+    optional: true
+    notes: "scénarios S1/S2/S3/S4 bout-en-bout via Mailpit + POST cron"
+
+execution_order:
+  - AUT-UNIT-frequency
+  - AUT-MSW-wizard
+  - AUT-INT-runner-recovery
+  - AUT-INT-triggers-wiring
+  - AUT-INT-steps-failure
+  - AUT-E2E-journeys
+
+non_flakiness:
+  - "aucun sleep ; findBy*/waitFor (composant), expect.poll (intégration)"
+  - "horloge fake pour quiet-hours/wait ; now injecté dans tickAutomation"
+  - "suites DB sérialisées par fichier"

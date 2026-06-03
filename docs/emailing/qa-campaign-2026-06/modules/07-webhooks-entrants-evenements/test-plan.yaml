@@ -1,0 +1,91 @@
+# Test plan — Module 07 : Webhooks entrants & événements
+# Machine-lisible : pilotable par 04-runbook.md.
+module: "07-webhooks-entrants-evenements"
+refs_inventaire: [F-070, F-071, F-072, F-073, F-074]
+matrix: test-matrix.csv
+
+prerequis:
+  env:
+    - FEMIGLOW_STALWART_WEBHOOK_SECRET   # secret webhook Stalwart (40 chars)
+    - LISTMONK_WEBHOOK_SECRET            # secret HMAC Listmonk
+    - DATABASE_URL_TEST                  # Postgres de test migree (couche 3)
+    - LISTMONK_INTERNAL_URL              # interceptee par MSW (blocklist)
+  fixtures:
+    dir: fixtures/stalwart/ + fixtures/listmonk/
+    contenu:
+      - delivered.json
+      - bounce-hard-550.json
+      - bounce-soft-452.json
+      - bounce-552-mailbox-full.json
+      - bounce-421-service-unavailable.json
+      - complaint.json
+      - queued.json
+      - rescheduled.json
+      - no-message-id.json
+      - truncated.json
+      - unknown-event.json
+      - listmonk-bounce-hard.json
+      - listmonk-campaign-completed.json
+  harnais:
+    - src/lib/mail/__tests__/_helpers/fake-drizzle.ts   # existant
+    - src/test/db/setup.ts                              # truncateEmailTables
+    - src/test/msw/server.ts                            # blocklist Listmonk
+
+suites:
+  - id: unit-parsers
+    couche: unit
+    fichiers:
+      - src/lib/mail/webhooks/stalwart-parser.test.ts
+      - src/lib/mail/webhooks/listmonk-parser.test.ts
+    cas: [WHK-UNIT-001..016, WHK-UNIT-SIG]
+    ordre: 1
+    isolation: pure
+
+  - id: contract-stalwart
+    couche: contract
+    fichiers:
+      - specs/stalwart-contract.test.ts
+    cas: [WHK-CT-001..021]
+    ordre: 2
+    isolation: fake-drizzle  # pas de vraie DB, table-driven sur fixtures
+
+  - id: contract-listmonk
+    couche: contract
+    fichiers:
+      - specs/listmonk-contract.test.ts   # symetrique a stalwart-contract
+    cas: [WHK-CT-022..034]
+    ordre: 2
+    isolation: fake-drizzle
+
+  - id: bounce-chain-integration
+    couche: integration
+    fichiers:
+      - specs/bounce-chain.integration.test.ts
+    cas: [WHK-INT-001..005, WHK-INT-ORPH, WHK-INT-REPLAY, WHK-INT-CMP-GUARD, WHK-INT-BRIDGE, WHK-INT-SUPCHECK]
+    ordre: 3
+    isolation: serial          # vraie DB, truncate entre tests
+    requiert: [DATABASE_URL_TEST]
+
+  - id: events-page-component
+    couche: component
+    fichiers:
+      - src/app/admin/emails/events/__tests__/page.test.tsx
+    cas: [WHK-MSW-001..006]
+    ordre: 4
+    isolation: msw
+
+  - id: events-e2e
+    couche: e2e
+    fichiers:
+      - e2e/emails-webhooks.spec.ts
+    cas: [WHK-E2E-001, WHK-E2E-002]
+    ordre: 5
+    isolation: playwright
+    requiert: [build_local, mailpit, cron_bearer]
+
+criteres_sortie:
+  - "100% des cas P0 verts"
+  - "Chaque hard!=soft prouve par table-driven (WHK-UNIT-016)"
+  - "Chaine bounce: 5 effets verifies en DB reelle (WHK-INT-001)"
+  - "Anti-rejeu prouve (WHK-INT-REPLAY counts==1)"
+  - "Orphelin persiste, pas de 200 muet (WHK-INT-ORPH)"

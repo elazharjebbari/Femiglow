@@ -1,0 +1,114 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+AUT-INT-001,Toggle actif,Automation active=true + trigger câblé crée exactement 1 run,integration,vitest-db,P0,une ligne email_automation_run insérée status=running,F-050
+AUT-INT-002,Toggle actif,Automation active=false + trigger ne crée aucun run,integration,vitest-db,P0,zero ligne run insérée; triggerAutomation retourne disabled,F-050
+AUT-INT-003,Toggle actif,Passage active=true->false annule les runs running au prochain tick,integration,vitest-db,P0,processRun met status=cancelled finishedAt set nextActionAt=null,F-050
+AUT-INT-004,Toggle actif,Aucun email envoyé pour un run annulé,integration,vitest-db,P0,sendTransactional non appelé pour le run cancelled,F-050
+AUT-INT-005,Toggle actif,Toggle off pendant wait n'envoie pas le send suivant,integration,vitest-db,P1,run cancelled avant d'atteindre le step send,F-050
+AUT-INT-010,Trigger event,user_event eventName==triggerConfig.eventName crée un run,integration,vitest-db,P0,run inséré pour l'automation matchée (ECHEC attendu: dispatcher absent),F-051
+AUT-INT-011,Trigger event,user_event d'un autre nom ne crée aucun run,integration,vitest-db,P0,zero run pour event non matché,F-051
+AUT-INT-012,Trigger event,triggerConditions non satisfaites bloquent l'enrôlement,integration,vitest-db,P0,zero run quand lead ne matche pas la condition,F-051
+AUT-INT-013,Trigger event,triggerConditions satisfaites enrôlent le lead,integration,vitest-db,P0,un run inséré quand lead matche,F-051
+AUT-INT-014,Trigger schedule,triggerType=schedule enrôle l'audience à l'heure cron,integration,vitest-db,P1,runs créés pour chaque membre d'audience au tick planifié,F-051
+AUT-INT-015,Trigger subscription,newsletter.subscribed enrôle l'inscrit,integration,vitest-db,P1,un run pour le nouvel abonné,F-051
+AUT-INT-016,Trigger webhook,payload webhook signé crée un run,integration,vitest-db,P1,run créé depuis payload externe valide; payload non signé rejeté,F-051
+AUT-INT-017,Trigger câblage,regression:F-051 triggerType lu par le runtime,integration,vitest-db,P0,le champ triggerType produit un effet observable (RED tant que non câblé),F-051
+AUT-INT-018,Trigger cart-abandoned-1h,seul trigger câblé enrôle avec contexte réel pas placeholder,integration,vitest-db,P1,contextJson contient vraies vars panier non figées,F-058
+AUT-UNIT-030,Quiet hours,23h00 Casablanca différé à 08h00 lendemain,unit,vitest,P0,applyQuietHours retourne 08:00 locale Casablanca,F-052
+AUT-UNIT-031,Quiet hours,"Heure dans la fenêtre [08:00,22:00] non modifiée",unit,vitest,P0,nextActionAt retourné inchangé,F-052
+AUT-UNIT-032,Quiet hours,07:59 Casablanca différé à 08:00 même jour,unit,vitest,P0,décalage de +1 min vers start local,F-052
+AUT-UNIT-033,Quiet hours,Fenêtre enjambant minuit 22:00->08:00 gérée,unit,vitest,P0,00:30 traité comme hors fenêtre nuit -> différé 08:00,F-052
+AUT-UNIT-034,Quiet hours,Offset tz appliqué en local pas en UTC,unit,vitest,P0,résultat correct pour Africa/Casablanca UTC+1 (RED sur setUTCMinutes),F-052
+AUT-UNIT-035,Quiet hours,Transition DST printemps marocaine,unit,vitest,P1,heure différée reste 08:00 wall-clock malgré bascule offset,F-052
+AUT-UNIT-036,Quiet hours,Transition DST automne marocaine,unit,vitest,P1,pas de double-différé ni d'envoi à 07:00,F-052
+AUT-UNIT-037,Quiet hours,quietHoursEnabled=false bypass total,unit,vitest,P1,nextActionAt inchangé quel que soit l'heure,F-052
+AUT-UNIT-038,Quiet hours,Fenêtre vide start==end ne boucle pas,unit,vitest,P2,fonction termine sans NaN ni boucle,F-052
+AUT-UNIT-039,Quiet hours,start invalide (non HH:mm) retourne valeur sûre,unit,vitest,P2,nextActionAt inchangé pas de crash,F-052
+AUT-UNIT-040,Quiet hours,minute non nulle dans start respectée (08:30),unit,vitest,P1,différé à 08:30 pas 08:00,F-052
+AUT-UNIT-041,Quiet hours,tz UTC nominal contrôle (sanity),unit,vitest,P1,comportement attendu en UTC,F-052
+AUT-UNIT-042,Quiet hours,table-driven 24 heures x 3 tz,unit,vitest,P0,chaque cas matche l'oracle attendu de la table,F-052
+AUT-UNIT-043,Quiet hours,résultat déterministe (pas de Date.now caché),unit,vitest,P1,deux appels identiques retournent même Date,F-052
+AUT-UNIT-044,Quiet hours,différé jamais dans le passé,unit,vitest,P0,résultat >= nextActionAt entrant,F-052
+AUT-UNIT-045,Quiet hours,câblage regression:F-052 appelé par le runner,integration,vitest-db,P0,applyQuietHours influence nextActionAt du run (RED: jamais importé),F-052
+AUT-INT-046,Cooldown,Deux triggers à moins de cooldownSeconds -> un seul run,integration,vitest-db,P0,second trigger retourne duplicate/blocked aucun 2e run,F-052
+AUT-INT-047,Cooldown,Trigger après cooldown expiré -> nouveau run,integration,vitest-db,P1,un 2e run créé après la fenêtre,F-052
+AUT-INT-048,Cooldown,cooldownSeconds=0 désactive le check,integration,vitest-db,P2,checkCooldown retourne blocked=false immédiat,F-052
+AUT-INT-049,Cooldown,câblage regression:F-052 checkCooldown appelé au trigger,integration,vitest-db,P0,deux triggers rapprochés bloqués (RED: jamais appelé),F-052
+AUT-INT-050,Daily cap,(N+1)-ième run du jour bloqué,integration,vitest-db,P0,checkDailyCap blocked=true au N+1,F-052
+AUT-INT-051,Daily cap,Compteur remis à zéro à minuit Casablanca pas UTC,integration,vitest-db,P0,run à 00:30 Casablanca compte dans le nouveau jour (RED: setHours serveur),F-052
+AUT-INT-052,Daily cap,dailyCap=null désactive,integration,vitest-db,P2,checkDailyCap blocked=false,F-052
+AUT-INT-060,Step send,send réussi avance le run et append outboxId,integration,vitest-db,P0,outboxIds contient l'outboxId; path avance,F-053
+AUT-INT-061,Step send,template inconnu -> run errored sans avancer,integration,vitest-db,P0,status=errored erroredReason set,F-053
+AUT-INT-062,Step wait,wait positionne nextActionAt=now+durationMs,integration,vitest-db,P0,nextActionAt == now+duration status=running,F-053
+AUT-INT-063,Step tag add,tag add insère lead_tag,integration,vitest-db,P0,ligne lead_tag créée onConflictDoNothing,F-053
+AUT-INT-064,Step tag echec,tag sur email sans lead NE doit pas avancer silencieusement,integration,vitest-db,P0,run errored ou bloqué (RED: advance malgré ok=false),F-053
+AUT-INT-065,Step update_lead,update_lead status valide modifie le lead,integration,vitest-db,P1,leads.status mis à jour,F-053
+AUT-INT-066,Step update_lead echec,status invalide ne doit pas avancer silencieusement,integration,vitest-db,P0,run errored/bloqué (RED: reason invalid_status ignoré),F-053
+AUT-INT-067,Step webhook,webhook 200 avance le run,integration,vitest-db,P1,run avance ok=true,F-053
+AUT-INT-068,Step webhook echec,webhook 500/erreur NE doit pas avancer silencieusement,integration,vitest-db,P0,run errored/retry (RED: advance malgré ok=false),F-053
+AUT-INT-069,Step webhook SSRF,url interne/non-https bloquée,unit,vitest,P0,handleWebhookStep reason https_only/internal_host_blocked,F-053
+AUT-UNIT-070,Step webhook timeout,endpoint lent annulé par timeout,unit,vitest,P0,fetch annulé via AbortSignal (RED: aucun timeout),F-053
+AUT-INT-071,Step webhook timeout,webhook lent ne bloque pas le tick entier,integration,vitest-db,P0,tick termine sous maxDuration; run non bloquant,F-053
+AUT-INT-080,Idempotence send,re-claim du même step ne renvoie pas (idempotencyKey),integration,vitest-db,P0,sendTransactional retourne duplicate pas de 2e outbox,F-053
+AUT-INT-081,Crash mid-tick send,crash entre send et advance puis re-tick = pas de double email,integration,vitest-db,P0,1 seul outbox pour le step après recovery,F-054
+AUT-INT-082,Ordre send/advance,advance commit avant ou idempotent avec send,integration,vitest-db,P0,aucun re-jeu observable même si crash (cible),F-053
+AUT-INT-083,Idempotence path,changement de path après édition ne re-permet pas un renvoi,integration,vitest-db,P0,idempotencyKey stable malgré ré-indexation (RED),F-056
+AUT-INT-090,Run orphelin,run running avec nextActionAt=NULL jamais re-sélectionné,integration,vitest-db,P0,sweep des orphelins ré-arme nextActionAt (RED: aucun sweep),F-054
+AUT-INT-091,Claim concurrent,deux ticks concurrents ne traitent pas le même run,integration,vitest-db,P0,SKIP LOCKED -> chaque run traité une fois,F-054
+AUT-INT-092,Crash recovery,run claimé puis crash recover au tick suivant,integration,vitest-db,P0,run repris et avance (RED si nextActionAt=NULL),F-054
+AUT-INT-093,Batch isolation,un run errored ne casse pas le batch,integration,vitest-db,P0,errored++ et autres runs traités,F-054
+AUT-INT-100,Edition runs en cours,édition réordonnant les steps ne rejoue pas le mauvais step,integration,vitest-db,P0,run continue le step logique d'origine (RED: index cassé),F-056
+AUT-INT-101,Edition runs en cours,suppression d'un step en vol ne saute pas un envoi,integration,vitest-db,P0,run ne complete pas prématurément (RED: getStepAtPath null),F-056
+AUT-INT-102,Edition runs en cours,steps versionnés snapshot au trigger,integration,vitest-db,P0,run garde stepsVersion figée (cible),F-056
+AUT-INT-103,Edition runs en cours,ajout de step en fin n'affecte pas runs avancés,integration,vitest-db,P1,runs en cours inchangés,F-056
+AUT-INT-104,Edition runs en cours,40 runs en wait au step2 pendant édition (scénario S2),integration,vitest-db,P0,aucun run ne rejoue step0 ni ne saute step3,F-056
+AUT-INT-105,Suppression automation,delete avec runs en cours respecte la FK,integration,vitest-db,P0,pas de violation FK; soft-delete (RED: hard-delete),F-056
+AUT-INT-106,Suppression automation,delete annule les runs running,integration,vitest-db,P0,runs passés à cancelled (cible),F-056
+AUT-INT-107,Suppression automation,runs orphelins après delete inexistants,integration,vitest-db,P0,aucun run pointant vers automation supprimée,F-056
+AUT-INT-110,wait_for_event entrée,step met status=waiting_for_event + awaitingUntil,integration,vitest-db,P0,awaitingEventName et awaitingUntil renseignés,F-057
+AUT-INT-111,wait_for_event resume,event correspondant réveille le run une fois,integration,vitest-db,P0,status=running currentStep avancé une seule fois,F-057
+AUT-INT-112,wait_for_event resume,event non correspondant ne réveille pas,integration,vitest-db,P1,run reste waiting_for_event,F-057
+AUT-INT-113,wait_for_event timeout continue,onTimeout=continue avance au step suivant,integration,vitest-db,P0,sweep met running et run avance,F-057
+AUT-INT-114,wait_for_event timeout abort,onTimeout=abort termine le run,integration,vitest-db,P0,run cancelled/errored (RED: abort ignoré),F-057
+AUT-INT-115,wait_for_event course,resume et sweep concurrents n'avancent pas deux fois,integration,vitest-db,P0,une seule avance du path (RED: pas de verrou),F-057
+AUT-INT-116,wait_for_event cap,plus de 50 runs en attente tous réveillés,integration,vitest-db,P1,pagination au-delà de 50 (RED: cap dur),F-057
+AUT-INT-117,wait_for_event expiré,event après awaitingUntil ne réveille pas,integration,vitest-db,P1,"gt(awaitingUntil,now) exclut les expirés",F-057
+AUT-UNIT-120,Condition evaluator,lead absent -> condition false documenté,unit,vitest,P1,evaluateConditionAgainstUser retourne false sans lead,F-053
+AUT-UNIT-121,Condition evaluator,lead présent matchant -> true,integration,vitest-db,P1,retourne true,F-053
+AUT-UNIT-122,Condition evaluator,branch avec lead absent prend ifFalse,integration,vitest-db,P1,descendToExecutable choisit ifFalse,F-053
+AUT-UNIT-123,Condition evaluator,distinguer lead absent de condition non satisfaite (cible),unit,vitest,P2,API expose absent vs unmatched (RED),F-053
+AUT-UNIT-124,Step path,nextPath sort d'une branche vers le parent,unit,vitest,P1,path remonte ifTrue/ifFalse correctement,F-053
+AUT-UNIT-125,Step path,getStepAtPath hors borne retourne null,unit,vitest,P1,null pour index >= length,F-053
+AUT-UNIT-126,Step path,isValidPath rejette segment branch non précédé d'un number,unit,vitest,P2,"false pour [ifTrue,0]",F-053
+AUT-UNIT-127,Step path,descendToExecutable branche vide saute la branche,unit,vitest,P1,passe au nextPath quand subList vide,F-053
+AUT-UNIT-128,Step types Zod,wait_for_event eventName regex validée,unit,vitest,P2,rejette UPPER ou espaces,F-053
+AUT-UNIT-129,Step types Zod,webhook url non-url rejetée par Zod,unit,vitest,P2,parse échoue sur url invalide,F-053
+AUT-MSW-130,Wizard identité,slug kebab-case validé côté client,component,vitest-msw,P1,erreur affichée si slug invalide bouton suivant désactivé,F-051
+AUT-MSW-131,Wizard identité,sélection triggerType expose les champs config,component,vitest-msw,P1,champ eventName visible pour event,F-051
+AUT-MSW-132,Wizard étapes,ajout step send requiert un template,component,vitest-msw,P1,validation bloque submit sans template,F-051
+AUT-MSW-133,Wizard étapes,branch imbriquée éditable ifTrue/ifFalse,component,vitest-msw,P1,sous-steps rendus et modifiables,F-051
+AUT-MSW-134,Wizard étapes,wait minutes converti en durationMs,component,vitest-msw,P2,30 min -> 1800000 ms,F-053
+AUT-MSW-135,Wizard fréquence,quiet hours HH:mm validé,component,vitest-msw,P1,25:00 rejeté message visible,F-052
+AUT-MSW-136,Wizard fréquence,daily cap entier positif,component,vitest-msw,P2,valeur <1 rejetée,F-052
+AUT-MSW-137,Wizard revue,récap fidèle aux saisies,component,vitest-msw,P1,récap affiche slug trigger steps fréquence,F-051
+AUT-MSW-138,Wizard submit,200 -> redirection liste + toast succès,component,vitest-msw,P0,createAutomation appelée navigation vers liste,F-051
+AUT-MSW-139,Wizard submit,401 -> message session pas de faux succès,component,vitest-msw,P0,alert session aucune navigation état conservé,F-051
+AUT-MSW-140,Wizard submit,422 slug dupliqué -> champ slug en erreur,component,vitest-msw,P0,message validation slug already used,F-051
+AUT-MSW-141,Wizard submit,500 -> message générique + retry possible,component,vitest-msw,P0,alert erreur état du wizard conservé,F-051
+AUT-MSW-142,Wizard submit,timeout/hang -> loading visible pas de double-submit,component,vitest-msw,P0,bouton désactivé pendant l'appel un seul POST,F-051
+AUT-MSW-143,Wizard submit,network error -> message réseau,component,vitest-msw,P1,alert réseau état conservé,F-051
+AUT-MSW-144,Liste toggle,clic toggle 200 met à jour l'état,component,vitest-msw,P0,badge actif/inactif reflète la réponse,F-050
+AUT-MSW-145,Liste toggle,toggle 500 -> état antérieur conservé,component,vitest-msw,P0,pas de faux succès toggle revient à l'état initial,F-050
+AUT-MSW-146,Liste toggle,toggle 401 -> message session,component,vitest-msw,P1,alert session toggle non basculé,F-050
+AUT-MSW-147,Liste delete,suppression 409 (runs en cours) message clair,component,vitest-msw,P1,message refus avec raison FK,F-056
+AUT-MSW-148,Liste delete,suppression 200 retire la ligne,component,vitest-msw,P2,ligne disparait de la liste,F-056
+AUT-MSW-150,Detail run,timeline affiche les steps dans l'ordre,component,vitest-msw,P1,étapes ordonnées avec horodatage,F-055
+AUT-MSW-151,Detail run,timeline reflète status running/waiting/completed,component,vitest-msw,P1,badge status fidèle à la donnée,F-055
+AUT-MSW-152,Detail run,outboxIds liés aux emails affichés,component,vitest-msw,P1,liens vers les outbox du run,F-055
+AUT-MSW-153,Detail run,run errored montre erroredReason,component,vitest-msw,P0,raison d'erreur visible non masquée,F-055
+AUT-MSW-154,Detail run,run waiting_for_event montre awaitingUntil,component,vitest-msw,P1,échéance d'attente affichée,F-055
+AUT-MSW-155,Detail run,500 sur fetch détail -> message erreur,component,vitest-msw,P1,pas d'écran vide message d'erreur,F-055
+AUT-MSW-156,Detail run,404 run inexistant -> état vide explicite,component,vitest-msw,P2,message run introuvable,F-055
+AUT-E2E-160,Parcours welcome,séquence bienvenue 3 emails 7j avec désabo au milieu (S1),e2e,playwright,P0,emails 1-2 envoyés email3 supprimé après unsub,F-053
+AUT-E2E-161,Parcours édition,admin édite pendant 40 runs en wait step2 (S2),e2e,playwright,P0,aucun run ne rejoue ni saute après édition,F-056
+AUT-E2E-162,Parcours wait_for_event,run attend order.delivered puis envoie review,e2e,playwright,P1,email review envoyé seulement après l'event,F-057
+AUT-E2E-163,Parcours quiet hours,run programmé 23h Casablanca envoyé à 08h,e2e,playwright,P1,email part après 08:00 locale,F-052
