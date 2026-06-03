@@ -18,10 +18,10 @@
  * Mode mémoire : ne fait rien (les `chat_lead` ne sont pas en
  * memoryStore — uniquement en Postgres via `chatDb`).
  */
-import { and, gt, isNull, lt, sql } from 'drizzle-orm';
+import { and, gt, isNotNull, isNull, lt, sql } from 'drizzle-orm';
 
 import { chatDb } from '@/lib/chat/db/client';
-import { chatLead } from '@/lib/chat/db/schema';
+import { chatLead, type ChatLeadRow } from '@/lib/chat/db/schema';
 import { logger } from '@/lib/logging/logger';
 
 import { dispatchCartAbandonWebhook } from './sources/from-cart-abandon';
@@ -47,6 +47,49 @@ export interface ScanCartAbandonResult {
 const DEFAULT_IDLE_MS = 30 * 60 * 1000;
 const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_LIMIT = 50;
+
+/** Champs minimaux requis pour juger l'éligibilité d'un lead au cart-abandon. */
+export type CartAbandonCandidate = Pick<
+  ChatLeadRow,
+  'cartSnapshot' | 'phoneE164' | 'phoneRaw' | 'purchasedAt' | 'abandonWebhookAt' | 'createdAt'
+>;
+
+export interface CartAbandonEligibilityOpts {
+  /** Horodatage de référence (Date.now()). */
+  now: number;
+  /** Délai d'inactivité requis avant tentative (ms). */
+  idleMs: number;
+  /** TTL anti-replay (ms). */
+  maxAgeMs: number;
+}
+
+/**
+ * Prédicat PUR d'éligibilité au webhook `cart.abandoned`.
+ *
+ * Règle clé (fix double-envoi) : un « panier abandonné » EXIGE un panier
+ * (`cart_snapshot IS NOT NULL`). Les leads conversationnels du chat
+ * (`source='chat_widget'` — rappel, manuel, inline-contact…) n'ont jamais de
+ * panier → ils sont exclus et ne reçoivent QUE leur webhook `lead.created`.
+ * Seuls les leads du tunnel (`wizard_kit`, qui portent un snapshot) restent
+ * éligibles. Source unique de vérité, utilisée par le scanner ET testée à part.
+ */
+export function isCartAbandonEligible(
+  lead: CartAbandonCandidate,
+  opts: CartAbandonEligibilityOpts,
+): boolean {
+  // Pas de panier → ce n'est pas un panier abandonné (exclut chat_widget & co).
+  if (lead.cartSnapshot == null) return false;
+  // Phone-gate matériel.
+  if (!lead.phoneE164 && !lead.phoneRaw) return false;
+  // Déjà converti ou déjà notifié → stop.
+  if (lead.purchasedAt != null) return false;
+  if (lead.abandonWebhookAt != null) return false;
+  const created = lead.createdAt.getTime();
+  // Trop récent (seuil d'inaction non atteint) ou trop vieux (anti-replay).
+  if (created >= opts.now - opts.idleMs) return false;
+  if (created <= opts.now - opts.maxAgeMs) return false;
+  return true;
+}
 
 export async function scanAndDispatchCartAbandon(
   opts: ScanCartAbandonOptions = {},
@@ -75,6 +118,10 @@ export async function scanAndDispatchCartAbandon(
     .from(chatLead)
     .where(
       and(
+        // Fix double-envoi : un cart.abandoned EXIGE un panier. Exclut les
+        // leads conversationnels (chat_widget : rappel/manuel/inline) qui
+        // n'ont pas de snapshot et ne doivent recevoir QUE leur lead.created.
+        isNotNull(chatLead.cartSnapshot),
         sql`${chatLead.phoneE164} is not null`,
         isNull(chatLead.purchasedAt),
         isNull(chatLead.abandonWebhookAt),
@@ -89,7 +136,20 @@ export async function scanAndDispatchCartAbandon(
   let skipped = 0;
   let disabled = 0;
 
+  const eligibilityOpts: CartAbandonEligibilityOpts = {
+    now: Date.now(),
+    idleMs,
+    maxAgeMs,
+  };
+
   for (const lead of rows) {
+    // Défense en profondeur : re-valide en JS le même prédicat que le WHERE
+    // SQL. Si une ligne sans panier remontait (filtre SQL altéré), on la
+    // saute proprement sans émettre de faux cart.abandoned.
+    if (!isCartAbandonEligible(lead, eligibilityOpts)) {
+      skipped += 1;
+      continue;
+    }
     try {
       const result = await dispatchCartAbandonWebhook(lead);
       if (result.status === 'sent') sent += 1;

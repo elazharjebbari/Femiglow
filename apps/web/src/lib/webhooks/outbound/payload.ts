@@ -60,6 +60,9 @@ export const outboundPayloadSchema = z
     product_sku: z.string().trim().max(100).optional(),
     note: z.string().trim().max(2000).optional(),
     source_channel: z.string().trim().max(60).optional(),
+    // Étape/statut métier du lead pour l'opérateur CRM. Les leads issus du
+    // chat sont des leads FINALISÉS (`complete`) — pas des paniers abandonnés.
+    lead_status: z.enum(['complete', 'partial', 'abandoned']).optional(),
     ip: z.string().trim().max(64).optional(),
   })
   .strict();

@@ -130,7 +130,8 @@ describe('dispatchInlineContactWebhook', () => {
 
       expect(result.status).toBe('sent');
       expect(captured.event).toBe('chat_lead.created');
-      expect(captured.idem).toBe('inline-contact:cl_inline');
+      // Idempotency unifiée avec from-chat-lead pour dédupe inline↔form.
+      expect(captured.idem).toBe('chat-lead:cl_inline');
       expect(captured.body).toMatchObject({
         id: 'inline-contact:cl_inline',
         full_name: 'Amina',
@@ -138,6 +139,7 @@ describe('dispatchInlineContactWebhook', () => {
         source: 'chat_widget',
         source_channel: 'chat:inline-contact',
         note: expect.stringContaining('trigger:inline-contact'),
+        lead_status: 'complete',
         currency: 'MAD',
         quantity: 1,
       });
@@ -268,7 +270,7 @@ describe('dispatchInlineContactWebhook', () => {
         phone: '0612345678',
         source_channel: 'chat:inline-contact',
       });
-      expect(captured.idem).toBe('chat_lead.created:inline-contact:cl_inline');
+      expect(captured.idem).toBe('chat_lead.created:chat-lead:cl_inline');
     });
 
     it('dispatche via adminEventNames fallback vers lead.created', async () => {

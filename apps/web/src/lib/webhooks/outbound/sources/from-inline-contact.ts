@@ -65,7 +65,13 @@ export async function dispatchInlineContactWebhook(
   const result = await dispatchToAllChannels({
     source: 'inline-contact',
     sourceId: lead.id,
-    idempotencyKey: `inline-contact:${lead.id}`,
+    // Idempotency UNIFIÉE avec `from-chat-lead` (`chat-lead:<id>`) : un même
+    // lead chat ne doit produire qu'UNE delivery `lead.created`. Si le visiteur
+    // tape son numéro (webhook inline) PUIS soumet le formulaire (upgrade →
+    // from-chat-lead), les deux partagent la clé → l'index unique
+    // `(endpoint, idempotency_key)` dédupe la 2ᵉ (cf. createDelivery + garde
+    // `succeeded` de attemptDelivery). Un seul webhook chat_widget, complet.
+    idempotencyKey: `chat-lead:${lead.id}`,
     eventName: 'chat_lead.created',
     adminEventNames: ['chat_lead.created', 'lead.created'],
     payload: {
@@ -76,6 +82,8 @@ export async function dispatchInlineContactWebhook(
       conversation,
       note: noteParts.join(' | '),
       source_channel: `chat:inline-contact`,
+      // Lead chat finalisé (coordonnées capturées), pas un panier abandonné.
+      lead_status: 'complete' as const,
       quantity: 1,
       currency: 'MAD' as const,
     },

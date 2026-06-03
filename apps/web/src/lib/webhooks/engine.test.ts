@@ -101,6 +101,35 @@ describe('webhook engine: attempt', () => {
     expect(receivedSource).toBe('admin');
   });
 
+  it('NE re-POSTe PAS une delivery déjà succeeded (garde idempotence)', async () => {
+    let fetchCalls = 0;
+    const fetchImpl: typeof fetch = async () => {
+      fetchCalls += 1;
+      return new Response('OK', { status: 200 });
+    };
+    // Delivery terminale `succeeded` (ex. déjà envoyée via une autre source
+    // partageant la même idempotency-key). attemptDelivery doit court-circuiter.
+    const succeeded = {
+      id: 'wd_done',
+      endpointId: 'ep_x',
+      event: 'lead.created' as const,
+      payload: { id: 'lead-1', full_name: 'X', phone: '0661234567' },
+      idempotencyKey: 'chat-lead:cl_x',
+      status: 'succeeded' as const,
+      attemptCount: 1,
+      nextAttemptAt: null,
+      responseStatus: 200,
+      responseBody: 'OK',
+      errorCode: null,
+      latencyMs: 12,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const result = await attemptDelivery(succeeded, { fetchImpl });
+    expect(result.status).toBe('succeeded');
+    expect(fetchCalls).toBe(0); // aucun POST réseau
+  });
+
   it('reprogramme un retry sur 5xx (status pending, nextAttemptAt futur)', async () => {
     const { endpoint } = await createWebhookEndpoint({
       url: 'https://api.example.com/hook',

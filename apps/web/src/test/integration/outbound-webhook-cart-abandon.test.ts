@@ -149,6 +149,7 @@ describe('dispatchCartAbandonWebhook — payload', () => {
     expect(received!.address).toBe('5 Avenue Hassan');
     expect(received!.country).toBe('Maroc');
     expect((received!.note as string)).toContain('cart-abandoned');
+    expect(received!.lead_status).toBe('abandoned');
   });
 
   it('fonctionne sans cartSnapshot (payload minimal)', async () => {
