@@ -22,6 +22,13 @@ export interface CouponWelcomeNoteProps {
   /** Active la copie arabe (RTL). */
   isArabic?: boolean;
   className?: string;
+  /**
+   * Code de fidélité validé dans le champ d'invitation → remonte au parent
+   * (PriceBlock) qui applique le crédit au store et actualise tous les prix.
+   */
+  onCouponValid?: (code: string, valueCents: number) => void;
+  /** Code ré-édité/vidé → retire le crédit (re-validation requise). */
+  onCouponClear?: () => void;
 }
 
 const COPY = {
@@ -46,6 +53,8 @@ export function CouponWelcomeNote({
   endsAtLabel,
   isArabic = false,
   className,
+  onCouponValid,
+  onCouponClear,
 }: CouponWelcomeNoteProps): JSX.Element {
   const t = isArabic ? COPY.ar : COPY.fr;
   return (
@@ -85,7 +94,11 @@ export function CouponWelcomeNote({
           {t.invitation}
         </summary>
         <div className="mt-1">
-          <InvitationCodeField isArabic={isArabic} />
+          <InvitationCodeField
+            isArabic={isArabic}
+            onValid={onCouponValid}
+            onClear={onCouponClear}
+          />
         </div>
       </details>
     </aside>

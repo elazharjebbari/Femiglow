@@ -27,6 +27,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils/cn';
+import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { computePackSavings, formatSavingsLabel } from '@/lib/kit/pack/savings';
 import type { ProductFeed } from '@/lib/products/feed/types';
 import { useTracking } from '@/lib/tracking/use-tracking';
@@ -121,7 +122,22 @@ export function PriceBlock({
   // Prix effectif (promo-aware) — utilisé pour computeSavings et CTA.
   const promo = computePromo(product.priceCents, product.promoPriceCents);
   const compareAtCents = parsePriceCents(hero.priceCompareAt);
+  // Tracking : économie STABLE basée sur le prix serveur (évite de re-fire
+  // l'analytique quand un crédit client change). cf. effet IntersectionObserver.
   const savings = computePackSavings(promo.effectivePriceCents, compareAtCents);
+
+  // Phase 3+ — crédit de fidélité appliqué côté client (wizard-store). Quand un
+  // code valide est saisi (champ du « geste d'accueil » ou du wizard), le crédit
+  // est soustrait de TOUS les prix de la page (XXL, badge, note, détail, CTA),
+  // en cohérence avec le récap du formulaire et le débit serveur (anti-422).
+  const creditCents = Math.max(0, useWizardStore((s) => s.creditCents));
+  const setCoupon = useWizardStore((s) => s.setCoupon);
+  const clearCoupon = useWizardStore((s) => s.clearCoupon);
+  const effectivePriceAfterCredit = Math.max(0, promo.effectivePriceCents - creditCents);
+  const creditApplied = promo.effectivePriceCents - effectivePriceAfterCredit;
+  // Badge économie AFFICHÉ : recalculé avec le crédit (économie totale vs barré).
+  const displaySavings = computePackSavings(effectivePriceAfterCredit, compareAtCents);
+  const formatMoney = (cents: number) => `${(cents / 100).toFixed(0)} ${currencyDisplay}`;
 
   // Social proof condensé — libellé géo prioritaire si défini, sinon
   // fallback sur reviewsCount (compat legacy).
@@ -205,7 +221,7 @@ export function PriceBlock({
           data-testid="pack-price-line"
         >
           <span className="font-display text-5xl text-encre tabular-nums">
-            {(promo.effectivePriceCents / 100).toFixed(0)}{' '}
+            {(effectivePriceAfterCredit / 100).toFixed(0)}{' '}
             <span className="text-2xl text-encre/70">{currencyDisplay}</span>
           </span>
           {hero.priceCompareAt && (
@@ -226,13 +242,13 @@ export function PriceBlock({
             devise du `ProductFeed` pour rester cohérente avec le prix XXL
             (ex : « 347 MAD · 64 % » et pas « 347 € · 64 % » sur un
             produit en MAD). */}
-        {savings && (
+        {displaySavings && (
           <p
             data-testid="pack-savings-badge"
             className="mx-auto inline-flex max-w-fit items-center gap-1 rounded-full bg-[#C28A6E]/12 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-[#8A4F36]"
           >
             {formatSavingsLabel(
-              savings,
+              displaySavings,
               savingsUnit,
               hero.savingsPhrase,
             )}
@@ -245,19 +261,31 @@ export function PriceBlock({
       {welcomeCoupon?.active && promo.active && (
         <CouponWelcomeNote
           isArabic={isArabic}
-          finalPriceLabel={`${(promo.effectivePriceCents / 100).toFixed(0)} ${currencyDisplay}`}
+          finalPriceLabel={formatMoney(effectivePriceAfterCredit)}
           savingsLabel={
             isArabic
               ? `${(promo.savingsCents / 100).toFixed(0)} ${currencyDisplay} هدية على طلبك الأول`
               : `${(promo.savingsCents / 100).toFixed(0)} ${savingsUnit} offerts sur votre première commande du pack`
           }
           endsAtLabel={formatCivilDate(welcomeCoupon.endsAt, isArabic)}
+          onCouponValid={(code, cents) => setCoupon(code, cents)}
+          onCouponClear={() => clearCoupon()}
         />
       )}
 
-      {/* 4 — ValueBreakdownList */}
-      {hero.valueBreakdown && hero.valueBreakdown.length > 0 && (
-        <ValueBreakdownList items={hero.valueBreakdown} />
+      {/* 4 — ValueBreakdownList (+ ligne de crédit fidélité si appliqué) */}
+      {((hero.valueBreakdown && hero.valueBreakdown.length > 0) || creditApplied > 0) && (
+        <ValueBreakdownList
+          items={hero.valueBreakdown ?? []}
+          creditLine={
+            creditApplied > 0
+              ? {
+                  label: isArabic ? 'رصيد الوفاء' : 'Crédit de fidélité',
+                  valueLabel: `−${formatMoney(creditApplied)}`,
+                }
+              : null
+          }
+        />
       )}
 
       {/* 5 — perUsageHint microcopy */}
@@ -276,7 +304,7 @@ export function PriceBlock({
         fullWidth
         productId={product.id}
         productName={product.name}
-        priceCents={promo.effectivePriceCents}
+        priceCents={effectivePriceAfterCredit}
         currency={product.currency}
         accent={ctaAccent === 'champagne' ? undefined : ctaAccent}
         source="pack_section"
