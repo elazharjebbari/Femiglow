@@ -70,6 +70,7 @@ import { PaymentStep } from './steps/PaymentStep';
 import { routes } from '@/lib/routes';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import { getJourneyPurchaseId, readJourneyPurchaseId } from '@/lib/tracking/lead-purchase-cookie';
+import { buildUserDataForEvent } from '@/lib/tracking/build-user-data';
 
 const stepLabels = ['Informations', 'Livraison', 'Confirmation'] as const;
 
@@ -332,15 +333,25 @@ export function CheckoutFlow({ onLeaveModalChange }: CheckoutFlowProps) {
         value: total / 100,
         ...(jpid ? { meta_purchase_eid: jpid } : {}),
       });
-      emit('generate_lead', {
-        // `method` discrimine la SOURCE du lead pour le pont Meta lead→Purchase
-        // (audit meta-lead-as-purchase-2026-06-01). Le serveur ne traite comme
-        // Purchase Meta que les sources éligibles {chat, abandoned_cart}.
-        method: 'abandoned_cart',
-        currency: 'MAD',
-        value: total / 100,
-        ...(jpid ? { meta_purchase_eid: jpid } : {}),
+      // `generate_lead` porte la conversion Google Ads `lead` (method-gatée
+      // {chat,abandoned_cart}) → `userData` pour Enhanced Conversions.
+      const userData = await buildUserDataForEvent('generate_lead', {
+        firstName: values.contact.firstName.trim(),
+        phone: values.contact.phone,
       });
+      emit(
+        'generate_lead',
+        {
+          // `method` discrimine la SOURCE du lead pour le pont Meta lead→Purchase
+          // (audit meta-lead-as-purchase-2026-06-01). Le serveur ne traite comme
+          // Purchase Meta que les sources éligibles {chat, abandoned_cart}.
+          method: 'abandoned_cart',
+          currency: 'MAD',
+          value: total / 100,
+          ...(jpid ? { meta_purchase_eid: jpid } : {}),
+        },
+        { userData },
+      );
       return true;
     } catch (err) {
       setNetworkError(err, 'Impossible de valider vos coordonnées.');

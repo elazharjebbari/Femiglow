@@ -206,6 +206,12 @@ const META_VALUE_EVENTS: ReadonlySet<string> = new Set([
   'lead_capture',
 ]);
 
+// Sources `method` éligibles à la conversion Google Ads `lead` (vrais leads
+// commerciaux). `generate_lead` est aussi émis par contact/newsletter — qui
+// ont leur PROPRE conversion — donc on method-gate pour ne pas polluer `lead`.
+// Même allowlist que le pont Meta lead→Purchase (LEAD_PURCHASE_SOURCES).
+const LEAD_ADS_METHODS = ['chat', 'abandoned_cart'] as const;
+
 // Built-in variables that ship with every GTM container by default.
 // Note: AD_STORAGE / ANALYTICS_STORAGE are NOT built-in variable types
 // (those are consent storage keys, surfaced via the Consent built-in
@@ -576,19 +582,28 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   function ensureAttributionTrigger(
     eventKey: string,
     providerKey: 'meta' | 'google_ads' | 'tiktok' | 'snap',
+    // Filtre méthode optionnel : restreint le fire aux sources éligibles
+    // (ex. lead Google Ads = {chat, abandoned_cart} → exclut les
+    // generate_lead de contact/newsletter qui partagent le même event mais
+    // ne sont PAS des leads commerciaux). Mire le pont Meta lead→Purchase.
+    methodAllowlist?: readonly string[],
   ): string {
-    const cacheKey = `${eventKey}:${providerKey}`;
+    const methodSuffix = methodAllowlist ? `:m=${methodAllowlist.join('+')}` : '';
+    const cacheKey = `${eventKey}:${providerKey}${methodSuffix}`;
     const cached = attributionTriggerCache.get(cacheKey);
     if (cached) return cached;
     // Assure que la DLV attribution.channel existe (idempotent).
     ensureDlv('DLV - attribution.channel', 'attribution.channel');
+    const methodVar = methodAllowlist
+      ? ensureDlv('DLV - method', DATALAYER_PATHS.method)
+      : null;
     const id = nextTrigger();
     triggers.push({
       triggerId: id,
       // NB : pas de ':' dans le nom — GTM rejette le caractère ':' à
       // l'import ("The name contains invalid character"). On utilise
       // un séparateur ' / ' pour rester lisible.
-      name: `CE — ${eventKey} [attr / ${providerKey}]`,
+      name: `CE — ${eventKey} [attr / ${providerKey}${methodAllowlist ? ` / method` : ''}]`,
       type: 'CUSTOM_EVENT',
       // customEventFilter : UN SEUL filtre autorisé par GTM
       // (matching du nom d'event). Si on en met plusieurs, GTM rejette
@@ -628,6 +643,24 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             },
           ],
         },
+        // Condition method (AND) optionnelle — n'émet la conversion que pour
+        // les sources éligibles. Le tableau `filter` autorise plusieurs
+        // conditions (contrairement à `customEventFilter`).
+        ...(methodVar
+          ? [
+              {
+                type: 'MATCH_REGEX' as const,
+                parameter: [
+                  { type: 'TEMPLATE' as const, key: 'arg0', value: methodVar },
+                  {
+                    type: 'TEMPLATE' as const,
+                    key: 'arg1',
+                    value: `^(${methodAllowlist!.join('|')})$`,
+                  },
+                ],
+              },
+            ]
+          : []),
       ],
       parentFolderId: '2',
     });
@@ -809,9 +842,17 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         // broadcast sur tous les canaux — alimente Smart Bidding sans
         // skewer l'attribution primary (clean primary attribution +
         // max volume secondary).
+        // Fix pollution conversion `lead` : `generate_lead` est ÉMIS par
+        // plusieurs sources (wizard/chat MAIS aussi contact/newsletter, cf.
+        // ContactForm/NewsletterForm). On ne compte comme `lead` Google Ads
+        // QUE les vrais leads commerciaux (method ∈ {chat, abandoned_cart}) —
+        // les soumissions contact/newsletter ont leur PROPRE conversion. Même
+        // allowlist que le pont Meta lead→Purchase.
+        const adsMethodGate =
+          labelKey === 'lead' ? LEAD_ADS_METHODS : undefined;
         const adsTriggerId =
           getAttributionMode(event.key, 'google_ads') === 'primary'
-            ? ensureAttributionTrigger(event.key, 'google_ads')
+            ? ensureAttributionTrigger(event.key, 'google_ads', adsMethodGate)
             : triggerId;
         tags.push({
           tagId: nextTag(),

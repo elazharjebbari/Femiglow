@@ -288,14 +288,21 @@ export function useLeadCaptureMutation(): {
         // que le serveur traite comme Meta Purchase (cf.
         // `lib/tracking/server/lead-as-purchase.ts`). `value`/`currency`
         // seulement si `value > 0` (currency orpheline = signal invalide).
-        emit('generate_lead', {
-          method: 'abandoned_cart',
-          lead_id: leadId,
-          ...(jpid ? { meta_purchase_eid: jpid } : {}),
-          ...(typeof leadValue === 'number' && leadValue > 0
-            ? { value: leadValue, currency: cartSnapshot?.currency ?? 'MAD' }
-            : {}),
-        });
+        // `generate_lead` porte DÉSORMAIS la conversion Google Ads `lead`
+        // (method-gatée {chat,abandoned_cart}) → on attache `userData` (mêmes
+        // identifiants hashés que lead_capture) pour Enhanced Conversions.
+        emit(
+          'generate_lead',
+          {
+            method: 'abandoned_cart',
+            lead_id: leadId,
+            ...(jpid ? { meta_purchase_eid: jpid } : {}),
+            ...(typeof leadValue === 'number' && leadValue > 0
+              ? { value: leadValue, currency: cartSnapshot?.currency ?? 'MAD' }
+              : {}),
+          },
+          { userData },
+        );
         return { leadId };
       } catch (e) {
         setError(e);

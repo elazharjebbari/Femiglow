@@ -30,6 +30,7 @@ import type {
   ChatLeadTriggerReason,
 } from '@/lib/chat/contracts';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { buildUserDataForEvent } from '@/lib/tracking/build-user-data';
 import { getJourneyPurchaseId } from '@/lib/tracking/lead-purchase-cookie';
 import { isOptimisticWizardClientEnabled } from '@/lib/checkout/flags';
 
@@ -275,14 +276,26 @@ export function LeadFormBubble({
       // on le porte sur `generate_lead` → le pixel Purchase ET la CAPI utilisent
       // le MÊME eventID → dédup native Meta (+ cookie pour bloquer l'achat réel).
       const jpid = getJourneyPurchaseId();
-      emit('generate_lead', {
-        method: 'chat',
-        lead_id: data.leadId,
-        ...(jpid ? { meta_purchase_eid: jpid } : {}),
-        ...(typeof data.value === 'number' && data.value > 0
-          ? { value: data.value, currency: data.currency ?? 'MAD' }
-          : {}),
+      // Parité « lead chat = vrai lead » : `generate_lead` porte la conversion
+      // Google Ads `lead` (method-gatée {chat,abandoned_cart}) → on attache
+      // `userData` (téléphone + prénom hashés SHA-256) pour Enhanced
+      // Conversions, exactement comme le lead wizard.
+      const userData = await buildUserDataForEvent('generate_lead', {
+        firstName: firstName.trim(),
+        phone: phone.trim(),
       });
+      emit(
+        'generate_lead',
+        {
+          method: 'chat',
+          lead_id: data.leadId,
+          ...(jpid ? { meta_purchase_eid: jpid } : {}),
+          ...(typeof data.value === 'number' && data.value > 0
+            ? { value: data.value, currency: data.currency ?? 'MAD' }
+            : {}),
+        },
+        { userData },
+      );
     } catch (err) {
       // En optimiste l'UI a déjà confirmé : best-effort, pas de retour en erreur.
       if (!optimistic) setLeadFormError((err as Error).message || 'network-error');
