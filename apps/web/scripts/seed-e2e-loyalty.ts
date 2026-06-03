@@ -61,7 +61,26 @@ async function upsertActivatedGrant(): Promise<void> {
   await sql.end();
 }
 
+/**
+ * Garde-fou PROD : ce seed insère un grant de TEST (FG-E2E-0001). Il ne doit
+ * JAMAIS tourner en production. Bloqué si NODE_ENV=production (override explicite
+ * `ALLOW_E2E_SEED=true` pour les rares cas légitimes). En CI, NODE_ENV n'est pas
+ * `production` → le seed E2E reste autorisé.
+ */
+function assertNotProduction(): void {
+  const env = process.env.NODE_ENV ?? 'development';
+  const allow = process.env.ALLOW_E2E_SEED === 'true';
+  if (env === 'production' && !allow) {
+    console.error(
+      '[seed-e2e-loyalty] ❌ Interdit en production (NODE_ENV=production). ' +
+        'Ce seed est réservé aux tests E2E. Pose ALLOW_E2E_SEED=true pour forcer (déconseillé).',
+    );
+    process.exit(1);
+  }
+}
+
 async function main() {
+  assertNotProduction();
   await ensureActiveTemplate();
   await upsertActivatedGrant();
   console.log('SEED_E2E_LOYALTY_OK');
