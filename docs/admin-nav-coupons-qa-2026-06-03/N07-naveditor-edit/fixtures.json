@@ -1,0 +1,25 @@
+{
+  "_note": "Props NavEditor = { initialItems, meta }. threeItems = jeu minimal (3 items dont coupons) pour des assertions lisibles. meta.version pilote le header If-Match (testé en N08).",
+  "meta": { "version": 1, "updatedAt": "2026-06-01T10:00:00.000Z", "updatedBy": { "id": "adm_1", "email": "op@femiglow.local" }, "isDefault": false },
+  "metaDefault": { "version": 0, "updatedAt": "1970-01-01T00:00:00.000Z", "updatedBy": null, "isDefault": true },
+  "threeItems": [
+    { "key": "dashboard", "label": "Tableau de bord", "href": "/admin", "icon": "home", "position": 0 },
+    { "key": "coupons", "label": "Coupons", "href": "/admin/coupons", "icon": "tag", "position": 1 },
+    { "key": "leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": 2 }
+  ],
+  "addedItemShape": { "key": "item-4", "label": "Nouvel item", "href": "/admin/nouveau", "icon": "box", "position": 3 },
+  "edits": {
+    "dupKey": { "rowIndex": 2, "field": "key", "value": "dashboard" },
+    "badHref": { "rowIndex": 1, "field": "href", "value": "admin/promos" },
+    "emptyLabel": { "rowIndex": 0, "field": "label", "value": "" }
+  },
+  "texts": {
+    "addButton": "+ Ajouter un item",
+    "removeAria": "Supprimer Coupons",
+    "upAria": "Monter",
+    "downAria": "Descendre",
+    "errorGlobalPattern": "/erreur\\(s\\) à corriger/",
+    "hrefError": "href doit commencer par /.",
+    "dupKeyError": "Clé \"dashboard\" dupliquée."
+  }
+}

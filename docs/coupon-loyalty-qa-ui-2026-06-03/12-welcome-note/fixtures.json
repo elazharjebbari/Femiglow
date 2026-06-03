@@ -1,0 +1,33 @@
+{
+  "props": {
+    "fr": {
+      "finalPriceLabel": "199 MAD",
+      "savingsLabel": "90 MAD offerts",
+      "endsAtLabel": null,
+      "isArabic": false
+    },
+    "withEndsAt": {
+      "finalPriceLabel": "199 MAD",
+      "savingsLabel": "90 MAD offerts",
+      "endsAtLabel": "Valable jusqu’au 30 juin 2026",
+      "isArabic": false
+    },
+    "ar": {
+      "finalPriceLabel": "199 درهم",
+      "savingsLabel": "90 درهم هدية",
+      "endsAtLabel": null,
+      "isArabic": true
+    }
+  },
+  "expected": {
+    "titleFr": "Votre geste d’accueil est appliqué.",
+    "titleAr": "لقد تم تطبيق هدية الترحيب الخاصة بك.",
+    "finalPrefixFr": "Prix final aujourd’hui :",
+    "nonCumulFr": "Hors cumul.",
+    "nonCumulAr": "غير قابل للجمع.",
+    "invitationFr": "J’ai un code d’invitation",
+    "invitationAr": "لدي رمز دعوة",
+    "borderClass": "border-sauge"
+  },
+  "charte": { "forbiddenPattern": "/[%!]|🎉|⏰/" }
+}

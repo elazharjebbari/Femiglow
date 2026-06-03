@@ -1,0 +1,49 @@
+{
+  "cart": {
+    "base": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "currency": "MAD" }
+    },
+    "negativeCredit": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "currency": "MAD" },
+      "appliedCreditCents": -500
+    },
+    "exactCredit": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "currency": "MAD" },
+      "appliedCreditCents": 19900
+    },
+    "overCredit": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "currency": "MAD" },
+      "appliedCreditCents": 25000
+    },
+    "arabicCurrency": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "currency": "MAD" },
+      "appliedCreditCents": 2000,
+      "currencyLabel": "درهم",
+      "priceCompareAt": "289 MAD"
+    },
+    "welcome": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "compareAtTotalCents": 28900, "currency": "MAD" },
+      "welcomeCoupon": { "active": true }
+    },
+    "welcomePlusCredit": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "compareAtTotalCents": 28900, "currency": "MAD" },
+      "welcomeCoupon": { "active": true },
+      "appliedCreditCents": 2000
+    },
+    "forwardNoWelcome": {
+      "cart": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "compareAtTotalCents": 28900, "currency": "MAD" },
+      "welcomeCoupon": { "active": false, "postPurchaseCreditCents": 2000 }
+    },
+    "empty": {
+      "cart": { "items": [], "totalCents": 0, "currency": "MAD" }
+    }
+  },
+  "expected": {
+    "totalFull": "199 MAD",
+    "totalZero": "0 MAD",
+    "creditFull": "−199 MAD",
+    "economy90": "90 MAD",
+    "terracotta": "#C28A6E"
+  },
+  "charte": { "forbiddenPattern": "/[%!]|🎉|⏰/" }
+}

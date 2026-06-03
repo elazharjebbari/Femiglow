@@ -1,0 +1,21 @@
+feature_id,exigence_metier,invariant,lacune_audit_adressee,fichier_test_cible,statut_impl
+F01,Operateur cree une promo en brouillon,INV-PERM,CouponsManager 0 test,src/components/admin/coupons/CouponsManager.create.test.tsx,fait
+F02,Operateur active/pause/archive une promo,INV-PERM,CouponsManager 0 test,src/components/admin/coupons/CouponsManager.status.test.tsx,fait
+F03,Operateur consulte l'uplift d'une promo,,CouponsManager 0 test,src/components/admin/coupons/CouponsManager.stats.test.tsx,fait
+F04,Operateur consulte les codes fidelite emis,INV-PII,CouponsManager grants 0 test,src/components/admin/coupons/CouponsManager.grants.test.tsx,fait
+F05,Transition de statut securisee,INV-PERM,status route 0 contrat,src/app/api/admin/coupons/[id]/status/route.test.ts,fait
+F06,Stats incrementality fiables,,stats route 0 contrat,src/app/api/admin/coupons/[id]/stats/route.test.ts,fait
+F07,Liste grants filtrable et masquee,INV-PII;INV-PERM,grants filtres non testes,src/app/api/admin/coupons/grants/route.filters.test.ts,fait
+F08,Cliente saisit et valide son code,,InvitationCodeField MSW,src/components/sections/InvitationCodeField.msw.test.tsx,fait
+F09,Cliente ouvre le champ code au checkout,INV-422,AddressStep disclosure 0 test,src/components/checkout/wizard/steps/AddressStep.coupon.test.tsx,fait
+F10,Cliente voit son economie et son credit,INV-NONCUMUL;INV-422,couvert partiel - durcir floor/forward,src/components/checkout/wizard/WizardCartRecap.credit.test.tsx,fait
+F11,Cliente recoit et copie son code,INV-PII,ThankYouStep wiring 0 test,src/components/checkout/wizard/steps/ThankYouStep.loyalty.test.tsx,fait
+F12,Cliente voit le geste d'accueil,,couvert - regression,src/components/sections/CouponWelcomeNote.test.tsx,fait
+F13,Etat coupon/loyalty persiste,,couvert partiel - loyalty/persistance,src/lib/checkout/state/wizard-store.loyalty.test.ts,fait
+F14,Validation code expose tous les motifs,INV-ACTIVATION;INV-VALIDITY,redeem reason non exhaustif,src/app/api/coupons/redeem/route.test.ts,fait
+F15,Offre rescue respecte le bucket,INV-BUCKET,couvert partiel - durcir,src/app/api/coupons/rescue/route.test.ts,fait
+F16,Parcours operateur bout-en-bout,INV-PRICE;INV-PERM;INV-PII,e2e operateur+grants 0,e2e/admin-coupons-loyalty.spec.ts,fait
+F17,Parcours fidelite bout-en-bout,INV-PRICE;INV-IDEMP-PHONE,e2e fidelite 0,e2e/loyalty-issuance.spec.ts,fait
+F18,Redemption client bout-en-bout,INV-422;INV-VALIDITY,e2e redemption 0,e2e/loyalty-redemption.spec.ts,fait
+F19,Parite prix affichage/debit,INV-PRICE;INV-422;INV-BUCKET,integration pricing UI-observable,src/lib/coupons/pricing-integration.test.ts,fait
+F20,Delai activation + unicite telephone,INV-ACTIVATION;INV-IDEMP-PHONE;INV-VALIDITY,regle metier consolidee,src/lib/db/queries/coupon-grant-repo.activation.test.ts,fait

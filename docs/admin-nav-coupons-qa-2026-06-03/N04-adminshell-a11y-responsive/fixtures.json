@@ -1,0 +1,18 @@
+{
+  "_note": "N04 teste a11y/responsive/logout (composant pur). jsdom n'evalue pas les media-queries Tailwind : les oracles 'responsive' portent sur les CLASSES, pas sur la visibilite calculee. Classes ground-truth lues depuis AdminShell.tsx l.57-95.",
+  "a11y": {
+    "adminEmail": "admin@femiglow.ma",
+    "active": "coupons",
+    "navAccessibleName": "Navigation principale"
+  },
+  "responsive": {
+    "ulClassFragments": ["flex", "gap-2", "lg:flex-col", "lg:gap-1"],
+    "asideClassFragments": ["lg:w-60"]
+  },
+  "logout": {
+    "formActionEndsWith": "/api/admin/logout",
+    "formMethod": "post",
+    "formClassFragments": ["hidden", "lg:block"],
+    "buttonAccessibleName": "Se déconnecter"
+  }
+}

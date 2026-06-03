@@ -1,0 +1,21 @@
+id,feature,surface,couche_dominante,risque,invariants,cibles_code,statut
+01,Admin creation coupon (formulaire),admin,Composant+MSW,P0,INV-PERM,CouponsManager.tsx,fait
+02,Admin liste et transitions de statut,admin,Composant+MSW,P0,INV-PERM,CouponsManager.tsx,fait
+03,Admin stats incrementality (uplift),admin,Composant+MSW,P1,,CouponsManager.tsx,fait
+04,Admin section Codes de fidelite emis,admin,Composant+MSW,P0,INV-PII,CouponsManager.tsx,fait
+05,Contrat API status (RBAC publish + lock archived),admin,Integration,P0,INV-PERM,app/api/admin/coupons/[id]/status/route.ts,fait
+06,Contrat API stats (agregation uplift),admin,Integration,P1,,app/api/admin/coupons/[id]/stats/route.ts,fait
+07,Contrat API grants (filtres + masquage PII),admin,Integration,P0,INV-PII;INV-PERM,app/api/admin/coupons/grants/route.ts,fait
+08,Client InvitationCodeField (saisie+validation),client,Composant+MSW,P0,,InvitationCodeField.tsx,fait
+09,Client AddressStep coupon disclosure,client,Composant+MSW,P1,INV-422,steps/AddressStep.tsx,fait
+10,Client WizardCartRecap (economie+credit+floor),client,Composant,P0,INV-NONCUMUL;INV-422,WizardCartRecap.tsx,fait
+11,Client ThankYouStep + LoyaltyCodeCard,client,Composant,P0,INV-PII,steps/ThankYouStep.tsx;LoyaltyCodeCard.tsx,fait
+12,Client CouponWelcomeNote (landing P1),client,Composant,P2,,CouponWelcomeNote.tsx,fait
+13,Etat wizard-store coupon/loyalty (persistance),client,Unit,P1,,wizard-store.ts,fait
+14,Contrat API redeem (tous les reason),client,Integration+MSW,P0,INV-ACTIVATION;INV-VALIDITY,app/api/coupons/redeem/route.ts,fait
+15,Contrat API rescue (bucket+events),client,Integration,P1,INV-BUCKET,app/api/coupons/rescue/route.ts,fait
+16,E2E parcours operateur (creer->activer->effet kit->grants),admin,Playwright,P0,INV-PRICE;INV-PERM;INV-PII,e2e/admin-coupons-loyalty.spec.ts,fait
+17,E2E parcours client fidelite (wizard->thankyou->carte),client,Playwright,P0,INV-PRICE;INV-IDEMP-PHONE,e2e/loyalty-issuance.spec.ts,fait
+18,E2E redemption client (saisir code->credit->commande),client,Playwright,P0,INV-422;INV-VALIDITY,e2e/loyalty-redemption.spec.ts,fait
+19,Integration pricing/eligibilite/holdout (anti-422),client,Integration,P0,INV-PRICE;INV-422;INV-BUCKET,lib/coupons/engine.ts;checkout/order/route.ts,fait
+20,Regles metier delai activation + unicite telephone,transverse,Integration,P1,INV-ACTIVATION;INV-IDEMP-PHONE;INV-VALIDITY,coupon-grant-repo.ts;delivery-delay.ts,fait

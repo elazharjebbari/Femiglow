@@ -1,0 +1,36 @@
+{
+  "_note": "Import direct de PATCH depuis route.ts. Mocks: getAdminSession->session, upsertAppConfig (résultat injectable), logAuditEvent (spy), next/cache revalidateTag (spy). ctx.params={section:'nav'} (ou Promise).",
+  "session": { "adminId": "adm_1", "email": "op@femiglow.local" },
+  "headers": { "valid": { "If-Match": "1" }, "zero": { "If-Match": "0" }, "nan": { "If-Match": "abc" }, "missing": {} },
+  "payloads": {
+    "navValid": { "items": [
+      { "key": "dashboard", "label": "Tableau de bord", "href": "/admin", "icon": "home", "position": 0 },
+      { "key": "coupons", "label": "Coupons", "href": "/admin/coupons", "icon": "tag", "position": 1 }
+    ] },
+    "navDupKey": { "items": [
+      { "key": "dashboard", "label": "A", "href": "/admin", "icon": "home", "position": 0 },
+      { "key": "dashboard", "label": "B", "href": "/admin/b", "icon": "box", "position": 1 }
+    ] },
+    "navBadHref": { "items": [
+      { "key": "leads", "label": "Leads", "href": "admin/leads", "icon": "users", "position": 0 }
+    ] }
+  },
+  "bodies": {
+    "wrapped": { "payload": "<<payloads.navValid>>", "note": "reorg menu" },
+    "wrappedEmptyNote": { "payload": "<<payloads.navValid>>", "note": "" },
+    "direct": "<<payloads.navValid (sans wrapper payload)>>",
+    "nonJson": "<>"
+  },
+  "upsertResults": {
+    "ok": { "ok": true, "row": { "version": 2, "payload": "<<echo>>", "updatedAt": "2026-06-03T12:00:00.000Z", "updatedBy": { "id": "adm_1", "email": "op@femiglow.local" } }, "snapshot": { "id": "snap_nav_2" } },
+    "conflict": { "ok": false, "currentVersion": 5 }
+  },
+  "expected": {
+    "tags": ["app-config", "app-config:nav"],
+    "auditAction": "app-config.update",
+    "resourceType": "app_config",
+    "resourceId": "nav",
+    "notFoundMessageIncludes": "zzz",
+    "errorCodes": { "auth": "unauthorized", "section": "not_found", "ifMatch": "invalid_input", "schema": "validation_failed", "version": "version_conflict" }
+  }
+}

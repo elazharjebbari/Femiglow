@@ -1,0 +1,30 @@
+@startuml loyalty-code
+title Code de fidélité — modèle & cycle de vie
+
+entity coupon_grants {
+  id : text PK
+  code : text  (FG-<MOT>-<NNNN>, unique)
+  phone_e164 : text  -- unicité 1 actif/phone
+  template_coupon_id : text
+  source_order_id : text
+  value_cents : int
+  activates_at : timestamptz  -- NOUVEAU (order + délai ville + 1j)
+  expires_at : timestamptz     -- = activates_at + 60j
+  status : issued|redeemed|expired
+  redeemed_order_id : text
+}
+
+state "Cycle de vie" as L {
+  [*] --> issued : commande créée\n(code mémorable, phone, activates_at)
+  issued --> redeemed : redeem (>= activates_at, < expires_at)
+  issued --> expired : now > expires_at
+  issued --> issued : 2e commande même phone\n(réutilise le code, pas de doublon)
+}
+
+note right of coupon_grants
+  validateGrant :
+   not_found / already_redeemed
+   / expired / NOT_YET_ACTIVE (now < activates_at)
+  Server-authoritative au repricing.
+end note
+@enduml

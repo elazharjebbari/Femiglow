@@ -16,6 +16,7 @@ interface AdminShellProps {
     | 'audit'
     | 'seo'
     | 'products'
+    | 'coupons'
     | 'content-studio'
     | 'chat'
     | 'rituals'
@@ -40,6 +41,7 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/webhooks', key: 'webhooks', label: 'Webhooks' },
   { href: '/admin/tracking', key: 'tracking', label: 'Tracking' },
   { href: '/admin/analytics', key: 'analytics', label: 'Analytics' },
+  { href: '/admin/coupons', key: 'coupons', label: 'Coupons' },
   { href: '/admin/audit', key: 'audit', label: 'Audit' },
   { href: '/admin/settings', key: 'settings', label: 'Réglages' },
 ];
@@ -62,6 +64,7 @@ export function AdminShell({ adminEmail, active, children }: AdminShellProps) {
                 <li key={item.key}>
                   <Link
                     href={item.href}
+                    data-testid={`admin-nav-${item.key}`}
                     className={`block rounded-md px-3 py-2 text-sm transition ${
                       isActive
                         ? 'bg-stone-900 text-white'

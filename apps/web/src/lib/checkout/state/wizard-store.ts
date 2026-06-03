@@ -137,6 +137,12 @@ export interface WizardState {
    */
   creditCents: number;
 
+  /**
+   * Code de fidélité ÉMIS pour cette commande (Phase 3), à afficher en fin de
+   * parcours (ThankYouStep). Persisté pour survivre à un refresh sur merci.
+   */
+  loyalty: { code: string; valueCents: number; activatesAt: string | null } | null;
+
   // Indique que `localStorage` a été lu (évite mismatch SSR).
   hydrated: boolean;
 
@@ -180,6 +186,8 @@ export interface WizardState {
   setCoupon: (code: string, creditCents: number) => void;
   /** Phase 3 — retire le crédit (code vidé ou ré-édité → re-validation). */
   clearCoupon: () => void;
+  /** Phase 3 — mémorise le code de fidélité émis (affichage ThankYou). */
+  setLoyalty: (loyalty: WizardState['loyalty']) => void;
   /** OWBS — signale une sync de fond dégradée (FR-11). */
   markSyncDegraded: () => void;
   /** OWBS — efface le signal (après un réessai réussi). */
@@ -252,6 +260,7 @@ const INITIAL: Omit<
   | 'setOrderId'
   | 'setCoupon'
   | 'clearCoupon'
+  | 'setLoyalty'
   | 'markSyncDegraded'
   | 'clearSyncDegraded'
   | 'setLanguage'
@@ -274,6 +283,7 @@ const INITIAL: Omit<
   paymentDraft: DEFAULT_PAYMENT_DRAFT,
   couponCode: null,
   creditCents: 0,
+  loyalty: null,
   hydrated: false,
   // wizard-kit-optim W0 — tracking enrichi (non-persisté sauf flag dismiss)
   fieldFocusedAt: {},
@@ -304,6 +314,7 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
   setCoupon: (code, creditCents) =>
     set({ couponCode: code.trim().toUpperCase(), creditCents: Math.max(0, Math.round(creditCents)) }),
   clearCoupon: () => set({ couponCode: null, creditCents: 0 }),
+  setLoyalty: (loyalty) => set({ loyalty }),
   markSyncDegraded: () => set({ syncDegraded: true }),
   clearSyncDegraded: () => set({ syncDegraded: false }),
   setLanguage: (lang) =>
@@ -454,6 +465,7 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     // Phase 3 : on persiste le CODE (reprise) mais pas `creditCents`
     // (re-validé à l'usage — le serveur reste autoritaire).
     couponCode: state.couponCode,
+    loyalty: state.loyalty,
     resumeBannerDismissed: state.resumeBannerDismissed,
   }),
   onRehydrateStorage: () => (state) => {

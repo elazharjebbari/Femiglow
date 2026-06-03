@@ -1,0 +1,50 @@
+{
+  "store": {
+    "withLoyalty": {
+      "orderId": "ORD-A1B2C3",
+      "loyalty": { "code": "FG-SAUGE-7212", "valueCents": 2000, "activatesAt": "2026-06-10T00:00:00.000Z" },
+      "formContext": { "formId": "f1", "formMode": "embed", "variantKey": "A", "source": "wizard_kit", "language": "fr" }
+    },
+    "noLoyalty": {
+      "orderId": "ORD-A1B2C3",
+      "loyalty": null,
+      "formContext": { "language": "fr" }
+    },
+    "emptyCode": {
+      "orderId": "ORD-A1B2C3",
+      "loyalty": { "code": "", "valueCents": 2000, "activatesAt": null }
+    },
+    "noActivation": {
+      "orderId": "ORD-A1B2C3",
+      "loyalty": { "code": "FG-AMBRE-3140", "valueCents": 2000, "activatesAt": null }
+    },
+    "invalidActivation": {
+      "orderId": "ORD-A1B2C3",
+      "loyalty": { "code": "FG-CEDRE-9088", "valueCents": 2000, "activatesAt": "not-a-date" }
+    },
+    "arabic": {
+      "orderId": "ORD-A1B2C3",
+      "loyalty": { "code": "FG-SAUGE-7212", "valueCents": 2000, "activatesAt": "2026-06-10T00:00:00.000Z" },
+      "formContext": { "language": "ar" }
+    }
+  },
+  "expected": {
+    "code": "FG-SAUGE-7212",
+    "valueFr": "20 MAD",
+    "valueAr": "20 درهم",
+    "copyFr": "Copier",
+    "copiedFr": "Copié",
+    "copyAr": "نسخ",
+    "copiedAr": "تم النسخ",
+    "terracotta": "#C28A6E",
+    "activationDateFr": "10 juin"
+  },
+  "pii": {
+    "forbiddenPattern": "/\\d{6,}/",
+    "note": "orderId fixture 'ORD-A1B2C3' choisi SANS 6 chiffres consecutifs pour que l oracle PII isole un eventuel telephone."
+  },
+  "mocks": {
+    "note": "Mocker useOrderEmailConfirmationMutation (status idle, execute no-op). Mocker navigator.clipboard.writeText (resolve par defaut ; reject pour le cas robustesse). Reset du store en afterEach."
+  },
+  "charte": { "forbiddenPattern": "/[%!]|🎉|⏰/" }
+}

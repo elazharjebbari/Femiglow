@@ -233,24 +233,47 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
     }
 
-    // Phase 3 — émet un CRÉDIT DE FIDÉLITÉ pour cette commande (best-effort,
-    // idempotent par order). Le client le recevra (confirmation/email) et
-    // pourra l'utiliser sur une prochaine commande.
+    // Phase 3 — émet un CRÉDIT DE FIDÉLITÉ mémorable pour cette commande :
+    // code unique par téléphone, ACTIVÉ après la durée max de livraison de la
+    // ville (la cliente a reçu sa commande), valable 60 j ensuite. Best-effort,
+    // idempotent (par order ET par téléphone). On capture le code pour le
+    // renvoyer au client (affichage en fin de commande).
+    let loyalty: { code: string; valueCents: number; activatesAt: string | null } | null = null;
     if (result.resourceId && result.body && !('error' in result.body) && !result.replayed) {
       try {
         const { listCoupons } = await import('@/lib/db/queries/coupon-repo');
         const { issueGrant } = await import('@/lib/db/queries/coupon-grant-repo');
         const template = (await listCoupons({ type: 'post_purchase', status: 'active' }))[0];
         if (template) {
-          const expiresAt = new Date(Date.now() + 60 * 24 * 3600 * 1000);
-          await issueGrant({
+          // Délai d'activation depuis la ville de livraison du lead.
+          let activatesAt: Date | undefined;
+          try {
+            const { searchDeliveryCities } = await import('@/lib/db/queries/delivery-cities');
+            const { computeActivatesAt } = await import('@/lib/coupons/delivery-delay');
+            const eta = lead.shippingCity
+              ? (await searchDeliveryCities(lead.shippingCity, { limit: 1 }))?.[0]?.deliveryEta ?? null
+              : null;
+            activatesAt = computeActivatesAt(new Date(), eta);
+          } catch {
+            const { computeActivatesAt } = await import('@/lib/coupons/delivery-delay');
+            activatesAt = computeActivatesAt(new Date(), null);
+          }
+          const grant = await issueGrant({
             templateCouponId: template.id,
             leadId: lead.id,
             sourceOrderId: result.resourceId,
             valueCents: template.valueAmount,
             currency: template.currency,
-            expiresAt,
+            phoneE164: lead.phoneE164,
+            activatesAt,
           });
+          if (grant) {
+            loyalty = {
+              code: grant.code,
+              valueCents: grant.valueCents,
+              activatesAt: grant.activatesAt ? new Date(grant.activatesAt).toISOString() : null,
+            };
+          }
         }
       } catch {
         /* non bloquant */
@@ -363,7 +386,13 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
     }
 
-    return NextResponse.json(result.body, { status: result.status });
+    // Joint le code de fidélité émis (le cas échéant) à la réponse de succès,
+    // pour affichage en fin de commande (ThankYouStep).
+    const body =
+      loyalty && result.body && !('error' in result.body)
+        ? { ...result.body, loyalty }
+        : result.body;
+    return NextResponse.json(body, { status: result.status });
   } catch (err) {
     logger.error('checkout.order.failed', { error: String(err) });
     return mapError(err);

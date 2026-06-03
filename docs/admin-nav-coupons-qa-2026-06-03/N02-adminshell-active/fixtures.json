@@ -1,0 +1,15 @@
+{
+  "_note": "N02 teste le surlignage par valeur d'active (composant pur). Classes Tailwind ground-truth lues depuis AdminShell.tsx l.74-79.",
+  "active": {
+    "activeClassFragments": ["bg-stone-900", "text-white"],
+    "inactiveClassFragments": ["text-stone-700", "hover:bg-stone-100"],
+    "ariaCurrentValue": "page",
+    "coupons": { "active": "coupons", "expectedActiveTestid": "admin-nav-coupons", "neighborTestid": "admin-nav-audit" },
+    "cases": [
+      { "active": "dashboard", "expectedActiveTestid": "admin-nav-dashboard" },
+      { "active": "coupons", "expectedActiveTestid": "admin-nav-coupons" },
+      { "active": "settings", "expectedActiveTestid": "admin-nav-settings" },
+      { "active": "leads", "expectedActiveTestid": "admin-nav-leads" }
+    ]
+  }
+}

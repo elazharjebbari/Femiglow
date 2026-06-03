@@ -1,0 +1,22 @@
+{
+  "_note": "N11 est un E2E Playwright best-effort contre la vraie app. Lecture seule : on ne declenche pas la sauvegarde PATCH (couverte par N08 composant+MSW et N09 contrat). Auth via storageState.",
+  "session": {
+    "admin": { "storageState": ".auth/admin.json", "produitPar": "global.setup.ts", "import": "ADMIN_STORAGE_PATH from ./helpers/auth" }
+  },
+  "route": "/admin/settings/navigation",
+  "headers": ["Key", "Label", "Href", "Icon", "Rôle", "Actions"],
+  "selectors": {
+    "grid": "role=grid",
+    "tableRows": "tbody tr",
+    "addButton": "role=button[name=/ajouter un item/i]",
+    "countText": "/\\d+ items/",
+    "navSettings": "[data-testid=\"admin-nav-settings\"]",
+    "navCoupons": "[data-testid=\"admin-nav-coupons\"]"
+  },
+  "bestEffort": {
+    "couponsLabelCell": "Coupons",
+    "regle": "if visible then expect visible sinon ne pas bloquer"
+  },
+  "ariaCurrentValue": "page",
+  "timeoutMs": 60000
+}

@@ -2430,6 +2430,11 @@ export const couponGrants = pgTable(
     redeemedOrderId: text('redeemed_order_id').references(() => orders.id, {
       onDelete: 'set null',
     }),
+    /** Téléphone bénéficiaire (E.164) — unicité + lien client. */
+    phoneE164: text('phone_e164'),
+    /** Date d'ACTIVATION : commande + durée max de livraison de la ville + 1j.
+     *  Le code n'est utilisable qu'à partir de cette date (validateGrant). */
+    activatesAt: timestamp('activates_at', { withTimezone: true }),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     redeemedAt: timestamp('redeemed_at', { withTimezone: true }),
@@ -2438,6 +2443,11 @@ export const couponGrants = pgTable(
     codeUnique: uniqueIndex('coupon_grants_code_unique').on(t.code),
     statusIdx: index('coupon_grants_status_idx').on(t.status),
     leadIdx: index('coupon_grants_lead_idx').on(t.leadId),
+    phoneIdx: index('coupon_grants_phone_idx').on(t.phoneE164),
+    /** Un seul code ACTIF (issued) par téléphone — anti-farming. */
+    phoneActiveUnique: uniqueIndex('coupon_grants_phone_active_unique')
+      .on(t.phoneE164)
+      .where(sql`${t.status} = 'issued' AND ${t.phoneE164} IS NOT NULL`),
     sourceOrderUnique: uniqueIndex('coupon_grants_source_order_unique')
       .on(t.sourceOrderId)
       .where(sql`${t.sourceOrderId} IS NOT NULL`),

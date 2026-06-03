@@ -1,0 +1,32 @@
+{
+  "_note": "N01 teste AdminShell (composant pur, aucun fetch). 'expected' est la table NAV ground-truth lue depuis AdminShell.tsx : ordre, cle, libelle (accents exacts), href, testid. Reutilisable par N02/N03/N04.",
+  "nav": {
+    "navAriaLabel": "Navigation principale",
+    "totalItems": 21,
+    "activeClass": "bg-stone-900",
+    "expected": [
+      { "key": "dashboard", "label": "Tableau de bord", "href": "/admin", "testid": "admin-nav-dashboard" },
+      { "key": "leads", "label": "Leads", "href": "/admin/leads", "testid": "admin-nav-leads" },
+      { "key": "rituals", "label": "Rituels partagés", "href": "/admin/rituals/queue", "testid": "admin-nav-rituals" },
+      { "key": "media", "label": "Médias", "href": "/admin/media", "testid": "admin-nav-media" },
+      { "key": "components", "label": "Composants", "href": "/admin/components", "testid": "admin-nav-components" },
+      { "key": "i18n", "label": "Traductions / i18n", "href": "/admin/i18n", "testid": "admin-nav-i18n" },
+      { "key": "seo", "label": "SEO", "href": "/admin/seo", "testid": "admin-nav-seo" },
+      { "key": "kit-video", "label": "Vidéo /kit", "href": "/admin/kit/video", "testid": "admin-nav-kit-video" },
+      { "key": "kit-composition", "label": "Composition /kit", "href": "/admin/kit/composition", "testid": "admin-nav-kit-composition" },
+      { "key": "kit-pack", "label": "Pack /kit", "href": "/admin/kit/pack", "testid": "admin-nav-kit-pack" },
+      { "key": "legal", "label": "Pages légales", "href": "/admin/legal", "testid": "admin-nav-legal" },
+      { "key": "products", "label": "Produits", "href": "/admin/products", "testid": "admin-nav-products" },
+      { "key": "content-studio", "label": "Studio contenu", "href": "/admin/content-studio", "testid": "admin-nav-content-studio" },
+      { "key": "chat", "label": "Chat", "href": "/admin/chat", "testid": "admin-nav-chat" },
+      { "key": "emails", "label": "Emails", "href": "/admin/emails", "testid": "admin-nav-emails" },
+      { "key": "webhooks", "label": "Webhooks", "href": "/admin/webhooks", "testid": "admin-nav-webhooks" },
+      { "key": "tracking", "label": "Tracking", "href": "/admin/tracking", "testid": "admin-nav-tracking" },
+      { "key": "analytics", "label": "Analytics", "href": "/admin/analytics", "testid": "admin-nav-analytics" },
+      { "key": "coupons", "label": "Coupons", "href": "/admin/coupons", "testid": "admin-nav-coupons" },
+      { "key": "audit", "label": "Audit", "href": "/admin/audit", "testid": "admin-nav-audit" },
+      { "key": "settings", "label": "Réglages", "href": "/admin/settings", "testid": "admin-nav-settings" }
+    ],
+    "coupons": { "key": "coupons", "label": "Coupons", "href": "/admin/coupons", "testid": "admin-nav-coupons" }
+  }
+}

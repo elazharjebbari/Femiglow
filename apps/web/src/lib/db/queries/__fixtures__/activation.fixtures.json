@@ -1,0 +1,44 @@
+{
+  "constants": { "GRANT_VALIDITY_DAYS": 60, "DEFAULT_MAX_DELIVERY_DAYS": 4, "ACTIVATION_BUFFER_DAYS": 1 },
+  "words": ["RITUEL", "ATLAS", "SAUGE", "ECLAT", "ACCUEIL", "MAISON", "GESTE", "ATELIER", "LUMIERE", "SAISON"],
+  "eta": {
+    "h24": { "value": "24h", "expectedDays": 1 },
+    "h24_48": { "value": "24-48h", "expectedDays": 2 },
+    "h48_72": { "value": "48 à 72 h", "expectedDays": 3 },
+    "d3_5": { "value": "3-5 jours", "expectedDays": 5 },
+    "none": { "value": null, "expectedDays": 4 },
+    "express": { "value": "express", "expectedDays": 4 }
+  },
+  "order": {
+    "date": "2026-06-03T00:00:00.000Z"
+  },
+  "issue": {
+    "base": { "templateCouponId": "cpn_tpl", "leadId": "lead_1", "sourceOrderId": "o_1", "valueCents": 2000, "currency": "MAD" },
+    "phoneA": { "templateCouponId": "cpn_tpl", "leadId": "lead_1", "valueCents": 2000, "currency": "MAD", "phoneE164": "+212600000001", "orders": ["o_1", "o_2"] },
+    "phoneB": { "templateCouponId": "cpn_tpl", "leadId": "lead_2", "sourceOrderId": "o_3", "valueCents": 2000, "currency": "MAD", "phoneE164": "+212600000002" },
+    "activated": { "templateCouponId": "cpn_tpl", "leadId": "lead_3", "sourceOrderId": "o_4", "valueCents": 2000, "currency": "MAD", "phoneE164": "+212600000003", "activatesAt": "2026-06-07T00:00:00.000Z", "derivedExpiresAt": "2026-08-06T00:00:00.000Z" },
+    "noActivation": { "templateCouponId": "cpn_tpl", "leadId": "lead_4", "sourceOrderId": "o_5", "valueCents": 2000, "currency": "MAD", "activatesAt": null }
+  },
+  "now": {
+    "before": "2026-06-05T00:00:00.000Z",
+    "justBefore": "2026-06-06T23:59:59.999Z",
+    "atActivation": "2026-06-07T00:00:00.000Z",
+    "inWindow": "2026-07-01T00:00:00.000Z",
+    "atExpiry": "2026-08-06T00:00:00.000Z",
+    "afterExpiry": "2026-08-07T00:00:01.000Z"
+  },
+  "unknown": { "code": "FG-ZZZZ-9999" },
+  "e2e": {
+    "delivery": {
+      "orderDate": "2026-06-03T00:00:00.000Z",
+      "eta": "48 à 72 h",
+      "expectedActivatesAt": "2026-06-07T00:00:00.000Z",
+      "expectedExpiresAt": "2026-08-06T00:00:00.000Z",
+      "nowBefore": "2026-06-05T00:00:00.000Z",
+      "nowAfter": "2026-06-10T00:00:00.000Z",
+      "note": "maxDeliveryDays('48 à 72 h')=3 ; activatesAt=orderDate+4j ; expiresAt=activatesAt+60j"
+    }
+  },
+  "reasons": ["not_found", "already_redeemed", "expired", "not_yet_active"],
+  "codeFormat": "/^FG-[A-Z]+-\\d{4}$/"
+}

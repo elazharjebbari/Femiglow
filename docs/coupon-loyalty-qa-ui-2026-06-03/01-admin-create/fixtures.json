@@ -1,0 +1,55 @@
+{
+  "coupons": {
+    "empty": [],
+    "one": [
+      {
+        "id": "cpn_1",
+        "label": "Geste d'accueil",
+        "code": null,
+        "type": "welcome_auto",
+        "mode": "auto",
+        "status": "draft",
+        "valueKind": "fixed_amount",
+        "valueAmount": 9000,
+        "holdoutPct": 0,
+        "usageCount": 0,
+        "startsAt": null,
+        "endsAt": null,
+        "createdAt": "2026-06-03T10:00:00.000Z"
+      }
+    ]
+  },
+  "create": {
+    "ok": {
+      "initialCoupons": [],
+      "newCouponId": "cpn_new",
+      "form": { "label": "Geste d'accueil", "valueAmount": 9000 },
+      "expectedRow": { "status": "Brouillon", "value": "90 MAD" }
+    },
+    "payload": {
+      "form": { "label": "Promo X", "valueAmount": 12000 },
+      "expectedBody": {
+        "label": "Promo X",
+        "type": "welcome_auto",
+        "mode": "auto",
+        "status": "draft",
+        "valueKind": "fixed_amount",
+        "valueAmount": 12000,
+        "target": "product_price",
+        "currency": "MAD"
+      }
+    },
+    "latency": { "initialCoupons": [], "latencyMs": 50, "newCouponId": "cpn_new" }
+  },
+  "fail": {
+    "403": { "fail": { "create": 403 }, "expectedAlert": "Création refusée (HTTP 403)." },
+    "409": { "fail": { "create": 409 }, "expectedAlert": "Création refusée (HTTP 409)." },
+    "422": { "fail": { "create": 422 }, "expectedAlert": "Création refusée (HTTP 422)." },
+    "500": { "fail": { "create": 500 }, "expectedAlert": "Création refusée (HTTP 500)." },
+    "network": { "fail": { "create": "network" }, "expectedAlert": "Erreur réseau." }
+  },
+  "sessions": {
+    "admin": { "role": "admin", "perms": ["read", "write", "publish", "delete"] },
+    "viewer": { "role": "viewer", "perms": ["read"] }
+  }
+}

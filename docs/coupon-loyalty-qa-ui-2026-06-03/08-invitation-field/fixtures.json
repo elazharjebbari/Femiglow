@@ -1,0 +1,39 @@
+{
+  "byCode": {
+    "valid": { "FG-SAUGE-7212": { "valid": true, "valueCents": 2000 } },
+    "lowerSpaced": { "FG-SAUGE-7212": { "valid": true, "valueCents": 2000 } },
+    "notFound": { "FG-NOPE": { "valid": false, "reason": "not_found" } },
+    "expired": { "FG-AMBRE-3140": { "valid": false, "reason": "expired" } },
+    "notYetActive": { "FG-CEDRE-9088": { "valid": false, "reason": "not_yet_active" } },
+    "alreadyRedeemed": { "FG-MENTHE-4501": { "valid": false, "reason": "already_redeemed" } },
+    "malformed": { "FG-SAUGE-7212": { "reason": "weird" } },
+    "retry": {
+      "FG-NOPE": { "valid": false, "reason": "not_found" },
+      "FG-SAUGE-7212": { "valid": true, "valueCents": 2000 }
+    }
+  },
+  "fail": {
+    "500": { "fail": 500 },
+    "network": { "fail": "network" }
+  },
+  "latency": { "withLatency": { "latencyMs": 50 } },
+  "inputs": {
+    "tooShort": "FG",
+    "valid": "FG-SAUGE-7212",
+    "lowerSpaced": " fg-sauge-7212 "
+  },
+  "expected": {
+    "okFr": "Crédit de 20 MAD appliqué — déduit au paiement.",
+    "okAr": "رصيد 20 درهم صالح — يُطبَّق عند الدفع.",
+    "koFr": "Code introuvable ou expiré.",
+    "koAr": "الرمز غير صالح أو منتهي.",
+    "btnFr": "Appliquer",
+    "btnAr": "تطبيق",
+    "ariaLabelFr": "Votre code",
+    "ariaLabelAr": "رمز الدعوة",
+    "checking": "…",
+    "onValidCode": "FG-SAUGE-7212",
+    "onValidCents": 2000
+  },
+  "charte": { "forbiddenPattern": "/[%!]|🎉|⏰/" }
+}

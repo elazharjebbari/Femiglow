@@ -1,0 +1,32 @@
+@startuml N06-resolve-nav-cascade
+title N06 — Cascade resolveSectionUncached('nav')
+
+start
+:getAppConfigRow('nav');
+if (row == null ?) then (oui — DB absente)
+  :payload = getDefault('nav');
+  :meta = defaultMeta()\nversion 0, isDefault true;
+  note right: aucun logger.warn
+  stop
+else (non — row presente)
+  :safeValidate('nav', row.payload);
+  if (validation OK ?) then (non — payload corrompu)
+    :logger.warn('admin_config.zod_fail',\n{ section:'nav', issues:slice(0,6) });
+    :payload = getDefault('nav')  (FAILSAFE);
+    :meta = rowMeta(row, isDefault=true)\nversion = row.version;
+    note right: NAV-INV-FAILSAFE\njamais de crash
+    stop
+  else (oui — payload valide)
+    :validated = parsed.data;
+    if (JSON.stringify(validated)\n== JSON.stringify(getDefault('nav')) ?) then (oui)
+      :isDefault = true;
+    else (non)
+      :isDefault = false;
+    endif
+    :payload = validated  (donnee DB servie);
+    :meta = rowMeta(row, isDefault)\nversion = row.version;
+    stop
+  endif
+endif
+
+@enduml

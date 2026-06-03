@@ -1,0 +1,66 @@
+{
+  "seedGrants": [
+    {
+      "templateCouponId": "cpn_tpl",
+      "leadId": "l1",
+      "sourceOrderId": "o_1",
+      "valueCents": 2000,
+      "phoneE164": "+212612345678",
+      "activatesAt": "2026-07-01T00:00:00.000Z",
+      "expectedStatus": "issued"
+    },
+    {
+      "templateCouponId": "cpn_tpl",
+      "leadId": "l2",
+      "sourceOrderId": "o_2",
+      "valueCents": 2000,
+      "phoneE164": "+212600000001",
+      "expectedStatus": "issued"
+    },
+    {
+      "templateCouponId": "cpn_tpl",
+      "leadId": "l3",
+      "sourceOrderId": "o_3",
+      "valueCents": 2000,
+      "phoneE164": "+212600000002",
+      "redeemWith": "ord_redeemed_1",
+      "expectedStatus": "redeemed"
+    }
+  ],
+  "queries": {
+    "all": "",
+    "byPhone": "?phone=%2B212600000001",
+    "byStatusRedeemed": "?status=redeemed",
+    "byStatusIssued": "?status=issued",
+    "combined": "?phone=%2B212600000001&status=issued",
+    "noMatch": "?phone=%2B212699999999",
+    "emptyPhone": "?phone="
+  },
+  "maskedExamples": {
+    "+212612345678": "+212…78",
+    "null": "—",
+    "12345": "***"
+  },
+  "expectedItemShape": {
+    "id": "grt_…",
+    "code": "FG-…",
+    "phone": "+212…78",
+    "valueCents": 2000,
+    "currency": "MAD",
+    "status": "issued",
+    "activatesAt": "ISO|null",
+    "expiresAt": "ISO|null",
+    "sourceOrderId": "o_1",
+    "redeemedOrderId": "null|ord_…",
+    "createdAt": "ISO"
+  },
+  "sessions": {
+    "admin": { "adminId": "adm_1", "email": "op@femiglow.local", "role": "admin" },
+    "noRole": { "adminId": "adm_x", "email": "x@femiglow.local", "role": "no_such_role" },
+    "none": null
+  },
+  "expectedErrors": {
+    "unauthorized": { "status": 401, "code": "unauthorized" },
+    "forbidden": { "status": 403, "code": "forbidden" }
+  }
+}

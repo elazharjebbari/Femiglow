@@ -1,0 +1,72 @@
+@startuml coupon-loyalty-qa-architecture
+title Surfaces UI <-> Endpoints <-> Etat (perimetre testé)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Client (/kit, wizard)" {
+  [CouponWelcomeNote\n(F12)] as Welcome
+  [InvitationCodeField\n(F08)] as Invite
+  [AddressStep\ndisclosure (F09)] as Address
+  [WizardCartRecap\n(F10)] as Recap
+  [ThankYouStep +\nLoyaltyCodeCard (F11)] as ThankYou
+  [wizard-store\nzustand (F13)] as Store
+}
+
+package "Admin (/admin/coupons)" {
+  [CouponsManager\n(F01..F04)] as Manager
+}
+
+package "API publiques" {
+  [POST /api/coupons/redeem\n(F14)] as Redeem
+  [POST /api/coupons/rescue\n(F15)] as Rescue
+  [POST /api/checkout/order\n(F19, issuance)] as Order
+}
+
+package "API admin" {
+  [GET/POST /api/admin/coupons] as ACoupons
+  [POST [id]/status (F05)] as AStatus
+  [GET [id]/stats (F06)] as AStats
+  [GET grants (F07)] as AGrants
+}
+
+package "Domaine (déjà couvert)" {
+  [engine / eligibility / bucketing] as Engine
+  [coupon-repo / grant-repo / event-repo (F20)] as Repos
+  [delivery-delay] as Delay
+}
+
+Welcome --> Invite
+Invite --> Redeem : valider (preview)
+Address --> Invite
+Address --> Store : setCoupon / clearCoupon
+Recap --> Store : creditCents / welcomeCoupon
+Address --> Order : couponCode + expectedTotalCents
+Order --> ThankYou : loyalty {code,value,activatesAt}
+Order --> Store : setLoyalty
+ThankYou --> Store : lire loyalty
+
+Manager --> ACoupons : lister / créer
+Manager --> AStatus : activer / pauser / archiver
+Manager --> AStats : uplift à la demande
+Manager --> AGrants : charger codes (téléphone masqué)
+
+Redeem --> Repos : validateGrant
+Rescue --> Engine : resolveRescueCoupon + bucket
+Order --> Engine : resolveProductPricing (INV-PRICE)
+Order --> Repos : issueGrant (INV-IDEMP-*)
+Order --> Delay : computeActivatesAt (INV-ACTIVATION)
+ACoupons --> Repos
+AStatus --> Repos
+AStats --> Repos
+AGrants --> Repos
+
+note bottom of Order
+  Invariants vérifiés bout-en-bout :
+  INV-PRICE (parité affichage/débit),
+  INV-422 (expectedTotalCents),
+  INV-IDEMP-ORDER / INV-IDEMP-PHONE,
+  INV-ACTIVATION / INV-VALIDITY,
+  INV-PII (masquage), INV-PERM (RBAC)
+end note
+@enduml

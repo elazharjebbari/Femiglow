@@ -1,0 +1,34 @@
+@startuml N10-e2e-operator-nav
+title N10 — Parcours operateur : onglet Coupons & bascule d'actif (E2E)
+
+actor Karim as K
+participant "Playwright\n(storageState)" as PW
+participant "Next App\n(RSC + Link)" as APP
+database "DB" as DB
+
+== Arrivee sur Coupons ==
+K -> PW : test demarre (storageState .auth/admin.json)
+PW -> APP : GET /admin/coupons (cookies session)
+APP -> APP : requireAdmin('/admin/coupons') -> session OK
+APP -> DB : listCoupons()
+DB --> APP : coupons[]
+APP --> PW : HTML : AdminShell active="coupons" + CouponsManager
+PW -> PW : expect coupons-manager visible
+PW -> PW : expect admin-nav-coupons [aria-current=page]
+
+== Bascule vers un autre onglet ==
+K -> PW : click admin-nav-dashboard
+PW -> APP : navigation Next vers /admin
+APP -> APP : requireAdmin -> session OK ; rend active="dashboard"
+APP --> PW : HTML : AdminShell active="dashboard"
+PW -> PW : expect URL == /admin
+PW -> PW : expect admin-nav-dashboard [aria-current=page]
+PW -> PW : expect admin-nav-coupons NOT [aria-current=page]
+
+note over PW,DB
+  Hors scope (INV-PRICE) : aucune mutation, aucun
+  acces a /kit ni a pack-price-line. La nav n'a
+  aucun effet sur le pricing.
+end note
+
+@enduml

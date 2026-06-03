@@ -1,0 +1,61 @@
+{
+  "coupon": {
+    "id": "cpn_rescue",
+    "label": "Sauvetage",
+    "type": "rescue",
+    "mode": "auto",
+    "status": "active",
+    "valueKind": "fixed_amount",
+    "valueAmount": 1,
+    "target": "future_credit",
+    "currency": "MAD"
+  },
+  "eventSets": {
+    "nominal": {
+      "exposed": { "treatment": 120, "holdout": 80 },
+      "converted": { "treatment": 24, "holdout": 8 },
+      "expectedStats": {
+        "conversionRate": { "treatment": 0.2, "holdout": 0.1 },
+        "upliftAbsolute": 0.1,
+        "upliftRelative": 1.0,
+        "noControl": false,
+        "lowSample": false
+      }
+    },
+    "noControl": {
+      "exposed": { "treatment": 150, "holdout": 0 },
+      "converted": { "treatment": 30, "holdout": 0 },
+      "expectedStats": { "noControl": true, "upliftAbsolute": null, "upliftRelative": null }
+    },
+    "lowSample": {
+      "exposed": { "treatment": 30, "holdout": 20 },
+      "converted": { "treatment": 6, "holdout": 2 },
+      "expectedStats": { "lowSample": true }
+    },
+    "sufficientSample": {
+      "exposed": { "treatment": 70, "holdout": 40 },
+      "converted": { "treatment": 14, "holdout": 4 },
+      "expectedStats": { "lowSample": false }
+    },
+    "holdoutZeroRate": {
+      "exposed": { "treatment": 120, "holdout": 80 },
+      "converted": { "treatment": 24, "holdout": 0 },
+      "expectedStats": { "upliftRelative": null }
+    },
+    "empty": {
+      "exposed": { "treatment": 0, "holdout": 0 },
+      "converted": { "treatment": 0, "holdout": 0 },
+      "expectedStats": { "noControl": true, "lowSample": true }
+    }
+  },
+  "sessions": {
+    "admin": { "adminId": "adm_1", "email": "op@femiglow.local", "role": "admin" },
+    "noRole": { "adminId": "adm_x", "email": "x@femiglow.local", "role": "no_such_role" },
+    "none": null
+  },
+  "expectedErrors": {
+    "unauthorized": { "status": 401, "code": "unauthorized" },
+    "forbidden": { "status": 403, "code": "forbidden" },
+    "notFound": { "status": 404, "code": "not_found" }
+  }
+}

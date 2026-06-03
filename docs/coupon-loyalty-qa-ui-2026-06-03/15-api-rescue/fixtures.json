@@ -1,0 +1,68 @@
+{
+  "coupons": {
+    "rescueTreatment": {
+      "label": "Sauvetage",
+      "code": null,
+      "type": "rescue",
+      "mode": "auto",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 1,
+      "target": "future_credit",
+      "currency": "MAD",
+      "eligibility": {},
+      "stackable": false,
+      "usageScope": "unlimited",
+      "holdoutPct": 0,
+      "priority": 0,
+      "expected": { "bucket": "treatment", "show": true, "event": "exposed/treatment" }
+    },
+    "rescueHoldout": {
+      "label": "Sauvetage",
+      "code": null,
+      "type": "rescue",
+      "mode": "auto",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 1,
+      "target": "future_credit",
+      "currency": "MAD",
+      "eligibility": {},
+      "stackable": false,
+      "usageScope": "unlimited",
+      "holdoutPct": 100,
+      "priority": 0,
+      "expected": { "bucket": "holdout", "show": false, "event": "exposed/holdout" }
+    },
+    "rescueSplit": {
+      "label": "Sauvetage",
+      "type": "rescue",
+      "mode": "auto",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 1,
+      "target": "future_credit",
+      "currency": "MAD",
+      "eligibility": {},
+      "stackable": false,
+      "usageScope": "unlimited",
+      "holdoutPct": 50,
+      "priority": 0,
+      "note": "pour test de déterminisme (même session → même bucket)"
+    }
+  },
+  "requests": {
+    "withSession": { "cookie": "fg_session_id=sess-1", "userAgent": "iPhone" },
+    "control": { "cookie": "fg_session_id=sess-control", "userAgent": "iPhone" },
+    "stable": { "cookie": "fg_session_id=sess-stable", "userAgent": "iPhone" },
+    "fbpFallback": { "cookie": "_fbp=fb-123", "userAgent": "iPhone" },
+    "noCookie": { "userAgent": "iPhone" }
+  },
+  "expectedResponses": {
+    "noActiveRescue": { "status": 200, "body": { "show": false }, "events": 0 },
+    "treatment": { "status": 200, "body": { "show": true }, "events": 1, "bucket": "treatment" },
+    "holdout": { "status": 200, "body": { "show": false }, "events": 1, "bucket": "holdout" },
+    "logFailure": { "status": 200, "body": { "show": true } },
+    "engineThrow": { "status": 200, "body": { "show": false } }
+  }
+}

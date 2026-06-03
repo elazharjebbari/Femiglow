@@ -379,6 +379,7 @@ export function useAddressMutation(): {
   const formContext = useWizardStore((s) => s.formContext);
   const goToStep = useWizardStore((s) => s.goToStep);
   const setOrderId = useWizardStore((s) => s.setOrderId);
+  const setLoyalty = useWizardStore((s) => s.setLoyalty);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
   const leadDraft = useWizardStore((s) => s.leadDraft);
   // Phase 3 — crédit de fidélité (code + montant validé).
@@ -522,6 +523,8 @@ export function useAddressMutation(): {
           couponCode: couponCode ?? undefined,
         });
         setOrderId(res.orderId);
+        // Phase 3 — mémorise le code de fidélité émis (affiché au ThankYouStep).
+        if (res.loyalty) setLoyalty(res.loyalty);
         // Conversion principale — identity complète hydratée
         // (Enhanced Conversions Google Ads + Advanced Matching Meta).
         // Email pas encore connu à ce stade (capturé optionnellement au
@@ -585,6 +588,7 @@ export function useAddressMutation(): {
       creditCents,
       goToStep,
       setOrderId,
+      setLoyalty,
       setLoading,
       setSuccess,
       setError,

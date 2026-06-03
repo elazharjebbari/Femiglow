@@ -1,0 +1,37 @@
+@startuml F02-coupon-status-lifecycle
+title F02 — Cycle de vie du statut d'un coupon (vu de l'UI CouponsManager)
+
+[*] --> draft : creation (F01)
+
+state "draft\n(Brouillon)" as draft
+state "active\n(Actif)" as active
+state "paused\n(En pause)" as paused
+state "archived\n(Archive)" as archived
+
+draft --> active : « Activer »\nPOST status {active}
+draft --> archived : « Archiver »\nPOST status {archived}
+
+active --> paused : « Pauser »\nPOST status {paused}
+active --> archived : « Archiver »\nPOST status {archived}
+
+paused --> active : « Activer »\nPOST status {active}
+paused --> archived : « Archiver »\nPOST status {archived}
+
+archived --> archived : transition non-archived\n=> 409 (lock terminal)
+
+note right of archived
+  Etat TERMINAL.
+  L'UI ne propose plus que « Stats ».
+  Toute autre cible cote serveur => 409.
+end note
+
+note bottom of active
+  Apres chaque POST ok :
+  refresh() = GET /api/admin/coupons
+  recompose le badge + les boutons.
+  Echec (403/409/422/500/network)
+  => role=alert, statut inchange.
+end note
+
+archived --> [*]
+@enduml

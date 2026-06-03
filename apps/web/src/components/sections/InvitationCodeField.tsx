@@ -17,8 +17,9 @@ type Status =
   | { kind: 'valid'; valueCents: number }
   | { kind: 'invalid'; reason: string };
 
-function formatMad(cents: number): string {
-  return `${(cents / 100).toFixed(0)} MAD`;
+function formatMad(cents: number, isArabic = false): string {
+  // Devise localisée (cohérence avec LoyaltyCodeCard) : درهم en arabe, MAD sinon.
+  return `${(cents / 100).toFixed(0)} ${isArabic ? 'درهم' : 'MAD'}`;
 }
 
 export interface InvitationCodeFieldProps {
@@ -149,7 +150,7 @@ export function InvitationCodeField({
           data-testid="invitation-code-ok"
           className="flex items-center gap-1 text-xs font-medium text-sauge"
         >
-          {t.ok(formatMad((status as { valueCents: number }).valueCents))}
+          {t.ok(formatMad((status as { valueCents: number }).valueCents, isArabic))}
         </p>
       )}
       {isInvalid && (

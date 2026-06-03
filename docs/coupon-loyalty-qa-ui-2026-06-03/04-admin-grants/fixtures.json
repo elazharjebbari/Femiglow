@@ -1,0 +1,39 @@
+{
+  "grants": {
+    "one": [
+      { "id": "grt_1", "code": "FG-SAUGE-7212", "phone": "0612…78", "valueCents": 2000, "status": "issued", "activatesAt": "2026-06-10T00:00:00.000Z", "expiresAt": "2026-08-09T00:00:00.000Z" }
+    ],
+    "nullDates": [
+      { "id": "grt_2", "code": "FG-AMBRE-3140", "phone": "0655…01", "valueCents": 2000, "status": "issued", "activatesAt": null, "expiresAt": null }
+    ],
+    "many": [
+      { "id": "grt_1", "code": "FG-SAUGE-7212", "phone": "0612…78", "valueCents": 2000, "status": "issued", "activatesAt": "2026-06-10T00:00:00.000Z", "expiresAt": "2026-08-09T00:00:00.000Z" },
+      { "id": "grt_2", "code": "FG-AMBRE-3140", "phone": "0655…01", "valueCents": 2000, "status": "active", "activatesAt": "2026-06-05T00:00:00.000Z", "expiresAt": "2026-08-04T00:00:00.000Z" },
+      { "id": "grt_3", "code": "FG-CEDRE-9088", "phone": "+212 6…88", "valueCents": 3000, "status": "redeemed", "activatesAt": "2026-05-01T00:00:00.000Z", "expiresAt": "2026-06-30T00:00:00.000Z" }
+    ],
+    "empty": [],
+    "refresh": {
+      "initial": [
+        { "id": "grt_1", "code": "FG-SAUGE-7212", "phone": "0612…78", "valueCents": 2000, "status": "issued", "activatesAt": "2026-06-10T00:00:00.000Z", "expiresAt": "2026-08-09T00:00:00.000Z" }
+      ],
+      "afterMutation": [
+        { "id": "grt_1", "code": "FG-SAUGE-7212", "phone": "0612…78", "valueCents": 2000, "status": "active", "activatesAt": "2026-06-10T00:00:00.000Z", "expiresAt": "2026-08-09T00:00:00.000Z" },
+        { "id": "grt_2", "code": "FG-AMBRE-3140", "phone": "0655…01", "valueCents": 2000, "status": "issued", "activatesAt": null, "expiresAt": null }
+      ]
+    }
+  },
+  "pii": {
+    "maskedPattern": "/…|\\*/",
+    "forbiddenPattern": "/\\d{6,}/",
+    "note": "Chaque telephone doit matcher maskedPattern et NE PAS matcher forbiddenPattern (6 chiffres consecutifs)."
+  },
+  "fail": {
+    "403": { "fail": { "grants": 403 } },
+    "500": { "fail": { "grants": 500 } },
+    "network": { "fail": { "grants": "network" } }
+  },
+  "sessions": {
+    "admin": { "role": "admin", "perms": ["read", "write", "publish", "delete"] },
+    "viewer": { "role": "viewer", "perms": ["read"] }
+  }
+}

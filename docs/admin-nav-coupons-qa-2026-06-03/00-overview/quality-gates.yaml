@@ -1,0 +1,38 @@
+# Portes de qualité — navigation admin & onglet Coupons.
+principes:
+  - "La couche rendu (AdminShell) est P0 : un onglet manquant/mal surligné = bug opérateur direct."
+  - "Toute sauvegarde nav testée doit couvrir succès ET conflit de version (If-Match) ET validation."
+
+gates_globales:
+  typecheck: "tsc --noEmit = 0 erreur"
+  lint: "next lint = 0 erreur sur les fichiers du dossier"
+  vitest: "100% vert sur le périmètre nav (AdminShell, admin-config, NavEditor, contrat [section])"
+  e2e: "playwright chromium vert sur e2e/admin-nav-*.spec.ts"
+  anti_flaky: "boucle Vitest 3x stable ; Playwright --repeat-each=2"
+
+chemins_obligatoires:
+  AdminShell:
+    - "les 21 onglets présents dans l'ordre attendu ; Coupons en position 9 (avant Audit)"
+    - "Coupons : data-testid admin-nav-coupons, libelle 'Coupons', href '/admin/coupons'"
+    - "actif : aria-current=page sur l'onglet courant et un seul"
+    - "déconnexion : form action=/api/admin/logout method=post"
+    - "a11y : nav nommée + axe 0 critique/serious"
+  CouponsPage:
+    - "RSC : requireAdmin ; rend CouponsManager ; AdminShell active=coupons (onglet Coupons surligné)"
+  config:
+    - "navDefault valide navSchema ; clés uniques ; coupons present"
+    - "resolve : DB absente→defaults ; DB valide→DB ; DB corrompue→failsafe defaults (isDefault true)"
+  NavEditor:
+    - "add/move↑↓/remove/update + normalizePositions ; dirty ; validation client (navSchema)"
+    - "save 200→message succès+version++ ; 409→message conflit ; 422→erreurs par ligne ; réseau→message"
+    - "header If-Match=<version> envoyé"
+  contrat_nav:
+    - "401 sans session ; 404 section inconnue ; If-Match manquant→400 ; 422 payload ; 409 version stale ; 200+audit+revalidateTag x2"
+
+conditions_passage_vague:
+  W0: "navSettingsHandlers MSW + smoke vert"
+  W1: "N05,N06,N09 (config + contrat) verts"
+  W2: "N01,N02,N03,N04 (AdminShell + page) verts"
+  W3: "N07,N08 (NavEditor) verts"
+  W4: "N10,N11 (E2E) verts"
+  W5: "anti-flaky + typecheck/lint 0 + traçabilité"

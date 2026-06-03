@@ -38,5 +38,13 @@ export const createOrderResponseSchema = z.object({
   status: z.enum(['created', 'pending_confirmation']),
   totalCents: z.number().int().nonnegative(),
   currency: z.string().length(3),
+  /** Code de fidélité mémorable émis pour cette commande (Phase 3). */
+  loyalty: z
+    .object({
+      code: z.string(),
+      valueCents: z.number().int().nonnegative(),
+      activatesAt: z.string().nullable(),
+    })
+    .optional(),
 });
 export type CreateOrderResponse = z.infer<typeof createOrderResponseSchema>;

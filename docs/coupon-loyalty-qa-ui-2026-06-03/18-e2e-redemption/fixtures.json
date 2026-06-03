@@ -1,0 +1,56 @@
+{
+  "_note": "F18 = E2E contre la vraie app + DB (pas de MSW). PRÉCONDITION BLOQUANTE : le code doit être DÉJÀ ACTIVÉ (activatesAt dans le passé). Un code F17 fraîchement émis est not_yet_active → KO. Pré-activer via scripts/_loyalty-activate-now.ts <code>.",
+  "preconditions": {
+    "templatePostPurchaseActif": "seed-coupons.ts (type post_purchase, status active, 2000c)",
+    "grantActive": {
+      "code": "FG-SAUGE-7212",
+      "phoneE164": "+212612345699",
+      "valueCents": 2000,
+      "statusAttendu": "issued",
+      "activatesAt": "now - 24h (FORCÉ via _loyalty-activate-now.ts)",
+      "expiresAt": "activatesAt + 60j (> now → non expiré, INV-VALIDITY)"
+    },
+    "scriptActivation": "cd apps/web && pnpm tsx scripts/_loyalty-activate-now.ts FG-SAUGE-7212",
+    "openQuestionRunbook": "Aucun test-hook HTTP n'active un grant — seul un script CLI direct DB existe. Pour un CI 100% Playwright sans psql : exposer un endpoint gardé par flag E2E_TEST_HOOKS=1, OU lancer le script tsx en globalSetup Playwright. À acter dans 99-runbook/."
+  },
+  "redeemResponses": {
+    "active": { "valid": true, "valueCents": 2000 },
+    "notYetActive": { "valid": false, "reason": "not_yet_active" },
+    "expired": { "valid": false, "reason": "expired" },
+    "alreadyRedeemed": { "valid": false, "reason": "already_redeemed" },
+    "notFound": { "valid": false, "reason": "not_found" }
+  },
+  "pricing": {
+    "totalSansCreditMad": 199,
+    "creditMad": 20,
+    "totalApresCreditMad": 179,
+    "expectedTotalCents": 17900,
+    "formuleInv422": "expectedTotalCents = totalCents - min(creditCents, totalCents)"
+  },
+  "selectors": {
+    "stepAddress": "[data-testid=\"wizard-step-address\"]",
+    "couponDetails": "[data-testid=\"wizard-coupon-field\"]",
+    "couponSummary": "[data-testid=\"wizard-coupon-summary\"]",
+    "codeField": "[data-testid=\"invitation-code-field\"]",
+    "codeOk": "[data-testid=\"invitation-code-ok\"]",
+    "codeKo": "[data-testid=\"invitation-code-ko\"]",
+    "applyButtonLabel": "Appliquer",
+    "creditLine": "[data-testid=\"wizard-credit-line\"]",
+    "recapTotal": "[data-testid=\"wizard-cart-recap-total\"]",
+    "addressSubmit": "[data-testid=\"wizard-address-submit\"]",
+    "stepThankYou": "[data-testid=\"wizard-step-thankyou\"]"
+  },
+  "labels": {
+    "summaryFr": "J’ai un code de fidélité",
+    "okFr": "Crédit de 20 MAD appliqué — déduit au paiement.",
+    "koFr": "Code introuvable ou expiré.",
+    "creditLineFr": "Crédit fidélité −20 MAD"
+  },
+  "i18nAr": {
+    "route": "/ar/kit",
+    "dir": "rtl",
+    "summary": "لدي رمز وفاء",
+    "ok": "رصيد 20 درهم صالح — يُطبَّق عند الدفع.",
+    "ko": "الرمز غير صالح أو منتهي."
+  }
+}

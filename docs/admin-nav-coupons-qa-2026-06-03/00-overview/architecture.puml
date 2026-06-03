@@ -1,0 +1,44 @@
+@startuml admin-nav-architecture
+title Navigation admin — couches rendu & config (perimetre teste)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Operateur" as Op
+
+package "Couche RENDU (ce que l'operateur voit)" {
+  [AdminShell\nNAV codé en dur (N01,N02,N04)] as Shell
+  [Onglet Coupons\ndata-testid admin-nav-coupons (N01/N03)] as Tab
+  [/admin/coupons/page.tsx\nactive=coupons → CouponsManager (N03)] as Page
+}
+
+package "Couche CONFIG (dynamique, parallèle)" {
+  [defaults.ts navDefault (N05)] as Def
+  [navSchema (N05)] as Schema
+  [resolve.ts cascade+failsafe (N06)] as Resolve
+  [NavEditor (N07,N08)] as Editor
+  [PATCH /api/admin/settings/nav (N09)] as Api
+  database "app_config (DB)\n+ snapshots/version" as DB
+}
+
+Op --> Shell : clique un onglet
+Shell --> Tab
+Tab --> Page : /admin/coupons
+Shell ..> Def : (DÉCOUPLÉ — rend la liste codée en dur,\nn'utilise PAS encore la config résolue)
+
+Def --> Schema : doit valider
+Resolve --> DB : lit
+Resolve --> Def : fallback / failsafe
+Editor --> Api : PATCH {payload} If-Match:<version>
+Api --> DB : upsert + snapshot + version++
+Api ..> Resolve : revalidateTag(app-config[:nav])
+
+note bottom of Api
+  Invariants : NAV-INV-LOCK (If-Match, 409 si stale),
+  NAV-INV-PERSIST (200 + version++ + audit app-config.update)
+end note
+note bottom of Shell
+  Invariants : NAV-INV-PRESENCE, NAV-INV-ACTIVE,
+  NAV-INV-ROUTE, NAV-INV-A11Y
+end note
+@enduml

@@ -26,6 +26,16 @@ interface SerializedCoupon {
   createdAt: string;
 }
 
+interface GrantRow {
+  id: string;
+  code: string;
+  phone: string;
+  valueCents: number;
+  status: string;
+  activatesAt: string | null;
+  expiresAt: string | null;
+}
+
 interface CouponStats {
   exposed: { treatment: number; holdout: number };
   converted: { treatment: number; holdout: number };
@@ -56,6 +66,13 @@ export function CouponsManager({
   // Formulaire de création (minimal — valeurs par défaut côté serveur).
   const [label, setLabel] = useState('Geste d’accueil');
   const [valueAmount, setValueAmount] = useState(9000);
+
+  // Codes de fidélité émis (Phase 3) — chargés à la demande.
+  const [grants, setGrants] = useState<GrantRow[] | null>(null);
+  async function loadGrants() {
+    const res = await fetch('/api/admin/coupons/grants', { credentials: 'include' });
+    if (res.ok) setGrants(((await res.json()) as { items: GrantRow[] }).items);
+  }
 
   async function refresh() {
     const res = await fetch('/api/admin/coupons', { credentials: 'include' });
@@ -238,6 +255,45 @@ export function CouponsManager({
           ))}
         </tbody>
       </table>
+
+      {/* Codes de fidélité émis (Phase 3) — téléphone masqué (PII). */}
+      <section className="space-y-2" data-testid="coupons-grants-section">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-encre">Codes de fidélité émis</h2>
+          <button type="button" onClick={loadGrants} className="text-xs text-sauge underline">
+            {grants === null ? 'Charger' : 'Rafraîchir'}
+          </button>
+        </div>
+        {grants !== null && (
+          <table className="w-full border-collapse text-xs" data-testid="coupons-grants-table">
+            <thead>
+              <tr className="border-b border-encre/15 text-left text-encre/60">
+                <th className="py-1">Code</th>
+                <th>Téléphone</th>
+                <th>Valeur</th>
+                <th>Statut</th>
+                <th>Activation</th>
+                <th>Expiration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {grants.length === 0 && (
+                <tr><td colSpan={6} className="py-4 text-center text-encre/50">Aucun code émis.</td></tr>
+              )}
+              {grants.map((g) => (
+                <tr key={g.id} className="border-b border-encre/10" data-testid={`grant-row-${g.id}`}>
+                  <td className="py-1 font-mono">{g.code}</td>
+                  <td>{g.phone}</td>
+                  <td>{(g.valueCents / 100).toFixed(0)} MAD</td>
+                  <td>{g.status}</td>
+                  <td>{g.activatesAt ? new Date(g.activatesAt).toLocaleDateString('fr-MA') : '—'}</td>
+                  <td>{g.expiresAt ? new Date(g.expiresAt).toLocaleDateString('fr-MA') : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   );
 }

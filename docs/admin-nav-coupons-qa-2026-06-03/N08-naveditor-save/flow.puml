@@ -1,0 +1,39 @@
+@startuml N08-naveditor-save-sequence
+title N08 — handleSave : sequence PATCH /api/admin/settings/nav
+
+actor Karim
+participant "NavEditor\n(handleSave)" as NE
+participant "navSchema\n(client)" as ZS
+participant "MSW\nnavSettingsHandlers" as MSW
+
+Karim -> NE : clic « Enregistrer »
+NE -> NE : setError(null); setSuccess(null)
+NE -> ZS : safeParse({ items: normalizePositions })
+alt validation client KO
+  ZS --> NE : success=false (issues)
+  NE -> NE : set-errors + « N erreur(s) à corriger. »
+  NE --> Karim : messages locaux (AUCUN fetch)
+else validation client OK
+  NE -> NE : setSaving(true)
+  NE -> MSW : PATCH /nav\nIf-Match: <version>\nbody { payload }
+  alt 200 success
+    MSW --> NE : { meta:{ version:v' }, snapshotId }
+    NE -> NE : setSuccess(« Navigation enregistrée. »)\nset-errors []\nsetVersion(v')
+  else 409 conflict
+    MSW --> NE : 409 version_conflict
+    NE -> NE : setError(« …Recharge la page. »)\n(corps non parse, version inchangee)
+  else 422 validation_failed
+    MSW --> NE : 422 { details:[{path,message}] }
+    NE -> NE : setError(« Validation serveur en échec. »)\nset-errors(map details -> lignes)
+  else autre !ok (500…)
+    MSW --> NE : 500
+    NE -> NE : setError(« Erreur serveur. »)
+  else rejet reseau
+    MSW --> NE : HttpResponse.error()
+    NE -> NE : catch -> setError(err.message || « Erreur réseau. »)
+  end
+  NE -> NE : finally setSaving(false)
+  NE --> Karim : message succes/erreur + bouton reactive
+end
+
+@enduml

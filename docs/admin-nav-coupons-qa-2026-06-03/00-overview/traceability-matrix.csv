@@ -1,0 +1,12 @@
+feature_id,exigence_metier,invariant,lacune_audit_adressee,fichier_test_cible,statut_impl
+N01,Operateur voit tous les onglets dont Coupons,NAV-INV-PRESENCE;NAV-INV-ROUTE,AdminShell inventaire non teste,src/components/admin/AdminShell.nav.test.tsx,fait
+N02,L'onglet courant est surligne,NAV-INV-ACTIVE,actif teste sur 1 seul item,src/components/admin/AdminShell.nav.test.tsx,fait
+N03,La page Coupons surligne l'onglet Coupons,NAV-INV-ACTIVE;NAV-INV-PRESENCE,integration onglet 0 test,src/app/admin/coupons/page.integration.test.tsx,fait
+N04,Nav accessible et responsive,NAV-INV-A11Y,a11y/responsive non couverts,src/components/admin/AdminShell.nav.test.tsx,fait
+N05,Config nav par defaut valide,NAV-INV-CONFIG,defaults vs schema non teste,src/lib/admin-config/nav-config.test.ts,fait
+N06,Resolution nav tolerante aux pannes,NAV-INV-FAILSAFE,failsafe nav non teste,src/lib/admin-config/resolve.nav.test.ts,fait
+N07,Operateur edite la nav,NAV-INV-CONFIG,NavEditor 0 test,src/components/admin/settings/NavEditor.test.tsx,fait
+N08,Sauvegarde nav fiable et verrouillee,NAV-INV-LOCK;NAV-INV-PERSIST,NavEditor save 0 test,src/components/admin/settings/NavEditor.save.test.tsx,fait
+N09,Contrat de sauvegarde securise,NAV-INV-LOCK;NAV-INV-PERSIST,contrat nav 0 test,src/app/api/admin/settings/[section]/route.nav.test.ts,fait
+N10,Parcours operateur onglet Coupons,NAV-INV-PRESENCE;NAV-INV-ACTIVE;NAV-INV-ROUTE,e2e nav 0,e2e/admin-nav-coupons.spec.ts,fait
+N11,Edition nav bout-en-bout,NAV-INV-CONFIG,e2e NavEditor 0,e2e/admin-nav-editor.spec.ts,fait

@@ -1,0 +1,45 @@
+@startuml F16-operator
+title F16 — Parcours opérateur Karim (create → activate → effet /kit → grants)
+
+actor "Karim (admin)" as K
+participant "Browser\n(storageState)" as B
+participant "CouponsManager\n/admin/coupons" as M
+participant "API /api/admin/coupons" as API
+participant "API /coupons/grants" as GAPI
+participant "/kit (SSR)\nresolveProductPricing" as KIT
+database "DB\ncoupons / coupon_grants" as DB
+
+== Auth pré-calculée ==
+note over B: storageState .auth/admin.json\n(login fait par global.setup.ts)
+
+== Création brouillon ==
+K -> M: remplir « Libellé » (horodaté) + Créer (brouillon)
+M -> API: POST /api/admin/coupons {welcome_auto, draft, 9000}
+API -> DB: insert coupon (status=draft)
+API --> M: 201
+M -> API: GET /api/admin/coupons (refresh)
+API --> M: items[]
+M --> K: ligne coupon-row (statut « Brouillon »)
+
+== Activation ==
+K -> M: clic « Activer »
+M -> API: POST /api/admin/coupons/{id}/status {active}
+API -> DB: update status=active (publish RBAC)
+API --> M: 200
+M -> API: GET refresh
+API --> M: items[] (active)
+M --> K: cellule statut « Actif » ; bouton Activer disparu
+
+== Effet vitrine (parité prix) ==
+K -> KIT: goto /kit
+KIT -> DB: resolveProductPricing (welcome_auto -90)
+KIT --> K: pack-price-line = « 199 MAD » (INV-PRICE)
+
+== Codes de fidélité émis (PII) ==
+K -> M: retour /admin/coupons + clic « Charger »
+M -> GAPI: GET /api/admin/coupons/grants
+GAPI -> DB: select grants
+GAPI --> M: items[] (téléphone DÉJÀ masqué 06…78)
+M --> K: coupons-grants-table (INV-PII)\nou « Aucun code émis. »
+
+@enduml

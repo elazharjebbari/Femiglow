@@ -1,0 +1,48 @@
+@startuml F18-redemption
+title F18 — Redemption client : saisir code → crédit → commande réduite (INV-422)
+
+actor "Yasmine" as Y
+participant "AddressStep\n<details coupon>" as A
+participant "InvitationCodeField" as IF
+participant "API /coupons/redeem\n(validateGrant)" as R
+participant "wizard-store\n(setCoupon/clearCoupon)" as S
+participant "WizardCartRecap" as RC
+participant "API /checkout/order" as O
+database "DB\ncoupon_grants" as DB
+
+note over R: PRÉCONDITION : grant DÉJÀ ACTIVÉ\n(activatesAt < now via _loyalty-activate-now.ts)
+
+== Ouvrir la porte coupon ==
+Y -> A: clic summary « J'ai un code de fidélité »
+A -> A: details.open = true → révèle InvitationCodeField
+
+== Valider le code ==
+Y -> IF: saisir code + « Appliquer »
+IF -> R: POST /api/coupons/redeem {code}
+R -> DB: validateGrant(code)
+alt grant activé, non expiré, non utilisé
+  DB --> R: ok
+  R --> IF: { valid:true, valueCents:2000 }
+  IF -> IF: invitation-code-ok « Crédit de 20 MAD appliqué »
+  IF -> S: onValid → setCoupon(code, 2000)
+  S -> RC: creditCents=2000 → re-render
+  RC --> Y: wizard-credit-line « −20 MAD » ; total 199 → 179
+else not_yet_active / expired / already_redeemed / not_found
+  DB --> R: invalid
+  R --> IF: { valid:false, reason }
+  IF --> Y: invitation-code-ko ; AUCUN crédit ; total inchangé
+end
+
+== Commander ==
+Y -> A: clic « Confirmer » (wizard-address-submit)
+A -> O: POST /api/checkout/order\n{ expectedTotalCents=17900, couponCode }
+O -> DB: reprice + soustrait MÊME crédit via grant
+O --> A: 201 (totaux coïncident → pas de 422, INV-422)
+A --> Y: wizard-step-thankyou
+
+== Anti-stale ==
+Y -> IF: ré-éditer le code après succès
+IF -> S: onClear → clearCoupon()
+S -> RC: creditCents=0 → wizard-credit-line disparaît, total revient à 199
+
+@enduml

@@ -1,0 +1,27 @@
+{
+  "_note": "navDefault est importé directement dans le test (source de vérité). Les fixtures ci-dessous sont des VARIANTES INVALIDES dérivées d'un item de base, pour les cas négatifs. baseItem = un item nav minimal valide.",
+  "baseItem": { "key": "dashboard", "label": "Tableau de bord", "href": "/admin", "icon": "home", "position": 0 },
+  "couponsExpected": { "key": "coupons", "label": "Coupons", "href": "/admin/coupons", "icon": "tag", "position": 9 },
+  "expectedKeys": ["dashboard", "leads", "components", "media", "legal", "content-studio", "tracking", "webhooks", "audit", "coupons", "settings"],
+  "expectedPositions": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  "invalid": {
+    "dupKey": { "items": [
+      { "key": "dashboard", "label": "A", "href": "/admin", "icon": "home", "position": 0 },
+      { "key": "dashboard", "label": "B", "href": "/admin/b", "icon": "box", "position": 1 }
+    ] },
+    "badKey": { "items": [ { "key": "Leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": 0 } ] },
+    "badHref": { "items": [ { "key": "leads", "label": "Leads", "href": "admin/leads", "icon": "users", "position": 0 } ] },
+    "emptyLabel": { "items": [ { "key": "leads", "label": "", "href": "/admin/leads", "icon": "users", "position": 0 } ] },
+    "longLabel": { "items": [ { "key": "leads", "label": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "href": "/admin/leads", "icon": "users", "position": 0 } ] },
+    "floatPos": { "items": [ { "key": "leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": 1.5 } ] },
+    "negPos": { "items": [ { "key": "leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": -1 } ] },
+    "extraField": { "items": [ { "key": "leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": 0, "extra": true } ] },
+    "tooMany": { "_build": "21 items générés programmatiquement key=item-0..item-20 position=0..20" },
+    "badRole": { "items": [ { "key": "leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": 0, "requiresRole": "viewer" } ] }
+  },
+  "messages": {
+    "dupKey": "Clé \"dashboard\" dupliquée.",
+    "badKey": "Clé invalide (kebab-case).",
+    "badHref": "href doit commencer par /."
+  }
+}

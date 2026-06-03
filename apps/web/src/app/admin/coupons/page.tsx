@@ -22,7 +22,7 @@ export default async function AdminCouponsPage() {
   }));
 
   return (
-    <AdminShell adminEmail={session.email} active="settings">
+    <AdminShell adminEmail={session.email} active="coupons">
       <CouponsManager initialCoupons={initial} />
     </AdminShell>
   );
