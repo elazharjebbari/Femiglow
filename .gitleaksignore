@@ -1,3 +1,8 @@
-apps/web/src/components/admin/tracking/plans/wizard/StepEnvProfiles.tsx:generic-api-key:11
-apps/web/src/lib/tracking/plan/validator.ts:generic-api-key:20
-docs/gtm/unified-tracking/14-tests/playwright/config.md:femiglow-database-url:103
+# Faux positifs — valeurs d'EXEMPLE dans la doc QA coupons (hash anonyme fictif
+# + descriptions d'assertions « visitorKey » dans des cellules CSV). Aucun
+# secret réel. Revus le 2026-06-03.
+docs/coupons-qa-2026-06-02/01-data-model/fixtures.json:generic-api-key:81
+docs/coupons-qa-2026-06-02/01-data-model/fixtures.json:generic-api-key:92
+docs/coupons-qa-2026-06-02/05-coupon-context/test-cases.csv:generic-api-key:24
+docs/coupons-qa-2026-06-02/05-coupon-context/test-cases.csv:generic-api-key:26
+docs/coupons-qa-2026-06-02/05-coupon-context/test-cases.csv:generic-api-key:27

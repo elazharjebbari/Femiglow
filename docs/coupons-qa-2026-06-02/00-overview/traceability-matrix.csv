@@ -1,0 +1,21 @@
+feature_id,risque,gate_associe,types_tests_requis,priorite_min,parcours_e2e,couverture_cible
+CPN-01,"Intégrité données / contrainte unique manquante",G-IDEMPOTENCE,"U,C",P0,admin-coupon,repos>=90
+CPN-02,"Mauvais calcul prix",G-PRICE-PARITY,U,P0,-,engine=100
+CPN-03,"Sélection/holdout non déterministe",G-HOLDOUT-DETERMINISM,U,P0,-,engine=100
+CPN-04,"Régression aval / fallback cassé",G-FALLBACK-LEGACY,"U",P0,visitor-coupon,engine=100
+CPN-05,"Contexte divergent affichage vs checkout",G-PRICE-PARITY,"U,I",P0,visitor-coupon,context>=95
+CPN-06,"Prix affiché faux / valeur lead faussée","G-PRICE-PARITY,G-TRACKING-VALUE","U,I,E",P0,visitor-coupon,ui>=85
+CPN-07,"Total snapshot ≠ total facturé",G-PRICE-PARITY,"U,I,E",P0,visitor-coupon,ui>=85
+CPN-08,"Commande rejetée 422 / fraude prix",G-PRICE-PARITY,"C,E",P0,visitor-coupon,api>=90
+CPN-09,"Double comptage / log bloquant",G-IDEMPOTENCE,"U,C,E",P1,visitor-coupon,api>=90
+CPN-10,"Saisie invalide acceptée / perte données","G-RBAC","I,C,E",P0,admin-coupon,ui>=85
+CPN-11,"Activation/pause sans effet",G-FALLBACK-LEGACY,"I,C,E",P0,admin-coupon,ui>=85
+CPN-12,"Uplift faux → mauvaise décision",,"U,I,E",P1,admin-coupon,ui>=85
+CPN-13,"Escalade privilèges",G-RBAC,"C,E",P0,admin-coupon,api>=90
+CPN-14,"Hors charte / message faux / flash SSR",G-CHARTE,"I,V,A,E",P0,visitor-coupon,ui>=85
+CPN-15,"Friction / champ ouvert / a11y",G-A11Y,"I,A",P2,visitor-coupon,ui>=80
+CPN-16,"Valeur conversion faussée",G-TRACKING-VALUE,"U,I,E",P0,visitor-coupon,api>=90
+CPN-17,"Double remise / rollback impossible","G-PRICE-PARITY,G-FALLBACK-LEGACY","U,C,E",P0,visitor-coupon,engine=100
+CPN-18,"Coupon expiré servi / bucket figé",G-HOLDOUT-DETERMINISM,"U,C",P0,-,api>=90
+CPN-19,"Bucket instable → mismatch",G-HOLDOUT-DETERMINISM,"U,E",P0,visitor-coupon,engine=100
+CPN-20,"Seed non idempotent",,"U,C",P1,-,repos>=90

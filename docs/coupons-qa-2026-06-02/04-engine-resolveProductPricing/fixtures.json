@@ -1,0 +1,101 @@
+{
+  "$comment": "CPN-04 resolveProductPricing — table de vérité composition + fallback. Prix en centimes. now injecté. 'selected' = coupon retourné par resolveCoupon (déjà filtré). 'bucket' = décision holdout (CPN-19) ; null/absent => calculé, mais ici on le force pour isoler la composition. expected = champs PromoComputation attendus + coupon.",
+  "nowCanonical": "2026-06-02T12:00:00.000Z",
+  "priceFull": 28900,
+  "promoClassic": 19900,
+  "couponWelcomeAuto": { "id": "welcome_auto", "type": "amount", "mode": "auto", "value": -9000 },
+  "expectedKeys": ["active", "coupon", "effectivePriceCents", "framing", "originalPriceCents", "savingsCents", "savingsPct"],
+  "cases": [
+    {
+      "id": "RPP-01",
+      "label": "treatment : coupon -90 MAD appliqué -> 199",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": { "id": "welcome_auto", "type": "amount", "mode": "auto", "value": -9000 },
+      "bucket": "treatment",
+      "expected": { "active": true, "effectivePriceCents": 19900, "originalPriceCents": 28900, "savingsCents": 9000, "coupon": { "id": "welcome_auto", "type": "amount", "mode": "auto", "bucket": "treatment" } }
+    },
+    {
+      "id": "RPP-02",
+      "label": "fallback : aucun coupon, promo classique 199",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": null,
+      "bucket": null,
+      "expected": { "active": true, "effectivePriceCents": 19900, "originalPriceCents": 28900, "savingsCents": 9000, "coupon": null }
+    },
+    {
+      "id": "RPP-03",
+      "label": "fallback plein tarif : aucun coupon, promo null",
+      "input": { "priceCents": 28900, "promoPriceCents": null, "currency": "MAD" },
+      "selected": null,
+      "bucket": null,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "coupon": null }
+    },
+    {
+      "id": "RPP-04",
+      "label": "holdout : coupon sélectionné mais prix = repli promo, coupon non-null",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": { "id": "welcome_auto", "type": "amount", "mode": "auto", "value": -10000 },
+      "bucket": "holdout",
+      "expected": { "active": true, "effectivePriceCents": 19900, "originalPriceCents": 28900, "savingsCents": 9000, "coupon": { "id": "welcome_auto", "type": "amount", "mode": "auto", "bucket": "holdout" } },
+      "$note": "coupon -100 MAD aurait donné 18900 ; on vérifie qu'en holdout c'est 19900 (promo), PAS 18900."
+    },
+    {
+      "id": "RPP-05",
+      "label": "holdout sans promo : plein tarif, coupon non-null",
+      "input": { "priceCents": 28900, "promoPriceCents": null, "currency": "MAD" },
+      "selected": { "id": "welcome_auto", "type": "amount", "mode": "auto", "value": -9000 },
+      "bucket": "holdout",
+      "expected": { "active": false, "effectivePriceCents": 28900, "savingsCents": 0, "coupon": { "id": "welcome_auto", "type": "amount", "mode": "auto", "bucket": "holdout" } }
+    },
+    {
+      "id": "RPP-06",
+      "label": "remise > prix : clamp à 0, jamais négatif",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": { "id": "welcome_auto", "type": "amount", "mode": "auto", "value": -40000 },
+      "bucket": "treatment",
+      "expected": { "effectivePriceCentsMin": 0, "coupon": { "id": "welcome_auto", "bucket": "treatment" } }
+    },
+    {
+      "id": "RPP-07",
+      "label": "remise nulle : computePromo garde promo<price -> plein tarif inactif",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": { "id": "noop", "type": "amount", "mode": "auto", "value": 0 },
+      "bucket": "treatment",
+      "expected": { "active": false, "effectivePriceCents": 28900, "savingsCents": 0 }
+    },
+    {
+      "id": "RPP-08",
+      "label": "coupon percent -10% en treatment",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": { "id": "pct10", "type": "percent", "mode": "auto", "value": -10 },
+      "bucket": "treatment",
+      "expected": { "active": true, "effectivePriceCents": 26010, "savingsCents": 2890, "coupon": { "id": "pct10", "type": "percent", "bucket": "treatment" } }
+    },
+    {
+      "id": "RPP-09",
+      "label": "phase 1 holdoutPct 0 -> toujours treatment (50 visitorKeys)",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": { "id": "welcome_auto", "type": "amount", "mode": "auto", "value": -9000 },
+      "holdoutPct": 0,
+      "visitorKeys": ["v-01", "v-17", "v-33", "v-49", "v-88", "v-99"],
+      "expectedBucketForAll": "treatment"
+    },
+    {
+      "id": "RPP-10",
+      "label": "visitorKey null + holdoutPct 50 -> treatment",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": { "id": "welcome_auto", "type": "amount", "mode": "auto", "value": -9000 },
+      "holdoutPct": 50,
+      "visitorKey": null,
+      "expected": { "coupon": { "bucket": "treatment" } }
+    },
+    {
+      "id": "RPP-11",
+      "label": "DB down -> candidates vides -> fallback silencieux",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "currency": "MAD" },
+      "selected": null,
+      "upstreamError": true,
+      "expected": { "active": true, "effectivePriceCents": 19900, "coupon": null, "throws": false }
+    }
+  ]
+}

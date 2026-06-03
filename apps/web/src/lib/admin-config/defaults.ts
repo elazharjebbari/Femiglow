@@ -35,12 +35,13 @@ export const navDefault: NavConfig = {
     { key: 'tracking', label: 'Tracking', href: '/admin/tracking', icon: 'activity', position: 6 },
     { key: 'webhooks', label: 'Webhooks', href: '/admin/webhooks', icon: 'webhook', position: 7 },
     { key: 'audit', label: 'Audit', href: '/admin/audit', icon: 'list', position: 8 },
+    { key: 'coupons', label: 'Coupons', href: '/admin/coupons', icon: 'tag', position: 9 },
     {
       key: 'settings',
       label: 'Réglages',
       href: '/admin/settings',
       icon: 'gear',
-      position: 9,
+      position: 10,
       requiresRole: 'admin',
     },
   ],
@@ -70,6 +71,7 @@ export const rbacDefault: RbacConfig = {
       'app-config': ['read', 'write', 'publish', 'delete'],
       legal: ['read', 'write', 'publish', 'delete'],
       'content-studio': ['read', 'write', 'publish', 'delete'],
+      coupons: ['read', 'write', 'publish', 'delete'],
     },
     admin: {
       components: ['read', 'write', 'publish'],
@@ -80,6 +82,7 @@ export const rbacDefault: RbacConfig = {
       'app-config': ['read', 'write'],
       legal: ['read', 'write', 'publish'],
       'content-studio': ['read', 'write', 'publish'],
+      coupons: ['read', 'write', 'publish'],
     },
     editor: {
       components: ['read', 'write'],
@@ -90,6 +93,7 @@ export const rbacDefault: RbacConfig = {
       'app-config': ['read'],
       legal: ['read', 'write'],
       'content-studio': ['read', 'write'],
+      coupons: ['read', 'write'],
     },
     viewer: {
       components: ['read'],
@@ -100,6 +104,7 @@ export const rbacDefault: RbacConfig = {
       'app-config': ['read'],
       legal: ['read'],
       'content-studio': ['read'],
+      coupons: ['read'],
     },
   },
 };

@@ -1,0 +1,126 @@
+{
+  "$comment": "CPN-02 applyCoupon — table de vérité. Toutes valeurs en centimes. basePriceCents canonique = 28900 sauf mention. Sortie = PromoComputation attendu. Vérifié contre l'implémentation réelle de computePromo (lib/utils/promo.ts).",
+  "basePriceCanonical": 28900,
+  "cases": [
+    {
+      "id": "TV-01",
+      "label": "fixed_amount 9000 (geste d'accueil -90 MAD)",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "fixed_amount", "valueAmount": 9000 },
+      "candidatePromoCents": 19900,
+      "expected": { "active": true, "effectivePriceCents": 19900, "originalPriceCents": 28900, "savingsCents": 9000, "savingsPct": 31, "framing": "amount" }
+    },
+    {
+      "id": "TV-02",
+      "label": "percent 10",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "percent", "valueAmount": 10 },
+      "candidatePromoCents": 26010,
+      "expected": { "active": true, "effectivePriceCents": 26010, "originalPriceCents": 28900, "savingsCents": 2890, "savingsPct": 10, "framing": "amount" }
+    },
+    {
+      "id": "TV-03",
+      "label": "fixed_amount = prix exact -> candidat 0 -> inactif",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "fixed_amount", "valueAmount": 28900 },
+      "candidatePromoCents": 0,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-04",
+      "label": "fixed_amount > prix -> plancher 0 -> inactif",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "fixed_amount", "valueAmount": 40000 },
+      "candidatePromoCents": 0,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-05",
+      "label": "percent 100 -> candidat 0 -> inactif",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "percent", "valueAmount": 100 },
+      "candidatePromoCents": 0,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-06",
+      "label": "percent 0 -> candidat = prix -> inactif",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "percent", "valueAmount": 0 },
+      "candidatePromoCents": 28900,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-07",
+      "label": "fixed_amount 0 -> candidat = prix -> inactif",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "fixed_amount", "valueAmount": 0 },
+      "candidatePromoCents": 28900,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-08",
+      "label": "percent 33 arrondi",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "percent", "valueAmount": 33 },
+      "candidatePromoCents": 19363,
+      "expected": { "active": true, "effectivePriceCents": 19363, "originalPriceCents": 28900, "savingsCents": 9537, "savingsPct": 33, "framing": "amount" }
+    },
+    {
+      "id": "TV-09",
+      "label": "percent 12.5 demi-point",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "percent", "valueAmount": 12.5 },
+      "candidatePromoCents": 25288,
+      "expected": { "active": true, "effectivePriceCents": 25288, "originalPriceCents": 28900, "savingsCents": 3612, "savingsPct": 12, "framing": "amount" }
+    },
+    {
+      "id": "TV-10",
+      "label": "valueAmount NaN -> inactif sans throw",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "percent", "valueAmount": null },
+      "candidatePromoCents": null,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-11",
+      "label": "fixed_amount négatif -> candidat > prix -> inactif (pas de majoration)",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "fixed_amount", "valueAmount": -5000 },
+      "candidatePromoCents": 33900,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-12",
+      "label": "percent 150 -> candidat négatif planché 0 -> inactif",
+      "priceCents": 28900,
+      "coupon": { "valueKind": "percent", "valueAmount": 150 },
+      "candidatePromoCents": 0,
+      "expected": { "active": false, "effectivePriceCents": 28900, "originalPriceCents": 28900, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-13",
+      "label": "prix Infinity -> original 0 -> inactif",
+      "priceCents": "Infinity",
+      "coupon": { "valueKind": "percent", "valueAmount": 10 },
+      "candidatePromoCents": "non-finite",
+      "expected": { "active": false, "effectivePriceCents": 0, "originalPriceCents": 0, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-14",
+      "label": "prix négatif -> original planché 0",
+      "priceCents": -100,
+      "coupon": { "valueKind": "fixed_amount", "valueAmount": 5000 },
+      "candidatePromoCents": -5100,
+      "expected": { "active": false, "effectivePriceCents": 0, "originalPriceCents": 0, "savingsCents": 0, "savingsPct": 0, "framing": "percent" }
+    },
+    {
+      "id": "TV-15",
+      "label": "petit panier percent 25 -> framing percent",
+      "priceCents": 800,
+      "coupon": { "valueKind": "percent", "valueAmount": 25 },
+      "candidatePromoCents": 600,
+      "expected": { "active": true, "effectivePriceCents": 600, "originalPriceCents": 800, "savingsCents": 200, "savingsPct": 25, "framing": "percent" }
+    }
+  ]
+}

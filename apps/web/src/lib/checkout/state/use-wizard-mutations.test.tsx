@@ -307,3 +307,50 @@ describe('useAddressMutation — gestion d\'erreur', () => {
     expect(patchAddressMock).not.toHaveBeenCalled();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FE-S5 — Crédit de fidélité (Phase 3) : couponCode + expectedTotalCents ajusté
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('useAddressMutation — crédit de fidélité (anti-422)', () => {
+  function primeSuccess() {
+    patchAddressMock.mockResolvedValue({ leadId: 'cl_test', status: 'address_set' });
+    patchPaymentMock.mockResolvedValue({ leadId: 'cl_test', status: 'payment_selected', nextStep: 'thank_you' });
+    createOrderMock.mockResolvedValue({ orderId: 'o_1', status: 'created', totalCents: 30000, currency: 'MAD' });
+  }
+  const runInput = { city: 'Casablanca', addressLine1: '12 rue X', country: 'MA', shippingMode: 'standard' as const };
+
+  it('S5-1 crédit 2000 → couponCode transmis + expectedTotalCents = total − crédit', async () => {
+    primeSuccess();
+    useWizardStore.getState().setCoupon('FG-ABC234', 2000);
+    const { result } = renderHook(() => useAddressMutation(), { wrapper });
+    await act(async () => {
+      await result.current.execute(runInput);
+    });
+    expect(createOrderMock.mock.calls[0]?.[0]).toMatchObject({
+      couponCode: 'FG-ABC234',
+      expectedTotalCents: 30000, // 32000 − 2000
+    });
+  });
+
+  it('S5-2 sans crédit → pas de couponCode, expectedTotalCents = total (non-régression)', async () => {
+    primeSuccess();
+    const { result } = renderHook(() => useAddressMutation(), { wrapper });
+    await act(async () => {
+      await result.current.execute(runInput);
+    });
+    const payload = createOrderMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(payload.expectedTotalCents).toBe(32000);
+    expect(payload.couponCode).toBeUndefined();
+  });
+
+  it('S5-3 crédit > total → expectedTotalCents plafonné à 0', async () => {
+    primeSuccess();
+    useWizardStore.getState().setCoupon('FG-BIG999', 99999);
+    const { result } = renderHook(() => useAddressMutation(), { wrapper });
+    await act(async () => {
+      await result.current.execute(runInput);
+    });
+    expect(createOrderMock.mock.calls[0]?.[0]).toMatchObject({ expectedTotalCents: 0 });
+  });
+});

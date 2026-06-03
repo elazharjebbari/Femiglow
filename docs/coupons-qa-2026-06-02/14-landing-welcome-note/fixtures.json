@@ -1,0 +1,108 @@
+{
+  "$comment": "Fixtures CPN-14 — props CouponWelcomeNote + textes attendus fr/ar. Devise MAD, prix kit 289 / promo 199, coupon welcome_auto -90 MAD. Aucune PII.",
+  "tokens": {
+    "$comment": "Tokens de charte de référence (apps/web/src/styles/tokens.css) pour les oracles charte/contraste.",
+    "creme": "#FBF8F1",
+    "cremeWarm": "#F5EFE3",
+    "encre": "#2C2A28",
+    "encreSoft": "#4A4744",
+    "sauge": "#C5DBC4",
+    "saugeDark": "#4F6D52",
+    "champagne": "#C8A876",
+    "champagneDark": "#7A5F38"
+  },
+  "props": {
+    "treatment_welcome_fr_proche": {
+      "coupon": { "id": "cpn_welcome", "type": "welcome_auto", "mode": "auto", "bucket": "treatment" },
+      "discountCents": 9000,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": "2026-06-30"
+    },
+    "treatment_welcome_fr_lointain": {
+      "coupon": { "id": "cpn_welcome", "type": "welcome_auto", "mode": "auto", "bucket": "treatment" },
+      "discountCents": 9000,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": "2026-12-31"
+    },
+    "treatment_welcome_fr_sans_date": {
+      "coupon": { "id": "cpn_welcome", "type": "welcome_auto", "mode": "auto", "bucket": "treatment" },
+      "discountCents": 9000,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": null
+    },
+    "treatment_welcome_ar_proche": {
+      "coupon": { "id": "cpn_welcome", "type": "welcome_auto", "mode": "auto", "bucket": "treatment" },
+      "discountCents": 9000,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": "2026-06-30",
+      "locale": "ar"
+    },
+    "holdout_welcome": {
+      "coupon": { "id": "cpn_welcome", "type": "welcome_auto", "mode": "auto", "bucket": "holdout" },
+      "discountCents": 9000,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": "2026-06-30"
+    },
+    "treatment_rescue": {
+      "coupon": { "id": "cpn_rescue", "type": "rescue", "mode": "auto", "bucket": "treatment" },
+      "discountCents": 9000,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": "2026-06-30"
+    },
+    "treatment_manual_code": {
+      "coupon": { "id": "cpn_manual", "type": "manual_code", "mode": "code", "bucket": "treatment" },
+      "discountCents": 9000,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": "2026-06-30"
+    },
+    "no_coupon": {
+      "coupon": null,
+      "discountCents": 0,
+      "finalPriceCents": 19900,
+      "currency": "MAD",
+      "endsAt": null
+    }
+  },
+  "expectedText": {
+    "fr": {
+      "heading": "Votre geste d'accueil est appliqué.",
+      "benefit": "90 MAD offerts sur votre première commande du pack.",
+      "final": "Prix final aujourd'hui : 199 MAD",
+      "validUntil": "Valable jusqu'au 30 juin 2026. Hors cumul.",
+      "validUntilLointain": "Valable jusqu'au 31 décembre 2026. Hors cumul.",
+      "noDateConditions": "Hors cumul.",
+      "invitationSummary": "J'ai un code d'invitation"
+    },
+    "ar": {
+      "heading": "تم تطبيق لفتة الترحيب الخاصة بكِ.",
+      "benefit": "٩٠ درهم هدية على طلبك الأول من المجموعة.",
+      "final": "السعر النهائي اليوم: ١٩٩ درهم",
+      "validUntil": "صالح حتى ٣٠ يونيو ٢٠٢٦. غير قابل للجمع.",
+      "invitationSummary": "لدي رمز دعوة",
+      "$comment": "Textes arabes indicatifs — à figer avec la rédaction maison lors de l'implémentation i18n ; les tests asserteront les clés du dictionnaire, pas des chaînes en dur dupliquées."
+    }
+  },
+  "forbidden": {
+    "$comment": "Motifs INTERDITS pour les oracles d'absence (charte).",
+    "redRetailRegex": "(text|bg|border)-red-|#FF0000|#E0245E",
+    "yellowDiscountRegex": "(text|bg|border)-yellow-|#FFEB3B|#FFD600|#FFFF00",
+    "countdownRegex": "data-countdown|plus que|expire dans|jours? restants?|compte à rebours",
+    "aggressiveAnimRegex": "animate-(bounce|pulse|ping|spin)",
+    "massiveRoundRegex": "rounded-(2xl|3xl|full)",
+    "emojiRegex": "\\p{Extended_Pictographic}",
+    "exclamation": "!"
+  },
+  "expectedClasses": {
+    "$comment": "Tokens autorisés attendus dans le sous-arbre (présence).",
+    "background": ["bg-creme", "bg-creme-warm"],
+    "text": ["text-encre", "text-encre/65", "text-encre-soft"],
+    "accentHairline": ["border-sauge/30", "border-t", "text-champagne-dark", "text-sauge-dark"]
+  }
+}

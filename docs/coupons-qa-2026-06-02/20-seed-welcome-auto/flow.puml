@@ -1,0 +1,54 @@
+@startuml CPN-20-seed-welcome-auto
+' Flux d'exécution idempotent du seed welcome_auto
+title CPN-20 — runWelcomeCouponSeed : insert si absent, sinon upsert (jamais de doublon)
+
+start
+:ctx { actorId };
+
+:rechercher coupon existant
+par CLE INTERNE (type=welcome_auto AND mode=auto);
+note right
+  PAS par id (createId aléatoire)
+  -> sinon idempotence impossible (R-CPN-20-4)
+end note
+
+if (coupon welcome_auto existe ?) then (non)
+  :id = createId('cpn');
+  :INSERT {
+    id, label="Geste d'accueil", code=null,
+    type=welcome_auto, mode=auto, status=active,
+    valueKind=fixed_amount, valueAmount=9000,
+    target=product_price, currency=MAD,
+    eligibility={}, holdoutPct=0,
+    createdBy=actorId
+  };
+  :stats = { inserted:1, updated:0 };
+else (oui)
+  partition "UPSERT vers la référence" {
+    :remettre valueAmount=9000, currency=MAD,
+     target=product_price, code=null;
+    if (status existant == 'paused' ?) then (oui)
+      :PRÉSERVER status=paused;
+      note right: respecte rollback opérateur (R-CPN-20-5)
+    else (non)
+      :status=active;
+    endif
+    :stats = { inserted:0, updated:0|1 };
+  }
+endif
+
+:INVARIANT post-seed
+count(type=welcome_auto) == 1;
+
+:retourner SeederResult {
+  stats, summary="Geste d'accueil prêt — -90 MAD"
+};
+
+partition "Vérification aval (CPN-17)" {
+  :resolveProductPricing(variant 28900/19900);
+  :effectivePriceCents == 19900 (199 MAD);
+  :source == 'coupon', savings == 9000;
+}
+
+stop
+@enduml

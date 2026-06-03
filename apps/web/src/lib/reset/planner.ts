@@ -18,7 +18,7 @@ const DOMAIN_TABLES: Record<string, string[]> = {
   commerce: [
     'products', 'product_variants', 'product_snapshots', 'product_stock',
     'form_config', 'form_config_history', 'form_variant_assignment',
-    'checkout_idempotency', 'delivery_cities',
+    'checkout_idempotency', 'delivery_cities', 'coupons', 'coupon_events', 'coupon_grants',
   ],
   content: [
     'site_components', 'component_field_bindings', 'component_field_history',
@@ -54,6 +54,7 @@ const SEEDER_DOMAIN: Record<string, string> = {
   'app-config-branding': 'system',
   'form-config': 'commerce',
   'products': 'commerce',
+  'coupons': 'commerce',
   'delivery-cities': 'commerce',
   'seo': 'content',
   'components': 'content',

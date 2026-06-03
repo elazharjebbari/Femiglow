@@ -231,3 +231,26 @@
 .hero-cta-wrapper a[role="button"]:hover {
   background-color: #3D4F3D !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   Coupon d'accueil — état « appliqué » vivant (récap wizard).
+   Kolenda : entrées lentes 400-600 ms, retenue, one-shot (pas de boucle qui
+   concurrence le CTA). Médaillon sauge qui éclôt + coche qui se DESSINE +
+   micro-pop unique sur l'économie. Tout désactivé sous prefers-reduced-motion.
+   ───────────────────────────────────────────────────────────────────── */
+@keyframes fgCouponRise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes fgCouponBadge { 0% { transform: scale(0.78); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes fgCouponCheck { to { stroke-dashoffset: 0; } }
+@keyframes fgCouponEco { 0%,100% { transform: scale(1); } 45% { transform: scale(1.07); } }
+
+.fg-coupon-line  { animation: fgCouponRise 500ms ease-out both; }
+.fg-coupon-badge { animation: fgCouponBadge 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.fg-coupon-check { stroke-dasharray: 13; stroke-dashoffset: 13; animation: fgCouponCheck 560ms 220ms ease-out forwards; }
+.fg-coupon-eco   { display: inline-block; animation: fgCouponEco 700ms 700ms ease-in-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fg-coupon-line,
+  .fg-coupon-badge,
+  .fg-coupon-eco { animation: none; }
+  .fg-coupon-check { animation: none; stroke-dashoffset: 0; }
+}

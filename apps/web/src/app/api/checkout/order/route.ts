@@ -93,6 +93,18 @@ export async function POST(req: NextRequest): Promise<Response> {
             details: unknown;
           };
         };
+    // Contexte coupon reconstruit depuis la requête — mêmes primitives que
+    // l'affichage (referer / UA / session) → bucket déterministe → prix
+    // facturé == prix affiché. En Phase 1 (holdout=0) le prix est de toute
+    // façon indépendant du visiteur.
+    const { buildCouponContext } = await import('@/lib/coupons/context');
+    const couponContext = buildCouponContext({
+      referer: req.headers.get('referer'),
+      userAgent: req.headers.get('user-agent'),
+      sessionId:
+        req.cookies.get('fg_session_id')?.value ?? req.cookies.get('_fbp')?.value ?? null,
+    });
+
     const result = await withIdempotency<OrderResp>({
       request: req,
       scope: 'order_create',
@@ -101,6 +113,8 @@ export async function POST(req: NextRequest): Promise<Response> {
         try {
           const order = await orderRepo.createOrder({
             chatLeadId: lead.id,
+            couponContext,
+            couponCode: input.couponCode ?? null,
             contact: {
               phoneE164: lead.phoneE164,
               firstName: lead.firstName,
@@ -184,6 +198,64 @@ export async function POST(req: NextRequest): Promise<Response> {
       leadId: input.leadId,
       replayed: result.replayed,
     });
+
+    // Phase 2 — converted SAUVETAGE. On lie la conversion à une exposition
+    // `rescue` préalable du visiteur (converted ⊆ exposed → taux cohérents
+    // treatment vs holdout). Best-effort, idempotent par orderId, jamais
+    // bloquant, seulement sur succès non rejoué.
+    if (
+      result.resourceId &&
+      result.body &&
+      !('error' in result.body) &&
+      !result.replayed &&
+      couponContext.visitorKey
+    ) {
+      try {
+        const { getRescueExposureBucket, recordCouponEvent } = await import(
+          '@/lib/db/queries/coupon-event-repo'
+        );
+        const { resolveRescueCoupon } = await import('@/lib/coupons/engine');
+        const bucket = await getRescueExposureBucket(couponContext.visitorKey);
+        if (bucket) {
+          const rescue = await resolveRescueCoupon(couponContext);
+          await recordCouponEvent({
+            couponId: rescue?.coupon.id ?? null,
+            phase: 'converted',
+            bucket,
+            orderId: result.resourceId,
+            visitorKey: couponContext.visitorKey,
+            trafficSource: couponContext.trafficSource ?? null,
+            device: couponContext.device ?? null,
+          });
+        }
+      } catch {
+        /* non bloquant */
+      }
+    }
+
+    // Phase 3 — émet un CRÉDIT DE FIDÉLITÉ pour cette commande (best-effort,
+    // idempotent par order). Le client le recevra (confirmation/email) et
+    // pourra l'utiliser sur une prochaine commande.
+    if (result.resourceId && result.body && !('error' in result.body) && !result.replayed) {
+      try {
+        const { listCoupons } = await import('@/lib/db/queries/coupon-repo');
+        const { issueGrant } = await import('@/lib/db/queries/coupon-grant-repo');
+        const template = (await listCoupons({ type: 'post_purchase', status: 'active' }))[0];
+        if (template) {
+          const expiresAt = new Date(Date.now() + 60 * 24 * 3600 * 1000);
+          await issueGrant({
+            templateCouponId: template.id,
+            leadId: lead.id,
+            sourceOrderId: result.resourceId,
+            valueCents: template.valueAmount,
+            currency: template.currency,
+            expiresAt,
+          });
+        }
+      } catch {
+        /* non bloquant */
+      }
+    }
 
     // CHA-260 — Webhook outbound (fire-and-forget). On ne bloque pas la
     // réponse client : le dispatcher logge la tentative en DB et l'idem-key

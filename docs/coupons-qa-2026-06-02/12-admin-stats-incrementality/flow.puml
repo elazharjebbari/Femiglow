@@ -1,0 +1,60 @@
+@startuml CPN-12-stats-flow
+title CPN-12 — Flux données → agrégats → UI (uplift / incrémentalité)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor "Opérateur" as Op
+participant "Panneau Performance\n(/admin/coupons/[id])" as UI
+participant "GET /stats\nroute" as API
+participant "coupon-event-repo\n(GROUP BY phase,bucket)" as Repo
+database "coupon_events\n(phase, bucket)" as DB
+participant "computeUplift\n(fonction pure)" as Calc
+
+Op -> UI : ouvre le panneau Performance
+UI -> API : GET /api/admin/coupons/{id}/stats?from&to
+API -> Repo : agrégat(couponId, window)
+Repo -> DB : SELECT phase, bucket, COUNT(*)\nWHERE coupon_id=? AND created_at IN [from,to]\nGROUP BY phase, bucket
+DB --> Repo : compteurs agrégés (PAS de visitorKey)
+Repo --> API : { treatment{exposed,applied,converted}, holdout{...} }
+API -> Calc : computeUplift(aggregates, minSamplePerBucket)
+
+alt total exposed == 0
+  Calc --> API : significance=no_data, uplift=null
+else holdout.exposed == 0
+  Calc --> API : noControl=true, uplift=null
+else min(exposed) < seuil
+  Calc --> API : significance=insufficient, uplift calculé (sourdine)
+else suffisant
+  Calc --> API : significance=sufficient, uplift{absolute,relative}
+end
+
+note right of Calc
+  Gardes :
+  convRate = exposed===0 ? 0 : converted/exposed
+  jamais NaN / Infinity
+  converted clampé <= exposed
+end note
+
+API --> UI : 200 { buckets, rates, uplift, significance, noControl }
+note over API #DDEFD8
+  Réponse = compteurs agrégés UNIQUEMENT.
+  Aucune PII (visitorKey/email) ne sort.
+end note
+
+alt no_data
+  UI --> Op : "Pas encore de données"
+else noControl
+  UI --> Op : "Pas de groupe contrôle (holdout 0 %)…"
+else insufficient
+  UI --> Op : tableau + uplift en sourdine + "Échantillon insuffisant"
+else sufficient
+  UI --> Op : tableau treatment/holdout + encart Uplift (+/-)
+end
+
+alt erreur 500
+  API --> UI : 500
+  UI --> Op : "Impossible de charger les statistiques" + "Réessayer"
+end
+
+@enduml

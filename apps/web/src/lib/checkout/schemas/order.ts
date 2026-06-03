@@ -28,6 +28,8 @@ export const createOrderInputSchema = z.object({
   currency: z.string().length(3).default('MAD'),
   paymentMethod: paymentMethodSchema,
   shippingMode: shippingModeSchema.default('standard'),
+  /** Code de crédit fidélité (Phase 3), optionnel. */
+  couponCode: z.string().trim().min(3).max(40).nullable().optional(),
 });
 export type CreateOrderInput = z.infer<typeof createOrderInputSchema>;
 

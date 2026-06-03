@@ -26,6 +26,7 @@ import {
 } from './items/app-config';
 import { formConfigSeeder } from './items/form-config';
 import { productsSeeder } from './items/products';
+import { couponsSeeder } from './items/coupons';
 import { deliveryCitiesSeeder } from './items/delivery-cities';
 import { seoSeeder } from './items/seo';
 import { componentsSeeder } from './items/components';
@@ -106,6 +107,16 @@ export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
     estimatedDurationMs: 2_000,
     idempotent: true,
     run: productsSeeder,
+  },
+  {
+    id: 'coupons',
+    group: 'commerce',
+    label: 'Coupon d’accueil (welcome_auto)',
+    description:
+      'Crée/réaligne le coupon d’accueil -90 MAD (289→199). Idempotent, préserve le status existant.',
+    estimatedDurationMs: 600,
+    idempotent: true,
+    run: couponsSeeder,
   },
   {
     id: 'delivery-cities',

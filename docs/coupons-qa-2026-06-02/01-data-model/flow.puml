@@ -1,0 +1,73 @@
+@startuml CPN-01-data-model
+' Diagramme entité-relation + contraintes — modèle de données coupons
+hide circle
+skinparam linetype ortho
+
+entity "admin_users" as admin {
+  * id : text <<PK>>
+}
+
+entity "orders" as orders {
+  * id : text <<PK>>
+}
+
+entity "coupons" as coupons {
+  * id : text <<PK>> -- createId('cpn')
+  --
+  * label : text NOT NULL
+  code : text NULL  <<UNIQUE WHERE NOT NULL>>
+  * type : enum(welcome_auto|rescue|email_unlock|manual_code|post_purchase)
+  * mode : enum(auto|code)
+  * status : enum(draft|active|paused|archived) = draft
+  * value_kind : enum(fixed_amount|percent)
+  * value_amount : int NOT NULL
+  * target : enum(product_price|shipping|future_credit) = product_price
+  * currency : text = MAD
+  * eligibility : jsonb = '{}'
+  starts_at : timestamptz NULL
+  ends_at : timestamptz NULL
+  * stackable : bool = false
+  * usage_scope : enum(unlimited|once_per_visitor|global_cap) = unlimited
+  usage_cap : int NULL
+  * usage_count : int = 0
+  * holdout_pct : int = 0
+  * priority : int = 0
+  * created_at : timestamptz = now()
+  * updated_at : timestamptz = now()
+  created_by : text NULL <<FK admin_users ON DELETE SET NULL>>
+}
+
+entity "coupon_events" as events {
+  * id : text <<PK>> -- createId('cpe')
+  --
+  coupon_id : text NULL <<FK coupons ON DELETE SET NULL>>
+  * phase : enum(exposed|applied|converted)
+  * bucket : enum(treatment|holdout)
+  visitor_key : text NULL  <<hash anonyme, pas de PII>>
+  order_id : text NULL <<FK orders ON DELETE SET NULL>>
+  amount_cents : int NULL
+  traffic_source : text NULL
+  device : text NULL
+  * created_at : timestamptz = now()
+}
+
+note bottom of coupons
+  Index:
+  - coupons_code_unique (code) WHERE code IS NOT NULL
+  - coupons_status_type_idx (status, type)
+end note
+
+note bottom of events
+  Index:
+  - coupon_events_coupon_phase_idx (coupon_id, phase, created_at)
+  - coupon_events_visitor_idx (visitor_key)
+  - coupon_events_order_converted_unique (order_id)
+       WHERE phase='converted' AND order_id IS NOT NULL
+       --> IDEMPOTENCE : 1 conversion / commande
+end note
+
+admin ||..o{ coupons : "created_by (SET NULL)"
+coupons ||..o{ events : "coupon_id (SET NULL)"
+orders ||..o{ events : "order_id (SET NULL)"
+
+@enduml

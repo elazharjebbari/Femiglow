@@ -1,0 +1,65 @@
+{
+  "$comment": "Fixtures CPN-20. Montants en CENTIMES. Coupon de référence seedé + variantes d'état + attendus aval.",
+  "seederDescriptor": {
+    "id": "coupons-welcome-auto",
+    "group": "commerce",
+    "label": "Coupon geste d'accueil (welcome_auto)",
+    "description": "Crée/met à jour le coupon welcome_auto -90 MAD, source de la promo /kit en Phase 1.",
+    "estimatedDurationMs": 600,
+    "idempotent": true
+  },
+  "expectedCoupon": {
+    "label": "Geste d'accueil",
+    "code": null,
+    "type": "welcome_auto",
+    "mode": "auto",
+    "status": "active",
+    "valueKind": "fixed_amount",
+    "valueAmount": 9000,
+    "target": "product_price",
+    "currency": "MAD",
+    "eligibility": {},
+    "stackable": false,
+    "usageScope": "unlimited",
+    "usageCap": null,
+    "usageCount": 0,
+    "holdoutPct": 0
+  },
+  "preexisting": {
+    "alteredValue": {
+      "$comment": "Le seed doit remettre valueAmount à 9000.",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 8000,
+      "currency": "MAD"
+    },
+    "pausedByAdmin": {
+      "$comment": "Le seed doit préserver status=paused (rollback opérateur).",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "paused",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "currency": "MAD"
+    }
+  },
+  "variant": { "priceCents": 28900, "promoPriceCents": 19900 },
+  "downstreamExpectation": {
+    "effectivePriceCents": 19900,
+    "displayMad": 199,
+    "savingsCents": 9000,
+    "savingsMad": 90,
+    "source": "coupon"
+  },
+  "idempotencyExpectations": {
+    "freshStore": { "inserted": 1, "countWelcomeAuto": 1 },
+    "reRun": { "inserted": 0, "countWelcomeAuto": 1 },
+    "threeRuns": { "countWelcomeAuto": 1 }
+  },
+  "voiceGuards": {
+    "summaryMustMatch": "accueil",
+    "summaryMustNotMatch": ["promo", "deal", "flash", "soldes"]
+  }
+}

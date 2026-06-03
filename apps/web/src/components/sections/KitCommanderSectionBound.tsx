@@ -143,9 +143,28 @@ export async function KitCommanderSectionBound({
       }
     : undefined;
 
+  // Coupon d'accueil — même source que /kit (resolveCoupon), pour rappeler le
+  // « geste d'accueil » dans le récap du wizard. On résout aussi la valeur du
+  // crédit fidélité (template post_purchase actif) pour le clin d'œil forward.
+  // Tolérant : erreur → inactif / 0.
+  let welcomeActive = false;
+  let postPurchaseCreditCents = 0;
+  try {
+    const { resolveCoupon } = await import('@/lib/coupons/engine');
+    const coupon = await resolveCoupon({});
+    welcomeActive = coupon?.type === 'welcome_auto';
+    const { listCoupons } = await import('@/lib/db/queries/coupon-repo');
+    const loyalty = (await listCoupons({ type: 'post_purchase', status: 'active' }))[0];
+    postPurchaseCreditCents = loyalty?.valueAmount ?? 0;
+  } catch {
+    welcomeActive = false;
+    postPurchaseCreditCents = 0;
+  }
+
   return (
     <KitCommanderSection
       initialCart={initialCart}
+      welcomeCoupon={{ active: welcomeActive, postPurchaseCreditCents }}
       packImage={primaryHeroImage}
       kicker={kicker ?? t('kicker_default')}
       title={title ?? t('title_default')}

@@ -1,0 +1,59 @@
+{
+  "$comment": "CPN-11 status lifecycle — fixtures. Machine à états + unicité welcome_auto + effet /kit. version = entier optimiste. Montants en centimes.",
+  "transitions": {
+    "allowed": [
+      { "from": "draft", "to": "active", "confirm": true, "toast": "Coupon activé" },
+      { "from": "draft", "to": "archived", "confirm": true, "toast": "Coupon archivé" },
+      { "from": "active", "to": "paused", "confirm": true, "toast": "Coupon mis en pause" },
+      { "from": "active", "to": "archived", "confirm": true, "toast": "Coupon archivé" },
+      { "from": "paused", "to": "active", "confirm": true, "toast": "Coupon repris" },
+      { "from": "paused", "to": "archived", "confirm": true, "toast": "Coupon archivé" }
+    ],
+    "forbidden": [
+      { "from": "archived", "to": "active", "status": 409, "code": "conflict", "message": "Ce coupon est archivé. Dupliquez-le pour le réutiliser." },
+      { "from": "archived", "to": "paused", "status": 409, "code": "conflict" },
+      { "from": "archived", "to": "draft", "status": 409, "code": "conflict" },
+      { "from": "draft", "to": "paused", "status": 409, "code": "conflict" }
+    ],
+    "idempotent": [
+      { "from": "active", "to": "active", "status": 200, "auditEmitted": false },
+      { "from": "paused", "to": "paused", "status": 200, "auditEmitted": false }
+    ]
+  },
+  "coupons": {
+    "welcomeDraft": { "id": "cpn_welcome_b", "label": "Bienvenue B", "type": "welcome_auto", "mode": "auto", "status": "draft", "valueKind": "fixed_amount", "valueAmount": 9000, "version": 1 },
+    "welcomeActive": { "id": "cpn_welcome_a", "label": "Bienvenue A", "type": "welcome_auto", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "version": 1 },
+    "welcomePaused": { "id": "cpn_welcome_p", "label": "Bienvenue P", "type": "welcome_auto", "mode": "auto", "status": "paused", "valueKind": "fixed_amount", "valueAmount": 9000, "version": 2 },
+    "welcomeArchived": { "id": "cpn_welcome_z", "label": "Bienvenue Z", "type": "welcome_auto", "mode": "auto", "status": "archived", "valueKind": "fixed_amount", "valueAmount": 9000, "version": 4 }
+  },
+  "uniquenessWelcomeAuto": {
+    "$comment": "un seul welcome_auto active à la fois",
+    "scenario": "A active + B draft -> activer B = 409",
+    "activeId": "cpn_welcome_a",
+    "attemptActivateId": "cpn_welcome_b",
+    "expected": { "status": 409, "code": "conflict", "conflictingId": "cpn_welcome_a", "message": "Un coupon d'accueil est déjà actif (Bienvenue A). Mettez-le en pause d'abord." }
+  },
+  "kitEffect": {
+    "basePriceCents": 28900,
+    "savingsCents": 9000,
+    "activeEffectiveCents": 19900,
+    "pausedEffectiveCents": 28900,
+    "$note": "active -> /kit affiche 19900 (treatment) après revalidate ; paused/archived/draft -> 28900 plein tarif"
+  },
+  "mockResponses": {
+    "transition200": { "status": 200, "body": { "id": "cpn_welcome_b", "status": "active", "version": 2 } },
+    "forbiddenTransition409": { "status": 409, "body": { "error": { "code": "conflict", "message": "Ce coupon est archivé. Dupliquez-le pour le réutiliser." } } },
+    "uniqueness409": { "status": 409, "body": { "error": { "code": "conflict", "message": "Un coupon d'accueil est déjà actif (Bienvenue A). Mettez-le en pause d'abord.", "conflictingId": "cpn_welcome_a" } } },
+    "versionConflict409": { "status": 409, "body": { "error": { "code": "version_conflict", "message": "Ce coupon a été modifié par un autre utilisateur." } } },
+    "invalidTarget422": { "status": 422, "body": { "error": { "code": "invalid_input", "fieldErrors": { "to": ["Statut cible invalide"] } } } },
+    "forbidden403": { "status": 403, "body": { "error": { "code": "forbidden", "message": "Permission refusée" } } },
+    "serverError500": { "status": 500, "body": { "error": { "code": "internal_error" } } }
+  },
+  "buttonsByStatus": {
+    "draft": ["Activer"],
+    "active": ["Mettre en pause"],
+    "paused": ["Reprendre"],
+    "archived": []
+  },
+  "auditAction": "admin.coupon.status_changed"
+}

@@ -89,6 +89,11 @@ export interface WizardShellProps {
   /** Snapshot du panier injecté côté serveur (Mode B). Mode A peut omettre. */
   initialCart?: CartSnapshot;
   /**
+   * Coupon d'accueil résolu serveur → mention « geste d'accueil » dans le
+   * récap. `active:false` ou absent → récap inchangé (non-régression).
+   */
+  welcomeCoupon?: { active: boolean; postPurchaseCreditCents?: number };
+  /**
    * Override de la thumbnail dans le `WizardCartRecap`. Permet au caller
    * (KitCommanderSection) de passer l'image hero résolue (Component-Media)
    * pour cohérence visuelle hero → wizard. Si undefined, WizardCartRecap
@@ -157,6 +162,7 @@ export function WizardShell({
   formContext,
   steps,
   initialCart,
+  welcomeCoupon,
   cartRecapThumbnailSrc,
   copy,
   paymentMethods,
@@ -168,6 +174,7 @@ export function WizardShell({
   const currentStep = useWizardStore((s) => s.currentStep);
   const storedFormContext = useWizardStore((s) => s.formContext);
   const storedCart = useWizardStore((s) => s.cartSnapshot);
+  const appliedCreditCents = useWizardStore((s) => s.creditCents);
   const setFormContext = useWizardStore((s) => s.setFormContext);
   const setCartSnapshot = useWizardStore((s) => s.setCartSnapshot);
   const goToStep = useWizardStore((s) => s.goToStep);
@@ -323,6 +330,22 @@ export function WizardShell({
           packLabel={t.cartRecap.packLabel}
           shippingIncludedLabel={t.cartRecap.shippingIncluded}
           currencyLabel={t.cartRecap.currency}
+          appliedCreditCents={appliedCreditCents}
+          welcomeCoupon={welcomeCoupon}
+          welcomeLabel={
+            dir === 'rtl'
+              ? 'لقد تم تطبيق هدية الترحيب الخاصة بك'
+              : 'Votre geste d’accueil est appliqué'
+          }
+          welcomeLabelShort={dir === 'rtl' ? 'هدية الترحيب' : 'Geste d’accueil'}
+          economyLabel={(amount) =>
+            dir === 'rtl' ? `توفير ${amount}` : `Économie ${amount}`
+          }
+          forwardCreditLabel={(amount) =>
+            dir === 'rtl'
+              ? `ورصيد بقيمة ${amount} ينتظرك بعد هذا الطلب.`
+              : `Et un crédit de ${amount} vous attend après cette commande.`
+          }
         />
       )}
       {header}

@@ -1,0 +1,56 @@
+@startuml CPN-16-tracking-value-based
+title CPN-16 — Flux valeur -> dataLayer -> providers pub (value-based)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+participant "Moteur prix\n(resolveProductPricing / computePromo)" as Engine
+participant "getKitLeadValue\n(public.ts, server-auth)" as Lead
+participant "Page /kit\n(view_item)" as Page
+participant "Wizard / Snapshot\n(add_to_cart, begin_checkout)" as Cart
+participant "Commande\n(purchase)" as Order
+participant "dataLayer (GTM)\nparams.value (MAD)" as DL
+participant "Meta CAPI / Pixel\n+ Google Ads" as Providers
+
+== Source unique de la value ==
+Engine -> Engine : effectivePriceCents = 19900 (coupon actif treatment)
+note right of Engine
+  Source de la value = prix PAYÉ
+  treatment -> 19900 ; holdout -> 28900
+end note
+
+== view_item (/kit) ==
+Page -> Engine : computePromo(28900, 19900)
+Engine --> Page : effectivePriceCents = 19900
+Page -> DL : view_item { value: 19900/100 = 199, currency: 'MAD' }
+
+== generate_lead (chat / contact) ==
+Cart -> Lead : getKitLeadValue()
+Lead --> Cart : { value: 199, currency: 'MAD' }
+Cart -> DL : generate_lead { value: 199 }
+
+== add_to_cart / begin_checkout ==
+Cart -> Cart : snapshot.totalCents = 19900 (CPN-07)
+Cart -> DL : add_to_cart / begin_checkout { value: 199 }
+
+== purchase (commande confirmée) ==
+Order -> Order : order.totalCents = 19900 (repricé, CPN-08)
+Order -> DL : purchase { value: 19900/100 = 199, currency: 'MAD' }
+
+== Propagation providers ==
+DL -> Providers : value = 199 (unité majeure)
+note over DL, Providers #DDEFD8
+  GATE G-TRACKING-VALUE ✔
+  Toutes surfaces : value = 199
+  JAMAIS 289 (barré) ni 19900 (centimes)
+  Cohérence view_item == add_to_cart == purchase
+  Invariance : promo statique OU coupon -> 199
+end note
+
+note over Providers #F6D9D4
+  Régression interdite :
+  - value=289 -> Meta sur-évalue -> bid trop haut -> CPA réel dégradé
+  - value=19900 -> value ×100 -> ROAS faux
+end note
+
+@enduml

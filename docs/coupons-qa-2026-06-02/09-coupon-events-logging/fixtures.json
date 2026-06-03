@@ -1,0 +1,98 @@
+{
+  "$comment": "CPN-09 coupon_events. amountCents = REMISE (savings), pas le total paye. welcome_auto -90 MAD => amountCents 9000. Holdout => amountCents 0 (remise non servie) mais couponId + bucket conserves. Index partiel unique : un seul converted par orderId. visitorKey = hash anonyme, JAMAIS de PII.",
+  "constants": {
+    "welcomeDiscountCents": 9000,
+    "kitEffectiveCents": 19900,
+    "holdoutAmountCents": 0
+  },
+  "coupon": {
+    "id": "cpn_welcome",
+    "label": "Geste d'accueil",
+    "type": "welcome_auto",
+    "mode": "auto",
+    "status": "active",
+    "valueKind": "fixed_amount",
+    "valueAmount": 9000,
+    "holdoutPct": 0
+  },
+  "events": {
+    "exposed_treatment": {
+      "id": "evt_exp_1",
+      "couponId": "cpn_welcome",
+      "phase": "exposed",
+      "bucket": "treatment",
+      "visitorKey": "vk1",
+      "orderId": null,
+      "amountCents": null,
+      "trafficSource": "paid_social",
+      "device": "mobile"
+    },
+    "applied_treatment": {
+      "id": "evt_app_1",
+      "couponId": "cpn_welcome",
+      "phase": "applied",
+      "bucket": "treatment",
+      "visitorKey": "vk1",
+      "orderId": null,
+      "amountCents": 9000,
+      "trafficSource": "paid_social",
+      "device": "mobile"
+    },
+    "converted_treatment": {
+      "id": "evt_cnv_1",
+      "couponId": "cpn_welcome",
+      "phase": "converted",
+      "bucket": "treatment",
+      "visitorKey": "vk1",
+      "orderId": "o1",
+      "amountCents": 9000,
+      "trafficSource": "paid_social",
+      "device": "mobile"
+    },
+    "converted_holdout": {
+      "id": "evt_cnv_2",
+      "couponId": "cpn_welcome",
+      "phase": "converted",
+      "bucket": "holdout",
+      "visitorKey": "vkHoldout",
+      "orderId": "o2",
+      "amountCents": 0,
+      "trafficSource": "paid_social",
+      "device": "desktop"
+    },
+    "exposed_anonymous": {
+      "id": "evt_exp_anon",
+      "couponId": "cpn_welcome",
+      "phase": "exposed",
+      "bucket": "treatment",
+      "visitorKey": null,
+      "orderId": null,
+      "amountCents": null,
+      "trafficSource": "direct",
+      "device": "mobile"
+    }
+  },
+  "piiProbe": {
+    "$comment": "Valeurs interdites a rechercher dans toute ligne coupon_events.",
+    "email": "sara@example.com",
+    "phone": "+212600000001",
+    "name": "Sara",
+    "forbiddenRegex": "@|\\+212|sara"
+  },
+  "aggregationSeed": {
+    "$comment": "Pour tester countByPhaseAndBucket.",
+    "events": ["exposed_treatment", "exposed_treatment", "applied_treatment", "converted_treatment"],
+    "expected": {
+      "exposed": { "treatment": 2, "holdout": 0 },
+      "applied": { "treatment": 1, "holdout": 0 },
+      "converted": { "treatment": 1, "holdout": 0 }
+    }
+  },
+  "idempotency": {
+    "$comment": "Double record converted meme orderId => 1 ligne.",
+    "orderId": "o1",
+    "firstInsert": { "inserted": true },
+    "secondInsert": { "inserted": false },
+    "finalCount": 1
+  }
+}

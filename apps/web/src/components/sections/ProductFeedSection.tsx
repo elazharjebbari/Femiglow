@@ -25,6 +25,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { PriceBlock } from '@/components/sections/PriceBlock';
+import { RescueOffer } from '@/components/sections/RescueOffer';
 import { PackVisualBound } from '@/components/sections/PackVisualBound';
 import { StepsTimeline } from '@/components/sections/StepsTimeline';
 import { cn } from '@/lib/utils/cn';
@@ -49,6 +50,10 @@ interface ProductFeedSectionProps {
    * chiffres restent latins (cohérence de marque).
    */
   reviewsCountLabel?: string;
+  /** Coupon d'accueil résolu serveur (CPN-14), propagé à `<PriceBlock/>`. */
+  welcomeCoupon?: { active: boolean; endsAt: string | null };
+  /** Locale arabe → RTL pour l'offre de sauvetage (Phase 2). */
+  isArabic?: boolean;
 }
 
 export function ProductFeedSection({
@@ -57,6 +62,8 @@ export function ProductFeedSection({
   anchorId = 'product-feed',
   resultLabel,
   reviewsCountLabel,
+  welcomeCoupon,
+  isArabic = false,
 }: ProductFeedSectionProps) {
   return (
     <section
@@ -86,7 +93,8 @@ export function ProductFeedSection({
                 CTA primaire + microcopy + social proof condensé.
                 IO émet pack_section_view + pack_economy_view +
                 pack_social_proof_view. */}
-            <PriceBlock feed={feed} product={product} hasVisual />
+            <PriceBlock feed={feed} product={product} hasVisual welcomeCoupon={welcomeCoupon} />
+            <RescueOffer isArabic={isArabic} />
           </div>
 
           {/* Colonne droite — packshot piloté par le Components-CMS

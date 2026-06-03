@@ -1,0 +1,66 @@
+{
+  "$comment": "CPN-06 price-display-public — fixtures. Prix en centimes. value de tracking/lead en unité majeure (MAD). Le coupon welcome_auto -90 MAD reproduit 289->199.",
+  "kitSlug": "le-kit",
+  "currency": "MAD",
+  "basePriceCents": 28900,
+  "effectiveWithCouponCents": 19900,
+  "couponSavingsCents": 9000,
+  "expectedSavingsLabelFr": "Économisez 90 MAD",
+  "expectedSavingsLabelAr": "Économisez 90 درهم",
+  "expectedAriaLabelFr": "Prix : 199 MAD, prix initial 289 MAD",
+  "products": {
+    "couponActive": {
+      "id": "prod-kit",
+      "slug": "le-kit",
+      "status": "published",
+      "title": "Le Kit FemiGlow",
+      "variant": {
+        "sku": "le-kit",
+        "priceCents": 28900,
+        "promoPriceCents": 19900,
+        "currency": "MAD",
+        "inventoryStatus": "in_stock"
+      },
+      "expected": {
+        "priceCents": 28900,
+        "promoPriceCents": 19900,
+        "currency": "MAD",
+        "leadValue": 199,
+        "viewItemValue": 199
+      }
+    },
+    "noCoupon": {
+      "id": "prod-kit",
+      "slug": "le-kit",
+      "status": "published",
+      "variant": {
+        "sku": "le-kit",
+        "priceCents": 28900,
+        "promoPriceCents": null,
+        "currency": "MAD",
+        "inventoryStatus": "in_stock"
+      },
+      "expected": {
+        "priceCents": 28900,
+        "promoPriceCents": null,
+        "leadValue": 289,
+        "viewItemValue": 289
+      }
+    }
+  },
+  "guardCases": [
+    { "id": "G-EQ", "label": "promo == prix", "rawPromoCents": 28900, "basePriceCents": 28900, "expectedPromoPriceCents": null },
+    { "id": "G-GT", "label": "promo > prix", "rawPromoCents": 30000, "basePriceCents": 28900, "expectedPromoPriceCents": null },
+    { "id": "G-ZERO", "label": "promo == 0", "rawPromoCents": 0, "basePriceCents": 28900, "expectedPromoPriceCents": null },
+    { "id": "G-NEG", "label": "promo négative", "rawPromoCents": -100, "basePriceCents": 28900, "expectedPromoPriceCents": null }
+  ],
+  "fallbackCases": [
+    { "id": "F-NULL", "label": "DB null -> mock", "dbData": null, "expectFallbackMock": true },
+    { "id": "F-DRAFT", "label": "produit non publié -> mock", "status": "draft", "expectFallbackMock": true },
+    { "id": "F-CURRENCY", "label": "devise hors enum -> mock currency", "currency": "XYZ", "expectCurrencyFromMock": true }
+  ],
+  "locales": [
+    { "locale": "fr", "currencySuffix": "MAD", "dir": "ltr", "activePrice": "199 MAD", "compareAt": "289 MAD" },
+    { "locale": "ar", "currencySuffix": "درهم", "dir": "rtl", "activePrice": "199 درهم", "compareAt": "289 درهم" }
+  ]
+}

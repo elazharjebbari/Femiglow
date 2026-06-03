@@ -1,0 +1,94 @@
+@startuml CPN-11-status-machine
+title CPN-11 — Machine à états du statut + effet /kit
+
+skinparam shadowing false
+
+[*] --> draft : création (CPN-10)
+
+state draft {
+}
+state active #DDEFD8 {
+}
+state paused #FBF0D9 {
+}
+state archived #E0E0E0 {
+}
+
+draft --> active : Activer\n(confirmation, unicité welcome_auto)\n→ /kit affiche la remise
+draft --> archived : Archiver
+active --> paused : Mettre en pause\n→ /kit repasse plein tarif
+active --> archived : Archiver
+paused --> active : Reprendre\n→ /kit réaffiche la remise
+paused --> archived : Archiver
+archived --> [*] : terminal (réactivation INTERDITE → 409)
+
+note right of archived
+  archived est TERMINAL.
+  archived → * = 409 conflict
+  "Dupliquez-le pour réutiliser"
+end note
+
+note left of draft
+  draft → paused = 409 conflict
+  (jamais pausé sans avoir été actif)
+end note
+
+note bottom of active
+  INVARIANT : un seul welcome_auto
+  peut être "active" à la fois.
+  Activer un 2e → 409 conflict
+  { conflictingId }
+end note
+
+@enduml
+
+@startuml CPN-11-status-sequence
+title CPN-11 — Séquence transition + propagation /kit
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor "Opérateur" as Op
+participant "UI admin\n(badge + bouton)" as UI
+participant "POST /status\nroute" as API
+participant "transitions table\n+ unicité" as FSM
+participant "coupon-repo\n(version CAS)" as Repo
+participant "revalidateTag" as Cache
+participant "/kit\n(CPN-06)" as Kit
+actor "Visiteur" as Vis
+
+Op -> UI : clique "Activer"
+UI --> Op : confirmation "deviendra visible sur le site"
+Op -> UI : confirme (bouton désactivé)
+UI -> API : POST /{id}/status { to:active, version }
+API -> FSM : transition autorisée ?
+alt interdite (ex. depuis archived)
+  API --> UI : 409 conflict (message)
+  UI --> Op : message + badge inchangé
+else welcome_auto déjà actif
+  API --> UI : 409 conflict { conflictingId }
+  UI --> Op : "coupon d'accueil déjà actif"
+else autorisée
+  API -> Repo : compare-and-set version
+  alt version stale
+    API --> UI : 409 version_conflict
+    UI --> Op : recharger
+  else OK
+    Repo --> API : status=active, version+1
+    API -> Cache : revalidateTag('coupons')
+    API --> UI : 200 { status:active }
+    UI --> Op : badge "active" + toast "Coupon activé"
+  end
+end
+
+== Effet public (après revalidate) ==
+Vis -> Kit : GET /kit
+Kit -> Kit : résout coupons actifs (cache invalidé)
+Kit --> Vis : remise visible (active) / plein tarif (paused)
+
+note over API, Cache #DDEFD8
+  GATE : toute transition réussie = audit status_changed
+  + revalidateTag('coupons') => /kit reflète le nouvel état.
+end note
+
+@enduml

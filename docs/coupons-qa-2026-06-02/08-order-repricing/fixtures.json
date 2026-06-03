@@ -1,0 +1,111 @@
+{
+  "$comment": "CPN-08 repricing commande. Centimes. Prix nu kit 28900, promo de repli 19900, coupon welcome_auto -9000 -> 19900. Phase 1 holdoutPct 0. Le serveur recalcule TOUJOURS le total via resolveProductPricing(couponContext) puis le compare a expectedTotalCents. Toute divergence -> 422 price_mismatch.",
+  "constants": {
+    "kitPriceNuCents": 28900,
+    "kitPromoFallbackCents": 19900,
+    "welcomeDiscountCents": 9000,
+    "couponEffectiveCents": 19900,
+    "currency": "MAD"
+  },
+  "coupon": {
+    "id": "cpn_welcome",
+    "label": "Geste d'accueil",
+    "type": "welcome_auto",
+    "mode": "auto",
+    "status": "active",
+    "valueKind": "fixed_amount",
+    "valueAmount": 9000,
+    "target": "product_price",
+    "currency": "MAD",
+    "eligibility": {},
+    "holdoutPct": 0,
+    "stackable": false
+  },
+  "variants": {
+    "kit_with_promo": { "sku": "kit-sku-1", "label": "Kit FemiGlow", "priceCents": 28900, "promoPriceCents": 19900, "stock": 50 },
+    "kit_no_promo": { "sku": "kit-sku-1", "label": "Kit FemiGlow", "priceCents": 28900, "promoPriceCents": null, "stock": 50 },
+    "kit_out_of_stock": { "sku": "kit-sku-1", "label": "Kit FemiGlow", "priceCents": 28900, "promoPriceCents": null, "stock": 0 },
+    "kit_last_one": { "sku": "kit-sku-1", "label": "Kit FemiGlow", "priceCents": 28900, "promoPriceCents": null, "stock": 1 }
+  },
+  "leads": {
+    "ready": { "id": "lead_ready", "phoneE164": "+212600000001", "firstName": "Sara", "email": "sara@example.com", "emailConsent": true, "addressCompletedAt": "2026-06-02T10:00:00Z", "paymentSelectedAt": "2026-06-02T10:01:00Z" },
+    "no_address": { "id": "lead_noaddr", "phoneE164": "+212600000002", "firstName": "Nadia", "addressCompletedAt": null }
+  },
+  "couponContext": {
+    "display": { "visitorKey": "vk1", "trafficSource": "paid_social", "device": "mobile" },
+    "divergent": { "visitorKey": "vkB", "trafficSource": "paid_social", "device": "mobile" }
+  },
+  "payloads": {
+    "nominal_coupon_201": {
+      "leadId": "lead_ready",
+      "formContext": { "formId": "kit", "formMode": "wizard_embed", "variantKey": null },
+      "items": [{ "sku": "kit-sku-1", "name": "Kit FemiGlow", "quantity": 1, "unitPriceCents": 19900 }],
+      "expectedTotalCents": 19900,
+      "currency": "MAD",
+      "paymentMethod": "cod",
+      "shippingMode": "standard",
+      "couponContext": { "visitorKey": "vk1", "trafficSource": "paid_social", "device": "mobile" }
+    },
+    "qty2_201": {
+      "leadId": "lead_ready",
+      "formContext": { "formId": "kit", "formMode": "wizard_embed", "variantKey": null },
+      "items": [{ "sku": "kit-sku-1", "name": "Kit FemiGlow", "quantity": 2, "unitPriceCents": 19900 }],
+      "expectedTotalCents": 39800,
+      "currency": "MAD",
+      "paymentMethod": "cod",
+      "shippingMode": "standard",
+      "couponContext": { "visitorKey": "vk1" }
+    },
+    "client_sends_full_price_422": {
+      "leadId": "lead_ready",
+      "formContext": { "formId": "kit", "formMode": "wizard_embed", "variantKey": null },
+      "items": [{ "sku": "kit-sku-1", "name": "Kit FemiGlow", "quantity": 1, "unitPriceCents": 28900 }],
+      "expectedTotalCents": 28900,
+      "currency": "MAD",
+      "paymentMethod": "cod",
+      "shippingMode": "standard",
+      "couponContext": { "visitorKey": "vk1" }
+    },
+    "underpay_422": {
+      "leadId": "lead_ready",
+      "formContext": { "formId": "kit", "formMode": "wizard_embed", "variantKey": null },
+      "items": [{ "sku": "kit-sku-1", "name": "Kit FemiGlow", "quantity": 1, "unitPriceCents": 10000 }],
+      "expectedTotalCents": 10000,
+      "currency": "MAD",
+      "paymentMethod": "cod",
+      "shippingMode": "standard",
+      "couponContext": { "visitorKey": "vk1" }
+    },
+    "legacy_no_context_201": {
+      "leadId": "lead_ready",
+      "formContext": { "formId": "kit", "formMode": "legacy_cart", "variantKey": null },
+      "items": [{ "sku": "kit-sku-1", "name": "Kit FemiGlow", "quantity": 1, "unitPriceCents": 19900 }],
+      "expectedTotalCents": 19900,
+      "currency": "MAD",
+      "paymentMethod": "cod",
+      "shippingMode": "standard"
+    },
+    "unknown_sku_400": {
+      "leadId": "lead_ready",
+      "formContext": { "formId": "kit", "formMode": "wizard_embed", "variantKey": null },
+      "items": [{ "sku": "zzz", "name": "Inconnu", "quantity": 1, "unitPriceCents": 19900 }],
+      "expectedTotalCents": 19900,
+      "currency": "MAD",
+      "paymentMethod": "cod",
+      "shippingMode": "standard",
+      "couponContext": { "visitorKey": "vk1" }
+    }
+  },
+  "expectedResults": {
+    "nominal_coupon_201": { "status": 201, "totalCents": 19900, "orderStatus": "pending_confirmation" },
+    "qty2_201": { "status": 201, "totalCents": 39800 },
+    "client_sends_full_price_422": { "status": 422, "code": "price_mismatch", "details": { "expectedTotalCents": 28900, "computedTotalCents": 19900 } },
+    "underpay_422": { "status": 422, "code": "price_mismatch", "details": { "expectedTotalCents": 10000, "computedTotalCents": 19900 } },
+    "race_coupon_expired_promo_covers_201": { "status": 201, "totalCents": 19900 },
+    "race_coupon_expired_no_promo_422": { "status": 422, "code": "price_mismatch", "details": { "expectedTotalCents": 19900, "computedTotalCents": 28900 } },
+    "legacy_no_context_201": { "status": 201, "totalCents": 19900 },
+    "unknown_sku_400": { "status": 400, "code": "invalid_input", "details": { "sku": "zzz" } },
+    "out_of_stock_409": { "status": 409, "code": "stock_insufficient", "details": { "sku": "kit-sku-1" } },
+    "idempotent_replay": { "status": 201, "replayed": true, "ordersCreated": 1, "stockCommits": 1 }
+  }
+}

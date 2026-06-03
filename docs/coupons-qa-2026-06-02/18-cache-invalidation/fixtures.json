@@ -1,0 +1,111 @@
+{
+  "$comment": "CPN-18 cache & invalidation — scénarios de cohérence cache/validité/bucket. dbCalls = nb d'accès DB attendus (mesure du hit/miss). servedSelectedId = coupon servi après l'enchaînement d'actions. now injecté.",
+  "nowCanonical": "2026-06-02T12:00:00.000Z",
+  "priceFull": 28900,
+  "promoClassic": 19900,
+  "cacheTags": { "coupons": "coupons", "products": "products", "appConfig": "app-config" },
+  "isrRevalidateSeconds": 1800,
+  "cases": [
+    {
+      "id": "CACHE-01",
+      "label": "2 lectures sans mutation -> 1 seul hit DB",
+      "seed": [ { "id": "c1", "status": "active", "endsAt": null } ],
+      "actions": [ "read", "read" ],
+      "expectedDbCalls": 1,
+      "servedSelectedId": "c1"
+    },
+    {
+      "id": "CACHE-02",
+      "label": "coupon expiré en cache -> non servi (validité re-évaluée)",
+      "seed": [ { "id": "c1", "status": "active", "endsAt": "2026-06-01T00:00:00.000Z" } ],
+      "now": "2026-06-02T12:00:00.000Z",
+      "actions": [ "read", "resolve" ],
+      "servedSelectedId": null,
+      "expectedEffectivePriceCents": 19900
+    },
+    {
+      "id": "CACHE-03",
+      "label": "borne endsAt == now -> servi (inclusif)",
+      "seed": [ { "id": "c1", "status": "active", "endsAt": "2026-06-02T12:00:00.000Z" } ],
+      "now": "2026-06-02T12:00:00.000Z",
+      "actions": [ "read", "resolve" ],
+      "servedSelectedId": "c1"
+    },
+    {
+      "id": "CACHE-04",
+      "label": "activation + revalidate -> coupon servi à la lecture suivante",
+      "seed": [ { "id": "c1", "status": "draft", "endsAt": null } ],
+      "actions": [ "read", "mutate:activate:c1", "revalidate:coupons", "resolve" ],
+      "expectedRevalidateCalls": [ "coupons" ],
+      "servedSelectedId": "c1"
+    },
+    {
+      "id": "CACHE-05",
+      "label": "pause + revalidate -> fallback promo immédiat",
+      "seed": [ { "id": "c1", "status": "active", "endsAt": null } ],
+      "actions": [ "read", "mutate:pause:c1", "revalidate:coupons", "resolvePricing" ],
+      "expectedRevalidateCalls": [ "coupons" ],
+      "servedSelectedId": null,
+      "expectedEffectivePriceCents": 19900,
+      "expectedCoupon": null
+    },
+    {
+      "id": "CACHE-06",
+      "label": "archivage + revalidate -> retiré",
+      "seed": [ { "id": "c1", "status": "active", "endsAt": null } ],
+      "actions": [ "mutate:archive:c1", "revalidate:coupons", "resolve" ],
+      "servedSelectedId": null
+    },
+    {
+      "id": "CACHE-07",
+      "label": "mutation échouée -> aucune invalidation",
+      "seed": [ { "id": "c1", "status": "draft" } ],
+      "actions": [ "mutate:activate:c1:FAIL" ],
+      "expectedRevalidateCalls": [],
+      "servedSelectedId": null
+    },
+    {
+      "id": "CACHE-08",
+      "label": "revalidate coupons -> products/app-config intacts",
+      "seed": [ { "id": "c1", "status": "active" } ],
+      "actions": [ "revalidate:coupons" ],
+      "expectedRevalidateCalls": [ "coupons" ],
+      "untouchedTags": [ "products", "app-config" ]
+    },
+    {
+      "id": "CACHE-09",
+      "label": "bucket non caché : 2 visiteurs même définition, holdoutPct 50",
+      "seed": [ { "id": "c1", "status": "active", "holdoutPct": 50 } ],
+      "visitors": [ { "visitorKey": "vk-aaa" }, { "visitorKey": "vk-bbb" } ],
+      "assert": "bucketDecidedPerRequest",
+      "cacheMustNotContain": [ "visitorKey", "bucket" ]
+    },
+    {
+      "id": "CACHE-10",
+      "label": "liste vide cachée -> fallback promo",
+      "seed": [],
+      "actions": [ "read", "resolvePricing" ],
+      "servedSelectedId": null,
+      "expectedEffectivePriceCents": 19900,
+      "expectedCoupon": null
+    },
+    {
+      "id": "CACHE-11",
+      "label": "cache miss + DB KO -> fallback silencieux, pas de throw",
+      "dbError": true,
+      "actions": [ "resolvePricing" ],
+      "expectedThrows": false,
+      "servedSelectedId": null,
+      "expectedEffectivePriceCents": 19900,
+      "expectedCoupon": null
+    },
+    {
+      "id": "CACHE-12",
+      "label": "concurrence : active puis paused, dernier état servi",
+      "seed": [ { "id": "c1", "status": "active" } ],
+      "actions": [ "mutate:activate:c1", "revalidate:coupons", "mutate:pause:c1", "revalidate:coupons", "resolve" ],
+      "expectedRevalidateCalls": [ "coupons", "coupons" ],
+      "servedSelectedId": null
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+@startuml CPN-19-holdout-sequence
+title CPN-19 — Séquence hash -> bucket et cohérence affichage/checkout
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+participant "Affichage /kit\n(Server Component)" as Display
+participant "order-repo\n(repricing)" as Order
+participant "resolveProductPricing\n(CPN-04)" as Resolve
+participant "assignBucket\n(holdout pur)" as Bucket
+participant "hash()\n(impl-définie)" as Hash
+
+== Phase affichage (rendu du prix) ==
+Display -> Resolve : resolveProductPricing(input, ctx{visitorKey, couponId, holdoutPct})
+activate Resolve
+Resolve -> Bucket : assignBucket(visitorKey, couponId, holdoutPct)
+activate Bucket
+
+alt visitorKey est null / undefined / ''
+  Bucket --> Resolve : 'treatment'
+  note right of Bucket
+    INV-4 : jamais de holdout
+    sans clé stable
+  end note
+else visitorKey présent
+  Bucket -> Hash : hash(visitorKey + ':' + couponId)
+  activate Hash
+  Hash --> Bucket : entier H (déterministe)
+  deactivate Hash
+  Bucket -> Bucket : n = H % 100\nbucket = (n < clamp(holdoutPct,0,100)) ? 'holdout' : 'treatment'
+  Bucket --> Resolve : bucket (treatment | holdout)
+end
+deactivate Bucket
+
+Resolve --> Display : ResolvedPricing { effectivePriceCents, coupon{ id, bucket } }
+deactivate Resolve
+note over Display
+  treatment -> prix remisé (ex. 19900)
+  holdout   -> prix plein   (ex. 28900)
+  => prix AFFICHÉ
+end note
+
+== Phase checkout (commande) ==
+Order -> Resolve : resolveProductPricing(input, ctx{MÊME visitorKey, couponId, holdoutPct})
+activate Resolve
+Resolve -> Bucket : assignBucket(visitorKey, couponId, holdoutPct)
+activate Bucket
+Bucket -> Hash : hash(visitorKey + ':' + couponId)
+activate Hash
+Hash --> Bucket : MÊME entier H (fonction pure)
+deactivate Hash
+Bucket --> Resolve : MÊME bucket
+deactivate Bucket
+Resolve --> Order : ResolvedPricing { effectivePriceCents identique }
+deactivate Resolve
+
+== Vérification de l'invariant ==
+Order -> Order : reprice : prix affiché == prix facturé ?
+alt buckets/prix identiques (cas nominal garanti)
+  note over Display, Order #DDEFD8
+    GATE G-HOLDOUT-DETERMINISM ✔
+    bucketDisplay == bucketOrderRepo
+    => prix affiché == prix facturé
+    => PAS de PriceMismatchError
+  end note
+else divergence (interdite)
+  Order -> Order : throw PriceMismatchError 422
+  note over Order #F6D9D4
+    Ne doit JAMAIS arriver si assignBucket
+    est pur et reçoit le MÊME visitorKey.
+    Tout 422 ici = régression du gate.
+  end note
+end
+
+@enduml

@@ -1,0 +1,62 @@
+@startuml CPN-07-cart-snapshot
+title CPN-07 — Flux snapshot panier -> expectedTotalCents -> commande (anti-422)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+participant "KitCommanderSectionBound\n(appelant coupon-aware)" as Bound
+participant "resolveProductPricing\n(moteur CPN-04)" as Resolve
+participant "projectCartSnapshotFromVariant\n(helper PUR)" as Helper
+participant "Wizard / Récap panier" as Wizard
+participant "POST /api/checkout/order" as API
+participant "order-repo\n(reprice serveur)" as Order
+participant "resolveProductPricing\n(MÊME moteur)" as Resolve2
+
+== Construction du snapshot (affichage) ==
+Bound -> Resolve : resolveProductPricing(input, ctx{visitorKey, couponId})
+activate Resolve
+Resolve --> Bound : { active, effectivePriceCents:19900, originalPriceCents:28900, coupon{bucket} }
+deactivate Resolve
+note right of Bound
+  L'appelant injecte le RÉSULTAT du moteur :
+  promoPriceCents = active ? effectivePriceCents : null
+end note
+Bound -> Helper : projectCartSnapshotFromVariant({sku, priceCents:28900, promoPriceCents:19900, currency}, {qty})
+activate Helper
+Helper -> Helper : hasPromo = isPromoActive()\nunit = 19900\ncompareAt = 28900\ntotal = unit*qty\ncompareAtTotal = compareAt*qty
+Helper --> Bound : CartSnapshot { totalCents:19900*qty, compareAtTotalCents:28900*qty, currency }
+deactivate Helper
+Bound -> Wizard : snapshot
+note over Wizard #DDEFD8
+  Récap : 199 + 289 barré (compareAt)
+  totalCents = promesse de prix client
+end note
+
+== Commande (repricing serveur) ==
+Wizard -> API : POST order { snapshot, ctx }
+API -> Order : reprice(snapshot, ctx)
+activate Order
+Order -> Resolve2 : resolveProductPricing(input, MÊME ctx)
+activate Resolve2
+Resolve2 --> Order : effectivePriceCents:19900 (déterministe)
+deactivate Resolve2
+Order -> Order : expectedTotalCents = 19900*qty
+
+alt snapshot.totalCents == expectedTotalCents (gate OK)
+  Order --> API : order accepté
+  note over Helper, Order #DDEFD8
+    GATE G-PRICE-PARITY ✔
+    snapshot.totalCents === expectedTotalCents
+    => prix affiché == prix facturé
+  end note
+else divergence (client falsifié ou bucket instable)
+  Order --> API : throw PriceMismatchError
+  API --> Wizard : HTTP 422 price_mismatch
+  note over Order #F6D9D4
+    Rien facturé. Tout 422 ici = soit fraude client,
+    soit régression de la parité snapshot/reprice.
+  end note
+end
+deactivate Order
+
+@enduml

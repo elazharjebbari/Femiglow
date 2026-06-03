@@ -34,6 +34,7 @@ import { computePromo } from '@/lib/utils/promo';
 import type { Product } from '@/lib/schemas';
 
 import { ValueBreakdownList } from './ValueBreakdownList';
+import { CouponWelcomeNote } from './CouponWelcomeNote';
 
 export interface PriceBlockProps {
   feed: ProductFeed;
@@ -43,6 +44,12 @@ export interface PriceBlockProps {
    * Propagé à l'event `pack_section_view` (analytique de variante).
    */
   hasVisual?: boolean;
+  /**
+   * Coupon d'accueil résolu côté serveur (CPN-14). `active` ⇔ un
+   * `welcome_auto` est actif en bucket treatment → on affiche la note
+   * « geste d'accueil ». `endsAt` ISO pour la mention de validité civile.
+   */
+  welcomeCoupon?: { active: boolean; endsAt: string | null };
 }
 
 /**
@@ -52,6 +59,23 @@ export interface PriceBlockProps {
  */
 function formatRating(rating: number): string {
   return rating.toFixed(1).replace('.', ',');
+}
+
+/**
+ * Date civile pour la mention de validité du coupon (« Valable jusqu'au … »).
+ * JAMAIS un countdown — format long, sobre, localisé. null si pas de date.
+ */
+function formatCivilDate(iso: string | null | undefined, isArabic: boolean): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const locale = isArabic ? 'ar-MA' : 'fr-MA';
+  const formatted = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(d);
+  return isArabic ? `صالح حتى ${formatted}` : `Valable jusqu'au ${formatted}`;
 }
 
 function parsePriceCents(label: string | undefined): number | null {
@@ -69,6 +93,7 @@ export function PriceBlock({
   feed,
   product,
   hasVisual = false,
+  welcomeCoupon,
 }: PriceBlockProps): JSX.Element {
   const { hero, currency, socialProof } = feed;
   const { emit } = useTracking();
@@ -214,6 +239,21 @@ export function PriceBlock({
           </p>
         )}
       </div>
+
+      {/* 3bis — Module « geste d'accueil » (coupon welcome_auto résolu serveur).
+          S'adosse à la zone prix, sous le bandeau économie. */}
+      {welcomeCoupon?.active && promo.active && (
+        <CouponWelcomeNote
+          isArabic={isArabic}
+          finalPriceLabel={`${(promo.effectivePriceCents / 100).toFixed(0)} ${currencyDisplay}`}
+          savingsLabel={
+            isArabic
+              ? `${(promo.savingsCents / 100).toFixed(0)} ${currencyDisplay} هدية على طلبك الأول`
+              : `${(promo.savingsCents / 100).toFixed(0)} ${savingsUnit} offerts sur votre première commande du pack`
+          }
+          endsAtLabel={formatCivilDate(welcomeCoupon.endsAt, isArabic)}
+        />
+      )}
 
       {/* 4 — ValueBreakdownList */}
       {hero.valueBreakdown && hero.valueBreakdown.length > 0 && (

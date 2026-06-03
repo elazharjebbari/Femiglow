@@ -36,6 +36,29 @@ export interface WizardCartRecapProps {
    * code `cart.currency` brut dans le total ET le prix barré. Défaut FR = code.
    */
   currencyLabel?: string;
+  /**
+   * Phase 3 — crédit de fidélité appliqué (centimes). Le total affiché devient
+   * `totalCents − min(credit, totalCents)` et une ligne « Crédit … » apparaît.
+   * Défaut 0 → rendu strictement inchangé (non-régression).
+   */
+  appliedCreditCents?: number;
+  /** Libellé localisé de la ligne crédit. */
+  creditLabel?: (amount: string) => string;
+  /**
+   * Coupon d'accueil résolu serveur. `active` ⇔ welcome_auto actif (treatment).
+   * Quand actif ET qu'une économie existe (compareAtTotalCents − totalCents > 0),
+   * on affiche une ligne calme « geste d'accueil · Économie X » (mise en récit
+   * de la remise, sans second objet saillant). Défaut absent → rendu inchangé.
+   */
+  welcomeCoupon?: { active: boolean; postPurchaseCreditCents?: number };
+  /** Libellé localisé long (desktop) « Votre geste d'accueil est appliqué ». */
+  welcomeLabel?: string;
+  /** Libellé court (mobile) « Geste d'accueil ». */
+  welcomeLabelShort?: string;
+  /** Libellé localisé « Économie {montant} » (desktop). */
+  economyLabel?: (amount: string) => string;
+  /** Libellé localisé du clin d'œil crédit fidélité post-achat. */
+  forwardCreditLabel?: (amount: string) => string;
 }
 
 export function WizardCartRecap({
@@ -50,6 +73,13 @@ export function WizardCartRecap({
   packLabel = (quantity) => `${quantity} × Pack FemiGlow`,
   shippingIncludedLabel = 'livraison incluse',
   currencyLabel,
+  appliedCreditCents = 0,
+  creditLabel = (amount) => `Crédit fidélité −${amount}`,
+  welcomeCoupon,
+  welcomeLabel = 'Votre geste d’accueil est appliqué',
+  welcomeLabelShort = 'Geste d’accueil',
+  economyLabel = (amount) => `Économie ${amount}`,
+  forwardCreditLabel = (amount) => `Et un crédit de ${amount} vous attend après cette commande.`,
 }: WizardCartRecapProps): JSX.Element | null {
   if (!cart || !cart.items || cart.items.length === 0) return null;
 
@@ -57,7 +87,26 @@ export function WizardCartRecap({
   // Phase 9 — devise localisée : on substitue le code `cart.currency` par le
   // libellé localisé (درهم sur /ar). Les chiffres restent latins (marque).
   const currencyDisplay = currencyLabel ?? cart.currency;
-  const totalLabel = `${(cart.totalCents / 100).toFixed(0)} ${currencyDisplay}`;
+  // Phase 3 — crédit fidélité plafonné au total (jamais négatif).
+  const credit = Math.max(0, Math.min(appliedCreditCents, cart.totalCents));
+  const totalAfterCredit = cart.totalCents - credit;
+  const totalLabel = `${(totalAfterCredit / 100).toFixed(0)} ${currencyDisplay}`;
+  const creditLineLabel =
+    credit > 0 ? creditLabel(`${(credit / 100).toFixed(0)} ${currencyDisplay}`) : null;
+  // Coupon d'accueil : économie absolue (Kolenda Pricing §6) déjà portée par le
+  // snapshot. On met en récit la remise SANS nouvel objet saillant ni % ni rouge.
+  const welcomeEconomyCents = cart.compareAtTotalCents
+    ? cart.compareAtTotalCents - cart.totalCents
+    : 0;
+  const showWelcome = !!welcomeCoupon?.active && welcomeEconomyCents > 0;
+  const welcomeEconomyAmount = `${(welcomeEconomyCents / 100).toFixed(0)} ${currencyDisplay}`;
+  // Clin d'œil crédit fidélité post-achat (forward, pas une 2ᵉ remise sur CE
+  // panier → conforme coupon-doc). Affiché si un template post_purchase actif.
+  const forwardCreditCents = welcomeCoupon?.postPurchaseCreditCents ?? 0;
+  const forwardCreditLine =
+    showWelcome && forwardCreditCents > 0
+      ? forwardCreditLabel(`${(forwardCreditCents / 100).toFixed(0)} ${currencyDisplay}`)
+      : null;
   // Prix barré localisé : on remplace le code devise brut dans la chaîne déjà
   // formatée (ex. « 289 MAD » → « 289 درهم »).
   const compareAtLabel =
@@ -93,6 +142,55 @@ export function WizardCartRecap({
           <p className="hidden text-xs text-encre/60 sm:block">
             {productDetailLabel} · {shippingIncludedLabel}
           </p>
+          {/* Coupon d'accueil — état « appliqué » explicite : coche fine sauge
+              (signal de succès) + économie absolue (Kolenda Pricing §6) en
+              accent terracotta. « 90 MAD » insécable (anti-casse mobile). Pas
+              de %, pas de rouge, pas de sticker, pas d'emoji. */}
+          {showWelcome && (
+            <p
+              className="fg-coupon-line mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs"
+              data-testid="wizard-welcome-coupon"
+            >
+              {/* Médaillon sauge qui éclôt + coche qui se dessine = signal
+                  « validé » vivant mais sobre (famille sauge, pas de rouge). */}
+              <span
+                aria-hidden
+                className="fg-coupon-badge flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#A8B89E]/30"
+              >
+                <svg viewBox="0 0 16 16" width="11" height="11" className="text-[#4A5D4A]">
+                  <path
+                    d="M4 8.4l2.6 2.6 5.4-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="fg-coupon-check"
+                  />
+                </svg>
+              </span>
+              <span className="font-medium text-encre">
+                <span className="sm:hidden">{welcomeLabelShort}</span>
+                <span className="hidden sm:inline">{welcomeLabel}</span>
+              </span>
+              <span aria-hidden className="text-encre/25">·</span>
+              <span
+                className="fg-coupon-eco whitespace-nowrap font-semibold tabular-nums text-[#C28A6E]"
+                data-testid="wizard-welcome-economy"
+              >
+                <span className="sm:hidden">−{welcomeEconomyAmount}</span>
+                <span className="hidden sm:inline">{economyLabel(welcomeEconomyAmount)}</span>
+              </span>
+            </p>
+          )}
+          {forwardCreditLine && (
+            <p
+              className="text-[11px] leading-snug text-encre/55"
+              data-testid="wizard-welcome-forward"
+            >
+              {forwardCreditLine}
+            </p>
+          )}
         </div>
         <p className="flex items-baseline gap-2 text-sm">
           <span
@@ -110,6 +208,14 @@ export function WizardCartRecap({
             </span>
           )}
         </p>
+        {creditLineLabel && (
+          <p
+            className="text-xs text-sauge sm:text-right"
+            data-testid="wizard-credit-line"
+          >
+            {creditLineLabel}
+          </p>
+        )}
       </div>
     </aside>
   );

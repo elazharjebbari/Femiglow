@@ -1,0 +1,83 @@
+@startuml CPN-09-coupon-events-sequence
+title CPN-09 — Émission des événements coupon sur le funnel (exposed / applied / converted)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor "Visiteur" as Client
+participant "/kit\n(affichage)" as Kit
+participant "resolveProductPricing\n(bucket déterministe)" as Pricing
+participant "POST /order\nroute.ts" as Route
+participant "couponEventsRepo\n.record" as Events
+database "coupon_events\n(append-only)" as DB
+
+== Affichage /kit (exposed / applied) ==
+Client -> Kit : GET /kit (visitorKey vk1)
+activate Kit
+Kit -> Pricing : resolveProductPricing(variant, couponContext)
+Pricing --> Kit : { effectivePriceCents, coupon{ bucket } }
+Kit -> Events : record { phase: exposed, bucket, visitorKey } (fire-and-forget)
+Events -> DB : insert exposed
+note right of DB
+  exposed/applied : PAS d'unicité par orderId
+  (index partiel ne couvre QUE converted).
+  Plusieurs exposed par visiteur autorisés.
+end note
+alt bucket == treatment (remise affichée)
+  Kit -> Events : record { phase: applied, bucket: treatment, amountCents: 9000 }
+  Events -> DB : insert applied
+end
+Kit --> Client : page /kit (prix 19900)
+deactivate Kit
+
+== Conversion (converted) ==
+Client -> Route : POST /order (couponContext vk1)
+activate Route
+Route -> Route : repricing coupon-aware (CPN-08)
+
+alt commande échoue (422 / 409 / 400)
+  Route --> Client : erreur
+  note right of Route
+    AUCUN converted émis sur échec.
+  end note
+else commande 201 ET !result.replayed
+  Route -> Events : record {\n phase: converted, orderId,\n amountCents: savings (9000),\n bucket, visitorKey } (void .catch)
+  activate Events
+  Events -> DB : INSERT ... ON CONFLICT DO NOTHING\n (idx coupon_events_order_converted_unique)
+  alt converted déjà présent pour orderId
+    DB --> Events : conflit -> inserted: false
+    note right of DB
+      Idempotence DB : un seul converted
+      par orderId, même en concurrence.
+    end note
+  else première conversion
+    DB --> Events : inserted: true
+  end
+  Events --> Route : { inserted } (jamais d'exception remontée)
+  deactivate Events
+  note right of Route
+    FIRE-AND-FORGET :
+    si record() rejette, on log
+    'coupon.event.converted.failed'
+    et la commande RESTE 201.
+  end note
+  Route --> Client : 201 { orderId, totalCents }
+else commande 201 mais result.replayed
+  Route --> Client : 201 (replay)
+  note right of Route
+    !result.replayed faux -> on n'émet PAS
+    de converted (double filet avec l'index).
+  end note
+end
+deactivate Route
+
+note over Client, DB
+  INVARIANTS :
+   - converted UNIQUEMENT sur succès (201) et !replayed
+   - 1 seul converted par orderId (index partiel)
+   - amountCents = REMISE (treatment 9000 / holdout 0)
+   - bucket(exposed) == bucket(converted) pour un visitorKey+couponId
+   - aucune PII ; émission jamais bloquante
+end note
+
+@enduml

@@ -73,6 +73,45 @@ export async function buildKitPublicProduct(): Promise<PublicProduct> {
 }
 
 /**
+ * Résout le pricing public du kit COUPON-AWARE.
+ *
+ * Le coupon devient la SOURCE de la promotion : on part du prix DB
+ * (`priceCents` + `promoPriceCents` brut comme fallback) et on applique le
+ * moteur de coupons. La résolution coupon vit HORS du cache produit
+ * (`getKitProductCached`, tag `products`) : `resolveProductPricing` lit sa
+ * propre source cachée (tag `coupons`) et réévalue la validité à `now`.
+ *
+ * `ctx` est optionnel — en Phase 1 (holdout=0, éligibilité tout-trafic) la
+ * résolution est indépendante du visiteur, donc un contexte vide suffit.
+ * cf. docs/coupons-qa-2026-06-02/{06,16}-*.
+ */
+export async function resolveKitPricing(
+  ctx: import('@/lib/coupons/types').CouponContext = {},
+): Promise<{
+  product: PublicProduct;
+  pricing: import('@/lib/coupons/types').ResolvedPricing;
+}> {
+  const { resolveProductPricing } = await import('@/lib/coupons/engine');
+  const kit = await buildKitPublicProduct();
+  const pricing = await resolveProductPricing(
+    {
+      priceCents: kit.priceCents,
+      promoPriceCents: kit.promoPriceCents,
+      sku: kit.primaryVariantSku,
+      currency: kit.currency,
+    },
+    ctx,
+  );
+  // Le prix affiché dérive du coupon : promoPriceCents = prix remisé si une
+  // remise est active, sinon null (pas de prix barré).
+  const product: PublicProduct = {
+    ...kit,
+    promoPriceCents: pricing.active ? pricing.effectivePriceCents : null,
+  };
+  return { product, pricing };
+}
+
+/**
  * Valeur monétaire d'un lead = **prix du kit avec la promotion** (prix
  * effectivement payé). Sert à valoriser les conversions `generate_lead`
  * (chat, formulaires) pour le bidding value-based Meta/Google Ads.
@@ -81,10 +120,12 @@ export async function buildKitPublicProduct(): Promise<PublicProduct> {
  * `value` en unité majeure (MAD), pas en centimes — aligné sur le contrat
  * dataLayer (`params.value`) et sur le checkout (`total / 100`).
  *
- * cf. docs/tracking-audit-2026-05-31 (T-06).
+ * COUPON-AWARE : la valeur reflète le coupon résolu (et reste correcte si
+ * `promoPriceCents` est retiré au profit du coupon).
+ *
+ * cf. docs/tracking-audit-2026-05-31 (T-06) + coupons-qa-2026-06-02/16.
  */
 export async function getKitLeadValue(): Promise<{ value: number; currency: string }> {
-  const kit = await buildKitPublicProduct();
-  const effectiveCents = kit.promoPriceCents ?? kit.priceCents;
-  return { value: effectiveCents / 100, currency: kit.currency };
+  const { pricing, product } = await resolveKitPricing();
+  return { value: pricing.effectivePriceCents / 100, currency: product.currency };
 }

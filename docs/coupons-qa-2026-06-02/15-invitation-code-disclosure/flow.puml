@@ -1,0 +1,38 @@
+@startuml CPN-15-disclosure
+title CPN-15 — États de la porte « J'ai un code d'invitation » (Phase 1, INERTE)
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+
+[*] --> Repliee : rendu initial (SSR)\ndetails.open = false\naria-expanded = false
+
+state Repliee {
+  Repliee : summary « J'ai un code d'invitation » visible
+  Repliee : contenu NON visible
+  Repliee : AUCUN champ ouvert / focusable
+  Repliee : style = lien discret (encre atténué)
+}
+
+state Ouverte {
+  Ouverte : details.open = true
+  Ouverte : aria-expanded = true
+  Ouverte : contenu visible
+  Ouverte : --- Option A : texte explicatif inerte (pas de champ)
+  Ouverte : --- Option B : champ + bouton DISABLED, hors tab order
+  Ouverte : AUCUNE soumission, AUCUN appel réseau, AUCUN coupon appliqué
+}
+
+Repliee --> Ouverte : clic / Enter / Espace sur summary
+Ouverte --> Repliee : re-clic / Enter / Espace sur summary
+
+note right of Ouverte
+  Invariants Phase 1 :
+  - inerte (R-15-2) : fetch jamais appelé
+  - CTA primaire inchangé (R-15-5)
+  - a11y : focus visible, pas de piège (R-15-4)
+  - reduced-motion : pas d'animation agressive (R-15-8)
+  - i18n : summary/contenu fr|ar, RTL sur /ar (R-15-6)
+end note
+
+@enduml

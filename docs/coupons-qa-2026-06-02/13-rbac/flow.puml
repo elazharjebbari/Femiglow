@@ -1,0 +1,66 @@
+@startuml CPN-13-rbac-flow
+title CPN-13 — Flux d'autorisation des routes coupons (auth → perm → existence → mutation)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor "Opérateur\n(rôle X)" as Op
+participant "Page admin\n(/admin/coupons*)" as Page
+participant "Route REST\n/api/admin/coupons/**" as API
+participant "getAdminSession" as Auth
+participant "requireCouponPermission\n(hasPermission, 'coupons')" as Perm
+participant "getAdminRole" as Role
+participant "coupon-repo\n(mutation)" as Repo
+participant "logAuditEvent" as Audit
+participant "revalidateTag" as Cache
+
+== Accès page (SSR) ==
+Op -> Page : navigue vers /admin/coupons
+Page -> Auth : requireAdmin('/admin/coupons')
+alt non authentifié
+  Page --> Op : redirect /admin/login?next=/admin/coupons
+else authentifié
+  Page -> Role : getAdminRole(adminId)
+  Page --> Op : liste rendue ; actions de mutation\nMASQUÉES/DÉSACTIVÉES selon le rôle
+  note right of Page
+    UI = confort seulement.
+    Le serveur reste l'autorité.
+  end note
+end
+
+== Appel API (autorité réelle) ==
+Op -> API : requête (GET/POST/PATCH/DELETE/status/stats)
+API -> Auth : getAdminSession()
+alt session absente
+  API --> Op : 401 unauthorized
+  note right of API : AUCUNE lecture body, AUCUNE mutation
+else session présente
+  API -> Perm : requireCouponPermission(actionRequise, session)
+  Perm -> Role : getAdminRole(adminId)
+  Perm -> Perm : hasPermission(role, 'coupons', action) ?
+  alt refusé
+    Perm --> API : throw HttpError('forbidden')
+    alt route de mutation (POST/PATCH/DELETE/status)
+      API -> Audit : admin.coupon.permission_denied { role, action }
+    end
+    API --> Op : 403 forbidden
+    note over API, Cache #F6D9D4
+      INVARIANT SÉCURITÉ :
+      mutation NON exécutée, revalidateTag NON appelé.
+      Permission vérifiée AVANT Zod (403 prime sur 422).
+    end note
+  else autorisé
+    API -> Repo : vérifier existence (404 si inconnu)
+    alt id inconnu
+      API --> Op : 404 not_found
+    else existe
+      API -> API : valider Zod (422 si invalide)
+      API -> Repo : appliquer mutation (si verbe mutateur)
+      API -> Audit : admin.coupon.<created|updated|status_changed|archived>
+      API -> Cache : revalidateTag('coupons')
+      API --> Op : 200/201
+    end
+  end
+end
+
+@enduml

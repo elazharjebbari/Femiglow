@@ -1,0 +1,48 @@
+@startuml coupon-checkout-visibility
+title Visibilité coupon d'accueil au paiement — flux & états
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Serveur (RSC)" {
+  [KitCommanderSectionBound] as bound
+  [resolveCoupon (moteur)] as engine
+  database "coupons" as db
+}
+package "Client (wizard)" {
+  [KitCommanderSection] as section
+  [WizardShell] as shell
+  [WizardCartRecap] as recap
+  [WizardWelcomeCouponLine] as line
+}
+
+bound --> engine : resolveCoupon(ctx)
+engine --> db : welcome_auto actif ?
+bound --> section : welcomeCoupon={active}\ninitialCart{total:199, compareAt:289}
+section --> shell : welcomeCoupon
+shell --> recap : welcomeCoupon + cart + i18n
+recap --> line : si active && (compareAt-total)>0
+
+note right of line
+  « Votre geste d'accueil est appliqué
+     · Économie 90 MAD »
+  - encre + accent terracotta sur « 90 MAD »
+  - tabular-nums, filet fin, puce sauge
+  - PAS de rouge/countdown/sticker/% /emoji
+end note
+
+note bottom of recap
+  ÉTATS :
+  - active=true  → ligne visible
+  - active=false → récap inchangé (non-régression)
+  - holdout      → active=false → masquée
+  - + crédit fidélité → 2 lignes calmes, total = 199 - crédit
+end note
+
+note top of bound
+  Aucune logique prix nouvelle :
+  économie = compareAtTotalCents - totalCents
+  (déjà dans le snapshot). Aucun risque 422.
+end note
+
+@enduml

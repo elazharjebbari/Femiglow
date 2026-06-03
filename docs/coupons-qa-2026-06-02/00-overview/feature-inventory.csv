@@ -1,0 +1,21 @@
+feature_id,folder,nom,couche,description_courte,criticite,risque_principal,acteur,phase
+CPN-01,01-data-model,Modèle de données coupons + coupon_events,data,"Tables Drizzle, enums, contraintes, index, idempotence par commande",P0,"Intégrité des données / contrainte unique manquante",systeme,1
+CPN-02,02-engine-applyCoupon,Moteur applyCoupon (math de prix pur),backend,"Calcul prix effectif depuis montant fixe ou pourcentage, délègue à computePromo",P0,"Mauvais calcul prix → écart caisse",systeme,1
+CPN-03,03-engine-resolveCoupon,Moteur resolveCoupon (sélection),backend,"Éligibilité, fenêtre validité, non-cumul, priorité, holdout déterministe",P0,"Mauvaise sélection / holdout non déterministe → mismatch prix",systeme,1
+CPN-04,04-engine-resolveProductPricing,Moteur resolveProductPricing (composition),backend,"Compose resolveCoupon + applyCoupon, fallback promoPriceCents, forme PromoComputation",P0,"Régression aval / fallback cassé",systeme,1
+CPN-05,05-coupon-context,Construction du contexte coupon,backend,"buildCouponContext depuis headers/cookies (SC) et req (API), visitorKey",P0,"Contexte divergent affichage vs checkout",systeme,1
+CPN-06,06-price-display-public,Prix public /kit (buildKitPublicProduct),backend+frontend,"Override promoPriceCents par coupon, getKitLeadValue",P0,"Prix affiché faux / valeur lead faussée",visiteur,1
+CPN-07,07-cart-snapshot,Projection snapshot panier,backend+frontend,"resolveProductPricing avant projectCartSnapshotFromVariant, compareAt",P0,"Total snapshot ≠ total facturé",visiteur,1
+CPN-08,08-order-repricing,Repricing commande server-authoritative,backend,"effectivePrice coupon-aware dans order-repo, anti PriceMismatchError 422",P0,"Commande rejetée 422 / fraude prix",visiteur,1
+CPN-09,09-coupon-events-logging,Journalisation événements coupon,backend,"exposed/applied/converted, idempotence orderId, fire-and-forget",P1,"Double comptage / log bloquant la commande",systeme,1
+CPN-10,10-admin-crud,Admin CRUD coupons,frontend+backend,"Liste, création, édition, archivage via routes dédiées + Zod + audit",P0,"Saisie invalide acceptée / perte de données",operateur_admin,1
+CPN-11,11-admin-status-lifecycle,Cycle de vie statut coupon,frontend+backend,"draft→active→paused→archived, effets immédiats sur /kit",P0,"Activation/pause sans effet ou avec effet différé incohérent",operateur_admin,1
+CPN-12,12-admin-stats-incrementality,Stats & incrémentalité,frontend+backend,"Agrégats treatment vs holdout, uplift, exposition/conversion",P1,"Calcul uplift faux → mauvaise décision business",operateur_admin,1
+CPN-13,13-rbac,RBAC ressource coupons,backend,"Permissions read/write coupons, 403 si non autorisé",P0,"Escalade de privilèges / modif non autorisée",operateur_admin,1
+CPN-14,14-landing-welcome-note,Module UI « geste d'accueil »,frontend,"CouponWelcomeNote dans PriceBlock, copie + charte, conditions",P0,"Hors charte / message faux / flash SSR",visiteur,1
+CPN-15,15-invitation-code-disclosure,Porte « J'ai un code d'invitation »,frontend,"Disclosure repliée, inerte Phase 1, accessible",P2,"Friction / champ ouvert par défaut / a11y",visiteur,1
+CPN-16,16-tracking-value-based,Non-régression tracking value-based,backend+frontend,"getKitLeadValue, view_item, purchase = 199 MAD",P0,"Valeur de conversion faussée → bidding Meta/Google dégradé",systeme,1
+CPN-17,17-promo-migration-source,Bascule promo → source coupon,data+backend,"Coupon override, promoPriceCents fallback, rollback trivial",P0,"Double remise / perte de la promo / rollback impossible",systeme,1
+CPN-18,18-cache-invalidation,Cache & invalidation,backend,"unstable_cache tag coupons, revalidateTag, décision bucket non cachée",P0,"Coupon expiré servi / bucket figé par cache",systeme,1
+CPN-19,19-holdout-determinism,Déterminisme holdout & bucketing,backend,"hash(visitorKey+couponId)%100, stabilité affichage↔checkout",P0,"Bucket instable → mismatch prix / biais expérience",systeme,1
+CPN-20,20-seed-welcome-auto,Seed coupon welcome_auto,data,"Seed -90 MAD, idempotent, reproductible, cohérent 289→199",P1,"Seed non idempotent / valeurs incohérentes",systeme,1

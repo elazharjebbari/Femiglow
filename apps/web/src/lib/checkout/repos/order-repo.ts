@@ -94,6 +94,18 @@ export interface CreateOrderInput {
     formMode: 'wizard_embed' | 'wizard_cart' | 'legacy_cart';
     variantKey?: 'A' | 'B' | 'control' | null;
   };
+  /**
+   * Contexte coupon reconstruit depuis la requête (mêmes primitives que
+   * l'affichage → même bucket → prix facturé == prix affiché). Optionnel :
+   * absent (legacy) → contexte vide (treatment, éligibilité tout-trafic).
+   */
+  couponContext?: import('@/lib/coupons/types').CouponContext;
+  /**
+   * Code de crédit fidélité (Phase 3) saisi par le client. S'il est valide,
+   * il se cumule sur le prix d'accueil (réduction additionnelle plafonnée) et
+   * est consommé (redeemed) à la création de la commande.
+   */
+  couponCode?: string | null;
 }
 
 /**
@@ -185,7 +197,16 @@ export const orderRepo = {
         }
       }
     }
+    // Repricing COUPON-AWARE (server-authoritative). On résout le prix via le
+    // moteur de coupons avec le MÊME contexte que l'affichage → bucket
+    // déterministe → prix facturé == prix affiché (anti PriceMismatchError).
+    // Sans coupon, le moteur retombe sur computePromo(price, promoPriceCents)
+    // (équivalent au legacy `promoPriceCents ?? priceCents`).
+    const { resolveProductPricing } = await import('@/lib/coupons/engine');
+    const couponCtx = input.couponContext ?? {};
     let computedTotal = 0;
+    let couponRef: import('@/lib/coupons/types').ResolvedCouponRef | null = null;
+    let couponSavingsCents = 0;
     const variantMatches: Array<{
       variantId: string;
       sku: string;
@@ -196,7 +217,24 @@ export const orderRepo = {
     for (const it of input.items) {
       const v = bySku.get(it.sku);
       if (!v) throw new UnknownSkuError(it.sku);
-      const effectivePrice = v.promoPriceCents ?? v.priceCents;
+      const resolved = await resolveProductPricing(
+        {
+          priceCents: v.priceCents,
+          promoPriceCents: v.promoPriceCents,
+          sku: v.sku,
+          currency: v.currency,
+        },
+        couponCtx,
+      );
+      const effectivePrice = resolved.effectivePriceCents;
+      // Capte le coupon résolu (treatment uniquement = remise effectivement
+      // appliquée) pour la journalisation d'incrémentalité.
+      if (resolved.coupon && resolved.coupon.bucket === 'treatment') {
+        couponRef = resolved.coupon;
+        couponSavingsCents += resolved.savingsCents * it.quantity;
+      } else if (resolved.coupon && !couponRef) {
+        couponRef = resolved.coupon; // holdout : tracé sans savings
+      }
       computedTotal += effectivePrice * it.quantity;
       variantMatches.push({
         variantId: v.id,
@@ -206,6 +244,22 @@ export const orderRepo = {
         name: it.name || v.label,
       });
     }
+
+    // Crédit de fidélité (Phase 3) — réduction additionnelle plafonnée sur le
+    // total, cumulable avec le geste d'accueil. Validé (non consommé) ici ; il
+    // sera marqué `redeemed` APRÈS la création de la commande.
+    let creditGrantCode: string | null = null;
+    let creditAppliedCents = 0;
+    if (input.couponCode) {
+      const { validateGrant } = await import('@/lib/db/queries/coupon-grant-repo');
+      const check = await validateGrant(input.couponCode);
+      if (check.valid) {
+        creditAppliedCents = Math.min(check.valueCents, computedTotal);
+        computedTotal -= creditAppliedCents;
+        creditGrantCode = check.grant.code;
+      }
+    }
+
     if (computedTotal !== input.expectedTotalCents) {
       throw new PriceMismatchError(input.expectedTotalCents, computedTotal);
     }
@@ -272,6 +326,41 @@ export const orderRepo = {
     //    faux `out_of_stock` PERMANENT (bug 2026-06-01 : reserved bloqué à 100).
     for (const v of variantMatches) {
       await stockRepo.commit(v.variantId, v.quantity);
+    }
+
+    // Journalisation incrémentalité — `converted`. Fire-and-forget : un échec
+    // ici ne doit JAMAIS faire échouer une commande déjà posée. Idempotent par
+    // orderId (index partiel + ON CONFLICT DO NOTHING). createOrder ne
+    // s'exécute qu'une fois par commande (l'idempotence amont court-circuite
+    // les rejeux), donc pas de double comptage.
+    if (couponRef) {
+      try {
+        const { recordCouponEvent } = await import('@/lib/db/queries/coupon-event-repo');
+        await recordCouponEvent({
+          couponId: couponRef.id,
+          phase: 'converted',
+          bucket: couponRef.bucket,
+          orderId,
+          amountCents: couponSavingsCents,
+          visitorKey: couponCtx.visitorKey ?? null,
+          trafficSource: couponCtx.trafficSource ?? null,
+          device: couponCtx.device ?? null,
+        });
+      } catch {
+        /* non bloquant */
+      }
+    }
+
+    // Phase 3 — consomme le crédit de fidélité utilisé sur cette commande.
+    // Best-effort : le prix a déjà été validé ; un échec de marquage ne doit
+    // pas annuler la commande (au pire le crédit reste « issued », corrigible).
+    if (creditGrantCode) {
+      try {
+        const { redeemGrant } = await import('@/lib/db/queries/coupon-grant-repo');
+        await redeemGrant(creditGrantCode, orderId);
+      } catch {
+        /* non bloquant */
+      }
     }
 
     const orderRows = await conn

@@ -374,6 +374,9 @@ export function useAddressMutation(): {
   const setOrderId = useWizardStore((s) => s.setOrderId);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
   const leadDraft = useWizardStore((s) => s.leadDraft);
+  // Phase 3 — crédit de fidélité (code + montant validé).
+  const couponCode = useWizardStore((s) => s.couponCode);
+  const creditCents = useWizardStore((s) => s.creditCents);
 
   const execute = useCallback(
     async (input: AddressMutationInput): Promise<void> => {
@@ -501,10 +504,15 @@ export function useAddressMutation(): {
             language: formContext.language === 'en' ? 'fr' : formContext.language,
           },
           items: cartSnapshot.items,
-          expectedTotalCents: cartSnapshot.totalCents,
+          // Phase 3 — INVARIANT anti-422 : le total attendu inclut le crédit
+          // (plafonné au total). Le serveur reprice et soustrait le MÊME
+          // crédit (via le grant du code) → les totaux coïncident.
+          expectedTotalCents:
+            cartSnapshot.totalCents - Math.min(creditCents, cartSnapshot.totalCents),
           currency: cartSnapshot.currency,
           paymentMethod: DEFAULT_PAYMENT_METHOD,
           shippingMode: input.shippingMode,
+          couponCode: couponCode ?? undefined,
         });
         setOrderId(res.orderId);
         // Conversion principale — identity complète hydratée
@@ -566,6 +574,8 @@ export function useAddressMutation(): {
       leadId,
       formContext,
       cartSnapshot,
+      couponCode,
+      creditCents,
       goToStep,
       setOrderId,
       setLoading,

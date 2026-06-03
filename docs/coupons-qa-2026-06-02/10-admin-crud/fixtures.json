@@ -1,0 +1,124 @@
+{
+  "$comment": "CPN-10 admin CRUD — fixtures opérateur. Montants en CENTIMES. Devise MAD figée Phase 1. version = entier optimiste. Réponses API mockées MSW + payloads valides/invalides.",
+  "productPriceCents": 28900,
+  "validPayloads": {
+    "welcomeAuto": {
+      "label": "Bienvenue -90 MAD",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "code": null,
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "target": "product_price",
+      "currency": "MAD",
+      "eligibility": {},
+      "startsAt": "2026-06-01T00:00:00.000Z",
+      "endsAt": null,
+      "stackable": false,
+      "usageScope": "unlimited",
+      "usageCap": null,
+      "holdoutPct": 10,
+      "priority": 100
+    },
+    "manualCodePercent": {
+      "label": "VIP -15%",
+      "type": "manual_code",
+      "mode": "code",
+      "code": "VIP15",
+      "valueKind": "percent",
+      "valueAmount": 15,
+      "target": "product_price",
+      "currency": "MAD",
+      "eligibility": {},
+      "startsAt": "2026-06-01T00:00:00.000Z",
+      "endsAt": "2026-07-01T00:00:00.000Z",
+      "stackable": false,
+      "usageScope": "global_cap",
+      "usageCap": 500,
+      "holdoutPct": 0,
+      "priority": 50
+    }
+  },
+  "invalidPayloads": [
+    {
+      "id": "INV-PCT-OVER",
+      "label": "percent > 100",
+      "patch": { "valueKind": "percent", "valueAmount": 120 },
+      "expectedStatus": 422,
+      "expectedFieldError": "valueAmount",
+      "expectedMessage": "Le pourcentage doit être entre 1 et 100"
+    },
+    {
+      "id": "INV-PCT-ZERO",
+      "label": "percent = 0",
+      "patch": { "valueKind": "percent", "valueAmount": 0 },
+      "expectedStatus": 422,
+      "expectedFieldError": "valueAmount"
+    },
+    {
+      "id": "INV-FIXED-NEG",
+      "label": "fixed_amount négatif",
+      "patch": { "valueKind": "fixed_amount", "valueAmount": -1 },
+      "expectedStatus": 422,
+      "expectedFieldError": "valueAmount"
+    },
+    {
+      "id": "INV-CODE-MISSING",
+      "label": "mode=code sans code",
+      "patch": { "mode": "code", "code": null },
+      "expectedStatus": 422,
+      "expectedFieldError": "code",
+      "expectedMessage": "Code requis"
+    },
+    {
+      "id": "INV-CODE-IN-AUTO",
+      "label": "mode=auto avec code",
+      "patch": { "mode": "auto", "code": "WELCOME" },
+      "expectedStatus": 422,
+      "expectedFieldError": "code"
+    },
+    {
+      "id": "INV-DATES",
+      "label": "endsAt <= startsAt",
+      "patch": { "startsAt": "2026-06-10T00:00:00.000Z", "endsAt": "2026-06-01T00:00:00.000Z" },
+      "expectedStatus": 422,
+      "expectedFieldError": "endsAt",
+      "expectedMessage": "La fin doit suivre le début"
+    }
+  ],
+  "warningPayload": {
+    "id": "WARN-AMOUNT-OVER-PRICE",
+    "label": "montant fixe >= prix produit (avertissement non bloquant)",
+    "patch": { "valueKind": "fixed_amount", "valueAmount": 30000 },
+    "expectedStatus": 201,
+    "expectedWarning": "Le montant dépasse le prix : le panier sera plafonné à 0"
+  },
+  "mockResponses": {
+    "listEmpty": { "status": 200, "body": { "items": [], "total": 0, "page": 1, "pageSize": 20 } },
+    "listPopulated": {
+      "status": 200,
+      "body": {
+        "items": [
+          { "id": "cpn_welcome", "label": "Bienvenue -90 MAD", "code": null, "type": "welcome_auto", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "usageScope": "unlimited", "usageCap": null, "usageCount": 12, "startsAt": "2026-06-01T00:00:00.000Z", "endsAt": null, "holdoutPct": 10, "priority": 100, "version": 3 },
+          { "id": "cpn_vip", "label": "VIP -15%", "code": "VIP15", "type": "manual_code", "mode": "code", "status": "draft", "valueKind": "percent", "valueAmount": 15, "target": "product_price", "currency": "MAD", "usageScope": "global_cap", "usageCap": 500, "usageCount": 0, "startsAt": "2026-06-01T00:00:00.000Z", "endsAt": "2026-07-01T00:00:00.000Z", "holdoutPct": 0, "priority": 50, "version": 1 },
+          { "id": "cpn_rescue", "label": "Panier abandonné -10%", "code": null, "type": "rescue", "mode": "auto", "status": "paused", "valueKind": "percent", "valueAmount": 10, "target": "product_price", "currency": "MAD", "usageScope": "once_per_visitor", "usageCap": null, "usageCount": 3, "startsAt": "2026-05-01T00:00:00.000Z", "endsAt": null, "holdoutPct": 20, "priority": 80, "version": 2 }
+        ],
+        "total": 3, "page": 1, "pageSize": 20
+      }
+    },
+    "created201": { "status": 201, "body": { "id": "cpn_x", "status": "draft", "version": 1 } },
+    "validation422": { "status": 422, "body": { "error": { "code": "invalid_input", "fieldErrors": { "valueAmount": ["Le pourcentage doit être entre 1 et 100"] } } } },
+    "codeConflict409": { "status": 409, "body": { "error": { "code": "conflict", "message": "Code déjà utilisé" } } },
+    "versionConflict409": { "status": 409, "body": { "error": { "code": "version_conflict", "message": "Ce coupon a été modifié par un autre utilisateur." } } },
+    "forbidden403": { "status": 403, "body": { "error": { "code": "forbidden", "message": "Permission refusée" } } },
+    "serverError500": { "status": 500, "body": { "error": { "code": "internal_error" } } }
+  },
+  "toasts": {
+    "created": "Coupon créé",
+    "updated": "Modifications enregistrées",
+    "archived": "Coupon archivé",
+    "forbidden": "Action non autorisée",
+    "serverError": "Une erreur est survenue",
+    "timeout": "Délai dépassé, réessayez"
+  }
+}

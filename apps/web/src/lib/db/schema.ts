@@ -2254,3 +2254,195 @@ export const productReviewPhotos = pgTable(
 
 export type ProductReviewPhotoRow = typeof productReviewPhotos.$inferSelect;
 export type ProductReviewPhotoInsert = typeof productReviewPhotos.$inferInsert;
+
+/* ─────────────────────────────────────────────────────────────────────
+ * COUPONS (migration 0080)
+ *
+ * Système de coupons piloté par l'admin. En Phase 1, un coupon
+ * `welcome_auto` auto-appliqué devient la SOURCE de la promotion `/kit`
+ * (re-scénarise le -90 MAD en « geste d'accueil ») — cf.
+ * docs/coupon-auto-appliqué.md et le plan d'implémentation.
+ *
+ * Deux tables :
+ *  - `coupons` : définition de campagne (CRUD admin).
+ *  - `coupon_events` : log append-only exposition/application/conversion
+ *    pour mesurer l'incrémentalité (treatment vs holdout).
+ *
+ * L'`eligibility` est en JSONB volontairement extensible : les Phases 2
+ * (sauvetage ciblé) et 3 (post-achat) n'exigent PAS de migration de schéma.
+ * ───────────────────────────────────────────────────────────────────── */
+
+export const couponType = pgEnum('coupon_type', [
+  'welcome_auto',
+  'rescue',
+  'email_unlock',
+  'manual_code',
+  'post_purchase',
+]);
+
+export const couponMode = pgEnum('coupon_mode', ['auto', 'code']);
+
+export const couponStatus = pgEnum('coupon_status', [
+  'draft',
+  'active',
+  'paused',
+  'archived',
+]);
+
+export const couponValueKind = pgEnum('coupon_value_kind', [
+  'fixed_amount',
+  'percent',
+]);
+
+export const couponTarget = pgEnum('coupon_target', [
+  'product_price',
+  'shipping',
+  'future_credit',
+]);
+
+export const couponUsageScope = pgEnum('coupon_usage_scope', [
+  'unlimited',
+  'once_per_visitor',
+  'global_cap',
+]);
+
+export const couponEventPhase = pgEnum('coupon_event_phase', [
+  'exposed',
+  'applied',
+  'converted',
+]);
+
+export const couponBucket = pgEnum('coupon_bucket', ['treatment', 'holdout']);
+
+export const coupons = pgTable(
+  'coupons',
+  {
+    id: text('id').primaryKey(),
+    /** Libellé interne admin (ex. « Geste d'accueil »). */
+    label: text('label').notNull(),
+    /** `null` pour les coupons `auto` ; rempli + unique pour le mode `code`. */
+    code: text('code'),
+    type: couponType('type').notNull(),
+    mode: couponMode('mode').notNull(),
+    status: couponStatus('status').notNull().default('draft'),
+    valueKind: couponValueKind('value_kind').notNull(),
+    /** Centimes si `fixed_amount` ; points de pourcentage (0..100) si `percent`. */
+    valueAmount: integer('value_amount').notNull(),
+    target: couponTarget('target').notNull().default('product_price'),
+    /** Garde-fou devise (cohérence avec la variante produit). */
+    currency: text('currency').notNull().default('MAD'),
+    /** Règles d'éligibilité extensibles (`{}` = tout le trafic). */
+    eligibility: jsonb('eligibility').notNull().default(sql`'{}'::jsonb`),
+    /** Fenêtre de validité — date civile, JAMAIS un countdown. */
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    stackable: boolean('stackable').notNull().default(false),
+    usageScope: couponUsageScope('usage_scope').notNull().default('unlimited'),
+    usageCap: integer('usage_cap'),
+    usageCount: integer('usage_count').notNull().default(0),
+    /** % d'éligibles placés en groupe contrôle (pas de coupon appliqué). */
+    holdoutPct: integer('holdout_pct').notNull().default(0),
+    /** Départage les candidats non-cumulables (plus haut = prioritaire). */
+    priority: integer('priority').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by').references(() => adminUsers.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (t) => ({
+    codeUnique: uniqueIndex('coupons_code_unique')
+      .on(t.code)
+      .where(sql`${t.code} IS NOT NULL`),
+    statusTypeIdx: index('coupons_status_type_idx').on(t.status, t.type),
+  }),
+);
+
+export const couponEvents = pgTable(
+  'coupon_events',
+  {
+    id: text('id').primaryKey(),
+    couponId: text('coupon_id').references(() => coupons.id, {
+      onDelete: 'set null',
+    }),
+    phase: couponEventPhase('phase').notNull(),
+    bucket: couponBucket('bucket').notNull(),
+    /** Hash anonyme du visiteur (PAS de PII). */
+    visitorKey: text('visitor_key'),
+    orderId: text('order_id').references(() => orders.id, { onDelete: 'set null' }),
+    /** Remise effective en centimes au moment de la conversion. */
+    amountCents: integer('amount_cents'),
+    trafficSource: text('traffic_source'),
+    device: text('device'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    couponPhaseIdx: index('coupon_events_coupon_phase_idx').on(
+      t.couponId,
+      t.phase,
+      t.createdAt,
+    ),
+    visitorIdx: index('coupon_events_visitor_idx').on(t.visitorKey),
+    /** Idempotence : une seule conversion par (commande, coupon) — permet à un
+     *  même order de porter un converted welcome ET un converted rescue. */
+    orderConvertedUnique: uniqueIndex('coupon_events_order_converted_unique')
+      .on(t.orderId, t.couponId)
+      .where(sql`${t.phase} = 'converted' AND ${t.orderId} IS NOT NULL`),
+  }),
+);
+
+export type CouponRow = typeof coupons.$inferSelect;
+export type CouponInsert = typeof coupons.$inferInsert;
+export type CouponEventRow = typeof couponEvents.$inferSelect;
+export type CouponEventInsert = typeof couponEvents.$inferInsert;
+
+/* ─────────────────────────────────────────────────────────────────────
+ * COUPON GRANTS (migration 0081) — Phase 3 : crédit de fidélité post-achat.
+ *
+ * Chaque commande émet un `coupon_grant` : un code personnel unique,
+ * rattaché au client (chat_lead) et à la commande source, redeemable UNE
+ * fois sur une commande ultérieure. La valeur est figée à l'émission
+ * (`value_cents`) pour qu'un changement ultérieur du template n'affecte pas
+ * les crédits déjà émis. cf. docs/coupons-qa-2026-06-02 (Phase 3).
+ * ───────────────────────────────────────────────────────────────────── */
+
+export const couponGrantStatus = pgEnum('coupon_grant_status', [
+  'issued',
+  'redeemed',
+  'expired',
+]);
+
+export const couponGrants = pgTable(
+  'coupon_grants',
+  {
+    id: text('id').primaryKey(),
+    templateCouponId: text('template_coupon_id').references(() => coupons.id, {
+      onDelete: 'set null',
+    }),
+    code: text('code').notNull(),
+    leadId: text('lead_id'),
+    sourceOrderId: text('source_order_id').references(() => orders.id, {
+      onDelete: 'set null',
+    }),
+    status: couponGrantStatus('status').notNull().default('issued'),
+    valueCents: integer('value_cents').notNull(),
+    currency: text('currency').notNull().default('MAD'),
+    redeemedOrderId: text('redeemed_order_id').references(() => orders.id, {
+      onDelete: 'set null',
+    }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    redeemedAt: timestamp('redeemed_at', { withTimezone: true }),
+  },
+  (t) => ({
+    codeUnique: uniqueIndex('coupon_grants_code_unique').on(t.code),
+    statusIdx: index('coupon_grants_status_idx').on(t.status),
+    leadIdx: index('coupon_grants_lead_idx').on(t.leadId),
+    sourceOrderUnique: uniqueIndex('coupon_grants_source_order_unique')
+      .on(t.sourceOrderId)
+      .where(sql`${t.sourceOrderId} IS NOT NULL`),
+  }),
+);
+
+export type CouponGrantRow = typeof couponGrants.$inferSelect;
+export type CouponGrantInsert = typeof couponGrants.$inferInsert;

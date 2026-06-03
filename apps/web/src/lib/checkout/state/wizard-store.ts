@@ -128,6 +128,15 @@ export interface WizardState {
   addressDraft: AddressDraft;
   paymentDraft: PaymentDraft;
 
+  // ── Phase 3 — crédit de fidélité ─────────────────────────────────────
+  /** Code crédit saisi (persisté pour reprise après refresh). */
+  couponCode: string | null;
+  /**
+   * Montant du crédit validé (centimes). NON persisté : re-validé à l'usage
+   * via /api/coupons/redeem (le serveur reste autoritaire au paiement).
+   */
+  creditCents: number;
+
   // Indique que `localStorage` a été lu (évite mismatch SSR).
   hydrated: boolean;
 
@@ -167,6 +176,10 @@ export interface WizardState {
   mergePaymentDraft: (patch: Partial<PaymentDraft>) => void;
   setLeadId: (id: string) => void;
   setOrderId: (id: string) => void;
+  /** Phase 3 — applique un crédit validé (code + montant). */
+  setCoupon: (code: string, creditCents: number) => void;
+  /** Phase 3 — retire le crédit (code vidé ou ré-édité → re-validation). */
+  clearCoupon: () => void;
   /** OWBS — signale une sync de fond dégradée (FR-11). */
   markSyncDegraded: () => void;
   /** OWBS — efface le signal (après un réessai réussi). */
@@ -237,6 +250,8 @@ const INITIAL: Omit<
   | 'mergePaymentDraft'
   | 'setLeadId'
   | 'setOrderId'
+  | 'setCoupon'
+  | 'clearCoupon'
   | 'markSyncDegraded'
   | 'clearSyncDegraded'
   | 'setLanguage'
@@ -257,6 +272,8 @@ const INITIAL: Omit<
   leadDraft: DEFAULT_LEAD_DRAFT,
   addressDraft: DEFAULT_ADDRESS_DRAFT,
   paymentDraft: DEFAULT_PAYMENT_DRAFT,
+  couponCode: null,
+  creditCents: 0,
   hydrated: false,
   // wizard-kit-optim W0 — tracking enrichi (non-persisté sauf flag dismiss)
   fieldFocusedAt: {},
@@ -284,6 +301,9 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
     set((state) => ({ paymentDraft: { ...state.paymentDraft, ...patch } })),
   setLeadId: (id) => set({ leadId: id }),
   setOrderId: (id) => set({ orderId: id }),
+  setCoupon: (code, creditCents) =>
+    set({ couponCode: code.trim().toUpperCase(), creditCents: Math.max(0, Math.round(creditCents)) }),
+  clearCoupon: () => set({ couponCode: null, creditCents: 0 }),
   markSyncDegraded: () => set({ syncDegraded: true }),
   clearSyncDegraded: () => set({ syncDegraded: false }),
   setLanguage: (lang) =>
@@ -431,6 +451,9 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     leadDraft: state.leadDraft,
     addressDraft: state.addressDraft,
     paymentDraft: state.paymentDraft,
+    // Phase 3 : on persiste le CODE (reprise) mais pas `creditCents`
+    // (re-validé à l'usage — le serveur reste autoritaire).
+    couponCode: state.couponCode,
     resumeBannerDismissed: state.resumeBannerDismissed,
   }),
   onRehydrateStorage: () => (state) => {

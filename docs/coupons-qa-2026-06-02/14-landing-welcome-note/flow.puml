@@ -1,0 +1,48 @@
+@startuml CPN-14-affichage
+title CPN-14 — Arbre des conditions d'affichage de CouponWelcomeNote
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+
+start
+
+:Props reçues (rendu serveur)\ncoupon, discountCents, finalPriceCents, currency, endsAt;
+
+if (coupon == null ?) then (oui)
+  #LightGray:return null\n(aucun noeud rendu);
+  stop
+else (non)
+  if (coupon.bucket == 'treatment' ?) then (non / holdout)
+    #LightGray:return null\n(groupe contrôle — note jamais visible);
+    stop
+  else (oui)
+    if (coupon.type == 'welcome_auto' ?) then (non)
+      #LightGray:return null\n(rescue / manual_code / autre : Phase 1 masque);
+      stop
+    else (oui)
+      :RENDU DE LA NOTE (SSR, pas de fetch);
+      :Ligne 1 — « Votre geste d'accueil est appliqué. »;
+      :Ligne 2 — « <discount> offerts sur votre première commande du pack. »;
+      :Ligne 3 — « Prix final aujourd'hui : <finalPrice> »;
+      if (endsAt != null ?) then (oui)
+        :Ligne 4 — « Valable jusqu'au <date civile localisée>. Hors cumul. »;
+      else (non)
+        :Ligne 4 — « Hors cumul. » (sans date);
+      endif
+      :Porte <details> repliée « J'ai un code d'invitation »\n(INERTE Phase 1 — voir CPN-15);
+      note right
+        Localisation appliquée (fr/ar) :
+        - devise MAD -> درهم sur /ar
+        - date au format civil localisé
+        - RTL hérité du contexte /ar
+        Charte : crème/encre, filet fin,
+        AUCUN rouge/jaune/countdown/emoji/!.
+      end note
+      :(optionnel) emit coupon_welcome_note_view\n{coupon_id, bucket:treatment, type:welcome_auto};
+      stop
+    endif
+  endif
+endif
+
+@enduml

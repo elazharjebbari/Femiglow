@@ -44,7 +44,6 @@ import { resolveOgImage } from '@/lib/components/og-image';
 import { resolvePageWithComponents } from '@/lib/seo/component-resolve';
 import { resolveSeoMetadata } from '@/lib/seo/resolve';
 import { productSchema } from '@/lib/seo/json-ld';
-import { computePromo } from '@/lib/utils/promo';
 import { deriveEventId } from '@/lib/tracking/event-id';
 import { serverFire } from '@/lib/tracking/server/server-fire';
 
@@ -212,7 +211,29 @@ export default async function KitPage({ params, searchParams }: PageProps) {
     ? deriveEventId({ eventName: 'view_item', sessionId, pageId: 'kit' })
     : undefined;
   void eventIdSeed;
-  const kitPromo = computePromo(dbProduct.priceCents, dbProduct.promoPriceCents);
+  // Le COUPON pilote la promotion affichée : on résout le prix coupon-aware
+  // (même moteur que getKitLeadValue + repricing commande) → prix affiché,
+  // valeur view_item et JSON-LD cohérents et pilotables depuis /admin/coupons.
+  const { resolveProductPricing } = await import('@/lib/coupons/engine');
+  const { buildCouponContext } = await import('@/lib/coupons/context');
+  const kitPricing = await resolveProductPricing(
+    {
+      priceCents: dbProduct.priceCents,
+      promoPriceCents: dbProduct.promoPriceCents,
+      sku: dbProduct.primaryVariantSku,
+      currency: dbProduct.currency,
+    },
+    buildCouponContext({
+      referer: reqHeaders.get('referer'),
+      userAgent: reqHeaders.get('user-agent'),
+      sessionId,
+    }),
+  );
+  const pricedProduct = {
+    ...dbProduct,
+    promoPriceCents: kitPricing.active ? kitPricing.effectivePriceCents : null,
+  };
+  const kitPromo = kitPricing;
   void serverFire({
     eventName: 'view_item',
     pageId: 'kit',
@@ -235,12 +256,12 @@ export default async function KitPage({ params, searchParams }: PageProps) {
   });
 
   // Product JSON-LD — admin override + aggregateRating system-driven.
-  const productFeed = buildKitProductFeed(dbProduct, content, reviewStats);
+  const productFeed = buildKitProductFeed(pricedProduct, content, reviewStats);
   const enrichment = feedToProductSchemaEnrichment(
     productFeed,
     content.handsTestimonials,
   );
-  const enrichedAuto = productSchema(dbProduct, `/${locale}/kit`, enrichment);
+  const enrichedAuto = productSchema(pricedProduct, `/${locale}/kit`, enrichment);
   const baseProductJsonLd: Record<string, unknown> = isProductSchema(
     seo.structuredData,
   )
@@ -261,7 +282,7 @@ export default async function KitPage({ params, searchParams }: PageProps) {
   const layoutProps = {
     content,
     journalArticles,
-    dbProduct,
+    dbProduct: pricedProduct,
     productJsonLd,
     reviewStats,
     ritualSummary,

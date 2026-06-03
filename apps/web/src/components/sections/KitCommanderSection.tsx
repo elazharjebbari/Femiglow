@@ -65,6 +65,8 @@ export interface KitCommanderSectionProps {
    * côté serveur.
    */
   wizardLanguage?: 'fr' | 'ar' | 'en';
+  /** Coupon d'accueil résolu serveur → mention « geste d'accueil » au récap. */
+  welcomeCoupon?: { active: boolean; postPurchaseCreditCents?: number };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,6 +96,7 @@ export function KitCommanderSection({
   preface,
   packImage,
   wizardLanguage,
+  welcomeCoupon,
 }: KitCommanderSectionProps) {
   // Phase 8 (7E-13) — injecte la langue dans le formContext du wizard. En AR/EN,
   // le dictionnaire de la langue (`useWizardTranslation`) pilote tous les libellés.
@@ -152,6 +155,7 @@ export function KitCommanderSection({
             formContext={formContext}
             steps={[...KIT_STEPS]}
             initialCart={initialCart}
+            welcomeCoupon={welcomeCoupon}
             cartRecapThumbnailSrc={packImage?.src}
             // FR : override marketing custom. AR/EN : pas d'override → le
             // dictionnaire complet de la langue fournit tous les libellés.

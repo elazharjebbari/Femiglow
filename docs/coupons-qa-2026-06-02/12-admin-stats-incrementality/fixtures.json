@@ -1,0 +1,104 @@
+{
+  "$comment": "CPN-12 stats & incrementality — fixtures. Agrégats par bucket, jamais de PII. minSamplePerBucket=100. uplift.absolute en proportion (0.04 = +4 points). Réponses API mockées MSW.",
+  "minSamplePerBucket": 100,
+  "aggregates": {
+    "nominalPositive": {
+      "treatment": { "exposed": 1000, "applied": 940, "converted": 130 },
+      "holdout": { "exposed": 200, "applied": 0, "converted": 18 },
+      "expected": {
+        "rates": { "treatmentConv": 0.13, "holdoutConv": 0.09 },
+        "uplift": { "absolute": 0.04, "relative": 0.4444 },
+        "significance": "sufficient",
+        "noControl": false
+      }
+    },
+    "noData": {
+      "treatment": { "exposed": 0, "applied": 0, "converted": 0 },
+      "holdout": { "exposed": 0, "applied": 0, "converted": 0 },
+      "expected": { "significance": "no_data", "uplift": null, "noControl": false }
+    },
+    "insufficient": {
+      "treatment": { "exposed": 40, "applied": 38, "converted": 6 },
+      "holdout": { "exposed": 30, "applied": 0, "converted": 2 },
+      "expected": { "significance": "insufficient" }
+    },
+    "atThreshold": {
+      "treatment": { "exposed": 100, "applied": 95, "converted": 13 },
+      "holdout": { "exposed": 100, "applied": 0, "converted": 9 },
+      "expected": { "significance": "sufficient" }
+    },
+    "noControl": {
+      "treatment": { "exposed": 1000, "applied": 950, "converted": 130 },
+      "holdout": { "exposed": 0, "applied": 0, "converted": 0 },
+      "expected": { "noControl": true, "uplift": null, "holdoutConv": null }
+    },
+    "convertedZero": {
+      "treatment": { "exposed": 500, "applied": 480, "converted": 0 },
+      "holdout": { "exposed": 100, "applied": 0, "converted": 0 },
+      "expected": { "rates": { "treatmentConv": 0, "holdoutConv": 0 }, "uplift": { "absolute": 0 } }
+    },
+    "upliftNegative": {
+      "treatment": { "exposed": 1000, "applied": 950, "converted": 80 },
+      "holdout": { "exposed": 200, "applied": 0, "converted": 30 },
+      "expected": {
+        "rates": { "treatmentConv": 0.08, "holdoutConv": 0.15 },
+        "uplift": { "absolute": -0.07 },
+        "significance": "sufficient"
+      }
+    },
+    "corruptConvertedOverExposed": {
+      "treatment": { "exposed": 100, "applied": 100, "converted": 150 },
+      "holdout": { "exposed": 100, "applied": 0, "converted": 9 },
+      "expected": { "clampedTreatmentConvLte1": true }
+    },
+    "exposedZeroConvertedPositive": {
+      "treatment": { "exposed": 0, "applied": 0, "converted": 5 },
+      "holdout": { "exposed": 200, "applied": 0, "converted": 18 },
+      "expected": { "finiteNoInfinity": true, "treatmentConvLte1": true }
+    }
+  },
+  "mockResponses": {
+    "stats200Nominal": {
+      "status": 200,
+      "body": {
+        "couponId": "cpn_welcome",
+        "window": { "from": "2026-06-01T00:00:00.000Z", "to": "2026-06-08T00:00:00.000Z" },
+        "buckets": { "treatment": { "exposed": 1000, "applied": 940, "converted": 130 }, "holdout": { "exposed": 200, "applied": 0, "converted": 18 } },
+        "rates": { "treatmentConv": 0.13, "holdoutConv": 0.09 },
+        "uplift": { "absolute": 0.04, "relative": 0.4444 },
+        "significance": { "level": "sufficient", "minSamplePerBucket": 100 },
+        "noControl": false
+      }
+    },
+    "stats200NoData": {
+      "status": 200,
+      "body": { "couponId": "cpn_new", "buckets": { "treatment": { "exposed": 0, "applied": 0, "converted": 0 }, "holdout": { "exposed": 0, "applied": 0, "converted": 0 } }, "rates": { "treatmentConv": 0, "holdoutConv": 0 }, "uplift": null, "significance": { "level": "no_data", "minSamplePerBucket": 100 }, "noControl": false }
+    },
+    "stats200Insufficient": {
+      "status": 200,
+      "body": { "couponId": "cpn_small", "buckets": { "treatment": { "exposed": 40, "applied": 38, "converted": 6 }, "holdout": { "exposed": 30, "applied": 0, "converted": 2 } }, "rates": { "treatmentConv": 0.15, "holdoutConv": 0.0667 }, "uplift": { "absolute": 0.0833, "relative": 1.25 }, "significance": { "level": "insufficient", "minSamplePerBucket": 100 }, "noControl": false }
+    },
+    "stats200NoControl": {
+      "status": 200,
+      "body": { "couponId": "cpn_noctrl", "buckets": { "treatment": { "exposed": 1000, "applied": 950, "converted": 130 }, "holdout": { "exposed": 0, "applied": 0, "converted": 0 } }, "rates": { "treatmentConv": 0.13, "holdoutConv": null }, "uplift": null, "significance": { "level": "sufficient", "minSamplePerBucket": 100 }, "noControl": true }
+    },
+    "stats200Negative": {
+      "status": 200,
+      "body": { "couponId": "cpn_neg", "buckets": { "treatment": { "exposed": 1000, "applied": 950, "converted": 80 }, "holdout": { "exposed": 200, "applied": 0, "converted": 30 } }, "rates": { "treatmentConv": 0.08, "holdoutConv": 0.15 }, "uplift": { "absolute": -0.07, "relative": -0.4667 }, "significance": { "level": "sufficient", "minSamplePerBucket": 100 }, "noControl": false }
+    },
+    "stats404": { "status": 404, "body": { "error": { "code": "not_found" } } },
+    "stats500": { "status": 500, "body": { "error": { "code": "internal_error" } } }
+  },
+  "messages": {
+    "noData": "Pas encore de données",
+    "insufficient": "Échantillon insuffisant (n < seuil) : uplift non significatif",
+    "noControl": "Pas de groupe contrôle (holdout 0 %) : l'incrémentalité ne peut pas être mesurée.",
+    "loadError": "Impossible de charger les statistiques",
+    "retry": "Réessayer"
+  },
+  "piiGuard": {
+    "$comment": "la réponse ne doit contenir aucune de ces clés/motifs",
+    "forbiddenKeys": ["visitorKey", "email", "phone"],
+    "forbiddenPattern": "@"
+  }
+}

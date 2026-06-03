@@ -1,0 +1,82 @@
+@startuml coupons-architecture
+title Système de coupons FemiGlow — Architecture & flux du prix (Phase 1)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Visiteur" as visitor
+actor "Opérateur admin" as admin
+
+package "Frontend public /kit" {
+  [PriceBlock] as priceblock
+  [CouponWelcomeNote] as note
+  [KitCommanderSectionBound] as commander
+}
+
+package "Frontend admin /admin/coupons" {
+  [Liste coupons] as adminlist
+  [Form coupon] as adminform
+  [Panneau stats] as adminstats
+}
+
+package "Moteur coupons (server-only)" {
+  [resolveProductPricing] as rpp
+  [resolveCoupon] as rc
+  [applyCoupon (pur)] as ac
+  [buildCouponContext] as ctx
+  [bucketing holdout] as bucket
+}
+
+package "Données" {
+  database "coupons" as tcoupons
+  database "coupon_events" as tevents
+  database "product_variants" as tvariants
+  [coupon-repo] as repo
+  [computePromo (existant)] as cp
+}
+
+package "Checkout" {
+  [/api/checkout/order] as orderapi
+  [order-repo.createOrder\n(repricing autoritaire)] as orderrepo
+}
+
+' Flux affichage
+visitor --> priceblock
+priceblock --> rpp : pricing
+priceblock --> note : coupon résolu
+commander --> rpp : pricing snapshot
+
+' Flux moteur
+rpp --> rc
+rpp --> ac
+rpp ..> cp : fallback si pas de coupon
+rc --> repo
+rc --> bucket
+repo --> tcoupons
+rpp --> tvariants : priceCents / promoPriceCents
+note right of bucket
+  bucket = hash(visitorKey + couponId) % 100 < holdoutPct
+  → DÉTERMINISTE : même décision
+    à l'affichage ET au checkout
+end note
+
+' Flux checkout (invariant prix)
+visitor --> orderapi : expectedTotalCents
+orderapi --> orderrepo
+orderrepo --> rpp : MÊME résolveur
+orderrepo --> ctx : contexte reconstruit (req)
+orderapi --> tevents : converted (idempotent / orderId)
+
+' Flux admin
+admin --> adminlist
+admin --> adminform
+adminform --> repo : CRUD (Zod + audit + revalidateTag)
+adminstats --> tevents : agrégats treatment vs holdout
+
+note bottom of orderrepo
+  INVARIANT n°1 :
+  prix AFFICHÉ == prix FACTURÉ
+  sinon PriceMismatchError (422)
+end note
+
+@enduml
