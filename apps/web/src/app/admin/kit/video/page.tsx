@@ -6,6 +6,7 @@
  *
  * cf. docs/video-gestes-optim-2026-05/06-admin-ui-ux-design.md
  */
+import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { KitVideoEditor } from '@/components/admin/kit-video/KitVideoEditor';
@@ -20,8 +21,14 @@ export default async function AdminKitVideoPage(): Promise<JSX.Element> {
   const resolved = resolveKitVideoDraft();
 
   return (
-    <AdminShell adminEmail={session.email} active="kit-video">
+    <AdminShell adminEmail={session.email} active="components">
       <header className="mb-6">
+        <Link
+          href="/admin/components?group=kit"
+          className="mb-2 inline-block text-xs text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline"
+        >
+          ← Composants /kit
+        </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
           Rituel vidéo `/kit`
         </h1>

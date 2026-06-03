@@ -8,6 +8,7 @@ import {
 import { listBindingsByComponent } from '@/lib/db/queries/component-bindings';
 import { listBindingsByComponent as listFieldBindingsByComponent } from '@/lib/db/queries/component-fields';
 import { ComponentsBulkPanel } from '@/components/admin/components/ComponentsBulkPanel';
+import { PageGroupEditors } from '@/components/admin/components/PageGroupEditors';
 import type { ComponentListCounts } from '@/components/admin/components/ComponentList';
 
 export const dynamic = 'force-dynamic';
@@ -112,6 +113,11 @@ export default async function AdminComponentsPage({
           />
         ))}
       </nav>
+
+      {/* Éditeurs de sections dédiés au groupe courant (ex. /kit : Vidéo,
+          Composition, Pack). Rendu en contexte au-dessus de la liste plutôt
+          que dans la nav globale. */}
+      <PageGroupEditors group={pageGroup} />
 
       {groups.length === 0 ? (
         <p className="rounded-md border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">

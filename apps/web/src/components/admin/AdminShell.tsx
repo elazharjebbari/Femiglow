@@ -20,10 +20,7 @@ interface AdminShellProps {
     | 'chat'
     | 'rituals'
     | 'legal'
-    | 'emails'
-    | 'kit-video'
-    | 'kit-composition'
-    | 'kit-pack';
+    | 'emails';
   children: ReactNode;
 }
 
@@ -35,9 +32,6 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/components', key: 'components', label: 'Composants' },
   { href: '/admin/i18n', key: 'i18n', label: 'Traductions / i18n' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
-  { href: '/admin/kit/video', key: 'kit-video', label: 'Vidéo /kit' },
-  { href: '/admin/kit/composition', key: 'kit-composition', label: 'Composition /kit' },
-  { href: '/admin/kit/pack', key: 'kit-pack', label: 'Pack /kit' },
   { href: '/admin/legal', key: 'legal', label: 'Pages légales' },
   { href: '/admin/products', key: 'products', label: 'Produits' },
   { href: '/admin/content-studio', key: 'content-studio', label: 'Studio contenu' },

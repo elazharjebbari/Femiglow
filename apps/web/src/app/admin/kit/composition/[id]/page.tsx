@@ -37,7 +37,7 @@ export default async function AdminKitCompositionEditorPage({
   if (!resolved) notFound();
 
   return (
-    <AdminShell adminEmail={session.email} active="kit-composition">
+    <AdminShell adminEmail={session.email} active="components">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
           <Link href="/admin/kit/composition" className="hover:underline">

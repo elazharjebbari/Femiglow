@@ -70,7 +70,7 @@ function exportContainer() {
 function labelKeyOf(tag: GtmTag): string | null {
   const v = tag.parameter?.find((p) => p.key === 'conversionLabel')?.value ?? '';
   const m = v.match(/CONST - Ads Label - (.+?)\}\}/);
-  return m ? m[1] : null;
+  return m?.[1] ?? null;
 }
 
 describe('export Google Ads — conversions awct', () => {
