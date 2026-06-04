@@ -83,46 +83,63 @@ export async function pushSnapshotToListmonk(
   const snapshot = snapshots[0];
   if (!snapshot) throw new Error(`Snapshot not found: ${snapshotId}`);
 
-  // 2. Idempotency : déjà pushed → return existing
-  if (snapshot.listmonkListId) {
+  // 2. Idempotency vs reprise (L-ATOM).
+  //   Le simple fait d'avoir `listmonkListId` ne prouve PAS que TOUS les
+  //   membres ont été poussés : un crash réseau à mi-parcours laisse la liste
+  //   créée mais incomplète. On ne court-circuite donc QUE si le push a été
+  //   marqué *terminé* (`metadata.listmonkPushedAt`). Sinon (liste créée mais
+  //   push inachevé) on REPREND : on réutilise la liste existante et on
+  //   re-pousse les membres — idempotent par email (409 → attach), donc les
+  //   déjà-poussés ne sont pas re-créés et les restants sont complétés.
+  const meta = (snapshot.metadata ?? {}) as Record<string, unknown>;
+  const alreadyComplete =
+    snapshot.listmonkListId != null && typeof meta.listmonkPushedAt === 'string';
+  if (alreadyComplete) {
     return {
-      listmonkListId: snapshot.listmonkListId,
+      listmonkListId: snapshot.listmonkListId!,
       listmonkListName: snapshot.listmonkListName ?? '',
       pushed: snapshot.size,
       durationMs: 0,
     };
   }
 
-  // 3. Compute list name
-  const listName =
-    opts.listName ??
-    `fg-snap-${snapshotId.slice(0, 8)}-${Date.now().toString(36)}`;
+  // 3. Liste Listmonk : réutiliser celle d'un push partiel précédent, sinon créer.
+  let listId: number;
+  let listName: string;
+  if (snapshot.listmonkListId != null) {
+    // Reprise d'un push partiel : la liste existe déjà.
+    listId = snapshot.listmonkListId;
+    listName = snapshot.listmonkListName ?? '';
+  } else {
+    listName =
+      opts.listName ??
+      `fg-snap-${snapshotId.slice(0, 8)}-${Date.now().toString(36)}`;
+    const createRes = await fetchImpl(`${config.url}/api/lists`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: basicAuth(config.user, config.token),
+      },
+      body: JSON.stringify({
+        name: listName,
+        type: 'private',
+        optin: 'single',
+        tags: ['ephemeral'],
+      }),
+    });
+    if (!createRes.ok) {
+      throw new Error(`Listmonk create list failed: ${createRes.status}`);
+    }
+    const createBody = (await createRes.json()) as { data: { id: number } };
+    listId = createBody.data.id;
 
-  // 4. Create Listmonk list
-  const createRes = await fetchImpl(`${config.url}/api/lists`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: basicAuth(config.user, config.token),
-    },
-    body: JSON.stringify({
-      name: listName,
-      type: 'private',
-      optin: 'single',
-      tags: ['ephemeral'],
-    }),
-  });
-  if (!createRes.ok) {
-    throw new Error(`Listmonk create list failed: ${createRes.status}`);
+    // Persister le listId TÔT (avant les membres) → un crash mi-push est
+    // rejouable : le re-run retrouve la liste et complète les membres manquants.
+    await drizzle
+      .update(emailAudienceSnapshot)
+      .set({ listmonkListId: listId, listmonkListName: listName })
+      .where(eq(emailAudienceSnapshot.id, snapshotId));
   }
-  const createBody = (await createRes.json()) as { data: { id: number } };
-  const listId = createBody.data.id;
-
-  // 5. Update snapshot with list ID (atomic + early so we can recover)
-  await drizzle
-    .update(emailAudienceSnapshot)
-    .set({ listmonkListId: listId, listmonkListName: listName })
-    .where(eq(emailAudienceSnapshot.id, snapshotId));
 
   // 6. Fetch members + push by chunks
   const members = await drizzle
@@ -201,6 +218,22 @@ export async function pushSnapshotToListmonk(
     });
   }
 
+  // Push terminé sans crash → marquer la complétion pour rendre les futurs
+  // appels idempotents (no-op) tout en gardant la reprise possible tant que ce
+  // marqueur est absent. `pushedCount` permet de vérifier le compte exact.
+  await drizzle
+    .update(emailAudienceSnapshot)
+    .set({
+      metadata: sql`
+        coalesce(${emailAudienceSnapshot.metadata}, '{}'::jsonb)
+        || ${JSON.stringify({
+          listmonkPushedAt: new Date().toISOString(),
+          listmonkPushedCount: pushed,
+        })}::jsonb
+      `,
+    })
+    .where(eq(emailAudienceSnapshot.id, snapshotId));
+
   const durationMs = Date.now() - start;
   logger.info('listmonk.snapshot.pushed', {
     snapshotId,
@@ -272,4 +305,81 @@ export async function cleanupExpiredListmonkLists(opts: {
 
   logger.info('listmonk.cleanup.completed', { purged, candidates: expired.length });
   return { purged };
+}
+
+type ListmonkListSummary = { id: number; name?: string; tags?: string[] };
+
+/**
+ * Filet anti-fuite (L-LEAK / ORPHAN-TAG) : balaye les listes Listmonk taguées
+ * `ephemeral` et supprime UNIQUEMENT celles qui ne correspondent à AUCUNE
+ * snapshot FemiGlow (référence `listmonk_list_id`). Une liste encore référencée
+ * — même expirée — n'est JAMAIS touchée ici (c'est le rôle de
+ * `cleanupExpiredListmonkLists`, ordonné). Garantit l'oracle « ne supprime QUE
+ * les orphelines ».
+ *
+ * Idempotent : un 404 sur une liste déjà disparue est traité comme succès.
+ */
+export async function cleanupOrphanEphemeralLists(opts: {
+  fetchImpl?: typeof fetch;
+} = {}): Promise<{ deleted: number; scanned: number; orphans: number }> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  const config = getListmonkConfig();
+  if (!config) return { deleted: 0, scanned: 0, orphans: 0 };
+  const drizzle = requireDb();
+
+  // 1. Toutes les listes Listmonk taguées ephemeral.
+  const listsRes = await fetchImpl(`${config.url}/api/lists?per_page=all`, {
+    headers: { authorization: basicAuth(config.user, config.token) },
+  });
+  if (!listsRes.ok) {
+    throw new Error(`Listmonk lists fetch failed: ${listsRes.status}`);
+  }
+  const listsBody = (await listsRes.json()) as {
+    data?: { results?: ListmonkListSummary[] };
+  };
+  const ephemeral = (listsBody.data?.results ?? []).filter((l) =>
+    (l.tags ?? []).includes('ephemeral'),
+  );
+
+  // 2. IDs de listes ENCORE référencés par une snapshot FemiGlow (source de vérité).
+  const referenced = await drizzle
+    .select({ listmonkListId: emailAudienceSnapshot.listmonkListId })
+    .from(emailAudienceSnapshot)
+    .where(sql`${emailAudienceSnapshot.listmonkListId} IS NOT NULL`);
+  const referencedIds = new Set(
+    referenced.map((r) => r.listmonkListId).filter((x): x is number => x != null),
+  );
+
+  // 3. Orphelins = ephemeral côté Listmonk SANS référence DB.
+  const orphans = ephemeral.filter((l) => !referencedIds.has(l.id));
+
+  let deleted = 0;
+  for (const orphan of orphans) {
+    try {
+      const res = await fetchImpl(`${config.url}/api/lists/${orphan.id}`, {
+        method: 'DELETE',
+        headers: { authorization: basicAuth(config.user, config.token) },
+      });
+      if (res.ok || res.status === 404) {
+        deleted += 1;
+      } else {
+        logger.warn('listmonk.orphan_cleanup.delete_failed', {
+          listmonkListId: orphan.id,
+          status: res.status,
+        });
+      }
+    } catch (err) {
+      logger.error('listmonk.orphan_cleanup.exception', {
+        listmonkListId: orphan.id,
+        error: String(err),
+      });
+    }
+  }
+
+  logger.info('listmonk.orphan_cleanup.completed', {
+    scanned: ephemeral.length,
+    orphans: orphans.length,
+    deleted,
+  });
+  return { deleted, scanned: ephemeral.length, orphans: orphans.length };
 }
