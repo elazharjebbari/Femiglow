@@ -16,6 +16,7 @@ import { logger } from '@/lib/logging/logger';
 import { env } from '@/lib/env';
 import { getTransporter, SmtpNotConfiguredError } from './client';
 import { computeBackoff, MAX_ATTEMPTS } from './backoff';
+import { generateUnsubToken } from './unsub-token';
 
 const BATCH_SIZE = 100;
 
@@ -66,6 +67,14 @@ export async function attemptSend(outboxId: string): Promise<void> {
   try {
     await deliverRow(row);
   } catch (err) {
+    if (isSmtpConfigError(err)) {
+      // Erreur de CONFIG (SMTP non configuré) : ce n'est pas la faute de l'email.
+      // On NE brûle PAS d'essai (attempts inchangé) et on pose un next_retry
+      // (backoff) pour que la ligne soit reprenable sans busy-loop une fois la
+      // config réparée. cf. F-081 / PIP-INT-117..119.
+      await markSmtpConfigError(drizzle, row, err, Date.now());
+      throw err;
+    }
     // Reset to 'failed' so the cron will retry (and so we don't leave rows
     // stuck in 'sending' forever after a transient error).
     const nextAttempts = (row.attempts ?? 0) + 1;
@@ -82,6 +91,40 @@ export async function attemptSend(outboxId: string): Promise<void> {
       .where(eq(emailOutbox.id, row.id));
     throw err;
   }
+}
+
+/** Reconnaît une erreur « SMTP non configuré » (instance ou code typé). */
+function isSmtpConfigError(err: unknown): boolean {
+  return (
+    err instanceof SmtpNotConfiguredError ||
+    (err instanceof Error && (err as { code?: string }).code === 'SMTP_NOT_CONFIGURED')
+  );
+}
+
+/**
+ * Persiste l'état d'une ligne dont l'envoi a échoué sur une erreur de CONFIG
+ * SMTP : `failed`, SANS incrémenter `attempts` (budget de retry préservé), AVEC
+ * un `next_retry` calé sur le backoff de l'essai courant — donc reprenable mais
+ * jamais en boucle immédiate. `now` injectable pour le déterminisme des tests.
+ */
+async function markSmtpConfigError(
+  drizzle: ReturnType<typeof requireDb>,
+  row: EmailOutboxRow,
+  err: unknown,
+  nowMs: number,
+): Promise<void> {
+  // `attempts` reste inchangé. On dérive néanmoins le backoff de l'essai courant
+  // (au moins 1) pour ne pas re-claimer immédiatement.
+  const backoffMs = computeBackoff(Math.max(1, row.attempts ?? 0));
+  await drizzle
+    .update(emailOutbox)
+    .set({
+      status: 'failed',
+      nextRetry: new Date(nowMs + backoffMs),
+      lastError: err instanceof Error ? err.message : String(err),
+      updatedAt: new Date(),
+    })
+    .where(eq(emailOutbox.id, row.id));
 }
 
 /**
@@ -188,6 +231,15 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
       await deliverRow(row);
       succeeded++;
     } catch (err) {
+      if (isSmtpConfigError(err)) {
+        // Erreur de CONFIG : pas d'incrément d'attempts, next_retry posé (backoff)
+        // → reprenable sans busy-loop, budget de retry préservé. Compté dans
+        // `failed` pour la visibilité, mais SANS event `failed` (pas une panne de
+        // livraison ; éviterait de polluer la timeline). cf. F-081.
+        await markSmtpConfigError(drizzle, row, err, now.getTime());
+        failed++;
+        continue;
+      }
       const nextAttempts = (row.attempts ?? 0) + 1;
       const reachedMax = nextAttempts >= MAX_ATTEMPTS;
       await drizzle
@@ -274,36 +326,24 @@ async function deliverRow(row: EmailOutboxRow): Promise<void> {
     throw new Error(`Outbox ${row.id} missing rendered snapshot`);
   }
 
-  let transporter;
-  try {
-    transporter = getTransporter();
-  } catch (err) {
-    if (err instanceof SmtpNotConfiguredError) {
-      // Don't burn an attempt on a config error — surface a friendly message,
-      // mark as failed so admin sees it, and skip retry path. The operator will
-      // fix env and manually retry.
-      const drizzle = requireDb();
-      await drizzle
-        .update(emailOutbox)
-        .set({
-          status: 'failed',
-          attempts: (row.attempts ?? 0) + 1,
-          lastError: err.message,
-          updatedAt: new Date(),
-        })
-        .where(eq(emailOutbox.id, row.id));
-      throw err;
-    }
-    throw err;
-  }
+  // NB : on NE persiste PAS l'état ici sur erreur — les call-sites
+  // (`attemptSend` / `pickAndProcessBatch`) possèdent l'UNIQUE écriture
+  // post-échec. `SmtpNotConfiguredError` est laissée remonter telle quelle :
+  // les catch appelants la reconnaissent (`isSmtpConfigError`) pour la traiter
+  // SANS brûler d'essai et AVEC un next_retry (anti busy-loop), cf. F-081.
+  const transporter = getTransporter();
 
   const headers: Record<string, string> = {
     'X-FG-Outbox-Id': row.id,
   };
   if (env.MAIL_UNSUB_TOKEN_SECRET) {
     // The unsubscribe URL was inlined into htmlSnapshot at send time ; here we
-    // only need the header.
-    headers['List-Unsubscribe'] = `<${env.NEXT_PUBLIC_SITE_URL}/api/mail/unsubscribe?email=${encodeURIComponent(row.toEmail)}>, <mailto:unsubscribe@femiglow-maroc.com>`;
+    // only need the header. La route /api/mail/unsubscribe ne lit QUE `?t=`
+    // (token signé HMAC, RFC 8058) : émettre `?email=` rendait le bouton
+    // one-click natif des clients mail inopérant (400 missing-token) et
+    // exposait l'adresse en clair en query (fix vague 2, CLI-INT-UNSUB-HDR).
+    const unsubToken = generateUnsubToken(row.toEmail);
+    headers['List-Unsubscribe'] = `<${env.NEXT_PUBLIC_SITE_URL}/api/mail/unsubscribe?t=${encodeURIComponent(unsubToken)}>, <mailto:unsubscribe@femiglow-maroc.com>`;
     headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
   }
 
@@ -323,7 +363,11 @@ async function deliverRow(row: EmailOutboxRow): Promise<void> {
     .update(emailOutbox)
     .set({
       status: 'sent',
-      attempts: (row.attempts ?? 0) + 1,
+      // NE PAS incrémenter `attempts` sur un SUCCÈS : `attempts` est le compteur
+      // d'ÉCHECS (budget de retry, plafond `max_attempts`). Un envoi réussi ne
+      // consomme pas ce budget. L'incrémenter ici faussait le compteur et, pire,
+      // épuisait prématurément le budget de retry des lignes qui avaient déjà
+      // échoué une fois avant de réussir (F-083 / PIP-INT-040..042).
       smtpMessageId: info.messageId ?? null,
       smtpResponse: typeof info.response === 'string' ? info.response : null,
       lastError: null,
