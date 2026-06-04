@@ -19,11 +19,27 @@ import { computeBackoff, MAX_ATTEMPTS } from './backoff';
 
 const BATCH_SIZE = 100;
 
+/**
+ * Reaper threshold — un délai au-delà duquel une ligne restée en `sending` est
+ * considérée comme orpheline (process crashé/redémarré entre le claim et le
+ * passage à un statut terminal). En prod, `next start` est redémarré à chaque
+ * build (~toutes les heures lors d'un déploiement) ; sans reaper, une ligne
+ * claimée juste avant le restart reste `sending` POUR TOUJOURS — jamais reprise
+ * par le cron (qui ne regarde que `pending`/`failed`) et donc email perdu sans
+ * trace de retry.
+ *
+ * 10 min : largement au-dessus de la durée d'un envoi SMTP normal (timeout
+ * socket = 30 s côté client.ts) et du `maxDuration = 60` du cron, donc aucune
+ * ligne en cours d'envoi légitime ne sera reapée par erreur.
+ */
+export const REAP_THRESHOLD_MS = 10 * 60_000; // 10 minutes
+
 export type BatchResult = {
   picked: number;
   succeeded: number;
   failed: number;
   dlq: number;
+  reaped: number;
   durationMs: number;
 };
 
@@ -69,11 +85,72 @@ export async function attemptSend(outboxId: string): Promise<void> {
 }
 
 /**
+ * Reaper — requalifie les lignes restées en `sending` plus longtemps que
+ * `REAP_THRESHOLD_MS`. Ces lignes ont été claimées (UPDATE → 'sending') puis le
+ * process est mort avant de les amener à un statut terminal (`sent`/`failed`/
+ * `dlq`). Sans ce balayage, elles ne sont JAMAIS reprises : le claim du cron ne
+ * regarde que `pending`/`failed`.
+ *
+ * Politique de requalification (un essai « brûlé » est compté pour ne pas
+ * boucler indéfiniment sur une ligne empoisonnée) :
+ *   - attempts+1 < max_attempts → `pending`, `next_retry = now` (reprise immédiate
+ *     au prochain claim), `last_error` parlant pour la traçabilité ;
+ *   - sinon → `dlq` (plafond atteint), `next_retry = NULL`.
+ *
+ * Fait en un seul UPDATE atomique (pas de course avec le claim qui suit : le
+ * claim ne sélectionne que `pending`/`failed`, donc une ligne tout juste
+ * requalifiée en `pending` redevient éligible — c'est voulu).
+ */
+export async function reapStuckSending(now: Date = new Date()): Promise<number> {
+  const drizzle = requireDb();
+  const cutoffMs = now.getTime() - REAP_THRESHOLD_MS;
+  const reapError = `reaped: bloquée en 'sending' > ${Math.round(
+    REAP_THRESHOLD_MS / 60_000,
+  )}min (process probablement crashé/redémarré entre le claim et l'envoi)`;
+
+  // UPDATE ... CASE en SQL brut : une seule requête, atomique. `to_timestamp`
+  // borne la fenêtre ; `now()` Postgres pour next_retry (cf. note serialisation
+  // Date dans pickAndProcessBatch). On compte attempts+1 ; au plafond → dlq.
+  const result = (await drizzle.execute(sql`
+    UPDATE email_outbox
+    SET
+      attempts = attempts + 1,
+      status = (CASE
+        WHEN attempts + 1 >= max_attempts THEN 'dlq'
+        ELSE 'pending'
+      END)::email_outbox_status,
+      next_retry = CASE
+        WHEN attempts + 1 >= max_attempts THEN NULL
+        ELSE now()
+      END,
+      last_error = ${reapError},
+      updated_at = now()
+    WHERE status = 'sending'
+      AND updated_at <= to_timestamp(${cutoffMs} / 1000.0)
+    RETURNING id;
+  `)) as unknown as { rows: { id: string }[] } | { id: string }[];
+
+  const reaped = rowsOf(result);
+  if (reaped.length > 0) {
+    logger.warn('mail.outbox.reaped_stuck_sending', {
+      count: reaped.length,
+      thresholdMs: REAP_THRESHOLD_MS,
+    });
+  }
+  return reaped.length;
+}
+
+/**
  * Cron pickup : claim a batch of outbox rows ready for retry and attempt them.
  */
 export async function pickAndProcessBatch(now: Date = new Date()): Promise<BatchResult> {
   const drizzle = requireDb();
   const startedAt = Date.now();
+
+  // 0. Reaper d'abord — récupère les lignes orphelines (`sending` figé) avant le
+  // claim, de sorte que celles requalifiées en `pending` soient ramassées dans
+  // le même tour.
+  const reaped = await reapStuckSending(now);
 
   // SELECT ... FOR UPDATE SKIP LOCKED + bulk UPDATE in a single CTE so concurrent
   // cron workers can process disjoint subsets.
@@ -148,6 +225,7 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
     succeeded,
     failed,
     dlq,
+    reaped,
     durationMs: Date.now() - startedAt,
   };
 }
