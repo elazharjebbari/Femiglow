@@ -80,6 +80,70 @@ async function describeHttpError(res: Response): Promise<string> {
   return detail ?? `Erreur serveur (HTTP ${res.status}). Réessaie dans un instant.`;
 }
 
+/**
+ * Convertit le `filterState` persisté d'une vue ({ filters:{status:[…],
+ * to:…, attempts:{operator,value}, … } }) en une chaîne Cmd-K que `parseFilters`
+ * sait re-parser. Robuste aux formes partielles : ignore les clés vides/inconnues.
+ */
+function filterStateToQuery(filterState?: SidebarView['filterState']): string {
+  const filters = filterState?.filters;
+  if (!filters || typeof filters !== 'object') return '';
+  const segments: string[] = [];
+  for (const [key, raw] of Object.entries(filters)) {
+    if (raw == null) continue;
+    if (key === 'status' || key === 'source' || key === 'template' || key === 'to') {
+      const value = Array.isArray(raw) ? raw.join(',') : String(raw);
+      if (value.trim().length === 0) continue;
+      const needsQuote = /\s/.test(value);
+      segments.push(`${key}:${needsQuote ? `"${value}"` : value}`);
+    } else if (key === 'after' || key === 'before') {
+      segments.push(`${key}:${String(raw)}`);
+    } else if (key === 'attempts' && typeof raw === 'object') {
+      const a = raw as { operator?: string; value?: number };
+      if (a.value != null) segments.push(`attempts:${a.operator ?? '='}${a.value}`);
+    } else if (key === 'has' && (raw === 'error' || raw === true)) {
+      segments.push('has:error');
+    }
+  }
+  return segments.join(' ');
+}
+
+/**
+ * Échappe un champ CSV selon RFC 4180 : si le champ contient une virgule, un
+ * guillemet ou un retour ligne, on l'entoure de guillemets et on double les
+ * guillemets internes. `null`/`undefined` → champ vide.
+ */
+function csvEscape(value: unknown): string {
+  const s = value == null ? '' : String(value);
+  if (/[",\r\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+const CSV_HEADERS = ['id', 'date', 'destinataire', 'nom', 'template', 'sujet', 'statut', 'tentatives'] as const;
+
+/** Construit le contenu CSV (BOM UTF-8 + en-têtes + lignes) pour les rows. */
+function buildCsv(rows: OutboxSearchRow[]): string {
+  const lines = [CSV_HEADERS.join(',')];
+  for (const r of rows) {
+    lines.push(
+      [
+        csvEscape(r.id),
+        csvEscape(r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt),
+        csvEscape(r.toEmail),
+        csvEscape(r.toName),
+        csvEscape(r.template),
+        csvEscape(r.subject),
+        csvEscape(r.status),
+        csvEscape(`${r.attempts}/${r.maxAttempts}`),
+      ].join(','),
+    );
+  }
+  // BOM UTF-8 (U+FEFF) pour qu'Excel fr lise correctement les accents.
+  return `﻿${lines.join('\r\n')}`;
+}
+
 export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -153,6 +217,10 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
   // ── Saved views ──────────────────────────────────────────────────────
   const [views, setViews] = useState<SidebarView[]>(initialViews);
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
+  // Formulaire de création de vue (remplace l'ancien window.alert stub).
+  const [createViewOpen, setCreateViewOpen] = useState(false);
+  const [createViewName, setCreateViewName] = useState('');
+  const [createViewBusy, setCreateViewBusy] = useState(false);
 
   // ── Sync filtres → URL ───────────────────────────────────────────────
   useEffect(() => {
@@ -170,6 +238,31 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
     setActiveViewId(null);
   }, []);
 
+  // ── Tri : changer le tri ramène à la page 1 (offset 0) ────────────────
+  // Sans ce reset, on resterait à un offset au-delà des résultats du nouveau
+  // tri (ex. page 3 d'un tri, page 3 d'un autre → lignes incohérentes).
+  const handleSortChange = useCallback((next: SearchSort) => {
+    setSort(next);
+    setOffset(0);
+  }, []);
+
+  // ── Pagination (F-011) ────────────────────────────────────────────────
+  // L'API search expose `pagination:{limit,offset}` ; on pilote `offset` par
+  // pas de PAGE_SIZE. Bornes : pas de page < 0, pas de page au-delà du total.
+  const total = searchResult?.total ?? 0;
+  const rowsLength = searchResult?.rows.length ?? 0;
+  const canPrev = offset > 0;
+  const canNext = offset + rowsLength < total;
+  const rangeStart = total === 0 ? 0 : offset + 1;
+  const rangeEnd = offset + rowsLength;
+
+  const goPrev = useCallback(() => {
+    setOffset((o) => Math.max(0, o - PAGE_SIZE));
+  }, []);
+  const goNext = useCallback(() => {
+    setOffset((o) => o + PAGE_SIZE);
+  }, []);
+
   const handleKpiClick = useCallback(
     (kind: 'delivered' | 'queued' | 'failed' | 'hardBounced') => {
       const statusByKind = {
@@ -184,16 +277,87 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
   );
 
   const handleSelectView = useCallback(
-    async (viewId: string) => {
+    (viewId: string) => {
       const v = views.find((x) => x.id === viewId);
       if (!v) return;
+      // Applique RÉELLEMENT le filterState de la vue (F-016) : on reconstruit
+      // une requête Cmd-K depuis le filterState persisté, on la re-parse, et on
+      // applique filtres + tri. Reset à la page 1. Sans filterState (compat),
+      // on retombe sur un highlight seul.
+      const query = filterStateToQuery(v.filterState);
+      setParseResult(parseFilters(query));
+      const sortFromView = v.filterState?.sort;
+      if (
+        sortFromView === 'date_desc' ||
+        sortFromView === 'date_asc' ||
+        sortFromView === 'status' ||
+        sortFromView === 'template' ||
+        sortFromView === 'attempts_desc'
+      ) {
+        setSort(sortFromView);
+      }
+      setOffset(0);
       setActiveViewId(viewId);
-      // Pour V1 on ne recharge pas le filterState complet ici. Reload
-      // future itération avec fetch /views/[id] → application des filters.
-      // Pour l'instant : juste highlight.
     },
     [views],
   );
+
+  /**
+   * Persiste une nouvelle vue depuis l'état de filtres courant (F-016).
+   * Construit le `filterState` à partir des filtres actifs + tri, POST /views,
+   * puis injecte la vue créée dans la sidebar. Échec → message visible, pas de
+   * faux succès (le formulaire reste ouvert).
+   */
+  const submitCreateView = useCallback(async () => {
+    const name = createViewName.trim();
+    if (name.length === 0 || createViewBusy) return;
+    // filters → record { status:[…], to:…, attempts:{operator,value}, has:'error' }
+    const filtersRecord: Record<string, unknown> = {};
+    for (const f of parseResult.filters) {
+      if (f.key === 'status') filtersRecord.status = f.value;
+      else if (f.key === 'after' || f.key === 'before') filtersRecord[f.key] = f.value.toISOString();
+      else if (f.key === 'attempts') filtersRecord.attempts = { operator: f.operator, value: f.value };
+      else if (f.key === 'has') filtersRecord.has = 'error';
+      else filtersRecord[f.key] = f.value;
+    }
+    setCreateViewBusy(true);
+    setViewsError(null);
+    try {
+      const res = await fetch('/api/admin/emails/views', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          scope: 'transactional',
+          filterState: { filters: filtersRecord, sort, cols: [] },
+        }),
+      });
+      if (!res.ok) {
+        setViewsError(await describeHttpError(res));
+        return; // formulaire conservé, pas de faux succès.
+      }
+      const created = (await res.json().catch(() => null)) as
+        | { id?: string; name?: string; isSystem?: boolean; filterState?: SidebarView['filterState'] }
+        | null;
+      if (created?.id) {
+        setViews((vs) => [
+          ...vs,
+          {
+            id: created.id!,
+            name: created.name ?? name,
+            isSystem: created.isSystem ?? false,
+            filterState: created.filterState ?? { filters: filtersRecord, sort, cols: [] },
+          },
+        ]);
+      }
+      setCreateViewOpen(false);
+      setCreateViewName('');
+    } catch {
+      setViewsError('Échec réseau : la vue n’a pas pu être créée.');
+    } finally {
+      setCreateViewBusy(false);
+    }
+  }, [createViewName, createViewBusy, parseResult.filters, sort]);
 
   /**
    * Exécute UNE action réseau bulk (retry/suppress) avec garde-fous :
@@ -266,6 +430,31 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
     [bulkBusy, fetchSearch, summary],
   );
 
+  /**
+   * Export CSV des lignes sélectionnées (F-017) — remplace le window.alert
+   * stub. Génère un Blob CSV (BOM UTF-8, échappement RFC 4180) et déclenche un
+   * téléchargement via un <a download> éphémère. N'exporte que les lignes
+   * présentes dans la page courante correspondant à la sélection.
+   */
+  const exportSelectedCsv = useCallback(
+    (ids: string[]) => {
+      const idSet = new Set(ids);
+      const rows = (searchResult?.rows ?? []).filter((r) => idSet.has(String(r.id)));
+      if (rows.length === 0) return;
+      const csv = buildCsv(rows);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `emails-transactionnels-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+    [searchResult],
+  );
+
   const handleBulkAction = useCallback(
     (id: 'retry' | 'suppress' | 'export' | 'clear') => {
       const ids = Array.from(selected);
@@ -279,8 +468,7 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
         return;
       }
       if (id === 'export') {
-        // V1 : à câbler en M5.6 si nécessaire (download CSV).
-        window.alert(`Export CSV de ${ids.length} lignes — à implémenter.`);
+        exportSelectedCsv(ids);
         return;
       }
       if (id === 'suppress') {
@@ -289,7 +477,7 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
       }
       void runBulkNetworkAction(id, ids);
     },
-    [selected, bulkBusy, runBulkNetworkAction],
+    [selected, bulkBusy, runBulkNetworkAction, exportSelectedCsv],
   );
 
   // Réessayer la dernière action échouée (bouton dans l'alerte d'erreur).
@@ -354,7 +542,11 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
           views={views}
           activeViewId={activeViewId}
           onSelect={handleSelectView}
-          onCreate={() => window.alert('Création de vue — à implémenter avec le wizard de save.')}
+          onCreate={() => {
+            setCreateViewName('');
+            setViewsError(null);
+            setCreateViewOpen(true);
+          }}
           onDelete={async (id) => {
             if (!window.confirm('Supprimer cette vue ?')) return;
             setViewsError(null);
@@ -387,6 +579,49 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
             }
           }}
         />
+
+        {/* Formulaire de création de vue (F-016) — remplace le window.alert
+            stub. Persiste l'état de filtres courant comme nouvelle vue. */}
+        {createViewOpen && (
+          <form
+            data-testid="create-view-form"
+            aria-label="Créer une vue"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitCreateView();
+            }}
+            className="w-56 shrink-0 space-y-2 rounded-md border border-stone-200 bg-white p-3"
+          >
+            <label className="block text-xs font-medium text-stone-700" htmlFor="create-view-name">
+              Nom de la vue
+            </label>
+            <input
+              id="create-view-name"
+              autoFocus
+              value={createViewName}
+              onChange={(e) => setCreateViewName(e.target.value)}
+              placeholder="Ex. Échecs du jour"
+              className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                disabled={createViewBusy || createViewName.trim().length === 0}
+                className="rounded bg-sage-600 px-3 py-1 text-sm text-white disabled:opacity-50"
+              >
+                {createViewBusy ? 'Création…' : 'Enregistrer'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateViewOpen(false)}
+                className="rounded px-2 py-1 text-sm text-stone-500 hover:bg-stone-100"
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        )}
+
         {viewsError && (
           <div
             role="alert"
@@ -458,9 +693,45 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
             selectedIds={selected}
             onSelectionChange={setSelected}
             sort={sort}
-            onSortChange={setSort}
+            onSortChange={handleSortChange}
             onRowClick={(id) => router.push(`/admin/emails/transactional/${id}`)}
           />
+
+          {/* Pagination (F-011) — visible dès qu'il y a plus d'une page.
+              L'opérateur n'est plus aveugle au-delà des 50 premières lignes. */}
+          {!isSearching && total > PAGE_SIZE && (
+            <nav
+              aria-label="Pagination des résultats"
+              data-testid="cockpit-pagination"
+              className="flex items-center justify-between rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-600"
+            >
+              <span data-testid="pagination-range">
+                {rangeStart.toLocaleString('fr-FR')}–{rangeEnd.toLocaleString('fr-FR')} sur{' '}
+                {total.toLocaleString('fr-FR')}
+                {searchResult?.window === 'truncated' ? '+' : ''}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={goPrev}
+                  disabled={!canPrev}
+                  data-testid="pagination-prev"
+                  className="rounded border border-stone-300 px-3 py-1 text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Précédent
+                </button>
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={!canNext}
+                  data-testid="pagination-next"
+                  className="rounded border border-stone-300 px-3 py-1 text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Suivant
+                </button>
+              </div>
+            </nav>
+          )}
         </main>
       </div>
 

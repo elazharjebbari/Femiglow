@@ -18,6 +18,16 @@ export type SidebarView = {
   id: string;
   name: string;
   isSystem: boolean;
+  /**
+   * État de filtres persisté de la vue (filters/sort/cols). Optionnel pour
+   * compat ascendante ; quand présent, sélectionner la vue applique réellement
+   * ces filtres au tableau (F-016, sinon highlight no-op).
+   */
+  filterState?: {
+    filters?: Record<string, unknown>;
+    sort?: string;
+    cols?: string[];
+  };
 };
 
 export type SavedViewsSidebarProps = {
