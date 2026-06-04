@@ -63,21 +63,24 @@ describe('runner V2 dispatch', () => {
       executeResult: { rows: [runRow()] },
       selectResult: [autoRow([{ kind: 'tag', action: 'add', tag: 'vip' }])],
     });
-    // override select to return automation row first, then lead lookup row
+    // Ordre des select() dans tickAutomation : (1) sweepOrphanRuns → [] ;
+    // (2) processRun charge l'automation ; (3) condition-evaluator/lead lookup.
     let selectCount = 0;
     drizzle.select.mockImplementation((_cols?: unknown) => {
       selectCount++;
+      const rows =
+        selectCount === 1
+          ? [] // sweepOrphanRuns : aucun orphelin
+          : selectCount === 2
+            ? [autoRow([{ kind: 'tag', action: 'add', tag: 'vip' }])]
+            : [{ id: 'lead-1' }];
       const obj: Record<string, unknown> = {
         from: vi.fn(() => obj),
         where: vi.fn(() => obj),
-        limit: vi.fn(() =>
-          Promise.resolve(
-            selectCount === 1
-              ? [autoRow([{ kind: 'tag', action: 'add', tag: 'vip' }])]
-              : [{ id: 'lead-1' }],
-          ),
-        ),
+        limit: vi.fn(() => Promise.resolve(rows)),
         orderBy: vi.fn(() => obj),
+        // Thenable : le sweep await `.select().from().where()` sans `.limit()`.
+        then: (cb: (r: unknown[]) => unknown) => Promise.resolve(rows).then(cb),
       };
       return obj;
     });

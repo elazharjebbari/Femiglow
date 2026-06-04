@@ -3,6 +3,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 vi.mock('@/lib/mail/automation/runner', () => ({
   tickAutomation: vi.fn(),
 }));
+vi.mock('@/lib/mail/automation/resume', () => ({
+  sweepWaitForEventTimeouts: vi.fn().mockResolvedValue(0),
+}));
+vi.mock('@/lib/mail/automation/event-dispatcher', () => ({
+  dispatchEventTriggers: vi.fn().mockResolvedValue({
+    automations: 0,
+    eventsScanned: 0,
+    enrolled: 0,
+    deduped: 0,
+    conditionBlocked: 0,
+  }),
+}));
 
 import { POST } from '../route';
 import { tickAutomation } from '@/lib/mail/automation/runner';
@@ -30,6 +42,8 @@ describe('POST /api/cron/email-automation', () => {
       advanced: 1,
       completed: 1,
       errored: 1,
+      orphansRearmed: 0,
+      orphansErrored: 0,
       durationMs: 45,
     });
     const res = await POST(makeReq({ authorization: `Bearer ${CRON_SECRET}` }));
