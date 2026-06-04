@@ -1,0 +1,18 @@
+{
+  "event": "delivery.failed",
+  "queueId": "304474043046695936",
+  "messageId": "<9a0c4da5-7f3a-73f6-b389-0a64facfc8bf@femiglow-maroc.com>",
+  "queueName": "local",
+  "from": "bonjour@femiglow-maroc.com",
+  "rcpt": "user6@exemple.test",
+  "to": ["user6@exemple.test"],
+  "size": 5490,
+  "total": 1,
+  "errorCode": 503,
+  "code": 503,
+  "reason": "Message expired without any delivery attempts made.",
+  "details": "503 5.5.0 Bad sequence of commands; message rejected by policy",
+  "expires": "2026-05-02T12:08:58Z",
+  "nextRetry": "2026-04-29T12:08:58Z",
+  "ts": "2026-05-11T16:17:47Z"
+}

@@ -1,0 +1,16 @@
+{
+  "event": "queue.authenticated-message-queued",
+  "queueId": "306677451331731456",
+  "messageId": "<a1b2c3d4-0001-4abc-9def-0123456789ab@femiglow-maroc.com>",
+  "listenerId": "submission",
+  "localPort": 587,
+  "remoteIp": "192.0.2.10",
+  "remotePort": 50610,
+  "from": "bonjour@femiglow-maroc.com",
+  "to": ["user7@exemple.test"],
+  "size": 1346,
+  "nextRetry": "2026-05-11T16:00:04Z",
+  "nextDsn": "2026-05-12T16:00:04Z",
+  "expires": "2026-05-14T16:00:04Z",
+  "ts": "2026-05-11T16:00:04Z"
+}

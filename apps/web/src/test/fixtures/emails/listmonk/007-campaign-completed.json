@@ -1,0 +1,19 @@
+{
+  "event": "campaign.completed",
+  "source": "listmonk",
+  "ts": 1748970000,
+  "data": {
+    "id": 200,
+    "campaign_id": 200,
+    "uuid": "c9d0e1f2-9933-4a55-bb66-778899001122",
+    "name": "Newsletter rituel juin",
+    "status": "finished",
+    "sent": 1240,
+    "views": 512,
+    "opens": 512,
+    "clicks": 138,
+    "bounces": 17,
+    "started_at": "2026-06-03T18:48:20.000000Z",
+    "finished_at": "2026-06-03T19:40:00.000000Z"
+  }
+}

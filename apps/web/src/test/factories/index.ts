@@ -148,3 +148,29 @@ export { chatLeadFactory, type ChatLeadLike } from './chat-lead.factory';
 export { chatInstructionFactory, type ChatInstructionLike } from './chat-instruction.factory';
 export { chatProviderFactory, type ChatProviderConfigLike, type ProviderKind } from './chat-provider.factory';
 export { maFirstName, maLastName, maFullName, maPhone, maPhoneInternational, maCity } from './helpers/ma-aligned';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Emailing factories (qa-campaign-2026-06, phase 0.2)
+// ─────────────────────────────────────────────────────────────────────────────
+export {
+  makeOutboxRow,
+  makeEmailEvent,
+  makeEmailAutomation,
+  makeAutomationRun,
+  makeEmailAudience,
+  makeAudienceSnapshot,
+  makeSnapshotMember,
+  makeCampaignLink,
+  makeSubscriberLink,
+  makeSuppression,
+  makeTemplateCustom,
+  makeTemplateCustomVersion,
+  makeLeadTag,
+  makeStalwartEvent,
+  makeListmonkEvent,
+  resetEmailFactories,
+  type StalwartEventKind,
+  type StalwartEventOptions,
+  type ListmonkEventKind,
+  type ListmonkEventOptions,
+} from './emails.factory';

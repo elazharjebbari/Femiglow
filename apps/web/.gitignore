@@ -7,6 +7,11 @@ coverage/
 .env*.local
 *.log
 .DS_Store
+
+# Variables DB des suites vraie-DB (harnais emailing phase 0.3). Contient les
+# credentials Postgres recopiés depuis .env — ne doit JAMAIS être commité.
+# (`.env*.local` ci-dessus ne couvre PAS `.env.test`.)
+.env.test
 .vscode/
 .idea/
 playwright-report/
