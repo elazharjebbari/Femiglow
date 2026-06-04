@@ -1,0 +1,41 @@
+{
+  "_note": "Events memoryStore calques sur la prod (evidence-db-2026-06-04.txt). AUCUN event engage (scroll_depth_50/cta_impression/video_user_play) -> reproduit l'effondrement cumulatif (funnel.ts L188-191). receivedAt dans la plage 'custom' [from,to). consent granted partout.",
+  "now": "2026-05-06T12:00:00Z",
+  "range": { "from": "2026-05-06T11:00:00Z", "to": "2026-05-06T12:00:00Z" },
+  "sessions": {
+    "A_converti": [
+      { "id": "a1", "sessionId": "A", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:05:00Z" },
+      { "id": "a2", "sessionId": "A", "eventName": "begin_checkout", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:10:00Z" },
+      { "id": "a3", "sessionId": "A", "eventName": "purchase", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:15:00Z", "payload": { "value": 320 } }
+    ],
+    "B_panier": [
+      { "id": "b1", "sessionId": "B", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:06:00Z" },
+      { "id": "b2", "sessionId": "B", "eventName": "add_to_cart", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:08:00Z" }
+    ],
+    "C_lead": [
+      { "id": "c1", "sessionId": "C", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:07:00Z" },
+      { "id": "c2", "sessionId": "C", "eventName": "generate_lead", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:09:00Z" }
+    ],
+    "D_vue_seule": [
+      { "id": "d1", "sessionId": "D", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:04:00Z" }
+    ]
+  },
+  "expectedCurrent_buggy": {
+    "totalSessions": 4,
+    "steps": { "view": 4, "engage": 0, "cta": 0, "checkout": 0, "purchase": 0 },
+    "cause": "reached.engage=view&&engage ; engage=false partout (aucun scroll_depth_50/cta_impression/video_user_play) => cascade && bloque tout en aval de view"
+  },
+  "expectedAfterFix_spec": {
+    "_model": "max-rank ou OR par etape + purchase=purchase OR generate_lead",
+    "steps": { "view": 4, "engage": "n/a (depend du fix nommage engage)", "cta": 2, "checkout": 1, "purchase": 2 },
+    "_notes": "cta>=2 (A begin_checkout implique amont, B add_to_cart) ; checkout=1 (A) ; purchase=2 (A purchase + C generate_lead)"
+  },
+  "engageProbe_afterFix": {
+    "sessionE": [
+      { "id": "e1", "sessionId": "E", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:11:00Z" },
+      { "id": "e2", "sessionId": "E", "eventName": "scroll_depth", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:12:00Z", "payload": { "percent_scrolled": 50 } }
+    ],
+    "expectedEngageAfterFix": 1
+  },
+  "dbCounts90j": { "view_item": 339, "begin_checkout": 97, "add_to_cart": 26, "generate_lead": 17, "purchase": 13, "scroll_depth_50": 0, "cta_impression": 0, "video_user_play": 0 }
+}

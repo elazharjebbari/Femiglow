@@ -1,0 +1,3 @@
+TOTAL n=1005 granted=1005 first=2026-05-07 last=2026-06-03
+ABSENT(0): page_view, scroll_depth, scroll_depth_50, cta_impression, cta_click, pack_cta_click, video_cta_click, composition_post_cta_click, checkout_intent, purchase_server, view_cart
+PRESENT: view_item=339, begin_checkout=97, lead_capture=52, add_to_cart=26, add_payment_info=18, generate_lead=17, address_completed=15, purchase=13, add_shipping_info=4

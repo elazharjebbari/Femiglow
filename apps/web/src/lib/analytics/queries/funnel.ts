@@ -121,9 +121,27 @@ function isCtaEvent(e: TrackingEventLogEntry): boolean {
   if (e.eventName === 'add_to_cart') return true;
   if (e.eventName === 'cta_click') {
     const intent = readStr(e.payload, 'cta_intent');
-    return intent === 'purchase';
+    // cta_click sans intent explicite compte comme intention d'achat sur /kit
+    // (les CTA produit normalisés à l'ingestion n'ont pas toujours cta_intent).
+    return intent === undefined || intent === 'purchase';
   }
   return false;
+}
+
+/**
+ * True si l'event appartient au PROCESSUS de checkout (AN-04). Le tunnel COD
+ * FemiGlow émet `begin_checkout`, `address_completed`, `add_shipping_info`,
+ * `add_payment_info`, `checkout_intent` — tous sont des signaux « checkout ».
+ */
+function isCheckoutEvent(eventName: string): boolean {
+  return (
+    eventName === 'begin_checkout' ||
+    eventName === 'checkout_intent' ||
+    eventName === 'add_shipping_info' ||
+    eventName === 'add_shipping' ||
+    eventName === 'address_completed' ||
+    eventName === 'add_payment_info'
+  );
 }
 
 /** True si l'event compte pour le stage « view » (vue produit / kit). */
@@ -135,13 +153,47 @@ function isViewEvent(e: TrackingEventLogEntry): boolean {
   return false;
 }
 
+/**
+ * Conversion (stage « purchase ») — AN-06. Pour un tunnel COD, la conversion est
+ * un `purchase` OU un `generate_lead` (le lead EST la vente). Configurable ici.
+ */
+function isPurchaseEvent(eventName: string): boolean {
+  return eventName === 'purchase' || eventName === 'generate_lead';
+}
+
 function classifyStage(e: TrackingEventLogEntry): FunnelStage | null {
-  if (e.eventName === 'purchase') return 'purchase';
-  if (e.eventName === 'begin_checkout') return 'checkout';
+  if (isPurchaseEvent(e.eventName)) return 'purchase';
+  if (isCheckoutEvent(e.eventName)) return 'checkout';
   if (isCtaEvent(e)) return 'cta';
   if (isEngageEvent(e.eventName)) return 'engage';
   if (isViewEvent(e)) return 'view';
   return null;
+}
+
+/**
+ * Rang max atteint par la session (AN-02). MODÈLE MONOTONIC : atteindre un
+ * jalon avancé implique les précédents — une session qui a déclenché
+ * `begin_checkout` compte pour view+engage+cta+checkout même sans event
+ * intermédiaire explicite. Corrige l'effondrement du funnel cumulatif strict.
+ */
+function maxReachedRank(s: SessionFlags): number {
+  let r = 0;
+  for (const stage of FUNNEL_STAGES) {
+    if (s[stage] && STAGE_RANK[stage] > r) r = STAGE_RANK[stage];
+  }
+  return r;
+}
+
+/** Stages atteints (monotonic) dérivés du rang max. */
+function reachedFlags(s: SessionFlags): Record<FunnelStage, boolean> {
+  const max = maxReachedRank(s);
+  return {
+    view: max >= STAGE_RANK.view,
+    engage: max >= STAGE_RANK.engage,
+    cta: max >= STAGE_RANK.cta,
+    checkout: max >= STAGE_RANK.checkout,
+    purchase: max >= STAGE_RANK.purchase,
+  };
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -183,13 +235,7 @@ export async function getFunnelOverview(
   };
 
   for (const s of sessions.values()) {
-    const reached: Record<FunnelStage, boolean> = {
-      view: s.view,
-      engage: s.view && s.engage,
-      cta: s.view && s.engage && s.cta,
-      checkout: s.view && s.engage && s.cta && s.checkout,
-      purchase: s.view && s.engage && s.cta && s.checkout && s.purchase,
-    };
+    const reached = reachedFlags(s);
     for (const stage of FUNNEL_STAGES) {
       if (reached[stage]) stepCounts[stage] += 1;
     }
@@ -252,9 +298,10 @@ export async function getFunnelByPage(
   for (const s of sessions.values()) {
     const page = s.firstPage ?? '/';
     const acc = byPage.get(page) ?? { views: 0, ctas: 0, purchases: 0 };
-    if (s.view) acc.views += 1;
-    if (s.view && s.engage && s.cta) acc.ctas += 1;
-    if (s.view && s.engage && s.cta && s.checkout && s.purchase) acc.purchases += 1;
+    const reached = reachedFlags(s);
+    if (reached.view) acc.views += 1;
+    if (reached.cta) acc.ctas += 1;
+    if (reached.purchase) acc.purchases += 1;
     byPage.set(page, acc);
   }
 
@@ -302,14 +349,17 @@ export async function getFunnelSankey(
   // 2) flux : firstPage (ou "Autres") × stage atteint MAX.
   const linkMap = new Map<string, number>();
   for (const s of sessions.values()) {
-    const reachedStage: FunnelStage = (() => {
-      if (s.view && s.engage && s.cta && s.checkout && s.purchase) return 'purchase';
-      if (s.view && s.engage && s.cta && s.checkout) return 'checkout';
-      if (s.view && s.engage && s.cta) return 'cta';
-      if (s.view && s.engage) return 'engage';
-      return 'view';
-    })();
-    if (!s.view) continue; // sessions sans view exclues du Sankey
+    const reached = reachedFlags(s);
+    const reachedStage: FunnelStage = reached.purchase
+      ? 'purchase'
+      : reached.checkout
+        ? 'checkout'
+        : reached.cta
+          ? 'cta'
+          : reached.engage
+            ? 'engage'
+            : 'view';
+    if (!reached.view) continue; // sessions sans view exclues du Sankey
     const rawPage = s.firstPage ?? '/';
     const page = visiblePages.has(rawPage) ? rawPage : 'Autres';
     const key = `${page}|${reachedStage}`;

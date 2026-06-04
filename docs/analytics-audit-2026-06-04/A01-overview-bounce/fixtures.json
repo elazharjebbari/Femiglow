@@ -1,0 +1,32 @@
+{
+  "_note": "Datasets calques sur la prod (evidence-db-2026-06-04.txt). receivedAt en ISO; consentSnapshot.analytics_storage='granted' sauf mention. memoryStore via pushEvent(overview.test.ts).",
+  "now": "2026-06-03T12:00:00Z",
+  "filters": {
+    "ninety_days": { "period": "90d", "device": "all", "traffic": "all" },
+    "today_all": { "period": "today", "device": "all", "traffic": "all" }
+  },
+  "prod_realistic": {
+    "_desc": "Aucun page_view. Mix view_item/begin_checkout/purchase reparti sur 3 sessions.",
+    "events": [
+      { "id": "vi1", "sessionId": "s1", "anonymousId": "a1", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:00:00Z" },
+      { "id": "vi2", "sessionId": "s2", "anonymousId": "a2", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T10:00:00Z" },
+      { "id": "vi3", "sessionId": "s2", "anonymousId": "a2", "eventName": "view_item", "pageRoute": "/kit#offre", "receivedAt": "2026-06-01T10:01:00Z" },
+      { "id": "bc1", "sessionId": "s2", "anonymousId": "a2", "eventName": "begin_checkout", "pageRoute": "/kit", "receivedAt": "2026-06-01T10:02:00Z" },
+      { "id": "pu1", "sessionId": "s2", "anonymousId": "a2", "eventName": "purchase", "pageRoute": "/kit", "isConversion": true, "receivedAt": "2026-06-01T10:05:00Z" },
+      { "id": "vi4", "sessionId": "s3", "anonymousId": "a3", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-02T11:00:00Z" }
+    ],
+    "expected_before_fix": { "bounceRate": null, "pageViews": 0, "sessions": 3 },
+    "expected_after_fix": { "bounceRate": 0.6666666666666666, "pageViews": 4, "sessions": 3 }
+  },
+  "mixed_consent": {
+    "_desc": "2 sessions granted + 1 session denied (AN-07).",
+    "events": [
+      { "id": "g1", "sessionId": "sg1", "anonymousId": "ag1", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:00:00Z" },
+      { "id": "g2", "sessionId": "sg2", "anonymousId": "ag2", "eventName": "begin_checkout", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:30:00Z" },
+      { "id": "d1", "sessionId": "sd1", "anonymousId": "ad1", "eventName": "view_item", "pageRoute": "/kit", "consentSnapshot": { "analytics_storage": "denied" }, "receivedAt": "2026-06-01T09:45:00Z" }
+    ],
+    "expected_before_fix": { "overview_sessions": 3, "consent_scoped_sessions": 2 },
+    "expected_after_fix": { "overview_sessions": 2 }
+  },
+  "empty": { "_desc": "Aucun event.", "events": [], "expected": { "bounceRate": null, "delta": null } }
+}

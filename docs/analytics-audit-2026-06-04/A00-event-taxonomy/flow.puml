@@ -1,0 +1,50 @@
+@startuml A00-ingest-taxonomy
+title A00 — Sort d'un evenement a l'ingestion POST /api/track (route.ts)
+
+start
+:POST /api/track\nbatch d'events;
+:batchSchema.safeParse(raw);
+if (batch valide ?) then (non)
+  :HttpError invalid_input;
+  stop
+else (oui)
+endif
+
+repeat :pour chaque event du batch;
+  :validator = getValidator(event.event)\n= eventSchemas[event.event] ?? null;
+  if (validator == null ?) then (oui — nom inconnu)
+    #pink:rejected += 1\nlog tracking.ingest.unknown_event;
+    note right
+      pack_cta_click / video_cta_click /
+      composition_post_cta_click / cta_impression /
+      scroll_depth_50 / checkout_intent
+      => DB count 0 (AN-02 / AN-03 / AN-04)
+    end note
+  else (non — au catalogue)
+    if (validator.safeParse(params) OK ?) then (non)
+      #pink:rejected += 1\nlog invalid_params;
+    else (oui)
+      if (event_id deja vu ?) then (oui)
+        :duplicates += 1;
+      else (non)
+        if (consent denie & != fg_consent_change ?) then (oui)
+          :rejected += 1;
+        else (non)
+          #palegreen:logEvent({ eventName: event.event,\nis_conversion: CONVERSION_EVENTS.has(event.event) });
+          note right
+            event_name stocke VERBATIM
+            (aucune normalisation ingest)
+            view_item=339 / begin_checkout=97 /
+            purchase=13 ...
+          end note
+          :accepted += 1;
+        endif
+      endif
+    endif
+  endif
+repeat while (events restants ?) is (oui)
+->non;
+
+:202 { accepted, rejected, duplicates };
+stop
+@enduml

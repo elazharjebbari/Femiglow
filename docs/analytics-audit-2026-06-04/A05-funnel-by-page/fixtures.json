@@ -1,0 +1,36 @@
+{
+  "_note": "Dataset memoryStore : sessions entrant par /kit (premier event view_item sur /kit => firstPage=/kit). Aucun event engage => getFunnelByPage applique le cumul strict L256-257 => ctas=purchases=0. Une session /rituel sans view_item teste le filtre views>0 (L262).",
+  "now": "2026-05-06T12:00:00Z",
+  "range": { "from": "2026-05-06T11:00:00Z", "to": "2026-05-06T12:00:00Z" },
+  "sessions": {
+    "A_kit_converti": [
+      { "id": "a1", "sessionId": "A", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:05:00Z" },
+      { "id": "a2", "sessionId": "A", "eventName": "begin_checkout", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:10:00Z" },
+      { "id": "a3", "sessionId": "A", "eventName": "purchase", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:15:00Z", "payload": { "value": 320 } }
+    ],
+    "B_kit_panier": [
+      { "id": "b1", "sessionId": "B", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:06:00Z" },
+      { "id": "b2", "sessionId": "B", "eventName": "add_to_cart", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:08:00Z" }
+    ],
+    "C_kit_lead": [
+      { "id": "c1", "sessionId": "C", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:07:00Z" },
+      { "id": "c2", "sessionId": "C", "eventName": "generate_lead", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:09:00Z" }
+    ],
+    "D_rituel_sansvue": [
+      { "id": "d1", "sessionId": "D", "eventName": "scroll_depth", "pageRoute": "/rituel", "receivedAt": "2026-05-06T11:04:00Z", "payload": { "percent_scrolled": 25 } }
+    ]
+  },
+  "expectedCurrent_buggy": {
+    "rows": [
+      { "pageRoute": "/kit", "views": 3, "viewToCta": 0, "ctaToBuy": null, "purchases": 0 }
+    ],
+    "rituelExcluded": "ligne /rituel absente : D n'a pas view_item ni page_view /kit => s.view=false => filtre views>0",
+    "cause": "ctas/purchases calcules avec s.view && s.engage && s.cta ... ; engage=false partout"
+  },
+  "expectedAfterFix_spec": {
+    "rows": [
+      { "pageRoute": "/kit", "views": 3, "viewToCta": ">0", "ctaToBuy": "[0,1]", "purchases": ">=2" }
+    ],
+    "coherence": "sum(rows.purchases) === overview.steps.purchase.sessions (purchase A + generate_lead C)"
+  }
+}

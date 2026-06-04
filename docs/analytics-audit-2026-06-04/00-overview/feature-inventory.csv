@@ -1,0 +1,11 @@
+id,feature,onglet,couche_dominante,risque,findings,cibles_code,statut
+A00,Taxonomie events + ingestion (emis->stocke->attendu),transverse,Integration+Unit,P0,AN-01;AN-02;AN-03;AN-04,lib/tracking/schemas.ts;lib/tracking/server/validator.ts;app/api/track/route.ts,a_faire
+A01,Overview - taux de rebond,Vue d'ensemble,Integration+Composant,P0,AN-01;AN-07,lib/analytics/queries/overview.ts,a_faire
+A02,Overview - top pages,Vue d'ensemble,Integration+Composant,P0,AN-01,lib/analytics/queries/overview.ts;components/.../OverviewTopPages.tsx,a_faire
+A03,Funnel global (etapes + mapping),Funnel,Integration+Composant,P0,AN-02;AN-06,lib/analytics/queries/funnel.ts;components/.../funnel/FunnelGlobal.tsx,a_faire
+A04,Funnel drop-off (artefact 100%),Funnel,Integration+Composant,P0,AN-02,lib/analytics/queries/funnel.ts;components/.../funnel/FunnelDropOff.tsx,a_faire
+A05,Funnel par page d'entree,Funnel,Integration+Composant,P1,AN-02,lib/analytics/queries/funnel.ts (getFunnelByPage),a_faire
+A06,Onglet CTA (impressions/clics/revenu/attribution),CTA,Integration+Composant+MSW,P0,AN-03;AN-08,lib/analytics/queries/cta.ts;components/.../cta,a_faire
+A07,Onglet Checkout (etapes/abandons/erreurs),Checkout,Integration+Composant+MSW,P0,AN-04,lib/analytics/queries/checkout.ts;components/.../checkout,a_faire
+A08,Onglet Insights (matviews/refresh/contrats),Insights,Integration+Composant+MSW,P0,AN-05,lib/analytics/insights/*;app/api/admin/analytics/insights/*,a_faire
+A09,Filtres (reactivite/timezone/device) transverse,transverse,Composant+E2E,P1,AN-09;AN-10;AN-11,lib/analytics/filters.ts;components/.../primitives/FilterBar.tsx,a_faire

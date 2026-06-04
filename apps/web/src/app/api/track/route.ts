@@ -41,6 +41,23 @@ const CONVERSION_EVENTS = new Set([
   'lead_capture',
 ]);
 
+/**
+ * AN-03 — variantes héritées de clic CTA, normalisées vers `cta_click` à
+ * l'ingestion. Sans ça elles étaient REJETÉES (hors schéma) → l'onglet CTA et
+ * l'étape funnel « cta » restaient vides. Le nom d'origine est conservé dans le
+ * payload stocké (`_src_event`) pour la traçabilité.
+ */
+const CTA_CLICK_ALIASES = new Set([
+  'pack_cta_click',
+  'video_cta_click',
+  'composition_post_cta_click',
+  'pack_steps_cta_click',
+  'steps_cta_click',
+]);
+function normalizeEventName(name: string): string {
+  return CTA_CLICK_ALIASES.has(name) ? 'cta_click' : name;
+}
+
 const consentStateSchema = z
   .object({
     ad_storage: z.enum(['granted', 'denied']),
@@ -170,7 +187,10 @@ export async function POST(request: Request): Promise<Response> {
     const result: IngestResult = { accepted: 0, rejected: 0, duplicates: 0 };
 
     for (const event of parsed.data.events) {
-      const validator = getValidator(event.event);
+      // AN-03 — normalise les alias de clic CTA vers `cta_click` avant tout
+      // (validation, dispatch, stockage, catégorie, conversion).
+      const eventName = normalizeEventName(event.event);
+      const validator = getValidator(eventName);
       if (!validator) {
         result.rejected += 1;
         logger.warn('tracking.ingest.unknown_event', { event_name: event.event });
@@ -207,7 +227,7 @@ export async function POST(request: Request): Promise<Response> {
         : await findTrackingPageByRoute(event.page.path).catch(() => null);
 
       const dispatch = await dispatchToProviders({
-        eventName: event.event,
+        eventName,
         eventId: event.event_id,
         receivedAt: event.timestamp ? new Date(event.timestamp) : new Date(),
         pageRoute: event.page.path,
@@ -277,8 +297,8 @@ export async function POST(request: Request): Promise<Response> {
         await logEvent({
           id: createId('tev'),
           eventId: event.event_id,
-          eventName: event.event,
-          eventCategory: getEventCategory(event.event),
+          eventName,
+          eventCategory: getEventCategory(eventName),
           pageId: event.source?.page_id ?? page?.id ?? null,
           componentId: event.source?.component_id ?? null,
           pageRoute: event.page.path,
@@ -286,12 +306,15 @@ export async function POST(request: Request): Promise<Response> {
           sessionId: event.user.session_id,
           userId: event.user.user_id ?? null,
           consentSnapshot: event.consent as TrackingConsentState,
-          payload: paramsParsed.data as Record<string, unknown>,
+          payload:
+            eventName === event.event
+              ? (paramsParsed.data as Record<string, unknown>)
+              : { ...(paramsParsed.data as Record<string, unknown>), _src_event: event.event },
           uaHash: enrichment.uaHash,
           ipAnonymized: enrichment.ipAnonymized,
           device: enrichment.device,
           locale: event.page.locale || enrichment.locale,
-          isConversion: CONVERSION_EVENTS.has(event.event),
+          isConversion: CONVERSION_EVENTS.has(eventName),
           providersDispatched: dispatch.dispatched,
           providersResults: dispatch.results,
           receivedAt: event.timestamp ? new Date(event.timestamp) : new Date(),

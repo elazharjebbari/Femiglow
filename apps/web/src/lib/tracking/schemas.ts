@@ -52,6 +52,22 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
   scroll_depth: z
     .object({ percent_scrolled: z.union([z.literal(25), z.literal(50), z.literal(75), z.literal(90)]) })
     .strict(),
+  // AN-03 — événements CTA canoniques attendus par l'agrégation funnel/CTA.
+  // `passthrough` : les CTA produit portent des payloads variés (label, destination,
+  // cta_intent…) — on les accepte sans rejet. Les variantes héritées
+  // `pack_cta_click`/`video_cta_click`/`composition_post_cta_click` sont normalisées
+  // vers `cta_click` à l'ingestion (cf. normalizeEventName dans /api/track).
+  cta_click: z
+    .object({
+      cta_intent: z.string().optional(),
+      label: z.string().optional(),
+      destination: z.string().optional(),
+      component_id: z.string().optional(),
+    })
+    .passthrough(),
+  cta_impression: z
+    .object({ label: z.string().optional(), component_id: z.string().optional() })
+    .passthrough(),
   click: z
     .object({
       link_text: z.string().optional(),

@@ -1,0 +1,55 @@
+@startuml analytics-pipeline-audit
+title Pipeline analytics — points de rupture (audit 2026-06-04)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Client (émission)" {
+  [sections /kit\nview_item ✓] as Emit1
+  [CTAs\npack_cta_click ✗] as EmitCta
+  [(rien)\npage_view ✗] as EmitPv
+  [wizard\nbegin_checkout/address_completed/\nadd_payment_info/lead_capture/purchase ✓] as EmitWiz
+  [(rien)\ncta_impression/scroll_depth_50 ✗] as EmitEng
+}
+
+[POST /api/track\nvalidator (schema)] as Ingest
+database "tracking_events_log\n(verbatim, consent granted)" as DB
+
+package "Agrégation (lib/analytics)" {
+  [overview.ts\nbounce/topPages\n(lit page_view)] as Q1
+  [funnel.ts\nCUMULATIF strict\nengage->cta->checkout->purchase] as Q2
+  [cta.ts\n(lit cta_click/cta_impression)] as Q3
+  [checkout.ts\n(attend add_shipping_info/view_cart)] as Q4
+  [insights matviews] as Q5
+}
+
+package "UI /admin/analytics" {
+  [Overview] [Funnel] [CTA] [Checkout] [Insights]
+}
+
+Emit1 --> Ingest
+EmitWiz --> Ingest
+EmitCta -[#red]-> Ingest : REJETÉ (unknown_event) AN-03
+EmitPv -[#red]-> Ingest : jamais émis AN-01
+EmitEng -[#red]-> Ingest : jamais émis AN-02
+Ingest --> DB
+
+DB --> Q1
+DB --> Q2
+DB --> Q3
+DB --> Q4
+DB --> Q5
+
+Q1 -[#red]-> Overview : bounce=null / topPages=[] (AN-01)
+Q2 -[#red]-> Funnel : collapse après view (AN-02) ; purchase ignore generate_lead (AN-06)
+Q3 -[#red]-> CTA : vide (cta_*=0) (AN-03)
+Q4 -[#red]-> Checkout : view_cart=0 ; address_completed non mappé (AN-04)
+Q5 -[#red]-> Insights : matviews non rafraîchies (AN-05)
+
+note bottom
+  Root cause = rupture émission/ingestion (events absents/rejetés)
+  AMPLIFIÉE par le modèle funnel cumulatif strict.
+  Les events présents (begin_checkout 97, purchase 13…) ne sont jamais
+  comptés car aucune session ne passe l'étape "engage" (vide).
+end note
+@enduml

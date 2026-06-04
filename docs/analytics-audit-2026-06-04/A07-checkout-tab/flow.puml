@@ -1,0 +1,52 @@
+@startuml A07-checkout-classify
+title A07 — classifyEvent : evenement reel emis -> etape funnel (etat actuel vs cible)
+
+skinparam shadowing false
+legend top
+  ROUGE = mapping manquant aujourd'hui (AN-04)
+  VERT  = cible apres fix
+end legend
+
+state "Evenements reels (DB 90j)" as src {
+  state "view_cart (0)"          as VC
+  state "begin_checkout (97)"    as BC
+  state "checkout_intent (0)"    as CI
+  state "lead_capture (52)"      as LC
+  state "address_completed (15)" as AC
+  state "add_shipping_info (4)"  as ASI
+  state "add_payment_info (18)"  as API
+  state "checkout_submit (0)"    as CS
+  state "purchase (13)"          as PU
+  state "purchase_server (0)"    as PS
+}
+
+state "CHECKOUT_STAGES" as stages {
+  state "view_cart"      as Svc
+  state "begin_checkout" as Sbc
+  state "add_shipping"   as Sas
+  state "add_payment"    as Sap
+  state "submit"         as Ssub
+  state "purchase"       as Spu
+}
+
+VC  --> Svc
+BC  --> Sbc
+ASI --> Sas
+API --> Sap
+CS  --> Ssub : (event jamais emis)
+PU  --> Spu
+PS  --> Spu
+
+' Mapping manquant (AN-04)
+AC  ..> Sas #red : NON mappe aujourd'hui\n(classifyEvent attend add_shipping_info)
+CI  ..> Sbc #green : [SPEC] checkout_intent -> begin_checkout ?
+LC  ..> Sbc #green : [SPEC] lead_capture -> begin_checkout ?
+PU  ..> Ssub #orange : submit=true pose a l'arrivee du purchase\n=> submit recopie purchase (pas de signal propre)
+
+note bottom of stages
+  Etat actuel: add_shipping=4 (ignore 15 address_completed),
+  view_cart=0, submit==purchase, abandons base sur begin_checkout+purchase.
+  Cible: add_shipping = address_completed OR add_shipping_info (=19),
+  submit issu d'un checkout_submit reel.
+end note
+@enduml

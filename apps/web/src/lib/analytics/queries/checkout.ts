@@ -335,9 +335,13 @@ function classifyEvent(e: TrackingEventLogEntry): CheckoutStage | null {
     case 'view_cart':
       return 'view_cart';
     case 'begin_checkout':
+    // AN-04 : le wizard FemiGlow émet `checkout_intent` au 1er tap du tunnel.
+    case 'checkout_intent':
       return 'begin_checkout';
     case 'add_shipping_info':
     case 'add_shipping':
+    // AN-04 : l'étape adresse réelle du wizard émet `address_completed`.
+    case 'address_completed':
       return 'add_shipping';
     case 'add_payment_info':
     case 'add_payment':

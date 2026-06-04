@@ -37,7 +37,8 @@ const MS_PER_DAY = 86_400_000;
 export const AnalyticsFiltersSchema = z
   .object({
     period: z.enum(ANALYTICS_PERIODS).default('today'),
-    device: z.enum(ANALYTICS_DEVICES).default('mobile'),
+    // AN-11 : défaut `all` — `mobile` masquait silencieusement tablet+desktop.
+    device: z.enum(ANALYTICS_DEVICES).default('all'),
     traffic: z.enum(TRAFFIC_VALUES).default('all'),
     from: isoDate.optional(),
     to: isoDate.optional(),
@@ -80,7 +81,7 @@ export type AnalyticsFilters = z.infer<typeof AnalyticsFiltersSchema>;
 
 export const DEFAULT_FILTERS: AnalyticsFilters = {
   period: 'today',
-  device: 'mobile',
+  device: 'all', // AN-11 : voir tout le trafic par défaut (pas seulement mobile)
   traffic: 'all',
 };
 

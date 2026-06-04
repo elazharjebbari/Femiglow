@@ -1,0 +1,40 @@
+{
+  "_note": "Payloads d'ingestion POST /api/track calques sur la prod (cf. evidence-db-2026-06-04.txt). Les events de la liste 'rejected' n'ont AUCUN schema dans eventSchemas -> getValidator()=null -> rejected. Les events 'accepted' sont au catalogue.",
+  "consentGranted": {
+    "ad_storage": "granted",
+    "analytics_storage": "granted",
+    "ad_user_data": "granted",
+    "ad_personalization": "granted",
+    "functional_storage": "granted"
+  },
+  "pageStub": { "url": "https://femiglow.ma/kit", "path": "/kit", "title": "Kit", "referrer": "", "locale": "fr-MA" },
+  "userStub": { "anonymous_id": "anon-A00-0001", "session_id": "sess-A00-0001" },
+  "rejected_unknown_event": [
+    { "event": "pack_cta_click", "event_id": "evt-pack-0001", "params": { "cta_intent": "purchase" }, "source": { "component_id": "c1" }, "expected": { "accepted": 0, "rejected": 1 } },
+    { "event": "video_cta_click", "event_id": "evt-vid-0001", "params": { "cta_intent": "purchase" }, "expected": { "accepted": 0, "rejected": 1 } },
+    { "event": "composition_post_cta_click", "event_id": "evt-comp-0001", "params": {}, "expected": { "accepted": 0, "rejected": 1 } },
+    { "event": "cta_impression", "event_id": "evt-imp-0001", "params": {}, "source": { "component_id": "c1" }, "expected": { "accepted": 0, "rejected": 1 } },
+    { "event": "scroll_depth_50", "event_id": "evt-scroll-0001", "params": {}, "expected": { "accepted": 0, "rejected": 1 } },
+    { "event": "checkout_intent", "event_id": "evt-ci-0001", "params": {}, "expected": { "accepted": 0, "rejected": 1 } }
+  ],
+  "accepted_verbatim": [
+    { "event": "view_item", "event_id": "evt-vi-0001", "params": { "currency": "MAD", "value": 320 }, "expected": { "accepted": 1, "storedEventName": "view_item", "isConversion": false } },
+    { "event": "begin_checkout", "event_id": "evt-bc-0001", "params": { "currency": "MAD", "value": 320 }, "expected": { "accepted": 1, "storedEventName": "begin_checkout", "isConversion": true } },
+    { "event": "generate_lead", "event_id": "evt-gl-0001", "params": { "currency": "MAD", "value": 0, "method": "newsletter" }, "expected": { "accepted": 1, "storedEventName": "generate_lead", "isConversion": true } },
+    { "event": "address_completed", "event_id": "evt-ac-0001", "params": { "form_id": "wiz-kit", "form_mode": "wizard_cart", "step_name": "address", "variant_key": "control", "schema_version": "v1", "currency": "MAD" }, "expected": { "accepted": 1, "storedEventName": "address_completed", "isConversion": false } },
+    { "event": "page_view", "event_id": "evt-pv-0001", "params": { "page_path": "/kit" }, "expected": { "accepted": 1, "storedEventName": "page_view", "isConversion": false, "prodCount90j": 0 } }
+  ],
+  "schemaProbes": {
+    "expectedNull": ["pack_cta_click", "video_cta_click", "composition_post_cta_click", "cta_impression", "scroll_depth_50", "purchase_server", "view_cart"],
+    "expectedPresent": ["page_view", "scroll_depth", "view_item", "add_to_cart", "begin_checkout", "add_shipping_info", "add_payment_info", "purchase", "generate_lead", "lead_capture", "address_completed"]
+  },
+  "conversionEvents": {
+    "members": ["purchase", "generate_lead", "sign_up", "begin_checkout", "lead_capture"],
+    "nonMembers_gap": ["checkout_intent", "add_to_cart", "address_completed"]
+  },
+  "specAfterFix": {
+    "cta_click": { "event": "cta_click", "event_id": "evt-cc-fix-0001", "params": { "cta_intent": "purchase" }, "source": { "component_id": "c1" }, "expected": { "accepted": 1, "storedEventName": "cta_click" } },
+    "cta_impression": { "event": "cta_impression", "event_id": "evt-imp-fix-0001", "params": {}, "source": { "component_id": "c1" }, "expected": { "accepted": 1 } }
+  },
+  "dbCounts90j": { "view_item": 339, "begin_checkout": 97, "lead_capture": 52, "add_to_cart": 26, "add_payment_info": 18, "generate_lead": 17, "address_completed": 15, "purchase": 13, "add_shipping_info": 4, "page_view": 0, "scroll_depth": 0, "scroll_depth_50": 0, "cta_impression": 0, "cta_click": 0, "pack_cta_click": 0, "video_cta_click": 0, "composition_post_cta_click": 0, "checkout_intent": 0, "purchase_server": 0, "view_cart": 0 }
+}

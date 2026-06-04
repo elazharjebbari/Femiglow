@@ -1,0 +1,44 @@
+@startuml A08-insights-refresh
+title A08 — Cycle de vie des agregats Insights (etat (a)/(b)/(c) + pipeline refresh)
+
+skinparam shadowing false
+legend top
+  AN-05 : Insights "tout vide" car insights_* non rafraichies
+  alors que tracking_events_log contient le trafic.
+end legend
+
+[*] --> JamaisRafraichi : deploiement / migration
+
+state JamaisRafraichi as A {
+  A : insights_* vide
+  A : lastRun = null
+  A : getOverview.firstRun = true
+  A : ETAT (a) — confondu avec "pas de trafic"
+}
+
+state RafraichiVide as B {
+  B : insights_* vide
+  B : lastRun = success, counts.event = 0
+  B : getOverview.firstRun = true
+  B : ETAT (b) — vrai zero sur la periode
+}
+
+state RafraichiPeuple as C {
+  C : insights_* peuple
+  C : getOverview.firstRun = false, KPI > 0
+  C : getFunnel non nul
+  C : ETAT (c)
+}
+
+A --> C : runInsightsRefresh(manual|cron)\nET enabled=true ET events presents
+A --> B : runInsightsRefresh\nmais aucun event sur la fenetre
+A --> A : cron + toggle OFF (skipped:disabled)\n=> reste vide (cause prod)
+B --> C : nouveau trafic + refresh
+C --> C : refresh idempotent (upsert ON CONFLICT)
+
+note right of A
+  Aujourd'hui (a) et (b) rendent le MEME ecran vide.
+  Fix UI: distinguer via getInsightsRefreshStatus().lastRun
+  (null => a, non-null => b/c) et bouton "Lancer un refresh".
+end note
+@enduml

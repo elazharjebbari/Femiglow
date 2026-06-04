@@ -1,0 +1,11 @@
+feature_id,finding,onglet,test_reproduction,test_specification,fichier_test_cible,statut_impl
+A00,AN-03,Ingestion,pack_cta_click rejete (unknown_event),cta_click accepte+stocke,src/app/api/track/route.analytics-taxonomy.test.ts,fait
+A01,AN-01;AN-07,Overview,bounce=null sur dataset view_item-only,bounce calcule + filtre consent,src/lib/analytics/queries/overview.audit.test.ts,fait
+A02,AN-01,Overview,topPages vide sans page_view,topPages peuplee depuis source reelle,src/lib/analytics/queries/overview.audit.test.ts,fait
+A03,AN-02;AN-06,Funnel,checkout/purchase=0 malgre begin_checkout/purchase,etapes>0 + purchase=purchase OR generate_lead,src/lib/analytics/queries/funnel.audit.test.ts,fait
+A04,AN-02,Funnel,dropoff=100% artificiel quand engage=0,dropoff coherent,src/lib/analytics/queries/funnel.audit.test.ts,fait
+A05,AN-02,Funnel,by-page: cta/purchase=0 sauf views,by-page peuple apres fix,src/lib/analytics/queries/funnel.audit.test.ts,fait
+A06,AN-03;AN-08,CTA,CTA vide (cta_*=0) + revenu /100,CTA peuple + revenu MAD,src/lib/analytics/queries/cta.audit.test.ts,fait
+A07,AN-04,Checkout,add_shipping=0 (address_completed non mappe),address_completed compte,src/lib/analytics/queries/checkout.audit.test.ts,fait
+A08,AN-05,Insights,overview vide si matview non rafraichie,refresh -> peuple ; distinction vide/no-traffic,src/lib/analytics/insights/refresh.audit.test.ts,ops_runbook
+A09,AN-09;AN-10;AN-11,Transverse,filtres figes/tz/device,reactivite+tz Maroc+device all,src/components/admin/analytics/*/*.refetch.test.tsx;filters.audit.test.ts,fait
