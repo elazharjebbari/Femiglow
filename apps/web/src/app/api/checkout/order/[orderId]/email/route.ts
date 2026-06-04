@@ -15,7 +15,6 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db/client';
 import { leads, leadTag, orders } from '@/lib/db/schema';
-import { createId } from '@/lib/ids';
 import { logger } from '@/lib/logging/logger';
 import { withIdempotency } from '@/lib/checkout/api/idempotency-middleware';
 import { errorResponse, mapError, zodErrorResponse } from '@/lib/checkout/api/response';
@@ -96,10 +95,12 @@ export async function PATCH(
         // (leadId, tag)). Permet de cibler ces leads via une audience
         // (has_tag = 'post-purchase-optin') ou de fire une automation
         // sur trigger = event lead.email_optin_post_purchase.
+        // DRIFT FIX (chantier 1.1) — `lead_tag.id` est `uuid DEFAULT
+        // gen_random_uuid()` côté DB : on laisse la base générer l'id (ne PAS
+        // passer `createId('tag')`, qui n'est pas un uuid → crash 500).
         await conn
           .insert(leadTag)
           .values({
-            id: createId('tag'),
             leadId: order.leadId,
             tag: 'post-purchase-optin',
             source: 'automation',

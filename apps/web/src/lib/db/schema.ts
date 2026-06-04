@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  uuid,
   index,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -144,7 +145,12 @@ export const leadEvents = pgTable(
 export const leadTag = pgTable(
   'lead_tag',
   {
-    id: text('id').primaryKey(),
+    // DRIFT FIX (chantier 1.1) — la colonne SQL est `uuid DEFAULT
+    // gen_random_uuid()` (prod + migrations). Le schéma déclarait `text`, et le
+    // code insérait `createId('tag')` (= `tag_…`, non-uuid) → l'INSERT crashait
+    // au cast uuid → PATCH /api/checkout/order/[orderId]/email renvoyait 500.
+    // On aligne Drizzle/code sur la DB (référence) : la base génère l'id.
+    id: uuid('id').primaryKey().defaultRandom(),
     leadId: text('lead_id')
       .notNull()
       .references(() => leads.id, { onDelete: 'cascade' }),
