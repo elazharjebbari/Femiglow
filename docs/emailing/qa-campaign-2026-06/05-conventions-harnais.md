@@ -212,3 +212,32 @@ export async function readLastEmail(request: APIRequestContext, to: string) {
 | ID matrice en commentaire de chaque test | traçabilité matrice ↔ code |
 | Oracle jamais affaibli pour passer au vert | escalader le bug à la place |
 ```
+
+---
+
+## 8. Harnais RÉEL livré (phase 0, 2026-06-04) — chemins faisant foi
+
+Le code de référence des §1–6 ci-dessus était THÉORIQUE. Le harnais livré suit
+les conventions du repo (qui priment) ; voici la carte réelle :
+
+| Pièce | Chemin réel | Notes |
+|---|---|---|
+| Serveur MSW | `src/test/msw/server.ts` (préexistant) | lifecycle PAR FICHIER, politique `onUnhandledRequest` par suite |
+| Handlers emails | `src/test/msw/emails-handlers.ts` | `emailsHandlers` (23 routes) + `emailsFailWith.{unauthorized,validation,serverError,hang,network}(url, method?)` ; STATELESS (override local pour du stateful) |
+| Factories | `src/test/factories/emails.factory.ts` | 13 factories `satisfies $inferInsert` (oracle anti-drift tsc) + `makeStalwartEvent`/`makeListmonkEvent` (parsés contre les vrais Zod) ; `resetEmailFactories()` |
+| Harnais DB | `src/test/db/emails-db.ts` | `emailsTestDb()`, `emailsTestSql()`, `truncateEmailTables()` (17 tables), `closeTestDb()`, garde-fou : l'URL DOIT contenir `femiglow_test` |
+| Skip honnête | `describeEmailsDb` (même module) | = `describe` si URL femiglow_test, sinon `describe.skip` — OBLIGATOIRE pour tout describe top-level vraie-DB (sinon `pnpm test` global casse) |
+| Fixtures | `src/test/fixtures/emails/{stalwart,listmonk}/` | provenance dans les README ; fixture 008 = enveloppe batch native NON parsée (R-021) |
+| Mailpit | `scripts/test-mailpit.sh` + `e2e/_helpers/mailpit.ts` | container `femiglow-mailpit`, 127.0.0.1:1025/8025 |
+| Scripts npm | `test:emails:{unit,component,integration,e2e,all}` | `integration` = `--env-file=.env.test` + `--no-file-parallelism` |
+
+### Règles durcies par l'expérience des chantiers P0
+
+| Règle | Pourquoi (constat) |
+|---|---|
+| Suites vraie-DB : JAMAIS en parallèle sur la même base | TRUNCATE croisés → deadlock 40P01 (R-023). Le script npm sérialise ; en run manuel multi-fichiers, ajouter `--no-file-parallelism` |
+| Route handlers en intégration : `DATABASE_URL` ET `DATABASE_URL_TEST` sur la DB de test | la lib applicative lit `DATABASE_URL` (src/lib/db/client.ts) |
+| Init DB module-level interdite dans les suites | `emailsTestDb()` au top-level throw avant le skip → casse le run global. Init lazy (dans hooks/tests ou Proxy) |
+| UPDATE CASE sur colonne enum : cast `::email_outbox_status` explicite | Postgres refuse text→enum implicite dans un SET (42804) |
+| Date JS dans un template `sql` postgres-js : binder `${d.toISOString()}::timestamptz` | la Date crue au milieu de refs colonnes → ERR_INVALID_ARG_TYPE |
+| Précédence MSW 2.x : dans UN server.use, le PREMIER matchant gagne ; entre server.use successifs, le DERNIER gagne | `emailsFailWith` doit être enregistré dans un server.use SÉPARÉ postérieur au nominal |

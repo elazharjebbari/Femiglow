@@ -1,0 +1,47 @@
+# État d'avancement — campagne QA emailing (runbook R1)
+# Statuts : todo | in_progress | done | blocked
+campagne: qa-emailing-2026-06
+demarree_le: "2026-06-04"
+environnement:
+  worktree: /var/www/femiglow-email-tests
+  branche: feat/email-test-campaign
+  db_dev: femiglow_emailqa            # clone prod 2026-06-04 (baseline /root/femiglow-emailqa-baseline-20260604.dump)
+  db_harnais: femiglow_test           # construite par scripts/_migrate-safe.mjs (83 migrations)
+  port: 8013
+  note_drift: >-
+    Constat 2026-06-04 : femiglow_test (migrations) a lead_tag.id uuid DEFAULT
+    gen_random_uuid(), identique à la prod. Le drift est dans schema.ts (text +
+    createId('tag')), PAS dans la DB. Fix 1.1 = aligner Drizzle/code sur uuid.
+phases:
+  p0-fondations:
+    statut: done               # 2026-06-04 — gates : tsc 0 err ; unit 420 / composant 136 / intégration 57 verts
+    etapes:
+      db-test: done            # femiglow_test migrée + clones par chantier
+      factories: done          # emails.factory.ts (13 factories satisfies $inferInsert) + smoke 26
+      msw-handlers: done       # emails-handlers.ts (23 routes, grille emailsFailWith) + smoke 27
+      fixtures: done           # 20 fixtures (12 stalwart + 8 listmonk) + READMEs provenance
+      smtp-test: done          # Mailpit docker (femiglow-mailpit, 1025/8025) + e2e/_helpers/mailpit.ts
+      scripts-npm: done        # test:emails:{unit,component,integration,e2e,all} (integration sérialisé .env.test)
+      canaris: done            # canari DB 3 verts ; skip honnête sans env (describeEmailsDb)
+  p1-stabilisation:
+    statut: done               # 2026-06-04 — doctrine rouge→fix→vert respectée sur les 8 bugs
+    bugs:
+      lead-tag: done           # schema.ts text→uuid + route checkout + tag.ts (régression croisée) ; PCL-INT-001..004 + AUT-INT-030..032
+      webhook-stalwart: done   # volet code : checks webhookSilent/cronOutboxLate/sendingStuck (HLT-INT 15) ; RECONFIG INFRA PROD EN ATTENTE + R-021 (parser enveloppe plate vs batch natif)
+      reaper-sending: done     # reapStuckSending (seuil 10 min, UPDATE atomique pending/dlq)
+      sweep-runs: done         # orphan-sweep.ts (zombies running/nextActionAt NULL)
+      bulk-erreurs: done       # res.ok systématique, sélection conservée, anti double-clic ; CKP-MSW 18
+      render-ordre: done       # INSERT pending avant render ; échec → failed + lastError
+      triggers: done           # event-dispatcher.ts générique (event/subscription, idempotence dedupeKey event:<id>)
+      frequency: done          # quiet hours/cooldown/daily cap câblés branche send, tz Africa/Casablanca
+  p2-unit: { statut: todo }
+  p3-composant-msw:
+    statut: todo
+    modules: { cockpit: todo, automations: todo, audiences: todo, campagnes: todo, templates: todo, dashboard: todo }
+  p4-integration: { statut: todo }
+  p5-contract: { statut: todo }
+  p6-e2e: { statut: todo }
+  p7-scenarios:
+    statut: todo
+    scenarios: { S1: todo, S2: todo, S3: todo, S4: todo, S5: todo }
+  p8-durcissement: { statut: todo }
