@@ -12,7 +12,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db as getDb } from '@/lib/db/client';
@@ -117,10 +117,12 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
   if (draft.status !== 'draft') throw new Error(`Statut ${draft.status} : cette campagne ne peut plus être finalisée`);
   if (!draft.subject) throw new Error('Sujet manquant');
 
+  // ── Préconditions d'audience (AVANT toute mutation/réservation) ──────────
   // M5.4 — si une audience FemiGlow est sélectionnée, snapshot + push à
   // Listmonk pour obtenir un list ID éphémère. Sinon on utilise audienceLinkIds
   // (legacy Listmonk lists choisies directement).
   let listmonkListIds: number[] = draft.audienceLinkIds as number[];
+  let snapshotLink: { snapshotId: string; snapshotListmonkListId: number } | null = null;
   if (draft.audienceId) {
     const { snapshotAudience } = await import('@/lib/mail/audiences/snapshot');
     const { pushSnapshotToListmonk } = await import('@/lib/mail/campaigns/listmonk-sync');
@@ -135,14 +137,7 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
       );
     }
     listmonkListIds = [pushed.listmonkListId];
-    // Persist snapshot link on the draft for later retrieval.
-    await drizzle
-      .update(emailCampaignLink)
-      .set({
-        snapshotId: snap.snapshotId,
-        snapshotListmonkListId: pushed.listmonkListId,
-      })
-      .where(eq(emailCampaignLink.id, parsed.id));
+    snapshotLink = { snapshotId: snap.snapshotId, snapshotListmonkListId: pushed.listmonkListId };
   }
 
   if (listmonkListIds.length === 0) throw new Error('Aucune liste ni audience sélectionnée');
@@ -154,43 +149,79 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
     if (err instanceof ListmonkConfigError) throw err;
   }
 
-  // Create Listmonk campaign
-  const createRes = await listmonk.campaigns.create({
-    name: draft.name,
-    subject: draft.subject,
-    lists: listmonkListIds,
-    from_email: env.MAIL_FROM,
-    body: parsed.bodyHtml,
-    content_type: 'html',
-    type: 'regular',
-    send_at: parsed.sendNow ? null : draft.scheduledFor?.toISOString() ?? null,
-    template_id: parsed.listmonkTemplateId,
-  });
-
-  const lmCampaignId = createRes.data.id;
-
-  // Start or schedule
-  if (parsed.sendNow) {
-    await listmonk.campaigns.updateStatus(lmCampaignId, 'running');
-  } else if (draft.scheduledFor) {
-    await listmonk.campaigns.updateStatus(lmCampaignId, 'scheduled');
-  }
-
-  // Mirror in FemiGlow
   const nextStatus = (parsed.sendNow
     ? 'sending'
     : draft.scheduledFor
       ? 'scheduled'
       : 'draft') as 'sending' | 'scheduled' | 'draft';
-  await drizzle
+
+  // ── R-010 — RÉSERVATION ATOMIQUE (anti double-envoi) ──────────────────────
+  // Avant tout appel distant qui DÉCLENCHE un envoi de masse, on « claim » le
+  // brouillon en une SEULE écriture conditionnelle (`WHERE … status='draft'`).
+  // Si 0 ligne n'est touchée, un autre flux (ou un retry après crash) a déjà
+  // commencé la finalisation → on rejette SANS rappeler `campaigns.create`.
+  // Cette transition draft→sending/scheduled est la clé d'idempotence : un
+  // second clic ne peut plus créer une 2e campagne Listmonk (= 2e envoi).
+  const claimed = await drizzle
     .update(emailCampaignLink)
     .set({
-      listmonkCampaignId: lmCampaignId,
       status: nextStatus,
       startedAt: parsed.sendNow ? new Date() : null,
+      ...(snapshotLink ?? {}),
       updatedAt: new Date(),
     })
-    .where(eq(emailCampaignLink.id, parsed.id));
+    .where(and(eq(emailCampaignLink.id, parsed.id), eq(emailCampaignLink.status, 'draft')))
+    .returning();
+  if (claimed.length === 0) {
+    throw new Error('Statut concurrent : cette campagne ne peut plus être finalisée');
+  }
+
+  let lmCampaignId: number;
+  try {
+    // Create Listmonk campaign
+    const createRes = await listmonk.campaigns.create({
+      name: draft.name,
+      subject: draft.subject,
+      lists: listmonkListIds,
+      from_email: env.MAIL_FROM,
+      body: parsed.bodyHtml,
+      content_type: 'html',
+      type: 'regular',
+      send_at: parsed.sendNow ? null : draft.scheduledFor?.toISOString() ?? null,
+      template_id: parsed.listmonkTemplateId,
+    });
+
+    lmCampaignId = createRes.data.id;
+
+    // R-010 — Persister l'ID externe IMMÉDIATEMENT après la création, AVANT
+    // de démarrer l'envoi. Si `updateStatus` (ou un crash) interrompt le flux
+    // ensuite, la campagne Listmonk reste TRACÉE en DB (pas de fantôme non
+    // référencé) et le brouillon est déjà `sending` → aucun retry ne pourra
+    // recréer une 2e campagne. L'unique index `listmonk_campaign_id` garantit
+    // par ailleurs l'absence de double-mirror.
+    await drizzle
+      .update(emailCampaignLink)
+      .set({ listmonkCampaignId: lmCampaignId, updatedAt: new Date() })
+      .where(eq(emailCampaignLink.id, parsed.id));
+  } catch (err) {
+    // La création Listmonk a échoué : aucun envoi n'a démarré (status n'a pas
+    // été passé à running). On déréserve pour permettre une nouvelle tentative
+    // propre (retour à draft) — pas de campagne fantôme côté Listmonk.
+    await drizzle
+      .update(emailCampaignLink)
+      .set({ status: 'draft', startedAt: null, updatedAt: new Date() })
+      .where(and(eq(emailCampaignLink.id, parsed.id), eq(emailCampaignLink.status, nextStatus)));
+    throw err;
+  }
+
+  // Start or schedule — l'envoi de masse DÉMARRE ici. À ce stade lmCampaignId
+  // est déjà persisté : une panne pendant updateStatus laisse une campagne
+  // tracée et un brouillon `sending` (retry rejeté), JAMAIS un double envoi.
+  if (parsed.sendNow) {
+    await listmonk.campaigns.updateStatus(lmCampaignId, 'running');
+  } else if (draft.scheduledFor) {
+    await listmonk.campaigns.updateStatus(lmCampaignId, 'scheduled');
+  }
 
   await logAuditEvent({
     action: 'mail.campaign.finalized',

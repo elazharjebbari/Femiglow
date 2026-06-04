@@ -34,6 +34,66 @@ export type SyncResult = {
   durationMs: number;
 };
 
+/** Statuts FemiGlow (miroir de l'enum `email_campaign_status`). */
+export type FemiGlowCampaignStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'sending'
+  | 'sent'
+  | 'paused'
+  | 'cancelled'
+  | 'failed';
+
+/**
+ * Mapping exhaustif Listmonk → FemiGlow (A-CMP-5). `paused` n'a pas
+ * d'équivalent métier côté FemiGlow → on ne touche pas le statut (`null`).
+ * Tout statut Listmonk inconnu retourne `null` (no-op défensif).
+ */
+export function mapListmonkStatus(lmStatus: string): FemiGlowCampaignStatus | null {
+  switch (lmStatus) {
+    case 'finished':
+      return 'sent';
+    case 'cancelled':
+      return 'cancelled';
+    case 'running':
+      return 'sending';
+    case 'scheduled':
+      return 'scheduled';
+    case 'paused':
+    case 'draft':
+    default:
+      return null;
+  }
+}
+
+/**
+ * Machine d'états cible (A-CMP-5) — transitions LÉGALES uniquement :
+ *
+ *   draft → scheduled → sending → sent
+ *   draft → sending → sent
+ *   (draft|scheduled|sending) → cancelled
+ *   sent / cancelled / failed → (terminaux : aucune transition sortante)
+ *
+ * Un poll/webhook rejoué ne doit JAMAIS régresser un état terminal
+ * (`sent → sending`, `cancelled → sending`, `sent → scheduled`).
+ */
+export function isLegalTransition(
+  from: FemiGlowCampaignStatus,
+  to: FemiGlowCampaignStatus,
+): boolean {
+  if (from === to) return true;
+  const legal: Record<FemiGlowCampaignStatus, FemiGlowCampaignStatus[]> = {
+    draft: ['scheduled', 'sending', 'cancelled', 'failed'],
+    scheduled: ['sending', 'cancelled', 'failed'],
+    sending: ['sent', 'cancelled', 'failed', 'paused'],
+    paused: ['sending', 'cancelled', 'failed'],
+    sent: [],
+    cancelled: [],
+    failed: [],
+  };
+  return legal[from]?.includes(to) ?? false;
+}
+
 export async function syncCampaignStatuses(): Promise<SyncResult> {
   const drizzle = requireDb();
   const start = Date.now();
@@ -70,12 +130,8 @@ export async function syncCampaignStatuses(): Promise<SyncResult> {
       const res = await listmonk.campaigns.get(c.listmonkCampaignId);
       const lmStatus = res.data.status;
 
-      let next: 'sent' | 'cancelled' | 'sending' | 'scheduled' | null = null;
+      const next = mapListmonkStatus(lmStatus);
       const now = new Date();
-      if (lmStatus === 'finished') next = 'sent';
-      else if (lmStatus === 'cancelled') next = 'cancelled';
-      else if (lmStatus === 'running') next = 'sending';
-      else if (lmStatus === 'scheduled') next = 'scheduled';
 
       // Pull metrics from Listmonk regardless of status transition.
       const set: Partial<typeof emailCampaignLink.$inferInsert> = {
@@ -85,7 +141,15 @@ export async function syncCampaignStatuses(): Promise<SyncResult> {
         clickCount: res.data.clicks ?? 0,
         bounceCount: res.data.bounces ?? 0,
       };
-      if (next && next !== c.status) {
+      // A-CMP-5 — n'applique la transition de statut que si elle est LÉGALE.
+      // Un poll rejoué renvoyant un état obsolète (ex. `running` pour une
+      // campagne déjà `sent`) ne doit JAMAIS régresser le statut terminal.
+      // Les métriques, elles, restent rafraîchies.
+      if (
+        next &&
+        next !== c.status &&
+        isLegalTransition(c.status as FemiGlowCampaignStatus, next)
+      ) {
         set.status = next;
         if (next === 'sent') set.finishedAt = now;
       }

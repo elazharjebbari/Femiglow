@@ -58,6 +58,11 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState<Step>(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // `useTransition`'s `pending` revient à false dès le premier `await` d'un
+  // callback async (React 18) → inutilisable pour verrouiller la soumission de
+  // finalisation (risque de double-envoi au double-clic). On suit donc l'état
+  // d'envoi explicitement, posé AVANT l'await et levé en finally.
+  const [sending, setSending] = useState(false);
 
   // form state
   const [name, setName] = useState(initial.name);
@@ -129,8 +134,12 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
       setErrorMsg('Coche la case de confirmation avant d\'envoyer.');
       return;
     }
+    // Garde anti double-soumission : un envoi déjà en cours ne peut pas être
+    // relancé (le `sending` est posé synchroniquement avant tout await).
+    if (sending) return;
     setErrorMsg(null);
-    startTransition(async () => {
+    setSending(true);
+    void (async () => {
       try {
         await finalizeCampaign({
           id: draftId,
@@ -142,8 +151,9 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
         router.refresh();
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : String(err));
+        setSending(false);
       }
-    });
+    })();
   }
 
   const estimatedAudience = audienceId
@@ -549,10 +559,10 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
           <button
             type="button"
             onClick={submit}
-            disabled={!ack || pending}
+            disabled={!ack || sending || pending}
             className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
-            {pending ? 'Envoi…' : scheduleMode === 'now' ? '📨 Envoyer maintenant' : '📅 Planifier'}
+            {sending ? 'Envoi…' : scheduleMode === 'now' ? '📨 Envoyer maintenant' : '📅 Planifier'}
           </button>
         )}
       </div>
