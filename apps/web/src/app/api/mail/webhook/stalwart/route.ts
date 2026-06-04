@@ -22,9 +22,9 @@ import {
 import { bridgeStalwartToUserEvent } from '@/lib/user-events/bridges/email-webhooks';
 import { logger } from '@/lib/logging/logger';
 import {
-  stalwartWebhookSchema,
   isHardBounce,
   isKnownEvent,
+  normalizeStalwartPayload,
   type StalwartWebhookEvent,
 } from '@/lib/mail/webhooks/stalwart-parser';
 import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
@@ -64,25 +64,74 @@ export async function POST(req: NextRequest): Promise<Response> {
     return new NextResponse('Invalid JSON', { status: 400 });
   }
 
-  const parsed = stalwartWebhookSchema.safeParse(raw);
-  if (!parsed.success) {
-    logger.warn('mail.webhook.stalwart.bad_payload', { issues: parsed.error.issues });
+  // Accept BOTH the legacy flat envelope ({ event, … }) AND the native
+  // Stalwart v0.16 BATCH envelope ({ events: [{ id, createdAt, type, data }] }).
+  // `normalizeStalwartPayload` always yields a flat-event ARRAY (R-021).
+  const normalized = normalizeStalwartPayload(raw);
+  if (!normalized.ok) {
+    logger.warn('mail.webhook.stalwart.bad_payload', { issues: normalized.issues });
     return new NextResponse('Bad payload', { status: 400 });
   }
 
-  const evt: StalwartWebhookEvent = parsed.data;
+  const drizzle = getDb();
+  if (!drizzle) {
+    logger.warn('mail.webhook.stalwart.db_not_configured');
+    return NextResponse.json({ ok: false, error: 'db-not-configured' }, { status: 503 });
+  }
+
+  // Process every event in the request. Per-event errors are ISOLATED : a
+  // single failing event must not fail the whole batch (Stalwart would replay
+  // the ENTIRE batch → re-applying the events that already succeeded). We
+  // collect a per-event result and always answer 200 once we got past auth +
+  // schema validation.
+  const results: Array<{ event: string; status: string }> = [];
+  for (const evt of normalized.events) {
+    try {
+      const r = await processStalwartEvent(drizzle, evt);
+      results.push({ event: evt.event, status: r });
+    } catch (err) {
+      logger.error('mail.webhook.stalwart.event_error', {
+        event: evt.event,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      results.push({ event: evt.event, status: 'error' });
+    }
+  }
+
+  // Backward-compat : for a single-event request (the legacy flat envelope),
+  // mirror an "ignored" reason at the top level when the event was a no-op
+  // (unhandled-event / no-message-id / unknown-message-id). Existing callers
+  // and tests key on `body.ignored` ; batches expose the full `results` array.
+  const single = results.length === 1 ? results[0] : null;
+  const ignoredReasons = new Set(['unhandled-event', 'no-message-id', 'unknown-message-id']);
+  const body: Record<string, unknown> = { ok: true, processed: results.length, results };
+  if (single && ignoredReasons.has(single.status)) {
+    body.ignored = single.status;
+  }
+  return NextResponse.json(body);
+}
+
+/**
+ * Apply ONE flat Stalwart event to the DB. Returns a short status string for
+ * observability. Throws on unexpected DB errors (caught + isolated per-event
+ * by the caller). The bridge to user_event stays fire-and-forget.
+ */
+async function processStalwartEvent(
+  drizzle: NonNullable<ReturnType<typeof getDb>>,
+  evt: StalwartWebhookEvent,
+): Promise<string> {
   logger.info('mail.webhook.stalwart.received', { event: evt.event });
 
   if (!isKnownEvent(evt)) {
     // Stalwart's webhook captures all events (eventsPolicy=exclude + events={}).
     // Most are noise for our use case (acme.*, dns.*, imap.*, etc.) — silently
-    // return 200 so Stalwart doesn't keep retrying.
-    return NextResponse.json({ ok: true, ignored: 'unhandled-event' });
+    // ignore so Stalwart doesn't keep retrying.
+    return 'unhandled-event';
   }
 
   if (evt.event === 'auth.failed') {
     logger.warn('mail.smtp.auth_failed', { user: evt.user, ip: evt.ip });
-    return NextResponse.json({ ok: true });
+    return 'auth-failed-logged';
   }
 
   // All remaining events should carry a messageId — but Stalwart's exact
@@ -91,14 +140,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     'messageId' in evt && typeof evt.messageId === 'string' ? evt.messageId : null;
   if (!messageId) {
     logger.info('mail.webhook.stalwart.no_message_id', { event: evt.event });
-    return NextResponse.json({ ok: true, ignored: 'no-message-id' });
+    return 'no-message-id';
   }
 
-  const drizzle = getDb();
-  if (!drizzle) {
-    logger.warn('mail.webhook.stalwart.db_not_configured');
-    return NextResponse.json({ ok: false, error: 'db-not-configured' }, { status: 503 });
-  }
   const found = await drizzle
     .select()
     .from(emailOutbox)
@@ -108,13 +152,15 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (found.length === 0 || !found[0]) {
     // May be a message originating from Listmonk (uses its own Message-ID
     // namespace) ; that path is handled via the Listmonk webhook.
-    return NextResponse.json({ ok: true, ignored: 'unknown-message-id' });
+    return 'unknown-message-id';
   }
 
   const outbox = found[0];
   const evtTs = 'ts' in evt && typeof evt.ts === 'string' ? evt.ts : null;
   const ts = evtTs ? new Date(evtTs) : new Date();
   const rawJson = evt as unknown as Record<string, unknown>;
+
+  let status = 'ok';
 
   if (evt.event === 'queue.message-queued' || evt.event === 'queue.authenticated-message-queued') {
     await drizzle.insert(emailEvent).values({
@@ -124,6 +170,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       ts,
       rawJson,
     });
+    status = 'queued';
   } else if (evt.event === 'delivery.delivered') {
     await drizzle
       .update(emailOutbox)
@@ -136,6 +183,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       ts,
       rawJson,
     });
+    status = 'delivered';
   } else if (evt.event === 'delivery.failed') {
     const errorCode = 'errorCode' in evt && typeof evt.errorCode === 'number' ? evt.errorCode : undefined;
     const reason = 'reason' in evt && typeof evt.reason === 'string' ? evt.reason : 'unknown';
@@ -168,6 +216,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         })
         .onConflictDoNothing();
     }
+    status = isHard ? 'bounced_hard' : 'bounced_soft';
   } else if (evt.event === 'queue.rescheduled') {
     await drizzle.insert(emailEvent).values({
       outboxId: outbox.id,
@@ -176,6 +225,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       ts,
       rawJson,
     });
+    status = 'retried';
   }
 
   // M5.2 — bridge vers user_event (unified). Fire-and-forget : ne bloque
@@ -199,5 +249,5 @@ export async function POST(req: NextRequest): Promise<Response> {
     });
   }
 
-  return NextResponse.json({ ok: true });
+  return status;
 }
