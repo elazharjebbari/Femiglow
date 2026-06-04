@@ -8,9 +8,21 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { getOutboxKpi, listRecentOutbox } from '@/lib/admin/emails/queries';
-import { checkEmailingHealth } from '@/lib/admin/emails/health';
+import { checkEmailingHealth, type HealthLevel } from '@/lib/admin/emails/health';
+import { db as getDb } from '@/lib/db/client';
+import {
+  checkEmailingInfraHealth,
+  type InfraChecks,
+} from '@/app/api/admin/emails/health/checks';
 
 export const dynamic = 'force-dynamic';
+
+/** Pire des deux niveaux (cohérent avec la route /api/admin/emails/health). */
+function worstLevel(a: HealthLevel, b: HealthLevel): HealthLevel {
+  if (a === 'incident' || b === 'incident') return 'incident';
+  if (a === 'degraded' || b === 'degraded') return 'degraded';
+  return 'ok';
+}
 
 function fmt(n: number): string {
   return n.toLocaleString('fr-FR');
@@ -29,6 +41,22 @@ export default async function AdminEmailsPage() {
     checkEmailingHealth(),
   ]);
 
+  // Checks infra additionnels (webhook silencieux, cron outbox en retard,
+  // sending bloqué) — même composition que la route /api/admin/emails/health.
+  // Branchés ici pour que le BADGE du dashboard reflète aussi ces pannes P0.
+  let infraChecks: InfraChecks | null = null;
+  let level = health.level;
+  const drizzle = getDb();
+  if (drizzle && health.checks.db.ok) {
+    try {
+      const infra = await checkEmailingInfraHealth(drizzle);
+      infraChecks = infra.checks;
+      level = worstLevel(level, infra.level);
+    } catch {
+      level = worstLevel(level, 'degraded');
+    }
+  }
+
   return (
     <AdminShell adminEmail={session.email} active="emails">
       <header className="mb-6 flex items-baseline justify-between">
@@ -38,7 +66,7 @@ export default async function AdminEmailsPage() {
             Transactionnels envoyés via Stalwart. KPIs 7 derniers jours.
           </p>
         </div>
-        <HealthBadge level={health.level} report={health} />
+        <HealthBadge level={level} report={health} infra={infraChecks} />
       </header>
 
       <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
@@ -180,9 +208,11 @@ function Kpi({
 function HealthBadge({
   level,
   report,
+  infra,
 }: {
   level: 'ok' | 'degraded' | 'incident';
   report: Awaited<ReturnType<typeof import('@/lib/admin/emails/health').checkEmailingHealth>>;
+  infra: InfraChecks | null;
 }) {
   const cls =
     level === 'ok'
@@ -199,6 +229,15 @@ function HealthBadge({
   if (!c.outboxStuck.ok) details.push(`${c.outboxStuck.stuckCount} stuck en 'sending' > 5 min`);
   if (!c.dlq24h.ok) details.push(`${c.dlq24h.count} DLQ sur 24h`);
   if (c.pendingNow > 50) details.push(`${c.pendingNow} pending en attente`);
+  // Pannes infra (chantier 1.2) — pipeline webhook / crons.
+  if (infra && !infra.webhookSilent.ok)
+    details.push(
+      `webhook muet : ${infra.webhookSilent.sentLast7d} envoyés / 0 livré confirmé (7j)`,
+    );
+  if (infra && !infra.cronOutboxLate.ok)
+    details.push(`${infra.cronOutboxLate.lateCount} en file > 15 min (cron outbox à l'arrêt ?)`);
+  if (infra && !infra.sendingStuck.ok)
+    details.push(`${infra.sendingStuck.stuckCount} bloqués en 'sending' > 15 min (reaper muet ?)`);
   return (
     <details className={`rounded-md border px-3 py-1.5 text-xs ${cls}`}>
       <summary className="cursor-pointer font-medium select-none">
@@ -211,6 +250,24 @@ function HealthBadge({
         <li>DLQ 24h : {c.dlq24h.count}</li>
         <li>Pending : {c.pendingNow}</li>
         <li>Dernier livré : {c.lastDeliveredAt ? new Date(c.lastDeliveredAt).toLocaleString('fr-FR') : 'jamais'}</li>
+        {infra ? (
+          <>
+            <li>
+              Webhook (delivered 7j) :{' '}
+              {infra.webhookSilent.ok
+                ? `✓ ${infra.webhookSilent.deliveredEventsLast7d} reçus`
+                : `✗ 0 reçu pour ${infra.webhookSilent.sentLast7d} envoyés`}
+            </li>
+            <li>
+              File outbox (en retard &gt; 15 min) :{' '}
+              {infra.cronOutboxLate.ok ? '✓ 0' : `✗ ${infra.cronOutboxLate.lateCount}`}
+            </li>
+            <li>
+              Sending bloqué (&gt; 15 min) :{' '}
+              {infra.sendingStuck.ok ? '✓ 0' : `✗ ${infra.sendingStuck.stuckCount}`}
+            </li>
+          </>
+        ) : null}
       </ul>
       {details.length > 0 ? (
         <p className="mt-2 font-medium">{details.join(' · ')}</p>
