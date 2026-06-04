@@ -77,3 +77,57 @@ L'unique échec — `src/lib/tracking/__tests__/event-catalog.checkout.test.ts`
 **préexistant sur master** (reproduit à l'identique dans /var/www/femiglow) :
 séquelle de la session GTM/google_ads, HORS périmètre emailing. À arbitrer
 côté tracking (oracle obsolète vs câblage manquant). Zéro régression emails.
+
+## Session 2026-06-04 (vague 2 — phases 2+3+4+5)
+
+**Orchestration** : workflow 9 chantiers parallèles (DB dédiée par chantier,
+fichiers gelés par vague). Run interrompu à 7/9 (compaction de session) puis
+**repris via resumeFromRunId** — les 7 terminés sont revenus du cache, seuls
+m08/m09 ont rejoué. Total ~1.8M tokens, ~96 min.
+
+### Bugs corrigés (rouge→fix→vert constaté pour chacun)
+- **R-021** (07) : parser Stalwart accepte le batch natif `{events:[…]}` +
+  rétro-compat plate ; route N événements/requête, isolation par-événement.
+  64 tests (37 unit + 27 contract vraie-DB rejouant les 20 fixtures).
+- **R-011 + R-025/A-AUD-2 + annexe** (04) : règle `country` (compilait TRUE),
+  **engagement corrélé au lead** (EXISTS global = tout-ou-rien ; corrélation
+  outbox.to_email OU subscriber_link ; templateSlug/urlPattern appliqués),
+  Date JS crue dans templates sql. R-012 : reapStuckSnapshots + idempotence
+  anti-zombie. 165 tests audiences.
+- **R-010** (03) : finalizeCampaign atomique/idempotent (réservation
+  draft→sending, anti campagne-fantôme/double envoi) ; A-CMP-5 garde de
+  transition de statut ; double-soumission wizard (pending React 18). 78 tests.
+- **R-015 + 5 défauts** (02) : pagination réelle, saved views appliquées,
+  create-view réel, export CSV RFC 4180, couleur tendance higherIsBad,
+  sparkline queued retirée. 130 tests cockpit.
+- **R-017** (06) : 3 vecteurs XSS réels bouchés (CSS expression/url(js)
+  inline+<style>, USE_PROFILES form/svg/details, data:text/html) + garde-fou
+  suppression de template câblé + data.version TemplateEditor. 87 tests.
+- **R-014 + 3** (10) : timeout/retry/429 client Listmonk, listAll anti-cap-50,
+  reprise push partiel (marqueur listmonkPushedAt), anti-fuite de listes à la
+  purge. 80 tests.
+- **R-009** (08, déjà en code) vérifié + batterie machine d'états/concurrence/
+  crash-recovery (194 tests scope module).
+- **F-001** (01) : carte Livrés alerte quand sent>0 et delivered=0. 60 tests.
+- **R-024** (09, fix orchestrateur) : en-tête List-Unsubscribe one-click
+  émettait `?email=` (adresse en clair) mais la route ne lit que `?t=` → le
+  bouton natif Gmail/Apple Mail ne désinscrivait PAS (400). Fix : token signé
+  dans l'en-tête (CLI-INT-UNSUB-HDR-001/002, rouge constaté avant fix).
+
+### Écarts résiduels documentés par oracles (non corrigés, décision requise)
+- R-013 Listmonk : tout subscriber.bounced suppressé hard quel que soit
+  bounce_type (comportement épinglé M07-CT-LM-002 — décision produit).
+- F-002 : fraîcheur delivered ne dégrade pas le badge ; pas de heartbeat cron.
+- F-012 : select-all limité à la page visible (50) sans avertissement.
+- A-CMP-3/4 : fenêtre poll 24h fige les métriques ; deliveredCount mort.
+- Pipeline : bounced_soft jamais re-drainé ; pas de classification
+  permanent/transient ; drain sans budget temps ; tls.rejectUnauthorized=false
+  (figé PIP-INT-114) ; DLQ silencieuse (→ module 11).
+
+### Harnais
+- test:emails:integration passe d'une liste explicite à un glob
+  (scripts/test-emails-integration.sh, sérialisé) ; unit élargi aux routes/
+  admin emails. Suite route unsubscribe rendue autosuffisante
+  (vi.hoisted MAIL_UNSUB_TOKEN_SECRET).
+- Gates vague 2 : tsc 0 erreur ; unit 749 verts / composant 287 verts /
+  intégration 332 verts (27 suites).

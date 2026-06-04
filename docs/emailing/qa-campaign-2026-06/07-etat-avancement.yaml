@@ -34,12 +34,15 @@ phases:
       render-ordre: done       # INSERT pending avant render ; échec → failed + lastError
       triggers: done           # event-dispatcher.ts générique (event/subscription, idempotence dedupeKey event:<id>)
       frequency: done          # quiet hours/cooldown/daily cap câblés branche send, tz Africa/Casablanca
-  p2-unit: { statut: todo }
+  p2-unit:
+    statut: done               # 2026-06-04 vague 2 — 9 chantiers parallèles, ~430 nouveaux tests, batterie unit 749 verts
   p3-composant-msw:
-    statut: todo
-    modules: { cockpit: todo, automations: todo, audiences: todo, campagnes: todo, templates: todo, dashboard: todo }
-  p4-integration: { statut: todo }
-  p5-contract: { statut: todo }
+    statut: done               # 2026-06-04 — batterie composant 287 verts (cockpit __qa__ 60, wizard, audiences, templates, dashboard)
+    modules: { cockpit: done, automations: done, audiences: done, campagnes: done, templates: done, dashboard: done }
+  p4-integration:
+    statut: done               # 2026-06-04 — 27 suites vraie-DB sérialisées, 332 verts (script glob test-emails-integration.sh)
+  p5-contract:
+    statut: done               # 2026-06-04 — R-021 corrigé (batch natif) ; 20 fixtures rejouées avec oracle métier par fixture (M07-CT-*)
   p6-e2e: { statut: todo }
   p7-scenarios:
     statut: todo
