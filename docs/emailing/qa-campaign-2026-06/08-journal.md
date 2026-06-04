@@ -69,3 +69,11 @@ conséquence : aligner Drizzle/code sur uuid, aucune migration.
 ### Prochaine étape
 Phases 2 (unit dense) + 3 (composant+MSW masse) module par module, + R-021
 (contrat Stalwart natif) en chantier prioritaire.
+
+### Addendum gate global (session 2026-06-04)
+`pnpm test` complet : **9249 verts / 1 échec / 76 skips (928 fichiers)**.
+L'unique échec — `src/lib/tracking/__tests__/event-catalog.checkout.test.ts`
+(« lead_capture par défaut sur google_ga4 + meta + google_ads ») — est
+**préexistant sur master** (reproduit à l'identique dans /var/www/femiglow) :
+séquelle de la session GTM/google_ads, HORS périmètre emailing. À arbitrer
+côté tracking (oracle obsolète vs câblage manquant). Zéro régression emails.
