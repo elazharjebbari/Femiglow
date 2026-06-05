@@ -79,24 +79,41 @@ bash run-battery.sh        # attendu : 0 FAIL (T41 WARN toléré) — dure ~2 mi
 
 ## P3 — Webhook Stalwart (creds admin requis)
 
-```bash
-# 1. Relevé (lecture seule, masqué)
-bash configure-stalwart-webhook.sh --show
+> Stalwart 0.16.x : la config se pilote par l'**API objet** (`stalwart-cli get/query/update`,
+> type `WebHook`) — l'ancienne API `/api/settings` répond 404. Les logs s'appellent
+> `stalwart.YYYY-MM-DD` (sans `.log`). **Un changement de config webhook exige un
+> `systemctl restart stalwart-mail.service`** (~2 s de coupure ; le collecteur ne
+> recharge pas l'URL à chaud, même via `--reload`/`Action ReloadSettings`).
 
-# 2. Apply : repointe TOUTES les webhook.<id>.url vers la prod + reload + relecture.
+```bash
+# 1. Relevé (lecture seule, masqué) + concordance du token (par sha256, jamais affiché)
+bash configure-stalwart-webhook.sh --show
+bash configure-stalwart-webhook.sh --check-token
+
+# 2. Apply : repointe l'URL du WebHook vers la prod + relecture de contrôle.
 #    L'URL précédente est consignée en sortie (ROLLBACK NOTE).
 bash configure-stalwart-webhook.sh --apply
+systemctl restart stalwart-mail.service        # OBLIGATOIRE (cache collecteur)
 
-# 3. Preuve bout-en-bout (mail réel interne -> log Stalwart -> journal prod)
+# 3. (Recommandé) Filtrer aux 6 événements traités par le récepteur — sinon le
+#    firehose complet (eval.*, store.*, smtp.raw-*) part vers la prod (~32 logs/min).
+bash configure-stalwart-webhook.sh --filter-events
+bash configure-stalwart-webhook.sh --reload
+
+# 4. Preuve bout-en-bout (mail réel interne -> POST Stalwart -> journal prod)
 bash verify-webhook-e2e.sh
+# Oracle T53 : journalctl -u femiglow.service | grep mail.webhook.stalwart.received
+# (champ stalwart_event=<type> — fix de la collision de clé `event`, 2026-06-05)
 
-# 4. T34 — le flux d'erreurs s'arrête (10 min après l'apply)
-grep -rc 'admin.femiglow-maroc' /etc/stalwart-mail/logs/*.log | tail -1   # compteur stable
+# 5. T34 — le flux d'erreurs s'arrête après le restart
+awk -v ts="$(systemctl show -p ActiveEnterTimestamp --value stalwart-mail.service)" \
+  'BEGIN{print ts}' >/dev/null
+grep -c 'admin.femiglow-maroc' /etc/stalwart-mail/logs/stalwart.$(date +%F)   # compteur stable
 ```
 
-**Rollback** : `WEBHOOK_TARGET_URL='<url notée en ROLLBACK NOTE>' bash configure-stalwart-webhook.sh --apply`
-**Fallback** si l'API settings refuse l'écriture : webadmin Stalwart → Settings → Webhooks
-(même cible, même header `X-FG-Webhook-Token`).
+**Rollback URL** : `WEBHOOK_TARGET_URL='<url notée en ROLLBACK NOTE>' bash configure-stalwart-webhook.sh --apply` + restart.
+**Rollback filtre** : `stalwart-cli update WebHook <id> --field eventsPolicy=exclude --field 'events={}'` + reload.
+**Fallback** si l'API objet refuse l'écriture : webadmin Stalwart (port 8080, `/login`) → Settings → Webhooks.
 
 ## P4 — Listmonk bounce (constat SEULEMENT — décision R-013 non tranchée)
 
@@ -134,5 +151,10 @@ sudo -u postgres psql -d femiglow -Atc \
 | 2026-06-05 14:46 | P1a migration | session (feu vert utilisateur) | 12 unités migrées, template `@` supprimé, backup `/root/femiglow-systemd-backup-20260605-144651` ; T16 : 15/15 `Result=success` |
 | 2026-06-05 14:47 | P1b rotation | session (feu vert utilisateur) | T17 ancien→**401**, T18 nouveau→**200** ; backup `.env` `/root/femiglow-env-backup-20260605-144716` (0600) ; `femiglow-cron-insights.env` retiré |
 | 2026-06-05 14:48 | Batterie | session | **34 PASS / 0 FAIL / 1 WARN** (T41 bounce=false, attendu — D5) |
-| _(en attente)_ | P3 webhook | **opérateur** | `--show` → `--apply` → `verify-webhook-e2e.sh` (cf. commandes ci-dessous) |
+| 2026-06-05 16:46 | P3 apply | session (feu vert utilisateur) | Script porté sur l'API objet 0.16 (`WebHook/iqxgh9qcacaa`) ; garde-fou 401 OK ; token MATCH (sha256) ; URL `admin.femiglow-maroc.com/...` → `femiglow-maroc.com/api/mail/webhook/stalwart` (relue) |
+| 2026-06-05 16:49 | P3 restart | session (feu vert utilisateur) | `systemctl restart stalwart-mail` (le collecteur cachait l'ancienne URL) ; **T34 : 0 erreur webhook depuis 16:49:04** (vs 58 928 le jour même avant) |
+| 2026-06-05 17:07 | P3 vérif E2E | session | T51 PASS (SMTP 250) ; T52 PASS (tcpdump : POSTs locaux :443 au rythme du throttle 1 s, 0 erreur) ; T53 PASS (`mail.webhook.stalwart.received` en continu dans journald) |
+| 2026-06-05 17:14 | Fix observabilité | session | Collision de clé `event` dans les logs des récepteurs Stalwart+Listmonk (le nom du log était écrasé par le type d'événement) → champ renommé `stalwart_event`/`listmonk_event` ; tests 16/16, tsc OK, build+restart femiglow |
+| 2026-06-05 17:20 | P3 filtre events | session (feu vert utilisateur) | `--filter-events` : policy=include sur les 6 événements traités (bruit −95 %, fin du transit smtp.raw-*) + reload — **pris à chaud** (vérifié : 0 réception en idle, sonde → `queue.authenticated-message-queued` reçu) |
+| 2026-06-05 17:29 | Batterie finale | session | **34 PASS / 0 FAIL / 1 WARN** (T41 bounce, attendu) — P3 CLOS, reste T54 à J+1 |
 | 2026-06-05 | P4 Listmonk | session (lecture seule) | `bounce.enabled=false` confirmé — activation différée à R-013 |

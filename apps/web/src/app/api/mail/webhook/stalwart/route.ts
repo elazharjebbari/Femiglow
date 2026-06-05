@@ -120,12 +120,15 @@ async function processStalwartEvent(
   drizzle: NonNullable<ReturnType<typeof getDb>>,
   evt: StalwartWebhookEvent,
 ): Promise<string> {
-  logger.info('mail.webhook.stalwart.received', { event: evt.event });
+  // NB: ne PAS nommer ce champ `event` — il écraserait la clé `event` du payload
+  // du logger (spread) et le log apparaîtrait sous le nom de l'événement Stalwart.
+  logger.info('mail.webhook.stalwart.received', { stalwart_event: evt.event });
 
   if (!isKnownEvent(evt)) {
-    // Stalwart's webhook captures all events (eventsPolicy=exclude + events={}).
-    // Most are noise for our use case (acme.*, dns.*, imap.*, etc.) — silently
-    // ignore so Stalwart doesn't keep retrying.
+    // Depuis 2026-06-05 le webhook Stalwart est filtré (eventsPolicy=include sur
+    // les 6 events traités ici — cf. configure-stalwart-webhook.sh --filter-events).
+    // On garde le garde-fou : tout event inattendu est ignoré silencieusement
+    // pour que Stalwart ne retente pas en boucle.
     return 'unhandled-event';
   }
 
@@ -139,7 +142,7 @@ async function processStalwartEvent(
   const messageId =
     'messageId' in evt && typeof evt.messageId === 'string' ? evt.messageId : null;
   if (!messageId) {
-    logger.info('mail.webhook.stalwart.no_message_id', { event: evt.event });
+    logger.info('mail.webhook.stalwart.no_message_id', { stalwart_event: evt.event });
     return 'no-message-id';
   }
 

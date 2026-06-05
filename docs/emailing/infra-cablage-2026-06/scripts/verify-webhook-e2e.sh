@@ -39,9 +39,11 @@ echo "== attente propagation (20s) =="
 sleep 20
 
 echo "== T52 — log Stalwart : POST webhook vers la prod =="
-RECENT="$(find "$STALWART_LOGS" -name '*.log*' -mmin -5 2>/dev/null | head -3)"
-if [[ -n "$RECENT" ]] && grep -h 'femiglow-maroc.com/api/mail/webhook' $RECENT 2>/dev/null | tail -3 | grep -q .; then
-  grep -h 'femiglow-maroc.com/api/mail/webhook' $RECENT | tail -3
+# Les logs Stalwart 0.16 s'appellent stalwart.YYYY-MM-DD (sans extension .log).
+RECENT="$(find "$STALWART_LOGS" -name 'stalwart.*' -mmin -10 2>/dev/null | head -3)"
+if [[ -n "$RECENT" ]] && grep -h 'https://femiglow-maroc.com/api/mail/webhook' $RECENT 2>/dev/null | tail -3 | grep -q .; then
+  # NB: ancre https:// pour ne PAS matcher l'ancienne URL admin.femiglow-maroc.com.
+  grep -h 'https://femiglow-maroc.com/api/mail/webhook' $RECENT | tail -3
   echo "T52 PASS — Stalwart poste bien vers la prod"
 elif [[ -n "$RECENT" ]] && grep -h -i 'webhook' $RECENT 2>/dev/null | tail -3 | grep -qi 'error\|admin\.femiglow'; then
   echo "T52 FAIL — erreurs webhook encore présentes :"; grep -h -i 'webhook' $RECENT | tail -3; exit 1

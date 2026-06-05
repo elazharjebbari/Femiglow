@@ -63,8 +63,8 @@
 | ID | Test | Oracle |
 |---|---|---|
 | T51 | Envoi d'un mail réel via SMTP Stalwart local (compte noreply → mailbox locale) | SMTP accepte (250) |
-| T52 | Stalwart émet le webhook vers la prod | Log Stalwart : POST vers `femiglow-maroc.com/...` statut **200** (plus de NXDOMAIN) |
-| T53 | La prod reçoit et journalise | `journalctl -u femiglow` : événement `mail.webhook.stalwart` (received/ignored — `ignored` est CORRECT pour un message-id hors outbox : prouve auth+parse) |
+| T52 | Stalwart émet le webhook vers la prod | Stalwart ne loggue PAS les POSTs réussis (seulement les échecs `telemetry.webhook-error`) → oracle = **0 erreur webhook** dans `stalwart.YYYY-MM-DD` (sans extension `.log` !) depuis le restart ; en cas de doute : tcpdump SYN locaux vers :443 au rythme du throttle (1 s) |
+| T53 | La prod reçoit et journalise | `journalctl -u femiglow` : `"event":"mail.webhook.stalwart.received"` + champ `stalwart_event=<type>` (fix collision de clé `event` 2026-06-05 — avant ce fix, le log apparaissait sous le nom de l'événement Stalwart et le grep ratait tout). `ignored`/`unknown-message-id` est CORRECT pour un message-id hors outbox : prouve auth+parse |
 | T54 | Chaîne complète outbox (différé) | Sous 24h de trafic réel : `email_outbox` voit apparaître des `delivered` (lecture seule) — première fois depuis l'audit (KPI Livrés > 0) |
 
 ## Critères de sortie globaux
