@@ -318,6 +318,10 @@ async function callHealth(): Promise<{ status: number; body: Record<string, any>
 
 describeEmailsDb('GET /api/admin/emails/health — composition additive (HLT-INT-021..024)', () => {
   // HLT-INT-021 — base saine + infra saine → tout ok, contrat de base intact.
+  // Le dernier `delivered` est FRAIS (8 min) — un état réellement sain au sens
+  // de la fraîcheur F-002 : la livraison la plus récente est bien en deçà du
+  // seuil de warn (24h). (Auparavant `realDaysAgo(1)` flirtait avec le seuil et
+  // basculait `degraded` au moindre drift d'horloge — pas un système « sain ».)
   it('préserve le contrat de base et renvoie ok quand tout est sain', async () => {
     const db = emailsTestDb();
     const [out] = await db
@@ -325,14 +329,14 @@ describeEmailsDb('GET /api/admin/emails/health — composition additive (HLT-INT
       .values(
         makeOutboxRow({
           status: 'delivered',
-          createdAt: realDaysAgo(1),
-          updatedAt: realDaysAgo(1),
-          deliveredAt: realDaysAgo(1),
+          createdAt: realMinAgo(8),
+          updatedAt: realMinAgo(8),
+          deliveredAt: realMinAgo(8),
         }),
       )
       .returning();
     await db.insert(emailEvent).values(
-      makeEmailEvent({ outboxId: out!.id, type: 'delivered', ts: realDaysAgo(1) }),
+      makeEmailEvent({ outboxId: out!.id, type: 'delivered', ts: realMinAgo(8) }),
     );
 
     const { status, body } = await callHealth();
