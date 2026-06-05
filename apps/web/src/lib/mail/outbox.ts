@@ -222,6 +222,19 @@ export async function pickAndProcessBatch(now: Date = new Date()): Promise<Batch
   // RAW SQL execute returns snake_case columns ; map to camelCase EmailOutboxRow
   // shape so deliverRow can use Drizzle's $inferSelect typed fields.
   const list = rowsOf(result).map(normalizeRow);
+
+  // L'ORDER BY du sous-SELECT ne survit PAS au RETURNING de l'UPDATE…FROM
+  // (Postgres joint en ordre physique, dépendant du plan) : l'ordre d'envoi
+  // « plus anciennes d'abord » ne tenait que par accident (flake PIP-INT-062
+  // constaté en batterie). Re-tri déterministe côté JS sur le batch claimé
+  // (≤ BATCH_SIZE lignes) : next_retry NULLS FIRST, puis created_at ASC.
+  const ts = (v: Date | string | null | undefined): number =>
+    v == null ? Number.NEGATIVE_INFINITY : new Date(v).getTime();
+  // Comparaison explicite (pas de soustraction : -Inf - -Inf = NaN).
+  const cmp = (x: number, y: number): number => (x < y ? -1 : x > y ? 1 : 0);
+  list.sort(
+    (a, b) => cmp(ts(a.nextRetry), ts(b.nextRetry)) || cmp(ts(a.createdAt), ts(b.createdAt)),
+  );
   let succeeded = 0;
   let failed = 0;
   let dlq = 0;
