@@ -162,6 +162,25 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (!result.ok) {
     return new NextResponse(`Unsubscribe failed: ${result.reason}`, { status: 400 });
   }
+  // Le <form> de la page de confirmation (navigateur humain, Accept: text/html)
+  // mérite une page digne — pas un JSON brut. Le one-click RFC 8058 (Gmail/
+  // Apple Mail POSTent sans Accept html) et les appels API gardent le JSON.
+  if (req.headers.get('accept')?.includes('text/html')) {
+    const tokenParam = encodeURIComponent(token!);
+    return htmlPage(
+      `<h1>Désinscription confirmée</h1>
+       <p>C'est noté${result.email ? ` pour <strong>${escapeHtml(result.email)}</strong>` : ''} :
+       tu ne recevras plus de communications marketing de FemiGlow.</p>
+       <p style="color:#666;font-size:.875rem">Tu t'es désinscrit par erreur ?</p>
+       <form method="post" action="/api/mail/unsubscribe?action=resubscribe&t=${tokenParam}" style="margin:.5rem 0">
+         <button type="submit"
+           style="background:transparent;color:#7C9A8A;border:1px solid #7C9A8A;border-radius:6px;padding:.6rem 1.1rem;font-size:.95rem;cursor:pointer">
+           Me réabonner
+         </button>
+       </form>`,
+      200,
+    );
+  }
   return NextResponse.json({ ok: true });
 }
 

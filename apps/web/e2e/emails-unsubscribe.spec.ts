@@ -45,6 +45,9 @@ test.describe('Phase 6 — désinscription publique one-click @emails-unsubscrib
     await closeE2eSql();
   });
 
+  // Vague 4 (R-032/UX-PUB-004) : le GET est devenu NON destructif — page de
+  // confirmation, AUCUNE écriture (un préfetch Gmail/Outlook ne désinscrit plus).
+  // Le POST (clic humain ou one-click RFC 8058) exécute. + réabonnement (UX-PUB-005).
   test('UNSUB — token signé → page confirme → DB suppression posée → idempotent', async ({
     page,
     request,
@@ -57,28 +60,39 @@ test.describe('Phase 6 — désinscription publique one-click @emails-unsubscrib
 
     const token = generateUnsubTokenE2e(UNSUB_EMAIL);
 
-    // UNSUB-01 — la page publique confirme la désinscription (200 + message).
+    // UNSUB-01 (R-032) — le GET est NON destructif : page de confirmation,
+    // et SURTOUT aucune ligne email_suppression posée par la simple visite.
     const res = await page.goto(
       `/api/mail/unsubscribe?t=${encodeURIComponent(token)}`,
     );
     expect(res?.status()).toBe(200);
+    await expect(
+      page.getByRole('heading', { name: /Confirmer la désinscription/i }),
+    ).toBeVisible();
+    expect(
+      await readSuppression(UNSUB_EMAIL),
+      'un GET (préfetch/scanner) ne doit JAMAIS désinscrire',
+    ).toBeNull();
+
+    // UNSUB-02 — le POST (clic humain sur le bouton) exécute réellement.
+    await page
+      .getByRole('button', { name: /Confirmer la désinscription/i })
+      .click();
     await expect(
       page.getByRole('heading', { name: /Désinscription confirmée/i }),
     ).toBeVisible();
     await expect(
       page.getByText(/plus de communications marketing/i),
     ).toBeVisible();
-
-    // UNSUB-02 — la suppression est RÉELLEMENT posée en base.
     const row = await readSuppression(UNSUB_EMAIL);
     expect(row, 'une ligne email_suppression doit exister').not.toBeNull();
     expect(row!.reason).toBe('unsubscribe');
     expect(row!.source).toBe('manual');
     expect(await countSuppression(UNSUB_EMAIL)).toBe(1);
 
-    // UNSUB-03 — idempotence : 2e visite (même token) → toujours 200, et la
-    // base ne contient TOUJOURS qu'une seule ligne (onConflictDoNothing).
-    const res2 = await request.get(
+    // UNSUB-03 — idempotence one-click RFC 8058 : re-POST programmatique (sans
+    // Accept html, comme Gmail/Apple Mail) → 200 JSON, pas de doublon.
+    const res2 = await request.post(
       `http://127.0.0.1:8013/api/mail/unsubscribe?t=${encodeURIComponent(token)}`,
     );
     expect(res2.status()).toBe(200);
@@ -86,6 +100,17 @@ test.describe('Phase 6 — désinscription publique one-click @emails-unsubscrib
       await countSuppression(UNSUB_EMAIL),
       'la 2e désinscription ne doit PAS dupliquer la ligne',
     ).toBe(1);
+
+    // UNSUB-05 (UX-PUB-005) — réabonnement : le bouton retire la suppression.
+    await page.goto(`/api/mail/unsubscribe?t=${encodeURIComponent(token)}`);
+    await page.getByRole('button', { name: /Me réabonner/i }).click();
+    await expect(
+      page.getByRole('heading', { name: /Réabonnement confirmé/i }),
+    ).toBeVisible();
+    expect(
+      await countSuppression(UNSUB_EMAIL),
+      'le réabonnement doit retirer la ligne de suppression',
+    ).toBe(0);
   });
 
   // UNSUB-04 — token invalide → page "Lien invalide" digne (400), pas de crash.

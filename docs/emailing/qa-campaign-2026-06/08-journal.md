@@ -276,3 +276,19 @@ claim ne survit PAS au RETURNING de l'UPDATE…FROM — Postgres joint en ordre
 physique. L'ordre « plus anciennes d'abord » ne tenait que par accident de
 plan. Fix : re-tri déterministe côté JS du batch claimé (next_retry NULLS
 FIRST, created_at ASC, comparateur sans NaN). Le flake était un VRAI bug.
+
+### Clôture — adaptation E2E à l'UI vague 4 (rouge→vert assumé)
+Le run E2E post-vague-4 a donné 8/10 : les 2 rouges étaient les flips ATTENDUS
+des changements d'UI livrés en vague 4, pas des régressions :
+- COCK-02 : la colonne statut du cockpit affiche désormais les labels FR du
+  StatusBadge canonique (common/StatusBadge.tsx) et non les slugs anglais
+  bruts — spec adaptée (regex sur les 11 labels, « failed » → « Échec »).
+- UNSUB-* : réécrits sur le flux R-032 non destructif : GET = page de
+  confirmation SANS désinscription (oracle : suppression absente après GET),
+  POST confirme (raison unsubscribe/manual), POST one-click re-joué =
+  idempotent, réabonnement (count retombe à 0). +UNSUB-05 (réabonnement).
+- Bug découvert au passage : le POST navigateur (formulaire de la page de
+  confirmation) renvoyait du JSON brut. Fix : négociation de contenu dans la
+  route (Accept: text/html → page « Désinscription confirmée » + formulaire de
+  réabonnement ; sinon JSON — RFC 8058 one-click préservé, suite intégration
+  désinscription 23/23 inchangée).

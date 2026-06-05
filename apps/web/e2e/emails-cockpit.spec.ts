@@ -129,18 +129,24 @@ test.describe('Phase 6 — cockpit transactionnel (S5 sous pression) @emails-coc
 
   // COCK-02 — recherche status:failed EXACTE : toutes les lignes affichées sont
   // failed, aucune autre. On lit les badges de statut rendus.
+  // Vague 4 : FilteredTable rend le StatusBadge FR canonique (common/StatusBadge,
+  // UX-TRANSVERSE-005). Le badge expose `data-status` (slug machine) — oracle
+  // exact — et son textContent contient le libellé FR (préfixé du puceron ⏺,
+  // d'où l'inutilité d'une regex ancrée sur le texte).
   test('COCK-02 — recherche status:failed exacte', async ({ page }) => {
     await gotoCockpitWithStatus(page, 'failed');
 
-    // Chaque ligne visible DOIT porter le statut "failed" et rien d'autre.
-    const statuses = await page
-      .locator('[data-testid^="row-"] td span')
-      .filter({ hasText: /^(pending|sent|delivered|failed|bounced_soft|dlq|sending|opened|clicked|bounced_permanent|suppressed)$/ })
-      .allInnerTexts();
+    const badges = page.locator('[data-testid^="row-"] [data-status]');
+    await expect(badges.first()).toBeVisible();
+    const statuses = await badges.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('data-status') ?? ''),
+    );
     expect(statuses.length).toBeGreaterThan(0);
     for (const s of statuses) {
-      expect(s.trim()).toBe('failed');
+      expect(s).toBe('failed');
     }
+    // Et le libellé FR canonique est bien celui rendu à l'écran.
+    await expect(badges.first()).toContainText('Échec');
   });
 
   // COCK-03 — pagination > 50 : page 2 montre des lignes différentes de page 1.

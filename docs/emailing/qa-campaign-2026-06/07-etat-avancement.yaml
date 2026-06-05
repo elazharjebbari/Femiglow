@@ -44,7 +44,7 @@ phases:
   p5-contract:
     statut: done               # 2026-06-04 — R-021 corrigé (batch natif) ; 20 fixtures rejouées avec oracle métier par fixture (M07-CT-*)
   p6-e2e:
-    statut: done               # 2026-06-05 vague 3 — 5 specs Playwright (dashboard, cockpit, transactionnel→Mailpit avec oracle List-Unsubscribe ?t=, désinscription one-click, dégradé Listmonk-down), 14 tests, 3 RUNS CONSÉCUTIFS verts (~13s), serveur :8013 sur femiglow_test_e2e ; 3 races d'isolation inter-specs corrigées (cleanup par préfixe, anti-contamination cron via scheduled_for=2999)
+    statut: done               # 2026-06-05 vague 3 — 5 specs Playwright (dashboard, cockpit, transactionnel→Mailpit avec oracle List-Unsubscribe ?t=, désinscription one-click, dégradé Listmonk-down), 14 tests, 3 RUNS CONSÉCUTIFS verts (~13s), serveur :8013 sur femiglow_test_e2e ; 3 races d'isolation inter-specs corrigées (cleanup par préfixe, anti-contamination cron via scheduled_for=2999). Clôture : 2 specs adaptées à l'UI vague 4 (COCK-02 oracle data-status du StatusBadge FR ; UNSUB-* flux R-032 non destructif + UNSUB-05 réabonnement) + fix route (POST navigateur → page HTML, JSON one-click RFC 8058 préservé) ; re-validé 3 RUNS CONSÉCUTIFS 14/14 sur le build final
   p7-scenarios:
     statut: done               # 2026-06-05 — 16 tests cross-modules vraie-DB (femiglow_test_scenarios), 2 runs verts ; 3 findings métier → R-026/R-027 + garde-fou delete automation (vague 4)
     scenarios:
