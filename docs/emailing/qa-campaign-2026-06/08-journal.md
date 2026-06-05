@@ -199,3 +199,80 @@ des UUID alors que `email_outbox.id` est un `createId('out')` (`out_<nanoid>`)
 inopérant en prod. Invisible des tests unit (UUID factices) ET composant
 (routes MSW mockées) — seul l'E2E contre la vraie route l'a vu. Fix :
 OutboxIdSchema opaque (alphanum+`_-`, ≤64, compat UUID).
+
+## Session 2026-06-05 (vague 4 — UX/pilotabilité, 7 chantiers)
+
+**Origine** : audit UX vague 3.5 (8 surfaces, 110 findings dont 21 P0,
+29 manques d'autocomplétion) synthétisé en 7 chantiers à file-freeze disjoints.
+**Orchestration** : FONDATION + PARCOURS_PUBLIC d'abord, puis 5 chantiers
+surface en parallèle consommant le socle gelé. ~88 min, 1.37M tokens, 818 tool
+uses. Tous les P0 livrés, doctrine rouge→fix→vert respectée partout.
+
+### Livré
+- **FONDATION** : EntityCombobox accessible (ARIA combobox/listbox complet,
+  clavier, debounce 250ms + AbortController + compteur de séquence anti-option-
+  fantôme, fermeture clic-extérieur/Escape/Tab — PAS mouseleave), wrappers par
+  entité, StatusBadge FR canonique (11 statuts), Breadcrumb, useUrlFilters
+  (router.replace + URL minimale partageable), loading/error de segment,
+  3 routes suggestions (recipients/sources/leads, escapeLikePrefix anti-wildcard,
+  DB-down → 200 liste vide). 52 tests ×2.
+- **PARCOURS_PUBLIC** (4 bugs prod corrigés) : R-032 GET unsubscribe DESTRUCTIF
+  (un préfetch Gmail/Outlook safelinks désinscrivait sans intention) → GET page
+  de confirmation 0 écriture, POST exécute, RFC 8058 préservé, + réabonnement ;
+  send.ts laissait le littéral {{unsubscribe_url}} sans secret → fallback
+  mailto + log error ; newsletter ok:true sans envoi → 503 actionnable ;
+  case newsletter du contact = note morte → vrai double opt-in idempotent.
+  CTA order-confirmation re-pointé /merci?order= (la route /compte/commandes
+  n'existait pas). Premisse d'audit corrigée : NewsletterForm ÉTAIT monté
+  (NewsletterBlock dynamic ssr:false). 104 tests ×2.
+- **DASHBOARD** : KPI cards → liens cockpit filtré (?status=…), lignes du badge
+  santé actionnables (DLQ/sending/file/webhook) + rendu deliveredFreshness/
+  cronHeartbeat, horodatage role=status + bouton Rafraîchir anti double-clic,
+  quick-link Events, page events FR + drill-down.
+- **COCKPIT** : R-026 corrigé — suppression consultable ET réversible
+  (removeSuppression + GET/DELETE /api/admin/emails/suppression + écran
+  filtrable + Retirer confirmé + deep-link depuis un envoi suppressed) ;
+  régression F-016 corrigée (initialViews sans filterState → vue système
+  inopérante au 1er chargement) ; palette template:/to:/source: branchée.
+- **CAMPAGNES** : test-send (LeadEmailCombobox), pause/reprise/annulation
+  d'urgence (isLegalTransition + anti no-op paused→paused), persistance du
+  template corrigée (payload_json.listmonkTemplateId, perdu à chaque reload
+  avant), confirmation d'envoi chiffrée bloquante tant que l'estimation vaut
+  '…', duplication, deep-links par UUID (le lien slug 404ait).
+- **AUDIENCES** : page édition réutilisant le wizard (PATCH, slug immuable),
+  exclusions éditables, operator between (num + dates), urlPattern/until/since,
+  snapshot confirmé avec count live + retry errored + auto-refresh, membres
+  paginés (route + drill-down), country multi-select chips, MAD→cents avec
+  helper d'équivalence.
+- **AUTOMATIONS** : R-027 corrigé — cancel-on-event.ts générique
+  (cart.abandoned→order.placed, runs sans outbox du bon lead, raison
+  consignée), flip S3-05 documenté ; triggerConditions éditables (la page edit
+  écrasait les conditions à null = perte de données) ; schedule/webhook
+  désamorcés (promesse fausse : dispatcher unsupported_trigger) ; retry d'un
+  run errored ; onTimeout='abort' enfin honoré par la sweep (cancelled +
+  raison) ; timeline lisible du run (skip/defer reasons) ; comboboxes
+  template/tag/source partout. 124 tests vraie-DB ×2.
+
+### Pièges React 18.3 documentés par les agents (évités au runtime)
+- useActionState N'EXISTE PAS (React 19) → useFormState (react-dom) ;
+- react-dom 18.3.1 n'exporte PAS useFormState/useFormStatus dans ce repo selon
+  le chantier cockpit (RetryButton : state pending explicite) — vérifié au cas
+  par cas ;
+- useTransition().isPending ne couvre pas un await arbitraire.
+
+### Fix harnais orchestrateur
+cancel-on-purchase.integration.test.ts : hooks top-level non gardés →
+collection en échec en batterie unit (env DB absente) malgré le skip honnête.
+Garde hasEmailsTestDb() ajoutée aux 3 hooks (conventions §8 complétées par
+l'exemple).
+
+### Matrice
+R-026/R-027 corrigés ; +R-031 (deleteAutomation DELETE brut vs FK RESTRICT,
+mitigé : câblé à aucune UI) ; +R-032 (GET unsubscribe destructif, corrigé).
+
+### Addendum vague 4 — R-033 (flake révélateur, corrigé)
+PIP-INT-062 a flaké en batterie (vert solo ×3) : l'ORDER BY du sous-SELECT de
+claim ne survit PAS au RETURNING de l'UPDATE…FROM — Postgres joint en ordre
+physique. L'ordre « plus anciennes d'abord » ne tenait que par accident de
+plan. Fix : re-tri déterministe côté JS du batch claimé (next_retry NULLS
+FIRST, created_at ASC, comparateur sans NaN). Le flake était un VRAI bug.
