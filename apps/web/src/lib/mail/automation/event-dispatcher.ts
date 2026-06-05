@@ -45,6 +45,7 @@ import { userEvent } from '@/lib/db/schema';
 import { logger } from '@/lib/logging/logger';
 import { triggerAutomation } from './triggers';
 import { evaluateConditionAgainstUser } from './condition-evaluator';
+import { CANCELLING_EVENTS, cancelSupersededRuns } from './cancel-on-event';
 import type { RulesGroup } from '@/lib/mail/audiences/rules-types';
 
 function requireDb() {
@@ -70,6 +71,8 @@ export type DispatchResult = {
   deduped: number;
   /** Nombre de matches bloqués par triggerConditions non satisfaites. */
   conditionBlocked: number;
+  /** Nombre de runs annulés car rendus caducs par un événement antagoniste (R-027). */
+  cancelledSuperseded: number;
 };
 
 type ActiveAutomation = {
@@ -131,6 +134,7 @@ export async function dispatchEventTriggers(
     enrolled: 0,
     deduped: 0,
     conditionBlocked: 0,
+    cancelledSuperseded: 0,
   };
 
   // 1) Automations actives uniquement (toggle off => triggerAutomation renvoie
@@ -179,9 +183,18 @@ export async function dispatchEventTriggers(
   }
 
   const watchedNames = [...watchers.keys()];
-  if (watchedNames.length === 0) return result;
 
-  // 3) Scanner les events récents pour les noms surveillés.
+  // 2b) Événements ANNULATEURS (R-027) : on les scanne aussi pour passer à
+  //     `cancelled` les runs encore en attente rendus caducs (ex. order.placed
+  //     annule les relances cart.abandoned). Indépendant des watchers d'enrôlement.
+  const cancellerNames = [
+    ...new Set(Object.values(CANCELLING_EVENTS).flat()),
+  ];
+
+  const scannedNames = [...new Set([...watchedNames, ...cancellerNames])];
+  if (scannedNames.length === 0) return result;
+
+  // 3) Scanner les events récents pour les noms surveillés + annulateurs.
   const events = (await drizzle
     .select({
       id: userEvent.id,
@@ -191,13 +204,29 @@ export async function dispatchEventTriggers(
       leadId: userEvent.leadId,
     })
     .from(userEvent)
-    .where(and(gte(userEvent.ts, since), inArray(userEvent.eventName, watchedNames)))
+    .where(and(gte(userEvent.ts, since), inArray(userEvent.eventName, scannedNames)))
     .orderBy(userEvent.ts)) as ScannedEvent[];
 
   result.eventsScanned = events.length;
 
-  // 4) Matcher + enrôler.
+  // 4) Matcher + enrôler ; et annuler les runs caducs sur événement antagoniste.
   for (const ev of events) {
+    // 4a-bis) Annulation des runs périmés (R-027). On le fait AVANT l'enrôlement
+    //         de ce même event : un order.placed n'enrôle rien lui-même ici, mais
+    //         annule les relances cart.abandoned déjà en attente pour ce lead.
+    if (cancellerNames.includes(ev.eventName)) {
+      try {
+        const cancelled = await cancelSupersededRuns(ev.eventName, ev.email, now);
+        result.cancelledSuperseded += cancelled.cancelled;
+      } catch (err) {
+        logger.error('automation.dispatch.cancel_failed', {
+          eventId: ev.id,
+          eventName: ev.eventName,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
     const matched = watchers.get(ev.eventName) ?? [];
     for (const auto of matched) {
       try {
@@ -237,7 +266,7 @@ export async function dispatchEventTriggers(
     }
   }
 
-  if (result.enrolled > 0 || result.conditionBlocked > 0) {
+  if (result.enrolled > 0 || result.conditionBlocked > 0 || result.cancelledSuperseded > 0) {
     logger.info('automation.dispatch.completed', { ...result });
   }
   return result;

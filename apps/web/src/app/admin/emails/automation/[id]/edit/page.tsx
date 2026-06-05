@@ -9,6 +9,7 @@ import { AdminShell } from '@/components/admin/AdminShell';
 import { db as getDb } from '@/lib/db/client';
 import { emailAutomation } from '@/lib/db/schema-emails';
 import { AUTOMATION_EVENT_CATALOG } from '@/lib/mail/automation/step-types-v2';
+import type { RulesGroup } from '@/lib/mail/audiences/rules-types';
 import { EditAutomationPageClient } from './EditAutomationPageClient';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,9 @@ export default async function EditAutomationPage({ params }: { params: { id: str
     name: row.name,
     triggerType: row.triggerType as 'event' | 'schedule' | 'subscription' | 'webhook',
     triggerConfig: (row.triggerConfig ?? {}) as Record<string, unknown>,
-    triggerConditions: (row.triggerConditions ?? null) as null,
+    // Charge correctement les conditions persistées (typage RulesGroup|null) —
+    // l'ancien `as null` écrasait toute condition existante au rechargement.
+    triggerConditions: (row.triggerConditions ?? null) as RulesGroup | null,
     steps: (row.steps ?? []) as never,
     frequency: {
       cooldownSeconds: row.cooldownSeconds,

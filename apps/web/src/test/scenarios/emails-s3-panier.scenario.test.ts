@@ -14,15 +14,14 @@
  *      est DIFFÉRÉ (nextActionAt = prochain 08:00 local, RIEN n'est envoyé) ;
  *   4. au tick à l'heure permise → l'email part UNE SEULE fois.
  *
- * VARIANTE ACHAT : il n'existe AUCUN mécanisme d'annulation d'un run cart-abandon
- * sur un achat (`order.placed`) — le seul chemin `cancelled` du runner est la
- * désactivation de l'automation (runner.ts:157-163). Le test S3-05 DOCUMENTE le
- * comportement actuel : la relance part MALGRÉ l'achat (décision produit, consigné
- * en bugsFound).
+ * VARIANTE ACHAT : depuis R-027 (vague 4), un achat (`order.placed`) ANNULE les
+ * runs cart-abandon encore EN ATTENTE pour le lead — `cancelSupersededRuns`,
+ * câblé dans `dispatchEventTriggers`, passe le run à `cancelled(purchase_completed)`
+ * et AUCUNE relance ne part. Le test S3-05 vérifie désormais ce comportement
+ * CORRIGÉ (ex-constat métier `bugsFound`, maintenant résolu).
  *
- * AUCUNE modification de `src`. Pas de sleep : tout passe par `now` injecté
- * (dispatcher + runner + applyQuietHours) — déterminisme total, jamais de vrai
- * minuit.
+ * Pas de sleep : tout passe par `now` injecté (dispatcher + runner +
+ * applyQuietHours) — déterminisme total, jamais de vrai minuit.
  *
  * Lancement (DB dédiée) :
  *   DBURL=$(grep '^DATABASE_URL=' .env | cut -d= -f2- | sed 's#/femiglow_emailqa#/femiglow_test_scenarios#')
@@ -32,7 +31,7 @@
  *
  * IDs scénario : S3-01 (enrôlement), S3-02 (quiet hours → différé),
  *   S3-03 (tick permis → 1 envoi), S3-04 (idempotence : pas de double envoi),
- *   S3-05 (variante achat : la relance part malgré l'achat — constat métier).
+ *   S3-05 (variante achat : la relance est ANNULÉE par l'achat — R-027).
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
@@ -292,13 +291,13 @@ describeEmailsDb('S3 — automation panier abandonné + quiet hours (modules 05+
   });
 });
 
-describeEmailsDb('S3 (variante achat) — pas d’annulation du run sur order.placed (constat métier)', () => {
-  // S3-05 — CONSTAT MÉTIER (documenté, pas un échec) : aucune mécanique du moteur
-  // n'annule un run cart-abandon quand un order.placed survient. On émet l'achat
-  // APRÈS l'enrôlement, on tick à l'heure permise, et la relance PART quand même.
-  // → la cliente reçoit une relance « panier abandonné » alors qu'elle a payé.
-  // Consigné en bugsFound (décision produit : ajouter un wait_for_event/annulation).
-  it('S3-05 : achat émis après enrôlement → la relance part MALGRÉ l’achat', async () => {
+describeEmailsDb('S3 (variante achat) — annulation du run sur order.placed (R-027)', () => {
+  // S3-05 — COMPORTEMENT CORRIGÉ (R-027, vague 4) : un order.placed survenu après
+  // l'enrôlement et AVANT l'envoi annule le run cart-abandon. On émet l'achat,
+  // le dispatcher repasse (scan inclut order.placed → cancelSupersededRuns), puis
+  // on tick à l'heure permise : AUCUNE relance ne part.
+  // → la cliente qui a payé NE reçoit PAS de relance « panier abandonné ».
+  it('S3-05 : achat émis après enrôlement → la relance est ANNULÉE (R-027)', async () => {
     const auto = await seedCartAutomation();
     await emitCartAbandoned(NIGHT_UTC, CART_PROPS);
     await dispatchEventTriggers(new Date(NIGHT_UTC.getTime() + 1000));
@@ -313,17 +312,25 @@ describeEmailsDb('S3 (variante achat) — pas d’annulation du run sur order.pl
       leadId: null,
     });
 
-    // Tick à l'heure permise : RIEN n'a annulé le run → la relance part.
+    // Le dispatcher repasse : l'order.placed annule le run cart-abandon en attente.
+    const dispatchRes = await dispatchEventTriggers(new Date(NIGHT_UTC.getTime() + 4 * 60 * 60_000));
+    expect(dispatchRes.cancelledSuperseded).toBe(1);
+
+    // Le run est cancelled, raison purchase_completed.
+    let [run] = await runsFor(auto.id);
+    expect(run!.status).toBe('cancelled');
+    expect((run!.contextJson as Record<string, unknown>)._cancelledReason).toBe('purchase_completed');
+
+    // Tick à l'heure permise : le run cancelled n'est plus claimé → AUCUNE relance.
     const tickRes = await tickAutomation(DAY_UTC);
-    expect(tickRes.completed).toBe(1);
+    expect(tickRes.picked).toBe(0);
+    expect(tickRes.completed).toBe(0);
 
     const outbox = await db.select().from(emailOutbox);
-    // Oracle du COMPORTEMENT ACTUEL (bug produit) : la relance panier a bien été
-    // enfilée malgré l'achat. Ce test verrouille le constat ; s'il devient rouge
-    // (relance correctement annulée), mettre à jour bugsFound.
-    expect(outbox).toHaveLength(1);
-    expect(outbox[0]!.template).toBe('cart-abandoned');
-    const [run] = await runsFor(auto.id);
-    expect(run!.status).toBe('completed'); // pas 'cancelled'
+    // Oracle CORRIGÉ : aucune ligne outbox de relance, le SMTP n'est pas sollicité.
+    expect(outbox).toHaveLength(0);
+    expect(smtpSentTo).toHaveLength(0);
+    [run] = await runsFor(auto.id);
+    expect(run!.status).toBe('cancelled'); // pas 'completed'
   });
 });

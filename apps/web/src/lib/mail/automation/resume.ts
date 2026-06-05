@@ -13,11 +13,12 @@ import { db as getDb } from '@/lib/db/client';
 import { emailAutomationRun } from '@/lib/db/schema-emails';
 import { logger } from '@/lib/logging/logger';
 import {
+  getStepAtPath,
   isValidPath,
   nextPath as computeNextPath,
   type StepPath,
 } from './step-handlers/step-path';
-import { AutomationStepSchema } from './step-types-v2';
+import { AutomationStepSchema, type AutomationStep } from './step-types-v2';
 import { z } from 'zod';
 import { emailAutomation } from '@/lib/db/schema-emails';
 
@@ -109,45 +110,131 @@ export async function resumeRunsForEvent(
 }
 
 /**
- * Marks runs whose awaiting_until has passed as either completed (onTimeout=continue)
- * or errored (onTimeout=abort). Called by the runner cron when picking up runs.
+ * Marks runs whose awaiting_until has passed according to leur step `onTimeout` :
+ *   - `continue` (défaut) → status='running' + next_action_at=now : le runner
+ *     les reprend et AVANCE au-delà du step wait_for_event ;
+ *   - `abort` → status='cancelled' : le run s'arrête (UX-AUT-008). AUCUN step
+ *     suivant n'est exécuté (ex. S3-B : pas de demande d'avis envoyée à tort).
  *
- * Simpler V1 : we leverage the existing 'waiting_for_event' rows whose
- * next_action_at <= now() (set to awaiting_until). The runner picks them up
- * via UPDATE ... WHERE status='running'. But waiting_for_event isn't 'running',
- * so we need a separate sweep.
+ * Câblé (UX-AUT-008, vague 4) : avant, le sweep forçait TOUJOURS `running`
+ * (commentaire « a more nuanced impl would inspect step.onTimeout ») → le choix
+ * « Abandonner » de l'UI était une fausse promesse. On inspecte désormais le
+ * step réel de chaque run expiré.
  *
- * Strategy : a cron sub-step in /api/cron/email-automation calls this BEFORE
- * picking up batches.
+ * Stratégie : un sous-step cron dans /api/cron/email-automation appelle ceci
+ * AVANT de claimer les batches.
+ *
+ * @returns total des runs balayés (continue + abort).
  */
 export async function sweepWaitForEventTimeouts(now: Date = new Date()): Promise<number> {
   const drizzle = getDb();
   if (!drizzle) return 0;
 
-  // For timed-out runs : set status='running' + nextActionAt=now so the runner
-  // picks them up and advances past the wait_for_event step (default onTimeout=continue).
-  // Note : a more nuanced impl would inspect step.onTimeout to either continue or abort.
   // NB : Date JS crue interdite dans un template sql postgres-js (ERR_INVALID_ARG_TYPE
   // à la phase ParameterDescription) → bind ISO + cast ::timestamptz (conventions §8).
   const nowIso = now.toISOString();
-  const result = await drizzle.execute(sql`
-    UPDATE email_automation_run
-    SET status = 'running',
-        next_action_at = ${nowIso}::timestamptz,
-        awaiting_event_name = NULL,
-        awaiting_until = NULL
-    WHERE status = 'waiting_for_event'
-      AND awaiting_until IS NOT NULL
-      AND awaiting_until <= ${nowIso}::timestamptz
-    RETURNING id;
-  `);
-  // postgres-js renvoie le RowList (tableau) directement ; neon-http renvoie
-  // { rows }. Le shape `.rows` seul rendait le compte TOUJOURS 0 en prod.
-  const rows = Array.isArray(result)
-    ? (result as unknown as { id: string }[])
-    : ((result as unknown as { rows?: { id: string }[] }).rows ?? []);
-  if (rows.length > 0) {
-    logger.info('automation.resume.timeouts_swept', { count: rows.length });
+
+  // 1) Récupère les runs expirés (status waiting_for_event + awaiting_until passé).
+  const expired = await drizzle
+    .select()
+    .from(emailAutomationRun)
+    .where(
+      and(
+        eq(emailAutomationRun.status, 'waiting_for_event'),
+        sql`${emailAutomationRun.awaitingUntil} IS NOT NULL`,
+        sql`${emailAutomationRun.awaitingUntil} <= ${nowIso}::timestamptz`,
+      ),
+    )
+    .limit(200);
+
+  if (expired.length === 0) return 0;
+
+  // 2) Pour chaque run, résout le step wait_for_event courant pour lire onTimeout.
+  //    On met en cache les steps d'automation pour éviter N requêtes.
+  const autoStepsCache = new Map<string, AutomationStep[] | null>();
+
+  const continueIds: string[] = [];
+  const abortIds: string[] = [];
+
+  for (const run of expired) {
+    let steps = autoStepsCache.get(run.automationId);
+    if (steps === undefined) {
+      const [auto] = await drizzle
+        .select()
+        .from(emailAutomation)
+        .where(eq(emailAutomation.id, run.automationId))
+        .limit(1);
+      const parsed = auto ? automationStepsSchema.safeParse(auto.steps) : null;
+      steps = parsed && parsed.success ? parsed.data : null;
+      autoStepsCache.set(run.automationId, steps);
+    }
+
+    const onTimeout = steps ? resolveOnTimeout(run, steps) : 'continue';
+    if (onTimeout === 'abort') abortIds.push(run.id);
+    else continueIds.push(run.id);
   }
-  return rows.length;
+
+  // 3a) continue → re-armés en running (le runner avancera au-delà du wait).
+  if (continueIds.length > 0) {
+    await drizzle.execute(sql`
+      UPDATE email_automation_run
+      SET status = 'running',
+          next_action_at = ${nowIso}::timestamptz,
+          awaiting_event_name = NULL,
+          awaiting_until = NULL
+      WHERE id IN ${inArrayIds(continueIds)};
+    `);
+  }
+
+  // 3b) abort → cancelled (le run s'arrête, raison consignée pour la timeline).
+  if (abortIds.length > 0) {
+    await drizzle.execute(sql`
+      UPDATE email_automation_run
+      SET status = 'cancelled',
+          finished_at = ${nowIso}::timestamptz,
+          next_action_at = NULL,
+          awaiting_event_name = NULL,
+          awaiting_until = NULL,
+          context_json = jsonb_set(
+            COALESCE(context_json, '{}'::jsonb),
+            '{_cancelledReason}',
+            to_jsonb('wait_for_event_timeout_abort'::text),
+            true
+          )
+      WHERE id IN ${inArrayIds(abortIds)};
+    `);
+  }
+
+  const swept = continueIds.length + abortIds.length;
+  if (swept > 0) {
+    logger.info('automation.resume.timeouts_swept', {
+      count: swept,
+      continued: continueIds.length,
+      aborted: abortIds.length,
+    });
+  }
+  return swept;
+}
+
+/** Résout l'onTimeout du step wait_for_event courant d'un run expiré. */
+function resolveOnTimeout(
+  run: { contextJson: unknown; currentStep: number },
+  steps: AutomationStep[],
+): 'continue' | 'abort' {
+  const ctx = (run.contextJson as Record<string, unknown> | null) ?? {};
+  const ctxPath = ctx._path;
+  const path: StepPath = isValidPath(ctxPath) ? ctxPath : [run.currentStep];
+  const step = getStepAtPath(steps, path);
+  if (step && step.kind === 'wait_for_event' && step.onTimeout === 'abort') {
+    return 'abort';
+  }
+  return 'continue';
+}
+
+/** Construit un fragment `(id1, id2, …)` sûr pour `IN`. */
+function inArrayIds(ids: string[]) {
+  return sql`(${sql.join(
+    ids.map((id) => sql`${id}`),
+    sql`, `,
+  )})`;
 }

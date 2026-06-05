@@ -7,31 +7,37 @@
  *  - Pas d'éditeur visuel des steps (lecture seule via JSON)
  */
 import Link from 'next/link';
-import { desc } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { db as getDb } from '@/lib/db/client';
 import { emailAutomation, emailAutomationRun } from '@/lib/db/schema-emails';
+import { StatusPill } from './runs/run-status';
 import {
-  toggleAutomationActive,
-  cancelAutomationRun,
-} from '@/lib/admin/emails/automation-actions';
+  ToggleAutomationButton,
+  CancelRunButton,
+  RetryRunButton,
+} from './AutomationRowActions';
 
 export const dynamic = 'force-dynamic';
 
 async function loadData() {
   const drizzle = getDb();
-  if (!drizzle) return { automations: [], runs: [] };
-  const [automations, runs] = await Promise.all([
+  if (!drizzle) return { automations: [], runs: [], erroredCount: 0 };
+  const [automations, runs, erroredRows] = await Promise.all([
     drizzle.select().from(emailAutomation).orderBy(desc(emailAutomation.createdAt)),
     drizzle.select().from(emailAutomationRun).orderBy(desc(emailAutomationRun.triggeredAt)).limit(20),
+    drizzle
+      .select({ n: sql<number>`count(*)::int` })
+      .from(emailAutomationRun)
+      .where(eq(emailAutomationRun.status, 'errored')),
   ]);
-  return { automations, runs };
+  return { automations, runs, erroredCount: erroredRows[0]?.n ?? 0 };
 }
 
 export default async function AutomationPage() {
   const session = await requireAdmin('/admin/emails/automation');
-  const { automations, runs } = await loadData();
+  const { automations, runs, erroredCount } = await loadData();
 
   return (
     <AdminShell adminEmail={session.email} active="emails">
@@ -57,6 +63,23 @@ export default async function AutomationPage() {
         </Link>
       </header>
 
+      {erroredCount > 0 && (
+        <div
+          role="alert"
+          className="mb-6 flex items-center justify-between rounded border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+        >
+          <span>
+            {erroredCount} run{erroredCount > 1 ? 's' : ''} en erreur. Filtrez-les pour les relancer.
+          </span>
+          <Link
+            href="/admin/emails/automation/runs?status=errored"
+            className="font-medium underline"
+          >
+            Voir les runs en erreur →
+          </Link>
+        </div>
+      )}
+
       <section className="mb-8">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600">
           Automations ({automations.length})
@@ -76,8 +99,16 @@ export default async function AutomationPage() {
             <tbody className="divide-y divide-stone-200">
               {automations.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-stone-500">
-                    Aucune automation. Seed via migration (cf. docs/emailing/scripts/).
+                  <td colSpan={6} className="px-3 py-10 text-center">
+                    <p className="text-sm text-stone-600">
+                      Aucune automation. Créez votre premier workflow.
+                    </p>
+                    <Link
+                      href="/admin/emails/automation/new"
+                      className="mt-3 inline-block rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+                    >
+                      + Créer une automation
+                    </Link>
                   </td>
                 </tr>
               ) : (
@@ -104,27 +135,24 @@ export default async function AutomationPage() {
                             : 'bg-stone-100 text-stone-600'
                         }`}
                       >
-                        {a.active ? 'active' : 'désactivée'}
+                        {a.active ? 'Active' : 'Désactivée'}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/emails/automation/runs?automationId=${a.id}`}
+                          className="text-xs text-stone-600 underline"
+                        >
+                          Runs
+                        </Link>
                         <Link
                           href={`/admin/emails/automation/${a.id}/edit`}
                           className="text-xs text-stone-600 underline"
                         >
                           Éditer
                         </Link>
-                        <form action={toggleAutomationActive} className="inline">
-                          <input type="hidden" name="id" value={a.id} />
-                          <input type="hidden" name="next" value={String(!a.active)} />
-                          <button
-                            type="submit"
-                            className="rounded-md border border-stone-300 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50"
-                          >
-                            {a.active ? 'Désactiver' : 'Activer'}
-                          </button>
-                        </form>
+                        <ToggleAutomationButton id={a.id} active={a.active} />
                       </div>
                     </td>
                   </tr>
@@ -136,9 +164,17 @@ export default async function AutomationPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600">
-          Runs récents ({runs.length})
-        </h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-600">
+            Runs récents ({runs.length})
+          </h2>
+          <Link
+            href="/admin/emails/automation/runs"
+            className="text-xs text-stone-600 underline"
+          >
+            Tous les runs (filtres) →
+          </Link>
+        </div>
         <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
           <table className="min-w-full text-sm">
             <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-600">
@@ -177,9 +213,7 @@ export default async function AutomationPage() {
                     </td>
                     <td className="px-3 py-2 text-xs">{r.currentStep}</td>
                     <td className="px-3 py-2">
-                      <span className="inline-block rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700">
-                        {r.status}
-                      </span>
+                      <StatusPill status={r.status} />
                     </td>
                     <td className="px-3 py-2 text-xs text-stone-500">
                       {r.nextActionAt
@@ -191,15 +225,9 @@ export default async function AutomationPage() {
                     </td>
                     <td className="px-3 py-2 text-right">
                       {r.status === 'running' ? (
-                        <form action={cancelAutomationRun} className="inline">
-                          <input type="hidden" name="id" value={r.id} />
-                          <button
-                            type="submit"
-                            className="text-xs text-rose-600 underline"
-                          >
-                            Annuler
-                          </button>
-                        </form>
+                        <CancelRunButton id={r.id} />
+                      ) : r.status === 'errored' ? (
+                        <RetryRunButton id={r.id} />
                       ) : null}
                     </td>
                   </tr>
