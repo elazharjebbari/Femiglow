@@ -58,7 +58,11 @@ describe('<AudienceRulesBuilder /> — règle country (R-011)', () => {
     expect(rule.value).toBe('FR');
   });
 
-  it('bascule operator eq → in et accepte une liste de pays', async () => {
+  it('bascule operator eq → in et accepte une liste de pays (chips, UX-AUD-009)', async () => {
+    // ADAPTÉ vague 4 : le mode `in` ne propose PLUS un input CSV texte-libre
+    // ("MA, FR") — remplacé par un multi-select de chips (CountryMultiSelect)
+    // alimenté par la liste fermée COUNTRIES. On valide que la chaîne
+    // select operator → ajout de chips produit toujours value=['MA','FR'].
     const onChange = vi.fn();
     const value: RulesGroup = {
       kind: 'all',
@@ -66,21 +70,31 @@ describe('<AudienceRulesBuilder /> — règle country (R-011)', () => {
     };
     const { rerender } = render(<AudienceRulesBuilder value={value} onChange={onChange} />);
 
-    // Le select operator du CountryEditor : eq → in.
+    // Le select operator du CountryEditor : eq → in. La bascule convertit aussi
+    // la value scalaire 'MA' en tableau ['MA'] (Zod CountryRule string[]).
     const select = screen.getByDisplayValue('égal') as HTMLSelectElement;
     await act(async () => {
       fireEvent.change(select, { target: { value: 'in' } });
     });
-    const afterOp = onChange.mock.calls.at(-1)![0] as RulesGroup;
-    expect((afterOp.conditions[0] as { operator: string }).operator).toBe('in');
+    let current = onChange.mock.calls.at(-1)![0] as RulesGroup;
+    expect((current.conditions[0] as { operator: string }).operator).toBe('in');
+    expect((current.conditions[0] as { value: string[] }).value).toEqual(['MA']);
 
-    // En mode 'in', l'éditeur rend un input CSV ; on saisit "ma, fr".
-    rerender(<AudienceRulesBuilder value={afterOp} onChange={onChange} />);
-    const csv = screen.getByPlaceholderText('MA, FR') as HTMLInputElement;
+    // En mode 'in' : un select fermé « + Ajouter un pays… » ; on ajoute FR.
+    rerender(<AudienceRulesBuilder value={current} onChange={onChange} />);
+    const addSelect = screen.getByTestId('country-add-select') as HTMLSelectElement;
     await act(async () => {
-      fireEvent.change(csv, { target: { value: 'ma, fr' } });
+      fireEvent.change(addSelect, { target: { value: 'FR' } });
     });
-    const next = onChange.mock.calls.at(-1)![0] as RulesGroup;
-    expect((next.conditions[0] as { value: string[] }).value).toEqual(['MA', 'FR']);
+    current = onChange.mock.calls.at(-1)![0] as RulesGroup;
+    expect((current.conditions[0] as { value: string[] }).value).toEqual(['MA', 'FR']);
+
+    // La chip MA est retirable → ne reste que FR.
+    rerender(<AudienceRulesBuilder value={current} onChange={onChange} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('country-remove-MA'));
+    });
+    current = onChange.mock.calls.at(-1)![0] as RulesGroup;
+    expect((current.conditions[0] as { value: string[] }).value).toEqual(['FR']);
   });
 });

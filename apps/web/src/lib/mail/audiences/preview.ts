@@ -30,6 +30,23 @@ export type PreviewSizeResult = {
   durationMs: number;
 };
 
+export type PreviewBreakdownResult = {
+  /** Contacts ciblés par les rules SEULES (sans appliquer la suppression list). */
+  matched: number;
+  /** Contacts retirés par les exclusions = matched − deliverable. */
+  excluded: number;
+  /** Contacts réellement envoyables (rules + exclusions). */
+  deliverable: number;
+  durationMs: number;
+};
+
+const NO_EXCLUSIONS: ExclusionFlags = {
+  hard_bounce: false,
+  unsubscribe: false,
+  manual_suppression: false,
+  marketing_optout: false,
+};
+
 export type SampleRow = {
   email: string;
   name: string | null;
@@ -67,6 +84,42 @@ export async function previewAudienceSize(
 
   const size = rows[0]?.n ?? 0;
   return { size, durationMs: Date.now() - start };
+}
+
+/**
+ * UX-AUD-011 — santé du ciblage : sépare la cible brute (rules seules) de la
+ * cible envoyable (rules + exclusions). Deux comptages dans une transaction
+ * bornée (statement_timeout). `excluded = matched − deliverable`.
+ *
+ * Permet à l'UI d'afficher « N ciblés − M exclus = K envoyables » et de
+ * comprendre l'écart créé par la suppression list (hard_bounce/unsubscribe/…).
+ */
+export async function previewAudienceBreakdown(
+  rules: RulesGroup,
+  exclusions: ExclusionFlags,
+): Promise<PreviewBreakdownResult> {
+  const drizzle = requireDb();
+  const start = Date.now();
+
+  const matchedCompiled = compileRulesToSql(rules, NO_EXCLUSIONS);
+  const deliverableCompiled = compileRulesToSql(rules, exclusions);
+
+  const [matchedRows, deliverableRows] = (await drizzle.transaction(async (tx) => {
+    await tx.execute(sql.raw(`SET LOCAL statement_timeout = ${PREVIEW_TIMEOUT_MS}`));
+    return Promise.all([
+      tx.select({ n: sql<number>`count(*)::int` }).from(leads).where(matchedCompiled.where),
+      tx.select({ n: sql<number>`count(*)::int` }).from(leads).where(deliverableCompiled.where),
+    ]);
+  })) as [Array<{ n: number }>, Array<{ n: number }>];
+
+  const matched = matchedRows[0]?.n ?? 0;
+  const deliverable = deliverableRows[0]?.n ?? 0;
+  return {
+    matched,
+    deliverable,
+    excluded: Math.max(0, matched - deliverable),
+    durationMs: Date.now() - start,
+  };
 }
 
 /**

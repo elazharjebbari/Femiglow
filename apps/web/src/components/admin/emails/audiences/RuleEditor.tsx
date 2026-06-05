@@ -11,11 +11,13 @@
  * select). Pas de date picker dédié — input type="date" natif suffit.
  */
 import type { Rule, RuleKind } from '@/lib/mail/audiences/rules-types';
-import { ruleLabel } from './rule-defaults';
+import { ruleLabel, madToCents, centsToMad } from './rule-defaults';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { TagAutocomplete } from './TagAutocomplete';
 import { TemplateAutocomplete } from './TemplateAutocomplete';
 import { CountryAutocomplete } from './CountryAutocomplete';
+import { CountryMultiSelect } from './CountryMultiSelect';
+import { ClickUrlCombobox } from './ClickUrlCombobox';
 import { DurationInput } from './DurationInput';
 
 export type RuleEditorProps = {
@@ -90,10 +92,21 @@ function ConsentMarketingEditor({ rule, onChange }: { rule: Extract<Rule, { kind
 
 function CountryEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'country' }>; onChange: (r: Rule) => void }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className={rule.operator === 'in' ? 'flex flex-col items-start gap-2' : 'flex items-center gap-2'}>
       <select
         value={rule.operator}
-        onChange={(e) => onChange({ ...rule, operator: e.target.value as 'eq' | 'in' })}
+        onChange={(e) => {
+          const nextOp = e.target.value as 'eq' | 'in';
+          // Convertit la value entre scalaire (eq) et tableau (in) pour rester
+          // valide vis-à-vis du Zod CountryRule (string | string[]).
+          if (nextOp === 'in') {
+            const arr = Array.isArray(rule.value) ? rule.value : rule.value ? [rule.value] : [];
+            onChange({ ...rule, operator: 'in', value: arr } as Rule);
+          } else {
+            const first = Array.isArray(rule.value) ? rule.value[0] ?? '' : rule.value;
+            onChange({ ...rule, operator: 'eq', value: first } as Rule);
+          }
+        }}
         className="rounded border border-stone-300 px-2 py-1 text-sm"
       >
         <option value="eq">égal</option>
@@ -105,17 +118,12 @@ function CountryEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'countr
           onChange={(code) => onChange({ ...rule, value: code } as Rule)}
         />
       ) : (
-        <input
-          type="text"
-          value={Array.isArray(rule.value) ? rule.value.join(', ') : rule.value}
-          onChange={(e) =>
-            onChange({
-              ...rule,
-              value: e.target.value.split(',').map((s) => s.trim().toUpperCase()),
-            } as Rule)
-          }
-          placeholder="MA, FR"
-          className="w-40 rounded border border-stone-300 px-2 py-1 text-sm uppercase"
+        // UX-AUD-009 — multi-select chips (liste fermée COUNTRIES) au lieu du
+        // CSV texte-libre : plus de code ISO à connaître par cœur, plus de
+        // code inconnu qui compile silencieusement en FALSE.
+        <CountryMultiSelect
+          value={Array.isArray(rule.value) ? rule.value : rule.value ? [rule.value] : []}
+          onChange={(codes) => onChange({ ...rule, value: codes } as Rule)}
         />
       )}
     </div>
@@ -126,19 +134,64 @@ function NumericRuleEditor({
   rule,
   onChange,
   withSince = false,
+  withUntil = false,
   unit,
+  /** order_total : la value est stockée en CENTIMES mais saisie en MAD (UX-AUD-010). */
+  mad = false,
 }: {
   rule: Extract<Rule, { kind: 'order_count' | 'order_total' | 'session_count' }>;
   onChange: (r: Rule) => void;
   withSince?: boolean;
+  withUntil?: boolean;
   unit?: string;
+  mad?: boolean;
 }) {
+  const isBetween = rule.operator === 'between';
+  const tuple = Array.isArray(rule.value) ? (rule.value as [number, number]) : null;
+
+  // UX-AUD-010 — l'affichage (display) est en MAD ; le stockage en cents.
+  const toDisplay = (cents: number): number | '' =>
+    Number.isFinite(cents) ? (mad ? centsToMad(cents) : cents) : '';
+  const fromDisplay = (raw: string): number => {
+    if (raw === '') return 0;
+    const n = Number(raw);
+    return mad ? madToCents(n) : Math.round(n);
+  };
+
+  function setScalar(raw: string) {
+    onChange({ ...rule, value: fromDisplay(raw) } as Rule);
+  }
+  function setLo(raw: string) {
+    const hi = tuple ? tuple[1] : 0;
+    onChange({ ...rule, value: [fromDisplay(raw), hi] } as Rule);
+  }
+  function setHi(raw: string) {
+    const lo = tuple ? tuple[0] : 0;
+    onChange({ ...rule, value: [lo, fromDisplay(raw)] } as Rule);
+  }
+
+  function setOperator(nextOp: typeof rule.operator) {
+    if (nextOp === 'between' && !isBetween) {
+      // scalaire → tuple [v, v] pour rester valide vis-à-vis du Zod (tuple requis).
+      const v = typeof rule.value === 'number' ? rule.value : 0;
+      onChange({ ...rule, operator: nextOp, value: [v, v] } as Rule);
+    } else if (nextOp !== 'between' && isBetween) {
+      // tuple → scalaire (on garde la borne basse).
+      onChange({ ...rule, operator: nextOp, value: tuple ? tuple[0] : 0 } as Rule);
+    } else {
+      onChange({ ...rule, operator: nextOp } as Rule);
+    }
+  }
+
+  const scalarValue = typeof rule.value === 'number' ? rule.value : tuple ? tuple[0] : 0;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <select
         value={rule.operator}
-        onChange={(e) => onChange({ ...rule, operator: e.target.value as typeof rule.operator })}
+        onChange={(e) => setOperator(e.target.value as typeof rule.operator)}
         className="rounded border border-stone-300 px-2 py-1 text-sm"
+        aria-label="Opérateur"
       >
         {NUM_OPERATORS.map((o) => (
           <option key={o.value} value={o.value}>
@@ -146,20 +199,72 @@ function NumericRuleEditor({
           </option>
         ))}
       </select>
-      <input
-        type="number"
-        value={typeof rule.value === 'number' ? rule.value : (rule.value as [number, number])[0]}
-        onChange={(e) => onChange({ ...rule, value: Number(e.target.value) } as Rule)}
-        className="w-24 rounded border border-stone-300 px-2 py-1 text-sm tabular-nums"
-      />
+
+      {isBetween ? (
+        // UX-AUD-003 — deux bornes → value = [lo, hi] (tuple exigé par Zod).
+        <span className="flex items-center gap-1" data-testid="num-between">
+          <input
+            type="number"
+            aria-label={mad ? 'Borne basse (MAD)' : 'Borne basse'}
+            data-testid="num-between-lo"
+            value={tuple ? toDisplay(tuple[0]) : ''}
+            onChange={(e) => setLo(e.target.value)}
+            className="w-24 rounded border border-stone-300 px-2 py-1 text-sm tabular-nums"
+          />
+          <span className="text-xs text-stone-500">et</span>
+          <input
+            type="number"
+            aria-label={mad ? 'Borne haute (MAD)' : 'Borne haute'}
+            data-testid="num-between-hi"
+            value={tuple ? toDisplay(tuple[1]) : ''}
+            onChange={(e) => setHi(e.target.value)}
+            className="w-24 rounded border border-stone-300 px-2 py-1 text-sm tabular-nums"
+          />
+        </span>
+      ) : (
+        <input
+          type="number"
+          aria-label={mad ? 'Montant (MAD)' : 'Valeur'}
+          data-testid="num-value"
+          value={toDisplay(scalarValue)}
+          onChange={(e) => setScalar(e.target.value)}
+          className="w-24 rounded border border-stone-300 px-2 py-1 text-sm tabular-nums"
+        />
+      )}
+
       {unit && <span className="text-xs text-stone-500">{unit}</span>}
+
+      {/* UX-AUD-010 — helper d'équivalence MAD ↔ centimes (pas pour between). */}
+      {mad && !isBetween && (
+        <span className="text-xs text-stone-400" data-testid="mad-helper">
+          = {scalarValue.toLocaleString('fr-FR')} centimes
+        </span>
+      )}
+
       {withSince && 'since' in rule && (
         <label className="flex items-center gap-1 text-xs text-stone-600">
           depuis
           <input
             type="date"
-            value={rule.since ?? ''}
+            aria-label="Depuis (date)"
+            data-testid="num-since"
+            value={(rule as { since?: string }).since ?? ''}
             onChange={(e) => onChange({ ...rule, since: e.target.value || undefined } as Rule)}
+            className="rounded border border-stone-300 px-1 py-0.5 text-xs"
+          />
+        </label>
+      )}
+
+      {/* UX-AUD-004 — borne `until` pour order_count (« entre janv. et mars »). */}
+      {withUntil && (
+        <label className="flex items-center gap-1 text-xs text-stone-600">
+          jusqu&apos;au
+          <input
+            type="date"
+            aria-label="Jusqu'au (date)"
+            data-testid="num-until"
+            value={(rule as { until?: string }).until ?? ''}
+            onChange={(e) => onChange({ ...rule, until: e.target.value || undefined } as Rule)}
             className="rounded border border-stone-300 px-1 py-0.5 text-xs"
           />
         </label>
@@ -175,26 +280,72 @@ function DateRuleEditor({
   rule: Extract<Rule, { kind: 'created_at' | 'last_order_at' }>;
   onChange: (r: Rule) => void;
 }) {
+  // last_order_at value est typé string (pas de tuple Zod) → on ne propose
+  // `between` que pour created_at, dont le Zod accepte le tuple [string, string].
+  const supportsBetween = rule.kind === 'created_at';
+  const operators = supportsBetween
+    ? DATE_OPERATORS
+    : DATE_OPERATORS.filter((o) => o.value !== 'between');
+
+  const isBetween = rule.operator === 'between';
+  const tuple = Array.isArray(rule.value) ? (rule.value as [string, string]) : null;
+
+  function setOperator(nextOp: typeof rule.operator) {
+    if (nextOp === 'between' && !isBetween) {
+      const v = typeof rule.value === 'string' ? rule.value : '';
+      onChange({ ...rule, operator: nextOp, value: [v, v] } as Rule);
+    } else if (nextOp !== 'between' && isBetween) {
+      onChange({ ...rule, operator: nextOp, value: tuple ? tuple[0] : '' } as Rule);
+    } else {
+      onChange({ ...rule, operator: nextOp } as Rule);
+    }
+  }
+
   return (
     <div className="flex items-center gap-2">
       <select
         value={rule.operator}
-        onChange={(e) => onChange({ ...rule, operator: e.target.value as typeof rule.operator })}
+        onChange={(e) => setOperator(e.target.value as typeof rule.operator)}
         className="rounded border border-stone-300 px-2 py-1 text-sm"
+        aria-label="Opérateur"
       >
-        {DATE_OPERATORS.filter((o) => o.value !== 'between').map((o) => (
+        {operators.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
       </select>
-      <input
-        type={rule.operator === 'within' ? 'text' : 'date'}
-        value={Array.isArray(rule.value) ? rule.value[0] : rule.value}
-        onChange={(e) => onChange({ ...rule, value: e.target.value })}
-        placeholder={rule.operator === 'within' ? '7d / 30d / 1h' : ''}
-        className="rounded border border-stone-300 px-2 py-1 text-sm"
-      />
+
+      {isBetween ? (
+        // UX-AUD-003 — plage de dates → value = [a, b] (tuple created_at).
+        <span className="flex items-center gap-1" data-testid="date-between">
+          <input
+            type="date"
+            aria-label="Date de début"
+            data-testid="date-between-from"
+            value={tuple ? tuple[0] : ''}
+            onChange={(e) => onChange({ ...rule, value: [e.target.value, tuple ? tuple[1] : ''] } as Rule)}
+            className="rounded border border-stone-300 px-2 py-1 text-sm"
+          />
+          <span className="text-xs text-stone-500">et</span>
+          <input
+            type="date"
+            aria-label="Date de fin"
+            data-testid="date-between-to"
+            value={tuple ? tuple[1] : ''}
+            onChange={(e) => onChange({ ...rule, value: [tuple ? tuple[0] : '', e.target.value] } as Rule)}
+            className="rounded border border-stone-300 px-2 py-1 text-sm"
+          />
+        </span>
+      ) : (
+        <input
+          type={rule.operator === 'within' ? 'text' : 'date'}
+          value={Array.isArray(rule.value) ? rule.value[0] : rule.value}
+          onChange={(e) => onChange({ ...rule, value: e.target.value })}
+          placeholder={rule.operator === 'within' ? '7d / 30d / 1h' : ''}
+          className="rounded border border-stone-300 px-2 py-1 text-sm"
+        />
+      )}
     </div>
   );
 }
@@ -246,6 +397,24 @@ function EmailOpenedClickedEditor({
           />
         </label>
       )}
+      {/* UX-AUD-004 — urlPattern pour email_clicked (« a cliqué un lien vers /promo »). */}
+      {rule.kind === 'email_clicked' && (
+        <label className="flex items-center gap-1 text-xs text-stone-600">
+          lien contient
+          <span className="w-40" data-testid="url-pattern-field">
+            <ClickUrlCombobox
+              value={(rule as { urlPattern?: string }).urlPattern ?? ''}
+              onChange={(pattern) =>
+                onChange({
+                  ...rule,
+                  urlPattern: pattern || undefined,
+                })
+              }
+              className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+            />
+          </span>
+        </label>
+      )}
     </div>
   );
 }
@@ -294,11 +463,25 @@ function ProductIdEditor({
   onChange: (r: Rule) => void;
 }) {
   return (
-    <ProductAutocomplete
-      value={rule.productId}
-      onChange={(slug) => onChange({ ...rule, productId: slug })}
-      placeholder="kit-eclat-v2"
-    />
+    <div className="flex flex-wrap items-center gap-2">
+      <ProductAutocomplete
+        value={rule.productId}
+        onChange={(slug) => onChange({ ...rule, productId: slug })}
+        placeholder="kit-eclat-v2"
+      />
+      {/* UX-AUD-004 — borne `since` : « a commandé X depuis le … ». */}
+      <label className="flex items-center gap-1 text-xs text-stone-600">
+        depuis
+        <input
+          type="date"
+          aria-label="Depuis (date)"
+          data-testid="product-since"
+          value={rule.since ?? ''}
+          onChange={(e) => onChange({ ...rule, since: e.target.value || undefined })}
+          className="rounded border border-stone-300 px-1 py-0.5 text-xs"
+        />
+      </label>
+    </div>
   );
 }
 
@@ -366,9 +549,9 @@ function renderEditor(rule: Rule, onChange: (r: Rule) => void) {
     case 'country':
       return <CountryEditor rule={rule} onChange={onChange} />;
     case 'order_count':
-      return <NumericRuleEditor rule={rule} onChange={onChange} withSince />;
+      return <NumericRuleEditor rule={rule} onChange={onChange} withSince withUntil />;
     case 'order_total':
-      return <NumericRuleEditor rule={rule} onChange={onChange} withSince unit="MAD" />;
+      return <NumericRuleEditor rule={rule} onChange={onChange} withSince unit="MAD" mad />;
     case 'session_count':
       return <NumericRuleEditor rule={rule} onChange={onChange} />;
     case 'created_at':
