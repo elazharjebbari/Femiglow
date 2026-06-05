@@ -43,8 +43,17 @@ phases:
     statut: done               # 2026-06-04 — 27 suites vraie-DB sérialisées, 332 verts (script glob test-emails-integration.sh)
   p5-contract:
     statut: done               # 2026-06-04 — R-021 corrigé (batch natif) ; 20 fixtures rejouées avec oracle métier par fixture (M07-CT-*)
-  p6-e2e: { statut: todo }
+  p6-e2e:
+    statut: done               # 2026-06-05 vague 3 — 5 specs Playwright (dashboard, cockpit, transactionnel→Mailpit avec oracle List-Unsubscribe ?t=, désinscription one-click, dégradé Listmonk-down), 14 tests, 3 RUNS CONSÉCUTIFS verts (~13s), serveur :8013 sur femiglow_test_e2e ; 3 races d'isolation inter-specs corrigées (cleanup par préfixe, anti-contamination cron via scheduled_for=2999)
   p7-scenarios:
-    statut: todo
-    scenarios: { S1: todo, S2: todo, S3: todo, S4: todo, S5: todo }
-  p8-durcissement: { statut: todo }
+    statut: done               # 2026-06-05 — 16 tests cross-modules vraie-DB (femiglow_test_scenarios), 2 runs verts ; 3 findings métier → R-026/R-027 + garde-fou delete automation (vague 4)
+    scenarios:
+      S1: done                 # checklist manuelle e2e/emails-s1-campagne.checklist.md (Listmonk volontairement mort en local ; chaque maillon référencé vers sa suite d'intégration)
+      S2: done                 # bounce hard : sent→bounced_permanent→suppression→re-send bloqué→réactivation SQL (seule voie → R-026)
+      S3: done                 # panier : dispatcher→quiet hours différé déterministe→envoi→idempotence ; variante achat → R-027
+      S4: done                 # crash/concurrence : reaper, S4-01 rejoué 3× anti-flake
+      S5: done                 # cockpit sous pression 5000 lignes (spec e2e emails-cockpit, bulk-retry, pagination)
+  p8-durcissement:
+    statut: done               # 2026-06-05 — couverture src/lib/mail ciblée (schemas 0→100, context-resolver 0→100, queries 41→100, resume 0→87.65 ; runner 79.4 résiduel cosmétique) ; CI .github/workflows/emails-qa.yml (unit+composant puis intégration pg16+_migrate-safe) ; 2 runs strictement identiques (unit 767, composant 317, intégration 362), 0 flake ; 2 bugs prod découverts dans le code gelé → R-028 (critique, cron automation) / R-029, corrigés par l'orchestrateur rouge→vert
+  v4-ux:
+    statut: in_progress        # 2026-06-05 — audit UX 8 surfaces (110 findings, 21 P0, 29 manques d'autocomplétion) → 7 chantiers (FONDATION EntityCombobox+suggestions, PARCOURS_PUBLIC, puis DASHBOARD/COCKPIT/CAMPAGNES/AUDIENCES/AUTOMATIONS en parallèle)

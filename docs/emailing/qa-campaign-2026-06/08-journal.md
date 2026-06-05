@@ -131,3 +131,71 @@ m08/m09 ont rejoué. Total ~1.8M tokens, ~96 min.
   (vi.hoisted MAIL_UNSUB_TOKEN_SECRET).
 - Gates vague 2 : tsc 0 erreur ; unit 749 verts / composant 287 verts /
   intégration 332 verts (27 suites).
+
+## Session 2026-06-05 (vague 3 — phases 6+7+8, + audit UX vague 3.5)
+
+**Orchestration** : workflow 4 chantiers parallèles + durcissement séquentiel.
+Run tué DEUX fois (compaction/fermeture de session) puis repris à chaque fois
+via `resumeFromRunId` — les chantiers terminés reviennent du cache journal,
+seuls les interrompus rejouent. En parallèle (lecture seule, zéro conflit) :
+audit UX/pilotabilité de 8 surfaces (vague 3.5).
+
+### Chantiers livrés (rouge→fix→vert constaté)
+- **m05 UI automations** (40 tests, ×2 runs) : DEUX promesses fausses corrigées —
+  trigger `event`/`subscription` sans champ eventName (triggerConfig:{} persisté
+  → automation INERTE côté dispatcher) ; step send sans template accepté jusqu'à
+  la revue. Oracle central : l'argument exact remis à createAutomation = les
+  noms/unités que lisent event-dispatcher/runner/frequency.
+- **m11 infra/santé** (67 tests, ×2 runs) : F-002 corrigé — fraîcheur delivered
+  (>24h warn / >72h incident) et heartbeat du cron de drain (tick périmé >15min
+  → incident même sur file vide) câblés DANS le niveau worst-wins du badge ;
+  heartbeat additif sur email_settings (zéro migration) ; DLQ 24h exposée et
+  dégradante ; script R-003 `scripts/check-email-timers.sh` (read-only,
+  prod-runnable) + test anti-drift route↔timer.
+- **scénarios S2/S3/S4** (16 tests vraie-DB, ×2 runs, zéro modif src) :
+  3 findings métier → R-026 (suppression irréversible par voie applicative),
+  R-027 (relance panier envoyée même après achat), garde-fou delete automation
+  à vérifier (vague 4).
+- **E2E Playwright phase 6 + S5** : 5 specs / 14 tests, 3 RUNS CONSÉCUTIFS verts
+  (~13s), serveur :8013 production build sur femiglow_test_e2e ; 3 races
+  d'isolation inter-specs corrigées (cleanup scopé par préfixe, capture d'ids
+  par data-testid, seed non-claimable par le cron via scheduled_for=2999).
+  S1 = checklist manuelle (Listmonk volontairement mort en local).
+- **durcissement p8** : couverture src/lib/mail ciblée — schemas.ts 0→100 %,
+  context-resolver.ts 0→100 %, audiences/queries.ts 41→100 %, resume.ts
+  0→87.65 % (53 tests) ; CI `.github/workflows/emails-qa.yml` (unit+composant
+  sans DB, puis intégration postgres:16 + _migrate-safe.mjs) ; double-run
+  STRICTEMENT identique (unit 767 / composant 317 / intégration 362), 0 flake.
+
+### Bugs prod découverts par le durcissement dans du code gelé (fix orchestrateur)
+- **R-028 (CRITIQUE, corrigé)** : `sweepWaitForEventTimeouts` bindait une Date
+  JS crue dans le template sql postgres-js → ERR_INVALID_ARG_TYPE, le cron
+  email-automation 500 à CHAQUE tick (invisible : le test de la route mocke la
+  sweep). PLUS un second défaut révélé par le fix : lecture du résultat via
+  `.rows` (shape neon-http) alors que postgres-js renvoie le tableau → compte
+  toujours 0. Fix : bind ISO ::timestamptz + lecture tableau|{rows}.
+  Bascule d'oracles : AUT-RESUME-007 pin du crash → garde-fou no-reject ;
+  AUT-RESUME-008 dé-skippé. 21/21 verts ×2.
+- **R-029 (corrigé)** : `listAudiencesWithSnapshotCount` — référence externe non
+  qualifiée dans la sous-requête corrélée (`WHERE "audience_id" = "id"`) →
+  snapshotCount TOUJOURS 0 dans l'admin. Fix : `"email_audience"."id"` en dur.
+  AUD-QRY-012 pin → garde-fou cohérence ; AUD-QRY-013 dé-skippé.
+
+### Audit UX vague 3.5 (8 auditeurs + architecte, lecture seule)
+110 findings (21 P0, 51 P1), 29 manques d'autocomplétion. Synthèse → 7 chantiers
+vague 4 à file-freeze disjoints : FONDATION (EntityCombobox a11y + StatusBadge FR
++ Breadcrumb + useUrlFilters + 3 routes suggestions) et PARCOURS_PUBLIC d'abord,
+puis DASHBOARD/COCKPIT/CAMPAGNES/AUDIENCES/AUTOMATIONS. R-026/R-027 injectés
+dans COCKPIT (suppression réversible) et AUTOMATIONS (cancel sur achat).
+
+### Gates vague 3
+tsc 0 erreur ; batteries emails complètes vertes (cf. logs) ; suite globale :
+attendu 1 seul échec préexistant tracking (event-catalog.checkout, hors périmètre).
+
+### Addendum vague 3 — bug prod n°3 (chantier E2E)
+**R-030 (corrigé)** : la validation des routes bulk-retry/bulk-suppress exigeait
+des UUID alors que `email_outbox.id` est un `createId('out')` (`out_<nanoid>`)
+→ 422 sur TOUS les ids réels : le bulk retry/suppress du cockpit était
+inopérant en prod. Invisible des tests unit (UUID factices) ET composant
+(routes MSW mockées) — seul l'E2E contre la vraie route l'a vu. Fix :
+OutboxIdSchema opaque (alphanum+`_-`, ≤64, compat UUID).
