@@ -8,7 +8,7 @@
  */
 import { useState } from 'react';
 import { useUrlFilters } from '@/components/admin/emails/common/use-url-filters';
-import { CAMPAIGN_STATUSES } from '@/lib/admin/emails/campaigns-queries';
+import { CAMPAIGN_STATUSES } from '@/lib/admin/emails/campaigns-shared';
 
 const STATUS_FR: Record<string, string> = {
   all: 'Tous les statuts',
