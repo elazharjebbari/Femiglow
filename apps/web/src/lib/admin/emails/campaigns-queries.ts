@@ -22,17 +22,13 @@ function requireDb() {
   return drizzle;
 }
 
-/** Statuts FemiGlow filtrables dans la liste des campagnes (UX-CAMP-012). */
-export const CAMPAIGN_STATUSES = [
-  'draft',
-  'scheduled',
-  'sending',
-  'paused',
-  'sent',
-  'cancelled',
-  'failed',
-] as const;
-export type CampaignStatusFilter = (typeof CAMPAIGN_STATUSES)[number];
+/**
+ * Statuts filtrables (UX-CAMP-012) : déplacés dans campaigns-shared.ts
+ * (client-safe — ce module est server-only et CampaignsListClient est
+ * 'use client'). Ré-exportés ici pour la compat des imports serveur.
+ */
+export { CAMPAIGN_STATUSES, type CampaignStatusFilter } from './campaigns-shared';
+import { CAMPAIGN_STATUSES, type CampaignStatusFilter } from './campaigns-shared';
 
 export interface ListCampaignsParams {
   /** Filtre statut exact (omis ou 'all' = tous). */

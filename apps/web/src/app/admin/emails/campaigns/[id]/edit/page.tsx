@@ -12,7 +12,7 @@ import {
   fetchListmonkTemplates,
 } from '@/lib/admin/emails/campaigns-queries';
 import { listAudiencesWithSnapshotCount } from '@/lib/mail/audiences/queries';
-import { readPayloadTemplateId } from '@/lib/admin/emails/wizard-actions';
+import { readPayloadTemplateId } from '@/lib/admin/emails/campaigns-shared';
 import { CampaignWizard } from '@/components/admin/emails/wizard/CampaignWizard';
 
 export const dynamic = 'force-dynamic';

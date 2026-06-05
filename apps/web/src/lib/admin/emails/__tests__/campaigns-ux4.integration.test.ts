@@ -58,8 +58,8 @@ import {
   pauseCampaign,
   cancelCampaign,
   finalizeCampaign,
-  readPayloadTemplateId,
 } from '@/lib/admin/emails/wizard-actions';
+import { readPayloadTemplateId } from '@/lib/admin/emails/campaigns-shared';
 
 const db = new Proxy({} as ReturnType<typeof emailsTestDb>, {
   get: (_t, prop) => (emailsTestDb() as never)[prop],

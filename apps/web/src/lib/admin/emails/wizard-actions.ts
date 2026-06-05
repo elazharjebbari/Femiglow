@@ -47,14 +47,9 @@ async function loadPayload(
   return (row?.payloadJson as Record<string, unknown> | undefined) ?? null;
 }
 
-/** Extrait l'ID de template Listmonk rangé dans payload_json (UX-CAMP-004). */
-export function readPayloadTemplateId(payload: unknown): number | null {
-  if (payload && typeof payload === 'object' && 'listmonkTemplateId' in payload) {
-    const v = (payload as { listmonkTemplateId?: unknown }).listmonkTemplateId;
-    if (typeof v === 'number' && Number.isInteger(v)) return v;
-  }
-  return null;
-}
+// readPayloadTemplateId (UX-CAMP-004) vit dans campaigns-shared.ts : un fichier
+// 'use server' ne peut EXPORTER que des fonctions async (refus webpack au build).
+import { readPayloadTemplateId } from './campaigns-shared';
 
 const createDraftInput = z.object({
   name: z.string().min(3).max(120),
