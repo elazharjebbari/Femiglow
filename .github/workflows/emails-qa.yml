@@ -1,0 +1,205 @@
+name: Emails QA
+
+# ──────────────────────────────────────────────────────────────────────────
+# Batterie QA emailing (campagne 2026-06). Découplée de `ci.yml` : elle ne se
+# déclenche QUE sur les PR touchant le périmètre email (lib/mail, composants
+# admin emails, routes mail / cron outbox / admin emails). Trois étages :
+#   - unit-component : pas de DB (vitest pur + MSW) — feedback rapide.
+#   - integration    : Postgres 16 éphémère + migrations + suites vraie-DB.
+#   - e2e (nightly)  : Playwright + Mailpit, schedule séparé (cf. job `e2e`).
+#
+# Le périmètre des `paths` est volontairement aligné sur les fichiers que la
+# campagne durcit ; un changement hors-périmètre ne paye pas le coût de cette
+# matrice (la CI globale `ci.yml` reste la gate de fond).
+# ──────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/src/lib/mail/**'
+      - 'apps/web/src/components/admin/emails/**'
+      - 'apps/web/src/app/api/mail/**'
+      - 'apps/web/src/app/api/cron/email-outbox/**'
+      - 'apps/web/src/app/api/cron/email-automation/**'
+      - 'apps/web/src/app/admin/emails/**'
+      - 'apps/web/src/app/api/admin/emails/**'
+      - 'apps/web/src/app/api/listmonk/**'
+      - 'apps/web/src/lib/admin/emails/**'
+      - 'apps/web/src/test/msw/emails-handlers.ts'
+      - 'apps/web/src/test/factories/emails.factory.ts'
+      - 'apps/web/src/test/db/emails-db.ts'
+      - 'apps/web/scripts/test-emails-integration.sh'
+      - '.github/workflows/emails-qa.yml'
+
+  # Permet un déclenchement manuel (re-run d'une PR, smoke local de la matrice).
+  workflow_dispatch:
+
+concurrency:
+  group: emails-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+# Secrets de test déterministes : valeurs factices stables (32 chars) si les
+# secrets CI ne sont pas configurés. Identiques au pattern de `ci.yml` pour que
+# les sessions admin / la vérif de signature webhook fonctionnent en test.
+env:
+  ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+  WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
+  CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
+
+jobs:
+  # ── (a) Unit + composant — AUCUNE DB ─────────────────────────────────────
+  # `test:emails:unit` + `test:emails:component`. Les suites vraie-DB importées
+  # par ces globs se SKIPPENT honnêtement (describeEmailsDb : pas d'URL
+  # femiglow_test → describe.skip), donc ce job ne nécessite pas de Postgres.
+  unit-component:
+    name: Unit + composant (sans DB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (apps/web)
+        run: pnpm --filter web typecheck
+
+      - name: Emails unit
+        run: pnpm test:emails:unit
+        working-directory: apps/web
+
+      - name: Emails composant (MSW)
+        run: pnpm test:emails:component
+        working-directory: apps/web
+
+  # ── (b) Intégration — Postgres 16 éphémère ───────────────────────────────
+  # Migrations via le runner maison (_migrate-safe.mjs, idempotent, pas de
+  # transaction-wrapper) PUIS la batterie `test:emails:integration` (sérialisée,
+  # --no-file-parallelism : suites vraie-DB sur la même base, cf. R-023).
+  integration:
+    name: Intégration (Postgres 16, vraie DB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: unit-component
+    # pgvector/pgvector:pg16 : les migrations cœur du repo créent l'extension
+    # vector (chat). Une image postgres:16 nue échouerait sur CREATE EXTENSION.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: femiglow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # Le harnais emails-db.ts EXIGE une URL contenant `femiglow_test` (garde-fou
+    # anti-prod) ; la lib applicative (db/client.ts) lit DATABASE_URL → les deux
+    # variables convergent sur la même base de test.
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+      DATABASE_URL_TEST: postgres://postgres:postgres@localhost:5432/femiglow_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply DB migrations
+        # Runner maison (lit DATABASE_URL de l'env du job). Idempotent (hash).
+        run: node scripts/_migrate-safe.mjs
+        working-directory: apps/web
+
+      - name: Materialize .env.test for the integration runner
+        # `scripts/test-emails-integration.sh` lance `node --env-file=.env.test`.
+        # En CI il n'y a pas de .env.test → on l'écrit depuis l'env du job
+        # (DATABASE_URL est la base éphémère femiglow_test). On NE met PAS de
+        # secret applicatif ici : ils sont injectés par l'env du step ci-dessous.
+        run: |
+          printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > .env.test
+          printf 'DATABASE_URL_TEST=%s\n' "$DATABASE_URL_TEST" >> .env.test
+        working-directory: apps/web
+
+      - name: Emails integration
+        run: bash scripts/test-emails-integration.sh
+        working-directory: apps/web
+
+# ── (c) E2E (nightly) — DOCUMENTÉ, activé via schedule séparé ──────────────
+#
+# Les E2E Playwright emailing (e2e/emails-*.spec.ts) ont besoin :
+#   - d'un build Next.js + serveur lancé (webServer Playwright) ;
+#   - de Mailpit (SMTP 1025 / API 8025) pour asserter l'envoi transactionnel ;
+#   - d'une base de données isolée par run (PAS la prod — cf. note infra).
+#
+# Ils sont LENTS et plus flaky par nature : on ne les met PAS sur chaque PR. Le
+# job ci-dessous est PRÊT mais commenté car il dépend d'un service Mailpit et
+# (selon l'orga) de secrets non encore provisionnés en CI. Décommenter le bloc
+# `on.schedule` + le job `e2e` une fois Mailpit câblé en service GitHub Actions.
+#
+# on:
+#   schedule:
+#     - cron: '0 3 * * *'   # nightly 03:00 UTC
+#
+#   e2e:
+#     name: E2E emailing (nightly, Playwright + Mailpit)
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 30
+#     if: github.event_name == 'schedule'
+#     services:
+#       postgres:
+#         image: pgvector/pgvector:pg16
+#         env:
+#           POSTGRES_USER: postgres
+#           POSTGRES_PASSWORD: postgres
+#           POSTGRES_DB: femiglow_test
+#         ports: ['5432:5432']
+#         options: >-
+#           --health-cmd "pg_isready -U postgres"
+#           --health-interval 5s --health-timeout 5s --health-retries 10
+#       mailpit:
+#         image: axllent/mailpit:latest
+#         ports: ['1025:1025', '8025:8025']
+#     env:
+#       DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+#       SMTP_HOST: localhost
+#       SMTP_PORT: '1025'
+#       MAILPIT_API: http://localhost:8025
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: pnpm/action-setup@v4
+#       - uses: actions/setup-node@v4
+#         with: { node-version: 22, cache: pnpm }
+#       - run: pnpm install --frozen-lockfile
+#       - run: npx playwright install chromium --with-deps
+#         working-directory: apps/web
+#       - run: node scripts/_migrate-safe.mjs
+#         working-directory: apps/web
+#       - run: pnpm --filter web build
+#       - run: pnpm test:emails:e2e
+#         working-directory: apps/web
+#       - uses: actions/upload-artifact@v4
+#         if: always()
+#         with:
+#           name: emails-e2e-report
+#           path: |
+#             apps/web/playwright-report/
+#             apps/web/test-results/
+#           retention-days: 7
