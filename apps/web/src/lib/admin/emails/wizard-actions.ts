@@ -22,11 +22,38 @@ import { listmonk, ListmonkConfigError } from '@/lib/mail/listmonk/client';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logging/logger';
 import { logAuditEvent } from '@/lib/audit/log-event';
+import {
+  isLegalTransition,
+  syncCampaignStatuses,
+  type FemiGlowCampaignStatus,
+} from '@/lib/mail/campaigns/listmonk-status-sync';
 
 function requireDb() {
   const drizzle = getDb();
   if (!drizzle) throw new Error('Database not configured');
   return drizzle;
+}
+
+/** Relit le payload_json courant d'un brouillon (merge non destructif). */
+async function loadPayload(
+  drizzle: ReturnType<typeof requireDb>,
+  id: string,
+): Promise<Record<string, unknown> | null> {
+  const [row] = await drizzle
+    .select({ payloadJson: emailCampaignLink.payloadJson })
+    .from(emailCampaignLink)
+    .where(eq(emailCampaignLink.id, id))
+    .limit(1);
+  return (row?.payloadJson as Record<string, unknown> | undefined) ?? null;
+}
+
+/** Extrait l'ID de template Listmonk rangé dans payload_json (UX-CAMP-004). */
+export function readPayloadTemplateId(payload: unknown): number | null {
+  if (payload && typeof payload === 'object' && 'listmonkTemplateId' in payload) {
+    const v = (payload as { listmonkTemplateId?: unknown }).listmonkTemplateId;
+    if (typeof v === 'number' && Number.isInteger(v)) return v;
+  }
+  return null;
 }
 
 const createDraftInput = z.object({
@@ -60,6 +87,37 @@ export async function createCampaignDraft(formData: FormData): Promise<void> {
   redirect(`/admin/emails/campaigns/${id}/edit`);
 }
 
+export type CreateDraftState = { error: string | null };
+
+/**
+ * UX-CAMP-009 — variante `useActionState` : capte les erreurs métier (nom
+ * invalide, DB non configurée) et les renvoie en état pour un feedback inline,
+ * au lieu de laisser Next afficher une page d'erreur générique. Le succès
+ * délègue à `createCampaignDraft` (qui redirige). `redirect()` lève une erreur
+ * spéciale `NEXT_REDIRECT` qui DOIT remonter telle quelle.
+ */
+export async function createCampaignDraftAction(
+  _prev: CreateDraftState,
+  formData: FormData,
+): Promise<CreateDraftState> {
+  try {
+    await createCampaignDraft(formData);
+    return { error: null };
+  } catch (err) {
+    // Laisse passer le redirect interne de Next (succès).
+    if (
+      err &&
+      typeof err === 'object' &&
+      'digest' in err &&
+      typeof (err as { digest?: unknown }).digest === 'string' &&
+      (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+    ) {
+      throw err;
+    }
+    return { error: err instanceof Error ? err.message : 'Création impossible' };
+  }
+}
+
 const updateDraftInput = z.object({
   id: z.string().min(1),
   name: z.string().min(3).max(120).optional(),
@@ -89,7 +147,23 @@ export async function updateCampaignDraft(input: z.infer<typeof updateDraftInput
   if (parsed.scheduledFor !== undefined) {
     set.scheduledFor = parsed.scheduledFor ? new Date(parsed.scheduledFor) : null;
   }
-  if (parsed.payloadJson !== undefined) set.payloadJson = parsed.payloadJson;
+
+  // UX-CAMP-004 — le template Listmonk choisi à l'étape Contenu DOIT être
+  // persisté (auparavant accepté par le schéma zod mais JAMAIS écrit → perdu à
+  // chaque rechargement, l'edit page le réhydratait à null). La table n'a pas de
+  // colonne dédiée : on le range dans `payload_json.listmonkTemplateId`, lu en
+  // fallback par finalize et par l'edit page. On fusionne avec le payload fourni
+  // (ou existant) pour ne pas écraser `body`.
+  if (parsed.payloadJson !== undefined || parsed.listmonkTemplateId !== undefined) {
+    const base =
+      parsed.payloadJson !== undefined
+        ? parsed.payloadJson
+        : ((await loadPayload(drizzle, parsed.id)) ?? {});
+    set.payloadJson =
+      parsed.listmonkTemplateId !== undefined
+        ? { ...base, listmonkTemplateId: parsed.listmonkTemplateId }
+        : base;
+  }
 
   await drizzle.update(emailCampaignLink).set(set).where(eq(emailCampaignLink.id, parsed.id));
 }
@@ -188,7 +262,9 @@ export async function finalizeCampaign(input: z.infer<typeof finalizeInput>): Pr
       content_type: 'html',
       type: 'regular',
       send_at: parsed.sendNow ? null : draft.scheduledFor?.toISOString() ?? null,
-      template_id: parsed.listmonkTemplateId,
+      // UX-CAMP-004 — fallback : si l'appelant ne passe pas le template
+      // explicitement, on reprend celui persisté dans le payload du draft.
+      template_id: parsed.listmonkTemplateId ?? readPayloadTemplateId(draft.payloadJson) ?? undefined,
     });
 
     lmCampaignId = createRes.data.id;
@@ -258,4 +334,226 @@ export async function discardCampaign(formData: FormData): Promise<void> {
   });
   revalidatePath('/admin/emails/campaigns');
   redirect('/admin/emails/campaigns');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UX-CAMP-001 — Test-send (envoi d'épreuve) depuis l'étape Vérification.
+// ─────────────────────────────────────────────────────────────────────────────
+const testSendInput = z.object({
+  id: z.string().min(1),
+  email: z.string().email('Adresse e-mail invalide'),
+  subject: z.string().min(1).optional(),
+  bodyHtml: z.string().min(1).optional(),
+});
+
+export type TestSendResult = { ok: true; email: string } | { ok: false; error: string };
+
+/**
+ * Envoie une épreuve de la campagne à une seule adresse via l'API
+ * transactionnelle Listmonk. Le test-send réutilise le template Listmonk
+ * sélectionné (obligatoire côté `/api/tx`) et passe sujet/corps dans `data`.
+ * Aucune mutation de la campagne ni de son statut — c'est une pré-visualisation
+ * livrée dans la vraie boîte de l'admin.
+ */
+export async function sendCampaignTest(
+  input: z.infer<typeof testSendInput>,
+): Promise<TestSendResult> {
+  const session = await requireAdmin('/admin/emails/campaigns');
+  const parsed = testSendInput.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Entrée invalide' };
+  }
+  const drizzle = requireDb();
+  const [draft] = await drizzle
+    .select()
+    .from(emailCampaignLink)
+    .where(eq(emailCampaignLink.id, parsed.data.id))
+    .limit(1);
+  if (!draft) return { ok: false, error: 'Brouillon introuvable' };
+
+  const templateId =
+    readPayloadTemplateId(draft.payloadJson) ??
+    null;
+  if (templateId == null) {
+    return {
+      ok: false,
+      error:
+        "L'envoi de test passe par un template Listmonk : sélectionne-en un à l'étape Contenu avant d'envoyer une épreuve.",
+    };
+  }
+
+  const subject = parsed.data.subject ?? draft.subject ?? '';
+  const body =
+    parsed.data.bodyHtml ??
+    (draft.payloadJson as { body?: string } | null)?.body ??
+    '';
+
+  try {
+    // Le destinataire de test doit être un abonné Listmonk connu pour /api/tx.
+    await listmonk.subscribers.upsert({ email: parsed.data.email, status: 'enabled' });
+    await listmonk.transactional.send({
+      subscriber_email: parsed.data.email,
+      template_id: templateId,
+      data: { subject, body, preheader: draft.preheader ?? '', is_test: true },
+    });
+  } catch (err) {
+    logger.warn('admin.emails.campaign_test_send_failed', {
+      draftId: parsed.data.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Échec de l’envoi de test',
+    };
+  }
+
+  await logAuditEvent({
+    action: 'mail.campaign.test_sent',
+    actorId: session.email,
+    resourceId: parsed.data.id,
+    meta: { to: parsed.data.email, templateId },
+  });
+  return { ok: true, email: parsed.data.email };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UX-CAMP-002 — Pause / reprise / annulation d'urgence d'une campagne.
+// ─────────────────────────────────────────────────────────────────────────────
+type CampaignControl = {
+  /** Statut FemiGlow cible après l'action. */
+  target: FemiGlowCampaignStatus;
+  /** Statut Listmonk à pousser. */
+  listmonkStatus: 'paused' | 'running' | 'cancelled';
+  action: string;
+};
+
+const CONTROLS: Record<'pause' | 'resume' | 'cancel', CampaignControl> = {
+  pause: { target: 'paused', listmonkStatus: 'paused', action: 'mail.campaign.paused' },
+  resume: { target: 'sending', listmonkStatus: 'running', action: 'mail.campaign.resumed' },
+  cancel: { target: 'cancelled', listmonkStatus: 'cancelled', action: 'mail.campaign.cancelled' },
+};
+
+async function controlCampaign(kind: 'pause' | 'resume' | 'cancel', formData: FormData): Promise<void> {
+  const session = await requireAdmin('/admin/emails/campaigns');
+  const id = String(formData.get('id') ?? '');
+  if (!id) return;
+  const drizzle = requireDb();
+  const ctrl = CONTROLS[kind];
+
+  const [campaign] = await drizzle
+    .select()
+    .from(emailCampaignLink)
+    .where(eq(emailCampaignLink.id, id))
+    .limit(1);
+  if (!campaign) throw new Error('Campagne introuvable');
+
+  const from = campaign.status as FemiGlowCampaignStatus;
+  // La machine d'états refuse toute transition illégale (ex. pause d'une
+  // campagne déjà `sent`, reprise d'une `cancelled`). Garde-fou serveur :
+  // l'UI cache déjà les boutons illégaux, mais on ne fait jamais confiance au
+  // client pour une opération d'arrêt d'urgence.
+  if (!isLegalTransition(from, ctrl.target)) {
+    throw new Error(`Transition ${from} → ${ctrl.target} interdite`);
+  }
+
+  // Pousse le statut à Listmonk d'abord (la source de vérité de l'envoi).
+  if (campaign.listmonkCampaignId != null) {
+    await listmonk.campaigns.updateStatus(campaign.listmonkCampaignId, ctrl.listmonkStatus);
+  }
+
+  await drizzle
+    .update(emailCampaignLink)
+    .set({
+      status: ctrl.target,
+      ...(ctrl.target === 'cancelled' ? { finishedAt: new Date() } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(emailCampaignLink.id, id));
+
+  await logAuditEvent({
+    action: ctrl.action,
+    actorId: session.email,
+    resourceId: id,
+    meta: { from, to: ctrl.target },
+  });
+  logger.info('admin.emails.campaign_controlled', { id, kind, from, to: ctrl.target, by: session.email });
+
+  revalidatePath('/admin/emails/campaigns');
+  revalidatePath(`/admin/emails/campaigns/${id}`);
+}
+
+export async function pauseCampaign(formData: FormData): Promise<void> {
+  await controlCampaign('pause', formData);
+}
+export async function resumeCampaign(formData: FormData): Promise<void> {
+  await controlCampaign('resume', formData);
+}
+export async function cancelCampaign(formData: FormData): Promise<void> {
+  await controlCampaign('cancel', formData);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UX-CAMP-006 — Rafraîchir les métriques (poll Listmonk à la demande).
+// ─────────────────────────────────────────────────────────────────────────────
+export async function refreshCampaignMetrics(formData: FormData): Promise<void> {
+  await requireAdmin('/admin/emails/campaigns');
+  const id = String(formData.get('id') ?? '');
+  // Le sync est global (poll de toutes les campagnes actives/récentes) ; il
+  // englobe l'id courant. On ne fait pas de sync ciblé pour rester aligné sur
+  // le cron unique (source de vérité). Échec Listmonk : non bloquant, on
+  // revalide quand même (les métriques restent celles du dernier poll).
+  try {
+    await syncCampaignStatuses();
+  } catch (err) {
+    logger.warn('admin.emails.campaign_metrics_refresh_failed', {
+      id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+  revalidatePath('/admin/emails/campaigns');
+  if (id) revalidatePath(`/admin/emails/campaigns/${id}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UX-CAMP-003 — Duplication de campagne (relance d'une récurrente).
+// ─────────────────────────────────────────────────────────────────────────────
+export async function duplicateCampaign(formData: FormData): Promise<void> {
+  const session = await requireAdmin('/admin/emails/campaigns');
+  const sourceId = String(formData.get('id') ?? '');
+  if (!sourceId) return;
+  const drizzle = requireDb();
+
+  const [src] = await drizzle
+    .select()
+    .from(emailCampaignLink)
+    .where(eq(emailCampaignLink.id, sourceId))
+    .limit(1);
+  if (!src) throw new Error('Campagne source introuvable');
+
+  const newId = randomUUID();
+  await drizzle.insert(emailCampaignLink).values({
+    id: newId,
+    name: `${src.name} (copie)`,
+    subject: src.subject,
+    preheader: src.preheader,
+    status: 'draft',
+    audienceLinkIds: src.audienceLinkIds,
+    audienceId: src.audienceId,
+    templateSlug: src.templateSlug,
+    payloadJson: src.payloadJson,
+    abVariant: src.abVariant,
+    createdByUserId: session.email,
+    // Volontairement réinitialisés : un nouveau brouillon vierge côté envoi.
+    listmonkCampaignId: null,
+    scheduledFor: null,
+  });
+
+  await logAuditEvent({
+    action: 'mail.campaign.duplicated',
+    actorId: session.email,
+    resourceId: newId,
+    meta: { sourceId },
+  });
+  revalidatePath('/admin/emails/campaigns');
+  redirect(`/admin/emails/campaigns/${newId}/edit`);
 }

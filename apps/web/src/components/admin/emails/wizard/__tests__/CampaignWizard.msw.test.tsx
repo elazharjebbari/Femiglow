@@ -263,6 +263,9 @@ describe('CampaignWizard — navigation & validations', () => {
   });
 
   it('CMP-MSW-012 : sélection template Listmonk persiste templateId', async () => {
+    // UX-CAMP-007 — le <select> natif est devenu un EntityCombobox recherchable.
+    // On sélectionne via la liste d'options (la valeur = nom du template, l'id
+    // réel est résolu en interne et persisté).
     const user = userEvent.setup();
     renderWizard();
     await user.type(screen.getByPlaceholderText(NAME_PLACEHOLDER), 'Avec template');
@@ -270,7 +273,10 @@ describe('CampaignWizard — navigation & validations', () => {
     await user.click(screen.getByRole('radio'));
     await screen.findByText('50000');
     await user.click(screen.getByRole('button', { name: /Suivant/i })); // -> 3
-    await user.selectOptions(screen.getByRole('combobox'), '5');
+    const tplInput = screen.getByRole('combobox', { name: /Template Listmonk/i });
+    await user.type(tplInput, 'Rituel');
+    const option = await screen.findByRole('option', { name: /Rituel printemps/i });
+    await user.click(option);
     await user.click(screen.getByRole('button', { name: /Suivant/i })); // -> 4 (persist)
     const lastCall = updateCampaignDraft.mock.calls.at(-1)![0];
     expect(lastCall).toMatchObject({ listmonkTemplateId: 5 });

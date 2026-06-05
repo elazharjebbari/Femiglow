@@ -18,13 +18,16 @@
  * State client uniquement. La persistance draft est faite via
  * updateCampaignDraft() à chaque step transition (pas auto-save debounced).
  */
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   updateCampaignDraft,
   finalizeCampaign,
+  sendCampaignTest,
 } from '@/lib/admin/emails/wizard-actions';
 import type { ListmonkListLite, ListmonkTemplateLite } from '@/lib/admin/emails/campaigns-queries';
+import { EntityCombobox, type ComboboxOption } from '@/components/admin/emails/common/EntityCombobox';
+import { LeadEmailCombobox } from '@/components/admin/emails/common/combobox-wrappers';
 
 type AudienceLite = {
   id: string;
@@ -49,11 +52,13 @@ type WizardProps = {
   templates: ListmonkTemplateLite[];
   audiences?: AudienceLite[];
   listmonkError: string | null;
+  /** E-mail de l'admin de session — préremplit le champ test-send (UX-CAMP-001). */
+  adminEmail?: string;
 };
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
-export function CampaignWizard({ draftId, initial, lists, templates, audiences = [], listmonkError }: WizardProps) {
+export function CampaignWizard({ draftId, initial, lists, templates, audiences = [], listmonkError, adminEmail = '' }: WizardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState<Step>(1);
@@ -82,6 +87,20 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
   );
   const [scheduledFor, setScheduledFor] = useState<string>(initial.scheduledFor ?? '');
   const [ack, setAck] = useState(false);
+
+  // UX-CAMP-007 — recherche d'audience / de liste (combobox filtrant la liste
+  // affichée ; les radios/checkboxes restent la source de vérité de sélection).
+  const [audienceQuery, setAudienceQuery] = useState('');
+  const [listQuery, setListQuery] = useState('');
+
+  // UX-CAMP-013 — état explicite du fetch d'estimation d'audience FemiGlow.
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+
+  // UX-CAMP-001 — test-send (épreuve à une adresse).
+  const [testEmail, setTestEmail] = useState(adminEmail);
+  const [testSending, setTestSending] = useState(false);
+  const [testFeedback, setTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   function persistDraft(): void {
     startTransition(async () => {
@@ -134,6 +153,12 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
       setErrorMsg('Coche la case de confirmation avant d\'envoyer.');
       return;
     }
+    // UX-CAMP-011 — interdiction d'envoyer en masse sans connaître le nombre de
+    // destinataires (estimation FemiGlow encore en cours / en échec).
+    if (!estimateKnown) {
+      setErrorMsg('Attends l\'estimation du nombre de destinataires avant d\'envoyer.');
+      return;
+    }
     // Garde anti double-soumission : un envoi déjà en cours ne peut pas être
     // relancé (le `sending` est posé synchroniquement avant tout await).
     if (sending) return;
@@ -163,33 +188,89 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
         0,
       );
 
+  // UX-CAMP-013 — un fetch d'estimation centralisé qui expose loading/erreur.
+  // L'oracle anti-faux-total : sur échec on laisse `audiencePreviewSize` à null
+  // (jamais 0) et on lève `previewError` pour un message actionnable.
+  async function loadAudiencePreview(id: string, signal?: AbortSignal): Promise<void> {
+    setPreviewLoading(true);
+    setPreviewError(false);
+    try {
+      const r = await fetch(`/api/admin/emails/audiences/${id}`, { credentials: 'include', signal });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      const r2 = await fetch('/api/admin/emails/audiences/preview-size', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'include',
+        signal,
+        body: JSON.stringify({ rules: data.rules, exclusionFlags: data.exclusionFlags }),
+      });
+      if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
+      const out = await r2.json();
+      if (typeof out.size !== 'number') throw new Error('Réponse invalide');
+      if (!signal?.aborted) setAudiencePreviewSize(out.size);
+    } catch (err) {
+      if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) return;
+      setAudiencePreviewSize(null);
+      setPreviewError(true);
+    } finally {
+      if (!signal?.aborted) setPreviewLoading(false);
+    }
+  }
+
   // Hydrate preview size when an audience is already selected on mount (e.g.
   // user reloads or jumps directly to step 5/6 without re-touching the radio).
   useEffect(() => {
     if (!audienceId || audiencePreviewSize !== null) return;
-    let cancelled = false;
-    (async () => {
+    const controller = new AbortController();
+    void loadAudiencePreview(audienceId, controller.signal);
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audienceId, audiencePreviewSize]);
+
+  // UX-CAMP-007 — filtres de recherche appliqués aux listes affichées.
+  const filteredAudiences = useMemo(() => {
+    const q = audienceQuery.trim().toLowerCase();
+    if (!q) return audiences;
+    return audiences.filter(
+      (a) => a.name.toLowerCase().includes(q) || a.slug.toLowerCase().includes(q),
+    );
+  }, [audiences, audienceQuery]);
+
+  const filteredLists = useMemo(() => {
+    const q = listQuery.trim().toLowerCase();
+    if (!q) return lists;
+    return lists.filter((l) => l.name.toLowerCase().includes(q));
+  }, [lists, listQuery]);
+
+  const selectedTemplate = templateId != null ? templates.find((t) => t.id === templateId) : undefined;
+
+  // UX-CAMP-011 — l'estimation est-elle connue ? (bloque l'envoi sinon).
+  const estimateKnown = audienceId ? audiencePreviewSize !== null : true;
+  // Libellé chiffré pour la case de confirmation (jamais « … » : si inconnu, la
+  // case ET le bouton d'envoi sont bloqués par `estimateKnown`).
+  const confirmCountLabel = estimateKnown ? String(estimatedAudience) : '…';
+
+  // UX-CAMP-001 — déclenche l'envoi de test (épreuve).
+  function submitTest(): void {
+    setTestFeedback(null);
+    if (testSending) return;
+    setTestSending(true);
+    void (async () => {
       try {
-        const r = await fetch(`/api/admin/emails/audiences/${audienceId}`, { credentials: 'include' });
-        if (!r.ok) return;
-        const data = await r.json();
-        const r2 = await fetch('/api/admin/emails/audiences/preview-size', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ rules: data.rules, exclusionFlags: data.exclusionFlags }),
-        });
-        if (!r2.ok) return;
-        const out = await r2.json();
-        if (!cancelled && typeof out.size === 'number') setAudiencePreviewSize(out.size);
-      } catch {
-        // silent
+        const res = await sendCampaignTest({ id: draftId, email: testEmail, subject, bodyHtml });
+        if (res.ok) {
+          setTestFeedback({ ok: true, msg: `Épreuve envoyée à ${res.email}.` });
+        } else {
+          setTestFeedback({ ok: false, msg: res.error });
+        }
+      } catch (err) {
+        setTestFeedback({ ok: false, msg: err instanceof Error ? err.message : String(err) });
+      } finally {
+        setTestSending(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [audienceId, audiencePreviewSize]);
+  }
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -261,53 +342,69 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
                   Aucune audience définie. Crée-en une dans <code>/admin/emails/audiences/new</code>.
                 </p>
               ) : (
-                <ul className="space-y-2">
-                  {audiences.map((a) => {
-                    const checked = audienceId === a.id;
-                    return (
-                      <li key={a.id}>
-                        <label className="flex items-center gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
-                          <input
-                            type="radio"
-                            name="audience-choice"
-                            checked={checked}
-                            onChange={() => {
-                              setAudienceId(a.id);
-                              setAudienceIds([]);
-                              // Fetch live preview size
-                              setAudiencePreviewSize(null);
-                              fetch(`/api/admin/emails/audiences/${a.id}`, { credentials: 'include' })
-                                .then((r) => r.ok ? r.json() : null)
-                                .then((data) => {
-                                  if (!data) return;
-                                  return fetch('/api/admin/emails/audiences/preview-size', {
-                                    method: 'POST',
-                                    headers: { 'content-type': 'application/json' },
-                                    credentials: 'include',
-                                    body: JSON.stringify({
-                                      rules: data.rules,
-                                      exclusionFlags: data.exclusionFlags,
-                                    }),
-                                  });
-                                })
-                                .then((r) => r?.ok ? r.json() : null)
-                                .then((data) => {
-                                  if (data && typeof data.size === 'number') setAudiencePreviewSize(data.size);
-                                })
-                                .catch(() => setAudiencePreviewSize(null));
-                            }}
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-stone-900">🎯 {a.name}</p>
-                            <p className="text-xs text-stone-500">
-                              slug <code className="font-mono">{a.slug}</code> · {a.snapshotCount} snapshot(s)
-                            </p>
-                          </div>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <>
+                  {/* UX-CAMP-007 — recherche d'audience : filtre la liste de radios
+                      ci-dessous (les radios restent la source de sélection). */}
+                  <div className="mb-3">
+                    <EntityCombobox
+                      value={audienceQuery}
+                      onChange={setAudienceQuery}
+                      ariaLabel="Rechercher une audience"
+                      placeholder="Rechercher une audience…"
+                      minChars={1}
+                      allowFreeText
+                      fetchSuggestions={async (q) => {
+                        const needle = q.toLowerCase();
+                        return audiences
+                          .filter(
+                            (a) =>
+                              a.name.toLowerCase().includes(needle) ||
+                              a.slug.toLowerCase().includes(needle),
+                          )
+                          .slice(0, 20)
+                          .map<ComboboxOption>((a) => ({
+                            value: a.name,
+                            label: a.name,
+                            hint: a.slug,
+                          }));
+                      }}
+                    />
+                  </div>
+                  {filteredAudiences.length === 0 ? (
+                    <p className="rounded border border-stone-200 bg-stone-50 p-3 text-xs text-stone-500">
+                      Aucune audience ne correspond à « {audienceQuery} ».
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {filteredAudiences.map((a) => {
+                        const checked = audienceId === a.id;
+                        return (
+                          <li key={a.id}>
+                            <label className="flex items-center gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
+                              <input
+                                type="radio"
+                                name="audience-choice"
+                                checked={checked}
+                                onChange={() => {
+                                  setAudienceId(a.id);
+                                  setAudienceIds([]);
+                                  setAudiencePreviewSize(null);
+                                  void loadAudiencePreview(a.id);
+                                }}
+                              />
+                              <div className="flex-1">
+                                <p className="font-medium text-stone-900">🎯 {a.name}</p>
+                                <p className="text-xs text-stone-500">
+                                  slug <code className="font-mono">{a.slug}</code> · {a.snapshotCount} snapshot(s)
+                                </p>
+                              </div>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </>
               )}
             </section>
 
@@ -319,47 +416,103 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
                   Aucune liste Listmonk. Crée-en une dans <code>/admin/emails/listmonk</code>.
                 </p>
               ) : (
-                <ul className="space-y-2">
-                  {lists.map((l) => {
-                    const checked = audienceIds.includes(l.id);
-                    return (
-                      <li key={l.id}>
-                        <label className="flex items-center gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setAudienceIds([...audienceIds, l.id]);
-                                setAudienceId(null);
-                              } else {
-                                setAudienceIds(audienceIds.filter((id) => id !== l.id));
-                              }
-                            }}
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-stone-900">{l.name}</p>
-                            <p className="text-xs text-stone-500">
-                              {l.subscriberCount} contacts · {l.type} · opt-in {l.optin}
-                            </p>
-                          </div>
-                        </label>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <>
+                  <div className="mb-3">
+                    <EntityCombobox
+                      value={listQuery}
+                      onChange={setListQuery}
+                      ariaLabel="Rechercher une liste Listmonk"
+                      placeholder="Rechercher une liste…"
+                      minChars={1}
+                      allowFreeText
+                      fetchSuggestions={async (q) => {
+                        const needle = q.toLowerCase();
+                        return lists
+                          .filter((l) => l.name.toLowerCase().includes(needle))
+                          .slice(0, 20)
+                          .map<ComboboxOption>((l) => ({
+                            value: l.name,
+                            label: l.name,
+                            hint: `${l.subscriberCount} contacts`,
+                          }));
+                      }}
+                    />
+                  </div>
+                  {filteredLists.length === 0 ? (
+                    <p className="rounded border border-stone-200 bg-stone-50 p-3 text-xs text-stone-500">
+                      Aucune liste ne correspond à « {listQuery} ».
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {filteredLists.map((l) => {
+                        const checked = audienceIds.includes(l.id);
+                        return (
+                          <li key={l.id}>
+                            <label className="flex items-center gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setAudienceIds([...audienceIds, l.id]);
+                                    setAudienceId(null);
+                                  } else {
+                                    setAudienceIds(audienceIds.filter((id) => id !== l.id));
+                                  }
+                                }}
+                              />
+                              <div className="flex-1">
+                                <p className="font-medium text-stone-900">{l.name}</p>
+                                <p className="text-xs text-stone-500">
+                                  {l.subscriberCount} contacts · {l.type} · opt-in {l.optin}
+                                </p>
+                              </div>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </>
               )}
             </section>
+
+            {/* UX-CAMP-013 — feedback d'erreur d'estimation (actionnable). */}
+            {previewError ? (
+              <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                Impossible d’estimer la taille de l’audience (API indisponible).{' '}
+                {audienceId ? (
+                  <button
+                    type="button"
+                    onClick={() => void loadAudiencePreview(audienceId)}
+                    className="font-medium underline"
+                  >
+                    Réessayer
+                  </button>
+                ) : null}
+              </p>
+            ) : null}
 
             <p className="rounded bg-stone-50 p-3 text-sm">
               Envois estimés :{' '}
               <strong>
                 {audienceId
-                  ? (audiencePreviewSize ?? '…')
+                  ? previewLoading
+                    ? '…'
+                    : (audiencePreviewSize ?? '…')
                   : estimatedAudience}
               </strong>
-              {audienceId && audiencePreviewSize !== null && (
+              {audienceId && previewLoading ? (
+                <span role="status" className="ml-2 text-xs text-stone-500">Estimation en cours…</span>
+              ) : null}
+              {audienceId && audiencePreviewSize !== null && !previewLoading && (
                 <span className="ml-2 text-xs text-stone-500">(snapshot dynamique au moment du send)</span>
+              )}
+              {/* UX-CAMP-010 — annotation borne haute multi-listes (sur-comptage). */}
+              {!audienceId && audienceIds.length > 1 && (
+                <span className="ml-2 block text-xs text-amber-700">
+                  ⚠ Borne haute : les doublons inter-listes ne sont pas déduits ici ; Listmonk dédoublonne à l’envoi.
+                </span>
               )}
             </p>
           </div>
@@ -372,21 +525,70 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
             <p className="mt-1 text-sm text-stone-600">
               Corps HTML du mail. Tu peux partir d'un template existant ou éditer directement.
             </p>
-            <label className="mt-4 block">
+            {/* UX-CAMP-007 — template Listmonk via combobox recherchable. La
+                valeur portée est le NOM du template (label visible) ; l'id réel
+                est résolu en sélection. Un bouton « Aucun » remet en corps libre. */}
+            <div className="mt-4">
               <span className="block text-xs font-medium text-stone-600">Template Listmonk (optionnel)</span>
-              <select
-                value={templateId ?? ''}
-                onChange={(e) => setTemplateId(e.target.value ? Number(e.target.value) : null)}
-                className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
-              >
-                <option value="">— Aucun (corps libre) —</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} ({t.type})
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="mt-1 flex items-center gap-2">
+                <div className="flex-1">
+                  <EntityCombobox
+                    value={selectedTemplate?.name ?? ''}
+                    onChange={(v) => {
+                      const match = templates.find((t) => t.name === v);
+                      setTemplateId(match ? match.id : null);
+                    }}
+                    ariaLabel="Template Listmonk"
+                    placeholder="Rechercher un template…"
+                    minChars={0}
+                    allowFreeText={false}
+                    fetchSuggestions={async (q) => {
+                      const needle = q.toLowerCase();
+                      return templates
+                        .filter((t) => !needle || t.name.toLowerCase().includes(needle))
+                        .slice(0, 20)
+                        .map<ComboboxOption>((t) => ({
+                          value: t.name,
+                          label: t.name,
+                          hint: t.type,
+                        }));
+                    }}
+                  />
+                </div>
+                {templateId != null ? (
+                  <button
+                    type="button"
+                    onClick={() => setTemplateId(null)}
+                    className="rounded-md border border-stone-300 bg-white px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50"
+                  >
+                    Aucun (corps libre)
+                  </button>
+                ) : null}
+              </div>
+              {selectedTemplate ? (
+                <p className="mt-1 text-xs text-stone-500">
+                  Template sélectionné : <strong>{selectedTemplate.name}</strong> (#{selectedTemplate.id}).
+                  Le corps ci-dessous est inséré dans l’enveloppe du template à l’envoi.
+                </p>
+              ) : null}
+            </div>
+
+            {/* UX-CAMP-008 — aperçu du template Listmonk sélectionné. */}
+            {selectedTemplate ? (
+              <div className="mt-4 rounded-md border border-stone-200 bg-stone-50 p-3">
+                <p className="mb-2 text-xs uppercase tracking-wider text-stone-500">
+                  Aperçu template « {selectedTemplate.name} »
+                </p>
+                <iframe
+                  title="Aperçu template"
+                  data-testid="template-preview"
+                  srcDoc={`<!doctype html><html><body style="font-family:system-ui;padding:1rem"><p style="color:#78716c;font-size:12px">Sujet template : ${escapeHtml(selectedTemplate.subject || '(défini par la campagne)')}</p>${bodyHtml}</body></html>`}
+                  sandbox=""
+                  className="h-48 w-full rounded border border-stone-200 bg-white"
+                />
+              </div>
+            ) : null}
+
             <label className="mt-4 block">
               <span className="block text-xs font-medium text-stone-600">Corps HTML</span>
               <textarea
@@ -522,9 +724,63 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
                 className="h-64 w-full rounded border border-stone-200 bg-white"
               />
             </div>
-            <label className="mt-6 flex items-center gap-2 text-sm">
+
+            {/* UX-CAMP-001 — Envoyer une épreuve (test-send). */}
+            <div className="mt-6 rounded-md border border-stone-200 bg-stone-50 p-3">
+              <p className="text-xs uppercase tracking-wider text-stone-500">Envoyer un test</p>
+              <p className="mt-1 text-xs text-stone-600">
+                Reçois une épreuve dans ta boîte avant l’envoi de masse. (Requiert un template Listmonk.)
+              </p>
+              <div className="mt-2 flex items-start gap-2">
+                <div className="flex-1">
+                  <LeadEmailCombobox
+                    value={testEmail}
+                    onChange={setTestEmail}
+                    ariaLabel="Adresse e-mail du test"
+                    placeholder="toi@femiglow-maroc.com"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={submitTest}
+                  disabled={testSending || testEmail.trim().length === 0}
+                  className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 disabled:opacity-40"
+                >
+                  {testSending ? 'Envoi du test…' : 'Envoyer le test'}
+                </button>
+              </div>
+              {testFeedback ? (
+                <p
+                  role={testFeedback.ok ? 'status' : 'alert'}
+                  className={`mt-2 rounded-md border p-2 text-sm ${
+                    testFeedback.ok
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                      : 'border-rose-200 bg-rose-50 text-rose-700'
+                  }`}
+                >
+                  {testFeedback.msg}
+                </p>
+              ) : null}
+            </div>
+
+            {/* UX-CAMP-010/011 — confirmation chiffrée + garde estimation. */}
+            {!estimateKnown ? (
+              <p role="status" className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                ⏳ Estimation des destinataires en cours… l’envoi est bloqué tant que le nombre n’est pas connu.
+              </p>
+            ) : null}
+            <label className="mt-6 flex items-start gap-2 text-sm">
               <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
-              Je confirme avoir relu le contenu et que l'envoi est légitime.
+              <span>
+                Je confirme l’envoi à <strong data-testid="confirm-count">~{confirmCountLabel}</strong>{' '}
+                destinataire{estimatedAudience > 1 ? 's' : ''} après relecture du contenu, et que cet envoi est
+                légitime.
+                {!audienceId && audienceIds.length > 1 ? (
+                  <span className="block text-xs text-amber-700">
+                    (borne haute multi-listes — doublons non déduits)
+                  </span>
+                ) : null}
+              </span>
             </label>
           </div>
         ) : null}
@@ -559,7 +815,7 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
           <button
             type="button"
             onClick={submit}
-            disabled={!ack || sending || pending}
+            disabled={!ack || sending || pending || !estimateKnown}
             className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
             {sending ? 'Envoi…' : scheduleMode === 'now' ? '📨 Envoyer maintenant' : '📅 Planifier'}
@@ -568,6 +824,15 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
       </div>
     </div>
   );
+}
+
+/** Échappement HTML minimal pour injection sûre dans le srcDoc d'aperçu. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function Field({ label, value }: { label: string; value: string }) {
