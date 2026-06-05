@@ -76,10 +76,34 @@ export function AutomationWizard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Le déclencheur `event`/`subscription` est piloté par le scan d'events du
+  // dispatcher, qui lit `triggerConfig.eventName`. Sans ce champ l'automation
+  // est INERTE (le dispatcher logue `missing_event_name`). Le wizard DOIT donc
+  // exiger un eventName pour ces deux types — sinon il enregistre une promesse
+  // que le moteur ne peut pas tenir.
+  const triggerNeedsEvent = state.triggerType === 'event' || state.triggerType === 'subscription';
+  const triggerEventName =
+    typeof state.triggerConfig.eventName === 'string' ? state.triggerConfig.eventName : '';
+
+  // Un step `send` sans template ne peut pas être persisté (schéma moteur :
+  // template min(1)) ni envoyé par le runner — on bloque AVANT la revue avec
+  // un message, plutôt que de laisser échouer la soumission.
+  const sendWithoutTemplate = state.steps.some(
+    (s) => s.kind === 'send' && (!s.template || s.template.trim().length === 0),
+  );
+
   const canNext = (() => {
-    if (state.step === 0)
-      return /^[a-z0-9][a-z0-9-]*$/.test(state.slug) && state.name.trim().length >= 1;
-    if (state.step === 1) return state.steps.length >= 1;
+    if (state.step === 0) {
+      const idOk = /^[a-z0-9][a-z0-9-]*$/.test(state.slug) && state.name.trim().length >= 1;
+      if (!idOk) return false;
+      if (triggerNeedsEvent && triggerEventName.trim().length === 0) return false;
+      return true;
+    }
+    if (state.step === 1) {
+      if (state.steps.length < 1) return false;
+      if (sendWithoutTemplate) return false;
+      return true;
+    }
     return true;
   })();
 
@@ -177,6 +201,42 @@ export function AutomationWizard({
               <option value="webhook">Webhook externe</option>
             </select>
           </div>
+          {triggerNeedsEvent && (
+            <div>
+              <label htmlFor="trigger-event-name" className="block text-sm font-medium text-stone-700">
+                Événement déclencheur
+              </label>
+              <select
+                id="trigger-event-name"
+                value={triggerEventName}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'patch',
+                    patch: {
+                      triggerConfig: { ...state.triggerConfig, eventName: e.target.value },
+                    },
+                  })
+                }
+                className="mt-1 w-full rounded border border-stone-300 px-3 py-1.5 text-sm font-mono"
+              >
+                <option value="">— Choisir un événement —</option>
+                {eventsCatalog.map((ev) => (
+                  <option key={ev.name} value={ev.name}>
+                    {ev.name} — {ev.description}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-stone-500">
+                Le moteur enrôle un destinataire quand cet événement est émis. Obligatoire — sans
+                lui l'automation reste inerte.
+              </p>
+              {triggerEventName.trim().length === 0 && (
+                <p role="alert" className="mt-1 text-xs text-red-600">
+                  Sélectionnez l'événement qui déclenche cette automation.
+                </p>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -189,6 +249,11 @@ export function AutomationWizard({
             onChange={(steps) => dispatch({ type: 'patch', patch: { steps } })}
             eventsCatalog={eventsCatalog}
           />
+          {sendWithoutTemplate && (
+            <p role="alert" className="text-xs text-red-600">
+              Chaque étape « Envoyer email » doit référencer un template (slug non vide).
+            </p>
+          )}
         </section>
       )}
 
