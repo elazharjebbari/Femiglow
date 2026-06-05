@@ -15,7 +15,28 @@ import type {
 } from '@/lib/mail/automation/step-types-v2';
 import { AudienceRulesBuilder } from '@/components/admin/emails/audiences/AudienceRulesBuilder';
 import type { RulesGroup } from '@/lib/mail/audiences/rules-types';
+import {
+  TemplateCombobox,
+  TagCombobox,
+} from '@/components/admin/emails/common/combobox-wrappers';
+import { EntityCombobox, type ComboboxOption } from '@/components/admin/emails/common/EntityCombobox';
 import { StepList } from './StepList';
+
+// Suggestions de `source` de lead (route dédiée) — branchées sur l'EntityCombobox
+// du socle pour le champ update_lead.field='source'.
+async function fetchSourceSuggestions(q: string, signal: AbortSignal): Promise<ComboboxOption[]> {
+  const res = await fetch('/api/admin/leads/sources/autocomplete', {
+    credentials: 'include',
+    signal,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = (await res.json()) as { sources: string[] };
+  const needle = q.toLowerCase();
+  return data.sources
+    .filter((s) => s.toLowerCase().includes(needle))
+    .slice(0, 20)
+    .map<ComboboxOption>((s) => ({ value: s, label: s }));
+}
 
 export type StepEditorProps = {
   value: AutomationStep;
@@ -95,14 +116,16 @@ function SendEditor({
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-stone-700">Template slug</label>
-        <input
-          type="text"
+        <label className="block text-sm font-medium text-stone-700">Template</label>
+        <TemplateCombobox
           value={value.template}
-          onChange={(e) => onChange({ ...value, template: e.target.value })}
+          onChange={(template) => onChange({ ...value, template })}
+          ariaLabel="Template de l'email à envoyer"
           placeholder="welcome-1"
-          className="w-full rounded border border-stone-300 px-3 py-1.5 text-sm"
         />
+        <p className="mt-1 text-xs text-stone-500">
+          Choisissez un template existant — un slug inconnu fait échouer l&apos;envoi.
+        </p>
       </div>
       <div>
         <label className="block text-sm font-medium text-stone-700">
@@ -151,12 +174,11 @@ function TagEditor({
       </div>
       <div className="flex-1">
         <label className="block text-sm font-medium text-stone-700">Tag</label>
-        <input
-          type="text"
+        <TagCombobox
           value={value.tag}
-          onChange={(e) => onChange({ ...value, tag: e.target.value })}
+          onChange={(tag) => onChange({ ...value, tag })}
+          ariaLabel="Tag à appliquer au lead"
           placeholder="vip"
-          className="w-full rounded border border-stone-300 px-3 py-1.5 text-sm"
         />
       </div>
     </div>
@@ -201,11 +223,12 @@ function UpdateLeadEditor({
             ))}
           </select>
         ) : (
-          <input
-            type="text"
+          <EntityCombobox
             value={value.value}
-            onChange={(e) => onChange({ ...value, value: e.target.value })}
-            className="w-full rounded border border-stone-300 px-3 py-1.5 text-sm"
+            onChange={(v) => onChange({ ...value, value: v })}
+            fetchSuggestions={fetchSourceSuggestions}
+            ariaLabel="Nouvelle source du lead"
+            placeholder="ex. import-2026"
           />
         )}
       </div>

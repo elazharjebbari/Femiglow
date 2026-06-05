@@ -130,15 +130,37 @@ describe('POST /api/admin/emails/transactional/bulk-retry', () => {
     expect(res.status).toBe(422);
   });
 
-  it('returns 422 if ids contains non-UUID', async () => {
+  it('returns 422 if ids contains a malformed id (espace/@)', async () => {
     const { POST } = await import('../bulk-retry/route');
     const req = new Request('http://test/x', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ids: ['not-a-uuid'] }),
+      // Caractères interdits (espace, @) → réellement invalide. NB : un simple
+      // `not-a-uuid` est DÉSORMAIS valide (les ids outbox `out_…` ne sont pas
+      // des UUID — cf. fix Phase 6 dans schemas.ts).
+      body: JSON.stringify({ ids: ['bad id@nope'] }),
     });
     const res = await POST(req);
     expect(res.status).toBe(422);
+  });
+
+  // RÉGRESSION (Phase 6) : un id outbox réel `out_<nanoid>` DOIT être accepté.
+  // L'ancien `z.string().uuid()` le rejetait (422) → bulk retry mort en prod.
+  it('accepts a real outbox id (out_<nanoid>, pas un UUID)', async () => {
+    vi.mocked(getDb).mockReturnValue(
+      makeFakeDrizzle({
+        selectResult: [{ id: 'out_cvo1b6hlag15slhq', status: 'failed' }],
+      }) as never,
+    );
+    const { POST } = await import('../bulk-retry/route');
+    const req = new Request('http://test/x', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ids: ['out_cvo1b6hlag15slhq'] }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect((await res.json()).retried).toBe(1);
   });
 
   it('returns 422 if ids > 500', async () => {
@@ -191,15 +213,35 @@ describe('POST /api/admin/emails/transactional/bulk-retry', () => {
 // ── POST /bulk-suppress ───────────────────────────────────────────────
 
 describe('POST /api/admin/emails/transactional/bulk-suppress', () => {
-  it('returns 422 on non-UUID ids', async () => {
+  it('returns 422 on malformed ids (caractères interdits)', async () => {
     const { POST } = await import('../bulk-suppress/route');
     const req = new Request('http://test/x', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ids: ['bad'] }),
+      // `bad` seul est désormais un id valide ; on teste un id réellement
+      // malformé (espace) pour garder l'oracle « rejette le garbage ».
+      body: JSON.stringify({ ids: ['bad id'] }),
     });
     const res = await POST(req);
     expect(res.status).toBe(422);
+  });
+
+  // RÉGRESSION (Phase 6) : un id outbox réel `out_<nanoid>` DOIT passer la
+  // validation de bulk-suppress (même bug uuid() que bulk-retry).
+  it('accepts a real outbox id (out_<nanoid>)', async () => {
+    vi.mocked(getDb).mockReturnValue(
+      makeFakeDrizzle({
+        selectResult: [{ id: 'out_cvo1b6hlag15slhq', toEmail: 'a@b.c' }],
+      }) as never,
+    );
+    const { POST } = await import('../bulk-suppress/route');
+    const req = new Request('http://test/x', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ids: ['out_cvo1b6hlag15slhq'] }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
   });
 
   it('defaults reason to manual_admin', async () => {

@@ -1,0 +1,70 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+WHK-UNIT-001,stalwart-parser,isHardBounce(550) retourne true,unit,vitest,P0,isHardBounce==true pour 500<=code<600,F-070
+WHK-UNIT-002,stalwart-parser,isHardBounce(450) retourne false (soft),unit,vitest,P0,isHardBounce==false pour 400<=code<500,F-070
+WHK-UNIT-003,stalwart-parser,isHardBounce(undefined) retourne false,unit,vitest,P1,isHardBounce==false quand code absent,F-070
+WHK-UNIT-004,stalwart-parser,isHardBounce(599) borne haute true,unit,vitest,P1,599 classe hard,F-070
+WHK-UNIT-005,stalwart-parser,isHardBounce(600) hors plage false,unit,vitest,P1,600 non classe hard,F-070
+WHK-UNIT-006,stalwart-parser,isKnownEvent(delivery.delivered) true,unit,vitest,P0,evenement reconnu,F-070
+WHK-UNIT-007,stalwart-parser,isKnownEvent(acme.renew) false,unit,vitest,P1,event inconnu non traite,F-070
+WHK-UNIT-008,stalwart-parser,mapStalwartEventToInternal(delivery.delivered)=delivered,unit,vitest,P1,mapping correct,F-070
+WHK-UNIT-009,stalwart-parser,mapStalwartEventToInternal(queue.rescheduled)=retried,unit,vitest,P1,mapping retried,F-070
+WHK-UNIT-010,stalwart-parser,mapStalwartEventToInternal(auth.failed)=null,unit,vitest,P2,pas de email_event pour auth.failed,F-070
+WHK-UNIT-011,stalwart-parser,schema delivery.failed accepte errorCode+reason,unit,vitest,P1,parse ok avec champs bounce,F-070
+WHK-UNIT-012,stalwart-parser,passthrough preserve champs inconnus dans rawJson,unit,vitest,P2,champs extra conserves,F-074
+WHK-UNIT-013,listmonk-parser,isKnownListmonkEvent(subscriber.bounced) true,unit,vitest,P0,event reconnu,F-071
+WHK-UNIT-014,listmonk-parser,isKnownListmonkEvent(subscriber.unknown) false,unit,vitest,P1,event inconnu rejete,F-071
+WHK-UNIT-015,listmonk-parser,discriminated union campaign.completed parse data,unit,vitest,P1,data.sent/views/clicks extraits,F-071
+WHK-UNIT-016,stalwart-parser,classification hard vs soft table-driven 8 codes,unit,vitest,P0,chaque code mappe au bon type,F-072
+WHK-UNIT-SIG,auth timing-safe,comparaison token longueur differente reste constante,unit,vitest,P0,timingSafeEqual sur buffer fixe pas de early-return observable,F-070
+WHK-CT-001,webhook stalwart,fixture delivered nominal -> outbox delivered,contract,vitest,P0,outbox.status=delivered + email_event delivered insere,F-070
+WHK-CT-002,webhook stalwart,fixture bounce 5xx -> bounced_permanent + suppression,contract,vitest,P0,status=bounced_permanent + suppression inseree,F-072
+WHK-CT-003,webhook stalwart,fixture bounce 4xx -> bounced_soft sans suppression,contract,vitest,P0,status=bounced_soft + AUCUNE suppression,F-072
+WHK-CT-004,webhook stalwart,fixture DSN variante 552 mailbox full -> hard,contract,vitest,P1,552 classe hard,F-072
+WHK-CT-005,webhook stalwart,fixture DSN variante 421 service unavailable -> soft,contract,vitest,P1,421 classe soft,F-072
+WHK-CT-006,webhook stalwart,fixture complaint (feedback loop) -> suppression complaint,contract,vitest,P0,suppression reason=complaint,F-072
+WHK-CT-007,webhook stalwart,fixture queued -> email_event queued sans changement status,contract,vitest,P1,email_event queued insere,F-070
+WHK-CT-008,webhook stalwart,fixture rescheduled -> email_event retried,contract,vitest,P1,email_event retried insere,F-070
+WHK-CT-009,webhook stalwart,messageId absent -> orphelin persiste (cible) pas 200 muet,contract,vitest,P0,email_event correlation=no-message-id persiste,F-070
+WHK-CT-010,webhook stalwart,messageId inconnu -> orphelin persiste outboxId NULL,contract,vitest,P0,email_event outboxId NULL correlation=orphan,F-070
+WHK-CT-011,webhook stalwart,payload tronque (JSON partiel) -> 400 sans 500,contract,vitest,P0,status 400 pas 500 aucun crash,F-070
+WHK-CT-012,webhook stalwart,payload schema-invalide -> orphelin malformed + 400,contract,vitest,P1,email_event type=malformed persiste,F-070
+WHK-CT-013,webhook stalwart,event inconnu acme.* -> 200 ignored unhandled-event,contract,vitest,P1,200 ignored=unhandled-event,F-070
+WHK-CT-014,webhook stalwart,auth.failed -> 200 sans ecriture outbox,contract,vitest,P1,aucun update/insert outbox,F-070
+WHK-CT-015,webhook stalwart,signature invalide (mauvais token) -> 401,contract,vitest,P0,status 401,F-070
+WHK-CT-016,webhook stalwart,token absent -> 401,contract,vitest,P0,status 401,F-070
+WHK-CT-017,webhook stalwart,secret non configure -> 503,contract,vitest,P1,status 503,F-070
+WHK-CT-018,webhook stalwart,rejeu meme DSN 3x -> 1 seul email_event,contract,vitest,P0,dedup via index unique anti-rejeu,F-070
+WHK-CT-019,webhook stalwart,rejeu hard bounce 2x -> 1 seule suppression,contract,vitest,P0,suppression ON CONFLICT DO NOTHING,F-072
+WHK-CT-020,webhook stalwart,lot NDJSON 50 events -> tous traites,contract,vitest,P1,50 email_event inseres aucun perdu,F-070
+WHK-CT-021,webhook stalwart,delivered apres bounced_permanent -> transition gardee,contract,vitest,P0,status reste bounced_permanent,F-070
+WHK-CT-022,webhook listmonk,signature HMAC invalide -> 401,contract,vitest,P0,status 401,F-071
+WHK-CT-023,webhook listmonk,signature HMAC valide sha256=prefix accepte,contract,vitest,P1,prefixe sha256= toleré,F-071
+WHK-CT-024,webhook listmonk,subscriber.bounced hard -> suppression+blocklist subscriber_link,contract,vitest,P0,suppression+subscriber_link blocklisted,F-072
+WHK-CT-025,webhook listmonk,subscriber.bounced soft -> pas de suppression a vie,contract,vitest,P0,soft seuil non atteint = aucune suppression,F-072
+WHK-CT-026,webhook listmonk,subscriber.unsubscribed -> suppression unsubscribe + disabled,contract,vitest,P0,suppression unsubscribe + status disabled,F-071
+WHK-CT-027,webhook listmonk,subscriber.complained -> suppression complaint,contract,vitest,P0,suppression complaint,F-071
+WHK-CT-028,webhook listmonk,campaign.started normal -> status sending,contract,vitest,P1,email_campaign_link status sending,F-071
+WHK-CT-029,webhook listmonk,campaign.completed -> sent + compteurs,contract,vitest,P1,sentCount/openCount/clickCount/bounceCount,F-071
+WHK-CT-030,webhook listmonk,campaign.started APRES completed -> ignore (garde),contract,vitest,P0,status reste sent transition gardee,F-071
+WHK-CT-031,webhook listmonk,campaign.* missing id -> log warn + 200 pas de crash,contract,vitest,P1,200 aucun update,F-071
+WHK-CT-032,webhook listmonk,payload malforme -> orphelin + 200 (pas 400 retry-storm),contract,vitest,P0,email_event orphelin + 200,F-071
+WHK-CT-033,webhook listmonk,event inconnu -> 200 ignored unknown-event,contract,vitest,P1,200 ignored,F-071
+WHK-CT-034,webhook listmonk,subscriber email absent -> log warn pas de crash,contract,vitest,P1,200 warn missing_email,F-071
+WHK-INT-001,bounce-chain,hard bounce stalwart applique les 5 effets,integration,vitest+db,P0,outbox+event+suppression+subscriber_link+blocklist,F-072
+WHK-INT-002,bounce-chain,blocklist Listmonk appelee apres hard bounce,integration,vitest+db+msw,P0,POST /api/subscribers/blocklist intercepte,F-072
+WHK-INT-003,bounce-chain,blocklist Listmonk echec -> transaction DB committee quand meme,integration,vitest+db+msw,P1,DB persiste meme si blocklist 500,F-072
+WHK-INT-004,bounce-chain,soft bounce sous seuil -> aucune suppression aucun blocklist,integration,vitest+db,P0,suppression count=0,F-072
+WHK-INT-005,bounce-chain,N soft consecutifs -> escalade suppression (cible),integration,vitest+db,P1,seuil atteint cree suppression,F-072
+WHK-INT-ORPH,bounce-chain,messageId inconnu -> email_event orphelin persiste,integration,vitest+db,P0,email_event outboxId NULL existe en DB,F-070
+WHK-INT-REPLAY,bounce-chain,rejeu hard bounce -> idempotent (1 event 1 suppression),integration,vitest+db,P0,counts==1,F-072
+WHK-INT-CMP-GUARD,bounce-chain,campaign started post-completed ne regresse pas,integration,vitest+db,P0,status final=sent,F-071
+WHK-INT-BRIDGE,bridge user_event,delivered cree user_event email.delivered source=email,integration,vitest+db,P1,user_event insere,F-074
+WHK-INT-SUPCHECK,chaine suppression,adresse suppressee ne recoit plus aucun envoi,integration,vitest+db,P0,isSuppressed bloque sendTransactional,F-072
+WHK-MSW-001,events page,rendu liste 100 derniers events + total 24h,component,vitest+msw,P1,table rendue total affiche,F-073
+WHK-MSW-002,events page,filtre source=email -> seule source email visible,component,vitest+msw,P1,lignes filtrees,F-073
+WHK-MSW-003,events page,filtre event_name (cible) -> liste reduite,component,vitest+msw,P1,filtre applique,F-073
+WHK-MSW-004,events page,aucun event -> empty state explicite,component,vitest+msw,P2,message aucun event,F-073
+WHK-MSW-005,events page,erreur 500 sur counts -> message erreur pas faux vide,component,vitest+msw,P1,alerte erreur visible,F-073
+WHK-MSW-006,events page,temps reel (cible) -> nouveau delivered apparait sans reload,component,vitest+msw,P2,polling incrementemte total,F-073
+WHK-E2E-001,events operateur,webhook test delivered -> ligne visible source=email badge vert,e2e,playwright,P1,ligne email apparait,F-073
+WHK-E2E-002,events operateur,webhook bounce -> page detail outbox montre bounced_permanent,e2e,playwright,P1,timeline montre bounce,F-072

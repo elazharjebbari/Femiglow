@@ -1,0 +1,20 @@
+{
+  "event": "subscriber.bounced",
+  "source": "listmonk",
+  "ts": 1748966400,
+  "data": {
+    "subscriber": {
+      "id": 60,
+      "uuid": "32ca1f3e-1a1d-42e1-af04-df0757f420f3",
+      "email": "user1@exemple.test",
+      "name": "Salma B.",
+      "status": "enabled"
+    },
+    "bounce_type": "hard",
+    "type": "hard",
+    "source": "stalwart",
+    "campaign": { "id": 1, "name": "Newsletter rituel juin" },
+    "meta": { "smtp_code": 550, "diagnostic": "5.1.1 user unknown" },
+    "created_at": "2026-06-03T18:40:00.000000Z"
+  }
+}

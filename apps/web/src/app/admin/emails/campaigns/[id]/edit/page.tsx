@@ -12,6 +12,7 @@ import {
   fetchListmonkTemplates,
 } from '@/lib/admin/emails/campaigns-queries';
 import { listAudiencesWithSnapshotCount } from '@/lib/mail/audiences/queries';
+import { readPayloadTemplateId } from '@/lib/admin/emails/campaigns-shared';
 import { CampaignWizard } from '@/components/admin/emails/wizard/CampaignWizard';
 
 export const dynamic = 'force-dynamic';
@@ -56,7 +57,9 @@ export default async function CampaignEditPage({ params }: { params: { id: strin
           preheader: draft.preheader,
           audienceLinkIds: Array.isArray(draft.audienceLinkIds) ? (draft.audienceLinkIds as number[]) : [],
           audienceId: (draft.audienceId as string | null) ?? null,
-          listmonkTemplateId: null,
+          // UX-CAMP-004 — réhydrate le template Listmonk persisté dans le payload
+          // (auparavant codé en dur à null → le choix d'étape 3 était perdu).
+          listmonkTemplateId: readPayloadTemplateId(draft.payloadJson),
           scheduledFor: draft.scheduledFor ? draft.scheduledFor.toISOString() : null,
           payloadJson: (draft.payloadJson as Record<string, unknown>) ?? {},
         }}
@@ -64,6 +67,7 @@ export default async function CampaignEditPage({ params }: { params: { id: strin
         templates={templates}
         audiences={audiences}
         listmonkError={listmonkError}
+        adminEmail={session.email}
       />
     </AdminShell>
   );

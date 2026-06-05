@@ -1,0 +1,56 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+CLI-UNIT-001,optin schema,email valide + emailConsent=true parse ok,unit,vitest,P0,optInEmailInputSchema accepte,F-090
+CLI-UNIT-002,optin schema,emailConsent=false rejete (consentement obligatoire),unit,vitest,P0,validation echoue si consent absent,F-090
+CLI-UNIT-003,optin schema,email malforme rejete,unit,vitest,P1,422 sur email invalide,F-090
+CLI-UNIT-004,order confirmation,formatage orderTotal 19900 cents -> 199.00 MAD,unit,vitest,P0,chaine exacte 199.00 MAD,F-091
+CLI-UNIT-005,order confirmation,deliveryEstimate pickup -> retrait en boutique,unit,vitest,P1,libelle pickup correct,F-091
+CLI-UNIT-006,order confirmation,deliveryEstimate delivery -> 2-4 jours ouvres,unit,vitest,P1,libelle livraison correct,F-091
+CLI-UNIT-007,unsub-token,generateUnsubToken/verifyUnsubToken roundtrip,unit,vitest,P0,email recupere apres verify,F-095
+CLI-UNIT-008,unsub-token,token altere -> verify retourne null,unit,vitest,P0,signature invalide rejetee,F-095
+CLI-UNIT-009,unsub-token,token expire -> verify retourne null,unit,vitest,P1,expiration respectee,F-095
+CLI-UNIT-010,newsletter schema,consent literal(true) obligatoire,unit,vitest,P0,422 si consent!=true,F-092
+CLI-UNIT-011,order-confirmation template,rendu contient orderId+total+itemsCount,unit,vitest,P1,HTML contient variables,F-091
+CLI-UNIT-012,newsletter-confirm template,rendu contient confirmUrl,unit,vitest,P1,lien present dans HTML,F-092
+CLI-UNIT-013,lead-notification template,rendu contient prenom+telephone+intent,unit,vitest,P1,HTML interne complet,F-094
+CLI-UNIT-014,cart-abandoned template,rendu accepte contexte produit personnalise,unit,vitest,P1,produit+prenom rendus,F-096
+CLI-UNIT-PWRESET-DEADCODE,password-reset,aucun call-site de password-reset template,unit,vitest,P2,grep call-site = 0 (fausse promesse detectee),F-097
+CLI-MSW-001,NewsletterForm,soumission 200 -> message succes + champ vide,component,vitest+msw,P1,feedback succes affiche,F-092
+CLI-MSW-002,NewsletterForm,401 -> erreur visible pas faux succes,component,vitest+msw,P0,alerte erreur saisie conservee,F-092
+CLI-MSW-003,NewsletterForm,422 validation -> message champ email,component,vitest+msw,P1,erreur validation affichee,F-092
+CLI-MSW-004,NewsletterForm,500 -> erreur generique + retry,component,vitest+msw,P1,etat anterieur conserve,F-092
+CLI-MSW-005,NewsletterForm,hang/timeout -> loading visible pas double submit,component,vitest+msw,P1,bouton disabled pendant requete,F-092
+CLI-MSW-006,NewsletterForm,consent non coche -> bouton bloque/erreur,component,vitest+msw,P0,pas d envoi sans consent,F-092
+CLI-MSW-007,ContactForm,soumission 200 -> accuse affiche,component,vitest+msw,P1,confirmation visible,F-093
+CLI-MSW-008,ContactForm,500 -> erreur sans faux succes,component,vitest+msw,P1,alerte erreur,F-093
+CLI-MSW-009,ThankYouOptin,case consent + email -> PATCH envoye,component,vitest+msw,P0,requete PATCH bien construite,F-090
+CLI-MSW-010,ThankYouOptin,PATCH 500 (drift) -> erreur claire pas faux succes,component,vitest+msw,P0,message erreur visible,F-090
+CLI-MSW-011,ThankYouOptin,double-clic -> une seule requete (idempotence UI),component,vitest+msw,P1,1 seul PATCH,F-090
+CLI-INT-OPTIN-DRIFT,opt-in post-achat,PATCH opt-in contre vrai schema attrape drift lead_tag,integration,vitest+db,P0,insert lead_tag reussit (ROUGE si drift uuid/text),F-090
+CLI-INT-OPTIN-OK,opt-in post-achat,opt-in cree tag + maj leads + user_event,integration,vitest+db,P0,lead_tag + leads.email + user_event presents,F-090
+CLI-INT-OPTIN-REPLAY,opt-in post-achat,replay idempotent -> 1 seul tag,integration,vitest+db,P0,count(lead_tag)=1 status replayed,F-090
+CLI-INT-OPTIN-NOLEAD,opt-in post-achat,order sans chatLeadId -> invalid_state 400,integration,vitest+db,P1,400 invalid_state,F-090
+CLI-INT-OPTIN-NOORDER,opt-in post-achat,orderId inexistant -> not_found 404,integration,vitest+db,P1,404 not_found,F-090
+CLI-INT-CONF-PRESENT,order confirmation,email present au checkout -> outbox order-confirmation enqueue,integration,vitest+db,P0,1 ligne outbox template order-confirmation,F-091
+CLI-INT-CONF-IDEM,order confirmation,re-checkout meme orderId -> 1 seul envoi,integration,vitest+db,P0,idempotencyKey order-confirm:orderId unique,F-091
+CLI-INT-CONF-ABSENT,order confirmation,email absent au checkout -> aucun envoi (documente),integration,vitest+db,P1,0 outbox + trace,F-091
+CLI-INT-CONF-LATE,order confirmation,opt-in tardif declenche confirmation/automation,integration,vitest+db,P1,confirmation envoyee apres opt-in,F-091
+CLI-INT-NL-SUBLINK,newsletter confirm,confirm cree email_subscriber_link status enabled,integration,vitest+db,P0,1 ligne subscriber_link doubleOptinConfirmedAt,F-092
+CLI-INT-NL-SYNC,newsletter confirm,confirm declenche sync Listmonk (cible),integration,vitest+db+msw,P0,POST Listmonk subscriber intercepte,F-092
+CLI-INT-NL-IDEM,newsletter,double soumission meme email -> 1 seul confirm enqueue,integration,vitest+db,P1,idempotencyKey newsletter-confirm:email,F-092
+CLI-INT-NL-CONFIRM-EXISTING,newsletter confirm,ligne pending existante promue a enabled,integration,vitest+db,P1,update status enabled pas double insert,F-092
+CLI-INT-CONTACT-ACK,contact,POST contact -> outbox contact-acknowledgement,integration,vitest+db,P1,1 outbox contact-ack,F-093
+CLI-INT-INTERNAL-ALLOWLIST,lead notification,adresse interne suppressee recoit quand meme,integration,vitest+db,P0,sendTransactional ne bloque pas adresse interne,F-094
+CLI-INT-INTERNAL-SENT,lead notification,nouveau lead -> notification interne enqueue,integration,vitest+db,P1,1 outbox lead-notification,F-094
+CLI-INT-UNSUB-NOWHERE,unsubscribe,desabonnement -> plus aucun envoi nulle part,integration,vitest+db,P0,suppression+subscriber_link disabled+blocklist Listmonk,F-095
+CLI-INT-UNSUB-TOKEN-KO,unsubscribe,token invalide -> 400 aucune ecriture,integration,vitest+db,P0,400 pas de suppression inseree,F-095
+CLI-INT-UNSUB-IDEM,unsubscribe,double clic unsub -> 1 seule suppression,integration,vitest+db,P1,ON CONFLICT DO NOTHING,F-095
+CLI-INT-SUPPRESS-BLOCKS,suppression,adresse suppressee bloque order-confirmation,integration,vitest+db,P0,sendTransactional status=suppressed,F-095
+CLI-INT-CART-CONTEXT,cart abandoned,contexte personnalise (produit reel prenom),integration,vitest+db,P1,payload non placeholder,F-096
+CLI-E2E-001,page merci opt-in,saisie email + consent + valider -> succes visible,e2e,playwright,P0,message succes affiche,F-090
+CLI-E2E-002,page merci opt-in,consent non coche -> envoi bloque,e2e,playwright,P0,pas de succes sans consent,F-090
+CLI-E2E-003,page merci opt-in,erreur serveur -> message clair pas faux succes,e2e,playwright,P0,erreur visible,F-090
+CLI-E2E-004,page merci opt-in,replay (recharger+revalider) idempotent,e2e,playwright,P1,pas de double tag,F-090
+CLI-E2E-005,parcours complet Kaoutar,commande->optin->confirmation->unsub mail recu Mailpit,e2e,playwright,P0,confirmation lue dans Mailpit puis unsub OK,F-090
+CLI-E2E-006,newsletter,form->confirm link->page confirmee,e2e,playwright,P1,page inscription confirmee,F-092
+CLI-E2E-007,unsubscribe,clic lien -> page desinscription confirmee,e2e,playwright,P1,page unsub OK,F-095
+CLI-E2E-008,parcours Kaoutar,apres unsub aucun nouvel email recu Mailpit,e2e,playwright,P0,0 nouveau message apres unsub,F-095

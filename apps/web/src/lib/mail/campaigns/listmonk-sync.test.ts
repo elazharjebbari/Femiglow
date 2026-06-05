@@ -33,6 +33,10 @@ describe('pushSnapshotToListmonk', () => {
   });
 
   it('returns existing list_id when snapshot already pushed (idempotent)', async () => {
+    // « Déjà poussée » = liste créée ET push marqué terminé
+    // (metadata.listmonkPushedAt). Le simple listmonkListId ne suffit plus :
+    // un push partiel (liste créée, membres incomplets) doit être REPRIS, pas
+    // court-circuité (L-ATOM). Cf. snapshot-push-recovery.integration.test.ts.
     vi.mocked(getDb).mockReturnValue(
       makeFakeDrizzle({
         selectResult: [
@@ -41,6 +45,7 @@ describe('pushSnapshotToListmonk', () => {
             listmonkListId: 42,
             listmonkListName: 'fg-existing',
             size: 100,
+            metadata: { listmonkPushedAt: '2026-06-01T10:00:00.000Z' },
           },
         ],
       }) as never,

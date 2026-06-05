@@ -5,7 +5,8 @@
  * insère un Rule pré-rempli sensé. Centralisation pour éviter les
  * placeholders incohérents partout.
  */
-import type { Rule, RuleKind } from '@/lib/mail/audiences/rules-types';
+import type { Rule, RuleKind, RulesGroup } from '@/lib/mail/audiences/rules-types';
+import { countryLabel } from './countries';
 
 export const RULE_CATEGORIES: { label: string; items: { kind: RuleKind; label: string }[] }[] = [
   {
@@ -92,4 +93,144 @@ export function ruleLabel(kind: RuleKind): string {
     if (item) return item.label;
   }
   return kind;
+}
+
+// ── Conversion MAD ↔ centimes (UX-AUD-010) ────────────────────────────────
+//
+// Le compilateur compare `order_total` à SUM(orders.total_cents) → la value
+// stockée est en CENTIMES. L'UI saisit en MAD (unité affichée). On centralise
+// la conversion ici pour qu'elle soit testable et réutilisable.
+
+/** MAD (saisie utilisateur) → centimes (stockage/compilateur). Arrondi entier. */
+export function madToCents(mad: number): number {
+  if (!Number.isFinite(mad)) return 0;
+  return Math.round(mad * 100);
+}
+
+/** centimes (stockage) → MAD (affichage). Peut être décimal (ex. 50050 → 500.5). */
+export function centsToMad(cents: number): number {
+  if (!Number.isFinite(cents)) return 0;
+  return cents / 100;
+}
+
+// ── Sérialisation règle → texte FR lisible (UX-AUD-014) ───────────────────
+//
+// Remplace le `<pre>{JSON.stringify(rules)}</pre>` de la page détail par un
+// rendu en langage naturel : « Pays = Maroc ET ≥ 1 commande ». Un opérateur
+// CRM non technique doit pouvoir relire son ciblage (kinds, cents, codes pays
+// traduits). Best-effort : tout kind/operator non couvert retombe sur un
+// libellé générique plutôt que de crasher.
+
+const NUM_OP_FR: Record<string, string> = {
+  gte: '≥',
+  lte: '≤',
+  gt: '>',
+  lt: '<',
+  eq: '=',
+  between: 'entre',
+};
+
+const DATE_OP_FR: Record<string, string> = {
+  after: 'après le',
+  before: 'avant le',
+  between: 'entre',
+  within: 'dans les',
+};
+
+const STR_OP_FR: Record<string, string> = {
+  contains: 'contient',
+  starts: 'commence par',
+  ends: 'finit par',
+  equals: 'égal à',
+  in: 'parmi',
+};
+
+function numPhrase(operator: string, value: number | [number, number], opts: { mad?: boolean } = {}): string {
+  const fmt = (n: number) =>
+    opts.mad ? `${centsToMad(n).toLocaleString('fr-FR')} MAD` : n.toLocaleString('fr-FR');
+  if (operator === 'between' && Array.isArray(value)) {
+    return `entre ${fmt(value[0])} et ${fmt(value[1])}`;
+  }
+  const v = Array.isArray(value) ? value[0] : value;
+  return `${NUM_OP_FR[operator] ?? operator} ${fmt(v)}`;
+}
+
+function datePhrase(operator: string, value: string | [string, string]): string {
+  if (operator === 'between' && Array.isArray(value)) {
+    return `entre le ${value[0]} et le ${value[1]}`;
+  }
+  const v = Array.isArray(value) ? value[0] : value;
+  return `${DATE_OP_FR[operator] ?? operator} ${v}`;
+}
+
+/** Décrit une Rule unique en français lisible. */
+export function ruleToText(rule: Rule): string {
+  switch (rule.kind) {
+    case 'email_pattern':
+      return `Email ${STR_OP_FR[rule.operator] ?? rule.operator} « ${
+        Array.isArray(rule.value) ? rule.value.join(', ') : rule.value
+      } »`;
+    case 'country': {
+      const codes = Array.isArray(rule.value) ? rule.value : [rule.value];
+      const names = codes.map((c) => countryLabel(c)).join(', ');
+      return rule.operator === 'in' ? `Pays parmi ${names}` : `Pays = ${names}`;
+    }
+    case 'consent_marketing':
+      return `Consentement marketing ${rule.value ? 'accepté' : 'refusé'}`;
+    case 'created_at':
+      return `Inscrit ${datePhrase(rule.operator, rule.value)}`;
+    case 'order_count':
+      return `Nombre de commandes ${numPhrase(rule.operator, rule.value)}${
+        rule.since ? ` depuis le ${rule.since}` : ''
+      }${rule.until ? ` jusqu'au ${rule.until}` : ''}`;
+    case 'order_total':
+      return `Total dépensé ${numPhrase(rule.operator, rule.value, { mad: true })}${
+        rule.since ? ` depuis le ${rule.since}` : ''
+      }`;
+    case 'has_ordered_product':
+      return `A commandé le produit « ${rule.productId} »${
+        rule.since ? ` depuis le ${rule.since}` : ''
+      }`;
+    case 'last_order_at':
+      return `Dernière commande ${datePhrase(rule.operator, rule.value)}`;
+    case 'email_opened':
+      return `A ouvert un email${rule.templateSlug ? ` (modèle « ${rule.templateSlug} »)` : ''}${
+        rule.within ? ` dans les ${rule.within}` : ''
+      }${rule.minCount ? ` au moins ${rule.minCount} fois` : ''}`;
+    case 'email_clicked':
+      return `A cliqué un lien${rule.urlPattern ? ` vers « ${rule.urlPattern} »` : ''}${
+        rule.within ? ` dans les ${rule.within}` : ''
+      }${rule.minCount ? ` au moins ${rule.minCount} fois` : ''}`;
+    case 'received_without_open':
+      return `A reçu ≥ ${rule.threshold} emails sans en ouvrir aucun dans les ${rule.within}`;
+    case 'inactive_since':
+      return `Inactif depuis ${rule.days} jours`;
+    case 'session_count':
+      return `Nombre de sessions ${numPhrase(rule.operator, rule.value)}${
+        rule.within ? ` dans les ${rule.within}` : ''
+      }`;
+    case 'has_tag':
+      return `A le tag « ${rule.tag} »`;
+    case 'not_has_tag':
+      return `N'a pas le tag « ${rule.tag} »`;
+    default:
+      return ruleLabel((rule as Rule).kind);
+  }
+}
+
+/** Aplatit un RulesGroup en lignes lisibles FR (récursif, indentation par niveau). */
+export type RuleTextLine = { depth: number; combinator: 'all' | 'any' | null; text: string };
+
+export function rulesGroupToLines(group: RulesGroup, depth = 0): RuleTextLine[] {
+  const lines: RuleTextLine[] = [];
+  const combinatorLabel = group.kind === 'all' ? 'TOUS les critères' : 'AU MOINS UN critère';
+  lines.push({ depth, combinator: group.kind, text: combinatorLabel });
+  for (const cond of group.conditions) {
+    if ('conditions' in cond && Array.isArray(cond.conditions)) {
+      lines.push(...rulesGroupToLines(cond as RulesGroup, depth + 1));
+    } else {
+      lines.push({ depth: depth + 1, combinator: null, text: ruleToText(cond as Rule) });
+    }
+  }
+  return lines;
 }

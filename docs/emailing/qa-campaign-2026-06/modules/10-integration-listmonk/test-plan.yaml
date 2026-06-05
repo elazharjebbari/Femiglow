@@ -1,0 +1,88 @@
+# Test plan — Module 10 : Intégration Listmonk
+module: "10-integration-listmonk"
+refs_inventaire: [F-100, F-101, F-102, F-103, F-104, F-105]
+matrix: test-matrix.csv
+
+prerequis:
+  env:
+    - LISTMONK_INTERNAL_URL    # base URL interceptee par MSW
+    - LISTMONK_API_USER
+    - LISTMONK_API_TOKEN
+    - DATABASE_URL_TEST        # snapshots/members reels (couche 3)
+  harnais:
+    - src/test/msw/server.ts              # handlers Listmonk (lists/subscribers/import)
+    - src/test/db/setup.ts                # email_audience_snapshot(.member)
+  factories:
+    - makeSnapshot({ size, purgeableAfter, listmonkListId })
+    - makeSnapshotMember({ snapshotId, email })
+
+suites:
+  - id: client-resilience
+    couche: unit
+    fichiers:
+      - specs/listmonk-client-resilience.test.ts
+    cas:
+      - LMK-MSW-001..003, LMK-MSW-TIMEOUT, LMK-MSW-RETRY, LMK-MSW-NORETRY-4XX
+      - LMK-MSW-429, LMK-MSW-AUTH-KO, LMK-MSW-PAGE-FULL, LMK-MSW-PAGE-CAP
+      - LMK-MSW-5XX-EXHAUST, LMK-MSW-BLOCKLIST, LMK-MSW-CAMPAIGN-CREATE, LMK-MSW-CAMPAIGN-STATUS
+    ordre: 1
+    isolation: msw
+    note: "MSW intercepte l'API Listmonk au niveau reseau (pas de vi.mock fetch)."
+
+  - id: push-recovery-integration
+    couche: integration
+    fichiers:
+      - specs/snapshot-push-recovery.integration.test.ts
+    cas:
+      - LMK-INT-PUSH-OK, LMK-INT-PUSH-IDEM, LMK-INT-PUSH-RECOVERY, LMK-INT-PUSH-CHUNK
+      - LMK-INT-PUSH-COUNT, LMK-INT-PUSH-409, LMK-INT-PUSH-NOCONFIG, LMK-INT-PUSH-CREATE-FAIL
+    ordre: 2
+    isolation: serial
+    requiert: [DATABASE_URL_TEST]
+
+  - id: cleanup-purge-integration
+    couche: integration
+    fichiers:
+      - specs/cleanup-purge-order.integration.test.ts
+    cas:
+      - LMK-INT-CLEANUP-OK, LMK-INT-CLEANUP-404, LMK-INT-CLEANUP-FAIL
+      - LMK-INT-ORDER, LMK-INT-PURGE-GUARD, LMK-INT-PURGE-OK, LMK-INT-PURGE-IDEM, LMK-INT-ORPHAN-TAG
+    ordre: 3
+    isolation: serial
+    requiert: [DATABASE_URL_TEST]
+
+  - id: subscriber-sync-integration
+    couche: integration
+    fichiers:
+      - specs/subscriber-sync.integration.test.ts
+    cas: [LMK-INT-SUBSYNC, LMK-INT-SUBSYNC-CREATED, LMK-INT-SUBSYNC-RECONCILE]
+    ordre: 3
+    isolation: serial
+    requiert: [DATABASE_URL_TEST]
+
+  - id: proxy-iframe
+    couche: component+integration
+    fichiers:
+      - src/app/api/listmonk/[...path]/__tests__/route.test.ts
+      - src/components/admin/emails/__tests__/ListmonkFrame.test.tsx
+    cas:
+      - LMK-INT-PROXY-AUTH, LMK-INT-PROXY-NOCREDS, LMK-INT-PROXY-INJECT, LMK-INT-PROXY-STRIP
+      - LMK-CMP-IFRAME-SRC-PROXY, LMK-CMP-IFRAME-SRC-SUBDOMAIN, LMK-CMP-IFRAME-SANDBOX, LMK-CMP-IFRAME-POSTMSG
+    ordre: 4
+    isolation: msw
+
+  - id: iframe-e2e
+    couche: e2e
+    fichiers:
+      - e2e/emails-listmonk.spec.ts
+    cas: [LMK-E2E-001]
+    ordre: 5
+    isolation: playwright
+    requiert: [build_local, listmonk_local_or_stub]
+
+criteres_sortie:
+  - "Client: timeout+retry+429+pagination complete prouves (MSW)"
+  - "Push: reprise apres partiel sans re-push complet (LMK-INT-PUSH-RECOVERY)"
+  - "Aucune fuite de liste: ordre cleanup->purge + garde (LMK-INT-ORDER, LMK-INT-PURGE-GUARD)"
+  - "subscriber_link alimente + sync (LMK-INT-SUBSYNC)"
+  - "Proxy: 401 sans admin, creds jamais exposes, iframe sandbox sans top-nav"

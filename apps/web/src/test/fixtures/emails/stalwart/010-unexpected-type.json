@@ -1,0 +1,8 @@
+{
+  "event": "acme.order-completed",
+  "id": "987654321",
+  "createdAt": "2026-06-04T00:00:00Z",
+  "hostname": "femiglow-maroc.com",
+  "details": "TLS certificate renewed via ACME — unrelated to mail delivery, must be ignored with 200",
+  "ts": "2026-06-04T00:00:00Z"
+}

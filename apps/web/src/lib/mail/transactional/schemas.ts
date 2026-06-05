@@ -48,12 +48,30 @@ export const SummaryQuerySchema = z.object({
   window: z.enum(['1h', '24h', '7d']),
 });
 
+/**
+ * Validateur d'id outbox.
+ *
+ * BUG FIX (Phase 6 E2E, chantier D) : `email_outbox.id` est un `text` généré par
+ * `createId('out')` → forme `out_<nanoid base36>` (ex. `out_cvo1b6hlag15slhq`),
+ * et JAMAIS un UUID. L'ancien `z.string().uuid()` rejetait donc TOUS les ids
+ * réels (422 « Validation échouée ») ⇒ le bulk retry / suppress du cockpit était
+ * inopérant en production. On valide ici un id opaque sûr : non vide, borné, et
+ * limité aux caractères des ids applicatifs (alphanum + `_` + `-`). Ce jeu de
+ * caractères couvre aussi le format UUID (compat ascendante des anciens tests
+ * qui passaient un UUID), tout en rejetant les valeurs manifestement invalides.
+ */
+const OutboxIdSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[A-Za-z0-9_-]+$/, 'identifiant outbox invalide');
+
 export const BulkRetrySchema = z.object({
-  ids: z.array(z.string().uuid()).min(0).max(500),
+  ids: z.array(OutboxIdSchema).min(0).max(500),
 });
 
 export const BulkSuppressSchema = z.object({
-  ids: z.array(z.string().uuid()).min(0).max(500),
+  ids: z.array(OutboxIdSchema).min(0).max(500),
   reason: z.enum(['manual_admin', 'hard_bounce']).optional(),
 });
 

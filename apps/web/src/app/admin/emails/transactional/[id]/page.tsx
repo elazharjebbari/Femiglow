@@ -6,7 +6,8 @@ import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { getOutboxRow, getOutboxTimeline } from '@/lib/admin/emails/queries';
-import { retryOutboxAction } from '@/lib/admin/emails/actions';
+import { StatusBadge } from '@/components/admin/emails/common/StatusBadge';
+import { RetryButton } from '@/components/admin/emails/cockpit/RetryButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +36,18 @@ export default async function OutboxDetailPage({
         </div>
         <div className="text-right">
           <p className="text-xs uppercase tracking-wider text-stone-500">Statut</p>
-          <p className="mt-1 text-lg font-semibold text-stone-900">{row.status}</p>
+          <div className="mt-1 flex justify-end">
+            <StatusBadge status={row.status} className="text-sm" />
+          </div>
+          {row.status === 'suppressed' ? (
+            <Link
+              href={`/admin/emails/suppression?email=${encodeURIComponent(row.toEmail)}`}
+              data-testid="suppression-deeplink"
+              className="mt-2 inline-block text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700"
+            >
+              Voir / retirer dans la liste de suppression
+            </Link>
+          ) : null}
         </div>
       </header>
 
@@ -65,17 +77,7 @@ export default async function OutboxDetailPage({
             </div>
           ) : null}
 
-          {canRetry ? (
-            <form action={retryOutboxAction} className="mt-4">
-              <input type="hidden" name="id" value={row.id} />
-              <button
-                type="submit"
-                className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
-              >
-                ↻ Renvoyer
-              </button>
-            </form>
-          ) : null}
+          {canRetry ? <RetryButton outboxId={row.id} /> : null}
         </section>
 
         {/* Preview HTML */}
@@ -101,15 +103,40 @@ export default async function OutboxDetailPage({
           <p className="text-sm text-stone-500">Aucun event enregistré.</p>
         ) : (
           <ol className="space-y-2">
-            {timeline.map((evt) => (
-              <li key={evt.id} className="flex items-center gap-3 text-sm">
-                <span className="font-mono text-xs text-stone-500 whitespace-nowrap">
-                  {new Date(evt.ts).toLocaleString('fr-FR', { hour12: false })}
-                </span>
-                <span className="font-medium text-stone-900">{evt.type}</span>
-                <span className="text-xs text-stone-500">via {evt.source}</span>
-              </li>
-            ))}
+            {timeline.map((evt) => {
+              // UX-COCKPIT-008 : event webhook (stalwart/listmonk) vs système (app).
+              const isWebhook = evt.source === 'stalwart' || evt.source === 'listmonk';
+              const hasPayload =
+                evt.rawJson != null &&
+                (typeof evt.rawJson !== 'object' || Object.keys(evt.rawJson).length > 0);
+              return (
+                <li key={evt.id} className="text-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-stone-500 whitespace-nowrap">
+                      {new Date(evt.ts).toLocaleString('fr-FR', { hour12: false })}
+                    </span>
+                    <span className="font-medium text-stone-900">{evt.type}</span>
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                        isWebhook ? 'bg-blue-50 text-blue-700' : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      via {evt.source}
+                    </span>
+                  </div>
+                  {hasPayload ? (
+                    <details className="ml-1 mt-1" data-testid={`timeline-payload-${evt.id}`}>
+                      <summary className="cursor-pointer text-xs text-stone-500 hover:text-stone-700">
+                        Voir le payload
+                      </summary>
+                      <pre className="mt-1 overflow-auto rounded bg-stone-50 p-2 text-[11px] text-stone-700">
+                        {JSON.stringify(evt.rawJson, null, 2)}
+                      </pre>
+                    </details>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
         )}
       </section>

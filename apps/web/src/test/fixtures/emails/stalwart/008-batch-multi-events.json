@@ -1,0 +1,38 @@
+{
+  "events": [
+    {
+      "id": "307018204079726080",
+      "createdAt": "2026-05-13T14:41:37Z",
+      "type": "delivery.delivered",
+      "data": {
+        "queueId": "307018204079726080",
+        "messageId": "<batch-0001@femiglow-maroc.com>",
+        "rcpt": "user8a@exemple.test",
+        "code": 250,
+        "details": "OK 2.0.0 accepted"
+      }
+    },
+    {
+      "id": "307018204079726081",
+      "createdAt": "2026-05-13T14:41:38Z",
+      "type": "delivery.failed",
+      "data": {
+        "queueId": "307018204079726081",
+        "messageId": "<batch-0002@femiglow-maroc.com>",
+        "rcpt": "user8b@exemple.test",
+        "code": 550,
+        "reason": "5.1.1 user unknown"
+      }
+    },
+    {
+      "id": "307018204079726082",
+      "createdAt": "2026-05-13T14:41:39Z",
+      "type": "queue.rescheduled",
+      "data": {
+        "queueId": "307018204079726082",
+        "messageId": "<batch-0003@femiglow-maroc.com>",
+        "nextRetry": "2026-05-13T15:00:00Z"
+      }
+    }
+  ]
+}

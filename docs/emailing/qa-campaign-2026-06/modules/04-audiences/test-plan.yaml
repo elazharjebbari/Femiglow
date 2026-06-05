@@ -1,0 +1,78 @@
+module: "04-audiences"
+ref_inventaire: [F-040, F-041, F-042, F-043, F-044, F-045, F-046]
+description: >
+  Plan de tests audiences : compilation exhaustive (chaque règle, unit + DB
+  seedée), preview, snapshot (cycle/zombie/idempotence/purge), builder UI (MSW),
+  CRUD + suppression référencée.
+
+suites:
+  - id: rules-compiler-exhaustive
+    couche: vitest+db
+    fichier: specs/rules-compiler-exhaustive.test.ts
+    cible: src/lib/mail/audiences/rules-compiler.ts
+    prerequis:
+      - "DATABASE_URL_TEST → femiglow_test, migrations appliquées"
+      - "Seed déterministe leads/orders/email_event/user_event/lead_tag/email_suppression"
+    couvre: [AUD-CMP-001, AUD-CMP-002, AUD-CMP-003, AUD-CMP-004, AUD-CMP-005,
+             AUD-CMP-006, AUD-CMP-007, AUD-CMP-008, AUD-CMP-009, AUD-CMP-010,
+             AUD-CMP-011, AUD-CMP-012, AUD-CMP-013, AUD-CMP-014, AUD-CMP-015,
+             AUD-CMP-016, AUD-CMP-017, AUD-CMP-018, AUD-CMP-019, AUD-CMP-020,
+             AUD-CMP-021, AUD-CMP-022, AUD-CMP-023, AUD-CMP-024, AUD-CMP-025,
+             AUD-CMP-026, AUD-CMP-027, AUD-CMP-028, AUD-CMP-029, AUD-CMP-030,
+             AUD-CMP-031, AUD-CMP-032, AUD-CMP-033, AUD-CMP-034, AUD-CMP-035,
+             AUD-CMP-036, AUD-CMP-037, AUD-CMP-038, AUD-CMP-039, AUD-CMP-040,
+             AUD-CMP-041, AUD-CMP-042, AUD-CMP-043]
+    serialise: true
+    ordre: 1
+
+  - id: preview-integration
+    couche: vitest+db
+    fichier: specs/snapshot-lifecycle.integration.test.ts
+    cible: src/lib/mail/audiences/preview.ts + api/preview-size|preview-sample
+    couvre: [AUD-PRE-001, AUD-PRE-002, AUD-PRE-003, AUD-PRE-004, AUD-PRE-005, AUD-PRE-006]
+    serialise: true
+    ordre: 2
+
+  - id: snapshot-lifecycle-integration
+    couche: vitest+db
+    fichier: specs/snapshot-lifecycle.integration.test.ts
+    cible: src/lib/mail/audiences/snapshot.ts + purge.ts
+    prerequis:
+      - "DB de test seedée ; possibilité d'insérer un snapshot zombie running manuellement"
+    couvre: [AUD-SNAP-001, AUD-SNAP-002, AUD-SNAP-003, AUD-SNAP-004, AUD-SNAP-005,
+             AUD-SNAP-006, AUD-SNAP-007, AUD-SNAP-008, AUD-SNAP-009, AUD-SNAP-010,
+             AUD-PURGE-001, AUD-PURGE-002]
+    serialise: true
+    ordre: 3
+
+  - id: audience-builder-msw
+    couche: vitest+msw
+    fichier: specs/audience-builder.msw.test.tsx
+    cible: src/components/admin/emails/audiences/AudienceRulesBuilder.tsx + autocompletes
+    prerequis:
+      - "Serveur MSW partagé pour autocompletes + preview"
+    couvre: [AUD-BLD-001, AUD-BLD-002, AUD-BLD-003, AUD-BLD-004, AUD-BLD-005,
+             AUD-BLD-006, AUD-BLD-007, AUD-BLD-008, AUD-BLD-009,
+             AUD-AC-001, AUD-AC-002, AUD-AC-003, AUD-AC-004]
+    grille_echecs: [200, 500]
+    ordre: 4
+
+  - id: audience-crud-integration
+    couche: vitest+db
+    fichier: specs/snapshot-lifecycle.integration.test.ts
+    cible: api/admin/emails/audiences/**
+    couvre: [AUD-CRUD-001, AUD-CRUD-002, AUD-CRUD-003, AUD-CRUD-004, AUD-CRUD-005]
+    serialise: true
+    ordre: 5
+
+  - id: audience-e2e
+    couche: playwright
+    fichier: e2e/emails-audiences.spec.ts
+    couvre: [AUD-E2E-001, AUD-E2E-002]
+    ordre: 6
+
+oracles_transverses:
+  - "Exactitude ciblage : sur jeu seedé connu, le résultat == ensemble attendu exact."
+  - "Écarts prouvés (country=TRUE, email_event non corrélé) par tests RED explicites."
+  - "Idempotence snapshot : ne renvoyer un existant QUE s'il est 'done' (état cible)."
+  - "Builder : aucune condition perdue lors d'ajout/suppression/réordonnancement."

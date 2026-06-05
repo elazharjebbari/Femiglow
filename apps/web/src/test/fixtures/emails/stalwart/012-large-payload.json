@@ -1,0 +1,377 @@
+{
+  "event": "delivery.failed",
+  "queueId": "307200000000000123",
+  "messageId": "<large-0001@femiglow-maroc.com>",
+  "queueName": "remote",
+  "from": "campagne@femiglow-maroc.com",
+  "rcpt": [
+    "user1@exemple.test",
+    "user2@exemple.test",
+    "user3@exemple.test",
+    "user4@exemple.test",
+    "user5@exemple.test",
+    "user6@exemple.test",
+    "user7@exemple.test",
+    "user8@exemple.test",
+    "user9@exemple.test",
+    "user10@exemple.test",
+    "user11@exemple.test",
+    "user12@exemple.test",
+    "user13@exemple.test",
+    "user14@exemple.test",
+    "user15@exemple.test",
+    "user16@exemple.test",
+    "user17@exemple.test",
+    "user18@exemple.test",
+    "user19@exemple.test",
+    "user20@exemple.test",
+    "user21@exemple.test",
+    "user22@exemple.test",
+    "user23@exemple.test",
+    "user24@exemple.test",
+    "user25@exemple.test",
+    "user26@exemple.test",
+    "user27@exemple.test",
+    "user28@exemple.test",
+    "user29@exemple.test",
+    "user30@exemple.test",
+    "user31@exemple.test",
+    "user32@exemple.test",
+    "user33@exemple.test",
+    "user34@exemple.test",
+    "user35@exemple.test",
+    "user36@exemple.test",
+    "user37@exemple.test",
+    "user38@exemple.test",
+    "user39@exemple.test",
+    "user40@exemple.test",
+    "user41@exemple.test",
+    "user42@exemple.test",
+    "user43@exemple.test",
+    "user44@exemple.test",
+    "user45@exemple.test",
+    "user46@exemple.test",
+    "user47@exemple.test",
+    "user48@exemple.test",
+    "user49@exemple.test",
+    "user50@exemple.test"
+  ],
+  "to": [
+    "user1@exemple.test",
+    "user2@exemple.test",
+    "user3@exemple.test",
+    "user4@exemple.test",
+    "user5@exemple.test",
+    "user6@exemple.test",
+    "user7@exemple.test",
+    "user8@exemple.test",
+    "user9@exemple.test",
+    "user10@exemple.test",
+    "user11@exemple.test",
+    "user12@exemple.test",
+    "user13@exemple.test",
+    "user14@exemple.test",
+    "user15@exemple.test",
+    "user16@exemple.test",
+    "user17@exemple.test",
+    "user18@exemple.test",
+    "user19@exemple.test",
+    "user20@exemple.test",
+    "user21@exemple.test",
+    "user22@exemple.test",
+    "user23@exemple.test",
+    "user24@exemple.test",
+    "user25@exemple.test",
+    "user26@exemple.test",
+    "user27@exemple.test",
+    "user28@exemple.test",
+    "user29@exemple.test",
+    "user30@exemple.test",
+    "user31@exemple.test",
+    "user32@exemple.test",
+    "user33@exemple.test",
+    "user34@exemple.test",
+    "user35@exemple.test",
+    "user36@exemple.test",
+    "user37@exemple.test",
+    "user38@exemple.test",
+    "user39@exemple.test",
+    "user40@exemple.test",
+    "user41@exemple.test",
+    "user42@exemple.test",
+    "user43@exemple.test",
+    "user44@exemple.test",
+    "user45@exemple.test",
+    "user46@exemple.test",
+    "user47@exemple.test",
+    "user48@exemple.test",
+    "user49@exemple.test",
+    "user50@exemple.test"
+  ],
+  "size": 184320,
+  "total": 50,
+  "hostname": "mx-cluster.exemple.test",
+  "errorCode": 552,
+  "code": 552,
+  "reason": "5.2.2 Mailbox quota exceeded for one or more recipients in this multi-rcpt delivery",
+  "details": "552 5.2.2 quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; quota exceeded; ",
+  "headers": {
+    "Received": "from app.femiglow-maroc.com (192.0.2.10) by mx1.exemple.test (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; (via relay; ",
+    "DKIM-Signature": "v=1; a=rsa-sha256; d=femiglow-maroc.com; s=mail; b=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "List-Unsubscribe": "<https://femiglow-maroc.com/api/mail/unsubscribe?token=tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt>",
+    "X-Campaign-Tags": "tag-segment-0,tag-segment-1,tag-segment-2,tag-segment-3,tag-segment-4,tag-segment-5,tag-segment-6,tag-segment-7,tag-segment-8,tag-segment-9,tag-segment-10,tag-segment-11,tag-segment-12,tag-segment-13,tag-segment-14,tag-segment-15,tag-segment-16,tag-segment-17,tag-segment-18,tag-segment-19,tag-segment-20,tag-segment-21,tag-segment-22,tag-segment-23,tag-segment-24,tag-segment-25,tag-segment-26,tag-segment-27,tag-segment-28,tag-segment-29"
+  },
+  "perRecipient": [
+    {
+      "rcpt": "user1@exemple.test",
+      "code": 552,
+      "status": "failed"
+    },
+    {
+      "rcpt": "user2@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user3@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user4@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user5@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user6@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user7@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user8@exemple.test",
+      "code": 552,
+      "status": "failed"
+    },
+    {
+      "rcpt": "user9@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user10@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user11@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user12@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user13@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user14@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user15@exemple.test",
+      "code": 552,
+      "status": "failed"
+    },
+    {
+      "rcpt": "user16@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user17@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user18@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user19@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user20@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user21@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user22@exemple.test",
+      "code": 552,
+      "status": "failed"
+    },
+    {
+      "rcpt": "user23@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user24@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user25@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user26@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user27@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user28@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user29@exemple.test",
+      "code": 552,
+      "status": "failed"
+    },
+    {
+      "rcpt": "user30@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user31@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user32@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user33@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user34@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user35@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user36@exemple.test",
+      "code": 552,
+      "status": "failed"
+    },
+    {
+      "rcpt": "user37@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user38@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user39@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user40@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user41@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user42@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user43@exemple.test",
+      "code": 552,
+      "status": "failed"
+    },
+    {
+      "rcpt": "user44@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user45@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user46@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user47@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user48@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user49@exemple.test",
+      "code": 250,
+      "status": "delivered"
+    },
+    {
+      "rcpt": "user50@exemple.test",
+      "code": 552,
+      "status": "failed"
+    }
+  ],
+  "ts": "2026-05-14T08:00:00Z"
+}

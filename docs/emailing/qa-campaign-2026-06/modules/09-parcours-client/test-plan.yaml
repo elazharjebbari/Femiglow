@@ -1,0 +1,86 @@
+# Test plan — Module 09 : Parcours client emailing
+module: "09-parcours-client"
+refs_inventaire: [F-090, F-091, F-092, F-093, F-094, F-095, F-096, F-097]
+matrix: test-matrix.csv
+
+prerequis:
+  env:
+    - DATABASE_URL_TEST              # vraies migrations drizzle (attrape le drift lead_tag)
+    - MAIL_UNSUB_TOKEN_SECRET        # tokens newsletter/unsub
+    - NEXT_PUBLIC_SITE_URL
+    - LISTMONK_INTERNAL_URL          # interceptee par MSW (sync subscriber)
+    - FEMIGLOW_INTERNAL_EMAILS       # allowlist adresses internes (cible)
+  harnais:
+    - src/test/db/setup.ts           # truncateEmailTables + lead_tag dans EMAIL_TABLES
+    - src/test/msw/server.ts
+    - e2e/_helpers                   # login + Mailpit readLastEmail
+  seed_factories:
+    - makeOrder({ chatLeadId, leadId })
+    - makeLead()
+    - makeChatLead()
+
+suites:
+  - id: unit-schemas-templates
+    couche: unit
+    fichiers:
+      - src/lib/checkout/schemas/lead.test.ts
+      - src/lib/mail/templates/__tests__/order-confirmation.test.tsx
+      - src/lib/mail/unsub-token.test.ts
+    cas: [CLI-UNIT-001..014, CLI-UNIT-PWRESET-DEADCODE]
+    ordre: 1
+    isolation: pure
+
+  - id: forms-component
+    couche: component
+    fichiers:
+      - src/components/forms/__tests__/NewsletterForm.test.tsx
+      - src/components/forms/__tests__/ContactForm.test.tsx
+      - src/components/checkout/__tests__/ThankYouOptin.test.tsx
+    cas: [CLI-MSW-001..011]
+    ordre: 2
+    isolation: msw
+
+  - id: optin-postpurchase-integration
+    couche: integration
+    fichiers:
+      - specs/optin-postpurchase.integration.test.ts
+    cas: [CLI-INT-OPTIN-DRIFT, CLI-INT-OPTIN-OK, CLI-INT-OPTIN-REPLAY, CLI-INT-OPTIN-NOLEAD, CLI-INT-OPTIN-NOORDER]
+    ordre: 3
+    isolation: serial
+    requiert: [DATABASE_URL_TEST]
+    note: "CLI-INT-OPTIN-DRIFT est le test qui devient ROUGE sur le drift lead_tag."
+
+  - id: confirmation-newsletter-integration
+    couche: integration
+    fichiers:
+      - specs/order-confirmation.integration.test.ts
+      - specs/newsletter-doubleoptin.integration.test.ts
+      - specs/internal-allowlist.integration.test.ts
+      - specs/unsubscribe-nowhere.integration.test.ts
+    cas:
+      - CLI-INT-CONF-PRESENT, CLI-INT-CONF-IDEM, CLI-INT-CONF-ABSENT, CLI-INT-CONF-LATE
+      - CLI-INT-NL-SUBLINK, CLI-INT-NL-SYNC, CLI-INT-NL-IDEM, CLI-INT-NL-CONFIRM-EXISTING
+      - CLI-INT-CONTACT-ACK
+      - CLI-INT-INTERNAL-ALLOWLIST, CLI-INT-INTERNAL-SENT
+      - CLI-INT-UNSUB-NOWHERE, CLI-INT-UNSUB-TOKEN-KO, CLI-INT-UNSUB-IDEM, CLI-INT-SUPPRESS-BLOCKS
+      - CLI-INT-CART-CONTEXT
+    ordre: 4
+    isolation: serial
+    requiert: [DATABASE_URL_TEST]
+
+  - id: parcours-client-e2e
+    couche: e2e
+    fichiers:
+      - specs/e2e-thankyou-optin.spec.ts
+      - e2e/emails-parcours-client.spec.ts
+    cas: [CLI-E2E-001..008]
+    ordre: 5
+    isolation: playwright
+    requiert: [build_local, mailpit, DATABASE_URL_TEST]
+
+criteres_sortie:
+  - "CLI-INT-OPTIN-DRIFT vert APRES alignement du schema lead_tag (red->green tracé)"
+  - "order-confirmation idempotente prouvee (count=1)"
+  - "email_subscriber_link cree + sync Listmonk prouvee"
+  - "Parcours Kaoutar complet vert: confirmation lue puis unsub bloque tout"
+  - "Allowlist interne: adresse interne suppressee recoit quand meme"

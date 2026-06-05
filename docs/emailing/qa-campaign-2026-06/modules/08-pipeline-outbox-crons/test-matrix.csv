@@ -1,0 +1,99 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+PIP-INT-001,Machine etats outbox,pending->sending au claim (attemptSend),integration,vitest-db,P0,status passe sending updatedAt set,F-082
+PIP-INT-002,Machine etats outbox,failed->sending au claim si retry dû,integration,vitest-db,P0,ligne failed avec next_retry<=now reprise,F-082
+PIP-INT-003,Machine etats outbox,sending->sent sur succès SMTP,integration,vitest-db,P0,status=sent event sent inséré,F-082
+PIP-INT-004,Machine etats outbox,sending->failed sur erreur transitoire attempts<MAX,integration,vitest-db,P0,status=failed next_retry posé event failed,F-083
+PIP-INT-005,Machine etats outbox,sending->dlq quand attempts>=MAX,integration,vitest-db,P0,status=dlq event dlq next_retry=null,F-083
+PIP-INT-006,Machine etats outbox,sent->delivered via webhook,integration,vitest-db,P1,delivered_at set,F-082
+PIP-INT-007,Machine etats outbox,sent->bounced_hard ajoute suppression,integration,vitest-db,P0,bounce_type=hard email en suppression,F-082
+PIP-INT-008,Machine etats outbox,sent->bounced_soft sans suppression,integration,vitest-db,P1,bounce_type=soft pas de suppression,F-082
+PIP-INT-010,Transition illegale,sent->sending rejeté (double envoi),integration,vitest-db,P0,claim n'inclut pas status=sent aucun renvoi,F-082
+PIP-INT-011,Transition illegale,delivered->sending rejeté,integration,vitest-db,P0,ligne delivered non re-claimée,F-082
+PIP-INT-012,Transition illegale,dlq->sending sans retry explicite rejeté,integration,vitest-db,P0,dlq non reprise par le drain,F-083
+PIP-INT-013,Transition illegale,claim d'une ligne déjà sending par autre worker,integration,vitest-db,P0,inArray exclut sending pas de double claim,F-082
+PIP-INT-014,Transition illegale,pending->sent direct sans sending interdit,integration,vitest-db,P1,aucun chemin ne saute sending,F-082
+PIP-INT-015,retryOutbox,failed->pending réinitialise attempts/nextRetry,integration,vitest-db,P1,status=pending attempts=0 lastError=null,F-083
+PIP-INT-016,retryOutbox,dlq->pending autorisé manuellement,integration,vitest-db,P1,dlq repasse pending,F-083
+PIP-INT-017,retryOutbox,sent->pending interdit (pas dans inArray),integration,vitest-db,P1,retry n'affecte pas une ligne sent,F-083
+PIP-INT-031,Reaper sending,sending orphelin après crash repris par reaper,integration,vitest-db,P0,sending ancien remis pending/failed (RED: pas de reaper),F-082
+PIP-INT-032,Reaper sending,sending récent (en vol) non touché par le reaper,integration,vitest-db,P0,seuil updatedAt respecté,F-082
+PIP-INT-033,Reaper sending,sans reaper la ligne sending n'est jamais reprise,integration,vitest-db,P0,drain ignore sending -> ligne bloquée à vie (RED documente bug),F-082
+PIP-INT-034,Reaper sending,reaper idempotent (deux passes),integration,vitest-db,P1,double reaper n'introduit pas de doublon,F-082
+PIP-INT-035,Reaper sending,reaper incrémente attempts une fois,integration,vitest-db,P1,attempts+1 unique au recyclage,F-082
+PIP-INT-036,Reaper sending,reaper respecte MAX_ATTEMPTS vers dlq,integration,vitest-db,P1,sending orphelin au max -> dlq pas pending,F-082
+PIP-INT-040,Attempts comptage,succès n'incrémente PAS attempts (cible),integration,vitest-db,P0,attempts inchangé après sent (RED: +1 sur succès),F-083
+PIP-INT-041,Attempts comptage,échec incrémente attempts exactement une fois,integration,vitest-db,P0,attempts+1 par échec,F-083
+PIP-INT-042,Attempts comptage,budget retry non épuisé par succès,integration,vitest-db,P0,5e essai réel disponible après succès intermédiaires,F-083
+PIP-INT-043,bounced_soft drain,bounced_soft ramassé par le cron (cible),integration,vitest-db,P0,bounced_soft repris pour réessai (RED: jamais sélectionné),F-083
+PIP-INT-044,bounced_soft drain,bounced_soft avec budget épuisé -> dlq,integration,vitest-db,P1,soft épuisé classé dlq,F-083
+PIP-INT-045,bounced_soft drain,bounced_hard jamais ré-essayé,integration,vitest-db,P0,hard reste terminal,F-083
+PIP-INT-050,Enqueue render,payload Zod invalide ne perd pas l'email sans trace,integration,vitest-db,P0,ligne failed+lastError persistée (RED: throw sans insert),F-080
+PIP-INT-051,Enqueue render,composant qui throw au render -> trace persistée,integration,vitest-db,P0,outbox failed avec erreur (RED),F-080
+PIP-INT-052,Enqueue ordre,INSERT avant render (ordre cible),integration,vitest-db,P0,ligne existe même si render échoue,F-080
+PIP-INT-053,Enqueue suppression,adresse suppressée -> status=suppressed pas d'insert envoi,integration,vitest-db,P0,SendResult suppressed outboxId=null,F-084
+PIP-INT-054,Enqueue idempotence,même idempotencyKey -> duplicate pas de 2e ligne,integration,vitest-db,P0,retourne duplicate outboxId existant,F-080
+PIP-INT-055,Enqueue transaction,échec post-insert n'avale pas l'erreur métier,integration,vitest-db,P0,l'appelant voit l'échec (RED: fire-and-forget avalé),F-080
+PIP-INT-056,Enqueue immédiat,tentative immédiate échouée laisse la ligne reprenable,integration,vitest-db,P1,status failed avec nextRetry pour le cron,F-080
+PIP-INT-057,Enqueue unsub URL,secret absent ne laisse pas {{unsubscribe_url}} littéral,integration,vitest-db,P1,placeholder remplacé ou email bloqué+log (RED: catch vide),F-086
+PIP-INT-058,Enqueue unsub URL,secret présent injecte une URL signée valide,integration,vitest-db,P1,htmlSnapshot contient /api/mail/unsubscribe?t=,F-086
+PIP-INT-060,Drain concurrent,deux pickAndProcessBatch concurrents disjoints,integration,vitest-db,P0,chaque ligne traitée une seule fois (SKIP LOCKED réel),F-082
+PIP-INT-061,Drain concurrent,aucune ligne perdue entre deux workers,integration,vitest-db,P0,union des deux batches = lignes dues,F-082
+PIP-INT-062,Drain ordre,ORDER BY next_retry NULLS FIRST created_at,integration,vitest-db,P1,les plus anciennes d'abord,F-082
+PIP-INT-063,Drain filtre,scheduled_for futur exclu du batch,integration,vitest-db,P1,ligne planifiée non reprise avant l'heure,F-082
+PIP-INT-064,Drain borne temps,batch borné par budget temps avant maxDuration,integration,vitest-db,P0,drain s'arrête avant 60s (RED: 100 séquentiel),F-082
+PIP-INT-065,Drain batch size,au plus BATCH_SIZE lignes par tick,integration,vitest-db,P1,LIMIT respecté,F-082
+PIP-INT-066,Drain cron auth,POST sans Bearer CRON_SECRET -> 401,integration,vitest-db,P0,401 aucune exécution,F-082
+PIP-UNIT-070,Backoff,attempt<=0 retourne 0,unit,vitest,P1,computeBackoff(0)==0,F-083
+PIP-UNIT-071,Backoff,croissance monotone attempts 1..4,unit,vitest,P0,d1<d2<d3<d4,F-083
+PIP-UNIT-072,Backoff,cap à 1h même pour gros attempt,unit,vitest,P0,<=3600000*1.3,F-083
+PIP-UNIT-073,Backoff,jitter déterministe pour now() fixé,unit,vitest,P1,deux appels identiques égaux,F-083
+PIP-UNIT-074,Backoff,jitter borné à 30 pourcent,unit,vitest,P1,delta<=0.3*base,F-083
+PIP-UNIT-075,Backoff,base minimale 60s à attempt1,unit,vitest,P1,>=60000,F-083
+PIP-UNIT-076,Backoff,computeNextRetryAt futur pour attempt>0,unit,vitest,P1,date>from,F-083
+PIP-UNIT-077,Backoff,MAX_ATTEMPTS==5,unit,vitest,P2,constante stable,F-083
+PIP-INT-083,Classification,erreur 5xx permanente -> dlq direct (cible),integration,vitest-db,P0,pas de 5 essais sur erreur permanente (RED: pas de classif),F-083
+PIP-INT-084,Classification,timeout transient -> failed+retry,integration,vitest-db,P0,retry programmé,F-083
+PIP-INT-085,Classification,adresse invalide -> dlq+suppression (cible),integration,vitest-db,P1,suppression ajoutée pour 5.1.1,F-083
+PIP-INT-086,Classification,4xx temporaire -> retry,integration,vitest-db,P1,failed avec nextRetry,F-083
+PIP-INT-090,DLQ,entrée DLQ insère event dlq,integration,vitest-db,P0,email_event type=dlq créé,F-083
+PIP-INT-091,DLQ,compteur DLQ visible (cible),integration,vitest-db,P1,KPI/badge reflète DLQ (RED: silencieuse),F-083
+PIP-INT-092,DLQ,DLQ n'est pas re-drainée automatiquement,integration,vitest-db,P1,dlq stable sans retry manuel,F-083
+PIP-INT-100,Suppression check,client suppressé bloqué à l'envoi,integration,vitest-db,P0,isSuppressed true -> suppressed,F-084
+PIP-INT-101,Allowlist interne,adresse interne JAMAIS bloquée même si suppressée,integration,vitest-db,P0,notif interne envoyée malgré suppression (RED: pas d'allowlist),F-084
+PIP-INT-102,Allowlist interne,notification nouveau lead chat non suppressible,integration,vitest-db,P0,lead-notification envoyée,F-084
+PIP-INT-103,Suppression CRUD,addSuppression idempotent onConflictDoNothing,unit,vitest,P1,une seule ligne email normalisé,F-084
+PIP-INT-104,Suppression CRUD,findSuppressed retourne le set normalisé,unit,vitest,P1,set contient adresses matchées,F-084
+PIP-INT-105,Suppression CRUD,isSuppressed normalise (trim/lowercase),unit,vitest,P1,A@B.C matche a@b.c,F-084
+PIP-INT-106,Suppression sync,bounce_hard webhook -> suppression ajoutée,integration,vitest-db,P0,email suppressé après hard bounce,F-084
+PIP-INT-107,Suppression e2e envoi,après suppression aucun transactionnel ni campagne,integration,vitest-db,P0,deux envois ultérieurs bloqués,F-084
+PIP-INT-110,SMTP stub down,transport down -> failed+retry (transitoire),integration,vitest-db,P0,status failed nextRetry posé,F-081
+PIP-INT-111,SMTP stub lent,envoi lent ne bloque pas indéfiniment,integration,vitest-db,P0,timeout transport -> failed (cible borné),F-081
+PIP-INT-112,SMTP stub refus,refus 550 -> classé permanent (cible),integration,vitest-db,P0,dlq direct (RED: pas de classif),F-081
+PIP-INT-113,SMTP stub succès,messageId persisté sur sent,integration,vitest-db,P1,smtp_message_id renseigné,F-081
+PIP-INT-114,SMTP TLS,rejectUnauthorized doit être true (cible),unit,vitest,P1,config refuse cert invalide (RED: false),F-081
+PIP-INT-115,SMTP snapshot manquant,deliverRow sans htmlSnapshot jette,integration,vitest-db,P0,erreur missing rendered snapshot,F-081
+PIP-INT-116,SMTP pool,pool borné maxConnections respecté,unit,vitest,P2,config pool=5,F-081
+PIP-INT-117,SMTP non configuré,SmtpNotConfiguredError -> failed AVEC nextRetry (cible),integration,vitest-db,P0,pas de busy-loop (RED: nextRetry null),F-081
+PIP-INT-118,SMTP non configuré,ligne non re-claimée en boucle immédiate,integration,vitest-db,P0,backoff appliqué après config error,F-081
+PIP-INT-119,SMTP non configuré,attempts pas brûlés par config error,integration,vitest-db,P1,attempts borné jusqu'au fix,F-081
+PIP-INT-120,Rate limit unsubscribe,au-delà de la limite -> 429+Retry-After,integration,vitest-db,P1,header Retry-After présent,F-085
+PIP-INT-121,Rate limit newsletter,scope newsletter limite 5/min,integration,vitest-db,P1,6e requête bloquée,F-085
+PIP-INT-122,Rate limit fenêtre,reset après windowMs,integration,vitest-db,P2,autorisé après la fenêtre,F-085
+PIP-INT-123,Rate limit clé,clé scope+ip isole les compteurs,integration,vitest-db,P2,deux IP distinctes indépendantes,F-085
+PIP-UNIT-130,Unsub token,round-trip même email,unit,vitest,P0,verify retourne l'email,F-086
+PIP-UNIT-131,Unsub token,signature falsifiée rejetée,unit,vitest,P0,verify null sur sig altérée,F-086
+PIP-UNIT-132,Unsub token,payload falsifié (autre email) rejeté,unit,vitest,P0,verify null,F-086
+PIP-UNIT-133,Unsub token,token expiré rejeté,unit,vitest,P0,verify null après 90j,F-086
+PIP-UNIT-134,Unsub token,token malformé rejeté,unit,vitest,P1,verify null sur format invalide,F-086
+PIP-UNIT-135,Unsub token,timingSafeEqual longueurs différentes,unit,vitest,P1,verify null sans throw,F-086
+PIP-UNIT-136,Unsub token,unsubscribeUrl contient base+token,unit,vitest,P1,URL /api/mail/unsubscribe?t=,F-086
+PIP-UNIT-137,Unsub token,email normalisé dans le token,unit,vitest,P2,A@B.C -> a@b.c signé,F-086
+PIP-E2E-138,Unsubscribe clic,POST one-click insère suppression,e2e,playwright,P0,email_suppression reason=unsubscribe,F-086
+PIP-E2E-139,Unsubscribe clic,clic désactive subscriber_link,e2e,playwright,P1,status=disabled unsubscribedAt set,F-086
+PIP-E2E-140,Unsubscribe clic,token invalide -> 400 page erreur FR,e2e,playwright,P1,HTML lien invalide statut 400,F-086
+PIP-INT-150,Crash mid-batch,crash après 4/10 envois -> 6 lignes reprenables,integration,vitest-db,P0,6 sending orphelines recyclables (S4),F-082
+PIP-INT-151,Crash mid-batch,aucun double envoi pour les 4 déjà sent,integration,vitest-db,P0,sent non re-claimées,F-082
+PIP-INT-152,Redeploiement,SIGTERM pendant batch de 80 ne perd aucune ligne,integration,vitest-db,P0,toutes reprises au tick suivant (S1),F-082
+PIP-INT-153,Stalwart down 2h,échecs répétés puis reprise au retour,integration,vitest-db,P0,backoff puis sent au retour pas de DLQ prématurée (S2),F-081
+PIP-INT-154,Stalwart down 2h,lignes ne dépassent pas MAX avant retour si backoff>2h cap,integration,vitest-db,P1,cap 1h -> retries pendant la panne,F-083
+PIP-INT-155,Crash mid-batch,event log cohérent après recovery,integration,vitest-db,P1,pas d'event sent dupliqué,F-082

@@ -43,6 +43,8 @@ describe('<FilteredTable />', () => {
   });
 
   it('applies status badge color', () => {
+    // UX-TRANSVERSE-005 : le cockpit consomme désormais le StatusBadge canonique
+    // (libellé FR + palette rose), plus le slug brut anglais « failed ».
     render(
       <FilteredTable
         rows={[makeRow({ id: 'r1', status: 'failed' })]}
@@ -51,8 +53,14 @@ describe('<FilteredTable />', () => {
         onSelectionChange={noopSelect}
       />,
     );
-    const badge = within(screen.getByTestId('row-r1')).getByText('failed');
-    expect(badge.className).toMatch(/red/);
+    const row = screen.getByTestId('row-r1');
+    // Plus de slug anglais visible : libellé FR canonique « Échec ».
+    expect(within(row).queryByText('failed')).toBeNull();
+    const badge = within(row).getByText('Échec');
+    expect(badge.closest('[data-status="failed"]')).not.toBeNull();
+    // Palette canonique d'échec = rose (et plus le red local).
+    const styled = badge.closest('[data-status="failed"]') as HTMLElement;
+    expect(styled.className).toMatch(/rose/);
   });
 
   it('toggle one row via checkbox', () => {
@@ -175,7 +183,9 @@ describe('<FilteredTable />', () => {
         onSelectionChange={noopSelect}
       />,
     );
-    expect(screen.getByText(/47/)).toBeInTheDocument();
+    // « 47 » apparaît dans le footer ET dans la bannière select-all (UX-COCKPIT-006,
+    // page ⊂ filtres) : on tolère plusieurs occurrences mais on exige ≥ 1.
+    expect(screen.getAllByText(/47/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId('selection-count')).toHaveTextContent('1 sélectionné');
   });
 });

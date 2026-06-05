@@ -1,0 +1,47 @@
+@startuml sync-db-listmonk
+title Sync DB FemiGlow <-> Listmonk : push snapshot (chunk+reprise) + cleanup/purge ordonnes
+
+participant "pushSnapshotToListmonk" as Push
+database "email_audience_snapshot(.member)" as Snap
+participant "Listmonk API (MSW en test)" as LM
+participant "cron email-listmonk-cleanup" as Clean
+participant "cron email-audience-purge" as Purge
+
+== Push (etat cible : chunking + reprise) ==
+Push -> Snap : SELECT snapshot
+alt deja pushe (listmonkListId != null)
+  Push --> Push : no-op, return existing (LMK-INT-PUSH-IDEM)
+end
+Push -> LM : POST /api/lists (tags=[ephemeral])
+LM --> Push : { id: listId }
+Push -> Snap : UPDATE listmonkListId=listId (AVANT push membres = reprise possible)
+Push -> Snap : SELECT members
+loop par CHUNK (~1000) -- pas 1 POST/contact
+  Push -> LM : POST /api/import/subscribers (chunk)
+  alt crash mi-parcours
+    note right #ffd0d0 : re-run reprend grace a listmonkListId persiste\n+ upsert idempotent par email (LMK-INT-PUSH-RECOVERY)
+  end
+end
+Push -> LM : GET list.subscriber_count
+Push -> Push : assert subscriber_count == snapshot.size (LMK-INT-PUSH-COUNT)
+
+== Nettoyage nocturne (ORDRE IMPOSE - anti-fuite L-LEAK) ==
+note over Clean, Purge #d0ffd0
+  ETAT CIBLE: cleanup AVANT purge, et la purge ne supprime
+  QUE les snapshots dont listmonkListId IS NULL (garde).
+end note
+
+Clean -> Snap : SELECT snapshots expires AVEC listmonkListId
+loop chaque liste expiree
+  Clean -> LM : DELETE /api/lists/{id}
+  alt 200 ou 404
+    Clean -> Snap : UPDATE listmonkListId=NULL
+  else 5xx
+    note right : conserve listmonkListId pour retry (LMK-INT-CLEANUP-FAIL)
+  end
+end
+Clean -> LM : balayage listes tag=ephemeral sans snapshot -> DELETE (LMK-INT-ORPHAN-TAG)
+
+Purge -> Snap : DELETE snapshots expires WHERE listmonkListId IS NULL
+note right #ffd0d0 : BUG ACTUEL: purge sans garde supprime la snapshot\navant le cleanup => fuite de liste Listmonk
+@enduml

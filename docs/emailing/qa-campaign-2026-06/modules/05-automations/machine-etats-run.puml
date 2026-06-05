@@ -1,0 +1,43 @@
+@startuml machine-etats-run
+title Machine d'états — email_automation_run (cible + écarts audit)
+
+[*] --> running : triggerAutomation()\nnextActionAt=now
+
+state running {
+  running : claim CTE met nextActionAt=NULL\n(FOR UPDATE SKIP LOCKED)
+}
+
+running --> running : step wait\nnextActionAt=now+durationMs
+running --> running : step send/tag/update_lead/webhook OK\nadvance() -> path++
+running --> waiting_for_event : step wait_for_event\nawaitingUntil=now+timeoutMs
+running --> completed : nextPath()==null\n(fin de flow)
+running --> cancelled : parent automation.active=false
+running --> errored : exception dans processRun\n(template inconnu, etc.)
+
+waiting_for_event --> running : resumeRunsForEvent()\n(event matché, awaitingUntil>now)
+waiting_for_event --> running : sweepWaitForEventTimeouts()\n(onTimeout=continue)
+waiting_for_event --> cancelled : onTimeout=abort [CIBLE]
+note right of waiting_for_event
+  ECART F-057 :
+  - onTimeout=abort IGNORE
+    (sweep force toujours continue)
+  - course resume vs sweep
+    (pas de verrou -> double avance)
+end note
+
+completed --> [*]
+cancelled --> [*]
+errored --> [*]
+
+state "ORPHELIN (bug F-054)" as orphan #pink
+running --> orphan : crash entre claim et UPDATE\nstatus=running + nextActionAt=NULL
+orphan --> orphan : jamais re-sélectionné\n(WHERE nextActionAt IS NOT NULL)
+note right of orphan
+  CIBLE : un sweep des orphelins
+  (running + nextActionAt IS NULL
+   + updatedAt ancien) ré-arme
+  nextActionAt -> retour à running.
+  En l'état : AUCUN sweep.
+end note
+
+@enduml

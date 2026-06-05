@@ -26,6 +26,22 @@ function isSql(value: unknown): boolean {
   return typeof value === 'object' && value !== null;
 }
 
+/**
+ * Aplati le texte « littéral » d'un fragment SQL drizzle (queryChunks) — utile
+ * pour garde-fouer la FORME (présence de TRUE/FALSE/LIKE) sans dépendre du SQL
+ * exact. Les valeurs bindées (params) n'apparaissent PAS ici (c'est voulu :
+ * l'exactitude métier est prouvée par les tests vraie-DB).
+ */
+function chunkText(s: unknown): string {
+  const chunks = (s as { queryChunks?: unknown[] }).queryChunks ?? [];
+  return chunks
+    .map((c) => {
+      const v = (c as { value?: unknown }).value;
+      return Array.isArray(v) ? v.join('') : String(v ?? '');
+    })
+    .join(' ');
+}
+
 describe('compileRule — individual rules', () => {
   it('compiles email_pattern contains', () => {
     const r: Rule = { kind: 'email_pattern', operator: 'contains', value: 'example' };
@@ -127,8 +143,17 @@ describe('compileRule — individual rules', () => {
     ).toBe(true);
   });
 
-  it('compiles country (fallback TRUE)', () => {
-    expect(isSql(compileRule({ kind: 'country', operator: 'eq', value: 'MA' }))).toBe(true);
+  it('compiles country to a real phone-prefix predicate (R-011 : plus de TRUE)', () => {
+    // R-011 — `country` ne compile PLUS en `TRUE` (qui ciblait toute la base).
+    // Il dérive le pays du préfixe E.164 de leads.phone → un prédicat LIKE.
+    // (L'exactitude du filtrage est prouvée sur vraie DB dans
+    //  rules-compiler.integration.test.ts ; ici on garde-fou la forme.)
+    const ma = chunkText(compileRule({ kind: 'country', operator: 'eq', value: 'MA' }));
+    expect(ma).not.toContain('TRUE'); // ancien bug A-AUD-1 : sql`TRUE`
+    expect(ma.toLowerCase()).toContain('like'); // s'appuie sur leads.phone LIKE
+    // Code pays inconnu → FALSE (ne cible personne, jamais toute la base).
+    const xx = chunkText(compileRule({ kind: 'country', operator: 'eq', value: 'XX' }));
+    expect(xx).toContain('FALSE');
   });
 
   it('compiles has_tag (fallback FALSE for M5.3)', () => {

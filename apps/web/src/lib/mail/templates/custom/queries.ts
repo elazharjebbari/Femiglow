@@ -5,6 +5,7 @@ import 'server-only';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db as getDb } from '@/lib/db/client';
 import {
+  emailAutomation,
   emailTemplateCustom,
   emailTemplateCustomVersion,
   type EmailTemplateCustomRow,
@@ -154,6 +155,56 @@ export async function listVersions(templateId: string): Promise<EmailTemplateCus
     .from(emailTemplateCustomVersion)
     .where(eq(emailTemplateCustomVersion.templateId, templateId))
     .orderBy(desc(emailTemplateCustomVersion.versionNumber));
+}
+
+/**
+ * Recense les automations dont au moins une étape `send` référence le template
+ * `slug` donné. Les `steps` sont du JSONB (array de steps, certaines `branch`
+ * imbriquant d'autres steps). On scanne récursivement.
+ *
+ * Garde-fou anti-référence orpheline : supprimer un template encore câblé dans
+ * une automation casserait l'étape `send` au RUNTIME (template introuvable →
+ * envoi en échec silencieux). La route DELETE refuse alors la suppression.
+ *
+ * Renvoie la liste des automations bloquantes (slug + name + active).
+ */
+export type AutomationRef = { id: string; slug: string; name: string; active: boolean };
+
+export async function findAutomationsUsingTemplate(slug: string): Promise<AutomationRef[]> {
+  const drizzle = requireDb();
+  const rows = await drizzle
+    .select({
+      id: emailAutomation.id,
+      slug: emailAutomation.slug,
+      name: emailAutomation.name,
+      active: emailAutomation.active,
+      steps: emailAutomation.steps,
+    })
+    .from(emailAutomation);
+
+  const refs: AutomationRef[] = [];
+  for (const row of rows) {
+    if (stepsReferenceTemplate(row.steps, slug)) {
+      refs.push({ id: row.id, slug: row.slug, name: row.name, active: row.active });
+    }
+  }
+  return refs;
+}
+
+/** Vrai si un step `send` (éventuellement imbriqué dans une `branch`) cible `slug`. */
+function stepsReferenceTemplate(steps: unknown, slug: string): boolean {
+  if (!Array.isArray(steps)) return false;
+  for (const step of steps) {
+    if (!step || typeof step !== 'object') continue;
+    const s = step as Record<string, unknown>;
+    if (s.kind === 'send' && s.template === slug) return true;
+    // Branch : ifTrue / ifFalse sont des tableaux de steps.
+    if (s.kind === 'branch') {
+      if (stepsReferenceTemplate(s.ifTrue, slug)) return true;
+      if (stepsReferenceTemplate(s.ifFalse, slug)) return true;
+    }
+  }
+  return false;
 }
 
 export async function deleteTemplate(id: string): Promise<boolean> {

@@ -1,0 +1,20 @@
+{
+  "event": "subscriber.bounced",
+  "source": "listmonk",
+  "ts": 1748966500,
+  "data": {
+    "subscriber": {
+      "id": 61,
+      "uuid": "8f2c0a11-4b3d-4e22-9a01-1122334455aa",
+      "email": "user2@exemple.test",
+      "name": "Imane T.",
+      "status": "enabled"
+    },
+    "bounce_type": "soft",
+    "type": "soft",
+    "source": "stalwart",
+    "campaign": { "id": 1, "name": "Newsletter rituel juin" },
+    "meta": { "smtp_code": 452, "diagnostic": "4.2.2 mailbox full" },
+    "created_at": "2026-06-03T18:41:40.000000Z"
+  }
+}

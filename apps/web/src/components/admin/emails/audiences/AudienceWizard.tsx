@@ -12,6 +12,25 @@ import { useRouter } from 'next/navigation';
 import type { ExclusionFlags, RulesGroup } from '@/lib/mail/audiences/rules-types';
 import { AudienceRulesBuilder } from './AudienceRulesBuilder';
 import { AudiencePreview } from './AudiencePreview';
+import { ExclusionFlagsFieldset } from './ExclusionFlagsFieldset';
+
+export type AudienceWizardInitial = {
+  slug: string;
+  name: string;
+  description?: string | null;
+  rules: RulesGroup;
+  exclusionFlags?: ExclusionFlags;
+  evaluationMode?: 'static' | 'dynamic';
+};
+
+export type AudienceWizardProps = {
+  /** 'create' (POST, défaut) ou 'edit' (PATCH d'une audience existante). */
+  mode?: 'create' | 'edit';
+  /** Requis en mode 'edit' : id de l'audience à patcher. */
+  audienceId?: string;
+  /** Pré-remplissage (mode 'edit' : depuis getAudienceById). */
+  initial?: AudienceWizardInitial;
+};
 
 type State = {
   step: number;
@@ -34,23 +53,27 @@ type Action =
   | { type: 'SUBMIT_ERROR'; error: string }
   | { type: 'SET_ERRORS'; errors: Record<string, string> };
 
-const initialState: State = {
-  step: 1,
-  slug: '',
-  name: '',
-  description: '',
-  rules: { kind: 'all', conditions: [] },
-  exclusionFlags: {
-    hard_bounce: true,
-    unsubscribe: true,
-    manual_suppression: true,
-    marketing_optout: false,
-  },
-  evaluationMode: 'dynamic',
-  errors: {},
-  submitting: false,
-  submitError: null,
+const DEFAULT_EXCLUSIONS: ExclusionFlags = {
+  hard_bounce: true,
+  unsubscribe: true,
+  manual_suppression: true,
+  marketing_optout: false,
 };
+
+function buildInitialState(initial?: AudienceWizardInitial): State {
+  return {
+    step: 1,
+    slug: initial?.slug ?? '',
+    name: initial?.name ?? '',
+    description: initial?.description ?? '',
+    rules: initial?.rules ?? { kind: 'all', conditions: [] },
+    exclusionFlags: initial?.exclusionFlags ?? { ...DEFAULT_EXCLUSIONS },
+    evaluationMode: initial?.evaluationMode ?? 'dynamic',
+    errors: {},
+    submitting: false,
+    submitError: null,
+  };
+}
 
 function slugify(s: string): string {
   return s
@@ -85,9 +108,33 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export function AudienceWizard() {
+/**
+ * UX-AUD-003 — détecte une règle `between` (numérique ou date) dont une borne
+ * n'est pas saisie. Tant qu'une borne manque, le payload `value=[a,b]` est
+ * incomplet → on bloque « Continuer » plutôt que d'envoyer un 422 silencieux.
+ */
+function hasIncompleteBetween(group: RulesGroup): boolean {
+  for (const cond of group.conditions) {
+    if ('conditions' in cond && Array.isArray(cond.conditions)) {
+      if (hasIncompleteBetween(cond as RulesGroup)) return true;
+      continue;
+    }
+    const rule = cond as { operator?: string; value?: unknown };
+    if (rule.operator === 'between') {
+      const v = rule.value;
+      if (!Array.isArray(v) || v.length !== 2) return true;
+      const [a, b] = v as [unknown, unknown];
+      const empty = (x: unknown) => x === '' || x === null || x === undefined;
+      if (empty(a) || empty(b)) return true;
+    }
+  }
+  return false;
+}
+
+export function AudienceWizard({ mode = 'create', audienceId, initial }: AudienceWizardProps = {}) {
   const router = useRouter();
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const isEdit = mode === 'edit';
+  const [state, dispatch] = useReducer(reducer, initial, buildInitialState);
 
   function validateStep1(): boolean {
     const errors: Record<string, string> = {};
@@ -102,6 +149,13 @@ export function AudienceWizard() {
       dispatch({ type: 'SET_ERRORS', errors: { rules: 'Ajoute au moins un critère' } });
       return false;
     }
+    if (hasIncompleteBetween(state.rules)) {
+      dispatch({
+        type: 'SET_ERRORS',
+        errors: { rules: 'Renseigne les deux bornes des critères « entre ».' },
+      });
+      return false;
+    }
     dispatch({ type: 'SET_ERRORS', errors: {} });
     return true;
   }
@@ -109,24 +163,40 @@ export function AudienceWizard() {
   async function handleSubmit() {
     dispatch({ type: 'SUBMIT_START' });
     try {
-      const res = await fetch('/api/admin/emails/audiences', {
-        method: 'POST',
+      // UX-AUD-001 — mode édition : PATCH /audiences/:id (slug immutable, exclu
+      // du payload). Mode création : POST /audiences.
+      const url = isEdit
+        ? `/api/admin/emails/audiences/${audienceId}`
+        : '/api/admin/emails/audiences';
+      const payload = isEdit
+        ? {
+            name: state.name,
+            description: state.description || undefined,
+            rules: state.rules,
+            exclusionFlags: state.exclusionFlags,
+            evaluationMode: state.evaluationMode,
+          }
+        : {
+            slug: state.slug,
+            name: state.name,
+            description: state.description || undefined,
+            rules: state.rules,
+            exclusionFlags: state.exclusionFlags,
+            evaluationMode: state.evaluationMode,
+          };
+      const res = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          slug: state.slug,
-          name: state.name,
-          description: state.description || undefined,
-          rules: state.rules,
-          exclusionFlags: state.exclusionFlags,
-          evaluationMode: state.evaluationMode,
-        }),
+        credentials: 'include',
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
-      const created = (await res.json()) as { id: string };
-      router.push(`/admin/emails/audiences/${created.id}`);
+      const saved = (await res.json()) as { id: string };
+      router.push(`/admin/emails/audiences/${isEdit ? audienceId : saved.id}`);
+      router.refresh();
     } catch (err) {
       dispatch({ type: 'SUBMIT_ERROR', error: err instanceof Error ? err.message : String(err) });
     }
@@ -177,17 +247,23 @@ export function AudienceWizard() {
               id="slug"
               type="text"
               value={state.slug}
+              disabled={isEdit}
+              readOnly={isEdit}
               onChange={(e) =>
                 dispatch({ type: 'SET', field: 'slug', value: slugify(e.target.value) })
               }
-              className="mt-1 w-full rounded border border-stone-300 px-3 py-2 font-mono text-sm"
+              className={`mt-1 w-full rounded border border-stone-300 px-3 py-2 font-mono text-sm ${
+                isEdit ? 'bg-stone-100 text-stone-500' : ''
+              }`}
               data-testid="slug-input"
             />
             {state.errors.slug && (
               <p className="mt-1 text-xs text-red-600">{state.errors.slug}</p>
             )}
             <p className="mt-1 text-xs text-stone-500">
-              ℹ Auto-généré depuis le nom. Immutable après création.
+              {isEdit
+                ? 'ℹ Slug immutable — non modifiable après création.'
+                : 'ℹ Auto-généré depuis le nom. Immutable après création.'}
             </p>
           </div>
           <div>
@@ -207,7 +283,7 @@ export function AudienceWizard() {
         </div>
       )}
 
-      {/* Step 2 — Critères */}
+      {/* Step 2 — Critères + Exclusions */}
       {state.step === 2 && (
         <div className="space-y-4">
           <AudienceRulesBuilder
@@ -215,10 +291,17 @@ export function AudienceWizard() {
             onChange={(rules) => dispatch({ type: 'SET', field: 'rules', value: rules })}
           />
           {state.errors.rules && (
-            <p className="text-sm text-red-600" data-testid="rules-error">
+            <p className="text-sm text-red-600" data-testid="rules-error" role="alert">
               {state.errors.rules}
             </p>
           )}
+          {/* UX-AUD-002 — exclusions éditables (wizard + edit). */}
+          <ExclusionFlagsFieldset
+            value={state.exclusionFlags}
+            onChange={(flags) =>
+              dispatch({ type: 'SET', field: 'exclusionFlags', value: flags })
+            }
+          />
           <AudiencePreview rules={state.rules} exclusionFlags={state.exclusionFlags} />
         </div>
       )}
@@ -320,7 +403,13 @@ export function AudienceWizard() {
             data-testid="submit-btn"
             className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:opacity-50"
           >
-            {state.submitting ? 'Création…' : '✓ Créer l\'audience'}
+            {state.submitting
+              ? isEdit
+                ? 'Enregistrement…'
+                : 'Création…'
+              : isEdit
+                ? '✓ Enregistrer les modifications'
+                : "✓ Créer l'audience"}
           </button>
         )}
       </div>

@@ -12,9 +12,22 @@ import { useReducer, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AutomationStep } from '@/lib/mail/automation/step-types-v2';
 import type { RulesGroup } from '@/lib/mail/audiences/rules-types';
+import { AudienceRulesBuilder } from '@/components/admin/emails/audiences/AudienceRulesBuilder';
 import { StepList } from './StepList';
 import { FrequencySettings, type FrequencyValue } from './FrequencySettings';
 import { stepLabel } from './step-defaults';
+
+/**
+ * Déclencheurs réellement honorés par le moteur (event-dispatcher.ts). Les
+ * autres (schedule/webhook) sont persistables mais INERTES — le dispatcher
+ * loggue `unsupported_trigger` et n'enrôle jamais de run. On les marque donc
+ * « non opérationnels » dans l'UI et on bloque l'activation (UX-AUT-002).
+ */
+const OPERATIONAL_TRIGGERS = new Set<WizardState['triggerType']>(['event', 'subscription']);
+
+function isOperationalTrigger(t: WizardState['triggerType']): boolean {
+  return OPERATIONAL_TRIGGERS.has(t);
+}
 
 type WizardState = {
   step: 0 | 1 | 2 | 3;
@@ -76,10 +89,43 @@ export function AutomationWizard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Le déclencheur `event`/`subscription` est piloté par le scan d'events du
+  // dispatcher, qui lit `triggerConfig.eventName`. Sans ce champ l'automation
+  // est INERTE (le dispatcher logue `missing_event_name`). Le wizard DOIT donc
+  // exiger un eventName pour ces deux types — sinon il enregistre une promesse
+  // que le moteur ne peut pas tenir.
+  const triggerNeedsEvent = state.triggerType === 'event' || state.triggerType === 'subscription';
+  const triggerEventName =
+    typeof state.triggerConfig.eventName === 'string' ? state.triggerConfig.eventName : '';
+
+  // Déclencheur non câblé (schedule/webhook) → l'automation serait inerte. On
+  // interdit l'activation et on affiche un bandeau d'avertissement (UX-AUT-002).
+  const triggerNonOperational = !isOperationalTrigger(state.triggerType);
+
+  // triggerConditions est `null` (aucune condition) tant que l'opérateur n'a pas
+  // ajouté de critère. On bascule sur un RulesGroup vide à l'activation du
+  // ciblage fin (UX-AUT-001).
+  const conditionsEnabled = state.triggerConditions !== null;
+
+  // Un step `send` sans template ne peut pas être persisté (schéma moteur :
+  // template min(1)) ni envoyé par le runner — on bloque AVANT la revue avec
+  // un message, plutôt que de laisser échouer la soumission.
+  const sendWithoutTemplate = state.steps.some(
+    (s) => s.kind === 'send' && (!s.template || s.template.trim().length === 0),
+  );
+
   const canNext = (() => {
-    if (state.step === 0)
-      return /^[a-z0-9][a-z0-9-]*$/.test(state.slug) && state.name.trim().length >= 1;
-    if (state.step === 1) return state.steps.length >= 1;
+    if (state.step === 0) {
+      const idOk = /^[a-z0-9][a-z0-9-]*$/.test(state.slug) && state.name.trim().length >= 1;
+      if (!idOk) return false;
+      if (triggerNeedsEvent && triggerEventName.trim().length === 0) return false;
+      return true;
+    }
+    if (state.step === 1) {
+      if (state.steps.length < 1) return false;
+      if (sendWithoutTemplate) return false;
+      return true;
+    }
     return true;
   })();
 
@@ -96,7 +142,8 @@ export function AutomationWizard({
         triggerConditions: state.triggerConditions,
         steps: state.steps,
         frequency: state.frequency,
-        active: state.active,
+        // Garde-fou : un déclencheur non opérationnel ne peut jamais partir actif.
+        active: state.active && isOperationalTrigger(state.triggerType),
       });
       if (r && 'id' in r) router.push(`/admin/emails/automation/${r.id}/edit`);
       else router.push('/admin/emails/automation');
@@ -160,22 +207,119 @@ export function AutomationWizard({
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-700">Déclencheur</label>
+            <label htmlFor="trigger-type" className="block text-sm font-medium text-stone-700">
+              Déclencheur
+            </label>
             <select
+              id="trigger-type"
               value={state.triggerType}
-              onChange={(e) =>
+              onChange={(e) => {
+                const nextType = e.target.value as WizardState['triggerType'];
                 dispatch({
                   type: 'patch',
-                  patch: { triggerType: e.target.value as WizardState['triggerType'] },
-                })
-              }
+                  patch: {
+                    triggerType: nextType,
+                    // Un déclencheur non câblé ne peut pas être activé : on coupe
+                    // l'activation pour éviter une promesse non tenue.
+                    ...(isOperationalTrigger(nextType) ? {} : { active: false }),
+                  },
+                });
+              }}
               className="mt-1 rounded border border-stone-300 px-3 py-1.5 text-sm"
             >
               <option value="event">Événement utilisateur (user_event)</option>
-              <option value="schedule">Récurrent (cron)</option>
               <option value="subscription">Inscription liste</option>
-              <option value="webhook">Webhook externe</option>
+              <option value="schedule">Récurrent (cron) — bientôt, non opérationnel</option>
+              <option value="webhook">Webhook externe — bientôt, non opérationnel</option>
             </select>
+            {triggerNonOperational && (
+              <p role="alert" className="mt-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Ce déclencheur n&apos;est pas encore opérationnel : le moteur ne
+                créera aucun envoi. L&apos;automation peut être enregistrée comme
+                brouillon mais ne pourra pas être activée.
+              </p>
+            )}
+          </div>
+          {triggerNeedsEvent && (
+            <div>
+              <label htmlFor="trigger-event-name" className="block text-sm font-medium text-stone-700">
+                Événement déclencheur
+              </label>
+              <select
+                id="trigger-event-name"
+                value={triggerEventName}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'patch',
+                    patch: {
+                      triggerConfig: { ...state.triggerConfig, eventName: e.target.value },
+                    },
+                  })
+                }
+                className="mt-1 w-full rounded border border-stone-300 px-3 py-1.5 text-sm font-mono"
+              >
+                <option value="">— Choisir un événement —</option>
+                {eventsCatalog.map((ev) => (
+                  <option key={ev.name} value={ev.name}>
+                    {ev.name} — {ev.description}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-stone-500">
+                Le moteur enrôle un destinataire quand cet événement est émis. Obligatoire — sans
+                lui l'automation reste inerte.
+              </p>
+              {triggerEventName.trim().length === 0 && (
+                <p role="alert" className="mt-1 text-xs text-red-600">
+                  Sélectionnez l'événement qui déclenche cette automation.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* triggerConditions — ciblage fin (UX-AUT-001) */}
+          <div className="border-t border-stone-100 pt-4">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-stone-700">
+                Conditions de déclenchement
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-stone-600">
+                <input
+                  type="checkbox"
+                  checked={conditionsEnabled}
+                  aria-label="Activer les conditions de déclenchement"
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'patch',
+                      patch: {
+                        triggerConditions: e.target.checked
+                          ? { kind: 'all', conditions: [] }
+                          : null,
+                      },
+                    })
+                  }
+                />
+                Restreindre à certains contacts
+              </label>
+            </div>
+            {conditionsEnabled ? (
+              <div className="mt-2 rounded border border-stone-200 bg-stone-50 p-3">
+                <AudienceRulesBuilder
+                  value={state.triggerConditions as RulesGroup}
+                  onChange={(g) =>
+                    dispatch({ type: 'patch', patch: { triggerConditions: g } })
+                  }
+                />
+                <p className="mt-2 text-xs text-stone-500">
+                  Le moteur n&apos;enrôle un contact que s&apos;il satisfait ces
+                  critères au moment du déclenchement.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-stone-500">
+                Tous les contacts qui déclenchent l&apos;événement sont enrôlés.
+              </p>
+            )}
           </div>
         </section>
       )}
@@ -189,6 +333,11 @@ export function AutomationWizard({
             onChange={(steps) => dispatch({ type: 'patch', patch: { steps } })}
             eventsCatalog={eventsCatalog}
           />
+          {sendWithoutTemplate && (
+            <p role="alert" className="text-xs text-red-600">
+              Chaque étape « Envoyer email » doit référencer un template (slug non vide).
+            </p>
+          )}
         </section>
       )}
 
@@ -218,7 +367,20 @@ export function AutomationWizard({
             </div>
             <div className="flex gap-2">
               <dt className="w-32 text-stone-500">Trigger</dt>
-              <dd>{state.triggerType}</dd>
+              <dd>
+                {state.triggerType}
+                {triggerNonOperational && (
+                  <span className="ml-2 text-xs text-amber-700">(non opérationnel)</span>
+                )}
+              </dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-32 text-stone-500">Conditions</dt>
+              <dd>
+                {conditionsEnabled
+                  ? `${(state.triggerConditions as RulesGroup).conditions.length} critère(s)`
+                  : 'aucune (tous les contacts)'}
+              </dd>
             </div>
             <div>
               <dt className="text-stone-500">Étapes ({state.steps.length})</dt>
@@ -245,10 +407,26 @@ export function AutomationWizard({
               <dd>{state.frequency.dailyCap ?? 'illimité'}</dd>
             </div>
           </dl>
-          <label className="mt-3 flex cursor-pointer items-center gap-2 rounded border border-stone-200 bg-stone-50 p-3">
+          {triggerNonOperational && (
+            <div
+              role="alert"
+              className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+            >
+              Déclencheur « {state.triggerType} » non opérationnel : l&apos;activation
+              est désactivée. L&apos;automation sera enregistrée comme brouillon
+              (inactive) et n&apos;enverra aucun email tant que ce déclencheur
+              n&apos;est pas câblé.
+            </div>
+          )}
+          <label
+            className={`mt-3 flex items-center gap-2 rounded border border-stone-200 bg-stone-50 p-3 ${
+              triggerNonOperational ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+            }`}
+          >
             <input
               type="checkbox"
-              checked={state.active}
+              checked={state.active && !triggerNonOperational}
+              disabled={triggerNonOperational}
               onChange={(e) => dispatch({ type: 'patch', patch: { active: e.target.checked } })}
             />
             <span className="text-sm text-stone-700">
@@ -256,7 +434,9 @@ export function AutomationWizard({
             </span>
           </label>
           {error && (
-            <div className="rounded bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>
+            <div role="alert" className="rounded bg-red-50 px-3 py-2 text-xs text-red-700">
+              {error}
+            </div>
           )}
         </section>
       )}

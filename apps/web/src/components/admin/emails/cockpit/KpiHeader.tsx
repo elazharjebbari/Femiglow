@@ -80,7 +80,17 @@ function Sparkline({ values, variant }: SparklineProps) {
 
 // ── Trend indicator ─────────────────────────────────────────────────────
 
-function Trend({ pct }: { pct: number | undefined }) {
+/**
+ * Indicateur de tendance avec sémantique de couleur correcte (F-015).
+ *
+ * `higherIsBad` = true pour les métriques d'ÉCHEC (Échecs, Hard bounces) : une
+ * HAUSSE (pct > 0) est mauvaise → ROUGE ↑ ; une BAISSE (pct < 0) est bonne →
+ * VERT ↓. Pour les métriques positives (Délivrés), c'est l'inverse (défaut).
+ *
+ * Bug audit corrigé : avant, tout pct > 0 s'affichait en emerald, donc une
+ * hausse d'échecs apparaissait en vert ↑ — faux signal rassurant.
+ */
+function Trend({ pct, higherIsBad = false }: { pct: number | undefined; higherIsBad?: boolean }) {
   if (pct === undefined) return <span className="text-stone-400">—</span>;
   if (pct === 0)
     return (
@@ -88,14 +98,21 @@ function Trend({ pct }: { pct: number | undefined }) {
         →
       </span>
     );
+  // `isGood` détermine la couleur selon la polarité de la métrique.
+  const isGood = higherIsBad ? pct < 0 : pct > 0;
+  const colorClass = isGood ? 'text-emerald-600' : 'text-red-600';
   if (pct > 0)
     return (
-      <span className="text-emerald-600" aria-label={`${pct}% increase`}>
+      <span className={colorClass} aria-label={`${pct}% increase`} data-trend={isGood ? 'good' : 'bad'}>
         ↑ {pct}%
       </span>
     );
   return (
-    <span className="text-red-600" aria-label={`${Math.abs(pct)}% decrease`}>
+    <span
+      className={colorClass}
+      aria-label={`${Math.abs(pct)}% decrease`}
+      data-trend={isGood ? 'good' : 'bad'}
+    >
       ↓ {Math.abs(pct)}%
     </span>
   );
@@ -109,12 +126,24 @@ type KpiCardProps = {
   sparklineValues: number[];
   sparklineVariant: 'delivered' | 'failed';
   pct?: number;
+  /** Métrique d'échec : une hausse est mauvaise (couleur de tendance inversée). */
+  higherIsBad?: boolean;
   alert?: boolean;
   onClick?: () => void;
   testId?: string;
 };
 
-function KpiCard({ label, value, sparklineValues, sparklineVariant, pct, alert, onClick, testId }: KpiCardProps) {
+function KpiCard({
+  label,
+  value,
+  sparklineValues,
+  sparklineVariant,
+  pct,
+  higherIsBad,
+  alert,
+  onClick,
+  testId,
+}: KpiCardProps) {
   const borderClass = alert
     ? 'border-red-300 bg-red-50/40'
     : 'border-stone-200 bg-white hover:bg-stone-50';
@@ -136,7 +165,7 @@ function KpiCard({ label, value, sparklineValues, sparklineVariant, pct, alert, 
       <div className="mt-2 text-3xl font-semibold tabular-nums text-stone-900">{value.toLocaleString('fr-FR')}</div>
       <div className="mt-1 flex items-center justify-between text-xs">
         <Sparkline values={sparklineValues} variant={sparklineVariant} />
-        <Trend pct={pct} />
+        <Trend pct={pct} higherIsBad={higherIsBad} />
       </div>
     </button>
   );
@@ -215,7 +244,10 @@ export function KpiHeader({
         <KpiCard
           label="En file"
           value={data.queued}
-          sparklineValues={deliveredSpark}
+          // F-015 : pas de sparkline trompeuse. Le DTO summary n'expose AUCUNE
+          // série « queued » ; afficher la courbe `delivered` ici laissait croire
+          // à une tendance de la file qui n'existe pas. On n'affiche donc rien.
+          sparklineValues={[]}
           sparklineVariant="delivered"
           onClick={onKpiClick ? () => onKpiClick('queued') : undefined}
           testId="kpi-queued"
@@ -226,6 +258,7 @@ export function KpiHeader({
           sparklineValues={failedSpark}
           sparklineVariant="failed"
           pct={data.comparison?.failedPct}
+          higherIsBad
           alert={data.failed >= failedAlertThreshold}
           onClick={onKpiClick ? () => onKpiClick('failed') : undefined}
           testId="kpi-failed"
@@ -235,6 +268,7 @@ export function KpiHeader({
           value={data.hardBounced}
           sparklineValues={failedSpark}
           sparklineVariant="failed"
+          higherIsBad
           alert={data.hardBounced > 0}
           onClick={onKpiClick ? () => onKpiClick('hardBounced') : undefined}
           testId="kpi-hard-bounced"

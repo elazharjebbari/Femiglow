@@ -1,0 +1,11 @@
+{
+  "event": "subscriber.deleted",
+  "source": "listmonk",
+  "ts": 1748970100,
+  "data": {
+    "id": 305,
+    "uuid": "b7c1d2e3-8822-4e44-aa55-667788990011",
+    "email": "user5@exemple.test",
+    "reason": "GDPR/CNDP erasure request — event type not consumed by the parser, must be ignored with 200"
+  }
+}

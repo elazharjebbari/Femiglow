@@ -10,6 +10,7 @@ build
 
 # Tests / coverage
 coverage
+coverage-phase8-*/
 playwright-report
 test-results
 

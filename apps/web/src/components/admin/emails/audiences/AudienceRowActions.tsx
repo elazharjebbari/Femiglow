@@ -1,9 +1,12 @@
 'use client';
 
 /**
- * AudienceRowActions — boutons Édit + Supprimer pour la liste audiences.
- * Édit = lien vers la page detail [id]. Suppression = DELETE /api/...
- * avec confirm explicite.
+ * AudienceRowActions — actions par ligne de la liste audiences :
+ *  - « Modifier » → page d'édition [id]/edit (UX-AUD-001) ;
+ *  - « Dupliquer » → clone rules+exclusions dans une nouvelle audience
+ *    (slug suggéré « -copie ») puis redirige (UX-AUD-008) ;
+ *  - « Détail » → page read-only [id] ;
+ *  - « Supprimer » → DELETE avec confirmation explicite.
  */
 import Link from 'next/link';
 import { useState } from 'react';
@@ -14,10 +17,21 @@ interface Props {
   audienceName: string;
 }
 
+/** Suggère un slug de copie unique-ish : "vip" → "vip-copie", "x-copie" → "x-copie-2". */
+function suggestCopySlug(slug: string): string {
+  const m = /^(.*)-copie(?:-(\d+))?$/.exec(slug);
+  if (m) {
+    const n = m[2] ? Number(m[2]) + 1 : 2;
+    return `${m[1]}-copie-${n}`;
+  }
+  return `${slug}-copie`.slice(0, 80);
+}
+
 export function AudienceRowActions({ audienceId, audienceName }: Props) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
@@ -39,6 +53,50 @@ export function AudienceRowActions({ audienceId, audienceName }: Props) {
     }
   }
 
+  async function handleDuplicate() {
+    if (duplicating) return; // anti double-clic
+    setDuplicating(true);
+    setError(null);
+    try {
+      const src = await fetch(`/api/admin/emails/audiences/${audienceId}`, {
+        credentials: 'include',
+      });
+      if (!src.ok) throw new Error(`HTTP ${src.status}`);
+      const audience = (await src.json()) as {
+        slug: string;
+        name: string;
+        description?: string | null;
+        rules: unknown;
+        exclusionFlags?: unknown;
+        evaluationMode?: 'static' | 'dynamic';
+      };
+
+      const res = await fetch('/api/admin/emails/audiences', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          slug: suggestCopySlug(audience.slug),
+          name: `${audience.name} (copie)`,
+          description: audience.description ?? undefined,
+          rules: audience.rules,
+          exclusionFlags: audience.exclusionFlags ?? undefined,
+          evaluationMode: audience.evaluationMode ?? undefined,
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const created = (await res.json()) as { id: string };
+      router.push(`/admin/emails/audiences/${created.id}`);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
+      setDuplicating(false);
+    }
+  }
+
   if (confirming) {
     return (
       <div className="inline-flex items-center gap-1">
@@ -57,7 +115,11 @@ export function AudienceRowActions({ audienceId, audienceName }: Props) {
         >
           Annuler
         </button>
-        {error && <span className="ml-2 text-xs text-red-700">{error}</span>}
+        {error && (
+          <span className="ml-2 text-xs text-red-700" role="alert">
+            {error}
+          </span>
+        )}
       </div>
     );
   }
@@ -65,12 +127,30 @@ export function AudienceRowActions({ audienceId, audienceName }: Props) {
   return (
     <div className="inline-flex items-center gap-1">
       <Link
-        href={`/admin/emails/audiences/${audienceId}`}
+        href={`/admin/emails/audiences/${audienceId}/edit`}
         className="rounded px-2 py-1 text-xs text-stone-700 hover:bg-stone-100"
+        title={`Modifier « ${audienceName} »`}
+        data-testid="row-edit-link"
+      >
+        Modifier
+      </Link>
+      <Link
+        href={`/admin/emails/audiences/${audienceId}`}
+        className="rounded px-2 py-1 text-xs text-stone-500 hover:bg-stone-100"
         title={`Détail « ${audienceName} »`}
       >
         Détail
       </Link>
+      <button
+        type="button"
+        onClick={handleDuplicate}
+        disabled={duplicating}
+        className="rounded px-2 py-1 text-xs text-stone-500 hover:bg-stone-100 disabled:opacity-50"
+        title="Dupliquer cette audience"
+        data-testid="row-duplicate-btn"
+      >
+        {duplicating ? 'Duplication…' : 'Dupliquer'}
+      </button>
       <button
         type="button"
         onClick={() => setConfirming(true)}
@@ -79,6 +159,11 @@ export function AudienceRowActions({ audienceId, audienceName }: Props) {
       >
         Supprimer
       </button>
+      {error && (
+        <span className="ml-2 text-xs text-red-700" role="alert">
+          {error}
+        </span>
+      )}
     </div>
   );
 }

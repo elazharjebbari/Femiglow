@@ -1,0 +1,61 @@
+@startuml sequence-bounce-chain
+title Chaine de bounce COMPLETE (etat cible) - Stalwart delivery.failed (5xx)
+
+actor Stalwart
+participant "POST /api/mail/webhook/stalwart" as Route
+participant "stalwart-parser" as Parser
+database "email_outbox" as Outbox
+database "email_event" as Event
+database "email_suppression" as Suppr
+database "email_subscriber_link" as SubLink
+participant "listmonk.subscribers.blocklist" as LM
+participant "bridge user_event" as Bridge
+database "user_event" as UE
+
+Stalwart -> Route : POST { event:delivery.failed,\n messageId, errorCode:550, reason }
+activate Route
+
+Route -> Route : enforceMailRateLimit('webhook-stalwart')
+Route -> Route : timingSafeEqual(token, secret)
+alt token KO
+  Route --> Stalwart : 401 Unauthorized
+end
+
+Route -> Parser : safeParse(body)
+alt payload tronque / invalide
+  Route -> Event : INSERT(type=malformed, outboxId=NULL, correlation=orphan)
+  Route --> Stalwart : 400 (Stalwart back-off correct sur 4xx)
+end
+
+Route -> Parser : isHardBounce(550) => true
+Route -> Outbox : SELECT WHERE smtp_message_id = ?\n(index UNIQUE - cible)
+alt 0 ligne (orphelin)
+  Route -> Event : INSERT(outboxId=NULL, correlation=orphan)
+  note right : CIBLE: on NE jette PAS l'info\n(au lieu du 200 {ignored} muet)
+  Route --> Stalwart : 200 { ok:true, orphan:true }
+end
+
+== Transaction unique (5 effets) ==
+Route -> Outbox : guard: si status terminal (bounced_permanent) -> no-op
+Route -> Outbox : UPDATE status=bounced_permanent,\n bounceType=hard, bouncedAt, bounceReason
+Route -> Event : INSERT(type=bounced_hard, source=stalwart)\nON CONFLICT (anti-rejeu) DO NOTHING
+Route -> Suppr : INSERT(reason=hard_bounce)\nON CONFLICT DO NOTHING
+Route -> SubLink : UPDATE status=blocklisted WHERE email=?
+== fin transaction DB ==
+
+Route -> LM : blocklist([email])  (best-effort)
+alt blocklist echoue
+  note right : log warn, NE rollback PAS la transaction DB\n(la suppression FemiGlow protege deja l'envoi)
+end
+
+Route -> Bridge : void bridgeStalwartToUserEvent(delivery.failed)
+Bridge -> UE : INSERT(email.bounced_hard, source=email)
+
+Route --> Stalwart : 200 { ok:true }
+deactivate Route
+
+note over Outbox, LM
+  SOFT bounce (4xx) : SEUL email_event(bounced_soft) + compteur.
+  AUCUNE suppression, AUCUN blocklist sous le seuil N.
+end note
+@enduml

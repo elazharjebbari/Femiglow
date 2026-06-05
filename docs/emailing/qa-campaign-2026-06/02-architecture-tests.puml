@@ -1,0 +1,53 @@
+@startuml architecture-tests-emailing
+title Couches de test — système emailing FemiGlow
+
+skinparam componentStyle rectangle
+
+package "Couche 5 — Contract tests" #FFE0E0 {
+  [Fixtures Stalwart réelles] as FXS
+  [Fixtures Listmonk réelles] as FXL
+}
+
+package "Couche 4 — E2E Playwright" #FFF0D0 {
+  [Parcours opérateur admin] as E2EA
+  [Parcours client public] as E2EC
+  [Faux SMTP (Mailpit)] as SMTP
+  [Déclenchement crons via API] as CRON
+}
+
+package "Couche 3 — Intégration API + vraie DB" #E0FFE0 {
+  [Route handlers appelés directement] as RH
+  [Postgres femiglow_test\n(vraies migrations drizzle)] as PG
+}
+
+package "Couche 2 — Composant + MSW (couche reine)" #D0E8FF {
+  [Testing Library + user-event] as TL
+  [MSW setupServer\n(grille 200/401/422/500/timeout)] as MSW
+}
+
+package "Couche 1 — Unit Vitest" #F0F0F0 {
+  [Parsers / backoff / compilateurs / Zod] as UNIT
+}
+
+FXS --> RH : rejoués contre\n/api/mail/webhook/stalwart
+FXL --> RH : rejoués contre\n/api/mail/webhook/listmonk
+E2EA --> SMTP : assertions sur\nemails réellement émis
+E2EA --> CRON : simule le temps\n(outbox, automation)
+RH --> PG : attrape les drifts schéma\n(cas lead_tag uuid/text)
+TL --> MSW : chaque action opérateur\n× chaque mode d'échec
+MSW ..> RH : contrats de réponse\nalignés sur les routes réelles
+
+note right of MSW
+  Règle d'or : 5 tests minimum
+  par action réseau d'un composant.
+  C'est la grille qui aurait détecté
+  les bulk actions à faux succès.
+end note
+
+note right of PG
+  Jamais la DB prod.
+  Migrations réelles en setup,
+  troncature entre tests.
+end note
+
+@enduml

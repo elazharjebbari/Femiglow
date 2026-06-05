@@ -5,7 +5,6 @@ import 'server-only';
 import { and, eq } from 'drizzle-orm';
 import { db as getDb } from '@/lib/db/client';
 import { leads, leadTag } from '@/lib/db/schema';
-import { createId } from '@/lib/ids';
 import { logger } from '@/lib/logging/logger';
 
 export type TagStep = {
@@ -35,10 +34,11 @@ export async function handleTagStep(
   }
 
   if (step.action === 'add') {
+    // `lead_tag.id` est uuid DEFAULT gen_random_uuid() — la DB génère l'id
+    // (cf. chantier 1.1 : ne jamais passer un createId('tag') ici).
     await drizzle
       .insert(leadTag)
       .values({
-        id: createId('tag'),
         leadId: lead.id,
         tag: step.tag,
         source: 'automation',

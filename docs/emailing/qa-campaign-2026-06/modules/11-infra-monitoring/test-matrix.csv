@@ -1,0 +1,35 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+INF-TIMER-001,timers systemd,les 6 timers du manifeste sont presents,infra,shell/ci,P0,check-timers.sh exit 0 si 6 presents,F-110
+INF-TIMER-002,timers systemd,timer manquant -> echec explicite,infra,shell/ci,P0,exit !=0 + nom du timer manquant,F-110
+INF-TIMER-003,timers systemd,timer present mais inactive (disabled) -> echec,infra,shell/ci,P0,exit !=0 enabled requis,F-110
+INF-TIMER-004,timers systemd,cadence divergente du manifeste -> warning/echec,infra,shell/ci,P1,compare OnUnitActiveSec/OnCalendar,F-110
+INF-TIMER-005,timers systemd,ordre cleanup(03:10) avant purge(03:30) respecte,infra,shell/ci,P1,OnCalendar cleanup < purge,F-110
+INF-TIMER-006,timers systemd,chaque service a un bearer CRON_SECRET,infra,shell/ci,P1,Authorization Bearer present,F-110
+INF-TIMER-007,timers systemd,script idempotent (2 runs meme resultat),infra,shell/ci,P1,2e run identique pas d effet de bord,F-110
+INF-UNIT-CRON-AUTH-001,auth cron,token correct -> autorise,unit,vitest,P0,authorizeCron true,F-114
+INF-UNIT-CRON-AUTH-002,auth cron,token incorrect -> 401,unit,vitest,P0,authorizeCron false,F-114
+INF-UNIT-CRON-AUTH-003,auth cron,longueur differente -> pas d early-return observable (timing-safe),unit,vitest,P0,hash longueur fixe + timingSafeEqual,F-114
+INF-UNIT-CRON-AUTH-004,auth cron,header absent/mal forme -> 401,unit,vitest,P1,401 sur Bearer manquant,F-114
+INF-UNIT-CRON-AUTH-005,auth cron,CRON_SECRET non configure -> refuse (pas d acces ouvert),unit,vitest,P0,401 si secret absent,F-114
+INF-HEALTH-001,healthcheck,SMTP non configure -> incident,unit,vitest,P0,level incident,F-113
+INF-HEALTH-002,healthcheck,DB injoignable -> incident,unit,vitest,P0,level incident,F-113
+INF-HEALTH-003,healthcheck,outbox stuck sending>5min -> degraded,unit,vitest,P0,level degraded stuckCount>0,F-113
+INF-HEALTH-004,healthcheck,DLQ>10 24h -> incident,unit,vitest,P0,level incident,F-113
+INF-HEALTH-005,healthcheck,pending vieillissant >10min -> degraded (cible),unit,vitest,P0,detecte cron outbox mort,F-113
+INF-HEALTH-006,healthcheck,fraicheur cron: last_tick trop ancien -> degraded (cible),unit,vitest,P0,cron mort dégrade le niveau,F-113
+INF-HEALTH-007,healthcheck,probe Listmonk down -> degraded (cible),unit,vitest,P0,Listmonk injoignable dégrade,F-113
+INF-HEALTH-008,healthcheck,probe SMTP verify echoue -> incident (cible),unit,vitest,P1,transporter.verify KO,F-113
+INF-HEALTH-009,healthcheck,lastDelivered=null malgre envois recents -> incident (cible),unit,vitest,P0,symptome webhook Stalwart casse,F-113
+INF-HEALTH-010,healthcheck,tout ok -> ok,unit,vitest,P1,level ok,F-113
+INF-HEALTH-011,healthcheck,niveau global = pire sous-check,unit,vitest,P1,worst-wins,F-113
+INF-HEALTH-012,healthcheck route,GET /api/admin/emails/health renvoie le rapport,integration,vitest,P1,JSON level+checks,F-113
+INF-DLQ-001,alerting DLQ,franchissement seuil -> alerte emise (cible),unit,vitest,P0,sendChatAlert/log mail.dlq.alert,F-114
+INF-DLQ-002,alerting DLQ,sous seuil -> pas d alerte,unit,vitest,P1,aucune alerte,F-114
+INF-OBS-001,observabilite,cron.email_outbox.completed logge,unit,vitest,P1,event logger present,F-114
+INF-OBS-002,observabilite,mail.send.suppressed logge sur adresse suppressee,unit,vitest,P1,event present,F-114
+INF-OBS-003,observabilite,listmonk.cleanup.completed logge,unit,vitest,P2,event present,F-114
+INF-UNIT-J45-STUB,rituals-j45,listOrdersForJ45 stub retourne [] (no-op detecte),unit,vitest,P2,test echoue tant que stub,F-115
+INF-UNIT-J45-CONSOLE,rituals-j45,fallback consoleEmailProvider silencieux detecte,unit,vitest,P2,provider != console en prod,F-115
+INF-PROBE-WEBHOOK,webhook Stalwart,URL configuree resout + repond 401 token vide (vivante),infra,shell/ci,P0,curl resout pas NXDOMAIN,F-111
+INF-PROBE-LM-BOUNCE,config Listmonk,bounce.enabled=true cote Listmonk,infra,shell/ci,P0,settings bounce active,F-112
+INF-CRON-INVOKE,cron invoke,POST cron avec bearer -> 200 ; sans -> 401,integration,vitest,P1,401/200 selon bearer,F-110

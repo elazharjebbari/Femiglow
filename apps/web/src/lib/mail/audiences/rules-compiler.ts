@@ -19,7 +19,12 @@
 import 'server-only';
 import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
 import { leads, userEvent, orders, leadTag } from '@/lib/db/schema';
-import { emailEvent, emailSuppression } from '@/lib/db/schema-emails';
+import {
+  emailEvent,
+  emailOutbox,
+  emailSubscriberLink,
+  emailSuppression,
+} from '@/lib/db/schema-emails';
 import {
   validateDepth,
   type ExclusionFlags,
@@ -31,6 +36,84 @@ import {
 // respectivement FALSE / TRUE — fallback safe. Quand M5.5 mergeera la
 // table lead_tag, on remplacera ces fallbacks par les vraies subqueries
 // EXISTS. Branche M5.3 standalone n'utilise pas de tags pour ses V1.
+
+// ── Country → indicatif (R-011) ───────────────────────────────────────────
+//
+// `leads` n'a pas de colonne `country`. Le seul signal de pays disponible est
+// l'indicatif E.164 du numéro stocké dans `leads.phone` (`+212…`, `+33…`).
+// On dérive donc le pays du préfixe d'appel, en réutilisant la convention de
+// `src/lib/phone.ts` (table `COUNTRIES`). Sans cette table, la règle `country`
+// retournait `TRUE` → ciblage hors périmètre = envoi de masse hors cible
+// (écart A-AUD-1). Le mapping ci-dessous couvre les pays de l'autocomplete
+// admin (CountryAutocomplete) + les marchés diaspora de phone.ts.
+//
+// Un code pays inconnu → aucun match (FALSE) : on ne peut pas filtrer dessus,
+// et il vaut mieux ne cibler personne que toute la base.
+const COUNTRY_CALLING_CODE: Record<string, string> = {
+  MA: '212',
+  FR: '33',
+  DZ: '213',
+  TN: '216',
+  BE: '32',
+  CH: '41',
+  CA: '1',
+  US: '1',
+  GB: '44',
+  DE: '49',
+  IT: '39',
+  ES: '34',
+  PT: '351',
+  NL: '31',
+  LU: '352',
+  SN: '221',
+  CI: '225',
+  CM: '237',
+  EG: '20',
+  AE: '971',
+  SA: '966',
+};
+
+/**
+ * Construit le prédicat SQL `country` sur `leads.phone` (E.164).
+ *
+ * - `eq 'MA'`     → `leads.phone LIKE '+212%'`
+ * - `in [..]`     → OR des préfixes correspondants
+ * - code inconnu  → ignoré (n'élargit jamais l'ensemble)
+ * - aucun code valide → `FALSE` (ne cible personne plutôt que tout le monde)
+ *
+ * La valeur passe par un paramètre Drizzle (`${prefix}`) — pas de concat de
+ * l'opérande : seul le préfixe d'appel (issu de la table interne, jamais de
+ * l'input brut) est interpolé, et la valeur LIKE est bindée.
+ */
+function compileCountry(
+  operator: 'eq' | 'in',
+  value: string | string[],
+): SQL {
+  const codes = (Array.isArray(value) ? value : [value])
+    .map((c) => String(c).trim().toUpperCase())
+    .filter((c) => c.length > 0);
+  void operator; // eq et in se compilent de la même façon (OR sur les préfixes)
+
+  const prefixes = Array.from(
+    new Set(
+      codes
+        .map((c) => COUNTRY_CALLING_CODE[c])
+        .filter((cc): cc is string => Boolean(cc)),
+    ),
+  );
+
+  if (prefixes.length === 0) {
+    // Code(s) pays inconnu(s) ou liste vide → ne cible personne.
+    return sql`FALSE`;
+  }
+
+  const likeFragments = prefixes.map(
+    (cc) => sql`${leads.phone} LIKE ${'+' + cc + '%'}`,
+  );
+  return likeFragments.length === 1
+    ? likeFragments[0]!
+    : (or(...likeFragments) as SQL);
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -73,6 +156,21 @@ function parseDateOrThrow(value: string): Date {
   return d;
 }
 
+/**
+ * Valide une date et renvoie un fragment SQL `'<ISO>'::timestamptz`.
+ *
+ * POURQUOI un fragment et pas un bind `${date}` ? — Binder un objet `Date` JS
+ * cru dans un template `sql` postgres-js lève `ERR_INVALID_ARG_TYPE` (le driver
+ * attend une string/Buffer). C'est le piège §8 du harnais : « Date JS dans un
+ * template sql postgres-js → ${d.toISOString()}::timestamptz ». On normalise
+ * donc en ISO + cast explicite. L'ISO provient de `Date.toISOString()` (jamais
+ * de l'input brut), donc aucune injection possible via ce chemin.
+ */
+function dateLiteralSql(value: string): SQL {
+  const d = parseDateOrThrow(value);
+  return sql.raw(`('${d.toISOString()}'::timestamptz)`);
+}
+
 // ── Operator → SQL builder ───────────────────────────────────────────────
 
 function numericOp(
@@ -105,12 +203,12 @@ function dateOp(
 ): SQL {
   switch (operator) {
     case 'before':
-      return sql`${column} < ${parseDateOrThrow(value as string)}`;
+      return sql`${column} < ${dateLiteralSql(value as string)}`;
     case 'after':
-      return sql`${column} > ${parseDateOrThrow(value as string)}`;
+      return sql`${column} > ${dateLiteralSql(value as string)}`;
     case 'between': {
       const [a, b] = value as [string, string];
-      return sql`${column} BETWEEN ${parseDateOrThrow(a)} AND ${parseDateOrThrow(b)}`;
+      return sql`${column} BETWEEN ${dateLiteralSql(a)} AND ${dateLiteralSql(b)}`;
     }
     case 'within': {
       const threshold = parseRelativeWithinSql(value as string);
@@ -118,6 +216,63 @@ function dateOp(
       return sql`${column} >= ${threshold}`;
     }
   }
+}
+
+// ── Engagement email — corrélation évènement ↔ lead (fix A-AUD-2) ─────────
+//
+// `email_event` ne porte PAS l'adresse du destinataire. La corrélation passe
+// par deux chemins, selon la provenance de l'évènement :
+//   (a) transactionnel (Stalwart) : event.outbox_id → email_outbox.to_email ;
+//   (b) campagne (Listmonk)       : event.subscriber_id (text) →
+//       email_subscriber_link.listmonk_subscriber_id, lié par email.
+// AVANT ce fix, le sous-SELECT était GLOBAL (aucune corrélation au lead) :
+// un seul `opened` n'importe où dans la base faisait matcher TOUTE l'audience
+// (tout-ou-rien — écart A-AUD-2, prouvé par AUD-CMP-023/025 version bug).
+//
+// `templateSlug` (email_opened) ne s'applique qu'au volet transactionnel —
+// `template` vit sur email_outbox ; les évènements campagne sont alors exclus.
+function correlatedEmailEventBody(
+  types: readonly ('sent' | 'delivered' | 'opened' | 'clicked')[],
+  opts: { within?: string; templateSlug?: string; urlPattern?: string },
+): SQL {
+  // `types` est une constante interne (jamais un input utilisateur) → littéral.
+  const typeCond =
+    types.length === 1
+      ? sql`${emailEvent.type} = ${sql.raw(`'${types[0]}'`)}`
+      : sql`${emailEvent.type} IN (${sql.raw(types.map((t) => `'${t}'`).join(', '))})`;
+  const withinFilter = opts.within
+    ? sql`AND ${emailEvent.ts} >= ${parseRelativeWithinSql(opts.within) ?? sql.raw("'1970-01-01'::timestamptz")}`
+    : sql``;
+  // urlPattern = substring (échappement ILIKE, même convention que
+  // email_pattern contains) — bindé, pas concaténé.
+  const urlFilter = opts.urlPattern
+    ? sql`AND ${emailEvent.linkUrl} ILIKE ${'%' + opts.urlPattern.replace(/%/g, '\\%').replace(/_/g, '\\_') + '%'}`
+    : sql``;
+  const templateFilter = opts.templateSlug
+    ? sql`AND ${emailOutbox.template} = ${opts.templateSlug}`
+    : sql``;
+
+  const outboxBranch = sql`(${emailEvent.outboxId} IS NOT NULL AND EXISTS (
+    SELECT 1 FROM ${emailOutbox}
+    WHERE ${emailOutbox.id} = ${emailEvent.outboxId}
+      AND lower(${emailOutbox.toEmail}) = lower(${leads.email})
+      ${templateFilter}
+  ))`;
+  const subscriberBranch = sql`(${emailEvent.subscriberId} IS NOT NULL AND EXISTS (
+    SELECT 1 FROM ${emailSubscriberLink}
+    WHERE ${emailSubscriberLink.listmonkSubscriberId} IS NOT NULL
+      AND ${emailSubscriberLink.listmonkSubscriberId}::text = ${emailEvent.subscriberId}
+      AND lower(${emailSubscriberLink.email}) = lower(${leads.email})
+  ))`;
+  const correlation = opts.templateSlug
+    ? outboxBranch
+    : sql`(${outboxBranch} OR ${subscriberBranch})`;
+
+  return sql`FROM ${emailEvent}
+    WHERE ${typeCond}
+      ${withinFilter}
+      ${urlFilter}
+      AND ${correlation}`;
 }
 
 // ── Compile a single Rule → SQL ──────────────────────────────────────────
@@ -141,11 +296,9 @@ function compileRule(rule: Rule): SQL {
     }
 
     case 'country': {
-      // leads has no `country` column in current schema — fallback ALWAYS TRUE
-      // (country filter not enforceable yet). Future-proof : si on ajoute
-      // une colonne country, remplacer ici.
-      void rule;
-      return sql`TRUE`;
+      // R-011 — dérive le pays du préfixe E.164 de `leads.phone` (pas de
+      // colonne `country` dans le schéma). Voir `compileCountry`.
+      return compileCountry(rule.operator, rule.value);
     }
 
     case 'consent_marketing':
@@ -157,10 +310,10 @@ function compileRule(rule: Rule): SQL {
     // ── Commerce (agrégations via subquery) ────────────────────────────
     case 'order_count': {
       const sinceFilter = rule.since
-        ? sql`AND ${orders.createdAt} >= ${parseDateOrThrow(rule.since)}`
+        ? sql`AND ${orders.createdAt} >= ${dateLiteralSql(rule.since)}`
         : sql``;
       const untilFilter = rule.until
-        ? sql`AND ${orders.createdAt} <= ${parseDateOrThrow(rule.until)}`
+        ? sql`AND ${orders.createdAt} <= ${dateLiteralSql(rule.until)}`
         : sql``;
       const cnt = sql`(SELECT COUNT(*) FROM ${orders} WHERE ${orders.leadId} = ${leads.id} ${sinceFilter} ${untilFilter})`;
       return numericOp(cnt, rule.operator, rule.value);
@@ -168,7 +321,7 @@ function compileRule(rule: Rule): SQL {
 
     case 'order_total': {
       const sinceFilter = rule.since
-        ? sql`AND ${orders.createdAt} >= ${parseDateOrThrow(rule.since)}`
+        ? sql`AND ${orders.createdAt} >= ${dateLiteralSql(rule.since)}`
         : sql``;
       const total = sql`(SELECT COALESCE(SUM(${orders.totalCents}), 0) FROM ${orders} WHERE ${orders.leadId} = ${leads.id} ${sinceFilter})`;
       return numericOp(total, rule.operator, rule.value);
@@ -176,7 +329,7 @@ function compileRule(rule: Rule): SQL {
 
     case 'has_ordered_product': {
       const sinceFilter = rule.since
-        ? sql`AND ${orders.createdAt} >= ${parseDateOrThrow(rule.since)}`
+        ? sql`AND ${orders.createdAt} >= ${dateLiteralSql(rule.since)}`
         : sql``;
       // orders.formContext or items table — for simplicity we use a
       // generic EXISTS on orders joined to order_items by sku.
@@ -193,34 +346,37 @@ function compileRule(rule: Rule): SQL {
       return dateOp(lastOrder, rule.operator, rule.value);
     }
 
-    // ── Engagement email (via email_event lié par toEmail) ─────────────
+    // ── Engagement email (corrélé au lead — fix A-AUD-2) ───────────────
     case 'email_opened': {
-      const withinFilter = rule.within
-        ? sql`AND ${emailEvent.ts} >= ${parseRelativeWithinSql(rule.within) ?? sql.raw("'1970-01-01'::timestamptz")}`
-        : sql``;
-      // type='opened'. templateSlug filtre via outbox join si fourni.
-      const inner = sql`SELECT 1 FROM ${emailEvent} WHERE ${emailEvent.type} = 'opened' ${withinFilter}`;
-      // Lien à l'email : pour V1 on lookup via outbox.toEmail.
-      // (alternative : ajouter emailEvent.subscriberEmail dans M5.4)
+      const body = correlatedEmailEventBody(['opened'], {
+        within: rule.within,
+        templateSlug: rule.templateSlug,
+      });
       if (rule.minCount && rule.minCount > 1) {
-        return sql`(SELECT COUNT(*) FROM ${emailEvent} WHERE ${emailEvent.type} = 'opened' ${withinFilter}) >= ${rule.minCount}`;
+        return sql`(SELECT COUNT(*) ${body}) >= ${rule.minCount}`;
       }
-      return sql`EXISTS (${inner})`;
+      return sql`EXISTS (SELECT 1 ${body})`;
     }
 
     case 'email_clicked': {
-      const withinFilter = rule.within
-        ? sql`AND ${emailEvent.ts} >= ${parseRelativeWithinSql(rule.within) ?? sql.raw("'1970-01-01'::timestamptz")}`
-        : sql``;
-      return sql`EXISTS (SELECT 1 FROM ${emailEvent} WHERE ${emailEvent.type} = 'clicked' ${withinFilter})`;
+      const body = correlatedEmailEventBody(['clicked'], {
+        within: rule.within,
+        urlPattern: rule.urlPattern,
+      });
+      if (rule.minCount && rule.minCount > 1) {
+        return sql`(SELECT COUNT(*) ${body}) >= ${rule.minCount}`;
+      }
+      return sql`EXISTS (SELECT 1 ${body})`;
     }
 
     case 'received_without_open': {
-      const threshold = parseRelativeWithinSql(rule.within);
-      const tsFilter = threshold ? sql`AND ${emailEvent.ts} >= ${threshold}` : sql``;
-      const sentCnt = sql`(SELECT COUNT(*) FROM ${emailEvent} WHERE ${emailEvent.type} IN ('sent', 'delivered') ${tsFilter})`;
-      const openCnt = sql`(SELECT COUNT(*) FROM ${emailEvent} WHERE ${emailEvent.type} = 'opened' ${tsFilter})`;
-      return sql`${sentCnt} >= ${rule.threshold} AND ${openCnt} = 0`;
+      // Corrélé par lead : ≥ threshold envois reçus, 0 ouverture — pour CE lead.
+      const sentBody = correlatedEmailEventBody(['sent', 'delivered'], {
+        within: rule.within,
+      });
+      const openBody = correlatedEmailEventBody(['opened'], { within: rule.within });
+      return sql`(SELECT COUNT(*) ${sentBody}) >= ${rule.threshold}
+        AND (SELECT COUNT(*) ${openBody}) = 0`;
     }
 
     // ── Activité (user_event) ──────────────────────────────────────────

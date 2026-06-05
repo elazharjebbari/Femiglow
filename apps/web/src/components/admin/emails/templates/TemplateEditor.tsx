@@ -119,8 +119,20 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error ?? `HTTP ${res.status}`);
       }
-      const data = (await res.json()) as { version: EmailTemplateCustomVersionRow };
-      setVersions((prev) => [data.version, ...prev]);
+      // L'API POST /versions retourne la version créée DIRECTEMENT (cf.
+      // app/api/admin/emails/templates/[id]/versions/route.ts → NextResponse.json(version)),
+      // pas enveloppée dans { version }. On tolère les deux formes par
+      // robustesse, et on n'ajoute JAMAIS une entrée `undefined` à la liste
+      // (sinon le rendu `v{v.versionNumber}` crashe).
+      const raw = (await res.json()) as
+        | EmailTemplateCustomVersionRow
+        | { version: EmailTemplateCustomVersionRow };
+      const created =
+        raw && typeof raw === 'object' && 'version' in raw ? raw.version : (raw as EmailTemplateCustomVersionRow);
+      if (!created || typeof created.versionNumber !== 'number') {
+        throw new Error('Réponse de version invalide');
+      }
+      setVersions((prev) => [created, ...prev]);
       setCommitMessage('');
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : String(err));

@@ -32,6 +32,12 @@ export type BulkActionsBarProps = {
   actions?: BulkAction[];
   onAction?: (id: BulkAction['id']) => void;
   onClear?: () => void;
+  /**
+   * Action réseau actuellement en vol. Le bouton correspondant passe en état
+   * « envoi… » + disabled ; les autres boutons sont aussi désactivés pendant
+   * l'envoi (anti double-soumission). `null` = aucune action en cours.
+   */
+  busyActionId?: BulkAction['id'] | null;
 };
 
 export function BulkActionsBar({
@@ -39,8 +45,10 @@ export function BulkActionsBar({
   actions = DEFAULT_ACTIONS,
   onAction,
   onClear,
+  busyActionId = null,
 }: BulkActionsBarProps) {
   if (selectedCount === 0) return null;
+  const isBusy = busyActionId !== null;
 
   return (
     <div
@@ -55,29 +63,41 @@ export function BulkActionsBar({
       </span>
 
       <div className="flex items-center gap-1">
-        {actions.map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            onClick={() => onAction?.(a.id)}
-            data-testid={`bulk-action-${a.id}`}
-            className={`rounded px-3 py-1.5 text-sm transition-colors ${
-              a.danger
-                ? 'text-red-700 hover:bg-red-50'
-                : 'text-stone-700 hover:bg-stone-100'
-            }`}
-          >
-            {a.icon && <span className="mr-1.5">{a.icon}</span>}
-            {a.label}
-          </button>
-        ))}
+        {actions.map((a) => {
+          const running = busyActionId === a.id;
+          return (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => onAction?.(a.id)}
+              disabled={isBusy}
+              aria-busy={running}
+              data-testid={`bulk-action-${a.id}`}
+              className={`rounded px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                a.danger
+                  ? 'text-red-700 hover:bg-red-50'
+                  : 'text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              {running ? (
+                <span>Envoi…</span>
+              ) : (
+                <>
+                  {a.icon && <span className="mr-1.5">{a.icon}</span>}
+                  {a.label}
+                </>
+              )}
+            </button>
+          );
+        })}
         {onClear && (
           <button
             type="button"
             onClick={onClear}
+            disabled={isBusy}
             aria-label="Désélectionner tout"
             data-testid="bulk-clear"
-            className="ml-2 rounded px-2 py-1.5 text-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900"
+            className="ml-2 rounded px-2 py-1.5 text-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             ✕
           </button>

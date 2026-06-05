@@ -1,0 +1,43 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+LMK-MSW-001,client API,GET lists nominal -> parse data.results,unit,vitest+msw,P1,liste parsee,F-100
+LMK-MSW-002,client API,auth Basic header construit (user:token base64),unit,vitest+msw,P0,Authorization Basic correct,F-100
+LMK-MSW-003,client API,creds manquants -> ListmonkConfigError,unit,vitest+msw,P0,erreur config levee avant fetch,F-100
+LMK-MSW-TIMEOUT,client API,requete qui hang -> abort apres timeout (cible),unit,vitest+msw,P0,AbortController declenche pas de hang infini,F-100
+LMK-MSW-RETRY,client API,5xx transitoire -> retry backoff puis succes (cible),unit,vitest+msw,P0,2e tentative reussit,F-100
+LMK-MSW-NORETRY-4XX,client API,422 -> pas de retry leve immediatement,unit,vitest+msw,P0,1 seule requete sur 4xx,F-100
+LMK-MSW-429,client API,429 Retry-After -> attend puis retente (cible),unit,vitest+msw,P0,respecte Retry-After,F-100
+LMK-MSW-AUTH-KO,client API,401 -> ListmonkApiError(401) explicite,unit,vitest+msw,P0,erreur 401 typee pas de retry,F-100
+LMK-MSW-PAGE-FULL,client API,pagination 130 items sur 3 pages tous recuperes (cible),unit,vitest+msw,P0,130 items pas de cap 50,F-100
+LMK-MSW-PAGE-CAP,client API,regression cap 50 silencieux detectee,unit,vitest+msw,P1,echoue si tronque a 50,F-100
+LMK-MSW-5XX-EXHAUST,client API,5xx persistant -> erreur apres N tentatives,unit,vitest+msw,P1,abandon propre apres cap,F-100
+LMK-MSW-BLOCKLIST,client API,blocklist(emails) PUT correct,unit,vitest+msw,P1,PUT /api/subscribers/blocklist body ids,F-100
+LMK-MSW-CAMPAIGN-CREATE,client API,campaigns.create POST body complet,unit,vitest+msw,P1,from_email+lists+body envoyes,F-100
+LMK-MSW-CAMPAIGN-STATUS,client API,updateStatus PUT body status,unit,vitest+msw,P1,PUT status correct,F-100
+LMK-INT-PUSH-OK,push snapshot,push snapshot 5 membres -> liste creee + 5 pousses,integration,vitest+db+msw,P0,pushed=5 listmonkListId persiste,F-101
+LMK-INT-PUSH-IDEM,push snapshot,snapshot deja pushe -> no-op retourne existing,integration,vitest+db+msw,P0,pushed inchange aucun appel create,F-101
+LMK-INT-PUSH-RECOVERY,push snapshot,crash apres 3/5 -> re-run reprend les 2 restants (cible),integration,vitest+db+msw,P0,total pousse=5 pas de re-push complet,F-101
+LMK-INT-PUSH-CHUNK,push snapshot,chunking par lots (cible) pas 1 POST/contact,integration,vitest+db+msw,P0,import par chunks observe,F-101
+LMK-INT-PUSH-COUNT,push snapshot,subscriber_count liste == snapshot.size,integration,vitest+db+msw,P1,compte exact verifie,F-101
+LMK-INT-PUSH-409,push snapshot,subscriber existant 409 -> attach a la liste,integration,vitest+db+msw,P1,subscriber attache pas perdu,F-101
+LMK-INT-PUSH-NOCONFIG,push snapshot,config absente -> erreur claire,integration,vitest+db,P1,throw not configured,F-101
+LMK-INT-PUSH-CREATE-FAIL,push snapshot,create list 500 -> erreur pas d etat partiel persiste,integration,vitest+db+msw,P1,listmonkListId non ecrit si create echoue,F-101
+LMK-INT-CLEANUP-OK,cleanup,liste ephemere expiree supprimee + listmonkListId NULL,integration,vitest+db+msw,P0,DELETE Listmonk + listmonkListId NULL,F-102
+LMK-INT-CLEANUP-404,cleanup,liste deja supprimee 404 -> accepte idempotent,integration,vitest+db+msw,P1,404 traite comme succes,F-102
+LMK-INT-CLEANUP-FAIL,cleanup,DELETE 500 -> listmonkListId conserve pour retry,integration,vitest+db+msw,P1,pas de NULL si echec,F-102
+LMK-INT-ORDER,cleanup vs purge,cleanup AVANT purge -> aucune fuite de liste (cible),integration,vitest+db+msw,P0,liste supprimee avant DELETE snapshot,F-102
+LMK-INT-PURGE-GUARD,purge,purge ne supprime que snapshots listmonkListId NULL (cible),integration,vitest+db,P0,snapshot avec listId survit a la purge,F-103
+LMK-INT-PURGE-OK,purge,snapshot expire sans liste -> supprime,integration,vitest+db,P1,count purged correct,F-103
+LMK-INT-PURGE-IDEM,purge,double purge -> idempotent,integration,vitest+db,P1,2e run purge 0,F-103
+LMK-INT-ORPHAN-TAG,cleanup,liste ephemere sans snapshot FemiGlow -> supprimee (cible),integration,vitest+db+msw,P1,orphelin par tag nettoye,F-102
+LMK-INT-SUBSYNC,subscriber sync,confirm newsletter cree+pousse email_subscriber_link,integration,vitest+db+msw,P0,subscriber_link + POST Listmonk,F-105
+LMK-INT-SUBSYNC-CREATED,subscriber sync,webhook subscriber.created alimente subscriber_link,integration,vitest+db,P1,1 ligne subscriber_link,F-105
+LMK-INT-SUBSYNC-RECONCILE,subscriber sync,reconcile listmonkSubscriberId+status,integration,vitest+db+msw,P1,champs synchronises,F-105
+LMK-INT-PROXY-AUTH,proxy,sans session admin -> 401 pas de fuite creds,integration,vitest,P0,401 requireAdmin,F-104
+LMK-INT-PROXY-NOCREDS,proxy,creds Listmonk absents -> 503,integration,vitest,P1,503 not configured,F-104
+LMK-INT-PROXY-INJECT,proxy,Basic auth injecte cote serveur jamais expose browser,integration,vitest,P0,header Authorization ajoute upstream,F-104
+LMK-INT-PROXY-STRIP,proxy,strip CSP/X-Frame-Options controle (parent re-applique),integration,vitest,P1,headers framing strippes,F-104
+LMK-CMP-IFRAME-SRC-PROXY,iframe,publicOrigin absent -> src=/api/listmonk path,component,vitest,P1,src proxy,F-104
+LMK-CMP-IFRAME-SRC-SUBDOMAIN,iframe,publicOrigin defini -> src=subdomaine,component,vitest,P1,src subdomaine,F-104
+LMK-CMP-IFRAME-SANDBOX,iframe,sandbox sans allow-top-navigation,component,vitest,P0,pas d evasion iframe,F-104
+LMK-CMP-IFRAME-POSTMSG,iframe,postMessage origine etrangere ignoree,component,vitest,P0,navigate ignore si origin != window,F-104
+LMK-E2E-001,iframe,admin ouvre /admin/emails/listmonk iframe charge,e2e,playwright,P2,iframe visible authentifie,F-104

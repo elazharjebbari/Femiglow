@@ -1,0 +1,124 @@
+# Plan d'exécution machine-lisible — Module 01 Dashboard santé
+# Couche → harnais : voir ../../05-conventions-harnais.md
+module: "01-dashboard-sante"
+refs_inventaire: [F-001, F-002, F-003, F-004]
+prerequis_globaux:
+  - "apps/web/src/test/msw/server.ts (serveur MSW partagé)"
+  - "apps/web/src/test/msw/handlers/emails.ts (handlers défaut + failWith)"
+  - "apps/web/src/test/factories/emails.ts (makeSummary, makeOutboxRow, makeHealthReport)"
+  - "vitest.setup.ts : server.listen({ onUnhandledRequest: 'error' })"
+
+suites:
+  - nom: "dashboard-kpis"
+    fichier_spec: "apps/web/src/components/admin/emails/__qa__/dashboard-kpis.msw.test.tsx"
+    couche: msw
+    ordre: 1
+    duree_estimee_s: 18
+    prerequis:
+      - "handler GET /api/admin/emails/health"
+      - "factory makeKpi() pour getOutboxKpi"
+    ids_matrice:
+      - DSH-MSW-010
+      - DSH-MSW-011
+      - DSH-MSW-012
+      - DSH-MSW-013
+      - DSH-MSW-014
+      - DSH-MSW-015
+      - DSH-MSW-016
+      - DSH-MSW-017
+      - DSH-MSW-018
+      - DSH-MSW-019
+      - DSH-MSW-020
+      - DSH-MSW-021
+      - DSH-MSW-022
+
+  - nom: "kpi-pure-fns"
+    fichier_spec: "apps/web/src/app/admin/emails/__qa__/kpi-format.test.ts"
+    couche: vitest
+    ordre: 0
+    duree_estimee_s: 3
+    prerequis: []
+    ids_matrice:
+      - DSH-UNIT-001
+      - DSH-UNIT-002
+      - DSH-UNIT-003
+
+  - nom: "health-states"
+    fichier_spec: "apps/web/src/components/admin/emails/__qa__/health-states.msw.test.tsx"
+    couche: msw
+    ordre: 2
+    duree_estimee_s: 22
+    prerequis:
+      - "factory makeHealthReport(level, overrides)"
+    ids_matrice:
+      - DSH-MSW-030
+      - DSH-MSW-031
+      - DSH-MSW-032
+      - DSH-MSW-033
+      - DSH-MSW-034
+      - DSH-MSW-035
+      - DSH-MSW-036
+      - DSH-MSW-037
+      - DSH-MSW-038
+      - DSH-MSW-039
+      - DSH-MSW-040
+      - DSH-MSW-041
+      - DSH-MSW-042
+      - DSH-MSW-043
+      - DSH-MSW-044
+      - DSH-MSW-045
+
+  - nom: "health-logic-unit"
+    fichier_spec: "apps/web/src/lib/admin/emails/__qa__/health.test.ts"
+    couche: vitest
+    ordre: 0
+    duree_estimee_s: 6
+    prerequis:
+      - "mock db drizzle minimal OU fakeNow injecté"
+    ids_matrice:
+      - DSH-UNIT-041
+      - DSH-UNIT-042
+      - DSH-UNIT-043
+      - DSH-UNIT-044
+      - DSH-UNIT-045
+      - DSH-UNIT-046
+
+  - nom: "health-route-db"
+    fichier_spec: "apps/web/src/app/api/admin/emails/health/__qa__/route.db.test.ts"
+    couche: db
+    ordre: 3
+    duree_estimee_s: 14
+    prerequis:
+      - "Postgres femiglow_test migrée (drizzle migrate)"
+      - "truncateEmailTables entre tests"
+      - "seed outbox déterministe"
+    ids_matrice:
+      - DSH-DB-050
+      - DSH-DB-051
+
+  - nom: "command-palette"
+    fichier_spec: "apps/web/src/components/admin/emails/__qa__/global-command-palette.test.tsx"
+    couche: msw
+    ordre: 4
+    duree_estimee_s: 10
+    prerequis:
+      - "mock next/navigation useRouter (push spy)"
+    ids_matrice:
+      - DSH-MSW-060
+      - DSH-MSW-061
+      - DSH-MSW-062
+      - DSH-MSW-063
+      - DSH-MSW-064
+      - DSH-MSW-065
+
+  - nom: "dashboard-e2e"
+    fichier_spec: "apps/web/e2e/emails-dashboard.spec.ts"
+    couche: playwright
+    ordre: 9
+    duree_estimee_s: 30
+    prerequis:
+      - "projet setup (storageState .auth/admin.json)"
+      - "build local + DB de test (jamais la prod)"
+    ids_matrice:
+      - DSH-E2E-070
+      - DSH-E2E-071

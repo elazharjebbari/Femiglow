@@ -1,0 +1,60 @@
+module: "06-templates"
+ref_inventaire: [F-060, F-061, F-062, F-063, F-064, F-065, F-086]
+description: >
+  Plan de tests templates : éditeur (composant+MSW), sanitize XSS (table-driven
+  unit), rendu transactionnel des 6 templates React (unit+snapshots), lien de
+  désinscription, starters.
+
+suites:
+  - id: sanitize-hostile-unit
+    couche: vitest
+    fichier: specs/sanitize-hostile.test.ts
+    cible: src/lib/mail/templates/custom/sanitize.ts + custom/render.ts
+    prerequis:
+      - "isomorphic-dompurify disponible (déjà dépendance du repo)"
+    couvre: [TPL-SAN-001, TPL-SAN-002, TPL-SAN-003, TPL-SAN-004, TPL-SAN-005,
+             TPL-SAN-006, TPL-SAN-007, TPL-SAN-008, TPL-SAN-009, TPL-SAN-010,
+             TPL-SAN-011, TPL-SAN-012, TPL-SAN-013, TPL-SAN-014,
+             TPL-REN-001, TPL-REN-002, TPL-REN-003, TPL-REN-004, TPL-REN-005]
+    ordre: 1
+
+  - id: transactional-render-unit
+    couche: vitest
+    fichier: specs/sanitize-hostile.test.ts
+    cible: src/lib/mail/render.ts + catalog.ts + templates/*.tsx
+    couvre: [TPL-TRX-001, TPL-TRX-002, TPL-TRX-003, TPL-TRX-004, TPL-TRX-005,
+             TPL-TRX-006, TPL-TRX-007, TPL-TRX-008, TPL-TRX-009,
+             TPL-UNS-001, TPL-UNS-002, TPL-UNS-003, TPL-STA-002]
+    ordre: 2
+
+  - id: template-editor-msw
+    couche: vitest+msw
+    fichier: specs/template-editor.msw.test.tsx
+    cible: src/components/admin/emails/templates/TemplateEditor.tsx
+    prerequis:
+      - "Serveur MSW partagé pour /preview et /versions"
+    couvre: [TPL-EDI-001, TPL-EDI-002, TPL-EDI-003, TPL-EDI-004, TPL-EDI-005,
+             TPL-EDI-006, TPL-EDI-007, TPL-EDI-008, TPL-EDI-009, TPL-EDI-010,
+             TPL-EDI-011, TPL-EDI-012, TPL-EDI-013, TPL-EDI-014, TPL-EDI-015,
+             TPL-EDI-016]
+    grille_echecs: [200, 401, 422, 500, hang]
+    ordre: 3
+
+  - id: starters-integration
+    couche: vitest+db
+    fichier: e2e/emails-templates.spec.ts
+    cible: api/admin/emails/templates/starters
+    couvre: [TPL-STA-001]
+    ordre: 4
+
+  - id: template-e2e
+    couche: playwright
+    fichier: e2e/emails-templates.spec.ts
+    couvre: [TPL-E2E-001]
+    ordre: 5
+
+oracles_transverses:
+  - "Sanitize : AUCUNE charge active ne survit (script/on*/javascript:/data:/svg/style)."
+  - "Contenu légitime conservé (a https, strong, table, img)."
+  - "Rendu transactionnel : payload invalide => throw traçable, jamais silence."
+  - "Lien de désinscription : toujours présent, signé, jamais littéral."

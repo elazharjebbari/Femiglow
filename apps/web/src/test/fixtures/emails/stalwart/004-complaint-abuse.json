@@ -1,0 +1,18 @@
+{
+  "event": "delivery.failed",
+  "queueId": "307101122398765012",
+  "messageId": "<c2a700a6-47fd-aa18-dc5a-34a5fbd38461@femiglow-maroc.com>",
+  "queueName": "remote",
+  "from": "bonjour@femiglow-maroc.com",
+  "rcpt": "user4@exemple.test",
+  "to": ["user4@exemple.test"],
+  "size": 2048,
+  "total": 1,
+  "hostname": "mx-feedback.exemple.test",
+  "errorCode": 554,
+  "code": 554,
+  "reason": "5.7.1 Message identified as abuse / spam complaint (ARF feedback loop)",
+  "details": "554 5.7.1 Recipient flagged this sender as junk; suppress further sends",
+  "feedbackType": "abuse",
+  "ts": "2026-05-13T18:10:44Z"
+}
