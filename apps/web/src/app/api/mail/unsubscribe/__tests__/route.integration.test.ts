@@ -244,10 +244,12 @@ describeEmailsDb('unsubscribe route (vraie DB) — effets de bord persistés', (
     expect(link[0]!.status).toBe('disabled');
   });
 
-  // CLI-INT-UNSUB (GET navigateur) — clic depuis le lien d'un email : page de
-  // confirmation HTML 200, ET la suppression est bien posée (le GET a un effet,
-  // conformément à la route). Oracle digne : pas de stack-trace, message FR.
-  it('GET token valide : page HTML « Désinscription confirmée » + suppression posée', async () => {
+  // UX4-PARCOURS-004 (GET non destructif) — clic/préfetch depuis le lien d'un
+  // email : page de CONFIRMATION HTML 200, mais AUCUNE suppression posée et
+  // subscriber_link INTACT. C'est le cœur du fix UX-PUB-004 : un préfetch GET
+  // (Gmail/Outlook safelinks, antivirus) ne doit plus désinscrire sans
+  // intention. La suppression n'a lieu qu'au POST.
+  it('UX4-PARCOURS-004 : GET token valide → page « Confirmer » NON destructive (0 suppression, link intact)', async () => {
     const email = 'lien-email@exemple.test';
     await db().insert(emailSubscriberLink).values(
       makeSubscriberLink({ email, status: 'enabled', unsubscribedAt: null }),
@@ -258,16 +260,130 @@ describeEmailsDb('unsubscribe route (vraie DB) — effets de bord persistés', (
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/html');
     const html = await res.text();
-    expect(html).toContain('Désinscription confirmée');
+    // La page invite à CONFIRMER (≠ « désinscription confirmée » de l'ancienne
+    // version qui agissait immédiatement) et nomme l'adresse + le réabonnement.
+    expect(html).toContain('Confirmer la désinscription');
+    expect(html).toContain(email);
+    expect(html).toContain('Me réabonner');
     // Pas de fuite technique dans la page rendue.
-    expect(html).not.toMatch(/error|stack|exception/i);
+    expect(html).not.toMatch(/stack|exception/i);
 
+    // Oracle central UX-PUB-004 : le GET n'a RIEN supprimé.
+    const supp = await db()
+      .select()
+      .from(emailSuppression)
+      .where(eq(emailSuppression.email, email));
+    expect(supp).toHaveLength(0);
+    // Le subscriber_link reste ENABLED, non touché.
+    const link = await db()
+      .select()
+      .from(emailSubscriberLink)
+      .where(eq(emailSubscriberLink.email, email));
+    expect(link[0]!.status).toBe('enabled');
+    expect(link[0]!.unsubscribedAt).toBeNull();
+  });
+
+  // UX4-PARCOURS-004 (POST destructif après confirmation) — le POST du même
+  // token (déclenché par le bouton « Confirmer » de la page) exécute bien la
+  // suppression. GET puis POST : seul le POST écrit.
+  it('UX4-PARCOURS-004 : GET (rien) puis POST (token) → suppression posée par le POST seul', async () => {
+    const email = 'confirme-apres-get@exemple.test';
+    await db().insert(emailSubscriberLink).values(
+      makeSubscriberLink({ email, status: 'enabled', unsubscribedAt: null }),
+    );
+    const token = generateUnsubToken(email);
+
+    // 1. GET = page de confirmation, aucun effet.
+    await GET(unsubReq('GET', token) as never);
+    expect(
+      await db().select().from(emailSuppression).where(eq(emailSuppression.email, email)),
+    ).toHaveLength(0);
+
+    // 2. POST = exécution de la désinscription.
+    const post = await POST(unsubReq('POST', token) as never);
+    expect(post.status).toBe(200);
     const supp = await db()
       .select()
       .from(emailSuppression)
       .where(eq(emailSuppression.email, email));
     expect(supp).toHaveLength(1);
     expect(supp[0]!.reason).toBe('unsubscribe');
+    const link = await db()
+      .select()
+      .from(emailSubscriberLink)
+      .where(eq(emailSubscriberLink.email, email));
+    expect(link[0]!.status).toBe('disabled');
+  });
+
+  // UX4-PARCOURS-005 — réabonnement : après une désinscription, POST
+  // action=resubscribe retire la suppression `unsubscribe` ET ré-active le
+  // subscriber_link. Chemin de retour direct (UX-PUB-005).
+  it('UX4-PARCOURS-005 : POST action=resubscribe retire la suppression + ré-active le link', async () => {
+    const email = 'reabo@exemple.test';
+    await db().insert(emailSubscriberLink).values(
+      makeSubscriberLink({ email, status: 'enabled', unsubscribedAt: null }),
+    );
+    const token = generateUnsubToken(email);
+
+    // Désinscription d'abord.
+    await POST(unsubReq('POST', token) as never);
+    expect(
+      await db().select().from(emailSuppression).where(eq(emailSuppression.email, email)),
+    ).toHaveLength(1);
+
+    // Réabonnement.
+    const reReq = new Request(
+      `http://localhost/api/mail/unsubscribe?action=resubscribe&t=${encodeURIComponent(token)}`,
+      { method: 'POST' },
+    );
+    const res = await POST(reReq as never);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    expect(await res.text()).toContain('Réabonnement confirmé');
+
+    // Oracle 1 — la suppression `unsubscribe` est retirée.
+    const supp = await db()
+      .select()
+      .from(emailSuppression)
+      .where(eq(emailSuppression.email, email));
+    expect(supp).toHaveLength(0);
+    // Oracle 2 — le subscriber_link est ré-activé.
+    const link = await db()
+      .select()
+      .from(emailSubscriberLink)
+      .where(eq(emailSubscriberLink.email, email));
+    expect(link[0]!.status).toBe('enabled');
+    expect(link[0]!.unsubscribedAt).toBeNull();
+  });
+
+  // UX4-PARCOURS-005 (garde-fou : ne réveille PAS un bounce) — le réabonnement
+  // ne retire QUE la suppression `unsubscribe`. Une adresse suppressée pour
+  // `hard_bounce` reste suppressée après un POST resubscribe (on ne ré-injecte
+  // pas une adresse qui rebondit).
+  it('UX4-PARCOURS-005 : resubscribe ne touche pas une suppression `hard_bounce`', async () => {
+    const email = 'rebondit@exemple.test';
+    await db().insert(emailSuppression).values({
+      email,
+      reason: 'hard_bounce',
+      detail: 'hard bounce',
+      source: 'stalwart',
+    });
+    const token = generateUnsubToken(email);
+
+    const reReq = new Request(
+      `http://localhost/api/mail/unsubscribe?action=resubscribe&t=${encodeURIComponent(token)}`,
+      { method: 'POST' },
+    );
+    const res = await POST(reReq as never);
+    expect(res.status).toBe(200);
+
+    // La suppression `hard_bounce` est PRÉSERVÉE.
+    const supp = await db()
+      .select()
+      .from(emailSuppression)
+      .where(eq(emailSuppression.email, email));
+    expect(supp).toHaveLength(1);
+    expect(supp[0]!.reason).toBe('hard_bounce');
   });
 
   // CLI-INT-UNSUB-TOKEN-KO (GET) — token invalide → page d'erreur DIGNE :

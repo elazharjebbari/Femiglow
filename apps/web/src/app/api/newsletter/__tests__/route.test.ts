@@ -87,12 +87,20 @@ describe('POST /api/newsletter', () => {
     });
   });
 
-  it('returns 200 without sending if token generation fails (no secret configured)', async () => {
+  // UX4-PARCOURS-006 / UX-PUB-007 — si le secret de signature manque, le mail de
+  // confirmation NE PEUT PAS partir. La route renvoie désormais une 503
+  // ACTIONNABLE (pas un faux `ok:true` qui ferait afficher « Bienvenue » à tort)
+  // et n'appelle PAS sendTransactional. (Avant la vague 4 : 200 ok silencieux.)
+  it('UX4-PARCOURS-006 : token absent (no secret) → 503 actionnable, aucun envoi', async () => {
     vi.mocked(generateUnsubToken).mockImplementationOnce(() => {
       throw new Error('MAIL_UNSUB_TOKEN_SECRET not configured');
     });
     const res = await POST(makeReq({ email: 'fan@example.com', consent: true }));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error?: string; ok?: boolean };
+    // Pas de faux succès : ni ok:true, ni message « bienvenue ».
+    expect(body.ok).toBeUndefined();
+    expect(body.error).toBeTruthy();
     await new Promise((r) => setImmediate(r));
     expect(sendTransactional).not.toHaveBeenCalled();
   });

@@ -134,6 +134,14 @@ export async function sendTransactional<S extends TemplateSlug>(
   const { html, text, subject, preheader } = rendered;
 
   // 5. Inject one-click unsubscribe URL placeholder into footer.
+  //
+  // UX-PUB-007 — si `MAIL_UNSUB_TOKEN_SECRET` manque, `unsubscribeUrl` throw.
+  // On NE laisse PLUS le placeholder littéral `{{unsubscribe_url}}` dans l'email :
+  // cela produisait un `href="{{unsubscribe_url}}"` cliquable mais cassé (lien
+  // invalide + email sans mécanisme de désabonnement = non-conformité). À la
+  // place, on bascule le lien vers un canal de désabonnement DE SECOURS réel
+  // (mailto vers l'adresse de réponse) et on logge une erreur explicite pour
+  // que l'absence de secret soit visible en exploitation.
   let htmlWithUnsub = html;
   let textWithUnsub = text;
   try {
@@ -141,7 +149,15 @@ export async function sendTransactional<S extends TemplateSlug>(
     htmlWithUnsub = html.replaceAll('{{unsubscribe_url}}', unsub);
     textWithUnsub = text.replaceAll('{{unsubscribe_url}}', unsub);
   } catch {
-    // MAIL_UNSUB_TOKEN_SECRET not configured (dev) — leave placeholder.
+    logger.error('mail.send.unsub_secret_missing', {
+      outboxId: id,
+      template: input.template,
+      detail:
+        'MAIL_UNSUB_TOKEN_SECRET absent — fallback mailto pour le lien de désabonnement (évite un href littéral cassé).',
+    });
+    const fallback = `mailto:${env.MAIL_REPLY_TO}?subject=${encodeURIComponent('Désabonnement')}`;
+    htmlWithUnsub = html.replaceAll('{{unsubscribe_url}}', fallback);
+    textWithUnsub = text.replaceAll('{{unsubscribe_url}}', fallback);
   }
 
   // 6. UPDATE la ligne avec le rendu (snapshots + vrai sujet).

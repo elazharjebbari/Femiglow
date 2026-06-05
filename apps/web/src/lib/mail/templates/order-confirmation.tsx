@@ -44,7 +44,7 @@ export default function OrderConfirmation({
 
       <Section className="mt-6">
         <Button
-          href={`https://femiglow-maroc.com/compte/commandes/${orderId}`}
+          href={`https://femiglow-maroc.com/merci?order=${encodeURIComponent(orderId)}`}
           className="inline-block rounded-md bg-brand-sauge px-5 py-3 text-sm font-medium text-white no-underline"
         >
           Suivre ma commande →
