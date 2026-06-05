@@ -26,9 +26,13 @@
  * les boîtes internes connues du projet, de sorte que le garde-fou est actif
  * même sans configuration explicite (fail-safe pour les notifications équipe).
  */
-import { eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { db as getDb } from '@/lib/db/client';
-import { emailSuppression, type EmailSuppressionInsert } from '@/lib/db/schema-emails';
+import {
+  emailSuppression,
+  type EmailSuppressionInsert,
+  type EmailSuppressionRow,
+} from '@/lib/db/schema-emails';
 
 function normalize(email: string): string {
   return email.toLowerCase().trim();
@@ -140,4 +144,96 @@ export async function addSuppression(input: EmailSuppressionInsert): Promise<voi
     .insert(emailSuppression)
     .values({ ...input, email: normalize(input.email) })
     .onConflictDoNothing();
+}
+
+/**
+ * Retire une adresse de la suppression list (UX-COCKPIT-001). C'est le pendant
+ * de `addSuppression` qui MANQUAIT : sans lui, une suppression erronée (faux
+ * positif bounce, suppress par mégarde, demande de réinscription RGPD) bloquait
+ * DÉFINITIVEMENT le destinataire — transactionnel ET campagnes — sans recours
+ * opérateur.
+ *
+ * Renvoie `true` si une ligne a été effectivement supprimée, `false` si l'email
+ * n'était pas dans la liste (idempotent : pas d'erreur). L'email est normalisé
+ * (lowercase/trim) comme à l'insertion, donc le retrait matche quelle que soit
+ * la casse saisie.
+ */
+export async function removeSuppression(email: string): Promise<boolean> {
+  const drizzle = requireDb();
+  const normalized = normalize(email);
+  const deleted = await drizzle
+    .delete(emailSuppression)
+    .where(eq(emailSuppression.email, normalized))
+    .returning();
+  return deleted.length > 0;
+}
+
+export type SuppressionListItem = Pick<
+  EmailSuppressionRow,
+  'email' | 'reason' | 'detail' | 'since' | 'source'
+>;
+
+export type ListSuppressionInput = {
+  /** Filtre par préfixe/sous-chaîne d'email (ILIKE %q%). */
+  email?: string;
+  reason?: EmailSuppressionRow['reason'];
+  source?: EmailSuppressionRow['source'];
+  limit?: number;
+  offset?: number;
+};
+
+export type ListSuppressionResult = {
+  rows: SuppressionListItem[];
+  total: number;
+};
+
+const MAX_SUPPRESSION_PAGE = 100;
+
+/** Échappe les métacaractères LIKE pour neutraliser l'injection de wildcard. */
+function escapeLike(raw: string): string {
+  return raw.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/**
+ * Liste paginée et filtrable de la suppression list (UX-COCKPIT-001). Filtre
+ * optionnel par sous-chaîne d'email, raison et source. Renvoie aussi le `total`
+ * (count) du filtre pour la pagination. Trié par `since` décroissant (les plus
+ * récentes blocklistées d'abord).
+ */
+export async function listSuppression(
+  input: ListSuppressionInput = {},
+): Promise<ListSuppressionResult> {
+  const drizzle = requireDb();
+  const limit = Math.min(Math.max(input.limit ?? 50, 1), MAX_SUPPRESSION_PAGE);
+  const offset = Math.max(input.offset ?? 0, 0);
+
+  const conditions = [];
+  const q = input.email?.trim();
+  if (q) {
+    conditions.push(ilike(emailSuppression.email, `%${escapeLike(q.toLowerCase())}%`));
+  }
+  if (input.reason) conditions.push(eq(emailSuppression.reason, input.reason));
+  if (input.source) conditions.push(eq(emailSuppression.source, input.source));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const rows = await drizzle
+    .select({
+      email: emailSuppression.email,
+      reason: emailSuppression.reason,
+      detail: emailSuppression.detail,
+      since: emailSuppression.since,
+      source: emailSuppression.source,
+    })
+    .from(emailSuppression)
+    .where(where)
+    .orderBy(desc(emailSuppression.since), asc(emailSuppression.email))
+    .limit(limit)
+    .offset(offset);
+
+  const [countRow] = await drizzle
+    .select({ n: sql<number>`count(*)::int` })
+    .from(emailSuppression)
+    .where(where);
+
+  return { rows: rows as SuppressionListItem[], total: countRow?.n ?? 0 };
 }

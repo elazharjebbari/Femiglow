@@ -276,6 +276,61 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
     [applyParseResult],
   );
 
+  // ── Filtres rapides (presets) — UX-COCKPIT-004 ───────────────────────
+  // La carte KPI « Échecs » route vers status:failed,dlq et aucun chemin ne
+  // mène à DLQ seul ni à bounced_soft (statut RELANÇABLE via bulkRetry mais
+  // jusque-là inatteignable en un clic). Ces presets isolent ces files en un
+  // clic pour les piloter (Requeue DLQ / relance des soft bounces).
+  const QUICK_FILTERS = useMemo(
+    () =>
+      [
+        { id: 'dlq', label: 'DLQ', query: 'status:dlq' },
+        { id: 'bounced_soft', label: 'Soft bounces', query: 'status:bounced_soft' },
+      ] as const,
+    [],
+  );
+  const applyQuickFilter = useCallback(
+    (query: string) => applyParseResult(parseFilters(query)),
+    [applyParseResult],
+  );
+
+  // ── « Libérer les envois bloqués » (reaper) — UX-COCKPIT-004 ──────────
+  const [reapBusy, setReapBusy] = useState(false);
+  const [reapFeedback, setReapFeedback] = useState<string | null>(null);
+  const [reapError, setReapError] = useState<string | null>(null);
+  const handleReapStuck = useCallback(async () => {
+    if (reapBusy) return; // anti double-clic
+    const ok = window.confirm(
+      'Libérer les envois bloqués en « envoi » ?\n\n' +
+        'Les lignes figées (process crashé) repasseront en file (ou en DLQ au plafond de tentatives). ' +
+        'Action sûre, sans perte de message.',
+    );
+    if (!ok) return;
+    setReapBusy(true);
+    setReapError(null);
+    setReapFeedback(null);
+    try {
+      const res = await fetch('/api/admin/emails/transactional/reap-stuck', { method: 'POST' });
+      if (!res.ok) {
+        setReapError(await describeHttpError(res));
+        return;
+      }
+      const body = (await res.json().catch(() => ({}))) as { reaped?: number };
+      const n = body.reaped ?? 0;
+      setReapFeedback(
+        n === 0
+          ? 'Aucun envoi bloqué à libérer.'
+          : `${n} envoi${n > 1 ? 's' : ''} bloqué${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''}.`,
+      );
+      await fetchSearch();
+      await summary.refresh();
+    } catch {
+      setReapError('Échec réseau : impossible de joindre le serveur. Réessaie.');
+    } finally {
+      setReapBusy(false);
+    }
+  }, [reapBusy, fetchSearch, summary]);
+
   const handleSelectView = useCallback(
     (viewId: string) => {
       const v = views.find((x) => x.id === viewId);
@@ -472,12 +527,28 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
         return;
       }
       if (id === 'suppress') {
-        const ok = window.confirm(`Marquer ${ids.length} email(s) en suppression list ?`);
+        // UX-COCKPIT-007 : compter les ADRESSES DISTINCTES (plusieurs lignes
+        // outbox peuvent partager un destinataire) et expliciter le périmètre
+        // humain + la propagation (transactionnel ET campagnes) + la réversibilité
+        // via la liste de suppression (UX-COCKPIT-001).
+        const idSet = new Set(ids);
+        const distinctAddresses = new Set(
+          (searchResult?.rows ?? [])
+            .filter((r) => idSet.has(String(r.id)))
+            .map((r) => r.toEmail.toLowerCase()),
+        );
+        const n = distinctAddresses.size || ids.length;
+        const ok = window.confirm(
+          `Bloquer ${n} adresse${n > 1 ? 's' : ''} distincte${n > 1 ? 's' : ''} ?\n\n` +
+            `Elle${n > 1 ? 's' : ''} ne recevra${n > 1 ? 'ont' : ''} plus AUCUN email ` +
+            `(transactionnel ET campagnes). ` +
+            `Action réversible uniquement via la liste de suppression.`,
+        );
         if (!ok) return; // confirmation annulée : aucun POST, sélection conservée.
       }
       void runBulkNetworkAction(id, ids);
     },
-    [selected, bulkBusy, runBulkNetworkAction, exportSelectedCsv],
+    [selected, bulkBusy, runBulkNetworkAction, exportSelectedCsv, searchResult],
   );
 
   // Réessayer la dernière action échouée (bouton dans l'alerte d'erreur).
@@ -498,6 +569,36 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
     [selected.size],
   );
 
+  // ── Actions de la palette ⌘K (UX-COCKPIT-009) ────────────────────────
+  // « Enregistrer la vue » est toujours disponible ; les actions sur la
+  // sélection n'apparaissent que quand au moins une ligne est cochée.
+  const paletteActions = useMemo(() => {
+    const list: { id: 'retry' | 'suppress' | 'export' | 'save-view'; label: string }[] = [
+      { id: 'save-view', label: 'Enregistrer la vue actuelle' },
+    ];
+    if (selected.size > 0) {
+      list.push(
+        { id: 'retry', label: `Relancer la sélection (${selected.size})` },
+        { id: 'suppress', label: `Marquer en suppression (${selected.size})` },
+        { id: 'export', label: `Exporter la sélection en CSV (${selected.size})` },
+      );
+    }
+    return list;
+  }, [selected.size]);
+
+  const handlePaletteAction = useCallback(
+    (actionId: 'retry' | 'suppress' | 'export' | 'save-view') => {
+      if (actionId === 'save-view') {
+        setCreateViewName('');
+        setViewsError(null);
+        setCreateViewOpen(true);
+        return;
+      }
+      handleBulkAction(actionId);
+    },
+    [handleBulkAction],
+  );
+
   return (
     <div>
       {/* Header KPI */}
@@ -512,12 +613,36 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
         />
       </div>
 
-      {/* Help bar : Cmd+K + filtres résolus */}
-      <div className="mb-4 flex items-center gap-2 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600">
+      {/* Help bar : Cmd+K + filtres rapides + filtres résolus */}
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600">
         <span>
           <kbd className="rounded border border-stone-300 bg-white px-1.5 py-0.5 font-mono">⌘K</kbd>{' '}
           pour filtrer
         </span>
+        <span className="text-stone-300">·</span>
+        {/* Filtres rapides DLQ / Soft bounces (UX-COCKPIT-004) */}
+        <div className="flex items-center gap-1" role="group" aria-label="Filtres rapides">
+          {QUICK_FILTERS.map((qf) => (
+            <button
+              key={qf.id}
+              type="button"
+              onClick={() => applyQuickFilter(qf.query)}
+              data-testid={`quick-filter-${qf.id}`}
+              className="rounded border border-stone-300 bg-white px-2 py-0.5 font-medium text-stone-700 hover:bg-stone-100"
+            >
+              {qf.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => void handleReapStuck()}
+            disabled={reapBusy}
+            data-testid="reap-stuck-btn"
+            className="rounded border border-stone-300 bg-white px-2 py-0.5 font-medium text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+          >
+            {reapBusy ? 'Libération…' : 'Libérer les envois bloqués'}
+          </button>
+        </div>
         {parseResult.filters.length > 0 && (
           <>
             <span className="text-stone-300">·</span>
@@ -680,6 +805,22 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
             </div>
           )}
 
+          {reapFeedback && (
+            <div
+              role="status"
+              data-testid="reap-feedback"
+              className="rounded-md border border-sage-300 bg-sage-50 p-3 text-sm text-sage-800"
+            >
+              <span aria-hidden="true" className="mr-1.5">✓</span>
+              {reapFeedback}
+            </div>
+          )}
+          {reapError && (
+            <div role="alert" data-testid="reap-error" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+              {reapError}
+            </div>
+          )}
+
           {searchError && (
             <div role="alert" className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
               Erreur : {searchError}
@@ -738,8 +879,10 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
       {/* Palette ⌘K (toujours montée, contrôlée en interne) */}
       <CommandPalette
         savedViews={views}
+        actions={paletteActions}
         onApply={applyParseResult}
         onSelectView={handleSelectView}
+        onAction={handlePaletteAction}
       />
     </div>
   );

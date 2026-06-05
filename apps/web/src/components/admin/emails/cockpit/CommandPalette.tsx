@@ -20,7 +20,7 @@
  *    docs/emailing/admin-evolution/04-ui-ux/01-wizard-spec-master.md §1.3
  */
 import { Command } from 'cmdk';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   OUTBOX_STATUSES,
   parseFilters,
@@ -59,6 +59,70 @@ const STATUS_HINTS: ReadonlyArray<{ value: string; label: string }> = OUTBOX_STA
   label: s.replace(/_/g, ' '),
 }));
 
+/** Suggestion d'entité affichée dans la palette (template/destinataire/source). */
+type EntitySuggestion = { value: string; label: string; hint?: string };
+
+/**
+ * Contextes d'autocomplétion d'entité branchés sur les routes du socle FONDATION
+ * (UX-COCKPIT-003). Avant : seul `status:` proposait des valeurs ; `template:`,
+ * `to:`, `source:` étaient saisis à l'aveugle (le filtre exact non-glob échouait
+ * silencieusement à un caractère près). Chaque contexte décrit comment
+ * récupérer + mapper ses suggestions depuis la route prête mais non consommée.
+ */
+const ENTITY_CONTEXTS = {
+  template: {
+    regex: /^template:(.*)$/i,
+    async fetch(q: string, signal: AbortSignal): Promise<EntitySuggestion[]> {
+      const res = await fetch('/api/admin/emails/templates/autocomplete', {
+        credentials: 'include',
+        signal,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as {
+        templates: Array<{ slug: string; name: string; source: string }>;
+      };
+      const needle = q.toLowerCase();
+      return data.templates
+        .filter(
+          (t) =>
+            t.slug.toLowerCase().includes(needle) || t.name.toLowerCase().includes(needle),
+        )
+        .slice(0, 20)
+        .map((t) => ({
+          value: t.slug,
+          label: t.slug,
+          hint: t.source === 'system' ? 'système' : 'custom',
+        }));
+    },
+  },
+  to: {
+    regex: /^to:(.*)$/i,
+    async fetch(q: string, signal: AbortSignal): Promise<EntitySuggestion[]> {
+      const res = await fetch(
+        `/api/admin/emails/transactional/recipients-autocomplete?q=${encodeURIComponent(q)}`,
+        { credentials: 'include', signal },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { recipients: string[] };
+      return data.recipients.slice(0, 20).map((email) => ({ value: email, label: email }));
+    },
+  },
+  source: {
+    regex: /^source:(.*)$/i,
+    async fetch(q: string, signal: AbortSignal): Promise<EntitySuggestion[]> {
+      const res = await fetch(
+        `/api/admin/emails/transactional/sources?q=${encodeURIComponent(q)}`,
+        { credentials: 'include', signal },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { sources: string[] };
+      return data.sources.slice(0, 20).map((s) => ({ value: s, label: s }));
+    },
+  },
+} as const;
+
+type EntityContextKey = keyof typeof ENTITY_CONTEXTS;
+
 /**
  * Hook ⌘K toggling — open quand Cmd/Ctrl+K, close on Esc.
  * Géré dans le composant pour ne pas dépendre du parent.
@@ -93,6 +157,76 @@ export function CommandPalette({
   const hasErrors = parsed.errors.length > 0;
   const lastSegment = value.split(' ').pop() ?? '';
   const inStatusContext = /^status:/i.test(lastSegment);
+
+  // ── Autocomplétion d'entité (UX-COCKPIT-003) ─────────────────────────
+  // Détecte le contexte template:/to:/source: du dernier segment et récupère
+  // ses suggestions depuis la route correspondante (debounce + AbortController :
+  // le fetch précédent est annulé à chaque frappe → pas de suggestion fantôme).
+  const entityContext = useMemo<{ key: EntityContextKey; prefix: string } | null>(() => {
+    for (const key of Object.keys(ENTITY_CONTEXTS) as EntityContextKey[]) {
+      const m = ENTITY_CONTEXTS[key].regex.exec(lastSegment);
+      if (m) return { key, prefix: m[1] ?? '' };
+    }
+    return null;
+  }, [lastSegment]);
+
+  const [entitySuggestions, setEntitySuggestions] = useState<EntitySuggestion[]>([]);
+  const [entityLoading, setEntityLoading] = useState(false);
+  const [entityError, setEntityError] = useState(false);
+  const entityAbortRef = useRef<AbortController | null>(null);
+  const entitySeqRef = useRef(0);
+
+  useEffect(() => {
+    // Hors d'un contexte d'entité : on purge et on annule tout fetch en vol.
+    if (!entityContext) {
+      entityAbortRef.current?.abort();
+      entitySeqRef.current++;
+      setEntitySuggestions([]);
+      setEntityLoading(false);
+      setEntityError(false);
+      return;
+    }
+    const ctx = ENTITY_CONTEXTS[entityContext.key];
+    const prefix = entityContext.prefix;
+    const seq = ++entitySeqRef.current;
+    entityAbortRef.current?.abort();
+    const controller = new AbortController();
+    entityAbortRef.current = controller;
+    setEntityLoading(true);
+    setEntityError(false);
+
+    const timer = setTimeout(() => {
+      ctx
+        .fetch(prefix, controller.signal)
+        .then((opts) => {
+          if (seq !== entitySeqRef.current) return;
+          setEntitySuggestions(opts);
+          setEntityError(false);
+        })
+        .catch((err: unknown) => {
+          if (controller.signal.aborted || seq !== entitySeqRef.current) return;
+          void err;
+          setEntitySuggestions([]);
+          setEntityError(true);
+        })
+        .finally(() => {
+          if (seq === entitySeqRef.current) setEntityLoading(false);
+        });
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [entityContext]);
+
+  /** Remplace le dernier segment par `<key>:<value>` (+ espace pour enchaîner). */
+  function completeEntity(key: EntityContextKey, optValue: string) {
+    const parts = value.split(' ');
+    // Les valeurs avec espace sont impossibles ici (slug/email/source) ; pas de quote.
+    parts[parts.length - 1] = `${key}:${optValue}`;
+    setValue(parts.join(' ') + ' ');
+  }
 
   function handleApply() {
     onApply?.(parsed);
@@ -175,6 +309,62 @@ export function CommandPalette({
                   status:{s.value} <span className="ml-2 text-stone-400">— {s.label}</span>
                 </Command.Item>
               ))}
+            </Command.Group>
+          )}
+
+          {/* Suggestions d'entité (template / destinataire / source) — UX-COCKPIT-003 */}
+          {entityContext && (
+            <Command.Group
+              heading={
+                entityContext.key === 'template'
+                  ? 'Templates'
+                  : entityContext.key === 'to'
+                    ? 'Destinataires'
+                    : 'Sources'
+              }
+              className="text-xs uppercase tracking-wider text-stone-500"
+            >
+              {entityLoading && (
+                <div
+                  data-testid="palette-entity-loading"
+                  role="status"
+                  className="px-2 py-1.5 text-sm text-stone-400"
+                >
+                  Chargement des suggestions…
+                </div>
+              )}
+              {!entityLoading && entityError && (
+                <div
+                  data-testid="palette-entity-error"
+                  role="status"
+                  className="px-2 py-1.5 text-sm text-rose-600"
+                >
+                  Suggestions indisponibles
+                </div>
+              )}
+              {!entityLoading &&
+                !entityError &&
+                entitySuggestions.map((opt) => (
+                  <Command.Item
+                    key={`${entityContext.key}-${opt.value}`}
+                    value={`${entityContext.key}:${opt.value}`}
+                    onSelect={() => completeEntity(entityContext.key, opt.value)}
+                    data-testid="palette-entity-option"
+                    className="cursor-pointer rounded px-2 py-1.5 text-sm text-stone-700 hover:bg-stone-50 data-[selected=true]:bg-sage-50"
+                  >
+                    {entityContext.key}:{opt.value}
+                    {opt.hint ? <span className="ml-2 text-stone-400">— {opt.hint}</span> : null}
+                  </Command.Item>
+                ))}
+              {!entityLoading && !entityError && entitySuggestions.length === 0 && (
+                <div
+                  data-testid="palette-entity-empty"
+                  role="status"
+                  className="px-2 py-1.5 text-sm text-stone-400"
+                >
+                  Aucun résultat
+                </div>
+              )}
             </Command.Group>
           )}
 

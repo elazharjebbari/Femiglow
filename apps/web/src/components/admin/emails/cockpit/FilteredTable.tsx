@@ -14,6 +14,7 @@
  */
 import { useState, useCallback } from 'react';
 import type { OutboxSearchRow, SearchSort } from '@/lib/mail/transactional/search';
+import { StatusBadge } from '@/components/admin/emails/common/StatusBadge';
 
 export type FilteredTableProps = {
   rows: OutboxSearchRow[];
@@ -24,20 +25,6 @@ export type FilteredTableProps = {
   sort?: SearchSort;
   onSortChange?: (sort: SearchSort) => void;
   onRowClick?: (id: string) => void;
-};
-
-const STATUS_STYLES: Record<string, string> = {
-  delivered: 'bg-emerald-50 text-emerald-700',
-  sent: 'bg-sky-50 text-sky-700',
-  opened: 'bg-sky-50 text-sky-700',
-  clicked: 'bg-sky-50 text-sky-700',
-  pending: 'bg-stone-100 text-stone-700',
-  sending: 'bg-sky-50 text-sky-700',
-  failed: 'bg-red-50 text-red-700',
-  bounced_soft: 'bg-amber-50 text-amber-700',
-  bounced_permanent: 'bg-red-50 text-red-700',
-  suppressed: 'bg-stone-100 text-stone-500 line-through',
-  dlq: 'bg-red-100 text-red-800',
 };
 
 function formatDate(d: Date | string): string {
@@ -57,29 +44,39 @@ function formatDate(d: Date | string): string {
 type SortableHeaderProps = {
   label: string;
   sortKey?: SearchSort;
+  /**
+   * Variante ASCENDANTE de la colonne (UX-COCKPIT-010). Quand fournie, cliquer la
+   * colonne déjà active BASCULE desc↔asc et `aria-sort` reflète la direction
+   * réelle (`descending`/`ascending`) au lieu de toujours « descending ».
+   */
+  ascSortKey?: SearchSort;
   currentSort?: SearchSort;
   onSortChange?: (s: SearchSort) => void;
   className?: string;
 };
 
-function SortableHeader({ label, sortKey, currentSort, onSortChange, className }: SortableHeaderProps) {
+function SortableHeader({ label, sortKey, ascSortKey, currentSort, onSortChange, className }: SortableHeaderProps) {
   if (!sortKey || !onSortChange) {
     return <th className={`text-left text-xs font-medium uppercase tracking-wider text-stone-500 ${className ?? ''}`}>{label}</th>;
   }
-  const active = currentSort === sortKey;
+  const isDesc = currentSort === sortKey;
+  const isAsc = ascSortKey != null && currentSort === ascSortKey;
+  const active = isDesc || isAsc;
+  // Toggle desc↔asc quand la colonne est déjà active (et qu'une variante asc existe).
+  const nextSort: SearchSort = active && ascSortKey != null ? (isDesc ? ascSortKey : sortKey) : sortKey;
   return (
     <th
       scope="col"
       className={`text-left text-xs font-medium uppercase tracking-wider text-stone-500 ${className ?? ''}`}
-      aria-sort={active ? 'descending' : 'none'}
+      aria-sort={isAsc ? 'ascending' : isDesc ? 'descending' : 'none'}
     >
       <button
         type="button"
-        onClick={() => onSortChange(sortKey)}
+        onClick={() => onSortChange(nextSort)}
         className={`inline-flex items-center gap-1 hover:text-stone-900 ${active ? 'text-stone-900' : ''}`}
       >
         {label}
-        {active && <span aria-hidden="true">↓</span>}
+        {active && <span aria-hidden="true">{isAsc ? '↑' : '↓'}</span>}
       </button>
     </th>
   );
@@ -148,9 +145,28 @@ export function FilteredTable({
 
   const allSelected = selectedIds.size === rows.length;
   const someSelected = selectedIds.size > 0 && selectedIds.size < rows.length;
+  // UX-COCKPIT-006 : « Sélectionner tout » ne coche QUE la page visible (≤ 50).
+  // Quand le filtre matche plus de lignes que la page, on avertit explicitement
+  // l'opérateur — sinon il croit couvrir l'ensemble alors que seules les 50
+  // visibles partiront en action de masse (faux sentiment d'exhaustivité, F-012).
+  const showPageOnlyWarning = allSelected && total > rows.length;
 
   return (
     <div className="overflow-x-auto rounded-md border border-stone-200 bg-white" data-testid="filtered-table">
+      {showPageOnlyWarning && (
+        <div
+          role="status"
+          data-testid="select-all-page-warning"
+          className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+        >
+          <span aria-hidden="true">⚠</span>
+          <span>
+            Les {rows.length} de cette page sont sélectionnés — sur{' '}
+            {total.toLocaleString('fr-FR')} correspondant aux filtres. Une action de masse ne
+            s’appliquera qu’aux {rows.length} visibles.
+          </span>
+        </div>
+      )}
       <table className="w-full text-sm">
         <thead className="border-b border-stone-200 bg-stone-50/50">
           <tr>
@@ -166,7 +182,7 @@ export function FilteredTable({
                 data-testid="select-all"
               />
             </th>
-            <SortableHeader label="Date" sortKey="date_desc" currentSort={sort} onSortChange={onSortChange} className="px-3 py-2 w-32" />
+            <SortableHeader label="Date" sortKey="date_desc" ascSortKey="date_asc" currentSort={sort} onSortChange={onSortChange} className="px-3 py-2 w-32" />
             <SortableHeader label="Destinataire" className="px-3 py-2" />
             <SortableHeader label="Template" sortKey="template" currentSort={sort} onSortChange={onSortChange} className="px-3 py-2 w-48" />
             <SortableHeader label="Sujet" className="px-3 py-2" />
@@ -209,13 +225,7 @@ export function FilteredTable({
                 <td className="px-3 py-2 font-mono text-xs text-stone-700">{row.template}</td>
                 <td className="max-w-md truncate px-3 py-2 text-stone-700">{row.subject}</td>
                 <td className="px-3 py-2">
-                  <span
-                    className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${
-                      STATUS_STYLES[row.status] ?? 'bg-stone-100 text-stone-700'
-                    }`}
-                  >
-                    {row.status}
-                  </span>
+                  <StatusBadge status={row.status} />
                 </td>
                 <td className="px-3 py-2 text-stone-600 tabular-nums">
                   {row.attempts}/{row.maxAttempts}
