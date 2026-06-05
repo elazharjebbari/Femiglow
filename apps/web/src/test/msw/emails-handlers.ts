@@ -348,6 +348,41 @@ export const emailsHandlers = [
       ],
     }),
   ),
+  // Suggestions destinataire / source / lead (chantier FONDATION vague 4).
+  http.get('/api/admin/emails/transactional/recipients-autocomplete', ({ request }) => {
+    const q = (new URL(request.url).searchParams.get('q') ?? '').toLowerCase();
+    const all = [
+      'amal@exemple.test',
+      'amine@exemple.test',
+      'bouchra@exemple.test',
+      'kaoutar@exemple.test',
+    ];
+    const recipients = (q ? all.filter((e) => e.startsWith(q)) : all).slice(0, 20);
+    return HttpResponse.json({ recipients });
+  }),
+  http.get('/api/admin/emails/transactional/sources', ({ request }) => {
+    const q = (new URL(request.url).searchParams.get('q') ?? '').toLowerCase();
+    const all = ['api.contact', 'app', 'import', 'transactional'];
+    const sources = (q ? all.filter((s) => s.startsWith(q)) : all).slice(0, 20);
+    return HttpResponse.json({ sources });
+  }),
+  http.get('/api/admin/emails/leads/autocomplete', ({ request }) => {
+    const q = (new URL(request.url).searchParams.get('q') ?? '').toLowerCase();
+    const all = [
+      { email: 'amal@exemple.test', name: 'Amal Benali' },
+      { email: 'kaoutar@exemple.test', name: 'Kaoutar Idrissi' },
+      { email: 'sans-nom@exemple.test', name: null },
+    ];
+    const leads = (q
+      ? all.filter(
+          (l) =>
+            l.email.toLowerCase().includes(q) ||
+            (l.name ?? '').toLowerCase().includes(q),
+        )
+      : all
+    ).slice(0, 20);
+    return HttpResponse.json({ leads });
+  }),
   http.get('/api/admin/emails/templates/starters', () =>
     HttpResponse.json([
       {
