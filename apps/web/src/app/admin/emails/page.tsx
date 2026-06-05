@@ -16,6 +16,7 @@ import {
 } from '@/app/api/admin/emails/health/checks';
 import { HealthBadge } from '@/components/admin/emails/HealthBadge';
 import { KpiCards, StatusBadge } from '@/components/admin/emails/KpiCards';
+import { DashboardFreshness } from '@/components/admin/emails/DashboardFreshness';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +60,10 @@ export default async function AdminEmailsPage() {
             Transactionnels envoyés via Stalwart. KPIs 7 derniers jours.
           </p>
         </div>
-        <HealthBadge level={level} report={health} infra={infraChecks} />
+        <div className="flex flex-col items-end gap-2">
+          <HealthBadge level={level} report={health} infra={infraChecks} />
+          <DashboardFreshness generatedAt={health.timestamp} />
+        </div>
       </header>
 
       <KpiCards kpi={kpi} />
@@ -101,6 +105,12 @@ export default async function AdminEmailsPage() {
         >
           Listmonk (admin natif) →
         </Link>
+        <Link
+          href="/admin/emails/events"
+          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+        >
+          Events (debug) →
+        </Link>
       </nav>
       <p className="mb-6 text-xs text-stone-400">
         Astuce :{' '}
@@ -115,9 +125,17 @@ export default async function AdminEmailsPage() {
       </p>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600">
-          Derniers envois
-        </h2>
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-600">
+            Derniers envois
+          </h2>
+          <Link
+            href="/admin/emails/transactional"
+            className="text-sm font-medium text-stone-600 underline underline-offset-2 hover:text-stone-900"
+          >
+            Voir tous les envois →
+          </Link>
+        </div>
         <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
           <table className="min-w-full text-sm">
             <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-600">
@@ -132,8 +150,14 @@ export default async function AdminEmailsPage() {
             <tbody className="divide-y divide-stone-200">
               {recent.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-stone-500">
-                    Aucun envoi sur la période.
+                  <td colSpan={5} className="px-3 py-8 text-center text-stone-500">
+                    <p>Aucun envoi sur la période.</p>
+                    <Link
+                      href="/admin/emails/transactional"
+                      className="mt-2 inline-block text-sm font-medium text-stone-700 underline underline-offset-2 hover:text-stone-900"
+                    >
+                      Ouvrir le cockpit transactionnel →
+                    </Link>
                   </td>
                 </tr>
               ) : (

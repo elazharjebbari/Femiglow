@@ -11,6 +11,7 @@
  * passe en alerte (ton rose) ET une bannière explicite « delivery silencieux »
  * apparaît — au lieu d'un « 0 » neutre qui masquait le webhook Stalwart mort.
  */
+import Link from 'next/link';
 import type { OutboxKpi } from '@/lib/admin/emails/queries';
 import {
   deliveredTone,
@@ -22,6 +23,20 @@ import {
   pendingTone,
   type KpiTone,
 } from '@/app/admin/emails/kpi-format';
+
+/**
+ * Deep-links cockpit par population (UX-DASH-001). Le cockpit transactionnel
+ * `deserializeFilters` lit `?status=…` (liste séparée par des virgules) →
+ * chaque carte KPI renvoie l'opérateur vers la liste filtrée correspondante,
+ * en ≤ 2 clics (« problème visible → action »).
+ */
+const COCKPIT = '/admin/emails/transactional';
+const HREF_SENT = `${COCKPIT}?status=sent,delivered`;
+const HREF_FAILED = `${COCKPIT}?status=failed,bounced_soft,bounced_permanent`;
+const HREF_DLQ = `${COCKPIT}?status=dlq`;
+const HREF_PENDING = `${COCKPIT}?status=pending`;
+/** Page de debug events filtrée sur les events email (delivered entrants). */
+const HREF_EVENTS_EMAIL = '/admin/emails/events?source=email';
 
 export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
   const deliverySilent = isDeliverySilent(kpi.sentLast7d, kpi.deliveredLast7d);
@@ -35,7 +50,13 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
         >
           <strong className="font-semibold">Livraison silencieuse</strong> :{' '}
           {fmt(kpi.sentLast7d)} email(s) envoyé(s) sur 7 j mais aucune livraison
-          confirmée — le webhook Stalwart est probablement muet.
+          confirmée — le webhook Stalwart est probablement muet.{' '}
+          <Link
+            href={HREF_EVENTS_EMAIL}
+            className="font-medium underline underline-offset-2"
+          >
+            Vérifier les events delivered →
+          </Link>
         </div>
       ) : null}
 
@@ -45,6 +66,8 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
           label="Envoyés (7j)"
           value={fmt(kpi.sentLast7d)}
           sub={`sur ${fmt(kpi.totalLast7d)} tentatives`}
+          href={HREF_SENT}
+          ariaLabel={`Voir les ${fmt(kpi.sentLast7d)} envoyés (7 jours)`}
         />
         <Kpi
           testId="kpi-card-delivered"
@@ -56,6 +79,8 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
               : pct(kpi.deliveredLast7d, kpi.sentLast7d) + ' des envoyés'
           }
           tone={deliveredTone(kpi)}
+          href={HREF_SENT}
+          ariaLabel={`Voir les ${fmt(kpi.deliveredLast7d)} livrés (7 jours)`}
         />
         <Kpi
           testId="kpi-card-failed"
@@ -63,6 +88,8 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
           value={fmt(kpi.failedLast7d)}
           sub={pct(kpi.failedLast7d, kpi.totalLast7d)}
           tone={failedTone(kpi.failedLast7d)}
+          href={HREF_FAILED}
+          ariaLabel={`Voir les ${fmt(kpi.failedLast7d)} échecs`}
         />
         <Kpi
           testId="kpi-card-dlq"
@@ -70,6 +97,8 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
           value={fmt(kpi.dlqLast7d)}
           sub="abandonnés (max attempts)"
           tone={dlqTone(kpi.dlqLast7d)}
+          href={HREF_DLQ}
+          ariaLabel={`Voir les ${fmt(kpi.dlqLast7d)} messages en DLQ`}
         />
         <Kpi
           testId="kpi-card-pending"
@@ -77,6 +106,8 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
           value={fmt(kpi.pendingNow)}
           sub="pickup cron 60s"
           tone={pendingTone(kpi.pendingNow)}
+          href={HREF_PENDING}
+          ariaLabel={`Voir les ${fmt(kpi.pendingNow)} messages en attente`}
         />
         <Kpi
           testId="kpi-card-total"
@@ -95,12 +126,18 @@ export function Kpi({
   sub,
   tone = 'neutral',
   testId,
+  href,
+  ariaLabel,
 }: {
   label: string;
   value: string;
   sub?: string;
   tone?: KpiTone;
   testId?: string;
+  /** Cible de drill-down (UX-DASH-001). Si absent, la carte est inerte (Total). */
+  href?: string;
+  /** Libellé accessible chiffré du lien (ex. « Voir les 42 échecs »). */
+  ariaLabel?: string;
 }) {
   const toneClass =
     tone === 'amber'
@@ -110,12 +147,22 @@ export function Kpi({
         : tone === 'emerald'
           ? 'text-emerald-700'
           : 'text-stone-900';
-  return (
+  const card = (
     <div className="rounded-lg border border-stone-200 bg-white p-3" data-testid={testId}>
       <p className="text-xs uppercase tracking-wider text-stone-500">{label}</p>
       <p className={`mt-1 text-2xl font-semibold tabular-nums ${toneClass}`}>{value}</p>
       {sub ? <p className="mt-0.5 text-xs text-stone-500">{sub}</p> : null}
     </div>
+  );
+  if (!href) return card;
+  return (
+    <Link
+      href={href}
+      aria-label={ariaLabel}
+      className="block rounded-lg transition hover:ring-2 hover:ring-stone-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-500"
+    >
+      {card}
+    </Link>
   );
 }
 
