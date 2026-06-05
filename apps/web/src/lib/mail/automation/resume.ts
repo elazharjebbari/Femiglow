@@ -127,18 +127,25 @@ export async function sweepWaitForEventTimeouts(now: Date = new Date()): Promise
   // For timed-out runs : set status='running' + nextActionAt=now so the runner
   // picks them up and advances past the wait_for_event step (default onTimeout=continue).
   // Note : a more nuanced impl would inspect step.onTimeout to either continue or abort.
+  // NB : Date JS crue interdite dans un template sql postgres-js (ERR_INVALID_ARG_TYPE
+  // à la phase ParameterDescription) → bind ISO + cast ::timestamptz (conventions §8).
+  const nowIso = now.toISOString();
   const result = await drizzle.execute(sql`
     UPDATE email_automation_run
     SET status = 'running',
-        next_action_at = ${now},
+        next_action_at = ${nowIso}::timestamptz,
         awaiting_event_name = NULL,
         awaiting_until = NULL
     WHERE status = 'waiting_for_event'
       AND awaiting_until IS NOT NULL
-      AND awaiting_until <= ${now}
+      AND awaiting_until <= ${nowIso}::timestamptz
     RETURNING id;
   `);
-  const rows = (result as unknown as { rows?: { id: string }[] }).rows ?? [];
+  // postgres-js renvoie le RowList (tableau) directement ; neon-http renvoie
+  // { rows }. Le shape `.rows` seul rendait le compte TOUJOURS 0 en prod.
+  const rows = Array.isArray(result)
+    ? (result as unknown as { id: string }[])
+    : ((result as unknown as { rows?: { id: string }[] }).rows ?? []);
   if (rows.length > 0) {
     logger.info('automation.resume.timeouts_swept', { count: rows.length });
   }

@@ -157,9 +157,12 @@ export async function listAudiencesWithSnapshotCount(): Promise<AudienceListItem
       evaluationMode: emailAudience.evaluationMode,
       createdBy: emailAudience.createdBy,
       createdAt: emailAudience.createdAt,
+      // Référence externe qualifiée en dur : dans ce sous-SELECT, drizzle rend
+      // ${emailAudience.id} SANS qualificateur ("id") qui se résout alors sur la
+      // colonne id du snapshot → count toujours 0 (bug épinglé AUD-QRY-012).
       snapshotCount: sql<number>`(
         SELECT COUNT(*)::int FROM ${emailAudienceSnapshot}
-        WHERE ${emailAudienceSnapshot.audienceId} = ${emailAudience.id}
+        WHERE ${emailAudienceSnapshot.audienceId} = "email_audience"."id"
       )`,
     })
     .from(emailAudience)
