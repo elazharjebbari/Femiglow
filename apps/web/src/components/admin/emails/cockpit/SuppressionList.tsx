@@ -3,20 +3,26 @@
 /**
  * SuppressionList — écran client de la liste de suppression (UX-COCKPIT-001).
  *
- * Rend la `email_suppression` enfin CONSULTABLE et RÉVERSIBLE : table paginée +
- * recherche (email / raison / source) + bouton « Retirer » avec confirmation
- * explicite (réinscription RGPD, faux positif bounce). Chaque retrait appelle
- * DELETE /api/admin/emails/suppression et fait disparaître la ligne — sans faux
- * succès (on lit `res.ok` ; échec → message visible, ligne conservée).
+ * ÉCRAN PILOTE du socle emails-ux (P1.5) : premier adoptant de
+ * ConfirmDialog / useToast / EmptyState / format-datetime — il a quitté les
+ * trois listes blanches des verrous cliquet (ui/__qa__/verrous.test.ts).
  *
- * A11y : table, role=status pour le feedback de succès, role=alert pour l'erreur,
- * anti double-clic (bouton désactivé pendant la mutation), libellés FR.
+ * Rend la `email_suppression` CONSULTABLE et RÉVERSIBLE : table paginée +
+ * recherche + « Retirer » via ConfirmDialog (réinscription RGPD, faux positif
+ * bounce). Zéro faux succès : échec DELETE → le dialog RESTE ouvert avec
+ * l'erreur (re-tentative immédiate possible) ; succès → toast résultat.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { statusLabel } from '@/components/admin/emails/common/StatusBadge';
+import { ConfirmDialog } from '@/components/admin/emails/ui/ConfirmDialog';
+import { EmptyState } from '@/components/admin/emails/ui/EmptyState';
+import { useToast } from '@/components/admin/emails/ui/toast';
+import { DEFAULT_TIMEZONE, formatAbsolute, timeZoneLabel } from '@/components/admin/emails/ui/format-datetime';
 
 const ROUTE = '/api/admin/emails/suppression';
 const PAGE_SIZE = 50;
+
+const nf = new Intl.NumberFormat('fr-FR');
 
 type SuppressionRow = {
   email: string;
@@ -64,6 +70,7 @@ export type SuppressionListProps = {
 };
 
 export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
+  const toast = useToast();
   const [query, setQuery] = useState(initialEmail);
   // Terme de recherche réellement appliqué (debounce léger via submit explicite).
   const [appliedQuery, setAppliedQuery] = useState(initialEmail);
@@ -73,10 +80,8 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Mutation en vol (verrou anti double-clic) + feedback.
-  const [removingEmail, setRemovingEmail] = useState<string | null>(null);
-  const [removeError, setRemoveError] = useState<string | null>(null);
-  const [removeOk, setRemoveOk] = useState<string | null>(null);
+  /** Adresse en attente de confirmation (le dialog est ouvert si non-null). */
+  const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
 
   const reqSeq = useRef(0);
 
@@ -126,45 +131,37 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
     [query],
   );
 
-  const handleRemove = useCallback(
-    async (email: string) => {
-      if (removingEmail) return; // verrou anti double-clic
-      const ok = window.confirm(
-        `Retirer ${email} de la liste de suppression ?\n\n` +
-          `Cette adresse pourra de nouveau recevoir des emails (transactionnel ET campagnes). ` +
-          `Ne le faites que si le blocage était une erreur ou sur demande de réinscription.`,
-      );
-      if (!ok) return;
+  const resetSearch = useCallback(() => {
+    setQuery('');
+    setAppliedQuery('');
+    setOffset(0);
+  }, []);
 
-      setRemovingEmail(email);
-      setRemoveError(null);
-      setRemoveOk(null);
-      try {
-        const res = await fetch(ROUTE, {
-          method: 'DELETE',
-          headers: { 'content-type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email }),
-        });
-        if (!res.ok) {
-          setRemoveError(
-            res.status === 401 || res.status === 403
-              ? 'Session expirée ou non autorisée — reconnecte-toi puis réessaie.'
-              : `Le retrait a échoué (HTTP ${res.status}). Réessaie dans un instant.`,
-          );
-          return; // ligne CONSERVÉE, pas de faux succès.
-        }
-        setRemoveOk(`${email} retiré de la liste de suppression.`);
-        // Recharge la liste : la ligne disparaît.
-        await fetchList();
-      } catch {
-        setRemoveError('Échec réseau : impossible de joindre le serveur. Réessaie.');
-      } finally {
-        setRemovingEmail(null);
-      }
-    },
-    [removingEmail, fetchList],
-  );
+  /**
+   * Exécutée PAR le ConfirmDialog (qui porte busy/anti double-clic). Un rejet
+   * laisse le dialog ouvert avec l'erreur ; le succès ferme + toast + refetch.
+   */
+  const confirmRemoval = useCallback(async () => {
+    const email = pendingRemoval!;
+    const res = await fetch(ROUTE, {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email }),
+    }).catch(() => {
+      throw new Error('Échec réseau : impossible de joindre le serveur. Réessaie.');
+    });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 401 || res.status === 403
+          ? 'Session expirée ou non autorisée — reconnecte-toi puis réessaie.'
+          : `Le retrait a échoué (HTTP ${res.status}). Réessaie dans un instant.`,
+      );
+    }
+    setPendingRemoval(null);
+    toast.success(`${email} retiré de la liste de suppression`);
+    await fetchList(); // la ligne disparaît
+  }, [pendingRemoval, toast, fetchList]);
 
   return (
     <div data-testid="suppression-list">
@@ -193,11 +190,7 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
         {appliedQuery.trim() && (
           <button
             type="button"
-            onClick={() => {
-              setQuery('');
-              setAppliedQuery('');
-              setOffset(0);
-            }}
+            onClick={resetSearch}
             className="text-sm text-stone-500 underline-offset-2 hover:underline"
           >
             effacer
@@ -205,31 +198,8 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
         )}
       </form>
 
-      {/* Feedback succès (role=status) */}
-      {removeOk && (
-        <div
-          role="status"
-          data-testid="suppression-remove-ok"
-          className="mb-3 rounded-md border border-sage-300 bg-sage-50 p-3 text-sm text-sage-800"
-        >
-          <span aria-hidden="true" className="mr-1.5">✓</span>
-          {removeOk}
-        </div>
-      )}
-
-      {/* Feedback erreur (role=alert) */}
-      {removeError && (
-        <div
-          role="alert"
-          data-testid="suppression-remove-error"
-          className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700"
-        >
-          {removeError}
-        </div>
-      )}
-
       {loadError && (
-        <div role="alert" className="mb-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+        <div role="alert" className="mb-3 rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">
           {loadError}
         </div>
       )}
@@ -242,18 +212,26 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
           Chargement…
         </div>
       ) : rows.length === 0 ? (
-        <div
-          data-testid="suppression-empty"
-          className="rounded-md border border-stone-200 bg-white p-12 text-center"
-        >
-          <div className="mb-2 text-3xl">🟢</div>
-          <h3 className="text-base font-medium text-stone-900">Aucune adresse en suppression</h3>
-          <p className="mt-1 text-sm text-stone-500">
-            {appliedQuery.trim()
-              ? 'Aucun résultat pour cette recherche.'
-              : 'La liste de suppression est vide.'}
-          </p>
-        </div>
+        appliedQuery.trim() ? (
+          <EmptyState
+            variant="filtered"
+            icon="📭"
+            title="Aucune adresse ne correspond à cette recherche"
+            body={
+              <>
+                Le filtre « <code>{appliedQuery.trim()}</code> » ne retient aucune adresse
+                de la liste de suppression.
+              </>
+            }
+            cta={{ label: 'Réinitialiser le filtre', onClick: resetSearch }}
+          />
+        ) : (
+          <EmptyState
+            icon="🟢"
+            title="Aucune adresse en suppression"
+            body="La liste de suppression est vide — toutes les adresses sont joignables."
+          />
+        )
       ) : (
         <div className="overflow-x-auto rounded-md border border-stone-200 bg-white">
           <table className="w-full text-sm">
@@ -269,7 +247,7 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
                   Source
                 </th>
                 <th scope="col" className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
-                  Depuis
+                  Depuis ({timeZoneLabel(DEFAULT_TIMEZONE)})
                 </th>
                 <th scope="col" className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-stone-500">
                   Action
@@ -277,41 +255,36 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {rows.map((row) => {
-                const busy = removingEmail === row.email;
-                return (
-                  <tr key={row.email} data-testid={`suppression-row-${row.email}`} className="hover:bg-stone-50">
-                    <td className="px-3 py-2 font-mono text-xs text-stone-800">{row.email}</td>
-                    <td className="px-3 py-2 text-stone-700">
-                      {reasonLabel(row.reason)}
-                      {row.detail ? <span className="ml-1 text-xs text-stone-400">({row.detail})</span> : null}
-                    </td>
-                    <td className="px-3 py-2 text-stone-600">{sourceLabel(row.source)}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-stone-500">
-                      {new Date(row.since).toLocaleString('fr-FR')}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        type="button"
-                        onClick={() => void handleRemove(row.email)}
-                        disabled={removingEmail !== null}
-                        aria-label={`Retirer ${row.email} de la liste de suppression`}
-                        data-testid={`suppression-remove-${row.email}`}
-                        className="rounded border border-stone-300 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {busy ? 'Retrait…' : 'Retirer'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {rows.map((row) => (
+                <tr key={row.email} data-testid={`suppression-row-${row.email}`} className="hover:bg-stone-50">
+                  <td className="px-3 py-2 font-mono text-xs text-stone-800">{row.email}</td>
+                  <td className="px-3 py-2 text-stone-700">
+                    {reasonLabel(row.reason)}
+                    {row.detail ? <span className="ml-1 text-xs text-stone-400">({row.detail})</span> : null}
+                  </td>
+                  <td className="px-3 py-2 text-stone-600">{sourceLabel(row.source)}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-stone-500">
+                    <time dateTime={row.since}>{formatAbsolute(row.since)}</time>
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setPendingRemoval(row.email)}
+                      aria-label={`Retirer ${row.email} de la liste de suppression`}
+                      data-testid={`suppression-remove-${row.email}`}
+                      className="rounded border border-stone-300 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-100"
+                    >
+                      Retirer
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
           <div className="flex items-center justify-between border-t border-stone-200 bg-stone-50/50 px-3 py-2 text-xs text-stone-500">
             <span data-testid="suppression-range">
-              {rangeStart.toLocaleString('fr-FR')}–{rangeEnd.toLocaleString('fr-FR')} sur{' '}
-              {total.toLocaleString('fr-FR')}
+              {nf.format(rangeStart)}–{nf.format(rangeEnd)} sur {nf.format(total)}
             </span>
             {total > PAGE_SIZE && (
               <div className="flex items-center gap-1">
@@ -336,6 +309,24 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
           </div>
         </div>
       )}
+
+      {/* Confirmation destructive — socle F01 (remplace window.confirm). */}
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        title={`Retirer ${pendingRemoval ?? ''} de la liste de suppression ?`}
+        body={
+          <p>
+            Cette adresse pourra de nouveau recevoir des emails (transactionnel ET
+            campagnes). Ne le faites que si le blocage était une erreur ou sur
+            demande de réinscription.
+          </p>
+        }
+        confirmLabel="Retirer"
+        busyLabel="Retrait…"
+        variant="danger"
+        onConfirm={confirmRemoval}
+        onCancel={() => setPendingRemoval(null)}
+      />
 
       {/* Note pédagogique sur la propagation : le statut canonique « Supprimé » est rappelé. */}
       <p className="mt-3 text-xs text-stone-400">

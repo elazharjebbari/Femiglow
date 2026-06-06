@@ -67,8 +67,8 @@ F01-U-065,U,P1,tokens,anti sage/red/blue,grep AST de components/admin/emails/** 
 F01-U-066,U,P2,tokens,liste blanche minimale,la liste blanche d'exceptions est vide ou justifiée commentaire à commentaire,arbre source,info_design,implemente
 F01-U-067,U,P1,verrou,no window.confirm,"CLIQUET (amendé P1.2) : 0 NOUVEAU fichier avec window.confirm/alert + liste blanche datée qui ne peut que décroître (oracle d'origine « 0 occurrence » atteint quand la liste est vide, fin des migrations P1.5-C8)",arbre source,TRV-01,implemente
 F01-U-068,U,P2,verrou,no toLocaleString direct,CLIQUET (amendé P1.2) : 0 NOUVEAU toLocale*String direct + liste blanche décroissante ; formateur central = ui/format-datetime.ts,arbre source,TRV-05,implemente
-F01-C-069,C,P1,invariants,describe.each dialog Esc,chaque écran adoptant le socle : Esc sur son ConfirmDialog n'agit pas,describe.each écrans,TRV-01,a_implementer
-F01-C-070,C,P1,invariants,describe.each toast 4s,chaque écran : son toast succès a disparu à 4000 ms (fake timers),describe.each écrans,TRV-02,a_implementer
+F01-C-069,C,P1,invariants,describe.each dialog Esc,chaque écran adoptant le socle : Esc sur son ConfirmDialog n'agit pas,describe.each écrans,TRV-01,implemente
+F01-C-070,C,P1,invariants,describe.each toast 4s,chaque écran : son toast succès a disparu à 4000 ms (fake timers),describe.each écrans,TRV-02,implemente
 F01-C-071,C,P1,invariants,describe.each dirty-guard,chaque écran à formulaire : navigation interceptée quand sale,describe.each écrans,TRV-10,a_implementer
 F01-C-072,C,P2,invariants,describe.each Freshness TZ,chaque écran avec Freshness : la TZ Africa/Casablanca est affichée,describe.each écrans,TRV-05,a_implementer
 F01-E-073,E,P1,scenario,SM-F01-01 opérateur pressé,"3 mutations sur 2 écrans : 3 toasts succès lisibles, AUCUN dialog natif window.confirm n'apparaît",femiglow_emailqa,metier,a_implementer

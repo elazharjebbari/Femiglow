@@ -62,7 +62,6 @@ describe('Verrous cliquet — section emails', () => {
       'src/app/admin/emails/campaigns/[id]/CampaignActions.tsx',
       'src/components/admin/emails/audiences/AudienceDetailActions.tsx',
       'src/components/admin/emails/cockpit/RetryButton.tsx',
-      'src/components/admin/emails/cockpit/SuppressionList.tsx',
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
     ]);
     ratchet('window.confirm/alert', /window\.(confirm|alert)\s*\(/, whitelist);
@@ -92,7 +91,6 @@ describe('Verrous cliquet — section emails', () => {
       'src/components/admin/emails/cockpit/CommandPalette.tsx',
       'src/components/admin/emails/cockpit/FilteredTable.tsx',
       'src/components/admin/emails/cockpit/KpiHeader.tsx',
-      'src/components/admin/emails/cockpit/SuppressionList.tsx',
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
       'src/components/admin/emails/events/EventsDashboardView.tsx',
       'src/components/admin/emails/templates/TemplateEditor.tsx',
@@ -136,7 +134,6 @@ describe('Verrous cliquet — section emails', () => {
       'src/components/admin/emails/cockpit/KpiHeader.tsx',
       'src/components/admin/emails/cockpit/RetryButton.tsx',
       'src/components/admin/emails/cockpit/SavedViewsSidebar.tsx',
-      'src/components/admin/emails/cockpit/SuppressionList.tsx',
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
       'src/components/admin/emails/common/StatusBadge.tsx',
       'src/components/admin/emails/templates/TemplateEditor.tsx',
