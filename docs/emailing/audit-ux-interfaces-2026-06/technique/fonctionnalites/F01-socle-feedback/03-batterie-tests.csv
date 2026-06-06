@@ -42,16 +42,16 @@ F01-C-040,C,P1,Freshness,âge honnête après veille,"onglet caché 2 h puis ret
 F01-C-041,C,P1,Freshness,reprise + refresh au retour,visibilitychange->visible : onRefresh déclenché immédiatement une fois,fake timers,DASH-08,implemente
 F01-C-042,C,P2,Freshness,bouton busy anti double-clic,"clic Rafraîchir pendant hang : bouton lit ""Rafraîchissement…"" disabled, 1 seul appel",MSW delay infinite,DASH-08,implemente
 F01-A-043,A,P2,Freshness,axe smoke,axe : 0 violation serious/critical,nominal,TRV-05,implemente
-F01-C-044,C,P1,Wizard,étape validée cliquable,clic sur l'étape 1 (validée) depuis l'étape 3 : le contenu de l'étape 1 s'affiche,nominal,TRV-08,a_implementer
-F01-C-045,C,P1,Wizard,étape future refusée,clic sur l'étape 4 depuis l'étape 1 : le contenu reste l'étape 1 (étape 4 inerte),nominal,TRV-08,a_implementer
-F01-C-046,C,P1,Wizard,Ctrl+flèche droite avance,Ctrl+ArrowRight sur étape valide : l'étape 2 s'affiche,nominal,TRV-08,a_implementer
-F01-C-047,C,P1,Wizard,Ctrl+flèche gauche recule,Ctrl+ArrowLeft sur étape 2 : l'étape 1 s'affiche,nominal,TRV-08,a_implementer
-F01-C-048,C,P1,Wizard,focus sur titre à chaque étape,après next() le focus est sur le titre de la nouvelle étape (activeElement),nominal,TRV-08,a_implementer
-F01-C-049,C,P1,Wizard,validation bloque l'avancée,next sur étape invalide : on reste sur l'étape et un role=alert s'affiche près du bouton Suivant,factory invalide,TRV-08,a_implementer
-F01-C-050,C,P2,Wizard,message d'erreur PRÈS du bouton,le message d'erreur de validation est le frère/voisin DOM du bouton Suivant (pas en tête de page),factory invalide,TRV-08,a_implementer
-F01-C-051,C,P1,Wizard,persistance étape après F5,"persistKey posé en étape 3, remontage du composant : il rouvre en étape 3 avec les données",persist localStorage,TRV-08,a_implementer
-F01-C-052,C,P2,Wizard,aria-current sur étape active,"l'étape affichée porte aria-current=step, les autres non",nominal,TRV-08,a_implementer
-F01-A-053,A,P2,Wizard,axe smoke,axe : 0 violation serious/critical sur la barre + l'étape,nominal,TRV-08,a_implementer
+F01-C-044,C,P1,Wizard,étape validée cliquable,clic sur l'étape 1 (validée) depuis l'étape 3 : le contenu de l'étape 1 s'affiche,nominal,TRV-08,implemente
+F01-C-045,C,P1,Wizard,étape future refusée,clic sur l'étape 4 depuis l'étape 1 : le contenu reste l'étape 1 (étape 4 inerte),nominal,TRV-08,implemente
+F01-C-046,C,P1,Wizard,Ctrl+flèche droite avance,Ctrl+ArrowRight sur étape valide : l'étape 2 s'affiche,nominal,TRV-08,implemente
+F01-C-047,C,P1,Wizard,Ctrl+flèche gauche recule,Ctrl+ArrowLeft sur étape 2 : l'étape 1 s'affiche,nominal,TRV-08,implemente
+F01-C-048,C,P1,Wizard,focus sur titre à chaque étape,après next() le focus est sur le titre de la nouvelle étape (activeElement),nominal,TRV-08,implemente
+F01-C-049,C,P1,Wizard,validation bloque l'avancée,next sur étape invalide : on reste sur l'étape et un role=alert s'affiche près du bouton Suivant,factory invalide,TRV-08,implemente
+F01-C-050,C,P2,Wizard,message d'erreur PRÈS du bouton,le message d'erreur de validation est le frère/voisin DOM du bouton Suivant (pas en tête de page),factory invalide,TRV-08,implemente
+F01-C-051,C,P1,Wizard,persistance étape après F5,"persistKey posé en étape 3, remontage du composant : il rouvre en étape 3 avec les données",persist localStorage,TRV-08,implemente
+F01-C-052,C,P2,Wizard,aria-current sur étape active,"l'étape affichée porte aria-current=step, les autres non",nominal,TRV-08,implemente
+F01-A-053,A,P2,Wizard,axe smoke,axe : 0 violation serious/critical sur la barre + l'étape,nominal,TRV-08,implemente
 F01-U-054,U,P1,Pill,STATUS_META exhaustif vs enum,chaque membre de email_outbox_status a une entrée STATUS_META (sinon le test échoue),enum schema-emails,TRV-07,implemente
 F01-U-055,U,P1,Pill,libellé FR par statut,"STATUS_META.bounced_permanent.label === ""Bounce permanent"" (AMENDÉ : oracle d'origine « Bounce perm. » supersédé par le correctif DASH-07 en P0.3)",nominal,TRV-07,implemente
 F01-U-056,U,P1,Pill,statut inconnu,"statusLabel(""zzz"") renvoie ""Inconnu"" (jamais le slug brut)",table cas,TRV-07,implemente
