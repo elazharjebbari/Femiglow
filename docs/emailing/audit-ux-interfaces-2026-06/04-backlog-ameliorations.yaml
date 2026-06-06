@@ -1,0 +1,186 @@
+# Backlog d'améliorations — interfaces emailing admin
+# Issu de l'audit 2026-06-06 (cf. 03-matrice-problemes.csv pour le détail des IDs).
+# Priorités : P0 = à faire avant tout autre chantier UI emails (corrige les
+# critiques + débloque mécaniquement les autres chantiers) ; P1 = fort ROI
+# opérateur ; P2 = polish / différable.
+# Efforts : S (<1 j), M (1-3 j), L (3-7 j), XL (>7 j) — estimation dev senior,
+# tests inclus (la base QA emails ~1700 tests doit suivre chaque chantier).
+
+meta:
+  source_audit: docs/emailing/audit-ux-interfaces-2026-06/
+  date: 2026-06-06
+  reference_commit: "3447177"
+  regles:
+    - "Tout chantier livre ses tests (unit + composant, suivre la convention __qa__/*.msw.test.tsx)"
+    - "Piège CI : les violations RSC ne sont attrapées que par next build — le lancer avant commit"
+    - "prod : pnpm build => systemctl restart femiglow.service obligatoire"
+
+chantiers:
+  - id: C1
+    titre: "Socle feedback & design system emails"
+    priorite: P0
+    effort: L
+    description: >
+      Le chantier-levier : un petit kit de composants partagés qui corrige d'un
+      coup les incohérences transverses. Sans lui, chaque chantier d'interface
+      re-paiera les mêmes dettes.
+    livrables:
+      - ConfirmDialog accessible (role=dialog, focus trap, variante danger) remplaçant les 9 window.confirm
+      - ToastProvider (succès auto-dismiss 4s, erreur persistante + action Réessayer) monté dans layout.tsx emails
+      - EmptyState unifié (icône + titre + cta)
+      - Freshness (âge relatif + timezone + auto-refresh optionnel)
+      - Wizard partagé (étapes cliquables <= validées, persistance étape courante, Ctrl+flèches, focus management)
+      - Dé-duplication StatusBadge (KpiCards importe STATUS_META) + libellé « Bounce permanent »
+      - Garde isDirty/beforeunload réutilisable
+    resout: [TRV-01, TRV-02, TRV-05, TRV-07, TRV-08, TRV-09, TRV-10, DASH-07, DASH-08, CAMP-05, CAMP-14, AUTO-15, TPL-10]
+    dependances: []
+
+  - id: C2
+    titre: "Navigation unifiée de la section emails"
+    priorite: P0
+    effort: M
+    description: >
+      Barre d'onglets persistante dans app/admin/emails/layout.tsx : Dashboard ·
+      Transactionnel · Campagnes · Automations · Audiences · Templates ·
+      Suppression · Events · Listmonk. État actif, badges compteurs (DLQ,
+      runs en erreur), breadcrumb harmonisé, ajout de Suppression à la palette ⌘K.
+    resout: [TRV-03, SUP-01, CAMP-08, DASH-12]
+    dependances: []
+
+  - id: C3
+    titre: "Dashboard & cockpit : lisibilité opérateur"
+    priorite: P1
+    effort: L
+    description: >
+      Rendre les deux écrans de pilotage quotidiens irréprochables : sélecteur de
+      fenêtre KPI, auto-refresh, levée des ambiguïtés webhook, export CSV serveur,
+      erreurs de filtre visibles, select-all sur l'ensemble des résultats.
+    livrables:
+      - "Dashboard : sélecteur 24h/7j/30j + tendances vs période précédente + auto-refresh 60s"
+      - "KPI Livrés : sous-texte déterministe (webhook muet depuis X / pct des envoyés)"
+      - "Cockpit : export CSV côté serveur sur les filtres courants (streaming) — corrige CKPT-01"
+      - "Cockpit : affichage des erreurs de parsing de filtres + « sélectionner les N résultats »"
+      - "Traduction des raisons skip + tooltips (5000+, sparkline file, reap-stuck)"
+    resout: [DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, DASH-09, DASH-10, CKPT-01, CKPT-02, CKPT-03, CKPT-04, CKPT-05, CKPT-06, CKPT-07, CKPT-08, CKPT-09, CKPT-10, CKPT-11, CKPT-12, TRV-04]
+    dependances: [C1]
+
+  - id: C4
+    titre: "Campagnes : wizard résilient et métriques honnêtes"
+    priorite: P1
+    effort: L
+    livrables:
+      - "Fallback d'envoi quand l'estimation échoue durablement (double confirmation) — corrige CAMP-01"
+      - "Autosave debounced 2s + persistance de l'étape courante + indicateur « Brouillon enregistré il y a Xs »"
+      - "Test send sans template Listmonk (via pipeline transactionnel interne)"
+      - "Timezone explicite à la planification ; toast post-duplication (planification réinitialisée)"
+      - "Tooltips sur les métriques n/d ; détection campagne orpheline (listmonk_campaign_id null en sending)"
+      - "Décision produit A/B test (CAMP-13) : implémenter le variant B spécifié ou retirer la colonne abVariant et la spec"
+    resout: [CAMP-01, CAMP-02, CAMP-03, CAMP-04, CAMP-06, CAMP-07, CAMP-09, CAMP-10, CAMP-11, CAMP-12, CAMP-13, CAMP-15, CAMP-16]
+    dependances: [C1]
+
+  - id: C5
+    titre: "Automations : visualisation de flux + debuggabilité"
+    priorite: P1
+    effort: XL
+    description: >
+      Le plus gros écart valeur/UX du système. Phase 1 (vue arborescente read-only
+      + timeline de run enrichie + corrections de libellés) avant toute ambition
+      d'éditeur drag-drop.
+    livrables:
+      - "Vue arborescente verticale des steps (indentation branches + connecteurs) en lecture dans détail/revue"
+      - "Timeline de run enrichie : horodatage par étape, résultat concret, raisons deferred/skipped inline"
+      - "Bouton « Tester sur un contact » (dry-run sandbox)"
+      - "FIX libellé daily cap (« plafond global / jour pour cette automation »)"
+      - "Badge « non opérationnel » liste pour triggers schedule/webhook (ou retrait des options)"
+      - "« Réinitialiser et rejouer » sur run en erreur ; tag sweep dans le détail"
+      - "Traiter deleteAutomation (R-031) : soft-delete + guard ou suppression du code"
+    resout: [AUTO-01, AUTO-02, AUTO-03, AUTO-04, AUTO-05, AUTO-06, AUTO-07, AUTO-08, AUTO-09, AUTO-10, AUTO-11, AUTO-12, AUTO-13, AUTO-14, AUTO-16]
+    dependances: [C1]
+
+  - id: C6
+    titre: "Templates : éditeur digne de production"
+    priorite: P1
+    effort: L
+    livrables:
+      - "Autosave + beforeunload (priorité absolue du chantier) — corrige TPL-01"
+      - "Panneau variables complet (20+ avec valeurs résolues du contexte preview) + autocomplete {{"
+      - "CodeMirror HTML/Handlebars avec lint"
+      - "Toggle preview Desktop/Mobile (375px)"
+      - "Diff de versions côte à côte avant restauration"
+      - "Bouton test send ; bouton Supprimer (avec automations bloquantes) ; Dupliquer"
+      - "Bannière « utilisé par N automations actives »"
+    resout: [TPL-01, TPL-02, TPL-03, TPL-04, TPL-05, TPL-06, TPL-07, TPL-08, TPL-09, TPL-11, TPL-12, TPL-14]
+    dependances: [C1]
+
+  - id: C7
+    titre: "Audiences : fiabilité du ciblage"
+    priorite: P1
+    effort: M
+    livrables:
+      - "Désactiver has_tag/not_has_tag (« bientôt — M5.5 ») — corrige AUD-01"
+      - "Validation bornes « entre » (lo<=hi) + erreur bloquante codes pays inconnus"
+      - "Indicateur drift : âge du snapshot + comparaison live/snapshot avec surlignage"
+      - "Aide détaillée mode dynamic/static ; mention ET/OU dès la 1re règle"
+      - "Pagination membres snapshot ; chips pour les valeurs « in »"
+    resout: [AUD-01, AUD-02, AUD-03, AUD-04, AUD-05, AUD-06, AUD-07, AUD-08, AUD-09, AUD-10, AUD-11, AUD-12, AUD-13]
+    dependances: [C1]
+
+  - id: C8
+    titre: "Suppression & Events : compléter les écrans MVP"
+    priorite: P1
+    effort: M
+    livrables:
+      - "Suppression : ajout manuel (dialog email+raison+détail), filtres raison/source, bulk remove, export CSV"
+      - "Events : corrélation outbox/campagne (liens), expand JSON, filtres nom/email, fenêtre temporelle cohérente, responsive"
+    resout: [SUP-02, SUP-03, SUP-04, SUP-05, SUP-06, SUP-07, EVT-01, EVT-02, EVT-03, EVT-04, EVT-05]
+    dependances: [C1, C2]
+
+  - id: C9
+    titre: "Listmonk : observabilité de l'intégration"
+    priorite: P2
+    effort: M
+    livrables:
+      - "Check Listmonk dans le HealthBadge dashboard"
+      - "Colonnes lastSyncAttemptAt/lastSyncError sur email_campaign_link + badge « sync en échec / périmé » en liste et détail"
+      - "Wizard : différencier « aucune liste » de « Listmonk indisponible »"
+      - "Désactiver le bouton nouvel onglet sans LISTMONK_PUBLIC_URL ; synthèse frame-ancestors dans le proxy"
+    resout: [LMK-01, LMK-02, LMK-03, LMK-04, LMK-05, LMK-06]
+    dependances: [C1]
+
+  - id: C10
+    titre: "Passe a11y + dette i18n"
+    priorite: P2
+    effort: M
+    livrables:
+      - "Dictionnaires FR pour tous les enums techniques affichés (statuts, raisons, modes)"
+      - "Audit contraste (rose-700/rose-50 etc.) + correctifs"
+      - "Labels/aria-live manquants (éditeur template, comboboxes), focus management dialogs"
+      - "Décision produit : extraction next-intl (le site public l'utilise déjà) ou statu quo FR"
+    resout: [TRV-06, DASH-11, TPL-13]
+    dependances: [C1]
+
+sequencement_recommande:
+  - phase: 1
+    chantiers: [C1, C2]
+    note: "2 semaines ; aucun risque métier ; débloque tout le reste"
+  - phase: 2
+    chantiers: [C3, C7]
+    note: "pilotage quotidien + intégrité du ciblage (les 2 écrans les plus utilisés)"
+  - phase: 3
+    chantiers: [C4, C6]
+    note: "production de contenu (campagnes + templates)"
+  - phase: 4
+    chantiers: [C5]
+    note: "automations — le plus gros morceau, planifier en vagues (lecture → dry-run → éditeur)"
+  - phase: 5
+    chantiers: [C8, C9, C10]
+
+quick_wins_sans_chantier:  # < 1 h chacun, faisables immédiatement
+  - "SUP-01 : ajouter le lien Suppression aux quick-links du dashboard (1 ligne)"
+  - "AUTO-04 : corriger le libellé du daily cap (1 chaîne)"
+  - "CKPT-02 : traduire not_found/wrong_status (1 map)"
+  - "DASH-07 : « Bounce perm. » → « Bounce permanent » (1 chaîne)"
+  - "DASH-10 : placeholder palette « Cmd-K / Ctrl-K » (1 chaîne)"
+  - "AUD-01 : désactiver has_tag/not_has_tag dans le menu d'ajout de critère"
+  - "LMK-04 : afficher listmonkError au lieu du hint de création quand lists vide"
+  - "EVT-05 : overflow-x-auto sur la table events"

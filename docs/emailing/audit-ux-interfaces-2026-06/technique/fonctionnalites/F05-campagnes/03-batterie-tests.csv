@@ -1,0 +1,150 @@
+id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
+F05-U-001,U,P0,machine-etats,isLegalTransition draft->scheduled,retourne true,makeCampaignLink draft,CAMP-14,a_implementer
+F05-U-002,U,P0,machine-etats,isLegalTransition draft->sending,retourne true,statut draft,CAMP-14,a_implementer
+F05-U-003,U,P0,machine-etats,isLegalTransition draft->cancelled,retourne true,statut draft,CAMP-14,a_implementer
+F05-U-004,U,P0,machine-etats,isLegalTransition draft->failed,retourne true,statut draft,CAMP-14,a_implementer
+F05-U-005,U,P0,machine-etats,isLegalTransition draft->paused illégale,retourne false,statut draft,CAMP-14,a_implementer
+F05-U-006,U,P0,machine-etats,isLegalTransition draft->sent illégale,retourne false,statut draft,CAMP-14,a_implementer
+F05-U-007,U,P0,machine-etats,isLegalTransition scheduled->sending,retourne true,statut scheduled,CAMP-14,a_implementer
+F05-U-008,U,P0,machine-etats,isLegalTransition scheduled->cancelled,retourne true,statut scheduled,CAMP-14,a_implementer
+F05-U-009,U,P0,machine-etats,isLegalTransition scheduled->paused illégale,retourne false,statut scheduled,CAMP-14,a_implementer
+F05-U-010,U,P0,machine-etats,isLegalTransition scheduled->sent illégale,retourne false,statut scheduled,CAMP-14,a_implementer
+F05-U-011,U,P0,machine-etats,isLegalTransition sending->sent,retourne true,statut sending,CAMP-14,a_implementer
+F05-U-012,U,P0,machine-etats,isLegalTransition sending->paused,retourne true,statut sending,CAMP-14,a_implementer
+F05-U-013,U,P0,machine-etats,isLegalTransition sending->cancelled,retourne true,statut sending,CAMP-14,a_implementer
+F05-U-014,U,P0,machine-etats,isLegalTransition sending->failed,retourne true,statut sending,CAMP-14,a_implementer
+F05-U-015,U,P0,machine-etats,isLegalTransition sending->scheduled illégale,retourne false,statut sending,CAMP-14,a_implementer
+F05-U-016,U,P0,machine-etats,isLegalTransition paused->sending,retourne true,statut paused,CAMP-14,a_implementer
+F05-U-017,U,P0,machine-etats,isLegalTransition paused->cancelled,retourne true,statut paused,CAMP-14,a_implementer
+F05-U-018,U,P0,machine-etats,isLegalTransition paused->sent illégale,retourne false,statut paused,CAMP-14,a_implementer
+F05-U-019,U,P0,machine-etats,isLegalTransition sent->* tous illégaux (terminal),false pour les 6 cibles,statut sent,CAMP-14,a_implementer
+F05-U-020,U,P0,machine-etats,isLegalTransition cancelled->* tous illégaux (terminal),false pour les 6 cibles,statut cancelled,CAMP-14,a_implementer
+F05-U-021,U,P0,machine-etats,isLegalTransition failed->* tous illégaux (terminal),false pour les 6 cibles,statut failed,CAMP-14,a_implementer
+F05-U-022,U,P0,machine-etats,isLegalTransition idempotente from==to,true pour les 7 statuts,table 7,CAMP-14,a_implementer
+F05-U-023,U,P0,machine-etats,table 7x7 exhaustive croisée,42 couples hors-diagonale conformes table légale,grille 7x7,CAMP-14,a_implementer
+F05-U-024,U,P1,machine-etats,mapListmonkStatus finished->sent running->sending,mapping conforme,statuts listmonk,nominal,a_implementer
+F05-U-025,U,P1,machine-etats,mapListmonkStatus paused/draft/inconnu->null,no-op défensif,statut paused/xyz,nominal,a_implementer
+F05-U-026,U,P0,planification,conversion datetime-local Casablanca->UTC,offset à T appliqué (UTC+1 hors DST),date 18:30 Africa/Casablanca,CAMP-07,a_implementer
+F05-U-027,U,P0,planification,conversion respecte DST/ramadan (offset variable),offset lu via Intl pas codé en dur,date en période suspension heure été,CAMP-07,a_implementer
+F05-U-028,U,P0,planification,validation date dans le passé refusée,retourne erreur date future,instant T-1h,CAMP-07,a_implementer
+F05-U-029,U,P0,planification,validation date future acceptée,pas d'erreur,instant T+1j,CAMP-07,a_implementer
+F05-U-030,U,P1,planification,validation mode scheduled sans date,erreur Choisis une date,scheduled date vide,nominal,a_implementer
+F05-U-031,U,P1,autosave,debounce trailing 2s 1 frappe,1 appel après 2s,frappe unique fake timers,CAMP-03,a_implementer
+F05-U-032,U,P0,autosave,debounce rafale rearme,1 seul appel 2s apres derniere frappe,5 frappes <2s,CAMP-03,a_implementer
+F05-U-033,U,P1,autosave,patch ne contient que champs touchés,patch partiel sans champs intacts,maj name seul,CAMP-03,a_implementer
+F05-U-034,U,P1,validation,Zod saveWizardProgress wizardStep 1..6,7 ou 0 rejeté,wizardStep=7,CAMP-03,a_implementer
+F05-U-035,U,P1,validation,Zod name 3-120 chars,len<3 ou >120 rejeté,name 2 chars,nominal,a_implementer
+F05-U-036,U,P1,fallback,compteur incrémente sur échec réel seulement,abort utilisateur n'incrémente pas,abort vs HTTP500,CAMP-01,a_implementer
+F05-U-037,U,P0,fallback,seuil fallback à 3 échecs,bouton dégradé exposé ssi compteur==3,compteur 1/2/3,CAMP-01,a_implementer
+F05-C-001,C,P0,liste,recherche q filtre nom et sujet,lignes hors-match absentes,3 campagnes q=été,CAMP-16,a_implementer
+F05-C-002,C,P0,liste,filtre statut reflété dans URL,?status=sent appliqué et survit reload,mix statuts,CAMP-16,a_implementer
+F05-C-003,C,P1,liste,pagination 20/page bornes,pas de page hors limites,42 campagnes,CAMP-16,a_implementer
+F05-C-004,C,P1,liste,EmptyState si aucun résultat,EmptyState titre+CTA visible pas tableau vide,q sans match,TRV-09,a_implementer
+F05-C-005,C,P1,liste,ligne draft action Continuer,bouton Continuer présent sur draft,1 draft,nominal,a_implementer
+F05-C-006,C,P1,liste,Pill statut unifié libellé complet,Pill En cours d'envoi pour sending,statut sending,DASH-07,a_implementer
+F05-C-007,C,P0,creation,warning unicité nom non bloquant,bandeau warning + création reste possible,nom homonyme existant,CAMP-12,a_implementer
+F05-C-008,C,P1,creation,nom <3 chars bloque,role=alert pas de création,name=ab,CAMP-12,a_implementer
+F05-C-009,C,P1,creation,debounce 500ms check unicité,1 seul appel name-available après frappe,frappe rapide,CAMP-12,a_implementer
+F05-C-010,C,P0,wizard-nav,stepper cliquable sur étapes validées,clic é2 depuis é4 revient sans perte,wizard é4,CAMP-05,a_implementer
+F05-C-011,C,P0,wizard-nav,étape future non cliquable,clic é5 depuis é2 sans effet,wizard é2,CAMP-05,a_implementer
+F05-C-012,C,P1,wizard-nav,Ctrl+flèches navigue,Ctrl+droite=Suivant Ctrl+gauche=Précédent,wizard é3,CAMP-14,a_implementer
+F05-C-013,C,P0,wizard-e1,validation nom <3 bloque Suivant,role=alert et reste é1,name=ab,nominal,a_implementer
+F05-C-014,C,P1,wizard-e1,compteur N/120,compteur reflète la frappe,name 12 chars,nominal,a_implementer
+F05-C-015,C,P0,wizard-e2,validation aucune sélection bloque,role=alert Sélectionne au moins,rien sélectionné,nominal,a_implementer
+F05-C-016,C,P0,wizard-e2,radio audience vide les listes,sélection mutuellement exclusive,liste+audience,nominal,a_implementer
+F05-C-017,C,P0,wizard-e2,chips listes sélectionnées,chip par liste avec croix de retrait,2 listes,CAMP-11,a_implementer
+F05-C-018,C,P1,wizard-e2,clic croix chip désélectionne,liste retirée de la sélection,2 listes,CAMP-11,a_implementer
+F05-C-019,C,P0,wizard-e2,Listmonk down erreur honnête,bandeau Listmonk indisponible pas de liste fantôme,lists fetch 500,CAMP-09;LMK-04,a_implementer
+F05-C-020,C,P1,wizard-e2,multi-listes annotation borne haute,mention doublons non déduits,3 listes,CAMP-10,a_implementer
+F05-C-021,C,P1,wizard-e3,template optionnel preview iframe,iframe template-preview srcDoc maj corps,template #12,nominal,a_implementer
+F05-C-022,C,P1,wizard-e3,bouton Aucun revient corps libre,templateId remis à null,template puis Aucun,CAMP-04,a_implementer
+F05-C-023,C,P0,wizard-e3,validation corps <10 chars bloque,role=alert corps trop court,body court,nominal,a_implementer
+F05-C-024,C,P1,wizard-e4,compteurs sujet/preheader,N/140 et N/200 reflètent frappe,sujet+preheader,nominal,a_implementer
+F05-C-025,C,P1,wizard-e4,mock inbox reflète sujet/preheader,aperçu boîte montre sujet et preheader,sujet=X preheader=Y,nominal,a_implementer
+F05-C-026,C,P0,wizard-e4,validation sujet <3 bloque,role=alert sujet trop court,sujet=ab,nominal,a_implementer
+F05-C-027,C,P0,wizard-e5,timezone Casablanca affichée,mention heure de Casablanca UTC+1,mode scheduled,CAMP-07,a_implementer
+F05-C-028,C,P0,wizard-e5,conversion correcte affichée,phrase reçu à HH:MM heure locale Maroc,18:30 saisi,CAMP-07,a_implementer
+F05-C-029,C,P0,wizard-e5,date passée refusée,role=alert date dans le futur reste é5,T-1h,CAMP-07,a_implementer
+F05-C-030,C,P1,wizard-e5,bascule now/scheduled masque/montre datetime,champ datetime conditionnel,toggle radios,nominal,a_implementer
+F05-C-031,C,P0,wizard-e6,récap fidèle,récap nom/audience/template/sujet/planif conforme,wizard complet,nominal,a_implementer
+F05-C-032,C,P1,wizard-e6,aperçu corps iframe sandbox,iframe corps rendu sandbox,body html,nominal,a_implementer
+F05-C-033,C,P0,wizard-e6,ack chiffrée reflète estimation,~N affiché dans la case,audience ~1234,nominal,a_implementer
+F05-C-034,C,P0,wizard-e6,envoi bloqué sans estimation,bouton+ack désactivés bandeau estimation,audience preview null,CAMP-01,a_implementer
+F05-A-001,C,P0,autosave,indicateur Enregistrement puis enregistré il y a Xs,transition libellés indicateur,frappe fake timers,CAMP-03,a_implementer
+F05-A-002,C,P0,autosave,frappe rapide = 1 seul POST,compteur MSW = 1 POST,5 frappes <2s,CAMP-03,a_implementer
+F05-A-003,C,P0,autosave,F5 reprise étape + données,wizard rouvre à wizard_step avec données,draft é4 persisté,CAMP-03,a_implementer
+F05-A-004,C,P1,autosave,flush immédiat au passage d'étape,POST émis sans attendre 2s sur goNext,goNext,CAMP-03,a_implementer
+F05-A-005,C,P1,autosave,indicateur âge relatif rafraîchi,il y a 2s -> il y a 5s sans nouvel appel,fake timers +3s,CAMP-03,a_implementer
+F05-A-006,C,P0,autosave,échec autosave préserve la saisie,role=alert réessayer données intactes,POST 500,CAMP-03,a_implementer
+F05-F-001,C,P0,fallback,échec 1 affiche Réessayer pas de fallback,bouton Réessayer seul,preview-size 500 x1,CAMP-01,a_implementer
+F05-F-002,C,P0,fallback,échec 3 expose Envoyer sans estimation,bouton dégradé apparaît,preview-size 500 x3,CAMP-01,a_implementer
+F05-F-003,C,P0,fallback,ConfirmDialog saisie ENVOYER exacte,confirm désactivé tant que != ENVOYER,fallback ouvert,CAMP-01,a_implementer
+F05-F-004,C,P1,fallback,ConfirmDialog saisie insensible casse/espaces,envoyer accepté trim+lower,saisie ' envoyer ',CAMP-01,a_implementer
+F05-F-005,C,P0,fallback,confirm envoie skipEstimate true,finalize appelé avec skipEstimate,fallback confirmé,CAMP-01,a_implementer
+F05-F-006,C,P0,fallback,succès tardif réactive chemin normal,nombre affiché bouton dégradé disparaît ack chiffrée,3 échecs puis 200,CAMP-01,a_implementer
+F05-F-007,C,P1,fallback,abort changement audience n'incrémente pas,compteur reste fallback non exposé,changement audience,CAMP-01,a_implementer
+F05-T-001,C,P0,test-send,avec template chemin Listmonk,sendCampaignTest appelé feedback succès,template #12,CAMP-04,a_implementer
+F05-T-002,C,P0,test-send,sans template chemin outbox,sendCampaignTestViaOutbox appelé feedback file outbox,corps libre,CAMP-04,a_implementer
+F05-T-003,C,P0,test-send,sans template bloc explique pipeline interne,texte pipeline transactionnel interne visible,corps libre,CAMP-04,a_implementer
+F05-T-004,C,P0,test-send,double-clic = 1 envoi,1 seul POST aria-busy bouton verrouillé,double clic,CAMP-04,a_implementer
+F05-T-005,C,P1,test-send,feedback succès role=status,role=status Épreuve envoyée,200,nominal,a_implementer
+F05-T-006,C,P1,test-send,feedback échec role=alert honnête,role=alert message listmonk,500,nominal,a_implementer
+F05-T-101,C,P0,test-send,grille réseau template 200 nominal,feedback succès uniquement sur ok,template 200,nominal,a_implementer
+F05-T-102,C,P0,test-send,grille réseau template 401,role=alert pas de faux succès email préservé,template 401,nominal,a_implementer
+F05-T-103,C,P0,test-send,grille réseau template 422,role=alert détail validation,template 422,nominal,a_implementer
+F05-T-104,C,P0,test-send,grille réseau template 500,role=alert message honnête,template 500,nominal,a_implementer
+F05-T-105,C,P0,test-send,grille réseau template hang,en cours aria-busy pas de 2e POST,template delay infini,nominal,a_implementer
+F05-T-106,C,P0,test-send,grille réseau template network error,role=alert saisie préservée,template neterr,nominal,a_implementer
+F05-T-107,C,P0,test-send,grille réseau outbox 200 nominal,feedback file outbox sur ok,outbox 200,CAMP-04,a_implementer
+F05-T-108,C,P0,test-send,grille réseau outbox 401,role=alert pas de faux succès,outbox 401,CAMP-04,a_implementer
+F05-T-109,C,P0,test-send,grille réseau outbox 422,role=alert détail validation,outbox 422,CAMP-04,a_implementer
+F05-T-110,C,P0,test-send,grille réseau outbox 500,role=alert message honnête,outbox 500,CAMP-04,a_implementer
+F05-T-111,C,P0,test-send,grille réseau outbox hang,en cours aria-busy pas de 2e POST,outbox delay infini,CAMP-04,a_implementer
+F05-T-112,C,P0,test-send,grille réseau outbox network error,role=alert saisie préservée,outbox neterr,CAMP-04,a_implementer
+F05-D-001,C,P0,actions-detail,boutons selon statut draft,seul Supprimer+Dupliquer visibles,statut draft,CAMP-06,a_implementer
+F05-D-002,C,P0,actions-detail,boutons selon statut sending,Pause+Annuler+Rafraîchir+Dupliquer visibles,statut sending,nominal,a_implementer
+F05-D-003,C,P0,actions-detail,boutons selon statut paused,Reprendre+Annuler visibles pas Pause,statut paused,nominal,a_implementer
+F05-D-004,C,P0,actions-detail,boutons selon statut sent terminal,seul Dupliquer+Rafraîchir,statut sent,nominal,a_implementer
+F05-D-005,C,P0,actions-detail,pause via ConfirmDialog + toast,confirm puis toast Campagne en pause,statut sending,TRV-01,a_implementer
+F05-D-006,C,P0,actions-detail,annuler via ConfirmDialog danger + toast,confirm danger nom rappelé toast,statut sending,TRV-01,a_implementer
+F05-D-007,C,P0,actions-detail,supprimer brouillon ConfirmDialog + toast,confirm puis toast,statut draft,TRV-01,a_implementer
+F05-D-008,C,P1,actions-detail,Esc ferme ConfirmDialog sans agir,aucune mutation focus rendu,dialog ouvert,TRV-01,a_implementer
+F05-D-101,C,P0,actions-detail,grille réseau pause 200/4xx/5xx/hang/neterr,succès=toast échec=alert dialog reste 1 POST max,statut sending,TRV-01,a_implementer
+F05-D-102,C,P0,actions-detail,grille réseau annuler 200/4xx/5xx/hang/neterr,idem condensé pas de faux succès,statut sending,TRV-01,a_implementer
+F05-P-001,C,P0,duplication,toast planif réinitialisée option conserver,toast + bouton La conserver,source planifiée,CAMP-06,a_implementer
+F05-P-002,C,P1,duplication,conserver recopie planif source,planif source réappliquée au nouveau draft,clic conserver,CAMP-06,a_implementer
+F05-P-003,C,P1,duplication,sans conserver planif reste null,nouveau draft scheduledFor null,sans clic,CAMP-06,a_implementer
+F05-O-001,C,P0,orpheline,bannière apparaît si critère,bannière danger sending+id null+>10min,orphanCampaign preset,CAMP-15,a_implementer
+F05-O-002,C,P0,orpheline,bannière absente si id présent,pas de bannière,sending+id ok,CAMP-15,a_implementer
+F05-O-003,C,P0,orpheline,bannière absente si started<10min,pas de bannière (on attend),sending+id null+5min,CAMP-15,a_implementer
+F05-O-004,C,P0,orpheline,marquer failed ConfirmDialog + toast,status failed toast affiché bannière disparaît,orpheline,CAMP-15,a_implementer
+F05-O-005,C,P0,orpheline,ré-associer id valide,id écrit bannière disparaît toast Ré-associée,id listmonk existant,CAMP-15,a_implementer
+F05-O-006,C,P0,orpheline,ré-associer id invalide,role=alert introuvable aucune écriture bannière reste,id inexistant,CAMP-15,a_implementer
+F05-M-001,C,P0,metriques,tooltip n/d Livrés honnête,tooltip Non couvert par le poll webhook R-013,métriques livrés n/d,CAMP-02,a_implementer
+F05-M-002,C,P1,metriques,tooltip n/d Désabos,tooltip présent pas de faux 0,désabos n/d,CAMP-02,a_implementer
+F05-M-003,C,P0,metriques,refresh spinner puis toast à jour,spinner pendant poll toast Métriques à jour,clic rafraîchir,CAMP-10,a_implementer
+F05-M-004,C,P0,metriques,refresh échec toast honnête,toast erreur métriques inchangées,sync 500,CAMP-10,a_implementer
+F05-I-001,I,P0,autosave,saveWizardProgress persiste merge non destructif,DB reflète patch champs intacts conservés,patch name seul,CAMP-03,a_implementer
+F05-I-002,I,P0,autosave,saveWizardProgress refuse hors draft,0 ligne touchée si status!=draft,statut sending,CAMP-03,a_implementer
+F05-I-003,I,P0,test-send,sendCampaignTestViaOutbox crée 1 ligne outbox,outbox row source=campaign_test idempotency_key,corps libre,CAMP-04,a_implementer
+F05-I-004,I,P0,test-send,idempotence anti double insert,2 POST même clé = 1 ligne outbox,double POST concurrent,CAMP-04,a_implementer
+F05-I-005,I,P0,machine-etats,transition illégale rejetée 409,controlCampaign refuse sent->sending,statut sent,CAMP-14,a_implementer
+F05-I-006,I,P0,orpheline,detectOrphan requête conforme,is_orphan true sur critère exact,orphanCampaign,CAMP-15,a_implementer
+F05-I-007,I,P0,orpheline,reassociate valide écrit id,listmonk_campaign_id persisté audit-log,id valide,CAMP-15,a_implementer
+F05-I-008,I,P0,orpheline,reassociate invalide aucune écriture,id null inchangé,id introuvable,CAMP-15,a_implementer
+F05-I-009,I,P0,orpheline,markCampaignFailed transition légale,status failed finished_at posé,orpheline sending,CAMP-15,a_implementer
+F05-I-010,I,P1,finalize,skipEstimate tracé audit-log,meta.skipEstimate=true,fallback,CAMP-01,a_implementer
+F05-I-011,I,P0,finalize,R-010 réservation atomique non régressée,2e finalize rejeté pas de 2e campagne listmonk,double finalize,nominal,a_implementer
+F05-I-012,I,P1,creation,route /new crée draft et redirige,303 vers /edit draft inséré,GET /new,CAMP-08,a_implementer
+F05-I-013,I,P1,creation,checkCampaignNameAvailable taken,taken=true sur homonyme,nom existant,CAMP-12,a_implementer
+F05-I-014,I,P1,contrat,conformité réponse outbox test-send parse Zod prod,handler MSW parse schéma prod,schéma test-send,CAMP-04,a_implementer
+F05-E-001,E,P0,parcours,SM-F05-01 campagne de A à Z avec épreuve,test reçu Mailpit puis envoi puis statut sending,seed audience+template,metier,a_implementer
+F05-E-002,E,P0,parcours,SM-F05-02 interruption et reprise,F5 rouvre étape persistée données intactes,draft mi-parcours,metier,a_implementer
+F05-E-003,E,P0,parcours,SM-F05-03 Listmonk en panne pendant création,erreur honnête pas de faux succès reprise possible,listmonk port mort,metier,a_implementer
+F05-E-004,E,P0,parcours,SM-F05-04 estimation morte fallback assumé,fallback ENVOYER puis envoi sans estimation,preview-size down,metier,a_implementer
+F05-E-005,E,P1,parcours,SM-F05-05 duplication ramadan planification,copie planif réinitialisée puis replanifiée,campagne source,metier,a_implementer
+F05-E-006,E,P0,parcours,SM-F05-06 orpheline après crash déploiement,bannière marquer failed OU ré-associer,orpheline seedée,metier,a_implementer
+F05-X-001,A,P1,a11y,axe wizard chaque étape 0 serious/critical,0 violation,wizard é1..é6,nominal,a_implementer
+F05-X-002,A,P1,a11y,axe détail + ConfirmDialog focus trap,0 violation focus piégé,détail,TRV-01,a_implementer
+F05-X-003,A,P1,a11y,axe liste + EmptyState,0 violation,liste vide,nominal,a_implementer
+F05-X-004,A,P1,a11y,stepper aria-current et états cliquables,aria-current sur étape courante,wizard,CAMP-05,a_implementer

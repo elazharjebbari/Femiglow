@@ -1,0 +1,105 @@
+id,interface,fonctionnalite,type,description,dossier_tests,refs_audit
+SOC-F01,socle,ConfirmDialog,nouvelle,"Dialog de confirmation accessible (focus trap, Esc, variante danger, saisie de confirmation pour le massif) remplaçant les 9 window.confirm",F01-socle-feedback,TRV-01
+SOC-F02,socle,ToastProvider/useToast,nouvelle,"Toasts succès auto-dismiss 4s / erreur persistante avec action Réessayer, empilables, aria-live",F01-socle-feedback,TRV-02
+SOC-F03,socle,EmptyState,nouvelle,"État vide unifié (icône, titre, explication, CTA)",F01-socle-feedback,TRV-09
+SOC-F04,socle,Freshness,nouvelle,"Âge relatif + timezone + auto-refresh optionnel suspendu onglet caché",F01-socle-feedback,TRV-05;DASH-08
+SOC-F05,socle,Wizard partagé/useWizard,nouvelle,"Étapes cliquables <= validées, persistance étape courante, Ctrl+flèches, focus management, autosave hook",F01-socle-feedback,TRV-08;CAMP-05;CAMP-14;AUTO-15
+SOC-F06,socle,Pill + STATUS_META unifié,amelioree,"Pastille sémantique unique, suppression du doublon KpiCards, libellés complets",F01-socle-feedback,TRV-07;DASH-07
+SOC-F07,socle,use-dirty-guard,nouvelle,"Garde modifications non enregistrées (beforeunload + navigation in-app)",F01-socle-feedback,TRV-10
+SOC-F08,socle,Tokens sémantiques,nouvelle,"success/danger/warning/info uniques (fin des doublons sage/red/blue) + test de verrouillage",F01-socle-feedback,info design
+NAV-F01,navigation,Barre d'onglets persistante,nouvelle,"9 onglets dans layout.tsx avec état actif (aria-current)",F02-navigation,TRV-03
+NAV-F02,navigation,Badges compteurs,nouvelle,"DLQ / runs en erreur / sync KO via /api/admin/emails/nav-counters (cache TTL 30s)",F02-navigation,TRV-03
+NAV-F03,navigation,Breadcrumb harmonisé,amelioree,"Emails › Section › Objet partout, fin des libellés retour divergents",F02-navigation,TRV-03
+NAV-F04,navigation,Entrée Suppression réintégrée,amelioree,"Onglet + palette + (transitoire) quick-link dashboard",F02-navigation,SUP-01
+NAV-F05,navigation,Palette ⌘K enrichie,amelioree,"Routes complètes (dont suppression) + placeholder Cmd-K/Ctrl-K",F02-navigation,DASH-10
+NAV-F06,navigation,Route /campaigns/new,nouvelle,"Redirect vers le flux de création (cohérence avec les autres sections)",F02-navigation,CAMP-08
+DSH-F01,dashboard,Cartes KPI cliquables,existante,"6 cartes (envoyés/livrés/échecs/dlq/attente/total) avec drill-down cockpit pré-filtré",F03-dashboard,nominal
+DSH-F02,dashboard,Sélecteur de fenêtre,nouvelle,"24h/7j/30j via ?window= partagé avec le summary cockpit",F03-dashboard,DASH-01
+DSH-F03,dashboard,KPI livraison tri-état,amelioree,"valeur / webhook muet depuis X / non suivi — fin des signaux contradictoires",F03-dashboard,DASH-02;TRV-04
+DSH-F04,dashboard,Sparklines + tendances,nouvelle,"séries et % vs période précédente sur les cartes (réutilise summary)",F03-dashboard,DASH-06
+DSH-F05,dashboard,Auto-refresh 60s,nouvelle,"refresh périodique + âge visible + suspension onglet caché",F03-dashboard,DASH-03
+DSH-F06,dashboard,Alerte livraison silencieuse,existante,"bandeau rose conditionnel (sent>=1 && delivered=0) avec lien diagnostic",F03-dashboard,nominal
+DSH-F07,dashboard,HealthBadge 15+ checks,amelioree,"checks existants + Listmonk/sync (F10) + deep-links contextualisés (?from=health)",F03-dashboard,DASH-12;LMK-01
+DSH-F08,dashboard,Table derniers envois,amelioree,"8 lignes + EmptyState unifié",F03-dashboard,DASH-05
+DSH-F09,dashboard,Loading/error boundaries,amelioree,"skeleton role=status, message d'erreur neutre + digest",F03-dashboard,DASH-09
+DSH-F10,dashboard,Compteur en attente avec âge,amelioree,"sous-texte relevé il y a Xs — drain cron 60s",F03-dashboard,DASH-04
+CKP-F01,transactionnel,Grammaire de filtres,existante,"status/to/template/source/after/before/attempts/has:error + freetext (parser)",F04-cockpit-transactionnel,nominal
+CKP-F02,transactionnel,Autocomplétion entités,existante,"templates/destinataires/sources avec debounce+abort",F04-cockpit-transactionnel,nominal
+CKP-F03,transactionnel,Erreurs de parsing visibles,nouvelle,"section warning palette + liseré rouge input",F04-cockpit-transactionnel,CKPT-03
+CKP-F04,transactionnel,Tri de colonnes,existante,"date/statut/template/tentatives avec aria-sort",F04-cockpit-transactionnel,nominal
+CKP-F05,transactionnel,Sélection multiple + globale,amelioree,"checkbox+shift-clic existants + sélectionner les N résultats du filtre (pattern Gmail)",F04-cockpit-transactionnel,CKPT-04
+CKP-F06,transactionnel,Bulk retry,amelioree,"par ids existant + par filtre (cap+dry-count) ; raisons skip traduites",F04-cockpit-transactionnel,CKPT-02
+CKP-F07,transactionnel,Bulk suppress,existante,"ConfirmDialog adresses distinctes + mention lignes sélectionnées",F04-cockpit-transactionnel,CKPT-10
+CKP-F08,transactionnel,Export CSV serveur,nouvelle,"POST /export streamé sur filtres (RFC4180+BOM), libellé honnête",F04-cockpit-transactionnel,CKPT-01
+CKP-F09,transactionnel,Reap-stuck,amelioree,"feedback précisant le statut résultant (file ou DLQ)",F04-cockpit-transactionnel,CKPT-07
+CKP-F10,transactionnel,Vues sauvegardées,existante,"système+perso CRUD, application du filterState",F04-cockpit-transactionnel,nominal
+CKP-F11,transactionnel,KPI header,amelioree,"4 cartes+sparklines+seuils existants + placeholder série file + tooltips",F04-cockpit-transactionnel,CKPT-05;CKPT-06
+CKP-F12,transactionnel,Pagination,amelioree,"offset 50/page existant + saut de page",F04-cockpit-transactionnel,CKPT-12
+CKP-F13,transactionnel,Page détail,amelioree,"métadonnées/snapshot HTML/payload existants + timeline pédagogique (légende webhook) + retour sticky",F04-cockpit-transactionnel,CKPT-08;CKPT-09
+CKP-F14,transactionnel,Quick filters,existante,"DLQ / Soft bounces / Libérer les envois bloqués",F04-cockpit-transactionnel,nominal
+CKP-F15,transactionnel,Bannière contexte santé,nouvelle,"affichée quand ?from=health (raison+horodatage du check)",F04-cockpit-transactionnel,DASH-12
+CMP-F01,campagnes,Liste + filtres,existante,"recherche nom/sujet, statut, pagination 20/page",F05-campagnes,CAMP-16
+CMP-F02,campagnes,Création de campagne,amelioree,"formulaire inline + route /new + warning unicité du nom",F05-campagnes,CAMP-08;CAMP-12
+CMP-F03,campagnes,Wizard é1 nom,existante,"validation 3-120 chars",F05-campagnes,nominal
+CMP-F04,campagnes,Wizard é2 audience,amelioree,"radio FemiGlow + checkboxes Listmonk + estimation async + chips sélection + erreur honnête si Listmonk down",F05-campagnes,CAMP-09;CAMP-11;LMK-04
+CMP-F05,campagnes,Wizard é3 contenu,existante,"template Listmonk optionnel + corps HTML + preview iframe",F05-campagnes,nominal
+CMP-F06,campagnes,Wizard é4 sujet/preheader,existante,"compteurs + mock inbox",F05-campagnes,nominal
+CMP-F07,campagnes,Wizard é5 planification,amelioree,"datetime + timezone explicite (Africa/Casablanca) + validation futur",F05-campagnes,CAMP-07
+CMP-F08,campagnes,Wizard é6 vérification,amelioree,"récap + ack + fallback envoi sans estimation (double confirmation) après N échecs",F05-campagnes,CAMP-01
+CMP-F09,campagnes,Test send,amelioree,"avec template (existant) + corps libre via pipeline transactionnel (nouveau)",F05-campagnes,CAMP-04
+CMP-F10,campagnes,Autosave + reprise,nouvelle,"debounce 2s + wizard_step persisté + indicateur Brouillon enregistré",F05-campagnes,CAMP-03
+CMP-F11,campagnes,Actions détail,amelioree,"pause/resume/cancel/discard/dupliquer via ConfirmDialog + toast duplication (planif réinitialisée)",F05-campagnes,CAMP-06;TRV-01
+CMP-F12,campagnes,Métriques + refresh,amelioree,"poll existant + spinner + toast + tooltips n/d",F05-campagnes,CAMP-02;CAMP-10
+CMP-F13,campagnes,Détection orpheline,nouvelle,"bannière sending sans listmonk_campaign_id + actions marquer failed / ré-associer",F05-campagnes,CAMP-15
+CMP-F14,campagnes,Machine d'états,existante,"7 statuts + transitions légales isLegalTransition",F05-campagnes,nominal
+AUT-F01,automations,Liste + toggle actif,amelioree,"table existante + badge non opérationnel pour triggers fantômes",F06-automations,AUTO-05
+AUT-F02,automations,Wizard é1 identité,amelioree,"nom/slug immuable (cadenas)/trigger/événement groupé par catégorie/conditions reliées",F06-automations,AUTO-07;AUTO-08;AUTO-13
+AUT-F03,automations,Éditeur de steps,existante,"7 types (wait/send/branch/tag/update_lead/webhook/wait_for_event) + réordonner",F06-automations,nominal
+AUT-F04,automations,Vue de flux arborescente,nouvelle,"FlowView read-only (indentation+connecteurs) dans revue et détail",F06-automations,AUTO-01
+AUT-F05,automations,Fréquence,amelioree,"cooldown/quiet hours/daily cap avec libellé CORRIGÉ (global par automation)",F06-automations,AUTO-04
+AUT-F06,automations,Revue + activation,amelioree,"récap + blocages listés près du bouton",F06-automations,AUTO-09
+AUT-F07,automations,Runs liste,amelioree,"filtres existants + compteur de résultats",F06-automations,AUTO-16
+AUT-F08,automations,Run détail timeline,amelioree,"timeline instrumentée _trace (horodatage/résultat/raisons inline) + tag sweep",F06-automations,AUTO-02;AUTO-10;AUTO-11
+AUT-F09,automations,Dry-run,nouvelle,"POST dry-run (simulation sans envoi ou redirigé) + run marqué is_dry_run exclu des KPI",F06-automations,AUTO-03
+AUT-F10,automations,Retry / replay,amelioree,"retry au step courant (existant) + réinitialiser et rejouer",F06-automations,AUTO-06
+AUT-F11,automations,Cancel run,existante,"annulation au prochain tick avec ConfirmDialog",F06-automations,TRV-01
+AUT-F12,automations,Suppression sécurisée,nouvelle,"softDeleteAutomation (deleted_at) + refus si runs actifs — remplace R-031",F06-automations,AUTO-12
+AUT-F13,automations,wait_for_event clarifié,amelioree,"phrase dynamique du devenir au timeout",F06-automations,AUTO-14
+TPL-F01,templates,Liste,amelioree,"recherche slug/nom + tri + actions dupliquer/supprimer",F07-templates,TPL-12;TPL-09
+TPL-F02,templates,Création + starters,existante,"radio vide/charte FemiGlow + slug kebab-case immuable",F07-templates,nominal
+TPL-F03,templates,Éditeur CodeMirror,nouvelle,"coloration HTML/Handlebars + lint inline (lazy, fallback textarea)",F07-templates,TPL-03
+TPL-F04,templates,Autosave + garde,nouvelle,"brouillon localStorage + restauration proposée + beforeunload",F07-templates,TPL-01
+TPL-F05,templates,Panneau variables complet,nouvelle,"20+ variables avec valeurs résolues + insertion au curseur + autocomplete {{",F07-templates,TPL-02;TPL-07
+TPL-F06,templates,Preview desktop/mobile,amelioree,"toggle 375px + contexte lead réel/mock (existant)",F07-templates,TPL-04
+TPL-F07,templates,Versions + diff,amelioree,"historique existant + diff côte à côte + restore via ConfirmDialog",F07-templates,TPL-05
+TPL-F08,templates,Test send,nouvelle,"épreuve via pipeline outbox",F07-templates,TPL-06
+TPL-F09,templates,Suppression UI,nouvelle,"bouton + automations bloquantes listées (l'API vérifie déjà)",F07-templates,TPL-08
+TPL-F10,templates,Bannière usage actif,nouvelle,"utilisé par N automations actives + liens",F07-templates,TPL-14
+TPL-F11,templates,Sanitization,existante,"DOMPurify strict (non-régression sécurité : balises/CSS/data-URI)",F07-templates,nominal
+TPL-F12,templates,Contexte preview,amelioree,"retrait city/address fantômes ; trigger.* documenté",F07-templates,TPL-11
+AUD-F01,audiences,Liste + actions,existante,"table + modifier/détail/dupliquer/supprimer",F08-audiences,nominal
+AUD-F02,audiences,Wizard é1 métadonnées,existante,"nom/slug auto immuable/description",F08-audiences,nominal
+AUD-F03,audiences,Rule builder,existante,"15 types de règles + groupes ET/OU récursifs + mention dès la 1re règle",F08-audiences,AUD-08
+AUD-F04,audiences,Validations de règles,nouvelle,"bornes entre lo<=hi (+auto-swap) ; codes pays inconnus bloquants ; confirm bascule eq/in ; chips pour in",F08-audiences,AUD-02;AUD-05;AUD-07;AUD-09
+AUD-F05,audiences,Tags neutralisés,nouvelle,"has_tag/not_has_tag grisés (bientôt M5.5) + bannière sur les règles existantes",F08-audiences,AUD-01
+AUD-F06,audiences,Exclusions,existante,"4 flags avec impact expliqué",F08-audiences,AUD-12
+AUD-F07,audiences,Preview triple,amelioree,"taille/échantillon/breakdown + message timeout dédié",F08-audiences,AUD-13
+AUD-F08,audiences,Mode d'évaluation,amelioree,"dynamic/static documenté en détail sous chaque radio",F08-audiences,AUD-04
+AUD-F09,audiences,Détail + restitution,existante,"règles FR lisibles + exclusions + live count + hint R-011 pays",F08-audiences,nominal
+AUD-F10,audiences,Snapshots,amelioree,"cycle pending/running/done/errored existant + drift live/snapshot + âge + purge affichée + membres paginés",F08-audiences,AUD-03;AUD-06;AUD-11
+AUD-F11,audiences,Suppression audience,amelioree,"ConfirmDialog (snapshots conservés)",F08-audiences,TRV-01
+SUP-F01,suppression,Liste + recherche,existante,"substring email, 50/page, deep-link ?email=",F09-suppression-events,nominal
+SUP-F02,suppression,Filtres raison/source,nouvelle,"dropdowns branchés sur l'API existante",F09-suppression-events,SUP-03
+SUP-F03,suppression,Ajout manuel,nouvelle,"dialog email+raison+détail (obligatoire pour manual_admin)",F09-suppression-events,SUP-02
+SUP-F04,suppression,Retrait unitaire,amelioree,"ConfirmDialog + ligne préservée sur erreur (existant)",F09-suppression-events,TRV-01
+SUP-F05,suppression,Retrait en masse,nouvelle,"checkboxes + bulk bar + confirmation unique + audit-log",F09-suppression-events,SUP-04
+SUP-F06,suppression,Export CSV,nouvelle,"export de la liste filtrée",F09-suppression-events,SUP-06
+SUP-F07,suppression,Allowlist interne,existante,"R-009 : domaine interne jamais suppressible (non-régression)",F09-suppression-events,nominal
+EVT-F01,events,Compteurs + top events,existante,"total 24h + top par (nom,source) cliquable",F09-suppression-events,nominal
+EVT-F02,events,Stream filtrable,amelioree,"filtres nom/email + fenêtre 24h cohérente + responsive",F09-suppression-events,EVT-03;EVT-04;EVT-05
+EVT-F03,events,Expand + corrélation,nouvelle,"details JSON formaté + liens outbox/campagne quand présents",F09-suppression-events,EVT-01;EVT-02
+LMK-F01,listmonk,Page iframe,amelioree,"iframe sous-domaine existante + bouton nouvel onglet désactivé sans env + bandeau pièges",F10-listmonk-observabilite,LMK-03
+LMK-F02,listmonk,Proxy sécurisé,amelioree,"auth+audit existants + resynthèse frame-ancestors",F10-listmonk-observabilite,LMK-05
+LMK-F03,listmonk,Health checks,nouvelle,"ping Listmonk + âge dernier sync OK dans HealthBadge",F10-listmonk-observabilite,LMK-01
+LMK-F04,listmonk,Sync persistée,nouvelle,"last_sync_attempt/ok/error sur campaign_link + badges liste/détail + bouton réessayer",F10-listmonk-observabilite,LMK-02;LMK-06
+LMK-F05,listmonk,Dégradations honnêtes,nouvelle,"wizard affiche l'indisponibilité au lieu du faux hint ; erreurs push snapshot détaillées",F10-listmonk-observabilite,LMK-04

@@ -1,0 +1,109 @@
+id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
+F06-U-001,U,P1,FlowView-arbre,linéariser un arbre 100% linéaire (5 steps wait/send),"la liste de paths rendue est [0,1,2,3,4] dans cet ordre",makeSteps.linear5,AUTO-01,a_implementer
+F06-U-002,U,P1,FlowView-arbre,linéariser un arbre avec 1 branch (ifTrue=2 ifFalse=1),"paths attendus = [0],[0,ifTrue,0],[0,ifTrue,1],[0,ifFalse,0] dans l'ordre de parcours préfixe",makeSteps.oneBranch,AUTO-01,a_implementer
+F06-U-003,U,P1,FlowView-arbre,linéariser branches imbriquées 3 niveaux,chaque feuille apparaît exactement une fois et aucune n'est omise,makeSteps.nested3,AUTO-01,a_implementer
+F06-U-004,U,P2,FlowView-arbre,branche ifTrue vide,le parcours émet un nœud terminal « branche vide » pour ce côté et continue après la condition,makeSteps.emptyTrue,AUTO-01,a_implementer
+F06-U-005,U,P2,FlowView-arbre,numérotation dérivée du path,racine→#1.#2 et sous-branche→#3a.#3b sans champ stocké,makeSteps.oneBranch,AUTO-01,a_implementer
+F06-U-006,U,P1,FlowView-ordre,stateFor classe done/current/upcoming par rang préfixe,une étape de la branche non prise n'est jamais marquée current par erreur,makeSteps.oneBranch,AUTO-01,a_implementer
+F06-U-007,U,P2,FlowView-profondeur,profondeur cumulée à 3 niveaux,depth rendu = 0/1/2/3 selon imbrication,makeSteps.nested3,AUTO-01,a_implementer
+F06-U-010,U,P1,TraceEntry-schema,parser une entrée ok valide,le schéma Zod accepte stepIdx/kind/startedAt/finishedAt/outcome,makeTraceEntry.ok,AUTO-02,a_implementer
+F06-U-011,U,P1,TraceEntry-schema,outcome hors enum rejeté,parse échoue avec erreur sur outcome,makeTraceEntry.badOutcome,AUTO-02,a_implementer
+F06-U-012,U,P1,TraceEntry-schema,finishedAt null accepté (étape en cours),parse réussit avec finishedAt=null,makeTraceEntry.inProgress,AUTO-02,a_implementer
+F06-U-013,U,P2,TraceEntry-schema,stepIdx avec segment branche sans number préfixe rejeté,parse échoue (isValidPath),makeTraceEntry.badPath,AUTO-02,a_implementer
+F06-U-014,U,P1,TraceEntry-schema,tableau _trace au-delà du cap 500 rejeté,parse échoue → garde anti-gonflement contextJson,makeTrace.over500,AUTO-10,a_implementer
+F06-U-015,U,P2,TraceEntry-schema,detail tronqué à 500 caractères,parse échoue si detail>500,makeTraceEntry.longDetail,AUTO-02,a_implementer
+F06-U-020,U,P1,frequency-dry-exclu,checkDailyCap ignore les runs is_dry_run,count attendu n'inclut pas les runs dry → blocked=false,seedRuns.realPlusDry,AUTO-03,a_implementer
+F06-U-021,U,P1,frequency-dry-exclu,checkCooldown ignore les runs is_dry_run,un dry-run antérieur ne déclenche pas le cooldown du vrai run,seedRuns.dryThenReal,AUTO-03,a_implementer
+F06-U-022,U,P2,onTimeout-phrase,phrase dynamique onTimeout=continue,texte = « le run continue à l'étape suivante »,makeStep.waitEventContinue,AUTO-14,a_implementer
+F06-U-023,U,P2,onTimeout-phrase,phrase dynamique onTimeout=abort,texte = « le run est abandonné »,makeStep.waitEventAbort,AUTO-14,a_implementer
+F06-U-024,U,P2,replay-reset,resetAndReplayRun calcule le contexte de redémarrage,_path=[0].currentStep=0.outboxIds=[].erroredReason=null,makeRun.errored,AUTO-06,a_implementer
+F06-U-025,U,P1,replay-archive,le replay archive l'ancien _trace,_traceArchive contient l'ancien _trace et _trace repart vide,makeRun.erroredWithTrace,AUTO-06,a_implementer
+F06-C-001,C,P1,FlowView-rendu,rendu d'un step wait,la ligne affiche l'icône ⏱️ et « Attendre … »,makeSteps.linear5,AUTO-01,a_implementer
+F06-C-002,C,P1,FlowView-rendu,rendu d'un step send,la ligne affiche ✉️ et le template,makeSteps.send,AUTO-01,a_implementer
+F06-C-003,C,P1,FlowView-rendu,rendu d'un step branch,l'entête condition + 2 colonnes « si vrai »/« sinon » sont visibles,makeSteps.oneBranch,AUTO-01,a_implementer
+F06-C-004,C,P2,FlowView-rendu,rendu tag/update_lead/webhook/wait_for_event,chaque kind a son icône et son libellé FR,makeSteps.allKinds,AUTO-01,a_implementer
+F06-C-005,C,P1,FlowView-courant,mode=run surligne l'étape courante,seule l'étape currentPath porte data-state=current (amber),makeSteps.oneBranch+path,AUTO-01,a_implementer
+F06-C-006,C,P1,FlowView-erreur,run errored → étape courante rouge,l'étape currentPath porte data-state=error et la raison est lisible,makeSteps.send+erroredRun,AUTO-02,a_implementer
+F06-C-007,C,P2,FlowView-profondeur,branches imbriquées 3 niveaux rendues,toutes les feuilles sont présentes et indentées sans chevauchement,makeSteps.nested3,AUTO-01,a_implementer
+F06-C-008,C,P2,FlowView-vide,branche vide,nœud « (branche vide → continue) » visible (pas de colonne blanche),makeSteps.emptyTrue,AUTO-01,a_implementer
+F06-C-009,C,P2,FlowView-fin,fin de flux,pastille (fin) après le dernier nœud racine,makeSteps.linear5,AUTO-01,a_implementer
+F06-C-010,C,P2,FlowView-a11y,axe smoke FlowView,0 violation serious/critical,makeSteps.oneBranch,AUTO-01,a_implementer
+F06-C-020,C,P1,timeline-trace,timeline avec _trace complet,chaque entrée montre horodatage durée et pastille de résultat,makeTrace.full,AUTO-10,a_implementer
+F06-C-021,C,P1,timeline-legacy,run sans _trace → timeline legacy,le rendu retombe sur la liste steps + bandeau « run antérieur »,makeRun.noTrace,AUTO-10,a_implementer
+F06-C-022,C,P1,timeline-deferred,deferred quiet-hours inline,la ligne affiche « différé … (quiet hours Africa/Casablanca) » + heure cible,makeTrace.deferred,AUTO-10,a_implementer
+F06-C-023,C,P1,timeline-skipped,skipped avec n° de step,la ligne affiche « sauté (step #3) — plafond quotidien atteint 50/50 »,makeTrace.skippedCap,AUTO-10,a_implementer
+F06-C-024,C,P1,timeline-sweep,entrée meta.sweep=true taguée,la ligne porte le tag « sweep » et « ré-armé par le balayage … »,makeTrace.sweep,AUTO-11,a_implementer
+F06-C-025,C,P2,timeline-duree,durée affichée par étape,startedAt→finishedAt rend une durée humaine (60 min),makeTrace.full,AUTO-10,a_implementer
+F06-C-026,C,P2,timeline-encours,étape finishedAt null,la ligne affiche « en cours… » sans durée,makeTrace.inProgress,AUTO-10,a_implementer
+F06-C-027,C,P1,timeline-erreur,entrée outcome=error,pastille ✗ + raison d'erreur lisible inline,makeTrace.error,AUTO-02,a_implementer
+F06-C-028,C,P2,timeline-a11y,axe smoke RunTimeline,0 violation serious/critical,makeTrace.full,AUTO-02,a_implementer
+F06-C-030,C,P1,wizard-cap-label,libellé daily cap corrigé,le label dit « Plafond global … pour cette automation » et jamais « par destinataire »,nominal,AUTO-04,a_implementer
+F06-C-031,C,P1,wizard-badge-liste,badge non-op en liste,une automation trigger=schedule affiche [Non opérationnel],seedAutomations.schedule,AUTO-05,a_implementer
+F06-C-032,C,P1,wizard-badge-select,badge non-op dans le sélecteur,les options schedule/webhook sont marquées « non opérationnel »,nominal,AUTO-05,a_implementer
+F06-C-033,C,P2,wizard-optgroup,événements groupés par catégorie,le select rend un <optgroup> par lifecycle/commerce/email/engagement/form,catalogEvents,AUTO-08,a_implementer
+F06-C-034,C,P1,wizard-blocages,blocages d'activation près du bouton,à la revue les raisons (send sans template) sont listées juste au-dessus du bouton Activer,makeWizard.sendNoTemplate,AUTO-09,a_implementer
+F06-C-035,C,P2,wizard-ontimeout,phrase onTimeout dynamique dans l'éditeur,changer onTimeout met à jour « continue »/« abandonné »,makeStep.waitEvent,AUTO-14,a_implementer
+F06-C-036,C,P2,wizard-slug-lock,slug verrouillé en édition,en mode édition le champ slug est disabled avec cadenas,makeWizard.editing,AUTO-07,a_implementer
+F06-C-037,C,P1,wizard-activation-bloquee,trigger non-op bloque l'activation,la case Activer est disabled et l'automation part inactive,makeWizard.schedule,AUTO-05,a_implementer
+F06-C-038,C,P2,wizard-flowview-revue,FlowView présent à l'étape Revue,l'arbre des steps est rendu read-only dans la revue,makeWizard.branched,AUTO-01,a_implementer
+F06-C-040,C,P1,dryrun-dialog,dialog 2 modes,les radios simulate/redirect sont présentes avec simulate par défaut,nominal,AUTO-03,a_implementer
+F06-C-041,C,P1,dryrun-200,grille réseau dry-run 200 nominal,succès → la timeline du runId s'ouvre avec badge « test »,msw.dryRun.ok,AUTO-03,a_implementer
+F06-C-042,C,P1,dryrun-401,grille réseau dry-run 401,role=alert visible.aucun run ouvert.saisie préservée,msw.dryRun.401,AUTO-03,a_implementer
+F06-C-043,C,P1,dryrun-422,grille réseau dry-run 422,le détail de validation (email invalide) est affiché,msw.dryRun.422,AUTO-03,a_implementer
+F06-C-044,C,P1,dryrun-500,grille réseau dry-run 500,role=alert message neutre.aucun faux succès,msw.dryRun.500,AUTO-03,a_implementer
+F06-C-045,C,P1,dryrun-hang,grille réseau dry-run hang,bouton « Test en cours » aria-busy disabled.aucun second POST,msw.dryRun.hang,AUTO-03,a_implementer
+F06-C-046,C,P1,dryrun-network,grille réseau dry-run network error,role=alert visible.dialog reste ouvert,msw.dryRun.netError,AUTO-03,a_implementer
+F06-C-047,C,P1,dryrun-resultat,résultat ouvre la timeline,après 200 la RunTimeline du run dry est affichée,msw.dryRun.ok,AUTO-03,a_implementer
+F06-C-048,C,P1,dryrun-badge,badge « test » sur le run dry,le run dry porte le badge « test » dans la timeline et la liste,msw.dryRun.ok,AUTO-03,a_implementer
+F06-C-049,C,P1,dryrun-double-clic,double-clic = 1 requête,le compteur MSW enregistre exactement 1 POST dry-run,msw.dryRun.hang,AUTO-03,a_implementer
+F06-C-050,C,P2,dryrun-a11y,axe smoke DryRunDialog,0 violation serious/critical + focus trap + Esc annule,nominal,AUTO-03,a_implementer
+F06-C-060,C,P1,replay-confirm,ConfirmDialog avant replay,cliquer Réinitialiser ouvre un ConfirmDialog variante danger,makeRun.errored,AUTO-06,a_implementer
+F06-C-061,C,P1,replay-200,grille réseau replay 200,succès → toast et le run repart à #1,msw.replay.ok,AUTO-06,a_implementer
+F06-C-062,C,P1,replay-422,grille réseau replay 422 (run en cours),role=alert « ce run est en cours » ; rien ne change,msw.replay.notTerminal,AUTO-06,a_implementer
+F06-C-063,C,P1,replay-500,grille réseau replay 500,role=alert neutre.aucun faux succès,msw.replay.500,AUTO-06,a_implementer
+F06-C-064,C,P1,replay-hang,grille réseau replay hang,bouton aria-busy disabled.aucun second envoi,msw.replay.hang,AUTO-06,a_implementer
+F06-C-065,C,P2,replay-network,grille réseau replay network error,role=alert visible.dialog préservé,msw.replay.netError,AUTO-06,a_implementer
+F06-C-070,C,P1,softdelete-bouton,bouton Supprimer présent,la liste/détail expose un bouton Supprimer (ConfirmDialog danger),seedAutomations.one,AUTO-12,a_implementer
+F06-C-071,C,P1,softdelete-refus,refus si runs actifs,message listant « 3 run(s) actif(s) (2 en cours.1 en attente) » ; ligne préservée,msw.softDelete.hasActiveRuns,AUTO-12,a_implementer
+F06-C-072,C,P1,softdelete-succes,succès retire de la liste,après 200 l'automation disparaît de la liste,msw.softDelete.ok,AUTO-12,a_implementer
+F06-C-073,C,P1,softdelete-401,grille réseau soft-delete 401,role=alert.ligne préservée,msw.softDelete.401,AUTO-12,a_implementer
+F06-C-074,C,P1,softdelete-422,grille réseau soft-delete 422,détail validation affiché.ligne préservée,msw.softDelete.422,AUTO-12,a_implementer
+F06-C-075,C,P1,softdelete-500,grille réseau soft-delete 500,role=alert neutre.aucun faux succès,msw.softDelete.500,AUTO-12,a_implementer
+F06-C-076,C,P1,softdelete-hang,grille réseau soft-delete hang,bouton « Suppression… » aria-busy.aucun second envoi,msw.softDelete.hang,AUTO-12,a_implementer
+F06-C-077,C,P2,softdelete-network,grille réseau soft-delete network error,role=alert.dialog préservé,msw.softDelete.netError,AUTO-12,a_implementer
+F06-C-078,C,P2,softdelete-confirm-danger,ConfirmDialog variante danger,le libellé du bouton est un verbe « Supprimer » (jamais OK),seedAutomations.one,AUTO-12,a_implementer
+F06-C-080,C,P1,runs-compteur,compteur de résultats runs,près du bouton Filtrer s'affiche « N run(s) » exact,seedRuns.mixed,AUTO-16,a_implementer
+F06-C-081,C,P2,runs-compteur-filtre,compteur reflète les filtres,filtrer statut=errored met à jour le compteur,seedRuns.mixed,AUTO-16,a_implementer
+F06-C-082,C,P2,runs-filtres-nonreg,filtres existants non régressés,statut/automation/email filtrent toujours correctement,seedRuns.mixed,nominal,a_implementer
+F06-C-083,C,P2,runs-dry-badge-liste,run dry badgé dans la liste,un run is_dry_run porte le badge « test » en liste,seedRuns.withDry,AUTO-03,a_implementer
+F06-C-084,C,P2,runs-parcours,parcours filtrer→relancer→succès,filtrer errored→relancer un run→le compteur errored décroît,seedRuns.errored,nominal,a_implementer
+F06-I-001,I,P1,dryrun-no-outbox,mode simulate n'écrit AUCUN outbox réel,count(email_outbox) identique avant/après l'exécution dry simulate,femiglow_test.autoWithSend,AUTO-03,a_implementer
+F06-I-002,I,P1,dryrun-cap-exclu,is_dry_run exclu de checkDailyCap,un dry-run ne consomme pas le cap → un vrai run suivant n'est pas skip,femiglow_test.capAtLimitMinusOne,AUTO-03,a_implementer
+F06-I-003,I,P1,dryrun-redirect-outbox,mode redirect crée un outbox vers le contact de test seul,la ligne outbox a to_email=testContact (jamais le destinataire métier),femiglow_test.autoWithSend,AUTO-03,a_implementer
+F06-I-004,I,P1,dryrun-is-dry-run,le run dry est persisté is_dry_run=true,SELECT is_dry_run du run créé = true,femiglow_test.autoWithSend,AUTO-03,a_implementer
+F06-I-005,I,P1,dryrun-contrat,conformité contrat dry-run,la réponse réelle parse avec response_200_zod,femiglow_test.autoWithSend,AUTO-03,a_implementer
+F06-I-006,I,P2,dryrun-404-deleted,dry-run sur automation soft-deletée → 404,la route renvoie 404 si deleted_at non null,femiglow_test.deletedAuto,AUTO-12,a_implementer
+F06-I-010,I,P1,trace-runner-write,le runner écrit _trace sur un run réel,après un tick le run a une entrée _trace ok pour le step send,femiglow_test.autoWithSend,AUTO-02,a_implementer
+F06-I-011,I,P1,trace-defer-write,le runner trace un deferred quiet-hours,_trace contient outcome=deferred + meta.deferredUntil,femiglow_test.autoQuietHours,AUTO-10,a_implementer
+F06-I-012,I,P1,trace-skip-write,le runner trace un skipped daily-cap,_trace contient outcome=skipped + meta.capCount,femiglow_test.autoAtCap,AUTO-10,a_implementer
+F06-I-013,I,P1,trace-sweep-write,le sweep tague son entrée _trace,un run ré-armé par le sweep a une entrée meta.sweep=true,femiglow_test.zombieRun,AUTO-11,a_implementer
+F06-I-014,I,P2,trace-cap-taille,_trace n'explose pas contextJson,après 500 entrées le runner tronque/cappe sans crasher,femiglow_test.longRun,AUTO-10,a_implementer
+F06-I-020,I,P1,softdelete-refuse-running,softDelete refuse avec un run running,ok=false has_active_runs ; deleted_at reste null,femiglow_test.autoWithRunningRun,AUTO-12,a_implementer
+F06-I-021,I,P1,softdelete-refuse-waiting,softDelete refuse avec un run waiting_for_event,ok=false has_active_runs,femiglow_test.autoWithWaitingRun,AUTO-12,a_implementer
+F06-I-022,I,P1,softdelete-success,softDelete pose deleted_at sans DELETE physique,deleted_at non null et les runs historiques existent toujours,femiglow_test.autoWithCompletedRun,AUTO-12,a_implementer
+F06-I-023,I,P1,softdelete-no-fk-crash,softDelete ne viole jamais la FK RESTRICT,aucune erreur FK même avec des runs liés (R-031 corrigé),femiglow_test.autoWithCompletedRun,AUTO-12,a_implementer
+F06-I-024,I,P1,liste-filtre-deleted,les listes filtrent deleted_at,une automation soft-deletée n'apparaît plus dans la liste ni le sélecteur runs,femiglow_test.deletedAuto,AUTO-12,a_implementer
+F06-I-025,I,P1,softdelete-contrat,conformité contrat soft-delete,la réponse de l'action parse avec le schéma ActionResult attendu,femiglow_test.autoWithCompletedRun,AUTO-12,a_implementer
+F06-I-030,I,P1,replay-reset-db,resetAndReplayRun remet le run à zéro en base,currentStep=0._path=[0].status=running.outboxIds=[],femiglow_test.erroredRun,AUTO-06,a_implementer
+F06-I-031,I,P1,replay-refuse-running,replay refuse un run non terminal,ok=false not_terminal ; le run en cours est inchangé,femiglow_test.runningRun,AUTO-06,a_implementer
+F06-I-032,I,P1,replay-archive-db,replay archive l'ancien _trace,_traceArchive contient l'ancien _trace et _trace est vide,femiglow_test.erroredRunWithTrace,AUTO-06,a_implementer
+F06-I-033,I,P2,kpi-dry-exclu,KPI/nav-counters excluent is_dry_run,le compteur de runs en erreur ignore les runs dry,femiglow_test.dryErroredRun,AUTO-03,a_implementer
+F06-E-001,E,P1,SM-F06-01,debugger l'automation cassée (run errored→timeline→cause→fix→replay→succès),"le run errored montre la cause en timeline, après correction du template le replay aboutit à completed",e2e.brokenCartFlow,AUTO-02;AUTO-06,a_implementer
+F06-E-002,E,P1,SM-F06-02,valider avant d'activer (dry-run flow VIP 3 branches),"le dry-run simulate parcourt les 3 branches sans créer d'outbox réel et la timeline est lisible",e2e.vipThreeBranch,AUTO-01;AUTO-03,a_implementer
+F06-E-003,E,P1,SM-F06-03,run différé expliqué par la timeline (quiet hours),la timeline montre l'entrée deferred avec l'heure cible 08:00,e2e.quietHoursRun,AUTO-10,a_implementer
+F06-E-004,E,P1,SM-F06-04,grand ménage soft-delete (dont une avec runs actifs refusée),"l'automation sans run actif est supprimée, celle avec run actif est refusée avec message",e2e.legacyCleanup,AUTO-12,a_implementer
+F06-E-005,E,P1,SM-F06-05,astreinte relance 12 runs après incident template,"après fix, 12 runs errored sont relancés et passent completed ; compteur errored→0",e2e.massReplay,AUTO-06;AUTO-16,a_implementer
+F06-A-001,A,P1,a11y-pages,axe Playwright sur détail run + timeline,0 violation serious/critical,e2e.runDetail,nominal,a_implementer
+F06-A-002,A,P1,a11y-pages,axe Playwright sur wizard (revue + FlowView),0 violation serious/critical,e2e.wizardReview,nominal,a_implementer
+F06-A-003,A,P2,a11y-pages,axe Playwright sur liste automations + dialog dry-run,0 violation serious/critical,e2e.autoList,nominal,a_implementer
+F06-A-004,A,P2,a11y-couleur,états FlowView/timeline non portés par la couleur seule,chaque état (current/done/error) a un libellé texte,nominal,AUTO-01;AUTO-02,a_implementer

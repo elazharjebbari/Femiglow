@@ -1,0 +1,104 @@
+id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
+F09-NOTE-000,note,P0,traçabilité,IDs réservés par le code modèle,"modeles-code/exemple-composant-msw.test.tsx occupe DÉJÀ F09-C-001 (parcours retrait) et F09-C-010..015 (grille réseau retrait unitaire) et F09-C-020 (toast 4s) — NE PAS réutiliser ; la couche C de cette batterie démarre à 030",modele,nominal,a_implementer
+F09-C-030,C,P1,ajout manuel,ouverture du dialog,"clic [+ Ajouter une adresse] : un role=dialog aria-modal=true s'affiche avec les champs Email, Raison, Détail",nominal,SUP-02,a_implementer
+F09-C-031,C,P1,ajout manuel,focus initial socle,"au montage du dialog le focus est sur Annuler et Esc le ferme sans POST",mutation espionnée MSW,SUP-02,a_implementer
+F09-C-032,C,P1,ajout manuel,raison défaut manual_admin,"le select Raison vaut ""Action admin"" (manual_admin) à l'ouverture",nominal,SUP-02,a_implementer
+F09-C-033,C,P1,ajout manuel,détail requis si manual_admin,"raison=manual_admin et détail vide : le bouton Ajouter est désactivé",factory ajout manual_admin,SUP-02,a_implementer
+F09-C-034,C,P1,ajout manuel,message détail manquant,"tenter de soumettre manual_admin sans détail : message ""Le détail est obligatoire pour une suppression manuelle.""",factory ajout manual_admin,SUP-02,a_implementer
+F09-C-035,C,P1,ajout manuel,détail facultatif autres raisons,"raison=hard_bounce détail vide : le bouton Ajouter est ACTIVÉ (détail non requis)",factory ajout hard_bounce,SUP-02,a_implementer
+F09-C-036,C,P2,ajout manuel,bascule raison réactive,"passer de manual_admin à unsubscribe : le bouton se réactive sans saisir de détail",factory ajout,SUP-02,a_implementer
+F09-C-037,C,P1,ajout manuel,email invalide bloque,"email ""pasunemail"" : bouton Ajouter désactivé / message format",factory ajout,SUP-02,a_implementer
+F09-C-038,C,P1,ajout manuel,rappel conséquences,"le dialog lit ""bloquée pour les envois transactionnels ET les campagnes""",nominal,SUP-02,a_implementer
+F09-C-039,C,P1,ajout manuel,succès toast + liste rafraîchie,"201 : toast ""<email> ajouté à la liste de suppression."" + dialog fermé + la ligne <email> visible dans la table",factory ajout cndp_request,SUP-02,a_implementer
+F09-C-040,C,P1,ajout manuel,409 allowlist message dédié,"POST info@femiglow-maroc.com -> 409 internal_allowlisted : role=alert ""Adresse interne protégée"", dialog ouvert, saisie préservée",factory ajout interne,nominal,a_implementer
+F09-C-041,C,P1,ajout manuel,409 doublon message distinct,"POST adresse déjà listée -> 409 already_suppressed : message ""déjà dans la liste"" (≠ message allowlist)",factory ajout doublon,SUP-02,a_implementer
+F09-C-042,C,P1,ajout manuel,422 détail manquant inline,"422 issues.detail : message inline dans le dialog resté ouvert, saisie préservée, AUCUN toast succès",factory ajout manual_admin,SUP-02,a_implementer
+F09-C-043,C,P1,ajout manuel — grille réseau,200 nominal,"201 : toast succès, liste refetch une fois",MSW 201,SUP-02,a_implementer
+F09-C-044,C,P1,ajout manuel — grille réseau,401,"401 : role=alert ""Session expirée ou non autorisée"", aucun toast succès, dialog ouvert",MSW 401,SUP-02,a_implementer
+F09-C-045,C,P1,ajout manuel — grille réseau,422,"422 : détail de validation lu, dialog ouvert, saisie préservée",MSW 422,SUP-02,a_implementer
+F09-C-046,C,P1,ajout manuel — grille réseau,500,"500 : role=alert actionnable, aucun ajout en liste",MSW 500,SUP-02,a_implementer
+F09-C-047,C,P1,ajout manuel — grille réseau,hang,"delay infini : bouton ""Ajout…"" désactivé aria-busy, UN SEUL POST au double-clic",MSW delay infinite,SUP-02,a_implementer
+F09-C-048,C,P1,ajout manuel — grille réseau,network,"HttpResponse.error : message réseau, Réessayer rejoue le MÊME POST",MSW network error,SUP-02,a_implementer
+F09-C-049,C,P1,filtres,filtre raison hard_bounce,"choisir Raison=Bounce permanent : le GET porte reason=hard_bounce et seules ces lignes restent",factory liste mixte,SUP-03,a_implementer
+F09-C-050,C,P2,filtres,chaque raison branche le bon slug,"describe.each 7 raisons : sélectionner la raison X => GET reason=<slug X>",factory liste,SUP-03,a_implementer
+F09-C-051,C,P1,filtres,filtre source stalwart,"Source=Stalwart : GET porte source=stalwart, lignes filtrées",factory liste mixte,SUP-03,a_implementer
+F09-C-052,C,P2,filtres,chaque source branche le bon slug,"describe.each 4 sources : sélectionner source X => GET source=<slug X>",factory liste,SUP-03,a_implementer
+F09-C-053,C,P1,filtres,combinés email+raison+source,"email=a + raison=hard_bounce + source=stalwart : UN GET porte les 3 params q/reason/source",factory liste,SUP-03,a_implementer
+F09-C-054,C,P1,filtres,recherche email seule,"taper bounce + Rechercher : GET q=bounce, lignes non matchantes absentes",factory liste,SUP-03,a_implementer
+F09-C-055,C,P1,filtres,libellé email honnête,"le champ porte le label ""Filtrer par email"" (et NON ""email, raison ou source"")",nominal,nominal,a_implementer
+F09-C-056,C,P1,filtres,URL persistée,"après filtre raison+source, l'URL contient ?reason=&source= et un remount restitue la même vue",nominal,SUP-03,a_implementer
+F09-C-057,C,P1,filtres,reset,"clic Réinitialiser : les 3 filtres vidés, offset=0, GET sans params de filtre",factory liste,SUP-03,a_implementer
+F09-C-058,C,P2,filtres,changement filtre remet offset 0,"sur page 2 (offset=50), changer la raison : GET offset=0",factory liste 120,SUP-07,a_implementer
+F09-C-059,C,P1,bulk,sélection une ligne,"cocher 1 ligne : la bulk bar affiche ""1 sélectionnée""",factory liste,SUP-04,a_implementer
+F09-C-060,C,P1,bulk,sélection tout-la-page,"cocher l'en-tête : toutes les lignes visibles cochées + ""N sélectionnées""",factory liste 5,SUP-04,a_implementer
+F09-C-061,C,P1,bulk,bulk bar conditionnelle,"0 sélection : aucune bulk bar ; >=1 : bulk bar visible avec bouton Retirer les N",factory liste,SUP-04,a_implementer
+F09-C-062,C,P1,bulk,ConfirmDialog porte le nombre,"clic Retirer les 3 : le dialog lit ""Retirer 3 adresses"" (le NOMBRE, pas N adresses distinctes implicite)",factory 3 sélections,SUP-04,a_implementer
+F09-C-063,C,P1,bulk,confirmation unique,"valider le dialog : UN SEUL POST /bulk-remove avec emails=[3], pas 3 requêtes",compteur requêtes MSW,SUP-04,a_implementer
+F09-C-064,C,P1,bulk,résultat partiel honnête,"réponse {removed:21,notFound:[x,y]} : feedback ""21 retirées · 2 introuvables"", JAMAIS ""23 retirées""",factory bulk 23,SUP-04,a_implementer
+F09-C-065,C,P1,bulk,succès vide la sélection,"200 : liste refetch, plus aucune ligne cochée, bulk bar disparue",factory bulk,SUP-04,a_implementer
+F09-C-066,C,P1,bulk,sélection préservée sur échec,"500 : role=alert, AUCUN faux succès, les N lignes RESTENT cochées",MSW 500,SUP-04,a_implementer
+F09-C-067,C,P1,bulk — grille réseau,200 nominal,"200 {removed:N,notFound:[]} : feedback ""N retirées""",MSW 200,SUP-04,a_implementer
+F09-C-068,C,P1,bulk — grille réseau,401,"401 : role=alert session, sélection préservée",MSW 401,SUP-04,a_implementer
+F09-C-069,C,P1,bulk — grille réseau,422,"422 (>500 cap) : détail validation, sélection préservée",MSW 422,SUP-04,a_implementer
+F09-C-070,C,P1,bulk — grille réseau,500,"500 : alerte, aucune ligne retirée, sélection préservée",MSW 500,SUP-04,a_implementer
+F09-C-071,C,P1,bulk — grille réseau,hang,"delay infini : bouton ""Retrait…"" désactivé aria-busy, UN SEUL POST au double-clic",MSW delay infinite,SUP-04,a_implementer
+F09-C-072,C,P1,bulk — grille réseau,network,"HttpResponse.error : message réseau, Réessayer rejoue le MÊME bulk avec la MÊME sélection",MSW network error,SUP-04,a_implementer
+F09-C-073,C,P1,export,filtres appliqués à l'export,"avec raison+source actifs, clic Export : la requête export porte reason=&source= (pas limit/offset)",factory liste filtrée,SUP-06,a_implementer
+F09-C-074,C,P2,export,nom de fichier daté,"la réponse expose Content-Disposition filename=""suppression-2026-06-06.csv""",MSW export headers,SUP-06,a_implementer
+F09-C-075,C,P2,export,libellé honnête bouton,"le bouton lit ""Export CSV"" et l'aide indique ""liste filtrée""",nominal,SUP-06,a_implementer
+F09-C-076,C,P1,export — grille réseau,200 nominal,"200 text/csv : le téléchargement est déclenché (pas d'erreur)",MSW 200 csv,SUP-06,a_implementer
+F09-C-077,C,P1,export — grille réseau,401,"401 : role=alert, pas de téléchargement",MSW 401,SUP-06,a_implementer
+F09-C-078,C,P1,export — grille réseau,422,"422 filtre invalide : message visible",MSW 422,SUP-06,a_implementer
+F09-C-079,C,P1,export — grille réseau,500,"500 : role=alert actionnable",MSW 500,SUP-06,a_implementer
+F09-C-080,C,P1,export — grille réseau,hang,"delay infini : bouton ""Export…"" désactivé aria-busy, UN SEUL GET au double-clic",MSW delay infinite,SUP-06,a_implementer
+F09-C-081,C,P1,export — grille réseau,network,"HttpResponse.error : message réseau, Réessayer relance l'export",MSW network error,SUP-06,a_implementer
+F09-C-082,C,P1,retrait unitaire socle,migration ConfirmDialog,"clic Retirer : un role=dialog (PAS window.confirm) variante danger avec verbe ""Retirer"" et conséquences",nominal,TRV-01,a_implementer
+F09-C-083,C,P1,retrait unitaire socle,toast succès socle,"200 : toast role=status ""<email> retiré"" (auto-dismiss 4s) et non plus le bandeau maison",nominal,TRV-01,a_implementer
+F09-C-084,C,P1,retrait unitaire socle,ligne préservée sur erreur,"500 : role=alert, la ligne reste visible, aucun toast succès",MSW 500,TRV-01,a_implementer
+F09-C-085,C,P2,état vide socle,EmptyState filtré,"recherche sans résultat : EmptyState variante filtered explique le filtre + CTA Réinitialiser",factory liste vide filtrée,nominal,a_implementer
+F09-C-086,C,P2,état vide socle,EmptyState vide,"liste totalement vide : EmptyState variante empty ""Aucune adresse en suppression""",factory liste vide,nominal,a_implementer
+F09-C-087,C,P1,allowlist UI,interne jamais affichée,"GET renvoie des lignes : aucune adresse @femiglow-maroc.com visible",factory liste,nominal,a_implementer
+F09-C-088,C,P1,events,filtre nom d'event,"saisir cart : GET porte event=cart, seuls les events dont le nom contient cart restent",factory events mixtes,EVT-04,a_implementer
+F09-C-089,C,P1,events,filtre email,"saisir a@x : GET porte email=a@x, lignes filtrées",factory events,EVT-04,a_implementer
+F09-C-090,C,P1,events,filtres combinés source+event+email,"source=email + event=open + email=a : UN GET porte les 3",factory events,EVT-04,a_implementer
+F09-C-091,C,P1,events,fenêtre 24h cohérente,"window=24h : aucune ligne du stream n'a ts < now-24h (cohérent avec Total 24h)",factory events horloge figée,EVT-03,a_implementer
+F09-C-092,C,P1,events,toggle tout sans borne,"window=all : l'en-tête lit ""fenêtre : tout"" et des events > 24h peuvent apparaître",factory events anciens,EVT-03,a_implementer
+F09-C-093,C,P1,events,expand JSON contenu complet,"déplier ""propriétés (N clés)"" : le JSON formaté COMPLET est lisible (aucune troncature max-w-md)",factory event grosse payload,EVT-02,a_implementer
+F09-C-094,C,P2,events,zéro clé pas de chevron,"properties vide : la cellule lit ""—"" sans details/chevron",factory event vide,EVT-02,a_implementer
+F09-C-095,C,P1,events,corrélation outbox_id,"properties.outbox_id=9f8e : un lien ""voir l'envoi"" vers /admin/emails/cockpit/9f8e est rendu",factory event outbox,EVT-01,a_implementer
+F09-C-096,C,P1,events,corrélation campaign_id,"properties.campaign_id=42 : un lien ""voir la campagne"" vers /admin/emails/campaigns/42",factory event campagne,EVT-01,a_implementer
+F09-C-097,C,P1,events,corrélation double,"outbox_id ET campaign_id présents : les DEUX liens rendus",factory event both,EVT-01,a_implementer
+F09-C-098,C,P1,events,pas de lien si clé absente,"properties sans outbox_id/campaign_id : AUCUN lien, juste le JSON",factory event neutre,EVT-01,a_implementer
+F09-C-099,C,P2,events,pas de lien si valeur vide,"properties.outbox_id='' : aucun lien (pas d'id deviné)",factory event vide id,EVT-01,a_implementer
+F09-C-100,C,P2,events,responsive overflow,"le wrapper de la table ""100 derniers events"" porte la classe overflow-x-auto",nominal,EVT-05,a_implementer
+F09-C-101,C,P2,events,titre désambiguïsé,"le titre lit ""Events utilisateur (pipeline user_event)""",nominal,nominal,a_implementer
+F09-U-030,U,P1,zod POST,détail requis manual_admin,"POSTSchema.safeParse {reason:manual_admin, detail:''} échoue avec issue path=detail",cas table,SUP-02,a_implementer
+F09-U-031,U,P1,zod POST,détail optionnel autres,"safeParse {reason:hard_bounce, detail:undefined} réussit",cas table,SUP-02,a_implementer
+F09-U-032,U,P1,zod POST,email normalisé,"safeParse {email:'  A@X.COM '} -> data.email==='a@x.com'",cas table,SUP-02,a_implementer
+F09-U-033,U,P1,zod POST,source défaut selon raison,"reason=cndp_request sans source -> source résolue 'cndp' ; manual_admin -> 'manual'",cas table,nominal,a_implementer
+F09-U-034,U,P1,zod bulk,cap 500,"safeParse emails de longueur 501 échoue ; 500 réussit ; 0 échoue",cas table,SUP-04,a_implementer
+F09-U-035,U,P1,allowlist,isInternalAddress domaine,"isInternalAddress('x@femiglow-maroc.com') === true ; 'x@gmail.com' === false",cas table,nominal,a_implementer
+F09-U-036,U,P1,allowlist,isInternalAddress adresse exacte,"isInternalAddress('info@femiglow-maroc.com') === true (casse/espaces ignorés)",cas table,nominal,a_implementer
+F09-U-037,U,P1,csv,échappement RFC4180,"un detail avec virgule/guillemet/saut de ligne est quoté et les guillemets doublés",cas table,SUP-06,a_implementer
+F09-U-038,U,P1,csv,BOM présent,"la sortie CSV commence par le BOM UTF-8 (\\uFEFF)",cas table,SUP-06,a_implementer
+F09-U-039,U,P1,correlation,clé -> lien,"buildEventLinks({outbox_id:'a'}) renvoie 1 lien cockpit ; {} renvoie [] ; {outbox_id:''} renvoie []",cas table,EVT-01,a_implementer
+F09-U-040,U,P2,events window,windowMs null pas de borne,"getRecentEvents clause : windowMs=null => pas de condition ts ; number => ts>=since",cas table,EVT-03,a_implementer
+F09-I-030,I,P1,POST suppression,ajout manuel effet DB + audit,"POST manual_admin valide -> 201, ligne en base, logAuditEvent mail.suppression.add émis",femiglow_test,SUP-02,a_implementer
+F09-I-031,I,P1,POST suppression,422 détail manquant,"POST manual_admin sans détail -> 422 issues.fieldErrors.detail, aucune ligne insérée",femiglow_test,SUP-02,a_implementer
+F09-I-032,I,P1,POST suppression,409 allowlist refusé,"POST info@femiglow-maroc.com -> 409 code internal_allowlisted, aucune ligne insérée",femiglow_test,nominal,a_implementer
+F09-I-033,I,P1,POST suppression,409 doublon,"POST email déjà présent -> 409 already_suppressed, pas de doublon",femiglow_test,SUP-02,a_implementer
+F09-I-034,I,P1,POST suppression,auth,"sans session admin -> 401/403",femiglow_test,nominal,a_implementer
+F09-I-035,I,P1,bulk-remove,effet DB + résultat partiel,"POST emails [present×2, absent×1] -> 200 {removed:2,notFound:[absent]}, 2 lignes supprimées",femiglow_test,SUP-04,a_implementer
+F09-I-036,I,P1,bulk-remove,audit systématique,"chaque bulk-remove émet logAuditEvent mail.suppression.bulk_remove avec requested/removed/notFound",femiglow_test,SUP-04,a_implementer
+F09-I-037,I,P1,bulk-remove,cap 500,"POST 501 emails -> 422",femiglow_test,SUP-04,a_implementer
+F09-I-038,I,P1,export,filtres + BOM + RFC4180,"GET export?source=stalwart -> text/csv, BOM en tête, seules lignes stalwart, detail quoté correct",femiglow_test,SUP-06,a_implementer
+F09-I-039,I,P1,export,nom de fichier daté,"Content-Disposition filename=suppression-<YYYY-MM-DD>.csv",femiglow_test,SUP-06,a_implementer
+F09-I-040,I,P1,allowlist lib,addSuppression refuse interne,"addSuppression({email:'x@femiglow-maroc.com'}) -> aucune ligne insérée",femiglow_test,nominal,a_implementer
+F09-I-041,I,P1,allowlist lib,isSuppressed bypass,"insérer manuellement une ligne interne legacy puis isSuppressed -> false (bypass)",femiglow_test,nominal,a_implementer
+F09-I-042,I,P1,contrat,POST mock == zod prod,"la réponse du handler MSW POST/bulk-remove parse avec le schéma Zod de prod",femiglow_test,nominal,a_implementer
+F09-E-001,E,P1,scénario métier,SM-F09-01 spike faux hard-bounces,"filtrer source=stalwart sur 24h, exporter la preuve, bulk-remove 200 : Mailpit reçoit à nouveau pour ces adresses, audit-log présent",e2e femiglow_emailqa Mailpit,SUP-04,a_implementer
+F09-E-002,E,P1,scénario métier,SM-F09-02 plainte WhatsApp,"retrouver les events de la cliente, suivre outbox_id vers le détail, ajout manuel manual_admin avec détail motivé, l'adresse n'est plus joignable",e2e femiglow_emailqa,EVT-01,a_implementer
+F09-E-003,E,P2,a11y,axe pages suppression+events,"axe Playwright : 0 violation serious/critical sur les deux pages refondues",e2e,nominal,a_implementer
+F09-A-030,A,P1,a11y jsdom,dialog ajout,"axe jsdom sur le dialog d'ajout ouvert : 0 violation ; champs requis aria-required",nominal,nominal,a_implementer
+F09-A-031,A,P1,a11y jsdom,bulk bar,"axe jsdom : la bulk bar et le ConfirmDialog massif sans violation, compteur annoncé",nominal,nominal,a_implementer
+F09-A-032,A,P2,a11y jsdom,events expand,"axe jsdom : le <details> propriétés est focusable au clavier et annoncé déplié/replié",nominal,nominal,a_implementer

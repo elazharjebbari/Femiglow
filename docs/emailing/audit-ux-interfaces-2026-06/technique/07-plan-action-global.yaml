@@ -1,0 +1,140 @@
+# Plan d'action global — programme « emails-ux »
+# Exécution PILOTÉE PAR LE RUNBOOK (08-runbook.md). Chaque étape déclare ses
+# tests et son gate ; la boucle de correction (runbook §4) s'applique à toute
+# étape dont le gate échoue. Statuts : a_faire | en_cours | fait | bloque.
+
+meta:
+  programme: emails-ux-2026
+  source: docs/emailing/audit-ux-interfaces-2026-06/
+  invariants:
+    - "Suite emails existante (~1700 tests) verte à CHAQUE étape (gate G2)"
+    - "Aucun test contre la prod ; E2E sur worktree+femiglow_emailqa"
+    - "Migrations additives uniquement, livrées avant le code lecteur"
+    - "pnpm build => systemctl restart femiglow.service (prod)"
+  boucle_correction: # appliquée par le runbook à chaque gate rouge
+    - "run batterie → exporter les échecs (reporter junit)"
+    - "triage : BUG_CODE | BUG_TEST | FLAKY | CONTRAT"
+    - "fix (test d'abord si BUG_CODE) → re-run ciblé → re-run complet"
+    - "2 échecs de triage identiques = escalade tech lead (stop étape)"
+
+phases:
+  - id: P0
+    titre: "Mise en place du programme"
+    etapes:
+      - id: P0.1
+        action: "Brancher feat/emails-ux-f01-socle ; étendre emails-qa.yml (shards vitest, job next build, gate coverage)"
+        tests: "CI verte à vide (aucun nouveau test)"
+        gate: "G5"
+      - id: P0.2
+        action: "Étendre factories + handlers MSW pour les contrats P1 (nav-counters, schémas socle) + tests de conformité (modeles-code/exemple-contrat)"
+        tests: "smoke handlers (convention *-handlers.smoke.test.ts) + conformité"
+        gate: "G9"
+      - id: P0.3
+        action: "Quick-wins de l'audit (8 items < 1h, cf. ../04-backlog §quick_wins) avec leur test nominatif chacun"
+        tests: "8 tests régression (regression_ref = SUP-01, AUTO-04, CKPT-02, DASH-07, DASH-10, AUD-01, LMK-04, EVT-05)"
+        gate: "G1+G2"
+
+  - id: P1
+    titre: "Socle + navigation (F01, F02)"
+    depend_de: P0
+    etapes:
+      - id: P1.1
+        action: "F01 lot ConfirmDialog + ToastProvider (TDD : batterie F01 rouge d'abord)"
+        tests: "F01-C-001..0xx (dialog, toasts, grille réseau du Réessayer)"
+        gate: "G1 (lot) + G3 (>=85% ui/)"
+      - id: P1.2
+        action: "F01 lots EmptyState + Freshness + Pill/STATUS_META + use-dirty-guard + tokens (test de verrouillage grep)"
+        tests: "reste de la batterie F01 + invariants describe.each"
+        gate: "G1 F01 complet"
+      - id: P1.3
+        action: "F01 lot Wizard partagé (useWizard) — sans consommateur encore"
+        tests: "F01-C wizard (clic étapes, Ctrl+flèches, focus, persistance)"
+        gate: "G1"
+      - id: P1.4
+        action: "F02 : EmailsTabs + nav-counters + breadcrumb + palette + /campaigns/new"
+        tests: "batterie F02 + intégration nav-counters + E2E SM-F02-01 (navigation complète clavier)"
+        gate: "G1+G2+G6+G8"
+      - id: P1.5
+        action: "Écran PILOTE : migrer Suppression sur le socle (ConfirmDialog+toasts+EmptyState) — valide le socle en conditions réelles AVANT généralisation"
+        tests: "suite suppression existante adaptée + invariants socle"
+        gate: "G1+G2 ; revue d'écran (démo)"
+
+  - id: P2
+    titre: "Pilotage quotidien + ciblage (F03, F04, F08)"
+    depend_de: P1
+    etapes:
+      - id: P2.1
+        action: "F03 dashboard : fenêtre KPI, tri-état livraison, sparklines, auto-refresh, EmptyState"
+        tests: "batterie F03 (dont fake timers auto-refresh) + E2E SM-F03-*"
+        gate: "G1+G2+G4+G6"
+      - id: P2.2
+        action: "F04 cockpit lot 1 : erreurs de parsing visibles, raisons traduites, tooltips, saut de page, bannière ?from=health"
+        tests: "F04-C lot 1"
+        gate: "G1"
+      - id: P2.3
+        action: "F04 cockpit lot 2 : sélection globale par filtre + bulk-retry-by-filter + export CSV serveur (migration aucune ; routes + streaming)"
+        tests: "F04-C lot 2 + intégration export/bulk-by-filter (cap, keyset, BOM) + conformité + E2E SM-F04-01/02"
+        gate: "G1+G2+G8+G9"
+      - id: P2.4
+        action: "F08 audiences : neutralisation tags, validations bornes/pays, drift snapshots, docs modes, pagination membres"
+        tests: "batterie F08 + unit rules (lo<=hi, codes pays) + E2E SM-F08-*"
+        gate: "G1+G2+G6"
+
+  - id: P3
+    titre: "Production de contenu (F05, F07)"
+    depend_de: P2
+    etapes:
+      - id: P3.1
+        action: "Migration data campagnes (wizard_step, schedule_timezone) — additive, 2 temps"
+        tests: "schema-drift + intégration sur femiglow_test ET femiglow_emailqa"
+        gate: "G2"
+      - id: P3.2
+        action: "F05 lot wizard : adoption Wizard partagé + autosave + reprise + TZ + fallback estimation"
+        tests: "F05-C wizard (dont hang preview-size → fallback) "
+        gate: "G1"
+      - id: P3.3
+        action: "F05 lot envoi/détail : test send corps libre, ConfirmDialog actions, toasts, tooltips n/d, détection orpheline"
+        tests: "F05 reste + intégration test-send + E2E SM-F05-01 (campagne de A à Z avec Mailpit)"
+        gate: "G1+G2+G8"
+      - id: P3.4
+        action: "F07 templates lot sécurité d'abord : autosave+garde, puis variables/CodeMirror/mobile/diff/test-send/delete"
+        tests: "batterie F07 (dont non-régression sanitization TPL-F11) + E2E SM-F07-*"
+        gate: "G1+G2+G6"
+
+  - id: P4
+    titre: "Automations (F06) — en 3 vagues"
+    depend_de: P3
+    etapes:
+      - id: P4.1
+        action: "Vague lecture : FlowView read-only + timeline _trace (migration is_dry_run+deleted_at posée ici) + libellé daily cap + badges triggers"
+        tests: "F06-C lecture + unit trace + intégration runner (_trace écrit)"
+        gate: "G1+G2"
+      - id: P4.2
+        action: "Vague actions : dry-run + replay + softDeleteAutomation (R-031 éteint)"
+        tests: "F06 intégration (dry exclu des KPI/cap, refus delete si runs actifs) + E2E SM-F06-01 (debug d'une automation cassée)"
+        gate: "G1+G2+G8+G9"
+      - id: P4.3
+        action: "Vague wizard : adoption Wizard partagé, événements groupés, blocages près du bouton"
+        tests: "F06 wizard + invariants socle"
+        gate: "G1+G6"
+
+  - id: P5
+    titre: "Clôture (F09, F10, C10)"
+    depend_de: P4
+    etapes:
+      - id: P5.1
+        action: "F09 : ajout manuel, filtres raison/source, bulk remove, export ; events corrélation/expand/filtres"
+        tests: "batterie F09 + intégration (detail obligatoire manual_admin, allowlist R-009 non-régression) + E2E SM-F09-*"
+        gate: "G1+G2+G9"
+      - id: P5.2
+        action: "F10 : migration campaign_link (3 colonnes), checks Listmonk HealthBadge, badges sync, wizard honnête, frame-ancestors"
+        tests: "batterie F10 + emails-degraded.spec étendu (Listmonk down)"
+        gate: "G1+G2+G8"
+      - id: P5.3
+        action: "Passe C10 : dictionnaires FR enums, contrastes, labels/live-regions, décision next-intl"
+        tests: "axe complet (jsdom + E2E toutes pages) + grep anglais brut"
+        gate: "G6 strict (0 serious/critical partout)"
+      - id: P5.4
+        action: "CAMPAGNE FINALE : batterie GLOBALE + tous scénarios métier + boucle de correction jusqu'à 0 rouge ; rapport de clôture ; tag emails-ux-1.0"
+        tests: "tout (cf. runbook §5)"
+        gate: "G1..G9 simultanés"

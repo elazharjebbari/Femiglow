@@ -1,0 +1,220 @@
+# F09 — Suppression & Events — spec technique machine-readable
+# Code cible :
+#   src/components/admin/emails/cockpit/SuppressionList.tsx        (refonte socle + ajout/filtres/bulk/export)
+#   src/components/admin/emails/events/EventsDashboardView.tsx     (filtres/fenêtre/expand/corrélation)
+#   src/app/api/admin/emails/suppression/route.ts                  (+ POST)
+#   src/app/api/admin/emails/suppression/bulk-remove/route.ts      (nouveau)
+#   src/app/api/admin/emails/suppression/export/route.ts           (nouveau)
+#   src/lib/mail/suppression.ts                                    (addSuppression refuse interne)
+#   src/lib/user-events/queries.ts                                 (filtres event/email + fenêtre)
+# Refs audit : SUP-01 SUP-02 SUP-03 SUP-04 SUP-05 SUP-06 SUP-07 EVT-01 EVT-02 EVT-03 EVT-04 EVT-05
+
+meta:
+  socle_pilote: SuppressionList   # 1er écran adoptant ConfirmDialog/Toast/EmptyState (P1.5)
+  axe_smoke: required
+  enums:
+    reason: [hard_bounce, soft_bounce_repeated, complaint, unsubscribe, manual_admin, cndp_request, invalid_format]
+    source: [stalwart, listmonk, manual, cndp]
+    reason_labels:
+      hard_bounce: "Bounce permanent"
+      soft_bounce_repeated: "Bounces soft répétés"
+      complaint: "Plainte"
+      unsubscribe: "Désinscription"
+      manual_admin: "Action admin"
+      cndp_request: "Demande CNDP"
+      invalid_format: "Format invalide"
+    source_labels: { stalwart: Stalwart, listmonk: Listmonk, manual: Manuel, cndp: CNDP }
+
+# ===========================================================================
+# ENDPOINTS
+# ===========================================================================
+endpoints:
+
+  # ---- existant, inchangé (référence) -------------------------------------
+  GET_/api/admin/emails/suppression:
+    statut: existant
+    auth: requireAdmin -> 401/403
+    query: "{ q?: string<=200, reason?: enum, source?: enum, limit?: int 1..100 =50, offset?: int >=0 =0 }"
+    reponse_200: { rows: "SuppressionListItem[]", total: int, limit: int, offset: int }
+    item: { email: string, reason: enum, detail: "string|null", since: "string ISO", source: enum }
+    notes: ["ILIKE %q% échappé LIKE", "DB absente => 200 liste vide (pas 500)", "internes invisibles via allowlist amont"]
+
+  DELETE_/api/admin/emails/suppression:
+    statut: "existant"
+    body: "{ email: string trim 3..320 }"
+    reponse_200: "{ removed: boolean }     # idempotent : false si absente"
+    audit: "mail.suppression.remove"
+    erreurs: "{ 400: \"Corps JSON invalide\", 422: \"Validation échouée + issues\", 401/403: auth }"
+
+  # ---- NOUVEAU : ajout manuel (SUP-F03 / SUP-02) --------------------------
+  POST_/api/admin/emails/suppression:
+    statut: "nouveau"
+    auth: "requireAdmin -> 401/403"
+    body_schema_zod: |
+      z.object({
+        email: "z.string().trim().toLowerCase().email().min(3).max(320),"
+        reason: "z.enum(SUPPRESSION_REASONS),"
+        source: "z.enum(SUPPRESSION_SOURCES).optional(),   # défaut serveur selon reason"
+        detail: "z.string().trim().max(2000).optional(),"
+      }).superRefine((v, ctx) => {
+        # validation CONDITIONNELLE : détail obligatoire ssi manual_admin
+        if (v.reason === 'manual_admin' && (!v.detail || v.detail.length === 0)) {
+          ctx.addIssue({ path: ['detail'], code: 'custom',
+            message: 'Le détail est obligatoire pour une suppression manuelle.' });
+        }
+      })
+    source_par_defaut:
+      manual_admin: "manual"
+      cndp_request: "cndp"
+      autre: "manual"
+    sequence:
+      - "1. parse Zod -> 422 { error, issues } si échec (inclut détail manquant)"
+      - "2. isInternalAddress(email) === true -> 409 { error, code: 'internal_allowlisted' }"
+      - "3. lookup existence -> si déjà présente : 409 { error, code: 'already_suppressed' }"
+      - "4. addSuppression({ email, reason, detail: detail ?? null, source }) -> insert"
+      - "5. logAuditEvent(mail.suppression.add) + logger.warn"
+      - "6. 201 { added: true, email }"
+    reponses:
+      201: "{ added: true, email: string }"
+      422: "{ error: \"Validation échouée\", issues: \"ZodFlattenedError\" }   # détail manquant => issues.fieldErrors.detail"
+      409_allowlist: "{ error: \"Adresse interne protégée …\", code: internal_allowlisted }"
+      409_doublon: "{ error: \"<email> est déjà dans la liste de suppression.\", code: already_suppressed }"
+    audit: "mail.suppression.add   # meta: { email, reason, source, hasDetail }"
+
+  # ---- NOUVEAU : retrait en masse (SUP-F05 / SUP-04) ----------------------
+  POST_/api/admin/emails/suppression/bulk-remove:
+    statut: "nouveau"
+    auth: "requireAdmin -> 401/403"
+    body_schema_zod: |
+      z.object({
+        emails: "z.array(z.string().trim().toLowerCase().email().min(3).max(320))"
+                 .min(1).max(500),   # cap dur
+      })
+    sequence:
+      - "1. parse -> 422 si vide/>500/email invalide"
+      - "2. dédoublonnage des emails normalisés"
+      - "3. removeSuppression en lot (DELETE … WHERE email IN (...) RETURNING email)"
+      - "4. removed = lignes effectivement supprimées ; notFound = emails demandés absents des RETURNING"
+      - "5. logAuditEvent(mail.suppression.bulk_remove) meta { requested, removed, notFound }"
+      - "6. 200 { removed: int, notFound: string[] }"
+    reponse_200: "{ removed: int, notFound: \"string[]\" }   # résultat PARTIEL honnête"
+    cap: "500"
+    audit: "mail.suppression.bulk_remove   # SYSTÉMATIQUE (sécurité délivrabilité)"
+    erreurs: "{ 422: \"emails vide / > 500 / invalide\", 401/403: auth }"
+
+  # ---- NOUVEAU : export CSV (SUP-F06 / SUP-06) ----------------------------
+  GET_/api/admin/emails/suppression/export:
+    statut: "nouveau"
+    auth: "requireAdmin -> 401/403"
+    query: "{ q?: string<=200, reason?: enum, source?: enum }   # MÊMES filtres que la liste ; PAS de limit/offset"
+    effet: "rejoue les conditions WHERE de listSuppression SANS pagination"
+    reponse_200:
+      content_type: "text/csv; charset=utf-8"
+      content_disposition: 'attachment; filename="suppression-YYYY-MM-DD.csv"'   # date = jour serveur Africa/Casablanca
+      bom: "true            # ﻿ en tête"
+      rfc4177: "rfc4180     # CRLF, guillemets doublés, champ quoté si , \" ou \\n"
+      colonnes: "[email, reason, reason_label, source, source_label, detail, since]"
+    erreurs: "{ 422: \"filtre invalide\", 401/403: auth }"
+
+  # ---- Events : queries enrichies (EVT-F02/F03) ---------------------------
+  events_queries:
+    getRecentEvents:
+      statut: "amelioree"
+      opts: "{ limit?: int 1..500 =100, source?: enum, eventName?: string, email?: string, windowMs?: \"number | null\" }"
+      regles:
+        - "eventName -> ILIKE %eventName% sur user_event.event_name"
+        - "email -> ILIKE %email% sur user_event.email"
+        - "windowMs number -> ts >= now-windowMs ; windowMs null => AUCUNE borne (fenêtre 'tout')"
+        - "window 24h => default 24*3600_000 (COHÉRENT avec counts/total)"
+      reponse: "RecentEvent[] { id, email, eventName, ts, source, sessionId, leadId, properties }"
+
+# ===========================================================================
+# CORRÉLATION EVENTS (EVT-01) — forme des liens
+# ===========================================================================
+correlation_events:
+  regle: "lit r.properties ; ne fabrique JAMAIS d'id absent"
+  liens:
+    - clef: "outbox_id"
+      condition: "typeof properties.outbox_id === 'string' && properties.outbox_id.length > 0"
+      href: "/admin/emails/cockpit/${properties.outbox_id}"
+      libelle: "voir l'envoi"
+    - clef: "campaign_id"
+      condition: "typeof properties.campaign_id === 'string' && properties.campaign_id.length > 0"
+      href: "/admin/emails/campaigns/${properties.campaign_id}"
+      libelle: "voir la campagne"
+  cumul: "les deux liens peuvent coexister"
+  aucun_lien_si: "clés absentes / valeur vide / null -> seul le JSON est affiché, pas de lien deviné"
+
+# ===========================================================================
+# COMPOSANT SuppressionList (socle pilote)
+# ===========================================================================
+composant_SuppressionList:
+  adopte_socle: "[ConfirmDialog, Toast, EmptyState]   # P1.5"
+  url_state: "?email=&reason=&source=&offset="    # persistée (F5 / partage)
+  dialog_ajout:
+    type: "ConfirmDialog"
+    champs:
+      - { nom: email, type: email, requis: true, transform: "trim+lowercase" }
+      - { nom: reason, type: select, requis: true, defaut: manual_admin }
+      - { nom: detail, type: textarea, requis_si: "reason === 'manual_admin'", aria_required_dynamique: true }
+    bouton_ajouter_disabled_si: "email vide/invalide OU (reason==manual_admin && detail trim vide)"
+    rappel: "Bloque les envois transactionnels ET les campagnes."
+    messages_erreur:
+      detail_manquant: "Le détail est obligatoire pour une suppression manuelle."
+      allowlist: "Adresse interne protégée : <email> ne peut pas être ajoutée (allowlist R-009)."
+      doublon: "<email> est déjà dans la liste de suppression."
+    succes_toast: "<email> ajouté à la liste de suppression."
+  filtres:
+    champs:
+      - { nom: email, control: searchbox, label: "Filtrer par email" }   # plus "email, raison OU source" (placeholder mensonger corrigé)
+      - { nom: reason, control: select, options: "Toutes + 7" }
+      - { nom: source, control: select, options: "Toutes + 4" }
+    reset: "bouton Réinitialiser -> efface les 3 + offset=0"
+    changement_filtre: "offset := 0"
+  bulk:
+    selection: "checkbox/ligne + checkbox tout-la-page ; compteur 'N sélectionnées'"
+    bulk_bar: "visible dès N>=1"
+    confirm: "ConfirmDialog UNIQUE, corps porte le NOMBRE, variante danger"
+    resultat: "toast 'X retirées · Y introuvables' (honnête, jamais X=N si X<N)"
+    sur_succes: "liste refetch + sélection vidée"
+    sur_echec: "sélection PRÉSERVÉE + role=alert + zéro faux succès"
+  retrait_unitaire:
+    avant: "window.confirm + bandeau role=status maison"
+    apres: "ConfirmDialog danger (verbe 'Retirer', conséquences) + toast succès"
+    invariant: "ligne CONSERVÉE sur erreur ; succès seulement sur res.ok ; anti double-clic"
+  export_bouton: "GET export?<filtres courants> ; libellé honnête (export de la liste filtrée)"
+
+composant_EventsDashboardView:
+  titre: "Events utilisateur (pipeline user_event)"   # désambiguïsation vs email_event
+  url_state: "?source=&event=&email=&window="
+  filtres: [source (existant), event (sous-chaîne), email (sous-chaîne)]
+  fenetre:
+    control: "toggle (24 h ▼)"
+    valeurs: { '24h': "ts>=now-24h (cohérent compteurs)", all: "sans borne — libellé 'fenêtre : tout'" }
+    defaut: '24h'
+  expand:
+    control: "<details> '▸ propriétés (N clés)'"
+    deplie: "JSON.stringify(properties, null, 2) COMPLET dans <pre>"
+    zero_cle: "—  (pas de chevron)"
+  correlation: "cf. correlation_events"
+  responsive: "wrapper table stream porte overflow-x-auto"
+
+# ===========================================================================
+# INVARIANTS / NON-RÉGRESSION
+# ===========================================================================
+invariants:
+  R-009_allowlist:
+    addSuppression: "refuse (no-op + signal) une adresse interne — testé intégration"
+    isSuppressed: "interne => false TOUJOURS (bypass DB)"
+    findSuppressed: "ne renvoie jamais une interne"
+    POST_UI: "409 internal_allowlisted, message dédié, jamais inséré"
+    affichage: "interne invisible dans la liste"
+  zero_faux_succes: "feedback succès (toast/status) UNIQUEMENT sur res.ok ; échec => role=alert, état préservé"
+  audit_systematique: "remove / bulk_remove / add => logAuditEvent émis (vérifié intégration)"
+  grille_reseau: "6 cas (200/401/422/500/hang/network) pour : add, bulk-remove, export, retrait unitaire"
+  contrat: "réponse handler MSW parse avec le schéma Zod de prod (POST, bulk-remove)"
+
+verrouillages:
+  no_window_confirm: "window.confirm interdit dans SuppressionList après P1.5 (ESLint)"
+  export_filtres: "export rejoue EXACTEMENT le WHERE de la liste (test de cohérence)"
+  bulk_audit: "bulk-remove sans logAuditEvent => test intégration rouge"

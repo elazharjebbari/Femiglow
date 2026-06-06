@@ -1,0 +1,247 @@
+# F05 — Campagnes — spécification technique
+# Référence code : lib/admin/emails/wizard-actions.ts,
+#                  lib/mail/campaigns/listmonk-status-sync.ts,
+#                  components/admin/emails/wizard/CampaignWizard.tsx
+# Contrainte data : migrations ADDITIVES uniquement (deploy single-instance).
+
+meta:
+  feature: F05-campagnes
+  refs_audit: [CAMP-01, CAMP-02, CAMP-03, CAMP-04, CAMP-06, CAMP-07, CAMP-08,
+               CAMP-09, CAMP-10, CAMP-11, CAMP-12, CAMP-15, CAMP-16]
+  socle_consomme: [SOC-F01 ConfirmDialog, SOC-F02 Toast, SOC-F03 EmptyState,
+                   SOC-F04 Freshness, SOC-F05 Wizard/useWizard, SOC-F06 Pill]
+
+# ───────────────────────────────────────────────────────────────────────────
+# 1. MIGRATIONS (additives, livrées AVANT le code lecteur — déploiement 2 temps)
+# ───────────────────────────────────────────────────────────────────────────
+migrations:
+  colonnes_nouvelles:
+    - table: email_campaign_link
+      colonne: wizard_step
+      type: smallint
+      nullable: true            # null = legacy (rouvre é1)
+      semantique: "étape courante 1..6 pour reprise (CAMP-03)"
+      sql: "ALTER TABLE email_campaign_link ADD COLUMN IF NOT EXISTS wizard_step smallint;"
+    - table: email_campaign_link
+      colonne: schedule_timezone
+      type: text
+      nullable: true            # null = legacy/navigateur
+      semantique: "IANA TZ ex. 'Africa/Casablanca' (CAMP-07)"
+      sql: "ALTER TABLE email_campaign_link ADD COLUMN IF NOT EXISTS schedule_timezone text;"
+  detection_orpheline:
+    colonnes_nouvelles: aucune       # requête pure (cf. server_actions.detectOrphan)
+  rollback: "colonnes additives inertes — rollback = rollback de CODE uniquement"
+  test_migration:
+    - schema-drift (introspection femiglow_test vs schema.ts)
+    - relire le SQL Drizzle généré (gotcha drift schema.ts/DB)
+
+# ───────────────────────────────────────────────────────────────────────────
+# 2. SERVER ACTIONS
+# ───────────────────────────────────────────────────────────────────────────
+server_actions:
+
+  # ── Autosave (CMP-F10 / CAMP-03) ───────────────────────────────────────
+  saveWizardProgress:
+    role: "persistance partielle du brouillon + étape courante (autosave)"
+    auth: requireAdmin
+    signature: "saveWizardProgress(input: SaveProgressInput): Promise<{ savedAt: string }>"
+    input_zod:
+      id: "z.string().min(1)"
+      wizardStep: "z.number().int().min(1).max(6).optional()"
+      patch:                      # tous optionnels, merge NON destructif serveur
+        name: "z.string().min(3).max(120).optional()"
+        subject: "z.string().max(140).optional()"
+        preheader: "z.string().max(200).optional()"
+        listmonkTemplateId: "z.number().int().nullable().optional()"
+        audienceLinkIds: "z.array(z.number().int()).optional()"
+        audienceId: "z.string().uuid().nullable().optional()"
+        scheduledFor: "z.string().datetime().nullable().optional()"
+        scheduleTimezone: "z.string().optional()   # ex 'Africa/Casablanca'"
+        bodyHtml: "z.string().optional()   # rangé dans payload_json.body"
+    effet_db: "UPDATE email_campaign_link SET <champs touchés>, wizard_step,
+               updated_at WHERE id=$1 AND status='draft'  -- jamais hors draft"
+    garde_critique:
+      - "WHERE status='draft' : l'autosave NE PEUT PAS écrire sur une campagne
+         déjà finalisée (anti-conflit autosave/finalize — risque 05-plan §1)"
+      - "n'écrit JAMAIS status ni listmonk_campaign_id (ne déclenche aucun envoi)"
+    debounce_cote_client:
+      delai_ms: 2000
+      strategie: "trailing — rearmé à chaque mutation ; 1 seul POST 2s après la
+                  DERNIÈRE frappe (anti-rafale)"
+      flush_immediat: "au passage d'étape (goNext/stepper) et au blur fenêtre"
+      indicateur: "Enregistrement… → ✓ Brouillon enregistré il y a Xs
+                   (Freshness SOC-F04) ; échec → ⚠ réessayer (action)"
+    sortie:
+      ok: "{ savedAt: ISO8601 }"
+      erreurs:
+        - "401 si non admin"
+        - "422 si patch invalide (Zod)"
+        - "0 ligne touchée (status != draft) → { savedAt } no-op silencieux côté
+           autosave MAIS l'UI a déjà quitté le wizard pour ces statuts"
+    audit_log: "non (trop fréquent) — seul finalize/control est audité"
+
+  # ── Test send corps libre via outbox (CMP-F09 / CAMP-04) ────────────────
+  sendCampaignTestViaOutbox:
+    role: "épreuve SANS template Listmonk via pipeline transactionnel interne"
+    auth: requireAdmin
+    signature: "sendCampaignTestViaOutbox(input): Promise<TestSendResult>"
+    input_zod:
+      id: "z.string().min(1)"
+      email: "z.string().email('Adresse e-mail invalide')"
+      subject: "z.string().min(1)"
+      bodyHtml: "z.string().min(1)"
+    effet_db: "INSERT 1 ligne email_outbox (to=email, subject, html=bodyHtml
+               rendu, source='campaign_test', idempotency_key) drainée par le
+               worker existant"
+    idempotence:
+      cle: "test:{draftId}:{email}:{hash(subject+bodyHtml)}  (fenêtre courte)"
+      effet: "un 2e INSERT avec la même clé est ignoré (ON CONFLICT DO NOTHING)
+              → une seule épreuve même sur double POST concurrent"
+    sortie:
+      ok: "{ ok: true, email }"
+      ko:
+        - "{ ok:false, error } si draft introuvable"
+        - "{ ok:false, error } si subject/body vide (Zod issues[0].message)"
+        - "{ ok:false, error } si outbox/worker indisponible (message honnête)"
+    audit_log: "mail.campaign.test_sent { to, via:'outbox' }"
+    note: "sendCampaignTest (avec template) EXISTE déjà — non régressé ; l'UI
+           route vers outbox ssi templateId == null"
+
+  # ── Détection + correction orpheline (CMP-F13 / CAMP-15) ────────────────
+  detectOrphan:
+    role: "lecture serveur du critère orphelin (rendu détail RSC)"
+    requete_sql: |
+      SELECT (
+        status = 'sending'
+        AND listmonk_campaign_id IS NULL
+        AND started_at < now() - interval '10 minutes'
+      ) AS is_orphan
+      FROM email_campaign_link WHERE id = $1;
+    sortie: "boolean is_orphan (true → bannière danger)"
+
+  markCampaignFailed:
+    role: "sortie sûre d'une orpheline (CAMP-15)"
+    auth: requireAdmin
+    input_zod: { id: "z.string().min(1)" }
+    garde: "isLegalTransition(from,'failed') ; refuse si terminal"
+    effet_db: "UPDATE … SET status='failed', finished_at=now() WHERE id=$1 AND status='sending'"
+    audit_log: "mail.campaign.marked_failed { from }"
+    toast: "Campagne marquée en échec."
+
+  reassociateCampaign:
+    role: "ré-associer un id Listmonk à une orpheline (CAMP-15)"
+    auth: requireAdmin
+    input_zod:
+      id: "z.string().min(1)"
+      listmonkCampaignId: "z.number().int().positive()"
+    validation_distante: "GET Listmonk campaigns/{id} — DOIT exister"
+    effet_db: "si valide : UPDATE … SET listmonk_campaign_id=$2 WHERE id=$1
+               AND listmonk_campaign_id IS NULL ; sinon AUCUNE écriture"
+    sortie:
+      ok: "{ ok:true } → bannière disparaît, sync reprend, toast 'Ré-associée à #N.'"
+      ko: "{ ok:false, error:'id Listmonk introuvable' } → role=alert, aucune écriture"
+    audit_log: "mail.campaign.reassociated { listmonkCampaignId }"
+
+  # ── Unicité du nom (CMP-F02 / CAMP-12) ──────────────────────────────────
+  checkCampaignNameAvailable:
+    role: "warning NON bloquant d'homonymie pendant la frappe (debounce 500ms)"
+    auth: requireAdmin
+    input_zod: { name: "z.string().min(1)" }
+    requete_sql: "SELECT EXISTS(SELECT 1 FROM email_campaign_link WHERE lower(name)=lower($1)) AS taken"
+    sortie: "{ taken: boolean }  -- purement indicatif, jamais une 422"
+
+  # ── Fallback estimation : drapeau passé à finalize (CMP-F08 / CAMP-01) ──
+  finalizeCampaign_extension:
+    note: "finalizeCampaign EXISTE — on AJOUTE le drapeau skipEstimate"
+    input_ajout: "skipEstimate: z.boolean().optional()  // fallback assumé"
+    effet: "n'altère pas la logique de send ; l'audience est évaluée au
+            snapshot/push réel ; tracé meta.skipEstimate dans l'audit-log"
+    invariant: "R-010 réservation atomique (WHERE status='draft') inchangée —
+                anti double-envoi conservé"
+
+  # ── Existantes non régressées (rappel) ──────────────────────────────────
+  existantes:
+    - "pauseCampaign / resumeCampaign / cancelCampaign  (controlCampaign + isLegalTransition)"
+    - "duplicateCampaign  (planif réinitialisée — CAMP-06 ; toast 'conserver' UI)"
+    - "refreshCampaignMetrics  (syncCampaignStatuses, échec non bloquant + toast)"
+    - "discardCampaign  (draft → cancelled)"
+    - "sendCampaignTest  (avec template, /api/tx)"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 3. MACHINE D'ÉTATS — transitions LÉGALES (source: isLegalTransition)
+# ───────────────────────────────────────────────────────────────────────────
+machine_etats:
+  statuts: [draft, scheduled, sending, paused, sent, cancelled, failed]
+  table_transitions:                       # from → [to légaux]
+    draft:     [scheduled, sending, cancelled, failed]
+    scheduled: [sending, cancelled, failed]
+    sending:   [sent, cancelled, failed, paused]
+    paused:    [sending, cancelled, failed]
+    sent:      []        # terminal
+    cancelled: []        # terminal
+    failed:    []        # terminal
+  invariants:
+    - "from == to → true (idempotence poll)"
+    - "tout couple absent de la table → false (rejet serveur)"
+    - "un terminal n'a AUCUNE sortie (sent→sending, cancelled→scheduled rejetés)"
+  mapping_listmonk:        # mapListmonkStatus
+    finished:  sent
+    cancelled: cancelled
+    running:   sending
+    scheduled: scheduled
+    paused:    null        # pas d'équivalent → no-op
+    draft:     null
+
+# ───────────────────────────────────────────────────────────────────────────
+# 4. FALLBACK ESTIMATION — états (CMP-F08 / CAMP-01)
+# ───────────────────────────────────────────────────────────────────────────
+fallback_estimation:
+  scope: "étape 6, audience FemiGlow uniquement (les listes Listmonk ont un
+          subscriberCount local → estimation toujours connue)"
+  etats:
+    - id: en_cours
+      ui: "spinner 'Estimation en cours…' ; ack + envoi BLOQUÉS (estimateKnown=false)"
+    - id: connu
+      transition_depuis: "en_cours sur succès"
+      ui: "nombre affiché ; ack chiffrée ; envoi normal possible"
+    - id: tentative_1
+      transition_depuis: "en_cours sur échec réel (HTTP/parse/network)"
+      ui: "role=alert + bouton 'Réessayer' ; PAS de fallback"
+    - id: tentative_2
+      transition_depuis: "tentative_1 + Réessayer échoue"
+      ui: "idem tentative_1"
+    - id: tentative_3_epuisee
+      transition_depuis: "tentative_2 + Réessayer échoue (compteur==3)"
+      ui: "'Réessayer' + bouton DÉGRADÉ 'Envoyer sans estimation…'"
+    - id: confirm_dialog
+      transition_depuis: "tentative_3_epuisee + clic bouton dégradé"
+      ui: "ConfirmDialog danger, saisie exacte 'ENVOYER' (case/espaces-insensible)
+           ; confirme → finalize(skipEstimate:true)"
+    - id: reactive_normal
+      transition_depuis: "n'importe quel état tentative_N + Réessayer RÉUSSIT"
+      effet: "nombre affiché, ack chiffrée reprend, bouton dégradé DISPARAÎT"
+  compteur:
+    incremente_sur: "échec réel uniquement"
+    n_increment_pas_sur: "abort utilisateur (changement d'audience)"
+  seuil_fallback: 3
+
+# ───────────────────────────────────────────────────────────────────────────
+# 5. TIMEZONE (CMP-F07 / CAMP-07) — conversion
+# ───────────────────────────────────────────────────────────────────────────
+timezone:
+  tz_defaut: "Africa/Casablanca"
+  persistance: "schedule_timezone (text)"
+  saisie: "datetime-local interprété DANS schedule_timezone"
+  conversion_envoi: "wall-clock local TZ → UTC via Intl/date-fns-tz (offset à T,
+                     jamais codé en dur — DST/ramadan)"
+  validation_futur: "instant UTC converti > now() ; sinon rejet 'date dans le futur'"
+  affichage: "'heure de Casablanca (UTC+1)' + 'reçu à HH:MM heure locale Maroc'"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 6. ROUTES
+# ───────────────────────────────────────────────────────────────────────────
+routes:
+  liste: "/admin/emails/campaigns  (?q=&status=&page=)"
+  detail: "/admin/emails/campaigns/[id]"
+  wizard: "/admin/emails/campaigns/[id]/edit"
+  new: "/admin/emails/campaigns/new  (CAMP-08 : RSC crée draft + redirect /edit)"

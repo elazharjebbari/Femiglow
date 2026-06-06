@@ -1,0 +1,79 @@
+id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
+F01-C-001,C,P1,ConfirmDialog,ouverture sur clic du déclencheur,"un élément role=dialog aria-modal=true est visible et le titre demandé y est lu",factory dialog danger,TRV-01,a_implementer
+F01-C-002,C,P1,ConfirmDialog,focus initial,"au montage le bouton ""Annuler"" porte le focus (document.activeElement)",nominal,TRV-01,a_implementer
+F01-C-003,C,P1,ConfirmDialog,Esc ferme sans agir,"appui Échap : le dialog disparaît et aucun POST n'est parti vers l'action",mutation espionnée MSW,TRV-01,a_implementer
+F01-C-004,C,P1,ConfirmDialog,clic backdrop ferme sans agir,"clic sur le fond assombri : dialog fermé, onConfirm jamais déclenché",nominal,TRV-01,a_implementer
+F01-C-005,C,P1,ConfirmDialog,libellé verbe variante danger,"le bouton d'action affiche ""Supprimer"" (pas ""OK"") et porte la classe token danger",factory danger,TRV-01,a_implementer
+F01-C-006,C,P1,ConfirmDialog,conséquences explicites,"le corps lit ""3 destinataires distincts seront retirés"" et ""irréversible""",factory 3 cibles,TRV-01,a_implementer
+F01-C-007,C,P1,ConfirmDialog,saisie de confirmation massif,"requireText=SUPPRIMER : le bouton est désactivé tant que le champ ne vaut pas SUPPRIMER",factory 60 éléments,TRV-01,a_implementer
+F01-C-008,C,P2,ConfirmDialog,saisie insensible casse/espaces,"taper "" supprimer "" active le bouton (trim + lower)",factory 60 éléments,TRV-01,a_implementer
+F01-C-009,C,P1,ConfirmDialog,confirmation déclenche l'action,"clic Supprimer (saisie OK) : un POST et UN SEUL part vers l'endpoint",compteur requêtes MSW,TRV-01,a_implementer
+F01-C-010,C,P1,ConfirmDialog,double-Enter ne soumet pas 2×,"deux Entrée rapides : exactement 1 requête émise",compteur requêtes MSW,TRV-01,a_implementer
+F01-C-011,C,P1,ConfirmDialog,état busy pendant mutation,"pendant le hang : bouton lit ""Suppression…"", désactivé, aria-busy=true",MSW delay infinite,TRV-01,a_implementer
+F01-C-012,C,P1,ConfirmDialog,échec garde le dialog ouvert,"500 : le dialog reste visible, un role=alert lit l'erreur, la saisie SUPPRIMER est conservée",MSW 500,TRV-01,a_implementer
+F01-C-013,C,P1,ConfirmDialog,retour du focus au déclencheur,"après fermeture (Annuler) le focus est revenu sur le bouton qui a ouvert le dialog",nominal,TRV-01,a_implementer
+F01-C-014,C,P2,ConfirmDialog,focus piégé,"Tab depuis le dernier élément focusable reboucle dans le dialog (ne sort pas vers la page)",nominal,TRV-01,a_implementer
+F01-A-015,A,P1,ConfirmDialog,axe smoke,"axe ne remonte aucune violation serious/critical sur le dialog ouvert",nominal,TRV-01,a_implementer
+F01-C-016,C,P1,Toast,succès vert affiché,"après res.ok la carte succès lit ""3 emails relancés"" (libellé résultat)",factory retry 3,TRV-02,a_implementer
+F01-C-017,C,P1,Toast,auto-dismiss 4s exact,"fake timers : à 3999 ms le toast est encore visible, à 4000 ms il a disparu",fake timers,TRV-02,a_implementer
+F01-C-018,C,P1,Toast,libellé jamais générique,"le toast succès ne contient jamais la chaîne ""opération effectuée""",nominal,TRV-02,a_implementer
+F01-C-019,C,P1,Toast,erreur persistante,"toast erreur affiché : après 10 s (fake timers) il est toujours visible",fake timers,TRV-02,a_implementer
+F01-C-020,C,P1,Toast,erreur en role alert,"le toast erreur porte role=alert et un message actionnable consigne",nominal,TRV-02,a_implementer
+F01-C-021,C,P1,Toast,bouton Réessayer rejoue,"clic ""Réessayer"" : un nouveau POST part avec les MÊMES ids que la 1re tentative",compteur+payload MSW,TRV-02,a_implementer
+F01-C-022,C,P1,Toast,pas de toast succès sur res.ok=false,"422 : aucune carte succès n'apparaît, seul un toast erreur est lu",MSW 422,TRV-02,a_implementer
+F01-C-023,C,P1,Toast,empilement 3 toasts,"3 success enchaînés : 3 cartes visibles, la plus récente en tête",nominal,TRV-02,a_implementer
+F01-C-024,C,P2,Toast,cap pile évince le + ancien succès,"4e success : 3 cartes visibles, la 1re a disparu",nominal,TRV-02,a_implementer
+F01-C-025,C,P2,Toast,erreur jamais évincée par cap,"3 success après 1 error : le toast erreur reste visible",nominal,TRV-02,a_implementer
+F01-C-026,C,P1,Toast,une seule live-region polite,"le DOM ne contient qu'UN seul aria-live=polite emails (pas de spam SR)",nominal,TRV-02,a_implementer
+F01-C-027,C,P2,Toast,fermeture manuelle,"clic croix aria-label=Fermer : la carte ciblée disparaît, les autres restent",nominal,TRV-02,a_implementer
+F01-A-028,A,P1,Toast,axe smoke,"axe : 0 violation serious/critical sur une pile de 2 toasts",nominal,TRV-02,a_implementer
+F01-C-029,C,P2,EmptyState,vide absolu,"liste sans données : titre + explication d'absence + CTA création visibles",nominal,TRV-09,a_implementer
+F01-C-030,C,P2,EmptyState,vide filtré,"variant filtered : le texte cite le filtre actif et le CTA lit ""Réinitialiser le filtre""",factory filtre,TRV-09,a_implementer
+F01-C-031,C,P2,EmptyState,icône décorative,"l'icône porte aria-hidden et n'est pas dans l'arbre accessible",nominal,TRV-09,a_implementer
+F01-A-032,A,P2,EmptyState,axe smoke,"axe : 0 violation serious/critical",nominal,TRV-09,a_implementer
+F01-U-033,U,P1,Freshness,âge relatif secondes,"formatAge(now-12s) renvoie ""il y a 12 s""",table cas,TRV-05,a_implementer
+F01-U-034,U,P1,Freshness,âge relatif minutes,"formatAge(now-3min) renvoie ""il y a 3 min""",table cas,TRV-05,a_implementer
+F01-U-035,U,P1,Freshness,âge relatif heures,"formatAge(now-2h) renvoie ""il y a 2 h""",table cas,TRV-05,a_implementer
+F01-C-036,C,P1,Freshness,TZ affichée,"l'heure absolue affiche le libellé ""Africa/Casablanca""",fake clock,TRV-05,a_implementer
+F01-C-037,C,P1,Freshness,time datetime machine-lisible,"l'élément time porte datetime égal à l'ISO fourni",nominal,TRV-05,a_implementer
+F01-C-038,C,P1,Freshness,auto-refresh au tick,"fake timers : à intervalMs onRefresh est déclenché et l'âge repasse à ""il y a 0 s""",fake timers,DASH-08,a_implementer
+F01-C-039,C,P1,Freshness,suspension onglet caché,"document.hidden=true puis intervalMs écoulé : onRefresh n'est PAS déclenché",fake timers+hidden,DASH-08,a_implementer
+F01-C-040,C,P1,Freshness,âge honnête après veille,"onglet caché 2 h puis retour : l'âge lit ""il y a 2 h"" (pas ""il y a 0 s"")",fake timers,DASH-08,a_implementer
+F01-C-041,C,P1,Freshness,reprise + refresh au retour,"visibilitychange->visible : onRefresh déclenché immédiatement une fois",fake timers,DASH-08,a_implementer
+F01-C-042,C,P2,Freshness,bouton busy anti double-clic,"clic Rafraîchir pendant hang : bouton lit ""Rafraîchissement…"" disabled, 1 seul appel",MSW delay infinite,DASH-08,a_implementer
+F01-A-043,A,P2,Freshness,axe smoke,"axe : 0 violation serious/critical",nominal,TRV-05,a_implementer
+F01-C-044,C,P1,Wizard,étape validée cliquable,"clic sur l'étape 1 (validée) depuis l'étape 3 : le contenu de l'étape 1 s'affiche",nominal,TRV-08,a_implementer
+F01-C-045,C,P1,Wizard,étape future refusée,"clic sur l'étape 4 depuis l'étape 1 : le contenu reste l'étape 1 (étape 4 inerte)",nominal,TRV-08,a_implementer
+F01-C-046,C,P1,Wizard,Ctrl+flèche droite avance,"Ctrl+ArrowRight sur étape valide : l'étape 2 s'affiche",nominal,TRV-08,a_implementer
+F01-C-047,C,P1,Wizard,Ctrl+flèche gauche recule,"Ctrl+ArrowLeft sur étape 2 : l'étape 1 s'affiche",nominal,TRV-08,a_implementer
+F01-C-048,C,P1,Wizard,focus sur titre à chaque étape,"après next() le focus est sur le titre de la nouvelle étape (activeElement)",nominal,TRV-08,a_implementer
+F01-C-049,C,P1,Wizard,validation bloque l'avancée,"next sur étape invalide : on reste sur l'étape et un role=alert s'affiche près du bouton Suivant",factory invalide,TRV-08,a_implementer
+F01-C-050,C,P2,Wizard,message d'erreur PRÈS du bouton,"le message d'erreur de validation est le frère/voisin DOM du bouton Suivant (pas en tête de page)",factory invalide,TRV-08,a_implementer
+F01-C-051,C,P1,Wizard,persistance étape après F5,"persistKey posé en étape 3, remontage du composant : il rouvre en étape 3 avec les données",persist localStorage,TRV-08,a_implementer
+F01-C-052,C,P2,Wizard,aria-current sur étape active,"l'étape affichée porte aria-current=step, les autres non",nominal,TRV-08,a_implementer
+F01-A-053,A,P2,Wizard,axe smoke,"axe : 0 violation serious/critical sur la barre + l'étape",nominal,TRV-08,a_implementer
+F01-U-054,U,P1,Pill,STATUS_META exhaustif vs enum,"chaque membre de email_outbox_status a une entrée STATUS_META (sinon le test échoue)",enum schema-emails,TRV-07,a_implementer
+F01-U-055,U,P1,Pill,libellé FR par statut,"STATUS_META.bounced_permanent.label === ""Bounce perm.""",nominal,TRV-07,a_implementer
+F01-U-056,U,P1,Pill,statut inconnu,"statusLabel(""zzz"") renvoie ""Inconnu"" (jamais le slug brut)",table cas,TRV-07,a_implementer
+F01-C-057,C,P1,Pill,cohérence dashboard vs cockpit,"même statut rendu dans deux contextes : libellé et tone identiques",factory bounced_permanent,DASH-07,a_implementer
+F01-U-058,U,P2,Pill,tone par statut,"STATUS_META.dlq.tone === danger et .sent.tone === success",nominal,TRV-07,a_implementer
+F01-U-059,U,P1,Pill,KpiCards consomme le map unique,"KpiCards n'exporte plus de mapping local : son rendu de statut provient de STATUS_META",grep AST,DASH-07,a_implementer
+F01-A-060,A,P2,Pill,axe smoke,"axe : 0 violation serious/critical",nominal,TRV-07,a_implementer
+F01-C-061,C,P1,use-dirty-guard,beforeunload armé,"composant sale : un handler beforeunload est enregistré (event preventDefault appelé)",nominal,TRV-10,a_implementer
+F01-C-062,C,P1,use-dirty-guard,navigation in-app interceptée,"sale + clic lien interne : un ConfirmDialog ""Modifications non enregistrées"" apparaît et la navigation est suspendue",nav mockée,TRV-10,a_implementer
+F01-C-063,C,P1,use-dirty-guard,désarmé après save,"isDirty repasse à false : recharger n'affiche plus l'invite (handler retiré)",nominal,TRV-10,a_implementer
+F01-C-064,C,P2,use-dirty-guard,pas d'invite si propre,"composant propre : aucun handler beforeunload, navigation libre",nominal,TRV-10,a_implementer
+F01-U-065,U,P1,tokens,anti sage/red/blue,"grep AST de components/admin/emails/** : aucune occurrence sage- red- blue- hors liste blanche",arbre source,info_design,a_implementer
+F01-U-066,U,P2,tokens,liste blanche minimale,"la liste blanche d'exceptions est vide ou justifiée commentaire à commentaire",arbre source,info_design,a_implementer
+F01-U-067,U,P1,verrou,no window.confirm,"grep de components/admin/emails/** et app/admin/emails/** : 0 occurrence window.confirm/window.alert hors tests",arbre source,TRV-01,a_implementer
+F01-U-068,U,P2,verrou,no toLocaleString direct,"grep : 0 toLocaleString/toLocaleTimeString direct hors formateur TZ central",arbre source,TRV-05,a_implementer
+F01-C-069,C,P1,invariants,describe.each dialog Esc,"chaque écran adoptant le socle : Esc sur son ConfirmDialog n'agit pas",describe.each écrans,TRV-01,a_implementer
+F01-C-070,C,P1,invariants,describe.each toast 4s,"chaque écran : son toast succès a disparu à 4000 ms (fake timers)",describe.each écrans,TRV-02,a_implementer
+F01-C-071,C,P1,invariants,describe.each dirty-guard,"chaque écran à formulaire : navigation interceptée quand sale",describe.each écrans,TRV-10,a_implementer
+F01-C-072,C,P2,invariants,describe.each Freshness TZ,"chaque écran avec Freshness : la TZ Africa/Casablanca est affichée",describe.each écrans,TRV-05,a_implementer
+F01-E-073,E,P1,scenario,SM-F01-01 opérateur pressé,"3 mutations sur 2 écrans : 3 toasts succès lisibles, AUCUN dialog natif window.confirm n'apparaît",femiglow_emailqa,metier,a_implementer
+F01-E-074,E,P1,scenario,SM-F01-02 fausse manip,"Esc/Annuler sur chaque dialog : aucune donnée détruite (compteurs DB inchangés)",femiglow_emailqa,metier,a_implementer
+F01-E-075,E,P1,scenario,SM-F01-03 onglet oublié,"page laissée 2 h : la Freshness lit ""il y a 2 h"" puis se rafraîchit au retour",femiglow_emailqa,metier,a_implementer
+F01-E-076,E,P1,scenario,SM-F01-04 wizard interrompu,"F5 en étape 3 : le wizard rouvre en étape 3 avec les données saisies",femiglow_emailqa,metier,a_implementer
+F01-E-077,E,P2,scenario,SM-F01-05 réseau qui lâche,"mutation en échec : toast erreur persistant + Réessayer rejoue et réussit, sélection conservée",femiglow_emailqa degraded,metier,a_implementer
+F01-A-078,A,P1,scenario,axe page socle,"axe Playwright sur une page adoptant le socle : 0 violation serious/critical",femiglow_emailqa,metier,a_implementer

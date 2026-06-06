@@ -1,0 +1,103 @@
+id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
+F08-U-001,U,P0,AUD-F05,compiler has_tag,compileRule(has_tag) produit FALSE (jamais EXISTS lead_tag),factory.rule.hasTag,AUD-01,a_implementer
+F08-U-002,U,P0,AUD-F05,compiler not_has_tag,compileRule(not_has_tag) produit FALSE (jamais NOT EXISTS / TRUE),factory.rule.notHasTag,AUD-01,a_implementer
+F08-U-003,U,P0,AUD-F05,warning compilateur tag,compiler logge audience.rules.tag_neutralized avec kind+tag,factory.rule.hasTag,AUD-01,a_implementer
+F08-U-004,U,P0,AUD-F05,compiler n'importe plus leadTag,la compilation d'une audience avec tag ne référence pas la table lead_tag,factory.group.withTag,AUD-01,a_implementer
+F08-U-005,U,P0,AUD-F04,between numérique lo<=hi valide,validateBetween([100 500]) renvoie ok,factory.rule.orderCountBetween,AUD-02,a_implementer
+F08-U-006,U,P0,AUD-F04,between numérique lo>hi invalide,validateBetween([500 100]) renvoie erreur borne,factory.rule.orderCountBetween,AUD-02,a_implementer
+F08-U-007,U,P1,AUD-F04,between date début<=fin valide,validateBetween dates [2025-01-01 .. 2025-03-01] ok,factory.rule.createdAtBetween,AUD-02,a_implementer
+F08-U-008,U,P1,AUD-F04,between date début>fin invalide,dates [2025-03-01 .. 2025-01-01] renvoie erreur,factory.rule.createdAtBetween,AUD-02,a_implementer
+F08-U-009,U,P1,AUD-F04,auto-swap permute les bornes,swapBounds([500 100]) === [100 500],factory.rule.orderCountBetween,AUD-02,a_implementer
+F08-U-010,U,P0,AUD-F04,code pays valide accepté,isKnownCountry('MA') === true,countries.MA,AUD-07,a_implementer
+F08-U-011,U,P0,AUD-F04,code pays inconnu rejeté,isKnownCountry('XX') === false,countries.XX,AUD-07,a_implementer
+F08-U-012,U,P0,AUD-F04,alignement countries/compileur,chaque code COUNTRIES a un COUNTRY_CALLING_CODE et inversement,countries.all,AUD-07,a_implementer
+F08-U-013,U,P0,AUD-F04,conversion MAD->centimes,madToCents(500) === 50000,nominal,AUD-09,a_implementer
+F08-U-014,U,P1,AUD-F04,conversion centimes->MAD,centsToMad(50050) === 500.5,nominal,AUD-09,a_implementer
+F08-U-015,U,P1,AUD-F04,madToCents arrondit,madToCents(12.346) === 1235,nominal,AUD-09,a_implementer
+F08-U-016,U,P1,AUD-F04,country inconnu compile FALSE,compileCountry(eq 'XX') === FALSE,nominal,AUD-07,a_implementer
+F08-U-017,U,P1,AUD-F04,country in vide compile FALSE,compileCountry(in []) === FALSE,nominal,AUD-07,a_implementer
+F08-U-018,U,P2,AUD-F09,restitution FR order_total en MAD,ruleToText(order_total cents=50000) contient '500 MAD',factory.rule.orderTotal,nominal,a_implementer
+F08-U-019,U,P2,AUD-F09,restitution FR pays traduit,ruleToText(country MA) contient 'Maroc',factory.rule.country,nominal,a_implementer
+F08-U-020,U,P2,AUD-F09,restitution FR cas imbriqué,rulesGroupToLines(groupe ET>sous-groupe OU) produit lignes indentées avec 2 combinateurs,factory.group.nested,nominal,a_implementer
+F08-U-021,U,P1,AUD-F10,formule écart drift,driftPct(size=1100 live=1234) === 12 (arrondi),nominal,AUD-03,a_implementer
+F08-U-022,U,P1,AUD-F10,écart drift size=0,driftPct(size=0 live=5) ne divise pas par zéro via max(1 size),nominal,AUD-03,a_implementer
+F08-U-023,U,P2,AUD-F10,âge relatif il y a Nj,relativeAge(createdAt J-3) === 'il y a 3 j',clock.fixed,AUD-03,a_implementer
+F08-U-024,U,P2,AUD-F10,snapshotMembersToCsv échappe,csv d'un name avec virgule est entre guillemets doublés,factory.member.comma,AUD-06,a_implementer
+F08-U-025,U,P2,AUD-F03,defaultRule couvre 15 kinds,defaultRule(kind) parse contre RuleSchema pour les 15 kinds,nominal,AUD-08,a_implementer
+F08-C-026,C,P0,AUD-F05,menu tags grisés,les items tag du menu sont aria-disabled et suffixés '(bientôt — M5.5)',nominal,AUD-01,a_implementer
+F08-C-027,C,P0,AUD-F05,clic tag grisé sans effet,cliquer 'A le tag X' n'ajoute aucune règle au groupe,nominal,AUD-01,a_implementer
+F08-C-028,C,P1,AUD-F05,13 autres types ajoutables,chaque type non-tag du menu ajoute bien une règle,nominal,AUD-08,a_implementer
+F08-C-029,C,P0,AUD-F05,bannière règle tag existante,une audience legacy avec has_tag affiche la bannière rouge role=alert,factory.audience.legacyTag,AUD-01,a_implementer
+F08-C-030,C,P0,AUD-F05,tag existant bloque étape 2,Continuer affiche l'erreur 'règle tag inactive' et reste à l'étape 2,factory.audience.legacyTag,AUD-01,a_implementer
+F08-C-031,C,P1,AUD-F05,retrait règle tag débloque,✕ sur la règle tag retire la bannière et autorise Continuer,factory.audience.legacyTag,AUD-01,a_implementer
+F08-C-032,C,P0,AUD-F03,builder rend 15 éditeurs,chaque kind rendu via RuleEditor affiche son sous-éditeur sans crash,factory.rule.eachKind,AUD-08,a_implementer
+F08-C-033,C,P1,AUD-F03,ajout groupe niveau 1,'+ Ajouter un groupe OU' crée un rules-group-1 de combinateur inverse,nominal,AUD-08,a_implementer
+F08-C-034,C,P1,AUD-F03,imbrication 3 niveaux,on peut imbriquer rules-group-0>1>2 ; le bouton groupe disparaît au niveau 3,nominal,AUD-08,a_implementer
+F08-C-035,C,P1,AUD-F03,suppression sous-groupe,✕ 'Supprimer ce sous-groupe' retire le groupe et ses règles,factory.group.nested,AUD-08,a_implementer
+F08-C-036,C,P0,AUD-F03,mention ET/OU dès 1 règle,avec 1 règle la mention combinateur pédagogique est visible,nominal,AUD-08,a_implementer
+F08-C-037,C,P1,AUD-F03,toggle combinateur >=2 règles,le bouton ET/OU apparaît à 2 règles et bascule all<->any,nominal,AUD-08,a_implementer
+F08-C-038,C,P1,AUD-F04,between rend 2 inputs num,order_count between affiche borne basse et borne haute distinctes,factory.rule.orderCountBetween,AUD-02,a_implementer
+F08-C-039,C,P0,AUD-F04,erreur borne basse>haute,saisir [500 100] affiche '⚠ La borne basse doit être ≤ la borne haute' role=alert,nominal,AUD-02,a_implementer
+F08-C-040,C,P0,AUD-F04,bouton inverser les bornes,cliquer 'Inverser les bornes' réécrit value=[100 500] et efface l'erreur,nominal,AUD-02,a_implementer
+F08-C-041,C,P1,AUD-F04,erreur borne date inversée,created_at between [fin .. début] affiche l'erreur de borne,factory.rule.createdAtBetween,AUD-02,a_implementer
+F08-C-042,C,P1,AUD-F04,borne manquante bloque étape 2,un between avec une borne vide bloque Continuer (message dédié),nominal,AUD-02,a_implementer
+F08-C-043,C,P0,AUD-F04,order_total saisi MAD stocké cents,saisir 500 dans le champ MAD émet value=50000,nominal,AUD-09,a_implementer
+F08-C-044,C,P1,AUD-F04,helper équivalence centimes,order_total affiche '= 50 000 centimes' sous le champ,nominal,AUD-09,a_implementer
+F08-C-045,C,P0,AUD-F04,country in chips ajout,sélectionner MA puis FR crée 2 chips 🇲🇦 🇫🇷,nominal,AUD-09,a_implementer
+F08-C-046,C,P0,AUD-F04,country in chips retrait,✕ sur une chip retire le code de la value,nominal,AUD-05,a_implementer
+F08-C-047,C,P1,AUD-F04,email_pattern in chips trim,une valeur ' foo ' devient chip 'foo' (trimée),nominal,AUD-09,a_implementer
+F08-C-048,C,P1,AUD-F04,email_pattern in chips doublon,ajouter une valeur déjà présente ne crée pas de chip dupliquée,nominal,AUD-09,a_implementer
+F08-C-049,C,P1,AUD-F04,chips in vide bloque,retirer toutes les chips puis Continuer affiche 'Ajoutez au moins une valeur',nominal,AUD-09,a_implementer
+F08-C-050,C,P0,AUD-F04,bascule in->eq ConfirmDialog,passer de in[MA FR DZ] à eq ouvre un ConfirmDialog 'Ne conserver que 🇲🇦 Maroc ?',nominal,AUD-05,a_implementer
+F08-C-051,C,P0,AUD-F04,bascule in->eq annuler garde in,Annuler le dialog conserve operator=in et les 3 codes,nominal,AUD-05,a_implementer
+F08-C-052,C,P1,AUD-F04,bascule in->eq confirmer,Confirmer bascule operator=eq value=MA (1er code),nominal,AUD-05,a_implementer
+F08-C-053,C,P1,AUD-F04,bascule eq->in sans dialog,passer eq MA à in n'ouvre aucun dialog et donne value=[MA],nominal,AUD-05,a_implementer
+F08-C-054,C,P0,AUD-F04,code pays inconnu bloque étape 2,une audience portant country 'XX' bloque Continuer avec 'Code pays inconnu « XX »',factory.audience.badCountry,AUD-07,a_implementer
+F08-C-055,C,P1,AUD-F03,a11y builder fieldset/legend,chaque groupe est un fieldset avec legend annonçant le combinateur,nominal,AUD-08,a_implementer
+F08-C-056,C,P1,AUD-F03,axe builder smoke,axe sur le builder à 3 niveaux = 0 violation serious/critical,nominal,AUD-08,a_implementer
+F08-C-057,C,P0,AUD-F07,preview debounce 800ms,3 changements rapides de règle n'émettent qu'1 POST preview-size après 800ms,nominal,AUD-13,a_implementer
+F08-C-058,C,P0,AUD-F07,preview-size 200 nominal,un succès affiche '🎯 N contacts',nominal,nominal,a_implementer
+F08-C-059,C,P1,AUD-F07,preview-size 401,une réponse 401 affiche un message role=alert sans compteur,nominal,nominal,a_implementer
+F08-C-060,C,P1,AUD-F07,preview-size 422,une réponse 422 affiche l'erreur de validation,nominal,nominal,a_implementer
+F08-C-061,C,P1,AUD-F07,preview-size 500,une réponse 500 affiche role=alert et préserve les règles,nominal,nominal,a_implementer
+F08-C-062,C,P0,AUD-F07,preview-size hang,delay infini garde 'Calcul en cours…' et n'émet pas de second POST,nominal,nominal,a_implementer
+F08-C-063,C,P1,AUD-F07,preview-size network error,une erreur réseau affiche role=alert,nominal,nominal,a_implementer
+F08-C-064,C,P0,AUD-F07,preview-size timeout dédié,un 504/timeout affiche '⏱ Requête trop lourde — simplifiez…' (message dédié),nominal,AUD-13,a_implementer
+F08-C-065,C,P1,AUD-F07,preview-sample grille réseau,/preview-sample : 200/401/422/500/hang/network couverts,nominal,nominal,a_implementer
+F08-C-066,C,P0,AUD-F07,preview-breakdown arithmétique,le breakdown affiche 'N ciblés − M exclus = K envoyables' avec N−M=K,nominal,nominal,a_implementer
+F08-C-067,C,P1,AUD-F07,preview-breakdown grille réseau,/preview-breakdown : 200/401/422/500/hang/network couverts,nominal,nominal,a_implementer
+F08-C-068,C,P0,AUD-F10,snapshot cycle auto-refresh,pending->running->done : router.refresh appelé toutes les 4s tant que running (fake timers),nominal,AUD-03,a_implementer
+F08-C-069,C,P1,AUD-F10,auto-refresh stoppe à done,quand tous les snapshots sont done l'intervalle 4s est dégagé,nominal,AUD-03,a_implementer
+F08-C-070,C,P0,AUD-F10,errored relancer,un snapshot errored affiche erroredReason + bouton Relancer (POST manuel),factory.snapshot.errored,AUD-06,a_implementer
+F08-C-071,C,P1,AUD-F10,relancer anti double-clic,double-clic sur Relancer n'émet qu'un seul POST,factory.snapshot.errored,AUD-06,a_implementer
+F08-C-072,C,P0,AUD-F10,drift âge affiché,une ligne done affiche 'créé il y a 3 j',factory.snapshot.old,AUD-03,a_implementer
+F08-C-073,C,P0,AUD-F10,drift écart calculé,size=1100 live=1234 affiche '+134 (+12 %)',factory.snapshot.drift,AUD-03,a_implementer
+F08-C-074,C,P0,AUD-F10,drift surlignage >10%,un écart de 12 % surligne la ligne + bandeau '⚠ Écart > 10 %',factory.snapshot.drift,AUD-03,a_implementer
+F08-C-075,C,P1,AUD-F10,drift pas de surlignage <=10%,un écart de 8 % n'affiche pas le bandeau d'alerte,factory.snapshot.smallDrift,AUD-03,a_implementer
+F08-C-076,C,P1,AUD-F10,purge date affichée,une ligne affiche 'purge auto le JJ/MM',factory.snapshot.done,AUD-11,a_implementer
+F08-C-077,C,P0,AUD-F10,membres charger plus cumule,'Charger plus' fetch offset=50 et ajoute 50 membres sans doublon,factory.snapshot.members120,AUD-06,a_implementer
+F08-C-078,C,P1,AUD-F10,charger plus disparaît à l'épuisement,quand members.length === total le bouton Charger plus disparaît,factory.snapshot.members120,AUD-06,a_implementer
+F08-C-079,C,P1,AUD-F10,membres grille réseau,le fetch membres : 200/401/500/hang/404 couverts,nominal,AUD-06,a_implementer
+F08-C-080,C,P2,AUD-F10,export CSV lien,une ligne done expose un lien Exporter CSV ?format=csv,factory.snapshot.done,AUD-06,a_implementer
+F08-C-081,C,P1,AUD-F08,mode évaluation textes,l'étape 3 affiche les 2 radios avec leur texte détaillé verbatim,nominal,AUD-04,a_implementer
+F08-C-082,C,P2,AUD-F08,mode évaluation envoyé,sélectionner static envoie evaluationMode=static dans le payload,nominal,AUD-04,a_implementer
+F08-C-083,C,P1,AUD-F02,wizard slug immuable,en mode edit le champ slug est readOnly/disabled et exclu du PATCH,factory.audience.existing,nominal,a_implementer
+F08-C-084,C,P2,AUD-F02,wizard étapes,Continuer/Retour naviguent entre les 3 étapes ; récap restitue nom/slug,nominal,nominal,a_implementer
+F08-C-085,C,P1,AUD-F09,détail hint R-011,le détail d'une règle country affiche le hint 'préfixe téléphonique',factory.audience.country,nominal,a_implementer
+F08-C-086,C,P2,AUD-F09,détail hint absent si pas pays,une audience sans règle country n'affiche pas le hint R-011,factory.audience.noCountry,nominal,a_implementer
+F08-C-087,C,P0,AUD-F11,suppression ConfirmDialog,Supprimer ouvre le ConfirmDialog danger (focus Annuler) au lieu de window.confirm,nominal,TRV-01,a_implementer
+F08-C-088,C,P1,AUD-F11,suppression 1 seul DELETE,double-clic Supprimer n'émet qu'un seul DELETE,nominal,TRV-01,a_implementer
+F08-C-089,C,P1,AUD-F11,suppression échec garde dialog,un 500 garde le dialog ouvert + role=alert et la ligne audience reste,nominal,TRV-01,a_implementer
+F08-I-090,I,P0,AUD-F02,PATCH exclut slug,PATCH /audiences/:id ignore tout slug fourni (UpdateAudienceSchema sans slug),femiglow_test,nominal,a_implementer
+F08-I-091,I,P1,AUD-F02,PATCH 422 validation,un body invalide renvoie 422 avec issues,femiglow_test,nominal,a_implementer
+F08-I-092,I,P0,AUD-F10,snapshot idempotent snapshotKey,2 POST snapshot même snapshotKey renvoient le même snapshotId,femiglow_test,nominal,a_implementer
+F08-I-093,I,P1,AUD-F10,snapshot errored re-créable,un snapshot errored avec clé libérée permet un nouveau snapshot même clé,femiglow_test,nominal,a_implementer
+F08-I-094,I,P0,AUD-F07,preview-size timeout 504,une requête dépassant statement_timeout renvoie une erreur propre (pas 200 faux),femiglow_test,AUD-13,a_implementer
+F08-I-095,I,P0,AUD-F05,compiler tag conformité,une audience tag compilée ne cible personne sur femiglow_test (snapshot size=0),femiglow_test,AUD-01,a_implementer
+F08-I-096,I,P1,AUD-F10,membres pagination contrat,GET members limit/offset renvoie {members total limit offset} et 404 cross-audience,femiglow_test,AUD-06,a_implementer
+F08-I-097,I,P1,AUD-F07,contrat preview Zod,la réponse preview-size réelle parse avec le schéma du handler MSW,femiglow_test,nominal,a_implementer
+F08-E-098,E,P0,SM-F08-01,segment promo construit,création 'clientes fidèles Casablanca' avec bornes inversées corrigées + code pays liste → audience sauvée non vide,e2e.seed,metier,a_implementer
+F08-E-099,E,P0,SM-F08-02,campagne sur snapshot périmé évitée,un snapshot J-21 montre écart >10 % → l'opératrice re-snapshote avant l'envoi,e2e.seed,metier,a_implementer
+F08-E-100,E,P1,SM-F08-03,tag VIP neutralisé,le menu grise les tags et la bannière explique pourquoi ; aucune audience tag créée,e2e.seed,metier,a_implementer
+F08-A-101,A,P1,AUD-F03,axe page wizard étape 2,axe Playwright sur l'étape critères = 0 serious/critical,e2e.seed,nominal,a_implementer
+F08-A-102,A,P2,AUD-F09,axe page détail audience,axe Playwright sur la page détail = 0 serious/critical,e2e.seed,nominal,a_implementer

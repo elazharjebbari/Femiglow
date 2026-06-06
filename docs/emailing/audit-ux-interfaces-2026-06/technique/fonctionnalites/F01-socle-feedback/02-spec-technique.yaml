@@ -1,0 +1,185 @@
+# F01 — Socle de feedback & interaction — spec technique machine-readable
+# Emplacement code cible : src/components/admin/emails/ui/
+# Refs audit : TRV-01 TRV-02 TRV-05 TRV-07 TRV-08 TRV-09 TRV-10 DASH-07 DASH-08
+
+meta:
+  module_path: src/components/admin/emails/ui/
+  consumers_only: true          # seuls composants autorisés pour leur usage (règle lint)
+  axe_smoke: required           # axe jsdom sur chaque composant
+
+composants:
+
+  ConfirmDialog:                # SOC-F01 / TRV-01
+    fichier: ui/ConfirmDialog.tsx
+    hook: useConfirm()
+    props:
+      - { nom: open, type: boolean, defaut: false }
+      - { nom: title, type: string, defaut: null }
+      - { nom: body, type: ReactNode, defaut: null }
+      - { nom: confirmLabel, type: string, defaut: "Confirmer" }
+      - { nom: cancelLabel, type: string, defaut: "Annuler" }
+      - { nom: variant, type: "'default'|'danger'", defaut: "'default'" }
+      - { nom: requireText, type: "string | undefined", defaut: undefined }   # active la saisie > 50 éléments
+      - { nom: onConfirm, type: "() => void | Promise<void>", defaut: null }
+      - { nom: onCancel, type: "() => void", defaut: null }
+    etats_internes: [busy, typedText]
+    evenements: [onConfirm, onCancel]
+    clavier:
+      - { touche: Esc, effet: "ferme sans agir (= onCancel)" }
+      - { touche: Tab, effet: "focus piégé, ne sort pas du dialog" }
+      - { touche: Enter, effet: "soumet UNE fois ; ignoré si busy ou saisie invalide" }
+    focus:
+      initial: bouton Annuler
+      retour: élément déclencheur à la fermeture (succès/Esc/Annuler/backdrop)
+    aria: { role: dialog, aria-modal: "true", aria-labelledby: titre, aria-describedby: corps }
+    comportements:
+      - clic backdrop = onCancel
+      - "requireText défini → bouton confirmer disabled tant que trim(lower(typedText)) != trim(lower(requireText))"
+      - "onConfirm async : busy=true, aria-busy, label '<verbe>…', 1 seule invocation ; rejet => dialog reste ouvert + role=alert interne ; saisie préservée"
+      - "libellé bouton = verbe (jamais 'OK')"
+    dependances: [tokens]
+
+  Toast:                        # SOC-F02 / TRV-02
+    fichier: ui/toast.tsx
+    provider: ToastProvider     # monté 1x dans layout.tsx
+    hook: useToast()
+    api:
+      - { nom: success, signature: "(message, opts?:{duration?:number=4000}) => id" }
+      - { nom: error,   signature: "(message, opts?:{onRetry?:()=>void}) => id" }
+      - { nom: dismiss, signature: "(id) => void" }
+    etats_internes: "[toasts[] (id,tone,message,onRetry?,duration?)]"
+    timings: { success_dismiss_ms: 4000, error_dismiss: persistant }
+    cap_pile: 3                 # éviction du succès le plus ancien ; erreurs jamais évincées
+    clavier:
+      - { touche: Échap/croix, effet: "dismiss du toast focalisé" }
+    aria:
+      live_region_polite: 1     # UNE seule pour les succès
+      erreurs: role=alert
+      bouton_fermer: aria-label="Fermer"
+      bouton_retry: "name accessible 'Réessayer'"
+    comportements:
+      - "success interdit si res.ok === false (zéro faux succès) — responsabilité appelant, vérifié en test"
+      - "onRetry rejoue la MÊME action avec le MÊME état (sélection/saisie)"
+      - "empilement : plus récent en tête"
+    dependances: [tokens]
+    derogations: []
+
+  EmptyState:                   # SOC-F03 / TRV-09
+    fichier: ui/EmptyState.tsx
+    props:
+      - { nom: icon, type: ReactNode, defaut: null }
+      - { nom: title, type: string, defaut: null }
+      - { nom: body, type: ReactNode, defaut: null }
+      - { nom: cta, type: "{label, onClick?, href?} | undefined", defaut: undefined }
+      - { nom: variant, type: "'empty'|'filtered'", defaut: "'empty'" }
+    aria: { role: status, icone: aria-hidden }
+    comportements:
+      - "variant 'filtered' => texte explique le filtre + CTA 'Réinitialiser le filtre'"
+      - "variant 'empty' => explique l'absence + CTA création"
+
+  Freshness:                    # SOC-F04 / TRV-05 DASH-08
+    fichier: ui/Freshness.tsx
+    props:
+      - { nom: generatedAt, type: "string (ISO)", defaut: null }
+      - { nom: timeZone, type: string, defaut: "'Africa/Casablanca'" }
+      - { nom: autoRefresh, type: "{intervalMs, onRefresh} | undefined", defaut: undefined }
+    etats_internes: [now (tick), refreshing]
+    evenements: [onRefresh]
+    timings: { tick_ms: 1000, default_interval_ms: 60000 }
+    aria: { role: status, aria-live: polite, time: "datetime=ISO" }
+    comportements:
+      - "âge relatif FR : <60s 'il y a Ns', <60min 'il y a N min', sinon 'il y a N h'"
+      - "heure absolue formatée via formateur TZ central + libellé TZ visible"
+      - "auto-refresh SUSPENDU si document.hidden"
+      - "au visibilitychange->visible : reprise + onRefresh immédiat ; âge honnête (jamais réinitialisé sans refresh)"
+      - "bouton Rafraîchir : busy => 'Rafraîchissement…' + disabled (anti double-clic)"
+    dependances: [formateur-tz-central]
+
+  Wizard:                       # SOC-F05 / TRV-08
+    fichier: ui/Wizard.tsx
+    hook: useWizard()
+    api:
+      - { nom: current, type: number }
+      - { nom: maxValidated, type: number }
+      - { nom: goTo, signature: "(i) => void  # refusé si i > maxValidated+1" }
+      - { nom: next, signature: "() => void   # refusé + message si étape invalide" }
+      - { nom: prev, signature: "() => void" }
+      - { nom: isStepValid, signature: "(i) => boolean" }
+    props_provider:
+      - { nom: steps, type: "Step[] {id,title,validate}", defaut: null }
+      - { nom: persistKey, type: "string | undefined", defaut: undefined }
+      - { nom: onAutosave, type: "(state) => void  # debounced", defaut: undefined }
+    clavier:
+      - { touche: "Ctrl+ArrowRight", effet: "next() si valide" }
+      - { touche: "Ctrl+ArrowLeft",  effet: "prev()" }
+    focus: { a_chaque_etape: "titre de l'étape reçoit le focus" }
+    aria: { etape_active: 'aria-current="step"', barre: "liste d'étapes" }
+    comportements:
+      - "étape validée (i <= maxValidated) cliquable ; étape future inerte/aria-disabled"
+      - "next sur étape invalide : avancée bloquée + message role=alert PRÈS du bouton Suivant"
+      - "persistance : étape courante + données ; F5 => reprise exacte"
+
+  Pill:                         # SOC-F06 / TRV-07 DASH-07
+    fichier: ui/Pill.tsx
+    props:
+      - { nom: tone, type: "'success'|'warning'|'danger'|'info'|'neutral'", defaut: "'neutral'" }
+      - { nom: label, type: string, defaut: null }
+    maps:
+      - STATUS_META            # email_outbox_status -> {label FR, tone}
+      - CAMPAIGN_STATUS_META   # email_campaign_status -> {label FR, tone}
+    aria: { role: status, point_decoratif: aria-hidden }
+    comportements:
+      - "statut inconnu => label 'Inconnu' tone neutral (jamais le slug brut)"
+      - "STATUS_META exhaustif vs enum email_outbox_status (test de contrat statique)"
+      - "KpiCards consomme le map unique (suppression du doublon DASH-07)"
+
+  use-dirty-guard:              # SOC-F07 / TRV-10
+    fichier: ui/use-dirty-guard.ts
+    api: "useDirtyGuard(isDirty: boolean, opts?:{message?:string})"
+    comportements:
+      - "isDirty=true => handler beforeunload armé (invite native navigateur)"
+      - "navigation in-app interceptée => ConfirmDialog 'Modifications non enregistrées'"
+      - "isDirty=false (après save) => handler retiré, navigation libre"
+
+  tokens:                       # SOC-F08 / info design
+    fichier: ui/tokens.ts
+    valeurs:
+      success: emerald (50/300/700)
+      danger:  rose (50/300/700)
+      warning: amber (50/300/800)
+      info:    sky (50/300/700)
+      neutral: stone
+    interdits_dans_admin_emails: [sage-, red-, blue-]   # hors liste blanche
+
+# ---------------------------------------------------------------------------
+invariants_transverses:        # les 8 standards du 03-plan-conception §3, en assertions
+  INV-1_destructif_confirm:
+    assert: "tout geste destructif passe par ConfirmDialog ; focus initial=Annuler ; Esc=annule ; bouton=verbe ; conséquences explicites ; saisie de confirmation si > 50 éléments irréversibles"
+  INV-2_succes_toast_4s:
+    assert: "mutation réussie => toast succès auto-dismiss 4000 ms, libellé RÉSULTAT, jamais 'opération effectuée'"
+  INV-3_echec_persistant:
+    assert: "mutation échouée => toast/bandeau role=alert persistant, message actionnable, Réessayer rejoue la même action avec le même état (sélection préservée)"
+  INV-4_freshness_tz:
+    assert: "donnée affichée > 60 s de validité => Freshness visible ; toute heure porte une TZ explicite"
+  INV-5_empty_state:
+    assert: "liste vide => EmptyState : pourquoi vide + action suivante"
+  INV-6_dirty_guard:
+    assert: "formulaire sale => garde de sortie (beforeunload + interception navigation in-app)"
+  INV-7_loading_busy:
+    assert: "chargement => skeleton role=status (jamais page blanche) ; bouton en cours => libellé dédié + aria-busy ; 1 seule requête"
+  INV-8_clavier:
+    assert: "tout parcours réalisable sans souris ; wizards Ctrl+←/→ ; focus visible ; aucune perte de focus après action"
+
+# ---------------------------------------------------------------------------
+verrouillages:                 # règles lint/grep/AST — échec = build rouge
+  no_window_confirm:
+    regle: "ESLint no-restricted-syntax : window.confirm / window.alert interdits dans components/admin/emails/** et app/admin/emails/**"
+    remplacement: ConfirmDialog
+  no_locale_string_direct:
+    regle: "toLocaleString/toLocaleTimeString direct interdit (passer par formateur TZ central)"
+  tokens_interdits:
+    regle: "test U (grep AST) échoue si 'sage-' | 'red-' | 'blue-' apparaît dans components/admin/emails/** hors liste blanche"
+  status_meta_exhaustif:
+    regle: "test U échoue si un membre de l'enum email_outbox_status n'a pas d'entrée STATUS_META (verrouille TRV-07)"
+  toast_provider_unique:
+    regle: "une seule region aria-live polite emails (pas de collision avec les live-regions existantes du cockpit / admin-legal Toast)"

@@ -1,0 +1,225 @@
+# F02 — Navigation : spécification technique
+# Périmètre NAV-F01..NAV-F06. Réfs audit : TRV-03, SUP-01, CAMP-08, DASH-10, DASH-12.
+# Doctrine : aucune requête bloquante au rendu RSC ; dégradation silencieuse des badges.
+
+feature: F02-navigation
+refs_audit: [TRV-03, SUP-01, CAMP-08, DASH-10, DASH-12]
+
+# ---------------------------------------------------------------------------
+# 1. COMPOSANTS
+# ---------------------------------------------------------------------------
+composants:
+
+  EmailsTabs:
+    fichier_cible: src/components/admin/emails/EmailsTabs.tsx
+    type: client_component        # lit usePathname + fetch badges côté navigateur
+    rendu_dans: src/app/admin/emails/layout.tsx   # persistante sur /admin/emails/*
+    contrainte_rsc: >
+      Le layout reste un Server Component qui rend la STRUCTURE des onglets
+      (liste statique connue). EmailsTabs n'effectue AUCUN fetch pendant le rendu
+      serveur. Le fetch nav-counters est post-hydratation (client).
+    props:
+      activeKey:
+        type: "SectionKey | null"
+        source: "dérivé de usePathname() côté client (sécurité : peut aussi être passé par le layout via une fonction pure pour SSR cohérent)"
+        note: un seul onglet actif ; null si route inconnue (aucun faux actif)
+    etats_internes:
+      counters:
+        type: "NavCounters | null"
+        init: null               # null => aucun badge au premier rendu (pas de skeleton)
+      lastKnownCounters:
+        type: "NavCounters | null"
+        note: conserve les derniers compteurs valides pour ne pas clignoter sur échec de refresh
+      refreshSuspended:
+        type: boolean
+        source: document.hidden / visibilitychange  # suspend le polling onglet caché
+    sections_ordre_canonique:           # ORDRE FIGÉ (cf. navigation.puml cible)
+      - { key: dashboard,     label: "Dashboard",      base: "/admin/emails",                badge: null }
+      - { key: transactional, label: "Transactionnel", base: "/admin/emails/transactional",  badge: "dlq" }
+      - { key: campaigns,     label: "Campagnes",      base: "/admin/emails/campaigns",      badge: null }
+      - { key: automation,    label: "Automations",    base: "/admin/emails/automation",     badge: "automationErrors" }
+      - { key: audiences,     label: "Audiences",      base: "/admin/emails/audiences",      badge: null }
+      - { key: templates,     label: "Templates",      base: "/admin/emails/templates",      badge: null }
+      - { key: suppression,   label: "Suppression",    base: "/admin/emails/suppression",    badge: null }
+      - { key: events,        label: "Events",         base: "/admin/emails/events",         badge: null }
+      - { key: listmonk,      label: "Listmonk",       base: "/admin/emails/listmonk",       badge: "listmonkSyncFailed" }
+    badges:
+      seuil_masque: 0            # valeur 0 => pas de pastille
+      seuil_affiche: ">= 1"
+      plafond_visuel: "99+"      # > 99 affiché "99+" (capage CLIENT)
+      tokens:
+        dlq: danger
+        automationErrors: danger
+        listmonkSyncFailed: warning
+      tooltip:
+        dlq: "{n} message(s) en DLQ"
+        automationErrors: "{n} run(s) en erreur"
+        listmonkSyncFailed: "Synchro Listmonk en échec"
+      libelle_accessible: "{label}, {tooltip}"   # badge annoncé en texte, pas couleur seule
+    responsive:
+      mode: overflow-x-auto      # défile horizontalement, jamais de menu "…" caché
+      contrainte: respecte min-w-0 du <main> AdminShell (pas de scroll page)
+    a11y:
+      nav_label: "Sections emails"
+      active_attr: 'aria-current="page"'
+      actif_non_couleur_seule: true
+      clavier: "Tab atteint chaque onglet (liens) ; Entrée active"
+    refresh:
+      intervalle_ms: 30000       # aligné TTL serveur
+      suspendu_si: document.hidden
+      reprise: visibilitychange (revient au premier plan)
+      sur_echec: conserver lastKnownCounters (pas de clignotement vers 'sans badge')
+
+  Breadcrumb:
+    fichier: src/components/admin/emails/common/Breadcrumb.tsx   # EXISTANT, réutilisé
+    type: presentationnel_rsc    # pas de 'use client', pas de fetch
+    apport_f02: mapping route->segments + adoption sur tous les écrans
+    racine: "EMAILS_ROOT = { label: 'Emails', href: '/admin/emails' }"
+    invariant: dernier segment aria-current=page, sans href ; jamais d'objet vide (fallback id tronqué)
+
+  GlobalCommandPalette:
+    fichier: src/components/admin/emails/GlobalCommandPalette.tsx   # EXISTANT, enrichi
+    type: client_component
+    enrichissements:
+      - ajouter entrée Navigation 'Suppression'
+      - ajouter entrée Navigation 'Runs automations'
+      - placeholder mentionnant Cmd-K ET Ctrl-K
+      - vérifier présence des 9 sections en groupe Navigation
+
+# ---------------------------------------------------------------------------
+# 2. ENDPOINT nav-counters
+# ---------------------------------------------------------------------------
+endpoint:
+  route: /api/admin/emails/nav-counters
+  fichier_cible: src/app/api/admin/emails/nav-counters/route.ts
+  methode: GET
+  runtime: nodejs
+  dynamic: force-dynamic        # auth par requête, JAMAIS cachée
+  auth:
+    appel: "await requireAdmin('/api/admin/emails/nav-counters')"
+    non_authentifie: 401        # route API : pas de redirect HTML
+  reponse_zod:
+    schema_nom: navCountersSchema
+    forme: |
+      z.object({
+        dlq: z.number().int().nonnegative(),
+        automationErrors: z.number().int().nonnegative(),
+        listmonkSyncFailed: z.number().int().nonnegative(),
+        generatedAt: z.string().datetime(),
+      })
+    exemple_200: |
+      { "dlq": 3, "automationErrors": 2, "listmonkSyncFailed": 0,
+        "generatedAt": "2026-06-06T10:21:00.000Z" }
+  codes_erreur:
+    200: corps conforme navCountersSchema
+    401: "{ error: 'unauthorized' } — non authentifié"
+    500: "{ error: string } — DB injoignable / calcul KO ; client dégrade sans badge"
+  cache:
+    mecanisme: unstable_cache
+    revalidate_s: 30            # EXPLICITE — OBLIGATOIRE
+    gotcha: >
+      unstable_cache SANS revalidate garde la valeur INDÉFINIMENT (gotcha
+      i18n-bindings / analytics-insights). Le TTL 30 s est non négociable :
+      l'omettre figerait les badges. Interdit en revue.
+    tag: emails-nav-counters    # invalidation ciblée éventuelle
+    invariant_testable: "2 appels < 30 s => 1 seule requête DB (compteur de requêtes)"
+    portee: "seul le CALCUL des compteurs est mémoïsé ; l'auth ne l'est jamais"
+  sources_donnees:
+    dlq: "COUNT outbox en état DLQ (mort-lettre / non relançable)"
+    automationErrors: "COUNT runs automation statut 'errored' actifs (def. alignée HealthBadge)"
+    listmonkSyncFailed: "COUNT campaign_link avec last_sync_ok=false (cf. LMK-F04) ; 0 si table absente"
+    cap_serveur_optionnel: 1000  # évite un COUNT massif ; capage visuel 99+ reste côté client
+  contrat:
+    test_conformite: "la réponse réelle parse avec navCountersSchema (le mock MSW ne peut pas mentir)"
+
+# ---------------------------------------------------------------------------
+# 3. MAPPING route -> onglet actif (règle : 1er segment après /admin/emails)
+# ---------------------------------------------------------------------------
+mapping_route_onglet:
+  algo: >
+    strip préfixe '/admin/emails' ; lire le 1er segment restant ;
+    '' => dashboard ; sinon match exact du segment sur une clé de section ;
+    aucune correspondance => null (aucun onglet actif).
+  exemples:
+    "/admin/emails":                          dashboard
+    "/admin/emails/":                          dashboard
+    "/admin/emails/transactional":             transactional
+    "/admin/emails/transactional/abc123":      transactional
+    "/admin/emails/campaigns":                 campaigns
+    "/admin/emails/campaigns/new":             campaigns
+    "/admin/emails/campaigns/42/edit":         campaigns
+    "/admin/emails/automation":                automation
+    "/admin/emails/automation/new":            automation
+    "/admin/emails/automation/runs":           automation
+    "/admin/emails/automation/runs/9":         automation
+    "/admin/emails/audiences/new":             audiences
+    "/admin/emails/templates/7/edit":          templates
+    "/admin/emails/suppression":               suppression
+    "/admin/emails/events":                    events
+    "/admin/emails/listmonk":                  listmonk
+    "/admin/emails/listmonk/campaigns/3":      listmonk
+    "/admin/emails/inexistant":                null
+
+# ---------------------------------------------------------------------------
+# 4. MAPPING route -> breadcrumb (segments)
+# ---------------------------------------------------------------------------
+mapping_route_breadcrumb:
+  racine_implicite: "{ label: 'Emails', href: '/admin/emails' }"   # toujours segment 0
+  routes:
+    "/admin/emails":                       ["Emails"]
+    "/admin/emails/transactional":         ["Emails", "Transactionnel"]
+    "/admin/emails/transactional/<id>":    ["Emails", "Transactionnel", "Message <id>"]
+    "/admin/emails/campaigns":             ["Emails", "Campagnes"]
+    "/admin/emails/campaigns/new":         ["Emails", "Campagnes", "Nouvelle campagne"]
+    "/admin/emails/campaigns/<id>":        ["Emails", "Campagnes", "<nom>"]
+    "/admin/emails/campaigns/<id>/edit":   ["Emails", "Campagnes", "<nom>", "Édition"]
+    "/admin/emails/automation":            ["Emails", "Automations"]
+    "/admin/emails/automation/new":        ["Emails", "Automations", "Nouvelle automation"]
+    "/admin/emails/automation/<id>/edit":  ["Emails", "Automations", "<nom>", "Édition"]
+    "/admin/emails/automation/runs":       ["Emails", "Automations", "Runs"]
+    "/admin/emails/automation/runs/<id>":  ["Emails", "Automations", "Runs", "Run <id>"]
+    "/admin/emails/audiences":             ["Emails", "Audiences"]
+    "/admin/emails/audiences/new":         ["Emails", "Audiences", "Nouvelle audience"]
+    "/admin/emails/audiences/<id>":        ["Emails", "Audiences", "<nom>"]
+    "/admin/emails/templates":             ["Emails", "Templates"]
+    "/admin/emails/templates/new":         ["Emails", "Templates", "Nouveau template"]
+    "/admin/emails/templates/<id>/edit":   ["Emails", "Templates", "<nom>", "Édition"]
+    "/admin/emails/suppression":           ["Emails", "Suppression"]
+    "/admin/emails/events":                ["Emails", "Events"]
+    "/admin/emails/listmonk":              ["Emails", "Listmonk"]
+  regles:
+    - segment intermediaire (section) cliquable (href = base section)
+    - dernier segment non cliquable (page courante, aria-current=page)
+    - libelle d'objet fourni par la page (donnees deja chargees) ; AUCUN fetch breadcrumb
+    - fallback id tronque si nom indisponible
+
+# ---------------------------------------------------------------------------
+# 5. ENTREES PALETTE (registry cible)
+# ---------------------------------------------------------------------------
+entrees_palette:
+  placeholder: "Rechercher… (Cmd-K / Ctrl-K)"
+  navigation:
+    - { id: nav-dashboard,        label: "Dashboard emails",        href: "/admin/emails" }
+    - { id: nav-transactional,    label: "Emails transactionnels",  href: "/admin/emails/transactional" }
+    - { id: nav-campaigns,        label: "Campagnes",               href: "/admin/emails/campaigns" }
+    - { id: nav-automation,       label: "Automatisations",         href: "/admin/emails/automation" }
+    - { id: nav-automation-runs,  label: "Runs automations",        href: "/admin/emails/automation/runs" }
+    - { id: nav-audiences,        label: "Audiences",               href: "/admin/emails/audiences" }
+    - { id: nav-templates,        label: "Templates HTML",          href: "/admin/emails/templates" }
+    - { id: nav-suppression,      label: "Suppression",             href: "/admin/emails/suppression" }   # REINTEGRE (SUP-01/DASH-10)
+    - { id: nav-events,           label: "Events (debug)",          href: "/admin/emails/events" }
+    - { id: nav-listmonk,         label: "Listmonk (admin natif)",  href: "/admin/emails/listmonk" }
+  actions:
+    - { id: new-campaign,   label: "Nouvelle campagne",   href: "/admin/emails/campaigns/new",  hint: "créer" }
+    - { id: new-automation, label: "Nouvelle automation", href: "/admin/emails/automation/new", hint: "créer" }
+    - { id: new-audience,   label: "Nouvelle audience",   href: "/admin/emails/audiences/new",  hint: "créer" }
+    - { id: new-template,   label: "Nouveau template",    href: "/admin/emails/templates/new",  hint: "créer" }
+
+# ---------------------------------------------------------------------------
+# 6. ROUTE /campaigns/new
+# ---------------------------------------------------------------------------
+route_campaigns_new:
+  fichier_cible: src/app/admin/emails/campaigns/new/page.tsx
+  comportement: redirect vers le flux de creation de campagne (cohérence /new des autres sections)
+  invariant: ne renvoie JAMAIS 404 ; palette + breadcrumb coherents
+  refs: [NAV-F06, CAMP-08]

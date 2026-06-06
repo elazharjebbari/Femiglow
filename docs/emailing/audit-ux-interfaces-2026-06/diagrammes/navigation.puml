@@ -1,0 +1,70 @@
+@startuml navigation
+' Carte de navigation de la section /admin/emails — état ACTUEL vs CIBLE
+' Audit UX 2026-06-06. Rendu : plantuml -tsvg navigation.puml
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor #57534e
+}
+
+title Navigation section emails — actuel (haut) vs cible (bas)
+
+package "ACTUEL — navigation fragmentée (TRV-03)" {
+  rectangle "AdminShell sidebar\n(1 seule entrée « Emails »)" as shell
+  rectangle "/admin/emails\nDashboard\n(7 quick-links)" as dash
+  rectangle "Palette ⌘K\n(12 routes + 4 actions)" as palette
+
+  rectangle "/transactional\nCockpit" as tx
+  rectangle "/transactional/[id]" as txd
+  rectangle "/campaigns" as camp
+  rectangle "/campaigns/[id]" as campd
+  rectangle "/campaigns/[id]/edit\nWizard 6 étapes" as campe
+  rectangle "/automation" as auto
+  rectangle "/automation/new|[id]/edit\nWizard 4 étapes" as autoe
+  rectangle "/automation/runs(/[id])" as runs
+  rectangle "/audiences (+new, [id], edit)" as aud
+  rectangle "/templates (+new, [id]/edit)" as tpl
+  rectangle "/events" as evt
+  rectangle "/listmonk/[[...path]]\niframe sous-domaine" as lmk
+  rectangle "/suppression\n⚠ ORPHELINE (SUP-01) :\nni quick-link ni sidebar" as sup #fff1f2
+
+  shell --> dash
+  dash --> tx
+  dash --> camp
+  dash --> auto
+  dash --> aud
+  dash --> tpl
+  dash --> evt
+  dash --> lmk
+  palette ..> tx
+  palette ..> camp
+  tx --> txd
+  camp --> campd
+  campd --> campe
+  auto --> autoe
+  auto --> runs
+  txd ..> sup : deep-link ?email=\n(seul chemin découvrable)
+
+  note right of dash
+    Problèmes :
+    - retour au hub obligatoire pour changer de section
+    - pas d'état actif ; libellés retour incohérents
+    - pas de /campaigns/new (CAMP-08)
+  end note
+}
+
+package "CIBLE — barre d'onglets persistante (chantier C2)" {
+  rectangle "layout.tsx /admin/emails\n[Dashboard][Transactionnel·DLQ:3][Campagnes][Automations·err:2]\n[Audiences][Templates][Suppression][Events][Listmonk]" as tabs #ecfdf5
+  rectangle "Breadcrumb harmonisé\nEmails › {Section} › {Objet}" as bc #ecfdf5
+  rectangle "Palette ⌘K\n(+ Suppression, + actions contextuelles)" as palette2 #ecfdf5
+  tabs --> bc
+  tabs ..> palette2
+  note bottom of tabs
+    - onglet actif visible partout, navigation en 1 clic
+    - badges compteurs live (DLQ, runs en erreur)
+    - Suppression réintégrée
+  end note
+}
+@enduml

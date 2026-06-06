@@ -1,0 +1,230 @@
+# F06 — Automations — spec technique machine-readable
+# Refs audit : AUTO-01..AUTO-16  (R-031)
+# Code cible :
+#   - components/admin/emails/automation/FlowView.tsx                 (nouveau)
+#   - components/admin/emails/automation/RunTimeline.tsx              (nouveau)
+#   - components/admin/emails/automation/DryRunDialog.tsx             (nouveau)
+#   - app/api/admin/emails/automation/[id]/dry-run/route.ts          (nouveau)
+#   - lib/mail/automation/trace.ts            (schéma TraceEntry + writer runner)
+#   - lib/mail/automation/dry-run.ts          (runner dry, sans effet de bord en simulate)
+#   - lib/admin/emails/automation-actions.ts  (resetAndReplayRun, softDeleteAutomation)
+#   - lib/mail/automation/frequency.ts        (checkDailyCap : WHERE NOT is_dry_run)
+
+meta:
+  module_path: src/components/admin/emails/automation/
+  axe_smoke: required
+  no_engine_dispatch_change: true     # F06 ne modifie PAS la logique de dispatch/step ; il instrumente + lit
+  migrations_ref: 02-modele-donnees.md#F06   # deleted_at, is_dry_run, _trace (JSONB existant)
+
+# ───────────────────────────────────────────────────────────────────────────
+# 1. Schéma Zod de la trace d'exécution (_trace)
+# ───────────────────────────────────────────────────────────────────────────
+schemas:
+
+  StepPath:
+    description: "adressage d'un step dans l'arbre, IDENTIQUE au runner (step-path.ts)"
+    zod: |
+      z.array(z.union([z.number().int().min(0), z.literal('ifTrue'), z.literal('ifFalse')]))
+        .max(12)            // MAX_PATH_DEPTH moteur
+    invariants:
+      - "un segment 'ifTrue'/'ifFalse' est TOUJOURS précédé d'un number (isValidPath)"
+
+  StepKind:
+    zod: "z.enum(['wait','send','branch','tag','update_lead','webhook','wait_for_event'])"
+
+  TraceEntry:                # AUTO-02 / AUTO-10 / AUTO-11
+    fichier: lib/mail/automation/trace.ts
+    zod: |
+      z.object({
+        stepIdx:    StepPathSchema,
+        kind:       StepKindSchema,
+        startedAt:  z.string().datetime(),
+        finishedAt: z.string().datetime().nullable(),
+        outcome:    z.enum(['ok','deferred','skipped','error']),
+        detail:     z.string().max(500).optional(),
+        meta:       z.record(z.string(), z.unknown()).optional(),
+      })
+    trace_array:
+      zod: "z.array(TraceEntrySchema).max(500)"   # cap de taille : évite le gonflement de contextJson (risque §5)
+      stockage: "contextJson._trace (JSONB existant — aucune migration)"
+      append_only: true
+    meta_conventions:
+      send_ok:     "{ template, outboxId, simulated?:boolean }"
+      deferred:    "{ deferredUntil:ISO }"          # quiet hours
+      skipped_cap: "{ capCount:number, capLimit:number }"
+      skipped_cd:  "{ cooldownWindow:number, lastRunAt:ISO }"
+      sweep:       "{ sweep:true }"                 # entrée posée par orphan-sweep
+    rétro_compat:
+      run_sans_trace: "_trace absent OU [] → la timeline retombe en mode legacy (sans timing)"
+
+  TraceArchive:
+    zod: "z.array(z.array(TraceEntrySchema)).max(20)"   # contextJson._traceArchive — replay empile l'ancien _trace
+    description: "trace(s) des run(s) précédents conservées au replay (jamais effacées)"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 2. Contrat API dry-run
+# ───────────────────────────────────────────────────────────────────────────
+endpoints:
+
+  dry_run:                   # AUTO-03 / AUT-F09
+    route: POST /api/admin/emails/automation/[id]/dry-run
+    auth: requireAdmin -> 401/403
+    request_zod: |
+      z.object({
+        testContact: z.string().email(),
+        mode: z.enum(['simulate','redirect']).default('simulate'),
+      })
+    response_200_zod: |
+      z.object({
+        runId: z.string(),
+        isDryRun: z.literal(true),
+        mode: z.enum(['simulate','redirect']),
+        trace: z.array(TraceEntrySchema),
+      })
+    erreurs:
+      - { code: 401, quand: "non authentifié" }
+      - { code: 404, quand: "automation introuvable OU deleted_at non null" }
+      - { code: 422, quand: "testContact invalide / mode inconnu (détail Zod)" }
+      - { code: 500, quand: "erreur interne — AUCUN run dry laissé en running incohérent" }
+    garanties:
+      - "mode=simulate : sendTransactional JAMAIS appelé → 0 ligne email_outbox créée"
+      - "mode=simulate : webhook/tag/update_lead JAMAIS exécutés (tracés simulated)"
+      - "mode=redirect : outbox créé UNIQUEMENT vers testContact (jamais le destinataire métier)"
+      - "le run créé porte is_dry_run=true"
+      - "exécution synchrone jusqu'au 1er point d'attente (wait/wait_for_event) ou complétion ; renvoie la trace"
+      - "double POST (double-clic) → 1 seul run créé (bouton aria-busy/disabled pendant l'exécution)"
+    contrat_test: "la réponse du handler MSW parse avec response_200_zod (conformité §3.2 stratégie)"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 3. Server actions (ActionResult { ok, message })
+# ───────────────────────────────────────────────────────────────────────────
+actions:
+
+  resetAndReplayRun:         # AUTO-06 / AUT-F10
+    fichier: lib/admin/emails/automation-actions.ts
+    signature: "(prev|FormData, FormData?) => Promise<ActionResult>"
+    auth: requireAdmin
+    préconditions:
+      - "run existe"
+      - "run.status ∈ {completed, errored, cancelled}  (terminal)"
+      - "automation parente existe (sinon refus)"
+    effet:
+      - "contextJson._traceArchive.push(contextJson._trace ?? [])"
+      - "set currentStep=0, contextJson._path=[0], _trace=[], status='running', nextActionAt=now"
+      - "clear outboxIds=[], erroredReason/_deferredReason/_skippedReason/_cancelledReason"
+      - "audit-log mail.automation.run_replayed ; revalidatePath runs + detail"
+    erreurs_typées:
+      - { ok: false, code: not_found,      message: "Run introuvable." }
+      - { ok: false, code: not_terminal,   message: "Seuls les runs terminés/en erreur/annulés peuvent être rejoués (ce run est en cours)." }
+      - { ok: false, code: no_automation,  message: "Automation parente supprimée — replay impossible." }
+    succès: { ok: true, message: "Run réinitialisé — il repart depuis la première étape au prochain tick." }
+
+  softDeleteAutomation:      # AUTO-12 / R-031 / AUT-F12  (REMPLACE deleteAutomation DELETE brut)
+    fichier: lib/admin/emails/automation-actions.ts
+    signature: "(prev|FormData, FormData?) => Promise<ActionResult>"
+    auth: requireAdmin
+    refus_si:
+      requête: "EXISTS run WHERE automation_id=? AND status IN ('running','waiting_for_event')"
+    effet_succès:
+      - "UPDATE email_automation SET deleted_at=now() WHERE id=? AND deleted_at IS NULL"
+      - "AUCUN DELETE physique (FK RESTRICT préservée — R-031 corrigé)"
+      - "audit-log mail.automation.soft_deleted ; revalidatePath liste"
+    erreurs_typées:
+      - { ok: false, code: not_found,        message: "Automation introuvable." }
+      - { ok: false, code: has_active_runs,  message: "Suppression refusée : {n} run(s) actif(s) ({r} en cours, {w} en attente d'événement). Annulez-les ou attendez leur fin." }
+    succès: { ok: true, message: "Automation supprimée (ses runs passés restent consultables)." }
+    note: "l'ancien deleteAutomation (DELETE brut) est SUPPRIMÉ — plus aucune référence (non-régression)"
+
+  # actions existantes conservées telles quelles (référence) :
+  retryAutomationRun:  { existant: true, effet: "reprend AU STEP COURANT (≠ replay) ; refuse si status≠errored" }
+  cancelAutomationRun: { existant: true }
+  toggleAutomationActive: { existant: true }
+
+# ───────────────────────────────────────────────────────────────────────────
+# 4. Composants
+# ───────────────────────────────────────────────────────────────────────────
+composants:
+
+  FlowView:                  # AUTO-01 / AUT-F04
+    fichier: components/admin/emails/automation/FlowView.tsx
+    read_only: true
+    props:
+      - { nom: steps,       type: "AutomationStep[]", requis: true }
+      - { nom: mode,        type: "'review' | 'run'", defaut: "'review'" }
+      - { nom: currentPath, type: "StepPath | undefined", defaut: undefined, note: "mode='run' : étape surlignée" }
+      - { nom: runStatus,   type: "RunStatus | undefined", defaut: undefined, note: "mode='run' : errored => étape rouge" }
+    rendu:
+      indentation: "1 cran fixe par niveau de branche, connecteur vertical + L"
+      numérotation: "dérivée du path : racine #1,#2 ; sous-branche #3a,#3b (jamais stockée)"
+      branche_vide: "nœud explicite « (branche vide → continue) » (pas de colonne blanche)"
+      profondeur: "arbitraire jusqu'au cap moteur (MAX_PATH_DEPTH=12) ; 3 niveaux imbriqués supportés"
+      fin: "pastille (fin) après le dernier nœud racine"
+      vide_total: "EmptyState « Aucune étape »"
+    états_noeud_mode_run:    # stateFor(path,currentPath,runStatus)
+      - { état: current,  quand: "path==currentPath & run non terminal",        rendu: "amber, « En cours »" }
+      - { état: error,    quand: "path==currentPath & runStatus=='errored'",    rendu: "rose, « ERREUR » + raison" }
+      - { état: done,     quand: "rang(path)<rang(currentPath) OU run terminal", rendu: "atténué, « Fait »" }
+      - { état: upcoming, quand: "rang(path)>rang(currentPath)",                rendu: "pointillé, « À venir »" }
+    ordre: "linéarisation par parcours préfixe (même que nextPath) ; comparaison de RANGS, pas de segments"
+    a11y: "structure de liste (ol/ul imbriqués) ; états annoncés en texte (pas couleur seule)"
+
+  RunTimeline:               # AUTO-02 / AUTO-10 / AUTO-11 / AUT-F08
+    fichier: components/admin/emails/automation/RunTimeline.tsx
+    props:
+      - { nom: trace,    type: "TraceEntry[]", requis: true }
+      - { nom: steps,    type: "AutomationStep[]", requis: true, note: "pour libellés FR" }
+      - { nom: fallback, type: "{ ctx, currentStep } | undefined", note: "legacy si trace vide" }
+    rendu_par_entrée:
+      - "pastille résultat : ok=✓ deferred=⏸ skipped=⤼ error=✗"
+      - "n° step dérivé de stepIdx (#3a) + icône kind + libellé FR"
+      - "horodatage startedAt→finishedAt + durée ; finishedAt null → « en cours… »"
+      - "detail humanisé inline (deferred/skipped/error)"
+      - "meta.sweep=true → tag « sweep » + phrase « ré-armé par le balayage … »"
+    rétro_compat: "trace vide/absent → rendu legacy (liste steps + encarts _deferred/_skipped/_cancelled) + bandeau « run antérieur à l'instrumentation »"
+
+  DryRunDialog:              # AUTO-03 / AUT-F09
+    fichier: components/admin/emails/automation/DryRunDialog.tsx
+    déclencheur: "bouton [Tester ▾] (détail automation + revue wizard)"
+    champs:
+      - { nom: testContact, type: select_email, défaut: "session.email" }
+      - { nom: mode, type: radio, options: ["simulate (aucun envoi, trace complète)", "redirect (envoi réel redirigé vers ma boîte)"], défaut: simulate }
+    soumission: "POST dry-run ; pendant : bouton aria-busy/disabled (1 requête) ; succès → ouvre RunTimeline du runId, badge « test »"
+    grille_réseau: requis   # 6 cas
+
+  # micro-correctifs (composants existants à amender)
+  FrequencySettings_label:   # AUTO-04
+    fichier: components/admin/emails/automation/FrequencySettings.tsx
+    avant: "Plafond d'envois par jour (par destinataire)"
+    après: "Plafond global d'envois / jour pour cette automation"
+    sous_texte: "tous destinataires confondus"
+
+  AutomationWizard_event_optgroup:   # AUTO-08
+    select_evenement: "<optgroup label={category}> par lifecycle/commerce/email/engagement/form (AUTOMATION_EVENT_CATALOG)"
+
+  AutomationWizard_onTimeout_phrase: # AUTO-14
+    wait_for_event:
+      continue: "Au bout de {formatDuration(timeoutMs)}, le run continue à l'étape suivante."
+      abort:    "Au bout de {formatDuration(timeoutMs)}, le run est abandonné."
+
+  AutomationWizard_review_blockers:  # AUTO-09
+    revue: "liste des raisons de blocage d'activation rendue JUSTE au-dessus du bouton Activer"
+
+  AutomationList_badge:      # AUTO-05
+    badge: "[Non opérationnel] amber pour triggerType ∈ {schedule, webhook} en LISTE et dans le sélecteur du wizard"
+
+  RunsList_count:            # AUTO-16
+    près_bouton_filtrer: "« {total} run(s) » + résumé des filtres appliqués"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 5. Requêtes impactées par is_dry_run / deleted_at (vigilance)
+# ───────────────────────────────────────────────────────────────────────────
+requetes_filtrees:
+  is_dry_run_exclu:
+    - "checkDailyCap  : count(*) ... WHERE NOT is_dry_run   (TEST DÉCISIF)"
+    - "checkCooldown  : ... AND NOT is_dry_run"
+    - "KPI runs (compteur erreurs liste, dashboards)  : ... WHERE NOT is_dry_run"
+    - "nav-counters runs errored (F02)  : ... WHERE NOT is_dry_run"
+  deleted_at_filtre:
+    - "liste automations  : WHERE deleted_at IS NULL"
+    - "sélecteur filtre runs (automations[])  : WHERE deleted_at IS NULL"
+    - "wizard / édition  : 404 si deleted_at NOT NULL"

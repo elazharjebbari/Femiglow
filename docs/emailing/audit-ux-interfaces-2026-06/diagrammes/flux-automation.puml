@@ -1,0 +1,76 @@
+@startuml flux-automation
+' Flux automation : configuration (wizard) → moteur → runs, avec les écarts
+' UI/engine relevés par l'audit 2026-06-06.
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+title Automations — du wizard au run (et les gaps UI ↔ engine)
+
+actor Admin
+participant "Wizard 4 étapes\n(AutomationWizard)" as wiz
+database "email_automation" as dbA
+participant "event-dispatcher\n(tick 60s)" as disp
+participant "runner\n(frequency + steps)" as run
+database "email_automation_run" as dbR
+participant "UI Runs\n(liste + détail)" as uiRuns
+
+== Configuration ==
+Admin -> wiz : 1 Identité (nom, slug immuable,\ntrigger, événement, conditions)
+note right of wiz
+  Triggers proposés : event, subscription,
+  schedule (« bientôt »), webhook (« bientôt »)
+  ⚠ AUTO-05 : schedule/webhook PERSISTÉS
+  mais ignorés par le moteur (fantômes)
+end note
+Admin -> wiz : 2 Étapes (7 types :\nwait, send, branch, tag,\nupdate_lead, webhook, wait_for_event)
+note right of wiz
+  ⚠ AUTO-01 : pas de vue de flux —
+  branches if/else = grilles imbriquées
+end note
+Admin -> wiz : 3 Fréquence (cooldown,\nquiet hours+TZ, daily cap)
+note right of wiz
+  ⚠ AUTO-04 : libellé « par destinataire »
+  mais le moteur plafonne PAR AUTOMATION
+end note
+Admin -> wiz : 4 Revue + activation
+wiz -> dbA : create/update (server action)
+
+== Exécution (moteur) ==
+disp -> dbA : scan automations actives\ntriggerType=event + eventName match
+disp -> run : enrôler (si conditions OK)
+run -> run : checkCooldown / applyQuietHours /\ncheckDailyCap (defer ou skip)
+run -> dbR : run créé (running)
+run -> dbR : avance step par step\n(wait → nextActionAt ; send → outbox ;\nbranch → descend ifTrue/ifFalse ;\nwait_for_event → waiting_for_event)
+run -> dbR : completed | errored | cancelled
+note over run
+  Invisible côté UI (AUTO-11) :
+  orphan-sweep ré-arme/erre les runs
+  zombies sans trace consultable.
+  cancel-on-event : cascade non
+  configurable depuis l'UI.
+end note
+
+== Observation / debug ==
+Admin -> uiRuns : filtres (statut, automation, email)
+uiRuns -> dbR : 50/page
+Admin -> uiRuns : détail run
+note right of uiRuns
+  ⚠ AUTO-02 : debug = contextJson brut
+  dans un <details> ; pas de logs par
+  étape, pas de timing, raisons
+  _deferredReason/_skippedReason à
+  décoder à la main.
+  ⚠ AUTO-03 : aucun test-run/dry-run.
+  ⚠ AUTO-06 : retry = reprise au step
+  courant uniquement (pas de replay).
+end note
+Admin -> uiRuns : Annuler (running) /\nRelancer (errored)\n— window.confirm (TRV-01)
+
+== Code mort ==
+note over dbA
+  R-031 / AUTO-12 : deleteAutomation()
+  = DELETE brut jamais câblé à l'UI ;
+  crash FK RESTRICT garanti si branché
+  sans correction. À soft-deleter ou retirer.
+end note
+@enduml

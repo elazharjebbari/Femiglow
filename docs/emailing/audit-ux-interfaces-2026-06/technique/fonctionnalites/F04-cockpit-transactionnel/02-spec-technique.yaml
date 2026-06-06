@@ -1,0 +1,203 @@
+# F04 — Cockpit transactionnel : spécification technique (contrats)
+# Source de vérité des contrats réseau + machines d'état. Les schémas Zod de
+# prod (lib/mail/transactional/schemas.ts) DOIVENT rester alignés ; les tests de
+# conformité (couche I) parsent la réponse du handler MSW avec ces mêmes schémas.
+
+meta:
+  feature: F04-cockpit-transactionnel
+  route_ui: /admin/emails/transactional
+  refs_audit: [CKPT-01, CKPT-02, CKPT-03, CKPT-04, CKPT-05, CKPT-06, CKPT-07, CKPT-08, CKPT-09, CKPT-12, DASH-12]
+  principe: honnetete_du_perimetre  # tout compteur/action dit sur quoi il agit
+  interdits:
+    - dupliquer_parseFilters            # une seule source : filters-parser.ts
+    - dupliquer_buildWhere              # une seule source : search.ts (compilateur SQL)
+    - export_client_silencieux_pour_tout  # client = page only, libellé "(page)"
+
+# ────────────────────────────────────────────────────────────────────────────
+# 1. ENDPOINTS EXISTANTS (non-régression — rappel des contrats)
+# ────────────────────────────────────────────────────────────────────────────
+existants:
+  search:
+    method: POST
+    path: /api/admin/emails/transactional/search
+    auth: requireAdmin                 # 401 si non admin
+    request: "{ filters: ParsedFilter[], freetext?: string, pagination: {limit:int 1..1000, offset:int>=0}, sort?: SearchSort }"
+    response_200: "{ rows: OutboxSearchRow[], total: int, window: \"matched\"|\"truncated\" }"
+    response_422: { error: string, issues: ZodFlatten }
+    notes: "window=truncated dès total>=5000 (pas de COUNT exact, perf)."
+
+  bulk_retry:
+    method: POST
+    path: /api/admin/emails/transactional/bulk-retry
+    request: "{ ids: OutboxId[] (0..500) }"
+    response_200: "{ retried: int, skipped: int, skippedIds: {id, reason}[] }"
+    cap: 500
+
+  bulk_suppress:
+    method: POST
+    path: /api/admin/emails/transactional/bulk-suppress
+    request: "{ ids: OutboxId[] (0..500), reason?: \"manual_admin\"|\"hard_bounce\" }"
+    response_200: { suppressed: int, skipped: int }
+    cap: 500
+    confirm_ui: adresses_distinctes  # le dialog compte les emails distincts, pas les lignes
+
+  reap_stuck:
+    method: POST
+    path: /api/admin/emails/transactional/reap-stuck
+    request: {}
+    response_200: { reaped: int }
+    audit: mail.outbox.reap_stuck
+
+# ────────────────────────────────────────────────────────────────────────────
+# 2. EXPORT CSV SERVEUR (CKPT-01 — critique)
+# ────────────────────────────────────────────────────────────────────────────
+export_csv_serveur:
+  method: POST
+  path: /api/admin/emails/transactional/export
+  auth: requireAdmin                   # 401 sinon ; 403 si non admin
+  audit: mail.outbox.export            # { actor, filters_count, rows_streamed, capped:bool }
+  request:
+    schema: ExportInputSchema
+    body: "{ filters: ParsedFilter[], freetext?: string, sort?: SearchSort }"
+    note: "PAS de pagination — l'export couvre l'ensemble du filtre."
+  response_200:
+    content_type: "text/csv; charset=utf-8"
+    streaming: true                    # ReadableStream, pas de buffer 100k lignes
+    headers:
+      Content-Disposition: 'attachment; filename="emails-transactionnels-YYYY-MM-DD.csv"'
+      Cache-Control: "no-store"
+    body_format:
+      bom: "U+FEFF en tête (Excel FR)"
+      dialect: RFC4180
+      line_ending: "\\r\\n"
+      escape: 'champ avec , " \\r \\n => entouré de "..." ; " interne doublé ""'
+      header_row: [id, date, destinataire, nom, template, sujet, statut, tentatives]
+      date_format: ISO8601
+    pagination_interne:
+      strategy: keyset
+      order_by: [createdAt, id]        # stable sous insertions concurrentes (pas d'OFFSET)
+      invariant: "aucun saut ni doublon de ligne pendant le stream"
+    cap:
+      max_rows: 100000
+      au_dela: "stream tronqué à 100000 ; flag capped émis ; UI affiche message cap"
+  response_422: { error: string, issues: ZodFlatten }   # filtre malformé
+  response_401: "Unauthorized"
+  ui:
+    libelle_honnete:
+      page_seulement: "Exporter CSV (page)"          # chemin client, total<=page
+      serveur: "Exporter CSV (serveur, ~{N} lignes)" # total>page OU selection-filtre
+    pendant_stream: { aria_busy: true, label: "Préparation de l'export…", double_clic: "1 seul POST" }
+    message_cap: "Export limité aux 100 000 premières lignes — affinez les filtres."
+
+# ────────────────────────────────────────────────────────────────────────────
+# 3. BULK RETRY PAR FILTRE + DRY-COUNT (CKPT-02)
+# ────────────────────────────────────────────────────────────────────────────
+bulk_retry_by_filter:
+  method: POST
+  path: /api/admin/emails/transactional/bulk-retry-by-filter
+  auth: requireAdmin
+  audit: mail.outbox.bulk_retry_by_filter   # { actor, filters, count, retried, skipped }
+  reutilise: buildWhere(search.ts)          # ensemble == /search pour le meme filtre
+  request:
+    schema: BulkRetryByFilterSchema
+    body: "{ filterState: { filters: ParsedFilter[], freetext?: string }, dry_run: boolean }"
+  modes:
+    dry_run_true:
+      response_200: { count: int }          # nb d'emails ELIGIBLES (statut in {failed,dlq,bounced_soft} ∩ filtre)
+      effet_db: aucun
+      usage: "alimente le ConfirmDialog : '{count} emails seront relancés — confirmer'"
+    dry_run_false:
+      precondition: count <= cap            # sinon 422 cap_exceeded (l'UI bloque déjà)
+      response_200: "{ retried: int, skipped: SkippedReason[] }"
+      effet_db: "UPDATE status=pending, attempts=0, lastError=null sur les eligibles"
+  cap:
+    max: 10000
+    depassement:
+      http: 422
+      body: { error: "cap_exceeded", count: int, cap: 10000 }
+      ui: "12 480 emails correspondent — au-delà de 10 000, affinez le filtre."
+  response_401: "Unauthorized"
+  response_422: "{ error: string, issues?: ZodFlatten }"
+
+# ────────────────────────────────────────────────────────────────────────────
+# 4. RAISONS DE SKIP — TRADUCTIONS (CKPT-02)  — source de vérité unique
+# ────────────────────────────────────────────────────────────────────────────
+skip_reasons:
+  source_of_truth: SKIP_REASON_FR          # map partagee UI + agregation serveur
+  map:
+    not_found: "non trouvé"
+    wrong_status: "statut non relançable"
+    suppressed: "adresse en liste de suppression"
+    cap_exceeded: "au-delà du plafond de tentatives"
+  oracle: "le feedback n'affiche JAMAIS le code anglais brut"
+
+# ────────────────────────────────────────────────────────────────────────────
+# 5. MODES DE SELECTION (page | filter) — machine de transitions (CKPT-04)
+# ────────────────────────────────────────────────────────────────────────────
+selection:
+  states:
+    page:    { repr: "Set<id> de la page courante (<=50)", actions: "par ids" }
+    filter:  { repr: "{ total, filterSnapshot } — tous les resultats du filtre", actions: "par filtre" }
+  amorce_link:
+    visible_si: "total > rows.length"      # sinon inutile
+    label: "Sélectionner les {total} emails correspondant aux filtres"
+  transitions:
+    - { from: page,   event: cocher_tout_page, guard: "total>rows.length", to: page,   effet: "affiche bannière d'amorce" }
+    - { from: page,   event: clic_amorce,      to: filter, effet: "bannière '{total} sélectionnés (filtre: …) [annuler]'" }
+    - { from: filter, event: changement_page,  to: filter, effet: "SURVIT — compteur inchangé" }
+    - { from: filter, event: changement_tri,   to: filter, effet: "SURVIT — l'ensemble ne change pas" }
+    - { from: filter, event: changement_filtre,to: page_vide, effet: "ANNULÉE + toast info 'Sélection globale annulée — les filtres ont changé'" }
+    - { from: filter, event: annuler,          to: page_vide, effet: "sans toast" }
+    - { from: filter, event: decocher_ligne,   to: page, effet: "rompt l'exhaustivité (Gmail-like)" }
+  changement_filtre_inclut: [saisie_cmdk, quick_filter, clic_carte_kpi, selection_vue, effacer_filtres]
+  consommation:
+    page:   { retry: bulk-retry(ids), suppress: bulk-suppress(ids), export: client(page) }
+    filter: { retry: bulk-retry-by-filter, suppress: "(hors périmètre F04 — réservé)", export: export-serveur }
+  libelles_filter:
+    retry: "Retry ({total})"
+    export: "Exporter CSV (serveur, ~{total} lignes)"
+
+# ────────────────────────────────────────────────────────────────────────────
+# 6. ERREURS DE PARSING VISIBLES (CKPT-03)
+# ────────────────────────────────────────────────────────────────────────────
+parsing_errors:
+  source: parseFilters().errors   # { position, raw, message } — déjà produit
+  ui:
+    input: { aria_invalid: true, liseré: rouge }   # uniquement si errors.length>0
+    section: { role: alert, une_ligne_par_erreur: true }
+  messages_par_type:
+    attempts_invalide: "« {raw} » ignoré — attendu : >N, <N, =N"
+    statut_inconnu: "Statut inconnu : « {value} ». Valides : failed, dlq, delivered…"
+    date_invalide: "Date invalide : « {value} ». Formats : 2026-05-01, today, -7d"
+    has_invalide: "« has: » n'accepte que « error »"
+    valeur_manquante: "Valeur manquante pour « {key}: »"
+  parsing_partiel: "les filtres valides du meme input restent appliqués"
+
+# ────────────────────────────────────────────────────────────────────────────
+# 7. BANNIERE CONTEXTE SANTE (DASH-12)
+# ────────────────────────────────────────────────────────────────────────────
+banniere_sante:
+  trigger: "query ?from=health"
+  contenu: "Vous arrivez depuis le contrôle santé (raison: {reason}, relevé à {time})."
+  params_optionnels: [reason, at]   # passés par le deep-link HealthBadge
+  fermer: "masque + retire 'from' de l'URL (pas de réapparition au refresh)"
+  absente_si: "from absent OU from != health"
+
+# ────────────────────────────────────────────────────────────────────────────
+# 8. MICRO-CORRECTIFS (compteurs / tooltips / reap / saut de page)
+# ────────────────────────────────────────────────────────────────────────────
+tooltips:
+  total_tronque: { affichage: "5 000+", title: "Plus de 5 000 résultats — compte exact non calculé. Affinez." }
+  sparkline_file_vide: { affichage: "—", title: "Pas de série temporelle pour la file (instantané)." }
+reap_feedback:
+  succes: "{n} envois bloqués libérés → re-mis en file (ou DLQ si plafond)."
+  zero: "Aucun envoi bloqué à libérer."
+saut_de_page:
+  ui: "[Précédent] [Aller à: __] / {dernierePage} [Suivant]"
+  bornes: { page_lt_1: "ramenée à 1", page_gt_max: "ramenée à la dernière", non_numerique: "ignorée (pas de navigation)" }
+  offset_calc: "(page-1)*50"
+detail_timeline:
+  legende: "📡 webhook Stalwart · ⚙ app"
+  badge_source: { "delivery.*": "📡", "transitions_app (sent,queued)": "⚙" }
+  sent_stagnant: "encart ⓘ expliquant boîte locale / webhook muet quand dernier état = sent sans delivered"
+  retour_sticky: "lien '← Transactionnel' collant en bas (CKPT-09)"

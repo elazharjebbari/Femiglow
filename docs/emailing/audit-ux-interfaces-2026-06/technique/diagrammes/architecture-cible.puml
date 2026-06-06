@@ -1,0 +1,102 @@
+@startuml architecture-cible
+' Architecture cible des interfaces emailing admin + flux de test associés.
+' Volet technique de l'audit UX 2026-06.
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam componentStyle rectangle
+
+title Architecture cible — couches applicatives et harnais de test
+
+package "Navigation (C2)" {
+  [layout.tsx /admin/emails] as layout
+  [EmailsTabs\n(badges compteurs)] as tabs
+  [GlobalCommandPalette ⌘K] as palette
+  [ToastProvider (C1)] as toasts
+  layout --> tabs
+  layout --> palette
+  layout --> toasts
+}
+
+package "Pages RSC (force-dynamic)" {
+  [dashboard · transactional · campaigns\nautomation · templates · audiences\nsuppression · events · listmonk] as pages
+}
+
+package "Composants clients de section" {
+  [TransactionalCockpit] as ckpt
+  [CampaignWizard] as cwiz
+  [AutomationWizard + FlowView] as awiz
+  [TemplateEditor (CodeMirror lazy)] as tedit
+  [AudienceWizard + RulesBuilder] as audw
+  [SuppressionList] as supl
+}
+
+package "Socle UI (C1) — components/admin/emails/ui/" {
+  [ConfirmDialog] as cdlg
+  [Toast / useToast] as toast
+  [EmptyState · Freshness · Pill] as misc
+  [Wizard / useWizard] as wiz
+  [use-dirty-guard] as dirty
+}
+
+package "Accès données" {
+  [server actions\n(wizard, automation, templates)] as actions
+  [routes /api/admin/emails/*\n(+ nav-counters, export, dry-run,\nsuppression POST/bulk-remove)] as api
+  [schémas Zod partagés\nlib/mail/**/schemas.ts] as zod
+}
+
+package "Domaine lib/mail/*" {
+  [outbox · campaigns · automation\naudiences · templates · suppression\nlistmonk · webhooks] as domain
+}
+
+database "Postgres (Drizzle)\nschema-emails + colonnes additives" as pg
+cloud "Listmonk API" as lm
+cloud "Stalwart (webhook entrant)" as st
+
+layout --> pages
+pages --> ckpt
+pages --> cwiz
+pages --> awiz
+pages --> tedit
+pages --> audw
+pages --> supl
+ckpt --> cdlg
+ckpt --> toast
+cwiz --> wiz
+awiz --> wiz
+audw --> wiz
+tedit --> dirty
+ckpt --> api
+cwiz --> actions
+awiz --> actions
+tedit --> api
+supl --> api
+actions --> domain
+api --> domain
+api ..> zod : valide
+actions ..> zod
+domain --> pg
+domain --> lm
+st --> api : POST /api/mail/webhook/stalwart
+
+package "Harnais de test (strategie-tests.md)" #f0fdf4 {
+  [Vitest unitaire\n(parsers, schémas, maps)] as tunit
+  [Vitest composant + MSW\n(masse principale, vue opérateur)] as tcomp
+  [Vitest intégration\n(routes API ↔ femiglow_test*)] as tint
+  [Playwright E2E\n(parcours métier, instance dédiée)] as te2e
+  [axe (a11y) — jsdom + E2E] as ta11y
+}
+
+tcomp ..> zod : handlers MSW générés\ndu MÊME schéma
+tcomp ..> ckpt
+tcomp ..> cwiz
+tint ..> api
+te2e ..> layout : parcours complets\n(Mailpit pour le SMTP)
+tunit ..> domain
+
+note bottom of tcomp
+  Grille obligatoire par action réseau :
+  200 / 401 / 422 / 500 / hang / network
+  Oracle central : ZÉRO faux succès.
+end note
+@enduml

@@ -1,0 +1,65 @@
+id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
+F10-U-001,U,P1,badges-derivation,3 champs null,"deriveBadge(attempt=null,ok=null,error=null,status=sending) renvoie aucun badge",factory campaignLink vierge,LMK-02,a_implementer
+F10-U-002,U,P1,badges-derivation,sync saine récente,"ok il y a 10 min, error null, sending : aucun badge",makeCampaignLinkSyncState ok,LMK-02,a_implementer
+F10-U-003,U,P1,badges-derivation,périmé au-delà d'1h,"ok il y a 70 min, error null, sending : badge 'périmé' (warning)",staleSyncLink,LMK-02,a_implementer
+F10-U-004,U,P1,badges-derivation,périmé pile au seuil,"ok il y a exactement 60 min : pas de badge ; il y a 60 min + 1 ms : badge périmé",table cas seuil,LMK-02,a_implementer
+F10-U-005,U,P1,badges-derivation,terminale jamais périmée,"ok il y a 3 jours, status sent : AUCUN badge (terminale)",factory sent stale,LMK-02,a_implementer
+F10-U-006,U,P1,badges-derivation,terminale jamais en échec,"error non-null, status cancelled : AUCUN badge",factory cancelled error,LMK-02,a_implementer
+F10-U-007,U,P1,badges-derivation,en échec attempt>ok,"error set, attempt postérieur à ok, sending : badge 'en échec' (danger)",factory failedSyncLink,LMK-06,a_implementer
+F10-U-008,U,P1,badges-derivation,jamais réussi,"ok null, error set, sending : badge 'en échec'",factory neverSynced,LMK-06,a_implementer
+F10-U-009,U,P1,badges-derivation,échec prime sur périmé,"error set ET ok>1h : un seul badge 'en échec' (pas deux)",factory failed+stale,LMK-06,a_implementer
+F10-U-010,U,P2,badges-derivation,scheduled non terminale,"status scheduled, ok>1h : badge périmé (scheduled n'est pas terminal)",factory scheduled stale,LMK-02,a_implementer
+F10-U-011,U,P1,sync-ecriture,troncature erreur 500,"un message d'erreur de 800 car. est tronqué à 500 dans last_sync_error",factory longError,LMK-06,a_implementer
+F10-U-012,U,P2,sync-ecriture,erreur courte intacte,"un message de 40 car. n'est pas tronqué",table cas,LMK-06,a_implementer
+F10-U-013,U,P1,sante-derivation,ping ok rapide,"latence 87 ms, 2xx : niveau ok 'joignable'",table cas,LMK-01,a_implementer
+F10-U-014,U,P1,sante-derivation,ping lent dégradé,"latence 1240 ms, 2xx : niveau degraded 'lent'",table cas,LMK-01,a_implementer
+F10-U-015,U,P1,sante-derivation,ping down incident,"timeout 3s : niveau incident 'injoignable'",table cas,LMK-01,a_implementer
+F10-U-016,U,P1,sante-derivation,âge sync ok < 1h,"dernier ok il y a 29 min, 0 échec : niveau ok",table cas,LMK-01,a_implementer
+F10-U-017,U,P1,sante-derivation,âge sync dégradé,"dernier ok il y a 2h OU 1 campagne en échec : niveau degraded",table cas,LMK-01,a_implementer
+F10-U-018,U,P1,sante-derivation,âge sync incident,"dernier ok il y a 7h avec campagnes non terminales : niveau incident",table cas,LMK-01,a_implementer
+F10-U-019,U,P1,sante-derivation,base calme jamais rouge,"0 campagne non terminale : niveau ok (rien à synchroniser != panne)",table cas,LMK-01,a_implementer
+F10-C-020,C,P1,HealthBadge,ligne Listmonk joignable,"ping ok : le déroulé lit 'Listmonk : ✓ joignable' et la pastille reste verte si rien d'autre",factory health ping ok,LMK-01,a_implementer
+F10-C-021,C,P1,HealthBadge,ligne Listmonk lent,"ping lent : déroulé lit '⚠ lent', niveau global degraded (pastille jaune)",factory health ping lent,LMK-01,a_implementer
+F10-C-022,C,P1,HealthBadge,ligne Listmonk down,"ping down : déroulé lit '✗ injoignable' + lien d'action, niveau incident (pastille rouge)",factory health ping down,LMK-01,a_implementer
+F10-C-023,C,P1,HealthBadge,ligne sync KO actionnable,"sync en échec : déroulé lit 'Sync campagnes : ✗' avec deep-link ?from=health",factory health sync ko,LMK-02,a_implementer
+F10-C-024,C,P2,HealthBadge,axe smoke badge,"axe : 0 violation serious/critical sur le badge déroulé avec les lignes Listmonk",factory health,LMK-01,a_implementer
+F10-C-025,C,P1,liste-campagnes,badge échec affiché,"campagne sending avec error : la ligne porte '⚠ sync en échec' en plus du statut",factory failedSyncLink,LMK-06,a_implementer
+F10-C-026,C,P1,liste-campagnes,badge périmé affiché,"campagne sending ok>1h : la ligne porte '⚠ métriques périmées (>1h)'",staleSyncLink,LMK-02,a_implementer
+F10-C-027,C,P1,liste-campagnes,aucun badge si sain,"campagne sending ok il y a 5 min : la ligne ne porte AUCUN badge sync",factory ok récent,LMK-02,a_implementer
+F10-C-028,C,P1,liste-campagnes,aucun badge si terminale,"campagne sent ok il y a 3 jours : AUCUN badge sync (terminale)",factory sent stale,LMK-02,a_implementer
+F10-C-029,C,P1,detail-campagne,ligne sync réussie,"sync saine : 'Dernière synchro réussie : <date> (poll cron)' visible, pas de bandeau alerte",factory ok récent,LMK-02,a_implementer
+F10-C-030,C,P1,detail-campagne,bandeau échec + message,"error set : bandeau role=alert lit le message tronqué + 'métriques potentiellement périmées' + bouton 'Réessayer maintenant'",factory failedSyncLink,LMK-06,a_implementer
+F10-C-031,C,P1,detail-campagne,bandeau périmé sans erreur,"ok>1h error null : bandeau amber 'datant de plus d'une heure' + 'Réessayer maintenant'",staleSyncLink,LMK-02,a_implementer
+F10-C-032,C,P1,detail-reessayer,grille réseau 200,"clic 'Réessayer maintenant' : 1 POST part ; res.ok : toast vert et le bandeau disparaît/maj",compteur MSW,LMK-02,a_implementer
+F10-C-033,C,P1,detail-reessayer,grille réseau 401,"401 : toast erreur role=alert, le bandeau d'échec reste, aucun faux succès",MSW 401,LMK-02,a_implementer
+F10-C-034,C,P1,detail-reessayer,grille réseau 422,"422 : message détail visible role=alert, bandeau conservé",MSW 422,LMK-02,a_implementer
+F10-C-035,C,P1,detail-reessayer,grille réseau 500,"500 : toast erreur persistant, bandeau conservé",MSW 500,LMK-02,a_implementer
+F10-C-036,C,P1,detail-reessayer,grille réseau hang,"delay infinite : bouton lit 'Synchronisation…' disabled aria-busy, double-clic => 1 SEUL POST",MSW delay infinite,LMK-02,a_implementer
+F10-C-037,C,P1,detail-reessayer,grille réseau network,"network error : toast erreur role=alert, état préservé",MSW network error,LMK-02,a_implementer
+F10-C-038,C,P1,wizard-e2,indispo au lieu du hint,"listmonkError set ET lists vide : message 'Listmonk est indisponible' + bouton 'Réessayer' visibles ET le hint 'Crée-en une' ABSENT",factory wizard listmonkDown,LMK-04,a_implementer
+F10-C-039,C,P1,wizard-e2,audience FemiGlow proposée,"listmonkError set ET lists vide : le texte propose 'audience FemiGlow' comme repli",factory wizard listmonkDown,LMK-04,a_implementer
+F10-C-040,C,P1,wizard-e2,hint normal si vide sans erreur,"listmonkError null ET lists vide : le hint 'Aucune liste Listmonk. Crée-en une' EST affiché, PAS de message d'indispo",factory wizard listesVides,LMK-04,a_implementer
+F10-C-041,C,P1,wizard-e2,cases affichées si listes,"listmonkError null ET lists>0 : les checkboxes de listes sont rendues, aucun message d'indispo",factory wizard listes,nominal,a_implementer
+F10-C-042,C,P2,wizard-e2,avertissement listes partielles,"listmonkError set ET lists>0 : les cases sont rendues + un avertissement 'certaines listes peuvent manquer'",factory wizard partiel,LMK-04,a_implementer
+F10-C-043,C,P1,wizard-e2,Réessayer recharge,"clic 'Réessayer' (hang puis ok) : 'Chargement…' disabled, puis les cases apparaissent ; échec => indispo persiste",MSW grille,LMK-04,a_implementer
+F10-C-044,C,P1,wizard-e3,indispo templates au lieu du hint,"listmonkError set ET templates vide : message d'indispo + 'Réessayer' ; hint 'crée-en un' ABSENT ; corps HTML libre reste utilisable",factory wizard tplDown,LMK-04,a_implementer
+F10-C-045,C,P1,wizard-e3,hint template normal,"listmonkError null ET templates vide : hint normal, pas de message d'indispo",factory wizard tplVides,LMK-04,a_implementer
+F10-C-046,C,P1,wizard-push,erreur push détaillée,"push partiel : l'alerte lit 'X tentés · Y rejetés · premier rejet : <message>' (jamais un '0' nu)",factory pushResult partiel,LMK-04,a_implementer
+F10-C-047,C,P2,wizard-push,push total échoué,"0 poussé : l'alerte lit 'Aucun destinataire n'a pu être ajouté à Listmonk (<message>)'",factory pushResult zero,LMK-04,a_implementer
+F10-C-048,C,P1,page-iframe,avec env iframe+bouton,"publicOrigin défini : iframe src = ${publicOrigin}${path} ET bouton 'Ouvrir dans un nouvel onglet' actif avec href correct",factory env publicUrl,LMK-03,a_implementer
+F10-C-049,C,P1,page-iframe,sans env bouton désactivé,"publicOrigin absent : bouton aria-disabled=true, title 'LISTMONK_PUBLIC_URL non configuré', pas de navigation",factory env absent,LMK-03,a_implementer
+F10-C-050,C,P1,page-iframe,sans env message ops,"publicOrigin absent : message 'Voir le runbook listmonk-subdomain', PAS l'instruction .env brute",factory env absent,LMK-03,a_implementer
+F10-C-051,C,P1,page-iframe,bandeau piège présent,"iframe rendue : bandeau 'les campagnes créées ici ne sont PAS visibles dans /campaigns' visible au-dessus",factory env publicUrl,LMK-03,a_implementer
+F10-C-052,C,P2,page-iframe,axe smoke page,"axe : 0 violation serious/critical sur la page (avec et sans env)",factory env,LMK-03,a_implementer
+F10-I-053,I,P1,sync-ecriture,succès écrit les 3 colonnes,"campaigns.get mocké 200 : last_sync_attempt_at=now, last_sync_ok_at=now, last_sync_error=null en DB",mock client Listmonk + femiglow_test,LMK-06,a_implementer
+F10-I-054,I,P1,sync-ecriture,échec HTTP écrit attempt+error,"campaigns.get mocké 503 : attempt avancé, ok INCHANGÉ (valeur antérieure), error renseignée tronquée",mock client 503 + femiglow_test,LMK-06,a_implementer
+F10-I-055,I,P1,sync-ecriture,timeout écrit attempt+error,"campaigns.get rejette ListmonkTimeoutError : attempt avancé, ok inchangé, error='...timed out...' tronquée",mock client timeout + femiglow_test,LMK-06,a_implementer
+F10-I-056,I,P1,sync-ecriture,ok reset error,"campagne avec error préexistante puis get 200 : last_sync_error repasse à null, ok=now",seed error + mock 200,LMK-06,a_implementer
+F10-I-057,I,P1,proxy-csp,frame-ancestors présent,"GET /api/listmonk/admin (upstream mocké) : la réponse porte 'content-security-policy: frame-ancestors \\'self\\''",upstream mock + femiglow_test,LMK-05,a_implementer
+F10-I-058,I,P1,proxy-csp,x-frame-options absent,"la réponse proxifiée ne porte NI x-frame-options NI la CSP Listmonk d'origine",upstream mock frame headers,LMK-05,a_implementer
+F10-I-059,I,P1,proxy-auth,401 sans session,"requête proxy sans session admin : 401, aucun appel upstream émis",sans session,LMK-05,a_implementer
+F10-I-060,I,P2,sante-route,check listmonk dans le rapport,"GET /api/admin/emails/health : le JSON inclut les checks listmonk (ping+sync) parsables par le schéma Zod de prod",femiglow_test,LMK-01,a_implementer
+F10-E-061,E,P1,scenario,SM-F10-01 panne un matin de campagne,"Listmonk port mort : le wizard reste utilisable via audience FemiGlow, le détail campagne montre l'échec de sync, le HealthBadge passe degraded/incident",femiglow_emailqa degraded,metier,a_implementer
+F10-E-062,E,P1,scenario,SM-F10-02 métriques gelées,"badge périmé en liste -> détail -> Réessayer -> erreur lisible role=alert (pas de faux succès)",femiglow_emailqa degraded,metier,a_implementer
+F10-E-063,E,P1,scenario,SM-F10-03 campagne native introuvable,"page iframe : le bandeau piège prévient que les campagnes Listmonk natives ne sont pas dans /campaigns",femiglow_emailqa,metier,a_implementer
+F10-A-064,A,P1,scenario,axe pages F10,"axe Playwright sur dashboard (HealthBadge), détail campagne (bandeau sync) et page iframe : 0 violation serious/critical",femiglow_emailqa,metier,a_implementer

@@ -1,0 +1,268 @@
+# F08 — Audiences — spec technique
+# Périmètre : AUD-F01..AUD-F11. Refs audit : AUD-01..AUD-13.
+# Source de vérité pour la batterie 03-batterie-tests.csv.
+
+meta:
+  feature: F08-audiences
+  route: /admin/emails/audiences
+  composants:
+    - AudienceWizard.tsx          # 3 étapes : métadonnées / critères / récap
+    - AudienceRulesBuilder.tsx    # builder récursif ET/OU + AddRuleMenu
+    - RuleEditor.tsx              # factory 15 sous-éditeurs
+    - AudiencePreview.tsx         # taille/échantillon/breakdown, debounce 800ms
+    - SnapshotsPanel.tsx          # cycle + drift + membres paginés + export
+    - AudienceDetailActions.tsx   # snapshot now + delete (ConfirmDialog cible)
+    - CountryMultiSelect.tsx      # chips pays (liste fermée)
+    - ExclusionFlagsFieldset.tsx  # 4 flags
+  lib:
+    - rules-compiler.ts           # RulesGroup → SQL Drizzle
+    - rules-types.ts              # Zod discriminated union 15 kinds
+    - preview.ts                  # size/sample/breakdown (statement_timeout 5s)
+    - snapshot.ts                 # matérialisation idempotente + reaper
+    - snapshot-members.ts         # listSnapshotMembers + CSV
+    - purge.ts                    # purge > 90j
+  endpoints:
+    - POST /api/admin/emails/audiences                       # create
+    - PATCH /api/admin/emails/audiences/[id]                 # update (slug exclu)
+    - DELETE /api/admin/emails/audiences/[id]
+    - POST /api/admin/emails/audiences/preview-size
+    - POST /api/admin/emails/audiences/preview-sample
+    - POST /api/admin/emails/audiences/preview-breakdown
+    - POST /api/admin/emails/audiences/[id]/snapshot
+    - GET  /api/admin/emails/audiences/[id]/snapshot/[snapshotId]/members  # ?limit&offset&format=csv
+
+# ── Table des règles de validation par type ────────────────────────────────
+regles:
+  email_pattern:
+    operators: [contains, starts, ends, equals, in]
+    value: "string (contains/starts/ends/equals) | string[] (in)"
+    in_edition: chips        # trim, anti-doublon, chip vide ignorée
+    validation_bloquante: "in vide → erreur étape 2"
+  country:
+    operators: [eq, in]
+    value: "code ISO (eq) | code[] (in)"
+    source_codes: countries.ts COUNTRIES (21)   # aligné COUNTRY_CALLING_CODE compileur
+    in_edition: CountryMultiSelect chips
+    eq_edition: CountryAutocomplete
+    validation_bloquante:
+      - "code inconnu (hors COUNTRIES) → erreur bloquante étape 2"
+      - "in vide → bloquant"
+    bascule:
+      eq_to_in: "scalaire → [v] (sans perte, sans dialog)"
+      in_to_eq: "ConfirmDialog si N>=2 (perte des N-1) ; conserve le 1er"
+    hint: R-011
+  consent_marketing:
+    value: boolean
+    validation_bloquante: aucune
+  created_at:
+    operators: [after, before, between, within]
+    value: "ISO date | [a,b] (between) | '7d/30d/1h' (within)"
+    validation_bloquante:
+      - "between : a<=b (dates) sinon auto-swap proposé"
+      - "between : 2 bornes saisies"
+  order_count:
+    operators: [gte, lte, gt, lt, eq, between]
+    value: "int>=0 | [lo,hi] (between)"
+    extras: [since, until]    # dates optionnelles
+    validation_bloquante:
+      - "between : lo<=hi (auto-swap)"
+      - "between : 2 bornes saisies"
+  order_total:
+    operators: [gte, lte, gt, lt, eq, between]
+    value: "int CENTIMES (saisi MAD) | [lo,hi] cents"
+    conversion: "madToCents=round(mad*100) ; centsToMad=cents/100"
+    extras: [since]
+    validation_bloquante: "between : lo<=hi (sur cents, auto-swap)"
+  has_ordered_product:
+    value: "productId non vide"
+    extras: [since]
+    validation_bloquante: "productId='' → 422"
+  last_order_at:
+    operators: [after, before, within]   # PAS between (value scalaire)
+    value: "ISO date | within"
+  email_opened:
+    extras: "[within?, minCount>=1?, templateSlug?]"
+  email_clicked:
+    extras: "[within?, minCount>=1?, urlPattern?]"
+  received_without_open:
+    value: "threshold int>=1"
+    extras: [within (requis)]
+  inactive_since:
+    value: "days int 0..3650"
+  session_count:
+    operators: [gte, lte, gt, lt, eq, between]
+    value: "int>=0 | [lo,hi]"
+    extras: "[within?]"
+    validation_bloquante: "between : lo<=hi"
+  has_tag: { etat: neutralise }
+  not_has_tag: { etat: neutralise }
+
+# ── États de la neutralisation tags (AUD-01) ───────────────────────────────
+neutralisation_tags:
+  refs_audit: [AUD-01]
+  surfaces:
+    menu:
+      composant: AudienceRulesBuilder/AddRuleMenu
+      etat: "items 'A le tag X' / 'N'a pas le tag X' affichés mais disabled + aria-disabled"
+      suffixe_verbatim: "(bientôt — M5.5)"
+      effet_clic: "aucun (onPick non appelé) ; 13 autres types non affectés"
+    regle_existante:
+      composant: RuleEditor (TagEditor)
+      banniere_role: alert
+      banniere_verbatim: >
+        ⛔ Critère inactif : le moteur de tags (M5.5) n'est pas livré.
+        Cette règle ne cible actuellement AUCUN contact. Retirez-la ou attendez M5.5.
+      effet_validation_etape2: "présence règle tag → erreur bloquante"
+      message_etape2: "Une règle « tag » est inactive (M5.5 non livré). Retirez-la pour continuer."
+      action_dispo: "✕ Supprimer ce critère"
+    compilateur:
+      fichier: rules-compiler.ts
+      has_tag: "FALSE (ne cible personne)"
+      not_has_tag: "FALSE (refus d'élargir à toute la base)"
+      warning: "logger.warn('audience.rules.tag_neutralized', { kind, tag })"
+      invariant: "ne plus importer leadTag pour ces 2 kinds ; pas de NOT EXISTS/TRUE"
+      levee: "M5.5 : flag TAGS_ENABLED + rebranche EXISTS"
+
+# ── Contrat membres paginé (AUD-06) ────────────────────────────────────────
+membres_paginated:
+  refs_audit: [AUD-06]
+  route: GET /api/admin/emails/audiences/[id]/snapshot/[snapshotId]/members
+  query:
+    limit: { type: int, min: 1, max: 500, default: 50 }
+    offset: { type: int, min: 0, default: 0 }
+    format: { enum: [json, csv], default: json }
+  reponse_json:
+    members: "Array<{ email: string, name: string|null }>"
+    total: int
+    limit: int
+    offset: int
+  reponse_csv:
+    content_type: "text/csv; charset=utf-8"
+    content_disposition: "attachment; filename=snapshot-<id>-membres.csv"
+    header: "email,name"
+    echappement: "guillemets doublés si , \" \\n"
+    borne: 500
+  ui_charger_plus:
+    premier_chargement: "limit=50 offset=0"
+    bouton: "Charger plus"
+    visible_si: "members.length < total"
+    offset_suivant: "members.length"
+    concat: "dédoublonne par email"
+    fin: "bouton masqué quand members.length === total"
+  securite: "snapshot doit appartenir à l'audience [id] → 404 sinon"
+
+# ── Forme du drift (AUD-03/11) ─────────────────────────────────────────────
+drift:
+  refs_audit: [AUD-03, AUD-11]
+  age:
+    source: snapshot.createdAt
+    format: "« il y a Nj » / « il y a Nh » / « à l'instant » (TZ Africa/Casablanca)"
+  live_count:
+    source: previewAudienceSize(audience.rules, audience.exclusionFlags)
+    cout: "1 appel par chargement de page ; PAS dans la boucle auto-refresh 4s"
+  ecart:
+    delta: "live - size"
+    pct: "abs(delta) / max(1, size) * 100"
+    affichage: "▲ +134, +12 %  /  ▼ -50, -8 %"
+  surlignage:
+    seuil: "pct > 10 (strict)"
+    banniere_verbatim: "⚠ Écart > 10 % avec l'audience live — [re-snapshoter]"
+    action: "bouton re-snapshoter = POST /snapshot manuel"
+  purge:
+    source: snapshot.purgeableAfter   # createdAt + 90j
+    affichage: "purge auto le JJ/MM"
+  autorefresh:
+    intervalle_ms: 4000
+    condition: "un snapshot pending|running ; arrêt quand tous done|errored"
+
+# ── Preview (AUD-13) ───────────────────────────────────────────────────────
+preview:
+  debounce_ms: 800
+  statement_timeout_ms: 5000
+  size: "count(*)::int sur leads WHERE compiled.where (txn bornée)"
+  sample: { limit_min: 1, limit_max: 50, default: 10 }
+  breakdown:
+    matched: "rules seules (NO_EXCLUSIONS)"
+    deliverable: "rules + exclusions"
+    excluded: "max(0, matched - deliverable)"
+    invariant_affichage: "matched - excluded = deliverable (N - M = K)"
+  timeout_dedie:
+    detection: "Postgres 57014 query_canceled (statement_timeout)"
+    message_verbatim: >
+      ⏱ Requête trop lourde — simplifiez les critères ou créez un snapshot
+      (calcul asynchrone).
+    role: alert
+    invariant: "ne pas remplacer le compteur par un faux 0 ; règles préservées"
+
+# ── Mode d'évaluation (AUD-04) ─────────────────────────────────────────────
+evaluation_mode:
+  champ: evaluationMode
+  defaut: dynamic
+  options:
+    dynamic:
+      label: "Re-évaluer au moment de l'envoi (recommandé)"
+      detail_verbatim: >
+        Les contacts qui rempliront les critères au moment du send seront inclus,
+        même s'ils n'existent pas encore aujourd'hui.
+    static:
+      label: "Figer la liste maintenant (snapshot statique)"
+      detail_verbatim: >
+        Seuls les {N} contacts actuels recevront — reproductible (A/B, conformité),
+        mais ignore les nouveaux inscrits.
+  envoi: "inclus dans payload POST et PATCH"
+
+# ── ET/OU dès la 1re règle (AUD-08) ────────────────────────────────────────
+combinateur:
+  refs_audit: [AUD-08]
+  mention_des_1_regle: true
+  texte_1_regle_verbatim: >
+    Une seule condition pour l'instant — ajoutez-en d'autres pour les combiner (ET/OU).
+  toggle_actif: ">= 2 règles"
+  labels: { all: "ET (toutes)", any: "OU (au moins une)" }
+
+# ── Validation between + auto-swap (AUD-02) ────────────────────────────────
+between_validation:
+  refs_audit: [AUD-02]
+  s_applique: [order_count, order_total, session_count, created_at]
+  regle: "lo <= hi (numérique) / début <= fin (date)"
+  message_verbatim: "⚠ La borne basse doit être ≤ la borne haute."
+  bouton_verbatim: "Inverser les bornes"
+  effet: "onChange value=[hi, lo]"
+  borne_manquante: "bloque Continuer (hasIncompleteBetween) — message existant"
+
+# ── Suppression (TRV-01) ───────────────────────────────────────────────────
+suppression:
+  refs_audit: [TRV-01]
+  remplace: window.confirm
+  composant: ConfirmDialog (socle F01) variante danger
+  verbatim: >
+    Supprimer cette audience ? Les snapshots existants sont conservés, mais
+    l'audience et son ciblage disparaissent. Action irréversible.
+  invariants: [focus initial Annuler, Esc/backdrop ferment, 1 seul DELETE, échec garde dialog + alert + ligne préservée]
+
+# ── Détail / restitution + hint R-011 ──────────────────────────────────────
+detail:
+  restitution: "rulesGroupToLines → ruleToText (FR, indenté, combinateur par groupe)"
+  order_total: "affiché en MAD (centsToMad)"
+  pays: "traduits (countryLabel) — 🇲🇦 Maroc"
+  live_count: "preview-size dans l'entête"
+  hint_r011_verbatim: >
+    ℹ Ciblage par préfixe téléphonique (E.164) — les leads sans téléphone ne
+    matchent pas ce critère.
+  hint_present_si: "règle country présente"
+
+# ── Grille réseau imposée (par action) ─────────────────────────────────────
+grille_reseau:
+  cas: [200, 401, 422, 500, hang_infinite, network_error]
+  cas_specifiques:
+    preview-size: [+504_timeout_dedie]
+    membres: [+404_cross_audience]
+  oracle_central: "zéro faux succès ; échec → role=alert ; état saisi préservé ; pas de double POST sur hang"
+
+# ── a11y ───────────────────────────────────────────────────────────────────
+a11y:
+  builder: "fieldset/legend par groupe (combinateur annoncé) ; imbrication = fieldsets imbriqués"
+  labels: "Opérateur / Valeur / Borne basse / Borne haute ; chips nommées + ✕ nommé"
+  menu_tags_disabled: "aria-disabled + description"
+  dialogs: "role=dialog, aria-modal, focus trap, focus rendu au déclencheur"
+  gate: "axe jsdom + E2E : 0 violation serious/critical (G6)"

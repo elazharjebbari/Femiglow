@@ -1,0 +1,68 @@
+@startuml cycle-vie-campagne
+' Machine d'états campagne + synchronisation Listmonk, vue opérateur.
+' Audit UX 2026-06-06.
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+title Cycle de vie d'une campagne (UI admin + sync Listmonk)
+
+[*] --> draft : « + Créer »\n(formulaire inline liste,\npas de route /new — CAMP-08)
+
+state "draft\n« Brouillon »" as draft {
+  state "Wizard 6 étapes" as wiz
+  wiz : 1 Nom → 2 Audience → 3 Contenu
+  wiz : → 4 Sujet → 5 Planif. → 6 Vérif.
+  wiz : brouillon persisté À CHAQUE étape
+  wiz : (pas d'autosave intra-étape — CAMP-03)
+}
+
+state "scheduled\n« Planifiée »" as scheduled
+state "sending\n« En cours d'envoi »" as sending
+state "paused\n« En pause »" as paused
+state "sent\n« Envoyée » (terminal)" as sent
+state "cancelled\n« Annulée » (terminal)" as cancelled
+state "failed\n« Échec » (terminal)" as failed
+
+draft --> scheduled : finalize (planifié)\n→ POST Listmonk status=scheduled
+draft --> sending : finalize (envoi immédiat)\n→ POST Listmonk status=running
+draft --> cancelled : « Supprimer ce brouillon »\n(window.confirm — TRV-01)
+
+scheduled --> sending : heure atteinte (Listmonk)
+scheduled --> cancelled : « Annuler l'envoi » (confirm)
+sending --> paused : « Mettre en pause »
+paused --> sending : « Reprendre l'envoi »
+sending --> sent : Listmonk finished\n(détecté PAR POLL uniquement)
+sending --> cancelled : « Annuler » (confirm)
+sending --> failed : erreur Listmonk
+paused --> cancelled : « Annuler » (confirm)
+
+note right of sending
+  SYNC = POLL (pas de webhook campagne) :
+  - cron tick (campaign_sync) + bouton
+    « ↻ Rafraîchir les métriques »
+  - métriques réelles : Envoyés, Ouvertures,
+    Clics, Bounces
+  - « n/d » : Livrés, Désabos (CAMP-02)
+  - échec de poll : SILENCIEUX (LMK-01)
+  - « Dernière synchro » retombe sur
+    updatedAt (LMK-02)
+end note
+
+note bottom of draft
+  GARDES étape 6 :
+  - checkbox de confirmation obligatoire
+  - envoi BLOQUÉ tant que l'estimation
+    d'audience est inconnue → deadlock
+    si l'API preview-size est down (CAMP-01)
+  - test send : exige un template Listmonk
+    (corps libre = à l'aveugle — CAMP-04)
+end note
+
+note left of sending
+  RISQUE CAMP-15 : crash entre
+  création Listmonk et persist de
+  listmonk_campaign_id → campagne
+  « sending » orpheline, pause/annulation
+  impossibles depuis l'UI.
+end note
+@enduml

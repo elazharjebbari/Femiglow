@@ -1,0 +1,227 @@
+$schema: spec-technique/F03-dashboard
+feature: F03-dashboard
+titre: Dashboard /admin/emails — fenêtre, tri-état livraison, tendances, auto-refresh
+audit_refs: [DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, DASH-07, DASH-08, DASH-09, DASH-10, DASH-11, DASH-12, TRV-04, TRV-07]
+inventaire_refs: [DSH-F01, DSH-F02, DSH-F03, DSH-F04, DSH-F05, DSH-F06, DSH-F07, DSH-F08, DSH-F09, DSH-F10]
+
+# ───────────────────────────────────────────────────────────────────────────
+# 1. EXTENSION DU CONTRAT SUMMARY
+# ───────────────────────────────────────────────────────────────────────────
+summary_contract:
+  endpoint: GET /api/admin/emails/transactional/summary
+  fichier: src/app/api/admin/emails/transactional/summary/route.ts
+  lib: src/lib/mail/transactional/summary.ts
+  query_param:
+    nom: window
+    enum_actuel: ['1h', '24h', '7d']
+    enum_cible: ['1h', '24h', '7d', '30d']   # union additive — '1h' conservé (cockpit), '30d' ajouté (dashboard)
+    strategie: >
+      Ajout de '30d' à SummaryWindow + SummaryQuerySchema (enum Zod). windowToMs
+      gagne le cas '30d' => 30 * 86_400_000. Le dashboard n'expose JAMAIS '1h' ;
+      le cockpit n'expose JAMAIS '30d' dans son UI — l'enum API est l'union des
+      deux pour éviter deux schémas divergents. Pas de breaking change : ancien
+      client cockpit (1h/24h/7d) toujours valide.
+    defaut_dashboard: '7d'
+    fallback: window absent OU invalide -> '7d' (dashboard) ; '1h' (cockpit, inchangé)
+
+  bornes_sql:
+    description: fenêtre [now - windowMs, now], colonne email_outbox.created_at
+    invariant_test: >
+      une ligne created_at = (start - 1 ms) est HORS fenêtre ; created_at = start
+      est DANS la fenêtre (gte inclusif). Test posé à cheval sur la borne.
+    windowToMs:
+      '1h': 3_600_000
+      '24h': 86_400_000
+      '7d': 604_800_000
+      '30d': 2_592_000_000
+
+  reponse_etendue:
+    window: "1h|24h|7d|30d"
+    delivered: int           # status IN ('delivered','opened','clicked')
+    queued: int              # status IN ('pending','sending')
+    failed: int              # status IN ('failed','dlq')
+    hardBounced: int         # status = 'bounced_permanent'
+    sent: int                # AJOUT F03 : status IN ('sent','delivered','opened','clicked') — base du tri-état + pct
+    webhookLastSuccessAt: "string|null"  # AJOUT F03 : iso du dernier email_event delivered (pour E2 'webhook muet depuis HH:MM')
+    sparkline:
+      type: "{ delivered: int, failed: int }[]"
+      length: 12             # buckets de windowMs/12, index 0 = plus ancien
+    comparison:
+      presence: "windows 24h | 7d | 30d uniquement (absent en 1h)"
+      deliveredPct: int      # pctChange(current, previous) ; previous=0 -> (current>0?100:0)
+      failedPct: int
+  note_perf:
+    - "30d : vérifier l'index sur email_outbox.created_at (cf. 05 risques)."
+    - "webhookLastSuccessAt : max(ts) sur email_event WHERE type='delivered' — index (type, ts) recommandé."
+
+# ───────────────────────────────────────────────────────────────────────────
+# 2. KPI LIVRAISON — MACHINE À 3 ÉTATS (tri-état)
+# ───────────────────────────────────────────────────────────────────────────
+delivered_kpi_state_machine:
+  module_pur: src/app/admin/emails/kpi-format.ts   # fonction deliveredState() AJOUT
+  signature: "deliveredState(input: { sent: number; delivered: number; webhookLastSuccessAt: string|null }): DeliveredState"
+  type_sortie:
+    state: "'tracked' | 'silent' | 'untracked'"
+    value: string           # '{fmt(delivered)}' | '0' | '—'
+    sub: string             # voir transitions
+    tone: "'neutral' | 'emerald' | 'rose'"
+    silenceSince: "string|null"   # HH:MM (ou JJ/MM HH:MM si >24h) si state==='silent'
+  transitions:
+    - id: E1_tracked
+      garde: "delivered > 0"
+      value: "fmt(delivered)"
+      sub: "pct(delivered, sent) + ' des envoyés'"
+      tone: "delivered/sent >= 0.95 ? 'emerald' : 'neutral'"
+    - id: E2_silent
+      garde: "sent > 0 && delivered === 0 && webhookLastSuccessAt != null"
+      value: "'0'"
+      sub: "'webhook muet depuis ' + fmtClock(webhookLastSuccessAt)"
+      tone: "'rose'"
+      action_link: "/admin/emails/transactional?status=sent,delivered&from=health&check=deliveredFreshness"
+    - id: E3_untracked
+      garde: "sent === 0 || (sent > 0 && delivered === 0 && webhookLastSuccessAt == null)"
+      value: "'—'"
+      sub: "'non suivi'"
+      tone: "'neutral'"
+      tooltip: "docs : statut delivered alimenté par le webhook Stalwart"
+  invariant: "les 3 gardes sont mutuellement exclusives et couvrantes (table de vérité exhaustive testée)."
+  helpers_existants_reutilises:
+    - "pct(num, den) : den===0 -> '—'"
+    - "fmt(n) : fr-FR séparateur milliers"
+    - "isDeliverySilent(sent, delivered) : sent>=1 && delivered===0 (prédicat du bandeau §banner)"
+  helper_ajout:
+    fmtClock: "iso -> 'HH:MM' (Africa/Casablanca) ; si age>24h -> 'JJ/MM HH:MM'"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 3. TENDANCES (sparkline + comparaison)
+# ───────────────────────────────────────────────────────────────────────────
+trend_format:
+  module_pur: src/app/admin/emails/kpi-format.ts   # fonction trendLabel() AJOUT
+  signature: "trendLabel(pct: number|undefined, periodLabel: string, polarity: 'good'|'bad'): { text: string; tone: KpiTone }"
+  regles:
+    - "pct===undefined -> { text: '—', tone: 'neutral' }"
+    - "pct>0 -> { text: `+${pct}% vs ${periodLabel}`, tone: polarity==='good'?'emerald':'rose' }"
+    - "pct<0 -> { text: `${pct}% vs ${periodLabel}`, tone: polarity==='good'?'rose':'emerald' }"
+    - "pct===0 -> { text: `= vs ${periodLabel}`, tone: 'neutral' }"
+  period_label:
+    '24h': '24 h préc.'
+    '7d': '7 j préc.'
+    '30d': '30 j préc.'
+  sparkline:
+    composant: src/components/admin/emails/Sparkline.tsx   # AJOUT
+    props: "{ points: number[]; ariaHidden: true }"
+    rendu: "<svg> inline polyline, 12 points, aria-hidden, décoratif"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 4. AUTO-REFRESH + FRAÎCHEUR
+# ───────────────────────────────────────────────────────────────────────────
+auto_refresh:
+  composant: src/components/admin/emails/DashboardAutoRefresh.tsx   # évolution de DashboardFreshness.tsx
+  parametres:
+    REFRESH_INTERVAL_MS: 60000       # tick fetch
+    AGE_TICK_MS: 1000                # tick affichage de l'âge
+    timezone: Africa/Casablanca
+  props:
+    generatedAt: string              # iso du render serveur (réinitialise l'âge)
+    window: "'24h'|'7d'|'30d'"       # pour ne PAS remonter inutilement, info contextuelle
+  comportement:
+    - "monte -> setInterval(router.refresh, 60000) + intervalle d'âge 1000ms"
+    - "visibilitychange hidden=true -> clearInterval(60s) ; l'âge continue de courir"
+    - "visibilitychange hidden=false -> router.refresh() immédiat + ré-arme l'intervalle 60s"
+    - "démontage -> clearInterval des DEUX intervalles (pas de fuite)"
+    - "bouton manuel 'Rafraîchir' -> router.refresh() + reset âge ; aria-busy pendant transition ; anti double-clic"
+  affichage_age:
+    texte: "'↻ auto · à jour il y a {N} s ({Casablanca})'"
+    aria_live: polite
+  degradation_refresh:
+    description: >
+      si le refresh échoue (le segment RSC throw / réseau), Next affiche
+      l'error boundary OU conserve l'ancien rendu. Côté client, si une mesure
+      d'échec est disponible, bandeau discret 'rafraîchissement impossible —
+      données figées à HH:MM'. Oracle : jamais 'à jour il y a 0 s' sur un raté.
+
+# ───────────────────────────────────────────────────────────────────────────
+# 5. BANDEAU LIVRAISON SILENCIEUSE
+# ───────────────────────────────────────────────────────────────────────────
+silent_delivery_banner:
+  composant: src/components/admin/emails/KpiCards.tsx
+  predicat: "isDeliverySilent(sent, delivered) sur la fenêtre courante"
+  role: alert
+  testid: delivery-silent-banner
+  texte: "Livraison silencieuse : {fmt(sent)} email(s) envoyé(s) sur {windowLabel} mais aucune livraison confirmée — le webhook Stalwart est probablement muet."
+  lien: "/admin/emails/events?source=email"
+  window_label:
+    '24h': '24 h'
+    '7d': '7 j'
+    '30d': '30 j'
+  coherence: "présent SSI carte Livrés en E2 ou E3-webhook-jamais-armé"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 6. HEALTHBADGE — DEEP-LINKS CONTEXTUALISÉS
+# ───────────────────────────────────────────────────────────────────────────
+health_badge:
+  composant: src/components/admin/emails/HealthBadge.tsx
+  deep_link_pattern: "{cockpit}?status={...}&from=health&check={checkId}&at={timestampIso}"
+  propagation_window: "ajoute &window={courant} au deep-link"
+  checks_avec_lien:
+    dlq24h: "?status=dlq&check=dlq24h"
+    webhookSilent: "/admin/emails/events?source=email&check=webhookSilent"
+    cronOutboxLate: "?status=pending,failed&check=cronOutboxLate"
+    sendingStuck: "?status=sending&check=sendingStuck"
+  contraste: "pied de synthèse rose-700 -> rose-800 (DASH-11, WCAG AA)"
+  tolerance: "rendu stable si checks supplémentaires (Listmonk F10) ajoutés ultérieurement"
+  cockpit_consommateur: "CKP-F15 lit ?from=health pour la bannière contextuelle (relevé HH:MM)"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 7. EMPTYSTATE + LOADING/ERROR
+# ───────────────────────────────────────────────────────────────────────────
+empty_state:
+  composant_socle: EmptyState (SOC-F03 / TRV-09)
+  condition: "recent.length === 0"
+  titre: "Aucun envoi sur {windowLabel explicite}"
+  cta: "Ouvrir le cockpit → /admin/emails/transactional?window={w}"
+loading_boundary:
+  fichier: src/app/admin/emails/loading.tsx
+  role: status
+  contenu: skeleton 6 cartes + 6 lignes
+error_boundary:
+  fichier: src/app/admin/emails/error.tsx
+  message_neutre: "Le tableau de bord n'a pas pu être chargé."   # supprime la présomption DB (DASH-09)
+  affiche: [digest, bouton Réessayer (reset), lien retour /admin]
+  interdit: "toute mention 'base de données' / cause présumée"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 8. COMPTEUR EN ATTENTE
+# ───────────────────────────────────────────────────────────────────────────
+pending_counter:
+  source: pendingNow (instantané, hors fenêtre)
+  sous_texte: "relevé il y a {ageSec} s · drain 60 s"
+  tone: "pendingNow > PENDING_AMBER_THRESHOLD(50) ? 'amber' : 'neutral'"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 9. CARTES CLIQUABLES — DRILL-DOWN
+# ───────────────────────────────────────────────────────────────────────────
+kpi_drill_down:
+  base: /admin/emails/transactional
+  propagation: "&window={courant} sur chaque lien"
+  mapping:
+    sent: "?status=sent,delivered"
+    delivered: "?status=sent,delivered"
+    failed: "?status=failed,bounced_soft,bounced_permanent"
+    dlq: "?status=dlq"
+    pending: "?status=pending"
+    total: inerte
+  aria_label: "Voir les {n} {population}"
+
+# ───────────────────────────────────────────────────────────────────────────
+# 10. PAGE RSC
+# ───────────────────────────────────────────────────────────────────────────
+page_rsc:
+  fichier: src/app/admin/emails/page.tsx
+  dynamic: force-dynamic
+  searchParams: "{ window?: string } -> parseWindow() -> '7d' par défaut"
+  fetch_parallele:
+    - "summarizeOutbox(window)"
+    - "checkEmailingHealth()"
+    - "checkEmailingInfraHealth(db)  (si db && health.db.ok)"
+    - "listRecentOutbox({ limit: 8 })"

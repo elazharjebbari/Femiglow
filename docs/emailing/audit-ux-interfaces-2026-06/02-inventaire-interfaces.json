@@ -1,0 +1,146 @@
+{
+  "$schema": "interne — inventaire des interfaces admin emailing, audit 2026-06-06",
+  "reference_commit": "3447177",
+  "racine_app": "apps/web/src",
+  "navigation_globale": {
+    "entree_admin_shell": { "key": "emails", "label": "Emails", "cible": "/admin/emails" },
+    "sous_navigation": "7 boutons quick-links sur le dashboard + GlobalCommandPalette (Cmd/Ctrl-K) montée par layout.tsx",
+    "absents_de_la_navigation": ["/admin/emails/suppression"]
+  },
+  "interfaces": [
+    {
+      "id": "dashboard",
+      "titre": "Tableau de bord emails",
+      "routes_pages": ["/admin/emails"],
+      "fichiers_cles": [
+        "app/admin/emails/page.tsx",
+        "app/admin/emails/layout.tsx",
+        "app/admin/emails/loading.tsx",
+        "app/admin/emails/error.tsx",
+        "app/admin/emails/kpi-format.ts",
+        "components/admin/emails/KpiCards.tsx",
+        "components/admin/emails/HealthBadge.tsx",
+        "components/admin/emails/DashboardFreshness.tsx",
+        "components/admin/emails/GlobalCommandPalette.tsx"
+      ],
+      "rendu": "RSC force-dynamic, 4 requêtes (getOutboxKpi 7j, listRecentOutbox limit 8, checkEmailingHealth, checkEmailingInfraHealth)",
+      "fonctionnalites": ["6 cartes KPI cliquables (drill-down cockpit)", "HealthBadge 15 checks (details repliable)", "alerte livraison silencieuse", "table 8 derniers envois", "bouton Rafraîchir (router.refresh)", "palette Cmd-K (12 routes + 4 actions)"],
+      "etats": { "loading": "skeleton 6 cartes + 6 lignes", "error": "boundary rose + Réessayer + digest", "empty": "ligne de table + lien cockpit" },
+      "apis": ["lib/admin/emails/queries.ts", "lib/admin/emails/health.ts", "lib/admin/emails/checks.ts"]
+    },
+    {
+      "id": "transactionnel",
+      "titre": "Cockpit transactionnel (outbox)",
+      "routes_pages": ["/admin/emails/transactional", "/admin/emails/transactional/[id]"],
+      "fichiers_cles": [
+        "components/admin/emails/cockpit/TransactionalCockpit.tsx",
+        "components/admin/emails/cockpit/FilteredTable.tsx",
+        "components/admin/emails/cockpit/KpiHeader.tsx",
+        "components/admin/emails/cockpit/BulkActionsBar.tsx",
+        "components/admin/emails/cockpit/SavedViewsSidebar.tsx",
+        "components/admin/emails/cockpit/CommandPalette.tsx",
+        "components/admin/emails/common/StatusBadge.tsx"
+      ],
+      "rendu": "RSC mince (vues sauvegardées) + client app complète, recherche POST /search offset 50/page, summary auto-refresh 5 s",
+      "fonctionnalites": ["grammaire de filtres (status/to/template/source/after/before/attempts/has:error + freetext)", "autocomplétion entités (templates, destinataires, sources)", "tri aria-sort (date/statut/template/tentatives)", "sélection multiple + shift-clic", "bulk retry / bulk suppress / export CSV / reap-stuck", "vues sauvegardées système + perso (CRUD)", "4 KPI sparkline + tendance vs J-1 + seuils d'alerte", "détail : métadonnées, snapshot HTML iframe, timeline email_event avec badge source webhook/app, payload JSON"],
+      "statuts_outbox": ["pending", "sending", "sent", "delivered", "opened", "clicked", "failed", "bounced_soft", "bounced_permanent", "suppressed", "dlq"],
+      "apis": ["api/admin/emails/transactional/{search,summary,bulk-retry,bulk-suppress,reap-stuck,recipients-autocomplete,sources}", "api/admin/emails/views", "api/admin/emails/views/[id]"]
+    },
+    {
+      "id": "campagnes",
+      "titre": "Campagnes",
+      "routes_pages": ["/admin/emails/campaigns", "/admin/emails/campaigns/[id]", "/admin/emails/campaigns/[id]/edit"],
+      "absence_notable": "pas de route /new — création via formulaire inline dans l'entête de la liste, puis redirect vers /edit",
+      "fichiers_cles": [
+        "components/admin/emails/wizard/CampaignWizard.tsx",
+        "app/admin/emails/campaigns/[id]/CampaignActions.tsx",
+        "lib/admin/emails/wizard-actions.ts ('use server')",
+        "lib/admin/emails/campaigns-queries.ts",
+        "lib/mail/campaigns/listmonk-status-sync.ts",
+        "lib/mail/campaigns/listmonk-sync.ts"
+      ],
+      "rendu": "RSC liste (filtres URL : q, status, page 20/page) ; wizard client 6 étapes alimenté par server actions ; brouillon persisté à chaque transition d'étape",
+      "wizard_etapes": ["1 Nom", "2 Audience (FemiGlow radio + listes Listmonk checkboxes, estimation async)", "3 Contenu (template Listmonk optionnel + corps HTML, preview iframe)", "4 Sujet & preheader (mock inbox)", "5 Planification (maintenant/datetime-local)", "6 Vérification (récap, test send via template, checkbox de confirmation, envoi bloqué tant que l'estimation est inconnue)"],
+      "statuts": ["draft", "scheduled", "sending", "paused", "sent", "cancelled", "failed"],
+      "actions_detail": ["Rafraîchir les métriques", "Mettre en pause", "Reprendre", "Annuler (confirm)", "Supprimer brouillon (confirm)", "Dupliquer"],
+      "metriques": { "reelles": ["Envoyés", "Ouvertures", "Clics", "Bounces"], "stub_nd": ["Livrés", "Désabos"] },
+      "apis": ["api/admin/emails/listmonk/lists", "api/admin/emails/audiences/preview-size", "server actions wizard-actions.ts"]
+    },
+    {
+      "id": "automations",
+      "titre": "Automations",
+      "routes_pages": ["/admin/emails/automation", "/admin/emails/automation/new", "/admin/emails/automation/[id]/edit", "/admin/emails/automation/runs", "/admin/emails/automation/runs/[id]"],
+      "fichiers_cles": [
+        "components/admin/emails/automation/AutomationWizard.tsx",
+        "components/admin/emails/automation/StepList.tsx",
+        "components/admin/emails/automation/StepEditor.tsx",
+        "components/admin/emails/automation/FrequencySettings.tsx",
+        "lib/mail/automation/{runner,event-dispatcher,frequency,orphan-sweep}.ts",
+        "lib/admin/emails/automation-{actions,mutations}.ts"
+      ],
+      "wizard_etapes": ["1 Identité (nom, slug immuable, trigger, événement, conditions AudienceRulesBuilder)", "2 Étapes (7 types : wait, send, branch, tag, update_lead, webhook, wait_for_event ; réordonner ↑↓)", "3 Fréquence (cooldown min, quiet hours + timezone, daily cap)", "4 Revue + activation"],
+      "triggers": { "operationnels": ["event", "subscription"], "fantomes_ui_seulement": ["schedule", "webhook"] },
+      "statuts_run": ["running", "waiting_for_event", "completed", "cancelled", "errored"],
+      "runs": "liste filtrable (statut/automation/email, 50/page) ; détail = info card + timeline d'étapes (done/current/upcoming) + alertes deferred/skipped + emails envoyés + contextJson brut repliable",
+      "gaps_ui_engine": ["daily cap libellé 'par destinataire' mais compté par automation", "orphan-sweep invisible", "cancel-on-event non configurable", "deleteAutomation jamais câblé (R-031)", "catalogue events non groupé par catégorie"],
+      "apis": ["api/admin/emails/automation/events-catalog"]
+    },
+    {
+      "id": "templates",
+      "titre": "Templates HTML",
+      "routes_pages": ["/admin/emails/templates", "/admin/emails/templates/new", "/admin/emails/templates/[id]/edit"],
+      "fichiers_cles": [
+        "components/admin/emails/templates/TemplateEditor.tsx",
+        "components/admin/emails/templates/NewTemplateForm.tsx",
+        "lib/mail/templates/custom/{render,context-resolver,sanitize,schemas}.ts"
+      ],
+      "moteur": "Handlebars (échappement par défaut, pas de helpers custom) + DOMPurify ; preview avec contexte lead réel (email) ou mock ; cache compile LRU-50",
+      "editeur": "3 colonnes : sources (sujet/preheader/textarea HTML 480px/customVars JSON repliable) | preview iframe sandbox + sujet rendu + email contexte + ↻ | panneau (5 boutons variables, commit message, Créer une version, historique 20 versions restaurables via confirm)",
+      "variables_exposees_ui": 5,
+      "variables_disponibles_moteur": "20+ (identité, commerce, dates, urls, trigger.*, customVars)",
+      "manques": ["autosave", "garde beforeunload", "preview mobile", "diff versions", "test send", "delete (API existe, pas de bouton)", "duplication", "export/import", "insertion variable au curseur (append fin uniquement)", "city/address toujours vides (pas de colonne)"],
+      "apis": ["api/admin/emails/templates", "api/admin/emails/templates/[id]", "api/admin/emails/templates/[id]/{preview,versions}", "api/admin/emails/templates/{starters,autocomplete}"]
+    },
+    {
+      "id": "audiences",
+      "titre": "Audiences (segments)",
+      "routes_pages": ["/admin/emails/audiences", "/admin/emails/audiences/new", "/admin/emails/audiences/[id]", "/admin/emails/audiences/[id]/edit"],
+      "fichiers_cles": [
+        "components/admin/emails/audiences/{AudienceWizard,AudienceRulesBuilder,RuleEditor,AudiencePreview,SnapshotsPanel,ExclusionFlagsFieldset,CountryMultiSelect}.tsx",
+        "lib/mail/audiences/{rules-compiler,preview,snapshot}.ts"
+      ],
+      "dsl": { "types_regles": 15, "groupes": "ET/OU récursifs", "exclusions": ["hard_bounce", "unsubscribe", "manual_suppression", "marketing_optout"], "stub": "has_tag/not_has_tag compilent en FALSE/TRUE (M5.5 non livré)" },
+      "preview": "taille (debounce 800 ms, timeout 5 s), échantillon 10, breakdown ciblés−exclus=envoyables (replié)",
+      "snapshots": "statuts pending/running/done/errored, auto-refresh 4 s pendant running, membres (50 premiers, pas de pagination), export CSV, relance si errored, confirmation par dialog custom avec taille calculée",
+      "apis": ["api/admin/emails/audiences", "api/admin/emails/audiences/[id]", "api/admin/emails/audiences/[id]/snapshot[…]/members", "api/admin/emails/audiences/{preview-size,preview-sample,preview-breakdown}", "api/admin/emails/audiences/click-urls/autocomplete"]
+    },
+    {
+      "id": "suppression",
+      "titre": "Liste de suppression",
+      "routes_pages": ["/admin/emails/suppression"],
+      "fichiers_cles": ["components/admin/emails/cockpit/SuppressionList.tsx", "lib/mail/suppression.ts", "api/admin/emails/suppression/route.ts"],
+      "taxonomie_raisons": ["hard_bounce", "soft_bounce_repeated", "complaint", "unsubscribe", "manual_admin", "cndp_request", "invalid_format"],
+      "sources": ["stalwart", "listmonk", "manual", "cndp"],
+      "fonctionnalites": ["recherche email (substring)", "retrait unitaire avec confirm", "pagination 50/page", "deep-link ?email= depuis le détail transactionnel"],
+      "manques": ["ajout manuel (API addSuppression existe, pas d'UI)", "filtres raison/source (supportés par l'API, non exposés)", "bulk remove", "export/import CSV", "absente de la navigation du dashboard"]
+    },
+    {
+      "id": "events",
+      "titre": "Events utilisateur (debug)",
+      "routes_pages": ["/admin/emails/events"],
+      "fichiers_cles": ["components/admin/emails/events/EventsDashboardView.tsx", "lib/user-events/queries.ts"],
+      "table_source": "user_event (pipeline générique, distinct de email_event)",
+      "fonctionnalites": ["compteur total 24 h", "top events par (nom, source)", "filtre source (web/email/server/admin/import)", "stream 100 derniers (sans fenêtre temporelle)"],
+      "manques": ["corrélation outbox/campagne", "expand JSON propriétés (tronqué max-w-md)", "pas de filtre par nom d'event ni par email"]
+    },
+    {
+      "id": "listmonk",
+      "titre": "Intégration Listmonk",
+      "routes_pages": ["/admin/emails/listmonk/[[...path]]"],
+      "fichiers_cles": ["components/admin/emails/ListmonkFrame.tsx", "app/api/listmonk/[...path]/route.ts", "lib/mail/listmonk/client.ts", "lib/mail/campaigns/listmonk-status-sync.ts"],
+      "mode": "iframe vers LISTMONK_PUBLIC_URL (sous-domaine dédié) ; fallback proxy same-origin /api/listmonk/* documenté cassé (chemins absolus /admin/*)",
+      "touchpoints": ["wizard campagne étape 2 (listes legacy) et 3 (templates)", "détail campagne : lien #id vers admin natif + métriques par poll", "bandeau d'erreur amber si fetch listes/templates échoue"],
+      "manques": ["aucun indicateur de santé Listmonk (dashboard ou liste campagnes)", "échec de sync silencieux (logs serveur seulement)", "'Dernière synchro' retombe sur updatedAt", "bouton 'nouvel onglet' cassé sans LISTMONK_PUBLIC_URL"]
+    }
+  ]
+}

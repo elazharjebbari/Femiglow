@@ -1,0 +1,203 @@
+# F07 — Templates : spec technique (contrats, formes de données)
+# Source de vérité côté code : src/lib/mail/templates/custom/{schemas,queries,
+#   context-resolver,sanitize}.ts ; src/app/api/admin/emails/templates/**.
+# Les handlers MSW de la batterie DOIVENT parser avec ces formes (test de
+# conformité de contrat, §05 G9).
+
+feature: F07-templates
+refs_audit: [TPL-01, TPL-02, TPL-03, TPL-04, TPL-05, TPL-06, TPL-07, TPL-08, TPL-09, TPL-11, TPL-12, TPL-14]
+
+# ─────────────────────────────────────────────────────────────────────────
+# 1. Brouillon localStorage (autosave) — TPL-01
+# ─────────────────────────────────────────────────────────────────────────
+local_draft:
+  key_pattern: "femiglow:tpl-draft:<templateId>"
+  write_debounce_ms: 1000
+  shape:
+    subjectTmpl: string
+    preheaderTmpl: string                # '' si vide
+    htmlSource: string
+    customVars: string                   # chaîne JSON BRUTE (peut être invalide)
+    savedAt: number                      # epoch ms
+    baseVersionId: "string|null"         # activeVersionId au chargement
+  write_when: "isDirty === true"         # sinon removeItem (purge)
+  restore_offer_when:                    # ET logique des 3 conditions
+    - "draft exists"
+    - "draft content !== DB content"
+    - "draft.savedAt > template.updatedAt (ms)"
+  restore_dialog: ConfirmDialog          # socle SOC-F01, JAMAIS appliqué d'office
+  on_restore: "applique les 4 champs ; draft conservé jusqu'au prochain save"
+  on_ignore:  "conserve l'état DB ; removeItem(draft)"
+  purge_on:   "POST /versions res.ok → removeItem(draft)"
+  freshness_label: "✓ Brouillon auto-enregistré il y a Ns"  # Freshness SOC-F04
+
+dirty_guard:                             # SOC-F07 use-dirty-guard
+  beforeunload: "armé ssi isDirty ; désarmé quand propre"
+  in_app_nav: "ConfirmDialog ; non destructif (brouillon local conservé)"
+
+# ─────────────────────────────────────────────────────────────────────────
+# 2. Preview — POST /api/admin/emails/templates/[id]/preview  (existant, étendu)
+# ─────────────────────────────────────────────────────────────────────────
+preview:
+  method: POST
+  request_zod: PreviewTemplateSchema      # schemas.ts (existant)
+  request:
+    subjectTmpl: "string?"
+    preheaderTmpl: "string?"
+    htmlSource: "string (min 1, max 200000)"
+    contextEmail: "email?"                # lead réel ; sinon mock
+    customVars: "Record<string,unknown>?"
+  response_200:
+    subject: string
+    preheader: string
+    html: string                          # déjà sanitizé serveur
+    variablesResolved: "string[]"         # EXISTANT (clés, hors trigger)
+    variablesResolvedMap: "Record<string,string>"  # À AJOUTER : clé→valeur résolue (tronquable côté UI)
+  errors:
+    400: "{ error } corps JSON invalide"
+    401: "{ error } non autorisé"
+    422: "{ error, issues } validation Zod"
+    500: "{ ok:false, error }"
+  debounce_ms: 600                        # côté UI (anti-flake §05)
+  notes: "city/address RETIRÉS du contexte exposé (TPL-11) ; trigger.* documenté"
+
+variables:
+  source: "variablesResolvedMap du dernier preview réussi (reflète lead réel|mock)"
+  groups:
+    identite:  [firstName, fullName, email, phone, country, language]
+    commerce:  [lastOrderId, lastOrderDate, lastOrderTotal, orderCount, totalSpent]
+    dates:     [today, tomorrow, dayOfWeek, currentMonth, currentYear]
+    urls:      [unsubscribeUrl, shopUrl, accountUrl, siteUrl]
+    trigger:   ["trigger.eventName", "trigger.properties"]
+    custom:    ["customVars.* (clés du JSON customVars courant)"]
+  removed: [city, address]                # TPL-11
+  insertion: "AU CURSEUR (selectionStart/end en textarea ; transaction dispatch en CodeMirror) — PAS en fin"
+  autocomplete: "déclenchée par '{{' ; filtre par préfixe ; Entrée insère + ferme }} ; Échap ferme"
+
+# ─────────────────────────────────────────────────────────────────────────
+# 3. Éditeur CodeEditor (CodeMirror lazy) — TPL-03
+# ─────────────────────────────────────────────────────────────────────────
+code_editor:
+  load: "dynamic import client-only (ssr:false)"
+  bundle_budget_kb: 150                   # max sur le chunk CodeMirror
+  props:
+    value: string
+    onChange: "(next:string)=>void"
+    onCursorInsert: "expose insertAtCursor(text:string)"  # pour le panneau variables
+    language: "html+handlebars"
+    lint: true
+    onReady: "()=>void"
+    onLoadError: "()=>void"               # → bascule fallback
+  lint_diagnostics:
+    - "expression Handlebars non fermée : '{{x' sans '}}'  → 'l.N : expression non fermée'"
+    - "balise HTML non fermée (best-effort, non bloquant)"
+  fallback: "<textarea> (composant actuel) si onLoadError ; édition + insertion + autosave OK"
+  hard_barrier: "le lint est INDICATIF ; la sanitization serveur reste la seule barrière de sécurité"
+
+# ─────────────────────────────────────────────────────────────────────────
+# 4. Preview mobile — TPL-04
+# ─────────────────────────────────────────────────────────────────────────
+preview_viewport:
+  modes: [desktop, mobile]
+  desktop_width: "100%"
+  mobile_width: "375px"                   # conteneur iframe ; srcDoc INCHANGÉ
+  refetch_on_toggle: false                # aucun POST preview à la bascule
+  sandbox: "allow-same-origin"            # inchangé (pas de allow-scripts)
+
+# ─────────────────────────────────────────────────────────────────────────
+# 5. Diff de versions — TPL-05
+# ─────────────────────────────────────────────────────────────────────────
+diff:
+  algo: "ligne par ligne (lib diff)"
+  fields: [subjectTmpl, preheaderTmpl, htmlSource]
+  shape:
+    - { type: "added|removed|unchanged", line: string }
+  render: "côte à côte ou inline ; ajouts vert, suppressions rouge, inchangés neutres"
+  restore:
+    confirm: ConfirmDialog                # remplace confirm() natif
+    effect: "charge vN dans les 4 champs (état éditeur)"
+    creates_version: false                # restore != save ; matérialisé au prochain POST /versions
+
+versions:
+  list: GET /api/admin/emails/templates/[id]/versions   # tableau, desc versionNumber
+  create: POST .../versions                              # SaveVersionSchema
+  create_response: EmailTemplateCustomVersionRow         # renvoyé DIRECTEMENT (pas { version })
+  side_effect: "miroir sur parent + activeVersionId ; versionNumber = max+1"
+
+# ─────────────────────────────────────────────────────────────────────────
+# 6. Test send — POST /api/admin/emails/templates/[id]/test-send  (À CRÉER)
+# ─────────────────────────────────────────────────────────────────────────
+test_send:
+  method: POST
+  request_zod: TestSendSchema             # EXISTANT (schemas.ts)
+  request:
+    recipient: "email (requis)"
+    contextEmail: "email?"                # contexte de rendu ; défaut = recipient
+  response_200:
+    status: "queued"
+    outboxId: "uuid"
+  outbox_row:
+    status: "pending"
+    source: "template-test"
+    template: "custom:<slug>"
+    idempotencyKey: "tpl-test:<id>:<recipient>:<tsMs>"   # unique/envoi ; double-clic UI → même clé → 1 row
+  errors:
+    401: "{ error } non autorisé (requireAdmin)"
+    404: "{ error } template introuvable"
+    422: "{ error, issues } recipient absent/invalide"
+    500: "{ ok:false, error }"
+  ui:
+    idempotent: "bouton disabled + aria-busy pendant l'appel ; double-clic = 1 POST"
+    success_toast: "Épreuve envoyée à <recipient>"        # SOC-F02 (nomme le destinataire)
+    on_error: "role=alert ; saisie recipient préservée"
+
+# ─────────────────────────────────────────────────────────────────────────
+# 7. Suppression — DELETE /api/admin/emails/templates/[id]  (existant)
+# ─────────────────────────────────────────────────────────────────────────
+delete:
+  method: DELETE
+  success_200: "{ ok:true } → ligne retirée de la liste + toast"
+  blocked_409:                            # quand findAutomationsUsingTemplate non vide
+    error: "Template utilisé par une ou plusieurs automations"
+    automations:                          # AutomationRef[]
+      - { id: string, slug: string, name: string, active: boolean }
+  ui_409: "ConfirmDialog/dialogue pédagogique listant les slugs bloquants + liens ; template CONSERVÉ"
+  not_found_404: "{ error: 'Not found' }"
+  confirm: ConfirmDialog                  # variante danger (remplace window.confirm)
+
+# ─────────────────────────────────────────────────────────────────────────
+# 8. Création — POST /api/admin/emails/templates  (existant)
+# ─────────────────────────────────────────────────────────────────────────
+create:
+  request_zod: CreateTemplateSchema
+  slug: "kebab-case immuable (regex ^[a-z][a-z0-9-]*$), saisi à la création UNIQUEMENT"
+  duplicate_409: "{ error: 'Slug déjà utilisé' } → affiché sous le champ slug"
+  starters: "GET .../starters (radio Vide | Default FemiGlow)"
+
+duplicate:
+  effect: "createTemplate { slug: <slug>-copie[-n], name: '<name> (copie)', ...source }"
+  redirect: "vers l'éditeur du nouveau template + toast"
+  collision_unresolved: "message d'erreur, aucun doublon créé"
+
+usage_banner:                             # TPL-14
+  source: "findAutomationsUsingTemplate(slug) filtré active===true"
+  zero: "pas de bannière"
+  one_or_n: "⚠ Utilisé par N automations actives (slugs) + [voir]"
+  note: "inactives n'affichent PAS la bannière mais bloquent quand même la suppression"
+
+# ─────────────────────────────────────────────────────────────────────────
+# 9. Sanitization — non-régression (GATE) — TPL-F11
+# ─────────────────────────────────────────────────────────────────────────
+sanitization:
+  fn: "sanitizeEmailHtml (custom/sanitize.ts)"
+  contracts:
+    allowed_tags_strict: true             # PAS de USE_PROFILES
+    forbid_tags: [form, input, button, select, textarea, iframe, object, embed, svg, math, base, noscript, ...]
+    dangerous_css: "expression( | url(javascript:|vbscript:|data:) | @import | behavior: | -moz-binding → neutralisé"
+    data_uri: "data:image/* autorisé ; tout autre data: sur href/src neutralisé"
+  vectors_must_die: [script, on*-handlers, "javascript:", "vbscript:", iframe, object, embed,
+                     form, input, button, "expression()", "@import", "data:text/html",
+                     base, "meta http-equiv=refresh", svg-onload, malformed-nesting]
+  must_survive: ["a[href=https]", strong, br, table, td, "img[src=https]",
+                 "img[src=data:image/png]", "style color", "target", "rel", "aria-label"]
+  gate: "la batterie XSS reste verte ; le lint éditeur ne remplace JAMAIS le sanitize serveur"

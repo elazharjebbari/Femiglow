@@ -1,0 +1,58 @@
+@startuml cycle-vie-transactionnel
+' Machine d'états email_outbox (11 statuts) telle qu'exposée à l'opérateur
+' dans le cockpit transactionnel. Audit UX 2026-06-06.
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+title Cycle de vie d'un email transactionnel (email_outbox)
+
+[*] --> pending : enqueue (route applicative)
+
+state "pending\n« En attente » (amber)" as pending
+state "sending\n« Envoi… » (amber)" as sending
+state "sent\n« Envoyé » (emerald clair)" as sent
+state "delivered\n« Livré » (emerald)" as delivered
+state "opened\n« Ouvert » (blue)" as opened
+state "clicked\n« Cliqué » (blue)" as clicked
+state "failed\n« Échec » (rose)" as failed
+state "bounced_soft\n« Bounce soft » (amber)" as bsoft
+state "bounced_permanent\n« Bounce perm. » (rose)" as bperm
+state "dlq\n« DLQ » (rose foncé)" as dlq
+state "suppressed\n« Supprimé » (stone)" as suppressed
+
+pending --> sending : cron outbox 60s\n(claim)
+sending --> sent : SMTP 2xx
+sending --> failed : SMTP 4xx/5xx fatal
+sending --> pending : reap-stuck\n(process crashé,\naction opérateur)
+sending --> dlq : reap-stuck si\nmax_attempts atteint
+
+sent --> delivered : webhook Stalwart\ndelivery.delivered\n(câblé 2026-06-05,\ndestinataires EXTERNES\nuniquement)
+sent --> bsoft : webhook delivery.failed\n(code soft)
+sent --> bperm : webhook delivery.failed\n(code hard)\n+ insertion suppression
+delivered --> opened : tracking
+opened --> clicked : tracking
+
+failed --> pending : bulk retry / retry détail\n(reset attempts)
+bsoft --> pending : bulk retry
+dlq --> pending : bulk retry
+failed --> dlq : max_attempts (cron)
+
+pending --> suppressed : bulk suppress\n(adresse bloquée)
+sent --> suppressed
+failed --> suppressed
+
+note right of sent
+  POINT UX (CKPT-08 / TRV-04) :
+  un mail vers une boîte LOCALE émet
+  delivery.completed (non traité) et
+  restera « Envoyé » pour toujours.
+  Aucune explication dans l'UI.
+end note
+
+note bottom of dlq
+  Actions opérateur (cockpit) :
+  retry-eligible = failed | dlq | bounced_soft
+  quick filters : status:dlq, status:bounced_soft
+  seuils d'alerte KPI : échecs >= 5, hard bounces > 0
+end note
+@enduml

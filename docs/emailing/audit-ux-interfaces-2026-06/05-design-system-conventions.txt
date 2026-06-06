@@ -1,0 +1,131 @@
+================================================================================
+DESIGN SYSTEM & CONVENTIONS — section admin emails (constat audit 2026-06-06)
+================================================================================
+
+1. PALETTE OBSERVÉE (Tailwind)
+--------------------------------------------------------------------------------
+Base ........... stone (texte 900/800/700, secondaire 600/500, désactivé 400,
+                 bordures 200/300, fonds 50/100, action primaire bg-stone-900)
+Succès ......... emerald (badges 50/700, 100/800 ; bouton envoi emerald-700)
+                 ATTENTION : le cockpit utilise "sage" (sage-50/100/300/700/900)
+                 pour les feedbacks succès et la vue active — DEUX verts
+                 coexistent dans la même section. → unifier (sage OU emerald).
+Avertissement .. amber (50/200/300/700/800)
+Erreur/danger .. rose majoritaire (50/100/200/700/800/900) MAIS le cockpit et
+                 la suppression utilisent red (red-50/300/700) → DEUX rouges.
+Info ........... sky (snapshots running, waiting_for_event) + blue (opened/
+                 clicked, badge webhook timeline, scheduled) → DEUX bleus.
+Violet ......... events source admin (pill).
+
+  INCOHÉRENCE #1 : 3 paires de doublons chromatiques (emerald/sage, rose/red,
+  sky/blue). Cible : 1 token par sémantique, mappé dans tailwind.config
+  (success, danger, warning, info) pour rendre le glissement impossible.
+
+2. TYPOGRAPHIE
+--------------------------------------------------------------------------------
+- H1 pages : text-2xl font-semibold (tracking-tight parfois) — SAUF templates/new
+  qui utilise font-serif text-3xl stone-800 (héritage charte publique FemiGlow).
+  INCOHÉRENCE #2 : un seul écran en serif. Trancher (tout sans-serif en admin).
+- Labels de formulaires : 2 patterns concurrents —
+    a) text-xs uppercase tracking-wider text-stone-500 (templates, métadonnées)
+    b) text-xs font-medium text-stone-600/700 sans uppercase (wizards)
+  INCOHÉRENCE #3 : choisir (b) partout (l'uppercase nuit à la lisibilité FR).
+- Données chiffrées : tabular-nums systématique (bon, à conserver).
+- Code/identifiants : font-mono text-xs (slugs, ids, emails) — convention saine.
+
+3. COMPOSANTS RÉCURRENTS ET LEURS VARIANTES (constat de divergence)
+--------------------------------------------------------------------------------
+Badge de statut
+  - common/StatusBadge.tsx = canonique (11 statuts outbox, "⏺ {label}",
+    role="status", data-status)
+  - KpiCards.tsx embarque SA PROPRE map (doublon, cf. TRV-07)
+  - CampaignStatusBadge, run-status.tsx (automations) : maps locales par domaine
+    (légitime — statuts différents) mais styles de pill non factorisés.
+  CIBLE : un <Pill tone=...> unique + maps de domaine {label, tone}.
+
+Boutons
+  - Primaire : bg-stone-900 text-white hover:bg-stone-800 rounded-md px-4 py-2
+  - Validation finale wizard : bg-emerald-700 (campagne, audience, automation)
+  - Secondaire : border-stone-300 bg-white text-stone-700 hover:bg-stone-50
+  - Danger : border-rose-300 text-rose-700/800 bg-white|rose-50
+  Convergence correcte dans l'ensemble. Manquent : taille unique (px-3/px-4 py-1.5/
+  py-2 selon les écrans), état loading homogène (« ... » vs « Envoi… » vs
+  pendingLabel dédié).
+
+Tables
+  - Pattern stable : rounded-lg border-stone-200 bg-white overflow-hidden,
+    thead bg-stone-50 text-xs uppercase tracking-wider, divide-y, hover:bg-stone-50.
+  - Manque overflow-x-auto sur events (EVT-05).
+
+Empty states : 3 patterns (cf. TRV-09) — box pointillée+emoji / ligne de table /
+  phrase nue. CIBLE : <EmptyState>.
+
+Confirmations : window.confirm() x9 + 1 dialog custom (snapshot audience).
+  CIBLE : <ConfirmDialog> (cf. TRV-01 / chantier C1).
+
+Feedback post-action : bandeau inline persistant avec OK (cockpit), texte
+  aria-live (automations), rien (templates save, refresh campagne).
+  CIBLE : ToastProvider + règle « toute mutation = 1 toast ».
+
+4. ICONOGRAPHIE
+--------------------------------------------------------------------------------
+Émojis utilisés comme icônes : 🎯 (audiences), 📋 (listes), 📭 (vide), 🟢, ⧉, ⏸,
+▶, ⛔, 🗑, ↻, ⚠, 📨, 📅, ⏺, ✓, ✕, ⌘.
+Avantage : zéro dépendance. Inconvénients : rendu hétérogène selon OS, pas de
+contrôle de couleur, lecture screen-reader parasite (les emojis sont lus).
+CIBLE : conserver pour la couleur fonctionnelle (statuts) mais aria-hidden
+systématique + envisager lucide-react (déjà présent ailleurs dans l'app ?
+à vérifier) pour les actions.
+
+5. ESPACEMENT / LAYOUT
+--------------------------------------------------------------------------------
+- Conteneur : AdminShell (sidebar lg:w-60) + contenu ; pas de max-width commun
+  aux pages emails (le wizard campagne se contraint à max-w-3xl, l'éditeur
+  template prend toute la largeur).
+- Grilles : gap-3 (cartes KPI), gap-2/gap-4 ailleurs — tolérable.
+- Densité : tables px-3 py-2 partout (bon).
+
+6. MOTION / ÉTATS DE CHARGEMENT
+--------------------------------------------------------------------------------
+- animate-pulse pour tous les skeletons (dashboard, cockpit KPI).
+- Aucune prise en compte de prefers-reduced-motion.
+- Pas de transitions déclarées (apparitions sèches des drawers/menus).
+
+7. ACCESSIBILITÉ — CONVENTIONS EXISTANTES À GÉNÉRALISER
+--------------------------------------------------------------------------------
+Acquis solides (à imposer comme règles) :
+  - role="alert" pour toute erreur, role="status" + aria-live="polite" pour
+    tout feedback non bloquant
+  - aria-sort sur les colonnes triables (cockpit) ; aria-busy sur les boutons
+    en cours ; aria-current sur l'élément actif
+  - skeletons : conteneur role="status" + sr-only descriptif + arbre visuel
+    aria-hidden
+  - dialogs : role="dialog" aria-modal + focus trap (palette ⌘K, snapshot)
+Manques récurrents : focus management des window.confirm (natif), labels de
+boutons icône (« ↻ » templates), contrastes limites (rose-700/rose-50),
+emojis non aria-hidden, prefers-reduced-motion.
+
+8. RÈGLES DE FORMAT DE DONNÉES
+--------------------------------------------------------------------------------
+- Dates : toLocaleString('fr-FR') avec variantes (dateStyle short/medium,
+  hour12=false) — JAMAIS de timezone affichée (TRV-05/DASH-08).
+  CIBLE : helper formatDateTime(date, {relative?: boolean}) unique affichant
+  « il y a 3 min » sous seuil et « 06/06 14:32 (Casablanca) » au-delà.
+- Nombres : toLocaleString('fr-FR') + tabular-nums (bon).
+- Montants : MAD avec conversion centimes explicitée (audiences) — étendre
+  le helper aux autres écrans si besoin.
+- Pluriels : à la main « {n} campagne{n>1?'s':''} » — fragile mais OK en FR-only.
+
+9. SYNTHÈSE DES TOKENS CIBLES (proposition)
+--------------------------------------------------------------------------------
+  color.action.primary       = stone-900 / hover stone-800
+  color.action.confirm       = emerald-700 (supprime sage des feedbacks)
+  color.semantic.success     = emerald   (50 fond, 700 texte, 300 bordure)
+  color.semantic.warning     = amber     (idem)
+  color.semantic.danger      = rose      (supprime red)
+  color.semantic.info        = sky       (supprime blue hors liens)
+  radius.card                = rounded-lg ; radius.control = rounded-md
+  label.form                 = text-xs font-medium text-stone-600 (sans uppercase)
+  table.*                    = pattern actuel (gelé)
+  feedback.toast.success     = auto-dismiss 4 s ; feedback.toast.error = persistant
+================================================================================

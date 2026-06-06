@@ -1,0 +1,194 @@
+# F10 — Listmonk observabilité — spec technique machine-readable
+# Refs audit : LMK-01 LMK-02 LMK-03 LMK-04 LMK-05 LMK-06
+# Features inventaire : LMK-F01 LMK-F02 LMK-F03 LMK-F04 LMK-F05
+
+meta:
+  code_cible:
+    ecrivain_sync: src/lib/mail/campaigns/listmonk-status-sync.ts
+    check_sante:   src/app/api/admin/emails/health/checks.ts
+    badge_sante:   src/components/admin/emails/HealthBadge.tsx
+    wizard:        src/components/admin/emails/wizard/CampaignWizard.tsx
+    snapshot_push: src/lib/mail/campaigns/listmonk-sync.ts
+    page_iframe:   src/app/admin/emails/listmonk/[[...path]]/page.tsx
+    frame:         src/components/admin/emails/ListmonkFrame.tsx
+    proxy:         src/app/api/listmonk/[...path]/route.ts
+  migrations_additive_only: true   # cf. deploy-infra-single-instance
+  axe_smoke: required
+
+# ---------------------------------------------------------------------------
+modele_donnees:                    # LMK-F04 / LMK-06
+  table: email_campaign_link
+  colonnes_ajoutees:
+    - { nom: last_sync_attempt_at, type: timestamptz, nullable: true }
+    - { nom: last_sync_ok_at,      type: timestamptz, nullable: true }
+    - { nom: last_sync_error,      type: text,        nullable: true }
+  migration_sql: |
+    ALTER TABLE email_campaign_link ADD COLUMN IF NOT EXISTS last_sync_attempt_at timestamptz;
+    ALTER TABLE email_campaign_link ADD COLUMN IF NOT EXISTS last_sync_ok_at      timestamptz;
+    ALTER TABLE email_campaign_link ADD COLUMN IF NOT EXISTS last_sync_error      text;
+  index: aucun   # lecture par id / agrégat sur statut (statusIdx existant suffit)
+
+# ---------------------------------------------------------------------------
+ecrivain_sync:                     # syncCampaignStatuses()
+  invariant_majeur: "les 3 colonnes sont écrites à CHAQUE passage candidat, succès comme échec"
+  regles_ecriture:
+    attempt_at:
+      quand: "systématique (tout candidat traité)"
+      valeur: now
+    ok_at:
+      quand: "uniquement si listmonk.campaigns.get() réussit"
+      valeur: now
+      sur_echec: "INCHANGÉ (conserve le dernier OK)"
+    error:
+      quand: "uniquement sur échec (throw du client)"
+      valeur: "String(err).slice(0, 500)"   # TRONCATURE 500 car.
+      sur_succes: "null (reset)"
+  exclusivite: "sur un passage donné : succès => {ok=now, error=null} ; échec => {error=<msg>, ok inchangé}"
+  un_seul_update_par_candidat: true
+  cas_couverts:
+    - { cas: succes,  effet: "attempt=now, ok=now, error=null + métriques + transition légale" }
+    - { cas: echec_http_4xx_5xx, effet: "attempt=now, ok inchangé, error=ListmonkApiError tronqué, errors++" }
+    - { cas: timeout, effet: "attempt=now, ok inchangé, error=ListmonkTimeoutError tronqué, errors++" }
+  non_regression:
+    - "transition de statut reste LÉGALE uniquement (isLegalTransition) — pas de régression terminale"
+    - "métriques (sent/views/clicks/bounces) rafraîchies uniquement sur succès"
+
+# ---------------------------------------------------------------------------
+check_sante:                       # LMK-F03 / LMK-01
+  ping_listmonk:
+    source: "listmonk.meta.serverInfo() (GET /api/health)"
+    timeout_ms: 3000               # DÉDIÉ — PAS le LISTMONK_TIMEOUT_MS=10000 du client métier
+    cache: "porté par le rapport santé (TTL court) — ping non payé à chaque rendu"
+    seuil_lent_ms: 1000
+    niveaux:
+      ok:       "2xx ET latence < 1000 ms      => 'joignable (NNN ms)'"
+      degraded: "2xx ET latence >= 1000 ms      => 'lent (NNN ms)'"
+      incident: "timeout 3s / réseau / non-2xx  => 'injoignable'"
+  age_dernier_sync_ok:
+    source_sql: "max(last_sync_ok_at) ; count(*) where last_sync_error is not null and last_sync_attempt_at > last_sync_ok_at ; sur status in ('sending','scheduled')"
+    seuils:
+      ok:       "dernier OK < 1h ET 0 campagne non terminale en échec"
+      degraded: "dernier OK entre 1h et 6h OU >=1 campagne non terminale en échec"
+      incident: "dernier OK > 6h alors que des campagnes non terminales existent"
+    base_calme: "aucune campagne non terminale => ok neutre, JAMAIS incident"
+    deep_link: "/admin/emails/campaigns?from=health (filtré sync KO)"
+  integration_badge:
+    rendu: "2 lignes ✓/✗ dans le <ul> déroulé, ligne d'action (deep-link) quand ✗"
+    worst_wins: "niveau global = worst(existant, ping, age_sync)"
+
+# ---------------------------------------------------------------------------
+badges_campagne:                   # LMK-F04 / LMK-02 LMK-06
+  seuil_perime_ms: 3600000         # 1 h
+  terminal_statuts: [sent, cancelled, failed]
+  derivation:
+    en_echec:  "error != null  ET  (ok == null OU attempt > ok)  ET  NON terminale"
+    perime:    "error == null  ET  ok != null  ET  (now - ok) > 1h  ET  NON terminale"
+    exclusivite: "en_echec prime sur perime (on n'affiche que la cause)"
+    aucun: "tout autre cas — notamment : 3 champs null (legacy) OU campagne terminale"
+  table_verite:                    # attempt|ok|error|terminale -> badge
+    - { attempt: null, ok: null, error: null,  terminale: any, badge: aucun }
+    - { attempt: set,  ok: set,  error: null,  terminale: non, age_ok: "<=1h", badge: aucun }
+    - { attempt: set,  ok: set,  error: null,  terminale: non, age_ok: ">1h",  badge: "perime (amber)" }
+    - { attempt: set,  ok: set,  error: null,  terminale: oui, age_ok: ">1h",  badge: aucun }   # piège terminal
+    - { attempt: set,  ok: set,  error: "set", terminale: non, condition: "attempt>ok", badge: "en_echec (rose)" }
+    - { attempt: set,  ok: set,  error: "set", terminale: oui, badge: aucun }
+    - { attempt: set,  ok: null, error: "set", terminale: non, badge: "en_echec (rose)" }
+  rendu:
+    liste: "Pill tone danger/warning par ligne, UNIQUEMENT si badge applicable, EN PLUS du Pill statut"
+    detail:
+      sain:   "ligne neutre 'Dernière synchro réussie : <date> (poll cron)' + Freshness"
+      echec:  "bandeau role=alert + texte error + bouton [Réessayer maintenant]"
+      perime: "bandeau amber léger + bouton [Réessayer maintenant]"
+  bouton_reessayer:
+    action: "POST re-poll ciblé de la campagne"
+    grille_reseau: "200/401/422/500/hang/network — busy 'Synchronisation…' + aria-busy + 1 seul POST"
+    succes: "toast vert + bandeau disparaît/maj"
+    echec:  "toast erreur role=alert persistant + bandeau conservé (zéro faux succès)"
+
+# ---------------------------------------------------------------------------
+wizard_honnete:                    # LMK-F05 / LMK-04
+  entrees: { listmonkError: "string | null", lists: "ListmonkListLite[]", templates: "ListmonkTemplateLite[]" }
+  etape2_listes:
+    table:
+      - { listmonkError: null,     lists: 0,  affichage: "hint création 'Crée-en une dans /admin/emails/listmonk'" }
+      - { listmonkError: null,     lists: ">0", affichage: "cases à cocher (nominal)" }
+      - { listmonkError: non-null, lists: 0,  affichage: "INDISPO + [Réessayer] + 'audience FemiGlow possible' ; PAS de hint création" }
+      - { listmonkError: non-null, lists: ">0", affichage: "cases + avertissement 'certaines listes peuvent manquer'" }
+  etape3_templates:
+    table:
+      - { listmonkError: null,     templates: 0,  affichage: "hint 'crée-en un' (nominal)" }
+      - { listmonkError: non-null, templates: 0, affichage: "INDISPO + [Réessayer] ; PAS de hint ; corps HTML libre reste utilisable" }
+  bouton_reessayer:
+    action: "re-fetch listes/templates"
+    grille_reseau: "busy 'Chargement…' + disabled + succès=cases apparaissent + échec=indispo persiste"
+  bandeau_global: "'⚠ Listmonk : {err}' en tête d'étape CONSERVÉ (situe la cause) — ne remplace plus le hint trompeur"
+  invariant: "liste/template vide AVEC erreur => JAMAIS 'crée-en une'"
+
+# ---------------------------------------------------------------------------
+push_snapshot:                     # LMK-F05 / LMK-04 bis
+  resultat_etendu:                 # extension additive de PushSnapshotResult
+    - { nom: attempted, type: number, def: "nombre de membres du snapshot" }
+    - { nom: pushed,    type: number, def: "poussés OK (existant)" }
+    - { nom: rejected,  type: number, def: "attempted - pushed" }
+    - { nom: firstError, type: "string | null", def: "status+corps tronqué du 1er rejet, ou 'timeout Listmonk'" }
+  alerte_wizard:
+    partiel: "Échec partiel : {attempted} tentés · {rejected} rejetés · premier rejet : {firstError}. [Réessayer le push]"
+    total:   "Aucun destinataire n'a pu être ajouté à Listmonk ({firstError})"
+  invariant: "jamais un '0' nu — toujours un nombre ET une raison"
+
+# ---------------------------------------------------------------------------
+page_iframe:                       # LMK-F01 / LMK-03
+  env: LISTMONK_PUBLIC_URL
+  bouton_nouvel_onglet:
+    avec_env:  "actif, href=${publicOrigin}${path}, target=_blank rel=noopener noreferrer"
+    sans_env:  "DÉSACTIVÉ (aria-disabled=true, pas de href cliquable) + title 'Indisponible : LISTMONK_PUBLIC_URL non configuré'"
+  message_indispo:
+    sans_env: "orienté ops : 'Listmonk n'est pas exposé publiquement. Voir le runbook listmonk-subdomain pour configurer le vhost LiteSpeed.' (PAS l'instruction .env brute)"
+  bandeau_piege:
+    quand: "iframe rendue (avec_env)"
+    texte: "⚠ Vous éditez dans Listmonk natif — les campagnes créées ici ne sont PAS visibles dans /campaigns."
+    role: note   # info, non bloquant
+  iframe_sandbox: "allow-same-origin allow-scripts allow-forms allow-popups (inchangé, PAS de allow-top-navigation)"
+  ssr_digne: "la page rend toujours (heading + iframe OU message) — jamais un 500 si Listmonk est mort"
+
+# ---------------------------------------------------------------------------
+proxy_csp:                         # LMK-F02 / LMK-05
+  auth: "requireAdmin => 401 sans session (inchangé)"
+  injection_serveur: "Basic Auth Listmonk + X-Forwarded-User (audit) — jamais exposés au navigateur (inchangé)"
+  reecriture_headers_reponse:
+    x-frame-options:                 RETIRÉ (toujours)
+    content-security-policy:         "REMPLACÉ par 'frame-ancestors \\'self\\''"
+    content-security-policy-report-only: RETIRÉ
+  entete_synthetise_verbatim: "content-security-policy: frame-ancestors 'self'"
+  invariant: "réponse proxifiée porte TOUJOURS frame-ancestors 'self', JAMAIS x-frame-options ni la CSP Listmonk d'origine"
+  upstream_ko: "502 'Listmonk upstream error'"
+  not_configured: "503 'Listmonk not configured' si creds absents"
+
+# ---------------------------------------------------------------------------
+textes_verbatim:                   # messages de dégradation (oracles E2E/composant)
+  health_ping_ok:       "Listmonk : ✓ joignable"
+  health_ping_lent:     "Listmonk : ⚠ lent"
+  health_ping_down:     "Listmonk : ✗ injoignable"
+  health_sync_ok:       "Sync campagnes : ✓ dernier poll"
+  health_sync_ko:       "Sync campagnes : ✗"
+  badge_liste_echec:    "⚠ sync en échec"
+  badge_liste_perime:   "⚠ métriques périmées (>1h)"
+  detail_sync_ok:       "Dernière synchro réussie"
+  detail_sync_echec:    "métriques potentiellement périmées."
+  detail_btn_retry:     "Réessayer maintenant"
+  wizard_indispo_listes: "Listmonk est indisponible"   # suivi de ({error})
+  wizard_indispo_suffix: "Vous pouvez utiliser une audience FemiGlow."
+  wizard_btn_retry:     "Réessayer"
+  wizard_hint_creation: "Aucune liste Listmonk. Crée-en une"   # NE doit PAS apparaître si Listmonk down
+  push_partiel_prefix:  "Échec partiel du push vers Listmonk"
+  push_total:           "Aucun destinataire n'a pu être ajouté à Listmonk"
+  iframe_btn_tooltip:   "Indisponible : LISTMONK_PUBLIC_URL non configuré"
+  iframe_msg_ops:       "Voir le runbook listmonk-subdomain"
+  iframe_bandeau_piege: "les campagnes créées ici ne sont PAS visibles dans /campaigns"
+  proxy_csp_header:     "content-security-policy: frame-ancestors 'self'"
+
+# ---------------------------------------------------------------------------
+verrouillages:
+  no_listmonk_status_strip: "le proxy ne doit JAMAIS supprimer la CSP sans resynthèse — test d'intégration vérifie la présence de frame-ancestors 'self'"
+  perime_jamais_terminal: "test U : aucune campagne status in (sent,cancelled,failed) ne porte un badge périmé/échec"
+  ping_timeout_court: "le ping santé utilise un AbortSignal de 3s, distinct de LISTMONK_TIMEOUT_MS"

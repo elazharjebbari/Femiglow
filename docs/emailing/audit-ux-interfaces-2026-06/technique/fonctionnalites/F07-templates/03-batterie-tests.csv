@@ -1,0 +1,123 @@
+id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
+F07-C-001,C,P1,autosave,"frappe dans htmlSource puis avance horloge 1000ms (fake timers)","la clé localStorage femiglow:tpl-draft:<id> contient le htmlSource frappé",factory template welcome,TPL-01,a_implementer
+F07-C-002,C,P1,autosave,"frappe puis avance horloge 999ms","aucune écriture localStorage (debounce non écoulé)",factory template,TPL-01,a_implementer
+F07-C-003,C,P1,autosave,"plusieurs frappes rapprochées puis 1000ms","une seule écriture finale contenant la dernière frappe (debounce coalesce)",factory template,TPL-01,a_implementer
+F07-C-004,C,P1,autosave,"état revenu identique à la version DB après modif+annulation","la clé localStorage est purgée (removeItem), pas de faux brouillon",factory template,TPL-01,a_implementer
+F07-C-005,C,P1,autosave,"brouillon écrit puis indicateur de fraîcheur","« Brouillon auto-enregistré il y a Ns » visible avec âge croissant",factory template,TPL-01,a_implementer
+F07-C-006,C,P1,autosave,"montage avec brouillon plus récent que updatedAt (savedAt>updatedAt)","ConfirmDialog de restauration proposé (pas appliqué d'office)",draft seedé localStorage savedAt>updatedAt,TPL-01,a_implementer
+F07-C-007,C,P1,autosave,"montage avec brouillon plus ANCIEN que updatedAt","aucun dialogue ; brouillon obsolète purgé silencieusement",draft savedAt<updatedAt,TPL-01,a_implementer
+F07-C-008,C,P1,autosave,"montage avec brouillon identique au contenu DB","aucun dialogue de restauration",draft == DB,TPL-01,a_implementer
+F07-C-009,C,P1,autosave,"dialogue restauration → clic Restaurer","les 4 champs prennent les valeurs du brouillon ; brouillon conservé",draft divergent,TPL-01,a_implementer
+F07-C-010,C,P1,autosave,"dialogue restauration → clic Ignorer","l'état reste celui de la DB ET la clé localStorage est purgée",draft divergent,TPL-01,a_implementer
+F07-C-011,C,P1,autosave,"dialogue restauration → Échap","dialogue fermé, état DB conservé, brouillon NON purgé (re-proposable)",draft divergent,TPL-01,a_implementer
+F07-C-012,C,P1,autosave,"POST /versions réussi (res.ok)","la clé localStorage est purgée et l'indicateur autosave disparaît",factory + nominalVersions,TPL-01,a_implementer
+F07-C-013,C,P1,autosave,"POST /versions échoue (500)","le brouillon localStorage est CONSERVÉ (pas de perte de travail)",versions 500,TPL-01,a_implementer
+F07-C-014,C,P1,garde-dirty,"état dirty puis beforeunload","l'événement beforeunload est armé (preventDefault appelé)",factory dirty,TPL-01,a_implementer
+F07-C-015,C,P1,garde-dirty,"état propre (= DB) puis beforeunload","beforeunload NON armé (navigation libre)",factory propre,TPL-01,a_implementer
+F07-C-016,C,P1,garde-dirty,"navigation in-app avec état dirty","ConfirmDialog « Quitter sans enregistrer ? » intercepte",factory dirty,TPL-01,a_implementer
+F07-C-017,C,P2,variables,"panneau affiche les 20+ variables groupées","les 20+ noms présents, rangés en groupes identité/commerce/dates/urls/trigger/custom",previewMap 20+ clés,TPL-02,a_implementer
+F07-U-018,U,P2,variables,"liste de référence des variables exposées","exactement les 20+ attendues ; city et address ABSENTS",liste variables resolver,TPL-11,a_implementer
+F07-C-019,C,P2,variables,"valeur résolue affichée à côté du nom","firstName=Fatima, orderCount=3, totalSpent=1 240 MAD visibles",previewMap résolu,TPL-02,a_implementer
+F07-C-020,C,P2,variables,"valeur résolue longue tronquée","valeur > 24 car. affichée avec ellipse",previewMap valeur longue,TPL-02,a_implementer
+F07-C-021,C,P2,variables,"clic sur firstName insère AU CURSEUR (curseur au milieu)","{{firstName}} inséré à la position du curseur, PAS en fin de source",source + curseur posé,TPL-07,a_implementer
+F07-C-022,C,P2,variables,"clic sur variable avec sélection active","la sélection est remplacée par {{var}} et le curseur repositionné après",source + sélection,TPL-07,a_implementer
+F07-C-023,C,P2,variables,"taper {{ ouvre l'autocomplete","une liste de variables filtrables apparaît sous le curseur",source vide,TPL-07,a_implementer
+F07-C-024,C,P2,variables,"taper {{fir filtre l'autocomplete","seule firstName (et préfixes fir) reste proposée",source,TPL-07,a_implementer
+F07-C-025,C,P2,variables,"autocomplete → Entrée insère et ferme }}","{{firstName}} inséré complet avec accolades fermantes",source {{fir,TPL-07,a_implementer
+F07-C-026,C,P2,variables,"autocomplete ouverte → Échap","la liste se ferme sans rien insérer",source {{,TPL-07,a_implementer
+F07-C-027,C,P2,variables,"taper {{zzz sans match","aucune pop-up fantôme (liste vide non affichée)",source {{zzz,TPL-07,a_implementer
+F07-C-028,C,P2,variables,"groupe trigger hors automation","trigger.eventName affiché avec valeur « (selon l'automation) »",previewMap sans trigger,TPL-02,a_implementer
+F07-C-029,C,P2,variables,"customVars.* reflète le JSON courant","les clés du JSON customVars apparaissent dans le groupe Custom",customVars {promo:X},TPL-02,a_implementer
+F07-C-030,C,P2,editeur,"lint signale {{notClosed non fermé","diagnostic « l.N : expression non fermée » visible",source {{notClosed,TPL-03,a_implementer
+F07-C-031,C,P2,editeur,"lint signale une balise HTML non fermée","diagnostic balise non fermée visible (non bloquant)",source <div sans fermeture,TPL-03,a_implementer
+F07-C-032,C,P2,editeur,"source valide sans erreur","aucun diagnostic de lint",source valide,TPL-03,a_implementer
+F07-C-033,C,P2,editeur,"échec de chargement du module CodeMirror","fallback textarea éditable présent (pas d'écran blanc)",onLoadError forcé,TPL-03,a_implementer
+F07-C-034,C,P2,editeur,"insertion au curseur fonctionne en mode fallback textarea","clic variable insère au curseur dans le textarea",fallback + curseur,TPL-03,a_implementer
+F07-C-035,C,P2,editeur,"autosave fonctionne en mode fallback","frappe dans le textarea fallback → brouillon écrit après 1000ms",fallback,TPL-03,a_implementer
+F07-C-036,C,P2,editeur,"lint indicatif n'empêche pas le save","bouton Créer une version reste actionnable malgré un diagnostic",source {{notClosed dirty,TPL-03,a_implementer
+F07-C-037,C,P2,preview,"preview debouncée à 600ms (fake timers)","POST preview émis seulement après 600ms d'inactivité",factory + grille MSW,nominal,a_implementer
+F07-C-038,C,P2,preview,"toggle Mobile change la largeur du conteneur","le conteneur iframe passe à 375px",factory,TPL-04,a_implementer
+F07-C-039,C,P2,preview,"toggle Desktop revient pleine largeur","le conteneur iframe repasse à 100%",factory mode mobile,TPL-04,a_implementer
+F07-C-040,C,P2,preview,"bascule de mode preview","AUCUN POST preview émis par le seul changement de mode (compteur MSW=0)",factory,TPL-04,a_implementer
+F07-C-041,C,P2,preview,"même srcDoc en desktop et mobile","le contenu de l'iframe est identique dans les deux modes",factory,TPL-04,a_implementer
+F07-C-042,C,P2,preview,"contexte lead réel saisi","POST preview porte contextEmail=lead@ex.com",lead réel,TPL-12,a_implementer
+F07-C-043,C,P2,preview,"contexte vide → mock","POST preview sans contextEmail (rendu mock côté serveur)",pas d'email,nominal,a_implementer
+F07-C-044,C,P2,preview,"preview 200 nominal","sujet rendu et iframe peuplée",grille MSW 200,nominal,a_implementer
+F07-C-045,C,P2,preview,"preview 401","message role=alert (session expirée), pas de faux rendu",grille MSW 401,nominal,a_implementer
+F07-C-046,C,P2,preview,"preview 422","détail de validation affiché",grille MSW 422,nominal,a_implementer
+F07-C-047,C,P2,preview,"preview 500","message d'erreur, placeholder sujet « — » conservé",grille MSW 500,nominal,a_implementer
+F07-C-048,C,P2,preview,"preview hang (delay infini)","indicateur de chargement visible, pas de double POST",grille MSW hang,nominal,a_implementer
+F07-C-049,C,P2,preview,"preview network error","message d'erreur, état préservé",grille MSW network,nominal,a_implementer
+F07-C-050,C,P2,preview,"customVars JSON invalide","erreur « customVars JSON invalide » AVANT tout POST preview",customVars 'pas json',nominal,a_implementer
+F07-C-051,C,P2,versions,"liste des versions affichée desc","v7 (actuelle) en tête, ordre décroissant",factory 7 versions,nominal,a_implementer
+F07-C-052,C,P2,versions,"clic voir le diff v6→v7","panneau diff affiché avec ajouts (vert) et suppressions (rouge)",v6 v7 divergents,TPL-05,a_implementer
+F07-U-053,U,P2,versions,"diff ligne par ligne d'un sujet+html","lignes added/removed/unchanged correctes",2 sources connues,TPL-05,a_implementer
+F07-C-054,C,P2,versions,"restore via ConfirmDialog → Confirmer","les 4 champs prennent les valeurs de la version restaurée",factory + version v3,TPL-05,a_implementer
+F07-C-055,C,P2,versions,"restore via ConfirmDialog → Échap/Annuler","aucun champ modifié (état inchangé)",factory + version v3,TPL-05,a_implementer
+F07-C-056,C,P2,versions,"après restore SANS save","la liste de versions est inchangée (restore != nouvelle version)",factory + restore,TPL-05,a_implementer
+F07-C-057,C,P2,versions,"après restore PUIS save (200)","une nouvelle version apparaît en tête avec numéro incrémenté",restore + nominalVersions,TPL-05,a_implementer
+F07-C-058,C,P2,versions,"création de version 200","v(N+1) ajoutée en tête de liste",grille MSW versions 200,nominal,a_implementer
+F07-C-059,C,P2,versions,"création de version 401","message d'erreur, AUCUNE version fantôme ajoutée",grille MSW versions 401,nominal,a_implementer
+F07-C-060,C,P2,versions,"création de version 422","détail de validation affiché, pas de version ajoutée",grille MSW versions 422,nominal,a_implementer
+F07-C-061,C,P2,versions,"création de version 500","message + bouton réactivé, pas de version fantôme",grille MSW versions 500,nominal,a_implementer
+F07-C-062,C,P2,versions,"création de version hang","bouton désactivé + aria-busy, AUCUN second POST au double-clic",grille MSW versions hang,nominal,a_implementer
+F07-C-063,C,P2,versions,"création de version network error","message d'erreur, état préservé",grille MSW versions network,nominal,a_implementer
+F07-C-064,C,P1,test-send,"clic Tester → POST test-send avec recipient","un POST émis vers /test-send body { recipient }",factory + grille MSW,TPL-06,a_implementer
+F07-C-065,C,P1,test-send,"test-send 200","toast succès « Épreuve envoyée à <recipient> » nommant le destinataire",grille MSW 200,TPL-06,a_implementer
+F07-C-066,C,P1,test-send,"test-send 401","message role=alert, saisie recipient préservée",grille MSW 401,TPL-06,a_implementer
+F07-C-067,C,P1,test-send,"test-send 422 (recipient invalide)","détail de validation affiché, pas de toast succès",grille MSW 422,TPL-06,a_implementer
+F07-C-068,C,P1,test-send,"test-send 500","message d'erreur, recipient préservé",grille MSW 500,TPL-06,a_implementer
+F07-C-069,C,P1,test-send,"test-send hang","bouton désactivé + aria-busy pendant le pending",grille MSW hang,TPL-06,a_implementer
+F07-C-070,C,P1,test-send,"test-send network error","message d'erreur, état préservé",grille MSW network,TPL-06,a_implementer
+F07-C-071,C,P1,test-send,"double-clic sur Tester","UN SEUL POST test-send émis (compteur MSW=1)",grille MSW 200,TPL-06,a_implementer
+F07-C-072,C,P1,suppression,"delete sans référence → ConfirmDialog → Confirmer","DELETE émis, ligne retirée de la liste + toast",factory sans automation,TPL-08,a_implementer
+F07-C-073,C,P1,suppression,"delete → ConfirmDialog → Annuler/Échap","aucun DELETE émis, template conservé",factory,TPL-08,a_implementer
+F07-C-074,C,P1,suppression,"delete répond 409 avec automations","dialogue liste les slugs bloquants + liens, template CONSERVÉ",delete 409 [welcome-flow vip-flow],TPL-08,a_implementer
+F07-C-075,C,P1,suppression,"delete 409 → l'opérateur ferme le dialogue","la liste n'est PAS raccourcie (pas de faux succès)",delete 409,TPL-08,a_implementer
+F07-C-076,C,P2,suppression,"delete 500","message d'erreur, ligne préservée",delete 500,nominal,a_implementer
+F07-C-077,C,P2,dupliquer,"clic Dupliquer → POST create avec slug suffixé","POST create body slug=<slug>-copie + name (copie)",factory,TPL-09,a_implementer
+F07-C-078,C,P2,dupliquer,"duplication 200 → redirection","navigation vers l'éditeur du nouveau template + toast",create 200,TPL-09,a_implementer
+F07-C-079,C,P2,dupliquer,"duplication collision slug (409 puis -copie-2)","slug dédupliqué proposé, pas de doublon créé",create 409 sur -copie,TPL-09,a_implementer
+F07-C-080,C,P2,banniere-usage,"0 automation active","aucune bannière d'usage affichée",automations: [],TPL-14,a_implementer
+F07-C-081,C,P2,banniere-usage,"1 automation active","« Utilisé par 1 automation active (welcome-flow) » + lien",automations:[welcome-flow active],TPL-14,a_implementer
+F07-C-082,C,P2,banniere-usage,"N automations actives","compte exact + liste des slugs + liens",automations:[3 actives],TPL-14,a_implementer
+F07-C-083,C,P2,banniere-usage,"automation inactive seule","pas de bannière d'avertissement (mais delete reste bloqué)",automations:[1 inactive],TPL-14,a_implementer
+F07-C-084,C,P2,liste,"recherche sur le slug","seules les lignes dont le slug contient le terme restent",liste 5 templates,TPL-12,a_implementer
+F07-C-085,C,P2,liste,"recherche sur le nom","filtre aussi sur le nom (insensible à la casse)",liste 5 templates,TPL-12,a_implementer
+F07-C-086,C,P2,liste,"recherche sans résultat","EmptyState affiché (pas de table vide muette)",liste + terme absent,TPL-12,a_implementer
+F07-C-087,C,P2,liste,"tri par colonne Modifié","lignes ordonnées par date, aria-sort positionné",liste dates variées,TPL-12,a_implementer
+F07-C-088,C,P2,liste,"tri par colonne Slug","ordre alphabétique des slugs, aria-sort positionné",liste,TPL-12,a_implementer
+F07-U-089,U,P1,sanitization,"<script>alert(document.cookie)</script>","aucun <script ne survit (email + preview)",payload script,nominal,a_implementer
+F07-U-090,U,P1,sanitization,"handlers on* (onerror/onclick/onmouseover)","aucun on…= ne survit",payload handlers,nominal,a_implementer
+F07-U-091,U,P1,sanitization,"href javascript:","aucun javascript: ne survit, texte légitime conservé",payload a href js,nominal,a_implementer
+F07-U-092,U,P1,sanitization,"href/src vbscript:","aucun vbscript: ne survit",payload vbscript,nominal,a_implementer
+F07-U-093,U,P1,sanitization,"iframe/object/embed","aucun de ces tags ne survit, texte conservé",payload iframe object embed,nominal,a_implementer
+F07-U-094,U,P1,sanitization,"form/input/button (phishing)","aucun de ces tags ne survit",payload form,nominal,a_implementer
+F07-U-095,U,P1,sanitization,"CSS expression() et url(javascript:)","aucun expression( ni url(javascript:) ne survit",payload style expression,nominal,a_implementer
+F07-U-096,U,P1,sanitization,"CSS @import distant dans <style>","aucun @import ne survit",payload style import,nominal,a_implementer
+F07-U-097,U,P1,sanitization,"href/src data:text/html","aucun data:text/html ne survit ; data:image/png conservé",payload data uri,nominal,a_implementer
+F07-U-098,U,P1,sanitization,"<base href=//evil>","aucun <base ne survit",payload base,nominal,a_implementer
+F07-U-099,U,P1,sanitization,"meta http-equiv=refresh","aucun http-equiv=refresh ne survit",payload meta refresh,nominal,a_implementer
+F07-U-100,U,P1,sanitization,"<svg onload> + script imbriqué","aucun <svg/onload/<script ne survit",payload svg,nominal,a_implementer
+F07-U-101,U,P1,sanitization,"imbrication malformée <scr<script>ipt>","aucun <script ne survit après reparse",payload nested,nominal,a_implementer
+F07-U-102,U,P1,sanitization,"injection via {{{userHtml}}} (pipeline preview)","la charge hostile ne survit pas dans le rendu preview",payload triple-brace,nominal,a_implementer
+F07-U-103,U,P1,sanitization,"préservation du légitime (a/strong/table/img/style)","balises et attributs sûrs conservés (pas de sur-nettoyage)",payload légitime,nominal,a_implementer
+F07-C-104,C,P2,creation,"slug kebab immuable après création","le champ slug n'est plus éditable dans l'éditeur (cadenas)",factory existant,nominal,a_implementer
+F07-C-105,C,P2,creation,"création slug en doublon (409)","« Slug déjà utilisé » affiché sous le champ slug",create 409,nominal,a_implementer
+F07-I-106,I,P1,test-send,"POST test-send réel crée une ligne outbox","une ligne outbox status=pending source=template-test est insérée",femiglow_test + template,TPL-06,a_implementer
+F07-I-107,I,P1,test-send,"POST test-send 401 sans admin","403/401 selon requireAdmin, aucune ligne outbox",femiglow_test sans session,TPL-06,a_implementer
+F07-I-108,I,P1,test-send,"POST test-send recipient invalide","422 avec issues, aucune ligne outbox",femiglow_test,TPL-06,a_implementer
+F07-I-109,I,P1,suppression,"DELETE template câblé → 409 forme exacte","409 { error, automations:[{id,slug,name,active}] } parse avec le schéma",femiglow_test + automation send,TPL-08,a_implementer
+F07-I-110,I,P2,suppression,"DELETE template libre","200 { ok:true } et deletedAt posé (soft delete)",femiglow_test sans réf,TPL-08,a_implementer
+F07-I-111,I,P2,versions,"POST /versions incrémente versionNumber","version créée = max+1, miroir sur parent + activeVersionId",femiglow_test + template,nominal,a_implementer
+F07-I-112,I,P2,preview,"POST /preview renvoie variablesResolvedMap","réponse contient subject/html + map clé→valeur sans city/address",femiglow_test + lead,TPL-11,a_implementer
+F07-I-113,I,P2,preview,"conformité contrat preview MSW↔réel","la réponse réelle parse avec le schéma du handler MSW",femiglow_test,nominal,a_implementer
+F07-A-114,A,P2,a11y,"axe smoke sur l'éditeur","0 violation serious/critical",factory,nominal,a_implementer
+F07-A-115,A,P2,a11y,"panneau variables labellisé et navigable","les variables ont un rôle/nom accessible ; aria du panneau correct",factory,TPL-02,a_implementer
+F07-A-116,A,P2,a11y,"dialogues (restauration/suppression) focus trap + Esc","focus piégé, Esc ferme, retour focus au déclencheur",factory,nominal,a_implementer
+F07-A-117,A,P2,a11y,"toggle desktop/mobile annoncé","les boutons de mode ont aria-pressed et nom accessible",factory,TPL-04,a_implementer
+F07-E-118,E,P1,e2e,"SM-F07-01 refonte complète d'un template de A à Z","édition→variables→mobile→épreuve reçue dans Mailpit→version créée",femiglow_emailqa + Mailpit,metier,a_implementer
+F07-E-119,E,P1,e2e,"SM-F07-02 crash navigateur → restauration","après rechargement, dialogue propose le brouillon ; restauration récupère le travail",femiglow_emailqa,metier,a_implementer
+F07-E-120,E,P2,e2e,"SM-F07-03 variable piégée {{firstname}}","preview vide pour firstname ; panneau/lint guident vers firstName",femiglow_emailqa,metier,a_implementer
+F07-E-121,E,P2,e2e,"SM-F07-04 suppression d'un template branché","409 pédagogique listant l'automation bloquante ; suppression refusée",femiglow_emailqa + automation,metier,a_implementer
+F07-E-122,E,P1,e2e,"SM-F07-05 injection du stagiaire (HTML douteux)","collage HTML hostile → preview/email sanitizés, charge active absente",femiglow_emailqa + Mailpit,metier,a_implementer
