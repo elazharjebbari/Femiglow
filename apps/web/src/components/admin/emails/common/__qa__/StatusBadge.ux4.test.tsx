@@ -2,7 +2,7 @@
  * Vague 4 — FONDATION — StatusBadge canonique (UX-TRANSVERSE-005).
  *
  * Oracle UX4-FONDATION-004 : rend le libellé FR pour les 11 statuts outbox
- * (dlq → 'DLQ', bounced_permanent → 'Bounce perm.') et JAMAIS le slug brut
+ * (dlq → 'DLQ', bounced_permanent → 'Bounce permanent') et JAMAIS le slug brut
  * anglais. Un statut inconnu rend 'Inconnu' (pas la chaîne technique).
  */
 import { describe, expect, it } from 'vitest';
@@ -18,7 +18,7 @@ const ALL_STATUSES: Array<[OutboxStatus, string]> = [
   ['clicked', 'Cliqué'],
   ['failed', 'Échec'],
   ['bounced_soft', 'Bounce soft'],
-  ['bounced_permanent', 'Bounce perm.'],
+  ['bounced_permanent', 'Bounce permanent'],
   ['suppressed', 'Supprimé'],
   ['dlq', 'DLQ'],
 ];
@@ -45,10 +45,10 @@ describe('StatusBadge — UX4-FONDATION-004 (11 statuts FR)', () => {
     },
   );
 
-  it('UX4-FONDATION-004b : bounced_permanent → "Bounce perm." (pas le slug)', () => {
+  it('UX4-FONDATION-004b : bounced_permanent → "Bounce permanent" (pas le slug)', () => {
     render(<StatusBadge status="bounced_permanent" />);
     const badge = screen.getByRole('status');
-    expect(badge).toHaveTextContent('Bounce perm.');
+    expect(badge).toHaveTextContent('Bounce permanent');
     expect(badge.textContent).not.toContain('bounced_permanent');
   });
 
@@ -69,7 +69,7 @@ describe('StatusBadge — UX4-FONDATION-004 (11 statuts FR)', () => {
 
   it('UX4-FONDATION-004e : statusLabel() expose le libellé FR sans rendu', () => {
     expect(statusLabel('dlq')).toBe('DLQ');
-    expect(statusLabel('bounced_permanent')).toBe('Bounce perm.');
+    expect(statusLabel('bounced_permanent')).toBe('Bounce permanent');
     expect(statusLabel('nope')).toBe('Inconnu');
   });
 });

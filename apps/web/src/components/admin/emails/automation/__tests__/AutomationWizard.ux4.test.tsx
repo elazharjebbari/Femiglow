@@ -82,9 +82,12 @@ describe('AutomationWizard — triggerConditions (UX4-AUTOMATIONS-001)', () => {
     const builder = await screen.findByTestId('rules-group-0');
     expect(builder).toBeInTheDocument();
 
-    // Ajouter un critère via le menu du builder.
+    // Ajouter un critère via le menu du builder. (P0/AUD-01 : has_tag est
+    // désormais neutralisé tant que M5.5 n'est pas livré → on utilise une
+    // règle opérationnelle ; la neutralisation a son propre test dans
+    // __qa__/p0-quickwins.msw.test.tsx.)
     await user.click(within(builder).getByTestId('add-rule-btn'));
-    await user.click(within(builder).getByTestId('add-rule-has_tag'));
+    await user.click(within(builder).getByTestId('add-rule-consent_marketing'));
 
     // Naviguer jusqu'à la soumission.
     await user.click(nextBtn());

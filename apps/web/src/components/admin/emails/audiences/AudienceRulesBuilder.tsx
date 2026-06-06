@@ -49,21 +49,41 @@ function AddRuleMenu({ onPick }: { onPick: (kind: RuleKind) => void }) {
               <p className="border-b border-stone-100 bg-stone-50 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-stone-500">
                 {cat.label}
               </p>
-              {cat.items.map((item) => (
-                <button
-                  key={item.kind}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    onPick(item.kind);
-                    setOpen(false);
-                  }}
-                  data-testid={`add-rule-${item.kind}`}
-                  className="block w-full px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-sage-50"
-                >
-                  {item.label}
-                </button>
-              ))}
+              {cat.items.map((item) =>
+                item.disabled ? (
+                  // AUD-01 : règle non opérationnelle (M5.5 non livré) —
+                  // visible mais non sélectionnable, avec la raison.
+                  <button
+                    key={item.kind}
+                    type="button"
+                    role="menuitem"
+                    disabled
+                    aria-disabled="true"
+                    title={item.disabledHint}
+                    data-testid={`add-rule-${item.kind}`}
+                    className="block w-full cursor-not-allowed px-3 py-1.5 text-left text-sm text-stone-400"
+                  >
+                    {item.label}
+                    {item.disabledHint ? (
+                      <span className="ml-2 text-xs text-stone-400">({item.disabledHint})</span>
+                    ) : null}
+                  </button>
+                ) : (
+                  <button
+                    key={item.kind}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onPick(item.kind);
+                      setOpen(false);
+                    }}
+                    data-testid={`add-rule-${item.kind}`}
+                    className="block w-full px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-sage-50"
+                  >
+                    {item.label}
+                  </button>
+                ),
+              )}
             </div>
           ))}
         </div>

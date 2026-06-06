@@ -22,6 +22,7 @@ import {
   type ParseResult,
 } from '@/lib/mail/transactional/filters-parser';
 import type { OutboxSearchRow, SearchSort } from '@/lib/mail/transactional/search';
+import { formatSkipReasons } from '@/lib/mail/transactional/skip-reasons';
 import { CommandPalette } from './CommandPalette';
 import { KpiHeader, useSummary } from './KpiHeader';
 import { SavedViewsSidebar, type SidebarView } from './SavedViewsSidebar';
@@ -453,9 +454,8 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
           const skipped = body.skipped ?? 0;
           const parts = [`${retried} relancé${retried > 1 ? 's' : ''}`];
           if (skipped > 0) {
-            const reasons = Array.from(
-              new Set((body.skippedIds ?? []).map((s) => s.reason)),
-            ).join(', ');
+            // CKPT-02 : raisons traduites (not_found → « non trouvé », etc.)
+            const reasons = formatSkipReasons(body.skippedIds);
             parts.push(
               `${skipped} ignoré${skipped > 1 ? 's' : ''}${reasons ? ` (${reasons})` : ''}`,
             );

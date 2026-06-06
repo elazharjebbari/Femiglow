@@ -4,7 +4,7 @@
  * FrequencySettings — édition des contrôles de fréquence M5.5 :
  *  - cooldownSeconds (anti-spam même destinataire)
  *  - quietHoursEnabled + start/end/tz (plage horaire d'envoi)
- *  - dailyCap (plafond quotidien par destinataire)
+ *  - dailyCap (plafond quotidien GLOBAL de l'automation — cf. frequency.ts)
  */
 
 export type FrequencyValue = {
@@ -101,10 +101,11 @@ export function FrequencySettings({ value, onChange }: FrequencySettingsProps) {
         )}
       </div>
 
-      {/* Daily cap */}
+      {/* Daily cap — AUTO-04 : le moteur (frequency.ts checkDailyCap) plafonne
+          PAR AUTOMATION entière, pas par destinataire — le libellé doit le dire. */}
       <div>
         <label className="block text-sm font-medium text-stone-700">
-          Plafond d'envois par jour (par destinataire)
+          Plafond d'envois par jour (global, pour cette automation)
         </label>
         <div className="mt-1 flex items-center gap-2">
           <input
@@ -120,7 +121,9 @@ export function FrequencySettings({ value, onChange }: FrequencySettingsProps) {
             }
             className="w-32 rounded border border-stone-300 px-3 py-1.5 text-sm"
           />
-          <span className="text-sm text-stone-500">emails / 24h</span>
+          <span className="text-sm text-stone-500">
+            envois / 24h — tous destinataires confondus
+          </span>
         </div>
       </div>
     </div>

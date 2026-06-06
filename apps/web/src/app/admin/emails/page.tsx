@@ -106,6 +106,12 @@ export default async function AdminEmailsPage() {
           Listmonk (admin natif) →
         </Link>
         <Link
+          href="/admin/emails/suppression"
+          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
+        >
+          Liste de suppression →
+        </Link>
+        <Link
           href="/admin/emails/events"
           className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-50"
         >

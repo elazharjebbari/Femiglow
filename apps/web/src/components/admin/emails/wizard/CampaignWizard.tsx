@@ -412,9 +412,21 @@ export function CampaignWizard({ draftId, initial, lists, templates, audiences =
             <section>
               <h3 className="mb-2 text-sm font-medium text-stone-700">📋 Listes Listmonk (legacy)</h3>
               {lists.length === 0 ? (
-                <p className="rounded border border-stone-200 bg-stone-50 p-3 text-xs text-stone-600">
-                  Aucune liste Listmonk. Crée-en une dans <code>/admin/emails/listmonk</code>.
-                </p>
+                listmonkError ? (
+                  // LMK-04 : ne PAS conseiller de « créer une liste » quand la
+                  // vacuité vient d'une panne Listmonk — dire la vérité.
+                  <p
+                    role="alert"
+                    className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
+                  >
+                    ⚠ Listmonk est indisponible — les listes ne peuvent pas être chargées (
+                    {listmonkError}). Vous pouvez utiliser une audience FemiGlow ci-dessus.
+                  </p>
+                ) : (
+                  <p className="rounded border border-stone-200 bg-stone-50 p-3 text-xs text-stone-600">
+                    Aucune liste Listmonk. Crée-en une dans <code>/admin/emails/listmonk</code>.
+                  </p>
+                )
               ) : (
                 <>
                   <div className="mb-3">

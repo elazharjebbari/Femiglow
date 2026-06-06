@@ -8,7 +8,20 @@
 import type { Rule, RuleKind, RulesGroup } from '@/lib/mail/audiences/rules-types';
 import { countryLabel } from './countries';
 
-export const RULE_CATEGORIES: { label: string; items: { kind: RuleKind; label: string }[] }[] = [
+export type RuleMenuItem = {
+  kind: RuleKind;
+  label: string;
+  /**
+   * AUD-01 : item présent mais non sélectionnable. Tant que M5.5 (moteur de
+   * tags) n'est pas livré, has_tag/not_has_tag compileraient des EXISTS sur
+   * une table lead_tag quasi vide (drift uuid) : has_tag ciblerait ~0 contact
+   * et not_has_tag TOUTE la base — sans aucun signal pour l'opératrice.
+   */
+  disabled?: boolean;
+  disabledHint?: string;
+};
+
+export const RULE_CATEGORIES: { label: string; items: RuleMenuItem[] }[] = [
   {
     label: '🧍 Identité',
     items: [
@@ -45,8 +58,13 @@ export const RULE_CATEGORIES: { label: string; items: { kind: RuleKind; label: s
   {
     label: '🏷 Tags',
     items: [
-      { kind: 'has_tag', label: 'A le tag X' },
-      { kind: 'not_has_tag', label: "N'a pas le tag X" },
+      { kind: 'has_tag', label: 'A le tag X', disabled: true, disabledHint: 'bientôt — M5.5' },
+      {
+        kind: 'not_has_tag',
+        label: "N'a pas le tag X",
+        disabled: true,
+        disabledHint: 'bientôt — M5.5',
+      },
     ],
   },
 ];

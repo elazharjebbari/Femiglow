@@ -113,7 +113,7 @@ describe('FilteredTable — vague 4', () => {
   });
 
   // UX-TRANSVERSE-005 : libellés FR canoniques, plus de slug anglais brut.
-  it('UX-TRANSVERSE-005 : statuts rendus en FR via StatusBadge (Bounce perm., DLQ)', () => {
+  it('UX-TRANSVERSE-005 : statuts rendus en FR via StatusBadge (Bounce permanent, DLQ)', () => {
     render(
       <FilteredTable
         rows={[
@@ -125,7 +125,7 @@ describe('FilteredTable — vague 4', () => {
         onSelectionChange={noop}
       />,
     );
-    expect(within(screen.getByTestId('row-r1')).getByText('Bounce perm.')).toBeInTheDocument();
+    expect(within(screen.getByTestId('row-r1')).getByText('Bounce permanent')).toBeInTheDocument();
     expect(within(screen.getByTestId('row-r1')).queryByText('bounced_permanent')).toBeNull();
     expect(within(screen.getByTestId('row-r2')).getByText('DLQ')).toBeInTheDocument();
   });

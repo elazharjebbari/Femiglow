@@ -183,4 +183,4 @@ quick_wins_sans_chantier:  # < 1 h chacun, faisables immédiatement
   - "DASH-10 : placeholder palette « Cmd-K / Ctrl-K » (1 chaîne)"
   - "AUD-01 : désactiver has_tag/not_has_tag dans le menu d'ajout de critère"
   - "LMK-04 : afficher listmonkError au lieu du hint de création quand lists vide"
-  - "EVT-05 : overflow-x-auto sur la table events"
+  - "EVT-05 : INVALIDÉ à la vérification P0 — overflow-x-auto déjà présent sur les 2 tables (aucune action)"

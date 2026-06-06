@@ -176,7 +176,7 @@ export function StatusBadge({ status }: { status: string }) {
     clicked: { label: 'Cliqué', cls: 'bg-blue-100 text-blue-800' },
     failed: { label: 'Échec', cls: 'bg-rose-50 text-rose-700' },
     bounced_soft: { label: 'Bounce soft', cls: 'bg-amber-50 text-amber-700' },
-    bounced_permanent: { label: 'Bounce perm.', cls: 'bg-rose-100 text-rose-800' },
+    bounced_permanent: { label: 'Bounce permanent', cls: 'bg-rose-100 text-rose-800' },
     suppressed: { label: 'Supprimé', cls: 'bg-stone-100 text-stone-700' },
     dlq: { label: 'DLQ', cls: 'bg-rose-200 text-rose-900' },
   };

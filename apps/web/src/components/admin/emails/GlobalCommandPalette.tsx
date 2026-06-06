@@ -157,7 +157,7 @@ export function GlobalCommandPalette({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Tapez pour chercher (Cmd-K)…"
+          placeholder="Tapez pour chercher (Cmd-K / Ctrl-K)…"
           aria-label="Recherche commandes"
           aria-activedescendant={
             filtered[activeIdx] ? `cmd-${filtered[activeIdx].id}` : undefined
