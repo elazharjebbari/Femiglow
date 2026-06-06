@@ -166,27 +166,7 @@ export function Kpi({
   );
 }
 
-export function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    pending: { label: 'En attente', cls: 'bg-amber-50 text-amber-700' },
-    sending: { label: 'Envoi…', cls: 'bg-amber-50 text-amber-700' },
-    sent: { label: 'Envoyé', cls: 'bg-emerald-50 text-emerald-700' },
-    delivered: { label: 'Livré', cls: 'bg-emerald-100 text-emerald-800' },
-    opened: { label: 'Ouvert', cls: 'bg-blue-50 text-blue-700' },
-    clicked: { label: 'Cliqué', cls: 'bg-blue-100 text-blue-800' },
-    failed: { label: 'Échec', cls: 'bg-rose-50 text-rose-700' },
-    bounced_soft: { label: 'Bounce soft', cls: 'bg-amber-50 text-amber-700' },
-    bounced_permanent: { label: 'Bounce permanent', cls: 'bg-rose-100 text-rose-800' },
-    suppressed: { label: 'Supprimé', cls: 'bg-stone-100 text-stone-700' },
-    dlq: { label: 'DLQ', cls: 'bg-rose-200 text-rose-900' },
-  };
-  const s = map[status] ?? { label: status, cls: 'bg-stone-100 text-stone-700' };
-  return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${s.cls}`}
-      role="status"
-    >
-      ⏺ {s.label}
-    </span>
-  );
-}
+// TRV-07 / F01-U-059 : plus AUCUNE map locale de statuts ici — le rendu
+// canonique vit dans common/StatusBadge (STATUS_META unique). Ce re-export
+// préserve les imports existants (`import { StatusBadge } from './KpiCards'`).
+export { StatusBadge } from './common/StatusBadge';

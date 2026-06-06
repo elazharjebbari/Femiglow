@@ -27,21 +27,21 @@ F01-C-025,C,P2,Toast,erreur jamais évincée par cap,3 success après 1 error : 
 F01-C-026,C,P1,Toast,une seule live-region polite,le DOM ne contient qu'UN seul aria-live=polite emails (pas de spam SR),nominal,TRV-02,implemente
 F01-C-027,C,P2,Toast,fermeture manuelle,"clic croix aria-label=Fermer : la carte ciblée disparaît, les autres restent",nominal,TRV-02,implemente
 F01-A-028,A,P1,Toast,axe smoke,axe : 0 violation serious/critical sur une pile de 2 toasts,nominal,TRV-02,implemente
-F01-C-029,C,P2,EmptyState,vide absolu,liste sans données : titre + explication d'absence + CTA création visibles,nominal,TRV-09,a_implementer
-F01-C-030,C,P2,EmptyState,vide filtré,"variant filtered : le texte cite le filtre actif et le CTA lit ""Réinitialiser le filtre""",factory filtre,TRV-09,a_implementer
-F01-C-031,C,P2,EmptyState,icône décorative,l'icône porte aria-hidden et n'est pas dans l'arbre accessible,nominal,TRV-09,a_implementer
-F01-A-032,A,P2,EmptyState,axe smoke,axe : 0 violation serious/critical,nominal,TRV-09,a_implementer
-F01-U-033,U,P1,Freshness,âge relatif secondes,"formatAge(now-12s) renvoie ""il y a 12 s""",table cas,TRV-05,a_implementer
-F01-U-034,U,P1,Freshness,âge relatif minutes,"formatAge(now-3min) renvoie ""il y a 3 min""",table cas,TRV-05,a_implementer
-F01-U-035,U,P1,Freshness,âge relatif heures,"formatAge(now-2h) renvoie ""il y a 2 h""",table cas,TRV-05,a_implementer
-F01-C-036,C,P1,Freshness,TZ affichée,"l'heure absolue affiche le libellé ""Africa/Casablanca""",fake clock,TRV-05,a_implementer
-F01-C-037,C,P1,Freshness,time datetime machine-lisible,l'élément time porte datetime égal à l'ISO fourni,nominal,TRV-05,a_implementer
-F01-C-038,C,P1,Freshness,auto-refresh au tick,"fake timers : à intervalMs onRefresh est déclenché et l'âge repasse à ""il y a 0 s""",fake timers,DASH-08,a_implementer
-F01-C-039,C,P1,Freshness,suspension onglet caché,document.hidden=true puis intervalMs écoulé : onRefresh n'est PAS déclenché,fake timers+hidden,DASH-08,a_implementer
-F01-C-040,C,P1,Freshness,âge honnête après veille,"onglet caché 2 h puis retour : l'âge lit ""il y a 2 h"" (pas ""il y a 0 s"")",fake timers,DASH-08,a_implementer
-F01-C-041,C,P1,Freshness,reprise + refresh au retour,visibilitychange->visible : onRefresh déclenché immédiatement une fois,fake timers,DASH-08,a_implementer
-F01-C-042,C,P2,Freshness,bouton busy anti double-clic,"clic Rafraîchir pendant hang : bouton lit ""Rafraîchissement…"" disabled, 1 seul appel",MSW delay infinite,DASH-08,a_implementer
-F01-A-043,A,P2,Freshness,axe smoke,axe : 0 violation serious/critical,nominal,TRV-05,a_implementer
+F01-C-029,C,P2,EmptyState,vide absolu,liste sans données : titre + explication d'absence + CTA création visibles,nominal,TRV-09,implemente
+F01-C-030,C,P2,EmptyState,vide filtré,"variant filtered : le texte cite le filtre actif et le CTA lit ""Réinitialiser le filtre""",factory filtre,TRV-09,implemente
+F01-C-031,C,P2,EmptyState,icône décorative,l'icône porte aria-hidden et n'est pas dans l'arbre accessible,nominal,TRV-09,implemente
+F01-A-032,A,P2,EmptyState,axe smoke,axe : 0 violation serious/critical,nominal,TRV-09,implemente
+F01-U-033,U,P1,Freshness,âge relatif secondes,"formatAge(now-12s) renvoie ""il y a 12 s""",table cas,TRV-05,implemente
+F01-U-034,U,P1,Freshness,âge relatif minutes,"formatAge(now-3min) renvoie ""il y a 3 min""",table cas,TRV-05,implemente
+F01-U-035,U,P1,Freshness,âge relatif heures,"formatAge(now-2h) renvoie ""il y a 2 h""",table cas,TRV-05,implemente
+F01-C-036,C,P1,Freshness,TZ affichée,"l'heure absolue affiche le libellé ""Africa/Casablanca""",fake clock,TRV-05,implemente
+F01-C-037,C,P1,Freshness,time datetime machine-lisible,l'élément time porte datetime égal à l'ISO fourni,nominal,TRV-05,implemente
+F01-C-038,C,P1,Freshness,auto-refresh au tick,"fake timers : à intervalMs onRefresh est déclenché et l'âge repasse à ""il y a 0 s""",fake timers,DASH-08,implemente
+F01-C-039,C,P1,Freshness,suspension onglet caché,document.hidden=true puis intervalMs écoulé : onRefresh n'est PAS déclenché,fake timers+hidden,DASH-08,implemente
+F01-C-040,C,P1,Freshness,âge honnête après veille,"onglet caché 2 h puis retour : l'âge lit ""il y a 2 h"" (pas ""il y a 0 s"")",fake timers,DASH-08,implemente
+F01-C-041,C,P1,Freshness,reprise + refresh au retour,visibilitychange->visible : onRefresh déclenché immédiatement une fois,fake timers,DASH-08,implemente
+F01-C-042,C,P2,Freshness,bouton busy anti double-clic,"clic Rafraîchir pendant hang : bouton lit ""Rafraîchissement…"" disabled, 1 seul appel",MSW delay infinite,DASH-08,implemente
+F01-A-043,A,P2,Freshness,axe smoke,axe : 0 violation serious/critical,nominal,TRV-05,implemente
 F01-C-044,C,P1,Wizard,étape validée cliquable,clic sur l'étape 1 (validée) depuis l'étape 3 : le contenu de l'étape 1 s'affiche,nominal,TRV-08,a_implementer
 F01-C-045,C,P1,Wizard,étape future refusée,clic sur l'étape 4 depuis l'étape 1 : le contenu reste l'étape 1 (étape 4 inerte),nominal,TRV-08,a_implementer
 F01-C-046,C,P1,Wizard,Ctrl+flèche droite avance,Ctrl+ArrowRight sur étape valide : l'étape 2 s'affiche,nominal,TRV-08,a_implementer
@@ -52,21 +52,21 @@ F01-C-050,C,P2,Wizard,message d'erreur PRÈS du bouton,le message d'erreur de va
 F01-C-051,C,P1,Wizard,persistance étape après F5,"persistKey posé en étape 3, remontage du composant : il rouvre en étape 3 avec les données",persist localStorage,TRV-08,a_implementer
 F01-C-052,C,P2,Wizard,aria-current sur étape active,"l'étape affichée porte aria-current=step, les autres non",nominal,TRV-08,a_implementer
 F01-A-053,A,P2,Wizard,axe smoke,axe : 0 violation serious/critical sur la barre + l'étape,nominal,TRV-08,a_implementer
-F01-U-054,U,P1,Pill,STATUS_META exhaustif vs enum,chaque membre de email_outbox_status a une entrée STATUS_META (sinon le test échoue),enum schema-emails,TRV-07,a_implementer
-F01-U-055,U,P1,Pill,libellé FR par statut,"STATUS_META.bounced_permanent.label === ""Bounce perm.""",nominal,TRV-07,a_implementer
-F01-U-056,U,P1,Pill,statut inconnu,"statusLabel(""zzz"") renvoie ""Inconnu"" (jamais le slug brut)",table cas,TRV-07,a_implementer
-F01-C-057,C,P1,Pill,cohérence dashboard vs cockpit,même statut rendu dans deux contextes : libellé et tone identiques,factory bounced_permanent,DASH-07,a_implementer
-F01-U-058,U,P2,Pill,tone par statut,STATUS_META.dlq.tone === danger et .sent.tone === success,nominal,TRV-07,a_implementer
-F01-U-059,U,P1,Pill,KpiCards consomme le map unique,KpiCards n'exporte plus de mapping local : son rendu de statut provient de STATUS_META,grep AST,DASH-07,a_implementer
-F01-A-060,A,P2,Pill,axe smoke,axe : 0 violation serious/critical,nominal,TRV-07,a_implementer
-F01-C-061,C,P1,use-dirty-guard,beforeunload armé,composant sale : un handler beforeunload est enregistré (event preventDefault appelé),nominal,TRV-10,a_implementer
-F01-C-062,C,P1,use-dirty-guard,navigation in-app interceptée,"sale + clic lien interne : un ConfirmDialog ""Modifications non enregistrées"" apparaît et la navigation est suspendue",nav mockée,TRV-10,a_implementer
-F01-C-063,C,P1,use-dirty-guard,désarmé après save,isDirty repasse à false : recharger n'affiche plus l'invite (handler retiré),nominal,TRV-10,a_implementer
-F01-C-064,C,P2,use-dirty-guard,pas d'invite si propre,"composant propre : aucun handler beforeunload, navigation libre",nominal,TRV-10,a_implementer
-F01-U-065,U,P1,tokens,anti sage/red/blue,grep AST de components/admin/emails/** : aucune occurrence sage- red- blue- hors liste blanche,arbre source,info_design,a_implementer
-F01-U-066,U,P2,tokens,liste blanche minimale,la liste blanche d'exceptions est vide ou justifiée commentaire à commentaire,arbre source,info_design,a_implementer
-F01-U-067,U,P1,verrou,no window.confirm,grep de components/admin/emails/** et app/admin/emails/** : 0 occurrence window.confirm/window.alert hors tests,arbre source,TRV-01,a_implementer
-F01-U-068,U,P2,verrou,no toLocaleString direct,grep : 0 toLocaleString/toLocaleTimeString direct hors formateur TZ central,arbre source,TRV-05,a_implementer
+F01-U-054,U,P1,Pill,STATUS_META exhaustif vs enum,chaque membre de email_outbox_status a une entrée STATUS_META (sinon le test échoue),enum schema-emails,TRV-07,implemente
+F01-U-055,U,P1,Pill,libellé FR par statut,"STATUS_META.bounced_permanent.label === ""Bounce permanent"" (AMENDÉ : oracle d'origine « Bounce perm. » supersédé par le correctif DASH-07 en P0.3)",nominal,TRV-07,implemente
+F01-U-056,U,P1,Pill,statut inconnu,"statusLabel(""zzz"") renvoie ""Inconnu"" (jamais le slug brut)",table cas,TRV-07,implemente
+F01-C-057,C,P1,Pill,cohérence dashboard vs cockpit,même statut rendu dans deux contextes : libellé et tone identiques,factory bounced_permanent,DASH-07,implemente
+F01-U-058,U,P2,Pill,tone par statut,STATUS_META.dlq.tone === danger et .sent.tone === success,nominal,TRV-07,implemente
+F01-U-059,U,P1,Pill,KpiCards consomme le map unique,KpiCards n'exporte plus de mapping local : son rendu de statut provient de STATUS_META,grep AST,DASH-07,implemente
+F01-A-060,A,P2,Pill,axe smoke,axe : 0 violation serious/critical,nominal,TRV-07,implemente
+F01-C-061,C,P1,use-dirty-guard,beforeunload armé,composant sale : un handler beforeunload est enregistré (event preventDefault appelé),nominal,TRV-10,implemente
+F01-C-062,C,P1,use-dirty-guard,navigation in-app interceptée,"sale + clic lien interne : un ConfirmDialog ""Modifications non enregistrées"" apparaît et la navigation est suspendue",nav mockée,TRV-10,implemente
+F01-C-063,C,P1,use-dirty-guard,désarmé après save,isDirty repasse à false : recharger n'affiche plus l'invite (handler retiré),nominal,TRV-10,implemente
+F01-C-064,C,P2,use-dirty-guard,pas d'invite si propre,"composant propre : aucun handler beforeunload, navigation libre",nominal,TRV-10,implemente
+F01-U-065,U,P1,tokens,anti sage/red/blue,grep AST de components/admin/emails/** : aucune occurrence sage- red- blue- hors liste blanche,arbre source,info_design,implemente
+F01-U-066,U,P2,tokens,liste blanche minimale,la liste blanche d'exceptions est vide ou justifiée commentaire à commentaire,arbre source,info_design,implemente
+F01-U-067,U,P1,verrou,no window.confirm,"CLIQUET (amendé P1.2) : 0 NOUVEAU fichier avec window.confirm/alert + liste blanche datée qui ne peut que décroître (oracle d'origine « 0 occurrence » atteint quand la liste est vide, fin des migrations P1.5-C8)",arbre source,TRV-01,implemente
+F01-U-068,U,P2,verrou,no toLocaleString direct,CLIQUET (amendé P1.2) : 0 NOUVEAU toLocale*String direct + liste blanche décroissante ; formateur central = ui/format-datetime.ts,arbre source,TRV-05,implemente
 F01-C-069,C,P1,invariants,describe.each dialog Esc,chaque écran adoptant le socle : Esc sur son ConfirmDialog n'agit pas,describe.each écrans,TRV-01,a_implementer
 F01-C-070,C,P1,invariants,describe.each toast 4s,chaque écran : son toast succès a disparu à 4000 ms (fake timers),describe.each écrans,TRV-02,a_implementer
 F01-C-071,C,P1,invariants,describe.each dirty-guard,chaque écran à formulaire : navigation interceptée quand sale,describe.each écrans,TRV-10,a_implementer

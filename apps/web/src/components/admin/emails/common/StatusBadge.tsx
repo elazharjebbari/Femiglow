@@ -27,28 +27,34 @@ export type OutboxStatus =
   | 'suppressed'
   | 'dlq';
 
+import type { Tone } from '../ui/Pill';
+
 interface StatusMeta {
   label: string;
+  /** Ton sémantique (ui/Pill) — la couche que les NOUVEAUX rendus consomment. */
+  tone: Tone;
+  /** Classes héritées (nuances fines conservées pour zéro régression visuelle). */
   cls: string;
 }
 
 /** Mapping FR + palette canonique des 11 statuts outbox. */
 export const STATUS_META: Record<OutboxStatus, StatusMeta> = {
-  pending: { label: 'En attente', cls: 'bg-amber-50 text-amber-700' },
-  sending: { label: 'Envoi…', cls: 'bg-amber-50 text-amber-700' },
-  sent: { label: 'Envoyé', cls: 'bg-emerald-50 text-emerald-700' },
-  delivered: { label: 'Livré', cls: 'bg-emerald-100 text-emerald-800' },
-  opened: { label: 'Ouvert', cls: 'bg-blue-50 text-blue-700' },
-  clicked: { label: 'Cliqué', cls: 'bg-blue-100 text-blue-800' },
-  failed: { label: 'Échec', cls: 'bg-rose-50 text-rose-700' },
-  bounced_soft: { label: 'Bounce soft', cls: 'bg-amber-50 text-amber-700' },
-  bounced_permanent: { label: 'Bounce permanent', cls: 'bg-rose-100 text-rose-800' },
-  suppressed: { label: 'Supprimé', cls: 'bg-stone-100 text-stone-700' },
-  dlq: { label: 'DLQ', cls: 'bg-rose-200 text-rose-900' },
+  pending: { label: 'En attente', tone: 'warning', cls: 'bg-amber-50 text-amber-700' },
+  sending: { label: 'Envoi…', tone: 'warning', cls: 'bg-amber-50 text-amber-700' },
+  sent: { label: 'Envoyé', tone: 'success', cls: 'bg-emerald-50 text-emerald-700' },
+  delivered: { label: 'Livré', tone: 'success', cls: 'bg-emerald-100 text-emerald-800' },
+  opened: { label: 'Ouvert', tone: 'info', cls: 'bg-blue-50 text-blue-700' },
+  clicked: { label: 'Cliqué', tone: 'info', cls: 'bg-blue-100 text-blue-800' },
+  failed: { label: 'Échec', tone: 'danger', cls: 'bg-rose-50 text-rose-700' },
+  bounced_soft: { label: 'Bounce soft', tone: 'warning', cls: 'bg-amber-50 text-amber-700' },
+  bounced_permanent: { label: 'Bounce permanent', tone: 'danger', cls: 'bg-rose-100 text-rose-800' },
+  suppressed: { label: 'Supprimé', tone: 'neutral', cls: 'bg-stone-100 text-stone-700' },
+  dlq: { label: 'DLQ', tone: 'danger', cls: 'bg-rose-200 text-rose-900' },
 };
 
 const UNKNOWN_META: StatusMeta = {
   label: 'Inconnu',
+  tone: 'neutral',
   cls: 'bg-stone-100 text-stone-700',
 };
 
