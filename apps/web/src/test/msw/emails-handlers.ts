@@ -33,6 +33,7 @@ import {
   makeEmailAudience,
   makeAudienceSnapshot,
   makeSnapshotMember,
+  makeSuppression,
   makeTemplateCustom,
   makeTemplateCustomVersion,
 } from '@/test/factories/emails.factory';
@@ -227,6 +228,18 @@ function nominalHealthReport() {
  * l'endpoint concerné dans le test via `server.use(http.post(...))`.
  */
 export const emailsHandlers = [
+  // ── Navigation (P0.2 — contrat AMONT : la route réelle arrive en F02) ───
+  // Compteurs des badges d'onglets. Forme verrouillée par
+  // NavCountersResponseWire (lib/mail/wire-schemas.ts) via le test de
+  // conformité ; permet d'écrire EmailsTabs test-first.
+  http.get('/api/admin/emails/nav-counters', () =>
+    HttpResponse.json({
+      dlq: 0,
+      automationErrored: 0,
+      syncFailing: 0,
+      generatedAt: '2026-06-06T10:00:00.000Z',
+    }),
+  ),
   // ── Transactional cockpit ──────────────────────────────────────────────
   http.post('/api/admin/emails/transactional/search', () =>
     HttpResponse.json(makeSearchResult()),
@@ -248,6 +261,27 @@ export const emailsHandlers = [
     const ids = body.ids ?? [];
     return HttpResponse.json({ suppressed: ids.length, skipped: 0 });
   }),
+  // P0.2 : nominal manquant détecté par le test de conformité (chaque suite
+  // le redéfinissait localement) — forme verrouillée par ReapStuckResponseWire.
+  http.post('/api/admin/emails/transactional/reap-stuck', () =>
+    HttpResponse.json({ reaped: 0 }),
+  ),
+
+  // ── Suppression (P0.2 — nominaux manquants, formes wire-schemas.ts) ─────
+  // NB : HttpResponse.json sérialise les Date du factory en ISO (format wire).
+  http.get('/api/admin/emails/suppression', ({ request }) => {
+    const sp = new URL(request.url).searchParams;
+    const limit = Number(sp.get('limit') ?? 50);
+    const offset = Number(sp.get('offset') ?? 0);
+    const rows = [
+      makeSuppression(),
+      makeSuppression({ reason: 'unsubscribe', source: 'manual', detail: null }),
+    ];
+    return HttpResponse.json({ rows, total: rows.length, limit, offset });
+  }),
+  http.delete('/api/admin/emails/suppression', () =>
+    HttpResponse.json({ removed: true }),
+  ),
 
   // ── Saved views (CRUD) ─────────────────────────────────────────────────
   http.get('/api/admin/emails/views', () => HttpResponse.json([nominalView()])),

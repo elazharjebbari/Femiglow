@@ -125,6 +125,7 @@ journalctl -u femiglow.service --since '2 minutes ago' | grep -ci error  # 0 att
 
 | Date | Étape | Opérateur | Batterie (vert/rouge) | Triage (causes) | Verdict |
 |---|---|---|---|---|---|
+| 2026-06-06 | P0.1+P0.2 CI & contrats | session (worktree, feat/emails-ux-p0) | conformité 8/8 ; composant 464 v (57 fichiers, shard 2× vérifié 29+28) ; unit 806 v ; tsc OK | 3 CONTRAT (nominaux manquants détectés par la conformité : reap-stuck, suppression GET/DELETE → ajoutés à emailsHandlers) ; 1 outillage (pnpm `--` n'forwarde pas --shard → retiré) | ✅ CI : jobs build-rsc + coverage(rapport) + shard 2× ; wire-schemas.ts (9 contrats dont nav-counters amont) |
 | 2026-06-06 | P0.3 quick-wins | session (worktree femiglow-email-tests, feat/emails-ux-p0) | p0-quickwins 9/9 ; emails composants 458 v / 0 r ; lib/mail 663 v ; tsc OK ; next build OK | 1 BUG_TEST (AutomationWizard utilisait has_tag → consent_marketing) ; EVT-05 INVALIDÉ (déjà conforme) ; lint = échec pré-existant master (preload.test.ts, hors périmètre) | ✅ commit 843d521 — 7 fixes + 9 tests régression |
 
 Consigner UNE ligne par session de travail, même intermédiaire. Les

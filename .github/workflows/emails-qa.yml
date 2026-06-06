@@ -26,6 +26,7 @@ on:
       - 'apps/web/src/app/api/listmonk/**'
       - 'apps/web/src/lib/admin/emails/**'
       - 'apps/web/src/test/msw/emails-handlers.ts'
+      - 'apps/web/src/test/msw/emails-contracts.conformity.test.ts'
       - 'apps/web/src/test/factories/emails.factory.ts'
       - 'apps/web/src/test/db/emails-db.ts'
       - 'apps/web/scripts/test-emails-integration.sh'
@@ -52,7 +53,77 @@ jobs:
   # par ces globs se SKIPPENT honnêtement (describeEmailsDb : pas d'URL
   # femiglow_test → describe.skip), donc ce job ne nécessite pas de Postgres.
   unit-component:
-    name: Unit + composant (sans DB)
+    name: Unit + composant (sans DB, shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # P0.1 emails-ux : la couche composant absorbera ~600 tests supplémentaires
+    # (batteries F01..F10) — sharding 2× dès maintenant pour garder le feedback
+    # PR < 10 min. Le typecheck et l'unit ne tournent que sur le shard 1 (pas
+    # de gain à les dupliquer).
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/2', '2/2']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (apps/web)
+        if: matrix.shard == '1/2'
+        run: pnpm --filter web typecheck
+
+      - name: Emails unit
+        if: matrix.shard == '1/2'
+        run: pnpm test:emails:unit
+        working-directory: apps/web
+
+      - name: Emails composant (MSW)
+        # NB pnpm : PAS de `--` avant le flag (il serait transmis littéralement
+        # à vitest qui l'avalerait comme filtre → shard ignoré, suite complète).
+        run: pnpm test:emails:component --shard=${{ matrix.shard }}
+        working-directory: apps/web
+
+  # ── (a-bis) Build Next.js — gate RSC (P0.1 emails-ux) ─────────────────────
+  # Les violations RSC ('use client' qui importe du server-only, export sync
+  # dans un module 'use server') sont INVISIBLES à tsc ET à vitest — seul
+  # `next build` les attrape (leçon campagne QA 2026-06). Job indépendant pour
+  # paralléliser ; il gate le merge au même titre que les tests.
+  build-rsc:
+    name: Build Next.js (gate RSC)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js
+        run: pnpm --filter web build
+
+  # ── (a-ter) Coverage emails — RAPPORT (P0.1 emails-ux) ────────────────────
+  # Rapport d'observation publié en artifact à chaque PR du périmètre. Les
+  # SEUILS bloquants (G3 : ui/ >= 85 %, G4 : écrans refondus >= 80 %) seront
+  # armés en P1.1, quand components/admin/emails/ui/ existera — les armer
+  # avant ferait échouer la CI sur un dossier vide.
+  coverage:
+    name: Coverage emails (rapport)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -68,16 +139,24 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck (apps/web)
-        run: pnpm --filter web typecheck
-
-      - name: Emails unit
-        run: pnpm test:emails:unit
+      - name: Coverage composants emails
+        run: >-
+          pnpm vitest run --coverage
+          --coverage.include='src/components/admin/emails/**'
+          --coverage.include='src/lib/mail/**'
+          --coverage.include='src/lib/admin/emails/**'
+          --coverage.reporter=text --coverage.reporter=json-summary
+          src/components/admin/emails src/test/msw/emails-handlers.smoke.test.ts
+          src/test/msw/emails-contracts.conformity.test.ts
         working-directory: apps/web
 
-      - name: Emails composant (MSW)
-        run: pnpm test:emails:component
-        working-directory: apps/web
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emails-coverage
+          path: apps/web/coverage/coverage-summary.json
+          retention-days: 14
 
   # ── (b) Intégration — Postgres 16 éphémère ───────────────────────────────
   # Migrations via le runner maison (_migrate-safe.mjs, idempotent, pas de
