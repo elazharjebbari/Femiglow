@@ -32,8 +32,11 @@ const DEFAULT_COMMANDS: Command[] = [
   { id: 'nav-automation', label: 'Automatisations', group: 'Navigation', href: '/admin/emails/automation' },
   { id: 'nav-audiences', label: 'Audiences', group: 'Navigation', href: '/admin/emails/audiences' },
   { id: 'nav-templates', label: 'Templates HTML', group: 'Navigation', href: '/admin/emails/templates' },
+  // F02/SUP-01 : Suppression réintégrée à la navigation (elle était orpheline).
+  { id: 'nav-suppression', label: 'Liste de suppression', group: 'Navigation', href: '/admin/emails/suppression', hint: 'blocklist' },
   { id: 'nav-events', label: 'Events (debug)', group: 'Navigation', href: '/admin/emails/events' },
   { id: 'nav-listmonk', label: 'Listmonk (admin natif)', group: 'Navigation', href: '/admin/emails/listmonk' },
+  { id: 'nav-automation-runs', label: 'Runs automations', group: 'Navigation', href: '/admin/emails/automation/runs', hint: 'debug' },
   { id: 'new-campaign', label: 'Nouvelle campagne', group: 'Actions', href: '/admin/emails/campaigns/new', hint: 'créer' },
   { id: 'new-automation', label: 'Nouvelle automation', group: 'Actions', href: '/admin/emails/automation/new', hint: 'créer' },
   { id: 'new-audience', label: 'Nouvelle audience', group: 'Actions', href: '/admin/emails/audiences/new', hint: 'créer' },

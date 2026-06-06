@@ -235,8 +235,8 @@ export const emailsHandlers = [
   http.get('/api/admin/emails/nav-counters', () =>
     HttpResponse.json({
       dlq: 0,
-      automationErrored: 0,
-      syncFailing: 0,
+      automationErrors: 0,
+      listmonkSyncFailed: 0,
       generatedAt: '2026-06-06T10:00:00.000Z',
     }),
   ),

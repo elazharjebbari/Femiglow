@@ -121,20 +121,24 @@ export const SuppressionRemoveResponseWire = z.object({
   removed: z.boolean(),
 });
 
-// ── GET /api/admin/emails/nav-counters (CONTRAT AMONT — route livrée en F02) ─
-// Compteurs des badges d'onglets (chantier C2). Le handler MSW existe dès P0
-// pour que les tests composant d'EmailsTabs puissent s'écrire test-first ;
-// l'intégration F02 validera la route réelle contre CE schéma.
+// ── GET /api/admin/emails/nav-counters (route livrée en F02/P1.4) ───────────
+// Compteurs des badges d'onglets. Noms ALIGNÉS sur la spec
+// F02-navigation/02-spec-technique.yaml (qui supersède la première ébauche
+// P0.2 : automationErrored→automationErrors, syncFailing→listmonkSyncFailed).
 export const NavCountersResponseWire = z.object({
   /** Emails en DLQ (cockpit, statut dlq). */
   dlq: z.number().int().min(0),
   /** Runs d'automation en erreur. */
-  automationErrored: z.number().int().min(0),
-  /** Campagnes dont la dernière sync Listmonk est en échec (F10). */
-  syncFailing: z.number().int().min(0),
+  automationErrors: z.number().int().min(0),
+  /** Campagnes dont la dernière sync Listmonk est en échec (0 tant que F10 n'a pas livré les colonnes). */
+  listmonkSyncFailed: z.number().int().min(0),
   /** Horodatage ISO du calcul (cache TTL 30 s côté serveur). */
-  generatedAt: z.string(),
+  generatedAt: z.string().datetime(),
 });
+
+/** Alias nommé par la spec F02. */
+export const navCountersSchema = NavCountersResponseWire;
+export type NavCounters = z.infer<typeof navCountersSchema>;
 
 // ── Assertions de compatibilité TS ↔ wire (compile-time, zéro runtime) ──────
 // Si un type de lib évolue sans son schéma wire (ou inversement), tsc casse

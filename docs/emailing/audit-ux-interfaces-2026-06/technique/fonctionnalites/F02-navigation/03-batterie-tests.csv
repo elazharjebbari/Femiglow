@@ -1,64 +1,64 @@
 id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
-F02-U-001,U,P1,onglet-actif,"map route->onglet : /admin/emails (exact) renvoie la clé dashboard","la fonction retourne ""dashboard""","route ""/admin/emails""",TRV-03,a_implementer
-F02-U-002,U,P1,onglet-actif,"map route->onglet : /admin/emails/transactional renvoie transactional","la fonction retourne ""transactional""","route ""/admin/emails/transactional""",TRV-03,a_implementer
-F02-U-003,U,P1,onglet-actif,"map route->onglet sur sous-route de détail /transactional/<id>","la fonction retourne ""transactional""","route ""/admin/emails/transactional/abc123""",TRV-03,a_implementer
-F02-U-004,U,P1,onglet-actif,"map route->onglet : /campaigns/new actif sur campaigns","la fonction retourne ""campaigns""","route ""/admin/emails/campaigns/new""",CAMP-08,a_implementer
-F02-U-005,U,P1,onglet-actif,"map route->onglet : /campaigns/<id>/edit actif sur campaigns","la fonction retourne ""campaigns""","route ""/admin/emails/campaigns/42/edit""",TRV-03,a_implementer
-F02-U-006,U,P1,onglet-actif,"map route->onglet : /automation/runs/<id> actif sur automation","la fonction retourne ""automation""","route ""/admin/emails/automation/runs/9""",TRV-03,a_implementer
-F02-U-007,U,P1,onglet-actif,"map route->onglet : /suppression actif sur suppression","la fonction retourne ""suppression""","route ""/admin/emails/suppression""",SUP-01,a_implementer
-F02-U-008,U,P2,onglet-actif,"map route->onglet : /listmonk/campaigns/3 actif sur listmonk","la fonction retourne ""listmonk""","route ""/admin/emails/listmonk/campaigns/3""",TRV-03,a_implementer
-F02-U-009,U,P1,onglet-actif,"map route->onglet : route inconnue ne marque aucun onglet","la fonction retourne null","route ""/admin/emails/inexistant""",TRV-03,a_implementer
-F02-U-010,U,P1,badge-plafond,"plafond visuel : valeur 0 ne produit aucun libellé de badge","le helper de formatage retourne null/vide pour 0","dlq=0",TRV-03,a_implementer
-F02-U-011,U,P1,badge-plafond,"plafond visuel : valeur 3 affichée telle quelle","le helper retourne ""3""","dlq=3",TRV-03,a_implementer
-F02-U-012,U,P1,badge-plafond,"plafond visuel : valeur 150 plafonnée à 99+","le helper retourne ""99+""","dlq=150",TRV-03,a_implementer
-F02-U-013,U,P2,breadcrumb-map,"map route->segments : /transactional/<id> = Emails › Transactionnel › Message <id>","les segments sont [Emails(href),Transactionnel(href),Message abc(no-href)]","route ""/admin/emails/transactional/abc"", nom indisponible",TRV-03,a_implementer
-F02-U-014,U,P2,breadcrumb-map,"map route->segments : /campaigns/<id>/edit a 4 segments avec Édition en dernier","dernier segment = Édition sans href","route campaigns/42/edit, nom=""Relance juin""",TRV-03,a_implementer
-F02-U-015,U,P2,breadcrumb-map,"fallback objet : nom campagne indisponible => id tronqué, jamais segment vide","le dernier libellé objet est non vide","route campaigns/abcdef123456, nom=null",TRV-03,a_implementer
-F02-U-016,U,P2,nav-counters-zod,"navCountersSchema accepte une réponse bien formée","parse réussit","{dlq:3,automationErrors:2,listmonkSyncFailed:0,generatedAt:iso}",nominal,a_implementer
-F02-U-017,U,P2,nav-counters-zod,"navCountersSchema rejette un compteur négatif","parse échoue (nonnegative)","{dlq:-1,...}",nominal,a_implementer
-F02-C-001,C,P1,onglets-rendu,"la barre rend les 9 onglets dans l'ordre canonique","les 9 libellés sont présents dans l'ordre Dashboard…Listmonk","compteurs MSW 200 vides",TRV-03,a_implementer
-F02-C-002,C,P1,onglet-actif,"sur /admin/emails/transactional l'onglet Transactionnel porte aria-current=page","l'onglet Transactionnel a aria-current=page et est seul actif","pathname=/admin/emails/transactional",TRV-03,a_implementer
-F02-C-003,C,P1,onglet-actif,"un seul onglet actif à la fois sur une sous-route de détail","exactement un élément avec aria-current=page","pathname=/admin/emails/campaigns/42/edit",TRV-03,a_implementer
-F02-C-004,C,P1,suppression-onglet,"l'onglet Suppression est présent et cliquable (réintégration SUP-01)","un lien nommé Suppression pointe vers /admin/emails/suppression","compteurs MSW 200",SUP-01,a_implementer
-F02-C-005,C,P1,badge-affichage,"badge masqué quand dlq=0","aucune pastille de compteur sur l'onglet Transactionnel","nav-counters 200 {dlq:0,...}",TRV-03,a_implementer
-F02-C-006,C,P1,badge-affichage,"badge visible ""3"" quand dlq=3 avec libellé accessible","l'onglet Transactionnel expose ""3"" et un libellé ""3 en DLQ""","nav-counters 200 {dlq:3,...}",TRV-03,a_implementer
-F02-C-007,C,P1,badge-affichage,"badge plafonné ""99+"" quand dlq=150","la pastille affiche ""99+""","nav-counters 200 {dlq:150,...}",TRV-03,a_implementer
-F02-C-008,C,P1,badge-affichage,"badge runs en erreur sur Automations quand automationErrors=2","pastille ""2"" sur l'onglet Automations","nav-counters 200 {automationErrors:2,...}",TRV-03,a_implementer
-F02-C-009,C,P2,badge-affichage,"badge sync KO sur Listmonk quand listmonkSyncFailed>=1","pastille (token warning) sur l'onglet Listmonk","nav-counters 200 {listmonkSyncFailed:1,...}",LMK-02,a_implementer
-F02-C-010,C,P1,badge-degradation,"nav-counters 500 : onglets rendus sans badge MAIS cliquables","les 9 onglets présents, aucune pastille, aucun role=alert bloquant","nav-counters 500",TRV-03,a_implementer
-F02-C-011,C,P1,badge-degradation,"nav-counters hang (delay infini) : le rendu n'est pas bloqué, onglets cliquables immédiatement","les 9 onglets interactifs sans attendre la réponse, aucun badge","nav-counters delay infinite",TRV-03,a_implementer
-F02-C-012,C,P2,badge-degradation,"nav-counters network error : dégradation silencieuse sans badge","onglets sans badge, navigation possible, pas de toast","nav-counters network error",TRV-03,a_implementer
-F02-C-014,C,P2,badge-refresh,"refresh suspendu quand l'onglet est caché : pas de nouvel appel pendant document.hidden","compteur de requêtes MSW inchangé après avance d'horloge onglet caché","horloge factice +30s, document.hidden=true",DASH-03,a_implementer
-F02-C-015,C,P2,badge-refresh,"refresh repris au retour premier plan émet un nouvel appel","un appel nav-counters supplémentaire après visibilitychange visible","document.hidden true->false",DASH-03,a_implementer
-F02-C-016,C,P2,badge-refresh,"échec de refresh conserve les derniers compteurs connus (pas de clignotement)","la pastille ""3"" reste affichée après un refresh 500","1er appel 200 {dlq:3}, 2e appel 500",TRV-03,a_implementer
-F02-C-017,C,P1,clavier-onglets,"navigation clavier : Tab atteint chaque onglet dans l'ordre","le focus parcourt les 9 onglets de Dashboard à Listmonk","barre montée",TRV-03,a_implementer
-F02-C-018,C,P1,clavier-onglets,"activation clavier : Entrée sur un onglet focalisé navigue","push de navigation vers la route de l'onglet ciblé (router mocké)","focus sur onglet Campagnes",TRV-03,a_implementer
-F02-C-019,C,P1,breadcrumb-rendu,"breadcrumb sur dashboard = seul segment Emails (page courante)","un nav Fil d'Ariane avec ""Emails"" en aria-current=page","route /admin/emails",TRV-03,a_implementer
-F02-C-020,C,P1,breadcrumb-rendu,"breadcrumb sur liste section = Emails › Section, section non cliquable","Emails est un lien, Transactionnel est aria-current=page","route /admin/emails/transactional",TRV-03,a_implementer
-F02-C-021,C,P1,breadcrumb-rendu,"breadcrumb sur détail = Emails › Section › Objet, Emails et Section cliquables","2 liens (Emails, Campagnes) + objet aria-current=page","route campaigns/42, nom=""Relance juin""",TRV-03,a_implementer
-F02-C-022,C,P2,breadcrumb-rendu,"breadcrumb édition = 4 segments, Édition en aria-current=page","Édition est le dernier segment non cliquable","route campaigns/42/edit",TRV-03,a_implementer
-F02-C-023,C,P2,breadcrumb-rendu,"breadcrumb runs détail = Emails › Automations › Runs › Run <id>","4 segments, Run <id> en aria-current=page","route automation/runs/9",TRV-03,a_implementer
-F02-C-024,C,P1,palette-suppression,"la palette trouve l'entrée Suppression sur recherche ""suppr""","une option ""Suppression"" -> /admin/emails/suppression est listée","palette ouverte, saisie ""suppr""",DASH-10,a_implementer
-F02-C-025,C,P1,palette-suppression,"sélection de l'entrée Suppression navigue vers /suppression","router.push appelé avec /admin/emails/suppression","Entrée sur l'option Suppression",SUP-01,a_implementer
-F02-C-026,C,P2,palette-placeholder,"le placeholder mentionne Cmd-K et Ctrl-K","le placeholder contient ""Cmd-K"" et ""Ctrl-K""","palette ouverte",DASH-10,a_implementer
-F02-C-027,C,P2,palette-contenu,"la palette liste les 9 sections en Navigation (dont Events et Listmonk)","9 options de navigation présentes incluant Listmonk et Events","palette ouverte, requête vide",DASH-10,a_implementer
-F02-C-029,C,P2,palette-ouverture,"Ctrl-K ouvre la palette (plateforme non mac)","la palette role=dialog devient visible","keydown ctrl+k",DASH-10,a_implementer
-F02-C-030,C,P2,palette-fermeture,"Esc ferme la palette et restaure un focus stable","la palette n'est plus dans le DOM","palette ouverte, keydown Escape",DASH-10,a_implementer
-F02-C-031,C,P2,perf-rsc,"le rendu de la barre n'émet aucune requête nav-counters de façon synchrone au mount serveur simulé","aucun fetch déclenché avant hydratation/effet ; 1er fetch post-effet uniquement","monter sans avancer les effets",TRV-03,a_implementer
-F02-A-001,A,P1,a11y,"axe sur la barre d'onglets : 0 violation serious/critical","axe ne retourne aucune violation serious/critical","barre montée, compteurs 200",TRV-03,a_implementer
-F02-A-002,A,P2,a11y,"axe sur le breadcrumb détail : 0 violation serious/critical","axe ne retourne aucune violation serious/critical","breadcrumb 4 segments",TRV-03,a_implementer
-F02-A-003,A,P2,a11y,"badge non basé sur la couleur seule : le compteur est annoncé en texte accessible","le libellé accessible de l'onglet inclut le nombre et son sens","nav-counters 200 {dlq:3}",TRV-03,a_implementer
-F02-I-001,I,P1,nav-counters-api,"GET nav-counters non authentifié renvoie 401","réponse HTTP 401","session absente",TRV-03,a_implementer
-F02-I-002,I,P1,nav-counters-api,"GET nav-counters authentifié renvoie un corps conforme navCountersSchema","status 200 et parse navCountersSchema réussit (conformité contrat)","admin, DB seedée DLQ=3 runs err=2",nominal,a_implementer
-F02-I-003,I,P1,nav-counters-api,"compteurs reflètent l'état DB réel","dlq=2 et automationErrors=1 correspondent aux lignes seedées","seed 2 DLQ + 1 run errored",nominal,a_implementer
-F02-I-004,I,P1,nav-counters-cache,"cache TTL 30s : 2 appels < 30s = 1 seule requête DB","le compteur de requêtes DB vaut 1 après 2 appels rapprochés","2 GET à 5s d'intervalle",TRV-03,a_implementer
-F02-I-005,I,P2,nav-counters-cache,"après expiration TTL (>30s) un nouvel appel recalcule","le compteur de requêtes DB vaut 2 après le 2e appel post-30s","2 GET à 31s, horloge avancée",TRV-03,a_implementer
-F02-I-006,I,P2,nav-counters-api,"listmonkSyncFailed=0 si aucun campaign_link en échec (ou table absente)","status 200, listmonkSyncFailed=0","DB sans échec de sync",LMK-02,a_implementer
-F02-I-007,I,P2,nav-counters-api,"erreur DB renvoie 500 (et non un 200 trompeur)","status 500, corps {error}","DB injoignable simulée",TRV-03,a_implementer
-F02-I-008,I,P1,campaigns-new,"GET /admin/emails/campaigns/new ne renvoie pas 404","réponse non-404 (redirect ou page de création)","admin authentifié",CAMP-08,a_implementer
-F02-E-001,E,P1,nav-clavier-bout-en-bout,"tour des 9 sections au clavier sans souris d'un bout à l'autre","chaque section affiche son écran et son onglet actif aria-current=page","instance dédiée seedée",TRV-03,a_implementer
-F02-E-002,E,P1,suppression-decouvrable,"Suppression atteignable via onglet ET via palette","les deux chemins mènent à l'écran Suppression","instance seedée",SUP-01,a_implementer
-F02-E-003,E,P2,badge-dlq-clic,"l'astreinte voit le badge DLQ et clique pour ouvrir le cockpit DLQ","onglet Transactionnel affiche le badge puis l'écran DLQ s'ouvre au clic","seed 3 messages DLQ",TRV-03,a_implementer
-F02-E-004,E,P2,degradation-infra,"nav-counters en panne : onglets utilisables, navigation complète possible","aucun badge mais les 9 sections restent navigables","nav-counters renvoie 500 (réseau instance)",TRV-03,a_implementer
-F02-E-005,E,P2,campaigns-new,"navigation vers /campaigns/new aboutit au flux de création","l'écran de création de campagne s'affiche","admin",CAMP-08,a_implementer
-F02-E-006,E,P2,a11y-pages,"axe Playwright sur layout avec barre : 0 serious/critical sur 3 écrans clés","aucune violation serious/critical (dashboard, transactional, suppression)","instance seedée",TRV-03,a_implementer
+F02-U-001,U,P1,onglet-actif,map route->onglet : /admin/emails (exact) renvoie la clé dashboard,"la fonction retourne ""dashboard""","route ""/admin/emails""",TRV-03,implemente
+F02-U-002,U,P1,onglet-actif,map route->onglet : /admin/emails/transactional renvoie transactional,"la fonction retourne ""transactional""","route ""/admin/emails/transactional""",TRV-03,implemente
+F02-U-003,U,P1,onglet-actif,map route->onglet sur sous-route de détail /transactional/<id>,"la fonction retourne ""transactional""","route ""/admin/emails/transactional/abc123""",TRV-03,implemente
+F02-U-004,U,P1,onglet-actif,map route->onglet : /campaigns/new actif sur campaigns,"la fonction retourne ""campaigns""","route ""/admin/emails/campaigns/new""",CAMP-08,implemente
+F02-U-005,U,P1,onglet-actif,map route->onglet : /campaigns/<id>/edit actif sur campaigns,"la fonction retourne ""campaigns""","route ""/admin/emails/campaigns/42/edit""",TRV-03,implemente
+F02-U-006,U,P1,onglet-actif,map route->onglet : /automation/runs/<id> actif sur automation,"la fonction retourne ""automation""","route ""/admin/emails/automation/runs/9""",TRV-03,implemente
+F02-U-007,U,P1,onglet-actif,map route->onglet : /suppression actif sur suppression,"la fonction retourne ""suppression""","route ""/admin/emails/suppression""",SUP-01,implemente
+F02-U-008,U,P2,onglet-actif,map route->onglet : /listmonk/campaigns/3 actif sur listmonk,"la fonction retourne ""listmonk""","route ""/admin/emails/listmonk/campaigns/3""",TRV-03,implemente
+F02-U-009,U,P1,onglet-actif,map route->onglet : route inconnue ne marque aucun onglet,la fonction retourne null,"route ""/admin/emails/inexistant""",TRV-03,implemente
+F02-U-010,U,P1,badge-plafond,plafond visuel : valeur 0 ne produit aucun libellé de badge,le helper de formatage retourne null/vide pour 0,dlq=0,TRV-03,implemente
+F02-U-011,U,P1,badge-plafond,plafond visuel : valeur 3 affichée telle quelle,"le helper retourne ""3""",dlq=3,TRV-03,implemente
+F02-U-012,U,P1,badge-plafond,plafond visuel : valeur 150 plafonnée à 99+,"le helper retourne ""99+""",dlq=150,TRV-03,implemente
+F02-U-013,U,P2,breadcrumb-map,map route->segments : /transactional/<id> = Emails › Transactionnel › Message <id>,"les segments sont [Emails(href),Transactionnel(href),Message abc(no-href)]","route ""/admin/emails/transactional/abc"", nom indisponible",TRV-03,implemente
+F02-U-014,U,P2,breadcrumb-map,map route->segments : /campaigns/<id>/edit a 4 segments avec Édition en dernier,dernier segment = Édition sans href,"route campaigns/42/edit, nom=""Relance juin""",TRV-03,implemente
+F02-U-015,U,P2,breadcrumb-map,"fallback objet : nom campagne indisponible => id tronqué, jamais segment vide",le dernier libellé objet est non vide,"route campaigns/abcdef123456, nom=null",TRV-03,implemente
+F02-U-016,U,P2,nav-counters-zod,navCountersSchema accepte une réponse bien formée,parse réussit,"{dlq:3,automationErrors:2,listmonkSyncFailed:0,generatedAt:iso}",nominal,implemente
+F02-U-017,U,P2,nav-counters-zod,navCountersSchema rejette un compteur négatif,parse échoue (nonnegative),"{dlq:-1,...}",nominal,implemente
+F02-C-001,C,P1,onglets-rendu,la barre rend les 9 onglets dans l'ordre canonique,les 9 libellés sont présents dans l'ordre Dashboard…Listmonk,compteurs MSW 200 vides,TRV-03,implemente
+F02-C-002,C,P1,onglet-actif,sur /admin/emails/transactional l'onglet Transactionnel porte aria-current=page,l'onglet Transactionnel a aria-current=page et est seul actif,pathname=/admin/emails/transactional,TRV-03,implemente
+F02-C-003,C,P1,onglet-actif,un seul onglet actif à la fois sur une sous-route de détail,exactement un élément avec aria-current=page,pathname=/admin/emails/campaigns/42/edit,TRV-03,implemente
+F02-C-004,C,P1,suppression-onglet,l'onglet Suppression est présent et cliquable (réintégration SUP-01),un lien nommé Suppression pointe vers /admin/emails/suppression,compteurs MSW 200,SUP-01,implemente
+F02-C-005,C,P1,badge-affichage,badge masqué quand dlq=0,aucune pastille de compteur sur l'onglet Transactionnel,"nav-counters 200 {dlq:0,...}",TRV-03,implemente
+F02-C-006,C,P1,badge-affichage,"badge visible ""3"" quand dlq=3 avec libellé accessible","l'onglet Transactionnel expose ""3"" et un libellé ""3 en DLQ""","nav-counters 200 {dlq:3,...}",TRV-03,implemente
+F02-C-007,C,P1,badge-affichage,"badge plafonné ""99+"" quand dlq=150","la pastille affiche ""99+""","nav-counters 200 {dlq:150,...}",TRV-03,implemente
+F02-C-008,C,P1,badge-affichage,badge runs en erreur sur Automations quand automationErrors=2,"pastille ""2"" sur l'onglet Automations","nav-counters 200 {automationErrors:2,...}",TRV-03,implemente
+F02-C-009,C,P2,badge-affichage,badge sync KO sur Listmonk quand listmonkSyncFailed>=1,pastille (token warning) sur l'onglet Listmonk,"nav-counters 200 {listmonkSyncFailed:1,...}",LMK-02,implemente
+F02-C-010,C,P1,badge-degradation,nav-counters 500 : onglets rendus sans badge MAIS cliquables,"les 9 onglets présents, aucune pastille, aucun role=alert bloquant",nav-counters 500,TRV-03,implemente
+F02-C-011,C,P1,badge-degradation,"nav-counters hang (delay infini) : le rendu n'est pas bloqué, onglets cliquables immédiatement","les 9 onglets interactifs sans attendre la réponse, aucun badge",nav-counters delay infinite,TRV-03,implemente
+F02-C-012,C,P2,badge-degradation,nav-counters network error : dégradation silencieuse sans badge,"onglets sans badge, navigation possible, pas de toast",nav-counters network error,TRV-03,implemente
+F02-C-014,C,P2,badge-refresh,refresh suspendu quand l'onglet est caché : pas de nouvel appel pendant document.hidden,compteur de requêtes MSW inchangé après avance d'horloge onglet caché,"horloge factice +30s, document.hidden=true",DASH-03,implemente
+F02-C-015,C,P2,badge-refresh,refresh repris au retour premier plan émet un nouvel appel,un appel nav-counters supplémentaire après visibilitychange visible,document.hidden true->false,DASH-03,implemente
+F02-C-016,C,P2,badge-refresh,échec de refresh conserve les derniers compteurs connus (pas de clignotement),"la pastille ""3"" reste affichée après un refresh 500","1er appel 200 {dlq:3}, 2e appel 500",TRV-03,implemente
+F02-C-017,C,P1,clavier-onglets,navigation clavier : Tab atteint chaque onglet dans l'ordre,le focus parcourt les 9 onglets de Dashboard à Listmonk,barre montée,TRV-03,implemente
+F02-C-018,C,P1,clavier-onglets,activation clavier : Entrée sur un onglet focalisé navigue,push de navigation vers la route de l'onglet ciblé (router mocké),focus sur onglet Campagnes,TRV-03,implemente
+F02-C-019,C,P1,breadcrumb-rendu,breadcrumb sur dashboard = seul segment Emails (page courante),"un nav Fil d'Ariane avec ""Emails"" en aria-current=page",route /admin/emails,TRV-03,implemente
+F02-C-020,C,P1,breadcrumb-rendu,"breadcrumb sur liste section = Emails › Section, section non cliquable","Emails est un lien, Transactionnel est aria-current=page",route /admin/emails/transactional,TRV-03,implemente
+F02-C-021,C,P1,breadcrumb-rendu,"breadcrumb sur détail = Emails › Section › Objet, Emails et Section cliquables","2 liens (Emails, Campagnes) + objet aria-current=page","route campaigns/42, nom=""Relance juin""",TRV-03,implemente
+F02-C-022,C,P2,breadcrumb-rendu,"breadcrumb édition = 4 segments, Édition en aria-current=page",Édition est le dernier segment non cliquable,route campaigns/42/edit,TRV-03,implemente
+F02-C-023,C,P2,breadcrumb-rendu,breadcrumb runs détail = Emails › Automations › Runs › Run <id>,"4 segments, Run <id> en aria-current=page",route automation/runs/9,TRV-03,implemente
+F02-C-024,C,P1,palette-suppression,"la palette trouve l'entrée Suppression sur recherche ""suppr""","une option ""Suppression"" -> /admin/emails/suppression est listée","palette ouverte, saisie ""suppr""",DASH-10,implemente
+F02-C-025,C,P1,palette-suppression,sélection de l'entrée Suppression navigue vers /suppression,router.push appelé avec /admin/emails/suppression,Entrée sur l'option Suppression,SUP-01,implemente
+F02-C-026,C,P2,palette-placeholder,le placeholder mentionne Cmd-K et Ctrl-K,"le placeholder contient ""Cmd-K"" et ""Ctrl-K""",palette ouverte,DASH-10,implemente
+F02-C-027,C,P2,palette-contenu,la palette liste les 9 sections en Navigation (dont Events et Listmonk),9 options de navigation présentes incluant Listmonk et Events,"palette ouverte, requête vide",DASH-10,implemente
+F02-C-029,C,P2,palette-ouverture,Ctrl-K ouvre la palette (plateforme non mac),la palette role=dialog devient visible,keydown ctrl+k,DASH-10,implemente
+F02-C-030,C,P2,palette-fermeture,Esc ferme la palette et restaure un focus stable,la palette n'est plus dans le DOM,"palette ouverte, keydown Escape",DASH-10,implemente
+F02-C-031,C,P2,perf-rsc,le rendu de la barre n'émet aucune requête nav-counters de façon synchrone au mount serveur simulé,aucun fetch déclenché avant hydratation/effet ; 1er fetch post-effet uniquement,monter sans avancer les effets,TRV-03,implemente
+F02-A-001,A,P1,a11y,axe sur la barre d'onglets : 0 violation serious/critical,axe ne retourne aucune violation serious/critical,"barre montée, compteurs 200",TRV-03,implemente
+F02-A-002,A,P2,a11y,axe sur le breadcrumb détail : 0 violation serious/critical,axe ne retourne aucune violation serious/critical,breadcrumb 4 segments,TRV-03,implemente
+F02-A-003,A,P2,a11y,badge non basé sur la couleur seule : le compteur est annoncé en texte accessible,le libellé accessible de l'onglet inclut le nombre et son sens,nav-counters 200 {dlq:3},TRV-03,implemente
+F02-I-001,I,P1,nav-counters-api,GET nav-counters non authentifié renvoie 401,réponse HTTP 401,session absente,TRV-03,implemente
+F02-I-002,I,P1,nav-counters-api,GET nav-counters authentifié renvoie un corps conforme navCountersSchema,status 200 et parse navCountersSchema réussit (conformité contrat),"admin, DB seedée DLQ=3 runs err=2",nominal,implemente
+F02-I-003,I,P1,nav-counters-api,compteurs reflètent l'état DB réel,dlq=2 et automationErrors=1 correspondent aux lignes seedées,seed 2 DLQ + 1 run errored,nominal,implemente
+F02-I-004,I,P1,nav-counters-cache,cache TTL 30s : 2 appels < 30s = 1 seule requête DB,le compteur de requêtes DB vaut 1 après 2 appels rapprochés,2 GET à 5s d'intervalle,TRV-03,implemente
+F02-I-005,I,P2,nav-counters-cache,après expiration TTL (>30s) un nouvel appel recalcule,le compteur de requêtes DB vaut 2 après le 2e appel post-30s,"2 GET à 31s, horloge avancée",TRV-03,implemente
+F02-I-006,I,P2,nav-counters-api,listmonkSyncFailed=0 si aucun campaign_link en échec (ou table absente),"status 200, listmonkSyncFailed=0",DB sans échec de sync,LMK-02,implemente
+F02-I-007,I,P2,nav-counters-api,erreur DB renvoie 500 (et non un 200 trompeur),"status 500, corps {error}",DB injoignable simulée,TRV-03,implemente
+F02-I-008,I,P1,campaigns-new,GET /admin/emails/campaigns/new ne renvoie pas 404,réponse non-404 (redirect ou page de création),admin authentifié,CAMP-08,implemente
+F02-E-001,E,P1,nav-clavier-bout-en-bout,tour des 9 sections au clavier sans souris d'un bout à l'autre,chaque section affiche son écran et son onglet actif aria-current=page,instance dédiée seedée,TRV-03,a_implementer
+F02-E-002,E,P1,suppression-decouvrable,Suppression atteignable via onglet ET via palette,les deux chemins mènent à l'écran Suppression,instance seedée,SUP-01,a_implementer
+F02-E-003,E,P2,badge-dlq-clic,l'astreinte voit le badge DLQ et clique pour ouvrir le cockpit DLQ,onglet Transactionnel affiche le badge puis l'écran DLQ s'ouvre au clic,seed 3 messages DLQ,TRV-03,a_implementer
+F02-E-004,E,P2,degradation-infra,"nav-counters en panne : onglets utilisables, navigation complète possible",aucun badge mais les 9 sections restent navigables,nav-counters renvoie 500 (réseau instance),TRV-03,a_implementer
+F02-E-005,E,P2,campaigns-new,navigation vers /campaigns/new aboutit au flux de création,l'écran de création de campagne s'affiche,admin,CAMP-08,a_implementer
+F02-E-006,E,P2,a11y-pages,axe Playwright sur layout avec barre : 0 serious/critical sur 3 écrans clés,"aucune violation serious/critical (dashboard, transactional, suppression)",instance seedée,TRV-03,a_implementer
