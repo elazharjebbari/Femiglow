@@ -19,12 +19,14 @@
  * Les scénarios par endpoint sont décrits dans
  * `docs/chat-test-strategy-2026-05/01-architecture-test/02-msw-handlers-catalog.md`.
  */
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, delay } from 'msw';
 import { setupServer } from 'msw/node';
 
 export const server = setupServer();
 
-export { http, HttpResponse };
+// `delay('infinite')` : étalon des tests d'état de chargement (grille réseau
+// emails-ux — un handler qui pend SANS résoudre, jamais de setTimeout).
+export { http, HttpResponse, delay };
 
 // Re-exports de handlers chat — opt-in (ne sont PAS register par défaut
 // pour ne pas casser les suites existantes qui utilisent leur propre stack).

@@ -27,7 +27,7 @@ composants:
     clavier:
       - { touche: Esc, effet: "ferme sans agir (= onCancel)" }
       - { touche: Tab, effet: "focus piégé, ne sort pas du dialog" }
-      - { touche: Enter, effet: "soumet UNE fois ; ignoré si busy ou saisie invalide" }
+      - { touche: Enter, effet: "soumet UNE fois ; ignoré si busy ou saisie invalide ; DÉROGATION sécurité (P1.1) : si le focus est sur Annuler, Enter annule (comportement natif) au lieu de soumettre l'action destructive" }
     focus:
       initial: bouton Annuler
       retour: élément déclencheur à la fermeture (succès/Esc/Annuler/backdrop)
