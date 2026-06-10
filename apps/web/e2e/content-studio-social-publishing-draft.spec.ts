@@ -169,7 +169,7 @@ async function seedApprovedInstagramPost(): Promise<SeedIds> {
         insert into content_asset_binding (
           id, draft_id, media_id, role, crop_json, created_at
         ) values (
-          ${ids.bindingId}, ${ids.draftId}, ${ids.mediaId}, 'primary',
+          ${ids.bindingId}, ${ids.draftId}, ${ids.mediaId}, 'primary_image',
           ${JSON.stringify({})}::jsonb, ${now}
         )
       `;

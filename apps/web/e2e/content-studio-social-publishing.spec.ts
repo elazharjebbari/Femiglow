@@ -20,7 +20,9 @@ test('publie un post Content Studio en dry-run depuis l interface admin', async 
   page.on('dialog', (dialog) => dialog.accept());
 
   try {
-    await page.goto('/admin/content-studio');
+    // /admin/content-studio redirige vers v2 (CONTENT_STUDIO_V2_DEFAULT=true) ;
+    // le module v1 (panneau « Publication directe ») vit sur l'URL legacy stable.
+    await page.goto('/admin/content-studio-legacy');
     await ensureAuthOrSkip(page);
 
     await expect(page.getByRole('heading', { name: 'Studio contenu' })).toBeVisible();
@@ -149,7 +151,7 @@ async function seedApprovedInstagramPost(): Promise<SeedIds> {
         insert into content_asset_binding (
           id, draft_id, media_id, role, crop_json, created_at
         ) values (
-          ${ids.bindingId}, ${ids.draftId}, ${ids.mediaId}, 'primary',
+          ${ids.bindingId}, ${ids.draftId}, ${ids.mediaId}, 'primary_image',
           ${JSON.stringify({})}::jsonb, ${now}
         )
       `;

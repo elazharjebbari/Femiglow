@@ -7,8 +7,10 @@ test.describe('Content Studio — auto-bind & approval gate (S1.1)', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/admin/content-studio');
-    await page.waitForURL('/admin/content-studio');
+    // /admin/content-studio redirige vers v2 (CONTENT_STUDIO_V2_DEFAULT=true) ;
+    // le module v1 (panneau « Publication directe ») vit sur l'URL legacy stable.
+    await page.goto('/admin/content-studio-legacy');
+    await page.waitForURL('/admin/content-studio-legacy');
   });
 
   test('cas 1 — auto-bind : générer visuel puis approuver sans cliquer Sauvegarder', async ({ page }) => {
