@@ -14,6 +14,10 @@ import { generateStudioImage } from './image-generation';
 import { generateStudioVideo } from './video-generation';
 import { assertTransition } from './state-machine';
 import {
+  cancelPublishJobsForPost,
+  reschedulePublishJobsForPost,
+} from '@/lib/social-publishing/admin-service';
+import {
   approveDraft,
   createBrief,
   createCampaign,
@@ -1180,7 +1184,15 @@ export async function cancelScheduledPost(input: { postId: string; reason?: stri
   const post = await getPost(input.postId);
   if (!post) throw new HttpError('not_found', 'Post introuvable.');
   assertTransition(post.status, 'cancelled');
-  return cancelPost(post.id, input.reason, input.actorId);
+  const cancelled = await cancelPost(post.id, input.reason, input.actorId);
+  // Purge les jobs de publication encore annulables : sans ça, un job schedule
+  // queued resterait exécutable par le cron et publierait un post annulé.
+  await cancelPublishJobsForPost({
+    postId: post.id,
+    actorId: input.actorId ?? null,
+    reason: input.reason,
+  });
+  return cancelled;
 }
 
 export async function archiveContentIdea(ideaId: string) {
@@ -1251,7 +1263,14 @@ export async function reschedulePost(input: { postId: string; scheduledAt: strin
   if (!post) throw new HttpError('not_found', 'Post introuvable.');
   const date = new Date(input.scheduledAt);
   if (Number.isNaN(date.getTime())) throw new HttpError('invalid_input', 'Date invalide.');
-  return updatePostPlanning({ postId: post.id, scheduledAt: date });
+  if (date.getTime() <= Date.now()) {
+    throw new HttpError('invalid_input', 'La date de programmation doit être future.');
+  }
+  const updated = await updatePostPlanning({ postId: post.id, scheduledAt: date });
+  // Re-cible les jobs schedule queued sur la nouvelle date — sans ça le cron
+  // exécuterait le job à l'ancienne date (le post replanifié partirait quand même).
+  await reschedulePublishJobsForPost({ postId: post.id, scheduledAt: date });
+  return updated;
 }
 
 export async function syncPostizIntegrations() {

@@ -15,6 +15,7 @@ import type {
   SocialProviderId,
   SocialPublishContent,
   SocialPublishJob,
+  SocialPublishMode,
   SocialPublishResult,
   SocialPublishingAdapter,
 } from './contracts';
@@ -25,7 +26,11 @@ import { publishWithAdapter } from './service';
 import { sendSocialAlert } from './alerts';
 import { logAuditEvent } from '@/lib/audit/log-event';
 import { logger } from '@/lib/logging/logger';
-import { assertSocialPublishJobTransition, nextRetryStatus } from './state-machine';
+import {
+  assertSocialPublishJobTransition,
+  canTransitionSocialPublishJob,
+  nextRetryStatus,
+} from './state-machine';
 import {
   createPublication,
   createPublishJob,
@@ -38,6 +43,7 @@ import {
   listSocialAccounts,
   recordPublishAttempt,
   tryAcquirePublishJobLock,
+  updatePublishJobSchedule,
   updatePublishJobStatus,
   upsertSocialAccount,
 } from './repository';
@@ -332,6 +338,15 @@ export async function scheduleContentPost(input: {
   if (!publishability.publishable) {
     throw new HttpError('invalid_state', 'Post non programmable.', { errors: publishability.errors });
   }
+  // Anti-double-publication : une seule programmation active par post. Sans
+  // cette purge, deux appels /schedule avec des dates différentes créent deux
+  // clés d'idempotence différentes → deux jobs queued → deux publications.
+  await cancelPublishJobsForPost({
+    postId: input.postId,
+    actorId: input.actorId,
+    publishModes: ['schedule'],
+    reason: 're-programmation',
+  });
   const key = input.idempotencyKey?.trim() || defaultIdempotencyKey(input.postId, publishability.account.id, input.scheduledAt.toISOString());
   const job = await createPublishJob({
     postId: input.postId,
@@ -363,6 +378,56 @@ export async function cancelPublishJob(input: { jobId: string; actorId: string |
   assertSocialPublishJobTransition(job.status, 'cancelled');
   const updated = await updatePublishJobStatus({ jobId: job.id, status: 'cancelled', lockedAt: null });
   return { job: updated ?? job };
+}
+
+/**
+ * Annule tous les jobs encore annulables d'un post (queued/failed/draft/
+ * approved — jamais un job en vol). Indispensable quand le post est annulé ou
+ * re-programmé : sans cette purge, le scheduler exécuterait des jobs orphelins
+ * (publication réelle d'un post annulé, double publication après re-schedule).
+ */
+export async function cancelPublishJobsForPost(input: {
+  postId: string;
+  actorId: string | null;
+  publishModes?: SocialPublishMode[];
+  reason?: string;
+}): Promise<{ cancelledJobIds: string[] }> {
+  const jobs = await listPublishJobs({ postId: input.postId });
+  const cancelledJobIds: string[] = [];
+  for (const job of jobs) {
+    if (!canTransitionSocialPublishJob(job.status, 'cancelled')) continue;
+    if (input.publishModes && !input.publishModes.includes(job.content.publishMode ?? 'now')) continue;
+    await updatePublishJobStatus({ jobId: job.id, status: 'cancelled', lockedAt: null });
+    cancelledJobIds.push(job.id);
+  }
+  if (cancelledJobIds.length > 0) {
+    await logAuditEvent({
+      action: 'social.jobs_cancelled',
+      actorId: input.actorId,
+      resourceType: 'content_post',
+      resourceId: input.postId,
+      meta: { jobIds: cancelledJobIds, reason: input.reason ?? null },
+    });
+  }
+  return { cancelledJobIds };
+}
+
+/**
+ * Re-cible les jobs schedule queued d'un post sur une nouvelle date.
+ * Les jobs draft/now ne sont pas touchés.
+ */
+export async function reschedulePublishJobsForPost(input: {
+  postId: string;
+  scheduledAt: Date;
+}): Promise<{ rescheduledJobIds: string[] }> {
+  const jobs = await listPublishJobs({ postId: input.postId, status: 'queued' });
+  const rescheduledJobIds: string[] = [];
+  for (const job of jobs) {
+    if ((job.content.publishMode ?? 'now') !== 'schedule') continue;
+    await updatePublishJobSchedule({ jobId: job.id, scheduledAt: input.scheduledAt });
+    rescheduledJobIds.push(job.id);
+  }
+  return { rescheduledJobIds };
 }
 
 export async function listPublishJobsForAdmin(filters: { status?: SocialPublishJob['status']; postId?: string; accountId?: string }) {
@@ -443,14 +508,30 @@ export async function executeJob(input: {
   }
   const account = await getSocialAccount(locked.accountId);
   if (!account) throw new HttpError('not_found', 'Compte social introuvable.');
-  // Kill-switch global : tant que SOCIAL_PUBLISHING_MODE n'est pas "live",
-  // aucun job ne peut s'exécuter sur un compte réel — quel que soit le chemin
-  // qui a créé le job (publish-now, schedule, retry, scheduler cron).
+  // Kill-switch global (garde la plus externe) : tant que
+  // SOCIAL_PUBLISHING_MODE n'est pas "live", aucun job ne peut s'exécuter sur
+  // un compte réel — quel que soit le chemin qui a créé le job (publish-now,
+  // schedule, retry, scheduler cron).
   const live = (input.mode ?? env.SOCIAL_PUBLISHING_MODE) === 'live';
   if (!live && account.provider !== 'dry_run') {
     const error = {
       code: 'invalid_request' as const,
       message: `Publication réelle bloquée (kill-switch) : SOCIAL_PUBLISHING_MODE≠live, compte "${account.provider}".`,
+      retryable: false,
+    };
+    const blocked = await updatePublishJobStatus({ jobId: locked.id, status: 'failed', lockedAt: null, lastError: error });
+    return { job: blocked ?? locked, result: { ok: false, status: 'failed', error } };
+  }
+  // Le job porte un snapshot figé à sa création ; le post source peut avoir
+  // été annulé/archivé entre-temps (cas typique : job schedule exécuté par le
+  // cron après une annulation). On re-vérifie l'état réel avant de publier.
+  const sourcePost = await getPost(locked.postId);
+  if (!sourcePost || sourcePost.status === 'cancelled' || sourcePost.status === 'archived') {
+    const error = {
+      code: 'invalid_request' as const,
+      message: sourcePost
+        ? `Post source "${sourcePost.status}" — publication refusée.`
+        : 'Post source introuvable — publication refusée.',
       retryable: false,
     };
     const blocked = await updatePublishJobStatus({ jobId: locked.id, status: 'failed', lockedAt: null, lastError: error });

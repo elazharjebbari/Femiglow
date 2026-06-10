@@ -416,6 +416,43 @@ export async function updatePublishJobStatus(input: {
   return updated;
 }
 
+/**
+ * Re-cible la date d'exécution d'un job queued (re-programmation d'un post).
+ * Met à jour job.scheduledAt ET content.scheduledAt (le snapshot porté par
+ * l'adapter) pour que les deux restent cohérents.
+ */
+export async function updatePublishJobSchedule(input: {
+  jobId: string;
+  scheduledAt: Date;
+}): Promise<SocialPublishJob | null> {
+  const current = await getPublishJob(input.jobId);
+  if (!current) return null;
+  const content = { ...current.content, scheduledAt: input.scheduledAt };
+  const updated: SocialPublishJob = {
+    ...current,
+    scheduledAt: input.scheduledAt,
+    content,
+    updatedAt: new Date(),
+  };
+  const drizzle = db();
+  if (drizzle) {
+    await drizzle.update(socialPublishJobs).set({
+      scheduledAt: updated.scheduledAt,
+      content: updated.content as never,
+      updatedAt: updated.updatedAt,
+    }).where(eq(socialPublishJobs.id, input.jobId));
+  } else {
+    store().socialPublishJobs.set(updated.id, updated);
+  }
+  await recordPublishEvent({
+    jobId: updated.id,
+    type: 'job.rescheduled',
+    actorId: updated.requestedBy,
+    message: `Publication job rescheduled to ${input.scheduledAt.toISOString()}`,
+  });
+  return updated;
+}
+
 export async function recordPublishAttempt(input: {
   jobId: string;
   provider: SocialProviderId;
