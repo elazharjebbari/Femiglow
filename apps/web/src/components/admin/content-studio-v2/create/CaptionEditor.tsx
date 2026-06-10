@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { useDraftAutosave } from '@/lib/content-studio-v2/state/StudioContext';
+import { useDraftAutosave, type DraftAutosaveAPI } from '@/lib/content-studio-v2/state/StudioContext';
 
 interface CaptionEditorProps {
   draftId: string;
@@ -11,6 +11,13 @@ interface CaptionEditorProps {
   maxLength?: number;
   /** Optional callback notified after every local change (used by preview). */
   onChange?: (next: { caption: string; hook: string | null }) => void;
+  /**
+   * Instance d'autosave PARTAGÉE avec le workspace. Indispensable en prod :
+   * sans elle, deux instances coexistent et le flush() pré-publication vide
+   * la mauvaise (caption publiée non sauvegardée). Le repli interne n'existe
+   * que pour les rendus isolés (tests).
+   */
+  autosave?: DraftAutosaveAPI;
 }
 
 export function CaptionEditor({
@@ -19,10 +26,12 @@ export function CaptionEditor({
   initialHook,
   maxLength = 2200,
   onChange,
+  autosave: sharedAutosave,
 }: CaptionEditorProps) {
   const [caption, setCaption] = useState(initialCaption);
   const [hook, setHook] = useState<string>(initialHook ?? '');
-  const autosave = useDraftAutosave(draftId);
+  const internalAutosave = useDraftAutosave(sharedAutosave ? null : draftId);
+  const autosave = sharedAutosave ?? internalAutosave;
 
   // Sync local state when draftId changes (switching drafts).
   useEffect(() => {

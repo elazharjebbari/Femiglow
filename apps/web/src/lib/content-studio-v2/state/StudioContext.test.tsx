@@ -248,6 +248,39 @@ describe('useDraftAutosave', () => {
     expect(result.current.error).toBeTruthy();
   });
 
+  it('restaure le patch en cas d’échec : un flush() ultérieur réessaie les mêmes données', async () => {
+    // P2 (audit 2026-06-10 §02) : avant, pendingRef était vidé AVANT le fetch
+    // et jeté en cas d'erreur — « Échec — réessayer » n'avait rien à réessayer.
+    const transport = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('Server Error', { status: 500 }))
+      .mockResolvedValue(
+        new Response(JSON.stringify({ draft: makeDraft({ caption: 'précieux' }) }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    const { result } = renderHook(
+      () => useDraftAutosave('draft-1', { debounceMs: 50, transport: transport as unknown as typeof fetch }),
+      { wrapper: wrapper({ drafts: [makeDraft()] }) },
+    );
+    act(() => result.current.patch({ caption: 'précieux' }));
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+    expect(result.current.status).toBe('error');
+    expect(result.current.isDirty).toBe(true);
+
+    // Retry : le patch perdu doit repartir tel quel.
+    await act(async () => {
+      await result.current.flush();
+    });
+    expect(transport).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(transport.mock.calls[1]?.[1]?.body as string)).toEqual({ caption: 'précieux' });
+    expect(result.current.status).toBe('saved');
+    expect(result.current.isDirty).toBe(false);
+  });
+
   it('flush() sends pending patch immediately without waiting for the debounce', async () => {
     const transport = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ draft: makeDraft() }), { status: 200 }),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Archive, CalendarClock, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Dialog } from '../primitives';
@@ -25,6 +26,7 @@ interface Props {
  * Pas de window.confirm — pour Archiver on ouvre un Dialog Radix.
  */
 export function BulkActionBar({ items, onClear, onActionDone }: Props) {
+  const router = useRouter();
   const [pending, setPending] = useState<ActionKind | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const count = items.length;
@@ -108,12 +110,17 @@ export function BulkActionBar({ items, onClear, onActionDone }: Props) {
         <Button
           variant="secondary"
           size="sm"
-          loading={pending === 'schedule'}
-          disabled={pending !== null && pending !== 'schedule'}
-          onClick={() => execute('schedule')}
+          disabled={pending !== null}
+          onClick={() => {
+            // Honnête : la programmation exige une date PAR post — pas
+            // d'action bulk silencieuse (l'ancien no-op affichait un faux
+            // succès « N drafts prêts à programmer », audit 2026-06-10 §02).
+            toast.info('Choisissez une date par post dans le Planning.');
+            router.push('/admin/content-studio-v2/plan');
+          }}
           leftIcon={<CalendarClock size={13} />}
         >
-          Programmer
+          Programmer…
         </Button>
         <Button
           variant="danger"
@@ -161,7 +168,6 @@ export function BulkActionBar({ items, onClear, onActionDone }: Props) {
 function messageFor(kind: ActionKind, n: number): string {
   const plural = n > 1 ? 's' : '';
   if (kind === 'approve') return `${n} draft${plural} approuvé${plural}.`;
-  if (kind === 'schedule') return `${n} draft${plural} prêt${plural} à programmer.`;
   return `${n} élément${plural} archivé${plural}.`;
 }
 
@@ -176,15 +182,6 @@ async function runOne(kind: ActionKind, item: LibraryItem): Promise<boolean> {
         headers: { 'content-type': 'application/json' },
       });
       return res.ok;
-    }
-    if (kind === 'schedule') {
-      // Approved posts can be scheduled — without an explicit date we
-      // simply navigate the user to /plan. Pour le bulk, on signale
-      // « prêt à programmer ». Backend dispo via /posts/:id/schedule.
-      if (!item.postId) return false;
-      // No-op: we don't pick a date in bulk. Just succeed (the user must
-      // pick a date manually in /plan). On retourne true pour pas spammer.
-      return true;
     }
     // archive
     if (item.postId) {

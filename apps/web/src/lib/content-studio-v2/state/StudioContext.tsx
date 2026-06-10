@@ -293,6 +293,11 @@ export function useDraftAutosave(
       setLastSavedAt(Date.now());
       setIsDirty(false);
     } catch (err) {
+      // Restaure le patch envoyé : sans ça « Échec — réessayer » n'avait rien
+      // à réessayer (les frappes étaient définitivement perdues). Les frappes
+      // arrivées pendant la requête gardent la priorité sur le snapshot rejoué.
+      pendingRef.current = { ...body, ...pendingRef.current };
+      setIsDirty(true);
       const message = err instanceof Error ? err.message : 'Échec de la sauvegarde';
       setError(message);
       setStatus('error');

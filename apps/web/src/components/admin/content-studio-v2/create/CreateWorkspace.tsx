@@ -31,8 +31,11 @@ import type { ContentPost } from '@/lib/content-studio/types';
 interface CreateWorkspaceProps {
   initialIdeas?: ContentIdea[];
   initialDrafts?: ContentDraft[];
+  initialPosts?: ContentPost[];
   initialMediaItems?: StudioV2MediaItem[];
   initialDraftId?: string | null;
+  /** Média pré-sélectionné (deep-link /create/[draftId] : l'asset lié au draft). */
+  initialSelectedMediaId?: string | null;
   /** MP-AR-006 (BUG-004) — gates the media-studio tracks panel. */
   mediaStudioEnabled?: boolean;
 }
@@ -43,16 +46,26 @@ export function CreateWorkspace(props: CreateWorkspaceProps) {
       initial={{
         ideas: props.initialIdeas ?? [],
         drafts: props.initialDrafts ?? [],
+        posts: props.initialPosts ?? [],
         mediaItems: props.initialMediaItems ?? [],
         selectedDraftId: props.initialDraftId ?? null,
       }}
     >
-      <CreateWorkspaceInner mediaStudioEnabled={props.mediaStudioEnabled ?? false} />
+      <CreateWorkspaceInner
+        mediaStudioEnabled={props.mediaStudioEnabled ?? false}
+        initialSelectedMediaId={props.initialSelectedMediaId ?? null}
+      />
     </StudioProvider>
   );
 }
 
-function CreateWorkspaceInner({ mediaStudioEnabled = false }: { mediaStudioEnabled?: boolean }) {
+function CreateWorkspaceInner({
+  mediaStudioEnabled = false,
+  initialSelectedMediaId = null,
+}: {
+  mediaStudioEnabled?: boolean;
+  initialSelectedMediaId?: string | null;
+}) {
   const {
     drafts,
     setDrafts,
@@ -68,7 +81,7 @@ function CreateWorkspaceInner({ mediaStudioEnabled = false }: { mediaStudioEnabl
 
   const [platform, setPlatform] = useState<PreviewPlatform>('instagram');
   const [format, setFormat] = useState<PreviewFormat>('post');
-  const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
+  const [selectedMediaId, setSelectedMediaId] = useState<string | null>(initialSelectedMediaId);
   const [livePreview, setLivePreview] = useState<{ caption: string; hook: string | null } | null>(
     null,
   );
@@ -278,7 +291,17 @@ function CreateWorkspaceInner({ mediaStudioEnabled = false }: { mediaStudioEnabl
             draftId={draft?.id ?? ''}
             items={mediaItems}
             selectedMedia={selectedMedia}
-            onSelect={(item) => setSelectedMediaId(item?.id ?? null)}
+            onSelect={(item) => {
+              setSelectedMediaId(item?.id ?? null);
+              // Persiste le binding côté serveur : sans ça l'aperçu montrait un
+              // média que le serveur ne connaissait pas (la publication partait
+              // avec l'ancien asset). Flush immédiat : c'est une action
+              // délibérée, pas une frappe à debouncer.
+              if (item?.id && draft) {
+                autosave.patch({ mediaId: item.id });
+                void autosave.flush();
+              }
+            }}
             onUploaded={(item) => {
               setMediaItems((prev) => [item, ...prev.filter((m) => m.id !== item.id)]);
             }}
@@ -291,6 +314,7 @@ function CreateWorkspaceInner({ mediaStudioEnabled = false }: { mediaStudioEnabl
               initialCaption={draft.caption}
               initialHook={draft.hook}
               onChange={(next) => setLivePreview(next)}
+              autosave={autosave}
             />
           ) : null}
           </div>

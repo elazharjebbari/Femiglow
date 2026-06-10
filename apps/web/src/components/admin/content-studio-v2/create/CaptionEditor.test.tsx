@@ -148,3 +148,31 @@ describe('CaptionEditor', () => {
     expect(alert).toHaveTextContent(/Échec — réessayer/);
   });
 });
+
+describe('CaptionEditor — instance autosave partagée (P2, audit 2026-06-10 §02)', () => {
+  it('route les frappes vers l’instance fournie par le workspace (pas une instance interne)', () => {
+    const shared = {
+      status: 'idle' as const,
+      lastSavedAt: null,
+      isDirty: false,
+      patch: vi.fn(),
+      flush: vi.fn().mockResolvedValue(undefined),
+      error: null,
+    };
+    renderWithProvider(
+      <CaptionEditor
+        draftId="draft_test1"
+        initialCaption="Initiale"
+        initialHook={null}
+        autosave={shared}
+      />,
+    );
+    const caption = screen.getByLabelText(/Légende complète/i);
+    fireEvent.change(caption, { target: { value: 'Nouvelle caption' } });
+    expect(shared.patch).toHaveBeenCalledWith({ caption: 'Nouvelle caption' });
+
+    const hook = screen.getByLabelText(/Accroche du draft/i);
+    fireEvent.change(hook, { target: { value: 'Hook !' } });
+    expect(shared.patch).toHaveBeenCalledWith({ hook: 'Hook !' });
+  });
+});

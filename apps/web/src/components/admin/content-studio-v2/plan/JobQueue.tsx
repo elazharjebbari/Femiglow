@@ -52,6 +52,8 @@ export function JobQueue({
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
+  const consecutiveFailuresRef = useRef(0);
+  const [pollError, setPollError] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async () => {
     if (!fetcher) return;
@@ -73,12 +75,20 @@ export function JobQueue({
         return now - ts <= SEVEN_DAYS_MS;
       });
       const focused = recent.filter((job) => FOCUS_STATUSES.includes(job.status));
-      if (mountedRef.current) setJobs(focused);
+      if (mountedRef.current) {
+        setJobs(focused);
+        consecutiveFailuresRef.current = 0;
+        setPollError(null);
+      }
     } catch (err) {
       if (mountedRef.current) {
-        toast.error(
-          err instanceof Error ? `Échec rafraîchissement jobs : ${err.message}` : 'Échec rafraîchissement jobs.',
-        );
+        // Anti-spam : le poll tourne toutes les 30 s — un seul toast à la
+        // première panne, puis un message inline persistant (audit §02).
+        const message =
+          err instanceof Error ? `Échec rafraîchissement jobs : ${err.message}` : 'Échec rafraîchissement jobs.';
+        consecutiveFailuresRef.current += 1;
+        if (consecutiveFailuresRef.current === 1) toast.error(message);
+        setPollError(message);
       }
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -193,6 +203,18 @@ export function JobQueue({
           Rafraîchir
         </Button>
       </header>
+      {pollError ? (
+        <p
+          role="status"
+          style={{
+            margin: '0 0 10px',
+            fontSize: 12,
+            color: 'var(--cs-danger, #b91c1c)',
+          }}
+        >
+          {pollError} — nouvelle tentative automatique.
+        </p>
+      ) : null}
 
       {jobs.length === 0 ? (
         <p style={{ margin: 0, fontSize: 13, color: 'var(--cs-fg-secondary)' }}>
