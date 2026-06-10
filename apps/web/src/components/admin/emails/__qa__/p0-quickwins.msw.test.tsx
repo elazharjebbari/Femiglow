@@ -37,11 +37,16 @@ vi.mock('@/lib/auth/require-admin', () => ({
   requireAdmin: vi.fn(async () => ({ email: 'admin@femiglow-maroc.com' })),
 }));
 vi.mock('@/lib/admin/emails/queries', () => ({
-  getOutboxKpi: vi.fn(async () => ({
-    sentLast7d: 0, deliveredLast7d: 0, failedLast7d: 0,
-    dlqLast7d: 0, pendingNow: 0, totalLast7d: 0,
+  getOutboxKpiForWindow: vi.fn(async () => ({
+    total: 0, sent: 0, delivered: 0, failed: 0, dlq: 0, pendingNow: 0,
   })),
   listRecentOutbox: vi.fn(async () => []),
+}));
+vi.mock('@/lib/mail/transactional/summary', () => ({
+  summarizeOutbox: vi.fn(async () => ({
+    window: '7d', delivered: 0, queued: 0, failed: 0, hardBounced: 0,
+    sent: 0, webhookLastSuccessAt: null, sparkline: [],
+  })),
 }));
 vi.mock('@/lib/admin/emails/health', () => ({
   checkEmailingHealth: vi.fn(async () => ({
@@ -60,8 +65,11 @@ vi.mock('@/components/admin/emails/KpiCards', () => ({
   KpiCards: () => null,
   StatusBadge: () => null,
 }));
-vi.mock('@/components/admin/emails/DashboardFreshness', () => ({
-  DashboardFreshness: () => null,
+vi.mock('@/components/admin/emails/DashboardAutoRefresh', () => ({
+  DashboardAutoRefresh: () => null,
+}));
+vi.mock('@/components/admin/emails/WindowSelector', () => ({
+  WindowSelector: () => null,
 }));
 
 import AdminEmailsPage from '@/app/admin/emails/page';
@@ -81,7 +89,7 @@ afterAll(() => server.close());
 
 describe('P0.3 SUP-01 — navigation vers la liste de suppression', () => {
   it('le dashboard expose un quick-link vers /admin/emails/suppression', async () => {
-    render(await AdminEmailsPage());
+    render(await AdminEmailsPage({}));
     const link = screen.getByRole('link', { name: /liste de suppression/i });
     expect(link).toHaveAttribute('href', '/admin/emails/suppression');
   });

@@ -1,22 +1,33 @@
 /**
- * /admin/emails — Dashboard transactional (M1.C).
+ * /admin/emails — Dashboard emailing FENÊTRÉ (F03, P2.1).
  *
- * Minimal MVP : 6 KPI cards (7 derniers jours) + quick links vers les
- * sous-sections. Server component, lecture seule.
+ * `?window=24h|7d|30d` (défaut 7d, valeur invalide silencieusement repliée) :
+ * cartes KPI, bandeau silence, tendances, deep-links santé et EmptyState
+ * suivent TOUS la fenêtre courante. Server component force-dynamic ;
+ * l'auto-refresh client (60 s, sonde summary) pilote `router.refresh()`.
  */
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
-import { getOutboxKpi, listRecentOutbox } from '@/lib/admin/emails/queries';
+import { getOutboxKpiForWindow, listRecentOutbox } from '@/lib/admin/emails/queries';
 import { checkEmailingHealth, type HealthLevel } from '@/lib/admin/emails/health';
 import { db as getDb } from '@/lib/db/client';
 import {
   checkEmailingInfraHealth,
   type InfraChecks,
 } from '@/app/api/admin/emails/health/checks';
+import { summarizeOutbox } from '@/lib/mail/transactional/summary';
+import { parseWindow, windowLabel, WINDOW_MS } from '@/app/admin/emails/kpi-format';
 import { HealthBadge } from '@/components/admin/emails/HealthBadge';
 import { KpiCards, StatusBadge } from '@/components/admin/emails/KpiCards';
-import { DashboardFreshness } from '@/components/admin/emails/DashboardFreshness';
+import { DashboardAutoRefresh } from '@/components/admin/emails/DashboardAutoRefresh';
+import { WindowSelector } from '@/components/admin/emails/WindowSelector';
+import { EmptyState } from '@/components/admin/emails/ui/EmptyState';
+import {
+  DEFAULT_TIMEZONE,
+  formatAbsolute,
+  timeZoneLabel,
+} from '@/components/admin/emails/ui/format-datetime';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +38,16 @@ function worstLevel(a: HealthLevel, b: HealthLevel): HealthLevel {
   return 'ok';
 }
 
-export default async function AdminEmailsPage() {
+export default async function AdminEmailsPage({
+  searchParams,
+}: {
+  searchParams?: { window?: string };
+}) {
   const session = await requireAdmin('/admin/emails');
-  const [kpi, recent, health] = await Promise.all([
-    getOutboxKpi(),
+  const window = parseWindow(searchParams?.window);
+  const [kpi, summary, recent, health] = await Promise.all([
+    getOutboxKpiForWindow(WINDOW_MS[window]),
+    summarizeOutbox(window),
     listRecentOutbox({ limit: 8 }),
     checkEmailingHealth(),
   ]);
@@ -51,22 +68,34 @@ export default async function AdminEmailsPage() {
     }
   }
 
+  const wl = windowLabel(window);
+
   return (
     <AdminShell adminEmail={session.email} active="emails">
       <header className="mb-6 flex items-baseline justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Emails</h1>
           <p className="mt-1 text-sm text-stone-600">
-            Transactionnels envoyés via Stalwart. KPIs 7 derniers jours.
+            Transactionnels envoyés via Stalwart. Indicateurs sur {wl}.
           </p>
+          <div className="mt-2">
+            <WindowSelector value={window} />
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <HealthBadge level={level} report={health} infra={infraChecks} />
-          <DashboardFreshness generatedAt={health.timestamp} />
+          <HealthBadge level={level} report={health} infra={infraChecks} window={window} />
+          <DashboardAutoRefresh generatedAt={health.timestamp} window={window} />
         </div>
       </header>
 
-      <KpiCards kpi={kpi} />
+      <KpiCards
+        kpi={kpi}
+        window={window}
+        webhookLastSuccessAt={summary.webhookLastSuccessAt}
+        comparison={summary.comparison}
+        sparkline={summary.sparkline}
+        generatedAt={health.timestamp}
+      />
 
       <nav className="mb-8 flex flex-wrap gap-3">
         <Link
@@ -142,35 +171,37 @@ export default async function AdminEmailsPage() {
             Voir tous les envois →
           </Link>
         </div>
-        <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
-          <table className="min-w-full text-sm">
-            <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-600">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Date</th>
-                <th className="px-3 py-2 text-left font-medium">Template</th>
-                <th className="px-3 py-2 text-left font-medium">Destinataire</th>
-                <th className="px-3 py-2 text-left font-medium">Statut</th>
-                <th className="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-200">
-              {recent.length === 0 ? (
+        {recent.length === 0 ? (
+          <EmptyState
+            icon="📭"
+            title={`Aucun envoi sur ${wl}`}
+            body="Aucun email transactionnel n'est parti sur la période — vérifie la fenêtre sélectionnée ou ouvre le cockpit pour l'historique complet."
+            cta={{
+              label: 'Ouvrir le cockpit →',
+              href: `/admin/emails/transactional?window=${window}`,
+            }}
+          />
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+            <table className="min-w-full text-sm">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-600">
                 <tr>
-                  <td colSpan={5} className="px-3 py-8 text-center text-stone-500">
-                    <p>Aucun envoi sur la période.</p>
-                    <Link
-                      href="/admin/emails/transactional"
-                      className="mt-2 inline-block text-sm font-medium text-stone-700 underline underline-offset-2 hover:text-stone-900"
-                    >
-                      Ouvrir le cockpit transactionnel →
-                    </Link>
-                  </td>
+                  <th className="px-3 py-2 text-left font-medium">
+                    Date ({timeZoneLabel(DEFAULT_TIMEZONE)})
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">Template</th>
+                  <th className="px-3 py-2 text-left font-medium">Destinataire</th>
+                  <th className="px-3 py-2 text-left font-medium">Statut</th>
+                  <th className="px-3 py-2"></th>
                 </tr>
-              ) : (
-                recent.map((r) => (
+              </thead>
+              <tbody className="divide-y divide-stone-200">
+                {recent.map((r) => (
                   <tr key={r.id} className="hover:bg-stone-50/60">
                     <td className="px-3 py-2 text-xs text-stone-600 whitespace-nowrap">
-                      {new Date(r.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                      <time dateTime={new Date(r.createdAt).toISOString()}>
+                        {formatAbsolute(new Date(r.createdAt).toISOString())}
+                      </time>
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">{r.template}</td>
                     <td className="px-3 py-2 text-stone-700">{r.toEmail}</td>
@@ -183,11 +214,11 @@ export default async function AdminEmailsPage() {
                       </Link>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </AdminShell>
   );

@@ -1,91 +1,91 @@
 id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
-F03-U-001,U,P1,kpi-format,"pct(38,42)","retourne '90.5 %'",factory:kpi,nominal,a_implementer
-F03-U-002,U,P0,kpi-format,"pct(num,0) division par zéro","retourne '—' (jamais 'NaN %' ni '0.0 %')",factory:kpi,TRV-04,a_implementer
-F03-U-003,U,P2,kpi-format,"fmt(12345) fr-FR","retourne '12 345' (espace insécable séparateur milliers)",factory:kpi,nominal,a_implementer
-F03-U-004,U,P2,kpi-format,"fmt(0)","retourne '0'",factory:kpi,nominal,a_implementer
-F03-U-005,U,P0,tri-etat,"deliveredState delivered>0 -> tracked","state='tracked', value=fmt(delivered), sub='{pct} des envoyés'","sent=42,delivered=38,webhook=set",DASH-02,a_implementer
-F03-U-006,U,P0,tri-etat,"deliveredState sent>0 delivered=0 webhook connu -> silent","state='silent', value='0', sub='webhook muet depuis HH:MM', tone='rose'","sent=42,delivered=0,webhook=set",DASH-02;TRV-04,a_implementer
-F03-U-007,U,P0,tri-etat,"deliveredState sent=0 -> untracked","state='untracked', value='—', sub='non suivi', tone='neutral'","sent=0,delivered=0,webhook=null",TRV-04,a_implementer
-F03-U-008,U,P0,tri-etat,"deliveredState sent>0 delivered=0 webhook jamais armé -> untracked","state='untracked', value='—', sub='non suivi' (PAS d'alerte rose)","sent=12,delivered=0,webhook=null",TRV-04,a_implementer
-F03-U-009,U,P0,tri-etat,"table de vérité exhaustive sent×delivered×webhook","les 3 gardes sont mutuellement exclusives et couvrantes sur les 8 combinaisons de signes",factory:kpi.matrix,TRV-04,a_implementer
-F03-U-010,U,P1,tri-etat,"deliveredState tracked pct>=95 -> emerald","tone='emerald' quand delivered/sent>=0.95","sent=100,delivered=98",nominal,a_implementer
-F03-U-011,U,P1,tri-etat,"fmtClock webhook <24h -> HH:MM","retourne 'HH:MM' (Casablanca)","webhook=il y a 2h",DASH-02,a_implementer
-F03-U-012,U,P2,tri-etat,"fmtClock webhook >24h -> JJ/MM HH:MM","retourne 'JJ/MM HH:MM'","webhook=il y a 30h",DASH-02,a_implementer
-F03-U-013,U,P0,silence-predicat,"isDeliverySilent(1,0)","retourne true","sent=1,delivered=0",nominal,a_implementer
-F03-U-014,U,P0,silence-predicat,"isDeliverySilent(0,0)","retourne false (aucun envoi)","sent=0,delivered=0",nominal,a_implementer
-F03-U-015,U,P1,silence-predicat,"isDeliverySilent(5,2)","retourne false (livraisons présentes)","sent=5,delivered=2",nominal,a_implementer
-F03-U-016,U,P1,tendance,"trendLabel(undefined) -> '—'","text='—', tone='neutral' (fenêtre sans comparaison)",factory:summary,DASH-06,a_implementer
-F03-U-017,U,P0,tendance,"trendLabel(+12,'7 j préc.','good')","text='+12% vs 7 j préc.', tone='emerald'",factory:summary,DASH-06,a_implementer
-F03-U-018,U,P0,tendance,"trendLabel(+1,'7 j préc.','bad') échecs","text='+1% vs 7 j préc.', tone='rose' (hausse d'échecs = mauvais)",factory:summary,DASH-06,a_implementer
-F03-U-019,U,P1,tendance,"trendLabel(-30,'24 h préc.','good')","text='-30% vs 24 h préc.', tone='rose' (baisse de livrés = mauvais)",factory:summary,DASH-06,a_implementer
-F03-U-020,U,P1,tendance,"trendLabel(0,'30 j préc.','good')","text='= vs 30 j préc.', tone='neutral'",factory:summary,DASH-06,a_implementer
-F03-U-021,U,P1,fenetre,"parseWindow('30d') -> '30d'","retourne '30d'",nominal,DASH-01,a_implementer
-F03-U-022,U,P1,fenetre,"parseWindow(undefined) -> '7d'","défaut '7d'",nominal,DASH-01,a_implementer
-F03-U-023,U,P1,fenetre,"parseWindow('bogus') -> '7d'","valeur invalide -> défaut '7d' (pas d'erreur)",nominal,DASH-01,a_implementer
-F03-U-024,U,P2,fenetre,"windowLabel mapping","'24h'->'24 h','7d'->'7 j','30d'->'30 j'",nominal,DASH-01,a_implementer
-F03-C-001,C,P1,fenetre,"sélecteur rendu radiogroup","3 boutons radio, 7 j a aria-checked=true par défaut",factory:summary,DASH-01,a_implementer
-F03-C-002,C,P0,fenetre,"clic '30 j' change l'URL","push/replace ?window=30d (pas d'entrée historique superflue)",factory:summary,DASH-01,a_implementer
-F03-C-003,C,P0,fenetre,"clic '24 h' recharge les données","les cartes affichent les chiffres du summary 24h (fetch émis avec window=24h)",factory:summary,DASH-01,a_implementer
-F03-C-004,C,P1,fenetre,"fenêtre propagée aux liens cartes","chaque href carte porte &window=24h après sélection 24 h",factory:summary,DASH-01,a_implementer
-F03-C-005,C,P1,fenetre,"navigation clavier flèches dans le radiogroup","flèche droite déplace la sélection au radio suivant",factory:summary,nominal,a_implementer
-F03-C-006,C,P0,tri-etat,"carte Livrés E1 tracked","affiche fmt(delivered) + '{pct} des envoyés', ton neutre/emerald","sent=42,delivered=38",DASH-02,a_implementer
-F03-C-007,C,P0,tri-etat,"carte Livrés E2 silent","affiche '0' + 'webhook muet depuis HH:MM' + lien diagnostiquer, ton rose","sent=42,delivered=0,webhook=set",DASH-02;TRV-04,a_implementer
-F03-C-008,C,P0,tri-etat,"carte Livrés E3 untracked","affiche '—' + 'non suivi', PAS de ton rose, PAS d'alerte","sent=0",TRV-04,a_implementer
-F03-C-009,C,P1,tri-etat,"E2 lien diagnostiquer cible","le lien porte from=health&check=deliveredFreshness","sent=42,delivered=0,webhook=set",DASH-12,a_implementer
-F03-C-010,C,P0,silence-banner,"bandeau apparaît en E2","role=alert visible, texte 'Livraison silencieuse … sur 7 j'","sent=42,delivered=0",nominal,a_implementer
-F03-C-011,C,P0,silence-banner,"bandeau absent si delivered>0","aucun role=alert delivery-silent","sent=42,delivered=38",nominal,a_implementer
-F03-C-012,C,P1,silence-banner,"libellé fenêtre suit le sélecteur","bandeau dit 'sur 24 h' après sélection 24 h","sent=42,delivered=0",DASH-01,a_implementer
-F03-C-013,C,P1,silence-banner,"bandeau disparaît au changement de fenêtre","fenêtre 30j avec delivered>0 -> bandeau retiré","30j a des livraisons",nominal,a_implementer
-F03-C-014,C,P0,auto-refresh,"refresh exact à 60s (fake timers)","exactement 1 router.refresh à T+60s, 0 avant",factory:summary,DASH-03,a_implementer
-F03-C-015,C,P0,auto-refresh,"aucun refresh onglet caché","document.hidden=true puis +180s -> 0 router.refresh émis",factory:summary,DASH-03,a_implementer
-F03-C-016,C,P0,auto-refresh,"refresh immédiat au retour d'onglet","hidden->visible -> 1 router.refresh émis aussitôt",factory:summary,DASH-03,a_implementer
-F03-C-017,C,P0,auto-refresh,"âge continue de courir onglet caché","après 247s caché, l'âge affiché ≈ '247 s'",factory:summary,DASH-03,a_implementer
-F03-C-018,C,P1,auto-refresh,"âge réinitialisé après refresh","à T+60s l'âge revient à '0 s'",factory:summary,DASH-03,a_implementer
-F03-C-019,C,P1,auto-refresh,"intervalles nettoyés au démontage","unmount -> aucun timer résiduel (clearInterval x2)",factory:summary,DASH-03,a_implementer
-F03-C-020,C,P1,auto-refresh,"bouton Rafraîchir manuel","clic -> 1 router.refresh, aria-busy pendant transition, anti double-clic",factory:summary,nominal,a_implementer
-F03-C-021,C,P2,freshness,"timezone affichée","l'âge affiche '(Casablanca)'",factory:summary,DASH-08,a_implementer
-F03-C-022,C,P0,cartes-cliquables,"carte Échecs -> bonne URL cockpit","href=?status=failed,bounced_soft,bounced_permanent&window=courant","failed=3",nominal,a_implementer
-F03-C-023,C,P0,cartes-cliquables,"carte DLQ -> ?status=dlq","href cockpit ?status=dlq&window propagé","dlq=2",nominal,a_implementer
-F03-C-024,C,P1,cartes-cliquables,"carte Total inerte","aucun lien (pas de role=link sur Total)","total=45",nominal,a_implementer
-F03-C-025,C,P1,cartes-cliquables,"aria-label chiffré","carte Échecs aria-label='Voir les 3 échecs'","failed=3",nominal,a_implementer
-F03-C-026,C,P1,tendance,"carte affiche +12% vs 7 j préc.","sous-texte '+12% vs 7 j préc.' ton emerald","comparison.deliveredPct=12",DASH-06,a_implementer
-F03-C-027,C,P1,tendance,"tendance absente -> '—'","comparison absent -> carte affiche '—', pas de NaN%","window=1h sans comparison",DASH-06,a_implementer
-F03-C-028,C,P2,sparkline,"sparkline 12 points aria-hidden","svg rendu, 12 points, aria-hidden=true",factory:summary,DASH-06,a_implementer
-F03-C-029,C,P0,health-badge,"chaque check rendu déplié","SMTP, DB, Outbox, DLQ, Pending, Dernier livré, Fraîcheur, Cron, Webhook, File, Sending tous présents",factory:health,DASH-12,a_implementer
-F03-C-030,C,P0,health-badge,"check DLQ ✗ -> lien deep-link","ligne DLQ porte ?status=dlq&from=health&check=dlq24h","dlq24h=3",DASH-12,a_implementer
-F03-C-031,C,P0,health-badge,"deep-link porte ?from=health","tout lien cockpit du badge contient from=health",factory:health,DASH-12,a_implementer
-F03-C-032,C,P1,health-badge,"deep-link propage la fenêtre","lien badge contient &window=30d quand fenêtre=30j",factory:health,DASH-01;DASH-12,a_implementer
-F03-C-033,C,P1,health-badge,"webhook muet -> lien events","ligne webhook ✗ -> /admin/emails/events?source=email&from=health","webhookSilent.ok=false",DASH-12,a_implementer
-F03-C-034,C,P2,health-badge,"contraste pied rose-800","le pied de synthèse utilise rose-800 (DASH-11)",factory:health,DASH-11,a_implementer
-F03-C-035,C,P1,health-badge,"check ✓ sans lien","un check OK ne rend pas de lien d'action",factory:health,nominal,a_implementer
-F03-C-036,C,P1,empty-state,"table vide -> EmptyState","recent=[] -> EmptyState rendu (icône+titre+CTA), pas la tr legacy","recent vide",DASH-05,a_implementer
-F03-C-037,C,P1,empty-state,"titre EmptyState explicite","titre 'Aucun envoi sur 7 jours' (fenêtre explicite)","recent vide, window=7d",DASH-05,a_implementer
-F03-C-038,C,P2,empty-state,"CTA propage la fenêtre","bouton 'Ouvrir le cockpit' href ?window=7d","recent vide",DASH-05,a_implementer
-F03-C-039,C,P1,empty-state,"table non vide -> pas d'EmptyState","recent=[8 lignes] -> table rendue, EmptyState absent","recent 8 lignes",nominal,a_implementer
-F03-C-040,C,P1,pending-age,"sous-texte âge du relevé","carte En attente sous-texte 'relevé il y a Xs · drain 60 s'","pending=12",DASH-04,a_implementer
-F03-C-041,C,P1,pending-age,"ton ambre au-delà de 50","pending=342 -> ton ambre","pending=342",DASH-04,a_implementer
-F03-C-042,C,P0,loading,"skeleton role=status","loading.tsx skeleton 6 cartes + role=status sr-only",nominal,nominal,a_implementer
-F03-C-043,C,P0,error,"message neutre sans présomption DB","error.tsx affiche 'n'a pas pu être chargé', AUCUNE mention 'base de données'",factory:error,DASH-09,a_implementer
-F03-C-044,C,P1,error,"digest affiché","error boundary montre le digest + bouton Réessayer + lien /admin",factory:error,DASH-09,a_implementer
-F03-C-045,C,P2,status-pill,"libellé Bounce permanent complet","la table consomme le Pill socle, libellé 'Bounce permanent' (pas 'Bounce perm.')","status=bounced_permanent",DASH-07;TRV-07,a_implementer
-F03-C-046,C,P2,a11y,"axe smoke dashboard","0 violation serious/critical sur le dashboard monté",factory:summary,nominal,a_implementer
-F03-N-001,C,P0,reseau,"summary 200 nominal","cartes peintes avec les chiffres, pas de bandeau d'erreur",factory:summary,nominal,a_implementer
-F03-N-002,C,P0,reseau,"summary 401","dashboard reste lisible (dernières données), bandeau auth, pas d'écran blanc",factory:summary,nominal,a_implementer
-F03-N-003,C,P0,reseau,"summary 500","données précédentes conservées + bandeau 'rafraîchissement impossible'",factory:summary,DASH-03,a_implementer
-F03-N-004,C,P0,reseau,"summary hang (delay infini)","état chargement stable, AUCUN double fetch, anciennes données visibles",factory:summary,DASH-03,a_implementer
-F03-N-005,C,P0,reseau,"summary network error","pas de faux 'à jour il y a 0 s', bandeau figé à HH:MM, données préservées",factory:summary,DASH-03,a_implementer
-F03-N-006,C,P1,reseau,"refresh raté ne ment pas sur l'âge","sur échec, l'âge reste figé (pas remis à 0)",factory:summary,DASH-03,a_implementer
-F03-I-001,I,P0,summary-fenetre,"window=24h bornes SQL","compte uniquement created_at dans [now-24h, now]",seed:outbox à cheval 24h,DASH-01,a_implementer
-F03-I-002,I,P0,summary-fenetre,"window=7d bornes SQL","compte uniquement [now-7j, now]",seed:outbox à cheval 7j,DASH-01,a_implementer
-F03-I-003,I,P0,summary-fenetre,"window=30d bornes SQL","compte uniquement [now-30j, now]",seed:outbox à cheval 30j,DASH-01,a_implementer
-F03-I-004,I,P0,summary-fenetre,"ligne sur la borne inférieure","created_at=start est INCLUS (gte inclusif) ; start-1ms EXCLU",seed:borne exacte,DASH-01,a_implementer
-F03-I-005,I,P1,summary-contrat,"conformité Zod réponse summary","la réponse réelle parse avec SummaryResult (window,delivered,queued,failed,hardBounced,sent,sparkline,comparison)",seed:outbox,nominal,a_implementer
-F03-I-006,I,P0,summary-contrat,"enum window étendu accepte 30d","?window=30d -> 200 (pas 422)",seed:outbox,DASH-01,a_implementer
-F03-I-007,I,P1,summary-contrat,"enum window rejette invalide","?window=bogus -> 422 avec détail",seed:outbox,nominal,a_implementer
-F03-I-008,I,P1,summary-contrat,"1h garde son comportement cockpit","?window=1h -> 200, comparison absent (non-régression cockpit)",seed:outbox,nominal,a_implementer
-F03-I-009,I,P1,summary-webhook,"webhookLastSuccessAt = max(ts) delivered","retourne l'iso du dernier event delivered ; null si aucun",seed:events delivered,DASH-02,a_implementer
-F03-I-010,I,P0,summary-auth,"summary requireAdmin","non-admin -> 401",seed:outbox,nominal,a_implementer
-F03-I-011,I,P1,summary-comparaison,"comparison 30d J-1","deliveredPct calculé vs fenêtre 30j précédente",seed:outbox 2x30j,DASH-06,a_implementer
+F03-U-001,U,P1,kpi-format,"pct(38,42)","retourne '90.5 %'",factory:kpi,nominal,implemente
+F03-U-002,U,P0,kpi-format,"pct(num,0) division par zéro","retourne '—' (jamais 'NaN %' ni '0.0 %')",factory:kpi,TRV-04,implemente
+F03-U-003,U,P2,kpi-format,"fmt(12345) fr-FR","retourne '12 345' (espace insécable séparateur milliers)",factory:kpi,nominal,implemente
+F03-U-004,U,P2,kpi-format,"fmt(0)","retourne '0'",factory:kpi,nominal,implemente
+F03-U-005,U,P0,tri-etat,"deliveredState delivered>0 -> tracked","state='tracked', value=fmt(delivered), sub='{pct} des envoyés'","sent=42,delivered=38,webhook=set",DASH-02,implemente
+F03-U-006,U,P0,tri-etat,"deliveredState sent>0 delivered=0 webhook connu -> silent","state='silent', value='0', sub='webhook muet depuis HH:MM', tone='rose'","sent=42,delivered=0,webhook=set",DASH-02;TRV-04,implemente
+F03-U-007,U,P0,tri-etat,"deliveredState sent=0 -> untracked","state='untracked', value='—', sub='non suivi', tone='neutral'","sent=0,delivered=0,webhook=null",TRV-04,implemente
+F03-U-008,U,P0,tri-etat,"deliveredState sent>0 delivered=0 webhook jamais armé -> untracked","state='untracked', value='—', sub='non suivi' (PAS d'alerte rose)","sent=12,delivered=0,webhook=null",TRV-04,implemente
+F03-U-009,U,P0,tri-etat,"table de vérité exhaustive sent×delivered×webhook","les 3 gardes sont mutuellement exclusives et couvrantes sur les 8 combinaisons de signes",factory:kpi.matrix,TRV-04,implemente
+F03-U-010,U,P1,tri-etat,"deliveredState tracked pct>=95 -> emerald","tone='emerald' quand delivered/sent>=0.95","sent=100,delivered=98",nominal,implemente
+F03-U-011,U,P1,tri-etat,"fmtClock webhook <24h -> HH:MM","retourne 'HH:MM' (Casablanca)","webhook=il y a 2h",DASH-02,implemente
+F03-U-012,U,P2,tri-etat,"fmtClock webhook >24h -> JJ/MM HH:MM","retourne 'JJ/MM HH:MM'","webhook=il y a 30h",DASH-02,implemente
+F03-U-013,U,P0,silence-predicat,"isDeliverySilent(1,0)","retourne true","sent=1,delivered=0",nominal,implemente
+F03-U-014,U,P0,silence-predicat,"isDeliverySilent(0,0)","retourne false (aucun envoi)","sent=0,delivered=0",nominal,implemente
+F03-U-015,U,P1,silence-predicat,"isDeliverySilent(5,2)","retourne false (livraisons présentes)","sent=5,delivered=2",nominal,implemente
+F03-U-016,U,P1,tendance,"trendLabel(undefined) -> '—'","text='—', tone='neutral' (fenêtre sans comparaison)",factory:summary,DASH-06,implemente
+F03-U-017,U,P0,tendance,"trendLabel(+12,'7 j préc.','good')","text='+12% vs 7 j préc.', tone='emerald'",factory:summary,DASH-06,implemente
+F03-U-018,U,P0,tendance,"trendLabel(+1,'7 j préc.','bad') échecs","text='+1% vs 7 j préc.', tone='rose' (hausse d'échecs = mauvais)",factory:summary,DASH-06,implemente
+F03-U-019,U,P1,tendance,"trendLabel(-30,'24 h préc.','good')","text='-30% vs 24 h préc.', tone='rose' (baisse de livrés = mauvais)",factory:summary,DASH-06,implemente
+F03-U-020,U,P1,tendance,"trendLabel(0,'30 j préc.','good')","text='= vs 30 j préc.', tone='neutral'",factory:summary,DASH-06,implemente
+F03-U-021,U,P1,fenetre,"parseWindow('30d') -> '30d'","retourne '30d'",nominal,DASH-01,implemente
+F03-U-022,U,P1,fenetre,"parseWindow(undefined) -> '7d'","défaut '7d'",nominal,DASH-01,implemente
+F03-U-023,U,P1,fenetre,"parseWindow('bogus') -> '7d'","valeur invalide -> défaut '7d' (pas d'erreur)",nominal,DASH-01,implemente
+F03-U-024,U,P2,fenetre,"windowLabel mapping","'24h'->'24 h','7d'->'7 j','30d'->'30 j'",nominal,DASH-01,implemente
+F03-C-001,C,P1,fenetre,"sélecteur rendu radiogroup","3 boutons radio, 7 j a aria-checked=true par défaut",factory:summary,DASH-01,implemente
+F03-C-002,C,P0,fenetre,"clic '30 j' change l'URL","push/replace ?window=30d (pas d'entrée historique superflue)",factory:summary,DASH-01,implemente
+F03-C-003,C,P0,fenetre,"clic '24 h' recharge les données","les cartes affichent les chiffres du summary 24h (fetch émis avec window=24h)",factory:summary,DASH-01,implemente
+F03-C-004,C,P1,fenetre,"fenêtre propagée aux liens cartes","chaque href carte porte &window=24h après sélection 24 h",factory:summary,DASH-01,implemente
+F03-C-005,C,P1,fenetre,"navigation clavier flèches dans le radiogroup","flèche droite déplace la sélection au radio suivant",factory:summary,nominal,implemente
+F03-C-006,C,P0,tri-etat,"carte Livrés E1 tracked","affiche fmt(delivered) + '{pct} des envoyés', ton neutre/emerald","sent=42,delivered=38",DASH-02,implemente
+F03-C-007,C,P0,tri-etat,"carte Livrés E2 silent","affiche '0' + 'webhook muet depuis HH:MM' + lien diagnostiquer, ton rose","sent=42,delivered=0,webhook=set",DASH-02;TRV-04,implemente
+F03-C-008,C,P0,tri-etat,"carte Livrés E3 untracked","affiche '—' + 'non suivi', PAS de ton rose, PAS d'alerte","sent=0",TRV-04,implemente
+F03-C-009,C,P1,tri-etat,"E2 lien diagnostiquer cible","le lien porte from=health&check=deliveredFreshness","sent=42,delivered=0,webhook=set",DASH-12,implemente
+F03-C-010,C,P0,silence-banner,"bandeau apparaît en E2","role=alert visible, texte 'Livraison silencieuse … sur 7 j'","sent=42,delivered=0",nominal,implemente
+F03-C-011,C,P0,silence-banner,"bandeau absent si delivered>0","aucun role=alert delivery-silent","sent=42,delivered=38",nominal,implemente
+F03-C-012,C,P1,silence-banner,"libellé fenêtre suit le sélecteur","bandeau dit 'sur 24 h' après sélection 24 h","sent=42,delivered=0",DASH-01,implemente
+F03-C-013,C,P1,silence-banner,"bandeau disparaît au changement de fenêtre","fenêtre 30j avec delivered>0 -> bandeau retiré","30j a des livraisons",nominal,implemente
+F03-C-014,C,P0,auto-refresh,"refresh exact à 60s (fake timers)","exactement 1 router.refresh à T+60s, 0 avant",factory:summary,DASH-03,implemente
+F03-C-015,C,P0,auto-refresh,"aucun refresh onglet caché","document.hidden=true puis +180s -> 0 router.refresh émis",factory:summary,DASH-03,implemente
+F03-C-016,C,P0,auto-refresh,"refresh immédiat au retour d'onglet","hidden->visible -> 1 router.refresh émis aussitôt",factory:summary,DASH-03,implemente
+F03-C-017,C,P0,auto-refresh,"âge continue de courir onglet caché","après 247s caché, l'âge affiché ≈ '247 s'",factory:summary,DASH-03,implemente
+F03-C-018,C,P1,auto-refresh,"âge réinitialisé après refresh","à T+60s l'âge revient à '0 s'",factory:summary,DASH-03,implemente
+F03-C-019,C,P1,auto-refresh,"intervalles nettoyés au démontage","unmount -> aucun timer résiduel (clearInterval x2)",factory:summary,DASH-03,implemente
+F03-C-020,C,P1,auto-refresh,"bouton Rafraîchir manuel","clic -> 1 router.refresh, aria-busy pendant transition, anti double-clic",factory:summary,nominal,implemente
+F03-C-021,C,P2,freshness,"timezone affichée","l'âge affiche '(Casablanca)'",factory:summary,DASH-08,implemente
+F03-C-022,C,P0,cartes-cliquables,"carte Échecs -> bonne URL cockpit","href=?status=failed,bounced_soft,bounced_permanent&window=courant","failed=3",nominal,implemente
+F03-C-023,C,P0,cartes-cliquables,"carte DLQ -> ?status=dlq","href cockpit ?status=dlq&window propagé","dlq=2",nominal,implemente
+F03-C-024,C,P1,cartes-cliquables,"carte Total inerte","aucun lien (pas de role=link sur Total)","total=45",nominal,implemente
+F03-C-025,C,P1,cartes-cliquables,"aria-label chiffré","carte Échecs aria-label='Voir les 3 échecs'","failed=3",nominal,implemente
+F03-C-026,C,P1,tendance,"carte affiche +12% vs 7 j préc.","sous-texte '+12% vs 7 j préc.' ton emerald","comparison.deliveredPct=12",DASH-06,implemente
+F03-C-027,C,P1,tendance,"tendance absente -> '—'","comparison absent -> carte affiche '—', pas de NaN%","window=1h sans comparison",DASH-06,implemente
+F03-C-028,C,P2,sparkline,"sparkline 12 points aria-hidden","svg rendu, 12 points, aria-hidden=true",factory:summary,DASH-06,implemente
+F03-C-029,C,P0,health-badge,"chaque check rendu déplié","SMTP, DB, Outbox, DLQ, Pending, Dernier livré, Fraîcheur, Cron, Webhook, File, Sending tous présents",factory:health,DASH-12,implemente
+F03-C-030,C,P0,health-badge,"check DLQ ✗ -> lien deep-link","ligne DLQ porte ?status=dlq&from=health&check=dlq24h","dlq24h=3",DASH-12,implemente
+F03-C-031,C,P0,health-badge,"deep-link porte ?from=health","tout lien cockpit du badge contient from=health",factory:health,DASH-12,implemente
+F03-C-032,C,P1,health-badge,"deep-link propage la fenêtre","lien badge contient &window=30d quand fenêtre=30j",factory:health,DASH-01;DASH-12,implemente
+F03-C-033,C,P1,health-badge,"webhook muet -> lien events","ligne webhook ✗ -> /admin/emails/events?source=email&from=health","webhookSilent.ok=false",DASH-12,implemente
+F03-C-034,C,P2,health-badge,"contraste pied rose-800","le pied de synthèse utilise rose-800 (DASH-11)",factory:health,DASH-11,implemente
+F03-C-035,C,P1,health-badge,"check ✓ sans lien","un check OK ne rend pas de lien d'action",factory:health,nominal,implemente
+F03-C-036,C,P1,empty-state,"table vide -> EmptyState","recent=[] -> EmptyState rendu (icône+titre+CTA), pas la tr legacy","recent vide",DASH-05,implemente
+F03-C-037,C,P1,empty-state,"titre EmptyState explicite","titre 'Aucun envoi sur 7 jours' (fenêtre explicite)","recent vide, window=7d",DASH-05,implemente
+F03-C-038,C,P2,empty-state,"CTA propage la fenêtre","bouton 'Ouvrir le cockpit' href ?window=7d","recent vide",DASH-05,implemente
+F03-C-039,C,P1,empty-state,"table non vide -> pas d'EmptyState","recent=[8 lignes] -> table rendue, EmptyState absent","recent 8 lignes",nominal,implemente
+F03-C-040,C,P1,pending-age,"sous-texte âge du relevé","carte En attente sous-texte 'relevé il y a Xs · drain 60 s'","pending=12",DASH-04,implemente
+F03-C-041,C,P1,pending-age,"ton ambre au-delà de 50","pending=342 -> ton ambre","pending=342",DASH-04,implemente
+F03-C-042,C,P0,loading,"skeleton role=status","loading.tsx skeleton 6 cartes + role=status sr-only",nominal,nominal,implemente
+F03-C-043,C,P0,error,"message neutre sans présomption DB","error.tsx affiche 'n'a pas pu être chargé', AUCUNE mention 'base de données'",factory:error,DASH-09,implemente
+F03-C-044,C,P1,error,"digest affiché","error boundary montre le digest + bouton Réessayer + lien /admin",factory:error,DASH-09,implemente
+F03-C-045,C,P2,status-pill,"libellé Bounce permanent complet","la table consomme le Pill socle, libellé 'Bounce permanent' (pas 'Bounce perm.')","status=bounced_permanent",DASH-07;TRV-07,implemente
+F03-C-046,C,P2,a11y,"axe smoke dashboard","0 violation serious/critical sur le dashboard monté",factory:summary,nominal,implemente
+F03-N-001,C,P0,reseau,"summary 200 nominal","cartes peintes avec les chiffres, pas de bandeau d'erreur",factory:summary,nominal,implemente
+F03-N-002,C,P0,reseau,"summary 401","dashboard reste lisible (dernières données), bandeau auth, pas d'écran blanc",factory:summary,nominal,implemente
+F03-N-003,C,P0,reseau,"summary 500","données précédentes conservées + bandeau 'rafraîchissement impossible'",factory:summary,DASH-03,implemente
+F03-N-004,C,P0,reseau,"summary hang (delay infini)","état chargement stable, AUCUN double fetch, anciennes données visibles",factory:summary,DASH-03,implemente
+F03-N-005,C,P0,reseau,"summary network error","pas de faux 'à jour il y a 0 s', bandeau figé à HH:MM, données préservées",factory:summary,DASH-03,implemente
+F03-N-006,C,P1,reseau,"refresh raté ne ment pas sur l'âge","sur échec, l'âge reste figé (pas remis à 0)",factory:summary,DASH-03,implemente
+F03-I-001,I,P0,summary-fenetre,"window=24h bornes SQL","compte uniquement created_at dans [now-24h, now]",seed:outbox à cheval 24h,DASH-01,implemente
+F03-I-002,I,P0,summary-fenetre,"window=7d bornes SQL","compte uniquement [now-7j, now]",seed:outbox à cheval 7j,DASH-01,implemente
+F03-I-003,I,P0,summary-fenetre,"window=30d bornes SQL","compte uniquement [now-30j, now]",seed:outbox à cheval 30j,DASH-01,implemente
+F03-I-004,I,P0,summary-fenetre,"ligne sur la borne inférieure","created_at=start est INCLUS (gte inclusif) ; start-1ms EXCLU",seed:borne exacte,DASH-01,implemente
+F03-I-005,I,P1,summary-contrat,"conformité Zod réponse summary","la réponse réelle parse avec SummaryResult (window,delivered,queued,failed,hardBounced,sent,sparkline,comparison)",seed:outbox,nominal,implemente
+F03-I-006,I,P0,summary-contrat,"enum window étendu accepte 30d","?window=30d -> 200 (pas 422)",seed:outbox,DASH-01,implemente
+F03-I-007,I,P1,summary-contrat,"enum window rejette invalide","?window=bogus -> 422 avec détail",seed:outbox,nominal,implemente
+F03-I-008,I,P1,summary-contrat,"1h garde son comportement cockpit","?window=1h -> 200, comparison absent (non-régression cockpit)",seed:outbox,nominal,implemente
+F03-I-009,I,P1,summary-webhook,"webhookLastSuccessAt = max(ts) delivered","retourne l'iso du dernier event delivered ; null si aucun",seed:events delivered,DASH-02,implemente
+F03-I-010,I,P0,summary-auth,"summary requireAdmin","non-admin -> 401",seed:outbox,nominal,implemente
+F03-I-011,I,P1,summary-comparaison,"comparison 30d J-1","deliveredPct calculé vs fenêtre 30j précédente",seed:outbox 2x30j,DASH-06,implemente
 F03-E-001,E,P0,e2e,"SM-F03-01 mur du matin : incident webhook visible sans action","dashboard ouvert, webhook coupé, après auto-refresh la carte Livrés passe 'webhook muet depuis HH:MM' + bandeau, sans clic",e2e:emails-degraded,DASH-02;DASH-03,a_implementer
 F03-E-002,E,P1,e2e,"SM-F03-02 comparer hier/semaine","sélecteur 24h puis 7j -> chiffres et tendances changent, URL ?window= suit",e2e:emails-db,DASH-01;DASH-06,a_implementer
 F03-E-003,E,P0,e2e,"SM-F03-03 livraison silencieuse -> diagnostic","carte E2 -> clic diagnostiquer -> cockpit filtré sent,delivered avec bannière ?from=health",e2e:emails-degraded,DASH-12;TRV-04,a_implementer

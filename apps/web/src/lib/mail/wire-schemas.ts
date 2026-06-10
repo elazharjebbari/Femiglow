@@ -61,11 +61,15 @@ export const SearchResponseWire = z.object({
 
 // ── GET /api/admin/emails/transactional/summary ────────────────────────────
 export const SummaryResponseWire = z.object({
-  window: z.enum(['1h', '24h', '7d']),
+  window: z.enum(['1h', '24h', '7d', '30d']),
   delivered: z.number().int().min(0),
   queued: z.number().int().min(0),
   failed: z.number().int().min(0),
   hardBounced: z.number().int().min(0),
+  // F03 : base du tri-état livraison + pourcentage « des envoyés ».
+  sent: z.number().int().min(0),
+  // F03 : iso du dernier event delivered reçu (null = webhook jamais armé).
+  webhookLastSuccessAt: z.string().datetime().nullable(),
   sparkline: z.array(z.object({ delivered: z.number(), failed: z.number() })),
   comparison: z
     .object({ deliveredPct: z.number(), failedPct: z.number() })

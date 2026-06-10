@@ -89,6 +89,51 @@ export async function getOutboxTimeline(id: string) {
     .orderBy(desc(emailEvent.ts));
 }
 
+/**
+ * F03 : compteurs cartes sur fenêtre PARAMÉTRÉE (le dashboard passe
+ * 24h/7j/30j). `pendingNow` reste un instantané hors fenêtre (file actuelle).
+ */
+export type OutboxKpiWindow = {
+  total: number;
+  sent: number;
+  delivered: number;
+  failed: number;
+  dlq: number;
+  pendingNow: number;
+};
+
+export async function getOutboxKpiForWindow(
+  windowMs: number,
+  now: Date = new Date(),
+): Promise<OutboxKpiWindow> {
+  const drizzle = requireDb();
+  const start = new Date(now.getTime() - windowMs);
+  const [agg] = await drizzle
+    .select({
+      total: sql<number>`count(*)::int`,
+      sent: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('sent','delivered','opened','clicked'))::int`,
+      delivered: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('delivered','opened','clicked'))::int`,
+      failed: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('failed','bounced_soft','bounced_permanent'))::int`,
+      dlq: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} = 'dlq')::int`,
+    })
+    .from(emailOutbox)
+    .where(gte(emailOutbox.createdAt, start));
+
+  const [pending] = await drizzle
+    .select({ n: sql<number>`count(*)::int` })
+    .from(emailOutbox)
+    .where(eq(emailOutbox.status, 'pending'));
+
+  return {
+    total: agg?.total ?? 0,
+    sent: agg?.sent ?? 0,
+    delivered: agg?.delivered ?? 0,
+    failed: agg?.failed ?? 0,
+    dlq: agg?.dlq ?? 0,
+    pendingNow: pending?.n ?? 0,
+  };
+}
+
 export async function getOutboxKpi(): Promise<OutboxKpi> {
   const drizzle = requireDb();
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

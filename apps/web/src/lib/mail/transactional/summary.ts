@@ -1,18 +1,23 @@
 /**
- * summarizeOutbox — KPIs temps réel pour le header cockpit.
+ * summarizeOutbox — KPIs temps réel pour le header cockpit ET le
+ * dashboard fenêtré (F03).
  *
- * 4 chiffres : delivered / queued / failed / hardBounced sur une
- * fenêtre temporelle (1h / 24h / 7d). + sparkline (12 buckets) +
- * comparaison vs même fenêtre J-1.
+ * Chiffres delivered / queued / failed / hardBounced / sent sur une
+ * fenêtre temporelle (1h / 24h / 7d / 30d) + sparkline (12 buckets) +
+ * comparaison vs même fenêtre précédente + webhookLastSuccessAt
+ * (dernier event `delivered` reçu — base du tri-état « webhook muet »).
+ *
+ * L'enum est l'UNION des besoins cockpit (1h) et dashboard (30d) pour
+ * éviter deux schémas divergents — chaque UI n'expose que sa partie.
  *
  * Cf. docs/emailing/admin-evolution/01-data/05-queries-catalog.md
  */
 import 'server-only';
 import { and, gte, lt, sql } from 'drizzle-orm';
 import { db as getDb } from '@/lib/db/client';
-import { emailOutbox } from '@/lib/db/schema-emails';
+import { emailEvent, emailOutbox } from '@/lib/db/schema-emails';
 
-export type SummaryWindow = '1h' | '24h' | '7d';
+export type SummaryWindow = '1h' | '24h' | '7d' | '30d';
 
 export type SummaryResult = {
   window: SummaryWindow;
@@ -20,11 +25,15 @@ export type SummaryResult = {
   queued: number;
   failed: number;
   hardBounced: number;
+  /** F03 : status IN (sent, delivered, opened, clicked) — base du tri-état + pct. */
+  sent: number;
+  /** F03 : iso du dernier event `delivered` reçu (toutes fenêtres confondues), null si jamais. */
+  webhookLastSuccessAt: string | null;
   /** 12 buckets de durée = window/12. Index 0 = plus ancien. */
   sparkline: { delivered: number; failed: number }[];
   /**
-   * Comparaison vs même fenêtre J-1. Présent uniquement si la
-   * comparaison est pertinente (windows 24h+).
+   * Comparaison vs même fenêtre précédente. Présent uniquement si la
+   * comparaison est pertinente (windows 24h+ ; absent en 1h).
    */
   comparison?: {
     deliveredPct: number;
@@ -46,6 +55,8 @@ function windowToMs(w: SummaryWindow): number {
       return 86_400_000;
     case '7d':
       return 7 * 86_400_000;
+    case '30d':
+      return 30 * 86_400_000;
   }
 }
 
@@ -73,15 +84,32 @@ export async function summarizeOutbox(
       queued: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('pending','sending'))::int`,
       failed: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('failed','dlq'))::int`,
       hardBounced: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} = 'bounced_permanent')::int`,
+      sent: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('sent','delivered','opened','clicked'))::int`,
     })
     .from(emailOutbox)
     .where(gte(emailOutbox.createdAt, start));
 
+  // 1b. Dernier event delivered reçu (toutes fenêtres) — « webhook armé ? ».
+  // max(ts) est index-friendly (idx (type, ts) recommandé, cf. spec F03 §1).
+  const [webhookRow] = await drizzle
+    .select({ last: sql<Date | string | null>`max(${emailEvent.ts})` })
+    .from(emailEvent)
+    .where(sql`${emailEvent.type} = 'delivered'`);
+  const webhookLastSuccessAt = webhookRow?.last
+    ? new Date(webhookRow.last).toISOString()
+    : null;
+
   // 2. Sparkline : 12 buckets de windowMs/12
   const bucketMs = Math.floor(windowMs / 12);
+  // `.as('bucket')` OBLIGATOIRE : drizzle n'aliase PAS un fragment sql brut —
+  // sans lui le SQL émis n'a pas de colonne `bucket` et le GROUP BY plante
+  // (42703), donc la route summary 500 silencieusement (bug attrapé F03-I).
   const sparklineRows = await drizzle
     .select({
-      bucket: sql<number>`floor(extract(epoch from (${emailOutbox.createdAt} - ${start.toISOString()}::timestamptz)) / ${bucketMs / 1000})::int`,
+      bucket:
+        sql<number>`floor(extract(epoch from (${emailOutbox.createdAt} - ${start.toISOString()}::timestamptz)) / ${bucketMs / 1000})::int`.as(
+          'bucket',
+        ),
       delivered: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('delivered','opened','clicked'))::int`,
       failed: sql<number>`count(*) FILTER (WHERE ${emailOutbox.status} IN ('failed','dlq','bounced_permanent'))::int`,
     })
@@ -95,9 +123,9 @@ export async function summarizeOutbox(
     return { delivered: row?.delivered ?? 0, failed: row?.failed ?? 0 };
   });
 
-  // 3. Comparaison J-1 (uniquement si window >= 24h pour pertinence)
+  // 3. Comparaison vs fenêtre précédente (uniquement si window >= 24h)
   let comparison: SummaryResult['comparison'];
-  if (windowName === '24h' || windowName === '7d') {
+  if (windowName === '24h' || windowName === '7d' || windowName === '30d') {
     const prevStart = new Date(start.getTime() - windowMs);
     const prevEnd = new Date(start.getTime());
     const [prev] = await drizzle
@@ -120,6 +148,8 @@ export async function summarizeOutbox(
     queued: agg?.queued ?? 0,
     failed: agg?.failed ?? 0,
     hardBounced: agg?.hardBounced ?? 0,
+    sent: agg?.sent ?? 0,
+    webhookLastSuccessAt,
     sparkline,
     comparison,
   };

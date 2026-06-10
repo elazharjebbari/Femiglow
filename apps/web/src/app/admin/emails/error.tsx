@@ -32,11 +32,15 @@ export default function EmailsError({ error, reset }: EmailsErrorProps) {
         role="alert"
         className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-rose-800"
       >
-        <h1 className="text-lg font-semibold">Tableau de bord emails indisponible</h1>
+        {/* DASH-09 : message NEUTRE — aucune cause présumée (la mention « base
+            de données » accusait un composant sans preuve). */}
+        <h1 className="text-lg font-semibold">
+          Le tableau de bord n&apos;a pas pu être chargé.
+        </h1>
         <p className="mt-2 text-sm">
-          Une erreur est survenue lors du chargement des données emailing (souvent
-          une base de données momentanément injoignable). Les envois ne sont pas
-          affectés ; seule cette vue est touchée.
+          Les envois ne sont pas affectés ; seule cette vue est touchée.
+          Réessaie dans un instant — si le problème persiste, contacte le
+          support.
         </p>
         {error.digest ? (
           <p className="mt-2 font-mono text-xs text-rose-500">

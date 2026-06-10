@@ -45,7 +45,7 @@ export const SearchInputSchema = z.object({
 });
 
 export const SummaryQuerySchema = z.object({
-  window: z.enum(['1h', '24h', '7d']),
+  window: z.enum(['1h', '24h', '7d', '30d']),
 });
 
 /**

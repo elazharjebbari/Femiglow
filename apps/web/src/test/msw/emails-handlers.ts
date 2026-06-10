@@ -67,11 +67,15 @@ export interface SearchResult {
 
 /** Réponse /transactional/summary (SummaryResult). */
 export interface SummaryResult {
-  window: '1h' | '24h' | '7d';
+  window: '1h' | '24h' | '7d' | '30d';
   delivered: number;
   queued: number;
   failed: number;
   hardBounced: number;
+  /** F03 : base du tri-état livraison. */
+  sent: number;
+  /** F03 : dernier event delivered reçu (null = webhook jamais armé). */
+  webhookLastSuccessAt: string | null;
   sparkline: { delivered: number; failed: number }[];
   comparison?: { deliveredPct: number; failedPct: number };
 }
@@ -117,6 +121,11 @@ export function makeSummary(over: Partial<SummaryResult> = {}): SummaryResult {
     queued: over.queued ?? 8,
     failed: over.failed ?? 3,
     hardBounced: over.hardBounced ?? 1,
+    sent: over.sent ?? 130,
+    webhookLastSuccessAt:
+      over.webhookLastSuccessAt !== undefined
+        ? over.webhookLastSuccessAt
+        : '2026-06-01T10:00:00.000Z',
     sparkline:
       over.sparkline ??
       Array.from({ length: 12 }, (_, i) => ({ delivered: 10 - (i % 3), failed: i % 2 })),

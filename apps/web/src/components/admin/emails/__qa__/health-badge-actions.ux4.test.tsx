@@ -44,11 +44,18 @@ function makeInfra(over: Partial<InfraChecks> = {}): InfraChecks {
   };
 }
 
-/** Renvoie le <a> dont le href matche, dans le détail déroulé. */
-function linkByHref(href: string): HTMLAnchorElement {
+/**
+ * Renvoie le <a> dont le href COMMENCE par le préfixe (F03 : les deep-links
+ * portent désormais le contexte `from=health&check=…&window=…&at=…`).
+ */
+function linkByHref(prefix: string): HTMLAnchorElement {
   const links = screen.getAllByRole('link') as HTMLAnchorElement[];
-  const found = links.find((a) => a.getAttribute('href') === href);
-  if (!found) throw new Error(`Aucun lien d'action avec href=${href}`);
+  const found = links.find((a) => (a.getAttribute('href') ?? '').startsWith(prefix));
+  if (!found) throw new Error(`Aucun lien d'action avec href commençant par ${prefix}`);
+  // Invariant F03/DASH-12 : tout deep-link santé est contextualisé.
+  if (!(found.getAttribute('href') ?? '').includes('from=health&check=')) {
+    throw new Error(`Deep-link santé sans contexte from=health&check= : ${found.getAttribute('href')}`);
+  }
   return found;
 }
 
@@ -65,7 +72,7 @@ describe('UX4-DASHBOARD-002 — badge santé : lignes de check actionnables', ()
     render(
       <HealthBadge level="degraded" report={makeReport({ dlq24h: { ok: false, count: 7 } })} infra={makeInfra()} />,
     );
-    const link = linkByHref('/admin/emails/transactional?status=dlq');
+    const link = linkByHref('/admin/emails/transactional?status=dlq&from=health');
     // Le lien est porté par la LIGNE DLQ (population concernée), pas ailleurs.
     expect(checkRow(/DLQ 24h/i).contains(link)).toBe(true);
   });
@@ -78,7 +85,7 @@ describe('UX4-DASHBOARD-002 — badge santé : lignes de check actionnables', ()
         infra={makeInfra({ sendingStuck: { ok: false, stuckCount: 3, oldestStuckAgeMs: 20 * 60_000 } })}
       />,
     );
-    const link = linkByHref('/admin/emails/transactional?status=sending');
+    const link = linkByHref('/admin/emails/transactional?status=sending&from=health');
     expect(checkRow(/Sending bloqué/i).contains(link)).toBe(true);
   });
 
@@ -90,7 +97,7 @@ describe('UX4-DASHBOARD-002 — badge santé : lignes de check actionnables', ()
         infra={makeInfra({ cronOutboxLate: { ok: false, lateCount: 120, oldestEligibleAgeMs: 40 * 60_000 } })}
       />,
     );
-    const link = linkByHref('/admin/emails/transactional?status=pending,failed');
+    const link = linkByHref('/admin/emails/transactional?status=pending,failed&from=health');
     expect(checkRow(/File outbox/i).contains(link)).toBe(true);
   });
 
@@ -102,7 +109,7 @@ describe('UX4-DASHBOARD-002 — badge santé : lignes de check actionnables', ()
         infra={makeInfra({ webhookSilent: { ok: false, sentLast7d: 4200, deliveredEventsLast7d: 0 } })}
       />,
     );
-    const link = linkByHref('/admin/emails/events?source=email');
+    const link = linkByHref('/admin/emails/events?source=email&from=health');
     expect(checkRow(/Webhook/i).contains(link)).toBe(true);
   });
 

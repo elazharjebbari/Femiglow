@@ -1,28 +1,30 @@
 /**
  * Cartes KPI du dashboard emailing (`/admin/emails`) — présentationnel pur.
  *
- * Extrait de `page.tsx` pour être rendu/testé en isolation (jsdom). Reçoit le
- * `OutboxKpi` déjà calculé par `getOutboxKpi()` (lecture DB côté RSC) et se
- * contente de l'AFFICHER avec le bon formatage fr-FR et la bonne sémantique
- * couleur.
- *
- * Corrige l'écart d'audit F-001 : quand des emails partent (`sent > 0`) mais
- * qu'aucune livraison n'est confirmée (`delivered = 0`), la carte « Livrés »
- * passe en alerte (ton rose) ET une bannière explicite « delivery silencieux »
- * apparaît — au lieu d'un « 0 » neutre qui masquait le webhook Stalwart mort.
+ * F03 (P2.1) : cartes FENÊTRÉES (24h/7j/30j) branchées sur la machine
+ * tri-état `deliveredState` (DASH-02/TRV-04 — fini le « 0 » ambigu), tendances
+ * polarisées vs période précédente (DASH-06), sparklines décoratives, et
+ * propagation `&window=` sur chaque drill-down (DASH-01). Le bandeau
+ * « livraison silencieuse » recalcule son libellé sur la fenêtre COURANTE.
  */
 import Link from 'next/link';
-import type { OutboxKpi } from '@/lib/admin/emails/queries';
+import type { OutboxKpiWindow } from '@/lib/admin/emails/queries';
 import {
-  deliveredTone,
+  deliveredState,
   dlqTone,
   failedTone,
   fmt,
   isDeliverySilent,
   pct,
   pendingTone,
+  trendLabel,
+  windowLabel,
+  DELIVERED_SILENT_DIAGNOSE_HREF,
+  PERIOD_LABEL,
+  type DashboardWindow,
   type KpiTone,
 } from '@/app/admin/emails/kpi-format';
+import { Sparkline } from './Sparkline';
 
 /**
  * Deep-links cockpit par population (UX-DASH-001). Le cockpit transactionnel
@@ -31,15 +33,50 @@ import {
  * en ≤ 2 clics (« problème visible → action »).
  */
 const COCKPIT = '/admin/emails/transactional';
-const HREF_SENT = `${COCKPIT}?status=sent,delivered`;
-const HREF_FAILED = `${COCKPIT}?status=failed,bounced_soft,bounced_permanent`;
-const HREF_DLQ = `${COCKPIT}?status=dlq`;
-const HREF_PENDING = `${COCKPIT}?status=pending`;
 /** Page de debug events filtrée sur les events email (delivered entrants). */
 const HREF_EVENTS_EMAIL = '/admin/emails/events?source=email';
 
-export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
-  const deliverySilent = isDeliverySilent(kpi.sentLast7d, kpi.deliveredLast7d);
+export type KpiCardsProps = {
+  kpi: OutboxKpiWindow;
+  window: DashboardWindow;
+  /** Dernier event delivered reçu (summary) — pilote le tri-état E2/E3. */
+  webhookLastSuccessAt: string | null;
+  /** Comparaison vs période précédente (summary) — absent ⇒ tendances '—'. */
+  comparison?: { deliveredPct: number; failedPct: number };
+  /** 12 buckets summary (sparklines décoratives). */
+  sparkline?: { delivered: number; failed: number }[];
+  /** Horodatage iso du relevé serveur (sous-texte de la carte En attente). */
+  generatedAt: string;
+};
+
+export function KpiCards({
+  kpi,
+  window,
+  webhookLastSuccessAt,
+  comparison,
+  sparkline,
+  generatedAt,
+}: KpiCardsProps) {
+  const wq = `&window=${window}`;
+  const hrefSent = `${COCKPIT}?status=sent,delivered${wq}`;
+  const hrefFailed = `${COCKPIT}?status=failed,bounced_soft,bounced_permanent${wq}`;
+  const hrefDlq = `${COCKPIT}?status=dlq${wq}`;
+  const hrefPending = `${COCKPIT}?status=pending${wq}`;
+
+  const wl = windowLabel(window);
+  const deliverySilent = isDeliverySilent(kpi.sent, kpi.delivered);
+  const ds = deliveredState({
+    sent: kpi.sent,
+    delivered: kpi.delivered,
+    webhookLastSuccessAt,
+  });
+  const deliveredTrend = trendLabel(comparison?.deliveredPct, PERIOD_LABEL[window], 'good');
+  const failedTrend = trendLabel(comparison?.failedPct, PERIOD_LABEL[window], 'bad');
+  const pendingAgeSec = Math.max(
+    0,
+    Math.round((Date.now() - new Date(generatedAt).getTime()) / 1000),
+  );
+
   return (
     <>
       {deliverySilent ? (
@@ -49,7 +86,7 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
           className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700"
         >
           <strong className="font-semibold">Livraison silencieuse</strong> :{' '}
-          {fmt(kpi.sentLast7d)} email(s) envoyé(s) sur 7 j mais aucune livraison
+          {fmt(kpi.sent)} email(s) envoyé(s) sur {wl} mais aucune livraison
           confirmée — le webhook Stalwart est probablement muet.{' '}
           <Link
             href={HREF_EVENTS_EMAIL}
@@ -63,62 +100,74 @@ export function KpiCards({ kpi }: { kpi: OutboxKpi }) {
       <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Kpi
           testId="kpi-card-sent"
-          label="Envoyés (7j)"
-          value={fmt(kpi.sentLast7d)}
-          sub={`sur ${fmt(kpi.totalLast7d)} tentatives`}
-          href={HREF_SENT}
-          ariaLabel={`Voir les ${fmt(kpi.sentLast7d)} envoyés (7 jours)`}
+          label={`Envoyés (${wl})`}
+          value={fmt(kpi.sent)}
+          sub={`sur ${fmt(kpi.total)} tentatives`}
+          href={hrefSent}
+          ariaLabel={`Voir les ${fmt(kpi.sent)} envoyés (${wl})`}
         />
         <Kpi
           testId="kpi-card-delivered"
           label="Livrés"
-          value={fmt(kpi.deliveredLast7d)}
-          sub={
-            deliverySilent
-              ? 'delivery silencieux ? webhook ?'
-              : pct(kpi.deliveredLast7d, kpi.sentLast7d) + ' des envoyés'
+          value={ds.value}
+          sub={ds.sub}
+          tone={ds.tone}
+          trend={deliveredTrend}
+          spark={sparkline?.map((b) => b.delivered)}
+          href={hrefSent}
+          ariaLabel={`Voir les ${fmt(kpi.delivered)} livrés (${wl})`}
+          extraLink={
+            ds.state === 'silent'
+              ? { label: 'Diagnostiquer →', href: `${DELIVERED_SILENT_DIAGNOSE_HREF}${wq}` }
+              : undefined
           }
-          tone={deliveredTone(kpi)}
-          href={HREF_SENT}
-          ariaLabel={`Voir les ${fmt(kpi.deliveredLast7d)} livrés (7 jours)`}
         />
         <Kpi
           testId="kpi-card-failed"
           label="Échecs"
-          value={fmt(kpi.failedLast7d)}
-          sub={pct(kpi.failedLast7d, kpi.totalLast7d)}
-          tone={failedTone(kpi.failedLast7d)}
-          href={HREF_FAILED}
-          ariaLabel={`Voir les ${fmt(kpi.failedLast7d)} échecs`}
+          value={fmt(kpi.failed)}
+          sub={pct(kpi.failed, kpi.total)}
+          tone={failedTone(kpi.failed)}
+          trend={failedTrend}
+          spark={sparkline?.map((b) => b.failed)}
+          href={hrefFailed}
+          ariaLabel={`Voir les ${fmt(kpi.failed)} échecs`}
         />
         <Kpi
           testId="kpi-card-dlq"
           label="DLQ"
-          value={fmt(kpi.dlqLast7d)}
+          value={fmt(kpi.dlq)}
           sub="abandonnés (max attempts)"
-          tone={dlqTone(kpi.dlqLast7d)}
-          href={HREF_DLQ}
-          ariaLabel={`Voir les ${fmt(kpi.dlqLast7d)} messages en DLQ`}
+          tone={dlqTone(kpi.dlq)}
+          href={hrefDlq}
+          ariaLabel={`Voir les ${fmt(kpi.dlq)} messages en DLQ`}
         />
         <Kpi
           testId="kpi-card-pending"
           label="En attente"
           value={fmt(kpi.pendingNow)}
-          sub="pickup cron 60s"
+          sub={`relevé il y a ${pendingAgeSec} s · drain 60 s`}
           tone={pendingTone(kpi.pendingNow)}
-          href={HREF_PENDING}
+          href={hrefPending}
           ariaLabel={`Voir les ${fmt(kpi.pendingNow)} messages en attente`}
         />
         <Kpi
           testId="kpi-card-total"
           label="Total tentatives"
-          value={fmt(kpi.totalLast7d)}
-          sub="7 derniers jours"
+          value={fmt(kpi.total)}
+          sub={wl}
         />
       </section>
     </>
   );
 }
+
+const TREND_CLS: Record<KpiTone, string> = {
+  emerald: 'text-emerald-700',
+  rose: 'text-rose-700',
+  amber: 'text-amber-700',
+  neutral: 'text-stone-500',
+};
 
 export function Kpi({
   label,
@@ -128,6 +177,9 @@ export function Kpi({
   testId,
   href,
   ariaLabel,
+  trend,
+  spark,
+  extraLink,
 }: {
   label: string;
   value: string;
@@ -138,6 +190,12 @@ export function Kpi({
   href?: string;
   /** Libellé accessible chiffré du lien (ex. « Voir les 42 échecs »). */
   ariaLabel?: string;
+  /** Tendance vs période précédente (F03, DASH-06). */
+  trend?: { text: string; tone: KpiTone };
+  /** Points de sparkline décorative (12 buckets). */
+  spark?: number[];
+  /** Lien d'action secondaire (ex. « Diagnostiquer » de l'état silent). */
+  extraLink?: { label: string; href: string };
 }) {
   const toneClass =
     tone === 'amber'
@@ -152,10 +210,17 @@ export function Kpi({
       <p className="text-xs uppercase tracking-wider text-stone-500">{label}</p>
       <p className={`mt-1 text-2xl font-semibold tabular-nums ${toneClass}`}>{value}</p>
       {sub ? <p className="mt-0.5 text-xs text-stone-500">{sub}</p> : null}
+      {trend ? (
+        <p className={`mt-0.5 text-xs ${TREND_CLS[trend.tone]}`} data-testid="kpi-trend">
+          {trend.text}
+        </p>
+      ) : null}
+      {spark && spark.length >= 2 ? <Sparkline points={spark} className="mt-1 text-stone-400" /> : null}
     </div>
   );
-  if (!href) return card;
-  return (
+  const linked = !href ? (
+    card
+  ) : (
     <Link
       href={href}
       aria-label={ariaLabel}
@@ -163,6 +228,18 @@ export function Kpi({
     >
       {card}
     </Link>
+  );
+  if (!extraLink) return linked;
+  return (
+    <div>
+      {linked}
+      <Link
+        href={extraLink.href}
+        className="mt-1 inline-block text-xs font-medium text-rose-700 underline underline-offset-2"
+      >
+        {extraLink.label}
+      </Link>
+    </div>
   );
 }
 

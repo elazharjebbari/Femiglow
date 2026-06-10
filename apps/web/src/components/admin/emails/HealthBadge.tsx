@@ -18,13 +18,25 @@
 import Link from 'next/link';
 import type { HealthReport, HealthLevel } from '@/lib/admin/emails/health';
 import type { InfraChecks } from '@/app/api/admin/emails/health/checks';
+import type { DashboardWindow } from '@/app/admin/emails/kpi-format';
+import { formatAbsolute } from '@/components/admin/emails/ui/format-datetime';
 
-/** Deep-links cockpit par population (cohérents avec les cartes KPI). */
+/**
+ * Deep-links cockpit par population, CONTEXTUALISÉS (F03/DASH-12) :
+ * `from=health&check={id}&at={relevé}` permet au cockpit d'afficher la
+ * bannière « vous arrivez du check santé X relevé à HH:MM » (CKP-F15) ;
+ * `&window=` garde la fenêtre de l'opérateur.
+ */
 const COCKPIT = '/admin/emails/transactional';
-const HREF_DLQ = `${COCKPIT}?status=dlq`;
-const HREF_SENDING = `${COCKPIT}?status=sending`;
-const HREF_QUEUE_LATE = `${COCKPIT}?status=pending,failed`;
-const HREF_EVENTS_EMAIL = '/admin/emails/events?source=email';
+function healthHref(
+  base: string,
+  check: string,
+  window: DashboardWindow,
+  at: string,
+): string {
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}from=health&check=${check}&window=${window}&at=${encodeURIComponent(at)}`;
+}
 
 /** Formate un âge en ms vers « 2 h 05 », « 12 min », « 40 s » (fr, compact). */
 function fmtAge(ageMs: number | null): string {
@@ -70,11 +82,19 @@ export function HealthBadge({
   level,
   report,
   infra,
+  window = '7d',
 }: {
   level: HealthLevel;
   report: HealthReport;
   infra: InfraChecks | null;
+  /** Fenêtre courante du dashboard — propagée aux deep-links (DASH-01). */
+  window?: DashboardWindow;
 }) {
+  const at = report.timestamp;
+  const HREF_DLQ = healthHref(`${COCKPIT}?status=dlq`, 'dlq24h', window, at);
+  const HREF_SENDING = healthHref(`${COCKPIT}?status=sending`, 'sendingStuck', window, at);
+  const HREF_QUEUE_LATE = healthHref(`${COCKPIT}?status=pending,failed`, 'cronOutboxLate', window, at);
+  const HREF_EVENTS_EMAIL = healthHref('/admin/emails/events?source=email', 'webhookSilent', window, at);
   const cls =
     level === 'ok'
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -121,7 +141,16 @@ export function HealthBadge({
           DLQ 24h : {c.dlq24h.count}
         </CheckLine>
         <li>Pending : {c.pendingNow}</li>
-        <li>Dernier livré : {c.lastDeliveredAt ? new Date(c.lastDeliveredAt).toLocaleString('fr-FR') : 'jamais'}</li>
+        <li>
+          Dernier livré :{' '}
+          {c.lastDeliveredAt ? (
+            <time dateTime={new Date(c.lastDeliveredAt).toISOString()}>
+              {formatAbsolute(new Date(c.lastDeliveredAt).toISOString())}
+            </time>
+          ) : (
+            'jamais'
+          )}
+        </li>
         {fresh ? (
           <li>
             Fraîcheur livraison :{' '}
@@ -158,7 +187,19 @@ export function HealthBadge({
         ) : null}
       </ul>
       {details.length > 0 ? (
-        <p className="mt-2 font-medium">{details.join(' · ')}</p>
+        // DASH-11 : pied de synthèse en *-800 (le *-700 hérité échouait le
+        // contraste AA sur les fonds 50).
+        <p
+          className={`mt-2 font-medium ${
+            level === 'incident'
+              ? 'text-rose-800'
+              : level === 'degraded'
+                ? 'text-amber-800'
+                : 'text-emerald-800'
+          }`}
+        >
+          {details.join(' · ')}
+        </p>
       ) : null}
     </details>
   );
