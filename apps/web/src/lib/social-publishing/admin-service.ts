@@ -41,6 +41,7 @@ import {
   listPublishJobs,
   listPublicationsForPost,
   listSocialAccounts,
+  listStalePublishingJobs,
   recordPublishAttempt,
   tryAcquirePublishJobLock,
   updatePublishJobSchedule,
@@ -378,6 +379,41 @@ export async function cancelPublishJob(input: { jobId: string; actorId: string |
   assertSocialPublishJobTransition(job.status, 'cancelled');
   const updated = await updatePublishJobStatus({ jobId: job.id, status: 'cancelled', lockedAt: null });
   return { job: updated ?? job };
+}
+
+const PUBLISH_LOCK_TTL_MS = 15 * 60_000;
+
+/**
+ * Reaper des jobs zombies : un crash entre tryAcquirePublishJobLock et
+ * l'écriture finale laissait le job "publishing" verrouillé à jamais
+ * (lockedAt posé → aucun retry possible, irréparable depuis l'UI).
+ * Après expiration du TTL, le job est basculé failed/retryable et son verrou
+ * relâché — récupérable via retry manuel ou politique de retry.
+ */
+export async function reapStalePublishJobs(
+  input: { now?: Date; ttlMs?: number } = {},
+): Promise<{ reapedJobIds: string[] }> {
+  const now = input.now ?? new Date();
+  const ttlMs = input.ttlMs ?? PUBLISH_LOCK_TTL_MS;
+  const stale = await listStalePublishingJobs({ olderThan: new Date(now.getTime() - ttlMs) });
+  const reapedJobIds: string[] = [];
+  for (const job of stale) {
+    const updated = await updatePublishJobStatus({
+      jobId: job.id,
+      status: 'failed',
+      lockedAt: null,
+      lastError: {
+        code: 'unknown_provider_error',
+        message: `Verrou expiré (>${Math.round(ttlMs / 60_000)} min) — job réinitialisé par le reaper.`,
+        retryable: true,
+      },
+    });
+    if (updated) reapedJobIds.push(job.id);
+  }
+  if (reapedJobIds.length > 0) {
+    logger.warn('social.publish.reaper', { job_ids: reapedJobIds });
+  }
+  return { reapedJobIds };
 }
 
 /**

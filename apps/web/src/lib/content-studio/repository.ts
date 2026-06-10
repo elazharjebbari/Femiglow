@@ -471,15 +471,19 @@ export async function upsertBundleAssets(input: {
       createdAt: new Date(),
     };
     if (drizzle) {
-      await drizzle
-        .delete(contentAssetBindings)
-        .where(
-          and(
-            eq(contentAssetBindings.draftId, input.draftId),
-            eq(contentAssetBindings.role, a.role),
-          ),
-        );
-      await drizzle.insert(contentAssetBindings).values(binding);
+      // Transaction : un crash entre le delete et l'insert laissait le draft
+      // sans asset pour ce rôle (perte du visuel lié).
+      await drizzle.transaction(async (tx) => {
+        await tx
+          .delete(contentAssetBindings)
+          .where(
+            and(
+              eq(contentAssetBindings.draftId, input.draftId),
+              eq(contentAssetBindings.role, a.role),
+            ),
+          );
+        await tx.insert(contentAssetBindings).values(binding);
+      });
     } else {
       for (const [id, row] of store().contentAssetBindings.entries()) {
         if (row.draftId === input.draftId && row.role === a.role) {
@@ -675,6 +679,12 @@ function rowGenerationRun(row: typeof contentGenerationRuns.$inferSelect): Conte
   };
 }
 
+function isUniqueViolation(err: unknown): boolean {
+  const direct = (err as { code?: string } | null)?.code;
+  const nested = (err as { cause?: { code?: string } } | null)?.cause?.code;
+  return direct === '23505' || nested === '23505';
+}
+
 export async function approveDraft(input: {
   draftId: string;
   actorId: string;
@@ -696,10 +706,33 @@ export async function approveDraft(input: {
   };
   const drizzle = db();
   if (drizzle) {
-    await drizzle.insert(contentPosts).values({ ...post, utm: post.utm as never });
-  } else {
-    store().contentPosts.set(post.id, post);
+    try {
+      // Transaction : insert du post + bascule du draft sont atomiques (un
+      // crash entre les deux laissait un post sans draft approuvé, ou l'inverse).
+      await drizzle.transaction(async (tx) => {
+        await tx.insert(contentPosts).values({ ...post, utm: post.utm as never });
+        await tx
+          .update(contentDrafts)
+          .set({ status: 'approved', editedBy: input.actorId, updatedAt: now })
+          .where(eq(contentDrafts.id, input.draftId));
+      });
+    } catch (err) {
+      // Double-approve concurrent : la contrainte unique (0066) gagne la
+      // course — on renvoie le post existant (idempotent) au lieu d'un 500.
+      if (isUniqueViolation(err)) {
+        const existing = await getPostForDraft(input.draftId);
+        if (existing) return existing;
+      }
+      throw err;
+    }
+    return post;
   }
+  // Store mémoire : simule la contrainte unique de la 0066.
+  const existing = Array.from(store().contentPosts.values()).find(
+    (p) => p.draftId === input.draftId,
+  );
+  if (existing) return existing;
+  store().contentPosts.set(post.id, post);
   await updateDraft(input.draftId, { status: 'approved', editedBy: input.actorId });
   return post;
 }

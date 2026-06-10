@@ -417,6 +417,42 @@ export async function updatePublishJobStatus(input: {
 }
 
 /**
+ * Jobs bloqués en "publishing" avec un verrou plus vieux que le cutoff —
+ * candidats du reaper (crash entre le lock et l'écriture finale).
+ */
+export async function listStalePublishingJobs(input: {
+  olderThan: Date;
+  limit?: number;
+}): Promise<SocialPublishJob[]> {
+  const limit = input.limit ?? 20;
+  const drizzle = db();
+  if (drizzle) {
+    const rows = await drizzle
+      .select()
+      .from(socialPublishJobs)
+      .where(
+        and(
+          eq(socialPublishJobs.status, 'publishing'),
+          isNotNull(socialPublishJobs.lockedAt),
+          lte(socialPublishJobs.lockedAt, input.olderThan),
+        ),
+      )
+      .orderBy(asc(socialPublishJobs.lockedAt))
+      .limit(limit);
+    return rows.map(rowJob);
+  }
+  return Array.from(store().socialPublishJobs.values())
+    .filter(
+      (job) =>
+        job.status === 'publishing' &&
+        job.lockedAt !== null &&
+        job.lockedAt.getTime() <= input.olderThan.getTime(),
+    )
+    .sort((a, b) => a.lockedAt!.getTime() - b.lockedAt!.getTime())
+    .slice(0, limit);
+}
+
+/**
  * Re-cible la date d'exécution d'un job queued (re-programmation d'un post).
  * Met à jour job.scheduledAt ET content.scheduledAt (le snapshot porté par
  * l'adapter) pour que les deux restent cohérents.

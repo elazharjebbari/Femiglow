@@ -1,4 +1,4 @@
-import { executeJob } from './admin-service';
+import { executeJob, reapStalePublishJobs } from './admin-service';
 import { listScheduledJobsDue } from './repository';
 
 export interface RunScheduledPublishJobsInput {
@@ -12,6 +12,8 @@ export interface RunScheduledPublishJobsResult {
   succeeded: number;
   failed: number;
   skipped: number;
+  /** Jobs zombies (publishing + verrou expiré) réinitialisés ce tick. */
+  reaped: number;
   tookMs: number;
   errors: Array<{ jobId: string; message: string }>;
 }
@@ -25,6 +27,9 @@ export async function runScheduledPublishJobs(
   const startedAt = Date.now();
   const now = input.now ?? new Date();
   const limit = clamp(input.limit ?? DEFAULT_LIMIT, 1, MAX_LIMIT);
+
+  // Reaper d'abord : libère les jobs zombies avant de chercher les dus.
+  const { reapedJobIds } = await reapStalePublishJobs({ now });
 
   const due = await listScheduledJobsDue({ now, limit });
   let executed = 0;
@@ -60,6 +65,7 @@ export async function runScheduledPublishJobs(
     succeeded,
     failed,
     skipped,
+    reaped: reapedJobIds.length,
     tookMs: Date.now() - startedAt,
     errors,
   };

@@ -3,11 +3,17 @@ import { resetMemoryStore } from '@/lib/db/client';
 import type { PostizIntegration } from '@/lib/content-studio/postiz';
 import {
   executeJob,
+  reapStalePublishJobs,
   resolveDefaultAccount,
   syncPostizSocialAccounts,
   syncSocialAccounts,
 } from './admin-service';
-import { createPublishJob, listSocialAccounts } from './repository';
+import {
+  createPublishJob,
+  getPublishJob,
+  listSocialAccounts,
+  updatePublishJobStatus,
+} from './repository';
 
 beforeEach(() => {
   resetMemoryStore();
@@ -199,6 +205,55 @@ describe('executeJob — kill-switch dry_run/live', () => {
     }
     expect(after.status).toBe('failed');
     expect(after.lockedAt).toBeNull();
+  });
+});
+
+describe('reapStalePublishJobs — reaper des jobs zombies (P1-4)', () => {
+  function makeJobInput(key: string) {
+    return {
+      postId: `post_${key}`,
+      accountId: 'acc_dry_run',
+      provider: 'dry_run' as const,
+      platform: 'instagram' as const,
+      format: 'post' as const,
+      idempotencyKey: `reaper:${key}`,
+      content: {
+        sourcePostId: `post_${key}`,
+        platform: 'instagram' as const,
+        format: 'post' as const,
+        caption: 'Test reaper',
+        media: [],
+        publishMode: 'now' as const,
+      },
+      status: 'queued' as const,
+      requestedBy: null,
+    };
+  }
+
+  it('réinitialise le job au verrou expiré (failed/retryable) et épargne le verrou récent', async () => {
+    const zombie = await createPublishJob(makeJobInput('zombie'));
+    await updatePublishJobStatus({
+      jobId: zombie.id,
+      status: 'publishing',
+      lockedAt: new Date(Date.now() - 30 * 60_000),
+    });
+    const inFlight = await createPublishJob(makeJobInput('inflight'));
+    await updatePublishJobStatus({
+      jobId: inFlight.id,
+      status: 'publishing',
+      lockedAt: new Date(Date.now() - 60_000),
+    });
+
+    const { reapedJobIds } = await reapStalePublishJobs({});
+
+    expect(reapedJobIds).toEqual([zombie.id]);
+    const reaped = await getPublishJob(zombie.id);
+    expect(reaped?.status).toBe('failed');
+    expect(reaped?.lockedAt).toBeNull();
+    expect(reaped?.lastError?.retryable).toBe(true);
+    const untouched = await getPublishJob(inFlight.id);
+    expect(untouched?.status).toBe('publishing');
+    expect(untouched?.lockedAt).not.toBeNull();
   });
 });
 

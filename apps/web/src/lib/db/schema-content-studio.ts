@@ -195,7 +195,8 @@ export const contentPosts = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    draftIdx: index('content_post_draft_idx').on(t.draftId),
+    // Un draft = un post (anti double-approve concurrent, migration 0066).
+    draftUnique: uniqueIndex('content_post_draft_unique').on(t.draftId),
     statusIdx: index('content_post_status_idx').on(t.status, t.createdAt),
   }),
 );
