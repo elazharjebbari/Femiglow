@@ -60,7 +60,6 @@ describe('Verrous cliquet — section emails', () => {
     const whitelist = new Set([
       'src/app/admin/emails/automation/AutomationRowActions.tsx',
       'src/app/admin/emails/campaigns/[id]/CampaignActions.tsx',
-      'src/components/admin/emails/audiences/AudienceDetailActions.tsx',
       'src/components/admin/emails/cockpit/RetryButton.tsx',
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
     ]);
@@ -71,18 +70,12 @@ describe('Verrous cliquet — section emails', () => {
     // Dette au 2026-06-06 — migration vers formatAge/formatAbsolute au fil
     // des chantiers C3-C8 (chaque écran refondu retire son entrée).
     const whitelist = new Set([
-      'src/app/admin/emails/audiences/[id]/page.tsx',
       'src/app/admin/emails/automation/page.tsx',
       'src/app/admin/emails/automation/runs/[id]/page.tsx',
       'src/app/admin/emails/automation/runs/page.tsx',
       'src/app/admin/emails/campaigns/[id]/page.tsx',
       'src/app/admin/emails/campaigns/page.tsx',
       'src/app/admin/emails/templates/page.tsx',
-      'src/components/admin/emails/audiences/AudienceDetailActions.tsx',
-      'src/components/admin/emails/audiences/AudiencePreview.tsx',
-      'src/components/admin/emails/audiences/RuleEditor.tsx',
-      'src/components/admin/emails/audiences/SnapshotsPanel.tsx',
-      'src/components/admin/emails/audiences/rule-defaults.ts',
       'src/components/admin/emails/cockpit/CommandPalette.tsx',
       'src/components/admin/emails/cockpit/FilteredTable.tsx',
       'src/components/admin/emails/cockpit/KpiHeader.tsx',
@@ -108,17 +101,8 @@ describe('Verrous cliquet — section emails', () => {
     // et retire son entrée. common/StatusBadge : nuances blue- héritées des
     // statuts opened/clicked, migrées avec la passe design C10.
     const whitelist = new Set([
-      'src/app/admin/emails/audiences/[id]/page.tsx',
       'src/app/admin/emails/campaigns/CampaignsListClient.tsx',
       'src/app/admin/emails/templates/new/NewTemplateForm.tsx',
-      'src/components/admin/emails/audiences/AudienceDetailActions.tsx',
-      'src/components/admin/emails/audiences/AudiencePreview.tsx',
-      'src/components/admin/emails/audiences/AudienceRowActions.tsx',
-      'src/components/admin/emails/audiences/AudienceRulesBuilder.tsx',
-      'src/components/admin/emails/audiences/AudienceWizard.tsx',
-      'src/components/admin/emails/audiences/CountryMultiSelect.tsx',
-      'src/components/admin/emails/audiences/RuleEditor.tsx',
-      'src/components/admin/emails/audiences/SnapshotsPanel.tsx',
       'src/components/admin/emails/automation/AutomationWizard.tsx',
       'src/components/admin/emails/automation/StepEditor.tsx',
       'src/components/admin/emails/automation/StepList.tsx',

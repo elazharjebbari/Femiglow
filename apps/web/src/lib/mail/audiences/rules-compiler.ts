@@ -18,7 +18,8 @@
  */
 import 'server-only';
 import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
-import { leads, userEvent, orders, leadTag } from '@/lib/db/schema';
+import { leads, userEvent, orders } from '@/lib/db/schema';
+import { logger } from '@/lib/logging/logger';
 import {
   emailEvent,
   emailOutbox,
@@ -32,10 +33,11 @@ import {
   type RulesGroup,
 } from './rules-types';
 
-// lead_tag (M5.5) pas encore livré : has_tag / not_has_tag retournent
-// respectivement FALSE / TRUE — fallback safe. Quand M5.5 mergeera la
-// table lead_tag, on remplacera ces fallbacks par les vraies subqueries
-// EXISTS. Branche M5.3 standalone n'utilise pas de tags pour ses V1.
+// AUD-01 — has_tag / not_has_tag NEUTRALISÉS (cf. tags-flag.ts) : les deux
+// compilent en FALSE tant que M5.5 n'est pas livré. Invariant : le compilateur
+// n'émet JAMAIS EXISTS/NOT EXISTS sur lead_tag ni TRUE pour un tag (sinon
+// not_has_tag matche toute la base — envoi de masse hors cible). La levée
+// M5.5 rebranche les EXISTS ici-même, derrière TAGS_ENABLED.
 
 // ── Country → indicatif (R-011) ───────────────────────────────────────────
 //
@@ -49,7 +51,8 @@ import {
 //
 // Un code pays inconnu → aucun match (FALSE) : on ne peut pas filtrer dessus,
 // et il vaut mieux ne cibler personne que toute la base.
-const COUNTRY_CALLING_CODE: Record<string, string> = {
+// Exporté pour le garde-fou d'alignement UI ↔ compilateur (F08-U-012).
+export const COUNTRY_CALLING_CODE: Record<string, string> = {
   MA: '212',
   FR: '33',
   DZ: '213',
@@ -403,20 +406,18 @@ function compileRule(rule: Rule): SQL {
       return numericOp(cnt, rule.operator, rule.value);
     }
 
-    // ── Tags (lead_tag, M5.5) ─────────────────────────────────────────
+    // ── Tags — NEUTRALISÉS (AUD-01, M5.5 non livré) ───────────────────
+    // Les DEUX kinds compilent en FALSE : ne cibler personne plutôt que
+    // toute la base (not_has_tag → NOT EXISTS sur table vide = tout le
+    // monde). M5.5 : rebrancher EXISTS/NOT EXISTS sur lead_tag derrière
+    // TAGS_ENABLED (tags-flag.ts) — jamais sans les surfaces UI.
     case 'has_tag':
-      return sql`EXISTS (
-        SELECT 1 FROM ${leadTag}
-        WHERE ${leadTag.leadId} = ${leads.id}
-          AND ${leadTag.tag} = ${rule.tag}
-      )`;
-
     case 'not_has_tag':
-      return sql`NOT EXISTS (
-        SELECT 1 FROM ${leadTag}
-        WHERE ${leadTag.leadId} = ${leads.id}
-          AND ${leadTag.tag} = ${rule.tag}
-      )`;
+      logger.warn('audience.rules.tag_neutralized', {
+        kind: rule.kind,
+        tag: rule.tag,
+      });
+      return sql`FALSE`;
   }
 }
 

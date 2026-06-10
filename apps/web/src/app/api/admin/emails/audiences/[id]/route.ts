@@ -2,7 +2,7 @@
  * /api/admin/emails/audiences/[id] — get / update / delete.
  */
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { getAdminSession } from '@/lib/auth/require-admin';
 import { logger } from '@/lib/logging/logger';
 import {
   deleteAudience,
@@ -15,14 +15,19 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(_req: Request, ctx: { params: { id: string } }) {
-  await requireAdmin('/api/admin/emails/audiences');
+  if (!(await getAdminSession())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
   const row = await getAudienceById(ctx.params.id);
   if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(row);
 }
 
 export async function PATCH(req: Request, ctx: { params: { id: string } }) {
-  const session = await requireAdmin('/api/admin/emails/audiences');
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   let body: unknown;
   try {
@@ -57,7 +62,10 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
 }
 
 export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
-  const session = await requireAdmin('/api/admin/emails/audiences');
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
   try {
     const ok = await deleteAudience(ctx.params.id);
     if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });

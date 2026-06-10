@@ -10,8 +10,19 @@
  * Pour la V1, on couvre les 15 kinds avec des inputs simples (text/number/
  * select). Pas de date picker dédié — input type="date" natif suffit.
  */
+import { useState } from 'react';
 import type { Rule, RuleKind } from '@/lib/mail/audiences/rules-types';
+import { TAGS_ENABLED, TAG_RULE_BANNER } from '@/lib/mail/audiences/tags-flag';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { ruleLabel, madToCents, centsToMad } from './rule-defaults';
+import {
+  BETWEEN_ERROR,
+  SWAP_BOUNDS_LABEL,
+  swapBounds,
+  toPatternChips,
+  validateBetween,
+} from './rule-validation';
+import { countryLabel } from './countries';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { TagAutocomplete } from './TagAutocomplete';
 import { TemplateAutocomplete } from './TemplateAutocomplete';
@@ -19,6 +30,8 @@ import { CountryAutocomplete } from './CountryAutocomplete';
 import { CountryMultiSelect } from './CountryMultiSelect';
 import { ClickUrlCombobox } from './ClickUrlCombobox';
 import { DurationInput } from './DurationInput';
+
+const nf = new Intl.NumberFormat('fr-FR');
 
 export type RuleEditorProps = {
   rule: Rule;
@@ -52,12 +65,138 @@ const DATE_OPERATORS = [
 
 // ── Sub-editors ──────────────────────────────────────────────────────────
 
-function EmailPatternEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'email_pattern' }>; onChange: (r: Rule) => void }) {
+/**
+ * AUD-02 — erreur de borne inversée + auto-correction « Inverser les bornes ».
+ * Rendu sous les deux inputs d'un `between` (numérique ou date) dès que les
+ * deux bornes sont saisies et que lo > hi.
+ */
+function BetweenBoundsError({
+  tuple,
+  onSwap,
+}: {
+  tuple: readonly [number, number] | readonly [string, string];
+  onSwap: (swapped: [number, number] | [string, string]) => void;
+}) {
+  if (validateBetween(tuple).ok) return null;
   return (
-    <div className="flex items-center gap-2">
+    <span
+      role="alert"
+      data-testid="between-error"
+      className="flex items-center gap-2 text-xs text-rose-700"
+    >
+      {BETWEEN_ERROR}
+      <button
+        type="button"
+        data-testid="swap-bounds"
+        onClick={() => onSwap(swapBounds(tuple))}
+        className="rounded border border-rose-300 px-1.5 py-0.5 text-rose-700 hover:bg-rose-50"
+      >
+        {SWAP_BOUNDS_LABEL}
+      </button>
+    </span>
+  );
+}
+
+/**
+ * AUD-09 — saisie `in` en chips (trim, anti-doublon, vide ignoré). Lecture
+ * tolérante du legacy CSV texte-libre via toPatternChips.
+ */
+function PatternChipsInput({
+  value,
+  onChange,
+}: {
+  value: string | string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [pending, setPending] = useState('');
+  const chips = toPatternChips(value);
+
+  function addPending() {
+    const t = pending.trim();
+    setPending('');
+    if (!t || chips.includes(t)) return;
+    onChange([...chips, t]);
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5" data-testid="pattern-chips">
+      <ul className="flex flex-wrap gap-1.5" aria-label="Valeurs ciblées">
+        {chips.length === 0 && (
+          <li className="text-xs italic text-stone-400" data-testid="pattern-chips-empty">
+            Aucune valeur. Ajoutez au moins une valeur.
+          </li>
+        )}
+        {chips.map((c) => (
+          <li key={c}>
+            <span
+              data-testid={`pattern-chip-${c}`}
+              className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-800"
+            >
+              <span className="font-mono">{c}</span>
+              <button
+                type="button"
+                onClick={() => onChange(chips.filter((x) => x !== c))}
+                aria-label={`Retirer ${c}`}
+                data-testid={`pattern-chip-remove-${c}`}
+                className="rounded-full px-0.5 text-stone-500 hover:text-rose-700"
+              >
+                ✕
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="text"
+          value={pending}
+          onChange={(e) => setPending(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addPending();
+            }
+          }}
+          placeholder="@example.com"
+          aria-label="Ajouter une valeur"
+          data-testid="pattern-chips-input"
+          className="w-44 rounded border border-stone-300 px-2 py-1 text-sm"
+        />
+        <button
+          type="button"
+          onClick={addPending}
+          data-testid="pattern-chips-add"
+          className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-700 hover:bg-stone-50"
+        >
+          Ajouter
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EmailPatternEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'email_pattern' }>; onChange: (r: Rule) => void }) {
+  const isIn = rule.operator === 'in';
+
+  function setOperator(nextOp: typeof rule.operator) {
+    if (nextOp === 'in') {
+      // scalaire/CSV → chips (migration tolérante, sans perte).
+      onChange({ ...rule, operator: 'in', value: toPatternChips(rule.value) } as Rule);
+    } else if (isIn) {
+      // chips → scalaire : on conserve la 1re valeur.
+      const chips = toPatternChips(rule.value);
+      onChange({ ...rule, operator: nextOp, value: chips[0] ?? '' } as Rule);
+    } else {
+      onChange({ ...rule, operator: nextOp } as Rule);
+    }
+  }
+
+  return (
+    <div className={isIn ? 'flex flex-col items-start gap-2' : 'flex items-center gap-2'}>
       <select
         value={rule.operator}
-        onChange={(e) => onChange({ ...rule, operator: e.target.value as typeof rule.operator })}
+        onChange={(e) => setOperator(e.target.value as typeof rule.operator)}
+        aria-label="Opérateur"
         className="rounded border border-stone-300 px-2 py-1 text-sm"
       >
         {STR_OPERATORS.map((o) => (
@@ -66,13 +205,21 @@ function EmailPatternEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'e
           </option>
         ))}
       </select>
-      <input
-        type="text"
-        value={Array.isArray(rule.value) ? rule.value.join(', ') : rule.value}
-        onChange={(e) => onChange({ ...rule, value: e.target.value })}
-        placeholder="@example.com"
-        className="flex-1 rounded border border-stone-300 px-2 py-1 text-sm"
-      />
+      {isIn ? (
+        <PatternChipsInput
+          value={rule.value}
+          onChange={(next) => onChange({ ...rule, value: next } as Rule)}
+        />
+      ) : (
+        <input
+          type="text"
+          aria-label="Valeur"
+          value={Array.isArray(rule.value) ? rule.value.join(', ') : rule.value}
+          onChange={(e) => onChange({ ...rule, value: e.target.value })}
+          placeholder="@example.com"
+          className="flex-1 rounded border border-stone-300 px-2 py-1 text-sm"
+        />
+      )}
     </div>
   );
 }
@@ -91,6 +238,15 @@ function ConsentMarketingEditor({ rule, onChange }: { rule: Extract<Rule, { kind
 }
 
 function CountryEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'country' }>; onChange: (r: Rule) => void }) {
+  // AUD-05 — la bascule in→eq PERD des données (N−1 codes) : ConfirmDialog
+  // socle si N≥2. eq→in est sans perte → aucune confirmation.
+  const [confirmEqOpen, setConfirmEqOpen] = useState(false);
+  const codes = Array.isArray(rule.value) ? rule.value : rule.value ? [rule.value] : [];
+
+  function switchToEq() {
+    onChange({ ...rule, operator: 'eq', value: codes[0] ?? '' } as Rule);
+  }
+
   return (
     <div className={rule.operator === 'in' ? 'flex flex-col items-start gap-2' : 'flex items-center gap-2'}>
       <select
@@ -100,13 +256,14 @@ function CountryEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'countr
           // Convertit la value entre scalaire (eq) et tableau (in) pour rester
           // valide vis-à-vis du Zod CountryRule (string | string[]).
           if (nextOp === 'in') {
-            const arr = Array.isArray(rule.value) ? rule.value : rule.value ? [rule.value] : [];
-            onChange({ ...rule, operator: 'in', value: arr } as Rule);
+            onChange({ ...rule, operator: 'in', value: codes } as Rule);
+          } else if (codes.length >= 2) {
+            setConfirmEqOpen(true);
           } else {
-            const first = Array.isArray(rule.value) ? rule.value[0] ?? '' : rule.value;
-            onChange({ ...rule, operator: 'eq', value: first } as Rule);
+            switchToEq();
           }
         }}
+        aria-label="Opérateur"
         className="rounded border border-stone-300 px-2 py-1 text-sm"
       >
         <option value="eq">égal</option>
@@ -122,10 +279,29 @@ function CountryEditor({ rule, onChange }: { rule: Extract<Rule, { kind: 'countr
         // CSV texte-libre : plus de code ISO à connaître par cœur, plus de
         // code inconnu qui compile silencieusement en FALSE.
         <CountryMultiSelect
-          value={Array.isArray(rule.value) ? rule.value : rule.value ? [rule.value] : []}
-          onChange={(codes) => onChange({ ...rule, value: codes } as Rule)}
+          value={codes}
+          onChange={(next) => onChange({ ...rule, value: next } as Rule)}
         />
       )}
+
+      {/* AUD-05 — confirmation de la perte (in [N codes] → eq [1 code]). */}
+      <ConfirmDialog
+        open={confirmEqOpen}
+        title={`Ne conserver que ${countryLabel(codes[0] ?? '')} ?`}
+        body={
+          <>
+            Passer en « égal » ne conserve que le premier pays — les{' '}
+            {Math.max(0, codes.length - 1)} autres seront retirés du ciblage.
+          </>
+        }
+        confirmLabel="Conserver le 1er"
+        variant="danger"
+        onConfirm={() => {
+          setConfirmEqOpen(false);
+          switchToEq();
+        }}
+        onCancel={() => setConfirmEqOpen(false)}
+      />
     </div>
   );
 }
@@ -202,7 +378,7 @@ function NumericRuleEditor({
 
       {isBetween ? (
         // UX-AUD-003 — deux bornes → value = [lo, hi] (tuple exigé par Zod).
-        <span className="flex items-center gap-1" data-testid="num-between">
+        <span className="flex flex-wrap items-center gap-1" data-testid="num-between">
           <input
             type="number"
             aria-label={mad ? 'Borne basse (MAD)' : 'Borne basse'}
@@ -220,6 +396,13 @@ function NumericRuleEditor({
             onChange={(e) => setHi(e.target.value)}
             className="w-24 rounded border border-stone-300 px-2 py-1 text-sm tabular-nums"
           />
+          {/* AUD-02 — lo > hi : BETWEEN hi AND lo ne matche PERSONNE. */}
+          {tuple && (
+            <BetweenBoundsError
+              tuple={tuple}
+              onSwap={(swapped) => onChange({ ...rule, value: swapped } as Rule)}
+            />
+          )}
         </span>
       ) : (
         <input
@@ -237,7 +420,7 @@ function NumericRuleEditor({
       {/* UX-AUD-010 — helper d'équivalence MAD ↔ centimes (pas pour between). */}
       {mad && !isBetween && (
         <span className="text-xs text-stone-400" data-testid="mad-helper">
-          = {scalarValue.toLocaleString('fr-FR')} centimes
+          = {nf.format(scalarValue)} centimes
         </span>
       )}
 
@@ -318,7 +501,7 @@ function DateRuleEditor({
 
       {isBetween ? (
         // UX-AUD-003 — plage de dates → value = [a, b] (tuple created_at).
-        <span className="flex items-center gap-1" data-testid="date-between">
+        <span className="flex flex-wrap items-center gap-1" data-testid="date-between">
           <input
             type="date"
             aria-label="Date de début"
@@ -336,10 +519,18 @@ function DateRuleEditor({
             onChange={(e) => onChange({ ...rule, value: [tuple ? tuple[0] : '', e.target.value] } as Rule)}
             className="rounded border border-stone-300 px-2 py-1 text-sm"
           />
+          {/* AUD-02 — début > fin : plage vide silencieuse. */}
+          {tuple && (
+            <BetweenBoundsError
+              tuple={tuple}
+              onSwap={(swapped) => onChange({ ...rule, value: swapped } as Rule)}
+            />
+          )}
         </span>
       ) : (
         <input
           type={rule.operator === 'within' ? 'text' : 'date'}
+          aria-label={rule.operator === 'within' ? 'Durée (7d / 30d / 1h)' : 'Date'}
           value={Array.isArray(rule.value) ? rule.value[0] : rule.value}
           onChange={(e) => onChange({ ...rule, value: e.target.value })}
           placeholder={rule.operator === 'within' ? '7d / 30d / 1h' : ''}
@@ -430,6 +621,7 @@ function InactiveSinceEditor({
     <div className="flex items-center gap-2 text-sm">
       <input
         type="number"
+        aria-label="Nombre de jours"
         value={rule.days}
         onChange={(e) => onChange({ ...rule, days: Number(e.target.value) })}
         className="w-20 rounded border border-stone-300 px-2 py-1 text-sm tabular-nums"
@@ -447,11 +639,24 @@ function TagEditor({
   onChange: (r: Rule) => void;
 }) {
   return (
-    <TagAutocomplete
-      value={rule.tag}
-      onChange={(tag) => onChange({ ...rule, tag })}
-      placeholder="vip"
-    />
+    <div className="space-y-2">
+      {/* AUD-01 — règle legacy : le compilateur la neutralise (FALSE), on le
+          DIT au lieu de laisser croire que le ciblage fonctionne. */}
+      {!TAGS_ENABLED && (
+        <p
+          role="alert"
+          data-testid="tag-rule-banner"
+          className="rounded border border-rose-300 bg-rose-50 px-2 py-1.5 text-xs text-rose-800"
+        >
+          {TAG_RULE_BANNER}
+        </p>
+      )}
+      <TagAutocomplete
+        value={rule.tag}
+        onChange={(tag) => onChange({ ...rule, tag })}
+        placeholder="vip"
+      />
+    </div>
   );
 }
 
@@ -531,7 +736,7 @@ export function RuleEditor({ rule, onChange, onRemove }: RuleEditorProps) {
           onClick={onRemove}
           aria-label="Supprimer ce critère"
           data-testid="remove-rule"
-          className="rounded px-2 py-1 text-stone-400 hover:bg-red-50 hover:text-red-600"
+          className="rounded px-2 py-1 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
         >
           ✕
         </button>

@@ -16,7 +16,7 @@ import { CountryMultiSelect } from './CountryMultiSelect';
 import { COUNTRIES, isKnownCountry } from './countries';
 
 describe('CountryMultiSelect — UX4-AUDIENCES-009', () => {
-  it('ajoute un pays depuis la liste fermée', async () => {
+  it('F08-C-045 (ex UX4-AUDIENCES-009) — ajoute des pays depuis la liste fermée (chips)', async () => {
     const onChange = vi.fn();
     render(<CountryMultiSelect value={['MA']} onChange={onChange} />);
     expect(screen.getByTestId('country-chip-MA')).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('CountryMultiSelect — UX4-AUDIENCES-009', () => {
     expect(values).toContain('FR');
   });
 
-  it('retire un pays via la chip', async () => {
+  it('F08-C-046 (ex UX4-AUDIENCES-009) — retire un pays via la chip ✕', async () => {
     const onChange = vi.fn();
     render(<CountryMultiSelect value={['MA', 'FR']} onChange={onChange} />);
     await act(async () => {

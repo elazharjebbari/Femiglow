@@ -108,7 +108,7 @@ describe('AudienceWizard — UX4-AUDIENCES-004 (exclusion fieldset → POST)', (
 });
 
 describe('AudienceWizard — UX4-AUDIENCES-001 (édition pré-remplie + PATCH)', () => {
-  it('mode edit : pré-rempli depuis initial et soumet en PATCH /audiences/:id', async () => {
+  it('F08-C-083 (ex UX4-AUDIENCES-001) — mode edit : slug readOnly/disabled, exclu du PATCH', async () => {
     mockPreview();
     let method: string | null = null;
     let captured: Record<string, unknown> | null = null;

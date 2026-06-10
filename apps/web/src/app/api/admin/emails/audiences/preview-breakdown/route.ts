@@ -9,7 +9,7 @@
  * validation Zod, erreurs JSON propres — calquée sur preview-size.
  */
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { getAdminSession } from '@/lib/auth/require-admin';
 import { logger } from '@/lib/logging/logger';
 import { previewAudienceBreakdown } from '@/lib/mail/audiences/preview';
 import { PreviewSchema } from '@/lib/mail/audiences/schemas';
@@ -25,7 +25,9 @@ const DEFAULT_EXCLUSIONS = {
 };
 
 export async function POST(req: Request) {
-  await requireAdmin('/api/admin/emails/audiences/preview-breakdown');
+  if (!(await getAdminSession())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   let body: unknown;
   try {

@@ -5,7 +5,7 @@
  * Returns { snapshotId, size, status, durationMs? }.
  */
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { getAdminSession } from '@/lib/auth/require-admin';
 import { logger } from '@/lib/logging/logger';
 import { snapshotAudience } from '@/lib/mail/audiences/snapshot';
 import { SnapshotTriggerSchema } from '@/lib/mail/audiences/schemas';
@@ -14,7 +14,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request, ctx: { params: { id: string } }) {
-  const session = await requireAdmin('/api/admin/emails/audiences/snapshot');
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   let body: unknown = {};
   try {

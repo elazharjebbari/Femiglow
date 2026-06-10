@@ -7,12 +7,16 @@
  *  - « + Snapshot maintenant » : action de MASSE → confirmation explicite
  *    affichant le nombre de contacts figés (preview-size) AVANT le POST
  *    (UX-AUD-005). Anti double-clic.
- *  - « Supprimer » : confirmation (préexistant).
+ *  - « Supprimer » : ConfirmDialog socle variante danger (TRV-01, F08-C-087) —
+ *    un échec garde le dialog ouvert (alerte interne), la ligne est préservée.
  */
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ExclusionFlags, RulesGroup } from '@/lib/mail/audiences/rules-types';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+
+const nf = new Intl.NumberFormat('fr-FR');
 
 export function AudienceDetailActions({
   audienceId,
@@ -29,6 +33,7 @@ export function AudienceDetailActions({
   // Confirmation de snapshot : null = fermée, number|undefined = ouverte avec count.
   const [confirmSize, setConfirmSize] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function openSnapshotConfirm() {
     if (busy) return; // anti double-clic
@@ -75,14 +80,10 @@ export function AudienceDetailActions({
     }
   }
 
-  async function handleDelete() {
-    if (
-      !window.confirm(
-        "Supprimer cette audience ? Les snapshots seront conservés mais l'audience disparaît.",
-      )
-    ) {
-      return;
-    }
+  // TRV-01 — la confirmation passe par le ConfirmDialog socle (plus de
+  // window.confirm). onConfirm REJETTE en cas d'échec : le dialog reste
+  // ouvert avec l'erreur, la ligne audience est préservée.
+  async function confirmDelete() {
     setBusy('delete');
     setError(null);
     try {
@@ -91,9 +92,9 @@ export function AudienceDetailActions({
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setDeleteOpen(false);
       router.push('/admin/emails/audiences');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+    } finally {
       setBusy(null);
     }
   }
@@ -112,21 +113,33 @@ export function AudienceDetailActions({
           type="button"
           onClick={openSnapshotConfirm}
           disabled={!!busy}
-          className="rounded bg-sage-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-sage-800 disabled:opacity-50"
+          className="rounded bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
           data-testid="snapshot-btn"
         >
           {busy === 'sizing' ? 'Calcul…' : '+ Snapshot maintenant'}
         </button>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setDeleteOpen(true)}
           disabled={!!busy}
-          className="rounded border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+          className="rounded border border-rose-200 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-50"
           data-testid="delete-btn"
         >
           {busy === 'delete' ? 'Suppression…' : 'Supprimer'}
         </button>
       </div>
+
+      {/* TRV-01 — suppression via le socle (focus Annuler, Esc/backdrop, 1 seul DELETE). */}
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Supprimer cette audience ?"
+        body="Les snapshots existants sont conservés, mais l'audience et son ciblage disparaissent. Action irréversible."
+        confirmLabel="Supprimer"
+        busyLabel="Suppression…"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
 
       {/* UX-AUD-005 — confirmation de l'action de masse avec count. */}
       {confirmOpen && (
@@ -142,7 +155,7 @@ export function AudienceDetailActions({
               <span data-testid="snapshot-confirm-count">Calcul du nombre de contacts…</span>
             ) : (
               <span data-testid="snapshot-confirm-count">
-                Figer <strong>{confirmSize.toLocaleString('fr-FR')}</strong> contact
+                Figer <strong>{nf.format(confirmSize)}</strong> contact
                 {confirmSize !== 1 ? 's' : ''} dans un snapshot ?
               </span>
             )}
@@ -167,7 +180,7 @@ export function AudienceDetailActions({
               type="button"
               onClick={confirmSnapshot}
               disabled={busy === 'snapshot'}
-              className="rounded bg-sage-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-sage-800 disabled:opacity-50"
+              className="rounded bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50"
               data-testid="snapshot-confirm-btn"
             >
               {busy === 'snapshot' ? 'Snapshot…' : 'Confirmer le snapshot'}
@@ -177,7 +190,7 @@ export function AudienceDetailActions({
       )}
 
       {error && (
-        <p className="text-xs text-red-600" role="alert">
+        <p className="text-xs text-rose-600" role="alert">
           {error}
         </p>
       )}

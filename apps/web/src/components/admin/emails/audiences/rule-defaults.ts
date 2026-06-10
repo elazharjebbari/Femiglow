@@ -6,7 +6,10 @@
  * placeholders incohérents partout.
  */
 import type { Rule, RuleKind, RulesGroup } from '@/lib/mail/audiences/rules-types';
+import { TAGS_ENABLED } from '@/lib/mail/audiences/tags-flag';
 import { countryLabel } from './countries';
+
+const nf = new Intl.NumberFormat('fr-FR');
 
 export type RuleMenuItem = {
   kind: RuleKind;
@@ -58,11 +61,16 @@ export const RULE_CATEGORIES: { label: string; items: RuleMenuItem[] }[] = [
   {
     label: '🏷 Tags',
     items: [
-      { kind: 'has_tag', label: 'A le tag X', disabled: true, disabledHint: 'bientôt — M5.5' },
+      {
+        kind: 'has_tag',
+        label: 'A le tag X',
+        disabled: !TAGS_ENABLED,
+        disabledHint: 'bientôt — M5.5',
+      },
       {
         kind: 'not_has_tag',
         label: "N'a pas le tag X",
-        disabled: true,
+        disabled: !TAGS_ENABLED,
         disabledHint: 'bientôt — M5.5',
       },
     ],
@@ -98,9 +106,11 @@ export function defaultRule(kind: RuleKind): Rule {
     case 'session_count':
       return { kind: 'session_count', operator: 'gte', value: 3, within: '7d' };
     case 'has_tag':
-      return { kind: 'has_tag', tag: '' };
+      // Placeholder VALIDE vis-à-vis du Zod (tag min 1) — inutilisé tant que
+      // le menu est grisé (AUD-01), mais defaultRule reste total/parseable.
+      return { kind: 'has_tag', tag: 'vip' };
     case 'not_has_tag':
-      return { kind: 'not_has_tag', tag: '' };
+      return { kind: 'not_has_tag', tag: 'vip' };
   }
 }
 
@@ -165,7 +175,7 @@ const STR_OP_FR: Record<string, string> = {
 
 function numPhrase(operator: string, value: number | [number, number], opts: { mad?: boolean } = {}): string {
   const fmt = (n: number) =>
-    opts.mad ? `${centsToMad(n).toLocaleString('fr-FR')} MAD` : n.toLocaleString('fr-FR');
+    opts.mad ? `${nf.format(centsToMad(n))} MAD` : nf.format(n);
   if (operator === 'between' && Array.isArray(value)) {
     return `entre ${fmt(value[0])} et ${fmt(value[1])}`;
   }

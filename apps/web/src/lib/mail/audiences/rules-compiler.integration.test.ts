@@ -334,15 +334,17 @@ describeEmailsDb('rules-compiler — exactitude du ciblage (DB seedée)', () => 
     expect(got).not.toContain('l1.casa@exemple.test');
   });
 
-  it('AUD-CMP-030 : has_tag ambassadrice → exactement L1 (attrape le drift lead_tag uuid/text)', async () => {
+  // AUD-01 / F08 étape 1 — les tags sont NEUTRALISÉS (FALSE) tant que M5.5
+  // n'est pas livré : les oracles d'origine (ciblage via lead_tag) sont
+  // remplacés par « personne », et surtout JAMAIS « tout le monde ».
+  it('AUD-CMP-030 (amendé F08) : has_tag ambassadrice → PERSONNE (neutralisé)', async () => {
     const got = await matchEmails(one({ kind: 'has_tag', tag: 'ambassadrice' }));
-    expect(got).toEqual(['l1.casa@exemple.test']);
+    expect(got).toEqual([]);
   });
 
-  it('AUD-CMP-031 : not_has_tag ambassadrice → tous sauf L1', async () => {
+  it('AUD-CMP-031 (amendé F08) : not_has_tag ambassadrice → PERSONNE (jamais toute la base)', async () => {
     const got = await matchEmails(one({ kind: 'not_has_tag', tag: 'ambassadrice' }));
-    expect(got).not.toContain('l1.casa@exemple.test');
-    expect(got).toHaveLength(4);
+    expect(got).toEqual([]); // l'ancien NOT EXISTS aurait renvoyé les 5 leads
   });
 });
 
@@ -389,15 +391,16 @@ describeEmailsDb('rules-compiler — combinaisons & négations', () => {
     expect(got).toEqual(['l3.rabat@exemple.test']);
   });
 
-  it('AUD-CMP-033 : any[has_tag ambassadrice, order_count>=3] → union = L1,L3', async () => {
+  it('AUD-CMP-033 (amendé F08) : any[has_tag, order_count>=3] → seule la branche non-tag matche (L3)', async () => {
     const got = await matchEmails({ kind: 'any', conditions: [
       { kind: 'has_tag', tag: 'ambassadrice' },
       { kind: 'order_count', operator: 'gte', value: 3 }] });
-    expect(got).toEqual(['l1.casa@exemple.test', 'l3.rabat@exemple.test']);
+    expect(got).toEqual(['l3.rabat@exemple.test']); // has_tag neutralisé → FALSE dans le OR
   });
 
-  it('AUD-CMP-034 : all[order_count>=2, any[order_total>=1000MAD, has_tag]] = A ET (B OU C) → L1', async () => {
-    // L1 : 2 cmd, 120000, tag → match ; L3 : 3 cmd mais 90000 & sans tag → exclu
+  it('AUD-CMP-034 (amendé F08) : all[order_count>=2, any[order_total>=1000MAD, has_tag]] → L1 (via la branche montant)', async () => {
+    // L1 : 2 cmd, 120000 → matche via order_total (la branche tag, neutralisée,
+    // n'apporte plus rien) ; L3 : 3 cmd mais 90000 → exclu.
     const got = await matchEmails({ kind: 'all', conditions: [
       { kind: 'order_count', operator: 'gte', value: 2 },
       { kind: 'any', conditions: [
@@ -406,13 +409,13 @@ describeEmailsDb('rules-compiler — combinaisons & négations', () => {
     expect(got).toEqual(['l1.casa@exemple.test']);
   });
 
-  it('negation : all[consent, not_has_tag ambassadrice] → consentants sans tag (pas L1, pas L4)', async () => {
+  it('negation (amendé F08) : all[consent, not_has_tag] → PERSONNE (not_has_tag = FALSE, pas TRUE)', async () => {
+    // Avant neutralisation : NOT EXISTS sur table quasi vide → quasi toute la
+    // base (défaut critique AUD-01). Désormais : FALSE → l'intersection est vide.
     const got = await matchEmails({ kind: 'all', conditions: [
       { kind: 'consent_marketing', value: true },
       { kind: 'not_has_tag', tag: 'ambassadrice' }] });
-    expect(got).not.toContain('l1.casa@exemple.test'); // a le tag
-    expect(got).not.toContain('l4.casa@exemple.test'); // non consentant
-    expect(got).toEqual(['l2.casa@exemple.test', 'l3.rabat@exemple.test', 'l5.bounce@exemple.test']);
+    expect(got).toEqual([]);
   });
 
   it('country combiné : all[country MA, consent] → MA consentants (L1,L2 ; pas L4 non-consent, pas L3 FR)', async () => {

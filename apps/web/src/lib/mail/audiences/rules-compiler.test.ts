@@ -4,7 +4,7 @@
  * Les tests d'intégration DB-mockée vérifient le SQL est utilisable
  * dans une vraie query.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { sql } from 'drizzle-orm';
 import {
   compileRulesToSql,
@@ -156,12 +156,67 @@ describe('compileRule — individual rules', () => {
     expect(xx).toContain('FALSE');
   });
 
-  it('compiles has_tag (fallback FALSE for M5.3)', () => {
-    expect(isSql(compileRule({ kind: 'has_tag', tag: 'vip' }))).toBe(true);
+  // ── AUD-01 — neutralisation tags (F08 étape 1, 3 lignes de défense) ────
+  // Verrouillage anti-régression : le retour silencieux d'un EXISTS/NOT
+  // EXISTS (ou pire, TRUE) sur lead_tag rouvrirait l'envoi de masse hors
+  // cible. Cf. tags-flag.ts (levée M5.5).
+
+  it('F08-U-001 — compiler has_tag produit FALSE (jamais EXISTS lead_tag)', () => {
+    const txt = chunkText(compileRule({ kind: 'has_tag', tag: 'vip' }));
+    expect(txt).toContain('FALSE');
+    expect(txt).not.toMatch(/EXISTS/i);
+    expect(txt).not.toMatch(/lead_tag/i);
   });
 
-  it('compiles not_has_tag (fallback TRUE for M5.3)', () => {
-    expect(isSql(compileRule({ kind: 'not_has_tag', tag: 'vip' }))).toBe(true);
+  it('F08-U-002 — compiler not_has_tag produit FALSE (jamais NOT EXISTS / TRUE)', () => {
+    const txt = chunkText(compileRule({ kind: 'not_has_tag', tag: 'vip' }));
+    expect(txt).toContain('FALSE');
+    expect(txt).not.toContain('TRUE');
+    expect(txt).not.toMatch(/NOT\s+EXISTS/i);
+    expect(txt).not.toMatch(/lead_tag/i);
+  });
+
+  it('F08-U-003 — le compilateur logge audience.rules.tag_neutralized (kind + tag)', async () => {
+    const { logger } = await import('@/lib/logging/logger');
+    const spy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined as never);
+    try {
+      compileRule({ kind: 'has_tag', tag: 'ambassadrice' });
+      expect(spy).toHaveBeenCalledWith('audience.rules.tag_neutralized', {
+        kind: 'has_tag',
+        tag: 'ambassadrice',
+      });
+      compileRule({ kind: 'not_has_tag', tag: 'vip' });
+      expect(spy).toHaveBeenCalledWith('audience.rules.tag_neutralized', {
+        kind: 'not_has_tag',
+        tag: 'vip',
+      });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('F08-U-004 — une audience avec tag ne référence pas la table lead_tag', () => {
+    const g: RulesGroup = {
+      kind: 'all',
+      conditions: [
+        { kind: 'consent_marketing', value: true },
+        { kind: 'has_tag', tag: 'vip' },
+        { kind: 'not_has_tag', tag: 'spam' },
+      ],
+    };
+    const compiled = compileRulesToSql(g, defaultExclusions);
+    expect(chunkText(compiled.where)).not.toMatch(/lead_tag/i);
+  });
+
+  it("F08-U-016 — country eq code inconnu ('XX') compile FALSE", () => {
+    const txt = chunkText(compileRule({ kind: 'country', operator: 'eq', value: 'XX' }));
+    expect(txt).toContain('FALSE');
+    expect(txt.toLowerCase()).not.toContain('like');
+  });
+
+  it('F08-U-017 — country in [] (liste vide) compile FALSE', () => {
+    const txt = chunkText(compileRule({ kind: 'country', operator: 'in', value: [] }));
+    expect(txt).toContain('FALSE');
   });
 });
 

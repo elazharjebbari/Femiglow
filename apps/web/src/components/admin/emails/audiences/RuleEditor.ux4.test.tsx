@@ -23,7 +23,7 @@ function lastRule(onChange: ReturnType<typeof vi.fn>): Rule {
 }
 
 describe('RuleEditor — UX4-AUDIENCES-002 (operator between)', () => {
-  it('order_count between : 2 inputs numériques → value=[lo,hi]', async () => {
+  it('F08-C-038 (ex UX4-AUDIENCES-002) — order_count between : 2 inputs numériques → value=[lo,hi]', async () => {
     const onChange = vi.fn();
     const rule: Rule = { kind: 'order_count', operator: 'between', value: [0, 0] };
     render(<RuleEditor rule={rule} onChange={onChange} />);
@@ -130,7 +130,7 @@ describe('RuleEditor — UX4-AUDIENCES-003 (champs récents)', () => {
 });
 
 describe('RuleEditor — UX4-AUDIENCES-006 (order_total MAD ↔ centimes)', () => {
-  it("saisir '500' MAD écrit value=50000 (centimes)", () => {
+  it("F08-C-043 (ex UX4-AUDIENCES-006) — saisir '500' MAD écrit value=50000 (centimes)", () => {
     const onChange = vi.fn();
     // 100000 cents = 1000 MAD affiché.
     const rule: Rule = { kind: 'order_total', operator: 'gte', value: 100000 };
@@ -146,7 +146,7 @@ describe('RuleEditor — UX4-AUDIENCES-006 (order_total MAD ↔ centimes)', () =
     expect(r.value).toBe(50000);
   });
 
-  it('affiche le helper d’équivalence en centimes', () => {
+  it('F08-C-044 (ex UX4-AUDIENCES-006) — affiche le helper d’équivalence en centimes', () => {
     const onChange = vi.fn();
     const rule: Rule = { kind: 'order_total', operator: 'gte', value: 50000 };
     render(<RuleEditor rule={rule} onChange={onChange} />);

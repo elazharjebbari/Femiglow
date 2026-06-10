@@ -13,6 +13,7 @@ import type { ExclusionFlags, RulesGroup } from '@/lib/mail/audiences/rules-type
 import { AudienceRulesBuilder } from './AudienceRulesBuilder';
 import { AudiencePreview } from './AudiencePreview';
 import { ExclusionFlagsFieldset } from './ExclusionFlagsFieldset';
+import { validateRulesForSave } from './rule-validation';
 
 export type AudienceWizardInitial = {
   slug: string;
@@ -40,6 +41,9 @@ type State = {
   rules: RulesGroup;
   exclusionFlags: ExclusionFlags;
   evaluationMode: 'static' | 'dynamic';
+  /** Dernière taille connue de l'aperçu (étape 2) — réutilisée par le texte
+   *  du mode statique à l'étape 3 (AUD-04 : « Seuls les N contacts… »). */
+  previewSize: number | null;
   errors: Record<string, string>;
   submitting: boolean;
   submitError: string | null;
@@ -69,6 +73,7 @@ function buildInitialState(initial?: AudienceWizardInitial): State {
     rules: initial?.rules ?? { kind: 'all', conditions: [] },
     exclusionFlags: initial?.exclusionFlags ?? { ...DEFAULT_EXCLUSIONS },
     evaluationMode: initial?.evaluationMode ?? 'dynamic',
+    previewSize: null,
     errors: {},
     submitting: false,
     submitError: null,
@@ -108,29 +113,6 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-/**
- * UX-AUD-003 — détecte une règle `between` (numérique ou date) dont une borne
- * n'est pas saisie. Tant qu'une borne manque, le payload `value=[a,b]` est
- * incomplet → on bloque « Continuer » plutôt que d'envoyer un 422 silencieux.
- */
-function hasIncompleteBetween(group: RulesGroup): boolean {
-  for (const cond of group.conditions) {
-    if ('conditions' in cond && Array.isArray(cond.conditions)) {
-      if (hasIncompleteBetween(cond as RulesGroup)) return true;
-      continue;
-    }
-    const rule = cond as { operator?: string; value?: unknown };
-    if (rule.operator === 'between') {
-      const v = rule.value;
-      if (!Array.isArray(v) || v.length !== 2) return true;
-      const [a, b] = v as [unknown, unknown];
-      const empty = (x: unknown) => x === '' || x === null || x === undefined;
-      if (empty(a) || empty(b)) return true;
-    }
-  }
-  return false;
-}
-
 export function AudienceWizard({ mode = 'create', audienceId, initial }: AudienceWizardProps = {}) {
   const router = useRouter();
   const isEdit = mode === 'edit';
@@ -149,11 +131,13 @@ export function AudienceWizard({ mode = 'create', audienceId, initial }: Audienc
       dispatch({ type: 'SET_ERRORS', errors: { rules: 'Ajoute au moins un critère' } });
       return false;
     }
-    if (hasIncompleteBetween(state.rules)) {
-      dispatch({
-        type: 'SET_ERRORS',
-        errors: { rules: 'Renseigne les deux bornes des critères « entre ».' },
-      });
+    // F08 étape 2 — validations BLOQUANTES à la sauvegarde (tags neutralisés,
+    // between incomplet/inversé, code pays inconnu, listes `in` vides). La
+    // validation ne s'applique qu'ici (jamais au chargement) : une audience
+    // legacy invalide reste éditable et corrigible.
+    const ruleErrors = validateRulesForSave(state.rules);
+    if (ruleErrors.length > 0) {
+      dispatch({ type: 'SET_ERRORS', errors: { rules: ruleErrors.join(' · ') } });
       return false;
     }
     dispatch({ type: 'SET_ERRORS', errors: {} });
@@ -236,7 +220,7 @@ export function AudienceWizard({ mode = 'create', audienceId, initial }: Audienc
               data-testid="name-input"
             />
             {state.errors.name && (
-              <p className="mt-1 text-xs text-red-600">{state.errors.name}</p>
+              <p className="mt-1 text-xs text-rose-600">{state.errors.name}</p>
             )}
           </div>
           <div>
@@ -258,7 +242,7 @@ export function AudienceWizard({ mode = 'create', audienceId, initial }: Audienc
               data-testid="slug-input"
             />
             {state.errors.slug && (
-              <p className="mt-1 text-xs text-red-600">{state.errors.slug}</p>
+              <p className="mt-1 text-xs text-rose-600">{state.errors.slug}</p>
             )}
             <p className="mt-1 text-xs text-stone-500">
               {isEdit
@@ -291,7 +275,7 @@ export function AudienceWizard({ mode = 'create', audienceId, initial }: Audienc
             onChange={(rules) => dispatch({ type: 'SET', field: 'rules', value: rules })}
           />
           {state.errors.rules && (
-            <p className="text-sm text-red-600" data-testid="rules-error" role="alert">
+            <p className="text-sm text-rose-600" data-testid="rules-error" role="alert">
               {state.errors.rules}
             </p>
           )}
@@ -302,7 +286,11 @@ export function AudienceWizard({ mode = 'create', audienceId, initial }: Audienc
               dispatch({ type: 'SET', field: 'exclusionFlags', value: flags })
             }
           />
-          <AudiencePreview rules={state.rules} exclusionFlags={state.exclusionFlags} />
+          <AudiencePreview
+            rules={state.rules}
+            exclusionFlags={state.exclusionFlags}
+            onSizeChange={(size) => dispatch({ type: 'SET', field: 'previewSize', value: size })}
+          />
         </div>
       )}
 
@@ -338,32 +326,58 @@ export function AudienceWizard({ mode = 'create', audienceId, initial }: Audienc
             <legend className="px-2 text-sm font-medium text-stone-700">
               Comportement à l&apos;envoi
             </legend>
-            <label className="mt-2 flex items-center gap-2 text-sm">
+            {/* AUD-04 — chaque option explique sa CONSÉQUENCE métier, pas
+                seulement son mécanisme (verbatim spec F08 §evaluation_mode). */}
+            <label className="mt-2 flex items-start gap-2 text-sm">
               <input
                 type="radio"
                 name="evalMode"
+                className="mt-0.5"
                 checked={state.evaluationMode === 'dynamic'}
                 onChange={() =>
                   dispatch({ type: 'SET', field: 'evaluationMode', value: 'dynamic' })
                 }
               />
-              Re-évaluer au moment de l&apos;envoi (recommandé)
+              <span>
+                Re-évaluer au moment de l&apos;envoi (recommandé)
+                <span
+                  className="block text-xs text-stone-500"
+                  data-testid="eval-mode-dynamic-detail"
+                >
+                  Les contacts qui rempliront les critères au moment du send seront
+                  inclus, même s&apos;ils n&apos;existent pas encore aujourd&apos;hui.
+                </span>
+              </span>
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="mt-2 flex items-start gap-2 text-sm">
               <input
                 type="radio"
                 name="evalMode"
+                className="mt-0.5"
                 checked={state.evaluationMode === 'static'}
                 onChange={() =>
                   dispatch({ type: 'SET', field: 'evaluationMode', value: 'static' })
                 }
               />
-              Figer la liste maintenant (snapshot statique)
+              <span>
+                Figer la liste maintenant (snapshot statique)
+                <span
+                  className="block text-xs text-stone-500"
+                  data-testid="eval-mode-static-detail"
+                >
+                  Seuls les{' '}
+                  {state.previewSize !== null
+                    ? `${new Intl.NumberFormat('fr-FR').format(state.previewSize)} contacts actuels`
+                    : 'contacts actuels'}{' '}
+                  recevront — reproductible (A/B, conformité), mais ignore les
+                  nouveaux inscrits.
+                </span>
+              </span>
             </label>
           </fieldset>
 
           {state.submitError && (
-            <p className="text-sm text-red-700" role="alert" data-testid="submit-error">
+            <p className="text-sm text-rose-700" role="alert" data-testid="submit-error">
               Erreur : {state.submitError}
             </p>
           )}

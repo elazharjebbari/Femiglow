@@ -17,7 +17,7 @@
 import { NextResponse } from 'next/server';
 import { and, desc, eq, ilike, isNotNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { getAdminSession } from '@/lib/auth/require-admin';
 import { db as getDb } from '@/lib/db/client';
 import { emailEvent } from '@/lib/db/schema-emails';
 import { escapeLikePrefix } from '../../../transactional/recipients-autocomplete/route';
@@ -30,7 +30,9 @@ const QuerySchema = z.object({
 });
 
 export async function GET(req: Request): Promise<Response> {
-  await requireAdmin('/api/admin/emails/audiences/click-urls/autocomplete');
+  if (!(await getAdminSession())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   const url = new URL(req.url);
   const parsed = QuerySchema.safeParse({ q: url.searchParams.get('q') ?? '' });

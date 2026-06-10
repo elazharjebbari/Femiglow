@@ -29,6 +29,8 @@ import {
   type SnapshotRow,
 } from '@/components/admin/emails/audiences/SnapshotsPanel';
 
+const nf = new Intl.NumberFormat('fr-FR');
+
 export const dynamic = 'force-dynamic';
 
 function formatDate(d: Date | null): string {
@@ -40,6 +42,15 @@ function formatDate(d: Date | null): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(d);
+}
+
+/** Une règle `country` (à n'importe quelle profondeur) ? — pilote le hint R-011. */
+function hasCountryRule(group: RulesGroup): boolean {
+  return group.conditions.some((cond) =>
+    'conditions' in cond && Array.isArray(cond.conditions)
+      ? hasCountryRule(cond as RulesGroup)
+      : (cond as { kind?: string }).kind === 'country',
+  );
 }
 
 const EXCLUSION_LABELS: Record<string, string> = {
@@ -108,7 +119,7 @@ export default async function AudienceDetailPage({
           <p className="mt-1 font-mono text-xs text-stone-500">{audience.slug}</p>
           {liveCount !== null && (
             <p className="mt-2 text-sm text-stone-700" data-testid="live-count">
-              <strong className="tabular-nums">{liveCount.toLocaleString('fr-FR')}</strong> contact
+              <strong className="tabular-nums">{nf.format(liveCount)}</strong> contact
               {liveCount !== 1 ? 's' : ''} actuellement envoyable{liveCount !== 1 ? 's' : ''}
             </p>
           )}
@@ -143,6 +154,14 @@ export default async function AudienceDetailPage({
               ))}
             </ul>
           )}
+          {/* R-011 — le « pays » est dérivé du préfixe téléphonique E.164 :
+              un lead sans téléphone ne matche jamais ce critère (F08-C-085). */}
+          {hasCountryRule(rules) && (
+            <p className="mt-3 text-xs text-stone-500" data-testid="country-hint">
+              ℹ Ciblage par préfixe téléphonique (E.164) — les leads sans téléphone ne
+              matchent pas ce critère.
+            </p>
+          )}
         </section>
 
         {/* Exclusions */}
@@ -162,15 +181,15 @@ export default async function AudienceDetailPage({
           </ul>
           <Link
             href={`/admin/emails/audiences/${audience.id}/edit`}
-            className="mt-3 inline-block text-xs text-sage-700 underline-offset-2 hover:underline"
+            className="mt-3 inline-block text-xs text-emerald-700 underline-offset-2 hover:underline"
           >
             Modifier les critères et exclusions →
           </Link>
         </section>
       </div>
 
-      {/* Snapshots (drill-down, retry, auto-refresh) */}
-      <SnapshotsPanel audienceId={audience.id} snapshots={snapshotRows} />
+      {/* Snapshots (drill-down, retry, auto-refresh, drift vs live) */}
+      <SnapshotsPanel audienceId={audience.id} snapshots={snapshotRows} liveCount={liveCount} />
 
       <footer className="mt-8 text-xs text-stone-400">
         Créée par {audience.createdBy} le {formatDate(audience.createdAt)} · Mode{' '}

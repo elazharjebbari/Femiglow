@@ -4,9 +4,12 @@
  * Body : { rules, exclusionFlags? } — returns { size, durationMs }.
  */
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { getAdminSession } from '@/lib/auth/require-admin';
 import { logger } from '@/lib/logging/logger';
-import { previewAudienceSize } from '@/lib/mail/audiences/preview';
+import {
+  isStatementTimeoutError,
+  previewAudienceSize,
+} from '@/lib/mail/audiences/preview';
 import { PreviewSchema } from '@/lib/mail/audiences/schemas';
 
 export const runtime = 'nodejs';
@@ -20,7 +23,11 @@ const DEFAULT_EXCLUSIONS = {
 };
 
 export async function POST(req: Request) {
-  await requireAdmin('/api/admin/emails/audiences/preview-size');
+  // Route API : 401 JSON (pas de redirect login — pattern F02).
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   let body: unknown;
   try {
@@ -44,6 +51,15 @@ export async function POST(req: Request) {
     );
     return NextResponse.json(result);
   } catch (err) {
+    // AUD-13 — statement_timeout (57014) : 504 + erreur typée `timeout`,
+    // jamais un 200 avec un faux 0 (F08-I-094).
+    if (isStatementTimeoutError(err)) {
+      logger.warn('admin.emails.audience.preview_size_timeout', { error: String(err) });
+      return NextResponse.json(
+        { error: 'timeout', message: 'Requête trop lourde — statement_timeout dépassé.' },
+        { status: 504 },
+      );
+    }
     logger.error('admin.emails.audience.preview_size_failed', { error: String(err) });
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }

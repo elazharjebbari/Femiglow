@@ -12,7 +12,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { SQL } from 'drizzle-orm';
-import { compileRule } from '../rules-compiler';
+import { compileRule, COUNTRY_CALLING_CODE } from '../rules-compiler';
 import { COUNTRIES } from '@/components/admin/emails/audiences/countries';
 
 /**
@@ -28,10 +28,16 @@ function isBareFalse(s: SQL): boolean {
 }
 
 describe('country UI ↔ compilateur — UX4-AUDIENCES-009', () => {
-  it('chaque pays proposé dans l UI compile en un prédicat non-FALSE', () => {
+  it('F08-U-012 (ex UX4-AUDIENCES-009) — alignement COUNTRIES ↔ COUNTRY_CALLING_CODE (bidirectionnel)', () => {
     for (const c of COUNTRIES) {
       const compiled = compileRule({ kind: 'country', operator: 'eq', value: c.code });
       expect(isBareFalse(compiled), `pays ${c.code} compile en FALSE`).toBe(false);
+    }
+    // Inversement : chaque code du compilateur est proposé dans l'UI (aucun
+    // pays ciblable « caché » que le multi-select ne saurait restituer).
+    const uiCodes = new Set(COUNTRIES.map((c) => c.code));
+    for (const code of Object.keys(COUNTRY_CALLING_CODE)) {
+      expect(uiCodes.has(code), `code compilateur ${code} absent de l'UI`).toBe(true);
     }
   });
 

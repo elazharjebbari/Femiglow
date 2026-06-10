@@ -78,7 +78,7 @@ function AddRuleMenu({ onPick }: { onPick: (kind: RuleKind) => void }) {
                       setOpen(false);
                     }}
                     data-testid={`add-rule-${item.kind}`}
-                    className="block w-full px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-sage-50"
+                    className="block w-full px-3 py-1.5 text-left text-sm text-stone-700 hover:bg-emerald-50"
                   >
                     {item.label}
                   </button>
@@ -141,12 +141,23 @@ export function AudienceRulesBuilder({
   const canNest = depth < maxDepth;
 
   return (
-    <div
+    // AUD-F03 a11y — chaque groupe est un fieldset dont la legend annonce le
+    // combinateur (les fieldsets imbriqués matérialisent l'imbrication pour
+    // les lecteurs d'écran).
+    <fieldset
       data-testid={`rules-group-${depth}`}
-      className={`rounded ${
-        depth > 0 ? 'border-2 border-dashed border-stone-200 bg-stone-50/50 p-3' : ''
-      }`}
+      className={
+        depth > 0
+          ? 'min-w-0 rounded border-2 border-dashed border-stone-200 bg-stone-50/50 p-3'
+          : 'min-w-0 rounded border-0 p-0'
+      }
     >
+      <legend className="sr-only">
+        {value.kind === 'all'
+          ? 'Groupe de critères — ET (toutes les conditions)'
+          : 'Groupe de critères — OU (au moins une condition)'}
+      </legend>
+
       {/* Combinator toggle */}
       {value.conditions.length > 1 && (
         <div className="mb-2 flex items-center gap-2 text-xs">
@@ -156,12 +167,21 @@ export function AudienceRulesBuilder({
             onClick={toggleCombinator}
             data-testid="toggle-combinator"
             className={`rounded px-2 py-0.5 font-medium ${
-              value.kind === 'all' ? 'bg-sage-100 text-sage-800' : 'bg-stone-200 text-stone-700'
+              value.kind === 'all' ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-700'
             }`}
           >
             {value.kind === 'all' ? 'ET (toutes)' : 'OU (au moins une)'}
           </button>
         </div>
+      )}
+
+      {/* AUD-08 — la logique de combinaison est annoncée DÈS la 1re règle,
+          pas seulement quand le toggle apparaît à 2. */}
+      {value.conditions.length === 1 && (
+        <p className="mb-2 text-xs text-stone-500" data-testid="combinator-hint">
+          Une seule condition pour l&apos;instant — ajoutez-en d&apos;autres pour les
+          combiner (ET/OU).
+        </p>
       )}
 
       {/* Conditions list */}
@@ -180,7 +200,7 @@ export function AudienceRulesBuilder({
                   type="button"
                   onClick={() => removeAt(idx)}
                   aria-label="Supprimer ce sous-groupe"
-                  className="absolute right-2 top-2 rounded px-2 py-1 text-stone-400 hover:bg-red-50 hover:text-red-600"
+                  className="absolute right-2 top-2 rounded px-2 py-1 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
                 >
                   ✕
                 </button>
@@ -218,6 +238,6 @@ export function AudienceRulesBuilder({
           </button>
         )}
       </div>
-    </div>
+    </fieldset>
   );
 }

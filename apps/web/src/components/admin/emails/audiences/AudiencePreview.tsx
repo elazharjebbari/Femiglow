@@ -10,13 +10,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ExclusionFlags, RulesGroup } from '@/lib/mail/audiences/rules-types';
 
+const nf = new Intl.NumberFormat('fr-FR');
+
 export type AudiencePreviewProps = {
   rules: RulesGroup;
   exclusionFlags?: ExclusionFlags;
   /** ms de debounce avant fetch (default 800ms). */
   debounceMs?: number;
   fetchImpl?: typeof fetch;
+  /** Notifie le parent (wizard) de la dernière taille calculée (AUD-04). */
+  onSizeChange?: (size: number) => void;
 };
+
+/** Message dédié au dépassement de statement_timeout (AUD-13 — C-064). */
+export const PREVIEW_TIMEOUT_MESSAGE =
+  '⏱ Requête trop lourde — simplifiez les critères ou créez un snapshot (calcul asynchrone).';
 
 type Sample = { email: string; name: string | null; createdAt: string };
 type Breakdown = { matched: number; excluded: number; deliverable: number };
@@ -33,11 +41,14 @@ export function AudiencePreview({
   exclusionFlags,
   debounceMs = 800,
   fetchImpl = fetch,
+  onSizeChange,
 }: AudiencePreviewProps) {
   const [size, setSize] = useState<number | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** true = erreur « requête trop lourde » (57014) — message pédagogique dédié. */
+  const [isTimeout, setIsTimeout] = useState(false);
   const [samples, setSamples] = useState<Sample[]>([]);
   const [showSamples, setShowSamples] = useState(false);
   const [breakdown, setBreakdown] = useState<Breakdown | null>(null);
@@ -47,27 +58,40 @@ export function AudiencePreview({
     if (!isRulesValid(rules)) {
       setSize(null);
       setError(null);
+      setIsTimeout(false);
       return;
     }
     setIsLoading(true);
     setError(null);
+    setIsTimeout(false);
     try {
       const res = await fetchImpl('/api/admin/emails/audiences/preview-size', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ rules, exclusionFlags }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        // AUD-13 — 504/timeout : message dédié (jamais un faux 0, les règles
+        // restent intactes côté parent).
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (res.status === 504 || body.error === 'timeout') {
+          setIsTimeout(true);
+          setSize(null);
+          return;
+        }
+        throw new Error(`HTTP ${res.status}`);
+      }
       const body = (await res.json()) as { size: number; durationMs: number };
       setSize(body.size);
       setDurationMs(body.durationMs);
+      onSizeChange?.(body.size);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setSize(null);
     } finally {
       setIsLoading(false);
     }
-  }, [rules, exclusionFlags, fetchImpl]);
+  }, [rules, exclusionFlags, fetchImpl, onSizeChange]);
 
   // Debounce on rules change
   useEffect(() => {
@@ -130,8 +154,13 @@ export function AudiencePreview({
       </div>
 
       <div className="mt-2 min-h-[2.5rem]">
-        {error && (
-          <p className="text-sm text-red-700" role="alert" data-testid="preview-error">
+        {isTimeout && (
+          <p className="text-sm text-amber-800" role="alert" data-testid="preview-timeout">
+            {PREVIEW_TIMEOUT_MESSAGE}
+          </p>
+        )}
+        {!isTimeout && error && (
+          <p className="text-sm text-rose-700" role="alert" data-testid="preview-error">
             Erreur : {error}
           </p>
         )}
@@ -140,7 +169,7 @@ export function AudiencePreview({
             Calcul en cours…
           </p>
         )}
-        {!error && !isLoading && size === null && (
+        {!isTimeout && !error && !isLoading && size === null && (
           <p className="text-sm italic text-stone-400" data-testid="preview-empty">
             Ajoute des critères pour voir l&apos;aperçu.
           </p>
@@ -148,7 +177,7 @@ export function AudiencePreview({
         {!error && !isLoading && size !== null && (
           <div className="flex items-baseline gap-3">
             <p className="text-2xl font-semibold tabular-nums text-stone-900" data-testid="preview-count">
-              🎯 {size.toLocaleString('fr-FR')} contact{size !== 1 ? 's' : ''}
+              🎯 {nf.format(size)} contact{size !== 1 ? 's' : ''}
             </p>
             {durationMs !== null && durationMs > 1000 && (
               <span className="text-xs text-stone-500">en {(durationMs / 1000).toFixed(1)}s</span>
@@ -166,24 +195,24 @@ export function AudiencePreview({
               onClick={fetchBreakdown}
               disabled={breakdownLoading}
               data-testid="show-breakdown"
-              className="text-xs text-sage-700 underline-offset-2 hover:underline disabled:opacity-50"
+              className="text-xs text-emerald-700 underline-offset-2 hover:underline disabled:opacity-50"
             >
               {breakdownLoading ? 'Calcul…' : '▾ Détailler ciblés / exclus / envoyables'}
             </button>
           ) : (
             <p className="text-xs text-stone-600" data-testid="breakdown">
               <span data-testid="breakdown-matched">
-                {breakdown.matched.toLocaleString('fr-FR')} ciblé
+                {nf.format(breakdown.matched)} ciblé
                 {breakdown.matched !== 1 ? 's' : ''}
               </span>
               {' − '}
               <span className="text-rose-700" data-testid="breakdown-excluded">
-                {breakdown.excluded.toLocaleString('fr-FR')} exclu
+                {nf.format(breakdown.excluded)} exclu
                 {breakdown.excluded !== 1 ? 's' : ''}
               </span>
               {' = '}
               <span className="font-semibold text-emerald-700" data-testid="breakdown-deliverable">
-                {breakdown.deliverable.toLocaleString('fr-FR')} envoyable
+                {nf.format(breakdown.deliverable)} envoyable
                 {breakdown.deliverable !== 1 ? 's' : ''}
               </span>
             </p>
@@ -196,7 +225,7 @@ export function AudiencePreview({
           type="button"
           onClick={fetchSamples}
           data-testid="show-samples"
-          className="mt-2 block text-xs text-sage-700 underline-offset-2 hover:underline"
+          className="mt-2 block text-xs text-emerald-700 underline-offset-2 hover:underline"
         >
           ▾ Voir 10 exemples
         </button>

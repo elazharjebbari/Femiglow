@@ -25,6 +25,21 @@ function requireDb() {
 const PREVIEW_TIMEOUT_MS = 5000;
 const MAX_SAMPLE = 50;
 
+/**
+ * AUD-13 — détecte le dépassement de `statement_timeout` Postgres (SQLSTATE
+ * 57014 query_canceled). Les routes preview le mappent en 504 + message
+ * pédagogique dédié au lieu d'un 500 générique (et JAMAIS d'un faux 200/0).
+ */
+export function isStatementTimeoutError(err: unknown): boolean {
+  if (!err) return false;
+  const code = (err as { code?: unknown }).code;
+  if (code === '57014') return true;
+  // postgres-js encapsule parfois l'erreur d'origine (cause).
+  const cause = (err as { cause?: { code?: unknown } }).cause;
+  if (cause && cause.code === '57014') return true;
+  return /statement timeout|canceling statement due to statement timeout/i.test(String(err));
+}
+
 export type PreviewSizeResult = {
   size: number;
   durationMs: number;

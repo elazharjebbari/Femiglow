@@ -17,11 +17,15 @@ import {
 import type { RulesGroup } from '@/lib/mail/audiences/rules-types';
 
 describe('madToCents / centsToMad — UX4-AUDIENCES-010', () => {
-  it('500 MAD = 50000 centimes', () => {
+  it('F08-U-013 (ex UX4-AUDIENCES-010) — 500 MAD = 50000 centimes', () => {
     expect(madToCents(500)).toBe(50000);
     expect(centsToMad(50000)).toBe(500);
   });
-  it('arrondit au centime (round-trip)', () => {
+  it('F08-U-014 (ex UX4-AUDIENCES-010) — centsToMad décimal : 50050 → 500.5', () => {
+    expect(centsToMad(50050)).toBe(500.5);
+  });
+  it('F08-U-015 (ex UX4-AUDIENCES-010) — arrondit au centime (12.346 → 1235)', () => {
+    expect(madToCents(12.346)).toBe(1235);
     expect(madToCents(199.99)).toBe(19999);
     expect(centsToMad(19999)).toBe(199.99);
   });
@@ -32,13 +36,13 @@ describe('madToCents / centsToMad — UX4-AUDIENCES-010', () => {
 });
 
 describe('ruleToText — UX4-AUDIENCES-014', () => {
-  it('pays : traduit le code en nom FR', () => {
+  it('F08-U-019 (ex UX4-AUDIENCES-014) — pays : traduit le code en nom FR', () => {
     expect(ruleToText({ kind: 'country', operator: 'eq', value: 'MA' })).toMatch(/Maroc/);
     expect(ruleToText({ kind: 'country', operator: 'in', value: ['MA', 'FR'] })).toMatch(
       /Maroc.*France/,
     );
   });
-  it('order_total : affiche en MAD, jamais en centimes bruts', () => {
+  it('F08-U-018 (ex UX4-AUDIENCES-014) — order_total : affiche en MAD, jamais en centimes bruts', () => {
     const txt = ruleToText({ kind: 'order_total', operator: 'gte', value: 50000 });
     expect(txt).toMatch(/500\s+MAD/);
     expect(txt).not.toMatch(/50000/);
@@ -76,7 +80,7 @@ describe('rulesGroupToLines — UX4-AUDIENCES-014', () => {
     expect(lines.some((l) => l.text.includes('Maroc'))).toBe(true);
     expect(lines.some((l) => /Nombre de commandes/.test(l.text))).toBe(true);
   });
-  it('gère la récursion (sous-groupe OU) avec indentation', () => {
+  it('F08-U-020 (ex UX4-AUDIENCES-014) — récursion ET>OU : lignes indentées, 2 combinateurs', () => {
     const group: RulesGroup = {
       kind: 'all',
       conditions: [
@@ -91,6 +95,7 @@ describe('rulesGroupToLines — UX4-AUDIENCES-014', () => {
       ],
     };
     const lines = rulesGroupToLines(group);
+    expect(lines[0]!.combinator).toBe('all');
     const sub = lines.find((l) => l.combinator === 'any');
     expect(sub).toBeDefined();
     expect(sub!.depth).toBe(1);

@@ -230,7 +230,7 @@ describeEmailsDb('snapshot — cycle nominal', () => {
 
 // ── Snapshot — idempotence (état cible : ne renvoyer QUE le 'done') ──────
 describeEmailsDb('snapshot — idempotence par snapshotKey', () => {
-  it('AUD-SNAP-004 : même snapshotKey → renvoie le snapshot DONE existant sans réinsérer', async () => {
+  it('F08-I-092 (ex AUD-SNAP-004) : même snapshotKey → même snapshotId, sans réinsertion', async () => {
     const audienceId = await makeConsentAudience();
     const first = await snapshotAudience(audienceId, { snapshotKey: 'camp-7' });
     expect(first.status).toBe('done');
@@ -270,7 +270,7 @@ describeEmailsDb('snapshot — zombie running (R-012)', () => {
     expect((await snapshotRow(freshId))?.status).toBe('running');
   });
 
-  it('AUD-SNAP-005/006 : re-snapshot même key → zombie requalifié errored ET nouveau snapshot done démarre', async () => {
+  it('F08-I-093 (ex AUD-SNAP-005/006) : errored/zombie avec clé libérée → nouveau snapshot même clé', async () => {
     const audienceId = await makeConsentAudience();
     const zombieId = await seedZombieSnapshot(audienceId, { snapshotKey: 'camp-z', ageMinutes: 120 });
 
@@ -297,6 +297,35 @@ describeEmailsDb('snapshot — zombie running (R-012)', () => {
     const again = await snapshotAudience(audienceId, { snapshotKey: 'camp-z' });
     expect(again.snapshotId).toBe(res.snapshotId);
     expect(again.status).toBe('done');
+  });
+});
+
+// ── F08-I-095 — conformité neutralisation tags (AUD-01) ─────────────────
+describeEmailsDb('snapshot — audience tag neutralisée (F08)', () => {
+  it('F08-I-095 : une audience tag compilée ne cible PERSONNE (snapshot size=0)', async () => {
+    // not_has_tag est le cas catastrophe historique : NOT EXISTS sur table
+    // vide = TOUTE la base. Le snapshot doit figer 0 membre, pas 4.
+    const id = randomUUID();
+    await db.insert(emailAudience).values({
+      id,
+      slug: 'tag-' + id.slice(0, 8),
+      name: 'Tag legacy',
+      rules: {
+        kind: 'any',
+        conditions: [
+          { kind: 'has_tag', tag: 'ambassadrice' },
+          { kind: 'not_has_tag', tag: 'ambassadrice' },
+        ],
+      },
+      exclusionFlags: NO_EXCL,
+      createdBy: 'admin@test',
+    });
+    const res = await snapshotAudience(id);
+    expect(res.status).toBe('done');
+    expect(res.size).toBe(0);
+    const members = await countOf(pg<{ n: number }[]>`
+      SELECT COUNT(*)::int AS n FROM email_audience_snapshot_member WHERE snapshot_id = ${res.snapshotId}`);
+    expect(members).toBe(0);
   });
 });
 

@@ -104,7 +104,7 @@ export function AudienceRowActions({ audienceId, audienceName }: Props) {
           type="button"
           onClick={handleDelete}
           disabled={pending}
-          className="rounded bg-red-700 px-2 py-1 text-xs font-medium text-white hover:bg-red-800 disabled:opacity-50"
+          className="rounded bg-rose-700 px-2 py-1 text-xs font-medium text-white hover:bg-rose-800 disabled:opacity-50"
         >
           {pending ? '…' : 'Confirmer'}
         </button>
@@ -116,7 +116,7 @@ export function AudienceRowActions({ audienceId, audienceName }: Props) {
           Annuler
         </button>
         {error && (
-          <span className="ml-2 text-xs text-red-700" role="alert">
+          <span className="ml-2 text-xs text-rose-700" role="alert">
             {error}
           </span>
         )}
@@ -154,13 +154,13 @@ export function AudienceRowActions({ audienceId, audienceName }: Props) {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="rounded px-2 py-1 text-xs text-stone-500 hover:bg-red-50 hover:text-red-700"
+        className="rounded px-2 py-1 text-xs text-stone-500 hover:bg-rose-50 hover:text-rose-700"
         title="Supprimer (avec confirmation)"
       >
         Supprimer
       </button>
       {error && (
-        <span className="ml-2 text-xs text-red-700" role="alert">
+        <span className="ml-2 text-xs text-rose-700" role="alert">
           {error}
         </span>
       )}

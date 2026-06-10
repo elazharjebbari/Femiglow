@@ -2,7 +2,7 @@
  * /api/admin/emails/audiences — list + create.
  */
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { getAdminSession } from '@/lib/auth/require-admin';
 import { logger } from '@/lib/logging/logger';
 import {
   createAudience,
@@ -14,7 +14,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  await requireAdmin('/api/admin/emails/audiences');
+  if (!(await getAdminSession())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
   try {
     const audiences = await listAudiencesWithSnapshotCount();
     return NextResponse.json(audiences);
@@ -25,7 +27,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await requireAdmin('/api/admin/emails/audiences');
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   let body: unknown;
   try {

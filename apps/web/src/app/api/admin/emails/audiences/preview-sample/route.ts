@@ -4,7 +4,7 @@
  * Body : { rules, exclusionFlags?, limit? } — returns { samples, size }.
  */
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { getAdminSession } from '@/lib/auth/require-admin';
 import { logger } from '@/lib/logging/logger';
 import { previewAudienceSample } from '@/lib/mail/audiences/preview';
 import { PreviewSampleSchema } from '@/lib/mail/audiences/schemas';
@@ -20,7 +20,9 @@ const DEFAULT_EXCLUSIONS = {
 };
 
 export async function POST(req: Request) {
-  await requireAdmin('/api/admin/emails/audiences/preview-sample');
+  if (!(await getAdminSession())) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   let body: unknown;
   try {

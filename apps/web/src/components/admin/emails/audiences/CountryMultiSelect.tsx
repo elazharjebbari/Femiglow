@@ -75,7 +75,7 @@ export function CountryMultiSelect({ value, onChange }: CountryMultiSelectProps)
                 role={known ? undefined : 'alert'}
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
                   known
-                    ? 'bg-sage-100 text-sage-800'
+                    ? 'bg-emerald-100 text-emerald-800'
                     : 'border border-rose-300 bg-rose-50 text-rose-700'
                 }`}
                 title={known ? undefined : `Code pays inconnu : ${code} (ne ciblera personne)`}
