@@ -71,9 +71,9 @@ F01-C-069,C,P1,invariants,describe.each dialog Esc,chaque écran adoptant le soc
 F01-C-070,C,P1,invariants,describe.each toast 4s,chaque écran : son toast succès a disparu à 4000 ms (fake timers),describe.each écrans,TRV-02,implemente
 F01-C-071,C,P1,invariants,describe.each dirty-guard,chaque écran à formulaire : navigation interceptée quand sale,describe.each écrans,TRV-10,a_implementer
 F01-C-072,C,P2,invariants,describe.each Freshness TZ,chaque écran avec Freshness : la TZ Africa/Casablanca est affichée,describe.each écrans,TRV-05,a_implementer
-F01-E-073,E,P1,scenario,SM-F01-01 opérateur pressé,"3 mutations sur 2 écrans : 3 toasts succès lisibles, AUCUN dialog natif window.confirm n'apparaît",femiglow_emailqa,metier,a_implementer
-F01-E-074,E,P1,scenario,SM-F01-02 fausse manip,Esc/Annuler sur chaque dialog : aucune donnée détruite (compteurs DB inchangés),femiglow_emailqa,metier,a_implementer
-F01-E-075,E,P1,scenario,SM-F01-03 onglet oublié,"page laissée 2 h : la Freshness lit ""il y a 2 h"" puis se rafraîchit au retour",femiglow_emailqa,metier,a_implementer
-F01-E-076,E,P1,scenario,SM-F01-04 wizard interrompu,F5 en étape 3 : le wizard rouvre en étape 3 avec les données saisies,femiglow_emailqa,metier,a_implementer
-F01-E-077,E,P2,scenario,SM-F01-05 réseau qui lâche,"mutation en échec : toast erreur persistant + Réessayer rejoue et réussit, sélection conservée",femiglow_emailqa degraded,metier,a_implementer
-F01-A-078,A,P1,scenario,axe page socle,axe Playwright sur une page adoptant le socle : 0 violation serious/critical,femiglow_emailqa,metier,a_implementer
+F01-E-073,E,P1,scenario,SM-F01-01 opérateur pressé,"3 mutations sur 2 écrans : 3 toasts succès lisibles, AUCUN dialog natif window.confirm n'apparaît",femiglow_emailqa,metier,implemente
+F01-E-074,E,P1,scenario,SM-F01-02 fausse manip,Esc/Annuler sur chaque dialog : aucune donnée détruite (compteurs DB inchangés),femiglow_emailqa,metier,implemente
+F01-E-075,E,P1,scenario,SM-F01-03 onglet oublié,"page laissée 2 h : la Freshness lit ""il y a 2 h"" puis se rafraîchit au retour",femiglow_emailqa,metier,reporte_p2_dashboard
+F01-E-076,E,P1,scenario,SM-F01-04 wizard interrompu,F5 en étape 3 : le wizard rouvre en étape 3 avec les données saisies,femiglow_emailqa,metier,reporte_p3_wizard
+F01-E-077,E,P2,scenario,SM-F01-05 réseau qui lâche,"mutation en échec : toast erreur persistant + Réessayer rejoue et réussit, sélection conservée",femiglow_emailqa degraded,metier,reporte_p2_cockpit
+F01-A-078,A,P1,scenario,axe page socle,axe Playwright sur une page adoptant le socle : 0 violation serious/critical,femiglow_emailqa,metier,implemente

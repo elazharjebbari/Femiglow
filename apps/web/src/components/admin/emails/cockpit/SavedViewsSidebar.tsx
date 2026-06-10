@@ -107,7 +107,7 @@ function ViewsSection({ heading, views, activeViewId, onSelect, onRename, onDele
 
   return (
     <div>
-      <h3 className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-stone-400">
+      <h3 className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-stone-600">
         {heading}
       </h3>
       <ul className="space-y-0.5">
@@ -122,7 +122,7 @@ function ViewsSection({ heading, views, activeViewId, onSelect, onRename, onDele
           />
         ))}
         {views.length === 0 && !readOnly && (
-          <li className="px-2 py-1 text-xs italic text-stone-400">Aucune vue personnalisée</li>
+          <li className="px-2 py-1 text-xs italic text-stone-600">Aucune vue personnalisée</li>
         )}
       </ul>
     </div>

@@ -225,6 +225,45 @@ export async function deleteSuppression(email: string): Promise<void> {
   await sql`DELETE FROM email_suppression WHERE email = ${email.toLowerCase()}`;
 }
 
+export type SeedSuppressionRow = {
+  email: string;
+  reason?: 'hard_bounce' | 'soft_bounce_repeated' | 'complaint' | 'unsubscribe' | 'manual_admin' | 'cndp_request' | 'invalid_format';
+  source?: 'stalwart' | 'listmonk' | 'manual' | 'cndp';
+  detail?: string | null;
+  since?: Date;
+};
+
+/**
+ * Insère des adresses en suppression (specs socle F01 : l'écran pilote
+ * SuppressionList opère dessus). Emails préfixés e2e- par convention ;
+ * upsert idempotent (PK = email) pour tolérer un run interrompu.
+ */
+export async function seedSuppression(rows: SeedSuppressionRow[]): Promise<void> {
+  if (rows.length === 0) return;
+  const sql = e2eSql();
+  for (const r of rows) {
+    await sql`
+      INSERT INTO email_suppression (email, reason, detail, since, source)
+      VALUES (${r.email.toLowerCase()}, ${r.reason ?? 'hard_bounce'}, ${r.detail ?? null},
+              ${r.since ?? new Date()}, ${r.source ?? 'manual'})
+      ON CONFLICT (email) DO UPDATE SET reason = EXCLUDED.reason, source = EXCLUDED.source`;
+  }
+}
+
+/** Compte les adresses de suppression matchant un préfixe (oracle SM-F01-02). */
+export async function countSuppressionByPrefix(prefix: string): Promise<number> {
+  const sql = e2eSql();
+  const rows = await sql<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM email_suppression WHERE email LIKE ${prefix + '%'}`;
+  return rows[0]?.n ?? 0;
+}
+
+/** Purge les suppressions seedées par préfixe (cleanup scopé par spec). */
+export async function cleanupSuppressionByPrefix(prefix: string): Promise<void> {
+  const sql = e2eSql();
+  await sql`DELETE FROM email_suppression WHERE email LIKE ${prefix + '%'}`;
+}
+
 // ── Cleanup ─────────────────────────────────────────────────────────────
 
 /**

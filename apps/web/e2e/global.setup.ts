@@ -38,9 +38,21 @@ setup('authenticate as admin', async ({ page }) => {
   // ce workaround à chaque spec admin (cf. `chat-mobile-ux.spec.ts`,
   // `tracking-public.spec.ts`), on persiste `fg_consent_chosen='1'`
   // directement dans le storageState. cf. ConsentBanner.tsx l.15.
-  await page.evaluate(() => {
-    window.localStorage.setItem('fg_consent_chosen', '1');
-  });
+  // `waitForURL` (loginAdmin) peut se résoudre au MILIEU d'une chaîne de
+  // redirections post-login : un evaluate immédiat meurt alors avec
+  // « Execution context was destroyed ». On attend la stabilité du document
+  // puis on retente une fois si la race se produit quand même.
+  await page.waitForLoadState('load');
+  const setConsent = () =>
+    page.evaluate(() => {
+      window.localStorage.setItem('fg_consent_chosen', '1');
+    });
+  try {
+    await setConsent();
+  } catch {
+    await page.waitForLoadState('load');
+    await setConsent();
+  }
 
   // Sauvegarde du contexte (cookies + localStorage) pour réutilisation
   // par les autres projets via `storageState`.

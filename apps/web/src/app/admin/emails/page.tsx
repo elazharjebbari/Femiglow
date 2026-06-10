@@ -118,7 +118,7 @@ export default async function AdminEmailsPage() {
           Events (debug) →
         </Link>
       </nav>
-      <p className="mb-6 text-xs text-stone-400">
+      <p className="mb-6 text-xs text-stone-600">
         Astuce :{' '}
         <kbd className="rounded border border-stone-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-stone-600">
           ⌘ K

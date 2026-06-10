@@ -260,7 +260,8 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
                   <td className="px-3 py-2 font-mono text-xs text-stone-800">{row.email}</td>
                   <td className="px-3 py-2 text-stone-700">
                     {reasonLabel(row.reason)}
-                    {row.detail ? <span className="ml-1 text-xs text-stone-400">({row.detail})</span> : null}
+                    {/* stone-600 : stone-400 sur blanc échoue le contraste AA (axe serious, F01-A-078) */}
+                    {row.detail ? <span className="ml-1 text-xs text-stone-600">({row.detail})</span> : null}
                   </td>
                   <td className="px-3 py-2 text-stone-600">{sourceLabel(row.source)}</td>
                   <td className="px-3 py-2 font-mono text-xs text-stone-500">
@@ -329,7 +330,7 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
       />
 
       {/* Note pédagogique sur la propagation : le statut canonique « Supprimé » est rappelé. */}
-      <p className="mt-3 text-xs text-stone-400">
+      <p className="mt-3 text-xs text-stone-600">
         Statut concerné dans le cockpit : « {statusLabel('suppressed')} ». Retirer une adresse la
         rend de nouveau joignable pour les envois transactionnels et les campagnes.
       </p>

@@ -35,7 +35,9 @@ export function CreateCampaignForm() {
   );
 
   return (
-    <form action={formAction}>
+    // id ciblé par le redirect /admin/emails/campaigns/new → #nouvelle-campagne :
+    // sans cette ancre le fragment ne mène nulle part (F02-E-005).
+    <form action={formAction} id="nouvelle-campagne">
       <label className="block">
         <span className="block text-xs font-medium text-stone-600">Nouvelle campagne</span>
         <div className="mt-1 flex gap-2">

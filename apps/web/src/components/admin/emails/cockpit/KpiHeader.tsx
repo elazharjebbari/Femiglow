@@ -91,10 +91,10 @@ function Sparkline({ values, variant }: SparklineProps) {
  * hausse d'échecs apparaissait en vert ↑ — faux signal rassurant.
  */
 function Trend({ pct, higherIsBad = false }: { pct: number | undefined; higherIsBad?: boolean }) {
-  if (pct === undefined) return <span className="text-stone-400">—</span>;
+  if (pct === undefined) return <span className="text-stone-600">—</span>;
   if (pct === 0)
     return (
-      <span className="text-stone-400" aria-label="stable">
+      <span className="text-stone-600" aria-label="stable">
         →
       </span>
     );

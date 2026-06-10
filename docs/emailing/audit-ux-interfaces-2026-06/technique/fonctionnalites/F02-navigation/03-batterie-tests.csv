@@ -56,9 +56,9 @@ F02-I-005,I,P2,nav-counters-cache,après expiration TTL (>30s) un nouvel appel r
 F02-I-006,I,P2,nav-counters-api,listmonkSyncFailed=0 si aucun campaign_link en échec (ou table absente),"status 200, listmonkSyncFailed=0",DB sans échec de sync,LMK-02,implemente
 F02-I-007,I,P2,nav-counters-api,erreur DB renvoie 500 (et non un 200 trompeur),"status 500, corps {error}",DB injoignable simulée,TRV-03,implemente
 F02-I-008,I,P1,campaigns-new,GET /admin/emails/campaigns/new ne renvoie pas 404,réponse non-404 (redirect ou page de création),admin authentifié,CAMP-08,implemente
-F02-E-001,E,P1,nav-clavier-bout-en-bout,tour des 9 sections au clavier sans souris d'un bout à l'autre,chaque section affiche son écran et son onglet actif aria-current=page,instance dédiée seedée,TRV-03,a_implementer
-F02-E-002,E,P1,suppression-decouvrable,Suppression atteignable via onglet ET via palette,les deux chemins mènent à l'écran Suppression,instance seedée,SUP-01,a_implementer
-F02-E-003,E,P2,badge-dlq-clic,l'astreinte voit le badge DLQ et clique pour ouvrir le cockpit DLQ,onglet Transactionnel affiche le badge puis l'écran DLQ s'ouvre au clic,seed 3 messages DLQ,TRV-03,a_implementer
-F02-E-004,E,P2,degradation-infra,"nav-counters en panne : onglets utilisables, navigation complète possible",aucun badge mais les 9 sections restent navigables,nav-counters renvoie 500 (réseau instance),TRV-03,a_implementer
-F02-E-005,E,P2,campaigns-new,navigation vers /campaigns/new aboutit au flux de création,l'écran de création de campagne s'affiche,admin,CAMP-08,a_implementer
-F02-E-006,E,P2,a11y-pages,axe Playwright sur layout avec barre : 0 serious/critical sur 3 écrans clés,"aucune violation serious/critical (dashboard, transactional, suppression)",instance seedée,TRV-03,a_implementer
+F02-E-001,E,P1,nav-clavier-bout-en-bout,tour des 9 sections au clavier sans souris d'un bout à l'autre,chaque section affiche son écran et son onglet actif aria-current=page,instance dédiée seedée,TRV-03,implemente
+F02-E-002,E,P1,suppression-decouvrable,Suppression atteignable via onglet ET via palette,les deux chemins mènent à l'écran Suppression,instance seedée,SUP-01,implemente
+F02-E-003,E,P2,badge-dlq-clic,l'astreinte voit le badge DLQ et clique pour ouvrir le cockpit DLQ,onglet Transactionnel affiche le badge puis l'écran DLQ s'ouvre au clic,seed 3 messages DLQ,TRV-03,implemente
+F02-E-004,E,P2,degradation-infra,"nav-counters en panne : onglets utilisables, navigation complète possible",aucun badge mais les 9 sections restent navigables,nav-counters renvoie 500 (réseau instance),TRV-03,implemente
+F02-E-005,E,P2,campaigns-new,navigation vers /campaigns/new aboutit au flux de création,l'écran de création de campagne s'affiche,admin,CAMP-08,implemente
+F02-E-006,E,P2,a11y-pages,axe Playwright sur layout avec barre : 0 serious/critical sur 3 écrans clés,"aucune violation serious/critical (dashboard, transactional, suppression)",instance seedée,TRV-03,implemente
