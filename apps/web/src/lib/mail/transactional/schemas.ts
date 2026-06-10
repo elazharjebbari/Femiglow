@@ -54,6 +54,19 @@ export const ExportInputSchema = z.object({
 });
 export type ExportInputDto = z.infer<typeof ExportInputSchema>;
 
+/** Cap dur du retry par filtre — partagé client (libellés/garde UI) et serveur. */
+export const BULK_BY_FILTER_CAP = 10_000;
+
+/** Bulk retry PAR FILTRE (CKPT-02) : filterState (sans pagination) + dry_run. */
+export const BulkRetryByFilterSchema = z.object({
+  filterState: z.object({
+    filters: z.array(ParsedFilterSchema).max(20),
+    freetext: z.string().max(200).optional(),
+  }),
+  dry_run: z.boolean(),
+});
+export type BulkRetryByFilterDto = z.infer<typeof BulkRetryByFilterSchema>;
+
 export const SummaryQuerySchema = z.object({
   window: z.enum(['1h', '24h', '7d', '30d']),
 });

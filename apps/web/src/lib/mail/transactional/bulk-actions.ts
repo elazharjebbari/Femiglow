@@ -140,3 +140,91 @@ export async function bulkSuppress(
 
   return { suppressed: rows.length, skipped: ids.length - rows.length };
 }
+
+/* ── Bulk retry PAR FILTRE (CKPT-02 / F04 P2.3) ─────────────────────────── */
+
+import { sql } from 'drizzle-orm';
+import { buildWhere, type ExportInput } from './search';
+
+/** Cap dur du retry par filtre (spec F04 §3) — défini dans schemas.ts (client-safe). */
+export { BULK_BY_FILTER_CAP } from './schemas';
+/** Borne du dry-count : au-delà, le chiffre exact n'a plus d'intérêt opérateur. */
+export const DRY_COUNT_BOUND = 100_000;
+
+export type BulkRetryByFilterExecResult = {
+  retried: number;
+  /** Agrégé par raison (un détail par id serait illisible à 10 000 lignes). */
+  skipped: { reason: 'wrong_status'; count: number }[];
+};
+
+/** Compte BORNÉ des lignes du filtre dans les statuts donnés. */
+async function countByFilterAndStatuses(
+  input: ExportInput,
+  statuses: readonly string[],
+  negate: boolean,
+  bound: number,
+): Promise<number> {
+  const drizzle = requireDb();
+  const base = buildWhere(input);
+  const statusCond = negate
+    ? sql`${emailOutbox.status} NOT IN ${statuses}`
+    : sql`${emailOutbox.status} IN ${statuses}`;
+  const where = base ? and(base, statusCond) : statusCond;
+  const inner = drizzle
+    .select({ one: sql<number>`1` })
+    .from(emailOutbox)
+    .$dynamic()
+    .where(where)
+    .limit(bound);
+  const [row] = await drizzle.select({ n: sql<number>`count(*)::int` }).from(inner.as('bounded'));
+  return row?.n ?? 0;
+}
+
+/**
+ * Dry-count : nombre d'emails ÉLIGIBLES au retry (statuts relançables ∩
+ * filtre), borné à `bound`. AUCUNE mutation.
+ */
+export async function countRetryEligibleByFilter(
+  input: ExportInput,
+  bound: number = DRY_COUNT_BOUND,
+): Promise<number> {
+  return countByFilterAndStatuses(input, RETRY_ELIGIBLE_STATUSES, false, bound);
+}
+
+/**
+ * Exécution : relance TOUS les éligibles du filtre (même reset que bulkRetry —
+ * pending, attempts=0). Le caller (route) a déjà vérifié le cap. Réutilise
+ * buildWhere : l'ensemble touché == l'ensemble de /search ∩ statuts éligibles.
+ */
+export async function bulkRetryByFilter(input: ExportInput): Promise<BulkRetryByFilterExecResult> {
+  const drizzle = requireDb();
+  const base = buildWhere(input);
+  const eligibleCond = inArray(emailOutbox.status, [...RETRY_ELIGIBLE_STATUSES]);
+  const where = base ? and(base, eligibleCond) : eligibleCond;
+
+  // Compter les NON-relançables AVANT l'update : après, les lignes relancées
+  // sont 'pending' et se feraient compter wrong_status (faux skip).
+  const wrongStatus = await countByFilterAndStatuses(
+    input,
+    RETRY_ELIGIBLE_STATUSES,
+    true,
+    DRY_COUNT_BOUND,
+  );
+
+  const updated = await drizzle
+    .update(emailOutbox)
+    .set({
+      status: 'pending',
+      attempts: 0,
+      nextRetry: new Date(),
+      lastError: null,
+      updatedAt: new Date(),
+    })
+    .where(where)
+    .returning();
+
+  return {
+    retried: updated.length,
+    skipped: wrongStatus > 0 ? [{ reason: 'wrong_status', count: wrongStatus }] : [],
+  };
+}

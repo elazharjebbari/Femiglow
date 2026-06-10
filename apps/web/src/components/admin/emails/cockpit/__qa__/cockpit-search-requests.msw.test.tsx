@@ -110,7 +110,7 @@ describe('Cockpit — requêtes de recherche exactes (F-010 / F-019)', () => {
   });
 
   // CKP-MSW-065 / F-015 : clic carte « Échecs » → applique status:failed,dlq.
-  it('CKP-MSW-065 : clic carte Échecs → POST search avec status [failed, dlq]', async () => {
+  it('F04-C-003 (ex CKP-MSW-065) : clic carte Échecs → POST search avec status [failed, dlq] (requêtes annulables)', async () => {
     const bodies: SearchBody[] = [];
     captureSearchBodies(bodies);
     const user = userEvent.setup();

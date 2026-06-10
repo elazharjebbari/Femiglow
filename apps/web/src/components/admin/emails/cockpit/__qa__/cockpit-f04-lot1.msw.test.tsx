@@ -183,7 +183,7 @@ describe('F04 — export CSV honnête (CKPT-01)', () => {
     );
   });
 
-  it('F04-C-031 / F04-C-035 — POST /export avec le filterState COURANT, téléchargement daté', async () => {
+  it('F04-C-031 — POST /export avec le filterState COURANT ; \'F04-C-035 : téléchargement daté', async () => {
     urlParams = new URLSearchParams('status=failed');
     arm(5312);
     let exportBody: unknown = null;

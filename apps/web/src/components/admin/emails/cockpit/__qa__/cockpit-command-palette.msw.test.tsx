@@ -68,7 +68,7 @@ describe('Cockpit — palette ⌘K (CommandPalette, F-019)', () => {
   });
 
   // CKP-MSW-091 : saisir « status: » propose le groupe de statuts.
-  it('CKP-MSW-091 : « status: » affiche le groupe de suggestions de statuts', async () => {
+  it('F04-C-001 (ex CKP-MSW-091) : suggestions « status: » ; \'F04-C-002 : debounce des suggestions', async () => {
     cockpitHandlers();
     const user = userEvent.setup();
     render(<TransactionalCockpit initialViews={[]} />);

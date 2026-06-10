@@ -76,7 +76,7 @@ afterAll(() => server.close());
 
 describe('Cockpit — vues sauvegardées (F-016)', () => {
   // CKP-MSW-070 : sélectionner une vue APPLIQUE son filterState (régression).
-  it('CKP-MSW-070 : sélection d’une vue → POST search avec le filterState de la vue', async () => {
+  it('F04-C-067 (ex CKP-MSW-070) : sélection d’une vue → POST search avec le filterState de la vue', async () => {
     const bodies: SearchBody[] = [];
     captureSearchBodies(bodies);
     const viewsList: SidebarView[] = [
@@ -137,7 +137,7 @@ describe('Cockpit — vues sauvegardées (F-016)', () => {
   });
 
   // CKP-MSW-073 : la création persiste via POST /views avec name + filterState.
-  it('CKP-MSW-073 : enregistrer la vue → POST /views avec name + scope + filterState', async () => {
+  it('F04-C-064 (ex CKP-MSW-073) : enregistrer la vue → POST /views avec name + scope + filterState', async () => {
     captureSearchBodies([]);
     let createBody: { name?: string; scope?: string; filterState?: unknown } | null = null;
     server.use(
@@ -166,7 +166,7 @@ describe('Cockpit — vues sauvegardées (F-016)', () => {
   });
 
   // CKP-MSW-073b : création échoue (500) → message visible, formulaire conservé.
-  it('CKP-SAVEDVIEW-CREATE-ERR : POST /views 500 → erreur visible, formulaire reste ouvert', async () => {
+  it('F04-C-069 (ex CKP-SAVEDVIEW-CREATE-ERR) : POST /views 500 → erreur visible, formulaire reste ouvert', async () => {
     captureSearchBodies([]);
     server.use(
       http.post(VIEWS, () =>
@@ -184,7 +184,7 @@ describe('Cockpit — vues sauvegardées (F-016)', () => {
   });
 
   // CKP-MSW-076 : les vues système n'ont pas de menu rename/delete.
-  it('CKP-MSW-076 : vue système non éditable (pas de menu 3-points)', async () => {
+  it('F04-C-068 (ex CKP-MSW-076) : vue système non éditable (pas de menu 3-points)', async () => {
     captureSearchBodies([]);
     const viewsList: SidebarView[] = [
       { id: 'view_sys', name: 'Tous les échecs', isSystem: true, filterState: { filters: {} } },

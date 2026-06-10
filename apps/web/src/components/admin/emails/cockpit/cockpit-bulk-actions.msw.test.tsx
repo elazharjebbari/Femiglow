@@ -84,7 +84,7 @@ afterAll(() => server.close());
 
 describe('Bulk retry — grille d’échecs (F-013)', () => {
   // CKP-MSW-040 : 200 nominal → résultat honnête affiché, sélection vidée APRÈS succès
-  it('CKP-MSW-040 : 200 → feedback succès, sélection vidée seulement après res.ok', async () => {
+  it('F04-C-072 (ex CKP-MSW-040) : retry 200 → feedback succès, sélection vidée seulement après res.ok', async () => {
     server.use(
       http.post(RETRY, () => HttpResponse.json({ retried: 2, skipped: 0, skippedIds: [] })),
     );
@@ -181,7 +181,7 @@ describe('Bulk suppress — confirmation + grille d’échecs (F-014)', () => {
   });
 
   // CKP-MSW-050 : 200 → confirmation honorée + comptes affichés, sélection vidée
-  it('CKP-MSW-050 : 200 → confirmation + comptes, sélection vidée après succès', async () => {
+  it('F04-C-071 (ex CKP-MSW-050) : suppress 200 → confirmation + comptes, sélection vidée après succès', async () => {
     server.use(http.post(SUPPRESS, () => HttpResponse.json({ suppressed: 2, skipped: 0 })));
     const user = await renderWithSelection();
     await user.click(screen.getByTestId('bulk-action-suppress'));
@@ -285,7 +285,7 @@ describe('Saved views — feedback d’échec rename/delete (F-016)', () => {
   const VIEWS = [{ id: 'view_1', name: 'Échecs récents', isSystem: false }];
 
   // CKP-MSW-070 : rename 500 → erreur visible, vue NON renommée en optimiste
-  it('CKP-MSW-070 : rename 500 → erreur visible, pas de faux succès', async () => {
+  it('F04-C-065 (ex CKP-MSW-070) : rename 500 → erreur visible, pas de faux succès', async () => {
     server.use(emailsFailWith.serverError('/api/admin/emails/views/view_1', 'patch'));
     const user = userEvent.setup();
     render(<TransactionalCockpit initialViews={VIEWS} />);
@@ -302,7 +302,7 @@ describe('Saved views — feedback d’échec rename/delete (F-016)', () => {
   });
 
   // CKP-MSW-071 : delete 500 → erreur visible, vue NON retirée en optimiste
-  it('CKP-MSW-071 : delete 500 → erreur visible, vue conservée', async () => {
+  it('F04-C-066 (ex CKP-MSW-071) : delete 500 → erreur visible, vue conservée', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     server.use(emailsFailWith.serverError('/api/admin/emails/views/view_1', 'delete'));
     const user = userEvent.setup();

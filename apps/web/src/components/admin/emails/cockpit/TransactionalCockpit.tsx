@@ -17,6 +17,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { buildCsvDocument, csvFilename } from '@/lib/mail/transactional/csv';
 import { offsetForPage, pageCount, COCKPIT_PAGE_SIZE } from '@/lib/mail/transactional/pagination';
+import { BULK_BY_FILTER_CAP } from '@/lib/mail/transactional/schemas';
+import { SKIP_REASON_LABELS_FR } from '@/lib/mail/transactional/skip-reasons';
+import { ConfirmDialog } from '@/components/admin/emails/ui/ConfirmDialog';
+import { useOptionalToast } from '@/components/admin/emails/ui/toast';
 import {
   deserializeFilters,
   parseFilters,
@@ -174,6 +178,19 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
   // ── Sélection ────────────────────────────────────────────────────────
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  // ── Sélection GLOBALE par filtre (CKPT-04) — machine page|filter ──────
+  // `filterSelection` non-null = mode filter : les actions portent sur TOUS
+  // les résultats du filtre (snapshot = signature du filtre au moment de
+  // l'amorce — tout changement de filtre ANNULE, le tri/page SURVIVENT).
+  type FilterSelection = { total: number; label: string };
+  const [filterSelection, setFilterSelection] = useState<FilterSelection | null>(null);
+  const toast = useOptionalToast();
+  const filterSignature = useMemo(() => {
+    const params = serializeFilters(parseResult.filters);
+    if (parseResult.freetext) params.set('q', parseResult.freetext);
+    return params.toString();
+  }, [parseResult]);
+
   // ── Feedback des actions bulk (anti faux-succès) ─────────────────────
   // `bulkBusy` = action réseau en vol (verrou anti double-soumission).
   // `bulkError` = message d'échec visible (role=alert), sélection conservée.
@@ -184,12 +201,24 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
   // Dernière action bulk tentée → permet à « réessayer » de rejouer la bonne.
   const lastBulkActionRef = useRef<BulkNetworkAction | null>(null);
 
-  // Reset selection on filter change
+  // Changement de FILTRE : reset page + ANNULATION de la sélection-filtre
+  // (toast info — l'ensemble visé n'existe plus). Le tri ne touche QUE la
+  // sélection page (l'ensemble du filtre est inchangé → la globale survit).
+  const prevSignatureRef = useRef(filterSignature);
   useEffect(() => {
+    if (prevSignatureRef.current === filterSignature) return;
+    prevSignatureRef.current = filterSignature;
     setSelected(new Set());
     setBulkError(null);
     setBulkResult(null);
-  }, [parseResult.filters.length, parseResult.freetext, sort]);
+    setFilterSelection((cur) => {
+      if (cur) toast?.success('Sélection globale annulée — les filtres ont changé');
+      return null;
+    });
+  }, [filterSignature, toast]);
+  useEffect(() => {
+    setSelected(new Set());
+  }, [sort]);
 
   // ── Feedback des actions sur les vues (rename/delete) ────────────────
   const [viewsError, setViewsError] = useState<string | null>(null);
@@ -557,8 +586,98 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
     }
   }, [exportBusy, searchResult, total, parseResult]);
 
+  // ── Retry PAR FILTRE : dry-count → ConfirmDialog → exécution ──────────
+  const [filterRetryDialog, setFilterRetryDialog] = useState<{ count: number } | null>(null);
+  const [filterRetryBusy, setFilterRetryBusy] = useState(false);
+  const [filterRetryError, setFilterRetryError] = useState<string | null>(null);
+  const [capMessage, setCapMessage] = useState<string | null>(null);
+
+  const startFilterRetry = useCallback(async () => {
+    if (filterRetryBusy) return; // anti double-clic (hang : UN SEUL POST)
+    setFilterRetryBusy(true);
+    setFilterRetryError(null);
+    setCapMessage(null);
+    try {
+      const res = await fetch('/api/admin/emails/transactional/bulk-retry-by-filter', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          filterState: { filters: parseResult.filters, freetext: parseResult.freetext },
+          dry_run: true,
+        }),
+      });
+      if (!res.ok) {
+        setFilterRetryError(await describeHttpError(res));
+        return;
+      }
+      const { count } = (await res.json()) as { count: number };
+      if (count > BULK_BY_FILTER_CAP) {
+        // CKPT-02 : au-delà du cap on BLOQUE avant toute confirmation.
+        setCapMessage(
+          `${count.toLocaleString('fr-FR')} emails correspondent — au-delà de ${BULK_BY_FILTER_CAP.toLocaleString('fr-FR')}, affinez le filtre.`,
+        );
+        return;
+      }
+      setFilterRetryDialog({ count });
+    } catch {
+      setFilterRetryError('Échec réseau : impossible de joindre le serveur. Réessaie.');
+    } finally {
+      setFilterRetryBusy(false);
+    }
+  }, [filterRetryBusy, parseResult]);
+
+  /** Exécutée PAR le ConfirmDialog : un rejet laisse le dialog ouvert avec l'erreur. */
+  const confirmFilterRetry = useCallback(async () => {
+    const res = await fetch('/api/admin/emails/transactional/bulk-retry-by-filter', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        filterState: { filters: parseResult.filters, freetext: parseResult.freetext },
+        dry_run: false,
+      }),
+    }).catch(() => {
+      throw new Error('Échec réseau : impossible de joindre le serveur. Réessaie.');
+    });
+    if (!res.ok) {
+      throw new Error(await describeHttpError(res));
+    }
+    const body = (await res.json()) as {
+      retried: number;
+      skipped: { reason: string; count: number }[];
+    };
+    setFilterRetryDialog(null);
+    const parts = [`${body.retried.toLocaleString('fr-FR')} relancé${body.retried > 1 ? 's' : ''}`];
+    for (const sk of body.skipped) {
+      parts.push(
+        `${sk.count.toLocaleString('fr-FR')} ignoré${sk.count > 1 ? 's' : ''} (${SKIP_REASON_LABELS_FR[sk.reason] ?? sk.reason})`,
+      );
+    }
+    setBulkResult(parts.join(' · '));
+    setFilterSelection(null);
+    setSelected(new Set());
+    await fetchSearch();
+    await summary.refresh();
+  }, [parseResult, fetchSearch, summary]);
+
   const handleBulkAction = useCallback(
     (id: 'retry' | 'suppress' | 'export' | 'clear') => {
+      // Mode FILTRE : les actions portent sur l'ensemble du filtre.
+      if (filterSelection) {
+        if (id === 'clear') {
+          setFilterSelection(null);
+          setSelected(new Set());
+          return;
+        }
+        if (id === 'retry') {
+          void startFilterRetry();
+          return;
+        }
+        if (id === 'export') {
+          void handleExportAll();
+          return;
+        }
+        return; // suppress par filtre : hors périmètre F04
+      }
       const ids = Array.from(selected);
       if (ids.length === 0) return;
       if (bulkBusy) return; // verrou anti double-soumission
@@ -595,7 +714,16 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
       }
       void runBulkNetworkAction(id, ids);
     },
-    [selected, bulkBusy, runBulkNetworkAction, exportSelectedCsv, searchResult],
+    [
+      selected,
+      bulkBusy,
+      runBulkNetworkAction,
+      exportSelectedCsv,
+      searchResult,
+      filterSelection,
+      startFilterRetry,
+      handleExportAll,
+    ],
   );
 
   // Réessayer la dernière action échouée (bouton dans l'alerte d'erreur).
@@ -607,13 +735,34 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
     void runBulkNetworkAction(lastBulkActionRef.current ?? 'retry', ids);
   }, [selected, bulkError, runBulkNetworkAction]);
 
-  const memoActions = useMemo(
-    () => [
+  const memoActions = useMemo(() => {
+    if (filterSelection) {
+      // Mode FILTRE : libellés honnêtes sur l'ENSEMBLE (CKPT-04) ; suppress
+      // par filtre hors périmètre F04 (réservé).
+      return [
+        { id: 'retry' as const, label: `Retry (${filterSelection.total.toLocaleString('fr-FR')})` },
+        {
+          id: 'export' as const,
+          label: `Exporter CSV (serveur, ~${filterSelection.total.toLocaleString('fr-FR')} lignes)`,
+        },
+      ];
+    }
+    return [
       { id: 'retry' as const, label: `Retry (${selected.size})` },
       { id: 'suppress' as const, label: 'Marquer en suppression', danger: true },
       { id: 'export' as const, label: 'Exporter CSV' },
-    ],
-    [selected.size],
+    ];
+  }, [selected.size, filterSelection]);
+
+  /** Décocher une ligne en mode filtre ROMPT l'exhaustivité (Gmail-like). */
+  const handleSelectionChange = useCallback(
+    (next: Set<string>) => {
+      if (filterSelection && next.size < selected.size) {
+        setFilterSelection(null);
+      }
+      setSelected(next);
+    },
+    [filterSelection, selected.size],
   );
 
   // ── Actions de la palette ⌘K (UX-COCKPIT-009) ────────────────────────
@@ -889,14 +1038,105 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
         )}
 
         <main className="flex-1 space-y-3">
-          {selected.size > 0 && (
+          {(selected.size > 0 || filterSelection) && (
             <BulkActionsBar
-              selectedCount={selected.size}
+              selectedCount={filterSelection ? filterSelection.total : selected.size}
               actions={memoActions}
               onAction={handleBulkAction}
-              onClear={() => setSelected(new Set())}
-              busyActionId={bulkBusy}
+              onClear={() => {
+                setFilterSelection(null);
+                setSelected(new Set());
+              }}
+              busyActionId={filterRetryBusy ? 'retry' : bulkBusy}
             />
+          )}
+
+          {/* Amorce de sélection GLOBALE (CKPT-04) : page entière cochée ET
+              d'autres résultats existent au-delà. */}
+          {!filterSelection &&
+            rowsLength > 0 &&
+            selected.size === rowsLength &&
+            total > rowsLength && (
+              <div
+                data-testid="select-all-filter-banner"
+                className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900"
+              >
+                Les {rowsLength} emails de cette page sont sélectionnés.{' '}
+                <button
+                  type="button"
+                  data-testid="select-all-filter-link"
+                  onClick={() =>
+                    setFilterSelection({
+                      total,
+                      label:
+                        parseResult.filters.map((f) => f.raw).join(' ') ||
+                        parseResult.freetext ||
+                        'tous les emails',
+                    })
+                  }
+                  className="font-medium underline underline-offset-2"
+                >
+                  Sélectionner les {total.toLocaleString('fr-FR')}
+                  {searchResult?.window === 'truncated' ? '+' : ''} emails correspondant aux filtres
+                </button>
+              </div>
+            )}
+
+          {/* Bannière du mode FILTRE : périmètre + annulation (sans toast). */}
+          {filterSelection && (
+            <div
+              role="status"
+              data-testid="filter-selection-banner"
+              className="flex items-center justify-between gap-3 rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-900"
+            >
+              <span>
+                <strong className="font-semibold">
+                  {filterSelection.total.toLocaleString('fr-FR')} emails sélectionnés
+                </strong>{' '}
+                (filtre : {filterSelection.label})
+              </span>
+              <button
+                type="button"
+                data-testid="filter-selection-cancel"
+                onClick={() => {
+                  setFilterSelection(null);
+                  setSelected(new Set());
+                }}
+                className="shrink-0 rounded border border-sky-300 px-2 py-0.5 text-xs font-medium hover:bg-sky-100"
+              >
+                annuler
+              </button>
+            </div>
+          )}
+
+          {/* Cap dépassé (CKPT-02) : on BLOQUE et on explique. */}
+          {capMessage && (
+            <div
+              role="alert"
+              data-testid="filter-retry-cap"
+              className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+            >
+              {capMessage}
+            </div>
+          )}
+
+          {/* Échec du dry-count : message + Réessayer (grille réseau). */}
+          {filterRetryError && (
+            <div
+              role="alert"
+              data-testid="filter-retry-error"
+              className="flex items-center justify-between gap-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700"
+            >
+              <span>{filterRetryError}</span>
+              <button
+                type="button"
+                onClick={() => void startFilterRetry()}
+                disabled={filterRetryBusy}
+                className="shrink-0 rounded border border-red-300 px-2 py-1 text-xs font-medium hover:bg-red-100 disabled:opacity-50"
+              >
+                Réessayer
+              </button>
+            </div>
           )}
 
           {/* Résultat HONNÊTE d'une action bulk réussie (retried/skipped/suppressed). */}
@@ -964,7 +1204,7 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
             total={searchResult?.total ?? 0}
             isLoading={isSearching}
             selectedIds={selected}
-            onSelectionChange={setSelected}
+            onSelectionChange={handleSelectionChange}
             sort={sort}
             onSortChange={handleSortChange}
             onRowClick={(id) => router.push(`/admin/emails/transactional/${id}`)}
@@ -1041,6 +1281,23 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
           )}
         </main>
       </div>
+
+      {/* Confirmation du retry PAR FILTRE — dry-count affiché (CKPT-02). */}
+      <ConfirmDialog
+        open={filterRetryDialog !== null}
+        title={`${(filterRetryDialog?.count ?? 0).toLocaleString('fr-FR')} emails seront relancés — confirmer ?`}
+        body={
+          <p>
+            La relance remet ces emails en file d&apos;attente (statut « En attente »,
+            tentatives remises à zéro). Les lignes non relançables du filtre seront
+            ignorées et comptées dans le résultat.
+          </p>
+        }
+        confirmLabel="Relancer"
+        busyLabel="Relance…"
+        onConfirm={confirmFilterRetry}
+        onCancel={() => setFilterRetryDialog(null)}
+      />
 
       {/* Palette ⌘K (toujours montée, contrôlée en interne) */}
       <CommandPalette

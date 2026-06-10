@@ -272,6 +272,14 @@ export const emailsHandlers = [
   }),
   // P0.2 : nominal manquant détecté par le test de conformité (chaque suite
   // le redéfinissait localement) — forme verrouillée par ReapStuckResponseWire.
+  // POST /transactional/bulk-retry-by-filter (CKPT-02) : dry → { count } ;
+  // exec → { retried, skipped agrégés }.
+  http.post('/api/admin/emails/transactional/bulk-retry-by-filter', async ({ request }) => {
+    const body = (await request.json()) as { dry_run?: boolean };
+    if (body?.dry_run) return HttpResponse.json({ count: 4 });
+    return HttpResponse.json({ retried: 4, skipped: [] });
+  }),
+
   // POST /transactional/export (CKPT-01) : CSV streamé — le nominal renvoie
   // un petit CSV BOM + en-têtes, X-Export-Capped: false (contrat d'en-têtes).
   http.post('/api/admin/emails/transactional/export', () =>

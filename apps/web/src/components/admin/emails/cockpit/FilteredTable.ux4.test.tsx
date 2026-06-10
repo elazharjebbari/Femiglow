@@ -79,7 +79,7 @@ describe('FilteredTable — vague 4', () => {
   });
 
   // UX-COCKPIT-010 : aria-sort reflète la direction réelle et bascule au re-clic.
-  it('UX-COCKPIT-010 : colonne Date — aria-sort descending puis ascending au toggle', () => {
+  it('F04-C-004 (ex UX-COCKPIT-010) : colonne Date — aria-sort descending puis ascending au toggle', () => {
     const onSortChange = vi.fn();
     const { rerender } = render(
       <FilteredTable

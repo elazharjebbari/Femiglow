@@ -107,7 +107,7 @@ describe('Cockpit vague 4 — pilotabilité', () => {
   });
 
   // UX4-COCKPIT-005 — filtre rapide Soft bounces.
-  it('UX4-COCKPIT-005 : filtre rapide « Soft bounces » → POST search status [bounced_soft]', async () => {
+  it('F04-C-076 (ex UX4-COCKPIT-005) : filtre rapide « Soft bounces » → POST search status [bounced_soft]', async () => {
     const bodies: SearchBody[] = [];
     captureSearch(bodies);
     const user = userEvent.setup();
@@ -122,7 +122,7 @@ describe('Cockpit vague 4 — pilotabilité', () => {
   });
 
   // UX4-COCKPIT-005b — filtre rapide DLQ.
-  it('UX4-COCKPIT-005b : filtre rapide « DLQ » → POST search status [dlq]', async () => {
+  it('F04-C-075 (ex UX4-COCKPIT-005b) : filtre rapide « DLQ » → POST search status [dlq]', async () => {
     const bodies: SearchBody[] = [];
     captureSearch(bodies);
     const user = userEvent.setup();
@@ -219,7 +219,7 @@ describe('Cockpit vague 4 — pilotabilité', () => {
 
   // UX-COCKPIT-007 — la confirmation de suppress chiffre les ADRESSES DISTINCTES
   // et mentionne la propagation (transactionnel ET campagnes) + la réversibilité.
-  it('UX-COCKPIT-007 : confirm suppress → nb d’adresses distinctes + propagation + réversibilité', async () => {
+  it('F04-C-070 (ex UX-COCKPIT-007) : confirm suppress → nb d’adresses distinctes + propagation + réversibilité', async () => {
     // 2 lignes outbox partageant la MÊME adresse → 1 adresse distincte.
     server.use(
       http.post(SEARCH, () =>

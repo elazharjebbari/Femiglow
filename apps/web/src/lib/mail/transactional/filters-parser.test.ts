@@ -17,13 +17,13 @@ const NOW = new Date('2026-05-14T22:00:00.000Z');
 
 describe('parseFilters — single tokens', () => {
   describe('status', () => {
-    it('parses a single status', () => {
+    it('F04-U-001 (ex) parses a single status', () => {
       const r = parseFilters('status:failed', NOW);
       expect(r.errors).toEqual([]);
       expect(r.filters).toEqual([{ key: 'status', value: ['failed'], raw: 'status:failed' }]);
     });
 
-    it('parses multiple statuses (comma-separated)', () => {
+    it('F04-U-002 (ex) parses multiple statuses (comma-separated)', () => {
       const r = parseFilters('status:failed,bounced_soft', NOW);
       expect(r.filters).toEqual([
         { key: 'status', value: ['failed', 'bounced_soft'], raw: 'status:failed,bounced_soft' },
@@ -62,17 +62,17 @@ describe('parseFilters — single tokens', () => {
       expect(r.filters).toEqual([{ key: 'to', value: 'user@x.y', raw: 'to:user@x.y' }]);
     });
 
-    it('parses to:glob with wildcard', () => {
+    it('F04-U-003 (ex) parses to:glob with wildcard', () => {
       const r = parseFilters('to:*@bad.tld', NOW);
       expect(r.filters).toEqual([{ key: 'to', value: '*@bad.tld', raw: 'to:*@bad.tld' }]);
     });
 
-    it('parses quoted value with space', () => {
+    it('F04-U-011 (ex) parses quoted value with space', () => {
       const r = parseFilters('to:"a b@c.d"', NOW);
       expect(r.filters).toEqual([{ key: 'to', value: 'a b@c.d', raw: 'to:"a b@c.d"' }]);
     });
 
-    it('parses template:cart-*', () => {
+    it('F04-U-004 (ex) parses template:cart-*', () => {
       const r = parseFilters('template:cart-*', NOW);
       expect(r.filters).toEqual([{ key: 'template', value: 'cart-*', raw: 'template:cart-*' }]);
     });
@@ -97,7 +97,7 @@ describe('parseFilters — single tokens', () => {
       expect(f.value.toISOString().startsWith('2026-05-01')).toBe(true);
     });
 
-    it('parses today keyword', () => {
+    it('F04-U-006 (ex) parses today keyword', () => {
       const r = parseFilters('after:today', NOW);
       const f = r.filters[0]! as Extract<ParsedFilter, { key: 'after' }>;
       // Midnight UTC of 2026-05-14 — but JS Date uses local TZ. On accepte la
@@ -115,7 +115,7 @@ describe('parseFilters — single tokens', () => {
       expect(diff).toBeLessThan(2 * 86_400_000);
     });
 
-    it('parses relative -7d offset', () => {
+    it('F04-U-005 (ex) parses relative -7d offset', () => {
       const r = parseFilters('after:-7d', NOW);
       const f = r.filters[0]! as Extract<ParsedFilter, { key: 'after' }>;
       const expected = new Date(NOW.getTime() - 7 * 86_400_000);
@@ -142,7 +142,7 @@ describe('parseFilters — single tokens', () => {
   });
 
   describe('attempts', () => {
-    it('parses attempts:>3', () => {
+    it('F04-U-007 (ex) parses attempts:>3', () => {
       const r = parseFilters('attempts:>3', NOW);
       expect(r.filters).toEqual([{ key: 'attempts', operator: '>', value: 3, raw: 'attempts:>3' }]);
     });
@@ -152,7 +152,7 @@ describe('parseFilters — single tokens', () => {
       expect(r.filters).toEqual([{ key: 'attempts', operator: '<=', value: 2, raw: 'attempts:<=2' }]);
     });
 
-    it('parses attempts:0 (defaults to =)', () => {
+    it('F04-U-008 (ex) parses attempts:0 (defaults to =)', () => {
       const r = parseFilters('attempts:0', NOW);
       expect(r.filters).toEqual([{ key: 'attempts', operator: '=', value: 0, raw: 'attempts:0' }]);
     });
@@ -169,7 +169,7 @@ describe('parseFilters — single tokens', () => {
   });
 
   describe('has', () => {
-    it('parses has:error', () => {
+    it('F04-U-009 (ex) parses has:error', () => {
       const r = parseFilters('has:error', NOW);
       expect(r.filters).toEqual([{ key: 'has', value: 'error', raw: 'has:error' }]);
     });
@@ -202,7 +202,7 @@ describe('parseFilters — combinations', () => {
 });
 
 describe('parseFilters — freetext fallback', () => {
-  it('falls back to freetext when no key:value pattern', () => {
+  it('F04-U-010 (ex) falls back to freetext when no key:value pattern', () => {
     const r = parseFilters('user@example.com', NOW);
     expect(r.filters).toEqual([]);
     expect(r.freetext).toBe('user@example.com');
@@ -235,7 +235,7 @@ describe('parseFilters — freetext fallback', () => {
 });
 
 describe('parseFilters — escape characters', () => {
-  it('respects escaped colon in value', () => {
+  it('F04-U-012 (ex) respects escaped colon in value', () => {
     const r = parseFilters('template:welcome\\:v2', NOW);
     expect(r.filters[0]!.value).toBe('welcome:v2');
   });

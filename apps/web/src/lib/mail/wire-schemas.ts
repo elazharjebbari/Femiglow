@@ -85,6 +85,23 @@ export const BulkRetryResponseWire = z.object({
   ),
 });
 
+// ── POST /api/admin/emails/transactional/bulk-retry-by-filter (F04 P2.3) ───
+export const BulkRetryByFilterDryWire = z.object({
+  /** Nombre d'emails ÉLIGIBLES (borné côté serveur — jamais de COUNT plein). */
+  count: z.number().int().min(0),
+});
+export const BulkRetryByFilterExecWire = z.object({
+  retried: z.number().int().min(0),
+  skipped: z.array(
+    z.object({ reason: z.enum(['wrong_status']), count: z.number().int().min(1) }),
+  ),
+});
+export const BulkRetryByFilterCapWire = z.object({
+  error: z.literal('cap_exceeded'),
+  count: z.number().int().min(0),
+  cap: z.number().int(),
+});
+
 // ── POST /api/admin/emails/transactional/bulk-suppress ─────────────────────
 export const BulkSuppressResponseWire = z.object({
   suppressed: z.number().int().min(0),

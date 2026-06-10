@@ -55,6 +55,16 @@ export function useToast(): ToastApi {
   return ctx;
 }
 
+/**
+ * Variante TOLÉRANTE pour l'adoption incrémentale : null hors provider.
+ * En prod le provider est TOUJOURS là (layout /admin/emails) ; cette variante
+ * n'existe que pour les écrans en cours de migration dont les anciens harnais
+ * de test montent le composant nu. Un écran 100 % migré repasse à useToast().
+ */
+export function useOptionalToast(): ToastApi | null {
+  return useContext(ToastContext);
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   // Plus récent EN TÊTE (ordre du viewport).
   const [toasts, setToasts] = useState<ToastItem[]>([]);

@@ -56,7 +56,7 @@ afterAll(() => server.close());
 
 describe('Cockpit — accessibilité de base (a11y)', () => {
   // CKP-A11Y-120 : colonnes triables exposent aria-sort.
-  it('CKP-A11Y-120 : la colonne triée active expose aria-sort="descending"', async () => {
+  it('F04-C-078 (ex CKP-A11Y-120) : axe/aria — colonne triée expose aria-sort="descending"', async () => {
     handlers();
     const user = userEvent.setup();
     render(<TransactionalCockpit initialViews={[]} />);
@@ -89,7 +89,7 @@ describe('Cockpit — accessibilité de base (a11y)', () => {
   });
 
   // CKP-A11Y-122 : la barre d'actions bulk est un toolbar labellisé.
-  it('CKP-A11Y-122 : barre bulk = role="toolbar" avec aria-label', async () => {
+  it('F04-C-079 (ex CKP-A11Y-122) : barre bulk = role="toolbar" avec aria-label', async () => {
     handlers();
     const user = userEvent.setup();
     render(<TransactionalCockpit initialViews={[]} />);

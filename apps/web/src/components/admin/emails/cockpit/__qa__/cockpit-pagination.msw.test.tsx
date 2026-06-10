@@ -156,7 +156,7 @@ describe('Pagination du cockpit (F-011 / R-015)', () => {
   });
 
   // CKP-MSW-025 : indicateur « X–Y sur total » exact en page 2.
-  it('CKP-MSW-025 : indicateur « 51–100 sur 5 000 » en page 2', async () => {
+  it('F04-C-077 (ex CKP-MSW-025) : indicateur « 51–100 sur 5 000 » en page 2 (tronqué « + »)', async () => {
     const offsets: number[] = [];
     paginatedHandlers(offsets);
     const user = userEvent.setup();
@@ -186,7 +186,7 @@ describe('Pagination du cockpit (F-011 / R-015)', () => {
   });
 
   // CKP-MSW-027 : changement de tri → reset page 1 (offset 0).
-  it('CKP-MSW-027 : changement de tri → reset à offset 0', async () => {
+  it('F04-C-005 (ex CKP-MSW-027) : changement de tri → reset à offset 0', async () => {
     const offsets: number[] = [];
     paginatedHandlers(offsets);
     const user = userEvent.setup();
