@@ -36,6 +36,39 @@ import type {
 import type { SocialPublishJob } from '@/lib/social-publishing/contracts';
 import type { StudioV2MediaItem } from '@/lib/content-studio-v2/media/types';
 
+/** Forme v1 renvoyée par GET /api/admin/content-studio/media (StudioMediaItem). */
+interface ApiMediaItem {
+  id: string;
+  kind: string;
+  compartment: 'imported' | 'ai_generated';
+  alt: string;
+  slug: string;
+  thumbUrl: string | null;
+  previewUrl: string | null;
+  originalUrl: string | null;
+  width: number | null;
+  height: number | null;
+  durationMs?: number | null;
+  createdAt: string | Date;
+}
+
+function toStudioV2MediaItem(m: ApiMediaItem): StudioV2MediaItem {
+  return {
+    id: m.id,
+    kind: m.kind === 'video' ? 'video' : 'image',
+    compartment: m.compartment === 'ai_generated' ? 'ai_generated' : 'imported',
+    alt: m.alt,
+    slug: m.slug,
+    thumbnailUrl: m.thumbUrl ?? null,
+    previewUrl: m.previewUrl ?? m.originalUrl ?? '',
+    originalUrl: m.originalUrl ?? '',
+    durationSec: typeof m.durationMs === 'number' ? m.durationMs / 1000 : null,
+    width: m.width ?? null,
+    height: m.height ?? null,
+    createdAt: typeof m.createdAt === 'string' ? m.createdAt : new Date(m.createdAt).toISOString(),
+  };
+}
+
 export type AutosaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'session_expired';
 
 export interface DraftPatch {
@@ -117,10 +150,12 @@ export function StudioProvider({ children, initial, skipInitialFetch = false }: 
     setLoading(true);
     setError(null);
     try {
-      const [ideasRes, draftsRes, postsRes] = await Promise.all([
+      const [ideasRes, draftsRes, postsRes, jobsRes, mediaRes] = await Promise.all([
         fetch('/api/admin/content-studio/ideas?limit=100'),
         fetch('/api/admin/content-studio/drafts?limit=100'),
         fetch('/api/admin/content-studio/posts?limit=100'),
+        fetch('/api/admin/content-studio/publish-jobs'),
+        fetch('/api/admin/content-studio/media?compartment=all'),
       ]);
       if (!ideasRes.ok || !draftsRes.ok || !postsRes.ok) {
         throw new Error('content_studio_v2_hydration_failed');
@@ -131,6 +166,26 @@ export function StudioProvider({ children, initial, skipInitialFetch = false }: 
       setIdeas(ideasJson.ideas ?? []);
       setDrafts(draftsJson.drafts ?? []);
       setPosts(postsJson.posts ?? []);
+      // Jobs + médias : best-effort — auxiliaires, un échec ne doit pas
+      // bloquer l'hydratation des 3 collections cœur. (Avant, reload() ne
+      // rechargeait QUE ideas/drafts/posts, contredisant son docstring —
+      // désync garantie après publication ou génération de visuel.)
+      if (jobsRes.ok) {
+        const jobsJson = (await jobsRes.json()) as {
+          jobs?: Array<SocialPublishJob | { job: SocialPublishJob }>;
+        };
+        setJobs(
+          (jobsJson.jobs ?? []).map((entry) =>
+            typeof entry === 'object' && entry !== null && 'job' in entry
+              ? (entry as { job: SocialPublishJob }).job
+              : (entry as SocialPublishJob),
+          ),
+        );
+      }
+      if (mediaRes.ok) {
+        const mediaJson = (await mediaRes.json()) as { media?: ApiMediaItem[] };
+        setMediaItems((mediaJson.media ?? []).map(toStudioV2MediaItem));
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur de chargement Studio';
       setError(message);

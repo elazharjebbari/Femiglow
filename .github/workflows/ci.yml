@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, studio/integration]
   pull_request:
-    branches: [master, main]
+    branches: [master, main, studio/integration]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -52,10 +52,41 @@ jobs:
           ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
   e2e:
-    name: Playwright E2E
+    name: Playwright E2E — suite studio (DB-assertive)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: quality
+    # Postgres éphémère (pgvector requis par les migrations chat) : sans vraie
+    # DB le serveur retombe en memoryStore → la session admin ne persiste pas
+    # et les specs social-publishing (assertions SQL directes) ne peuvent pas
+    # tourner. Pattern repris de la CI master (ci-e2e-postgres-2026-05-30).
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: femiglow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # Env au niveau job → hérité par build, migrate ET le webServer Playwright.
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+      ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+      WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
+      CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
+      ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
+      ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+      CONTENT_STUDIO_ENABLED: 'true'
+      CONTENT_STUDIO_V2_ENABLED: 'true'
+      CONTENT_STUDIO_V2_DEFAULT: 'true'
+      CONTENT_STUDIO_MEDIA_STUDIO_ENABLED: 'true'
+      CONTENT_STUDIO_IMAGE_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
 
@@ -75,22 +106,37 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: apps/web
 
+      - name: Apply DB migrations
+        # Runner maison (hash-based, idempotent) — `drizzle-kit migrate` wrappe
+        # chaque migration dans une transaction et casse CREATE EXTENSION.
+        run: node scripts/_migrate-safe.mjs
+        working-directory: apps/web
+
       - name: Build Next.js
         run: pnpm --filter web build
-        env:
-          ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
-          WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
-          CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
-          DATABASE_URL: ${{ secrets.CI_DATABASE_URL || '' }}
 
-      - name: Run E2E tests (all specs)
-        run: npx playwright test
+      - name: Run studio E2E (publication DB-assertive + create flow)
+        # Suite ciblée et stable : les specs social-publishing sont les seules
+        # à vérifier les écritures Postgres réelles du pipeline de publication
+        # (audit 2026-06-10 §04 : elles ne tournaient jamais en CI → rot).
+        # La suite complète reste exécutable à la main (npx playwright test).
+        run: >-
+          npx playwright test
+          content-studio.spec.ts
+          content-studio-approval-gate.spec.ts
+          content-studio-social-publishing.spec.ts
+          content-studio-social-publishing-draft.spec.ts
+          e2e/content-studio-v2/
         working-directory: apps/web
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
-          ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
-          ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
-          CONTENT_STUDIO_ENABLED: 'true'
-          CONTENT_STUDIO_V2_ENABLED: 'true'
-          CONTENT_STUDIO_V2_DEFAULT: 'true'
-          CONTENT_STUDIO_IMAGE_PROVIDER: mock
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-studio
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7

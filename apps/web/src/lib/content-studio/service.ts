@@ -302,6 +302,42 @@ export async function listDraftPrimaryAssets() {
   );
 }
 
+/**
+ * Échec de génération visuelle (image/vidéo) : enregistre un run `failed`
+ * (avant, le run n'était écrit qu'après succès → un échec live était un trou
+ * noir : 500 « Erreur interne », rien dans /generation-runs — audit 2026-06-10
+ * §05) puis relève une HttpError 502 explicite.
+ */
+async function failVisualGeneration(input: {
+  briefId: string;
+  draftId: string;
+  kind: 'image' | 'video';
+  prompt: string;
+  provider: string;
+  model: string;
+  promptVersion: string;
+  actorId: string | null;
+  err: unknown;
+}): Promise<never> {
+  const message = input.err instanceof Error ? input.err.message : String(input.err);
+  // L'enregistrement du run ne doit jamais masquer l'erreur d'origine.
+  await insertGenerationRun({
+    ideaId: null,
+    briefId: input.briefId,
+    provider: input.provider,
+    model: input.model,
+    promptVersion: input.promptVersion,
+    input: { draftId: input.draftId, prompt: input.prompt, kind: input.kind },
+    output: {},
+    status: 'failed',
+    costCents: 0,
+    errorMessage: message,
+    createdBy: input.actorId,
+  }).catch(() => {});
+  if (input.err instanceof HttpError) throw input.err;
+  throw new HttpError('upstream_failed', `Génération ${input.kind === 'video' ? 'vidéo' : 'du visuel'} échouée : ${message}`);
+}
+
 export async function generateVisualForDraft(input: {
   draftId: string;
   actorId: string | null;
@@ -337,13 +373,28 @@ export async function generateVisualForDraft(input: {
     draft,
     userPrompt: input.prompt,
   });
-  const generated = await generateStudioImage({
-    prompt: finalPrompt,
-    size: input.size,
-    quality: input.quality,
-    model: input.model,
-    mode: input.mode,
-  });
+  let generated: Awaited<ReturnType<typeof generateStudioImage>>;
+  try {
+    generated = await generateStudioImage({
+      prompt: finalPrompt,
+      size: input.size,
+      quality: input.quality,
+      model: input.model,
+      mode: input.mode,
+    });
+  } catch (err) {
+    return failVisualGeneration({
+      briefId: draft.briefId,
+      draftId: draft.id,
+      kind: 'image',
+      prompt: input.prompt,
+      provider: input.mode === 'mock' ? 'mock' : env.CONTENT_STUDIO_IMAGE_PROVIDER,
+      model: input.model ?? env.CONTENT_STUDIO_IMAGE_MODEL,
+      promptVersion: 'content-studio-image-v0-2026-05-15',
+      actorId: input.actorId,
+      err,
+    });
+  }
   const media = await createMedia({
     kind: 'image',
     source: 'upload',
@@ -431,12 +482,27 @@ async function generateVideoForDraft(args: {
   // Mock video has cost 0; still keep budget call for parity with future
   // real providers. Estimate 2c so the daily cap notion stays consistent.
   await checkDailyBudget(0);
-  const generated = await generateStudioVideo({
-    format: draft.format,
-    prompt: args.prompt,
-    model: args.model,
-    mode: args.mode,
-  });
+  let generated: Awaited<ReturnType<typeof generateStudioVideo>>;
+  try {
+    generated = await generateStudioVideo({
+      format: draft.format,
+      prompt: args.prompt,
+      model: args.model,
+      mode: args.mode,
+    });
+  } catch (err) {
+    return failVisualGeneration({
+      briefId: draft.briefId,
+      draftId: draft.id,
+      kind: 'video',
+      prompt: args.prompt,
+      provider: args.mode === 'mock' ? 'mock' : 'higgsfield',
+      model: args.model ?? 'default',
+      promptVersion: 'content-studio-video-v0-2026-05-28',
+      actorId: args.actorId,
+      err,
+    });
+  }
   const media = await createMedia({
     kind: 'video',
     source: 'upload',
