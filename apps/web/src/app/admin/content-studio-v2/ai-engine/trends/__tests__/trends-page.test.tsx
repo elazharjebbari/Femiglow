@@ -155,7 +155,7 @@ describe('TrendsPage', () => {
     const routineButtons = screen.getAllByText('Routine');
     // The filter button is the one without the category badge styling
     // Filter buttons are rendered first in the DOM
-    fireEvent.click(routineButtons[0]);
+    fireEvent.click(routineButtons[0]!);
 
     // A re-fetch should happen
     await waitFor(() => {

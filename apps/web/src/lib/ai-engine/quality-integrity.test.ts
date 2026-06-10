@@ -82,10 +82,10 @@ describe('Quality scoring mathematical integrity', () => {
     // Weights: text=0.3, visual=0.3, brand=0.25, hook=0.15
     const weightSum = 0.3 + 0.3 + 0.25 + 0.15;
     const expectedAverage =
-      (scores.text_quality * 0.3 +
-        scores.visual_quality * 0.3 +
-        scores.brand_compliance * 0.25 +
-        scores.hook_strength * 0.15) /
+      (scores.text_quality! * 0.3 +
+        scores.visual_quality! * 0.3 +
+        scores.brand_compliance! * 0.25 +
+        scores.hook_strength! * 0.15) /
       weightSum;
 
     expect(scores.average).toBeCloseTo(expectedAverage, 2);
@@ -139,7 +139,7 @@ describe('Quality scoring mathematical integrity', () => {
     const scored = scoreTrends(raw);
     expect(scored).toHaveLength(1);
 
-    const t = scored[0];
+    const t = scored[0]!;
     const expected =
       t.brandRelevance * 0.35 +
       t.viralPotential * 0.25 +
@@ -158,7 +158,7 @@ describe('Quality scoring mathematical integrity', () => {
     expect(scored.length).toBe(2);
 
     for (let i = 1; i < scored.length; i++) {
-      expect(scored[i - 1].compositeScore).toBeGreaterThanOrEqual(scored[i].compositeScore);
+      expect(scored[i - 1]!.compositeScore).toBeGreaterThanOrEqual(scored[i]!.compositeScore);
     }
   });
 

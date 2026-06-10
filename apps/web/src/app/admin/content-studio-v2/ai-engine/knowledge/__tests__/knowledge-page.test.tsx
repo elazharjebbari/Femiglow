@@ -460,8 +460,8 @@ describe('KnowledgePage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /Enregistrer/i }));
       await waitFor(() => {
-        const patchCalls = spy.mock.calls.filter(
-          ([url, opts]: [string, RequestInit?]) =>
+        const patchCalls = (spy.mock.calls as [string, RequestInit][]).filter(
+          ([url, opts]) =>
             String(url).includes('/knowledge/science-cosmetique') &&
             opts?.method === 'PATCH' &&
             !String(url).includes('/documents/'),
@@ -517,8 +517,8 @@ describe('KnowledgePage', () => {
       const confirmBtn = buttons.find((b) => !b.textContent?.includes('collection'));
       fireEvent.click(confirmBtn!);
       await waitFor(() => {
-        const delCalls = spy.mock.calls.filter(
-          ([url, opts]: [string, RequestInit?]) =>
+        const delCalls = (spy.mock.calls as [string, RequestInit][]).filter(
+          ([url, opts]) =>
             String(url).includes('/knowledge/science-cosmetique') &&
             opts?.method === 'DELETE',
         );
@@ -659,12 +659,12 @@ describe('KnowledgePage', () => {
       fireEvent.click(screen.getByRole('button', { name: /^Ingérer$/i }));
 
       await waitFor(() => {
-        const postCalls = spy.mock.calls.filter(
-          ([url, opts]: [string, RequestInit?]) =>
+        const postCalls = (spy.mock.calls as [string, RequestInit][]).filter(
+          ([url, opts]) =>
             String(url).includes('/documents') && opts?.method === 'POST',
         );
         expect(postCalls.length).toBeGreaterThanOrEqual(1);
-        const body = JSON.parse(postCalls[0][1].body as string);
+        const body = JSON.parse(postCalls[0]![1].body as string);
         expect(body.sourceType).toBe('text');
         expect(body.title).toBe('Nouveau doc');
         expect(body.content).toBe('Contenu test');
@@ -685,12 +685,12 @@ describe('KnowledgePage', () => {
       fireEvent.click(screen.getByRole('button', { name: /^Ingérer$/i }));
 
       await waitFor(() => {
-        const postCalls = spy.mock.calls.filter(
-          ([url, opts]: [string, RequestInit?]) =>
+        const postCalls = (spy.mock.calls as [string, RequestInit][]).filter(
+          ([url, opts]) =>
             String(url).includes('/documents') && opts?.method === 'POST',
         );
         expect(postCalls.length).toBeGreaterThanOrEqual(1);
-        const body = JSON.parse(postCalls[0][1].body as string);
+        const body = JSON.parse(postCalls[0]![1].body as string);
         expect(body.sourceType).toBe('url');
         expect(body.url).toBe('https://test.com/article');
       });
@@ -852,8 +852,8 @@ describe('KnowledgePage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Enregistrer/i }));
 
       await waitFor(() => {
-        const patchCalls = spy.mock.calls.filter(
-          ([url, opts]: [string, RequestInit?]) =>
+        const patchCalls = (spy.mock.calls as [string, RequestInit][]).filter(
+          ([url, opts]) =>
             String(url).match(/\/knowledge\/[^/]+\/documents\/[^/]+$/) &&
             opts?.method === 'PATCH',
         );
@@ -1035,7 +1035,7 @@ describe('KnowledgePage', () => {
       await waitFor(() => expect(screen.getByPlaceholderText(/Fiches produits/i)).toBeInTheDocument());
       const selectElements = document.querySelectorAll('select');
       expect(selectElements.length).toBeGreaterThanOrEqual(1);
-      const options = selectElements[0].querySelectorAll('option');
+      const options = selectElements[0]!.querySelectorAll('option');
       expect(options.length).toBe(7);
     });
 
@@ -1060,12 +1060,12 @@ describe('KnowledgePage', () => {
       fireEvent.click(screen.getByRole('button', { name: /^Créer$/i }));
 
       await waitFor(() => {
-        const postCalls = spy.mock.calls.filter(
-          ([url, opts]: [string, RequestInit?]) =>
+        const postCalls = (spy.mock.calls as [string, RequestInit][]).filter(
+          ([url, opts]) =>
             String(url).match(/\/knowledge\/?$/) && opts?.method === 'POST',
         );
         expect(postCalls.length).toBeGreaterThanOrEqual(1);
-        const body = JSON.parse(postCalls[0][1].body as string);
+        const body = JSON.parse(postCalls[0]![1].body as string);
         expect(body.name).toBe('Fiches produits');
         expect(body.slug).toBe('fiches-produits');
       });

@@ -1080,7 +1080,7 @@ describe('API Keys Tab', () => {
       expect(testBtns.length).toBeGreaterThanOrEqual(1);
     });
     const testBtns = screen.getAllByText('Tester');
-    fireEvent.click(testBtns[0]);
+    fireEvent.click(testBtns[0]!);
     await waitFor(() => {
       expect(fetchCallCount['api-keys-test']).toBeGreaterThanOrEqual(1);
       expect(fetchMethods['api-keys-test']).toContain('POST');
@@ -1090,7 +1090,7 @@ describe('API Keys Tab', () => {
   it('test success shows valid toast', async () => {
     await goToKeysTab();
     await waitFor(() => expect(screen.getAllByText('Tester').length).toBeGreaterThanOrEqual(1));
-    fireEvent.click(screen.getAllByText('Tester')[0]);
+    fireEvent.click(screen.getAllByText('Tester')[0]!);
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledWith(expect.stringContaining('Clé valide'));
     });
@@ -1122,7 +1122,7 @@ describe('API Keys Tab', () => {
     switchToTab('Clés API');
     await waitFor(() => expect(screen.getByText("Clés d'accès API")).toBeInTheDocument());
     await waitFor(() => expect(screen.getAllByText('Tester').length).toBeGreaterThanOrEqual(1));
-    fireEvent.click(screen.getAllByText('Tester')[0]);
+    fireEvent.click(screen.getAllByText('Tester')[0]!);
     await waitFor(() => {
       expect(toastError).toHaveBeenCalled();
     });
@@ -1147,7 +1147,7 @@ describe('API Keys Tab', () => {
     // Click the confirm button (in the banner — last one)
     const confirmBtn = deleteBtns.find(
       (btn) => btn.closest('div[style*="danger"]') !== null,
-    ) ?? deleteBtns[deleteBtns.length - 1];
+    ) ?? deleteBtns[deleteBtns.length - 1]!;
     fireEvent.click(confirmBtn);
     await waitFor(() => {
       expect(fetchMethods['api-keys']).toContain('DELETE');
@@ -1174,7 +1174,7 @@ describe('API Keys Tab', () => {
     switchToTab('Clés API');
     await waitFor(() => expect(screen.getByText("Clés d'accès API")).toBeInTheDocument());
     await waitFor(() => expect(screen.getAllByText('Tester').length).toBeGreaterThanOrEqual(1));
-    fireEvent.click(screen.getAllByText('Tester')[0]);
+    fireEvent.click(screen.getAllByText('Tester')[0]!);
     await waitFor(() => {
       expect(toastError).toHaveBeenCalledWith('Trop de tentatives. Réessayez dans 1 minute.');
     });
@@ -1320,7 +1320,7 @@ describe('Multiple providers', () => {
     await renderAndWait();
     const editBtns = screen.getAllByText('Éditer');
     expect(editBtns.length).toBe(2);
-    fireEvent.click(editBtns[0]);
+    fireEvent.click(editBtns[0]!);
     await waitFor(() => expect(screen.getByText('Sauvegarder')).toBeInTheDocument());
     // The edited provider's Edit button is disabled, but the other provider still has an active one
     const remainingEditBtns = screen.getAllByText('Éditer');
@@ -1712,7 +1712,7 @@ describe('Higgsfield Provider Integration', () => {
 
     // Add Higgsfield unconfigured key to the API keys list
     (fetchResponses.apiKeys as { apiKeys: ReturnType<typeof buildApiKeyInfo>[] }).apiKeys.push(
-      buildUnconfiguredKey('higgsfield', 'Higgsfield AI'),
+      buildUnconfiguredKey('higgsfield', 'Higgsfield AI') as unknown as ReturnType<typeof buildApiKeyInfo>,
     );
 
     installFetchMock();
@@ -1744,7 +1744,7 @@ describe('Higgsfield Provider Integration', () => {
     const editBtns = screen.getAllByText('Éditer');
     expect(editBtns.length).toBe(2);
     // Click the Higgsfield Edit button (second one)
-    fireEvent.click(editBtns[1]);
+    fireEvent.click(editBtns[1]!);
     await waitFor(() => {
       expect(screen.getByText('Sauvegarder')).toBeInTheDocument();
       expect(screen.getByText('Annuler')).toBeInTheDocument();
@@ -1754,7 +1754,7 @@ describe('Higgsfield Provider Integration', () => {
   it('edit form shows ModelSelector for Higgsfield', async () => {
     await renderAndWait();
     const editBtns = screen.getAllByText('Éditer');
-    fireEvent.click(editBtns[1]);
+    fireEvent.click(editBtns[1]!);
     await waitFor(() => {
       const selectors = screen.getAllByTestId('model-selector');
       const hfSelector = selectors.find((el) => el.getAttribute('data-provider') === 'higgsfield');
@@ -1766,7 +1766,7 @@ describe('Higgsfield Provider Integration', () => {
   it('no Base URL field for Higgsfield (it is not Ollama)', async () => {
     await renderAndWait();
     const editBtns = screen.getAllByText('Éditer');
-    fireEvent.click(editBtns[1]);
+    fireEvent.click(editBtns[1]!);
     await waitFor(() => expect(screen.getByText('Sauvegarder')).toBeInTheDocument());
     expect(screen.queryByText('URL de base Ollama')).not.toBeInTheDocument();
   });
@@ -1788,7 +1788,7 @@ describe('Higgsfield Provider Integration', () => {
 
     await renderAndWait();
     const editBtns = screen.getAllByText('Éditer');
-    fireEvent.click(editBtns[1]);
+    fireEvent.click(editBtns[1]!);
     await waitFor(() => expect(screen.getByText('Sauvegarder')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Sauvegarder'));
 
@@ -1850,7 +1850,7 @@ describe('Higgsfield Provider Integration', () => {
           };
         }
         return k;
-      });
+      }) as unknown as ReturnType<typeof buildApiKeyInfo>[];
     // Reinstall the mock with updated responses
     vi.restoreAllMocks();
     installFetchMock();

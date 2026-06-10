@@ -40,10 +40,10 @@ function fillRequiredFields() {
   const selects = Array.from(
     document.querySelectorAll('select'),
   ) as HTMLSelectElement[];
-  fireEvent.change(selects[0], { target: { value: 'awareness' } });
-  fireEvent.change(selects[1], { target: { value: 'instagram' } });
-  fireEvent.change(selects[2], { target: { value: 'reel' } });
-  fireEvent.change(selects[3], { target: { value: 'empowering' } });
+  fireEvent.change(selects[0]!, { target: { value: 'awareness' } });
+  fireEvent.change(selects[1]!, { target: { value: 'instagram' } });
+  fireEvent.change(selects[2]!, { target: { value: 'reel' } });
+  fireEvent.change(selects[3]!, { target: { value: 'empowering' } });
   fireEvent.change(screen.getByPlaceholderText(/message principal/i), {
     target: { value: 'Test message' },
   });

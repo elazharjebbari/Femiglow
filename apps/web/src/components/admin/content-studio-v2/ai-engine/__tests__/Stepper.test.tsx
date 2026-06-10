@@ -19,26 +19,26 @@ import type { Phase, StepDef } from '../Stepper';
 describe('mapPhaseToSteps', () => {
   it('brief phase → step 0 active, rest pending', () => {
     const steps = mapPhaseToSteps('brief');
-    expect(steps[0].status).toBe('active');
-    expect(steps[1].status).toBe('pending');
-    expect(steps[2].status).toBe('pending');
-    expect(steps[3].status).toBe('pending');
+    expect(steps[0]!.status).toBe('active');
+    expect(steps[1]!.status).toBe('pending');
+    expect(steps[2]!.status).toBe('pending');
+    expect(steps[3]!.status).toBe('pending');
   });
 
   it('generating phase → step 0 completed, step 1 active, rest pending', () => {
     const steps = mapPhaseToSteps('generating');
-    expect(steps[0].status).toBe('completed');
-    expect(steps[1].status).toBe('active');
-    expect(steps[2].status).toBe('pending');
-    expect(steps[3].status).toBe('pending');
+    expect(steps[0]!.status).toBe('completed');
+    expect(steps[1]!.status).toBe('active');
+    expect(steps[2]!.status).toBe('pending');
+    expect(steps[3]!.status).toBe('pending');
   });
 
   it('review phase → steps 0-1 completed, step 2 active, step 3 pending', () => {
     const steps = mapPhaseToSteps('review');
-    expect(steps[0].status).toBe('completed');
-    expect(steps[1].status).toBe('completed');
-    expect(steps[2].status).toBe('active');
-    expect(steps[3].status).toBe('pending');
+    expect(steps[0]!.status).toBe('completed');
+    expect(steps[1]!.status).toBe('completed');
+    expect(steps[2]!.status).toBe('active');
+    expect(steps[3]!.status).toBe('pending');
   });
 
   it('reviewing phase → same as review', () => {
@@ -49,18 +49,18 @@ describe('mapPhaseToSteps', () => {
 
   it('result phase → steps 0-2 completed, step 3 active', () => {
     const steps = mapPhaseToSteps('result');
-    expect(steps[0].status).toBe('completed');
-    expect(steps[1].status).toBe('completed');
-    expect(steps[2].status).toBe('completed');
-    expect(steps[3].status).toBe('active');
+    expect(steps[0]!.status).toBe('completed');
+    expect(steps[1]!.status).toBe('completed');
+    expect(steps[2]!.status).toBe('completed');
+    expect(steps[3]!.status).toBe('active');
   });
 
   it('error phase → step 0 completed, step 1 active (fallback)', () => {
     const steps = mapPhaseToSteps('error');
-    expect(steps[0].status).toBe('completed');
-    expect(steps[1].status).toBe('active');
-    expect(steps[2].status).toBe('pending');
-    expect(steps[3].status).toBe('pending');
+    expect(steps[0]!.status).toBe('completed');
+    expect(steps[1]!.status).toBe('active');
+    expect(steps[2]!.status).toBe('pending');
+    expect(steps[3]!.status).toBe('pending');
   });
 
   it('returns exactly 4 steps', () => {

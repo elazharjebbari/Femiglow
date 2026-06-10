@@ -61,7 +61,7 @@ describe('searchKnowledge', () => {
     vi.mocked(db).mockReturnValue(mockDb as never);
     vi.mocked(getEngineConfig).mockReturnValue({
       enabled: true,
-      apiKeys: { openai: 'test-key', anthropic: undefined, google: undefined, elevenlabs: undefined, ollamaBaseUrl: undefined },
+      apiKeys: { openai: 'test-key', anthropic: undefined, google: undefined, elevenlabs: undefined, higgsfield: undefined, ollamaBaseUrl: undefined },
       providers: {
         text: { default: 'openai', model: 'gpt-4o-mini' },
         image: { default: 'mock', model: 'mock' },
@@ -95,7 +95,7 @@ describe('searchKnowledge', () => {
   it('returns empty array when no API key', async () => {
     vi.mocked(getEngineConfig).mockReturnValueOnce({
       enabled: true,
-      apiKeys: { openai: undefined, anthropic: undefined, google: undefined, elevenlabs: undefined, ollamaBaseUrl: undefined },
+      apiKeys: { openai: undefined, anthropic: undefined, google: undefined, elevenlabs: undefined, higgsfield: undefined, ollamaBaseUrl: undefined },
       providers: {
         text: { default: 'openai', model: 'gpt-4o-mini' },
         image: { default: 'mock', model: 'mock' },

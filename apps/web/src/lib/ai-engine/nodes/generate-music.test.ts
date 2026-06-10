@@ -39,7 +39,7 @@ vi.mock('fluent-ffmpeg', () => {
     }),
   };
   const ffmpeg = vi.fn(() => cmd);
-  (ffmpeg as Record<string, unknown>).setFfmpegPath = vi.fn();
+  (ffmpeg as unknown as Record<string, unknown>).setFfmpegPath = vi.fn();
   return { default: ffmpeg };
 });
 

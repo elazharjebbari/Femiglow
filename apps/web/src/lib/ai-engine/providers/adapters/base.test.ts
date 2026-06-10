@@ -16,7 +16,7 @@ import { ProviderAdapter } from './base';
 // ---------------------------------------------------------------------------
 
 class TestAdapter extends ProviderAdapter {
-  public generateTextFn = vi.fn<[TextGenParams], Promise<ProviderCallResult<TextGenResult>>>();
+  public generateTextFn = vi.fn<(params: TextGenParams) => Promise<ProviderCallResult<TextGenResult>>>();
 
   async generateText(params: TextGenParams): Promise<ProviderCallResult<TextGenResult>> {
     return this.circuitBreaker.execute(() =>

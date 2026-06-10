@@ -43,13 +43,13 @@ function fillRequiredFields() {
   const selects = getSelects();
 
   // Objective
-  fireEvent.change(selects[0], { target: { value: 'awareness' } });
+  fireEvent.change(selects[0]!, { target: { value: 'awareness' } });
   // Platform
-  fireEvent.change(selects[1], { target: { value: 'instagram' } });
+  fireEvent.change(selects[1]!, { target: { value: 'instagram' } });
   // Format
-  fireEvent.change(selects[2], { target: { value: 'single_image' } });
+  fireEvent.change(selects[2]!, { target: { value: 'single_image' } });
   // Tone
-  fireEvent.change(selects[3], { target: { value: 'empowering' } });
+  fireEvent.change(selects[3]!, { target: { value: 'empowering' } });
 
   // Key message
   const keyMessageTextarea = screen.getByPlaceholderText(
@@ -87,7 +87,7 @@ describe('AIEngineCreatePage', () => {
   it('objective dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
     const selects = getSelects();
-    const options = selects[0].querySelectorAll('option');
+    const options = selects[0]!.querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('awareness');
     expect(values).toContain('engagement');
@@ -100,7 +100,7 @@ describe('AIEngineCreatePage', () => {
   it('platform dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
     const selects = getSelects();
-    const options = selects[1].querySelectorAll('option');
+    const options = selects[1]!.querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('instagram');
     expect(values).toContain('tiktok');
@@ -113,7 +113,7 @@ describe('AIEngineCreatePage', () => {
   it('format dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
     const selects = getSelects();
-    const options = selects[2].querySelectorAll('option');
+    const options = selects[2]!.querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('reel');
     expect(values).toContain('carousel');
@@ -126,7 +126,7 @@ describe('AIEngineCreatePage', () => {
   it('tone dropdown has correct options', () => {
     render(<AIEngineCreatePage />);
     const selects = getSelects();
-    const options = selects[3].querySelectorAll('option');
+    const options = selects[3]!.querySelectorAll('option');
     const values = Array.from(options).map((o) => o.getAttribute('value'));
     expect(values).toContain('empowering');
     expect(values).toContain('educational');
@@ -271,7 +271,7 @@ describe('AIEngineCreatePage', () => {
   it('form maps format values correctly (single_image value exists)', () => {
     render(<AIEngineCreatePage />);
     const selects = getSelects();
-    fireEvent.change(selects[2], { target: { value: 'single_image' } });
+    fireEvent.change(selects[2]!, { target: { value: 'single_image' } });
     expect(selects[2]).toHaveValue('single_image');
   });
 

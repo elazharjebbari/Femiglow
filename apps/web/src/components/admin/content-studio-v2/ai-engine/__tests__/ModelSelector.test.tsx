@@ -469,7 +469,7 @@ describe('ModelSelector', () => {
       render(<ModelSelector {...defaultProps({ providerType: 'anthropic' })} />);
       await openPopover();
       await waitFor(() => expect(spy).toHaveBeenCalled());
-      const url = String(spy.mock.calls[0][0]);
+      const url = String(spy.mock.calls[0]![0]);
       expect(url).toContain('provider=anthropic');
     });
 
@@ -478,7 +478,7 @@ describe('ModelSelector', () => {
       render(<ModelSelector {...defaultProps({ capabilityFilter: 'embedding' })} />);
       await openPopover();
       await waitFor(() => expect(spy).toHaveBeenCalled());
-      const url = String(spy.mock.calls[0][0]);
+      const url = String(spy.mock.calls[0]![0]);
       expect(url).toContain('capability=embedding');
     });
 

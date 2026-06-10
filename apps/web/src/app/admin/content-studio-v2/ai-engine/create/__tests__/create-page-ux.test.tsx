@@ -534,7 +534,7 @@ describe('AIEngineCreatePage — UX features integration', () => {
         expect(fetchSpy).toHaveBeenCalledTimes(1);
       });
 
-      const [url, options] = fetchSpy.mock.calls[0];
+      const [url, options] = fetchSpy.mock.calls[0]!;
       expect(url).toBe('/api/admin/ai-engine/generate');
       expect(options.method).toBe('POST');
 
@@ -560,7 +560,7 @@ describe('AIEngineCreatePage — UX features integration', () => {
         expect(fetchSpy).toHaveBeenCalled();
       });
 
-      const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body);
       expect(body.model).toBe('glm-5.1:cloud');
     });
 
@@ -583,7 +583,7 @@ describe('AIEngineCreatePage — UX features integration', () => {
         expect(fetchSpy).toHaveBeenCalled();
       });
 
-      const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body);
       expect(body.model).toBe('gpt-4o');
     });
 
@@ -607,7 +607,7 @@ describe('AIEngineCreatePage — UX features integration', () => {
         expect(fetchSpy).toHaveBeenCalled();
       });
 
-      const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body);
       expect(body.humanReviewRequired).toBe(true);
     });
 
@@ -625,7 +625,7 @@ describe('AIEngineCreatePage — UX features integration', () => {
         expect(fetchSpy).toHaveBeenCalled();
       });
 
-      const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body);
       expect(body.temperature).toBe(0.7);
     });
 
@@ -643,7 +643,7 @@ describe('AIEngineCreatePage — UX features integration', () => {
         expect(fetchSpy).toHaveBeenCalled();
       });
 
-      const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+      const body = JSON.parse(fetchSpy.mock.calls[0]![1].body);
       expect(body.maxTokens).toBe(4096);
     });
   });

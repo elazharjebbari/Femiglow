@@ -34,7 +34,7 @@ vi.mock('sharp', () => {
     toBuffer: vi.fn().mockResolvedValue(Buffer.from('exported image')),
   };
   const fn = vi.fn(() => instance);
-  (fn as Record<string, unknown>).__instance = instance;
+  (fn as unknown as Record<string, unknown>).__instance = instance;
   return { default: fn };
 });
 
@@ -61,7 +61,7 @@ vi.mock('fluent-ffmpeg', () => {
     }),
   };
   const ffmpeg = vi.fn(() => cmd);
-  (ffmpeg as Record<string, unknown>).setFfmpegPath = vi.fn();
+  (ffmpeg as unknown as Record<string, unknown>).setFfmpegPath = vi.fn();
   return { default: ffmpeg };
 });
 

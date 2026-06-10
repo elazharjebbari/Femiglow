@@ -149,7 +149,7 @@ describe('PublishSection (via GenerationResult, Gap #32)', () => {
     });
 
     // Verify the body includes draftId and mode
-    const callBody = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    const callBody = JSON.parse(fetchSpy.mock.calls[0]![1].body);
     expect(callBody.draftId).toBe('draft_pub_1');
     expect(callBody.mode).toBe('now');
   });

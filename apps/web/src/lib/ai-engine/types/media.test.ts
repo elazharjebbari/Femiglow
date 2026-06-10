@@ -71,6 +71,6 @@ describe('structural typing (extra fields)', () => {
     // Casting through unknown simulates receiving data with extra fields.
     const extended = { ...asset, customField: 'extra', priority: 1 } as unknown as MediaAsset;
     expect(extended.assetId).toBe('asset-002');
-    expect((extended as Record<string, unknown>)['customField']).toBe('extra');
+    expect((extended as unknown as Record<string, unknown>)['customField']).toBe('extra');
   });
 });
