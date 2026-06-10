@@ -44,6 +44,16 @@ export const SearchInputSchema = z.object({
   sort: z.enum(['date_desc', 'date_asc', 'status', 'template', 'attempts_desc']).optional(),
 });
 
+/**
+ * Export CSV serveur (CKPT-01) : MÊME forme de filtre que /search mais SANS
+ * pagination — l'export couvre l'ensemble du filtre (keyset interne).
+ */
+export const ExportInputSchema = z.object({
+  filters: z.array(ParsedFilterSchema).max(20),
+  freetext: z.string().max(200).optional(),
+});
+export type ExportInputDto = z.infer<typeof ExportInputSchema>;
+
 export const SummaryQuerySchema = z.object({
   window: z.enum(['1h', '24h', '7d', '30d']),
 });

@@ -263,7 +263,9 @@ function parseSingleFilter(
   now: Date,
 ): ParsedFilter | { error: string } {
   if (rawValue.length === 0) {
-    return { error: `Valeur manquante pour ${key}:` };
+    // Messages alignés sur la spec F04 §6 (CKPT-03) — affichés tels quels
+    // dans la section d'erreurs du cockpit.
+    return { error: `Valeur manquante pour « ${key}: »` };
   }
 
   switch (key) {
@@ -275,7 +277,7 @@ function parseSingleFilter(
         if ((OUTBOX_STATUSES as readonly string[]).includes(p)) {
           valid.push(p as OutboxStatus);
         } else {
-          return { error: `Statut inconnu : "${p}"` };
+          return { error: `Statut inconnu : « ${p} ». Valides : failed, dlq, delivered…` };
         }
       }
       if (valid.length === 0) {
@@ -294,19 +296,19 @@ function parseSingleFilter(
     case 'after':
     case 'before': {
       const d = parseDate(rawValue, now);
-      if (!d) return { error: `Date invalide : "${rawValue}"` };
+      if (!d) return { error: `Date invalide : « ${rawValue} ». Formats : 2026-05-01, today, -7d` };
       return { key, value: d, raw };
     }
 
     case 'attempts': {
       const parsed = parseAttemptsValue(rawValue);
-      if (!parsed) return { error: `Format attempts invalide : "${rawValue}"` };
+      if (!parsed) return { error: `« ${rawValue} » ignoré — attendu : >N, <N, =N` };
       return { key: 'attempts', operator: parsed.operator, value: parsed.value, raw };
     }
 
     case 'has': {
       if (rawValue.toLowerCase() !== 'error') {
-        return { error: `has: seul "error" est supporté (reçu : "${rawValue}")` };
+        return { error: `« has: » n'accepte que « error » (reçu : « ${rawValue} »)` };
       }
       return { key: 'has', value: 'error', raw };
     }

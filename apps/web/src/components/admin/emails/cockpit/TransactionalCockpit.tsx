@@ -15,6 +15,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { buildCsvDocument, csvFilename } from '@/lib/mail/transactional/csv';
+import { offsetForPage, pageCount, COCKPIT_PAGE_SIZE } from '@/lib/mail/transactional/pagination';
 import {
   deserializeFilters,
   parseFilters,
@@ -29,7 +31,7 @@ import { SavedViewsSidebar, type SidebarView } from './SavedViewsSidebar';
 import { FilteredTable } from './FilteredTable';
 import { BulkActionsBar } from './BulkActionsBar';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = COCKPIT_PAGE_SIZE;
 
 type SearchResultDto = {
   rows: OutboxSearchRow[];
@@ -109,40 +111,17 @@ function filterStateToQuery(filterState?: SidebarView['filterState']): string {
   return segments.join(' ');
 }
 
-/**
- * Échappe un champ CSV selon RFC 4180 : si le champ contient une virgule, un
- * guillemet ou un retour ligne, on l'entoure de guillemets et on double les
- * guillemets internes. `null`/`undefined` → champ vide.
- */
-function csvEscape(value: unknown): string {
-  const s = value == null ? '' : String(value);
-  if (/[",\r\n]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-}
 
-const CSV_HEADERS = ['id', 'date', 'destinataire', 'nom', 'template', 'sujet', 'statut', 'tentatives'] as const;
-
-/** Construit le contenu CSV (BOM UTF-8 + en-têtes + lignes) pour les rows. */
-function buildCsv(rows: OutboxSearchRow[]): string {
-  const lines = [CSV_HEADERS.join(',')];
-  for (const r of rows) {
-    lines.push(
-      [
-        csvEscape(r.id),
-        csvEscape(r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt),
-        csvEscape(r.toEmail),
-        csvEscape(r.toName),
-        csvEscape(r.template),
-        csvEscape(r.subject),
-        csvEscape(r.status),
-        csvEscape(`${r.attempts}/${r.maxAttempts}`),
-      ].join(','),
-    );
-  }
-  // BOM UTF-8 (U+FEFF) pour qu'Excel fr lise correctement les accents.
-  return `﻿${lines.join('\r\n')}`;
+/** Déclenche un téléchargement navigateur depuis un Blob (a[download] éphémère). */
+function triggerDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps) {
@@ -215,6 +194,29 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
   // ── Feedback des actions sur les vues (rename/delete) ────────────────
   const [viewsError, setViewsError] = useState<string | null>(null);
 
+  // ── Export CSV (CKPT-01) — libellé HONNÊTE page vs serveur ────────────
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportCapped, setExportCapped] = useState(false);
+
+  // ── Bannière contexte santé (DASH-12) : ?from=health&check=&at= ───────
+  const [healthBanner, setHealthBanner] = useState<{ check: string | null; at: string | null } | null>(
+    () =>
+      searchParams.get('from') === 'health'
+        ? { check: searchParams.get('check'), at: searchParams.get('at') }
+        : null,
+  );
+  const dismissHealthBanner = useCallback(() => {
+    setHealthBanner(null);
+    // Nettoie l'URL (pas de réapparition au refresh) en préservant les filtres.
+    const params = new URLSearchParams(window.location.search);
+    params.delete('from');
+    params.delete('check');
+    params.delete('at');
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : '?', { scroll: false });
+  }, [router]);
+
   // ── Saved views ──────────────────────────────────────────────────────
   const [views, setViews] = useState<SidebarView[]>(initialViews);
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
@@ -263,6 +265,13 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
   const goNext = useCallback(() => {
     setOffset((o) => o + PAGE_SIZE);
   }, []);
+
+  // Saut de page (CKPT-12) : champ contrôlé, resynchronisé quand l'offset
+  // change par un autre chemin (Précédent/Suivant, changement de filtre).
+  const [pageInput, setPageInput] = useState('1');
+  useEffect(() => {
+    setPageInput(String(Math.floor(offset / PAGE_SIZE) + 1));
+  }, [offset]);
 
   const handleKpiClick = useCallback(
     (kind: 'delivered' | 'queued' | 'failed' | 'hardBounced') => {
@@ -318,10 +327,11 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
       }
       const body = (await res.json().catch(() => ({}))) as { reaped?: number };
       const n = body.reaped ?? 0;
+      // CKPT-07 : le feedback dit OÙ vont les lignes libérées.
       setReapFeedback(
         n === 0
           ? 'Aucun envoi bloqué à libérer.'
-          : `${n} envoi${n > 1 ? 's' : ''} bloqué${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''}.`,
+          : `${n} envoi${n > 1 ? 's' : ''} bloqué${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''} → re-mis en file (ou DLQ si plafond).`,
       );
       await fetchSearch();
       await summary.refresh();
@@ -496,19 +506,56 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
       const idSet = new Set(ids);
       const rows = (searchResult?.rows ?? []).filter((r) => idSet.has(String(r.id)));
       if (rows.length === 0) return;
-      const csv = buildCsv(rows);
+      const csv = buildCsvDocument(rows);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `emails-transactionnels-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      triggerDownload(blob, csvFilename());
     },
     [searchResult],
   );
+
+  /**
+   * Export CSV de l'ENSEMBLE du filtre (CKPT-01) :
+   *  - total <= page → chemin CLIENT (page courante), libellé « (page) » ;
+   *  - total > page  → POST /export (stream serveur, keyset, cap 100 000).
+   * Anti double-clic (exportBusy) ; échec → message visible + Réessayer ;
+   * réponse cappée (X-Export-Capped) → message « affinez les filtres ».
+   */
+  const handleExportAll = useCallback(async () => {
+    if (exportBusy) return;
+    setExportError(null);
+    setExportCapped(false);
+
+    const rows = searchResult?.rows ?? [];
+    if (total <= rows.length) {
+      // Page unique : le chemin client suffit (et le dit honnêtement).
+      if (rows.length === 0) return;
+      triggerDownload(
+        new Blob([buildCsvDocument(rows)], { type: 'text/csv;charset=utf-8' }),
+        csvFilename(),
+      );
+      return;
+    }
+
+    setExportBusy(true);
+    try {
+      const res = await fetch('/api/admin/emails/transactional/export', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ filters: parseResult.filters, freetext: parseResult.freetext }),
+      });
+      if (!res.ok) {
+        setExportError(await describeHttpError(res));
+        return; // pas de faux téléchargement.
+      }
+      setExportCapped(res.headers.get('x-export-capped') === 'true');
+      const blob = await res.blob();
+      triggerDownload(blob, csvFilename());
+    } catch {
+      setExportError('Échec réseau : impossible de joindre le serveur. Réessaie.');
+    } finally {
+      setExportBusy(false);
+    }
+  }, [exportBusy, searchResult, total, parseResult]);
 
   const handleBulkAction = useCallback(
     (id: 'retry' | 'suppress' | 'export' | 'clear') => {
@@ -601,6 +648,35 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
 
   return (
     <div>
+      {/* Bannière contexte santé (DASH-12) — l'opérateur sait POURQUOI il est là. */}
+      {healthBanner && (
+        <div
+          role="status"
+          data-testid="health-context-banner"
+          className="mb-4 flex items-center justify-between gap-3 rounded-md border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-900"
+        >
+          <span>
+            Vous arrivez depuis le contrôle santé
+            {healthBanner.check ? (
+              <>
+                {' '}
+                (raison : <code className="font-mono text-xs">{healthBanner.check}</code>
+                {healthBanner.at ? <>, relevé à {new Date(healthBanner.at).toISOString().slice(11, 16)}</> : null})
+              </>
+            ) : null}
+            . La liste est déjà filtrée sur la population concernée.
+          </span>
+          <button
+            type="button"
+            onClick={dismissHealthBanner}
+            aria-label="Fermer la bannière santé"
+            className="shrink-0 rounded border border-sky-300 px-2 py-0.5 text-xs font-medium text-sky-800 hover:bg-sky-100"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
+
       {/* Header KPI */}
       <div className="mb-6">
         <KpiHeader
@@ -658,6 +734,62 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
               effacer
             </button>
           </>
+        )}
+      </div>
+
+      {/* Erreurs de parsing VISIBLES (CKPT-03) — les filtres valides restent appliqués. */}
+      {parseResult.errors.length > 0 && (
+        <div
+          role="alert"
+          data-testid="filter-parse-errors"
+          className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
+          <p className="font-medium">
+            {parseResult.errors.length} filtre{parseResult.errors.length > 1 ? 's' : ''} ignoré
+            {parseResult.errors.length > 1 ? 's' : ''} — les filtres valides restent appliqués :
+          </p>
+          <ul className="mt-1 list-inside list-disc space-y-0.5">
+            {parseResult.errors.map((err) => (
+              <li key={`${err.position}-${err.raw}`}>
+                <code className="font-mono text-xs">{err.raw}</code> : {err.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Export CSV — libellé HONNÊTE sur le périmètre (CKPT-01). */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void handleExportAll()}
+          disabled={exportBusy || isSearching || total === 0}
+          aria-busy={exportBusy}
+          data-testid="export-all-btn"
+          className="rounded border border-stone-300 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+        >
+          {exportBusy
+            ? "Préparation de l'export…"
+            : total > rowsLength
+              ? `Exporter CSV (serveur, ~${total.toLocaleString('fr-FR')}${searchResult?.window === 'truncated' ? '+' : ''} lignes)`
+              : 'Exporter CSV (page)'}
+        </button>
+        {exportCapped && (
+          <span data-testid="export-capped-msg" className="text-xs text-amber-700">
+            Export limité aux 100 000 premières lignes — affinez les filtres.
+          </span>
+        )}
+        {exportError && (
+          <span role="alert" data-testid="export-error" className="flex items-center gap-2 text-xs text-red-700">
+            {exportError}
+            <button
+              type="button"
+              onClick={() => void handleExportAll()}
+              className="rounded border border-red-300 px-2 py-0.5 font-medium hover:bg-red-100"
+            >
+              Réessayer
+            </button>
+          </span>
         )}
       </div>
 
@@ -846,12 +978,46 @@ export function TransactionalCockpit({ initialViews }: TransactionalCockpitProps
               data-testid="cockpit-pagination"
               className="flex items-center justify-between rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-600"
             >
-              <span data-testid="pagination-range">
+              <span
+                data-testid="pagination-range"
+                title={
+                  searchResult?.window === 'truncated'
+                    ? 'Plus de 5 000 résultats — compte exact non calculé. Affinez.'
+                    : undefined
+                }
+              >
                 {rangeStart.toLocaleString('fr-FR')}–{rangeEnd.toLocaleString('fr-FR')} sur{' '}
                 {total.toLocaleString('fr-FR')}
                 {searchResult?.window === 'truncated' ? '+' : ''}
               </span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                {/* Saut de page direct (CKPT-12) — bornes pures, jamais d'erreur. */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const next = offsetForPage(pageInput, total);
+                    if (next === null) {
+                      setPageInput(String(Math.floor(offset / PAGE_SIZE) + 1)); // non numérique → reset
+                      return;
+                    }
+                    setOffset(next);
+                    setPageInput(String(next / PAGE_SIZE + 1));
+                  }}
+                  className="flex items-center gap-1 text-xs"
+                >
+                  <label htmlFor="page-jump-input" className="text-stone-500">
+                    Aller à :
+                  </label>
+                  <input
+                    id="page-jump-input"
+                    data-testid="page-jump-input"
+                    inputMode="numeric"
+                    value={pageInput}
+                    onChange={(e) => setPageInput(e.target.value)}
+                    className="w-12 rounded border border-stone-300 px-1.5 py-0.5 text-center"
+                  />
+                  <span className="text-stone-400">/ {pageCount(total)}</span>
+                </form>
                 <button
                   type="button"
                   onClick={goPrev}

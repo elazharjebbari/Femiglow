@@ -164,7 +164,19 @@ function KpiCard({
       </div>
       <div className="mt-2 text-3xl font-semibold tabular-nums text-stone-900">{value.toLocaleString('fr-FR')}</div>
       <div className="mt-1 flex items-center justify-between text-xs">
-        <Sparkline values={sparklineValues} variant={sparklineVariant} />
+        {sparklineValues.length > 0 ? (
+          <Sparkline values={sparklineValues} variant={sparklineVariant} />
+        ) : (
+          // CKPT-05 : pas de série pour cette métrique (instantané) — un
+          // placeholder EXPLIQUÉ plutôt qu'un graphe plat trompeur.
+          <span
+            data-testid="sparkline-placeholder"
+            title="Pas de série temporelle pour la file (instantané)."
+            className="text-stone-600"
+          >
+            —
+          </span>
+        )}
         <Trend pct={pct} higherIsBad={higherIsBad} />
       </div>
     </button>

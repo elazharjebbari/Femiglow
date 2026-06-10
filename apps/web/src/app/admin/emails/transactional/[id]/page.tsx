@@ -8,6 +8,7 @@ import { AdminShell } from '@/components/admin/AdminShell';
 import { getOutboxRow, getOutboxTimeline } from '@/lib/admin/emails/queries';
 import { StatusBadge } from '@/components/admin/emails/common/StatusBadge';
 import { RetryButton } from '@/components/admin/emails/cockpit/RetryButton';
+import { formatAbsolute } from '@/components/admin/emails/ui/format-datetime';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,7 @@ export default async function OutboxDetailPage({
         <section className="rounded-lg border border-stone-200 bg-white p-4">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600">Métadonnées</h2>
           <dl className="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
-            <Field label="Date" value={new Date(row.createdAt).toLocaleString('fr-FR')} />
+            <Field label="Date" value={formatAbsolute(new Date(row.createdAt).toISOString())} />
             <Field label="Template" value={<code className="text-xs">{row.template} v{row.templateVersion}</code>} />
             <Field label="Destinataire" value={row.toName ? `${row.toName} <${row.toEmail}>` : row.toEmail} />
             <Field label="From" value={row.fromEmail} />
@@ -67,7 +68,7 @@ export default async function OutboxDetailPage({
             <Field label="Source" value={<code className="text-xs">{row.source ?? '—'}</code>} />
             <Field label="SMTP Message-ID" value={<code className="text-xs">{row.smtpMessageId ?? '—'}</code>} />
             <Field label="SMTP Response" value={row.smtpResponse ?? '—'} />
-            <Field label="Livré à" value={row.deliveredAt ? new Date(row.deliveredAt).toLocaleString('fr-FR') : '—'} />
+            <Field label="Livré à" value={row.deliveredAt ? formatAbsolute(new Date(row.deliveredAt).toISOString()) : '—'} />
           </dl>
 
           {row.lastError ? (
@@ -96,9 +97,27 @@ export default async function OutboxDetailPage({
         </section>
       </div>
 
-      {/* Timeline */}
+      {/* Timeline pédagogique (CKP-F13) */}
       <section className="mt-6 rounded-lg border border-stone-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600">Timeline</h2>
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-600">Timeline</h2>
+          {/* Légende : l'opérateur distingue ce qui vient du MONDE (webhook)
+              de ce que l'app a décidé elle-même. */}
+          <p data-testid="timeline-legend" className="text-xs text-stone-500">
+            <span aria-hidden="true">📡</span> webhook Stalwart · <span aria-hidden="true">⚙</span> app
+          </p>
+        </div>
+        {row.status === 'sent' && !row.deliveredAt ? (
+          <div
+            data-testid="sent-stagnant-info"
+            className="mb-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900"
+          >
+            <span aria-hidden="true" className="mr-1">ⓘ</span>
+            Cet envoi est resté à « Envoyé » sans confirmation de livraison : soit le
+            destinataire est une boîte LOCALE (Stalwart n'émet pas d'event delivered),
+            soit le webhook est muet — vérifie les events si le cas se répète.
+          </div>
+        ) : null}
         {timeline.length === 0 ? (
           <p className="text-sm text-stone-500">Aucun event enregistré.</p>
         ) : (
@@ -113,15 +132,18 @@ export default async function OutboxDetailPage({
                 <li key={evt.id} className="text-sm">
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-xs text-stone-500 whitespace-nowrap">
-                      {new Date(evt.ts).toLocaleString('fr-FR', { hour12: false })}
+                      <time dateTime={new Date(evt.ts).toISOString()}>
+                        {formatAbsolute(new Date(evt.ts).toISOString())}
+                      </time>
                     </span>
                     <span className="font-medium text-stone-900">{evt.type}</span>
                     <span
+                      data-testid={`timeline-source-${evt.id}`}
                       className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                        isWebhook ? 'bg-blue-50 text-blue-700' : 'bg-stone-100 text-stone-600'
+                        isWebhook ? 'bg-sky-100 text-sky-800' : 'bg-stone-100 text-stone-600'
                       }`}
                     >
-                      via {evt.source}
+                      <span aria-hidden="true">{isWebhook ? '📡' : '⚙'}</span> via {evt.source}
                     </span>
                   </div>
                   {hasPayload ? (
@@ -148,6 +170,17 @@ export default async function OutboxDetailPage({
           {JSON.stringify(row.payloadJson, null, 2)}
         </pre>
       </section>
+
+      {/* Retour collant (CKPT-09) — toujours accessible en bas d'une longue page. */}
+      <div className="sticky bottom-0 mt-6 -mx-1 border-t border-stone-200 bg-white/95 px-1 py-2 backdrop-blur">
+        <Link
+          href="/admin/emails/transactional"
+          data-testid="sticky-back-link"
+          className="text-sm font-medium text-stone-600 underline underline-offset-2 hover:text-stone-900"
+        >
+          ← Transactionnel
+        </Link>
+      </div>
     </AdminShell>
   );
 }

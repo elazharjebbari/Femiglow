@@ -11,38 +11,38 @@ F04-U-009,U,P1,CKP-F01 parser,has:error drapeau,"filter {key:has,value:error}",t
 F04-U-010,U,P1,CKP-F01 parser,token inconnu => freetext,'bonjour' va dans freetext pas dans errors,table_cas,nominal,a_implementer
 F04-U-011,U,P1,CKP-F01 parser,valeur entre guillemets avec espace,to:"a b@c" parse value='a b@c',table_cas,nominal,a_implementer
 F04-U-012,U,P1,CKP-F01 parser,escape \: littéral,token avec \: ne split pas la clé,table_cas,nominal,a_implementer
-F04-U-013,U,P0,CKPT-03 parser err,attempts:abc => erreur,errors contient message 'attendu >N <N =N' avec position,table_cas,CKPT-03,a_implementer
-F04-U-014,U,P0,CKPT-03 parser err,status:plop => erreur,errors message 'Statut inconnu plop',table_cas,CKPT-03,a_implementer
-F04-U-015,U,P0,CKPT-03 parser err,after:32/13 date invalide => erreur,errors message 'Date invalide',table_cas,CKPT-03,a_implementer
-F04-U-016,U,P1,CKPT-03 parser err,has:foo => erreur,errors message 'has n accepte que error',table_cas,CKPT-03,a_implementer
-F04-U-017,U,P1,CKPT-03 parser err,status: valeur manquante => erreur,errors message 'Valeur manquante pour status',table_cas,CKPT-03,a_implementer
-F04-U-018,U,P0,CKPT-03 parser err,parsing partiel status:failed attempts:abc,filters contient status:failed ET errors contient attempts:abc,table_cas,CKPT-03,a_implementer
-F04-U-019,U,P1,CKPT-03 parser err,position d'erreur exacte,errors[0].position = index du token fautif dans l'input,table_cas,CKPT-03,a_implementer
-F04-U-020,U,P1,CKP-F01 parser,combinaison 4 filtres valides,filters.length=4 errors vide ET freetext absent,table_cas,nominal,a_implementer
-F04-U-021,U,P1,CKP-F01 parser,opérateur inconnu attempts:>>3,errors (format attempts invalide),table_cas,CKPT-03,a_implementer
-F04-U-022,U,P1,CKP-F01 sérialisation,round-trip serialize/deserialize stable,deserializeFilters(serializeFilters(f)) == f,table_cas,nominal,a_implementer
-F04-U-023,U,P1,CKP-F01 sérialisation,after sérialisé en ISO,serializeFilters met after=ISO8601,table_cas,nominal,a_implementer
-F04-U-024,U,P0,CKPT-02 map skip,SKIP_REASON_FR traduit not_found,renvoie 'non trouvé',table_cas,CKPT-02,a_implementer
-F04-U-025,U,P0,CKPT-02 map skip,SKIP_REASON_FR traduit wrong_status,renvoie 'statut non relançable',table_cas,CKPT-02,a_implementer
-F04-U-026,U,P1,CKPT-02 map skip,SKIP_REASON_FR traduit suppressed,renvoie 'adresse en liste de suppression',table_cas,CKPT-02,a_implementer
-F04-U-027,U,P1,CKPT-02 map skip,SKIP_REASON_FR traduit cap_exceeded,renvoie 'au-delà du plafond de tentatives',table_cas,CKPT-02,a_implementer
-F04-U-028,U,P1,CKPT-02 map skip,agrégation skip distincte,2 not_found + 1 wrong_status => '2 non trouvé · 1 statut non relançable',table_cas,CKPT-02,a_implementer
-F04-U-029,U,P1,CKPT-12 saut page,offset depuis numéro de page,page 3 => offset 100 (PAGE_SIZE 50),table_cas,CKPT-12,a_implementer
-F04-U-030,U,P1,CKPT-12 saut page,borne page<1 ramenée à 1,page 0 => offset 0,table_cas,CKPT-12,a_implementer
-F04-U-031,U,P1,CKPT-12 saut page,borne page>max ramenée à dernière,page 99 sur 5 pages => offset 200,table_cas,CKPT-12,a_implementer
-F04-U-032,U,P1,export csvEscape,champ avec virgule entouré de guillemets,"'a,b' => '""a,b""'",table_cas,CKPT-01,a_implementer
-F04-U-033,U,P0,export csvEscape,guillemet interne doublé,'di"t' => '"di""t"',table_cas,CKPT-01,a_implementer
-F04-U-034,U,P1,export csvEscape,retour ligne entouré,'a\nb' => '"a\nb"',table_cas,CKPT-01,a_implementer
-F04-U-035,U,P1,export csvEscape,null => champ vide,null => '',table_cas,CKPT-01,a_implementer
+F04-U-013,U,P0,CKPT-03 parser err,attempts:abc => erreur,errors contient message 'attendu >N <N =N' avec position,table_cas,CKPT-03,implemente
+F04-U-014,U,P0,CKPT-03 parser err,status:plop => erreur,errors message 'Statut inconnu plop',table_cas,CKPT-03,implemente
+F04-U-015,U,P0,CKPT-03 parser err,after:32/13 date invalide => erreur,errors message 'Date invalide',table_cas,CKPT-03,implemente
+F04-U-016,U,P1,CKPT-03 parser err,has:foo => erreur,errors message 'has n accepte que error',table_cas,CKPT-03,implemente
+F04-U-017,U,P1,CKPT-03 parser err,status: valeur manquante => erreur,errors message 'Valeur manquante pour status',table_cas,CKPT-03,implemente
+F04-U-018,U,P0,CKPT-03 parser err,parsing partiel status:failed attempts:abc,filters contient status:failed ET errors contient attempts:abc,table_cas,CKPT-03,implemente
+F04-U-019,U,P1,CKPT-03 parser err,position d'erreur exacte,errors[0].position = index du token fautif dans l'input,table_cas,CKPT-03,implemente
+F04-U-020,U,P1,CKP-F01 parser,combinaison 4 filtres valides,filters.length=4 errors vide ET freetext absent,table_cas,nominal,implemente
+F04-U-021,U,P1,CKP-F01 parser,opérateur inconnu attempts:>>3,errors (format attempts invalide),table_cas,CKPT-03,implemente
+F04-U-022,U,P1,CKP-F01 sérialisation,round-trip serialize/deserialize stable,deserializeFilters(serializeFilters(f)) == f,table_cas,nominal,implemente
+F04-U-023,U,P1,CKP-F01 sérialisation,after sérialisé en ISO,serializeFilters met after=ISO8601,table_cas,nominal,implemente
+F04-U-024,U,P0,CKPT-02 map skip,SKIP_REASON_FR traduit not_found,renvoie 'non trouvé',table_cas,CKPT-02,implemente
+F04-U-025,U,P0,CKPT-02 map skip,SKIP_REASON_FR traduit wrong_status,renvoie 'statut non relançable',table_cas,CKPT-02,implemente
+F04-U-026,U,P1,CKPT-02 map skip,SKIP_REASON_FR traduit suppressed,renvoie 'adresse en liste de suppression',table_cas,CKPT-02,implemente
+F04-U-027,U,P1,CKPT-02 map skip,SKIP_REASON_FR traduit cap_exceeded,renvoie 'au-delà du plafond de tentatives',table_cas,CKPT-02,implemente
+F04-U-028,U,P1,CKPT-02 map skip,agrégation skip distincte,2 not_found + 1 wrong_status => '2 non trouvé · 1 statut non relançable',table_cas,CKPT-02,implemente
+F04-U-029,U,P1,CKPT-12 saut page,offset depuis numéro de page,page 3 => offset 100 (PAGE_SIZE 50),table_cas,CKPT-12,implemente
+F04-U-030,U,P1,CKPT-12 saut page,borne page<1 ramenée à 1,page 0 => offset 0,table_cas,CKPT-12,implemente
+F04-U-031,U,P1,CKPT-12 saut page,borne page>max ramenée à dernière,page 99 sur 5 pages => offset 200,table_cas,CKPT-12,implemente
+F04-U-032,U,P1,export csvEscape,champ avec virgule entouré de guillemets,"'a,b' => '""a,b""'",table_cas,CKPT-01,implemente
+F04-U-033,U,P0,export csvEscape,guillemet interne doublé,'di"t' => '"di""t"',table_cas,CKPT-01,implemente
+F04-U-034,U,P1,export csvEscape,retour ligne entouré,'a\nb' => '"a\nb"',table_cas,CKPT-01,implemente
+F04-U-035,U,P1,export csvEscape,null => champ vide,null => '',table_cas,CKPT-01,implemente
 F04-C-001,C,P0,CKP-F01 grammaire,saisie status:failed dans palette applique le filtre,un POST /search part avec filters=[status:failed],factory,nominal,a_implementer
 F04-C-002,C,P1,CKP-F02 autocomplete,frappe template déclenche suggestions debouncées,suggestions visibles après debounce (horloge contrôlée) sans requête par frappe,factory,nominal,a_implementer
 F04-C-003,C,P1,CKP-F02 autocomplete,frappe rapide annule la requête précédente,seule la dernière requête peuple les suggestions (abort),factory,nominal,a_implementer
 F04-C-004,C,P1,CKP-F04 tri,clic en-tête Date bascule desc->asc,aria-sort passe descending->ascending et POST sort=date_asc,factory,nominal,a_implementer
 F04-C-005,C,P1,CKP-F04 tri,changement de tri ramène page 1,offset repart à 0 sur changement de tri,factory,nominal,a_implementer
-F04-C-006,C,P0,CKPT-03 erreurs parsing,attempts:abc affiche warning + liseré,section role=alert présente ET input aria-invalid=true,factory,CKPT-03,a_implementer
-F04-C-007,C,P0,CKPT-03 erreurs parsing,un message par type d'erreur,saisie multi-erreurs affiche autant de lignes que d'erreurs,factory,CKPT-03,a_implementer
-F04-C-008,C,P0,CKPT-03 erreurs parsing,input 100% valide n'affiche aucun warning,ni alert ni aria-invalid quand errors vide,factory,CKPT-03,a_implementer
-F04-C-009,C,P1,CKPT-03 erreurs parsing,parsing partiel applique les filtres valides,status:failed appliqué malgré attempts:abc fautif,factory,CKPT-03,a_implementer
+F04-C-006,C,P0,CKPT-03 erreurs parsing,attempts:abc affiche warning + liseré,section role=alert présente ET input aria-invalid=true,factory,CKPT-03,implemente
+F04-C-007,C,P0,CKPT-03 erreurs parsing,un message par type d'erreur,saisie multi-erreurs affiche autant de lignes que d'erreurs,factory,CKPT-03,implemente
+F04-C-008,C,P0,CKPT-03 erreurs parsing,input 100% valide n'affiche aucun warning,ni alert ni aria-invalid quand errors vide,factory,CKPT-03,implemente
+F04-C-009,C,P1,CKPT-03 erreurs parsing,parsing partiel applique les filtres valides,status:failed appliqué malgré attempts:abc fautif,factory,CKPT-03,implemente
 F04-C-010,C,P0,CKPT-04 sélection,lien d'amorce apparaît seulement si total>page,total=5312 affiche le lien / total=12 ne l'affiche pas,factory,CKPT-04,a_implementer
 F04-C-011,C,P0,CKPT-04 sélection,clic amorce bascule en mode filtre,bannière '5 312 emails sélectionnés (filtre …) [annuler]' visible,factory,CKPT-04,a_implementer
 F04-C-012,C,P0,CKPT-04 sélection,compteur global exact,le bouton Retry affiche '(5 312)' pas '(50)',factory,CKPT-04,a_implementer
@@ -64,39 +64,39 @@ F04-C-027,C,P0,bulk-by-filter grille réseau,POST 422,alerte détail validation 
 F04-C-028,C,P0,bulk-by-filter grille réseau,POST 500,alerte 'réessaie' + pas de faux succès,factory,500,a_implementer
 F04-C-029,C,P0,bulk-by-filter grille réseau,POST hang,bouton aria-busy+disabled UN SEUL POST au double-clic,factory,hang,a_implementer
 F04-C-030,C,P0,bulk-by-filter grille réseau,POST network error,message réseau + Réessayer rejoue l'action,factory,network,a_implementer
-F04-C-031,C,P0,CKPT-01 export serveur,export déclenché avec les filtres du moment,POST /export body filterState == filtre courant,factory,CKPT-01,a_implementer
-F04-C-032,C,P0,CKPT-01 export serveur,libellé honnête page seulement,total<=page => bouton 'Exporter CSV (page)' (chemin client),factory,CKPT-01,a_implementer
-F04-C-033,C,P0,CKPT-01 export serveur,libellé honnête serveur,"total>page => bouton 'Exporter CSV (serveur, ~5 312 lignes)'",factory,CKPT-01,a_implementer
-F04-C-034,C,P1,CKPT-01 export serveur,gros volume affiche message cap,réponse capped => 'Export limité aux 100 000 premières lignes',factory,CKPT-01,a_implementer
+F04-C-031,C,P0,CKPT-01 export serveur,export déclenché avec les filtres du moment,POST /export body filterState == filtre courant,factory,CKPT-01,implemente
+F04-C-032,C,P0,CKPT-01 export serveur,libellé honnête page seulement,total<=page => bouton 'Exporter CSV (page)' (chemin client),factory,CKPT-01,implemente
+F04-C-033,C,P0,CKPT-01 export serveur,libellé honnête serveur,"total>page => bouton 'Exporter CSV (serveur, ~5 312 lignes)'",factory,CKPT-01,implemente
+F04-C-034,C,P1,CKPT-01 export serveur,gros volume affiche message cap,réponse capped => 'Export limité aux 100 000 premières lignes',factory,CKPT-01,implemente
 F04-C-035,C,P0,export grille réseau,POST /export 200 nominal,téléchargement déclenché (a[download] daté),factory,nominal,a_implementer
-F04-C-036,C,P0,export grille réseau,POST /export 401,alerte session + pas de téléchargement,factory,401,a_implementer
-F04-C-037,C,P0,export grille réseau,POST /export 422,alerte validation + état préservé,factory,422,a_implementer
-F04-C-038,C,P0,export grille réseau,POST /export 500,alerte serveur + pas de faux succès,factory,500,a_implementer
-F04-C-039,C,P0,export grille réseau,POST /export hang,bouton 'Préparation de l export…' aria-busy UN SEUL POST,factory,hang,a_implementer
-F04-C-040,C,P0,export grille réseau,POST /export network error,message réseau + Réessayer,factory,network,a_implementer
-F04-C-041,C,P0,CKPT-02 raisons traduites,not_found affiché en FR,'1 ignoré (non trouvé)' jamais '(not_found)',factory,CKPT-02,a_implementer
-F04-C-042,C,P0,CKPT-02 raisons traduites,wrong_status affiché en FR,'2 ignorés (statut non relançable)',factory,CKPT-02,a_implementer
-F04-C-043,C,P1,CKPT-02 raisons traduites,suppressed affiché en FR,'(adresse en liste de suppression)',factory,CKPT-02,a_implementer
-F04-C-044,C,P1,CKPT-02 raisons traduites,cap_exceeded affiché en FR,'(au-delà du plafond de tentatives)',factory,CKPT-02,a_implementer
-F04-C-045,C,P1,CKPT-02 raisons traduites,raisons multiples concaténées,'1 non trouvé · 1 statut non relançable',factory,CKPT-02,a_implementer
-F04-C-046,C,P1,CKPT-07 reap feedback,feedback précise le statut résultant,'3 envois bloqués libérés → re-mis en file (ou DLQ si plafond)',factory,CKPT-07,a_implementer
-F04-C-047,C,P1,CKPT-07 reap feedback,cas zéro,'Aucun envoi bloqué à libérer.',factory,CKPT-07,a_implementer
-F04-C-048,C,P0,reap grille réseau,reap POST 200/401/422/500/hang/network,grille 6 cas zéro faux succès,factory,nominal,a_implementer
-F04-C-049,C,P1,CKPT-12 saut de page,saut à page 12 navigue à offset 550,POST /search offset=550,factory,CKPT-12,a_implementer
-F04-C-050,C,P1,CKPT-12 saut de page,valeur invalide ignorée,'abc' => pas de navigation input revient à page courante,factory,CKPT-12,a_implementer
-F04-C-051,C,P1,CKPT-12 saut de page,page hors borne ramenée,page 999 => dernière page,factory,CKPT-12,a_implementer
-F04-C-052,C,P1,CKPT-12 pagination,Précédent/Suivant bornés,Précédent disabled page 1 / Suivant disabled dernière,factory,nominal,a_implementer
-F04-C-053,C,P0,CKPT-15 bannière santé,?from=health affiche la bannière,bannière 'depuis le contrôle santé (raison …)' visible,factory,DASH-12,a_implementer
-F04-C-054,C,P1,CKPT-15 bannière santé,from absent => pas de bannière,aucune bannière sans ?from=health,factory,DASH-12,a_implementer
-F04-C-055,C,P1,CKPT-15 bannière santé,fermer masque et nettoie l'URL,bannière disparaît ET 'from' retiré (pas de réapparition),factory,DASH-12,a_implementer
-F04-C-056,C,P1,CKPT-05 tooltip file,sparkline file vide montre '—' + title,placeholder '—' avec title explicatif (pas de graphe plat),factory,CKPT-05,a_implementer
-F04-C-057,C,P1,CKPT-06 tooltip 5000+,'5 000+' porte un title,title 'Plus de 5 000 résultats … affinez',factory,CKPT-06,a_implementer
-F04-C-058,C,P1,CKP-F11 KPI seuils,seuil failed déclenche le mode alerte,bordure/icone alerte dès failed>=5,factory,nominal,a_implementer
-F04-C-059,C,P1,CKP-F11 KPI clic,"clic carte Échecs filtre status:failed,dlq",POST /search filters status failed+dlq,factory,nominal,a_implementer
-F04-C-060,C,P1,CKP-F13 timeline,légende webhook/app affichée,'📡 webhook Stalwart · ⚙ app' présente,factory,CKPT-08,a_implementer
-F04-C-061,C,P1,CKP-F13 timeline,badge source par évènement,delivery.delivered porte 📡 / sent porte ⚙,factory,CKPT-08,a_implementer
-F04-C-062,C,P0,CKP-F13 timeline,sent stagnant explique le blocage,encart ⓘ 'boîte locale / webhook muet' quand dernier état=sent,factory,CKPT-08,a_implementer
-F04-C-063,C,P1,CKP-F13 retour sticky,lien retour collant en bas du détail,'← Transactionnel' présent en pied de page,factory,CKPT-09,a_implementer
+F04-C-036,C,P0,export grille réseau,POST /export 401,alerte session + pas de téléchargement,factory,401,implemente
+F04-C-037,C,P0,export grille réseau,POST /export 422,alerte validation + état préservé,factory,422,implemente
+F04-C-038,C,P0,export grille réseau,POST /export 500,alerte serveur + pas de faux succès,factory,500,implemente
+F04-C-039,C,P0,export grille réseau,POST /export hang,bouton 'Préparation de l export…' aria-busy UN SEUL POST,factory,hang,implemente
+F04-C-040,C,P0,export grille réseau,POST /export network error,message réseau + Réessayer,factory,network,implemente
+F04-C-041,C,P0,CKPT-02 raisons traduites,not_found affiché en FR,'1 ignoré (non trouvé)' jamais '(not_found)',factory,CKPT-02,implemente
+F04-C-042,C,P0,CKPT-02 raisons traduites,wrong_status affiché en FR,'2 ignorés (statut non relançable)',factory,CKPT-02,implemente
+F04-C-043,C,P1,CKPT-02 raisons traduites,suppressed affiché en FR,'(adresse en liste de suppression)',factory,CKPT-02,implemente
+F04-C-044,C,P1,CKPT-02 raisons traduites,cap_exceeded affiché en FR,'(au-delà du plafond de tentatives)',factory,CKPT-02,implemente
+F04-C-045,C,P1,CKPT-02 raisons traduites,raisons multiples concaténées,'1 non trouvé · 1 statut non relançable',factory,CKPT-02,implemente
+F04-C-046,C,P1,CKPT-07 reap feedback,feedback précise le statut résultant,'3 envois bloqués libérés → re-mis en file (ou DLQ si plafond)',factory,CKPT-07,implemente
+F04-C-047,C,P1,CKPT-07 reap feedback,cas zéro,'Aucun envoi bloqué à libérer.',factory,CKPT-07,implemente
+F04-C-048,C,P0,reap grille réseau,reap POST 200/401/422/500/hang/network,grille 6 cas zéro faux succès,factory,nominal,implemente
+F04-C-049,C,P1,CKPT-12 saut de page,saut à page 12 navigue à offset 550,POST /search offset=550,factory,CKPT-12,implemente
+F04-C-050,C,P1,CKPT-12 saut de page,valeur invalide ignorée,'abc' => pas de navigation input revient à page courante,factory,CKPT-12,implemente
+F04-C-051,C,P1,CKPT-12 saut de page,page hors borne ramenée,page 999 => dernière page,factory,CKPT-12,implemente
+F04-C-052,C,P1,CKPT-12 pagination,Précédent/Suivant bornés,Précédent disabled page 1 / Suivant disabled dernière,factory,nominal,implemente
+F04-C-053,C,P0,CKPT-15 bannière santé,?from=health affiche la bannière,bannière 'depuis le contrôle santé (raison …)' visible,factory,DASH-12,implemente
+F04-C-054,C,P1,CKPT-15 bannière santé,from absent => pas de bannière,aucune bannière sans ?from=health,factory,DASH-12,implemente
+F04-C-055,C,P1,CKPT-15 bannière santé,fermer masque et nettoie l'URL,bannière disparaît ET 'from' retiré (pas de réapparition),factory,DASH-12,implemente
+F04-C-056,C,P1,CKPT-05 tooltip file,sparkline file vide montre '—' + title,placeholder '—' avec title explicatif (pas de graphe plat),factory,CKPT-05,implemente
+F04-C-057,C,P1,CKPT-06 tooltip 5000+,'5 000+' porte un title,title 'Plus de 5 000 résultats … affinez',factory,CKPT-06,implemente
+F04-C-058,C,P1,CKP-F11 KPI seuils,seuil failed déclenche le mode alerte,bordure/icone alerte dès failed>=5,factory,nominal,implemente
+F04-C-059,C,P1,CKP-F11 KPI clic,"clic carte Échecs filtre status:failed,dlq",POST /search filters status failed+dlq,factory,nominal,implemente
+F04-C-060,C,P1,CKP-F13 timeline,légende webhook/app affichée,'📡 webhook Stalwart · ⚙ app' présente,factory,CKPT-08,implemente
+F04-C-061,C,P1,CKP-F13 timeline,badge source par évènement,delivery.delivered porte 📡 / sent porte ⚙,factory,CKPT-08,implemente
+F04-C-062,C,P0,CKP-F13 timeline,sent stagnant explique le blocage,encart ⓘ 'boîte locale / webhook muet' quand dernier état=sent,factory,CKPT-08,implemente
+F04-C-063,C,P1,CKP-F13 retour sticky,lien retour collant en bas du détail,'← Transactionnel' présent en pied de page,factory,CKPT-09,implemente
 F04-C-064,C,P1,CKP-F10 vues CRUD,créer une vue depuis le filtre courant,POST /views avec filterState courant + vue ajoutée à la sidebar,factory,nominal,a_implementer
 F04-C-065,C,P1,CKP-F10 vues CRUD,renommer une vue,PATCH /views et libellé mis à jour,factory,nominal,a_implementer
 F04-C-066,C,P1,CKP-F10 vues CRUD,supprimer une vue (confirm),DELETE /views et vue retirée de la sidebar,factory,nominal,a_implementer
@@ -113,16 +113,16 @@ F04-C-076,C,P1,CKP-F14 quick filters,Soft bounces preset,POST /search filters st
 F04-C-077,C,P1,CKP-F12 truncated,total tronqué affiche '5 000+',pagination range montre '… sur 5 000+',factory,CKPT-06,a_implementer
 F04-C-078,C,P1,a11y composant,axe smoke cockpit sans sélection,0 violation serious/critical,factory,nominal,a_implementer
 F04-C-079,C,P1,a11y composant,axe smoke avec bulk bar ouverte,0 violation serious/critical,factory,nominal,a_implementer
-F04-I-001,I,P0,CKPT-01 export contrat,réponse /export parse avec ExportInputSchema (conformité),le handler MSW et le réel partagent le schéma,femiglow_test,CKPT-01,a_implementer
-F04-I-002,I,P0,CKPT-01 export auth,/export sans admin => 401,401 et aucun corps CSV,femiglow_test,CKPT-01,a_implementer
-F04-I-003,I,P0,CKPT-01 export BOM,le flux commence par le BOM UTF-8,premier octets = U+FEFF,femiglow_test,CKPT-01,a_implementer
-F04-I-004,I,P0,CKPT-01 export RFC4180,virgules/quotes/newlines dans les données échappés,"sujet 'Bonjour, ""vous""' ressort '""Bonjour, """"vous""""""'",seed_donnees_piégées,CKPT-01,a_implementer
-F04-I-005,I,P0,CKPT-01 export keyset,pagination stable sous insertions concurrentes,aucun doublon ni saut malgré inserts pendant le stream,seed+insert_concurrent,CKPT-01,a_implementer
-F04-I-006,I,P0,CKPT-01 export cap,au-delà de 100 000 lignes le flux est tronqué,exactement 100 000 lignes data + flag capped émis,seed_volumineux,CKPT-01,a_implementer
-F04-I-007,I,P1,CKPT-01 export nom fichier,Content-Disposition daté du jour,filename emails-transactionnels-YYYY-MM-DD.csv,femiglow_test,CKPT-01,a_implementer
-F04-I-008,I,P1,CKPT-01 export en-têtes,Content-Type text/csv + no-store,en-têtes conformes au contrat,femiglow_test,CKPT-01,a_implementer
-F04-I-009,I,P1,CKPT-01 export audit,export émet un audit-log,événement mail.outbox.export avec actor+rows_streamed,femiglow_test,CKPT-01,a_implementer
-F04-I-010,I,P0,CKPT-02 bulk-by-filter même ensemble,le filtre cible == résultat de /search,bulk-retry-by-filter touche EXACTEMENT les ids de /search même filtre,seed_mixte,CKPT-02,a_implementer
+F04-I-001,I,P0,CKPT-01 export contrat,réponse /export parse avec ExportInputSchema (conformité),le handler MSW et le réel partagent le schéma,femiglow_test,CKPT-01,implemente
+F04-I-002,I,P0,CKPT-01 export auth,/export sans admin => 401,401 et aucun corps CSV,femiglow_test,CKPT-01,implemente
+F04-I-003,I,P0,CKPT-01 export BOM,le flux commence par le BOM UTF-8,premier octets = U+FEFF,femiglow_test,CKPT-01,implemente
+F04-I-004,I,P0,CKPT-01 export RFC4180,virgules/quotes/newlines dans les données échappés,"sujet 'Bonjour, ""vous""' ressort '""Bonjour, """"vous""""""'",seed_donnees_piégées,CKPT-01,implemente
+F04-I-005,I,P0,CKPT-01 export keyset,pagination stable sous insertions concurrentes,aucun doublon ni saut malgré inserts pendant le stream,seed+insert_concurrent,CKPT-01,implemente
+F04-I-006,I,P0,CKPT-01 export cap,au-delà de 100 000 lignes le flux est tronqué,exactement 100 000 lignes data + flag capped émis,seed_volumineux,CKPT-01,implemente
+F04-I-007,I,P1,CKPT-01 export nom fichier,Content-Disposition daté du jour,filename emails-transactionnels-YYYY-MM-DD.csv,femiglow_test,CKPT-01,implemente
+F04-I-008,I,P1,CKPT-01 export en-têtes,Content-Type text/csv + no-store,en-têtes conformes au contrat,femiglow_test,CKPT-01,implemente
+F04-I-009,I,P1,CKPT-01 export audit,export émet un audit-log,événement mail.outbox.export avec actor+rows_streamed,femiglow_test,CKPT-01,implemente
+F04-I-010,I,P0,CKPT-02 bulk-by-filter même ensemble,le filtre cible == résultat de /search,bulk-retry-by-filter touche EXACTEMENT les ids de /search même filtre,seed_mixte,CKPT-02,implemente
 F04-I-011,I,P0,CKPT-02 bulk-by-filter dry-count,dry_run:true ne mute rien,statuts DB inchangés ET count exact retourné,seed_mixte,CKPT-02,a_implementer
 F04-I-012,I,P0,CKPT-02 bulk-by-filter exec,dry_run:false relance les éligibles,les rows failed/dlq passent à pending attempts=0,seed_mixte,CKPT-02,a_implementer
 F04-I-013,I,P0,CKPT-02 bulk-by-filter cap,dry-count>10 000 => 422 cap_exceeded,"422 body {error:cap_exceeded,count,cap} aucune mutation",seed_volumineux,CKPT-02,a_implementer

@@ -272,6 +272,20 @@ export const emailsHandlers = [
   }),
   // P0.2 : nominal manquant détecté par le test de conformité (chaque suite
   // le redéfinissait localement) — forme verrouillée par ReapStuckResponseWire.
+  // POST /transactional/export (CKPT-01) : CSV streamé — le nominal renvoie
+  // un petit CSV BOM + en-têtes, X-Export-Capped: false (contrat d'en-têtes).
+  http.post('/api/admin/emails/transactional/export', () =>
+    new HttpResponse('﻿id,date,destinataire,nom,template,sujet,statut,tentatives\r\n', {
+      status: 200,
+      headers: {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': 'attachment; filename="emails-transactionnels-2026-06-10.csv"',
+        'cache-control': 'no-store',
+        'x-export-capped': 'false',
+      },
+    }),
+  ),
+
   http.post('/api/admin/emails/transactional/reap-stuck', () =>
     HttpResponse.json({ reaped: 0 }),
   ),

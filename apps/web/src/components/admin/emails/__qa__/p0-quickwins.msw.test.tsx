@@ -123,7 +123,10 @@ describe('P0.3 CKPT-02 — raisons d’ignorés traduites', () => {
         { reason: 'wrong_status' },
         { reason: 'wrong_status' },
       ]),
-    ).toBe('non trouvé, statut non relançable');
+    // Oracle amendé F04-U-028 (P2.2) : l'agrégation COMPTE désormais chaque
+    // raison (« 1 non trouvé · 2 statut non relançable ») — intention préservée
+    // (traduit + dédupliqué + honnête).
+    ).toBe('1 non trouvé · 2 statut non relançable');
     // Raison inconnue : clé brute plutôt que silence (pas de faux confort).
     expect(formatSkipReasons([{ reason: 'mystery' }])).toBe('mystery');
     expect(formatSkipReasons(undefined)).toBe('');

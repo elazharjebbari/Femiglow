@@ -131,7 +131,12 @@ function freetextSql(freetext: string): SQL {
   )!;
 }
 
-function buildWhere(input: SearchInput): SQL | undefined {
+/**
+ * Compilateur filtre → WHERE. SOURCE UNIQUE (interdit de dupliquer — spec F04) :
+ * /search, /export et /bulk-retry-by-filter DOIVENT passer par lui pour
+ * garantir le MÊME ensemble de lignes pour le même filtre (F04-I-010).
+ */
+export function buildWhere(input: Pick<SearchInput, 'filters' | 'freetext'>): SQL | undefined {
   const fragments: SQL[] = [];
   for (const f of input.filters) {
     const sqlFrag = filterToSql(f);
@@ -158,6 +163,103 @@ function buildOrderBy(sort: SearchSort) {
     default:
       return desc(emailOutbox.createdAt);
   }
+}
+
+/* ── Export CSV serveur (CKPT-01) ─────────────────────────────────────── */
+
+export type ExportInput = Pick<SearchInput, 'filters' | 'freetext'>;
+
+/** Cap dur de l'export serveur (spec F04 §2). */
+export const EXPORT_MAX_ROWS = 100_000;
+
+/**
+ * Compte BORNÉ des lignes matchant le filtre : s'arrête à `bound` (pas de
+ * COUNT(*) plein sur un gros ensemble — on n'a besoin que de « > cap ? »).
+ */
+export async function countOutboxBounded(input: ExportInput, bound: number): Promise<number> {
+  const drizzle = requireDb();
+  const where = buildWhere(input);
+  const inner = drizzle
+    .select({ one: sql<number>`1` })
+    .from(emailOutbox)
+    .$dynamic();
+  const bounded = (where ? inner.where(where) : inner).limit(bound);
+  const [row] = await drizzle
+    .select({ n: sql<number>`count(*)::int` })
+    .from(bounded.as('bounded'));
+  return row?.n ?? 0;
+}
+
+/**
+ * Itère les lignes de l'export par paquets, en pagination KEYSET
+ * `(created_at, id)` croissants — JAMAIS d'OFFSET : stable sous insertions
+ * concurrentes (aucun saut ni doublon des lignes existantes au départ), et
+ * O(n) au lieu de O(n²) sur 100 000 lignes.
+ *
+ * Retour final : `{ streamed, capped }` — capped=true si des lignes restaient
+ * au-delà de `maxRows`.
+ */
+export async function* iterateOutboxForExport(
+  input: ExportInput,
+  opts: { maxRows?: number; chunkSize?: number } = {},
+): AsyncGenerator<OutboxSearchRow[], { streamed: number; capped: boolean }> {
+  const drizzle = requireDb();
+  const maxRows = opts.maxRows ?? EXPORT_MAX_ROWS;
+  const chunkSize = Math.max(1, opts.chunkSize ?? 1_000);
+  const baseWhere = buildWhere(input);
+
+  let streamed = 0;
+  let lastCreatedAt: Date | null = null;
+  let lastId: string | null = null;
+
+  while (streamed < maxRows) {
+    // +1 ligne « sonde » sur le dernier paquet pour détecter le cap sans
+    // requête supplémentaire (remaining <= chunkSize ⇒ paquet final).
+    const remaining = maxRows - streamed;
+    const take = remaining <= chunkSize ? remaining + 1 : chunkSize;
+    // ISO + cast explicite : postgres-js refuse une Date JS crue dans un
+    // fragment sql brut (ERR_INVALID_ARG_TYPE — même gotcha que R-028).
+    const cursor =
+      lastCreatedAt !== null && lastId !== null
+        ? sql`(${emailOutbox.createdAt}, ${emailOutbox.id}) > (${lastCreatedAt.toISOString()}::timestamptz, ${lastId})`
+        : undefined;
+    const where = cursor && baseWhere ? and(baseWhere, cursor) : (cursor ?? baseWhere);
+
+    const q = drizzle
+      .select({
+        id: emailOutbox.id,
+        template: emailOutbox.template,
+        toEmail: emailOutbox.toEmail,
+        toName: emailOutbox.toName,
+        subject: emailOutbox.subject,
+        status: emailOutbox.status,
+        attempts: emailOutbox.attempts,
+        maxAttempts: emailOutbox.maxAttempts,
+        lastError: emailOutbox.lastError,
+        source: emailOutbox.source,
+        createdAt: emailOutbox.createdAt,
+        deliveredAt: emailOutbox.deliveredAt,
+        bounceType: emailOutbox.bounceType,
+      })
+      .from(emailOutbox)
+      .$dynamic();
+    const rows = (await (where ? q.where(where) : q)
+      .orderBy(asc(emailOutbox.createdAt), asc(emailOutbox.id))
+      .limit(take)) as OutboxSearchRow[];
+
+    if (rows.length === 0) return { streamed, capped: false };
+
+    const emit = rows.slice(0, maxRows - streamed);
+    const last = emit[emit.length - 1]!;
+    lastCreatedAt = last.createdAt;
+    lastId = String(last.id);
+    streamed += emit.length;
+    yield emit;
+
+    if (rows.length > emit.length) return { streamed, capped: true }; // la sonde a vu au-delà du cap
+    if (rows.length < take) return { streamed, capped: false }; // fin de l'ensemble
+  }
+  return { streamed, capped: false };
 }
 
 /**
