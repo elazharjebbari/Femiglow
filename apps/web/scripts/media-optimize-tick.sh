@@ -17,7 +17,9 @@ set -euo pipefail
 
 APP_DIR="/var/www/femiglow-staging/apps/web"
 ENV_FILE="${APP_DIR}/.env"
-URL="http://127.0.0.1:8012/api/cron/media-optimize"
+# Le port est lu depuis .env (PORT=…) pour suivre les réattributions ; repli 8014.
+APP_PORT="$(grep -E '^PORT=' "${ENV_FILE}" 2>/dev/null | head -1 | cut -d= -f2-)"
+URL="http://127.0.0.1:${APP_PORT:-8014}/api/cron/media-optimize"
 
 ts() { date -Is; }
 
