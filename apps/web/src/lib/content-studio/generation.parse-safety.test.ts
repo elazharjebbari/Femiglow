@@ -31,7 +31,7 @@ describe('generationOutputSchema parse safety', () => {
     const result = generationOutputSchema.parse(validOutput());
     expect(result.brief.angle).toBe(validBrief().angle);
     expect(result.drafts).toHaveLength(1);
-    expect(result.drafts[0].caption).toBe(validDraft().caption);
+    expect(result.drafts[0]!.caption).toBe(validDraft().caption);
   });
 
   it('throws ZodError when brief is missing', () => {
@@ -84,7 +84,7 @@ describe('generationOutputSchema parse safety', () => {
       drafts: [draftWithExtra],
     });
     expect(result.drafts[0]).not.toHaveProperty('extraField');
-    expect(result.drafts[0].caption).toBe(validDraft().caption);
+    expect(result.drafts[0]!.caption).toBe(validDraft().caption);
   });
 
   it('defaults hashtags to [] when missing', () => {
@@ -93,7 +93,7 @@ describe('generationOutputSchema parse safety', () => {
       brief: validBrief(),
       drafts: [draftNoHashtags],
     });
-    expect(result.drafts[0].hashtags).toEqual([]);
+    expect(result.drafts[0]!.hashtags).toEqual([]);
   });
 
   it('defaults altText to empty string when missing', () => {
@@ -102,7 +102,7 @@ describe('generationOutputSchema parse safety', () => {
       brief: validBrief(),
       drafts: [draftNoAlt],
     });
-    expect(result.drafts[0].altText).toBe('');
+    expect(result.drafts[0]!.altText).toBe('');
   });
 
   it('throws ZodError for a valid JSON string that is not an object', () => {

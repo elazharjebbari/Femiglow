@@ -98,7 +98,7 @@ describe('CalendarCard', () => {
       postizPostId: null,
       status: 'failed',
       request: {},
-      response: null,
+      response: {},
       attemptCount: 1,
       lastError: 'Provider down',
       createdAt: new Date(),

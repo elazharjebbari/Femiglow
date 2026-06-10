@@ -411,7 +411,12 @@ async function resultForExistingJob(job: SocialPublishJob): Promise<{ job: Socia
   return executeJob({ jobId: job.id, actorId: job.requestedBy });
 }
 
-export async function executeJob(input: { jobId: string; actorId: string | null }): Promise<{ job: SocialPublishJob; result: SocialPublishResult }> {
+export async function executeJob(input: {
+  jobId: string;
+  actorId: string | null;
+  /** Injectable pour les tests ; la prod lit env.SOCIAL_PUBLISHING_MODE. */
+  mode?: 'dry_run' | 'live';
+}): Promise<{ job: SocialPublishJob; result: SocialPublishResult }> {
   const existing = await getPublishJob(input.jobId);
   if (!existing) throw new HttpError('not_found', 'Job de publication introuvable.');
   if (existing.status === 'published') {
@@ -438,6 +443,19 @@ export async function executeJob(input: { jobId: string; actorId: string | null 
   }
   const account = await getSocialAccount(locked.accountId);
   if (!account) throw new HttpError('not_found', 'Compte social introuvable.');
+  // Kill-switch global : tant que SOCIAL_PUBLISHING_MODE n'est pas "live",
+  // aucun job ne peut s'exécuter sur un compte réel — quel que soit le chemin
+  // qui a créé le job (publish-now, schedule, retry, scheduler cron).
+  const live = (input.mode ?? env.SOCIAL_PUBLISHING_MODE) === 'live';
+  if (!live && account.provider !== 'dry_run') {
+    const error = {
+      code: 'invalid_request' as const,
+      message: `Publication réelle bloquée (kill-switch) : SOCIAL_PUBLISHING_MODE≠live, compte "${account.provider}".`,
+      retryable: false,
+    };
+    const blocked = await updatePublishJobStatus({ jobId: locked.id, status: 'failed', lockedAt: null, lastError: error });
+    return { job: blocked ?? locked, result: { ok: false, status: 'failed', error } };
+  }
   const adapter = adapterFor(account.provider);
   const publishing = locked;
   const startedAt = Date.now();
@@ -581,13 +599,10 @@ export async function resolveDefaultAccount(
   );
 
   if (!live) {
-    // Mode dry_run (défaut, sécurité staging) : préférence au compte simulé,
-    // puis premier compte actif compatible. Aucune publication réelle.
-    return (
-      eligible.find((account) => account.provider === 'dry_run') ??
-      eligible[0] ??
-      null
-    );
+    // Mode dry_run (défaut, sécurité staging) : UNIQUEMENT le compte simulé.
+    // Jamais de repli sur un compte réel — si aucun compte dry_run n'est actif,
+    // on préfère échouer (null) plutôt que cibler un compte Postiz client.
+    return eligible.find((account) => account.provider === 'dry_run') ?? null;
   }
 
   // Mode live : on publie réellement via Postiz. S'assurer que les comptes

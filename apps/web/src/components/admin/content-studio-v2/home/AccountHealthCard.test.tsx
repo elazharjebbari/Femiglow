@@ -19,6 +19,7 @@ function makeRow(over: Partial<AccountHealth>): AccountHealth {
     account: accountInstagramActive,
     lastSuccessAt: null,
     lastFailureAt: null,
+    lastFailureCode: null,
     ...over,
   };
 }

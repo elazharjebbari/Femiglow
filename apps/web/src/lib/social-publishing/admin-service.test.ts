@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetMemoryStore } from '@/lib/db/client';
 import type { PostizIntegration } from '@/lib/content-studio/postiz';
 import {
+  executeJob,
   resolveDefaultAccount,
   syncPostizSocialAccounts,
   syncSocialAccounts,
 } from './admin-service';
-import { listSocialAccounts } from './repository';
+import { createPublishJob, listSocialAccounts } from './repository';
 
 beforeEach(() => {
   resetMemoryStore();
@@ -145,6 +146,59 @@ describe('resolveDefaultAccount (mode dry_run vs live)', () => {
     });
     const account = await resolveDefaultAccount('instagram', { mode: 'live' });
     expect(account).toBeNull();
+  });
+
+  it('mode dry_run : retombe sur null si aucun compte dry_run (jamais eligible[0] réel)', async () => {
+    // Seuls des comptes Postiz réels existent : en mode dry_run la résolution
+    // doit échouer (null) plutôt que cibler un compte client.
+    await syncPostizSocialAccounts(postizFetcher());
+    const accounts = await listSocialAccounts();
+    expect(accounts.some((a) => a.provider === 'postiz')).toBe(true);
+    expect(accounts.some((a) => a.provider === 'dry_run')).toBe(false);
+    const account = await resolveDefaultAccount('instagram', { mode: 'dry_run' });
+    expect(account).toBeNull();
+  });
+});
+
+describe('executeJob — kill-switch dry_run/live', () => {
+  it('bloque un job ciblant un compte réel quand le mode n’est pas live', async () => {
+    const accounts = await syncPostizSocialAccounts(
+      vi.fn().mockResolvedValue([
+        { id: 'postiz_ig_1', identifier: 'instagram', name: 'AlFenna Beauty', disabled: false },
+      ] satisfies PostizIntegration[]),
+    );
+    const postiz = accounts.find((a) => a.provider === 'postiz');
+    expect(postiz).toBeDefined();
+
+    const job = await createPublishJob({
+      postId: 'post_killswitch',
+      accountId: postiz!.id,
+      provider: 'postiz',
+      platform: 'instagram',
+      format: 'post',
+      idempotencyKey: 'killswitch:post_killswitch:now',
+      content: {
+        sourcePostId: 'post_killswitch',
+        platform: 'instagram',
+        format: 'post',
+        caption: 'Test kill-switch',
+        media: [],
+        publishMode: 'now',
+      },
+      status: 'queued',
+      requestedBy: null,
+    });
+
+    const { job: after, result } = await executeJob({ jobId: job.id, actorId: null, mode: 'dry_run' });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('invalid_request');
+      expect(result.error.retryable).toBe(false);
+      expect(result.error.message).toContain('kill-switch');
+    }
+    expect(after.status).toBe('failed');
+    expect(after.lockedAt).toBeNull();
   });
 });
 

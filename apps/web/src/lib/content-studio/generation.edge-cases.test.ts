@@ -114,7 +114,7 @@ describe('generateForIdea edge cases', () => {
     expect(result.provider).toBe('openai');
     expect(result.brief.angle).toBe('Angle test');
     expect(result.drafts).toHaveLength(3);
-    expect(result.drafts[0].variantLabel).toBe('variant-0');
+    expect(result.drafts[0]!.variantLabel).toBe('variant-0');
   });
 
   it('returns fallback when OpenAI returns truncated/invalid JSON', async () => {
@@ -197,7 +197,7 @@ describe('generateForIdea edge cases', () => {
     expect(result.provider).toBe('openai');
     expect(result.drafts).toHaveLength(3);
     // Confirm it's the first 3
-    expect(result.drafts[0].variantLabel).toBe('variant-0');
-    expect(result.drafts[2].variantLabel).toBe('variant-2');
+    expect(result.drafts[0]!.variantLabel).toBe('variant-0');
+    expect(result.drafts[2]!.variantLabel).toBe('variant-2');
   });
 });
