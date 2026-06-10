@@ -122,7 +122,7 @@ function PatternChipsInput({
     <div className="flex flex-col gap-1.5" data-testid="pattern-chips">
       <ul className="flex flex-wrap gap-1.5" aria-label="Valeurs ciblées">
         {chips.length === 0 && (
-          <li className="text-xs italic text-stone-400" data-testid="pattern-chips-empty">
+          <li className="text-xs italic text-stone-600" data-testid="pattern-chips-empty">
             Aucune valeur. Ajoutez au moins une valeur.
           </li>
         )}
@@ -419,7 +419,7 @@ function NumericRuleEditor({
 
       {/* UX-AUD-010 — helper d'équivalence MAD ↔ centimes (pas pour between). */}
       {mad && !isBetween && (
-        <span className="text-xs text-stone-400" data-testid="mad-helper">
+        <span className="text-xs text-stone-600" data-testid="mad-helper">
           = {nf.format(scalarValue)} centimes
         </span>
       )}
@@ -736,7 +736,7 @@ export function RuleEditor({ rule, onChange, onRemove }: RuleEditorProps) {
           onClick={onRemove}
           aria-label="Supprimer ce critère"
           data-testid="remove-rule"
-          className="rounded px-2 py-1 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
+          className="rounded px-2 py-1 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
         >
           ✕
         </button>

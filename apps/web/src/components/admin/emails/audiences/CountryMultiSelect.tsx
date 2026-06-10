@@ -61,7 +61,7 @@ export function CountryMultiSelect({ value, onChange }: CountryMultiSelectProps)
       {/* Chips des pays sélectionnés */}
       <ul className="flex flex-wrap gap-1.5" aria-label="Pays sélectionnés">
         {selected.length === 0 && (
-          <li className="text-xs italic text-stone-400" data-testid="country-empty">
+          <li className="text-xs italic text-stone-600" data-testid="country-empty">
             Aucun pays. Ajoute au moins un pays à cibler.
           </li>
         )}

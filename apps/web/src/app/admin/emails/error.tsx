@@ -10,10 +10,17 @@
  * s'affichait jamais lors d'une panne DB — paradoxe corrigé ici.
  *
  * Message FR actionnable, `role="alert"`, bouton « Réessayer » câblé sur
- * `reset()` (re-render du segment) et lien retour dashboard.
+ * router.refresh() + reset() et lien retour dashboard.
+ *
+ * POURQUOI refresh() AVANT reset() : pour une erreur survenue côté SERVEUR
+ * (RSC), `reset()` seul re-rend le segment avec le MÊME payload RSC en cache —
+ * l'erreur se rejoue indéfiniment et « Réessayer » ne réessaie rien (constat
+ * F03-E-004 : après reprise de la DB, le bouton ne ramenait jamais la page).
+ * `router.refresh()` invalide le cache et re-déclenche le rendu serveur.
  */
-import { useEffect } from 'react';
+import { useEffect, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface EmailsErrorProps {
   error: Error & { digest?: string };
@@ -21,10 +28,20 @@ interface EmailsErrorProps {
 }
 
 export default function EmailsError({ error, reset }: EmailsErrorProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   useEffect(() => {
     // Trace côté client pour corréler avec les logs serveur (digest).
     console.error('[admin/emails/error.tsx]', error);
   }, [error]);
+
+  const retry = () => {
+    startTransition(() => {
+      router.refresh(); // invalide le payload RSC en cache (erreur serveur)
+      reset(); // re-rend le segment
+    });
+  };
 
   return (
     <div className="mx-auto max-w-xl py-16">
@@ -51,10 +68,11 @@ export default function EmailsError({ error, reset }: EmailsErrorProps) {
         <div className="mt-5 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => reset()}
-            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700"
+            onClick={retry}
+            disabled={isPending}
+            className="rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700 disabled:opacity-60"
           >
-            Réessayer
+            {isPending ? 'Nouvel essai…' : 'Réessayer'}
           </button>
           <Link
             href="/admin"

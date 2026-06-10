@@ -264,6 +264,153 @@ export async function cleanupSuppressionByPrefix(prefix: string): Promise<void> 
   await sql`DELETE FROM email_suppression WHERE email LIKE ${prefix + '%'}`;
 }
 
+// ── Events (webhook) — F03 tri-état Livrés ─────────────────────────────
+
+export type SeedEventRow = {
+  outboxId: string;
+  type: 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced_soft' | 'bounced_hard';
+  ts?: Date;
+  source?: 'stalwart' | 'listmonk' | 'app';
+};
+
+/** Insère des événements email (webhookLastSuccessAt = max ts delivered). */
+export async function seedEvents(rows: SeedEventRow[]): Promise<void> {
+  if (rows.length === 0) return;
+  const sql = e2eSql();
+  for (const r of rows) {
+    await sql`
+      INSERT INTO email_event (outbox_id, type, ts, source, raw_json)
+      VALUES (${r.outboxId}, ${r.type}, ${r.ts ?? new Date()}, ${r.source ?? 'stalwart'}, ${sql.json({ e2e: true })})`;
+  }
+}
+
+// ── Leads + orders — seeds F08 (audiences) ──────────────────────────────
+
+export type SeedLeadRow = {
+  id: string;
+  email: string;
+  phone?: string | null;
+  consentMarketing?: boolean;
+  /** total_cents par commande (1 order par entrée du tableau). */
+  orders?: number[];
+};
+
+export async function seedLeads(rows: SeedLeadRow[]): Promise<void> {
+  if (rows.length === 0) return;
+  const sql = e2eSql();
+  for (const r of rows) {
+    await sql`
+      INSERT INTO leads (id, email, phone, consent_marketing, created_at, updated_at)
+      VALUES (${r.id}, ${r.email.toLowerCase()}, ${r.phone ?? null},
+              ${r.consentMarketing ?? true}, now(), now())
+      ON CONFLICT (id) DO NOTHING`;
+    for (let i = 0; i < (r.orders ?? []).length; i++) {
+      await sql`
+        INSERT INTO orders (id, lead_id, total_cents, currency, shipping_mode, payment_method, created_at)
+        VALUES (${`${r.id}-order-${i}`}, ${r.id}, ${r.orders![i]!}, 'MAD', 'standard', 'cod', now())
+        ON CONFLICT (id) DO NOTHING`;
+    }
+  }
+}
+
+export async function cleanupLeadsByPrefix(prefix: string): Promise<void> {
+  const sql = e2eSql();
+  await sql`DELETE FROM orders WHERE lead_id LIKE ${prefix + '%'}`;
+  await sql`DELETE FROM leads WHERE id LIKE ${prefix + '%'}`;
+}
+
+// ── Audiences + snapshots — seeds F08 ───────────────────────────────────
+
+export async function seedAudience(row: {
+  slug: string;
+  name: string;
+  rules: unknown;
+  exclusionFlags?: unknown;
+}): Promise<string> {
+  const sql = e2eSql();
+  const rows = await sql<{ id: string }[]>`
+    INSERT INTO email_audience (slug, name, rules, exclusion_flags, created_by)
+    VALUES (${row.slug}, ${row.name}, ${sql.json(row.rules as never)},
+            ${sql.json((row.exclusionFlags ?? {
+              hard_bounce: false,
+              unsubscribe: false,
+              manual_suppression: false,
+              marketing_optout: false,
+            }) as never)}, 'e2e@femiglow.test')
+    ON CONFLICT (slug) DO UPDATE SET rules = EXCLUDED.rules, deleted_at = NULL
+    RETURNING id`;
+  return rows[0]!.id;
+}
+
+export async function seedAudienceSnapshot(row: {
+  audienceId: string;
+  size: number;
+  createdAt?: Date;
+  status?: 'pending' | 'running' | 'done' | 'errored';
+  rules: unknown;
+}): Promise<string> {
+  const sql = e2eSql();
+  const createdAt = row.createdAt ?? new Date();
+  const rows = await sql<{ id: string }[]>`
+    INSERT INTO email_audience_snapshot
+      (audience_id, status, size, rules_snapshot, exclusion_snapshot, metadata, created_at, completed_at, purgeable_after)
+    VALUES (${row.audienceId}, ${row.status ?? 'done'}, ${row.size},
+            ${sql.json(row.rules as never)}, ${sql.json({
+              hard_bounce: false,
+              unsubscribe: false,
+              manual_suppression: false,
+              marketing_optout: false,
+            } as never)}, ${sql.json({ e2e: true } as never)},
+            ${createdAt}, ${createdAt},
+            ${new Date(createdAt.getTime() + 90 * 86_400_000)})
+    RETURNING id`;
+  return rows[0]!.id;
+}
+
+/** Purge audiences e2e (slug préfixé) + snapshots/membres en cascade. */
+export async function cleanupAudiencesBySlugPrefix(prefix: string): Promise<void> {
+  const sql = e2eSql();
+  await sql`DELETE FROM email_audience WHERE slug LIKE ${prefix + '%'}`;
+}
+
+// ── Vues sauvegardées (F04-E-005) ───────────────────────────────────────
+
+export async function cleanupSavedViewsByPrefix(prefix: string): Promise<void> {
+  const sql = e2eSql();
+  await sql`DELETE FROM admin_email_view WHERE name LIKE ${prefix + '%'}`;
+}
+
+// ── DB down (F03-E-004) — coupe la DB e2e vue du SERVEUR Next ───────────
+//
+// `ALTER DATABASE … ALLOW_CONNECTIONS false` + terminaison des backends du
+// serveur (sauf NOTRE connexion helper) → toute requête RSC échoue → l'error
+// boundary du segment rend son message. `restore` ré-autorise ; le pool
+// postgres-js du serveur se reconnecte au prochain accès. À n'utiliser QUE
+// dans un run --workers=1 (les autres specs seraient affectées).
+
+// Une coupure TOTALE (ALLOW_CONNECTIONS false) fait tomber le LAYOUT admin
+// (tracking_settings) AVANT le boundary du segment emails → page « Application
+// error » globale (constat du run 2026-06-10). On simule donc une panne
+// CIBLÉE : renommer email_outbox → toute requête du dashboard échoue
+// (relation does not exist) pendant que le layout reste sain → c'est bien
+// l'error boundary du segment (DASH-09) qui rend, et « Réessayer » fonctionne
+// après restauration. DB e2e jetable, --workers=1 obligatoire.
+
+export async function cutDbForServer(): Promise<void> {
+  const sql = e2eSql();
+  await sql`ALTER TABLE email_outbox RENAME TO email_outbox_e2e_down`;
+}
+
+export async function restoreDbForServer(): Promise<void> {
+  const sql = e2eSql();
+  // Idempotent : ne restaure que si la coupure est en place.
+  await sql`DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'email_outbox_e2e_down') THEN
+      ALTER TABLE email_outbox_e2e_down RENAME TO email_outbox;
+    END IF;
+  END $$`;
+}
+
 // ── Cleanup ─────────────────────────────────────────────────────────────
 
 /**

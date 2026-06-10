@@ -9,7 +9,7 @@ F04-U-007,U,P1,CKP-F01 parser,attempts:>3 opérateur,"filter {operator:>,value:3
 F04-U-008,U,P1,CKP-F01 parser,attempts:5 sans opérateur => =,operator='=' value=5,table_cas,nominal,implemente
 F04-U-009,U,P1,CKP-F01 parser,has:error drapeau,"filter {key:has,value:error}",table_cas,nominal,implemente
 F04-U-010,U,P1,CKP-F01 parser,token inconnu => freetext,'bonjour' va dans freetext pas dans errors,table_cas,nominal,implemente
-F04-U-011,U,P1,CKP-F01 parser,valeur entre guillemets avec espace,to:"a b@c" parse value='a b@c',table_cas,nominal,implemente
+F04-U-011,U,P1,CKP-F01 parser,valeur entre guillemets avec espace,"to:""a b@c"" parse value='a b@c'",table_cas,nominal,implemente
 F04-U-012,U,P1,CKP-F01 parser,escape \: littéral,token avec \: ne split pas la clé,table_cas,nominal,implemente
 F04-U-013,U,P0,CKPT-03 parser err,attempts:abc => erreur,errors contient message 'attendu >N <N =N' avec position,table_cas,CKPT-03,implemente
 F04-U-014,U,P0,CKPT-03 parser err,status:plop => erreur,errors message 'Statut inconnu plop',table_cas,CKPT-03,implemente
@@ -31,8 +31,8 @@ F04-U-029,U,P1,CKPT-12 saut page,offset depuis numéro de page,page 3 => offset 
 F04-U-030,U,P1,CKPT-12 saut page,borne page<1 ramenée à 1,page 0 => offset 0,table_cas,CKPT-12,implemente
 F04-U-031,U,P1,CKPT-12 saut page,borne page>max ramenée à dernière,page 99 sur 5 pages => offset 200,table_cas,CKPT-12,implemente
 F04-U-032,U,P1,export csvEscape,champ avec virgule entouré de guillemets,"'a,b' => '""a,b""'",table_cas,CKPT-01,implemente
-F04-U-033,U,P0,export csvEscape,guillemet interne doublé,'di"t' => '"di""t"',table_cas,CKPT-01,implemente
-F04-U-034,U,P1,export csvEscape,retour ligne entouré,'a\nb' => '"a\nb"',table_cas,CKPT-01,implemente
+F04-U-033,U,P0,export csvEscape,guillemet interne doublé,"'di""t' => '""di""""t""'",table_cas,CKPT-01,implemente
+F04-U-034,U,P1,export csvEscape,retour ligne entouré,"'a\nb' => '""a\nb""'",table_cas,CKPT-01,implemente
 F04-U-035,U,P1,export csvEscape,null => champ vide,null => '',table_cas,CKPT-01,implemente
 F04-C-001,C,P0,CKP-F01 grammaire,saisie status:failed dans palette applique le filtre,un POST /search part avec filters=[status:failed],factory,nominal,implemente
 F04-C-002,C,P1,CKP-F02 autocomplete,frappe template déclenche suggestions debouncées,suggestions visibles après debounce (horloge contrôlée) sans requête par frappe,factory,nominal,implemente
@@ -134,12 +134,12 @@ F04-I-018,I,P1,CKP-F01 search non-régression,contrat /search inchangé,réponse
 F04-I-019,I,P1,CKP-F01 search truncated,total>=5000 => window truncated,window='truncated' sans COUNT exact,seed_volumineux,nominal,implemente
 F04-I-020,I,P1,CKP-F10 vues persistance,CRUD vues persistées en DB,POST/PATCH/DELETE reflétés en table + audit,femiglow_test,nominal,implemente
 F04-I-021,I,P1,CKP-F09 reap-stuck,reap requalifie les sending figés,rows sending repassent pending ou dlq + audit reap_stuck,seed_stuck,CKPT-07,implemente
-F04-E-001,E,P0,SM-F04-01 astreinte,dashboard->deep-link santé->DLQ->retry global->file assainie,oracles texte de bout en bout (cf. exemple-e2e),seed_outbox_dlq,metier,a_implementer
-F04-E-002,E,P0,SM-F04-02 domaine pourri,filtre to:*@bad.tld -> export CSV preuve -> suppress global,CSV téléchargé daté ET adresses bloquées,seed_bad_domain,metier,a_implementer
-F04-E-003,E,P1,SM-F04-03 enquête client,recherche -> détail -> timeline -> deep-link suppression,timeline lisible ET retrait depuis le détail,seed_client,metier,a_implementer
-F04-E-004,E,P1,SM-F04-04 faux filtre,faute de frappe dans la grammaire montrée par l'UI,warning visible + liseré + filtres valides appliqués,seed_outbox,metier,a_implementer
-F04-E-005,E,P1,SM-F04-05 vue d'équipe,création/partage vue système vs perso,vue créée appliquée et restituée après reload,seed_views,metier,a_implementer
-F04-E-006,E,P1,SM-F04-06 reap après crash,reap après crash déploiement assainit la file,envois figés re-mis en file + feedback statut résultant,seed_stuck,metier,a_implementer
-F04-A-001,A,P1,a11y E2E page cockpit,axe Playwright sur le cockpit,0 violation serious/critical,seed_outbox,nominal,a_implementer
-F04-A-002,A,P1,a11y E2E page détail,axe Playwright sur le détail + timeline,0 violation serious/critical,seed_client,nominal,a_implementer
+F04-E-001,E,P0,SM-F04-01 astreinte,dashboard->deep-link santé->DLQ->retry global->file assainie,oracles texte de bout en bout (cf. exemple-e2e),seed_outbox_dlq,metier,implemente
+F04-E-002,E,P0,SM-F04-02 domaine pourri,filtre to:*@bad.tld -> export CSV preuve -> suppress global,CSV téléchargé daté ET adresses bloquées,seed_bad_domain,metier,implemente
+F04-E-003,E,P1,SM-F04-03 enquête client,recherche -> détail -> timeline -> deep-link suppression,timeline lisible ET retrait depuis le détail,seed_client,metier,implemente
+F04-E-004,E,P1,SM-F04-04 faux filtre,faute de frappe dans la grammaire montrée par l'UI,warning visible + liseré + filtres valides appliqués,seed_outbox,metier,implemente
+F04-E-005,E,P1,SM-F04-05 vue d'équipe,création/partage vue système vs perso,vue créée appliquée et restituée après reload,seed_views,metier,implemente
+F04-E-006,E,P1,SM-F04-06 reap après crash,reap après crash déploiement assainit la file,envois figés re-mis en file + feedback statut résultant,seed_stuck,metier,implemente
+F04-A-001,A,P1,a11y E2E page cockpit,axe Playwright sur le cockpit,0 violation serious/critical,seed_outbox,nominal,implemente
+F04-A-002,A,P1,a11y E2E page détail,axe Playwright sur le détail + timeline,0 violation serious/critical,seed_client,nominal,implemente
 F04-A-003,A,P1,a11y bannière sélection-filtre,bannière sélection globale accessible,aria-live annonce le compteur ET focus géré,seed_volumineux,CKPT-04,implemente

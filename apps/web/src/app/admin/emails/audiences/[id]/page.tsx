@@ -140,7 +140,7 @@ export default async function AudienceDetailPage({
         <section className="rounded-md border border-stone-200 bg-white p-4">
           <h2 className="mb-2 text-sm font-medium text-stone-700">Critères</h2>
           {ruleLines.length <= 1 && rules.conditions.length === 0 ? (
-            <p className="text-sm italic text-stone-400">Aucun critère.</p>
+            <p className="text-sm italic text-stone-600">Aucun critère.</p>
           ) : (
             <ul className="space-y-1 text-sm" data-testid="rules-readable">
               {ruleLines.map((line, i) => (
@@ -170,10 +170,10 @@ export default async function AudienceDetailPage({
           <ul className="space-y-1 text-sm">
             {Object.entries(exclusionFlags as Record<string, boolean>).map(([key, val]) => (
               <li key={key} className="flex items-center gap-2">
-                <span className={val ? 'text-emerald-700' : 'text-stone-400'}>
+                <span className={val ? 'text-emerald-700' : 'text-stone-600'}>
                   {val ? '✓' : '○'}
                 </span>
-                <span className={val ? 'text-stone-800' : 'text-stone-400'}>
+                <span className={val ? 'text-stone-800' : 'text-stone-600'}>
                   {EXCLUSION_LABELS[key] ?? key}
                 </span>
               </li>
@@ -191,7 +191,7 @@ export default async function AudienceDetailPage({
       {/* Snapshots (drill-down, retry, auto-refresh, drift vs live) */}
       <SnapshotsPanel audienceId={audience.id} snapshots={snapshotRows} liveCount={liveCount} />
 
-      <footer className="mt-8 text-xs text-stone-400">
+      <footer className="mt-8 text-xs text-stone-600">
         Créée par {audience.createdBy} le {formatDate(audience.createdAt)} · Mode{' '}
         {audience.evaluationMode}
       </footer>

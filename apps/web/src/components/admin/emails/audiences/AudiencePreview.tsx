@@ -170,7 +170,7 @@ export function AudiencePreview({
           </p>
         )}
         {!isTimeout && !error && !isLoading && size === null && (
-          <p className="text-sm italic text-stone-400" data-testid="preview-empty">
+          <p className="text-sm italic text-stone-600" data-testid="preview-empty">
             Ajoute des critères pour voir l&apos;aperçu.
           </p>
         )}
@@ -236,7 +236,7 @@ export function AudiencePreview({
           {samples.map((s) => (
             <li key={s.email} className="flex items-center gap-2">
               <span className="font-mono">{s.email}</span>
-              {s.name && <span className="text-stone-400">— {s.name}</span>}
+              {s.name && <span className="text-stone-600">— {s.name}</span>}
             </li>
           ))}
         </ul>

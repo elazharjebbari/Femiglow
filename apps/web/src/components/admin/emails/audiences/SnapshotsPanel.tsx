@@ -249,7 +249,7 @@ export function SnapshotsPanel({
                   <td className="px-3 py-2 text-right tabular-nums">{nf.format(s.size)}</td>
                   <td className="px-3 py-2 text-xs" data-testid={`snapshot-drift-${s.id}`}>
                     {pct === null ? (
-                      <span className="text-stone-400" title="Live indisponible ou snapshot non terminé">
+                      <span className="text-stone-600" title="Live indisponible ou snapshot non terminé">
                         —
                       </span>
                     ) : (

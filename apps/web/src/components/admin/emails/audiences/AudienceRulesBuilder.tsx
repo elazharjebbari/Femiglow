@@ -61,11 +61,11 @@ function AddRuleMenu({ onPick }: { onPick: (kind: RuleKind) => void }) {
                     aria-disabled="true"
                     title={item.disabledHint}
                     data-testid={`add-rule-${item.kind}`}
-                    className="block w-full cursor-not-allowed px-3 py-1.5 text-left text-sm text-stone-400"
+                    className="block w-full cursor-not-allowed px-3 py-1.5 text-left text-sm text-stone-600"
                   >
                     {item.label}
                     {item.disabledHint ? (
-                      <span className="ml-2 text-xs text-stone-400">({item.disabledHint})</span>
+                      <span className="ml-2 text-xs text-stone-600">({item.disabledHint})</span>
                     ) : null}
                   </button>
                 ) : (
@@ -200,7 +200,7 @@ export function AudienceRulesBuilder({
                   type="button"
                   onClick={() => removeAt(idx)}
                   aria-label="Supprimer ce sous-groupe"
-                  className="absolute right-2 top-2 rounded px-2 py-1 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
+                  className="absolute right-2 top-2 rounded px-2 py-1 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
                 >
                   ✕
                 </button>
@@ -218,7 +218,7 @@ export function AudienceRulesBuilder({
         })}
 
         {value.conditions.length === 0 && (
-          <p className="rounded border border-dashed border-stone-200 bg-stone-50 px-3 py-2 text-sm italic text-stone-400">
+          <p className="rounded border border-dashed border-stone-200 bg-stone-50 px-3 py-2 text-sm italic text-stone-600">
             Aucun critère. Ajoute au moins un critère pour cibler les contacts.
           </p>
         )}

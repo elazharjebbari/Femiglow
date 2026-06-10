@@ -96,8 +96,8 @@ F08-I-094,I,P0,AUD-F07,preview-size timeout 504,une requête dépassant statemen
 F08-I-095,I,P0,AUD-F05,compiler tag conformité,une audience tag compilée ne cible personne sur femiglow_test (snapshot size=0),femiglow_test,AUD-01,implemente
 F08-I-096,I,P1,AUD-F10,membres pagination contrat,GET members limit/offset renvoie {members total limit offset} et 404 cross-audience,femiglow_test,AUD-06,implemente
 F08-I-097,I,P1,AUD-F07,contrat preview Zod,la réponse preview-size réelle parse avec le schéma du handler MSW,femiglow_test,nominal,implemente
-F08-E-098,E,P0,SM-F08-01,segment promo construit,création 'clientes fidèles Casablanca' avec bornes inversées corrigées + code pays liste → audience sauvée non vide,e2e.seed,metier,a_implementer
-F08-E-099,E,P0,SM-F08-02,campagne sur snapshot périmé évitée,un snapshot J-21 montre écart >10 % → l'opératrice re-snapshote avant l'envoi,e2e.seed,metier,a_implementer
-F08-E-100,E,P1,SM-F08-03,tag VIP neutralisé,le menu grise les tags et la bannière explique pourquoi ; aucune audience tag créée,e2e.seed,metier,a_implementer
-F08-A-101,A,P1,AUD-F03,axe page wizard étape 2,axe Playwright sur l'étape critères = 0 serious/critical,e2e.seed,nominal,a_implementer
-F08-A-102,A,P2,AUD-F09,axe page détail audience,axe Playwright sur la page détail = 0 serious/critical,e2e.seed,nominal,a_implementer
+F08-E-098,E,P0,SM-F08-01,segment promo construit,création 'clientes fidèles Casablanca' avec bornes inversées corrigées + code pays liste → audience sauvée non vide,e2e.seed,metier,implemente
+F08-E-099,E,P0,SM-F08-02,campagne sur snapshot périmé évitée,un snapshot J-21 montre écart >10 % → l'opératrice re-snapshote avant l'envoi,e2e.seed,metier,implemente
+F08-E-100,E,P1,SM-F08-03,tag VIP neutralisé,le menu grise les tags et la bannière explique pourquoi ; aucune audience tag créée,e2e.seed,metier,implemente
+F08-A-101,A,P1,AUD-F03,axe page wizard étape 2,axe Playwright sur l'étape critères = 0 serious/critical,e2e.seed,nominal,implemente
+F08-A-102,A,P2,AUD-F09,axe page détail audience,axe Playwright sur la page détail = 0 serious/critical,e2e.seed,nominal,implemente
