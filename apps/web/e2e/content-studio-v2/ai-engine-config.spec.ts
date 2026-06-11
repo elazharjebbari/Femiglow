@@ -135,7 +135,8 @@ test('config — page loads with title "Configuration"', async ({ page }) => {
   await gotoAIEngine(page, 'config');
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+  // « AI Engine » apparaît plusieurs fois (sidebar, eyebrow…) : on cible l'eyebrow du header.
+  await expect(page.locator('.cs-eyebrow', { hasText: 'AI Engine' })).toBeVisible({ timeout: 15_000 });
   await expect(
     page.getByRole('heading', { name: /Configuration/i }),
   ).toBeVisible({ timeout: 15_000 });
@@ -176,9 +177,10 @@ test('config — capabilities badges display', async ({ page }) => {
   await expect(page.getByText('Fournisseurs IA')).toBeVisible({ timeout: 20_000 });
 
   // OpenAI has text, image, embedding capabilities
+  // (le badge embedding est libellé « Embed » dans CAPABILITY_LABELS de config/page.tsx)
   await expect(page.getByText('Texte').first()).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText('Image').first()).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByText('Embedding').first()).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('Embed').first()).toBeVisible({ timeout: 10_000 });
 });
 
 // ─────────────────────────────────────────────────────────────────
@@ -192,8 +194,10 @@ test('config — click "Workflows" tab switches content', async ({ page }) => {
   await expect(page.getByText('Fournisseurs IA')).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole('button', { name: 'Workflows' }).click();
+  // L'onglet Workflows n'a plus de titre « Workflows de génération » :
+  // il affiche le bouton « Créer un workflow » + la liste des cartes workflow.
   await expect(
-    page.getByText(/Workflows de generation/i),
+    page.getByRole('button', { name: 'Créer un workflow' }),
   ).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText('Default Pipeline')).toBeVisible({ timeout: 10_000 });
 });
@@ -220,15 +224,21 @@ test('config — click "Prompts" tab shows templates', async ({ page }) => {
 // ─────────────────────────────────────────────────────────────────
 test('config — click "Base de connaissances" tab switches', async ({ page }) => {
   await mockConfigAPIs(page);
+  // « Base de connaissances » n'est plus un onglet de la page Config :
+  // c'est un lien du header qui navigue vers /ai-engine/knowledge.
+  await page.route('**/api/admin/ai-engine/knowledge', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ collections: [] }) });
+  });
   await gotoAIEngine(page, 'config');
   ensureAuthOrSkip(page);
 
   await expect(page.getByText('Fournisseurs IA')).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole('button', { name: 'Base de connaissances' }).click();
+  await expect(page).toHaveURL(/\/ai-engine\/knowledge/, { timeout: 15_000 });
   await expect(
-    page.getByText(/Gerez les collections/i),
-  ).toBeVisible({ timeout: 10_000 });
+    page.getByRole('heading', { name: /Base de connaissances/i }),
+  ).toBeVisible({ timeout: 15_000 });
 });
 
 // ─────────────────────────────────────────────────────────────────

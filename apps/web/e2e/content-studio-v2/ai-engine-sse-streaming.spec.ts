@@ -11,7 +11,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -164,6 +164,8 @@ test('sse-streaming — steps transition from pending to running to done', async
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   // Wait for pipeline heading
@@ -204,6 +206,8 @@ test('sse-streaming — result appears after all steps complete', async ({ page 
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   // Wait for the final result
@@ -225,6 +229,8 @@ test('sse-streaming — script hook is displayed in result', async ({ page }) =>
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });

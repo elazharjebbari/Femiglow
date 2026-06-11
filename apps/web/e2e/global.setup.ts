@@ -17,7 +17,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-import { test as setup } from '@playwright/test';
+import { type Page, test as setup } from '@playwright/test';
 
 import { ADMIN_STORAGE_PATH, loginAdmin } from './helpers/auth';
 
@@ -29,7 +29,31 @@ setup('authenticate as admin', async ({ page }) => {
   setup.setTimeout(120_000);
   await fs.mkdir(path.dirname(ADMIN_STORAGE_PATH), { recursive: true });
 
-  await loginAdmin(page);
+  // Réutilise le storageState existant s'il est encore valide : le login
+  // admin est rate-limité côté serveur ("Trop de tentatives"), donc on
+  // évite de re-poster le formulaire à chaque run quand la session tient.
+  const reused = await (async () => {
+    try {
+      const raw = await fs.readFile(ADMIN_STORAGE_PATH, 'utf8');
+      const state = JSON.parse(raw) as {
+        cookies?: Parameters<
+          ReturnType<Page['context']>['addCookies']
+        >[0];
+      };
+      if (!state.cookies?.length) return false;
+      await page.context().addCookies(state.cookies);
+      await page.goto('/admin');
+      await page.waitForLoadState('domcontentloaded');
+      // Session encore acceptée ⇔ pas de redirection vers /admin/login.
+      return !page.url().includes('/admin/login');
+    } catch {
+      return false; // fichier absent/corrompu → login classique
+    }
+  })();
+
+  if (!reused) {
+    await loginAdmin(page);
+  }
 
   // Wait for any post-login redirects to settle before evaluating
   // localStorage, otherwise the execution context can be destroyed

@@ -42,3 +42,21 @@ export function ensureAuthOrSkip(page: import('@playwright/test').Page) {
     test.skip(true, 'Admin auth storage state is not valid in this environment.');
   }
 }
+
+/**
+ * Désactive la revue humaine (HITL) sur la page Create.
+ *
+ * Depuis l'introduction du HITL, `reviewEnabled` est ON PAR DÉFAUT
+ * (create/page.tsx) : toute génération aboutit en phase « Revue humaine
+ * requise » au lieu de la phase résultat « Contenu généré ». Les specs qui
+ * testent le résultat direct doivent désactiver le toggle AVANT de cliquer
+ * Générer. Le panneau « Paramètres avancés » est ouvert par défaut.
+ */
+export async function disableHumanReview(page: import('@playwright/test').Page) {
+  const toggle = page.getByRole('switch', { name: 'Activer la revue humaine' });
+  await expect(toggle).toBeVisible({ timeout: 10_000 });
+  if ((await toggle.getAttribute('aria-checked')) === 'true') {
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  }
+}

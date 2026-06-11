@@ -5,7 +5,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -50,6 +50,9 @@ async function generateContent(page: import('@playwright/test').Page) {
   ensureAuthOrSkip(page);
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL est ON par défaut : sans désactivation, la génération s'arrête en
+  // phase « Revue humaine requise » et la section Publier n'apparaît jamais.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
 }

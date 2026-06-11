@@ -9,17 +9,12 @@
  * required.
  */
 import { expect, test } from '@playwright/test';
+// Le repo est en "type": "module" : `require()` n'existe pas dans les specs
+// (l'ancien try/require faisait silencieusement skipper les 3 audits axe).
+// Import statique comme dans ai-engine-a11y.spec.ts.
+import AxeBuilder from '@axe-core/playwright';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
 import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
-
-// Gracefully import axe-core — skip a11y audit tests if not available
-let AxeBuilder: typeof import('@axe-core/playwright').default | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  AxeBuilder = require('@axe-core/playwright').default;
-} catch {
-  // Will be handled by test.skip() in individual tests
-}
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -161,10 +156,6 @@ async function mockAllAPIs(page: import('@playwright/test').Page) {
 // ── Helper: run axe audit ────────────────────────────────────────
 
 async function runAxeAudit(page: import('@playwright/test').Page, context = '.cs-v2-shell') {
-  if (!AxeBuilder) {
-    test.skip(true, '@axe-core/playwright not available');
-    return { violations: [] };
-  }
   const results = await new AxeBuilder({ page })
     .include(context)
     .exclude('.cs-skeleton')
@@ -179,8 +170,6 @@ async function runAxeAudit(page: import('@playwright/test').Page, context = '.cs
 
 test.describe('Accessibility', () => {
   test('config page has no critical a11y violations', async ({ page }) => {
-    if (!AxeBuilder) test.skip(true, '@axe-core/playwright not available');
-
     await mockAllAPIs(page);
     await gotoAIEngine(page, 'config');
     ensureAuthOrSkip(page);
@@ -198,8 +187,6 @@ test.describe('Accessibility', () => {
   });
 
   test('knowledge page has no critical a11y violations', async ({ page }) => {
-    if (!AxeBuilder) test.skip(true, '@axe-core/playwright not available');
-
     await mockAllAPIs(page);
     await gotoAIEngine(page, 'knowledge');
     ensureAuthOrSkip(page);
@@ -212,8 +199,6 @@ test.describe('Accessibility', () => {
   });
 
   test('create page has no critical a11y violations', async ({ page }) => {
-    if (!AxeBuilder) test.skip(true, '@axe-core/playwright not available');
-
     await mockAllAPIs(page);
     await gotoAIEngine(page, 'create');
     ensureAuthOrSkip(page);
@@ -564,8 +549,8 @@ test.describe('Keyboard Navigation', () => {
 
     await expect(page.getByText('Fournisseurs IA')).toBeVisible({ timeout: 20_000 });
 
-    // Navigate to API keys tab
-    await page.getByText('Cles API', { exact: false }).click();
+    // Navigate to API keys tab (libellé réel avec accent : « Clés API »)
+    await page.getByRole('button', { name: /Clés API/ }).click();
     await expect(page.getByText('OpenAI')).toBeVisible({ timeout: 10_000 });
 
     // Open the add key form

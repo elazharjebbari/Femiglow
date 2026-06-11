@@ -64,13 +64,13 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
 const crossBrowser = process.env.PLAYWRIGHT_CROSS === '1';
 
 /**
- * Quarantaine CI (2026-06-11) : les specs `ai-engine-*` (battery spéculative
- * du 25/05, commit 5557875f) ont dérivé de l'UI réelle — ~60 échecs
- * déterministes mesurés contre staging (strict-mode violations, labels
- * renommés, pages restructurées). Avec retries=2 et workers=1 en CI, ces
- * échecs transforment le job e2e en run de plusieurs heures. Le job CI les
- * exclut via `CS_E2E_SKIP_AI_ENGINE=true` le temps de les réparer ; la
- * suite complète reste exécutable à la main (sans le flag).
+ * Exclusion CI (2026-06-11) : les specs `ai-engine-*` (412 tests) sont
+ * RÉPARÉS et verts contre staging depuis le 2026-06-11 (l'UI drift du 25/05
+ * — HITL par défaut, locators ambigus, labels renommés — est résorbé), mais
+ * restent exclus du job e2e BLOQUANT pour son runtime (workers=1 en CI →
+ * >40 min). Ils tournent dans le job CI dédié non-bloquant `e2e-ai-engine`
+ * (sans ce flag). `CS_E2E_SKIP_AI_ENGINE=true` ne sert qu'à scoper le job
+ * bloquant ; la suite complète reste exécutable à la main (sans le flag).
  */
 const quarantineAiEngine = process.env.CS_E2E_SKIP_AI_ENGINE === 'true';
 

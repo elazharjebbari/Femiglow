@@ -105,7 +105,8 @@ test('knowledge — page loads with "Base de connaissances" title', async ({ pag
   await gotoAIEngine(page, 'knowledge');
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+  // « AI Engine » apparaît 4 fois (sidebar, label, breadcrumb, eyebrow) : on cible l'eyebrow.
+  await expect(page.locator('.cs-eyebrow', { hasText: 'AI Engine' })).toBeVisible({ timeout: 15_000 });
   await expect(
     page.getByRole('heading', { name: /Base de connaissances/i }),
   ).toBeVisible({ timeout: 15_000 });

@@ -6,7 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -68,7 +68,8 @@ test.describe.serial('Golden Path: Brief -> Generate -> Library', () => {
     await gotoAIEngine(sharedPage);
     ensureAuthOrSkip(sharedPage);
 
-    await expect(sharedPage.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+    // « AI Engine » apparaît plusieurs fois (sidebar, subnav, eyebrow) : on cible l'eyebrow.
+    await expect(sharedPage.locator('.cs-eyebrow', { hasText: 'AI Engine' })).toBeVisible({ timeout: 15_000 });
     await expect(sharedPage.getByRole('heading', { name: /Tableau de bord/i })).toBeVisible({ timeout: 15_000 });
   });
 
@@ -128,6 +129,8 @@ test.describe.serial('Golden Path: Brief -> Generate -> Library', () => {
 
   // 10. Click "Générer"
   test('click "Générer"', async () => {
+    // HITL ON par défaut : on le désactive pour atteindre la phase « Contenu généré ».
+    await disableHumanReview(sharedPage);
     const genButton = sharedPage.getByRole('button', { name: /Générer/i });
     await expect(genButton).toBeEnabled({ timeout: 5_000 });
     await genButton.click();

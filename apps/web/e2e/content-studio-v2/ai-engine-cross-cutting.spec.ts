@@ -200,8 +200,10 @@ test.describe('Dark Mode', () => {
       expect(Number(match[3])).toBeLessThan(80);
     }
 
-    // Verify text is light (readable on dark bg)
-    const fgColor = await page.getByText('Fournisseurs IA').evaluate((el) => {
+    // Verify text is light (readable on dark bg).
+    // On mesure le titre h1 « Configuration » (couleur fg primaire) : le label
+    // d'onglet « Fournisseurs IA » utilise désormais une couleur secondaire (~122).
+    const fgColor = await page.getByRole('heading', { name: 'Configuration' }).evaluate((el) => {
       return getComputedStyle(el).color;
     });
     const fgMatch = fgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -451,15 +453,13 @@ test.describe('Loading & Error States', () => {
     await gotoAIEngine(page, 'config');
     ensureAuthOrSkip(page);
 
-    // During loading, the page should show a loading indicator (skeleton, spinner, or loading text)
-    const loadingIndicator = page.locator('.cs-skeleton, [class*="skeleton"], [class*="spinner"]')
-      .first()
-      .or(page.getByText(/chargement|loading/i).first())
-      .or(page.locator('.cs-spin').first());
+    // Le skeleton actuel = blocs placeholder inline-style (min-height) sans
+    // classe .cs-skeleton ni texte « Chargement » (config/page.tsx, if (loading)).
+    const loadingIndicator = page.locator('main div[style*="min-height"]').first();
 
-    const hasLoading = await loadingIndicator.isVisible({ timeout: 3_000 }).catch(() => false);
+    const hasLoading = await loadingIndicator.isVisible().catch(() => false);
     // If the data loaded fast enough to skip the loading state, that is also acceptable
-    const hasData = await page.getByText('Fournisseurs IA').isVisible({ timeout: 5_000 }).catch(() => false);
+    const hasData = await page.getByText('Fournisseurs IA').isVisible().catch(() => false);
     expect(hasLoading || hasData).toBe(true);
 
     // Eventually the data should load
@@ -529,13 +529,14 @@ test.describe('Loading & Error States', () => {
     await gotoAIEngine(page, 'knowledge');
     ensureAuthOrSkip(page);
 
-    // During load — either loading indicator or the final heading is already visible
+    // During load — either loading indicator or the final heading is already visible.
+    // Le loading actuel = blocs placeholder inline-style (min-height), sans
+    // classe .cs-skeleton ni texte (knowledge/page.tsx, if (loading)).
     const heading = page.getByRole('heading', { name: /Base de connaissances/i });
-    const loadingEl = page.locator('.cs-skeleton, .cs-spin, [class*="spinner"]').first()
-      .or(page.getByText(/chargement|loading/i).first());
+    const loadingEl = page.locator('main div[style*="min-height"]').first();
 
-    const headingVisible = await heading.isVisible({ timeout: 5_000 }).catch(() => false);
-    const loadingVisible = await loadingEl.isVisible({ timeout: 3_000 }).catch(() => false);
+    const headingVisible = await heading.isVisible().catch(() => false);
+    const loadingVisible = await loadingEl.isVisible().catch(() => false);
     expect(headingVisible || loadingVisible).toBe(true);
 
     // Eventually the data loads
@@ -573,8 +574,8 @@ test.describe('Loading & Error States', () => {
 
     await expect(page.getByText('Fournisseurs IA')).toBeVisible({ timeout: 20_000 });
 
-    // Click the API keys tab
-    await page.getByText('Cles API', { exact: false }).click();
+    // Click the API keys tab (label UI avec accent : « Clés API »)
+    await page.getByRole('button', { name: 'Clés API' }).click();
 
     // While loading, there should be a spinner or loading indicator
     const spinner = page.locator('.cs-spin, [class*="spinner"]').first()
@@ -673,8 +674,9 @@ test.describe('Session & Auth', () => {
     await gotoAIEngine(page, 'config');
     ensureAuthOrSkip(page);
 
-    // An error message should be shown
-    await expect(page.getByText(/erreur|session|unauthorized|expir[eé]e/i).first()).toBeVisible({ timeout: 15_000 });
+    // An error message should be shown — l'UI actuelle affiche
+    // « Impossible de charger la configuration » + « Fournisseurs: 401 ».
+    await expect(page.getByText(/erreur|impossible|session|unauthorized|expir[eé]e/i).first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('unauthenticated knowledge page redirects to login', async ({ browser }) => {

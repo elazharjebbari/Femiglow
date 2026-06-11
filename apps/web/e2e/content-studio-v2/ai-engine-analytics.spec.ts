@@ -97,7 +97,8 @@ test('analytics — page loads with "Analytiques" title', async ({ page }) => {
   await gotoAIEngine(page, 'analytics');
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+  // « AI Engine » apparaît 4 fois (sidebar, label, breadcrumb, eyebrow) : on cible l'eyebrow du header.
+  await expect(page.locator('.cs-eyebrow', { hasText: 'AI Engine' })).toBeVisible({ timeout: 15_000 });
   await expect(
     page.getByRole('heading', { name: /Analytiques/i }),
   ).toBeVisible({ timeout: 15_000 });

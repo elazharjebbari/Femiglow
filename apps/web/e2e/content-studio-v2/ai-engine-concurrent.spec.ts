@@ -6,7 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -112,6 +112,9 @@ test('concurrent — user cannot submit form twice (phase transitions prevent it
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
 
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
+
   const genButton = page.getByRole('button', { name: /Générer/i });
   await expect(genButton).toBeEnabled({ timeout: 5_000 });
 
@@ -132,6 +135,8 @@ test('concurrent — user cannot submit form twice (phase transitions prevent it
 // 3. After result, user can generate again (Régénérer re-enables)
 // ─────────────────────────────────────────────────────────────────
 test('concurrent — after result, Régénérer triggers new generation', async ({ page }) => {
+  // Deux générations simulées (~12 s chacune) → dépasse le timeout test de 30 s.
+  test.setTimeout(90_000);
   let callCount = 0;
 
   await page.route('**/api/admin/ai-engine/generate', async (route) => {
@@ -148,6 +153,8 @@ test('concurrent — after result, Régénérer triggers new generation', async 
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   // Wait for result
@@ -175,6 +182,8 @@ test('concurrent — after result, Régénérer triggers new generation', async 
 // 4. Two sequential generations both succeed
 // ─────────────────────────────────────────────────────────────────
 test('concurrent — two sequential generations both succeed', async ({ page }) => {
+  // Deux générations simulées (~12 s chacune) → dépasse le timeout test de 30 s.
+  test.setTimeout(90_000);
   let callCount = 0;
   const responses = [
     {
@@ -207,6 +216,8 @@ test('concurrent — two sequential generations both succeed', async ({ page }) 
   // --- First generation ---
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });

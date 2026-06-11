@@ -123,9 +123,10 @@ jobs:
         # à vérifier les écritures Postgres réelles du pipeline de publication
         # (audit 2026-06-10 §04 : elles ne tournaient jamais en CI → rot).
         # La suite complète reste exécutable à la main (npx playwright test).
-        # CS_E2E_SKIP_AI_ENGINE : quarantaine des specs ai-engine-* (battery
-        # spéculative du 25/05, ~60 échecs déterministes d'UI drift mesurés le
-        # 2026-06-11) — voir playwright.config.ts.
+        # CS_E2E_SKIP_AI_ENGINE : les specs ai-engine-* (412 tests) sont
+        # exclus de CE job pour son runtime (workers=1 en CI → >40 min) ;
+        # réparés et verts contre staging le 2026-06-11, ils tournent dans le
+        # job dédié non-bloquant `e2e-ai-engine` ci-dessous.
         run: >-
           npx playwright test
           content-studio.spec.ts
@@ -144,6 +145,87 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-studio
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7
+
+  e2e-ai-engine:
+    name: Playwright E2E — suite ai-engine (non-bloquant)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: quality
+    # NON-BLOQUANT : la suite ai-engine (412 tests, réparée le 2026-06-11
+    # après l'UI drift du 25/05) est trop lourde pour le job e2e bloquant
+    # (workers=1). Ce job donne le signal sans bloquer ; passer bloquant
+    # quand le module ai-engine sera porté au niveau du studio.
+    continue-on-error: true
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: femiglow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/femiglow_test
+      ADMIN_SESSION_PASSWORD: ${{ secrets.CI_ADMIN_SESSION_PASSWORD || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+      WEBHOOK_SECRET_KEY: ${{ secrets.CI_WEBHOOK_SECRET_KEY || 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }}
+      CRON_SECRET: ${{ secrets.CI_CRON_SECRET || 'cccccccccccccccccccccccccccccccc' }}
+      ADMIN_BOOTSTRAP_EMAIL: admin@femiglow.local
+      ADMIN_BOOTSTRAP_PASSWORD: admin-test-pass
+      CONTENT_STUDIO_ENABLED: 'true'
+      CONTENT_STUDIO_V2_ENABLED: 'true'
+      CONTENT_STUDIO_V2_DEFAULT: 'true'
+      CONTENT_STUDIO_MEDIA_STUDIO_ENABLED: 'true'
+      CONTENT_STUDIO_IMAGE_PROVIDER: mock
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: apps/web
+
+      - name: Apply DB migrations
+        run: node scripts/_migrate-safe.mjs
+        working-directory: apps/web
+
+      - name: Build Next.js
+        run: pnpm --filter web build
+
+      - name: Run ai-engine E2E
+        # --workers=2 : la suite est massivement mockée (page.route), 2 workers
+        # tiennent sur le runner sans affamer le serveur Next.
+        run: >-
+          npx playwright test
+          "e2e/content-studio-v2/ai-engine-.*\.spec\.ts"
+          --workers=2
+        working-directory: apps/web
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+
+      - name: Upload Playwright artifacts (ai-engine)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-ai-engine
           path: |
             apps/web/playwright-report/
             apps/web/test-results/

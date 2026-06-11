@@ -6,7 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -161,6 +161,7 @@ test('create — pipeline steps transition from pending to done', async ({ page 
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
 
   await page.getByRole('button', { name: /Générer/i }).click();
 
@@ -181,6 +182,7 @@ test('create — result phase shows hook text', async ({ page }) => {
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -200,6 +202,7 @@ test('create — result phase shows caption', async ({ page }) => {
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -218,6 +221,7 @@ test('create — result phase shows hashtag badges', async ({ page }) => {
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -238,6 +242,7 @@ test('create — result phase shows quality scores', async ({ page }) => {
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -254,6 +259,7 @@ test('create — result phase shows "Voir dans la Bibliothèque" link', async ({
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -266,6 +272,10 @@ test('create — result phase shows "Voir dans la Bibliothèque" link', async ({
 // 11. "Régénérer" button resets to brief phase
 // ─────────────────────────────────────────────────────────────────
 test('create — "Régénérer" button triggers new generation', async ({ page }) => {
+  // Deux générations simulées (~12 s de pipeline client chacune) : le timeout
+  // global de 30 s ne tient pas sous charge (suite complète). Même remède que
+  // les tests Régénérer d'ai-engine-concurrent.
+  test.setTimeout(90_000);
   let callCount = 0;
   await page.route('**/api/admin/ai-engine/generate', async (route) => {
     callCount++;
@@ -281,6 +291,7 @@ test('create — "Régénérer" button triggers new generation', async ({ page }
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -317,6 +328,7 @@ test('create — error phase shows error message and retry button', async ({ pag
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   // Error phase

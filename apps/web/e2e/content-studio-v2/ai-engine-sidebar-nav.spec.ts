@@ -156,7 +156,9 @@ test.describe('Sidebar Navigation', () => {
     const sidebar = page.locator('.cs-sidebar');
     const labels = ['Accueil', 'Création', 'Bibliothèque', 'Planning', 'AI Engine'];
     for (const label of labels) {
-      await expect(sidebar.getByText(label, { exact: true })).toBeVisible({ timeout: 10_000 });
+      // getByText serait ambigu pour « AI Engine » (lien + en-tête de subnav) :
+      // on cible le lien de nav principal, unique pour chaque libellé.
+      await expect(sidebar.getByRole('link', { name: label, exact: true })).toBeVisible({ timeout: 10_000 });
     }
   });
 

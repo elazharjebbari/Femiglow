@@ -7,7 +7,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -171,13 +171,14 @@ test('refresh — dashboard reloads health data correctly', async ({ page }) => 
   await gotoAIEngine(page);
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+  // « AI Engine » apparaît plusieurs fois (sidebar, label…) → cible l'eyebrow du header.
+  await expect(page.locator('.cs-eyebrow', { hasText: 'AI Engine' }).first()).toBeVisible({ timeout: 15_000 });
 
   const callsBefore = healthCallCount;
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('.cs-v2-shell')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('.cs-eyebrow', { hasText: 'AI Engine' }).first()).toBeVisible({ timeout: 15_000 });
 
   // The health API should have been called again after reload
   expect(healthCallCount).toBeGreaterThan(callsBefore);
@@ -318,6 +319,8 @@ test('refresh — after generation result, refresh goes back to brief form', asy
   await page.locator('select').nth(3).selectOption('luxurious');
   await page.locator('textarea').first().fill('Le rituel FemiGlow');
 
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
 

@@ -72,7 +72,8 @@ test('sidebar — dashboard shows navigation links to sub-pages', async ({ page 
   await gotoAIEngine(page);
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+  // « AI Engine » apparaît 4 fois (lien sidebar, subnav, eyebrow…) : on cible l'eyebrow du dashboard.
+  await expect(page.locator('.cs-eyebrow', { hasText: 'AI Engine' })).toBeVisible({ timeout: 15_000 });
 
   // The dashboard provides direct navigation links
   await expect(

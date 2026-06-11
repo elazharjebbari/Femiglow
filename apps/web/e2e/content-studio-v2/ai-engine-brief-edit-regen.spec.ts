@@ -7,7 +7,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -90,6 +90,10 @@ test.describe.serial('Brief Edit & Regeneration flow', () => {
     await sharedPage.locator('select').nth(2).selectOption('carousel');
     await sharedPage.locator('select').nth(3).selectOption('luxurious');
     await sharedPage.locator('textarea').first().fill('Rituel beaute japonaise FemiGlow');
+
+    // HITL ON par défaut : on le désactive AVANT le premier « Générer » pour
+    // que tout le flux serial (résultat + régénération) atteigne « Contenu généré ».
+    await disableHumanReview(sharedPage);
 
     const genButton = sharedPage.getByRole('button', { name: /Générer/i });
     await expect(genButton).toBeEnabled({ timeout: 5_000 });

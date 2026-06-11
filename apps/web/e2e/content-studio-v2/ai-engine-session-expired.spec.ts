@@ -10,7 +10,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -212,6 +212,8 @@ test('session — after 401 on generate, retry succeeds on second attempt', asyn
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL ON par défaut : on le désactive pour atteindre la phase « Contenu généré ».
+  await disableHumanReview(page);
 
   // First attempt — 401
   const genButton = page.getByRole('button', { name: /Générer/i });

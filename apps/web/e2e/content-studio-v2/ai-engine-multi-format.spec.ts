@@ -6,7 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -146,6 +146,8 @@ test('multi-format — post format shows 1 image and caption', async ({ page }) 
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBriefWithFormat(page, 'single_image');
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -173,6 +175,8 @@ test('multi-format — carousel format shows 3+ images and caption', async ({ pa
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBriefWithFormat(page, 'carousel');
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -203,6 +207,8 @@ test('multi-format — reel format shows script with voiceover info', async ({ p
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBriefWithFormat(page, 'reel');
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -235,6 +241,8 @@ test('multi-format — story format shows result with story content', async ({ p
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBriefWithFormat(page, 'story');
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -302,6 +310,8 @@ test('multi-format — format selection persists and generates correct output', 
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBriefWithFormat(page, 'carousel');
+  // HITL ON par défaut → on le désactive pour atteindre la phase résultat.
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });

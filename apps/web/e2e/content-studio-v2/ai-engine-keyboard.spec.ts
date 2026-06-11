@@ -42,6 +42,11 @@ test('keyboard — Tab moves focus through brief form fields', async ({ page }) 
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
 
+  // Le shell expose désormais de nombreux éléments focusables avant le
+  // formulaire (sidebar, topbar) : on ancre le focus sur le premier champ
+  // du brief pour tester l'ordre de tabulation DANS le formulaire.
+  await page.locator('select').first().focus();
+
   // Press Tab multiple times and track which elements receive focus
   const focusedElements: { tag: string; type?: string }[] = [];
 

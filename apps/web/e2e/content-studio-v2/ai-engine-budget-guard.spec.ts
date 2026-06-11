@@ -6,7 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -188,6 +188,8 @@ test('budget-guard — user can modify brief and try again', async ({ page }) =>
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  // HITL ON par défaut : on le désactive pour atteindre la phase « Contenu généré ».
+  await disableHumanReview(page);
   await page.getByRole('button', { name: /Générer/i }).click();
 
   // Error should show first

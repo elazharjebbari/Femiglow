@@ -7,7 +7,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
-import { gotoAIEngine, ensureAuthOrSkip } from './ai-engine-helpers';
+import { gotoAIEngine, ensureAuthOrSkip, disableHumanReview } from './ai-engine-helpers';
 
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
@@ -117,6 +117,7 @@ test('provider-fallback — generation succeeds with fallback provider', async (
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   // Should complete without error
@@ -140,6 +141,7 @@ test('provider-fallback — result shows deterministic fallback content', async 
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -170,6 +172,7 @@ test('provider-fallback — quality scores still display and pass threshold', as
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -207,6 +210,7 @@ test('provider-fallback — cost is zero for deterministic fallback', async ({ p
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -232,6 +236,7 @@ test('provider-fallback — no error displayed to user on fallback', async ({ pa
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });
@@ -258,6 +263,7 @@ test('provider-fallback — caption is generated even with fallback script', asy
 
   await expect(page.getByText('Brief créatif')).toBeVisible({ timeout: 15_000 });
   await fillBrief(page);
+  await disableHumanReview(page); // HITL ON par défaut → sans ça, phase « Revue humaine requise »
   await page.getByRole('button', { name: /Générer/i }).click();
 
   await expect(page.getByText('Contenu généré')).toBeVisible({ timeout: 60_000 });

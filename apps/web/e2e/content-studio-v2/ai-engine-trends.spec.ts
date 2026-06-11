@@ -71,7 +71,8 @@ test('trends — page loads with "Veille & Tendances" header', async ({ page }) 
   await gotoAIEngine(page, 'trends');
   ensureAuthOrSkip(page);
 
-  await expect(page.getByText('AI Engine')).toBeVisible({ timeout: 15_000 });
+  // « AI Engine » apparaît 4 fois (sidebar, label, breadcrumb, eyebrow) : on cible l'eyebrow.
+  await expect(page.locator('.cs-eyebrow', { hasText: 'AI Engine' })).toBeVisible({ timeout: 15_000 });
   await expect(
     page.getByRole('heading', { name: /Veille & Tendances/i }),
   ).toBeVisible({ timeout: 15_000 });
