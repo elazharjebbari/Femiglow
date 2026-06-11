@@ -13,7 +13,16 @@
 import { expect, test } from '@playwright/test';
 import { ADMIN_STORAGE_PATH } from '../helpers/auth';
 
-test.use({ storageState: ADMIN_STORAGE_PATH });
+test.use({
+  storageState: ADMIN_STORAGE_PATH,
+  // Les cases du calendrier font ~677 px de haut : avec le viewport par
+  // défaut (720) leur CENTRE est sous la ligne de flottaison, Playwright
+  // scrolle PENDANT le drag et les rects mesurés par dnd-kit au dragStart
+  // ne correspondent plus → le drop se résout sur la mauvaise case
+  // (constaté le 2026-06-11 : drop sur la case d'origine). Un viewport
+  // haut garde toute la grille visible, aucun scroll en cours de drag.
+  viewport: { width: 1280, height: 1600 },
+});
 
 async function ensureAuthOrSkip(page: import('@playwright/test').Page) {
   if (page.url().includes('/admin/login')) {
@@ -42,6 +51,41 @@ function formatDateKey(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+/**
+ * Drag manuel par étapes : `page.dragAndDrop` n'émet pas assez de
+ * `mousemove` après l'activation du PointerSensor dnd-kit → la détection
+ * de collision reste figée sur la case source (drop annoncé sur le jour
+ * d'origine, constaté le 2026-06-11). On pilote la souris nous-mêmes avec
+ * des déplacements intermédiaires pour que dnd-kit suive le pointeur.
+ */
+async function dragCardTo(
+  page: import('@playwright/test').Page,
+  sourceSelector: string,
+  targetSelector: string,
+) {
+  const source = page.locator(sourceSelector);
+  const target = page.locator(targetSelector);
+  await target.scrollIntoViewIfNeeded();
+  const sBox = await source.boundingBox();
+  const tBox = await target.boundingBox();
+  if (!sBox || !tBox) throw new Error('drag: bounding box introuvable');
+  const sx = sBox.x + sBox.width / 2;
+  const sy = sBox.y + sBox.height / 2;
+  // Viser le HAUT de la case cible (les cases sont hautes : le centre peut
+  // chevaucher d'autres droppables ou sortir du viewport).
+  const tx = tBox.x + tBox.width / 2;
+  const ty = tBox.y + Math.min(60, tBox.height / 2);
+  await page.mouse.move(sx, sy);
+  await page.mouse.down();
+  // Petit mouvement initial pour franchir la contrainte d'activation.
+  await page.mouse.move(sx + 8, sy + 8, { steps: 4 });
+  await page.mouse.move(tx, ty, { steps: 20 });
+  // Pause : dnd-kit met à jour la collision au rythme des events.
+  await page.waitForTimeout(150);
+  await page.mouse.move(tx, ty + 2);
+  await page.mouse.up();
 }
 
 test('calendar — drag card to future day triggers reschedule + success toast', async ({
@@ -80,8 +124,11 @@ test('calendar — drag card to future day triggers reschedule + success toast',
     }
   });
 
-  // Perform drag and drop
-  await page.dragAndDrop(
+  // Perform drag and drop (cible rendue visible AVANT le drag pour que les
+  // rects dnd-kit mesurés au dragStart restent valides).
+  await page.locator(`[data-testid="day-${futureDayKey}"]`).scrollIntoViewIfNeeded();
+  await dragCardTo(
+    page,
     `[data-testid="calendar-card-${card.postId}"]`,
     `[data-testid="day-${futureDayKey}"]`,
   );
@@ -119,7 +166,8 @@ test('calendar — drag card to past day shows error toast', async ({ page }) =>
   }
 
   // Try to drag to a past day
-  await page.dragAndDrop(
+  await dragCardTo(
+    page,
     `[data-testid="calendar-card-${card.postId}"]`,
     `[data-testid="day-${pastDayKey}"]`,
   );
@@ -163,7 +211,8 @@ test('calendar — drag with PATCH 500 shows error toast + card rollback', async
     }
   });
 
-  await page.dragAndDrop(
+  await dragCardTo(
+    page,
     `[data-testid="calendar-card-${card.postId}"]`,
     `[data-testid="day-${futureDayKey}"]`,
   );
@@ -207,7 +256,8 @@ test('calendar — drag card to same day = no-op (no PATCH fired)', async ({ pag
   }
 
   // Drag to the same day cell
-  await page.dragAndDrop(
+  await dragCardTo(
+    page,
     `[data-testid="calendar-card-${card.postId}"]`,
     `[data-testid="${dayTestId}"]`,
   );
