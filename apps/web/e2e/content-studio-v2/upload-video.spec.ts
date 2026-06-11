@@ -26,6 +26,10 @@ async function openUploaderWithVideo(page: import('@playwright/test').Page) {
   await ensureAuthOrSkip(page);
   await expect(page.getByRole('heading', { name: /quelle intention/i })).toBeVisible();
 
+  // L'uploader vit désormais dans l'onglet « Bibliothèque » de MediaStudio
+  // (defaultValue="generate" depuis la refonte tabs) — l'ouvrir d'abord.
+  await page.getByTestId('media-tab-library').click();
+
   const importBtn = page.getByRole('button', { name: /importer un média/i });
   await expect(importBtn).toBeVisible({ timeout: 10_000 });
   await importBtn.click();

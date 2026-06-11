@@ -7,8 +7,10 @@ test.describe('Content Studio', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/admin/content-studio');
-    await page.waitForURL('/admin/content-studio');
+    // /admin/content-studio redirige vers la v2 (CONTENT_STUDIO_V2_DEFAULT) ;
+    // le module v1 vit sur l'URL legacy stable.
+    await page.goto('/admin/content-studio-legacy');
+    await page.waitForURL('/admin/content-studio-legacy');
   });
 
   // --- Layout & navigation ---
@@ -81,7 +83,7 @@ test.describe('Content Studio', () => {
 
     await expect(page.locator('li').filter({ hasText: prompt })).toBeVisible({ timeout: 10_000 });
     await page.reload();
-    await page.waitForURL('/admin/content-studio');
+    await page.waitForURL('/admin/content-studio-legacy');
     await expect(page.locator('li').filter({ hasText: prompt })).toBeVisible();
   });
 
@@ -186,7 +188,7 @@ test.describe('Content Studio', () => {
       route.fulfill({ status: 500, body: JSON.stringify({ error: { code: 'internal', message: 'Server error' } }) }),
     );
     await page.reload();
-    await page.waitForURL('/admin/content-studio');
+    await page.waitForURL('/admin/content-studio-legacy');
     await expect(page.getByRole('heading', { name: 'Studio contenu' })).toBeVisible();
   });
 
@@ -195,7 +197,7 @@ test.describe('Content Studio', () => {
       route.fulfill({ status: 401, body: JSON.stringify({ error: { code: 'unauthorized', message: 'Non autorisé' } }) }),
     );
     await page.reload();
-    await page.waitForURL('/admin/content-studio');
+    await page.waitForURL('/admin/content-studio-legacy');
     await expect(page.getByRole('heading', { name: 'Studio contenu' })).toBeVisible();
   });
 });

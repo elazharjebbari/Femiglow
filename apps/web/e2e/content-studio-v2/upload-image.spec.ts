@@ -29,6 +29,10 @@ async function openUploadDialog(page: import('@playwright/test').Page) {
   // Wait for workspace to be interactive
   await expect(page.getByRole('heading', { name: /quelle intention/i })).toBeVisible();
 
+  // L'uploader vit désormais dans l'onglet « Bibliothèque » de MediaStudio
+  // (defaultValue="generate" depuis la refonte tabs) — l'ouvrir d'abord.
+  await page.getByTestId('media-tab-library').click();
+
   // Click "Importer un media" button in the MediaPicker
   const importBtn = page.getByRole('button', { name: /importer un média/i });
   await expect(importBtn).toBeVisible({ timeout: 10_000 });
