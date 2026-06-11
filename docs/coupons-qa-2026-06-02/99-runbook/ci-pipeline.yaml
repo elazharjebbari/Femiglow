@@ -1,0 +1,73 @@
+# Pipeline CI de référence — batterie de tests coupons
+# Gabarit (GitHub Actions-like). À adapter au CI réel du repo.
+# Principe : gates bloquants, fail-fast par étape, artefacts de preuve.
+
+name: coupons-qa
+on:
+  pull_request:
+    paths:
+      - "apps/web/src/lib/coupons/**"
+      - "apps/web/src/lib/checkout/**"
+      - "apps/web/src/lib/products/**"
+      - "apps/web/src/app/api/admin/coupons/**"
+      - "apps/web/src/app/admin/coupons/**"
+      - "apps/web/src/components/sections/CouponWelcomeNote.tsx"
+      - "apps/web/src/components/sections/PriceBlock.tsx"
+      - "apps/web/drizzle/migrations/**"
+
+defaults:
+  run:
+    working-directory: apps/web
+
+jobs:
+
+  static:
+    name: "Qualité statique"
+    steps:
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  unit-integration:
+    name: "Vitest (unit + MSW) + couverture"
+    needs: static
+    steps:
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test --coverage
+      # GATE : engine=100% ; api_routes>=90 ; ui>=85 (cf. quality-gates.yaml)
+      - name: "Vérifier les seuils de couverture"
+        run: node scripts/check-coverage-gates.mjs   # compare au quality-gates.yaml
+      - uses: upload-artifact
+        with: { name: coverage, path: coverage/ }
+
+  migration:
+    name: "Migration Drizzle (forward + idempotence)"
+    needs: static
+    steps:
+      - run: pnpm exec drizzle-kit migrate
+      - run: pnpm exec drizzle-kit migrate   # 2e fois = no-op (idempotence)
+
+  e2e:
+    name: "Playwright (visiteur + opérateur)"
+    needs: unit-integration
+    strategy:
+      matrix:
+        project: [chromium, webkit]
+    steps:
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps ${{ matrix.project }}
+      - run: pnpm exec playwright test --project=${{ matrix.project }} --repeat-each=3
+      # GATES : G-PRICE-PARITY, G-RBAC, G-CHARTE, G-A11Y, G-I18N
+      - uses: upload-artifact
+        if: always()
+        with: { name: playwright-report-${{ matrix.project }}, path: playwright-report/ }
+
+  gate-summary:
+    name: "Synthèse des gates (bloquant)"
+    needs: [unit-integration, migration, e2e]
+    steps:
+      - name: "Tous les gates fonctionnels verts ?"
+        run: echo "Bloque le merge si un gate de quality-gates.yaml est rouge."
+
+# Politique flaky : --repeat-each=3 ; tout flaky => échec du job (0 toléré).
+# Artefacts : coverage/, playwright-report/, traces sur échec.

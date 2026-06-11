@@ -62,6 +62,9 @@ test.describe('create — error recovery', () => {
   });
 
   test('generate-visual 429 budget error shows toast', async ({ page }) => {
+    // Le bouton Générer est désormais désactivé tant qu'aucune variante n'est
+    // sélectionnée (garde P2) : il faut dérouler idée → variante avant de
+    // déclencher le 429 (même pattern que create-budget-exhaustion).
     await page.goto('/admin/content-studio-v2/create');
     await ensureAuthOrSkip(page);
 
@@ -76,13 +79,16 @@ test.describe('create — error recovery', () => {
       }),
     );
 
-    // The "Generer un visuel IA" button is in the MediaStudio section.
-    // It is always rendered (even without a draft), so check for it.
-    const genBtn = page.getByRole('button', { name: /générer un visuel ia/i });
-    if (await genBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await genBtn.click();
-      // Sonner toast should show the budget error message
-      await expect(page.getByText(/budget/i)).toBeVisible({ timeout: 5000 });
-    }
+    await page.getByRole('radio', { name: /Reel/i }).click();
+    await page.locator('textarea').first().fill('Rituel du soir pour un 429 budget.');
+    await page.getByRole('button', { name: /enregistrer l'idée/i }).click();
+    await expect(page.locator('[data-variant-id]').first()).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: /Choisir cette variante/i }).first().click();
+
+    const genBtn = page.getByRole('button', { name: /Générer (un visuel|une vidéo) IA/i });
+    await expect(genBtn).toBeEnabled({ timeout: 10_000 });
+    await genBtn.click();
+    // Sonner toast should show the budget error message
+    await expect(page.getByText(/budget/i).first()).toBeVisible({ timeout: 5000 });
   });
 });

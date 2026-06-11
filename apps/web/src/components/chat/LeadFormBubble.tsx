@@ -30,6 +30,9 @@ import type {
   ChatLeadTriggerReason,
 } from '@/lib/chat/contracts';
 import { useTracking } from '@/lib/tracking/use-tracking';
+import { buildUserDataForEvent } from '@/lib/tracking/build-user-data';
+import { getJourneyPurchaseId } from '@/lib/tracking/lead-purchase-cookie';
+import { isOptimisticWizardClientEnabled } from '@/lib/checkout/flags';
 
 import { useChatStore } from './chat-store';
 import { getLeadFormCopy, type CopyKey } from './lead-form-copy';
@@ -215,6 +218,16 @@ export function LeadFormBubble({
       reason,
     });
 
+    // OWBS (P6) — chemin optimiste : on confirme tout de suite (l'UI n'attend
+    // pas le réseau) ; l'envoi + le tracking valorisé (value/leadId serveur)
+    // continuent en tâche de fond. Flag OFF → legacy (succès après réponse).
+    // cf. docs/checkout-leads-background-2026-06-01 (P6).
+    const optimistic = isOptimisticWizardClientEnabled();
+    if (optimistic) {
+      setLeadFormSuccess(copy.successFallback);
+      saveLeadPrefill({ firstName: firstName.trim(), phone: phone.trim(), country });
+    }
+
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -236,23 +249,56 @@ export function LeadFormBubble({
         const data: { error?: string; code?: string } = await res
           .json()
           .catch(() => ({}));
-        setLeadFormError(data.error || 'submit-failed');
+        // En optimiste l'UI a déjà confirmé → on ne revient pas en erreur.
+        if (!optimistic) setLeadFormError(data.error || 'submit-failed');
         return;
       }
-      const data: { ok: boolean; leadId: string; outcomeMessage: string } = await res.json();
-      setLeadFormSuccess(data.outcomeMessage || copy.successFallback);
-      saveLeadPrefill({
+      const data: {
+        ok: boolean;
+        leadId: string;
+        outcomeMessage: string;
+        value?: number;
+        currency?: string;
+      } = await res.json();
+      // En optimiste, succès + prefill déjà posés avant le fetch.
+      if (!optimistic) {
+        setLeadFormSuccess(data.outcomeMessage || copy.successFallback);
+        saveLeadPrefill({
+          firstName: firstName.trim(),
+          phone: phone.trim(),
+          country,
+        });
+      }
+      // T-06 — `generate_lead` valorisé au prix du kit (avec promo), fourni
+      // par la réponse serveur. On n'émet `currency` QUE si `value` est
+      // présente (currency orpheline = signal invalide GA4/Meta).
+      // Pont lead→Meta Purchase : on crée/lit le `eventID` de parcours (jpid) et
+      // on le porte sur `generate_lead` → le pixel Purchase ET la CAPI utilisent
+      // le MÊME eventID → dédup native Meta (+ cookie pour bloquer l'achat réel).
+      const jpid = getJourneyPurchaseId();
+      // Parité « lead chat = vrai lead » : `generate_lead` porte la conversion
+      // Google Ads `lead` (method-gatée {chat,abandoned_cart}) → on attache
+      // `userData` (téléphone + prénom hashés SHA-256) pour Enhanced
+      // Conversions, exactement comme le lead wizard.
+      const userData = await buildUserDataForEvent('generate_lead', {
         firstName: firstName.trim(),
         phone: phone.trim(),
-        country,
       });
-      emit('generate_lead', {
-        method: 'chat',
-        lead_id: data.leadId,
-        currency: 'MAD',
-      });
+      emit(
+        'generate_lead',
+        {
+          method: 'chat',
+          lead_id: data.leadId,
+          ...(jpid ? { meta_purchase_eid: jpid } : {}),
+          ...(typeof data.value === 'number' && data.value > 0
+            ? { value: data.value, currency: data.currency ?? 'MAD' }
+            : {}),
+        },
+        { userData },
+      );
     } catch (err) {
-      setLeadFormError((err as Error).message || 'network-error');
+      // En optimiste l'UI a déjà confirmé : best-effort, pas de retour en erreur.
+      if (!optimistic) setLeadFormError((err as Error).message || 'network-error');
     }
   };
 

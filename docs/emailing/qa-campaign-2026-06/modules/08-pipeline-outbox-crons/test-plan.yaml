@@ -1,0 +1,98 @@
+module: "08-pipeline-outbox-crons"
+ref_inventaire: [F-080, F-081, F-082, F-083, F-084, F-085, F-086]
+description: >
+  Plan d'exécution du module pipeline/outbox/crons. Couche reine = intégration DB
+  (machine d'états outbox réelle, claim SKIP LOCKED concurrent). Les suites
+  expect_red encodent l'oracle CIBLE (reaper, classification, allowlist interne,
+  attempts non gonflés, nextRetry sur SmtpNotConfigured) et échouent sur l'état
+  actuel jusqu'au fix.
+
+prerequisites:
+  db:
+    name: femiglow_test
+    migrate: "drizzle-kit migrate (vraies migrations)"
+    truncate_between_tests: true
+    tables: [email_outbox, email_event, email_suppression, email_subscriber_link]
+  env:
+    - CRON_SECRET=test-cron-secret
+    - MAIL_UNSUB_TOKEN_SECRET=test-secret-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    - MAIL_FROM=info@femiglow-maroc.com
+  fakes:
+    - "@/lib/db/client mocké via makeFakeDrizzle pour les suites unit/state-machine"
+    - "transport SMTP stub (deliverRow via getTransporter stub : down/lent/refusé)"
+    - "vi.useFakeTimers() pour backoff et fenêtres rate-limit"
+  smtp_stub:
+    contract: "{ sendMail: (msg) => Promise }"
+    modes: [ok, down(connexion refusée), slow(timeout), refused(550 permanent)]
+
+suites:
+  - id: PIP-INT-state-machine
+    file: specs/outbox-state-machine.integration.test.ts
+    layer: integration
+    runner: vitest
+    db: true
+    targets: [src/lib/mail/outbox.ts]
+    covers: [PIP-INT-001, PIP-INT-003, PIP-INT-004, PIP-INT-005, PIP-INT-010, PIP-INT-013, PIP-INT-015, PIP-INT-017, PIP-INT-040, PIP-INT-031, PIP-INT-033, PIP-INT-117]
+    expect_red: partial
+    serialize: true
+    notes: "chaque transition légale acceptée, chaque illégale rejetée ; attempts succès ; reaper ; SmtpNotConfigured"
+
+  - id: PIP-INT-concurrency
+    file: specs/outbox-concurrency.integration.test.ts
+    layer: integration
+    runner: vitest
+    db: true
+    targets: [src/lib/mail/outbox.ts]
+    covers: [PIP-INT-060, PIP-INT-061, PIP-INT-062, PIP-INT-064, PIP-INT-065, PIP-INT-150, PIP-INT-152]
+    serialize: true
+    notes: "deux pickAndProcessBatch concurrents RÉELS en DB de test (SKIP LOCKED), crash mid-batch, borne temps"
+
+  - id: PIP-UNIT-backoff
+    file: specs/backoff-exhaustive.test.ts
+    layer: unit
+    runner: vitest
+    targets: [src/lib/mail/backoff.ts]
+    covers: [PIP-UNIT-070, PIP-UNIT-071, PIP-UNIT-072, PIP-UNIT-073, PIP-UNIT-074, PIP-UNIT-075, PIP-UNIT-076, PIP-UNIT-077]
+    notes: "bornes exactes, jitter déterministe et borné, cap 1h, table-driven attempts"
+
+  - id: PIP-UNIT-unsub
+    file: src/lib/mail/__tests__/unsub-token.test.ts
+    layer: unit
+    runner: vitest
+    reuse_existing: true
+    targets: [src/lib/mail/unsub-token.ts]
+    covers: [PIP-UNIT-130, PIP-UNIT-131, PIP-UNIT-132, PIP-UNIT-133, PIP-UNIT-134, PIP-UNIT-136]
+    notes: "suite existante à densifier (longueurs, normalisation)"
+
+  - id: PIP-INT-suppression
+    file: specs/suppression-allowlist.integration.test.ts
+    layer: integration
+    runner: vitest
+    db: true
+    targets: [src/lib/mail/suppression.ts, src/lib/mail/send.ts]
+    covers: [PIP-INT-100, PIP-INT-101, PIP-INT-102, PIP-INT-107]
+    expect_red: true
+    optional: true
+    notes: "allowlist interne court-circuitante — RED tant qu'absente"
+
+  - id: PIP-E2E-unsubscribe
+    file: e2e/emails-unsubscribe.spec.ts
+    layer: e2e
+    runner: playwright
+    base_url: local-test-build
+    covers: [PIP-E2E-138, PIP-E2E-139, PIP-E2E-140]
+    optional: true
+    notes: "clic one-click -> effet DB suppression + subscriber disabled"
+
+execution_order:
+  - PIP-UNIT-backoff
+  - PIP-UNIT-unsub
+  - PIP-INT-state-machine
+  - PIP-INT-concurrency
+  - PIP-INT-suppression
+  - PIP-E2E-unsubscribe
+
+non_flakiness:
+  - "aucun sleep ; expect.poll pour les états DB ; vi.useFakeTimers pour backoff"
+  - "suites DB sérialisées par fichier ; troncature entre tests"
+  - "concurrence testée avec deux connexions postgres réelles, pas un mock"

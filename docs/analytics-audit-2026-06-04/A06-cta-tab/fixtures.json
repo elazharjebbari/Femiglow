@@ -1,0 +1,69 @@
+{
+  "_note": "Dataset CTA calque sur la prod : AUCUN cta_click / cta_impression (rejetes a l'ingestion sous pack_cta_click & co, cf. A00). Reproduit l'onglet CTA vide. Les blocs specAfterFix supposent le fix AN-03 (cta_click/cta_impression en base). Revenu: value en MAD (unite majeure) -> readValueCents x100 (cta.ts L549).",
+  "now": "2026-05-06T12:00:00Z",
+  "filtersToday": { "period": "custom", "from": "2026-05-06T00:00:00Z", "to": "2026-05-07T00:00:00Z", "device": "all", "traffic": "all" },
+  "components": [
+    { "id": "c1", "label": "Commander mon Kit", "category": "cta_primary", "deletedAt": null },
+    { "id": "c2", "label": "Composer mon rituel", "category": "cta_primary", "deletedAt": null }
+  ],
+  "reproduction_prodlike": {
+    "sessions": {
+      "A": [
+        { "id": "a1", "sessionId": "A", "anonymousId": "anA", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T10:00:00Z" },
+        { "id": "a2", "sessionId": "A", "anonymousId": "anA", "eventName": "begin_checkout", "pageRoute": "/kit", "receivedAt": "2026-05-06T10:05:00Z" },
+        { "id": "a3", "sessionId": "A", "anonymousId": "anA", "eventName": "purchase", "pageRoute": "/kit", "receivedAt": "2026-05-06T10:10:00Z", "payload": { "value": 320 } }
+      ]
+    },
+    "expectedCurrent_buggy": {
+      "totals": { "impressions": 0, "clicks": 0, "conversionRate": null, "revenueAttributedCents": 0 },
+      "rows": [],
+      "topMessages": [],
+      "topPages": [],
+      "cause": "cta_click/cta_impression count 0 en base ; attributePurchases n'indexe que cta_click => index vide => purchase non attribue"
+    }
+  },
+  "nonRegression_AN08_revenue": {
+    "valueMAD": { "events": [
+      { "id": "r1", "sessionId": "S1", "anonymousId": "A1", "eventName": "cta_click", "componentId": "c1", "receivedAt": "2026-05-06T10:01:00Z" },
+      { "id": "r2", "sessionId": "S1", "anonymousId": "A1", "eventName": "purchase", "receivedAt": "2026-05-06T10:02:00Z", "payload": { "value": 320 } }
+    ], "expectedRevenueCents": 32000 },
+    "amountCents": { "events": [
+      { "id": "r3", "sessionId": "S2", "anonymousId": "A2", "eventName": "cta_click", "componentId": "c1", "receivedAt": "2026-05-06T10:01:00Z" },
+      { "id": "r4", "sessionId": "S2", "anonymousId": "A2", "eventName": "purchase", "receivedAt": "2026-05-06T10:02:00Z", "payload": { "amount_cents": 32000 } }
+    ], "expectedRevenueCents": 32000 }
+  },
+  "specAfterFix": {
+    "kpiPopulated": {
+      "events": [
+        { "id": "f1", "sessionId": "S1", "anonymousId": "A1", "eventName": "cta_impression", "componentId": "c1", "receivedAt": "2026-05-06T10:00:00Z" },
+        { "id": "f2", "sessionId": "S1", "anonymousId": "A1", "eventName": "cta_impression", "componentId": "c1", "receivedAt": "2026-05-06T10:00:30Z" },
+        { "id": "f3", "sessionId": "S1", "anonymousId": "A1", "eventName": "cta_click", "componentId": "c1", "receivedAt": "2026-05-06T10:01:00Z" },
+        { "id": "f4", "sessionId": "S1", "anonymousId": "A1", "eventName": "purchase", "receivedAt": "2026-05-06T10:02:00Z", "payload": { "value": 250 } }
+      ],
+      "expected": { "impressions": 2, "clicks": 1, "revenueAttributedCents": 25000 }
+    },
+    "lastClick": {
+      "events": [
+        { "id": "g1", "sessionId": "S1", "anonymousId": "A1", "eventName": "cta_click", "componentId": "c1", "receivedAt": "2026-05-06T10:01:00Z" },
+        { "id": "g2", "sessionId": "S1", "anonymousId": "A1", "eventName": "cta_click", "componentId": "c2", "receivedAt": "2026-05-06T10:05:00Z" },
+        { "id": "g3", "sessionId": "S1", "anonymousId": "A1", "eventName": "purchase", "receivedAt": "2026-05-06T10:10:00Z", "payload": { "value": 320 } }
+      ],
+      "expected": { "attributedTo": "c2", "c1Attributed": 0, "c2RevenueCents": 32000 }
+    },
+    "fallback7d_in": {
+      "events": [
+        { "id": "h1", "sessionId": "S0", "anonymousId": "A1", "eventName": "cta_click", "componentId": "c1", "receivedAt": "2026-05-03T15:00:00Z" },
+        { "id": "h2", "sessionId": "S1", "anonymousId": "A1", "eventName": "purchase", "receivedAt": "2026-05-06T10:00:00Z", "payload": { "value": 100 } }
+      ],
+      "expected": { "attributedTo": "c1", "revenueCents": 10000 }
+    },
+    "fallback7d_out": {
+      "events": [
+        { "id": "i1", "sessionId": "S0", "anonymousId": "A1", "eventName": "cta_click", "componentId": "c1", "receivedAt": "2026-04-28T10:00:00Z" },
+        { "id": "i2", "sessionId": "S1", "anonymousId": "A1", "eventName": "purchase", "receivedAt": "2026-05-06T10:00:00Z", "payload": { "value": 5000 } }
+      ],
+      "expected": { "rowsLength": 0, "revenueCents": 0 }
+    }
+  },
+  "dbCounts90j": { "cta_click": 0, "cta_impression": 0, "purchase": 13, "view_item": 339, "begin_checkout": 97 }
+}

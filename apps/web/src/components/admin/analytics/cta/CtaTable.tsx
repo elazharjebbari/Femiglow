@@ -160,8 +160,9 @@ export function CtaTable({ rows, loading = false, currency = 'EUR' }: CtaTablePr
             Performance des CTA
           </h3>
           <p className="text-xs text-stone-500">
-            Attribution last-click sur 7 jours. Tri sur n'importe quelle
-            colonne.
+            Attribution last-click sur 7 jours : un achat peut être crédité à un
+            CTA cliqué avant la période — une ligne « 0 clic / achats &gt; 0 »
+            est donc normale. Tri sur n'importe quelle colonne.
           </p>
         </div>
         <ExportCsvButton

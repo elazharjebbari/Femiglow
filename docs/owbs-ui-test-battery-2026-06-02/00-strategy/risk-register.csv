@@ -1,0 +1,23 @@
+risk_id,module,description,likelihood,impact,severity,ui_symptom,mitigating_tests
+RSK-01,F01,L'UI gèle quand même (flag mal propagé au bundle client),medium,high,high,spinner bloqué 6s,F01 PW timing + F12 parité
+RSK-02,F01,Honeypot sélectionné par erreur (1er input[text]) -> submit invalide,high,medium,high,bouton reste disabled,F01 RTL name-based + guard honeypot
+RSK-03,F02,Conversion échoue car lead pas encore persisté (flush raté),medium,high,high,erreur order alors que tout semblait OK,F02 PW flush + F14 idempotence
+RSK-04,F02,Double-tap submit -> 2 commandes,medium,high,high,2 commandes / 2 thank-you,F02 PW double-tap + F14 idempotence
+RSK-05,F04,Beacon non émis sur iOS (pagehide/bfcache),medium,high,high,lead perdu silencieusement,F04 PW pagehide + visibilitychange (webkit)
+RSK-06,F04,Reprise reload duplique le lead,low,medium,medium,2 leads admin,F09 reload + F14 dedup
+RSK-07,F05,Indicateur dégradé bloque la navigation (modal),low,high,medium,utilisatrice coincée,F05 RTL non-bloquant + PW navigation libre
+RSK-08,F05,Faux positif: indicateur affiché alors que tout est OK,medium,low,low,inquiétude inutile,F05 RTL onDrop only on real drop
+RSK-09,F06,Retry storm sur coupure prolongée (boucle CPU/batterie),low,medium,medium,page qui rame,F03 backoff borné + F06 offline
+RSK-10,F07,Chat optimiste perd la valeur de conversion (generate_lead sans value),medium,high,high,ROAS sous-évalué,F07 tracking valorisé en fond
+RSK-11,F07,Chat: succès affiché mais lead jamais envoyé (échec silencieux),medium,high,high,lead fantôme,F07 best-effort + F14 dedup serveur
+RSK-12,F08,AR/RTL casse l'alignement/saisie du téléphone (latin),medium,medium,medium,champ illisible,F08 RTL layout + saisie
+RSK-13,F08,a11y: changement d'étape non annoncé (lecteur d'écran),high,medium,high,non-voyant perdu,F08 aria-live + focus
+RSK-14,F10,Lead optimiste invisible en admin (latence projection),medium,high,high,opérateur ne voit pas le lead,F10 reflet temps réel
+RSK-15,F11,Pas d'UI pour superviser l'outbox -> dead invisibles,high,high,high,effets perdus sans alerte,F11 GAP spec + observabilité
+RSK-16,F11,Worker double-traite (SKIP LOCKED mal compris),low,high,medium,doublons effets,F11 worker + F14 dedup
+RSK-17,F12,Activation partielle (serveur ON / client OFF) -> incohérence,medium,high,high,leadId ignoré,F12 garde-fou + matrice flag
+RSK-18,F12,Flag OFF régresse l'existant,low,high,high,checkout cassé,F12 parité legacy (tous écrans)
+RSK-19,F13,Rate-limit bloque un usage légitime (beacon multi-étapes),low,medium,medium,429 sur acheteuse réelle,F13 seuil + scénario réaliste
+RSK-20,F14,Désordre/rejeu corrompt un état (timestamp régressif),low,high,medium,lead incohérent,F14 monotone + désordre
+RSK-21,F14,Webhook order.created dupliqué (dedupeKey),low,high,medium,double commande CRM,F14 UNIQUE dedupe
+RSK-22,F01,Validation onChange ne déverrouille pas (mode form),medium,high,high,bouton jamais actif,F01 RTL isValid

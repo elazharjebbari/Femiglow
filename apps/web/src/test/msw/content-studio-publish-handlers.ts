@@ -613,7 +613,6 @@ export function createPublishHandlers(opts: PublishMocksOpts = {}): HttpHandler[
  * onto the page request stream.
  */
 export async function applyPlaywrightRoutes(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   page: any,
   opts: PublishMocksOpts = {},
 ): Promise<{ store: PublishMockStore }> {
@@ -622,28 +621,21 @@ export async function applyPlaywrightRoutes(
 
   for (const handler of handlers) {
     // MSW handlers have a `info` field with method + path patterns.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const info = (handler as any).info;
     if (!info?.path || !info?.method) continue;
     const pathRegex = mswPathToPlaywrightPattern(info.path as string);
 
     await page.route(pathRegex, async (route: { request: () => Request; fulfill: (r: { status: number; contentType: string; body: string }) => Promise<void> }) => {
       const req = route.request();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const fetchReq = new Request((req as any).url(), {
         method: info.method,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         headers: (req as any).headers(),
         body: ['POST', 'PATCH', 'PUT'].includes(info.method as string)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? ((req as any).postData() as string | undefined)
           : undefined,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const params = extractParams(info.path as string, (req as any).url() as string);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const resolver = (handler as any).resolver;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await resolver({ request: fetchReq, params } as any);
       const response = result instanceof HttpResponse ? result : (result as Response);
       const status = response.status;

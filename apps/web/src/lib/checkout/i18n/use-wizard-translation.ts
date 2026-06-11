@@ -19,11 +19,15 @@ import { useMemo } from 'react';
 
 import { selectLanguage, useWizardStore } from '@/lib/checkout/state/wizard-store';
 
-import { getWizardDictionary, type WizardDictionary } from './dictionary';
+import {
+  getWizardDictionary,
+  type DictionaryLanguage,
+  type WizardDictionary,
+} from './dictionary';
 
 interface WizardTranslation {
   t: WizardDictionary;
-  language: 'fr' | 'ar';
+  language: DictionaryLanguage;
   dir: 'ltr' | 'rtl';
 }
 

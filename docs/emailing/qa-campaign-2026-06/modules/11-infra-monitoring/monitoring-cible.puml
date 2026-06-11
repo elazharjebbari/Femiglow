@@ -1,0 +1,80 @@
+@startuml monitoring-cible
+title Monitoring cible - timers -> crons -> heartbeat -> healthcheck -> badge + alertes
+
+skinparam componentStyle rectangle
+
+package "systemd (6 timers - manifeste timers-attendus.yaml)" {
+  [email-outbox.timer\n60s] as T1
+  [email-automation.timer\n60s] as T2
+  [email-campaign-sync.timer\n5min] as T3
+  [email-listmonk-cleanup.timer\n03:10] as T4
+  [email-audience-purge.timer\n03:30] as T5
+  [rituals-email-j45.timer\n09:00] as T6
+}
+
+package "Routes cron (auth: authorizeCron timing-safe)" {
+  [/api/cron/email-outbox] as R1
+  [/api/cron/email-automation] as R2
+  [/api/cron/email-campaign-sync] as R3
+  [/api/cron/email-listmonk-cleanup] as R4
+  [/api/cron/email-audience-purge] as R5
+  [/api/cron/rituals-email-j45] as R6
+}
+
+database "cron_heartbeat\n(last_tick_at par cron)" as HB
+database "email_outbox\n(pending/dlq/delivered)" as OB
+
+T1 --> R1
+T2 --> R2
+T3 --> R3
+T4 --> R4
+T5 --> R5
+T6 --> R6
+
+R1 --> HB : last_tick
+R2 --> HB
+R3 --> HB
+R4 --> HB
+R5 --> HB
+R6 --> HB
+R1 --> OB
+
+note right of T4
+  ORDRE: cleanup (03:10) AVANT purge (03:30)
+  => garde anti-fuite de listes Listmonk
+end note
+
+package "checkEmailingHealth (ÉTENDU)" {
+  [probe: SMTP verify] as P1
+  [probe: DB reachable] as P2
+  [probe: outbox stuck >5min] as P3
+  [probe: pending vieillissant >10min] as P4
+  [probe: fraicheur cron (last_tick)] as P5
+  [probe: Listmonk serverInfo] as P6
+  [probe: lastDelivered != null] as P7
+  [probe: DLQ 24h] as P8
+}
+
+HB --> P5
+OB --> P3
+OB --> P4
+OB --> P7
+OB --> P8
+
+P1 --> [niveau = pire(ok/degraded/incident)] as LVL
+P2 --> LVL
+P3 --> LVL
+P4 --> LVL
+P5 --> LVL
+P6 --> LVL
+P7 --> LVL
+P8 --> LVL
+
+LVL --> [Badge /admin/emails] as BADGE
+P8 --> [Alerte DLQ (Slack + log mail.dlq.alert)] as ALERT
+
+note bottom of P7
+  lastDelivered=null malgre envois recents => INCIDENT
+  (symptome du webhook Stalwart casse / W-URL)
+end note
+@enduml

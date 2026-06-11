@@ -3,10 +3,17 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { PriceDisplay } from '@/components/commerce/PriceDisplay';
 import { useChatStore } from '@/components/chat/chat-store';
+import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import type { Currency } from '@/lib/products/currency';
 
 interface StickyCartCTAProps {
   productName: string;
+  /**
+   * Libellé `aria-label` de la région (« Achat rapide »). Localisé via
+   * `marketing.kit.sticky.aria_region` et passé par le layout `/[locale]/kit`.
+   * Optionnel pour les call-sites legacy (FR) qui n'ont pas encore wiré l'i18n.
+   */
+  ariaRegion?: string;
   priceCents: number;
   /**
    * Prix promotionnel optionnel — si fourni et `< priceCents`, la sticky
@@ -21,6 +28,7 @@ interface StickyCartCTAProps {
 
 export function StickyCartCTA({
   productName,
+  ariaRegion = 'Achat rapide',
   priceCents,
   promoPriceCents = null,
   currency,
@@ -28,6 +36,14 @@ export function StickyCartCTA({
   children,
 }: StickyCartCTAProps) {
   const [visible, setVisible] = useState(false);
+  // Phase 3+ — crédit de fidélité (wizard-store) : soustrait du prix ACTIF
+  // affiché (promo si présente, sinon prix), pour rester cohérent avec le bloc
+  // prix /kit et le récap du formulaire quand un code valide est appliqué.
+  const creditCents = Math.max(0, useWizardStore((s) => s.creditCents));
+  const activeCents = promoPriceCents ?? priceCents;
+  const adjustedActive = Math.max(0, activeCents - creditCents);
+  const displayPriceCents = promoPriceCents != null ? priceCents : adjustedActive;
+  const displayPromoCents = promoPriceCents != null ? adjustedActive : null;
   // CHA-244 — Le sticky CTA se cache (slide-down + fade) quand le chat
   // est ouvert pour libérer la zone composer/clavier du panel chat.
   // cf. docs/admin-config/43-chat-mobile-ux-fix-runbook.md §B.
@@ -57,12 +73,13 @@ export function StickyCartCTA({
   return (
     <div
       role="region"
-      aria-label="Achat rapide"
+      aria-label={ariaRegion}
+      data-testid="sticky-cart-cta"
       data-visible={dataVisible}
       data-chat-open={chatOpen ? 'true' : 'false'}
       aria-hidden={chatOpen}
       style={{ zIndex: 'var(--z-sticky)' }}
-      className="fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:left-auto lg:right-6 lg:w-[340px] lg:rounded-md lg:border"
+      className="fixed inset-x-0 bottom-0 border-t border-encre/10 bg-creme/95 px-4 py-3 backdrop-blur transition-[transform,opacity] duration-base ease-out-soft data-[visible=false]:translate-y-full data-[chat-open=true]:opacity-0 data-[chat-open=true]:pointer-events-none motion-reduce:transition-none motion-reduce:data-[visible=false]:opacity-0 motion-reduce:data-[visible=false]:translate-y-0 lg:bottom-6 lg:start-auto lg:end-6 lg:w-[340px] lg:rounded-md lg:border"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -75,8 +92,8 @@ export function StickyCartCTA({
             sur mobile). Le contraste actif vs barré reste visible.
           */}
           <PriceDisplay
-            priceCents={priceCents}
-            promoPriceCents={promoPriceCents}
+            priceCents={displayPriceCents}
+            promoPriceCents={displayPromoCents}
             currency={currency}
             size="md"
             layout="inline"

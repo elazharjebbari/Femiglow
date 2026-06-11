@@ -1,0 +1,80 @@
+{
+  "$comment": "Fixtures synthétiques OWBS — aucune PII réelle. Réutilisables en Vitest/MSW/Playwright.",
+  "leadId": "cl_3xq7m2k9v4b1n8p0w5tz",
+  "visitorId": "vis_test_0001",
+  "sessionId": "cs_test_0001",
+  "createLeadInput": {
+    "leadId": "cl_3xq7m2k9v4b1n8p0w5tz",
+    "phone": "+212600000000",
+    "firstName": "Test",
+    "consentVersion": "v1",
+    "language": "fr",
+    "visitorId": "vis_test_0001",
+    "sessionId": "cs_test_0001",
+    "page": "/fr/kit",
+    "referrer": "",
+    "utm": { "source": "test", "medium": "e2e" },
+    "gclid": null,
+    "fbp": null,
+    "fbc": null,
+    "formContext": { "formId": "wizard_kit", "formMode": "wizard_cart", "variantKey": "control", "source": "wizard_kit" },
+    "cartSnapshot": { "items": [{ "sku": "KIT-3", "qty": 1, "price": 28900 }], "currency": "MAD", "total": 28900 }
+  },
+  "addressInput": {
+    "city": "Rabat",
+    "addressLine1": "12 rue des Oudayas",
+    "addressLine2": null,
+    "postalCode": "10000",
+    "country": "MA",
+    "notes": null
+  },
+  "paymentInput": { "paymentMethod": "cod" },
+  "envelopes": [
+    {
+      "mutationId": "11111111-1111-4111-8111-111111111111",
+      "leadId": "cl_3xq7m2k9v4b1n8p0w5tz",
+      "scope": "lead_create",
+      "endpoint": "/api/checkout/lead",
+      "method": "POST",
+      "idempotencyKey": "idem_lead_create_3xq7m2k9v4b1",
+      "payload": { "$ref": "#/createLeadInput" },
+      "enqueuedAt": "2026-06-01T10:00:00.000Z",
+      "attempt": 0
+    },
+    {
+      "mutationId": "22222222-2222-4222-8222-222222222222",
+      "leadId": "cl_3xq7m2k9v4b1n8p0w5tz",
+      "scope": "address_update",
+      "endpoint": "/api/checkout/lead/cl_3xq7m2k9v4b1n8p0w5tz/address",
+      "method": "PATCH",
+      "idempotencyKey": "idem_address_3xq7m2k9v4b1",
+      "payload": { "$ref": "#/addressInput" },
+      "enqueuedAt": "2026-06-01T10:00:03.000Z",
+      "attempt": 0
+    }
+  ],
+  "beaconBatch": {
+    "schemaVersion": 1,
+    "sentVia": "beacon",
+    "envelopes": [
+      {
+        "mutationId": "33333333-3333-4333-8333-333333333333",
+        "leadId": "cl_3xq7m2k9v4b1n8p0w5tz",
+        "scope": "lead_create",
+        "idempotencyKey": "idem_lead_create_3xq7m2k9v4b1",
+        "payload": { "$ref": "#/createLeadInput" }
+      }
+    ]
+  },
+  "outboxEvent": {
+    "type": "purchase_capi",
+    "leadId": "cl_3xq7m2k9v4b1n8p0w5tz",
+    "dedupeKey": "evt-purchase-test-0001",
+    "payload": { "eventId": "evt-purchase-test-0001", "value": 289.0, "currency": "MAD", "orderId": "ord_test_0001" }
+  },
+  "expected": {
+    "transitionMaxMs": 50,
+    "outboxDrainMaxMs": 90000,
+    "queueMaxAttempts": 6
+  }
+}

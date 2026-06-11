@@ -1,0 +1,76 @@
+# language: fr
+
+Fonctionnalité: Réception de la réponse assistant en streaming SSE
+  En tant que visiteur
+  Je veux voir la réponse de l'assistant apparaître progressivement
+  Afin de percevoir une interaction naturelle et fluide
+
+  Contexte:
+    Étant donné que je suis sur "/kit" avec le widget ouvert
+    Et que l'orchestrator est en mode nominal
+
+  Scénario: Réception d'une réponse complète (happy path)
+    Quand j'envoie le message "Bonjour"
+    Alors je vois apparaître un avatar assistant
+    Et le texte de la réponse s'affiche par chunks progressifs
+    Et l'animation typewriter applique une cadence de 30-50ms par chunk
+    Et après l'event "end" le composer redevient disponible
+    Et le coût et latence sont disponibles dans le store (debug-mode)
+
+  Scénario: Réception avec sources RAG
+    Étant donné que ma question matche une page produit (intent pricing)
+    Quand j'envoie "Combien coûte le kit ?"
+    Alors la réponse s'affiche en streaming
+    Et au moins une source est attachée au message (chunk type source)
+    Et les sources sont rendues sous forme de badges discrets
+
+  Scénario: Erreur LLM en cours de stream
+    Étant donné que le provider primary échoue après 1 chunk
+    Quand j'envoie "Salut"
+    Alors je reçois un premier morceau de texte
+    Et un événement "error" est émis
+    Et un toast d'erreur s'affiche : "Une erreur est survenue"
+    Et un bouton "Réessayer" est proposé
+
+  Scénario: Annulation mid-stream par le visiteur
+    Étant donné qu'une réponse est en cours de streaming
+    Quand je clique sur "Annuler" ou ferme le panel
+    Alors le AbortController est invoqué
+    Et la requête POST /api/chat/message est annulée
+    Et le serveur reçoit le signal et persiste un message partiel
+    Et le store marque le dernier message comme "partial"
+
+  Scénario: Coupure réseau mid-stream
+    Étant donné qu'une réponse est en cours
+    Quand la connexion réseau coupe
+    Alors le texte reçu est conservé
+    Et un état "disconnected" est affiché
+    Et un bouton "Reconnecter" est proposé
+    Et aucun crash JS ne survient
+
+  Scénario: Heartbeat — pas de chunk pendant 10s
+    Étant donné qu'aucun chunk n'est reçu pendant 10 secondes
+    Quand l'attente continue
+    Alors un indicateur "L'assistant réfléchit…" s'affiche
+    Et il disparaît au prochain chunk reçu
+
+  Scénario: Lead form offer en milieu de réponse
+    Étant donné que mon message exprime une "purchase-intent"
+    Quand l'assistant a fini sa réponse
+    Et que l'event "lead-form-offer" est émis
+    Alors une LeadFormBubble apparaît sous le dernier message
+    Et le formulaire est pré-rempli avec le numéro éventuellement détecté
+
+  Scénario: Réponse non-SSE (erreur HTML 500)
+    Étant donné que le serveur retourne une page HTML 500 au lieu d'un SSE
+    Quand j'envoie un message
+    Alors aucun chunk n'est ajouté
+    Et un toast d'erreur s'affiche
+    Et isSending revient à false
+
+  Scénario: Plusieurs envois successifs — abort du précédent
+    Étant donné qu'une réponse est en cours
+    Quand je tape un autre message et l'envoie
+    Alors la requête précédente est abortée
+    Et seule la nouvelle réponse continue à streamer
+    Et le store ne contient qu'un seul message assistant final

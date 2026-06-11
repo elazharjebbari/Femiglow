@@ -1,0 +1,81 @@
+# Gates qualité — Système de coupons FemiGlow
+# Seuils bloquants pour la CI. Un gate non satisfait = release bloquée.
+# La couverture est un PLANCHER, pas un objectif : la robustesse prime (cf. test-strategy §1).
+
+meta:
+  scope: coupons
+  date: 2026-06-02
+  owner: qa-femiglow
+
+# ── Couverture minimale par couche logique (plancher) ──────────────────
+coverage:
+  engine:            # lib/coupons/engine.ts, applyCoupon, resolveCoupon, resolveProductPricing
+    statements: 100
+    branches: 100
+    functions: 100
+    rationale: "Logique pure portant l'invariant prix — tolérance zéro."
+  context:           # lib/coupons/context.ts
+    statements: 95
+    branches: 90
+  repos:             # coupon-repo.ts, coupon-event-repo.ts (chemin memoryStore)
+    statements: 90
+    branches: 85
+  api_routes:        # api/admin/coupons/**, api/checkout/order
+    statements: 90
+    branches: 90
+    rationale: "Auth, validation, idempotence, audit — chemins d'erreur obligatoires."
+  ui_components:     # CouponWelcomeNote, pages admin coupons
+    statements: 85
+    branches: 80
+
+# ── Gates fonctionnels (binaires : pass/fail) ──────────────────────────
+functional_gates:
+  - id: G-PRICE-PARITY
+    description: "Prix affiché == prix facturé sur tous les parcours E2E (anti-422)."
+    blocking: true
+    evidence: "Playwright: aucun 422 price_mismatch; totalCents == prix affiché."
+  - id: G-HOLDOUT-DETERMINISM
+    description: "Même visitorKey → même bucket à l'affichage et au checkout, 100% du temps."
+    blocking: true
+    evidence: "Vitest: 10000 tirages stables; E2E: bucket cohérent affichage↔order."
+  - id: G-FALLBACK-LEGACY
+    description: "Coupon désactivé/DB indisponible → fallback promoPriceCents, page jamais cassée."
+    blocking: true
+  - id: G-CHARTE
+    description: "Module coupon: pas de rouge retail, pas de countdown, pas d'emoji, tokens crème/encre/sauge."
+    blocking: true
+    evidence: "Playwright visuel + assertions de classes/texte."
+  - id: G-RBAC
+    description: "Écriture coupons interdite (403) sans permission; lecture conforme matrice."
+    blocking: true
+  - id: G-IDEMPOTENCE
+    description: "Une commande = au plus un coupon_event converted; double soumission sans double comptage."
+    blocking: true
+  - id: G-TRACKING-VALUE
+    description: "getKitLeadValue + view_item + purchase exposent value=199 (pas 289)."
+    blocking: true
+  - id: G-A11Y
+    description: "0 violation axe-core critique/grave sur module coupon et pages admin."
+    blocking: true
+  - id: G-I18N
+    description: "Affichage correct fr (MAD) et ar (درهم, RTL)."
+    blocking: false
+
+# ── Stabilité ──────────────────────────────────────────────────────────
+flakiness:
+  max_flaky_rate: 0.0
+  reruns_required_green: 3
+  policy: "Tout test flaky est quarantiné puis corrigé sous 24h, jamais ignoré durablement."
+
+# ── Matrice navigateurs E2E ──────────────────────────────────────────────
+e2e_browsers:
+  - chromium
+  - webkit
+  mobile_emulation:
+    - "iPhone 13"   # trafic mobile dominant Maroc
+
+# ── Performance (budgets) ────────────────────────────────────────────────
+performance:
+  resolveCoupon_p95_ms: 5        # lecture cachée
+  kit_ttfb_regression_max_ms: 0  # aucune régression TTFB tolérée vs baseline
+  admin_list_render_p95_ms: 300

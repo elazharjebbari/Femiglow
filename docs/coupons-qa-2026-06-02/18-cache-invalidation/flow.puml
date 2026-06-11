@@ -1,0 +1,81 @@
+@startuml CPN-18-cache-invalidation-sequence
+title CPN-18 — Séquence : lecture cachée + invalidation + bucket non caché
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1
+skinparam ParticipantBackgroundColor #F7F4EC
+skinparam ParticipantBorderColor #4A4A42
+skinparam NoteBackgroundColor #EAEFE6
+skinparam NoteBorderColor #6B7A5E
+
+actor "Visiteur A" as A
+actor "Visiteur B" as B
+actor "Opérateur admin" as OP
+
+participant "/kit (ISR 1800s)\nresolveProductPricing" as KIT
+participant "repo: getActiveCouponsCached\nunstable_cache tag 'coupons'" as CACHE
+database "Postgres\n(définitions coupons)" as DB
+participant "decideBucket()\n(pur, NON caché)" as BUCKET
+participant "/api/admin/coupons\n(mutation, RBAC)" as ADMIN
+
+== Lecture initiale (cache miss) ==
+A -> KIT : GET /kit (cookie _fbp -> visitorKey vkA)
+KIT -> CACHE : getActiveCouponsCached()
+CACHE -> DB : SELECT définitions (miss)
+DB --> CACHE : [c1 active, endsAt, eligibility, holdoutPct...]
+CACHE --> KIT : définitions (mises en cache, tag 'coupons')
+KIT -> KIT : resolveCoupon(ctx avec ctx.now)  // validité re-évaluée
+KIT -> BUCKET : decideBucket(vkA, 'c1', holdoutPct)
+BUCKET --> KIT : 'treatment'
+KIT --> A : prix coupon (199)
+
+== Lecture suivante (cache HIT, autre visiteur) ==
+B -> KIT : GET /kit (cookie _fbp -> visitorKey vkB)
+KIT -> CACHE : getActiveCouponsCached()
+CACHE --> KIT : MÊMES définitions (HIT, pas de DB)
+note right of CACHE
+  HIT : pas de round-trip DB.
+  L'entrée cache ne contient AUCUNE
+  donnée visiteur (ni vkA/vkB ni bucket).
+end note
+KIT -> KIT : resolveCoupon(ctx.now)  // validité encore re-évaluée
+KIT -> BUCKET : decideBucket(vkB, 'c1', holdoutPct)
+BUCKET --> KIT : bucket propre à vkB (indépendant de vkA)
+note right of BUCKET
+  Bucket décidé PAR REQUÊTE.
+  Jamais mémoïsé / jamais caché.
+  => isolation entre visiteurs.
+end note
+KIT --> B : prix selon SON bucket
+
+== Coupon expiré servi par cache figé ? -> NON ==
+note over KIT, CACHE #EAEFE6
+  Même si la définition est en cache,
+  resolveCoupon compare endsAt à ctx.now
+  à CHAQUE résolution :
+  endsAt < now => coupon écarté => fallback promo.
+  L'expiration ne dépend pas d'une purge de cache.
+end note
+
+== Mutation admin -> invalidation ==
+OP -> ADMIN : PATCH statut c1 active->paused (authentifié, RBAC)
+ADMIN -> DB : UPDATE c1.status = 'paused'
+DB --> ADMIN : ok
+ADMIN -> CACHE : revalidateTag('coupons')
+note right of ADMIN
+  Émis APRÈS persistance réussie.
+  Une mutation échouée => PAS d'invalidation.
+  N'affecte pas 'products' ni 'app-config'.
+  Prime sur la fenêtre ISR 1800s.
+end note
+
+== Lecture post-invalidation -> fallback ==
+A -> KIT : GET /kit
+KIT -> CACHE : getActiveCouponsCached()
+CACHE -> DB : SELECT (entrée purgée -> miss)
+DB --> CACHE : [c1 paused]
+CACHE --> KIT : définitions fraîches
+KIT -> KIT : resolveCoupon => null (paused écarté)
+KIT --> A : fallback computePromo(28900,19900) = 199, coupon null
+
+@enduml

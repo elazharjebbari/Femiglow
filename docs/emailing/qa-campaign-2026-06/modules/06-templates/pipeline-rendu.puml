@@ -1,0 +1,55 @@
+@startuml pipeline-rendu
+title Pipeline de rendu email — transactionnel (React) & custom (Handlebars)
+
+skinparam shadowing false
+
+partition "Transactionnel React (lib/mail/render.ts)" {
+  start
+  :renderTemplate(slug, payload);
+  if (isKnownTemplate(slug) ?) then (non)
+    :throw Unknown template;
+    stop
+  else (oui)
+  endif
+  :meta.schema.parse(payload)\n(VALIDATION ZOD);
+  note right
+    ÉCART A-TPL-1 :
+    si parse() throw AVANT INSERT outbox,
+    l'email est perdu SANS TRACE.
+    État cible : le pipeline (lib/mail/send.ts)
+    transforme l'échec en ligne outbox 'failed'.
+  end note
+  :createElement(component, parsed);
+  :@react-email/render -> HTML inline;
+  :htmlToText -> texte alternatif;
+  :subjectFn / preheaderFn;
+  :substitution {{unsubscribe_url}}\n-> URL SIGNÉE (unsub-token);
+  note right
+    ÉCART A-TPL-3 :
+    si secret manquant + catch{} vide,
+    {{unsubscribe_url}} LITTÉRAL fuite.
+  end note
+  :{ html, text, subject, preheader };
+  stop
+}
+
+partition "Custom HTML (lib/mail/templates/custom/render.ts)" {
+  start
+  :buildEmailContext(email)\n(context-resolver : lead, orders, URLs);
+  :Handlebars.compile (cache LRU 50);
+  :rendu sujet / preheader / html;
+  note right
+    {{var}}   -> échappé (HTML-safe)
+    {{{var}}} -> bypass -> sanitize obligatoire
+  end note
+  :sanitizeEmailHtml(htmlRaw)\nDOMPurify whitelist;
+  note right
+    ÉCART A-TPL-2 : dernière barrière XSS.
+    Retire script/iframe/object/on*/javascript:/
+    data:text-html/svg onload/style expression.
+  end note
+  :{ subject, preheader, html (sûr) };
+  stop
+}
+
+@enduml

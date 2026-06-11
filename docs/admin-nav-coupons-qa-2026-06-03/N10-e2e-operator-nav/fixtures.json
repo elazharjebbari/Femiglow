@@ -1,0 +1,24 @@
+{
+  "_note": "N10 est un E2E Playwright contre la vraie app (pas de MSW). Auth via storageState produit par global.setup.ts. Aucune mutation, aucune assertion pricing (INV-PRICE hors scope).",
+  "session": {
+    "admin": { "storageState": ".auth/admin.json", "produitPar": "global.setup.ts", "import": "ADMIN_STORAGE_PATH from ./helpers/auth" }
+  },
+  "routes": {
+    "coupons": "/admin/coupons",
+    "dashboard": "/admin",
+    "login": "/admin/login"
+  },
+  "selectors": {
+    "manager": "[data-testid=\"coupons-manager\"]",
+    "navCoupons": "[data-testid=\"admin-nav-coupons\"]",
+    "navDashboard": "[data-testid=\"admin-nav-dashboard\"]"
+  },
+  "urlMatchers": {
+    "dashboard": "/\\/admin(\\/?$|\\?)/",
+    "coupons": "/\\/admin\\/coupons/",
+    "login": "/\\/admin\\/login/"
+  },
+  "ariaCurrentValue": "page",
+  "timeoutMs": 60000,
+  "outOfScope": ["pack-price-line", "creation de coupon", "/kit"]
+}

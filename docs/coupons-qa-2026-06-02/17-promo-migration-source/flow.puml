@@ -1,0 +1,64 @@
+@startuml CPN-17-price-resolution
+' Arbre de décision de résolution du prix produit (bascule promo -> coupon source)
+title CPN-17 — resolveProductPricing : coupon prime, promoPriceCents fallback
+
+start
+
+:variant = { priceCents=28900, promoPriceCents };
+:context (visitorKey, trafficSource, device, now);
+
+partition "1. Résolution coupon (CPN-03)" {
+  if (resolveCoupon(context) lève une exception ?) then (oui)
+    :capturer l'erreur;
+    note right: jamais de crash UI
+    ' -> on saute au fallback
+    goto fallback
+  else (non)
+    :coupon = resolveCoupon(context);
+  endif
+}
+
+if (coupon résolu ?) then (oui)
+  partition "2. Application (CPN-02)" {
+    if (valueKind == fixed_amount) then
+      :effective = priceCents - valueAmount;
+    else (percent)
+      :effective = round(priceCents * (1 - valueAmount/100));
+    endif
+    :clamp effective >= 0;
+  }
+  partition "Garde-fou cohérence (promo < prix)" {
+    if (currency == MAD\nAND valueAmount > 0\nAND 0 < effective < priceCents ?) then (oui)
+      :source = "coupon";
+      :couponId = coupon.id;
+      :RETURN { effective, source=coupon, active=true,\noriginal=28900, savings=priceCents-effective };
+      note right
+        Scénario 1 : 28900-9000 = 19900
+        PAS 19900-9000 (pas d'empilement)
+      end note
+      stop
+    else (non — incohérent)
+      :coupon écarté;
+      ' -> fallback
+    endif
+  }
+endif
+
+label fallback
+partition "3. Fallback computePromo(priceCents, promoPriceCents)" {
+  if (promoPriceCents valide ET < priceCents ?) then (oui)
+    :effective = promoPriceCents;
+    :source = "promoPrice";
+    :RETURN { effective=19900, source=promoPrice, active=true };
+    note right: Scénarios 3 & 5
+    stop
+  else (non)
+    :effective = priceCents;
+    :source = "none";
+    :RETURN { effective=28900, source=none, active=false };
+    note right: Scénario 4 (prix nu)
+    stop
+  endif
+}
+
+@enduml

@@ -1,0 +1,127 @@
+{
+  "$comment": "CPN-19 holdout determinism — fixtures. Le mapping clé->bucket pour holdoutPct intermédiaire est implémentation-définie (dépend du hash) : on N'en fige PAS la valeur. Les cas ABSOLUS (pct=0, pct=100, no-key) sont indépendants du hash et figés. Les cas de distribution/stabilité décrivent un contrat statistique vérifiable.",
+  "couponId": "welcome_auto",
+  "basePriceCents": 28900,
+  "couponSavingsCents": 9000,
+  "effectiveIfTreatment": 19900,
+  "effectiveIfHoldout": 28900,
+  "absoluteCases": [
+    {
+      "id": "HB-01",
+      "label": "pct=0 -> treatment quelle que soit la clé",
+      "holdoutPct": 0,
+      "visitorKeys": ["v-001", "v-002", "any-key", "ZZZ"],
+      "expectedBucketForAll": "treatment"
+    },
+    {
+      "id": "HB-02",
+      "label": "pct=100 + clé présente -> holdout",
+      "holdoutPct": 100,
+      "visitorKeys": ["v-001", "v-002", "any-key", "ZZZ"],
+      "expectedBucketForAll": "holdout"
+    },
+    {
+      "id": "HB-03",
+      "label": "visitorKey null -> treatment même à pct=100",
+      "holdoutPct": 100,
+      "visitorKey": null,
+      "expectedBucket": "treatment"
+    },
+    {
+      "id": "HB-04",
+      "label": "visitorKey undefined -> treatment",
+      "holdoutPct": 100,
+      "visitorKey": null,
+      "$note": "undefined équivalent à null dans le contrat",
+      "expectedBucket": "treatment"
+    },
+    {
+      "id": "HB-05",
+      "label": "visitorKey '' (vide) -> treatment",
+      "holdoutPct": 50,
+      "visitorKey": "",
+      "expectedBucket": "treatment"
+    },
+    {
+      "id": "HB-06",
+      "label": "pct=-5 clampé à 0 -> treatment",
+      "holdoutPct": -5,
+      "visitorKey": "k",
+      "expectedBucket": "treatment"
+    },
+    {
+      "id": "HB-07",
+      "label": "pct=150 clampé à 100 + clé -> holdout",
+      "holdoutPct": 150,
+      "visitorKey": "k",
+      "expectedBucket": "holdout"
+    }
+  ],
+  "stabilityContract": {
+    "id": "HB-STAB",
+    "label": "même (visitorKey, couponId, holdoutPct) -> bucket constant",
+    "visitorKey": "visitor-abc",
+    "couponId": "welcome_auto",
+    "holdoutPct": 50,
+    "calls": 10000,
+    "expectedDistinctBucketValues": 1
+  },
+  "distributionContract": [
+    {
+      "id": "HB-DIST-50",
+      "label": "pct=50 sur 10000 clés distinctes",
+      "holdoutPct": 50,
+      "sampleSize": 10000,
+      "expectedHoldoutRatioRange": [0.47, 0.53]
+    },
+    {
+      "id": "HB-DIST-10",
+      "label": "pct=10 sur 10000 clés distinctes",
+      "holdoutPct": 10,
+      "sampleSize": 10000,
+      "expectedHoldoutRatioRange": [0.07, 0.13]
+    },
+    {
+      "id": "HB-DIST-25",
+      "label": "pct=25 sur 10000 clés distinctes",
+      "holdoutPct": 25,
+      "sampleSize": 10000,
+      "expectedHoldoutRatioRange": [0.22, 0.28]
+    }
+  ],
+  "couponIdDependencyContract": {
+    "id": "HB-COUPONDEP",
+    "label": "même clé, 2 couponId distincts -> buckets potentiellement différents",
+    "holdoutPct": 50,
+    "couponIds": ["coupon-A", "coupon-B"],
+    "expectation": "il existe au moins une visitorKey dans un balayage de 1000 clés telle que bucket(A) != bucket(B)"
+  },
+  "crossSurfaceContract": [
+    {
+      "id": "HB-XS-TREATMENT",
+      "label": "visiteur treatment : prix identique affichage & order-repo",
+      "holdoutPct": 50,
+      "visitorKeyBucket": "treatment",
+      "expected": {
+        "bucketDisplay": "treatment",
+        "bucketOrderRepo": "treatment",
+        "effectiveDisplayCents": 19900,
+        "effectiveOrderRepoCents": 19900,
+        "priceMismatch422": false
+      }
+    },
+    {
+      "id": "HB-XS-HOLDOUT",
+      "label": "visiteur holdout : plein tarif identique affichage & order-repo",
+      "holdoutPct": 50,
+      "visitorKeyBucket": "holdout",
+      "expected": {
+        "bucketDisplay": "holdout",
+        "bucketOrderRepo": "holdout",
+        "effectiveDisplayCents": 28900,
+        "effectiveOrderRepoCents": 28900,
+        "priceMismatch422": false
+      }
+    }
+  ]
+}

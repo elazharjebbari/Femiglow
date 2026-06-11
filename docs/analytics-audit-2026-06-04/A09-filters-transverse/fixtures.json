@@ -1,0 +1,37 @@
+{
+  "_note": "Filtres transverses. AN-11 (device defaut mobile) encore actif. AN-09 (reactivite) et AN-10 (fuseau Maroc Africa/Casablanca) deja corriges => non-regression. startOfDay borne en UTC+1 sans DST.",
+  "defaults": { "_desc": "Etat actuel attendu", "period": "today", "device": "mobile", "traffic": "all" },
+  "defaults_after_fix": { "period": "today", "device": "all", "traffic": "all" },
+  "empty_params": { "_desc": "URLSearchParams() vide", "query": "" },
+  "invalid_period": { "_desc": "period invalide + device valide", "query": "period=foo&device=desktop", "expected": { "period": "today", "device": "desktop" } },
+  "custom_incomplete": { "_desc": "custom sans from/to => DEFAULT_FILTERS", "query": "period=custom" },
+  "mixed_device": {
+    "_desc": "1 session mobile + 1 desktop (pour prouver le masquage AN-11).",
+    "now": "2026-06-03T12:00:00Z",
+    "events": [
+      { "id": "m1", "sessionId": "sm", "anonymousId": "am", "eventName": "view_item", "device": "mobile", "pageRoute": "/kit", "receivedAt": "2026-06-03T09:00:00Z" },
+      { "id": "d1", "sessionId": "sd", "anonymousId": "ad", "eventName": "view_item", "device": "desktop", "pageRoute": "/kit", "receivedAt": "2026-06-03T09:10:00Z" }
+    ],
+    "expected_before_fix_default_device": { "sessions": 1 },
+    "expected_after_fix_default_device": { "sessions": 2 }
+  },
+  "tz_midnight": {
+    "_desc": "00:30 Maroc le 4 juin = 23:30 UTC le 3 juin.",
+    "now": "2026-06-03T23:30:00Z",
+    "period_today_expected": { "from": "2026-06-03T23:00:00.000Z", "to": "2026-06-04T23:00:00.000Z" },
+    "period_yesterday_expected": { "from": "2026-06-02T23:00:00.000Z", "to": "2026-06-03T23:00:00.000Z" },
+    "purchase_event": { "id": "pu", "sessionId": "s1", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T23:30:00Z" },
+    "expected_today_includes_purchase": true
+  },
+  "stored_filters": {
+    "_desc": "localStorage fg_analytics_filters valide < 30j, URL vide => hydratation + push URL.",
+    "localStorage": { "fg_analytics_filters": { "filters": { "period": "30d", "device": "all", "traffic": "all" }, "savedAt": 1780000000000 } },
+    "expected": { "router_replace_called_with_query": true }
+  },
+  "refetch": {
+    "_desc": "Pour tests composant: mocks next/navigation (useRouter.replace, useSearchParams).",
+    "initialFilters_7d": { "period": "7d", "device": "all", "traffic": "all" },
+    "navigate_to": "?period=7d&device=desktop",
+    "expected_fetch_url_contains": "device=desktop"
+  }
+}

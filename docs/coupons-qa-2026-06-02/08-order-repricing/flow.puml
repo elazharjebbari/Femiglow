@@ -1,0 +1,107 @@
+@startuml CPN-08-order-repricing-sequence
+title CPN-08 — POST /api/checkout/order : repricing coupon-aware (branches 422 / 409 / 400 / idempotence)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor "Visiteur\n(wizard /kit)" as Client
+participant "POST /order\nroute.ts" as Route
+participant "withIdempotency\n(scope order_create)" as Idem
+participant "orderRepo\n.createOrder" as Repo
+participant "resolveProductPricing\n(engine, coupon-aware)" as Pricing
+participant "stockRepo\n(CAS)" as Stock
+database "orders /\norder_items" as DB
+participant "coupon_events\n(CPN-09)" as Events
+
+Client -> Route : POST { items, expectedTotalCents,\n couponContext { visitorKey, ... } }
+activate Route
+
+Route -> Route : Zod parse (createOrderInputSchema)
+alt payload invalide
+  Route --> Client : 422 (zodErrorResponse)
+end
+
+Route -> Route : getById(leadId)
+alt lead introuvable
+  Route --> Client : 404 not_found
+else adresse non finalisee
+  Route --> Client : 4xx invalid_state
+end
+
+Route -> Idem : execute(payload, Idempotency-Key)
+activate Idem
+
+alt Idempotency-Key deja vue (replay)
+  Idem --> Route : { body original, replayed: true }
+  note right of Idem
+    Aucun nouvel order,
+    aucun commit stock,
+    PAS de 2e event converted.
+  end note
+else premiere execution
+  Idem -> Repo : createOrder({ items, expectedTotalCents,\n couponContext })
+  activate Repo
+
+  loop pour chaque item (par SKU, + fallback slug CHA-233)
+    Repo -> Pricing : resolveProductPricing(\n {priceCents, promoPriceCents}, couponContext)
+    activate Pricing
+    note right of Pricing
+      MEME couponContext que l'affichage.
+      bucket = hash(visitorKey+couponId)%100 < holdoutPct
+       - treatment -> prix coupon (ex 19900)
+       - holdout   -> computePromo(price, promoPriceCents)
+       - aucun coupon / absent -> promoPriceCents ?? priceCents (legacy)
+    end note
+    Pricing --> Repo : effectivePriceCents
+    deactivate Pricing
+    Repo -> Repo : computedTotal += effective * qty
+  end
+
+  alt SKU introuvable (ni variant ni slug)
+    Repo --> Idem : throw UnknownSkuError
+    Idem --> Route : 400 invalid_input { sku }
+  else computedTotal != expectedTotalCents
+    Repo --> Idem : throw PriceMismatchError
+    note right of Repo
+      INVARIANT MAITRE viole :
+      prix affiche != prix recalcule.
+    end note
+    Idem --> Route : 422 price_mismatch\n { expectedTotalCents, computedTotalCents }
+  else totaux egaux
+    Repo -> Stock : reserve(variantId, qty) [CAS]
+    alt reserve echoue
+      Repo -> Stock : release(deja reserves)
+      Repo --> Idem : throw StockInsufficientError
+      Idem --> Route : 409 stock_insufficient { sku }
+    else stock OK
+      Repo -> DB : insert orders { totalCents = expectedTotalCents }\n insert order_items { unitPriceCents = effective }
+      Repo -> Stock : commit(variantId, qty)
+      Repo --> Idem : { orderId, totalCents, replayed: false }
+    end
+  end
+  deactivate Repo
+end
+Idem --> Route : result { body, status, replayed }
+deactivate Idem
+
+alt succes ET !replayed
+  Route -> Route : markPurchased(lead)
+  Route -> Events : emit converted\n { orderId, amountCents=remise, bucket }\n (fire-and-forget, idempotent par orderId)
+  note right of Events
+    Jamais bloquant : si l'insert event
+    echoue, la commande reste 201.
+    Voir CPN-09.
+  end note
+  Route -> Route : dispatchOrderWebhook + sendTransactional\n + recordOrderPlaced (fire-and-forget)
+end
+
+Route --> Client : NextResponse.json(body, status)
+deactivate Route
+
+note over Client, Events
+  INVARIANT MAITRE (G-PRICE-PARITY) :
+   order.totalCents == computedTotal == expectedTotalCents == prix affiche /kit
+  Tout ecart => 422, aucune commande creee.
+end note
+
+@enduml

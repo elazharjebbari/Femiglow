@@ -29,6 +29,10 @@ vi.mock('@/components/commerce/CartButton', () => ({
   CartButton: () => <button data-testid="stub-cart">Cart</button>,
 }));
 
+vi.mock('@/components/i18n/LocaleSwitcher', () => ({
+  LocaleSwitcher: () => <div data-testid="stub-locale-switcher" />,
+}));
+
 vi.mock('./SommaireOverlay', () => ({
   SommaireOverlay: ({ open }: { open: boolean }) => (
     <div data-testid="stub-sommaire" data-open={open} />

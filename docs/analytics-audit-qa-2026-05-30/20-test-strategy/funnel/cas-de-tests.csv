@@ -1,0 +1,21 @@
+case_id,feature,layer,operator_gesture_or_precondition,expected,linked_finding
+TC-FUN-001,FN-FUN-07,vitest,"3 sessions (complète/cta/view)","view=3, cta=2, purchase=1; cumul strict",AF-03
+TC-FUN-002,FN-FUN-07,vitest,"steps avec dénominateur 0","progression null 1ère étape; dropoff null dernière",
+TC-FUN-003,FN-FUN-13,vitest,"times-to-next pairs et impairs","médiane exacte (moyenne des 2 centraux si pair)",
+TC-FUN-004,FN-FUN-12,vitest,"page_view sur /kit et /kit/sub; view_item","classés 'view'; page_view hors /kit ignoré",F-FUN-03
+TC-FUN-005,FN-FUN-13,vitest,"1er event = scroll puis page_view","firstPage = la page (pas l'event scroll)",F-FUN-03
+TC-FUN-006,FN-FUN-09,vitest,"25 first_pages distinctes","top20 + 'Autres'; truncated=true",
+TC-FUN-007,FN-FUN-09,vitest,"sessions a étapes variées","chaque session comptée a son étape max une seule fois",
+TC-FUN-008,FN-FUN-07,vitest,"session sans consent granted","exclue du funnel",
+TC-FUN-009,FN-FUN-07,vitest,"event a 00:30 heure Maroc, period today","rattaché a aujourd'hui (TZ Casablanca)",AF-04
+TC-FUN-010,FN-FUN-07,vitest,"purchase sans engage/cta","non compté en purchase (chaîne rompue) + documenté",F-FUN-02
+TC-FUN-011,FN-FUN-10,msw,"GET /funnel sans session","401 unauthorized",
+TC-FUN-012,FN-FUN-10,msw,"GET /funnel?view=table","renvoie FunnelByPageData",
+TC-FUN-013,FN-FUN-02,rtl,"initialData rendu","FunnelGlobal+DropOff+Sankey+Table affichés",
+TC-FUN-014,FN-FUN-02,rtl,"changement URL filtre -> MSW renvoie autre jeu","les 3 blocs affichent les nouvelles valeurs",AF-01
+TC-FUN-015,FN-FUN-02,rtl,"MSW renvoie 500","ErrorState affiché",
+TC-FUN-016,FN-FUN-02,rtl,"MSW renvoie 0 session","EmptyState affiché",
+TC-FUN-017,FN-FUN-01,playwright,"mount onglet funnel","1 seul appel API par endpoint (pas de double fetch)",F-PERF-03
+TC-FUN-018,FN-FUN-02,playwright,"changer device mobile->desktop","dashboard change; URL contient device=desktop",AF-01
+TC-FUN-019,FN-FUN-05,playwright,"Sankey tronqué","mention 'Autres'/truncated visible",
+TC-FUN-020,FN-FUN-03,a11y,"axe sur /funnel","aucune violation critique; table accessible",

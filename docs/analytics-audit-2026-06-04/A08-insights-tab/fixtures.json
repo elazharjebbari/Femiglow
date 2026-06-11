@@ -1,0 +1,39 @@
+{
+  "_note": "Calque prod. Les services Insights lisent insights_* (pas trackingEventsLog). Le pipeline runInsightsRefresh agrege trackingEventsLog -> insights_*. FUNNEL_EVENT_NAMES (aggregate.ts) = view_item/add_to_cart/begin_checkout/add_payment_info/purchase/generate_lead. Sans refresh, insights_* reste vide => onglet vide.",
+  "now": "2026-06-03T12:00:00Z",
+  "insights_filters": { "window": "30d", "env": "all", "device": "all", "locale": "all" },
+  "prod_realistic": {
+    "_desc": "Events reels en trackingEventsLog. Sans refresh: insights vide. Apres refresh: funnel non nul.",
+    "tracking_events": [
+      { "id": "vi1", "sessionId": "s1", "eventName": "view_item", "pageRoute": "/kit", "device": "mobile", "locale": "fr-MA", "receivedAt": "2026-06-01T09:00:00Z" },
+      { "id": "vi2", "sessionId": "s2", "eventName": "view_item", "pageRoute": "/kit", "device": "mobile", "locale": "fr-MA", "receivedAt": "2026-06-01T09:10:00Z" },
+      { "id": "atc1", "sessionId": "s1", "eventName": "add_to_cart", "pageRoute": "/kit", "device": "mobile", "locale": "fr-MA", "receivedAt": "2026-06-01T09:05:00Z" },
+      { "id": "bc1", "sessionId": "s1", "eventName": "begin_checkout", "pageRoute": "/kit", "device": "mobile", "locale": "fr-MA", "receivedAt": "2026-06-01T09:08:00Z" },
+      { "id": "ap1", "sessionId": "s1", "eventName": "add_payment_info", "pageRoute": "/kit", "device": "mobile", "locale": "fr-MA", "receivedAt": "2026-06-01T09:12:00Z" },
+      { "id": "pu1", "sessionId": "s1", "eventName": "purchase", "pageRoute": "/kit", "device": "mobile", "locale": "fr-MA", "isConversion": true, "payload": { "value": 499 }, "receivedAt": "2026-06-01T09:15:00Z" },
+      { "id": "gl1", "sessionId": "s3", "eventName": "generate_lead", "pageRoute": "/contact", "device": "mobile", "locale": "fr-MA", "isConversion": true, "receivedAt": "2026-06-01T10:00:00Z" }
+    ],
+    "expected_before_refresh": { "overview_firstRun": true, "overview_totalEvents": 0, "funnel_all_zero": true },
+    "expected_after_refresh": { "overview_firstRun": false, "funnel_view_item": 2, "funnel_begin_checkout": 1, "funnel_add_payment_info": 1, "funnel_purchase": 1 }
+  },
+  "add_payment_alias": {
+    "_desc": "Uniquement add_payment (alias non agrege par FUNNEL_EVENT_NAMES).",
+    "tracking_events": [
+      { "id": "apx1", "sessionId": "s1", "eventName": "add_payment", "pageRoute": "/kit", "device": "mobile", "locale": "fr-MA", "receivedAt": "2026-06-01T09:00:00Z" }
+    ],
+    "expected_after_refresh": { "funnel_add_payment_info": 0 }
+  },
+  "lead_heavy": {
+    "_desc": "17 generate_lead — agreges (aggregate.ts) mais absents des 5 etapes de getFunnel.",
+    "tracking_events": [
+      { "id": "gl1", "sessionId": "s1", "eventName": "generate_lead", "pageRoute": "/contact", "device": "mobile", "locale": "fr-MA", "isConversion": true, "receivedAt": "2026-06-01T09:00:00Z" }
+    ],
+    "expected_after_refresh": { "stages_names": ["view_item", "add_to_cart", "begin_checkout", "add_payment_info", "purchase"], "generate_lead_in_stages": false }
+  },
+  "empty": {
+    "_desc": "Aucun event. Sert a distinguer jamais-rafraichi (lastRun null) de rafraichi-vide (lastRun success counts.event=0).",
+    "tracking_events": [],
+    "expected_never_refreshed": { "lastRun": null, "overview_firstRun": true },
+    "expected_after_empty_refresh": { "lastRun_status": "success", "counts_event": 0 }
+  }
+}

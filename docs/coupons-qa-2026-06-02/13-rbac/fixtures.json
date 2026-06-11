@@ -1,0 +1,66 @@
+{
+  "$comment": "CPN-13 RBAC coupons — fixtures. Matrice par défaut, mapping verbe->action, table d'attentes rôle×route. S'appuie sur lib/legal/permissions.ts (getAdminRole/hasPermission) et schemas.ts (RBAC_RESOURCES/rbacResourceMatrix).",
+  "resourceKey": "coupons",
+  "actions": ["read", "write", "publish", "delete"],
+  "defaultMatrix": {
+    "superadmin": ["read", "write", "publish", "delete"],
+    "admin": ["read", "write", "publish"],
+    "editor": ["read", "write"],
+    "viewer": ["read"]
+  },
+  "verbToAction": {
+    "GET /api/admin/coupons": "read",
+    "POST /api/admin/coupons": "write",
+    "GET /api/admin/coupons/[id]": "read",
+    "PATCH /api/admin/coupons/[id]": "write",
+    "DELETE /api/admin/coupons/[id]": "delete",
+    "POST /api/admin/coupons/[id]/status": "write",
+    "GET /api/admin/coupons/[id]/stats": "read"
+  },
+  "expectationMatrix": [
+    { "role": "anonymous", "route": "GET liste", "status": 401 },
+    { "role": "anonymous", "route": "POST creation", "status": 401, "mutationApplied": false },
+    { "role": "anonymous", "route": "page /admin/coupons", "redirect": "/admin/login?next=/admin/coupons" },
+    { "role": "viewer", "route": "GET liste", "status": 200 },
+    { "role": "viewer", "route": "GET detail", "status": 200 },
+    { "role": "viewer", "route": "GET stats", "status": 200 },
+    { "role": "viewer", "route": "POST creation", "status": 403, "mutationApplied": false, "auditPermissionDenied": true },
+    { "role": "viewer", "route": "PATCH edition", "status": 403, "mutationApplied": false, "auditPermissionDenied": true },
+    { "role": "viewer", "route": "POST status", "status": 403, "mutationApplied": false, "auditPermissionDenied": true },
+    { "role": "viewer", "route": "DELETE archive", "status": 403, "mutationApplied": false, "auditPermissionDenied": true },
+    { "role": "editor", "route": "POST creation", "status": 201 },
+    { "role": "editor", "route": "PATCH edition", "status": 200 },
+    { "role": "editor", "route": "POST status", "status": 200 },
+    { "role": "editor", "route": "DELETE archive", "status": 403, "mutationApplied": false, "auditPermissionDenied": true },
+    { "role": "admin", "route": "POST creation", "status": 201 },
+    { "role": "admin", "route": "POST status", "status": 200 },
+    { "role": "admin", "route": "DELETE archive", "status": 403, "mutationApplied": false },
+    { "role": "superadmin", "route": "POST creation", "status": 201 },
+    { "role": "superadmin", "route": "PATCH edition", "status": 200 },
+    { "role": "superadmin", "route": "POST status", "status": 200 },
+    { "role": "superadmin", "route": "DELETE archive", "status": 200 }
+  ],
+  "securityOrderCases": [
+    { "id": "SEC-PERM-BEFORE-ZOD", "role": "viewer", "route": "POST creation", "body": {}, "expectedStatus": 403, "note": "permission avant validation Zod -> 403 et non 422" },
+    { "id": "SEC-AUTH-PERM-EXIST", "role": "superadmin", "route": "GET detail", "id": "cpn_inexistant", "expectedStatus": 404, "note": "404 seulement après auth+perm OK" }
+  ],
+  "uiVisibility": {
+    "viewer": { "nouveauCoupon": false, "enregistrer": false, "activer": false, "archiver": false },
+    "editor": { "nouveauCoupon": true, "enregistrer": true, "activer": true, "archiver": false },
+    "admin": { "nouveauCoupon": true, "enregistrer": true, "activer": true, "archiver": false },
+    "superadmin": { "nouveauCoupon": true, "enregistrer": true, "activer": true, "archiver": true }
+  },
+  "mockResponses": {
+    "forbidden403": { "status": 403, "body": { "error": { "code": "forbidden", "message": "Permission refusée : rôle \"viewer\" sans droit \"write\" sur coupons." } } },
+    "unauthorized401": { "status": 401, "body": { "error": { "code": "unauthorized", "message": "Session requise" } } },
+    "notFound404": { "status": 404, "body": { "error": { "code": "not_found" } } }
+  },
+  "auditActions": {
+    "permissionDenied": "admin.coupon.permission_denied",
+    "$meta": { "actorId": "<adminId>", "resourceType": "coupon", "meta": { "action": "<requise>", "role": "<role>" } }
+  },
+  "uiMessages": {
+    "forbidden": "Action non autorisée",
+    "insufficientRights": "Droits insuffisants"
+  }
+}

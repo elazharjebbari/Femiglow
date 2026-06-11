@@ -44,7 +44,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useId, useMemo } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -60,12 +60,11 @@ import type { PublicCity } from '@/lib/checkout/delivery/use-delivery-cities';
 import { StockIndicator } from '../StockIndicator';
 import { CityAutocomplete } from '../components/CityAutocomplete';
 import { NoCommitmentBadge } from '../NoCommitmentBadge';
+import { InvitationCodeField } from '@/components/sections/InvitationCodeField';
+import { cn } from '@/lib/utils/cn';
 import { useShippingConfig } from '@/lib/checkout/use-shipping-config';
 import { ShippingPriceDisplay } from '@/components/checkout/ShippingPriceDisplay';
-import {
-  DEFAULT_WIZARD_COPY,
-  DEFAULT_WIZARD_FEATURES,
-} from '@/lib/checkout/copy/wizard-copy';
+import { DEFAULT_WIZARD_FEATURES } from '@/lib/checkout/copy/wizard-copy';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Schema validation client (miroir simplifié de `patchLeadAddressInputSchema`)
@@ -96,6 +95,10 @@ interface ShippingNoticeProps {
   body: string;
   freeShipping: boolean;
   catalogPriceMad?: number | null;
+  /** Note lecteur d'écran i18n pour le badge livraison offerte. */
+  freeBadgeSrNote: (price: number) => string;
+  /** Libellé visible i18n du badge livraison offerte. */
+  freeBadgeLabel: string;
 }
 
 function ShippingNotice({
@@ -103,6 +106,8 @@ function ShippingNotice({
   body,
   freeShipping,
   catalogPriceMad,
+  freeBadgeSrNote,
+  freeBadgeLabel,
 }: ShippingNoticeProps) {
   return (
     <section
@@ -147,9 +152,10 @@ function ShippingNotice({
             <ShippingPriceDisplay
               displayPrice={`${catalogPriceMad} MAD`}
               freeShipping
+              freeLabel={freeBadgeLabel}
               size="sm"
               align="left"
-              srNote={`Livraison normalement à ${catalogPriceMad} MAD, actuellement offerte`}
+              srNote={freeBadgeSrNote(catalogPriceMad)}
             />
           </div>
         )}
@@ -182,6 +188,13 @@ export function AddressStep({ cta }: AddressStepProps) {
   const mergeAddressDraft = useWizardStore((s) => s.mergeAddressDraft);
   const goToStep = useWizardStore((s) => s.goToStep);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
+  // Phase 3 — crédit de fidélité
+  const couponCode = useWizardStore((s) => s.couponCode);
+  const setCoupon = useWizardStore((s) => s.setCoupon);
+  const clearCoupon = useWizardStore((s) => s.clearCoupon);
+  const isArabic = useWizardStore((s) => s.formContext?.language === 'ar');
+  // Disclosure crédit : ouverte d'office si un code a déjà été saisi (reprise).
+  const [couponDisclosureOpen, setCouponDisclosureOpen] = useState<boolean>(!!couponCode);
 
   const mutation = useAddressMutation();
   const { freeShipping } = useShippingConfig();
@@ -343,6 +356,10 @@ export function AddressStep({ cta }: AddressStepProps) {
               placeholder={t.address.cityPlaceholder}
               hint={t.address.cityHintBilingual}
               matchedHint={t.address.cityHintMatched}
+              popularCitiesLabel={t.address.cityPopularLabel}
+              searchingLabel={t.address.citySearching}
+              freeDeliveryLabel={t.address.cityFreeDelivery}
+              freeShippingLabel={t.shipping.freeBadgeLabel}
               required
               error={errors.city?.message}
               value={field.value ?? ''}
@@ -371,6 +388,8 @@ export function AddressStep({ cta }: AddressStepProps) {
           body={shippingBody}
           freeShipping={freeShipping}
           catalogPriceMad={addressDraft.cityDeliveryPriceMad ?? null}
+          freeBadgeSrNote={t.shipping.freeBadgeSrNote}
+          freeBadgeLabel={t.shipping.freeBadgeLabel}
         />
 
         <TextAreaField
@@ -383,6 +402,46 @@ export function AddressStep({ cta }: AddressStepProps) {
           error={errors.notes?.message}
           {...register('notes')}
         />
+
+        {/* Phase 3 — crédit de fidélité (optionnel). Porte DISCRÈTE repliée
+            par défaut (esprit coupon-doc : zéro friction pour qui n'a pas de
+            code) ; s'ouvre sur clic, ou d'office si un code est déjà saisi
+            (reprise). Validé via /api/coupons/redeem → store → total. */}
+        <details
+          data-testid="wizard-coupon-field"
+          open={couponDisclosureOpen}
+          onToggle={(e) => setCouponDisclosureOpen(e.currentTarget.open)}
+          className="text-sm"
+        >
+          <summary
+            data-testid="wizard-coupon-summary"
+            className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-encre/65 transition-colors hover:text-encre [&::-webkit-details-marker]:hidden"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width="12"
+              height="12"
+              aria-hidden
+              className={cn(
+                'shrink-0 text-sauge transition-transform duration-300',
+                couponDisclosureOpen && 'rotate-90',
+              )}
+            >
+              <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="underline decoration-encre/20 underline-offset-4">
+              {isArabic ? 'لدي رمز وفاء' : 'J’ai un code de fidélité'}
+            </span>
+          </summary>
+          <div className="mt-2 max-w-[18rem]">
+            <InvitationCodeField
+              isArabic={isArabic}
+              initialCode={couponCode ?? ''}
+              onValid={(code, cents) => setCoupon(code, cents)}
+              onClear={clearCoupon}
+            />
+          </div>
+        </details>
 
         {networkBanner && (
           <div
@@ -410,8 +469,9 @@ export function AddressStep({ cta }: AddressStepProps) {
             financier. */}
         {DEFAULT_WIZARD_FEATURES.noCommitmentBadge && (
           <NoCommitmentBadge
-            label={DEFAULT_WIZARD_COPY.noCommitmentLabel}
-            sub={DEFAULT_WIZARD_COPY.noCommitmentSub}
+            label={t.noCommitment.label}
+            sub={t.noCommitment.sub}
+            ariaLabel={t.noCommitment.ariaLabel}
           />
         )}
 

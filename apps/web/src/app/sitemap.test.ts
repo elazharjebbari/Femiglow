@@ -52,26 +52,43 @@ afterEach(() => {
 });
 
 describe('sitemap', () => {
-  it('liste les 6 routes statiques connues avec lastModified = BUILD_DATE', async () => {
+  it('liste les 6 routes statiques en FR/AR/EN (préfixe locale) + lastModified = BUILD_DATE', async () => {
     const result = await sitemap();
-    const expected = [
-      'https://femiglow.ma/',
-      'https://femiglow.ma/rituel',
-      'https://femiglow.ma/kit',
-      'https://femiglow.ma/journal',
-      'https://femiglow.ma/maison',
-      'https://femiglow.ma/contact',
-    ];
     const urls = result.map((e) => e.url);
-    expected.forEach((url) => expect(urls).toContain(url));
+    // FR (préfixe /fr/, comme les hreflang des pages).
+    const expectedFr = [
+      'https://femiglow.ma/fr/',
+      'https://femiglow.ma/fr/rituel',
+      'https://femiglow.ma/fr/kit',
+      'https://femiglow.ma/fr/journal',
+      'https://femiglow.ma/fr/maison',
+      'https://femiglow.ma/fr/contact',
+    ];
+    expectedFr.forEach((url) => expect(urls).toContain(url));
+    // Variantes traduites présentes comme entrées à part entière.
+    ['ar', 'en'].forEach((loc) => {
+      expect(urls).toContain(`https://femiglow.ma/${loc}/kit`);
+      expect(urls).toContain(`https://femiglow.ma/${loc}/`);
+    });
     // Tous les statiques partagent la même date de build.
-    expected.forEach((url) => {
+    expectedFr.forEach((url) => {
       const entry = result.find((e) => e.url === url);
       expect(entry?.lastModified).toEqual(new Date('2026-05-19T00:00:00.000Z'));
     });
   });
 
-  it('mappe les articles sur updatedAt (priorité fraîcheur)', async () => {
+  it('porte les alternates hreflang fr/ar/en + x-default sur chaque entrée', async () => {
+    const result = await sitemap();
+    const kitFr = result.find((e) => e.url === 'https://femiglow.ma/fr/kit');
+    expect(kitFr?.alternates?.languages).toEqual({
+      fr: 'https://femiglow.ma/fr/kit',
+      ar: 'https://femiglow.ma/ar/kit',
+      en: 'https://femiglow.ma/en/kit',
+      'x-default': 'https://femiglow.ma/fr/kit',
+    });
+  });
+
+  it('mappe les articles (FR/AR/EN) sur updatedAt (priorité fraîcheur)', async () => {
     vi.mocked(cms.getArticles).mockResolvedValue([
       {
         slug: 'rituel-eclat',
@@ -80,9 +97,13 @@ describe('sitemap', () => {
       },
     ] as never);
     const result = await sitemap();
-    const article = result.find((e) => e.url === 'https://femiglow.ma/journal/rituel-eclat');
-    expect(article).toBeTruthy();
-    expect(article?.lastModified).toEqual(new Date('2026-04-15T10:00:00Z'));
+    for (const loc of ['fr', 'ar', 'en']) {
+      const article = result.find(
+        (e) => e.url === `https://femiglow.ma/${loc}/journal/rituel-eclat`,
+      );
+      expect(article).toBeTruthy();
+      expect(article?.lastModified).toEqual(new Date('2026-04-15T10:00:00Z'));
+    }
   });
 
   it('retombe sur publishedAt si updatedAt absent', async () => {
@@ -94,7 +115,7 @@ describe('sitemap', () => {
       },
     ] as never);
     const result = await sitemap();
-    const article = result.find((e) => e.url === 'https://femiglow.ma/journal/foo');
+    const article = result.find((e) => e.url === 'https://femiglow.ma/fr/journal/foo');
     expect(article?.lastModified).toEqual(new Date('2026-03-01T00:00:00Z'));
   });
 
@@ -142,21 +163,21 @@ describe('sitemap', () => {
       },
     ] as never);
     const result = await sitemap();
-    expect(result.find((e) => e.url === 'https://femiglow.ma/journal/foo')).toBeTruthy();
+    expect(result.find((e) => e.url === 'https://femiglow.ma/fr/journal/foo')).toBeTruthy();
     expect(result.find((e) => e.url.includes('/legal/'))).toBeUndefined();
   });
 
   it('absence de NEXT_PUBLIC_BUILD_DATE → fallback à epoch (pas NaN)', async () => {
     delete process.env.NEXT_PUBLIC_BUILD_DATE;
     const result = await sitemap();
-    const home = result.find((e) => e.url === 'https://femiglow.ma/');
+    const home = result.find((e) => e.url === 'https://femiglow.ma/fr/');
     expect(home?.lastModified).toEqual(new Date(0));
   });
 
   it('valeur invalide de NEXT_PUBLIC_BUILD_DATE → fallback à epoch', async () => {
     process.env.NEXT_PUBLIC_BUILD_DATE = 'not-a-date';
     const result = await sitemap();
-    const home = result.find((e) => e.url === 'https://femiglow.ma/');
+    const home = result.find((e) => e.url === 'https://femiglow.ma/fr/');
     expect(home?.lastModified).toEqual(new Date(0));
   });
 });

@@ -1,0 +1,85 @@
+# Phases d'exécution machine-lisibles — pilotées par le runbook.
+# Chaque phase liste : features couvertes, fichiers à produire, commandes de test, gates de sortie.
+
+waves:
+  - id: W0
+    name: "Fondations de test (outillage)"
+    features: []
+    produces:
+      - apps/web/src/test/msw/server.ts
+      - apps/web/src/test/msw/coupons-handlers.ts
+      - apps/web/src/test/msw/checkout-handlers.ts
+      - apps/web/src/test/factories/coupons.ts
+    test_command: "pnpm test src/test"
+    exit_gates: ["smoke MSW vert", "factory vert"]
+
+  - id: W1
+    name: "Data & migration"
+    features: [CPN-01, CPN-17, CPN-20]
+    produces:
+      - apps/web/drizzle/migrations/0080_coupons.sql
+      - apps/web/src/lib/db/queries/coupon-repo.ts
+      - apps/web/src/lib/db/queries/coupon-event-repo.ts
+      - apps/web/scripts/seed-coupons.ts
+    test_command: "pnpm test src/lib/db/queries/coupon"
+    exit_gates: ["G-IDEMPOTENCE (data)", "migration forward idempotente", "seed ré-entrant"]
+    depends_on: [W0]
+
+  - id: W2
+    name: "Moteur"
+    features: [CPN-02, CPN-03, CPN-19, CPN-04, CPN-05, CPN-18]
+    produces:
+      - apps/web/src/lib/coupons/engine.ts
+      - apps/web/src/lib/coupons/context.ts
+      - apps/web/src/lib/coupons/bucketing.ts
+      - apps/web/src/lib/coupons/eligibility.ts
+      - apps/web/src/lib/coupons/cache.ts
+    test_command: "pnpm test src/lib/coupons --coverage"
+    exit_gates: ["coverage engine=100", "G-HOLDOUT-DETERMINISM", "G-FALLBACK-LEGACY"]
+    depends_on: [W1]
+
+  - id: W3
+    name: "Branchements prix & checkout (coeur)"
+    features: [CPN-06, CPN-07, CPN-08, CPN-09, CPN-16]
+    modifies:
+      - apps/web/src/lib/products/public.ts
+      - apps/web/src/components/sections/KitCommanderSectionBound.tsx
+      - apps/web/src/lib/checkout/repos/order-repo.ts
+      - apps/web/src/app/api/checkout/order/route.ts
+      - apps/web/src/app/[locale]/kit/page.tsx
+    test_command: "pnpm test src/lib/checkout src/lib/products && pnpm exec playwright test e2e/visitor-coupon.spec.ts"
+    exit_gates: ["G-PRICE-PARITY", "G-IDEMPOTENCE", "G-TRACKING-VALUE"]
+    depends_on: [W2]
+
+  - id: W4
+    name: "Admin"
+    features: [CPN-10, CPN-11, CPN-12, CPN-13]
+    produces:
+      - apps/web/src/app/api/admin/coupons/route.ts
+      - apps/web/src/app/api/admin/coupons/[id]/route.ts
+      - apps/web/src/app/api/admin/coupons/[id]/status/route.ts
+      - apps/web/src/app/api/admin/coupons/[id]/stats/route.ts
+      - apps/web/src/app/admin/coupons/page.tsx
+      - apps/web/src/app/admin/coupons/new/page.tsx
+      - apps/web/src/app/admin/coupons/[id]/page.tsx
+    test_command: "pnpm test src/app/api/admin/coupons src/app/admin/coupons && pnpm exec playwright test e2e/admin-coupon.spec.ts"
+    exit_gates: ["G-RBAC", "coverage api_routes>=90", "coverage ui_components>=85"]
+    depends_on: [W3]
+
+  - id: W5
+    name: "UI landing"
+    features: [CPN-14, CPN-15]
+    produces:
+      - apps/web/src/components/sections/CouponWelcomeNote.tsx
+    modifies:
+      - apps/web/src/components/sections/PriceBlock.tsx
+    test_command: "pnpm test src/components/sections/CouponWelcomeNote && pnpm exec playwright test e2e/visitor-coupon.spec.ts --grep @charte"
+    exit_gates: ["G-CHARTE", "G-A11Y", "G-I18N"]
+    depends_on: [W3]
+
+  - id: W6
+    name: "E2E bout-en-bout & durcissement"
+    features: [all]
+    test_command: "pnpm exec playwright test --project=chromium --project=webkit"
+    exit_gates: ["tous gates verts", "0 flaky sur 3 reruns"]
+    depends_on: [W4, W5]

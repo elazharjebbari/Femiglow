@@ -1,0 +1,125 @@
+{
+  "$comment": "Fixtures réutilisables pour CPN-01 (data-model). Montants en CENTIMES. createId génère les PK ; ici valeurs déterministes pour tests.",
+  "coupons": {
+    "welcomeAutoValid": {
+      "id": "cpn_welcome_auto",
+      "label": "Geste d'accueil",
+      "code": null,
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "target": "product_price",
+      "currency": "MAD",
+      "eligibility": {},
+      "startsAt": null,
+      "endsAt": null,
+      "stackable": false,
+      "usageScope": "unlimited",
+      "usageCap": null,
+      "usageCount": 0,
+      "holdoutPct": 0,
+      "priority": 100,
+      "createdBy": null
+    },
+    "minimalInsert": {
+      "$comment": "Champs obligatoires seuls — vérifie l'application des defaults.",
+      "id": "cpn_min",
+      "label": "Coupon minimal",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000
+    },
+    "manualCodeWELCOME": {
+      "id": "cpn_code_1",
+      "label": "Code invitation WELCOME",
+      "code": "WELCOME",
+      "type": "manual_code",
+      "mode": "code",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "target": "product_price",
+      "currency": "MAD"
+    },
+    "manualCodeDuplicate": {
+      "$comment": "Doit violer coupons_code_unique (23505).",
+      "id": "cpn_code_2",
+      "label": "Doublon WELCOME",
+      "code": "WELCOME",
+      "type": "manual_code",
+      "mode": "code",
+      "valueKind": "fixed_amount",
+      "valueAmount": 5000
+    },
+    "labelArabic": {
+      "id": "cpn_ar",
+      "label": "هدية الترحيب",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000
+    },
+    "invalidType": {
+      "$comment": "Doit violer l'enum (22P02).",
+      "id": "cpn_bad",
+      "label": "Type invalide",
+      "type": "flash",
+      "mode": "auto",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000
+    }
+  },
+  "couponEvents": {
+    "exposedTreatment": {
+      "id": "cpe_exp_1",
+      "couponId": "cpn_welcome_auto",
+      "phase": "exposed",
+      "bucket": "treatment",
+      "visitorKey": "h_2c1a9f5e4b",
+      "orderId": null,
+      "amountCents": null,
+      "trafficSource": "paid_social",
+      "device": "mobile"
+    },
+    "convertedOrder1": {
+      "id": "cpe_conv_1",
+      "couponId": "cpn_welcome_auto",
+      "phase": "converted",
+      "bucket": "treatment",
+      "visitorKey": "h_2c1a9f5e4b",
+      "orderId": "o_1",
+      "amountCents": 9000,
+      "trafficSource": "paid_social",
+      "device": "mobile"
+    },
+    "convertedOrder1Duplicate": {
+      "$comment": "Doit violer coupon_events_order_converted_unique (23505).",
+      "id": "cpe_conv_1_dup",
+      "couponId": "cpn_welcome_auto",
+      "phase": "converted",
+      "bucket": "treatment",
+      "orderId": "o_1",
+      "amountCents": 9000
+    }
+  },
+  "expectedDefaults": {
+    "status": "draft",
+    "target": "product_price",
+    "currency": "MAD",
+    "eligibility": {},
+    "stackable": false,
+    "usageScope": "unlimited",
+    "usageCount": 0,
+    "holdoutPct": 0,
+    "priority": 0
+  },
+  "errorCodes": {
+    "enum": "22P02",
+    "notNull": "23502",
+    "unique": "23505",
+    "foreignKey": "23503"
+  }
+}

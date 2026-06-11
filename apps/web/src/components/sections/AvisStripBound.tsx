@@ -14,6 +14,8 @@ interface AvisStripBoundProps {
    * carte. Si un binding actif existe, il prime sur `testimonial.handImage`.
    */
   componentKey?: string;
+  /** Phase 9bis — formateur localisé « Initiée depuis {date} ». */
+  formatInitiee?: (date: string) => string;
 }
 
 /**
@@ -40,6 +42,7 @@ export async function AvisStripBound({
   kicker,
   title,
   componentKey = 'home-avis-strip',
+  formatInitiee,
 }: AvisStripBoundProps) {
   const entries = await Promise.all(
     testimonials.map(async (t): Promise<[string, ReactNode] | null> => {
@@ -70,6 +73,7 @@ export async function AvisStripBound({
       kicker={kicker}
       title={title}
       mediaSlotsByTestimonialId={mediaSlotsByTestimonialId}
+      formatInitiee={formatInitiee}
     />
   );
 }

@@ -1,0 +1,112 @@
+{
+  "$comment": "Telemetry des 5 events du moteur de suggestion. Source de vérité : ../../CONTRACT.md §7.3 (payloads FIGÉS) + §7.4 (INV-13..INV-20). (a) fonctionnement optimal = quand l'event est émis + payload typé. (b) à vérifier = bloc `verify`. Types partagés : Locale='fr'|'ar'|'en' ; Page=string (pathname localisé, ex '/fr/kit') ; Surface alignée sur ../02-config/profiles-catalog.csv ('pearl'|'toast').",
+  "sharedTypes": {
+    "Locale": "'fr' | 'ar' | 'en'",
+    "Page": "string (pathname localisé, ex. '/fr/kit', querystring exclu)",
+    "Decision": "'show' | 'suppress'",
+    "PromptSurface": "'pearl' | 'toast'"
+  },
+  "sink": {
+    "transport": "trackEvent() existant (même pipeline analytics que CONTRACT §4 locale_switch/nudge). Côté serveur pour `evaluated` quand la décision serveur est connue, côté client pour shown/accepted/dismissed/suppressed (collecte de signaux comportementaux).",
+    "audit": "En plus du sink analytics, `locale_suggestion_evaluated` ET `locale_suggestion_suppressed` alimentent la vue d'audit /admin/i18n/engine/audit (cf. ../02-config/audit-model.md, INV-19). Le snapshot de signaux n'est joint qu'au flux d'audit (debug), jamais exposé au pipeline analytics public.",
+    "piiNote": "Aucune PII. Pas d'IP. visitorId = identifiant first-party anonyme éphémère. Conforme INV-20."
+  },
+  "events": {
+    "locale_suggestion_evaluated": {
+      "contractRef": "CONTRACT §7.3 (ligne 1) — audit/debug, échantillonnable",
+      "whenFired": "À CHAQUE évaluation de evaluateSuggestionPolicy(signals, config) : que la décision soit 'show' ou 'suppress'. C'est l'event de traçabilité maître (INV-19) — il existe même quand rien ne s'affiche, ce qui prouve que le moteur a bien décidé.",
+      "decisionMapping": "decision='show' quand la politique retourne show(...) ; decision='suppress' pour engine-off, no-trigger, quiet-zone, budget, defer-abandon, same-lang. `reason` porte le motif machine ; `profileMatched` porte l'ID du profil never OU trigger qui a tranché (null si aucun).",
+      "payload": {
+        "suggested": "Locale | null",
+        "served": "Locale",
+        "decision": "Decision",
+        "reason": "string (motif machine : 'engine-off' | 'quiet-zone:NEVER-CHECKOUT' | 'no-trigger' | 'budget' | 'same-lang' | 'defer-abandon' | 'show')",
+        "profileMatched": "string | null (ProfileID never OU trigger, ../02-config/profiles-catalog.csv)",
+        "page": "Page"
+      },
+      "sampling": {
+        "rule": "ÉCHANTILLONNABLE (CONTRACT §7.3). Volume élevé : 1 émission par évaluation, plusieurs par session (re-évaluation au fil des breakpoints). Échantillonner les decision='suppress' courantes (engine-off, same-lang) à un taux configurable (ex. 1/100) pour ne pas noyer le sink.",
+        "alwaysKeep": "NE JAMAIS échantillonner : (1) decision='show' (rare, critique pour l'audit) ; (2) suppress pour cause de zone calme (quiet-zone:NEVER-CHECKOUT / NEVER-FORM) — doivent être capturés à 100% car ils prouvent INV-14 ; (3) suppress 'budget'/'dismissed' pertinents pour INV-16. Le taux est piloté en config debug et N'AFFECTE PAS la décision elle-même.",
+        "defaultRate": "evaluatedSampleRate par défaut côté audit : show=1.0, quiet-zone=1.0, autres suppress=0.05"
+      },
+      "examples": [
+        { "suggested": "ar", "served": "fr", "decision": "show", "reason": "show", "profileMatched": "TRIG-ENTRY-MISMATCH", "page": "/fr/kit" },
+        { "suggested": "ar", "served": "fr", "decision": "suppress", "reason": "quiet-zone:NEVER-CHECKOUT", "profileMatched": "NEVER-CHECKOUT", "page": "/fr/kit/checkout" },
+        { "suggested": null, "served": "fr", "decision": "suppress", "reason": "engine-off", "profileMatched": null, "page": "/fr" },
+        { "suggested": "ar", "served": "fr", "decision": "suppress", "reason": "same-lang", "profileMatched": "NEVER-SAME-LANG", "page": "/fr/maison" }
+      ]
+    },
+    "locale_suggestion_shown": {
+      "contractRef": "CONTRACT §7.3 (ligne 2)",
+      "whenFired": "Au moment où LocaleSuggestionPrompt est effectivement RENDU et visible (après defer-to-breakpoint résolu, INV-17). Exactement 1 fois par affichage. Implique toujours un `locale_suggestion_evaluated` decision='show' antérieur.",
+      "payload": {
+        "suggested": "Locale",
+        "served": "Locale",
+        "profileMatched": "string (ProfileID trigger qui a déclenché)",
+        "page": "Page",
+        "trigger": "string (breakpoint/moment opportun atteint, ex. 'scroll-pause-after-hero' | 'exit-intent' | 'idle-break')"
+      },
+      "sampling": { "rule": "Non échantillonné (event rare et critique conversion). 100%." },
+      "examples": [
+        { "suggested": "ar", "served": "fr", "profileMatched": "TRIG-ENTRY-MISMATCH", "page": "/fr/kit", "trigger": "scroll-pause-after-hero" },
+        { "suggested": "ar", "served": "fr", "profileMatched": "TRIG-EXIT-RESCUE", "page": "/fr/rituel", "trigger": "exit-intent" }
+      ]
+    },
+    "locale_suggestion_accepted": {
+      "contractRef": "CONTRACT §7.3 (ligne 3)",
+      "whenFired": "Quand la visiteuse ACCEPTE la suggestion (clique 'passer à <langue>'), juste avant le déclenchement de useLocaleTransition (bascule sans reload). `msToDecision` = délai entre shown et accepted (proxy de pertinence ; un délai très court n'est PAS un dismiss).",
+      "payload": {
+        "suggested": "Locale",
+        "page": "Page",
+        "msToDecision": "number (ms entre shown et accepted)"
+      },
+      "sampling": { "rule": "Non échantillonné. 100% (mesure de conversion)." },
+      "examples": [
+        { "suggested": "ar", "page": "/fr/kit", "msToDecision": 2400 }
+      ]
+    },
+    "locale_suggestion_dismissed": {
+      "contractRef": "CONTRACT §7.3 (ligne 4)",
+      "whenFired": "Quand la visiteuse REFUSE/ferme le prompt (clic 'rester en <langue actuelle>', croix, ou auto-effacement assimilé). `scope='session'` => muet jusqu'à fin de session ; `scope='persistent'` => plus jamais (dismissedPersistent, INV-16, sauf reset admin). Un dismiss < 2s alimente le proxy d'agacement de l'audit (cf. audit-model.md), mais N'EST PAS un event distinct.",
+      "payload": {
+        "suggested": "Locale",
+        "page": "Page",
+        "scope": "'session' | 'persistent'"
+      },
+      "sampling": { "rule": "Non échantillonné. 100% (mesure de non-intrusion / dismiss<2s)." },
+      "examples": [
+        { "suggested": "ar", "page": "/fr/kit", "scope": "session" },
+        { "suggested": "ar", "page": "/fr/maison", "scope": "persistent" }
+      ]
+    },
+    "locale_suggestion_suppressed": {
+      "contractRef": "CONTRACT §7.3 (ligne 5)",
+      "whenFired": "Quand une suggestion qui AURAIT pu correspondre est BLOQUÉE par un never-profile (zone calme, budget, dismissed, same-lang). C'est l'event de preuve d'INV-14/15/16 : il nomme le `neverProfile` responsable. Distinct de `evaluated`(decision=suppress) en ce qu'il cible spécifiquement le blocage par exclusion (toujours capturé à 100% pour les zones calmes).",
+      "payload": {
+        "suggested": "Locale | null",
+        "served": "Locale",
+        "reason": "string (motif machine, ex. 'quiet-zone' | 'budget' | 'dismissed' | 'same-lang')",
+        "neverProfile": "string (ProfileID never responsable, ex. 'NEVER-CHECKOUT')",
+        "page": "Page"
+      },
+      "sampling": {
+        "rule": "Non échantillonné pour les zones calmes (NEVER-CHECKOUT/NEVER-FORM/NEVER-DEEP-READ) : 100%, car SEUL chemin légitime d'apparition d'une suppression en checkout/form/lecture (audit INV-14/15). Les suppressions de masse (NEVER-SAME-LANG) peuvent être échantillonnées comme leur pendant dans `evaluated`."
+      },
+      "examples": [
+        { "suggested": "ar", "served": "fr", "reason": "quiet-zone", "neverProfile": "NEVER-CHECKOUT", "page": "/fr/kit/checkout" },
+        { "suggested": "ar", "served": "fr", "reason": "quiet-zone", "neverProfile": "NEVER-FORM", "page": "/fr/contact" },
+        { "suggested": "ar", "served": "fr", "reason": "budget", "neverProfile": "NEVER-BUDGET", "page": "/fr" }
+      ]
+    }
+  },
+  "verify": [
+    "engineEnabled=false => UNIQUEMENT des locale_suggestion_evaluated decision='suppress' reason='engine-off' ; 0 shown (INV-13).",
+    "En checkout (inCheckout=true) avec un trigger actif => locale_suggestion_suppressed neverProfile='NEVER-CHECKOUT' ; 0 shown (INV-14).",
+    "Tout locale_suggestion_shown est précédé d'un locale_suggestion_evaluated decision='show' avec le même profileMatched.",
+    "locale_suggestion_accepted.msToDecision > 0 et cohérent avec l'intervalle shown->accepted.",
+    "dismissed scope='persistent' => les évaluations suivantes => suppressed neverProfile='NEVER-DISMISSED' (INV-16).",
+    "Échantillonnage : show et quiet-zone JAMAIS droppés ; suppress 'same-lang'/'engine-off' respectent evaluatedSampleRate.",
+    "Aucun event ne contient d'IP ni de PII ; payloads strictement conformes aux clés de CONTRACT §7.3 (test de schéma).",
+    "trigger (dans shown) ∈ ensemble des opportuneMoment du profil déclenché (INV-17)."
+  ]
+}

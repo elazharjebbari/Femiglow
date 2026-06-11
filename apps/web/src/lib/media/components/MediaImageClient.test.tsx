@@ -39,6 +39,22 @@ describe('MediaImageClient', () => {
     expect(img.style.transition).toBe('');
   });
 
+  it('négociation de format : <source type=image/avif> + image/webp avant le fallback <img> jpeg', () => {
+    const { container } = render(<MediaImageClient {...baseProps} />);
+    const sources = Array.from(container.querySelectorAll('picture > source'));
+    const types = sources.map((s) => s.getAttribute('type'));
+    // Les formats modernes sont exposés comme <source> (le navigateur choisit
+    // avif sinon webp). avif AVANT webp (préférence). Aucun <source> jpeg/png.
+    expect(types).toEqual(['image/avif', 'image/webp']);
+    expect(types).not.toContain('image/jpeg');
+    expect(sources[0]?.getAttribute('srcset')).toContain('.avif');
+    expect(sources[1]?.getAttribute('srcset')).toContain('.webp');
+    // Le jpeg n'est QUE le fallback de l'<img> (non chargé par les navigateurs
+    // modernes qui supportent avif/webp).
+    const img = container.querySelector('picture > img.media-img') as HTMLImageElement;
+    expect(img.getAttribute('src')).toMatch(/\.jpg$/);
+  });
+
   it('respecte les modes objectFit / objectPosition', () => {
     const { container } = render(
       <MediaImageClient

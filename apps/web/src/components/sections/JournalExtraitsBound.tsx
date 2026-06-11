@@ -1,14 +1,18 @@
 import 'server-only';
 import type { ReactNode } from 'react';
+import { getTranslations } from 'next-intl/server';
 import type { Article } from '@/lib/schemas';
-import { JournalExtraits } from './JournalExtraits';
+import { JournalExtraits, type JournalExtraitsStrings } from './JournalExtraits';
 import { ComponentMedia } from '@/lib/components/ComponentMedia';
 import { resolveComponentSlot } from '@/lib/components/resolver';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n.config';
 
 interface JournalExtraitsBoundProps {
   articles: Article[];
   kicker?: string;
   title?: string;
+  /** Phase 9 i18n — locale active pour résoudre kicker/title/cta/catégories. */
+  locale?: Locale;
 }
 
 /**
@@ -23,8 +27,32 @@ export async function JournalExtraitsBound({
   articles,
   kicker,
   title,
+  locale,
 }: JournalExtraitsBoundProps) {
   const visibles = articles.slice(0, 3);
+  const activeLocale = locale ?? DEFAULT_LOCALE;
+
+  // Phase 9 i18n — kicker/title/cta + catégories + durée de lecture localisés.
+  const [tHome, tArticle, tCategories] = await Promise.all([
+    getTranslations({ locale: activeLocale, namespace: 'marketing.home.journal' }),
+    getTranslations({ locale: activeLocale, namespace: 'marketing.journal.article' }),
+    getTranslations({ locale: activeLocale, namespace: 'marketing.journal.categories' }),
+  ]);
+
+  const resolvedKicker = kicker ?? tHome('kicker');
+  const resolvedTitle = title ?? tHome('title');
+  const strings: JournalExtraitsStrings = {
+    cta: tHome('cta'),
+    categoryLabels: {
+      maison: tCategories('maison'),
+      saison: tCategories('saison'),
+      voix: tCategories('voix'),
+      matieres: tCategories('matieres'),
+      pratique: tCategories('pratique'),
+    },
+    // Gabarit ICU `{min}` ré-émis tel quel → substitution côté composant.
+    readingTime: tArticle('reading_time', { min: '{min}' }),
+  };
 
   const resolutions = await Promise.all(
     visibles.map(async (article) => {
@@ -62,9 +90,10 @@ export async function JournalExtraitsBound({
   return (
     <JournalExtraits
       articles={articles}
-      kicker={kicker}
-      title={title}
+      kicker={resolvedKicker}
+      title={resolvedTitle}
       mediaSlots={mediaSlots}
+      strings={strings}
     />
   );
 }

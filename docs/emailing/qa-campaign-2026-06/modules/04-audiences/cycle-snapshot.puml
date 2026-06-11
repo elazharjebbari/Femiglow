@@ -1,0 +1,46 @@
+@startuml cycle-snapshot
+title Cycle de vie d'un snapshot d'audience (état cible vs zombie)
+
+[*] --> Lookup : snapshotAudience(audienceId, {snapshotKey?})
+
+state Lookup {
+  Lookup : charge l'audience (refuse si absente / soft-deleted)
+}
+
+Lookup --> ReturnExisting : snapshotKey fourni\nET snapshot existant
+Lookup --> running : sinon\nINSERT snapshot(status=running)
+
+state ReturnExisting {
+  ReturnExisting : ÉTAT CIBLE = ne renvoyer QUE si status=done
+  ReturnExisting : ÉCART A-AUD-4 = renvoie aussi running/errored
+}
+ReturnExisting --> [*]
+
+state running {
+  running : INSERT...SELECT members (compileRulesToSql)
+}
+
+running --> done : COUNT members\nUPDATE size, status=done, completedAt
+running --> errored : exception (compile/SQL)\nUPDATE status=errored, erroredReason
+
+done --> Purge : purgeableAfter < now()
+errored --> Purge : purgeableAfter < now()
+
+state Purge {
+  Purge : purgeExpiredSnapshots()
+  Purge : cleanupExpiredListmonkLists()
+}
+Purge --> [*]
+
+note right of running
+  ZOMBIE (écart A-AUD-4) :
+  si le process CRASHE entre l'INSERT(running)
+  et l'UPDATE(done), la ligne reste running À VIE.
+  Aucun reaper ne la marque errored.
+  --> snapshotKey identique récupère ce zombie
+      (size=0, membres absents) = envoi vide.
+  CORRECTIF CIBLE : reaper running > N min -> errored,
+  + idempotence conditionnée à status=done.
+end note
+
+@enduml

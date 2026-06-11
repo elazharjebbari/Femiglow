@@ -4,6 +4,7 @@ import { isEventSupported } from './event-mapping';
 import { getMappedName } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
+import { findEventInCatalog } from '@/lib/tracking/event-catalog';
 
 function buildMpPayload(ctx: DispatchContext): Record<string, unknown> {
   // Si pas de mapping résolu, fallback au nom canonique (comportement
@@ -32,8 +33,15 @@ function buildMpPayload(ctx: DispatchContext): Record<string, unknown> {
 
 export const googleAdapter: ProviderAdapter = {
   kind: 'google_ga4',
+  // T-07 (audit 2026-05-31) — décision PO : **GA4 = client GTM uniquement**.
+  // Les events client (scope `web`/`both`) sont déjà envoyés par le tag
+  // `gaawe` du container GTM. GA4 ne déduplique PAS gtag ↔ Measurement
+  // Protocol → les envoyer aussi côté serveur double le revenu/les
+  // conversions. On restreint donc le dispatch MP serveur aux events
+  // **server-scope** (ex. `refund`), qui n'ont aucun tag gaawe client.
   supports(eventName: string): boolean {
-    return isEventSupported(eventName, 'google_ga4');
+    if (!isEventSupported(eventName, 'google_ga4')) return false;
+    return findEventInCatalog(eventName)?.scope === 'server';
   },
   async dispatch(provider: TrackingProvider, ctx: DispatchContext): Promise<TrackingProviderResult> {
     const startedAt = Date.now();

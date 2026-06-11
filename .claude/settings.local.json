@@ -153,7 +153,19 @@
       "Bash(python3 *)",
       "Bash(git push)",
       "Bash(git push origin master)",
-      "Bash(git push origin master:master)"
+      "Bash(git push origin master:master)",
+      "Bash(grep -v \"^\\\\* master$\")",
+      "Bash(grep -v \"^  master$\")",
+      "Bash(git checkout *)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)",
+      "Bash(git log *)",
+      "Bash(git restore *)",
+      "Bash(git stash *)",
+      "Bash(git rev-list *)",
+      "Bash(git ls-tree *)",
+      "Bash(ls -la /Users/elazhar/PycharmProjects/tenant-design-system-runbook 2>&1 | head -20)",
+      "Bash(pnpm db:generate)"
     ]
   }
 }

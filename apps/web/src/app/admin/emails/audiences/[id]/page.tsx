@@ -1,9 +1,11 @@
 /**
- * /admin/emails/audiences/[id] — Detail d'une audience (M5.3.9).
+ * /admin/emails/audiences/[id] — Détail d'une audience (M5.3.9 + vague 4 UX).
  *
- * Affiche les rules, exclusions, snapshots, créateur. Boutons :
- * - Snapshot maintenant
- * - Supprimer (soft delete)
+ * - Critères rendus en français lisible (UX-AUD-014, plus de JSON brut).
+ * - Count live de l'audience (preview-size côté serveur, UX-AUD-005).
+ * - Exclusions lisibles ; édition via la page [id]/edit.
+ * - Snapshots : drill-down membres, retry errored, auto-refresh running
+ *   (UX-AUD-006/007/012, dans SnapshotsPanel).
  */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -13,7 +15,19 @@ import {
   getAudienceById,
   listSnapshotsForAudience,
 } from '@/lib/mail/audiences/queries';
+import { previewAudienceSize } from '@/lib/mail/audiences/preview';
+import {
+  ExclusionFlagsSchema,
+  RulesGroupSchema,
+  type ExclusionFlags,
+  type RulesGroup,
+} from '@/lib/mail/audiences/rules-types';
+import { rulesGroupToLines } from '@/components/admin/emails/audiences/rule-defaults';
 import { AudienceDetailActions } from '@/components/admin/emails/audiences/AudienceDetailActions';
+import {
+  SnapshotsPanel,
+  type SnapshotRow,
+} from '@/components/admin/emails/audiences/SnapshotsPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,11 +42,11 @@ function formatDate(d: Date | null): string {
   }).format(d);
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-stone-100 text-stone-700',
-  running: 'bg-sky-50 text-sky-700',
-  done: 'bg-emerald-50 text-emerald-700',
-  errored: 'bg-red-50 text-red-700',
+const EXCLUSION_LABELS: Record<string, string> = {
+  hard_bounce: 'Rebonds durs (hard bounce)',
+  unsubscribe: 'Désinscrits',
+  manual_suppression: 'Suppressions manuelles (admin)',
+  marketing_optout: 'Refus de consentement marketing',
 };
 
 export default async function AudienceDetailPage({
@@ -45,6 +59,38 @@ export default async function AudienceDetailPage({
   if (!audience) notFound();
 
   const snapshots = await listSnapshotsForAudience(params.id, 20);
+
+  // Shapes sûres (jsonb → typé). Fallback non bloquant si drift historique.
+  const parsedRules = RulesGroupSchema.safeParse(audience.rules);
+  const rules: RulesGroup = parsedRules.success
+    ? parsedRules.data
+    : { kind: 'all', conditions: [] };
+  const parsedExclusions = ExclusionFlagsSchema.safeParse(audience.exclusionFlags);
+  const exclusionFlags: ExclusionFlags = parsedExclusions.success
+    ? parsedExclusions.data
+    : { hard_bounce: true, unsubscribe: true, manual_suppression: true, marketing_optout: false };
+
+  // UX-AUD-005 — count live (best-effort, ne bloque jamais la page).
+  let liveCount: number | null = null;
+  if (rules.conditions.length > 0) {
+    try {
+      const { size } = await previewAudienceSize(rules, exclusionFlags);
+      liveCount = size;
+    } catch {
+      liveCount = null;
+    }
+  }
+
+  const ruleLines = rulesGroupToLines(rules);
+
+  const snapshotRows: SnapshotRow[] = snapshots.map((s) => ({
+    id: s.id,
+    status: s.status,
+    size: s.size,
+    createdAt: s.createdAt ? s.createdAt.toISOString() : null,
+    purgeableAfter: s.purgeableAfter ? s.purgeableAfter.toISOString() : null,
+    erroredReason: s.erroredReason ?? null,
+  }));
 
   return (
     <AdminShell adminEmail={session.email} active="emails">
@@ -59,9 +105,19 @@ export default async function AudienceDetailPage({
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-stone-900">
             🎯 {audience.name}
           </h1>
-          <p className="mt-1 text-xs font-mono text-stone-500">{audience.slug}</p>
+          <p className="mt-1 font-mono text-xs text-stone-500">{audience.slug}</p>
+          {liveCount !== null && (
+            <p className="mt-2 text-sm text-stone-700" data-testid="live-count">
+              <strong className="tabular-nums">{liveCount.toLocaleString('fr-FR')}</strong> contact
+              {liveCount !== 1 ? 's' : ''} actuellement envoyable{liveCount !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
-        <AudienceDetailActions audienceId={audience.id} />
+        <AudienceDetailActions
+          audienceId={audience.id}
+          rules={rules}
+          exclusionFlags={exclusionFlags}
+        />
       </header>
 
       {audience.description && (
@@ -69,90 +125,56 @@ export default async function AudienceDetailPage({
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Critères */}
+        {/* Critères — rendu FR lisible (UX-AUD-014) */}
         <section className="rounded-md border border-stone-200 bg-white p-4">
           <h2 className="mb-2 text-sm font-medium text-stone-700">Critères</h2>
-          <pre className="overflow-x-auto rounded bg-stone-50 p-3 text-xs text-stone-800">
-            {JSON.stringify(audience.rules, null, 2)}
-          </pre>
+          {ruleLines.length <= 1 && rules.conditions.length === 0 ? (
+            <p className="text-sm italic text-stone-400">Aucun critère.</p>
+          ) : (
+            <ul className="space-y-1 text-sm" data-testid="rules-readable">
+              {ruleLines.map((line, i) => (
+                <li
+                  key={i}
+                  style={{ paddingLeft: `${line.depth * 1}rem` }}
+                  className={line.combinator ? 'font-medium text-stone-500' : 'text-stone-800'}
+                >
+                  {line.combinator ? `▸ ${line.text}` : `• ${line.text}`}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         {/* Exclusions */}
         <section className="rounded-md border border-stone-200 bg-white p-4">
           <h2 className="mb-2 text-sm font-medium text-stone-700">Exclusions automatiques</h2>
           <ul className="space-y-1 text-sm">
-            {Object.entries(audience.exclusionFlags as Record<string, boolean>).map(
-              ([key, val]) => (
-                <li key={key} className="flex items-center gap-2">
-                  <span className={val ? 'text-emerald-700' : 'text-stone-400'}>
-                    {val ? '✓' : '○'}
-                  </span>
-                  <span className={val ? 'text-stone-800' : 'text-stone-400'}>{key}</span>
-                </li>
-              ),
-            )}
+            {Object.entries(exclusionFlags as Record<string, boolean>).map(([key, val]) => (
+              <li key={key} className="flex items-center gap-2">
+                <span className={val ? 'text-emerald-700' : 'text-stone-400'}>
+                  {val ? '✓' : '○'}
+                </span>
+                <span className={val ? 'text-stone-800' : 'text-stone-400'}>
+                  {EXCLUSION_LABELS[key] ?? key}
+                </span>
+              </li>
+            ))}
           </ul>
+          <Link
+            href={`/admin/emails/audiences/${audience.id}/edit`}
+            className="mt-3 inline-block text-xs text-sage-700 underline-offset-2 hover:underline"
+          >
+            Modifier les critères et exclusions →
+          </Link>
         </section>
       </div>
 
-      {/* Snapshots */}
-      <section className="mt-6 rounded-md border border-stone-200 bg-white">
-        <header className="border-b border-stone-200 px-4 py-3">
-          <h2 className="text-sm font-medium text-stone-700">
-            Snapshots ({snapshots.length})
-          </h2>
-        </header>
-        {snapshots.length === 0 ? (
-          <div className="p-6 text-center text-sm text-stone-500">
-            Aucun snapshot. Crée-en un pour figer la liste.
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50/50">
-              <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
-                  Date
-                </th>
-                <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-stone-500">
-                  Taille
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
-                  Status
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-stone-500">
-                  Purge le
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {snapshots.map((s) => (
-                <tr key={s.id}>
-                  <td className="px-3 py-2 font-mono text-xs text-stone-600">
-                    {formatDate(s.createdAt)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{s.size}</td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${
-                        STATUS_COLORS[s.status] ?? 'bg-stone-100'
-                      }`}
-                    >
-                      {s.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-stone-500">
-                    {formatDate(s.purgeableAfter)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      {/* Snapshots (drill-down, retry, auto-refresh) */}
+      <SnapshotsPanel audienceId={audience.id} snapshots={snapshotRows} />
 
       <footer className="mt-8 text-xs text-stone-400">
-        Créée par {audience.createdBy} le {formatDate(audience.createdAt)} ·{' '}
-        Mode {audience.evaluationMode}
+        Créée par {audience.createdBy} le {formatDate(audience.createdAt)} · Mode{' '}
+        {audience.evaluationMode}
       </footer>
     </AdminShell>
   );

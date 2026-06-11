@@ -38,6 +38,10 @@ paths = [
   '''docs/admin/specifications/.*\.md''',
   '''docs/dossier-chat-v2/.*''',
   '''docs/audit/.*''',
+  '''docs/i18n-strategy-2026-05/.*''',
+  '''docs/i18n-content-2026-05/.*''',
+  '''docs/checkout-leads-background-2026-06-01/.*''',
+  '''docs/owbs-ui-test-battery-2026-06-02/.*''',
   '''.*/__fixtures__/.*''',
   '''.*\.example$''',
   '''\.gitleaks\.toml''',
@@ -46,4 +50,9 @@ regexes = [
   '''USER:PASSWORD@ep-xxx''',
   '''argon2id\$.*PASS''',
   '''placeholder''',
+  # Postgres ephemere de CI/e2e (user=pass=postgres, host=localhost) — non secret.
+  '''postgres(?:ql)?://postgres:postgres@localhost''',
+  # URLs d'exemple de bases de TEST dans la doc (password=test, host=localhost
+  # ou testcontainers, db=femiglow_test) — placeholders, non secrets.
+  '''postgres(?:ql)?://[^:\s]+:test@''',
 ]

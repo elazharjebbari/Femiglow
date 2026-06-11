@@ -10,6 +10,8 @@ import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import { pickAndProcessBatch } from '@/lib/mail/outbox';
 import { logger } from '@/lib/logging/logger';
+import { db as getDb } from '@/lib/db/client';
+import { OUTBOX_CRON_NAME, recordCronHeartbeat } from '@/lib/admin/emails/cron-heartbeat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,6 +25,24 @@ export async function POST(req: Request): Promise<Response> {
 
   try {
     const result = await pickAndProcessBatch();
+    // Heartbeat (F-002) — on persiste un tick à CHAQUE exécution réussie, même
+    // sur file vide (picked=0). C'est ce marqueur que le health check lit pour
+    // distinguer « cron vivant, rien à faire » de « cron mort ». Best-effort :
+    // un échec d'écriture du heartbeat ne doit pas faire échouer le drain.
+    const drizzle = getDb();
+    if (drizzle) {
+      try {
+        await recordCronHeartbeat(drizzle, OUTBOX_CRON_NAME, {
+          processed: result.picked,
+          succeeded: result.succeeded,
+          failed: result.failed,
+        });
+      } catch (hbErr) {
+        logger.error('cron.email_outbox.heartbeat_failed', {
+          error: hbErr instanceof Error ? hbErr.message : String(hbErr),
+        });
+      }
+    }
     logger.info('cron.email_outbox.completed', result);
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {

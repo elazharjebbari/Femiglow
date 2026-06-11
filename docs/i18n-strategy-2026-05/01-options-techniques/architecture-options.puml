@@ -1,0 +1,111 @@
+@startuml architecture-options
+!theme cerulean-outline
+
+title FemiGlow i18n — 3 architectures candidates
+
+' ====================================================================
+' OPTION 1 : PATH-BASED ROUTING (RECOMMANDÉE)
+' ====================================================================
+package "Option 1 : Path-based (/fr/, /ar/, /en/)" as Opt1 {
+
+  actor Visitor as V1
+  database "Browser cookies" as Cookie1
+  rectangle "Next.js Middleware" as MW1 {
+    note bottom : 1. Detect locale\n  (path > cookie > Accept-Language > default)\n2. Rewrite/redirect if needed
+  }
+  rectangle "app/[locale]/(marketing)/page.tsx" as Page1 {
+    note bottom : RSC server-side\nMessages chargés via\n`useMessages()` ou\n`getTranslations()`
+  }
+  database "messages/[locale].json" as Bundle1 {
+    note bottom : Bundle JSON imported\nau build time\nou lazy via dynamic import
+  }
+  database "PostgreSQL" as DB1 {
+    note bottom : component_field_bindings\n(locale = clé)\nDB content multilingue
+  }
+
+  V1 -right-> MW1 : GET /kit
+  MW1 -down-> V1 : 301 /fr/kit
+  V1 -down-> Page1 : GET /fr/kit
+  Cookie1 ..> MW1 : NEXT_LOCALE=fr
+  Page1 -down-> Bundle1 : load fr.json
+  Page1 -right-> DB1 : query bindings WHERE locale='fr'
+
+  note right of MW1
+    PROS:
+    - SEO optimal (Google indexe /fr/, /ar/, /en/)
+    - URL partageable
+    - hreflang auto
+    CONS:
+    - URL plus longue
+    - Refacto liens internes
+  end note
+}
+
+' ====================================================================
+' OPTION 2 : COOKIE-BASED (DEFAULT URLS, COOKIE FOR LOCALE)
+' ====================================================================
+package "Option 2 : Cookie-based (URLs unchanged)" as Opt2 {
+
+  actor Visitor as V2
+  database "Browser cookies" as Cookie2
+  rectangle "Next.js Middleware" as MW2 {
+    note bottom : 1. Read cookie NEXT_LOCALE\n2. Override request context\n  with locale (header)
+  }
+  rectangle "app/(marketing)/page.tsx" as Page2 {
+    note bottom : RSC reads request locale\nfrom header injected by MW\nor from cookie
+  }
+  database "messages/[locale].json" as Bundle2
+  database "PostgreSQL" as DB2
+
+  V2 -right-> MW2 : GET /kit
+  MW2 -down-> Page2 : Same URL\n+ x-locale: ar
+  Cookie2 ..> MW2 : NEXT_LOCALE=ar
+  Page2 -down-> Bundle2 : load ar.json
+  Page2 -right-> DB2 : query bindings WHERE locale='ar'
+
+  note right of MW2
+    PROS:
+    - URL propre (/kit toujours)
+    - Pas de refacto liens
+    CONS:
+    - SEO faible (Google voit 1 URL pour 3 langues)
+    - Pas de hreflang naturel
+    - Lien partagé ne conserve pas la langue
+    - Flicker possible côté client (JS read cookie)
+  end note
+}
+
+' ====================================================================
+' OPTION 3 : HYBRID — SUBDOMAIN + PATH
+' ====================================================================
+package "Option 3 : Hybrid Subdomain (fr.femiglow.ma)" as Opt3 {
+
+  actor Visitor as V3
+  rectangle "Vercel DNS / Edge" as DNS3 {
+    note bottom : Route par sous-domaine
+  }
+  rectangle "Next.js app multi-tenant" as App3 {
+    note bottom : 1 app, locale extraite\ndu hostname
+  }
+  database "messages/[locale].json" as Bundle3
+  database "PostgreSQL" as DB3
+
+  V3 -right-> DNS3 : GET https://ar.femiglow.ma/kit
+  DNS3 -down-> App3 : route to app
+  App3 -down-> Bundle3 : load ar.json (from hostname)
+  App3 -right-> DB3 : query bindings WHERE locale='ar'
+
+  note right of DNS3
+    PROS:
+    - SEO bon (sous-domaines séparés)
+    - Géo-targeting Google Search Console
+    CONS:
+    - Certif SSL multi (3+ sous-domaines)
+    - DNS config complexe
+    - Auth cookie ne traverse pas sous-domaines
+      (sauf .femiglow.ma scope)
+    - Coût gestion
+  end note
+}
+
+@enduml

@@ -1,0 +1,70 @@
+{
+  "$comment": "CPN-05 buildCouponContext — tables de mapping + cas d'équivalence SC/API. visitorKey attendu non figé (dépend du hash d'implémentation) : on assert l'ÉGALITÉ entre adaptateurs et la STABILITÉ, pas une valeur littérale.",
+  "nowCanonical": "2026-06-02T12:00:00.000Z",
+  "currency": "MAD",
+  "trafficSource": [
+    { "id": "TS-01", "utm_source": "facebook", "referer": null, "expected": "paid_social" },
+    { "id": "TS-02", "utm_source": "ig", "referer": null, "expected": "paid_social" },
+    { "id": "TS-03", "utm_source": "instagram", "referer": null, "expected": "paid_social" },
+    { "id": "TS-04", "utm_source": "klaviyo", "referer": null, "expected": "email" },
+    { "id": "TS-05", "utm_source": "newsletter", "referer": null, "expected": "email" },
+    { "id": "TS-06", "utm_source": null, "referer": "https://www.instagram.com/", "expected": "social_organic" },
+    { "id": "TS-07", "utm_source": null, "referer": "https://l.facebook.com/", "expected": "social_organic" },
+    { "id": "TS-08", "utm_source": null, "referer": "https://www.google.com/search?q=femiglow", "expected": "organic_search" },
+    { "id": "TS-09", "utm_source": "newsletter", "referer": "https://facebook.com/", "expected": "email", "$note": "utm prioritaire sur referer" },
+    { "id": "TS-10", "utm_source": "zzz-unknown", "referer": null, "expected": "direct", "$note": "utm non mappé -> direct" },
+    { "id": "TS-11", "utm_source": null, "referer": null, "expected": "direct" },
+    { "id": "TS-12", "utm_source": null, "referer": "https://template-femiglow.example/kit", "expected": "direct", "$note": "referer interne -> direct" }
+  ],
+  "device": [
+    { "id": "DV-01", "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", "expected": "mobile" },
+    { "id": "DV-02", "ua": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Mobile Safari/537.36", "expected": "mobile" },
+    { "id": "DV-03", "ua": "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/604.1", "expected": "tablet" },
+    { "id": "DV-04", "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36", "expected": "desktop" },
+    { "id": "DV-05", "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", "expected": "desktop" },
+    { "id": "DV-06", "ua": "", "expected": "desktop", "$note": "UA vide -> défaut desktop, pas de throw" },
+    { "id": "DV-07", "ua": "\u0000garbage-ÿ-not-a-ua", "expected": "desktop", "$note": "UA exotique -> défaut desktop, pas de throw" }
+  ],
+  "visitorType": [
+    { "id": "VT-01", "cookies": { "_fg_seen": "1" }, "expected": "returning" },
+    { "id": "VT-02", "cookies": {}, "expected": "first" },
+    { "id": "VT-03", "cookies": { "_fbp": "fb.1.1.2" }, "expected": "first", "$note": "_fbp seul ne marque pas returning" }
+  ],
+  "visitorKey": [
+    { "id": "VK-01", "cookies": { "_fbp": "fb.1.1700000000.555" }, "expectNull": false, "expectExcludesSubstrings": ["555", "1700000000"], "$note": "non-null, anonymisé" },
+    { "id": "VK-02", "cookies": {}, "expectNull": true },
+    { "id": "VK-03", "cookies": { "_fbp": "" }, "expectNull": true, "$note": "vide = absent" },
+    { "id": "VK-04", "cookies": { "session": "s-abc", "_fbp": "fb.1.1.2" }, "expectNull": false, "$note": "ordre de préférence session puis _fbp, déterministe" },
+    { "id": "VK-05", "cookies": { "_fbp": "not-a-valid-fbp" }, "expectNull": false, "$note": "malformé : hashé quand même, pas de throw, déterministe" }
+  ],
+  "equivalence": [
+    {
+      "id": "EQ-01",
+      "label": "cookies identiques SC et API -> visitorKey identique",
+      "sc": { "cookies": { "_fbp": "fb.1.1700000000.555" }, "headers": { "user-agent": "Mozilla/5.0 (iPhone) Safari", "referer": "https://facebook.com/" }, "query": { "utm_source": "facebook" } },
+      "api": { "cookies": { "_fbp": "fb.1.1700000000.555" }, "headers": { "user-agent": "Mozilla/5.0 (iPhone) Safari", "referer": "https://facebook.com/" }, "query": { "utm_source": "facebook" } },
+      "assert": "visitorKeyEqual"
+    },
+    {
+      "id": "EQ-02",
+      "label": "referer absent côté API mais _fbp identique -> visitorKey identique",
+      "sc": { "cookies": { "_fbp": "fb.1.1700000000.555" }, "headers": { "referer": "https://facebook.com/" } },
+      "api": { "cookies": { "_fbp": "fb.1.1700000000.555" }, "headers": {} },
+      "assert": "visitorKeyEqual",
+      "$note": "trafficSource peut différer ; le bucket dépend de visitorKey+couponId donc le prix reste stable"
+    },
+    {
+      "id": "EQ-03",
+      "label": "aucun cookie des deux côtés -> visitorKey null identique",
+      "sc": { "cookies": {}, "headers": {} },
+      "api": { "cookies": {}, "headers": {} },
+      "assert": "visitorKeyBothNull"
+    }
+  ],
+  "piiGuards": {
+    "$comment": "patterns interdits dans visitorKey (et tout champ du contexte)",
+    "emailRegex": "@",
+    "phoneRegex": "\\+212|00212|0[5-7]\\d{8}",
+    "ipv4Regex": "\\b\\d{1,3}(?:\\.\\d{1,3}){3}\\b"
+  }
+}

@@ -7,6 +7,7 @@
 import type { ChatLeadRow } from '@/lib/chat/db/schema';
 
 import { logger } from '@/lib/logging/logger';
+import { leadRepo } from '@/lib/chat/repos/lead';
 import { dispatchToAllChannels, type DispatchToAllChannelsResult } from '../dispatch-to-all-channels';
 import { composeFullName, normalizePhoneForPayload } from '../payload';
 
@@ -25,6 +26,7 @@ export interface OrderWebhookContext {
   /** Lead wizard (chat_lead row) — sert pour les coordonnées + adresse. */
   lead: Pick<
     ChatLeadRow,
+    | 'id'
     | 'phoneE164'
     | 'phoneRaw'
     | 'firstName'
@@ -83,6 +85,34 @@ export interface BuildOrderPayloadResult {
 }
 
 /**
+ * Synchronise `chat_lead.webhook_status` depuis le résultat du webhook commande,
+ * pour que /admin/leads ne reste pas bloqué sur « En attente » après un achat
+ * (les leads wizard ne déclenchent jamais `chat_lead.created`). Best-effort :
+ * un échec de marquage NE doit PAS faire échouer/rejouer le webhook (déjà parti).
+ * Mappage calqué sur `from-chat-lead`.
+ */
+async function syncLeadWebhookStatus(
+  leadId: string,
+  status: DispatchToAllChannelsResult['status'],
+  lastError?: string,
+): Promise<void> {
+  try {
+    if (status === 'sent') {
+      await leadRepo.markWebhookSent(leadId);
+    } else if (status === 'failed' || status === 'skipped') {
+      await leadRepo.markWebhookFailed(leadId, lastError ?? status);
+    } else if (status === 'disabled') {
+      await leadRepo.markWebhookFailed(leadId, 'webhook-not-configured');
+    }
+  } catch (err) {
+    logger.warn('outbound.webhook.order.lead_status_sync_failed', {
+      leadId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * Construit le payload PLAT et envoie via le dispatcher unifié.
  * Anti-blocage : on n'attend pas la réponse au caller — la route appelle
  * cette fonction sans `await` (fire-and-forget).
@@ -92,6 +122,7 @@ export async function dispatchOrderWebhook(
 ): Promise<BuildOrderPayloadResult> {
   const phone = normalizePhoneForPayload(ctx.lead.phoneE164 || ctx.lead.phoneRaw, 'MA');
   if (!phone.ok) {
+    await syncLeadWebhookStatus(ctx.lead.id, 'skipped', `invalid-phone:${phone.reason}`);
     return {
       status: 'skipped',
       attempts: 0,
@@ -147,6 +178,9 @@ export async function dispatchOrderWebhook(
     responseStatus: result.responseStatus,
     logId: result.logId,
   });
+
+  // Reflète l'état du webhook commande sur le lead (badge /admin/leads).
+  await syncLeadWebhookStatus(ctx.lead.id, result.status, result.lastError);
 
   return {
     status: result.status,

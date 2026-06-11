@@ -7,6 +7,9 @@ import {
   getEventMapping,
 } from '@/lib/tracking/providers/event-mapping';
 import type { AdsConversionCategory } from '@/lib/tracking/providers/event-mapping';
+import { findEventInCatalog } from '@/lib/tracking/event-catalog';
+import { DATALAYER_PATHS } from '@/lib/tracking/datalayer-paths';
+import { BROADCAST_FALLBACK_CHANNELS } from '@/lib/tracking/attribution/types';
 
 /**
  * Politique de gating attribution PAR PROVIDER (cf. event-mapping.ts
@@ -38,6 +41,7 @@ type GtmParameter = {
   key?: string;
   value?: string;
   list?: GtmParameter[];
+  map?: GtmParameter[];
 };
 
 interface GtmTag {
@@ -46,6 +50,8 @@ interface GtmTag {
   type: string;
   parameter: GtmParameter[];
   firingTriggerId?: string[];
+  /** Triggers d'exception : le tag NE fire PAS si l'un d'eux fire. */
+  blockingTriggerId?: string[];
   setupTag?: Array<{ tagName: string; stopOnSetupFailure: boolean }>;
   tagFiringOption?: 'ONCE_PER_EVENT' | 'UNLIMITED' | 'ONCE_PER_LOAD';
   priority?: GtmParameter;
@@ -146,6 +152,65 @@ function snapEventNameFor(eventKey: string): string | null {
 function tiktokEventNameFor(eventKey: string): string | null {
   return getEventMapping(eventKey)?.tiktok?.name ?? null;
 }
+
+// ─── Détection « event monétaire » (catalogue) ───────────────────────
+// Le plan `TrackingEvent` ne porte pas la catégorie ; on dérive du catalogue
+// (source de vérité) si l'event déclare `value` / `transaction_id`.
+function catalogParamProps(eventKey: string): Record<string, unknown> | null {
+  const props = (
+    findEventInCatalog(eventKey)?.paramsSchema as
+      | { properties?: Record<string, unknown> }
+      | undefined
+  )?.properties;
+  return props ?? null;
+}
+function eventHasValue(eventKey: string): boolean {
+  return Boolean(catalogParamProps(eventKey)?.value);
+}
+function eventHasTransactionId(eventKey: string): boolean {
+  return Boolean(catalogParamProps(eventKey)?.transaction_id);
+}
+
+// Une ligne `eventSettingsTable` GA4 (`gaawe`) : MAP { parameter, parameterValue }.
+function ga4Setting(parameter: string, placeholder: string): GtmParameter {
+  return {
+    type: 'MAP',
+    map: [
+      { type: 'TEMPLATE', key: 'parameter', value: parameter },
+      { type: 'TEMPLATE', key: 'parameterValue', value: placeholder },
+    ],
+  };
+}
+
+// Une ligne `configSettingsTable` de la Balise Google (`googtag`) :
+// MAP { parameter, parameterValue }. Les réglages posés sur la config GA4
+// sont envoyés avec TOUS les events GA4 de la même destination.
+function ga4ConfigSetting(parameter: string, value: string): GtmParameter {
+  return {
+    type: 'MAP',
+    map: [
+      { type: 'TEMPLATE', key: 'parameter', value: parameter },
+      { type: 'TEMPLATE', key: 'parameterValue', value: value },
+    ],
+  };
+}
+
+// Events Meta où value/currency sont injectés EN CLAIR dans le 3e arg de
+// `fbq('track', …)`. Restreint aux conversions TOUJOURS valorisées :
+// interpoler `{{DLV - value}}` dans un objet JS inline produirait `value: ,`
+// (script cassé) si la value manquait. Les autres events ecommerce restent
+// en `{}` côté pixel — leur valeur passe par GA4 (param vide toléré) / awct.
+const META_VALUE_EVENTS: ReadonlySet<string> = new Set([
+  'purchase',
+  'generate_lead',
+  'lead_capture',
+]);
+
+// Sources `method` éligibles à la conversion Google Ads `lead` (vrais leads
+// commerciaux). `generate_lead` est aussi émis par contact/newsletter — qui
+// ont leur PROPRE conversion — donc on method-gate pour ne pas polluer `lead`.
+// Même allowlist que le pont Meta lead→Purchase (LEAD_PURCHASE_SOURCES).
+const LEAD_ADS_METHODS = ['chat', 'abandoned_cart'] as const;
 
 // Built-in variables that ship with every GTM container by default.
 // Note: AD_STORAGE / ANALYTICS_STORAGE are NOT built-in variable types
@@ -332,15 +397,33 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     return placeholder;
   }
 
-  // ─── GA4 Configuration tag ───────────────────────────────────────
+  // ─── GA4 Configuration tag (Balise Google / googtag) ─────────────
+  // Google a RETIRÉ la balise « Configuration GA4 » (`gaawc`) en 2024 :
+  // l'import GTM la rejette désormais (« Nom de colonne inconnu » sur ses
+  // paramètres). On émet la Balise Google (`googtag`) à la place — elle
+  // initialise la destination GA4 et porte les réglages de config
+  // (`send_page_view`, `page_locale`) via `configSettingsTable`
+  // (colonnes `parameter` / `parameterValue`). Les events `gaawe`
+  // (measurementIdOverride sur la même mesure) en héritent.
   if (idVars.ga4) {
+    // `page_locale` posé sur la config → envoyé avec TOUS les events GA4.
+    // Permet de segmenter conversions/revenu par langue du site (fr/ar/en).
+    // Déclarer une custom dimension `page_locale` côté GA4 pour l'exploiter.
+    const localeVar = ensureDlv('DLV - page.locale', DATALAYER_PATHS.pageLocale);
     tags.push({
       tagId: nextTag(),
       name: 'GA4 Cfg',
-      type: 'gaawc',
+      type: 'googtag',
       parameter: [
-        { type: 'TEMPLATE', key: 'measurementId', value: idVars.ga4 },
-        { type: 'BOOLEAN', key: 'sendPageView', value: 'false' },
+        { type: 'TEMPLATE', key: 'tagId', value: idVars.ga4 },
+        {
+          type: 'LIST',
+          key: 'configSettingsTable',
+          list: [
+            ga4ConfigSetting('send_page_view', 'false'),
+            ga4ConfigSetting('page_locale', localeVar),
+          ],
+        },
       ],
       priority: { type: 'INTEGER', key: 'priority', value: '80' },
       tagFiringOption: 'ONCE_PER_EVENT',
@@ -499,19 +582,28 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
   function ensureAttributionTrigger(
     eventKey: string,
     providerKey: 'meta' | 'google_ads' | 'tiktok' | 'snap',
+    // Filtre méthode optionnel : restreint le fire aux sources éligibles
+    // (ex. lead Google Ads = {chat, abandoned_cart} → exclut les
+    // generate_lead de contact/newsletter qui partagent le même event mais
+    // ne sont PAS des leads commerciaux). Mire le pont Meta lead→Purchase.
+    methodAllowlist?: readonly string[],
   ): string {
-    const cacheKey = `${eventKey}:${providerKey}`;
+    const methodSuffix = methodAllowlist ? `:m=${methodAllowlist.join('+')}` : '';
+    const cacheKey = `${eventKey}:${providerKey}${methodSuffix}`;
     const cached = attributionTriggerCache.get(cacheKey);
     if (cached) return cached;
     // Assure que la DLV attribution.channel existe (idempotent).
     ensureDlv('DLV - attribution.channel', 'attribution.channel');
+    const methodVar = methodAllowlist
+      ? ensureDlv('DLV - method', DATALAYER_PATHS.method)
+      : null;
     const id = nextTrigger();
     triggers.push({
       triggerId: id,
       // NB : pas de ':' dans le nom — GTM rejette le caractère ':' à
       // l'import ("The name contains invalid character"). On utilise
       // un séparateur ' / ' pour rester lisible.
-      name: `CE — ${eventKey} [attr / ${providerKey}]`,
+      name: `CE — ${eventKey} [attr / ${providerKey}${methodAllowlist ? ` / method` : ''}]`,
       type: 'CUSTOM_EVENT',
       // customEventFilter : UN SEUL filtre autorisé par GTM
       // (matching du nom d'event). Si on en met plusieurs, GTM rejette
@@ -528,9 +620,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       ],
       // filter : conditions additionnelles évaluées APRÈS le matching
       // du nom d'event. C'est ici qu'on met le filtre d'attribution.
-      // MATCH_REGEX → fire si channel = providerKey OU direct OU
-      // organic. Le visiteur direct/organic est broadcasté à tous les
-      // pixels payants (politique défaut, cf. docs/tracking-attribution/04).
+      // MATCH_REGEX → fire si channel = providerKey OU l'un des canaux
+      // fallback broadcast (direct, organic, social_organic, email, …) OU
+      // canal vide (1er event avant résolution). La liste est la SOURCE DE
+      // VÉRITÉ UNIQUE partagée avec le gate serveur (BROADCAST_FALLBACK_CHANNELS)
+      // → plus de dérive client/serveur (cf. docs/tracking-attribution-audit-2026-05-31).
       filter: [
         {
           type: 'MATCH_REGEX',
@@ -543,14 +637,88 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             {
               type: 'TEMPLATE',
               key: 'arg1',
-              value: `^(${providerKey}|direct|organic|broadcast)$`,
+              // `…|)$` : le `|` final autorise la chaîne vide (canal non encore
+              // résolu) pour ne perdre aucune conversion pendant la capture.
+              value: `^(${providerKey}|${BROADCAST_FALLBACK_CHANNELS.join('|')}|)$`,
             },
+          ],
+        },
+        // Condition method (AND) optionnelle — n'émet la conversion que pour
+        // les sources éligibles. Le tableau `filter` autorise plusieurs
+        // conditions (contrairement à `customEventFilter`).
+        ...(methodVar
+          ? [
+              {
+                type: 'MATCH_REGEX' as const,
+                parameter: [
+                  { type: 'TEMPLATE' as const, key: 'arg0', value: methodVar },
+                  {
+                    type: 'TEMPLATE' as const,
+                    key: 'arg1',
+                    value: `^(${methodAllowlist!.join('|')})$`,
+                  },
+                ],
+              },
+            ]
+          : []),
+      ],
+      parentFolderId: '2',
+    });
+    attributionTriggerCache.set(cacheKey, id);
+    return id;
+  }
+
+  // ─── Pont lead→Meta Purchase : trigger d'exception du purchase pixel ──
+  // (audit meta-lead-as-purchase-2026-06-01). Le tag Meta `Purchase` du VRAI
+  // achat est bloqué quand le cookie `fg_meta_lead_purchase` est posé (= un
+  // lead chat/panier a déjà été compté comme Purchase via la CAPI) → zéro
+  // doublon pixel. INERTE tant que le client ne pose pas le cookie (flag
+  // NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED OFF) → ajout sans risque.
+  let leadPurchaseBlockTriggerId: string | null = null;
+  function ensureLeadPurchaseBlockTrigger(): string {
+    if (leadPurchaseBlockTriggerId) return leadPurchaseBlockTriggerId;
+    // Variable 1st-party cookie (type 'k').
+    const cookieVar = 'Cookie - fg_meta_lead_purchase';
+    if (!dlvByName.has(cookieVar)) {
+      variables.push({
+        variableId: nextVariable(),
+        name: cookieVar,
+        type: 'k',
+        parameter: [
+          { type: 'TEMPLATE', key: 'name', value: 'fg_meta_lead_purchase' },
+          { type: 'BOOLEAN', key: 'decodeCookie', value: 'true' },
+        ],
+        parentFolderId: '3',
+      });
+      dlvByName.set(cookieVar, `{{${cookieVar}}}`);
+    }
+    const id = nextTrigger();
+    triggers.push({
+      triggerId: id,
+      name: 'BLK — lead-purchase déjà compté (anti-doublon Meta)',
+      type: 'CUSTOM_EVENT',
+      customEventFilter: [
+        {
+          type: 'EQUALS',
+          parameter: [
+            { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+            { type: 'TEMPLATE', key: 'arg1', value: 'purchase' },
+          ],
+        },
+      ],
+      // Cookie non vide → bloque (fire de l'exception). MATCH_REGEX `.+`.
+      filter: [
+        {
+          type: 'MATCH_REGEX',
+          parameter: [
+            { type: 'TEMPLATE', key: 'arg0', value: `{{${cookieVar}}}` },
+            { type: 'TEMPLATE', key: 'arg1', value: '.+' },
           ],
         },
       ],
       parentFolderId: '2',
     });
-    attributionTriggerCache.set(cacheKey, id);
+    leadPurchaseBlockTriggerId = id;
     return id;
   }
 
@@ -560,14 +728,33 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
     if (!triggerId) continue;
 
     if (event.providers.ga4 && idVars.ga4) {
+      const ga4Parameter: GtmParameter[] = [
+        { type: 'TEMPLATE', key: 'eventName', value: event.key },
+        { type: 'TEMPLATE', key: 'measurementIdOverride', value: idVars.ga4 },
+      ];
+      // T-02 — transmettre value/currency(/transaction_id) à GA4 pour les
+      // events monétaires (sinon revenu GA4 = 0). Un param absent au runtime
+      // est ignoré par GA4 (pas d'erreur, contrairement à l'inline Meta).
+      if (eventHasValue(event.key)) {
+        const settings: GtmParameter[] = [
+          ga4Setting('value', ensureDlv('DLV - value', DATALAYER_PATHS.value)),
+          ga4Setting('currency', ensureDlv('DLV - currency', DATALAYER_PATHS.currency)),
+        ];
+        if (eventHasTransactionId(event.key)) {
+          settings.push(
+            ga4Setting(
+              'transaction_id',
+              ensureDlv('DLV - transaction_id', DATALAYER_PATHS.transactionId),
+            ),
+          );
+        }
+        ga4Parameter.push({ type: 'LIST', key: 'eventSettingsTable', list: settings });
+      }
       tags.push({
         tagId: nextTag(),
         name: `GA4 Evt — ${event.key}`,
         type: 'gaawe',
-        parameter: [
-          { type: 'TEMPLATE', key: 'eventName', value: event.key },
-          { type: 'TEMPLATE', key: 'measurementIdOverride', value: idVars.ga4 },
-        ],
+        parameter: ga4Parameter,
         firingTriggerId: [triggerId],
         parentFolderId: '2',
       });
@@ -584,6 +771,11 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         getAttributionMode(event.key, 'meta') === 'primary'
           ? ensureAttributionTrigger(event.key, 'meta')
           : triggerId;
+      // T-03 — custom_data (3e arg fbq) : value/currency pour les conversions
+      // valorisées (sinon Purchase/Lead Meta sans valeur → ROAS Meta dégradé).
+      const metaCd = META_VALUE_EVENTS.has(event.key)
+        ? `{ value: ${ensureDlv('DLV - value', DATALAYER_PATHS.value)}, currency: '${ensureDlv('DLV - currency', DATALAYER_PATHS.currency)}' }`
+        : '{}';
       tags.push({
         tagId: nextTag(),
         name: `Meta Evt — ${event.key} (${metaName})`,
@@ -598,11 +790,16 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
             // et n'est pas le bon emplacement pour eventID.
             // cf. https://developers.facebook.com/docs/marketing-api/conversions-api/deduplicate-pixel-and-server-events
             // cf. docs/meta-quality-audit-2026-05/02-plan-dev-action.md step 2.9
-            value: `<script>fbq('track', '${metaName}', {}, { eventID: {{DLV - event_id}} });</script>`,
+            value: `<script>fbq('track', '${metaName}', ${metaCd}, { eventID: {{DLV - event_id}} });</script>`,
           },
           { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
         ],
         firingTriggerId: [metaTriggerId],
+        // Anti-doublon lead→Purchase : le Purchase pixel du vrai achat est
+        // bloqué si un lead a déjà compté (cookie posé). Inerte si flag OFF.
+        ...(event.key === 'purchase'
+          ? { blockingTriggerId: [ensureLeadPurchaseBlockTrigger()] }
+          : {}),
         setupTag: [{ tagName: META_INIT_NAME, stopOnSetupFailure: false }],
         parentFolderId: '2',
       });
@@ -619,9 +816,12 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
       if (labelVar) {
         // DLVs ecommerce nécessaires pour la conversion (transaction,
         // currency, value). Idempotent — déjà créés au besoin.
-        const txnIdVar = ensureDlv('DLV - ecommerce.transaction_id', 'ecommerce.transaction_id');
-        const currencyVar = ensureDlv('DLV - ecommerce.currency', 'ecommerce.currency');
-        const valueVar = ensureDlv('DLV - ecommerce.value', 'ecommerce.value');
+        // T-01 — la valeur vit sous `params.*` dans le dataLayer (jamais
+        // `ecommerce.*`, jamais poussé). Lire le bon chemin sinon awct envoie
+        // conversionValue/currencyCode/orderId = undefined → ROAS faux + doublons.
+        const txnIdVar = ensureDlv('DLV - transaction_id', DATALAYER_PATHS.transactionId);
+        const currencyVar = ensureDlv('DLV - currency', DATALAYER_PATHS.currency);
+        const valueVar = ensureDlv('DLV - value', DATALAYER_PATHS.value);
         // Catégorie API Google Ads (param `conversionCategory` du tag
         // awct). Permet à Ads d'associer la conversion à la bonne
         // catégorie côté reporting + bidding.
@@ -642,9 +842,17 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
         // broadcast sur tous les canaux — alimente Smart Bidding sans
         // skewer l'attribution primary (clean primary attribution +
         // max volume secondary).
+        // Fix pollution conversion `lead` : `generate_lead` est ÉMIS par
+        // plusieurs sources (wizard/chat MAIS aussi contact/newsletter, cf.
+        // ContactForm/NewsletterForm). On ne compte comme `lead` Google Ads
+        // QUE les vrais leads commerciaux (method ∈ {chat, abandoned_cart}) —
+        // les soumissions contact/newsletter ont leur PROPRE conversion. Même
+        // allowlist que le pont Meta lead→Purchase.
+        const adsMethodGate =
+          labelKey === 'lead' ? LEAD_ADS_METHODS : undefined;
         const adsTriggerId =
           getAttributionMode(event.key, 'google_ads') === 'primary'
-            ? ensureAttributionTrigger(event.key, 'google_ads')
+            ? ensureAttributionTrigger(event.key, 'google_ads', adsMethodGate)
             : triggerId;
         tags.push({
           tagId: nextTag(),
@@ -798,6 +1006,71 @@ export function exportPlan(plan: TrackingPlan, env: EnvName): ExportResult {
           parentFolderId: '2',
         });
       }
+    }
+  }
+
+  // ─── Pont lead→Meta Purchase : pixels PURCHASE sur les events lead ───────
+  // (audit meta-lead-purchase-pixel-2026-06-01). Pour les sources éligibles
+  // (chat / panier abandonné / wizard) on fait fire un pixel Meta `Purchase`
+  // EN PLUS du pixel `Lead`, avec `eventID = {{DLV - meta_purchase_eid}}` (le
+  // jpid de parcours) → MÊME eventID que la CAPI et que les autres signaux Purchase
+  // du même parcours → Meta déduplique nativement → 1 SEUL Purchase compté.
+  // Broadcast (non attribution-gated), comme la CAPI lead-as-purchase. Filtré
+  // par `method` → newsletter/contact ne firent JAMAIS Purchase.
+  if (idVars.meta) {
+    const LEAD_PURCHASE_SOURCES: Array<{ eventKey: string; methods: string[] }> = [
+      { eventKey: 'generate_lead', methods: ['chat', 'abandoned_cart'] },
+      { eventKey: 'lead_capture', methods: ['wizard'] },
+    ];
+    const methodVar = ensureDlv('DLV - method', DATALAYER_PATHS.method);
+    const eidVar = ensureDlv('DLV - meta_purchase_eid', DATALAYER_PATHS.metaPurchaseEid);
+    for (const src of LEAD_PURCHASE_SOURCES) {
+      if (!eventTriggerByKey[src.eventKey]) continue; // event absent du plan
+      const trigId = nextTrigger();
+      triggers.push({
+        triggerId: trigId,
+        name: `CE — ${src.eventKey} [lead→purchase]`,
+        type: 'CUSTOM_EVENT',
+        customEventFilter: [
+          {
+            type: 'EQUALS',
+            parameter: [
+              { type: 'TEMPLATE', key: 'arg0', value: '{{_event}}' },
+              { type: 'TEMPLATE', key: 'arg1', value: src.eventKey },
+            ],
+          },
+        ],
+        // Ne fire QUE pour les méthodes éligibles (jamais newsletter/contact).
+        filter: [
+          {
+            type: 'MATCH_REGEX',
+            parameter: [
+              { type: 'TEMPLATE', key: 'arg0', value: methodVar },
+              { type: 'TEMPLATE', key: 'arg1', value: `^(${src.methods.join('|')})$` },
+            ],
+          },
+        ],
+        parentFolderId: '2',
+      });
+      const cd = `{ value: ${ensureDlv('DLV - value', DATALAYER_PATHS.value)}, currency: '${ensureDlv('DLV - currency', DATALAYER_PATHS.currency)}' }`;
+      tags.push({
+        tagId: nextTag(),
+        name: `Meta Evt — ${src.eventKey}→Purchase (Purchase)`,
+        type: 'html',
+        parameter: [
+          {
+            type: 'TEMPLATE',
+            key: 'html',
+            // eventID = jpid de parcours → dédup native avec la CAPI + les autres
+            // signaux Purchase du parcours (lead_capture/generate_lead/purchase).
+            value: `<script>fbq('track', 'Purchase', ${cd}, { eventID: ${eidVar} });</script>`,
+          },
+          { type: 'BOOLEAN', key: 'supportDocumentWrite', value: 'false' },
+        ],
+        firingTriggerId: [trigId],
+        setupTag: [{ tagName: META_INIT_NAME, stopOnSetupFailure: false }],
+        parentFolderId: '2',
+      });
     }
   }
 

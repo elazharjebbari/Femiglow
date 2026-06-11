@@ -24,6 +24,7 @@ import type { Language } from '@/lib/checkout/schemas/common';
 
 import { dictionaryFr } from './locales/fr';
 import { dictionaryAr } from './locales/ar';
+import { dictionaryEn } from './locales/en';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Type du dictionnaire — source de vérité
@@ -57,6 +58,12 @@ export interface WizardDictionary {
     cityPlaceholder: string;
     cityHintBilingual: string;
     cityHintMatched: (matched: string) => string;
+    /** En-tête du listbox quand la query est vide (villes prioritaires). */
+    cityPopularLabel: string;
+    /** Statut de chargement du listbox. */
+    citySearching: string;
+    /** Prix de livraison nul ("Gratuit"). */
+    cityFreeDelivery: string;
     addressLine1Label: string;
     addressLine1Placeholder: string;
     notesLabel: string;
@@ -94,18 +101,130 @@ export interface WizardDictionary {
     orderGeneric: string;
     emailGeneric: string;
   };
+  /** CHA-232 — Indicateur de progression du wizard. */
+  stepIndicator: {
+    navAriaLabel: string;
+    labelCartReview: string;
+    labelLead: string;
+    labelAddress: string;
+    labelPayment: string;
+    labelThankYou: string;
+  };
+  /** CHA-232 — Microcopies du shell (durées, badges transverses). */
+  shell: {
+    /** Réassurance durée totale ("≈ 90 secondes pour confirmer"). */
+    timeEstimateTotal: string;
+    /** Durée step lead (unité latine conservée). */
+    timeEstimateLead: string;
+    /** Durée step address. */
+    timeEstimateAddress: string;
+    /** Durée step thank-you. */
+    timeEstimateThankYou: string;
+    /** Fallback étape indisponible. */
+    stepUnavailable: (name: string) => string;
+    /** Fallback hydratation. */
+    hydrating: string;
+  };
+  /** CHA-232 — Step 1 (lead) — copies hardcodées migrées. */
+  leadStep: {
+    heading: string;
+    subtitle: string;
+    firstNameLabel: string;
+    firstNamePlaceholder: string;
+    phoneLabel: string;
+    phonePlaceholder: string;
+    /** Hint masque téléphone (digits/format restent latins). */
+    phoneHint: string;
+    ctaDefault: string;
+    consentLabel: string;
+    consentFootnotePrefix: string;
+    consentFootnoteLink: string;
+    honeypotLabel: string;
+    errorRateLimited: string;
+    errorNetwork: string;
+    errorGeneric: string;
+    errorInvalidField: string;
+  };
+  /** CHA-232 — Bandeau de reprise ("Bon retour, …"). */
+  resumeBanner: {
+    /** Template avec `{firstName}`. */
+    template: string;
+    dismissAriaLabel: string;
+  };
+  /** CHA-232 — Badge "Aucun paiement maintenant". */
+  noCommitment: {
+    label: string;
+    sub: string;
+    ariaLabel: string;
+  };
+  /** CHA-232 — Récap panier permanent. */
+  cartRecap: {
+    ariaLabel: string;
+    /** Préfixe quantité + nom pack ("× Pack FemiGlow"). */
+    packLabel: (quantity: number) => string;
+    shippingIncluded: string;
+    /** Libellé devise affiché (MAD en fr/en, درهم en ar). Phase 9. */
+    currency: string;
+  };
+  /** CHA-232 — Vignette pack mobile (alt par défaut). */
+  packThumb: {
+    alt: string;
+  };
+  /** CHA-232 — Step 0 (revue panier, mode B). */
+  cartReview: {
+    heading: string;
+    subtitle: string;
+    ctaContinue: string;
+  };
+  /** CHA-232 — Réassurance livraison offerte (srNote). */
+  shipping: {
+    freeBadgeSrNote: (price: number) => string;
+    /** Libellé visible du badge livraison offerte. */
+    freeBadgeLabel: string;
+  };
+  /** CHA-232 — StockIndicator (statuts + opt-in retour). */
+  stock: {
+    inStock: string;
+    /** Préfixe en gras ("Il n'en reste que N"). */
+    lowStock: (count: number) => string;
+    /** Suffixe non gras du message low-stock. */
+    lowStockSuffix: string;
+    outOfStockTitle: string;
+    outOfStockBody: string;
+    notifyFormAriaLabel: string;
+    notifyEmailLabel: string;
+    notifyEmailPlaceholder: string;
+    notifyConsentLabel: string;
+    notifySubmit: string;
+    notifySuccess: string;
+    notifyErrorDefault: string;
+    notifyErrorUnexpected: string;
+    unavailable: string;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Registry
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DICTIONARIES: Record<Language, WizardDictionary> = {
+/**
+ * CHA-232 — Langues d'AFFICHAGE du wizard. Sur-ensemble additif et sûr de
+ * `Language` (le schéma persisté `languageSchema` reste `'fr' | 'ar'` pour ne
+ * pas impacter la validation serveur ni les CHECK SQL). L'anglais existe au
+ * niveau du dictionnaire d'affichage uniquement ; tant que le store/route ne
+ * propage pas `'en'`, il reste résolu via le mapping caller (en → 'fr').
+ */
+export type DictionaryLanguage = Language | 'en';
+
+const DICTIONARIES: Record<DictionaryLanguage, WizardDictionary> = {
   fr: dictionaryFr,
   ar: dictionaryAr,
+  en: dictionaryEn,
 };
 
 /** Récupère le dictionnaire complet pour une langue donnée. */
-export function getWizardDictionary(language: Language): WizardDictionary {
+export function getWizardDictionary(
+  language: DictionaryLanguage,
+): WizardDictionary {
   return DICTIONARIES[language] ?? DICTIONARIES.fr;
 }

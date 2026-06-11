@@ -1,0 +1,65 @@
+# Test plan — Module 11 : Infra & monitoring
+module: "11-infra-monitoring"
+refs_inventaire: [F-110, F-111, F-112, F-113, F-114, F-115]
+matrix: test-matrix.csv
+manifeste_timers: timers-attendus.yaml
+
+prerequis:
+  env:
+    - CRON_SECRET
+    - FEMIGLOW_STALWART_WEBHOOK_URL    # pour la probe webhook
+    - DATABASE_URL_TEST                # healthcheck contre vraie DB
+  outils:
+    - systemctl       # check-timers.sh (serveur/CI avec systemd)
+    - curl            # probes
+    - yq OU python3   # parsing du manifeste yaml dans check-timers.sh
+  harnais:
+    - src/lib/mail/__tests__/_helpers/fake-drizzle.ts
+    - src/test/db/setup.ts
+
+suites:
+  - id: timers-shell
+    couche: infra
+    fichiers:
+      - specs/check-timers.sh
+    cas: [INF-TIMER-001..007, INF-PROBE-WEBHOOK, INF-PROBE-LM-BOUNCE]
+    ordre: 1
+    isolation: shell
+    requiert: [systemd, manifeste_timers]
+    note: "Exécutable en CI (avec systemd) ET sur le serveur. Idempotent. exit!=0 sur écart."
+
+  - id: cron-auth-unit
+    couche: unit
+    fichiers:
+      - src/lib/cron/__tests__/authorize-cron.test.ts
+    cas: [INF-UNIT-CRON-AUTH-001..005, INF-CRON-INVOKE]
+    ordre: 2
+    isolation: pure
+
+  - id: health-extended
+    couche: unit+integration
+    fichiers:
+      - specs/health-extended.test.ts
+    cas:
+      - INF-HEALTH-001..012
+      - INF-DLQ-001, INF-DLQ-002
+    ordre: 3
+    isolation: serial
+    requiert: [DATABASE_URL_TEST]
+    note: "Chaque condition (cron mort, Listmonk down, jamais delivered) DOIT dégrader le niveau."
+
+  - id: observability-rituals
+    couche: unit
+    fichiers:
+      - src/lib/mail/__tests__/observability.test.ts
+      - src/lib/rituals/__tests__/j45-stub.test.ts
+    cas: [INF-OBS-001..003, INF-UNIT-J45-STUB, INF-UNIT-J45-CONSOLE]
+    ordre: 4
+    isolation: pure
+
+criteres_sortie:
+  - "check-timers.sh: exit 0 uniquement si les 6 timers presents/enabled/cadence OK"
+  - "Healthcheck: cron mort, pending vieillissant, Listmonk down, jamais-delivered dégradent le niveau"
+  - "auth cron timing-safe sans early-return sur longueur"
+  - "DLQ: alerte au franchissement du seuil"
+  - "Probes infra: webhook URL résout (pas NXDOMAIN), Listmonk bounce.enabled=true"

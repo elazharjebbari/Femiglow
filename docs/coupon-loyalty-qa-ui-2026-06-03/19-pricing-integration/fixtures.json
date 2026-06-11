@@ -1,0 +1,53 @@
+{
+  "input": {
+    "kit": { "priceCents": 19900, "promoPriceCents": null, "sku": "FG-KIT", "currency": "MAD" },
+    "legacyPromo": { "priceCents": 19900, "promoPriceCents": 14900, "sku": "FG-KIT", "currency": "MAD" }
+  },
+  "now": {
+    "inside": "2026-06-03T12:00:00.000Z",
+    "outside": "2026-01-01T12:00:00.000Z"
+  },
+  "contexts": {
+    "treatment": { "visitorKey": "vk_treatment_0001", "trafficSource": "meta", "device": "mobile", "now": "2026-06-03T12:00:00.000Z" },
+    "holdout": { "visitorKey": "vk_holdout_0001", "trafficSource": "meta", "device": "mobile", "now": "2026-06-03T12:00:00.000Z" },
+    "stable": { "visitorKey": "vk_stable_fixed", "trafficSource": "meta", "device": "desktop", "now": "2026-06-03T12:00:00.000Z" },
+    "noKey": { "visitorKey": null, "trafficSource": "meta", "device": "mobile", "now": "2026-06-03T12:00:00.000Z" },
+    "noSource": { "visitorKey": "vk_x", "trafficSource": null, "device": "mobile", "now": "2026-06-03T12:00:00.000Z" },
+    "meta": { "visitorKey": "vk_x", "trafficSource": "meta", "device": "mobile", "now": "2026-06-03T12:00:00.000Z" }
+  },
+  "coupons": {
+    "welcome": { "id": "cpn_welcome", "label": "Accueil 90", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "welcomeHoldout": { "id": "cpn_welcome", "label": "Accueil 90", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 100, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "metaOnly": { "id": "cpn_meta", "label": "Meta only", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 5000, "target": "product_price", "currency": "MAD", "eligibility": { "trafficSources": ["meta"] }, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 5, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "window": { "id": "cpn_win", "label": "Fenetre", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": "2026-06-01T00:00:00.000Z", "endsAt": "2026-06-30T00:00:00.000Z", "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "paused": { "id": "cpn_paused", "label": "Pause", "code": null, "type": "welcome", "mode": "auto", "status": "paused", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "eur": { "id": "cpn_eur", "label": "EUR", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "EUR", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "overFixed": { "id": "cpn_over", "label": "Sur-remise", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 25000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "pct100": { "id": "cpn_pct100", "label": "100pct", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "percent", "valueAmount": 100, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "pct0": { "id": "cpn_pct0", "label": "0pct", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "percent", "valueAmount": 0, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "rescueTarget": { "id": "cpn_rescue", "label": "Sauvetage", "code": null, "type": "rescue", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "rescue", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+    "tiePriority": [
+      { "id": "cpn_hi", "label": "Prio 10", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 10, "createdAt": "2026-05-02T00:00:00.000Z" },
+      { "id": "cpn_lo", "label": "Prio 5", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 5000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 5, "createdAt": "2026-05-01T00:00:00.000Z" }
+    ],
+    "tieAge": [
+      { "id": "cpn_old", "label": "Ancien", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 7, "createdAt": "2026-05-01T00:00:00.000Z" },
+      { "id": "cpn_new", "label": "Recent", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 7, "createdAt": "2026-05-10T00:00:00.000Z" }
+    ],
+    "tieId": [
+      { "id": "cpn_a", "label": "A", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 7, "createdAt": "2026-05-01T00:00:00.000Z" },
+      { "id": "cpn_b", "label": "B", "code": null, "type": "welcome", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "usageScope": "global", "usageCap": null, "usageCount": 0, "holdoutPct": 0, "priority": 7, "createdAt": "2026-05-01T00:00:00.000Z" }
+    ],
+    "none": []
+  },
+  "order": {
+    "aligned": { "expectedTotalCents": 10900, "resolvedTotalCents": 10900, "note": "treatment welcome 90 MAD => pas de price_mismatch" },
+    "mismatch": { "expectedTotalCents": 19900, "resolvedTotalCents": 10900, "note": "UI stale prix plein vs prix coupon => PriceMismatchError / 422 price_mismatch" }
+  },
+  "expected": {
+    "fullPriceCents": 19900,
+    "welcomeFinalCents": 10900,
+    "metaFinalCents": 14900,
+    "legacyPromoCents": 14900
+  }
+}

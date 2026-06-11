@@ -414,6 +414,14 @@ const MAP: Record<string, EventMapping> = {
   chat_conversion_attributed: {
     google_ga4: { name: 'chat_conversion_attributed', isStandard: false },
   },
+  // CHA-231 gap 1 — récupération d'offre via /api/chat/lead-status
+  chat_lead_form_recovered: {
+    google_ga4: { name: 'chat_lead_form_recovered', isStandard: false },
+  },
+  // CHA-231 gap 4 — observabilité contrat SSE (interne)
+  chat_sse_invalid_event: {
+    google_ga4: { name: 'chat_sse_invalid_event', isStandard: false },
+  },
 };
 
 export function getEventMapping(eventName: string): EventMapping | null {
@@ -462,7 +470,11 @@ export type AttributionMode = 'primary' | 'broadcast';
 
 export type AttributionProvider = 'meta' | 'google_ads' | 'tiktok' | 'snap';
 
-const META_PRIMARY_NAMES: ReadonlySet<string> = new Set(['Purchase', 'Lead']);
+// C3 (audit 2026-05-31) — `Purchase` est volontairement BROADCAST pour Meta :
+// on veut que le pixel + CAPI Meta reçoivent TOUS les purchases, quel que soit
+// le canal d'attribution (Meta gère sa propre attribution ; dedup par event_id).
+// Seul `Lead` reste primary (attribution-gated) côté Meta.
+const META_PRIMARY_NAMES: ReadonlySet<string> = new Set(['Lead']);
 const TIKTOK_PRIMARY_NAMES: ReadonlySet<string> = new Set([
   'Purchase',
   'SubmitForm',

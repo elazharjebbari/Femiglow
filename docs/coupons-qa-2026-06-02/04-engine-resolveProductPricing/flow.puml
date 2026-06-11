@@ -1,0 +1,87 @@
+@startuml CPN-04-resolveProductPricing-composition
+title CPN-04 — Arbre de composition resolveProductPricing(input, ctx)
+
+skinparam shadowing false
+skinparam ActivityBackgroundColor #F7F4EC
+skinparam ActivityBorderColor #4A4A42
+
+start
+:Entrée : input { priceCents, promoPriceCents, currency }
+         ctx { now, currency, trafficSource, visitorType,
+               device, visitorKey, candidates[] };
+
+partition "1. Sélection (CPN-03)" {
+  :selected = resolveCoupon(ctx);
+  note right
+    Chargement amont des candidates
+    (repo + cache tag 'coupons', CPN-18)
+    fait avant l'appel. Échec amont
+    -> candidates [] -> selected null.
+  end note
+}
+
+if (selected == null ?) then (oui — fallback)
+  :base = computePromo(input.priceCents, input.promoPriceCents);
+  if (promoPriceCents == null ?) then (oui)
+    :plein tarif (active:false, effectif = priceCents);
+  else (non)
+    :promo classique (active si promo < price);
+  endif
+  :retour { ...base, coupon: null };
+  note right
+    Chemin rollback-safe (CPN-17) :
+    désactiver le coupon = ce chemin.
+    JAMAIS d'exception (INV-7).
+  end note
+  stop
+else (non — un coupon sélectionné)
+endif
+
+partition "2. Bucketing holdout (CPN-19) — NON caché" {
+  if (visitorKey == null ?) then (oui)
+    :bucket = 'treatment';
+    note right: anonyme -> sert la remise (INV-8)
+  else (non)
+    :h = hash(visitorKey + couponId) % 100;
+    if (h < holdoutPct ?) then (oui)
+      :bucket = 'holdout';
+    else (non)
+      :bucket = 'treatment';
+    endif
+    note right
+      Phase 1 : holdoutPct = 0
+      => toujours treatment.
+      Décision recalculée à CHAQUE appel
+      (dépend du cookie, pas de mémoïsation).
+    end note
+  endif
+}
+
+if (bucket == 'treatment' ?) then (oui — voit la remise)
+  :applied = applyCoupon(input.priceCents, selected)  // CPN-02;
+  :retour { ...applied,
+            coupon: { id, type, mode, bucket:'treatment' } };
+else (non — holdout, prix de repli)
+  :base = computePromo(input.priceCents, input.promoPriceCents);
+  :retour { ...base,
+            coupon: { id, type, mode, bucket:'holdout' } };
+  note right
+    Prix = repli promo (PAS le prix coupon)
+    MAIS coupon non-null (attribution stats
+    incrémentalité, CPN-12). En Phase 1 cette
+    branche n'arrive jamais (holdout=0) :
+    contrat testé pour Phase 2/3.
+  end note
+endif
+
+floating note
+  Forme rendue (tous chemins) = PromoComputation
+  { active, effectivePriceCents, originalPriceCents,
+    savingsCents, savingsPct, framing } + coupon.
+  => zéro régression aval (CPN-06/07/08/16).
+  Appelée à l'IDENTIQUE affichage / snapshot / repricing
+  => invariant prix affiché == prix facturé.
+end note
+stop
+
+@enduml

@@ -1,0 +1,62 @@
+{
+  "$schema": "internal://analytics-test-matrix",
+  "meta": {
+    "project": "FemiGlow",
+    "scope": "admin/analytics",
+    "date": "2026-05-30",
+    "systems": ["funnel", "cta", "checkout", "insights", "transverse"]
+  },
+  "layers": {
+    "vitest_unit": {
+      "purpose": "Justesse des calculs (queries, format, filtres, attribution, percentiles)",
+      "runner": "vitest run",
+      "mocking": "memoryStore + faker seedé + now injectée",
+      "fast": true
+    },
+    "component_msw": {
+      "purpose": "Rendu, etats (loading/empty/error), refetch sur changement de filtre",
+      "runner": "vitest run + @testing-library/react",
+      "mocking": "MSW handlers (src/test/msw/analytics-handlers.ts)"
+    },
+    "e2e_playwright": {
+      "purpose": "Point de vue operateur : parcours, persistance, exports, drill-down, a11y",
+      "runner": "playwright test",
+      "mocking": "route interception ou base seedee"
+    }
+  },
+  "timezones": ["UTC", "Africa/Casablanca"],
+  "scenarios_data": ["nominal", "empty", "error500", "highVolume", "firstRun"],
+  "business_scenarios": [
+    "SM-01 analyse semaine",
+    "SM-02 mobile vs desktop",
+    "SM-03 CTA sous-performant",
+    "SM-04 abandons checkout",
+    "SM-05 insights refresh+export",
+    "SM-06 periode custom + persistance",
+    "SM-07 API en panne",
+    "SM-08 fuseau Maroc"
+  ],
+  "systems_matrix": {
+    "funnel":    { "vitest_unit": true, "component_msw": true, "e2e_playwright": true, "a11y": true, "key_findings": ["AF-01", "AF-03", "AF-04", "F-FUN-02"] },
+    "cta":       { "vitest_unit": true, "component_msw": true, "e2e_playwright": true, "a11y": true, "key_findings": ["AF-01", "AF-02", "F-CTA-02", "F-CTA-05"] },
+    "checkout":  { "vitest_unit": true, "component_msw": true, "e2e_playwright": true, "a11y": true, "key_findings": ["AF-01", "AF-03", "F-CHK-02", "F-CHK-03"] },
+    "insights":  { "vitest_unit": true, "component_msw": true, "e2e_playwright": true, "a11y": true, "key_findings": ["AF-05", "F-INS-03", "F-INS-06", "F-INS-05"] },
+    "transverse":{ "vitest_unit": true, "component_msw": true, "e2e_playwright": true, "a11y": true, "key_findings": ["AF-04", "AF-05", "F-FLT-01", "F-PERF-03", "F-SEC-01"] }
+  },
+  "counts": {
+    "features_catalogued": 73,
+    "findings_total": 27,
+    "findings_p0": 1,
+    "findings_p1": 4,
+    "test_cases_documented": 111
+  },
+  "gate": {
+    "blocking": true,
+    "paths": [
+      "apps/web/src/lib/analytics/**",
+      "apps/web/src/components/admin/analytics/**",
+      "apps/web/src/app/api/admin/analytics/**",
+      "apps/web/src/app/admin/analytics/**"
+    ]
+  }
+}

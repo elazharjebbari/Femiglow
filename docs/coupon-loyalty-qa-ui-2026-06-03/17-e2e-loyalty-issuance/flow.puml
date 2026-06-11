@@ -1,0 +1,41 @@
+@startuml F17-loyalty-issuance
+title F17 — Parcours client Yasmine : wizard → ThankYou → carte FG-…
+
+actor "Yasmine\n(visiteuse)" as Y
+participant "Wizard /kit" as W
+participant "LeadCaptureStep" as L
+participant "AddressStep" as A
+participant "API /checkout/*" as API
+participant "issueGrant\n+ computeActivatesAt" as ISS
+participant "ThankYouStep\n+ LoyaltyCodeCard" as T
+database "DB\norders / coupon_grants" as DB
+
+note over API: PRÉCONDITION : template post_purchase ACTIF (seed-coupons.ts)
+
+== Étape lead ==
+Y -> L: firstName=Yasmine, phone=unique, consent
+Y -> L: submit (wizard-lead-submit)
+L -> API: PATCH /api/checkout/lead
+API --> W: lead ok → goToStep('address')
+
+== Étape adresse ==
+Y -> A: ville (listbox → Casablanca), addressLine1
+Y -> A: submit (wizard-address-submit)
+A -> API: PATCH address
+A -> API: PATCH payment(cod)
+A -> API: POST /api/checkout/order\n{expectedTotalCents, couponCode?}
+API -> DB: create order
+API -> ISS: issueGrant(template, phone, sourceOrderId)
+ISS -> ISS: activatesAt = orderDate + maxDeliveryDays(eta) + 1j
+ISS -> DB: insert coupon_grant (code FG-…)
+ISS --> API: { code, valueCents, activatesAt }
+API --> A: { orderId, status, loyalty:{...} }
+A -> A: setLoyalty(res.loyalty)
+A -> W: goToStep('thank_you')
+
+== Écran remerciement ==
+W -> T: render step thank_you (DOM testid = wizard-step-thankyou)
+T --> Y: wizard-thankyou-orderref (réf commande)
+T --> Y: LoyaltyCodeCard\n• loyalty-code-value = FG-…-NNNN\n• valeur 20 MAD (terracotta)\n• « Utilisable à partir du <date> · valable 60 jours »\n• AUCUN numéro en clair (INV-PII)
+
+@enduml

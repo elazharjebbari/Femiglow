@@ -1,0 +1,35 @@
+@startuml F20-grant-lifecycle
+title F20 — Cycle de vie d'un crédit fidélité (activation différée + validité 60 j)
+
+[*] --> issued : issueGrant (commande OK)\ncode FG-<MOT>-<NNNN>\nactivatesAt = orderDate + maxDeliveryDays(eta) + 1j\nexpiresAt = activatesAt + 60j
+
+state "issued\n(emis, non encore utilisable)" as issued
+state "active\n(fenetre ouverte, redeemable)" as active
+state "redeemed\n(consomme, usage unique)" as redeemed
+state "expired\n(validite depassee)" as expired
+
+' --- validateGrant(now) : etats observables par la cliente ---
+issued --> issued : validateGrant, now < activatesAt\n=> reason = not_yet_active (activatesAt fourni)
+issued --> active : now >= activatesAt\n(borne incluse : now === activatesAt => valide)\n(INV-ACTIVATION)
+
+active --> active : validateGrant, activatesAt <= now <= expiresAt\n=> valid (valueCents)
+active --> redeemed : redeemGrant(code, orderId)\n(usage unique)
+active --> expired : now > expiresAt\n(borne incluse : now === expiresAt => valide)\n(INV-VALIDITY)
+issued --> expired : jamais active puis now > expiresAt
+
+redeemed --> redeemed : validateGrant => reason = already_redeemed\n(prioritaire sur expired / not_yet_active)
+expired --> expired : validateGrant => reason = expired
+
+note right of issued
+  IDEMPOTENCE a l'emission :
+  - même sourceOrderId => MÊME grant (INV-IDEMP-ORDER)
+  - même phoneE164 actif => grant existant renvoye (INV-IDEMP-PHONE, anti-farming)
+  Un seul code actif par telephone.
+end note
+
+note bottom of active
+  Conséquence UI : code dictable, message
+  « utilisable à partir du JJ/MM ». validateGrant
+  est NON mutante (previsualisation). reason inconnu => not_found.
+end note
+@enduml

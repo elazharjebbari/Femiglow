@@ -142,17 +142,21 @@ describe('tickAutomation', () => {
     drizzle = makeFakeDrizzle({
       executeResult: { rows: [runErr, runOk] },
     });
-    // Each select returns the appropriate parent automation
+    // Each select returns the appropriate parent automation.
+    // NB : le 1er select() de tickAutomation est désormais sweepOrphanRuns (qui
+    // n'attend pas via .limit() → son await de .where() retourne `obj`, ignoré
+    // par le garde Array.isArray du sweep). Les lookups d'automation suivent.
     let selCount = 0;
     drizzle.select.mockImplementation(() => {
       selCount++;
-      const obj = {
+      const obj: Record<string, unknown> = {
         from: vi.fn(() => obj),
         where: vi.fn(() => obj),
         limit: vi.fn(() => {
-          // 1st run : steps reference unknown template → throw
-          // 2nd run : valid wait-only automation
-          if (selCount === 1) {
+          // selCount===1 : sweepOrphanRuns (aucun orphelin)
+          // selCount===2 : automation du 1er run → template inconnu → throw
+          // selCount>=3  : automation du 2e run → wait-only valide
+          if (selCount === 2) {
             return Promise.resolve([{
               ...SEND_TEMPLATE_AUTOMATION,
               steps: [{ kind: 'send', template: 'NON-EXISTENT', payloadKeys: [] }],

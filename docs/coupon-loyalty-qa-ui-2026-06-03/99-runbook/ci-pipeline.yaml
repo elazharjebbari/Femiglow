@@ -1,0 +1,61 @@
+# Pipeline CI suggéré pour la batterie coupon/fidélité.
+# À intégrer au workflow existant (GitHub Actions) — illustratif.
+name: qa-coupon-loyalty
+on: [pull_request]
+defaults:
+  run:
+    working-directory: apps/web
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+  unit-integration-components:
+    runs-on: ubuntu-latest
+    needs: static
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      # périmètre coupon/fidélité (les fichiers du dossier)
+      - run: pnpm vitest run
+          src/test/msw/coupons-handlers.smoke.test.ts
+          src/lib/coupons
+          src/lib/db/queries/coupon-grant-repo.activation.test.ts
+          src/lib/checkout/state
+          src/components/admin/coupons
+          src/components/sections/InvitationCodeField.msw.test.tsx
+          src/components/sections/CouponWelcomeNote.test.tsx
+          src/components/checkout/wizard
+          "src/app/api/admin/coupons/**"
+          "src/app/api/coupons/**"
+      - name: anti-flaky composants
+        run: pnpm vitest run --repeat-each 3 src/components/admin/coupons
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: unit-integration-components
+    env:
+      DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      - name: seed e2e loyalty (template actif + grant pré-activé)
+        run: node --env-file=.env --import tsx scripts/seed-e2e-loyalty.ts
+      - run: pnpm exec playwright test --project=chromium
+          e2e/admin-coupons-loyalty.spec.ts
+          e2e/loyalty-issuance.spec.ts
+          e2e/loyalty-redemption.spec.ts
+      - run: pnpm exec playwright test --grep @a11y --project=chromium
+      - if: always()
+        run: node --env-file=.env --import tsx scripts/_loyalty-cleanup.ts

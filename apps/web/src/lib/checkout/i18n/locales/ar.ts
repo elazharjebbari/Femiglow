@@ -40,6 +40,9 @@ export const dictionaryAr: WizardDictionary = {
     cityHintBilingual:
       'يمكنك الكتابة بالعربية أو بالفرنسية (Casablanca).',
     cityHintMatched: (matched) => `تم التعرف على: ${matched}.`,
+    cityPopularLabel: 'المدن الشائعة',
+    citySearching: 'جارٍ البحث…',
+    cityFreeDelivery: 'مجاني',
     addressLine1Label: 'العنوان',
     addressLine1Placeholder: 'رقم الشارع واسمه',
     notesLabel: 'ملاحظة لعامل التوصيل (اختياري)',
@@ -82,5 +85,90 @@ export const dictionaryAr: WizardDictionary = {
     addressGeneric: 'تعذر تسجيل العنوان. أعد المحاولة.',
     orderGeneric: 'تعذر إتمام الطلب.',
     emailGeneric: 'تعذر تسجيل البريد الإلكتروني. أعد المحاولة.',
+  },
+  stepIndicator: {
+    navAriaLabel: 'مراحل إتمام الطلب',
+    labelCartReview: 'السلة',
+    labelLead: 'بياناتك',
+    labelAddress: 'التوصيل',
+    labelPayment: 'الدفع',
+    labelThankYou: 'التأكيد',
+  },
+  shell: {
+    timeEstimateTotal: '≈ 90 s لتأكيد طلبك',
+    timeEstimateLead: '60 s',
+    timeEstimateAddress: '30 s',
+    timeEstimateThankYou: '5 s',
+    stepUnavailable: (name) => `المرحلة « ${name} » غير متاحة بعد.`,
+    hydrating: 'لحظة من فضلك…',
+  },
+  leadStep: {
+    heading: 'بياناتك',
+    subtitle: 'معلومتان فقط — سنتصل بك لتأكيد الطلب.',
+    firstNameLabel: 'اسمك',
+    firstNamePlaceholder: 'ياسمين',
+    phoneLabel: 'رقم الهاتف',
+    phonePlaceholder: '06 12 34 56 78',
+    // La séquence latine du numéro est encadrée par des isolats bidi
+    // (U+2066 LRI … U+2069 PDI) pour garder l'ordre +212 6 XX… intact dans
+    // un contexte RTL, sinon les groupes de chiffres sont ré-ordonnés.
+    phoneHint: 'رقم هاتف محمول مغربي. الصيغة ⁦+212 6 XX XX XX XX⁩.',
+    // Kolenda §5 W1 (P2) — le CTA porte la réassurance « paiement à la
+    // livraison » (désamorce la peur du paiement upfront), comme l'override FR.
+    ctaDefault: 'متابعة · الدفع عند الاستلام',
+    consentLabel: 'أرغب في أن يتم الاتصال بي لتأكيد طلبي.',
+    consentFootnotePrefix: 'بدون إعادة بيع، بدون رسائل مزعجة —',
+    consentFootnoteLink: 'الإشعارات القانونية',
+    honeypotLabel: 'الموقع الإلكتروني (لا تملأ هذا الحقل)',
+    errorRateLimited: 'محاولات كثيرة. أعد المحاولة بعد لحظات.',
+    errorNetwork: 'لا يوجد اتصال بالإنترنت. تحقق من شبكتك ثم أعد المحاولة.',
+    errorGeneric: 'تعذر بدء الطلب. أعد المحاولة.',
+    errorInvalidField: 'حقل غير مقبول. تحقق من معلوماتك.',
+  },
+  resumeBanner: {
+    template: 'أهلاً بعودتك يا {firstName} — سنكمل من حيث توقفت.',
+    dismissAriaLabel: 'إغلاق رسالة الترحيب',
+  },
+  noCommitment: {
+    label: 'لا دفع الآن',
+    sub: 'تدفعين عند الاستلام، نقداً',
+    ariaLabel: 'ضمان دون التزام',
+  },
+  cartRecap: {
+    ariaLabel: 'ملخص طلبك',
+    packLabel: (quantity) => `${quantity} × مجموعة FemiGlow`,
+    shippingIncluded: 'التوصيل مشمول',
+    currency: 'درهم',
+  },
+  packThumb: {
+    alt: 'مجموعة FemiGlow',
+  },
+  cartReview: {
+    heading: 'سلتك',
+    subtitle:
+      'مرحلة المراجعة متاحة في الوضع B (`/commander`). التنفيذ الكامل في المرحلة 9.',
+    ctaContinue: 'بياناتك',
+  },
+  shipping: {
+    freeBadgeSrNote: (price) => `سعر التوصيل عادةً ${price} درهم، وهو مجاني حالياً`,
+    freeBadgeLabel: 'مجانية',
+  },
+  stock: {
+    inStock: 'متوفر — يُشحن خلال 24-48 ساعة',
+    lowStock: (count) => `لم يتبقَّ سوى ${count}`,
+    lowStockSuffix: ' — ننصحك بالطلب قبل نفاد الكمية.',
+    outOfStockTitle: 'نفاد مؤقت',
+    outOfStockBody:
+      'الطقس قيد التزويد. اتركي لنا بريدك الإلكتروني وسنخبرك فور عودته.',
+    notifyFormAriaLabel: 'أبلغيني عند توفره من جديد',
+    notifyEmailLabel: 'بريدك الإلكتروني',
+    notifyEmailPlaceholder: 'vous@exemple.ma',
+    notifyConsentLabel:
+      'أوافق على إشعاري عند توفر المنتج من جديد. لا استخدام آخر لهذا البريد.',
+    notifySubmit: 'أبلغيني',
+    notifySuccess: 'تم تسجيلك. سنراسلك فور عودة الطقس.',
+    notifyErrorDefault: 'تعذر التسجيل. أعد المحاولة لاحقاً.',
+    notifyErrorUnexpected: 'خطأ غير متوقع.',
+    unavailable: 'المخزون غير متاح.',
   },
 };

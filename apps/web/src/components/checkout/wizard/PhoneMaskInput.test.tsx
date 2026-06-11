@@ -60,6 +60,44 @@ describe('PhoneMaskInput', () => {
     expect(input.value).toBe('06 12 34 56 78');
   });
 
+  it('autofill +212 : affiche masque local SANS troncature, RAW local au parent', () => {
+    let raw: string | undefined;
+    const onChange = vi.fn((e: { target: { value: string } }) => {
+      raw = e.target.value;
+    });
+    render(<PhoneMaskInput id="phone" label="Téléphone" onChange={onChange} />);
+    const input = screen.getByLabelText(/Téléphone/) as HTMLInputElement;
+    // Autocomplétion navigateur au format international.
+    fireEvent.change(input, { target: { value: '+212612345678' } });
+    expect(input.value).toBe('06 12 34 56 78');
+    expect(raw).toBe('0612345678');
+  });
+
+  it('autofill 00212 : normalisé vers le format local', () => {
+    let raw: string | undefined;
+    const onChange = vi.fn((e: { target: { value: string } }) => {
+      raw = e.target.value;
+    });
+    render(<PhoneMaskInput id="phone" label="Téléphone" onChange={onChange} />);
+    const input = screen.getByLabelText(/Téléphone/) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '00212612345678' } });
+    expect(input.value).toBe('06 12 34 56 78');
+    expect(raw).toBe('0612345678');
+  });
+
+  it('init avec value internationale +212 → masque local', () => {
+    render(
+      <PhoneMaskInput
+        id="phone"
+        label="Téléphone"
+        value="+212612345678"
+        onChange={() => undefined}
+      />,
+    );
+    const input = screen.getByLabelText(/Téléphone/) as HTMLInputElement;
+    expect(input.value).toBe('06 12 34 56 78');
+  });
+
   it('autoComplete="tel" préservé', () => {
     render(<PhoneMaskInput id="phone" label="Téléphone" />);
     const input = screen.getByLabelText(/Téléphone/);

@@ -1,0 +1,60 @@
+{
+  "_note": "Rows PlainRow injectées via le mock getAppConfigRow('nav'). payload = ce que renvoie la DB. navDefault est importé dans le test pour comparaisons; rowEqualsDefault.payload doit être un clone structurel de navDefault (le test peut faire structuredClone(navDefault)).",
+  "rows": {
+    "absent": null,
+    "rowValidCustom": {
+      "section": "nav",
+      "version": 4,
+      "updatedAt": "2026-06-01T10:00:00.000Z",
+      "updatedBy": { "id": "adm_1", "email": "op@femiglow.local" },
+      "payload": {
+        "items": [
+          { "key": "dashboard", "label": "Accueil", "href": "/admin", "icon": "home", "position": 0 },
+          { "key": "coupons", "label": "Coupons", "href": "/admin/coupons", "icon": "tag", "position": 1 },
+          { "key": "leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": 2 }
+        ]
+      }
+    },
+    "rowEqualsDefault": {
+      "section": "nav",
+      "version": 2,
+      "updatedAt": "2026-05-20T08:00:00.000Z",
+      "updatedBy": { "id": "adm_1", "email": "op@femiglow.local" },
+      "payload": "<<structuredClone(navDefault) — identique au défaut>>"
+    },
+    "rowCorruptDupKey": {
+      "section": "nav",
+      "version": 7,
+      "updatedAt": "2026-06-02T09:00:00.000Z",
+      "updatedBy": { "id": "adm_2", "email": "x@femiglow.local" },
+      "payload": {
+        "items": [
+          { "key": "dashboard", "label": "A", "href": "/admin", "icon": "home", "position": 0 },
+          { "key": "dashboard", "label": "B", "href": "/admin/b", "icon": "box", "position": 1 }
+        ]
+      }
+    },
+    "rowNullPayload": { "section": "nav", "version": 3, "updatedAt": "2026-06-02T09:00:00.000Z", "updatedBy": null, "payload": null },
+    "rowStringPayload": { "section": "nav", "version": 3, "updatedAt": "2026-06-02T09:00:00.000Z", "updatedBy": null, "payload": "oops" },
+    "rowNoItems": { "section": "nav", "version": 3, "updatedAt": "2026-06-02T09:00:00.000Z", "updatedBy": null, "payload": {} },
+    "rowManyIssues": {
+      "section": "nav",
+      "version": 5,
+      "updatedAt": "2026-06-02T09:00:00.000Z",
+      "updatedBy": null,
+      "payload": { "items": [ { "key": "X", "label": "", "href": "bad", "icon": "", "position": -1, "extra": true } ] }
+    },
+    "rowValidDate": {
+      "section": "nav",
+      "version": 1,
+      "updatedAt": "<<new Date('2026-06-01T10:00:00Z') — instance Date>>",
+      "updatedBy": null,
+      "payload": "<<structuredClone(navDefault)>>"
+    }
+  },
+  "expected": {
+    "defaultMeta": { "version": 0, "updatedAt": "1970-01-01T00:00:00.000Z", "updatedBy": null, "isDefault": true },
+    "warnEvent": "admin_config.zod_fail",
+    "warnIssuesMax": 6
+  }
+}

@@ -8,6 +8,10 @@ import { resolveComponentSlot } from '@/lib/components/resolver';
 interface CompositionRevealBoundProps {
   items: SubProduct[];
   ingredientsAnchor?: string;
+  /** Phase 7E — en-tête localisé forwardé à `<CompositionReveal>`. */
+  header?: { kicker: string; title: string; description: string };
+  /** Phase 7E — libellé localisé « Lire le détail » forwardé aux cards. */
+  cardCta?: string;
 }
 
 /**
@@ -43,6 +47,8 @@ const COMPONENT_KEY = 'kit-comparatif';
 export async function CompositionRevealBound({
   items,
   ingredientsAnchor,
+  header,
+  cardCta,
 }: CompositionRevealBoundProps) {
   const resolutions = await Promise.all(
     items.map(async (item) => {
@@ -73,6 +79,8 @@ export async function CompositionRevealBound({
       items={items}
       ingredientsAnchor={ingredientsAnchor}
       mediaSlots={mediaSlots}
+      {...(header !== undefined ? { header } : {})}
+      {...(cardCta !== undefined ? { cardCta } : {})}
     />
   );
 }

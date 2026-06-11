@@ -1,0 +1,35 @@
+@startuml F14-grant-lifecycle
+title Cycle de vie d'un grant vu par /api/coupons/redeem (validation non mutante)
+
+state "issued (créé)" as issued
+state "not_yet_active\n(now < activatesAt)" as nya
+state "active\n(activatesAt <= now <= expiresAt)" as active
+state "expired\n(now > expiresAt)" as expired
+state "redeemed\n(consommé à la commande)" as redeemed
+
+[*] --> issued : issueGrant (sourceOrder, phone)
+issued --> nya : activatesAt dans le futur
+issued --> active : activatesAt passé
+nya --> active : le temps passe (now atteint activatesAt)
+active --> expired : now dépasse expiresAt (= activatesAt + 60j)
+active --> redeemed : redeemGrant (commande payée)
+
+note right of nya
+  redeem → 200 { valid:false, reason:"not_yet_active" }
+end note
+note right of active
+  redeem → 200 { valid:true, valueCents }
+end note
+note right of expired
+  redeem → 200 { valid:false, reason:"expired" }
+end note
+note right of redeemed
+  redeem → 200 { valid:false, reason:"already_redeemed" }
+end note
+note bottom of issued
+  code inexistant → 200 { valid:false, reason:"not_found" }
+  corps invalide / code <3 ou >40 → 422 reason:"invalid_input"
+  exception validateGrant → 200 { valid:false, reason:"error" }
+  (redeem ne MUTE jamais l'état : prévisualisation seule)
+end note
+@enduml

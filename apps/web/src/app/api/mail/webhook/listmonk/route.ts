@@ -63,7 +63,8 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   const evt = parsed.data;
-  logger.info('mail.webhook.listmonk.received', { event: evt.event });
+  // NB: pas `event` comme nom de champ — collision avec la clé `event` du logger.
+  logger.info('mail.webhook.listmonk.received', { listmonk_event: evt.event });
 
   if (!isKnownListmonkEvent(evt)) {
     return NextResponse.json({ ok: true, ignored: 'unknown-event' });

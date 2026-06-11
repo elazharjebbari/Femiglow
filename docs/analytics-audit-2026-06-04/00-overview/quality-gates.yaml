@@ -1,0 +1,31 @@
+# Portes de qualité — audit analytics.
+principes:
+  - "Chaque finding P0/P1 a un test de reproduction (rouge avant) ET un test de spec (vert apres)."
+  - "Les fixtures d'evenements refletent la prod (event-taxonomy.csv) : pas de page_view/cta_* synthetiques injectes pour 'faire passer'."
+  - "Aucune metrique validee tant que sa source d'evenement reelle n'est pas confirmee."
+
+gates_globales:
+  typecheck: "tsc --noEmit = 0"
+  lint: "next lint = 0 sur les fichiers du perimetre"
+  vitest: "100% vert sur le perimetre analytics (queries + insights + routes + composants)"
+  e2e: "playwright chromium vert sur e2e/admin-analytics-*.spec.ts"
+  anti_flaky: "boucle 3x Vitest ; --repeat-each=2 Playwright"
+
+criteres_correction_par_finding:
+  AN-01: "page_view emis/aligne -> bounceRate non-null et topPages peuplee sur dataset reel"
+  AN-02: "engage alimente par events reels + modele funnel corrige -> checkout/purchase > 0 quand begin_checkout/purchase existent ; dropoff coherent (pas 100% artificiel)"
+  AN-03: "cta_click/cta_impression emis+stockes (ou pack_cta_click normalise) -> onglet CTA peuple"
+  AN-04: "address_completed mappe add_shipping ; view_cart/submit definis -> etapes checkout > 0"
+  AN-05: "refresh matviews -> insights peuple ; matview-vide distingue de aucun-trafic dans l'UI"
+  AN-06: "etape purchase = purchase OR generate_lead (config) -> conversion non sous-comptee"
+  AN-07: "overview filtre analytics_storage=granted -> coherence inter-onglets"
+  AN-08: "revenu CTA en MAD correct (pas /100)"
+  AN-09: "changer periode/device rafraichit funnel/cta/checkout"
+  AN-10: "today/yesterday resolus en TZ Maroc"
+  AN-11: "device defaut = all"
+
+definition_of_done:
+  - "Chaque feature A00..A09 : spec.md + test-cases.csv + scenarios.md + fixtures.json (+ flow.puml si pertinent)"
+  - "MSW analytics-handlers cree + smoke vert"
+  - "Tests de reproduction verts (prouvent le bug) ; tests de spec prets (verts une fois le fix livre)"
+  - "findings-register.csv + traceability a jour"

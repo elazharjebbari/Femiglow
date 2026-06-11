@@ -1,0 +1,62 @@
+@startuml parcours-incident
+' Séquence opérateur : incident 200 échecs SMTP, du tri à la résolution.
+' État cible (résultat partiel honnête, anti faux-succès). Rendu :
+'   plantuml parcours-incident.puml
+title Cockpit — incident 200 échecs SMTP (parcours opérateur cible)
+
+actor "Salma\n(opératrice)" as OP
+participant "TransactionalCockpit\n(UI)" as UI
+participant "KpiHeader\n+ useSummary" as KPI
+participant "API /transactional/search" as SEARCH
+participant "API /transactional/bulk-retry" as RETRY
+database "email_outbox\n(Postgres)" as DB
+participant "Cron email-outbox\n(+ SMTP)" as CRON
+
+== Détection ==
+OP -> UI : ouvre /admin/emails/transactional
+UI -> KPI : GET /summary?window=1h
+KPI --> UI : failed élevé (tendance ROUGE car hausse)
+OP -> KPI : clic carte « Échecs »
+KPI -> UI : applique status:failed,dlq
+
+== Tri ==
+OP -> UI : ⌘K « status:failed template:order-confirmation after:-1h »
+UI -> SEARCH : POST { filters, pagination:{limit:50,offset:0} }
+SEARCH -> DB : SELECT ... WHERE status IN (...) AND template ilike ... AND created_at >= ...
+DB --> SEARCH : 50 rows / total 200
+SEARCH --> UI : { rows, total:200, window:'matched' }
+UI --> OP : « 50 affichés sur 200 total »
+
+== Sélection étendue (cible F-012) ==
+OP -> UI : select-all
+UI --> OP : « 50 sur cette page · sélectionner les 200 filtrés ? »
+OP -> UI : choisit « les 200 filtrés »
+
+== Action retry ==
+OP -> UI : clic « Retry sélection »
+UI -> RETRY : POST { ids:[...200] }
+RETRY -> DB : SELECT statuses (éligibilité)
+RETRY -> DB : UPDATE eligible SET status='pending', attempts=0, last_error=NULL
+DB --> RETRY : ok
+RETRY --> UI : { retried:200, skipped:0, skippedIds:[] }
+
+alt res.ok (succès)
+  UI --> OP : « 200 relancés, 0 ignorés »
+  UI -> UI : vide la sélection (APRÈS succès)
+  UI -> SEARCH : re-fetch → rows désormais 'pending'
+else 401 / 422 / 500 (échec) — ANTI FAUX-SUCCÈS
+  RETRY --> UI : HTTP 401/422/500
+  UI --> OP : role=alert (message d'erreur) + bouton réessayer
+  UI -> UI : CONSERVE la sélection (selection-count inchangé)
+  note right of UI
+    Oracle F-013 : jamais de
+    setSelected(new Set()) ni
+    re-fetch masquant l'échec.
+  end note
+end
+
+== Résolution asynchrone ==
+CRON -> DB : claim pending → SMTP send
+CRON -> DB : UPDATE status='sent' (puis 'delivered' via webhook)
+OP -> KPI : refresh → Échecs en baisse (tendance verte)
+@enduml

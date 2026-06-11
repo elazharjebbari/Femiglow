@@ -37,6 +37,8 @@ import { createOrderInputSchema } from '@/lib/checkout/schemas/order';
 import { dispatchOrderWebhook } from '@/lib/webhooks/outbound/sources/from-order';
 import { sendTransactional } from '@/lib/mail/send';
 import { recordOrderPlaced } from '@/lib/user-events/bridges/server-actions';
+import { env } from '@/lib/env';
+import { leadOutboxRepo } from '@/lib/leads/outbox/lead-outbox-repo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,6 +93,18 @@ export async function POST(req: NextRequest): Promise<Response> {
             details: unknown;
           };
         };
+    // Contexte coupon reconstruit depuis la requête — mêmes primitives que
+    // l'affichage (referer / UA / session) → bucket déterministe → prix
+    // facturé == prix affiché. En Phase 1 (holdout=0) le prix est de toute
+    // façon indépendant du visiteur.
+    const { buildCouponContext } = await import('@/lib/coupons/context');
+    const couponContext = buildCouponContext({
+      referer: req.headers.get('referer'),
+      userAgent: req.headers.get('user-agent'),
+      sessionId:
+        req.cookies.get('fg_session_id')?.value ?? req.cookies.get('_fbp')?.value ?? null,
+    });
+
     const result = await withIdempotency<OrderResp>({
       request: req,
       scope: 'order_create',
@@ -99,6 +113,8 @@ export async function POST(req: NextRequest): Promise<Response> {
         try {
           const order = await orderRepo.createOrder({
             chatLeadId: lead.id,
+            couponContext,
+            couponCode: input.couponCode ?? null,
             contact: {
               phoneE164: lead.phoneE164,
               firstName: lead.firstName,
@@ -183,6 +199,87 @@ export async function POST(req: NextRequest): Promise<Response> {
       replayed: result.replayed,
     });
 
+    // Phase 2 — converted SAUVETAGE. On lie la conversion à une exposition
+    // `rescue` préalable du visiteur (converted ⊆ exposed → taux cohérents
+    // treatment vs holdout). Best-effort, idempotent par orderId, jamais
+    // bloquant, seulement sur succès non rejoué.
+    if (
+      result.resourceId &&
+      result.body &&
+      !('error' in result.body) &&
+      !result.replayed &&
+      couponContext.visitorKey
+    ) {
+      try {
+        const { getRescueExposureBucket, recordCouponEvent } = await import(
+          '@/lib/db/queries/coupon-event-repo'
+        );
+        const { resolveRescueCoupon } = await import('@/lib/coupons/engine');
+        const bucket = await getRescueExposureBucket(couponContext.visitorKey);
+        if (bucket) {
+          const rescue = await resolveRescueCoupon(couponContext);
+          await recordCouponEvent({
+            couponId: rescue?.coupon.id ?? null,
+            phase: 'converted',
+            bucket,
+            orderId: result.resourceId,
+            visitorKey: couponContext.visitorKey,
+            trafficSource: couponContext.trafficSource ?? null,
+            device: couponContext.device ?? null,
+          });
+        }
+      } catch {
+        /* non bloquant */
+      }
+    }
+
+    // Phase 3 — émet un CRÉDIT DE FIDÉLITÉ mémorable pour cette commande :
+    // code unique par téléphone, ACTIVÉ après la durée max de livraison de la
+    // ville (la cliente a reçu sa commande), valable 60 j ensuite. Best-effort,
+    // idempotent (par order ET par téléphone). On capture le code pour le
+    // renvoyer au client (affichage en fin de commande).
+    let loyalty: { code: string; valueCents: number; activatesAt: string | null } | null = null;
+    if (result.resourceId && result.body && !('error' in result.body) && !result.replayed) {
+      try {
+        const { listCoupons } = await import('@/lib/db/queries/coupon-repo');
+        const { issueGrant } = await import('@/lib/db/queries/coupon-grant-repo');
+        const template = (await listCoupons({ type: 'post_purchase', status: 'active' }))[0];
+        if (template) {
+          // Délai d'activation depuis la ville de livraison du lead.
+          let activatesAt: Date | undefined;
+          try {
+            const { searchDeliveryCities } = await import('@/lib/db/queries/delivery-cities');
+            const { computeActivatesAt } = await import('@/lib/coupons/delivery-delay');
+            const eta = lead.shippingCity
+              ? (await searchDeliveryCities(lead.shippingCity, { limit: 1 }))?.[0]?.deliveryEta ?? null
+              : null;
+            activatesAt = computeActivatesAt(new Date(), eta);
+          } catch {
+            const { computeActivatesAt } = await import('@/lib/coupons/delivery-delay');
+            activatesAt = computeActivatesAt(new Date(), null);
+          }
+          const grant = await issueGrant({
+            templateCouponId: template.id,
+            leadId: lead.id,
+            sourceOrderId: result.resourceId,
+            valueCents: template.valueAmount,
+            currency: template.currency,
+            phoneE164: lead.phoneE164,
+            activatesAt,
+          });
+          if (grant) {
+            loyalty = {
+              code: grant.code,
+              valueCents: grant.valueCents,
+              activatesAt: grant.activatesAt ? new Date(grant.activatesAt).toISOString() : null,
+            };
+          }
+        }
+      } catch {
+        /* non bloquant */
+      }
+    }
+
     // CHA-260 — Webhook outbound (fire-and-forget). On ne bloque pas la
     // réponse client : le dispatcher logge la tentative en DB et l'idem-key
     // empêche les doublons (court-circuit si `result.replayed`).
@@ -195,24 +292,58 @@ export async function POST(req: NextRequest): Promise<Response> {
         req.headers.get('x-real-ip') ??
         null;
       const leadSnapshot = lead;
-      void dispatchOrderWebhook({
-        order: { id: orderId, totalCents, currency },
-        items: input.items.map((it) => ({
-          sku: it.sku,
-          name: it.name,
-          quantity: it.quantity,
-          variantKey: input.formContext.variantKey ?? null,
-        })),
-        lead: leadSnapshot,
-        shippingMode: input.shippingMode,
-        paymentMethod: input.paymentMethod,
-        ip,
-      }).catch((err: unknown) => {
-        logger.error('outbound.webhook.order.dispatch_error', {
-          orderId,
-          error: String(err),
+      const webhookItems = input.items.map((it) => ({
+        sku: it.sku,
+        name: it.name,
+        quantity: it.quantity,
+        variantKey: input.formContext.variantKey ?? null,
+      }));
+      if (env.CHECKOUT_OPTIMISTIC_WIZARD_ENABLED === 'true') {
+        // OWBS (P5) — durable : on enfile l'invocation du webhook dans
+        // `lead_event_outbox` (le worker l'appellera, avec retry, en survivant à
+        // un restart). dedupeKey=orderId → un seul webhook par commande. Fallback
+        // inline si l'enqueue échoue, pour que le webhook parte quand même.
+        try {
+          await leadOutboxRepo.enqueue({
+            type: 'order_webhook',
+            leadId: input.leadId,
+            dedupeKey: orderId,
+            payload: {
+              orderId,
+              totalCents,
+              currency,
+              items: webhookItems,
+              shippingMode: input.shippingMode,
+              paymentMethod: input.paymentMethod,
+              ip,
+            },
+          });
+        } catch (err) {
+          logger.error('owbs.order_webhook.enqueue_failed', { orderId, error: String(err) });
+          void dispatchOrderWebhook({
+            order: { id: orderId, totalCents, currency },
+            items: webhookItems,
+            lead: leadSnapshot,
+            shippingMode: input.shippingMode,
+            paymentMethod: input.paymentMethod,
+            ip,
+          }).catch(() => {});
+        }
+      } else {
+        void dispatchOrderWebhook({
+          order: { id: orderId, totalCents, currency },
+          items: webhookItems,
+          lead: leadSnapshot,
+          shippingMode: input.shippingMode,
+          paymentMethod: input.paymentMethod,
+          ip,
+        }).catch((err: unknown) => {
+          logger.error('outbound.webhook.order.dispatch_error', {
+            orderId,
+            error: String(err),
+          });
         });
-      });
+      }
 
       // M1.B.3 — Confirmation de commande au client (si on a un email).
       // Pas tous les leads ont fourni un email — on tente uniquement si
@@ -255,7 +386,13 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
     }
 
-    return NextResponse.json(result.body, { status: result.status });
+    // Joint le code de fidélité émis (le cas échéant) à la réponse de succès,
+    // pour affichage en fin de commande (ThankYouStep).
+    const body =
+      loyalty && result.body && !('error' in result.body)
+        ? { ...result.body, loyalty }
+        : result.body;
+    return NextResponse.json(body, { status: result.status });
   } catch (err) {
     logger.error('checkout.order.failed', { error: String(err) });
     return mapError(err);

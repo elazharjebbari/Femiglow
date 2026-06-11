@@ -1,0 +1,46 @@
+{
+  "_note": "F16 est un E2E contre la VRAIE app + vraie DB (pas de MSW). Ces fixtures documentent les données de référence et les sélecteurs ; le test crée son propre coupon à la volée (libellé horodaté) pour éviter les collisions entre workers.",
+  "session": {
+    "admin": { "storageState": ".auth/admin.json", "produitPar": "global.setup.ts" }
+  },
+  "couponDraftForm": {
+    "labelPrefix": "Geste d’accueil E2E",
+    "valueAmountCents": 9000,
+    "type": "welcome_auto",
+    "mode": "auto",
+    "statusInitial": "draft",
+    "valueKind": "fixed_amount",
+    "target": "product_price",
+    "currency": "MAD"
+  },
+  "statusLabels": {
+    "draft": "Brouillon",
+    "active": "Actif",
+    "paused": "En pause",
+    "archived": "Archivé"
+  },
+  "selectors": {
+    "manager": "[data-testid=\"coupons-manager\"]",
+    "labelInput": "aria-label=Libellé",
+    "amountInput": "aria-label=Montant offert",
+    "createBtn": "Créer (brouillon)",
+    "rowPrefix": "[data-testid^=\"coupon-row-\"]",
+    "statusPrefix": "[data-testid^=\"coupon-status-\"]",
+    "activateBtn": "Activer",
+    "grantsSection": "[data-testid=\"coupons-grants-section\"]",
+    "grantsLoadBtn": "Charger",
+    "grantsRefreshBtn": "Rafraîchir",
+    "grantsTable": "[data-testid=\"coupons-grants-table\"]",
+    "grantRowPrefix": "[data-testid^=\"grant-row-\"]",
+    "kitPriceBlock": "[data-testid=\"pack-price-block\"]",
+    "kitPriceLine": "[data-testid=\"pack-price-line\"]",
+    "kitWelcomeNote": "[data-testid=\"coupon-welcome-note\"]"
+  },
+  "expectedKitPrice": "199",
+  "phoneMaskRegex": {
+    "masquéAttendu": "/0\\d.*\\d{2}/",
+    "clairInterdit": "/\\d{9}/"
+  },
+  "grantsExpectedEmptyMessage": "Aucun code émis.",
+  "charte": { "interdits": ["%", "!", "🎉", "⏰"] }
+}

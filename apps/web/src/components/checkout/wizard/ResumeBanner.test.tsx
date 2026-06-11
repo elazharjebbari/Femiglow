@@ -25,6 +25,9 @@ vi.mock('@/lib/checkout/state/wizard-store', () => ({
       markResumeBannerShown: markShownMock,
       dismissResumeBanner: dismissMock,
     }),
+  // CHA-232 — `useWizardTranslation` lit la langue via `selectLanguage`.
+  // Le mock du store doit donc l'exposer ; défaut FR (pas de formContext).
+  selectLanguage: () => 'fr',
 }));
 
 import { ResumeBanner } from './ResumeBanner';

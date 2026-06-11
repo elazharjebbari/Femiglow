@@ -1,0 +1,9 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F09-S01,RTL,P1,Salma,état persisté avec leadId+address,render WizardShell,reprise sur address,currentStep=address,-
+F09-S02,RTL,P1,Salma,resume offert,render ResumeBanner,banner visible + dismiss,wizard-resume-banner,-
+F09-S03,RTL,P0,Salma,currentStep hors steps,hydratation,recale sur steps[0],cohérence,RSK-06
+F09-S04,RTL,P0,système,syncDegraded=true puis reload simulé,partialize,syncDegraded NON persisté (false),éphémère,RSK-08
+F09-S05,PW,P0,Salma,envelope en file + reload,recharger,reflush -> 1 lead,1 lead,RSK-06
+F09-S06,PW,P1,Salma,2 onglets wizard,parcours parallèle,états cohérents (sessionStorage par onglet),pas de corruption,-
+F09-S07,RTL,P1,Salma,saisie partielle persistée,render,drafts restaurés,leadDraft,-
+F09-S08,RTL,P0,Salma,hydratation,monter,pas de flash d'étape erronée,hydrated true,-

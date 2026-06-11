@@ -29,9 +29,9 @@ import { create, type StateCreator } from 'zustand';
 import { createJSONStorage, persist, type PersistOptions } from 'zustand/middleware';
 
 import type { FormMode, VariantKey } from '@/lib/tracking/checkout-events';
+import type { DictionaryLanguage } from '@/lib/checkout/i18n/dictionary';
 import type {
   CartSnapshot,
-  Language,
   PaymentMethod,
   ShippingMode,
   StepName,
@@ -50,8 +50,12 @@ export interface WizardFormContext {
   /**
    * CHA-231 — Langue de saisie / d'UI courante. Optionnel : défaut `fr`.
    * Sert à projeter le bon dictionnaire i18n et le bon `dir` (LTR/RTL).
+   *
+   * CHA-232 — Langue d'AFFICHAGE (`DictionaryLanguage` = `fr|ar|en`), sur-ensemble
+   * de la langue persistée (`languageSchema` reste `fr|ar`). L'anglais ne sert
+   * qu'au rendu ; à la persistance, `en` est ramené à `fr` (cf. use-wizard-mutations).
    */
-  language?: Language;
+  language?: DictionaryLanguage;
 }
 
 export interface LeadDraft {
@@ -106,6 +110,10 @@ export interface WizardState {
   leadId: string | null;
   orderId: string | null;
 
+  // OWBS — sync de fond dégradée (drop persistant d'une envelope) → permet à
+  // l'UI d'afficher un indicateur discret non bloquant (FR-11). Éphémère.
+  syncDegraded: boolean;
+
   // Contexte form / variant
   formContext: WizardFormContext | null;
 
@@ -119,6 +127,21 @@ export interface WizardState {
   leadDraft: LeadDraft;
   addressDraft: AddressDraft;
   paymentDraft: PaymentDraft;
+
+  // ── Phase 3 — crédit de fidélité ─────────────────────────────────────
+  /** Code crédit saisi (persisté pour reprise après refresh). */
+  couponCode: string | null;
+  /**
+   * Montant du crédit validé (centimes). NON persisté : re-validé à l'usage
+   * via /api/coupons/redeem (le serveur reste autoritaire au paiement).
+   */
+  creditCents: number;
+
+  /**
+   * Code de fidélité ÉMIS pour cette commande (Phase 3), à afficher en fin de
+   * parcours (ThankYouStep). Persisté pour survivre à un refresh sur merci.
+   */
+  loyalty: { code: string; valueCents: number; activatesAt: string | null } | null;
 
   // Indique que `localStorage` a été lu (évite mismatch SSR).
   hydrated: boolean;
@@ -159,8 +182,18 @@ export interface WizardState {
   mergePaymentDraft: (patch: Partial<PaymentDraft>) => void;
   setLeadId: (id: string) => void;
   setOrderId: (id: string) => void;
+  /** Phase 3 — applique un crédit validé (code + montant). */
+  setCoupon: (code: string, creditCents: number) => void;
+  /** Phase 3 — retire le crédit (code vidé ou ré-édité → re-validation). */
+  clearCoupon: () => void;
+  /** Phase 3 — mémorise le code de fidélité émis (affichage ThankYou). */
+  setLoyalty: (loyalty: WizardState['loyalty']) => void;
+  /** OWBS — signale une sync de fond dégradée (FR-11). */
+  markSyncDegraded: () => void;
+  /** OWBS — efface le signal (après un réessai réussi). */
+  clearSyncDegraded: () => void;
   /** CHA-231 — Bascule la langue courante (FR ↔ AR). */
-  setLanguage: (lang: Language) => void;
+  setLanguage: (lang: DictionaryLanguage) => void;
   reset: () => void;
   setHydrated: () => void;
   /** wizard-kit-optim W0 — actions tracking enrichi */
@@ -225,6 +258,11 @@ const INITIAL: Omit<
   | 'mergePaymentDraft'
   | 'setLeadId'
   | 'setOrderId'
+  | 'setCoupon'
+  | 'clearCoupon'
+  | 'setLoyalty'
+  | 'markSyncDegraded'
+  | 'clearSyncDegraded'
   | 'setLanguage'
   | 'reset'
   | 'setHydrated'
@@ -236,12 +274,16 @@ const INITIAL: Omit<
 > = {
   leadId: null,
   orderId: null,
+  syncDegraded: false,
   formContext: null,
   cartSnapshot: null,
   currentStep: 'lead',
   leadDraft: DEFAULT_LEAD_DRAFT,
   addressDraft: DEFAULT_ADDRESS_DRAFT,
   paymentDraft: DEFAULT_PAYMENT_DRAFT,
+  couponCode: null,
+  creditCents: 0,
+  loyalty: null,
   hydrated: false,
   // wizard-kit-optim W0 — tracking enrichi (non-persisté sauf flag dismiss)
   fieldFocusedAt: {},
@@ -269,6 +311,12 @@ export const wizardStoreCreator: StateCreator<WizardState> = (set) => ({
     set((state) => ({ paymentDraft: { ...state.paymentDraft, ...patch } })),
   setLeadId: (id) => set({ leadId: id }),
   setOrderId: (id) => set({ orderId: id }),
+  setCoupon: (code, creditCents) =>
+    set({ couponCode: code.trim().toUpperCase(), creditCents: Math.max(0, Math.round(creditCents)) }),
+  clearCoupon: () => set({ couponCode: null, creditCents: 0 }),
+  setLoyalty: (loyalty) => set({ loyalty }),
+  markSyncDegraded: () => set({ syncDegraded: true }),
+  clearSyncDegraded: () => set({ syncDegraded: false }),
   setLanguage: (lang) =>
     set((state) => ({
       formContext: state.formContext
@@ -414,6 +462,10 @@ const persistOpts: PersistOptions<WizardState, Partial<WizardState>> = {
     leadDraft: state.leadDraft,
     addressDraft: state.addressDraft,
     paymentDraft: state.paymentDraft,
+    // Phase 3 : on persiste le CODE (reprise) mais pas `creditCents`
+    // (re-validé à l'usage — le serveur reste autoritaire).
+    couponCode: state.couponCode,
+    loyalty: state.loyalty,
     resumeBannerDismissed: state.resumeBannerDismissed,
   }),
   onRehydrateStorage: () => (state) => {
@@ -547,6 +599,6 @@ export function selectPreviousStep(state: WizardState): StepName | null {
  * CHA-231 — Langue effective courante (défaut `fr`). Centralisé pour éviter
  * la duplication `formContext.language ?? 'fr'` dans chaque composant.
  */
-export function selectLanguage(state: WizardState): Language {
+export function selectLanguage(state: WizardState): DictionaryLanguage {
   return state.formContext?.language ?? 'fr';
 }

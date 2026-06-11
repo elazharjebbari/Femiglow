@@ -97,6 +97,7 @@ export async function dispatchCartAbandonWebhook(
       product_sku: productSku,
       note: noteParts.join(' | '),
       source_channel: 'cart-abandon',
+      lead_status: 'abandoned' as const,
     },
   });
 

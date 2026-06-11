@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { EditorialCalendar } from './EditorialCalendar';
 import type { ContentDraft, ContentPost, ContentPostizDelivery } from '@/lib/content-studio/types';
@@ -53,6 +53,18 @@ const delivery: ContentPostizDelivery = {
 };
 
 describe('EditorialCalendar', () => {
+  // Le calendrier ouvre par défaut la SEMAINE courante ; la fixture `post` est
+  // planifiée le 2026-02-01. On fige « aujourd'hui » sur ce jour (Date seulement,
+  // pour ne pas perturber React) → la semaine affichée contient le post, et le
+  // test est déterministe quel que soit le jour d'exécution.
+  // beforeEach (PAS beforeAll) : le filet global de vitest.setup
+  // (ACT-BE-001) fait vi.useRealTimers() après CHAQUE test — un beforeAll
+  // ne protégerait que le premier test du fichier.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-02-01T12:00:00Z'));
+  });
+
   it('affiche le calendrier avec les contrôles de vue', () => {
     render(<EditorialCalendar posts={[]} drafts={[]} deliveries={[]} />);
     expect(screen.getByText('Semaine')).toBeInTheDocument();

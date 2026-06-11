@@ -1,0 +1,17 @@
+concept,emitted_name,emitted_from,stored_in_db,db_count_90j,expected_by_aggregation,match,finding
+page_view,page_view,(aucun emetteur generique),non,0,overview.bounceRate+topPages ; funnel view,NON,AN-01
+product_view,view_item,sections /kit,oui,339,funnel view,OUI,-
+scroll_engage,scroll_depth (percent_scrolled),(catalogue),non,0,funnel engage attend scroll_depth_50,NON,AN-02
+cta_impression,cta_impression,(non emis),non,0,funnel engage + CTA impressions,NON,AN-02;AN-03
+cta_click,pack_cta_click/video_cta_click/composition_post_cta_click,CommanderAnchorButton + CTAs,non (REJETE ingestion),0,funnel cta + CTA clicks (attend cta_click),NON,AN-03
+add_to_cart,add_to_cart,wizard/cart,oui,26,funnel cta,OUI,-
+checkout_start,begin_checkout,CartContents (legacy),oui,97,funnel checkout + checkout begin_checkout,OUI (mais bloque par cumul),AN-02
+checkout_start_alt,checkout_intent,wizard,non,0,(variante non mappee),NON,AN-04
+shipping,address_completed,wizard AddressStep,oui,15,checkout add_shipping (attend add_shipping_info),NON,AN-04
+shipping_alt,add_shipping_info,(provider map),oui,4,checkout add_shipping,OUI,-
+payment,add_payment_info,wizard,oui,18,checkout add_payment + insights,OUI,-
+lead,lead_capture,wizard step1,oui,52,(non utilise par funnel),PARTIEL,AN-06
+lead_conv,generate_lead,contact/newsletter/chat,oui,17,insights funnel ; (funnel purchase ignore),PARTIEL,AN-06
+purchase,purchase,order confirm,oui,13,funnel purchase + checkout + CTA attribution,OUI,-
+purchase_server,purchase_server,(webhook fallback),non,0,checkout purchase fallback,NON,AN-04
+view_cart,view_cart,(non emis),non,0,checkout view_cart,NON,AN-04

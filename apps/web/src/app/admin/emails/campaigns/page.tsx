@@ -1,17 +1,39 @@
 /**
  * /admin/emails/campaigns — Liste des campagnes broadcast.
+ *
+ * UX-CAMP-012 — recherche + filtre statut + pagination portés par l'URL.
+ * UX-CAMP-003 — duplication de campagne depuis la colonne actions.
+ * UX-CAMP-009 — création via formulaire client (feedback + anti double-clic).
  */
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { listCampaigns } from '@/lib/admin/emails/campaigns-queries';
-import { createCampaignDraft } from '@/lib/admin/emails/wizard-actions';
+import { duplicateCampaign } from '@/lib/admin/emails/wizard-actions';
+import { CreateCampaignForm } from './CreateCampaignForm';
+import {
+  CampaignsFilterBar,
+  CampaignsPagination,
+  CampaignStatusBadge,
+} from './CampaignsListClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CampaignsListPage() {
+type SearchParams = { status?: string; q?: string; page?: string };
+
+export default async function CampaignsListPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const session = await requireAdmin('/admin/emails/campaigns');
-  const rows = await listCampaigns({ limit: 100 });
+  const page = Math.max(1, Number(searchParams?.page) || 1);
+  const { rows, total, pageCount } = await listCampaigns({
+    status: searchParams?.status,
+    q: searchParams?.q,
+    page,
+    pageSize: 20,
+  });
 
   return (
     <AdminShell adminEmail={session.email} active="emails">
@@ -24,33 +46,14 @@ export default async function CampaignsListPage() {
             Campagnes
           </h1>
           <p className="mt-1 text-sm text-stone-600">
-            {rows.length} campagne{rows.length === 1 ? '' : 's'}
+            {total} campagne{total === 1 ? '' : 's'}
           </p>
         </div>
 
-        <form action={createCampaignDraft}>
-          <label className="block">
-            <span className="block text-xs font-medium text-stone-600">Nouvelle campagne</span>
-            <div className="mt-1 flex gap-2">
-              <input
-                name="name"
-                type="text"
-                required
-                minLength={3}
-                maxLength={120}
-                placeholder="Nom interne"
-                className="rounded-md border border-stone-300 px-3 py-2 text-sm"
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white"
-              >
-                + Créer
-              </button>
-            </div>
-          </label>
-        </form>
+        <CreateCampaignForm />
       </header>
+
+      <CampaignsFilterBar />
 
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
         <table className="min-w-full text-sm">
@@ -68,7 +71,7 @@ export default async function CampaignsListPage() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-3 py-8 text-center text-stone-500">
-                  Aucune campagne. Crée la première via le bouton ci-dessus.
+                  Aucune campagne ne correspond à ces filtres.
                 </td>
               </tr>
             ) : (
@@ -77,32 +80,46 @@ export default async function CampaignsListPage() {
                   <td className="px-3 py-2 font-medium text-stone-900">{c.name}</td>
                   <td className="px-3 py-2 text-stone-700 max-w-xs truncate">{c.subject || '—'}</td>
                   <td className="px-3 py-2">
-                    <span className="inline-block rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700">
-                      {c.status}
-                    </span>
+                    <CampaignStatusBadge status={c.status} />
                   </td>
                   <td className="px-3 py-2 text-xs text-stone-500">
-                    {Array.isArray(c.audienceLinkIds) ? `${c.audienceLinkIds.length} listes` : '—'}
+                    {c.audienceId
+                      ? 'Audience FemiGlow'
+                      : Array.isArray(c.audienceLinkIds)
+                        ? `${c.audienceLinkIds.length} liste${c.audienceLinkIds.length > 1 ? 's' : ''}`
+                        : '—'}
                   </td>
                   <td className="px-3 py-2 text-xs text-stone-500 whitespace-nowrap">
                     {new Date(c.createdAt).toLocaleString('fr-FR', { dateStyle: 'short' })}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    {c.status === 'draft' ? (
-                      <Link
-                        href={`/admin/emails/campaigns/${c.id}/edit`}
-                        className="text-xs text-stone-600 underline"
-                      >
-                        Continuer
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/admin/emails/campaigns/${c.id}`}
-                        className="text-xs text-stone-600 underline"
-                      >
-                        Voir
-                      </Link>
-                    )}
+                    <div className="flex items-center justify-end gap-3">
+                      {c.status === 'draft' ? (
+                        <Link
+                          href={`/admin/emails/campaigns/${c.id}/edit`}
+                          className="text-xs text-stone-600 underline"
+                        >
+                          Continuer
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/admin/emails/campaigns/${c.id}`}
+                          className="text-xs text-stone-600 underline"
+                        >
+                          Voir
+                        </Link>
+                      )}
+                      <form action={duplicateCampaign}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-stone-600 underline"
+                          aria-label={`Dupliquer la campagne ${c.name}`}
+                        >
+                          Dupliquer
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -110,6 +127,8 @@ export default async function CampaignsListPage() {
           </tbody>
         </table>
       </div>
+
+      <CampaignsPagination page={page} pageCount={pageCount} />
     </AdminShell>
   );
 }

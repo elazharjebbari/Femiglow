@@ -1,0 +1,10 @@
+{
+  "event": "auth.failed",
+  "user": "bonjour@femiglow-maroc.com",
+  "ip": "192.0.2.66",
+  "listenerId": "submission",
+  "localPort": 587,
+  "mechanism": "PLAIN",
+  "details": "535 5.7.8 Authentication credentials invalid (3 failed attempts)",
+  "ts": "2026-05-13T20:15:02Z"
+}

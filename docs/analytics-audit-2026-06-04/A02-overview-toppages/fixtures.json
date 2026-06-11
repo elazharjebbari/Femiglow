@@ -1,0 +1,33 @@
+{
+  "_note": "Calque prod (evidence-db-2026-06-04.txt). topPages ne compte aujourd'hui que eventName==='page_view'. consentSnapshot.analytics_storage='granted' par defaut.",
+  "now": "2026-06-03T12:00:00Z",
+  "filters": { "ninety_days": { "period": "90d", "device": "all", "traffic": "all" } },
+  "prod_realistic": {
+    "_desc": "Aucun page_view. /kit 5 view_item (dont 2 meme session s2), /journal 1 view_item.",
+    "events": [
+      { "id": "k1", "sessionId": "s1", "anonymousId": "a1", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:00:00Z" },
+      { "id": "k2", "sessionId": "s2", "anonymousId": "a2", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:10:00Z" },
+      { "id": "k3", "sessionId": "s2", "anonymousId": "a2", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:11:00Z" },
+      { "id": "k4", "sessionId": "s3", "anonymousId": "a3", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:20:00Z" },
+      { "id": "k5", "sessionId": "s4", "anonymousId": "a4", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T09:30:00Z" },
+      { "id": "j1", "sessionId": "s5", "anonymousId": "a5", "eventName": "view_item", "pageRoute": "/journal", "receivedAt": "2026-06-01T10:00:00Z" }
+    ],
+    "expected_before_fix": { "topPages": [] },
+    "expected_after_fix": [
+      { "pageRoute": "/kit", "pageViews": 5, "sessions": 4 },
+      { "pageRoute": "/journal", "pageViews": 1, "sessions": 1 }
+    ]
+  },
+  "mixed_pageview": {
+    "_desc": "1 page_view legacy sur /journal + view_item sur /kit et /maison.",
+    "events": [
+      { "id": "pv1", "sessionId": "s1", "anonymousId": "a1", "eventName": "page_view", "pageRoute": "/journal", "receivedAt": "2026-06-01T08:00:00Z" },
+      { "id": "vk1", "sessionId": "s2", "anonymousId": "a2", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T08:10:00Z" },
+      { "id": "vk2", "sessionId": "s3", "anonymousId": "a3", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-06-01T08:20:00Z" },
+      { "id": "vm1", "sessionId": "s4", "anonymousId": "a4", "eventName": "view_item", "pageRoute": "/maison", "receivedAt": "2026-06-01T08:30:00Z" }
+    ],
+    "expected_before_fix": { "topPages_routes": ["/journal"] },
+    "expected_after_fix": { "topPages_routes_contains": ["/kit", "/journal", "/maison"] }
+  },
+  "empty": { "_desc": "Aucun event.", "events": [], "expected": { "topPages": [] } }
+}

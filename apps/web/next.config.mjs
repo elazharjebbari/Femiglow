@@ -1,8 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import createNextIntlPlugin from 'next-intl/plugin';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Plugin next-intl : injecte la config de chargement des messages côté serveur.
+// Le chemin pointe vers `src/i18n/request.ts` qui exporte `getRequestConfig`.
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -95,12 +101,19 @@ const nextConfig = {
       // Chunks JS/CSS hashés : immutable 1 an. Le hash change à chaque
       // déploiement, on peut donc cacher agressivement sans risque de stale.
       // Évite que l'utilisateur charge un chunk obsolète après un déploy.
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
+      // Uniquement en production : en dev les chunks ne sont PAS hashés
+      // (`layout.js`), un cache immutable y figerait un bundle obsolète et
+      // casserait le rechargement après édition.
+      ...(process.env.NODE_ENV === 'production'
+        ? [
+            {
+              source: '/_next/static/:path*',
+              headers: [
+                { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+              ],
+            },
+          ]
+        : []),
       // Images optimisées Next servies dynamiquement : cache court côté CDN.
       {
         source: '/_next/image/:path*',
@@ -112,4 +125,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

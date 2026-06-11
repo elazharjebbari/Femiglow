@@ -1,0 +1,46 @@
+@startuml A03-funnel-cumul
+title A03 — Cumul strict en cascade (funnel.ts L186-192) : pourquoi tout s'effondre apres View
+
+start
+:aggregateSessions(events)\n=> s.view / s.engage / s.cta / s.checkout / s.purchase (BOOL_OR);
+note right
+  Dataset prod : view_item(339), begin_checkout(97),
+  add_to_cart(26), purchase(13) PRESENTS
+  scroll_depth_50 / cta_impression / video_user_play = 0
+  => s.engage = false pour TOUTE session
+end note
+
+:reached.view = s.view;
+if (s.view && s.engage ?) then (non — engage=0)
+  #pink:reached.engage = false;
+  #pink:reached.cta = false (cascade);
+  #pink:reached.checkout = false (cascade);
+  #pink:reached.purchase = false (cascade);
+  note right
+    begin_checkout & purchase
+    bien classes par classifyStage
+    MAIS jamais comptes (bloques par &&)
+    => steps {view:N, reste:0}, dropoff=100% (cf. A04)
+  end note
+else (oui)
+  :reached.engage = true;
+  if (reached.engage && s.cta ?) then (oui)
+    :reached.cta = true;
+    if (reached.cta && s.checkout ?) then (oui)
+      :reached.checkout = true;
+      if (reached.checkout && s.purchase ?) then (oui)
+        #palegreen:reached.purchase = true;
+      endif
+    endif
+  endif
+endif
+
+:stepCounts[stage] += 1 pour chaque reached[stage];
+stop
+
+note bottom
+  FIX AN-02 : remplacer le && cumulatif par
+  max-rank atteint (monotone) ou OR par etape ;
+  FIX AN-06 : purchase = purchase OR generate_lead.
+end note
+@enduml

@@ -19,6 +19,9 @@ const EXPECTED_LINKS: ReadonlyArray<{ label: string; href: string }> = [
   { label: 'Leads chat', href: '/admin/chat/leads' },
   { label: 'Care', href: '/admin/chat/care' },
   { label: 'KPIs', href: '/admin/chat/kpis' },
+  // CHA-230 Phase 3 — dashboard qualité intent + curator du golden-set.
+  { label: 'Qualité', href: '/admin/chat/quality' },
+  { label: 'Curator', href: '/admin/chat/intent-curator' },
   { label: 'Analytics', href: '/admin/chat/analytics' },
   { label: 'Instructions', href: '/admin/chat/instructions' },
   { label: 'Sources', href: '/admin/chat/sources' },

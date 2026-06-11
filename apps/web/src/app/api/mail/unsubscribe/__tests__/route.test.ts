@@ -3,8 +3,10 @@
  *
  * Verifies :
  *   - missing / invalid token → 400 (POST: text, GET: HTML)
- *   - valid token → suppression INSERT + subscriber_link UPDATE in one tx
+ *   - POST valid token → suppression INSERT + subscriber_link UPDATE in one tx
  *   - POST returns JSON, GET returns HTML
+ *   - UX-PUB-004 : GET valid token est NON DESTRUCTIF → page de confirmation,
+ *     AUCUNE écriture DB (la suppression n'a lieu qu'au POST).
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { makeFakeDrizzle } from '@/lib/mail/__tests__/_helpers/fake-drizzle';
@@ -88,12 +90,26 @@ describe('GET /api/mail/unsubscribe', () => {
     expect(await res.text()).toContain('Lien invalide');
   });
 
-  it('happy path : returns 200 HTML confirmation', async () => {
+  // UX-PUB-004 — GET avec token valide = page de CONFIRMATION non destructive.
+  // (Avant la vague 4, le GET exécutait la suppression immédiatement → un
+  // préfetch de lien désinscrivait sans intention. Désormais le GET n'écrit
+  // RIEN : il propose de confirmer via un POST.)
+  it('UX-PUB-004 : GET token valide → page « Confirmer la désinscription », AUCUNE écriture DB', async () => {
     vi.mocked(verifyUnsubToken).mockReturnValue('bye@example.com');
-    vi.mocked(getDb).mockReturnValue(makeFakeDrizzle() as never);
+    const drizzle = makeFakeDrizzle();
+    vi.mocked(getDb).mockReturnValue(drizzle as never);
     const res = await GET(makeReq('GET', 'good') as never);
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/html');
-    expect(await res.text()).toContain('Désinscription confirmée');
+    const html = await res.text();
+    // La page invite à confirmer et nomme l'adresse concernée.
+    expect(html).toContain('Confirmer la désinscription');
+    expect(html).toContain('bye@example.com');
+    // UX-PUB-005 — un chemin de retour direct est offert.
+    expect(html).toContain('Me réabonner');
+    // Oracle anti-régression : le GET n'a déclenché AUCUNE mutation.
+    expect(drizzle.calls.insert).toHaveLength(0);
+    expect(drizzle.calls.update).toHaveLength(0);
+    expect(drizzle.calls.delete).toHaveLength(0);
   });
 });

@@ -153,7 +153,6 @@ describe('POST /api/admin/ai-engine/generate-stream — SSE contract tests', () 
 
   it('missing platform returns 400', async () => {
     const payload = validPayload();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (payload as any).platform;
 
     const res = await POST(makeRequest(payload));

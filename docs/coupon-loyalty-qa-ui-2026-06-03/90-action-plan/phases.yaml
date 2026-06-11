@@ -1,0 +1,65 @@
+# Jalons détaillés des vagues — piloté par le runbook.
+waves:
+  - id: W0
+    titre: Fondations MSW + fixtures
+    statut: fait
+    livrables:
+      - apps/web/src/test/msw/coupons-handlers.ts
+      - apps/web/src/test/msw/coupons-handlers.smoke.test.ts
+    gate: smoke vert (5/5)
+  - id: W1
+    titre: Contrats API
+    statut: a_faire
+    features: [F14, F05, F06, F07, F15]
+    livrables:
+      - src/app/api/coupons/redeem/route.test.ts
+      - src/app/api/admin/coupons/[id]/status/route.test.ts
+      - src/app/api/admin/coupons/[id]/stats/route.test.ts
+      - src/app/api/admin/coupons/grants/route.filters.test.ts
+      - src/app/api/coupons/rescue/route.test.ts (extension)
+    gate: 5 fichiers verts
+  - id: W2
+    titre: Composants admin CouponsManager
+    statut: a_faire
+    features: [F01, F02, F03, F04]
+    livrables:
+      - src/components/admin/coupons/CouponsManager.create.test.tsx
+      - src/components/admin/coupons/CouponsManager.status.test.tsx
+      - src/components/admin/coupons/CouponsManager.stats.test.tsx
+      - src/components/admin/coupons/CouponsManager.grants.test.tsx
+    gate: 4 fichiers verts + charte + PII
+  - id: W3
+    titre: Composants client
+    statut: a_faire
+    features: [F08, F09, F10, F11, F12, F13]
+    livrables:
+      - src/components/sections/InvitationCodeField.msw.test.tsx
+      - src/components/checkout/wizard/steps/AddressStep.coupon.test.tsx
+      - src/components/checkout/wizard/WizardCartRecap.credit.test.tsx
+      - src/components/checkout/wizard/steps/ThankYouStep.loyalty.test.tsx
+      - src/components/sections/CouponWelcomeNote.test.tsx (extension)
+      - src/lib/checkout/state/wizard-store.loyalty.test.ts
+    gate: 6 fichiers verts
+  - id: W4
+    titre: Intégration + règles métier
+    statut: a_faire
+    features: [F19, F20]
+    livrables:
+      - src/lib/coupons/pricing-integration.test.ts
+      - src/lib/db/queries/coupon-grant-repo.activation.test.ts
+    gate: 2 fichiers verts
+  - id: W5
+    titre: E2E Playwright
+    statut: a_faire
+    features: [F16, F17, F18]
+    pre_requis:
+      - scripts/seed-e2e-loyalty.ts (template actif + grant pré-activé) pour F18
+    livrables:
+      - e2e/admin-coupons-loyalty.spec.ts
+      - e2e/loyalty-issuance.spec.ts
+      - e2e/loyalty-redemption.spec.ts
+    gate: 3 specs vertes + a11y sans violation critique
+  - id: W6
+    titre: Durcissement
+    statut: a_faire
+    gate: anti-flaky 3x, typecheck 0, lint 0, traçabilité fait

@@ -1,0 +1,303 @@
+# =============================================================================
+# config-schema.yaml — Schéma complet de la config admin-éditable
+# Locale Switcher V2 — section "i18n_locale_config"
+# =============================================================================
+#
+# SOURCE DE VÉRITÉ : ../CONTRACT.md §3 (clés) + §4 (events) + §6 (invariants).
+# Ce fichier décrit la forme CANONIQUE, les types, les defaults, les
+# contraintes et les règles de validation. Il est **Zod-mappable** : chaque
+# noeud `type` / `enum` / `constraints` se traduit en un schéma Zod 1:1
+# (cf. mapping en fin de fichier + apps/web/src/lib/admin-config/schemas.ts
+# comme précédent de style — `z.object`, `.refine`, `.superRefine`).
+#
+# Stockage : 1 ligne dans la table `app_config` (section = 'i18n_locale_config'),
+# payload JSONB. Lecture publique cachée via /api/i18n/config. Écriture admin
+# via /api/admin/i18n/config (PUT, If-Match). Voir 03-data/admin-config-model.md.
+#
+# (a) FONCTIONNEMENT OPTIMAL : la config validée pilote quelles locales sont
+#     proposées, dans quel ordre, avec quel endonyme, sur quelles surfaces, et
+#     si le nudge + quelle durée de transition. Toute config invalide => defaults
+#     embarqués (INV-12) — jamais d'écran cassé.
+# (b) À VÉRIFIER/TESTER : chaque règle de la section `validationRules` ci-dessous
+#     doit avoir AU MOINS un test (cf. 07-tests/) + un fixture (fixtures.json).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# $meta — métadonnées de schéma (non sérialisé dans le payload runtime)
+# -----------------------------------------------------------------------------
+$meta:
+  section: i18n_locale_config            # clé de section dans app_config (figée)
+  schemaVersion: 1                       # incrément = breaking change de forme
+  zodExport: localeConfigSchema          # nom du symbole Zod attendu
+  supportedLocales: [fr, ar, en]         # aligné sur apps/web/src/i18n.config.ts (LOCALES)
+  defaultLocaleCode: fr                  # aligné sur DEFAULT_LOCALE (x-default SEO)
+
+# -----------------------------------------------------------------------------
+# Définitions de types réutilisables (-> z.enum / z.union)
+# -----------------------------------------------------------------------------
+$defs:
+  LocaleCode:
+    type: string
+    enum: [fr, ar, en]                   # z.enum(['fr','ar','en'])  (= Locale du CONTRACT §1)
+    description: Code BCP-47 d'une locale supportée.
+  Direction:
+    type: string
+    enum: [ltr, rtl]                     # z.enum(['ltr','rtl'])
+    description: Direction de lecture. ar ⇒ rtl obligatoire (voir validationRules).
+  Surface:
+    type: string
+    enum: [header, drawer, footer, nudge]  # CONTRACT §1 "Surface"
+  SurfaceVariant:
+    type: string
+    enum: [dropdown, pills, toggle]      # B1 dropdown / B3 pills / B2 toggle (dossier §6)
+  _SurfaceCfg:
+    type: object
+    additionalProperties: false
+    required: [variant]
+    properties:
+      variant:
+        $ref: '#/$defs/SurfaceVariant'
+
+# -----------------------------------------------------------------------------
+# Schéma racine du payload (-> z.object racine)
+# -----------------------------------------------------------------------------
+type: object
+additionalProperties: false              # .strict()
+required: [locales, defaultLocale, nudge, surfaces, transition]
+properties:
+
+  # ---------------------------------------------------------------------------
+  # locales[] — une entrée par locale connue (présence n'implique pas enabled)
+  # ---------------------------------------------------------------------------
+  locales:
+    type: array
+    minItems: 1
+    maxItems: 3                          # borné par $meta.supportedLocales
+    uniqueBy: code                       # pas deux entrées avec le même `code`
+    description: >
+      Liste ordonnée des locales. Chaque entrée décrit l'affichage et l'activation.
+      Décision modèle : ROWS-IN-JSONB (tableau dans un payload single-row),
+      pas une table rows-per-locale — cf. admin-config-model.md §"Single-row".
+    items:
+      type: object
+      additionalProperties: false
+      required: [code, enabled, endonym, order]
+      properties:
+        code:
+          $ref: '#/$defs/LocaleCode'
+        enabled:
+          type: boolean
+          default: true
+          description: Locale servie au public si true. INV-12 garde le défaut toujours servable.
+        endonym:
+          type: string
+          minLength: 1                    # non-vide (règle V-ENDONYM)
+          maxLength: 40
+          trim: true
+          description: >
+            Nom de la langue dans sa propre écriture (CONTRACT §1).
+            fr="Français", ar="العربية", en="English". Jamais un code ISO seul.
+        direction:
+          $ref: '#/$defs/Direction'
+          default: ltr
+          description: >
+            Optionnel mais NORMALISÉ : si absent, dérivé du code
+            (ar⇒rtl, sinon ltr). Si présent pour ar, DOIT valoir rtl (V-AR-RTL).
+        order:
+          type: integer
+          minimum: 1
+          maximum: 99
+          description: Ordre d'affichage croissant. Unique parmi les locales (V-ORDER-UNIQUE).
+
+  # ---------------------------------------------------------------------------
+  # defaultLocale — la locale par défaut (x-default), pivot SEO + fallback
+  # ---------------------------------------------------------------------------
+  defaultLocale:
+    $ref: '#/$defs/LocaleCode'
+    default: fr
+    description: >
+      Exactement UNE locale par défaut (V-DEFAULT-ONE). Elle DOIT référencer une
+      entrée de `locales` (V-DEFAULT-EXISTS) qui est `enabled: true` (V-DEFAULT-ENABLED).
+
+  # ---------------------------------------------------------------------------
+  # nudge — suggestion contextuelle one-shot (CONTRACT §1 "Nudge", dossier §8 D4)
+  # ---------------------------------------------------------------------------
+  nudge:
+    type: object
+    additionalProperties: false
+    required: [enabled, maxImpressionsPerVisitor]
+    properties:
+      enabled:
+        type: boolean
+        default: true
+      maxImpressionsPerVisitor:
+        type: integer
+        minimum: 0                        # 0 = désactivé de fait
+        maximum: 3
+        default: 1                        # one-shot par défaut (dossier §8 / §10.4)
+        description: Nombre max d'affichages du nudge par visiteur. Cookie locale_nudge_dismissed scelle le one-shot.
+
+  # ---------------------------------------------------------------------------
+  # surfaces — variante visuelle par emplacement (CONTRACT §3)
+  # ---------------------------------------------------------------------------
+  surfaces:
+    type: object
+    additionalProperties: false
+    required: [header, drawer, footer]
+    properties:
+      header:
+        $ref: '#/$defs/_SurfaceCfg'
+        default: { variant: dropdown }   # B1 desktop (dossier §10.2)
+      drawer:
+        $ref: '#/$defs/_SurfaceCfg'
+        default: { variant: pills }      # B3 mobile
+      footer:
+        $ref: '#/$defs/_SurfaceCfg'
+        default: { variant: pills }      # B3 redondance
+    # NB : pas de surface `nudge` ici — le nudge est piloté par le bloc `nudge`.
+
+  # ---------------------------------------------------------------------------
+  # transition — paramètres du fondu de bascule (CONTRACT §3 + §5 tokens)
+  # ---------------------------------------------------------------------------
+  transition:
+    type: object
+    additionalProperties: false
+    required: [durationMs, easing]
+    properties:
+      durationMs:
+        type: integer
+        minimum: 200                      # charte : jamais < 200 ms (dossier §2)
+        maximum: 560                      # borne haute charte (280–560 ms)
+        default: 280                      # token motion.switch.duration (CONTRACT §5)
+      easing:
+        type: string
+        pattern: '^(cubic-bezier\([^)]*\)|ease|ease-in|ease-out|ease-in-out|linear)$'
+        default: "cubic-bezier(0.22,1,0.36,1)"   # token motion.switch.easing
+
+# (Sous-définition surface `_SurfaceCfg` déclarée dans $defs ci-dessus -> z.object.)
+
+# -----------------------------------------------------------------------------
+# DEFAULTS — payload de repli embarqué (INV-12). Doit être VALIDE par lui-même.
+# Reflété dans apps/web/src/lib/i18n/locale-config/defaults.ts (TS).
+# Identique à la "Forme canonique" de CONTRACT.md §3.
+# -----------------------------------------------------------------------------
+defaults:
+  locales:
+    - { code: fr, enabled: true, endonym: "Français",  direction: ltr, order: 1 }
+    - { code: ar, enabled: true, endonym: "العربية",   direction: rtl, order: 2 }
+    - { code: en, enabled: true, endonym: "English",   direction: ltr, order: 3 }
+  defaultLocale: fr
+  nudge:
+    enabled: true
+    maxImpressionsPerVisitor: 1
+  surfaces:
+    header: { variant: dropdown }
+    drawer: { variant: pills }
+    footer: { variant: pills }
+  transition:
+    durationMs: 280
+    easing: "cubic-bezier(0.22,1,0.36,1)"
+
+# =============================================================================
+# validationRules — règles trans-champs (-> z.superRefine / .refine)
+# Chaque règle a un CODE (réutilisé par l'API: error.details[].rule) et DOIT
+# avoir un test unitaire (07-tests/vitest-plan.csv) + un fixture (fixtures.json).
+# =============================================================================
+validationRules:
+
+  - code: V-DEFAULT-ONE
+    rule: "Il existe exactement une valeur `defaultLocale` (champ scalaire, non-null)."
+    severity: error
+    onFail: reject_write           # PUT → 422 ; lecture DB invalide → fallback defaults (INV-12)
+
+  - code: V-DEFAULT-EXISTS
+    rule: "`defaultLocale` correspond au `code` d'une entrée de `locales`."
+    severity: error
+    onFail: reject_write
+
+  - code: V-DEFAULT-ENABLED
+    rule: "L'entrée `locales` dont `code == defaultLocale` a `enabled: true`."
+    severity: error
+    onFail: reject_write
+    note: "Garde-fou admin : on ne peut JAMAIS désactiver la locale par défaut (CONTRACT §6, admin-permissions.md)."
+
+  - code: V-AT-LEAST-ONE-ENABLED
+    rule: "Au moins une entrée a `enabled: true` (impliqué par V-DEFAULT-ENABLED, mais testé séparément)."
+    severity: error
+    onFail: reject_write
+
+  - code: V-ENDONYM
+    rule: "Chaque `endonym` est non-vide après trim (minLength 1)."
+    severity: error
+    onFail: reject_write
+
+  - code: V-AR-RTL
+    rule: "Si une entrée a `code == ar`, alors `direction == rtl` (jamais ltr)."
+    severity: error
+    onFail: reject_write
+    note: "Empêche un AR servi en LTR (casse INV-2)."
+
+  - code: V-NON-AR-LTR
+    rule: "Les entrées `fr` et `en` ont `direction == ltr` (cohérence i18n.config.ts)."
+    severity: error
+    onFail: reject_write
+
+  - code: V-CODE-UNIQUE
+    rule: "Les `code` des entrées `locales` sont uniques."
+    severity: error
+    onFail: reject_write
+
+  - code: V-CODE-SUPPORTED
+    rule: "Tout `code` ∈ supportedLocales (fr|ar|en). Pas de locale fantôme."
+    severity: error
+    onFail: reject_write
+
+  - code: V-ORDER-UNIQUE
+    rule: "Les `order` sont uniques (pas deux locales au même rang)."
+    severity: error
+    onFail: reject_write
+
+  - code: V-TRANSITION-RANGE
+    rule: "`transition.durationMs` ∈ [200,560] (borne charte)."
+    severity: error
+    onFail: reject_write
+
+  - code: V-NUDGE-RANGE
+    rule: "`nudge.maxImpressionsPerVisitor` ∈ [0,3]."
+    severity: error
+    onFail: reject_write
+
+  - code: V-SURFACE-VARIANT
+    rule: "Chaque surface.variant ∈ {dropdown, pills, toggle}."
+    severity: warn                  # une variante inconnue ⇒ fallback dropdown au rendu, pas un reject
+    onFail: coerce_default
+
+# =============================================================================
+# Mapping Zod (référence d'implémentation — apps/web/src/lib/i18n/locale-config/schema.ts)
+# =============================================================================
+zodMapping:
+  notes:
+    - "type:object + additionalProperties:false  → z.object({...}).strict()"
+    - "enum                                       → z.enum([...])"
+    - "minLength/maxLength/trim                    → z.string().trim().min(1).max(40)"
+    - "minimum/maximum (integer)                   → z.number().int().min(x).max(y)"
+    - "default                                     → .default(v)"
+    - "validationRules (trans-champs)              → .superRefine((cfg, ctx) => { ... ctx.addIssue({ code:'custom', params:{ rule:'V-...' }}) })"
+    - "Échec parse côté DB                         → resolver retombe sur defaults (INV-12), comme admin-config/resolve.ts safeValidate()"
+
+# =============================================================================
+# Éléments à VÉRIFIER / TESTER (récap transverse)
+# =============================================================================
+verify:
+  functional:
+    - "Round-trip : defaults parse() OK et re-sérialise à l'identique."
+    - "Chaque validationRule error ⇒ safeParse().success === false avec le bon code."
+  dataIntegrity:
+    - "uniqueBy code & order respectés ; endonyms non vides ; ar=rtl."
+    - "defaultLocale toujours présent + enabled après tout PUT accepté."
+  security:
+    - "Le schéma .strict() rejette tout champ inconnu (anti-injection de clés)."
+  caching:
+    - "schemaVersion bump invalide le cache via tag (cf. admin-config-model.md)."
+  failureModes:
+    - "Payload DB corrompu / champ manquant ⇒ defaults servis (INV-12), aucun throw vers le rendu public."

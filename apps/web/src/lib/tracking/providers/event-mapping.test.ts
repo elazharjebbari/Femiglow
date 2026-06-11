@@ -264,9 +264,10 @@ describe('event-mapping', () => {
       });
     });
 
-    describe('Meta — primary uniquement pour Purchase et Lead', () => {
+    // C3 (audit 2026-05-31) — Meta `purchase` est désormais BROADCAST (Meta
+    // reçoit tous les purchases). Seul `Lead` reste primary côté Meta.
+    describe('Meta — primary uniquement pour Lead (purchase = broadcast)', () => {
       it.each([
-        ['purchase', 'primary'], // → Purchase
         ['generate_lead', 'primary'], // → Lead
         ['lead_capture', 'primary'], // → Lead
         ['chat_lead_form_submit', 'primary'], // → Lead
@@ -275,6 +276,7 @@ describe('event-mapping', () => {
       });
 
       it.each([
+        ['purchase', 'broadcast'], // → Purchase (C3 : broadcast, fire tous canaux)
         ['view_item', 'broadcast'], // → ViewContent
         ['add_to_cart', 'broadcast'], // → AddToCart
         ['checkout_intent', 'broadcast'], // → InitiateCheckout

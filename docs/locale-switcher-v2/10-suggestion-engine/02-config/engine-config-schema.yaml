@@ -1,0 +1,413 @@
+# =============================================================================
+# engine-config-schema.yaml — app_config section `i18n_suggestion_engine`
+# -----------------------------------------------------------------------------
+# Source de vérité : ../../CONTRACT.md §7 (artefacts figés, events, INV-13..INV-20).
+# Patterns mirrorés : ADR-009 (app_config + JSONB + version + app_config_snapshots
+#   + logAuditEvent + unstable_cache + safeValidate->defaults), cf.
+#   ../../03-data/admin-config-model.md et ../../06-admin/admin-feature-spec.md.
+#
+# (a) FONCTIONNEMENT OPTIMAL
+#   - Schéma Zod-mappable (chaque noeud => z.*). `.strict()` partout (anti-injection
+#     de clés, comme app_config). superRefine pour les invariants trans-champs.
+#   - Section app_config : { section:'i18n_suggestion_engine', payload:<ci-dessous>,
+#     version, updated_at, updated_by } + snapshots before/after.
+#   - safeValidate : payload invalide/absent => DEFAULTS applicatifs (ci-dessous),
+#     et `engineEnabled` est FORCÉ false (INV-13 / §7.5). Jamais d'affichage par erreur.
+#   - Lu via getSuggestionEngineConfig() (unstable_cache, tag I18N_ENGINE_TAG).
+#
+# (b) À VÉRIFIER / TESTER : voir section `validationRules` (V-codes) + bloc `verify`.
+# =============================================================================
+
+schemaVersion: 1            # z.literal(1) — bump => migration de forme (safeValidate échoue sur ancien => defaults)
+
+# -----------------------------------------------------------------------------
+# 1. Interrupteur global — OFF PAR DÉFAUT POUR TOUT LE MONDE (INV-13)
+# -----------------------------------------------------------------------------
+engineEnabled: false        # z.boolean().default(false). Si payload invalide => forcé false.
+
+# -----------------------------------------------------------------------------
+# 2. Poids des stratégies de devinette (S1..S7 — detection-strategies.md §2)
+#    guessPreferredLocale(strategies) agrège des votes pondérés -> {guessedLocale,confidence}.
+#    Chaque poids z.number().min(0).max(1).
+# -----------------------------------------------------------------------------
+strategyWeights:
+  S1_cookieNextLocale: 1.0      # cookie NEXT_LOCALE — choix explicite, le plus fiable
+  S2_priorLocale: 0.8           # langue de la dernière session
+  S3_acceptLanguage: 0.5        # Accept-Language (q-weights respectés)
+  S4_adLocale: 0.7              # langue de la créa Meta (utm/referrer)
+  S5_inPageBehavior: 0.5        # clic contenu autre langue / hover switcher (booste confiance)
+  S6_accessVsAcceptLang: 0.0    # COMPARATEUR de mismatch, pas un vote -> poids ignoré (doc only)
+  S7_typedScript: 0.5           # détection script AR vs latin (recherche/chat)
+  # GEO IP : volontairement ABSENT des votes. Tie-breaker faible & désactivable seulement.
+  geoIpTieBreaker:
+    enabled: false              # z.boolean().default(false) — INV-20, jamais signal dur
+    weight: 0.1                 # appliqué UNIQUEMENT à égalité de confiance, si enabled
+
+# -----------------------------------------------------------------------------
+# 3. Seuils & budget globaux (défauts, surchargés par profil)
+# -----------------------------------------------------------------------------
+globalConfidenceFloor: 0.6      # z.number().min(0).max(1). Plancher dur : confidence < floor => NEVER-SAME-LANG.
+defaults:
+  cooldownHours: 24             # z.number().int().min(0).max(168)
+  maxImpressions: 1             # z.number().int().min(0).max(3) — INV-16
+  minConfidence: 0.6            # z.number().min(0).max(1)
+deferTtlMs: 8000                # z.number().int().min(0).max(60000) — defer-to-breakpoint TTL (INV-17), sinon abandon
+
+# Seuils comportementaux nommés (référencés par les conditions des profils)
+behaviorThresholds:
+  freshDwellMs: 3000            # NEVER-FRESH : dwellMs < 3000 => trop tôt
+  deepReadDwellMs: 45000        # NEVER-DEEP-READ
+  fastScrollVelocity: 1200      # NEVER-FAST-SCROLL (px/s)
+  idleBreakMinMs: 1500          # TRIG-IDLE-BREAK borne basse
+  idleBreakMaxMs: 6000          # TRIG-IDLE-BREAK borne haute
+
+# -----------------------------------------------------------------------------
+# 4. Zones calmes — PLANCHER DUR NON DÉSAGRÉGEABLE (INV-14 / §7.5)
+#    Ces never-profiles sont TOUJOURS présents et `enabled:true`, même si absents
+#    du payload. La validation REFUSE (V-QUIETZONE-LOCKED) toute tentative de les
+#    désactiver ou supprimer. Hard-coded floor : non pilotable par config.
+# -----------------------------------------------------------------------------
+quietZones:
+  lockedNeverProfileIds:        # z.array(z.string()).readonly — injectés/forcés à la validation
+    - NEVER-CHECKOUT            # inCheckout == true (INV-14, cohérent INV-5)
+    - NEVER-FORM                # formFocused || typing (INV-14)
+  enforce: true                 # z.literal(true) — non éditable
+
+# -----------------------------------------------------------------------------
+# 5. Surfaces de prompt (LocaleSuggestionPrompt — pearl / toast). Jamais de modale.
+# -----------------------------------------------------------------------------
+surfaces:
+  pearl:                        # perle ancrée au switcher (mismatch léger — D3)
+    enabled: true               # z.boolean().default(true)
+    autoDismissMs: 8000         # auto-effacement au breakpoint (anti-harcèlement)
+    respectReducedMotion: true  # z.literal(true) — INV-7, rendu statique si reduced-motion
+  toast:                        # toast bas, deux choix symétriques stay/switch (rescue — D4)
+    enabled: true
+    autoDismissMs: 10000
+    respectReducedMotion: true
+  # modale: INTERDITE (anti-pattern D1) — pas de clé, refusée par .strict()
+
+# -----------------------------------------------------------------------------
+# 6. Profils (trigger + never) — DONNÉES éditables (INV-18)
+#    Forme = colonnes de ../02-config/profiles-catalog.csv. z.array(profileSchema).
+#    profileSchema = z.object({ id, kind:'trigger'|'never', name, enabled, priority,
+#      conditions:[{signal, op, value}], minConfidence, cooldownHours, maxImpressions,
+#      surface:'pearl'|'toast'|'none', opportuneMoment:[...], reason }).strict()
+#    INV-13 : tout trigger Enabled=false par défaut. Never-profiles Enabled=true.
+# -----------------------------------------------------------------------------
+profiles:
+  # ---- NEVER (exclusions, priorité absolue, évaluées en premier) ----
+  - id: NEVER-CHECKOUT
+    kind: never
+    name: En paiement
+    enabled: true               # locked (quietZones) — V-QUIETZONE-LOCKED si false
+    priority: 1
+    conditions:
+      - { signal: inCheckout, op: eq, value: true }
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Zone calme inviolable (Zeigarnik / INV-14). Plancher non désactivable."
+  - id: NEVER-FORM
+    kind: never
+    name: Formulaire actif
+    enabled: true               # locked (quietZones)
+    priority: 2
+    conditions:
+      - { signal: formFocused, op: eq, value: true }
+      - { signal: typing, op: eq, value: true }   # OR au niveau profil (any-of)
+    conditionsLogic: any        # z.enum(['all','any']).default('all')
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Tâche en cours / charge haute. Plancher non désactivable (INV-14)."
+  - id: NEVER-DEEP-READ
+    kind: never
+    name: Lecture longue
+    enabled: true
+    priority: 3
+    conditions:
+      - { signal: dwellMs, op: gt, value: 45000 }
+      - { signal: scrollDepth, op: increasing, value: true }
+      - { signal: routeType, op: eq, value: article }
+    conditionsLogic: all
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Flux de lecture engagé (INV-15)."
+  - id: NEVER-FRESH
+    kind: never
+    name: Trop tôt
+    enabled: true
+    priority: 4
+    conditions:
+      - { signal: dwellMs, op: lt, value: 3000 }
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Aucun breakpoint encore (anti-moment INV-17)."
+  - id: NEVER-FAST-SCROLL
+    kind: never
+    name: Scroll rapide
+    enabled: true
+    priority: 5
+    conditions:
+      - { signal: scrollVelocity, op: gt, value: 1200 }
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Charge / geste en cours (INV-17)."
+  - id: NEVER-MODAL
+    kind: never
+    name: Modale ouverte
+    enabled: true
+    priority: 6
+    conditions:
+      - { signal: modalOpen, op: eq, value: true }
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Ne pas empiler de surfaces (chat ouvert)."
+  - id: NEVER-VIDEO
+    kind: never
+    name: Vidéo en lecture
+    enabled: true
+    priority: 7
+    conditions:
+      - { signal: videoPlaying, op: eq, value: true }
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Immersion média."
+  - id: NEVER-DISMISSED
+    kind: never
+    name: A déjà refusé
+    enabled: true
+    priority: 8
+    conditions:
+      - { signal: dismissedPersistent, op: eq, value: true }
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Refus persistant respecté (INV-16). Reset admin uniquement."
+  - id: NEVER-BUDGET
+    kind: never
+    name: Budget épuisé
+    enabled: true
+    priority: 9
+    conditions:
+      - { signal: cooldownActive, op: eq, value: true }
+      - { signal: impressionsThisVisitor, op: gte, value: "$maxImpressions" }
+      - { signal: quietHours, op: eq, value: true }
+    conditionsLogic: any
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Fréquence bornée (INV-16)."
+  - id: NEVER-SAME-LANG
+    kind: never
+    name: Non pertinent
+    enabled: true
+    priority: 10
+    conditions:
+      - { signal: guessedLocale, op: eqServed, value: true }
+      - { signal: confidence, op: lt, value: "$globalConfidenceFloor" }
+    conditionsLogic: any
+    minConfidence: 0
+    cooldownHours: 0
+    maxImpressions: 0
+    surface: none
+    opportuneMoment: []
+    reason: "Devinette = langue servie OU confiance insuffisante."
+
+  # ---- TRIGGER (déclenchements, TOUS enabled:false par défaut — INV-13) ----
+  - id: TRIG-HESITATION
+    kind: trigger
+    name: Hésitation + signal langue
+    enabled: false              # INV-13
+    priority: 90
+    conditions:
+      - { signal: hoverSwitcher, op: eq, value: true }
+      - { signal: clickedOtherLangContent, op: eq, value: true }
+      - { signal: searchedInLang, op: notNull, value: true }
+    conditionsLogic: any
+    minConfidence: 0.5
+    cooldownHours: 24
+    maxImpressions: 1
+    surface: pearl
+    opportuneMoment: [immediate-on-intent]
+    reason: "Intent explicite langue."
+  - id: TRIG-EXIT-RESCUE
+    kind: trigger
+    name: Intent de sortie + mismatch
+    enabled: false
+    priority: 80
+    conditions:
+      - { signal: exitIntent, op: eq, value: true }
+      - { signal: guessedLocale, op: neServed, value: true }
+    conditionsLogic: all
+    minConfidence: 0.65
+    cooldownHours: 24
+    maxImpressions: 1
+    surface: toast
+    opportuneMoment: [exit-intent]
+    reason: "Sauvetage desktop (pattern Zara stay/switch)."
+  - id: TRIG-ENTRY-MISMATCH
+    kind: trigger
+    name: Arrivée en langue non préférée
+    enabled: false
+    priority: 100
+    conditions:
+      - { signal: guessedLocale, op: neServed, value: true }
+    conditionsLogic: all
+    minConfidence: 0.75
+    cooldownHours: 24
+    maxImpressions: 1
+    surface: pearl
+    opportuneMoment: [scroll-pause-after-hero, section-end]
+    reason: "Accès dans une langue != préférence forte (remplace LocaleNudge — ADR-010)."
+  - id: TRIG-RETURNING-PREF
+    kind: trigger
+    name: Visiteuse de retour avec préférence connue
+    enabled: false
+    priority: 110
+    conditions:
+      - { signal: returningVisitor, op: eq, value: true }
+      - { signal: priorLocale, op: neServed, value: true }
+    conditionsLogic: all
+    minConfidence: 0.6
+    cooldownHours: 72
+    maxImpressions: 1
+    surface: pearl
+    opportuneMoment: [light-breakpoint, scroll-pause]
+    reason: "Préférence connue d'une session passée != langue servie."
+  - id: TRIG-AD-LANG
+    kind: trigger
+    name: Créa Meta dans une autre langue
+    enabled: false
+    priority: 120
+    conditions:
+      - { signal: adLocale, op: notNull, value: true }
+      - { signal: adLocale, op: neServed, value: true }
+    conditionsLogic: all
+    minConfidence: 0.6
+    cooldownHours: 24
+    maxImpressions: 1
+    surface: pearl
+    opportuneMoment: [first-section-end]
+    reason: "Trafic Meta arrivé dans une langue != créa."
+  - id: TRIG-IDLE-BREAK
+    kind: trigger
+    name: Pause après engagement
+    enabled: false
+    priority: 130
+    conditions:
+      - { signal: idleMs, op: gte, value: 1500 }
+      - { signal: idleMs, op: lte, value: 6000 }
+      - { signal: dwellMs, op: gt, value: 10000 }
+      - { signal: scrollDepth, op: gte, value: 0.2 }
+    conditionsLogic: all
+    minConfidence: 0.6
+    cooldownHours: 24
+    maxImpressions: 1
+    surface: pearl
+    opportuneMoment: [idle-break]
+    reason: "Pause courte après engagement réel (creux calme)."
+
+# -----------------------------------------------------------------------------
+# 7. Règles de validation (V-codes) — superRefine Zod. Le route handler renvoie
+#    422 { details:[{ rule, path, message }] }. Tout échec bloquant => engine off
+#    (INV-13) côté resolver (safeValidate -> DEFAULTS avec engineEnabled:false).
+# -----------------------------------------------------------------------------
+validationRules:
+  - code: V-SCHEMA-VERSION
+    rule: "schemaVersion === 1"
+    onFail: "safeValidate échoue => DEFAULTS (engineEnabled:false)."
+  - code: V-ENGINE-OFF-IF-INVALID
+    rule: "Tout payload qui ne parse pas => resolver force engineEnabled=false (INV-13 / §7.5)."
+    onFail: "moteur off, jamais d'affichage par erreur."
+  - code: V-QUIETZONE-LOCKED
+    rule: "NEVER-CHECKOUT et NEVER-FORM PRÉSENTS, kind=never, enabled=true ; ni désactivables ni supprimables (INV-14 / §7.5)."
+    onFail: "422 + réinjection forcée des never-profiles plancher (la config ne peut pas les retirer)."
+  - code: V-CONFIDENCE-RANGE
+    rule: "globalConfidenceFloor ∈ [0,1] ; defaults.minConfidence ∈ [0,1] ; chaque profile.minConfidence ∈ [0,1]."
+    onFail: "422 sur le champ fautif."
+  - code: V-WEIGHTS-RANGE
+    rule: "Chaque strategyWeights.S* ∈ [0,1] ; geoIpTieBreaker.weight ∈ [0,1]."
+    onFail: "422."
+  - code: V-PRIORITY-UNIQUE
+    rule: "Les priority sont UNIQUES sur l'ensemble des profils (ordre d'évaluation déterministe)."
+    onFail: "422 (doublon de priorité)."
+  - code: V-NEVER-BEFORE-TRIGGER
+    rule: "Toute never-profile a une priority < toute trigger-profile (exclusions évaluées en premier — politique §4)."
+    onFail: "422 (never doit primer)."
+  - code: V-COOLDOWN-RANGE
+    rule: "cooldownHours ∈ [0,168] (défaut + par profil)."
+    onFail: "422."
+  - code: V-CAP-RANGE
+    rule: "maxImpressions ∈ [0,3] (INV-16, défaut + par profil)."
+    onFail: "422."
+  - code: V-SURFACE-ENUM
+    rule: "profile.surface ∈ {pearl,toast,none}. Trigger => pearl|toast ; never => none. JAMAIS 'modal'."
+    onFail: "422 (anti-modale D1)."
+  - code: V-CONDITION-SIGNAL-KNOWN
+    rule: "Chaque condition.signal existe dans signals-catalog.csv ; op ∈ {eq,ne,gt,gte,lt,lte,notNull,increasing,eqServed,neServed} ; value bien typée."
+    onFail: "422 (condition orpheline)."
+  - code: V-TRIGGER-DEFAULT-OFF
+    rule: "Au SEED / sur defaults : tout profile kind=trigger a enabled=false (INV-13). (Un admin peut ensuite activer ; le défaut reste off.)"
+    onFail: "defaults non conformes rejetés en test."
+  - code: V-OPPORTUNE-NONEMPTY
+    rule: "Tout trigger enabled=true a opportuneMoment non vide (sinon jamais opportun => mort)."
+    onFail: "422 (trigger inerte)."
+  - code: V-NO-GEO-HARD
+    rule: "geoIpTieBreaker n'est jamais une condition de profil ; au plus tie-breaker si enabled (INV-20)."
+    onFail: "422 si geoCountry apparaît en condition trigger."
+  - code: V-STRICT-KEYS
+    rule: "Schéma .strict() : toute clé inconnue dans le payload => 422 (anti-injection, mirror app_config)."
+    onFail: "422."
+
+# -----------------------------------------------------------------------------
+# 8. DEFAULTS applicatifs (failsafe INV-13/§7.5) — objet TS identique servi par le
+#    resolver si payload absent/invalide/DB down. engineEnabled:false + quiet zones.
+# -----------------------------------------------------------------------------
+appliedDefaultsNote: >
+  defaults = { schemaVersion:1, engineEnabled:false, globalConfidenceFloor:0.6,
+  strategyWeights:{...ci-dessus}, defaults:{cooldownHours:24,maxImpressions:1,minConfidence:0.6},
+  quietZones:{ lockedNeverProfileIds:[NEVER-CHECKOUT,NEVER-FORM], enforce:true },
+  surfaces:{pearl,toast respectReducedMotion:true}, profiles:[ 10 never enabled:true,
+  6 trigger enabled:FALSE ] }. Le resolver ne throw JAMAIS vers le rendu (INV-13).
+
+# -----------------------------------------------------------------------------
+# 9. À VÉRIFIER / TESTER (schéma)
+# -----------------------------------------------------------------------------
+verify:
+  - "Payload vide / DB down => DEFAULTS, engineEnabled=false (test resolver)."
+  - "Payload tentant enabled=false sur NEVER-CHECKOUT ou NEVER-FORM => 422 V-QUIETZONE-LOCKED + réinjection."
+  - "Payload supprimant NEVER-CHECKOUT/NEVER-FORM => réinjectés de force (plancher)."
+  - "globalConfidenceFloor=1.2 => 422 V-CONFIDENCE-RANGE."
+  - "Deux profils même priority => 422 V-PRIORITY-UNIQUE."
+  - "Un trigger priority < un never => 422 V-NEVER-BEFORE-TRIGGER."
+  - "surface='modal' => 422 V-SURFACE-ENUM."
+  - "condition.signal='inexistant' => 422 V-CONDITION-SIGNAL-KNOWN."
+  - "geoCountry en condition d'un trigger => 422 V-NO-GEO-HARD."
+  - "clé inconnue 'foo' dans payload => 422 V-STRICT-KEYS."
+  - "defaults : tous les triggers enabled=false (INV-13)."
+  - "Round-trip Zod : parse(defaults) === defaults (idempotent)."

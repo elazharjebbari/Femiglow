@@ -1,0 +1,11 @@
+{
+  "event": "delivery.delivered",
+  "queueId": "307118204079726099",
+  "queueName": "remote",
+  "from": "bonjour@femiglow-maroc.com",
+  "rcpt": "user9@exemple.test",
+  "to": ["user9@exemple.test"],
+  "code": 250,
+  "details": "OK accepted but Message-ID header was absent on submission",
+  "ts": "2026-05-13T19:30:00Z"
+}

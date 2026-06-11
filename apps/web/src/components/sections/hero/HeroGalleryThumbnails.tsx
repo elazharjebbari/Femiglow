@@ -1,5 +1,6 @@
 'use client';
 
+import NextImage from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import type { HeroGalleryImage } from '@/lib/products/hero-gallery-types';
 
@@ -26,7 +27,7 @@ export function HeroGalleryThumbnails({
   return (
     <ul
       className={cn(
-        'flex max-h-[600px] flex-col gap-3 overflow-y-auto pr-1',
+        'flex max-h-[600px] flex-col gap-3 overflow-y-auto pe-1',
         '[scrollbar-width:thin] [&::-webkit-scrollbar]:w-1',
         '[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-encre/15',
         className,
@@ -52,14 +53,18 @@ export function HeroGalleryThumbnails({
                 'active:scale-[0.97]',
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {/* Vignette optimisée : Next/Image sert AVIF/WebP (négociation
+                  + srcset) à la taille vignette (~64–128px) au lieu du JPEG brut.
+                  cf. migration images 2026-06-01. */}
+              <NextImage
                 src={img.src}
                 alt=""
-                aria-hidden="true"
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 h-full w-full object-cover"
+                aria-hidden
+                fill
+                sizes="(min-width: 1024px) 128px, 80px"
+                placeholder={img.blurDataURL ? 'blur' : 'empty'}
+                blurDataURL={img.blurDataURL}
+                className="object-cover"
               />
             </button>
           </li>

@@ -44,6 +44,8 @@ import {
   nextPath,
   type StepPath,
 } from './step-handlers/step-path';
+import { sweepOrphanRuns } from './orphan-sweep';
+import { applyQuietHours, checkCooldown, checkDailyCap } from './frequency';
 import type { RulesGroup } from '@/lib/mail/audiences/rules-types';
 
 type AutomationContext = Record<string, unknown> & {
@@ -65,12 +67,21 @@ export type RunnerResult = {
   advanced: number;
   completed: number;
   errored: number;
+  /** Runs orphelins ré-armés par le sweep (chantier 1.4). */
+  orphansRearmed: number;
+  /** Runs orphelins non-reconstructibles passés en errored par le sweep. */
+  orphansErrored: number;
   durationMs: number;
 };
 
 export async function tickAutomation(now: Date = new Date()): Promise<RunnerResult> {
   const drizzle = requireDb();
   const startedAt = Date.now();
+
+  // ── Sweep des runs orphelins AVANT le claim (chantier 1.4) ───────────────
+  // Ré-arme les zombies running+next_action_at=NULL reconstructibles pour qu'ils
+  // soient re-claimés dans CE tick ; erreure les non-reconstructibles.
+  const orphan = await sweepOrphanRuns(now);
 
   const result = (await drizzle.execute(sql`
     UPDATE email_automation_run o
@@ -123,6 +134,8 @@ export async function tickAutomation(now: Date = new Date()): Promise<RunnerResu
     advanced,
     completed,
     errored,
+    orphansRearmed: orphan.rearmed,
+    orphansErrored: orphan.errored,
     durationMs: Date.now() - startedAt,
   };
 }
@@ -210,12 +223,82 @@ async function processRun(run: EmailAutomationRunRow, now: Date): Promise<boolea
     return false;
   };
 
+  /**
+   * DIFFÈRE le run SANS le faire avancer : on reste sur le step courant et on
+   * repousse `next_action_at`. Utilisé par les quiet hours — le step d'envoi
+   * sera ré-évalué (et envoyé) au prochain claim une fois la fenêtre rouverte.
+   *
+   * Idempotence : le path NE change PAS et `next_action_at` est posé à l'instant
+   * cible CALCULÉ (déterministe via applyQuietHours). Deux ticks pendant la nuit
+   * recalculent le même `start` local → même `next_action_at`, donc PAS de
+   * double-décalage (le différé ne « glisse » pas tick après tick).
+   */
+  const defer = async (until: Date, reason: string): Promise<boolean> => {
+    const newCtx = { ...ctx, _path: path, _deferredReason: reason, _deferredUntil: until.toISOString() } as Record<string, unknown>;
+    await drizzle
+      .update(emailAutomationRun)
+      .set({ status: 'running', nextActionAt: until, contextJson: newCtx })
+      .where(eq(emailAutomationRun.id, run.id));
+    return false;
+  };
+
+  /**
+   * SKIP un step d'envoi (cooldown / daily cap) : on N'ENVOIE PAS mais on AVANCE
+   * (le run n'est ni perdu ni bloqué). La raison est persistée dans contextJson
+   * (`_skippedReason` + `_skippedStep`) pour l'observabilité de la timeline.
+   */
+  const skipSend = async (reason: string): Promise<boolean> => {
+    logger.info('automation.send.skipped', {
+      runId: run.id,
+      slug: auto.slug,
+      step: pathToString(path),
+      reason,
+    });
+    ctx._skippedReason = reason;
+    ctx._skippedStep = pathToString(path);
+    return advance();
+  };
+
   // ── Dispatch by kind ───────────────────────────────────────────────────
   switch (step.kind) {
     case 'send': {
       if (!isKnownTemplate(step.template)) {
         throw new Error(`Template inconnu : ${step.template}`);
       }
+
+      // ── Contrôles de fréquence (chantier 1.8 — frequency.ts câblé) ───────
+      // Ordre : daily cap (automation entière) → cooldown (par destinataire) →
+      // quiet hours (différé). cap/cooldown SKIPPENT le send ; quiet hours le
+      // DIFFÈRE (rien n'est perdu).
+      const cap = await checkDailyCap(auto.id, auto.dailyCap, {
+        tz: auto.quietHoursTz,
+        now,
+      });
+      if (cap.blocked) {
+        return skipSend(`daily_cap_reached(${cap.todayCount}/${auto.dailyCap})`);
+      }
+
+      const cooldown = await checkCooldown(auto.id, run.recipientEmail, auto.cooldownSeconds, {
+        excludeRunId: run.id,
+        now,
+      });
+      if (cooldown.blocked) {
+        return skipSend(
+          `cooldown_active(last=${cooldown.lastRunAt?.toISOString() ?? '?'}, window=${auto.cooldownSeconds}s)`,
+        );
+      }
+
+      const sendAt = applyQuietHours(now, {
+        quietHoursEnabled: auto.quietHoursEnabled,
+        quietHoursStart: auto.quietHoursStart,
+        quietHoursEnd: auto.quietHoursEnd,
+        quietHoursTz: auto.quietHoursTz,
+      });
+      if (sendAt.getTime() > now.getTime()) {
+        // Hors fenêtre autorisée → différé au prochain `start` local, pas d'envoi.
+        return defer(sendAt, `quiet_hours(until=${sendAt.toISOString()})`);
+      }
+
       const payload: Record<string, unknown> = {};
       const keys = step.payloadKeys ?? [];
       for (const k of keys) payload[k] = ctx[k];

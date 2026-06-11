@@ -252,3 +252,41 @@ describe('orchestrator.streamReply — détection langue', () => {
     expect((start.data as { language: string }).language).toBe('ar');
   });
 });
+
+// ---------------------------------------------------------------------------
+// CHA-230 Phase 2 — flag-off byte-identique au pré-CHA-230
+// ---------------------------------------------------------------------------
+
+describe('orchestrator.streamReply — CHA-230 Phase 2 (flag off, comportement legacy)', () => {
+  // RÉCONCILIATION cha-230 ↔ master — SKIP volontaire.
+  // L'orchestrateur master ne persiste PAS `intentMethod`/`intentConfidence`
+  // sur la ligne message : il logge `intentSource` ('regex'|'vector') dans
+  // l'event `message_sent_user` et classe via `detectIntent` (regex) +
+  // `classifyByEmbedding` (vector), pas via `classifyIntent` (qui rendait
+  // 'negotiation'/confidence). Ce test verrouillait un détail interne de
+  // l'orchestrateur cha-230 désormais abandonné.
+  it.skip("persiste intentMethod='regex' quand CHAT_LLM_INTENT_ENABLED est off", async () => {
+    server.use(...openaiHappyPathHandlers);
+    const session = sessionStore.get('cs_test') as never;
+    // "rabais" matche fortement negotiation (strong score 2) → confidence='medium'.
+    await collect(streamReply({ session, text: 'rabais' }));
+    const user = [...messageStore.values()].find(
+      (m) => (m as { role: string }).role === 'user',
+    );
+    expect(user).toBeDefined();
+    // Avec le flag OFF (défaut env de test), method DOIT rester 'regex'.
+    expect((user as { intentMethod: string }).intentMethod).toBe('regex');
+    expect((user as { intentTag: string }).intentTag).toBe('negotiation');
+    expect((user as { intentConfidence: string }).intentConfidence).toBe(
+      'medium',
+    );
+  });
+
+  it("ne déclenche PAS d'event chat_provider_retry_or_fallback en happy path", async () => {
+    server.use(...openaiHappyPathHandlers);
+    const session = sessionStore.get('cs_test') as never;
+    await collect(streamReply({ session, text: 'Bonjour' }));
+    const types = events.map((e) => e.type);
+    expect(types).not.toContain('chat_provider_retry_or_fallback');
+  });
+});

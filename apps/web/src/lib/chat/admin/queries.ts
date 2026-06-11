@@ -15,17 +15,63 @@ import {
   chatConversationEvent,
   chatFaqEntry,
   chatFeedback,
+  chatGoldenIntentSet,
   chatKnowledgeSource,
   chatLead,
   chatMessage,
   chatProviderConfig,
   chatSession,
   chatThemePreset,
+  type ChatMessageRow,
   type ChatCannedPairRow,
   type ChatFaqEntryRow,
   type ChatLeadRow,
   type ChatSessionRow,
 } from '../db/schema';
+import {
+  ADMIN_CHAT_VISIBLE_KINDS,
+  ADMIN_CHAT_VISIBLE_LEAD_SOURCES,
+  type ChatSessionKind,
+} from '../db/kind';
+import { isChatAdminFiltersV2Enabled } from '../feature-flag';
+
+// ----------------------------------------------------------------------------
+// CHA-LEAD-V2 — Helpers pour filtres admin V2 (kind + source).
+// ----------------------------------------------------------------------------
+
+/**
+ * Construit la SQL condition pour filtrer `chat_session` par kind.
+ * Quand le feature flag est off, renvoie undefined (no-op).
+ */
+function buildKindFilter(kinds?: ReadonlyArray<ChatSessionKind>) {
+  if (!isChatAdminFiltersV2Enabled()) return undefined;
+  const allowed = kinds && kinds.length > 0 ? kinds : ADMIN_CHAT_VISIBLE_KINDS;
+  return inArray(chatSession.kind, [...allowed]);
+}
+
+/**
+ * Construit la SQL condition pour filtrer `chat_lead` par source.
+ * Quand le feature flag est off, renvoie undefined (no-op).
+ */
+function buildSourceFilter(sources?: ReadonlyArray<ChatLeadRow['source']>) {
+  if (!isChatAdminFiltersV2Enabled()) return undefined;
+  const allowed = sources && sources.length > 0 ? sources : ADMIN_CHAT_VISIBLE_LEAD_SOURCES;
+  return inArray(chatLead.source, [...allowed]);
+}
+
+/**
+ * Condition SQL : "la session a au moins un chat_message user/sent".
+ * Returns undefined quand le filtre est désactivé.
+ */
+function buildHasUserMessageFilter() {
+  if (!isChatAdminFiltersV2Enabled()) return undefined;
+  return sql`EXISTS (
+    SELECT 1 FROM ${chatMessage} m
+     WHERE m.session_id = ${chatSession.id}
+       AND m.role = 'user'
+       AND m.status = 'sent'
+  )`;
+}
 
 export type KpiWindow = 'today' | 'yesterday' | '7d' | '30d' | '90d' | 'all';
 
@@ -174,28 +220,37 @@ export const adminQueries = {
      *  - undefined : pas de filtre.
      */
     converted?: 'yes' | 'no';
+    /**
+     * CHA-LEAD-V2 — Filtre `kind` (default `['chat']` quand flag V2 ON).
+     * Override pour vues de debug ou pages d'audit dédiées.
+     */
+    kinds?: ReadonlyArray<ChatSessionKind>;
+    /**
+     * CHA-LEAD-V2 — Si true (default), exclut les sessions sans
+     * `chat_message` role='user' status='sent'. Désactivable via
+     * `?debug=ghosts`.
+     */
+    withMessagesOnly?: boolean;
     limit?: number;
   }) {
     const db = requireChatDb();
     const limit = opts.limit ?? 50;
+    const withMessagesOnly = opts.withMessagesOnly ?? true;
 
     // Pré-calcule l'ensemble des session ids "convertis" si nécessaire.
-    // On utilise un sous-set côté Node plutôt qu'un JOIN à chaque requête,
-    // pour ne pas dupliquer les lignes (un session peut avoir plusieurs
-    // chat_lead) et garder la requête principale lisible.
     let convertedIdsFilter: { ids: Set<string> } | null = null;
     if (opts.converted) {
       const ids = await this.convertedSessionIds({
         fromDate: opts.fromDate,
         toDate: opts.toDate,
+        kinds: opts.kinds,
       });
       convertedIdsFilter = { ids: new Set(ids) };
     }
 
     if (opts.q && opts.q.trim().length > 0) {
-      // Recherche full-text : trouve les sessions qui contiennent un
-      // message matching la query, retourne la session unique la plus
-      // récente.
+      // Recherche full-text. Le filtre kind est appliqué en post-Node faute
+      // de pouvoir l'injecter proprement dans la requête SQL ci-dessous.
       const rows = await db.execute<ChatSessionRow>(sql`
         SELECT s.*
           FROM chat_session s
@@ -207,7 +262,13 @@ export const adminQueries = {
          ORDER BY s.last_seen_at DESC
          LIMIT ${limit}
       `);
-      const list = rowsOf(rows);
+      let list = rowsOf(rows);
+      if (isChatAdminFiltersV2Enabled()) {
+        const allowedKinds = opts.kinds && opts.kinds.length > 0
+          ? new Set<ChatSessionKind>(opts.kinds)
+          : new Set<ChatSessionKind>(ADMIN_CHAT_VISIBLE_KINDS);
+        list = list.filter((s) => allowedKinds.has(s.kind as ChatSessionKind));
+      }
       if (!convertedIdsFilter) return list;
       return list.filter((s) =>
         opts.converted === 'yes'
@@ -217,6 +278,12 @@ export const adminQueries = {
     }
 
     const conds = [];
+    const kindCond = buildKindFilter(opts.kinds);
+    if (kindCond) conds.push(kindCond);
+    if (withMessagesOnly) {
+      const msgCond = buildHasUserMessageFilter();
+      if (msgCond) conds.push(msgCond);
+    }
     if (opts.language) conds.push(eq(chatSession.language, opts.language));
     if (opts.status) conds.push(eq(chatSession.status, opts.status));
     if (opts.fromDate) conds.push(gte(chatSession.openedAt, opts.fromDate));
@@ -245,9 +312,16 @@ export const adminQueries = {
    * marqué converted). Sert de filtre pour `listConversations` et de
    * marqueur visuel ("voyant") dans la table.
    */
-  async convertedSessionIds(opts: { fromDate?: Date; toDate?: Date } = {}): Promise<string[]> {
+  async convertedSessionIds(opts: {
+    fromDate?: Date;
+    toDate?: Date;
+    /** CHA-LEAD-V2 — Default ['chat']. */
+    kinds?: ReadonlyArray<ChatSessionKind>;
+  } = {}): Promise<string[]> {
     const db = requireChatDb();
     const conds: ReturnType<typeof eq>[] = [isNotNull(chatSession.convertedAt)];
+    const kindCond = buildKindFilter(opts.kinds);
+    if (kindCond) conds.push(kindCond);
     if (opts.fromDate) conds.push(gte(chatSession.openedAt, opts.fromDate));
     if (opts.toDate) conds.push(lte(chatSession.openedAt, opts.toDate));
     const sessionRows = await db
@@ -255,7 +329,11 @@ export const adminQueries = {
       .from(chatSession)
       .where(and(...conds));
 
+    // CHA-LEAD-V2 — Lead-based conversions filtrées par source (sinon un
+    // wizard_kit converted polluerait ici).
     const leadConds: ReturnType<typeof eq>[] = [eq(chatLead.outcome, 'converted')];
+    const leadSourceCond = buildSourceFilter();
+    if (leadSourceCond) leadConds.push(leadSourceCond);
     if (opts.fromDate) leadConds.push(gte(chatLead.createdAt, opts.fromDate));
     if (opts.toDate) leadConds.push(lte(chatLead.createdAt, opts.toDate));
     const leadRows = await db
@@ -280,10 +358,17 @@ export const adminQueries = {
     triggerReason?: ChatLeadRow['triggerReason'];
     fromDate?: Date;
     toDate?: Date;
+    /**
+     * CHA-LEAD-V2 — Filtre `source` (default `['chat_widget', 'inline']`
+     * quand flag V2 ON). Override possible (ex. `/admin/leads` veut tout).
+     */
+    sources?: ReadonlyArray<ChatLeadRow['source']>;
     limit?: number;
   } = {}): Promise<ChatLeadRow[]> {
     const db = requireChatDb();
     const conds: ReturnType<typeof eq>[] = [];
+    const sourceCond = buildSourceFilter(opts.sources);
+    if (sourceCond) conds.push(sourceCond);
     if (opts.outcome) conds.push(eq(chatLead.outcome, opts.outcome));
     if (opts.triggerReason) conds.push(eq(chatLead.triggerReason, opts.triggerReason));
     if (opts.fromDate) conds.push(gte(chatLead.createdAt, opts.fromDate));
@@ -325,6 +410,228 @@ export const adminQueries = {
       .from(chatConversationEvent)
       .orderBy(desc(chatConversationEvent.occurredAt))
       .limit(limit);
+  },
+
+  // -------------------------------------------------------------------------
+  // CHA-230 Phase 3 — curator / quality dashboard
+  // -------------------------------------------------------------------------
+
+  /**
+   * Liste paginée des messages user récents avec leur intent classifié,
+   * pour la page `/admin/chat/intent-curator`.
+   *
+   * Filtres optionnels : intent, langue, méthode (regex/llm), date min.
+   * Par défaut : derniers 7 j, role=user, limit 100, ordre desc.
+   */
+  async listMessagesForCurator(
+    opts: {
+      intent?: string;
+      language?: string;
+      method?: 'regex' | 'llm' | 'llm-fixed' | 'golden' | 'manual';
+      since?: Date;
+      limit?: number;
+    } = {},
+  ): Promise<ChatMessageRow[]> {
+    const db = requireChatDb();
+    const start = opts.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const conds = [
+      eq(chatMessage.role, 'user'),
+      gte(chatMessage.createdAt, start),
+      isNotNull(chatMessage.intentTag),
+    ];
+    if (opts.intent) conds.push(eq(chatMessage.intentTag, opts.intent));
+    if (opts.language) conds.push(eq(chatMessage.language, opts.language));
+    if (opts.method) conds.push(eq(chatMessage.intentMethod, opts.method));
+
+    return db
+      .select()
+      .from(chatMessage)
+      .where(and(...conds))
+      .orderBy(desc(chatMessage.createdAt))
+      .limit(opts.limit ?? 100);
+  },
+
+  /**
+   * Aggrégats pour le quality dashboard. Retourne, pour la fenêtre
+   * donnée, le nombre de messages user par intent_tag, par méthode,
+   * et la part golden-tagué.
+   */
+  async qualityKpis(window: KpiWindow = '7d') {
+    const db = requireChatDb();
+    const start = windowStart(window);
+
+    // Distribution par intent.
+    const byIntent = await db
+      .select({
+        intent: chatMessage.intentTag,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentTag),
+        ),
+      )
+      .groupBy(chatMessage.intentTag)
+      .orderBy(desc(sql`COUNT(*)`));
+
+    // Distribution par méthode (regex vs llm vs llm-fixed).
+    const byMethod = await db
+      .select({
+        method: chatMessage.intentMethod,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentMethod),
+        ),
+      )
+      .groupBy(chatMessage.intentMethod);
+
+    // Distribution par confiance.
+    const byConfidence = await db
+      .select({
+        confidence: chatMessage.intentConfidence,
+        n: sql<number>`COUNT(*)::int`,
+      })
+      .from(chatMessage)
+      .where(
+        and(
+          eq(chatMessage.role, 'user'),
+          gte(chatMessage.createdAt, start),
+          isNotNull(chatMessage.intentConfidence),
+        ),
+      )
+      .groupBy(chatMessage.intentConfidence);
+
+    // Total golden-set (cumulé, indépendant de la fenêtre).
+    const [goldenTotal] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatGoldenIntentSet);
+
+    return {
+      byIntent: byIntent.map((r) => ({ intent: r.intent ?? '∅', count: r.n })),
+      byMethod: byMethod.map((r) => ({ method: r.method ?? '∅', count: r.n })),
+      byConfidence: byConfidence.map((r) => ({
+        confidence: r.confidence ?? '∅',
+        count: r.n,
+      })),
+      goldenTotal: goldenTotal?.n ?? 0,
+    };
+  },
+
+  // -------------------------------------------------------------------------
+  // CHA-231 Phase 6 — Lead funnel & resilience (quality dashboard widget)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Aggrégats du funnel lead-form sur la fenêtre choisie. Retourne :
+   *   - offered  : nombre d'offres `chat_lead_form_offered` poussées au client.
+   *   - submitted: nombre de leads créés via `chat_lead_form_submit` (capture
+   *                explicite avec consent RGPD).
+   *   - autoCreated : nombre de leads `chat_lead_auto_created` (filet
+   *                inline-contact — phone détecté en clair sans formulaire).
+   *   - dismissed: nombre d'offres rejetées par l'utilisateur.
+   *   - byReason : ventilation des offres par `payload->>'reason'`.
+   *   - retryFallbackCount : compte des bascules retry/fallback provider.
+   *
+   * Utilisé par `/admin/chat/quality` (widget « Lead funnel & résilience »).
+   *
+   * Implémentation : on lit `chat_conversation_event` (append-only KPI) et
+   * pas `chat_lead` direct — pour rester homogène avec les autres KPIs et
+   * pour pouvoir filtrer sur la fenêtre temps via `occurred_at`.
+   */
+  async leadFunnelKpis(window: KpiWindow = '7d') {
+    const db = requireChatDb();
+    const start = windowStart(window);
+
+    // Total des offres + ventilation par raison (purchase-intent / negotiation
+    // / wholesaler / etc). On récupère en un seul scan.
+    const byReasonRows = await db.execute<{ reason: string; n: number }>(sql`
+      SELECT
+        COALESCE(payload->>'reason', 'unknown') AS reason,
+        COUNT(*)::int AS n
+        FROM chat_conversation_event
+       WHERE type = 'chat_lead_form_offered'
+         AND occurred_at >= ${start.toISOString()}::timestamptz
+       GROUP BY reason
+       ORDER BY n DESC
+    `);
+    const byReason = (
+      (byReasonRows as { rows?: Array<{ reason: string; n: number }> }).rows ??
+      []
+    ).map((r) => ({ reason: r.reason, count: Number(r.n) }));
+    const offered = byReason.reduce((sum, r) => sum + r.count, 0);
+
+    // Capture (RGPD) — submission explicite du formulaire.
+    const [submitted] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_form_submit'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Capture filet de sécurité — phone détecté inline.
+    const [autoCreated] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_auto_created'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Dismissals (utilisateur a fermé l'offre sans soumettre).
+    const [dismissed] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_lead_form_dismiss'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Retry/fallback provider (CHA-230 Phase 2 — si streaming a dû basculer).
+    const [retryFallback] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.type, 'chat_provider_retry_or_fallback'),
+          gte(chatConversationEvent.occurredAt, start),
+        ),
+      );
+
+    // Taux de capture = (submit + auto-created) / offered. Saturé à 100 %
+    // pour rester lisible (si auto > offered, signe que le filet inline
+    // joue à plein avant que l'utilisateur n'ait vu d'offre).
+    const captures =
+      (submitted?.n ?? 0) + (autoCreated?.n ?? 0);
+    const captureRate =
+      offered > 0
+        ? Math.min(100, Math.round((captures / offered) * 1000) / 10)
+        : 0;
+
+    return {
+      offered,
+      submitted: submitted?.n ?? 0,
+      autoCreated: autoCreated?.n ?? 0,
+      dismissed: dismissed?.n ?? 0,
+      captureRate,
+      byReason,
+      retryFallbackCount: retryFallback?.n ?? 0,
+    };
   },
 
   /**
@@ -438,18 +745,26 @@ export const adminQueries = {
    * directement dans `/admin/chat/leads` ou `/admin/chat/conversations`
    * pour filtrer / paginer.
    */
-  async careOverview(opts: { limit?: number } = {}): Promise<{
+  async careOverview(opts: {
+    limit?: number;
+    /** CHA-LEAD-V2 — Default ['chat_widget', 'inline']. */
+    sources?: ReadonlyArray<ChatLeadRow['source']>;
+  } = {}): Promise<{
     pendingLeads: ChatLeadRow[];
     frustrationEvents: Array<{ sessionId: string; occurredAt: Date }>;
   }> {
     const db = requireChatDb();
     const limit = opts.limit ?? 200;
     const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const sourceCond = buildSourceFilter(opts.sources);
+
+    const pendingConds: ReturnType<typeof eq>[] = [eq(chatLead.outcome, 'pending')];
+    if (sourceCond) pendingConds.push(sourceCond);
 
     const pendingLeads = await db
       .select()
       .from(chatLead)
-      .where(eq(chatLead.outcome, 'pending'))
+      .where(and(...pendingConds))
       .orderBy(desc(chatLead.createdAt))
       .limit(limit);
 

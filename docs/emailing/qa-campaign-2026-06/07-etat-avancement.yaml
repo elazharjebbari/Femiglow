@@ -1,0 +1,60 @@
+# État d'avancement — campagne QA emailing (runbook R1)
+# Statuts : todo | in_progress | done | blocked
+campagne: qa-emailing-2026-06
+demarree_le: "2026-06-04"
+environnement:
+  worktree: /var/www/femiglow-email-tests
+  branche: feat/email-test-campaign
+  db_dev: femiglow_emailqa            # clone prod 2026-06-04 (baseline /root/femiglow-emailqa-baseline-20260604.dump)
+  db_harnais: femiglow_test           # construite par scripts/_migrate-safe.mjs (83 migrations)
+  port: 8013
+  note_drift: >-
+    Constat 2026-06-04 : femiglow_test (migrations) a lead_tag.id uuid DEFAULT
+    gen_random_uuid(), identique à la prod. Le drift est dans schema.ts (text +
+    createId('tag')), PAS dans la DB. Fix 1.1 = aligner Drizzle/code sur uuid.
+phases:
+  p0-fondations:
+    statut: done               # 2026-06-04 — gates : tsc 0 err ; unit 420 / composant 136 / intégration 57 verts
+    etapes:
+      db-test: done            # femiglow_test migrée + clones par chantier
+      factories: done          # emails.factory.ts (13 factories satisfies $inferInsert) + smoke 26
+      msw-handlers: done       # emails-handlers.ts (23 routes, grille emailsFailWith) + smoke 27
+      fixtures: done           # 20 fixtures (12 stalwart + 8 listmonk) + READMEs provenance
+      smtp-test: done          # Mailpit docker (femiglow-mailpit, 1025/8025) + e2e/_helpers/mailpit.ts
+      scripts-npm: done        # test:emails:{unit,component,integration,e2e,all} (integration sérialisé .env.test)
+      canaris: done            # canari DB 3 verts ; skip honnête sans env (describeEmailsDb)
+  p1-stabilisation:
+    statut: done               # 2026-06-04 — doctrine rouge→fix→vert respectée sur les 8 bugs
+    bugs:
+      lead-tag: done           # schema.ts text→uuid + route checkout + tag.ts (régression croisée) ; PCL-INT-001..004 + AUT-INT-030..032
+      webhook-stalwart: done   # volet code : checks webhookSilent/cronOutboxLate/sendingStuck (HLT-INT 15) ; RECONFIG INFRA PROD EN ATTENTE + R-021 (parser enveloppe plate vs batch natif)
+      reaper-sending: done     # reapStuckSending (seuil 10 min, UPDATE atomique pending/dlq)
+      sweep-runs: done         # orphan-sweep.ts (zombies running/nextActionAt NULL)
+      bulk-erreurs: done       # res.ok systématique, sélection conservée, anti double-clic ; CKP-MSW 18
+      render-ordre: done       # INSERT pending avant render ; échec → failed + lastError
+      triggers: done           # event-dispatcher.ts générique (event/subscription, idempotence dedupeKey event:<id>)
+      frequency: done          # quiet hours/cooldown/daily cap câblés branche send, tz Africa/Casablanca
+  p2-unit:
+    statut: done               # 2026-06-04 vague 2 — 9 chantiers parallèles, ~430 nouveaux tests, batterie unit 749 verts
+  p3-composant-msw:
+    statut: done               # 2026-06-04 — batterie composant 287 verts (cockpit __qa__ 60, wizard, audiences, templates, dashboard)
+    modules: { cockpit: done, automations: done, audiences: done, campagnes: done, templates: done, dashboard: done }
+  p4-integration:
+    statut: done               # 2026-06-04 — 27 suites vraie-DB sérialisées, 332 verts (script glob test-emails-integration.sh)
+  p5-contract:
+    statut: done               # 2026-06-04 — R-021 corrigé (batch natif) ; 20 fixtures rejouées avec oracle métier par fixture (M07-CT-*)
+  p6-e2e:
+    statut: done               # 2026-06-05 vague 3 — 5 specs Playwright (dashboard, cockpit, transactionnel→Mailpit avec oracle List-Unsubscribe ?t=, désinscription one-click, dégradé Listmonk-down), 14 tests, 3 RUNS CONSÉCUTIFS verts (~13s), serveur :8013 sur femiglow_test_e2e ; 3 races d'isolation inter-specs corrigées (cleanup par préfixe, anti-contamination cron via scheduled_for=2999). Clôture : 2 specs adaptées à l'UI vague 4 (COCK-02 oracle data-status du StatusBadge FR ; UNSUB-* flux R-032 non destructif + UNSUB-05 réabonnement) + fix route (POST navigateur → page HTML, JSON one-click RFC 8058 préservé) ; re-validé 3 RUNS CONSÉCUTIFS 14/14 sur le build final
+  p7-scenarios:
+    statut: done               # 2026-06-05 — 16 tests cross-modules vraie-DB (femiglow_test_scenarios), 2 runs verts ; 3 findings métier → R-026/R-027 + garde-fou delete automation (vague 4)
+    scenarios:
+      S1: done                 # checklist manuelle e2e/emails-s1-campagne.checklist.md (Listmonk volontairement mort en local ; chaque maillon référencé vers sa suite d'intégration)
+      S2: done                 # bounce hard : sent→bounced_permanent→suppression→re-send bloqué→réactivation SQL (seule voie → R-026)
+      S3: done                 # panier : dispatcher→quiet hours différé déterministe→envoi→idempotence ; variante achat → R-027
+      S4: done                 # crash/concurrence : reaper, S4-01 rejoué 3× anti-flake
+      S5: done                 # cockpit sous pression 5000 lignes (spec e2e emails-cockpit, bulk-retry, pagination)
+  p8-durcissement:
+    statut: done               # 2026-06-05 — couverture src/lib/mail ciblée (schemas 0→100, context-resolver 0→100, queries 41→100, resume 0→87.65 ; runner 79.4 résiduel cosmétique) ; CI .github/workflows/emails-qa.yml (unit+composant puis intégration pg16+_migrate-safe) ; 2 runs strictement identiques (unit 767, composant 317, intégration 362), 0 flake ; 2 bugs prod découverts dans le code gelé → R-028 (critique, cron automation) / R-029, corrigés par l'orchestrateur rouge→vert
+  v4-ux:
+    statut: done               # 2026-06-05 — 7 chantiers done (audit 110 findings/21 P0 → tous les P0 livrés) : FONDATION (EntityCombobox a11y + StatusBadge FR + Breadcrumb + useUrlFilters + loading/error segment + 3 routes suggestions, 52 tests ×2) ; PARCOURS_PUBLIC (R-032 GET unsubscribe non destructif + réabonnement, opt-in contact réel, 503 newsletter honnête, CTA /merci réel, 104 tests ×2) ; DASHBOARD (KPI cliquables → cockpit filtré, badge santé actionnable + deliveredFreshness/cronHeartbeat rendus, fraîcheur+refresh) ; COCKPIT (R-026 suppression réversible bout-en-bout, fix régression F-016 vues système, palette template:/to:/source: branchée socle) ; CAMPAGNES (test-send, pause/reprise/annulation garde isLegalTransition, fix persistance template payload_json, confirmation chiffrée, duplication) ; AUDIENCES (édition [id]/edit, between, urlPattern/until/since, MAD→cents, snapshot confirmé+retry+membres paginés, country multi-select) ; AUTOMATIONS (R-027 cancel-on-event sur achat + flip S3-05, triggerConditions éditables sans perte, schedule/webhook désamorcés, retry run errored, onTimeout abort honoré, timeline runs, comboboxes partout)
+    chantiers: { fondation: done, parcours_public: done, dashboard: done, cockpit: done, campagnes: done, audiences: done, automations: done }

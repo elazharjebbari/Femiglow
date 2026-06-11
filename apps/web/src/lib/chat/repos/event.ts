@@ -49,6 +49,31 @@ export const eventRepo = {
     return res[0]?.n ?? 0;
   },
 
+  /**
+   * CHA-231 v7 — Existe-t-il déjà un event de ce type pour la session ?
+   *
+   * Cas d'usage canonique : décider si l'utilisateur a déjà soumis le
+   * formulaire de capture (event `chat_lead_form_submit`). On distingue
+   * ainsi un lead « auto-créé » (inline-contact, pas de submit explicite)
+   * d'un lead « confirmé » (avec submit explicite).
+   *
+   * cf. orchestrator safety-net `llmPromisedForm`.
+   */
+  async hasEventOfType(sessionId: string, type: EventType): Promise<boolean> {
+    const db = requireChatDb();
+    const rows = await db
+      .select({ id: chatConversationEvent.id })
+      .from(chatConversationEvent)
+      .where(
+        and(
+          eq(chatConversationEvent.sessionId, sessionId),
+          eq(chatConversationEvent.type, type),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  },
+
   async hasLeadOfferForSession(sessionId: string): Promise<boolean> {
     const db = requireChatDb();
     const rows = await db

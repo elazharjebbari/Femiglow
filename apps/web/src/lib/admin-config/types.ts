@@ -33,7 +33,8 @@ export type RbacResource =
   | 'users'
   | 'app-config'
   | 'legal'
-  | 'content-studio';
+  | 'content-studio'
+  | 'coupons';
 
 export type RbacMatrix = Record<string, Record<RbacResource, RbacAction[]>>;
 

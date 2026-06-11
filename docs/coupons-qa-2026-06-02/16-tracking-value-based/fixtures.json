@@ -1,0 +1,56 @@
+{
+  "$comment": "CPN-16 tracking value-based — fixtures. value = unité majeure (MAD), = prix effectif payé. Coupon actif -> 199, jamais 289 (barré) ni 19900 (centimes). La bascule promo->coupon ne change pas la value (non-régression G-TRACKING-VALUE).",
+  "currency": "MAD",
+  "basePriceCents": 28900,
+  "effectiveWithCouponCents": 19900,
+  "expectedValues": {
+    "couponActiveTreatment": 199,
+    "holdoutFullPrice": 289,
+    "allDisabled": 289,
+    "qty2Purchase": 398
+  },
+  "antiPatterns": {
+    "$comment": "valeurs INTERDITES quand le coupon ramène à 199",
+    "forbiddenValues": [289, 19900, 28900, 39800]
+  },
+  "eventMatrix": [
+    {
+      "context": "coupon actif, treatment, qty 1",
+      "events": [
+        { "name": "view_item", "value": 199, "currency": "MAD" },
+        { "name": "add_to_cart", "value": 199, "currency": "MAD" },
+        { "name": "begin_checkout", "value": 199, "currency": "MAD" },
+        { "name": "generate_lead", "value": 199, "currency": "MAD" },
+        { "name": "purchase", "value": 199, "currency": "MAD" }
+      ]
+    },
+    {
+      "context": "coupon actif, treatment, qty 2",
+      "events": [
+        { "name": "purchase", "value": 398, "currency": "MAD" }
+      ]
+    },
+    {
+      "context": "visiteur holdout (prix plein)",
+      "events": [
+        { "name": "view_item", "value": 289, "currency": "MAD" },
+        { "name": "purchase", "value": 289, "currency": "MAD" }
+      ]
+    },
+    {
+      "context": "tout désactivé",
+      "events": [
+        { "name": "view_item", "value": 289, "currency": "MAD" },
+        { "name": "generate_lead", "value": 289, "currency": "MAD" }
+      ]
+    }
+  ],
+  "invarianceSource": [
+    { "id": "INV-STATIC", "label": "promo statique 19900", "promoSource": "static", "promoPriceCents": 19900, "expectedValue": 199 },
+    { "id": "INV-COUPON", "label": "coupon welcome_auto -9000", "promoSource": "coupon", "effectivePriceCents": 19900, "expectedValue": 199 }
+  ],
+  "localeInvariance": [
+    { "locale": "fr", "displaySuffix": "MAD", "trackedValue": 199 },
+    { "locale": "ar", "displaySuffix": "درهم", "trackedValue": 199 }
+  ]
+}

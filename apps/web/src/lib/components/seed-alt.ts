@@ -16,7 +16,7 @@ export const SEED_ALT_BY_PATH: Record<string, string> = {
 
   /* rituel */
   'rituel/hero-lifestyle.png': 'Scène lifestyle d’un rituel du soir, texture lin et bois.',
-  'rituel/portrait-salma.png': 'Portrait éditorial de Souheila, fondatrice et formulatrice, regard de côté, lumière naturelle.',
+  'rituel/portrait-salma.png': 'Portrait éditorial de notre fondatrice, fondatrice et formulatrice, regard de côté, lumière naturelle.',
   'rituel/origine-sepia.png': 'Image sépia évoquant l’origine — atelier vintage.',
   'rituel/poster-video.png': 'Poster de la vidéo des 4 gestes — main appliquant l’huile.',
   'rituel/og-rituel.png': 'Page Rituel — visuel social.',

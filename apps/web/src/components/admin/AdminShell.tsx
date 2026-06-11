@@ -11,18 +11,17 @@ interface AdminShellProps {
     | 'tracking'
     | 'analytics'
     | 'components'
+    | 'i18n'
     | 'settings'
     | 'audit'
     | 'seo'
     | 'products'
+    | 'coupons'
     | 'content-studio'
     | 'chat'
     | 'rituals'
     | 'legal'
-    | 'emails'
-    | 'kit-video'
-    | 'kit-composition'
-    | 'kit-pack';
+    | 'emails';
   children: ReactNode;
 }
 
@@ -32,10 +31,8 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/rituals/queue', key: 'rituals', label: 'Rituels partagés' },
   { href: '/admin/media', key: 'media', label: 'Médias' },
   { href: '/admin/components', key: 'components', label: 'Composants' },
+  { href: '/admin/i18n', key: 'i18n', label: 'Traductions / i18n' },
   { href: '/admin/seo', key: 'seo', label: 'SEO' },
-  { href: '/admin/kit/video', key: 'kit-video', label: 'Vidéo /kit' },
-  { href: '/admin/kit/composition', key: 'kit-composition', label: 'Composition /kit' },
-  { href: '/admin/kit/pack', key: 'kit-pack', label: 'Pack /kit' },
   { href: '/admin/legal', key: 'legal', label: 'Pages légales' },
   { href: '/admin/products', key: 'products', label: 'Produits' },
   { href: '/admin/content-studio', key: 'content-studio', label: 'Studio contenu' },
@@ -44,6 +41,7 @@ const NAV: Array<{ href: string; key: AdminShellProps['active']; label: string }
   { href: '/admin/webhooks', key: 'webhooks', label: 'Webhooks' },
   { href: '/admin/tracking', key: 'tracking', label: 'Tracking' },
   { href: '/admin/analytics', key: 'analytics', label: 'Analytics' },
+  { href: '/admin/coupons', key: 'coupons', label: 'Coupons' },
   { href: '/admin/audit', key: 'audit', label: 'Audit' },
   { href: '/admin/settings', key: 'settings', label: 'Réglages' },
 ];
@@ -66,6 +64,7 @@ export function AdminShell({ adminEmail, active, children }: AdminShellProps) {
                 <li key={item.key}>
                   <Link
                     href={item.href}
+                    data-testid={`admin-nav-${item.key}`}
                     className={`block rounded-md px-3 py-2 text-sm transition ${
                       isActive
                         ? 'bg-stone-900 text-white'

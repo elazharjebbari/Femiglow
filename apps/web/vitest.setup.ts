@@ -2,6 +2,8 @@ import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+import { clearAnalyticsCache } from './src/lib/analytics/cache';
+
 // jsdom n'implémente pas ResizeObserver — utilisé par cmdk (CommandPalette M5.1).
 if (typeof globalThis.ResizeObserver === 'undefined') {
   class MockResizeObserver {
@@ -52,12 +54,25 @@ afterEach(() => {
   // rejection qui fait sortir le process en EXIT 1 malgré « tests passed ».
   vi.clearAllTimers();
   vi.useRealTimers();
+  clearAnalyticsCache(); // évite la pollution inter-tests (cache long-window par défaut)
 });
 
 vi.mock('next/font/google', () => ({
   Cormorant_Garamond: () => ({ variable: '--font-cormorant', className: '' }),
   Inter: () => ({ variable: '--font-inter', className: '' }),
   Pinyon_Script: () => ({ variable: '--font-pinyon', className: '' }),
+  Cairo: () => ({ variable: '--font-cairo', className: '' }),
+}));
+
+// `next/font/local` n'a pas de transform SWC hors build Next → on le stubbe.
+// Le nom de variable est dérivé de l'option `variable` passée à l'appel pour
+// que les composants (ex. EditorialLetter) puissent scoper `var(--font-…)`.
+vi.mock('next/font/local', () => ({
+  default: (opts?: { variable?: string }) => ({
+    variable: opts?.variable ?? '--font-local',
+    className: '',
+    style: { fontFamily: 'mock-local-font' },
+  }),
 }));
 
 // Mock minimal de `useRouter` pour les tests RTL : sans contexte App Router

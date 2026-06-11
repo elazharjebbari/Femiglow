@@ -10,8 +10,37 @@
 
 import { useChatStore } from './chat-store';
 
+// Phase 9bis — libellés du header localisés selon la langue du store
+// (alignée sur la locale de la page par ChatPanel). `FemiGlow` reste latin.
+const HEADER_STRINGS_FR = {
+  title: 'Assistante FemiGlow',
+  status: 'En ligne · répond en quelques secondes',
+  closeAria: 'Fermer le chat',
+  close: 'Fermer',
+};
+const HEADER_STRINGS: Record<
+  string,
+  { title: string; status: string; closeAria: string; close: string }
+> = {
+  fr: HEADER_STRINGS_FR,
+  ar: {
+    title: 'مساعِدة FemiGlow',
+    status: 'متصلة · تجيب في ثوانٍ',
+    closeAria: 'إغلاق المحادثة',
+    close: 'إغلاق',
+  },
+  'ar-MA': {
+    title: 'مساعِدة FemiGlow',
+    status: 'متصلة · كتجاوب فثواني',
+    closeAria: 'سدّ المحادثة',
+    close: 'سدّ',
+  },
+};
+
 export function ChatHeader() {
   const close = useChatStore((s) => s.close);
+  const language = useChatStore((s) => s.language);
+  const t = HEADER_STRINGS[language] ?? HEADER_STRINGS_FR;
   return (
     <header className="flex items-center justify-between border-b border-stone-200 bg-white px-3 py-2">
       <div className="flex items-center gap-2">
@@ -22,14 +51,14 @@ export function ChatHeader() {
           <span className="text-xs font-medium">FG</span>
         </div>
         <div>
-          <p className="text-base font-medium text-stone-900">Assistante FemiGlow</p>
-          <p className="text-xs text-stone-500">En ligne · répond en quelques secondes</p>
+          <p className="text-base font-medium text-stone-900">{t.title}</p>
+          <p className="text-xs text-stone-500">{t.status}</p>
         </div>
       </div>
       <button
         type="button"
         onClick={close}
-        aria-label="Fermer le chat"
+        aria-label={t.closeAria}
         data-testid="chat-close"
         // 44×44 = cible tactile WCAG 2.5.5 AAA. Label texte
         // « Fermer » visible (et non plus seulement aria-label) pour
@@ -52,7 +81,7 @@ export function ChatHeader() {
             strokeLinejoin="round"
           />
         </svg>
-        <span>Fermer</span>
+        <span>{t.close}</span>
       </button>
     </header>
   );

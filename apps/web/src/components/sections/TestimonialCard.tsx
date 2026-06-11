@@ -11,9 +11,18 @@ interface TestimonialCardProps {
    * testable en vitest.
    */
   mediaSlot?: ReactNode;
+  /**
+   * Libellé « Initiée depuis {date} » déjà localisé + formaté. Si absent,
+   * fallback FR « Initiée depuis {date} ». Phase 9bis.
+   */
+  initieeLabel?: string;
 }
 
-export function TestimonialCard({ testimonial, mediaSlot }: TestimonialCardProps) {
+export function TestimonialCard({
+  testimonial,
+  mediaSlot,
+  initieeLabel,
+}: TestimonialCardProps) {
   const { authorFirstName, authorContext, quote, handImage, initieeDepuis } = testimonial;
   return (
     <figure className="flex flex-col items-center gap-6 text-center">
@@ -45,7 +54,7 @@ export function TestimonialCard({ testimonial, mediaSlot }: TestimonialCardProps
         </Text>
         {initieeDepuis && (
           <Text size="small" tone="tertiary" italic family="display">
-            Initiée depuis {initieeDepuis}
+            {initieeLabel ?? `Initiée depuis ${initieeDepuis}`}
           </Text>
         )}
       </figcaption>

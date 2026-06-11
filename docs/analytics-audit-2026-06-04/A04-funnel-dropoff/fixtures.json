@@ -1,0 +1,32 @@
+{
+  "_note": "Reutilise le dataset prod-like de A03 (memoryStore). Le drop-off est DERIVE de stepCounts : il suffit de seeder les memes events sans engage pour reproduire l'artefact 100%. funnel.ts L219-220 : dropoffToNext = next!==null && cur>0 ? 1-next/cur : null.",
+  "now": "2026-05-06T12:00:00Z",
+  "range": { "from": "2026-05-06T11:00:00Z", "to": "2026-05-06T12:00:00Z" },
+  "sessions": {
+    "A_converti": [
+      { "id": "a1", "sessionId": "A", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:05:00Z" },
+      { "id": "a2", "sessionId": "A", "eventName": "begin_checkout", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:10:00Z" },
+      { "id": "a3", "sessionId": "A", "eventName": "purchase", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:15:00Z", "payload": { "value": 320 } }
+    ],
+    "B_panier": [
+      { "id": "b1", "sessionId": "B", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:06:00Z" },
+      { "id": "b2", "sessionId": "B", "eventName": "add_to_cart", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:08:00Z" }
+    ],
+    "C_lead": [
+      { "id": "c1", "sessionId": "C", "eventName": "view_item", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:07:00Z" },
+      { "id": "c2", "sessionId": "C", "eventName": "generate_lead", "pageRoute": "/kit", "receivedAt": "2026-05-06T11:09:00Z" }
+    ]
+  },
+  "expectedCurrent_buggy": {
+    "stepCounts": { "view": 3, "engage": 0, "cta": 0, "checkout": 0, "purchase": 0 },
+    "dropoffToNext": { "view": 1.0, "engage": null, "cta": null, "checkout": null, "purchase": null },
+    "operatorReads": "100% puis — — — (incomprehensible)",
+    "cause": "engage=0 => view.dropoff=1-0/3=1.0 (artefact) ; etapes suivantes cur=0 => null ; purchase next=null => null"
+  },
+  "expectedAfterFix_spec": {
+    "noArtefact100": "aucun dropoffToNext===1.0 la ou des conversions existent en aval",
+    "bornes": "tout dropoff non-null dans [0,1]",
+    "monotone": "next <= cur a chaque etape (apres modele corrige A03)",
+    "nonInstrumente": "etape aval reellement non emise => dropoff null (ou flag non-mesure), pas 1.0"
+  }
+}

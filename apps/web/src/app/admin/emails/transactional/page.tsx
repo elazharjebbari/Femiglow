@@ -21,10 +21,17 @@ export default async function TransactionalCockpitPage() {
   // Fetch initial des saved views (system + owned). Le composant client
   // fait le re-fetch après chaque CRUD.
   const views = await listViewsForAdmin(session.email, 'transactional');
+  // UX-COCKPIT-002 (régression F-016) : on PROPAGE filterState — sans lui, cliquer
+  // une vue (y compris système, ex. « Échecs du jour ») au premier chargement ne
+  // faisait que surligner sans filtrer (filterStateToQuery('') → parseFilters('')
+  // → aucun filtre). `filterState` est sérialisable (JSON) donc passable RSC→client.
   const initialViews = views.map((v) => ({
     id: v.id,
     name: v.name,
     isSystem: v.isSystem,
+    filterState: (v.filterState ?? undefined) as
+      | { filters?: Record<string, unknown>; sort?: string; cols?: string[] }
+      | undefined,
   }));
 
   return (

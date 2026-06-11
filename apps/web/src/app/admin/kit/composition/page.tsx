@@ -16,8 +16,14 @@ export default async function AdminKitCompositionListPage(): Promise<JSX.Element
   const items = resolveKitCompositionDraft();
 
   return (
-    <AdminShell adminEmail={session.email} active="kit-composition">
+    <AdminShell adminEmail={session.email} active="components">
       <header className="mb-6">
+        <Link
+          href="/admin/components?group=kit"
+          className="mb-2 inline-block text-xs text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline"
+        >
+          ← Composants /kit
+        </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
           Composition `/kit`
         </h1>

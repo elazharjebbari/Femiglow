@@ -25,6 +25,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { PriceBlock } from '@/components/sections/PriceBlock';
+import { RescueOffer } from '@/components/sections/RescueOffer';
 import { PackVisualBound } from '@/components/sections/PackVisualBound';
 import { StepsTimeline } from '@/components/sections/StepsTimeline';
 import { cn } from '@/lib/utils/cn';
@@ -41,12 +42,28 @@ interface ProductFeedSectionProps {
   product: Product;
   /** Slug d'ancre pour le test E2E (default `product-feed`). */
   anchorId?: string;
+  /** Phase 9bis — libellé localisé du badge « Résultat » (step `isResult`). */
+  resultLabel?: string;
+  /**
+   * Libellé localisé du compteur d'avis (ex. « 287 avis » / « 287 تقييم »).
+   * Défaut FR « {count} avis » si absent — préserve le rendu legacy. Les
+   * chiffres restent latins (cohérence de marque).
+   */
+  reviewsCountLabel?: string;
+  /** Coupon d'accueil résolu serveur (CPN-14), propagé à `<PriceBlock/>`. */
+  welcomeCoupon?: { active: boolean; endsAt: string | null };
+  /** Locale arabe → RTL pour l'offre de sauvetage (Phase 2). */
+  isArabic?: boolean;
 }
 
 export function ProductFeedSection({
   feed,
   product,
   anchorId = 'product-feed',
+  resultLabel,
+  reviewsCountLabel,
+  welcomeCoupon,
+  isArabic = false,
 }: ProductFeedSectionProps) {
   return (
     <section
@@ -62,7 +79,7 @@ export function ProductFeedSection({
         {/*             col droite (PackVisual centré verticalement)   */}
         <div className="grid grid-cols-1 gap-12 md:grid-cols-[1.05fr_0.95fr] md:items-center md:gap-16">
           {/* Colonne gauche — texte + prix */}
-          <div className="space-y-5 text-center md:text-left">
+          <div className="space-y-5 text-center md:text-start">
             <Kicker tone="champagne">{feed.hero.kicker}</Kicker>
             <Heading id="product-feed-title" as="h2" size="display-md">
               {feed.hero.title}
@@ -76,7 +93,8 @@ export function ProductFeedSection({
                 CTA primaire + microcopy + social proof condensé.
                 IO émet pack_section_view + pack_economy_view +
                 pack_social_proof_view. */}
-            <PriceBlock feed={feed} product={product} hasVisual />
+            <PriceBlock feed={feed} product={product} hasVisual welcomeCoupon={welcomeCoupon} />
+            <RescueOffer isArabic={isArabic} />
           </div>
 
           {/* Colonne droite — packshot piloté par le Components-CMS
@@ -94,6 +112,7 @@ export function ProductFeedSection({
           steps={feed.steps}
           header={feed.stepsHeader}
           postCta={feed.stepsPostCta}
+          resultLabel={resultLabel}
         />
 
         {/* 3 — Promesses (3 claims) ------------------------------------- */}
@@ -120,7 +139,7 @@ export function ProductFeedSection({
             </span>
             <span className="text-encre/50">·</span>
             <span className="text-encre/70 tabular-nums">
-              {feed.socialProof.reviewsCount} avis
+              {reviewsCountLabel ?? `${feed.socialProof.reviewsCount} avis`}
             </span>
           </div>
           <blockquote className="mt-4">
@@ -140,7 +159,7 @@ export function ProductFeedSection({
 /** Item promesse : icône SVG + libellé + détail. */
 function FeedClaimItem({ claim }: { claim: ProductFeedClaim }) {
   return (
-    <li className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
+    <li className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-start">
       <span
         className={cn(
           'inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full',

@@ -1,0 +1,38 @@
+@startuml F04-grants-load-and-lifecycle
+title F04 — Chargement de la section grants + cycle de vie d'un code (vu UI)
+
+' --- Sequence : geste « Charger » cote operateur ---
+state "grants === null\n(bouton « Charger »,\ntableau masque)" as Null
+state "grants chargés\n(bouton « Rafraîchir »,\ntableau visible)" as Loaded
+state "echec silencieux\n(tableau absent,\nbouton « Charger »)" as Failed
+
+[*] --> Null : montage
+
+Null --> Loaded : clic « Charger »\nGET /grants 200 => setGrants(items)
+Null --> Failed : clic « Charger »\n403/500/network (pas de setGrants)
+Failed --> Loaded : nouveau clic « Charger »\nGET 200
+Loaded --> Loaded : clic « Rafraîchir »\nGET 200 => remplace
+
+note right of Loaded
+  Telephone affiche TEL QUEL = deja masque serveur
+  (ex. 0612…78). Jamais demasque, jamais 6 chiffres
+  consecutifs (INV-PII).
+  Valeur = valueCents/100 MAD. Dates fr-MA ou « — ».
+end note
+
+' --- Cycle de vie metier d'un grant (statut affiche brut) ---
+state "issued" as issued
+state "active" as active
+state "redeemed" as redeemed
+state "expired" as expired
+
+issued --> active : activatesAt atteint\n(INV-ACTIVATION)
+active --> redeemed : code utilise
+active --> expired : expiresAt depasse\n(INV-VALIDITY)
+issued --> expired : jamais active puis expire
+
+note bottom of redeemed
+  Le statut est affiche brut dans la colonne Statut
+  (pas de STATUS_LABEL pour les grants).
+end note
+@enduml

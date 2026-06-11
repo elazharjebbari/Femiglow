@@ -1,0 +1,45 @@
+{
+  "coupons": {
+    "draft": [
+      { "id": "cpn_1", "label": "Geste d'accueil", "code": null, "type": "welcome_auto", "mode": "auto", "status": "draft", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 0, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ],
+    "active": [
+      { "id": "cpn_2", "label": "Promo active", "code": null, "type": "welcome_auto", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 12, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ],
+    "paused": [
+      { "id": "cpn_3", "label": "Promo en pause", "code": null, "type": "welcome_auto", "mode": "auto", "status": "paused", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 4, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ],
+    "archived": [
+      { "id": "cpn_4", "label": "Promo archivee", "code": null, "type": "welcome_auto", "mode": "auto", "status": "archived", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 30, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ],
+    "all": [
+      { "id": "cpn_1", "label": "Brouillon", "code": null, "type": "welcome_auto", "mode": "auto", "status": "draft", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 0, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" },
+      { "id": "cpn_2", "label": "Actif", "code": null, "type": "welcome_auto", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 12, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" },
+      { "id": "cpn_3", "label": "En pause", "code": null, "type": "welcome_auto", "mode": "auto", "status": "paused", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 4, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" },
+      { "id": "cpn_4", "label": "Archive", "code": null, "type": "welcome_auto", "mode": "auto", "status": "archived", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 30, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ]
+  },
+  "transition": {
+    "activate": { "id": "cpn_1", "targetStatus": "active", "expectedLabel": "Actif", "expectedBody": { "status": "active" } },
+    "pause": { "id": "cpn_2", "targetStatus": "paused", "expectedLabel": "En pause", "expectedBody": { "status": "paused" } },
+    "archive": { "id": "cpn_2", "targetStatus": "archived", "expectedLabel": "Archivé", "expectedBody": { "status": "archived" } },
+    "latency": { "id": "cpn_1", "latencyMs": 50 }
+  },
+  "fail": {
+    "403": { "fail": { "transition": 403 }, "expectedAlert": "Transition refusée (HTTP 403)." },
+    "409": { "fail": { "transition": 409 }, "expectedAlert": "Transition refusée (HTTP 409)." },
+    "422": { "fail": { "transition": 422 }, "expectedAlert": "Transition refusée (HTTP 422)." },
+    "500": { "fail": { "transition": 500 }, "expectedAlert": "Transition refusée (HTTP 500)." },
+    "network": { "fail": { "transition": "network" }, "expectedAlert": "Erreur réseau." }
+  },
+  "actionsMatrix": {
+    "draft": ["Activer", "Archiver", "Stats"],
+    "active": ["Pauser", "Archiver", "Stats"],
+    "paused": ["Activer", "Archiver", "Stats"],
+    "archived": ["Stats"]
+  },
+  "sessions": {
+    "admin": { "role": "admin", "perms": ["read", "write", "publish", "delete"] },
+    "viewer": { "role": "viewer", "perms": ["read"] }
+  }
+}

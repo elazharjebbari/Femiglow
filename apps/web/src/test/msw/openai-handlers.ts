@@ -243,3 +243,146 @@ export const openaiImageRateLimitHandler = http.post(
       { status: 429, headers: { 'retry-after': '60' } },
     ),
 );
+
+// ---------------------------------------------------------------------------
+// Tool-call handlers (CHA-230 Phase 2 — classify-intent.runnable.ts)
+//
+// Renvoie une réponse non-stream `chat.completion` avec un `tool_calls[0]`
+// dont les `arguments` sont une string JSON. Différent du happy path
+// streaming au-dessus parce que le runnable d'intent ne fait pas de stream.
+// ---------------------------------------------------------------------------
+
+/**
+ * Crée un handler qui simule un tool-call OpenAI réussi, avec les `arguments`
+ * fournis. Si `args` est un string, on le passe tel quel (utile pour tester
+ * un JSON malformé). Sinon on `JSON.stringify` automatiquement.
+ *
+ * Si `argsByCall` est un tableau, le N-ème appel renvoie `argsByCall[N-1]`,
+ * permettant de simuler un 1er essai cassé puis un 2e essai correct
+ * (`OutputFixingParser` retry).
+ */
+export function openaiToolCallHandler(
+  argsByCall: Array<unknown | string>,
+  opts?: { toolName?: string; functionName?: string },
+): ReturnType<typeof http.post> {
+  const toolName = opts?.toolName ?? 'classify_intent';
+  let callIdx = 0;
+  return http.post('https://api.openai.com/v1/chat/completions', async () => {
+    const idx = Math.min(callIdx, argsByCall.length - 1);
+    callIdx += 1;
+    const raw = argsByCall[idx];
+    const argsString = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    return HttpResponse.json({
+      id: 'chatcmpl-msw-tool',
+      object: 'chat.completion',
+      created: Math.floor(Date.now() / 1000),
+      model: 'gpt-4o-mini',
+      choices: [
+        {
+          index: 0,
+          finish_reason: 'tool_calls',
+          message: {
+            role: 'assistant',
+            content: null,
+            tool_calls: [
+              {
+                id: `call_${idx}`,
+                type: 'function',
+                function: {
+                  name: toolName,
+                  arguments: argsString,
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usage: { prompt_tokens: 80, completion_tokens: 25, total_tokens: 105 },
+    });
+  });
+}
+
+/**
+ * Variante : la réponse n'a aucun `tool_calls` — modèle qui désobéit. Le
+ * runnable doit fallback regex.
+ */
+export const openaiNoToolCallHandler = http.post(
+  'https://api.openai.com/v1/chat/completions',
+  () =>
+    HttpResponse.json({
+      id: 'chatcmpl-msw-notool',
+      object: 'chat.completion',
+      created: Math.floor(Date.now() / 1000),
+      model: 'gpt-4o-mini',
+      choices: [
+        {
+          index: 0,
+          finish_reason: 'stop',
+          message: {
+            role: 'assistant',
+            content: 'I refuse to use the tool.',
+          },
+        },
+      ],
+      usage: { prompt_tokens: 80, completion_tokens: 8 },
+    }),
+);
+
+/**
+ * Capture du body et compteur d'appels, pour les tests qui vérifient le
+ * `OutputFixingParser`-retry (1 appel vs 2 appels) et la structure du
+ * tool_choice. Renvoie le 1er résultat invalide, le 2e résultat valide.
+ */
+export function captureToolCallBodies(args: {
+  firstArgs: unknown | string;
+  secondArgs: unknown | string;
+}): {
+  handler: ReturnType<typeof http.post>;
+  getCallCount: () => number;
+  getBodies: () => Array<unknown>;
+} {
+  const bodies: Array<unknown> = [];
+  let callIdx = 0;
+  const handler = http.post(
+    'https://api.openai.com/v1/chat/completions',
+    async ({ request }: { request: StrictRequest<DefaultBodyType> }) => {
+      bodies.push(await request.clone().json());
+      const which = callIdx === 0 ? args.firstArgs : args.secondArgs;
+      callIdx += 1;
+      const argsString =
+        typeof which === 'string' ? which : JSON.stringify(which);
+      return HttpResponse.json({
+        id: `chatcmpl-msw-${callIdx}`,
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: 'gpt-4o-mini',
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'tool_calls',
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [
+                {
+                  id: `call_${callIdx}`,
+                  type: 'function',
+                  function: {
+                    name: 'classify_intent',
+                    arguments: argsString,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 80, completion_tokens: 25 },
+      });
+    },
+  );
+  return {
+    handler,
+    getCallCount: () => callIdx,
+    getBodies: () => bodies,
+  };
+}

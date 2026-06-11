@@ -1,0 +1,17 @@
+{
+  "event": "delivery.failed",
+  "queueId": "307098634944523264",
+  "messageId": "<7e336113-577f-adfe-4ae2-d1e8774f9585@femiglow-maroc.com>",
+  "queueName": "remote",
+  "from": "bonjour@femiglow-maroc.com",
+  "rcpt": "user2@exemple.test",
+  "to": ["user2@exemple.test"],
+  "size": 1346,
+  "total": 1,
+  "hostname": "mx1.exemple.test",
+  "errorCode": 550,
+  "code": 550,
+  "reason": "5.1.1 The email account that you tried to reach does not exist",
+  "details": "550 5.1.1 <user2@exemple.test>: Recipient address rejected: User unknown",
+  "ts": "2026-05-13T15:02:11Z"
+}

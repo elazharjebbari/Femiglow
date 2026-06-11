@@ -22,7 +22,7 @@ describe('StepsConnector', () => {
     const mobile = screen.getByTestId('steps-connector-mobile');
     expect(mobile.className).toContain('sm:hidden');
     expect(mobile.className).toContain('bg-encre/10');
-    expect(mobile.className).toContain('left-6');
+    expect(mobile.className).toContain('start-6');
   });
 
   it('les deux spans sont aria-hidden par défaut', () => {

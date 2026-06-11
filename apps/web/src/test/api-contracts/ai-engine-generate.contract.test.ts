@@ -158,7 +158,6 @@ describe('POST /api/admin/ai-engine/generate — contract tests', () => {
 
   it('returns 400 when platform is missing', async () => {
     const payload = validPayload();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (payload as any).platform;
 
     const res = await POST(makeRequest(payload));
@@ -171,7 +170,6 @@ describe('POST /api/admin/ai-engine/generate — contract tests', () => {
 
   it('returns 400 when briefInput.keyMessage is missing', async () => {
     const payload = validPayload();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (payload as any).briefInput.keyMessage;
 
     const res = await POST(makeRequest(payload));

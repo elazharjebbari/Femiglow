@@ -77,11 +77,16 @@ describe('<KpiHeader />', () => {
     expect(onRefresh).toHaveBeenCalled();
   });
 
-  it('renders sparkline SVGs', () => {
+  it('renders sparkline SVGs (3 métriques avec série ; pas la file)', () => {
     render(<KpiHeader data={buildSummary()} />);
     const svgs = document.querySelectorAll('svg');
-    // 4 cards × 1 sparkline each
-    expect(svgs.length).toBeGreaterThanOrEqual(4);
+    // F-015 corrigé : seules les cartes Délivrés / Échecs / Hard bounces ont une
+    // sparkline (séries delivered/failed du DTO). La carte « En file » n'en a
+    // PAS — le DTO summary n'expose aucune série queued, donc afficher la courbe
+    // delivered ici serait trompeur (bug d'audit).
+    expect(svgs.length).toBe(3);
+    // La carte « En file » ne contient aucune sparkline.
+    expect(screen.getByTestId('kpi-queued').querySelector('svg')).toBeNull();
   });
 
   it('handles missing comparison gracefully', () => {

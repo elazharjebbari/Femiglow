@@ -40,6 +40,67 @@ function requireDb() {
   return drizzle;
 }
 
+/**
+ * Seuil au-delà duquel un snapshot resté `running` est considéré zombie
+ * (process crashé entre le INSERT…SELECT et le UPDATE status='done'). Aligné
+ * sur le pattern `reapStuckSending` de l'outbox. 30 min : très au-dessus de la
+ * durée d'un snapshot légitime (quelques secondes, borné par statement_timeout),
+ * mais assez court pour qu'un re-snapshot post-crash ne reste pas bloqué.
+ */
+const SNAPSHOT_STUCK_THRESHOLD_MS = 30 * 60_000;
+
+const SNAPSHOT_REAP_REASON =
+  "reaped: snapshot bloqué en 'running' (process probablement crashé entre la " +
+  'matérialisation des membres et la finalisation)';
+
+/**
+ * R-012 — Requalifie en `errored` les snapshots restés `running` au-delà du
+ * seuil (zombies). Libère aussi leur `snapshot_key` (→ NULL) pour qu'un
+ * nouveau snapshot puisse réutiliser la même clé d'idempotence sans heurter
+ * la contrainte unique `(audience_id, snapshot_key)`.
+ *
+ * Atomique (un seul UPDATE). Renvoie le nombre de zombies requalifiés.
+ *
+ * @param audienceId si fourni, ne reape que les snapshots de cette audience
+ *                   (chemin appelé depuis `snapshotAudience`). Sinon, balaye
+ *                   toute la table (chemin cron/maintenance).
+ */
+export async function reapStuckSnapshots(
+  now: Date = new Date(),
+  audienceId?: string,
+): Promise<number> {
+  const drizzle = requireDb();
+  const cutoffMs = now.getTime() - SNAPSHOT_STUCK_THRESHOLD_MS;
+  const cutoffSeconds = cutoffMs / 1000;
+
+  const audienceFilter = audienceId
+    ? sql`AND audience_id = ${audienceId}`
+    : sql``;
+
+  const result = (await drizzle.execute(sql`
+    UPDATE email_audience_snapshot
+    SET
+      status = 'errored',
+      errored_at = now(),
+      errored_reason = ${SNAPSHOT_REAP_REASON},
+      snapshot_key = NULL
+    WHERE status = 'running'
+      AND created_at <= to_timestamp(${cutoffSeconds})
+      ${audienceFilter}
+    RETURNING id
+  `)) as unknown as { rows?: { id: string }[] } | { id: string }[];
+
+  const rows = Array.isArray(result) ? result : (result.rows ?? []);
+  if (rows.length > 0) {
+    logger.warn('audience.snapshot.reaped_zombie', {
+      count: rows.length,
+      audienceId: audienceId ?? null,
+      thresholdMs: SNAPSHOT_STUCK_THRESHOLD_MS,
+    });
+  }
+  return rows.length;
+}
+
 export type SnapshotOpts = {
   /** Clé d'idempotency. Si fournie, ré-utilisée si snapshot existe déjà. */
   snapshotKey?: string;
@@ -94,7 +155,16 @@ export async function snapshotAudience(
   }
 
   // ── 2. Idempotency : si snapshotKey + déjà existant → return ─────
+  //
+  // R-012 — AVANT de consulter l'existant, on requalifie les zombies
+  // (snapshots restés `running` après un crash) : leur status passe à
+  // `errored` ET leur snapshot_key est libéré. Ainsi l'idempotence ne peut
+  // PLUS renvoyer un zombie inutilisable, et la clé redevient disponible pour
+  // le nouveau snapshot. On ne renvoie un existant QUE s'il est exploitable
+  // (`done`) ou légitimement en cours (`running` récent, non-zombie).
   if (opts.snapshotKey) {
+    await reapStuckSnapshots(new Date(), audienceId);
+
     const existing = await drizzle
       .select()
       .from(emailAudienceSnapshot)
@@ -106,7 +176,9 @@ export async function snapshotAudience(
       )
       .limit(1);
     const existingSnapshot = existing[0];
-    if (existingSnapshot) {
+    if (existingSnapshot && existingSnapshot.status !== 'errored') {
+      // `done` → liste figée réutilisable ; `running` récent → snapshot en
+      // vol légitime (le reaper l'aurait sinon requalifié). `pending` idem.
       return {
         snapshotId: existingSnapshot.id,
         audienceId,
@@ -114,6 +186,9 @@ export async function snapshotAudience(
         status: existingSnapshot.status,
       };
     }
+    // Sinon (aucun existant, ou existant `errored` après reap du zombie) :
+    // on retombe sur la création d'un nouveau snapshot ci-dessous. La clé est
+    // libre car le reaper a mis snapshot_key=NULL sur le zombie requalifié.
   }
 
   // ── 3. Validation Zod des règles stockées ────────────────────────

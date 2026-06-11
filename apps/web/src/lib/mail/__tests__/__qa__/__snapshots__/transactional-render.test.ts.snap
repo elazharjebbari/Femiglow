@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderTemplate transactionnel — 6 templates React > TPL-TRX-001 : order-confirmation rend html + texte + sujet (sujet porte orderId) 1`] = `"Ta commande FG-20260513-001 est confirmée ✨"`;

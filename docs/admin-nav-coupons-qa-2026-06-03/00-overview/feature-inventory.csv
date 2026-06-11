@@ -1,0 +1,12 @@
+id,feature,surface,couche_dominante,risque,invariants,cibles_code,statut
+N01,AdminShell inventaire et ordre des onglets,admin,Composant,P0,NAV-INV-PRESENCE;NAV-INV-ROUTE,components/admin/AdminShell.tsx,fait
+N02,AdminShell onglet actif (aria-current+style),admin,Composant,P0,NAV-INV-ACTIVE,components/admin/AdminShell.tsx,fait
+N03,Integration onglet Coupons (page RSC active=coupons),admin,Composant/Integration,P0,NAV-INV-PRESENCE;NAV-INV-ACTIVE,app/admin/coupons/page.tsx;AdminShell.tsx,fait
+N04,AdminShell a11y + responsive + deconnexion,admin,Composant+A11y,P1,NAV-INV-A11Y,components/admin/AdminShell.tsx,fait
+N05,admin-config defaults vs navSchema,config,Unit,P1,NAV-INV-CONFIG,lib/admin-config/defaults.ts;schemas.ts,fait
+N06,resolve.ts cascade DB/defaults/failsafe,config,Integration,P1,NAV-INV-FAILSAFE,lib/admin-config/resolve.ts,fait
+N07,NavEditor edition locale,admin,Composant,P0,NAV-INV-CONFIG,components/admin/settings/NavEditor.tsx,fait
+N08,NavEditor sauvegarde reseau (MSW),admin,Composant+MSW,P0,NAV-INV-LOCK;NAV-INV-PERSIST,components/admin/settings/NavEditor.tsx,fait
+N09,Contrat API PATCH settings/nav,admin,Integration,P0,NAV-INV-LOCK;NAV-INV-PERSIST,app/api/admin/settings/[section]/route.ts,fait
+N10,E2E parcours operateur onglet Coupons,admin,Playwright,P0,NAV-INV-PRESENCE;NAV-INV-ACTIVE;NAV-INV-ROUTE,e2e/admin-nav-coupons.spec.ts,fait
+N11,E2E NavEditor visibilite/edition,admin,Playwright,P2,NAV-INV-CONFIG,e2e/admin-nav-editor.spec.ts,fait

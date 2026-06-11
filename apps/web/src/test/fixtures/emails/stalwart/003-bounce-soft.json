@@ -1,0 +1,18 @@
+{
+  "event": "delivery.failed",
+  "queueId": "306837009064793600",
+  "messageId": "<cda2b16a-2049-1deb-c5ce-d354bb9d7fd2@femiglow-maroc.com>",
+  "queueName": "remote",
+  "from": "bonjour@femiglow-maroc.com",
+  "rcpt": "user3@exemple.test",
+  "to": ["user3@exemple.test"],
+  "size": 5599,
+  "total": 1,
+  "hostname": "mx1.exemple.test",
+  "errorCode": 451,
+  "code": 451,
+  "reason": "4.7.1 Greylisted, please try again later",
+  "details": "451 4.7.1 Recipient address rejected: temporary greylisting in effect",
+  "nextRetry": "2026-05-12T13:23:08Z",
+  "ts": "2026-05-12T13:08:08Z"
+}

@@ -6,6 +6,9 @@ import { isEventSupported } from './event-mapping';
 import { getMappedName, isMetaCustomEvent } from './get-mapped-name';
 import { fetchWithRetry } from './retry';
 import type { DispatchContext, ProviderAdapter } from './types';
+// Sprint 4 A2 — Batching async via Redis buffer (cf. capi-flush cron).
+import { LIVE_CAPI_BATCHING } from '@/lib/feature-flags/live-systems';
+import { pushToBatch } from '@/lib/tracking/server/capi-buffer';
 
 const GRAPH_API_VERSION = 'v19.0';
 const PURCHASE_EVENT_NAMES = new Set(['purchase', 'purchase_server']);
@@ -102,6 +105,25 @@ export const metaAdapter: ProviderAdapter = {
       ...(provider.testEventCode ? { test_event_code: provider.testEventCode } : {}),
     };
     const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${provider.pixelId}/events?access_token=${encodeURIComponent(accessToken)}`;
+
+    // Sprint 4 A2 — Si batching activé, push dans Redis buffer au lieu
+    // de fetch direct. Le cron `/api/cron/tracking/capi-flush` envoie le
+    // batch toutes les minutes. Réduit la latence ingest /api/track P95
+    // de ~500ms à <100ms et améliore le match rate Meta (timing optimisé).
+    // Référence : docs/live-systems-fix-2026-05/08-system-tracking.md
+    if (LIVE_CAPI_BATCHING === 'on') {
+      const buffered = await pushToBatch('meta', { url, body: payload });
+      if (buffered) {
+        return {
+          status: 'sent', // sent = buffered for async dispatch
+          httpStatus: 202, // Accepted
+          attempts: 0,
+          latencyMs: Date.now() - startedAt,
+        };
+      }
+      // Si push Redis fail (Redis down) → fallback dispatch direct
+    }
+
     const result = await fetchWithRetry(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

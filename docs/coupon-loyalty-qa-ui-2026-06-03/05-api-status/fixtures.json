@@ -1,0 +1,47 @@
+{
+  "coupons": [
+    {
+      "id": "cpn_welcome",
+      "label": "Geste d’accueil",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "draft",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "target": "product_price",
+      "currency": "MAD"
+    },
+    {
+      "id": "cpn_old",
+      "label": "Promo saison passée",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "archived",
+      "valueKind": "fixed_amount",
+      "valueAmount": 5000,
+      "target": "product_price",
+      "currency": "MAD"
+    }
+  ],
+  "bodies": {
+    "toActive": { "status": "active" },
+    "toPaused": { "status": "paused" },
+    "toArchived": { "status": "archived" },
+    "invalidEnum": { "status": "on" },
+    "missingStatus": {},
+    "malformed": "<not-json>"
+  },
+  "sessions": {
+    "admin": { "adminId": "adm_1", "email": "op@femiglow.local", "role": "admin" },
+    "viewer": { "adminId": "adm_2", "email": "viewer@femiglow.local", "role": "viewer" },
+    "none": null
+  },
+  "expectedErrors": {
+    "unauthorized": { "status": 401, "code": "unauthorized" },
+    "forbidden": { "status": 403, "code": "forbidden" },
+    "notFound": { "status": 404, "code": "not_found" },
+    "conflict": { "status": 409, "code": "conflict" },
+    "validation": { "status": 422, "code": "validation_failed" },
+    "invalidInput": { "status": 400, "code": "invalid_input" }
+  }
+}

@@ -1,0 +1,68 @@
+@startuml CPN-06-price-display-public
+title CPN-06 — Flux de résolution du prix public (/kit)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+participant "Page /kit\n([locale]/kit/page.tsx)" as Page
+participant "buildKitPublicProduct\n(public.ts)" as Build
+participant "getKitProductCached\n(unstable_cache)" as Cache
+participant "DB Drizzle / memoryStore" as DB
+participant "resolveProductPricing\n(moteur coupon CPN-04)" as Resolve
+participant "computePromo\n(garde + framing)" as Promo
+participant "mockKit\n(éditorial)" as Mock
+participant "PriceBlock / PriceDisplay" as UI
+participant "Tracking view_item\n+ getKitLeadValue" as Track
+
+Page -> Build : buildKitPublicProduct()
+activate Build
+Build -> Cache : getKitProductCached()
+activate Cache
+Cache -> DB : getProductBySlug('le-kit')
+DB --> Cache : { product, variants } | null
+Cache --> Build : data | null
+deactivate Cache
+
+alt data == null OU status != 'published'
+  Build -> Mock : fallback intégral
+  Mock --> Build : mockKit (prix éditorial)
+  note right of Build
+    Résilience : pas de throw,
+    page toujours servie
+  end note
+else produit publié
+  Build -> Resolve : résoudre prix effectif coupon-aware
+  activate Resolve
+  Resolve --> Build : effectivePriceCents (19900 si treatment)
+  deactivate Resolve
+  Build -> Build : basePrice = 28900\nrawPromo = effectif\npromo = (rawPromo>0 && rawPromo<base) ? rawPromo : null
+  note right of Build
+    Garde promo>=prix / 0 / négatif -> null
+    Devise hors enum -> mockKit.currency
+  end note
+end
+Build --> Page : PublicProduct { priceCents=28900, promoPriceCents=19900|null, currency }
+deactivate Build
+
+== Affichage ==
+Page -> UI : product
+UI -> Promo : computePromo(28900, 19900)
+activate Promo
+Promo --> UI : { active:true, effective:19900, original:28900, savings:9000, savingsPct:31, framing:'amount' }
+deactivate Promo
+note over UI #DDEFD8
+  fr : 199 MAD | 289 MAD barré | « Économisez 90 MAD »
+  ar : 199 درهم | 289 درهم | RTL
+  Pas de rouge / countdown / emoji
+end note
+
+== Tracking value-based (G-TRACKING-VALUE) ==
+Page -> Track : view_item value = effectivePriceCents/100 = 199
+Track -> Build : getKitLeadValue()
+Build --> Track : { value: 199, currency: 'MAD' }
+note over Track #DDEFD8
+  value = 199 (PAS 289)
+  unité majeure (MAD), server-authoritative
+end note
+
+@enduml

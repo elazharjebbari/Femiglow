@@ -43,6 +43,7 @@ describe('POST /api/cron/email-outbox', () => {
       succeeded: 4,
       failed: 1,
       dlq: 0,
+      reaped: 0,
       durationMs: 123,
     });
     const res = await POST(makeReq({ authorization: `Bearer ${CRON_SECRET}` }));

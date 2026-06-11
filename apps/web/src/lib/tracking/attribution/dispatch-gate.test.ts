@@ -187,7 +187,9 @@ describe('decideAttribution — stratégie broadcast', () => {
 });
 
 describe('shouldDispatchByAttribution — intégration repository + settings', () => {
-  it('Meta + visiteur Meta + purchase → allowed', async () => {
+  // NB : depuis C3 (audit 2026-05-31) Meta `purchase` est BROADCAST. Les tests
+  // de GATING Meta utilisent donc `generate_lead` (Meta `Lead`, resté primary).
+  it('Meta + visiteur Meta + generate_lead → allowed (match)', async () => {
     await upsertAttribution({
       visitorId: 'v_meta',
       touch: touch({ channel: 'meta', is_paid: true, click_id: 'fb1', click_id_field: 'fbclid' }),
@@ -195,13 +197,13 @@ describe('shouldDispatchByAttribution — intégration repository + settings', (
     const r = await shouldDispatchByAttribution({
       visitorId: 'v_meta',
       providerKind: 'meta',
-      eventName: 'purchase',
+      eventName: 'generate_lead',
     });
     expect(r.allowed).toBe(true);
     expect(r.attributedChannel).toBe('meta');
   });
 
-  it('Meta + visiteur Google Ads + purchase → SKIP (le cas critique de la phase 2)', async () => {
+  it('Meta + visiteur Google Ads + generate_lead → SKIP (le cas critique de la phase 2)', async () => {
     await upsertAttribution({
       visitorId: 'v_ads',
       touch: touch({
@@ -214,10 +216,24 @@ describe('shouldDispatchByAttribution — intégration repository + settings', (
     const r = await shouldDispatchByAttribution({
       visitorId: 'v_ads',
       providerKind: 'meta',
-      eventName: 'purchase',
+      eventName: 'generate_lead',
     });
     expect(r.allowed).toBe(false);
     expect(r.attributedChannel).toBe('google_ads');
+  });
+
+  it('Meta + visiteur Google Ads + purchase → ALLOWED (C3 : Meta purchase broadcast)', async () => {
+    await upsertAttribution({
+      visitorId: 'v_ads_pur',
+      touch: touch({ channel: 'google_ads', is_paid: true, click_id: 'g_pur', click_id_field: 'gclid' }),
+    });
+    const r = await shouldDispatchByAttribution({
+      visitorId: 'v_ads_pur',
+      providerKind: 'meta',
+      eventName: 'purchase',
+    });
+    expect(r.allowed).toBe(true);
+    expect(r.reason).toBe('non_primary_event');
   });
 
   it('Meta + visiteur Google Ads + page_view → allowed (audience)', async () => {
@@ -256,7 +272,9 @@ describe('shouldDispatchByAttribution — intégration repository + settings', (
     const r = await shouldDispatchByAttribution({
       visitorId: 'v_ghost',
       providerKind: 'meta',
-      eventName: 'purchase',
+      // generate_lead = primary pour Meta → atteint la branche no-snapshot
+      // (purchase serait broadcast et n'exercerait pas ce chemin).
+      eventName: 'generate_lead',
     });
     expect(r.allowed).toBe(true);
     expect(r.reason).toBe('no_snapshot_broadcast');
@@ -292,7 +310,7 @@ describe('shouldDispatchByAttribution — intégration repository + settings', (
     const r = await shouldDispatchByAttribution({
       visitorId: 'v_first',
       providerKind: 'meta',
-      eventName: 'purchase',
+      eventName: 'generate_lead', // primary pour Meta (purchase = broadcast depuis C3)
     });
     expect(r.allowed).toBe(true);
     expect(r.attributedChannel).toBe('meta');
@@ -303,7 +321,7 @@ describe('shouldDispatchByAttribution — intégration repository + settings', (
         await shouldDispatchByAttribution({
           visitorId: 'v_first',
           providerKind: 'google_ads',
-          eventName: 'purchase',
+          eventName: 'generate_lead',
         })
       ).allowed,
     ).toBe(false);
@@ -374,7 +392,11 @@ describe('shouldDispatchByAttribution — matrice complète providers × canaux'
           providerKind: provider,
           eventName: 'purchase',
         });
-        if (provider === visitorChannel) {
+        if (provider === 'meta') {
+          // C3 — Meta `purchase` est BROADCAST : Meta reçoit TOUS les purchases,
+          // quel que soit le canal du visiteur (dedup par event_id).
+          expect(r.allowed, `${visitorChannel} → meta (broadcast)`).toBe(true);
+        } else if (provider === visitorChannel) {
           expect(r.allowed, `${visitorChannel} → ${provider}`).toBe(true);
         } else {
           expect(r.allowed, `${visitorChannel} → ${provider}`).toBe(false);

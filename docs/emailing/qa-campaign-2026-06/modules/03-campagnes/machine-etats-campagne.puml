@@ -1,0 +1,48 @@
+@startuml machine-etats-campagne
+title Machine d'états — Campagne FemiGlow (état cible)
+
+[*] --> draft : createCampaignDraft
+
+state draft {
+  draft : - éditable via wizard
+  draft : - subject/audience/contenu requis avant finalize
+}
+
+draft --> scheduled : finalizeCampaign(sendNow=false)\n[scheduledFor futur]\nListmonk updateStatus(scheduled)
+draft --> sending   : finalizeCampaign(sendNow=true)\nListmonk updateStatus(running)\nstartedAt := now()
+draft --> cancelled : discardCampaign
+
+scheduled --> sending : cron/poll : Listmonk running
+scheduled --> cancelled : discardCampaign / Listmonk cancelled
+
+sending --> sent : cron/poll : Listmonk finished\nfinishedAt := now()
+sending --> cancelled : Listmonk cancelled
+
+sent --> [*]
+cancelled --> [*]
+
+note right of sending
+  Métriques (sent/open/click/bounce) mises à jour
+  par le poll TANT QUE candidate :
+  status in (sending,scheduled)
+  OU (sent AND finishedAt > now()-24h)
+  --> au-delà de H+24 : métriques FIGÉES (écart A-CMP-3)
+end note
+
+note bottom of sent
+  TRANSITIONS ILLÉGALES (à rejeter — écart A-CMP-5) :
+  - sent      -/-> sending   (poll/webhook rejoué)
+  - sent      -/-> scheduled
+  - cancelled -/-> sending
+  - cancelled -/-> sent
+  États sent et cancelled = TERMINAUX.
+end note
+
+note bottom of draft
+  ATOMICITÉ (écart A-CMP-1/A-CMP-2) :
+  create Listmonk -> updateStatus -> UPDATE DB
+  doit être atomique + réentrant.
+  Garde anti-rejeu : finalize refuse si status != draft.
+end note
+
+@enduml

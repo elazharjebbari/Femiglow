@@ -1,8 +1,10 @@
 import dynamic from 'next/dynamic';
+import { getTranslations } from 'next-intl/server';
 import { Container } from '@/components/ui/Container';
 import { Heading } from '@/components/ui/Heading';
 import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
+import type { Locale } from '@/i18n.config';
 
 const NewsletterForm = dynamic(
   () => import('@/components/forms/NewsletterForm').then((m) => m.NewsletterForm),
@@ -22,6 +24,27 @@ interface NewsletterBlockProps {
   kicker?: string;
   title?: string;
   description?: string;
+}
+
+/**
+ * Phase 7E — résout les strings éditoriaux localisés du bloc newsletter
+ * depuis `marketing.common.newsletter_block`. À appeler dans la page
+ * parente (async, locale connue), puis injecter via les props `kicker`/
+ * `title`/`description`. En FR, ces valeurs sont identiques aux défauts
+ * hardcodés ci-dessous (zéro régression sur le legacy `(marketing)/*`).
+ */
+export async function getNewsletterBlockStringsForLocale(
+  locale: Locale,
+): Promise<{ kicker: string; title: string; description: string }> {
+  const t = await getTranslations({
+    locale,
+    namespace: 'marketing.common.newsletter_block',
+  });
+  return {
+    kicker: t('kicker'),
+    title: t('title'),
+    description: t('description'),
+  };
 }
 
 export function NewsletterBlock({

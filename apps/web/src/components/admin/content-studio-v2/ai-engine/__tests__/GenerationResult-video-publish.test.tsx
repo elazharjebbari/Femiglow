@@ -293,7 +293,7 @@ describe('P5 — PublishSection mock badge', () => {
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(1);
-      const [, options] = fetchSpy.mock.calls[0];
+      const [, options] = fetchSpy.mock.calls[0]!;
       const body = JSON.parse(options.body);
       expect(body.draftId).toBe('mock-draft-123');
       expect(body.mode).toBe('now');

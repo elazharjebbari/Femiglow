@@ -1,0 +1,64 @@
+@startuml machine-etats-outbox
+title Machine d'états — email_outbox (cible + écarts audit)
+' enum email_outbox_status : pending, sending, sent, delivered, opened,
+'   clicked, failed, bounced_soft, bounced_permanent, suppressed, dlq
+
+[*] --> pending : sendTransactional()\nINSERT (après suppression+idempotence)
+[*] --> suppressed : isSuppressed(to)==true\n(outboxId=null, pas d'INSERT envoi)
+[*] --> failed : render échoue [CIBLE]\nINSERT failed + lastError
+note right of pending
+  ECART F-080 : render AVANT insert.
+  Si render jette -> AUCUNE ligne
+  (email perdu sans trace).
+  CIBLE : insert puis render, ou
+  capture render -> failed+lastError.
+end note
+
+pending --> sending : claim\n(attemptSend / CTE batch)\nWHERE status IN (pending,failed)
+failed  --> sending : claim si next_retry<=now\nAND attempts<max_attempts
+
+sending --> sent : SMTP accepté (deliverRow)\n+ event 'sent'
+sending --> failed : erreur transitoire\nattempts<MAX, next_retry=now+backoff\n+ event 'failed'
+sending --> dlq : erreur, attempts>=MAX\nnext_retry=null + event 'dlq'
+
+note right of sending
+  ECART F-082 : crash entre claim et update
+  -> ligne reste 'sending' (orpheline) ; le
+  claim ne reprend que pending/failed.
+  AUCUN reaper. CIBLE : reaper recycle les
+  'sending' dont updatedAt > seuil.
+  ECART F-083 : attempts incrémenté MEME
+  sur succès (deliverRow) -> budget faussé.
+  ECART F-081 : SmtpNotConfiguredError ->
+  failed SANS next_retry -> busy-loop.
+end note
+
+sent --> delivered : webhook Stalwart delivered
+sent --> opened : webhook open
+sent --> clicked : webhook click
+sent --> bounced_soft : webhook bounce soft
+sent --> bounced_permanent : webhook bounce hard\n+ INSERT suppression
+
+bounced_soft --> sending : reaper soft [CIBLE]
+note right of bounced_soft
+  ECART F-083 : le drain ne sélectionne que
+  pending/failed -> bounced_soft JAMAIS repris.
+  CIBLE : drain inclut bounced_soft (avec budget).
+end note
+
+' Retry manuel (retryOutbox)
+failed --> pending : retryOutbox (manuel)
+dlq --> pending : retryOutbox (manuel)
+bounced_soft --> pending : retryOutbox (manuel)
+
+' Transitions ILLEGALES (doivent être rejetées par les tests)
+sent --> sending : ILLEGAL (double envoi) #red
+delivered --> sending : ILLEGAL #red
+dlq --> sending : ILLEGAL (sans retry explicite) #red
+
+delivered --> [*]
+bounced_permanent --> [*]
+suppressed --> [*]
+dlq --> [*] : visibilité requise [CIBLE]\n(ECART F-083 : DLQ silencieuse)
+
+@enduml

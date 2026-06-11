@@ -46,8 +46,10 @@ function log(entry: LogEntry): void {
   if (!shouldLog(entry.level)) return;
   const formatted = formatEntry(entry);
   const method = entry.level === 'error' ? 'error' : entry.level === 'warn' ? 'warn' : 'log';
+  // eslint-disable-next-line no-console -- module logger : seule sortie console autorisée
   console[method](formatted);
   if (entry.data && entry.level !== 'debug') {
+    // eslint-disable-next-line no-console -- module logger : seule sortie console autorisée
     console[method](JSON.stringify(entry.data, null, 2));
   }
 }

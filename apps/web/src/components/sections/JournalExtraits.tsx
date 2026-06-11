@@ -8,6 +8,18 @@ import { Kicker } from '@/components/ui/Kicker';
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/utils/cn';
 
+/**
+ * Phase 9 i18n — libellés localisés. Défaut FR si absent (préserve legacy +
+ * tests). `categoryLabels` override la map FR ; `readingTime` est un gabarit
+ * avec `{min}` ; `cta` remplace « Lire le journal ».
+ */
+export interface JournalExtraitsStrings {
+  cta: string;
+  categoryLabels: Record<Article['category'], string>;
+  /** Gabarit avec `{min}` (ex. « {min} دقائق قراءة »). */
+  readingTime: string;
+}
+
 interface JournalExtraitsProps {
   articles: Article[];
   kicker?: string;
@@ -17,9 +29,11 @@ interface JournalExtraitsProps {
    * `article.slug`. Si présent, remplace l'`<Image src={featuredImage}>`.
    */
   mediaSlots?: Record<string, ReactNode>;
+  /** Phase 9 i18n — libellés localisés. Défaut FR. */
+  strings?: JournalExtraitsStrings;
 }
 
-const categoryLabels: Record<Article['category'], string> = {
+const DEFAULT_CATEGORY_LABELS: Record<Article['category'], string> = {
   maison: 'Maison',
   saison: 'Saison',
   voix: 'Voix',
@@ -27,11 +41,18 @@ const categoryLabels: Record<Article['category'], string> = {
   pratique: 'Pratique',
 };
 
+const DEFAULT_STRINGS: JournalExtraitsStrings = {
+  cta: 'Lire le journal',
+  categoryLabels: DEFAULT_CATEGORY_LABELS,
+  readingTime: '{min} min',
+};
+
 export function JournalExtraits({
   articles,
   kicker = 'Le journal',
   title = 'Lettres saisonnières.',
   mediaSlots,
+  strings = DEFAULT_STRINGS,
 }: JournalExtraitsProps) {
   if (articles.length === 0) return null;
   const [hero, ...rest] = articles;
@@ -59,7 +80,7 @@ export function JournalExtraits({
             href="/journal"
             className="self-start text-sm uppercase tracking-[0.18em] text-encre underline-offset-4 hover:underline sm:self-auto"
           >
-            Lire le journal
+            {strings.cta}
           </Link>
         </div>
 
@@ -68,6 +89,7 @@ export function JournalExtraits({
             article={hero}
             mediaSlot={mediaSlots?.[hero.slug]}
             className="lg:col-span-3"
+            strings={strings}
           />
           <div className="flex flex-col gap-10 lg:col-span-2">
             {secondaires.map((article) => (
@@ -75,6 +97,7 @@ export function JournalExtraits({
                 key={article.slug}
                 article={article}
                 mediaSlot={mediaSlots?.[article.slug]}
+                strings={strings}
               />
             ))}
           </div>
@@ -88,9 +111,20 @@ interface ArticleCardProps {
   article: Article;
   className?: string;
   mediaSlot?: ReactNode;
+  strings: JournalExtraitsStrings;
 }
 
-function ArticleHeroCard({ article, className, mediaSlot }: ArticleCardProps) {
+/** Rend le kicker « Catégorie · X min » localisé. */
+function categoryMeta(article: Article, strings: JournalExtraitsStrings): string {
+  const cat = strings.categoryLabels[article.category];
+  const rt = strings.readingTime.replace(
+    '{min}',
+    String(article.readingTimeMinutes),
+  );
+  return `${cat} · ${rt}`;
+}
+
+function ArticleHeroCard({ article, className, mediaSlot, strings }: ArticleCardProps) {
   return (
     <article className={cn('group flex flex-col gap-5', className)}>
       <Link href={`/journal/${article.slug}`} className="block">
@@ -108,9 +142,7 @@ function ArticleHeroCard({ article, className, mediaSlot }: ArticleCardProps) {
         )}
       </Link>
       <div className="space-y-3">
-        <Kicker tone="champagne">
-          {categoryLabels[article.category]} · {article.readingTimeMinutes}&nbsp;min
-        </Kicker>
+        <Kicker tone="champagne">{categoryMeta(article, strings)}</Kicker>
         <Heading as="h3" size="display-sm" italic="never">
           <Link
             href={`/journal/${article.slug}`}
@@ -127,7 +159,7 @@ function ArticleHeroCard({ article, className, mediaSlot }: ArticleCardProps) {
   );
 }
 
-function ArticleMiniCard({ article, mediaSlot }: ArticleCardProps) {
+function ArticleMiniCard({ article, mediaSlot, strings }: ArticleCardProps) {
   return (
     <article className="group flex gap-5">
       <Link
@@ -148,9 +180,7 @@ function ArticleMiniCard({ article, mediaSlot }: ArticleCardProps) {
         )}
       </Link>
       <div className="flex flex-1 flex-col justify-center gap-2">
-        <Kicker tone="champagne">
-          {categoryLabels[article.category]} · {article.readingTimeMinutes}&nbsp;min
-        </Kicker>
+        <Kicker tone="champagne">{categoryMeta(article, strings)}</Kicker>
         <Heading as="h3" size="sm" italic="never">
           <Link
             href={`/journal/${article.slug}`}

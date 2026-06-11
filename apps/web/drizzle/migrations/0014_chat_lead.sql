@@ -54,6 +54,10 @@ CREATE TABLE IF NOT EXISTS "chat_lead" (
       -- CHA-225 — Nouvelles raisons (intent d'achat / coordonnées en clair).
       'purchase-intent',
       'inline-contact',
+      -- CHA-230 — Marchandage (rabais) + volume pro (grossiste) :
+      -- escalade humaine immédiate. cf. contracts.ts chatLeadTriggerReasonSchema.
+      'negotiation',
+      'wholesaler',
       'manual'
     )
   ),

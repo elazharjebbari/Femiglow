@@ -1,0 +1,63 @@
+@startuml dependencies
+title Graphe de dépendances des lots
+
+skinparam shadowing false
+skinparam rectangle {
+  BackgroundColor #FBF8F1
+  BorderColor #2C2A28
+}
+
+rectangle "L0\nPréparation\n(flag + baseline)" as L0
+rectangle "L1\nHelpers purs\n(buildSwitchUrl)" as L1
+rectangle "L2\nHook\nuseLocaleTransition" as L2
+rectangle "L3\nUI présentation\n(variantes + veil)" as L3
+rectangle "L4\nBackend config\n(API + migration)" as L4
+rectangle "L5\nDétection + Nudge" as L5
+rectangle "L6\nPage admin\n/admin/i18n" as L6
+rectangle "L7\nE2E + a11y + garde" as L7
+rectangle "L8\nFlag on + livraison" as L8
+
+package "Track moteur de suggestion" {
+  rectangle "L9\nDevinette + politique\n(pures)" as L9
+  rectangle "L10\nRuntime + prompt\n(defer-to-breakpoint)" as L10
+  rectangle "L11\nConfig + admin + audit" as L11
+  rectangle "L12\nE2E + a11y + garde\n+ activation progressive" as L12
+}
+
+L0 --> L1
+L0 --> L4
+L1 --> L2
+L2 --> L3
+L4 --> L5
+L4 --> L6
+L3 --> L7
+L5 --> L7
+L6 --> L7
+L7 --> L8
+
+' Moteur : réutilise les helpers (L1), le hook de bascule (L2) et le backend config (L4)
+L1 --> L9
+L9 --> L10
+L2 --> L10
+L9 --> L11
+L4 --> L11
+L10 --> L12
+L11 --> L12
+
+note bottom of L7
+  Porte de qualité :
+  coverage-matrix.csv sans trou
+  + garde-fous (scanners, build, wizard)
+end note
+
+note bottom of L12
+  Porte moteur :
+  coverage-matrix.csv (INV-13..INV-20) sans trou,
+  1 test negatif par invariant,
+  activation profil par profil (off par defaut INV-13).
+end note
+
+' Parallélisme possible :
+' - Switcher : L1→L2→L3 (frontend) et L4 (backend) en parallèle après L0.
+' - Moteur : L9 demarre apres L1 ; peut avancer en parallele du switcher (L10 a besoin de L2, L11 de L4).
+@enduml

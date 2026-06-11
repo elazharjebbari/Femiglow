@@ -20,7 +20,29 @@ export function presetVars(now: Date = new Date()): Map<string, string> {
 }
 
 export function isPresetVar(key: string): boolean {
-  return key === 'LAST_UPDATED' || key === 'CURRENT_YEAR' || key === 'SITE_URL';
+  return (
+    key === 'LAST_UPDATED' ||
+    key === 'CURRENT_YEAR' ||
+    key === 'SITE_URL' ||
+    key === 'VERSION' // LEGAL-V2-01 — VERSION devient preset auto
+  );
+}
+
+/**
+ * LEGAL-V2 — Presets dérivés d'une page spécifique.
+ * Étend presetVars() avec VERSION et LAST_UPDATED contextuels (basés sur
+ * la page elle-même, pas le moment du render).
+ *
+ * Cf. docs/pages-legales-fix-2026-05/01-design-conception/api-contracts.md
+ */
+export function presetVarsForPage(
+  page: { version: number; updatedAt: Date },
+  now: Date = new Date(),
+): Map<string, string> {
+  const m = presetVars(now);
+  m.set('VERSION', `v${page.version}`);
+  m.set('LAST_UPDATED', formatFrenchDate(page.updatedAt));
+  return m;
 }
 
 export type SubstituteMode = 'public' | 'admin-preview';
@@ -37,6 +59,39 @@ export function buildVarMap(
   const m = presetVars(opts.now);
   for (const { key, value } of dbVars) {
     if (value && value.trim().length > 0) {
+      m.set(key, value);
+    }
+  }
+  return m;
+}
+
+/**
+ * LEGAL-V2 — Wording standard pour vars marquées `sensitive=true` en mode public.
+ * La valeur DB n'est PAS exposée — remplacée par une invitation contact email.
+ *
+ * Cf. docs/pages-legales-fix-2026-05/00-context/contraintes-juridiques.md
+ */
+export const SENSITIVE_VAR_PUBLIC_PLACEHOLDER =
+  'information disponible sur demande à legal@femiglow-maroc.com';
+
+/**
+ * LEGAL-V2 — Construit le var map pour rendu public avec masquage des vars
+ * sensibles. Pour les rows DB avec `sensitive=true`, la valeur est remplacée
+ * par le placeholder standard (independent de la valeur réelle stockée).
+ *
+ * Utiliser cette variante au lieu de `buildVarMap` côté `/legal/*` public.
+ * Côté admin preview, utiliser `buildVarMap` (qui expose les vraies valeurs).
+ */
+export function buildPublicVarMap(
+  dbVars: ReadonlyArray<{ key: string; value: string | null; sensitive: boolean }>,
+  opts: SubstituteOptions = {},
+): Map<string, string> {
+  const m = presetVars(opts.now);
+  for (const { key, value, sensitive } of dbVars) {
+    if (sensitive) {
+      // Toujours remplacer par le placeholder, peu importe si value est rempli.
+      m.set(key, SENSITIVE_VAR_PUBLIC_PLACEHOLDER);
+    } else if (value && value.trim().length > 0) {
       m.set(key, value);
     }
   }

@@ -26,9 +26,11 @@ import {
 } from './items/app-config';
 import { formConfigSeeder } from './items/form-config';
 import { productsSeeder } from './items/products';
+import { couponsSeeder } from './items/coupons';
 import { deliveryCitiesSeeder } from './items/delivery-cities';
 import { seoSeeder } from './items/seo';
 import { componentsSeeder } from './items/components';
+import { i18nBindingsSeeder } from './items/i18n-bindings';
 import { mediaSeeder } from './items/media';
 import { chatInstructionsSeeder } from './items/chat-instructions';
 import { chatInstructionsV2Seeder } from './items/chat-instructions-v2';
@@ -107,6 +109,16 @@ export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
     run: productsSeeder,
   },
   {
+    id: 'coupons',
+    group: 'commerce',
+    label: 'Coupon d’accueil (welcome_auto)',
+    description:
+      'Crée/réaligne le coupon d’accueil -90 MAD (289→199). Idempotent, préserve le status existant.',
+    estimatedDurationMs: 600,
+    idempotent: true,
+    run: couponsSeeder,
+  },
+  {
     id: 'delivery-cities',
     group: 'commerce',
     label: 'Villes de livraison (~430)',
@@ -137,6 +149,16 @@ export const SEEDERS_REGISTRY: readonly SeederDescriptor[] = [
     estimatedDurationMs: 25_000,
     idempotent: true,
     run: componentsSeeder,
+  },
+  {
+    id: 'i18n-bindings',
+    group: 'content',
+    label: 'Traductions composants (AR + EN)',
+    description:
+      'Publie les bindings i18n AR + EN des champs Content Studio depuis docs/i18n-content-2026-05 (parité FR). Idempotent : préserve les éditions admin (I0).',
+    estimatedDurationMs: 3_000,
+    idempotent: true,
+    run: i18nBindingsSeeder,
   },
   {
     id: 'media',

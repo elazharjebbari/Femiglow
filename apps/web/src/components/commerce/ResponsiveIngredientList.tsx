@@ -11,7 +11,7 @@
  * Server Component — aucune logique stateful.
  */
 import { IngredientCard } from './IngredientCard';
-import { IngredientsTable } from './IngredientsTable';
+import { IngredientsTable, type IngredientsTableLabels } from './IngredientsTable';
 import { sortByConcentrationDesc } from '@/lib/kit/composition/sort';
 import type {
   IngredientDetailed,
@@ -22,20 +22,27 @@ export interface ResponsiveIngredientListProps {
   ingredients: ReadonlyArray<IngredientDetailed>;
   subProductId: string;
   accentColor?: SubProductAccentColor;
+  /** Phase 9 i18n — libellés de colonnes localisés (table + aria). */
+  labels?: IngredientsTableLabels;
+  /** aria-label localisé de la liste mobile. */
+  listAria?: string;
 }
 
 export function ResponsiveIngredientList({
   ingredients,
   subProductId,
   accentColor,
+  labels,
+  listAria,
 }: ResponsiveIngredientListProps): JSX.Element {
   const sorted = sortByConcentrationDesc(ingredients);
+  const inciInParens = labels?.inciInParens ?? false;
   return (
     <>
       {/* Mobile : cards verticales — Kolenda §4.5 + UX §1 ≤ 4 colonnes */}
       <ul
         className="space-y-3 sm:hidden"
-        aria-label={`Composition de ${subProductId}, par ordre décroissant`}
+        aria-label={listAria ?? `Composition de ${subProductId}, par ordre décroissant`}
         data-testid={`responsive-list-mobile-${subProductId}`}
       >
         {sorted.map((ing) => (
@@ -44,6 +51,7 @@ export function ResponsiveIngredientList({
               ingredient={ing}
               subProductId={subProductId}
               accentColor={accentColor}
+              inciInParens={inciInParens}
             />
           </li>
         ))}
@@ -58,6 +66,7 @@ export function ResponsiveIngredientList({
           ingredients={sorted}
           subProductId={subProductId}
           accentColor={accentColor}
+          {...(labels ? { labels } : {})}
         />
       </div>
     </>

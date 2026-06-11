@@ -7,6 +7,11 @@ coverage/
 .env*.local
 *.log
 .DS_Store
+
+# Variables DB des suites vraie-DB (harnais emailing phase 0.3). Contient les
+# credentials Postgres recopiés depuis .env — ne doit JAMAIS être commité.
+# (`.env*.local` ci-dessus ne couvre PAS `.env.test`.)
+.env.test
 .vscode/
 .idea/
 playwright-report/
@@ -15,3 +20,7 @@ test-results/
 # Playwright storage state (admin session pré-rempli, généré par
 # `e2e/global.setup.ts` à chaque run). Ne doit jamais être commité.
 .auth/
+
+# Rapports JSON timestampés des seeds (générés par `pnpm seed:i18n-bindings`,
+# horodatés par run). Cf. docs/i18n-strategy-2026-05/PHASE-6-SEED-RUNBOOK.md.
+.seed-reports/

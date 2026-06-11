@@ -173,7 +173,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Fin de lecture vid\u00e9o',
     isConversion: false,
     applicableCategories: ['media_video'],
-    defaultProviders: ['google_ga4', 'meta'],
+    defaultProviders: ['google_ga4', 'meta', 'google_ads'],
     paramsSchema: { type: 'object', properties: { video_title: { type: 'string' } } },
   },
   {
@@ -183,7 +183,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'T\u00e9l\u00e9chargement d\u2019un fichier',
     isConversion: false,
     applicableCategories: ['cta_primary', 'cta_secondary'],
-    defaultProviders: ['google_ga4'],
+    defaultProviders: ['google_ga4', 'google_ads'],
     paramsSchema: { type: 'object', properties: { file_name: { type: 'string' }, file_extension: { type: 'string' } } },
   },
   {
@@ -389,7 +389,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Cr\u00e9ation d\u2019un compte',
     isConversion: true,
     applicableCategories: ['form_submit'],
-    defaultProviders: ['google_ga4', 'meta', 'tiktok', 'snap'],
+    defaultProviders: ['google_ga4', 'meta', 'tiktok', 'snap', 'google_ads'],
     paramsSchema: { type: 'object', properties: { method: { type: 'string' } } },
   },
   {
@@ -419,7 +419,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Lecture article journal compl\u00e8te',
     isConversion: false,
     applicableCategories: ['section_content'],
-    defaultProviders: ['google_ga4'],
+    defaultProviders: ['google_ga4', 'google_ads'],
     paramsSchema: { type: 'object', properties: { article_id: { type: 'string' } } },
   },
   {
@@ -459,7 +459,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Soumission du formulaire contact (intent, avant validation lead)',
     isConversion: false,
     applicableCategories: ['form_submit'],
-    defaultProviders: ['google_ga4'],
+    defaultProviders: ['google_ga4', 'google_ads'],
     paramsSchema: {
       type: 'object',
       properties: {
@@ -475,7 +475,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Soumission du formulaire newsletter (intent, avant validation lead)',
     isConversion: false,
     applicableCategories: ['form_submit', 'newsletter'],
-    defaultProviders: ['google_ga4'],
+    defaultProviders: ['google_ga4', 'google_ads'],
     paramsSchema: {
       type: 'object',
       properties: {
@@ -685,7 +685,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Ouverture du widget chat assistant',
     isConversion: false,
     applicableCategories: ['chat'],
-    defaultProviders: ['google_ga4', 'meta'],
+    defaultProviders: ['google_ga4', 'meta', 'google_ads'],
     paramsSchema: {
       type: 'object',
       properties: {
@@ -720,7 +720,7 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
     description: 'Message envoy\u00e9 par le visiteur dans le chat',
     isConversion: false,
     applicableCategories: ['chat'],
-    defaultProviders: ['google_ga4'],
+    defaultProviders: ['google_ga4', 'google_ads'],
     paramsSchema: {
       type: 'object',
       properties: {
@@ -1028,7 +1028,11 @@ export const EVENT_CATALOG: EventCatalogEntry[] = [
       'Capture lead step 1 wizard (téléphone + ville pré-soumis ; lead_id créé).',
     isConversion: true,
     applicableCategories: ['form_submit', 'commerce_checkout'],
-    defaultProviders: ['google_ga4', 'meta', 'google_ads', 'snap'],
+    // `google_ads` RETIRÉ volontairement (fix double-comptage lead) : la
+    // conversion Google Ads `lead` est portée UNIQUEMENT par `generate_lead`
+    // (émis par wizard + chat), method-gatée {chat,abandoned_cart} à l'export.
+    // `lead_capture` garde GA4/Meta/Snap. cf. audit google-ads-2026-06-03.
+    defaultProviders: ['google_ga4', 'meta', 'snap'],
     paramsSchema: {
       type: 'object',
       required: ['form_id', 'form_mode', 'step_name', 'method', 'lead_id'],

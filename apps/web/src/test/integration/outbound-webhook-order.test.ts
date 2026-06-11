@@ -24,6 +24,11 @@ const envMock = vi.hoisted(() => ({
   DATABASE_URL: undefined as string | undefined,
 }));
 
+const leadRepoMock = vi.hoisted(() => ({
+  markWebhookSent: vi.fn(async () => {}),
+  markWebhookFailed: vi.fn(async () => {}),
+}));
+
 vi.mock('@/lib/env', () => ({ env: envMock }));
 vi.mock('@/lib/logging/logger', () => ({
   logger: {
@@ -33,6 +38,7 @@ vi.mock('@/lib/logging/logger', () => ({
     debug: vi.fn(),
   },
 }));
+vi.mock('@/lib/chat/repos/lead', () => ({ leadRepo: leadRepoMock }));
 
 import { dispatchOrderWebhook } from '@/lib/webhooks/outbound/sources/from-order';
 import { resetMemoryStore } from '@/lib/db/client';
@@ -200,5 +206,53 @@ describe('dispatchOrderWebhook — idempotency court-circuit', () => {
     expect(a.status).toBe('sent');
     expect(b.status).toBe('sent');
     expect(calls).toBe(1);
+  });
+});
+
+describe('dispatchOrderWebhook — sync chat_lead.webhook_status (/admin/leads)', () => {
+  it('succès → markWebhookSent(leadId) (le lead converti sort de « En attente »)', async () => {
+    server.use(
+      http.post('https://hook.example.com/outbound', () => HttpResponse.json({ ok: true })),
+    );
+
+    await dispatchOrderWebhook({
+      order: { id: 'ord_sent', totalCents: 19900, currency: 'MAD' },
+      items: [{ sku: 'X', name: 'Truc', quantity: 1 }],
+      lead: makeLead({ id: 'cl_sent_001' }),
+    });
+
+    expect(leadRepoMock.markWebhookSent).toHaveBeenCalledWith('cl_sent_001');
+    expect(leadRepoMock.markWebhookFailed).not.toHaveBeenCalled();
+  });
+
+  it('aucun endpoint configuré → markWebhookFailed (jamais bloqué sur pending)', async () => {
+    envMock.OUTBOUND_WEBHOOK_URL = undefined;
+    try {
+      await dispatchOrderWebhook({
+        order: { id: 'ord_disabled', totalCents: 19900, currency: 'MAD' },
+        items: [{ sku: 'X', name: 'Truc', quantity: 1 }],
+        lead: makeLead({ id: 'cl_disabled_001' }),
+      });
+      expect(leadRepoMock.markWebhookFailed).toHaveBeenCalledWith(
+        'cl_disabled_001',
+        'webhook-not-configured',
+      );
+      expect(leadRepoMock.markWebhookSent).not.toHaveBeenCalled();
+    } finally {
+      envMock.OUTBOUND_WEBHOOK_URL = 'https://hook.example.com/outbound';
+    }
+  });
+
+  it('téléphone invalide → markWebhookFailed (pas de pending fantôme)', async () => {
+    await dispatchOrderWebhook({
+      order: { id: 'ord_badphone', totalCents: 19900, currency: 'MAD' },
+      items: [{ sku: 'X', name: 'Truc', quantity: 1 }],
+      lead: makeLead({ id: 'cl_badphone_001', phoneE164: '', phoneRaw: 'abc' }),
+    });
+
+    expect(leadRepoMock.markWebhookFailed).toHaveBeenCalledWith(
+      'cl_badphone_001',
+      expect.stringContaining('invalid-phone'),
+    );
   });
 });

@@ -41,6 +41,7 @@ function emptyResources(): Record<RbacResource, RbacAction[]> {
     'app-config': [],
     legal: [],
     'content-studio': [],
+    coupons: [],
   };
 }
 

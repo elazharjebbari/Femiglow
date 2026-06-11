@@ -13,7 +13,7 @@ export const mockKit: Product = {
   tagline:
     'Manucure japonaise. Deux gestes, un polissoir, un éclat.',
   description:
-    'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par Souheila, biologiste et formulatrice. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
+    'Le pack FemiGlow réunit deux pots — une paste lissante et une powder lustrante — et un polissoir Step 4 Polish & Shine. Une manucure japonaise, formulée à Rabat par notre équipe. Sans vernis. Sans abrasion. Cinq minutes par jour suffisent.',
   priceCents: 28900,
   promoPriceCents: 19900,
   currency: 'MAD',

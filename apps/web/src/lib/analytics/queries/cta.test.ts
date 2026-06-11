@@ -2,7 +2,7 @@
  * Tests des queries CTA — attribution last-click 7j, KPI globaux, top msg/page.
  * cf. docs/analytics/06-tests-strategy.md §3 et 05-onglets-specs.md §4
  */
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { memoryStore, resetMemoryStore } from '@/lib/db/client';
 import type {
@@ -10,6 +10,7 @@ import type {
   TrackingEventLogEntry,
 } from '@/lib/db/types';
 
+import { __clearAnalyticsCache } from '../cache';
 import { getCtaData } from './cta';
 import type { AnalyticsFilters } from '../filters';
 
@@ -140,7 +141,8 @@ describe('getCtaData — attribution', () => {
       anonymousId: 'A1',
       eventName: 'purchase',
       receivedAt: new Date('2026-05-06T10:10:00Z'),
-      payload: { value: 32000 },
+      // `value` en unité majeure MAD (cf. checkout-events) → 320 MAD = 32000 cents.
+      payload: { value: 320 },
     });
 
     const data = await getCtaData(filtersToday(), NOW);
@@ -169,7 +171,7 @@ describe('getCtaData — attribution', () => {
       anonymousId: 'A1',
       eventName: 'purchase',
       receivedAt: new Date('2026-05-06T10:00:00Z'),
-      payload: { value: 10000 },
+      payload: { value: 100 }, // 100 MAD = 10000 cents
     });
 
     const data = await getCtaData(filtersToday(), NOW);
@@ -236,7 +238,7 @@ describe('getCtaData — KPI totals', () => {
       anonymousId: 'A1',
       eventName: 'purchase',
       receivedAt: new Date('2026-05-06T10:02:00Z'),
-      payload: { value: 25000 },
+      payload: { value: 250 }, // 250 MAD = 25000 cents
     });
 
     const data = await getCtaData(filtersToday(), NOW);
@@ -244,6 +246,97 @@ describe('getCtaData — KPI totals', () => {
     expect(data.totals.clicks).toBe(1);
     expect(data.totals.conversionRate).toBeCloseTo(1, 5);
     expect(data.totals.revenueAttributedCents).toBe(25000);
+  });
+});
+
+describe('getCtaData — F-PERF-04 cache opt-in', () => {
+  afterEach(() => {
+    delete process.env.ANALYTICS_CACHE_TTL_MS;
+    __clearAnalyticsCache();
+  });
+
+  it('cache actif : un 2e appel ignore les nouveaux events (servi du cache)', async () => {
+    process.env.ANALYTICS_CACHE_TTL_MS = '30000';
+    pushComp('c1', 'CTA');
+    pushEvent({ id: '1', sessionId: 'S1', anonymousId: 'A1', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:00:00Z') });
+    const first = await getCtaData(filtersToday(), NOW);
+    expect(first.totals.clicks).toBe(1);
+
+    pushEvent({ id: '2', sessionId: 'S2', anonymousId: 'A2', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:01:00Z') });
+    const second = await getCtaData(filtersToday(), NOW);
+    expect(second.totals.clicks).toBe(1); // servi du cache
+
+    __clearAnalyticsCache();
+    const third = await getCtaData(filtersToday(), NOW);
+    expect(third.totals.clicks).toBe(2); // recalcul frais
+  });
+
+  it('défaut (cache off) : chaque appel reflète les données fraîches', async () => {
+    pushComp('c1', 'CTA');
+    pushEvent({ id: '1', sessionId: 'S1', anonymousId: 'A1', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:00:00Z') });
+    const first = await getCtaData(filtersToday(), NOW);
+    pushEvent({ id: '2', sessionId: 'S2', anonymousId: 'A2', eventName: 'cta_click', componentId: 'c1', receivedAt: new Date('2026-05-06T10:01:00Z') });
+    const second = await getCtaData(filtersToday(), NOW);
+    expect(first.totals.clicks).toBe(1);
+    expect(second.totals.clicks).toBe(2);
+  });
+});
+
+describe('getCtaData — F-CTA-02 topPages réconcilié avec le fallback 7j', () => {
+  it('compte l’achat dans topPages même si le clic vient du fallback (page hors période)', async () => {
+    pushComp('c1', 'CTA');
+    // clic 3 jours avant, sur /promo (hors fenêtre "today")
+    pushEvent({
+      id: '1',
+      sessionId: 'S0',
+      anonymousId: 'A1',
+      eventName: 'cta_click',
+      componentId: 'c1',
+      pageRoute: '/promo',
+      receivedAt: new Date('2026-05-03T10:00:00Z'),
+    });
+    // achat aujourd'hui, autre session, même anonymous_id
+    pushEvent({
+      id: '2',
+      sessionId: 'S1',
+      anonymousId: 'A1',
+      eventName: 'purchase',
+      receivedAt: new Date('2026-05-06T10:00:00Z'),
+      payload: { value: 100 },
+    });
+    const data = await getCtaData(filtersToday(), NOW);
+    const promo = data.topPages.find((p) => p.pageRoute === '/promo');
+    expect(promo?.purchasesAttributed).toBe(1);
+    // réconciliation : Σ topPages.purchases = Σ rows.purchases (totals attribués)
+    const sumTop = data.topPages.reduce((s, p) => s + p.purchasesAttributed, 0);
+    const sumRows = data.rows.reduce((s, r) => s + r.purchasesAttributed, 0);
+    expect(sumTop).toBe(sumRows);
+  });
+});
+
+describe('getCtaData — F-CTA-04 page majoritaire déterministe', () => {
+  it('choisit la page lexicographiquement plus petite à égalité de clics', async () => {
+    pushComp('c1', 'CTA');
+    pushEvent({
+      id: '1',
+      sessionId: 'S1',
+      anonymousId: 'A1',
+      eventName: 'cta_click',
+      componentId: 'c1',
+      pageRoute: '/zeta',
+      receivedAt: new Date('2026-05-06T10:00:00Z'),
+    });
+    pushEvent({
+      id: '2',
+      sessionId: 'S2',
+      anonymousId: 'A2',
+      eventName: 'cta_click',
+      componentId: 'c1',
+      pageRoute: '/alpha',
+      receivedAt: new Date('2026-05-06T10:01:00Z'),
+    });
+    const data = await getCtaData(filtersToday(), NOW);
+    expect(data.rows.find((r) => r.componentId === 'c1')?.pageRoute).toBe('/alpha');
   });
 });
 

@@ -15,18 +15,25 @@ export interface ValueBreakdownListProps {
   items: ProductFeedValueItem[];
   /** Label aria (default « Détail de la valeur du pack »). */
   ariaLabel?: string;
+  /**
+   * Ligne de réduction additionnelle (crédit de fidélité appliqué), rendue en
+   * bas du détail avec un accent terracotta `#C28A6E` (économie). null = omise.
+   * Affichée même si `items` est vide (cas crédit seul).
+   */
+  creditLine?: { label: string; valueLabel: string } | null;
 }
 
 export function ValueBreakdownList({
   items,
   ariaLabel = 'Détail de la valeur du pack',
+  creditLine = null,
 }: ValueBreakdownListProps): JSX.Element | null {
-  if (!items || items.length === 0) return null;
+  if ((!items || items.length === 0) && !creditLine) return null;
   return (
     <ul
       aria-label={ariaLabel}
       data-testid="pack-value-breakdown"
-      className="mx-auto mt-4 max-w-sm space-y-1.5 text-left text-sm"
+      className="mx-auto mt-4 max-w-sm space-y-1.5 text-start text-sm"
     >
       {items.map((item, index) => (
         <li
@@ -48,6 +55,17 @@ export function ValueBreakdownList({
           </span>
         </li>
       ))}
+      {creditLine && (
+        <li
+          data-testid="pack-value-credit-line"
+          className="flex items-baseline justify-between gap-3 border-t border-encre/10 pt-1.5"
+        >
+          <span className="text-encre/75">{creditLine.label}</span>
+          <span className="font-semibold tabular-nums text-[#C28A6E]">
+            {creditLine.valueLabel}
+          </span>
+        </li>
+      )}
     </ul>
   );
 }

@@ -28,6 +28,8 @@ export const createOrderInputSchema = z.object({
   currency: z.string().length(3).default('MAD'),
   paymentMethod: paymentMethodSchema,
   shippingMode: shippingModeSchema.default('standard'),
+  /** Code de crédit fidélité (Phase 3), optionnel. */
+  couponCode: z.string().trim().min(3).max(40).nullable().optional(),
 });
 export type CreateOrderInput = z.infer<typeof createOrderInputSchema>;
 
@@ -36,5 +38,13 @@ export const createOrderResponseSchema = z.object({
   status: z.enum(['created', 'pending_confirmation']),
   totalCents: z.number().int().nonnegative(),
   currency: z.string().length(3),
+  /** Code de fidélité mémorable émis pour cette commande (Phase 3). */
+  loyalty: z
+    .object({
+      code: z.string(),
+      valueCents: z.number().int().nonnegative(),
+      activatesAt: z.string().nullable(),
+    })
+    .optional(),
 });
 export type CreateOrderResponse = z.infer<typeof createOrderResponseSchema>;

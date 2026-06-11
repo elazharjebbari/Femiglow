@@ -1,0 +1,61 @@
+@startuml CPN-05-buildCouponContext-sequence
+title CPN-05 — Séquence : extraction contexte (SC vs API) -> visitorKey commun
+
+skinparam shadowing false
+skinparam sequenceArrowThickness 1
+skinparam ParticipantBackgroundColor #F7F4EC
+skinparam ParticipantBorderColor #4A4A42
+skinparam NoteBackgroundColor #EAEFE6
+skinparam NoteBorderColor #6B7A5E
+
+actor Visiteur as V
+
+box "Point 1 — Affichage /kit (Server Component)" #FBF9F3
+  participant "kit/page.tsx\n(headers()/cookies())" as SC
+end box
+
+box "Point 2 — Checkout (API route)" #FBF9F3
+  participant "/api/checkout/order\n(req.headers)" as API
+end box
+
+participant "couponContext\nFromServerComponent()" as ADSC
+participant "couponContext\nFromApiRequest(req)" as ADAPI
+participant "buildCouponContext(src, opts)\n(coeur partagé, server-only)" as CORE
+
+== Affichage (SSR) ==
+V -> SC : GET /kit  (cookies: _fbp, session ; headers: UA, referer ; query: utm_source)
+SC -> ADSC : headers()/cookies()
+ADSC -> ADSC : normaliser en HeaderSource\n{ get, getCookie, getQuery }
+ADSC -> CORE : buildCouponContext(src, { now, currency })
+CORE -> CORE : trafficSource = utm > referer > 'direct'
+CORE -> CORE : device = ua -> mobile|tablet|desktop
+CORE -> CORE : visitorType = cookie récurrence ? returning : first
+CORE -> CORE : visitorKey = hash(source canonique: session||_fbp)\nou null si absent
+note right of CORE
+  hash anonyme stable, sans PII,
+  indépendant de now.
+  visitorKey null => treatment en aval (CPN-04).
+end note
+CORE --> ADSC : CouponContext { now, currency, trafficSource,\n device, visitorType, visitorKey }
+ADSC --> SC : ctx_SC
+SC -> SC : resolveProductPricing(input, ctx_SC)  // CPN-04 -> prix AFFICHÉ
+
+== Checkout (POST) ==
+V -> API : POST /api/checkout/order  (mêmes cookies _fbp/session)
+API -> ADAPI : req.headers / cookies de la requête
+ADAPI -> ADAPI : normaliser en HeaderSource (MÊME forme)
+ADAPI -> CORE : buildCouponContext(src, { now, currency })
+CORE --> ADAPI : CouponContext (MÊME visitorKey si mêmes cookies)
+ADAPI --> API : ctx_API
+API -> API : resolveProductPricing(input, ctx_API)  // CPN-04 -> prix REPRICÉ
+
+== Invariant ==
+note over SC, API #EAEFE6
+  INV-1 : src équivalente => ctx_SC.visitorKey === ctx_API.visitorKey
+  => même bucket (CPN-19) => prix AFFICHÉ == prix REPRICÉ
+  => pas de PriceMismatchError 422 (CPN-08).
+  Divergence structurellement impossible : un seul CORE,
+  deux adaptateurs qui produisent la même HeaderSource.
+end note
+
+@enduml

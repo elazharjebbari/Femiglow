@@ -1,0 +1,78 @@
+@startuml sequence-trigger-vers-envoi
+title Séquence — de l'événement déclencheur à l'envoi (cible vs écarts)
+
+actor "Lead (Kaoutar)" as lead
+participant "App / bridge\ninsertUserEvent" as bridge
+database "user_event" as ue
+participant "Trigger dispatcher\n[CIBLE - absent]" as disp #pink
+participant "frequency.ts\n[CIBLE - code mort]" as freq #pink
+participant "triggerAutomation()" as trig
+database "email_automation_run" as run
+participant "cron email-automation" as cron
+participant "tickAutomation()\nrunner.ts" as runner
+participant "sendTransactional()" as send
+database "email_outbox" as outbox
+
+== Déclenchement (F-051 — NON CABLE) ==
+lead -> bridge : action (inscription, achat...)
+bridge -> ue : INSERT user_event
+note right of disp
+  ECART F-051 : aucun dispatcher ne lit
+  triggerType/triggerConfig/triggerConditions.
+  Seul cart-abandoned-1h est appelé en dur (F-058).
+end note
+disp -[#red]-> disp : SELECT automations\nWHERE triggerConfig.eventName == event\nAND triggerConditions match (CIBLE)
+disp -> freq : checkCooldown / checkDailyCap (CIBLE)
+freq --> disp : autorisé / bloqué
+disp -> trig : triggerAutomation(slug, ctx, {dedupeKey})
+
+== Enrôlement ==
+trig -> run : SELECT automation by slug
+alt automation absente
+  trig --> disp : status=unknown
+else active=false
+  trig --> disp : status=disabled (OK F-050)
+else dedupe match (24h)
+  trig --> disp : status=duplicate
+else
+  trig -> freq : applyQuietHours(nextActionAt) (CIBLE)
+  freq --> trig : nextActionAt différé (08:00 si 23h Casablanca)
+  trig -> run : INSERT run running\nnextActionAt=now (ou différé)
+  trig --> disp : status=enqueued
+end
+
+== Avance (toutes les 60s) ==
+cron -> runner : POST /api/cron/email-automation
+runner -> run : UPDATE ... SET nextActionAt=NULL\nFOR UPDATE SKIP LOCKED RETURNING *
+note right of runner
+  ECART F-054 : si crash ici,
+  run reste running + nextActionAt=NULL
+  -> orphelin jamais repris.
+end note
+loop pour chaque run claimé
+  runner -> run : SELECT automation (steps)
+  runner -> runner : descendToExecutable(steps, path)
+  alt step send
+    runner -> send : sendTransactional(idempotencyKey=automation:run:stepPATH)
+    note right of send
+      ECART F-053 : send AVANT advance().
+      Crash entre les deux -> re-jeu possible
+      (idempotencyKey protège le MEME path).
+    end note
+    send -> outbox : INSERT outbox pending
+    send --> runner : {status, outboxId}
+    runner -> run : UPDATE advance + outboxIds
+  else step tag/update_lead/webhook
+    runner -> runner : handleXStep -> {ok:false?}
+    note right of runner
+      ECART F-053 : résultat ok=false IGNORE,
+      advance() quand même. Webhook sans timeout.
+    end note
+    runner -> run : UPDATE advance
+  else step wait_for_event
+    runner -> run : UPDATE waiting_for_event\nawaitingUntil=now+timeout
+  end
+end
+runner --> cron : {picked, advanced, completed, errored}
+
+@enduml

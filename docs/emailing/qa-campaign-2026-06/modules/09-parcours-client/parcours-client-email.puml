@@ -1,0 +1,61 @@
+@startuml parcours-client-email
+title Parcours client emailing - "Kaoutar" (commande -> opt-in -> confirmation -> unsub)
+
+actor Kaoutar
+participant "POST /checkout/order" as Order
+participant "PATCH /order/[id]/email" as Optin
+database "orders / leads / lead_tag" as DB
+database "email_outbox" as Outbox
+participant "sendTransactional" as Send
+database "email_suppression" as Suppr
+participant "GET /newsletter/confirm" as NLConfirm
+database "email_subscriber_link" as SubLink
+participant "Listmonk" as LM
+participant "GET /mail/unsubscribe" as Unsub
+participant "user_event" as UE
+
+== 1. Commande (email pas encore donne) ==
+Kaoutar -> Order : finalise commande (email=null)
+Order -> DB : INSERT orders
+note right : leadSnapshot.email=null\n=> AUCUNE order-confirmation\n(documente CLI-INT-CONF-ABSENT)
+
+== 2. Opt-in page merci ==
+Kaoutar -> Optin : PATCH { email, emailConsent:true }\n(Idempotency-Key)
+Optin -> DB : UPDATE chat_lead.email, leads.email/consentMarketing
+Optin -> DB : INSERT lead_tag('post-purchase-optin')
+note right #ffd0d0 : DRIFT PROD: lead_tag.leadId uuid vs text\n=> 500. CLI-INT-OPTIN-DRIFT le capte.
+Optin -> UE : user_event(lead.email_optin_post_purchase)
+Optin --> Kaoutar : 200 email_optin_saved
+
+== 3. Confirmation de commande ==
+Optin -> Send : order-confirmation (idempotencyKey=order-confirm:orderId)
+Send -> Suppr : isSuppressed(email)? non
+Send -> Outbox : INSERT (template=order-confirmation, 199.00 MAD)
+note right : idempotent par orderId\n=> jamais de doublon (CLI-INT-CONF-IDEM)
+Outbox --> Kaoutar : email recu (Mailpit en E2E)
+
+== (parallele) Newsletter double opt-in ==
+Kaoutar -> NLConfirm : clic lien confirm (token HMAC)
+NLConfirm -> SubLink : UPSERT status=enabled, doubleOptinConfirmedAt
+NLConfirm -> LM : sync subscriber (CIBLE: comble 0 ligne prod)
+
+== 4. Desabonnement ==
+Kaoutar -> Unsub : clic List-Unsubscribe (token)
+Unsub -> Suppr : INSERT(reason=unsubscribe) ON CONFLICT DO NOTHING
+Unsub -> SubLink : UPDATE status=disabled
+Unsub -> LM : blocklist(email)
+Unsub --> Kaoutar : page "Desinscription confirmee"
+
+== Garantie finale ==
+note over Send, LM #d0ffd0
+  Apres unsub : tout envoi vers Kaoutar est BLOQUE PARTOUT
+  - transactionnel: isSuppressed=true => status=suppressed
+  - campagne Listmonk: blocklisted
+  CLI-INT-UNSUB-NOWHERE / CLI-E2E-008 (0 nouveau mail Mailpit)
+end note
+
+note over Optin, Outbox #fff0d0
+  Allowlist interne (F-094): info@femiglow-maroc.com
+  n'est JAMAIS bloque meme suppresse (CLI-INT-INTERNAL-ALLOWLIST).
+end note
+@enduml

@@ -1,0 +1,67 @@
+id,fonctionnalite,scenario,type,couche,priorite,oracle,ref_inventaire
+CMP-MSW-001,Wizard étape 1 nom,"Nom < 3 caractères bloque le passage à l'étape 2",component,msw,P0,"Message « au moins 3 caractères » affiché ; on reste à l'étape 1 (titre « 1. Nom interne » visible)",F-031
+CMP-MSW-002,Wizard étape 1 nom,"Nom de 3 caractères autorise Suivant",component,msw,P1,"L'étape 2 (« 2. Audience ») devient visible",F-031
+CMP-MSW-003,Wizard étape 1 nom,"persistDraft appelé au passage d'étape (PATCH draft)",component,msw,P1,"Une requête updateCampaignDraft est interceptée avec name correct",F-031
+CMP-MSW-004,Wizard étape 2 audience,"Aucune source sélectionnée bloque",component,msw,P0,"Message « Sélectionne au moins une liste OU une audience » ; reste étape 2",F-031
+CMP-MSW-005,Wizard étape 2 audience,"Sélection audience native vide la sélection legacy",component,msw,P0,"audienceId set, audienceIds remis à []",F-031
+CMP-MSW-006,Wizard étape 2 audience,"Sélection liste legacy vide l'audience native",component,msw,P0,"audienceIds contient l'id, audienceId remis à null",F-031
+CMP-MSW-007,Wizard étape 2 audience,"Cocher 2 listes legacy additionne les compteurs estimés",component,msw,P1,"« Envois estimés » == somme subscriberCount des 2 listes",F-031
+CMP-MSW-008,Wizard étape 2 audience,"Sélection audience native déclenche preview-size",component,msw,P0,"POST /preview-size intercepté ; taille affichée == size renvoyée",F-031
+CMP-MSW-009,Wizard étape 2 audience,"preview-size 500 → taille reste « … » sans crash",component,msw,P1,"Pas de faux nombre affiché ; champ « … » conservé",F-031
+CMP-MSW-010,Wizard étape 2 audience,"GET audience 401 → preview non lancé, pas de faux total",component,msw,P1,"Aucune valeur numérique fantôme ; sélection conservée",F-031
+CMP-MSW-011,Wizard étape 3 contenu,"Corps < 10 caractères bloque",component,msw,P1,"Message « corps trop court » ; reste étape 3",F-031
+CMP-MSW-012,Wizard étape 3 contenu,"Sélection template Listmonk persiste templateId",component,msw,P2,"updateCampaignDraft reçoit listmonkTemplateId attendu",F-031
+CMP-MSW-013,Wizard étape 4 sujet,"Sujet < 3 caractères bloque",component,msw,P1,"Message « sujet au moins 3 caractères » ; reste étape 4",F-031
+CMP-MSW-014,Wizard étape 4 sujet,"Compteur de caractères sujet exact",component,msw,P2,"Affiche longueur courante /140",F-031
+CMP-MSW-015,Wizard étape 5 planif,"Mode scheduled sans date bloque",component,msw,P0,"Message « Choisis une date » ; reste étape 5",F-031
+CMP-MSW-016,Wizard étape 5 planif,"Date passée bloque",component,msw,P0,"Message « la date doit être dans le futur » ; reste étape 5",F-031
+CMP-MSW-017,Wizard étape 5 planif,"Date future autorise étape 6",component,msw,P1,"L'étape 6 « Vérification finale » devient visible",F-031
+CMP-MSW-018,Wizard navigation,"Précédent conserve les saisies des étapes futures",component,msw,P0,"Retour étape 1 puis étape 2 : la sélection audience est conservée",F-031
+CMP-MSW-019,Wizard navigation,"Précédent désactivé à l'étape 1",component,msw,P2,"Bouton Précédent disabled quand step==1",F-031
+CMP-MSW-020,Wizard navigation,"Précédent ne revalide pas l'étape courante",component,msw,P1,"Aucun message d'erreur déclenché par goPrev",F-031
+CMP-MSW-021,Wizard récap,"Étape 6 affiche le récap fidèle (nom/audience/sujet/planif)",component,msw,P1,"Les valeurs saisies apparaissent dans le dl récap",F-031
+CMP-MSW-022,Wizard envoi,"Bouton envoyer désactivé tant que ack non coché",component,msw,P0,"Bouton final disabled jusqu'à cocher la case",F-031
+CMP-MSW-023,Wizard envoi,"Submit sans ack affiche message et n'appelle pas finalize",component,msw,P0,"Message « coche la case » ; aucun POST finalize",F-031
+CMP-MSW-024,Wizard envoi,"Submit nominal appelle finalizeCampaign puis redirige",component,msw,P0,"finalizeCampaign appelé avec sendNow=true ; router.push vers le détail",F-031
+CMP-MSW-025,Wizard envoi,"finalize 401 → message session, pas de redirection",component,msw,P0,"Message d'erreur visible ; reste sur le wizard ; ack conservé",F-031
+CMP-MSW-026,Wizard envoi,"finalize 422 → message validation affiché",component,msw,P0,"Erreur de validation visible ; reste sur le wizard",F-031
+CMP-MSW-027,Wizard envoi,"finalize 500 → message générique + état conservé",component,msw,P0,"Message d'erreur ; bouton réactivé (pas de spinner figé)",F-031
+CMP-MSW-028,Wizard envoi,"finalize hang → spinner « Envoi… », pas de double clic",component,msw,P0,"Bouton disabled pendant pending ; un seul appel finalize",F-031
+CMP-MSW-029,Wizard envoi,"Mode scheduled → libellé bouton « Planifier »",component,msw,P2,"Bouton affiche « 📅 Planifier » et finalize reçoit sendNow=false",F-031
+CMP-MSW-030,Wizard listmonkError,"Bandeau d'alerte affiché si listmonkError non nul",component,msw,P1,"Alerte « Listmonk : … » visible au chargement",F-030
+CMP-UNIT-031,Validation étape,"validate() retourne message attendu pour chaque étape invalide",unit,vitest,P1,"Table-driven : 6 cas étape→message",F-031
+CMP-UNIT-032,Estimation audience,"estimatedAudience somme correcte pour listes legacy",unit,vitest,P2,"Calcul == somme subscriberCount",F-031
+CMP-INT-001,Finalize atomicité,"Happy path send-now crée campagne + mirror DB cohérent",integration,db,P0,"status='sending', listmonkCampaignId set, startedAt non nul",F-031
+CMP-INT-002,Finalize atomicité,"Crash entre updateStatus(running) et UPDATE DB",integration,db,P0,"DB ne reste PAS en draft silencieux OU campagne marquée incohérente détectable ; pas de fantôme non tracké",F-031
+CMP-INT-003,Finalize garde rejeu,"Retry après finalize réussi ne recrée pas de campagne Listmonk",integration,db,P0,"Second appel rejeté (status!=draft) ; createCampaign appelé 1 seule fois",F-031
+CMP-INT-004,Finalize garde rejeu,"Brouillon déjà 'sending' refuse une nouvelle finalisation",integration,db,P0,"Erreur « ne peut plus être finalisée » ; aucune mutation Listmonk",F-031
+CMP-INT-005,Finalize garde rejeu,"Brouillon 'sent' refuse la finalisation",integration,db,P0,"Erreur statut ; aucune mutation",F-031
+CMP-INT-006,Finalize préconditions,"Sujet vide rejette avant tout appel Listmonk",integration,db,P0,"Erreur « Sujet manquant » ; create non appelé",F-031
+CMP-INT-007,Finalize préconditions,"Aucune liste ni audience rejette",integration,db,P0,"Erreur « Aucune liste ni audience » ; create non appelé",F-031
+CMP-INT-008,Finalize audience native,"audienceId → snapshot + push Listmonk, listIds = liste éphémère",integration,db,P0,"snapshotId + snapshotListmonkListId persistés ; create reçoit le list id éphémère",F-031
+CMP-INT-009,Finalize audience native,"push pushed=0 rejette avec message explicite",integration,db,P0,"Erreur « 0 a pu être ajouté » ; campagne Listmonk NON créée",F-031
+CMP-INT-010,Finalize draft introuvable,"id inexistant rejette",integration,db,P1,"Erreur « Brouillon introuvable »",F-031
+CMP-INT-011,Finalize mirror,"send-now positionne startedAt, scheduled le laisse null",integration,db,P1,"startedAt non nul si sendNow ; null si scheduled",F-031
+CMP-INT-012,Finalize idempotence Listmonk,"unique index listmonk_campaign_id empêche doublon mirror",integration,db,P1,"Insertion d'un 2e mirror avec même lmId viole l'unique constraint",F-031
+CMP-INT-013,Sync transition légale,"running → sending applique sentCount/openCount",integration,db,P1,"status reste/ devient sending ; compteurs mis à jour",F-034
+CMP-INT-014,Sync transition légale,"finished → sent positionne finishedAt",integration,db,P0,"status='sent' ; finishedAt non nul",F-034
+CMP-INT-015,Sync transition légale,"cancelled Listmonk → cancelled FemiGlow",integration,db,P1,"status='cancelled'",F-034
+CMP-INT-016,Sync transition illégale,"sent (terminal) n'est pas remis en sending par poll rejoué",integration,db,P0,"status reste 'sent' (garde anti-régression)",F-034
+CMP-INT-017,Sync transition illégale,"cancelled ne repasse pas en sending",integration,db,P0,"status reste 'cancelled'",F-034
+CMP-INT-018,Sync fenêtre poll,"campagne sent finishedAt H-25 n'est plus candidate",integration,db,P0,"Non incluse dans candidates → métriques figées (oracle documenté)",F-030
+CMP-INT-019,Sync fenêtre poll,"campagne sent finishedAt H-23 reste candidate",integration,db,P1,"Incluse dans candidates → métriques rafraîchies",F-030
+CMP-INT-020,Sync deliveredCount,"deliveredCount jamais alimenté par le sync actuel",integration,db,P1,"deliveredCount reste 0 (red) — flag correction",F-033
+CMP-INT-021,Sync métriques cohérence,"compteurs DB == valeurs Listmonk après sync",integration,db,P0,"sent/open/click/bounce == payload Listmonk",F-034
+CMP-INT-022,Sync erreurs,"Listmonk get échoue → errors++ sans planter le batch",integration,db,P1,"checked compte tous, errors>=1, autres campagnes traitées",F-034
+CMP-INT-023,Sync candidats,"draft sans listmonkCampaignId exclu du poll",integration,db,P2,"Non inclus dans candidates",F-034
+CMP-INT-024,Sync scheduled,"scheduled reste candidate jusqu'à running",integration,db,P2,"status scheduled inclus dans candidates",F-034
+CMP-INT-025,Draft CRUD,"createCampaignDraft insère status=draft + audit",integration,db,P1,"Ligne draft créée ; audit mail.campaign.draft_created",F-032
+CMP-INT-026,Draft CRUD,"updateCampaignDraft applique uniquement les champs fournis",integration,db,P1,"Champs non fournis inchangés ; updatedAt bougé",F-032
+CMP-INT-027,Draft CRUD,"discardCampaign passe status=cancelled",integration,db,P1,"status='cancelled' ; audit cancelled",F-032
+CMP-INT-028,Draft édition garde,"édition refusée si status!=draft (état cible)",integration,db,P1,"Mutation rejetée pour sending/sent",F-032
+CMP-E2E-001,Parcours opérateur,"Wizard complet du nom à l'envoi (audience native)",e2e,playwright,P0,"Campagne apparaît en liste avec statut sending ; Mailpit reçoit l'envoi",F-031
+CMP-E2E-002,Parcours opérateur,"Reprise d'un brouillon après reload pré-remplit le wizard",e2e,playwright,P1,"Les champs persistés sont rechargés",F-032
+CMP-E2E-003,Parcours opérateur,"Retry après échec réseau ne crée pas 2 campagnes",e2e,playwright,P0,"Une seule campagne en liste ; pas de doublon Listmonk",F-031
+CMP-E2E-004,Détail campagne,"Métriques affichées == état Listmonk après sync cron",e2e,playwright,P1,"sent/open/click cohérents avec le stub Listmonk",F-033
+CMP-UNIT-033,Machine d'états,"Table des transitions légales/illégales",unit,vitest,P0,"isLegalTransition(from,to) conforme à la matrice cible",F-034
+CMP-UNIT-034,Mapping statut,"Mapping Listmonk→FemiGlow exhaustif",unit,vitest,P1,"running/finished/cancelled/scheduled/paused mappés correctement",F-034

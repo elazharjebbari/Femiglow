@@ -10,13 +10,26 @@ import { bridgeWebTrackingToUserEvent } from '@/lib/user-events/bridges/web-trac
 import { findTrackingPageByRoute } from '@/lib/db/queries/tracking/pages';
 import { getValidator } from '@/lib/tracking/server/validator';
 import { enrichRequest } from '@/lib/tracking/server/enricher';
-import { isDuplicateEventId } from '@/lib/tracking/server/dedup';
+import { isDuplicateEventId, isDuplicateEventIdAsync } from '@/lib/tracking/server/dedup';
 import { dispatchToProviders } from '@/lib/tracking/server/dispatcher';
 import { getEventCategory } from '@/lib/tracking/schemas';
 import type { TrackingConsentState } from '@/lib/db/types';
+// Attribution v2 — résolution server-side authoritative (cf. audit).
+// Référence : `docs/attribution-fix-2026-05/02-vision-architecture.md`.
+import { ATTRIBUTION_VERSION } from '@/lib/feature-flags/attribution';
+import { extractRequestSignals } from '@/lib/tracking/server/request-signals';
+import { enrichEvent, type EnrichedEvent } from '@/lib/tracking/server/enrich-event';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/**
+ * `maxDuration` 10s pour l'ingest tracking — synchrone, doit rester
+ * snappy. Si la latence /api/track P95 approche 10s, c'est qu'il faut
+ * activer le batching CAPI (cf. Sprint 2 S2).
+ *
+ * Référence : docs/live-systems-fix-2026-05/03-plan-action-phases.md § QW3.
+ */
+export const maxDuration = 10;
 
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
@@ -27,6 +40,23 @@ const CONVERSION_EVENTS = new Set([
   'begin_checkout',
   'lead_capture',
 ]);
+
+/**
+ * AN-03 — variantes héritées de clic CTA, normalisées vers `cta_click` à
+ * l'ingestion. Sans ça elles étaient REJETÉES (hors schéma) → l'onglet CTA et
+ * l'étape funnel « cta » restaient vides. Le nom d'origine est conservé dans le
+ * payload stocké (`_src_event`) pour la traçabilité.
+ */
+const CTA_CLICK_ALIASES = new Set([
+  'pack_cta_click',
+  'video_cta_click',
+  'composition_post_cta_click',
+  'pack_steps_cta_click',
+  'steps_cta_click',
+]);
+function normalizeEventName(name: string): string {
+  return CTA_CLICK_ALIASES.has(name) ? 'cta_click' : name;
+}
 
 const consentStateSchema = z
   .object({
@@ -157,7 +187,10 @@ export async function POST(request: Request): Promise<Response> {
     const result: IngestResult = { accepted: 0, rejected: 0, duplicates: 0 };
 
     for (const event of parsed.data.events) {
-      const validator = getValidator(event.event);
+      // AN-03 — normalise les alias de clic CTA vers `cta_click` avant tout
+      // (validation, dispatch, stockage, catégorie, conversion).
+      const eventName = normalizeEventName(event.event);
+      const validator = getValidator(eventName);
       if (!validator) {
         result.rejected += 1;
         logger.warn('tracking.ingest.unknown_event', { event_name: event.event });
@@ -173,7 +206,10 @@ export async function POST(request: Request): Promise<Response> {
         continue;
       }
 
-      if (isDuplicateEventId(event.event_id)) {
+      // ⭐ S1 — Dedup robuste cross-lambda via Redis si v2.
+      // Fallback gracieux vers Map locale (v1) sinon.
+      // Référence : docs/live-systems-fix-2026-05/08-system-tracking.md
+      if (await isDuplicateEventIdAsync(event.event_id)) {
         result.duplicates += 1;
         continue;
       }
@@ -191,7 +227,7 @@ export async function POST(request: Request): Promise<Response> {
         : await findTrackingPageByRoute(event.page.path).catch(() => null);
 
       const dispatch = await dispatchToProviders({
-        eventName: event.event,
+        eventName,
         eventId: event.event_id,
         receivedAt: event.timestamp ? new Date(event.timestamp) : new Date(),
         pageRoute: event.page.path,
@@ -218,12 +254,51 @@ export async function POST(request: Request): Promise<Response> {
         return { dispatched: [], results: {} };
       });
 
+      // ── Attribution v2 : résolution server-side authoritative ─────────
+      // Le flag `ATTRIBUTION_V2` (default v1) garde la rétrocompat. Quand
+      // ON, on enrichit l'event avec `trafficSource`/`trafficMedium` avant
+      // l'INSERT. Quand OFF, comportement identique à avant (colonnes NULL).
+      let enriched: EnrichedEvent | null = null;
+      if (ATTRIBUTION_VERSION === 'v2') {
+        try {
+          const cookieReader = {
+            get: (name: string) => {
+              const cookieHeader = request.headers.get('cookie') ?? '';
+              const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+              return match ? { value: decodeURIComponent(match[1]!) } : undefined;
+            },
+          };
+          const signals = extractRequestSignals({
+            cookies: cookieReader,
+            referrer: event.page.referrer ?? request.headers.get('referer') ?? null,
+          });
+          enriched = await enrichEvent({
+            anonymousId: event.user.anonymous_id,
+            clientHint: event.attribution
+              ? {
+                  channel: event.attribution.channel,
+                  isPaid: event.attribution.is_paid,
+                  utm: event.attribution.utm,
+                }
+              : null,
+            requestSignals: signals,
+          });
+        } catch (err) {
+          // Ne JAMAIS faire échouer l'ingest pour un problème d'enrichissement.
+          // On log + persiste sans attribution (équivalent v1).
+          logger.warn('tracking.enrich.failed', {
+            event_name: event.event,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+
       try {
         await logEvent({
           id: createId('tev'),
           eventId: event.event_id,
-          eventName: event.event,
-          eventCategory: getEventCategory(event.event),
+          eventName,
+          eventCategory: getEventCategory(eventName),
           pageId: event.source?.page_id ?? page?.id ?? null,
           componentId: event.source?.component_id ?? null,
           pageRoute: event.page.path,
@@ -231,16 +306,22 @@ export async function POST(request: Request): Promise<Response> {
           sessionId: event.user.session_id,
           userId: event.user.user_id ?? null,
           consentSnapshot: event.consent as TrackingConsentState,
-          payload: paramsParsed.data as Record<string, unknown>,
+          payload:
+            eventName === event.event
+              ? (paramsParsed.data as Record<string, unknown>)
+              : { ...(paramsParsed.data as Record<string, unknown>), _src_event: event.event },
           uaHash: enrichment.uaHash,
           ipAnonymized: enrichment.ipAnonymized,
           device: enrichment.device,
           locale: event.page.locale || enrichment.locale,
-          isConversion: CONVERSION_EVENTS.has(event.event),
+          isConversion: CONVERSION_EVENTS.has(eventName),
           providersDispatched: dispatch.dispatched,
           providersResults: dispatch.results,
           receivedAt: event.timestamp ? new Date(event.timestamp) : new Date(),
           schemaVersion: event.schema_version ?? 1,
+          // 🔥 Fix attribution audit cause #1 — colonnes désormais persistées.
+          trafficSource: enriched?.trafficSource ?? null,
+          trafficMedium: enriched?.trafficMedium ?? null,
         });
         result.accepted += 1;
 

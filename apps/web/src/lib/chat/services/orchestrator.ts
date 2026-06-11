@@ -17,7 +17,6 @@
 import { logger } from '@/lib/logging/logger';
 
 import type {
-  ChatCannedPairLeadCopyKey,
   ChatLanguage,
   ChatLeadTriggerReason,
   ChatStreamEvent,
@@ -38,6 +37,7 @@ import { sessionRepo } from '../repos/session';
 import { providerRouter } from './provider-router';
 import { sanitizeAndRedact } from './sanitize';
 import { charterFilter } from './charter-filter';
+import { moderateChatText, decideOnModeration } from './moderation';
 import { detectIntent, type ChatIntent } from './intent';
 import { classifyByEmbedding } from './intent-vector';
 import {
@@ -45,7 +45,7 @@ import {
   EmbeddingProviderUnavailableError,
 } from './embeddings';
 import { faqRepo } from '../repos/faq';
-import { shouldOfferLeadForm } from './lead-decision';
+import { shouldOfferLeadForm, type LeadFormCopyKey } from './lead-decision';
 import { detectAssistantReplyLeadTrigger } from './assistant-reply-lead-trigger';
 import { notifyHotLead } from './lead-alerts';
 import { dispatchInlineContactWebhook } from '@/lib/webhooks/outbound/sources/from-inline-contact';
@@ -67,7 +67,7 @@ interface StreamReplyInput {
 interface LeadOfferPayload {
   messageId: string;
   reason: ChatLeadTriggerReason;
-  copyKey: ChatCannedPairLeadCopyKey;
+  copyKey: LeadFormCopyKey;
 }
 
 export async function* streamReply(
@@ -311,6 +311,37 @@ export async function* streamReply(
   }
   const { adapter, row } = chosen;
 
+  // ⭐ Moderation INBOUND (QW2 Sprint 1 live-systems-fix).
+  // Référence : docs/live-systems-fix-2026-05/06-system-chat-openai.md
+  // Flag-gated (LIVE_CHAT_MODERATION) — default OFF pour rétrocompat.
+  // Si flagged → on remplace par message scripté + log + retour anticipé.
+  // Fail-soft : si OpenAI Moderation down → continue (heuristique
+  // charterFilter reste active comme garantie minimum).
+  const inboundMod = await moderateChatText(adapter, sanitized.contentSafe, {
+    sessionId: input.session.id,
+    direction: 'inbound',
+  });
+  if (inboundMod.flagged) {
+    const decision = decideOnModeration(inboundMod, 'inbound');
+    logger.info('chat.input_moderated', {
+      sessionId: input.session.id,
+      categories: inboundMod.categories,
+      action: decision.action,
+    });
+    // Émet la réponse scriptée via la séquence SSE standard start → chunk → end
+    // (le `message_complete` précédent n'existait pas dans l'union d'events → le
+    // client l'ignorait, donc le message de modération n'était jamais affiché).
+    const moderatedContent =
+      decision.scriptedMessage ?? 'Je ne suis pas en mesure de répondre à cela.';
+    yield { event: 'start', data: { messageId: 'moderated_input', language } };
+    yield {
+      event: 'chunk',
+      data: { messageId: 'moderated_input', delta: moderatedContent },
+    };
+    yield { event: 'end', data: { messageId: 'moderated_input', latencyMs: 0 } };
+    return;
+  }
+
   // Pré-crée un message assistant en streaming
   const assistantMessage = await messageRepo.create({
     sessionId: input.session.id,
@@ -372,6 +403,32 @@ export async function* streamReply(
         code: 'charter-out',
         reason: charterOut.reason,
         detected: charterOut.detected,
+      });
+    }
+
+    // ⭐ Moderation OUTBOUND (QW2 Sprint 1 live-systems-fix).
+    // Si la sortie est flagged sur catégorie hard (sexual/minors,
+    // violence/graphic), on log + alerte admin. Si soft (harassment),
+    // on log seulement (la réponse aggregée est déjà envoyée au client
+    // via stream — on ne peut pas la "reprendre"). À termes : moderation
+    // pre-stream-flush si latence acceptable.
+    const outboundMod = await moderateChatText(adapter, aggregated, {
+      sessionId: input.session.id,
+      direction: 'outbound',
+    });
+    if (outboundMod.flagged) {
+      const decision = decideOnModeration(outboundMod, 'outbound');
+      logger.warn('chat.output_moderated', {
+        sessionId: input.session.id,
+        messageId: assistantMessage.id,
+        categories: outboundMod.categories,
+        action: decision.action,
+      });
+      await eventRepo.append(input.session.id, 'error', {
+        messageId: assistantMessage.id,
+        code: 'moderation-out',
+        reason: decision.action,
+        detected: outboundMod.categories,
       });
     }
 

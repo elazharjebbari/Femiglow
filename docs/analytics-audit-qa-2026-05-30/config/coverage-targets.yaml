@@ -1,0 +1,64 @@
+# Cibles de couverture & qualité — batterie de tests analytics
+# Consommé par la CI (gate). Seuils minimaux ; une baisse = échec.
+
+meta:
+  scope: analytics
+  paths:
+    - apps/web/src/lib/analytics/**
+    - apps/web/src/components/admin/analytics/**
+    - apps/web/src/app/api/admin/analytics/**
+    - apps/web/src/app/admin/analytics/**
+  rationale: >
+    La justesse des chiffres (queries) doit etre tres haute ; l'UI est verrouillee
+    surtout par les couches composant+MSW et e2e (orientees operateur).
+
+coverage:
+  # Couche unitaire (justesse des calculs) — exigence forte
+  lib_analytics:
+    statements: 90
+    branches: 85
+    functions: 90
+    lines: 90
+  # Composants dashboards — rendu + etats + refetch
+  components_admin_analytics:
+    statements: 80
+    branches: 75
+    functions: 80
+    lines: 80
+  # Global du scope
+  global:
+    statements: 85
+    branches: 80
+    functions: 85
+    lines: 85
+
+stability:
+  e2e_consecutive_green_runs: 3        # anti-flaky
+  max_flaky_quarantine: 0              # 0 a la cloture
+  timezones_required:                  # cas temporels (AF-04)
+    - UTC
+    - Africa/Casablanca
+
+a11y:
+  tool: "@axe-core/playwright"
+  fail_on:
+    - critical
+    - serious
+  pages:
+    - /admin/analytics/funnel
+    - /admin/analytics/cta
+    - /admin/analytics/checkout
+    - /admin/analytics/insights
+
+non_regression:
+  # 100% des findings P0/P1 doivent avoir un test rouge->vert
+  p0_p1_findings_covered_pct: 100
+  feature_primary_layer_covered_pct: 100   # tous les FN-* a leur niveau primaire
+
+gate:
+  blocking: true
+  triggers_on_paths:
+    - apps/web/src/lib/analytics/**
+    - apps/web/src/components/admin/analytics/**
+    - apps/web/src/app/api/admin/analytics/**
+    - apps/web/src/app/admin/analytics/**

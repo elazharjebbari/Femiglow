@@ -1,0 +1,15 @@
+{
+  "event": "campaign.started",
+  "source": "listmonk",
+  "ts": 1748966900,
+  "data": {
+    "id": 200,
+    "campaign_id": 200,
+    "uuid": "c9d0e1f2-9933-4a55-bb66-778899001122",
+    "name": "Newsletter rituel juin",
+    "subject": "Votre rituel beaute du mois",
+    "status": "running",
+    "type": "regular",
+    "started_at": "2026-06-03T18:48:20.000000Z"
+  }
+}

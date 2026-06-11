@@ -30,10 +30,10 @@ export function ReadingProgress() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed left-0 right-0 top-0 z-sticky h-[2px] bg-transparent"
+      className="pointer-events-none fixed inset-x-0 top-0 z-sticky h-[2px] bg-transparent"
     >
       <div
-        className="h-full origin-left bg-champagne motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-out"
+        className="h-full origin-left rtl:origin-right bg-champagne motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-out"
         style={{ transform: `scaleX(${progress})` }}
       />
     </div>

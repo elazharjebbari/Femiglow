@@ -1,0 +1,97 @@
+{
+  "_note": "Calque prod (evidence-db-2026-06-04.txt). classifyEvent NE mappe PAS address_completed. fetchEvents filtre analytics_storage=granted. NOW=2026-06-03T12:00:00Z; begin_checkout 'anciens' a NOW-2h (fenetre 60min ecoulee). Filtre custom from=NOW-90j to=NOW.",
+  "now": "2026-06-03T12:00:00Z",
+  "filters": {
+    "custom_90d": { "period": "custom", "device": "all", "traffic": "all", "from": "2026-03-05T00:00:00Z", "to": "2026-06-03T12:00:00Z" }
+  },
+  "prod_realistic": {
+    "_desc": "Echantillon proportionnel: 6 sessions illustratives (address_completed=2, add_shipping_info=1, begin_checkout sans conversion=3 anciens, purchase=2). En test reel scaler a 97 begin_checkout / 15 address_completed / 4 add_shipping_info / 13 purchase pour l oracle abandons=84.",
+    "events": [
+      { "id": "bc_old1", "sessionId": "ab1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T10:00:00Z" },
+      { "id": "ac1", "sessionId": "ab1", "eventName": "address_completed", "receivedAt": "2026-06-03T10:01:00Z" },
+      { "id": "bc_old2", "sessionId": "ab2", "eventName": "begin_checkout", "receivedAt": "2026-06-03T10:00:00Z" },
+      { "id": "ac2", "sessionId": "ab2", "eventName": "address_completed", "receivedAt": "2026-06-03T10:02:00Z" },
+      { "id": "bc_old3", "sessionId": "ab3", "eventName": "begin_checkout", "receivedAt": "2026-06-03T09:30:00Z" },
+      { "id": "asi1", "sessionId": "cv1", "eventName": "add_shipping_info", "receivedAt": "2026-06-03T11:00:00Z" },
+      { "id": "bc_cv1", "sessionId": "cv1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T10:55:00Z" },
+      { "id": "ap1", "sessionId": "cv1", "eventName": "add_payment_info", "receivedAt": "2026-06-03T11:01:00Z" },
+      { "id": "pu1", "sessionId": "cv1", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T11:03:00Z" },
+      { "id": "bc_cv2", "sessionId": "cv2", "eventName": "begin_checkout", "receivedAt": "2026-06-03T11:10:00Z" },
+      { "id": "pu2", "sessionId": "cv2", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T11:13:00Z" }
+    ],
+    "expected_before_fix": { "viewCart": 0, "add_shipping": 1, "submit_equals_purchase": true, "beginCheckout": 5, "submissions": 2, "abandons": 3 },
+    "expected_after_fix_full_scale": { "add_shipping": 19, "abandons": 84 }
+  },
+  "address_only": {
+    "_desc": "1 session: begin_checkout + address_completed, aucun add_shipping_info ni purchase.",
+    "events": [
+      { "id": "bc", "sessionId": "x1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T09:00:00Z" },
+      { "id": "ac", "sessionId": "x1", "eventName": "address_completed", "receivedAt": "2026-06-03T09:01:00Z" }
+    ],
+    "expected_before_fix": { "add_shipping": 0, "submit": 0 },
+    "expected_after_fix": { "add_shipping": 1 }
+  },
+  "recent_begin": {
+    "_desc": "begin_checkout a NOW-10min (fenetre 60min non ecoulee) sans purchase.",
+    "events": [
+      { "id": "bcr", "sessionId": "r1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T11:50:00Z" }
+    ],
+    "expected": { "abandons": 0 }
+  },
+  "tts_sample": {
+    "_desc": "3 sessions begin->purchase a +120s/+300s/+600s.",
+    "events": [
+      { "id": "b1", "sessionId": "t1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T11:00:00Z" },
+      { "id": "p1", "sessionId": "t1", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T11:02:00Z" },
+      { "id": "b2", "sessionId": "t2", "eventName": "begin_checkout", "receivedAt": "2026-06-03T11:00:00Z" },
+      { "id": "p2", "sessionId": "t2", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T11:05:00Z" },
+      { "id": "b3", "sessionId": "t3", "eventName": "begin_checkout", "receivedAt": "2026-06-03T11:00:00Z" },
+      { "id": "p3", "sessionId": "t3", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T11:10:00Z" }
+    ],
+    "expected": { "sampleSize": 3, "p50_seconds_approx": 300 }
+  },
+  "tts_bot": {
+    "_desc": "purchase a +0.5s (sub-seconde, exclu MIN_TTS_SECONDS).",
+    "events": [
+      { "id": "bb", "sessionId": "bot1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T11:00:00.000Z" },
+      { "id": "pb", "sessionId": "bot1", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T11:00:00.500Z" }
+    ],
+    "expected": { "sampleSize": 0, "p50": null }
+  },
+  "mixed_consent": {
+    "_desc": "1 begin_checkout granted + 1 denied.",
+    "events": [
+      { "id": "cg", "sessionId": "g1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T11:00:00Z" },
+      { "id": "cd", "sessionId": "d1", "eventName": "begin_checkout", "consentSnapshot": { "analytics_storage": "denied" }, "receivedAt": "2026-06-03T11:05:00Z" }
+    ],
+    "expected": { "beginCheckout": 1 }
+  },
+  "with_view_cart": {
+    "_desc": "[SPEC] 5 view_cart + 3 begin_checkout (apres emission view_cart).",
+    "events": [
+      { "id": "vc1", "sessionId": "v1", "eventName": "view_cart", "receivedAt": "2026-06-03T10:00:00Z" },
+      { "id": "vc2", "sessionId": "v2", "eventName": "view_cart", "receivedAt": "2026-06-03T10:01:00Z" },
+      { "id": "vc3", "sessionId": "v3", "eventName": "view_cart", "receivedAt": "2026-06-03T10:02:00Z" },
+      { "id": "vc4", "sessionId": "v4", "eventName": "view_cart", "receivedAt": "2026-06-03T10:03:00Z" },
+      { "id": "vc5", "sessionId": "v5", "eventName": "view_cart", "receivedAt": "2026-06-03T10:04:00Z" },
+      { "id": "bcv1", "sessionId": "v1", "eventName": "begin_checkout", "receivedAt": "2026-06-03T10:05:00Z" },
+      { "id": "bcv2", "sessionId": "v2", "eventName": "begin_checkout", "receivedAt": "2026-06-03T10:06:00Z" },
+      { "id": "bcv3", "sessionId": "v3", "eventName": "begin_checkout", "receivedAt": "2026-06-03T10:07:00Z" }
+    ],
+    "expected_after_fix": { "viewCart": 5, "begin_checkout_progression": 0.6 }
+  },
+  "with_submit": {
+    "_desc": "[SPEC] 5 checkout_submit dont 3 purchase (apres emission submit explicite).",
+    "events": [
+      { "id": "s1", "sessionId": "w1", "eventName": "checkout_submit", "receivedAt": "2026-06-03T10:00:00Z" },
+      { "id": "s2", "sessionId": "w2", "eventName": "checkout_submit", "receivedAt": "2026-06-03T10:01:00Z" },
+      { "id": "s3", "sessionId": "w3", "eventName": "checkout_submit", "receivedAt": "2026-06-03T10:02:00Z" },
+      { "id": "s4", "sessionId": "w4", "eventName": "checkout_submit", "receivedAt": "2026-06-03T10:03:00Z" },
+      { "id": "s5", "sessionId": "w5", "eventName": "checkout_submit", "receivedAt": "2026-06-03T10:04:00Z" },
+      { "id": "wp1", "sessionId": "w1", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T10:05:00Z" },
+      { "id": "wp2", "sessionId": "w2", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T10:06:00Z" },
+      { "id": "wp3", "sessionId": "w3", "eventName": "purchase", "isConversion": true, "receivedAt": "2026-06-03T10:07:00Z" }
+    ],
+    "expected_after_fix": { "submit": 5, "purchase": 3 }
+  }
+}

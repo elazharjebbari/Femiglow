@@ -1,0 +1,14 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F11-S01,RTL,P0,Nadia,vue outbox (si construite) effets variés,render,liste par statut + compteurs,UI,RSK-15
+F11-S02,RTL,P0,Nadia,outbox avec dead>0,render,alerte visuelle dead,badge,RSK-15
+F11-S03,RTL,P1,Nadia,vue outbox,filtrer statut=dead,seuls dead,filtre,RSK-15
+F11-S04,RTL,P1,Nadia,détail effet dead,render,type+lead+attempts+last_error (sans PII),détail,RSK-15
+F11-S05,INT,P1,Nadia,effet dead,rejouer (replay),repasse pending attempts=0,statut,RSK-15
+F11-S06,SPEC,P0,Nadia,pas d'UI,procédure SQL supervision,dead listés + rejeu SQL documentés,runbook,RSK-15
+F11-S10,INT,P1,système,2 runners,pickBatch concurrent,disjoint (SKIP LOCKED),pas de double,RSK-16
+F11-S11,INT,P1,système,handler KO/OK,process,KO->reschedule, OK->done,statut,RSK-16
+F11-S12,INT,P0,système,cron sans secret,POST,401,status,-
+F11-S13,INT,P0,système,cron avec secret,POST,200 + rapport,status,-
+F11-S14,INT,P1,système,double enqueue même clé,enqueue,1 row (UNIQUE),dedup,RSK-21
+F11-S20,OPS,P0,Nadia,backlog pending monte,observer,alerte/visibilité backlog,seuil,RSK-15
+F11-S21,OPS,P1,Nadia,effet dead,procédure rejeu,effet retraité,done,RSK-15

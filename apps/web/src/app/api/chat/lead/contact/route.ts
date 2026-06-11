@@ -38,6 +38,7 @@ import { env } from '@/lib/env';
 import { parsePhone, PhoneParseError } from '@/lib/phone';
 import { logger } from '@/lib/logging/logger';
 import { sendTransactional } from '@/lib/mail/send';
+import { getKitLeadValue } from '@/lib/products/public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -244,10 +245,17 @@ export async function POST(req: NextRequest): Promise<Response> {
     });
   });
 
+  // T-06 — valeur du lead = prix du kit AVEC promo (server-authoritative).
+  // Renvoyée au client pour que `generate_lead` parte valorisé (bidding
+  // value-based Meta/Ads). Fail-soft : si le prix est indisponible, on omet
+  // value/currency plutôt que d'émettre une currency orpheline.
+  const leadValue = await getKitLeadValue().catch(() => null);
+
   return NextResponse.json({
     ok: true,
     leadId: lead.id,
     outcomeMessage: OUTCOME_MESSAGES[parsed.data.language] ?? OUTCOME_MESSAGES.fr,
     webhookStatus,
+    ...(leadValue ? { value: leadValue.value, currency: leadValue.currency } : {}),
   });
 }

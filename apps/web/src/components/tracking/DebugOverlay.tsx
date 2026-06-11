@@ -18,7 +18,7 @@ export function DebugOverlay(): JSX.Element | null {
 
   if (!enabled) return null;
   return (
-    <div className="fixed bottom-4 right-4 z-[60] max-h-72 w-80 overflow-auto rounded-xl border border-stone-300 bg-white/95 p-3 text-xs shadow-xl backdrop-blur">
+    <div className="fixed bottom-4 end-4 z-[60] max-h-72 w-80 overflow-auto rounded-xl border border-stone-300 bg-white/95 p-3 text-xs shadow-xl backdrop-blur">
       <div className="mb-2 flex items-center justify-between text-stone-700">
         <strong>fg_debug</strong>
         <span>{entries.length} events</span>

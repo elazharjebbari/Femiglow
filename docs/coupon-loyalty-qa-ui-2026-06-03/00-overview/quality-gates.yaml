@@ -1,0 +1,59 @@
+# Portes de qualité — conditions de passage de vague et critères de sortie
+# Référence pour le runbook (99-runbook) et la boucle de correction (90-action-plan).
+
+principes:
+  - "Robustesse avant volume : un test doit pouvoir échouer pour une vraie régression."
+  - "Aucun test orienté UI ne merge sans variante d'erreur réseau (MSW)."
+  - "Aucune PII (téléphone en clair) tolérée dans les assertions ou snapshots."
+
+gates_globales:
+  typecheck: "tsc --noEmit = 0 erreur"
+  lint: "next lint = 0 erreur"
+  unit_integration_components: "vitest run = 100% vert sur le périmètre coupon/fidélité"
+  e2e: "playwright (chromium) = 100% vert sur les specs du dossier"
+  anti_flaky: "tests C/E/A stables sur 3 exécutions consécutives (--repeat-each 3)"
+
+couverture_cible:
+  # Couverture orientée comportement : on vise la couverture des CHEMINS observables,
+  # pas un % brut. Les seuils ci-dessous s'appliquent aux fichiers nouvellement ciblés.
+  composant_admin_CouponsManager:
+    chemins_obligatoires:
+      - "création OK (201) → ligne ajoutée"
+      - "création refusée (403 viewer) → alerte"
+      - "création invalide (422) → alerte"
+      - "création doublon (409) → alerte"
+      - "transition activer (publish) → badge Actif"
+      - "transition pauser → badge En pause"
+      - "transition archiver → ligne verrouillée"
+      - "réactivation archivé refusée (409) → alerte"
+      - "stats à la demande → uplift affiché / (pas de contrôle)"
+      - "grants charger → téléphone masqué + dates fr-MA"
+      - "grants filtre statut/phone"
+      - "erreur réseau générique → message + retry"
+  composant_client:
+    chemins_obligatoires:
+      - "InvitationCodeField: idle→checking→valid (onValid) ; invalid (role=alert) ; anti-stale (onClear) ; <3 chars = pas de requête"
+      - "WizardCartRecap: sans crédit ; avec crédit ; crédit>total (floor 0) ; ligne welcome + forward ; terracotta ; AR rtl"
+      - "ThankYouStep: loyalty présent → carte ; absent → pas de carte ; copie ; date civile ; AR"
+      - "AddressStep: disclosure fermée par défaut ; ouverte si couponCode en store ; setCoupon/clearCoupon"
+  contrats_api:
+    chemins_obligatoires:
+      - "redeem: valid ; not_found ; not_yet_active ; expired ; already_redeemed ; invalid_input(422) ; error(500)"
+      - "status: 200 publish ; 403 write-only ; 409 archived→active ; 422 statut invalide ; 401 sans session"
+      - "stats: agrégation treatment/holdout ; noControl ; lowSample ; 403 ; 404"
+      - "grants: masquage PII ; filtre phone ; filtre status ; 403 rôle invalide"
+
+conditions_passage_vague:
+  W0_fondations: "MSW coupons-handlers.ts créé + smoke test vert ; fixtures partagées prêtes"
+  W1_contrats_api: "F05,F06,F07,F14,F15 verts (contrats)"
+  W2_composants_admin: "F01,F02,F03,F04 verts (CouponsManager)"
+  W3_composants_client: "F08,F09,F10,F11,F12,F13 verts"
+  W4_integration: "F19,F20 verts (pricing/règles métier)"
+  W5_e2e: "F16,F17,F18 verts (parcours) + a11y sans violation critique"
+  W6_durcissement: "anti-flaky 3x OK ; typecheck+lint 0 ; traçabilité complète"
+
+definition_of_done:
+  - "Chaque feature: spec.md + test-cases.csv + scenarios.md + fixtures.json (+ flow.puml si pertinent)"
+  - "Code de test implémenté et vert"
+  - "traceability-matrix.csv mise à jour (test ↔ risque)"
+  - "Aucun TODO/skip résiduel non justifié"

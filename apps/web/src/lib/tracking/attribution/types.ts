@@ -30,6 +30,28 @@ export const PAID_CHANNELS = new Set<AttributionChannel>([
   'bing_ads',
 ]);
 
+/**
+ * Canaux « fallback broadcast » : un visiteur résolu sur l'un d'eux n'est PAS
+ * attribué à un canal payant identifié → une conversion primary est broadcastée
+ * à TOUS les pixels payants (chaque plateforme crédite via sa propre attribution).
+ *
+ * SOURCE DE VÉRITÉ UNIQUE — consommée par :
+ *  - le gate serveur CAPI (`attribution/dispatch-gate.ts` BROADCAST_CHANNELS)
+ *  - l'export GTM client (`plan/exporter.ts`, regex du trigger `[attr/provider]`)
+ * Toute évolution ici se propage aux deux côtés → plus de dérive client/serveur.
+ *
+ * Inclut les sentinelles non-typées `broadcast` (stratégie=broadcast) et
+ * `unknown` (pas de snapshot serveur), d'où le type `string` (pas AttributionChannel).
+ */
+export const BROADCAST_FALLBACK_CHANNELS: readonly string[] = [
+  'direct',
+  'organic',
+  'social_organic',
+  'email',
+  'broadcast',
+  'unknown',
+];
+
 /** Mapping canal → tag GTM provider attendu. Sert pour la condition GTM. */
 export const CHANNEL_TO_PROVIDERS: Record<AttributionChannel, readonly string[]> = {
   google_ads: ['google_ads'],

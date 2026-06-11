@@ -38,6 +38,14 @@ describe('wizardStore — initial state', () => {
     expect(s.leadId).toBeNull();
     expect(s.orderId).toBeNull();
     expect(s.hydrated).toBe(false);
+    expect(s.syncDegraded).toBe(false);
+  });
+
+  it('OWBS — markSyncDegraded() lève le signal FR-11 (sync de fond dégradée)', () => {
+    const store = makeStore();
+    expect(store.getState().syncDegraded).toBe(false);
+    store.getState().markSyncDegraded();
+    expect(store.getState().syncDegraded).toBe(true);
   });
 
   it('addressDraft initial ne contient PAS addressLine2 ni postalCode', () => {

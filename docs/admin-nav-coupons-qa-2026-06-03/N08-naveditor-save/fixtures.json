@@ -1,0 +1,45 @@
+{
+  "_note": "Réponses attendues du handler MSW navSettingsHandlers (src/test/msw/nav-settings-handlers.ts, à créer). variant pilote la réponse; le handler success écho le header If-Match reçu dans la réponse (champ _ifMatch) pour faciliter les asserts, en plus de l'interception directe de la requête.",
+  "props": {
+    "meta": { "version": 1, "updatedAt": "2026-06-01T10:00:00.000Z", "updatedBy": { "id": "adm_1", "email": "op@femiglow.local" }, "isDefault": false },
+    "initialItems": [
+      { "key": "dashboard", "label": "Tableau de bord", "href": "/admin", "icon": "home", "position": 0 },
+      { "key": "coupons", "label": "Coupons", "href": "/admin/coupons", "icon": "tag", "position": 1 },
+      { "key": "leads", "label": "Leads", "href": "/admin/leads", "icon": "users", "position": 2 }
+    ]
+  },
+  "responses": {
+    "success": {
+      "status": 200,
+      "body": {
+        "section": "nav",
+        "payload": { "items": "<<echo du payload reçu>>" },
+        "meta": { "version": 2, "updatedAt": "2026-06-03T12:00:00.000Z", "updatedBy": { "id": "adm_1", "email": "op@femiglow.local" }, "isDefault": false },
+        "snapshotId": "snap_nav_2"
+      }
+    },
+    "conflict": {
+      "status": 409,
+      "body": { "error": { "code": "version_conflict", "message": "Version stale : courante=3, fournie=1", "details": { "currentVersion": 3 } } }
+    },
+    "validation": {
+      "status": 422,
+      "body": { "error": { "code": "validation_failed", "message": "Payload invalide", "details": [ { "path": ["items", 1, "href"], "message": "href doit commencer par /." } ] } }
+    },
+    "server": { "status": 500, "body": { "error": { "code": "internal", "message": "Erreur serveur" } } },
+    "network": "HttpResponse.error()"
+  },
+  "messages": {
+    "success": "Navigation enregistrée.",
+    "conflict": "Une autre modification a été enregistrée. Recharge la page.",
+    "validation": "Validation serveur en échec.",
+    "server": "Erreur serveur.",
+    "clientGuardPattern": "/erreur\\(s\\) à corriger/"
+  },
+  "request": {
+    "method": "PATCH",
+    "url": "/api/admin/settings/nav",
+    "headers": { "If-Match": "1", "Content-Type": "application/json" },
+    "bodyShape": { "payload": { "items": "NavItem[] renumérotés, sans requiresRole:'—'" } }
+  }
+}

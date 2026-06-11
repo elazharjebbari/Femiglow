@@ -1,0 +1,16 @@
+{
+  "event": "delivery.delivered",
+  "queueId": "307018204079726080",
+  "messageId": "<dc917b24-97e9-1ace-b1c5-8cd23685dc00@femiglow-maroc.com>",
+  "queueName": "remote",
+  "from": "bonjour@femiglow-maroc.com",
+  "rcpt": "user1@exemple.test",
+  "to": ["user1@exemple.test"],
+  "size": 2740,
+  "total": 1,
+  "hostname": "mx1.exemple.test",
+  "code": 250,
+  "details": "OK 2.0.0 message accepted for delivery",
+  "elapsed": "647ms",
+  "ts": "2026-05-13T14:41:37Z"
+}

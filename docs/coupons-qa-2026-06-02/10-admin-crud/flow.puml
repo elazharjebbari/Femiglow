@@ -1,0 +1,80 @@
+@startuml CPN-10-admin-crud
+title CPN-10 — Flux CRUD opérateur (création / édition / archivage)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor "Opérateur" as Op
+participant "Page admin\n(/admin/coupons*)" as UI
+participant "Route REST\n/api/admin/coupons" as API
+participant "Zod\ncouponInputSchema" as Zod
+participant "coupon-repo\n(version CAS)" as Repo
+participant "logAuditEvent" as Audit
+participant "revalidateTag" as Cache
+
+== Garde d'accès ==
+Op -> UI : ouvre /admin/coupons
+UI -> UI : requireAdmin()
+alt non authentifié
+  UI --> Op : redirect /admin/login?next=/admin/coupons
+end
+
+== Création ==
+Op -> UI : remplit le formulaire + clique "Enregistrer"
+UI -> UI : valider inline (miroir Zod) + désactiver le bouton
+alt validation client KO
+  UI --> Op : erreurs inline, AUCUN appel réseau
+else validation client OK
+  UI -> API : POST /api/admin/coupons (payload)
+  API -> Zod : safeParse(payload)
+  alt Zod KO
+    API --> UI : 422 { error.fieldErrors }
+    UI --> Op : toast erreur + erreurs inline reconstruites
+  else code dupliqué
+    API --> UI : 409 conflict
+    UI --> Op : "Code déjà utilisé" sous le champ code
+  else OK
+    API -> Repo : insert(status=draft, version=1)
+    Repo --> API : coupon créé
+    API -> Audit : admin.coupon.created
+    API -> Cache : revalidateTag('coupons')
+    API --> UI : 201 { id, status:draft, version:1 }
+    UI --> Op : toast "Coupon créé" + redirect /admin/coupons/{id}
+  end
+end
+
+== Édition (concurrence optimiste) ==
+Op -> UI : modifie + "Enregistrer"
+UI -> API : PATCH /api/admin/coupons/{id} (champs, version)
+API -> Zod : safeParse
+API -> Repo : compare-and-set sur version
+alt version stale
+  Repo --> API : conflit
+  API --> UI : 409 version_conflict
+  UI --> Op : bannière conflit + bouton "Recharger" (aucune écriture)
+else OK
+  Repo --> API : version+1
+  API -> Audit : admin.coupon.updated
+  API -> Cache : revalidateTag('coupons')
+  API --> UI : 200 { version+1 }
+  UI --> Op : toast "Modifications enregistrées"
+end
+
+== Archivage (soft delete) ==
+Op -> UI : clique "Archiver"
+UI --> Op : modale "Archiver ce coupon ?"
+Op -> UI : confirme
+UI -> API : DELETE /api/admin/coupons/{id}
+API -> Repo : set status=archived (idempotent)
+API -> Audit : admin.coupon.archived
+API -> Cache : revalidateTag('coupons')
+API --> UI : 200 { status:archived }
+UI --> Op : toast "Coupon archivé"
+
+note over UI, Cache #DDEFD8
+  Invariant CRUD : toute mutation réussie =
+  1 audit + 1 revalidateTag('coupons').
+  Aucune suppression dure (intégrité coupon_events).
+end note
+
+@enduml

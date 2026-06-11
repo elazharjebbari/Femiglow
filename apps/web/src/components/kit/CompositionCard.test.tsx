@@ -57,7 +57,7 @@ describe('CompositionCard — rendu de base', () => {
   it('rend le titre suivi du volume inline (« 1 Paste · 15 g »)', () => {
     const { container } = render(<CompositionCard subProduct={makeSub()} index={0} />);
     const h3 = container.querySelector('h3');
-    // L'espace entre le nom et le `·` est fourni par `ml-2` (marge CSS) — il
+    // L'espace entre le nom et le `·` est fourni par `ms-2` (marge CSS) — il
     // n'apparaît PAS dans `textContent`. On vérifie donc la concaténation
     // logique (nom + séparateur + volume) sans préjuger du whitespace.
     const text = h3?.textContent?.replace(/\s+/g, ' ').trim();

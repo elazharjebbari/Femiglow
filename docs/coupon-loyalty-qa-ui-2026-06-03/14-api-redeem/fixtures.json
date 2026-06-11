@@ -1,0 +1,67 @@
+{
+  "now": "2026-06-03T00:00:00.000Z",
+  "seedGrants": {
+    "valid": {
+      "templateCouponId": "cpn_tpl",
+      "leadId": "l1",
+      "sourceOrderId": "o_valid",
+      "valueCents": 2000,
+      "phoneE164": "+212600000010",
+      "activatesAt": "2026-05-01T00:00:00.000Z",
+      "note": "activatesAt passé, expiresAt = +60j (2026-06-30) → valide au now",
+      "expectedReason": null,
+      "expectedValid": true
+    },
+    "notYetActive": {
+      "sourceOrderId": "o_future",
+      "valueCents": 2000,
+      "phoneE164": "+212600000011",
+      "activatesAt": "2026-06-13T00:00:00.000Z",
+      "note": "activatesAt dans 10j → now < activatesAt",
+      "expectedReason": "not_yet_active"
+    },
+    "expired": {
+      "sourceOrderId": "o_old",
+      "valueCents": 2000,
+      "phoneE164": "+212600000012",
+      "activatesAt": "2026-01-01T00:00:00.000Z",
+      "note": "expiresAt = 2026-03-02 < now → expiré",
+      "expectedReason": "expired"
+    },
+    "redeemed": {
+      "sourceOrderId": "o_used",
+      "valueCents": 2000,
+      "phoneE164": "+212600000013",
+      "activatesAt": "2026-05-01T00:00:00.000Z",
+      "redeemWith": "ord_used_1",
+      "note": "redeemGrant appliqué → status redeemed",
+      "expectedReason": "already_redeemed"
+    }
+  },
+  "redeem": {
+    "FG-ATLAS-2048": { "valid": true, "valueCents": 2000 },
+    "FG-ATLAS-2048-lower": "fg-atlas-2048",
+    "FG-ATLAS-2048-spaces": "  fg-atlas-2048  ",
+    "FG-INCONNU-0001": { "valid": false, "reason": "not_found" }
+  },
+  "bodies": {
+    "valid": { "code": "FG-ATLAS-2048" },
+    "lowercase": { "code": "fg-atlas-2048" },
+    "spaced": { "code": "  fg-atlas-2048  " },
+    "notFound": { "code": "FG-INCONNU-0001" },
+    "tooShort": { "code": "AB" },
+    "minLen": { "code": "ABC" },
+    "tooLong": { "code": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" },
+    "missingCode": {},
+    "malformed": "not-json"
+  },
+  "expectedStatusByReason": {
+    "valid": 200,
+    "not_found": 200,
+    "not_yet_active": 200,
+    "expired": 200,
+    "already_redeemed": 200,
+    "error": 200,
+    "invalid_input": 422
+  }
+}

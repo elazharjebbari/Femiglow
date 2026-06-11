@@ -50,9 +50,12 @@ describe('sitemap.ts — édition cas standards', () => {
     listSearchableMock.mockResolvedValue([]);
     const out = await sitemap();
     const urls = out.map((e) => e.url);
-    expect(urls).toContain('https://femiglow.ma/');
-    expect(urls).toContain('https://femiglow.ma/rituel');
-    expect(urls).toContain('https://femiglow.ma/contact');
+    // Préfixe locale (FR inclus), variantes traduites présentes.
+    expect(urls).toContain('https://femiglow.ma/fr/');
+    expect(urls).toContain('https://femiglow.ma/fr/rituel');
+    expect(urls).toContain('https://femiglow.ma/fr/contact');
+    expect(urls).toContain('https://femiglow.ma/ar/contact');
+    expect(urls).toContain('https://femiglow.ma/en/kit');
   });
 
   it('inclut les articles du CMS', async () => {
@@ -63,8 +66,11 @@ describe('sitemap.ts — édition cas standards', () => {
     listSearchableMock.mockResolvedValue([]);
     const out = await sitemap();
     const urls = out.map((e) => e.url);
-    expect(urls).toContain('https://femiglow.ma/journal/article-1');
-    expect(urls).toContain('https://femiglow.ma/journal/article-2');
+    // Chaque article décliné FR/AR/EN.
+    for (const loc of ['fr', 'ar', 'en']) {
+      expect(urls).toContain(`https://femiglow.ma/${loc}/journal/article-1`);
+      expect(urls).toContain(`https://femiglow.ma/${loc}/journal/article-2`);
+    }
   });
 
   it('exclut /legal/* si aucune page publiée searchable', async () => {

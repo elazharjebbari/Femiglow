@@ -1,0 +1,25 @@
+{
+  "_note": "N03 verifie le contrat de montage de /admin/coupons. Le RSC async n'est PAS rendu en jsdom : on rend AdminShell+CouponsManager avec active='coupons' (niveau a) et on renvoie a N10 pour la realite RSC (niveau b).",
+  "mount": {
+    "empty": {
+      "adminEmail": "admin@femiglow.ma",
+      "active": "coupons",
+      "initialCoupons": []
+    }
+  },
+  "selectors": {
+    "navCoupons": "admin-nav-coupons",
+    "navSettings": "admin-nav-settings",
+    "manager": "coupons-manager"
+  },
+  "source": {
+    "file": "src/app/admin/coupons/page.tsx",
+    "expectedActiveProp": "coupons",
+    "expectedChild": "CouponsManager"
+  },
+  "e2e": {
+    "route": "/admin/coupons",
+    "storageState": ".auth/admin.json",
+    "renvoi": "N10-e2e-operator-nav"
+  }
+}

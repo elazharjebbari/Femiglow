@@ -1,0 +1,11 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F05-S01,RTL,P0,Salma,syncDegraded=false,render WizardSyncIndicator,rien d'affiché,not in DOM,RSK-08
+F05-S02,RTL,P0,Salma,markSyncDegraded(),render,indicateur role=status visible,getByRole(status),RSK-07
+F05-S03,RTL,P0,Salma,indicateur visible,inspecter,non bloquant (aria-live polite, pas de role=dialog),pas de modal,RSK-07
+F05-S04,RTL,P0,système,retry en cours (pas de drop),flush,markSyncDegraded NON appelé,no flag,RSK-08
+F05-S05,RTL,P0,système,drop (4xx/maxAttempts),onDrop,markSyncDegraded appelé une fois,1 call,-
+F05-S06,PW,P0,Salma,drop simulé (4xx /lead),après transition,navigation address->(retour) reste possible,navigation libre,RSK-07
+F05-S07,PW,P0,Salma,indicateur affiché,cliquer continuer,parcours non bloqué,thank_you atteignable,RSK-07
+F05-S10,RTL,P1,Salma,indicateur,action réessayer,flush re-déclenché + (succès) indicateur effacé,clearSyncDegraded,-
+F05-S11,RTL,P1,Salma,AR/RTL,indicateur,texte traduit + dir,RTL ok,RSK-12
+F05-S12,RTL,P0,Salma,indicateur,axe,0 violation,axe,RSK-13

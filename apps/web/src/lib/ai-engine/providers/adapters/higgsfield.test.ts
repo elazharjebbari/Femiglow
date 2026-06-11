@@ -181,7 +181,6 @@ function mockPollHttpError(status: number, body = `Error ${status}`): void {
  * Must be called after adapter construction.
  */
 function stubAdapterSleep(inst: HiggsFieldAdapter): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vi.spyOn(inst as any, 'sleep').mockResolvedValue(undefined);
 }
 
@@ -710,7 +709,6 @@ describe('HiggsFieldAdapter', () => {
 
       // Spy on pollVideoStatus to always reject with timeout error.
       // Must use mockRejectedValue (not Once) to cover all retry attempts.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.spyOn(adapter as any, 'pollVideoStatus').mockRejectedValue(
         new ProviderError(
           'Higgsfield video generation timed out after 300000ms for job job-008',
@@ -936,7 +934,6 @@ describe('HiggsFieldAdapter', () => {
       mockVideoSubmitResponse('job-all-fail');
       mockVideoSubmitResponse('job-all-fail');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.spyOn(adapter as any, 'pollVideoStatus').mockRejectedValue(
         new ProviderError(
           'Higgsfield video generation timed out after 300000ms for job job-all-fail',

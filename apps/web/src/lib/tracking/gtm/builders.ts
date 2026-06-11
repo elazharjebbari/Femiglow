@@ -472,6 +472,14 @@ export interface BuildOptions {
   exportTime?: Date;
 }
 
+/**
+ * @deprecated Générateur GTM **legacy** (utilisé seulement par le
+ * drift-detector via `gtm/snapshot.ts`, aucune route d'export). Ne gère que
+ * GA4 + Meta (ni Google Ads/awct, ni Conversion Linker, ni TikTok/Snap/
+ * Pinterest, ni value/currency). Cf. audit `docs/tracking-audit-2026-05-31`
+ * (T-09). **Source canonique = `plan/exporter.ts` (`exportPlan`).**
+ * Follow-up : rebrancher le drift-detector sur `exportPlan` puis retirer ce module.
+ */
 export function buildContainer(opts: BuildOptions): GtmContainer {
   resetIds();
 

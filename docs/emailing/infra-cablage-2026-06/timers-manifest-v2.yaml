@@ -1,0 +1,66 @@
+# timers-manifest-v2.yaml — Manifeste OPÉRATOIRE des timers email prod.
+#
+# Remplace docs/emailing/qa-campaign-2026-06/modules/11-infra-monitoring/
+# timers-attendus.yaml (v1, artefact de campagne) avec deux écarts ASSUMÉS,
+# journalisés dans 01-plan-action.md :
+#   D1 — email-campaign-sync : couvert par femiglow-cron-tick (pas de timer dédié)
+#   D2 — rituals-email-j45  : unité créée mais DISABLED (route stub + env absente)
+#
+# Consommé par scripts/run-battery.sh.
+version: 2
+bearer_env: CRON_SECRET
+env_file: /etc/femiglow-cron.env          # 0600 root — AUCUN secret dans les unités
+base_url: "http://127.0.0.1:8011"
+
+timers:
+  - name: femiglow-cron-email-outbox
+    route: /api/cron/email-outbox
+    schedule_kind: interval
+    on_unit_active_sec: 60
+    enabled: true
+    description: "Drain de la file email_outbox (claim + send + reaper sending)."
+
+  - name: femiglow-cron-email-automation
+    route: /api/cron/email-automation
+    schedule_kind: interval
+    on_unit_active_sec: 60
+    enabled: true
+    description: "Runner automation (runs dus) + sweep wait_for_event timeouts (R-028 fixé)."
+
+  - name: femiglow-cron-email-listmonk-cleanup
+    route: /api/cron/email-listmonk-cleanup
+    schedule_kind: calendar
+    on_calendar: "*-*-* 03:10:00"
+    persistent: true
+    enabled: true
+    description: "Suppression des listes Listmonk éphémères expirées. AVANT la purge (garde anti-fuite)."
+
+  - name: femiglow-cron-email-audience-purge
+    route: /api/cron/email-audience-purge
+    schedule_kind: calendar
+    on_calendar: "*-*-* 03:30:00"
+    persistent: true
+    enabled: true
+    description: "Purge des snapshots d'audience expirés (>90j). APRÈS le cleanup."
+
+  - name: femiglow-cron-rituals-email-j45
+    route: /api/cron/rituals-email-j45
+    schedule_kind: calendar
+    on_calendar: "*-*-* 09:00:00"
+    persistent: false
+    enabled: false              # D2 : stub (listOrdersForJ45()→[]) + RITUAL_EMAIL_SECRET absent.
+    description: "Invitation J+45 (review wall). Activer quand la query orders + l'env seront posées."
+
+covered_by_tick:
+  - route: /api/cron/email-campaign-sync   # D1 : syncCampaignStatuses() appelé par /api/cron/tick (60s)
+    carrier: femiglow-cron-tick
+    log_oracle: 'cron.tick.completed contient "campaign_sync"'
+
+probes:
+  webhook_stalwart:
+    receiver_url: "https://femiglow-maroc.com/api/mail/webhook/stalwart"
+    expect_status_without_token: 401      # vivante ET fermée
+    stalwart_admin_api: "http://127.0.0.1:8080"
+  listmonk_bounce:
+    setting: "bounce.enabled"
+    expect: true                          # R-013 — constat seulement tant que non tranchée (D5)

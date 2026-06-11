@@ -1,0 +1,62 @@
+{
+  "_note": "F17 = E2E contre la vraie app + DB (pas de MSW). Précondition: seed-coupons.ts doit avoir créé un template post_purchase ACTIF. Téléphone unique par run pour observer une émission fraîche (INV-IDEMP-PHONE).",
+  "preconditions": {
+    "seedScript": "cd apps/web && pnpm tsx scripts/seed-coupons.ts",
+    "templateRequis": {
+      "type": "post_purchase",
+      "status": "active",
+      "valueAmountCents": 2000,
+      "target": "product_price",
+      "code": "LOYALTY-TEMPLATE"
+    },
+    "verifierStatut": "L'upsert idempotent préserve un status existant — si 'paused', réactiver via /api/admin/coupons/{id}/status {active}",
+    "ordreCI": ["db", "migrations", "seed-coupons", "playwright"]
+  },
+  "lead": {
+    "firstName": "Yasmine",
+    "phoneTemplate": "06####### (9 chiffres, suffixe dérivé du timestamp pour unicité par run)",
+    "consent": true
+  },
+  "address": {
+    "city": "Casablanca",
+    "citySlugAttendu": "casablanca",
+    "addressLine1": "12 rue des Roses, Maârif",
+    "shippingMode": "standard",
+    "paymentMethod": "cod"
+  },
+  "expectedLoyalty": {
+    "codePattern": "^FG-[A-Z]+-\\d{4}$",
+    "valueCents": 2000,
+    "valueLabelFr": "20 MAD",
+    "valueLabelAr": "20 درهم",
+    "activatesAtFormula": "orderDate + maxDeliveryDays(eta) + 1j",
+    "validitéJours": 60
+  },
+  "selectors": {
+    "stepLead": "[data-testid=\"wizard-step-lead\"]",
+    "leadFirstName": "input[name=\"firstName\"]",
+    "leadPhone": "input[name=\"phone\"]",
+    "leadConsent": "input[name=\"consent\"]",
+    "leadSubmit": "[data-testid=\"wizard-lead-submit\"]",
+    "stepAddress": "[data-testid=\"wizard-step-address\"]",
+    "addressCity": "[data-testid=\"wizard-address-city\"]",
+    "addressCityListbox": "[data-testid=\"wizard-address-city-listbox\"]",
+    "addressCityOption": "[data-testid=\"wizard-address-city-option-casablanca\"]",
+    "addressLine1": "[data-testid=\"wizard-address-line1\"]",
+    "addressSubmit": "[data-testid=\"wizard-address-submit\"]",
+    "stepThankYou": "[data-testid=\"wizard-step-thankyou\"]",
+    "orderRef": "[data-testid=\"wizard-thankyou-orderref\"]",
+    "loyaltyCard": "[data-testid=\"loyalty-code-card\"]",
+    "loyaltyValue": "[data-testid=\"loyalty-code-value\"]",
+    "loyaltyCopy": "[data-testid=\"loyalty-code-copy\"]"
+  },
+  "orderResponseShape": {
+    "orderId": "ord_…",
+    "status": "pending_confirmation",
+    "totalCents": 19900,
+    "currency": "MAD",
+    "loyalty": { "code": "FG-SAUGE-7212", "valueCents": 2000, "activatesAt": "2026-06-08T00:00:00.000Z" }
+  },
+  "charte": { "interditsCountdown": ["⏰", "compte à rebours", "/\\d{2}:\\d{2}/"] },
+  "i18nAr": { "route": "/ar/kit", "dir": "rtl", "devise": "درهم", "validité": "لمدة 60 يومًا" }
+}

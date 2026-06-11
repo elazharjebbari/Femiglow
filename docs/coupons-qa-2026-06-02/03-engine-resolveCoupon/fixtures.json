@@ -1,0 +1,199 @@
+{
+  "$comment": "CPN-03 resolveCoupon — table de vérité sélection. now injecté. expectedSelectedId = id du coupon gagnant ou null. Champs coupon réduits aux attributs lus par resolveCoupon.",
+  "nowCanonical": "2026-06-02T12:00:00.000Z",
+  "contextDefaults": { "currency": "MAD", "trafficSource": "direct", "visitorType": "first", "device": "mobile", "visitorKey": "v-001" },
+  "couponDefaults": { "status": "active", "target": "product_price", "currency": "MAD", "eligibility": {}, "startsAt": null, "endsAt": null, "stackable": false, "holdoutPct": 0, "priority": 0 },
+  "cases": [
+    {
+      "id": "RC-01",
+      "label": "active + fenêtre ouverte + eligibility {} -> sélectionné",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [ { "id": "c1", "status": "active", "eligibility": {} } ],
+      "expectedSelectedId": "c1"
+    },
+    {
+      "id": "RC-02",
+      "label": "liste vide -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-03",
+      "label": "draft + paused + archived -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [
+        { "id": "c-draft", "status": "draft" },
+        { "id": "c-paused", "status": "paused" },
+        { "id": "c-arch", "status": "archived" }
+      ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-04",
+      "label": "active vs draft -> active",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [ { "id": "c-active", "status": "active" }, { "id": "c-draft", "status": "draft" } ],
+      "expectedSelectedId": "c-active"
+    },
+    {
+      "id": "RC-05",
+      "label": "now < startsAt -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [ { "id": "c1", "startsAt": "2026-06-03T00:00:00.000Z" } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-06",
+      "label": "now == startsAt (borne incluse) -> sélectionné",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [ { "id": "c1", "startsAt": "2026-06-02T12:00:00.000Z", "endsAt": null } ],
+      "expectedSelectedId": "c1"
+    },
+    {
+      "id": "RC-07",
+      "label": "now == endsAt (borne incluse) -> sélectionné",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [ { "id": "c1", "startsAt": null, "endsAt": "2026-06-02T12:00:00.000Z" } ],
+      "expectedSelectedId": "c1"
+    },
+    {
+      "id": "RC-08",
+      "label": "now > endsAt (expiré 1ms) -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [ { "id": "c1", "endsAt": "2026-06-02T11:59:59.999Z" } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-09",
+      "label": "eligibility {} + trafic email -> sélectionné",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "trafficSource": "email" },
+      "coupons": [ { "id": "c1", "eligibility": {} } ],
+      "expectedSelectedId": "c1"
+    },
+    {
+      "id": "RC-10",
+      "label": "eligibility paid_social + ctx paid_social -> sélectionné",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "trafficSource": "paid_social" },
+      "coupons": [ { "id": "c1", "eligibility": { "trafficSource": ["paid_social"] } } ],
+      "expectedSelectedId": "c1"
+    },
+    {
+      "id": "RC-11",
+      "label": "eligibility paid_social + ctx email -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "trafficSource": "email" },
+      "coupons": [ { "id": "c1", "eligibility": { "trafficSource": ["paid_social"] } } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-12",
+      "label": "eligibility visitorType first + ctx returning -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "visitorType": "returning" },
+      "coupons": [ { "id": "c1", "eligibility": { "visitorType": ["first"] } } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-13",
+      "label": "eligibility device mobile + ctx desktop -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "device": "desktop" },
+      "coupons": [ { "id": "c1", "eligibility": { "device": ["mobile"] } } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-14",
+      "label": "multi-clés ET : source OK device KO -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "trafficSource": "paid_social", "device": "desktop" },
+      "coupons": [ { "id": "c1", "eligibility": { "trafficSource": ["paid_social"], "device": ["mobile"] } } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-15",
+      "label": "clé absente non contrainte (device tablet) -> sélectionné",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "trafficSource": "paid_social", "device": "tablet" },
+      "coupons": [ { "id": "c1", "eligibility": { "trafficSource": ["paid_social"] } } ],
+      "expectedSelectedId": "c1"
+    },
+    {
+      "id": "RC-16",
+      "label": "non-cumul : priorité 10 vs 5 -> priorité 10",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [
+        { "id": "c-bas", "priority": 5 },
+        { "id": "c-haut", "priority": 10 }
+      ],
+      "expectedSelectedId": "c-haut"
+    },
+    {
+      "id": "RC-17",
+      "label": "tie-break priorité égale -> createdAt le plus ancien",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [
+        { "id": "c-mai02", "priority": 10, "createdAt": "2026-05-02T00:00:00.000Z" },
+        { "id": "c-mai01", "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" }
+      ],
+      "expectedSelectedId": "c-mai01"
+    },
+    {
+      "id": "RC-18",
+      "label": "tie-break createdAt égal -> id lexicographique min",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [
+        { "id": "c-b", "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" },
+        { "id": "c-a", "priority": 10, "createdAt": "2026-05-01T00:00:00.000Z" }
+      ],
+      "expectedSelectedId": "c-a"
+    },
+    {
+      "id": "RC-19",
+      "label": "eligibility liste vide -> aucun match -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "trafficSource": "paid_social" },
+      "coupons": [ { "id": "c1", "eligibility": { "trafficSource": [] } } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-20",
+      "label": "target shipping (Phase 1 product_price only) -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": {},
+      "coupons": [ { "id": "c1", "target": "shipping" } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-21",
+      "label": "devise incompatible EUR vs ctx MAD -> null",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "currency": "MAD" },
+      "coupons": [ { "id": "c1", "currency": "EUR" } ],
+      "expectedSelectedId": null
+    },
+    {
+      "id": "RC-22",
+      "label": "résultat indépendant du holdoutPct (0 vs 100) -> même gagnant",
+      "now": "2026-06-02T12:00:00.000Z",
+      "context": { "visitorKey": "v-stable" },
+      "variants": [
+        { "coupons": [ { "id": "c1", "holdoutPct": 0 } ], "expectedSelectedId": "c1" },
+        { "coupons": [ { "id": "c1", "holdoutPct": 100 } ], "expectedSelectedId": "c1" }
+      ]
+    }
+  ]
+}

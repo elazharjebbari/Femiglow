@@ -35,6 +35,10 @@ import {
   ensureSessionId,
   ensureVisitorId,
 } from '@/lib/checkout/client/visitor-id';
+import { newLeadId } from '@/lib/checkout/client/lead-id';
+import { getOrCreateIdempotencyKey } from '@/lib/checkout/client/idempotency-key';
+import { isOptimisticWizardClientEnabled } from '@/lib/checkout/flags';
+import { getLeadSyncQueue } from '@/lib/checkout/state/lead-sync-singleton';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
 import { useTracking } from '@/lib/tracking/use-tracking';
 import {
@@ -48,6 +52,10 @@ import {
 } from '@/lib/tracking/checkout-events';
 import { hashIdentityBrowser } from '@/lib/tracking/providers/hashing-browser';
 import { getEventIdentityFields } from '@/lib/tracking/providers/event-mapping';
+import {
+  getJourneyPurchaseId,
+  readJourneyPurchaseId,
+} from '@/lib/tracking/lead-purchase-cookie';
 import type { CartItemSnapshot } from '@/lib/checkout/schemas/common';
 import { normalizePhoneToE164Maroc } from '@/lib/checkout/schemas/common';
 import type { EmitOptions } from '@/lib/tracking/client';
@@ -197,7 +205,7 @@ export function useLeadCaptureMutation(): {
       const visitorId = ensureVisitorId() ?? 'v_unknown_visitor';
       const sessionId = ensureSessionId() ?? 's_unknown_session';
       try {
-        const res = await wizardClient.createLead({
+        const leadBody = {
           formContext: {
             formId: formContext.formId,
             formMode: formContext.formMode,
@@ -210,14 +218,43 @@ export function useLeadCaptureMutation(): {
           consentVersion: input.consentVersion,
           visitorId,
           sessionId,
-          language: 'fr',
+          language: 'fr' as const,
           cartSnapshot: cartSnapshot ?? undefined,
           page: typeof window !== 'undefined' ? window.location.pathname : undefined,
           referrer: typeof document !== 'undefined' ? document.referrer || undefined : undefined,
-        });
-        setLeadId(res.leadId);
+        };
+
+        // OWBS — chemin optimiste : leadId généré client, on AVANCE
+        // immédiatement (goToStep), et on envoie la création en tâche de fond
+        // (file de sync idempotente). Flag OFF → legacy (await bloquant).
+        // cf. docs/checkout-leads-background-2026-06-01 (ADR-0001/0002/0003).
+        let leadId: string;
+        if (isOptimisticWizardClientEnabled()) {
+          leadId = newLeadId();
+          getLeadSyncQueue().enqueue({
+            leadId,
+            scope: 'lead_create',
+            endpoint: '/api/checkout/lead',
+            method: 'POST',
+            idempotencyKey: getOrCreateIdempotencyKey('lead_create', leadId),
+            payload: { ...leadBody, leadId },
+          });
+        } else {
+          const res = await wizardClient.createLead(leadBody);
+          leadId = res.leadId;
+        }
+        setLeadId(leadId);
         goToStep('address');
         setSuccess();
+        // Pont lead→Meta Purchase (parité `CheckoutFlow`) : on crée/lit le
+        // `eventID` de parcours (jpid) et on le porte sur `lead_capture` ET
+        // `generate_lead` → le pixel Purchase du lead ET la CAPI partagent le
+        // MÊME eventID → dédup native Meta (+ cookie qui bloquera l'achat
+        // réel). No-op si le flag NEXT_PUBLIC lead-as-Purchase est OFF.
+        const jpid = getJourneyPurchaseId();
+        const leadValue = cartSnapshot?.totalCents
+          ? cartSnapshot.totalCents / 100
+          : undefined;
         // Tracking — lead_capture (conversion) — hydratée pour
         // Enhanced Conversions Google Ads + Advanced Matching Meta.
         const userData = await buildUserDataForEvent(
@@ -236,18 +273,37 @@ export function useLeadCaptureMutation(): {
               formMode: formContext.formMode,
               variantKey: formContext.variantKey,
               stepName: 'lead',
-              leadId: res.leadId,
+              leadId,
             }),
             method: 'wizard',
             contact_channels: ['phone'],
             currency: cartSnapshot?.currency ?? 'MAD',
-            value: cartSnapshot?.totalCents
-              ? cartSnapshot.totalCents / 100
-              : undefined,
+            value: leadValue,
+            meta_purchase_eid: jpid ?? undefined,
           }),
           { userData },
         );
-        return { leadId: res.leadId };
+        // `generate_lead` (GA4 standard) — c'est CET event, avec
+        // `method:'abandoned_cart'` (source éligible) + `meta_purchase_eid`,
+        // que le serveur traite comme Meta Purchase (cf.
+        // `lib/tracking/server/lead-as-purchase.ts`). `value`/`currency`
+        // seulement si `value > 0` (currency orpheline = signal invalide).
+        // `generate_lead` porte DÉSORMAIS la conversion Google Ads `lead`
+        // (method-gatée {chat,abandoned_cart}) → on attache `userData` (mêmes
+        // identifiants hashés que lead_capture) pour Enhanced Conversions.
+        emit(
+          'generate_lead',
+          {
+            method: 'abandoned_cart',
+            lead_id: leadId,
+            ...(jpid ? { meta_purchase_eid: jpid } : {}),
+            ...(typeof leadValue === 'number' && leadValue > 0
+              ? { value: leadValue, currency: cartSnapshot?.currency ?? 'MAD' }
+              : {}),
+          },
+          { userData },
+        );
+        return { leadId };
       } catch (e) {
         setError(e);
         emitEvent(
@@ -323,8 +379,12 @@ export function useAddressMutation(): {
   const formContext = useWizardStore((s) => s.formContext);
   const goToStep = useWizardStore((s) => s.goToStep);
   const setOrderId = useWizardStore((s) => s.setOrderId);
+  const setLoyalty = useWizardStore((s) => s.setLoyalty);
   const cartSnapshot = useWizardStore((s) => s.cartSnapshot);
   const leadDraft = useWizardStore((s) => s.leadDraft);
+  // Phase 3 — crédit de fidélité (code + montant validé).
+  const couponCode = useWizardStore((s) => s.couponCode);
+  const creditCents = useWizardStore((s) => s.creditCents);
 
   const execute = useCallback(
     async (input: AddressMutationInput): Promise<void> => {
@@ -344,6 +404,14 @@ export function useAddressMutation(): {
       });
 
       // ── 1) PATCH address ─────────────────────────────────────────────────
+      // OWBS — garantit que le lead (potentiellement créé en tâche de fond en
+      // mode optimiste) est bien persisté côté serveur AVANT la conversion :
+      // patchAddress / createOrder référencent `leadId`. Flush quasi instantané
+      // s'il a déjà abouti pendant la saisie de l'adresse. cf. ADR-0002 (snapshot).
+      if (isOptimisticWizardClientEnabled()) {
+        await getLeadSyncQueue().flush();
+      }
+
       try {
         await wizardClient.patchAddress(leadId, {
           city: input.city.trim(),
@@ -439,15 +507,24 @@ export function useAddressMutation(): {
             formMode: formContext.formMode,
             variantKey: formContext.variantKey ?? null,
             source: formContext.source,
-            language: formContext.language,
+            // CHA-232 — la langue persistée reste `fr|ar` (contrainte SQL) ;
+            // `en` n'est qu'une langue d'affichage → ramenée à `fr` ici.
+            language: formContext.language === 'en' ? 'fr' : formContext.language,
           },
           items: cartSnapshot.items,
-          expectedTotalCents: cartSnapshot.totalCents,
+          // Phase 3 — INVARIANT anti-422 : le total attendu inclut le crédit
+          // (plafonné au total). Le serveur reprice et soustrait le MÊME
+          // crédit (via le grant du code) → les totaux coïncident.
+          expectedTotalCents:
+            cartSnapshot.totalCents - Math.min(creditCents, cartSnapshot.totalCents),
           currency: cartSnapshot.currency,
           paymentMethod: DEFAULT_PAYMENT_METHOD,
           shippingMode: input.shippingMode,
+          couponCode: couponCode ?? undefined,
         });
         setOrderId(res.orderId);
+        // Phase 3 — mémorise le code de fidélité émis (affiché au ThankYouStep).
+        if (res.loyalty) setLoyalty(res.loyalty);
         // Conversion principale — identity complète hydratée
         // (Enhanced Conversions Google Ads + Advanced Matching Meta).
         // Email pas encore connu à ce stade (capturé optionnellement au
@@ -461,6 +538,11 @@ export function useAddressMutation(): {
             country: input.country,
           },
         );
+        // Si un lead a précédé (cookie jpid posé), l'achat réel porte le MÊME
+        // jpid → la CAPI déduplique avec le lead même si le ledger serveur a été
+        // perdu (restart). Achat direct → null → event_id client standard.
+        // Parité avec le `CheckoutFlow` legacy.
+        const purchaseJpid = readJourneyPurchaseId();
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.purchase,
@@ -477,6 +559,7 @@ export function useAddressMutation(): {
               currency: res.currency,
             })),
             payment_type: DEFAULT_PAYMENT_METHOD,
+            meta_purchase_eid: purchaseJpid ?? undefined,
           }),
           { userData: userDataPurchase },
         );
@@ -501,8 +584,11 @@ export function useAddressMutation(): {
       leadId,
       formContext,
       cartSnapshot,
+      couponCode,
+      creditCents,
       goToStep,
       setOrderId,
+      setLoyalty,
       setLoading,
       setSuccess,
       setError,
@@ -636,7 +722,12 @@ export function useOrderCreateMutation(): {
         setOrderId(res.orderId);
         goToStep('thank_you');
         setSuccess();
-        // Conversion finale (purchase)
+        // Conversion finale (purchase). Si un lead a précédé (cookie jpid posé),
+        // l'achat réel porte le MÊME jpid → la CAPI déduplique avec le lead même
+        // si le ledger serveur a été perdu (restart). Achat direct (sans lead) :
+        // `readJourneyPurchaseId()` renvoie null → event_id client standard.
+        // Parité avec `CheckoutFlow`.
+        const purchaseJpid = readJourneyPurchaseId();
         emitEvent(
           emit,
           CHECKOUT_EVENT_NAMES.purchase,
@@ -659,6 +750,7 @@ export function useOrderCreateMutation(): {
               currency: res.currency,
             })),
             payment_type: input.paymentMethod,
+            meta_purchase_eid: purchaseJpid ?? undefined,
           }),
         );
         return { orderId: res.orderId };

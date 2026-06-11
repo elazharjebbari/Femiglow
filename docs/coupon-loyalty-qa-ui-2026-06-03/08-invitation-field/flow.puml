@@ -1,0 +1,34 @@
+@startuml F08-invitation-field-states
+title InvitationCodeField — machine à états (validation non mutante)
+
+state idle
+state checking
+state valid
+state invalid
+
+[*] --> idle : montage (initialCode éventuel)
+
+idle --> idle : frappe (code.trim < 3) — bouton disabled, AUCUN POST
+idle --> checking : clic « Appliquer » (code.trim >= 3)\nPOST /api/coupons/redeem { code }
+
+checking --> valid : 200 { valid:true, valueCents:number }\nsetStatus(valid) + onValid(code.toUpperCase(), valueCents)
+checking --> invalid : 200 { valid:false | valueCents absent }\nsetStatus(invalid, reason)
+checking --> invalid : fetch/json throw (network)\nsetStatus(invalid, 'error')
+
+valid --> idle : frappe dans le champ\nsetStatus(idle) + onClear()
+invalid --> idle : frappe dans le champ\nsetStatus(idle) + onClear()
+
+note right of checking
+  bouton textContent = « … », disabled
+  (anti double-soumission)
+end note
+note right of valid
+  bouton REMPLACÉ par médaillon coche sauge (aria-hidden)
+  <p data-testid=invitation-code-ok>
+end note
+note right of invalid
+  <p data-testid=invitation-code-ko role=alert>
+  message KO générique (reason brut NON exposé)
+  not_found / expired / not_yet_active / already_redeemed → même texte
+end note
+@enduml

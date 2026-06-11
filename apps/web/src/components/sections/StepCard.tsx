@@ -33,9 +33,11 @@ const accentResultRing: Record<FeedAccent, string> = {
 
 export interface StepCardProps {
   step: ProductFeedStep;
+  /** Phase 9bis — libellé du badge « Résultat » localisé. Défaut FR. */
+  resultLabel?: string;
 }
 
-export function StepCard({ step }: StepCardProps): JSX.Element {
+export function StepCard({ step, resultLabel = 'Résultat' }: StepCardProps): JSX.Element {
   return (
     <article
       data-testid={`step-card-${step.step}`}
@@ -71,7 +73,7 @@ export function StepCard({ step }: StepCardProps): JSX.Element {
             data-testid={`step-badge-${step.step}`}
             className="inline-flex items-center rounded-full bg-champagne-dark/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-champagne-dark"
           >
-            Résultat
+            {resultLabel}
           </span>
         )}
       </div>

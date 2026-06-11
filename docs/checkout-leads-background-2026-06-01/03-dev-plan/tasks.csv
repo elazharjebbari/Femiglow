@@ -1,0 +1,19 @@
+task_id,phase,title,depends_on,workstream,estimate_d,requirement,tests,dod_ref,status
+A0.1,P0,Flag env CHECKOUT_OPTIMISTIC_WIZARD_ENABLED,,WS-Backend,0.25,FR-10,TST-U-00,DOD-CODE,todo
+A0.2,P0,client lead-id.ts (newLeadId/isLeadId),,WS-Frontend,0.25,FR-01,TST-U-01,DOD-CODE,todo
+A0.3,P0,Migration lead_event_outbox + CHECK chat_lead.id,,WS-Backend,0.75,FR-08,TST-I-00,DOD-DB,todo
+A0.4,P0,Schemas Zod + JSON (envelope/batch/leadId requis),A0.2,WS-Backend,0.5,FR-01;FR-04,TST-U-02,DOD-CODE,todo
+A1.1,P1,lead-repo create->upsert + upsertAddress/Payment,A0.4,WS-Backend,1,FR-04,TST-I-01;TST-I-02;TST-I-03;TST-I-04,DOD-CODE,todo
+A1.2,P1,lead-service (orchestration transactionnelle),A1.1;A0.3,WS-Backend,1,FR-04;FR-08,TST-U-03;TST-I-09,DOD-CODE,todo
+A1.3,P1,Brancher routes granulaires sur lead-service,A1.2,WS-Backend,0.5,FR-04;FR-10,TST-R-OFF,DOD-COMPAT,todo
+A2.1,P2,lead-outbox-repo (enqueue/pick SKIP LOCKED/reschedule),A0.3,WS-Backend,1,FR-08,TST-I-05;TST-I-06;TST-I-07;TST-I-08,DOD-CODE,todo
+A2.2,P2,lead-outbox-processor + handlers (adapters),A2.1,WS-Backend,1,FR-08,TST-U-04;TST-I-10,DOD-CODE,todo
+A2.3,P2,cron/lead-outbox route + timer systemd,A2.2,WS-Ops,0.5,FR-08;NFR-05,TST-I-11,DOD-OPS,todo
+A3.1,P3,lead-sync-queue (FIFO/retry/mirror/transport),A0.2;A0.4,WS-Frontend,1.5,FR-03;NFR-04,TST-U-10;TST-U-11;TST-U-12;TST-U-13;TST-U-14;TST-M-01;TST-M-02;TST-M-03,DOD-CODE,todo
+A3.2,P3,wizard-store optimiste + use-wizard-mutations (flag),A3.1;A1.3,WS-Frontend,1,FR-02;FR-10,TST-U-15;TST-U-16;TST-E-01;TST-E-02,DOD-CODE,todo
+A4.1,P4,/api/checkout/lead/sync batch idempotent,A1.2,WS-Backend,1,FR-06,TST-I-12;TST-I-13;TST-I-14,DOD-CODE,todo
+A4.2,P4,beacon-flush + recovery reload,A3.1;A4.1,WS-Frontend,1,FR-06;NFR-02,TST-U-17;TST-E-03;TST-E-04,DOD-CODE,todo
+A5.1,P5,order/route snapshot complet + enqueue outbox,A1.2;A2.1,WS-Backend,1,FR-07;FR-08,TST-I-15;TST-I-16;TST-I-17;TST-E-05,DOD-CODE,todo
+A6.1,P6,use-chat-send via lead-sync-queue,A3.1,WS-Frontend,1,FR-09,TST-U-18;TST-E-06,DOD-CODE,todo
+A7.1,P7,Observabilite + rate-limit /sync + FR-11,A4.1;A3.1,WS-Frontend;WS-Backend,1,FR-11;NFR-06,TST-U-19;TST-I-18;TST-E-07,DOD-OPS,todo
+A8.1,P8,Ramp flag + suppression legacy,A7.1,WS-QA;WS-Ops,1,NFR-07,full-suite,DOD-GA,todo

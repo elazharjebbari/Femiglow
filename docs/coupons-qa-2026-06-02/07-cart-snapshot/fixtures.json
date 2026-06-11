@@ -1,0 +1,47 @@
+{
+  "$comment": "CPN-07 cart-snapshot — fixtures. Tous les montants en centimes. Le helper est PUR : promoPriceCents reçu = effectivePriceCents injecté par l'appelant coupon-aware. totalCents DOIT égaler le reprice order-repo (anti-422).",
+  "sku": "le-kit",
+  "currency": "MAD",
+  "productName": "Le Kit FemiGlow",
+  "variantId": "var-le-kit-1",
+  "basePriceCents": 28900,
+  "effectiveWithCouponCents": 19900,
+  "snapshotCases": [
+    {
+      "id": "S-COUPON-Q1",
+      "label": "coupon actif qty 1",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "quantity": 1 },
+      "expected": { "unitPriceCents": 19900, "compareAtPriceCents": 28900, "totalCents": 19900, "compareAtTotalCents": 28900 }
+    },
+    {
+      "id": "S-COUPON-Q2",
+      "label": "coupon actif qty 2",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "quantity": 2 },
+      "expected": { "unitPriceCents": 19900, "compareAtPriceCents": 28900, "totalCents": 39800, "compareAtTotalCents": 57800 }
+    },
+    {
+      "id": "S-COUPON-Q3",
+      "label": "coupon actif qty 3",
+      "input": { "priceCents": 28900, "promoPriceCents": 19900, "quantity": 3 },
+      "expected": { "unitPriceCents": 19900, "compareAtPriceCents": 28900, "totalCents": 59700, "compareAtTotalCents": 86700 }
+    },
+    {
+      "id": "S-NOCOUPON",
+      "label": "pas de coupon",
+      "input": { "priceCents": 28900, "promoPriceCents": null, "quantity": 1 },
+      "expected": { "unitPriceCents": 28900, "compareAtPriceCents": null, "totalCents": 28900, "compareAtTotalCents": null }
+    }
+  ],
+  "guardCases": [
+    { "id": "G-EQ", "label": "promo == prix", "input": { "priceCents": 28900, "promoPriceCents": 28900, "quantity": 1 }, "expected": { "unitPriceCents": 28900, "compareAtPriceCents": null } },
+    { "id": "G-GT", "label": "promo > prix", "input": { "priceCents": 28900, "promoPriceCents": 30000, "quantity": 1 }, "expected": { "unitPriceCents": 28900, "compareAtPriceCents": null } },
+    { "id": "G-ZERO", "label": "promo 0", "input": { "priceCents": 28900, "promoPriceCents": 0, "quantity": 1 }, "expected": { "unitPriceCents": 28900, "compareAtPriceCents": null } },
+    { "id": "G-NEG", "label": "promo négative", "input": { "priceCents": 28900, "promoPriceCents": -100, "quantity": 1 }, "expected": { "unitPriceCents": 28900, "compareAtPriceCents": null } }
+  ],
+  "crossSurfaceParity": [
+    { "id": "XS-TREAT-Q1", "bucket": "treatment", "quantity": 1, "snapshotTotalCents": 19900, "repriceExpectedTotalCents": 19900, "priceMismatch422": false },
+    { "id": "XS-TREAT-Q2", "bucket": "treatment", "quantity": 2, "snapshotTotalCents": 39800, "repriceExpectedTotalCents": 39800, "priceMismatch422": false },
+    { "id": "XS-NOCOUPON", "bucket": "none", "quantity": 1, "snapshotTotalCents": 28900, "repriceExpectedTotalCents": 28900, "priceMismatch422": false },
+    { "id": "XS-FRAUD", "bucket": "treatment", "quantity": 1, "clientForgedTotalCents": 1000, "repriceExpectedTotalCents": 19900, "priceMismatch422": true }
+  ]
+}

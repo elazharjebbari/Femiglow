@@ -19,6 +19,7 @@ export type AudiencePreviewProps = {
 };
 
 type Sample = { email: string; name: string | null; createdAt: string };
+type Breakdown = { matched: number; excluded: number; deliverable: number };
 
 function isRulesValid(g: RulesGroup): boolean {
   // Empty all → matches everyone → on évite, c'est inutile
@@ -39,6 +40,8 @@ export function AudiencePreview({
   const [error, setError] = useState<string | null>(null);
   const [samples, setSamples] = useState<Sample[]>([]);
   const [showSamples, setShowSamples] = useState(false);
+  const [breakdown, setBreakdown] = useState<Breakdown | null>(null);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
 
   const fetchSize = useCallback(async () => {
     if (!isRulesValid(rules)) {
@@ -88,6 +91,26 @@ export function AudiencePreview({
     }
   }, [rules, exclusionFlags, fetchImpl]);
 
+  // UX-AUD-011 — détail santé du ciblage : ciblés − exclus = envoyables.
+  const fetchBreakdown = useCallback(async () => {
+    setBreakdownLoading(true);
+    setError(null);
+    try {
+      const res = await fetchImpl('/api/admin/emails/audiences/preview-breakdown', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ rules, exclusionFlags }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = (await res.json()) as Breakdown;
+      setBreakdown(body);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBreakdownLoading(false);
+    }
+  }, [rules, exclusionFlags, fetchImpl]);
+
   return (
     <div
       data-testid="audience-preview"
@@ -134,12 +157,46 @@ export function AudiencePreview({
         )}
       </div>
 
+      {/* UX-AUD-011 — drill-down ciblés / exclus / envoyables. */}
+      {size !== null && (
+        <div className="mt-2">
+          {breakdown === null ? (
+            <button
+              type="button"
+              onClick={fetchBreakdown}
+              disabled={breakdownLoading}
+              data-testid="show-breakdown"
+              className="text-xs text-sage-700 underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              {breakdownLoading ? 'Calcul…' : '▾ Détailler ciblés / exclus / envoyables'}
+            </button>
+          ) : (
+            <p className="text-xs text-stone-600" data-testid="breakdown">
+              <span data-testid="breakdown-matched">
+                {breakdown.matched.toLocaleString('fr-FR')} ciblé
+                {breakdown.matched !== 1 ? 's' : ''}
+              </span>
+              {' − '}
+              <span className="text-rose-700" data-testid="breakdown-excluded">
+                {breakdown.excluded.toLocaleString('fr-FR')} exclu
+                {breakdown.excluded !== 1 ? 's' : ''}
+              </span>
+              {' = '}
+              <span className="font-semibold text-emerald-700" data-testid="breakdown-deliverable">
+                {breakdown.deliverable.toLocaleString('fr-FR')} envoyable
+                {breakdown.deliverable !== 1 ? 's' : ''}
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+
       {size !== null && size > 0 && !showSamples && (
         <button
           type="button"
           onClick={fetchSamples}
           data-testid="show-samples"
-          className="mt-2 text-xs text-sage-700 underline-offset-2 hover:underline"
+          className="mt-2 block text-xs text-sage-700 underline-offset-2 hover:underline"
         >
           ▾ Voir 10 exemples
         </button>

@@ -1,0 +1,58 @@
+{
+  "$comment": "Fixtures CPN-15 — porte 'J'ai un code d'invitation'. INERTE en Phase 1. Aucune PII.",
+  "variants": {
+    "$comment": "Deux variantes acceptables ; Option A recommandée. À figer à l'implémentation.",
+    "optionA": {
+      "hasField": false,
+      "description": "Pas de champ. Contenu = texte explicatif inerte."
+    },
+    "optionB": {
+      "hasField": true,
+      "fieldDisabled": true,
+      "description": "Champ + bouton présents mais disabled + aria-disabled, hors tab order, aucune soumission."
+    }
+  },
+  "expectedText": {
+    "fr": {
+      "invitationSummary": "J'ai un code d'invitation",
+      "invitationBodyOptionA": "Votre avantage est déjà appliqué automatiquement.",
+      "invitationFieldPlaceholderOptionB": "Code d'invitation",
+      "invitationButtonOptionB": "Appliquer"
+    },
+    "ar": {
+      "invitationSummary": "لدي رمز دعوة",
+      "invitationBodyOptionA": "تم تطبيق ميزتك تلقائيًا بالفعل.",
+      "invitationFieldPlaceholderOptionB": "رمز الدعوة",
+      "invitationButtonOptionB": "تطبيق",
+      "$comment": "Textes arabes indicatifs — à valider par la rédaction maison ; les tests asserteront les clés i18n."
+    }
+  },
+  "initialState": {
+    "detailsOpen": false,
+    "ariaExpanded": "false",
+    "fieldVisible": false,
+    "fieldFocusable": false
+  },
+  "afterOpen": {
+    "detailsOpen": true,
+    "ariaExpanded": "true"
+  },
+  "inertGuarantees": {
+    "networkRequestsOnOpen": 0,
+    "couponAppliedOnInteract": false,
+    "submitEffect": "none"
+  },
+  "charteForbidden": {
+    "summaryRedYellowRegex": "(text|bg|border)-(red|yellow)-|#FF0000|#FFEB3B",
+    "summaryFullBgRegex": "bg-(sauge|champagne|encre)\\b",
+    "massiveRoundRegex": "rounded-(2xl|3xl|full)",
+    "aggressiveAnimRegex": "animate-(bounce|pulse|ping|spin)",
+    "emojiRegex": "\\p{Extended_Pictographic}",
+    "exclamation": "!"
+  },
+  "charteExpectedSummaryClasses": {
+    "$comment": "Lien discret : texte encre atténué, soulignement au focus/hover, curseur pointer.",
+    "text": ["text-encre/65", "text-encre-soft"],
+    "interactionHints": ["cursor-pointer", "underline", "hover:underline", "focus-visible:"]
+  }
+}

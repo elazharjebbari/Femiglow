@@ -50,7 +50,7 @@ export function HeroGalleryMain({
         className="object-cover"
       />
       {image.caption ? (
-        <figcaption className="absolute bottom-2 right-2 rounded-full bg-encre/70 px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-creme-warm">
+        <figcaption className="absolute bottom-2 end-2 rounded-full bg-encre/70 px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-creme-warm">
           {image.caption}
         </figcaption>
       ) : null}

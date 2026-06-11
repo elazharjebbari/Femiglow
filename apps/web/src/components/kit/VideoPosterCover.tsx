@@ -38,6 +38,31 @@ import { YouTubeEmbed } from '@/components/sections/YouTubeEmbed';
 import type { RituelVideo } from '@/lib/schemas';
 import { sanitizeSvgClient } from '@/lib/kit/video/sanitize-svg-client';
 
+/**
+ * Phase 7E — libellés courts localisés de l'overlay éditorial du poster.
+ * Tous optionnels via le défaut FR `DEFAULT_VIDEO_POSTER_STRINGS`. Ne couvre
+ * QUE l'overlay UI (kicker, titre 2 lignes, sous-titre 2 lignes, aria play) —
+ * aucun contenu long.
+ */
+export interface VideoPosterStrings {
+  kicker: string;
+  titleLine1: string;
+  titleLine2: string;
+  subtitleLine1: string;
+  subtitleLine2: string;
+  /** Préfixe de l'aria-label du bouton play (« Lancer la vidéo : <alt> »). */
+  playAriaPrefix: string;
+}
+
+export const DEFAULT_VIDEO_POSTER_STRINGS: VideoPosterStrings = {
+  kicker: 'La manucure japonaise',
+  titleLine1: 'Brille 3 semaines.',
+  titleLine2: 'Sans vernis.',
+  subtitleLine1: "Cire d'abeille, silicates, poudre de perle.",
+  subtitleLine2: "4 gestes en 90 secondes — c'est tout.",
+  playAriaPrefix: 'Lancer la vidéo :',
+};
+
 export interface VideoPosterCoverProps {
   video: RituelVideo;
   /** ID stable pour le tracking analytics (`video_user_play`, etc.). */
@@ -48,6 +73,8 @@ export interface VideoPosterCoverProps {
   played: boolean;
   /** Callback déclenché par le clic utilisateur sur le poster. */
   onPlay: () => void;
+  /** Phase 7E — libellés courts localisés de l'overlay. Défaut FR si absent. */
+  strings?: VideoPosterStrings;
 }
 
 /**
@@ -125,7 +152,14 @@ function PosterMedia({
 }
 
 function VideoPosterCoverImpl(
-  { video, videoId, iframeTitle, played, onPlay }: VideoPosterCoverProps,
+  {
+    video,
+    videoId,
+    iframeTitle,
+    played,
+    onPlay,
+    strings = DEFAULT_VIDEO_POSTER_STRINGS,
+  }: VideoPosterCoverProps,
   iframeRef: ForwardedRef<HTMLIFrameElement>,
 ): JSX.Element {
   const buttonId = useId();
@@ -155,7 +189,7 @@ function VideoPosterCoverImpl(
       id={buttonId}
       type="button"
       onClick={onPlay}
-      aria-label={`Lancer la vidéo : ${posterImage.alt}`}
+      aria-label={`${strings.playAriaPrefix} ${posterImage.alt}`}
       className="group absolute inset-0 overflow-hidden rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8A876] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8EDE3]"
       data-testid="video-poster-cover"
     >
@@ -185,19 +219,20 @@ function VideoPosterCoverImpl(
         className="pointer-events-none absolute inset-x-4 top-6 flex flex-col gap-2 text-creme sm:inset-x-8 sm:top-10"
       >
         <span className="font-body text-[10px] font-medium uppercase tracking-[0.22em] text-[#C3D4B5] sm:text-[11px]">
-          La manucure japonaise
+          {strings.kicker}
         </span>
         <span
           className="font-display text-[26px] leading-[1.05] sm:text-[34px]"
           style={{ fontStyle: 'italic' }}
         >
-          Brille 3 semaines.
+          {strings.titleLine1}
           <br />
-          Sans vernis.
+          {strings.titleLine2}
         </span>
         <span className="font-body text-[12px] leading-snug text-creme/85 sm:text-[13px]">
-          Cire d'abeille, silicates, poudre de perle.
-          <br />4 gestes en 90 secondes — c'est tout.
+          {strings.subtitleLine1}
+          <br />
+          {strings.subtitleLine2}
         </span>
       </div>
 
@@ -218,7 +253,7 @@ function VideoPosterCoverImpl(
       {video.durationDisplay ? (
         <span
           aria-hidden="true"
-          className="absolute bottom-3 left-3 inline-flex items-center rounded-sm bg-[#2C2A28]/80 px-2 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-creme [font-variant-numeric:tabular-nums]"
+          className="absolute bottom-3 start-3 inline-flex items-center rounded-sm bg-[#2C2A28]/80 px-2 py-1 font-body text-[11px] uppercase tracking-[0.18em] text-creme [font-variant-numeric:tabular-nums]"
           data-testid="video-poster-duration-badge"
         >
           {video.durationDisplay}

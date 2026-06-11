@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'Le rituel \u2014 manucure japonaise halal, deux gestes',
     description:
-      'Origine japonaise, sciences du soin, interview de Souheila \u00E0 Rabat. Le rituel FemiGlow racont\u00e9 sans pr\u00E9cipitation.',
+      'Origine japonaise, sciences du soin, interview de notre fondatrice \u00E0 Rabat. Le rituel FemiGlow racont\u00E9 sans pr\u00E9cipitation.',
     alternates: { canonical: '/rituel' },
     openGraph: {
       type: 'article',

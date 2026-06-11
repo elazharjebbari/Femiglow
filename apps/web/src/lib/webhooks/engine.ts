@@ -56,6 +56,15 @@ export async function attemptDelivery(
   const now = options.now ?? (() => new Date());
   const timeoutMs = options.timeoutMs ?? ATTEMPT_TIMEOUT_MS;
 
+  // Garde d'idempotence : une delivery déjà `succeeded` ne doit JAMAIS être
+  // re-POSTée par un chemin de dispatch (ex. 2 sources partageant la même
+  // idempotency-key → createDelivery renvoie la ligne existante, qu'on ne
+  // veut pas renvoyer au CRM). Le replay admin reset explicitement à `pending`
+  // avant d'appeler attemptDelivery, donc il n'est pas affecté.
+  if (delivery.status === 'succeeded') {
+    return delivery;
+  }
+
   const endpoint = await getWebhookEndpoint(delivery.endpointId);
   if (!endpoint) {
     return recordDeliveryAttempt({

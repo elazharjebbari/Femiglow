@@ -1,0 +1,29 @@
+@startuml F09-address-disclosure-sequence
+title AddressStep — disclosure crédit : saisie → redeem → store → total
+
+actor Yasmine
+participant "AddressStep\n(<details>)" as Step
+participant "InvitationCodeField" as Field
+participant "MSW /api/coupons/redeem" as Redeem
+participant "wizardStore" as Store
+participant "WizardCartRecap\n(F10)" as Recap
+
+note over Step
+  init couponDisclosureOpen = !!couponCode
+  store sans code → fermée ; avec code → ouverte d'office
+end note
+
+Yasmine -> Step : clic summary « J'ai un code de fidélité »
+Step -> Step : onToggle → couponDisclosureOpen = true (chevron rotate-90)
+Yasmine -> Field : saisit « FG-SAUGE-7212 », clic « Appliquer »
+Field -> Redeem : POST { code }
+Redeem --> Field : 200 { valid:true, valueCents:2000 }
+Field -> Step : onValid('FG-SAUGE-7212', 2000)
+Step -> Store : setCoupon('FG-SAUGE-7212', 2000)\n(upper/trim, clamp >=0)
+Store --> Recap : credit = min(2000, total)\ntotal = total − credit (plancher 0)  [INV-422]
+
+== Anti-stale ==
+Yasmine -> Field : modifie un caractère
+Field -> Step : onClear()
+Step -> Store : clearCoupon() → couponCode=null, creditCents=0
+@enduml

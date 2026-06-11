@@ -1,0 +1,87 @@
+@startuml CPN-03-resolveCoupon-decision
+title CPN-03 — Arbre de décision resolveCoupon(ctx)
+
+skinparam shadowing false
+skinparam ActivityBackgroundColor #F7F4EC
+skinparam ActivityBorderColor #4A4A42
+
+start
+:Entrée : ctx { now, currency, trafficSource,
+visitorType, device, visitorKey, candidates[] };
+
+if (candidates est vide ?) then (oui)
+  :retour null;
+  stop
+endif
+
+partition "1. Filtre statut" {
+  :ne garder que status == 'active';
+  note right
+    draft / paused / archived
+    -> éliminés
+  end note
+}
+
+partition "2. Filtre fenêtre (bornes incluses, sur ctx.now)" {
+  :garder si
+  (startsAt == null OU startsAt <= now)
+  ET (endsAt == null OU now <= endsAt);
+  note right
+    null = borne ouverte
+    now == startsAt -> retenu
+    now == endsAt   -> retenu
+  end note
+}
+
+partition "3. Filtre cible / devise" {
+  :garder si target == 'product_price'
+  ET currency compatible ctx.currency;
+}
+
+partition "4. Filtre éligibilité (JSONB)" {
+  if (eligibility == {} ?) then (oui)
+    :tout le trafic -> garder;
+  else (non)
+    :pour chaque clé présente
+    (trafficSource / visitorType / device) :
+    valeur du ctx ∈ liste autorisée ? (ET logique);
+    note right
+      clé absente -> non contrainte
+      liste vide  -> aucun match
+      eligibility corrompue -> coupon ignoré (pas de throw)
+    end note
+    if (toutes les clés présentes matchent ?) then (non)
+      :écarter le coupon;
+    else (oui)
+      :garder;
+    endif
+  endif
+}
+
+if (liste filtrée vide ?) then (oui)
+  :retour null;
+  stop
+endif
+
+partition "5. Non-cumul + tri déterministe" {
+  :trier par priority DESC;
+  :tie-break 1 : createdAt ASC (plus ancien gagne);
+  :tie-break 2 : id ASC (lexicographique);
+  note right
+    Phase 1 : au plus UN coupon,
+    quel que soit stackable.
+    Tri stable => indépendant de
+    l'ordre d'entrée des candidates.
+  end note
+}
+
+:retour candidates_triés[0]
+(un seul CouponRow);
+note right
+  Le bucket holdout n'est PAS décidé ici.
+  resolveProductPricing (CPN-04) + CPN-19
+  appliqueront treatment/holdout en aval.
+end note
+stop
+
+@enduml

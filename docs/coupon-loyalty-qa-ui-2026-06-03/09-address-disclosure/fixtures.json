@@ -1,0 +1,32 @@
+{
+  "store": {
+    "empty": {
+      "formContext": { "formId": "f1", "formMode": "embed", "variantKey": "A", "source": "wizard_kit", "language": "fr" },
+      "cartSnapshot": { "items": [{ "name": "Pack FemiGlow", "quantity": 1, "variantId": "v1" }], "totalCents": 19900, "compareAtTotalCents": 28900, "currency": "MAD" },
+      "couponCode": null,
+      "creditCents": 0
+    },
+    "withCode": { "couponCode": "FG-SAUGE-7212", "creditCents": 2000 },
+    "withCodeAmbre": { "couponCode": "FG-AMBRE-3140", "creditCents": 2000 },
+    "arabic": {
+      "formContext": { "formId": "f1", "formMode": "embed", "variantKey": "A", "source": "wizard_kit", "language": "ar" }
+    }
+  },
+  "redeem": {
+    "valid": { "byCode": { "FG-SAUGE-7212": { "valid": true, "valueCents": 2000 } } },
+    "notFound": { "byCode": { "FG-NOPE": { "valid": false, "reason": "not_found" } } }
+  },
+  "inv422": {
+    "normal": { "totalCents": 19900, "creditCents": 2000, "expectedTotalCents": 17900 },
+    "over": { "totalCents": 19900, "creditCents": 25000, "expectedTotalCents": 0 },
+    "exact": { "totalCents": 19900, "creditCents": 19900, "expectedTotalCents": 0 }
+  },
+  "expected": {
+    "summaryFr": "J’ai un code de fidélité",
+    "summaryAr": "لدي رمز وفاء"
+  },
+  "mocks": {
+    "note": "Mocker useAddressMutation (execute no-op, status idle), useShippingConfig (freeShipping false), et CityAutocomplete pour eviter le fetch /api/delivery-cities/search. Reset du store en afterEach."
+  },
+  "charte": { "forbiddenPattern": "/[%!]|🎉|⏰/" }
+}

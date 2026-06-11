@@ -43,11 +43,15 @@ describe('event-catalog — CHA-230 wizard events', () => {
     }
   });
 
-  it('lead_capture par défaut sur google_ga4 + meta + google_ads (conversion routing)', () => {
+  it('lead_capture par défaut sur google_ga4 + meta + snap — google_ads retiré (fix double-comptage)', () => {
+    // `google_ads` est porté UNIQUEMENT par `generate_lead` depuis l'audit
+    // google-ads-2026-06-03 (cf. commentaire du catalogue) — ce test était
+    // resté sur l'ancien routing et échouait aussi sur master.
     const entry = findEventInCatalog('lead_capture');
     expect(entry?.defaultProviders).toEqual(
-      expect.arrayContaining(['google_ga4', 'meta', 'google_ads']),
+      expect.arrayContaining(['google_ga4', 'meta', 'snap']),
     );
+    expect(entry?.defaultProviders).not.toContain('google_ads');
   });
 
   it('chaque entry a un paramsSchema avec `form_mode`/`step_name`/`variant_key`', () => {

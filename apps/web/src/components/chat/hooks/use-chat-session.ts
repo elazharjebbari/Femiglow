@@ -22,7 +22,7 @@ import { useEffect } from 'react';
 import { useChatStore } from '../chat-store';
 import type { ChatSessionSnapshot } from '@/lib/chat/contracts';
 
-export function useChatSession(initialPage?: string): void {
+export function useChatSession(initialPage?: string, lang?: string): void {
   const sessionId = useChatStore((s) => s.sessionId);
   const hasMessages = useChatStore((s) => s.messages.length > 0);
   const hasSuggestions = useChatStore((s) => s.suggestions.length > 0);
@@ -38,6 +38,9 @@ export function useChatSession(initialPage?: string): void {
     let cancelled = false;
     const params = new URLSearchParams();
     if (initialPage) params.set('page', initialPage);
+    // Phase 9bis — propage la locale de la page pour que la session soit
+    // créée/alignée dans la bonne langue (pills + greeting + réponses AR).
+    if (lang) params.set('lang', lang);
     fetch(`/api/chat/session${params.toString() ? `?${params.toString()}` : ''}`, {
       credentials: 'include',
     })
@@ -61,7 +64,15 @@ export function useChatSession(initialPage?: string): void {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError((err as Error).message);
+        // CHA-230 Phase 2 — Erreur de chargement de session : non
+        // retryable côté UI (le retry est déjà fait par useEffect au
+        // remount). Pas de lastUserText (rien d'envoyé encore).
+        setError({
+          code: 'session-load-failed',
+          message: (err as Error).message,
+          retryable: false,
+          lastUserText: null,
+        });
       });
     return () => {
       cancelled = true;
@@ -72,6 +83,7 @@ export function useChatSession(initialPage?: string): void {
     hasSuggestions,
     isStreaming,
     initialPage,
+    lang,
     setSession,
     setError,
   ]);

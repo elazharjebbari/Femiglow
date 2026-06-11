@@ -1,8 +1,11 @@
 /**
  * CHA-103 — Sous-navigation de la console chat.
  *
- * 8 sections : Vue d'ensemble, Conversations, KPIs, Instructions,
- * Sources (RAG), Providers, Themes (UX), Système (visualisation).
+ * Sections : Vue d'ensemble, Conversations, KPIs, Instructions,
+ * Sources (RAG), Providers, Themes (UX), Langues, Audit, Système.
+ *
+ * CHA-230 Phase 3 : ajout `intent-curator` (tag manuel des messages
+ * pour le golden-set) et `quality` (dashboard SQL des KPIs intent).
  */
 import Link from 'next/link';
 
@@ -21,7 +24,9 @@ export type ChatAdminSection =
   | 'themes'
   | 'lang'
   | 'audit'
-  | 'system';
+  | 'system'
+  | 'intent-curator'
+  | 'quality';
 
 const ITEMS: Array<{ key: ChatAdminSection; href: string; label: string }> = [
   { key: 'overview', href: '/admin/chat', label: "Vue d'ensemble" },
@@ -31,6 +36,8 @@ const ITEMS: Array<{ key: ChatAdminSection; href: string; label: string }> = [
   // CHAT-066 — Console Care : hot leads + frustration alerts consolidés.
   { key: 'care', href: '/admin/chat/care', label: 'Care' },
   { key: 'kpis', href: '/admin/chat/kpis', label: 'KPIs' },
+  { key: 'quality', href: '/admin/chat/quality', label: 'Qualité' },
+  { key: 'intent-curator', href: '/admin/chat/intent-curator', label: 'Curator' },
   // CHAT-055 — Dashboard Business (funnel + intents) avec drill-down.
   { key: 'analytics', href: '/admin/chat/analytics', label: 'Analytics' },
   { key: 'instructions', href: '/admin/chat/instructions', label: 'Instructions' },

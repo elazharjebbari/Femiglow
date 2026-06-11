@@ -1,0 +1,12 @@
+scenario_id,layer,priority,persona,given,when,then,oracle,risk
+F08-S01,PW,P1,Salma,/fr/kit,parcours optimiste,libellés FR + transition OK,texte FR,-
+F08-S02,PW,P1,Salma,/ar/kit,parcours,dir=rtl + libellés AR,RTL + AR,RSK-12
+F08-S03,PW,P1,Salma,/en/kit,parcours,libellés EN,texte EN,-
+F08-S04,PW,P1,Salma,/ar/kit,saisie téléphone,séquence latine préservée,valeur latine,RSK-12
+F08-S05,RTL,P1,Salma,LeadFormBubble AR,render,dir rtl + traduit,RTL,RSK-12
+F08-S10,RTL,P0,Salma,étape lead,axe,0 violation,axe,RSK-13
+F08-S11,RTL,P0,Salma,étape address,axe,0 violation,axe,RSK-13
+F08-S12,RTL,P0,Salma,étape lead AR,axe,0 violation,axe,RSK-13
+F08-S13,PW,P1,Salma,transition optimiste lead->address,observer aria,étape annoncée (aria-live/focus),annonce,RSK-13
+F08-S14,RTL,P1,Salma,clavier,Tab,ordre focus firstName->phone->consent->submit,focus order,RSK-13
+F08-S15,RTL,P1,Salma,erreur champ,render,message lié + aria-invalid,aria,RSK-13

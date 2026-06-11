@@ -37,15 +37,46 @@ export interface LeadOfferState {
   successMessage: string | null;
 }
 
+// CHA-231 (gap 2) — Buffer pour les offres reçues alors que la
+// précédente n'est pas encore traitée. Si une nouvelle offre arrive
+// pendant que l'utilisateur a le formulaire `open`/`submitting`, on
+// la met en attente plutôt que de l'écraser. Promue à `leadOffer`
+// quand l'état se libère (dismissal, success).
+export interface PendingLeadOffer {
+  triggeringMessageId: string;
+  reason: ChatLeadTriggerReason;
+  copyKey: string;
+  force: boolean;
+  receivedAt: string;
+}
+
+// CHA-230 Phase 2 — État d'erreur structuré pour permettre l'affichage
+// d'un chip "Réessayer" quand l'erreur est transitoire (timeout, 5xx,
+// rate-limit). Le `lastUserText` est conservé pour pouvoir le ré-envoyer
+// en un clic sans saisie utilisateur.
+export interface ChatErrorState {
+  /** Code court (ex: 'timeout', 'rate-limit', 'auth', 'unknown'). */
+  code: string;
+  /** Message lisible affiché à l'utilisateur. */
+  message: string | null;
+  /** Si `true`, l'UI propose un chip "Réessayer". */
+  retryable: boolean;
+  /** Texte du dernier message user — re-envoyé par le chip. */
+  lastUserText: string | null;
+}
+
 interface ChatVolatileState {
   isOpen: boolean;
   isStreaming: boolean;
   messages: ChatMessageDto[];
   pendingAssistantId: string | null;
-  error: string | null;
+  // CHA-230 Phase 2 — Structuré (était `string | null`).
+  error: ChatErrorState | null;
   greeting: string;
   suggestions: ChatSuggestionPill[];
   leadOffer: LeadOfferState;
+  // CHA-231 (gap 2) — Offre en attente quand l'UI est occupée.
+  pendingLeadOffer: PendingLeadOffer | null;
 }
 
 interface ChatActions {
@@ -68,6 +99,11 @@ interface ChatActions {
   ): void;
   endStreaming(messageId: string): void;
   pushUserMessage(message: ChatMessageDto): void;
+  // CHA-230 Phase 2 — `null` clear l'erreur ; sinon payload complet.
+  // Pas de surcharge string par mesure de simplicité (un seul shape).
+  setError(error: ChatErrorState | null): void;
+  /** CHA-230 Phase 2 — Clear l'erreur (équivaut à `setError(null)`). */
+  clearError(): void;
   // CHA-310 — Reset des SuggestionPills (utilisé dès qu'un message part,
   // libre ou cliqué). Ne touche pas à `messages` / `greeting`.
   clearSuggestions(): void;
@@ -75,12 +111,13 @@ interface ChatActions {
   // par le flux streaming. Utilisé quand le serveur retourne déjà la
   // `scripted_reply_*` complète. Réinitialise les pills (one-shot).
   pushAssistantMessage(message: ChatMessageDto): void;
-  setError(message: string | null): void;
   // CHA-212 — Actions formulaire lead.
   receiveLeadOffer(payload: {
     messageId: string;
     reason: ChatLeadTriggerReason;
     copyKey: string;
+    /** CHA-231 (gap 3) — Force le bypass de la dismissal session. */
+    force?: boolean;
   }): void;
   openLeadForm(): void;
   dismissLeadForm(reason?: string): void;
@@ -143,6 +180,7 @@ const initial: ChatPersistedState & ChatVolatileState = {
   greeting: '',
   suggestions: [],
   leadOffer: initialLeadOffer,
+  pendingLeadOffer: null,
 };
 
 export const useChatStore = create<ChatState>()(
@@ -203,19 +241,44 @@ export const useChatStore = create<ChatState>()(
           messages: [...s.messages, m],
         })),
       setError: (error) => set({ error }),
-      // CHA-212 / CHA-229 — Lead form actions.
-      receiveLeadOffer: ({ messageId, reason, copyKey }) =>
+      clearError: () => set({ error: null }),
+      // CHA-212 / CHA-229 / CHA-231 — Lead form actions.
+      // Logique de réception (gap 2 + 3) :
+      //   1. Si lead déjà capturé pour la session → ignore (success final).
+      //   2. Si user a dismissé ET pas de bypass (force OU intention forte)
+      //      → ignore.
+      //   3. Si l'offer courante est ACTIVE (status=open|submitting) →
+      //      buffer dans `pendingLeadOffer` (sera promue après dismiss/success).
+      //   4. Sinon (idle ou offered passive) → écrase avec la nouvelle.
+      receiveLeadOffer: ({ messageId, reason, copyKey, force = false }) =>
         set((s) => {
-          // Lead déjà capturé : on n'embête plus jamais la visiteuse.
+          // 1. Lead déjà soumis avec succès → on n'ouvre plus.
           if (s.leadCapturedSessionId === s.sessionId) return {};
-          // Bulle déjà refusée pour cette session : on respecte le choix
-          // SAUF pour une intention forte arrivant *après* le dismiss
-          // (achat explicite, demande humain, numéro tapé en clair) — sinon
-          // on rate la conversion exactement au moment où elle est mûre.
-          const dismissed =
-            s.leadOfferDismissedSessionId === s.sessionId &&
-            !STRONG_LEAD_REASONS.has(reason);
-          if (dismissed) return {};
+          // 2. Dismissal session sticky — bypassable par `force` (CHA-231,
+          //    re-demande explicite) OU par une intention forte (CHA-229 —
+          //    achat explicite / demande humain / numéro tapé en clair) :
+          //    sinon on rate la conversion au moment exact où elle est mûre.
+          const bypassDismiss = force || STRONG_LEAD_REASONS.has(reason);
+          if (s.leadOfferDismissedSessionId === s.sessionId && !bypassDismiss) return {};
+          // 3. Buffer si UI active (l'utilisateur est en train de remplir).
+          //    On évite d'écraser ses inputs — on stockera la dernière offre
+          //    reçue pour la promouvoir dès que le formulaire se libère.
+          if (s.leadOffer.status === 'open' || s.leadOffer.status === 'submitting') {
+            return {
+              pendingLeadOffer: {
+                triggeringMessageId: messageId,
+                reason,
+                copyKey,
+                force,
+                receivedAt: new Date().toISOString(),
+              },
+            };
+          }
+          // 4. État idle / offered passif / error → on remplace.
+          //    Si `force=true` et user avait dismissé, on RÉINITIALISE
+          //    `leadOfferDismissedSessionId` pour ne pas re-bloquer la
+          //    prochaine offre passive. (Un bypass « intention forte » ne
+          //    réinitialise PAS : les soft suivantes restent bloquées.)
           return {
             // Si la précédente offre avait été dismiss, on remet la jauge
             // à zéro côté UI (le flag persistant `leadOfferDismissedSessionId`
@@ -229,6 +292,8 @@ export const useChatStore = create<ChatState>()(
               errorMessage: null,
               successMessage: null,
             },
+            leadOfferDismissedSessionId: force ? null : s.leadOfferDismissedSessionId,
+            pendingLeadOffer: null,
           };
         }),
       openLeadForm: () =>
@@ -236,10 +301,31 @@ export const useChatStore = create<ChatState>()(
           leadOffer: { ...s.leadOffer, status: 'open' },
         })),
       dismissLeadForm: (_reason?: string) =>
-        set((s) => ({
-          leadOffer: { ...initialLeadOffer, status: 'idle' },
-          leadOfferDismissedSessionId: s.sessionId,
-        })),
+        set((s) => {
+          // CHA-231 (gap 2) — Si une offre était bufferée, on la promeut
+          // après dismissal (l'utilisateur a refusé l'ancienne, mais on
+          // peut lui re-proposer la nouvelle qui a un trigger différent).
+          if (s.pendingLeadOffer) {
+            const p = s.pendingLeadOffer;
+            return {
+              leadOffer: {
+                status: 'offered',
+                triggeringMessageId: p.triggeringMessageId,
+                reason: p.reason,
+                copyKey: p.copyKey,
+                errorMessage: null,
+                successMessage: null,
+              },
+              pendingLeadOffer: null,
+              // Le buffer p.force déclenche aussi le bypass.
+              leadOfferDismissedSessionId: p.force ? null : s.sessionId,
+            };
+          }
+          return {
+            leadOffer: { ...initialLeadOffer, status: 'idle' },
+            leadOfferDismissedSessionId: s.sessionId,
+          };
+        }),
       setLeadFormSubmitting: () =>
         set((s) => ({
           leadOffer: { ...s.leadOffer, status: 'submitting', errorMessage: null },
@@ -253,6 +339,9 @@ export const useChatStore = create<ChatState>()(
             errorMessage: null,
           },
           leadCapturedSessionId: s.sessionId,
+          // CHA-231 (gap 2) — Lead capturé : tout buffer en attente est
+          // obsolète (success est terminal pour la session).
+          pendingLeadOffer: null,
         })),
       setLeadFormError: (message) =>
         set((s) => ({

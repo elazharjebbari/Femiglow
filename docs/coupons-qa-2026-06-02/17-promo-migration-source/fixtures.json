@@ -1,0 +1,93 @@
+{
+  "$comment": "Fixtures CPN-17. Montants en CENTIMES. Variante kit de référence + 5 scénarios critiques + attendus de prix.",
+  "variant": {
+    "base": { "priceCents": 28900, "promoPriceCents": 19900 },
+    "baseNoPromo": { "priceCents": 28900, "promoPriceCents": null }
+  },
+  "coupons": {
+    "welcomeActive": {
+      "id": "cpn_welcome_auto",
+      "label": "Geste d'accueil",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "target": "product_price",
+      "currency": "MAD",
+      "eligibility": {},
+      "holdoutPct": 0
+    },
+    "welcomePaused": {
+      "id": "cpn_welcome_auto",
+      "label": "Geste d'accueil",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "paused",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "currency": "MAD"
+    },
+    "welcomeArchived": {
+      "id": "cpn_welcome_auto",
+      "label": "Geste d'accueil",
+      "type": "welcome_auto",
+      "mode": "auto",
+      "status": "archived",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "currency": "MAD"
+    },
+    "incoherentEqualPrice": {
+      "$comment": "valueAmount = priceCents -> prix résultant 0, non < prix -> inapplicable.",
+      "id": "cpn_bad_eq",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 28900,
+      "currency": "MAD"
+    },
+    "incoherentOverPrice": {
+      "$comment": "valueAmount > priceCents -> jamais négatif, inapplicable.",
+      "id": "cpn_bad_over",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 28901,
+      "currency": "MAD"
+    },
+    "percentHundred": {
+      "id": "cpn_pct_100",
+      "status": "active",
+      "valueKind": "percent",
+      "valueAmount": 100,
+      "currency": "MAD"
+    },
+    "negativeValue": {
+      "id": "cpn_neg",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": -9000,
+      "currency": "MAD"
+    },
+    "wrongCurrency": {
+      "id": "cpn_eur",
+      "status": "active",
+      "valueKind": "fixed_amount",
+      "valueAmount": 9000,
+      "currency": "EUR"
+    }
+  },
+  "scenarios": [
+    { "name": "1-coupon-active-fallback", "coupon": "welcomeActive", "variant": "base", "expected": { "effectivePriceCents": 19900, "source": "coupon", "active": true, "notEqual": 10900 } },
+    { "name": "2-coupon-active-no-fallback", "coupon": "welcomeActive", "variant": "baseNoPromo", "expected": { "effectivePriceCents": 19900, "source": "coupon", "active": true } },
+    { "name": "3-coupon-paused-fallback", "coupon": "welcomePaused", "variant": "base", "expected": { "effectivePriceCents": 19900, "source": "promoPrice", "active": true } },
+    { "name": "4-coupon-paused-no-fallback", "coupon": "welcomePaused", "variant": "baseNoPromo", "expected": { "effectivePriceCents": 28900, "source": "none", "active": false } },
+    { "name": "5-coupon-incoherent-fallback", "coupon": "incoherentEqualPrice", "variant": "base", "expected": { "effectivePriceCents": 19900, "source": "promoPrice", "active": true } }
+  ],
+  "invariants": {
+    "originalPriceCentsAlways": 28900,
+    "effectiveNeverNegative": true,
+    "effectiveNeverAbovePrice": true,
+    "doubleDiscountForbiddenValue": 10900
+  },
+  "http": { "orderCreated": 201, "priceMismatch": 422 }
+}

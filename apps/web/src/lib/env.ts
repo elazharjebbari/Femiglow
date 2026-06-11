@@ -28,6 +28,17 @@ const envSchema = z.object({
   ADMIN_BOOTSTRAP_NAME: z.string().min(1).optional(),
   // Chat assistant (cf. docs/chat-assistant/15-plan-action.md CHA-001/CHA-008).
   CHAT_ENABLED: z.enum(['true', 'false']).default('false'),
+  // CHA-LEAD-V2 — Active les filtres admin V2 (kind discriminator + source filtering).
+  // Cf. docs/chat-conversations-leads-fix-2026-05/00-context/decisions-architecturales.md ADR-002.
+  CHAT_ADMIN_FILTERS_V2: z.enum(['true', 'false']).default('false'),
+  // LEGAL-V2 — Active nouveau naming vars + presetVarsForPage + UI create-var.
+  // Cf. docs/pages-legales-fix-2026-05/00-context/decisions-architecturales.md ADR-002.
+  LEGAL_VARS_V2: z.enum(['true', 'false']).default('false'),
+  // I18N — Active le routing locale-aware (path-based /[locale]/) + middleware
+  // next-intl. Par défaut OFF → zéro régression : toutes les routes legacy
+  // (`/kit`, `/maison`, ...) continuent de fonctionner en FR uniquement.
+  // Cf. docs/i18n-strategy-2026-05/08-plan-action/feature-flags.md
+  I18N_ENABLED: z.enum(['true', 'false']).default('false'),
   CHAT_PROVIDER_KEY: z.string().min(32).optional(),
   CHAT_TOTAL_BUDGET_EUR_MONTHLY: z.coerce.number().nonnegative().default(0),
   CHAT_DEFAULT_LANGUAGE: z.enum(['fr', 'ar', 'ar-MA']).default('fr'),
@@ -58,6 +69,28 @@ const envSchema = z.object({
   CHAT_LEAD_WEBHOOK_URL: z.string().url().optional(),
   CHAT_LEAD_WEBHOOK_SECRET: z.string().min(16).optional(),
   CHAT_LEAD_CONSENT_VERSION: z.string().min(4).default('2026-05-06'),
+  // CHA-230 Phase 2 — Feature flags pour l'opt-in progressif des Runnables LangChain.
+  // Default `false` → comportement byte-identique à pré-CHA-230. Ship dark, flip
+  // par déploiement, rollback en variant l'env. Pas de toggle DB pour l'instant
+  // (gain marginal vs. complexité — on l'ajoutera si on a vraiment besoin de
+  // bascule à chaud sans redeploy).
+  CHAT_LLM_INTENT_ENABLED: z.enum(['true', 'false']).default('false'),
+  CHAT_PROVIDER_FALLBACK_ENABLED: z.enum(['true', 'false']).default('false'),
+  // Audit meta-lead-as-purchase-2026-06-01 — Compter les leads (chat + panier
+  // abandonné) comme `Purchase` côté Meta, sans doublon avec le vrai purchase.
+  // Défaut OFF (zéro impact). NEXT_PUBLIC mirror pour gater l'émission client.
+  META_LEAD_AS_PURCHASE_ENABLED: z.enum(['true', 'false']).default('false'),
+  NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED: z.enum(['true', 'false']).default('false'),
+  // OWBS — Optimistic Wizard & Background Lead Sync. ON => le wizard avance de
+  // façon optimiste et synchronise les leads en tâche de fond (file + beacon +
+  // outbox). OFF (défaut) => comportement legacy (await bloquant), bit-à-bit.
+  // NEXT_PUBLIC mirror pour gater le chemin client.
+  // cf. docs/checkout-leads-background-2026-06-01/.
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: z.enum(['true', 'false']).default('false'),
+  NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: z.enum(['true', 'false']).default('false'),
+  // Fenêtre de dédup du parcours lead→achat (heures). Au-delà, un purchase
+  // n'est plus considéré comme « le même parcours » qu'un lead antérieur.
+  META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS: z.coerce.number().int().positive().default(24),
   // CHA-260 — Outbound webhook unifié (order, cart-abandon, contact, …).
   // Priorité sur CHAT_LEAD_WEBHOOK_URL ; fallback rétrocompat si absent.
   OUTBOUND_WEBHOOK_URL: z.string().url().optional(),
@@ -204,6 +237,9 @@ export const env = envSchema.parse({
   ADMIN_BOOTSTRAP_PASSWORD: process.env.ADMIN_BOOTSTRAP_PASSWORD,
   ADMIN_BOOTSTRAP_NAME: process.env.ADMIN_BOOTSTRAP_NAME,
   CHAT_ENABLED: process.env.CHAT_ENABLED,
+  CHAT_ADMIN_FILTERS_V2: process.env.CHAT_ADMIN_FILTERS_V2,
+  LEGAL_VARS_V2: process.env.LEGAL_VARS_V2,
+  I18N_ENABLED: process.env.I18N_ENABLED,
   CHAT_PROVIDER_KEY: process.env.CHAT_PROVIDER_KEY,
   CHAT_TOTAL_BUDGET_EUR_MONTHLY: process.env.CHAT_TOTAL_BUDGET_EUR_MONTHLY,
   CHAT_DEFAULT_LANGUAGE: process.env.CHAT_DEFAULT_LANGUAGE,
@@ -221,6 +257,16 @@ export const env = envSchema.parse({
   CHAT_LEAD_WEBHOOK_URL: process.env.CHAT_LEAD_WEBHOOK_URL,
   CHAT_LEAD_WEBHOOK_SECRET: process.env.CHAT_LEAD_WEBHOOK_SECRET,
   CHAT_LEAD_CONSENT_VERSION: process.env.CHAT_LEAD_CONSENT_VERSION,
+  CHAT_LLM_INTENT_ENABLED: process.env.CHAT_LLM_INTENT_ENABLED,
+  CHAT_PROVIDER_FALLBACK_ENABLED: process.env.CHAT_PROVIDER_FALLBACK_ENABLED,
+  META_LEAD_AS_PURCHASE_ENABLED: process.env.META_LEAD_AS_PURCHASE_ENABLED,
+  NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED:
+    process.env.NEXT_PUBLIC_META_LEAD_AS_PURCHASE_ENABLED,
+  CHECKOUT_OPTIMISTIC_WIZARD_ENABLED: process.env.CHECKOUT_OPTIMISTIC_WIZARD_ENABLED,
+  NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED:
+    process.env.NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED,
+  META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS:
+    process.env.META_LEAD_PURCHASE_DEDUP_WINDOW_HOURS,
   OUTBOUND_WEBHOOK_URL: process.env.OUTBOUND_WEBHOOK_URL,
   OUTBOUND_WEBHOOK_SECRET: process.env.OUTBOUND_WEBHOOK_SECRET,
   SNAP_CAPI_TOKEN: process.env.SNAP_CAPI_TOKEN,

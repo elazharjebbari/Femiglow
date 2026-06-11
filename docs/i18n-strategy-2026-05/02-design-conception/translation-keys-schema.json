@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://femiglow.ma/i18n/messages.schema.json",
+  "title": "FemiGlow i18n messages",
+  "description": "JSON Schema pour valider les fichiers messages/[locale].json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Référence à ce schema (URI ou path relatif)"
+    },
+    "_meta": {
+      "type": "object",
+      "description": "Métadonnées du fichier (locale, completeness, last_review, ...)",
+      "properties": {
+        "locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "completeness_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "last_reviewed_by": { "type": "string" },
+        "last_reviewed_at": { "type": "string", "format": "date-time" },
+        "translator_notes": { "type": "string" }
+      }
+    },
+    "common": {
+      "type": "object",
+      "description": "Strings communs à toute l'application (boutons, états)",
+      "additionalProperties": { "type": "string" }
+    },
+    "navigation": {
+      "type": "object",
+      "description": "Labels de navigation (header, footer, menu)",
+      "additionalProperties": { "type": "string" }
+    },
+    "marketing": {
+      "type": "object",
+      "description": "Pages marketing (home, kit, maison, rituel, contact, journal)",
+      "properties": {
+        "hero": { "$ref": "#/definitions/section" },
+        "kit": { "$ref": "#/definitions/section" },
+        "maison": { "$ref": "#/definitions/section" },
+        "rituel": { "$ref": "#/definitions/section" },
+        "contact": { "$ref": "#/definitions/section" },
+        "journal": { "$ref": "#/definitions/section" },
+        "manifest": { "$ref": "#/definitions/section" }
+      }
+    },
+    "wizard": {
+      "type": "object",
+      "description": "Wizard checkout (synchronisé avec WizardDictionary CHA-231)",
+      "additionalProperties": true
+    },
+    "legal": {
+      "type": "object",
+      "description": "Pages légales (mentions, CGV, confidentialité, etc.)",
+      "additionalProperties": { "type": "string" }
+    },
+    "admin": {
+      "type": "object",
+      "description": "Console admin (out of scope V1 — reste FR)",
+      "additionalProperties": { "type": "string" }
+    },
+    "email": {
+      "type": "object",
+      "description": "Templates emails transactionnels",
+      "additionalProperties": true
+    },
+    "errors": {
+      "type": "object",
+      "description": "Messages d'erreurs (404, 500, validation)",
+      "additionalProperties": { "type": "string" }
+    },
+    "seo": {
+      "type": "object",
+      "description": "Metadata SEO localisées par page",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "maxLength": 70 },
+          "description": { "type": "string", "maxLength": 160 },
+          "og_title": { "type": "string", "maxLength": 70 },
+          "og_description": { "type": "string", "maxLength": 200 },
+          "og_alt": { "type": "string" },
+          "twitter_card": { "type": "string", "enum": ["summary", "summary_large_image"] }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "section": {
+      "type": "object",
+      "description": "Section générique (title, subtitle, cta, body)",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "required": ["common", "navigation"],
+  "examples": [
+    {
+      "_meta": {
+        "locale": "fr",
+        "completeness_pct": 100,
+        "last_reviewed_by": "founder@femiglow.local",
+        "last_reviewed_at": "2026-05-27T14:30:00Z"
+      },
+      "common": {
+        "back": "Retour",
+        "continue": "Continuer"
+      },
+      "navigation": {
+        "home": "Accueil",
+        "kit": "Le kit"
+      },
+      "marketing": {
+        "hero": {
+          "title": "Le rituel ongles, en cinq minutes.",
+          "subtitle": "Trois gestes, une saison."
+        }
+      }
+    }
+  ]
+}

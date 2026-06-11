@@ -1,0 +1,19 @@
+{
+  "event": "subscriber.complained",
+  "source": "listmonk",
+  "ts": 1748966600,
+  "data": {
+    "subscriber": {
+      "id": 62,
+      "uuid": "1d9e7c44-22aa-4f10-8b77-99aabbccddee",
+      "email": "user3@exemple.test",
+      "name": "Yassine C.",
+      "status": "enabled"
+    },
+    "type": "complaint",
+    "source": "feedback-loop",
+    "campaign": { "id": 1, "name": "Newsletter rituel juin" },
+    "meta": { "feedback_type": "abuse", "reported_domain": "exemple.test" },
+    "created_at": "2026-06-03T18:43:20.000000Z"
+  }
+}

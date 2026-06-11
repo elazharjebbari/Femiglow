@@ -7,6 +7,7 @@
  *
  * cf. docs/pack-section-optim-2026-05/06-admin-ui-ux-design.md
  */
+import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { KitPackEditor } from '@/components/admin/kit-pack/KitPackEditor';
@@ -25,8 +26,14 @@ export default async function AdminKitPackPage(): Promise<JSX.Element> {
       : 'override-draft';
 
   return (
-    <AdminShell adminEmail={session.email} active="kit-pack">
+    <AdminShell adminEmail={session.email} active="components">
       <header className="mb-6">
+        <Link
+          href="/admin/components?group=kit"
+          className="mb-2 inline-block text-xs text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline"
+        >
+          ← Composants /kit
+        </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
           Pack `/kit`
         </h1>

@@ -1,0 +1,15 @@
+{
+  "event": "subscriber.created",
+  "source": "listmonk",
+  "ts": 1748966700,
+  "data": {
+    "id": 301,
+    "uuid": "a4f0b2c8-7711-4d33-bb90-0011aa22bb33",
+    "email": "user4@exemple.test",
+    "name": "Kaoutar A.",
+    "status": "enabled",
+    "attribs": { "first_name": "Kaoutar", "city": "Casablanca" },
+    "lists": [{ "id": 3, "name": "Rituel — double opt-in", "subscription_status": "confirmed" }],
+    "created_at": "2026-06-03T18:45:00.000000Z"
+  }
+}

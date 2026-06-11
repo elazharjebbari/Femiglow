@@ -29,7 +29,7 @@ export const menuEntries: MenuEntry[] = [
   {
     label: 'La maison',
     href: routes.maison,
-    description: "Rabat, l'atelier de Souheila, les mains qui font.",
+    description: "Rabat, l'atelier de notre fondatrice, les mains qui font.",
     vignette: { src: '/maison/atelier-1.png', alt: '' },
   },
   {

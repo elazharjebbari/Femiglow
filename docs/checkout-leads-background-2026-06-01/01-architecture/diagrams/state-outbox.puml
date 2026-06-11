@@ -1,0 +1,16 @@
+@startuml state-outbox
+title OWBS — Machine à états d'une row lead_event_outbox
+skinparam shadowing false
+[*] --> pending : enqueue (dans la txn métier)
+pending --> processing : pickBatch (FOR UPDATE SKIP LOCKED)
+processing --> done : handler OK
+processing --> pending : échec retryable\n(attempts++, next_attempt_at = backoff)
+pending --> dead : attempts > max_attempts
+done --> [*]
+dead --> [*] : alerte ops (à rejouer manuellement)
+
+note bottom
+  UNIQUE(type, leadId, dedupe_key) absorbe
+  les doubles-insertions (idempotence des effets)
+end note
+@enduml

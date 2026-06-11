@@ -11,7 +11,7 @@
  */
 export interface WizardCheckmarkProps {
   visible: boolean;
-  /** Classe additionnelle pour positionnement (ex. `absolute top-0 right-0`). */
+  /** Classe additionnelle pour positionnement (ex. `absolute top-0 end-0`). */
   className?: string;
 }
 

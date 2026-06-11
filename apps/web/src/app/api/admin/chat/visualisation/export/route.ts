@@ -17,26 +17,34 @@ import { requireAdminApi } from '@/lib/chat/admin/auth';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// CHA-230 — Aligné sur le PipelineGraph mis à jour : intent + humanize + lead.
+// Doit rester en phase avec `src/components/admin/chat/PipelineGraph.tsx`.
 const NODES = [
-  { id: 'visitor', label: 'Visiteur', cx: 80, cy: 100 },
-  { id: 'sanitize', label: 'Sanitize', cx: 220, cy: 100 },
-  { id: 'lang', label: 'Lang', cx: 360, cy: 100 },
-  { id: 'charter', label: 'Charter', cx: 500, cy: 100 },
-  { id: 'rag', label: 'RAG', cx: 640, cy: 60 },
-  { id: 'provider', label: 'Provider', cx: 640, cy: 140 },
-  { id: 'stream', label: 'Stream', cx: 780, cy: 100 },
-  { id: 'response', label: 'Réponse', cx: 920, cy: 100 },
+  { id: 'visitor', label: 'Visiteur', cx: 50, cy: 110 },
+  { id: 'sanitize', label: 'Sanitize', cx: 160, cy: 110 },
+  { id: 'lang', label: 'Lang', cx: 260, cy: 110 },
+  { id: 'intent', label: 'Intent (regex/LLM)', cx: 370, cy: 110 },
+  { id: 'charter', label: 'Charte', cx: 480, cy: 110 },
+  { id: 'rag', label: 'RAG', cx: 590, cy: 55 },
+  { id: 'provider', label: 'Provider (retry/breaker)', cx: 590, cy: 110 },
+  { id: 'stream', label: 'Stream', cx: 700, cy: 110 },
+  { id: 'humanize', label: 'Humanize', cx: 820, cy: 110 },
+  { id: 'response', label: 'Réponse', cx: 940, cy: 110 },
+  { id: 'lead', label: 'Lead (décision)', cx: 1080, cy: 110 },
 ];
 
 const EDGES: Array<[string, string]> = [
   ['visitor', 'sanitize'],
   ['sanitize', 'lang'],
-  ['lang', 'charter'],
+  ['lang', 'intent'],
+  ['intent', 'charter'],
   ['charter', 'rag'],
   ['charter', 'provider'],
   ['rag', 'provider'],
   ['provider', 'stream'],
-  ['stream', 'response'],
+  ['stream', 'humanize'],
+  ['humanize', 'response'],
+  ['response', 'lead'],
 ];
 
 export async function GET(req: NextRequest) {
@@ -77,7 +85,7 @@ export async function GET(req: NextRequest) {
   ).join('\n');
 
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" role="img" aria-label="Pipeline du chat FemiGlow">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 200" role="img" aria-label="Pipeline du chat FemiGlow">
 ${svgEdges}
 ${svgNodes}
 </svg>`;

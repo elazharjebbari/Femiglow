@@ -64,7 +64,13 @@ test.describe('Content Studio', () => {
   });
 
   test('affiche l\'éditeur de brouillon', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Brouillons' })).toBeVisible();
+    // Base sans brouillon → état vide « Générez une idée pour ouvrir l'éditeur » ;
+    // avec des brouillons → panneau « Brouillons ». Les deux états sont valides.
+    await expect(
+      page
+        .getByRole('heading', { name: 'Brouillons' })
+        .or(page.getByText(/Générez une idée pour ouvrir l/i)),
+    ).toBeVisible();
   });
 
   test('les champs du formulaire idée sont interactifs', async ({ page }) => {

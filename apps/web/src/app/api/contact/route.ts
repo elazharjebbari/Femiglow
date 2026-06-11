@@ -3,6 +3,7 @@ import { contactFormSchema } from '@/lib/schemas';
 import { logger } from '@/lib/logging/logger';
 import { dispatchContactWebhook } from '@/lib/webhooks/outbound/sources/from-contact';
 import { sendTransactional } from '@/lib/mail/send';
+import { triggerNewsletterDoubleOptIn } from '@/lib/mail/newsletter-optin';
 import { enforceMailRateLimit } from '@/lib/mail/rate-limit';
 import { recordContactSubmitted } from '@/lib/user-events/bridges/server-actions';
 
@@ -92,6 +93,24 @@ export async function POST(request: Request) {
   }).catch((err: unknown) => {
     logger.error('mail.contact_ack.dispatch_error', { error: String(err) });
   });
+
+  // UX-PUB-003 — la case « Je souhaite recevoir la lettre saisonnière » du
+  // formulaire de contact PROMET une inscription. On déclenche donc le VRAI
+  // double opt-in newsletter (même flux que /api/newsletter) plutôt que de se
+  // contenter d'une note webhook. Le double opt-in est idempotent par email
+  // (clé `newsletter-confirm:<email>`) : une re-soumission n'envoie pas de mail
+  // en double. On NE bloque PAS la réponse de contact si le secret manque —
+  // l'accusé de contact, lui, part quand même ; on logge seulement l'échec
+  // d'opt-in (l'utilisateur a surtout demandé un contact ici).
+  if (data.newsletterOptIn) {
+    const optIn = triggerNewsletterDoubleOptIn({
+      email: data.email,
+      source: 'contact-form',
+    });
+    if (!optIn.ok) {
+      logger.warn('contact.newsletter_optin_unavailable', { reason: optIn.reason });
+    }
+  }
 
   return NextResponse.json({ ok: true });
 }

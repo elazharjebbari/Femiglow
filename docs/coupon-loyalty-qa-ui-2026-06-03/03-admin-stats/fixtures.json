@@ -1,0 +1,28 @@
+{
+  "coupons": {
+    "one": [
+      { "id": "cpn_1", "label": "Geste d'accueil", "code": null, "type": "welcome_auto", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 10, "usageCount": 150, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ],
+    "two": [
+      { "id": "cpn_1", "label": "Promo A", "code": null, "type": "welcome_auto", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 10, "usageCount": 150, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" },
+      { "id": "cpn_2", "label": "Promo B", "code": null, "type": "welcome_auto", "mode": "auto", "status": "active", "valueKind": "fixed_amount", "valueAmount": 5000, "holdoutPct": 0, "usageCount": 30, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ],
+    "mixed": [
+      { "id": "cpn_1", "label": "Brouillon", "code": null, "type": "welcome_auto", "mode": "auto", "status": "draft", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 0, "usageCount": 0, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" },
+      { "id": "cpn_4", "label": "Archive", "code": null, "type": "welcome_auto", "mode": "auto", "status": "archived", "valueKind": "fixed_amount", "valueAmount": 9000, "holdoutPct": 10, "usageCount": 200, "startsAt": null, "endsAt": null, "createdAt": "2026-06-03T10:00:00.000Z" }
+    ]
+  },
+  "stats": {
+    "positive": { "cpn_1": { "exposed": { "treatment": 1000, "holdout": 100 }, "converted": { "treatment": 150, "holdout": 10 }, "conversionRate": { "treatment": 0.15, "holdout": 0.1 }, "upliftAbsolute": 0.05, "upliftRelative": 0.5, "noControl": false, "lowSample": false }, "expectedText": "uplift: 5.0 pts" },
+    "null": { "cpn_1": { "exposed": { "treatment": 1000, "holdout": 0 }, "converted": { "treatment": 150, "holdout": 0 }, "conversionRate": { "treatment": 0.15, "holdout": null }, "upliftAbsolute": null, "upliftRelative": null, "noControl": false, "lowSample": false }, "expectedText": "uplift: —" },
+    "noControl": { "cpn_1": { "exposed": { "treatment": 1000, "holdout": 0 }, "converted": { "treatment": 150, "holdout": 0 }, "conversionRate": { "treatment": 0.15, "holdout": null }, "upliftAbsolute": null, "upliftRelative": null, "noControl": true, "lowSample": false }, "expectedText": "uplift: — (pas de contrôle)" },
+    "negative": { "cpn_1": { "exposed": { "treatment": 1000, "holdout": 100 }, "converted": { "treatment": 130, "holdout": 15 }, "conversionRate": { "treatment": 0.13, "holdout": 0.15 }, "upliftAbsolute": -0.02, "upliftRelative": -0.13, "noControl": false, "lowSample": false }, "expectedText": "uplift: -2.0 pts" },
+    "rounding": { "cpn_1": { "exposed": { "treatment": 1000, "holdout": 100 }, "converted": { "treatment": 250, "holdout": 13 }, "conversionRate": { "treatment": 0.25, "holdout": 0.127 }, "upliftAbsolute": 0.123, "upliftRelative": 0.97, "noControl": false, "lowSample": false }, "expectedText": "uplift: 12.3 pts" },
+    "perRow": { "cpn_1": { "exposed": { "treatment": 1000, "holdout": 100 }, "converted": { "treatment": 150, "holdout": 10 }, "conversionRate": { "treatment": 0.15, "holdout": 0.1 }, "upliftAbsolute": 0.05, "upliftRelative": 0.5, "noControl": false, "lowSample": false } }
+  },
+  "fail": {
+    "403": { "fail": { "stats": 403 } },
+    "500": { "fail": { "stats": 500 } },
+    "network": { "fail": { "stats": "network" } }
+  }
+}

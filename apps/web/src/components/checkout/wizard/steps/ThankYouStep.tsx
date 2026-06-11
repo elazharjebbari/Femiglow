@@ -44,6 +44,7 @@ import { useWizardTranslation } from '@/lib/checkout/i18n/use-wizard-translation
 import { emailSchema } from '@/lib/checkout/schemas/common';
 import { useOrderEmailConfirmationMutation } from '@/lib/checkout/state/use-wizard-mutations';
 import { useWizardStore } from '@/lib/checkout/state/wizard-store';
+import { LoyaltyCodeCard } from '@/components/checkout/LoyaltyCodeCard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -66,6 +67,8 @@ export function ThankYouStep({ title, subtitle }: ThankYouStepProps) {
   const { t } = useWizardTranslation();
 
   const orderId = useWizardStore((s) => s.orderId);
+  const loyalty = useWizardStore((s) => s.loyalty);
+  const isArabic = useWizardStore((s) => s.formContext?.language === 'ar');
   const resetWizard = useWizardStore((s) => s.reset);
 
   const optIn = useOrderEmailConfirmationMutation();
@@ -140,6 +143,16 @@ export function ThankYouStep({ title, subtitle }: ThankYouStepProps) {
             {orderId}
           </Text>
         </div>
+      )}
+
+      {/* Phase 3 — code de fidélité mémorable remis pour la prochaine visite. */}
+      {loyalty?.code && (
+        <LoyaltyCodeCard
+          code={loyalty.code}
+          valueCents={loyalty.valueCents}
+          activatesAt={loyalty.activatesAt}
+          isArabic={isArabic}
+        />
       )}
 
       <div

@@ -158,6 +158,10 @@ async function fetchEvents(opts: FetchOpts): Promise<TrackingEventLogEntry[]> {
     const conditions = [
       sql`received_at >= ${opts.from.toISOString()}`,
       sql`received_at < ${opts.to.toISOString()}`,
+      // AN-07 : cohérence inter-onglets — Overview filtre le consentement
+      // analytics comme funnel/cta/checkout (sinon KPI calculés sur un dataset
+      // différent des autres onglets).
+      sql`consent_snapshot->>'analytics_storage' = 'granted'`,
     ];
     if (opts.device) {
       conditions.push(sql`device = ${opts.device}`);
@@ -184,7 +188,10 @@ async function fetchEvents(opts: FetchOpts): Promise<TrackingEventLogEntry[]> {
   const store = memoryStore();
   let entries = Array.from(store.trackingEventsLog.values());
   entries = entries.filter(
-    (e) => e.receivedAt >= opts.from && e.receivedAt < opts.to,
+    (e) =>
+      e.receivedAt >= opts.from &&
+      e.receivedAt < opts.to &&
+      e.consentSnapshot?.analytics_storage === 'granted', // AN-07
   );
   if (opts.device) entries = entries.filter((e) => e.device === opts.device);
   if (opts.traffic) {
@@ -229,6 +236,17 @@ function rowToEntry(row: Record<string, unknown>): TrackingEventLogEntry {
  * Compute helpers
  * ───────────────────────────────────────────────────────────────────── */
 
+/**
+ * AN-01 : événements comptant comme « vue de page ». L'app FemiGlow n'émet pas
+ * de `page_view` générique mais un `view_item` par page produit (/kit). On
+ * reconnaît donc les deux comme signal de page-vue pour le rebond, les top
+ * pages, la série et le KPI pageViews — sinon ces métriques restent à 0/vide.
+ */
+const PAGE_VIEW_EVENTS = new Set(['page_view', 'view_item']);
+function isPageViewEvent(e: TrackingEventLogEntry): boolean {
+  return PAGE_VIEW_EVENTS.has(e.eventName);
+}
+
 function countSessions(ctx: ComputeContext): number {
   return new Set(ctx.events.map((e) => e.sessionId)).size;
 }
@@ -238,7 +256,7 @@ function countVisitors(ctx: ComputeContext): number {
 }
 
 function countPageViews(ctx: ComputeContext): number {
-  return ctx.events.filter((e) => e.eventName === 'page_view').length;
+  return ctx.events.filter(isPageViewEvent).length;
 }
 
 function avgSessionDuration(ctx: ComputeContext): number | null {
@@ -261,7 +279,7 @@ function avgSessionDuration(ctx: ComputeContext): number | null {
 function bounceRate(ctx: ComputeContext): number | null {
   const sessionPageViews = new Map<string, number>();
   for (const e of ctx.events) {
-    if (e.eventName !== 'page_view') continue;
+    if (!isPageViewEvent(e)) continue;
     sessionPageViews.set(e.sessionId, (sessionPageViews.get(e.sessionId) ?? 0) + 1);
   }
   if (sessionPageViews.size === 0) return null;
@@ -296,7 +314,7 @@ function buildSeries(
     const key = bucketKey(e.receivedAt, granularity);
     const b = buckets.get(key) ?? { sessions: new Set<string>(), pv: 0 };
     b.sessions.add(e.sessionId);
-    if (e.eventName === 'page_view') b.pv += 1;
+    if (isPageViewEvent(e)) b.pv += 1;
     buckets.set(key, b);
   }
   return Array.from(buckets.entries())
@@ -352,7 +370,7 @@ function topSources(ctx: ComputeContext, limit = 10): OverviewSourceRow[] {
 function topPages(ctx: ComputeContext, limit = 10): OverviewPageRow[] {
   const byPage = new Map<string, { pv: number; sessions: Set<string> }>();
   for (const e of ctx.events) {
-    if (e.eventName !== 'page_view') continue;
+    if (!isPageViewEvent(e)) continue;
     const r = byPage.get(e.pageRoute) ?? { pv: 0, sessions: new Set<string>() };
     r.pv += 1;
     r.sessions.add(e.sessionId);

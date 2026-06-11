@@ -1,0 +1,61 @@
+@startuml CPN-02-applyCoupon-sequence
+title CPN-02 — Séquence applyCoupon -> computePromo (fonction pure)
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+actor "Appelant\n(resolveProductPricing)" as Caller
+participant "applyCoupon\n(engine.ts)" as Apply
+participant "computePromo\n(utils/promo.ts)" as Promo
+
+Caller -> Apply : applyCoupon(priceCents, coupon)
+activate Apply
+
+note right of Apply
+  applyCoupon ne lit QUE :
+   - coupon.valueKind
+   - coupon.valueAmount
+  (ni status, ni fenêtre, ni eligibility)
+end note
+
+alt valueKind == "fixed_amount"
+  Apply -> Apply : candidat = priceCents - valueAmount
+else valueKind == "percent"
+  Apply -> Apply : candidat = round(priceCents * (1 - valueAmount/100))
+end
+
+Apply -> Apply : candidat = max(0, candidat)
+note right of Apply
+  Plancher AVANT délégation :
+  jamais de prix négatif transmis.
+  candidat peut valoir 0 ou rester >= prix.
+end note
+
+Apply -> Promo : computePromo(priceCents, candidat)
+activate Promo
+
+note right of Promo
+  Garde UNIQUE (non dupliquée) :
+   active = candidat != null
+         && candidat > 0
+         && candidat < priceCents
+  Framing Kolenda #34 :
+   "amount" si savings/100 >= savingsPct
+   sinon "percent"
+end note
+
+Promo --> Apply : PromoComputation\n{active, effectivePriceCents,\n originalPriceCents, savingsCents,\n savingsPct, framing}
+deactivate Promo
+
+Apply --> Caller : return (tel quel, sans réécriture)
+deactivate Apply
+
+note over Apply, Promo
+  Cas limites résolus par la garde de computePromo :
+   candidat == 0          -> active:false, effective = priceCents
+   candidat >= priceCents -> active:false, effective = priceCents
+  => INVARIANT : applyCoupon ne crée jamais de produit gratuit
+     ni de prix négatif, et ne lève jamais d'exception.
+end note
+
+@enduml

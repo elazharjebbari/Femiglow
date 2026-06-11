@@ -72,6 +72,9 @@ export async function dispatchChatLeadWebhook(
     email: lead.email ?? undefined,
     note: noteParts.length ? noteParts.join(' | ') : undefined,
     source_channel: `chat:${lead.triggerReason ?? 'manual'}`,
+    // Lead chat = lead finalisé (nom + tél + consentement + conversation),
+    // pas un panier abandonné → l'opérateur le voit complet d'emblée.
+    lead_status: 'complete' as const,
     quantity: 1,
     currency: 'MAD' as const,
   };

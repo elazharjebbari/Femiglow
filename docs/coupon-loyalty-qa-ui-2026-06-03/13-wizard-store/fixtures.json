@@ -1,0 +1,26 @@
+{
+  "coupon": {
+    "valid": { "code": "FG-SAUGE-7212", "creditCents": 2000 },
+    "spaced": { "code": "  fg-sauge-7212  ", "creditCents": 2000 },
+    "negative": { "code": "FG-X", "creditCents": -100 },
+    "fractional": { "code": "FG-X", "creditCents": 1999.6 }
+  },
+  "loyalty": {
+    "full": { "code": "FG-SAUGE-7212", "valueCents": 2000, "activatesAt": "2026-06-10T00:00:00.000Z" },
+    "null": null
+  },
+  "persist": {
+    "key": "femiglow.wizard.v1",
+    "version": 3,
+    "persistedKeys": ["leadId", "orderId", "formContext", "cartSnapshot", "currentStep", "leadDraft", "addressDraft", "paymentDraft", "couponCode", "loyalty", "resumeBannerDismissed"],
+    "excludedKeys": ["creditCents", "hydrated", "fieldFocusedAt", "fieldCorrections", "filledFieldsThisSession", "resumeBannerShown", "syncDegraded"]
+  },
+  "expected": {
+    "normalizedCode": "FG-SAUGE-7212",
+    "clampedZero": 0,
+    "roundedCredit": 2000
+  },
+  "setup": {
+    "note": "Soit create(wizardStoreCreator) sans persist pour les actions, soit useWizardStore + lecture localStorage['femiglow.wizard.v1'] pour partialize. reset() / localStorage.clear() en afterEach."
+  }
+}

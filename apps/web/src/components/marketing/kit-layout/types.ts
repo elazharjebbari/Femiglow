@@ -8,6 +8,7 @@
 import type { KitPageContent, Article, Product } from '@/lib/schemas';
 import type { ProductReviewStats } from '@/lib/products/reviews';
 import type { RitualSummary } from '@/lib/schemas/rituals';
+import type { Locale } from '@/i18n.config';
 
 export interface KitPageLayoutProps {
   /** Contenu CMS structuré (composition, faq, comparatif, testimonials, etc.). */
@@ -27,4 +28,10 @@ export interface KitPageLayoutProps {
    * fallback handsTestimonials ou starter rating).
    */
   ritualSummary: RitualSummary;
+  /**
+   * Phase 7B — Locale active de la page. Propagée aux Bound qui consomment
+   * `resolveComponentFields(componentKey, locale)`. Optionnel pour rester
+   * back-compat avec `(marketing)/kit/page.tsx` (legacy non locale-aware).
+   */
+  locale?: Locale;
 }

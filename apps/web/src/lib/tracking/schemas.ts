@@ -26,6 +26,8 @@ const purchaseParams = ecommerceParams.extend({
   transaction_id: z.string().min(1),
   tax: z.number().nonnegative().optional(),
   shipping: z.number().nonnegative().optional(),
+  // jpid de parcours (présent si un lead a précédé) — dédup CAPI avec le lead.
+  meta_purchase_eid: z.string().optional(),
 });
 
 const generateLeadParams = z
@@ -34,6 +36,8 @@ const generateLeadParams = z
     value: z.number().nonnegative().optional(),
     lead_id: z.string().optional(),
     method: z.string().optional(),
+    // eventID de parcours Meta Purchase (jpid) — porté pour dédup Pixel↔CAPI.
+    meta_purchase_eid: z.string().optional(),
   })
   .strict();
 
@@ -48,6 +52,22 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
   scroll_depth: z
     .object({ percent_scrolled: z.union([z.literal(25), z.literal(50), z.literal(75), z.literal(90)]) })
     .strict(),
+  // AN-03 — événements CTA canoniques attendus par l'agrégation funnel/CTA.
+  // `passthrough` : les CTA produit portent des payloads variés (label, destination,
+  // cta_intent…) — on les accepte sans rejet. Les variantes héritées
+  // `pack_cta_click`/`video_cta_click`/`composition_post_cta_click` sont normalisées
+  // vers `cta_click` à l'ingestion (cf. normalizeEventName dans /api/track).
+  cta_click: z
+    .object({
+      cta_intent: z.string().optional(),
+      label: z.string().optional(),
+      destination: z.string().optional(),
+      component_id: z.string().optional(),
+    })
+    .passthrough(),
+  cta_impression: z
+    .object({ label: z.string().optional(), component_id: z.string().optional() })
+    .passthrough(),
   click: z
     .object({
       link_text: z.string().optional(),
@@ -96,6 +116,7 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       promotion_id: z.string().optional(),
       promotion_name: z.string().optional(),
       creative_slot: z.string().optional(),
+      creative_name: z.string().optional(),
     })
     .strict(),
   select_promotion: z
@@ -166,12 +187,18 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       session_id: z.string().min(1).max(40),
       form_variant: z.string().optional(),
       trigger_intent: z.string().optional(),
+      // CHA-230 Phase 2 — décision orchestrateur propagée côté client pour QA & analyses.
+      message_id: z.string().min(1).max(40).optional(),
+      reason: z.string().max(120).optional(),
+      copy_key: z.string().max(80).optional(),
     })
     .strict(),
   chat_lead_form_view: z
     .object({
       session_id: z.string().min(1).max(40),
       form_variant: z.string().optional(),
+      // CHA-230 Phase 2 — raison d'apparition héritée du orchestrateur.
+      reason: z.string().max(120).optional(),
     })
     .strict(),
   chat_lead_form_focus: z
@@ -259,6 +286,26 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       retry_after_seconds: z.number().int().nonnegative(),
     })
     .strict(),
+  // CHA-231 (gap 1) — Tracking d'une offre lead-form récupérée via le pull
+  // /api/chat/lead-status (réconciliation post-SSE quand le stream est
+  // tombé sans avoir livré l'event). Permet d'auditer l'efficacité du
+  // filet anti-perte côté quality dashboard.
+  chat_lead_form_recovered: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      message_id: z.string().min(1).max(40),
+      reason: z.string().min(1).max(40),
+    })
+    .strict(),
+  // CHA-231 (gap 4) — Tracking d'un event SSE invalide (Zod safeParse KO).
+  // Permet de surveiller la stabilité du contrat SSE en prod.
+  chat_sse_invalid_event: z
+    .object({
+      session_id: z.string().min(1).max(40),
+      raw_event: z.string().max(40).optional(),
+      issues: z.array(z.string()).max(20).optional(),
+    })
+    .strict(),
   chat_conversion_attributed: z
     .object({
       session_id: z.string().min(1).max(40),
@@ -287,6 +334,8 @@ export const eventSchemas: Record<string, z.ZodTypeAny> = {
       contact_channels: z.array(z.enum(['phone', 'email', 'sms'])).max(3),
       currency: z.string().length(3),
       value: z.number().nonnegative().optional(),
+      // eventID de parcours Meta Purchase (jpid) — dédup Pixel↔CAPI.
+      meta_purchase_eid: z.string().optional(),
     })
     .strict(),
   address_completed: z
@@ -474,8 +523,10 @@ const eventCategoryByName: Record<string, TrackingEventCategory> = {
   chat_lead_form_focus: 'lead',
   chat_lead_form_dismiss: 'lead',
   chat_lead_form_submit: 'lead',
+  chat_lead_form_recovered: 'lead', // CHA-231 gap 1
   chat_lead_webhook_sent: 'lead',
   chat_lead_webhook_failed: 'lead',
+  chat_sse_invalid_event: 'engagement', // CHA-231 gap 4
   chat_suggestion_clicked: 'engagement',
   chat_feedback: 'engagement',
   chat_language_switch: 'engagement',

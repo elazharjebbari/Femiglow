@@ -7,6 +7,7 @@ export default {
     './src/lib/chat/db/schema.ts',
     './src/lib/db/schema-content-studio.ts',
     './src/lib/db/schema-social-publishing.ts',
+    './src/lib/leads/db/schema-lead-outbox.ts',
   ],
   out: './drizzle/migrations',
   dialect: 'postgresql',

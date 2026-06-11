@@ -1,0 +1,67 @@
+@startuml F19-pricing-resolution
+title F19 — Résolution du pricing (source unique) + garde anti-422
+
+start
+:resolveProductPricing(input, ctx);
+note right
+  MÊME fonction appelée aux 3 points :
+  affichage /kit, snapshot wizard, recalcul order.
+  ctx.now injecte (jamais Date.now()).
+end note
+
+:listAutoCoupons() puis selectCoupon(coupons, ctx, now);
+note right
+  filtre isCandidate :
+  status=active ET fenetre ET eligible ET target=product_price
+  tri : priority desc -> createdAt asc -> id asc (non-cumul)
+end note
+
+if (coupon selectionne ?) then (non)
+  :fallback computePromo(price, promoPriceCents);
+  :coupon = null;
+  note right: prix plein ou promo legacy
+  stop
+else (oui)
+endif
+
+if (coupon.target == product_price ?) then (non)
+  :ignore -> fallback, coupon = null;
+  stop
+else (oui)
+endif
+
+if (coupon.currency == input.currency ?) then (non)
+  :ignore -> fallback, coupon = null;
+  stop
+else (oui)
+endif
+
+:bucket = pickBucket(visitorKey, couponId, holdoutPct);
+note right
+  visitorKey absent -> treatment
+  holdoutPct 0 -> treatment ; 100 -> holdout
+  DETERMINISTE & STABLE (affichage == checkout)
+end note
+
+if (bucket == holdout ?) then (oui)
+  :fallback (prix PLEIN) MAIS ref coupon conservee\n(bucket=holdout) pour incrementalite;
+  stop
+else (treatment)
+  :applyCoupon(price, coupon)\n(jamais < 0 ; percent 0/100 -> inactive);
+  :coupon = ref (bucket=treatment);
+endif
+
+:ResolvedPricing => finalPriceCents (= prix AFFICHE);
+
+partition "Au checkout (order-repo)" {
+  :recalcul via la MÊME source unique;
+  if (expectedTotalCents == finalPriceCents recalcule ?) then (oui)
+    :commande creee (prix affiche == prix debite);
+    stop
+  else (non)
+    :throw PriceMismatchError;
+    :HTTP 422 price_mismatch (debit errone bloque);
+    stop
+  endif
+}
+@enduml

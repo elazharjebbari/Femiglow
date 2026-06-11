@@ -22,10 +22,10 @@ export function FieldShell({ id, label, hint, error, required, children, trailin
   const errorId = error ? `${id}-error` : undefined;
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium text-encre">
+      <label htmlFor={id} className="block text-start text-sm font-medium text-encre">
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-1 text-encre/50">
+          <span aria-hidden="true" className="ms-1 text-encre/50">
             *
           </span>
         )}

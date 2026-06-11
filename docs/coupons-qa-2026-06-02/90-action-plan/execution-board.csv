@@ -1,0 +1,27 @@
+ticket,vague,feature_id,intitule,statut,priorite,cause_racine,couche_corrigee,test_non_regression,notes
+EB-001,W0,-,"Setup MSW server + handlers coupons/checkout",partial,P0,"réutilise src/test/msw/server.ts existant",test,," handlers admin à ajouter en W4"
+EB-002,W0,-,"Factories makeCoupon/makeContext/makeCouponEvent",done,P0,,test,src/test/factories/coupons.ts," makeCoupon+makeContext faits"
+EB-003,W1,CPN-01,"Générer migration 0080_coupons.sql",done,P0,"drift meta préexistant",data,"drizzle generate + trim coupons-only"," snapshot resync conservé"
+EB-004,W1,CPN-01,"coupon-repo dual-driver + tests",done,P0,,data,coupon-repo.test.ts," 8 tests verts"
+EB-005,W1,CPN-01,"coupon-event-repo + idempotence converted",done,P0,"union DrizzleDb sur returning()",data,coupon-event-repo.test.ts," 6 tests verts"
+EB-006,W1,CPN-20,"seed welcome_auto idempotent",done,P1,,data,seed-coupons.test.ts," 4 tests verts, D-2 respecté"
+EB-007,W1,CPN-17,"socle bascule promo (fallback)",done,P0,,backend,engine.test.ts U031-U035," override+fallback testés"
+EB-008,W2,CPN-02,"applyCoupon + table de vérité",done,P0,,backend,engine.test.ts U001-U007," délègue à computePromo"
+EB-009,W2,CPN-03,"resolveCoupon (éligibilité/validité/non-cumul)",done,P0,,backend,engine.test.ts U010-U019,
+EB-010,W2,CPN-19,"bucketing holdout déterministe",done,P0,,backend,engine.test.ts U040-U046," 10000 tirages stables"
+EB-011,W2,CPN-04,"resolveProductPricing + fallback",done,P0,,backend,engine.test.ts U030-U036,
+EB-012,W2,CPN-05,"buildCouponContext SC↔API équivalence",done,P0,,backend,context.test.ts U030-U031,
+EB-013,W2,CPN-18,"cache tag coupons + invalidation",partial,P0,,backend,," COUPONS_TAG défini; revalidateTag à câbler en W4"
+EB-014,W3,CPN-06,"public.ts coupon-aware + getKitLeadValue",done,P0,,backend,public.ts resolveKitPricing," lead value coupon-aware"
+EB-015,W3,CPN-07,"snapshot coupon-aware (anti-422)",partial,P0,"holdout=0 → display déjà 199 via promoPriceCents seed",backend,," KitCommanderSectionBound display à câbler avec W5"
+EB-016,W3,CPN-08,"order-repo repricing coupon-aware",done,P0,,backend,"order-repo.ts L196+"," resolveProductPricing autoritaire"
+EB-017,W3,CPN-09,"coupon_events converted idempotent",done,P1,,backend,"order-repo emit + event-repo"," fire-and-forget, idempotent orderId"
+EB-018,W3,CPN-16,"non-régression tracking value=199",done,P0,,backend,public.ts getKitLeadValue," via resolveKitPricing"
+EB-019,W4,CPN-10,"admin CRUD routes + pages",done,P0,,backend+frontend,route.test.ts," routes + page + CouponsManager"
+EB-020,W4,CPN-11,"status lifecycle + effet /kit",done,P0,,backend+frontend,"status/route + revalidateTag"," archived→active interdit (409)"
+EB-021,W4,CPN-12,"stats incrémentalité + uplift",done,P1,,backend,stats.test.ts," computeCouponStats + route /stats"
+EB-022,W4,CPN-13,"RBAC coupons (matrice + enforcement)",done,P0,"RbacResource typé manuellement",backend,route.test.ts C001-C003," coupons ajouté schema+types+matrice"
+EB-023,W5,CPN-14,"CouponWelcomeNote + charte + a11y",done,P0,,frontend,CouponWelcomeNote.test.tsx," wiring Bound→Section→PriceBlock + nav"
+EB-024,W5,CPN-15,"disclosure code invitation inerte",done,P2,,frontend,CouponWelcomeNote.test.tsx I003," <details> replié, D-6 sans champ"
+EB-025,W6,all,"E2E visiteur + opérateur multi-navigateurs",done,P0,,e2e,"e2e/coupon-welcome.spec.ts + e2e/admin-coupons.spec.ts"," + vérif live preview /fr/kit OK"
+EB-026,W6,all,"durcissement anti-flaky 3 reruns",todo,P0,,,," à lancer en CI avec --repeat-each=3"

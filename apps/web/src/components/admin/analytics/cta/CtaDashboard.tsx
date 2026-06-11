@@ -2,17 +2,21 @@
  * CtaDashboard — orchestrateur client de l'onglet CTA.
  * cf. docs/analytics/05-onglets-specs.md §4
  *
- * Reçoit les données pré-chargées par le RSC et refetch quand les filtres
- * URL changent.
+ * Source de vérité = l'URL (réactif via `useAnalyticsFilters`). Le RSC a
+ * pré-chargé `initialData` pour `initialFilters` ; on ne refetch que lorsque
+ * l'admin change réellement un filtre (period/device/traffic).
+ * cf. docs/analytics-audit-qa-2026-05-30 — findings AF-01 (réactivité) +
+ * F-PERF-03 (pas de double fetch au mount) + F-CTA-05 (devise MAD).
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { AnalyticsFilters } from '@/lib/analytics/filters';
 import { filtersToSearchParams } from '@/lib/analytics/filters';
 import type { CtaData } from '@/lib/analytics/queries/cta';
 
+import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
 import { CtaKpiGrid } from './CtaKpiGrid';
 import { CtaTable } from './CtaTable';
 import { CtaTopMessages } from './CtaTopMessages';
@@ -21,23 +25,31 @@ import { CtaTopPages } from './CtaTopPages';
 interface CtaDashboardProps {
   initialFilters: AnalyticsFilters;
   initialData: CtaData;
-  /** Devise pour les montants (default EUR). */
+  /** Devise pour les montants (MAD pour FemiGlow). */
   currency?: string;
 }
 
 export function CtaDashboard({
   initialFilters,
   initialData,
-  currency = 'EUR',
+  currency = 'MAD',
 }: CtaDashboardProps) {
-  const [filters] = useState<AnalyticsFilters>(initialFilters);
+  const { filters } = useAnalyticsFilters();
   const [data, setData] = useState<CtaData>(initialData);
   const [loading, setLoading] = useState(false);
   const [, setError] = useState<string | null>(null);
+  const initialQs = filtersToSearchParams(initialFilters).toString();
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
-    let cancelled = false;
     const params = filtersToSearchParams(filters).toString();
+    // 1er rendu : si les filtres correspondent à ceux pré-chargés par le RSC,
+    // on garde `initialData` (pas de refetch — F-PERF-03).
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      if (params === initialQs) return;
+    }
+    let cancelled = false;
     const q = params ? `?${params}` : '';
     setLoading(true);
     setError(null);
@@ -59,7 +71,7 @@ export function CtaDashboard({
     return () => {
       cancelled = true;
     };
-  }, [filters]);
+  }, [filters, initialQs]);
 
   return (
     <div className="flex flex-col gap-6" data-testid="cta-dashboard">
