@@ -61,7 +61,7 @@ test.describe('Content Studio v2 — budget exhaustion', () => {
     await page.getByRole('button', { name: /Enregistrer l'idée/i }).click();
     await expect(page.locator('[data-variant-id]').first()).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /Choisir cette variante/i }).first().click();
-    await page.getByRole('button', { name: /Générer un visuel IA/i }).click();
+    await page.getByRole('button', { name: /Générer (un visuel|une vidéo) IA/i }).click();
 
     // MediaStudio surfaces a toast with the server message.
     await expect(page.getByText(/Budget atteint/i)).toBeVisible({ timeout: 5_000 });

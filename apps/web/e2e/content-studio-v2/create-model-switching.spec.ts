@@ -14,7 +14,7 @@ import { registerCreateMocks, ensureCreatePageLoaded } from './create-helpers';
 test.use({ storageState: ADMIN_STORAGE_PATH });
 
 test.describe('Content Studio v2 — model switching', () => {
-  test('no explicit model → request omits the model field (server uses suggestion)', async ({
+  test('no explicit model → request carries the suggested model (auto-select)', async ({
     page,
   }) => {
     const state = await registerCreateMocks(page);
@@ -26,8 +26,10 @@ test.describe('Content Studio v2 — model switching', () => {
     await page.getByRole('button', { name: /Enregistrer l'idée/i }).click();
     await expect(page.locator('[data-variant-id]').first()).toBeVisible({ timeout: 15_000 });
 
-    expect(state.lastIdeasBody?.model).toBeUndefined();
-    expect(state.lastGenerateBody?.model).toBeUndefined();
+    // Le ModelPicker auto-sélectionne désormais la suggestion (fetch eager) :
+    // le client envoie body.model = suggested.id au lieu de l'omettre.
+    expect(state.lastIdeasBody?.model).toBe('gpt-4o-mini');
+    expect(state.lastGenerateBody?.model).toBe('gpt-4o-mini');
   });
 
   test('reel format exposes the role=video ModelPicker by default', async ({ page }) => {

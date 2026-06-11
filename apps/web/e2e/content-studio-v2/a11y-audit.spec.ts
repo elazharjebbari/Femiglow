@@ -26,6 +26,9 @@ const MODES = [
 
 for (const mode of MODES) {
   test(`a11y — /${mode.name} has no critical violations`, async ({ page }) => {
+    // /library en staging porte une vraie bibliothèque (100+ médias) :
+    // networkidle (15 s) + axe.analyze dépassent les 30 s par défaut.
+    test.setTimeout(90_000);
     await page.goto(mode.path);
     await ensureAuthOrSkip(page);
 

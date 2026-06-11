@@ -40,8 +40,9 @@ test.describe('Content Studio v2 — create golden path (mocked)', () => {
     // Step 3 — pick the first variant → server auto-review puts it in needs_review.
     await page.getByRole('button', { name: /Choisir cette variante/i }).first().click();
 
-    // Step 4 — generate visual (defaults to video for reel).
-    await page.getByRole('button', { name: /Générer un visuel IA/i }).click();
+    // Step 4 — generate visual (defaults to video for reel, where the
+    // button reads « Générer une vidéo IA »).
+    await page.getByRole('button', { name: /Générer (un visuel|une vidéo) IA/i }).click();
     await expect(page.locator('video, img').first()).toBeVisible({ timeout: 15_000 });
 
     // Step 5 — approve & publish.

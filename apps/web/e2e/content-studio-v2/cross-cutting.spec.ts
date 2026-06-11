@@ -255,6 +255,9 @@ test.describe('cross-cutting — operator scenarios', () => {
   });
 
   test('axe-core: /library — 0 critical a11y violations', async ({ page }) => {
+    // /library en staging porte une vraie bibliothèque (100+ médias) :
+    // networkidle (15 s) + axe.analyze dépassent les 30 s par défaut.
+    test.setTimeout(90_000);
     await page.goto('/admin/content-studio-v2/library');
     await ensureAuthOrSkip(page);
     await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});

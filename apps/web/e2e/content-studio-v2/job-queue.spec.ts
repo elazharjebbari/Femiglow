@@ -181,6 +181,7 @@ test('job-queue — network error on list shows error toast', async ({ page }) =
   await page.goto('/admin/content-studio-v2/plan');
   await ensureAuthOrSkip(page);
 
-  // The error toast should mention "Échec rafraîchissement jobs"
-  await expect(page.getByText(/échec rafraîchissement jobs/i)).toBeVisible({ timeout: 10000 });
+  // The error surfaces twice (statut inline + toast) → .first() pour éviter
+  // la violation strict-mode.
+  await expect(page.getByText(/échec rafraîchissement jobs/i).first()).toBeVisible({ timeout: 10000 });
 });

@@ -49,7 +49,7 @@ test.describe('Content Studio v2 — mock video flow', () => {
 
     // Switch to Image kind
     await page.locator('button[role="radio"][data-cs-kind="image"]').click();
-    await page.getByRole('button', { name: /Générer un visuel IA/i }).click();
+    await page.getByRole('button', { name: /Générer (un visuel|une vidéo) IA/i }).click();
     await expect(page.locator('img').first()).toBeVisible({ timeout: 15_000 });
     expect(state.lastVisualBody?.kind).toBe('image');
   });

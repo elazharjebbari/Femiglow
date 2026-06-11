@@ -28,7 +28,7 @@ test.describe('Content Studio v2 — step progression', () => {
     });
 
     // Generate visual + approve → step=Valider.
-    await page.getByRole('button', { name: /Générer un visuel IA/i }).click();
+    await page.getByRole('button', { name: /Générer (un visuel|une vidéo) IA/i }).click();
     await expect(page.locator('video, img').first()).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('approve-draft-button').click();
     await expect(page.locator('button[data-step="validate"][aria-current="step"]')).toBeVisible({

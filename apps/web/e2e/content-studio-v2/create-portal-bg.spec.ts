@@ -45,7 +45,7 @@ test.describe('Content Studio v2 — portal backgrounds are opaque', () => {
     await page.getByRole('button', { name: /Enregistrer l'idée/i }).click();
     await expect(page.locator('[data-variant-id]').first()).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /Choisir cette variante/i }).first().click();
-    await page.getByRole('button', { name: /Générer un visuel IA/i }).click();
+    await page.getByRole('button', { name: /Générer (un visuel|une vidéo) IA/i }).click();
     await expect(page.locator('video, img').first()).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('approve-draft-button').click();
     await expect(page.getByText(/Draft validé/i)).toBeVisible({ timeout: 5_000 });
