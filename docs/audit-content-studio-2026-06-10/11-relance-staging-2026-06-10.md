@@ -19,6 +19,7 @@ Décision actée par le propriétaire : **pas de merge vers master** (le projet 
 
 **À savoir (comportements normaux de la nouvelle infra)** :
 - L'**hibernation** endormira l'app après inactivité ; la première visite la réveille (page « waking up » ~quelques secondes). C'est voulu, partagé avec les autres stagings.
+- ⚠️ **Le détecteur d'inactivité ne voit QUE le trafic public** (marqueur `/var/run/staging-activity-femiglow` touché par le wake-proxy). Les e2e locaux sur `127.0.0.1:8014` sont invisibles → l'app peut être arrêtée **en plein run** (constaté le 10/06 à 21:30, suite tuée à mi-course). La détection par journal du script est inopérante (bug de parsing `short-precise` → date à minuit). **Avant une suite e2e longue : `sudo touch /var/run/staging-activity-femiglow`** (fenêtre 60 min, à re-toucher si la suite dépasse).
 - Le timer systemd `femiglow-staging-cron-media-optimize.timer` existe mais est **minutely** → laissé désactivé (le cron quotidien 03:15 fait le travail).
 - master n'a pas bougé ; la prod n'a pas été touchée ; rien n'a été poussé sur origin.
 
