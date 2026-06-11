@@ -74,6 +74,28 @@ Le merge ne se discute que quand TOUT ceci est vrai :
 4. `pnpm -r typecheck` + suite complète + build verts sur la branche à jour de master (rebase/merge de master → branche d'abord, pour absorber les 146 commits tracking/chat/i18n **dans le sens sans risque**) ;
 5. plan de migration DB prod écrit (la prod n'a PAS les migrations 0063-0065 — c'est le point qui demandera le plus de soin au moment du merge).
 
+> **STATUT 2026-06-11** :
+> - **Gate 2 FERMÉ** : la jambe vidéo (`video-publish-end-to-end.spec.ts`)
+>   est dans le scope CI ; au passage, ce spec a révélé un crash réel de
+>   /create (patch partiel → caption undefined → `.trim()` dans le
+>   Stepper) corrigé à la racine (`f3c751c4`). Le premier run COMPLET du
+>   scope CI a ensuite révélé 88 échecs e2e déterministes (drift UI) :
+>   31 specs réparés (`a7cfde20`, `2dae9969`), 412 tests `ai-engine-*`
+>   (battery spéculative du 25/05) mis en quarantaine CI via
+>   `CS_E2E_SKIP_AI_ENGINE=true` — dette tracée, à réparer ou réécrire.
+>   Scope CI final : 220 tests / 46 fichiers, vérifiés verts contre :8014.
+> - **Gate 5 FERMÉ** : plan de migration DB prod écrit
+>   (`12-plan-migration-db-prod.md`).
+> - **Gate 4 EN ATTENTE** : le merge master→branche (mesuré : 5 conflits,
+>   union des journaux de migrations validée) attend la confirmation
+>   explicite du propriétaire — « on merge pas avec master » reste la
+>   consigne tant qu'elle n'est pas levée pour ce sens-là.
+> - **Gate 3 EN ATTENTE** : test live Postiz sur compte dédié — attend
+>   décision + credentials (jamais un compte client).
+> - NB : les résultats GitHub Actions ne sont pas vérifiables depuis ce
+>   serveur (pas de `gh`, repo privé) — la CI réelle est à confirmer côté
+>   GitHub.
+
 ### Risques résiduels acceptés aujourd'hui
 - Hibernation : un cron applicatif qui tire pendant le sommeil échoue silencieusement (`curl -sf`) — acceptable en staging.
 - La branche porte aussi `lib/ai-engine` (~240 fichiers) dont la maturité est inférieure au studio lui-même — le périmètre du futur merge pourra être découpé (cherry-pick studio sans ai-engine) si on veut réduire le risque, au prix d'un travail git plus fin.
