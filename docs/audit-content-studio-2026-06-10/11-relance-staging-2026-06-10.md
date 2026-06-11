@@ -86,10 +86,17 @@ Le merge ne se discute que quand TOUT ceci est vrai :
 >   Scope CI final : 220 tests / 46 fichiers, vérifiés verts contre :8014.
 > - **Gate 5 FERMÉ** : plan de migration DB prod écrit
 >   (`12-plan-migration-db-prod.md`).
-> - **Gate 4 EN ATTENTE** : le merge master→branche (mesuré : 5 conflits,
->   union des journaux de migrations validée) attend la confirmation
->   explicite du propriétaire — « on merge pas avec master » reste la
->   consigne tant qu'elle n'est pas levée pour ce sens-là.
+> - **Gate 4 FERMÉ (2026-06-11, feu vert explicite du propriétaire)** :
+>   merge `origin/master` → `studio/integration` (`9a88c0a8`), 239 commits
+>   absorbés, master/prod intacts. 5 conflits résolus comme mesuré ;
+>   journal migrations unifié (87 entrées, validateur strict OK) ; DB
+>   staging migrée (11 appliquées, re-run Pending: 0). Sur l'arbre mergé :
+>   typecheck 0, lint 0, vitest 12 051/12 051, build OK, e2e scope CI
+>   195 passed/23 skipped (2 échecs calendar-drag-drop dépendants des
+>   données staging — skippent en CI). Au passage, 4 bugs PRÉEXISTANTS de
+>   master corrigés (build cassé par un export de helper dans un route.ts
+>   emails, 2 tests rouges, lint) — master lui-même ne buildait pas tel
+>   quel.
 > - **Gate 3 EN ATTENTE** : test live Postiz sur compte dédié — attend
 >   décision + credentials (jamais un compte client).
 > - NB : les résultats GitHub Actions ne sont pas vérifiables depuis ce
