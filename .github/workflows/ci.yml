@@ -126,6 +126,7 @@ jobs:
           content-studio-approval-gate.spec.ts
           content-studio-social-publishing.spec.ts
           content-studio-social-publishing-draft.spec.ts
+          e2e/social-publishing/video-publish-end-to-end.spec.ts
           e2e/content-studio-v2/
         working-directory: apps/web
         env:

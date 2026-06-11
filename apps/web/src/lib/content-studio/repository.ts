@@ -420,7 +420,16 @@ export async function updateDraft(
 ): Promise<ContentDraft | null> {
   const existing = await getDraft(id);
   if (!existing) return null;
-  const updated: ContentDraft = { ...existing, ...patch, updatedAt: new Date() };
+  // Un patch peut porter des clés explicitement `undefined` (ex. PATCH
+  // {mediaId} seul → service passe caption: undefined). Le spread JS écrase
+  // alors la valeur existante : drizzle ignorait l'undefined côté DB mais
+  // l'objet RETOURNÉ (donc l'état client) perdait sa caption — et le
+  // memory-store la perdait pour de bon. On ne garde que les clés définies
+  // (`null` reste un effacement volontaire, seul `undefined` est ignoré).
+  const definedPatch = Object.fromEntries(
+    Object.entries(patch).filter(([, v]) => v !== undefined),
+  ) as typeof patch;
+  const updated: ContentDraft = { ...existing, ...definedPatch, updatedAt: new Date() };
   const drizzle = db();
   if (drizzle) {
     await drizzle
