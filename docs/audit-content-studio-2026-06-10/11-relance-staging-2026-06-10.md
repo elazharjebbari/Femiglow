@@ -98,7 +98,19 @@ Le merge ne se discute que quand TOUT ceci est vrai :
 >   emails, 2 tests rouges, lint) — master lui-même ne buildait pas tel
 >   quel.
 > - **Gate 3 EN ATTENTE** : test live Postiz sur compte dédié — attend
->   décision + credentials (jamais un compte client).
+>   décision + credentials (jamais un compte client). **Runbook prêt :
+>   `13-runbook-gate3-test-live-postiz.md`** (procédure, garde-fous,
+>   retour arrière).
+> - **Dette quarantaine RÉSORBÉE (2026-06-11 soir, `63d37d94`)** : les 412
+>   tests `ai-engine-*` sont réparés (causes : HITL par défaut → helper
+>   `disableHumanReview`, locators ambigus, labels renommés) — run complet
+>   267 verts / 146 skips conditionnels / 0 échec contre :8014. Bonus : les
+>   3 audits axe d'accessibility étaient silencieusement skippés (require
+>   en ESM) et tournent désormais ; `global.setup` réutilise la session
+>   admin (anti rate-limit 20 logins/15 min). CI : le job bloquant garde le
+>   scope rapide ; **nouveau job dédié non-bloquant `e2e-ai-engine`**
+>   exécute la suite complète. Les specs calendar-drag-drop sont aussi
+>   réparés (drag dnd-kit piloté à la souris, 5/5).
 > - NB : les résultats GitHub Actions ne sont pas vérifiables depuis ce
 >   serveur (pas de `gh`, repo privé) — la CI réelle est à confirmer côté
 >   GitHub.
