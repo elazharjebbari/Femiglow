@@ -111,6 +111,39 @@ Le merge ne se discute que quand TOUT ceci est vrai :
 >   scope rapide ; **nouveau job dédié non-bloquant `e2e-ai-engine`**
 >   exécute la suite complète. Les specs calendar-drag-drop sont aussi
 >   réparés (drag dnd-kit piloté à la souris, 5/5).
+> - **Infra réparée (2026-06-11 soir, accord explicite du propriétaire)** :
+>   1. *Hibernation* : le parsing journal de `get_last_access` tronquait le
+>      timestamp à « Jun 11 » → minuit (3 suites e2e tuées en plein run).
+>      Corrigé dans `/opt/staging-hibernate/staging-hibernate.sh`
+>      (`--output=short-unix`, backup `.bak-2026-06-11`) — l'activité
+>      locale est désormais visible (« Last access: 0 min ago » vérifié).
+>      Le `touch` du marqueur n'est plus nécessaire avant les e2e.
+>   2. *Postiz en crash-loop depuis le reboot du 02/06* (9 jours) —
+>      DOUBLE cause :
+>      - **a)** PostgreSQL avait démarré avant Docker → bind `172.17.0.1`
+>        raté (« could not bind IPv4 address ») → le conteneur ne joignait
+>        plus sa DB (P1001). Ses restarts ~toutes les 60 s faisaient
+>        churner les réseaux Docker (`ERR_NETWORK_CHANGED` dans Chromium →
+>        crashs client intermittents pendant les e2e).
+>      - **b)** une fois Postgres rebindé, `ufw` (default deny) bloquait
+>        encore le port 5432 depuis les bridges Docker.
+>      Réparé : (a) restart `postgresql@16-main` (listener 172.17.0.1 OK,
+>      prod re-vérifiée 200 local+public immédiatement) + drop-in systemd
+>      `postgresql@16-main.service.d/after-docker.conf` (ordre After=docker
+>      pour les prochains reboots) ; (b) règle `ufw allow from
+>      172.19.0.0/16 to 172.17.0.1 port 5432 proto tcp` (subnet Docker
+>      Postiz → hôte, trafic interne non routable). Après ça, `pg_isready`
+>      depuis le réseau Postiz = « accepting connections », le conteneur
+>      cesse de redémarrer ; le backend NestJS rebootait (long) au moment
+>      de la rédaction.
+> - **Suite e2e INTÉGRALE du repo** (1 329 tests, 52 min, pendant le
+>   crash-loop Postiz) : 843 verts / 315 skips / 165 échecs — TOUS hors
+>   périmètre studio (tracking, kit/wizard, owbs, coupons/loyalty, legal,
+>   attribution…) : specs master exigeant leurs feature flags/builds
+>   dédiés (ex. owbs : « Nécessite un build avec
+>   NEXT_PUBLIC_CHECKOUT_OPTIMISTIC_WIZARD_ENABLED=true ») + une part de
+>   casse réseau due au crash-loop. Jamais couverts par un job CI global ;
+>   à re-mesurer Postiz stable si on veut un chiffre propre.
 > - NB : les résultats GitHub Actions ne sont pas vérifiables depuis ce
 >   serveur (pas de `gh`, repo privé) — la CI réelle est à confirmer côté
 >   GitHub.
