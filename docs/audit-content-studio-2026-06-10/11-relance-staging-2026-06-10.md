@@ -138,7 +138,17 @@ Le merge ne se discute que quand TOUT ceci est vrai :
 >      Docker Postiz → hôte, trafic interne non routable). Redis et
 >      Postgres deviennent joignables (`pg_isready` = « accepting », Redis
 >      = `NOAUTH` donc TCP OK), le conteneur cesse de redémarrer, le
->      backend rebind `:3000`.
+>      backend rebind `:3000`. **Dernier obstacle** : le cluster Postgres
+>      (partagé, `max_connections=100`, 3 réservées → 97 utiles) était à
+>      ~97 → le pool Prisma de Postiz (9 conns, 4 CPU) refusé (« remaining
+>      connection slots are reserved for SUPERUSER »). Résolu par un
+>      re-restart quand assez de slots se sont libérés.
+>      **État final vérifié : API integrations 200 en local (`:4200`) ET
+>      via l'URL publique (reverse-proxy) ; prod+staging 200.** Le cluster
+>      reste chroniquement tendu à cause de fuites de connexions idle
+>      d'AUTRES apps (`corolle_tracking` ~30 idle, `gestion_stock_test`
+>      ~17, `corolle_optimise` ~16) — risque latent pour la prod, à traiter
+>      côté ces apps (pooling / `idle_in_transaction_session_timeout`).
 >      ⚠️ NB : Postiz dépend de Redis ET PostgreSQL **sur l'hôte** (pas de
 >      conteneurs dédiés), via `172.17.0.1` (docker0). Toute remise à zéro
 >      du firewall doit reconduire ces deux règles.

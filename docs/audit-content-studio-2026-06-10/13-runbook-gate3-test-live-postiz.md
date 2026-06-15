@@ -9,14 +9,26 @@ client**.
 > les credentials d'un compte de test. Rien ici n'est automatisé : chaque
 > étape est manuelle et réversible.
 
+## ⚠️ État du Postiz actuel (vérifié 2026-06-15)
+
+Le Postiz (`postiz.lumiereacademy.com`) est de nouveau **opérationnel** (API
+200) après la réparation infra du 2026-06-11/15. MAIS les comptes connectés
+sont **tous des comptes réels / clients** : « Ahmed El Azhar Jebbari »,
+« Chaplin Crêpes » (`crepes_chaplin_creperie`), « Lumière Academy », etc.
+**AUCUN compte de test dédié.** Le test live ne peut donc PAS démarrer en
+l'état : publier (même un draft) doit viser un compte créé pour l'occasion,
+jamais l'un de ceux-ci. Première action obligatoire du jour J : connecter un
+compte Instagram de test dans Postiz, puis forcer
+`SOCIAL_PUBLISHING_DEFAULT_ACCOUNT_ID` dessus.
+
 ## Pré-requis (à fournir par le propriétaire)
 
-1. Un **workspace Postiz dédié** (ou un canal de test isolé dans le workspace
-   existant) avec un compte social de test connecté — ex. un compte Instagram
-   créé pour l'occasion. Jamais `femiglow` ni un compte client.
-2. `POSTIZ_BASE_URL` + `POSTIZ_API_KEY` de CE workspace (les valeurs staging
+1. Un **compte social de test connecté dans Postiz** (compte Instagram créé
+   pour l'occasion), OU un workspace Postiz dédié. Jamais `femiglow` ni un
+   compte client (cf. liste ci-dessus).
+2. `POSTIZ_BASE_URL` + `POSTIZ_API_KEY` du workspace ciblé (les valeurs staging
    actuelles dans `.env` pointent sur le Postiz existant — vérifier qu'elles
-   ciblent bien le workspace de test avant de passer live).
+   ciblent bien le bon workspace avant de passer live).
 
 ## Garde-fous codés (vérifiés le 2026-06-11 sur l'arbre mergé)
 
