@@ -126,16 +126,22 @@ Le merge ne se discute que quand TOUT ceci est vrai :
 >        churner les réseaux Docker (`ERR_NETWORK_CHANGED` dans Chromium →
 >        crashs client intermittents pendant les e2e).
 >      - **b)** une fois Postgres rebindé, `ufw` (default deny) bloquait
->        encore le port 5432 depuis les bridges Docker.
+>        encore les deux dépendances hôte du backend depuis les bridges
+>        Docker : **5432** (PostgreSQL) ET **6379** (Redis/BullMQ). Sans
+>        Redis joignable, le backend NestJS ne finit jamais son boot → port
+>        3000 jamais bindé → API en 502 (frontend up mais API morte).
 >      Réparé : (a) restart `postgresql@16-main` (listener 172.17.0.1 OK,
 >      prod re-vérifiée 200 local+public immédiatement) + drop-in systemd
 >      `postgresql@16-main.service.d/after-docker.conf` (ordre After=docker
->      pour les prochains reboots) ; (b) règle `ufw allow from
->      172.19.0.0/16 to 172.17.0.1 port 5432 proto tcp` (subnet Docker
->      Postiz → hôte, trafic interne non routable). Après ça, `pg_isready`
->      depuis le réseau Postiz = « accepting connections », le conteneur
->      cesse de redémarrer ; le backend NestJS rebootait (long) au moment
->      de la rédaction.
+>      pour les prochains reboots) ; (b) DEUX règles `ufw allow from
+>      172.19.0.0/16 to 172.17.0.1 port <5432|6379> proto tcp` (subnet
+>      Docker Postiz → hôte, trafic interne non routable). Redis et
+>      Postgres deviennent joignables (`pg_isready` = « accepting », Redis
+>      = `NOAUTH` donc TCP OK), le conteneur cesse de redémarrer, le
+>      backend rebind `:3000`.
+>      ⚠️ NB : Postiz dépend de Redis ET PostgreSQL **sur l'hôte** (pas de
+>      conteneurs dédiés), via `172.17.0.1` (docker0). Toute remise à zéro
+>      du firewall doit reconduire ces deux règles.
 > - **Suite e2e INTÉGRALE du repo** (1 329 tests, 52 min, pendant le
 >   crash-loop Postiz) : 843 verts / 315 skips / 165 échecs — TOUS hors
 >   périmètre studio (tracking, kit/wizard, owbs, coupons/loyalty, legal,
