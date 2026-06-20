@@ -12,6 +12,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -243,6 +244,11 @@ export const emailCampaignLink = pgTable(
     audienceLinkIds: jsonb('audience_link_ids').notNull().default([]),
     payloadJson: jsonb('payload_json').notNull().default({}),
     scheduledFor: timestamp('scheduled_for', { withTimezone: true }),
+    // F05 P3.1 (additif, inerte jusqu'à P3.2) — reprise du wizard à la bonne
+    // étape (null = draft legacy → rouvre é1) et TZ de planification persistée
+    // (null = legacy → fallback TZ navigateur ; nouveaux drafts = Africa/Casablanca).
+    wizardStep: smallint('wizard_step'),
+    scheduleTimezone: text('schedule_timezone'),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
     sentCount: integer('sent_count').notNull().default(0),

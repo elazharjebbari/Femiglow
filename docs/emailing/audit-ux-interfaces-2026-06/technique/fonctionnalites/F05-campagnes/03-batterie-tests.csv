@@ -1,29 +1,29 @@
 id,couche,priorite,fonctionnalite,scenario,oracle,donnees,regression_ref,statut
-F05-U-001,U,P0,machine-etats,isLegalTransition draft->scheduled,retourne true,makeCampaignLink draft,CAMP-14,a_implementer
-F05-U-002,U,P0,machine-etats,isLegalTransition draft->sending,retourne true,statut draft,CAMP-14,a_implementer
-F05-U-003,U,P0,machine-etats,isLegalTransition draft->cancelled,retourne true,statut draft,CAMP-14,a_implementer
-F05-U-004,U,P0,machine-etats,isLegalTransition draft->failed,retourne true,statut draft,CAMP-14,a_implementer
-F05-U-005,U,P0,machine-etats,isLegalTransition draft->paused illégale,retourne false,statut draft,CAMP-14,a_implementer
-F05-U-006,U,P0,machine-etats,isLegalTransition draft->sent illégale,retourne false,statut draft,CAMP-14,a_implementer
-F05-U-007,U,P0,machine-etats,isLegalTransition scheduled->sending,retourne true,statut scheduled,CAMP-14,a_implementer
-F05-U-008,U,P0,machine-etats,isLegalTransition scheduled->cancelled,retourne true,statut scheduled,CAMP-14,a_implementer
-F05-U-009,U,P0,machine-etats,isLegalTransition scheduled->paused illégale,retourne false,statut scheduled,CAMP-14,a_implementer
-F05-U-010,U,P0,machine-etats,isLegalTransition scheduled->sent illégale,retourne false,statut scheduled,CAMP-14,a_implementer
-F05-U-011,U,P0,machine-etats,isLegalTransition sending->sent,retourne true,statut sending,CAMP-14,a_implementer
-F05-U-012,U,P0,machine-etats,isLegalTransition sending->paused,retourne true,statut sending,CAMP-14,a_implementer
-F05-U-013,U,P0,machine-etats,isLegalTransition sending->cancelled,retourne true,statut sending,CAMP-14,a_implementer
-F05-U-014,U,P0,machine-etats,isLegalTransition sending->failed,retourne true,statut sending,CAMP-14,a_implementer
-F05-U-015,U,P0,machine-etats,isLegalTransition sending->scheduled illégale,retourne false,statut sending,CAMP-14,a_implementer
-F05-U-016,U,P0,machine-etats,isLegalTransition paused->sending,retourne true,statut paused,CAMP-14,a_implementer
-F05-U-017,U,P0,machine-etats,isLegalTransition paused->cancelled,retourne true,statut paused,CAMP-14,a_implementer
-F05-U-018,U,P0,machine-etats,isLegalTransition paused->sent illégale,retourne false,statut paused,CAMP-14,a_implementer
-F05-U-019,U,P0,machine-etats,isLegalTransition sent->* tous illégaux (terminal),false pour les 6 cibles,statut sent,CAMP-14,a_implementer
-F05-U-020,U,P0,machine-etats,isLegalTransition cancelled->* tous illégaux (terminal),false pour les 6 cibles,statut cancelled,CAMP-14,a_implementer
-F05-U-021,U,P0,machine-etats,isLegalTransition failed->* tous illégaux (terminal),false pour les 6 cibles,statut failed,CAMP-14,a_implementer
-F05-U-022,U,P0,machine-etats,isLegalTransition idempotente from==to,true pour les 7 statuts,table 7,CAMP-14,a_implementer
-F05-U-023,U,P0,machine-etats,table 7x7 exhaustive croisée,42 couples hors-diagonale conformes table légale,grille 7x7,CAMP-14,a_implementer
-F05-U-024,U,P1,machine-etats,mapListmonkStatus finished->sent running->sending,mapping conforme,statuts listmonk,nominal,a_implementer
-F05-U-025,U,P1,machine-etats,mapListmonkStatus paused/draft/inconnu->null,no-op défensif,statut paused/xyz,nominal,a_implementer
+F05-U-001,U,P0,machine-etats,isLegalTransition draft->scheduled,retourne true,makeCampaignLink draft,CAMP-14,implemente
+F05-U-002,U,P0,machine-etats,isLegalTransition draft->sending,retourne true,statut draft,CAMP-14,implemente
+F05-U-003,U,P0,machine-etats,isLegalTransition draft->cancelled,retourne true,statut draft,CAMP-14,implemente
+F05-U-004,U,P0,machine-etats,isLegalTransition draft->failed,retourne true,statut draft,CAMP-14,implemente
+F05-U-005,U,P0,machine-etats,isLegalTransition draft->paused illégale,retourne false,statut draft,CAMP-14,implemente
+F05-U-006,U,P0,machine-etats,isLegalTransition draft->sent illégale,retourne false,statut draft,CAMP-14,implemente
+F05-U-007,U,P0,machine-etats,isLegalTransition scheduled->sending,retourne true,statut scheduled,CAMP-14,implemente
+F05-U-008,U,P0,machine-etats,isLegalTransition scheduled->cancelled,retourne true,statut scheduled,CAMP-14,implemente
+F05-U-009,U,P0,machine-etats,isLegalTransition scheduled->paused illégale,retourne false,statut scheduled,CAMP-14,implemente
+F05-U-010,U,P0,machine-etats,isLegalTransition scheduled->sent illégale,retourne false,statut scheduled,CAMP-14,implemente
+F05-U-011,U,P0,machine-etats,isLegalTransition sending->sent,retourne true,statut sending,CAMP-14,implemente
+F05-U-012,U,P0,machine-etats,isLegalTransition sending->paused,retourne true,statut sending,CAMP-14,implemente
+F05-U-013,U,P0,machine-etats,isLegalTransition sending->cancelled,retourne true,statut sending,CAMP-14,implemente
+F05-U-014,U,P0,machine-etats,isLegalTransition sending->failed,retourne true,statut sending,CAMP-14,implemente
+F05-U-015,U,P0,machine-etats,isLegalTransition sending->scheduled illégale,retourne false,statut sending,CAMP-14,implemente
+F05-U-016,U,P0,machine-etats,isLegalTransition paused->sending,retourne true,statut paused,CAMP-14,implemente
+F05-U-017,U,P0,machine-etats,isLegalTransition paused->cancelled,retourne true,statut paused,CAMP-14,implemente
+F05-U-018,U,P0,machine-etats,isLegalTransition paused->sent illégale,retourne false,statut paused,CAMP-14,implemente
+F05-U-019,U,P0,machine-etats,isLegalTransition sent->* tous illégaux (terminal),false pour les 6 cibles,statut sent,CAMP-14,implemente
+F05-U-020,U,P0,machine-etats,isLegalTransition cancelled->* tous illégaux (terminal),false pour les 6 cibles,statut cancelled,CAMP-14,implemente
+F05-U-021,U,P0,machine-etats,isLegalTransition failed->* tous illégaux (terminal),false pour les 6 cibles,statut failed,CAMP-14,implemente
+F05-U-022,U,P0,machine-etats,isLegalTransition idempotente from==to,true pour les 7 statuts,table 7,CAMP-14,implemente
+F05-U-023,U,P0,machine-etats,table 7x7 exhaustive croisée,42 couples hors-diagonale conformes table légale,grille 7x7,CAMP-14,implemente
+F05-U-024,U,P1,machine-etats,mapListmonkStatus finished->sent running->sending,mapping conforme,statuts listmonk,nominal,implemente
+F05-U-025,U,P1,machine-etats,mapListmonkStatus paused/draft/inconnu->null,no-op défensif,statut paused/xyz,nominal,implemente
 F05-U-026,U,P0,planification,conversion datetime-local Casablanca->UTC,offset à T appliqué (UTC+1 hors DST),date 18:30 Africa/Casablanca,CAMP-07,a_implementer
 F05-U-027,U,P0,planification,conversion respecte DST/ramadan (offset variable),offset lu via Intl pas codé en dur,date en période suspension heure été,CAMP-07,a_implementer
 F05-U-028,U,P0,planification,validation date dans le passé refusée,retourne erreur date future,instant T-1h,CAMP-07,a_implementer

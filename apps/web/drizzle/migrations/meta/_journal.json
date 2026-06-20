@@ -582,6 +582,13 @@
       "when": 1780491327342,
       "tag": "0082_loyalty_grant_activation",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1781964585504,
+      "tag": "0083_tearful_madame_masque",
+      "breakpoints": true
     }
   ]
 }
