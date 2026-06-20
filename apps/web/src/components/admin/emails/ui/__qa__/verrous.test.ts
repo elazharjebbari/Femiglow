@@ -157,4 +157,21 @@ describe('Verrous cliquet — section emails', () => {
       new Set(['src/components/admin/emails/ui/tokens.ts']),
     );
   });
+
+  it('F01-U-069 — anneau de focus UNIQUE : focus-visible:ring via le token FOCUS (charte 09 §A.4)', () => {
+    // La charte impose un seul utilitaire de focus (ui/tokens.ts FOCUS). Tout
+    // `focus-visible:ring` littéral ailleurs doit migrer vers ${FOCUS}.
+    // Dette au 2026-06-20 : 3 fichiers. Cliquet décroissant.
+    const whitelist = new Set([
+      'src/components/admin/emails/KpiCards.tsx',
+      'src/components/admin/emails/audiences/AudienceWizard.tsx',
+      'src/components/admin/emails/events/EventsDashboardView.tsx',
+    ]);
+    ratchet(
+      'focus-visible:ring hors token FOCUS',
+      /focus-visible:ring/,
+      whitelist,
+      new Set(['src/components/admin/emails/ui/tokens.ts']),
+    );
+  });
 });

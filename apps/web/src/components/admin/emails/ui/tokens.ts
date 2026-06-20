@@ -45,6 +45,24 @@ export const TONE_BORDER: Record<Tone, string> = {
   neutral: 'border-stone-200',
 };
 
+/** Encre sémantique (texte/icône seuls : messages inline, aides d'erreur). */
+export const INK: Record<Tone, string> = {
+  success: 'text-emerald-700',
+  warning: 'text-amber-700',
+  danger: 'text-rose-700',
+  info: 'text-sky-700',
+  neutral: 'text-stone-600',
+};
+
+// ── Boutons (variantes de couleur/état — la primitive Button ajoute la taille) ─
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+export const BUTTON: Record<ButtonVariant, string> = {
+  primary: 'bg-stone-900 text-white hover:bg-stone-700',
+  secondary: 'border border-stone-300 bg-white text-stone-700 hover:bg-stone-50',
+  danger: 'bg-rose-700 text-white hover:bg-rose-800',
+  ghost: 'text-stone-700 hover:bg-stone-100',
+};
+
 /** Classes d'un ton à une intensité donnée (helper unique). */
 export function toneClass(tone: Tone, intensity: ToneIntensity = 'subtle'): string {
   return TONE[tone][intensity];
