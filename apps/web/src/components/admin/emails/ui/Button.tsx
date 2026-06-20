@@ -9,7 +9,7 @@
 'use client';
 
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { BUTTON, FOCUS, RADIUS, type ButtonVariant } from './tokens';
+import { BUTTON, FOCUS, MOTION, RADIUS, type ButtonVariant } from './tokens';
 
 type Size = 'sm' | 'md';
 
@@ -18,9 +18,11 @@ const SIZE_CLS: Record<Size, string> = {
   md: 'px-4 py-2 text-sm',
 };
 
+// MOTION.enter (motion-safe) plutôt que `transition` nu : le respect de
+// prefers-reduced-motion est porté par la primitive, pas délégué à un reset global.
 const BASE =
   `inline-flex items-center justify-center gap-1.5 font-medium ${RADIUS.control} ` +
-  `transition disabled:cursor-not-allowed disabled:opacity-60 ${FOCUS}`;
+  `${MOTION.enter} disabled:cursor-not-allowed disabled:opacity-60 ${FOCUS}`;
 
 export type ButtonProps = {
   variant?: ButtonVariant;
@@ -39,11 +41,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type={type}
+      className={`${BASE} ${SIZE_CLS[size]} ${BUTTON[variant]} ${className}`}
+      {...rest}
+      // Attributs calculés APRÈS {...rest} : invariants non écrasables par l'appelant.
       data-variant={variant}
       aria-busy={busy || undefined}
       disabled={disabled || busy}
-      className={`${BASE} ${SIZE_CLS[size]} ${BUTTON[variant]} ${className}`}
-      {...rest}
     >
       {busy && busyLabel ? busyLabel : children}
     </button>
@@ -68,11 +71,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     <button
       ref={ref}
       type={type}
+      className={`inline-flex items-center justify-center ${pad} ${RADIUS.control} ${MOTION.enter} disabled:cursor-not-allowed disabled:opacity-60 ${FOCUS} ${BUTTON[variant]} ${className}`}
+      {...rest}
       data-variant={variant}
       aria-busy={busy || undefined}
       disabled={disabled || busy}
-      className={`inline-flex items-center justify-center ${pad} ${RADIUS.control} transition disabled:cursor-not-allowed disabled:opacity-60 ${FOCUS} ${BUTTON[variant]} ${className}`}
-      {...rest}
     >
       {children}
     </button>

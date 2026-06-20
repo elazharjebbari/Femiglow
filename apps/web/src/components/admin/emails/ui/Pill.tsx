@@ -42,6 +42,7 @@ export function Pill({
 } & React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
+      {...rest}
       role="status"
       data-tone={tone}
       data-intensity={intensity}
@@ -49,7 +50,6 @@ export function Pill({
         tone,
         intensity,
       )} ${className}`}
-      {...rest}
     >
       {children}
     </span>

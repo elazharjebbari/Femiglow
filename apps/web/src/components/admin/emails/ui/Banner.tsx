@@ -16,11 +16,8 @@ export type BannerProps = {
   action?: ReactNode;
   /** Force le role ; par défaut `alert` si tone=danger, sinon `status`. */
   role?: 'alert' | 'status';
-  className?: string;
   children: ReactNode;
-  /** Attributs de test/data passthrough. */
-  'data-testid'?: string;
-};
+} & Omit<React.HTMLAttributes<HTMLDivElement>, 'children' | 'role'>;
 
 export function Banner({
   tone = 'info',
@@ -34,10 +31,10 @@ export function Banner({
   const resolvedRole = role ?? (tone === 'danger' ? 'alert' : 'status');
   return (
     <div
+      {...rest}
       role={resolvedRole}
       data-tone={tone}
       className={`flex items-center justify-between gap-3 border ${RADIUS.card} ${TONE_BORDER[tone]} ${TONE[tone].subtle} px-3 py-2 text-xs ${className}`}
-      {...rest}
     >
       <span className="flex items-center gap-2">
         {icon ? (

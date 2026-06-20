@@ -14,10 +14,18 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { statusLabel } from '@/components/admin/emails/common/StatusBadge';
-import { ConfirmDialog } from '@/components/admin/emails/ui/ConfirmDialog';
-import { EmptyState } from '@/components/admin/emails/ui/EmptyState';
-import { useToast } from '@/components/admin/emails/ui/toast';
-import { DEFAULT_TIMEZONE, formatAbsolute, timeZoneLabel } from '@/components/admin/emails/ui/format-datetime';
+import {
+  Banner,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Input,
+  SkeletonTable,
+  useToast,
+  DEFAULT_TIMEZONE,
+  formatAbsolute,
+  timeZoneLabel,
+} from '@/components/admin/emails/ui';
 
 const ROUTE = '/api/admin/emails/suppression';
 const PAGE_SIZE = 50;
@@ -172,44 +180,34 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
         aria-label="Rechercher dans la liste de suppression"
         className="mb-4 flex items-center gap-2"
       >
-        <input
+        <Input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filtrer par email, raison ou source…"
           aria-label="Filtrer par email"
-          className="w-80 rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="w-80"
           data-testid="suppression-search-input"
         />
-        <button
-          type="submit"
-          className="rounded bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
-        >
+        <Button type="submit" variant="primary" size="sm">
           Rechercher
-        </button>
+        </Button>
         {appliedQuery.trim() && (
-          <button
-            type="button"
-            onClick={resetSearch}
-            className="text-sm text-stone-500 underline-offset-2 hover:underline"
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={resetSearch}>
             effacer
-          </button>
+          </Button>
         )}
       </form>
 
       {loadError && (
-        <div role="alert" className="mb-3 rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">
+        <Banner tone="danger" className="mb-3" data-testid="suppression-load-error">
           {loadError}
-        </div>
+        </Banner>
       )}
 
       {isLoading ? (
-        <div
-          data-testid="suppression-skeleton"
-          className="rounded-md border border-stone-200 bg-white p-8 text-center text-sm text-stone-500"
-        >
-          Chargement…
+        <div data-testid="suppression-skeleton">
+          <SkeletonTable rows={6} cols={5} label="Chargement de la liste de suppression…" />
         </div>
       ) : rows.length === 0 ? (
         appliedQuery.trim() ? (
@@ -268,15 +266,15 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
                     <time dateTime={row.since}>{formatAbsolute(row.since)}</time>
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => setPendingRemoval(row.email)}
                       aria-label={`Retirer ${row.email} de la liste de suppression`}
                       data-testid={`suppression-remove-${row.email}`}
-                      className="rounded border border-stone-300 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-100"
                     >
                       Retirer
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -289,22 +287,22 @@ export function SuppressionList({ initialEmail = '' }: SuppressionListProps) {
             </span>
             {total > PAGE_SIZE && (
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
                   disabled={!canPrev}
-                  className="rounded border border-stone-300 px-2 py-1 text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Précédent
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setOffset((o) => o + PAGE_SIZE)}
                   disabled={!canNext}
-                  className="rounded border border-stone-300 px-2 py-1 text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Suivant
-                </button>
+                </Button>
               </div>
             )}
           </div>

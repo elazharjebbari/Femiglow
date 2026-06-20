@@ -30,7 +30,9 @@ export type ToneIntensity = 'subtle' | 'solid';
 
 export const TONE: Record<Tone, Record<ToneIntensity, string>> = {
   success: { subtle: 'bg-emerald-50 text-emerald-700', solid: 'bg-emerald-700 text-white' },
-  warning: { subtle: 'bg-amber-50 text-amber-800', solid: 'bg-amber-600 text-white' },
+  // warning.solid : amber-800 (et non amber-600) — blanc sur amber-600 échoue
+  // le contraste AA (~2.9:1) ; amber-800 passe (~6.5:1).
+  warning: { subtle: 'bg-amber-50 text-amber-800', solid: 'bg-amber-800 text-white' },
   danger: { subtle: 'bg-rose-50 text-rose-700', solid: 'bg-rose-700 text-white' },
   info: { subtle: 'bg-sky-50 text-sky-700', solid: 'bg-sky-700 text-white' },
   neutral: { subtle: 'bg-stone-100 text-stone-700', solid: 'bg-stone-800 text-white' },

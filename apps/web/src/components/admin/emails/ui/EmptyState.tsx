@@ -9,6 +9,8 @@
  */
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { Button } from './Button';
+import { BUTTON, FOCUS, RADIUS } from './tokens';
 
 export type EmptyStateProps = {
   icon?: ReactNode;
@@ -36,18 +38,14 @@ export function EmptyState({ icon, title, body, cta, variant = 'empty' }: EmptyS
         cta.href ? (
           <Link
             href={cta.href}
-            className="mt-4 inline-block rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+            className={`mt-4 inline-block ${RADIUS.control} px-4 py-2 text-sm font-medium ${BUTTON.primary} ${FOCUS}`}
           >
             {cta.label}
           </Link>
         ) : (
-          <button
-            type="button"
-            onClick={cta.onClick}
-            className="mt-4 inline-block rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
-          >
+          <Button variant="primary" onClick={cta.onClick} className="mt-4">
             {cta.label}
-          </button>
+          </Button>
         )
       ) : null}
     </div>

@@ -18,6 +18,8 @@ export { Card } from './Card';
 export type { CardProps } from './Card';
 export { Field } from './Field';
 export type { FieldProps, FieldAria } from './Field';
+export { Input } from './Input';
+export type { InputProps } from './Input';
 export { Skeleton, SkeletonTable, SkeletonKpiCard } from './Skeleton';
 export { Banner } from './Banner';
 export type { BannerProps } from './Banner';

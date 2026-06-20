@@ -31,7 +31,8 @@ export type OutboxStatus =
   | 'suppressed'
   | 'dlq';
 
-import { RADIUS, toneClass, type Tone, type ToneIntensity } from '../ui/tokens';
+import type { Tone, ToneIntensity } from '../ui/tokens';
+import { Pill } from '../ui/Pill';
 
 interface StatusMeta {
   label: string;
@@ -72,18 +73,12 @@ export function StatusBadge({
   className?: string;
 }) {
   const meta = (STATUS_META as Record<string, StatusMeta>)[status] ?? UNKNOWN_META;
+  // Rendu via la primitive Pill : géométrie/typographie mono-source (la couleur
+  // vient du même toneClass). data-status passe par le passthrough de Pill.
   return (
-    <span
-      className={`inline-flex items-center gap-1 ${RADIUS.pill} px-2 py-0.5 text-xs font-medium ${toneClass(
-        meta.tone,
-        meta.intensity,
-      )} ${className}`}
-      role="status"
-      data-status={status}
-      data-tone={meta.tone}
-    >
+    <Pill tone={meta.tone} intensity={meta.intensity} data-status={status} className={className}>
       <span aria-hidden="true">⏺</span>
       {meta.label}
-    </span>
+    </Pill>
   );
 }

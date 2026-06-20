@@ -139,19 +139,21 @@ describe('Verrous cliquet — section emails', () => {
       'src/components/admin/emails/cockpit/KpiHeader.tsx',
       'src/components/admin/emails/cockpit/RetryButton.tsx',
       'src/components/admin/emails/cockpit/SavedViewsSidebar.tsx',
-      'src/components/admin/emails/cockpit/SuppressionList.tsx',
+      // SuppressionList : MIGRÉ sur le socle v2 (Banner/Button/SkeletonTable) — P3.0-c.
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
       'src/components/admin/emails/common/EntityCombobox.tsx',
       'src/components/admin/emails/events/EventsDashboardView.tsx',
       'src/components/admin/emails/templates/TemplateEditor.tsx',
-      'src/components/admin/emails/ui/ConfirmDialog.tsx',
+      // ui/ConfirmDialog : MIGRÉ sur le socle v2 (Button/Input/Banner) — P3.0-c.
       'src/components/admin/emails/ui/Wizard.tsx',
       'src/components/admin/emails/ui/toast.tsx',
       'src/components/admin/emails/wizard/CampaignWizard.tsx',
     ]);
     ratchet(
       'couleur hors tokens.ts',
-      /\b(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|sage|slate|gray|zinc)-[0-9]/,
+      // Classes de couleur nommées (non-stone) ET couleurs arbitraires
+      // (-[#hex] / -[rgb…] / -[hsl…]) — la charte A.7 §3 exige « 0 hex brut ».
+      /(\b(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|sage|slate|gray|zinc)-[0-9])|((bg|text|border|ring|from|to|via|fill|stroke)-\[(#|rgb|hsl))/,
       whitelist,
       // ui/tokens.ts = unique source autorisée des classes de couleur.
       new Set(['src/components/admin/emails/ui/tokens.ts']),

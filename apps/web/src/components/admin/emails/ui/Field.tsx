@@ -28,7 +28,9 @@ export type FieldProps = {
 
 export function Field({ label, hint, error, required, className = '', children }: FieldProps) {
   const id = useId();
-  const hintId = hint ? `${id}-hint` : undefined;
+  // L'aide n'est RENDUE que si `!error` → ne référencer son id dans
+  // aria-describedby que dans ce cas (sinon IDREF mort, aide inaccessible).
+  const hintId = hint && !error ? `${id}-hint` : undefined;
   const errId = error ? `${id}-err` : undefined;
   const describedBy = [hintId, errId].filter(Boolean).join(' ') || undefined;
 

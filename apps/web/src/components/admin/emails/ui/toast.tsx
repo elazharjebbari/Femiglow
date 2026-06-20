@@ -26,6 +26,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { FOCUS } from './tokens';
 
 type ToastTone = 'success' | 'error';
 
@@ -166,7 +167,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   dismiss(t.id);
                   t.onRetry?.();
                 }}
-                className="rounded border border-rose-300 bg-white px-2 py-0.5 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                className={`rounded border border-rose-300 bg-white px-2 py-0.5 text-xs font-medium text-rose-700 hover:bg-rose-100 ${FOCUS}`}
               >
                 Réessayer
               </button>
@@ -175,7 +176,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               aria-label="Fermer"
               onClick={() => dismiss(t.id)}
-              className="text-current opacity-60 hover:opacity-100"
+              className={`rounded text-current opacity-60 hover:opacity-100 ${FOCUS}`}
             >
               ✕
             </button>

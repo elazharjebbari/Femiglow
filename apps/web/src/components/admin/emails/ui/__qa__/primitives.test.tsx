@@ -92,6 +92,20 @@ describe('F01 — Field (primitive socle v2)', () => {
     expect(input.getAttribute('aria-describedby')).toContain(alert.id);
     expect(screen.queryByText('aide')).not.toBeInTheDocument();
   });
+
+  it('F01-C-095b — hint+error : CHAQUE token aria-describedby resout (pas d’IDREF mort)', () => {
+    render(
+      <Field label="Email" hint="aide" error="invalide">
+        {(aria) => <input type="email" {...aria} />}
+      </Field>,
+    );
+    const input = screen.getByLabelText('Email');
+    const ids = (input.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) {
+      expect(document.getElementById(id), `IDREF ${id} doit exister`).not.toBeNull();
+    }
+  });
 });
 
 describe('F01 — Card (primitive socle v2)', () => {

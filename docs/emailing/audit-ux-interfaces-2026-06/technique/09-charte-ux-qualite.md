@@ -39,7 +39,7 @@ On n'introduit donc PAS d'alias `semantic.*` dans la config : on centralise les
 export const TONE = {
   neutral:  { subtle: 'bg-stone-100 text-stone-700',   solid: 'bg-stone-800 text-white' },
   success:  { subtle: 'bg-emerald-50 text-emerald-700', solid: 'bg-emerald-700 text-white' },
-  warning:  { subtle: 'bg-amber-50 text-amber-800',     solid: 'bg-amber-600 text-white' },
+  warning:  { subtle: 'bg-amber-50 text-amber-800',     solid: 'bg-amber-800 text-white' }, // amber-800 (pas 600): blanc/amber-600 echoue AA
   danger:   { subtle: 'bg-rose-50 text-rose-700',       solid: 'bg-rose-700 text-white' },
   info:     { subtle: 'bg-sky-50 text-sky-700',         solid: 'bg-sky-700 text-white' },
 } as const;

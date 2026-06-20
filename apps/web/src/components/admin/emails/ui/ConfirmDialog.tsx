@@ -16,6 +16,9 @@
  *   - libellé du bouton = un VERBE (« Supprimer »), jamais « OK ».
  */
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Button } from './Button';
+import { Input } from './Input';
+import { Banner } from './Banner';
 
 export type ConfirmDialogProps = {
   open: boolean;
@@ -137,10 +140,6 @@ export function ConfirmDialog({
   if (!open) return null;
 
   const confirmTone = variant === 'danger' ? 'danger' : 'default';
-  const confirmCls =
-    variant === 'danger'
-      ? 'bg-rose-700 text-white hover:bg-rose-800'
-      : 'bg-stone-900 text-white hover:bg-stone-800';
 
   return (
     // Overlay : clic = annuler ; le clic DANS le dialog ne remonte pas.
@@ -175,44 +174,38 @@ export function ConfirmDialog({
             <label htmlFor={inputId} className="block text-xs font-medium text-stone-600">
               Tapez {requireText} pour confirmer
             </label>
-            <input
+            <Input
               id={inputId}
               type="text"
               value={typedText}
               onChange={(e) => setTypedText(e.target.value)}
               autoComplete="off"
               spellCheck={false}
-              className="mt-1 w-full rounded-md border border-stone-300 px-3 py-1.5 font-mono text-sm"
+              className="mt-1 font-mono"
             />
           </div>
         ) : null}
 
         {error ? (
-          <p role="alert" className="mt-3 rounded-md border border-rose-300 bg-rose-50 p-2 text-sm text-rose-700">
+          <Banner tone="danger" className="mt-3">
             {error}
-          </p>
+          </Banner>
         ) : null}
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            ref={cancelRef}
-            type="button"
-            disabled={busy}
-            onClick={onCancel}
-            className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
-          >
+          <Button ref={cancelRef} variant="secondary" disabled={busy} onClick={onCancel}>
             {cancelLabel}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant={variant === 'danger' ? 'danger' : 'primary'}
             data-tone={confirmTone}
-            disabled={busy || !requireOk}
-            aria-busy={busy || undefined}
+            disabled={!requireOk}
+            busy={busy}
+            busyLabel={busyLabel ?? `${confirmLabel}…`}
             onClick={() => void confirm()}
-            className={`rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50 ${confirmCls}`}
           >
-            {busy ? (busyLabel ?? `${confirmLabel}…`) : confirmLabel}
-          </button>
+            {confirmLabel}
+          </Button>
         </div>
       </div>
     </div>
