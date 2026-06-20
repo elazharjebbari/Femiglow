@@ -29,8 +29,8 @@ F05-U-027,U,P0,planification,conversion respecte DST/ramadan (offset variable),o
 F05-U-028,U,P0,planification,validation date dans le passé refusée,retourne erreur date future,instant T-1h,CAMP-07,implemente
 F05-U-029,U,P0,planification,validation date future acceptée,pas d'erreur,instant T+1j,CAMP-07,implemente
 F05-U-030,U,P1,planification,validation mode scheduled sans date,erreur Choisis une date,scheduled date vide,nominal,implemente
-F05-U-031,U,P1,autosave,debounce trailing 2s 1 frappe,1 appel après 2s,frappe unique fake timers,CAMP-03,a_implementer
-F05-U-032,U,P0,autosave,debounce rafale rearme,1 seul appel 2s apres derniere frappe,5 frappes <2s,CAMP-03,a_implementer
+F05-U-031,U,P1,autosave,debounce trailing 2s 1 frappe,1 appel après 2s,frappe unique fake timers,CAMP-03,implemente
+F05-U-032,U,P0,autosave,debounce rafale rearme,1 seul appel 2s apres derniere frappe,5 frappes <2s,CAMP-03,implemente
 F05-U-033,U,P1,autosave,patch ne contient que champs touchés,patch partiel sans champs intacts,maj name seul,CAMP-03,implemente
 F05-U-034,U,P1,validation,Zod saveWizardProgress wizardStep 1..6,7 ou 0 rejeté,wizardStep=7,CAMP-03,implemente
 F05-U-035,U,P1,validation,Zod name 3-120 chars,len<3 ou >120 rejeté,name 2 chars,nominal,implemente
