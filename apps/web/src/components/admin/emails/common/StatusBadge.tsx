@@ -6,9 +6,13 @@
  * UX-TRANSVERSE-005 : le dashboard montrait « Bounce perm. » (rose) pendant que
  * le cockpit affichait le slug brut anglais « bounced_permanent » (rouge).
  *
+ * Couleurs dérivées de la SOURCE UNIQUE `ui/tokens.ts` (charte 09 §A.1, gate
+ * G10) : chaque statut déclare son `tone` + son `intensity`. Les états
+ * TERMINAUX/morts (dlq, bounce permanent) sont en `solid` pour accrocher l'œil ;
+ * tout le reste en `subtle`. Plus aucune nuance ad hoc (50/100/200) ni `blue-`.
+ *
  * Présentationnel pur, importable côté RSC comme côté client. `KpiCards`
- * réexporte ce composant ; le cockpit (FilteredTable) le consommera pour
- * supprimer son `STATUS_STYLES` local et son rendu de slug brut.
+ * réexporte ce composant.
  *
  * Toujours un libellé FR — jamais le slug brut anglais (un statut inconnu rend
  * « Inconnu » plutôt que la chaîne technique).
@@ -27,36 +31,33 @@ export type OutboxStatus =
   | 'suppressed'
   | 'dlq';
 
-import type { Tone } from '../ui/Pill';
+import { RADIUS, toneClass, type Tone, type ToneIntensity } from '../ui/tokens';
 
 interface StatusMeta {
   label: string;
-  /** Ton sémantique (ui/Pill) — la couche que les NOUVEAUX rendus consomment. */
+  /** Ton sémantique (ui/tokens.ts). */
   tone: Tone;
-  /** Classes héritées (nuances fines conservées pour zéro régression visuelle). */
-  cls: string;
+  /** Intensité : `solid` pour les états terminaux/urgents, `subtle` sinon. */
+  intensity: ToneIntensity;
 }
 
-/** Mapping FR + palette canonique des 11 statuts outbox. */
+/** Mapping FR + ton/intensité canoniques des 11 statuts outbox. */
 export const STATUS_META: Record<OutboxStatus, StatusMeta> = {
-  pending: { label: 'En attente', tone: 'warning', cls: 'bg-amber-50 text-amber-700' },
-  sending: { label: 'Envoi…', tone: 'warning', cls: 'bg-amber-50 text-amber-700' },
-  sent: { label: 'Envoyé', tone: 'success', cls: 'bg-emerald-50 text-emerald-700' },
-  delivered: { label: 'Livré', tone: 'success', cls: 'bg-emerald-100 text-emerald-800' },
-  opened: { label: 'Ouvert', tone: 'info', cls: 'bg-blue-50 text-blue-700' },
-  clicked: { label: 'Cliqué', tone: 'info', cls: 'bg-blue-100 text-blue-800' },
-  failed: { label: 'Échec', tone: 'danger', cls: 'bg-rose-50 text-rose-700' },
-  bounced_soft: { label: 'Bounce soft', tone: 'warning', cls: 'bg-amber-50 text-amber-700' },
-  bounced_permanent: { label: 'Bounce permanent', tone: 'danger', cls: 'bg-rose-100 text-rose-800' },
-  suppressed: { label: 'Supprimé', tone: 'neutral', cls: 'bg-stone-100 text-stone-700' },
-  dlq: { label: 'DLQ', tone: 'danger', cls: 'bg-rose-200 text-rose-900' },
+  pending: { label: 'En attente', tone: 'warning', intensity: 'subtle' },
+  sending: { label: 'Envoi…', tone: 'warning', intensity: 'subtle' },
+  sent: { label: 'Envoyé', tone: 'success', intensity: 'subtle' },
+  delivered: { label: 'Livré', tone: 'success', intensity: 'subtle' },
+  opened: { label: 'Ouvert', tone: 'info', intensity: 'subtle' },
+  clicked: { label: 'Cliqué', tone: 'info', intensity: 'subtle' },
+  failed: { label: 'Échec', tone: 'danger', intensity: 'subtle' },
+  bounced_soft: { label: 'Bounce soft', tone: 'warning', intensity: 'subtle' },
+  // États TERMINAUX/morts → solid (accroche l'œil dans une table dense).
+  bounced_permanent: { label: 'Bounce permanent', tone: 'danger', intensity: 'solid' },
+  suppressed: { label: 'Supprimé', tone: 'neutral', intensity: 'subtle' },
+  dlq: { label: 'DLQ', tone: 'danger', intensity: 'solid' },
 };
 
-const UNKNOWN_META: StatusMeta = {
-  label: 'Inconnu',
-  tone: 'neutral',
-  cls: 'bg-stone-100 text-stone-700',
-};
+const UNKNOWN_META: StatusMeta = { label: 'Inconnu', tone: 'neutral', intensity: 'subtle' };
 
 /** Libellé FR canonique d'un statut (utilitaire hors rendu). */
 export function statusLabel(status: string): string {
@@ -73,9 +74,13 @@ export function StatusBadge({
   const meta = (STATUS_META as Record<string, StatusMeta>)[status] ?? UNKNOWN_META;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${meta.cls} ${className}`}
+      className={`inline-flex items-center gap-1 ${RADIUS.pill} px-2 py-0.5 text-xs font-medium ${toneClass(
+        meta.tone,
+        meta.intensity,
+      )} ${className}`}
       role="status"
       data-status={status}
+      data-tone={meta.tone}
     >
       <span aria-hidden="true">⏺</span>
       {meta.label}

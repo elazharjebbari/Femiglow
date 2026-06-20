@@ -95,14 +95,41 @@ describe('Verrous cliquet — section emails', () => {
     );
   });
 
-  it('F01-U-065/066 — tokens : aucun NOUVEAU sage-/red-/blue-, liste justifiée (design §1)', () => {
-    // Dette chromatique au 2026-06-06 (3 doublons : sage/emerald, red/rose,
-    // blue/sky). Chaque écran refondu (C3-C8) migre vers les tones de ui/Pill
-    // et retire son entrée. common/StatusBadge : nuances blue- héritées des
-    // statuts opened/clicked, migrées avec la passe design C10.
+  it('F01-U-065/066 — COULEUR hors ui/tokens.ts : source unique, liste décroissante (charte 09 §A.1, G10)', () => {
+    // Verrou ÉLARGI (P3.0) : ne couvre plus seulement les doublons legacy
+    // (sage/red/blue) mais TOUTE classe de couleur sémantique (non-stone) — la
+    // charte impose que la couleur vienne d'ui/tokens.ts (TONE/TONE_BORDER).
+    // tokens.ts est l'UNIQUE endroit autorisé (exempté). Chaque écran migré sur
+    // les tokens (P3.0→P5) retire son entrée. `stone-` (neutre) est permis.
+    // Au 2026-06-20 : 43 fichiers portent encore une couleur en dur. StatusBadge
+    // et Pill en sont SORTIS (dérivent de tokens) — preuve de l'unification.
     const whitelist = new Set([
+      'src/app/admin/emails/audiences/[id]/page.tsx',
+      'src/app/admin/emails/audiences/page.tsx',
+      'src/app/admin/emails/automation/AutomationRowActions.tsx',
+      'src/app/admin/emails/automation/page.tsx',
+      'src/app/admin/emails/automation/runs/[id]/page.tsx',
+      'src/app/admin/emails/automation/runs/run-status.tsx',
       'src/app/admin/emails/campaigns/CampaignsListClient.tsx',
+      'src/app/admin/emails/campaigns/CreateCampaignForm.tsx',
+      'src/app/admin/emails/campaigns/[id]/CampaignActions.tsx',
+      'src/app/admin/emails/error.tsx',
+      'src/app/admin/emails/events/error.tsx',
+      'src/app/admin/emails/listmonk/[[...path]]/page.tsx',
       'src/app/admin/emails/templates/new/NewTemplateForm.tsx',
+      'src/app/admin/emails/transactional/[id]/page.tsx',
+      'src/components/admin/emails/DashboardAutoRefresh.tsx',
+      'src/components/admin/emails/EmailsTabs.tsx',
+      'src/components/admin/emails/HealthBadge.tsx',
+      'src/components/admin/emails/KpiCards.tsx',
+      'src/components/admin/emails/audiences/AudienceDetailActions.tsx',
+      'src/components/admin/emails/audiences/AudiencePreview.tsx',
+      'src/components/admin/emails/audiences/AudienceRowActions.tsx',
+      'src/components/admin/emails/audiences/AudienceRulesBuilder.tsx',
+      'src/components/admin/emails/audiences/AudienceWizard.tsx',
+      'src/components/admin/emails/audiences/CountryMultiSelect.tsx',
+      'src/components/admin/emails/audiences/RuleEditor.tsx',
+      'src/components/admin/emails/audiences/SnapshotsPanel.tsx',
       'src/components/admin/emails/automation/AutomationWizard.tsx',
       'src/components/admin/emails/automation/StepEditor.tsx',
       'src/components/admin/emails/automation/StepList.tsx',
@@ -112,10 +139,22 @@ describe('Verrous cliquet — section emails', () => {
       'src/components/admin/emails/cockpit/KpiHeader.tsx',
       'src/components/admin/emails/cockpit/RetryButton.tsx',
       'src/components/admin/emails/cockpit/SavedViewsSidebar.tsx',
+      'src/components/admin/emails/cockpit/SuppressionList.tsx',
       'src/components/admin/emails/cockpit/TransactionalCockpit.tsx',
-      'src/components/admin/emails/common/StatusBadge.tsx',
+      'src/components/admin/emails/common/EntityCombobox.tsx',
+      'src/components/admin/emails/events/EventsDashboardView.tsx',
       'src/components/admin/emails/templates/TemplateEditor.tsx',
+      'src/components/admin/emails/ui/ConfirmDialog.tsx',
+      'src/components/admin/emails/ui/Wizard.tsx',
+      'src/components/admin/emails/ui/toast.tsx',
+      'src/components/admin/emails/wizard/CampaignWizard.tsx',
     ]);
-    ratchet('tokens sage-/red-/blue-', /\b(sage|red|blue)-[0-9]/, whitelist);
+    ratchet(
+      'couleur hors tokens.ts',
+      /\b(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|sage|slate|gray|zinc)-[0-9]/,
+      whitelist,
+      // ui/tokens.ts = unique source autorisée des classes de couleur.
+      new Set(['src/components/admin/emails/ui/tokens.ts']),
+    );
   });
 });

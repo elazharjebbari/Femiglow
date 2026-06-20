@@ -2,40 +2,53 @@
  * Pill — pastille sémantique unique du socle emails (SOC-F06 / TRV-07).
  *
  * Les CINQ tons sémantiques de la section (fin des doublons chromatiques
- * sage/emerald, red/rose, blue/sky relevés par l'audit — design-system §1) :
+ * sage/emerald, red/rose, blue/sky relevés par l'audit) dérivent désormais de
+ * la SOURCE UNIQUE `ui/tokens.ts` (charte 09 §A.1, gate G10) :
  *   success → emerald · warning → amber · danger → rose · info → sky ·
- *   neutral → stone.
+ *   neutral → stone, en 2 intensités (subtle | solid).
  *
- * Présentationnel pur (RSC ou client). Les maps de domaine (statuts outbox,
- * statuts de run, statuts de campagne…) fournissent `{label, tone}` ;
- * `common/StatusBadge` reste le rendu canonique outbox et s'appuie dessus.
+ * Présentationnel pur (RSC ou client). `data-tone`/`data-intensity` exposés
+ * pour la traçabilité/debug visuel (charte §A.2). `common/StatusBadge` reste le
+ * rendu canonique outbox et s'appuie sur les mêmes tokens.
  */
 import type { ReactNode } from 'react';
+import { RADIUS, TONE, toneClass, type Tone, type ToneIntensity } from './tokens';
 
-export type Tone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+export type { Tone } from './tokens';
 
+/**
+ * Rétro-compat : map des classes `subtle` par ton (l'ancien export public).
+ * Dérivée de TONE — plus aucune classe de couleur en dur ici.
+ */
 export const TONE_CLS: Record<Tone, string> = {
-  success: 'bg-emerald-50 text-emerald-700',
-  warning: 'bg-amber-50 text-amber-800',
-  danger: 'bg-rose-50 text-rose-700',
-  info: 'bg-sky-50 text-sky-700',
-  neutral: 'bg-stone-100 text-stone-700',
+  success: TONE.success.subtle,
+  warning: TONE.warning.subtle,
+  danger: TONE.danger.subtle,
+  info: TONE.info.subtle,
+  neutral: TONE.neutral.subtle,
 };
 
 export function Pill({
   tone = 'neutral',
+  intensity = 'subtle',
   children,
   className = '',
   ...rest
 }: {
   tone?: Tone;
+  intensity?: ToneIntensity;
   children: ReactNode;
   className?: string;
 } & React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       role="status"
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${TONE_CLS[tone]} ${className}`}
+      data-tone={tone}
+      data-intensity={intensity}
+      className={`inline-flex items-center gap-1 ${RADIUS.pill} px-2 py-0.5 text-xs font-medium ${toneClass(
+        tone,
+        intensity,
+      )} ${className}`}
       {...rest}
     >
       {children}
