@@ -140,3 +140,61 @@ diff-er les sources rendues (sanitizées) mais les **sources brutes**.
 **Gate sécurité transverse (tous les lots)** : `F07-U-089..103` +
 `__qa__/sanitize-hostile` verts. Le lint éditeur (Lot 5) est **indicatif** et ne
 remplace JAMAIS `sanitizeEmailHtml` serveur.
+
+---
+
+## Enrichissement barème relevé (2026-06-20) — gates G10–G15
+
+> Référence : ../../09-charte-ux-qualite.md. Ces exigences s'ajoutent au plan
+> ci-dessus et conditionnent le gate de phase (cf. 07-plan-action-global.yaml,
+> 08-runbook.md §5). Nouvelles couches de batterie à créer : **F07-D-*** (design)
+> et **F07-S-*** (sécurité).
+
+### Design haut calibre (G10)
+- **Écran éditeur 3 zones** (code `CodeEditor` / preview iframe / panneau variables) : aucun layout n'est dessiné aujourd'hui. Spécifier la grille desktop (3 colonnes, zone code dominante, panneau variables latéral), la densité et la hiérarchie typo (titre template / slug verrouillé / champs sujet-preheader). Tokens à figer : échelle typo, espacement 4/8px, couleurs sémantiques `success/warning/danger/neutre` + paire `diff-add/diff-remove`.
+- **Responsive éditeur aux 3 breakpoints** : <1024px le panneau variables bascule en drawer déclenchable, la preview passe en onglet ; le code reste éditable. Aujourd'hui seul l'iframe (375px mobile, TPL-04) est responsive, pas l'interface admin. Snapshot `F07-D-*` à 768px et 1280px.
+- **Diff de versions (TPL-05) niveau GitHub** : au-delà de « ajouts vert / suppressions rouge », dessiner gouttière de numéros de ligne, marqueurs +/-, compteur (N ajouts / M suppressions), navigation hunk suivant/précédent, et bascule côte-à-côte / inline. Snapshot visuel du diff sur htmlSource multi-hunks.
+- **Panneau variables (TPL-02)** : dessiner la distinction des 6 groupes (identité/commerce/dates/urls/trigger/custom) avec en-têtes + icônes, le badge d'état par variable (`résolu` / `vide` / `selon automation`), le tooltip de valeur complète au survol (la troncature ~24 car est le seul état spécifié), et l'action clic (insertion au curseur vs copie).
+- **États vide / chargement / erreur dessinés** : skeleton de la preview iframe pendant le POST preview, état vide de la liste de versions, état « aucune variable résolue » du panneau, état initial éditeur vierge, et tooltip explicatif du cadenas slug immuable (F07-C-104). Aujourd'hui seul `placeholder sujet —` est dessiné.
+- **Micro-interactions** : transition de bascule Desktop/Mobile (la spec dit « instantanée » = anti-micro-interaction à corriger), surlignage de la ligne insérée au curseur, highlight de l'item actif de l'autocomplete `{{`, pulsation discrète de l'indicateur autosave (Freshness), toast test-send. Respecter `prefers-reduced-motion`.
+- **Snapshots visuels `F07-D-*` à créer** : éditeur 3 colonnes (desktop + 768px), panneau variables (groupes + états badge), diff multi-hunks. Revue design signée avant merge des Lots 5/6.
+
+### Assistance à la saisie (G11)
+- **Champ slug (création + duplication)** → smart_default + inline_validation : slugification live depuis `name` (« Bienvenue J0 » → `bienvenue-j0`), validation inline du pattern `^[a-z][a-z0-9-]*$`, check de disponibilité débouncé AVANT le POST (aujourd'hui le 409 n'arrive qu'au POST). Test : saisie nom dérive le slug ; slug pris → message sous le champ sans soumettre ; caractère invalide rejeté inline.
+- **Champ recipient (test-send)** → smart_default + autocomplete : pré-remplir l'email de l'admin courant, autocompléter sur l'historique des derniers destinataires de test, validation email inline (aujourd'hui seul le 422 serveur est testé). Test : défaut = admin connecté ; frappe filtre les destinataires récents.
+- **Champ contextEmail (preview ET test-send)** → autocomplete combobox de leads : recherche serveur paginée, item = email + nom + nb commandes (cas central SM-F07-01/03 saisis à la main). Test : frappe « fat » → `fatima@example.com` avec « 3 commandes » ; sélection remplit contextEmail ; clavier flèches/Entrée ; a11y combobox (role, aria-activedescendant).
+- **Champ customVars (JSON brut)** → token_insert + inline_validation : bouton Prettify, autocomplétion des clés `customVars.*` référencées dans `htmlSource`, signalement des clés utilisées mais absentes du JSON (et inversement). Test : `{{customVars.promo}}` absent du JSON → avertissement ; Prettify reformate sans altérer la valeur.
+- **Éditeur htmlSource** → token_insert : étendre l'autocomplete au-delà de `{{` aux helpers Handlebars (`#if`, `#each`) et vérifier qu'elle filtre AUSSI sur `customVars.*` (pas seulement variables système). Lint : signaler `#each`/`#if` non fermé en plus du `{{` non fermé. Test : autocomplete propose `customVars.promo` du JSON courant.
+- **Champ recherche de la liste (TPL-12)** → autocomplete : suggestions de slugs existants + surlignage du terme dans les résultats (aujourd'hui substring nu). Test : surlignage du terme tapé.
+- **Champ message de version (F07-C-058)** → suggestions : pré-remplissage dérivé du diff (« modif sujet + html »). Test : message proposé reflète les champs modifiés.
+- Rows correspondantes ajoutées à **10-inventaire-assistance.csv** (`F07-editor`/`F07-liste`) : slug, recipient, contextEmail, customVars, htmlSource, recherche, message de version — toutes `assiste_cible=oui`, aucun champ en saisie nue non justifié.
+
+### Sécurité (G12) — batterie F07-S-*
+- **Authz exhaustive** : tests d'intégration `requireAdmin` (401/403) sur TOUTES les routes du périmètre, pas seulement test-send/delete — `POST /preview`, `GET /versions`, `POST /versions` (la couverture actuelle est asymétrique : F07-C-045 ne teste que l'UI). → `F07-S-*`.
+- **Anti-abus test-send** : rate-limit par admin (N épreuves/heure), allowlist de domaines optionnelle, plafond d'épreuves — la route insère en outbox + `attemptSend` un mail réel vers n'importe quelle adresse. Test : dépassement quota → 429 sans insert outbox ; domaine hors allowlist → 422. → `F07-S-*`.
+- **Accès PII via contextEmail** : `buildEmailContext` résout `orderCount/totalSpent/lastOrderId` d'un lead réel arbitraire ; cloisonner et auditer cet accès (log de qui rend le PII de qui). → `F07-S-*`.
+- **Sanitization HTML opérateur** : conserver la batterie XSS verte (gate existant) MAIS tracer les vecteurs retirés au rendu (cf. observabilité) ; le lint éditeur reste indicatif.
+- **Brouillon localStorage** : pas de PII en clair durable sur poste partagé — TTL/purge des brouillons anciens + champ `schemaVersion` (purge silencieuse si shape inconnue).
+- **Concurrence d'édition** : au `POST /versions`, comparer `baseVersionId` à `activeVersionId` courant ; divergence → 409 « la version a changé depuis le chargement », brouillon conservé. Test I- : version modifiée en DB pendant l'édition → 409. → `F07-S-*`.
+- Batteries à écrire : `F07-S-001..` (authz routes), `F07-S-010..` (rate-limit/allowlist test-send), `F07-S-020..` (audit PII contextEmail), `F07-S-030..` (conflit d'édition 409).
+
+### Observabilité / débogabilité (G14)
+- **Route test-send** : émettre un log structuré `template.test_send` (sans champ `event`) `{ actorId, slug, outboxId, recipientHash, contextEmailHash, attemptSendOk, latencyMs, correlationId }`. Test : un test-send émet le log corrélé ; le chemin d'échec `attemptSend` est tracé.
+- **Échecs silencieux côté client** : remonter en télémétrie `template.editor.load_error` (fallback CodeMirror → textarea, aujourd'hui géré UX mais jamais mesuré) et `template.draft.quota_exceeded` (QuotaExceededError localStorage). Test : `onLoadError` et `QuotaExceededError` émettent chacun une trace.
+- **Sanitization** : log structuré `template.sanitize.stripped` listant les vecteurs retirés au rendu preview/test-send (debug prod « quel HTML opérateur a été nettoyé »).
+- **Correlation-id** : relier le POST test-send au `outboxId` créé via un `correlationId` propagé ; chaque chemin d'erreur (422/429/500) tracé et testé, pas seulement le succès.
+
+### Performance / optimal (G13)
+- **Budget bundle par ajout** (pas seulement CodeMirror +150 kB) : budget séparé chiffré pour la lib `diff` et pour le module d'autocomplete ; le `next build` échoue au dépassement.
+- **Latence preview** : budget p95 < 800 ms sur `htmlSource` à la borne max (200000 car) — render + sanitize synchrones ; timeout serveur défini. Test perf dédié au gros HTML.
+- **Latence diff** : budget < 300 ms sur htmlSource 200k ; borner l'algorithme ligne par ligne. Test perf à la borne max du schéma.
+- **Débounce** : preview 600 ms (existant) ; autosave 1000 ms (existant) ; ajouter débounce sur le check de disponibilité du slug. Pas de re-fetch à la bascule preview Desktop/Mobile (style du conteneur, pas remount iframe).
+- **Liste de versions** : mémoïsation/virtualisation si un template ancien a des dizaines de versions (la factory ne teste que 7).
+
+### Modularité / évolutivité / concurrence (G15)
+- **Contrat hook `useTemplateDraft`** : figer entrées/sorties typées + événements émis comme contrat vérifiable ; test anti-duplication prouvant que F07 RÉUTILISE le socle (ConfirmDialog, EmptyState, Freshness, Toast, `use-dirty-guard` SOC-F07) au lieu de réimplémenter.
+- **Contrat `insertAtCursor`** : test que l'insertion ET l'autocomplete `{{` se comportent IDENTIQUEMENT en textarea ET en CodeMirror (aujourd'hui seul l'autosave/insertion de base est testé deux modes, pas l'autocomplete).
+- **Panneau variables dérivé** : remplacer F07-U-018 (« exactement les 20+ attendues », anti-évolutif) par un test de DÉRIVATION depuis `variablesResolvedMap` (injecter une variable → elle apparaît sans modif UI) + un test de régression ciblé sur le retrait `city/address`.
+- **Versionnage du schéma brouillon** : champ `schemaVersion` dans le draft localStorage ; lecture d'une shape inconnue → purge silencieuse sans crash. Test : draft d'ancienne forme → pas de restauration.
+- **Diff couvre customVars (4e champ)** : la restauration charge 4 champs mais le diff n'en porte que 3 → une version ne différant que par `customVars` passe inaperçue (régression silencieuse). Étendre le diff + test.
+- **Concurrence / TOCTOU** : idempotence test-send réelle (la clé `tpl-test:<id>:<recipient>:<tsMs>` change à chaque ms — l'oracle « double-clic = 1 POST » repose sur le disabled UI, pas sur la clé) → test d'intégration de rejeu réseau ; conflit d'édition multi-admin via le 409 `baseVersionId` (cf. G12) ; cohérence toast (« Épreuve en file » si `attemptSend` KO + outbox pending, pas « envoyée » trompeur).

@@ -130,12 +130,26 @@ schéma se corrige en un point.
 | G7 Grille réseau | 6/6 cas présents pour chaque action réseau (vérifié par revue + grep des describe '— grille réseau') | revue |
 | G8 E2E scénarios métier de la phase | 100 % vert | fin de phase |
 | G9 Contrats | 100 % des endpoints touchés ont leur test de conformité | revue |
+| **G10 Design** | checklist design (`09 §A.7`) signée + snapshots visuels 3 viewports verts + verrou couleur (0 classe hors `ui/tokens.ts`) | revue de phase + CI (couche D) |
+| **G11 Assistance** | `10-inventaire-assistance.csv` à jour ; 0 champ assistable nu non justifié ; verrou `EntityCombobox` décroissant | revue + CI (cliquet) |
+| **G12 Sécurité** | checklist sécurité verte + `/security-review` sur le diff de phase (0 finding bloquant) + batterie `Fxx-S-nnn` verte | fin de phase + PR |
+| **G13 Performance** | budgets par écran (bundle gz / requêtes DB / p95 route) non dépassés ; build échoue si bundle hors budget ; EXPLAIN/borne en intégration | CI + intégration |
+| **G14 Observabilité** | 100 % des actions d'écriture loguées (`<domaine>.<action>`, sans champ `event`) + correlation-id propagé (test logger espionné) | revue + CI |
+| **G15 Modularité** | 0 import croisé inter-sections (lint AST) ; conformité contrats TOTALE (pas seulement endpoints touchés) ; maps exhaustives ; barrel `ui/` | CI + revue |
+
+> Référence détaillée des gates G10–G15 (design haut calibre, autocomplétion
+> partout, 8 dimensions de code) : **`09-charte-ux-qualite.md`**.
 
 ## 6. Traçabilité batterie ↔ audit ↔ code
 
 - Chaque ligne de `fonctionnalites/Fxx/03-batterie-tests.csv` porte :
-  `id` (ex. `F04-C-031`), `couche` (U/C/I/E/A), `regression_ref` (ID matrice
+  `id` (ex. `F04-C-031`), `couche`, `regression_ref` (ID matrice
   ou `nominal`/`metier`), `statut` (`a_implementer` → `implemente`).
+- **Couches** : `U` (unitaire) · `C` (composant+MSW) · `I` (intégration route) ·
+  `E` (E2E) · `A` (a11y) · **`D` (design — snapshot visuel/contraste/tokens/
+  responsive, gate G10)** · **`S` (sécurité — sanitization/CSV-injection/authz
+  exhaustive/rate-limit/redaction PII/concurrence, gate G12)**. Le comptage
+  mécanique du runbook accepte donc `[UCIEADS]` dans la regex d'ID.
 - Le nom du test dans le code COMMENCE par son ID : `it('F04-C-031 — export
   serveur : 422 affiche le détail de validation', …)` → croisement grep
   bidirectionnel CSV↔code, et le runbook peut compter l'avancement

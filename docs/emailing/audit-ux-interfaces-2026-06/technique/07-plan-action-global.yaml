@@ -6,11 +6,19 @@
 meta:
   programme: emails-ux-2026
   source: docs/emailing/audit-ux-interfaces-2026-06/
+  bareme_releve: "09-charte-ux-qualite.md — gates G10..G15 (design haut calibre, assistance partout, 8 dimensions de code) bloquants au même titre que G1..G9"
   invariants:
     - "Suite emails existante (~1700 tests) verte à CHAQUE étape (gate G2)"
     - "Aucun test contre la prod ; E2E sur worktree+femiglow_emailqa"
     - "Migrations additives uniquement, livrées avant le code lecteur"
     - "pnpm build => systemctl restart femiglow.service (prod)"
+    # ── Barème relevé (transverses, vérifiés à chaque PR d'écriture) ──
+    - "DESIGN (G10) : toute couleur via ui/tokens.ts (verrou) ; états vide/chargement/erreur dessinés ; snapshot visuel 3 viewports par écran refondu ; checklist 09 §A.7 signée par phase"
+    - "ASSISTANCE (G11) : aucun champ assistable en saisie nue sans justification écrite ; inventaire 10-inventaire-assistance.csv ; verrou EntityCombobox décroissant"
+    - "SÉCURITÉ (G12) : authz par endpoint + Zod + caps/bornes + sanitization + anti CSV-injection + redaction PII + rate-limit envois ; /security-review sur le diff de phase ; batterie Fxx-S-*"
+    - "PERFORMANCE (G13) : budget par écran (bundle gz / requêtes DB / p95 route) déclaré et non dépassé"
+    - "OBSERVABILITÉ (G14) : chaque action d'écriture émet logger.info('<domaine>.<action>', {…}) SANS champ `event`, avec correlation-id ; chemins d'erreur tracés"
+    - "MODULARITÉ/ÉVOLUTIVITÉ (G15) : 0 import croisé inter-sections ; conformité contrats TOTALE ; maps de domaine exhaustives ; contrats Zod versionnés"
   boucle_correction: # appliquée par le runbook à chaque gate rouge
     - "run batterie → exporter les échecs (reporter junit)"
     - "triage : BUG_CODE | BUG_TEST | FLAKY | CONTRAT"
@@ -84,57 +92,110 @@ phases:
     titre: "Production de contenu (F05, F07)"
     depend_de: P2
     etapes:
+      - id: P3.0
+        action: >
+          SOCLE DESIGN & ASSISTANCE v2 (préalable à F05/F07, doctrine pilote P1.5).
+          (a) ui/tokens.ts (TONE intensité subtle/solid, TYPO, SPACE, RADIUS, FOCUS, MOTION) ;
+          Pill + StatusBadge consomment TONE (source unique). (b) Primitives socle :
+          Button, IconButton, Field, Card, Skeleton, Banner (+ barrel ui/index.ts).
+          (c) EntityCombobox promu socle + inventaire 10-inventaire-assistance.csv initialisé.
+          (d) Verrous cliquet : couleur hors tokens.ts, primitives inline, couverture
+          EntityCombobox. (e) Baseline snapshots visuels (e2e/emails-visual.spec.ts, 3 viewports).
+          (f) Rattrapage dette P0–P2 sur 1 écran pilote (FilteredTable.formatDate→format-datetime,
+          StatusBadge↔Pill, focus ring, états vides→EmptyState) AVANT généralisation.
+        tests: "tests primitives (ui/__qa__) + verrous + 1er snapshot baseline + a11y axe socle v2"
+        gate: "G1+G3+G10+G11+G15"
       - id: P3.1
-        action: "Migration data campagnes (wizard_step, schedule_timezone) — additive, 2 temps"
-        tests: "schema-drift + intégration sur femiglow_test ET femiglow_emailqa"
-        gate: "G2"
+        action: "Migration data campagnes (wizard_step, schedule_timezone, payload_json VERSIONNÉ) — additive, 2 temps"
+        tests: "schema-drift + intégration sur femiglow_test ET femiglow_emailqa + tolérance drafts legacy (G15)"
+        gate: "G2+G15"
       - id: P3.2
-        action: "F05 lot wizard : adoption Wizard partagé + autosave + reprise + TZ + fallback estimation"
-        tests: "F05-C wizard (dont hang preview-size → fallback) "
-        gate: "G1"
+        action: >
+          F05 lot wizard : adoption Wizard + autosave (optimistic-lock multi-onglets +
+          sendBeacon au blur) + reprise + TZ + fallback estimation. ASSISTANCE :
+          email test-send (smart default admin + datalist récents), template Listmonk
+          (typeahead), filtre des listes, merge-tags {{ }} (autocomplete + signalement
+          variables inconnues), datetime ('demain 9h'). DESIGN : layout wizard (récap
+          latéral é6, stepper responsive), mock inbox soigné, skeletons de combobox.
+        tests: "F05-C wizard (hang preview-size→fallback) + F05-D snapshots wizard + concurrence autosave (G15)"
+        gate: "G1+G10+G11+G13+G14+G15"
       - id: P3.3
-        action: "F05 lot envoi/détail : test send corps libre, ConfirmDialog actions, toasts, tooltips n/d, détection orpheline"
-        tests: "F05 reste + intégration test-send + E2E SM-F05-01 (campagne de A à Z avec Mailpit)"
-        gate: "G1+G2+G8"
+        action: >
+          F05 lot envoi/détail : test-send corps libre SANITIZÉ, ConfirmDialog actions,
+          toasts, tooltips n/d, détection ET prévention orpheline (transaction/outbox
+          reliant création Listmonk ↔ persistance id). SÉCURITÉ : sanitization bodyHtml,
+          rate-limit test-send, CSP iframe preview, minimisation PII audit-log (F05-S-*).
+        tests: "F05 reste + intégration test-send + F05-S sécurité + E2E SM-F05-01 (Mailpit) + test crash finalize (récupérable)"
+        gate: "G1+G2+G8+G12+G14"
       - id: P3.4
-        action: "F07 templates lot sécurité d'abord : autosave+garde, puis variables/CodeMirror/mobile/diff/test-send/delete"
-        tests: "batterie F07 (dont non-régression sanitization TPL-F11) + E2E SM-F07-*"
-        gate: "G1+G2+G6"
+        action: >
+          F07 templates, SÉCURITÉ d'abord : autosave+garde, sanitization. ASSISTANCE :
+          slug (slugify live + dispo), recipient/contextEmail (combobox de leads + nb
+          commandes), customVars (Prettify + autocomplete des clés + signalement
+          manquantes). DESIGN : éditeur 3 zones responsive (variables→drawer <1024,
+          preview→onglet), diff gouttière +/- + compteur + navigation hunk.
+        tests: "batterie F07 (non-régression sanitization TPL-F11 + F07-S authz exhaustive/rate-limit/PII) + F07-D snapshots éditeur/diff + E2E SM-F07-*"
+        gate: "G1+G2+G6+G10+G11+G12+G13+G14"
 
   - id: P4
     titre: "Automations (F06) — en 3 vagues"
     depend_de: P3
     etapes:
       - id: P4.1
-        action: "Vague lecture : FlowView read-only + timeline _trace (migration is_dry_run+deleted_at posée ici) + libellé daily cap + badges triggers"
-        tests: "F06-C lecture + unit trace + intégration runner (_trace écrit)"
-        gate: "G1+G2"
+        action: >
+          Vague lecture : FlowView read-only (responsive + repliage branches >2 niveaux,
+          hiérarchie typo par token) + timeline _trace (migration is_dry_run+deleted_at) +
+          libellé daily cap + badges triggers. TraceEntry.meta en UNION DISCRIMINÉE par
+          outcome (deferred/skipped-cap/send-ok) + humanizeTrace() testé (runner produit
+          des CODES, la timeline humanise). DESIGN : FlowView snapshot 3 niveaux/viewport étroit.
+        tests: "F06-C lecture + unit humanizeTrace par outcome + F06-D snapshot FlowView + intégration runner (_trace écrit)"
+        gate: "G1+G2+G10+G14+G15"
       - id: P4.2
-        action: "Vague actions : dry-run + replay + softDeleteAutomation (R-031 éteint)"
-        tests: "F06 intégration (dry exclu des KPI/cap, refus delete si runs actifs) + E2E SM-F06-01 (debug d'une automation cassée)"
-        gate: "G1+G2+G8+G9"
+        action: >
+          Vague actions : dry-run + replay + softDeleteAutomation (R-031 éteint).
+          dry-run PARTAGE le chemin du runner réel (EffectExecutor injecté — un seul code,
+          test que dry et réel parcourent les mêmes steps). SÉCURITÉ : whitelist domaine
+          testContact, rate-limit, cap profondeur/temps synchrone, audit enrichi.
+          CONCURRENCE : soft-delete transactionnel anti-TOCTOU, replay sous verrou.
+        tests: "F06 intégration (dry exclu KPI/cap, refus delete si runs actifs, course TOCTOU) + F06-S sécurité dry-run + E2E SM-F06-01"
+        gate: "G1+G2+G8+G9+G12+G14+G15"
       - id: P4.3
-        action: "Vague wizard : adoption Wizard partagé, événements groupés, blocages près du bouton"
-        tests: "F06 wizard + invariants socle"
-        gate: "G1+G6"
+        action: "Vague wizard : adoption Wizard + ASSISTANCE (testContact autocomplete, slug dérivé+unicité live, sélecteur d'événement typeahead, durées presets) + événements groupés + blocages près du bouton"
+        tests: "F06 wizard + invariants socle + F06 assistance (suggestions observables)"
+        gate: "G1+G6+G10+G11"
 
   - id: P5
     titre: "Clôture (F09, F10, C10)"
     depend_de: P4
     etapes:
       - id: P5.1
-        action: "F09 : ajout manuel, filtres raison/source, bulk remove, export ; events corrélation/expand/filtres"
-        tests: "batterie F09 + intégration (detail obligatoire manual_admin, allowlist R-009 non-régression) + E2E SM-F09-*"
-        gate: "G1+G2+G9"
+        action: >
+          F09 : ajout manuel (INSERT ON CONFLICT anti-race), filtres raison/source,
+          bulk-remove ET bulk-remove-by-filter (dry-count, sur le modèle F04 — sert
+          réellement SM-F09-01), export. ASSISTANCE : email (endpoint recipients/suggest),
+          nom d'event (combobox DISTINCT). SÉCURITÉ : anti CSV formula-injection (préfixe
+          ' sur =,+,-,@), redaction PII logs. PERF : débounce 300ms + index pg_trgm.
+        tests: "batterie F09 + F09-S (CSV-injection, concurrence ON CONFLICT) + intégration (detail manual_admin, allowlist R-009) + E2E SM-F09-*"
+        gate: "G1+G2+G9+G10+G11+G12+G13"
       - id: P5.2
-        action: "F10 : migration campaign_link (3 colonnes), checks Listmonk HealthBadge, badges sync, wizard honnête, frame-ancestors"
-        tests: "batterie F10 + emails-degraded.spec étendu (Listmonk down)"
-        gate: "G1+G2+G8"
+        action: >
+          F10 : migration campaign_link (3 colonnes), checks Listmonk HealthBadge,
+          badges sync, wizard honnête, frame-ancestors. DESIGN : ui/Banner socle
+          (tout bandeau en dérive) + overlay EmptyState sur iframe morte. SÉCURITÉ :
+          rendu échappé + redaction PII de last_sync_error/firstError. OBSERVABILITÉ :
+          logs listmonk.health.*/sync.*/push.* + seuils centralisés (LISTMONK_OBS) testés.
+          PERF : cache santé healthCacheMs testé (1 ping/fenêtre).
+        tests: "batterie F10 + F10-S (rendu sûr/redaction) + emails-degraded étendu (overlay iframe) + test cache santé"
+        gate: "G1+G2+G8+G10+G12+G13+G14+G15"
       - id: P5.3
-        action: "Passe C10 : dictionnaires FR enums, contrastes, labels/live-regions, décision next-intl"
-        tests: "axe complet (jsdom + E2E toutes pages) + grep anglais brut"
-        gate: "G6 strict (0 serious/critical partout)"
+        action: >
+          Passe C10 + DESIGN FINAL : dictionnaires FR enums, contrastes, labels/
+          live-regions, décision next-intl. CLÔTURE DESIGN : verrou couleur à 0 hors
+          tokens.ts ; whitelist EntityCombobox VIDE ; baseline snapshots validée pour
+          TOUS les écrans ; inventaire d'assistance complet et 0 champ nu non justifié.
+        tests: "axe complet (jsdom + E2E toutes pages) + grep anglais brut + couche D complète (snapshots 3 viewports) + verrous à 0"
+        gate: "G6 strict + G10 + G11 (whitelists vides)"
       - id: P5.4
-        action: "CAMPAGNE FINALE : batterie GLOBALE + tous scénarios métier + boucle de correction jusqu'à 0 rouge ; rapport de clôture ; tag emails-ux-1.0"
-        tests: "tout (cf. runbook §5)"
-        gate: "G1..G9 simultanés"
+        action: "CAMPAGNE FINALE : batterie GLOBALE + tous scénarios métier + /security-review global + boucle de correction jusqu'à 0 rouge ; rapport de clôture ; tag emails-ux-1.0"
+        tests: "tout (cf. runbook §5 + §8 critères G1..G15)"
+        gate: "G1..G15 simultanés"

@@ -115,3 +115,148 @@ MSW pour les nouveaux contrats (`saveWizardProgress`, `*ViaOutbox`,
   toucher la migration P3.1.
 - **Garde-fou prod** : ne JAMAIS lancer les E2E Playwright contre la prod (pas
   d'isolation DB) — tout E2E sur instance dédiée + `femiglow_emailqa`.
+
+---
+
+## Enrichissement barème relevé (2026-06-20) — gates G10–G15
+
+> Référence : ../../09-charte-ux-qualite.md. Ces exigences s'ajoutent au plan
+> ci-dessus et conditionnent le gate de phase (cf. 07-plan-action-global.yaml,
+> 08-runbook.md §5). Nouvelles couches de batterie à créer : **F05-D-*** (design)
+> et **F05-S-*** (sécurité).
+
+### Design haut calibre (G10)
+- Figer un jeu de tokens dédié au périmètre campagnes : échelle typographique,
+  échelle d'espacement 4/8 px, couleurs sémantiques succès/warning/danger/info —
+  aujourd'hui le dossier ne fait que « consommer le socle » (Pill, Toast,
+  EmptyState, ConfirmDialog) sans intention visuelle ; tracer un test de design qui
+  vérifie l'emploi des tokens plutôt que des valeurs en dur.
+- Spécifier la mise en page du **wizard 6 étapes** (écran phare) : grille avec
+  **récap latéral persistant à é6**, densité, hiérarchie titre d'étape / aide
+  contextuelle / champs, et progression visuelle du stepper au-delà des glyphes
+  ✓/●/○ (états cliquables CAMP-05).
+- Dessiner les **micro-interactions** : transition de passage d'étape (slide/fade),
+  apparition des chips listes é2, transition « Enregistrement… » → « enregistré »
+  (indicateur Freshness), apparition du bouton dégradé fallback estimation,
+  disparition de la bannière orpheline.
+- Soigner le rendu de l'**aperçu** : chrome de la boîte de réception simulée é4
+  (avatar expéditeur, troncature réaliste sujet/preheader, état dark-mode inbox) et
+  iframe template é3/é6 — point précis où le calibre se distingue.
+- Dessiner les états **SKELETON/chargement** des données distantes (combobox
+  templates Listmonk, liste des listes é2, estimation d'audience) — seul le cas
+  d'ERREUR (bandeau honnête Listmonk down) est aujourd'hui dessiné ; éviter flash de
+  contenu vide / spinner générique.
+- Traiter le **responsive aux 3 breakpoints** (mobile/tablette/desktop) du wizard :
+  stepper horizontal vs vertical, récap é6, `datetime-local` é5, et la table Liste
+  6 colonnes (Nom, Sujet, Statut, Audience, Date, Actions) qui déborde.
+- Spécifier la hiérarchie/densité/troncature/état de tri visuel de la **table Liste**
+  et le layout de la **page Détail** (bloc métriques, barre d'actions, bannière
+  danger orpheline) au-delà de « quels boutons selon le statut ».
+- Snapshots visuels de non-régression **F05-D-*** à créer : un par écran — liste,
+  wizard é1..é6, détail (Playwright screenshot / Chromatic).
+
+### Assistance à la saisie (G11)
+- **Email du test-send (é6)** → smart default = email de l'admin connecté +
+  `datalist` des adresses admin récentes / domaine femiglow-maroc.com (aujourd'hui :
+  input + validation Zod email seule). Test : « le champ test propose l'email admin
+  par défaut ».
+- **Nom interne de campagne (é1 / /new)** → suggestion de nom (ex. « Newsletter
+  <mois> », dérivé du template ou d'une campagne existante) en plus du warning
+  d'homonymie debounce 500 ms (qui est de la validation, pas de l'autocomplétion).
+  Test : la saisie vide propose un nom dérivé.
+- **Combobox template Listmonk (é3)** → typeahead avec surlignage du terme + tri par
+  récence/usage (qualifier « recherchable » en critère testable). Test : « la frappe
+  filtre et surligne ».
+- **Liste des listes Listmonk (é2)** → champ de filtre / recherche (la liste peut
+  être longue) en plus des checkboxes + chips. Test : filtre réduisant les options.
+- **Sujet & preheader (é4)** → menu de jetons de personnalisation auto-complétables
+  `{{ … }}` + détection emoji/spam-words, en plus des compteurs N/140 et N/200.
+  Test : insertion d'un jeton via le menu ; variable inconnue signalée.
+- **Corps HTML (é3)** → autocomplétion des merge-tags Listmonk `{{ … }}` disponibles
+  + snippets, signalement des variables mal nommées. Test : `{{ … }}` propose la
+  liste des merge-tags ; jeton inconnu averti.
+- **`datetime-local` de planification (é5)** → smart defaults (prochain créneau
+  recommandé, arrondi à l'heure pleine, mémorisation de la dernière heure) +
+  raccourcis « demain 9h » / « lundi prochain ». Test : raccourci pré-remplit
+  l'instant attendu (TZ Africa/Casablanca).
+- **id Listmonk de ré-association (orpheline)** → `select` des campagnes Listmonk
+  récentes « sending » sans correspondance locale, au lieu d'un entier tapé à
+  l'aveugle. Test : la liste propose les candidates plutôt qu'une saisie libre.
+- Renseigner chacun de ces champs dans **10-inventaire-assistance.csv** (champ →
+  mécanisme autocomplete/smart-default/inline-validation → test associé).
+
+### Sécurité (G12) — batterie F05-S-*
+- **Sanitization/CSP du HTML opérateur** : le corps libre é3 et le `bodyHtml` du
+  test-send partent dans l'iframe preview ET dans l'outbox/Listmonk — neutraliser le
+  XSS stocké/injecté et durcir l'iframe au-delà de `sandbox=''` (CSP). Ce qui part
+  réellement dans l'outbox doit être nettoyé. → **F05-S-001** (XSS é3),
+  **F05-S-002** (XSS test-send), **F05-S-003** (CSP iframe preview).
+- **Anti CSV-injection** : neutraliser les payloads `=,+,-,@` sur tout export/affichage
+  tabulaire de la liste campagnes/métriques. → **F05-S-004**.
+- **Rate-limit / anti-abus du test-send** : au-delà de l'`idempotency_key` par
+  minute, plafonner les envois (vecteur d'abus). `checkCampaignNameAvailable` /
+  `name-available` exposent l'existence de noms (énumération mineure) → durcir.
+  → **F05-S-005**.
+- **Authz exhaustive** : test d'intégration `requireAdmin` sur TOUTES les server
+  actions à effet (`saveWizardProgress`, `finalize`, `controlCampaign`,
+  `sendCampaignTestViaOutbox`, `reassociateCampaign`, `markCampaignFailed`,
+  `preview-size`). → **F05-S-006**.
+- **Garde SSRF/appartenance sur `reassociateCampaign`** : le GET Listmonk de l'id
+  fourni doit vérifier que l'id appartient bien au compte (pas seulement son
+  existence) + log de tentative d'id invalide. → **F05-S-007**.
+- **Redaction PII** : ne pas logger l'email de test en clair dans
+  `mail.campaign.test_sent` (hash/masquage du `to`). → **F05-S-008**.
+
+### Observabilité / débogabilité (G14)
+- Émettre des **logs structurés `<domaine>.<action>` sans champ `event`** (gotcha
+  logger) pour les chemins aujourd'hui muets : `mail.campaign.autosave_failed`,
+  `mail.campaign.estimate_failed` (1 log par tentative parmi les 3, avec statut +
+  raison HTTP/parse/network), `mail.campaign.listmonk_down`,
+  `mail.campaign.orphan_detected`. Tests d'émission asserrant code + raison.
+- Propager un **correlation-id de session wizard** reliant tout le parcours
+  (autosave → estimation → finalize) pour diagnostiquer « l'autosave qui échoue chez
+  un opérateur ».
+- Tracer explicitement les **chemins d'erreur** du fallback estimation : la cause des
+  3 échecs doit être loggée serveur (aujourd'hui seul un compteur client est
+  incrémenté). Test : un échec d'estimation émet un log structuré avec code+raison.
+- Compteurs d'exploitation agrégés : taux d'autosave en échec, taux de recours au
+  `skipEstimate`, nombre d'orphelines détectées. Test d'émission des compteurs.
+
+### Performance / optimal (G13)
+- Définir des **budgets p95** pour les server actions chaudes : `saveWizardProgress`,
+  `checkCampaignNameAvailable` (frappé toutes les 500 ms), `preview-size`. Test :
+  borne de temps en intégration.
+- **Index fonctionnel `lower(name)`** pour `checkCampaignNameAvailable`
+  (`SELECT EXISTS … lower(name)=lower($1)` à chaque frappe → seq scan sinon) +
+  assertion EXPLAIN.
+- **Index trigram/ILIKE** pour la recherche liste `?q=` (nom OU sujet) ; pagination
+  20/page avec count optimisé / keyset. Test : EXPLAIN confirmant l'index.
+- **Budget de bundle** pour `CampaignWizard` (client component lourd : 6 étapes +
+  autosave + fallback) ; débounce autosave 2 s trailing déjà posé — verrouiller un
+  budget chiffré et le faire échouer le build au dépassement.
+
+### Modularité / évolutivité / concurrence (G15)
+- **Frontières testées** : lint d'import interdisant au contenu d'étape de toucher la
+  mécanique `useWizard` (SOC-F05) + test du contrat d'interface SOC-F05 ↔ contenu F05
+  en isolation (la « délégation de la navigation au socle » doit être asserrée).
+- **Conformité de contrat MSW ↔ prod** étendue (aujourd'hui seul `outbox` F05-I-014) :
+  `saveWizardProgress`, `reassociateCampaign`, `checkCampaignNameAvailable`,
+  `preview-size` — fermer le drift handler/prod sur tous les nouveaux contrats.
+- **Versionnage du payload** : `payload_json` schématisé + versionné, mapping nommé
+  des étapes (au lieu de `wizard_step` smallint 1..6 figé) ; test « ajout/réordon. d'une
+  étape sans casser les drafts en cours » + tolérance aux drafts legacy (`wizard_step`
+  null ET payload partiel ancien).
+- **Cohérence caps UI ↔ `isLegalTransition`** : un test unique DÉRIVE les boutons
+  visibles par statut de la même source que le serveur (au lieu des deux tables
+  testées séparément) — éviter le drift UI/serveur.
+- **Optimistic-lock multi-onglets** sur l'autosave : ajouter `updated_at`/version au
+  payload, rejeter/merger explicitement un autosave périmé ; test d'intégration
+  « deux onglets éditent le même draft → pas de perte silencieuse » + oracle du flush
+  au blur via `sendBeacon` (remplacer le « best-effort » non testable).
+- **Prévention (pas seulement détection) de l'orpheline** : transaction / outbox-pattern
+  reliant « création Listmonk » et « persistance id » ; test injectant un crash entre
+  les deux et asserrant un état récupérable. Compléter SM-F05-03 par un oracle de
+  cohérence référentielle (audience/liste supprimée avant finalize).
+- Borner `CampaignWizard.tsx` (risque de god-component) : cible de couverture chiffrée
+  + limite de complexité/taille + convention documentée pour ajouter une validation
+  d'étape.

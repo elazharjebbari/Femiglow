@@ -1,0 +1,32 @@
+ecran,champ,type,assiste_cible,mecanisme,validation_inline,format_hint,nav_clavier,phase,statut,justification_si_non
+# Gate G11 (09-charte-ux-qualite.md §B) : 0 champ assistable en saisie nue sans justification.
+# assiste_cible: oui|non ; mecanisme: autocomplete|suggestions|smart_default|inline_validation|format_hint|token_insert|none
+# statut: a_faire|fait. Compléter au fil de P3.0→P5 ; un champ assiste_cible=non DOIT remplir justification_si_non.
+F05-wizard-e6,email test-send,email,oui,smart_default+autocomplete,oui,oui,oui,P3.2,a_faire,
+F05-wizard-e1,nom de campagne,text,oui,suggestions,oui,non,oui,P3.2,a_faire,
+F05-wizard-e3,template Listmonk,select-entité,oui,autocomplete,non,non,oui,P3.2,a_faire,
+F05-wizard-e2,filtre des listes Listmonk,text,oui,autocomplete,non,non,oui,P3.2,a_faire,
+F05-wizard-e4,sujet/preheader (merge-tags),text,oui,token_insert,oui,oui,oui,P3.2,a_faire,
+F05-wizard-e3,corps HTML (merge-tags),richtext,oui,token_insert,oui,non,oui,P3.2,a_faire,
+F05-wizard-e5,datetime planification,datetime,oui,smart_default+suggestions,oui,oui,oui,P3.2,a_faire,
+F05-detail,id Listmonk ré-association,select-entité,oui,autocomplete,oui,non,oui,P3.3,a_faire,
+F06-dryrun,testContact,email,oui,smart_default+autocomplete,oui,oui,oui,P4.2,a_faire,
+F06-wizard,slug,text,oui,smart_default+inline_validation,oui,oui,oui,P4.3,a_faire,
+F06-wizard,sélecteur d'événement,select-entité,oui,autocomplete,non,non,oui,P4.3,a_faire,
+F06-wizard,durée wait/timeout,text,oui,suggestions+format_hint,oui,oui,oui,P4.3,a_faire,
+F07-editor,slug,text,oui,smart_default+inline_validation,oui,oui,oui,P3.4,a_faire,
+F07-editor,recipient (test-send),select-entité,oui,smart_default+autocomplete,oui,non,oui,P3.4,a_faire,
+F07-editor,contextEmail,select-entité,oui,autocomplete,non,non,oui,P3.4,a_faire,
+F07-editor,customVars (JSON),json,oui,token_insert+inline_validation,oui,oui,oui,P3.4,a_faire,
+F07-editor,htmlSource (merge-tags + helpers),richtext,oui,token_insert,oui,non,oui,P3.4,a_faire,
+F07-liste,recherche slug/nom,text,oui,autocomplete,non,non,oui,P3.4,a_faire,
+F07-editor,message de version,text,oui,suggestions,non,oui,oui,P3.4,a_faire,
+F09-dialog,email destinataire,email,oui,autocomplete,oui,oui,oui,P5.1,a_faire,
+F09-filtres,nom d'event,select-entité,oui,autocomplete,non,non,oui,P5.1,a_faire,
+F09-filtres,email (filtre),email,oui,autocomplete,non,non,oui,P5.1,a_faire,
+F03-dashboard,fenêtre KPI,radiogroup,oui,smart_default,non,non,oui,fait,fait,smart default mémorisé + radiogroup clavier (livré P2.1)
+F04-cockpit,recherche/filtres ⌘K,palette,oui,autocomplete,oui,oui,oui,fait,fait,palette ⌘K avec autocompletes status/template/to/source (livré P2.2/2.3)
+F08-audiences,pays/produit/tag/template/url,select-entité,oui,autocomplete,oui,non,oui,fait,fait,EntityCombobox + CountryMultiSelect (livré P2.4)
+F10-detail-campagne,Réessayer maintenant (re-poll),action,non,none,non,non,oui,P5.2,a_faire,action serveur (bouton) — pas une saisie ; nav clavier requise sur le bouton
+F10-liste-campagnes,filtre sync KO (?from=health),filtre-épinglé,oui,smart_default,non,non,oui,P5.2,a_faire,deep-link santé pré-applique le filtre sync KO ; à épingler comme état de filtre suggéré dans la barre F04
+F10-3-colonnes-cron,last_sync_attempt/ok/error,colonne,non,none,non,non,non,P5.2,a_faire,écrites par le cron syncCampaignStatuses — aucune saisie opérateur dans F10 (déclaré explicite ; barème G11 tracé)

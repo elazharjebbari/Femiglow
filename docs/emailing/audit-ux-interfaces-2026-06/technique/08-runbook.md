@@ -56,6 +56,24 @@ pnpm playwright test e2e/emails-*.spec.ts e2e/admin-emails*.spec.ts \
 # a11y (gate G6) :
 pnpm vitest run -t "A11Y"                          # axe jsdom (socle)
 pnpm playwright test e2e/a11y --grep emails        # axe pages
+
+# ── Gates barème relevé G10–G15 (cf. 09-charte-ux-qualite.md) ──
+# G10 DESIGN — non-régression visuelle (snapshots 3 viewports) + verrou tokens :
+pnpm playwright test e2e/emails-visual.spec.ts                 # couche D (Fxx-D-*)
+pnpm vitest run -t "verrous"                                   # cliquets couleur/primitives/combobox
+# G11 ASSISTANCE — inventaire à jour + verrou EntityCombobox :
+test -s technique/10-inventaire-assistance.csv && echo "inventaire présent"
+grep -rEoh "Fxx-D-|Fxx-S-" apps/web/src apps/web/e2e          # couches D/S présentes
+# G12 SÉCURITÉ — batterie S + revue du diff de phase :
+pnpm vitest run -t "Fxx-S-"                                    # batterie sécurité
+#   puis, manuellement : /security-review  (sur le diff de la phase)
+# G13 PERFORMANCE — budgets (bundle/DB/p95) :
+pnpm next build | grep -E "First Load JS|Route"               # budget bundle
+pnpm vitest run -c vitest.config.ts src/test/integration -t "perf|budget|EXPLAIN"
+# G14 OBSERVABILITÉ — chaque action d'écriture émet son log (logger espionné) :
+pnpm vitest run -t "observabilité|log structuré|\\.action"
+# G15 MODULARITÉ — imports croisés + conformité contrats TOTALE :
+pnpm vitest run src/test/msw/emails-contracts.conformity.test.ts
 ```
 
 ## 3. Mesurer l'avancement (mécanique, sans déclaratif)
@@ -65,7 +83,7 @@ pnpm playwright test e2e/a11y --grep emails        # axe pages
 for f in technique/fonctionnalites/F0*/03-batterie-tests.csv; do
   ID=$(basename $(dirname "$f") | cut -d- -f1)
   DECL=$(tail -n +2 "$f" | wc -l)
-  IMPL=$(grep -rEoh "[\"']$ID-[UCIENA]+-[0-9]+" ../../../../apps/web/src ../../../../apps/web/e2e 2>/dev/null | sort -u | wc -l)
+  IMPL=$(grep -rEoh "[\"']$ID-[UCIENADS]+-[0-9]+" ../../../../apps/web/src ../../../../apps/web/e2e 2>/dev/null | sort -u | wc -l)
   echo "$ID : $IMPL / $DECL implémentés"
 done
 ```
@@ -99,9 +117,29 @@ pnpm vitest run --coverage src/components/admin/emails
 pnpm playwright test --grep "SM-F0[34]"            # ex. phase P2
 # 4. Démo de revue d'écran (03-plan-conception §5) : dérouler À LA MAIN un
 #    scénario métier sur staging, consigner le verdict.
-# 5. Journal (§7) + commit + tag :
+
+# 5. REVUES DU BARÈME RELEVÉ (G10–G15) — verdict ÉCRIT obligatoire, archivé au
+#    journal §7 (cf. 09-charte-ux-qualite.md). Une revue rouge = gate de phase rouge.
+#    5a. DESIGN (G10) : dérouler la checklist 09 §A.7 (espacement/typo/couleur =
+#        tokens uniquement ; états vide/chargement/erreur dessinés ;
+#        micro-interactions + focus ; responsive 3 breakpoints) ; valider/mettre à
+#        jour la baseline des snapshots visuels. Verdict : SIGNÉ.
+#    5b. ASSISTANCE (G11) : 10-inventaire-assistance.csv à jour ; 0 champ
+#        assistable laissé nu sans justification écrite ; verrou EntityCombobox a décru.
+#    5c. SÉCURITÉ (G12) : checklist sécu (authz par endpoint, Zod, caps/bornes,
+#        sanitization, anti CSV-injection, frame-ancestors, redaction PII,
+#        rate-limit envois, 0 secret) ; lancer /security-review sur le diff de phase.
+#    5d. OBSERVABILITÉ (G14) : grep des nouvelles actions d'écriture ; chacune
+#        émet logger.info('<domaine>.<action>', {…}) SANS champ `event`, avec
+#        correlation-id ; chemins d'erreur tracés. Tests d'émission verts.
+#    5e. PERFORMANCE (G13) : budgets par écran (bundle gz, requêtes DB/page, p95
+#        route) non dépassés ; EXPLAIN/borne vérifiés en intégration.
+#    5f. MODULARITÉ (G15) : 0 import croisé inter-sections ; conformité contrats
+#        TOTALE ; maps de domaine exhaustives.
+
+# 6. Journal (§7) + commit + tag :
 cd /var/www/femiglow
-git add -A && git commit -m "feat(emails-ux): phase Px terminée — gates G1..G9 verts" 
+git add -A && git commit -m "feat(emails-ux): phase Px terminée — gates G1..G15 verts"
 git tag emails-ux-phase-Px
 ```
 
@@ -123,8 +161,14 @@ journalctl -u femiglow.service --since '2 minutes ago' | grep -ci error  # 0 att
 
 ## 7. Journal d'exécution
 
-| Date | Étape | Opérateur | Batterie (vert/rouge) | Triage (causes) | Verdict |
+> Colonne « Verdict » : consigner — en plus du vert/rouge des tests — le
+> **verdict design + assistance** de la phase (G10/G11) et l'issue de la revue
+> sécurité (G12, `/security-review`). À chaque fin de phase, archiver la
+> checklist design signée (§5.5a) et l'inventaire d'assistance à jour.
+
+| Date | Étape | Opérateur | Batterie (vert/rouge) | Triage (causes) | Verdict (+ design/assistance/sécu) |
 |---|---|---|---|---|---|
+| 2026-06-20 | MERGE master ← feat/emails-ux-p0 + ENRICHISSEMENT barème (charte 09, gates G10–G15) | session (worktree) | Merge FF local `efbf5b5→8e96a53` après validation (tsc ×2 RC=0 ; suite complète 10 873 tests : seuls 2 F03 rouges = oracle d'horloge >24 h corrigé en test-only 8e96a53, + 1 tracking PRÉ-EXISTANT hors périmètre) ; build OOM (box 15 Gi/0 swap, worker orphelin 2 Go) → gate build couvert par compile-OK + tsc×2 + cible identique au build vert P2 | Évaluation multi-agents (7 aires) : le plan G1–G9 NE COUVRE PAS le barème relevé (design haut calibre, autocomplétion partout, sécu/perf/observabilité/modularité explicites) → 6 angles morts convergents | ✅ Charte `09-charte-ux-qualite.md` (tokens uniques, primitives socle, doctrine d'états, responsive, non-régression visuelle couche D ; invariant autocomplétion + inventaire `10-…csv` + verrou EntityCombobox ; 8 dimensions → critères vérifiables) ; **gates G10–G15** ajoutés à `05 §5` + runbook §2/§5/§7/§8 ; plan `07` : étape `P3.0 Socle design & assistance v2` + gates étendus P3–P5 ; notes d'enrichissement par dossier F05/F06/F07/F09/F10. NON POUSSÉ (master ahead origin de 16+). |
 | 2026-06-10 | GATE PHASE P2 — E2E F03+F04+F08 (:3100) | session (worktree, feat/emails-ux-p0) | **21/21 × 3 RUNS consécutifs** (emails-dashboard-f03 + emails-cockpit-f04 + emails-audiences-f08, --workers=1 OBLIGATOIRE : oracles santé globaux + panne DB simulée) ; non-régression P1 10/10 (socle+navigation) ; composant 87 fichiers v ; tsc OK ; **F03 = 94/94, F04 = 144/144, F08 = 102/102 — trois batteries à 100 %** | 2 BUGS PROD trouvés par la batterie : (1) le « Réessayer » de error.tsx ne faisait que reset() — pour une erreur RSC le payload en cache se REJOUE indéfiniment, le bouton ne réessayait RIEN (fix : router.refresh() + reset() sous useTransition) ; (2) contraste AA text-stone-400 sur TOUS les écrans audiences (mad-helper, preview-empty, chips vides… — invisible en axe jsdom) → stone-600. 4 leçons d'oracle : le check dlq24h n'expose son deep-link qu'au-delà de 10 (seuil incident → seeds à 12) ; `to:` sans wildcard = égalité exacte (la grammaire du SM est to:*@bad.tld) ; le deep-link suppression du détail ne se rend que sur statut suppressed ; une coupure DB TOTALE tombe sur le boundary GLOBAL (le layout admin lit tracking_settings) → panne CIBLÉE par rename d'email_outbox pour atteindre le boundary du segment (DASH-09). 1 flake éliminée : axe-core > 30 s sur pages denses → setTimeout(90 s) des tests A-* | ✅ specs F03-E-001..005 + A-001/002 (tri-état « webhook muet », fenêtres ?window=, Diagnostiquer→from=health, error boundary + reprise réelle, radiogroup clavier), F04-E-001..006 + A-001/002 (SM-F04-01 astreinte DLQ bout-en-bout 12→0, domaine pourri export CSV daté + 4 suppressions prouvées en DB, enquête cliente timeline→suppression, filtre fautif warning + filtres valides appliqués, vue d'équipe persistée, reap sending figés → pending), F08-E-098/099/100 + A-101/102 (SM-F08-01 chips pays + Inverser les bornes + aperçu 12 exacts + détail FR, SM-F08-02 drift −99 % → re-snapshoter → « = à jour », SM-F08-03 tags grisés + legacy bloquée puis débloquée) ; helpers e2e étendus (events webhook, leads+orders, audiences+snapshots, vues, panne DB ciblée idempotente) ; **TAG emails-ux-phase-P2** |
 | 2026-06-10 | P2.4 audiences F08 — tags/validations/drift/membres | session (worktree, feat/emails-ux-p0) | **F08 = 97/102** (restent 3 E2E + 2 axe Playwright = gate de phase) ; intégration vraie-DB : compilateur+lifecycle 93/93 + routes F08 7/7 (femiglow_test_m04audiences, --no-file-parallelism : les 2 suites partagent la DB) ; suites emails 1530 v ; conformité+verrous inclus ; tsc + lint + next build OK | DÉFAUT CRITIQUE AUD-01 FERMÉ aux 3 surfaces dans le même commit (garde-fou §rollback : jamais partiel) — le compilateur émettait ENCORE EXISTS/NOT EXISTS sur lead_tag (not_has_tag = NOT EXISTS sur table M5.5 vide → TOUTE la base) ; 5 oracles d'intégration AMENDÉS en conséquence (AUD-CMP-030/031/033/034 + negation → « personne, jamais tout le monde ») ; axe a attrapé 3 inputs sans label (inactive_since, date scalaire, email_pattern) ; oracle U-025 amendé (productId vide VOLONTAIRE → bloqué étape 2 PRODUCT_EMPTY_ERROR) ; 2 suites intégration sur la même DB se marchaient dessus en parallèle → --no-file-parallelism documenté ; I-094 : 57014 injecté au moteur (timeout réel non-déterministe sur DB minuscule), mapping route RÉEL | ✅ neutralisation tags : tags-flag.ts (TAGS_ENABLED, levée M5.5 un seul flag) + compilateur FALSE/FALSE + warn tag_neutralized + menu câblé au flag + bannière TagEditor + blocage étape 2 + I-095 vraie-DB (snapshot tag size=0) ; validations : rule-validation.ts (validateBetween/swapBounds + « Inverser les bornes » num+date, chips email_pattern in trim/dédup/vide bloquant, bascule pays in→eq sous ConfirmDialog socle, code pays inconnu bloquant, COUNTRY_CALLING_CODE exporté pour l'alignement bidirectionnel U-012) ; drift : drift.ts (driftPct max(1,size), ▲/▼ ±N (±P %), seuil >10 % strict → surlignage + bandeau re-snapshoter, âge relatif, purge JJ/MM) + liveCount RSC passé au panel (1 calcul/page, HORS boucle 4 s) ; membres « Charger plus » (offset=length, concat dédoublonnée, bouton masqué à épuisement, grille réseau + 404 cross-audience I-096) ; étape 4 : mention ET/OU dès 1 règle, textes mode d'évaluation verbatim (N injecté via onSizeChange), timeout preview 57014→504→message ⏱ dédié, hint R-011 détail, suppression ConfirmDialog ; routes audiences passées au 401 JSON (pattern F02) ; CLIQUETS : window.confirm 5→4, toLocale 19→13, tokens 23→14 (9 fichiers audiences migrés emerald/rose/sky + Intl.NumberFormat) |
 | 2026-06-10 | P2.3 cockpit F04 lot 2 — sélection globale + bulk-by-filter | session (worktree, feat/emails-ux-p0) | **F04 = 136/144** (restent 6 E2E + 2 axe Playwright = gate de phase) ; intégration bulk 13/13 (femiglow_test_f04bulk, dont I-010 « même ensemble que /search ») ; suites emails 1542 v ; tsc + build OK | 1 BUG de séquence trouvé par I-017 (compte wrong_status APRÈS l'update → les relancées comptées skipped ; compter AVANT) ; 1 adaptation harnais (12 suites montent le cockpit nu → useOptionalToast ajouté au socle pour l'adoption incrémentale, provider réel au layout) ; oracle I-020 aligné (deleteView = SOFT delete) ; ~25 IDs legacy GREFFÉS sur les tests existants (parser U-001..012, vues C-064..069, grilles C-070..072, presets/a11y C-075..079, non-régressions I-018..021 écrites vraie-DB) | ✅ route /bulk-retry-by-filter (dry-count borné, cap 10 000 → 422 cap_exceeded AVANT toute mutation, audit, compilateur unique buildWhere) ; cap partagé client/serveur via schemas.ts ; machine de sélection page-filter COMPLÈTE (amorce ssi total>page, bannière périmètre, survie page/tri, ANNULATION au changement de filtre + toast, rupture d'exhaustivité au décochage, libellés Retry (N)/Export ~N cohérents) ; ConfirmDialog SOCLE adopté pour le dry-count (échec → erreur DANS le dialog) ; parcours opérateur C-073/074 + a11y bannière A-003 |
@@ -144,9 +188,25 @@ quarantaines flaky ouvertes sont listées en pied de tableau jusqu'à résolutio
 
 ## 8. Critères de clôture du programme (P5.4)
 
-- [ ] 10 batteries Fxx : 100 % implémentées (comptage §3) et vertes
-- [ ] Suite globale emails (~1700 + nouveaux) verte 3 runs consécutifs (anti-flaky)
+**Correction (historique) :**
+- [ ] 10 batteries Fxx : 100 % implémentées (comptage §3, couches `[UCIEADS]`) et vertes
+- [ ] Suite globale emails verte 3 runs consécutifs (anti-flaky)
 - [ ] Tous les scénarios SM-* verts
 - [ ] G1..G9 verts simultanément sur le même commit
 - [ ] 111 problèmes de la matrice : statut traité/différé justifié ligne à ligne
+
+**Barème relevé (G10–G15, cf. `09-charte-ux-qualite.md`) :**
+- [ ] **G10 Design** : checklist `09 §A.7` signée pour CHAQUE écran refondu ;
+  baseline de snapshots visuels (3 viewports) verte ; verrou couleur à 0 hors `tokens.ts` ;
+  primitives socle (Button/IconButton/Field/Card/Skeleton/Banner) extraites et adoptées.
+- [ ] **G11 Assistance** : `10-inventaire-assistance.csv` complet ; 0 champ assistable
+  nu non justifié ; verrou `EntityCombobox` à whitelist vide.
+- [ ] **G12 Sécurité** : `/security-review` sur le diff global sans finding bloquant ;
+  batteries `Fxx-S-*` vertes ; scan secrets propre.
+- [ ] **G13 Performance** : budgets par écran (bundle/DB/p95) tenus ; aucun dépassement en CI.
+- [ ] **G14 Observabilité** : 100 % des actions d'écriture loguées + corrélées (tests d'émission verts).
+- [ ] **G15 Modularité** : 0 import croisé ; conformité contrats TOTALE ; maps exhaustives ; barrel `ui/`.
+
+**Clôture :**
+- [ ] G1..G15 verts simultanément sur le même commit
 - [ ] Rapport de clôture + tag `emails-ux-1.0` + mémoire projet mise à jour

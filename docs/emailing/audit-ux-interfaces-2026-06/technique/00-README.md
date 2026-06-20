@@ -21,6 +21,8 @@
 | `06-inventaire-fonctionnalites.csv` | Énumération EXHAUSTIVE des fonctionnalités (existantes/améliorées/nouvelles) → dossier de tests | csv |
 | `07-plan-action-global.yaml` | Plan d'action exécutable : phases, étapes avec tests, boucles de correction, gates | yaml |
 | `08-runbook.md` | Runbook opérateur qui PILOTE le plan d'action (commandes, oracles, journal) | md |
+| `09-charte-ux-qualite.md` | **Barème relevé (2026-06-20)** : design haut calibre (tokens, primitives, états dessinés, responsive, non-régression visuelle), assistance à la saisie (autocomplétion partout), 8 dimensions de code → **gates G10–G15** | md |
+| `10-inventaire-assistance.csv` | Inventaire transverse de l'assistance à la saisie (1 ligne/champ : mécanisme, validation inline, justification si non) — gate G11 | csv |
 | `diagrammes/architecture-cible.puml` | Vue en couches + flux de test | puml |
 | `modeles-code/` | Code de référence FONCTIONNEL (gold standard) : test composant MSW, spec Playwright, builders | tsx/ts |
 | `fonctionnalites/F01…F10/` | **Un sous-dossier par fonctionnalité/chantier** (voir tableau ci-dessous) | mixte |
@@ -81,3 +83,11 @@ Chaque dossier `fonctionnalites/Fxx-*/` contient le même quintuple :
 5. **Non-régression** : la base existante (~1 700 tests emails) reste verte à
    chaque étape ; tout bug corrigé reçoit son test nominatif (`regression_ref`
    = ID de la matrice d'audit).
+6. **Barème relevé (intransigeance UX + qualité)** : au-delà de la correction,
+   chaque écran refondu satisfait `09-charte-ux-qualite.md` — design de très
+   haut calibre (tokens uniques, primitives socle, états dessinés, responsive,
+   snapshots visuels), **assistance à la saisie partout** (autocomplétion,
+   smart defaults, validation inline), et les 8 dimensions de code (modulaire,
+   évolutif, déboggable, maintenable, sécurisé, fiable, fonctionnel, optimal)
+   érigées en **gates G10–G15** bloquants. Couches de batterie `D` (design) et
+   `S` (sécurité) s'ajoutent à `U/C/I/E/A`.

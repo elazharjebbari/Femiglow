@@ -165,3 +165,137 @@ Vague la plus légère, purement UI/libellés ; aucune migration.
 M0 (migrations + index CONCURRENTLY séparés) → P4.1 (lecture, sûr) → P4.2
 (actions, gate dry-run d'abord) → P4.3 (wizard). Chaque vague : build + restart,
 batterie verte, puis E2E de la vague.
+
+---
+
+## Enrichissement barème relevé (2026-06-20) — gates G10–G15
+
+> Référence : ../../09-charte-ux-qualite.md. Ces exigences s'ajoutent au plan
+> ci-dessus et conditionnent le gate de phase (cf. 07-plan-action-global.yaml,
+> 08-runbook.md §5). Nouvelles couches de batterie à créer : **F06-D-*** (design)
+> et **F06-S-*** (sécurité).
+
+### Design haut calibre (G10)
+
+- **FlowView** : remplacer le « 1 cran fixe par niveau » par une échelle
+  d'espacement nommée et chiffrée (token design-system), et poser une hiérarchie
+  typographique explicite à 3 rangs (numéro de step `#1`/`#3a` > libellé > détail)
+  avec poids/taille distincts ; spec du tracé des connecteurs en L (épaisseur,
+  rayon, couleur) au-delà de « visible ».
+- **FlowView arbre profond** (jusqu'à `MAX_PATH_DEPTH=12`, 2 cols « si vrai » /
+  « sinon » récursives) : dessiner le repliage/dépliage de branche, le focus-branche
+  ou l'accordéon au-delà de 2 niveaux imbriqués — sinon l'arbre reste illisible
+  (régression du problème d'origine AUTO-01 « JSON brut »).
+- **Micro-interactions** à spécifier : transition du surlignage `current` (amber)
+  des nœuds, animation d'entrée des lignes de `RunTimeline`, états hover/focus
+  dessinés sur les nœuds FlowView, feedback de progression pendant le dry-run
+  synchrone (au-delà du seul `aria-busy`).
+- **États vide/chargement/erreur dessinés** : skeleton de timeline pendant le fetch
+  du détail run ; écran de chargement du dry-run synchrone (le run déroule
+  plusieurs branches) avec progression par step simulé ; rendu de l'état partiel
+  « trace tronquée à 500 (N entrées élidées) » (l'élision existe côté data, pas côté
+  rendu) ; nuances des états `done` (atténué : opacité/tone à fixer) et `upcoming`
+  (pointillé : gris à fixer).
+- **Couleurs sémantiques** : fixer les tones du badge « test » du dry-run (placement
+  + tone, pas « badge test » répété) et les nuances done/upcoming dans le système.
+- **Responsive aux 3 breakpoints** : comportement mobile/écran étroit de la
+  sous-grille FlowView 2 colonnes (scroll horizontal vs pliage vs accordéon), de la
+  `RunTimeline` et de la liste runs — totalement absent.
+- **Snapshots visuels F06-D-*** à créer : FlowView à 3 niveaux sur viewport étroit,
+  `RunTimeline` pleine (500 entrées), `DryRunDialog` en chargement.
+
+### Assistance à la saisie (G11)
+
+- **`DryRunDialog.testContact`** : autocomplétion sur les emails de l'équipe admin
+  + 5 derniers contacts de test utilisés + validation inline du domaine (aujourd'hui
+  `select` figé avec défaut `session.email` seulement) — test : la suggestion et la
+  validation de domaine sont observables.
+- **Wizard — sélecteur d'événement déclencheur** : typeahead/recherche filtrant le
+  catalogue `AUTOMATION_EVENT_CATALOG` (AUTO-08 ajoute les `<optgroup>` mais pas de
+  filtre) — test : frappe filtre les options groupées.
+- **Wizard — champ slug (création, AUTO-07)** : dérivation auto du slug depuis le nom
+  + validation d'unicité inline en direct (smart default ; verrou en édition déjà OK)
+  — test : nom → slug suggéré + collision signalée live.
+- **Step `send` — slug de template** : autocomplétion + validation d'existence du
+  template à la saisie (le scénario phare SM-F06-01 « template introuvable » aurait
+  été PRÉVENU) — test : slug inconnu signalé avant exécution.
+- **Step `wait` / `wait_for_event` — durée (`timeoutMs`)** : presets (« 1 h / 24 h /
+  3 j »), parsing humain (« 90 min »), validation de borne — test : preset et parsing
+  renseignent la durée consommée par la phrase onTimeout (AUTO-14).
+- **Step `branch` — condition** : autocomplétion sur les attributs lead/events
+  disponibles et les valeurs énumérées lors de la CONSTRUCTION (champ/opérateur/valeur,
+  ex. `email.opened ?`) ; FlowView ne fait qu'humaniser en lecture — test : suggestion
+  d'attribut/valeur à la saisie.
+- **Page runs — filtre `automation` et filtre `email`** : autocomplétion/recherche sur
+  le sélecteur d'automation (long) et sur les destinataires existants pour le filtre
+  email — test : frappe propose automation/destinataire.
+- Renseigner aussi **10-inventaire-assistance.csv** pour chacun de ces champs (axe A
+  aujourd'hui structurellement absent de la batterie F06).
+
+### Sécurité (G12) — batterie F06-S-*
+
+- **Whitelist/contrôle de domaine du `testContact` du dry-run `redirect`** (envoie du
+  RÉEL ; le Zod valide juste `.email()` → un admin compromis exfiltre vers un domaine
+  arbitraire) — **F06-S-001** : 422/403 si domaine non autorisé.
+- **Rate-limit + cap d'usage du endpoint dry-run** ; **cap de profondeur/temps de
+  l'exécution synchrone serveur** (au-delà du `MAX_PATH_DEPTH` moteur) pour éviter le
+  DoS auto-infligé d'un flow lourd simulé — **F06-S-002** : timeout serveur RÉEL testé
+  (pas seulement le `hang` MSW côté client).
+- **Audit-log enrichi des envois pilotés admin** : dry-run `redirect` ET `replay`
+  tracent acteur, mode, automation, run, destinataire (le contenu du log replay n'est
+  pas spécifié) — **F06-S-003** ; **redaction PII** du destinataire (`to`) dans l'audit
+  (hash plutôt que clair).
+- **Concurrence/authz** : l'`requireAdmin` simple ne suffit pas pour les chemins
+  d'envoi réels — revue sécurité dédiée distincte (gate G12).
+
+### Observabilité / débogabilité (G14)
+
+- **Logs structurés `<domaine>.<action>` (sans champ `event`)** à émettre sur les
+  nouvelles routes/actions : `automation.dry_run`, `automation.replay`,
+  `automation.soft_delete` — succès ET chemin d'erreur (le 500 dry-run garantit
+  « aucun run dry en running incohérent » sans aucun test de log associé).
+- **Correlation-id** reliant le POST dry-run au run créé (`request id ↔ run id`) ;
+  tracer l'échec dry-run 500 de façon corrélable — test d'émission du log corrélé.
+- **Digest/diagnostic agrégé** (la trace est par-run, jamais en agrégat) : regroupement
+  par cause (« N runs deferred par quiet hours aujourd'hui », « top causes d'erreur »)
+  — outil de debug naturel de SM-F06-05 (12 runs même cause) ; test d'agrégation.
+
+### Performance / optimal (G13)
+
+- **Budget de rendu `RunTimeline`** : virtualisation si > N entrées (la trace monte à
+  500) ; budget chiffré comme le +150 kB CodeMirror du socle — test de rendu 500 entrées.
+- **Budget de latence du endpoint dry-run synchrone** (parcours complet multi-branches/
+  multi-send simulés) + débounce des filtres runs — aujourd'hui aucun budget F06.
+- **Index DB de la requête de comptage runs** (AUTO-16) filtrée statut+email+automation :
+  l'index `(automation_id, triggered_at) WHERE NOT is_dry_run` ne couvre pas le filtre
+  email/statut combiné → seq scan probable — test EXPLAIN confirmant l'usage d'index.
+
+### Modularité / évolutivité / concurrence (G15)
+
+- **Port d'exécution d'effets partagé dry/réel** : `dry-run.ts` et `runner.ts` doivent
+  exécuter le MÊME parcours via un `EffectExecutor` injecté — test qui CASSE si la liste
+  de steps parcourue diffère entre dry et réel sur le même arbre (interdit le fork de
+  logique).
+- **Exhaustivité de l'instrumentation `appendTrace`** : verrouiller par un test la liste
+  des call-sites runner (`advance/defer/skipSend/wait/wait_for_event/catch/sweep`) — rien
+  n'empêche aujourd'hui d'oublier un site et de trouer la trace.
+- **`TraceEntry.meta` en union discriminée** par `outcome`/`kind` (au lieu de
+  `z.record(z.string(), z.unknown())`) : chaque outcome porte ses clés
+  (`deferred`→`deferredUntil`, `skipped`(cap)→`capCount/capLimit`, `send ok`→
+  `outboxId/template`) ; centraliser le FR dans `humanizeTrace(entry)` testé (le runner
+  produit des CODES + meta, la timeline humanise) — évite le double formatage logique↔i18n.
+- **Couture V2 de FlowView** : props/callbacks neutres + data-attrs stables pour la future
+  édition (aujourd'hui `read_only V1` purement présentiel → refonte plutôt qu'extension).
+- **Concurrence / TOCTOU** : `softDeleteAutomation` en transaction avec re-check
+  `EXISTS run actif` au moment de l'UPDATE (course possible : un run passe actif entre le
+  check et l'UPDATE) ; `replay` sous verrou de run vs `sweep` concurrent — tests de course :
+  run qui devient actif entre check et delete → refus ; sweep concurrent au replay → pas de
+  double-armement.
+- **Idempotence post-replay** : après `resetAndReplayRun` (outboxIds vidés, retour `#1`),
+  un re-déroulé ne crée pas de doublon d'envoi (invariant affirmé SM-F06-05, non testé).
+- **Contrat onTimeout** : figer le défaut moteur par un test contre `lib/mail/automation`
+  (la phrase AUTO-14 « absent → abandonné » DOIT correspondre au runner réel, sinon la
+  timeline ment).
+- **Rendu du chemin EFFECTIF en `mode='run'`** : quand un run a pris `ifFalse`, les steps de
+  `ifTrue` ne doivent PAS être marqués `done` ; distinguer `done` (présent dans `_trace`) de
+  `skipped-branch` dans `stateFor` (l'ordre par rang préfixe ne le garantit pas).

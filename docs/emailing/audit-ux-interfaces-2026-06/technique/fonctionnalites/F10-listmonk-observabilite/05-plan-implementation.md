@@ -97,3 +97,53 @@
   revenir au strip pur en cas d'incident de framing (mais on perd LMK-05).
 - **Gate de sortie** : G1 (batterie F10 100 % verte), G5 (tsc+lint+next build),
   G6 (axe), G8 (SM-F10-01/02/03 verts), G9 (contrat `/health` + proxy).
+
+---
+
+## Enrichissement barème relevé (2026-06-20) — gates G10–G15
+
+> Référence : ../../09-charte-ux-qualite.md. Ces exigences s'ajoutent au plan
+> ci-dessus et conditionnent le gate de phase (cf. 07-plan-action-global.yaml,
+> 08-runbook.md §5). Nouvelles couches de batterie à créer : **F10-D-*** (design)
+> et **F10-S-*** (sécurité).
+
+### Design haut calibre (G10)
+- Créer un composant socle **`ui/Banner.tsx`** (4 tones success/warning/danger/info ; slots icône + titre + corps + action) AVANT l'étape 3 : il manque au socle C1 (qui n'a que Pill/Toast/EmptyState). Tous les bandeaux F10 (détail échec/périmé, bloc indispo wizard étape 2/3, overlay iframe morte) en dérivent — 0 markup de bandeau ad hoc dans `components/admin/emails/**`. Snapshot visuel **F10-D-001** (3 tones) + axe 0 serious/critical.
+- Bandeau détail campagne : spec de composition (icône + titre + corps + action), échelle d'espacement et poids typo distinguant le message d'erreur de la consigne d'action — pas un bloc plat générique. Snapshot **F10-D-002** (états échec et périmé).
+- `last_sync_error` affiché humanisé (pas le log brut) : la classe technique va sous un disclosure « Détails techniques » en monospace/secondaire ; le corps du bandeau porte le message d'action. Snapshot **F10-D-003** comparant rendu brut interdit vs humanisé.
+- Page iframe en mode dégradé : DESSINER le « shell digne » — overlay `EmptyState` « Listmonk ne répond pas pour l'instant — [Réessayer] / [Ouvrir dans un nouvel onglet] » par-dessus l'iframe morte, jamais un iframe blanc/cassé. Snapshot **F10-D-004** (iframe down).
+- Bandeau piège (LMK-03) `role=note` : travail de hiérarchie pour qu'il soit lu et non « banni » (les bandeaux info permanents deviennent invisibles) — le distinguer visuellement d'un bandeau d'erreur. Snapshot **F10-D-005**.
+- État de chargement DESSINÉ des 2 nouvelles `CheckLine` Listmonk pendant le (re)calcul du ping 3 s (skeleton ou valeur stale explicite, standard §3.7 appliqué). Snapshot **F10-D-006**.
+- Responsive 3 breakpoints (mobile/tablette/desktop) des badges en liste : `Pill` statut + `Pill` sync côte à côte avec libellé long « ⚠ métriques périmées (>1h) » — règle de troncature/wrap/icône-seule en colonne étroite. Snapshot **F10-D-007** aux 3 viewports.
+- Micro-interactions : transition d'apparition/résolution du bandeau quand « Réessayer » réussit (le bandeau se met à jour/disparaît, pas un saut sec), feedback de succès au-delà du toast ; respecter `prefers-reduced-motion`.
+
+### Assistance à la saisie (G11)
+- **[Réessayer maintenant] / re-poll ciblé** → action serveur, PAS une saisie : `mecanisme=none`, mais navigation clavier sur le bouton requise (test focus + activation Entrée/Espace). Inscrit `10-inventaire-assistance.csv` (F10-detail-campagne).
+- **Filtre « sync KO » (deep-link `?from=health`)** → `smart_default` : le filtre est pré-appliqué par le deep-link santé ; l'épingler comme état de filtre suggéré dans la barre de filtres de la liste campagnes (F04) et pas seulement comme query-param. Test : arriver via `?from=health` applique et matérialise le filtre. Inscrit CSV (F10-liste-campagnes).
+- **Les 3 colonnes (last_sync_attempt/ok/error)** → écrites par le cron, aucune saisie opérateur : déclarer EXPLICITEMENT « aucun champ éditable opérateur dans F10 » (`assiste_cible=non` justifié) pour tracer le barème G11 au lieu de laisser le vide implicite. Inscrit CSV (F10-3-colonnes-cron). `LISTMONK_PUBLIC_URL`/creds = config ops (env), hors UI — message ops pointe vers le runbook (acceptable, pas d'autocomplete attendu).
+
+### Sécurité (G12) — batterie F10-S-*
+- **F10-S-001** — rendu sûr des messages upstream : `last_sync_error` et `firstError` rendus en **texte échappé**, JAMAIS `dangerouslySetInnerHTML` (corps Listmonk = donnée non fiable → XSS stocké). Grep interdisant `dangerouslySetInnerHTML` dans le périmètre F10.
+- **F10-S-002** — redaction PII : `firstError` (ex. Listmonk 422 « invalid email » inclut l'adresse) masque toute adresse email (regex) avant affichage. Test unitaire « 422 invalid email → email masqué ».
+- **F10-S-003** — anti-abus du re-poll ciblé : le bouton « Réessayer » déclenche un appel Listmonk externe à la demande ; garde serveur « pas plus d'un re-poll par campagne / 10 s » → **429 humanisé**. Étendre la grille réseau du bouton avec le cas 429 (en plus du debounce client 1 POST/double-clic).
+- Authz : le 401 proxy et l'auth implicite de l'action admin sont conservés ; vérifier que le re-poll passe bien par `requireAdmin`.
+
+### Observabilité / débogabilité (G14)
+- Émettre des logs structurés nommés `<domaine>.<action>` (sans champ `event`, gotcha logger) : `listmonk.health.ping{latencyMs,level}`, `listmonk.health.ping_failed{error}`, `listmonk.sync.retry{campaignId,result}`, `listmonk.push.partial{attempted,pushed,rejected,firstErrorClass}`.
+- Corrélation incident : chaque re-poll échoué logge `campaignId` + classe d'erreur côté serveur (pour retrouver l'incident). Ligne batterie **F10-I** asserrant sur un logger espionné que le re-poll KO émet le log avec `campaignId`.
+- Stockage débogable : préférer conserver `error class` + `status` séparément à `String(err).slice(0,500)` (qui perd la stack/le code) — champ structuré plutôt que texte tronqué.
+- Tests d'émission : logger espionné vérifiant la présence de `campaignId`/`latencyMs`/`rejected` selon l'action.
+
+### Performance / optimal (G13)
+- Budget latence : **/health enrichi p95 < 500 ms** (hors ping froid). Le ping 3 s caché + 1 agrégat SQL s'ajoutent au rapport santé — actuellement aucun budget latence (seul un budget bundle existe ailleurs).
+- Cache santé chiffré : `healthCacheMs = 15 s` (le « TTL court » vague devient vérifiable) ; test d'intégration « deux GET /health en < 15 s ⇒ un seul ping Listmonk émis » (compteur sur le client mocké). Jamais `unstable_cache` sans TTL (gotcha i18n).
+- Borne de temps sur l'agrégat SQL santé (pas seulement le timeout 3 s du ping) : si la DB traîne, l'agrégat ne doit pas suspendre le dashboard.
+- Index : **EXPLAIN documenté** de l'agrégat `email_campaign_link WHERE status IN (...) AND last_sync_error IS NOT NULL AND attempt>ok` ; justifier « statusIdx suffit » ou poser un seuil de ré-évaluation d'index (ex. > 5000 campagnes non terminales).
+- Borne du nombre d'UPDATE cron : « un UPDATE par candidat » = N UPDATE ; poser un critère de batch si N grandit.
+
+### Modularité / évolutivité / concurrence (G15)
+- Nommer et typer les helpers purs de niveau santé (séparés du fetch/SQL) : `deriveListmonkPingLevel(latencyMs, status)`, `deriveSyncAgeLevel(maxOkAt, failCount, hasNonTerminal, now)` — critère vérifiable au même titre que `deriveSyncBadge(link, now)`. Cible couverture 100 % branches sur la table de vérité.
+- Centraliser TOUS les seuils dans un module exporté `LISTMONK_OBS = { staleMs:3600000, pingTimeoutMs:3000, pingSlowMs:1000, syncOkMaxMs:3600000, syncIncidentMs:21600000, errorTruncate:500, healthCacheMs:15000 }` importé par `deriveSyncBadge`/helpers santé/écrivain. **Grep AST** échoue si un littéral numérique de seuil apparaît hors de ce module dans les fichiers F10.
+- Contrat `/health` rétro-compatible : l'ajout des 2 checks Listmonk reste **additif only** (consommateurs nav-counters F02 / alerting externe non cassés) ; critère versionning du schéma Zod `/health`.
+- Concurrence cron vs re-poll manuel : modèle **dernier-écrivain-gagne** assumé (attempt monotone) explicité ; test d'intégration concurrent (deux UPDATE entrelacés ⇒ `attempt` final = max, `error` cohérente avec le dernier résultat).
+- Maintenabilité i18n : relier `textes_verbatim` aux clés i18n du repo ; les oracles composant/E2E lisent la valeur via la **même source** que le rendu (évite divergence libellé/oracle — gotcha i18n bindings).
