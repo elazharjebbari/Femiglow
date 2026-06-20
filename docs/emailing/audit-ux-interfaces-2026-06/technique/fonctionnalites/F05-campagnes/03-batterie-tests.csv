@@ -24,11 +24,11 @@ F05-U-022,U,P0,machine-etats,isLegalTransition idempotente from==to,true pour le
 F05-U-023,U,P0,machine-etats,table 7x7 exhaustive croisée,42 couples hors-diagonale conformes table légale,grille 7x7,CAMP-14,implemente
 F05-U-024,U,P1,machine-etats,mapListmonkStatus finished->sent running->sending,mapping conforme,statuts listmonk,nominal,implemente
 F05-U-025,U,P1,machine-etats,mapListmonkStatus paused/draft/inconnu->null,no-op défensif,statut paused/xyz,nominal,implemente
-F05-U-026,U,P0,planification,conversion datetime-local Casablanca->UTC,offset à T appliqué (UTC+1 hors DST),date 18:30 Africa/Casablanca,CAMP-07,a_implementer
-F05-U-027,U,P0,planification,conversion respecte DST/ramadan (offset variable),offset lu via Intl pas codé en dur,date en période suspension heure été,CAMP-07,a_implementer
-F05-U-028,U,P0,planification,validation date dans le passé refusée,retourne erreur date future,instant T-1h,CAMP-07,a_implementer
-F05-U-029,U,P0,planification,validation date future acceptée,pas d'erreur,instant T+1j,CAMP-07,a_implementer
-F05-U-030,U,P1,planification,validation mode scheduled sans date,erreur Choisis une date,scheduled date vide,nominal,a_implementer
+F05-U-026,U,P0,planification,conversion datetime-local Casablanca->UTC,offset à T appliqué (UTC+1 hors DST),date 18:30 Africa/Casablanca,CAMP-07,implemente
+F05-U-027,U,P0,planification,conversion respecte DST/ramadan (offset variable),offset lu via Intl pas codé en dur,date en période suspension heure été,CAMP-07,implemente
+F05-U-028,U,P0,planification,validation date dans le passé refusée,retourne erreur date future,instant T-1h,CAMP-07,implemente
+F05-U-029,U,P0,planification,validation date future acceptée,pas d'erreur,instant T+1j,CAMP-07,implemente
+F05-U-030,U,P1,planification,validation mode scheduled sans date,erreur Choisis une date,scheduled date vide,nominal,implemente
 F05-U-031,U,P1,autosave,debounce trailing 2s 1 frappe,1 appel après 2s,frappe unique fake timers,CAMP-03,a_implementer
 F05-U-032,U,P0,autosave,debounce rafale rearme,1 seul appel 2s apres derniere frappe,5 frappes <2s,CAMP-03,a_implementer
 F05-U-033,U,P1,autosave,patch ne contient que champs touchés,patch partiel sans champs intacts,maj name seul,CAMP-03,a_implementer
@@ -148,3 +148,8 @@ F05-X-001,A,P1,a11y,axe wizard chaque étape 0 serious/critical,0 violation,wiza
 F05-X-002,A,P1,a11y,axe détail + ConfirmDialog focus trap,0 violation focus piégé,détail,TRV-01,a_implementer
 F05-X-003,A,P1,a11y,axe liste + EmptyState,0 violation,liste vide,nominal,a_implementer
 F05-X-004,A,P1,a11y,stepper aria-current et états cliquables,aria-current sur étape courante,wizard,CAMP-05,a_implementer
+F05-U-041,U,P1,AUD-F02,mapping nommé étapes,"stepNumber/stepKey inverses, 6 étapes ordonnées",nominal,metier,implemente
+F05-U-042,U,P1,AUD-F02,normalizeWizardStep tolérant,"null/NaN/hors-borne→1, valide conservé",nominal,metier,implemente
+F05-U-043,U,P1,AUD-F02,migratePayload legacy,"sans _v→version courante, champs préservés",nominal,metier,implemente
+F05-U-044,U,P1,AUD-F02,migratePayload défensif,null/non-objet→payload vide versionné,nominal,metier,implemente
+F05-U-045,U,P2,AUD-F02,migratePayload idempotent,à jour→champs inconnus conservés,nominal,metier,implemente
