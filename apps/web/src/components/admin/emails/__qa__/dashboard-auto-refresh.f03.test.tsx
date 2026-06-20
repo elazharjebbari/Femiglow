@@ -191,6 +191,11 @@ describe('F03 — grille réseau de la sonde summary (N-001..006)', () => {
   });
 
   it('F03-N-003 — 500 : bandeau « données figées à HH:MM », données précédentes intactes', async () => {
+    // Horloge épinglée à ~GENERATED_AT (Date fake UNIQUEMENT — setTimeout/MSW
+    // restent réels pour findBy/waitFor) : sinon `fmtClock` bascule sur sa
+    // branche « JJ/MM HH:MM » dès que le test tourne >24 h après le fixture
+    // (oracle dépendant de la date — il passait près du 10/06, cassait après).
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(GENERATED_AT).getTime() + 30_000 });
     server.use(http.get(SUMMARY_ROUTE, () => HttpResponse.json({ error: 'x' }, { status: 500 })));
     renderAuto();
     clickRefresh();
@@ -224,6 +229,8 @@ describe('F03 — grille réseau de la sonde summary (N-001..006)', () => {
   });
 
   it('F03-N-005 — panne réseau : bandeau figé, jamais de faux « à jour »', async () => {
+    // Horloge épinglée (cf. F03-N-003) — robustesse face à la branche >24 h.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(GENERATED_AT).getTime() + 30_000 });
     server.use(http.get(SUMMARY_ROUTE, () => HttpResponse.error()));
     renderAuto();
     clickRefresh();
