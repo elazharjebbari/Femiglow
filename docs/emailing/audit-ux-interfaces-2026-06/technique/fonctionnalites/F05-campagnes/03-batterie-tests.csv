@@ -31,9 +31,9 @@ F05-U-029,U,P0,planification,validation date future acceptée,pas d'erreur,insta
 F05-U-030,U,P1,planification,validation mode scheduled sans date,erreur Choisis une date,scheduled date vide,nominal,implemente
 F05-U-031,U,P1,autosave,debounce trailing 2s 1 frappe,1 appel après 2s,frappe unique fake timers,CAMP-03,a_implementer
 F05-U-032,U,P0,autosave,debounce rafale rearme,1 seul appel 2s apres derniere frappe,5 frappes <2s,CAMP-03,a_implementer
-F05-U-033,U,P1,autosave,patch ne contient que champs touchés,patch partiel sans champs intacts,maj name seul,CAMP-03,a_implementer
-F05-U-034,U,P1,validation,Zod saveWizardProgress wizardStep 1..6,7 ou 0 rejeté,wizardStep=7,CAMP-03,a_implementer
-F05-U-035,U,P1,validation,Zod name 3-120 chars,len<3 ou >120 rejeté,name 2 chars,nominal,a_implementer
+F05-U-033,U,P1,autosave,patch ne contient que champs touchés,patch partiel sans champs intacts,maj name seul,CAMP-03,implemente
+F05-U-034,U,P1,validation,Zod saveWizardProgress wizardStep 1..6,7 ou 0 rejeté,wizardStep=7,CAMP-03,implemente
+F05-U-035,U,P1,validation,Zod name 3-120 chars,len<3 ou >120 rejeté,name 2 chars,nominal,implemente
 F05-U-036,U,P1,fallback,compteur incrémente sur échec réel seulement,abort utilisateur n'incrémente pas,abort vs HTTP500,CAMP-01,a_implementer
 F05-U-037,U,P0,fallback,seuil fallback à 3 échecs,bouton dégradé exposé ssi compteur==3,compteur 1/2/3,CAMP-01,a_implementer
 F05-C-001,C,P0,liste,recherche q filtre nom et sujet,lignes hors-match absentes,3 campagnes q=été,CAMP-16,a_implementer
@@ -124,8 +124,8 @@ F05-M-001,C,P0,metriques,tooltip n/d Livrés honnête,tooltip Non couvert par le
 F05-M-002,C,P1,metriques,tooltip n/d Désabos,tooltip présent pas de faux 0,désabos n/d,CAMP-02,a_implementer
 F05-M-003,C,P0,metriques,refresh spinner puis toast à jour,spinner pendant poll toast Métriques à jour,clic rafraîchir,CAMP-10,a_implementer
 F05-M-004,C,P0,metriques,refresh échec toast honnête,toast erreur métriques inchangées,sync 500,CAMP-10,a_implementer
-F05-I-001,I,P0,autosave,saveWizardProgress persiste merge non destructif,DB reflète patch champs intacts conservés,patch name seul,CAMP-03,a_implementer
-F05-I-002,I,P0,autosave,saveWizardProgress refuse hors draft,0 ligne touchée si status!=draft,statut sending,CAMP-03,a_implementer
+F05-I-001,I,P0,autosave,saveWizardProgress persiste merge non destructif,DB reflète patch champs intacts conservés,patch name seul,CAMP-03,implemente
+F05-I-002,I,P0,autosave,saveWizardProgress refuse hors draft,0 ligne touchée si status!=draft,statut sending,CAMP-03,implemente
 F05-I-003,I,P0,test-send,sendCampaignTestViaOutbox crée 1 ligne outbox,outbox row source=campaign_test idempotency_key,corps libre,CAMP-04,a_implementer
 F05-I-004,I,P0,test-send,idempotence anti double insert,2 POST même clé = 1 ligne outbox,double POST concurrent,CAMP-04,a_implementer
 F05-I-005,I,P0,machine-etats,transition illégale rejetée 409,controlCampaign refuse sent->sending,statut sent,CAMP-14,a_implementer

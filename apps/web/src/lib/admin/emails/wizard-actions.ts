@@ -49,7 +49,16 @@ async function loadPayload(
 
 // readPayloadTemplateId (UX-CAMP-004) vit dans campaigns-shared.ts : un fichier
 // 'use server' ne peut EXPORTER que des fonctions async (refus webpack au build).
-import { readPayloadTemplateId } from './campaigns-shared';
+import {
+  readPayloadTemplateId,
+  saveWizardProgressInput,
+  type SaveWizardProgressInput,
+  type SaveWizardResult,
+} from './campaigns-shared';
+import {
+  CAMPAIGN_PAYLOAD_VERSION,
+  migratePayload,
+} from '@/lib/mail/campaigns/campaign-payload';
 
 const createDraftInput = z.object({
   name: z.string().min(3).max(120),
@@ -161,6 +170,101 @@ export async function updateCampaignDraft(input: z.infer<typeof updateDraftInput
   }
 
   await drizzle.update(emailCampaignLink).set(set).where(eq(emailCampaignLink.id, parsed.id));
+}
+
+/**
+ * saveWizardProgress (F05 P3.2) — autosave du wizard. Différences clés vs
+ * updateCampaignDraft :
+ *  - GARDE R-010 : `WHERE status='draft'` atomique → ne peut JAMAIS écrire (ni
+ *    réveiller) une campagne finalisée (scheduled/sending/sent/…) ;
+ *  - OPTIMISTIC-LOCK multi-onglets via `payload_json._rev` : si l'appelant
+ *    annonce un `expectedRev` ≠ du rev courant → `conflict` (pas d'écrasement
+ *    silencieux) ; le rev est incrémenté à chaque écriture ;
+ *  - persiste `wizard_step` + `schedule_timezone` (reprise + TZ) ;
+ *  - PATCH partiel : seuls les champs FOURNIS sont écrits (U-033) ;
+ *  - observabilité : log structuré `mail.campaign.autosave[_rejected|_conflict]`.
+ */
+export async function saveWizardProgress(
+  input: SaveWizardProgressInput,
+): Promise<SaveWizardResult> {
+  const session = await requireAdmin('/admin/emails/campaigns');
+  const parsed = saveWizardProgressInput.parse(input);
+  const drizzle = requireDb();
+
+  const [current] = await drizzle
+    .select({ status: emailCampaignLink.status, payloadJson: emailCampaignLink.payloadJson })
+    .from(emailCampaignLink)
+    .where(eq(emailCampaignLink.id, parsed.id))
+    .limit(1);
+
+  if (!current) return { ok: false, reason: 'not_found' };
+  if (current.status !== 'draft') {
+    logger.warn('mail.campaign.autosave_rejected', {
+      id: parsed.id,
+      status: current.status,
+      reason: 'not_draft',
+    });
+    return { ok: false, reason: 'not_draft' }; // R-010 — jamais d'écriture hors draft
+  }
+
+  const currentPayload = migratePayload(current.payloadJson);
+  const currentRev = typeof currentPayload._rev === 'number' ? currentPayload._rev : 0;
+
+  if (parsed.expectedRev !== undefined && parsed.expectedRev !== currentRev) {
+    logger.warn('mail.campaign.autosave_conflict', {
+      id: parsed.id,
+      expectedRev: parsed.expectedRev,
+      currentRev,
+    });
+    return { ok: false, reason: 'conflict' }; // un autre onglet a écrit entre-temps
+  }
+
+  const nextRev = currentRev + 1;
+  const basePayload =
+    parsed.payloadJson !== undefined ? migratePayload(parsed.payloadJson) : currentPayload;
+  const nextPayload: Record<string, unknown> = {
+    ...basePayload,
+    ...(parsed.listmonkTemplateId !== undefined
+      ? { listmonkTemplateId: parsed.listmonkTemplateId }
+      : {}),
+    _v: CAMPAIGN_PAYLOAD_VERSION,
+    _rev: nextRev,
+  };
+
+  const set: Partial<typeof emailCampaignLink.$inferInsert> = {
+    updatedAt: new Date(),
+    payloadJson: nextPayload,
+  };
+  if (parsed.wizardStep !== undefined) set.wizardStep = parsed.wizardStep;
+  if (parsed.name !== undefined) set.name = parsed.name;
+  if (parsed.subject !== undefined) set.subject = parsed.subject;
+  if (parsed.preheader !== undefined) set.preheader = parsed.preheader;
+  if (parsed.templateSlug !== undefined) set.templateSlug = parsed.templateSlug;
+  if (parsed.audienceLinkIds !== undefined) set.audienceLinkIds = parsed.audienceLinkIds;
+  if (parsed.audienceId !== undefined) set.audienceId = parsed.audienceId;
+  if (parsed.scheduledFor !== undefined) {
+    set.scheduledFor = parsed.scheduledFor ? new Date(parsed.scheduledFor) : null;
+  }
+  if (parsed.scheduleTimezone !== undefined) set.scheduleTimezone = parsed.scheduleTimezone;
+
+  // UPDATE atomique reconfirmant `status='draft'` (course finalize entre SELECT et UPDATE).
+  // NB drizzle (ce driver) : `.returning()` est 0-arité (renvoie toutes les
+  // colonnes) — gotcha déjà rencontré en P2 (bulk-actions).
+  const updated = await drizzle
+    .update(emailCampaignLink)
+    .set(set)
+    .where(and(eq(emailCampaignLink.id, parsed.id), eq(emailCampaignLink.status, 'draft')))
+    .returning();
+
+  if (updated.length === 0) return { ok: false, reason: 'not_draft' };
+
+  logger.info('mail.campaign.autosave', {
+    id: parsed.id,
+    actor: session.email,
+    wizardStep: parsed.wizardStep ?? null,
+    rev: nextRev,
+  });
+  return { ok: true, rev: nextRev, updatedAt: updated[0]!.updatedAt.toISOString() };
 }
 
 const finalizeInput = z.object({
