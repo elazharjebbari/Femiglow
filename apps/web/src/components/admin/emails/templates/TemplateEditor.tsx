@@ -22,6 +22,7 @@ import { useTemplateDraft, type TemplateDraftState } from './use-template-draft'
 import { useTokenInsertion } from '../common/use-token-insertion';
 import { TEMPLATE_VARIABLES, TEMPLATE_VARIABLE_GROUPS, variablesOfGroup } from './template-variables';
 import { activeMergeQuery, applyMergeCompletion } from './merge-autocomplete';
+import { VersionDiff } from './VersionDiff';
 
 export type TemplateEditorProps = {
   template: EmailTemplateCustomRow;
@@ -59,6 +60,8 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
 
   // Restauration de version (P3.4-i) : ConfirmDialog socle au lieu de confirm().
   const [restoreVersion, setRestoreVersion] = useState<EmailTemplateCustomVersionRow | null>(null);
+  // Comparaison de version (P3.4-j) : diff vs l'édition courante.
+  const [diffVersion, setDiffVersion] = useState<EmailTemplateCustomVersionRow | null>(null);
 
   const isDirty = useMemo(
     () =>
@@ -319,6 +322,15 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
         }}
         onCancel={() => setRestoreVersion(null)}
       />
+
+      {diffVersion ? (
+        <VersionDiff
+          versionNumber={diffVersion.versionNumber}
+          oldSource={diffVersion.htmlSource}
+          newSource={htmlSource}
+          onClose={() => setDiffVersion(null)}
+        />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-[1fr_1fr_240px]">
       {/* Left : source editor */}
@@ -583,6 +595,15 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
                   className="flex-1 text-left text-stone-700 hover:underline"
                 >
                   v{v.versionNumber} {i === 0 && '(actuelle)'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDiffVersion(v)}
+                  aria-label={`Comparer la version v${v.versionNumber} à l’édition`}
+                  title="Comparer à l’édition courante"
+                  className="rounded px-1 text-stone-500 hover:bg-stone-100"
+                >
+                  ⇄
                 </button>
                 <span className="text-[10px] text-stone-500">
                   {formatAbsolute(new Date(v.createdAt).toISOString())}

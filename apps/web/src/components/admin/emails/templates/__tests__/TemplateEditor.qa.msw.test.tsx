@@ -132,6 +132,12 @@ describe('TemplateEditor — base (CRUD UI)', () => {
     expect(screen.getByRole('button', { name: /Créer une version/i })).toBeEnabled();
   });
 
+  it('F07-C-027 : « Comparer » une version ouvre le panneau de diff', async () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole('button', { name: /Comparer la version v1/i }));
+    expect(await screen.findByTestId('version-diff')).toBeInTheDocument();
+  });
+
   it('TPL-EDI-016 : aucune version → « Aucune version » affiché', () => {
     server.use(nominalPreview());
     render(<TemplateEditor template={baseTemplate} versions={[]} />);
