@@ -17,7 +17,8 @@ import {
 } from '@/components/admin/emails/ui';
 import { useTemplateDraft, type TemplateDraftState } from './use-template-draft';
 import { useTokenInsertion } from '../common/use-token-insertion';
-import { TEMPLATE_VARIABLE_GROUPS, variablesOfGroup } from './template-variables';
+import { TEMPLATE_VARIABLES, TEMPLATE_VARIABLE_GROUPS, variablesOfGroup } from './template-variables';
+import { activeMergeQuery, applyMergeCompletion } from './merge-autocomplete';
 
 export type TemplateEditorProps = {
   template: EmailTemplateCustomRow;
@@ -73,6 +74,34 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
   });
   // Insertion de variable au CURSEUR dans la source (réutilise le socle G11).
   const sourceInsert = useTokenInsertion<HTMLTextAreaElement>(setHtmlSource);
+
+  // Autocomplete `{{` (F07 P3.4-e) : suit le curseur de la source, propose les
+  // variables dont la clé contient le partiel saisi.
+  const [sourceCursor, setSourceCursor] = useState(0);
+  const [acIndex, setAcIndex] = useState(0);
+  const [acDismissed, setAcDismissed] = useState(false);
+  const acQuery = activeMergeQuery(htmlSource, sourceCursor);
+  const acMatches = acQuery
+    ? TEMPLATE_VARIABLES.filter((v) =>
+        v.key.toLowerCase().includes(acQuery.query.toLowerCase()),
+      ).slice(0, 8)
+    : [];
+  const acOpen = acMatches.length > 0 && !acDismissed;
+  const acSel = Math.max(0, Math.min(acIndex, acMatches.length - 1));
+
+  const acceptCompletion = (key: string) => {
+    const { value, cursor } = applyMergeCompletion(htmlSource, sourceCursor, key);
+    setHtmlSource(value);
+    setSourceCursor(cursor);
+    setAcDismissed(true);
+    const el = sourceInsert.ref.current;
+    if (el && typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+      });
+    }
+  };
 
   // Autosave debounced de la frappe. Le hook SUSPEND tant qu'une restauration
   // n'est pas tranchée ; `didMount` évite une écriture au montage (état serveur).
@@ -248,10 +277,58 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
           <textarea
             ref={sourceInsert.ref}
             value={htmlSource}
-            onChange={(e) => setHtmlSource(e.target.value)}
+            onChange={(e) => {
+              setHtmlSource(e.target.value);
+              setSourceCursor(e.target.selectionStart ?? e.target.value.length);
+              setAcDismissed(false);
+              setAcIndex(0);
+            }}
+            onClick={(e) => setSourceCursor(e.currentTarget.selectionStart ?? 0)}
+            onKeyUp={(e) => setSourceCursor(e.currentTarget.selectionStart ?? 0)}
+            onKeyDown={(e) => {
+              if (!acOpen) return;
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setAcIndex((i) => Math.min(i + 1, acMatches.length - 1));
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setAcIndex((i) => Math.max(i - 1, 0));
+              } else if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                acceptCompletion(acMatches[acSel]!.key);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setAcDismissed(true);
+              }
+            }}
             className="mt-1 h-[480px] w-full rounded border border-stone-300 px-3 py-2 text-xs font-mono leading-snug"
             spellCheck={false}
           />
+          {acOpen ? (
+            <ul
+              role="listbox"
+              aria-label="Variables suggérées"
+              data-testid="merge-autocomplete"
+              className="mt-1 max-h-48 overflow-auto rounded border border-stone-200 bg-white text-xs shadow"
+            >
+              {acMatches.map((v, i) => (
+                <li
+                  key={v.key}
+                  role="option"
+                  aria-selected={i === acSel}
+                  // mouseDown (pas click) : agit AVANT le blur de la textarea → focus conservé.
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    acceptCompletion(v.key);
+                  }}
+                  className={`cursor-pointer px-2 py-1 ${i === acSel ? 'bg-stone-100' : 'hover:bg-stone-50'}`}
+                >
+                  <span className="font-mono text-stone-800">{v.token}</span>{' '}
+                  <span className="text-stone-500">{v.label}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
         <details>
           <summary className="cursor-pointer text-xs font-medium text-stone-500">
