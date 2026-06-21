@@ -21,6 +21,13 @@ export const CAMPAIGN_STATUSES = [
 ] as const;
 export type CampaignStatusFilter = (typeof CAMPAIGN_STATUSES)[number];
 
+/**
+ * Rate-limit du test-send (F05-S P3.3-b) — anti-abus : un test-send envoie un
+ * VRAI e-mail (et upsert l'adresse comme abonné Listmonk). On borne le débit par
+ * admin. Vit ici (pur) car `wizard-actions.ts` est 'use server'.
+ */
+export const TEST_SEND_RATE_LIMIT = { limit: 10, windowMs: 60_000 } as const;
+
 /** Extrait l'ID de template Listmonk rangé dans payload_json (UX-CAMP-004). */
 export function readPayloadTemplateId(payload: unknown): number | null {
   if (payload && typeof payload === 'object' && 'listmonkTemplateId' in payload) {

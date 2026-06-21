@@ -15,6 +15,8 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createId } from '@/lib/ids';
+import { memoryStore } from '@/lib/db/client';
+import { TEST_SEND_RATE_LIMIT } from '@/lib/admin/emails/campaigns-shared';
 import { emailCampaignLink } from '@/lib/db/schema-emails';
 import {
   closeTestDb,
@@ -62,6 +64,7 @@ async function seedDraftWithTemplate(payloadOver: Record<string, unknown> = {}):
 beforeEach(async () => {
   vi.clearAllMocks();
   await truncateEmailTables();
+  memoryStore().rateLimitCounters.clear(); // isolation du compteur in-memory
   lmUpsert.mockResolvedValue({ data: { id: 1 } });
   lmTxSend.mockResolvedValue({ data: true });
 });
@@ -91,5 +94,36 @@ describeEmailsDb('F05-S — test-send (corps sanitizé, vraie DB)', () => {
     const data = (lmTxSend.mock.calls[0]![0] as { data: { body: string } }).data;
     expect(data.body).not.toMatch(/<iframe/i);
     expect(data.body).toContain('Promo');
+  });
+
+  it('F05-S-013 : l’audit MINIMISE le PII (destinataire masqué, pas en clair)', async () => {
+    const { logAuditEvent } = await import('@/lib/audit/log-event');
+    const id = await seedDraftWithTemplate();
+    await sendCampaignTest({ id, email: 'cliente.secrete@gmail.com' });
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'mail.campaign.test_sent',
+        meta: expect.objectContaining({ to: 'c***@gmail.com' }),
+      }),
+    );
+    // Aucune trace du local part complet.
+    const call = (logAuditEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls.at(-1)![0];
+    expect(JSON.stringify(call)).not.toContain('cliente.secrete');
+  });
+
+  it('F05-S-009 : rate-limit anti-abus — au-delà de la limite/min, le test-send est refusé', async () => {
+    const id = await seedDraftWithTemplate();
+    const { limit } = TEST_SEND_RATE_LIMIT;
+    // `limit` envois passent…
+    for (let i = 0; i < limit; i++) {
+      const r = await sendCampaignTest({ id, email: 'nadia@femiglow-maroc.com' });
+      expect(r.ok).toBe(true);
+    }
+    // …le suivant est bloqué SANS toucher Listmonk.
+    expect(lmTxSend).toHaveBeenCalledTimes(limit);
+    const blocked = await sendCampaignTest({ id, email: 'nadia@femiglow-maroc.com' });
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.error).toMatch(/Trop d'envois de test/i);
+    expect(lmTxSend).toHaveBeenCalledTimes(limit); // pas d'appel supplémentaire
   });
 });

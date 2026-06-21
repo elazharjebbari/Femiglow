@@ -20,6 +20,7 @@ import { emailCampaignLink } from '@/lib/db/schema-emails';
 import { requireAdmin } from '@/lib/auth/require-admin';
 import { listmonk, ListmonkConfigError } from '@/lib/mail/listmonk/client';
 import { sanitizeCampaignBody } from '@/lib/mail/campaigns/sanitize-body';
+import { maskEmail } from '@/lib/mail/pii';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logging/logger';
 import { logAuditEvent } from '@/lib/audit/log-event';
@@ -53,9 +54,11 @@ async function loadPayload(
 import {
   readPayloadTemplateId,
   saveWizardProgressInput,
+  TEST_SEND_RATE_LIMIT,
   type SaveWizardProgressInput,
   type SaveWizardResult,
 } from './campaigns-shared';
+import { checkRateLimit } from '@/lib/rate-limit/check';
 import {
   CAMPAIGN_PAYLOAD_VERSION,
   migratePayload,
@@ -464,6 +467,27 @@ export async function sendCampaignTest(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Entrée invalide' };
   }
+
+  // F05-S — rate-limit anti-abus : un test-send envoie un VRAI e-mail. Borné par
+  // admin (le compromis d'une session ne doit pas devenir un canal de spam).
+  const rl = await checkRateLimit({
+    key: `mail:test-send:${session.email}`,
+    limit: TEST_SEND_RATE_LIMIT.limit,
+    windowMs: TEST_SEND_RATE_LIMIT.windowMs,
+  });
+  if (!rl.ok) {
+    const retryS = Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000));
+    logger.warn('admin.emails.campaign_test_send_rate_limited', {
+      actor: session.email,
+      draftId: parsed.data.id,
+      retryAfterS: retryS,
+    });
+    return {
+      ok: false,
+      error: `Trop d'envois de test (max ${TEST_SEND_RATE_LIMIT.limit}/min). Réessaie dans ${retryS} s.`,
+    };
+  }
+
   const drizzle = requireDb();
   const [draft] = await drizzle
     .select()
@@ -512,7 +536,9 @@ export async function sendCampaignTest(
     action: 'mail.campaign.test_sent',
     actorId: session.email,
     resourceId: parsed.data.id,
-    meta: { to: parsed.data.email, templateId },
+    // F05-S — minimisation PII : destinataire masqué dans l'audit (traçabilité
+    // domaine + 1re lettre suffit ; actorId reste l'opérateur, non masqué).
+    meta: { to: maskEmail(parsed.data.email), templateId },
   });
   return { ok: true, email: parsed.data.email };
 }
