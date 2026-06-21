@@ -11,6 +11,7 @@ import {
   type EmailTemplateCustomRow,
   type EmailTemplateCustomVersionRow,
 } from '@/lib/db/schema-emails';
+import { nextDuplicateSlug, duplicateName } from './duplicate-slug';
 
 function requireDb() {
   const drizzle = getDb();
@@ -53,6 +54,17 @@ export async function getTemplateBySlug(slug: string): Promise<EmailTemplateCust
     .where(and(eq(emailTemplateCustom.slug, slug), isNull(emailTemplateCustom.deletedAt)))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * TOUS les slugs de la table — y compris les soft-deleted. Le slug est unique
+ * en base indépendamment de `deletedAt` ; la dédup à la duplication doit donc
+ * tenir compte des slugs supprimés (sinon violation de contrainte à l'INSERT).
+ */
+export async function listAllSlugs(): Promise<string[]> {
+  const drizzle = requireDb();
+  const rows = await drizzle.select({ slug: emailTemplateCustom.slug }).from(emailTemplateCustom);
+  return rows.map((r) => r.slug);
 }
 
 export async function getTemplateById(id: string): Promise<EmailTemplateCustomRow | null> {
@@ -98,6 +110,33 @@ export async function createTemplate(
   });
 
   return row;
+}
+
+/**
+ * Duplique un template (contenu courant) sous un slug dérivé libre + nom
+ * « (copie) ». Réutilise `createTemplate` → seed aussi une v1 « Initial version »
+ * (la copie repart d'un historique propre, indépendant de la source). Renvoie
+ * `null` si la source est introuvable (404 côté route).
+ */
+export async function duplicateTemplate(
+  sourceId: string,
+  createdBy: string,
+): Promise<EmailTemplateCustomRow | null> {
+  const source = await getTemplateById(sourceId);
+  if (!source) return null;
+  const slug = nextDuplicateSlug(source.slug, await listAllSlugs());
+  return createTemplate(
+    {
+      slug,
+      name: duplicateName(source.name),
+      description: source.description ?? undefined,
+      subjectTmpl: source.subjectTmpl,
+      preheaderTmpl: source.preheaderTmpl ?? undefined,
+      htmlSource: source.htmlSource,
+      customVars: (source.customVars as Record<string, unknown>) ?? {},
+    },
+    createdBy,
+  );
 }
 
 export async function saveTemplateVersion(

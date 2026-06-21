@@ -75,7 +75,8 @@ describe('Verrous cliquet — section emails', () => {
       'src/app/admin/emails/automation/runs/page.tsx',
       'src/app/admin/emails/campaigns/[id]/page.tsx',
       'src/app/admin/emails/campaigns/page.tsx',
-      'src/app/admin/emails/templates/page.tsx',
+      // templates/page.tsx (P3.4-l) : rendu déplacé dans TemplatesListClient
+      // (formatAbsolute) → plus de toLocale ; retiré du cliquet.
       'src/components/admin/emails/cockpit/CommandPalette.tsx',
       'src/components/admin/emails/cockpit/FilteredTable.tsx',
       'src/components/admin/emails/cockpit/KpiHeader.tsx',

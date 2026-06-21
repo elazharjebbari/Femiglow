@@ -37,6 +37,7 @@ import { makeEmailAutomation } from '@/test/factories/emails.factory';
 import {
   createTemplate,
   deleteTemplate,
+  duplicateTemplate,
   findAutomationsUsingTemplate,
   getTemplateById,
   listVersions,
@@ -217,6 +218,70 @@ describeEmailsDb('Module 06 — garde-fou DELETE template référencé (A-DEL-1)
     });
     expect(res.status).toBe(200);
     expect(await getTemplateById(tpl.id)).toBeNull();
+  });
+});
+
+// ── Duplication (F07 P3.4-l, Lot 6) ──────────────────────────────────────
+describeEmailsDb('Module 06 — duplication de template (vraie DB)', () => {
+  it('TPL-DUP-content : copie le contenu courant, slug dérivé libre, nom « (copie) »', async () => {
+    const src = await seedTemplate('bienvenue');
+    const copy = await duplicateTemplate(src.id, ACTOR);
+    expect(copy).not.toBeNull();
+    expect(copy!.slug).toBe('bienvenue-copie');
+    expect(copy!.name).toBe('Template bienvenue (copie)');
+    expect(copy!.subjectTmpl).toBe(src.subjectTmpl);
+    expect(copy!.htmlSource).toBe(src.htmlSource);
+    // Identité distincte (ce n'est pas un alias).
+    expect(copy!.id).not.toBe(src.id);
+  });
+
+  it('TPL-DUP-history : la copie repart d’un historique propre (v1 « Initial version »)', async () => {
+    const src = await seedTemplate('bienvenue');
+    // La source gagne une v2 — la copie NE doit PAS l'hériter.
+    await saveTemplateVersion(src.id, { subjectTmpl: 'v2', htmlSource: '<p>v2</p>' }, ACTOR);
+    const copy = await duplicateTemplate(src.id, ACTOR);
+    const versions = await listVersions(copy!.id);
+    expect(versions.map((v) => v.versionNumber)).toEqual([1]);
+    expect(versions[0]!.commitMessage).toBe('Initial version');
+  });
+
+  it('TPL-DUP-dedup : dupliquer 2× incrémente le suffixe sans collision', async () => {
+    const src = await seedTemplate('bienvenue');
+    const c1 = await duplicateTemplate(src.id, ACTOR);
+    const c2 = await duplicateTemplate(src.id, ACTOR);
+    expect(c1!.slug).toBe('bienvenue-copie');
+    expect(c2!.slug).toBe('bienvenue-copie-2');
+  });
+
+  it('TPL-DUP-deleted : un slug SOFT-DELETED occupe quand même la dédup (unicité globale)', async () => {
+    const src = await seedTemplate('bienvenue');
+    const c1 = await duplicateTemplate(src.id, ACTOR);
+    await deleteTemplate(c1!.id); // soft-delete de bienvenue-copie
+    // La 2e copie NE réutilise PAS le slug supprimé (contrainte unique globale).
+    const c2 = await duplicateTemplate(src.id, ACTOR);
+    expect(c2!.slug).toBe('bienvenue-copie-2');
+  });
+
+  it('TPL-DUP-404 : dupliquer un id inconnu → null', async () => {
+    expect(await duplicateTemplate('00000000-0000-0000-0000-000000000000', ACTOR)).toBeNull();
+  });
+
+  it('TPL-DUP-route : POST /duplicate renvoie 201 + la copie ; 404 si introuvable', async () => {
+    const { POST } = await import('@/app/api/admin/emails/templates/[id]/duplicate/route');
+    const src = await seedTemplate('bienvenue');
+
+    const ok = await POST(new Request('http://t/x', { method: 'POST' }), {
+      params: { id: src.id },
+    });
+    expect(ok.status).toBe(201);
+    const created = (await ok.json()) as { id: string; slug: string };
+    expect(created.slug).toBe('bienvenue-copie');
+    expect(await getTemplateById(created.id)).not.toBeNull();
+
+    const ko = await POST(new Request('http://t/x', { method: 'POST' }), {
+      params: { id: '00000000-0000-0000-0000-000000000000' },
+    });
+    expect(ko.status).toBe(404);
   });
 });
 
