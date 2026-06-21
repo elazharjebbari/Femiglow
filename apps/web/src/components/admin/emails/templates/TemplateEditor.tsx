@@ -37,6 +37,7 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
   const [contextEmail, setContextEmail] = useState('');
   const [previewHtml, setPreviewHtml] = useState<string>('');
   const [previewSubject, setPreviewSubject] = useState<string>('');
+  const [resolvedMap, setResolvedMap] = useState<Record<string, string>>({});
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [versions, setVersions] = useState(initialVersions);
@@ -142,9 +143,14 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
         const data = await res.json().catch(() => ({}));
         setPreviewError(data?.error ?? `Preview ${res.status}`);
       } else {
-        const data = (await res.json()) as { html: string; subject: string };
+        const data = (await res.json()) as {
+          html: string;
+          subject: string;
+          variablesResolvedMap?: Record<string, string>;
+        };
         setPreviewHtml(data.html);
         setPreviewSubject(data.subject);
+        if (data.variablesResolvedMap) setResolvedMap(data.variablesResolvedMap);
       }
     } catch (err) {
       setPreviewError(String(err));
@@ -401,17 +407,23 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
                   {group}
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {variablesOfGroup(group).map((v) => (
-                    <button
-                      key={v.key}
-                      type="button"
-                      onClick={() => sourceInsert.insert(v.token)}
-                      title={v.label}
-                      className="rounded bg-stone-100 px-2 py-0.5 text-xs font-mono text-stone-700 hover:bg-stone-200"
-                    >
-                      {v.token}
-                    </button>
-                  ))}
+                  {variablesOfGroup(group).map((v) => {
+                    const resolved = resolvedMap[v.key];
+                    return (
+                      <button
+                        key={v.key}
+                        type="button"
+                        onClick={() => sourceInsert.insert(v.token)}
+                        title={
+                          resolved !== undefined ? `${v.label} → ${resolved || '(vide)'}` : v.label
+                        }
+                        data-resolved={resolved ?? undefined}
+                        className="rounded bg-stone-100 px-2 py-0.5 text-xs font-mono text-stone-700 hover:bg-stone-200"
+                      >
+                        {v.token}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}

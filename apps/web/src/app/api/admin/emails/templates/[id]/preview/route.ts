@@ -10,6 +10,7 @@ import { logger } from '@/lib/logging/logger';
 import { getTemplateById } from '@/lib/mail/templates/custom/queries';
 import { buildEmailContext } from '@/lib/mail/templates/custom/context-resolver';
 import { renderTemplate } from '@/lib/mail/templates/custom/render';
+import { resolvedVarsMap } from '@/lib/mail/templates/custom/resolved-vars';
 import { PreviewTemplateSchema } from '@/lib/mail/templates/custom/schemas';
 
 export const runtime = 'nodejs';
@@ -51,11 +52,13 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       customVars: parsed.data.customVars,
     });
     const rendered = renderTemplate({ subjectTmpl, preheaderTmpl, htmlSource }, context);
-    // Variables resolved : extraction des keys du context (sans `trigger` qui est nested)
+    // Variables resolved : keys (compat) + carte clé→valeur affichable (G11).
     const variablesResolved = Object.keys(context).filter((k) => k !== 'trigger');
+    const variablesResolvedMap = resolvedVarsMap(context as Record<string, unknown>);
     return NextResponse.json({
       ...rendered,
       variablesResolved,
+      variablesResolvedMap,
     });
   } catch (err) {
     logger.error('admin.emails.template.preview_failed', { error: String(err) });

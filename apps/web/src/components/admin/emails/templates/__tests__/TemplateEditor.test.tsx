@@ -2,7 +2,7 @@
  * Tests TemplateEditor — basic interactions (insert var, save flow).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TemplateEditor } from '../TemplateEditor';
 import type { EmailTemplateCustomRow, EmailTemplateCustomVersionRow } from '@/lib/db/schema-emails';
 
@@ -76,6 +76,32 @@ describe('TemplateEditor', () => {
     // Les anciennes variables trompeuses ne sont plus proposées.
     expect(screen.queryByRole('button', { name: '{{lastName}}' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '{{orderTotal}}' })).not.toBeInTheDocument();
+  });
+
+  it('F07-C-022 — le panneau affiche la valeur résolue de chaque variable (depuis la preview)', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          html: '<p>x</p>',
+          subject: 'S',
+          variablesResolvedMap: { firstName: 'Fatima', phone: '' },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    render(<TemplateEditor template={baseTemplate} versions={baseVersions} />);
+    await waitFor(
+      () =>
+        expect(screen.getByRole('button', { name: '{{firstName}}' })).toHaveAttribute(
+          'title',
+          expect.stringContaining('Fatima'),
+        ),
+      { timeout: 2000 },
+    );
+    expect(screen.getByRole('button', { name: '{{phone}}' })).toHaveAttribute(
+      'title',
+      expect.stringContaining('(vide)'),
+    );
   });
 
   it('disables save button when no changes', () => {
