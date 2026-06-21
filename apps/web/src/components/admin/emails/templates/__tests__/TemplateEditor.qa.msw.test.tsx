@@ -24,6 +24,9 @@ import type {
   EmailTemplateCustomVersionRow,
 } from '@/lib/db/schema-emails';
 
+// UnsavedChangesGuard (P3.4-b) utilise useRouter.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+
 const TPL_ID = 'tpl-1';
 const PREVIEW_URL = `/api/admin/emails/templates/${TPL_ID}/preview`;
 const VERSIONS_URL = `/api/admin/emails/templates/${TPL_ID}/versions`;
@@ -82,6 +85,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => {
   server.resetHandlers();
   vi.restoreAllMocks();
+  localStorage.clear(); // isolation du brouillon local (P3.4-b)
 });
 afterAll(() => server.close());
 

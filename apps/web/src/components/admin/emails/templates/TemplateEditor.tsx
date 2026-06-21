@@ -9,6 +9,13 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EmailTemplateCustomRow, EmailTemplateCustomVersionRow } from '@/lib/db/schema-emails';
+import {
+  ConfirmDialog,
+  UnsavedChangesGuard,
+  formatAbsolute,
+  formatAge,
+} from '@/components/admin/emails/ui';
+import { useTemplateDraft, type TemplateDraftState } from './use-template-draft';
 
 export type TemplateEditorProps = {
   template: EmailTemplateCustomRow;
@@ -44,6 +51,36 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
       customVars !== JSON.stringify(template.customVars ?? {}, null, 2),
     [subject, preheader, htmlSource, customVars, template],
   );
+
+  // ── Brouillon local (F07 P3.4-b, Lot 1) ───────────────────────────────────
+  const serverState = useMemo<TemplateDraftState>(
+    () => ({
+      subject: template.subjectTmpl,
+      preheader: template.preheaderTmpl ?? '',
+      htmlSource: template.htmlSource,
+      customVars: JSON.stringify(template.customVars ?? {}, null, 2),
+    }),
+    [template],
+  );
+  const draft = useTemplateDraft({
+    templateId: template.id,
+    current: serverState,
+    serverUpdatedAt: (template.updatedAt instanceof Date
+      ? template.updatedAt
+      : new Date(template.updatedAt)
+    ).toISOString(),
+  });
+  // Autosave debounced de la frappe. Le hook SUSPEND tant qu'une restauration
+  // n'est pas tranchée ; `didMount` évite une écriture au montage (état serveur).
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    draft.schedule({ subject, preheader, htmlSource, customVars });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subject, preheader, htmlSource, customVars]);
 
   const refreshPreview = useCallback(async () => {
     setPreviewLoading(true);
@@ -134,6 +171,7 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
       }
       setVersions((prev) => [created, ...prev]);
       setCommitMessage('');
+      draft.discardDraft(); // version committée → le brouillon local de récup n'a plus lieu d'être
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -146,7 +184,39 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_1fr_240px]">
+    <>
+      {/* Garde « modifications non enregistrées » (nav in-app + fermeture onglet). */}
+      <UnsavedChangesGuard isDirty={isDirty} />
+
+      {/* Restauration d'un brouillon local plus récent que la version enregistrée. */}
+      <ConfirmDialog
+        open={draft.pendingRestore !== null}
+        title="Restaurer le brouillon non enregistré ?"
+        body={
+          draft.pendingRestore ? (
+            <p>
+              Un brouillon local, plus récent que la dernière version enregistrée (modifié le{' '}
+              {formatAbsolute(draft.pendingRestore.savedAt)}), a été trouvé sur ce poste. Le
+              restaurer remplacera le contenu actuel de l’éditeur.
+            </p>
+          ) : null
+        }
+        confirmLabel="Restaurer le brouillon"
+        cancelLabel="Ignorer"
+        onConfirm={() => {
+          const d = draft.pendingRestore;
+          if (d) {
+            setSubject(d.data.subject);
+            setPreheader(d.data.preheader);
+            setHtmlSource(d.data.htmlSource);
+            setCustomVars(d.data.customVars);
+          }
+          draft.restoreResolved();
+        }}
+        onCancel={() => draft.discardDraft()}
+      />
+
+      <div className="grid gap-4 md:grid-cols-[1fr_1fr_240px]">
       {/* Left : source editor */}
       <section className="space-y-3 rounded border border-stone-200 bg-white p-4">
         <div>
@@ -287,6 +357,11 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
           >
             {saving ? '...' : isDirty ? 'Créer une version' : 'Aucun changement'}
           </button>
+          <p data-testid="tpl-draft-status" className="mt-2 text-[10px] text-stone-500">
+            {draft.status === 'saved' && draft.savedAt
+              ? `✓ Brouillon local enregistré ${formatAge(draft.savedAt)}`
+              : '🖫 Sauvegarde locale automatique'}
+          </p>
         </section>
 
         <section className="rounded border border-stone-200 bg-white p-3">
@@ -329,6 +404,7 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
           </ul>
         </section>
       </aside>
-    </div>
+      </div>
+    </>
   );
 }

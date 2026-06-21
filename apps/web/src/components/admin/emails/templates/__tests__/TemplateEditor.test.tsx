@@ -6,6 +6,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { TemplateEditor } from '../TemplateEditor';
 import type { EmailTemplateCustomRow, EmailTemplateCustomVersionRow } from '@/lib/db/schema-emails';
 
+// UnsavedChangesGuard (P3.4-b) utilise useRouter.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+
 const baseTemplate: EmailTemplateCustomRow = {
   id: 'tpl-1',
   slug: 'welcome',
@@ -38,6 +41,7 @@ const baseVersions: EmailTemplateCustomVersionRow[] = [
 ];
 
 beforeEach(() => {
+  localStorage.clear(); // isolation du brouillon local (P3.4-b)
   global.fetch = vi.fn().mockResolvedValue(
     new Response(JSON.stringify({ html: '<p>rendered</p>', subject: 'Hi' }), {
       status: 200,
