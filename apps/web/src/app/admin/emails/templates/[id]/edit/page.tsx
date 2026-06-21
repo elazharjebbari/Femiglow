@@ -25,7 +25,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
         <h1 className="mt-1 font-serif text-2xl text-stone-800">{template.name}</h1>
         <p className="text-xs text-stone-500 font-mono">{template.slug}</p>
       </header>
-      <TemplateEditor template={template} versions={versions} />
+      <TemplateEditor template={template} versions={versions} adminEmail={session.email} />
     </AdminShell>
   );
 }

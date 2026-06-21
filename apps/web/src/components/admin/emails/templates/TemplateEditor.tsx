@@ -10,8 +10,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EmailTemplateCustomRow, EmailTemplateCustomVersionRow } from '@/lib/db/schema-emails';
 import {
+  Banner,
   ConfirmDialog,
   UnsavedChangesGuard,
+  useOptionalToast,
   formatAbsolute,
   formatAge,
 } from '@/components/admin/emails/ui';
@@ -23,11 +25,14 @@ import { activeMergeQuery, applyMergeCompletion } from './merge-autocomplete';
 export type TemplateEditorProps = {
   template: EmailTemplateCustomRow;
   versions: EmailTemplateCustomVersionRow[];
+  /** E-mail de l'admin de session — préremplit le destinataire du test (G11). */
+  adminEmail?: string;
 };
 
 const PREVIEW_DEBOUNCE_MS = 600;
 
-export function TemplateEditor({ template, versions: initialVersions }: TemplateEditorProps) {
+export function TemplateEditor({ template, versions: initialVersions, adminEmail = '' }: TemplateEditorProps) {
+  const toast = useOptionalToast();
   const [subject, setSubject] = useState(template.subjectTmpl);
   const [preheader, setPreheader] = useState(template.preheaderTmpl ?? '');
   const [htmlSource, setHtmlSource] = useState(template.htmlSource);
@@ -45,6 +50,11 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
   const [saveError, setSaveError] = useState<string | null>(null);
   const [commitMessage, setCommitMessage] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Test-send (F07 P3.4-h / Lot 4) — épreuve à une adresse.
+  const [testRecipient, setTestRecipient] = useState(adminEmail);
+  const [testSending, setTestSending] = useState(false);
+  const [testFeedback, setTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const isDirty = useMemo(
     () =>
@@ -217,6 +227,38 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
       setSaving(false);
     }
   };
+
+  async function handleTestSend() {
+    if (testSending || testRecipient.trim().length === 0) return;
+    setTestSending(true);
+    setTestFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/emails/templates/${template.id}/test-send`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          recipient: testRecipient,
+          contextEmail: contextEmail || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = (data as { error?: string })?.error ?? `Erreur ${res.status}`;
+        setTestFeedback({ ok: false, msg });
+        toast?.error(msg);
+      } else {
+        const msg = `Épreuve mise en file pour ${testRecipient}.`;
+        setTestFeedback({ ok: true, msg });
+        toast?.success(msg);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setTestFeedback({ ok: false, msg });
+      toast?.error(msg);
+    } finally {
+      setTestSending(false);
+    }
+  }
 
   return (
     <>
@@ -462,6 +504,37 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
               ? `✓ Brouillon local enregistré ${formatAge(draft.savedAt)}`
               : '🖫 Sauvegarde locale automatique'}
           </p>
+        </section>
+
+        <section className="rounded border border-stone-200 bg-white p-3">
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-500">
+            Envoyer un test
+          </h3>
+          <p className="mb-2 text-[10px] text-stone-500">
+            Reçois une épreuve dans une boîte avant de t’en servir (rendu avec le contexte
+            ci-contre).
+          </p>
+          <input
+            type="email"
+            value={testRecipient}
+            onChange={(e) => setTestRecipient(e.target.value)}
+            placeholder="toi@femiglow-maroc.com"
+            aria-label="Adresse e-mail du test"
+            className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
+          />
+          <button
+            type="button"
+            onClick={handleTestSend}
+            disabled={testSending || testRecipient.trim().length === 0}
+            className="mt-2 w-full rounded border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-40"
+          >
+            {testSending ? 'Envoi…' : 'Envoyer un test'}
+          </button>
+          {testFeedback ? (
+            <Banner tone={testFeedback.ok ? 'success' : 'danger'} className="mt-2">
+              {testFeedback.msg}
+            </Banner>
+          ) : null}
         </section>
 
         <section className="rounded border border-stone-200 bg-white p-3">
