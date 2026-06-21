@@ -2,13 +2,13 @@ ecran,champ,type,assiste_cible,mecanisme,validation_inline,format_hint,nav_clavi
 # Gate G11 (09-charte-ux-qualite.md §B) : 0 champ assistable en saisie nue sans justification.
 # assiste_cible: oui|non ; mecanisme: autocomplete|suggestions|smart_default|inline_validation|format_hint|token_insert|none
 # statut: a_faire|fait. Compléter au fil de P3.0→P5 ; un champ assiste_cible=non DOIT remplir justification_si_non.
-F05-wizard-e6,email test-send,email,oui,smart_default+autocomplete,oui,oui,oui,P3.2,a_faire,
+F05-wizard-e6,email test-send,email,oui,smart_default+autocomplete,oui,oui,oui,P3.2,fait,LeadEmailCombobox + préremplissage adminEmail
 F05-wizard-e1,nom de campagne,text,oui,suggestions,oui,non,oui,P3.2,a_faire,
-F05-wizard-e3,template Listmonk,select-entité,oui,autocomplete,non,non,oui,P3.2,a_faire,
-F05-wizard-e2,filtre des listes Listmonk,text,oui,autocomplete,non,non,oui,P3.2,a_faire,
-F05-wizard-e4,sujet/preheader (merge-tags),text,oui,token_insert,oui,oui,oui,P3.2,a_faire,
-F05-wizard-e3,corps HTML (merge-tags),richtext,oui,token_insert,oui,non,oui,P3.2,a_faire,
-F05-wizard-e5,datetime planification,datetime,oui,smart_default+suggestions,oui,oui,oui,P3.2,a_faire,
+F05-wizard-e3,template Listmonk,select-entité,oui,autocomplete,non,non,oui,P3.2,fait,EntityCombobox + aperçu iframe
+F05-wizard-e2,filtre des listes Listmonk,text,oui,autocomplete,non,non,oui,P3.2,fait,EntityCombobox filtrant audiences+listes
+F05-wizard-e4,sujet/preheader (merge-tags),text,oui,token_insert,oui,oui,oui,P3.2,fait,MergeTagInserter (c3) sur sujet
+F05-wizard-e3,corps HTML (merge-tags),richtext,oui,token_insert,oui,non,oui,P3.2,fait,MergeTagInserter (c3) sur corps
+F05-wizard-e5,datetime planification,datetime,oui,smart_default+suggestions,oui,oui,oui,P3.2,fait,ScheduleShortcuts (c3) chips futurs
 F05-detail,id Listmonk ré-association,select-entité,oui,autocomplete,oui,non,oui,P3.3,a_faire,
 F06-dryrun,testContact,email,oui,smart_default+autocomplete,oui,oui,oui,P4.2,a_faire,
 F06-wizard,slug,text,oui,smart_default+inline_validation,oui,oui,oui,P4.3,a_faire,

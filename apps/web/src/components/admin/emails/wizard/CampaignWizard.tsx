@@ -33,6 +33,9 @@ import { LeadEmailCombobox } from '@/components/admin/emails/common/combobox-wra
 import { Banner, DEFAULT_TIMEZONE } from '@/components/admin/emails/ui';
 import { useCampaignAutosave, type AutosavePatch } from './use-campaign-autosave';
 import { AutosaveIndicator } from './AutosaveIndicator';
+import { MergeTagInserter } from './MergeTagInserter';
+import { ScheduleShortcuts } from './ScheduleShortcuts';
+import { useTokenInsertion } from './use-token-insertion';
 
 type AudienceLite = {
   id: string;
@@ -129,6 +132,10 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
     [draftId],
   );
   const autosave = useCampaignAutosave({ save, initialRev });
+
+  // Assistance (G11) — insertion de merge-tags au curseur dans corps + sujet.
+  const bodyInsert = useTokenInsertion<HTMLTextAreaElement>(setBodyHtml);
+  const subjectInsert = useTokenInsertion<HTMLInputElement>(setSubject);
 
   /**
    * Patch d'autosave = état courant des champs persistables. On OMET `name` tant
@@ -696,15 +703,20 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
               </div>
             ) : null}
 
-            <label className="mt-4 block">
-              <span className="block text-xs font-medium text-stone-600">Corps HTML</span>
+            <div className="mt-4">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="block text-xs font-medium text-stone-600">Corps HTML</span>
+                <MergeTagInserter onInsert={bodyInsert.insert} />
+              </div>
               <textarea
+                ref={bodyInsert.ref}
                 rows={10}
                 value={bodyHtml}
                 onChange={(e) => setBodyHtml(e.target.value)}
-                className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 font-mono text-xs"
+                aria-label="Corps HTML"
+                className="w-full rounded-md border border-stone-300 px-3 py-2 font-mono text-xs"
               />
-            </label>
+            </div>
           </div>
         ) : null}
 
@@ -712,17 +724,22 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
         {step === 4 ? (
           <div>
             <h2 className="text-lg font-semibold text-stone-900">4. Sujet & preheader</h2>
-            <label className="mt-4 block">
-              <span className="block text-xs font-medium text-stone-600">Sujet (idéal 30-50 chars)</span>
+            <div className="mt-4">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="block text-xs font-medium text-stone-600">Sujet (idéal 30-50 chars)</span>
+                <MergeTagInserter onInsert={subjectInsert.insert} />
+              </div>
               <input
+                ref={subjectInsert.ref}
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                aria-label="Sujet"
+                className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
                 placeholder="✨ Découvre nos rituels printemps"
               />
               <span className="text-xs text-stone-500">{subject.length}/140</span>
-            </label>
+            </div>
             <label className="mt-4 block">
               <span className="block text-xs font-medium text-stone-600">
                 Preheader (visible juste après le sujet dans Gmail/Outlook)
@@ -778,12 +795,16 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
               </label>
             </div>
             {scheduleMode === 'scheduled' ? (
-              <input
-                type="datetime-local"
-                value={scheduledFor.slice(0, 16)}
-                onChange={(e) => setScheduledFor(e.target.value)}
-                className="mt-4 rounded-md border border-stone-300 px-3 py-2 text-sm"
-              />
+              <div className="mt-4">
+                <input
+                  type="datetime-local"
+                  value={scheduledFor.slice(0, 16)}
+                  onChange={(e) => setScheduledFor(e.target.value)}
+                  aria-label="Date et heure d’envoi"
+                  className="rounded-md border border-stone-300 px-3 py-2 text-sm"
+                />
+                <ScheduleShortcuts onPick={setScheduledFor} />
+              </div>
             ) : null}
             <p className="mt-4 rounded bg-stone-50 p-3 text-sm">
               Estimation envoi total : <strong>{estimatedAudience} emails</strong>
