@@ -36,6 +36,7 @@ import {
   truncateEmailTables,
 } from '@/test/db/emails-db';
 import { buildEmailContext } from '../context-resolver';
+import { TEMPLATE_VARIABLE_KEYS } from '@/components/admin/emails/templates/template-variables';
 
 // Init PARESSEUSE (emailsTestDb()/emailsTestSql() throw sans URL femiglow_test).
 const db = new Proxy({} as ReturnType<typeof emailsTestDb>, {
@@ -229,5 +230,19 @@ describeEmailsDb('context-resolver — pont lead → variables (vraie DB)', () =
     expect(ctx.firstName).toBe('Kaoutar');
     expect(ctx.email).toBe('cliente@exemple.test');
     void lead;
+  });
+
+  // F07-I-112 — cohérence catalogue d'assistance ↔ resolver : chaque clé proposée
+  // dans l'éditeur résout RÉELLEMENT ; city/address retirées (TPL-11).
+  it('F07-I-112 : toutes les clés du catalogue de variables résolvent (et city/address sont retirées)', async () => {
+    const ctx = (await buildEmailContext('inconnue@exemple.test', { now: NOW })) as Record<
+      string,
+      unknown
+    >;
+    for (const key of TEMPLATE_VARIABLE_KEYS) {
+      expect(Object.prototype.hasOwnProperty.call(ctx, key)).toBe(true);
+    }
+    expect(Object.prototype.hasOwnProperty.call(ctx, 'city')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(ctx, 'address')).toBe(false);
   });
 });

@@ -2,7 +2,7 @@
  * Context resolver lead → variables (M5.7.1).
  *
  * Construit le payload de variables Handlebars depuis :
- *   - leads (firstName, city, phone, ...)
+ *   - leads (firstName, phone, ...)
  *   - orders agrégés (lastOrderId, orderCount, totalSpent, ...)
  *   - URLs auto (unsubscribeUrl, shopUrl, ...)
  *   - dates système (today, dayOfWeek, ...)
@@ -122,8 +122,6 @@ export async function buildEmailContext(
     fullName: lead?.name ?? firstName,
     email: normalized,
     phone: lead?.phone ?? '',
-    city: '', // pas de colonne city sur leads pour l'instant
-    address: '', // idem
     country: 'MA',
     language: 'fr',
     // Commerce

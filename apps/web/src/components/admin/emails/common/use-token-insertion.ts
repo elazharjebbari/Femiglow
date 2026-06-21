@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * useTokenInsertion — insertion d'un merge-tag à la position du curseur dans un
- * <input>/<textarea> CONTRÔLÉ (F05 P3.2-c3, G11).
+ * useTokenInsertion — insertion d'un jeton à la position du curseur dans un
+ * <input>/<textarea> CONTRÔLÉ (assistance G11). PARTAGÉ : merge-tags du wizard
+ * campagne (F05) ET variables de l'éditeur de template (F07).
  *
  * Lit la sélection live du DOM via une ref, calcule la nouvelle valeur (pur
  * `insertToken`), la pousse dans l'état React, puis restaure focus + curseur

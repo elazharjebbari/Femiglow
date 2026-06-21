@@ -106,15 +106,19 @@ describe('TemplateEditor — base (CRUD UI)', () => {
     expect(screen.getAllByDisplayValue(/Bonjour \{\{firstName\}\}/).length).toBeGreaterThan(0);
   });
 
-  it('TPL-EDI-002 : insertion de variable ajoute {{lastName}} en fin de source', () => {
+  it('TPL-EDI-002 : insertion de variable au CURSEUR (clé réelle, plus en fin)', () => {
     renderEditor();
-    fireEvent.click(screen.getByRole('button', { name: '{{lastName}}' }));
     const source = screen
       .getAllByRole('textbox')
-      .find((t) => (t as HTMLTextAreaElement).value.includes('{{lastName}}'));
-    expect(source).toBeTruthy();
-    // L'insertion est en fin de source (pas un remplacement).
-    expect((source as HTMLTextAreaElement).value).toMatch(/\{\{lastName\}\}$/);
+      .find((t) => (t as HTMLTextAreaElement).value.includes('Bonjour {{firstName}}')) as HTMLTextAreaElement;
+    source.focus();
+    source.setSelectionRange(0, 0); // curseur au DÉBUT
+    fireEvent.click(screen.getByRole('button', { name: '{{shopUrl}}' }));
+    const after = screen
+      .getAllByRole('textbox')
+      .find((t) => (t as HTMLTextAreaElement).value.includes('{{shopUrl}}')) as HTMLTextAreaElement;
+    // Inséré à la position du curseur (début), PAS appendé en fin.
+    expect(after.value.startsWith('{{shopUrl}}')).toBe(true);
   });
 
   it('TPL-EDI-003 : bouton enregistrer désactivé sans changement', () => {

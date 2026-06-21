@@ -46,7 +46,7 @@ import { useCampaignAutosave, type AutosavePatch } from './use-campaign-autosave
 import { AutosaveIndicator } from './AutosaveIndicator';
 import { MergeTagInserter } from './MergeTagInserter';
 import { ScheduleShortcuts } from './ScheduleShortcuts';
-import { useTokenInsertion } from './use-token-insertion';
+import { useTokenInsertion } from '../common/use-token-insertion';
 
 type AudienceLite = {
   id: string;

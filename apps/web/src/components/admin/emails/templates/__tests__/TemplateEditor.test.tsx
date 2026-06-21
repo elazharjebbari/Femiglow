@@ -59,14 +59,23 @@ describe('TemplateEditor', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('insert-var button appends {{var}} to source', () => {
+  it('insert-var button inserts {{var}} into source (clé réelle du catalogue)', () => {
     render(<TemplateEditor template={baseTemplate} versions={baseVersions} />);
-    const btn = screen.getByRole('button', { name: '{{lastName}}' });
+    const btn = screen.getByRole('button', { name: '{{shopUrl}}' });
     fireEvent.click(btn);
-    // The textarea should now contain {{lastName}} at the end
     const textareas = screen.getAllByRole('textbox');
-    const source = textareas.find((t) => (t as HTMLTextAreaElement).value.includes('{{lastName}}'));
+    const source = textareas.find((t) => (t as HTMLTextAreaElement).value.includes('{{shopUrl}}'));
     expect(source).toBeTruthy();
+  });
+
+  it('F07-C-017 — panneau de variables groupé, clés RÉELLES, sans variable fantôme', () => {
+    render(<TemplateEditor template={baseTemplate} versions={baseVersions} />);
+    expect(screen.getByText('Identité')).toBeInTheDocument();
+    expect(screen.getByText('Commerce')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '{{totalSpent}}' })).toBeInTheDocument();
+    // Les anciennes variables trompeuses ne sont plus proposées.
+    expect(screen.queryByRole('button', { name: '{{lastName}}' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '{{orderTotal}}' })).not.toBeInTheDocument();
   });
 
   it('disables save button when no changes', () => {

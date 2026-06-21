@@ -16,6 +16,8 @@ import {
   formatAge,
 } from '@/components/admin/emails/ui';
 import { useTemplateDraft, type TemplateDraftState } from './use-template-draft';
+import { useTokenInsertion } from '../common/use-token-insertion';
+import { TEMPLATE_VARIABLE_GROUPS, variablesOfGroup } from './template-variables';
 
 export type TemplateEditorProps = {
   template: EmailTemplateCustomRow;
@@ -23,7 +25,6 @@ export type TemplateEditorProps = {
 };
 
 const PREVIEW_DEBOUNCE_MS = 600;
-const SAMPLE_VARS = ['firstName', 'lastName', 'email', 'orderTotal', 'unsubscribeUrl'];
 
 export function TemplateEditor({ template, versions: initialVersions }: TemplateEditorProps) {
   const [subject, setSubject] = useState(template.subjectTmpl);
@@ -70,6 +71,9 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
       : new Date(template.updatedAt)
     ).toISOString(),
   });
+  // Insertion de variable au CURSEUR dans la source (réutilise le socle G11).
+  const sourceInsert = useTokenInsertion<HTMLTextAreaElement>(setHtmlSource);
+
   // Autosave debounced de la frappe. Le hook SUSPEND tant qu'une restauration
   // n'est pas tranchée ; `didMount` évite une écriture au montage (état serveur).
   const didMountRef = useRef(false);
@@ -179,10 +183,6 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
     }
   };
 
-  const insertVar = (varName: string) => {
-    setHtmlSource((s) => `${s}{{${varName}}}`);
-  };
-
   return (
     <>
       {/* Garde « modifications non enregistrées » (nav in-app + fermeture onglet). */}
@@ -246,6 +246,7 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
             HTML source ({htmlSource.length.toLocaleString()} car.)
           </label>
           <textarea
+            ref={sourceInsert.ref}
             value={htmlSource}
             onChange={(e) => setHtmlSource(e.target.value)}
             className="mt-1 h-[480px] w-full rounded border border-stone-300 px-3 py-2 text-xs font-mono leading-snug"
@@ -316,20 +317,30 @@ export function TemplateEditor({ template, versions: initialVersions }: Template
           <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-stone-500">
             Variables disponibles
           </h3>
-          <div className="flex flex-wrap gap-1">
-            {SAMPLE_VARS.map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => insertVar(v)}
-                className="rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-700 hover:bg-stone-200"
-              >
-                {`{{${v}}}`}
-              </button>
+          <div className="space-y-2">
+            {TEMPLATE_VARIABLE_GROUPS.map((group) => (
+              <div key={group}>
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-stone-400">
+                  {group}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {variablesOfGroup(group).map((v) => (
+                    <button
+                      key={v.key}
+                      type="button"
+                      onClick={() => sourceInsert.insert(v.token)}
+                      title={v.label}
+                      className="rounded bg-stone-100 px-2 py-0.5 text-xs font-mono text-stone-700 hover:bg-stone-200"
+                    >
+                      {v.token}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-          <p className="mt-2 text-[10px] text-stone-400">
-            Cliquer pour insérer en fin de source.
+          <p className="mt-2 text-[10px] text-stone-500">
+            Cliquer pour insérer à la position du curseur.
           </p>
         </section>
 
