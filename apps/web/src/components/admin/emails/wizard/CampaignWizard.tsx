@@ -30,7 +30,18 @@ import type { SaveWizardProgressInput } from '@/lib/admin/emails/campaigns-share
 import type { ListmonkListLite, ListmonkTemplateLite } from '@/lib/admin/emails/campaigns-queries';
 import { EntityCombobox, type ComboboxOption } from '@/components/admin/emails/common/EntityCombobox';
 import { LeadEmailCombobox } from '@/components/admin/emails/common/combobox-wrappers';
-import { Banner, DEFAULT_TIMEZONE } from '@/components/admin/emails/ui';
+import {
+  Banner,
+  Button,
+  Card,
+  Input,
+  DEFAULT_TIMEZONE,
+  formatAbsolute,
+  FOCUS,
+  INK,
+  TONE,
+  TYPO,
+} from '@/components/admin/emails/ui';
 import { useCampaignAutosave, type AutosavePatch } from './use-campaign-autosave';
 import { AutosaveIndicator } from './AutosaveIndicator';
 import { MergeTagInserter } from './MergeTagInserter';
@@ -358,9 +369,9 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
         {([1, 2, 3, 4, 5, 6] as Step[]).map((n, i) => (
           <li key={n} className="flex flex-1 items-center">
             <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full font-semibold ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-semibold ${
                 n < step
-                  ? 'bg-emerald-100 text-emerald-700'
+                  ? TONE.success.subtle
                   : n === step
                     ? 'bg-stone-900 text-white'
                     : 'bg-stone-200 text-stone-500'
@@ -368,7 +379,10 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
             >
               {n < step ? '✓' : n}
             </span>
-            <span className={`ml-2 ${n === step ? 'font-medium text-stone-900' : 'text-stone-500'}`}>
+            {/* Libellés masqués sous `sm` (les pastilles numérotées suffisent sur mobile). */}
+            <span
+              className={`ml-2 hidden sm:inline ${n === step ? 'font-medium text-stone-900' : 'text-stone-500'}`}
+            >
               {['Nom', 'Audience', 'Contenu', 'Sujet', 'Planif.', 'Vérif.'][i]}
             </span>
             {i < 5 ? <span className="mx-2 h-px flex-1 bg-stone-200" /> : null}
@@ -377,9 +391,9 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
       </ol>
 
       {listmonkError ? (
-        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          ⚠ Listmonk : {listmonkError}
-        </div>
+        <Banner tone="warning" className="mb-4" icon="⚠">
+          Listmonk : {listmonkError}
+        </Banner>
       ) : null}
 
       {/* Conflit multi-onglets : un autre onglet/session a écrit ce brouillon.
@@ -405,7 +419,7 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
         </Banner>
       ) : null}
 
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
+      <Card>
         {/* Step 1 */}
         {step === 1 ? (
           <div>
@@ -413,12 +427,12 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
             <p className="mt-1 text-sm text-stone-600">
               Pour t'y retrouver dans la liste. Non visible des destinataires.
             </p>
-            <input
-              type="text"
+            <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Bienvenue printemps 2026"
-              className="mt-4 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-900 focus:outline-none"
+              aria-label="Nom interne de la campagne"
+              className="mt-4"
               autoFocus
             />
             <p className="mt-1 text-xs text-stone-500">{name.length}/120</p>
@@ -429,7 +443,7 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
         {step === 2 ? (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-stone-900">2. Audience</h2>
+              <h2 className={TYPO.sectionTitle}>2. Audience</h2>
               <p className="mt-1 text-sm text-stone-600">
                 Choisis une <strong>audience FemiGlow</strong> (segmentation par règles, snapshot dynamique au send)
                 ou une <strong>liste Listmonk</strong> (statique, opt-in manuel).
@@ -517,13 +531,10 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
                 listmonkError ? (
                   // LMK-04 : ne PAS conseiller de « créer une liste » quand la
                   // vacuité vient d'une panne Listmonk — dire la vérité.
-                  <p
-                    role="alert"
-                    className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
-                  >
-                    ⚠ Listmonk est indisponible — les listes ne peuvent pas être chargées (
+                  <Banner tone="warning" role="alert" icon="⚠">
+                    Listmonk est indisponible — les listes ne peuvent pas être chargées (
                     {listmonkError}). Vous pouvez utiliser une audience FemiGlow ci-dessus.
-                  </p>
+                  </Banner>
                 ) : (
                   <p className="rounded border border-stone-200 bg-stone-50 p-3 text-xs text-stone-600">
                     Aucune liste Listmonk. Crée-en une dans <code>/admin/emails/listmonk</code>.
@@ -593,18 +604,23 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
 
             {/* UX-CAMP-013 — feedback d'erreur d'estimation (actionnable). */}
             {previewError ? (
-              <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                Impossible d’estimer la taille de l’audience (API indisponible).{' '}
-                {audienceId ? (
-                  <button
-                    type="button"
-                    onClick={() => void loadAudiencePreview(audienceId)}
-                    className="font-medium underline"
-                  >
-                    Réessayer
-                  </button>
-                ) : null}
-              </p>
+              <Banner
+                tone="danger"
+                role="alert"
+                action={
+                  audienceId ? (
+                    <button
+                      type="button"
+                      onClick={() => void loadAudiencePreview(audienceId)}
+                      className="font-medium underline"
+                    >
+                      Réessayer
+                    </button>
+                  ) : undefined
+                }
+              >
+                Impossible d’estimer la taille de l’audience (API indisponible).
+              </Banner>
             ) : null}
 
             <p className="rounded bg-stone-50 p-3 text-sm">
@@ -624,7 +640,7 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
               )}
               {/* UX-CAMP-010 — annotation borne haute multi-listes (sur-comptage). */}
               {!audienceId && audienceIds.length > 1 && (
-                <span className="ml-2 block text-xs text-amber-700">
+                <span className={`ml-2 block text-xs ${INK.warning}`}>
                   ⚠ Borne haute : les doublons inter-listes ne sont pas déduits ici ; Listmonk dédoublonne à l’envoi.
                 </span>
               )}
@@ -670,13 +686,9 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
                   />
                 </div>
                 {templateId != null ? (
-                  <button
-                    type="button"
-                    onClick={() => setTemplateId(null)}
-                    className="rounded-md border border-stone-300 bg-white px-3 py-2 text-xs font-medium text-stone-700 hover:bg-stone-50"
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => setTemplateId(null)}>
                     Aucun (corps libre)
-                  </button>
+                  </Button>
                 ) : null}
               </div>
               {selectedTemplate ? (
@@ -714,7 +726,7 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
                 value={bodyHtml}
                 onChange={(e) => setBodyHtml(e.target.value)}
                 aria-label="Corps HTML"
-                className="w-full rounded-md border border-stone-300 px-3 py-2 font-mono text-xs"
+                className={`w-full rounded border border-stone-300 px-3 py-2 font-mono text-xs ${FOCUS}`}
               />
             </div>
           </div>
@@ -729,13 +741,11 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
                 <span className="block text-xs font-medium text-stone-600">Sujet (idéal 30-50 chars)</span>
                 <MergeTagInserter onInsert={subjectInsert.insert} />
               </div>
-              <input
+              <Input
                 ref={subjectInsert.ref}
-                type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 aria-label="Sujet"
-                className="w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
                 placeholder="✨ Découvre nos rituels printemps"
               />
               <span className="text-xs text-stone-500">{subject.length}/140</span>
@@ -744,11 +754,10 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
               <span className="block text-xs font-medium text-stone-600">
                 Preheader (visible juste après le sujet dans Gmail/Outlook)
               </span>
-              <input
-                type="text"
+              <Input
                 value={preheader}
                 onChange={(e) => setPreheader(e.target.value)}
-                className="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                className="mt-1"
                 placeholder="Une sélection douce pour cette saison"
               />
               <span className="text-xs text-stone-500">{preheader.length}/200</span>
@@ -796,12 +805,12 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
             </div>
             {scheduleMode === 'scheduled' ? (
               <div className="mt-4">
-                <input
+                <Input
                   type="datetime-local"
                   value={scheduledFor.slice(0, 16)}
                   onChange={(e) => setScheduledFor(e.target.value)}
                   aria-label="Date et heure d’envoi"
-                  className="rounded-md border border-stone-300 px-3 py-2 text-sm"
+                  className="sm:w-auto"
                 />
                 <ScheduleShortcuts onPick={setScheduledFor} />
               </div>
@@ -819,7 +828,7 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
         {step === 6 ? (
           <div>
             <h2 className="text-lg font-semibold text-stone-900">6. Vérification finale</h2>
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
+            <dl className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
               <Field label="Nom" value={name} />
               <Field
                 label="Audience"
@@ -838,7 +847,7 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
                   scheduleMode === 'now'
                     ? 'Envoi immédiat'
                     : scheduledFor
-                      ? new Date(scheduledFor).toLocaleString('fr-FR')
+                      ? formatAbsolute(new Date(scheduledFor).toISOString(), DEFAULT_TIMEZONE)
                       : '(non choisi)'
                 }
               />
@@ -868,34 +877,28 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
                     placeholder="toi@femiglow-maroc.com"
                   />
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
                   onClick={submitTest}
-                  disabled={testSending || testEmail.trim().length === 0}
-                  className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 disabled:opacity-40"
+                  busy={testSending}
+                  busyLabel="Envoi du test…"
+                  disabled={testEmail.trim().length === 0}
                 >
-                  {testSending ? 'Envoi du test…' : 'Envoyer le test'}
-                </button>
+                  Envoyer le test
+                </Button>
               </div>
               {testFeedback ? (
-                <p
-                  role={testFeedback.ok ? 'status' : 'alert'}
-                  className={`mt-2 rounded-md border p-2 text-sm ${
-                    testFeedback.ok
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                      : 'border-rose-200 bg-rose-50 text-rose-700'
-                  }`}
-                >
+                <Banner tone={testFeedback.ok ? 'success' : 'danger'} className="mt-2">
                   {testFeedback.msg}
-                </p>
+                </Banner>
               ) : null}
             </div>
 
             {/* UX-CAMP-010/011 — confirmation chiffrée + garde estimation. */}
             {!estimateKnown ? (
-              <p role="status" className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                ⏳ Estimation des destinataires en cours… l’envoi est bloqué tant que le nombre n’est pas connu.
-              </p>
+              <Banner tone="warning" role="status" className="mt-6" icon="⏳">
+                Estimation des destinataires en cours… l’envoi est bloqué tant que le nombre n’est pas connu.
+              </Banner>
             ) : null}
             <label className="mt-6 flex items-start gap-2 text-sm">
               <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
@@ -904,7 +907,7 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
                 destinataire{estimatedAudience > 1 ? 's' : ''} après relecture du contenu, et que cet envoi est
                 légitime.
                 {!audienceId && audienceIds.length > 1 ? (
-                  <span className="block text-xs text-amber-700">
+                  <span className={`block text-xs ${INK.warning}`}>
                     (borne haute multi-listes — doublons non déduits)
                   </span>
                 ) : null}
@@ -914,41 +917,32 @@ export function CampaignWizard({ draftId, initial, initialStep = 1, initialRev =
         ) : null}
 
         {errorMsg ? (
-          <p className="mt-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          <Banner tone="danger" className="mt-4">
             {errorMsg}
-          </p>
+          </Banner>
         ) : null}
-      </div>
+      </Card>
 
       {/* Footer */}
       <div className="mt-6 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={goPrev}
-          disabled={step === 1 || pending}
-          className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 disabled:opacity-40"
-        >
+        <Button variant="secondary" onClick={goPrev} disabled={step === 1 || pending}>
           ← Précédent
-        </button>
+        </Button>
         <AutosaveIndicator status={autosave.status} savedAt={autosave.savedAt} />
         {step < 6 ? (
-          <button
-            type="button"
-            onClick={goNext}
-            disabled={pending}
-            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-          >
+          <Button variant="primary" onClick={goNext} disabled={pending}>
             Suivant →
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={submit}
-            disabled={!ack || sending || pending || !estimateKnown}
-            className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+            disabled={!ack || pending || !estimateKnown}
+            busy={sending}
+            busyLabel="Envoi…"
           >
-            {sending ? 'Envoi…' : scheduleMode === 'now' ? '📨 Envoyer maintenant' : '📅 Planifier'}
-          </button>
+            {scheduleMode === 'now' ? '📨 Envoyer maintenant' : '📅 Planifier'}
+          </Button>
         )}
       </div>
     </div>
