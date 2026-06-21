@@ -4,16 +4,18 @@
  *
  * Oracle UX4-CAMPAGNES-002 :
  *  - pour status='sending', le détail rend des boutons Pause / Annuler ;
- *  - « Annuler » exige une confirmation (window.confirm) ;
+ *  - « Annuler » exige une confirmation — depuis P3.3-d, via le `ConfirmDialog`
+ *    socle (et non plus `window.confirm`) ; la confirmation nomme la campagne ;
  *  - les transitions illégales sont ABSENTES (pas de bouton Reprendre pour
  *    une campagne sending ; pas de Pause/Annuler pour une campagne sent).
  *
  * La page est un RSC async : on mocke ses frontières de données, on l'« await »
  * pour obtenir l'arbre JSX, puis on le rend en jsdom. Les server actions sont
- * mockées (on observe l'appel, pas l'effet DB).
+ * mockées (on observe l'appel, pas l'effet DB). `CampaignActions` (client) tire
+ * `useRouter` (refresh post-action) → on le mocke aussi.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { EmailCampaignLinkRow } from '@/lib/db/schema-emails';
 
@@ -49,8 +51,14 @@ vi.mock('@/components/admin/AdminShell', () => ({
   AdminShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-// next/navigation notFound : ne doit pas être déclenché ici.
-vi.mock('next/navigation', () => ({ notFound: () => { throw new Error('notFound'); } }));
+// next/navigation : notFound ne doit pas être déclenché ici ; useRouter est
+// requis par CampaignActions (refresh après une action de pilotage).
+vi.mock('next/navigation', () => ({
+  notFound: () => {
+    throw new Error('notFound');
+  },
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
 
 // `useFormStatus` (react-dom) n'est défini qu'au sein d'une soumission de form
 // pilotée par le runtime React Server. En test unitaire jsdom on le neutralise
@@ -115,17 +123,21 @@ describe('UX4-CAMPAGNES-002 — actions de pilotage selon le statut', () => {
     expect(screen.queryByRole('button', { name: /Supprimer le brouillon/i })).not.toBeInTheDocument();
   });
 
-  it('UX4-CAMPAGNES-002b : « Annuler » exige une confirmation (window.confirm)', async () => {
+  it('UX4-CAMPAGNES-002b : « Annuler » ouvre un ConfirmDialog nommant la campagne (P3.3-d)', async () => {
     getCampaignDraft.mockResolvedValue(makeRow({ status: 'sending' }));
     await renderPage();
     const user = userEvent.setup();
 
-    // Refus de confirmation → preventDefault → l'action n'est pas soumise.
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    // Clic sur Annuler → ouvre le dialog, SANS encore soumettre l'action.
     await user.click(screen.getByRole('button', { name: /Annuler définitivement la campagne/i }));
-    expect(confirmSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/Annuler définitivement la campagne « Aïd 2026 »/i),
-    );
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: /Annuler l’envoi/i })).toBeInTheDocument();
+    expect(within(dialog).getByText('Aïd 2026')).toBeInTheDocument();
+    expect(cancelCampaign).not.toHaveBeenCalled();
+
+    // Confirmation dans le dialog → soumet l'action serveur.
+    await user.click(within(dialog).getByRole('button', { name: /Annuler l’envoi/i }));
+    expect(cancelCampaign).toHaveBeenCalledTimes(1);
   });
 
   it('UX4-CAMPAGNES-002c : status=paused rend Reprendre + Annuler (pas Pause)', async () => {
@@ -146,16 +158,17 @@ describe('UX4-CAMPAGNES-002 — actions de pilotage selon le statut', () => {
     expect(screen.getByRole('button', { name: /Rafraîchir les métriques/i })).toBeInTheDocument();
   });
 
-  it('UX4-CAMPAGNES-002e : status=draft → Supprimer (confirmé), pas Pause/Annuler/Reprendre', async () => {
+  it('UX4-CAMPAGNES-002e : status=draft → Supprimer ouvre un ConfirmDialog (P3.3-d), pas Pause/Annuler/Reprendre', async () => {
     getCampaignDraft.mockResolvedValue(makeRow({ status: 'draft', listmonkCampaignId: null }));
     await renderPage();
     const user = userEvent.setup();
     expect(screen.getByRole('button', { name: /Supprimer le brouillon/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Mettre la campagne en pause/i })).not.toBeInTheDocument();
-    // UX-CAMP-015 — la suppression demande confirmation.
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    // UX-CAMP-015 — la suppression demande confirmation (ConfirmDialog socle).
     await user.click(screen.getByRole('button', { name: /Supprimer le brouillon/i }));
-    expect(confirmSpy).toHaveBeenCalledWith(expect.stringMatching(/Supprimer le brouillon « Aïd 2026 »/i));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: /Supprimer le brouillon/i })).toBeInTheDocument();
+    expect(within(dialog).getByText('Aïd 2026')).toBeInTheDocument();
   });
 
   it('UX-CAMP-005 : deep-link audience cliquable vers /audiences/{id}', async () => {
