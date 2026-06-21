@@ -122,13 +122,28 @@ describeEmailsDb('F03 — contrat de la route summary', () => {
       .insert(emailEvent)
       .values({ outboxId: null, type: 'delivered', ts: at(2 * HOUR), source: 'stalwart' });
 
-    const res = await callRoute('?window=7d');
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    const parsed = SummaryResponseWire.safeParse(body);
-    expect(parsed.success, JSON.stringify(parsed.success ? null : parsed.error.issues)).toBe(true);
-    expect(body.sent).toBe(3);
-    expect(body.comparison).toBeDefined();
+    // Contrairement aux F03-I-001..004 qui appellent `summarizeOutbox(window, NOW)`
+    // avec un `now` injecté, on exerce ici le VRAI route handler, qui lit l'horloge
+    // réelle (`new Date()`). Les lignes sont posées à NOW-1h ; sans épinglage, la
+    // fenêtre 7d glissait avec le calendrier et les excluait passé 7 jours → bombe
+    // à retardement (constat identique à F03-N-003/005, fix 8e96a535). On fige donc
+    // `Date` à NOW le temps de l'appel (toFake: ['Date'] : setTimeout/sockets PG
+    // restent réels pour l'I/O async). Test-only, aucun changement produit.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    try {
+      const res = await callRoute('?window=7d');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      const parsed = SummaryResponseWire.safeParse(body);
+      expect(parsed.success, JSON.stringify(parsed.success ? null : parsed.error.issues)).toBe(
+        true,
+      );
+      expect(body.sent).toBe(3);
+      expect(body.comparison).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('F03-I-006 — ?window=30d → 200 (enum étendu)', async () => {

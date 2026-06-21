@@ -209,12 +209,24 @@ describeEmailsDb('chantier 1.7 — dispatchEventTriggers (moteur de triggers câ
     expect(await runsForAutomation(auto.id)).toHaveLength(1);
   });
 
+  // ── AUD-01 — pourquoi consent_marketing et pas has_tag dans ce couple ─────
+  // `has_tag` / `not_has_tag` sont NEUTRALISÉS au niveau du rules-compiler : ils
+  // compilent en FALSE tant que M5.5 / TAGS_ENABLED n'est pas livré (pour que
+  // `not_has_tag` ne matche jamais toute la base = envoi de masse hors cible).
+  // Un oracle « condition satisfaite → enrôle » NE PEUT donc PAS s'appuyer sur
+  // has_tag : il serait structurellement bloqué (bombe à retardement masquée —
+  // c'est ce qui faisait rougir AUT-INT-013). On adosse le couple bloque/enrôle
+  // à `consent_marketing`, condition réellement évaluée par le compilateur ; la
+  // neutralisation de has_tag est, elle, assertée explicitement par AUT-INT-013b
+  // (et couverte unitairement dans rules-compiler.test.ts).
+
   // AUT-INT-012 — triggerConditions non satisfaites bloquent l'enrôlement
   it('AUT-INT-012 : triggerConditions non satisfaites bloquent l’enrôlement', async () => {
-    // Lead présent SANS le tag « vip » ; la condition exige has_tag vip.
+    // Lead présent SANS consentement marketing (consent_marketing défaut false) ;
+    // la condition exige consent_marketing=true → non satisfaite → bloque.
     await db.insert(leads).values({
       id: createId('l'),
-      email: 'lead-notag@exemple.test',
+      email: 'lead-noconsent@exemple.test',
       status: 'new',
     });
     const auto = await insertAutomation({
@@ -223,11 +235,11 @@ describeEmailsDb('chantier 1.7 — dispatchEventTriggers (moteur de triggers câ
       triggerConfig: { eventName: 'lead.status_changed' },
       triggerConditions: {
         kind: 'all',
-        conditions: [{ kind: 'has_tag', tag: 'vip' }],
+        conditions: [{ kind: 'consent_marketing', value: true }],
       } as unknown as object,
       active: true,
     });
-    await insertEvent({ email: 'lead-notag@exemple.test', eventName: 'lead.status_changed' });
+    await insertEvent({ email: 'lead-noconsent@exemple.test', eventName: 'lead.status_changed' });
 
     const res = await dispatchEventTriggers(new Date(ANCHOR.getTime() + 1000));
 
@@ -238,6 +250,36 @@ describeEmailsDb('chantier 1.7 — dispatchEventTriggers (moteur de triggers câ
 
   // AUT-INT-013 — triggerConditions satisfaites enrôlent le lead
   it('AUT-INT-013 : triggerConditions satisfaites enrôlent le lead', async () => {
+    // Lead AVEC consentement marketing ; condition consent_marketing=true →
+    // satisfaite → enrôle.
+    await db.insert(leads).values({
+      id: createId('l'),
+      email: 'lead-consent@exemple.test',
+      status: 'qualified',
+      consentMarketing: true,
+    });
+    const auto = await insertAutomation({
+      slug: `cond-${createId()}`,
+      triggerType: 'event',
+      triggerConfig: { eventName: 'lead.status_changed' },
+      triggerConditions: {
+        kind: 'all',
+        conditions: [{ kind: 'consent_marketing', value: true }],
+      } as unknown as object,
+      active: true,
+    });
+    await insertEvent({ email: 'lead-consent@exemple.test', eventName: 'lead.status_changed' });
+
+    const res = await dispatchEventTriggers(new Date(ANCHOR.getTime() + 1000));
+
+    expect(res.enrolled).toBe(1);
+    expect(await runsForAutomation(auto.id)).toHaveLength(1);
+  });
+
+  // AUT-INT-013b — INVARIANT AUD-01 : has_tag neutralisé → bloque MÊME quand le
+  // lead porte réellement le tag. Garde-fou : tant que M5.5 / TAGS_ENABLED n'est
+  // pas livré, aucune automation conditionnée sur un tag ne doit enrôler.
+  it('AUT-INT-013b : has_tag neutralisé (AUD-01) bloque même si le lead porte le tag', async () => {
     const leadId = createId('l');
     await db.insert(leads).values({
       id: leadId,
@@ -265,8 +307,12 @@ describeEmailsDb('chantier 1.7 — dispatchEventTriggers (moteur de triggers câ
 
     const res = await dispatchEventTriggers(new Date(ANCHOR.getTime() + 1000));
 
-    expect(res.enrolled).toBe(1);
-    expect(await runsForAutomation(auto.id)).toHaveLength(1);
+    // Le tag existe en base, mais has_tag compile en FALSE → condition jamais
+    // satisfaite → blocage (jamais d'enrôlement hors cible). Le warn structuré
+    // `audience.rules.tag_neutralized` est émis (couvert dans rules-compiler.test.ts).
+    expect(res.conditionBlocked).toBe(1);
+    expect(res.enrolled).toBe(0);
+    expect(await runsForAutomation(auto.id)).toHaveLength(0);
   });
 
   // AUT-INT-015 — triggerType='subscription' enrôle sur newsletter.subscribed
