@@ -23,6 +23,11 @@ import { useTokenInsertion } from '../common/use-token-insertion';
 import { TEMPLATE_VARIABLES, TEMPLATE_VARIABLE_GROUPS, variablesOfGroup } from './template-variables';
 import { activeMergeQuery, applyMergeCompletion } from './merge-autocomplete';
 import { VersionDiff } from './VersionDiff';
+import {
+  PreviewViewportToggle,
+  viewportWidth,
+  type PreviewViewport,
+} from './PreviewViewportToggle';
 
 export type TemplateEditorProps = {
   template: EmailTemplateCustomRow;
@@ -47,6 +52,8 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
   const [resolvedMap, setResolvedMap] = useState<Record<string, string>>({});
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  // Aperçu Bureau ↔ Mobile (P3.4-k, Lot 3) — un e-mail se lit surtout sur mobile.
+  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>('desktop');
   const [versions, setVersions] = useState(initialVersions);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -432,7 +439,7 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
 
       {/* Center : preview iframe */}
       <section className="space-y-3 rounded border border-stone-200 bg-white p-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="text-xs font-medium uppercase tracking-wider text-stone-500">
             Preview avec contexte
           </label>
@@ -441,11 +448,13 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
             placeholder="lead@example.com (optionnel)"
             value={contextEmail}
             onChange={(e) => setContextEmail(e.target.value)}
-            className="flex-1 rounded border border-stone-300 px-2 py-1 text-xs font-mono"
+            className="min-w-[8rem] flex-1 rounded border border-stone-300 px-2 py-1 text-xs font-mono"
           />
+          <PreviewViewportToggle value={previewViewport} onChange={setPreviewViewport} />
           <button
             type="button"
             onClick={() => void refreshPreview()}
+            aria-label="Rafraîchir l’aperçu"
             className="rounded border border-stone-300 px-2 py-1 text-xs text-stone-600 hover:bg-stone-50"
           >
             ↻
@@ -460,18 +469,31 @@ export function TemplateEditor({ template, versions: initialVersions, adminEmail
           <p className="text-xs text-stone-500">Sujet rendu :</p>
           <p className="font-medium text-stone-900">{previewSubject || <i>—</i>}</p>
         </div>
-        <div className="relative h-[520px] overflow-hidden rounded border border-stone-200">
+        <div
+          data-testid="preview-frame"
+          data-viewport={previewViewport}
+          className="relative h-[520px] overflow-hidden rounded border border-stone-200 bg-stone-100"
+        >
           {previewLoading && (
             <div className="absolute right-2 top-2 z-10 rounded bg-stone-900/80 px-2 py-0.5 text-xs text-white">
               ...
             </div>
           )}
-          <iframe
-            title="Email preview"
-            srcDoc={previewHtml || '<p style="font-family: sans-serif; color: #999; padding: 1rem">Preview chargement…</p>'}
-            sandbox="allow-same-origin"
-            className="h-full w-full bg-white"
-          />
+          {/* Cadre centré, borné en mobile pour simuler un écran de téléphone. */}
+          <div
+            className="mx-auto h-full bg-white transition-[max-width] duration-200"
+            style={{ maxWidth: viewportWidth(previewViewport) ?? '100%' }}
+          >
+            <iframe
+              title="Email preview"
+              srcDoc={previewHtml || '<p style="font-family: sans-serif; color: #999; padding: 1rem">Preview chargement…</p>'}
+              // sandbox="" → origine opaque + scripts inertes (durci F07-S, P3.4-k :
+              // l'aperçu n'est que du HTML statique sanitizé ; aligne sur les autres
+              // surfaces emails). Double rempart avec sanitizeEmailHtml côté serveur.
+              sandbox=""
+              className="h-full w-full bg-white"
+            />
+          </div>
         </div>
       </section>
 
